@@ -3064,9 +3064,9 @@ int bad_format(char *fmt) {
                  if (*ptr == '.') ptr++;
                  while (*ptr >= '0' && *ptr <= '9') ptr++;
   
-                 /* Either 'le' or 'lf' must follow here */
+                 /* Either 'le', 'lf' or 'lg' must follow here */
                  if (*ptr++ != 'l') return 1;
-                 if (*ptr == 'e' || *ptr == 'f') ptr++;
+                 if (*ptr == 'e' || *ptr == 'f' || *ptr == 'g') ptr++;
                  else return 1;
                  n++;
             }
