@@ -54,6 +54,7 @@ const char *rrd_strerror(int err) {
     return strerror_r(err, ctx->lib_errstr, ctx->errlen);
 }
 #else
+#undef strerror
 const char *rrd_strerror(int err) {
     static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
     struct rrd_context *ctx;
