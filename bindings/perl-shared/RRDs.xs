@@ -176,7 +176,7 @@ void
 rrd_graph(...)
 	PROTOTYPE: @	
 	PREINIT:
-	char **calcpr;
+	char **calcpr=NULL;
 	int i,xsize,ysize;
 	char **argv;
 	AV *retar;
