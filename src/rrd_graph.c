@@ -2635,7 +2635,7 @@ scan_for_col(char *input, int len, char *output)
 ** - script parsing   now in rrd_graph_script()
 */
 int 
-rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *stream)
+rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *stream, double *ymin, double *ymax)
 {
     image_desc_t   im;
             
@@ -2676,6 +2676,8 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *s
 
     *xsize=im.ximg;
     *ysize=im.yimg;
+    *ymin=im.minval;
+    *ymax=im.maxval;
     if (im.imginfo) {
 	char *filename;
 	if (!(*prdata)) {

@@ -5,6 +5,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.9  2005/02/13 16:13:33  oetiker
+ * let rrd_graph return the actual value range it picked ...
+ * -- Henrik Stoerner <henrik@hswn.dk>
+ *
  * Revision 1.8  2004/05/26 22:11:12  oetiker
  * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
  *
@@ -59,7 +63,7 @@ typedef double       rrd_value_t;         /* the data storage type is
 /* main function blocks */
 int    rrd_create(int, char **);
 int    rrd_update(int, char **);
-int    rrd_graph(int, char **, char ***, int *, int *, FILE *);
+int    rrd_graph(int, char **, char ***, int *, int *, FILE *, double *, double *);
 int    rrd_fetch(int, char **, time_t *, time_t *, unsigned long *,
 		 unsigned long *, char ***, rrd_value_t **);
 int    rrd_restore(int, char **);
