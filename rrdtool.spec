@@ -7,7 +7,7 @@ Name: rrdtool
 Version: 1.1.0
 Release: %{cvsver}
 License: GPL
-Group: Applications/Networking
+Group: Applications/Databases
 Source: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/beta/rrdtool-cvs-snap.tar.gz
 URL: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
 Buildroot: /tmp/%{name}-root
@@ -29,26 +29,21 @@ values collected over a definable time period.
 %package devel
 Summary: RRD Tool development libraries and header files
 Group: Development/Libraries
-Requires: rrdtool = %{version}-%{release}
+Requires: %{name} = %{version}
 
 %description devel
 The RRD Tools development library.
 
 %package perl
 Summary: RRD Tool Perl interface
-Group: Applications/Networking
-Requires: rrdtool = %{version}-%{release}
+Group: Applications/Databases
+Requires: %{name} = %{version}
 
 %description perl
 The RRD Tools Perl modules.
 
 %prep
 %setup -q -n rrdtool-%{cvsdate}
-
-mkdir config
-cd config
-ln -s ../mkinstalldirs .
-cd ..
 
 %define deffont %{_datadir}/fonts/VeraMono.ttf
 perl -pi -e 's!^(#define\s+RRD_DEFAULT_FONT\s+).*!$1"%{deffont}"!' src/rrd_graph.c
