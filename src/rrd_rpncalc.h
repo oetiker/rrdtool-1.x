@@ -26,17 +26,17 @@ typedef struct rpnp_t {
 
 /* a compact representation of rpnp_t for computed data sources */
 typedef struct rpn_cdefds_t {
-	char op;  /* rpn operator type */
-	short val; /* used by OP_NUMBER and OP_VARIABLE */
+    char op;  /* rpn operator type */
+    short val; /* used by OP_NUMBER and OP_VARIABLE */
 } rpn_cdefds_t;
 
 /* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
 #define DS_CDEF_MAX_RPN_NODES 26 
 
 typedef struct rpnstack_t {
-	double *s;
-	long dc_stacksize;
-	long dc_stackblock;
+    double *s;
+    long dc_stacksize;
+    long dc_stackblock;
 } rpnstack_t;
 
 void rpnstack_init(rpnstack_t *rpnstack);
