@@ -2,26 +2,53 @@
 
 =head1 SYNOPSYS
 
-I<(to be) Depriciated commands>
+=over 4
 
-[B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>]
-[B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>]
-[B<HRULE:>I<value>B<#>I<rrggbbaa>[B<:>I<legend>]]
-[B<STACK:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]]
+=item B<to be depriciated commands>
 
-I<(soon) available commands>
+=over 4
 
-[B<PRINT:>I<vname>B<:>I<format>]
-[B<GPRINT:>I<vname>B<:>I<format>]
-[B<COMMENT:>I<text>]
-[B<VRULE:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
-[B<LINE>{I<width>}B<:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
-[B<AREA:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
-[B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
+=item B<PRINT> : I<vname> : I<CF> : I<format>
 
-I<to be implemented commands>
+=item B<GPRINT> : I<vname> : I<CF> : I<format>
 
-[B<SHIFT:>I<vname>]
+=item B<HRULE> : I<value> # I<color> [ :I<legend> ]
+
+=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
+
+=back
+
+=item B<available commands>
+
+=over 8
+
+=item B<PRINT> : I<vname> : I<format>
+
+=item B<GPRINT> : I<vname> : I<format>
+
+=item B<COMMENT> : I<text>
+
+=item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
+
+=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ : STACK ]
+
+=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:> C<STACK> ]
+
+=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+
+=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
+
+=back
+
+=item B<to be implemented commands>
+
+=over 8
+
+=item B<SHIFT> : I<vname> , I<offset>
+
+=back
+
+=back
 
 =head1 DESCRIPTION
 
@@ -31,12 +58,14 @@ Similarly no report is generated if you don't use print options.
 
 =head1 PRINT
 
-B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>
+=over 4
+
+=item B<PRINT> : I<vname> : I<CF> : I<format>
 
 I<Depriciated. Use the new form of this command in new scripts.>
 The first form of this command is to be used with B<CDEF> I<vname>s.
 
-B<PRINT:>I<vname>B<:>I<format>
+=item B<PRINT> : I<vname> : I<format>
 
 Depending on the context, either the value component or the time
 component of a B<VDEF> is printed using I<format>. It is an error
@@ -125,24 +154,26 @@ B<%Z> time zone
 
 =back
 
+=back
+
 =head1 GRAPH
 
-B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>
+=over 4
+
+=item B<GPRINT> : I<vname> : I<CF> : I<format>
 
 I<Depriciated. Use the new form of this command in new scripts.>
-This is the same as B<PRINT> but now it is printed inside the graph.
-See L<PRINT|rrdgraph/PRINT> for more information.
+This is the same as C<PRINT> but now it is printed inside the graph.
 
-B<GPRINT:>I<vname>B<:>I<format>
+=item B<GPRINT> : I<vname> : I<format>
 
-This is the same as B<PRINT> but now it is printed inside the graph.
-See L<PRINT|rrdgraph/PRINT> for more information.
+This is the same as C<PRINT> but now it is printed inside the graph.
 
-B<COMMENT:>I<text>
+=item B<COMMENT> : I<text>
 
 Text is printed literally in the legend section of the graph
 
-B<HRULE:>I<value>B<#>I<rrggbbaa>[B<:>I<legend>]
+=item B<HRULE> : I<value> # I<color> [ :I<legend> ]
 
 Draw an horizontal line at I<value>. Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
@@ -150,7 +181,7 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<value> can be a variable from a B<VDEF>.
 It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-B<VRULE:>I<time>B<#>I<rrggbbaa>[B<:>I<legend>]
+=item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
 
 Draw a vertical line at I<time>.  Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
@@ -158,7 +189,7 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<time> may be a number or a variable
 from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-B<LINE>{I<width>}B<:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]][B<:STACK>]
+=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ : STACK ]
 
 Draw a line of the specified width into the graph. If the color
 is not specified, the drawing is done 'blind'.  This is useful when
@@ -169,19 +200,19 @@ B<CDEF>.  If the optional B<STACK> modifier is used, this line is
 stacked on top of the previous element which can be a B<LINEx> or
 an B<AREA>
 
-B<AREA:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]][B<:STACK>]
+=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:> C<STACK> ]
 
-See B<LINEx>, however the area between the x-axis and the line will
+See B<LINE>, however the area between the x-axis and the line will
 also be filled.
 
-B<STACK:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]
+=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
 
 I<Depriciated.  Use the B<STACK> modifiers on the other commands.>
 I<Note: the comments on stacking are still valid...>
 Repeats the last B<LINEx> or B<AREA> however it doesn't start at the
 x-axis but rather on top of the previous element. This implies that
 there needs to be something to stack on. An invisible B<LINEx> or
-B<AREA> is something you can stack on!
+B<AREA> is something you can stack on, an unknown value is not!
 
 Note: When you stack on something that was I<unknown>, the whole
 stack will be I<unknown> for that point in time. If the beginning
@@ -190,7 +221,7 @@ graph this stacked variable anyway you need to make sure that the
 B<LINEx> or B<AREA> it gets stacked on is not unknown. Use a CDEF
 instruction with B<IF> and B<UN> to do so.
 
-B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]
+=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
 
 B<RRDtool> has now support for B<pie charts>. If you include the
 B<PART> command, the canvas is extended to make room for a chart
@@ -203,9 +234,21 @@ is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
 function.  It should return a number between 0 and 100, being a
 percentage.  Providing wrong input will produce undefined results.
 
-B<THE NEXT STUFF IS NOT YET IMPLEMENTED>
+=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
 
-B<SHIFT:>I<offset in seconds>
+Plot a tick mark (a vertical line) for each value of I<vname> that is
+non-zero and not *UNKNOWN*. The I<fraction> argument specifies the
+length of the tick mark as a fraction of the y-axis; the default value
+is 0.1 (10% of the axis). Note that the color specification is not
+optional.
+
+=back
+
+B<THE NEXT COMMAND IS NOT YET IMPLEMENTED>
+
+=over 4
+
+=item B<SHIFT> : I<vname> , I<offset>
 
 Using this command B<RRDtool> will graph the following elements
 with the specified offset.  For instance, you can specify an
@@ -215,5 +258,7 @@ The offset will be valid until the next B<SHIFT> command, which
 can have an offset of zero to restore normal graphing.
 As with the other grapher elements, you can specify a number or
 a variable here.
+
+=back
 
 =include see_also
