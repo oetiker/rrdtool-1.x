@@ -453,10 +453,10 @@ token()
 
 
 /* 
- * expect() gets a token and complins if it's not the token we want
+ * expect2() gets a token and complins if it's not the token we want
  */
 static char *
-expect(int desired, char *complain_fmt, ...)
+expect2(int desired, char *complain_fmt, ...)
 {
     va_list ap;
     va_start( ap, complain_fmt );
@@ -466,7 +466,7 @@ expect(int desired, char *complain_fmt, ...)
     va_end( ap );
     return TIME_OK;
     
-} /* expect */
+} /* expect2 */
 
 
 /*
@@ -484,7 +484,7 @@ plus_minus(struct time_value *ptv, int doop)
     if( doop >= 0 ) 
       {
       op = doop;
-      try(expect(NUMBER,"There should be number after '%c'", op == PLUS ? '+' : '-'));
+      try(expect2(NUMBER,"There should be number after '%c'", op == PLUS ? '+' : '-'));
       prev_multiplier = -1; /* reset months-minutes guessing mechanics */
       }
     /* if doop is < 0 then we repeat the previous op
@@ -584,7 +584,7 @@ tod(struct time_value *ptv)
       return TIME_OK;
     }
     if (sc_tokid == COLON ) {
-	try(expect(NUMBER,
+	try(expect2(NUMBER,
             "Parsing HH:MM syntax, expecting MM as number, got none"));
 	minute = atoi(sc_token);
 	if (minute > 59) {
@@ -681,7 +681,7 @@ day(struct time_value *ptv)
 	    /* do month mday [year]
 	     */
 	    mon = (sc_tokid-JAN);
-	    try(expect(NUMBER,
+	    try(expect2(NUMBER,
 		"the day of the month should follow month name"));
 	    mday = atol(sc_token);
 	    if (token() == NUMBER) {
@@ -737,11 +737,11 @@ day(struct time_value *ptv)
 	      if (mon <= 31 && (sc_tokid == SLASH || sc_tokid == DOT)) {
 		int sep;		    
 		sep = sc_tokid;
-		try(expect(NUMBER,"there should be %s number after '%c'",
+		try(expect2(NUMBER,"there should be %s number after '%c'",
 			   sep == DOT ? "month" : "day", sep == DOT ? '.' : '/'));
 		mday = atol(sc_token);
 		if (token() == sep) {
-		  try(expect(NUMBER,"there should be year number after '%c'",
+		  try(expect2(NUMBER,"there should be year number after '%c'",
 			     sep == DOT ? '.' : '/'));
 		  year = atol(sc_token);
 		  token();
