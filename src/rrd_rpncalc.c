@@ -137,8 +137,10 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_UNKN,UNKN)
 	  add_op(OP_UN,UN)
 	  add_op(OP_NEGINF,NEGINF)
+	  add_op(OP_NE,NE)
 	  add_op(OP_PREV,PREV)
 	  add_op(OP_INF,INF)
+	  add_op(OP_ISINF,ISINF)
 	  add_op(OP_NOW,NOW)
 	  add_op(OP_LTIME,LTIME)
 	  add_op(OP_TIME,TIME)
@@ -286,8 +288,10 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_UNKN,UNKN)
 	match_op(OP_UN,UN)
 	match_op(OP_NEGINF,NEGINF)
+	match_op(OP_NE,NE)
 	match_op(OP_PREV,PREV)
 	match_op(OP_INF,INF)
+	match_op(OP_ISINF,ISINF)
 	match_op(OP_NOW,NOW)
 	match_op(OP_LTIME,LTIME)
 	match_op(OP_TIME,TIME)
@@ -580,6 +584,19 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
                rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] >= rpnstack -> s[stptr] ? 1.0 : 0.0;
            stptr--;
            break;
+	case OP_NE:
+	    if(stptr<1){
+		rrd_set_error("RPN stack underflow");
+		return -1;
+	    }
+	    if (isnan(rpnstack -> s[stptr-1]))
+		;
+	    else if (isnan(rpnstack -> s[stptr]))
+		rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+	    else
+		rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] == rpnstack -> s[stptr] ? 0.0 : 1.0;
+	    stptr--;
+	    break;
        case OP_EQ:
            if(stptr<1){
                rrd_set_error("RPN stack underflow");
@@ -653,8 +670,15 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
            }
            rpnstack->s[stptr] = isnan(rpnstack->s[stptr]) ? 1.0 : 0.0;
            break;
+	case OP_ISINF:
+	    if(stptr<0){
+		rrd_set_error("RPN stack underflow");
+		return -1;
+	    }
+	    rpnstack->s[stptr] = isinf(rpnstack->s[stptr]) ? 1.0 : 0.0;
+	    break;
        case OP_END:
-           break;
+	    break;
        }
    }
    if(stptr!=0){
