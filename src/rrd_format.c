@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2004/05/18 18:53:03  oetiker
+ * big spell checking patch -- slif@bellsouth.net
+ *
  * Revision 1.4  2003/02/13 07:05:27  oetiker
  * Find attached the patch I promised to send to you. Please note that there
  * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
@@ -57,7 +60,7 @@ enum dst_en dst_conv(char *string)
     converter(GAUGE,DST_GAUGE)
     converter(DERIVE,DST_DERIVE)
     converter(COMPUTE,DST_CDEF)
-    rrd_set_error("unknown data aquisition function '%s'",string);
+    rrd_set_error("unknown data acquisition function '%s'",string);
     return(-1);
 }
 

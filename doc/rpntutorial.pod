@@ -1,13 +1,13 @@
 =head1 NAME
 
-rpntutorial - Reading RRDTtool RPN Expressions by Steve Rader
+rpntutorial - Reading RRDtool RPN Expressions by Steve Rader
 
 =for html <div align="right"><a href="rpntutorial.pdf">PDF</a> version.</div>
 
 =head1 DESCRIPTION
 
-This tutorial should help you get to grips with rrdtool RPN expressions
-as seen in CDEF arguments of rrdtool graph.
+This tutorial should help you get to grips with RRDtool RPN expressions
+as seen in CDEF arguments of RRDtool graph.
 
 =head1 Reading Comparison Operators
 
@@ -40,7 +40,7 @@ And the first value to the left of the IF corresponds to the false
 ("Z") branch.  Read the RPN expression "X,Y,Z,IF" from left to
 right like so: "if X then Y else Z".
 
-For example, consider "1,10,100,IF".  It looks bizzare to me.
+For example, consider "1,10,100,IF".  It looks bizarre to me.
 But when I read "if 1 then 10 else 100" it's crystal clear: 1 is true
 so the answer is 10.  Note that only zero is false; all other values
 are true.  "2,20,200,IF" ("if 2 then 20 else 200") evaluates to 20.
@@ -72,7 +72,7 @@ operations as:
  2) 1,5,+        eval is 1,5,+ = 6    result is 6
  3) 6
 
-Let's use that notation to conviently solve some complex RPN expressions
+Let's use that notation to conveniently solve some complex RPN expressions
 with multiple logic operators:
 
  1) 20,10,GT,10,20,IF  eval is 20,10,GT = 1     result is 1,10,20,IF
@@ -175,7 +175,7 @@ Answer 3:
 
     Traditional mathematic expressions are evaluated by
     doing multiplication and division first, then addition and
-    subtraction.  Perentences are used to force the evaluation of
+    subtraction.  Parentheses are used to force the evaluation of
     addition before multiplication (etc).  RPN does not require
     parentheses because the ordering of objects on the stack
     can force the evaluation of addition before multiplication.
@@ -197,4 +197,4 @@ Answer 4:
 
 =head1 AUTHOR
 
-steve rader E<lt>rader@wiscnet.netE<gt>
+Steve Rader E<lt>rader@wiscnet.netE<gt>

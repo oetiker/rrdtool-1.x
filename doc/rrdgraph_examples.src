@@ -1,6 +1,6 @@
 =include name
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 B<rrdtool graph /home/httpd/html/test.png --img-format PNG \>
 

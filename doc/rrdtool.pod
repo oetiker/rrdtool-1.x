@@ -16,28 +16,28 @@ It is pretty easy to gather status information from all sorts of
 things, ranging from the temperature in your office to the number of
 octets which have passed through the FDDI interface of your
 router. But it is not so trivial to store this data in a efficient and
-systematic manner. This is where B<rrdtool> kicks in. It lets you
+systematic manner. This is where B<RRDtool> kicks in. It lets you
 I<log and analyze> the data you gather from all kinds of data-sources
-(B<DS>). The data analysis part of rrdtool is based on the ability to
+(B<DS>). The data analysis part of RRDtool is based on the ability to
 quickly generate graphical representations of the data values
 collected over a definable time period.
 
 In this man page you will find general information on the design and
-functionality of the Round Robin Database Tool (rrdtool). For a more
+functionality of the Round Robin Database Tool (RRDtool). For a more
 detailed description of how to use the individual functions of the
-B<rrdtool> check the corresponding man page.
+B<RRDtool> check the corresponding man page.
 
-For an introduction to the usage of rrdtool make sure you check L<rrdtutorial>.
+For an introduction to the usage of RRDtool make sure you check L<rrdtutorial>.
 
 =head2 FUNCTIONS
 
 While the man pages talk of command line switches you have to set in
-order to make B<rrdtool> work it is important to note that the
-B<rrdtool> can be 'remote controlled' through a set of pipes. This
+order to make B<RRDtool> work it is important to note that the
+B<RRDtool> can be remotely controlled through a set of pipes. This
 saves a considerable amount of startup time when you plan to make
-B<rrdtool> do a lot of things quickly. Check the section on L<"Remote
+B<RRDtool> do a lot of things quickly. Check the section on L<"Remote
 Control"> further down. There is also a number of language bindings
-for rrdtool which allow you to use it directly from perl, python, tcl,
+for RRDtool which allow you to use it directly from perl, python, tcl,
 php, ...
 
 =over 8
@@ -62,17 +62,17 @@ generating graphs, data can also be extracted to stdout. Check L<rrdgraph>.
 =item B<dump>
 
 Dump the contents of an RRD in plain ASCII. In connection with 
-restore you can use it to transport an rrd from one architecture to another.
+restore you can use it to transport an RRD from one architecture to another.
 Check L<rrddump>.
 
 =item B<restore>
 
-Restore an RRD in XML format to a binary rrd ... Check L<rrdrestore>
+Restore an RRD in XML format to a binary RRD ... Check L<rrdrestore>
 
 =item B<fetch>
 
 Get data for a certain time period from a RRD. The graph function
-uses fetch to retrieve its data from an rrd. Check L<rrdfetch>.
+uses fetch to retrieve its data from an RRD. Check L<rrdfetch>.
 
 =item B<tune>
 
@@ -96,7 +96,7 @@ Export data retrieved from one or several RRD. Check L<rrdxport>
 
 =item B<rrdcgi>
 
-This is a standalone tool for producing rrd graphs on the fly. Check
+This is a standalone tool for producing RRD graphs on the fly. Check
 L<rrdcgi>.
 
 =back
@@ -110,7 +110,7 @@ L<rrdcgi>.
 When monitoring the state of a system, it is convenient to have the
 data available at a constant interval. Unfortunately you may not
 always be able to fetch data at exactly the time you want
-to. Therefore B<rrdtool> lets you update the logfile at any time you
+to. Therefore B<RRDtool> lets you update the logfile at any time you
 want. It will automatically interpolate the value of the data-source
 (B<DS>) at the latest official time-slot and write this value to the
 log. The value you have supplied is stored as well and is also taken
@@ -123,7 +123,7 @@ interested to know the development of the data over the last year. You
 could do this by simply storing the data in 1 minute interval, for one
 year. While this would take considerable disk space it would also take
 a lot of time to analyze the data when you wanted to create a graph
-covering the whole year. B<rrdtool> offers a solution to this of this
+covering the whole year. B<RRDtool> offers a solution to this of this
 problem through its data consolidation feature. When setting up
 an Round Robin Database (B<RRD>), you can define at which interval
 this consolidation should occur, and what consolidation function
@@ -140,7 +140,7 @@ for a certain amount of time, while using a known amount of storage
 space. 
 
 It works like this: If you want to store 1000 values in 5 minute
-interval, B<rrdtool> will allocate space for 1000 data values and a
+interval, B<RRDtool> will allocate space for 1000 data values and a
 header area. In the header it will store a pointer telling
 which one of the values in the storage area was last written to. New
 values are written to the Round Robin Archive in a ...  you guess it
@@ -164,7 +164,7 @@ the wine cellar, total minutes down time ...)
 As mentioned earlier, the B<RRD> stores data at a constant
 interval. Now it may happen that no new data is available when a
 value has to be written to the B<RRD>. Data acquisition may not be
-possible for one reason or an other. The B<rrdtool> handles these
+possible for one reason or an other. The B<RRDtool> handles these
 situations by storing an I<*UNKNOWN*> value into the database. The
 value 'I<*UNKNOWN*>' is supported through all the functions of the
 database. When consolidating the amount of I<*UNKNOWN*> data is
@@ -176,7 +176,7 @@ written to the B<RRA>.
 
 =item Graphing
 
-The B<rrdtool> also allows one to generate reports in numerical and
+The B<RRDtool> also allows one to generate reports in numerical and
 graphical form based on the data stored in one or several
 B<RRD>s. The graphing feature is fully configurable. Size, color and
 contents of the graph can be defined freely. Check L<rrdgraph>
@@ -186,7 +186,7 @@ for more information on this.
 
 by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
 
-The  B<rrdtool> also provides the building blocks for near real-time
+The  B<RRDtool> also provides the building blocks for near real-time
 aberrant behavior detection. These components include:
 
 =over 12
@@ -208,7 +208,7 @@ or sequence of observed values is I<too deviant> from the predicted value(s).
 
 Each of these components is briefly described:
 
-Holt-Winters Time Series Forecasting Algorithm is an online, or incremental, 
+Holt-Winters Time Series forecasting algorithm is an on-line, or incremental, 
 algorithm that adaptively predicts future observations in a time series. It's 
 forecast is the sum of three components: a baseline (or intercept), a linear 
 trend over time (or slope), and a seasonal coefficient (a periodic effect, 
@@ -221,7 +221,7 @@ can also be viewed as a smoothed value for the time series.
 
 The measure of deviation is a seasonal weighted absolute deviation. The term 
 I<seasonal> means deviation is measured separately for each time point in the 
-seasonal cycle. As with Holt-Winters Forecasting, deviation is predicted using 
+seasonal cycle. As with Holt-Winters forecasting, deviation is predicted using 
 the measure computed from past values (but only at that point in the seasonal cycle). 
 After the value is observed, the algorithm learns from the observed value via 
 exponential smoothing. Confidence bands for the observed time series are generated 
@@ -231,10 +231,10 @@ as a continuous line rather than a set of discrete points).
 Aberrant behavior (a potential failure) is reported whenever the number of 
 times the observed value violates the confidence bands meets or exceeds a 
 specified threshold within a specified temporal window (i.e. 5 violations 
-during the past 45 minutes with a value observed every 5 mintues).
+during the past 45 minutes with a value observed every 5 minutes).
 
 This functionality is embedded in a set of related B<RRAs>. In particular, a FAILURES
-B<RRA> logs potential failures. Presumably a front-end application to B<rrdtool> can
+B<RRA> logs potential failures. Presumably a front-end application to B<RRDtool> can
 utilize this B<RRA> to initiate real-time alerts if that is desired.
 
 You can find a detailed description of how to set this up in L<rrdcreate>.
@@ -243,24 +243,24 @@ You can find a detailed description of how to set this up in L<rrdcreate>.
 
 =head2 REMOTE CONTROL
 
-When you start B<rrdtool> with the command line option 'B<->', it waits
+When you start B<RRDtool> with the command line option 'B<->', it waits
 for input via standard in. With this feature you can improve
-performance by attaching B<rrdtool> to another process (mrtg is one
-example) through a set of pipes. Over the pipes B<rrdtool> accepts the
-same arguments as on the command line and some spezial commands like
+performance by attaching B<RRDtool> to another process (MRTG is one
+example) through a set of pipes. Over the pipes B<RRDtool> accepts the
+same arguments as on the command line and some special commands like
 B<quit, cd, mkdir> and B<ls>. For detail helps about the server commands
 type :
 
    rrdtool help cd|mkdir|ls|quit
 
-When a command is completed, rrdtool will print the string  'C<OK>', 
+When a command is completed, RRDtool will print the string  'C<OK>', 
 followed by timing information of the form B<u:>I<usertime> 
 B<s:>I<systemtime> both values are running totals of seconds 
-since rrdtool was started. If an error occurs, a line of the 
-form 'C<ERROR:> I<Description of error>' will be printed. B<rrdtool>
+since RRDtool was started. If an error occurs, a line of the 
+form 'C<ERROR:> I<Description of error>' will be printed. B<RRDtool>
 will not abort if possible, but follow the ERROR line with an OK line.
-If a B<workdir> is spezified and the UID is 0, rrdtool will do a 
-chroot to the workdir. If the UID is not 0, rrdtool only changes the
+If a B<workdir> is specified and the UID is 0, RRDtool will do a 
+chroot to the workdir. If the UID is not 0, RRDtool only changes the
 current directory to B<workdir>.
 
 =head2 RRD Server
@@ -268,12 +268,12 @@ current directory to B<workdir>.
 If you want to create a RRD-Server, you must choose a TCP/IP Service 
 number and add them to I</etc/services> like this:
 
- rrdsrv      13900/tcp                       # rrd server
+ rrdsrv      13900/tcp                       # RRD server
 
-Attention: the tcp port 13900 isn't official registered for rrdsrv. You
+Attention: the TCP port 13900 isn't official registered for rrdsrv. You
 can use any unused port in your services, but the server an the client
 system must use the same port of curse.
-After this you can add the rrdtool as meta-server to I</etc/inetd.conf>
+After this you can add the RRDtool as meta-server to I</etc/inetd.conf>
 for example:
   
  rrdsrv stream tcp nowait root /opt/rrd/bin/rrdtool rrdtool - /var/rrd
@@ -281,7 +281,7 @@ for example:
 Don't forget to create the database directory /var/rrd and reinitialize
 your inetd.
 If all was correct, you can access the server with perl sockets, tools
-like netcat or a quickhack test 'telnet localhost rrdsrv'.
+like netcat or a quick test 'telnet localhost rrdsrv'.
 
 
 

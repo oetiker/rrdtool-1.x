@@ -25,13 +25,13 @@ with I<*UNKNOWN*> data.
 =item I<filename>
 
 The name of the B<RRD> you want to create. B<RRD> files should end
-with the extension F<.rrd>. However, B<rrdtool> will accept any
+with the extension F<.rrd>. However, B<RRDtool> will accept any
 filename.
 
 =item B<--start>|B<-b> I<start time> (default: now - 10s)
 
 Specifies the time in seconds since 1970-01-01 UTC when the first
-value should be added to the B<RRD>. B<rrdtool> will not accept
+value should be added to the B<RRD>. B<RRDtool> will not accept
 any data timed before or at the time specified.
 
 See also AT-STYLE TIME SPECIFICATION section in the
@@ -76,7 +76,7 @@ room or value of a RedHat share.
 =item B<COUNTER>
 
 is for continuous incrementing counters like the
-InOctets counter in a router. The B<COUNTER> data source assumes that
+ifInOctets counter in a router. The B<COUNTER> data source assumes that
 the counter never decreases, except when a counter overflows.  The update
 function takes the overflow into account.  The counter is stored as a
 per-second rate. When the counter overflows, RRDtool checks if the overflow happened at
@@ -199,15 +199,15 @@ aberrant behavior in the data source time series:
 
 =over 4
 
-=item B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra num>
+=item B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra-num>
 
-=item B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra num>
+=item B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
 
-=item B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra num>
+=item B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
 
-=item B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra num>
+=item B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra-num>
 
-=item B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra num>
+=item B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
 
 =back
 
@@ -229,24 +229,24 @@ example of using these B<RRAs> to graph confidence bounds and failures
 appears in L<rrdgraph>.
 
 The SEASONAL and DEVSEASONAL B<RRAs> store the seasonal coefficients for the
-Holt-Winters Forecasting algorithm and the seasonal deviations respectively.
+Holt-Winters forecasting algorithm and the seasonal deviations respectively.
 There is one entry per observation time point in the seasonal cycle. For
 example, if primary data points are generated every five minutes, and the
 seasonal cycle is 1 day, both SEASONAL and DEVSEASONAL with have 288 rows.
 
 In order to simplify the creation for the novice user, in addition to
 supporting explicit creation the HWPREDICT, SEASONAL, DEVPREDICT,
-DEVSEASONAL, and FAILURES B<RRAs>, the B<rrdtool> create command supports
+DEVSEASONAL, and FAILURES B<RRAs>, the B<RRDtool> create command supports
 implicit creation of the other four when HWPREDICT is specified alone and
-the final argument I<rra num> is omitted.
+the final argument I<rra-num> is omitted.
 
 I<rows> specifies the length of the B<RRA> prior to wrap around. Remember
 that there is a one-to-one correspondence between primary data points and
 entries in these RRAs. For the HWPREDICT CF, I<rows> should be larger than
-the I<seasonal period>. If the DEVPREDICT B<RRA> is implicity created, the
+the I<seasonal period>. If the DEVPREDICT B<RRA> is implicitly created, the
 default number of rows is the same as the HWPREDICT I<rows> argument. If the
 FAILURES B<RRA> is implicitly created, I<rows> will be set to the I<seasonal
-period> argument of the HWPREDICT B<RRA>. Of course, the B<rrdtool>
+period> argument of the HWPREDICT B<RRA>. Of course, the B<RRDtool>
 I<resize> command is available if these defaults are not sufficient and the
 create wishes to avoid explicit creations of the other specialized function
 B<RRAs>.
@@ -254,11 +254,11 @@ B<RRAs>.
 I<seasonal period> specifies the number of primary data points in a seasonal
 cycle. If SEASONAL and DEVSEASONAL are implicitly created, this argument for
 those B<RRAs> is set automatically to the value specified by HWPREDICT. If
-they are explicity created, the creator should verify that all three
+they are explicitly created, the creator should verify that all three
 I<seasonal period> arguments agree.
 
-I<alpha> is the adaptation parameter of the intercept (or baseline)
-coefficient in the Holt-Winters Forecasting algorithm. See L<rrdtool> for a
+I<alpha> is the adaption parameter of the intercept (or baseline)
+coefficient in the Holt-Winters forecasting algorithm. See L<RRDtool> for a
 description of this algorithm. I<alpha> must lie between 0 and 1. A value
 closer to 1 means that more recent observations carry greater weight in
 predicting the baseline component of the forecast. A value closer to 0 mean
@@ -266,56 +266,56 @@ that past history carries greater weight in predicted the baseline
 component.
 
 I<beta> is the adaption parameter of the slope (or linear trend) coefficient
-in the Holt-Winters Forecating algorihtm. I<beta> must lie between 0 and 1
+in the Holt-Winters forecasting algorithm. I<beta> must lie between 0 and 1
 and plays the same role as I<alpha> with respect to the predicted linear
 trend.
 
 I<gamma> is the adaption parameter of the seasonal coefficients in the
-Holt-Winters Forecasting algorithm (HWPREDICT) or the adaption parameter in
+Holt-Winters forecasting algorithm (HWPREDICT) or the adaption parameter in
 the exponential smoothing update of the seasonal deviations. It must lie
 between 0 and 1. If the SEASONAL and DEVSEASONAL B<RRAs> are created
 implicitly, they will both have the same value for I<gamma>: the value
 specified for the HWPREDICT I<alpha> argument. Note that because there is
 one seasonal coefficient (or deviation) for each time point during the
-seasonal cycle, the adaption rate is much slower than the baseline. Each
+seasonal cycle, the adaptation rate is much slower than the baseline. Each
 seasonal coefficient is only updated (or adapts) when the observed value
 occurs at the offset in the seasonal cycle corresponding to that
 coefficient.
 
-If SEASONAL and DEVSEASONAL B<RRAs> are created explicity, I<gamma> need not
+If SEASONAL and DEVSEASONAL B<RRAs> are created explicitly, I<gamma> need not
 be the same for both. Note that I<gamma> can also be changed via the
-B<rrdtool> I<tune> command.
+B<RRDtool> I<tune> command.
 
-I<rra num> provides the links between related B<RRAs>. If HWPREDICT is
+I<rra-num> provides the links between related B<RRAs>. If HWPREDICT is
 specified alone and the other B<RRAs> created implicitly, then there is no
 need to worry about this argument. If B<RRAs> are created explicitly, then
 pay careful attention to this argument. For each B<RRA> which includes this
 argument, there is a dependency between that B<RRA> and another B<RRA>. The
-I<rra num> argument is the 1-based index in the order of B<RRA> creation
+I<rra-num> argument is the 1-based index in the order of B<RRA> creation
 (that is, the order they appear in the I<create> command). The dependent
-B<RRA> for each B<RRA> requiring the I<rra num> argument is listed here:
+B<RRA> for each B<RRA> requiring the I<rra-num> argument is listed here:
 
 =over 4
 
 =item *
 
-HWPREDICT I<rra num> is the index of the SEASONAL B<RRA>.
+HWPREDICT I<rra-num> is the index of the SEASONAL B<RRA>.
 
 =item * 
 
-SEASONAL I<rra num> is the index of the HWPREDICT B<RRA>.
+SEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
 =item * 
 
-DEVPREDICT I<rra num> is the index of the DEVSEASONAL B<RRA>.
+DEVPREDICT I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
 =item *
 
-DEVSEASONAL I<rra num> is the index of the HWPREDICT B<RRA>.
+DEVSEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
 =item * 
 
-FAILURES I<rra num> is the index of the DEVSEASONAL B<RRA>.
+FAILURES I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
 =back
 
@@ -326,16 +326,16 @@ FAILURES B<RRA> is implicitly created, the default value is 7.
 I<window length> is the number of time points in the window. Specify an
 integer greater than or equal to the threshold and less than or equal to 28.
 The time interval this window represents depends on the interval between
-primary data points. If the FAILURES B<RRA> is implicity created, the
+primary data points. If the FAILURES B<RRA> is implicitly created, the
 default value is 9.
 
 =head1 The HEARTBEAT and the STEP
 
-Here is an explanation by Don Baarda on the inner workings of rrdtool.
+Here is an explanation by Don Baarda on the inner workings of RRDtool.
 It may help you to sort out why all this *UNKNOWN* data is popping
 up in your databases:
 
-RRD gets fed samples at arbitrary times. From these it builds Primary
+RRDtool gets fed samples at arbitrary times. From these it builds Primary
 Data Points (PDPs) at exact times every "step" interval. The PDPs are
 then accumulated into RRAs.
 
@@ -363,7 +363,7 @@ the "step" interval between PDPs. A short "heartbeat" means you
 require multiple samples per PDP, and if you don't get them mark the
 PDP unknown. A long heartbeat can span multiple "steps", which means
 it is acceptable to have multiple PDPs calculated from a single
-sample. An extreme example of this might be a "step" of 5mins and a
+sample. An extreme example of this might be a "step" of 5 minutes and a
 "heartbeat" of one day, in which case a single sample every day will
 result in all the PDPs for that entire day period being set to the
 same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
@@ -379,9 +379,9 @@ Here are a few hints on how to measure:
 =item Temperature
 
 Normally you have some type of meter you can read to get the temperature.
-The temperature is not realy connected with a time. The only connection is
+The temperature is not really connected with a time. The only connection is
 that the temperature reading happened at a certain time. You can use the
-B<GAUGE> data source type for this. RRRtool will the record your reading
+B<GAUGE> data source type for this. RRDtool will the record your reading
 together with the time.
 
 =item Mail Messages
@@ -389,7 +389,7 @@ together with the time.
 Assume you have a method to count the number of messages transported by
 your mailserver in a certain amount of time, this give you data like '5
 messages in the last 65 seconds'. If you look at the count of 5 like and
-B<ABSOLUTE> datatype you can simply update the rrd with the number 5 and the
+B<ABSOLUTE> data type you can simply update the RRD with the number 5 and the
 end time of your monitoring period. RRDtool will then record the number of
 messages per second. If at some later stage you want to know the number of
 messages transported in a day, you can get the average messages per second
@@ -439,8 +439,8 @@ RRA:AVERAGE:0.5:1:2016
 RRA:HWPREDICT:1440:0.1:0.0035:288>
 
 This example is a monitor of a router interface. The first B<RRA> tracks the
-traffic flow in octects; the second B<RRA> generates the specialized
-functions B<RRAs> for aberrant behavior detection. Note that the I<rra num>
+traffic flow in octets; the second B<RRA> generates the specialized
+functions B<RRAs> for aberrant behavior detection. Note that the I<rra-num>
 argument of HWPREDICT is missing, so the other B<RRAs> will be implicitly be
 created with default parameter values. In this example, the forecasting
 algorithm baseline adapts quickly; in fact the most recent one hour of
@@ -451,7 +451,7 @@ made in during the last day (at 288 observations per day) account for only
 exponential smoothing formula described in a forthcoming LISA 2000 paper.
 
 The seasonal cycle is one day (288 data points at 300 second intervals), and
-the seasonal adaption paramter will be set to 0.1. The RRD file will store 5
+the seasonal adaption parameter will be set to 0.1. The RRD file will store 5
 days (1440 data points) of forecasts and deviation predictions before wrap
 around. The file will store 1 day (a seasonal cycle) of 0-1 indicators in
 the FAILURES B<RRA>.

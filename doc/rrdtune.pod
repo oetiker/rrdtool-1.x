@@ -47,7 +47,7 @@ The name of the B<RRD> you want to tune.
 =item S<B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>>
 
 modify the I<heartbeat> of a data source. By setting this to a high
-value the rrd will accept things like one value per day ...
+value the RRD will accept things like one value per day ...
 
 =item S<B<--minimum>|B<-i> I<ds-name>:I<min>>
 
@@ -124,7 +124,7 @@ This option causes the aberrant behavior detection algorithm to reset
 for the specified data source; that is, forget all it is has learn.
 Specifically, for the HWPREDICT B<RRA>, it sets the intercept and slope
 coefficients to unknown. For the SEASONAL B<RRA>, it sets all seasonal
-coefficients to unknown. For the DEVSEASONL B<RRA>, it sets all seasonal
+coefficients to unknown. For the DEVSEASONAL B<RRA>, it sets all seasonal
 deviation coefficients to unknown. For the FAILURES B<RRA>, it erases
 the violation history. Note that reset does not erase past predictions
 (the values of the HWPREDICT B<RRA>), predicted deviations (the values of the
@@ -138,7 +138,7 @@ initialization this smoothing is deferred. For efficiency, the implementation
 of smoothing is not data source specific. This means that utilizing
 reset for one data source will delay running the smoothing algorithm
 for all data sources in the file. This is unlikely to have serious
-consequences, unless the data being collected for the non-reset data soures 
+consequences, unless the data being collected for the non-reset data sources 
 is unusually volatile during the reinitialization period of the reset 
 data source.
 
@@ -153,15 +153,15 @@ C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
 
 Set the minimum required heartbeat for data sources 'in', 'out' 
 and 'through' to 10000 seconds which is a little over one day in data.rrd.
-This would allow to feed old data from mrtg-2.0 right into
-rrdtool without generating *UNKNOWN* entries.
+This would allow to feed old data from MRTG-2.0 right into
+RRDtool without generating *UNKNOWN* entries.
 
 =head1 EXAMPLE 2
 
 C<rrdtool tune monitor.rrd --window-length 5 --failure-threshold 3>
 
 If the FAILURES B<RRA> is implicitly created, the default window-length is 9 and 
-the default failure-thresold is 7. This command now defines a failure as 3 or more
+the default failure-threshold is 7. This command now defines a failure as 3 or more
 violations in a temporal window of 5 time points.
 
 =head1 AUTHOR

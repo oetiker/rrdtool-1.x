@@ -53,9 +53,9 @@ from generating graphs, it can also extract numerical reports.
 
 =item I<filename> 
 
-The name of the graph to generate. Since B<rrdtool> outputs
+The name of the graph to generate. Since B<RRDtool> outputs
 SVGs and PNGs, it's recommended that the filename end in either
-F<.svg> or F<.png>.  B<rrdtool> does not enforce this, however.
+F<.svg> or F<.png>.  B<RRDtool> does not enforce this, however.
 If the  I<filename> is set to '-' the image file will be written
 to standard out.  All other output will get suppressed.
 
@@ -196,7 +196,7 @@ would look like this:
 
 =item B<-a>|B<--imgformat> B<SVG>|B<PNG> (default: PNG)
 
-Allows you to produce PNG output from rrdtool. 
+Allows you to produce PNG output from RRDtool. 
 
 =item B<-z>|B<--lazy> (default: false)
 
@@ -207,7 +207,7 @@ existent.
 
 Defines the value normally located at the upper border of the
 graph. If the graph contains higher values, the upper border will
-move upwards to accomodate these values as well.
+move upward to accommodate these values as well.
 
 If you want to define an upper-limit which will not move in any
 event you have to set the B<--rigid> option as well.
@@ -253,11 +253,11 @@ Define a title to be written into the graph
 
 =item B<--step> I<value> (default automatic)
 
-By default rrdgraph calculates the width of one pixle in the time domain and
+By default rrdgraph calculates the width of one pixel in the time domain and
 tries to get data at that resolution from the RRD. With this switch you can
 override this behaviour. If you want rrdgraph to get data at 1 hour
 resolution from the RRD, then you can set the step to 3600 seconds. Note,
-that a step smaller than 1 pixle will be silently ignored.
+that a step smaller than 1 pixel will be silently ignored.
 
 =item B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>
 
@@ -391,7 +391,7 @@ offset would be 2*3600 seconds, as Zurich at that time of year is 2
 hours ahead of UTC.
 
 Note that the timezone offset is always calculated for the time the
-current sample was taken at. It has nuthing todo with the time you are
+current sample was taken at. It has nothing to do with the time you are
 doing the calculation.
 
 =back
@@ -476,7 +476,7 @@ This obviously implies that the first B<STACK> must be preceded by an
 B<AREA> or B<LINE?> -- you need something to stack something onto in
 the first place ;) 
 
-Note, that when you STACK onto *UNKNOWN* data, rrdtool will not draw
+Note, that when you STACK onto *UNKNOWN* data, RRDtool will not draw
 any graphics ... *UNKNOWN* is not zero ... if you want it to be zero
 then you might want to use a CDEF argument with IF and UN functions to
 turn *UNKNOWN* into zero ...
@@ -513,9 +513,9 @@ example showing how to use centered formating.
 
 Normally there are two space characters inserted between every two items
 printed into the graph. The space following a string can be suppressed by
-putting a B<\g> at the end of the string. The B<\g> also squshes any space
+putting a B<\g> at the end of the string. The B<\g> also ignores any space
 inside the string if it is at the very end of the string. This can be used
-in connection with B<%s> to supress empty unit strings.
+in connection with B<%s> to suppress empty unit strings.
 
  GPRINT:a:MAX:%lf%s\g
 
@@ -525,7 +525,7 @@ before placing the next row of legends.
 =head1 NOTE on Return Values
 
 Whenever rrd_graph gets called, it prints a line telling the size of
-the image it has just created to STDOUT. This line looks like this: XSIZExYSIZE.
+the image it has just created to stdout. This line looks like this: XSIZExYSIZE.
 
 =head1 EXAMPLE 1
 
@@ -597,8 +597,8 @@ not least, overlay everything with eye-hurting red
 to signal any unknown data.
 
 Note that this example assumes that your data is in the positive half of the y-axis
-otherwhise you would would have to add NEGINF in order to extend the coverage
-of the rea to whole graph.
+otherwise you would would have to add NEGINF in order to extend the coverage
+of the area to whole graph.
 
 =head1 EXAMPLE 4
 

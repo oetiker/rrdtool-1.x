@@ -1,6 +1,6 @@
 #! /usr/bin/perl 
 
-# this exercises just the perl module .. not rrdtool as such ... 
+# this exercises just the perl module .. not RRDtool as such ... 
 
 BEGIN { $| = 1; print "1..5\n"; }
 END {

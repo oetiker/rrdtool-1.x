@@ -12,7 +12,7 @@ start all over again and increment the position just before this. The
 digit 0 is only shown if it is the only symbol in the sequence, or if
 it is not the first one.
 
-If this sounds as crypto to you, this is what I've said in numbers:
+If this sounds cryptic to you, this is what I've said in numbers:
 
      0
      1

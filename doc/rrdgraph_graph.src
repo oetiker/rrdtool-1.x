@@ -1,6 +1,6 @@
 =include name
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 =over 4
 
@@ -146,8 +146,8 @@ B<%c, %x, %X> date+time, date, time
 
 =item *
 
-B<%U, %W> week number of the current year with either the first sunday or
-the first monday determining the first week
+B<%U, %W> week number of the current year with either the first Sunday or
+the first Monday determining the first week
 
 =item *
 
@@ -257,7 +257,7 @@ offset of S<( 7*24*60*60 = ) 604800 seconds> to "look back" one
 week. Make sure to notify the viewer you did so...
 The offset will be valid until the next B<SHIFT> command, which
 can have an offset of zero to restore normal graphing.
-As with the other grapher elements, you can specify a number or
+As with the other graphing elements, you can specify a number or
 a variable here.
 
 =back
