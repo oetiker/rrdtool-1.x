@@ -3,7 +3,7 @@
 # ---------------------------------------------
 # Contributed by Mat Zimmermann
 #
-AC_DEFUN(INCLUDED_LIB,
+AC_DEFUN([INCLUDED_LIB],
 [
 use_installed_lib$1=
 AC_ARG_WITH([lib$1],

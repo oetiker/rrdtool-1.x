@@ -35,7 +35,7 @@ ihtml_DATA = $(HTML)
 imandir = $(prefix)/man/man1
 iman_DATA = $(MAN)
 
-all-local: link txt man html
+all-local: link txt man html-local
 
 .src.pod:
 	perl -n -e 'if (/^=include\s+(\S+)/){open F,"$$1.inc" || die $$?;print <F>; close F} else {print}'  $<  > $@ 
@@ -65,9 +65,9 @@ link: RRDp.pm RRDs.pm index.html
 
 man: $(MAN)
 
-html: $(HTML)
+html-local: $(HTML)
 
 txt: $(TXT)
 
-pdf: $(PDF)
+pdf-local: $(PDF)
 
