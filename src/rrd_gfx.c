@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2003
+ * RRDtool 1.2.x  Copyright Tobias Oetiker, 1997 - 2005
  ****************************************************************************
  * rrd_gfx.c  graphics wrapper for rrdtool
   **************************************************************************/
@@ -46,7 +46,7 @@ static void compute_string_bbox(gfx_string string);
 
 /* create a freetype glyph string */
 gfx_string gfx_string_create ( FT_Face face,
-                               const char *text, int rotation);
+                               const char *text, int rotation, double tabwidth);
 
 /* create a freetype glyph string */
 static void gfx_string_destroy ( gfx_string string );
@@ -280,7 +280,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double tabwidth, char* text, int rotation){
   switch (canvas->imgformat) {
   case IF_PNG: 
-    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text, rotation);
+    return gfx_get_text_width_libart (start, font, size, tabwidth, text, rotation);
   case IF_SVG: /* fall through */ 
   case IF_EPS:
   case IF_PDF:
@@ -290,7 +290,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
   }
 }
 
-double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
+double gfx_get_text_width_libart (
 			    double start, char* font, double size,
 			    double tabwidth, char* text, int rotation){
 
@@ -306,7 +306,7 @@ double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
   error = FT_Set_Char_Size(face,  size*64,size*64,  100,100);
   if ( error ) return -1;
 
-  string = gfx_string_create( face, text, rotation);
+  string = gfx_string_create( face, text, rotation,tabwidth);
   text_width = string->width;
   gfx_string_destroy(string);
   FT_Done_FreeType(library);
@@ -372,7 +372,7 @@ static void compute_string_bbox(gfx_string string) {
 
 /* create a free type glyph string */
 gfx_string gfx_string_create(FT_Face face,const char *text,
-        int rotation)
+        int rotation, double tabwidth)
 {
 
   FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
@@ -384,6 +384,7 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   gfx_char      glyph;          /* current glyph in table */
   unsigned int  n;
   int           error;
+  int        gottab;    
 
   ft_pen.x = 0;   /* start at (0,0) !! */
   ft_pen.y = 0;
@@ -404,14 +405,29 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   glyph = string->glyphs;
   for (n=0; n<string->count; n++, glyph++) {
     FT_Vector   vec;
-
+    /* handle the tabs ...
+       have a witespace glyph inserted, but set its width such that the distance
+    of the new right edge is x times tabwidth from 0,0 where x is an integer. */    
+    char letter = text[n];
+    gottab = 0;
+    if (letter == '\\' && n+1 < string->count && text[n+1] == 't'){
+            /* we have a tab here so skip the backslash and
+               set t to ' ' so that we get a white space */
+            gottab = 1;
+            n++;
+            letter  = ' ';            
+    }            
+    if (letter == '\t'){
+	letter = ' ';
+        gottab = 1 ;
+    }            
     /* initialize each struct gfx_char_s */
     glyph->index = 0;
     glyph->pos.x = 0;
     glyph->pos.y = 0;
     glyph->image = NULL;
 
-    glyph->index = FT_Get_Char_Index( face, text[n] );
+    glyph->index = FT_Get_Char_Index( face, letter );
 
     /* compute glyph origin */
     if ( use_kerning && previous && glyph->index ) {
@@ -422,24 +438,30 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
       ft_pen.y += kerning.y;
     }
 
-    /* store current pen position */
-    glyph->pos.x = ft_pen.x;
-    glyph->pos.y = ft_pen.y;
-
     /* load the glyph image (in its native format) */
     /* for now, we take a monochrome glyph bitmap */
     error = FT_Load_Glyph (face, glyph->index, FT_LOAD_DEFAULT);
     if (error) {
-      fprintf (stderr, "couldn't load glyph:  %c\n", text[n]);
+      fprintf (stderr, "couldn't load glyph:  %c\n", letter);
       continue;
     }
     error = FT_Get_Glyph (slot, &glyph->image);
     if (error) {
-      fprintf (stderr, "couldn't get glyph from slot:  %c\n", text[n]);
+      fprintf (stderr, "couldn't get glyph from slot:  %c\n", letter);
       continue;
     }
+    /* if we are in tabbing mode, we replace the tab with a space and shift the position
+       of the space so that its left edge is where the tab was supposed to land us */
+    if (gottab){
+       /* we are in gridfitting mode so the calculations happen in 1/64 pixles */
+        ft_pen.x = tabwidth*64.0 * (float)(1 + (long)(ft_pen.x / (tabwidth * 64.0))) - slot->advance.x;
+    }
+    /* store current pen position */
+    glyph->pos.x = ft_pen.x;
+    glyph->pos.y = ft_pen.y;
 
-    ft_pen.x   += slot->advance.x;
+
+    ft_pen.x   += slot->advance.x;    
     ft_pen.y   += slot->advance.y;
 
     /* rotate glyph */
@@ -452,7 +474,7 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     }
 
     /* convert to a bitmap - destroy native image */
-    error = FT_Glyph_To_Bitmap (&glyph->image, ft_render_mode_normal, 0, 1);
+    error = FT_Glyph_To_Bitmap (&glyph->image, FT_RENDER_MODE_NORMAL, 0, 1);
     if (error) {
       fprintf (stderr, "couldn't convert glyph to bitmap\n");
       continue;
@@ -464,9 +486,13 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   }
 /*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
   compute_string_bbox( string );
-  string->width = string->bbox.xMax - string->bbox.xMin;
+  /* the last character was a tab */  
+  if (gottab) {
+      string->width = ft_pen.x;
+  } else {
+      string->width = string->bbox.xMax - string->bbox.xMin;
+  }
   string->height = string->bbox.yMax - string->bbox.yMin;
-
   return string;
 }
 
@@ -548,7 +574,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             pen_x = node->x * canvas->zoom;
             pen_y = node->y * canvas->zoom;
 
-            string = gfx_string_create (face, node->text, node->angle);
+            string = gfx_string_create (face, node->text, node->angle, node->tabwidth);
             switch(node->halign){
             case GFX_H_RIGHT:  vec.x = -string->bbox.xMax;
                                break;          

@@ -7,6 +7,7 @@
 #ifndef  RRD_GFX_H
 #define RRD_GFX_H
 #define LIBART_COMPILATION
+
 #include <libart_lgpl/libart.h>
 
 enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS,IF_PDF};
@@ -101,8 +102,7 @@ int           gfx_destroy    (gfx_canvas_t *canvas);
 int       gfx_render_png (gfx_canvas_t *canvas,
                               art_u32 width, art_u32 height,
                               gfx_color_t background, FILE *fo);
-double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
-			    double start, char* font, double size,
+double gfx_get_text_width_libart ( double start, char* font, double size,
 			    double tabwidth, char* text, int rotation);
 
 /* SVG support */
