@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="rrd_cgi"
 	SccProjectName=""
 	SccLocalPath="">
@@ -22,7 +22,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories=".,..\gd1.3,..\cgilib-0.4,..\libpng-1.0.3,..\zlib-1.1.3"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,_CTYPE_DISABLE_MACROS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CTYPE_DISABLE_MACROS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				PrecompiledHeaderFile=".\rrd_cgi_Debug/rrd_cgi.pch"
@@ -38,17 +38,18 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="odbc32.lib odbccp32.lib ..\gd1.3\debug\gd.lib debug\rrd.lib ..\cgilib-0.4\debug\cgilib.lib ..\zlib-1.1.3\Debug\zlib.lib ..\libpng-1.0.3\Debug\png.lib"
 				OutputFile=".\rrd_cgi_Debug/rrd_cgi.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\rrd_cgi_Debug/rrd_cgi.pdb"
-				SubSystem="1"/>
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\rrd_cgi_Debug/rrd_cgi.tlb"/>
+				TypeLibraryName=".\rrd_cgi_Debug/rrd_cgi.tlb"
+				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -62,7 +63,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -76,9 +83,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				OptimizeForProcessor="2"
-				AdditionalIncludeDirectories=".;&quot;..\libraries\cgilib-0.4&quot;"
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,_CTYPE_DISABLE_MACROS"
+				AdditionalIncludeDirectories=".,..\gd1.3,..\cgilib-0.4"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CTYPE_DISABLE_MACROS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
@@ -93,16 +99,17 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="odbc32.lib odbccp32.lib release\rrd.lib ..\libraries\cgilib-0.4\release\cgilib.lib ..\libraries\zlib-1.1.4\Release\zlib.lib ..\libraries\libpng-1.2.0\release\png.lib ..\libraries\freetype-2.0.5\release\freetype.lib ..\libraries\libart_lgpl-2.3.7\release\libart.lib $(NOINHERIT)"
+				AdditionalDependencies="odbc32.lib odbccp32.lib ..\gd1.3\release\gd.lib release\rrd.lib ..\cgilib-0.4\release\cgilib.lib ..\zlib-1.1.3\Release\zlib.lib ..\libpng-1.0.3\Release\png.lib"
 				OutputFile=".\rrd_cgi_Release/rrd_cgi.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				ProgramDatabaseFile=".\rrd_cgi_Release/rrd_cgi.pdb"
-				SubSystem="1"/>
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\rrd_cgi_Release/rrd_cgi.tlb"/>
+				TypeLibraryName=".\rrd_cgi_Release/rrd_cgi.tlb"
+				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -116,15 +123,41 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath=".\rrd_cgi.c">
+				RelativePath="rrd_cgi.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"
+						BrowseInformation="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
