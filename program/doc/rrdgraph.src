@@ -312,9 +312,9 @@ for the graph legend.
 
 Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
 
-B<[-a|--imgformat C<PNG>|C<SVG>|C<EPS>]>
+B<[-a|--imgformat C<PNG>|C<SVG>|C<EPS>|C<PDF>]>
 
-At present C<PNG>, C<SVG> and C<EPS> are supported.
+Image format for the generated graph.
 
 B<[-i|--interlaced]>
 

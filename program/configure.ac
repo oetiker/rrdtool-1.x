@@ -459,7 +459,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://ee-staff.ethz.ch/~oetiker/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from http://people.ee.ethz.ch/~oetiker/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -481,7 +481,7 @@ echo "If you want to install the perl"
 echo "modules in site-perl, try 'make site-perl-install'."
 echo 
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://ee-staff.ethz.ch/~oetiker/wish and"
+echo "make me happy. Go to http://people.ee.ethz.ch/~oetiker/wish and"
 echo "place an order."
 echo 
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"
