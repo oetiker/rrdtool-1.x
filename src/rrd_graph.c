@@ -21,7 +21,7 @@
 
 
 #ifndef RRD_DEFAULT_FONT
-#define RRD_DEFAULT_FONT "/usr/openwin/lib/X11/fonts/TrueType/Arial.ttf" 
+#define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" 
 /* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/Arial.ttf" */
 #endif
 

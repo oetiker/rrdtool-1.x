@@ -137,11 +137,11 @@ char *strchr (), *strrchr ();
 
 
 dnl Define library subdirectory names here.
-CGI_LIB_DIR=libraries/cgilib-0.4
-FREETYPE_LIB_DIR=libraries/freetype-2.0.5
-ART_LIB_DIR=libraries/libart_lgpl-2.3.7
-PNG_LIB_DIR=libraries/libpng-1.2.0
-ZLIB_LIB_DIR=libraries/zlib-1.1.3
+CGI_LIB_DIR=cgilib-0.4
+FREETYPE_LIB_DIR=freetype-2.0.5
+ART_LIB_DIR=libart_lgpl-2.3.7
+PNG_LIB_DIR=libpng-1.2.0
+ZLIB_LIB_DIR=zlib-1.1.3
 
 dnl substitute them in all the files listed in AC_OUTPUT
 AC_SUBST(CGI_LIB_DIR)
@@ -150,6 +150,12 @@ AC_SUBST(PNG_LIB_DIR)
 AC_SUBST(FREETYPE_LIB_DIR)
 AC_SUBST(ZLIB_LIB_DIR)
 AC_SUBST(PERLFLAGS)
+
+INCLUDED_LIB(cgi,cgiInit)
+INCLUDED_LIB(art_lgpl,art_vpath_add_point)
+INCLUDED_LIB(png,png_access_version_number)
+INCLUDED_LIB(freetype,FT_Init_FreeType)
+INCLUDED_LIB(z,zlibVersion)
 
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)

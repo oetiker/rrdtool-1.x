@@ -5,14 +5,39 @@
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 
-CGI_LIB_DIR	   = $(top_srcdir)/@CGI_LIB_DIR@
-FREETYPE_LIB_DIR   = $(top_srcdir)/@FREETYPE_LIB_DIR@
-ART_LIB_DIR	   = $(top_srcdir)/@ART_LIB_DIR@
-PNG_LIB_DIR	   = $(top_srcdir)/@PNG_LIB_DIR@
-ZLIB_LIB_DIR	   = $(top_srcdir)/@ZLIB_LIB_DIR@
+if USE_INSTALLED_libcgi
+CGI_LIB 	   = -lcgi
+else
+CGI_LIB	           = $(top_srcdir)/libraries/@CGI_LIB_DIR@/librrd_cgi.la
+CGI_INCLUDES       = -I$(top_srcdir)/libraries/@CGI_LIB_DIR@
+endif
+if USE_INSTALLED_libfreetype
+FREETYPE_LIB       = -lfreetype
+else
+FREETYPE_LIB       = $(top_srcdir)/libraries/@FREETYPE_LIB_DIR@/librrd_freetype.la
+FREETYPE_INCLUDES  = -I$(top_srcdir)/libraries/@FREETYPE_LIB_DIR@/include
+endif
+if USE_INSTALLED_libart_lgpl
+ART_LIB            = -lart_lgpl
+else
+ART_LIB 	   = $(top_srcdir)/libraries/@ART_LIB_DIR@/librrd_art.la
+ART_INCLUDES       = -I$(top_srcdir)/libraries/@ART_LIB_DIR@
+endif
+if USE_INSTALLED_libpng
+PNG_LIB            = -lpng
+else
+PNG_LIB		   = $(top_srcdir)/libraries/@PNG_LIB_DIR@/librrd_png.la
+PNG_INCLUDES       = -I$(top_srcdir)/libraries/@PNG_LIB_DIR@
+endif
+if USE_INSTALLED_libz
+ZLIB_LIB           = -lz
+else
+ZLIB_LIB           = $(top_srcdir)/libraries/@ZLIB_LIB_DIR@/librrd_z.la
+ZLIB_INCLUDES      = -I$(top_srcdir)/libraries/@ZLIB_LIB_DIR@
+endif
 
-INCLUDES 	   = -I$(CGI_LIB_DIR) -I$(ART_LIB_DIR) \
-	-I$(PNG_LIB_DIR) -I$(ZLIB_LIB_DIR) -I$(FREETYPE_LIB_DIR)/include
+INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
+           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
 
 RRD_C_FILES =		\
 	getopt.c	\
@@ -49,11 +74,11 @@ RRD_C_FILES =		\
 # files.
 
 RRD_LIBS =				\
-	$(CGI_LIB_DIR)/librrd_cgi.la	\
-	$(FREETYPE_LIB_DIR)/librrd_freetype.la	\
-	$(ART_LIB_DIR)/librrd_art.la	\
-	$(PNG_LIB_DIR)/librrd_png.la	\
-	$(ZLIB_LIB_DIR)/librrd_z.la
+	$(CGI_LIB)	\
+	$(FREETYPE_LIB)	\
+	$(ART_LIB)	\
+	$(PNG_LIB)	\
+	$(ZLIB_LIB)
 
 lib_LTLIBRARIES           = librrd.la
 noinst_LTLIBRARIES        = librrd_private.la
