@@ -105,7 +105,7 @@ Must be between 0 and 1.
 
 =item S<B<--beta> I<adaption-parameter>>
 
-Alter the intercept adaptation parameter for the Holt-Winters forecasting algorithm.
+Alter the slope adaptation parameter for the Holt-Winters forecasting algorithm.
 Must be between 0 and 1.
 
 =item S<B<--gamma> I<adaption-parameter>>
