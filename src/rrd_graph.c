@@ -1569,16 +1569,18 @@ int draw_horizontal_grid(image_desc_t *im)
 			      im->text_prop[TEXT_PROP_AXIS].size,
 			      im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER,
 			      graph_label );
-	       gfx_new_line ( im->canvas,
+	       gfx_new_dashed_line ( im->canvas,
 			      X0-2,Y0,
 			      X1+2,Y0,
-			      MGRIDWIDTH, im->graph_col[GRC_MGRID] );	       
+			      MGRIDWIDTH, im->graph_col[GRC_MGRID],
+			      im->grid_dash_on, im->grid_dash_off);	       
 	       
 	    } else {		
-	       gfx_new_line ( im->canvas,
+	       gfx_new_dashed_line ( im->canvas,
 			      X0-1,Y0,
 			      X1+1,Y0,
-			      GRIDWIDTH, im->graph_col[GRC_GRID] );	       
+			      GRIDWIDTH, im->graph_col[GRC_GRID],
+			      im->grid_dash_on, im->grid_dash_off);	       
 	       
 	    }	    
 	}	
@@ -1629,10 +1631,11 @@ horizontal_log_grid(image_desc_t   *im)
 	while(yloglab[minoridx][++i] > 0){	    
 	   Y0 = ytr(im,value * yloglab[minoridx][i]);
 	   if (Y0 <= im->yorigin - im->ysize) break;
-	   gfx_new_line ( im->canvas,
+	   gfx_new_dashed_line ( im->canvas,
 			  X0-1,Y0,
 			  X1+1,Y0,
-			  GRIDWIDTH, im->graph_col[GRC_GRID] );
+			  GRIDWIDTH, im->graph_col[GRC_GRID],
+			  im->grid_dash_on, im->grid_dash_off);
 	}
     }
 
@@ -1646,10 +1649,11 @@ horizontal_log_grid(image_desc_t   *im)
 	while(yloglab[majoridx][++i] > 0){	    
 	   Y0 = ytr(im,value * yloglab[majoridx][i]);    
 	   if (Y0 <= im->yorigin - im->ysize) break;
-	   gfx_new_line ( im->canvas,
+	   gfx_new_dashed_line ( im->canvas,
 			  X0-2,Y0,
 			  X1+2,Y0,
-			  MGRIDWIDTH, im->graph_col[GRC_MGRID] );
+			  MGRIDWIDTH, im->graph_col[GRC_MGRID],
+			  im->grid_dash_on, im->grid_dash_off);
 	   
 	   sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
 	   gfx_new_text ( im->canvas,
@@ -1670,7 +1674,7 @@ vertical_grid(
     image_desc_t   *im )
 {   
     int xlab_sel;		/* which sort of label and grid ? */
-    time_t ti, tilab;
+    time_t ti, tilab, timajor;
     long factor;
     char graph_label[100];
     double X0,Y0,Y1; /* points for filled graph and more*/
@@ -1703,14 +1707,24 @@ vertical_grid(
     /* paint the minor grid */
     for(ti = find_first_time(im->start,
 			    im->xlab_user.gridtm,
-			    im->xlab_user.gridst);
+			    im->xlab_user.gridst),
+        timajor = find_first_time(im->start,
+			    im->xlab_user.mgridtm,
+			    im->xlab_user.mgridst);
 	ti < im->end; 
 	ti = find_next_time(ti,im->xlab_user.gridtm,im->xlab_user.gridst)
 	){
 	/* are we inside the graph ? */
 	if (ti < im->start || ti > im->end) continue;
+	while (timajor < ti) {
+	    timajor = find_next_time(timajor,
+		    im->xlab_user.mgridtm, im->xlab_user.mgridst);
+	}
+	if (ti == timajor) continue; /* skip as falls on major grid line */
        X0 = xtr(im,ti);       
-       gfx_new_line(im->canvas,X0,Y0+1, X0,Y1-1,GRIDWIDTH, im->graph_col[GRC_GRID]);
+       gfx_new_dashed_line(im->canvas,X0,Y0+1, X0,Y1-1,GRIDWIDTH,
+	   im->graph_col[GRC_GRID],
+	   im->grid_dash_on, im->grid_dash_off);
        
     }
 
@@ -1724,7 +1738,9 @@ vertical_grid(
 	/* are we inside the graph ? */
 	if (ti < im->start || ti > im->end) continue;
        X0 = xtr(im,ti);
-       gfx_new_line(im->canvas,X0,Y0+2, X0,Y1-2,MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+       gfx_new_dashed_line(im->canvas,X0,Y0+3, X0,Y1-2,MGRIDWIDTH,
+	   im->graph_col[GRC_MGRID],
+	   im->grid_dash_on, im->grid_dash_off);
        
     }
     /* paint the labels below the graph */
@@ -2605,6 +2621,8 @@ rrd_graph_init(image_desc_t *im)
     im->gdes_c = 0;
     im->gdes = NULL;
     im->canvas = gfx_new_canvas();
+    im->grid_dash_on = 1;
+    im->grid_dash_off = 1;
 
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];

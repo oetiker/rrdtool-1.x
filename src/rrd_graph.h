@@ -129,6 +129,7 @@ typedef struct image_desc_t {
     char           title[200];     /* title for graph */
     int            draw_x_grid;      /* no x-grid at all */
     int            draw_y_grid;      /* no x-grid at all */
+    double         grid_dash_on, grid_dash_off;
     xlab_t         xlab_user;      /* user defined labeling for xaxis */
     char           xlab_form[200]; /* format for the label on the xaxis */
 
