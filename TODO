@@ -1,10 +1,26 @@
-1.1.x Goals
------------
+What has to be done before the 1.2.0 Release
+--------------------------------------------
+* Add tab support so that it becomes possible to use proportional
+  fonts in the legend
 
-ability to completely remove x and y grid
+* Polish up the looks of the generated graphs.
 
+* Remove all unfinished code like the PIE chart stuff.
+
+* Sync Docs with reality (there are things described which have not been
+  implemented)
+
+* Write Changes Document with all new features
+
+* Update Tutorials for new Release.
+
+Future Ideas
+------------
 reverse order of stacked graph entries prior to plotting ... this is to make
 plotting order more naturally fit with the ordering of the legend ...
+
+make it possible to define order of legend items independant of their order
+on the commandline ...
 
 use XDR to write architecture independant date
 
@@ -54,17 +70,9 @@ add smothing functions to grapher, using rolling average ...
 
 make VRULE and HRULE with 123 versions ... 
 
-configurable fonts ... truetype ? colors ...
-antialiasing ... 
-
-make it possible to define order of legend items independant of their order
-on the commandline ...
-
 have configurable role-over limits for counters
 
 align data points not to GMT but some free offset
 
 allow starting through symlinks called rrdcreate rrdtune and the like
-
-allow time shifiting of data before it is being graphed ... allow overlay of last years data over todays data
 
