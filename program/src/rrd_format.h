@@ -22,19 +22,7 @@
 #define RRD_VERSION   "0002"
 #define FLOAT_COOKIE  8.642135E130
 
-#if defined(WIN32)
-#define DNAN          ((double)fmod(0.0,0.0))    
-#define DINF	      ((double)log(0.0))
-#else
-
-#define DNAN          ((double)(0.0/0.0))     /* we use a DNAN to
-					       * represent the UNKNOWN
-					       * */
-#define DINF          ((double)(1.0/0.0))     /* we use a DINF to
-					       * represent a value at the upper or
-					       * lower border of the graph ...
-					       * */
-#endif
+#include "rrd_nan_inf.h"
 
 typedef union unival { 
     unsigned long u_cnt; 
