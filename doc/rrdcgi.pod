@@ -127,7 +127,7 @@ be used:
  <IMG SRC="%s" WIDTH="%lu" HEIGHT="%lu">
 
 Note that %s stands for the filename part of the graph generated, all
-directories given in the GIF file argument will get dropped.
+directories given in the PNG file argument will get dropped.
 
 =item RRD::PRINT I<number>
 
@@ -147,7 +147,7 @@ The example below creates a web pages with a single RRD graph.
  <BODY>
  <H1>RRDCGI Example Page</H1>
  <P>
- <RRD::GRAPH demo.gif --lazy --title="Temperatures"
+ <RRD::GRAPH demo.png --lazy --title="Temperatures"
           DEF:cel=demo.rrd:exhaust:AVERAGE
           LINE2:cel#00a000:"D. Celsius">
 
@@ -172,7 +172,7 @@ you want to use a source for your graph.
        <INPUT TYPE=SUBMIT></FORM>
  <H2>Graph</H2>
  <P>
- <RRD::GRAPH <RRD::CV::PATH RRD_NAME>.gif --lazy 
+ <RRD::GRAPH <RRD::CV::PATH RRD_NAME>.png --lazy 
           --title "Temperatures for "<RRD::CV::QUOTE RRD_NAME>
           DEF:cel=<RRD::CV::PATH RRD_NAME>.rrd:exhaust:AVERAGE
           LINE2:cel#00a000:"D. Celsius">
@@ -192,8 +192,8 @@ cgi-bins are seperate directories
  <BODY>
  <H1>RRDCGI test Page</H1>
  <RRD::GRAPH
-  /.../web/gifs/testhvt.gif
-  --imginfo '<IMG SRC=/.../gifs/%s WIDTH=%lu HEIGHT=%lu >'
+  /.../web/pngs/testhvt.png
+  --imginfo '<IMG SRC=/.../pngs/%s WIDTH=%lu HEIGHT=%lu >'
   --lazy --start -1d --end now
   DEF:http_src=/.../rrds/test.rrd:http_src:AVERAGE
   AREA:http_src#00ff00:http_src
@@ -203,7 +203,7 @@ cgi-bins are seperate directories
 
 Note 1: Replace /.../ with the relevant directories
 
-Note 2: The SRC=/.../gifs should be paths from the view of the
+Note 2: The SRC=/.../pngs should be paths from the view of the
 webserver/browser
 
 =head1 AUTHOR
