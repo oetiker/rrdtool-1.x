@@ -6,7 +6,7 @@ SUFFIXES = .pod .1 .man .html .txt .pm .pdf .src .inc
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
-CLEANFILES = *.1 *.html *.txt *-dircache *.pm *.pdf *~ core *itemcache *.rej *.orig
+CLEANFILES = *.1 *.html *.txt *-dircache *.pm *.pdf *~ core *itemcache *.rej *.orig rrdgraph_*.pod
 
 SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
       rrdgraph_data.src rrdgraph_graph.src    
@@ -57,7 +57,10 @@ RRDs.pm:
 RRDp.pm:
 	ln -s ../bindings/perl-piped/RRDp.pm .
 
-link: RRDp.pm RRDs.pm
+index.html:
+	rm index.html; ln -s rrdtool.html index.html
+
+link: RRDp.pm RRDs.pm index.html
 
 man: $(MAN)
 

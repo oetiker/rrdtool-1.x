@@ -1,5 +1,11 @@
 =head1 NAME
 
+=cut
+
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
+
+=pod
+
 rrdtool graph - Round Robin Database tool grapher functions
 
 WARNING: This is for version 1.1.x which is B<I<BETA>> software.
