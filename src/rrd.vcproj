@@ -65,7 +65,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
 				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="4"
+				RuntimeLibrary="1"
 				PrecompiledHeaderFile=".\debug/rrd.pch"
 				AssemblerListingLocation=".\debug/"
 				ObjectFile=".\debug/"
@@ -155,6 +155,9 @@
 			RelativePath=".\rrd_last.c">
 		</File>
 		<File
+			RelativePath="rrd_nan_inf.c">
+		</File>
+		<File
 			RelativePath=".\rrd_open.c">
 		</File>
 		<File
@@ -165,6 +168,9 @@
 		</File>
 		<File
 			RelativePath=".\rrd_rpncalc.c">
+		</File>
+		<File
+			RelativePath="rrd_thread_safe_nt.c">
 		</File>
 		<File
 			RelativePath=".\rrd_tune.c">

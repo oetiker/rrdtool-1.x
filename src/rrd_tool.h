@@ -110,6 +110,10 @@ int isnan(double value);
 #define isnan _isnan
 #define finite _finite
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
+struct tm* localtime_r(const time_t *timep, struct tm* result);
+char* ctime_r(const time_t *timep, char* result);
+struct tm* gmtime_r(const time_t *timep, struct tm* result);
+char *strtok_r(char *str, const char *sep, char **last);
 #endif
 
 /* local include files -- need to be after the system ones */

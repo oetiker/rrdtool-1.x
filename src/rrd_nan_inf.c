@@ -2,6 +2,8 @@
 
 #if defined(WIN32)
 
+#include <math.h>
+
 double set_to_DNAN(void) { return (double)fmod(0.0,0.0); }
 double set_to_DINF(void) { return (double)fabs((double)log(0.0)); }
 

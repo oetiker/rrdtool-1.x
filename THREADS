@@ -54,4 +54,7 @@ thread-safe.
   It uses lots of global vars. You may use it in functions not
   designed to be thread-safe like functions wrapping the _r version of some
   operation (eg. rrd_create, but not in rrd_create_r)
-  
+
+WIN32 Platform Note (added 04/01/03):
+
+Both rrdtool.vcproj (MSVC++ 7.0) and rrd.dsw (MSVC++ 6.0) are configured to compile with rrd_thread_safe_nt.c.

@@ -160,6 +160,10 @@ SOURCE=.\rrd_last.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\rrd_nan_inf.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\rrd_open.c
 # End Source File
 # Begin Source File
@@ -173,6 +177,10 @@ SOURCE=.\rrd_restore.c
 # Begin Source File
 
 SOURCE=.\rrd_rpncalc.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_thread_safe_nt.c
 # End Source File
 # Begin Source File
 
