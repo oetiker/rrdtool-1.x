@@ -1,3 +1,10 @@
+/****************************************************************************
+ * RRDtool 1.2.x  Copyright Tobias Oetiker, 1997 - 2005
+ ****************************************************************************
+ * rrd_graph_helper.c  commandline parser functions 
+ *                     this code was probably writtenn by Alex van den Bogaerdt
+ ****************************************************************************/
+
 #include "rrd_graph.h"
 
 #define dprintf if (gdp->debug) printf
@@ -325,6 +332,15 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	}
 	dprintf("- looking for optional legend\n");
 	dprintf("- in '%s'\n",&line[*eaten]);
+	/* the legend for a graph item must start with "m " the first
+           m will then be over drawn with a color box. Since there
+           is ample space I overwrite the first few characters of the line
+	   with the material that I want to see in the legend */
+	if (line[*eaten] != '\0' && line[*eaten] != ':'){
+		*eaten = *eaten - 2;
+		line[*eaten] = 'm';
+		line[*eaten+1] = ' ';
+	}	
 	if (rrd_parse_legend(line, eaten, gdp)) return 1;
     }
 
@@ -352,7 +368,6 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	    return 1;
 	}
     }
-
     return 0;
 }
 
