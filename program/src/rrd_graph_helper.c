@@ -15,6 +15,8 @@ int rrd_parse_legend  (char *, unsigned int *, graph_desc_t *);
 int rrd_parse_color   (char *, graph_desc_t *);
 int rrd_parse_CF      (char *, unsigned int *, graph_desc_t *);
 int rrd_parse_print   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_shift   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_xport   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 int rrd_parse_PVHLAST (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 int rrd_parse_vname   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 int rrd_parse_def     (char *, unsigned int *, graph_desc_t *, image_desc_t *);
@@ -159,6 +161,77 @@ rrd_parse_print(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
     strcpy(gdp->format,gdp->legend);
 
     return 0;
+}
+
+int
+rrd_parse_shift(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *im) {
+	char	*l = strdup(line + *eaten), *p;
+	int	rc = 1;
+
+	p = strchr(l, ',');
+	if (p == NULL) {
+		rrd_set_error("Invalid SHIFT syntax");
+		goto out;
+	}
+	*p++ = '\0';
+	
+	if ((gdp->vidx=find_var(im,l))<0) {
+		rrd_set_error("Not a valid vname: %s in line %s",l,line);
+		goto out;
+	}
+	
+        /* constant will parse; otherwise, must be VDEF reference */
+	if (sscanf(p, "%ld", &gdp->shval) != 1) {
+		graph_desc_t	*vdp;
+		
+		if ((gdp->shidx=find_var(im, p))<0) {
+			rrd_set_error("invalid offset vname: %s", p);
+			goto out;
+		}
+		
+		vdp = &im->gdes[gdp->shidx];
+		if (vdp->gf != GF_VDEF) {
+			rrd_set_error("offset must specify value or VDEF");
+			goto out;
+		}
+	} else {
+		gdp->shidx = -1;
+	}
+	
+	*eaten = strlen(line);
+	rc = 0;
+
+ out:
+	free(l);
+	return rc;
+}
+
+int
+rrd_parse_xport(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *im) {
+	char	*l = strdup(line + *eaten), *p;
+	int	rc = 1;
+
+	p = strchr(l, ':');
+	if (p != NULL)
+		*p++ = '\0';
+	else
+		p = "";
+	
+	if ((gdp->vidx=find_var(im, l))==-1){
+		rrd_set_error("unknown variable '%s'",l);
+		goto out;
+	}
+	
+	if (strlen(p) >= FMT_LEG_LEN)
+		*(p + FMT_LEG_LEN) = '\0';
+	
+	strcpy(gdp->legend, p);
+	*eaten = strlen(line);
+	rc = 0;
+	
+ out:
+	free(l);
+	return rc;
 }
 
 /* Parsing of PART, VRULE, HRULE, LINE, AREA, STACK and TICK
@@ -463,10 +536,10 @@ rrd_parse_cdef(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t 
 }
 
 void
-rrd_graph_script(int argc, char *argv[], image_desc_t *im) {
+rrd_graph_script(int argc, char *argv[], image_desc_t *im, int optno) {
     int i;
 
-    for (i=optind+1;i<argc;i++) {
+    for (i=optind+optno;i<argc;i++) {
 	graph_desc_t *gdp;
 	unsigned int eaten=0;
 
@@ -479,11 +552,11 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im) {
 	if (rrd_parse_find_gf(argv[i],&eaten,gdp)) return;
 
 	switch (gdp->gf) {
-#if 0
-	/* future command */
-	    case GF_SHIFT:	vname:value
-#endif
+	    case GF_SHIFT:	/* vname:value */
+		if (rrd_parse_shift(argv[i],&eaten,gdp,im)) return;
+		break;
 	    case GF_XPORT:
+		if (rrd_parse_xport(argv[i],&eaten,gdp,im)) return;
 		break;
 	    case GF_PRINT:	/* vname:CF:format -or- vname:format */
 	    case GF_GPRINT:	/* vname:CF:format -or- vname:format */

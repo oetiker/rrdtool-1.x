@@ -43,11 +43,7 @@ rrd_xport(int argc, char **argv, int *xsize,
 {
 
     image_desc_t   im;
-    int            i;
-    long           long_tmp;
     time_t	   start_tmp=0,end_tmp=0;
-    char           symname[100];
-    long           scancount;
     struct rrd_time_value start_tv, end_tv;
     char           *parsetime_error = NULL;
 
@@ -91,12 +87,11 @@ rrd_xport(int argc, char **argv, int *xsize,
 	    }
 	    break;
 	case 'm':
-	    long_tmp = atol(optarg);
-	    if (long_tmp < 10) {
+	    im.xsize = atol(optarg);
+	    if (im.xsize < 10) {
 		rrd_set_error("maxrows below 10 rows");
 		return -1;
 	    }
-	    im.xsize = long_tmp;
 	    break;
 	case '?':
 	    rrd_set_error("unknown option '%c'", optopt);
@@ -122,115 +117,10 @@ rrd_xport(int argc, char **argv, int *xsize,
     im.start = start_tmp;
     im.end = end_tmp;
 
-    for(i=optind;i<argc;i++){
-	int   argstart=0;
-	int   strstart=0;
-	char  varname[30],*rpnex;
-	gdes_alloc(&im);
-	if(sscanf(argv[i],"%10[A-Z0-9]:%n",symname,&argstart)==1){
-	    if((int)(im.gdes[im.gdes_c-1].gf=gf_conv(symname))==-1){
-		im_free(&im);
-		rrd_set_error("unknown function '%s'",symname);
-		return -1;
-	    }
-	} else {
-	    rrd_set_error("can't parse '%s'",argv[i]);
-	    im_free(&im);
-	    return -1;
-	}
-
-	switch(im.gdes[im.gdes_c-1].gf){
-	case GF_CDEF:
-	    if((rpnex = malloc(strlen(&argv[i][argstart])*sizeof(char)))==NULL){
-		rrd_set_error("malloc for CDEF");
-		return -1;
-	    }
-	    if(sscanf(
-		    &argv[i][argstart],
-		    DEF_NAM_FMT "=%[^: ]",
-		    im.gdes[im.gdes_c-1].vname,
-		    rpnex) != 2){
-		im_free(&im);
-		free(rpnex);
-		rrd_set_error("can't parse CDEF '%s'",&argv[i][argstart]);
-		return -1;
-	    }
-	    /* checking for duplicate DEF CDEFS */
-	    if(find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
-		im_free(&im);
-		rrd_set_error("duplicate variable '%s'",
-			      im.gdes[im.gdes_c-1].vname);
-		return -1; 
-	    }	   
-	    if((im.gdes[im.gdes_c-1].rpnp = rpn_parse(&im,rpnex,&find_var_wrapper))== NULL){
-		rrd_set_error("invalid rpn expression '%s'", rpnex);
-		im_free(&im);		
-		return -1;
-	    }
-	    free(rpnex);
-	    break;
-	case GF_DEF:
-	    if (sscanf(
-		&argv[i][argstart],
-		DEF_NAM_FMT "=%n",
-		im.gdes[im.gdes_c-1].vname,
-		&strstart)== 1 && strstart){ /* is the = did not match %n returns 0 */ 
-		if(sscanf(&argv[i][argstart
-				  +strstart
-				  +scan_for_col(&argv[i][argstart+strstart],
-						MAXPATH,im.gdes[im.gdes_c-1].rrd)],
-			  ":" DS_NAM_FMT ":" CF_NAM_FMT,
-			  im.gdes[im.gdes_c-1].ds_nam,
-			  symname) != 2){
-		    im_free(&im);
-		    rrd_set_error("can't parse DEF '%s' -2",&argv[i][argstart]);
-		    return -1;
-		}
-	    } else {
-		im_free(&im);
-		rrd_set_error("can't parse DEF '%s'",&argv[i][argstart]);
-		return -1;
-	    }
-	    
-	    /* checking for duplicate DEF CDEFS */
-	    if (find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
-		im_free(&im);
-		rrd_set_error("duplicate variable '%s'",
-			  im.gdes[im.gdes_c-1].vname);
-		return -1; 
-	    }	   
-	    if((int)(im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
-		im_free(&im);
-		rrd_set_error("unknown cf '%s'",symname);
-		return -1;
-	    }
-	    break;
-	case GF_XPORT:
-	    if((scancount=sscanf(
-		&argv[i][argstart],
-		"%29[^:]:%n",
-		varname,
-		&strstart))>=1){
-		if(strstart <= 0){
-		    im.gdes[im.gdes_c-1].legend[0] = '\0';
-		} else { 
-		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
-		}
-		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		    im_free(&im);
-		    rrd_set_error("unknown variable '%s'",varname);
-		    return -1;
-		}		
-	    } else {
-		im_free(&im);
-		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		return -1;
-	    }
-	    break;
-	default:
-	  break;
-	}
-	
+    rrd_graph_script(argc,argv,&im,0);
+    if (rrd_test_error()) {
+	im_free(&im);
+	return -1;
     }
 
     if (im.gdes_c == 0){
