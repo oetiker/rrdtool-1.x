@@ -5,7 +5,7 @@ In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
 2001/03/21 Tobias Oetiker <oetiker@ee.ethz.ch>
-  Added Aberrant Patch from Jake Brutlag <jakeb@corp.webtv.net>
+  Added Aberrant Patch from Jake Brutlag <jakeb@microsoft.com>
   From now one, new rrd files use version tag 0002. They can
   NOT be read by the old 1.0.x rrdtools
 
