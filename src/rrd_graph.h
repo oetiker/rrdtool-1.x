@@ -91,6 +91,7 @@ typedef struct ylab_t {
 
 typedef  struct graph_desc_t {
     enum gf_en     gf;         /* graphing function */
+    int            stack;      /* boolean */
     char           vname[MAX_VNAME_LEN+1];  /* name of the variable */
     long           vidx;       /* gdes reference */
     char           rrd[255];   /* name of the rrd_file containing data */

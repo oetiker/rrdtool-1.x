@@ -978,68 +978,68 @@ data_proc( image_desc_t *im ){
     unsigned long gr_time;    
 
     /* memory for the processed data */
-    for(i=0;i<im->gdes_c;i++){
-      if((im->gdes[i].gf==GF_LINE) ||
-	 (im->gdes[i].gf==GF_AREA) ||
-	 (im->gdes[i].gf==GF_TICK) ||
-	 (im->gdes[i].gf==GF_STACK)){
-	if((im->gdes[i].p_data = malloc((im->xsize +1)
+    for(i=0;i<im->gdes_c;i++) {
+	if((im->gdes[i].gf==GF_LINE) ||
+		(im->gdes[i].gf==GF_AREA) ||
+		(im->gdes[i].gf==GF_TICK) ||
+		(im->gdes[i].gf==GF_STACK)) {
+	    if((im->gdes[i].p_data = malloc((im->xsize +1)
 					* sizeof(rrd_value_t)))==NULL){
-	  rrd_set_error("malloc data_proc");
-	  return -1;
+		rrd_set_error("malloc data_proc");
+		return -1;
+	    }
 	}
-      }
     }
-    
-    for(i=0;i<im->xsize;i++){
+
+    for (i=0;i<im->xsize;i++) {	/* for each pixel */
 	long vidx;
-	gr_time = im->start+pixstep*i; /* time of the 
-					  current step */
+	gr_time = im->start+pixstep*i; /* time of the current step */
 	paintval=0.0;
 	
-	for(ii=0;ii<im->gdes_c;ii++){
-	  double value;
-	    switch(im->gdes[ii].gf){
-	    case GF_LINE:
-	    case GF_AREA:
+	for (ii=0;ii<im->gdes_c;ii++) {
+	    double value;
+	    switch (im->gdes[ii].gf) {
+		case GF_LINE:
+		case GF_AREA:
 		case GF_TICK:
-		paintval = 0.0;
-	    case GF_STACK:
-		vidx = im->gdes[ii].vidx;
+		    if (!im->gdes[ii].stack)
+			paintval = 0.0;
+		case GF_STACK:
+		    /* The time of the data doesn't necessarily match
+		    ** the time of the graph. Beware.
+		    */
+		    vidx = im->gdes[ii].vidx;
+		    if (	(gr_time >= im->gdes[vidx].start) &&
+				(gr_time <= im->gdes[vidx].end) ) {
+			value = im->gdes[vidx].data[
+			    (unsigned long) floor(
+				    (double)(gr_time - im->gdes[vidx].start)
+						/ im->gdes[vidx].step)
+			    * im->gdes[vidx].ds_cnt
+			    + im->gdes[vidx].ds
+			];
+		    } else {
+			value = DNAN;
+		    }
 
-		value =
-		    im->gdes[vidx].data[
-			((unsigned long)floor(
-	(double)(gr_time-im->gdes[vidx].start) / im->gdes[vidx].step
-					     )
-                        )	*im->gdes[vidx].ds_cnt
-				+im->gdes[vidx].ds];
-
-		if (! isnan(value)) {
-		  paintval += value;
-		  im->gdes[ii].p_data[i] = paintval;
-		  /* GF_TICK: the data values are not relevant for min and max */
-		  if (finite(paintval) && im->gdes[ii].gf != GF_TICK ){
-  		   if (isnan(minval) || paintval <  minval)
-		     minval = paintval;
-		   if (isnan(maxval) || paintval >  maxval)
-		     maxval = paintval;
-		  }
-		} else {
-		  im->gdes[ii].p_data[i] = DNAN;
-		}
-		break;
-	    case GF_PRINT:
-	    case GF_GPRINT:
-	    case GF_COMMENT:
-	    case GF_HRULE:
-	    case GF_VRULE:
-	    case GF_DEF:	       
-	    case GF_CDEF:
-	    case GF_VDEF:
-	    case GF_PART:
-	    case GF_XPORT:
-		break;
+		    if (! isnan(value)) {
+			paintval += value;
+			im->gdes[ii].p_data[i] = paintval;
+			/* GF_TICK: the data values are not
+			** relevant for min and max
+			*/
+			if (finite(paintval) && im->gdes[ii].gf != GF_TICK ) {
+			    if (isnan(minval) || paintval <  minval)
+				minval = paintval;
+			    if (isnan(maxval) || paintval >  maxval)
+				maxval = paintval;
+			}
+		    } else {
+			im->gdes[ii].p_data[i] = DNAN;
+		    }
+		    break;
+		default:
+		    break;
 	    }
 	}
     }
@@ -1053,12 +1053,13 @@ data_proc( image_desc_t *im ){
     
     /* adjust min and max values */
     if (isnan(im->minval) 
-	|| ((!im->logarithmic && !im->rigid) /* don't adjust low-end with log scale */
-	    && im->minval > minval))
+	/* don't adjust low-end with log scale */
+	|| ((!im->logarithmic && !im->rigid) && im->minval > minval)
+	)
 	im->minval = minval;
     if (isnan(im->maxval) 
-	|| (!im->rigid 
-	    && im->maxval < maxval)){
+	|| (!im->rigid && im->maxval < maxval)
+	) {
 	if (im->logarithmic)
 	    im->maxval = maxval * 1.1;
 	else
@@ -1066,16 +1067,14 @@ data_proc( image_desc_t *im ){
     }
     /* make sure min and max are not equal */
     if (im->minval == im->maxval) {
-      im->maxval *= 1.01; 
-      if (! im->logarithmic) {
-	im->minval *= 0.99;
-      }
-      
-      /* make sure min and max are not both zero */
-      if (im->maxval == 0.0) {
+	im->maxval *= 1.01; 
+	if (! im->logarithmic) {
+	    im->minval *= 0.99;
+	}
+	/* make sure min and max are not both zero */
+	if (im->maxval == 0.0) {
 	    im->maxval = 1.0;
-      }
-        
+	}
     }
     return 0;
 }
@@ -2156,6 +2155,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     if (Xlegend > im->ximg) {
 	im->ximg = Xlegend;
 	/* reposition Pie */
+    }
 #endif
 
     /* The pie is placed in the upper right hand corner,
@@ -2489,6 +2489,7 @@ gdes_alloc(image_desc_t *im){
 
 
     im->gdes[im->gdes_c-1].step=def_step; 
+    im->gdes[im->gdes_c-1].stack=0;
     im->gdes[im->gdes_c-1].start=im->start; 
     im->gdes[im->gdes_c-1].end=im->end; 
     im->gdes[im->gdes_c-1].vname[0]='\0'; 
@@ -3018,7 +3019,7 @@ rrd_vname_color(image_desc_t *im, char * param,
 {
     int result=0,i=0;
 
-    if (param[0]!='#') { /* vname or num present or empty string */
+    if (param[0]!='#') { /* vname or num present, or empty string */
 	char *s,*c=param;
 	while ((*c!='\0')&&(*c!='#')) c++,i++;
 	if (*c!='\0') {
@@ -3138,21 +3139,25 @@ rrd_find_function(char *param, graph_desc_t *gdp)
 static int
 rrd_split_line(char *line,char ***param)
 {
-    int i=0,n=0;
-    char *c=line;
+    int i=0,n=0,quoted=0;
+    char *src=line;
+    char *dst=line;
 
     /* scan the amount of colons in the line.  We need
     ** at most this amount+1 pointers for the array. If
     ** any colons are escaped we waste some space.
     */
-    if (*c!='\0') n=1;
-    while (*c != '\0')
-	if (*c++ == ':') n++;
+    if (*src!='\0') n=1;
+
+    while (*src != '\0')
+	if (*src++ == ':') n++;
 
     if (n==0) {
 	rrd_set_error("No line to split. rrd_split_line was given the empty string.");
 	return -1;
     }
+
+    src = line;
 
     /* Allocate memory for an array of n char pointers */
     *param=calloc(n,sizeof(char *));
@@ -3162,34 +3167,132 @@ rrd_split_line(char *line,char ***param)
     }
 
     /* split the line and fill the array */
-    c = line;
+   
     i=0;
-    (*param)[i] = c;
-    while (*c != '\0') {
-	switch (*c) {
-	    case '\\':
-		c++;
-		if (*c=='\0') {
-		    free(*param);
-		    rrd_set_error("Lone backslash found inside rrd_split_line");
-		    return -1;
+    (*param)[i] = dst;
+    while (*src != '\0') {
+	switch (*src) {
+	    case '\'':
+		quoted^=1;
+		src++;
+		break;
+	    case '\\':	/* could be \:  but also \n */
+		src++;
+		switch (*src) {
+		    case '\0':
+			free(*param);
+			rrd_set_error("Lone backslash inside rrd_split_line");
+			return -1;
+		    case ':':
+			*dst++=*src++;
+			break;
+		    default:
+			*dst++='\\';
+			*dst++=*src++;
 		}
-		c++;
 		break;
 	    case ':':
-		*c = '\0';
-		c++;
-		i++;
-		(*param)[i] = c;
+		if (quoted) *dst++=*src++;
+		else {
+		    *dst++ = '\0';
+		    src++;
+		    i++;
+		    (*param)[i] = dst;
+		}
 		break;
 	    default:
-		c++;
+		*dst++=*src++;
 	}
     }
+    *dst='\0';
     i++; /* i separators means i+1 parameters */
 
     return i;
 }
+
+void
+rrd_graph_script_parse_def(int argc,char *argv[],int used,graph_desc_t *gdp) {
+    time_t		start_tmp=0,end_tmp=0;
+    struct time_value	start_tv, end_tv;
+    char		*parsetime_error = NULL;
+    struct option long_options[] = {
+	{ "step",	required_argument, NULL, 256 },
+	{ "start",	required_argument, NULL, 's' },
+	{ "end",	required_argument, NULL, 'e' },
+	{ NULL,0,NULL,0 }};
+    int option_index = 0;
+    int opt;
+
+    opterr=0;
+    optind=used;
+
+    start_tv.type=ABSOLUTE_TIME;
+    start_tv.offset=0;
+    end_tv.type=ABSOLUTE_TIME;
+    end_tv.offset=0;
+    memcpy(&start_tv.tm, gmtime(&gdp->start) , sizeof(struct tm) );
+    memcpy(&end_tv.tm,   gmtime(&gdp->end) ,   sizeof(struct tm) );
+
+    while (1) {
+	opt = getopt_long(argc,argv,"-s:e:", long_options,&option_index);
+	if (opt==-1) break;
+	switch (opt) {
+	    case   1:
+		printf("DEBUG: found non-option[%i] %s\n",optind,optarg);
+		break;
+	    case 's':
+		if ((parsetime_error = parsetime(optarg, &start_tv))) {
+		    rrd_set_error( "DEF start time: %s", parsetime_error );
+		    return;
+		}
+		break;
+	    case 'e':
+		if ((parsetime_error = parsetime(optarg, &end_tv))) {
+		    rrd_set_error( "DEF end time: %s", parsetime_error );
+		    return;
+		}
+		break;
+	    case 256:
+                gdp->step = atol(optarg);
+		break;
+	    case '?':
+		printf("DEBUG: unrecognized option %s\n",argv[optind]);
+		break;
+	    case ':':
+		printf("DEBUG: option %c needs parameter\n",optopt);
+		break;
+	    default:
+		printf("DEBUG: getopt returned unknown char %c\n",opt);
+		break;
+	}
+    }
+    if (optind < argc) {
+	printf("DEBUG: %i remaining parameters:\n",argc-optind);
+	while (optind<argc)
+	    printf("DEBUG: %3i: %s\n",optind,argv[optind++]);
+	printf("\n");
+    }
+
+    if (proc_start_end(&start_tv,&end_tv,&start_tmp,&end_tmp) == -1){
+	/* error string is set in parsetime.c */
+	return;
+    }  
+    
+    if (start_tmp < 3600*24*365*10){
+	rrd_set_error("the first entry to fetch should be after 1980 (%ld)",start_tmp);
+	return;
+    }
+    
+    if (end_tmp < start_tmp) {
+	rrd_set_error("start (%ld) should be less than end (%ld)", 
+	       start_tmp, end_tmp);
+	return;
+    }
+    
+    gdp->start = start_tmp;
+    gdp->end = end_tmp;
+}
+
 void
 rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 {
@@ -3317,25 +3420,62 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 	    case GF_LINE:
 	    case GF_AREA:
 	    case GF_TICK:
-		j=k=0;
+			/* LINEx:vname[#color[:legend]][:STACK]
+			** AREA:vname[#color[:legend]][:STACK]
+			** STACK:vname[#color[:legend]]
+			** TICK:vname#color[:num[:legend]]
+			*/
 		linepass=1;
-		sscanf(&line[argstart],DEF_NAM_FMT"%n%1[#:]%n",vname,&j,sep,&k);
-		if (j+1!=k)
-		    rrd_set_error("Cannot parse vname in line: %s",line);
-		else if (rrd_graph_check_vname(im,vname,line))
-		    rrd_set_error("Undefined vname '%s' in line: %s",line);
-		else
-		    k=rrd_graph_color(im,&line[argstart],line,1);
-		if (rrd_test_error()) break;
-		argstart=argstart+j+k;
-		if ((strlen(&line[argstart])!=0)&&(gdp->gf==GF_TICK)) {
-		    j=0;
-		    sscanf(&line[argstart], ":%lf%n", &gdp->yrule,&j);
-		    argstart+=j;
+		j=rrd_vname_color(im,param[paramused++],
+				&gdp->vidx,&gdp->yrule,&gdp->col);
+		if (!j) break;	/* error string set by function */
+		switch (j&0x0F) {
+		    case 0x00:
+			rrd_set_error("Cannot parse name nor number "
+					"in %s:%s",param[0],param[1]);
+			break;
+		    case 0x01:
+		    case 0x02:
+			rrd_set_error("Cannot %s a number",param[0]);
+			break;
+		    case 0x08:
+		    case 0x09:
+			break;
+		    case 0x0A:
+			rrd_set_error("Cannot use VDEF based variable "
+					"with %s %s",param[0],gdp->vname);
+			break;
 		}
-		if (strlen(&line[argstart])!=0)
-		    if (rrd_graph_legend(gdp,&line[++argstart])==0)
-			rrd_set_error("Cannot parse legend in line: %s",line);
+		if (rrd_test_error()) break;
+
+		if (gdp->gf == GF_TICK) {
+		    if (!(j&0x10)) {
+			rrd_set_error("Color not optional for TICK");
+			break;
+		    } else { /* parse optional number */
+			k=l=0;
+			sscanf(param[paramused], "%lf%n%*s%n",
+						&gdp->yrule,&k,&l);
+			if ((k!=0)&&(l==0)) paramused++;
+			if (paramused<paramcnt)
+			    strcpy(gdp->legend,param[paramused++]);
+		    }
+		} else {
+		    if (j&0x10) { /* color present */
+			/* next should be legend or STACK.  If it
+			** is STACK then leave it at is, else parse
+			** the legend (if any)
+			*/
+			if (paramused<paramcnt)
+			    if (strcmp("STACK",param[paramused]))
+				strcpy(gdp->legend,param[paramused++]);
+		    }
+		    if (paramused<paramcnt)
+			if (!strcmp("STACK",param[paramused])) {
+			    gdp->stack=1;
+			    paramused++;
+			}
+		}
 		break;
 	    case GF_PRINT:
 		im->prt_c++;
@@ -3397,7 +3537,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 		    break;
 		}
 		paramused++;
-		argstart+=j;
+		argstart+=j;	/* parsed upto and including "xDEF:vname=" */
 		switch (gdp->gf) {
 		    case GF_DEF:
 			if (strlen(&param[1][j])>MAXPATH) {
@@ -3436,28 +3576,20 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 			    break;
 			}
 			paramused++;
-			if (paramcnt>paramused) {
-			    k=0;l=0;
-			    sscanf(param[4],
-					"step=%lu%n%*s%n",
-                                &gdp->step,&k,&l);
-                            if ((k==0)||(l!=0)) {
-                                rrd_set_error("Cannot parse step in "
-							"%s:%s:%s:%s:%s",
-				param[0],param[1],param[2],param[3],param[4]);
-				break;
-                            }
-			    paramused++;
+			if (paramcnt>paramused) { /* optional parameters */
+rrd_graph_script_parse_def(paramcnt,param,paramused,gdp);
+			    if (rrd_test_error()) break;
 			}
 			break;
 		    case GF_VDEF:
-			j=0;
-			sscanf(&line[argstart],DEF_NAM_FMT ",%n",vname,&j);
-			if (j==0) {
-			    rrd_set_error("Cannot parse vname in line '%s'",line);
+			k=0;
+			sscanf(&param[1][j],DEF_NAM_FMT ",%n",vname,&k);
+			if (k==0) {
+			    rrd_set_error("Cannot parse vname: %s:%s",
+							param[0],param[1]);
 			    break;
 			}
-			argstart+=j;
+			j+=k;
 			if (rrd_graph_check_vname(im,vname,line)) return;
 			if (       im->gdes[gdp->vidx].gf != GF_DEF
 				&& im->gdes[gdp->vidx].gf != GF_CDEF) {
@@ -3465,19 +3597,15 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 				"CDEF in VDEF '%s'", vname,gdp->vname);
 			    break;
 			}
-			vdef_parse(gdp,&line[argstart+strstart]);
+			vdef_parse(gdp,&param[1][j]);
 			break;
 		    case GF_CDEF:
-			if (strstr(&line[argstart],":")!=NULL) {
-			    rrd_set_error("Error in RPN, line: %s",line);
-			    break;
-			}
 			if ((gdp->rpnp = rpn_parse(
 						(void *)im,
-						&line[argstart],
+						&param[1][j],
 						&find_var_wrapper)
 				)==NULL)
-			    rrd_set_error("invalid rpn expression in: %s",line);
+			    rrd_set_error("invalid rpn expression in: %s",param[1]);
 			break;
 		    default: break;
 		}
