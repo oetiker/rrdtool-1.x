@@ -2399,7 +2399,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       /* make sure we do not run into trouble when stacking on NaN */
       for(ii=0;ii<im->xsize;ii++){
         if (isnan(im->gdes[i].p_data[ii])) {
-          if (lastgdes) {
+          if (lastgdes && (im->gdes[i].gf == GF_STACK)) {
             im->gdes[i].p_data[ii] = lastgdes->p_data[ii];
           } else {
             im->gdes[i].p_data[ii] =  ytr(im,areazero);
