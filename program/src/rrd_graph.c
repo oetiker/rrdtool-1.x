@@ -41,7 +41,7 @@ char rrd_win_default_font[80];
 
 text_prop_t text_prop[] = {   
      { 10.0, RRD_DEFAULT_FONT }, /* default */
-     { 12.0, RRD_DEFAULT_FONT }, /* title */
+     { 10.0, RRD_DEFAULT_FONT }, /* title */
      { 8.0,  RRD_DEFAULT_FONT },  /* axis */
      { 10.0, RRD_DEFAULT_FONT },  /* unit */
      { 10.0, RRD_DEFAULT_FONT }  /* legend */
