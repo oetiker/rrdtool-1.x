@@ -7,6 +7,25 @@ set -x
 find . -name Makefile | xargs rm -f
 find . -name Makefile.in | xargs rm -f
 
+if [ 1.4.2 -gt `libtool --version | awk '{print $4}'` ]
+then
+  echo get a copy of GNU libtool >= 1.4.2
+  exit 1
+fi
+
+if [ 1.5 -gt `automake --version | head -1 | awk '{print $4}'` ]
+then
+  echo get a copy of GNU automake >= 1.5
+  exit 1
+fi
+
+if [ 2.52 -gt `autoconf --version | head -1 | awk '{print $4}'` ]
+then
+  echo get a copy of GNU autoconf >= 2.52
+  exit 1
+fi
+
+
 
 # wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.4.2.tar.gz
 libtoolize --copy
