@@ -10,7 +10,6 @@ B<rrdtool> B<create> I<filename>
 S<[B<--start>|B<-b> I<start time>]> 
 S<[B<--step>|B<-s> I<step>]> 
 S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
-I<heartbeat>B<:>I<min>B<:>I<max>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
 =head1 DESCRIPTION
