@@ -6,6 +6,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_hw.h"
 
 unsigned long FnvHash(char *str);
 int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
@@ -565,18 +566,11 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
        switch (cf_conv(rrd->rra_def[i].cf_nam))
 	   {
            case CF_HWPREDICT:
-               rrd->cdp_prep->scratch[CDP_hw_intercept].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_hw_last_intercept].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_hw_slope].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_hw_last_slope].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_null_count].u_cnt = 1; 
-               rrd->cdp_prep->scratch[CDP_last_null_count].u_cnt = 1;
+               init_hwpredict_cdp(rrd->cdp_prep);
                break;
            case CF_SEASONAL:
            case CF_DEVSEASONAL:
-               rrd->cdp_prep->scratch[CDP_hw_seasonal].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_hw_last_seasonal].u_val = DNAN;
-               rrd->cdp_prep->scratch[CDP_init_seasonal].u_cnt = 1; 
+               init_seasonal_cdp(rrd->cdp_prep);
                break;
            case CF_FAILURES:
                /* initialize violation history to 0 */

@@ -30,14 +30,15 @@ void PrintUsage(char *cmd)
 	   "* create - create a new RRD\n\n"
 	   "\trrdtool create filename [--start|-b start time]\n"
 	   "\t\t[--step|-s step]\n"
-	   "\t\t[DS:ds-name:DST:heartbeat:min:max] [RRA:CF:xff:steps:rows]\n\n";
+	   "\t\t[DS:ds-name:DST:dst arguments]\n" 
+	   "\t\t[RRA:CF:cf arguments]\n\n";
 
     char help_dump[] =
 	   "* dump - dump an RRD to XML\n\n"
 	   "\trrdtool dump filename.rrd >filename.xml\n\n";
 
     char help_info[] =
-	   "* info - returns the configuration and status of the\n\n"
+	   "* info - returns the configuration and status of the RRD\n\n"
 	   "\trrdtool info filename.rrd\n\n";
 
     char help_restore[] =
@@ -94,9 +95,17 @@ void PrintUsage(char *cmd)
 	   " * tune -  Modify some basic properties of an RRD\n\n"
 	   "\trrdtool tune filename\n"
 	   "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
-	   "\t\t[--data-source-type|-d ds-name:DST\n"
-	   "\t\t[--data-source-rename|-r old-name:new-name\n"
-	   "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n\n";
+	   "\t\t[--data-source-type|-d ds-name:DST]\n"
+	   "\t\t[--data-source-rename|-r old-name:new-name]\n"
+	   "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n"
+	   "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
+	   "\t\t[--failure-threshold integer]\n"
+	   "\t\t[--window-length integer]\n"
+	   "\t\t[--alpha adaptation-parameter]\n"
+	   "\t\t[--beta adaptation-parameter]\n"
+	   "\t\t[--gamma adaptation-parameter]\n"
+	   "\t\t[--gamma-deviation adaptation-parameter]\n"
+	   "\t\t[--aberrant-reset ds-name]\n\n";
 
     char help_resize[] =
 	   " * resize - alter the lenght of one of the RRAs in an RRD\n\n"
