@@ -5,39 +5,9 @@
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
-if USE_INSTALLED_libcgi
-CGI_LIB 	   = -lcgi
-else
-CGI_LIB	           = $(top_builddir)/libraries/@CGI_LIB_DIR@/librrd_cgi.la
-CGI_INCLUDES       = -I$(top_srcdir)/libraries/@CGI_LIB_DIR@
-endif
-if USE_INSTALLED_libfreetype
-FREETYPE_LIB       = -lfreetype
-else
-FREETYPE_LIB       = $(top_builddir)/libraries/@FREETYPE_LIB_DIR@/librrd_freetype.la
-FREETYPE_INCLUDES  = -I$(top_srcdir)/libraries/@FREETYPE_LIB_DIR@/include
-endif
-if USE_INSTALLED_libart_lgpl
-ART_LIB            = -lart_lgpl
-else
-ART_LIB 	   = $(top_builddir)/libraries/@ART_LIB_DIR@/librrd_art.la
-ART_INCLUDES       = -I$(top_srcdir)/libraries/@ART_LIB_DIR@ -I$(top_builddir)/libraries/@ART_LIB_DIR@
-endif
-if USE_INSTALLED_libpng
-PNG_LIB            = -lpng
-else
-PNG_LIB		   = $(top_builddir)/libraries/@PNG_LIB_DIR@/librrd_png.la
-PNG_INCLUDES       = -I$(top_srcdir)/libraries/@PNG_LIB_DIR@
-endif
-if USE_INSTALLED_libz
-ZLIB_LIB           = -lz
-else
-ZLIB_LIB           = $(top_builddir)/libraries/@ZLIB_LIB_DIR@/librrd_z.la
-ZLIB_INCLUDES      = -I$(top_srcdir)/libraries/@ZLIB_LIB_DIR@
-endif
 
-INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
-           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
+#INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
+#           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
 
 RRD_C_FILES =		\
 	getopt.c	\
@@ -72,38 +42,24 @@ RRD_C_FILES =		\
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
 	rrd_is_thread_safe.h
 
-# Build two libraries.  One is a public one that gets installed in
-# $prefix/lib.  Libtool does not create an archive of the PIC compiled
-# objects for this library type.  The second library is a private one
-# meant to build the RRDs.so for perl-shared.  In this case libtool
-# creates a ./.lib/*.al file that contains the PIC compiled object
-# files.
-
-RRD_LIBS =				\
-	$(CGI_LIB)	\
-	$(FREETYPE_LIB)	\
-	$(ART_LIB)	\
-	$(PNG_LIB)	\
-	$(ZLIB_LIB)
-
 lib_LTLIBRARIES           = librrd.la librrd_th.la
-noinst_LTLIBRARIES        = librrd_private.la
+#noinst_LTLIBRARIES        = librrd_private.la
 
 librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
-librrd_private_la_SOURCES = $(RRD_C_FILES) rrd_not_thread_safe.c
+#librrd_private_la_SOURCES = $(RRD_C_FILES) rrd_not_thread_safe.c
 
-librrd_la_LIBADD          = $(RRD_LIBS)
+# librrd_la_LIBADD          = $(RRD_LIBS)
 librrd_la_LDFLAGS         = -version-info 1:2:0
 
 librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
-librrd_th_la_LIBADD          = $(RRD_LIBS) -lpthread
+librrd_th_la_LIBADD          = -lpthread
 librrd_th_la_LDFLAGS         = -version-info 1:2:0
 
 
 include_HEADERS	= rrd.h
 
-librrd_private_la_LIBADD  = $(RRD_LIBS)
-librrd_private_la_LDFLAGS = -static
+#librrd_private_la_LIBADD  = $(RRD_LIBS)
+#librrd_private_la_LDFLAGS = -static
 
 bin_PROGRAMS	= rrdcgi rrdtool rrdupdate
 

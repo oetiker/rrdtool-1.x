@@ -7,7 +7,7 @@
 #ifndef  RRD_GFX_H
 #define RRD_GFX_H
 #define LIBART_COMPILATION
-#include <libart.h>
+#include <libart_lgpl/libart.h>
 
 enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS,IF_PDF};
 enum gfx_en { GFX_LINE=0,GFX_AREA,GFX_TEXT };
