@@ -10,3 +10,5 @@ rrdupdate
 rrdcgi
 configure
 config.cache
+.pure
+gen_art_config
