@@ -98,7 +98,7 @@ rrd_info(int argc, char **argv) {
     switch (current_ds) {
 	   case DST_CDEF:
 		  {
-		  char *buffer;
+		  char *buffer = 0;
 		  rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
 			 rrd.ds_def, &buffer);
 		  info.u_str = buffer;
