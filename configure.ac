@@ -7,8 +7,8 @@ dnl
 
 dnl tell automake the this script is for rrdtool
 AC_INIT([rrdtool],[1.1.0])
-AM_INIT_AUTOMAKE
 AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 # AC_CONFIG_AUX_DIR(config)
 
@@ -183,12 +183,6 @@ The last tested version of $4 is $5.
 ]
 )
  
-EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.16, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
-EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.5,  http://prdownloads.sourceforge.net/libpng/)
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.5,  http://prdownloads.sourceforge.net/freetype/)
-
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
  [Vertical label angle: 90.0 (default) or 270.0])
@@ -196,6 +190,84 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
  [Vertical label angle: 90.0 (default) or 270.0])
 
 
+AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
+[],[enable_rrdcgi=yes])
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+ 
+if test $enable_rrdcgi != no; then
+EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
+fi
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.16, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
+EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.5,  http://prdownloads.sourceforge.net/libpng/)
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.5,  http://prdownloads.sourceforge.net/freetype/)
+ 
+dnl Check for pthreads (pieces of code from Bert Driehuis)
+ 
+AC_SUBST(MULTITHREAD_CFLAGS)
+AC_SUBST(MULTITHREAD_LDFLAGS)
+
+AC_DEFUN(AC_CHECK_PTHREAD, [
+   AC_MSG_CHECKING([pthreads: trying no flags])
+   AC_CACHE_VAL(ac_cv_flag_pthread,[
+ 	AC_TRY_LINK([
+ 		#include <pthread.h>
+ 	],
+ 	[pthread_exit(0);],
+ 	eval "ac_cv_flag_pthread=no",
+ 	[
+ 		AC_MSG_RESULT([didn't work])
+ 		AC_MSG_CHECKING([pthreads: trying to add -pthread])
+ 		ac_save_CFLAGS="$CFLAGS"
+ 		CFLAGS="$CFLAGS -pthread"
+     AC_TRY_LINK([
+       #include <pthread.h>
+       ],
+       [pthread_exit(0);],
+       eval "ac_cv_flag_pthread=yes",
+       AC_MSG_ERROR([Can't figure out pthreads])
+     )
+     CFLAGS="$ac_save_CFLAGS"
+ 	])
+   ])
+ 
+   if test "$ac_cv_flag_pthread" = "no"; then
+     AC_MSG_RESULT([good, -pthread flag not necessary])
+   else
+     AC_MSG_RESULT([adding -pthread flag])
+     MULTITHREAD_CFLAGS="-pthread"
+   fi
+ 
+   AC_MSG_CHECKING([for libpthread])
+   AC_CACHE_VAL(ac_cv_lib_pthread,[
+     ac_save_LIBS="$LIBS"
+     LIBS="-lpthread"
+     AC_TRY_LINK([
+       #include <pthread.h>
+       ],
+       [pthread_exit(0);],
+       eval "ac_cv_lib_pthread=-lphtread",
+       eval "ac_cv_lib_pthread=no"
+     )
+     LIBS="$ac_save_LIBS"
+   ])
+   if test "$ac_cv_lib_pthread" = "no"; then
+     AC_MSG_RESULT([no -lpthread necessary])
+   else
+     AC_MSG_RESULT([adding -lpthread to LIBS])
+     MULTITHREAD_LDFLAGS="-lpthread"
+   fi
+])
+ 
+AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
+[],[enable_pthread=yes])
+ 
+if test $enable_pthread != no; then 
+ 	AC_CHECK_PTHREAD
+fi
+ 
+AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
+  
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
 if test "x$PERL" = "xno"; then
