@@ -21,7 +21,7 @@ dnl determine the type of system we are running on
 AC_SUBST(VERSION)
 
 dnl where we install our stuff ...
-AC_PREFIX_DEFAULT( /usr/local/rrdtool-1.1.0 )
+AC_PREFIX_DEFAULT( /usr/local/rrdtool-$PACKAGE_VERSION )
 
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
