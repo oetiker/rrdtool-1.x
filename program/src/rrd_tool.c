@@ -543,7 +543,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     else if (strcmp("resize", argv[1]) == 0)
 	rrd_resize(argc-1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
-        printf("%ld\n",rrd_last(argc-1, argv[1]));
+        printf("%ld\n",rrd_last(argc-1, &argv[1]));
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {
