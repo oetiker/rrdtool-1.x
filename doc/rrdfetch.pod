@@ -248,7 +248,7 @@ I<931225537> -- 18:45  July 5th, 1999
 (yes, seconds since 1970 are valid as well)
 
 I<19970703 12:45> -- 12:45  July 3th, 1997
-(not quote standard, but I love this ...)
+(my favorite, and its even got an ISO number (8601))
 
 
 =head1 AUTHOR
