@@ -5,6 +5,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.13  2003/11/11 19:38:03  oetiker
+ * rrd files should NOT change size ever ... bulk update code wa buggy.
+ * -- David M. Grimes <dgrimes@navisite.com>
+ *
  * Revision 1.12  2003/09/04 13:16:12  oetiker
  * should not assigne but compare ... grrrrr
  *
@@ -1219,10 +1223,9 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 
 		/* write other rows of the bulk update, if any */
 		scratch_idx = CDP_secondary_val;
-		for ( ; rra_step_cnt[i] > 1; 
-		     rra_step_cnt[i]--, rrd.rra_ptr[i].cur_row++)
+               for ( ; rra_step_cnt[i] > 1; rra_step_cnt[i]--)
 		{
-		   if (rrd.rra_ptr[i].cur_row == rrd.rra_def[i].row_cnt)
+                  if (++rrd.rra_ptr[i].cur_row == rrd.rra_def[i].row_cnt)
 		   {
 #ifdef DEBUG
               fprintf(stderr,"Wraparound for RRA %s, %lu updates left\n",
