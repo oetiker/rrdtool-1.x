@@ -1,1 +1,37 @@
-Title: Plan n
+Title: Plan for the Release of RRDtool 1.2
+$HeadURL$
+$LastChangedDate$
+$LastChangedBy$
+$LastChangedRevision$
+
+Plan for the release of RRDtool 1.2
+-----------------------------------
+This work is sponserd by Cablecom GmbH (cablecom.ch)
+
+[OK] Convert repository to Subversion
+       svn://svn.ee.ethz.ch/rrdtool
+
+---  Update build infrastructure to current versions of
+     autotools and support libraries.
+
+---  Verify build on Solaris and Debian Linux
+
+---  Implement tab support for text fields. This will allow
+     to use propertional fonts in lables and still have the
+     alignement over several lines
+
+---  remove or fix piechart code in rrd_graph
+
+---  [ 2005-04-04 ] Publish rrdtool 1.2.0rc1 (feature complete)
+
+---  Work on the looks of the graphs. Especially the grid setup
+
+---  Update Tutorials with material about the new features
+
+---  Check documentation for consistancy
+
+---  Update Website for 1.2
+
+---  Write release notes with changes relative to 1.0
+
+---- [ 2005-04-25 ] Publish rrdtool 1.2.0
