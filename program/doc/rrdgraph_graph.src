@@ -85,15 +85,21 @@ B<%%> just prints a literal '%' character
 
 =item *
 
-B<%#.#le> (where # is an optional number) prints like 1.2346e+04
+B<%#.#le> prints like 1.2346e+04. Optional numbers # are field width and
+decimal precision
 
 =item *
 
-B<%#.#lf> prints like 12345.6789
+B<%#.#lf> prints like 12345.6789, with optional field width and precision
 
 =item *
 
-B<%s> place this after B<%le> or B<%lf>.  This will be replaced by the
+B<%#.#lg> prints like 12345.6789, with optional field width and number of
+significant digits
+
+=item *
+
+B<%s> place this after B<%le>, B<%lf> or B<%lg>. This will be replaced by the
 appropriate SI magnitude unit and the value will be scaled
 accordingly (123456 -> 123.456 k)
 

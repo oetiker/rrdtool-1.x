@@ -399,7 +399,7 @@ message but not a I<vname> fourtytwo that's always equal to 42.
 
 Calculate the chosen consolidation function I<CF> over the data-source
 variable I<vname> and C<printf> the result to stdout using I<format>.
-In the I<format> string there should be a '%lf' or '%le' marker in the
+In the I<format> string there should be a '%lf', '%le' or'%lg' marker in the
 place where the number should be printed.
 
 If an additional '%s' is found AFTER the marker, the value will be scaled
