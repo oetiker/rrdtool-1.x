@@ -1116,8 +1116,11 @@ static void svg_text(FILE *fp, gfx_node_t *node)
    svg_write_number(fp, x);
    fputs("\" y=\"", fp);
    svg_write_number(fp, y);
-  if (strcmp(node->filename, svg_default_font))
+
+/*  if (strcmp(node->filename, svg_default_font))
     fprintf(fp, " font-family=\"%s\"", node->filename);
+    */
+   fputs("\" font-family=\"Helvetica", fp);
    fputs("\" font-size=\"", fp);
    svg_write_number(fp, node->size);
    fputs("\"", fp);
