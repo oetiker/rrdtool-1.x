@@ -527,7 +527,8 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
 {
     unsigned long    i,ii;
     FILE             *rrd_file;
-    rrd_value_t       unknown = DNAN ;
+    rrd_value_t      *unknown;
+    int	unkn_cnt;
     
     if ((rrd_file = fopen(file_name,"wb")) == NULL ) {
 	rrd_set_error("creating '%s': %s",file_name, rrd_strerror(errno));
@@ -632,17 +633,24 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
     }
     
     /* write the empty data area */
-    for(i=0; 
-	i <  rrd->stat_head->rra_cnt;
-	i++)
-    {
-        for(ii=0; 
-            ii <  rrd->rra_def[i].row_cnt 
-                * rrd->stat_head->ds_cnt;
-            ii++){
-            fwrite(&unknown,sizeof(rrd_value_t),1,rrd_file);
-        }
+    if ((unknown = (rrd_value_t *)malloc(512 * sizeof(rrd_value_t))) == NULL) {
+	rrd_set_error("allocating unknown");
+	rrd_free(rrd);
+	fclose(rrd_file);
+	return(-1);
     }
+    for (i = 0; i < 512; ++i)
+	unknown[i] = DNAN;
+    
+    unkn_cnt = 0;
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++)
+        unkn_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
+		      
+    while (unkn_cnt > 0) {
+	fwrite(unknown, sizeof(rrd_value_t), min(unkn_cnt, 512), rrd_file);
+	unkn_cnt -= 512;
+     }
+    free(unknown);
     
     /* lets see if we had an error */
     if(ferror(rrd_file)){
