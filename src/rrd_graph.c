@@ -2932,6 +2932,13 @@ printf("DEBUG: strstart==%i\n",strstart);
 	    );
 	    if (strstart==0) {
 		im_free(&im);
+		rrd_set_error("Cannot parse '%s' in VDEF '%s'",
+				&argv[i][argstart],
+				im.gdes[im.gdes_c-1].vname);
+		return -1;
+	    }
+	    if ((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname)) == -1) {
+		im_free(&im);
 		rrd_set_error("variable '%s' not known in VDEF '%s'",
 		    varname,
 		    im.gdes[im.gdes_c-1].vname);
@@ -3201,13 +3208,13 @@ printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 		dst->vf.val  = DNAN;
 		dst->vf.when = 0;
 	    } else {
-		dst->vf.val  = data[steps*src->ds_cnt];
+		dst->vf.val  = data[step*src->ds_cnt];
 		dst->vf.when = src->start + (step+1)*src->step;
 	    }
 	    while (step != steps) {
 		if (finite(data[step*src->ds_cnt])) {
 		    if (data[step*src->ds_cnt] > dst->vf.val) {
-			dst->vf.val  = data[steps*src->ds_cnt];
+			dst->vf.val  = data[step*src->ds_cnt];
 			dst->vf.when = src->start + (step+1)*src->step;
 		    }
 		}
@@ -3245,13 +3252,13 @@ printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 		dst->vf.val  = DNAN;
 		dst->vf.when = 0;
 	    } else {
-		dst->vf.val  = data[steps*src->ds_cnt];
+		dst->vf.val  = data[step*src->ds_cnt];
 		dst->vf.when = src->start + (step+1)*src->step;
 	    }
 	    while (step != steps) {
 		if (finite(data[step*src->ds_cnt])) {
 		    if (data[step*src->ds_cnt] < dst->vf.val) {
-			dst->vf.val  = data[steps*src->ds_cnt];
+			dst->vf.val  = data[step*src->ds_cnt];
 			dst->vf.when = src->start + (step+1)*src->step;
 		    }
 		}
