@@ -5,9 +5,12 @@
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
+fontsdir =  $(datadir)/rrdtool/fonts
+fonts_DATA = VeraMono.ttf
 
 #INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 #           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
+INCLUDES = -DRRD_DEFAULT_FONT=\"$(fontsdir)/$(fonts_DATA)\"
 
 RRD_C_FILES =		\
 	getopt.c	\
@@ -53,11 +56,12 @@ librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
 #librrd_private_la_SOURCES = $(RRD_C_FILES) rrd_not_thread_safe.c
 
 # librrd_la_LIBADD          = $(RRD_LIBS)
-librrd_la_LDFLAGS         = -version-info 1:2:0
+# see http://www.gnu.org/software/libtool/manual.html#SEC32 for explanation
+librrd_la_LDFLAGS         = -version-info 1:0:0
 
 librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
-librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 1:2:0
+librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 1:0:0
 
 
 include_HEADERS	= rrd.h
@@ -86,4 +90,4 @@ rrdtool_SOURCES =
 rrdtool_DEPENDENCIES = rrd_tool.o
 rrdtool_LDADD	= librrd.la
 
-EXTRA_DIST= rrdtool.dsp rrdtool.dsw
+EXTRA_DIST= rrdtool.dsp rrdtool.dsw $(fonts_DATA)
