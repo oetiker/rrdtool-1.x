@@ -1,6 +1,6 @@
 SUBDIRS = tcl 
 # the following files are not mentioned in any other Makefile
-EXTRA_DIST = $(shell for A in perl-*; do cat $$A/MANIFEST | sed -e s,^,$$A/, ; done)
+EXTRA_DIST = $(shell for A in perl-*; do cat $$A/MANIFEST | sed -e "s,^,$$A/," ; done)
 
 # add the following to the all target
 all-local:  @COMP_PERL@
@@ -21,6 +21,7 @@ perl_shared: perl-shared/Makefile
 
 perl-shared/Makefile: perl-shared/Makefile.PL
 	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
+# LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
 clean-local:
 	cd perl-piped && test -f Makefile && $(MAKE) clean || true

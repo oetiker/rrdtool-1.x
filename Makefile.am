@@ -23,10 +23,6 @@ to-docs: to-versync
 	(cd doc && $(MAKE) clean && $(MAKE) && $(MAKE) pdf)
 	(cd website && wmk-1.7.4 -f manual tutorial contributors.wml && ./site-sync )
 
-to-versync: 
-	perl -i -p -e '"$(VERSION)" =~ /(\d+)\.(\d+)\.(\d+)/; $$v=sprintf("%1d.%02d0%02d1" ,$${1},$${2},$${3}); s|VERSION\s*=\s*[\d.]+|VERSION = $$v|' perl-*/RRD?.pm
-	perl -i -p -e 's|RRDtool\s+\d+\.\d+\.\d+ |RRDtool $(VERSION) |' src/*.[ch]
-
 to-dist: to-docs dist
 	mv $(PACKAGE)-$(VERSION).tar.gz archive
 

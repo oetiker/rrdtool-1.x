@@ -11,10 +11,10 @@ WriteMakefile(
     'NAME'         => 'RRDs',
     'VERSION_FROM' => 'RRDs.pm', # finds $VERSION
     'DEFINE'	   => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
-    'INC'          => '-I../../src -I../../libraries/gd1.3',
+    'INC'          => '-I../../src',
     # where to look for the necessary libraries 
     # Perl will figure out which one is valid
-    'depend'	   => {'RRDs.c' => "../../src/.libs/librrd.a"},
+    'depend'	   => {'RRDs.c' => "../../src/.libs/librrd.so"},
     'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' }
 );
