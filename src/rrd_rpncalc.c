@@ -40,7 +40,8 @@ short rpn_compact(rpnp_t *rpnp, rpn_cdefds_t **rpnc, short *count)
                 return -1;
             }
             (*rpnc)[i].val = (short) temp;
-        } else if (rpnp[i].op == OP_VARIABLE) {
+	  } else if (rpnp[i].op == OP_VARIABLE ||
+				 rpnp[i].op == OP_PREV_OTHER) {
             (*rpnc)[i].val = (short) rpnp[i].ptr;
         }
     }
@@ -63,7 +64,8 @@ rpnp_t * rpn_expand(rpn_cdefds_t *rpnc)
         rpnp[i].op = (long) rpnc[i].op;
         if (rpnp[i].op == OP_NUMBER) {
             rpnp[i].val = (double) rpnc[i].val;
-        } else if (rpnp[i].op == OP_VARIABLE) {
+	  } else if (rpnp[i].op == OP_VARIABLE ||
+				 rpnp[i].op == OP_PREV_OTHER) {
             rpnp[i].ptr = (long) rpnc[i].val;
         }
     }
@@ -106,6 +108,12 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
             char *ds_name = ds_def[rpnc[i].val].ds_nam;
             add_op(OP_VARIABLE, ds_name)
                 }
+
+	  if (rpnc[i].op == OP_PREV_OTHER) {
+		char *ds_name = ds_def[rpnc[i].val].ds_nam;
+		add_op(OP_VARIABLE, ds_name)
+	  }
+
 #undef add_op
         
 #define add_op(VV,VVV) \
@@ -261,6 +269,21 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	    expr+=strlen(#VVV); \
 	}
 
+
+#define match_op_param(VV,VVV) \
+        else if (sscanf(expr, #VVV "(%[a-z0-9]s)",vname) == 1) { \
+          int length = 0; \
+          if ((length = strlen(#VVV)+strlen(vname)+2, \
+              expr[length] == ',' || expr[length] == '\0') ) { \
+             rpnp[steps].op = VV; \
+             rpnp[steps].ptr = (*lookup)(key_hash,vname); \
+             if (rpnp[steps].ptr < 0) { \
+			   free(rpnp); \
+			   return NULL; \
+			 } else expr+=length; \
+          } \
+        }
+
 	match_op(OP_ADD,+)
 	match_op(OP_SUB,-)
 	match_op(OP_MUL,*)
@@ -289,6 +312,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_UN,UN)
 	match_op(OP_NEGINF,NEGINF)
 	match_op(OP_NE,NE)
+	  match_op_param(OP_PREV_OTHER,PREV)
 	match_op(OP_PREV,PREV)
 	match_op(OP_INF,INF)
 	match_op(OP_ISINF,ISINF)
@@ -410,6 +434,13 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		    rpnstack -> s[++stptr] = output[output_idx-1];
 		}
 		break;
+	case OP_PREV_OTHER:
+	  if ((output_idx-1) <= 0) {
+		rpnstack -> s[++stptr] = DNAN;
+	  } else {
+		rpnstack -> s[++stptr] = rpnp[rpnp[rpi].ptr].data[output_idx-1];
+	  }
+	  break;
 	    case OP_UNKN:
 		rpnstack -> s[++stptr] = DNAN; 
 		break;
