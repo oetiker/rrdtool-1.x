@@ -2,7 +2,7 @@
 
 ZLIB_LIB_DIR = @ZLIB_LIB_DIR@
 
-INCLUDES = -I$(top_srcdir)/$(ZLIB_LIB_DIR)
+INCLUDES = -I$(top_srcdir)/libraries/$(ZLIB_LIB_DIR)
 
 EXTRA_DIST= ANNOUNCE CHANGES INSTALL KNOWNBUG README README.rrdtool \
             TODO Y2KINFO example.c libpng.3 \
