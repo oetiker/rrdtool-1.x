@@ -161,7 +161,8 @@ in the create command. This is similar to the restriction that B<CDEF>s must
 refer only to B<DEF>s and B<CDEF>s previously defined in the same graph command.
 
 =item B<RRA:>I<CF>B<:>I<cf arguments>
-  
+
+
 The purpose of an B<RRD> is to store data in the round robin archives
 (B<RRA>). An archive consists of a number of data values or statistics for 
 each of the defined data-sources (B<DS>) and is defined with an B<RRA> line.
@@ -187,7 +188,7 @@ I<rows> defines how many generations of data values are kept in an B<RRA>.
 
 =back
 
-=head1 Aberrant Behaviour detection with Holt-Winters forecasting
+=head1 Aberrant Behavior Detection with Holt-Winters Forecasting
 
 by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
 
