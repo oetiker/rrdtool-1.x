@@ -108,52 +108,6 @@ gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas,
 
   return node;
 }
-/* create an arc section (2*M_PI is full circle) */
-gfx_node_t   *gfx_arc_sect   (gfx_canvas_t *canvas, 
-			      double centerx, double centery,
-			      double radiusx, double radiusy,
-			      double start, double end,
-			      gfx_color_t color) {
-
-  gfx_node_t *node;
-  ArtVpath *vec;
-  int counter;
-  double position;
-
-/* 20 is too low, 100 is overkill */
-#define AMOUNT_OF_VECTORS 50
-
-  node = gfx_new_node(canvas,GFX_AREA);
-  if (node == NULL) return NULL;
-  vec = art_new(ArtVpath, AMOUNT_OF_VECTORS+4);
-  if (vec == NULL) return NULL;
-
-  vec[0].code = ART_MOVETO;
-  vec[0].x = centerx;
-  vec[0].y = centery;
-
-  for (counter=0;counter<=AMOUNT_OF_VECTORS;) {
-    position=start + counter*(end-start)/AMOUNT_OF_VECTORS;
-
-    counter++;
-    vec[counter].code = ART_LINETO;
-    vec[counter].x = centerx + sin(position)*radiusx;
-    vec[counter].y = centery - cos(position)*radiusy;
-  }
-
-  vec[AMOUNT_OF_VECTORS+2].code = ART_LINETO;
-  vec[AMOUNT_OF_VECTORS+2].x = centerx;
-  vec[AMOUNT_OF_VECTORS+2].y = centery;
-
-  vec[AMOUNT_OF_VECTORS+3].code = ART_END;
-  
-  node->points = AMOUNT_OF_VECTORS+4;
-  node->points_max = AMOUNT_OF_VECTORS+4;
-  node->color = color;
-  node->path  = vec;
-
-  return node;
-}
 
 /* add a point to a line or to an area */
 int           gfx_add_point  (gfx_node_t *node, 
