@@ -151,9 +151,6 @@ AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
 
-dnl substitute them in all the files listed in AC_OUTPUT
-AC_SUBST(PERLFLAGS)
-
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
@@ -214,7 +211,7 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
 fi
 
 AC_LANG_PUSH(C)
-dnl solaris has some odd define it need in order to propperly compile ctime_r
+dnl solaris has some odd defines it needs in order to propperly compile ctime_r
 AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
 AC_LINK_IFELSE(
     AC_LANG_PROGRAM(
@@ -252,7 +249,14 @@ AC_SUBST(MULTITHREAD_LDFLAGS)
  
 AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
- 
+
+dnl since we use lots of *_r functions all over the code we better
+dnl make sure they are known
+
+if test  "x$x_rflag" != "xno"; then
+   CPPFLAGS="$CPPFLAGS $x_rflag"
+fi
+
 if test $enable_pthread != no; then 
  ACX_PTHREAD([
     MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
@@ -271,24 +275,53 @@ if test "x$PERL" = "xno"; then
 	COMP_PERL=
 else
 	COMP_PERL="perl_piped perl_shared"
-	AC_MSG_CHECKING(for shared library extension)
-	SO_EXT=`$PERL -e 'use Config; if (defined $Config{so} and $Config{so} ne 'a') {print "$Config{so}\n"} else {print "so\n"};'`
-	AC_MSG_RESULT($SO_EXT)
+        AC_MSG_CHECKING(for the perl version you are running)
+	PERL_VERSION=`$PERL -MConfig -e 'print $Config{version}'`
+	AC_MSG_RESULT($PERL_VERSION)
         AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
-        PROBLEMCC=`$PERL -e 'use Config; ($cc = $Config{cc}) =~ s/\s.*//; exit 0 if -x $cc; map {if (-x "$_/$cc"){exit 0}} split /:/, $ENV{PATH};print $Config{cc}'`
-        if test x$PROBLEMCC != x; then
-                AC_MSG_RESULT(no)
-                echo Could not find the Compiler: '"'$PROBLEMCC'"'
-                echo which has been used to build perl. You may have to compile
-                echo your own copy of perl to make this work. Binary perls often
-                echo exhibit this problem
-                exit 1
-        else
-                AC_MSG_RESULT(found)
+	perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
+	AC_MSG_RESULT($perlcc)
+	if test ! -x $perlcc; then
+ 	       AC_PATH_PROG(PERLCC, ${perlcc}, no)
+	       if test -x $"x$PERLCC" = "xno"; then
+                  AC_MSG_WARN([
+I would not find the Compiler ($perlcc) that was originally used to compile your
+perl binary. You should either make sure that this compiler is available on your
+system, or use a different perl setup that was compiled with $CC.
+
+I will disable the compilation of the RRDs perl module.
+])
+  		  COMP_PERL="perl_piped"
+	       fi
         fi
 fi
+AC_MSG_CHECKING(Perl Modules to build)
+AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
+
+# Options to pass when configuring perl module
+PERL_MAKE_OPTIONS="PREFIX=$prefix LIB=$prefix/lib/perl/$PERL_VERSION"
+
+dnl pass additional perl options when generating Makefile from Makefile.PL
+AC_ARG_ENABLE(perl-site-install,
+[  --enable-perl-site-install   by default the rrdtool perl modules are installed
+		  	  together with rrdtool in $prefix/lib/perl. You have to
+                          put a 'use lib qw($prefix/lib/perl)' into your scripts
+                          when you want to use them. When you set this option
+                          the perl modules will get installed wherever
+                          your perl setup thinks it is best.],
+[PERL_MAKE_OPTIONS=],[])
+
+AC_ARG_WITH(perl-options,
+[  --with-perl-options=[OPTIONS]  options to pass on command-line when
+                          generating Makefile from Makefile.PL. If you set this
+                          option, interesting things may happen unless you know
+                          what you are doing!],
+[PERL_MAKE_OPTIONS=$withval])
+
+AC_SUBST(PERL_MAKE_OPTIONS)
+AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
-AC_SUBST(SO_EXT)
+AC_SUBST(PERL_VERSION)
 
 dnl Check for Tcl.
 withval=""
@@ -310,13 +343,6 @@ else
 	. $tcl_config
 fi
 
-dnl Pass additional perl options when generating Makefile from Makefile.PL
-# Options to pass when configuring perl module
-AC_ARG_WITH(perl-options,
-[  --with-perl-options=[OPTIONS]  options to pass on command-line when
-                          generating Makefile from Makefile.PL],
-[PERL_MAKE_OPTIONS=$withval])
-AC_SUBST(PERL_MAKE_OPTIONS)
 
 AM_CONDITIONAL(COMP_TCL, test x$found = x1 )
 

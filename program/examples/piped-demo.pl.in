@@ -1,9 +1,5 @@
 #! @PERL@ 
 
-#makes things work when run without install
-use lib qw( ../bindings/perl-piped/blib/lib  ../lib/perl );
-
-#makes programm work AFTER install 
 use lib qw( @prefix@/lib/perl );
 
 use RRDp;
@@ -20,8 +16,8 @@ $SVG = "piped-demo.svg";
 $PNG = "piped-demo.png";
 
 # some magic to find the correct rrdtol executable
-if ( -x "@prefix@/bin/rrdtool") {
-   RRDp::start "@prefix@/bin/rrdtool";
+if ( -x "@exec_prefix@/bin/rrdtool") {
+   RRDp::start "@exec_prefix@/bin/rrdtool";
 } elsif ( -x "../bin/rrdtool") {
    RRDp::start "../bin/rrdtool";
 } else {
@@ -109,6 +105,9 @@ print "\n\n* Creating $GRUNS PNG graphs: $PNG\n\n";
 
 $now = time;
 ($user1,$sys1,$real1) =  ($RRDp::user,$RRDp::sys,$RRDp::real);
+my $local = "".localtime(time());
+$local =~ s/:/\\:/g;
+
 for ($i=0;$i<$GRUNS;$i++) {
 RRDp::cmd "graph $PNG ", "--title 'Test GRAPH' ",
 	"--imgformat PNG --height 150 --vertical-label 'Dummy Units' ".
@@ -128,7 +127,7 @@ RRDp::cmd "graph $PNG ", "--title 'Test GRAPH' ",
 	"GPRINT:calc:MAX:'Max calc\\: %1.2lf %S'",
         "VRULE:".($now-3600)."#008877:'60 Minutes ago'",
         "COMMENT:'\\s'",
-        "COMMENT:'Graph created on\\: ".localtime(time())."\\c'";
+        "COMMENT:'Graph created on\\: $local\\c'";
 
 $answer = RRDp::read;
 }

@@ -140,7 +140,7 @@ typedef union infoval {
     unsigned long u_cnt; 
     rrd_value_t   u_val;
     char         *u_str;
-	int			  u_int;
+    int		  u_int;
 } infoval;
 
 typedef struct info_t {

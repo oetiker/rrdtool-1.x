@@ -240,11 +240,9 @@ for flag in $acx_pthread_flags; do
         # pthread_cleanup_push because it is one of the few pthread
         # functions on Solaris that doesn't have a non-functional libc stub.
         # We try pthread_create on general principles.
-        AC_TRY_LINK([#include <pthread.h>],
-                    [pthread_t th; pthread_join(th, 0);
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <pthread.h>]], [[pthread_t th; pthread_join(th, 0);
                      pthread_attr_init(0); pthread_cleanup_push(0, 0);
-                     pthread_create(0,0,0,0); pthread_cleanup_pop(0); ],
-                    [acx_pthread_ok=yes])
+                     pthread_create(0,0,0,0); pthread_cleanup_pop(0); ]])],[acx_pthread_ok=yes],[])
 
         LIBS="$save_LIBS"
         CFLAGS="$save_CFLAGS"
@@ -270,8 +268,7 @@ if test "x$acx_pthread_ok" = xyes; then
 	AC_MSG_CHECKING([for joinable pthread attribute])
 	attr_name=unknown
 	for attr in PTHREAD_CREATE_JOINABLE PTHREAD_CREATE_UNDETACHED; do
-	    AC_TRY_LINK([#include <pthread.h>], [int attr=$attr;],
-                        [attr_name=$attr; break])
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <pthread.h>]], [[int attr=$attr;]])],[attr_name=$attr; break],[])
 	done
         AC_MSG_RESULT($attr_name)
         if test "$attr_name" != PTHREAD_CREATE_JOINABLE; then
@@ -281,14 +278,14 @@ if test "x$acx_pthread_ok" = xyes; then
         fi
 
         AC_MSG_CHECKING([if more special flags are required for pthreads])
-        flag=no
+        x_rflag=no
         case "${host_cpu}-${host_os}" in
-            *-aix* | *-freebsd* | *-darwin*) flag="-D_THREAD_SAFE";;
-            *solaris* | *-osf* | *-hpux*) flag="-D_REENTRANT";;
+            *-aix* | *-freebsd* | *-darwin*) x_rflag="-D_THREAD_SAFE";;
+            *solaris* | *-osf* | *-hpux*) x_rflag="-D_REENTRANT";;
         esac
-        AC_MSG_RESULT(${flag})
-        if test "x$flag" != xno; then
-            PTHREAD_CFLAGS="$flag $PTHREAD_CFLAGS"
+        AC_MSG_RESULT(${x_rflag})
+        if test "x$x_rflag" != xno; then
+            PTHREAD_CFLAGS="$x_rflag $PTHREAD_CFLAGS"
         fi
 
         LIBS="$save_LIBS"
@@ -321,6 +318,9 @@ dnl determine how to get IEEE math working
 dnl AC_IEEE(MESSAGE, set rd_cv_ieee_[var] variable, INCLUDES,
 dnl   FUNCTION-BODY, [ACTION-IF-FOUND [,ACTION-IF-NOT-FOUND]])
 dnl
+
+dnl substitute them in all the files listed in AC_OUTPUT
+AC_SUBST(PERLFLAGS)
 
 AC_DEFUN([AC_IEEE], [
 AC_MSG_CHECKING([if IEEE math works $1])
