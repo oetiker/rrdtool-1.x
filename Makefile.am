@@ -2,7 +2,7 @@
 RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
-SUBDIRS = libraries bindings src doc examples
+SUBDIRS = libraries src bindings doc examples
 
   # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS rrdtool.spec
