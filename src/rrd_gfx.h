@@ -54,6 +54,13 @@ gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas,
 			      double x2, double y2,
 			      gfx_color_t  color);
 
+/* create an arc section (2*M_PI is full circle) */
+gfx_node_t   *gfx_arc_sect   (gfx_canvas_t *canvas, 
+			      double centerx, double centery,
+			      double radiusx, double radiusy,
+			      double start, double end,
+			      gfx_color_t color);
+
 /* add a point to a line or to an area */
 int           gfx_add_point  (gfx_node_t *node, double x, double y);
 

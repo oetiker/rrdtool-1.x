@@ -938,6 +938,7 @@ data_proc( image_desc_t *im ){
 	    case GF_DEF:	       
 	    case GF_CDEF:
 	    case GF_VDEF:
+	    case GF_PART:
 		break;
 	    }
 	}
@@ -1920,14 +1921,17 @@ graph_paint(image_desc_t *im, char ***calcpr)
   }
 
   if (piechart) {
+	/* allocate enough space for the piechart itself (PieSize), 20%
+	** more for the background and an additional 50 pixels spacing.
+	*/
     if (im->xsize < im->ysize)
 	PieSize = im->xsize;
     else
 	PieSize = im->ysize;
-    im->xgif += PieSize + 50;
+    im->xgif += PieSize*1.2 + 50;
 
-    PieCenterX = im->xorigin + im->xsize + 50 + PieSize/2;
-    PieCenterY = im->yorigin - PieSize/2;
+    PieCenterX = im->xorigin + im->xsize + 50 + PieSize*0.6;
+    PieCenterY = im->yorigin - PieSize*0.5;
   }
   
   /* determine where to place the legends onto the graphics.
@@ -1957,12 +1961,21 @@ graph_paint(image_desc_t *im, char ***calcpr)
   gfx_add_point(node,im->xorigin, im->yorigin - im->ysize);
 
   if (piechart) {
+#if 1
+    node=gfx_arc_sect (canvas,
+	PieCenterX,PieCenterY,
+	PieSize*0.6, PieSize*0.6,	/* 20% more as background */
+	0,M_PI*2,
+	im->graph_col[GRC_CANVAS]);
+#else
     node=gfx_new_area ( canvas,
-		im->xorigin + im->xsize + 50,		im->yorigin,
-		im->xorigin + im->xsize + 50 + PieSize,	im->yorigin,
-		im->xorigin + im->xsize + 50 + PieSize,	im->yorigin - PieSize,
-		im->graph_col[GRC_CANVAS]);
-    gfx_add_point(node,im->xorigin+im->xsize+50, im->yorigin - PieSize);
+	PieCenterX-0.6*PieSize, PieCenterY-0.6*PieSize,
+	PieCenterX+0.6*PieSize, PieCenterY-0.6*PieSize,
+	PieCenterX+0.6*PieSize, PieCenterY+0.6*PieSize,
+	im->graph_col[GRC_CANVAS]);
+    gfx_add_point(node,
+	PieCenterX-0.6*PieSize, PieCenterY+0.6*PieSize);
+#endif
   }
 
   if (im->minval > 0.0)
@@ -2092,48 +2105,20 @@ graph_paint(image_desc_t *im, char ***calcpr)
       } 
       lastgdes = &(im->gdes[i]);                         
       break;
-    case GF_PART: {
-      int x,y , counter;
-      double d1,d2,d3,d4;
-
-      /* This probably is not the most efficient algorithm...
-      ** If you know how to help, please do!
-      **
-      ** If you change this routine be aware that I optimized
-      ** the following algorithm:
-      **
-      ** Full circle == 100
-      **    relative X-position is sin(2*pi * position/100)
-      **    relative Y-position is cos(2*pi * position/100)
-      **
-      ** Position is incremented from start to end in a number
-      ** of steps.  This number of steps corresponds with the
-      ** size of the pie canvas, each step being 1/PieSize.
-      */
-
+    case GF_PART:
       if(isnan(im->gdes[i].yrule)) /* fetch variable */
 	im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
      
-      if (finite(im->gdes[i].yrule)) {
-	d1 = 2 * M_PI / 100;
-	d2 = im->gdes[i].yrule / PieSize;
-	d3 = PieSize/2;
-
-	for (counter=0;counter<=PieSize;counter++) {
-	  d4 = d1 * (PieStart + d2 * counter);
-	  x=sin(d4) * d3;
-	  y=cos(d4) * d3;
-
-	  gfx_new_line(canvas,
-	    PieCenterX,PieCenterY ,
-	    PieCenterX+x,PieCenterY-y,
-	    1.0,
-	    im->gdes[i].col);
-        }
-        PieStart += im->gdes[i].yrule;
+      if (finite(im->gdes[i].yrule)) {	/* even the fetched var can be NaN */
+	node=gfx_arc_sect(canvas,
+		PieCenterX, PieCenterY,
+		PieSize/2,PieSize/2,
+		M_PI*2.0*PieStart/100.0,
+		M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0,
+		im->gdes[i].col);
+	PieStart += im->gdes[i].yrule;
       }
       break;
-      } /* GF_PART */
     } /* switch */
   }
   grid_paint(im,canvas);
