@@ -2399,14 +2399,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
       /* make sure we do not run into trouble when stacking on NaN */
       for(ii=0;ii<im->xsize;ii++){
         if (isnan(im->gdes[i].p_data[ii])) {
-          double ybase = 0.0;
           if (lastgdes) {
-            ybase = ytr(im,lastgdes->p_data[ii-1]);
-          };
-          if (isnan(ybase) || !lastgdes ){
-            ybase =  ytr(im,areazero);
+            im->gdes[i].p_data[ii] = lastgdes->p_data[ii];
+          } else {
+            im->gdes[i].p_data[ii] =  ytr(im,areazero);
           }
-          im->gdes[i].p_data[ii] = ybase;
         }
       } 
       lastgdes = &(im->gdes[i]);                         
