@@ -148,12 +148,14 @@ fi
 dnl add pic flag in any case this makes sure all our code is relocatable
 CFLAGS="$CFLAGS "`grep pic_flag= libtool | sed -e 's/.*pic_flag=//' -e 's/"//g'`
 
+ZLIB_CFLAGS=$CFLAGS
 dnl it seems that hpux chockes on -fPIC for some reason
 case $target_os in
 *hpux*)
-	CLFAGS=`echo $CFLAGS|sed -e 's/-fPIC/-fpic/g'`
+        ZLIB_CFLAGS=`echo $CFLAGS|sed -e 's/-fPIC/-fpic/g'`
 ;;
 esac
+AC_SUBST(ZLIB_CFLAGS)
 
 dnl Checks for library functions.
 AC_FUNC_STRFTIME
