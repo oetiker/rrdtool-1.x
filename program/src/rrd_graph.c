@@ -13,6 +13,12 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
 
 #include "rrd_graph.h"
 #include "rrd_graph_helper.h"
@@ -2434,6 +2440,14 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 {
     image_desc_t   im;
 
+#ifdef HAVE_TZSET
+    tzset();
+#endif
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_ALL,"");
+#endif
+            
+            
     rrd_graph_init(&im);
 
     rrd_graph_options(argc,argv,&im);
