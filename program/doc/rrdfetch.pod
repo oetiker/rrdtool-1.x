@@ -35,7 +35,7 @@ want to fetch? (AVERAGE,MIN,MAX,LAST)
 
 what interval should the values have (seconds per value). B<rrdfetch> will try
 to match your request, but it will return data even if no absolute
-match is possible.
+match is possible. B<NB.> See note below.
 
 =item B<--start>|B<-s> I<start> (default end-1day)
 
@@ -51,6 +51,62 @@ AT-STYLE TIME SPECIFICATION section for a detailed explanation of how to specify
 end time.
 
 =back
+
+=head2 RESOLUTION INTERVAL
+
+In order to get rrdtool to fetch anything other than the finest resolution RRA 
+B<both> the start and end time must be specified on boundaries that are 
+multiples of the wanted resolution. Consider the following example:
+
+ rrdtool create subdata.rrd -s 10 DS:ds0:GAUGE:300:0:U \
+  RRA:AVERAGE:0.5:30:3600 \
+  RRA:AVERAGE:0.5:90:1200 \
+  RRA:AVERAGE:0.5:360:1200 \
+  RRA:MAX:0.5:360:1200 \
+  RRA:AVERAGE:0.5:8640:600 \
+  RRA:MAX:0.5:8640:600
+
+This RRD collects data every 10 seconds and stores its averages over 5 minutes, 
+15 minutes, 1 hour and 1 day as well as the maxima for 1 hour and 1 day.
+
+Consider now that you want too fetch the 15 minute average data for last hour. 
+So you might try
+
+ rrdtool fetch subdata.rrd AVERAGE -r 900 -s -1h
+
+However, this will almost always result in a time series that is B<NOT> in the 15 
+minute RRA. Therefore the highest resolution RRA, i.e. 5 minute averages, will 
+be chosen which, in this case, is not what you want.
+
+Hence, make sure that
+
+=over 3
+
+=item 1.
+
+both start and end time are a multiple of 900
+
+=item 2.
+
+both start and end time are within the wanted RRA
+
+=back
+
+So, if time now is called "t",
+
+ do end time == int(t/900)*900,
+ start time == end time -1hour, resolution == 900.
+
+In e.g. bash this could look as:
+
+ TIME=$(date +%s); RRDRES=900; rrdtool fetch subdata.rrd AVERAGE -r $RRDRES \
+ -e $(echo $(($TIME/$RRDRES*$RRDRES))) -s e-1h
+
+Or in perl:
+
+ perl -e '$ctime = time; $rrdres = 900; system "rrdtool fetch subdata.rrd AVERAGE \
+ -r $rrdres -e @{[int($ctime/$rrdres)*$rrdres]} -s e-1h"'
+
 
 =head2 AT-STYLE TIME SPECIFICATION
 
