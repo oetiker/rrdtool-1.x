@@ -43,6 +43,9 @@ libtoolize --copy --force
 cp ltmain.sh config
 
 # wget ftp://sources.redhat.com/pub/automake/automake-1.5.tar.gz
+# If autoconf generates undefined MACRO errors, it may be unable
+# to find libtool.m4. Add the -I flag to aclocal to specify the
+# directory location of this file.
 aclocal
 autoheader --warnings=all
 automake --foreign --add-missing --force-missing --copy 
