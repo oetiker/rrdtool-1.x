@@ -58,9 +58,10 @@ find . -name .debs | xargs rm -r
 
 libtoolize --copy --force
 $aclocal
+autoheader --warnings=all --force  
 $automake --foreign --add-missing --force-missing --copy --warnings=all
 autoconf --warnings=all --force
-rm config.h.in
-autoheader --warnings=all --force  
+#rm config.h.in
+#autoheader --warnings=all --force  
 
 
