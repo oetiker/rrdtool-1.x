@@ -307,9 +307,7 @@ not be all that difficult to add.
 
 B<[-i|--interlaced]>
 
-The default is to generate a non-interlaced GIF image. It is recommended
-to generate PNG graphics as they take up to 40% less disk space and
-20-30% less time to generate.
+If images are interlaced they become visible on browsers more quickly.
 
 B<[-g|--no-legend]>
 
