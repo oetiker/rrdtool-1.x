@@ -473,7 +473,7 @@ char* rrdgoodfor(long argc, char **args){
  * */
 #define MAX_STRFTIME_SIZE 256
 char* printstrftime(long argc, char **args){
-	struct	time_value start_tv, end_tv;
+	struct	rrd_time_value start_tv, end_tv;
 	char    *parsetime_error = NULL;
 	char	formatted[MAX_STRFTIME_SIZE];
 	struct tm *the_tm;
@@ -677,7 +677,7 @@ char* drawgraph(long argc, char **args){
   optind=0; /* reset gnu getopt */
   opterr=0; /* reset gnu getopt */
   calfree();
-  if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize) != -1 ) {
+  if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize,NULL) != -1 ) {
     return stralloc(calcpr[0]);
   } else {
     if (rrd_test_error()) {
