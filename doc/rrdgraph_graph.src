@@ -34,7 +34,11 @@
 
 =item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:> C<STACK> ]
 
-=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+=cut
+
+# =item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+
+=pod
 
 =item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
 
@@ -222,18 +226,22 @@ graph this stacked variable anyway you need to make sure that the
 B<LINEx> or B<AREA> it gets stacked on is not unknown. Use a CDEF
 instruction with B<IF> and B<UN> to do so.
 
-=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+=cut
 
-B<RRDtool> has now support for B<pie charts>. If you include the
-B<PART> command, the canvas is extended to make room for a chart
-The size of the canvas is determined by the lesser of
-L<width and height|rrdgraph/item_Size>.
+#=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+#
+#B<RRDtool> has now support for B<pie charts>. If you include the
+#B<PART> command, the canvas is extended to make room for a chart
+#The size of the canvas is determined by the lesser of
+#L<width and height|rrdgraph/item_Size>.
+#
+#Pie parts will be concatenated, the first one will start at the
+#top and parts will be created clockwise.  The size of the part
+#is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
+#function.  It should return a number between 0 and 100, being a
+#percentage.  Providing wrong input will produce undefined results.
 
-Pie parts will be concatenated, the first one will start at the
-top and parts will be created clockwise.  The size of the part
-is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
-function.  It should return a number between 0 and 100, being a
-percentage.  Providing wrong input will produce undefined results.
+=pod
 
 =item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
 
@@ -242,12 +250,6 @@ non-zero and not *UNKNOWN*. The I<fraction> argument specifies the
 length of the tick mark as a fraction of the y-axis; the default value
 is 0.1 (10% of the axis). Note that the color specification is not
 optional.
-
-=back
-
-B<THE NEXT COMMAND IS NOT YET IMPLEMENTED>
-
-=over 4
 
 =item B<SHIFT> : I<vname> , I<offset>
 
