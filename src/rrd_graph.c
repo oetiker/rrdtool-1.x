@@ -2719,7 +2719,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 
 	opt = getopt_long(argc, argv, 
-			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:z:g",
+			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:zg",
 			  long_options, &option_index);
 
 	if (opt == EOF)
