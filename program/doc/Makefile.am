@@ -14,7 +14,7 @@ SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
 POD = rrdtool.pod rrdlast.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
 	cdeftutorial.pod rpntutorial.pod rrdgraph-old.pod  bin_dec_hex.pod \
 	rrdfetch.pod rrdrestore.pod rrddump.pod rrdtune.pod rrdresize.pod \
-	rrdcgi.pod rrdtutorial.pod rrdinfo.pod $(SRC:.src=.pod)
+	rrdxport.pod rrdcgi.pod rrdtutorial.pod rrdinfo.pod $(SRC:.src=.pod)
 
 PMP = RRDs.pm RRDp.pm
 

@@ -5,8 +5,12 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:05  oetiker
- * Initial revision
+ * Revision 1.2  2002/05/07 21:58:32  oetiker
+ * new command rrdtool xport integrated
+ * --  Wolfgang Schrimm <Wolfgang.Schrimm@urz.uni-heidelberg.de>
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
+ * checkin
  *
  *****************************************************************************/
 #ifdef  __cplusplus
@@ -34,6 +38,9 @@ int    rrd_dump(int, char **);
 int    rrd_tune(int, char **);
 time_t rrd_last(int, char **);
 int    rrd_resize(int, char **);
+int    rrd_xport(int, char **, int *, time_t *, time_t *,
+		 unsigned long *, unsigned long *,
+		 char ***, rrd_value_t **);
 
 /* Transplanted from parsetime.h */
 typedef enum {

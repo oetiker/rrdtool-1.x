@@ -23,7 +23,7 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
 	    GF_AREA,GF_STACK,GF_TICK,
 	    GF_DEF, GF_CDEF, GF_VDEF,
-	    GF_PART};
+	    GF_PART, GF_XPORT};
 
 enum vdef_op_en {
 		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
