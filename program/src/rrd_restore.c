@@ -508,8 +508,8 @@ rrd_restore(int argc, char **argv)
 			force_overwrite=1;
 			break;
 		default:
-			rrd_set_error("usage rrdtool %s [--range-check|-r] file.xml file.rrd",argv[0]);
-	return -1;
+			rrd_set_error("usage rrdtool %s [--range-check|-r] [--force-overwrite/-f]  file.xml file.rrd",argv[0]);
+                	return -1;
 			break;
 		}
     }
