@@ -11,7 +11,7 @@ use vars qw(@ISA $loaded);
 
 use RRDs;
 my $start=time;
-my $rrd="randome.rrd";
+my $rrd="random.rrd";
 RRDs::create ($rrd, "--start",$start-1, "--step",300,
 	      "DS:a:GAUGE:600:U:U",
 	      "DS:b:GAUGE:600:U:U",
@@ -26,7 +26,7 @@ for ($t=$start; $t<$start+200*300; $t+=300){
   }
 }
 RRDs::graph "stripes.png",
-  "--title", 'Stripes Demo', 
+  "--title", "Stripes Demo", 
   "--start", $start,
   "--end", "start + 400 min",
   "--interlace", 
@@ -40,8 +40,8 @@ RRDs::graph "stripes.png",
   "AREA:beta#00b674:beta",
   "LINE1:b#ff4400:beta envelope\\c",
   "COMMENT:\\s",
-  "COMMENT:CDEF\:alpha=TIME,1200,%,600,LT,a,UNKN,IF",
-  "COMMENT:CDEF\:beta=TIME,1200,%,600,GE,b,UNKN,IF\\j";
+  "COMMENT:alpha=TIME,1200,%,600,LT,a,UNKN,IF",
+  "COMMENT:beta=TIME,1200,%,600,GE,b,UNKN,IF\\j";
 if ($ERROR = RRDs::error) {
   print "ERROR: $ERROR\n";
 };
