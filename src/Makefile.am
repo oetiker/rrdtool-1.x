@@ -84,7 +84,7 @@ rrdupdate_LDADD	= rrdupdate.o librrd.la
 #	-ln -s ${srcdir}/rrdupdate.c rrd_update.c
 
 rrdupdate.o: rrd_update.c
-	$(COMPILE) -DSTANDALONE -c -o $@ $<
+	$(COMPILE) -DSTANDALONE -c -o $@ $^
 
 rrdtool_SOURCES = 
 rrdtool_DEPENDENCIES = rrd_tool.o
