@@ -56,12 +56,10 @@ find . -name Makefile.in | xargs rm -f _UNKNONW_
 find . -name .libs | xargs rm -r 
 find . -name .debs | xargs rm -r
 
-libtoolize --copy --force
 $aclocal
+libtoolize --copy --force
 autoheader --warnings=all --force  
 $automake --foreign --add-missing --force-missing --copy --warnings=all
 autoconf --warnings=all --force
 #rm config.h.in
 #autoheader --warnings=all --force  
-
-
