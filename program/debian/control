@@ -3,8 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Matt Zimmerman <mdz@debian.org>
 Standards-Version: 3.2.1
-Build-Depends: debhelper (>= 3.0.5), cgilib (>= 0.5), zlib1g-dev (>= 1.2.1), tcl8.4-dev, perl (>= 5.8.0)
-Build-Depends: libart-2.0-dev (>= 2.3.16), libpng12-dev (>= 1.2.5)
+Build-Depends: debhelper (>= 3.0.5), cgilib (>= 0.5), zlib1g-dev (>= 1.2.1), tcl8.4-dev, perl (>= 5.8.0), libart-2.0-dev (>= 2.3.16), libpng12-dev (>= 1.2.5), libfreetype6-dev (>= 2.1.7)
 
 Package: rrdtool
 Architecture: any
