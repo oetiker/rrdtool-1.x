@@ -20,7 +20,7 @@ AC_DEFUN([EX_CHECK_ALL],
  ex_check_save_LIBS=${LIBS}
  ex_check_save_CPPFLAGS=${CPPFLAGS}
  ex_check_save_LDFLAGS=${LDPFLAGS}
- if [ x$7 != x ]; then
+ if test "x$7" != "x"; then
    CPPFLAGS="-I$7 $CPPFLAGS"
  fi
  dnl try compiling naked first

@@ -449,7 +449,7 @@ echo "      Tcl Config: $tcl_config"
 echo "    Build rrdcgi: $enable_rrdcgi"
 echo " Build librrd MT: $enable_pthread"
 echo
-ech
+echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
 echo 
