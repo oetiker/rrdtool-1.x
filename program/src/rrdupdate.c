@@ -5,7 +5,7 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.3  2001/03/04 13:01:55  oetiker
+ * Revision 1.3  2001/03/04 13:01:56  oetiker
  * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
  * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
  * This is backwards compatible! But new files using the Aberrant stuff are not readable
@@ -15,9 +15,8 @@
  * Revision 1.2  2001/03/04 11:14:25  oetiker
  * added at-style-time@value:value syntax to rrd_update
  * --  Dave Bodenstab <imdave@mcs.net>
- *
- * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
- * checkin
+ * Revision 1.1  2001/02/25 22:25:06  oetiker
+ * Initial revision
  *
  *****************************************************************************/
 

@@ -170,6 +170,63 @@ B<RRD>s. The graphing feature is fully configurable. Size, color and
 contents of the graph can be defined freely. Check L<rrdgraph>
 for more information on this.
 
+=item Aberrant Behavior Detection
+
+by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
+
+The  B<rrdtool> also provides the building blocks for near real-time
+aberrant behavior detection. These components include:
+
+=over 12
+
+=item *
+
+An algorithm for predicting the values time series one time step into the future.
+
+=item *
+
+A measure of deviation between the predicted values and the observed values.
+
+=item *
+
+A mechanism to decide if and when an observed value
+or sequence of observed values is I<too deviant> from the predicted value(s).
+
+=back
+
+Each of these components is briefly described:
+
+Holt-Winters Time Series Forecasting Algorithm is an online, or incremental, 
+algorithm that adaptively predicts future observations in a time series. It's 
+forecast is the sum of three components: a baseline (or intercept), a linear 
+trend over time (or slope), and a seasonal coefficient (a periodic effect, 
+such as a daily cycle). There is one seasonal coefficient for each time point 
+in the period (cycle). After a value is observed, each of these components is 
+updated via exponential smoothing. So the algorithm learns from past values 
+and uses them to predict the future. The rate of adaptation is governed by 
+3 parameters, alpha (intercept), beta (slope), and gamma (seasonal). The prediction 
+can also be viewed as a smoothed value for the time series.
+
+The measure of deviation is a seasonal weighted absolute deviation. The term 
+I<seasonal> means deviation is measured separately for each time point in the 
+seasonal cycle. As with Holt-Winters Forecasting, deviation is predicted using 
+the measure computed from past values (but only at that point in the seasonal cycle). 
+After the value is observed, the algorithm learns from the observed value via 
+exponential smoothing. Confidence bands for the observed time series are generated 
+by scaling the sequence of predicted deviation values (we usually think of the sequence 
+as a continuous line rather than a set of discrete points).
+
+Aberrant behavior (a potential failure) is reported whenever the number of 
+times the observed value violates the confidence bands meets or exceeds a 
+specified threshold within a specified temporal window (i.e. 5 violations 
+during the past 45 minutes with a value observed every 5 mintues).
+
+This functionality is embedded in a set of related B<RRAs>. In particular, a FAILURES
+B<RRA> logs potential failures. Presumably a front-end application to B<rrdtool> can
+utilize this B<RRA> to initiate real-time alerts if that is desired.
+
+You can find a detailed description of how to set this up in L<rrdcreate>.
+
 =back
 
 =head2 REMOTE CONTROL

@@ -1,0 +1,18 @@
+RRDTOOL NEWS
+============
+
+In this file I am noting the Major changes to rrdtool
+for details check the cvs ChangeLog
+
+2001/03/21 Tobias Oetiker <oetiker@ee.ethz.ch>
+  Added Aberrant Patch from Jake Brutlag <jakeb@corp.webtv.net>
+  From now one, new rrd files use version tag 0002. They can
+  NOT be read by the old 1.0.x rrdtools
+
+  Jack:
+  Aberrant Behavior Detection support. A brief overview added to
+  rrdtool.pod.  Major updates to rrd_update.c, rrd_create.c. Minor update to
+  other core files.  Updated documentation: rrdcreate.pod, rrdgraph.pod,
+  rrdtune.pod.  This is backwards compatible!  See
+  http://cricket.sourceforge.net/aberrant/rrd_hw.htm
+

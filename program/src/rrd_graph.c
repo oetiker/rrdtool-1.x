@@ -35,7 +35,7 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 
 
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE1,
-	    GF_LINE2,GF_LINE3,GF_AREA,GF_STACK, GF_DEF, GF_CDEF };
+	    GF_LINE2,GF_LINE3,GF_AREA,GF_STACK,GF_TICK,GF_DEF, GF_CDEF};
 
 enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_UNKN,OP_NOW,OP_TIME,OP_LTIME,OP_ADD,OP_MOD,
@@ -346,6 +346,7 @@ enum gf_en gf_conv(char *string){
     conv_if(LINE3,GF_LINE3)
     conv_if(AREA,GF_AREA)
     conv_if(STACK,GF_STACK)
+	conv_if(TICK,GF_TICK)
     conv_if(DEF,GF_DEF)
     conv_if(CDEF,GF_CDEF)
     
@@ -687,12 +688,18 @@ reduce_data(
 		if (isnan(newval)) newval = srcptr[i*(*ds_cnt)+col];
 		else {
 		    switch (cf) {
+                        case CF_HWPREDICT:
+                        case CF_DEVSEASONAL:
+                        case CF_DEVPREDICT:
+                        case CF_SEASONAL:
 			case CF_AVERAGE:
 			    newval += srcptr[i*(*ds_cnt)+col];
 			    break;
 			case CF_MINIMUM:
 			    newval = min (newval,srcptr[i*(*ds_cnt)+col]);
 			    break;
+                        case CF_FAILURES: 
+                        /* an interval contains a failure if any subintervals contained a failure */
 			case CF_MAXIMUM:
 			    newval = max (newval,srcptr[i*(*ds_cnt)+col]);
 			    break;
@@ -704,11 +711,16 @@ reduce_data(
 	    }
 	    if (validval == 0){newval = DNAN;} else{
 		switch (cf) {
-		    case CF_AVERAGE:		
-			newval /= validval;
+                    case CF_HWPREDICT:
+                    case CF_DEVSEASONAL:
+                    case CF_DEVPREDICT:
+                    case CF_SEASONAL:
+                    case CF_AVERAGE:                
+                        newval /= validval;
 			break;
 		    case CF_MINIMUM:
-		    case CF_MAXIMUM:
+                    case CF_FAILURES:
+ 		    case CF_MAXIMUM:
 		    case CF_LAST:
 			break;
 		}
@@ -1389,6 +1401,7 @@ data_proc( image_desc_t *im ){
 	 (im->gdes[i].gf==GF_LINE2) ||
 	 (im->gdes[i].gf==GF_LINE3) ||
 	 (im->gdes[i].gf==GF_AREA) ||
+	 (im->gdes[i].gf==GF_TICK) ||
 	 (im->gdes[i].gf==GF_STACK)){
 	if((im->gdes[i].p_data = malloc((im->xsize +1)
 					* sizeof(rrd_value_t)))==NULL){
@@ -1411,6 +1424,7 @@ data_proc( image_desc_t *im ){
 	    case GF_LINE2:
 	    case GF_LINE3:
 	    case GF_AREA:
+		case GF_TICK:
 		paintval = 0.0;
 	    case GF_STACK:
 		vidx = im->gdes[ii].vidx;
@@ -1430,7 +1444,8 @@ data_proc( image_desc_t *im ){
 		if (! isnan(value)) {
 		  paintval += value;
 		  im->gdes[ii].p_data[i] = paintval;
-		  if (finite(paintval)){
+		  /* GF_TICK: the data values are not relevant for min and max */
+		  if (finite(paintval) && im->gdes[ii].gf != GF_TICK ){
   		   if (isnan(minval) || paintval <  minval)
 		     minval = paintval;
 		   if (isnan(maxval) || paintval >  maxval)
@@ -1669,6 +1684,10 @@ print_calc(image_desc_t *im, char ***prdata)
 		}
 
 		switch (im->gdes[i].cf){
+		case CF_HWPREDICT:
+		case CF_DEVPREDICT:
+		case CF_DEVSEASONAL:
+		case CF_SEASONAL:
 		case CF_AVERAGE:
 		    validsteps++;
 		    printval += im->gdes[vidx].data[ii];
@@ -1676,6 +1695,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		case CF_MINIMUM:
 		    printval = min( printval, im->gdes[vidx].data[ii]);
 		    break;
+	    case CF_FAILURES:
 		case CF_MAXIMUM:
 		    printval = max( printval, im->gdes[vidx].data[ii]);
 		    break;
@@ -1683,7 +1703,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		    printval = im->gdes[vidx].data[ii];
 		}
 	    }
-	    if (im->gdes[i].cf ==  CF_AVERAGE) {
+	    if (im->gdes[i].cf ==  CF_AVERAGE || im -> gdes[i].cf > CF_LAST) {
 		if (validsteps > 1) {
 		    printval = (printval / validsteps);
 		}
@@ -1738,6 +1758,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_LINE2:
 	case GF_LINE3:
 	case GF_AREA:
+	case GF_TICK:
 	case GF_STACK:
 	case GF_HRULE:
 	case GF_VRULE:
@@ -2423,7 +2444,7 @@ MkLineBrush(image_desc_t *im,long cosel, enum gf_en typsel){
 
 int lazy_check(image_desc_t *im){
     FILE *fd = NULL;
-    int size = 1;
+	int size = 1;
     struct stat  gifstat;
     
     if (im->lazy == 0) return 0; /* no lazy option */
@@ -2438,11 +2459,11 @@ int lazy_check(image_desc_t *im){
       return 0; /* the file does not exist */
     switch (im->imgformat) {
     case IF_GIF:
-	size = GifSize(fd,&(im->xgif),&(im->ygif));
-	break;
+	   size = GifSize(fd,&(im->xgif),&(im->ygif));
+	   break;
     case IF_PNG:
-	size = PngSize(fd,&(im->xgif),&(im->ygif));
-	break;
+	   size = PngSize(fd,&(im->xgif),&(im->ygif));
+	   break;
     }
     fclose(fd);
     return size;
@@ -2592,7 +2613,22 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	case GF_COMMENT:
 	case GF_HRULE:
 	case GF_VRULE:
-	  break;
+		break;
+	case GF_TICK:
+		for (ii = 0; ii < im->xsize; ii++)
+		{
+		   if (!isnan(im->gdes[i].p_data[ii]) && 
+			   im->gdes[i].p_data[ii] > 0.0)
+		   { 
+			  /* generate a tick */
+			  gdImageLine(gif, im -> xorigin + ii, 
+				 im -> yorigin - (im -> gdes[i].yrule * im -> ysize),
+				 im -> xorigin + ii, 
+				 im -> yorigin,
+				 im -> gdes[i].col.i);
+		   }
+		}
+		break;
 	case GF_LINE1:
 	case GF_LINE2:
 	case GF_LINE3:
@@ -3181,6 +3217,48 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 		return -1;
 	    }
 	    break;
+	case GF_TICK:
+	    if((scancount=sscanf(
+		&argv[i][argstart],
+		"%29[^:#]#%2x%2x%2x:%lf:%n",
+		varname,
+		&col_red,
+		&col_green,
+		&col_blue,
+		&(im.gdes[im.gdes_c-1].yrule),
+		&strstart))>=1)
+		{
+		im.gdes[im.gdes_c-1].col.red = col_red;
+		im.gdes[im.gdes_c-1].col.green = col_green;
+		im.gdes[im.gdes_c-1].col.blue = col_blue;
+		if(strstart <= 0){
+		    im.gdes[im.gdes_c-1].legend[0] = '\0';
+		} else { 
+		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+		}
+		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
+		    im_free(&im);
+		    rrd_set_error("unknown variable '%s'",varname);
+		    return -1;
+		}
+		if (im.gdes[im.gdes_c-1].yrule <= 0.0 || im.gdes[im.gdes_c-1].yrule > 1.0)
+		{
+		    im_free(&im);
+		    rrd_set_error("Tick mark scaling factor out of range");
+		    return -1;
+		}
+		if (scancount < 4)
+		   im.gdes[im.gdes_c-1].col.red = -1;		
+	    if (scancount < 5) 
+		   /* default tick marks: 10% of the y-axis */
+		   im.gdes[im.gdes_c-1].yrule = 0.1;
+
+		} else {
+		   im_free(&im);
+		   rrd_set_error("can't parse '%s'",&argv[i][argstart]);
+		   return -1;
+		} /* endif sscanf */
+		break;
 	case GF_STACK:
 	    if(linepass == 0){
 		im_free(&im);

@@ -22,6 +22,8 @@ RRD_C_FILES =		\
 	getopt1.c	\
 	gifsize.c	\
 	parsetime.c	\
+	hash_32.c	\
+        rrd_hw.c	\
 	pngsize.c	\
 	rrd_create.c	\
 	rrd_diff.c	\
