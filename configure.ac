@@ -416,22 +416,24 @@ AC_IEEE([out of the box], works, , , ,
        AC_IEEE([with the -mieee switch], mswitch, , , ,
          [CFLAGS="$_cflags -q float=rndsngl"
          AC_IEEE([with the -q float=rndsngl switch], qswitch, , , ,
-           [CFLAGS="$_cflags -OPT:IEEE_comparisons=ON"
-           AC_IEEE([with the -OPT:IEEE_comparisons=ON switch], ieeecmpswitch, , , ,
-             [CFLAGS=$_cflags
-             AC_IEEE([with fpsetmask(0)], mask,
-               [#include <floatingpoint.h>], [fpsetmask(0)],
-               [AC_DEFINE(MUST_DISABLE_FPMASK)
-	       PERLFLAGS="CCFLAGS=-DMUST_DISABLE_FPMASK"],
-               [AC_IEEE([with signal(SIGFPE,SIG_IGN)], sigfpe,
-                 [#include <signal.h>], [signal(SIGFPE,SIG_IGN)],
-                 [AC_DEFINE(MUST_DISABLE_SIGFPE)
-                 PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
-                 AC_MSG_ERROR([
+           [CFLAGS="$_cflags -OPT:IEEE_NaN_inf=ON"
+           AC_IEEE([with the -OPT:IEEE_NaN_inf=ON switch], ieeenaninfswitch, , , ,
+             [CFLAGS="$_cflags -OPT:IEEE_comparisons=ON"
+             AC_IEEE([with the -OPT:IEEE_comparisons=ON switch], ieeecmpswitch, , , ,
+               [CFLAGS=$_cflags
+               AC_IEEE([with fpsetmask(0)], mask,
+                 [#include <floatingpoint.h>], [fpsetmask(0)],
+                 [AC_DEFINE(MUST_DISABLE_FPMASK)
+	         PERLFLAGS="CCFLAGS=-DMUST_DISABLE_FPMASK"],
+                 [AC_IEEE([with signal(SIGFPE,SIG_IGN)], sigfpe,
+                   [#include <signal.h>], [signal(SIGFPE,SIG_IGN)],
+                   [AC_DEFINE(MUST_DISABLE_SIGFPE)
+                   PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
+                   AC_MSG_ERROR([
 Your Compiler does not do propper IEEE math ... Please find out how to
 make IEEE math work with your compiler and let me know (oetiker@ee.ethz.ch).
 Check config.log to see what went wrong ...
-]))])])])])])])])])
+]))])])])])])])])])])
 
 
 AC_CONFIG_FILES([examples/shared-demo.pl			\
