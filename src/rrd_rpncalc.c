@@ -76,8 +76,8 @@ rpnp_t * rpn_expand(rpn_cdefds_t *rpnc)
  * into a CDEF string. This function is used by rrd_dump.
  * arguments:
  *  rpnc: an array of compact RPN operator nodes
- *  rrd: a pointer an rrd header (only the ds_cnt and ds_def elements need 
- *   to be valid) for lookup of data source names by index
+ *  ds_def: a pointer to the data source definition section of an RRD header
+ *   for lookup of data source names by index
  *  str: out string, memory is allocated by the function, must be freed by the
  *   the caller */
 void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)

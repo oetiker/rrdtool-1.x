@@ -476,7 +476,7 @@ erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx)
 	  fprintf(stderr,"erase_violations called for non-FAILURES RRA: %s\n",
 	     rrd -> rra_def[rra_idx].cf);
 #endif
-      return;
+	  return;
    }
 
 #ifdef DEBUG
@@ -488,12 +488,11 @@ erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx)
    fprintf(stderr,"\n");
 #endif
 
-   /* WARNING: this cast makes XML files non-portable across platforms,
-	* because an array of longs on disk is treated as an array of chars
-	* in memory. */
+   /* WARNING: an array of longs on disk is treated as an array of chars
+    * in memory. */
    violations_array = (char *) ((void *) rrd -> cdp_prep[cdp_idx].scratch);
    /* erase everything in the part of the CDP scratch array that will be
-	* used to store violations for the current window */
+    * used to store violations for the current window */
    for (i = rrd -> rra_def[rra_idx].par[RRA_window_len].u_cnt; i > 0; i--)
    {
 	  violations_array[i-1] = 0;
@@ -522,6 +521,7 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    unsigned long offset;
    FIFOqueue **buffers;
    rrd_value_t *working_average;
+   rrd_value_t *baseline;
 
    offset = floor(0.025*row_count);
    if (offset == 0) return 0; /* no smoothing */
@@ -570,6 +570,7 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    }
    /* need working average initialized to 0 */
    working_average = (rrd_value_t *) calloc(row_length,sizeof(rrd_value_t));
+   baseline = (rrd_value_t *) calloc(row_length,sizeof(rrd_value_t));
 
    /* compute sums of the first 2*offset terms */ 
    for (i = 0; i < 2*offset; ++i)
@@ -597,18 +598,56 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 	     /* overwrite rdd_values entry, the old value is already
 	      * saved in buffers */
 	     rrd_values[k*row_length + j] = working_average[j]/(2*offset + 1);
+	     baseline[j] += rrd_values[k*row_length + j];
 
 	     /* remove a term from the sum */
 	     working_average[j] -= queue_pop(buffers[j]);
 	  }	
    } 
-
+ 
    for (i = 0; i < row_length; ++i)
    {
 	  queue_dealloc(buffers[i]);
+	  baseline[i] /= row_count; 
    }
    free(buffers);
    free(working_average);
+
+   if (cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
+   for (j = 0; j < row_length; ++j)
+   {
+   for (i = 0; i < row_count; ++i)
+   {
+	 rrd_values[i*row_length + j] -= baseline[j];
+   }
+	 /* update the baseline coefficient,
+	  * first, compute the cdp_index. */
+	 offset = (rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt)
+	  * row_length + j;
+	 (rrd->cdp_prep[offset]).scratch[CDP_hw_intercept].u_val += baseline[j];
+   }
+   /* flush cdp to disk */
+   fflush(rrd_file);
+   if (fseek(rrd_file,sizeof(stat_head_t) + 
+	  rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
+	  rrd->stat_head->rra_cnt * sizeof(rra_def_t) + 
+	  sizeof(live_head_t) +
+	  rrd->stat_head->ds_cnt * sizeof(pdp_prep_t),SEEK_SET))
+   {
+	  rrd_set_error("apply_smoother: seek to cdp_prep failed");
+	  free(rrd_values);
+	  return -1;
+   }
+   if (fwrite( rrd -> cdp_prep,
+	  sizeof(cdp_prep_t),
+	  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt, rrd_file) 
+	  != (rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt) )
+   { 
+	  rrd_set_error("apply_smoother: cdp_prep write failed");
+	  free(rrd_values);
+	  return -1;
+   }
+   } /* endif CF_SEASONAL */ 
 
    /* flush updated values to disk */
    fflush(rrd_file);
@@ -620,7 +659,7 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    }
    /* write as a single block */
    if (fwrite(rrd_values,sizeof(rrd_value_t),row_length*row_count,rrd_file)
-       != row_length*row_count)
+	  != row_length*row_count)
    {
 	  rrd_set_error("apply_smoother: write failed to %lu",rra_start);
 	  free(rrd_values);
@@ -630,6 +669,97 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    fflush(rrd_file);
    free(rrd_values);
    return 0;
+}
+
+/* Reset aberrant behavior model coefficients, including intercept, slope,
+ * seasonal, and seasonal deviation for the specified data source. */
+void
+reset_aberrant_coefficients(rrd_t *rrd, FILE *rrd_file, unsigned long ds_idx)
+{
+   unsigned long cdp_idx, rra_idx, i;
+   unsigned long cdp_start, rra_start;
+   rrd_value_t nan_buffer = DNAN;
+
+   /* compute the offset for the cdp area */
+   cdp_start = sizeof(stat_head_t) + 
+	  rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
+	  rrd->stat_head->rra_cnt * sizeof(rra_def_t) + 
+	  sizeof(live_head_t) +
+	  rrd->stat_head->ds_cnt * sizeof(pdp_prep_t);
+   /* compute the offset for the first rra */
+   rra_start = cdp_start + 
+	  (rrd->stat_head->ds_cnt) * (rrd->stat_head->rra_cnt) * sizeof(cdp_prep_t) +
+	  rrd->stat_head->rra_cnt * sizeof(rra_ptr_t);
+
+   /* loop over the RRAs */
+   for (rra_idx = 0; rra_idx < rrd -> stat_head -> rra_cnt; rra_idx++)
+   {
+	  cdp_idx = rra_idx * (rrd-> stat_head-> ds_cnt) + ds_idx;
+	  switch (cf_conv(rrd -> rra_def[rra_idx].cf_nam))
+	  {
+		 case CF_HWPREDICT:
+	        init_hwpredict_cdp(&(rrd -> cdp_prep[cdp_idx]));
+			break;
+		 case CF_SEASONAL:
+		 case CF_DEVSEASONAL:
+			/* don't use init_seasonal because it will reset burn-in, which
+			 * means different data sources will be calling for the smoother
+			 * at different times. */
+	        rrd->cdp_prep[cdp_idx].scratch[CDP_hw_seasonal].u_val = DNAN;
+	        rrd->cdp_prep[cdp_idx].scratch[CDP_hw_last_seasonal].u_val = DNAN;
+			/* move to first entry of data source for this rra */
+			fseek(rrd_file,rra_start + ds_idx * sizeof(rrd_value_t),SEEK_SET);
+			/* entries for the same data source are not contiguous, 
+			 * temporal entries are contiguous */
+	        for (i = 0; i < rrd->rra_def[rra_idx].row_cnt; ++i)
+			{
+			   if (fwrite(&nan_buffer,sizeof(rrd_value_t),1,rrd_file) != 1)
+			   {
+                  rrd_set_error(
+				  "reset_aberrant_coefficients: write failed data source %lu rra %s",
+				  ds_idx,rrd->rra_def[rra_idx].cf_nam);
+				  return;
+			   } 
+			   fseek(rrd_file,(rrd->stat_head->ds_cnt - 1) * 
+				  sizeof(rrd_value_t),SEEK_CUR);
+			}
+			break;
+		 case CF_FAILURES:
+			erase_violations(rrd,cdp_idx,rra_idx);
+			break;
+		 default:
+			break;
+	  }
+	  /* move offset to the next rra */
+	  rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt * 
+		 sizeof(rrd_value_t);
+   }
+   fseek(rrd_file,cdp_start,SEEK_SET);
+   if (fwrite( rrd -> cdp_prep,
+	  sizeof(cdp_prep_t),
+	  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt, rrd_file) 
+	  != (rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt) )
+   {
+	  rrd_set_error("reset_aberrant_coefficients: cdp_prep write failed");
+	  return;
+   }
+}
+
+void init_hwpredict_cdp(cdp_prep_t *cdp)
+{
+   cdp->scratch[CDP_hw_intercept].u_val = DNAN;
+   cdp->scratch[CDP_hw_last_intercept].u_val = DNAN;
+   cdp->scratch[CDP_hw_slope].u_val = DNAN;
+   cdp->scratch[CDP_hw_last_slope].u_val = DNAN;
+   cdp->scratch[CDP_null_count].u_cnt = 1;
+   cdp->scratch[CDP_last_null_count].u_cnt = 1;
+}
+
+void init_seasonal_cdp(cdp_prep_t *cdp)
+{
+   cdp->scratch[CDP_hw_seasonal].u_val = DNAN;
+   cdp->scratch[CDP_hw_last_seasonal].u_val = DNAN;
+   cdp->scratch[CDP_init_seasonal].u_cnt = 1;
 }
 
 int

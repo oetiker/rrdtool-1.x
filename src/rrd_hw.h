@@ -15,6 +15,9 @@ int lookup_seasonal(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 void erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx);
 int apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    FILE *rrd_file);
+void reset_aberrant_coefficients(rrd_t *rrd, FILE *rrd_file, unsigned long ds_idx);
+void init_hwpredict_cdp(cdp_prep_t *);
+void init_seasonal_cdp(cdp_prep_t *);
 #define BURNIN_CYCLES 3
 
 /* a standard fixed-capacity FIFO queue implementation */
