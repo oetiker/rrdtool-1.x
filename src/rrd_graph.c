@@ -2978,7 +2978,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    char font[1024];
 
 	    if(sscanf(optarg,
-				"%10[A-Z]:%lf:%s",
+				"%10[A-Z]:%lf:%1000s",
 				prop,&size,font) == 3){
 		int sindex;
 		if((sindex=text_prop_conv(prop)) != -1){
