@@ -1,0 +1,29 @@
+=head1 NAME
+
+rrdtool last - Return the date of the last data sample in an B<RRD>
+
+=for html <div align="right"><a href="rrdlast.pdf">PDF</a> version.</div>
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<last> I<filename>
+
+=head1 DESCRIPTION
+
+The B<last> function returns the UNIX timestamp when the RRD was last
+updated.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> that contains the data.
+
+=back
+
+=head1 AUTHOR
+
+Russ Wright <rwwright@home.com>
+
+
+

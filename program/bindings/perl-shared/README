@@ -1,0 +1,12 @@
+These are the Perl bindings for rrdtool as a shared library. To compile do
+the following:
+
+perl Makefile.PL
+make test
+
+(win32 users try perl ntmake.pl)
+
+* if dynamic linking does not work, try
+
+perl Makefile.PL LINKTYPE=static
+make test

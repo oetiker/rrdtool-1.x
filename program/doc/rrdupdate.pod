@@ -1,0 +1,75 @@
+=head1 NAME
+
+rrdtool update - Store a new set of values into the rrd
+
+=for html <div align="right"><a href="rrdupdate.pdf">PDF</a> version.</div>
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<update> I<filename> 
+S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]> 
+S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]> 
+S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
+
+=head1 DESCRIPTION
+
+The B<update> function feeds new data values into an B<RRD>. The
+data gets time aligned according to the properties of the B<RRD> to
+which the data is written.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> you want to update.
+
+=item B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...
+
+by default, the update function expects the data input in the order,
+the data sources are defined in the RRD. This is not very error
+resistant, as you might be sending the wrong data into a RRD.
+
+The template switch allows you to specify which data sources you are
+going to update and in which order. If the data sources specified in
+the template are not available in the rrd file, the update process
+will abort with an error message.
+
+=item B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]
+
+The data used for updating the RRD was acquired at a certain time. This
+time can either be defined in seconds since 1970-01-01. Or by using the
+letter 'N' the update time is set to be the current time. Negative time
+values are subtracted from the current time.
+Getting the timing right to the second is especially
+important when you are working with data-sources of type B<COUNTER>,
+B<DERIVE> or B<ABSOLUTE>. 
+
+The remaining elements of the argument are DS updates. The order of this list is
+the same as the order the data sources were defined in the rra.
+If there is no data for a certain data-source, the letter 
+B<U> (eg. N:0.1:U:1) can be defined.
+
+The format of the value acquired from the data source is dependent of the
+data source type chosen. Normally it will be numeric, but the data acquisition
+modules my impose their very own parsing of this parameter as long as the colon
+(B<:>) remains the data source value separator.
+
+=back
+
+=head1 EXAMPLE
+
+C<rrdtool update demo1.rrd N:3.44:3.15:U:23>
+
+Update the database file demo1.rrd with 3 known and one I<*UNKNOWN*>
+value. Use the current time as the update time.
+
+C<rrdtool update demo2.rrd 887457267:U 887457521:22 88745790:2.7>
+
+Update the database file demo2.rrd which expects data from a single
+data-source, three times. First with an I<*UNKNOWN*> value then with two
+normal readings. The update interval seems to be around 300 seconds.
+
+=head1 AUTHOR
+
+Tobias Oetiker <oetiker@ee.ethz.ch>
+

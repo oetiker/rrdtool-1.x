@@ -1,0 +1,49 @@
+Compiling RRDtool on NT ... work in progress
+---------------------------------------------------------------
+                         by Tamas Kovacshazy (khazy@mit.bme.hu)
+
+Persisting Problems with the current NT port:
+
+Unfortunately, the RRD perl modules does not work with Perl
+(ActivePerl) using the current distribution.
+
+The RRD shared perl module can be compiled after some
+modification...
+
+Follow these steps:
+
+0. Install perl if you do not have it!
+   Visit http://www.ActiveState.com/pw32/ for a complete distribution.
+
+1. Copy ..\gd1.2\release\gd.lib  to ..\gd1.2\
+2. Copy ..\src\release\rrd.lib to ..\src
+3. perl Makefile.pl
+
+In this step the system complains about something I do not
+understand. The error message is the following:
+
+Note (probably harmless): No library found for '-lm'
+
+Is a library missing? But it does not stop with an error...
+
+4. nmake test (You must have Visual C++ on the machine!)
+
+After these steps it generates the test files (gifs and rrds),
+and they seem to be good.
+
+The real problem in the shared perl modul is the following:
+
+I do not know how this installation stuff works. The problem is
+that the installation stuff looks for the gd.lib and the
+rrd.lib in the ..\gd1.2 and ..\src directory. The UNIX compile
+puts the files into these directories, but the NT compile does
+not.
+
+It is all for today,
+
+khazy
+
+Tamas Kovacshazy  E-mail: khazy@mit.bme.hu  
+WWW: http://www.mit.bme.hu/~khazy
+Technical University of Budapest 
+Department of Measurement and Information Systems

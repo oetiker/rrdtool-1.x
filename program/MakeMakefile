@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Run this script after the first cvs checkout to build
+# makefiles and friends
+set -x
+#
+automake --foreign --verbose
+autoconf --localdir=./config
