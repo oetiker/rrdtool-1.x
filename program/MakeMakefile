@@ -4,16 +4,19 @@
 # makefiles and friends
 set -x
 #
-find . -name Makefile | xargs rm
-find . -name Makefile.in | xargs rm
+find . -name Makefile | xargs rm -f
+find . -name Makefile.in | xargs rm -f
 
-# libtool 1.4.2
+
+# wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.4.2.tar.gz
 libtoolize --automake
-# automake 2.12
+
+# wget ftp://sources.redhat.com/pub/automake/automake-1.5.tar.gz
 aclocal
 autoheader --warnings=all
 automake --foreign --add-missing --force-missing --copy 
-# autoconf 2.52
+
+# wget ftp://ftp.gnu.org/gnu/autoconf/autoconf-2.52.tar.gz
 autoconf 
 
 
