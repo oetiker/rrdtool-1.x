@@ -137,7 +137,7 @@ Use GNU   diff --unified --recursive olddir newdir   to build your patches.
 
 The latest Version:
 -------------------
-Is available from http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
+Is available from http://people.ee.ethz.ch/oetiker/webtools/rrdtool/
 
 
 Tobias Oetiker <oetiker@ee.ethz.ch>
