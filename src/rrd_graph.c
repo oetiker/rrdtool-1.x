@@ -6,6 +6,9 @@
 
 
 #include <sys/stat.h>
+
+#include "rrd_tool.h"
+
 #ifdef WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -18,8 +21,6 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-
-#include "rrd_tool.h"
 
 #include "rrd_graph.h"
 #include "rrd_graph_helper.h"
