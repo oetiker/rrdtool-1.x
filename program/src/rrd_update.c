@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.14  2003/11/11 19:46:21  oetiker
+ * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
+ *
  * Revision 1.13  2003/11/11 19:38:03  oetiker
  * rrd files should NOT change size ever ... bulk update code wa buggy.
  * -- David M. Grimes <dgrimes@navisite.com>
@@ -466,7 +469,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	char *p;
 	char *parsetime_error = NULL;
 	enum {atstyle, normal} timesyntax;
-	struct time_value ds_tv;
+	struct rrd_time_value ds_tv;
         if (stepper == NULL){
                 rrd_set_error("failed duplication argv entry");
                 free(updvals);

@@ -475,7 +475,7 @@ expect2(int desired, char *complain_fmt, ...)
  *              It allso applies those m-guessing euristics.
  */
 static char *
-plus_minus(struct time_value *ptv, int doop)
+plus_minus(struct rrd_time_value *ptv, int doop)
 {
     static int op = PLUS;
     static int prev_multiplier = -1;
@@ -555,7 +555,7 @@ plus_minus(struct time_value *ptv, int doop)
  * tod() computes the time of day (TIME-OF-DAY-SPEC)
  */
 static char *
-tod(struct time_value *ptv)
+tod(struct rrd_time_value *ptv)
 {
     int hour, minute = 0;
     int tlen;
@@ -631,7 +631,7 @@ tod(struct time_value *ptv)
  * assign_date() assigns a date, adjusting year as appropriate
  */
 static char *
-assign_date(struct time_value *ptv, long mday, long mon, long year)
+assign_date(struct rrd_time_value *ptv, long mday, long mon, long year)
 {
     if (year > 138) {
 	if (year > 1970)
@@ -659,7 +659,7 @@ assign_date(struct time_value *ptv, long mday, long mon, long year)
  * day() picks apart DAY-SPEC-[12]
  */
 static char *
-day(struct time_value *ptv)
+day(struct rrd_time_value *ptv)
 {
     long mday=0, wday, mon, year = ptv->tm.tm_year;
     int tlen;
@@ -777,7 +777,7 @@ day(struct time_value *ptv)
 
 /*
  * parsetime() is the external interface that takes tspec, parses
- * it and puts the result in the time_value structure *ptv.
+ * it and puts the result in the rrd_time_value structure *ptv.
  * It can return either absolute times (these are ensured to be
  * correct) or relative time references that are expected to be
  * added to some absolute time value and then normalized by
@@ -785,7 +785,7 @@ day(struct time_value *ptv)
  * the pointer to the error message in the case of problems
  */
 char *
-parsetime(char *tspec, struct time_value *ptv)
+parsetime(char *tspec, struct rrd_time_value *ptv)
 {
     time_t now = time(NULL);
     int hr = 0;
@@ -913,8 +913,8 @@ parsetime(char *tspec, struct time_value *ptv)
 } /* parsetime */
 
 
-int proc_start_end (struct time_value *start_tv, 
-		    struct time_value *end_tv, 
+int proc_start_end (struct rrd_time_value *start_tv, 
+		    struct rrd_time_value *end_tv, 
 		    time_t *start, 
 		    time_t *end){
     if (start_tv->type == RELATIVE_TO_END_TIME  && /* same as the line above */

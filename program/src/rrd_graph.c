@@ -2704,7 +2704,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     char		scan_gtm[12],scan_mtm[12],scan_ltm[12],col_nam[12];
     time_t		start_tmp=0,end_tmp=0;
     long		long_tmp;
-    struct time_value	start_tv, end_tv;
+    struct rrd_time_value	start_tv, end_tv;
     gfx_color_t         color;
 
     parsetime("end-24h", &start_tv);
