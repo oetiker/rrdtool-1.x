@@ -1,7 +1,7 @@
 /****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.x  Copyright Tobias Oetiker, 1997 - 2005
  ****************************************************************************
- * rrd__graph.c  make creates ne rrds
+ * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
 
 
@@ -32,11 +32,8 @@ char rrd_win_default_font[80];
 #endif
 
 #ifndef RRD_DEFAULT_FONT
-#ifndef WIN32
+/* there is special code later to pick Cour.ttf when running on windows */
 #define RRD_DEFAULT_FONT "VeraMono.ttf"
-/* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" */
-/* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/Arial.ttf" */
-#endif
 #endif
 
 text_prop_t text_prop[] = {   
@@ -102,11 +99,11 @@ gfx_color_t graph_col[] =   /* default colors */
      0xF0F0F0FF,   /* background */
      0xD0D0D0FF,   /* shade A    */
      0xA0A0A0FF,   /* shade B    */
-     0x909090FF,   /* grid       */
-     0xE05050FF,   /* major grid */
+     0x90909080,   /* grid       */
+     0xE0505080,   /* major grid */
      0x000000FF,   /* font       */ 
-     0x000000FF,   /* frame      */
-     0xFF0000FF  /* arrow      */
+     0xFF0000FF,   /* arrow      */
+     0x404040FF    /* axis       */
 };
 
 
@@ -224,8 +221,8 @@ enum grc_en grc_conv(char *string){
     conv_if(GRID,GRC_GRID)
     conv_if(MGRID,GRC_MGRID)
     conv_if(FONT,GRC_FONT)
-    conv_if(FRAME,GRC_FRAME)
     conv_if(ARROW,GRC_ARROW)
+    conv_if(AXIS,GRC_AXIS)
 
     return -1;	
 }
@@ -1374,7 +1371,6 @@ leg_place(image_desc_t *im)
 {
     /* graph labels */
     int   interleg = im->text_prop[TEXT_PROP_LEGEND].size*2.0;
-    int   box =im->text_prop[TEXT_PROP_LEGEND].size*1.5;
     int   border = im->text_prop[TEXT_PROP_LEGEND].size*2.0;
     int   fill=0, fill_last;
     int   leg_c = 0;
@@ -1409,7 +1405,8 @@ leg_place(image_desc_t *im)
 	leg_cc = strlen(im->gdes[i].legend);
 	
 	/* is there a controle code ant the end of the legend string ? */ 
-	if (leg_cc >= 2 && im->gdes[i].legend[leg_cc-2] == '\\') {
+	/* and it is not a tab \\t */
+	if (leg_cc >= 2 && im->gdes[i].legend[leg_cc-2] == '\\' && im->gdes[i].legend[leg_cc-1] != 't') {
 	    prt_fctn = im->gdes[i].legend[leg_cc-1];
 	    leg_cc -= 2;
 	    im->gdes[i].legend[leg_cc] = '\0';
@@ -1429,10 +1426,6 @@ leg_place(image_desc_t *im)
 	   if (fill > 0){ 
  	       /* no interleg space if string ends in \g */
 	       fill += legspace[i];
-	    }
-	    if (im->gdes[i].gf != GF_GPRINT && 
-		im->gdes[i].gf != GF_COMMENT) { 
-		fill += box; 	   
 	    }
 	   fill += gfx_get_text_width(im->canvas, fill+border,
 				      im->text_prop[TEXT_PROP_LEGEND].font,
@@ -1466,7 +1459,7 @@ leg_place(image_desc_t *im)
 	}
 
 
-	if (prt_fctn != '\0'){
+	if (prt_fctn != '\0'){	
 	    leg_x = border;
 	    if (leg_c >= 2 && prt_fctn == 'j') {
 		glue = (im->ximg - fill - 2* border) / (leg_c-1);
@@ -1489,12 +1482,9 @@ leg_place(image_desc_t *im)
 				      im->gdes[ii].legend, 0) 
 		   + legspace[ii]
 		   + glue;
-		if (im->gdes[ii].gf != GF_GPRINT && 
-		    im->gdes[ii].gf != GF_COMMENT) 
-		    leg_x += box; 	   
-	    }	    
-	    leg_y = leg_y + im->text_prop[TEXT_PROP_LEGEND].size*1.2;
-	    if (prt_fctn == 's') leg_y -=  im->text_prop[TEXT_PROP_LEGEND].size*1.2;	   
+	    }	                
+	    leg_y += im->text_prop[TEXT_PROP_LEGEND].size*1.7;
+	    if (prt_fctn == 's') leg_y -=  im->text_prop[TEXT_PROP_LEGEND].size;	   
 	    fill = 0;
 	    leg_c = 0;
 	    mark = ii;
@@ -1846,21 +1836,21 @@ axis_paint(
 	   )
 {   
     /* draw x and y axis */
-    gfx_new_line ( im->canvas, im->xorigin+im->xsize,im->yorigin,
+    /* gfx_new_line ( im->canvas, im->xorigin+im->xsize,im->yorigin,
 		      im->xorigin+im->xsize,im->yorigin-im->ysize,
-		      GRIDWIDTH, im->graph_col[GRC_GRID]);
+		      GRIDWIDTH, im->graph_col[GRC_AXIS]);
        
        gfx_new_line ( im->canvas, im->xorigin,im->yorigin-im->ysize,
 		         im->xorigin+im->xsize,im->yorigin-im->ysize,
-		         GRIDWIDTH, im->graph_col[GRC_GRID]);
+		         GRIDWIDTH, im->graph_col[GRC_AXIS]); */
    
        gfx_new_line ( im->canvas, im->xorigin-4,im->yorigin,
 		         im->xorigin+im->xsize+4,im->yorigin,
-		         MGRIDWIDTH, im->graph_col[GRC_GRID]);
+		         MGRIDWIDTH, im->graph_col[GRC_AXIS]);
    
        gfx_new_line ( im->canvas, im->xorigin,im->yorigin+4,
 		         im->xorigin,im->yorigin-im->ysize-4,
-		         MGRIDWIDTH, im->graph_col[GRC_GRID]);
+		         MGRIDWIDTH, im->graph_col[GRC_AXIS]);
    
     
     /* arrow for X axis direction */
@@ -1869,9 +1859,7 @@ axis_paint(
 		   im->xorigin+im->xsize+3,  im->yorigin+4,
 		   im->xorigin+im->xsize+8,  im->yorigin+0.5, /* LINEOFFSET */
 		   im->graph_col[GRC_ARROW]);
-   
-   
-   
+
 }
 
 void
@@ -1924,34 +1912,15 @@ grid_paint(image_desc_t   *im)
     }
 
     /* yaxis description */
-/*	if (im->canvas->imgformat != IF_PNG) {*/
-	if (1) {
-	    gfx_new_text( im->canvas,
-			  7, (im->yorigin - im->ysize/2),
-			  im->graph_col[GRC_FONT],
-			  im->text_prop[TEXT_PROP_AXIS].font,
-			  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 
-			  RRDGRAPH_YLEGEND_ANGLE,
-			  GFX_H_LEFT, GFX_V_CENTER,
-			  im->ylegend);
-	} else {
-	    /* horrible hack until we can actually print vertically */
-	    {
-		int n;
-		char s[2];
-		for (n=0;n< (int)strlen(im->ylegend);n++) {
-		    s[0]=im->ylegend[n];
-		    s[1]='\0';
-		    gfx_new_text(im->canvas,7,im->text_prop[TEXT_PROP_AXIS].size*(n+1),
-			im->graph_col[GRC_FONT],
-			im->text_prop[TEXT_PROP_AXIS].font,
-			im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
-			GFX_H_CENTER, GFX_V_CENTER,
-			s);
-		}
-	    }
-	}
-   
+    gfx_new_text( im->canvas,
+                  7, (im->yorigin - im->ysize/2),
+                  im->graph_col[GRC_FONT],
+                  im->text_prop[TEXT_PROP_AXIS].font,
+                  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 
+                  RRDGRAPH_YLEGEND_ANGLE,
+                  GFX_H_LEFT, GFX_V_CENTER,
+                  im->ylegend);
+
     /* graph title */
     gfx_new_text( im->canvas,
 		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size,
@@ -1960,50 +1929,50 @@ grid_paint(image_desc_t   *im)
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
 		  GFX_H_CENTER, GFX_V_CENTER,
 		  im->title);
-
+    
     /* graph labels */
     if( !(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH) ) {
-      for(i=0;i<im->gdes_c;i++){
-	if(im->gdes[i].legend[0] =='\0')
-	    continue;
-	 
-	/* im->gdes[i].leg_y is the bottom of the legend */
-		X0 = im->gdes[i].leg_x;
-		Y0 = im->gdes[i].leg_y;
-		/* Box needed? */
-		if (	   im->gdes[i].gf != GF_GPRINT
-			&& im->gdes[i].gf != GF_COMMENT) {
-		    int boxH, boxV;
-
-		    boxH = gfx_get_text_width(im->canvas, 0,
-				im->text_prop[TEXT_PROP_AXIS].font,
-				im->text_prop[TEXT_PROP_AXIS].size,
-				im->tabwidth,"M", 0) * 1.25;
-		    boxV = boxH;
-
-		    node = gfx_new_area(im->canvas,
-				X0,Y0-boxV,
-				X0,Y0,
-				X0+boxH,Y0,
-				im->gdes[i].col);
-		    gfx_add_point ( node, X0+boxH, Y0-boxV );
-		    node = gfx_new_line(im->canvas,
-				X0,Y0-boxV, X0,Y0,
-				1,0x000000FF);
-		    gfx_add_point(node,X0+boxH,Y0);
-		    gfx_add_point(node,X0+boxH,Y0-boxV);
-		    gfx_close_path(node);
-		    X0 += boxH / 1.25 * 2;
-		}
-		gfx_new_text ( im->canvas, X0, Y0,
+            for(i=0;i<im->gdes_c;i++){
+                    if(im->gdes[i].legend[0] =='\0')
+                            continue;
+                    
+                    /* im->gdes[i].leg_y is the bottom of the legend */
+                    X0 = im->gdes[i].leg_x;
+                    Y0 = im->gdes[i].leg_y;
+                    gfx_new_text ( im->canvas, X0, Y0,
 				   im->graph_col[GRC_FONT],
-				   im->text_prop[TEXT_PROP_AXIS].font,
-				   im->text_prop[TEXT_PROP_AXIS].size,
+				   im->text_prop[TEXT_PROP_LEGEND].font,
+				   im->text_prop[TEXT_PROP_LEGEND].size,
 				   im->tabwidth,0.0, GFX_H_LEFT, GFX_V_BOTTOM,
 				   im->gdes[i].legend );
-	      }
-	   }
-	}
+		    /* The legend for GRAPH items starts with "M " to have
+                       enough space for the box */
+                    if (	   im->gdes[i].gf != GF_GPRINT
+                                   && im->gdes[i].gf != GF_COMMENT) {
+                            int boxH, boxV;
+                            
+                            boxH = gfx_get_text_width(im->canvas, 0,
+                                                      im->text_prop[TEXT_PROP_LEGEND].font,
+                                                      im->text_prop[TEXT_PROP_LEGEND].size,
+                                                      im->tabwidth,"M", 0);
+                            boxV = boxH;
+                            
+                            node = gfx_new_area(im->canvas,
+                                                X0,Y0-boxV,
+                                                X0,Y0,
+                                                X0+boxH,Y0,
+                                                im->gdes[i].col);
+                            gfx_add_point ( node, X0+boxH, Y0-boxV );
+                            node = gfx_new_line(im->canvas,
+                                                X0,Y0-boxV, X0,Y0,
+                                                1,0x000000FF);
+                            gfx_add_point(node,X0+boxH,Y0);
+                            gfx_add_point(node,X0+boxH,Y0-boxV);
+                            gfx_close_path(node);
+                    }
+            }
+    }
+}
 
 
 /*****************************************************
@@ -2117,12 +2086,8 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
         Xspacing =10,  Yspacing =10;
 
     if (im->extra_flags & ONLY_GRAPH) {
-        if ( im->ysize > 32 ) {
-           rrd_set_error("height > 32 is not possible with --only-graph option");
-           return -1;
-        }
        Xspacing =0;
-        Yspacing =0;
+       Yspacing =0;
     } else {
         if (im->ylegend[0] != '\0') {
            Xvertical = im->text_prop[TEXT_PROP_LEGEND].size *2;
@@ -2176,7 +2141,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     im->ximg = Xmain;
 
     if ( !(im->extra_flags & ONLY_GRAPH) ) {
-        im->ximg = Xylabel + Xmain + Xpie + Xspacing;
+        im->ximg = Xylabel + Xmain + Xpie + 2 * Xspacing;
     }
 
     if (Xmain) im->ximg += Xspacing;
@@ -2358,8 +2323,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
       areazero = im->minval;
     if (im->maxval < 0.0)
       areazero = im->maxval;
-    if( !(im->extra_flags & ONLY_GRAPH) )  
-      axis_paint(im);
   }
 
   if (piechart) {
@@ -2511,6 +2474,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
     im->draw_x_grid=0;
     im->draw_y_grid=0;
   }
+
+  if( !(im->extra_flags & ONLY_GRAPH) )  
+      axis_paint(im);
+
   /* grid_paint also does the text */
   if( !(im->extra_flags & ONLY_GRAPH) )  
     grid_paint(im);
@@ -2743,20 +2710,21 @@ rrd_graph_init(image_desc_t *im)
     im->canvas = gfx_new_canvas();
     im->grid_dash_on = 1;
     im->grid_dash_off = 1;
-
+    im->tabwidth = 40.0;
+    
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];
 #ifdef WIN32
     {
-    char *windir; 
-    windir = getenv("windir");
-    /* %windir% is something like D:\windows or C:\winnt */
-    if (windir != NULL) {
-        strcpy(rrd_win_default_font,windir);
-        strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
-        for(i=0;i<DIM(text_prop);i++)
-           text_prop[i].font = rrd_win_default_font;
-    }
+            char *windir; 
+            windir = getenv("windir");
+            /* %windir% is something like D:\windows or C:\winnt */
+            if (windir != NULL) {
+                    strcpy(rrd_win_default_font,windir);
+                    strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
+                    for(i=0;i<DIM(text_prop);i++)
+                            text_prop[i].font = rrd_win_default_font;
+            }
     }
 #endif
     for(i=0;i<DIM(text_prop);i++){        
@@ -2811,6 +2779,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"alt-autoscale-max", no_argument, 0, 'M'},
 	    {"units-exponent",required_argument, 0, 'X'},
 	    {"step",       required_argument, 0,    'S'},
+            {"tabwidth",   required_argument, 0,    'T'},            
 	    {"no-gridfit", no_argument,       0,   'N'},
 	    {0,0,0,0}};
 	int option_index = 0;
@@ -2818,7 +2787,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 
 	opt = getopt_long(argc, argv, 
-			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:S:N",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:S:NT:",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -2837,7 +2806,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	case 'M':
 	    im->extra_flags |= ALTAUTOSCALE_MAX;
 	    break;
-       case 'j':
+        case 'j':
            im->extra_flags |= ONLY_GRAPH;
            break;
 	case 'g':
@@ -2848,6 +2817,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    break;
 	case 'X':
 	    im->unitsexponent = atoi(optarg);
+	    break;
+	case 'T':
+	    im->tabwidth = atof(optarg);
 	    break;
 	case 'S':
 	    im->step =  atoi(optarg);
