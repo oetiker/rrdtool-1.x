@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /bin/perl
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
@@ -40,8 +40,6 @@ RRDs::graph "$name.png",
   "AREA:b#00b6e4:beta",
   "AREA:line#0022e9:alpha",
   "LINE3:line#ff0000",
-  "GRPINT:a:AVERAGE:Average a %lf",
-  "GRPINT:b:AVERAGE:Average b %lf";
 
 ;
 

@@ -33,12 +33,13 @@ fi
 
 set -x
 find . -name Makefile | xargs rm -f
+find . -name "*.la" | xargs rm -f
 find . -name Makefile.in | xargs rm -f
 
 
 
 # wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.4.2.tar.gz
-libtoolize --copy
+libtoolize --copy --force
 cp ltmain.sh config
 
 # wget ftp://sources.redhat.com/pub/automake/automake-1.5.tar.gz
