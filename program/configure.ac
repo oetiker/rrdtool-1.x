@@ -6,11 +6,11 @@ dnl
 dnl
 
 dnl tell automake the this script is for rrdtool
-AC_INIT(src/rrd_tool.c)
-AC_CONFIG_AUX_DIR(config)
-AC_CANONICAL_TARGET([])
-AM_INIT_AUTOMAKE(rrdtool, 1.1.0)
+AC_INIT([rrdtool],[1.1.0])
+AM_INIT_AUTOMAKE
+AC_CANONICAL_TARGET
 AM_CONFIG_HEADER(config.h)
+# AC_CONFIG_AUX_DIR(config)
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -25,7 +25,7 @@ dnl where we install our stuff ...
 AC_PREFIX_DEFAULT( /usr/local/rrdtool-1.1.0 )
 
 dnl Minimum Autoconf version required.
-AC_PREREQ(2.52)
+AC_PREREQ(2.58)
 
 dnl At the TOP of the HEADER
 
@@ -158,9 +158,12 @@ AC_SUBST(PERLFLAGS)
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
-AC_DEFUN(EX_CHECK_ALL,
+AC_DEFUN([EX_CHECK_ALL],
 [ AC_CHECK_LIB($1,$2,
-  [ AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}"],AC_MSG_ERROR([Adjust CPPFLAGS so that the $4 header $3 gets found])) ],
+  [ AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}"],[
+     [ $echo "#include <$3>" | $CC -E - > /dev/null ] 
+     AC_MSG_ERROR([Adjust CPPFLAGS so that the $4 header $3 AND its dependencies gets found])
+  ] ) ],
   [ AC_MSG_ERROR([
 ############################################################################
 I could not find a working copy of $4. Check config.log for hints on why
@@ -259,9 +262,7 @@ if test "x$GCC" = "xyes"; then
   oCFLAGS=$CFLAGS
   CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
   AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
-                [AC_TRY_COMPILE( , return 0 ,
-                    rd_cv_gcc_opt=yes,
-                    rd_cv_gcc_opt=no )
+                [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[rd_cv_gcc_opt=yes],[rd_cv_gcc_opt=no ])
                ]
         )
   if test $rd_cv_gcc_opt = no; then
@@ -293,32 +294,28 @@ AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror stre
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro
 AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
-    AC_TRY_LINK([#include <math.h>], [float f = 0.0; fpclassify(f)],
-      AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_FPCLASSIFY), AC_MSG_RESULT(no))])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; fpclassify(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
 AC_CHECK_FUNCS(finite, ,
   [AC_CHECK_FUNCS(isfinite, ,
     [AC_MSG_CHECKING(for isfinite with <math.h>)
-    AC_TRY_LINK([#include <math.h>], [float f = 0.0; isfinite(f)],
-      AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_ISFINITE), AC_MSG_RESULT(no))])])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isfinite(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
-    AC_TRY_LINK([#include <math.h>], [float f = 0.0; isinf(f)],
-      AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_ISINF), AC_MSG_RESULT(no))])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isinf(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
 
 dnl what does realloc do if it gets called with a NULL pointer
 
 AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
-[AC_TRY_RUN([#include <stdlib.h>
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
 	      int main(void){
               char *x = NULL;
 	      x = realloc (x,10);
 	      if (x==NULL) return 1;
 	      return 0;
-             }],
-           [rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],:)])
+             }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
 
 if test x"$rd_cv_null_realloc" = xnope; then
 AC_DEFINE(NO_NULL_REALLOC)
@@ -330,10 +327,10 @@ dnl   FUNCTION-BODY, [ACTION-IF-FOUND [,ACTION-IF-NOT-FOUND]])
 
 AC_C_BIGENDIAN
 
-AC_DEFUN(AC_IEEE, 
+AC_DEFUN([AC_IEEE], 
 AC_MSG_CHECKING([if IEEE math works $1])
 AC_CACHE_VAL([rd_cv_ieee_$2],
-[AC_TRY_RUN([$3
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[$3
 
 #if HAVE_MATH_H
 #  include <math.h>
@@ -397,11 +394,7 @@ int main(void){
     if (! inf > 0) {printf ("not inf > 0 ... "); return 1;}
     if (! -inf < 0) {printf ("not -inf < 0 ... "); return 1;}
     return 0;
- }],
-
-rd_cv_ieee_$2=yes,
-rd_cv_ieee_$2=no,
-:)])
+ }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
 dnl these we run regardles is cached or not
 if test x${rd_cv_ieee_$2} = "xyes"; then
  AC_MSG_RESULT(yes)

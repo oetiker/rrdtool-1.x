@@ -85,7 +85,7 @@ my $counter = 1e7;
 for (my $t=$START+1;
      $t<$START+$STEP*$RUNS;
      $t+=$STEP+int((rand()-0.5)*7)){
-  $counter += 2500*sin($t/2000)*$STEP;
+  $counter += int(2500*sin($t/2000)*$STEP);
   my $data = (1000+500*sin($t/1000)).":".
       (1000+900*sin($t/2330)).":".
       (2000*cos($t/1550)).":".
@@ -161,7 +161,11 @@ foreach my $line (@$array){
   print "".localtime($start),"   ";
   $start += $step; 
   foreach my $val (@$line) {		
-    printf "%12.1f", $val;
+    if (not defined $val){
+	 printf "%12s", "UNKNOWN";
+    } else {
+      printf "%12.1f", $val;
+    }
   }
   print "\n";
 }

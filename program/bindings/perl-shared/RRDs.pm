@@ -51,10 +51,9 @@ Note that
 
 is also valid.
 
-
 The RRDs::times function takes two parameters:  a "start" and "end" time.
-These should be specified in the U<AT-STYLE TIME SPECIFICATION> format
-used by rrdtool.  See the U<rrdfetch> documentation for a detailed
+These should be specified in the B<AT-STYLE TIME SPECIFICATION> format
+used by rrdtool.  See the B<rrdfetch> documentation for a detailed
 explanation on how to specify time.
 
 =head2 Error Handling

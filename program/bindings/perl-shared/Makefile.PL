@@ -4,7 +4,8 @@ use Config;
 # the contents of the Makefile that is written.
 
 # Specify the location of the archive containing PIC compiled object files.
-my $librrd = "-L../../src/.libs/ -lrrd"  ;
+my $R = $^O eq 'Linux' ? "-Wl,--rpath -Wl," : "-R" ;
+my $librrd = "-L../../src/.libs/ $R\$(RPATH) -lrrd";
 
 WriteMakefile(
     'NAME'         => 'RRDs',
@@ -13,7 +14,7 @@ WriteMakefile(
     'INC'          => '-I../../src -I../../libraries/gd1.3',
     # where to look for the necessary libraries 
     # Perl will figure out which one is valid
-    'depend'	   => {'RRDs.c' => "../../src/.libs/librrd_private.a"},
+    'depend'	   => {'RRDs.c' => "../../src/.libs/librrd.a"},
     'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' }
 );
