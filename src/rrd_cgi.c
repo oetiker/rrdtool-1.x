@@ -459,7 +459,7 @@ char* scanargs(char *aLine, long *argc, char ***args)
   getP = aLine;
   putP = aLine;
   while (*getP && !( !Quote  && (braket == 0) && ((*getP) == '>'))){
-    if (*getP < ' ') *getP = ' '; /*remove all special chars*/
+    if ((unsigned)*getP < ' ') *getP = ' '; /*remove all special chars*/
     switch (*getP) {
     case ' ': 
       if (Quote){
