@@ -56,6 +56,7 @@ Debugging and code contributions
 	Christophe Van Ginneken <Christophe.VanGinneken@ubizen.com> (--no-legend)
 	Wolfgang Schrimm <wschrimm@uni-hd.de> xport function
         Travis Brown <tebrown@csh.rit.edu> 
+	Peter Stamfest <peter@stamfest.at> initial multi-thread support
 
 Documentation
 
