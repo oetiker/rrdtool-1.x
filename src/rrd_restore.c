@@ -129,6 +129,12 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
     free(rrd -> stat_head);
     return -1;
   }
+  if (atoi(rrd -> stat_head -> version) < 2) 
+  {
+    rrd_set_error("Can only restore version >= 2 (Not %s). Dump your rrd using a current rrdtool dump.",  rrd -> stat_head -> version );
+    free(rrd -> stat_head);
+    return -1;
+  }
   rrd->stat_head->float_cookie = FLOAT_COOKIE;
   rrd->stat_head->ds_cnt = 0;
   rrd->stat_head->rra_cnt = 0;
