@@ -328,6 +328,10 @@ B<[-g|--no-legend]>
 
 Suppress generation of legend; only render the graph.
 
+B<[-F|--force-rules-legend]>
+
+Force the generation of HRULE and VRULE legend even if those HRULE or VRULE will not be drawn because out of graph boundaries (mimics behaviour of pre 1.0.42 versions).
+
 B<[-b|--base E<lt>valueE<gt>]>
 
 If you are graphing memory (and NOT network traffic) this switch

@@ -1396,13 +1396,15 @@ leg_place(image_desc_t *im)
         
         /* hid legends for rules which are not displayed */
         
-	if (im->gdes[i].gf == GF_HRULE &&
-	    (im->gdes[i].yrule < im->minval || im->gdes[i].yrule > im->maxval))
-	    im->gdes[i].legend[0] = '\0';
+	if(!(im->extra_flags & FORCE_RULES_LEGEND)) {
+		if (im->gdes[i].gf == GF_HRULE &&
+		    (im->gdes[i].yrule < im->minval || im->gdes[i].yrule > im->maxval))
+		    im->gdes[i].legend[0] = '\0';
 
-	if (im->gdes[i].gf == GF_VRULE &&
-	    (im->gdes[i].xrule < im->start || im->gdes[i].xrule > im->end))
-	    im->gdes[i].legend[0] = '\0';
+		if (im->gdes[i].gf == GF_VRULE &&
+		    (im->gdes[i].xrule < im->start || im->gdes[i].xrule > im->end))
+		    im->gdes[i].legend[0] = '\0';
+	}
 
 	leg_cc = strlen(im->gdes[i].legend);
 	
@@ -2799,6 +2801,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"lazy",       no_argument,       0,  'z'},
             {"zoom",       required_argument, 0,  'm'},
 	    {"no-legend",  no_argument,       0,  'g'},
+	    {"force-rules-legend",no_argument,0,  'F'},
             {"only-graph", no_argument,       0,  'j'},
 	    {"alt-y-grid", no_argument,       0,  'Y'},
             {"no-minor",   no_argument,       0,  'I'},
@@ -2813,7 +2816,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 
 	opt = getopt_long(argc, argv, 
-                         "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjYAMX:S:N",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:S:N",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -2837,6 +2840,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
            break;
 	case 'g':
 	    im->extra_flags |= NOLEGEND;
+	    break;
+	case 'F':
+	    im->extra_flags |= FORCE_RULES_LEGEND;
 	    break;
 	case 'X':
 	    im->unitsexponent = atoi(optarg);

@@ -14,6 +14,7 @@
 #define NOLEGEND	0x08	/* use no legend */
 #define NOMINOR         0x20    /* Turn off minor gridlines */
 #define ONLY_GRAPH      0x24   /* use only graph */
+#define FORCE_RULES_LEGEND	0x40	/* force printing of HRULE and VRULE legend */
 
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
