@@ -62,6 +62,7 @@ Debugging and code contributions
 	Peter Speck <speck@vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
 	David Grimes <dgrimes@navisite.com> SQRT/SORT/REV/SHIFT/TREND
 	Henrik Storner <henrik@hswn.dk> make rrd_graph() provide the min/max values of data in graph
+	Radoslaw Karas <rkaras@tyndall.ie>
 
 Documentation
 
