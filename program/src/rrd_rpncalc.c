@@ -271,7 +271,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 
 
 #define match_op_param(VV,VVV) \
-        else if (sscanf(expr, #VVV "(%[a-z0-9]s)",vname) == 1) { \
+        else if (sscanf(expr, #VVV "(" DEF_NAM_FMT ")",vname) == 1) { \
           int length = 0; \
           if ((length = strlen(#VVV)+strlen(vname)+2, \
               expr[length] == ',' || expr[length] == '\0') ) { \
