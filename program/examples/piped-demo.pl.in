@@ -88,7 +88,7 @@ RRDp::cmd "graph $SVG ", "--title 'Test GRAPH' ",
 	"GPRINT:calc:MAX:'Max calc\\: %1.2lf %S'",
         "VRULE:".($now-3600)."#008877:'60 Minutes ago'",
         "COMMENT:'\\s'",
-        "COMMENT:'Graph created on: ".localtime(time())."\\c'";
+        "COMMENT:'Graph created on\\: ".localtime(time())."\\c'";
 
 $answer = RRDp::read;
 }
@@ -126,7 +126,7 @@ RRDp::cmd "graph $PNG ", "--title 'Test GRAPH' ",
 	"GPRINT:calc:MAX:'Max calc\\: %1.2lf %S'",
         "VRULE:".($now-3600)."#008877:'60 Minutes ago'",
         "COMMENT:'\\s'",
-        "COMMENT:'Graph created on: ".localtime(time())."\\c'";
+        "COMMENT:'Graph created on\\: ".localtime(time())."\\c'";
 
 $answer = RRDp::read;
 }
