@@ -5,6 +5,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.10  2003/04/29 19:14:12  jake
+ * Change updatev RRA return from index_number to cf_nam, pdp_cnt.
+ * Also revert accidental addition of -I to aclocal MakeMakefile.
+ *
  * Revision 1.9  2003/04/25 18:35:08  jake
  * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
  *
@@ -1441,8 +1445,9 @@ info_t
 	     iv.u_val = rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
 	     /* append info to the return hash */
 	  	 pcdp_summary = info_push(pcdp_summary,
-		 sprintf_alloc("[%d]RRA[%lu]DS[%s]",
-		 *rra_time, rra_idx, rrd->ds_def[ds_idx].ds_nam),
+		 sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
+		 *rra_time, rrd->rra_def[rra_idx].cf_nam, 
+		 rrd->rra_def[rra_idx].pdp_cnt, rrd->ds_def[ds_idx].ds_nam),
          RD_I_VAL, iv);
 	  }
 	  if(fwrite(&(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
