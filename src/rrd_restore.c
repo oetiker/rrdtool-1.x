@@ -406,9 +406,12 @@ rrd_write(char *file_name, rrd_t *rrd)
     if (strcmp("-",file_name)==0){
       *rrd_file= *stdout;
     } else {
-      if ((rrd_file = fopen(file_name,"wb")) == NULL ) {
+      int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL);
+      if (fd == -1 || (rrd_file = fdopen(fd,"wb")) == NULL) {
 	rrd_set_error("creating '%s': %s",file_name,strerror(errno));
 	rrd_free(rrd);
+        if (fd != -1)
+          close(fd);
 	return(-1);
       }
     }
