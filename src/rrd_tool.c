@@ -541,7 +541,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    datai=data;
 	    printf("           ");
 	    for (i = 0; i<ds_cnt;i++)
-	        printf("%14s",ds_namv[i]);
+	        printf("%20s",ds_namv[i]);
 	    printf ("\n\n");
 	    for (ti = start+step; ti <= end; ti += step){
 	        printf("%10lu:", ti);
