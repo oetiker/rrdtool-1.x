@@ -433,60 +433,68 @@ reduce_data(
     (*step) = cur_step*reduce_factor; /* set new step size for reduced data */
     dstptr = *data;
     srcptr = *data;
+    row_cnt = ((*end)-(*start))/cur_step;
 
-    /* We were given one extra row at the beginning of the interval.
-    ** We also need to return one extra row.  The extra interval is
-    ** the one defined by the start time in both cases.  It is not
-    ** used when graphing but maybe we can use it while reducing the
-    ** data.
+#ifdef DEBUG
+#define DEBUG_REDUCE
+#endif
+#ifdef DEBUG_REDUCE
+printf("Reducing %lu rows with factor %i time %lu to %lu, step %lu\n",
+			row_cnt,reduce_factor,*start,*end,cur_step);
+for (col=0;col<row_cnt;col++) {
+    printf("time %10lu: ",*start+(col+1)*cur_step);
+    for (i=0;i<*ds_cnt;i++)
+	printf(" %8.2e",srcptr[*ds_cnt*col+i]);
+    printf("\n");
+}
+#endif
+
+    /* We have to combine [reduce_factor] rows of the source
+    ** into one row for the destination.  Doing this we also
+    ** need to take care to combine the correct rows.  First
+    ** alter the start and end time so that they are multiples
+    ** of the new step time.  We cannot reduce the amount of
+    ** time so we have to move the end towards the future and
+    ** the start towards the past.
     */
-    row_cnt = ((*end)-(*start))/cur_step +1;
-
-    /* alter start and end so that they are multiples of the new steptime.
-    ** End will be shifted towards the future and start will be shifted
-    ** towards the past in order to include the requested interval
-    */ 
     end_offset = (*end) % (*step);
-    if (end_offset) end_offset = (*step)-end_offset;
     start_offset = (*start) % (*step);
-    (*end) = (*end)+end_offset;
-    (*start) = (*start)-start_offset;
 
-    /* The first destination row is unknown yet it still needs
-    ** to be present in the returned data.  Skip it.
-    ** Don't make it NaN or we might overwrite the source.
+    /* If there is a start offset (which cannot be more than
+    ** one destination row), skip the appropriate number of
+    ** source rows and one destination row.  The appropriate
+    ** number is what we do know (start_offset/cur_step) of
+    ** the new interval (*step/cur_step aka reduce_factor).
     */
-    dstptr += (*ds_cnt);
-
-    /* Depending on the amount of extra data needed at the
-    ** start of the destination, three things can happen:
-    ** -1- start_offset == 0:  skip the extra source row
-    ** -2- start_offset == cur_step: do nothing
-    ** -3- start_offset > cur_step: skip some source rows and 
-    **                      fill one destination row with NaN
-    */
-    if (start_offset==0) {
-	srcptr+=(*ds_cnt);
-	row_cnt--;
-    } else if (start_offset!=cur_step) {
-	skiprows=((*step)-start_offset)/cur_step+1;
-	srcptr += ((*ds_cnt)*skiprows);
+#ifdef DEBUG_REDUCE
+printf("start_offset: %lu  end_offset: %lu\n",start_offset,end_offset);
+printf("row_cnt before:  %lu\n",row_cnt);
+#endif
+    if (start_offset) {
+	(*start) = (*start)-start_offset;
+	skiprows=reduce_factor-start_offset/cur_step;
+	srcptr+=skiprows* *ds_cnt;
+        for (col=0;col<(*ds_cnt);col++) *dstptr++ = DNAN;
 	row_cnt-=skiprows;
-	for (col=0;col<(*ds_cnt);col++) *dstptr++=DNAN;
     }
+#ifdef DEBUG_REDUCE
+printf("row_cnt between: %lu\n",row_cnt);
+#endif
 
-    /* If we had to alter the endtime, there won't be
-    ** enough data to fill the last row.  This means
-    ** we have to skip some rows at the end
+    /* At the end we have some rows that are not going to be
+    ** used, the amount is end_offset/cur_step
     */
     if (end_offset) {
-	skiprows = ((*step)-end_offset)/cur_step;
+	(*end) = (*end)-end_offset+(*step);
+	skiprows = end_offset/cur_step;
 	row_cnt-=skiprows;
     }
-
+#ifdef DEBUG_REDUCE
+printf("row_cnt after:   %lu\n",row_cnt);
+#endif
 
 /* Sanity check: row_cnt should be multiple of reduce_factor */
-/* if this gets triggered, something is REALY WRONG ... we die immediately */
+/* if this gets triggered, something is REALLY WRONG ... we die immediately */
 
     if (row_cnt%reduce_factor) {
 	printf("SANITY CHECK: %lu rows cannot be reduced by %i \n",
@@ -554,11 +562,22 @@ reduce_data(
 	srcptr+=(*ds_cnt)*reduce_factor;
 	row_cnt-=reduce_factor;
     }
-
     /* If we had to alter the endtime, we didn't have enough
     ** source rows to fill the last row. Fill it with NaN.
     */
-    if (end_offset!=0) for (col=0;col<(*ds_cnt);col++) *dstptr++ = DNAN;
+    if (end_offset) for (col=0;col<(*ds_cnt);col++) *dstptr++ = DNAN;
+#ifdef DEBUG_REDUCE
+    row_cnt = ((*end)-(*start))/ *step;
+    srcptr = *data;
+    printf("Done reducing. Currently %lu rows, time %lu to %lu, step %lu\n",
+				row_cnt,*start,*end,*step);
+for (col=0;col<row_cnt;col++) {
+    printf("time %10lu: ",*start+(col+1)*(*step));
+    for (i=0;i<*ds_cnt;i++)
+	printf(" %8.2e",srcptr[*ds_cnt*col+i]);
+    printf("\n");
+}
+#endif
 }
 
 
@@ -728,11 +747,6 @@ data_calc( image_desc_t *im){
 		/* Find the variables in the expression.
 		 * - VDEF variables are substituted by their values
 		 *   and the opcode is changed into OP_NUMBER.
-******************
-* Note to Jake: I cannot oversee the implications for your
-* COMPUTE DS stuff.  Please check if VDEF and COMPUTE are
-* compatible (or can be made so).
-******************
 		 * - CDEF variables are analized for their step size,
 		 *   the lowest common denominator of all the step
 		 *   sizes of the data sources involved is calculated
@@ -777,8 +791,7 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 			     * further save step size and data source
 			     * count of this rra
 			     */ 
-			    im->gdes[gdi].rpnp[rpi].data = 
-					im->gdes[ptr].data + im->gdes[ptr].ds; 
+			    im->gdes[gdi].rpnp[rpi].data = im->gdes[ptr].data; 
 			    im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
 			    im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
 
@@ -786,7 +799,6 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 			     * rpncalc() function doesn't have to treat
 			     * the first case differently
 			     */
-			    im->gdes[gdi].rpnp[rpi].data-=im->gdes[ptr].ds_cnt;
 			} /* if ds_cnt != 0 */
 		    } /* if OP_VARIABLE */
 		} /* loop through all rpi */
@@ -805,7 +817,7 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 		free(steparray);
 		if((im->gdes[gdi].data = malloc((
 				(im->gdes[gdi].end-im->gdes[gdi].start) 
-				    / im->gdes[gdi].step +1)
+				    / im->gdes[gdi].step)
 				    * sizeof(double)))==NULL){
 		    rrd_set_error("malloc im->gdes[gdi].data");
 		    rpnstack_free(&rpnstack);
@@ -815,7 +827,7 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 		/* Step through the new cdef results array and
 		 * calculate the values
 		 */
-		for (now = im->gdes[gdi].start;
+		for (now = im->gdes[gdi].start + im->gdes[gdi].step;
 				now<=im->gdes[gdi].end;
 				now += im->gdes[gdi].step)
 		{
@@ -889,15 +901,11 @@ data_proc( image_desc_t *im ){
 
 		value =
 		    im->gdes[vidx].data[
-					((unsigned long)floor((double)
-							     (gr_time - im->gdes[vidx].start ) 
-							     / im->gdes[vidx].step)+1)			
-
-					/* added one because data was not being aligned properly
-					   this fixes it. We may also be having a problem in fetch ... */
-
-					*im->gdes[vidx].ds_cnt
-					+im->gdes[vidx].ds];
+			((unsigned long)floor(
+	(double)(gr_time-im->gdes[vidx].start) / im->gdes[vidx].step
+					     )
+                        )	*im->gdes[vidx].ds_cnt
+				+im->gdes[vidx].ds];
 
 		if (! isnan(value)) {
 		  paintval += value;
@@ -1107,6 +1115,7 @@ print_calc(image_desc_t *im, char ***prdata)
 {
     long i,ii,validsteps;
     double printval;
+    time_t printtime;
     int graphelement = 0;
     long vidx;
     int max_ii;	
@@ -1131,6 +1140,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	    vidx = im->gdes[i].vidx;
 	    if (im->gdes[vidx].gf==GF_VDEF) { /* simply use vals */
 		printval = im->gdes[vidx].vf.val;
+		printtime = im->gdes[vidx].vf.when;
 	    } else { /* need to calculate max,min,avg etcetera */
 		max_ii =((im->gdes[vidx].end 
 			- im->gdes[vidx].start)
@@ -1138,8 +1148,8 @@ print_calc(image_desc_t *im, char ***prdata)
 			* im->gdes[vidx].ds_cnt);
 		printval = DNAN;
 		validsteps = 0;
-		for(ii=im->gdes[vidx].ds+im->gdes[vidx].ds_cnt;
-			ii < max_ii+im->gdes[vidx].ds_cnt;
+		for(	ii=im->gdes[vidx].ds;
+			ii < max_ii;
 			ii+=im->gdes[vidx].ds_cnt){
 		    if (! finite(im->gdes[vidx].data[ii]))
 			continue;
@@ -1176,7 +1186,18 @@ print_calc(image_desc_t *im, char ***prdata)
 		}
 	    } /* prepare printval */
 
-
+	    if (!strcmp(im->gdes[i].format,"%c")) { /* VDEF time print */
+		if (im->gdes[i].gf == GF_PRINT){
+		    (*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
+		    sprintf((*prdata)[prlines-2],"%s (%lu)",
+					ctime(&printtime),printtime);
+		    (*prdata)[prlines-1] = NULL;
+		} else {
+		    sprintf(im->gdes[i].legend,"%s (%lu)",
+					ctime(&printtime),printtime);
+		    graphelement = 1;
+		}
+	    } else {
 	    if ((percent_s = strstr(im->gdes[i].format,"%S")) != NULL) {
 		/* Magfact is set to -1 upon entry to print_calc.  If it
 		 * is still less than 0, then we need to run auto_scale.
@@ -1220,6 +1241,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		sprintf(im->gdes[i].legend,im->gdes[i].format,printval,si_symb);
 #endif
 		graphelement = 1;
+	    }
 	    }
 	    break;
         case GF_COMMENT:
@@ -2177,7 +2199,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
         
 	switch(im->gdes[i].gf){
 	case GF_HRULE:
-printf("DEBUG: HRULE at %f\n",im->gdes[i].yrule);
 	    if(isnan(im->gdes[i].yrule)) { /* fetch variable */
 		im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
 	    };
@@ -2296,58 +2317,121 @@ scan_for_col(char *input, int len, char *output)
     return inp;
 }
 
+/* Some surgery done on this function, it became ridiculously big.
+** Things moved:
+** - initializing     now in rrd_graph_init()
+** - options parsing  now in rrd_graph_options()
+** - script parsing   now in rrd_graph_script()
+*/
 int 
 rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 {
-    
     image_desc_t   im;
-    int            i;
-    long           long_tmp;
-    time_t	   start_tmp=0,end_tmp=0;
-    char           scan_gtm[12],scan_mtm[12],scan_ltm[12],col_nam[12];
-    char           symname[100];
-    unsigned int            col_red,col_green,col_blue;
-    long           scancount;
-    int linepass = 0; /* stack can only follow directly after LINE* AREA or STACK */    
-    struct time_value start_tv, end_tv;
-    char *parsetime_error = NULL;
-    int stroff;    
+
+    rrd_graph_init(&im);
+
+    rrd_graph_options(argc,argv,&im);
+    if (rrd_test_error()) return -1;
+    
+    if (strlen(argv[optind])>=MAXPATH) {
+	rrd_set_error("filename (including path) too long");
+	return -1;
+    }
+    strncpy(im.graphfile,argv[optind],MAXPATH-1);
+    im.graphfile[MAXPATH-1]='\0';
+
+    rrd_graph_script(argc,argv,&im);
+    if (rrd_test_error()) return -1;
+
+    /* Everything is now read and the actual work can start */
 
     (*prdata)=NULL;
+    if (graph_paint(&im,prdata)==-1){
+	im_free(&im);
+	return -1;
+    }
+
+    /* The image is generated and needs to be output.
+    ** Also, if needed, print a line with information about the image.
+    */
+
+    *xsize=im.xgif;
+    *ysize=im.ygif;
+    if (im.imginfo) {
+	char *filename;
+	if (!(*prdata)) {
+	    /* maybe prdata is not allocated yet ... lets do it now */
+	    if ((*prdata = calloc(2,sizeof(char *)))==NULL) {
+		rrd_set_error("malloc imginfo");
+		return -1; 
+	    };
+	}
+	if(((*prdata)[0] = malloc((strlen(im.imginfo)+200+strlen(im.graphfile))*sizeof(char)))
+	 ==NULL){
+	    rrd_set_error("malloc imginfo");
+	    return -1;
+	}
+	filename=im.graphfile+strlen(im.graphfile);
+	while(filename > im.graphfile) {
+	    if (*(filename-1)=='/' || *(filename-1)=='\\' ) break;
+	    filename--;
+	}
+
+	sprintf((*prdata)[0],im.imginfo,filename,im.xgif,im.ygif);
+    }
+    im_free(&im);
+    return 0;
+}
+
+void
+rrd_graph_init(image_desc_t *im)
+{
+    int i;
+
+    im->xlab_user.minsec = -1;
+    im->xgif=0;
+    im->ygif=0;
+    im->xsize = 400;
+    im->ysize = 100;
+    im->step = 0;
+    im->ylegend[0] = '\0';
+    im->title[0] = '\0';
+    im->minval = DNAN;
+    im->maxval = DNAN;    
+    im->interlaced = 0;
+    im->unitsexponent= 9999;
+    im->extra_flags= 0;
+    im->rigid = 0;
+    im->imginfo = NULL;
+    im->lazy = 0;
+    im->logarithmic = 0;
+    im->ygridstep = DNAN;
+    im->draw_x_grid = 1;
+    im->draw_y_grid = 1;
+    im->base = 1000;
+    im->prt_c = 0;
+    im->gdes_c = 0;
+    im->gdes = NULL;
+    im->imgformat = IF_GIF; /* we default to GIF output */
+
+    for(i=0;i<DIM(graph_col);i++)
+	im->graph_col[i].red=-1;
+}
+
+void
+rrd_graph_options(int argc, char *argv[],image_desc_t *im)
+{
+    int			stroff;    
+    char		*parsetime_error = NULL;
+    char		scan_gtm[12],scan_mtm[12],scan_ltm[12],col_nam[12];
+    time_t		start_tmp=0,end_tmp=0;
+    long		long_tmp;
+    struct time_value	start_tv, end_tv;
+    unsigned int	col_red,col_green,col_blue;
 
     parsetime("end-24h", &start_tv);
     parsetime("now", &end_tv);
 
-    im.xlab_user.minsec = -1;
-    im.xgif=0;
-    im.ygif=0;
-    im.xsize = 400;
-    im.ysize = 100;
-    im.step = 0;
-    im.ylegend[0] = '\0';
-    im.title[0] = '\0';
-    im.minval = DNAN;
-    im.maxval = DNAN;    
-    im.interlaced = 0;
-    im.unitsexponent= 9999;
-    im.extra_flags= 0;
-    im.rigid = 0;
-    im.imginfo = NULL;
-    im.lazy = 0;
-    im.logarithmic = 0;
-    im.ygridstep = DNAN;
-    im.draw_x_grid = 1;
-    im.draw_y_grid = 1;
-    im.base = 1000;
-    im.prt_c = 0;
-    im.gdes_c = 0;
-    im.gdes = NULL;
-    im.imgformat = IF_GIF; /* we default to GIF output */
-
-    for(i=0;i<DIM(graph_col);i++)
-	im.graph_col[i].red=-1;
-    
-    
     while (1){
 	static struct option long_options[] =
 	{
@@ -2379,7 +2463,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	int option_index = 0;
 	int opt;
 
-	
+
 	opt = getopt_long(argc, argv, 
 			  "s:e:x:y:v:w:h:iu:l:rb:oc:t:f:a:z:g",
 			  long_options, &option_index);
@@ -2389,147 +2473,147 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	
 	switch(opt) {
 	case 257:
-	    im.extra_flags |= ALTYGRID;
+	    im->extra_flags |= ALTYGRID;
 	    break;
 	case 258:
-	    im.extra_flags |= ALTAUTOSCALE;
+	    im->extra_flags |= ALTAUTOSCALE;
 	    break;
 	case 259:
-	    im.extra_flags |= ALTAUTOSCALE_MAX;
+	    im->extra_flags |= ALTAUTOSCALE_MAX;
 	    break;
 	case 'g':
-	    im.extra_flags |= NOLEGEND;
+	    im->extra_flags |= NOLEGEND;
 	    break;
 	case 260:
-	    im.unitsexponent = atoi(optarg);
+	    im->unitsexponent = atoi(optarg);
 	    break;
 	case 261:
-	    im.step =  atoi(optarg);
+	    im->step =  atoi(optarg);
 	    break;
 	case 's':
 	    if ((parsetime_error = parsetime(optarg, &start_tv))) {
 	        rrd_set_error( "start time: %s", parsetime_error );
-		return -1;
+		return;
 	    }
 	    break;
 	case 'e':
 	    if ((parsetime_error = parsetime(optarg, &end_tv))) {
 	        rrd_set_error( "end time: %s", parsetime_error );
-		return -1;
+		return;
 	    }
 	    break;
 	case 'x':
 	    if(strcmp(optarg,"none") == 0){
-	      im.draw_x_grid=0;
+	      im->draw_x_grid=0;
 	      break;
 	    };
 	        
 	    if(sscanf(optarg,
 		      "%10[A-Z]:%ld:%10[A-Z]:%ld:%10[A-Z]:%ld:%ld:%n",
 		      scan_gtm,
-		      &im.xlab_user.gridst,
+		      &im->xlab_user.gridst,
 		      scan_mtm,
-		      &im.xlab_user.mgridst,
+		      &im->xlab_user.mgridst,
 		      scan_ltm,
-		      &im.xlab_user.labst,
-		      &im.xlab_user.precis,
+		      &im->xlab_user.labst,
+		      &im->xlab_user.precis,
 		      &stroff) == 7 && stroff != 0){
-                strncpy(im.xlab_form, optarg+stroff, sizeof(im.xlab_form) - 1);
-		if((im.xlab_user.gridtm = tmt_conv(scan_gtm)) == -1){
+                strncpy(im->xlab_form, optarg+stroff, sizeof(im->xlab_form) - 1);
+		if((im->xlab_user.gridtm = tmt_conv(scan_gtm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_gtm);
-		    return -1;
-		} else if ((im.xlab_user.mgridtm = tmt_conv(scan_mtm)) == -1){
+		    return;
+		} else if ((im->xlab_user.mgridtm = tmt_conv(scan_mtm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_mtm);
-		    return -1;
-		} else if ((im.xlab_user.labtm = tmt_conv(scan_ltm)) == -1){
+		    return;
+		} else if ((im->xlab_user.labtm = tmt_conv(scan_ltm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_ltm);
-		    return -1;
+		    return;
 		} 
-		im.xlab_user.minsec = 1;
-		im.xlab_user.stst = im.xlab_form;
+		im->xlab_user.minsec = 1;
+		im->xlab_user.stst = im->xlab_form;
 	    } else {
 		rrd_set_error("invalid x-grid format");
-		return -1;
+		return;
 	    }
 	    break;
 	case 'y':
 
 	    if(strcmp(optarg,"none") == 0){
-	      im.draw_y_grid=0;
+	      im->draw_y_grid=0;
 	      break;
 	    };
 
 	    if(sscanf(optarg,
 		      "%lf:%d",
-		      &im.ygridstep,
-		      &im.ylabfact) == 2) {
-		if(im.ygridstep<=0){
+		      &im->ygridstep,
+		      &im->ylabfact) == 2) {
+		if(im->ygridstep<=0){
 		    rrd_set_error("grid step must be > 0");
-		    return -1;
-		} else if (im.ylabfact < 1){
+		    return;
+		} else if (im->ylabfact < 1){
 		    rrd_set_error("label factor must be > 0");
-		    return -1;
+		    return;
 		} 
 	    } else {
 		rrd_set_error("invalid y-grid format");
-		return -1;
+		return;
 	    }
 	    break;
 	case 'v':
-	    strncpy(im.ylegend,optarg,150);
-	    im.ylegend[150]='\0';
+	    strncpy(im->ylegend,optarg,150);
+	    im->ylegend[150]='\0';
 	    break;
 	case 'u':
-	    im.maxval = atof(optarg);
+	    im->maxval = atof(optarg);
 	    break;
 	case 'l':
-	    im.minval = atof(optarg);
+	    im->minval = atof(optarg);
 	    break;
 	case 'b':
-	    im.base = atol(optarg);
-	    if(im.base != 1024 && im.base != 1000 ){
+	    im->base = atol(optarg);
+	    if(im->base != 1024 && im->base != 1000 ){
 		rrd_set_error("the only sensible value for base apart from 1000 is 1024");
-		return -1;
+		return;
 	    }
 	    break;
 	case 'w':
 	    long_tmp = atol(optarg);
 	    if (long_tmp < 10) {
 		rrd_set_error("width below 10 pixels");
-		return -1;
+		return;
 	    }
-	    im.xsize = long_tmp;
+	    im->xsize = long_tmp;
 	    break;
 	case 'h':
 	    long_tmp = atol(optarg);
 	    if (long_tmp < 10) {
 		rrd_set_error("height below 10 pixels");
-		return -1;
+		return;
 	    }
-	    im.ysize = long_tmp;
+	    im->ysize = long_tmp;
 	    break;
 	case 'i':
-	    im.interlaced = 1;
+	    im->interlaced = 1;
 	    break;
 	case 'r':
-	    im.rigid = 1;
+	    im->rigid = 1;
 	    break;
 	case 'f':
-	    im.imginfo = optarg;
+	    im->imginfo = optarg;
 	    break;
     	case 'a':
-	    if((im.imgformat = if_conv(optarg)) == -1) {
+	    if((im->imgformat = if_conv(optarg)) == -1) {
 		rrd_set_error("unsupported graphics format '%s'",optarg);
-		return -1;
+		return;
 	    }
 	    break;
 	case 'z':
-	    im.lazy = 1;
+	    im->lazy = 1;
 	    break;
 	case 'o':
-	    im.logarithmic = 1;
-	    if (isnan(im.minval))
-		im.minval=1;
+	    im->logarithmic = 1;
+	    if (isnan(im->minval))
+		im->minval=1;
 	    break;
 	case 'c':
 	    if(sscanf(optarg,
@@ -2537,20 +2621,20 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 		      col_nam,&col_red,&col_green,&col_blue) == 4){
 		int ci;
 		if((ci=grc_conv(col_nam)) != -1){
-		    im.graph_col[ci].red=col_red;
-		    im.graph_col[ci].green=col_green;
-		    im.graph_col[ci].blue=col_blue;
+		    im->graph_col[ci].red=col_red;
+		    im->graph_col[ci].green=col_green;
+		    im->graph_col[ci].blue=col_blue;
 		}  else {
 		  rrd_set_error("invalid color name '%s'",col_nam);
 		}
 	    } else {
 		rrd_set_error("invalid color def format");
-		return -1;
+		return;
 	    }
 	    break;	  
 	case 't':
-	    strncpy(im.title,optarg,150);
-	    im.title[150]='\0';
+	    strncpy(im->title,optarg,150);
+	    im->title[150]='\0';
 	    break;
 
 	case '?':
@@ -2558,128 +2642,147 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
                 rrd_set_error("unknown option '%c'", optopt);
             else
                 rrd_set_error("unknown option '%s'",argv[optind-1]);
-            return -1;
+            return;
 	}
     }
     
     if (optind >= argc) {
        rrd_set_error("missing filename");
-       return -1;
+       return;
     }
 
-    if (im.logarithmic == 1 && (im.minval <= 0 || isnan(im.minval))){
+    if (im->logarithmic == 1 && (im->minval <= 0 || isnan(im->minval))){
 	rrd_set_error("for a logarithmic yaxis you must specify a lower-limit > 0");	
-	return -1;
+	return;
     }
-
-    strncpy(im.graphfile,argv[optind],MAXPATH-1);
-    im.graphfile[MAXPATH-1]='\0';
 
     if (proc_start_end(&start_tv,&end_tv,&start_tmp,&end_tmp) == -1){
-	return -1;
+	/* error string is set in parsetime.c */
+	return;
     }  
     
     if (start_tmp < 3600*24*365*10){
 	rrd_set_error("the first entry to fetch should be after 1980 (%ld)",start_tmp);
-	return -1;
+	return;
     }
     
     if (end_tmp < start_tmp) {
 	rrd_set_error("start (%ld) should be less than end (%ld)", 
 	       start_tmp, end_tmp);
-	return -1;
+	return;
     }
     
-    im.start = start_tmp;
-    im.end = end_tmp;
+    im->start = start_tmp;
+    im->end = end_tmp;
+}
 
-    
+int
+rrd_graph_check_vname(image_desc_t *im, char *varname, char *err)
+{
+    if ((im->gdes[im->gdes_c-1].vidx=find_var(im,varname))==-1) {
+	im_free(im);
+	rrd_set_error("Unknown variable '%s' in %s",varname,err);
+	return -1;
+    }
+    return 0;
+}
+int
+rrd_graph_check_CF(image_desc_t *im, char *symname, char *err)
+{
+    if ((im->gdes[im->gdes_c-1].cf=cf_conv(symname))==-1) {
+	im_free(im);
+	rrd_set_error("Unknown CF '%s' in %s",symname,err);
+	return -1;
+    }
+    return 0;
+}
+
+void
+rrd_graph_script(int argc, char *myarg[], image_desc_t *im)
+{
+    int			i;
+    char		symname[100];
+    unsigned int	col_red,col_green,col_blue;
+    long		scancount;
+    int			linepass = 0; /* stack can only follow directly after LINE* AREA or STACK */    
+
+/* All code worked on "argv[i]", it made sense to formalize this
+** and use "arg" instead.
+**
+** The same can be said for "im->gdes[im->gdes_c-1]" which
+** has been changed into a simple "gdp".
+*/
+
     for(i=optind+1;i<argc;i++){
-	int   argstart=0;
-	int   strstart=0;
-	char  varname[MAX_VNAME_LEN+1],*rpnex;
-	gdes_alloc(&im);
-	if(sscanf(argv[i],"%10[A-Z0-9]:%n",symname,&argstart)==1){
-	    if((im.gdes[im.gdes_c-1].gf=gf_conv(symname))==-1){
-		im_free(&im);
+	char		*arg=myarg[i];
+	int		argstart=0;
+	int		strstart=0;
+	char		varname[MAX_VNAME_LEN+1],*rpnex;
+	graph_desc_t	*gdp;
+
+	gdes_alloc(im);
+	gdp=&im->gdes[im->gdes_c-1];
+
+	if(sscanf(arg,"%10[A-Z0-9]:%n",symname,&argstart)==1){
+	    if((gdp->gf=gf_conv(symname))==-1){
+		im_free(im);
 		rrd_set_error("unknown function '%s'",symname);
-		return -1;
+		return;
 	    }
 	} else {
-	    rrd_set_error("can't parse '%s'",argv[i]);
-	    im_free(&im);
-	    return -1;
+	    rrd_set_error("can't parse '%s'",arg);
+	    im_free(im);
+	    return;
 	}
 
-	/* reset linepass if a non LINE/STACK/AREA operator gets parsed 
-	
-	   if (im.gdes[im.gdes_c-1].gf != GF_LINE1 &&
-	   im.gdes[im.gdes_c-1].gf != GF_LINE2 &&
-	   im.gdes[im.gdes_c-1].gf != GF_LINE3 &&
-	   im.gdes[im.gdes_c-1].gf != GF_AREA &&
-	   im.gdes[im.gdes_c-1].gf != GF_STACK) {
-	   linepass = 0;
-	   } 
-	*/
-	
-	switch(im.gdes[im.gdes_c-1].gf){
+	switch(gdp->gf){
 	case GF_PRINT:
-	    im.prt_c++;
+	    im->prt_c++;
 	case GF_GPRINT:
 	    strstart=0;
-	    sscanf(&argv[i][argstart], DEF_NAM_FMT ":%n"
+	    sscanf(&arg[argstart], DEF_NAM_FMT ":%n"
 		    ,varname
 		    ,&strstart
 	    );
 
 	    if (strstart==0) {
-		im_free(&im);
-		rrd_set_error("can't parse vname in '%s'",&argv[i][argstart]);
-		return -1;
+		im_free(im);
+		rrd_set_error("can't parse vname in '%s'",&arg[argstart]);
+		return;
 	    };
 
-	    if ((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		im_free(&im);
-		rrd_set_error("Unknown variable '%s' in (G)PRINT",varname);
-		return -1;
-	    } else {
+	    if (rrd_graph_check_vname(im,varname,arg)) return;
+	    else {
 		int n=0;
 
-		sscanf(&argv[i][argstart+strstart],CF_NAM_FMT ":%n"
+		sscanf(&arg[argstart+strstart],CF_NAM_FMT ":%n"
 		    ,symname
 		    ,&n
 		);
-		if (im.gdes[im.gdes[im.gdes_c-1].vidx].gf==GF_VDEF) {
+		if (im->gdes[gdp->vidx].gf==GF_VDEF) {
 		    /* No consolidation function should be present */
 		    if (n != 0) {
 			rrd_set_error("(G)PRINT of VDEF needs no CF");
-			im_free(&im);
-			return -1;
+			im_free(im);
+			return;
 		    }
 		} else {
 		    /* A consolidation function should follow */
 		    if (n==0) {
-			im_free(&im);
-			rrd_set_error("Missing or incorrect CF in (G)PRINTing '%s' (%s)",varname,&argv[i][argstart]);
-			return -1;
+			im_free(im);
+			rrd_set_error("Missing or incorrect CF in (G)PRINTing '%s' (%s)",varname,&arg[argstart]);
+			return;
 		    };
-		    if((im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
-			im_free(&im);
-			return -1;
-		    };
+		    if (rrd_graph_check_CF(im,symname,arg)) return;
 		    strstart+=n;
 		};
 	    };
 
-	    scan_for_col(
-			&argv[i][argstart+strstart]
-			,FMT_LEG_LEN
-			,im.gdes[im.gdes_c-1].format
-			);
+	    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->format);
 	    break;
 	case GF_COMMENT:
-	    if(strlen(&argv[i][argstart])>FMT_LEG_LEN) argv[i][argstart+FMT_LEG_LEN-3]='\0' ;
-	    strcpy(im.gdes[im.gdes_c-1].legend, &argv[i][argstart]);
+	    if(strlen(&arg[argstart])>FMT_LEG_LEN) arg[argstart+FMT_LEG_LEN-3]='\0' ;
+	    strcpy(gdp->legend, &arg[argstart]);
 	    break;
 	case GF_HRULE:
 	    /* scan for either "HRULE:vname#..." or "HRULE:num#..."
@@ -2689,57 +2792,50 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	     * permitted
 	     */
 	    strstart=0;
-	    sscanf(&argv[i][argstart], "%lf#%n"
-		,&im.gdes[im.gdes_c-1].yrule
+	    sscanf(&arg[argstart], "%lf#%n"
+		,&im->gdes[im->gdes_c-1].yrule
 		,&strstart
 	    );
 	    if (strstart==0) { /* no number, should be vname */
-		sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
+		sscanf(&arg[argstart], DEF_NAM_FMT "#%n"
 		    ,varname
 		    ,&strstart
 		);
 		if (strstart) {
-		    im.gdes[im.gdes_c-1].yrule = DNAN;/* signal use of vname */
-		    if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-			im_free(&im);
-			rrd_set_error("unknown variable '%s' in HRULE",varname);
-			return -1;
-		    }		
-		    if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
-			im_free(&im);
+		    gdp->yrule = DNAN;/* signal use of vname */
+		    if (rrd_graph_check_vname(im,varname,arg)) return;
+		    if(im->gdes[gdp->vidx].gf != GF_VDEF) {
+			im_free(im);
 			rrd_set_error("Only VDEF is allowed in HRULE",varname);
-			return -1;
+			return;
 		    }
 		}
-	    } else {
-printf("DEBUG: matched HRULE:num\n");
-printf("DEBUG: strstart==%i\n",strstart);
 	    };
 	    if (strstart==0) {
-		im_free(&im);
-		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		return -1;
+		im_free(im);
+		rrd_set_error("can't parse '%s'",&arg[argstart]);
+		return;
 	    } else {
 		int n=0;
 		if(sscanf(
-			&argv[i][argstart+strstart],
+			&arg[argstart+strstart],
 			"%2x%2x%2x:%n",
 			&col_red,
 			&col_green,
 			&col_blue,
 			&n)>=3) {
-		    im.gdes[im.gdes_c-1].col.red = col_red;
-		    im.gdes[im.gdes_c-1].col.green = col_green;
-		    im.gdes[im.gdes_c-1].col.blue = col_blue;
+		    gdp->col.red = col_red;
+		    gdp->col.green = col_green;
+		    gdp->col.blue = col_blue;
 		    if (n==0) {
-			im.gdes[im.gdes_c-1].legend[0] = '\0';
+			gdp->legend[0] = '\0';
 		    } else {
-			scan_for_col(&argv[i][argstart+strstart+n],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+			scan_for_col(&arg[argstart+strstart+n],FMT_LEG_LEN,gdp->legend);
 		    }
 		} else {
-		    im_free(&im);
-		    rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		    return -1;
+		    im_free(im);
+		    rrd_set_error("can't parse '%s'",&arg[argstart]);
+		    return;
 		}
 	    }
 	    
@@ -2752,108 +2848,98 @@ printf("DEBUG: strstart==%i\n",strstart);
 	     * permitted
 	     */
 	    strstart=0;
-	    sscanf(&argv[i][argstart], "%lu#%n"
-		,(long unsigned int *)&im.gdes[im.gdes_c-1].xrule
-		,&strstart
-	    );
+	    sscanf(&arg[argstart], "%lu#%n"
+		,(long unsigned int *)&gdp->xrule,&strstart);
 	    if (strstart==0) { /* no number, should be vname */
-		sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
+		sscanf(&arg[argstart], DEF_NAM_FMT "#%n"
 		    ,varname
 		    ,&strstart
 		);
 		if (strstart!=0) { /* vname matched */
-		    im.gdes[im.gdes_c-1].xrule = 0;/* signal use of vname */
-		    if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-			im_free(&im);
-			rrd_set_error("unknown variable '%s' in VRULE",varname);
-			return -1;
-		    }		
-		    if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
-			im_free(&im);
+		    gdp->xrule = 0;/* signal use of vname */
+		    if (rrd_graph_check_vname(im,varname,arg)) return;
+		    if(im->gdes[gdp->vidx].gf != GF_VDEF) {
+			im_free(im);
 			rrd_set_error("Only VDEF is allowed in VRULE",varname);
-			return -1;
+			return;
 		    }
 		}
 	    } else {
-		if (im.gdes[im.gdes_c-1].xrule==0)
+		if (gdp->xrule==0)
 		    strstart=0;
 	    }
 
 	    if (strstart==0) {
-		im_free(&im);
-		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		return -1;
+		im_free(im);
+		rrd_set_error("can't parse '%s'",&arg[argstart]);
+		return;
 	    } else {
 		int n=0;
 		if(sscanf(
-			&argv[i][argstart+strstart],
+			&arg[argstart+strstart],
 			"%2x%2x%2x:%n",
 			&col_red,
 			&col_green,
 			&col_blue,
 			&n)>=3) {
-		    im.gdes[im.gdes_c-1].col.red = col_red;
-		    im.gdes[im.gdes_c-1].col.green = col_green;
-		    im.gdes[im.gdes_c-1].col.blue = col_blue;
+		    gdp->col.red = col_red;
+		    gdp->col.green = col_green;
+		    gdp->col.blue = col_blue;
 		    if (n==0) {
-			im.gdes[im.gdes_c-1].legend[0] = '\0';
+			gdp->legend[0] = '\0';
 		    } else {
-			scan_for_col(&argv[i][argstart+strstart+n],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+			scan_for_col(&arg[argstart+strstart+n],FMT_LEG_LEN,gdp->legend);
 		    }
 		} else {
-		    im_free(&im);
-		    rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		    return -1;
+		    im_free(im);
+		    rrd_set_error("can't parse '%s'",&arg[argstart]);
+		    return;
 		}
 	    }
 	    break;
 	case GF_TICK:
 	    if((scancount=sscanf(
-		&argv[i][argstart],
+		&arg[argstart],
 		"%29[^:#]#%2x%2x%2x:%lf:%n",
 		varname,
 		&col_red,
 		&col_green,
 		&col_blue,
-		&(im.gdes[im.gdes_c-1].yrule),
+		&(gdp->yrule),
 		&strstart))>=1)
 		{
-		im.gdes[im.gdes_c-1].col.red = col_red;
-		im.gdes[im.gdes_c-1].col.green = col_green;
-		im.gdes[im.gdes_c-1].col.blue = col_blue;
+		gdp->col.red = col_red;
+		gdp->col.green = col_green;
+		gdp->col.blue = col_blue;
 		if(strstart <= 0){
-		    im.gdes[im.gdes_c-1].legend[0] = '\0';
+		    gdp->legend[0] = '\0';
 		} else { 
-		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+		    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->legend);
 		}
-		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		    im_free(&im);
-		    rrd_set_error("unknown variable '%s'",varname);
-		    return -1;
-		}
-		if (im.gdes[im.gdes_c-1].yrule <= 0.0 || im.gdes[im.gdes_c-1].yrule > 1.0)
+		if (rrd_graph_check_vname(im,varname,arg)) return;
+		if (gdp->yrule <= 0.0 || gdp->yrule > 1.0)
 		{
-		    im_free(&im);
+		    im_free(im);
 		    rrd_set_error("Tick mark scaling factor out of range");
-		    return -1;
+		    return;
 		}
 		if (scancount < 4)
-		   im.gdes[im.gdes_c-1].col.red = -1;		
+		   gdp->col.red = -1;		
 	    if (scancount < 5) 
 		   /* default tick marks: 10% of the y-axis */
-		   im.gdes[im.gdes_c-1].yrule = 0.1;
+		   gdp->yrule = 0.1;
 
 		} else {
-		   im_free(&im);
-		   rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		   return -1;
+		   im_free(im);
+		   rrd_set_error("can't parse '%s'",&arg[argstart]);
+		   return;
 		} /* endif sscanf */
 		break;
 	case GF_STACK:
 	    if(linepass == 0){
-		im_free(&im);
+		im_free(im);
 		rrd_set_error("STACK must follow AREA, LINE or STACK");
-		return -1; 
+		return; 
 	    }		
 	case GF_LINE1:
 	case GF_LINE2:
@@ -2861,187 +2947,117 @@ printf("DEBUG: strstart==%i\n",strstart);
 	case GF_AREA:
 	    linepass = 1;
 	    if((scancount=sscanf(
-		&argv[i][argstart],
+		&arg[argstart],
 		"%29[^:#]#%2x%2x%2x:%n",
 		varname,
 		&col_red,
 		&col_green,
 		    &col_blue,
 		&strstart))>=1){
-		im.gdes[im.gdes_c-1].col.red = col_red;
-		im.gdes[im.gdes_c-1].col.green = col_green;
-		im.gdes[im.gdes_c-1].col.blue = col_blue;
+		gdp->col.red = col_red;
+		gdp->col.green = col_green;
+		gdp->col.blue = col_blue;
 		if(strstart <= 0){
-		    im.gdes[im.gdes_c-1].legend[0] = '\0';
+		    gdp->legend[0] = '\0';
 		} else { 
-		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+		    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->legend);
 		}
-		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		    im_free(&im);
-		    rrd_set_error("unknown variable '%s'",varname);
-		    return -1;
-		}		
+		if (rrd_graph_check_vname(im,varname,arg)) return;
 		if (scancount < 4)
-		    im.gdes[im.gdes_c-1].col.red = -1;		
-		
+		    gdp->col.red = -1;		
 	    } else {
-		im_free(&im);
-		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
-		return -1;
+		im_free(im);
+		rrd_set_error("can't parse '%s'",&arg[argstart]);
+		return;
 	    }
 	    break;
 	case GF_CDEF:
-	    if((rpnex = malloc(strlen(&argv[i][argstart])*sizeof(char)))==NULL){
+	    if((rpnex = malloc(strlen(&arg[argstart])*sizeof(char)))==NULL){
+		free(im);
 		rrd_set_error("malloc for CDEF");
-		return -1;
+		return;
 	    }
-	    if(sscanf(
-		    &argv[i][argstart],
-		    DEF_NAM_FMT "=%[^: ]",
-		    im.gdes[im.gdes_c-1].vname,
-		    rpnex) != 2){
-		im_free(&im);
-		free(rpnex);
-		rrd_set_error("can't parse CDEF '%s'",&argv[i][argstart]);
-		return -1;
+	    strstart=parse_vname1(&arg[argstart],im,"CDEF");
+	    argstart+=strstart;
+	    /* parse_vname1() did free(im) and rrd_set_error() */
+	    if (strstart==0) return;
+
+	    strstart=0;
+	    sscanf(&arg[argstart],"%[^: ]%n",rpnex,&strstart);
+	    if (strstart==0) {
+		rrd_set_error("can't parse RPN in CDEF:%s=%s",
+					gdp->vname,
+					&arg[argstart]);
+		free(im);
+		return;
 	    }
-	    /* checking for duplicate variable names */
-	    if(find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
-		im_free(&im);
-		rrd_set_error("duplicate variable '%s'",
-			      im.gdes[im.gdes_c-1].vname);
-		return -1; 
-	    }	   
-	    if((im.gdes[im.gdes_c-1].rpnp = 
-		   rpn_parse((void*)&im,rpnex,&find_var_wrapper))== NULL){
+	    if((gdp->rpnp = 
+		   rpn_parse((void*)im,rpnex,&find_var_wrapper))== NULL){
 		rrd_set_error("invalid rpn expression '%s'", rpnex);
-		im_free(&im);		
-		return -1;
+		im_free(im);		
+		return;
 	    }
 	    free(rpnex);
 	    break;
 	case GF_VDEF:
-	    strstart=parse_vname1(&argv[i][argstart],&im,"VDEF");
-	    if (strstart==0) return -1;
-
+	    strstart=parse_vname1(&arg[argstart],im,"VDEF");
 	    argstart+=strstart;
-	    sscanf(
-		&argv[i][argstart],
-		DEF_NAM_FMT ",%n",
-		varname,&strstart
-	    );
+	    /* parse_vname1() did free(im) and rrd_set_error() */
+	    if (strstart==0) return;
+
+	    strstart=0;
+	    sscanf(&arg[argstart],DEF_NAM_FMT ",%n",varname,&strstart);
 	    if (strstart==0) {
-		im_free(&im);
+		im_free(im);
 		rrd_set_error("Cannot parse '%s' in VDEF '%s'",
-				&argv[i][argstart],
-				im.gdes[im.gdes_c-1].vname);
-		return -1;
+				&arg[argstart],
+				gdp->vname);
+		return;
 	    }
-	    if ((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname)) == -1) {
-		im_free(&im);
-		rrd_set_error("variable '%s' not known in VDEF '%s'",
-		    varname,
-		    im.gdes[im.gdes_c-1].vname);
-		return -1;
-	    };
-	    if (
-		    im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_DEF
-		 && im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_CDEF) {
+	    if (rrd_graph_check_vname(im,varname,arg)) return;
+	    if (   im->gdes[gdp->vidx].gf != GF_DEF
+		&& im->gdes[gdp->vidx].gf != GF_CDEF) {
 		rrd_set_error("variable '%s' not DEF nor CDEF in VDEF '%s'",
-			varname,
-			im.gdes[im.gdes_c-1].vname);
-		im_free(&im);
-		return -1;
+			varname,gdp->vname);
+		im_free(im);
+		return;
 	    };
 
 	    /* parsed upto and including the first comma. Now
 	     * see what function is requested.  This function
 	     * sets the error string.
 	     */
-	    if (vdef_parse(&im.gdes[im.gdes_c-1],&argv[i][argstart+strstart])<0) {
-		im_free(&im);
-		return -1;
+	    if (vdef_parse(gdp,&arg[argstart+strstart])<0) {
+		im_free(im);
+		return;
 	    };
 	    break;
 	case GF_DEF:
-	    if (sscanf(
-		&argv[i][argstart],
-		DEF_NAM_FMT "=%n",
-		im.gdes[im.gdes_c-1].vname,
-		&strstart)== 1 && strstart){ /* is the = did not match %n returns 0 */ 
-		if(sscanf(&argv[i][argstart
-				  +strstart
-				  +scan_for_col(&argv[i][argstart+strstart],
-						MAXPATH,im.gdes[im.gdes_c-1].rrd)],
-			  ":" DS_NAM_FMT ":" CF_NAM_FMT,
-			  im.gdes[im.gdes_c-1].ds_nam,
-			  symname) != 2){
-		    im_free(&im);
-		    rrd_set_error("can't parse DEF '%s' -2",&argv[i][argstart]);
-		    return -1;
-		}
-	    } else {
-		im_free(&im);
-		rrd_set_error("can't parse DEF '%s'",&argv[i][argstart]);
-		return -1;
+	    strstart=parse_vname1(&arg[argstart],im,"DEF");
+	    argstart+=strstart;
+	    /* parse_vname1() did free(im) and rrd_set_error() */
+	    if (strstart==0) return;
+
+	    argstart+=scan_for_col(&arg[argstart],MAXPATH,gdp->rrd);
+	    if(sscanf(&arg[argstart], ":" DS_NAM_FMT ":" CF_NAM_FMT,
+			  gdp->ds_nam, symname) != 2){
+		im_free(im);
+		rrd_set_error("can't parse DEF '%s' -2",&arg[argstart]);
+		return;
 	    }
 	    
-	    /* checking for duplicate DEF CDEFS */
-	    if (find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
-		im_free(&im);
-		rrd_set_error("duplicate variable '%s'",
-			  im.gdes[im.gdes_c-1].vname);
-		return -1; 
-	    }	   
-	    if((im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
-		im_free(&im);
-		rrd_set_error("unknown cf '%s'",symname);
-		return -1;
-	    }
+	    if (rrd_graph_check_CF(im,symname,arg)) return;
 	    break;
 	}
-	
     }
 
-    if (im.gdes_c==0){
+    if (im->gdes_c==0){
 	rrd_set_error("can't make a graph without contents");
-	im_free(&im);
-	return(-1); 
+	im_free(im);
+	return; 
     }
-    
-	/* parse rest of arguments containing information on what to draw*/
-    if (graph_paint(&im,prdata)==-1){
-	im_free(&im);
-	return -1;
-    }
-    
-    *xsize=im.xgif;
-    *ysize=im.ygif;
-    if (im.imginfo){
-      char *filename;
-      if (! (*prdata)) {	
-	/* maybe prdata is not allocated yet ... lets do it now */
-	if((*prdata = calloc(2,sizeof(char *)))==NULL){
-	  rrd_set_error("malloc imginfo");
-	  return -1; 
-	};
-      }
-      if(((*prdata)[0] = malloc((strlen(im.imginfo)+200+strlen(im.graphfile))*sizeof(char)))
-	 ==NULL){
-	rrd_set_error("malloc imginfo");
-	return -1;
-      }
-      filename=im.graphfile+strlen(im.graphfile);      
-      while(filename > im.graphfile){
-	if (*(filename-1)=='/' || *(filename-1)=='\\' ) break;
-	filename--;
-      }
-      
-      sprintf((*prdata)[0],im.imginfo,filename,im.xgif,im.ygif);
-    }
-    im_free(&im);
-    return 0;
 }
+
 
 int bad_format(char *fmt) {
 	char *ptr;
@@ -3166,7 +3182,7 @@ int gdi;
 
     dst = &im->gdes[gdi];
     src = &im->gdes[dst->vidx];
-    data = src->data + src->ds + src->ds_cnt; /* skip first value! */
+    data = src->data + src->ds;
     steps = (src->end - src->start) / src->step;
 
 #if 0
@@ -3312,7 +3328,7 @@ const void *a,*b;
     if (isnan( *(double *)a )) return -1;
     if (isnan( *(double *)b )) return  1;
 
-    /* NaN doestn't reach this part so INF and -INF are extremes.
+    /* NaN doesn't reach this part so INF and -INF are extremes.
      * The sign from isinf() is compatible with the sign we return
      */
     if (isinf( *(double *)a )) return isinf( *(double *)a );
@@ -3321,4 +3337,3 @@ const void *a,*b;
     /* If we reach this, both values must be finite */
     if ( *(double *)a < *(double *)b ) return -1; else return 1;
 }
-
