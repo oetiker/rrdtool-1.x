@@ -4,7 +4,7 @@ use Config;
 # the contents of the Makefile that is written.
 
 # Specify the location of the archive containing PIC compiled object files.
-my $librrd = "-L../../src/.libs/ -lrrd_private"  ;
+my $librrd = "-L../../src/.libs/ -lrrd"  ;
 
 WriteMakefile(
     'NAME'         => 'RRDs',

@@ -5,6 +5,10 @@ RRDTOOL NEWS
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
+2004/01/20 Tobi Oetiker <tobi@oetiker.ch>
+  Ripped out all foreign libraries and adapted
+  Configure and Makefiles and accordingly.
+
 2002/03/26 Peter Speck <speck@ruc.dk>
   Contribution of an svg output routine for the new gfx graphing part
 

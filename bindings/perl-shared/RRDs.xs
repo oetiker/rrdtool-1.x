@@ -277,7 +277,7 @@ rrd_times(start, end)
 	  char *start
 	  char *end
 	PREINIT:
-		struct	time_value start_tv, end_tv;
+		struct	rrd_time_value start_tv, end_tv;
 		char    *parsetime_error = NULL;
 		time_t	start_tmp, end_tmp;
 	PPCODE:
