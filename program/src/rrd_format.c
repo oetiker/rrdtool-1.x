@@ -5,8 +5,16 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:05  oetiker
- * Initial revision
+ * Revision 1.2  2001/03/10 23:54:39  oetiker
+ * Support for COMPUTE data sources (CDEF data sources). Removes the RPN
+ * parser and calculator from rrd_graph and puts then in a new file,
+ * rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
+ * clean-up of aberrant behavior stuff, including a bug fix.
+ * Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
+ * -- Jake Brutlag <jakeb@corp.webtv.net>
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
+ * checkin
  *
  * Revision 1.3  1998/03/08 12:35:11  oetiker
  * checkpointing things because the current setup seems to work
@@ -32,7 +40,8 @@ enum dst_en dst_conv(char *string)
     converter(ABSOLUTE,DST_ABSOLUTE)
     converter(GAUGE,DST_GAUGE)
     converter(DERIVE,DST_DERIVE)
-    rrd_set_error("unknown date aquisition function '%s'",string);
+    converter(COMPUTE,DST_CDEF)
+    rrd_set_error("unknown data aquisition function '%s'",string);
     return(-1);
 }
 
@@ -44,6 +53,11 @@ enum cf_en cf_conv(char *string)
     converter(MIN,CF_MINIMUM)
     converter(MAX,CF_MAXIMUM)
     converter(LAST,CF_LAST)
+    converter(HWPREDICT,CF_HWPREDICT)
+    converter(DEVPREDICT,CF_DEVPREDICT)
+    converter(SEASONAL,CF_SEASONAL)
+    converter(DEVSEASONAL,CF_DEVSEASONAL)
+    converter(FAILURES,CF_FAILURES)
     rrd_set_error("unknown consolidation function '%s'",string);
     return(-1);
 }
@@ -59,10 +73,3 @@ ds_match(rrd_t *rrd,char *ds_nam){
     rrd_set_error("unknown data source name '%s'",ds_nam);
     return -1;
 }
-
-
-
-
-
-
-

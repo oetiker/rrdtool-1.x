@@ -5,6 +5,7 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+#include "rrd_rpncalc.h"
 #include <stdarg.h>
 
 /* proto */
@@ -68,6 +69,7 @@ rrd_info(int argc, char **argv) {
     info_t       *data,*cd;
     infoval      info;
 	enum cf_en   current_cf;
+	enum dst_en  current_ds;
 
     if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
 	return(NULL);
@@ -91,15 +93,30 @@ rrd_info(int argc, char **argv) {
 
 	info.u_str=rrd.ds_def[i].dst;
 	cd=push(cd,sprintf_alloc("ds[%s].type",             rrd.ds_def[i].ds_nam), RD_I_STR, info);
+  
+	current_ds = dst_conv(rrd.ds_def[i].dst);
+    switch (current_ds) {
+	   case DST_CDEF:
+		  {
+		  char *buffer;
+		  rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
+			 rrd.ds_def, &buffer);
+		  info.u_str = buffer;
+		  cd=push(cd,sprintf_alloc("ds[%s].cdef",rrd.ds_def[i].ds_nam),RD_I_STR,info);
+		  free(buffer);
+		  }
+		  break;
+	   default:
+	   info.u_cnt=rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt;
+	   cd=push(cd,sprintf_alloc("ds[%s].minimal_heartbeat",rrd.ds_def[i].ds_nam), RD_I_CNT, info);
 
-	info.u_cnt=rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt;
-	cd=push(cd,sprintf_alloc("ds[%s].minimal_heartbeat",rrd.ds_def[i].ds_nam), RD_I_CNT, info);
-
-	info.u_val=rrd.ds_def[i].par[DS_min_val].u_val;
-	cd=push(cd,sprintf_alloc("ds[%s].min",              rrd.ds_def[i].ds_nam), RD_I_VAL, info);
+	   info.u_val=rrd.ds_def[i].par[DS_min_val].u_val;
+	   cd=push(cd,sprintf_alloc("ds[%s].min",rrd.ds_def[i].ds_nam), RD_I_VAL, info);
 	
-	info.u_val=rrd.ds_def[i].par[DS_max_val].u_val;
-	cd=push(cd,sprintf_alloc("ds[%s].max",              rrd.ds_def[i].ds_nam), RD_I_VAL, info);
+	   info.u_val=rrd.ds_def[i].par[DS_max_val].u_val;
+	   cd=push(cd,sprintf_alloc("ds[%s].max",rrd.ds_def[i].ds_nam), RD_I_VAL, info);
+	   break;
+	}
 	
 	info.u_str=rrd.pdp_prep[i].last_ds;
 	cd=push(cd,sprintf_alloc("ds[%s].last_ds",          rrd.ds_def[i].ds_nam), RD_I_STR, info);
@@ -154,8 +171,6 @@ rrd_info(int argc, char **argv) {
 	}
 
 	for(ii=0;ii<rrd.stat_head->ds_cnt;ii++){
-	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
-	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].value",i,ii), RD_I_VAL, info);
         switch(current_cf)
 		{
 		case CF_HWPREDICT:
@@ -175,9 +190,23 @@ rrd_info(int argc, char **argv) {
 	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].deviation",i,ii), RD_I_VAL, info);
 		   break;
 		case CF_DEVPREDICT:
+		   break;
 		case CF_FAILURES:
+		   {
+			  short j;
+			  char *violations_array;
+			  char history[MAX_FAILURES_WINDOW_LEN+1];
+			  violations_array = (char*) rrd.cdp_prep[i*rrd.stat_head->ds_cnt +ii].scratch;
+			  for (j = 0; j < rrd.rra_def[i].par[RRA_window_len].u_cnt; ++j)
+				 history[j] = (violations_array[j] == 1) ? '1' : '0';
+		      history[j] = '\0';
+		      info.u_str = history;
+			  cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].history",i,ii), RD_I_STR, info);
+		   }
 		   break;
 		default:
+	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].value",i,ii), RD_I_VAL, info);
 	    info.u_cnt=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_unkn_pdp_cnt].u_cnt;
 	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].unknown_datapoints",i,ii), RD_I_CNT, info);
 		   break;

@@ -5,17 +5,20 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+#include "rrd_rpncalc.h"
 
-/* prototype for FnvHash */
 unsigned long FnvHash(char *str);
+int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
+void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx);
 
 /* #define DEBUG */
 int
 rrd_create(int argc, char **argv) 
 {
-    rrd_t          rrd;
-    long                i,long_tmp;
-    time_t             last_up;
+    rrd_t             rrd;
+    long              i,long_tmp;
+	int               offset;
+    time_t            last_up;
     struct time_value last_up_tv;
     char *parsetime_error = NULL;
     char *token;
@@ -116,7 +119,6 @@ rrd_create(int argc, char **argv)
 	 * arrays. */
 	hashed_name = FnvHash(argv[optind]);
     for(i=optind+1;i<argc;i++){
-	char minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];	
 	int ii;
 	if (strncmp(argv[i],"DS:",3)==0){
 	    size_t old_size = sizeof(ds_def_t)*(rrd.stat_head->ds_cnt);
@@ -127,49 +129,44 @@ rrd_create(int argc, char **argv)
 		return(-1);	
 	    }
 	    memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
+		/* extract the name and type */
 	    if (sscanf(&argv[i][3],
-		       DS_NAM_FMT ":" DST_FMT ":%lu:%18[^:]:%18[^:]",
+		       DS_NAM_FMT ":" DST_FMT ":%n",
 		       rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-		       rrd.ds_def[rrd.stat_head->ds_cnt].dst,
-		       &rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_mrhb_cnt].u_cnt,
-		       minstr,maxstr) == 5){
-		/* check for duplicate datasource names */
-		for(ii=0;ii<rrd.stat_head->ds_cnt;ii++){
+		       rrd.ds_def[rrd.stat_head->ds_cnt].dst,&offset) == 2)
+		{
+		   /* check for duplicate datasource names */
+		   for(ii=0;ii<rrd.stat_head->ds_cnt;ii++)
 			if(strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
 			  	  rrd.ds_def[ii].ds_nam) == 0){
 				rrd_set_error("Duplicate DS name: %s",rrd.ds_def[ii].ds_nam);
-		                rrd_free(&rrd);
-                                return(-1);
 			}				                                
+		} else {
+		   rrd_set_error("invalid DS format");
 		}
-		if(dst_conv(rrd.ds_def[rrd.stat_head->ds_cnt].dst) == -1){
-		    rrd_free(&rrd);
-		    return (-1);
+
+		/* parse the remainder of the arguments */
+		switch(dst_conv(rrd.ds_def[rrd.stat_head->ds_cnt].dst))
+	    {
+		   case DST_COUNTER:
+		   case DST_ABSOLUTE:
+		   case DST_GAUGE:
+		   case DST_DERIVE:
+			  parseGENERIC_DS(&argv[i][offset+3],&rrd, rrd.stat_head->ds_cnt);
+			  break;
+	       case DST_CDEF:
+			  parseCDEF_DS(&argv[i][offset+3],&rrd, rrd.stat_head->ds_cnt);
+			  break;
+           default:
+			  rrd_set_error("invalid DS type specified");
+			  break;
 		}
-		if (minstr[0] == 'U' && minstr[1] == 0)
-		    rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_min_val].u_val = DNAN;
-		else
-		    rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_min_val].u_val = atof(minstr);
-		
-		if (maxstr[0] == 'U' && maxstr[1] == 0)
-		    rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_max_val].u_val = DNAN;
-		else
-		    rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_max_val].u_val  = atof(maxstr);
-		
-		if (! isnan(rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_min_val].u_val) &&
-		    ! isnan(rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_max_val].u_val) &&
-		    rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_min_val].u_val
-		    >= rrd.ds_def[rrd.stat_head->ds_cnt].par[DS_max_val].u_val ) {
-		    rrd_set_error("min must be less than max in DS definition");
-		    rrd_free(&rrd);
-		    return (-1);		
-		}
-		rrd.stat_head->ds_cnt++;	    
-	    } else {
-		rrd_set_error("can't parse argument '%s'",argv[i]);
-		rrd_free(&rrd);
-		return (-1);		
-	    }
+
+		if (rrd_test_error()) {
+		   rrd_free(&rrd);
+		   return -1;
+        }
+		rrd.stat_head -> ds_cnt++;
 	} else if (strncmp(argv[i],"RRA:",3)==0){
 	    size_t old_size = sizeof(rra_def_t)*(rrd.stat_head->rra_cnt);
 	    if((rrd.rra_def = rrd_realloc(rrd.rra_def,
@@ -404,6 +401,42 @@ rrd_create(int argc, char **argv)
 	return(-1);
     }
     return rrd_create_fn(argv[optind],&rrd);
+}
+
+void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx)
+{
+   char minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];	
+   /*
+   int temp;
+
+   temp = sscanf(def,"%lu:%18[^:]:%18[^:]",	
+       &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
+       minstr,maxstr);
+   */
+   if (sscanf(def,"%lu:%18[^:]:%18[^:]",	
+       &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
+       minstr,maxstr) == 3)
+   {
+		if (minstr[0] == 'U' && minstr[1] == 0)
+		    rrd -> ds_def[ds_idx].par[DS_min_val].u_val = DNAN;
+		else
+		    rrd -> ds_def[ds_idx].par[DS_min_val].u_val = atof(minstr);
+		
+		if (maxstr[0] == 'U' && maxstr[1] == 0)
+		    rrd -> ds_def[ds_idx].par[DS_max_val].u_val = DNAN;
+		else
+		    rrd -> ds_def[ds_idx].par[DS_max_val].u_val  = atof(maxstr);
+		
+		if (! isnan(rrd -> ds_def[ds_idx].par[DS_min_val].u_val) &&
+		    ! isnan(rrd -> ds_def[ds_idx].par[DS_max_val].u_val) &&
+		    rrd -> ds_def[ds_idx].par[DS_min_val].u_val
+		    >= rrd -> ds_def[ds_idx].par[DS_max_val].u_val ) {
+		    rrd_set_error("min must be less than max in DS definition");
+		    return;		
+		}
+   } else {
+	  rrd_set_error("failed to parse data source %s", def);
+   }
 }
 
 /* Create the CF_DEVPREDICT, CF_DEVSEASONAL, CF_SEASONAL, and CF_FAILURES RRAs

@@ -1,0 +1,689 @@
+/****************************************************************************
+ * RRDtool 1.0.28  Copyright Tobias Oetiker, 1997 - 2000
+ ****************************************************************************
+ * rrd_rpncalc.c  RPN calculator functions
+ ****************************************************************************/
+
+#include "rrd_tool.h"
+#include "rrd_rpncalc.h"
+#include <limits.h>
+
+short addop2str(enum op_en op, enum op_en op_type, char *op_str, 
+	    char **result_str, unsigned short *offset);
+int tzoffset(time_t); /* used to implement LTIME */
+
+short rpn_compact(rpnp_t *rpnp, rpn_cdefds_t **rpnc, short *count)
+{
+   short i;
+   *count = 0;
+   /* count the number of rpn nodes */
+   while(rpnp[*count].op != OP_END) (*count)++;
+   if (++(*count) > DS_CDEF_MAX_RPN_NODES) {
+	  rrd_set_error("Maximum %d RPN nodes permitted",
+		 DS_CDEF_MAX_RPN_NODES);
+	  return -1;
+   }
+
+   /* allocate memory */
+   *rpnc = (rpn_cdefds_t *) calloc(*count,sizeof(rpn_cdefds_t));
+   for (i = 0; rpnp[i].op != OP_END; i++)
+   {
+	  (*rpnc)[i].op = (char) rpnp[i].op;
+	  if (rpnp[i].op == OP_NUMBER) {
+		 /* rpnp.val is a double, rpnc.val is a short */
+         double temp = floor(rpnp[i].val);
+         if (temp < SHRT_MIN || temp > SHRT_MAX) {
+			rrd_set_error(
+		    "constants must be integers in the interval (%d, %d)",
+			SHRT_MIN, SHRT_MAX);
+		    free(*rpnc);	
+			return -1;
+		 }
+		 (*rpnc)[i].val = (short) temp;
+	  } else if (rpnp[i].op == OP_VARIABLE) {
+		 (*rpnc)[i].val = (short) rpnp[i].ptr;
+	  }
+   }
+   /* terminate the sequence */
+   (*rpnc)[(*count) - 1].op = OP_END;
+   return 0;
+}
+
+rpnp_t * rpn_expand(rpn_cdefds_t *rpnc)
+{
+   short i;
+   rpnp_t *rpnp;
+
+   /* DS_CDEF_MAX_RPN_NODES is small, so at the expense of some wasted
+	* memory we avoid any reallocs */
+   rpnp = (rpnp_t *) calloc(DS_CDEF_MAX_RPN_NODES,sizeof(rpnp_t));
+   if (rpnp == NULL) return NULL;
+   for (i = 0; rpnc[i].op != OP_END; ++i)
+   {
+	  rpnp[i].op = (long) rpnc[i].op;
+	  if (rpnp[i].op == OP_NUMBER) {
+		 rpnp[i].val = (double) rpnc[i].val;
+	  } else if (rpnp[i].op == OP_VARIABLE) {
+		 rpnp[i].ptr = (long) rpnc[i].val;
+	  }
+   }
+   /* terminate the sequence */
+   rpnp[i].op = OP_END;
+   return rpnp;
+}
+
+/* rpn_compact2str: convert a compact sequence of RPN operator nodes back
+ * into a CDEF string. This function is used by rrd_dump.
+ * arguments:
+ *  rpnc: an array of compact RPN operator nodes
+ *  rrd: a pointer an rrd header (only the ds_cnt and ds_def elements need 
+ *   to be valid) for lookup of data source names by index
+ *  str: out string, memory is allocated by the function, must be freed by the
+ *   the caller */
+void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
+{
+   unsigned short i,offset = 0;
+   char buffer[7]; /* short as a string */
+
+   for (i = 0; rpnc[i].op != OP_END; i++)
+   {
+      if (i > 0) (*str)[offset++] = ',';
+
+#define add_op(VV,VVV) \
+	  if (addop2str(rpnc[i].op, VV, VVV, str, &offset) == 1) continue;
+
+	  if (rpnc[i].op == OP_NUMBER) {
+		 /* convert a short into a string */
+#ifdef WIN32
+		 _itoa(rpnc[i].val,buffer,10);
+#else
+		 sprintf(buffer,"%d",rpnc[i].val);
+#endif
+		 add_op(OP_NUMBER,buffer)
+	  }
+
+	  if (rpnc[i].op == OP_VARIABLE) {
+		 char *ds_name = ds_def[rpnc[i].val].ds_nam;
+	     add_op(OP_VARIABLE, ds_name)
+	  }
+#undef add_op
+
+#define add_op(VV,VVV) \
+	  if (addop2str(rpnc[i].op, VV, #VVV, str, &offset) == 1) continue;
+
+	  add_op(OP_ADD,+)
+	  add_op(OP_SUB,-)
+	  add_op(OP_MUL,*)
+	  add_op(OP_DIV,/)
+	  add_op(OP_MOD,%)
+	  add_op(OP_SIN,SIN)
+	  add_op(OP_COS,COS)
+	  add_op(OP_LOG,LOG)
+      add_op(OP_FLOOR,FLOOR)
+	  add_op(OP_CEIL,CEIL)
+	  add_op(OP_EXP,EXP)
+	  add_op(OP_DUP,DUP)
+	  add_op(OP_EXC,EXC)
+	  add_op(OP_POP,POP)
+	  add_op(OP_LT,LT)
+      add_op(OP_LE,LE)
+	  add_op(OP_GT,GT)
+	  add_op(OP_GE,GE)
+	  add_op(OP_EQ,EQ)
+	  add_op(OP_IF,IF)
+	  add_op(OP_MIN,MIN)
+	  add_op(OP_MAX,MAX)
+	  add_op(OP_LIMIT,LIMIT)
+	  add_op(OP_UNKN,UNKN)
+	  add_op(OP_UN,UN)
+	  add_op(OP_NEGINF,NEGINF)
+	  add_op(OP_PREV,PREV)
+	  add_op(OP_INF,INF)
+	  add_op(OP_NOW,NOW)
+	  add_op(OP_LTIME,LTIME)
+	  add_op(OP_TIME,TIME)
+
+#undef add_op
+   }
+   (*str)[offset] = '\0';
+
+}
+
+short addop2str(enum op_en op, enum op_en op_type, char *op_str, 
+	    char **result_str, unsigned short *offset)
+{
+   if (op == op_type) {
+	  short op_len;
+	  op_len = strlen(op_str);
+	  *result_str =  (char *) rrd_realloc(*result_str,
+		 (op_len + 1 + *offset)*sizeof(char));
+      if (*result_str == NULL) {
+		 rrd_set_error("failed to alloc memory in addop2str");
+		 return -1;
+	  }
+	  strncpy(&((*result_str)[*offset]),op_str,op_len);
+	  *offset += op_len;
+	  return 1;
+   }
+   return 0;
+}
+
+void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
+{
+   rpnp_t *rpnp = NULL;
+   rpn_cdefds_t *rpnc = NULL;
+   short count, i;
+
+   rpnp = rpn_parse((void*) rrd, def, &lookup_DS);
+   if (rpnp == NULL) {
+	  rrd_set_error("failed to parse computed data source %s", def);
+	  return;
+   }
+   /* Check for OP nodes not permitted in COMPUTE DS.
+    * Moved this check from within rpn_compact() because it really is
+	* COMPUTE DS specific. This is less efficient, but creation doesn't
+	* occur too often. */
+   for (i = 0; rpnp[i].op != OP_END; i++) {
+      if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME || 
+		  rpnp[i].op == OP_PREV)
+	  {
+		 rrd_set_error(
+		 "operators time, ltime and prev not supported with DS COMPUTE");
+		 free(rpnp);
+		 return;
+	  }
+   }
+   if (rpn_compact(rpnp,&rpnc,&count) == -1) {
+	  free(rpnp);
+	  return;
+   }
+   /* copy the compact rpn representation over the ds_def par array */
+   memcpy((void*) &(rrd -> ds_def[ds_idx].par[DS_cdef]),
+		  (void*) rpnc, count*sizeof(rpn_cdefds_t));
+   free(rpnp);
+   free(rpnc);
+}
+
+/* lookup a data source name in the rrd struct and return the index,
+ * should use ds_match() here except:
+ * (1) need a void * pointer to the rrd
+ * (2) error handling is left to the caller
+ */
+long lookup_DS(void *rrd_vptr,char *ds_name)
+{
+   int i;
+   rrd_t *rrd; 
+   
+   rrd = (rrd_t *) rrd_vptr;
+
+   for (i = 0; i < rrd -> stat_head -> ds_cnt; ++i)
+   {
+      if(strcmp(ds_name,rrd -> ds_def[i].ds_nam) == 0)
+		 return i;
+   }
+   /* the caller handles a bad data source name in the rpn string */
+   return -1;
+}
+
+/* rpn_parse : parse a string and generate a rpnp array; modified
+ * str2rpn() originally included in rrd_graph.c
+ * arguments:
+ * key_hash: a transparent argument passed to lookup(); conceptually this
+ *    is a hash object for lookup of a numeric key given a variable name
+ * expr: the string RPN expression, including variable names
+ * lookup(): a function that retrieves a numeric key given a variable name
+ */
+rpnp_t * 
+rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
+    int pos=0;
+    long steps=-1;    
+    rpnp_t  *rpnp;
+    char vname[30];
+
+    rpnp=NULL;
+
+    while(*expr){
+	if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2)* 
+				       sizeof(rpnp_t)))==NULL){
+	    return NULL;
+	}
+
+	else if((sscanf(expr,"%lf%n",&rpnp[steps].val,&pos) == 1) && (expr[pos] == ',')){
+ 	    rpnp[steps].op = OP_NUMBER;
+	    expr+=pos;
+	} 
+	
+#define match_op(VV,VVV) \
+        else if (strncmp(expr, #VVV, strlen(#VVV))==0){ \
+	    rpnp[steps].op = VV; \
+	    expr+=strlen(#VVV); \
+	}
+
+	match_op(OP_ADD,+)
+	match_op(OP_SUB,-)
+	match_op(OP_MUL,*)
+	match_op(OP_DIV,/)
+	match_op(OP_MOD,%)
+	match_op(OP_SIN,SIN)
+	match_op(OP_COS,COS)
+	match_op(OP_LOG,LOG)
+	match_op(OP_FLOOR,FLOOR)
+	match_op(OP_CEIL,CEIL)
+	match_op(OP_EXP,EXP)
+	match_op(OP_DUP,DUP)
+	match_op(OP_EXC,EXC)
+	match_op(OP_POP,POP)
+	match_op(OP_LT,LT)
+	match_op(OP_LE,LE)
+	match_op(OP_GT,GT)
+	match_op(OP_GE,GE)
+	match_op(OP_EQ,EQ)
+	match_op(OP_IF,IF)
+	match_op(OP_MIN,MIN)
+	match_op(OP_MAX,MAX)
+	match_op(OP_LIMIT,LIMIT)
+	  /* order is important here ! .. match longest first */
+	match_op(OP_UNKN,UNKN)
+	match_op(OP_UN,UN)
+	match_op(OP_NEGINF,NEGINF)
+	match_op(OP_PREV,PREV)
+	match_op(OP_INF,INF)
+	match_op(OP_NOW,NOW)
+	match_op(OP_LTIME,LTIME)
+	match_op(OP_TIME,TIME)
+
+#undef match_op
+
+
+	else if ((sscanf(expr,"%29[_A-Za-z0-9]%n",
+			 vname,&pos) == 1) 
+		 && ((rpnp[steps].ptr = (*lookup)(key_hash,vname)) != -1)){
+	    rpnp[steps].op = OP_VARIABLE;
+	    expr+=pos;
+	}	   
+
+	else {
+	    free(rpnp);
+	    return NULL;
+	}
+	if (*expr == 0)
+	  break;
+	if (*expr == ',')
+	    expr++;
+	else {
+	    free(rpnp);
+	    return NULL;
+	}  
+    }
+    rpnp[steps+1].op = OP_END;
+    return rpnp;
+}
+
+void
+rpnstack_init(rpnstack_t *rpnstack)
+{
+   rpnstack -> s = NULL;
+   rpnstack -> dc_stacksize = 0;
+   rpnstack -> dc_stackblock = 100;
+}
+
+void
+rpnstack_free(rpnstack_t *rpnstack)
+{
+   if (rpnstack -> s != NULL)
+	  free(rpnstack -> s);
+   rpnstack -> dc_stacksize = 0;
+}
+
+/* rpn_calc: run the RPN calculator; also performs variable substitution;
+ * moved and modified from data_calc() originally included in rrd_graph.c 
+ * arguments:
+ * rpnp : an array of RPN operators (including variable references)
+ * rpnstack : the initialized stack
+ * data_idx : when data_idx is a multiple of rpnp.step, the rpnp.data pointer
+ *   is advanced by rpnp.ds_cnt; used only for variable substitution
+ * output : an array of output values; OP_PREV assumes this array contains
+ *   the "previous" value at index position output_idx-1; the definition of
+ *   "previous" depends on the calling environment
+ * output_idx : an index into the output array in which to store the output
+ *   of the RPN calculator
+ * returns: -1 if the computation failed (also calls rrd_set_error)
+ *           0 on success
+ */
+short
+rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, 
+		rrd_value_t *output, int output_idx)
+{
+   int rpi;
+   long stptr = -1;
+
+   /* process each op from the rpn in turn */
+   for (rpi=0; rpnp[rpi].op != OP_END; rpi++){
+	  /* allocate or grow the stack */
+      if (stptr + 5 > rpnstack -> dc_stacksize){
+			/* could move this to a separate function */
+		    rpnstack -> dc_stacksize += rpnstack -> dc_stackblock;		
+		    rpnstack -> s = rrd_realloc(rpnstack -> s,
+			   (rpnstack -> dc_stacksize)*sizeof(*(rpnstack -> s)));
+		    if (rpnstack -> s == NULL){
+			rrd_set_error("RPN stack overflow");
+			return -1;
+		    }
+	  }
+	  switch (rpnp[rpi].op){
+		case OP_NUMBER:
+		    rpnstack -> s[++stptr] = rpnp[rpi].val;
+		    break;
+		case OP_VARIABLE:
+            /* make sure we pull the correct value from the *.data array 
+		     * adjust the pointer into the array acordingly. 
+			 * Advance the ptr one row in the rra (skip over
+			 * non-relevant data sources) */
+		    if (data_idx % rpnp[rpi].step == 0){
+			   rpnp[rpi].data += rpnp[rpi].ds_cnt;
+		    }
+		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		    break;
+		case OP_PREV:
+		    if ((output_idx-1) <= 0) {
+               rpnstack -> s[++stptr] = DNAN;
+            } else {
+               rpnstack -> s[++stptr] = output[output_idx-1];
+            }
+		    break;
+		case OP_UNKN:
+		    rpnstack -> s[++stptr] = DNAN; 
+		    break;
+		case OP_INF:
+		    rpnstack -> s[++stptr] = DINF; 
+		    break;
+		case OP_NEGINF:
+		    rpnstack -> s[++stptr] = -DINF; 
+		    break;
+		case OP_NOW:
+		    rpnstack -> s[++stptr] = (double)time(NULL);
+		    break;
+		case OP_TIME:
+			/* HACK: this relies on the data_idx being the time,
+			 * which the within-function scope is unaware of */
+		    rpnstack -> s[++stptr] = (double) data_idx;
+		    break;
+		case OP_LTIME:
+		    rpnstack -> s[++stptr] = (double) tzoffset(data_idx) + (double)data_idx;
+		    break;
+		case OP_ADD:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] 
+			   + rpnstack -> s[stptr];
+		    stptr--;
+		    break;
+		case OP_SUB:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] - rpnstack -> s[stptr];
+		    stptr--;
+		    break;
+		case OP_MUL:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr-1] = (rpnstack -> s[stptr-1]) * (rpnstack -> s[stptr]);
+		    stptr--;
+		    break;
+		case OP_DIV:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] / rpnstack -> s[stptr];
+		    stptr--;
+		    break;
+		case OP_MOD:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr-1] = fmod(rpnstack -> s[stptr-1],rpnstack -> s[stptr]);
+		    stptr--;
+		    break;
+		case OP_SIN:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = sin(rpnstack -> s[stptr]);
+		    break;
+		case OP_COS:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = cos(rpnstack -> s[stptr]);
+		    break;
+		case OP_CEIL:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = ceil(rpnstack -> s[stptr]);
+		    break;
+		case OP_FLOOR:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = floor(rpnstack -> s[stptr]);
+		    break;
+		case OP_LOG:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = log(rpnstack -> s[stptr]);
+		    break;
+		case OP_DUP:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr+1] = rpnstack -> s[stptr];
+		    stptr++;
+		    break;
+		case OP_POP:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    stptr--;
+		    break;
+		case OP_EXC:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    } else {
+		      double dummy;
+		      dummy = rpnstack -> s[stptr] ;
+		      rpnstack -> s[stptr] = rpnstack -> s[stptr-1];
+		      rpnstack -> s[stptr-1] = dummy;
+		    }
+		    break;
+		case OP_EXP:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack -> s[stptr] = exp(rpnstack -> s[stptr]);
+		    break;
+		case OP_LT:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack -> s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack -> s[stptr]))
+		        rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		    else
+			    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] < rpnstack -> s[stptr] ? 1.0 : 0.0;
+		    stptr--;
+		    break;
+		case OP_LE:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack -> s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack -> s[stptr]))
+		        rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		    else
+			    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] <= rpnstack -> s[stptr] ? 1.0 : 0.0;
+		    stptr--;
+		    break;
+		case OP_GT:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack -> s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack -> s[stptr]))
+		        rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		    else
+			    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] > rpnstack -> s[stptr] ? 1.0 : 0.0;
+		    stptr--;
+		    break;
+		case OP_GE:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack -> s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack -> s[stptr]))
+		        rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		    else
+			    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] >= rpnstack -> s[stptr] ? 1.0 : 0.0;
+		    stptr--;
+		    break;
+		case OP_EQ:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack -> s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack -> s[stptr]))
+		        rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		    else
+			    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] == rpnstack -> s[stptr] ? 1.0 : 0.0;
+		    stptr--;
+		    break;
+		case OP_IF:
+		    if(stptr<2){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack->s[stptr-2] = rpnstack->s[stptr-2] != 0.0 ? rpnstack->s[stptr-1] : rpnstack->s[stptr];
+		    stptr--;
+		    stptr--;
+		    break;
+		case OP_MIN:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack->s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack->s[stptr]))
+		        rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		    else if (rpnstack->s[stptr-1] > rpnstack->s[stptr])
+		        rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		    stptr--;
+		    break;
+		case OP_MAX:
+		    if(stptr<1){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    if (isnan(rpnstack->s[stptr-1])) 
+			;
+		    else if (isnan(rpnstack->s[stptr]))
+		        rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		    else if (rpnstack->s[stptr-1] < rpnstack->s[stptr])
+		        rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		    stptr--;
+		    break;
+		case OP_LIMIT:
+		    if(stptr<2){
+			rrd_set_error("RPN stack underflow");
+			free(rpnstack->s);
+			return -1;
+		    }
+		    if (isnan(rpnstack->s[stptr-2])) 
+			;
+		    else if (isnan(rpnstack->s[stptr-1]))
+		        rpnstack->s[stptr-2] = rpnstack->s[stptr-1];
+		    else if (isnan(rpnstack->s[stptr]))
+		        rpnstack->s[stptr-2] = rpnstack->s[stptr];
+		    else if (rpnstack->s[stptr-2] < rpnstack->s[stptr-1])
+		        rpnstack->s[stptr-2] = DNAN;
+		    else if (rpnstack->s[stptr-2] > rpnstack->s[stptr])
+		        rpnstack->s[stptr-2] = DNAN;
+		    stptr-=2;
+		    break;
+		case OP_UN:
+		    if(stptr<0){
+			rrd_set_error("RPN stack underflow");
+			return -1;
+		    }
+		    rpnstack->s[stptr] = isnan(rpnstack->s[stptr]) ? 1.0 : 0.0;
+		    break;
+		case OP_END:
+		    break;
+		}
+	    }
+	    if(stptr!=0){
+		rrd_set_error("RPN final stack size != 1");
+		return -1;
+	    }
+
+	    output[output_idx] = rpnstack->s[0];
+		return 0;
+}
+
+/* figure out what the local timezone offset for any point in
+   time was. Return it in seconds */
+int
+tzoffset( time_t now ){
+  int gm_sec, gm_min, gm_hour, gm_yday, gm_year,
+    l_sec, l_min, l_hour, l_yday, l_year;
+  struct tm *t;
+  int off;
+  t = gmtime(&now);
+  gm_sec = t->tm_sec;
+  gm_min = t->tm_min;
+  gm_hour = t->tm_hour;
+  gm_yday = t->tm_yday;
+  gm_year = t->tm_year;
+  t = localtime(&now);
+  l_sec = t->tm_sec;
+  l_min = t->tm_min;
+  l_hour = t->tm_hour;
+  l_yday = t->tm_yday;
+  l_year = t->tm_year;
+  off = (l_sec-gm_sec)+(l_min-gm_min)*60+(l_hour-gm_hour)*3600; 
+  if ( l_yday > gm_yday || l_year > gm_year){
+        off += 24*3600;
+  } else if ( l_yday < gm_yday || l_year < gm_year){
+        off -= 24*3600;
+  }
+
+  return off;
+}

@@ -26,14 +26,24 @@ The name of the B<RRD> you want to update.
 
 =item B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...
 
-by default, the update function expects the data input in the order,
-the data sources are defined in the RRD. This is not very error
-resistant, as you might be sending the wrong data into a RRD.
+by default, the B<update> function expects the data input in the order
+the data sources are defined in the RRD, excluding any COMPUTE data sources 
+(i.e. if the third data source B<DST> is COMPUTE, the third input value
+will be mapped to the fourth data source in the B<RRD>). This is not very
+error resistant, as you might be sending the wrong data into a RRD.
 
 The template switch allows you to specify which data sources you are
 going to update and in which order. If the data sources specified in
 the template are not available in the rrd file, the update process
 will abort with an error message.
+
+While it appears possible with the template switch to update data sources
+asynchronously, B<RRDtool> implicitly assigns non-COMPUTE data sources missing
+from the template the I<*UNKNOWN*> value. 
+
+Do not specify a value for a COMPUTE B<DST> in the B<update> function. If
+this is done accidently (and this can only be done using the template switch),
+B<RRDtool> will ignore the value specified for the COMPUTE B<DST>.
 
 =item B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]
 

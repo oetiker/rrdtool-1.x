@@ -31,7 +31,10 @@ database as *UNKNOWN*.
 One application of the B<tune> function is to relax the 
 validation rules on an B<RRD>. This allows to fill a new B<RRD> with
 data available in larger intervals than what you would normally want
-to permit.
+to permit. Be very careful with tune operations for COMPUTE data sources.
+Setting the I<min>, I<max>, and  I<heartbeat> for a COMPUTE data source
+without changing the data source type to a non-COMPUTE B<DST> WILL corrupt
+the data source header in the B<RRD>.
 
 A second application of the B<tune> function is to set or alter parameters
 used by the specialized function B<RRAs> for aberrant behavior detection.
@@ -70,9 +73,9 @@ rename a data source
 Alter the deviation scaling factor for the upper bound of the confidence band
 used internally to calculate violations for the FAILURES B<RRA>. The default
 value is 2. Note that this parameter is not related to graphing confidence
-bounds, that scale factor is specified as a CDEV argument to generate a graph with
-confidence bounds. It need agree with the value used internally by the FAILURES
-B<RRA> (although common sense dictates it should).
+bounds, that scale factor must be specified as a CDEF argument to generate 
+a graph with confidence bounds. It need not agree with the value used internally 
+by the FAILURES B<RRA> (although common sense dictates it should).
 
 =item S<B<--deltaneg> I<scale-value>>
 

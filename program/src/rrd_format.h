@@ -136,7 +136,8 @@ typedef struct stat_head_t {
 enum dst_en          { DST_COUNTER=0,     /* data source types available */
                        DST_ABSOLUTE, 
                        DST_GAUGE,
-                       DST_DERIVE};
+                       DST_DERIVE,
+					   DST_CDEF};
 
 enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
 					   * data source must provide input at
@@ -144,10 +145,12 @@ enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
 					   * otherwise it is regarded dead and
 					   * will be set to UNKNOWN */             
 		             DS_min_val,	  /* the processed input of a ds must */
-                     DS_max_val };        /* be between max_val and min_val
+                     DS_max_val,      /* be between max_val and min_val
 					   * both can be set to UNKNOWN if you
 					   * do not care. Data outside the limits
  					   * set to UNKNOWN */
+                     DS_cdef = DS_mrhb_cnt}; /* pointer to encoded rpn
+					   * expression only applies to DST_CDEF */
 
 /* The magic number here is one less than DS_NAM_SIZE */
 #define DS_NAM_FMT    "%19[a-zA-Z0-9_-]"
