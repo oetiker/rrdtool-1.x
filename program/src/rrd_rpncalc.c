@@ -397,10 +397,10 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		     * row in the rra (skip over non-relevant
 		     * data sources)
 		     */
+		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
 		    if (data_idx % rpnp[rpi].step == 0){
 			rpnp[rpi].data += rpnp[rpi].ds_cnt;
 		    }
-		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
 		}
 		break;
 	    case OP_PREV:
