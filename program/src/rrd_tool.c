@@ -96,7 +96,8 @@ void PrintUsage(char *cmd)
 	   "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
-           "\t\t[-g|--no-legend]\n";
+           "\t\t[-g|--no-legend]\n"
+    	   "\t\t[-F|--force-rules-legend]\n";
     char help_graph2[] =
            "\t\t[-j|--only-graph]\n"
 	   "\t\t[--font FONTTAG:size:font]\n"
@@ -384,8 +385,11 @@ int main(int argc, char *argv[])
 		PrintUsage(argv[2]);
 		exit(0);
 	}
-    else
-	HandleInputLine(argc, argv, stderr);    
+    else {
+        if(HandleInputLine(argc, argv, stderr)) {
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -642,6 +646,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     if (rrd_test_error()) {
 	fprintf(out, "ERROR: %s\n",rrd_get_error());
 	rrd_clear_error();
+	return 1;
     }
     return(0);
 }
