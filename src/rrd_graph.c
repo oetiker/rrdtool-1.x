@@ -816,6 +816,17 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 		    } /* if OP_VARIABLE */
 		} /* loop through all rpi */
 
+                /* move the data pointers to the correct period */
+                for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
+                    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE){
+                        long ptr = im->gdes[gdi].rpnp[rpi].ptr;
+                        if(im->gdes[gdi].start > im->gdes[ptr].start) {
+                            im->gdes[gdi].rpnp[rpi].data += im->gdes[gdi].rpnp[rpi].ds_cnt;
+                        }
+                     }
+                }
+        
+
 		if(steparray == NULL){
 		    rrd_set_error("rpn expressions without DEF"
 				" or CDEF variables are not supported");
