@@ -6,7 +6,7 @@ $LastChangedRevision$
 
 Plan for the release of RRDtool 1.2
 -----------------------------------
-This work is sponserd by Cablecom GmbH (cablecom.ch)
+This work is sponsored by Cablecom GmbH (cablecom.ch)
 
 [OK] Convert repository to Subversion
        svn://svn.ee.ethz.ch/rrdtool
@@ -17,10 +17,10 @@ This work is sponserd by Cablecom GmbH (cablecom.ch)
 ---  Verify build on Solaris and Debian Linux
 
 ---  Implement tab support for text fields. This will allow
-     to use propertional fonts in lables and still have the
-     alignement over several lines
+     to use proportional fonts in labels and still have the
+     alignment over several lines
 
----  remove or fix piechart code in rrd_graph
+---  remove or fix pie-chart code in rrd_graph
 
 ---  [ 2005-04-04 ] Publish rrdtool 1.2.0rc1 (feature complete)
 
@@ -28,7 +28,7 @@ This work is sponserd by Cablecom GmbH (cablecom.ch)
 
 ---  Update Tutorials with material about the new features
 
----  Check documentation for consistancy
+---  Check documentation for consistency
 
 ---  Update Website for 1.2
 
