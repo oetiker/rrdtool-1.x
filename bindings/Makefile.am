@@ -6,7 +6,7 @@ EXTRA_DIST = `cat perl-*/MANIFEST`
 # lets schedule the perl stuff for installation
 # the special call to install-sh is because the -d switch is not portable
 install-data-local:
-	./config/mkinstalldirs $(DESTDIR)$(prefix)/lib/perl/auto/RRDs
+	../config/mkinstalldirs $(DESTDIR)$(prefix)/lib/perl/auto/RRDs
 	$(INSTALL) -m 644 perl-piped/RRDp.pm $(DESTDIR)$(prefix)/lib/perl
 	$(INSTALL) -m 644 perl-shared/RRDs.pm $(DESTDIR)$(prefix)/lib/perl
 	$(INSTALL) -m 644 perl-shared/blib/arch/auto/RRDs/RRDs.bs $(DESTDIR)$(prefix)/lib/perl/auto/RRDs
