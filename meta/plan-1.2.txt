@@ -16,10 +16,10 @@ Stat  Info
 ----  --------------------------------------------------------------------
 [OK]  Convert repository to Subversion -- svn://svn.ee.ethz.ch/rrdtool
 
-----  Update build infrastructure to current versions of
+[OK]  Update build infrastructure to current versions of
       autotools and support libraries.
 
-----  Verify build on Solaris and Debian Linux
+*---  Verify build on Solaris and Debian Linux
 
 ----  Implement tab support for text fields. This will allow
       to use proportional fonts in labels and still have them
@@ -30,7 +30,7 @@ Stat  Info
 ----  [ 2005-04-04 ] branch for 1.2 and publish RRDtool 1.2.0rc1
       (feature complete). No new features will be accepted after this date.
 
-----  Fix compiler warnings
+*---  Fix compiler warnings
 
 ----  Work on the looks of the graphs. Especially the grid setup.
 
