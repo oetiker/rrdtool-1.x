@@ -519,7 +519,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
         case GFX_AREA: {   
             ArtVpath *vec,*pvec;
             double dst[6];     
-            ArtSVP *svp,*usvp,*rsvp;
+            ArtSVP *svp,*svpt;
             art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
@@ -530,18 +530,18 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( pvec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
-                                             node->size*canvas->zoom,1,1);
+                                             node->size*canvas->zoom,4,0.25);
             } else {
-                svp = art_svp_from_vpath ( pvec );
+                svp  = art_svp_from_vpath ( pvec );
+                svpt = art_svp_uncross( svp );
+                art_free(svp);
+	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_ODDEVEN); 
+                art_free(svpt);
             }
             art_free(pvec);
-            usvp=art_svp_uncross(svp);
-            art_free(svp);
-	    rsvp=art_svp_rewind_uncrossed(usvp,ART_WIND_RULE_ODDEVEN); 
-            art_free(usvp); 
-            art_rgb_svp_alpha (rsvp ,0,0, pys_width, pys_height,
+            art_rgb_svp_alpha (svp ,0,0, pys_width, pys_height,
                                node->color, buffer, rowstride, NULL);
-            art_free(rsvp);
+            art_free(svp);
             break;
         }
         case GFX_TEXT: {
