@@ -173,3 +173,46 @@ foreach my $line (@$array){
 
 
 
+my ($start,$end,$step,$col_cnt,$legend,$data) = 
+  RRDs::xport ("-m", 400,
+	       "--start", "now-1day",
+	       "--end", "now",
+	       "DEF:alpha=$RRD1:a:AVERAGE",
+	       "DEF:beta=$RRD1:d:AVERAGE",
+	       "CDEF:calc=alpha,beta,+,2,/,100,*,102,/",
+	       "XPORT:alpha:original ds",
+	       "XPORT:calc:calculated values",
+	       );
+
+my $ERROR = RRDs::error;
+die "$0: unable to xport: $ERROR\n" if $ERROR;
+
+print "\nrrdxport test:\n\n";
+print "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n\n";
+print "<xport>\n";
+print "  <meta>\n";
+print "    <start>$start</start>\n";
+print "    <step>$step</step>\n";
+print "    <end>$end</end>\n";
+print "    <rows>", $#$data + 1, "</rows>\n";
+print "    <columns>$col_cnt</columns>\n";
+print "    <legend>\n";
+foreach my $entry (@$legend) {
+    print "      <entry>$entry</entry>\n";
+}
+print "    </legend>\n";
+print "  </meta>\n";
+print "  <data>\n";
+my $row_counter = 0;
+foreach my $row (@$data) {
+    $row_counter++;
+    print "    <row id=\"$row_counter\"><t is=\"", scalar localtime($start), "\">$start</t>";
+    $start += $step;
+    foreach my $val (@$row) {
+	printf ("<v>%1.10e</v>",$val) if $val ne '';
+	print "<v>NaN</v>" if  $val eq '';
+    }
+    print "</row>\n";
+}
+print "  </data>\n";
+print "</xport>\n";

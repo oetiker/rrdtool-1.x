@@ -82,6 +82,10 @@ Find last update time of an RRD. Check L<rrdlast>.
 
 Change the size of individual RRAs ... Dangerous! Check L<rrdresize>.
 
+=item B<xport>
+
+Export data retrieved from one or several RRD. Check L<rrdxport>
+
 =item B<rrdcgi>
 
 This is a standalone tool for producing rrd graphs on the fly. Check
@@ -245,7 +249,7 @@ will not abort if possible, but follow the ERROR line with an OK line.
 
 =head1 SEE ALSO
 
-rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast
+rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast, rrdxport
 
 =head1 BUGS
 

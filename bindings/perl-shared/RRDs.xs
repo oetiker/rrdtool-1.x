@@ -204,7 +204,7 @@ rrd_fetch(...)
 		/* convert the data array into perl format */
 		datai=data;
 		retar=newAV();
-		for (i = start; i <= end; i += step){
+		for (i = start+step; i <= end; i += step){
 			line = newAV();
 			for (ii = 0; ii < ds_cnt; ii++){
  			  av_push(line,(isnan(*datai) ? &PL_sv_undef : newSVnv(*datai)));
@@ -214,11 +214,70 @@ rrd_fetch(...)
 		}
 		free(data);
 		EXTEND(sp,5);
-		PUSHs(sv_2mortal(newSViv(start)));
+		PUSHs(sv_2mortal(newSViv(start+step)));
 		PUSHs(sv_2mortal(newSViv(step)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 
+
+int
+rrd_xport(...)
+	PROTOTYPE: @	
+	PREINIT:
+                time_t start,end;		
+                int xsize;
+		unsigned long step, col_cnt,row_cnt,i,ii;
+		rrd_value_t *data,*ptr;
+                char **argv,**legend_v;
+		AV *retar,*line,*names;
+	PPCODE:
+		argv = (char **) malloc((items+1)*sizeof(char *));
+		argv[0] = "dummy";
+		for (i = 0; i < items; i++) { 
+		    STRLEN len;
+		    char *handle = SvPV(ST(i),len);
+		    /* actually copy the data to make sure possible modifications
+		       on the argv data does not backfire into perl */ 
+		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
+		    strcpy(argv[i+1],handle);
+ 	        }
+		optind=0; opterr=0; 
+		rrd_clear_error();
+		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data); 
+		for (i=0; i < items; i++) {
+		    free(argv[i+1]);
+		}
+		free(argv);
+		if (rrd_test_error()) XSRETURN_UNDEF;
+
+                /* convert the legend_v into perl format */
+		names=newAV();
+		for (ii = 0; ii < col_cnt; ii++){
+		    av_push(names,newSVpv(legend_v[ii],0));
+		    free(legend_v[ii]);
+		}
+		free(legend_v);			
+
+		/* convert the data array into perl format */
+		ptr=data;
+		retar=newAV();
+		for (i = start+step; i <= end; i += step){
+			line = newAV();
+			for (ii = 0; ii < col_cnt; ii++){
+ 			  av_push(line,(isnan(*ptr) ? &PL_sv_undef : newSVnv(*ptr)));
+			  ptr++;
+			}
+			av_push(retar,newRV_noinc((SV*)line));
+		}
+		free(data);
+
+		EXTEND(sp,7);
+		PUSHs(sv_2mortal(newSViv(start+step)));
+		PUSHs(sv_2mortal(newSViv(end)));
+		PUSHs(sv_2mortal(newSViv(step)));
+		PUSHs(sv_2mortal(newSViv(col_cnt)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 
 SV*
 rrd_info(...)

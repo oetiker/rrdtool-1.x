@@ -186,6 +186,7 @@ enum gf_en gf_conv(char *string){
     conv_if(CDEF,GF_CDEF)
     conv_if(VDEF,GF_VDEF)
     conv_if(PART,GF_PART)
+    conv_if(XPORT,GF_XPORT)
     
     return (-1);
 }
@@ -814,6 +815,8 @@ data_calc( image_desc_t *im){
 	 * so CDEFs can use VDEFs and vice versa
 	 */
 	switch (im->gdes[gdi].gf) {
+	    case GF_XPORT:
+	      break;
 	    case GF_VDEF:
 		/* A VDEF has no DS.  This also signals other parts
 		 * of rrdtool that this is a VDEF value, not a CDEF.
@@ -1030,6 +1033,7 @@ data_proc( image_desc_t *im ){
 	    case GF_CDEF:
 	    case GF_VDEF:
 	    case GF_PART:
+	    case GF_XPORT:
 		break;
 	    }
 	}
@@ -1311,6 +1315,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_CDEF:	    
 	case GF_VDEF:	    
 	case GF_PART:
+	case GF_XPORT:
 	    break;
 	}
     }
@@ -2274,6 +2279,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
     case GF_COMMENT:
     case GF_HRULE:
     case GF_VRULE:
+    case GF_XPORT:
       break;
     case GF_TICK:
       for (ii = 0; ii < im->xsize; ii++)
@@ -2999,6 +3005,8 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 
 	/* If the error string is set, we exit at the end of the switch */
 	switch (gdp->gf) {
+	    case GF_XPORT:
+	        break;
 	    case GF_COMMENT:
 		if (rrd_graph_legend(gdp,&line[argstart])==0)
 		    rrd_set_error("Cannot parse comment in line: %s",line);
