@@ -22,4 +22,4 @@ librrd_freetype_la_SOURCES = \
 
 EXTRA_DIST= README ChangeLog cffdrivr.c      cffparse.c      cffload.c       cffobjs.c       cffgload.c
 
-INCLUDES = -Iinclude
+INCLUDES = -I$(srcdir)/include
