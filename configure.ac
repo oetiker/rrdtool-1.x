@@ -141,7 +141,7 @@ CGI_LIB_DIR=cgilib-0.4
 FREETYPE_LIB_DIR=freetype-2.0.5
 ART_LIB_DIR=libart_lgpl-2.3.7
 PNG_LIB_DIR=libpng-1.2.0
-ZLIB_LIB_DIR=zlib-1.1.3
+ZLIB_LIB_DIR=zlib-1.1.4
 
 dnl substitute them in all the files listed in AC_OUTPUT
 AC_SUBST(CGI_LIB_DIR)
