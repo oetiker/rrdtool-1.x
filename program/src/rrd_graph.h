@@ -92,6 +92,7 @@ typedef struct ylab_t {
 typedef  struct graph_desc_t {
     enum gf_en     gf;         /* graphing function */
     int            stack;      /* boolean */
+    int            debug;      /* boolean */
     char           vname[MAX_VNAME_LEN+1];  /* name of the variable */
     long           vidx;       /* gdes reference */
     char           rrd[255];   /* name of the rrd_file containing data */
@@ -210,7 +211,6 @@ void rrd_graph_init(image_desc_t *);
 void rrd_graph_options(int, char **, image_desc_t *);
 void rrd_graph_script(int, char **, image_desc_t *);
 int rrd_graph_check_vname(image_desc_t *, char *, char *);
-int rrd_graph_check_CF(image_desc_t *, char *, char *);
 int rrd_graph_color(image_desc_t *, char *, char *, int);
 int rrd_graph_legend(graph_desc_t *, char *);
 int bad_format(char *);
