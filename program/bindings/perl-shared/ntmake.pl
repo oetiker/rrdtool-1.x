@@ -14,7 +14,8 @@ WriteMakefile(
    'INC'	=> '-I../../src/ -I../../libraries/freetype-2.0.5/include -I ../../libraries/libart_lgpl-2.3.7 -I ../../libraries/zlib-1.1.4 -I ../../libraries/libpng-1.2.0',
    'OPTIMIZE' => '-O2 -MT',
 # change this path to refer to your libc.lib
-    'MYEXTLIB'  => 'c:/vc98/lib/libcmt.lib ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0\release\png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
+    'MYEXTLIB'  => '"$(VCINSTALLDIR)/vc7/lib/libcmt.lib" ../../src/debug/rrd.lib ../../libraries/libart_lgpl-2.3.7/debug/libart.lib ../../libraries/zlib-1.1.4/debug/zlib.lib ../../libraries/libpng-1.2.0/debug/png.lib ../../libraries/freetype-2.0.5/debug/freetype.lib', 
+#   'MYEXTLIB'  => '"$(VCINSTALLDIR)/vc7/lib/libcmt.lib" ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0\release\png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
     ($] ge '5.005') ? (
         'AUTHOR' => 'Tobias Oetiker (oetiker@ee.ethz.ch)',
