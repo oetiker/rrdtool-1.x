@@ -4,7 +4,7 @@
 
 =over 4
 
-=item B<to be depriciated commands>
+=item B<to be deprecated commands>
 
 =over 4
 
@@ -62,7 +62,7 @@ Similarly no report is generated if you don't use print options.
 
 =item B<PRINT> : I<vname> : I<CF> : I<format>
 
-I<Depriciated. Use the new form of this command in new scripts.>
+I<Deprecated. Use the new form of this command in new scripts.>
 The first form of this command is to be used with B<CDEF> I<vname>s.
 
 =item B<PRINT> : I<vname> : I<format>
@@ -168,7 +168,7 @@ B<%Z> time zone
 
 =item B<GPRINT> : I<vname> : I<CF> : I<format>
 
-I<Depriciated. Use the new form of this command in new scripts.>
+I<Deprecated. Use the new form of this command in new scripts.>
 This is the same as C<PRINT> but now it is printed inside the graph.
 
 =item B<GPRINT> : I<vname> : I<format>
@@ -213,7 +213,7 @@ also be filled.
 
 =item B<STACK> : I<vname> # I<color> [ :I<legend> ]
 
-I<Depriciated.  Use the B<STACK> modifiers on the other commands.>
+I<Deprecated.  Use the B<STACK> modifiers on the other commands.>
 I<Note: the comments on stacking are still valid...>
 Repeats the last B<LINEx> or B<AREA> however it doesn't start at the
 x-axis but rather on top of the previous element. This implies that

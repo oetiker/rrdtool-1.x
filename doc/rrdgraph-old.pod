@@ -11,10 +11,10 @@ S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-x>|B<--x-grid> I<x-axis grid and label>]>
 S<[B<-y>|B<--y-grid> I<y-axis grid and label>]>
-S<[B<--alt-y-grid>]>
-S<[B<--alt-autoscale>]>
-S<[B<--alt-autoscale-max>]>
-S<[B<--units-exponent>]> I<value>]>
+S<[B<-Y>|B<--alt-y-grid>]>
+S<[B<-A>|B<--alt-autoscale>]>
+S<[B<-M>|B<--alt-autoscale-max>]>
+S<[B<-X>|B<--units-exponent>]> I<value>]>
 S<[B<-v>|B<--vertical-label> I<text>]>
 S<[B<-w>|B<--width> I<pixels>]>
 S<[B<-h>|B<--height> I<pixels>]> 
@@ -27,7 +27,7 @@ S<[B<-u>|B<--upper-limit> I<value>]>
 S<[B<-l>|B<--lower-limit> I<value>]>
 S<[B<-g>|B<--no-legend>]>
 S<[B<-r>|B<--rigid>]>
-S<[B<--step> I<value>]>
+S<[B<-S>|B<--step> I<value>]>
 S<[B<-b>|B<--base> I<value>]>
 S<[B<-c>|B<--color> I<COLORTAG>B<#>I<rrggbb>]>
 S<[B<-t>|B<--title> I<title>]>
