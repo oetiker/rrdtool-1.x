@@ -19,20 +19,20 @@ Stat  Info
 [OK]  Update build infrastructure to current versions of
       autotools and support libraries.
 
-**--  Verify build on Solaris and Debian Linux
+[OK]  Verify build on Solaris and Debian Linux
 
 [OK]  Implement tab support for text fields. This will allow
       to use proportional fonts in labels and still have them
       aliened across several lines.
 
-----  remove or fix pie-chart code in rrd_graph
+[OK]  remove or fix pie-chart code in rrd_graph
 
 ----  [ 2005-04-04 ] branch for 1.2 and publish RRDtool 1.2.0rc1
       (feature complete). No new features will be accepted after this date.
 
 **--  Fix compiler warnings
 
-*---  Work on the looks of the graphs. Especially the grid setup.
+***-  Work on the looks of the graphs. Especially the grid setup.
 
 ----  Update Tutorials with material about the new features
 
