@@ -175,7 +175,7 @@ rrd_parse_shift(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
 	char	*l = strdup(line + *eaten), *p;
 	int	rc = 1;
 
-	p = strchr(l, ',');
+	p = strchr(l, ':');
 	if (p == NULL) {
 		rrd_set_error("Invalid SHIFT syntax");
 		goto out;
