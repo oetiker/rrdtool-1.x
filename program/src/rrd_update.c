@@ -5,6 +5,19 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.7  2003/02/13 07:05:27  oetiker
+ * Find attached the patch I promised to send to you. Please note that there
+ * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
+ * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
+ * library is identical to librrd, but it contains support code for per-thread
+ * global variables currently used for error information only. This is similar
+ * to how errno per-thread variables are implemented.  librrd_th must be linked
+ * alongside of libpthred
+ *
+ * There is also a new file "THREADS", holding some documentation.
+ *
+ * -- Peter Stamfest <peter@stamfest.at>
+ *
  * Revision 1.6  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -41,8 +54,6 @@
 #include "rrd_tool.h"
 #include <sys/types.h>
 #include <fcntl.h>
-#include "rrd_hw.h"
-#include "rrd_rpncalc.h"
 
 #ifdef WIN32
  #include <sys/locking.h>
@@ -50,11 +61,18 @@
  #include <io.h>
 #endif
 
+#include "rrd_hw.h"
+#include "rrd_rpncalc.h"
+
+#include "rrd_is_thread_safe.h"
+
 /* Local prototypes */
 int LockRRD(FILE *rrd_file);
-void write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-    unsigned short CDP_scratch_idx, FILE *rrd_file);
- 
+void write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
+					unsigned long *rra_current,
+					unsigned short CDP_scratch_idx, FILE *rrd_file);
+int rrd_update_r(char *filename, char *template, int argc, char **argv);
+
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
 
 
@@ -81,10 +99,54 @@ main(int argc, char **argv){
 int
 rrd_update(int argc, char **argv)
 {
+    char             *template = NULL;          
+    int rc;
+
+    while (1) {
+		static struct option long_options[] =
+			{
+				{"template",      required_argument, 0, 't'},
+				{0,0,0,0}
+			};
+		int option_index = 0;
+		int opt;
+		opt = getopt_long(argc, argv, "t:", 
+						  long_options, &option_index);
+		
+		if (opt == EOF)
+			break;
+		
+		switch(opt) {
+		case 't':
+			template = optarg;
+			break;
+			
+		case '?':
+			rrd_set_error("unknown option '%s'",argv[optind-1]);
+			/*            rrd_free(&rrd); */
+			return(-1);
+		}
+    }
+
+    /* need at least 2 arguments: filename, data. */
+    if (argc-optind < 2) {
+		rrd_set_error("Not enough arguments");
+
+		return -1;
+    }
+
+    rc = rrd_update_r(argv[optind], template,
+		      argc - optind - 1, argv + optind + 1);
+    return rc;
+}
+
+int
+rrd_update_r(char *filename, char *template, int argc, char **argv)
+{
 
     int              arg_i = 2;
     short            j;
-    long             i,ii,iii=1;
+    unsigned long    i,ii,iii=1;
 
     unsigned long    rra_begin;          /* byte pointer to the rra
 					  * area in the rrd file.  this
@@ -118,14 +180,13 @@ rrd_update(int argc, char **argv)
 
     long             *tmpl_idx;          /* index representing the settings
 					    transported by the template index */
-    long             tmpl_cnt = 2;       /* time and data */
+    unsigned long    tmpl_cnt = 2;       /* time and data */
 
     FILE             *rrd_file;
     rrd_t            rrd;
     time_t           current_time = time(NULL);
     char             **updvals;
     int              schedule_smooth = 0;
-    char             *template = NULL;   
 	rrd_value_t      *seasonal_coef = NULL, *last_seasonal_coef = NULL;
 					 /* a vector of future Holt-Winters seasonal coefs */
     unsigned long    elapsed_pdp_st;
@@ -145,39 +206,13 @@ rrd_update(int argc, char **argv)
 
     rpnstack_init(&rpnstack);
 
-    while (1) {
-	static struct option long_options[] =
-	{
-	    {"template",      required_argument, 0, 't'},
-	    {0,0,0,0}
-	};
-	int option_index = 0;
-	int opt;
-	opt = getopt_long(argc, argv, "t:", 
-			  long_options, &option_index);
-	
-	if (opt == EOF)
-	  break;
-	
-	switch(opt) {
-	case 't':
-	    template = optarg;
-	    break;
-
-	case '?':
-	    rrd_set_error("unknown option '%s'",argv[optind-1]);
-            rrd_free(&rrd);            
-	    return(-1);
-	}
-    }
-
-    /* need at least 2 arguments: filename, data. */
-    if (argc-optind < 2) {
+    /* need at least 1 arguments: data. */
+    if (argc < 1) {
 	rrd_set_error("Not enough arguments");
 	return -1;
     }
 
-    if(rrd_open(argv[optind],&rrd_file,&rrd, RRD_READWRITE)==-1){
+    if(rrd_open(filename,&rrd_file,&rrd, RRD_READWRITE)==-1){
 	return -1;
     }
     rra_current = rra_start = rra_begin = ftell(rrd_file);
@@ -244,7 +279,7 @@ rrd_update(int argc, char **argv)
 
     if (template) {
 	char *dsname;
-	int tmpl_len;
+	unsigned int tmpl_len;
 	dsname = template;
 	tmpl_cnt = 1; /* the first entry is the time */
 	tmpl_len = strlen(template);
@@ -288,7 +323,7 @@ rrd_update(int argc, char **argv)
     }
 
     /* loop through the arguments. */
-    for(arg_i=optind+1; arg_i<argc;arg_i++) {
+    for(arg_i=0; arg_i<argc;arg_i++) {
 	char *stepper = malloc((strlen(argv[arg_i])+1)*sizeof(char));
         char *step_start = stepper;
 	char *p;
@@ -355,7 +390,7 @@ rrd_update(int argc, char **argv)
 	    if (ds_tv.type == RELATIVE_TO_END_TIME ||
 		ds_tv.type == RELATIVE_TO_START_TIME) {
 		rrd_set_error("specifying time relative to the 'start' "
-                              "or 'end' makes no sense here: %s",
+			      "or 'end' makes no sense here: %s",
 			      updvals[0]);
 		free(step_start);
 		break;
@@ -1149,9 +1184,9 @@ rrd_update(int argc, char **argv)
 	if (schedule_smooth)
 	{
 #ifndef WIN32
-	  rrd_file = fopen(argv[optind],"r+");
+	  rrd_file = fopen(filename,"r+");
 #else
-	  rrd_file = fopen(argv[optind],"rb+");
+	  rrd_file = fopen(filename,"rb+");
 #endif
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
@@ -1219,7 +1254,7 @@ LockRRD(FILE *rrdfile)
 
 void
 write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-   unsigned short CDP_scratch_idx, FILE *rrd_file)
+	       unsigned short CDP_scratch_idx, FILE *rrd_file)
 {
    unsigned long ds_idx, cdp_idx;
 

@@ -164,7 +164,9 @@ void rrd_freemem(void *mem);
 void rrd_init(rrd_t *rrd);
 
 int rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
+int rrd_open_r(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
 int readfile(char *file, char **buffer, int skipfirst);
+int readfile_r(char *file, char **buffer, int skipfirst);
 
 #define RRD_READONLY    0
 #define RRD_READWRITE   1
@@ -173,6 +175,14 @@ enum cf_en cf_conv(char *string);
 enum dst_en dst_conv(char *string);
 long ds_match(rrd_t *rrd,char *ds_nam);
 double rrd_diff(char *a, char *b);
+
+    /* rrd_strerror is thread safe, but still it uses a global buffer
+       (but one per thread), thus subsequent calls within a single
+       thread overwrite the same buffer */
+const char *rrd_strerror(int err);
+
+/* just a defensive work-around... */
+#define strerror(x) rrd_strerror(x)
 
 #endif
 

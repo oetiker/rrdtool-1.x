@@ -12,6 +12,7 @@
 static char * sprintf_alloc(char *, ...);
 static info_t *push(info_t *, char *, enum info_type, infoval);
 info_t *rrd_info(int, char **);
+info_t *rrd_info_r(char *filename);
 
 /* allocate memory for string */
 static char *
@@ -60,10 +61,26 @@ static info_t
     return(next);
 }
 
-  
+
 info_t *
 rrd_info(int argc, char **argv) {   
-    int          i,ii=0;
+    info_t             *info;
+
+    if(argc < 2){
+        rrd_set_error("please specify an rrd");
+        return NULL;
+    }
+
+    info = rrd_info_r(argv[1]);
+
+    return(info);
+}
+
+
+  
+info_t *
+rrd_info_r(char *filename) {   
+    unsigned int i,ii=0;
     FILE         *in_file;
     rrd_t        rrd;
     info_t       *data,*cd;
@@ -71,12 +88,12 @@ rrd_info(int argc, char **argv) {
 	enum cf_en   current_cf;
 	enum dst_en  current_ds;
 
-    if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
+    if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1){
 	return(NULL);
     }
     fclose(in_file);
 
-    info.u_str=argv[1];
+    info.u_str=filename;
     cd=push(NULL,sprintf_alloc("filename"),    RD_I_STR, info);
     data=cd;
 
@@ -193,7 +210,7 @@ rrd_info(int argc, char **argv) {
 		   break;
 		case CF_FAILURES:
 		   {
-			  short j;
+			  unsigned short j;
 			  char *violations_array;
 			  char history[MAX_FAILURES_WINDOW_LEN+1];
 			  violations_array = (char*) rrd.cdp_prep[i*rrd.stat_head->ds_cnt +ii].scratch;

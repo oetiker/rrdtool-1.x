@@ -32,6 +32,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* NOTE: nothing in here is thread-safe!!!! Not even the localtime
+   calls ... */
+
 /*
  * The BNF-like specification of the time syntax parsed is below:
  *                                                               

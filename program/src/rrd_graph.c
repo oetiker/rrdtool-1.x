@@ -677,9 +677,9 @@ for (col=0;col<row_cnt;col++) {
    relevant rrds ... */
 
 int
-data_fetch( image_desc_t *im )
+data_fetch(image_desc_t *im )
 {
-    int		i,ii;
+    unsigned int i,ii;
     int		skip;
 
     /* pull the data from the log files ... */
@@ -1096,7 +1096,7 @@ find_first_time(
     )
 {
     struct tm tm;
-    tm = *localtime(&start);
+    localtime_r(&start, &tm);
     switch(baseint){
     case TMT_SECOND:
 	tm.tm_sec -= tm.tm_sec % basestep; break;
@@ -1149,7 +1149,7 @@ find_next_time(
 {
     struct tm tm;
     time_t madetime;
-    tm = *localtime(&current);
+    localtime_r(&current, &tm);
     do {
 	switch(baseint){
 	case TMT_SECOND:
@@ -1254,14 +1254,15 @@ print_calc(image_desc_t *im, char ***prdata)
 	    } /* prepare printval */
 
 	    if (!strcmp(im->gdes[i].format,"%c")) { /* VDEF time print */
+		char ctime_buf[128]; /* PS: for ctime_r, must be >= 26 chars */
 		if (im->gdes[i].gf == GF_PRINT){
 		    (*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
 		    sprintf((*prdata)[prlines-2],"%s (%lu)",
-					ctime(&printtime),printtime);
+					ctime_r(&printtime,ctime_buf),printtime);
 		    (*prdata)[prlines-1] = NULL;
 		} else {
 		    sprintf(im->gdes[i].legend,"%s (%lu)",
-					ctime(&printtime),printtime);
+					ctime_r(&printtime,ctime_buf),printtime);
 		    graphelement = 1;
 		}
 	    } else {
@@ -1694,7 +1695,7 @@ vertical_grid(
     long factor;
     char graph_label[100];
     double X0,Y0,Y1; /* points for filled graph and more*/
-   
+    struct tm tm;
 
     /* the type of time grid is determined by finding
        the number of seconds per pixel in the graph */
@@ -1774,7 +1775,8 @@ vertical_grid(
 	if (ti < im->start || ti > im->end) continue;
 
 #if HAVE_STRFTIME
-	strftime(graph_label,99,im->xlab_user.stst,localtime(&tilab));
+	localtime_r(&tilab, &tm);
+	strftime(graph_label,99,im->xlab_user.stst, &tm);
 #else
 # error "your libc has no strftime I guess we'll abort the exercise here."
 #endif
@@ -2195,15 +2197,15 @@ graph_paint(image_desc_t *im, char ***calcpr)
   double areazero = 0.0;
   enum gf_en stack_gf = GF_PRINT;
   graph_desc_t *lastgdes = NULL;    
-  
+
   /* if we are lazy and there is nothing to PRINT ... quit now */
   if (lazy && im->prt_c==0) return 0;
-  
+
   /* pull the data from the rrd files ... */
   
   if(data_fetch(im)==-1)
     return -1;
-  
+
   /* evaluate VDEF and CDEF operations ... */
   if(data_calc(im)==-1)
     return -1;
@@ -2470,7 +2472,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   } else {
     if ((fo = fopen(im->graphfile,"wb")) == NULL) {
       rrd_set_error("Opening '%s' for write: %s",im->graphfile,
-                    strerror(errno));
+                    rrd_strerror(errno));
       return (-1);
     }
   }
@@ -2488,7 +2490,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 int
 gdes_alloc(image_desc_t *im){
 
-    long def_step = (im->end-im->start)/im->xsize;
+    unsigned long def_step = (im->end-im->start)/im->xsize;
     
     if (im->step > def_step) /* step can be increassed ... no decreassed */
       def_step = im->step;
@@ -2623,7 +2625,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 void
 rrd_graph_init(image_desc_t *im)
 {
-    int i;
+    unsigned int i;
 
 #ifdef HAVE_TZSET
     tzset();

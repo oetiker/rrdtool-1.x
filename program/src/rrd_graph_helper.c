@@ -293,8 +293,8 @@ rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *
 
     start_tv.type   = end_tv.type=ABSOLUTE_TIME;
     start_tv.offset = end_tv.offset=0;
-    memcpy(&start_tv.tm, localtime(&gdp->start) , sizeof(struct tm) );
-    memcpy(&end_tv.tm,   localtime(&gdp->end) ,   sizeof(struct tm) );
+    localtime_r(&gdp->start, &start_tv.tm);
+    localtime_r(&gdp->end, &end_tv.tm);
     
     dprintf("- parsing '%s'\n",&line[*eaten]);
     dprintf("- from line '%s'\n",line);

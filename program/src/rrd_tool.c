@@ -360,6 +360,8 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/* HandleInputLine is NOT thread safe - due to readdir issues,
+   resolving them portably is not really simple. */
 int HandleInputLine(int argc, char **argv, FILE* out)
 {
 #if defined(HAVE_OPENDIR) && defined (HAVE_READDIR)
@@ -505,7 +507,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {
-	time_t        start,end;
+	time_t        start,end, ti;
 	unsigned long step, ds_cnt,i,ii;
 	rrd_value_t   *data,*datai;
 	char          **ds_namv;
@@ -515,8 +517,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    for (i = 0; i<ds_cnt;i++)
 	        printf("%14s",ds_namv[i]);
 	    printf ("\n\n");
-	    for (i = start+step; i <= end; i += step){
-	        printf("%10lu:", i);
+	    for (ti = start+step; ti <= end; ti += step){
+	        printf("%10lu:", ti);
 	        for (ii = 0; ii < ds_cnt; ii++)
 		    printf(" %0.10e", *(datai++));
 	        printf("\n");
@@ -528,8 +530,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
 	int xxsize;
-	unsigned long int i = 0, j = 0;
-	time_t        start,end;
+	unsigned long int j = 0;
+	time_t        start,end, ti;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
@@ -555,9 +557,9 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	  printf("    </%s>\n", LEGEND_TAG);
 	  printf("  </%s>\n", META_TAG);
 	  printf("  <%s>\n", DATA_TAG);
-	  for (i = start+step; i <= end; i += step) {
+	  for (ti = start+step; ti <= end; ti += step) {
 	    printf ("    <%s>", DATA_ROW_TAG);
-	    printf ("<%s>%lu</%s>", COL_TIME_TAG, i, COL_TIME_TAG);
+	    printf ("<%s>%lu</%s>", COL_TIME_TAG, ti, COL_TIME_TAG);
 	    for (j = 0; j < col_cnt; j++) {
 	      rrd_value_t newval = DNAN;
 	      newval = *ptr;

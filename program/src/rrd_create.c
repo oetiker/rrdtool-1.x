@@ -8,25 +8,96 @@
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 
+#include "rrd_is_thread_safe.h"
+
 unsigned long FnvHash(char *str);
 int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
 void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx);
 
-/* #define DEBUG */
 int
 rrd_create(int argc, char **argv) 
 {
-    rrd_t             rrd;
-    long              i,long_tmp;
-	int               offset;
-    time_t            last_up;
+    time_t            last_up = time(NULL)-10;
+    unsigned long     pdp_step = 300;
     struct time_value last_up_tv;
     char *parsetime_error = NULL;
+    long              long_tmp;
+    int               rc;
+
+    while (1){
+	static struct option long_options[] =
+	{
+	    {"start",      required_argument, 0, 'b'},
+	    {"step",        required_argument,0,'s'},
+	    {0,0,0,0}
+	};
+	int option_index = 0;
+	int opt;
+	opt = getopt_long(argc, argv, "b:s:", 
+			  long_options, &option_index);
+	
+	if (opt == EOF)
+	    break;
+	
+	switch(opt) {
+	case 'b':
+            if ((parsetime_error = parsetime(optarg, &last_up_tv))) {
+                rrd_set_error("start time: %s", parsetime_error );
+                return(-1);
+	    }
+	    if (last_up_tv.type == RELATIVE_TO_END_TIME ||
+		last_up_tv.type == RELATIVE_TO_START_TIME) {
+		rrd_set_error("specifying time relative to the 'start' "
+                              "or 'end' makes no sense here");
+		return(-1);
+	    }
+
+	    last_up = mktime(&last_up_tv.tm) + last_up_tv.offset;
+	    
+	    if (last_up < 3600*24*365*10){
+		rrd_set_error("the first entry to the RRD should be after 1980");
+		return(-1);
+	    }	
+	    break;
+
+	case 's':
+	    long_tmp = atol(optarg);
+	    if (long_tmp < 1){
+		rrd_set_error("step size should be no less than one second");
+		return(-1);
+	    }
+	    pdp_step = long_tmp;
+	    break;
+
+	case '?':
+            if (optopt != 0)
+                rrd_set_error("unknown option '%c'", optopt);
+            else
+                rrd_set_error("unknown option '%s'",argv[optind-1]);
+	    return(-1);
+	}
+    }
+
+    rc = rrd_create_r(argv[optind],
+		      pdp_step, last_up,
+		      argc - optind - 1, argv + optind + 1);
+    
+    return rc;
+}
+
+/* #define DEBUG */
+int
+rrd_create_r(char *filename,
+	     unsigned long pdp_step, time_t last_up,
+	     int argc, char **argv) 
+{
+    rrd_t             rrd;
+    long              i;
+    int               offset;
     char *token;
     unsigned short token_idx, error_flag, period=0;
-	unsigned long hashed_name;
-    /* init last_up */
-    last_up = time(NULL)-10;
+    unsigned long hashed_name;
+
     /* init rrd clean */
     rrd_init(&rrd);
     /* static header */
@@ -48,79 +119,21 @@ rrd_create(int argc, char **argv)
     rrd.stat_head->float_cookie = FLOAT_COOKIE;
     rrd.stat_head->ds_cnt = 0; /* this will be adjusted later */
     rrd.stat_head->rra_cnt = 0; /* ditto */
-    rrd.stat_head->pdp_step = 300; /* 5 minute default */
+    rrd.stat_head->pdp_step = pdp_step; /* 5 minute default */
 
     /* a default value */
     rrd.ds_def = NULL;
     rrd.rra_def = NULL;
-    
-    while (1){
-	static struct option long_options[] =
-	{
-	    {"start",      required_argument, 0, 'b'},
-	    {"step",        required_argument,0,'s'},
-	    {0,0,0,0}
-	};
-	int option_index = 0;
-	int opt;
-	opt = getopt_long(argc, argv, "b:s:", 
-			  long_options, &option_index);
-	
-	if (opt == EOF)
-	  break;
-	
-	switch(opt) {
-	case 'b':
-            if ((parsetime_error = parsetime(optarg, &last_up_tv))) {
-                rrd_set_error("start time: %s", parsetime_error );
-		rrd_free(&rrd);
-                return(-1);
-	    }
-	    if (last_up_tv.type == RELATIVE_TO_END_TIME ||
-		last_up_tv.type == RELATIVE_TO_START_TIME) {
-		rrd_set_error("specifying time relative to the 'start' "
-                              "or 'end' makes no sense here");
-		rrd_free(&rrd);
-		return(-1);
-	    }
 
-	    last_up = mktime(&last_up_tv.tm) + last_up_tv.offset;
-	    
-	    if (last_up < 3600*24*365*10){
-		rrd_set_error("the first entry to the RRD should be after 1980");
-		rrd_free(&rrd);
-		return(-1);
-	    }	
-	    break;
-
-	case 's':
-	    long_tmp = atol(optarg);
-	    if (long_tmp < 1){
-		rrd_set_error("step size should be no less than one second");
-		rrd_free(&rrd);
-		return(-1);
-	    }
-	    rrd.stat_head->pdp_step = long_tmp;
-	    break;
-
-	case '?':
-            if (optopt != 0)
-                rrd_set_error("unknown option '%c'", optopt);
-            else
-                rrd_set_error("unknown option '%s'",argv[optind-1]);
-            rrd_free(&rrd);
-	    return(-1);
-	}
-    }
     rrd.live_head->last_up = last_up;
 	
 	/* optind points to the first non-option command line arg,
 	 * in this case, the file name. */
 	/* Compute the FNV hash value (used by SEASONAL and DEVSEASONAL
 	 * arrays. */
-    hashed_name = FnvHash(argv[optind]);
-    for(i=optind+1;i<argc;i++){
-	int ii;
+    hashed_name = FnvHash(filename);
+    for(i=0;i<argc;i++){
+	unsigned int ii;
 	if (strncmp(argv[i],"DS:",3)==0){
 	    size_t old_size = sizeof(ds_def_t)*(rrd.stat_head->ds_cnt);
 	    if((rrd.ds_def = rrd_realloc(rrd.ds_def,
@@ -169,6 +182,7 @@ rrd_create(int argc, char **argv)
             }
             rrd.stat_head -> ds_cnt++;
 	} else if (strncmp(argv[i],"RRA:",3)==0){
+	    char *tokptr;
 	    size_t old_size = sizeof(rra_def_t)*(rrd.stat_head->rra_cnt);
 	    if((rrd.rra_def = rrd_realloc(rrd.rra_def,
                                           old_size+sizeof(rra_def_t)))==NULL)
@@ -179,7 +193,7 @@ rrd_create(int argc, char **argv)
 	    }
 	    memset(&rrd.rra_def[rrd.stat_head->rra_cnt], 0, sizeof(rra_def_t));
             
-	    token = strtok(&argv[i][4],":");
+	    token = strtok_r(&argv[i][4],":", &tokptr);
 	    token_idx = error_flag = 0;
 	    while (token != NULL)
 	    {
@@ -359,7 +373,7 @@ rrd_create(int argc, char **argv)
                     rrd_free(&rrd);
                     return (-1);
                 }
-                token = strtok(NULL,":");
+                token = strtok_r(NULL,":", &tokptr);
                 token_idx++;
 	    } /* end while */
 #ifdef DEBUG
@@ -401,7 +415,7 @@ rrd_create(int argc, char **argv)
 	rrd_free(&rrd);
 	return(-1);
     }
-    return rrd_create_fn(argv[optind],&rrd);
+    return rrd_create_fn(filename, &rrd);
 }
 
 void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx)
@@ -519,7 +533,7 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
     rrd_value_t       unknown = DNAN ;
     
     if ((rrd_file = fopen(file_name,"wb")) == NULL ) {
-	rrd_set_error("creating '%s': %s",file_name,strerror(errno));
+	rrd_set_error("creating '%s': %s",file_name, rrd_strerror(errno));
 	free(rrd->stat_head);
 	free(rrd->ds_def);
 	free(rrd->rra_def);

@@ -5,6 +5,19 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2003/02/13 07:05:27  oetiker
+ * Find attached the patch I promised to send to you. Please note that there
+ * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
+ * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
+ * library is identical to librrd, but it contains support code for per-thread
+ * global variables currently used for error information only. This is similar
+ * to how errno per-thread variables are implemented.  librrd_th must be linked
+ * alongside of libpthred
+ *
+ * There is also a new file "THREADS", holding some documentation.
+ *
+ * -- Peter Stamfest <peter@stamfest.at>
+ *
  * Revision 1.4  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -29,18 +42,33 @@
 extern char *tzname[2];
 
 int
-rrd_dump(int argc, char **argv)    
+rrd_dump(int argc, char **argv) 
+{
+    int                 rc;
+
+    if (argc < 2) {
+	rrd_set_error("Not enough arguments");
+	return -1;
+    }
+
+    rc = rrd_dump_r(argv[1]);
+    
+    return rc;
+}
+
+int
+rrd_dump_r(char *filename)    
 {   
-    int          i,ii,ix,iii=0;
+    unsigned int i,ii,ix,iii=0;
     time_t       now;
     char         somestring[255];
     rrd_value_t  my_cdp;
     long         rra_base, rra_start, rra_next;
-    FILE                  *in_file;
-    rrd_t             rrd;
+    FILE        *in_file;
+    rrd_t        rrd;
     rrd_value_t  value;
-
-    if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
+    struct tm    tm;
+    if(rrd_open(filename, &in_file,&rrd, RRD_READONLY)==-1){
 	return(-1);
     }
 
@@ -49,8 +77,9 @@ rrd_dump(int argc, char **argv)
     printf("\t<version> %s </version>\n",RRD_VERSION);
     printf("\t<step> %lu </step> <!-- Seconds -->\n",rrd.stat_head->pdp_step);
 #if HAVE_STRFTIME
+    localtime_r(&rrd.live_head->last_up, &tm);
     strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z",
-	     localtime(&rrd.live_head->last_up));
+	     &tm);
 #else
 # error "Need strftime"
 #endif
@@ -225,7 +254,7 @@ rrd_dump(int argc, char **argv)
 			break;
 		case CF_FAILURES:
 		    {
-            short vidx;
+            unsigned short vidx;
 			char *violations_array = (char *) ((void*) 
 			   rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch);
 			printf("\t\t\t<history> ");
@@ -275,7 +304,8 @@ rrd_dump(int argc, char **argv)
 
 	    timer++;
 #if HAVE_STRFTIME
-	    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z", localtime(&now));
+	    localtime_r(&now, &tm);
+	    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z", &tm);
 #else
 # error "Need strftime"
 #endif

@@ -5,6 +5,19 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.4  2003/02/13 07:05:27  oetiker
+ * Find attached the patch I promised to send to you. Please note that there
+ * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
+ * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
+ * library is identical to librrd, but it contains support code for per-thread
+ * global variables currently used for error information only. This is similar
+ * to how errno per-thread variables are implemented.  librrd_th must be linked
+ * alongside of libpthred
+ *
+ * There is also a new file "THREADS", holding some documentation.
+ *
+ * -- Peter Stamfest <peter@stamfest.at>
+ *
  * Revision 1.3  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -69,7 +82,7 @@ enum cf_en cf_conv(char *string)
 
 long
 ds_match(rrd_t *rrd,char *ds_nam){
-    long i;
+    unsigned long i;
     for(i=0;i<rrd->stat_head->ds_cnt;i++)
 	if ((strcmp(ds_nam,rrd->ds_def[i].ds_nam))==0)
 	    return i;

@@ -409,7 +409,7 @@ rrd_write(char *file_name, rrd_t *rrd)
     } else {
       int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL,0666);
       if (fd == -1 || (rrd_file = fdopen(fd,"wb")) == NULL) {
-	rrd_set_error("creating '%s': %s",file_name,strerror(errno));
+	rrd_set_error("creating '%s': %s",file_name,rrd_strerror(errno));
         if (fd != -1)
           close(fd);
 	return(-1);
@@ -557,7 +557,7 @@ parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index)
 {
    char history[MAX_FAILURES_WINDOW_LEN + 1];
    char *violations_array;
-   short i;
+   unsigned short i;
 
    /* 28 = MAX_FAILURES_WINDOW_LEN */ 
    read_tag(buf, "history", "%28[0-1]", history);

@@ -1,0 +1,35 @@
+/*****************************************************************************
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * This file:     Copyright 2003 Peter Stamfest <peter@stamfest.at> 
+ *                             & Tobias Oetiker
+ * Distributed under the GPL
+ *****************************************************************************
+ * rrd_not_thread_safe.c   Contains routines used when thread safety is not
+ *                         an issue
+ *****************************************************************************
+ * $Id$
+ *************************************************************************** */
+#include "rrd.h"
+#include "rrd_tool.h"
+#define MAXLEN 4096
+#define ERRBUFLEN 256
+static char rrd_error[MAXLEN] = "\0";
+static char rrd_liberror[ERRBUFLEN] = "\0";
+/* The global context is very useful in the transition period to even
+   more thread-safe stuff, it can be used whereever we need a context
+   and do not need to worry about concurrency. */
+static struct rrd_context global_ctx = {
+    sizeof(rrd_error),
+    sizeof(rrd_liberror),
+    rrd_error, 
+    rrd_liberror
+};
+#include <stdarg.h>
+
+struct rrd_context *rrd_get_context() {
+    return &global_ctx;
+}
+
+const char *rrd_strerror(int err) {
+    return strerror(err);
+}
