@@ -12,7 +12,7 @@ E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt>[ ...]
 
 =head1 DESCRIPTION
 
-The B<graph> function of B<RRDtool> is used to represent the
+The B<graph> function of B<RRDtool> is used to present the
 data from an B<RRD> to a human viewer.  Its main purpose is to
 create a nice graphical representation but it can also generate
 a numerical report.
@@ -103,9 +103,14 @@ Z<>
 
 B<[-w|--width E<lt>pixelsE<gt>]>
 B<[-h|--heigth E<lt>pixelsE<gt>]>
+B<[-j|--only-graph]>
 
 The width and height of the B<canvas> (the part of the graph with
 the actual lines and such). Defaults are 400 pixels by 100 pixels.
+
+If you sepcify the B<--only-graph> and set the hight < 32 pixels you will
+get a tiny graph image to use as an icon in a potential overview. All
+labeling will be stripped off the graph.
 
 Z<>
 
