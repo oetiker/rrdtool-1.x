@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.7  2003/11/12 22:14:26  oetiker
+ * allow to pass an open filehandle into rrd_graph as an extra argument
+ *
  * Revision 1.6  2003/11/11 19:46:21  oetiker
  * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
  *
@@ -53,7 +56,7 @@ typedef double       rrd_value_t;         /* the data storage type is
 /* main function blocks */
 int    rrd_create(int, char **);
 int    rrd_update(int, char **);
-int    rrd_graph(int, char **, char ***, int *, int *);
+int    rrd_graph(int, char **, char ***, int *, int *, FILE *);
 int    rrd_fetch(int, char **, time_t *, time_t *, unsigned long *,
 		 unsigned long *, char ***, rrd_value_t **);
 int    rrd_restore(int, char **);

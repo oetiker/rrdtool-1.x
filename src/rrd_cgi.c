@@ -433,7 +433,7 @@ char* drawgraph(long argc, char **args){
   optind=0; /* reset gnu getopt */
   opterr=0; /* reset gnu getopt */
   calfree();
-  if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize) != -1 ) {
+  if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize, NULL) != -1 ) {
     return stralloc(calcpr[0]);
   } else {
     if (rrd_test_error()) {

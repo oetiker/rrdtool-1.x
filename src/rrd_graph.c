@@ -2477,11 +2477,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
   
   if (strcmp(im->graphfile,"-")==0) {
+    fo = im->graphhandle ? im->graphhandle : stdout;
 #ifdef WIN32
     /* Change translation mode for stdout to BINARY */
-    _setmode( _fileno( stdout ), O_BINARY );
+    _setmode( _fileno( fo ), O_BINARY );
 #endif
-    fo = stdout;
   } else {
     if ((fo = fopen(im->graphfile,"wb")) == NULL) {
       rrd_set_error("Opening '%s' for write: %s",im->graphfile,
@@ -2569,12 +2569,13 @@ scan_for_col(char *input, int len, char *output)
 ** - script parsing   now in rrd_graph_script()
 */
 int 
-rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
+rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *stream)
 {
     image_desc_t   im;
             
     rrd_graph_init(&im);
-
+    im.graphhandle = stream;
+    
     rrd_graph_options(argc,argv,&im);
     if (rrd_test_error()) {
 	im_free(&im);

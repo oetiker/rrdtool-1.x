@@ -193,7 +193,7 @@ rrd_graph(...)
  	        }
 		optind=0; opterr=0; 
 		rrd_clear_error();
-		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize); 
+		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL); 
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
