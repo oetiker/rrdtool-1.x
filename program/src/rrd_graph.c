@@ -3243,36 +3243,41 @@ rrd_graph_legend(graph_desc_t *gdp, char *line)
 
 
 int bad_format(char *fmt) {
-	char *ptr;
-	int n=0;
+    char *ptr;
+    int n=0;
+    ptr = fmt;
+    while (*ptr != '\0')
+        if (*ptr++ == '%') {
+ 
+             /* line cannot end with percent char */
+             if (*ptr == '\0') return 1;
+ 
+             /* '%s', '%S' and '%%' are allowed */
+             if (*ptr == 's' || *ptr == 'S' || *ptr == '%') ptr++;
 
-	ptr = fmt;
-	while (*ptr != '\0') {
-		if (*ptr == '%') {ptr++;
-			if (*ptr == '\0') return 1;
-			while ((*ptr >= '0' && *ptr <= '9') || *ptr == '.') { 
-				ptr++;
-			}
-			if (*ptr == '\0') return 1;
-			else if (*ptr == ' ') ptr++;
-			else if (*ptr == '-') ptr++;
-			else if (*ptr == '+') ptr++;				
-			if (*ptr == 'l') {
-				ptr++;
-				n++;
-				if (*ptr == '\0') return 1;
-				if (*ptr == 'e' || *ptr == 'f') { 
-					ptr++; 
-					} else { return 1; }
-			}
-			else if (*ptr == 's' || *ptr == 'S' || *ptr == '%') { ++ptr; }
-			else { return 1; }
-		} else {
-			++ptr;
-		}
-	}
-	return (n!=1);
+             /* or else '% 6.2lf' and such are allowed */
+             else {
+   
+                 /* optional padding character */
+                 if (*ptr == ' ' || *ptr == '+' || *ptr == '-') ptr++;
+  
+                 /* This should take care of 'm.n' with all three optional */
+                 while (*ptr >= '0' && *ptr <= '9') ptr++;
+                 if (*ptr == '.') ptr++;
+                 while (*ptr >= '0' && *ptr <= '9') ptr++;
+  
+                 /* Either 'le' or 'lf' must follow here */
+                 if (*ptr++ != 'l') return 1;
+                 if (*ptr == 'e' || *ptr == 'f') ptr++;
+                 else return 1;
+                 n++;
+            }
+         }
+      
+      return (n!=1); 
 }
+
+
 int
 vdef_parse(gdes,str)
 struct graph_desc_t *gdes;
@@ -3359,6 +3364,8 @@ char *str;
     };
     return 0;
 }
+
+
 int
 vdef_calc(im,gdi)
 image_desc_t *im;
