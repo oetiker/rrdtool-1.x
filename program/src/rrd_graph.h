@@ -66,6 +66,12 @@ typedef struct xlab_t {
     char         *stst;        /* strftime string*/
 } xlab_t;
 
+typedef struct ygrid_scale_t {  /* y axis grid scaling info */
+    double       gridstep;
+    int          labfact;
+    char         labfmt[64];
+} ygrid_scale_t;
+
 /* sensible y label intervals ...*/
 
 typedef struct ylab_t {
@@ -134,6 +140,9 @@ typedef struct image_desc_t {
     rrd_value_t    minval,maxval;  /* extreme values in the data */
     int            rigid;          /* do not expand range even with 
 				      values outside */
+    ygrid_scale_t  ygrid_scale;    /* calculated y axis grid info */
+    int            gridfit;        /* adjust y-axis range etc so all
+				      grindlines falls in integer pixel values */
     char*          imginfo;        /* construct an <IMG ... tag and return 
 				      as first retval */
     int            lazy;           /* only update the image if there is
@@ -161,7 +170,7 @@ typedef struct image_desc_t {
 
 /* Prototypes */
 int xtr(image_desc_t *,time_t);
-int ytr(image_desc_t *, double);
+double ytr(image_desc_t *, double);
 enum gf_en gf_conv(char *);
 enum gfx_if_en if_conv(char *);
 enum tmt_en tmt_conv(char *);
@@ -171,6 +180,7 @@ int im_free(image_desc_t *);
 void auto_scale( image_desc_t *,  double *, char **, double *);
 void si_unit( image_desc_t *);
 void expand_range(image_desc_t *);
+void apply_gridfit(image_desc_t *);
 void reduce_data( enum cf_en,  unsigned long,  time_t *, time_t *,  unsigned long *,  unsigned long *,  rrd_value_t **);
 int data_fetch( image_desc_t *);
 long find_var(image_desc_t *, char *);
@@ -182,7 +192,8 @@ time_t find_first_time( time_t,  enum tmt_en,  long);
 time_t find_next_time( time_t,  enum tmt_en,  long);
 int print_calc(image_desc_t *, char ***);
 int leg_place(image_desc_t *);
-int horizontal_grid(image_desc_t *);
+int calc_horizontal_grid(image_desc_t *);
+int draw_horizontal_grid(image_desc_t *);
 int horizontal_log_grid(image_desc_t *);
 void vertical_grid(image_desc_t *);
 void axis_paint(image_desc_t *);

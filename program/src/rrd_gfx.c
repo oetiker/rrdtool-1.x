@@ -169,6 +169,8 @@ int           gfx_add_point  (gfx_node_t *node,
 
 void           gfx_close_path  (gfx_node_t *node) {
     node->closed_path = 1;
+    if (node->path[0].code == ART_MOVETO_OPEN)
+	node->path[0].code = ART_MOVETO;
 }
 
 /* create a text node */
@@ -280,6 +282,29 @@ double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
   return text_width;
 }
  
+static void gfx_libart_close_path(gfx_canvas_t *canvas,
+	gfx_node_t *node, ArtVpath **vec)
+{
+    /* libart must have end==start for closed paths,
+       even if using ART_MOVETO and not ART_MOVETO_OPEN
+       so add extra point which is the same as the starting point */
+    int points_max = node->points; /* scaled array has exact size */
+    int points = node->points - 1;
+    art_vpath_add_point (vec, &points, &points_max, ART_LINETO,
+	    (**vec).x, (**vec).y);
+    art_vpath_add_point (vec, &points, &points_max, ART_END, 0, 0);
+}
+
+static void gfx_round_scaled_coordinates(gfx_canvas_t *canvas,
+	gfx_node_t *node, ArtVpath *vec)
+{
+    while (vec->code != ART_END) {
+	vec->x = floor(vec->x - LINEOFFSET + 0.5) + LINEOFFSET;
+	vec->y = floor(vec->y - LINEOFFSET + 0.5) + LINEOFFSET;
+	vec++;
+    }
+}
+
 static int gfx_save_png (art_u8 *buffer, FILE *fp,
                      long width, long height, long bytes_per_pixel);
 /* render grafics into png image */
@@ -306,13 +331,11 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             ArtVpath *vec;
             double dst[6];     
             ArtSVP *svp;
-	    if (node->closed_path) { 
-		/* libart uses end==start for closed as indicator of closed path */
-		gfx_add_point(node, node->path[0].x, node->path[0].y);
-		node->closed_path = 0;
-	    }
             art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
+	    if (node->closed_path)
+		gfx_libart_close_path(canvas, node, &vec);
+	    gfx_round_scaled_coordinates(canvas, node, vec);
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
