@@ -65,7 +65,7 @@ B<U> (eg. N:0.1:U:1) can be defined.
 
 The format of the value acquired from the data source is dependent of the
 data source type chosen. Normally it will be numeric, but the data acquisition
-modules my impose their very own parsing of this parameter as long as the colon
+modules may impose their very own parsing of this parameter as long as the colon
 (B<:>) remains the data source value separator.
 
 =back
