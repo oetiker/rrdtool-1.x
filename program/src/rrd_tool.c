@@ -422,8 +422,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
                       printf("d %s\n",dent->d_name);
                    }
                    if (strlen(dent->d_name)>4 && S_ISREG(st.st_mode)){
-                      if (!strcmp(dent->d_name+strlen(dent->d_name)-4,".rrd") ||
-                          !strcmp(dent->d_name+strlen(dent->d_name)-4,".RRD")){
+                      if (!strcmp(dent->d_name+NAMLEN(dent)-4,".rrd") ||
+                          !strcmp(dent->d_name+NAMLEN(dent)-4,".RRD")){
                          printf("- %s\n",dent->d_name);
                       }
                    }

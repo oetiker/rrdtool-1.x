@@ -230,7 +230,8 @@ AC_PROG_LIBTOOL
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
