@@ -1357,7 +1357,7 @@ leg_place(image_desc_t *im)
     char  prt_fctn; /*special printfunctions */
     int  *legspace;
 
-  if( !(im->extra_flags & NOLEGEND) ) {
+  if( !(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH) ) {
     if ((legspace = malloc(im->gdes_c*sizeof(int)))==NULL){
        rrd_set_error("malloc for legspace");
        return -1;
@@ -1932,7 +1932,7 @@ grid_paint(image_desc_t   *im)
 		  im->title);
 
     /* graph labels */
-    if( !(im->extra_flags & NOLEGEND) ) {
+    if( !(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH) ) {
       for(i=0;i<im->gdes_c;i++){
 	if(im->gdes[i].legend[0] =='\0')
 	    continue;
@@ -2084,11 +2084,20 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 #if 0
 	Xlegend  =0,	Ylegend  =0,
 #endif
-	Xspacing =10,	Yspacing =10;
+        Xspacing =10,  Yspacing =10;
 
-    if (im->ylegend[0] != '\0') {
-	Xvertical = im->text_prop[TEXT_PROP_LEGEND].size *2;
-	Yvertical = im->text_prop[TEXT_PROP_LEGEND].size * (strlen(im->ylegend)+1);
+    if (im->extra_flags & ONLY_GRAPH) {
+        if ( im->ysize > 32 ) {
+           rrd_set_error("height > 32 is not possible with --only-graph option");
+           return -1;
+        }
+       Xspacing =0;
+        Yspacing =0;
+    } else {
+        if (im->ylegend[0] != '\0') {
+           Xvertical = im->text_prop[TEXT_PROP_LEGEND].size *2;
+           Yvertical = im->text_prop[TEXT_PROP_LEGEND].size * (strlen(im->ylegend)+1);
+        }
     }
 
     if (im->title[0] != '\0') {
@@ -2134,10 +2143,21 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     ** forget about it at all; the legend will have to fit in the
     ** size already allocated.
     */
-    im->ximg = Xylabel + Xmain + Xpie + Xspacing;
+    im->ximg = Xmain;
+
+    if ( !(im->extra_flags & ONLY_GRAPH) ) {
+        im->ximg = Xylabel + Xmain + Xpie + Xspacing;
+    }
+
     if (Xmain) im->ximg += Xspacing;
     if (Xpie) im->ximg += Xspacing;
-    im->xorigin = Xspacing + Xylabel;
+
+    if (im->extra_flags & ONLY_GRAPH) {
+       im->xorigin = 0;
+    } else {
+       im->xorigin = Xspacing + Xylabel;
+    }
+
     if (Xtitle > im->ximg) im->ximg = Xtitle;
     if (Xvertical) {
 	im->ximg += Xvertical;
@@ -2155,9 +2175,21 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     */
 
     /* reserve space for main and/or pie */
-    im->yimg = Ymain + Yxlabel;
+
+    if (im->extra_flags & ONLY_GRAPH) {
+        im->yimg = Ymain;
+    } else {
+        im->yimg = Ymain + Yxlabel;
+    }
+
     if (im->yimg < Ypie) im->yimg = Ypie;
-    im->yorigin = im->yimg - Yxlabel;
+
+    if (im->extra_flags & ONLY_GRAPH) {
+        im->yorigin = im->yimg;
+    } else {
+        im->yorigin = im->yimg - Yxlabel;
+    }
+
     /* reserve space for the title *or* some padding above the graph */
     if (Ytitle) {
 	im->yimg += Ytitle;
@@ -2260,8 +2292,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
   if (!calc_horizontal_grid(im))
     return -1;
+
   if (im->gridfit)
     apply_gridfit(im);
+
 
 /**************************************************************
  *** Calculating sizes and locations became a bit confusing ***
@@ -2294,8 +2328,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
       areazero = im->minval;
     if (im->maxval < 0.0)
       areazero = im->maxval;
-  
-    axis_paint(im);
+    if( !(im->extra_flags & ONLY_GRAPH) )  
+      axis_paint(im);
   }
 
   if (piechart) {
@@ -2447,7 +2481,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
     im->draw_y_grid=0;
   }
   /* grid_paint also does the text */
-  grid_paint(im);
+  if( !(im->extra_flags & ONLY_GRAPH) )  
+    grid_paint(im);
   
   /* the RULES are the last thing to paint ... */
   for(i=0;i<im->gdes_c;i++){    
@@ -2740,6 +2775,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"lazy",       no_argument,       0,  'z'},
             {"zoom",       required_argument, 0,  'm'},
 	    {"no-legend",  no_argument,       0,  'g'},
+           {"only-graph", no_argument,       0,  'j'},
 	    {"alt-y-grid", no_argument,       0,  'Y'},
             {"no-minor",   no_argument,       0,  'I'},
 	    {"alt-autoscale", no_argument,    0,  'A'},
@@ -2753,7 +2789,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 
 	opt = getopt_long(argc, argv, 
-			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgYAMX:S:N",
+                         "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjYAMX:S:N",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -2772,6 +2808,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	case 'M':
 	    im->extra_flags |= ALTAUTOSCALE_MAX;
 	    break;
+       case 'j':
+           im->extra_flags |= ONLY_GRAPH;
+           break;
 	case 'g':
 	    im->extra_flags |= NOLEGEND;
 	    break;

@@ -95,6 +95,7 @@ void PrintUsage(char *cmd)
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
            "\t\t[-g|--no-legend]\n"
+           "\t\t[-j|--only-graph]\n"
 	   "\t\t[--font FONTTAG:size:font]\n"
            "\t\t[--zoom factor]\n"       
 	   "\t\t[--alt-autoscale]\n"
