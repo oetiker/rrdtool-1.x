@@ -5,6 +5,13 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.9  2003/04/29 21:56:49  oetiker
+ * readline in rrd_open.c reads the file in 8 KB blocks, and calls realloc for
+ * each block. realloc is very slow in Mac OS X for huge blocks, e.g. when
+ * restoring databases from huge xml files. This patch finds the size of the
+ * file, and starts out with malloc'ing the full size.
+ * -- Peter Speck <speck@ruc.dk>
+ *
  * Revision 1.8  2003/04/11 19:43:44  oetiker
  * New special value COUNT which allows calculations based on the position of a
  * value within a data set. Bug fix in rrd_rpncalc.c. PREV returned erroneus
@@ -185,6 +192,7 @@ void rrd_freemem(void *mem)
 
 int readfile(char *file_name, char **buffer, int skipfirst){
     long writecnt=0,totalcnt = MEMBLK;
+     long offset = 0;
     FILE *input=NULL;
     char c ;
     if ((strcmp("-",file_name) == 0)) { input = stdin; }
@@ -195,14 +203,22 @@ int readfile(char *file_name, char **buffer, int skipfirst){
       }
     }
     if (skipfirst){
-      do { c = getc(input); } while (c != '\n' && ! feof(input)); 
+      do { c = getc(input); offset++; } while (c != '\n' && ! feof(input));
     }
-    if (((*buffer) = (char *) malloc((MEMBLK+4)*sizeof(char))) == NULL) {
+    if (strcmp("-",file_name)) {
+      fseek(input, 0, SEEK_END);
+      /* have extra space for detecting EOF without realloc */
+      totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
+      if (totalcnt < MEMBLK)
+	totalcnt = MEMBLK; /* sanitize */
+      fseek(input, offset * sizeof(char), SEEK_SET);
+    }
+    if (((*buffer) = (char *) malloc((totalcnt+4) * sizeof(char))) == NULL) {
 	perror("Allocate Buffer:");
 	exit(1);
     };
     do{
-      writecnt += fread((*buffer)+writecnt, 1, MEMBLK * sizeof(char) ,input);
+      writecnt += fread((*buffer)+writecnt, 1, (totalcnt - writecnt) * sizeof(char),input);
       if (writecnt >= totalcnt){
 	totalcnt += MEMBLK;
 	if (((*buffer)=rrd_realloc((*buffer), (totalcnt+4) * sizeof(char)))==NULL){
