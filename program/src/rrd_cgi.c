@@ -128,9 +128,9 @@ int main(int argc, char *argv[]) {
       server_url = getenv("SERVER_URL");
   }
 
-  if (optind != argc-1) { 
-     fprintf(stderr, "ERROR: expected a filename\n");
-     exit(1);
+  if ( (optind != argc-2 && strstr(getenv("SERVER_SOFTWARE"),"Apache/2") != NULL) && optind != argc-1) {
+    fprintf(stderr, "ERROR: expected a filename\n");
+    exit(1);
   } else {
      length  = readfile(argv[optind], &buffer, 1);
   }
