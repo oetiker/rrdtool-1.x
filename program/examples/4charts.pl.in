@@ -1,9 +1,10 @@
-#! /usr/bin/perl
+#! @PERL@
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
 # this is for after install
 use lib qw( @prefix@/lib/perl ../lib/perl );
+
 use RRDs;
 
 my $start=time;
@@ -31,10 +32,11 @@ for ($t=$start; $t<$start+300*300; $t+=300){
   }
 }
 
-$c1="f57912a0";
-$c2="2a79e9a0";
-$w=300;
-$h=140;
+my $c1="f57912a0";
+my $c2="2a79e9a0";
+my $w=300;
+my $h=140;
+
 RRDs::graph "$name-L.png",
   "--title", "2 LINES", 
   "--start", "now",
@@ -115,12 +117,9 @@ RRDs::graph "$name-sample.png",
   "LINE1:b#ff0000:Max Incoming",
 ;
 
-
-
-print "ERROR: $ERROR\n" if $ERROR = RRDs::error;
-
-
-
+if ($ERROR = RRDs::error) {
+  print "ERROR: $ERROR\n";
+};
 
 print "This script has created $name.png in the current directory\n";
 print "This demonstrates the use of the TIME and % RPN operators\n";

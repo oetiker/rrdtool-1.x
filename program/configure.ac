@@ -523,6 +523,7 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           examples/bigtops.pl				\
           examples/minmax.pl				\
           examples/cgi-demo.cgi				\
+          examples/4charts.pl  				\
           examples/Makefile				\
           doc/Makefile					\
           src/Makefile					\
