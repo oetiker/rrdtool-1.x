@@ -382,3 +382,27 @@ rrd_updatev(...)
     OUTPUT:
 	   RETVAL
 
+int
+rrd_dump(...)
+       PROTOTYPE: @
+       PREINIT:
+        int i;
+       char **argv;
+       CODE:
+               rrdcode(rrd_dump);
+                       RETVAL = 1;
+       OUTPUT:
+               RETVAL
+
+int
+rrd_restore(...)
+       PROTOTYPE: @
+       PREINIT:
+        int i;
+       char **argv;
+       CODE:
+               rrdcode(rrd_restore);
+                       RETVAL = 1;
+       OUTPUT:
+               RETVAL
+
