@@ -46,7 +46,7 @@ thread-safe.
   getopt uses global variables and behaves badly in a multithreaded
   application when called concurrently. Instead provide a *_r function
   taking all options as function parameters. You may provide argc and
-  **argv arguments for variable lenght argument lists. See
+  **argv arguments for variable length argument lists. See
   rrd_update_r as an example. 
 
 * Do not use the parsetime function!

@@ -20,7 +20,7 @@ void parse_patch1028_RRA_params(char **buf, rrd_t *rrd, int rra_index);
 void parse_patch1028_CDP_params(char **buf, rrd_t *rrd, int rra_index, int ds_index);
 void parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index);
 
-/* convert all ocurances of <BlaBlaBla> to <blablabla> */
+/* convert all occurrences of <BlaBlaBla> to <blablabla> */
 
 void xml_lc(char* buf){
   int intag=0;
@@ -194,12 +194,12 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   while (eat_tag(&ptr2,"rra") == 1){
       rrd->stat_head->rra_cnt++;
 
-      /* alocate and reset rra definition areas */
+      /* allocate and reset rra definition areas */
       if((rrd->rra_def = rrd_realloc(rrd->rra_def,rrd->stat_head->rra_cnt*sizeof(rra_def_t)))==NULL){
 	  rrd_set_error("allocating rra_def"); return -1; }      
       memset(&(rrd->rra_def[rrd->stat_head->rra_cnt-1]), 0, sizeof(rra_def_t));
 
-      /* alocate and reset consolidation point areas */
+      /* allocate and reset consolidation point areas */
       if((rrd->cdp_prep = rrd_realloc(rrd->cdp_prep,
 				  rrd->stat_head->rra_cnt
 				  *rrd->stat_head->ds_cnt*sizeof(cdp_prep_t)))==NULL){

@@ -104,7 +104,7 @@ rrd_resize(int argc, char **argv)
     fwrite(rrdnew.rra_ptr,sizeof(rra_ptr_t),rrdnew.stat_head->rra_cnt,outfile);
 
     /* Move the CDPs from the old to the new database.
-    ** This can be made (much) faster but isn't worth the efford. Clarity
+    ** This can be made (much) faster but isn't worth the effort. Clarity
     ** is much more important.
     */
 

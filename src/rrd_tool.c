@@ -70,7 +70,7 @@ void PrintUsage(char *cmd)
  	   "\t\t[ time:value[:value...] ..]\n\n";
     
 	char help_updatev[] =
-	   "* updatev - a verbose verion of update\n"
+	   "* updatev - a verbose version of update\n"
 	   "\treturns information about values, RRAs, and datasources updated\n\n"
 	   "\trrdtool updatev filename\n"
 	   "\t\t--template|-t ds-name:ds-name:...\n"
@@ -132,7 +132,7 @@ void PrintUsage(char *cmd)
 	   "\t\t[--aberrant-reset ds-name]\n\n";
 
     char help_resize[] =
-	   " * resize - alter the lenght of one of the RRAs in an RRD\n\n"
+	   " * resize - alter the length of one of the RRAs in an RRD\n\n"
 	   "\trrdtool resize filename rranum GROW|SHRINK rows\n\n";
 
     char help_xport[] =
@@ -145,7 +145,7 @@ void PrintUsage(char *cmd)
            "\t\t[XPORT:vname:legend]\n\n";
 
     char help_quit[] =
-	   " * quit - closeing a session in remote mode\n\n"
+	   " * quit - closing a session in remote mode\n\n"
 	   "\trrdtool quit\n\n";
 
     char help_ls[] =
@@ -154,11 +154,11 @@ void PrintUsage(char *cmd)
 
     char help_cd[] =
 	   " * cd - changes the current directory\n\n"
-	   "\trrdtool cd new direcotry\n\n";
+	   "\trrdtool cd new directory\n\n";
 
     char help_mkdir[] =
-	   " * mkdir - creates a new direcotry\n\n"
-	   "\trrdtool mkdir newdirecotryname\n\n";
+	   " * mkdir - creates a new directory\n\n"
+	   "\trrdtool mkdir newdirectoryname\n\n";
 
     char help_lic[] =
 	   "RRDtool is distributed under the Terms of the GNU General\n"
@@ -410,7 +410,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
-             printf("ERROR: chdir security problem - rrdtool is runnig as "
+             printf("ERROR: chdir security problem - rrdtool is running as "
                     "root an no chroot!\n");
              return(0); 
           }
@@ -428,7 +428,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
-             printf("ERROR: mkdir security problem - rrdtool is runnig as "
+             printf("ERROR: mkdir security problem - rrdtool is running as "
                     "root an no chroot!\n");
              return(0); 
           }

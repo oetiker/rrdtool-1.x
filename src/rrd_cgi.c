@@ -951,7 +951,7 @@ parse(
 	}
 
 #ifdef DEBUG_PARSER
-	printf("parse(): handeling tag '%s'\n", tag);
+	printf("parse(): handling tag '%s'\n", tag);
 #endif
 
 	/* Scan for arguments following the tag;
