@@ -416,9 +416,9 @@ rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
       rrd_file= stdout;
     } else {
 #ifdef WIN32
-      fdflags = O_RDWR|O_BINARY|O_CREAT|O_EXCL;
+      fdflags = O_RDWR|O_BINARY|O_CREAT;
 #else
-      fdflags = O_WRONLY|O_CREAT|O_EXCL;
+      fdflags = O_WRONLY|O_CREAT;
 #endif            
       if (force_overwrite == 0) {
       	fdflags |= O_EXCL;
