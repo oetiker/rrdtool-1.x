@@ -1,0 +1,371 @@
+rrdtool (1.1.0) unstable; urgency=low
+
+  * grafted "debian" directory from 1.0.46 source 
+  * no tcl package support due to build failures (see ##NO_TCL )
+
+ -- Mike Slifcak <>  Wed, 12 May 2004 20:53:16 -0400
+
+rrdtool (1.0.46-3) unstable; urgency=low
+
+  * Add dependencies to librrd0-dev to ensure that static linking is
+    possible: libgd-gif1-dev, zlib1g-dev
+  * #include <stdio.h> in rrd.h (Closes: #238849)
+  * Only link rrdcgi with -lcgi, not librrd
+
+ -- Matt Zimmerman <mdz@debian.org>  Fri, 19 Mar 2004 11:38:39 -0800
+
+rrdtool (1.0.46-2) unstable; urgency=medium
+
+  * Fix tcl module installation (Closes: #231171)
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed,  4 Feb 2004 15:35:46 -0800
+
+rrdtool (1.0.46-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matt Zimmerman <mdz@debian.org>  Mon, 12 Jan 2004 23:22:09 -0800
+
+rrdtool (1.0.45-1) unstable; urgency=low
+
+  * New upstream release
+  * Deal with changed tclrrd naming scheme
+  * Build with tcl8.4
+  * Remove old dpkg-dev build-dependency; even woody is new enough
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed, 17 Dec 2003 14:09:11 -0800
+
+rrdtool (1.0.42-2) unstable; urgency=low
+
+  * Build-Depends: libpng12-dev instead of libpng3-dev (when will the madness end?)
+    (Closes: #195224
+     I hope this will also fix weird version mismatch problems (Closes: #194900)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat, 31 May 2003 15:06:42 -0400
+
+rrdtool (1.0.42-1) unstable; urgency=low
+
+  * New upstream release
+  * librrd0-dev Section: libdevel
+  * librrd[sp]-perl Section: perl
+  * Build with libpng3 (Closes: #189493)
+
+ -- Matt Zimmerman <mdz@debian.org>  Thu, 15 May 2003 19:44:37 -0400
+
+rrdtool (1.0.40-2) unstable; urgency=low
+
+  * Correctly suppress non-image output when writing image to stdout
+    (Closes: #182217)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat,  1 Mar 2003 16:59:39 -0500
+
+rrdtool (1.0.40-1) unstable; urgency=low
+
+  * New upstream release
+  * Remove unnecessary rrd_free to avoid crash on invalid option
+    (Closes: #166156)
+  * Clean example source code; some libtool cruft was getting installed in
+    /usr/share/doc/examples
+
+ -- Matt Zimmerman <mdz@debian.org>  Tue, 17 Dec 2002 22:11:46 -0500
+
+rrdtool (1.0.39-2) unstable; urgency=low
+
+  * Rebuild for perl 5.8 (Closes: #158728)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sun, 25 Aug 2002 17:29:41 -0400
+
+rrdtool (1.0.39-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed, 31 Jul 2002 00:40:00 -0400
+
+rrdtool (1.0.38-1) unstable; urgency=low
+
+  * New upstream release (Closes: #148486)
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed, 29 May 2002 12:28:28 -0400
+
+rrdtool (1.0.35-2) unstable; urgency=low
+
+  * Remove CVS directories with rm -rf.  This broke autobuilds entirely.
+    (Closes: #140075)
+
+ -- Matt Zimmerman <mdz@debian.org>  Tue, 26 Mar 2002 17:15:01 -0500
+
+rrdtool (1.0.35-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Matt Zimmerman <mdz@debian.org>  Sun, 24 Mar 2002 11:29:10 -0500
+
+rrdtool (1.0.33-9) unstable; urgency=low
+
+  * Call dh_shlibdeps with -l to allow it to find dependencies correctly
+    (Closes: #118629)
+  * Add call to ldconfig in postrm of librrd0
+  * Remove .cvsignore files from installed examples
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat, 10 Nov 2001 14:14:51 -0500
+
+rrdtool (1.0.33-8) unstable; urgency=low
+
+  * Use AM_MAINTAINER_MODE to keep the makefiles from trying to rebuild 
+    autoconf/automake stuff during the build (Closes: #117599)
+  * Regenerated everything AGAIN.
+  * Use DESTDIR instead of prefix= during "make install"
+
+ -- Matt Zimmerman <mdz@debian.org>  Mon, 29 Oct 2001 22:22:07 -0500
+
+rrdtool (1.0.33-7) unstable; urgency=low
+
+  * Add an example to the rrddump documentation showing what is necessary
+    to transfer an RRD from one architecture to another. (Closes: #117147)
+  * Regenerated autoconf/automake configs
+
+ -- Matt Zimmerman <mdz@debian.org>  Mon, 29 Oct 2001 02:28:16 -0500
+
+rrdtool (1.0.33-6) unstable; urgency=low
+
+  * Spelling corrections from Martin Schulze (Closes: #110784)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat,  8 Sep 2001 13:13:22 -0400
+
+rrdtool (1.0.33-5) unstable; urgency=low
+
+  * Ship with pre-generated files from autoconf2.50/automake, rather than
+    pulling them in at build-time, in order to work around the current
+    libtool mess.  This makes the diff less manageable, but should make
+    the build more stable.
+  * debian/control: remove build-dependencies on autoconf/automake/libtool
+  * debian/rules: don't call autoconf/automake
+  * Fix shlibs file (it was trying to use a substitution)
+  * configure.in: remove makefiles that no longer exist from AC_OUTPUT.
+    Apparently this is an error in autoconf 2.50.
+  * configure.in: Remove wacky logic to pull PIC flags out of libtool, and
+    let libtool do the right thing.
+  * debian/rules: shlibs.local hackery is no longer necessary, removed
+
+ -- Matt Zimmerman <mdz@debian.org>  Fri,  3 Aug 2001 17:36:43 -0400
+
+rrdtool (1.0.33-4) unstable; urgency=low
+
+  * Add build-dependencies on libtool and autoconf (Closes: #105655)
+
+ -- Matt Zimmerman <mdz@debian.org>  Tue, 17 Jul 2001 15:44:25 -0400
+
+rrdtool (1.0.33-3) unstable; urgency=low
+
+  * Update config.{sub,guess} from autotools-dev 20010702.1
+    (Closes: #105037)
+  * Update ltmain.sh for good measure, from libtool 1.4-1
+  * Build-Depend on autoconf, and run autoconf and aclocal from
+    debian/rules (in addition to automake)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat, 14 Jul 2001 03:19:22 -0400
+
+rrdtool (1.0.33-2) unstable; urgency=low
+
+  * Rebuild with latest tcl8.3-dev, to fix shared object extension
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat,  3 Mar 2001 17:28:24 -0500
+
+rrdtool (1.0.33-1) unstable; urgency=low
+
+  * New upstream version.
+  * This is yet another patch release to fix some distribution/compilation
+    problems.  There should be no visible changes for Debian users from
+    1.0.32-3.
+
+ -- Matt Zimmerman <mdz@debian.org>  Thu,  1 Mar 2001 02:27:53 -0500
+
+rrdtool (1.0.32-3) unstable; urgency=low
+
+  * Fix the tcl extension module to build against tcl8.3, rather than
+    tcl8.0 (Closes: #87357)
+  * debian/control: Build-depend on tcl8.3-dev
+  * debian/rules: tclconfigdir = /usr/lib/tcl8.3
+  * tcl/Makefile.am: (upstream) -I/usr/include/tcl@TCL_VERSION@
+  * configure.in: (upstream) AC_SUBST(TCL_VERSION)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat, 24 Feb 2001 02:25:46 -0500
+
+rrdtool (1.0.32-2) unstable; urgency=low
+
+  * List changes to upstream source in the copyright file (as well as the
+    changelog)
+  * Link against libgd-gif instead of libgd, to restore GIF support
+
+ -- Matt Zimmerman <mdz@debian.org>  Fri, 23 Feb 2001 15:27:37 -0500
+
+rrdtool (1.0.32-1) unstable; urgency=low
+
+  * New upstream version.  Hopefully this one will last more than 24
+    hours (Closes: #75771)
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed, 21 Feb 2001 20:13:09 -0500
+
+rrdtool (1.0.27-7) unstable; urgency=low
+
+  * debian/rules: Updated for new Perl policy
+  * debian/rules: Don't use install-stamp; it causes more problems than it
+    prevents
+  * debian/rules: Don't call dh_suidregister; we didn't use it anyway
+  * debian/control: Build-depend on the new debhelper for dh_perl
+  * debian/control: rrdtool-tcl only seems to work with 8.0, so depend on
+    tcl8.0
+  * debian/control: Build-depend on perl 5.6.0+
+  * debian/librrd?-perl: Updated for new Perl filesystem layout
+
+ -- Matt Zimmerman <mdz@debian.org>  Thu, 15 Feb 2001 19:04:11 -0500
+
+rrdtool (1.0.27-6) unstable; urgency=low
+
+  * debian/rules: Handle DEB_BUILD_OPTIONS debug, nostrip
+  * debian/rules: Separate out "configure" target
+  * debian/rules: Miscellaneous cleanup
+  * Recompile librrds-perl against perl-5.6
+
+ -- Matt Zimmerman <mdz@debian.org>  Tue, 19 Dec 2000 21:23:55 -0500
+
+rrdtool (1.0.27-5) unstable; urgency=low
+
+  * Fix Build-Depends to reflect our dependency on dpkg-dev >= 1.7.0 |
+    librrd0.  The old dpkg can only calculate our dependencies correctly
+    if the runtime library is installed on the system, so potato users
+    must either install the potato librrd0 or the new dpkg-dev
+    (Closes: #77479)
+
+ -- Matt Zimmerman <mdz@debian.org>  Mon, 20 Nov 2000 20:39:55 -0500
+
+rrdtool (1.0.27-4) unstable; urgency=low
+
+  * Updated to comply with policy 3.2.1.0:
+    - Don't build with -g by default
+  * Build-Depend on tcl8.0-dev (not tcl-dev), since that is the only
+    version we currently work with.
+  * Added automake to Build-Depends (oops)
+
+ -- Matt Zimmerman <mdz@debian.org>  Sat, 18 Nov 2000 22:29:02 -0500
+
+rrdtool (1.0.27-3) unstable; urgency=low
+
+  * Big packaging cleanup release.
+  * Fixed perl module compilation to link with the shared library, rather
+    than including a copy of the static library inside the .so (also fixes
+    a lintian error, shlib-with-non-pic-code in librrds-perl)
+  * Fixed tcl module compilation to link with the shared library, rather
+    than including a copy of the static library inside the .so (also fixes
+    a lintian error, shlib-with-non-pic-code in rrdtool-tcl)
+  * The above shrunk the size of the perl and tcl library packages from
+    60k each to about 20k (perl) and 16k (tcl)
+  * We can now use shlibdeps to calculate the dependencies for
+    librrds-perl, so those will be more correct now
+  * Rather than include Makefile.in changes in the .diff.gz, just keep our
+    modifications to Makefile.am and run automake in debian/rules.  This
+    makes the .diff.gz much smaller and cleaner
+  * Fixed shared library dependencies all around to be smarter
+  * rrdtool package now Suggests librrds-perl (rather than depending on
+    perl), as it is only needed for an auxiliary script for converting
+    mrtg data
+
+ -- Matt Zimmerman <mdz@debian.org>  Fri, 10 Nov 2000 19:34:05 -0500
+
+rrdtool (1.0.27-2) unstable; urgency=low
+
+  * Updated maintainer email address (now official maintainer)
+
+ -- Matt Zimmerman <mdz@debian.org>  Wed,  1 Nov 2000 22:44:41 -0500
+
+rrdtool (1.0.27-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Wed, 13 Sep 2000 13:10:14 -0400
+
+rrdtool (1.0.26-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Sun, 10 Sep 2000 16:34:08 -0400
+
+rrdtool (1.0.25-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Sun, 23 Jul 2000 02:23:53 -0400
+
+rrdtool (1.0.24-2) unstable; urgency=low
+
+  * Updated for libgd 1.8.3 (build depends, recompile)
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Fri,  7 Jul 2000 19:33:29 -0400
+
+rrdtool (1.0.24-1) unstable; urgency=low
+
+  * New upstream version (Closes: #61997).
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Fri, 30 Jun 2000 13:53:27 -0400
+
+rrdtool (1.0.17-1) unstable; urgency=low
+
+  * New upstream version.
+  * Now creates rrdtool-tcl, containing tcl bindings.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Wed, 26 Apr 2000 13:16:24 -0700
+
+rrdtool (1.0.16-1) unstable; urgency=low
+
+  * New upstream version.
+  * Not released.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Wed, 26 Apr 2000 10:53:36 -0700
+
+rrdtool (1.0.13-2) unstable; urgency=low
+
+  * Build-Depends: cgilib, zlib1g-dev, libpng2-dev, libgd1g-dev, groff,
+    debhelper.  Hopefully that's everything.
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Fri,  7 Apr 2000 14:16:55 -0700
+
+rrdtool (1.0.13-1) unstable; urgency=low
+
+  * New upstream version (Closes: #58583)
+  * Added Build-Depends for cgilib (Closes: #55270)
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Thu, 23 Mar 2000 15:55:37 -0800
+
+rrdtool (1.0.10-1) unstable; urgency=low
+
+  * New upstream version. 
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Mon, 10 Jan 2000 16:46:33 -0800
+
+rrdtool (1.0.7-3) unstable; urgency=low
+
+  * Non-i386 fixes, thanks to Christopher C Chimelis <chris@debian.org>:
+  * Changed 'clean' target in debian/rules to remove the auto-generated
+    Makefiles for the Perl modules
+  * Changed Depends: for librrds-perl to use shlibdeps
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Mon, 22 Nov 1999 10:47:13 -0800
+
+rrdtool (1.0.7-2) unstable; urgency=low
+
+  * Linked RRDs.so against libpng, closes: #49701
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Tue,  9 Nov 1999 15:02:40 -0800
+
+rrdtool (1.0.7-1) unstable; urgency=low
+
+  * Initial Release.
+  * Upstream source ships with cgilib-0.4, gd-1.3, libpng-1.0.3, and
+    zlib-1.3.3 (!).  Build process is modified to skip building these, and
+    instead link with the Debian versions.
+  * Modifications for gd 1.6.1 included removal of GIF support (no longer
+    included with gd as of 1.6)
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>  Sat, 11 Sep 1999 13:29:29 -0700
+
+

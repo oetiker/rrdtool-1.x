@@ -1,0 +1,33 @@
+rrdtool for Debian
+----------------------
+
+The RRDtool distribution is split into several packages:
+
+
+Package: rrdtool
+	Command-line utilities and documentation
+
+Package: librrd0
+	Shared library
+
+Package: librrd0-dev
+	Static library
+
+Package: librrds-perl
+	Perl interface using the shared library (RRDs)
+
+Package: librrdp-perl
+	Perl interface using command pipes to the rrdtool program (RRDp)
+
+Package: rrdtool-tcl
+	TCL interface using the shared library (librrd)
+
+
+Original by 
+
+ -- Matt Zimmerman <mdz@csh.rit.edu>, Fri, 10 Sep 1999 10:53:19 -0700
+
+Hacked for 1.1.x by
+
+ -- Mike Slifcak <slif@bellsouth.net>, Tue , 18 May 2004 20:38:40 +0200
+
