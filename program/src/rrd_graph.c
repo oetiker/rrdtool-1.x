@@ -1221,7 +1221,6 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_LINE:
 	case GF_AREA:
 	case GF_TICK:
-	case GF_PART:
 	case GF_STACK:
 	case GF_HRULE:
 	case GF_VRULE:
@@ -1230,6 +1229,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_DEF:
 	case GF_CDEF:	    
 	case GF_VDEF:	    
+	case GF_PART:
 	    break;
 	}
     }
@@ -1280,7 +1280,7 @@ leg_place(image_desc_t *im)
 	   leg_cc--;
 	   im->gdes[i].legend[leg_cc]='\0';
 	}
-	if (leg_cc != 0 ){	    
+	if (leg_cc != 0 ){
 	   legspace[i]=(prt_fctn=='g' ? 0 : interleg);
 	   
 	   if (fill > 0){ 
@@ -1355,7 +1355,7 @@ leg_place(image_desc_t *im)
 	    mark = ii;
 	}	   
     }
-    im->ygif = leg_y+6;
+    im->ygif = leg_y;
     free(legspace);
   }
   return 0;
@@ -1654,6 +1654,8 @@ vertical_grid(
 	ti = find_next_time(ti,im->xlab_user.labtm,im->xlab_user.labst)
 	){
         tilab= ti + im->xlab_user.precis/2; /* correct time for the label */
+	/* are we inside the graph ? */
+	if (ti < im->start || ti > im->end) continue;
 
 #if HAVE_STRFTIME
 	strftime(graph_label,99,im->xlab_user.stst,localtime(&tilab));
@@ -1716,11 +1718,9 @@ grid_paint(
     )
 {   
     long i;
-    int boxH=8, boxV=8;
     int res=0;
     double x0,x1,x2,x3,y0,y1,y2,y3; /* points for filled graph and more*/
     gfx_node_t *node;
-    
 
     /* draw 3d border */
     node = gfx_new_area (canvas, 0,im->ygif,
@@ -1764,68 +1764,85 @@ grid_paint(
     }
 
     /* yaxis description */
-    gfx_new_text( canvas,
-		  7, (im->yorigin - im->ysize/2),
-		  im->graph_col[GRC_FONT],
-		  im->text_prop[TEXT_PROP_AXIS].font,
-		  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
-		  GFX_H_CENTER, GFX_V_CENTER,
-		  im->ylegend);
+	#if 0
+	    gfx_new_text( canvas,
+			  7, (im->yorigin - im->ysize/2),
+			  im->graph_col[GRC_FONT],
+			  im->text_prop[TEXT_PROP_AXIS].font,
+			  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
+			  GFX_H_CENTER, GFX_V_CENTER,
+			  im->ylegend);
+	#else
+	    /* horrible hack until we can actually print vertically */
+	    {
+		int n;
+		int l=strlen(im->ylegend);
+		char s[2];
+		for (n=0;n<strlen(im->ylegend);n++) {
+		    s[0]=im->ylegend[n];
+		    s[1]='\0';
+		    gfx_new_text(canvas,7,im->text_prop[TEXT_PROP_AXIS].size*(l-n),
+			im->graph_col[GRC_FONT],
+			im->text_prop[TEXT_PROP_AXIS].font,
+			im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
+			GFX_H_CENTER, GFX_V_CENTER,
+			s);
+		}
+	    }
+	#endif
    
     /* graph title */
     gfx_new_text( canvas,
-		  im->xgif/2, im->text_prop[TEXT_PROP_TITLE].size*1.5,
+		  im->xgif/2, im->text_prop[TEXT_PROP_TITLE].size,
 		  im->graph_col[GRC_FONT],
 		  im->text_prop[TEXT_PROP_TITLE].font,
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
 		  GFX_H_CENTER, GFX_V_CENTER,
 		  im->title);
 
-   /* graph labels */
-   if( !(im->extra_flags & NOLEGEND) ) {
+    /* graph labels */
+    if( !(im->extra_flags & NOLEGEND) ) {
       for(i=0;i<im->gdes_c;i++){
-	 if(im->gdes[i].legend[0] =='\0')
-	   continue;
+	if(im->gdes[i].legend[0] =='\0')
+	    continue;
 	 
-	 if(im->gdes[i].gf != GF_GPRINT && im->gdes[i].gf != GF_COMMENT){
-	    x0 = im->gdes[i].leg_x;
-	    y0 = im->gdes[i].leg_y+1.0;
-	    x1 = x0;
-	    x2 = x0+boxH;
-	    x3 = x0+boxH;
-	    y1 = y0+boxV;
-	    y2 = y0+boxV;
-	    y3 = y0;
-	    node = gfx_new_area(canvas, x0,y0,x1,y1,x2,y2 ,im->gdes[i].col);
-	    gfx_add_point ( node, x3, y3 );
-/*	    gfx_add_point ( node, x0, y0 ); */
-	    node = gfx_new_line(canvas, x0,y0,x1,y1 ,GRIDWIDTH, im->graph_col[GRC_FRAME]);
-	    gfx_add_point ( node, x2, y2 );
-	    gfx_add_point ( node, x3, y3 );
-	    gfx_add_point ( node, x0, y0 );
-	    
-	    gfx_new_text ( canvas, x0+boxH+6,  (y0+y2) / 2.0,
-			   im->graph_col[GRC_FONT],
-			   im->text_prop[TEXT_PROP_AXIS].font,
-			   im->text_prop[TEXT_PROP_AXIS].size,
-			   im->tabwidth,0.0, GFX_H_LEFT, GFX_V_CENTER,
-			   im->gdes[i].legend );
-	    
-	 } else {
-	    x0 = im->gdes[i].leg_x;
-	    y0 = im->gdes[i].leg_y;
-	        
-	    gfx_new_text ( canvas, x0,  (y0+y2) / 2.0,
-			   im->graph_col[GRC_FONT],
-			   im->text_prop[TEXT_PROP_AXIS].font,
-			   im->text_prop[TEXT_PROP_AXIS].size,
-			   im->tabwidth,0.0, GFX_H_LEFT, GFX_V_BOTTOM,
-			   im->gdes[i].legend );
-	    
-	 }
-      }
-   }
-}
+	/* im->gdes[i].leg_y is the bottom of the legend */
+		x0 = im->gdes[i].leg_x;
+		y0 = im->gdes[i].leg_y;
+		/* Box needed? */
+		if (	   im->gdes[i].gf != GF_GPRINT
+			&& im->gdes[i].gf != GF_COMMENT) {
+		    int boxH, boxV;
+
+		    boxH = gfx_get_text_width(0,
+				im->text_prop[TEXT_PROP_AXIS].font,
+				im->text_prop[TEXT_PROP_AXIS].size,
+				im->tabwidth,"M") * 1.25;
+		    boxV = boxH;
+
+		    node = gfx_new_area(canvas,
+				x0,y0-boxV,
+				x0,y0,
+				x0+boxH,y0,
+				im->gdes[i].col);
+		    gfx_add_point ( node, x0+boxH, y0-boxV );
+		    node = gfx_new_line(canvas,
+				x0,y0-boxV, x0,y0,
+				1,0x000000FF);
+		    gfx_add_point(node,x0+boxH,y0);
+		    gfx_add_point(node,x0+boxH,y0-boxV);
+		    gfx_add_point(node,x0,y0-boxV);
+		    x0 += boxH / 1.25 * 2;
+		}
+		gfx_new_text ( canvas, x0, y0,
+				   im->graph_col[GRC_FONT],
+				   im->text_prop[TEXT_PROP_AXIS].font,
+				   im->text_prop[TEXT_PROP_AXIS].size,
+				   im->tabwidth,0.0, GFX_H_LEFT, GFX_V_BOTTOM,
+				   im->gdes[i].legend );
+	      }
+	   }
+	}
 
 
 /*****************************************************
@@ -1902,6 +1919,147 @@ pie_part(gfx_canvas_t *canvas, gfx_color_t color,
     }
 }
 
+int
+graph_size_location(image_desc_t *im, int elements, int piechart )
+{
+    /* The actual size of the image to draw is determined from
+    ** several sources.  The size given on the command line is
+    ** the graph area but we need more as we have to draw labels
+    ** and other things outside the graph area
+    */
+
+    /* +-+-------------------------------------------+
+    ** |l|.................title.....................|
+    ** |e+--+-------------------------------+--------+
+    ** |b| b|                               |        |
+    ** |a| a|                               |  pie   |
+    ** |l| l|          main graph area      | chart  |
+    ** |.| .|                               |  area  |
+    ** |t| y|                               |        |
+    ** |r+--+-------------------------------+--------+
+    ** |e|  | x-axis labels                 |        |
+    ** |v+--+-------------------------------+--------+
+    ** | |..............legends......................|
+    ** +-+-------------------------------------------+
+    */
+    int Xvertical=0,	Yvertical=0,
+	Xtitle   =0,	Ytitle   =0,
+	Xylabel  =0,	Yylabel  =0,
+	Xmain    =0,	Ymain    =0,
+	Xpie     =0,	Ypie     =0,
+	Xxlabel  =0,	Yxlabel  =0,
+	Xlegend  =0,	Ylegend  =0,
+	Xspacing =10,	Yspacing =10;
+
+    if (im->ylegend[0] != '\0') {
+	Xvertical = im->text_prop[TEXT_PROP_LEGEND].size *2;
+	Yvertical = im->text_prop[TEXT_PROP_LEGEND].size * (strlen(im->ylegend)+1);
+    }
+
+    if (im->title[0] != '\0') {
+	/* The title is placed "inbetween" two text lines so it
+	** automatically has some vertical spacing.  The horizontal
+	** spacing is added here, on each side.
+	*/
+	Xtitle = gfx_get_text_width(0,
+		im->text_prop[TEXT_PROP_TITLE].font,
+		im->text_prop[TEXT_PROP_TITLE].size,
+		im->tabwidth,
+		im->title) + 2*Xspacing;
+	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2;
+    }
+
+    if (elements) {
+	Xmain=im->xsize;
+	Ymain=im->ysize;
+	if (im->draw_x_grid) {
+	    Xxlabel=Xmain;
+	    Yxlabel=im->text_prop[TEXT_PROP_LEGEND].size *2;
+	}
+	if (im->draw_y_grid) {
+	    Xylabel=im->text_prop[TEXT_PROP_LEGEND].size *6;
+	    Yylabel=Ymain;
+	}
+    }
+
+    if (piechart) {
+	im->piesize=im->xsize<im->ysize?im->xsize:im->ysize;
+	Xpie=im->piesize;
+	Ypie=im->piesize;
+    }
+
+    /* Now calculate the total size.  Insert some spacing where
+       desired.  im->xorigin and im->yorigin need to correspond
+       with the lower left corner of the main graph area or, if
+       this one is not set, the imaginary box surrounding the
+       pie chart area. */
+
+    /* The legend width cannot yet be determined, as a result we
+    ** have problems adjusting the image to it.  For now, we just
+    ** forget about it at all; the legend will have to fit in the
+    ** size already allocated.
+    */
+    im->xgif = Xylabel + Xmain + Xpie + Xspacing;
+    if (Xmain) im->xgif += Xspacing;
+    if (Xpie) im->xgif += Xspacing;
+    im->xorigin = Xspacing + Xylabel;
+    if (Xtitle > im->xgif) im->xgif = Xtitle;
+    if (Xvertical) {
+	im->xgif += Xvertical;
+	im->xorigin += Xvertical;
+    }
+    xtr(im,0);
+
+    /* The vertical size is interesting... we need to compare
+    ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend} with Yvertical
+    ** however we need to know {Ytitle+Ymain+Yxlabel} in order to
+    ** start even thinking about Ylegend.
+    **
+    ** Do it in three portions: First calculate the inner part,
+    ** then do the legend, then adjust the total height of the img.
+    */
+
+    /* reserve space for main and/or pie */
+    im->ygif = Ymain + Yxlabel;
+    if (im->ygif < Ypie) im->ygif = Ypie;
+    im->yorigin = im->ygif - Yxlabel;
+    /* reserve space for the title *or* some padding above the graph */
+    if (Ytitle) {
+	im->ygif += Ytitle;
+	im->yorigin += Ytitle;
+    } else {
+	im->ygif += Yspacing;
+	im->yorigin += Yspacing;
+    }
+    /* reserve space for padding below the graph */
+    im->ygif += Yspacing;
+    ytr(im,DNAN);
+
+    /* Determine where to place the legends onto the image.
+    ** Adjust im->ygif to match the space requirements.
+    */
+    if(leg_place(im)==-1)
+	return -1;
+
+    /* last of three steps: check total height of image */
+    if (im->ygif < Yvertical) im->ygif = Yvertical;
+
+#if 0
+    if (Xlegend > im->xgif) {
+	im->xgif = Xlegend;
+	/* reposition Pie */
+#endif
+
+    /* The pie is placed in the upper right hand corner,
+    ** just below the title (if any) and with sufficient
+    ** padding.
+    */
+    im->pie_x = im->xgif - Xspacing - Xpie/2;
+    im->pie_y = im->yorigin-Ymain+Ypie/2;
+
+    return 0;
+}
+
 /* draw that picture thing ... */
 int
 graph_paint(image_desc_t *im, char ***calcpr)
@@ -1909,7 +2067,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   int i,ii;
   int lazy =     lazy_check(im);
   int piechart = 0;
-  double PieStart=0.0, PieSize=0.0, PieCenterX=0.0, PieCenterY=0.0;
+  double PieStart=0.0;
   FILE  *fo;
   gfx_canvas_t *canvas;
   gfx_node_t *node;
@@ -1930,6 +2088,14 @@ graph_paint(image_desc_t *im, char ***calcpr)
   if(data_calc(im)==-1)
     return -1;
   
+  /* check if we need to draw a piechart */
+  for(i=0;i<im->gdes_c;i++){
+    if (im->gdes[i].gf == GF_PART) {
+      piechart=1;
+      break;
+    }
+  }
+
   /* calculate and PRINT and GPRINT definitions. We have to do it at
    * this point because it will affect the length of the legends
    * if there are no graph elements we stop here ... 
@@ -1937,7 +2103,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
    */
   i=print_calc(im,calcpr);
   if(i<0) return -1;
-  if(i==0 || lazy) return 0;
+  if(((i==0)&&(piechart==0)) || lazy) return 0;
+
+  /* If there's only the pie chart to draw, signal this */
+  if (i==0) piechart=2;
   
   /* get actual drawing data and find min and max values*/
   if(data_proc(im)==-1)
@@ -1948,56 +2117,15 @@ graph_paint(image_desc_t *im, char ***calcpr)
   if(!im->rigid && ! im->logarithmic)
     expand_range(im);   /* make sure the upper and lower limit are
                            sensible values */
-  
-  /* init xtr and ytr */
-  /* determine the actual size of the gif to draw. The size given
-     on the cmdline is the graph area. But we need more as we have
-     draw labels and other things outside the graph area */
-  
-  
-  im->xorigin = 10 + 9 *  im->text_prop[TEXT_PROP_LEGEND].size;
 
-  xtr(im,0); 
-  
-  im->yorigin = 10 + im->ysize;
-
-  ytr(im,DNAN);
-  
-  if(im->title[0] != '\0')
-    im->yorigin += im->text_prop[TEXT_PROP_TITLE].size*3+4;
-  
-  im->xgif= 20 +im->xsize + im->xorigin;
-  im->ygif= im->yorigin+2* im->text_prop[TEXT_PROP_LEGEND].size;
-
-  /* check if we need to draw a piechart */
-  for(i=0;i<im->gdes_c;i++){
-    if (im->gdes[i].gf == GF_PART) {
-      piechart=1;
-      break;
-    }
-  }
-
-  if (piechart) {
-	/* allocate enough space for the piechart itself (PieSize), 20%
-	** more for the background and an additional 50 pixels spacing.
-	*/
-    if (im->xsize < im->ysize)
-	PieSize = im->xsize;
-    else
-	PieSize = im->ysize;
-    im->xgif += PieSize*1.2 + 50;
-
-    PieCenterX = im->xorigin + im->xsize + 50 + PieSize*0.6;
-    PieCenterY = im->yorigin - PieSize*0.5;
-  }
-
-  /* determine where to place the legends onto the graphics.
-     and set im->ygif to match space requirements for text */
-  if(leg_place(im)==-1)
+/**************************************************************
+ *** Calculating sizes and locations became a bit confusing ***
+ *** so I moved this into a separate function.              ***
+ **************************************************************/
+  if(graph_size_location(im,i,piechart)==-1)
     return -1;
 
   canvas=gfx_new_canvas();
-
 
   /* the actual graph is created by going through the individual
      graph elements and then drawing them */
@@ -2010,81 +2138,26 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
   gfx_add_point(node,0, im->ygif);
 
-  node=gfx_new_area ( canvas,
+  if (piechart != 2) {
+    node=gfx_new_area ( canvas,
                       im->xorigin,             im->yorigin, 
                       im->xorigin + im->xsize, im->yorigin,
                       im->xorigin + im->xsize, im->yorigin-im->ysize,
                       im->graph_col[GRC_CANVAS]);
   
-  gfx_add_point(node,im->xorigin, im->yorigin - im->ysize);
+    gfx_add_point(node,im->xorigin, im->yorigin - im->ysize);
 
-#if 0
-/******************************************************************
- ** Just to play around.  If you see this, I forgot to remove it **
- ******************************************************************/
-  im->ygif+=100;
-  node=gfx_new_area(canvas,
-			0,		im->ygif-100,
-			im->xgif,	im->ygif-100,
-			im->xgif,	im->ygif,
-			im->graph_col[GRC_CANVAS]);
-  gfx_add_point(node,0,im->ygif);
-
-  /* Four areas:
-  ** top left:     current way, solid color
-  ** top right:    proper way,  solid color
-  ** bottom left:  current way, alpha=0x80, partially overlapping
-  ** bottom right: proper way,  alpha=0x80, partially overlapping
-  */
-  {
-    double x,y,x1,y1,x2,y2,x3,y3,x4,y4;
-
-    x=(im->xgif-40)/6;
-    y=     (100-40)/6;
-    x1=    20;   y1=im->ygif-100+20;
-    x2=3*x+20;   y2=im->ygif-100+20;
-    x3=  x+20;   y3=im->ygif-100+20+2*y;
-    x4=4*x+20;   y4=im->ygif-100+20+2*y;
-
-    node=gfx_new_area(canvas,
-			x1,y1,
-			x1+3*x,y1,
-			x1+3*x,y1+3*y,
-			0xFF0000FF);
-    gfx_add_point(node,x1,y1+3*y);
-    node=gfx_new_area(canvas,
-			x2,y2,
-			x2,y2+3*y,
-			x2+3*x,y2+3*y,
-			0xFFFF00FF);
-    gfx_add_point(node,x2+3*x,y2);
-    node=gfx_new_area(canvas,
-			x3,y3,
-			x3+2*x,y3,
-			x3+2*x,y3+3*y,
-			0x00FF007F);
-    gfx_add_point(node,x3,y3+3*y);
-    node=gfx_new_area(canvas,
-			x4,y4,
-			x4,y4+3*y,
-			x4+2*x,y4+3*y,
-			0x0000FF7F);
-    gfx_add_point(node,x4+2*x,y4);
+    if (im->minval > 0.0)
+      areazero = im->minval;
+    if (im->maxval < 0.0)
+      areazero = im->maxval;
+  
+    axis_paint(im,canvas);
   }
-			
-#endif
 
   if (piechart) {
-    pie_part(canvas,im->graph_col[GRC_CANVAS],PieCenterX,PieCenterY,PieSize*0.6,0,2*M_PI);
+    pie_part(canvas,im->graph_col[GRC_CANVAS],im->pie_x,im->pie_y,im->piesize*0.5,0,2*M_PI);
   }
-
-  if (im->minval > 0.0)
-    areazero = im->minval;
-  if (im->maxval < 0.0)
-    areazero = im->maxval;
-  
-  axis_paint(im,canvas);
-
 
   for(i=0;i<im->gdes_c;i++){
     switch(im->gdes[i].gf){
@@ -2211,7 +2284,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
      
       if (finite(im->gdes[i].yrule)) {	/* even the fetched var can be NaN */
 	pie_part(canvas,im->gdes[i].col,
-		PieCenterX,PieCenterY,PieSize/2,
+		im->pie_x,im->pie_y,im->piesize*0.4,
 		M_PI*2.0*PieStart/100.0,
 		M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0);
 	PieStart += im->gdes[i].yrule;
@@ -2219,6 +2292,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
       break;
     } /* switch */
   }
+  if (piechart==2) {
+    im->draw_x_grid=0;
+    im->draw_y_grid=0;
+  }
+  /* grid_paint also does the text */
   grid_paint(im,canvas);
   
   /* the RULES are the last thing to paint ... */

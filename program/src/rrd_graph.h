@@ -118,7 +118,7 @@ typedef struct image_desc_t {
     /* configuration of graph */
 
     char           graphfile[MAXPATH]; /* filename for graphic */
-    long           xsize,ysize;    /* graph area size in pixels */
+    long           xsize,ysize,piesize;    /* graph area size in pixels */
     double         zoom;           /* zoom for graph */
     gfx_color_t    graph_col[__GRC_END__]; /* real colors for the graph */   
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
@@ -147,6 +147,7 @@ typedef struct image_desc_t {
     /* status information */
     	    
     long           xorigin,yorigin;/* where is (0,0) of the graph */
+    long           pie_x,pie_y;    /* where is the centerpoint */
     long           xgif,ygif;      /* total size of the gif */
     int            interlaced;     /* will the graph be interlaced? */
     double         magfact;        /* numerical magnitude*/
@@ -207,3 +208,4 @@ int bad_format(char *);
 int vdef_parse(struct graph_desc_t *,char *);
 int vdef_calc(image_desc_t *, int);
 int vdef_percent_compar(const void *,const void *);
+int graph_size_location(image_desc_t *, int, int);
