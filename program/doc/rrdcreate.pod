@@ -386,7 +386,7 @@ together with the time.
 
 =item Mail Messages
 
-Assume you have a methode to count the number of messages transported by
+Assume you have a method to count the number of messages transported by
 your mailserver in a certain amount of time, this give you data like '5
 messages in the last 65 seconds'. If you look at the count of 5 like and
 B<ABSOLUTE> datatype you can simply update the rrd with the number 5 and the
