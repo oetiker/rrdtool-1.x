@@ -12,7 +12,7 @@ WriteMakefile(
    'INC'	=> '-I../../src/ -I../../libraries/freetype-2.0.5/include -I ../../libraries/libart_lgpl-2.3.7 -I ../../libraries/zlib-1.1.4 -I ../../libraries/libpng-1.2.0',    
 # change this path to refer to your libc.lib
     'MYEXTLIB'  => 'c:/vc98/lib/libc.lib ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0\release\png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
-    'realclean'    => {FILES => 't/demo?.rrd t/demo?.gif' },
+    'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
     ($] ge '5.005') ? (
         'AUTHOR' => 'Tobias Oetiker (oetiker@ee.ethz.ch)',
         'ABSTRACT' => 'Round Robin Database Tool',

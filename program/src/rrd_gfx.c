@@ -64,15 +64,15 @@ gfx_canvas_t *gfx_new_canvas (void) {
 
 /* create a new line */
 gfx_node_t  *gfx_new_line(gfx_canvas_t *canvas, 
-			   double x0, double y0, 
-	 		   double x1, double y1,
+			   double X0, double Y0, 
+	 		   double X1, double Y1,
  			   double width, gfx_color_t color){
-  return gfx_new_dashed_line(canvas, x0, y0, x1, y1, width, color, 0, 0);
+  return gfx_new_dashed_line(canvas, X0, Y0, X1, Y1, width, color, 0, 0);
 }
 
 gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas, 
-			   double x0, double y0, 
-	 		   double x1, double y1,
+			   double X0, double Y0, 
+	 		   double X1, double Y1,
  			   double width, gfx_color_t color,
 			   double dash_on, double dash_off){
 
@@ -82,8 +82,8 @@ gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas,
   if (node == NULL) return NULL;
   vec = art_new(ArtVpath, 3);
   if (vec == NULL) return NULL;
-  vec[0].code = ART_MOVETO_OPEN; vec[0].x=x0+LINEOFFSET; vec[0].y=y0+LINEOFFSET;
-  vec[1].code = ART_LINETO; vec[1].x=x1+LINEOFFSET; vec[1].y=y1+LINEOFFSET;
+  vec[0].code = ART_MOVETO_OPEN; vec[0].x=X0+LINEOFFSET; vec[0].y=Y0+LINEOFFSET;
+  vec[1].code = ART_LINETO; vec[1].x=X1+LINEOFFSET; vec[1].y=Y1+LINEOFFSET;
   vec[2].code = ART_END;
   
   node->points = 3;
@@ -98,9 +98,9 @@ gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas,
 
 /* create a new area */
 gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas, 
-			      double x0, double y0,
-			      double x1, double y1,
-			      double x2, double y2,
+			      double X0, double Y0,
+			      double X1, double Y1,
+			      double X2, double Y2,
 			      gfx_color_t color) {
 
   gfx_node_t *node;
@@ -109,10 +109,10 @@ gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas,
   if (node == NULL) return NULL;
   vec = art_new(ArtVpath, 5);
   if (vec == NULL) return NULL;
-  vec[0].code = ART_MOVETO; vec[0].x=x0; vec[0].y=y0;
-  vec[1].code = ART_LINETO; vec[1].x=x1; vec[1].y=y1;
-  vec[2].code = ART_LINETO; vec[2].x=x2; vec[2].y=y2;
-  vec[3].code = ART_LINETO; vec[3].x=x0; vec[3].y=y0;
+  vec[0].code = ART_MOVETO; vec[0].x=X0; vec[0].y=Y0;
+  vec[1].code = ART_LINETO; vec[1].x=X1; vec[1].y=Y1;
+  vec[2].code = ART_LINETO; vec[2].x=X2; vec[2].y=Y2;
+  vec[3].code = ART_LINETO; vec[3].x=X0; vec[3].y=Y0;
   vec[4].code = ART_END;
   
   node->points = 5;
@@ -128,8 +128,8 @@ int           gfx_add_point  (gfx_node_t *node,
 			      double x, double y){
   if (node == NULL) return 1;
   if (node->type == GFX_AREA) {
-    double x0 = node->path[0].x;
-    double y0 = node->path[0].y;
+    double X0 = node->path[0].x;
+    double Y0 = node->path[0].y;
     node->points -= 2;
     art_vpath_add_point (&(node->path),
                          &(node->points),
@@ -140,7 +140,7 @@ int           gfx_add_point  (gfx_node_t *node,
                          &(node->points),
                          &(node->points_max),
                          ART_LINETO,
-                         x0,y0);
+                         X0,Y0);
     art_vpath_add_point (&(node->path),
                          &(node->points),
                          &(node->points_max),
@@ -384,12 +384,14 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             case GFX_H_RIGHT:  pen_x -= text_width; break;
             case GFX_H_CENTER: pen_x -= text_width / 2.0; break;          
             case GFX_H_LEFT: break;          
+            case GFX_H_NULL: break;          
             }
 
             switch(node->valign){
             case GFX_V_TOP:    pen_y += text_height; break;
             case GFX_V_CENTER: pen_y += text_height / 2.0; break;          
             case GFX_V_BOTTOM: break;          
+            case GFX_V_NULL: break;          
             }
 
             glyph_index=0;

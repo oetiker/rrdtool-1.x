@@ -253,6 +253,7 @@ char* includefile(long argc, char **args){
   }
 }
 
+static
 char* rrdstrip(char *buf){
   char *start;
   if (buf == NULL) return NULL;
@@ -442,6 +443,7 @@ char* printtimenow(long argc, char **args) {
 }
 
 /* scan aLine until an unescaped '>' arives */
+static
 char* scanargs(char *aLine, long *argc, char ***args)
 {
   char        *getP, *putP;

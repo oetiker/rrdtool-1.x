@@ -20,7 +20,7 @@ S<[B<-w>|B<--width> I<pixels>]>
 S<[B<-h>|B<--height> I<pixels>]> 
 S<[B<-i>|B<--interlaced>]> 
 S<[B<-f>|B<--imginfo> I<formatstring>]> 
-S<[B<-a>|B<--imgformat> B<GIF>|B<PNG>]> 
+S<[B<-a>|B<--imgformat> B<SVG>|B<PNG>]> 
 S<[B<-z>|B<--lazy>]> 
 S<[B<-o>|B<--logarithmic>]>
 S<[B<-u>|B<--upper-limit> I<value>]> 
@@ -54,13 +54,10 @@ from generating graphs, it can also extract numerical reports.
 =item I<filename> 
 
 The name of the graph to generate. Since B<rrdtool> outputs
-GIFs and PNGs, it's recommended that the filename end in either
-F<.gif> or F<.png>.  B<rrdtool> does not enforce this, however.
+SVGs and PNGs, it's recommended that the filename end in either
+F<.svg> or F<.png>.  B<rrdtool> does not enforce this, however.
 If the  I<filename> is set to '-' the image file will be written
 to standard out.  All other output will get suppressed.
-
-PNG output is recommended, since it takes up to 40% less disk space
-and 20-30% less time to generate than a GIF file.
 
 If no graph functions are called, the graph will not be created.
 
@@ -170,20 +167,20 @@ specify the units used.
 =item B<-w>|B<--width> I<pixels> (default 400 pixel)
 
 Width of the drawing area within the graph. This affects the size of the
-gif.
+image.
 
 =item B<-h>|B<--height> I<pixels> (default 100 pixel)
 
 Width of the drawing area within the graph. This affects the size of the
-gif.
+image.
 
 =item B<-i>|B<--interlaced> (default: false)
 
-If you set this option, then the resulting GIF will be interlaced.
+If you set this option, then the resulting image will be interlaced.
 Most web browsers display these incrementally as they load. If
-you do not use this option, the GIFs default to being progressive
+you do not use this option, the image defaults to being progressive
 scanned. The only effect of this option is to control the format
-of the GIF on disk. It makes no changes to the layout or contents
+of the image on disk. It makes no changes to the layout or contents
 of the graph.
 
 =item B<-f>|B<--imginfo> I<formatstring>
@@ -197,13 +194,13 @@ would look like this:
 
  --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
 
-=item B<-a>|B<--imgformat> B<GIF>|B<PNG> (default: GIF)
+=item B<-a>|B<--imgformat> B<SVG>|B<PNG> (default: PNG)
 
 Allows you to produce PNG output from rrdtool. 
 
 =item B<-z>|B<--lazy> (default: false)
 
-Only generate the graph, if the current gif is out of date or not
+Only generate the graph, if the current image is out of date or not
 existent.
 
 =item B<-u>|B<--upper-limit> I<value> (default autoconfigure)
@@ -521,11 +518,11 @@ before placing the next row of legends.
 =head1 NOTE on Return Values
 
 Whenever rrd_graph gets called, it prints a line telling the size of
-the gif it has just created to STDOUT. This line looks like this: XSIZExYSIZE.
+the image it has just created to STDOUT. This line looks like this: XSIZExYSIZE.
 
 =head1 EXAMPLE 1
 
-  rrdtool graph demo.gif --title="Demo Graph" \
+  rrdtool graph demo.png --title="Demo Graph" \
           DEF:cel=demo.rrd:exhaust:AVERAGE \
           "CDEF:far=cel,1.8,*,32,+"" \
           LINE2:cel#00a000:"D. Celsius" \
@@ -538,7 +535,7 @@ I<*UNKNOWN*> values to 0.  This technique is useful if you are
 aggregating interface data where the start dates of the data sets
 doesn't match.
 
-  rrdtool graph demo.gif --title="Demo Graph" \
+  rrdtool graph demo.png --title="Demo Graph" \
          DEF:idat1=interface1.rrd:ds0:AVERAGE \
          DEF:idat2=interface2.rrd:ds0:AVERAGE \
          DEF:odat1=interface1.rrd:ds1:AVERAGE \
@@ -602,7 +599,7 @@ If the specialized function B<RRAs> exist for aberrant behavior detection, they
 can be used to generate the graph of a time series with confidence bands and
 failures.
 
-   rrdtool graph example.gif \
+   rrdtool graph example.png \
           DEF:obs=monitor.rrd:ifOutOctets:AVERAGE \
           DEF:pred=monitor.rrd:ifOutOctets:HWPREDICT \
           DEF:dev=monitor.rrd:ifOutOctets:DEVPREDICT \

@@ -58,7 +58,7 @@ RRDp.pm:
 	ln -s ../bindings/perl-piped/RRDp.pm .
 
 index.html:
-	rm index.html; ln -s rrdtool.html index.html
+	rm -f index.html; ln -s rrdtool.html index.html
 
 link: RRDp.pm RRDs.pm index.html
 
