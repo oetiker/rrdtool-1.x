@@ -42,12 +42,6 @@
 
 =item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
 
-=back
-
-=item B<to be implemented commands>
-
-=over 8
-
 =item B<SHIFT> : I<vname> , I<offset>
 
 =back
@@ -251,7 +245,7 @@ length of the tick mark as a fraction of the y-axis; the default value
 is 0.1 (10% of the axis). Note that the color specification is not
 optional.
 
-=item B<SHIFT> : I<vname> , I<offset>
+=item B<SHIFT> : I<vname> : I<offset>
 
 Using this command B<RRDtool> will graph the following elements
 with the specified offset.  For instance, you can specify an
