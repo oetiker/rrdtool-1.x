@@ -14,6 +14,16 @@ ready because comments are intermixed with the examples.
 
 =head1 EXAMPLES
 
+=head2 Data with multiple resolutions
+
+    --end now --start end-120000s --width 400
+    DEF:ds0a=/home/rrdtool/data/router1.rrd:ds0:AVERAGE
+    DEF:ds0b=/home/rrdtool/data/router1.rrd:ds0:AVERAGE:step=1800
+    DEF:ds0c=/home/rrdtool/data/router1.rrd:ds0:AVERAGE:step=7200
+    LINE1:ds0a#0000FF:"default resolution\n"
+    LINE1:ds0b#00CCFF:"resolution 1800 seconds per interval\n"
+    LINE1:ds0c#FF00FF:"resolution 7200 seconds per interval\n"
+
 =head2 Nicely formatted legend section
 
     DEF:ds0=/home/rrdtool/data/router1.rrd:ds0:AVERAGE

@@ -2,7 +2,7 @@
 
 =head1 SYNOPSYS
 
-B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:[I<time range>][:I<step size>]]
+B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:step=I<step size>][:<time range>>]
 
 B<VDEF>:I<vname>=I<RPN expression>
 
@@ -18,15 +18,15 @@ a language called B<RPN> which is described in its own manual page.
 
 =head1 DEF
 
-B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:[I<time range>][:I<step size>]]
+B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:step=I<step size>][:<time range>>]
 
 This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
 default, an B<RRA> which contains the correct consolidated data
 at an appropriate resolution will be chosen.  The resolution can
 be overriden with the L<--step|rrdgraph/item_Time> option. 
-I<Not yet implemented:>[ The resolution can be overriden by specifying
-the B<step size>.]  I<Not yet implemented:> [ The time span of this data
+The resolution can again be overriden by specifying the B<step size>.
+I<Not yet implemented:> [ The time span of this data
 is the same as for the graph by default, you can override this by
 specifying the B<time range>. ]
 
@@ -39,9 +39,10 @@ a resolution of 1800 seconds per B<CDP>, you should create an
 image with width 400 and time span 400*1800 seconds (use appropriate
 start and end times, such as C<--start end-8days8hours>).
 
-Example: C<DEF:mydata=router.rrd:ds0:AVERAGE>
+Example:
 
-Example: C<DEF:januari=router.rrd:ds0:AVERAGE:start=20010101 end=20010201>
+        DEF:ds0=router.rrd:ds0:AVERAGE
+        DEF:ds0weekly=router.rrd:ds0:AVERAGE:step=7200
 
 =head1 VDEF
 
