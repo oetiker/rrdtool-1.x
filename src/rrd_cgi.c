@@ -83,7 +83,11 @@ static void calfree (void){
 
 /* create freeable version of the string */
 char * stralloc(char *str){
-  char *nstr = malloc((strlen(str)+1)*sizeof(char));
+  char *nstr;
+  if (str == NULL) {  
+        return NULL;
+  }
+  nstr = malloc((strlen(str)+1)*sizeof(char));
   strcpy(nstr,str);
   return(nstr);
 }
