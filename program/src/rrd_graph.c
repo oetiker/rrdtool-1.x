@@ -853,19 +853,22 @@ data_calc( image_desc_t *im){
 		 *   resulting data source.
 		 */
 		for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-		    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE){
+		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
+		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
 			long ptr = im->gdes[gdi].rpnp[rpi].ptr;
 			if (im->gdes[ptr].ds_cnt == 0) {
 #if 0
-printf("DEBUG: inside CDEF '%s' processing VDEF '%s'\n",
+			printf("DEBUG: inside CDEF '%s' processing VDEF '%s'\n",
 	im->gdes[gdi].vname,
 	im->gdes[ptr].vname);
-printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
+			printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 #endif
 			    im->gdes[gdi].rpnp[rpi].val = im->gdes[ptr].vf.val;
 			    im->gdes[gdi].rpnp[rpi].op  = OP_NUMBER;
 			} else {
-			    if ((steparray = rrd_realloc(steparray, (++stepcnt+1)*sizeof(*steparray)))==NULL){
+			if ((steparray =
+				 rrd_realloc(steparray,
+							 (++stepcnt+1)*sizeof(*steparray)))==NULL){
 				rrd_set_error("realloc steparray");
 				rpnstack_free(&rpnstack);
 				return -1;
@@ -904,7 +907,8 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 
                 /* move the data pointers to the correct period */
                 for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-                    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE){
+		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
+		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
                         long ptr = im->gdes[gdi].rpnp[rpi].ptr;
                         if(im->gdes[gdi].start > im->gdes[ptr].start) {
                             im->gdes[gdi].rpnp[rpi].data += im->gdes[gdi].rpnp[rpi].ds_cnt;

@@ -838,6 +838,31 @@ the other half of your graph. This can be done in a relatively simple
 way: what you need is the "wipeout" variable and place a negative
 sign before it:  "CDEF:wipeout2=wipeout,-1,*"
     
+=head2 Filtering data
+
+You may do some complex data filtering:
+
+  MEDIAN FILTER: filters shot noise
+
+    DEF:var=database.rrd:traffic:AVERAGE
+    CDEF:prev1=PREV(var)
+    CDEF:prev2=PREV(prev1)
+    CDEF:prev3=PREV(prev2)
+    CDEF:median=prev1,prev2,prev3,+,+,3,/
+    LINE3:median#000077:filtered
+    LINE1:prev2#007700:'raw data'
+
+
+  DERIVATE:
+
+    DEF:var=database.rrd:traffic:AVERAGE
+    CDEF:prev1=PREV(var)
+    CDEF:time=TIME
+    CDEF:prevtime=PREV(time)
+    CDEF:derivate=var,prev1,-,time,prevtime,-,/
+    LINE3:derivate#000077:derivate
+    LINE1:var#007700:'raw data'
+
 =head1 Out of ideas for now
 
 This document was created from questions asked by either myself or
