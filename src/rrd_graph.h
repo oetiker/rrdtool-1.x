@@ -192,6 +192,7 @@ void axis_paint( image_desc_t *, gfx_canvas_t *);
 void grid_paint( image_desc_t *, gfx_canvas_t *);
 int lazy_check(image_desc_t *);
 int graph_paint(image_desc_t *, char ***);
+void pie_part(gfx_canvas_t *, gfx_color_t, double, double, double, double, double);
 int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *);

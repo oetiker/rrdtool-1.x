@@ -1844,6 +1844,51 @@ int lazy_check(image_desc_t *im){
     return size;
 }
 
+void
+pie_part(gfx_canvas_t *canvas, gfx_color_t color,
+	    double PieCenterX, double PieCenterY, double Radius,
+	    double startangle, double endangle)
+{
+    gfx_node_t *node;
+    double angle;
+    double step=M_PI/50; /* Number of iterations for the circle;
+			 ** 10 is definitely too low, more than
+			 ** 50 seems to be overkill
+			 */
+
+    /* Strange but true: we have to work clockwise or else
+    ** anti aliasing nor transparency don't work.
+    **
+    ** This test is here to make sure we do it right, also
+    ** this makes the for...next loop more easy to implement.
+    ** The return will occur if the user enters a negative number
+    ** (which shouldn't be done according to the specs) or if the
+    ** programmers do something wrong (which, as we all know, never
+    ** happens anyway :)
+    */
+    if (endangle<startangle) return;
+
+    /* Hidden feature: Radius decreases each full circle */
+    angle=startangle;
+    while (angle>=2*M_PI) {
+	angle  -= 2*M_PI;
+	Radius *= 0.8;
+    }
+
+    node=gfx_new_area(canvas,
+		PieCenterX+sin(startangle)*Radius,
+		PieCenterY-cos(startangle)*Radius,
+		PieCenterX,
+		PieCenterY,
+		PieCenterX+sin(endangle)*Radius,
+		PieCenterY-cos(endangle)*Radius,
+		color);
+    for (angle=endangle;angle-startangle>=step;angle-=step) {
+	gfx_add_point(node,
+		PieCenterX+sin(angle)*Radius,
+		PieCenterY-cos(angle)*Radius );
+    }
+}
 
 /* draw that picture thing ... */
 int
@@ -1852,7 +1897,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   int i,ii;
   int lazy =     lazy_check(im);
   int piechart = 0;
-  double PieStart=0.0, PieSize, PieCenterX, PieCenterY;
+  double PieStart=0.0, PieSize=0.0, PieCenterX=0.0, PieCenterY=0.0;
   FILE  *fo;
   gfx_canvas_t *canvas;
   gfx_node_t *node;
@@ -1973,42 +2018,52 @@ graph_paint(image_desc_t *im, char ***calcpr)
 			im->graph_col[GRC_CANVAS]);
   gfx_add_point(node,0,im->ygif);
 
-  node=gfx_new_line (canvas,
-		0,		im->ygif-100,
-		im->xgif-3,	im->ygif-100,
-		1.0,
-		0xFF0000FF);
-  gfx_add_point(node,im->xgif-3,im->ygif-3);
-  gfx_add_point(node,2,im->ygif-3);
-  gfx_add_point(node,2,im->ygif-100);
+  /* Four areas:
+  ** top left:     current way, solid color
+  ** top right:    proper way,  solid color
+  ** bottom left:  current way, alpha=0x80, partially overlapping
+  ** bottom right: proper way,  alpha=0x80, partially overlapping
+  */
+  {
+    double x,y,x1,y1,x2,y2,x3,y3,x4,y4;
 
+    x=(im->xgif-40)/6;
+    y=     (100-40)/6;
+    x1=    20;   y1=im->ygif-100+20;
+    x2=3*x+20;   y2=im->ygif-100+20;
+    x3=  x+20;   y3=im->ygif-100+20+2*y;
+    x4=4*x+20;   y4=im->ygif-100+20+2*y;
 
-#if 0
-  node=gfx_new_area ( canvas,
-			1,		im->ygif-99,
-			im->xgif-1,	im->ygif-99,
-			im->xgif-1,	im->ygif-1,
-			im->graph_col[GRC_CANVAS]);
-  gfx_add_point(node,1,im->ygif-1);
-#endif
-
+    node=gfx_new_area(canvas,
+			x1,y1,
+			x1+3*x,y1,
+			x1+3*x,y1+3*y,
+			0xFF0000FF);
+    gfx_add_point(node,x1,y1+3*y);
+    node=gfx_new_area(canvas,
+			x2,y2,
+			x2,y2+3*y,
+			x2+3*x,y2+3*y,
+			0xFFFF00FF);
+    gfx_add_point(node,x2+3*x,y2);
+    node=gfx_new_area(canvas,
+			x3,y3,
+			x3+2*x,y3,
+			x3+2*x,y3+3*y,
+			0x00FF007F);
+    gfx_add_point(node,x3,y3+3*y);
+    node=gfx_new_area(canvas,
+			x4,y4,
+			x4,y4+3*y,
+			x4+2*x,y4+3*y,
+			0x0000FF7F);
+    gfx_add_point(node,x4+2*x,y4);
+  }
+			
 #endif
 
   if (piechart) {
-	int n;
-
-	node=gfx_new_area(canvas,
-		PieCenterX,PieCenterY-PieSize*0.6,
-		PieCenterX,PieCenterY,
-		PieCenterX,PieCenterY-PieSize*0.6,
-		im->graph_col[GRC_CANVAS]);
-	for (n=1;n<500;n++) {
-		double angle;
-		angle=M_PI*2.0*n/500.0;
-		gfx_add_point(node,
-		PieCenterX+sin(angle)*PieSize*0.6,
-		PieCenterY-cos(angle)*PieSize*0.6 );
-	}
+    pie_part(canvas,im->graph_col[GRC_CANVAS],PieCenterX,PieCenterY,PieSize*0.6,0,2*M_PI);
   }
 
   if (im->minval > 0.0)
@@ -2143,25 +2198,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
      
       if (finite(im->gdes[i].yrule)) {	/* even the fetched var can be NaN */
-	double angle,endangle;
-	int n;
-
-	angle=M_PI*2.0*PieStart/100.0;
-	endangle=M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0;
-	node=gfx_new_area(canvas,
-		PieCenterX+sin(endangle)*PieSize/2,
-		PieCenterY-cos(endangle)*PieSize/2,
-		PieCenterX,
-		PieCenterY,
-		PieCenterX+sin(angle)*PieSize/2,
-		PieCenterY-cos(angle)*PieSize/2,
-		im->gdes[i].col);
-	for (n=1;n<100;n++) {
-		angle=M_PI*2.0*(PieStart+n/100.0*im->gdes[i].yrule)/100.0;
-		gfx_add_point(node,
-		PieCenterX+sin(angle)*PieSize/2,
-		PieCenterY-cos(angle)*PieSize/2 );
-	}
+	pie_part(canvas,im->gdes[i].col,
+		PieCenterX,PieCenterY,PieSize/2,
+		M_PI*2.0*PieStart/100.0,
+		M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0);
 	PieStart += im->gdes[i].yrule;
       }
       break;
