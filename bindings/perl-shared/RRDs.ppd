@@ -1,0 +1,10 @@
+<SOFTPKG NAME="RRDs" VERSION="1,100001,0,0">
+	<TITLE>RRDs</TITLE>
+	<ABSTRACT>Round Robin Database Tool</ABSTRACT>
+	<AUTHOR>Tobias Oetiker (oetiker@ee.ethz.ch)</AUTHOR>
+	<IMPLEMENTATION>
+		<OS NAME="MSWin32" />
+		<ARCHITECTURE NAME="MSWin32-x86-multi-thread-5.8" />
+		<CODEBASE HREF="RRDs.tar.gz" />
+	</IMPLEMENTATION>
+</SOFTPKG>

@@ -1,43 +1,11 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cgilib", "..\libraries\cgilib-0.4\cgilib.vcproj", "{02256094-BBB3-4792-94D6-A9B6D6ADD8AC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrd", "rrd.vcproj", "{8DF24CAC-DF33-4131-8584-529054E341B3}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "..\libraries\freetype-2.0.5\freetype.vcproj", "{B4326A72-B07E-4C86-BD90-769F06C1D19B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrdtool", "rrdtool.vcproj", "{3A5A6297-3F61-498A-BA72-66D36144901B}"
 	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libart", "..\libraries\libart_lgpl-2.3.7\libart.vcproj", "{1ED76D7D-0869-4445-9B75-44046552B8F0}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "png", "..\libraries\libpng-1.2.0\png.vcproj", "{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}"
-	ProjectSection(ProjectDependencies) = postProject
-		{10442D5F-AB42-4DE2-B023-0621C8246933} = {10442D5F-AB42-4DE2-B023-0621C8246933}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrd", "rrd.vcproj", "{1B3BDE03-74E3-461E-A644-A78DDE14E990}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1ED76D7D-0869-4445-9B75-44046552B8F0} = {1ED76D7D-0869-4445-9B75-44046552B8F0}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrd_cgi", "rrd_cgi.vcproj", "{684AF5F9-D687-4224-896B-D21BDA80D424}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990} = {1B3BDE03-74E3-461E-A644-A78DDE14E990}
-		{02256094-BBB3-4792-94D6-A9B6D6ADD8AC} = {02256094-BBB3-4792-94D6-A9B6D6ADD8AC}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrdtool", "rrdtool.vcproj", "{6ABDEADD-BE46-4D87-9885-D64E0D2DB03A}"
-	ProjectSection(ProjectDependencies) = postProject
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990} = {1B3BDE03-74E3-461E-A644-A78DDE14E990}
-		{10442D5F-AB42-4DE2-B023-0621C8246933} = {10442D5F-AB42-4DE2-B023-0621C8246933}
-		{B4326A72-B07E-4C86-BD90-769F06C1D19B} = {B4326A72-B07E-4C86-BD90-769F06C1D19B}
-		{1ED76D7D-0869-4445-9B75-44046552B8F0} = {1ED76D7D-0869-4445-9B75-44046552B8F0}
-		{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84} = {EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "..\libraries\zlib-1.1.4\zlib.vcproj", "{10442D5F-AB42-4DE2-B023-0621C8246933}"
-	ProjectSection(ProjectDependencies) = postProject
+		{8DF24CAC-DF33-4131-8584-529054E341B3} = {8DF24CAC-DF33-4131-8584-529054E341B3}
 	EndProjectSection
 EndProject
 Global
@@ -46,38 +14,14 @@ Global
 		Release = Release
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
-		{02256094-BBB3-4792-94D6-A9B6D6ADD8AC}.Debug.ActiveCfg = Debug|Win32
-		{02256094-BBB3-4792-94D6-A9B6D6ADD8AC}.Debug.Build.0 = Debug|Win32
-		{02256094-BBB3-4792-94D6-A9B6D6ADD8AC}.Release.ActiveCfg = Release|Win32
-		{02256094-BBB3-4792-94D6-A9B6D6ADD8AC}.Release.Build.0 = Release|Win32
-		{B4326A72-B07E-4C86-BD90-769F06C1D19B}.Debug.ActiveCfg = Debug|Win32
-		{B4326A72-B07E-4C86-BD90-769F06C1D19B}.Debug.Build.0 = Debug|Win32
-		{B4326A72-B07E-4C86-BD90-769F06C1D19B}.Release.ActiveCfg = Release|Win32
-		{B4326A72-B07E-4C86-BD90-769F06C1D19B}.Release.Build.0 = Release|Win32
-		{1ED76D7D-0869-4445-9B75-44046552B8F0}.Debug.ActiveCfg = Debug|Win32
-		{1ED76D7D-0869-4445-9B75-44046552B8F0}.Debug.Build.0 = Debug|Win32
-		{1ED76D7D-0869-4445-9B75-44046552B8F0}.Release.ActiveCfg = Release|Win32
-		{1ED76D7D-0869-4445-9B75-44046552B8F0}.Release.Build.0 = Release|Win32
-		{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}.Debug.ActiveCfg = Debug|Win32
-		{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}.Debug.Build.0 = Debug|Win32
-		{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}.Release.ActiveCfg = Release|Win32
-		{EC01DFAF-6F42-45CD-BDD7-DA04C7A98A84}.Release.Build.0 = Release|Win32
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990}.Debug.ActiveCfg = Debug|Win32
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990}.Debug.Build.0 = Debug|Win32
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990}.Release.ActiveCfg = Release|Win32
-		{1B3BDE03-74E3-461E-A644-A78DDE14E990}.Release.Build.0 = Release|Win32
-		{684AF5F9-D687-4224-896B-D21BDA80D424}.Debug.ActiveCfg = Debug|Win32
-		{684AF5F9-D687-4224-896B-D21BDA80D424}.Debug.Build.0 = Debug|Win32
-		{684AF5F9-D687-4224-896B-D21BDA80D424}.Release.ActiveCfg = Release|Win32
-		{684AF5F9-D687-4224-896B-D21BDA80D424}.Release.Build.0 = Release|Win32
-		{6ABDEADD-BE46-4D87-9885-D64E0D2DB03A}.Debug.ActiveCfg = Debug|Win32
-		{6ABDEADD-BE46-4D87-9885-D64E0D2DB03A}.Debug.Build.0 = Debug|Win32
-		{6ABDEADD-BE46-4D87-9885-D64E0D2DB03A}.Release.ActiveCfg = Release|Win32
-		{6ABDEADD-BE46-4D87-9885-D64E0D2DB03A}.Release.Build.0 = Release|Win32
-		{10442D5F-AB42-4DE2-B023-0621C8246933}.Debug.ActiveCfg = Debug|Win32
-		{10442D5F-AB42-4DE2-B023-0621C8246933}.Debug.Build.0 = Debug|Win32
-		{10442D5F-AB42-4DE2-B023-0621C8246933}.Release.ActiveCfg = Release|Win32
-		{10442D5F-AB42-4DE2-B023-0621C8246933}.Release.Build.0 = Release|Win32
+		{8DF24CAC-DF33-4131-8584-529054E341B3}.Debug.ActiveCfg = Debug|Win32
+		{8DF24CAC-DF33-4131-8584-529054E341B3}.Debug.Build.0 = Debug|Win32
+		{8DF24CAC-DF33-4131-8584-529054E341B3}.Release.ActiveCfg = Release|Win32
+		{8DF24CAC-DF33-4131-8584-529054E341B3}.Release.Build.0 = Release|Win32
+		{3A5A6297-3F61-498A-BA72-66D36144901B}.Debug.ActiveCfg = Debug|Win32
+		{3A5A6297-3F61-498A-BA72-66D36144901B}.Debug.Build.0 = Debug|Win32
+		{3A5A6297-3F61-498A-BA72-66D36144901B}.Release.ActiveCfg = Release|Win32
+		{3A5A6297-3F61-498A-BA72-66D36144901B}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

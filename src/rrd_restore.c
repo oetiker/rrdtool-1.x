@@ -8,6 +8,12 @@
 #include "rrd_rpncalc.h"
 #include <fcntl.h>
 
+#ifdef WIN32
+#include <io.h>
+#define open _open
+#define close _close
+#endif
+
 /* Prototypes */
 
 void xml_lc(char*);

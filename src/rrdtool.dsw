@@ -3,57 +3,6 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "cgilib"="..\libraries\cgilib-0.4\cgilib.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "freetype"="..\libraries\freetype-2.0.5\freetype.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "libart"="..\libraries\libart_lgpl-2.3.7\libart.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
-Project: "png"="..\libraries\libpng-1.2.0\png.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name zlib
-    End Project Dependency
-}}}
-
-###############################################################################
-
 Project: "rrd"=".\rrd.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -62,24 +11,6 @@ Package=<5>
 
 Package=<4>
 {{{
-}}}
-
-###############################################################################
-
-Project: "rrd_cgi"=".\rrd_cgi.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name cgilib
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name rrd
-    End Project Dependency
 }}}
 
 ###############################################################################
@@ -95,30 +26,6 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name rrd
     End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name freetype
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name libart
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name png
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name zlib
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "zlib"="..\libraries\zlib-1.1.4\zlib.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
 }}}
 
 ###############################################################################
