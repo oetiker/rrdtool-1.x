@@ -3204,6 +3204,7 @@ printf("DEBUG: start == %lu, end == %lu, %lu steps\n"
 		field = (steps-1)*dst->vf.param/100;
 		dst->vf.val  = array[field];
 		dst->vf.when = 0;	/* no time component */
+		free(array);
 #if 0
 for(step=0;step<steps;step++)
 printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
