@@ -1,5 +1,4 @@
 SUBDIRS = tcl
-
 # the following files are not mentioned in any other Makefile
 EXTRA_DIST = $(shell for A in perl-*; do cat $$A/MANIFEST | sed -e s,^,$$A/, ; done)
 

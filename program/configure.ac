@@ -3,14 +3,13 @@ dnl ---------------------------
 dnl
 dnl Created by Jeff Allen, Tobi Oetiker, Blair Zajac
 dnl
-dnl
+dnl Inspiration from http://autoconf-archive.cryp.to
 
 dnl tell automake the this script is for rrdtool
-AC_INIT([rrdtool],[1.1.0])
+AC_INIT([rrdtool],[1.1.9901])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
-AM_CONFIG_HEADER(config.h)
-# AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -25,7 +24,7 @@ dnl where we install our stuff ...
 AC_PREFIX_DEFAULT( /usr/local/rrdtool-1.1.0 )
 
 dnl Minimum Autoconf version required.
-AC_PREREQ(2.58)
+AC_PREREQ(2.59)
 
 dnl At the TOP of the HEADER
 
@@ -158,31 +157,6 @@ AC_SUBST(PERLFLAGS)
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
-AC_DEFUN([EX_CHECK_ALL],
-[ AC_CHECK_LIB($1,$2,
-  [ AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}"],[
-     [ $echo "#include <$3>" | $CC -E - > /dev/null ] 
-     AC_MSG_ERROR([Adjust CPPFLAGS so that the $4 header $3 AND its dependencies gets found])
-  ] ) ],
-  [ AC_MSG_ERROR([
-############################################################################
-I could not find a working copy of $4. Check config.log for hints on why
-this is the case. Maybe you need to set LDFLAGS appropriately so that the
-linker can find lib$1. If you have not installed $4, you can get it
-either from its original home on
-
-   $6
-
-Or you can find an archive copy on
-
-   http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
-
-The last tested version of $4 is $5.
-############################################################################
-])] )
-]
-)
- 
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
  [Vertical label angle: 90.0 (default) or 270.0])
@@ -197,74 +171,62 @@ AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 if test $enable_rrdcgi != no; then
 EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
 fi
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.16, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
 EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.5,  http://prdownloads.sourceforge.net/libpng/)
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.5,  http://prdownloads.sourceforge.net/freetype/)
- 
-dnl Check for pthreads (pieces of code from Bert Driehuis)
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/)
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.9,  http://prdownloads.sourceforge.net/freetype/)
+
+if test "$EX_CHECK_ALL_ERR" = "YES"; then
+  AC_MSG_ERROR([Please fix the library issues listed above and try again.])
+fi
+
+dnl solaris has some odd define it need in order to propperly compile ctime_r
+AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
+AC_LINK_IFELSE(
+    AC_LANG_PROGRAM(
+           [[#include <time.h>]],
+           [[ctime_r(NULL,NULL,0)]]
+                   ),
+    [ CPPFLAGS="$CPPFLAGS -D_POSIX_PTHREAD_SEMANTICS"
+      AC_LINK_IFELSE(
+          AC_LANG_PROGRAM(
+                [[#include <time.h>]],
+                [[ctime_r(NULL,NULL)]]
+    	                 ),
+          [AC_MSG_RESULT([yes, this seems to be solaris style])],
+          [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
+      )
+    ],  
+    [ AC_LINK_IFELSE(
+          AC_LANG_PROGRAM(
+                [[#include <time.h>]],
+                [[ctime_r(NULL,NULL)]]
+    	                 ),
+          [AC_MSG_RESULT(yes)],
+          [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
+      )
+    ]  
+)
+
+dnl Check for pthreads
+dnl http://autoconf-archive.cryp.to/acx_pthread.m4
  
 AC_SUBST(MULTITHREAD_CFLAGS)
 AC_SUBST(MULTITHREAD_LDFLAGS)
 
-AC_DEFUN(AC_CHECK_PTHREAD, [
-   AC_MSG_CHECKING([pthreads: trying no flags])
-   AC_CACHE_VAL(ac_cv_flag_pthread,[
- 	AC_TRY_LINK([
- 		#include <pthread.h>
- 	],
- 	[pthread_exit(0);],
- 	eval "ac_cv_flag_pthread=no",
- 	[
- 		AC_MSG_RESULT([didn't work])
- 		AC_MSG_CHECKING([pthreads: trying to add -pthread])
- 		ac_save_CFLAGS="$CFLAGS"
- 		CFLAGS="$CFLAGS -pthread"
-     AC_TRY_LINK([
-       #include <pthread.h>
-       ],
-       [pthread_exit(0);],
-       eval "ac_cv_flag_pthread=yes",
-       AC_MSG_ERROR([Can't figure out pthreads])
-     )
-     CFLAGS="$ac_save_CFLAGS"
- 	])
-   ])
- 
-   if test "$ac_cv_flag_pthread" = "no"; then
-     AC_MSG_RESULT([good, -pthread flag not necessary])
-   else
-     AC_MSG_RESULT([adding -pthread flag])
-     MULTITHREAD_CFLAGS="-pthread"
-   fi
- 
-   AC_MSG_CHECKING([for libpthread])
-   AC_CACHE_VAL(ac_cv_lib_pthread,[
-     ac_save_LIBS="$LIBS"
-     LIBS="-lpthread"
-     AC_TRY_LINK([
-       #include <pthread.h>
-       ],
-       [pthread_exit(0);],
-       eval "ac_cv_lib_pthread=-lphtread",
-       eval "ac_cv_lib_pthread=no"
-     )
-     LIBS="$ac_save_LIBS"
-   ])
-   if test "$ac_cv_lib_pthread" = "no"; then
-     AC_MSG_RESULT([no -lpthread necessary])
-   else
-     AC_MSG_RESULT([adding -lpthread to LIBS])
-     MULTITHREAD_LDFLAGS="-lpthread"
-   fi
-])
  
 AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
  
 if test $enable_pthread != no; then 
- 	AC_CHECK_PTHREAD
+ ACX_PTHREAD([
+    MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
+    MULTITHREAD_LDFLAGS=$PTHREAD_LIBS
+	     ],
+	     [])
 fi
+
+
  
 AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
   
@@ -350,7 +312,8 @@ if test "x$GCC" = "xyes"; then
 fi
 
 dnl add pic flag in any case this makes sure all our code is relocatable
-CFLAGS="$CFLAGS "`grep pic_flag= libtool | head -1|sed -e 's/.*pic_flag=//' -e 's/"//g'`
+CFLAGS="$CFLAGS "`grep pic_flag= libtool | head -1|sed -e 's/.*pic_flag=//' -e 's/"//g'` 
+dnl" make joes highliter happy it does not grasp the quote in the line above
 
 ZLIB_CFLAGS=$CFLAGS
 dnl it seems that hpux chockes on -fPIC for some reason
