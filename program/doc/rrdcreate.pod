@@ -428,7 +428,7 @@ A few archives areas are also defined. The first stores the
 temperatures supplied for 100 hours (1200 * 300 seconds = 100
 hours). The second RRA stores the minimum temperature recorded over
 every hour (12 * 300 seconds = 1 hour), for 100 days (2400 hours). The
-third and the fourth RRA's do the same with the for the maximum and
+third and the fourth RRA's do the same for the maximum and
 average temperature, respectively.
 
 =head1 EXAMPLE 2
