@@ -37,11 +37,11 @@ char rrd_win_default_font[80];
 #endif
 
 text_prop_t text_prop[] = {   
-     { 10.0, RRD_DEFAULT_FONT }, /* default */
-     { 10.0, RRD_DEFAULT_FONT }, /* title */
-     { 8.0,  RRD_DEFAULT_FONT },  /* axis */
-     { 10.0, RRD_DEFAULT_FONT },  /* unit */
-     { 10.0, RRD_DEFAULT_FONT }  /* legend */
+     { 9.0, RRD_DEFAULT_FONT }, /* default */
+     { 11.0, RRD_DEFAULT_FONT }, /* title */
+     { 8.0,  RRD_DEFAULT_FONT }, /* axis */
+     { 9.0, RRD_DEFAULT_FONT }, /* unit */
+     { 9.0, RRD_DEFAULT_FONT }  /* legend */
 };
 
 xlab_t xlab[] = {
@@ -1319,7 +1319,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		(*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
 		(*prdata)[prlines-1] = NULL;
 		if (bad_format(im->gdes[i].format)) {
-			rrd_set_error("bad format for [G]PRINT in '%s'", im->gdes[i].format);
+			rrd_set_error("bad format for PRINT in '%s'", im->gdes[i].format);
 			return -1;
 		}
 #ifdef HAVE_SNPRINTF
@@ -1331,7 +1331,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		/* GF_GPRINT */
 
 		if (bad_format(im->gdes[i].format)) {
-			rrd_set_error("bad format for [G]PRINT in '%s'", im->gdes[i].format);
+			rrd_set_error("bad format for GPRINT in '%s'", im->gdes[i].format);
 			return -1;
 		}
 #ifdef HAVE_SNPRINTF
@@ -1471,7 +1471,7 @@ leg_place(image_desc_t *im)
 
 	    for(ii=mark;ii<=i;ii++){
 		if(im->gdes[ii].legend[0]=='\0')
-		    continue;
+		    continue; /* skip empty legends */
 		im->gdes[ii].leg_x = leg_x;
 		im->gdes[ii].leg_y = leg_y;
 	        leg_x += 
@@ -1911,19 +1911,19 @@ grid_paint(image_desc_t   *im)
 	}
     }
 
-    /* yaxis description */
+    /* yaxis unit description */
     gfx_new_text( im->canvas,
                   7, (im->yorigin - im->ysize/2),
                   im->graph_col[GRC_FONT],
-                  im->text_prop[TEXT_PROP_AXIS].font,
-                  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 
+                  im->text_prop[TEXT_PROP_UNIT].font,
+                  im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth, 
                   RRDGRAPH_YLEGEND_ANGLE,
                   GFX_H_LEFT, GFX_V_CENTER,
                   im->ylegend);
 
     /* graph title */
     gfx_new_text( im->canvas,
-		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size,
+		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size*1.2,
 		  im->graph_col[GRC_FONT],
 		  im->text_prop[TEXT_PROP_TITLE].font,
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
@@ -1947,14 +1947,15 @@ grid_paint(image_desc_t   *im)
 				   im->gdes[i].legend );
 		    /* The legend for GRAPH items starts with "M " to have
                        enough space for the box */
-                    if (	   im->gdes[i].gf != GF_GPRINT
-                                   && im->gdes[i].gf != GF_COMMENT) {
+                    if (	   im->gdes[i].gf != GF_PRINT &&
+				   im->gdes[i].gf != GF_GPRINT &&
+                                   im->gdes[i].gf != GF_COMMENT) {
                             int boxH, boxV;
                             
                             boxH = gfx_get_text_width(im->canvas, 0,
                                                       im->text_prop[TEXT_PROP_LEGEND].font,
                                                       im->text_prop[TEXT_PROP_LEGEND].size,
-                                                      im->tabwidth,"M", 0);
+                                                      im->tabwidth,"M", 0)*1.2;
                             boxV = boxH;
                             
                             node = gfx_new_area(im->canvas,
@@ -2090,8 +2091,11 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
        Yspacing =0;
     } else {
         if (im->ylegend[0] != '\0') {
-           Xvertical = im->text_prop[TEXT_PROP_LEGEND].size *2;
-           Yvertical = im->text_prop[TEXT_PROP_LEGEND].size * (strlen(im->ylegend)+1);
+           Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
+           Yvertical = gfx_get_text_width(im->canvas, 0,
+                                          im->text_prop[TEXT_PROP_UNIT].font,
+                                          im->text_prop[TEXT_PROP_UNIT].size,
+                                          im->tabwidth,im->ylegend, 0);
         }
     }
 
@@ -2105,7 +2109,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 		im->text_prop[TEXT_PROP_TITLE].size,
 		im->tabwidth,
 		im->title, 0) + 2*Xspacing;
-	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2;
+	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.5;
     }
 
     if (elements) {
@@ -2113,10 +2117,10 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 	Ymain=im->ysize;
 	if (im->draw_x_grid) {
 	    Xxlabel=Xmain;
-	    Yxlabel=im->text_prop[TEXT_PROP_LEGEND].size *2;
+	    Yxlabel=im->text_prop[TEXT_PROP_AXIS].size *2.5;
 	}
 	if (im->draw_y_grid) {
-	    Xylabel=im->text_prop[TEXT_PROP_LEGEND].size *6;
+	    Xylabel=im->text_prop[TEXT_PROP_AXIS].size *6;
 	    Yylabel=Ymain;
 	}
     }
@@ -2563,6 +2567,7 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].shift=0;
     im->gdes[im->gdes_c-1].col = 0x0;
     im->gdes[im->gdes_c-1].legend[0]='\0';
+    im->gdes[im->gdes_c-1].format[0]='\0';
     im->gdes[im->gdes_c-1].rrd[0]='\0';
     im->gdes[im->gdes_c-1].ds=-1;    
     im->gdes[im->gdes_c-1].p_data=NULL;    
@@ -2723,13 +2728,13 @@ rrd_graph_init(image_desc_t *im)
                     strcpy(rrd_win_default_font,windir);
                     strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
                     for(i=0;i<DIM(text_prop);i++)
-                            text_prop[i].font = rrd_win_default_font;
+                            strcpy(text_prop[i].font,rrd_win_default_font);
             }
     }
 #endif
     for(i=0;i<DIM(text_prop);i++){        
       im->text_prop[i].size = text_prop[i].size;
-      im->text_prop[i].font = text_prop[i].font;
+      strcpy(im->text_prop[i].font,text_prop[i].font);
     }
 }
 
@@ -2968,35 +2973,26 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             }
             break;        
         case 'n':{
-			/* originally this used char *prop = "" and
-			** char *font = "dummy" however this results
-			** in a SEG fault, at least on RH7.1
-			**
-			** The current implementation isn't proper
-			** either, font is never freed and prop uses
-			** a fixed width string
-			*/
-	    char prop[100];
+	    char prop[15];
 	    double size = 1;
-	    char *font;
+	    char font[1024];
 
-	    font=malloc(255);
 	    if(sscanf(optarg,
 				"%10[A-Z]:%lf:%s",
 				prop,&size,font) == 3){
 		int sindex;
 		if((sindex=text_prop_conv(prop)) != -1){
 		    im->text_prop[sindex].size=size;              
-		    im->text_prop[sindex].font=font;
+		    strcpy(im->text_prop[sindex].font,font);
 		    if (sindex==0) { /* the default */
 			im->text_prop[TEXT_PROP_TITLE].size=size;
-			im->text_prop[TEXT_PROP_TITLE].font=font;
+			strcpy(im->text_prop[TEXT_PROP_TITLE].font,font);
 			im->text_prop[TEXT_PROP_AXIS].size=size;
-			im->text_prop[TEXT_PROP_AXIS].font=font;
+			strcpy(im->text_prop[TEXT_PROP_AXIS].font,font);
 			im->text_prop[TEXT_PROP_UNIT].size=size;
-			im->text_prop[TEXT_PROP_UNIT].font=font;
+			strcpy(im->text_prop[TEXT_PROP_UNIT].font,font);
 			im->text_prop[TEXT_PROP_LEGEND].size=size;
-			im->text_prop[TEXT_PROP_LEGEND].font=font;
+			strcpy(im->text_prop[TEXT_PROP_LEGEND].font,font);
 		    }
 		} else {
 		    rrd_set_error("invalid fonttag '%s'",prop);
@@ -3109,15 +3105,6 @@ rrd_graph_color(image_desc_t *im, char *var, char *err, int optional)
 	gdp->col = col;
 	return n;
     }
-}
-int
-rrd_graph_legend(graph_desc_t *gdp, char *line)
-{
-    int i;
-
-    i=scan_for_col(line,FMT_LEG_LEN,gdp->legend);
-
-    return (strlen(&line[i])==0);
 }
 
 
