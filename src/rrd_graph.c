@@ -1713,17 +1713,22 @@ grid_paint(
     
 
     /* draw 3d border */
-    node = gfx_new_area (canvas, 0,im->ygif, 0,0, im->xgif, 0,im->graph_col[GRC_SHADEA]);
+    node = gfx_new_area (canvas, 0,im->ygif,
+                                 2,im->ygif-2,
+                                 2,2,im->graph_col[GRC_SHADEA]);
     gfx_add_point( node , im->xgif - 2, 2 );
-    gfx_add_point( node , 2,2 );
-    gfx_add_point( node , 2,im->ygif-2 );
-    gfx_add_point( node , 0,im->ygif );
+    gfx_add_point( node , im->xgif, 0 );
+    gfx_add_point( node , 0,0 );
+/*    gfx_add_point( node , 0,im->ygif ); */
    
-    node =  gfx_new_area (canvas, 0,im->ygif, im->xgif,im->ygif, im->xgif,0,im->graph_col[GRC_SHADEB]);
-    gfx_add_point( node , im->xgif - 2, 2 );
-    gfx_add_point( node , im->xgif-2,im->ygif-2 );
-    gfx_add_point( node , 2,im->ygif-2 );
-    gfx_add_point( node , 0,im->ygif );
+    node =  gfx_new_area (canvas, 2,im->ygif-2,
+                                  im->xgif-2,im->ygif-2,
+                                  im->xgif - 2, 2,
+                                 im->graph_col[GRC_SHADEB]);
+    gfx_add_point( node ,   im->xgif,0);
+    gfx_add_point( node ,   im->xgif,im->ygif);
+    gfx_add_point( node ,   0,im->ygif);
+/*    gfx_add_point( node , 0,im->ygif ); */
    
    
     if (im->draw_x_grid == 1 )
@@ -1775,15 +1780,15 @@ grid_paint(
 	 if(im->gdes[i].gf != GF_GPRINT && im->gdes[i].gf != GF_COMMENT){
 	    x0 = im->gdes[i].leg_x;
 	    y0 = im->gdes[i].leg_y+1.0;
-	    x1 = x0+boxH;
+	    x1 = x0;
 	    x2 = x0+boxH;
-	    x3 = x0;
-	    y1 = y0;
+	    x3 = x0+boxH;
+	    y1 = y0+boxV;
 	    y2 = y0+boxV;
-	    y3 = y0+boxV;
+	    y3 = y0;
 	    node = gfx_new_area(canvas, x0,y0,x1,y1,x2,y2 ,im->gdes[i].col);
 	    gfx_add_point ( node, x3, y3 );
-	    gfx_add_point ( node, x0, y0 );
+/*	    gfx_add_point ( node, x0, y0 ); */
 	    node = gfx_new_line(canvas, x0,y0,x1,y1 ,GRIDWIDTH, im->graph_col[GRC_FRAME]);
 	    gfx_add_point ( node, x2, y2 );
 	    gfx_add_point ( node, x3, y3 );
