@@ -12,7 +12,6 @@
 #ifdef WIN32
 #include <io.h>
 #include <fcntl.h>
-#define RRD_DEFAULT_FONT "c:/winnt/fonts/COUR.TTF"
 #endif
 
 #include "rrd_graph.h"
@@ -1220,7 +1219,6 @@ print_calc(image_desc_t *im, char ***prdata)
 	    }
 	    }
 	    break;
-        case GF_COMMENT:
 	case GF_LINE:
 	case GF_AREA:
 	case GF_TICK:
@@ -1229,6 +1227,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_VRULE:
 	    graphelement = 1;
 	    break;
+        case GF_COMMENT:
 	case GF_DEF:
 	case GF_CDEF:	    
 	case GF_VDEF:	    
@@ -1250,7 +1249,7 @@ leg_place(image_desc_t *im)
     int   border = im->text_prop[TEXT_PROP_LEGEND].size*2.0;
     int   fill=0, fill_last;
     int   leg_c = 0;
-    int   leg_x = border, leg_y = im->ygif;
+    int   leg_x = border, leg_y = im->yimg;
     int   leg_cc;
     int   glue = 0;
     int   i,ii, mark = 0;
@@ -1311,7 +1310,7 @@ leg_place(image_desc_t *im)
 	    if (i == im->gdes_c -1 ) prt_fctn ='l';
 	    
 	    /* is it time to place the legends ? */
-	    if (fill > im->xgif - 2*border){
+	    if (fill > im->ximg - 2*border){
 		if (leg_c > 1) {
 		    /* go back one */
 		    i--; 
@@ -1329,12 +1328,12 @@ leg_place(image_desc_t *im)
 	if (prt_fctn != '\0'){
 	    leg_x = border;
 	    if (leg_c >= 2 && prt_fctn == 'j') {
-		glue = (im->xgif - fill - 2* border) / (leg_c-1);
+		glue = (im->ximg - fill - 2* border) / (leg_c-1);
 	    } else {
 		glue = 0;
 	    }
-	    if (prt_fctn =='c') leg_x =  (im->xgif - fill) / 2.0;
-	    if (prt_fctn =='r') leg_x =  im->xgif - fill - border;
+	    if (prt_fctn =='c') leg_x =  (im->ximg - fill) / 2.0;
+	    if (prt_fctn =='r') leg_x =  im->ximg - fill - border;
 
 	    for(ii=mark;ii<=i;ii++){
 		if(im->gdes[ii].legend[0]=='\0')
@@ -1360,7 +1359,7 @@ leg_place(image_desc_t *im)
 	    mark = ii;
 	}	   
     }
-    im->ygif = leg_y;
+    im->yimg = leg_y;
     free(legspace);
   }
   return 0;
@@ -1384,7 +1383,7 @@ horizontal_grid(image_desc_t   *im)
     double   gridstep;
     double   scaledstep;
     char     graph_label[100];
-    double   x0,x1,y0;
+    double   X0,X1,Y0;
     int      labfact,gridind;
     int      decimals, fractionals;
     char     labfmt[64];
@@ -1455,16 +1454,16 @@ horizontal_grid(image_desc_t   *im)
 	labfact = im->ylabfact;
     }
     
-   x0=im->xorigin;
-   x1=im->xorigin+im->xsize;
+   X0=im->xorigin;
+   X1=im->xorigin+im->xsize;
    
     sgrid = (int)( im->minval / gridstep - 1);
     egrid = (int)( im->maxval / gridstep + 1);
     scaledstep = gridstep/im->magfact;
     for (i = sgrid; i <= egrid; i++){
-       y0=ytr(im,gridstep*i);
-       if ( y0 >= im->yorigin-im->ysize
-	         && y0 <= im->yorigin){       
+       Y0=ytr(im,gridstep*i);
+       if ( Y0 >= im->yorigin-im->ysize
+	         && Y0 <= im->yorigin){       
 	    if(i % labfact == 0){		
 		if (i==0 || im->symbol == ' ') {
 		    if(scaledstep < 1){
@@ -1486,21 +1485,21 @@ horizontal_grid(image_desc_t   *im)
 		}
 
 	       gfx_new_text ( im->canvas,
-			      x0-im->text_prop[TEXT_PROP_AXIS].size/1.5, y0,
+			      X0-im->text_prop[TEXT_PROP_AXIS].size/1.5, Y0,
 			      im->graph_col[GRC_FONT],
 			      im->text_prop[TEXT_PROP_AXIS].font,
 			      im->text_prop[TEXT_PROP_AXIS].size,
 			      im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER,
 			      graph_label );
 	       gfx_new_line ( im->canvas,
-			      x0-2,y0,
-			      x1+2,y0,
+			      X0-2,Y0,
+			      X1+2,Y0,
 			      MGRIDWIDTH, im->graph_col[GRC_MGRID] );	       
 	       
 	    } else {		
 	       gfx_new_line ( im->canvas,
-			      x0-1,y0,
-			      x1+1,y0,
+			      X0-1,Y0,
+			      X1+1,Y0,
 			      GRIDWIDTH, im->graph_col[GRC_GRID] );	       
 	       
 	    }	    
@@ -1517,7 +1516,7 @@ horizontal_log_grid(image_desc_t   *im)
     int      ii,i;
     int      minoridx=0, majoridx=0;
     char     graph_label[100];
-    double   x0,x1,y0;   
+    double   X0,X1,Y0;   
     double   value, pixperstep, minstep;
 
     /* find grid spaceing */
@@ -1540,8 +1539,8 @@ horizontal_log_grid(image_desc_t   *im)
        if(pixperstep > 2 *  im->text_prop[TEXT_PROP_LEGEND].size){majoridx = i;}
     }
    
-   x0=im->xorigin;
-   x1=im->xorigin+im->xsize;
+   X0=im->xorigin;
+   X1=im->xorigin+im->xsize;
     /* paint minor grid */
     for (value = pow((double)10, log10(im->minval) 
 			  - fmod(log10(im->minval),log10(yloglab[minoridx][0])));
@@ -1550,11 +1549,11 @@ horizontal_log_grid(image_desc_t   *im)
 	if (value < im->minval) continue;
 	i=0;	
 	while(yloglab[minoridx][++i] > 0){	    
-	   y0 = ytr(im,value * yloglab[minoridx][i]);
-	   if (y0 <= im->yorigin - im->ysize) break;
+	   Y0 = ytr(im,value * yloglab[minoridx][i]);
+	   if (Y0 <= im->yorigin - im->ysize) break;
 	   gfx_new_line ( im->canvas,
-			  x0-1,y0,
-			  x1+1,y0,
+			  X0-1,Y0,
+			  X1+1,Y0,
 			  GRIDWIDTH, im->graph_col[GRC_GRID] );
 	}
     }
@@ -1567,16 +1566,16 @@ horizontal_log_grid(image_desc_t   *im)
 	if (value < im->minval) continue;
 	i=0;	
 	while(yloglab[majoridx][++i] > 0){	    
-	   y0 = ytr(im,value * yloglab[majoridx][i]);    
-	   if (y0 <= im->yorigin - im->ysize) break;
+	   Y0 = ytr(im,value * yloglab[majoridx][i]);    
+	   if (Y0 <= im->yorigin - im->ysize) break;
 	   gfx_new_line ( im->canvas,
-			  x0-2,y0,
-			  x1+2,y0,
+			  X0-2,Y0,
+			  X1+2,Y0,
 			  MGRIDWIDTH, im->graph_col[GRC_MGRID] );
 	   
 	   sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
 	   gfx_new_text ( im->canvas,
-			  x0-im->text_prop[TEXT_PROP_AXIS].size/1.5, y0,
+			  X0-im->text_prop[TEXT_PROP_AXIS].size/1.5, Y0,
 			  im->graph_col[GRC_FONT],
 			  im->text_prop[TEXT_PROP_AXIS].font,
 			  im->text_prop[TEXT_PROP_AXIS].size,
@@ -1596,7 +1595,7 @@ vertical_grid(
     time_t ti, tilab;
     long factor;
     char graph_label[100];
-    double x0,y0,y1; /* points for filled graph and more*/
+    double X0,Y0,Y1; /* points for filled graph and more*/
    
 
     /* the type of time grid is determined by finding
@@ -1619,8 +1618,8 @@ vertical_grid(
     }
     
     /* y coords are the same for every line ... */
-    y0 = im->yorigin;
-    y1 = im->yorigin-im->ysize;
+    Y0 = im->yorigin;
+    Y1 = im->yorigin-im->ysize;
    
 
     /* paint the minor grid */
@@ -1632,8 +1631,8 @@ vertical_grid(
 	){
 	/* are we inside the graph ? */
 	if (ti < im->start || ti > im->end) continue;
-       x0 = xtr(im,ti);       
-       gfx_new_line(im->canvas,x0,y0+1, x0,y1-1,GRIDWIDTH, im->graph_col[GRC_GRID]);
+       X0 = xtr(im,ti);       
+       gfx_new_line(im->canvas,X0,Y0+1, X0,Y1-1,GRIDWIDTH, im->graph_col[GRC_GRID]);
        
     }
 
@@ -1646,8 +1645,8 @@ vertical_grid(
 	){
 	/* are we inside the graph ? */
 	if (ti < im->start || ti > im->end) continue;
-       x0 = xtr(im,ti);
-       gfx_new_line(im->canvas,x0,y0+2, x0,y1-2,MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+       X0 = xtr(im,ti);
+       gfx_new_line(im->canvas,X0,Y0+2, X0,Y1-2,MGRIDWIDTH, im->graph_col[GRC_MGRID]);
        
     }
     /* paint the labels below the graph */
@@ -1667,7 +1666,7 @@ vertical_grid(
 # error "your libc has no strftime I guess we'll abort the exercise here."
 #endif
        gfx_new_text ( im->canvas,
-		      xtr(im,tilab), y0+im->text_prop[TEXT_PROP_AXIS].size/1.5,
+		      xtr(im,tilab), Y0+im->text_prop[TEXT_PROP_AXIS].size/1.5,
 		      im->graph_col[GRC_FONT],
 		      im->text_prop[TEXT_PROP_AXIS].font,
 		      im->text_prop[TEXT_PROP_AXIS].size,
@@ -1706,7 +1705,7 @@ axis_paint(
     gfx_new_area ( im->canvas, 
 		   im->xorigin+im->xsize+3,  im->yorigin-3,
 		   im->xorigin+im->xsize+3,  im->yorigin+4,
-		   im->xorigin+im->xsize+8,  im->yorigin+0.5,   // LINEOFFSET
+		   im->xorigin+im->xsize+8,  im->yorigin+0.5, /* LINEOFFSET */
 		   im->graph_col[GRC_ARROW]);
    
    
@@ -1718,26 +1717,26 @@ grid_paint(image_desc_t   *im)
 {   
     long i;
     int res=0;
-    double x0,y0; /* points for filled graph and more*/
+    double X0,Y0; /* points for filled graph and more*/
     gfx_node_t *node;
 
     /* draw 3d border */
-    node = gfx_new_area (im->canvas, 0,im->ygif,
-                                 2,im->ygif-2,
+    node = gfx_new_area (im->canvas, 0,im->yimg,
+                                 2,im->yimg-2,
                                  2,2,im->graph_col[GRC_SHADEA]);
-    gfx_add_point( node , im->xgif - 2, 2 );
-    gfx_add_point( node , im->xgif, 0 );
+    gfx_add_point( node , im->ximg - 2, 2 );
+    gfx_add_point( node , im->ximg, 0 );
     gfx_add_point( node , 0,0 );
-/*    gfx_add_point( node , 0,im->ygif ); */
+/*    gfx_add_point( node , 0,im->yimg ); */
    
-    node =  gfx_new_area (im->canvas, 2,im->ygif-2,
-                                  im->xgif-2,im->ygif-2,
-                                  im->xgif - 2, 2,
+    node =  gfx_new_area (im->canvas, 2,im->yimg-2,
+                                  im->ximg-2,im->yimg-2,
+                                  im->ximg - 2, 2,
                                  im->graph_col[GRC_SHADEB]);
-    gfx_add_point( node ,   im->xgif,0);
-    gfx_add_point( node ,   im->xgif,im->ygif);
-    gfx_add_point( node ,   0,im->ygif);
-/*    gfx_add_point( node , 0,im->ygif ); */
+    gfx_add_point( node ,   im->ximg,0);
+    gfx_add_point( node ,   im->ximg,im->yimg);
+    gfx_add_point( node ,   0,im->yimg);
+/*    gfx_add_point( node , 0,im->yimg ); */
    
    
     if (im->draw_x_grid == 1 )
@@ -1753,7 +1752,7 @@ grid_paint(image_desc_t   *im)
 	/* dont draw horizontal grid if there is no min and max val */
 	if (! res ) {
 	  char *nodata = "No Data found";
-	   gfx_new_text(im->canvas,im->xgif/2, (2*im->yorigin-im->ysize) / 2,
+	   gfx_new_text(im->canvas,im->ximg/2, (2*im->yorigin-im->ysize) / 2,
 			im->graph_col[GRC_FONT],
 			im->text_prop[TEXT_PROP_AXIS].font,
 			im->text_prop[TEXT_PROP_AXIS].size,
@@ -1792,7 +1791,7 @@ grid_paint(image_desc_t   *im)
    
     /* graph title */
     gfx_new_text( im->canvas,
-		  im->xgif/2, im->text_prop[TEXT_PROP_TITLE].size,
+		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size,
 		  im->graph_col[GRC_FONT],
 		  im->text_prop[TEXT_PROP_TITLE].font,
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
@@ -1806,8 +1805,8 @@ grid_paint(image_desc_t   *im)
 	    continue;
 	 
 	/* im->gdes[i].leg_y is the bottom of the legend */
-		x0 = im->gdes[i].leg_x;
-		y0 = im->gdes[i].leg_y;
+		X0 = im->gdes[i].leg_x;
+		Y0 = im->gdes[i].leg_y;
 		/* Box needed? */
 		if (	   im->gdes[i].gf != GF_GPRINT
 			&& im->gdes[i].gf != GF_COMMENT) {
@@ -1820,20 +1819,20 @@ grid_paint(image_desc_t   *im)
 		    boxV = boxH;
 
 		    node = gfx_new_area(im->canvas,
-				x0,y0-boxV,
-				x0,y0,
-				x0+boxH,y0,
+				X0,Y0-boxV,
+				X0,Y0,
+				X0+boxH,Y0,
 				im->gdes[i].col);
-		    gfx_add_point ( node, x0+boxH, y0-boxV );
+		    gfx_add_point ( node, X0+boxH, Y0-boxV );
 		    node = gfx_new_line(im->canvas,
-				x0,y0-boxV, x0,y0,
+				X0,Y0-boxV, X0,Y0,
 				1,0x000000FF);
-		    gfx_add_point(node,x0+boxH,y0);
-		    gfx_add_point(node,x0+boxH,y0-boxV);
+		    gfx_add_point(node,X0+boxH,Y0);
+		    gfx_add_point(node,X0+boxH,Y0-boxV);
 		    gfx_close_path(node);
-		    x0 += boxH / 1.25 * 2;
+		    X0 += boxH / 1.25 * 2;
 		}
-		gfx_new_text ( im->canvas, x0, y0,
+		gfx_new_text ( im->canvas, X0, Y0,
 				   im->graph_col[GRC_FONT],
 				   im->text_prop[TEXT_PROP_AXIS].font,
 				   im->text_prop[TEXT_PROP_AXIS].size,
@@ -1851,21 +1850,21 @@ grid_paint(image_desc_t   *im)
 int lazy_check(image_desc_t *im){
     FILE *fd = NULL;
 	int size = 1;
-    struct stat  gifstat;
+    struct stat  imgstat;
     
     if (im->lazy == 0) return 0; /* no lazy option */
-    if (stat(im->graphfile,&gifstat) != 0) 
+    if (stat(im->graphfile,&imgstat) != 0) 
       return 0; /* can't stat */
     /* one pixel in the existing graph is more then what we would
        change here ... */
-    if (time(NULL) - gifstat.st_mtime > 
+    if (time(NULL) - imgstat.st_mtime > 
 	(im->end - im->start) / im->xsize) 
       return 0;
     if ((fd = fopen(im->graphfile,"rb")) == NULL) 
       return 0; /* the file does not exist */
     switch (im->canvas->imgformat) {
     case IF_PNG:
-	   size = PngSize(fd,&(im->xgif),&(im->ygif));
+	   size = PngSize(fd,&(im->ximg),&(im->yimg));
 	   break;
     default:
 	   size = 1;
@@ -1949,7 +1948,9 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 	Xmain    =0,	Ymain    =0,
 	Xpie     =0,	Ypie     =0,
 	Xxlabel  =0,	Yxlabel  =0,
+#if 0
 	Xlegend  =0,	Ylegend  =0,
+#endif
 	Xspacing =10,	Yspacing =10;
 
     if (im->ylegend[0] != '\0') {
@@ -2000,13 +2001,13 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     ** forget about it at all; the legend will have to fit in the
     ** size already allocated.
     */
-    im->xgif = Xylabel + Xmain + Xpie + Xspacing;
-    if (Xmain) im->xgif += Xspacing;
-    if (Xpie) im->xgif += Xspacing;
+    im->ximg = Xylabel + Xmain + Xpie + Xspacing;
+    if (Xmain) im->ximg += Xspacing;
+    if (Xpie) im->ximg += Xspacing;
     im->xorigin = Xspacing + Xylabel;
-    if (Xtitle > im->xgif) im->xgif = Xtitle;
+    if (Xtitle > im->ximg) im->ximg = Xtitle;
     if (Xvertical) {
-	im->xgif += Xvertical;
+	im->ximg += Xvertical;
 	im->xorigin += Xvertical;
     }
     xtr(im,0);
@@ -2021,33 +2022,33 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     */
 
     /* reserve space for main and/or pie */
-    im->ygif = Ymain + Yxlabel;
-    if (im->ygif < Ypie) im->ygif = Ypie;
-    im->yorigin = im->ygif - Yxlabel;
+    im->yimg = Ymain + Yxlabel;
+    if (im->yimg < Ypie) im->yimg = Ypie;
+    im->yorigin = im->yimg - Yxlabel;
     /* reserve space for the title *or* some padding above the graph */
     if (Ytitle) {
-	im->ygif += Ytitle;
+	im->yimg += Ytitle;
 	im->yorigin += Ytitle;
     } else {
-	im->ygif += Yspacing;
+	im->yimg += Yspacing;
 	im->yorigin += Yspacing;
     }
     /* reserve space for padding below the graph */
-    im->ygif += Yspacing;
+    im->yimg += Yspacing;
     ytr(im,DNAN);
 
     /* Determine where to place the legends onto the image.
-    ** Adjust im->ygif to match the space requirements.
+    ** Adjust im->yimg to match the space requirements.
     */
     if(leg_place(im)==-1)
 	return -1;
 
     /* last of three steps: check total height of image */
-    if (im->ygif < Yvertical) im->ygif = Yvertical;
+    if (im->yimg < Yvertical) im->yimg = Yvertical;
 
 #if 0
-    if (Xlegend > im->xgif) {
-	im->xgif = Xlegend;
+    if (Xlegend > im->ximg) {
+	im->ximg = Xlegend;
 	/* reposition Pie */
 #endif
 
@@ -2056,10 +2057,10 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     ** padding.
     */
     if (elements) {
-	im->pie_x = im->xgif - Xspacing - Xpie/2;
+	im->pie_x = im->ximg - Xspacing - Xpie/2;
         im->pie_y = im->yorigin-Ymain+Ypie/2;
     } else {
-	im->pie_x = im->xgif/2;
+	im->pie_x = im->ximg/2;
         im->pie_y = im->yorigin-Ypie/2;
     }
 
@@ -2135,11 +2136,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   node=gfx_new_area ( im->canvas,
                       0, 0,
-                      im->xgif, 0,
-                      im->xgif, im->ygif,
+                      im->ximg, 0,
+                      im->ximg, im->yimg,
                       im->graph_col[GRC_BACK]);
 
-  gfx_add_point(node,0, im->ygif);
+  gfx_add_point(node,0, im->yimg);
 
   if (piechart != 2) {
     node=gfx_new_area ( im->canvas,
@@ -2347,7 +2348,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       return (-1);
     }
   }
-  gfx_render (im->canvas,im->xgif,im->ygif,0x0,fo);
+  gfx_render (im->canvas,im->ximg,im->yimg,0x0,fo);
   if (strcmp(im->graphfile,"-") != 0)
     fclose(fo);
   return 0;
@@ -2455,8 +2456,8 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
     ** Also, if needed, print a line with information about the image.
     */
 
-    *xsize=im.xgif;
-    *ysize=im.ygif;
+    *xsize=im.ximg;
+    *ysize=im.yimg;
     if (im.imginfo) {
 	char *filename;
 	if (!(*prdata)) {
@@ -2477,7 +2478,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	    filename--;
 	}
 
-	sprintf((*prdata)[0],im.imginfo,filename,(long)(im.canvas->zoom*im.xgif),(long)(im.canvas->zoom*im.ygif));
+	sprintf((*prdata)[0],im.imginfo,filename,(long)(im.canvas->zoom*im.ximg),(long)(im.canvas->zoom*im.yimg));
     }
     im_free(&im);
     return 0;
@@ -2489,8 +2490,8 @@ rrd_graph_init(image_desc_t *im)
     int i;
 
     im->xlab_user.minsec = -1;
-    im->xgif=0;
-    im->ygif=0;
+    im->ximg=0;
+    im->yimg=0;
     im->xsize = 400;
     im->ysize = 100;
     im->step = 0;

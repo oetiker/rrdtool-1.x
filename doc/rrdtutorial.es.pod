@@ -76,7 +76,7 @@ probable es que empieces a usar RRDtool para guardar y procesar datos
 conseguidos a través de SNMP, y que los datos
 sean el número de bytes (o bits) transferidos desde y hacia una red u
 ordenador. RRDtool te permite crear una base de datos, guardar los
-datos en ellas, recuperarlos y crear gráficos en formato GIF o PNG,
+datos en ellas, recuperarlos y crear gráficos en formato SVG o PNG,
 para mostrarlos en un navegador web. Esas imágenes dependen de los
 datos que hayas guardado y pueden, por ejemplo, ser un sumario del
 promedio de uso de la red, o los picos de tráfico que ocurrieron.
@@ -332,12 +332,12 @@ Lo que representa exactamente esta salida lo vamos más adelante en el tutorial.
 
 Prueba este comando:
 
- rrdtool graph speed.gif                                 \
+ rrdtool graph speed.png                                 \
          --start 920804400 --end 920808000               \
          DEF:myspeed=test.rrd:speed:AVERAGE              \
          LINE2:myspeed#FF0000
 
-Este comando crea speed.gif, un gráfico de los datos desde las
+Este comando crea speed.png, un gráfico de los datos desde las
 12:00 hasta las 13:00. Contiene una definición de la variable myspeed
 y define el color como rojo. Notarás que el gráfico no comienza
 exactamente a las 12:00 sino a las 12:05, y es porque no tenemos datos
@@ -360,10 +360,10 @@ FFFFFF; el negro es la ausencia de todos los colores: 000000.
    violeta #FF00FF     (mezcla de rojo y azul)
    gris    #555555     (un tercio de cada uno de los colores)
 
-El archivo GIF que acabas de crear puede
+El archivo PNG que acabas de crear puede
 verse con tu visor de archivos de imagen favorito. Los navegadores lo
 mostrarán usando la URL
-``file://el/camino/de/directorios/hasta/speed.gif''
+``file://el/camino/de/directorios/hasta/speed.png''
 
 =head2 Gráficos con un poco de matemática
 
@@ -384,9 +384,9 @@ Donde nos equivocamos fue en que debimos medir en metros. Así,
 
 Vamos a corregirlo. Podríamos recrear la base de datos con los
 valores correctos, pero hay una forma mejor: ¡haciendo los cálculos
-mientras creamos el archivo gif!
+mientras creamos el archivo png!
 
-   rrdtool graph speed2.gif                           \
+   rrdtool graph speed2.png                           \
       --start 920804400 --end 920808000               \
       --vertical-label m/s                            \
       DEF:myspeed=test.rrd:speed:AVERAGE              \
@@ -395,7 +395,7 @@ mientras creamos el archivo gif!
 
 Cuando veas esta imagen, notarás que la ``m'' ha desaparecido, y
 ahora tienes los resultados correctos. Además hemos añadido una
-etiqueta a la imagen. Apartando esto, el archivo GIF es el mismo.
+etiqueta a la imagen. Apartando esto, el archivo PNG es el mismo.
 
 Las operaciones están en la sección del CDEF
 y están escritas en Notación Polaca Inversa (Reverse Polish Notation o
@@ -418,9 +418,9 @@ Como en nuestra base de datos cometimos un error guardando los
 valores en kilómetros, debemos compensar por ello, multiplicando por
 100, por lo que al aplicar esta corrección nos queda valor * 3600.
 
-Ahora vamos a crear este gif, agreándole un poco más de magia...
+Ahora vamos a crear este png, agreándole un poco más de magia...
 
-   rrdtool graph speed3.gif                           \
+   rrdtool graph speed3.png                           \
       --start 920804400 --end 920808000               \
       --vertical-label km/h                           \
       DEF:myspeed=test.rrd:speed:AVERAGE              \
@@ -449,9 +449,9 @@ Para calcular la parte de velocidad "excesiva":
 =head2 Magia gráfica
 
 Me gusta creer que virtualmente no hay limites para lo que RRDtool puede
-hacer con los datos. No voy a explicarlo en detalle, pero mira este GIF:
+hacer con los datos. No voy a explicarlo en detalle, pero mira este PNG:
 
-   rrdtool graph speed4.gif                           \
+   rrdtool graph speed4.png                           \
       --start 920804400 --end 920808000               \
       --vertical-label km/h                           \
       DEF:myspeed=test.rrd:speed:AVERAGE              \
@@ -464,21 +464,21 @@ hacer con los datos. No voy a explicarlo en detalle, pero mira este GIF:
       AREA:fast#550000:"Too fast"                     \
       STACK:over#FF0000:"Over speed"
 
-Vamos a crear una página HTML simple para ver los tres archivos GIF:
+Vamos a crear una página HTML simple para ver los tres archivos PNG:
 
    <HTML><HEAD><TITLE>Velocidad</TITLE></HEAD><BODY>
-   <IMG src="speed2.gif" alt="Speed in meters per second">
+   <IMG src="speed2.png" alt="Speed in meters per second">
    <BR>
-   <IMG src="speed3.gif" alt="Speed in kilometers per hour">
+   <IMG src="speed3.png" alt="Speed in kilometers per hour">
    <BR>
-   <IMG src="speed4.gif" alt="Traveled too fast?">
+   <IMG src="speed4.png" alt="Traveled too fast?">
    </BODY></HTML>
 
 Guárdalo como ``speed.html'' o algo parecido, y examínalo con un navegador.
 
 Ahora, todo lo que tienes que hacer es medir los datos regularmente
 y actualizar la base de datos. Cuando quieras verlos, vuelve a crear
-los archivos GIF y asegúrate que se carguen de nuevo en tu navegador
+los archivos PNG y asegúrate que se carguen de nuevo en tu navegador
 (Nota: presionar el botón de "refrescar" puede no ser suficiente; en
 particular, Netscape tiene un problema al respecto, por lo que
 necesitaras darle al botón mientras presionas la tecla de mayúsculas.
@@ -705,7 +705,7 @@ buscar exactamente como hacerlo funcionar en tu sistema operativo.
 
 Luego, tras recoger datos por un día, crea una imagen, usando:
 
-   rrdtool graph myrouter-day.gif --start -86400 \
+   rrdtool graph myrouter-day.png --start -86400 \
             DEF:inoctets=myrouter.rrd:input:AVERAGE \
             DEF:outoctets=myrouter.rrd:output:AVERAGE \
             AREA:inoctets#00FF00:"In traffic" \
@@ -874,7 +874,7 @@ Vamos a probarlos todos:
             978303300:2400:6:600:2400  \
             978303600:2700:4:600:2700  \
             978303900:3000:2:1200:3000
-   rrdtool graph all1.gif -s 978300600 -e 978304200 -h 400 \
+   rrdtool graph all1.png -s 978300600 -e 978304200 -h 400 \
             DEF:linea=all.rrd:a:AVERAGE LINE3:linea#FF0000:"Line A" \
             DEF:lineb=all.rrd:b:AVERAGE LINE3:lineb#00FF00:"Line B" \
             DEF:linec=all.rrd:c:AVERAGE LINE3:linec#0000FF:"Line C" \
@@ -922,7 +922,7 @@ terminando a las 00:10 (las U significan desconocido).
  - Línea  C:  u  u  2  2  2  0 -2 -6  2  0  2  u
  - Línea  D:  u  1  2  3  4  5  6  7  8  9 10  u
 
-Si tu archivo GIF muestra todo esto, has
+Si tu archivo PNG muestra todo esto, has
 entrado los datos correctamente, tu programa RRDtool está funcionando
 bien, el visor de gráficos no te engaña y hemos entrado en el 2000 sin
 problemas :) Puedes probar el mismo ejemplo cuatro veces, una por cada línea.
@@ -1131,7 +1131,7 @@ tiempo entre 920805000 y 920805900.
    rrdtool update seconds2.rrd \
       920805000:000 920805300:300 920805603:603 920805900:900
 
-   rrdtool graph seconds1.gif                       \
+   rrdtool graph seconds1.png                       \
       --start 920804700 --end 920806200             \
       --height 200                                  \
       --upper-limit 1.05 --lower-limit 0.95 --rigid \
@@ -1139,7 +1139,7 @@ tiempo entre 920805000 y 920805900.
       CDEF:unknown=seconds,UN                       \
       LINE2:seconds#0000FF                          \
       AREA:unknown#FF0000
-   rrdtool graph seconds2.gif                       \
+   rrdtool graph seconds2.png                       \
       --start 920804700 --end 920806200             \
       --height 200                                  \
       --upper-limit 1.05 --lower-limit 0.95 --rigid \

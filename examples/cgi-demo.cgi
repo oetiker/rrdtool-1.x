@@ -11,7 +11,7 @@ the <TT>shared-demo.pl</TT>.
 <H1>This is NOT traffic</H1>
 
 
-<P><RRD::GRAPH cgi-demo1.gif 
+<P><RRD::GRAPH cgi-demo1.png 
 	    --lower-limit 0
 	    --start 'end-10h'
 	    --title "Graph in Localtime <RRD::TIME::NOW %c>"
@@ -22,7 +22,7 @@ the <TT>shared-demo.pl</TT>.
 </P>
 
 <P><RRD::SETENV TZ UTC>
-   <RRD::GRAPH cgi-demo2.gif 
+   <RRD::GRAPH cgi-demo2.png 
 	    --lower-limit 0
 	    --start 'end-10h'
 	    --title "Graph in UTC"

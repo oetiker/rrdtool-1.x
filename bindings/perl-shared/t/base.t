@@ -30,8 +30,8 @@ my $RUNS  = 500;
 my $GRUNS = 4;
 my $RRD1  = "demo1.rrd";
 my $RRD2  = "demo2.rrd";
-my $GIF1  = "demo1.gif";
-my $GIF2  = "demo2.gif";
+my $PNG1  = "demo1.png";
+my $PNG2  = "demo2.png";
 my $time  = 30*int(time/30);
 my $START = $time-$RUNS*$STEP;
 
@@ -107,14 +107,14 @@ if ($ERROR = RRDs::error) {
   die "$0: unable to update `$RRD2': $ERROR\n";
 }
 
-print "* Creating $GRUNS graphs: $GIF1 & $GIF2\n\n";
+print "* Creating $GRUNS graphs: $PNG1 & $PNG2\n\n";
 my $now = $time;
 for (my $i=0;$i<$GRUNS;$i++) {
-  my @rrd_gifs = ($RRD1, $GIF1, $RRD2, $GIF2);
-  while (@rrd_gifs) {
-    my $RRD = shift(@rrd_gifs);
-    my $GIF = shift(@rrd_gifs);
-    my ($graphret,$xs,$ys) = RRDs::graph $GIF, "--title", 'Test GRAPH',
+  my @rrd_pngs = ($RRD1, $PNG1, $RRD2, $PNG2);
+  while (@rrd_pngs) {
+    my $RRD = shift(@rrd_pngs);
+    my $PNG = shift(@rrd_pngs);
+    my ($graphret,$xs,$ys) = RRDs::graph $PNG, "--title", 'Test GRAPH',
           "--vertical-label", 'Dummy Units', "--start", (-$RUNS*$STEP),
           "DEF:alpha=$RRD:a:AVERAGE",
           "DEF:beta=$RRD:b:AVERAGE",
@@ -143,7 +143,7 @@ for (my $i=0;$i<$GRUNS;$i++) {
     if ($ERROR = RRDs::error) {
       print "ERROR: $ERROR\n";
     } else {
-      print "GIF Size: ${xs}x${ys}\n";
+      print "Image Size: ${xs}x${ys}\n";
       print "Graph Return:\n",(join "\n", @$graphret),"\n\n";
     }
   }

@@ -75,10 +75,10 @@ B<RRDs::last> returns a single INTEGER representing the last update time.
  $lastupdate = RRDs::last ...
 
 B<RRDs::graph> returns an pointer to an ARRAY containing the x-size and y-size of the
-created gif and results of the PRINT arguments.
+created image and results of the PRINT arguments.
 
  ($averages,$xsize,$ysize) = RRDs::graph ...
- print "Gifsize: ${xsize}x${ysize}\n";
+ print "Imagesize: ${xsize}x${ysize}\n";
  print "Averages: ", (join ", ", @$averages);
 
 B<RRDs::info> returns a pointer to a hash. The keys of the hash

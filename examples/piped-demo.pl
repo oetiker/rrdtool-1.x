@@ -1,4 +1,4 @@
-#! /bin/perl 
+#! /usr/bin/perl 
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-piped/blib/lib  ../lib/perl );
@@ -16,7 +16,7 @@ $STEP = 300;
 $RUNS = 12*24*30*6;
 $GRUNS = 20;
 $RRD = "piped-demo.rrd";
-$GIF = "piped-demo.gif";
+$SVG = "piped-demo.svg";
 $PNG = "piped-demo.png";
 
 # some magic to find the correct rrdtol executable
@@ -67,11 +67,11 @@ printf "-- performance analysis Update test\n".
 print "\n";
 # creating some graphs
 
-print "* Creating $GRUNS GIF graphs: $GIF\n\n";
+print "* Creating $GRUNS SVG graphs: $SVG\n\n";
 $now = time;
 for ($i=0;$i<$GRUNS;$i++) {
-RRDp::cmd "graph $GIF ", "--title 'Test GRAPH' ",
-	"--height 150 --vertical-label 'Dummy Units' ".
+RRDp::cmd "graph $SVG ", "--title 'Test GRAPH' ",
+	"--imgformat SVG --height 150 --vertical-label 'Dummy Units' ".
 	"--start now".(-$RUNS*$STEP),
 	"--color ARROW#bfbfbf",
         "DEF:alpha=$RRD:in:AVERAGE",

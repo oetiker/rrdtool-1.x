@@ -725,7 +725,7 @@ If you do so, you won't be able to use these next GPRINTs:
 
 =head2 Degrees Celcius vs. Degrees Fahrenheit
 
-   rrdtool graph demo.gif --title="Demo Graph" \
+   rrdtool graph demo.png --title="Demo Graph" \
       DEF:cel=demo.rrd:exhaust:AVERAGE \
       CDEF:far=cel,32,-,0.55555,* \
       LINE2:cel#00a000:"D. Celsius" \
@@ -750,7 +750,7 @@ enough for this purpose and it saves a calculation.
 
 =head2 Changing unknown into zero
 
-   rrdtool graph demo.gif --title="Demo Graph" \
+   rrdtool graph demo.png --title="Demo Graph" \
       DEF:idat1=interface1.rrd:ds0:AVERAGE \
       DEF:idat2=interface2.rrd:ds0:AVERAGE \
       DEF:odat1=interface1.rrd:ds1:AVERAGE \

@@ -119,8 +119,6 @@ info_t *rrd_info(int, char **);
 
 /* HELPER FUNCTIONS */
 
-int GifSize(FILE *, long *, long *);
-int PngSize(FILE *, long *, long *);
 int PngSize(FILE *, long *, long *);
 
 int rrd_create_fn(char *file_name, rrd_t *rrd);

@@ -136,15 +136,16 @@ typedef struct image_desc_t {
 				      values outside */
     char*          imginfo;        /* construct an <IMG ... tag and return 
 				      as first retval */
-    int            lazy;           /* only update the gif if there is reasonable
-				      probablility that the existing one is out of date */
+    int            lazy;           /* only update the image if there is
+				      reasonable probablility that the
+				      existing one is out of date */
     int            logarithmic;    /* scale the yaxis logarithmic */
     
     /* status information */
     	    
     long           xorigin,yorigin;/* where is (0,0) of the graph */
     long           pie_x,pie_y;    /* where is the centerpoint */
-    long           xgif,ygif;      /* total size of the gif */
+    long           ximg,yimg;      /* total size of the image */
     double         magfact;        /* numerical magnitude*/
     long         base;            /* 1000 or 1024 depending on what we graph */
     char           symbol;         /* magnitude symbol for y-axis */

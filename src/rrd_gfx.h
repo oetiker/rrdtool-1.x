@@ -50,21 +50,21 @@ gfx_canvas_t *gfx_new_canvas (void);
 
 /* create a new line */
 gfx_node_t   *gfx_new_line   (gfx_canvas_t *canvas, 
-			      double x0, double y0, 
-	 		      double x1, double y1,
+			      double X0, double Y0, 
+	 		      double X1, double Y1,
  			      double width, gfx_color_t color);
 
 gfx_node_t   *gfx_new_dashed_line   (gfx_canvas_t *canvas, 
-			      double x0, double y0, 
-	 		      double x1, double y1,
+			      double X0, double Y0, 
+	 		      double X1, double Y1,
  			      double width, gfx_color_t color,
 			      double dash_on, double dash_off);
 
 /* create a new area */
 gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas, 
-			      double x0, double y0,
-			      double x1, double y1,
-			      double x2, double y2,
+			      double X0, double Y0,
+			      double X1, double Y1,
+			      double X2, double Y2,
 			      gfx_color_t  color);
 
 /* add a point to a line or to an area */

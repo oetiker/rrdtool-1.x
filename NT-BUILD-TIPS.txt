@@ -58,7 +58,7 @@ Is a library missing? But it does not stop with an error...
 
 4. nmake test (You must have Visual C++ on the machine!)
 
-After these steps it generates the test files (gifs and rrds),
+After these steps it generates the test files (svgs and rrds),
 and they seem to be good.
 
 The real problem in the shared perl modul is the following:

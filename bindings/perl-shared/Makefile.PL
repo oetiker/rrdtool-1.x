@@ -15,5 +15,5 @@ WriteMakefile(
     # Perl will figure out which one is valid
     'depend'	   => {'RRDs.c' => "../../src/.libs/librrd_private.a"},
     'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
-    'realclean'    => {FILES => 't/demo?.rrd t/demo?.gif' }
+    'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' }
 );
