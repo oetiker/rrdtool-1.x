@@ -300,6 +300,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_DUP,DUP)
 	match_op(OP_EXC,EXC)
 	match_op(OP_POP,POP)
+	match_op(OP_LTIME,LTIME)
 	match_op(OP_LT,LT)
 	match_op(OP_LE,LE)
 	match_op(OP_GT,GT)
@@ -320,7 +321,6 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_INF,INF)
 	match_op(OP_ISINF,ISINF)
 	match_op(OP_NOW,NOW)
-	match_op(OP_LTIME,LTIME)
 	match_op(OP_TIME,TIME)
 	match_op(OP_ATAN,ATAN)
 
