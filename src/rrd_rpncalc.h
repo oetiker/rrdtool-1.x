@@ -10,12 +10,12 @@
  * This is because COMPUTE (CDEF) DS store OP nodes by number (name is not
  * an option due to limited par array size). OP nodes must have the same
  * numeric values, otherwise the stored numbers will mean something different. */
-enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_COUNT,OP_NEGINF,
+enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_UNKN,OP_NOW,OP_TIME,OP_ADD,OP_MOD,OP_SUB,OP_MUL,
 	    OP_DIV,OP_SIN, OP_DUP, OP_EXC, OP_POP,
 	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
 	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
-	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER};
+	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER,OP_COUNT};
 
 typedef struct rpnp_t {
     enum op_en   op;
