@@ -222,7 +222,7 @@ void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
  */
 long lookup_DS(void *rrd_vptr,char *ds_name)
 {
-    int i;
+    unsigned int i;
     rrd_t *rrd; 
     
     rrd = (rrd_t *) rrd_vptr;
@@ -670,20 +670,20 @@ int
 tzoffset( time_t now ){
     int gm_sec, gm_min, gm_hour, gm_yday, gm_year,
         l_sec, l_min, l_hour, l_yday, l_year;
-    struct tm *t;
+    struct tm t;
     int off;
-    t = gmtime(&now);
-    gm_sec = t->tm_sec;
-    gm_min = t->tm_min;
-    gm_hour = t->tm_hour;
-    gm_yday = t->tm_yday;
-    gm_year = t->tm_year;
-    t = localtime(&now);
-    l_sec = t->tm_sec;
-    l_min = t->tm_min;
-    l_hour = t->tm_hour;
-    l_yday = t->tm_yday;
-    l_year = t->tm_year;
+    gmtime_r(&now, &t);
+    gm_sec = t.tm_sec;
+    gm_min = t.tm_min;
+    gm_hour = t.tm_hour;
+    gm_yday = t.tm_yday;
+    gm_year = t.tm_year;
+    localtime_r(&now, &t);
+    l_sec = t.tm_sec;
+    l_min = t.tm_min;
+    l_hour = t.tm_hour;
+    l_yday = t.tm_yday;
+    l_year = t.tm_year;
     off = (l_sec-gm_sec)+(l_min-gm_min)*60+(l_hour-gm_hour)*3600; 
     if ( l_yday > gm_yday || l_year > gm_year){
         off += 24*3600;

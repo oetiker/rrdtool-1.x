@@ -413,7 +413,7 @@ char* printtimelast(long argc, char **args) {
       rrd_clear_error();
       return err;
     }
-    tm_last = *localtime(&last);
+    localtime_r(&last, &tm_last);
     strftime(buf,254,args[1],&tm_last);
     return buf;
   }
@@ -432,7 +432,7 @@ char* printtimenow(long argc, char **args) {
     if (buf == NULL){	
 	return stralloc("[ERROR: allocating strftime buffer]");
     };
-    tm_now = *localtime(&now);
+    localtime_r(&now, &tm_now);
     strftime(buf,254,args[0],&tm_now);
     return buf;
   }
@@ -578,10 +578,10 @@ int parse(char **buf, long i, char *tag,
 
 char *
 http_time(time_t *now) {
-        struct tm *tmptime;
+        struct tm tmptime;
         static char buf[60];
 
-        tmptime=gmtime(now);
-        strftime(buf,sizeof(buf),"%a, %d %b %Y %H:%M:%S GMT",tmptime);
+        gmtime_r(now, &tmptime);
+        strftime(buf,sizeof(buf),"%a, %d %b %Y %H:%M:%S GMT", &tmptime);
         return(buf);
 }

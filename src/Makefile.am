@@ -84,14 +84,19 @@ RRD_LIBS =				\
 	$(PNG_LIB)	\
 	$(ZLIB_LIB)
 
-lib_LTLIBRARIES           = librrd.la
+lib_LTLIBRARIES           = librrd.la librrd_th.la
 noinst_LTLIBRARIES        = librrd_private.la
 
-librrd_la_SOURCES         = $(RRD_C_FILES)
+librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
 librrd_private_la_SOURCES = $(RRD_C_FILES)
 
 librrd_la_LIBADD          = $(RRD_LIBS)
 librrd_la_LDFLAGS         = -version-info 1:2:0
+
+librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
+librrd_th_la_LIBADD          = $(RRD_LIBS) -lpthread
+librrd_th_la_LDFLAGS         = -version-info 1:2:0
+
 
 include_HEADERS	= rrd.h
 

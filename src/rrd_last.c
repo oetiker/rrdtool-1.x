@@ -11,16 +11,28 @@
 time_t
 rrd_last(int argc, char **argv)
 {
-    FILE	*in_file;
     time_t       lastup;
-
-    rrd_t	 rrd;
 
     if(argc < 2){
         rrd_set_error("please specify an rrd");
         return(-1);
     }
-    if(rrd_open(argv[1], &in_file, &rrd, RRD_READONLY)==-1){
+
+    lastup = rrd_last_r(argv[1]);
+
+    return(lastup);
+}
+ 
+
+time_t
+rrd_last_r(char *filename)
+{
+    FILE	*in_file;
+    time_t       lastup;
+
+    rrd_t	 rrd;
+
+    if(rrd_open(filename, &in_file, &rrd, RRD_READONLY)==-1){
         return(-1);
     }
     lastup = rrd.live_head->last_up;
@@ -28,7 +40,5 @@ rrd_last(int argc, char **argv)
     fclose(in_file);
     return(lastup);
 }
- 
-
 
 

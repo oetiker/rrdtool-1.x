@@ -5,6 +5,19 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2003/02/13 07:05:27  oetiker
+ * Find attached the patch I promised to send to you. Please note that there
+ * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
+ * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
+ * library is identical to librrd, but it contains support code for per-thread
+ * global variables currently used for error information only. This is similar
+ * to how errno per-thread variables are implemented.  librrd_th must be linked
+ * alongside of libpthred
+ *
+ * There is also a new file "THREADS", holding some documentation.
+ *
+ * -- Peter Stamfest <peter@stamfest.at>
+ *
  * Revision 1.5  2002/06/20 00:21:03  jake
  * More Win32 build changes; thanks to Kerry Calvert.
  *
@@ -55,7 +68,7 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
     }
     
     if (((*in_file) = fopen(file_name,mode)) == NULL ){
-	rrd_set_error("opening '%s': %s",file_name, strerror(errno));
+	rrd_set_error("opening '%s': %s",file_name, rrd_strerror(errno));
 	return (-1);
     }
 /*
@@ -124,14 +137,14 @@ void rrd_init(rrd_t *rrd)
 
 void rrd_free(rrd_t *rrd)
 {
-    free(rrd->stat_head);
-    free(rrd->ds_def);
-    free(rrd->rra_def);
-    free(rrd->live_head);
-    free(rrd->rra_ptr);
-    free(rrd->pdp_prep);
-    free(rrd->cdp_prep);
-    free(rrd->rrd_value);
+    if (rrd->stat_head) free(rrd->stat_head);
+    if (rrd->ds_def) free(rrd->ds_def);
+    if (rrd->rra_def) free(rrd->rra_def);
+    if (rrd->live_head) free(rrd->live_head);
+    if (rrd->rra_ptr) free(rrd->rra_ptr);
+    if (rrd->pdp_prep) free(rrd->pdp_prep);
+    if (rrd->cdp_prep) free(rrd->cdp_prep);
+    if (rrd->rrd_value) free(rrd->rrd_value);
 }
 
 /* routine used by external libraries to free memory allocated by
@@ -139,7 +152,7 @@ void rrd_free(rrd_t *rrd)
 void rrd_freemem(void *mem)
 {
 
-    free(mem);
+    if (mem) free(mem);
 }
 
 int readfile(char *file_name, char **buffer, int skipfirst){
@@ -149,7 +162,7 @@ int readfile(char *file_name, char **buffer, int skipfirst){
     if ((strcmp("-",file_name) == 0)) { input = stdin; }
     else {
       if ((input = fopen(file_name,"rb")) == NULL ){
-	rrd_set_error("opening '%s': %s",file_name,strerror(errno));
+	rrd_set_error("opening '%s': %s",file_name,rrd_strerror(errno));
 	return (-1);
       }
     }

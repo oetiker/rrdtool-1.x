@@ -29,7 +29,7 @@ rrd_stat(int argc, char **argv)
     printf("\t<step> %lu </step> <!-- Seconds -->\n",rrd.stat_head->pdp_step);
 #if HAVE_STRFTIME
     strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z",
-	     localtime(&rrd.live_head->last_up));
+	     localtime_r(&rrd.live_head->last_up, &tm));
 #else
 # error "Need strftime"
 #endif
@@ -116,7 +116,7 @@ rrd_stat(int argc, char **argv)
 
 	    timer++;
 #if HAVE_STRFTIME
-	    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z", localtime(&now));
+	    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z", localtime_r(&now, &tm));
 #else
 # error "Need strftime"
 #endif

@@ -5,7 +5,8 @@ RSYNC = rsync --rsh=ssh
 SUBDIRS = libraries src bindings doc examples
 
   # the following files are not mentioned in any other Makefile
-EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS rrdtool.spec
+EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
+	     rrdtool.spec
 
 CLEANFILES = config.cache
 
