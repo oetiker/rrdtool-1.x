@@ -11,7 +11,7 @@
 
 #include <pthread.h>
 #include <string.h>
-#include <error.h>
+/* #include <error.h> */
 #include "rrd.h"
 #include "rrd_tool.h"
 
