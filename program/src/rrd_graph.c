@@ -1358,6 +1358,16 @@ leg_place(image_desc_t *im)
 
     for(i=0;i<im->gdes_c;i++){
 	fill_last = fill;
+        
+        /* hid legends for rules which are not displayed */
+        
+	if (im->gdes[i].gf == GF_HRULE &&
+	    (im->gdes[i].yrule < im->minval || im->gdes[i].yrule > im->maxval))
+	    im->gdes[i].legend[0] = '\0';
+
+	if (im->gdes[i].gf == GF_VRULE &&
+	    (im->gdes[i].xrule < im->start || im->gdes[i].xrule > im->end))
+	    im->gdes[i].legend[0] = '\0';
 
 	leg_cc = strlen(im->gdes[i].legend);
 	
