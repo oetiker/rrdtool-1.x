@@ -30,6 +30,8 @@ Stat  Info
 ----  [ 2005-04-04 ] branch for 1.2 and publish RRDtool 1.2.0rc1
       (feature complete). No new features will be accepted after this date.
 
+----  Fix compiler warnings
+
 ----  Work on the looks of the graphs. Especially the grid setup.
 
 ----  Update Tutorials with material about the new features
