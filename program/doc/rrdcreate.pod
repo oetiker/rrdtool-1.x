@@ -87,7 +87,7 @@ the 32bit or 64bit border and acts accordingly by adding an appropriate value to
 will store the derivative of the line going from the last to the
 current value of the data source. This can be useful for gauges, for
 example, to measure the rate of people entering or leaving a
-room. Internally, derive works exaclty like COUNTER but without
+room. Internally, derive works exactly like COUNTER but without
 overflow checks. So if your counter does not reset at 32 or 64 bit you
 might want to use DERIVE and combine it with a MIN value of 0.
 

@@ -2707,41 +2707,41 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"lazy",       no_argument,       0,  'z'},
             {"zoom",       required_argument, 0,  'm'},
 	    {"no-legend",  no_argument,       0,  'g'},
-	    {"alt-y-grid", no_argument,       0,   257 },
-	    {"alt-autoscale", no_argument,    0,   258 },
-	    {"alt-autoscale-max", no_argument,    0,   259 },
-	    {"units-exponent",required_argument, 0,  260},
-	    {"step",       required_argument, 0,   261},
-	    {"no-gridfit", no_argument,       0,   262},
+	    {"alt-y-grid", no_argument,       0,  'Y'},
+	    {"alt-autoscale", no_argument,    0,  'A'},
+	    {"alt-autoscale-max", no_argument, 0, 'M'},
+	    {"units-exponent",required_argument, 0, 'X'},
+	    {"step",       required_argument, 0,    'S'},
+	    {"no-gridfit", no_argument,       0,   'N'},
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
 
 
 	opt = getopt_long(argc, argv, 
-			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:zg",
+			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:zgYAMX:S:N",
 			  long_options, &option_index);
 
 	if (opt == EOF)
 	    break;
 	
 	switch(opt) {
-	case 257:
+	case 'Y':
 	    im->extra_flags |= ALTYGRID;
 	    break;
-	case 258:
+	case 'A':
 	    im->extra_flags |= ALTAUTOSCALE;
 	    break;
-	case 259:
+	case 'M':
 	    im->extra_flags |= ALTAUTOSCALE_MAX;
 	    break;
 	case 'g':
 	    im->extra_flags |= NOLEGEND;
 	    break;
-	case 260:
+	case 'X':
 	    im->unitsexponent = atoi(optarg);
 	    break;
-	case 261:
+	case 'S':
 	    im->step =  atoi(optarg);
 	    break;
 	case 262:

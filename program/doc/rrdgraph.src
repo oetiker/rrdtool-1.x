@@ -71,7 +71,7 @@ Z<>
 
 B<[-s|--start E<lt>timeE<gt>]>
 B<[-e|--end E<lt>timeE<gt>]>
-B<[--step E<lt>secondsE<gt>]>
+B<[-S|--step E<lt>secondsE<gt>]>
 
 The start and end of what you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
@@ -153,7 +153,7 @@ To mimic the old B<rigid> option, you can do:
 --maximum-upper-limit 4000 --minimum-upper-limit 4000
 --maximum-lower-limit -3000 --minimum-lower-limit -3000
 
-B<[--alt-autoscale]>
+B<[-A|--alt-autoscale]>
 
 Sometimes the default algorithm for selecting the y-axis scale is not
 performing very well.  Normally the scale is selected from a predefined
@@ -163,7 +163,7 @@ maximum y-axis from the actual minimum and maximum values. Our example
 would display slightly less than C<260-0.001> to slightly more than
 C<260+0.001> (Contributed by Sasha Mikheev).
 
-B<[--alt-autoscale-max]>
+B<[-M|--alt-autoscale-max]>
 
 Where C<--alt-autoscale> will modify both the absolute maximum AND minimum
 values, this option will only affect the maximum value. The minimum
@@ -171,7 +171,7 @@ value, if not defined on the command line, will be 0. This option can
 be useful when graphing router traffic when the WAN line uses compression,
 and thus the throughput may be higher than the WAN line speed.
 
-B<[--no-gridfit]>
+B<[-N|--no-gridfit]>
 
 To avoid antialiasing effects gridlines are placed on 
 integer pixel values. This is by default done by extending 
@@ -237,7 +237,7 @@ placed every I<label factor> lines.  You can specify C<-y none> to
 skip the grid and labels altogether.  The default for this option is
 to automatically select sensible values.
 
-B<[--alt-y-grid]>
+B<[-Y|--alt-y-grid]>
 
 Place Y grid dynamically based on graph Y range. Algorithm ensures
 that you always have grid, that there are enough but not too many
@@ -248,7 +248,7 @@ B<[-o|--logarithmic]>
 
 Logarithmic y-axis scaling.
 
-B<[--units-exponent E<lt>valueE<gt>]>
+B<[-X|--units-exponent E<lt>valueE<gt>]>
 
 This sets the 10**exponent scaling of the y-axis values.  Normally
 values will be scaled to the appropriate units (k, M, etc.).  However
