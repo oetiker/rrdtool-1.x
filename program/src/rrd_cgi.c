@@ -392,6 +392,7 @@ char* rrdsetenv(long argc, const char **args) {
 			free(xyz);
 			return stralloc("[ERROR: failed to do putenv]");
 		};
+ 	        return stralloc("");
 	}
 	return stralloc("[ERROR: setenv failed because not enough "
 		  			"arguments were defined]");
