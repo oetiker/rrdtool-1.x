@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.4  2003/04/01 22:52:23  jake
+ * Fix Win32 build. VC++ 6.0 and 7.0 now use the thread-safe code.
+ *
  * Revision 1.3  2003/02/13 07:05:27  oetiker
  * Find attached the patch I promised to send to you. Please note that there
  * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
@@ -62,7 +65,7 @@ int    rrd_create_r(char *filename,
 		    int argc, char **argv);
 /* NOTE: rrd_update_r is only thread-safe if no at-style time
    specifications get used!!! */
-int    rrd_update_r(char *filename, char *template,
+int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);
 int    rrd_dump_r(char *filename);
 time_t rrd_last_r(char *filename);

@@ -13,6 +13,7 @@
 #include "rrd_tool.h"
 #define MAXLEN 4096
 #define ERRBUFLEN 256
+
 static char rrd_error[MAXLEN] = "\0";
 static char rrd_liberror[ERRBUFLEN] = "\0";
 /* The global context is very useful in the transition period to even
