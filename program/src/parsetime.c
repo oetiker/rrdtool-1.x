@@ -716,7 +716,7 @@ day(struct rrd_time_value *ptv)
 	     */
 	    tlen = strlen(sc_token);
 	    mon = atol(sc_token);
-            if (mon > 10*356*24*60*60) {
+            if (mon > 10*365*24*60*60) {
 		ptv->tm=*localtime(&mon);
 		token();
 		break;
