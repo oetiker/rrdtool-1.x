@@ -1,7 +1,7 @@
 SUBDIRS = tcl
 
 # the following files are not mentioned in any other Makefile
-EXTRA_DIST = `cat perl-*/MANIFEST`
+EXTRA_DIST = $(shell for A in perl-*; do cat $$A/MANIFEST | sed -e s,^,$$A/, ; done)
 
 # lets schedule the perl stuff for installation
 # the special call to install-sh is because the -d switch is not portable
