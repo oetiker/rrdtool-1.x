@@ -9,7 +9,8 @@ find . -name Makefile.in | xargs rm -f
 
 
 # wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.4.2.tar.gz
-libtoolize --automake
+libtoolize --copy
+cp ltmain.sh config
 
 # wget ftp://sources.redhat.com/pub/automake/automake-1.5.tar.gz
 aclocal
