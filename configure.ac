@@ -248,7 +248,7 @@ AC_PATH_PROGS(TROFF, groff troff)
 dnl Does the compiler like -Wall and -pedantic?
 if test "x$GCC" = "xyes"; then
   oCFLAGS=$CFLAGS
-  CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline"
+  CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
   AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
                 [AC_TRY_COMPILE( , return 0 ,
                     rd_cv_gcc_opt=yes,
