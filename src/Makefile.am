@@ -40,7 +40,7 @@ RRD_C_FILES =		\
 	rrd_nan_inf.c	\
 	rrd_gfx.c rrd_gfx.h \
 	rrd_afm.c rrd_afm_data.c \
-	getopt.h ntconfig.h parsetime.h \
+	getopt.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
 	rrd_tool.c \
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
