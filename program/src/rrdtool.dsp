@@ -42,8 +42,8 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "." /I "..\gd1.3" /I "..\libpng-1.0.3" /I "..\zlib-1.1.3" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
-# SUBTRACT CPP /YX
+# ADD CPP /nologo /W3 /GX /I "..\libraries\libpng-1.2.0" /I "..\libraries\zlib-1.1.4" /I "..\libraries\libart_lgpl-2.3.7" /I "..\libraries\freetype-2.0.5\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
+# SUBTRACT CPP /O<none> /YX
 # ADD BASE RSC /l 0x100c /d "NDEBUG"
 # ADD RSC /l 0x100c /d "NDEBUG"
 BSC32=bscmake.exe
@@ -51,7 +51,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ..\gd1.3\release\gd.lib release\rrd.lib /nologo /subsystem:console /incremental:yes /debug /machine:I386
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\release\png.lib ..\libraries\zlib-1.1.4\release\zlib.lib ..\libraries\libart_lgpl-2.3.7\release\libart.lib ..\libraries\freetype-2.0.5\release\freetype.lib /nologo /subsystem:console /incremental:yes /debug /machine:I386
 
 !ELSEIF  "$(CFG)" == "rrdtool - Win32 Debug"
 
@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "." /I "..\gd1.3" /I "..\libpng-1.0.3" /I "..\zlib-1.1.3" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
+# ADD CPP /nologo /ML /W3 /Gm /GX /ZI /Od /I "..\libraries\libpng-1.2.0" /I "..\libraries\zlib-1.1.4" /I "..\libraries\libart_lgpl-2.3.7" /I "..\libraries\freetype-2.0.5\include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x100c /d "_DEBUG"
 # ADD RSC /l 0x100c /d "_DEBUG"
@@ -76,7 +76,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"rrdtool.bsc"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ..\gd1.3\debug\gd.lib debug\rrd.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\Debug\png.lib ..\libraries\zlib-1.1.4\Debug\zlib.lib ..\libraries\libart_lgpl-2.3.7\Debug\libart.lib ..\libraries\freetype-2.0.5\Debug\freetype.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 
 !ENDIF 
 

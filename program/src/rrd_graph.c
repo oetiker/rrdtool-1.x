@@ -12,6 +12,7 @@
 #ifdef WIN32
 #include <io.h>
 #include <fcntl.h>
+#define RRD_DEFAULT_FONT "c:/winnt/fonts/COUR.TTF"
 #endif
 
 #include "rrd_graph.h"

@@ -1,14 +1,22 @@
 use ExtUtils::MakeMaker;
+use Config;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+# This file is current set to compile with ActiveState 5xx builds
+# (perl 5.005_03). Hopefully this lowest common denominator
+# approach will work with newer ActiveState builds (i.e. 6xx).
 WriteMakefile(
     'NAME'	=> 'RRDs',
-    'VERSION_FROM' => 'RRDs.pm', 
-    #'DEFINE'	=> '-D_DEBUG -DWIN32 -D_CONSOLE',     
-    'OPTIMIZE' => '-O2',
-    'INC'	=> '-I../src/ -I../gd1.3',    
-    #'LIBS' => ['-L../src/debug -lrrd.lib  -L../gd1.3/debug -lgd.lib'],
-	#'LIBC' => 'libc.lib',
-    'MYEXTLIB'  => '../src/release/rrd.lib ../gd1.3/release/gd.lib ..\zlib-1.1.3\Release\zlib.lib ..\libpng-1.0.3\Release\png.lib', 
-    'realclean'    => {FILES => 't/demo?.rrd t/demo?.gif' }
+    'VERSION_FROM' => 'RRDs.pm',
+    'DEFINE'	   => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
+   'INC'	=> '-I../../src/ -I../../libraries/freetype-2.0.5/include -I ../../libraries/libart_lgpl-2.3.7 -I ../../libraries/zlib-1.1.4 -I ../../libraries/libpng-1.2.0',    
+# change this path to refer to your libc.lib
+    'MYEXTLIB'  => 'c:/vc98/lib/libc.lib ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0\release\png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
+    'realclean'    => {FILES => 't/demo?.rrd t/demo?.gif' },
+    ($] ge '5.005') ? (
+        'AUTHOR' => 'Tobias Oetiker (oetiker@ee.ethz.ch)',
+        'ABSTRACT' => 'Round Robin Database Tool',
+    ) : ()
+
+
 );
