@@ -15,37 +15,45 @@ dnl
 dnl
 AC_DEFUN([EX_CHECK_ALL],
 [
+ AC_LANG_PUSH(C)
  EX_CHECK_STATE=NO
+ ex_check_save_LIBS=${LIBS}
+ ex_check_save_CPPFLAGS=${CPPFLAGS}
+ ex_check_save_LDFLAGS=${LDPFLAGS}
  dnl try compiling naked first
  AC_CHECK_LIB($1,$2, [
-    AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}";EX_CHECK_STATE=YES],[
-       dnl now asking pkg-config for help
-       AC_PATH_PROG(PKGCONFIG,pkg-config,no)
-       if test "$PKGCONFIG" != "no"; then
+    AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}";EX_CHECK_STATE=YES],[])],[])
+ if test $EX_CHECK_STATE = NO; then
+    dnl now asking pkg-config for help
+    AC_CHECK_PROGS(PKGCONFIG,[pkg-config],no)
+    if test "$PKGCONFIG" != "no"; then
           if $PKGCONFIG --exists $4; then
              CPPFLAGS=${CPPFLAGS}" "`$PKGCONFIG --cflags $4`
-             LDFLAGS=${LDFLAGS}" "`$PKGCONFIG --libs-only-l $4`
-             LIBS=${LIBS}" " `$PKGCONFIG --libs-only-other $4`
-             AC_CHECK_LIB($1,$2,[ AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS};EX_CHECK_STATE=YES"],[])],[])
+             LDFLAGS=${LDFLAGS}" "`$PKGCONFIG --libs-only-L $4`
+             LDFLAGS=${LDFLAGS}" "`$PKGCONFIG --libs-only-other $4`
+             LIBS=${LIBS}" "`$PKGCONFIG --libs-only-l $4`
+	     dnl remove the cached value and test again
+	     unset ac_cv_lib_$1_$2
+             AC_CHECK_LIB($1,$2,[ AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])],[])
           else
              AC_MSG_WARN([
 ----------------------------------------------------------------------------
 * I found a copy of pkgconfig, but there is no $4.pc file around.
   You may want to set the PKG_CONFIG_PATH variable to point to its
   location.
+----------------------------------------------------------------------------
 			])
            fi
-       fi
-     ])],[])
-
+     fi
+  fi  
 
   if test ${EX_CHECK_STATE} = NO; then
      AC_MSG_WARN([
 ----------------------------------------------------------------------------
 * I could not find a working copy of $4. Check config.log for hints on why
-  this is the case. Maybe you need to set LDFLAGS appropriately so that the
-  linker can find lib$1. If you have not installed $4, you can get it
-  either from its original home on
+  this is the case. Maybe you need to set LDFLAGS and CPPFLAGS appropriately
+  so that compiler and the linker can find lib$1 and its header files. If
+  you have not installed $4, you can get it either from its original home on
 
      $6
 
@@ -54,10 +62,19 @@ AC_DEFUN([EX_CHECK_ALL],
      http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
 
   The last tested version of $4 is $5.
+
+       LIBS=$LIBS
+   LDFLAGS=$LDFLAGS
+  CPPFLAGS=$CPPFLAGS
+
 ----------------------------------------------------------------------------
                 ])
        EX_CHECK_ALL_ERR=YES
+       LIBS="${ex_check_save_LIBS}"
+       CPPFLAGS="${ex_check_save_CPPFLAGS}"
+       LDFLAGS="${ex_check_save_LDFLAGS}"
     fi
+    AC_LANG_POP(C)
 ]
 )
 dnl
@@ -111,8 +128,7 @@ dnl @license GPLWithACException
 
 AC_DEFUN([ACX_PTHREAD], [
 AC_REQUIRE([AC_CANONICAL_HOST])
-AC_LANG_SAVE
-AC_LANG_C
+AC_LANG_PUSH(C)
 acx_pthread_ok=no
 
 # We used to check for pthread.h first, but this fails if pthread.h
@@ -296,5 +312,128 @@ else
         acx_pthread_ok=no
         $2
 fi
-AC_LANG_RESTORE
+AC_LANG_POP(C)
 ])dnl ACX_PTHREAD
+
+
+dnl
+dnl determine how to get IEEE math working
+dnl AC_IEEE(MESSAGE, set rd_cv_ieee_[var] variable, INCLUDES,
+dnl   FUNCTION-BODY, [ACTION-IF-FOUND [,ACTION-IF-NOT-FOUND]])
+dnl
+
+AC_DEFUN([AC_IEEE], [
+AC_MSG_CHECKING([if IEEE math works $1])
+AC_CACHE_VAL([rd_cv_ieee_$2],
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[$3
+
+#if HAVE_MATH_H
+#  include <math.h>
+#endif
+
+#if HAVE_FLOAT_H
+#  include <float.h>  
+#endif
+
+#if HAVE_IEEEFP_H
+#  include <ieeefp.h>
+#endif
+
+#if HAVE_FP_CLASS_H
+#  include <fp_class.h>
+#endif
+
+/* Solaris */
+#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
+#  define HAVE_ISINF 1
+#  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
+#endif
+
+/* Digital UNIX */
+#if (! defined(HAVE_ISINF) && defined(HAVE_FP_CLASS) && defined(HAVE_FP_CLASS_H))
+#  define HAVE_ISINF 1
+#  define isinf(a) (fp_class(a) == FP_NEG_INF || fp_class(a) == FP_POS_INF)
+#endif 
+
+/* AIX */
+#if (! defined(HAVE_ISINF) && defined(HAVE_CLASS))
+#  define HAVE_ISINF 1
+#  define isinf(a) (class(a) == FP_MINUS_INF || class(a) == FP_PLUS_INF)
+#endif
+
+#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_PLUS_INF) && defined(FP_MINUS_INF))
+#  define HAVE_ISINF 1
+#  define isinf(a) (fpclassify(a) == FP_MINUS_INF || fpclassify(a) == FP_PLUS_INF)
+#endif
+
+#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_INFINITE))
+#  define HAVE_ISINF 1
+#  define isinf(a) (fpclassify(a) == FP_INFINITE)
+#endif
+
+#include <stdio.h>
+int main(void){
+    double nan,inf,c,zero;
+    $4;
+    /* some math to see if we get a floating point exception */
+    zero=sin(0.0); /* don't let the compiler optimize us away */
+    nan=0.0/zero; /* especially here */
+    inf=1.0/zero; /* and here. I want to know if it can do the magic */
+		  /* at run time without sig fpe */
+    c = inf + nan;
+    c = inf / nan;
+    if (! isnan(nan)) {printf ("not isnan(NaN) ... "); return 1;}
+    if (nan == nan) {printf ("nan == nan ... "); return 1;}
+    if (! isinf(inf)) {printf ("not isinf(oo) ... "); return 1;}
+    if (! isinf(-inf)) {printf ("not isinf(-oo) ... "); return 1;}
+    if (! inf > 0) {printf ("not inf > 0 ... "); return 1;}
+    if (! -inf < 0) {printf ("not -inf < 0 ... "); return 1;}
+    return 0;
+ }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
+dnl these we run regardles is cached or not
+if test x${rd_cv_ieee_$2} = "xyes"; then
+ AC_MSG_RESULT(yes)
+ $5
+else
+ AC_MSG_RESULT(no)
+ $6
+fi
+
+])
+
+AC_DEFUN([AC_FULL_IEEE],[
+AC_LANG_PUSH(C)
+_cflags=${CFLAGS}
+AC_IEEE([out of the box], works, , , ,
+  [CFLAGS="$_cflags -ieee"
+  AC_IEEE([with the -ieee switch], switch, , , ,
+    [CFLAGS="$_cflags -qfloat=nofold"
+    AC_IEEE([with the -qfloat=nofold switch], nofold, , , ,
+      [CFLAGS="$_cflags -w -qflttrap=enable:zerodivide"
+      AC_IEEE([with the -w -qflttrap=enable:zerodivide], flttrap, , , ,
+       [CFLAGS="$_cflags -mieee"
+       AC_IEEE([with the -mieee switch], mswitch, , , ,
+         [CFLAGS="$_cflags -q float=rndsngl"
+         AC_IEEE([with the -q float=rndsngl switch], qswitch, , , ,
+           [CFLAGS="$_cflags -OPT:IEEE_NaN_inf=ON"
+           AC_IEEE([with the -OPT:IEEE_NaN_inf=ON switch], ieeenaninfswitch, , , ,
+             [CFLAGS="$_cflags -OPT:IEEE_comparisons=ON"
+             AC_IEEE([with the -OPT:IEEE_comparisons=ON switch], ieeecmpswitch, , , ,
+               [CFLAGS=$_cflags
+               AC_IEEE([with fpsetmask(0)], mask,
+                 [#include <floatingpoint.h>], [fpsetmask(0)],
+                 [AC_DEFINE(MUST_DISABLE_FPMASK)
+	         PERLFLAGS="CCFLAGS=-DMUST_DISABLE_FPMASK"],
+                 [AC_IEEE([with signal(SIGFPE,SIG_IGN)], sigfpe,
+                   [#include <signal.h>], [signal(SIGFPE,SIG_IGN)],
+                   [AC_DEFINE(MUST_DISABLE_SIGFPE)
+                   PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
+                   AC_MSG_ERROR([
+Your Compiler does not do propper IEEE math ... Please find out how to
+make IEEE math work with your compiler and let me know (oetiker@ee.ethz.ch).
+Check config.log to see what went wrong ...
+]))])])])])])])])])])
+
+AC_LANG_POP(C)
+
+])
