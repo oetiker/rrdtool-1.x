@@ -122,10 +122,10 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   strcpy(rrd->stat_head->cookie,RRD_COOKIE);
   read_tag(&ptr,"version","%4[0-9]",rrd->stat_head->version);
   /* added primitive version checking */
-  if (atoi(rrd -> stat_head -> version) != 2)
+  if (atoi(rrd -> stat_head -> version) > atoi(RRD_VERSION) )
   {
-    rrd_set_error("Incompatible file version, detected version %s, required version %s\n",
-		  rrd -> stat_head -> version, RRD_VERSION);
+    rrd_set_error("Incompatible file version, detected version %s is bigger than supported version %s\n",
+		  rrd -> stat_head -> version, RRD_VERSION );
     free(rrd -> stat_head);
     return -1;
   }
