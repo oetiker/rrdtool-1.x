@@ -9,8 +9,8 @@ dnl if this check fails set the environment variable EX_CHECK_ALL_ERR to YES
 dnl and prints out a helful message
 dnl
 dnl
-dnl EX_CHECK_ALL(library, function, header, pkgconf name, tested-version, homepage)
-dnl              $1       $2        $3      $4            $5              $6
+dnl EX_CHECK_ALL(library, function, header, pkgconf name, tested-version, homepage, cppflags)
+dnl              $1       $2        $3      $4            $5              $6        $7
 dnl
 dnl
 AC_DEFUN([EX_CHECK_ALL],
@@ -20,6 +20,9 @@ AC_DEFUN([EX_CHECK_ALL],
  ex_check_save_LIBS=${LIBS}
  ex_check_save_CPPFLAGS=${CPPFLAGS}
  ex_check_save_LDFLAGS=${LDPFLAGS}
+ if [ x$7 != x ]; then
+   CPPFLAGS="-I$7 $CPPFLAGS"
+ fi
  dnl try compiling naked first
  AC_CHECK_LIB($1,$2, [
     AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}";EX_CHECK_STATE=YES],[])],[])
@@ -77,6 +80,7 @@ AC_DEFUN([EX_CHECK_ALL],
     AC_LANG_POP(C)
 ]
 )
+
 dnl
 dnl  Ptherad check from http://autoconf-archive.cryp.to/acx_pthread.m4
 dnl

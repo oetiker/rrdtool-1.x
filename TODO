@@ -1,12 +1,5 @@
 What has to be done before the 1.2.0 Release
 --------------------------------------------
-* Add tab support so that it becomes possible to use proportional
-  fonts in the legend
-
-* Polish up the looks of the generated graphs.
-
-* Remove all unfinished code like the PIE chart stuff.
-
 * Sync Docs with reality (there are things described which have not been
   implemented)
 
@@ -37,7 +30,7 @@ Let the user define the base resolution of the graph independently of
 the pixel resolution. If it is smaller than one pixel it will simply
 be ignored
 
-allow sub second presition for step definition
+allow sub second precision for the step definition
 
 modularise consolidation and acquisition functions
 
@@ -75,4 +68,3 @@ have configurable role-over limits for counters
 align data points not to GMT but some free offset
 
 allow starting through symlinks called rrdcreate rrdtune and the like
-

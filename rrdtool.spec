@@ -4,11 +4,11 @@
 
 Summary: Round Robin Database Tools
 Name: rrdtool
-Version: 1.1.0
+Version: 1.2rc1
 Release: %{cvsver}
 License: GPL
 Group: Applications/Databases
-Source: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/beta/rrdtool-cvs-snap.tar.gz
+Source: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/beta/rrdtool-1.2rc1.tar.gz
 URL: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
 Buildroot: /tmp/%{name}-root
 
