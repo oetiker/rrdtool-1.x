@@ -21,10 +21,10 @@ dnl determine the type of system we are running on
 AC_SUBST(VERSION)
 
 dnl where we install our stuff ...
-if [ -d /opt ]; then
-   xxpreinst = /opt
+if test -d /opt; then
+   xxpreinst=/opt
 else 
-   xxpreinst = /usr/local
+   xxpreinst=/usr/local
 fi
 
 AC_PREFIX_DEFAULT( $xxpreinst/rrdtool-$PACKAGE_VERSION )
