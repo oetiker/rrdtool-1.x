@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2004/05/26 22:11:12  oetiker
+ * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
+ *
  * Revision 1.5  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -156,7 +159,7 @@ rrd_tune(int argc, char **argv)
 	        fclose(rrd_file);
 		return -1;
 	    }
-	    if (dst_conv(dst) == -1){
+	    if ((int)dst_conv(dst) == -1){
 		rrd_free(&rrd);
 	        fclose(rrd_file);
 		return -1;
@@ -277,7 +280,7 @@ rrd_tune(int argc, char **argv)
 		   rrd_file);
     } else {
 	int i;
-	for(i=0;i< rrd.stat_head->ds_cnt;i++)
+	for(i=0;i< (int)rrd.stat_head->ds_cnt;i++)
 		if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
 	    printf("DS[%s] typ: %s\thbt: %ld\tmin: %1.4f\tmax: %1.4f\n",
 		   rrd.ds_def[i].ds_nam,

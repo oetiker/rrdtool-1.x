@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.8  2004/05/26 22:11:12  oetiker
+ * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
+ *
  * Revision 1.7  2003/11/12 22:14:26  oetiker
  * allow to pass an open filehandle into rrd_graph as an extra argument
  *
@@ -62,7 +65,7 @@ int    rrd_fetch(int, char **, time_t *, time_t *, unsigned long *,
 int    rrd_restore(int, char **);
 int    rrd_dump(int, char **);
 int    rrd_tune(int, char **);
-time_t rrd_last(int, char **);
+time_t rrd_last(int, const char **);
 int    rrd_resize(int, char **);
 int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 unsigned long *, unsigned long *,
@@ -77,7 +80,7 @@ int    rrd_create_r(char *filename,
 int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);
 int    rrd_dump_r(char *filename);
-time_t rrd_last_r(char *filename);
+time_t rrd_last_r(const char *filename);
 
 /* Transplanted from parsetime.h */
 typedef enum {
@@ -104,7 +107,7 @@ struct rrd_context {
 /* returns the current per-thread rrd_context */
 struct rrd_context *rrd_get_context(void);
 
-char *parsetime(char *spec, struct rrd_time_value *ptv);
+char *parsetime(const char *spec, struct rrd_time_value *ptv);
 /* END parsetime.h */
 
 int proc_start_end (struct rrd_time_value *,  struct rrd_time_value *, time_t *, time_t *);

@@ -84,7 +84,9 @@ void PrintUsage(char *cmd)
 	   "\t\t[--resolution|-r resolution]\n"
 	   "\t\t[--start|-s start] [--end|-e end]\n\n";
 
-    char help_graph[] =
+/* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
+
+    char help_graph1[] =
 	   "* graph - generate a graph from one or several RRD\n\n"
 	   "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
 	   "\t\t[-x|--x-grid x-axis grid and label]\n"
@@ -94,7 +96,8 @@ void PrintUsage(char *cmd)
 	   "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
-           "\t\t[-g|--no-legend]\n"
+           "\t\t[-g|--no-legend]\n";
+    char help_graph2[] =
            "\t\t[-j|--only-graph]\n"
 	   "\t\t[--font FONTTAG:size:font]\n"
            "\t\t[--zoom factor]\n"       
@@ -104,7 +107,8 @@ void PrintUsage(char *cmd)
 	   "\t\t[--step seconds]\n"	   
 	   "\t\t[-f|--imginfo printfstr]\n"
 	   "\t\t[-a|--imgformat PNG]\n"
-	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
+	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n";
+    char help_graph3[] =
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
 	   "\t\t[PRINT:vname:CF:format]\n"
@@ -115,7 +119,7 @@ void PrintUsage(char *cmd)
 	   "\t\t[AREA:vname[#rrggbb[aa][:legend]]]\n"
 	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]]\n\n";
 
-    char help_tune[] =
+    char help_tune1[] =
 	   " * tune -  Modify some basic properties of an RRD\n\n"
 	   "\trrdtool tune filename\n"
 	   "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
@@ -125,7 +129,9 @@ void PrintUsage(char *cmd)
 	   "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
 	   "\t\t[--failure-threshold integer]\n"
 	   "\t\t[--window-length integer]\n"
-	   "\t\t[--alpha adaptation-parameter]\n"
+	   "\t\t[--alpha adaptation-parameter]\n";
+    char help_tune2[] =
+	   " * tune -  Modify some basic properties of an RRD\n\n"
 	   "\t\t[--beta adaptation-parameter]\n"
 	   "\t\t[--gamma adaptation-parameter]\n"
 	   "\t\t[--gamma-deviation adaptation-parameter]\n"
@@ -241,10 +247,13 @@ void PrintUsage(char *cmd)
 		fputs(help_fetch, stdout);
 		break;
 	    case C_GRAPH:
-		fputs(help_graph, stdout);
+		fputs(help_graph1, stdout);
+		fputs(help_graph2, stdout);
+		fputs(help_graph3, stdout);
 		break;
 	    case C_TUNE:
-		fputs(help_tune, stdout);
+		fputs(help_tune1, stdout);
+		fputs(help_tune2, stdout);
 		break;
 	    case C_RESIZE:
 		fputs(help_resize, stdout);
@@ -320,7 +329,7 @@ int main(int argc, char *argv[])
           if (strcmp(firstdir,"")){
              chdir(firstdir);
              if (errno!=0){
-                fprintf(stderr,"ERROR: %s\n",strerror(errno));
+                fprintf(stderr,"ERROR: %s\n",rrd_strerror(errno));
                 exit(errno);
              }
           }
@@ -417,7 +426,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #endif
           chdir(argv[2]);
           if (errno!=0){
-             printf("ERROR: %s\n",strerror(errno));
+             printf("ERROR: %s\n",rrd_strerror(errno));
           }
           return(0);
        }
@@ -435,7 +444,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #endif
           mkdir(argv[2],0777);
           if (errno!=0){
-             printf("ERROR: %s\n",strerror(errno));
+             printf("ERROR: %s\n",rrd_strerror(errno));
           }
           return(0);
        }
@@ -460,7 +469,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
              }
           }
           else{
-             printf("ERROR: %s\n",strerror(errno));
+             printf("ERROR: %s\n",rrd_strerror(errno));
              return(errno);
           }
           return(0);
@@ -530,7 +539,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     else if (strcmp("resize", argv[1]) == 0)
 	rrd_resize(argc-1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
-        printf("%ld\n",rrd_last(argc-1, &argv[1]));
+        printf("%ld\n",rrd_last(argc-1, argv[1]));
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {
@@ -606,7 +615,9 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     }
     else if (strcmp("graph", argv[1]) == 0) {
 	char **calcpr;
+#ifdef notused  /*XXX*/
 	const char *imgfile = argv[2]; /* rrd_graph changes argv pointer */
+#endif
 	int xsize, ysize;
 	int i;
 	int tostdout = (strcmp(argv[2],"-") == 0);	

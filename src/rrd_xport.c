@@ -128,7 +128,7 @@ rrd_xport(int argc, char **argv, int *xsize,
 	char  varname[30],*rpnex;
 	gdes_alloc(&im);
 	if(sscanf(argv[i],"%10[A-Z0-9]:%n",symname,&argstart)==1){
-	    if((im.gdes[im.gdes_c-1].gf=gf_conv(symname))==-1){
+	    if((int)(im.gdes[im.gdes_c-1].gf=gf_conv(symname))==-1){
 		im_free(&im);
 		rrd_set_error("unknown function '%s'",symname);
 		return -1;
@@ -199,7 +199,7 @@ rrd_xport(int argc, char **argv, int *xsize,
 			  im.gdes[im.gdes_c-1].vname);
 		return -1; 
 	    }	   
-	    if((im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
+	    if((int)(im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
 		im_free(&im);
 		rrd_set_error("unknown cf '%s'",symname);
 		return -1;
@@ -396,8 +396,8 @@ rrd_xport_fn(image_desc_t *im,
     }
 
     /* fill data structure */
-    for(dst_row = 0; dst_row < row_cnt; dst_row++) {
-      for(i = 0; i < nof_xports; i++) {
+    for(dst_row = 0; (int)dst_row < (int)row_cnt; dst_row++) {
+      for(i = 0; i < (int)nof_xports; i++) {
         j = ref_list[i];
 	ii = im->gdes[j].vidx;
 	ds_cnt = &im->gdes[ii].ds_cnt;

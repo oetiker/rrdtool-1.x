@@ -169,7 +169,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 
       read_tag(&ptr2,"type",DST_FMT,rrd->ds_def[rrd->stat_head->ds_cnt-1].dst);
       /* test for valid type */
-      if(dst_conv(rrd->ds_def[rrd->stat_head->ds_cnt-1].dst) == -1) return -1;      
+      if( (int)dst_conv(rrd->ds_def[rrd->stat_head->ds_cnt-1].dst) == -1) return -1;      
 
 	  if (dst_conv(rrd->ds_def[rrd->stat_head->ds_cnt-1].dst) != DST_CDEF)
 	  {
@@ -211,7 +211,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       
       read_tag(&ptr2,"cf",CF_NAM_FMT,rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam);
       /* test for valid type */
-      if(cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == -1) return -1;
+      if( (int)cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == -1) return -1;
 
       read_tag(&ptr2,"pdp_per_row","%lu",&(rrd->rra_def[rrd->stat_head->rra_cnt-1].pdp_cnt));
       /* support to read RRA parameters */
@@ -265,7 +265,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       }
       eat_tag(&ptr2, "/params");
       eat_tag(&ptr2,"cdp_prep");
-      for(i=0;i<rrd->stat_head->ds_cnt;i++)
+      for(i=0;i< (int)rrd->stat_head->ds_cnt;i++)
       {
       eat_tag(&ptr2,"ds");
       /* support to read CDP parameters */
@@ -348,7 +348,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 	  rows++;
 	  mempool--;
 	  rrd->rra_def[rrd->stat_head->rra_cnt-1].row_cnt++;
-	  for(i=0;i<rrd->stat_head->ds_cnt;i++){
+	  for(i=0;i< (int)rrd->stat_head->ds_cnt;i++){
 
 		  rrd_value_t  * value = &(rrd->rrd_value[(rows-1)*rrd->stat_head->ds_cnt+i]);
 
@@ -387,7 +387,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       return(-1);
   }
 
-  for(i=0; i <rrd->stat_head->rra_cnt; i++) {
+  for(i=0; i < (int)rrd->stat_head->rra_cnt; i++) {
 	  /* last row in the xml file is the most recent; as
 	   * rrd_update increments the current row pointer, set cur_row
 	   * here to the last row. */

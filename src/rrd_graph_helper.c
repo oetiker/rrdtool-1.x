@@ -2,6 +2,27 @@
 
 #define dprintf if (gdp->debug) printf
 
+/* Define prototypes for the parsing methods.
+  Inputs:
+   char *line         - pointer to base of input source
+   unsigned int eaten - index to next input character (INPUT/OUTPUT)
+   graph_desc_t *gdp  - pointer to a graph description
+   image_desc_t *im   - pointer to an image description
+*/
+
+int rrd_parse_find_gf (char *, unsigned int *, graph_desc_t *);
+int rrd_parse_legend  (char *, unsigned int *, graph_desc_t *);
+int rrd_parse_color   (char *, graph_desc_t *);
+int rrd_parse_CF      (char *, unsigned int *, graph_desc_t *);
+int rrd_parse_print   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_PVHLAST (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_vname   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_def     (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_vdef    (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+int rrd_parse_cdef    (char *, unsigned int *, graph_desc_t *, image_desc_t *);
+
+
+
 int
 rrd_parse_find_gf(char *line, unsigned int *eaten, graph_desc_t *gdp) {
     char funcname[11],c1=0,c2=0;

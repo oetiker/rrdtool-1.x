@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.10  2004/05/26 22:11:12  oetiker
+ * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
+ *
  * Revision 1.9  2003/04/29 21:56:49  oetiker
  * readline in rrd_open.c reads the file in 8 KB blocks, and calls realloc for
  * each block. realloc is very slow in Mac OS X for huge blocks, e.g. when
@@ -66,7 +69,7 @@
 /* positioned to the first cdp in the first rra */
 
 int
-rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)    
+rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)    
 {
 
     
@@ -190,7 +193,7 @@ void rrd_freemem(void *mem)
     if (mem) free(mem);
 }
 
-int readfile(char *file_name, char **buffer, int skipfirst){
+int readfile(const char *file_name, char **buffer, int skipfirst){
     long writecnt=0,totalcnt = MEMBLK;
      long offset = 0;
     FILE *input=NULL;

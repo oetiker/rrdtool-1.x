@@ -3319,6 +3319,6 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Times_Roman_kerning_data,
       afm_Times_Roman_highchars_index, 220,
       afm_Times_Roman_ligatures, 1},
-  { 0, 0, 0 }
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 const int afm_fontinfo_count = 14;

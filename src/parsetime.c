@@ -234,25 +234,24 @@ static struct SpecialToken TimeMultipliers[] = {
  */
 static struct SpecialToken *Specials;
 
-static char **scp;	/* scanner - pointer at arglist */
+static const char **scp;	/* scanner - pointer at arglist */
 static char scc;	/* scanner - count of remaining arguments */
-static char *sct;	/* scanner - next char pointer in current argument */
+static const char *sct;	/* scanner - next char pointer in current argument */
 static int need;	/* scanner - need to advance to next argument */
 
 static char *sc_token=NULL;	/* scanner - token buffer */
 static size_t sc_len;   /* scanner - length of token buffer */
 static int sc_tokid;	/* scanner - token id */
 
-static int need_to_free = 0; /* means that we need deallocating memory */
-
 /* Local functions */
+static void EnsureMemFree (void);
 
-void EnsureMemFree ()
+static void EnsureMemFree (void)
 {
-  if( need_to_free )
+  if( sc_token )
     {
     free(sc_token);
-    need_to_free = 0;
+    sc_token = NULL;
     }
 }
 
@@ -368,7 +367,7 @@ parse_token(char *arg)
  * init_scanner() sets up the scanner to eat arguments
  */
 static char *
-init_scanner(int argc, char **argv)
+init_scanner(int argc, const char **argv)
 {
     scp = argv;
     scc = argc;
@@ -380,7 +379,6 @@ init_scanner(int argc, char **argv)
     sc_token = (char *) malloc(sc_len*sizeof(char));
     if( sc_token == NULL )
       return "Failed to allocate memory";
-    need_to_free = 1;
     return TIME_OK;
 } /* init_scanner */
 
@@ -561,7 +559,7 @@ tod(struct rrd_time_value *ptv)
     int tlen;
     /* save token status in  case we must abort */
     int scc_sv = scc; 
-    char *sct_sv = sct; 
+    const char *sct_sv = sct; 
     int sc_tokid_sv = sc_tokid;
 
     tlen = strlen(sc_token);
@@ -785,7 +783,7 @@ day(struct rrd_time_value *ptv)
  * the pointer to the error message in the case of problems
  */
 char *
-parsetime(char *tspec, struct rrd_time_value *ptv)
+parsetime(const char *tspec, struct rrd_time_value *ptv)
 {
     time_t now = time(NULL);
     int hr = 0;

@@ -14,11 +14,11 @@
 #define DEBUG_VARS*/
 
 /* global variable for libcgi */
-s_cgi **cgiArg;
+s_cgi *cgiArg;
 
 /* in arg[0] find tags beginning with arg[1] call arg[2] on them
    and replace by result of arg[2] call */
-int parse(char **, long, char *, char *(*)(long , char **));
+int parse(char **, long, char *, char *(*)(long , const char **));
 
 /**************************************************/
 /* tag replacers ... they are called from parse   */
@@ -26,43 +26,43 @@ int parse(char **, long, char *, char *(*)(long , char **));
 /**************************************************/
 
 /* return cgi var named arg[0] */ 
-char* cgiget(long , char **);
+char* cgiget(long , const char **);
 
 /* return a quoted cgi var named arg[0] */ 
-char* cgigetq(long , char **);
+char* cgigetq(long , const char **);
 
 /* return a quoted and sanitized cgi variable */
-char* cgigetqp(long , char **);
+char* cgigetqp(long , const char **);
 
 /* call rrd_graph and insert appropriate image tag */
 char* drawgraph(long, char **);
 
 /* return PRINT functions from last rrd_graph call */
-char* drawprint(long, char **);
+char* drawprint(long, const char **);
 
 /* pretty-print the <last></last> value for some.rrd via strftime() */
-char* printtimelast(long, char **);
+char* printtimelast(long, const char **);
 
 /* pretty-print current time */
-char* printtimenow(long,char **);
+char* printtimenow(long, const char **);
 
 /* set an environment variable */
-char* rrdsetenv(long, char **);
+char* rrdsetenv(long, const char **);
 
 /* get an environment variable */
-char* rrdgetenv(long, char **);
+char* rrdgetenv(long, const char **);
 
 /* include the named file at this point */
-char* includefile(long, char **);
+char* includefile(long, const char **);
 
 /* for how long is the output of the cgi valid ? */
-char* rrdgoodfor(long, char **);
+char* rrdgoodfor(long, const char **);
 
 char* rrdstrip(char *buf);
 char* scanargs(char *line, int *argc, char ***args);
 
 /* format at-time specified times using strftime */
-char* printstrftime(long, char**);
+char* printstrftime(long, const char**);
 
 /** HTTP protocol needs special format, and GMT time **/
 char *http_time(time_t *);
@@ -72,9 +72,9 @@ char *stralloc(const char *);
 
 
 /* rrd interface to the variable functions {put,get}var() */
-char* rrdgetvar(long argc, char **args);
-char* rrdsetvar(long argc, char **args);
-char* rrdsetvarconst(long argc, char **args);
+char* rrdgetvar(long argc, const char **args);
+char* rrdsetvar(long argc, const char **args);
+char* rrdsetvarconst(long argc, const char **args);
 
 
 /* variable store: put/get key-value pairs */
@@ -117,7 +117,7 @@ donevar()
 {
 	int i;
 	if (varheap) {
-		for (i=0; i<varheap_size; i++) {
+		for (i=0; i<(int)varheap_size; i++) {
 			if (varheap[i].name) {
 				free((char*)varheap[i].name);
 			}
@@ -135,7 +135,7 @@ static const char*
 getvar(const char* name)
 {
 	int i;
-	for (i=0; i<varheap_size && varheap[i].name; i++) {
+	for (i=0; i<(int)varheap_size && varheap[i].name; i++) {
 		if (0 == strcmp(name, varheap[i].name)) {
 #ifdef		DEBUG_VARS
 			printf("<!-- getvar(%s) -> %s -->\n", name, varheap[i].value);
@@ -157,7 +157,7 @@ static const char*
 putvar(const char* name, const char* value, int is_const)
 {
 	int i;
-	for (i=0; i < varheap_size && varheap[i].name; i++) {
+	for (i=0; i < (int)varheap_size && varheap[i].name; i++) {
 		if (0 == strcmp(name, varheap[i].name)) {
 			/* overwrite existing entry */
 			if (varheap[i].is_const) {
@@ -180,7 +180,7 @@ putvar(const char* name, const char* value, int is_const)
 	}
 
 	/* no existing variable found by that name, add it */
-	if (i == varheap_size) {
+	if (i == (int)varheap_size) {
 		/* ran out of heap: resize heap to double size */
 		size_t new_size = varheap_size * 2;
 		varheap = (vardata*)(realloc(varheap, sizeof(vardata) * new_size));
@@ -372,7 +372,7 @@ int main(int argc, char *argv[]) {
 /* remove occurrences of .. this is a general measure to make
    paths which came in via cgi do not go UP ... */
 
-char* rrdsetenv(long argc, char **args) {
+char* rrdsetenv(long argc, const char **args) {
 	if (argc >= 2) {
 		char *xyz = malloc((strlen(args[0]) + strlen(args[1]) + 2));
 		if (xyz == NULL) {
@@ -390,7 +390,7 @@ char* rrdsetenv(long argc, char **args) {
 
 /* rrd interface to the variable function putvar() */
 char*
-rrdsetvar(long argc, char **args)
+rrdsetvar(long argc, const char **args)
 {
 	if (argc >= 2)
 	{
@@ -407,7 +407,7 @@ rrdsetvar(long argc, char **args)
 
 /* rrd interface to the variable function putvar() */
 char*
-rrdsetvarconst(long argc, char **args)
+rrdsetvarconst(long argc, const char **args)
 {
 	if (argc >= 2)
 	{
@@ -422,7 +422,7 @@ rrdsetvarconst(long argc, char **args)
 					"were defined]");
 }
 
-char* rrdgetenv(long argc, char **args) {
+char* rrdgetenv(long argc, const char **args) {
 	char buf[128];
 	const char* envvar;
 	if (argc != 1) {
@@ -438,7 +438,7 @@ char* rrdgetenv(long argc, char **args) {
 	}
 }
 
-char* rrdgetvar(long argc, char **args) {
+char* rrdgetvar(long argc, const char **args) {
 	char buf[128];
 	const char* value;
 	if (argc != 1) {
@@ -454,7 +454,7 @@ char* rrdgetvar(long argc, char **args) {
 	}
 }
 
-char* rrdgoodfor(long argc, char **args){
+char* rrdgoodfor(long argc, const char **args){
   if (argc == 1) {
       goodfor = atol(args[0]);
   } else {
@@ -472,7 +472,7 @@ char* rrdgoodfor(long argc, char **args){
  * start and end times, because, either might be relative to the other.
  * */
 #define MAX_STRFTIME_SIZE 256
-char* printstrftime(long argc, char **args){
+char* printstrftime(long argc, const char **args){
 	struct	rrd_time_value start_tv, end_tv;
 	char    *parsetime_error = NULL;
 	char	formatted[MAX_STRFTIME_SIZE];
@@ -524,11 +524,10 @@ char* printstrftime(long argc, char **args){
 	}
 }
 
-char* includefile(long argc, char **args){
+char* includefile(long argc, const char **args){
   char *buffer;
   if (argc >= 1) {
-	  char* filename = args[0];
-      readfile(filename, &buffer, 0);
+      readfile(args[0], &buffer, 0);
       if (rrd_test_error()) {
 	  	char *err = malloc((strlen(rrd_get_error())+DS_NAM_SIZE));
 	  sprintf(err, "[ERROR: %s]",rrd_get_error());
@@ -566,7 +565,7 @@ char* rrdstrip(char *buf) {
   return buf;
 }
 
-char* cgigetq(long argc, char **args){
+char* cgigetq(long argc, const char **args){
   if (argc>= 1){
     char *buf = rrdstrip(cgiGetValue(cgiArg,args[0]));
     char *buf2;
@@ -604,7 +603,7 @@ char* cgigetq(long argc, char **args){
 /* remove occurrences of .. this is a general measure to make
    paths which came in via cgi do not go UP ... */
 
-char* cgigetqp(long argc, char **args){
+char* cgigetqp(long argc, const char **args){
   if (argc>= 1) {
     char *buf = rrdstrip(cgiGetValue(cgiArg,args[0]));
     char *buf2;
@@ -657,7 +656,7 @@ char* cgigetqp(long argc, char **args){
 }
 
 
-char* cgiget(long argc, char **args){
+char* cgiget(long argc, const char **args){
   if (argc>= 1)
     return rrdstrip(cgiGetValue(cgiArg,args[0]));
   else
@@ -691,7 +690,7 @@ char* drawgraph(long argc, char **args){
   return NULL;
 }
 
-char* drawprint(long argc, char **args){
+char* drawprint(long argc, const char **args){
   if (argc==1 && calcpr){
     long i=0;
     while (calcpr[i] != NULL) i++; /*determine number lines in calcpr*/
@@ -701,7 +700,7 @@ char* drawprint(long argc, char **args){
   return stralloc("[ERROR: RRD::PRINT argument error]");
 }
 
-char* printtimelast(long argc, char **args) {
+char* printtimelast(long argc, const char **args) {
   time_t last;
   struct tm tm_last;
   char *buf;
@@ -727,7 +726,7 @@ char* printtimelast(long argc, char **args) {
   return stralloc("[ERROR: not enough arguments for RRD::TIME::LAST]");
 }
 
-char* printtimenow(long argc, char **args) {
+char* printtimenow(long argc, const char **args) {
   time_t now = time(NULL);
   struct tm tm_now;
   char *buf;
@@ -929,7 +928,7 @@ parse(
 	char **buf, 	/* buffer */
 	long i, 		/* offset in buffer */
 	char *tag,  	/* tag to handle  */
-	char *(*func)(long argc, char **args) /* function to call for 'tag' */
+	char *(*func)(long , const char **) /* function to call for 'tag' */
 	)
 {
 	/* the name of the vairable ... */

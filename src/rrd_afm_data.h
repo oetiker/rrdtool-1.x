@@ -135,18 +135,7 @@ Implementation design:
       unicode char1, char2, resultingchar;
     }
 
-    Font-global info is stored in a
-    struct {
-      char    *fullname; // e.g. "Futura Bold Oblique"
-      char    *postscript_name; // e.g. "Futura-BoldOblique"
-      uint8   *widths;
-      sint16  *kerning_index;
-      sint8   *kerning_data;
-      uint16  *highchars_index;
-	  uint16   highchars_count;
-      unicode *ligatures;
-      uint16   ligatures_count;
-    }
+    Font-global info is stored in a struct afm_fontinfo (see below).
 
     The highchars_index and ligatures structures are flattened
     to a simple array to avoid accidental padding between
@@ -177,8 +166,8 @@ typedef const afm_sint16  afm_csint16;
 typedef const afm_unicode afm_cunicode;
 
 typedef struct afm_fontinfo {
-  const char   *fullname; // e.g. "Futura Bold Oblique"
-  const char   *postscript_name; // e.g. "Futura-BoldOblique"
+  const char   *fullname; /* e.g. "Futura Bold Oblique" */
+  const char   *postscript_name; /* e.g. "Futura-BoldOblique" */
   afm_cuint8   *widths;
   afm_csint16  *kerning_index;
   afm_cuint8   *kerning_data;
