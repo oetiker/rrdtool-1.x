@@ -25,7 +25,7 @@ enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
 	    GF_DEF, GF_CDEF, GF_VDEF,
 	    GF_PART};
 
-enum if_en {IF_GIF=0,IF_PNG=1};
+enum if_en {IF_PNG=0};
 
 enum vdef_op_en {
 		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */

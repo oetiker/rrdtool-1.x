@@ -42,7 +42,6 @@ INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 RRD_C_FILES =		\
 	getopt.c	\
 	getopt1.c	\
-	gifsize.c	\
 	parsetime.c	\
 	hash_32.c	\
 	rrd_hw.c	\

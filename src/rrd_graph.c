@@ -181,7 +181,6 @@ enum gf_en gf_conv(char *string){
 
 enum if_en if_conv(char *string){
     
-    conv_if(GIF,IF_GIF)
     conv_if(PNG,IF_PNG)
 
     return (-1);
@@ -1849,9 +1848,6 @@ int lazy_check(image_desc_t *im){
     if ((fd = fopen(im->graphfile,"rb")) == NULL) 
       return 0; /* the file does not exist */
     switch (im->imgformat) {
-    case IF_GIF:
-	   size = GifSize(fd,&(im->xgif),&(im->ygif));
-	   break;
     case IF_PNG:
 	   size = PngSize(fd,&(im->xgif),&(im->ygif));
 	   break;
@@ -2271,8 +2267,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
     }
   }
   switch (im->imgformat) {
-  case IF_GIF:
-    break;
   case IF_PNG:
     gfx_render_png (canvas,im->xgif,im->ygif,im->zoom,0x0,fo);
     break;
@@ -2444,7 +2438,7 @@ rrd_graph_init(image_desc_t *im)
     im->gdes_c = 0;
     im->gdes = NULL;
     im->zoom = 1.0;
-    im->imgformat = IF_GIF; /* we default to GIF output */
+    im->imgformat = IF_PNG; /* we default to PNG output */
 
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];

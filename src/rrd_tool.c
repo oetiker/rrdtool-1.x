@@ -81,7 +81,7 @@ void PrintUsage(char *cmd)
 	   "\t\t[--units-exponent value]\n"	   
 	   "\t\t[--step seconds]\n"	   
 	   "\t\t[-f|--imginfo printfstr]\n"
-	   "\t\t[-a|--imgformat GIF|PNG]\n"
+	   "\t\t[-a|--imgformat PNG]\n"
 	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
