@@ -15,19 +15,19 @@ PERL
 
 if vcheck 1.4.2 "libtool --version"
 then
-  echo get a copy of GNU libtool >= 1.4.2
+  echo "get a copy of GNU libtool >= 1.4.2"
   exit 1
 fi
 
 if vcheck 1.5  "automake --version"
 then
-  echo get a copy of GNU automake >= 1.5
+  echo "get a copy of GNU automake >= 1.5"
   exit 1
 fi
 
 if vcheck 2.52 "autoconf --version"
 then
-  echo get a copy of GNU autoconf >= 2.52
+  echo "get a copy of GNU autoconf >= 2.52"
   exit 1
 fi
 
