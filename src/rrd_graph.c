@@ -1285,6 +1285,7 @@ print_calc(image_desc_t *im, char ***prdata)
 
 	    if (im->gdes[i].gf == GF_PRINT){
 		(*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
+		(*prdata)[prlines-1] = NULL;
 		if (bad_format(im->gdes[i].format)) {
 			rrd_set_error("bad format for [G]PRINT in '%s'", im->gdes[i].format);
 			return -1;
@@ -1294,7 +1295,6 @@ print_calc(image_desc_t *im, char ***prdata)
 #else
 		sprintf((*prdata)[prlines-2],im->gdes[i].format,printval,si_symb);
 #endif
-		(*prdata)[prlines-1] = NULL;
 	    } else {
 		/* GF_GPRINT */
 
