@@ -9,6 +9,7 @@ rrdtool update - Store a new set of values into the rrd
 B<rrdtool> B<update> I<filename> 
 S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]> 
 S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]> 
+S<I<at-timestamp>B<@>I<value>[B<:>I<value>...]> 
 S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
 
 =head1 DESCRIPTION
@@ -40,6 +41,9 @@ The data used for updating the RRD was acquired at a certain time. This
 time can either be defined in seconds since 1970-01-01. Or by using the
 letter 'N' the update time is set to be the current time. Negative time
 values are subtracted from the current time.
+An AT_STYLE TIME SPECIFICATION (see the I<rrdfetch> documentation) may
+also be used by delimiting the end of the time specification with the '@' character
+instead of a ':'.
 Getting the timing right to the second is especially
 important when you are working with data-sources of type B<COUNTER>,
 B<DERIVE> or B<ABSOLUTE>. 
