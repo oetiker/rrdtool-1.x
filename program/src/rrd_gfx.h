@@ -25,6 +25,7 @@ typedef struct  gfx_node_t {
   char *filename;             /* font or image filename */
   char *text;
   double        x,y;          /* position */
+  double      angle;
   enum gfx_h_align_en halign; /* text alignement */
   enum gfx_v_align_en valign; /* text alignement */
   double        tabwidth; 
@@ -86,5 +87,10 @@ int           gfx_destroy    (gfx_canvas_t *canvas);
 
 #endif
 
+/* turn graph into an svg image */
+int       gfx_render_svg (gfx_canvas_t *canvas,
+                              art_u32 width, art_u32 height,
+                              double zoom,
+                              gfx_color_t background, FILE *fo);
 
 

@@ -61,7 +61,7 @@ statements (after all, most of them do define graph elements...).
 =item filename
 
 The name and path of the graph to generate. It is recommended to
-end this in C<.png> or C<.gif> but B<rrdtool> does not enforce this.
+end this in C<.png> or C<.svg> but B<rrdtool> does not enforce this.
 
 I<filename> can be 'C<->' to send the image to C<stdout>. In
 that case, no other output is generated.  
@@ -300,9 +300,9 @@ for the graph legend.
 
 Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
 
-B<[-a|--imgformat C<PNG>]>
+B<[-a|--imgformat C<PNG>|C<SVG>]>
 
-At present only PNG is supported, but C<EPS>, C<SVG> or even C<FLASH> should
+At present only C<PNG> and C<SVG> are supported, but C<EPS>, or even C<FLASH> should
 not be all that difficult to add.
 
 B<[-i|--interlaced]>
