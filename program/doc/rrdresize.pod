@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool resize - alters the size of an RRA.
+rrdtool resize - alters the size of an RRA and creates new .rrd file
 
 =for html <div align="right"><a href="rrdresize.pdf">PDF</a> version.</div>
 
@@ -40,6 +40,10 @@ the number of rows you want to add or remove.
 =back
 
 =head1 NOTES
+
+The new .rrd file, with the modified RRAm, is written to the file 
+B<resize.rrd> in the current directory.  The original .rrd file is not
+modified.
 
 It is possible to abuse this tool and get strange results
 by first removing some rows and then reinsert the same amount (effectively
