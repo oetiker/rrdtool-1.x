@@ -1,10 +1,10 @@
-#! /usr/sepp/bin/perl 
+#! /usr/bin/perl 
 
 #makes things work when run without install
-use lib qw( ../libraries/perl-piped/blib/lib  ../lib/perl );
+use lib qw( ../bindings/perl-piped/blib/lib  ../lib/perl );
 
 #makes programm work AFTER install 
-use lib qw( /usr/local/rrdtool-1.0.33/lib/perl );
+use lib qw( /usr/local/rrdtool-1.1.0/lib/perl );
 
 use RRDp;
 
@@ -20,8 +20,8 @@ $GIF = "piped-demo.gif";
 $PNG = "piped-demo.png";
 
 # some magic to find the correct rrdtol executable
-if ( -x "/usr/local/rrdtool-1.0.33/bin/rrdtool") {
-   RRDp::start "/usr/local/rrdtool-1.0.33/bin/rrdtool";
+if ( -x "/usr/local/rrdtool-1.1.0/bin/rrdtool") {
+   RRDp::start "/usr/local/rrdtool-1.1.0/bin/rrdtool";
 } elsif ( -x "../bin/rrdtool") {
    RRDp::start "../bin/rrdtool";
 } else {

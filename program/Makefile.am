@@ -10,10 +10,11 @@ EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS rrdtool.spec
 CLEANFILES = config.cache
 
 # use relaxed rules when building dists
-AUTOMAKE_OPTIONS= foreign no-dependencies
+AUTOMAKE_OPTIONS= foreign 
 
 # where we keep local rules for automake
-ACLOCAL_M4= 	$(top_srcdir)/config/aclocal.m4
+
+ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
 

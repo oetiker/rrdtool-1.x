@@ -269,7 +269,7 @@ would look like this:
 
     --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
 
-B<[-c|--color I<COLORTAG#rrggbb>]>
+B<[-c|--color I<COLORTAGBB<#>I<rrggbb>B<[>I<aa>B<<]>
 
 Override the default colors for the standard elements of the graph.
 The I<COLORTAG> is one of C<BACK> ground, C<CANVAS>, C<SHADEA> for the
@@ -281,7 +281,24 @@ You may set this option several times to alter multiple defaults.
 
 A green arrow is made by: C<--color ARROW:00FF00>
 
-B<[-a|--imgformat C<GIF>|C<PNG>]>
+B<--zoom> I<factor>
+
+Zoom the graphics by the given amount ... The factor must be > 0
+
+B<[-n|--font I<FONTTAG>B<:>I<size>B<:>I<font>
+
+Lets you customize which font to use for the various text elements on the
+rrd graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
+C<AXIS> for the axis labels, C<UNIT> for the vertical unit label, C<LEGEND>
+for the graph legend.
+
+Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
+
+B<[-a|--imgformat C<PNG>]>
+
+At present only PNG is supported, but C<EPS>, C<SVG> or even C<FLASH> should
+not be all that difficult to add.
+
 B<[-i|--interlaced]>
 
 The default is to generate a non-interlaced GIF image. It is recommended

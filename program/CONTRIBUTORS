@@ -87,8 +87,8 @@ Further I would like to note, that rrdtool would not exist without
 the following free software products:
 
 	Perl by Larry Wall
-	gd library by Thomas Boutell
-	gifcode from David Koblas
+	libart by Raph Levien
+	freetype by David Turner, Robert Wilhelm, and Werner Lemberg
 	libpng by Glenn Randers-Pehrson / Andreas Eric Dilger / Guy Eric Schalnat
 	cgilib by Martin Schulze
 	zlib by Jean-loup Gailly and Mark Adler

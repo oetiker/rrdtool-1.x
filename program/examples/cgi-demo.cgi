@@ -1,4 +1,4 @@
-#! /usr/local/rrdtool-1.0.33/bin/rrdcgi 
+#! /usr/local/rrdtool-1.1.0/bin/rrdcgi 
 
 <HTML>
 <HEAD>

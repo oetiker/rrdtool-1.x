@@ -118,12 +118,10 @@ typedef struct info_t {
 info_t *rrd_info(int, char **);
 
 /* HELPER FUNCTIONS */
+
 int GifSize(FILE *, long *, long *);
 int PngSize(FILE *, long *, long *);
 int PngSize(FILE *, long *, long *);
-
-#include <gd.h>
-void gdImagePng(gdImagePtr im, FILE *out);
 
 int rrd_create_fn(char *file_name, rrd_t *rrd);
 int rrd_fetch_fn(char *filename, enum cf_en cf_idx,

@@ -5,6 +5,23 @@ RRDTOOL NEWS
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
+2002/01/15 Tobias Oetiker <tobi@oetiker.ch>
+  The BIG graph update
+  * Replace libgd with libart
+  * Added freetype
+  * Updated zlib and libpng
+  * rrd_gfx.c intrduced as libart wrapper
+  * LINE takes now a float as argument
+  * rrdtool uses truetype for fonts
+  * thanks to libart there is now full alpha transparenc
+    and antialiasing.
+  * the new option --font lets customize the font
+    and size for various graph elements
+  * Updated to -> libtool 1.4.2 automake 2.12 autoconf 2.52
+  * new --zoom commandline option for zoom ans shrinking
+  ---- Still missing is rotatet text for the yaxis description
+  ---- Still missing is tab support in the text rendere
+  ---- Still missing is autoconf support for a default truetype font
 
 2001/07/26 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
   Added TOTAL to the VDEF functions.

@@ -6,22 +6,22 @@ I<(to be) Depriciated commands>
 
 [B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>]
 [B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>]
-[B<HRULE:>I<value>B<#>I<rrggbb>[B<:>I<legend>]]
-[B<STACK:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]]
+[B<HRULE:>I<value>B<#>I<rrggbbaa>[B<:>I<legend>]]
+[B<STACK:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]]
 
 I<(soon) available commands>
 
 [B<PRINT:>I<vname>B<:>I<format>]
 [B<GPRINT:>I<vname>B<:>I<format>]
 [B<COMMENT:>I<text>]
-[B<VRULE:>I<vname>B<#>I<rrggbb>[B<:>I<legend>]]
-[B<LINE>{B<1>|B<2>|B<3>}B<:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]][B<:STACK>]
-[B<AREA:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]][B<:STACK>]
+[B<VRULE:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
+[B<LINE>{I<width>}B<:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
+[B<AREA:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
 
 I<to be implemented commands>
 
 [B<SHIFT:>I<vname>]
-[B<PART:>I<vname>B<#>I<rrggbb>[B<:>I<legend>]]
+[B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
 
 =head1 DESCRIPTION
 
@@ -142,7 +142,7 @@ B<COMMENT:>I<text>
 
 Text is printed literally in the legend section of the graph
 
-B<HRULE:>I<value>B<#>I<rrggbb>[B<:>I<legend>]
+B<HRULE:>I<value>B<#>I<rrggbbaa>[B<:>I<legend>]
 
 Draw an horizontal line at I<value>. Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
@@ -150,7 +150,7 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<value> can be a variable from a B<VDEF>.
 It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-B<VRULE:>I<time>B<#>I<rrggbb>[B<:>I<legend>]
+B<VRULE:>I<time>B<#>I<rrggbbaa>[B<:>I<legend>]
 
 Draw a vertical line at I<time>.  Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
@@ -158,7 +158,7 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<time> may be a number or a variable
 from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-B<LINE>{B<1>|B<2>|B<3>}B<:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]][B<:STACK>]
+B<LINE>{I<width>}B<:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]][B<:STACK>]
 
 Draw a line of the specified width into the graph. If the color
 is not specified, the drawing is done 'blind'.  This is useful when
@@ -169,12 +169,12 @@ B<CDEF>.  If the optional B<STACK> modifier is used, this line is
 stacked on top of the previous element which can be a B<LINEx> or
 an B<AREA>
 
-B<AREA:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]][B<:STACK>]
+B<AREA:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]][B<:STACK>]
 
 See B<LINEx>, however the area between the x-axis and the line will
 also be filled.
 
-B<STACK:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
+B<STACK:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]
 
 I<Depriciated.  Use the B<STACK> modifiers on the other commands.>
 I<Note: the comments on stacking are still valid...>
@@ -209,7 +209,7 @@ B<PART> command, the canvas is extended to make room for a chart
 used for the pie chart). The size of the canvas is determined by
 the lesser of L<width and height|rrdgraph/item_Size>.
 
-B<PART:>I<vname>B<#>I<rrggbb>[B<:>I<legend>]
+B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]
 
 Draw a part of pie. Pie parts will be concatenated, the first one
 will start at the top and parts will be created clockwise.

@@ -6,18 +6,15 @@
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 
 CGI_LIB_DIR	   = $(top_srcdir)/@CGI_LIB_DIR@
-GD_LIB_DIR	   = $(top_srcdir)/@GD_LIB_DIR@
+FREETYPE_LIB_DIR   = $(top_srcdir)/@FREETYPE_LIB_DIR@
+ART_LIB_DIR	   = $(top_srcdir)/@ART_LIB_DIR@
 PNG_LIB_DIR	   = $(top_srcdir)/@PNG_LIB_DIR@
 ZLIB_LIB_DIR	   = $(top_srcdir)/@ZLIB_LIB_DIR@
 
-INCLUDES 	   = -I$(CGI_LIB_DIR) -I$(GD_LIB_DIR) -I$(PNG_LIB_DIR) -I$(ZLIB_LIB_DIR)
-
-#COMPILE   = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CFLAGS_EXTRA)
-#LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(CFLAGS_EXTRA)
-#LINK      = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(CFLAGS_EXTRA) $(LDFLAGS) -o $@
+INCLUDES 	   = -I$(CGI_LIB_DIR) -I$(ART_LIB_DIR) \
+	-I$(PNG_LIB_DIR) -I$(ZLIB_LIB_DIR) -I$(FREETYPE_LIB_DIR)/include
 
 RRD_C_FILES =		\
-	gdpng.c		\
 	getopt.c	\
 	getopt1.c	\
 	gifsize.c	\
@@ -41,6 +38,7 @@ RRD_C_FILES =		\
 	rrd_rpncalc.c \
 	rrd_tune.c	\
 	rrd_update.c	\
+	rrd_gfx.c rrd_gfx.h \
 	getopt.h ntconfig.h parsetime.h rrd_format.h rrd_tool.h rrd.h rrd_hw.h rrd_rpncalc.h
 
 # Build two libraries.  One is a public one that gets installed in
@@ -52,7 +50,8 @@ RRD_C_FILES =		\
 
 RRD_LIBS =				\
 	$(CGI_LIB_DIR)/librrd_cgi.la	\
-	$(GD_LIB_DIR)/librrd_gd.la	\
+	$(FREETYPE_LIB_DIR)/librrd_freetype.la	\
+	$(ART_LIB_DIR)/librrd_art.la	\
 	$(PNG_LIB_DIR)/librrd_png.la	\
 	$(ZLIB_LIB_DIR)/librrd_z.la
 
@@ -63,7 +62,7 @@ librrd_la_SOURCES         = $(RRD_C_FILES)
 librrd_private_la_SOURCES = $(RRD_C_FILES)
 
 librrd_la_LIBADD          = $(RRD_LIBS)
-librrd_la_LDFLAGS         = -version-info 0:0:0
+librrd_la_LDFLAGS         = -version-info 1:2:0
 
 include_HEADERS	= rrd.h
 
