@@ -256,6 +256,8 @@ void rrd_graph_options(int, char **, image_desc_t *);
 void rrd_graph_script(int, char **, image_desc_t *);
 int rrd_graph_check_vname(image_desc_t *, char *, char *);
 int rrd_graph_check_CF(image_desc_t *, char *, char *);
+int rrd_graph_color(image_desc_t *, char *, char *, int);
+int rrd_graph_legend(graph_desc_t *, char *);
 int bad_format(char *);
 int vdef_parse(struct graph_desc_t *,char *);
 int vdef_calc(image_desc_t *, int);

@@ -2676,391 +2676,304 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     im->end = end_tmp;
 }
 
+void
+rrd_graph_script(int argc, char *argv[], image_desc_t *im)
+{
+    int		i;
+    char	symname[100];
+    int		linepass = 0; /* stack must follow LINE*, AREA or STACK */    
+
+    for (i=optind+1;i<argc;i++) {
+	int		argstart=0;
+	int		strstart=0;
+	graph_desc_t	*gdp;
+	char		*line;
+	char		funcname[10],vname[MAX_VNAME_LEN+1],sep[1];
+	double		d;
+	int		j,k,l,m;
+
+	/* Each command is one element from *argv[], we call this "line".
+	**
+	** Each command defines the most current gdes inside struct im.
+	** In stead of typing "im->gdes[im->gdes_c-1]" we use "gdp".
+	*/
+	gdes_alloc(im);
+	gdp=&im->gdes[im->gdes_c-1];
+	line=argv[i];
+
+	/* function:newvname=string[:ds-name:CF]	for xDEF
+	** function:vname[#color[:string]]		for LINEx,AREA,STACK
+	** function:vname#color[:num[:string]]		for TICK
+	** function:vname-or-num#color[:string]		for xRULE
+	** function:vname:CF:string			for xPRINT
+	** function:string				for COMMENT
+	*/
+	argstart=0;
+	sscanf(line, "%10[A-Z0-9]:%n", funcname,&argstart);
+	if (argstart==0) {
+	    rrd_set_error("Cannot parse function in line: %s",line);
+	    im_free(im);
+	    return;
+	}
+	if ((gdp->gf=gf_conv(funcname))==-1) {
+	    rrd_set_error("'%s' is not a valid function name",funcname);
+	    im_free(im);
+	    return;
+	}
+
+	/* If the error string is set, we exit at the end of the switch */
+	switch (gdp->gf) {
+	    case GF_COMMENT:
+		if (rrd_graph_legend(gdp,&line[argstart])==0)
+		    rrd_set_error("Cannot parse comment in line: %s",line);
+		break;
+	    case GF_VRULE:
+	    case GF_HRULE:
+		j=k=l=m=0;
+		sscanf(&line[argstart], "%lf%n#%n", &d, &j, &k);
+		sscanf(&line[argstart], DEF_NAM_FMT "%n#%n", vname, &l, &m);
+		if (k+m==0) {
+		    rrd_set_error("Cannot parse name or num in line: %s",line);
+		    break;
+		}
+		if (j!=0) {
+		    gdp->xrule=d;
+		    gdp->yrule=d;
+		    argstart+=j;
+		} else if (!rrd_graph_check_vname(im,vname,line)) {
+		    gdp->xrule=0;
+		    gdp->yrule=DNAN;
+		    argstart+=l;
+		} else break; /* exit due to wrong vname */
+		if ((j=rrd_graph_color(im,&line[argstart],line,0))==0) break;
+		argstart+=j;
+		if (strlen(&line[argstart])!=0) {
+		    if (rrd_graph_legend(gdp,&line[++argstart])==0)
+			rrd_set_error("Cannot parse comment in line: %s",line);
+		}
+		break;
+	    case GF_STACK:
+		if (linepass==0) {
+		    rrd_set_error("STACK must follow another graphing element");
+		    break;
+		}
+	    case GF_LINE1:
+	    case GF_LINE2:
+	    case GF_LINE3:
+	    case GF_AREA:
+	    case GF_TICK:
+		j=k=0;
+		linepass=1;
+		sscanf(&line[argstart],DEF_NAM_FMT"%n%1[#:]%n",vname,&j,sep,&k);
+		if (j+1!=k)
+		    rrd_set_error("Cannot parse vname in line: %s",line);
+		else if (rrd_graph_check_vname(im,vname,line))
+		    rrd_set_error("Undefined vname '%s' in line: %s",line);
+		else
+		    k=rrd_graph_color(im,&line[argstart],line,1);
+		if (rrd_test_error()) break;
+		argstart=argstart+j+k;
+		if ((strlen(&line[argstart])!=0)&&(gdp->gf==GF_TICK)) {
+		    j=0;
+		    sscanf(&line[argstart], ":%lf%n", &gdp->yrule,&j);
+		    argstart+=j;
+		}
+		if (strlen(&line[argstart])!=0)
+		    if (rrd_graph_legend(gdp,&line[++argstart])==0)
+			rrd_set_error("Cannot parse legend in line: %s",line);
+		break;
+	    case GF_PRINT:
+		im->prt_c++;
+	    case GF_GPRINT:
+		j=0;
+		sscanf(&line[argstart], DEF_NAM_FMT ":%n",gdp->vname,&j);
+		if (j==0) {
+		    rrd_set_error("Cannot parse vname in line: '%s'",line);
+		    break;
+		}
+		argstart+=j;
+		if (rrd_graph_check_vname(im,gdp->vname,line)) return;
+		j=0;
+		sscanf(&line[argstart], CF_NAM_FMT ":%n",symname,&j);
+
+		k=(j!=0)?rrd_graph_check_CF(im,symname,line):1;
+#define VIDX im->gdes[gdp->vidx]
+		switch (k) {
+		    case -1: /* looks CF but is not really CF */
+			if (VIDX.gf == GF_VDEF) rrd_clear_error();
+			break;
+		    case  0: /* CF present and correct */
+			if (VIDX.gf == GF_VDEF)
+			    rrd_set_error("Don't use CF when printing VDEF");
+			argstart+=j;
+			break;
+		    case  1: /* CF not present */
+			if (VIDX.gf == GF_VDEF) rrd_clear_error();
+			else rrd_set_error("Printing DEF or CDEF needs CF");
+			break;
+		    default:
+			rrd_set_error("Oops, bug in GPRINT scanning");
+		}
+#undef VIDX
+		if (rrd_test_error()) break;
+
+		if (strlen(&line[argstart])!=0) {
+		    if (rrd_graph_legend(gdp,&line[argstart])==0)
+			rrd_set_error("Cannot parse legend in line: %s",line);
+		} else rrd_set_error("No legend in (G)PRINT line: %s",line);
+		strcpy(gdp->format, gdp->legend);
+		break;
+	    case GF_DEF:
+	    case GF_VDEF:
+	    case GF_CDEF:
+		j=0;
+		sscanf(&line[argstart], DEF_NAM_FMT "=%n",gdp->vname,&j);
+		if (j==0) {
+		    rrd_set_error("Could not parse line: %s",line);
+		    break;
+		}
+		if (find_var(im,gdp->vname)!=-1) {
+		    rrd_set_error("Variable '%s' in line '%s' already in use\n",
+							gdp->vname,line);
+		    break;
+		}
+		argstart+=j;
+		switch (gdp->gf) {
+		    case GF_DEF:
+			argstart+=scan_for_col(&line[argstart],MAXPATH,gdp->rrd);
+			j=k=0;
+			sscanf(&line[argstart],
+				":" DS_NAM_FMT ":" CF_NAM_FMT "%n%*s%n",
+				gdp->ds_nam, symname, &j, &k);
+			if ((j==0)||(k!=0)) {
+			    rrd_set_error("Cannot parse DS or CF in '%s'",line);
+			    break;
+			}
+			rrd_graph_check_CF(im,symname,line);
+			break;
+		    case GF_VDEF:
+			j=0;
+			sscanf(&line[argstart],DEF_NAM_FMT ",%n",vname,&j);
+			if (j==0) {
+			    rrd_set_error("Cannot parse vname in line '%s'",line);
+			    break;
+			}
+			argstart+=j;
+			if (rrd_graph_check_vname(im,vname,line)) return;
+			if (       im->gdes[gdp->vidx].gf != GF_DEF
+				&& im->gdes[gdp->vidx].gf != GF_CDEF) {
+			    rrd_set_error("variable '%s' not DEF nor "
+				"CDEF in VDEF '%s'", vname,gdp->vname);
+			    break;
+			}
+			vdef_parse(gdp,&line[argstart+strstart]);
+			break;
+		    case GF_CDEF:
+			if (strstr(&line[argstart],":")!=NULL) {
+			    rrd_set_error("Error in RPN, line: %s",line);
+			    break;
+			}
+			if ((gdp->rpnp = rpn_parse(
+						(void *)im,
+						&line[argstart],
+						&find_var_wrapper)
+				)==NULL)
+			    rrd_set_error("invalid rpn expression in: %s",line);
+			break;
+		    default: break;
+		}
+		break;
+	    default: rrd_set_error("Big oops");
+	}
+	if (rrd_test_error()) {
+	    im_free(im);
+	    return;
+	}
+    }
+
+    if (im->gdes_c==0){
+	rrd_set_error("can't make a graph without contents");
+	im_free(im); /* ??? is this set ??? */
+	return; 
+    }
+}
 int
 rrd_graph_check_vname(image_desc_t *im, char *varname, char *err)
 {
     if ((im->gdes[im->gdes_c-1].vidx=find_var(im,varname))==-1) {
-	im_free(im);
 	rrd_set_error("Unknown variable '%s' in %s",varname,err);
 	return -1;
     }
     return 0;
 }
 int
+rrd_graph_color(image_desc_t *im, char *var, char *err, int optional)
+{
+    char *color;
+    graph_desc_t *gdp=&im->gdes[im->gdes_c-1];
+
+    color=strstr(var,"#");
+    if (color==NULL) {
+	if (optional==0) {
+	    rrd_set_error("Found no color in %s",err);
+	    return 0;
+	}
+	return 0;
+    } else {
+	int n=0;
+	char *rest;
+	unsigned int R,G,B,A;
+
+	rest=strstr(color,":");
+	if (rest!=NULL)
+	    n=rest-color;
+	else
+	    n=strlen(color);
+
+	switch (n) {
+	    case 7:
+		sscanf(color,"#%2x%2x%2x%n",&R,&G,&B,&n);
+		A=255;
+		if (n!=7) rrd_set_error("Color problem in %s",err);
+		break;
+	    case 9:
+		sscanf(color,"#%2x%2x%2x%2x%n",&R,&G,&B,&A,&n);
+		if (n==9) break;
+	    default:
+		rrd_set_error("Color problem in %s",err);
+	}
+	if (rrd_test_error()) return 0;
+	gdp->col.red   = R;
+	gdp->col.green = G;
+	gdp->col.blue  = B;
+/*	gdp->col.alpha = A;	*/
+if (n==9) printf("WARNING: alpha channel not yet supported\n");
+	return n;
+    }
+}
+int
 rrd_graph_check_CF(image_desc_t *im, char *symname, char *err)
 {
     if ((im->gdes[im->gdes_c-1].cf=cf_conv(symname))==-1) {
-	im_free(im);
 	rrd_set_error("Unknown CF '%s' in %s",symname,err);
 	return -1;
     }
     return 0;
 }
-
-void
-rrd_graph_script(int argc, char *myarg[], image_desc_t *im)
+int
+rrd_graph_legend(graph_desc_t *gdp, char *line)
 {
-    int			i;
-    char		symname[100];
-    unsigned int	col_red,col_green,col_blue;
-    long		scancount;
-    int			linepass = 0; /* stack can only follow directly after LINE* AREA or STACK */    
+    int i;
 
-/* All code worked on "argv[i]", it made sense to formalize this
-** and use "arg" instead.
-**
-** The same can be said for "im->gdes[im->gdes_c-1]" which
-** has been changed into a simple "gdp".
-*/
+    i=scan_for_col(line,FMT_LEG_LEN,gdp->legend);
 
-    for(i=optind+1;i<argc;i++){
-	char		*arg=myarg[i];
-	int		argstart=0;
-	int		strstart=0;
-	char		varname[MAX_VNAME_LEN+1],*rpnex;
-	graph_desc_t	*gdp;
-
-	gdes_alloc(im);
-	gdp=&im->gdes[im->gdes_c-1];
-
-	if(sscanf(arg,"%10[A-Z0-9]:%n",symname,&argstart)==1){
-	    if((gdp->gf=gf_conv(symname))==-1){
-		im_free(im);
-		rrd_set_error("unknown function '%s'",symname);
-		return;
-	    }
-	} else {
-	    rrd_set_error("can't parse '%s'",arg);
-	    im_free(im);
-	    return;
-	}
-
-	switch(gdp->gf){
-	case GF_PRINT:
-	    im->prt_c++;
-	case GF_GPRINT:
-	    strstart=0;
-	    sscanf(&arg[argstart], DEF_NAM_FMT ":%n"
-		    ,varname
-		    ,&strstart
-	    );
-
-	    if (strstart==0) {
-		im_free(im);
-		rrd_set_error("can't parse vname in '%s'",&arg[argstart]);
-		return;
-	    };
-
-	    if (rrd_graph_check_vname(im,varname,arg)) return;
-	    else {
-		int n=0;
-
-		sscanf(&arg[argstart+strstart],CF_NAM_FMT ":%n"
-		    ,symname
-		    ,&n
-		);
-		if (im->gdes[gdp->vidx].gf==GF_VDEF) {
-		    /* No consolidation function should be present */
-		    if (n != 0) {
-			rrd_set_error("(G)PRINT of VDEF needs no CF");
-			im_free(im);
-			return;
-		    }
-		} else {
-		    /* A consolidation function should follow */
-		    if (n==0) {
-			im_free(im);
-			rrd_set_error("Missing or incorrect CF in (G)PRINTing '%s' (%s)",varname,&arg[argstart]);
-			return;
-		    };
-		    if (rrd_graph_check_CF(im,symname,arg)) return;
-		    strstart+=n;
-		};
-	    };
-
-	    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->format);
-	    break;
-	case GF_COMMENT:
-	    if(strlen(&arg[argstart])>FMT_LEG_LEN) arg[argstart+FMT_LEG_LEN-3]='\0' ;
-	    strcpy(gdp->legend, &arg[argstart]);
-	    break;
-	case GF_HRULE:
-	    /* scan for either "HRULE:vname#..." or "HRULE:num#..."
-	     *
-	     * If a vname is used, the value NaN is set; this is catched
-	     * when graphing.  Setting value NaN from the script is not
-	     * permitted
-	     */
-	    strstart=0;
-	    sscanf(&arg[argstart], "%lf#%n"
-		,&im->gdes[im->gdes_c-1].yrule
-		,&strstart
-	    );
-	    if (strstart==0) { /* no number, should be vname */
-		sscanf(&arg[argstart], DEF_NAM_FMT "#%n"
-		    ,varname
-		    ,&strstart
-		);
-		if (strstart) {
-		    gdp->yrule = DNAN;/* signal use of vname */
-		    if (rrd_graph_check_vname(im,varname,arg)) return;
-		    if(im->gdes[gdp->vidx].gf != GF_VDEF) {
-			im_free(im);
-			rrd_set_error("Only VDEF is allowed in HRULE",varname);
-			return;
-		    }
-		}
-	    };
-	    if (strstart==0) {
-		im_free(im);
-		rrd_set_error("can't parse '%s'",&arg[argstart]);
-		return;
-	    } else {
-		int n=0;
-		if(sscanf(
-			&arg[argstart+strstart],
-			"%2x%2x%2x:%n",
-			&col_red,
-			&col_green,
-			&col_blue,
-			&n)>=3) {
-		    gdp->col.red = col_red;
-		    gdp->col.green = col_green;
-		    gdp->col.blue = col_blue;
-		    if (n==0) {
-			gdp->legend[0] = '\0';
-		    } else {
-			scan_for_col(&arg[argstart+strstart+n],FMT_LEG_LEN,gdp->legend);
-		    }
-		} else {
-		    im_free(im);
-		    rrd_set_error("can't parse '%s'",&arg[argstart]);
-		    return;
-		}
-	    }
-	    
-	    break;
-	case GF_VRULE:
-	    /* scan for either "VRULE:vname#..." or "VRULE:num#..."
-	     *
-	     * If a vname is used, the value 0 is set; this is catched
-	     * when graphing.  Setting value 0 from the script is not
-	     * permitted
-	     */
-	    strstart=0;
-	    sscanf(&arg[argstart], "%lu#%n"
-		,(long unsigned int *)&gdp->xrule,&strstart);
-	    if (strstart==0) { /* no number, should be vname */
-		sscanf(&arg[argstart], DEF_NAM_FMT "#%n"
-		    ,varname
-		    ,&strstart
-		);
-		if (strstart!=0) { /* vname matched */
-		    gdp->xrule = 0;/* signal use of vname */
-		    if (rrd_graph_check_vname(im,varname,arg)) return;
-		    if(im->gdes[gdp->vidx].gf != GF_VDEF) {
-			im_free(im);
-			rrd_set_error("Only VDEF is allowed in VRULE",varname);
-			return;
-		    }
-		}
-	    } else {
-		if (gdp->xrule==0)
-		    strstart=0;
-	    }
-
-	    if (strstart==0) {
-		im_free(im);
-		rrd_set_error("can't parse '%s'",&arg[argstart]);
-		return;
-	    } else {
-		int n=0;
-		if(sscanf(
-			&arg[argstart+strstart],
-			"%2x%2x%2x:%n",
-			&col_red,
-			&col_green,
-			&col_blue,
-			&n)>=3) {
-		    gdp->col.red = col_red;
-		    gdp->col.green = col_green;
-		    gdp->col.blue = col_blue;
-		    if (n==0) {
-			gdp->legend[0] = '\0';
-		    } else {
-			scan_for_col(&arg[argstart+strstart+n],FMT_LEG_LEN,gdp->legend);
-		    }
-		} else {
-		    im_free(im);
-		    rrd_set_error("can't parse '%s'",&arg[argstart]);
-		    return;
-		}
-	    }
-	    break;
-	case GF_TICK:
-	    if((scancount=sscanf(
-		&arg[argstart],
-		"%29[^:#]#%2x%2x%2x:%lf:%n",
-		varname,
-		&col_red,
-		&col_green,
-		&col_blue,
-		&(gdp->yrule),
-		&strstart))>=1)
-		{
-		gdp->col.red = col_red;
-		gdp->col.green = col_green;
-		gdp->col.blue = col_blue;
-		if(strstart <= 0){
-		    gdp->legend[0] = '\0';
-		} else { 
-		    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->legend);
-		}
-		if (rrd_graph_check_vname(im,varname,arg)) return;
-		if (gdp->yrule <= 0.0 || gdp->yrule > 1.0)
-		{
-		    im_free(im);
-		    rrd_set_error("Tick mark scaling factor out of range");
-		    return;
-		}
-		if (scancount < 4)
-		   gdp->col.red = -1;		
-	    if (scancount < 5) 
-		   /* default tick marks: 10% of the y-axis */
-		   gdp->yrule = 0.1;
-
-		} else {
-		   im_free(im);
-		   rrd_set_error("can't parse '%s'",&arg[argstart]);
-		   return;
-		} /* endif sscanf */
-		break;
-	case GF_STACK:
-	    if(linepass == 0){
-		im_free(im);
-		rrd_set_error("STACK must follow AREA, LINE or STACK");
-		return; 
-	    }		
-	case GF_LINE1:
-	case GF_LINE2:
-	case GF_LINE3:
-	case GF_AREA:
-	    linepass = 1;
-	    if((scancount=sscanf(
-		&arg[argstart],
-		"%29[^:#]#%2x%2x%2x:%n",
-		varname,
-		&col_red,
-		&col_green,
-		    &col_blue,
-		&strstart))>=1){
-		gdp->col.red = col_red;
-		gdp->col.green = col_green;
-		gdp->col.blue = col_blue;
-		if(strstart <= 0){
-		    gdp->legend[0] = '\0';
-		} else { 
-		    scan_for_col(&arg[argstart+strstart],FMT_LEG_LEN,gdp->legend);
-		}
-		if (rrd_graph_check_vname(im,varname,arg)) return;
-		if (scancount < 4)
-		    gdp->col.red = -1;		
-	    } else {
-		im_free(im);
-		rrd_set_error("can't parse '%s'",&arg[argstart]);
-		return;
-	    }
-	    break;
-	case GF_CDEF:
-	    if((rpnex = malloc(strlen(&arg[argstart])*sizeof(char)))==NULL){
-		free(im);
-		rrd_set_error("malloc for CDEF");
-		return;
-	    }
-	    strstart=parse_vname1(&arg[argstart],im,"CDEF");
-	    argstart+=strstart;
-	    /* parse_vname1() did free(im) and rrd_set_error() */
-	    if (strstart==0) return;
-
-	    strstart=0;
-	    sscanf(&arg[argstart],"%[^: ]%n",rpnex,&strstart);
-	    if (strstart==0) {
-		rrd_set_error("can't parse RPN in CDEF:%s=%s",
-					gdp->vname,
-					&arg[argstart]);
-		free(im);
-		return;
-	    }
-	    if((gdp->rpnp = 
-		   rpn_parse((void*)im,rpnex,&find_var_wrapper))== NULL){
-		rrd_set_error("invalid rpn expression '%s'", rpnex);
-		im_free(im);		
-		return;
-	    }
-	    free(rpnex);
-	    break;
-	case GF_VDEF:
-	    strstart=parse_vname1(&arg[argstart],im,"VDEF");
-	    argstart+=strstart;
-	    /* parse_vname1() did free(im) and rrd_set_error() */
-	    if (strstart==0) return;
-
-	    strstart=0;
-	    sscanf(&arg[argstart],DEF_NAM_FMT ",%n",varname,&strstart);
-	    if (strstart==0) {
-		im_free(im);
-		rrd_set_error("Cannot parse '%s' in VDEF '%s'",
-				&arg[argstart],
-				gdp->vname);
-		return;
-	    }
-	    if (rrd_graph_check_vname(im,varname,arg)) return;
-	    if (   im->gdes[gdp->vidx].gf != GF_DEF
-		&& im->gdes[gdp->vidx].gf != GF_CDEF) {
-		rrd_set_error("variable '%s' not DEF nor CDEF in VDEF '%s'",
-			varname,gdp->vname);
-		im_free(im);
-		return;
-	    };
-
-	    /* parsed upto and including the first comma. Now
-	     * see what function is requested.  This function
-	     * sets the error string.
-	     */
-	    if (vdef_parse(gdp,&arg[argstart+strstart])<0) {
-		im_free(im);
-		return;
-	    };
-	    break;
-	case GF_DEF:
-	    strstart=parse_vname1(&arg[argstart],im,"DEF");
-	    argstart+=strstart;
-	    /* parse_vname1() did free(im) and rrd_set_error() */
-	    if (strstart==0) return;
-
-	    argstart+=scan_for_col(&arg[argstart],MAXPATH,gdp->rrd);
-	    if(sscanf(&arg[argstart], ":" DS_NAM_FMT ":" CF_NAM_FMT,
-			  gdp->ds_nam, symname) != 2){
-		im_free(im);
-		rrd_set_error("can't parse DEF '%s' -2",&arg[argstart]);
-		return;
-	    }
-	    
-	    if (rrd_graph_check_CF(im,symname,arg)) return;
-	    break;
-	}
-    }
-
-    if (im->gdes_c==0){
-	rrd_set_error("can't make a graph without contents");
-	im_free(im);
-	return; 
-    }
+    return (strlen(&line[i])==0);
 }
 
 
 int bad_format(char *fmt) {
 	char *ptr;
+	int n=0;
 
 	ptr = fmt;
 	while (*ptr != '\0') {
@@ -3072,6 +2985,7 @@ int bad_format(char *fmt) {
 			if (*ptr == '\0') return 1;
 			if (*ptr == 'l') {
 				ptr++;
+				n++;
 				if (*ptr == '\0') return 1;
 				if (*ptr == 'e' || *ptr == 'f') { 
 					ptr++; 
@@ -3083,7 +2997,7 @@ int bad_format(char *fmt) {
 			++ptr;
 		}
 	}
-	return 0;
+	return (n!=1);
 }
 int
 vdef_parse(gdes,str)
