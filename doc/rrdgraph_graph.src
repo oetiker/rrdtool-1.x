@@ -17,11 +17,11 @@ I<(soon) available commands>
 [B<VRULE:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
 [B<LINE>{I<width>}B<:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
 [B<AREA:>I<vname>[B<#>I<rrggbbaa>[B<:>I<legend>]]][B<:STACK>]
+[B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
 
 I<to be implemented commands>
 
 [B<SHIFT:>I<vname>]
-[B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]]
 
 =head1 DESCRIPTION
 
@@ -190,6 +190,19 @@ graph this stacked variable anyway you need to make sure that the
 B<LINEx> or B<AREA> it gets stacked on is not unknown. Use a CDEF
 instruction with B<IF> and B<UN> to do so.
 
+B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]
+
+B<RRDtool> has now support for B<pie charts>. If you include the
+B<PART> command, the canvas is extended to make room for a chart
+The size of the canvas is determined by the lesser of
+L<width and height|rrdgraph/item_Size>.
+
+Pie parts will be concatenated, the first one will start at the
+top and parts will be created clockwise.  The size of the part
+is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
+function.  It should return a number between 0 and 100, being a
+percentage.  Providing wrong input will produce undefined results.
+
 B<THE NEXT STUFF IS NOT YET IMPLEMENTED>
 
 B<SHIFT:>I<offset in seconds>
@@ -202,20 +215,5 @@ The offset will be valid until the next B<SHIFT> command, which
 can have an offset of zero to restore normal graphing.
 As with the other grapher elements, you can specify a number or
 a variable here.
-
-B<RRDtool> has now support for B<pie charts>. If you include the
-B<PART> command, the canvas is extended to make room for a chart
-(or, if no other graph elements are used, the canvas is solely
-used for the pie chart). The size of the canvas is determined by
-the lesser of L<width and height|rrdgraph/item_Size>.
-
-B<PART:>I<vname>B<#>I<rrggbbaa>[B<:>I<legend>]
-
-Draw a part of pie. Pie parts will be concatenated, the first one
-will start at the top and parts will be created clockwise.
-The size of the part is defined by the value part of
-the L<VDEF|rrdgraph_data/VDEF> function.  It should return
-a number between 0 and 100, being a percentage.
-Providing wrong input will produce undefined results.
 
 =include see_also
