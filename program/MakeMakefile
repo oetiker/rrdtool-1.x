@@ -2,28 +2,38 @@
 #
 # Run this script after the first cvs checkout to build
 # makefiles and friends
-set -x
-#
-find . -name Makefile | xargs rm -f
-find . -name Makefile.in | xargs rm -f
 
-if [ 1.4.2 -gt `libtool --version | awk '{print $4}'` ]
+vcheck (){
+  perl <<PERL
+@t = split /\./, "$1";
+@v = split /\./, (split /\s+/, \`$2\`)[3];
+print "$2 = ", (join ".",@v), "  (expected $1)\n";
+exit \$t[0]*1000000+\$t[1]*1000+\$t[2] > \$v[0]*1000000+\$v[1]*1000+\$v[2];
+PERL
+}
+
+
+if vcheck 1.4.2 "libtool --version"
 then
   echo get a copy of GNU libtool >= 1.4.2
   exit 1
 fi
 
-if [ 1.5 -gt `automake --version | head -1 | awk '{print $4}'` ]
+if vcheck 1.5  "automake --version"
 then
   echo get a copy of GNU automake >= 1.5
   exit 1
 fi
 
-if [ 2.52 -gt `autoconf --version | head -1 | awk '{print $4}'` ]
+if vcheck 2.52 "autoconf --version"
 then
   echo get a copy of GNU autoconf >= 2.52
   exit 1
 fi
+
+set -x
+find . -name Makefile | xargs rm -f
+find . -name Makefile.in | xargs rm -f
 
 
 
