@@ -5,6 +5,7 @@ extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include <time.h>
 
 #ifdef __cplusplus
 }
@@ -138,6 +139,7 @@ rrd_graph(...)
  	        }
 		optind=0; opterr=0; 
 		rrd_clear_error();
+                tzset();
 		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize); 
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
