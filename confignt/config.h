@@ -14,3 +14,6 @@
 #define rrd_realloc(a,b) realloc((a), (b))
 
 #define snprintf _snprintf
+
+/* change this to %windir%/fonts */
+#define RRD_DEFAULT_FONT "c:/winnt/fonts/cour.ttf"

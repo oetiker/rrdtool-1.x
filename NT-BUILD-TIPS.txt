@@ -18,7 +18,8 @@ configure script-- but of course not on Win32 platforms). ..\..\confignt
 (which contains a static Win32 version of config.h) should be on
 the include path.
 (4) Fonts are located in the %windir%\fonts, so the default font
-is c:\winnt\fonts\cour.ttf.
+is c:\winnt\fonts\cour.ttf. (6/19/02) At Kerry Calvert's suggestion
+this setting was moved to confignt\config.h.
 (5) libart requires a custom build step to generate art_config.h; this
 is done manually via the commands:
 cl -I..\..\confignt gen_art_config.c

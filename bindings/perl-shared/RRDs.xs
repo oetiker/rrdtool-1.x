@@ -17,6 +17,7 @@ extern "C" {
 #define PL_sv_undef sv_undef
 #endif
 
+
 #define rrdcode(name) \
 		argv = (char **) malloc((items+1)*sizeof(char *));\
 		argv[0] = "dummy";\
@@ -149,16 +150,16 @@ rrd_graph(...)
 		if (rrd_test_error()) {
 			if(calcpr)
 			   for(i=0;calcpr[i];i++)
-				free(calcpr[i]);
+				rrd_freemem(calcpr[i]);
 			XSRETURN_UNDEF;
 		}
 		retar=newAV();
 		if(calcpr){
 			for(i=0;calcpr[i];i++){
 				 av_push(retar,newSVpv(calcpr[i],0));
-				 free(calcpr[i]);
+				 rrd_freemem(calcpr[i]);
 			}
-			free(calcpr);
+			rrd_freemem(calcpr);
 		}
 		EXTEND(sp,4);
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
@@ -198,9 +199,9 @@ rrd_fetch(...)
 		names=newAV();
 		for (ii = 0; ii < ds_cnt; ii++){
 		    av_push(names,newSVpv(ds_namv[ii],0));
-		    free(ds_namv[ii]);
+		    rrd_freemem(ds_namv[ii]);
 		}
-		free(ds_namv);			
+		rrd_freemem(ds_namv);			
 		/* convert the data array into perl format */
 		datai=data;
 		retar=newAV();
@@ -212,7 +213,7 @@ rrd_fetch(...)
 			}
 			av_push(retar,newRV_noinc((SV*)line));
 		}
-		free(data);
+		rrd_freemem(data);
 		EXTEND(sp,5);
 		PUSHs(sv_2mortal(newSViv(start+step)));
 		PUSHs(sv_2mortal(newSViv(step)));
@@ -254,9 +255,9 @@ rrd_xport(...)
 		names=newAV();
 		for (ii = 0; ii < col_cnt; ii++){
 		    av_push(names,newSVpv(legend_v[ii],0));
-		    free(legend_v[ii]);
+		    rrd_freemem(legend_v[ii]);
 		}
-		free(legend_v);			
+		rrd_freemem(legend_v);			
 
 		/* convert the data array into perl format */
 		ptr=data;
@@ -269,7 +270,7 @@ rrd_xport(...)
 			}
 			av_push(retar,newRV_noinc((SV*)line));
 		}
-		free(data);
+		rrd_freemem(data);
 
 		EXTEND(sp,7);
 		PUSHs(sv_2mortal(newSViv(start+step)));
@@ -325,15 +326,15 @@ rrd_info(...)
 			break;
 		    case RD_I_STR:
 			hvs(newSVpv(data->value.u_str,0));
-			free(data->value.u_str);
+			rrd_freemem(data->value.u_str);
 			break;
 		    }
 #undefine hvs
-		    free(data->key);
+		    rrd_freemem(data->key);
 		    data = data->next;		    
-		    free(save);
+		    rrd_freemem(save);
 		}
-                free(data);
+                rrd_freemem(data);
                 RETVAL = newRV_noinc((SV*)hash);
        OUTPUT:
 		RETVAL
