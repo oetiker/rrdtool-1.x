@@ -1,0 +1,108 @@
+I would like to thank to following people for helping to
+bring RRDTool into existence.
+
+Planning and Inspiration
+
+	Daniel Wesemann
+	Krister Karlson
+	Simon Leinen
+
+Debugging and code contributions
+
+	Andreas Kroomaa <andre@ml.ee>
+	Andrew Turner <turner@mint.net> (LAST consolidator)
+	Bernard Fischer <bfischer@syslog.ch> 64bit stuff and --alt-autoscale-max
+	Bill Fenner <fenner@research.att.com>
+	Blair Zajac <bzajac@geostaff.com>
+	Dan Dunn <dandunn@computer.org>
+	Hermann Hueni <hueni@glue.ch> (SunOS porting)
+	Jeff R. Allen <jeff.allen@acm.org> (autoconfigure, portability)  
+	Joel Becker <jlbec@raleigh.ibm.com> AIX
+	Joey Miller <joeym@inficad.com>	php3 and php4 bindings
+	Jost.Krieger <Jost.Krieger@ruhr-uni-bochum.de>
+	Larry Leszczynski <larryl@furph.com>
+	Otmar Lendl <O.Lendl@Austria.EU.net> (lots of bugfixes)
+	Paul Joslin <Paul.Joslin@sdrc.com>
+	Philippe.Simonet <Philippe.Simonet@swisscom.com> (NT porting)
+	Poul-Henning Kamp <phk@freebsd.org> CDEF enhancements
+	REIBENSCHUH Alfred <alfred.reibenschuh@it-austria.com> AIX
+        Roman Hoogant <rhoogant@ee.ethz.ch>
+	Russ Wright <rwwright@home.com>
+	Simon Leinen <simon@switch.ch>
+	Stefan Mueller <s.mueller@computer.org> HPUX 11
+	Steve Rader <rader@teak.wiscnet.net> (rrd_cgi debugging and LAST)
+        Terminator rAT <karl_schilke@eli.net>
+        Christophe VG <Christophe.VanGinneken@ubizen.com>
+        Shane O'Donnell <shaneo@opennms.org>
+        Tuc <ttsg@ttsg.com>
+        Mike Mitchell <mcm@unx.sas.com>
+	Ulrich Schilling <schilling@netz.uni-essen.de> AIX
+	Wrolf Courtney <wrolf@wrolf.net> (HP-UX)
+        Alan Lichty <alan_lichty@eli.net>
+        Alex van den Bogaerdt <alex@ergens.op.het.net> (rrd_resize.c and more)
+        Frank Strauss <strauss@escape.de> TCL bindings
+        Jakob Ilves <jilves@se.oracle.com> HPUX 11
+        Jeremy Fischer <jeremy@pobox.com> (Makefile changes & RPM builds)
+        Oleg Cherevko <olwi@icyb.kiev.ua>
+        Rainer Bawidamann <Rainer.Bawidamann@informatik.uni-ulm.de>
+        Selena M Brewington <smbrewin@ichips.intel.com> add_ds
+        Steen Linden <Steen.Linden@ebone.net>
+        Steve Harris <steveh@wesley.com.au> AIX portability
+        Tom Crawley <Tom.Crawley@hi.riotinto.com.au> (GCC&HP configuration)
+	Albert Chin-A-Young <china@thewrittenword.com>
+	Sean McCreary mccreary@xoanon.colorado.edu
+	Bruce Campbell <bruce.campbell@apnic.net>
+	Sean Summers <sean@Fenstermaker.com> (RPM .spec)
+	Christophe Van Ginneken <Christophe.VanGinneken@ubizen.com> (--no-legend)
+
+
+Documentation
+
+	Alan Lichty <alan_lichty@eli.net>
+	Alex van den Bogaerdt <alex@ergens.op.het.net>
+        Amos Shapira <amos@gezernet.co.il>
+        Kai Siering <kai.siering@mediaways.net>
+        Russ Wright <rwwright@home.com>
+	Steve Rader <rader@teak.wiscnet.net>  
+        Wrolf Courtney <wrolf@wrolf.net>      
+	Tobias Weingartner <weingart@cs.ualberta.ca>
+	hendrik visage <hvisage@is.co.za>
+	Steve Rader <rader@teak.wiscnet.net>
+        Jesús Couto Fandiño
+
+Packaging
+        Henri GOMEZ -- Redhat RPMs
+        Philippe Simonet -- NT Binaries
+
+
+Internet Resources
+        LAN Services AG (www.lan.ch) 
+           for the http://rrdtool.eu.org domain reflector
+
+        Alexander Lucke (lucke@dns-net.de) 
+           and DNS:NET Internet Services (www.dns-net.de)
+              for http://rrdtool.org
+
+Further I would like to note, that rrdtool would not exist without
+the following free software products:
+
+	Perl by Larry Wall
+	gd library by Thomas Boutell
+	gifcode from David Koblas
+	libpng by Glenn Randers-Pehrson / Andreas Eric Dilger / Guy Eric Schalnat
+	cgilib by Martin Schulze
+	zlib by Jean-loup Gailly and Mark Adler
+	SNMP Perl-Module by Simon Leinen
+
+	and last but not least
+	
+	Linux by Linus Torvalds	
+
+I would also like to thank the Department of Electrical Engineering
+at the Swiss Federal Institute of Technology who allow me to
+use their network resources to publish rrdtool ...
+
+During Summer 1999 CAIDA (www.caida.org) has supported me in working full
+time on RRDtool ... A big thank you to them as well.
+
+Tobias Oetiker <oetiker@ee.ethz.ch>

@@ -1,0 +1,72 @@
+=head1 NAME
+
+rrdtool tune - Modify some basic properties of a Round Robin Database
+
+=for html <div align="right"><a href="rrdtune.pdf">PDF</a> version.</div>
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<tune> I<filename> 
+S<[B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>]> 
+S<[B<--minimum>|B<-i> I<ds-name>:I<min>]>
+S<[B<--maximum>|B<-a> I<ds-name>:I<max>]>
+S<[B<--data-source-type>|B<-d> I<ds-name>:I<DST>]>
+S<[B<--data-source-rename>|B<-r> I<old-name>:I<new-name>]>
+
+=head1 DESCRIPTION
+
+The tune option allows you to alter some of the basic configuration
+values stored in the header area of a Round Robin Database (B<RRD>).
+All these tunable parameters together decide when data fed into an 
+B<RRD> is to be regarded as invalid. Invalid data is entered into the 
+database as *UNKNOWN*.
+
+The main application of the B<tune> function is to relax the 
+validation rules on an B<RRD>. This allows to fill a new B<RRD> with
+data available in larger intervals than what you would normally want
+to permit.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> you want to tune.
+
+=item S<B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>>
+
+modify the I<heartbeat> of a data source. By setting this to a high
+value the rrd will accept things like one value per day ...
+
+=item S<B<--minimum>|B<-i> I<ds-name>:I<min>>
+
+alter the minimum value acceptable as input from the data source.
+Setting I<min> to 'U' will disable this limit.
+
+=item S<B<--maximum>|B<-a> I<ds-name>:I<max>>
+
+alter the maximum value acceptable as input from the data source.
+Setting I<max> to 'U' will disable this limit.
+
+=item S<B<--data-source-type>|B<-d> I<ds-name>:I<DST>>
+
+alter the type B<DST> of a data source.
+
+=item S<[B<--data-source-rename>|B<-r> I<old-name>:I<new-name>]>
+
+rename a data source
+
+=back
+
+=head1 EXAMPLE
+
+C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
+
+Set the minimum required heartbeat for data sources 'in', 'out' 
+and 'through' to 10000 seconds which is a little over one day in data.rrd.
+This would allow to feed old data from mrtg-2.0 right into
+rrdtool without generating *UNKNOWN* entries.
+
+=head1 AUTHOR
+
+Tobias Oetiker <oetiker@ee.ethz.ch>
+

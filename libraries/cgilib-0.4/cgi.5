@@ -1,0 +1,115 @@
+.\" cgi - Common Gateway Interface
+.\" Copyright (c) 1998  Martin Schulze <joey@infodrom.north.de>
+.\" 
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc.,59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+.\"
+.TH cgi 5 "15 February 1998" "Debian GNU/Linux" "Programmer's Manual"
+.SH NAME
+cgi \- Common Gateway Interface
+
+.SH DESCRIPTION
+The Common Gateway Interface is a way to create dynamic web pages.
+It defines rules for interaction between a program and the web server
+while the server talks to the client.  There are some ways to use it.
+
+.SH "ENVIRONMENT"
+Normally the webserver sets several environment variables to give some
+information to the CGI program so it can determine various stuff.
+.TP
+.B AUTH_TYPE
+This reflects the authentification method used to validate a user.
+.TP
+.B CONTENT_LENGTH
+The length of the data in bytes passed to the CGI program through
+standard input.  This is used by the POST method.
+.TP
+.B CONTENT_TYPE
+The MIME type of the query data, such as "text/html", optional.
+.TP
+.B DOCUMENT_ROOT
+This reflects the document root directory of the webserver.
+.TP
+.B GATEWAY_INTERFACE
+Reflects the version of the Common Gateway Interface that the server
+is using
+.TP
+.B HTTP_ACCEPT
+A comma separated list of MIME type that the client is willing to
+accept.
+.TP
+.B HTTP_FROM
+The email address of the user issuing the information request.  This
+is not supported by most browsers.
+.TP
+.B HTTP_REFERER
+Reflects the URL from which tis cgi program was accessed.
+.TP
+.B HTTP_USER_AGENT
+The name, version and libraries of the browser making the request.
+This information can be used to determine if the browser is capable of
+graphics and is able to display frames and tables.
+.TP
+.B PATH_INFO
+This shows extra information that was passed to the cgi program via
+command line.  Normally it's empty or non-existant.
+.TP
+.B PATH_TRANSLATED
+The translated path on the local filesystem.
+.TP
+.B QUERY_STRING
+This variable refers to additional arguments that were appended to the
+cgi programm - normally with the '?' sign.
+.TP
+.B REMOTE_ADDR
+This refers to the host from which the information request was issued,
+as ip number.
+.TP
+.B REMOTE_HOST
+This refers to the host from which the information request was issued.
+.TP
+.B REMOTE_USER
+The authenticated name of the user.
+.TP
+.B REQUEST_METHOD
+This refers to the method with which the information request was
+issued.  Normally this is either GET or POST.
+.TP
+.B SCRIPT_NAME
+The virtual name of the script being executed.
+.TP
+.B SERVER_NAME
+The server's hostname or ip number.  This may be used to determine the
+correct paths or resulting HTML code for cgi programs that are used on
+the same machine for several servers.
+.TP
+.B SERVER_PROTOCOL
+This is the nae and version of the information protocol the request
+came in with.  Normally this is "HTTP/1.0" or "HTTP/1.1".
+.TP
+.B SERVER_PORT
+This refers to the TCP/IP port on which the webserver is running.
+.TP
+.B SERVER_SOFTWARE
+This reflects the name and revision of the webserver software.
+
+.SH "AUTHOR"
+This cgi library is written by Martin Schulze
+<joey@infodrom.north.de>.  If you have additions or improvements
+please get in touch with him.
+
+.SH "SEE ALSO"
+.BR cgiDebug (3),
+.BR cgiHeader (3),
+.BR cgiGetValue (3).

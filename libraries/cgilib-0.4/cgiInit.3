@@ -1,0 +1,49 @@
+.\" cgiInit - Initializes cgi library
+.\" Copyright (c) 1998  Martin Schulze <joey@infodrom.north.de>
+.\" 
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version.
+.\" 
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\" 
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software
+.\" Foundation, Inc.,59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+.\"
+.TH cgiInit 3 "14 February 1998" "Debian GNU/Linux" "Programmer's Manual"
+.SH NAME
+cgiInit \- Initializes cgi library
+.SH SYNOPSYS
+.nf
+.B #include <cgi.h>
+.sp
+.B s_cgi **cgiInit();
+.fi
+.SH DESCRIPTION
+This routine initializes the cgi routines.  Mainly it reads in and
+decodes cgi data for later processing.  If the program is not called
+via cgi interface the user is prompted to type in cgi variable
+bindings via stdin - just like GGI.pm does.
+
+This routine normally is the first or second.  Only
+.BR cgiDebug ()
+may be called before.  If debugging is enabled this routine produces
+some additional output.
+.SH "RETURN VALUE"
+On success a set of cgi variable bindings is returned that is needed
+for later processing.  If an error occurs NULL is returned.
+
+.SH "AUTHOR"
+This cgi library is written by Martin Schulze
+<joey@infodrom.north.de>.  If you have additions or improvements
+please get in touch with him.
+
+.SH "SEE ALSO"
+.BR cgiDebug (3),
+.BR cgiHeader (3),
+.BR cgiGetValue (3).
