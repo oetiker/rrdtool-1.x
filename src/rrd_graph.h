@@ -12,6 +12,7 @@
 #define ALTAUTOSCALE	0x02	/* use alternative algorithm to find lower and upper bounds */
 #define ALTAUTOSCALE_MAX 0x04	/* use alternative algorithm to find upper bounds */
 #define NOLEGEND	0x08	/* use no legend */
+#define NOMINOR         0x20    /* Turn off minor gridlines */
 
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
