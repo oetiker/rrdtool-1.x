@@ -374,6 +374,13 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		return -1;
 	    }
 	}
+
+#define stackunderflow(MINSIZE)				\
+	if(stptr<MINSIZE){				\
+	    rrd_set_error("RPN stack underflow");	\
+	    return -1;					\
+	}
+
 	switch (rpnp[rpi].op){
 	    case OP_NUMBER:
 		rpnstack -> s[++stptr] = rpnp[rpi].val;
@@ -403,283 +410,218 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		    rpnstack -> s[++stptr] = output[output_idx-1];
 		}
 		break;
-       case OP_UNKN:
-           rpnstack -> s[++stptr] = DNAN; 
-           break;
-       case OP_INF:
-           rpnstack -> s[++stptr] = DINF; 
-           break;
-       case OP_NEGINF:
-           rpnstack -> s[++stptr] = -DINF; 
-           break;
-       case OP_NOW:
-           rpnstack -> s[++stptr] = (double)time(NULL);
-           break;
-       case OP_TIME:
-           /* HACK: this relies on the data_idx being the time,
-            * which the within-function scope is unaware of */
-           rpnstack -> s[++stptr] = (double) data_idx;
-           break;
-       case OP_LTIME:
-           rpnstack -> s[++stptr] = (double) tzoffset(data_idx) + (double)data_idx;
-           break;
-       case OP_ADD:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] 
-               + rpnstack -> s[stptr];
-           stptr--;
-           break;
-       case OP_SUB:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] - rpnstack -> s[stptr];
-           stptr--;
-           break;
-       case OP_MUL:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr-1] = (rpnstack -> s[stptr-1]) * (rpnstack -> s[stptr]);
-           stptr--;
-           break;
-       case OP_DIV:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] / rpnstack -> s[stptr];
-           stptr--;
-           break;
-       case OP_MOD:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr-1] = fmod(rpnstack -> s[stptr-1],rpnstack -> s[stptr]);
-           stptr--;
-           break;
-       case OP_SIN:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = sin(rpnstack -> s[stptr]);
-           break;
-       case OP_COS:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = cos(rpnstack -> s[stptr]);
-           break;
-       case OP_CEIL:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = ceil(rpnstack -> s[stptr]);
-           break;
-       case OP_FLOOR:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = floor(rpnstack -> s[stptr]);
-           break;
-       case OP_LOG:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = log(rpnstack -> s[stptr]);
-           break;
-       case OP_DUP:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr+1] = rpnstack -> s[stptr];
-           stptr++;
-           break;
-       case OP_POP:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           stptr--;
-           break;
-       case OP_EXC:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           } else {
-               double dummy;
-               dummy = rpnstack -> s[stptr] ;
-               rpnstack -> s[stptr] = rpnstack -> s[stptr-1];
-               rpnstack -> s[stptr-1] = dummy;
-           }
-           break;
-       case OP_EXP:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack -> s[stptr] = exp(rpnstack -> s[stptr]);
-           break;
-       case OP_LT:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack -> s[stptr-1])) 
+	    case OP_UNKN:
+		rpnstack -> s[++stptr] = DNAN; 
+		break;
+	    case OP_INF:
+		rpnstack -> s[++stptr] = DINF; 
+		break;
+	    case OP_NEGINF:
+		rpnstack -> s[++stptr] = -DINF; 
+		break;
+	    case OP_NOW:
+		rpnstack -> s[++stptr] = (double)time(NULL);
+		break;
+	    case OP_TIME:
+		/* HACK: this relies on the data_idx being the time,
+		** which the within-function scope is unaware of */
+		rpnstack -> s[++stptr] = (double) data_idx;
+		break;
+	    case OP_LTIME:
+		rpnstack -> s[++stptr] =
+			(double) tzoffset(data_idx) + (double)data_idx;
+		break;
+	    case OP_ADD:
+		stackunderflow(1);
+		rpnstack -> s[stptr-1]	= rpnstack -> s[stptr-1] 
+					+ rpnstack -> s[stptr];
+		stptr--;
+		break;
+	    case OP_SUB:
+		stackunderflow(1);
+		rpnstack -> s[stptr-1]	= rpnstack -> s[stptr-1]
+					- rpnstack -> s[stptr];
+		stptr--;
+		break;
+	    case OP_MUL:
+		stackunderflow(1);
+		rpnstack -> s[stptr-1]	= (rpnstack -> s[stptr-1])
+					* (rpnstack -> s[stptr]);
+		stptr--;
+		break;
+	    case OP_DIV:
+		stackunderflow(1);
+		rpnstack -> s[stptr-1]	= rpnstack -> s[stptr-1]
+					/ rpnstack -> s[stptr];
+		stptr--;
+		break;
+	    case OP_MOD:
+		stackunderflow(1);
+		rpnstack -> s[stptr-1]= fmod(	rpnstack -> s[stptr-1]
+						,rpnstack -> s[stptr]);
+		stptr--;
+		break;
+	    case OP_SIN:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = sin(rpnstack -> s[stptr]);
+		break;
+	    case OP_COS:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = cos(rpnstack -> s[stptr]);
+		break;
+	    case OP_CEIL:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = ceil(rpnstack -> s[stptr]);
+		break;
+	    case OP_FLOOR:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = floor(rpnstack -> s[stptr]);
+		break;
+	    case OP_LOG:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = log(rpnstack -> s[stptr]);
+		break;
+	    case OP_DUP:
+		stackunderflow(0);
+		rpnstack -> s[stptr+1] = rpnstack -> s[stptr];
+		stptr++;
+		break;
+	    case OP_POP:
+		stackunderflow(0);
+		stptr--;
+		break;
+	    case OP_EXC:
+		stackunderflow(1);
+		{
+		    double dummy;
+		    dummy = rpnstack -> s[stptr] ;
+		    rpnstack -> s[stptr] = rpnstack -> s[stptr-1];
+		    rpnstack -> s[stptr-1] = dummy;
+		}
+		break;
+	    case OP_EXP:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = exp(rpnstack -> s[stptr]);
+		break;
+	    case OP_LT:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] <
+					rpnstack -> s[stptr] ? 1.0 : 0.0;
+		stptr--;
+		break;
+	    case OP_LE:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] <=
+					rpnstack -> s[stptr] ? 1.0 : 0.0;
+		stptr--;
+		break;
+	    case OP_GT:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] >
+					rpnstack -> s[stptr] ? 1.0 : 0.0;
+		stptr--;
+		break;
+	    case OP_GE:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+       		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] >=
+					rpnstack -> s[stptr] ? 1.0 : 0.0;
+		stptr--;
+		break;
+	    case OP_NE:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1]))
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] ==
+					rpnstack -> s[stptr] ? 0.0 : 1.0;
+		stptr--;
+		break;
+	    case OP_EQ:
+		stackunderflow(1);
+		if (isnan(rpnstack -> s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack -> s[stptr]))
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
+		else
+		    rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] ==
+					rpnstack -> s[stptr] ? 1.0 : 0.0;
+		stptr--;
+		break;
+	    case OP_IF:
+		stackunderflow(2);
+		rpnstack->s[stptr-2] = rpnstack->s[stptr-2] != 0.0 ?
+				rpnstack->s[stptr-1] : rpnstack->s[stptr];
+		stptr--;
+		stptr--;
+		break;
+	    case OP_MIN:
+		stackunderflow(1);
+		if (isnan(rpnstack->s[stptr-1])) 
+		    ;
+		else if (isnan(rpnstack->s[stptr]))
+		    rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		else if (rpnstack->s[stptr-1] > rpnstack->s[stptr])
+		    rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		stptr--;
+		break;
+	    case OP_MAX:
+		stackunderflow(1);
+		if (isnan(rpnstack->s[stptr-1])) 
                ;
-           else if (isnan(rpnstack -> s[stptr]))
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-           else
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] < rpnstack -> s[stptr] ? 1.0 : 0.0;
-           stptr--;
-           break;
-       case OP_LE:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack -> s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack -> s[stptr]))
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-           else
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] <= rpnstack -> s[stptr] ? 1.0 : 0.0;
-           stptr--;
-           break;
-       case OP_GT:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack -> s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack -> s[stptr]))
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-           else
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] > rpnstack -> s[stptr] ? 1.0 : 0.0;
-           stptr--;
-           break;
-       case OP_GE:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack -> s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack -> s[stptr]))
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-           else
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] >= rpnstack -> s[stptr] ? 1.0 : 0.0;
-           stptr--;
-           break;
-	case OP_NE:
-	    if(stptr<1){
-		rrd_set_error("RPN stack underflow");
-		return -1;
-	    }
-	    if (isnan(rpnstack -> s[stptr-1]))
-		;
-	    else if (isnan(rpnstack -> s[stptr]))
-		rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-	    else
-		rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] == rpnstack -> s[stptr] ? 0.0 : 1.0;
-	    stptr--;
-	    break;
-       case OP_EQ:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack -> s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack -> s[stptr]))
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr];
-           else
-               rpnstack -> s[stptr-1] = rpnstack -> s[stptr-1] == rpnstack -> s[stptr] ? 1.0 : 0.0;
-           stptr--;
-           break;
-       case OP_IF:
-           if(stptr<2){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack->s[stptr-2] = rpnstack->s[stptr-2] != 0.0 ? rpnstack->s[stptr-1] : rpnstack->s[stptr];
-           stptr--;
-           stptr--;
-           break;
-       case OP_MIN:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack->s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack->s[stptr]))
-               rpnstack->s[stptr-1] = rpnstack->s[stptr];
-           else if (rpnstack->s[stptr-1] > rpnstack->s[stptr])
-               rpnstack->s[stptr-1] = rpnstack->s[stptr];
-           stptr--;
-           break;
-       case OP_MAX:
-           if(stptr<1){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           if (isnan(rpnstack->s[stptr-1])) 
-               ;
-           else if (isnan(rpnstack->s[stptr]))
-               rpnstack->s[stptr-1] = rpnstack->s[stptr];
-           else if (rpnstack->s[stptr-1] < rpnstack->s[stptr])
-               rpnstack->s[stptr-1] = rpnstack->s[stptr];
-           stptr--;
-           break;
-       case OP_LIMIT:
-           if(stptr<2){
-               rrd_set_error("RPN stack underflow");
-               free(rpnstack->s);
-               return -1;
-           }
-           if (isnan(rpnstack->s[stptr-2])) 
-               ;
-           else if (isnan(rpnstack->s[stptr-1]))
-               rpnstack->s[stptr-2] = rpnstack->s[stptr-1];
-           else if (isnan(rpnstack->s[stptr]))
-               rpnstack->s[stptr-2] = rpnstack->s[stptr];
-           else if (rpnstack->s[stptr-2] < rpnstack->s[stptr-1])
-               rpnstack->s[stptr-2] = DNAN;
-           else if (rpnstack->s[stptr-2] > rpnstack->s[stptr])
-               rpnstack->s[stptr-2] = DNAN;
-           stptr-=2;
-           break;
-       case OP_UN:
-           if(stptr<0){
-               rrd_set_error("RPN stack underflow");
-               return -1;
-           }
-           rpnstack->s[stptr] = isnan(rpnstack->s[stptr]) ? 1.0 : 0.0;
-           break;
-	case OP_ISINF:
-	    if(stptr<0){
-		rrd_set_error("RPN stack underflow");
-		return -1;
-	    }
-	    rpnstack->s[stptr] = isinf(rpnstack->s[stptr]) ? 1.0 : 0.0;
-	    break;
-       case OP_END:
-	    break;
+		else if (isnan(rpnstack->s[stptr]))
+		    rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		else if (rpnstack->s[stptr-1] < rpnstack->s[stptr])
+		    rpnstack->s[stptr-1] = rpnstack->s[stptr];
+		stptr--;
+		break;
+	    case OP_LIMIT:
+		stackunderflow(2);
+		if (isnan(rpnstack->s[stptr-2])) 
+		    ;
+		else if (isnan(rpnstack->s[stptr-1]))
+		    rpnstack->s[stptr-2] = rpnstack->s[stptr-1];
+		else if (isnan(rpnstack->s[stptr]))
+		    rpnstack->s[stptr-2] = rpnstack->s[stptr];
+		else if (rpnstack->s[stptr-2] < rpnstack->s[stptr-1])
+		    rpnstack->s[stptr-2] = DNAN;
+		else if (rpnstack->s[stptr-2] > rpnstack->s[stptr])
+		    rpnstack->s[stptr-2] = DNAN;
+		stptr-=2;
+       		break;
+	    case OP_UN:
+		stackunderflow(0);
+		rpnstack->s[stptr] = isnan(rpnstack->s[stptr]) ? 1.0 : 0.0;
+		break;
+	    case OP_ISINF:
+		stackunderflow(0);
+		rpnstack->s[stptr] = isinf(rpnstack->s[stptr]) ? 1.0 : 0.0;
+		break;
+	    case OP_END:
+		break;
        }
+#undef stackunderflow
    }
    if(stptr!=0){
        rrd_set_error("RPN final stack size != 1");
