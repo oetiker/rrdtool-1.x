@@ -94,7 +94,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr (-, root, root)
-%doc 00README CONTRIBUTORS COPYING COPYRIGHT ChangeLog NEWS PROJECTS
+%doc 00README CONTRIBUTORS COPYING COPYRIGHT NEWS PROJECTS
 %doc README THREADS TODO
 %doc docs/[a-z]* html/[a-z]*
 %doc examples/*.cgi
