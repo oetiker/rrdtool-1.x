@@ -157,6 +157,39 @@ AC_SUBST(PERLFLAGS)
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
+dnl add pic flag in any case this makes sure all our code is relocatable
+eval `./libtool --config | grep pic_flag`
+CFLAGS="$CFLAGS $pic_flag"
+
+dnl Checks for library functions.
+AC_FUNC_STRFTIME
+AC_FUNC_VPRINTF
+
+AC_C_BIGENDIAN
+
+dnl for each function found we get a definition in config.h 
+dnl of the form HAVE_FUNCTION
+
+AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+
+dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we need
+dnl actual code to check if this works
+AC_CHECK_FUNCS(fpclassify, ,
+  [AC_MSG_CHECKING(for fpclassify with <math.h>)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; fpclassify(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
+AC_CHECK_FUNCS(finite, ,
+  [AC_CHECK_FUNCS(isfinite, ,
+    [AC_MSG_CHECKING(for isfinite with <math.h>)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isfinite(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
+AC_CHECK_FUNCS(isinf, ,
+  [AC_MSG_CHECKING(for isinf with <math.h>)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isinf(f)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
+
+AC_FULL_IEEE
+
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
  [Vertical label angle: 90.0 (default) or 270.0])
@@ -171,15 +204,16 @@ AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 if test $enable_rrdcgi != no; then
 EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
 fi
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
 EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
 EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/)
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.9,  http://prdownloads.sourceforge.net/freetype/)
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		     freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/)
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
+AC_LANG_PUSH(C)
 dnl solaris has some odd define it need in order to propperly compile ctime_r
 AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
 AC_LINK_IFELSE(
@@ -207,6 +241,7 @@ AC_LINK_IFELSE(
       )
     ]  
 )
+AC_LANG_POP(C)
 
 dnl Check for pthreads
 dnl http://autoconf-archive.cryp.to/acx_pthread.m4
@@ -311,43 +346,6 @@ if test "x$GCC" = "xyes"; then
   fi
 fi
 
-dnl add pic flag in any case this makes sure all our code is relocatable
-CFLAGS="$CFLAGS "`grep pic_flag= libtool | head -1|sed -e 's/.*pic_flag=//' -e 's/"//g'` 
-dnl" make joes highliter happy it does not grasp the quote in the line above
-
-ZLIB_CFLAGS=$CFLAGS
-dnl it seems that hpux chockes on -fPIC for some reason
-case $target_os in
-*hpux*)
-        ZLIB_CFLAGS=`echo $CFLAGS|sed -e 's/-fPIC/-fpic/g'`
-;;
-esac
-AC_SUBST(ZLIB_CFLAGS)
-
-dnl Checks for library functions.
-AC_FUNC_STRFTIME
-AC_FUNC_VPRINTF
-
-dnl for each function found we get a definition in config.h 
-dnl of the form HAVE_FUNCTION
-
-AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
-
-dnl HP-UX 11.00 does not have finite but does have isfinite as a macro
-AC_CHECK_FUNCS(fpclassify, ,
-  [AC_MSG_CHECKING(for fpclassify with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; fpclassify(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
-AC_CHECK_FUNCS(finite, ,
-  [AC_CHECK_FUNCS(isfinite, ,
-    [AC_MSG_CHECKING(for isfinite with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isfinite(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
-AC_CHECK_FUNCS(isinf, ,
-  [AC_MSG_CHECKING(for isinf with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isinf(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
-
 dnl what does realloc do if it gets called with a NULL pointer
 
 AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
@@ -362,123 +360,6 @@ AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
 if test x"$rd_cv_null_realloc" = xnope; then
 AC_DEFINE(NO_NULL_REALLOC)
 fi
-
-dnl determine how to get IEEE math working
-dnl AC_IEEE(MESSAGE, set rd_cv_ieee_[var] variable, INCLUDES,
-dnl   FUNCTION-BODY, [ACTION-IF-FOUND [,ACTION-IF-NOT-FOUND]])
-
-AC_C_BIGENDIAN
-
-AC_DEFUN([AC_IEEE], 
-AC_MSG_CHECKING([if IEEE math works $1])
-AC_CACHE_VAL([rd_cv_ieee_$2],
-[AC_RUN_IFELSE([AC_LANG_SOURCE([[$3
-
-#if HAVE_MATH_H
-#  include <math.h>
-#endif
-
-#if HAVE_FLOAT_H
-#  include <float.h>  
-#endif
-
-#if HAVE_IEEEFP_H
-#  include <ieeefp.h>
-#endif
-
-#if HAVE_FP_CLASS_H
-#  include <fp_class.h>
-#endif
-
-/* Solaris */
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
-#endif
-
-/* Digital UNIX */
-#if (! defined(HAVE_ISINF) && defined(HAVE_FP_CLASS) && defined(HAVE_FP_CLASS_H))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fp_class(a) == FP_NEG_INF || fp_class(a) == FP_POS_INF)
-#endif 
-
-/* AIX */
-#if (! defined(HAVE_ISINF) && defined(HAVE_CLASS))
-#  define HAVE_ISINF 1
-#  define isinf(a) (class(a) == FP_MINUS_INF || class(a) == FP_PLUS_INF)
-#endif
-
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_PLUS_INF) && defined(FP_MINUS_INF))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclassify(a) == FP_MINUS_INF || fpclassify(a) == FP_PLUS_INF)
-#endif
-
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_INFINITE))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclassify(a) == FP_INFINITE)
-#endif
-
-#include <stdio.h>
-int main(void){
-    double nan,inf,c,zero;
-    $4;
-    /* some math to see if we get a floating point exception */
-    zero=sin(0.0); /* don't let the compiler optimize us away */
-    nan=0.0/zero; /* especially here */
-    inf=1.0/zero; /* and here. I want to know if it can do the magic */
-		  /* at run time without sig fpe */
-    c = inf + nan;
-    c = inf / nan;
-    if (! isnan(nan)) {printf ("not isnan(NaN) ... "); return 1;}
-    if (nan == nan) {printf ("nan == nan ... "); return 1;}
-    if (! isinf(inf)) {printf ("not isinf(oo) ... "); return 1;}
-    if (! isinf(-inf)) {printf ("not isinf(-oo) ... "); return 1;}
-    if (! inf > 0) {printf ("not inf > 0 ... "); return 1;}
-    if (! -inf < 0) {printf ("not -inf < 0 ... "); return 1;}
-    return 0;
- }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
-dnl these we run regardles is cached or not
-if test x${rd_cv_ieee_$2} = "xyes"; then
- AC_MSG_RESULT(yes)
- $5
-else
- AC_MSG_RESULT(no)
- $6
-fi
-
-)
-
-_cflags=${CFLAGS}
-AC_IEEE([out of the box], works, , , ,
-  [CFLAGS="$_cflags -ieee"
-  AC_IEEE([with the -ieee switch], switch, , , ,
-    [CFLAGS="$_cflags -qfloat=nofold"
-    AC_IEEE([with the -qfloat=nofold switch], nofold, , , ,
-      [CFLAGS="$_cflags -w -qflttrap=enable:zerodivide"
-      AC_IEEE([with the -w -qflttrap=enable:zerodivide], flttrap, , , ,
-       [CFLAGS="$_cflags -mieee"
-       AC_IEEE([with the -mieee switch], mswitch, , , ,
-         [CFLAGS="$_cflags -q float=rndsngl"
-         AC_IEEE([with the -q float=rndsngl switch], qswitch, , , ,
-           [CFLAGS="$_cflags -OPT:IEEE_NaN_inf=ON"
-           AC_IEEE([with the -OPT:IEEE_NaN_inf=ON switch], ieeenaninfswitch, , , ,
-             [CFLAGS="$_cflags -OPT:IEEE_comparisons=ON"
-             AC_IEEE([with the -OPT:IEEE_comparisons=ON switch], ieeecmpswitch, , , ,
-               [CFLAGS=$_cflags
-               AC_IEEE([with fpsetmask(0)], mask,
-                 [#include <floatingpoint.h>], [fpsetmask(0)],
-                 [AC_DEFINE(MUST_DISABLE_FPMASK)
-	         PERLFLAGS="CCFLAGS=-DMUST_DISABLE_FPMASK"],
-                 [AC_IEEE([with signal(SIGFPE,SIG_IGN)], sigfpe,
-                   [#include <signal.h>], [signal(SIGFPE,SIG_IGN)],
-                   [AC_DEFINE(MUST_DISABLE_SIGFPE)
-                   PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
-                   AC_MSG_ERROR([
-Your Compiler does not do propper IEEE math ... Please find out how to
-make IEEE math work with your compiler and let me know (oetiker@ee.ethz.ch).
-Check config.log to see what went wrong ...
-]))])])])])])])])])])
-
 
 AC_CONFIG_FILES([examples/shared-demo.pl			\
           examples/piped-demo.pl			\
