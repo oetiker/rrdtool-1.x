@@ -248,7 +248,7 @@ auto_scale(
 	   )
 {
 	
-    char *symbol[] = {"a", /* 10e-18 Ato */
+    char *symbol[] = {"a", /* 10e-18 Atto */
 		      "f", /* 10e-15 Femto */
 		      "p", /* 10e-12 Pico */
 		      "n", /* 10e-9  Nano */
@@ -258,7 +258,7 @@ auto_scale(
 		      "k", /* 10e3   Kilo */
 		      "M", /* 10e6   Mega */
 		      "G", /* 10e9   Giga */
-		      "T", /* 10e12  Terra */
+		      "T", /* 10e12  Tera */
 		      "P", /* 10e15  Peta */
 		      "E"};/* 10e18  Exa */
 
@@ -289,7 +289,7 @@ si_unit(
 )
 {
 
-    char symbol[] = {'a', /* 10e-18 Ato */ 
+    char symbol[] = {'a', /* 10e-18 Atto */ 
 		     'f', /* 10e-15 Femto */
 		     'p', /* 10e-12 Pico */
 		     'n', /* 10e-9  Nano */
@@ -299,7 +299,7 @@ si_unit(
 		     'k', /* 10e3   Kilo */
 		     'M', /* 10e6   Mega */
 		     'G', /* 10e9   Giga */
-		     'T', /* 10e12  Terra */
+		     'T', /* 10e12  Tera */
 		     'P', /* 10e15  Peta */
 		     'E'};/* 10e18  Exa */
 
