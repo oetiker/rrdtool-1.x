@@ -1303,49 +1303,59 @@ print_calc(image_desc_t *im, char ***prdata)
 		return 0;
 	    }
 	case GF_GPRINT:
+	    /* PRINT and GPRINT can now print VDEF generated values.
+	     * There's no need to do any calculations on them as these
+	     * calculations were already made.
+	     */
 	    vidx = im->gdes[i].vidx;
-	    max_ii =((im->gdes[vidx].end 
-		      - im->gdes[vidx].start)
-		     /im->gdes[vidx].step
-		     *im->gdes[vidx].ds_cnt);
-	    printval = DNAN;
-	    validsteps = 0;
-	    for(ii=im->gdes[vidx].ds+im->gdes[vidx].ds_cnt;
-		ii < max_ii+im->gdes[vidx].ds_cnt;
-		ii+=im->gdes[vidx].ds_cnt){
-		 if (! finite(im->gdes[vidx].data[ii]))
-		     continue;
-		 if (isnan(printval)){
-		     printval = im->gdes[vidx].data[ii];
-		     validsteps++;
-		    continue;
-		}
+	    if (im->gdes[vidx].gf==GF_VDEF) { /* simply use vals */
+		printval = im->gdes[vidx].yrule;
+	    } else { /* need to calculate max,min,avg etcetera */
+		max_ii =((im->gdes[vidx].end 
+			- im->gdes[vidx].start)
+			/ im->gdes[vidx].step
+			* im->gdes[vidx].ds_cnt);
+		printval = DNAN;
+		validsteps = 0;
+		for(ii=im->gdes[vidx].ds+im->gdes[vidx].ds_cnt;
+			ii < max_ii+im->gdes[vidx].ds_cnt;
+			ii+=im->gdes[vidx].ds_cnt){
+		    if (! finite(im->gdes[vidx].data[ii]))
+			continue;
+		    if (isnan(printval)){
+			printval = im->gdes[vidx].data[ii];
+			validsteps++;
+			continue;
+		    }
 
-		switch (im->gdes[i].cf){
-		case CF_HWPREDICT:
-		case CF_DEVPREDICT:
-		case CF_DEVSEASONAL:
-		case CF_SEASONAL:
-		case CF_AVERAGE:
-		    validsteps++;
-		    printval += im->gdes[vidx].data[ii];
-		    break;
-		case CF_MINIMUM:
-		    printval = min( printval, im->gdes[vidx].data[ii]);
-		    break;
-	    case CF_FAILURES:
-		case CF_MAXIMUM:
-		    printval = max( printval, im->gdes[vidx].data[ii]);
-		    break;
-		case CF_LAST:
-		    printval = im->gdes[vidx].data[ii];
+		    switch (im->gdes[i].cf){
+			case CF_HWPREDICT:
+			case CF_DEVPREDICT:
+			case CF_DEVSEASONAL:
+			case CF_SEASONAL:
+			case CF_AVERAGE:
+			    validsteps++;
+			    printval += im->gdes[vidx].data[ii];
+			    break;
+			case CF_MINIMUM:
+			    printval = min( printval, im->gdes[vidx].data[ii]);
+			    break;
+			case CF_FAILURES:
+			case CF_MAXIMUM:
+			    printval = max( printval, im->gdes[vidx].data[ii]);
+			    break;
+			case CF_LAST:
+			    printval = im->gdes[vidx].data[ii];
+		    }
 		}
-	    }
-	    if (im->gdes[i].cf ==  CF_AVERAGE || im -> gdes[i].cf > CF_LAST) {
-		if (validsteps > 1) {
-		    printval = (printval / validsteps);
+		if (im->gdes[i].cf==CF_AVERAGE || im->gdes[i].cf > CF_LAST) {
+		    if (validsteps > 1) {
+			printval = (printval / validsteps);
+		    }
 		}
-	    }
+	    } /* prepare printval */
+
+
 	    if ((percent_s = strstr(im->gdes[i].format,"%S")) != NULL) {
 		/* Magfact is set to -1 upon entry to print_calc.  If it
 		 * is still less than 0, then we need to run auto_scale.
@@ -1360,10 +1370,10 @@ print_calc(image_desc_t *im, char ***prdata)
 		    printval /= magfact;
 		}
 		*(++percent_s) = 's';
-	    }
-	    else if (strstr(im->gdes[i].format,"%s") != NULL) {
+	    } else if (strstr(im->gdes[i].format,"%s") != NULL) {
 		auto_scale(im,&printval,&si_symb,&magfact);
 	    }
+
 	    if (im->gdes[i].gf == GF_PRINT){
 		(*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
 		if (bad_format(im->gdes[i].format)) {
@@ -2795,26 +2805,56 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	case GF_PRINT:
 	    im.prt_c++;
 	case GF_GPRINT:
-	    if(sscanf(
-		&argv[i][argstart],
-		"%29[^#:]:" CF_NAM_FMT ":%n",
-		varname,symname,&strstart) == 2){
-		scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].format);
-		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		    im_free(&im);
-		    rrd_set_error("unknown variable '%s'",varname);
-		    return -1;
-		}	
-		if((im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
-		    im_free(&im);
-		    return -1;
-		}
-		
-	    } else {
+	    strstart=0;
+	    sscanf(&argv[i][argstart], DEF_NAM_FMT ":%n"
+		    ,varname
+		    ,&strstart
+	    );
+
+	    if (strstart==0) {
 		im_free(&im);
-		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
+		rrd_set_error("can't parse vname in '%s'",&argv[i][argstart]);
 		return -1;
-	    }
+	    };
+
+	    if ((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
+		im_free(&im);
+		rrd_set_error("Unknown variable '%s' in (G)PRINT",varname);
+		return -1;
+	    } else {
+		int n=0;
+
+		sscanf(&argv[i][argstart+strstart],CF_NAM_FMT ":%n"
+		    ,symname
+		    ,&n
+		);
+		if (im.gdes[im.gdes[im.gdes_c-1].vidx].gf==GF_VDEF) {
+		    /* No consolidation function should be present */
+		    if (n != 0) {
+			rrd_set_error("(G)PRINT of VDEF needs no CF");
+			im_free(&im);
+			return -1;
+		    }
+		} else {
+		    /* A consolidation function should follow */
+		    if (n==0) {
+			im_free(&im);
+			rrd_set_error("Missing or incorrect CF in (G)PRINTing '%s' (%s)",varname,&argv[i][argstart]);
+			return -1;
+		    };
+		    if((im.gdes[im.gdes_c-1].cf=cf_conv(symname))==-1){
+			im_free(&im);
+			return -1;
+		    };
+		    strstart+=n;
+		};
+	    };
+
+	    scan_for_col(
+			&argv[i][argstart+strstart]
+			,FMT_LEG_LEN
+			,im.gdes[im.gdes_c-1].format
+			);
 	    break;
 	case GF_COMMENT:
 	    if(strlen(&argv[i][argstart])>FMT_LEG_LEN) argv[i][argstart+FMT_LEG_LEN-3]='\0' ;

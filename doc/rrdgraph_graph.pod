@@ -44,7 +44,7 @@ Similarly no report is generated if you don't use print options.
 
 B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>
 
-I<Soon depriciated. Use the new form of this command in new scripts.>
+I<Depriciated. Use the new form of this command in new scripts.>
 The first form of this command is to be used with B<CDEF> I<vname>s.
 
 B<PRINT:>I<vname>B<:>I<format>
@@ -140,7 +140,7 @@ B<%Z> time zone
 
 B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>
 
-I<Soon depriciated. Use the new form of this command in new scripts.>
+I<Depriciated. Use the new form of this command in new scripts.>
 This is the same as B<PRINT> but now it is printed inside the graph.
 See L<PRINT> for more information.
 
@@ -155,12 +155,11 @@ Text is printed literally in the legend section of the graph
 
 B<HRULE:>I<value>B<#>I<rrggbb>[B<:>I<legend>]
 
-I<Soon depriciated. Use a VDEF and a LINEx in new scripts.>
-
 Draw an horizontal line at I<value>. Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
 maximum) red, green and blue.  Optionally a legend box and string is
-printed in the legend section.
+printed in the legend section. I<value> can be a variable from a B<VDEF>.
+It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
 B<VRULE:>I<time>B<#>I<rrggbb>[B<:>I<legend>]
 
