@@ -719,12 +719,19 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   text[0].compression = PNG_TEXT_COMPRESSION_NONE;
   png_set_text (png_ptr, info_ptr, text, 1);
 
+  /* lets make this fast */
+  png_set_compression_level(png_ptr,1);
+  png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_NO_FILTERS);
+  /* 
+  png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_FILTER_SUB);
+  png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
+  png_set_compression_level(png_ptr,Z_BEST_SPEED); */
+  
   /* Write header data */
   png_write_info (png_ptr, info_ptr);
-
   for (i = 0; i < height; i++)
     row_pointers[i] = (png_bytep) (buffer + i*rowstride);
-
+  
   png_write_image(png_ptr, row_pointers);
   png_write_end(png_ptr, info_ptr);
   png_destroy_write_struct(&png_ptr, &info_ptr);
