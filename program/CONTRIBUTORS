@@ -59,6 +59,8 @@ Debugging and code contributions
 	Peter Stamfest <peter@stamfest.at> initial multi-thread support
 	David L. Barker <dave@ncomtech.com> xport function bug fixes
 	Mike Slifcak <slif@bellsouth.net> many rrdtool-1.1.x fixes
+	Peter Speck <speck@vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
+
 
 Documentation
 
