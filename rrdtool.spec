@@ -1,11 +1,11 @@
-%define cvsdate 2004-04-30
+%define cvsdate cvs-snap
 %define cvsver %(echo %{cvsdate} | tr -d -)
-%define sover 1.0.2
+%define sover 1.0.0
 
 Summary: Round Robin Database Tools
 Name: rrdtool
 Version: 1.1.0
-Release: 0.1.%{cvsver}
+Release: %{cvsver}
 License: GPL
 Group: Applications/Networking
 Source: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/beta/rrdtool-cvs-snap.tar.gz
@@ -13,7 +13,7 @@ URL: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
 Buildroot: /tmp/%{name}-root
 
 BuildRequires: perl
-BuildRequires: cgilib
+BuildRequires: cgilib-devel
 BuildRequires: freetype-devel libart_lgpl-devel libpng-devel zlib-devel
 
 %description
@@ -56,6 +56,9 @@ perl -pi -e 's!^(#define\s+RRD_DEFAULT_FONT\s+).*!$1"%{deffont}"!' src/rrd_graph
 %build
 CPPFLAGS="-I/usr/include/libart-2.0 -I/usr/include/freetype2"
 export CPPFLAGS
+aclocal > /tmp/aclocal.out 2>&1
+automake
+autoconf
 %configure
 make
 
@@ -70,6 +73,7 @@ install -m 644 src/VeraMono.ttf %{buildroot}%{deffont}
 # Fix up the documentation
 [ -d docs ] && mv docs docs.src
 mv %{buildroot}/usr/doc docs
+rm -f docs/*.pod
 [ -d examples ] && mv examples examples.src
 mv %{buildroot}/usr/examples examples
 [ -d html ] && mv html html.src
@@ -82,7 +86,7 @@ mv %{buildroot}%{_libdir}/perl/* %{buildroot}%{perlsite}
 rmdir %{buildroot}%{_libdir}/perl
 
 # Fix up the man pages
-if [ "%{_mandir}" != "/usr/man" ]; then
+if [ "%{_mandir}" != "/usr/share/man" ]; then
 	mkdir -p %{buildroot}%{_mandir}
 	mv %{buildroot}/usr/man/* %{buildroot}%{_mandir}/
 fi
