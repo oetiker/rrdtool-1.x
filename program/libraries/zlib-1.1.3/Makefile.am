@@ -8,6 +8,8 @@
 
 EXTRA_DIST= ChangeLog FAQ INDEX README README.rrdtool algorithm.txt zlib.dsp zlib.dsw zlib.3 
 
+CFLAGS = $(ZLIB_CFLAGS)
+
 noinst_LTLIBRARIES = librrd_z.la
 
 librrd_z_la_SOURCES =	\
