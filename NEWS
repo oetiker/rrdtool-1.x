@@ -5,6 +5,9 @@ RRDTOOL NEWS
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
+2002/03/26 Peter Speck <speck@ruc.dk>
+  Contribution of an svg output routine for the new gfx graphing part
+
 2002/03/23 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
   Several visible changes made to rrd_graph
   * Pie chart support workable
