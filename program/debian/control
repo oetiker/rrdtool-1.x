@@ -1,0 +1,99 @@
+Source: rrdtool
+Section: utils
+Priority: extra
+Maintainer: Matt Zimmerman <mdz@debian.org>
+Standards-Version: 3.2.1
+Build-Depends: debhelper (>= 3.0.5), cgilib (>= 0.5), zlib (>= 1.2.1), tcl8.4-dev, perl (>= 5.8.0)
+Build-Depends: libart-2.0-dev (>= 2.3.16), libpng12-dev (>= 1.2.5)
+
+Package: rrdtool
+Architecture: any
+Depends: ${shlibs:Depends}
+Suggests: librrds-perl
+Description: Time-series data storage and display system (programs)
+ RRD is the Acronym for Round Robin Database. RRD is a system to store and
+ display time-series data (i.e. network bandwidth, machine-room temperature,
+ server load average). It stores the data in a very compact way that will
+ not expand over time, and it presents useful graphs by processing the data
+ to enforce a certain data density. It can be used either via simple wrapper
+ scripts (from shell or Perl) or via frontends that poll network devices and
+ put friendly user interface on it.
+ .
+ This package contains command line programs used to access and manipulate
+ RRDs.
+
+Package: librrd0
+Architecture: any
+Section: libs
+Priority: optional
+Depends: ${shlibs:Depends}
+Description: Time-series data storage and display system (runtime)
+ RRD is the Acronym for Round Robin Database. RRD is a system to store and
+ display time-series data (i.e. network bandwidth, machine-room temperature,
+ server load average). It stores the data in a very compact way that will
+ not expand over time, and it presents useful graphs by processing the data
+ to enforce a certain data density. It can be used either via simple wrapper
+ scripts (from shell or Perl) or via frontends that poll network devices and
+ put friendly user interface on it.
+ .
+ This package contains shared libraries used to access and manipulate RRDs.
+
+Package: librrd0-dev
+Architecture: any
+Section: libdevel
+Depends: librrd0 (= ${Source-Version}), ${shlibs:Depends}
+Description: Time-series data storage and display system (development)
+ RRD is the Acronym for Round Robin Database. RRD is a system to store and
+ display time-series data (i.e. network bandwidth, machine-room temperature,
+ server load average). It stores the data in a very compact way that will
+ not expand over time, and it presents useful graphs by processing the data
+ to enforce a certain data density. It can be used either via simple wrapper
+ scripts (from shell or Perl) or via frontends that poll network devices and
+ put friendly user interface on it.
+ .
+ This package contains libraries used to develop software that uses RRDs.
+
+Package: librrds-perl
+Architecture: any
+Section: perl
+Depends: ${perl:Depends}, ${shlibs:Depends}
+Description: Time-series data storage and display system (perl-shared)
+ RRD is the Acronym for Round Robin Database. RRD is a system to store and
+ display time-series data (i.e. network bandwidth, machine-room temperature,
+ server load average). It stores the data in a very compact way that will
+ not expand over time, and it presents useful graphs by processing the data
+ to enforce a certain data density. It can be used either via simple wrapper
+ scripts (from shell or Perl) or via frontends that poll network devices and
+ put friendly user interface on it.
+ .
+ This package contains a Perl interface to RRDs using a shared library.
+
+Package: librrdp-perl
+Architecture: all
+Section: perl
+Depends: ${perl:Depends}, rrdtool
+Description: Time-series data storage and display system (perl-piped)
+ RRD is the Acronym for Round Robin Database. RRD is a system to store and
+ display time-series data (i.e. network bandwidth, machine-room temperature,
+ server load average). It stores the data in a very compact way that will
+ not expand over time, and it presents useful graphs by processing the data
+ to enforce a certain data density. It can be used either via simple wrapper
+ scripts (from shell or Perl) or via frontends that poll network devices and
+ put friendly user interface on it.
+ .
+ This package contains a Perl interface to RRDs using command pipes.
+
+#NO_TCL Package: rrdtool-tcl
+#NO_TCL Architecture: any
+#NO_TCL Section: utils
+#NO_TCL Depends: ${shlibs:Depends}, tcl8.4
+#NO_TCL Description: Time-series data storage and display system (tcl)
+#NO_TCL  RRD is the Acronym for Round Robin Database. RRD is a system to store and
+#NO_TCL  display time-series data (i.e. network bandwidth, machine-room temperature,
+#NO_TCL  server load average). It stores the data in a very compact way that will
+#NO_TCL  not expand over time, and it presents useful graphs by processing the data
+#NO_TCL  to enforce a certain data density. It can be used either via simple wrapper
+#NO_TCL  scripts (from shell or Perl) or via frontends that poll network devices and
+#NO_TCL  put friendly user interface on it.
+#NO_TCL  .
+#NO_TCL  This package contains a tcl interface to RRDs.

@@ -1,0 +1,170 @@
+#!/usr/bin/make -f
+#-*- makefile -*-
+# Made with the aid of dh_make, by Craig Small
+# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
+# This version is for a hypothetical package that builds an
+# architecture-dependant package, as well as an architecture-independant
+# package.
+
+package:=rrdtool
+
+top_srcdir:=$(shell pwd)
+tmp:=$(top_srcdir)/debian/tmp
+
+# TCL installation stuff (must match tcl/Makefile.am)
+tclconfigdir = /usr/lib/tcl8.4
+
+# Uncomment this to turn on verbose mode. 
+#export DH_VERBOSE=1
+
+# This is the debhelper compatability version to use.
+export DH_COMPAT=2
+
+# Defaults
+CFLAGS := -O2
+
+# Handle DEB_BUILD_OPTIONS
+ifneq "$(findstring debug,$(DEB_BUILD_OPTIONS))" ""
+CFLAGS += -g
+endif
+
+# Whack the flags to compile additional dependent pieces
+CFLAGS += -I/usr/include/libart-2.0 -I/usr/local/include/freetype2
+
+##NO_TCL CFLAGS += -I/usr/include/tcl8.4
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	# Make sure we can find tcl stuff (configure won't fail)
+	test -f $(tclconfigdir)/tclConfig.sh
+
+	# Configure C and Tcl stuff
+##NO_TCL	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --enable-shared=yes --enable-static=yes --with-tcllib=$(tclconfigdir) --enable-local-libpng=yes --enable-local-zlib=yes
+	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --enable-shared=yes --enable-static=yes --enable-local-libpng=yes --enable-local-zlib=yes
+
+	# Configure Perl stuff
+	cd bindings/perl-piped && \
+		rm -f Makefile && \
+		perl Makefile.PL INSTALLDIRS=vendor
+
+	cd bindings/perl-shared && \
+		rm -f Makefile && \
+		perl Makefile.PL INSTALLDIRS=vendor
+
+	touch configure-stamp
+
+build: build-stamp
+build-stamp: configure-stamp
+	dh_testdir
+
+	# Build most stuff
+	$(MAKE)
+
+	# We now build perl-piped and perl-shared separately
+	cd bindings/perl-piped && make OPTIMIZE="$(CFLAGS)"
+	cd bindings/perl-shared && make OPTIMIZE="$(CFLAGS)"
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	-$(MAKE) distclean
+
+	-rm bindings/perl*/Makefile.old bindings/perl*/Makefile
+
+	dh_clean
+
+install: build-stamp
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/tmp.
+##NO_TCL	$(MAKE) install site-tcl-install DESTDIR=$(tmp)
+	$(MAKE) install DESTDIR=$(tmp)
+
+	mkdir -p $(tmp)/usr/share/doc
+	mv $(tmp)/usr/doc $(tmp)/usr/share/doc/rrdtool
+	mkdir -p $(tmp)/usr/share/rrdtool
+	mv $(tmp)/usr/examples $(tmp)/usr/share/rrdtool
+	mv $(tmp)/usr/html $(tmp)/usr/share/rrdtool
+
+	## touch-up perl docs
+	mv $(tmp)/usr/man $(tmp)/usr/share
+	mkdir -p $(tmp)/usr/share/man/man3
+	mv $(tmp)/usr/share/man/man1/RRDs.1 $(tmp)/usr/share/man/man3/RRDs.3pm
+	mv $(tmp)/usr/share/man/man1/RRDp.1 $(tmp)/usr/share/man/man3/RRDp.3pm
+	mv $(tmp)/usr/lib/perl $(tmp)/usr/lib/perl5
+
+	dh_movefiles
+
+# Build architecture-independent files here.
+binary-indep: build install
+#	dh_testversion
+	dh_testdir -i
+	dh_testroot -i
+	dh_installdocs -i
+#	dh_installexamples -i
+#	dh_installmenu -i
+#	dh_installemacsen -i
+#	dh_installpam -i
+#	dh_installinit -i
+#	dh_installcron -i
+#	dh_installmanpages -i
+#	dh_installinfo -i
+#	dh_undocumented
+#LATER	dh_installchangelogs -i ChangeLog
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	# You may want to make some executables suid here.
+#	dh_suidregister -i
+	dh_installdeb -i
+	dh_perl -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+#	dh_testversion
+	dh_testdir -a
+	dh_testroot -a
+	dh_installdocs -a
+#	dh_installexamples -a
+#	dh_installmenu -a
+#	dh_installemacsen -a
+#	dh_installpam -a
+#	dh_installinit -a
+#	dh_installcron -a
+#	dh_installmanpages -a
+#	dh_installinfo -a
+#	dh_undocumented
+#LATER	dh_installchangelogs -a ChangeLog
+ifeq "$(findstring nostrip,$(DEB_BUILD_OPTIONS))" ""
+	dh_strip -a
+endif
+	dh_link -a
+	dh_compress -a -Xexamples/
+	dh_fixperms -a
+	# You may want to make some executables suid here.
+#	dh_suidregister -a
+#	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_perl -a
+	dh_shlibdeps -a -ldebian/librrd0/usr/lib
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+source diff:                                                                  
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

@@ -1,0 +1,5 @@
+usr/lib/librrd.a
+usr/lib/librrd.so
+usr/lib/librrd_th.a
+usr/lib/librrd_th.so
+usr/include/*
