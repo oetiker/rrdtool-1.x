@@ -6,7 +6,7 @@ rrdtool - round robin database tool
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<-> | I<function>
+B<rrdtool> B<-> [workdir]| I<function>
 
 =head1 DESCRIPTION
 
@@ -239,12 +239,42 @@ When you start B<rrdtool> with the command line option 'B<->', it waits
 for input via standard in. With this feature you can improve
 performance by attaching B<rrdtool> to another process (mrtg is one
 example) through a set of pipes. Over the pipes B<rrdtool> accepts the
-same arguments as on the command line. When a command is completed, 
-rrdtool will print the string  'C<OK>', followed by timing information of
-the form B<u:>I<usertime> B<s:>I<systemtime> both values are running
-totals of seconds since rrdtool was started. If an error occurs, a line 
-of the form 'C<ERROR:> I<Description of error>' will be printed. B<rrdtool>
+same arguments as on the command line and some spezial commands like
+B<quit, cd, mkdir> and B<ls>. For detail helps about the server commands
+type :
+
+   rrdtool help cd|mkdir|ls|quit
+
+When a command is completed, rrdtool will print the string  'C<OK>', 
+followed by timing information of the form B<u:>I<usertime> 
+B<s:>I<systemtime> both values are running totals of seconds 
+since rrdtool was started. If an error occurs, a line of the 
+form 'C<ERROR:> I<Description of error>' will be printed. B<rrdtool>
 will not abort if possible, but follow the ERROR line with an OK line.
+If a B<workdir> is spezified and the UID is 0, rrdtool will do a 
+chroot to the workdir. If the UID is not 0, rrdtool only changes the
+current directory to B<workdir>.
+
+=head2 RRD Server
+
+If you want to create a RRD-Server, you must choose a TCP/IP Service 
+number and add them to I</etc/services> like this:
+
+ rrdsrv      13900/tcp                       # rrd server
+
+Attention: the tcp port 13900 isn't official registered for rrdsrv. You
+can use any unused port in your services, but the server an the client
+system must use the same port of curse.
+After this you can add the rrdtool as meta-server to I</etc/inetd.conf>
+for example:
+  
+ rrdsrv stream tcp nowait root /opt/rrd/bin/rrdtool rrdtool - /var/rrd
+
+Don't forget to create the database directory /var/rrd and reinitialize
+your inetd.
+If all was correct, you can access the server with perl sockets, tools
+like netcat or a quickhack test 'telnet localhost rrdsrv'.
+
 
 
 =head1 SEE ALSO

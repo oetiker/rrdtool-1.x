@@ -45,6 +45,15 @@ extern "C" {
 #if HAVE_MATH_H
 # include <math.h>
 #endif
+/* Sorry: don't know autoconf as well how to check the exist of
+   dirent.h ans sys/stat.h
+*/
+#include <sys/stat.h>
+#include <dirent.h>
+#include <sys/types.h>
+/*
+#endif
+*/
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
