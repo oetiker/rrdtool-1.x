@@ -9,7 +9,7 @@
 #define LIBART_COMPILATION
 #include <libart.h>
 
-enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS};
+enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS,IF_PDF};
 enum gfx_en { GFX_LINE=0,GFX_AREA,GFX_TEXT };
 enum gfx_h_align_en { GFX_H_NULL=0, GFX_H_LEFT, GFX_H_RIGHT, GFX_H_CENTER };
 enum gfx_v_align_en { GFX_V_NULL=0, GFX_V_TOP,  GFX_V_BOTTOM, GFX_V_CENTER };
@@ -113,6 +113,11 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
 
 /* EPS support */
 int       gfx_render_eps (gfx_canvas_t *canvas,
+                              art_u32 width, art_u32 height,
+                              gfx_color_t background, FILE *fo);
+
+/* PDF support */
+int       gfx_render_pdf (gfx_canvas_t *canvas,
                               art_u32 width, art_u32 height,
                               gfx_color_t background, FILE *fo);
 
