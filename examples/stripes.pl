@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /bin/perl
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );

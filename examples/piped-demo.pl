@@ -1,4 +1,4 @@
-#! /usr/bin/perl 
+#! /bin/perl 
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-piped/blib/lib  ../lib/perl );

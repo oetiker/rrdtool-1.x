@@ -445,7 +445,7 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           libraries/cgilib-0.4/Makefile                 \
           libraries/libart_lgpl-2.3.7/Makefile		\
           libraries/libpng-1.2.0/Makefile		\
-          libraries/zlib-1.1.3/Makefile			\
+          libraries/zlib-1.1.4/Makefile			\
           libraries/freetype-2.0.5/Makefile		\
           src/Makefile					\
           bindings/Makefile                             \
