@@ -291,15 +291,16 @@ would look like this:
 
 B<[-c|--color I<COLORTAG>#I<rrggbb>[I<aa>]]>
 
-Override the default colors for the standard elements of the graph.
-The I<COLORTAG> is one of C<BACK> ground, C<CANVAS>, C<SHADEA> for the
-left and top border, C<SHADEB> for the right and bottom border, C<GRID>,
-C<MGRID> for the major grid, C<FONT>, C<FRAME> and axis, C<ARROW>.
-Each color is composed out of three hexadecimal numbers specifying
-its color component (00 is off, FF is maximum) of red, green and blue.
-Optionally you may add another hexadecimal number specifying the
-transparency (FF is solid).
-You may set this option several times to alter multiple defaults.
+Override the default colors for the standard elements of the graph. The
+I<COLORTAG> is one of C<BACK> background, C<CANVAS> for the background of
+the actual graph, C<SHADEA> for the left and top border, C<SHADEB> for the
+right and bottom border, C<GRID>, C<MGRID> for the major grid, C<FONT> for
+the color of the font, C<AXIS> for the axis of the graph and finaly C<ARROW>
+for the arrow head pointing to the future. Each color is composed out of
+three hexadecimal numbers specifying its color component (00 is off, FF is
+maximum) of red, green and blue. Optionally you may add another hexadecimal
+number specifying the transparency (FF is solid). You may set this option
+several times to alter multiple defaults.
 
 A green arrow is made by: C<--color ARROW:00FF00>
 
@@ -331,6 +332,10 @@ Suppress generation of legend; only render the graph.
 B<[-F|--force-rules-legend]>
 
 Force the generation of HRULE and VRULE legend even if those HRULE or VRULE will not be drawn because out of graph boundaries (mimics behaviour of pre 1.0.42 versions).
+
+B<[-T|--tabwidth E<lt>valueE<gt>]>
+
+By default the tab-width is 40 pixels, use this option to change it.
 
 B<[-b|--base E<lt>valueE<gt>]>
 
