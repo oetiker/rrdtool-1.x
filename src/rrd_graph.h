@@ -27,7 +27,7 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
 	    GF_AREA,GF_STACK,GF_TICK,
-	    GF_DEF, GF_CDEF, GF_VDEF,
+	    GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
 	    GF_PART, GF_XPORT};
 
 enum vdef_op_en {
@@ -112,6 +112,11 @@ typedef  struct graph_desc_t {
     time_t         xrule;      /* time for x rule line and for VDEF */
     vdef_t         vf;         /* instruction for VDEF function */
     rpnp_t         *rpnp;     /* instructions for CDEF function */
+
+    /* SHIFT implementation */
+    int            shidx; /* gdes reference for offset (-1 --> constant) */
+    time_t         shval; /* offset if shidx is -1 */
+    time_t         shift; /* current shift applied */
 
     /* description of data fetched for the graph element */
     time_t         start,end; /* timestaps for first and last data element */
@@ -215,7 +220,7 @@ int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *, FILE *);
 void rrd_graph_init(image_desc_t *);
 void rrd_graph_options(int, char **, image_desc_t *);
-void rrd_graph_script(int, char **, image_desc_t *);
+void rrd_graph_script(int, char **, image_desc_t *, int);
 int rrd_graph_check_vname(image_desc_t *, char *, char *);
 int rrd_graph_color(image_desc_t *, char *, char *, int);
 int rrd_graph_legend(graph_desc_t *, char *);

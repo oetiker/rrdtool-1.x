@@ -154,6 +154,9 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_LTIME,LTIME)
 	  add_op(OP_TIME,TIME)
 	  add_op(OP_ATAN,ATAN)
+	  add_op(OP_SQRT,SQRT)
+	  add_op(OP_SORT,SORT)
+	  add_op(OP_REV,REV)
 
 #undef add_op
               }
@@ -323,7 +326,9 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_NOW,NOW)
 	match_op(OP_TIME,TIME)
 	match_op(OP_ATAN,ATAN)
-
+	match_op(OP_SQRT,SQRT)
+	match_op(OP_SORT,SORT)
+	match_op(OP_REV,REV)
 #undef match_op
 
 
@@ -365,6 +370,14 @@ rpnstack_free(rpnstack_t *rpnstack)
    if (rpnstack -> s != NULL)
 	  free(rpnstack -> s);
    rpnstack -> dc_stacksize = 0;
+}
+
+static int
+rpn_compare_double(const void *x, const void *y)
+{
+	double	diff = *((const double *)x) - *((const double *)y);
+	
+	return (diff < 0) ? -1 : (diff > 0) ? 1 : 0;
 }
 
 /* rpn_calc: run the RPN calculator; also performs variable substitution;
@@ -659,6 +672,38 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 	    case OP_ISINF:
 		stackunderflow(0);
 		rpnstack->s[stptr] = isinf(rpnstack->s[stptr]) ? 1.0 : 0.0;
+		break;
+	    case OP_SQRT:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = sqrt(rpnstack -> s[stptr]);
+		break;
+	    case OP_SORT:
+		stackunderflow(0);
+		{
+		    int	spn = (int)rpnstack -> s[stptr--];
+
+		    stackunderflow(spn-1);
+		    qsort(rpnstack -> s + stptr-spn+1, spn, sizeof(double),
+			  rpn_compare_double);
+		}
+		break;
+	    case OP_REV:
+		stackunderflow(0);
+		{
+		    int	spn = (int)rpnstack -> s[stptr--];
+		    double *p, *q;
+
+		    stackunderflow(spn-1);
+
+		    p = rpnstack -> s + stptr-spn+1;
+		    q = rpnstack -> s + stptr;
+		    while (p < q) {
+			    double	x = *q;
+			    
+			    *q-- = *p;
+			    *p++ = x;
+		    }
+		}
 		break;
 	    case OP_END:
 		break;

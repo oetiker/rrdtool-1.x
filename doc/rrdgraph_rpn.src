@@ -94,9 +94,9 @@ B<+, -, *, /, %>
 
 Add, subtract, multiply, divide, modulo
 
-B<SIN, COS, LOG, EXP>
+B<SIN, COS, LOG, EXP, SQRT>
 
-Sine, cosine (input in radians), log, exp (natural logarithm)
+Sine, cosine (input in radians), log, exp (natural logarithm), square root
 
 B<ATAN>
 
@@ -107,6 +107,18 @@ B<FLOOR, CEIL>
 Round down,up to the nearest integer
 
 Z<>
+
+=item Ordering Operations
+
+B<SORT, REV>
+
+Pop one element from the stack.  This is the I<count> of items to be sorted
+(or reversed).  The top I<count> of the remaining elements are then sorted
+(or reversed) in place on the stack.
+
+Example: C<CDEF:x=v1,v2,v3,v4,v5,v6,6,SORT,POP,5,REV,POP,+,+,+,4,/> will
+compute the average of the values v1..v6 after removing the smallest and
+largest.
 
 =item Special values
 

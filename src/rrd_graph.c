@@ -188,6 +188,7 @@ enum gf_en gf_conv(char *string){
     conv_if(VDEF,GF_VDEF)
     conv_if(PART,GF_PART)
     conv_if(XPORT,GF_XPORT)
+    conv_if(SHIFT,GF_SHIFT)
     
     return (-1);
 }
@@ -822,6 +823,28 @@ data_calc( image_desc_t *im){
 	switch (im->gdes[gdi].gf) {
 	    case GF_XPORT:
 	      break;
+	    case GF_SHIFT: {
+		graph_desc_t	*vdp = &im->gdes[im->gdes[gdi].vidx];
+		
+		/* remove current shift */
+		vdp->start -= vdp->shift;
+		vdp->end -= vdp->shift;
+		
+		/* vdef */
+		if (im->gdes[gdi].shidx >= 0) 
+			vdp->shift = im->gdes[im->gdes[gdi].shidx].vf.val;
+		/* constant */
+		else
+			vdp->shift = im->gdes[gdi].shval;
+
+		/* normalize shift to multiple of consolidated step */
+		vdp->shift = (vdp->shift / vdp->step) * vdp->step;
+
+		/* apply shift */
+		vdp->start += vdp->shift;
+		vdp->end += vdp->shift;
+		break;
+	    }
 	    case GF_VDEF:
 		/* A VDEF has no DS.  This also signals other parts
 		 * of rrdtool that this is a VDEF value, not a CDEF.
@@ -911,14 +934,13 @@ data_calc( image_desc_t *im){
                 for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
 		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
 		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
-                        long ptr = im->gdes[gdi].rpnp[rpi].ptr;
-                        if(im->gdes[gdi].start > im->gdes[ptr].start) {
-                            im->gdes[gdi].rpnp[rpi].data += im->gdes[gdi].rpnp[rpi].ds_cnt
-				* ((im->gdes[gdi].start - im->gdes[ptr].start) / im->gdes[ptr].step);
-                        }
+                        long	ptr  = im->gdes[gdi].rpnp[rpi].ptr;
+			long	diff = im->gdes[gdi].start - im->gdes[ptr].start;
+
+                        if(diff > 0)
+			    im->gdes[gdi].rpnp[rpi].data += (diff / im->gdes[ptr].step) * im->gdes[ptr].ds_cnt;
                      }
                 }
-        
 
 		if(steparray == NULL){
 		    rrd_set_error("rpn expressions without DEF"
@@ -1016,8 +1038,10 @@ data_proc( image_desc_t *im ){
 			** the time of the graph. Beware.
 			*/
 			vidx = im->gdes[ii].vidx;
-			if (	((long int)gr_time >= (long int)im->gdes[vidx].start) &&
-				((long int)gr_time <= (long int)im->gdes[vidx].end) ) {
+			if (im->gdes[vidx].gf == GF_VDEF) {
+			    value = im->gdes[vidx].vf.val;
+			} else if (((long int)gr_time >= (long int)im->gdes[vidx].start) &&
+				   ((long int)gr_time <= (long int)im->gdes[vidx].end) ) {
 			    value = im->gdes[vidx].data[
 				(unsigned long) floor(
 				    (double)(gr_time - im->gdes[vidx].start)
@@ -1333,6 +1357,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_CDEF:	    
 	case GF_VDEF:	    
 	case GF_PART:
+	case GF_SHIFT:
 	case GF_XPORT:
 	    break;
 	}
@@ -2348,6 +2373,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
     case GF_HRULE:
     case GF_VRULE:
     case GF_XPORT:
+    case GF_SHIFT:
       break;
     case GF_TICK:
       for (ii = 0; ii < im->xsize; ii++)
@@ -2569,6 +2595,7 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].data_first=0;
     im->gdes[im->gdes_c-1].p_data=NULL;
     im->gdes[im->gdes_c-1].rpnp=NULL;
+    im->gdes[im->gdes_c-1].shift=0;
     im->gdes[im->gdes_c-1].col = 0x0;
     im->gdes[im->gdes_c-1].legend[0]='\0';
     im->gdes[im->gdes_c-1].rrd[0]='\0';
@@ -2631,7 +2658,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *s
     strncpy(im.graphfile,argv[optind],MAXPATH-1);
     im.graphfile[MAXPATH-1]='\0';
 
-    rrd_graph_script(argc,argv,&im);
+    rrd_graph_script(argc,argv,&im,1);
     if (rrd_test_error()) {
 	im_free(&im);
 	return -1;
@@ -2776,7 +2803,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"lazy",       no_argument,       0,  'z'},
             {"zoom",       required_argument, 0,  'm'},
 	    {"no-legend",  no_argument,       0,  'g'},
-           {"only-graph", no_argument,       0,  'j'},
+            {"only-graph", no_argument,       0,  'j'},
 	    {"alt-y-grid", no_argument,       0,  'Y'},
             {"no-minor",   no_argument,       0,  'I'},
 	    {"alt-autoscale", no_argument,    0,  'A'},
