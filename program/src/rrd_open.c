@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2002/06/20 00:21:03  jake
+ * More Win32 build changes; thanks to Kerry Calvert.
+ *
  * Revision 1.4  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -129,6 +132,14 @@ void rrd_free(rrd_t *rrd)
     free(rrd->pdp_prep);
     free(rrd->cdp_prep);
     free(rrd->rrd_value);
+}
+
+/* routine used by external libraries to free memory allocated by
+ * rrd library */
+void rrd_freemem(void *mem)
+{
+
+    free(mem);
 }
 
 int readfile(char *file_name, char **buffer, int skipfirst){

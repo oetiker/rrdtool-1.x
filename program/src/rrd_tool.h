@@ -160,6 +160,7 @@ int rrd_fetch_fn(char *filename, enum cf_en cf_idx,
 		 rrd_value_t **data);
 
 void rrd_free(rrd_t *rrd);
+void rrd_freemem(void *mem);
 void rrd_init(rrd_t *rrd);
 
 int rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
