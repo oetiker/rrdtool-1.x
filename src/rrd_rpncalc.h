@@ -6,7 +6,7 @@
 #ifndef _RRD_RPNCALC_H
 #define _RRD_RPNCALC_H
 
-/* WARNING: if new operators are added, they MUST be added after OP_END.
+/* WARNING: if new operators are added, they MUST be added at the very end of the list.
  * This is because COMPUTE (CDEF) DS store OP nodes by number (name is not
  * an option due to limited par array size). OP nodes must have the same
  * numeric values, otherwise the stored numbers will mean something different. */
@@ -15,7 +15,7 @@ enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_DIV,OP_SIN, OP_DUP, OP_EXC, OP_POP,
 	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
 	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
-	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER,OP_COUNT};
+	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER,OP_COUNT,OP_ATAN};
 
 typedef struct rpnp_t {
     enum op_en   op;

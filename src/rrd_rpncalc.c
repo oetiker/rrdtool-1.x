@@ -153,6 +153,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_NOW,NOW)
 	  add_op(OP_LTIME,LTIME)
 	  add_op(OP_TIME,TIME)
+	  add_op(OP_ATAN,ATAN)
 
 #undef add_op
               }
@@ -321,6 +322,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_NOW,NOW)
 	match_op(OP_LTIME,LTIME)
 	match_op(OP_TIME,TIME)
+	match_op(OP_ATAN,ATAN)
 
 #undef match_op
 
@@ -500,6 +502,10 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 	    case OP_SIN:
 		stackunderflow(0);
 		rpnstack -> s[stptr] = sin(rpnstack -> s[stptr]);
+		break;
+	    case OP_ATAN:
+		stackunderflow(0);
+		rpnstack -> s[stptr] = atan(rpnstack -> s[stptr]);
 		break;
 	    case OP_COS:
 		stackunderflow(0);

@@ -98,6 +98,10 @@ B<SIN, COS, LOG, EXP>
 
 Sine, cosine (input in radians), log, exp (natural logarithm)
 
+B<ATAN>
+
+Arctangent. Output in radians.
+
 B<FLOOR, CEIL>
 
 Round down,up to the nearest integer
