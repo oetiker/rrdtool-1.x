@@ -27,7 +27,7 @@ HTML = $(POD:.pod=.html) $(PMP:.pm=.html)
 PDF = $(MAN:.1=.pdf)
 
 # what should go into the distribution
-EXTRA_DIST= $(POD) $(HTML) $(TXT)
+EXTRA_DIST= $(POD) $(HTML) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
 
 # some install rules
 idocdir = $(prefix)/doc
