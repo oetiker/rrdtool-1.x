@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -22,7 +22,7 @@ void PrintUsage(char *cmd)
 {
 
     char help_main[] =
-	   "RRDtool 1.1.x  Copyright 1997-2003 by Tobias Oetiker <tobi@oetiker.ch>\n"
+	   "RRDtool 1.1.x  Copyright 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n"
 #ifndef WIN32
            "               Compiled " MAKE_TIMESTAMP "\n\n"
 #else
@@ -524,7 +524,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	     strcmp("v", argv[1]) == 0 ||
 	     strcmp("-v", argv[1]) == 0  ||
 	     strcmp("-version", argv[1]) == 0  )
-        printf("RRDtool 1.1.x  Copyright (C) 1997-2003 by Tobias Oetiker <tobi@oetiker.ch>\n");
+        printf("RRDtool 1.1.x  Copyright (C) 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n");
     else if (strcmp("restore", argv[1]) == 0)
 	rrd_restore(argc-1, &argv[1]);
     else if (strcmp("resize", argv[1]) == 0)

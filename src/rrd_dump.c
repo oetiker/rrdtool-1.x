@@ -1,10 +1,13 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
  *****************************************************************************
  * rrd_dump  Display a RRD
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2004/05/25 20:51:49  oetiker
+ * Update displayed copyright messages to be consistent. -- Mike Slifcak
+ *
  * Revision 1.5  2003/02/13 07:05:27  oetiker
  * Find attached the patch I promised to send to you. Please note that there
  * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
