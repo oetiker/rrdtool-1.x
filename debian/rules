@@ -39,6 +39,11 @@ configure-stamp:
 	# Make sure we can find tcl stuff (configure won't fail)
 	test -f $(tclconfigdir)/tclConfig.sh
 
+	# match the configure script to the build environment, as needed
+	#aclocal
+	#automake
+	#autoconf
+
 	# Configure C and Tcl stuff
 ##NO_TCL	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --enable-shared=yes --enable-static=yes --with-tcllib=$(tclconfigdir) --enable-local-libpng=yes --enable-local-zlib=yes
 	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --enable-shared=yes --enable-static=yes --enable-local-libpng=yes --enable-local-zlib=yes
@@ -101,6 +106,9 @@ install: build-stamp
 	mv $(tmp)/usr/share/man/man1/RRDs.1 $(tmp)/usr/share/man/man3/RRDs.3pm
 	mv $(tmp)/usr/share/man/man1/RRDp.1 $(tmp)/usr/share/man/man3/RRDp.3pm
 	mv $(tmp)/usr/lib/perl $(tmp)/usr/lib/perl5
+
+	## trim off the doc sources
+	find $(tmp) -name "*.pod" | xargs rm -f
 
 	dh_movefiles
 
