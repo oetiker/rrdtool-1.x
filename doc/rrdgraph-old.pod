@@ -360,6 +360,13 @@ Push I<*UNKNOWN*> if its at the first value of a data set or otherwise
 the value of this CDEF at the previous time step. This allows you to
 perform calculations across the data.
 
+=item COUNT
+
+Pushes the number 1 if it is at the first value of the data set, the 
+number 2 if it is at the second, and so on. This special value, allows 
+you to make calculations based on the position of the value within 
+the data set.
+
 =item INF, NEGINF
 
 Push a positive or negative infinite (oo) value onto the stack. When

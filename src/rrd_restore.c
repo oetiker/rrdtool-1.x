@@ -423,8 +423,12 @@ rrd_write(char *file_name, rrd_t *rrd)
 
     fwrite(rrd->rra_def,
 	   sizeof(rra_def_t), rrd->stat_head->rra_cnt, rrd_file);
-    
-    fwrite(rrd->live_head, sizeof(live_head_t),1, rrd_file);
+
+	 /* maybe the xml hold an old formatted rrd */
+    if (atoi(rrd->stat_head->version) < 3)
+      fwrite(&(rrd->live_head->last_up), sizeof(long),1, rrd_file);
+    else
+      fwrite(rrd->live_head, sizeof(live_head_t),1, rrd_file);
 
     fwrite( rrd->pdp_prep, sizeof(pdp_prep_t),rrd->stat_head->ds_cnt,rrd_file);
     

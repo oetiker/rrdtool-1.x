@@ -196,10 +196,10 @@ void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
      * occur too often. */
     for (i = 0; rpnp[i].op != OP_END; i++) {
         if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME || 
-            rpnp[i].op == OP_PREV)
+            rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT)
         {
             rrd_set_error(
-                "operators time, ltime and prev not supported with DS COMPUTE");
+                "operators time, ltime, prev and count not supported with DS COMPUTE");
             free(rpnp);
             return;
         }
@@ -313,6 +313,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_UN,UN)
 	match_op(OP_NEGINF,NEGINF)
 	match_op(OP_NE,NE)
+	match_op(OP_COUNT,COUNT)
 	  match_op_param(OP_PREV_OTHER,PREV)
 	match_op(OP_PREV,PREV)
 	match_op(OP_INF,INF)
@@ -428,15 +429,18 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		    }
 		}
 		break;
+	    case OP_COUNT:
+	    	rpnstack -> s[++stptr] = (output_idx+1); /* Note: Counter starts at 1 */
+	    	break;
 	    case OP_PREV:
-		if ((output_idx-1) <= 0) {
+		if ((output_idx) <= 0) {
 		    rpnstack -> s[++stptr] = DNAN;
 		} else {
 		    rpnstack -> s[++stptr] = output[output_idx-1];
 		}
 		break;
 	case OP_PREV_OTHER:
-	  if ((output_idx-1) <= 0) {
+	  if ((output_idx) <= 0) {
 		rpnstack -> s[++stptr] = DNAN;
 	  } else {
 		rpnstack -> s[++stptr] = rpnp[rpnp[rpi].ptr].data[output_idx-1];

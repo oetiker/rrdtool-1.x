@@ -154,7 +154,7 @@ I<rpn-expression> defines the formula used to compute the PDPs of a COMPUTE
 data source from other data sources in the same <RRD>. It is similar to defining
 a B<CDEF> argument for the graph command. Please refer to that manual page
 for a list and description of RPN operations supported. For
-COMPUTE data sources, the following RPN operations are not supported: PREV,
+COMPUTE data sources, the following RPN operations are not supported: COUNT, PREV,
 TIME, and LTIME. In addition, in defining the RPN expression, the COMPUTE
 data source may only refer to the names of data source listed previously
 in the create command. This is similar to the restriction that B<CDEF>s must
