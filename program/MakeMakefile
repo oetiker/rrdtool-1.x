@@ -47,7 +47,7 @@ cp ltmain.sh config
 # If autoconf generates undefined MACRO errors, it may be unable
 # to find libtool.m4. Add the -I flag to aclocal to specify the
 # directory location of this file.
-aclocal -I $HOME/libtool/share/aclocal
+aclocal
 autoheader --warnings=all
 automake-1.7 --foreign --add-missing --force-missing --copy 
 
