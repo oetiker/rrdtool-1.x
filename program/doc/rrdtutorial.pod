@@ -552,18 +552,18 @@ try again.  Also, Read The Fine Manual.  Skip the parts you cannot
 understand yet, you should be able to find out how to start the
 program and use it.
 
-   snmpget myrouter public system.sysdescr.0
+   snmpget myrouter public system.sysDescr.0
 
 The device should answer with a description of itself, perhaps empty.
 Until you got a valid answer from a device, perhaps using a different
 "password", or a different device, there is no point in continuing.
 
-   snmpget myrouter public interfaces.ifnumber.0
+   snmpget myrouter public interfaces.ifNumber.0
 
 Hopefully you get a number as a result, the number of interfaces.
 If so, you can carry on and try a different program called "snmpwalk".
 
-   snmpwalk myrouter public interfaces.iftable.ifentry.ifdescr
+   snmpwalk myrouter public interfaces.ifTable.ifEntry.ifDescr
 
 If it returns with a list of interfaces, you're almost there.
 Here's an example:
