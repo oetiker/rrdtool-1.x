@@ -33,6 +33,7 @@ RRD_C_FILES =		\
 	rrd_fetch.c	\
 	rrd_format.c	\
 	rrd_graph.c	\
+	rrd_graph_helper.c	\
 	rrd_last.c	\
 	rrd_open.c	\
 	rrd_resize.c	\
