@@ -253,7 +253,9 @@ int main(int argc, char *argv[])
 {
     char **myargv;
     char aLine[MAX_LENGTH];
+#ifdef HAVE_CHROOT    
     char *firstdir="";
+#endif
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE,SIG_IGN);
 #endif
@@ -279,7 +281,7 @@ int main(int argc, char *argv[])
 	    gettimeofday(&starttime,&tz);
 #endif
 	  RemoteMode=1;
-#ifndef WIN32
+#ifdef HAVE_CHROOT
           if ((argc == 3) && strcmp("",argv[2])){
              if (getuid()==0){
                 chroot(argv[2]);
@@ -303,8 +305,8 @@ int main(int argc, char *argv[])
              }
           }
 #else
-          fprintf(stderr,"ERROR: change root only in unix "
-                         "enviroment posible\n");
+          fprintf(stderr,"ERROR: change root is not supported by your OS "
+                         "or at least by this copy of rrdtool\n");
           exit(1);
 #endif
 
@@ -374,12 +376,13 @@ int HandleInputLine(int argc, char **argv, FILE* out)
           }
           exit(0);
        }
+#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR)
        if (argc>1 && strcmp("cd", argv[1]) == 0){
           if (argc>3){
              printf("ERROR: invalid parameter count for cd\n");
              return(0);
           }
-#ifndef WIN32
+#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: chdir security problem - rrdtool is runnig as "
                     "root an no chroot!\n");
@@ -397,7 +400,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
              printf("ERROR: invalid parameter count for mkdir\n");
              return(0);
           }
-#ifndef WIN32
+#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: mkdir security problem - rrdtool is runnig as "
                     "root an no chroot!\n");
@@ -436,6 +439,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
           }
           return(0);
        }
+#endif /* opendir and readdir */
+
     }
     if (argc < 3 
 	|| strcmp("help", argv[1]) == 0
@@ -519,7 +524,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
 	int xxsize;
-	int i = 0, j = 0;
+	unsigned long int i = 0, j = 0;
 	time_t        start,end;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
