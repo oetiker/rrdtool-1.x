@@ -21,8 +21,12 @@
 
 
 #ifndef RRD_DEFAULT_FONT
+#ifdef WIN32
+#define RRD_DEFAULT_FONT "c:/winnt/fonts/COUR.TTF"
+#else
 #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" 
 /* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/Arial.ttf" */
+#endif
 #endif
 
 
