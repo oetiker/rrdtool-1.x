@@ -96,8 +96,11 @@ time is I<strftime>-formatted with the string specified in the second argument.
 
 =item RRD::TIME::NOW I<strftime-format>
 
-This gets replaced by the current time of day. The
-time is I<strftime>-formatted with the string specified in the argument.
+This gets replaced by the current time of day. The time is
+I<strftime>-formatted with the string specified in the argument.
+
+Note that if you return : from your strftime format you may have to escape
+them using \ if the time is to be used as an argument to a GRAPH command. 
 
 =item RRD::TIME::STRFTIME I<START|END> I<start-spec> I<end-spec> I<strftime-format>
 
@@ -107,6 +110,9 @@ whether I<START> or I<END> is specified.  Both I<start-spec> and I<end-spec>
 must be supplied as either could be relative to the other.  This is intended
 to allow pretty titles on graphs with times that are easier for non RRDtool
 folks to figure out than "-2weeks".
+
+Note that if you return : from your strftime format you may have to escape
+them using \ if the time is to be used as an argument to a GRAPH command.
 
 =item RRD::GRAPH I<rrdgraph arguments>
 
