@@ -8,31 +8,31 @@ DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
 if USE_INSTALLED_libcgi
 CGI_LIB 	   = -lcgi
 else
-CGI_LIB	           = $(top_srcdir)/libraries/@CGI_LIB_DIR@/librrd_cgi.la
+CGI_LIB	           = $(top_builddir)/libraries/@CGI_LIB_DIR@/librrd_cgi.la
 CGI_INCLUDES       = -I$(top_srcdir)/libraries/@CGI_LIB_DIR@
 endif
 if USE_INSTALLED_libfreetype
 FREETYPE_LIB       = -lfreetype
 else
-FREETYPE_LIB       = $(top_srcdir)/libraries/@FREETYPE_LIB_DIR@/librrd_freetype.la
+FREETYPE_LIB       = $(top_builddir)/libraries/@FREETYPE_LIB_DIR@/librrd_freetype.la
 FREETYPE_INCLUDES  = -I$(top_srcdir)/libraries/@FREETYPE_LIB_DIR@/include
 endif
 if USE_INSTALLED_libart_lgpl
 ART_LIB            = -lart_lgpl
 else
-ART_LIB 	   = $(top_srcdir)/libraries/@ART_LIB_DIR@/librrd_art.la
-ART_INCLUDES       = -I$(top_srcdir)/libraries/@ART_LIB_DIR@
+ART_LIB 	   = $(top_builddir)/libraries/@ART_LIB_DIR@/librrd_art.la
+ART_INCLUDES       = -I$(top_srcdir)/libraries/@ART_LIB_DIR@ -I$(top_builddir)/libraries/@ART_LIB_DIR@
 endif
 if USE_INSTALLED_libpng
 PNG_LIB            = -lpng
 else
-PNG_LIB		   = $(top_srcdir)/libraries/@PNG_LIB_DIR@/librrd_png.la
+PNG_LIB		   = $(top_builddir)/libraries/@PNG_LIB_DIR@/librrd_png.la
 PNG_INCLUDES       = -I$(top_srcdir)/libraries/@PNG_LIB_DIR@
 endif
 if USE_INSTALLED_libz
 ZLIB_LIB           = -lz
 else
-ZLIB_LIB           = $(top_srcdir)/libraries/@ZLIB_LIB_DIR@/librrd_z.la
+ZLIB_LIB           = $(top_builddir)/libraries/@ZLIB_LIB_DIR@/librrd_z.la
 ZLIB_INCLUDES      = -I$(top_srcdir)/libraries/@ZLIB_LIB_DIR@
 endif
 
@@ -113,11 +113,11 @@ rrdcgi_LDADD	= librrd.la
 rrdupdate_SOURCES = 
 rrdupdate_LDADD	= rrdupdate.o librrd.la
 
-rrdupdate.c: rrd_update.c
-	-ln -s rrd_update.c rrdupdate.c
+# rrdupdate.c: rrd_update.c
+#	-ln -s ${srcdir}/rrdupdate.c rrd_update.c
 
-rrdupdate.o: rrdupdate.c
-	$(COMPILE) -DSTANDALONE -c rrdupdate.c
+rrdupdate.o: rrd_update.c
+	$(COMPILE) -DSTANDALONE -c -o $@ $^
 
 rrdtool_SOURCES = 
 rrdtool_DEPENDENCIES = rrd_tool.o
