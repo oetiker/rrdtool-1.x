@@ -261,7 +261,7 @@ if test "x$GCC" = "xyes"; then
 fi
 
 dnl add pic flag in any case this makes sure all our code is relocatable
-CFLAGS="$CFLAGS "`grep pic_flag= libtool | sed -e 's/.*pic_flag=//' -e 's/"//g'`
+CFLAGS="$CFLAGS "`grep pic_flag= libtool | head -1|sed -e 's/.*pic_flag=//' -e 's/"//g'`
 
 ZLIB_CFLAGS=$CFLAGS
 dnl it seems that hpux chockes on -fPIC for some reason
