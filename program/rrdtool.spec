@@ -45,8 +45,7 @@ The RRD Tools Perl modules.
 %prep
 %setup -q -n rrdtool-%{cvsdate}
 
-%define deffont %{_datadir}/fonts/VeraMono.ttf
-perl -pi -e 's!^(#define\s+RRD_DEFAULT_FONT\s+).*!$1"%{deffont}"!' src/rrd_graph.c
+%define deffont %{_datadir}/%{name}/fonts/VeraMono.ttf
 
 %build
 CPPFLAGS="-I/usr/include/libart-2.0 -I/usr/include/freetype2"
@@ -79,6 +78,7 @@ mv %{buildroot}/usr/html html
 mkdir -p %{buildroot}%{perlsite}
 mv %{buildroot}%{_libdir}/perl/* %{buildroot}%{perlsite}
 rmdir %{buildroot}%{_libdir}/perl
+rm -f %{buildroot}/%{perlsite}/auto/RRDs/RRDs.bs
 
 # Fix up the man pages
 if [ "%{_mandir}" != "/usr/share/man" ]; then
@@ -98,8 +98,9 @@ rm -rf %{buildroot}
 %files
 %defattr (-, root, root)
 %doc 00README CONTRIBUTORS COPYING COPYRIGHT ChangeLog NEWS PROJECTS
-%doc README THREADS TODO examples
-%doc docs examples html
+%doc README THREADS TODO
+%doc docs/[a-z]* html/[a-z]*
+%doc examples/*.cgi
 %{_bindir}/rrdcgi
 %{_bindir}/rrdtool
 %{_bindir}/rrdupdate
@@ -119,11 +120,12 @@ rm -rf %{buildroot}
 %{_libdir}/librrd_th.so
 
 %files perl
+%doc examples/*.pl
+%doc docs/RRD* html/RRD*
 %defattr (-, root, root)
 %{perlsite}/RRDp.pm
 %{perlsite}/RRDs.pm
 %dir %{perlsite}/auto/RRDs
-%{perlsite}/auto/RRDs/RRDs.bs
 %{perlsite}/auto/RRDs/RRDs.so
 %{_mandir}/man1/RRDp.1*
 %{_mandir}/man1/RRDs.1*
