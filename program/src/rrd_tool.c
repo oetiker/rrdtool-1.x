@@ -350,14 +350,15 @@ int HandleInputLine(int argc, char **argv, FILE* out)
     }
     else if (strcmp("graph", argv[1]) == 0) {
 	char **calcpr;
+	const char *imgfile = argv[2]; /* rrd_graph changes argv pointer */
 	int xsize, ysize;
 	int i;
 	if( rrd_graph(argc-1, &argv[1], &calcpr, &xsize, &ysize) != -1 ) {
-	    if (strcmp(argv[2],"-") != 0) 
+	    if (strcmp(imgfile,"-") != 0) 
 		printf ("%dx%d\n",xsize,ysize);
 	    if (calcpr) {
 		for(i=0;calcpr[i];i++){
-		    if (strcmp(argv[2],"-") != 0) 
+		    if (strcmp(imgfile,"-") != 0) 
 			printf("%s\n",calcpr[i]);
 		    free(calcpr[i]);
 		} 

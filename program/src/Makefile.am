@@ -63,6 +63,7 @@ RRD_C_FILES =		\
 	rrd_tune.c	\
 	rrd_update.c	\
 	rrd_gfx.c rrd_gfx.h \
+	rrd_afm.c rrd_afm_data.c \
 	getopt.h ntconfig.h parsetime.h rrd_format.h rrd_tool.h rrd.h rrd_hw.h rrd_rpncalc.h
 
 # Build two libraries.  One is a public one that gets installed in

@@ -447,6 +447,7 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           libraries/libpng-1.2.0/Makefile		\
           libraries/zlib-1.1.4/Makefile			\
           libraries/freetype-2.0.5/Makefile		\
+          libraries/afm/Makefile		        \
           src/Makefile					\
           bindings/Makefile                             \
           bindings/tcl/Makefile				\

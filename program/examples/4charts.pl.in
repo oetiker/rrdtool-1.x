@@ -1,4 +1,4 @@
-#! @PERL@
+#! /usr/sepp/bin/perl
 
 #makes things work when run without install
 use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
@@ -31,8 +31,8 @@ for ($t=$start; $t<$start+300*300; $t+=300){
   }
 }
 
-$c1="f57912";
-$c2="2a79e9";
+$c1="f57912a0";
+$c2="2a79e9a0";
 $w=300;
 $h=140;
 RRDs::graph "$name-L.png",

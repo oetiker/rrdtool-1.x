@@ -9,7 +9,7 @@
 #define LIBART_COMPILATION
 #include <libart.h>
 
-enum gfx_if_en {IF_PNG=0,IF_SVG};
+enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS};
 enum gfx_en { GFX_LINE=0,GFX_AREA,GFX_TEXT };
 enum gfx_h_align_en { GFX_H_NULL=0, GFX_H_LEFT, GFX_H_RIGHT, GFX_H_CENTER };
 enum gfx_v_align_en { GFX_V_NULL=0, GFX_V_TOP,  GFX_V_BOTTOM, GFX_V_CENTER };
@@ -88,29 +88,32 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
 			    double tabwidth, char* text);
 
+/* save image to file */
+int       gfx_render (gfx_canvas_t *canvas,
+                              art_u32 width, art_u32 height,
+                              gfx_color_t background, FILE *fo);
+
+/* free memory used by nodes this will also remove memory required for
+   node chain and associated material */
+int           gfx_destroy    (gfx_canvas_t *canvas); 
 
 
-/* turn graph into a png image */
+/* PNG support*/
 int       gfx_render_png (gfx_canvas_t *canvas,
                               art_u32 width, art_u32 height,
                               gfx_color_t background, FILE *fo);
 double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
 			    double tabwidth, char* text);
-                                                                                          
-int       gfx_render (gfx_canvas_t *canvas,
-                              art_u32 width, art_u32 height,
-                              gfx_color_t background, FILE *fo);
-                                                                                         
-/* free memory used by nodes this will also remove memory required for
-   node chain and associated material */
-int           gfx_destroy    (gfx_canvas_t *canvas); 
 
-#endif
-
-/* turn graph into an svg image */
+/* SVG support */
 int       gfx_render_svg (gfx_canvas_t *canvas,
                               art_u32 width, art_u32 height,
                               gfx_color_t background, FILE *fo);
 
+/* EPS support */
+int       gfx_render_eps (gfx_canvas_t *canvas,
+                              art_u32 width, art_u32 height,
+                              gfx_color_t background, FILE *fo);
 
+#endif

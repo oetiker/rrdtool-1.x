@@ -17,6 +17,7 @@
 #include FT_FREETYPE_H
 
 #include "rrd_gfx.h"
+#include "rrd_afm.h"
 
 /* lines are better drawn on the pixle than between pixles */
 #define LINEOFFSET 0.5
@@ -194,6 +195,11 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
    node->tabwidth = tabwidth;
    node->halign = h_align;
    node->valign = v_align;
+#if 0
+  /* debugging: show text anchor */
+   gfx_new_line(canvas, x - 3, y + 0, x, y, 0.2, 0x00FF0000);
+   gfx_new_line(canvas, x - 0, y + 3, x, y, 0.2, 0x00FF0000);
+#endif
    return node;
 }
 
@@ -205,6 +211,8 @@ int           gfx_render(gfx_canvas_t *canvas,
     return gfx_render_png (canvas, width, height, background, fp);
   case IF_SVG: 
     return gfx_render_svg (canvas, width, height, background, fp);
+  case IF_EPS:
+    return gfx_render_eps (canvas, width, height, background, fp);
   default:
     return -1;
   }
@@ -216,6 +224,9 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
   switch (canvas->imgformat) {
   case IF_PNG: 
     return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text);
+  case IF_SVG: /* fall through */ 
+  case IF_EPS:
+    return afm_get_text_width(start, font, size, tabwidth, text);
   default:
     return size * strlen(text);
   }
@@ -269,9 +280,6 @@ double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
   return text_width;
 }
  
-
-
-
 static int gfx_save_png (art_u8 *buffer, FILE *fp,
                      long width, long height, long bytes_per_pixel);
 /* render grafics into png image */
@@ -577,10 +585,11 @@ static void svg_close_tag_empty_node(FILE *fp)
    svg_end_tag(fp, NULL);
 }
  
-static void svg_write_text(FILE *fp, const char *p)
+static void svg_write_text(FILE *fp, const char *text)
 {
-   char ch;
-   const char *start, *last;
+   const unsigned char *p, *start, *last;
+   unsigned int ch;
+   p = (const unsigned char*)text;
    if (!p)
      return;
    /* trim leading spaces */
@@ -594,16 +603,21 @@ static void svg_write_text(FILE *fp, const char *p)
        last = p;
      p++;
   }
-   /* encode trimmed text */
-   p = start;
-   while (p <= last) {
-     ch = *p++;
-     switch (ch) {
-       case '&': fputs("&amp;", fp); break;
-       case '<': fputs("&lt;", fp); break;
-       case '>': fputs("&gt;", fp); break;
-       case '"': fputs("&quot;", fp); break;
-       default: putc(ch, fp);
+  /* encode trimmed text */
+  p = start;
+  while (p <= last) {
+    ch = *p++;
+    ch = afm_host2unicode(ch); /* unsafe macro */
+    switch (ch) {
+    case '&': fputs("&amp;", fp); break;
+    case '<': fputs("&lt;", fp); break;
+    case '>': fputs("&gt;", fp); break;
+    case '"': fputs("&quot;", fp); break;
+    default:
+      if (ch >= 127)
+	fprintf(fp, "&#%d;", ch);
+      else
+	putc(ch, fp);
      }
    }
 }
@@ -665,7 +679,7 @@ static void svg_common_path_attributes(FILE *fp, gfx_node_t *node)
   fputs("\"", fp);
   svg_write_color(fp, node->color, "stroke");
   fputs(" fill=\"none\"", fp);
-  if (node->dash_on != 0 && node->dash_off != 0) {
+  if (node->dash_on > 0 && node->dash_off > 0) {
     fputs(" stroke-dasharray=\"", fp);
     svg_write_number(fp, node->dash_on);
     fputs(",", fp);
@@ -935,4 +949,344 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
    }
    svg_end_tag(fp, "svg");
    return 0;
+}
+
+/* ------- EPS -------
+   EPS and Postscript references:
+   http://partners.adobe.com/asn/developer/technotes/postscript.html
+*/
+
+typedef struct eps_font
+{
+  const char *ps_font;
+  int id;
+  struct eps_font *next;
+} eps_font;
+
+typedef struct eps_state
+{
+  FILE *fp;
+  gfx_canvas_t *canvas;
+  art_u32 page_width, page_height;
+  eps_font *font_list;
+  /*--*/
+  gfx_color_t color;
+  const char *font;
+  double font_size;
+  double line_width;
+  int linecap, linejoin;
+} eps_state;
+
+static void eps_set_color(eps_state *state, gfx_color_t color)
+{
+   /* gfx_color_t is RRGGBBAA */
+  if (state->color == color)
+    return;
+  fprintf(state->fp, "%d %d %d Rgb\n",
+      (int)((color >> 24) & 255),
+      (int)((color >> 16) & 255),
+      (int)((color >>  8) & 255));
+  state->color = color;
+}
+
+static int eps_add_font(eps_state *state, gfx_node_t *node)
+{
+  /* The fonts list could be postponed to the end using
+     (atend), but let's be nice and have them in the header. */
+  const char *ps_font = afm_get_font_postscript_name(node->filename);
+  eps_font *ef;
+  for (ef = state->font_list; ef; ef = ef->next) {
+    if (!strcmp(ps_font, ef->ps_font))
+      return 0;
+  }
+  ef = malloc(sizeof(eps_font));
+  if (ef == NULL) {
+    rrd_set_error("malloc for eps_font");
+    return -1;
+  }
+  ef->next = state->font_list;
+  ef->ps_font = ps_font;
+  state->font_list = ef;
+  return 0;
+}
+
+static void eps_list_fonts(eps_state *state, const char *dscName)
+{
+  eps_font *ef;
+  int lineLen = strlen(dscName);
+  if (!state->font_list)
+    return;
+  fputs(dscName, state->fp);
+  for (ef = state->font_list; ef; ef = ef->next) {
+    int nameLen = strlen(ef->ps_font);
+    if (lineLen + nameLen > 100 && lineLen) {
+      fputs("\n", state->fp);
+      fputs("%%- \n", state->fp);
+      lineLen = 5;
+    } else {
+      fputs(" ", state->fp);
+      lineLen++;
+    }
+    fputs(ef->ps_font, state->fp);
+    lineLen += nameLen;
+  }
+  fputs("\n", state->fp);
+}
+
+static void eps_define_fonts(eps_state *state)
+{
+  eps_font *ef;
+  if (!state->font_list)
+    return;
+  for (ef = state->font_list; ef; ef = ef->next) {
+    /* PostScript¨ LANGUAGE REFERENCE third edition
+       page 349 */
+    fprintf(state->fp,
+        "%%\n"
+        "/%s findfont dup length dict begin\n"
+        "{ 1 index /FID ne {def} {pop pop} ifelse } forall\n"
+        "/Encoding ISOLatin1Encoding def\n"
+        "currentdict end\n"
+        "/%s-ISOLatin1 exch definefont pop\n"
+        "/SetFont-%s { /%s-ISOLatin1 findfont exch scalefont setfont } bd\n",
+        ef->ps_font, ef->ps_font, ef->ps_font, ef->ps_font);
+  }
+}
+
+static int eps_prologue(eps_state *state)
+{
+  gfx_node_t *node;
+  fputs(
+    "%!PS-Adobe-3.0 EPSF-3.0\n"
+    "%%Creator: RRDtool 1.1.x, Tobias Oetiker, http://tobi.oetiker.ch\n"
+    /* can't like weird chars here */
+    "%%Title: (RRDTool output)\n"
+    "%%DocumentData: Clean7Bit\n"
+    "", state->fp);
+  fprintf(state->fp, "%%%%BoundingBox: 0 0 %d %d\n",
+    state->page_width, state->page_height);
+  for (node = state->canvas->firstnode; node; node = node->next) {
+    if (node->type == GFX_TEXT && eps_add_font(state, node) == -1)
+      return -1;
+  }
+  eps_list_fonts(state, "%%DocumentFonts:");
+  eps_list_fonts(state, "%%DocumentNeededFonts:");
+  fputs(
+      "%%EndComments\n"
+      "%%BeginProlog\n"
+      "%%EndProlog\n" /* must have, or BoundingBox is ignored */
+      "/bd { bind def } bind def\n"
+      "", state->fp);
+  fprintf(state->fp, "/X { %.2f add } bd\n", LINEOFFSET);
+  fputs(
+      "/X2 {X exch X exch} bd\n"
+      "/M {X2 moveto} bd\n"
+      "/L {X2 lineto} bd\n"
+      "/m {moveto} bd\n"
+      "/l {lineto} bd\n"
+      "/S {stroke} bd\n"
+      "/CP {closepath} bd\n"
+      "/WS {setlinewidth stroke} bd\n"
+      "/F {fill} bd\n"
+      "/TaL { } bd\n"
+      "/TaC {dup stringwidth pop neg 2 div 0 rmoveto } bd\n"
+      "/TaR {dup stringwidth pop neg 0 rmoveto } bd\n"
+      "/TL {moveto TaL show} bd\n"
+      "/TC {moveto TaC show} bd\n"
+      "/TR {moveto TaR show} bd\n"
+      "/Rgb { 255.0 div 3 1 roll\n"
+      "       255.0 div 3 1 roll \n"
+      "       255.0 div 3 1 roll setrgbcolor } bd\n"
+      "", state->fp);
+  eps_define_fonts(state);
+  return 0;
+}
+
+static void eps_write_linearea(eps_state *state, gfx_node_t *node)
+{
+  int i;
+  FILE *fp = state->fp;
+  int useOffset = 0;
+  eps_set_color(state, node->color);
+  if (node->type == GFX_LINE) {
+    if (state->linecap != 1) {
+      fputs("1 setlinecap\n", fp);
+      state->linecap = 1;
+    }
+    if (state->linejoin != 1) {
+      fputs("1 setlinejoin\n", fp);
+      state->linejoin = 1;
+    }
+  }
+  for (i = 0; i < node->points; i++) {
+    ArtVpath *vec = node->path + i;
+    double x = vec->x;
+    double y = state->page_height - vec->y;
+    if (vec->code == ART_MOVETO_OPEN || vec->code == ART_MOVETO)
+      useOffset = (fabs(x - floor(x) - 0.5) < 0.01 && fabs(y - floor(y) - 0.5) < 0.01);
+    if (useOffset) {
+      x -= LINEOFFSET;
+      y -= LINEOFFSET;
+    }
+    switch (vec->code) {
+    case ART_MOVETO_OPEN: /* fall-through */
+    case ART_MOVETO:
+      svg_write_number(fp, x);
+      fputc(' ', fp);
+      svg_write_number(fp, y);
+      fputc(' ', fp);
+      fputs(useOffset ? "M\n" : "m\n", fp);
+      break;
+    case ART_LINETO:
+      svg_write_number(fp, x);
+      fputc(' ', fp);
+      svg_write_number(fp, y);
+      fputc(' ', fp);
+      fputs(useOffset ? "L\n" : "l\n", fp);
+      break;
+    case ART_CURVETO: break; /* unsupported */
+    case ART_END: break; /* nop */
+    }
+  }
+  if (node->type == GFX_LINE) {
+    if (node->closed_path)
+      fputs("CP ", fp);
+    if (node->size != state->line_width) {
+      state->line_width = node->size;
+      svg_write_number(fp, state->line_width);
+      fputs(" WS\n", fp);
+    } else {
+      fputs("S\n", fp);
+    }
+   } else {
+    fputs("F\n", fp);
+   }
+}
+
+static void eps_write_text(eps_state *state, gfx_node_t *node)
+{
+  FILE *fp = state->fp;
+  const unsigned char *p;
+  const char *ps_font = afm_get_font_postscript_name(node->filename);
+  char align = 'L';
+  double x = node->x;
+  double y = state->page_height - node->y, ydelta = 0;
+  int lineLen = 0;
+  eps_set_color(state, node->color);
+  if (strcmp(ps_font, state->font) || node->size != state->font_size) {
+    state->font = ps_font;
+    state->font_size = node->size;
+    svg_write_number(fp, state->font_size);
+    fprintf(fp, " SetFont-%s\n", state->font);
+  }
+  fputs("(", fp);
+  lineLen = 20;
+  for (p = (const unsigned char*)node->text; *p; p++) {
+    if (lineLen > 70) {
+      fputs("\\\n", fp); /* backslash and \n */
+      lineLen = 0;
+    }
+    switch (*p) {
+      case '(':
+      case ')':
+      case '\\':
+      case '\n':
+      case '\r':
+      case '\t':
+        fputc('\\', fp);
+        lineLen++;
+        /* fall-through */
+      default:
+        if (*p >= 126)
+          fprintf(fp, "\\%03o", *p);
+        else
+          fputc(*p, fp);
+        lineLen++;
+    }
+  }
+  fputs(") ", fp);
+  switch(node->valign){
+  case GFX_V_TOP:    ydelta = -node->size; break;
+  case GFX_V_CENTER: ydelta = -node->size / 3.0; break;          
+  case GFX_V_BOTTOM: break;          
+  case GFX_V_NULL: break;          
+  }
+  if (node->angle == 0)
+    y += ydelta;
+  switch (node->halign) {
+  case GFX_H_RIGHT:  align = 'R'; break;
+  case GFX_H_CENTER: align = 'C'; break;
+  case GFX_H_LEFT: align= 'L'; break;
+  case GFX_H_NULL: align= 'L'; break;
+  }
+  if (node->angle != 0) {
+    fputs("\n", fp);
+    fputs("  gsave ", fp);
+    svg_write_number(fp, x);
+    fputc(' ', fp);
+    svg_write_number(fp, y);
+    fputs(" translate ", fp);
+    svg_write_number(fp, -node->angle);
+    fputs(" rotate 0 ", fp);
+    svg_write_number(fp, ydelta);
+    fputs(" moveto ", fp);
+    fprintf(fp, "Ta%c", align);
+    fputs(" show grestore\n", fp);
+  } else {
+    svg_write_number(fp, x);
+    fputc(' ', fp);
+    svg_write_number(fp, y);
+    fputs(" T", fp);
+    fputc(align, fp);
+    fputc('\n', fp);
+  }
+}
+
+static int eps_write_content(eps_state *state)
+{
+  gfx_node_t *node;
+  fputs("%\n", state->fp);
+  for (node = state->canvas->firstnode; node; node = node->next) {
+    switch (node->type) {
+    case GFX_LINE:
+    case GFX_AREA:
+      eps_write_linearea(state, node);
+      break;
+    case GFX_TEXT:
+      eps_write_text(state, node);
+      break;
+    }
+  }
+  return 0;
+}
+
+int       gfx_render_eps (gfx_canvas_t *canvas,
+                 art_u32 width, art_u32 height,
+                 gfx_color_t background, FILE *fp){
+  struct eps_state state;
+  state.fp = fp;
+  state.canvas = canvas;
+  state.page_width = width;
+  state.page_height = height;
+  state.font = "no-default-font";
+  state.font_size = -1;
+  state.color = 0; /* black */
+  state.font_list = NULL;
+  state.linecap = -1;
+  state.linejoin = -1;
+  if (eps_prologue(&state) == -1)
+    return -1;
+  eps_set_color(&state, background);
+  fprintf(fp, "0 0 M 0 %d L %d %d L %d 0 L fill\n",
+      height, width, height, width);
+  if (eps_write_content(&state) == -1)
+    return 0;
+  fputs("showpage\n", fp);
+  fputs("%%EOF\n", fp);
+  while (state.font_list) {
+    eps_font *next = state.font_list->next;
+    free(state.font_list);
+    state.font_list = next;
+  }
+  return 0;
 }
