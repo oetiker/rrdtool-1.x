@@ -32,6 +32,7 @@ gfx_node_t *gfx_new_node( gfx_canvas_t *canvas,enum gfx_en type){
   node->path = NULL;        /* path */
   node->points = 0;
   node->points_max =0;
+  node->closed_path = 0;
   node->svp = NULL;         /* svp */
   node->filename = NULL;             /* font or image filename */
   node->text = NULL;
@@ -56,6 +57,9 @@ gfx_canvas_t *gfx_new_canvas (void) {
     gfx_canvas_t *canvas = art_new(gfx_canvas_t,1);
     canvas->firstnode = NULL;
     canvas->lastnode = NULL;
+    canvas->imgformat = IF_PNG; /* we default to PNG output */
+    canvas->interlaced = 0;
+    canvas->zoom = 1.0;
     return canvas;    
 }
 
@@ -64,6 +68,14 @@ gfx_node_t  *gfx_new_line(gfx_canvas_t *canvas,
 			   double x0, double y0, 
 	 		   double x1, double y1,
  			   double width, gfx_color_t color){
+  return gfx_new_dashed_line(canvas, x0, y0, x1, y1, width, color, 0, 0);
+}
+
+gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas, 
+			   double x0, double y0, 
+	 		   double x1, double y1,
+ 			   double width, gfx_color_t color,
+			   double dash_on, double dash_off){
 
   gfx_node_t *node;
   ArtVpath *vec;
@@ -79,6 +91,8 @@ gfx_node_t  *gfx_new_line(gfx_canvas_t *canvas,
   node->points_max = 3;
   node->color = color;
   node->size  = width;
+  node->dash_on = dash_on;
+  node->dash_off = dash_off;
   node->path  = vec;
   return node;
 }
@@ -153,7 +167,9 @@ int           gfx_add_point  (gfx_node_t *node,
   return 0;
 }
 
-
+void           gfx_close_path  (gfx_node_t *node) {
+    node->closed_path = 1;
+}
 
 /* create a text node */
 gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,  
@@ -182,7 +198,32 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
    return node;
 }
 
-double gfx_get_text_width ( double start, char* font, double size, 			      
+int           gfx_render(gfx_canvas_t *canvas, 
+			      art_u32 width, art_u32 height, 
+			      gfx_color_t background, FILE *fp){
+  switch (canvas->imgformat) {
+  case IF_PNG: 
+    return gfx_render_png (canvas, width, height, background, fp);
+  case IF_SVG: 
+    return gfx_render_svg (canvas, width, height, background, fp);
+  default:
+    return -1;
+  }
+}
+
+double gfx_get_text_width ( gfx_canvas_t *canvas,
+			    double start, char* font, double size,
+			    double tabwidth, char* text){
+  switch (canvas->imgformat) {
+  case IF_PNG: 
+    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text);
+  default:
+    return size * strlen(text);
+  }
+}
+
+double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
+			    double start, char* font, double size,
 			    double tabwidth, char* text){
 
   FT_GlyphSlot  slot;
@@ -237,7 +278,6 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,
 /* render grafics into png image */
 int           gfx_render_png (gfx_canvas_t *canvas, 
 			      art_u32 width, art_u32 height, 
-		              double zoom, 
 			      gfx_color_t background, FILE *fp){
     
     
@@ -245,8 +285,8 @@ int           gfx_render_png (gfx_canvas_t *canvas,
     gfx_node_t *node = canvas->firstnode;    
     art_u8 red = background >> 24, green = (background >> 16) & 0xff;
     art_u8 blue = (background >> 8) & 0xff, alpha = ( background & 0xff );
-    unsigned long pys_width = width * zoom;
-    unsigned long pys_height = height * zoom;
+    unsigned long pys_width = width * canvas->zoom;
+    unsigned long pys_height = height * canvas->zoom;
     const int bytes_per_pixel = 3;
     unsigned long rowstride = pys_width*bytes_per_pixel; /* bytes per pixel */
     art_u8 *buffer = art_new (art_u8, rowstride*pys_height);
@@ -259,12 +299,17 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             ArtVpath *vec;
             double dst[6];     
             ArtSVP *svp;
-            art_affine_scale(dst,zoom,zoom);
+	    if (node->closed_path) { 
+		/* libart uses end==start for closed as indicator of closed path */
+		gfx_add_point(node, node->path[0].x, node->path[0].y);
+		node->closed_path = 0;
+	    }
+            art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
-                                             node->size*zoom,1,1);
+                                             node->size*canvas->zoom,1,1);
             } else {
                 svp = art_svp_from_vpath ( vec );
             }
@@ -303,11 +348,11 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             error = FT_Set_Char_Size(face,   /* handle to face object            */
                                      (long)(node->size*64),
                                      (long)(node->size*64),
-                                     (long)(100*zoom),
-                                     (long)(100*zoom));
+                                     (long)(100*canvas->zoom),
+                                     (long)(100*canvas->zoom));
             if ( error ) break;
-            pen_x = node->x * zoom;
-            pen_y = node->y * zoom;
+            pen_x = node->x * canvas->zoom;
+            pen_y = node->y * canvas->zoom;
             slot = face->glyph;
 
             for(text=(unsigned char *)node->text;*text;text++) {	
@@ -471,8 +516,14 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 }
 
  
+/* ------- SVG -------
+   SVG reference:
+   http://www.w3.org/TR/SVG/
+*/
 static int svg_indent = 0;
 static int svg_single_line = 0;
+static const char *svg_default_font = "Helvetica";
+
 static void svg_print_indent(FILE *fp)
 {
   int i;
@@ -483,28 +534,28 @@ static void svg_print_indent(FILE *fp)
 }
  
 static void svg_start_tag(FILE *fp, const char *name)
- {
+{
    svg_print_indent(fp);
    putc('<', fp);
    fputs(name, fp);
    svg_indent++;
- }
+}
  
- static void svg_close_tag_single_line(FILE *fp)
- {
+static void svg_close_tag_single_line(FILE *fp)
+{
    svg_single_line++;
    putc('>', fp);
- }
+}
  
- static void svg_close_tag(FILE *fp)
- {
+static void svg_close_tag(FILE *fp)
+{
    putc('>', fp);
    if (!svg_single_line)
      putc('\n', fp);
- }
+}
  
- static void svg_end_tag(FILE *fp, const char *name)
- {
+static void svg_end_tag(FILE *fp, const char *name)
+{
    /* name is NULL if closing empty-node tag */
    svg_indent--;
    if (svg_single_line)
@@ -518,15 +569,15 @@ static void svg_start_tag(FILE *fp, const char *name)
      putc('/', fp);
    }
    svg_close_tag(fp);
- }
+}
  
- static void svg_close_tag_empty_node(FILE *fp)
- {
+static void svg_close_tag_empty_node(FILE *fp)
+{
    svg_end_tag(fp, NULL);
- }
+}
  
- static void svg_write_text(FILE *fp, const char *p)
- {
+static void svg_write_text(FILE *fp, const char *p)
+{
    char ch;
    const char *start, *last;
    if (!p)
@@ -554,10 +605,10 @@ static void svg_start_tag(FILE *fp, const char *name)
        default: putc(ch, fp);
      }
    }
- }
+}
  
- static void svg_write_number(FILE *fp, double d)
- {
+static void svg_write_number(FILE *fp, double d)
+{
    /* omit decimals if integer to reduce filesize */
    char buf[60], *p;
    snprintf(buf, sizeof(buf), "%.2f", d);
@@ -575,41 +626,64 @@ static void svg_start_tag(FILE *fp, const char *name)
      break;
    }
    fputs(buf, fp);
- }
+}
  
- static int svg_color_is_black(int c)
- {
-   /* gfx_color_t is RRGGBBAA, svg can use #RRGGBB like html */
-   c = (int)((c >> 8) & 0xFFFFFF);
-   return !c;
- }
+static int svg_color_is_black(int c)
+{
+  /* gfx_color_t is RRGGBBAA */
+  return c == 0x000000FF;
+}
  
- static void svg_write_color(FILE *fp, int c)
- {
-   /* gfx_color_t is RRGGBBAA, svg can use #RRGGBB like html */
-   c = (int)((c >> 8) & 0xFFFFFF);
-   if ((c & 0x0F0F0F) == ((c >> 4) & 0x0F0F0F)) {
+static void svg_write_color(FILE *fp, gfx_color_t c, const char *attr)
+{
+  /* gfx_color_t is RRGGBBAA, svg can use #RRGGBB and #RGB like html */
+  gfx_color_t rrggbb = (int)((c >> 8) & 0xFFFFFF);
+  gfx_color_t opacity = c & 0xFF;
+  fprintf(fp, " %s=\"", attr);
+  if ((rrggbb & 0x0F0F0F) == ((rrggbb >> 4) & 0x0F0F0F)) {
      /* css2 short form, #rgb is #rrggbb, not #r0g0b0 */
-     fprintf(fp, "#%03X",
-           ( ((c >> 8) & 0xF00)
-           | ((c >> 4) & 0x0F0)
-           | ( c       & 0x00F)));
+    fprintf(fp, "#%03lX",
+          ( ((rrggbb >> 8) & 0xF00)
+          | ((rrggbb >> 4) & 0x0F0)
+          | ( rrggbb       & 0x00F)));
    } else {
-     fprintf(fp, "#%06X", c);
+    fprintf(fp, "#%06lX", rrggbb);
    }
+  fputs("\"", fp);
+  if (opacity != 0xFF) {
+    fprintf(fp, " stroke-opacity=\"");
+    svg_write_number(fp, opacity / 255.0);
+    fputs("\"", fp);
  }
+}
  
- static int svg_is_int_step(double a, double b)
- {
+static void svg_common_path_attributes(FILE *fp, gfx_node_t *node)
+{
+  fputs(" stroke-width=\"", fp);
+  svg_write_number(fp, node->size);
+  fputs("\"", fp);
+  svg_write_color(fp, node->color, "stroke");
+  fputs(" fill=\"none\"", fp);
+  if (node->dash_on != 0 && node->dash_off != 0) {
+    fputs(" stroke-dasharray=\"", fp);
+    svg_write_number(fp, node->dash_on);
+    fputs(",", fp);
+    svg_write_number(fp, node->dash_off);
+    fputs("\"", fp);
+  }
+}
+
+static int svg_is_int_step(double a, double b)
+{
    double diff = fabs(a - b);
    return floor(diff) == diff;
- }
+}
  
- static int svg_path_straight_segment(FILE *fp,
+static int svg_path_straight_segment(FILE *fp,
      double lastA, double currentA, double currentB,
      gfx_node_t *node,
      int segment_idx, int isx, char absChar, char relChar)
- {
+{
    if (!svg_is_int_step(lastA, currentA)) {
      putc(absChar, fp);
      svg_write_number(fp, currentA);
@@ -630,23 +704,18 @@ static void svg_start_tag(FILE *fp, const char *name)
    putc(relChar, fp);
    svg_write_number(fp, currentA - lastA);
    return 0;
- }
+}
  
- static void svg_path(FILE *fp, gfx_node_t *node, int multi)
- {
+static void svg_path(FILE *fp, gfx_node_t *node, int multi)
+{
    int i;
    double lastX = 0, lastY = 0;
    /* for straight lines <path..> tags take less space than
       <line..> tags because of the efficient packing
       in the 'd' attribute */
    svg_start_tag(fp, "path");
-   if (!multi) {
-     fputs(" stroke-width=\"", fp);
-     svg_write_number(fp, node->size);
-     fputs("\" stroke=\"", fp);
-     svg_write_color(fp, node->color);
-     fputs("\" fill=\"none\"", fp);
-   }
+  if (!multi)
+    svg_common_path_attributes(fp, node);
    fputs(" d=\"", fp);
    /* specification of the 'd' attribute: */
    /* http://www.w3.org/TR/SVG/paths.html#PathDataGeneralInformation */
@@ -684,12 +753,14 @@ static void svg_start_tag(FILE *fp, const char *name)
      lastX = x;
      lastY = y;
    }
+  if (node->closed_path)
+    fputs(" Z", fp);
    fputs("\"", fp);
    svg_close_tag_empty_node(fp);
- }
+}
  
- static void svg_multi_path(FILE *fp, gfx_node_t **nodeR)
- {
+static void svg_multi_path(FILE *fp, gfx_node_t **nodeR)
+{
    /* optimize for multiple paths with the same color, penwidth, etc. */
    int num = 1;
    gfx_node_t *node = *nodeR;
@@ -697,7 +768,9 @@ static void svg_start_tag(FILE *fp, const char *name)
    while (next) {
      if (next->type != node->type
          || next->size != node->size
-         || next->color != node->color)
+        || next->color != node->color
+        || next->dash_on != node->dash_on
+        || next->dash_off != node->dash_off)
        break;
      next = next->next;
      num++;
@@ -707,11 +780,7 @@ static void svg_start_tag(FILE *fp, const char *name)
      return;
    }
    svg_start_tag(fp, "g");
-   fputs(" stroke-width=\"", fp);
-   svg_write_number(fp, node->size);
-   fputs("\" stroke=\"", fp);
-   svg_write_color(fp, node->color);
-   fputs("\" fill=\"none\"", fp);
+  svg_common_path_attributes(fp, node);
    svg_close_tag(fp);
    while (num && node) {
      svg_path(fp, node, 1);
@@ -721,16 +790,16 @@ static void svg_start_tag(FILE *fp, const char *name)
      *nodeR = node;
    }
    svg_end_tag(fp, "g");
- }
+}
  
- static void svg_area(FILE *fp, gfx_node_t *node)
- {
+static void svg_area(FILE *fp, gfx_node_t *node)
+{
    int i;
    double startX = 0, startY = 0;
    svg_start_tag(fp, "polygon");
-   fputs(" fill=\"", fp);
-   svg_write_color(fp, node->color);
-   fputs("\" points=\"", fp);
+  fputs(" ", fp);
+  svg_write_color(fp, node->color, "fill");
+  fputs(" points=\"", fp);
    for (i = 0; i < node->points; i++) {
      ArtVpath *vec = node->path + i;
      double x = vec->x - LINEOFFSET;
@@ -761,10 +830,10 @@ static void svg_start_tag(FILE *fp, const char *name)
    }
    fputs("\"", fp);
    svg_close_tag_empty_node(fp);
- }
+}
  
- static void svg_text(FILE *fp, gfx_node_t *node)
- {
+static void svg_text(FILE *fp, gfx_node_t *node)
+{
    double x = node->x - LINEOFFSET;
    double y = node->y - LINEOFFSET;
    if (node->angle != 0) {
@@ -790,14 +859,13 @@ static void svg_start_tag(FILE *fp, const char *name)
    svg_write_number(fp, x);
    fputs("\" y=\"", fp);
    svg_write_number(fp, y);
+  if (strcmp(node->filename, svg_default_font))
+    fprintf(fp, " font-family=\"%s\"", node->filename);
    fputs("\" font-size=\"", fp);
    svg_write_number(fp, node->size);
    fputs("\"", fp);
-   if (!svg_color_is_black(node->color)) {
-     fputs(" fill=\"", fp);
-     svg_write_color(fp, node->color);
-     fputs("\"", fp);
-   }
+  if (!svg_color_is_black(node->color))
+    svg_write_color(fp, node->color, "fill");
    switch (node->halign) {
    case GFX_H_RIGHT:  fputs(" text-anchor=\"end\"", fp); break;
    case GFX_H_CENTER: fputs(" text-anchor=\"middle\"", fp); break;
@@ -810,32 +878,31 @@ static void svg_start_tag(FILE *fp, const char *name)
    svg_end_tag(fp, "text");
    if (node->angle != 0)
      svg_end_tag(fp, "g");
- }
+}
  
- int       gfx_render_svg (gfx_canvas_t *canvas,
+int       gfx_render_svg (gfx_canvas_t *canvas,
                  art_u32 width, art_u32 height,
-                 double zoom,
                  gfx_color_t background, FILE *fp){
    gfx_node_t *node = canvas->firstnode;
    fputs(
- "<?xml version=\"1.0\" standalone=\"yes\"?>\n"
- "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\"\n"
- "   \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
- "<!--\n"
- "   SVG file created by RRDtool,\n"
- "   Tobias Oetiker <tobi@oetike.ch>, http://tobi.oetiker.ch\n"
- "\n"
- "   The width/height attributes in the outhermost svg node\n"
- "   are just default sizes for the browser which is used\n"
- "   if the svg file is openened directly without being\n"
- "   embedded in an html file.\n"
- "   The viewBox is the local coord system for rrdtool.\n"
- "-->\n", fp);
+"<?xml version=\"1.0\" standalone=\"no\"?>\n"
+"<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\"\n"
+"   \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
+"<!--\n"
+"   SVG file created by RRDtool,\n"
+"   Tobias Oetiker <tobi@oetike.ch>, http://tobi.oetiker.ch\n"
+"\n"
+"   The width/height attributes in the outhermost svg node\n"
+"   are just default sizes for the browser which is used\n"
+"   if the svg file is openened directly without being\n"
+"   embedded in an html file.\n"
+"   The viewBox is the local coord system for rrdtool.\n"
+"-->\n", fp);
    svg_start_tag(fp, "svg");
    fputs(" width=\"", fp);
-   svg_write_number(fp, width * zoom);
+  svg_write_number(fp, width * canvas->zoom);
    fputs("\" height=\"", fp);
-   svg_write_number(fp, height * zoom);
+  svg_write_number(fp, height * canvas->zoom);
    fputs("\" x=\"0\" y=\"0\" viewBox=\"", fp);
    svg_write_number(fp, -LINEOFFSET);
    fputs(" ", fp);
@@ -845,13 +912,12 @@ static void svg_start_tag(FILE *fp, const char *name)
    fputs(" ", fp);
    svg_write_number(fp, height - LINEOFFSET);
    fputs("\" preserveAspectRatio=\"xMidYMid\"", fp);
-   fputs(" font-family=\"Helvetica\"", fp); /* default font */
+  fprintf(fp, " font-family=\"%s\"", svg_default_font); /* default font */
+  fputs(" stroke-linecap=\"round\" stroke-linejoin=\"round\"", fp);
    svg_close_tag(fp);
    svg_start_tag(fp, "rect");
    fprintf(fp, " x=\"0\" y=\"0\" width=\"%d\" height=\"%d\"", width, height);
-   fputs(" style=\"fill:", fp);
-   svg_write_color(fp, background);
-   fputs("\"", fp);
+  svg_write_color(fp, background, "fill");
    svg_close_tag_empty_node(fp);
    while (node) {
      switch (node->type) {
@@ -868,4 +934,4 @@ static void svg_start_tag(FILE *fp, const char *name)
    }
    svg_end_tag(fp, "svg");
    return 0;
- }
+}

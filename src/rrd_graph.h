@@ -25,8 +25,6 @@ enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
 	    GF_DEF, GF_CDEF, GF_VDEF,
 	    GF_PART};
 
-enum if_en {IF_PNG=0,IF_SVG};
-
 enum vdef_op_en {
 		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
 		,VDEF_MINIMUM	/* like the MIN in (G)PRINT */
@@ -119,7 +117,6 @@ typedef struct image_desc_t {
 
     char           graphfile[MAXPATH]; /* filename for graphic */
     long           xsize,ysize,piesize;    /* graph area size in pixels */
-    double         zoom;           /* zoom for graph */
     gfx_color_t    graph_col[__GRC_END__]; /* real colors for the graph */   
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
     char           ylegend[200];   /* legend along the yaxis */
@@ -142,14 +139,12 @@ typedef struct image_desc_t {
     int            lazy;           /* only update the gif if there is reasonable
 				      probablility that the existing one is out of date */
     int            logarithmic;    /* scale the yaxis logarithmic */
-    enum if_en     imgformat;      /* image format */
     
     /* status information */
     	    
     long           xorigin,yorigin;/* where is (0,0) of the graph */
     long           pie_x,pie_y;    /* where is the centerpoint */
     long           xgif,ygif;      /* total size of the gif */
-    int            interlaced;     /* will the graph be interlaced? */
     double         magfact;        /* numerical magnitude*/
     long         base;            /* 1000 or 1024 depending on what we graph */
     char           symbol;         /* magnitude symbol for y-axis */
@@ -160,14 +155,14 @@ typedef struct image_desc_t {
     long  prt_c;                  /* number of print elements */
     long  gdes_c;                  /* number of graphics elements */
     graph_desc_t   *gdes;          /* points to an array of graph elements */
-
+    gfx_canvas_t   *canvas;        /* graphics library */
 } image_desc_t;
 
 /* Prototypes */
 int xtr(image_desc_t *,time_t);
 int ytr(image_desc_t *, double);
 enum gf_en gf_conv(char *);
-enum if_en if_conv(char *);
+enum gfx_if_en if_conv(char *);
 enum tmt_en tmt_conv(char *);
 enum grc_en grc_conv(char *);
 enum grc_en text_prop_conv(char *);
@@ -186,14 +181,14 @@ time_t find_first_time( time_t,  enum tmt_en,  long);
 time_t find_next_time( time_t,  enum tmt_en,  long);
 int print_calc(image_desc_t *, char ***);
 int leg_place(image_desc_t *);
-int horizontal_grid(gfx_canvas_t *,image_desc_t *);
-int horizontal_log_grid(gfx_canvas_t *, image_desc_t *);
-void vertical_grid(gfx_canvas_t *, image_desc_t *);
-void axis_paint( image_desc_t *, gfx_canvas_t *);
-void grid_paint( image_desc_t *, gfx_canvas_t *);
+int horizontal_grid(image_desc_t *);
+int horizontal_log_grid(image_desc_t *);
+void vertical_grid(image_desc_t *);
+void axis_paint(image_desc_t *);
+void grid_paint(image_desc_t *);
 int lazy_check(image_desc_t *);
 int graph_paint(image_desc_t *, char ***);
-void pie_part(gfx_canvas_t *, gfx_color_t, double, double, double, double, double);
+void pie_part(image_desc_t *, gfx_color_t, double, double, double, double, double);
 int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *);
