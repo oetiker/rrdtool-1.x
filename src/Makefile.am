@@ -4,7 +4,7 @@
 #
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
-
+DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
 if USE_INSTALLED_libcgi
 CGI_LIB 	   = -lcgi
 else
@@ -68,6 +68,7 @@ RRD_C_FILES =		\
 	rrd_afm.c rrd_afm_data.c \
 	getopt.h ntconfig.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
+	rrd_tool.c \
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h
 
 # Build two libraries.  One is a public one that gets installed in
@@ -111,14 +112,14 @@ rrdcgi_LDADD	= librrd.la
 rrdupdate_SOURCES = 
 rrdupdate_LDADD	= rrdupdate.o librrd.la
 
-
 rrdupdate.c: rrd_update.c
 	-ln -s rrd_update.c rrdupdate.c
 
 rrdupdate.o: rrdupdate.c
 	$(COMPILE) -DSTANDALONE -c rrdupdate.c
 
-rrdtool_SOURCES	= rrd_tool.c
+rrdtool_SOURCES = 
+rrdtool_DEPENDENCIES = rrd_tool.o
 rrdtool_LDADD	= librrd.la
 
 EXTRA_DIST= rrdtool.dsp rrdtool.dsw
