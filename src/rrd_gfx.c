@@ -1544,6 +1544,7 @@ static void pdf_init_object(pdf_state *state, pdf_buffer *buf)
   pdf_init_buffer(state, buf);
   buf->id = ++state->last_obj_id;
   buf->is_obj = 1;
+  buf->is_stream = 0;
 }
 
 static void pdf_init_dict(pdf_state *state, pdf_buffer *buf)
@@ -1830,12 +1831,12 @@ static void pdf_init_document(pdf_state *state)
   pdf_init_dict(state, &state->pages_obj);
   pdf_init_dict(state, &state->page1_obj);
   pdf_init_dict(state, &state->fontsdict_obj);
-  state->graph_stream.is_stream = 1;
   pdf_create_fonts(state);
   if (state->has_failed)
     return;
   /* make stream last object in file */
   pdf_init_object(state, &state->graph_stream);
+  state->graph_stream.is_stream = 1;
 }
 
 static void pdf_setup_document(pdf_state *state)
