@@ -10,7 +10,7 @@ fonts_DATA = VeraMono.ttf
 
 #INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 #           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
-INCLUDES = -DRRD_DEFAULT_FONT=\"$(fontsdir)/$(fonts_DATA)\"
+AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(fontsdir)/$(fonts_DATA)\"
 
 RRD_C_FILES =		\
 	getopt.c	\
