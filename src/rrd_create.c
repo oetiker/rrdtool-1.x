@@ -114,8 +114,7 @@ rrd_create_r(char *filename,
 
     /* set some defaults */
     strcpy(rrd.stat_head->cookie,RRD_COOKIE);
-	/* assume the will be version 1 compatible */
-    strcpy(rrd.stat_head->version,"0001");
+    strcpy(rrd.stat_head->version,RRD_VERSION);
     rrd.stat_head->float_cookie = FLOAT_COOKIE;
     rrd.stat_head->ds_cnt = 0; /* this will be adjusted later */
     rrd.stat_head->rra_cnt = 0; /* ditto */
@@ -170,8 +169,6 @@ rrd_create_r(char *filename,
                 break;
             case DST_CDEF:
                 parseCDEF_DS(&argv[i][offset+3],&rrd, rrd.stat_head->ds_cnt);
-                /* need to mark the file w/ current version */
-                strcpy(rrd.stat_head->version,RRD_VERSION);
                 break;
             default:
                 rrd_set_error("invalid DS type specified");
@@ -213,8 +210,6 @@ rrd_create_r(char *filename,
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_beta].u_val = 1.0/288;
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt = 
                             rrd.stat_head -> rra_cnt;
-                        /* need to mark the file w/ current version */
-                        strcpy(rrd.stat_head->version,RRD_VERSION);
                         break;
                     case CF_DEVSEASONAL:
                     case CF_SEASONAL:
