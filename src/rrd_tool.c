@@ -53,7 +53,8 @@ void PrintUsage(char *cmd)
 	   "\trrdtool update filename\n"
 	   "\t\t--template|-t ds-name:ds-name:...\n"
 	   "\t\ttime|N:value[:value...]\n\n"
-	   "\t\t[ time:value[:value...] ..]\n\n";
+           "\t\tat-time@value[:value...]\n\n"
+ 	   "\t\t[ time:value[:value...] ..]\n\n";
 
     char help_fetch[] =
 	   "* fetch - fetch data out of an RRD\n\n"

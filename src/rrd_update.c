@@ -5,8 +5,12 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:06  oetiker
- * Initial revision
+ * Revision 1.2  2001/03/04 11:14:25  oetiker
+ * added at-style-time@value:value syntax to rrd_update
+ * --  Dave Bodenstab <imdave@mcs.net>
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
+ * checkin
  *
  *****************************************************************************/
 
@@ -36,6 +40,7 @@ main(int argc, char **argv){
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"
+                        "\t\t\tat-time@value[:value...]\n\n"
                         "\t\t\t[ time:value[:value...] ..]\n\n");
                                    
                 printf("ERROR: %s\n",rrd_get_error());
@@ -238,6 +243,10 @@ rrd_update(int argc, char **argv)
     for(arg_i=optind+1; arg_i<argc;arg_i++) {
 	char *stepper = malloc((strlen(argv[arg_i])+1)*sizeof(char));
         char *step_start = stepper;
+	char *p;
+	char *parsetime_error = NULL;
+	enum {atstyle, normal} timesyntax;
+	struct time_value ds_tv;
         if (stepper == NULL){
                 rrd_set_error("faild duplication argv entry");
                 free(updvals);
@@ -250,9 +259,26 @@ rrd_update(int argc, char **argv)
 	/* initialize all ds input to unknown except the first one
            which has always got to be set */
 	for(ii=1;ii<=rrd.stat_head->ds_cnt;ii++) updvals[ii] = "U";
-	ii=0;
 	strcpy(stepper,argv[arg_i]);
 	updvals[0]=stepper;
+	/* separate all ds elements; first must be examined separately
+	   due to alternate time syntax */
+	if ((p=strchr(stepper,'@'))!=NULL) {
+	    timesyntax = atstyle;
+	    *p = '\0';
+	    stepper = p+1;
+	} else if ((p=strchr(stepper,':'))!=NULL) {
+	    timesyntax = normal;
+	    *p = '\0';
+	    stepper = p+1;
+	} else {
+	    rrd_set_error("expected timestamp not found in data source from %s:...",
+			  argv[arg_i]);
+	    free(step_start);
+	    break;
+	}
+	ii=1;
+	updvals[tmpl_idx[ii]] = stepper;
 	while (*stepper) {
 	    if (*stepper == ':') {
 		*stepper = '\0';
@@ -272,7 +298,23 @@ rrd_update(int argc, char **argv)
 	}
 	
         /* get the time from the reading ... handle N */
-	if (strcmp(updvals[0],"N")==0){
+	if (timesyntax == atstyle) {
+            if ((parsetime_error = parsetime(updvals[0], &ds_tv))) {
+                rrd_set_error("ds time: %s: %s", updvals[0], parsetime_error );
+		free(step_start);
+		break;
+	    }
+	    if (ds_tv.type == RELATIVE_TO_END_TIME ||
+		ds_tv.type == RELATIVE_TO_START_TIME) {
+		rrd_set_error("specifying time relative to the 'start' "
+                              "or 'end' makes no sense here: %s",
+			      updvals[0]);
+		free(step_start);
+		break;
+	    }
+
+	    current_time = mktime(&ds_tv.tm) + ds_tv.offset;
+	} else if (strcmp(updvals[0],"N")==0){
 	    current_time = time(NULL);
 	} else {
 	    current_time = atol(updvals[0]);
