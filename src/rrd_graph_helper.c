@@ -163,10 +163,10 @@ rrd_parse_print(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
     }
 
     if (rrd_parse_legend(line,eaten,gdp)) return 1;
-
-    /* Why is there a separate structure member "format" ??? */
+    /* for *PRINT the legend itself gets renderd later. We only
+       get the format at this juncture */
     strcpy(gdp->format,gdp->legend);
-
+    gdp->legend[0]='\0';	
     return 0;
 }
 
