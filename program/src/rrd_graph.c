@@ -913,7 +913,8 @@ data_calc( image_desc_t *im){
 		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
                         long ptr = im->gdes[gdi].rpnp[rpi].ptr;
                         if(im->gdes[gdi].start > im->gdes[ptr].start) {
-                            im->gdes[gdi].rpnp[rpi].data += im->gdes[gdi].rpnp[rpi].ds_cnt;
+                            im->gdes[gdi].rpnp[rpi].data += im->gdes[gdi].rpnp[rpi].ds_cnt
+				* ((im->gdes[gdi].start - im->gdes[ptr].start) / im->gdes[ptr].step);
                         }
                      }
                 }
