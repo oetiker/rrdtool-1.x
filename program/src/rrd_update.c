@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.17  2004/05/26 22:11:12  oetiker
+ * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
+ *
  * Revision 1.16  2004/05/25 20:52:16  oetiker
  * fix spelling and syntax, especially in messages that are printed -- Mike Slifcak
  *
@@ -1441,31 +1444,31 @@ int
 LockRRD(FILE *rrdfile)
 {
     int	rrd_fd;		/* File descriptor for RRD */
-    int			stat;
+    int	rcstat;
 
     rrd_fd = fileno(rrdfile);
 
 	{
 #ifndef WIN32    
-		struct flock	lock;
+    struct flock	lock;
     lock.l_type = F_WRLCK;    /* exclusive write lock */
     lock.l_len = 0;	      /* whole file */
     lock.l_start = 0;	      /* start of file */
     lock.l_whence = SEEK_SET;   /* end of file */
 
-    stat = fcntl(rrd_fd, F_SETLK, &lock);
+    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
 #else
-		struct _stat st;
+    struct _stat st;
 
-		if ( _fstat( rrd_fd, &st ) == 0 ) {
-			stat = _locking ( rrd_fd, _LK_NBLCK, st.st_size );
-		} else {
-			stat = -1;
-		}
+    if ( _fstat( rrd_fd, &st ) == 0 ) {
+	    rcstat = _locking ( rrd_fd, _LK_NBLCK, st.st_size );
+    } else {
+	    rcstat = -1;
+    }
 #endif
 	}
 
-    return(stat);
+    return(rcstat);
 }
 
 

@@ -9,23 +9,19 @@
 #include "rrd_tool.h"
 
 time_t
-rrd_last(int argc, char **argv)
+rrd_last(int argc, const char **argv)
 {
-    time_t       lastup;
-
     if(argc < 2){
         rrd_set_error("please specify an rrd");
         return(-1);
     }
 
-    lastup = rrd_last_r(argv[1]);
-
-    return(lastup);
+    return( rrd_last_r(argv[1]) );
 }
  
 
 time_t
-rrd_last_r(char *filename)
+rrd_last_r(const char *filename)
 {
     FILE	*in_file;
     time_t       lastup;

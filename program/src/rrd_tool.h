@@ -171,10 +171,8 @@ void rrd_free(rrd_t *rrd);
 void rrd_freemem(void *mem);
 void rrd_init(rrd_t *rrd);
 
-int rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
-int rrd_open_r(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
-int readfile(char *file, char **buffer, int skipfirst);
-int readfile_r(char *file, char **buffer, int skipfirst);
+int rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
+int readfile(const char *file, char **buffer, int skipfirst);
 
 #define RRD_READONLY    0
 #define RRD_READWRITE   1
@@ -188,9 +186,6 @@ double rrd_diff(char *a, char *b);
        (but one per thread), thus subsequent calls within a single
        thread overwrite the same buffer */
 const char *rrd_strerror(int err);
-
-/* just a defensive work-around... */
-#define strerror(x) rrd_strerror(x)
 
 #endif
 

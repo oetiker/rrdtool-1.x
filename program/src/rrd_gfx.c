@@ -313,8 +313,7 @@ double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
   return text_width/64;
 }
 
-static void gfx_libart_close_path(gfx_canvas_t *canvas,
-	gfx_node_t *node, ArtVpath **vec)
+static void gfx_libart_close_path(gfx_node_t *node, ArtVpath **vec)
 {
     /* libart must have end==start for closed paths,
        even if using ART_MOVETO and not ART_MOVETO_OPEN
@@ -326,8 +325,7 @@ static void gfx_libart_close_path(gfx_canvas_t *canvas,
     art_vpath_add_point (vec, &points, &points_max, ART_END, 0, 0);
 }
 
-static void gfx_round_scaled_coordinates(gfx_canvas_t *canvas,
-	gfx_node_t *node, ArtVpath *vec)
+static void gfx_round_scaled_coordinates(ArtVpath *vec)
 {
     while (vec->code != ART_END) {
 	vec->x = floor(vec->x - LINEOFFSET + 0.5) + LINEOFFSET;
@@ -503,8 +501,8 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
-		gfx_libart_close_path(canvas, node, &vec);
-	    gfx_round_scaled_coordinates(canvas, node, vec);
+		gfx_libart_close_path(node, &vec);
+	    gfx_round_scaled_coordinates(vec);
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
@@ -602,13 +600,13 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                 gr = bit->bitmap.num_grays -1;
                 for (iy=0; iy < bit->bitmap.rows; iy++){
                     long buf_y = iy+(pen_y+0.5)-bit->top;
-                    if (buf_y < 0 || buf_y >= pys_height) continue;
+                    if (buf_y < 0 || buf_y >= (long)pys_height) continue;
                     buf_y *= rowstride;
                     for (ix=0;ix < bit->bitmap.width;ix++){
                         long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
                         art_u8 font_alpha;
                         
-                        if (buf_x < 0 || buf_x >= pys_width) continue;
+                        if (buf_x < 0 || buf_x >= (long)pys_width) continue;
                         buf_x *=  bytes_per_pixel ;
                         font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
                         font_alpha =  (art_u8)((double)font_alpha / gr * falpha);

@@ -5,6 +5,7 @@
  *****************************************************************************/
 
 #include <png.h>
+#include "rrd_tool.h"
 
 int
 PngSize(FILE *fd, long *width, long *height)

@@ -69,7 +69,7 @@ rrd_resize(int argc, char **argv)
     }
 
     if (modify < 0)
-	if (rrdold.rra_def[target_rra].row_cnt <= -modify) {
+	if ((long)rrdold.rra_def[target_rra].row_cnt <= -modify) {
 	    rrd_set_error("This RRA is not that big");
 	    rrd_free(&rrdold);
 	    fclose(infile);
@@ -145,7 +145,7 @@ rrd_resize(int argc, char **argv)
         signed long int remove_end=0;
 
         remove_end=(rrdnew.rra_ptr[target_rra].cur_row-modify)%rrdnew.rra_def[target_rra].row_cnt;
-        if (remove_end <= rrdnew.rra_ptr[target_rra].cur_row) {
+        if (remove_end <= (signed long int)rrdnew.rra_ptr[target_rra].cur_row) {
             while (remove_end >= 0) {
                 fseek(infile,sizeof(rrd_value_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
                 rrdnew.rra_ptr[target_rra].cur_row--;

@@ -4,11 +4,17 @@
  * rrd_afm.h  Parsing afm tables to find width of strings.
  ****************************************************************************/
 
+#include "config.h"
+
 #include "rrd_afm.h"
 #include "rrd_afm_data.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
 
 #if 0
 # define DEBUG 1
@@ -201,21 +207,21 @@ double afm_get_text_width ( double start, const char* font, double size,
 
 #ifdef __APPLE__
 const unsigned char afm_mac2iso[128] = {
-  '\xC4', '\xC5', '\xC7', '\xC9', '\xD1', '\xD6', '\xDC', '\xE1', // 80
-  '\xE0', '\xE2', '\xE4', '\xE3', '\xE5', '\xE7', '\xE9', '\xE8', // 88
-  '\xEA', '\xEB', '\xED', '\xEC', '\xEE', '\xEF', '\xF1', '\xF3', // 90
-  '\xF2', '\xF4', '\xF6', '\xF5', '\xFA', '\xF9', '\xFB', '\xFC', // 98
-  '\xDD', '\xB0', '\xA2', '\xA3', '\xA7', ' ',    '\xB6', '\xDF', // A0
-  '\xAE', '\xA9', ' ',    '\xB4', '\xA8', ' ',    '\xC6', '\xD8', // A8
-  ' ',    '\xB1', '\xBE', ' ',    '\xA5', '\xB5', ' ',    ' ',    // B0
-  '\xBD', '\xBC', ' ',    '\xAA', '\xBA', ' ',    '\xE6', '\xF8', // B8
-  '\xBF', '\xA1', '\xAC', ' ',    ' ',    ' ',    ' ',    '\xAB', // C0
-  '\xBB', ' ',    '\xA0', '\xC0', '\xC3', '\xD5', ' ',    '\xA6', // C8
-  '\xAD', ' ',    '"',    '"',    '\'',   '\'',   '\xF7', '\xD7', // D0
-  '\xFF', ' ',    ' ',    '\xA4', '\xD0', '\xF0', '\xDE', '\xFE', // D8
-  '\xFD', '\xB7', ' ',    ' ',    ' ',    '\xC2', '\xCA', '\xC1', // E0
-  '\xCB', '\xC8', '\xCD', '\xCE', '\xCF', '\xCC', '\xD3', '\xD4', // E8
-  ' ',    '\xD2', '\xDA', '\xDB', '\xD9', ' ',    ' ',    ' ',    // F0
-  '\xAF', ' ',    ' ',    ' ',    '\xB8', ' ',    ' ',    ' ',    // F8
+  '\xC4', '\xC5', '\xC7', '\xC9', '\xD1', '\xD6', '\xDC', '\xE1', /* 80 */
+  '\xE0', '\xE2', '\xE4', '\xE3', '\xE5', '\xE7', '\xE9', '\xE8', /* 88 */
+  '\xEA', '\xEB', '\xED', '\xEC', '\xEE', '\xEF', '\xF1', '\xF3', /* 90 */
+  '\xF2', '\xF4', '\xF6', '\xF5', '\xFA', '\xF9', '\xFB', '\xFC', /* 98 */
+  '\xDD', '\xB0', '\xA2', '\xA3', '\xA7', ' ',    '\xB6', '\xDF', /* A0 */
+  '\xAE', '\xA9', ' ',    '\xB4', '\xA8', ' ',    '\xC6', '\xD8', /* A8 */
+  ' ',    '\xB1', '\xBE', ' ',    '\xA5', '\xB5', ' ',    ' ',    /* B0 */
+  '\xBD', '\xBC', ' ',    '\xAA', '\xBA', ' ',    '\xE6', '\xF8', /* B8 */
+  '\xBF', '\xA1', '\xAC', ' ',    ' ',    ' ',    ' ',    '\xAB', /* C0 */
+  '\xBB', ' ',    '\xA0', '\xC0', '\xC3', '\xD5', ' ',    '\xA6', /* C8 */
+  '\xAD', ' ',    '"',    '"',    '\'',   '\'',   '\xF7', '\xD7', /* D0 */
+  '\xFF', ' ',    ' ',    '\xA4', '\xD0', '\xF0', '\xDE', '\xFE', /* D8 */
+  '\xFD', '\xB7', ' ',    ' ',    ' ',    '\xC2', '\xCA', '\xC1', /* E0 */
+  '\xCB', '\xC8', '\xCD', '\xCE', '\xCF', '\xCC', '\xD3', '\xD4', /* E8 */
+  ' ',    '\xD2', '\xDA', '\xDB', '\xD9', ' ',    ' ',    ' ',    /* F0 */
+  '\xAF', ' ',    ' ',    ' ',    '\xB8', ' ',    ' ',    ' ',    /* F8 */
 };
 #endif

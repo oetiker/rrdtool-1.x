@@ -601,7 +601,7 @@ printf("row_cnt after:   %lu\n",row_cnt);
     ** into one interval for the destination.
     */
 
-    for (dst_row=0;row_cnt>=reduce_factor;dst_row++) {
+    for (dst_row=0;(long int)row_cnt>=reduce_factor;dst_row++) {
 	for (col=0;col<(*ds_cnt);col++) {
 	    rrd_value_t newval=DNAN;
 	    unsigned long validval=0;
@@ -681,11 +681,11 @@ for (col=0;col<row_cnt;col++) {
 int
 data_fetch(image_desc_t *im )
 {
-    unsigned int i,ii;
+    int i,ii;
     int		skip;
 
     /* pull the data from the log files ... */
-    for (i=0;i<im->gdes_c;i++){
+    for (i=0;i< (int)im->gdes_c;i++){
 	/* only GF_DEF elements fetch data */
 	if (im->gdes[i].gf != GF_DEF) 
 	    continue;
@@ -744,7 +744,7 @@ data_fetch(image_desc_t *im )
 	}
 	
         /* lets see if the required data source is really there */
-	for(ii=0;ii<im->gdes[i].ds_cnt;ii++){
+	for(ii=0;ii<(int)im->gdes[i].ds_cnt;ii++){
 	    if(strcmp(im->gdes[i].ds_namv[ii],im->gdes[i].ds_nam) == 0){
 		im->gdes[i].ds=ii; }
 	}
@@ -1015,8 +1015,8 @@ data_proc( image_desc_t *im ){
 			** the time of the graph. Beware.
 			*/
 			vidx = im->gdes[ii].vidx;
-			if (	(gr_time >= im->gdes[vidx].start) &&
-				(gr_time <= im->gdes[vidx].end) ) {
+			if (	((long int)gr_time >= (long int)im->gdes[vidx].start) &&
+				((long int)gr_time <= (long int)im->gdes[vidx].end) ) {
 			    value = im->gdes[vidx].data[
 				(unsigned long) floor(
 				    (double)(gr_time - im->gdes[vidx].start)
@@ -1908,9 +1908,8 @@ grid_paint(image_desc_t   *im)
 	    /* horrible hack until we can actually print vertically */
 	    {
 		int n;
-		int l=strlen(im->ylegend);
 		char s[2];
-		for (n=0;n<strlen(im->ylegend);n++) {
+		for (n=0;n< (int)strlen(im->ylegend);n++) {
 		    s[0]=im->ylegend[n];
 		    s[1]='\0';
 		    gfx_new_text(im->canvas,7,im->text_prop[TEXT_PROP_AXIS].size*(n+1),
@@ -2853,13 +2852,13 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 		      &im->xlab_user.precis,
 		      &stroff) == 7 && stroff != 0){
                 strncpy(im->xlab_form, optarg+stroff, sizeof(im->xlab_form) - 1);
-		if((im->xlab_user.gridtm = tmt_conv(scan_gtm)) == -1){
+		if((int)(im->xlab_user.gridtm = tmt_conv(scan_gtm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_gtm);
 		    return;
-		} else if ((im->xlab_user.mgridtm = tmt_conv(scan_mtm)) == -1){
+		} else if ((int)(im->xlab_user.mgridtm = tmt_conv(scan_mtm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_mtm);
 		    return;
-		} else if ((im->xlab_user.labtm = tmt_conv(scan_ltm)) == -1){
+		} else if ((int)(im->xlab_user.labtm = tmt_conv(scan_ltm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_ltm);
 		    return;
 		} 
@@ -2936,7 +2935,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    im->imginfo = optarg;
 	    break;
     	case 'a':
-	    if((im->canvas->imgformat = if_conv(optarg)) == -1) {
+	    if((int)(im->canvas->imgformat = if_conv(optarg)) == -1) {
 		rrd_set_error("unsupported graphics format '%s'",optarg);
 		return;
 	    }
@@ -3167,12 +3166,12 @@ char *str;
     
     n=0;
     sscanf(str,"%le,%29[A-Z]%n",&param,func,&n);
-    if (n==strlen(str)) { /* matched */
+    if (n== (int)strlen(str)) { /* matched */
 	;
     } else {
 	n=0;
 	sscanf(str,"%29[A-Z]%n",func,&n);
-	if (n==strlen(str)) { /* matched */
+	if (n== (int)strlen(str)) { /* matched */
 	    param=DNAN;
 	} else {
 	    rrd_set_error("Unknown function string '%s' in VDEF '%s'"
