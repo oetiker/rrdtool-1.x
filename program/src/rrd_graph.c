@@ -183,7 +183,9 @@ enum gf_en gf_conv(char *string){
     conv_if(DEF,GF_DEF)
     conv_if(CDEF,GF_CDEF)
     conv_if(VDEF,GF_VDEF)
+#ifdef WITH_PIECHART
     conv_if(PART,GF_PART)
+#endif
     conv_if(XPORT,GF_XPORT)
     conv_if(SHIFT,GF_SHIFT)
     
@@ -1355,7 +1357,9 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_DEF:
 	case GF_CDEF:	    
 	case GF_VDEF:	    
+#ifdef WITH_PIECHART
 	case GF_PART:
+#endif
 	case GF_SHIFT:
 	case GF_XPORT:
 	    break;
@@ -2006,6 +2010,7 @@ int lazy_check(image_desc_t *im){
     return size;
 }
 
+#ifdef WITH_PIECHART
 void
 pie_part(image_desc_t *im, gfx_color_t color,
 	    double PieCenterX, double PieCenterY, double Radius,
@@ -2052,8 +2057,16 @@ pie_part(image_desc_t *im, gfx_color_t color,
     }
 }
 
+#endif
+
 int
-graph_size_location(image_desc_t *im, int elements, int piechart )
+graph_size_location(image_desc_t *im, int elements
+
+#ifdef WITH_PIECHART
+, int piechart
+#endif
+
+ )
 {
     /* The actual size of the image to draw is determined from
     ** several sources.  The size given on the command line is
@@ -2125,11 +2138,13 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 	}
     }
 
+#ifdef WITH_PIECHART
     if (piechart) {
 	im->piesize=im->xsize<im->ysize?im->xsize:im->ysize;
 	Xpie=im->piesize;
 	Ypie=im->piesize;
     }
+#endif
 
     /* Now calculate the total size.  Insert some spacing where
        desired.  im->xorigin and im->yorigin need to correspond
@@ -2217,6 +2232,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     }
 #endif
 
+#ifdef WITH_PIECHART
     /* The pie is placed in the upper right hand corner,
     ** just below the title (if any) and with sufficient
     ** padding.
@@ -2228,6 +2244,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 	im->pie_x = im->ximg/2;
         im->pie_y = im->yorigin-Ypie/2;
     }
+#endif
 
     return 0;
 }
@@ -2238,8 +2255,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
 {
   int i,ii;
   int lazy =     lazy_check(im);
+#ifdef WITH_PIECHART
   int piechart = 0;
   double PieStart=0.0;
+#endif
   FILE  *fo;
   gfx_node_t *node;
   
@@ -2258,7 +2277,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
   /* evaluate VDEF and CDEF operations ... */
   if(data_calc(im)==-1)
     return -1;
-  
+
+#ifdef WITH_PIECHART  
   /* check if we need to draw a piechart */
   for(i=0;i<im->gdes_c;i++){
     if (im->gdes[i].gf == GF_PART) {
@@ -2266,6 +2286,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       break;
     }
   }
+#endif
 
   /* calculate and PRINT and GPRINT definitions. We have to do it at
    * this point because it will affect the length of the legends
@@ -2274,10 +2295,16 @@ graph_paint(image_desc_t *im, char ***calcpr)
    */
   i=print_calc(im,calcpr);
   if(i<0) return -1;
-  if(((i==0)&&(piechart==0)) || lazy) return 0;
+  if(((i==0)
+#ifdef WITH_PIECHART
+&&(piechart==0)
+#endif
+) || lazy) return 0;
 
+#ifdef WITH_PIECHART
   /* If there's only the pie chart to draw, signal this */
   if (i==0) piechart=2;
+#endif
   
   /* get actual drawing data and find min and max values*/
   if(data_proc(im)==-1)
@@ -2300,7 +2327,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
  *** Calculating sizes and locations became a bit confusing ***
  *** so I moved this into a separate function.              ***
  **************************************************************/
-  if(graph_size_location(im,i,piechart)==-1)
+  if(graph_size_location(im,i
+#ifdef WITH_PIECHART
+,piechart
+#endif
+)==-1)
     return -1;
 
   /* the actual graph is created by going through the individual
@@ -2314,7 +2345,9 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
   gfx_add_point(node,0, im->yimg);
 
+#ifdef WITH_PIECHART
   if (piechart != 2) {
+#endif
     node=gfx_new_area ( im->canvas,
                       im->xorigin,             im->yorigin, 
                       im->xorigin + im->xsize, im->yorigin,
@@ -2327,11 +2360,15 @@ graph_paint(image_desc_t *im, char ***calcpr)
       areazero = im->minval;
     if (im->maxval < 0.0)
       areazero = im->maxval;
-  }
+#ifdef WITH_PIECHART
+   }
+#endif
 
+#ifdef WITH_PIECHART
   if (piechart) {
     pie_part(im,im->graph_col[GRC_CANVAS],im->pie_x,im->pie_y,im->piesize*0.5,0,2*M_PI);
   }
+#endif
 
   for(i=0;i<im->gdes_c;i++){
     switch(im->gdes[i].gf){
@@ -2460,6 +2497,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       } 
       lastgdes = &(im->gdes[i]);                         
       break;
+#ifdef WITH_PIECHART
     case GF_PART:
       if(isnan(im->gdes[i].yrule)) /* fetch variable */
 	im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
@@ -2472,12 +2510,16 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	PieStart += im->gdes[i].yrule;
       }
       break;
+#endif
+	
     } /* switch */
   }
+#ifdef WITH_PIECHART
   if (piechart==2) {
     im->draw_x_grid=0;
     im->draw_y_grid=0;
   }
+#endif
 
   if( !(im->extra_flags & ONLY_GRAPH) )  
       axis_paint(im);

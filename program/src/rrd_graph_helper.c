@@ -347,7 +347,9 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
     /* PART, HRULE, VRULE and TICK cannot be stacked.  We're finished */
     if (   (gdp->gf == GF_HRULE)
 	|| (gdp->gf == GF_VRULE)
+#ifdef WITH_PIECHART
 	|| (gdp->gf == GF_PART)
+#endif
 	|| (gdp->gf == GF_TICK)
 	) return 0;
 
@@ -587,7 +589,9 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im, int optno) {
             case GF_COMMENT:	/* text */
 		if (rrd_parse_legend(argv[i],&eaten,gdp)) return;
 		break;
+#ifdef WITH_PIECHART
 	    case GF_PART:	/* value[#color[:legend]] */
+#endif
 	    case GF_VRULE:	/* value#color[:legend] */
 	    case GF_HRULE:	/* value#color[:legend] */
 	    case GF_LINE:	/* vname-or-value[#color[:legend]][:STACK] */

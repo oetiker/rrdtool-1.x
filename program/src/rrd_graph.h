@@ -29,7 +29,10 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
 	    GF_AREA,GF_STACK,GF_TICK,
 	    GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
-	    GF_PART, GF_XPORT};
+#ifdef WITH_PIECHART
+	    GF_PART,
+#endif
+            GF_XPORT};
 
 enum vdef_op_en {
 		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
@@ -137,7 +140,10 @@ typedef struct image_desc_t {
 
     char           graphfile[MAXPATH]; /* filename for graphic */
     FILE	  *graphhandle;        /* FILE to use if filename is "-" */
-    long           xsize,ysize,piesize;    /* graph area size in pixels */
+    long           xsize,ysize;        /* graph area size in pixels */
+#ifdef WITH_PIECHART
+    long 	   piesize;            /* size of the piechart */
+#endif
     gfx_color_t    graph_col[__GRC_END__]; /* real colors for the graph */   
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
     char           ylegend[200];   /* legend along the yaxis */
@@ -169,7 +175,9 @@ typedef struct image_desc_t {
     /* status information */
     	    
     long           xorigin,yorigin;/* where is (0,0) of the graph */
+#ifdef WITH_PIECHART
     long           pie_x,pie_y;    /* where is the centerpoint */
+#endif
     long           ximg,yimg;      /* total size of the image */
     double         magfact;        /* numerical magnitude*/
     long         base;            /* 1000 or 1024 depending on what we graph */
@@ -216,7 +224,9 @@ void axis_paint(image_desc_t *);
 void grid_paint(image_desc_t *);
 int lazy_check(image_desc_t *);
 int graph_paint(image_desc_t *, char ***);
+#ifdef WITH_PIECHART
 void pie_part(image_desc_t *, gfx_color_t, double, double, double, double, double);
+#endif
 int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *, FILE *, double *, double *);
@@ -229,6 +239,10 @@ int bad_format(char *);
 int vdef_parse(struct graph_desc_t *,char *);
 int vdef_calc(image_desc_t *, int);
 int vdef_percent_compar(const void *,const void *);
-int graph_size_location(image_desc_t *, int, int);
+int graph_size_location(image_desc_t *, int
+#ifdef WITH_PIECHART
+ ,int
+#endif
+);
 
 #endif
