@@ -92,10 +92,10 @@ for (my $t=$START+1;
      $t<$START+$STEP*$RUNS;
      $t+=$STEP+int((rand()-0.5)*7)){
   $counter += int(2500*sin($t/2000)*$STEP);
-  my $data = int(1000+500*sin($t/1000)).":".
-      int(1000+900*sin($t/2330)).":".
-      int(2000*cos($t/1550)).":".
-      int(3220*sin($t/3420)).":$counter";
+  my $data = (1000+500*sin($t/1000)).":".
+      (1000+900*sin($t/2330)).":".
+      (2000*cos($t/1550)).":".
+      (3220*sin($t/3420)).":$counter";
   push(@options, "$t:$data");
   RRDs::update $RRD1, "$t:$data";
   if ($ERROR = RRDs::error) {
