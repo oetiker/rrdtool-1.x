@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.12  2003/09/04 13:16:12  oetiker
+ * should not assigne but compare ... grrrrr
+ *
  * Revision 1.11  2003/09/02 21:58:35  oetiker
  * be pickier about what we accept in rrd_update. Complain if things do not work out
  *
@@ -624,7 +627,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		case DST_DERIVE:
 		    if(rrd.pdp_prep[i].last_ds[0] != 'U'){
                       for(ii=0;updvals[i+1][ii] != '\0';ii++){
-                            if(updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9' || (ii=0 && updvals[i+1][ii] == '-')){
+                            if(updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9' || (ii==0 && updvals[i+1][ii] == '-')){
                                  rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
                                  break;
                             }
