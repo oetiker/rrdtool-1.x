@@ -1591,7 +1591,7 @@ int draw_horizontal_grid(image_desc_t *im)
 			      MGRIDWIDTH, im->graph_col[GRC_MGRID],
 			      im->grid_dash_on, im->grid_dash_off);	       
 	       
-	    } else {		
+	    } else if (!(im->extra_flags & NOMINOR)) {		
 	       gfx_new_dashed_line ( im->canvas,
 			      X0-1,Y0,
 			      X1+1,Y0,
@@ -1721,27 +1721,30 @@ vertical_grid(
    
 
     /* paint the minor grid */
-    for(ti = find_first_time(im->start,
-			    im->xlab_user.gridtm,
-			    im->xlab_user.gridst),
-        timajor = find_first_time(im->start,
-			    im->xlab_user.mgridtm,
-			    im->xlab_user.mgridst);
-	ti < im->end; 
-	ti = find_next_time(ti,im->xlab_user.gridtm,im->xlab_user.gridst)
-	){
-	/* are we inside the graph ? */
-	if (ti < im->start || ti > im->end) continue;
-	while (timajor < ti) {
-	    timajor = find_next_time(timajor,
-		    im->xlab_user.mgridtm, im->xlab_user.mgridst);
-	}
-	if (ti == timajor) continue; /* skip as falls on major grid line */
-       X0 = xtr(im,ti);       
-       gfx_new_dashed_line(im->canvas,X0,Y0+1, X0,Y1-1,GRIDWIDTH,
-	   im->graph_col[GRC_GRID],
-	   im->grid_dash_on, im->grid_dash_off);
-       
+    if (!(im->extra_flags & NOMINOR))
+    {
+        for(ti = find_first_time(im->start,
+                                im->xlab_user.gridtm,
+                                im->xlab_user.gridst),
+            timajor = find_first_time(im->start,
+                                im->xlab_user.mgridtm,
+                                im->xlab_user.mgridst);
+            ti < im->end; 
+            ti = find_next_time(ti,im->xlab_user.gridtm,im->xlab_user.gridst)
+            ){
+            /* are we inside the graph ? */
+            if (ti < im->start || ti > im->end) continue;
+            while (timajor < ti) {
+                timajor = find_next_time(timajor,
+                        im->xlab_user.mgridtm, im->xlab_user.mgridst);
+            }
+            if (ti == timajor) continue; /* skip as falls on major grid line */
+           X0 = xtr(im,ti);       
+           gfx_new_dashed_line(im->canvas,X0,Y0+1, X0,Y1-1,GRIDWIDTH,
+               im->graph_col[GRC_GRID],
+               im->grid_dash_on, im->grid_dash_off);
+           
+        }
     }
 
     /* paint the major grid */
@@ -2708,6 +2711,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"zoom",       required_argument, 0,  'm'},
 	    {"no-legend",  no_argument,       0,  'g'},
 	    {"alt-y-grid", no_argument,       0,  'Y'},
+            {"no-minor",   no_argument,       0,  'I'},
 	    {"alt-autoscale", no_argument,    0,  'A'},
 	    {"alt-autoscale-max", no_argument, 0, 'M'},
 	    {"units-exponent",required_argument, 0, 'X'},
@@ -2719,13 +2723,16 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 
 	opt = getopt_long(argc, argv, 
-			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:zgYAMX:S:N",
+			  "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgYAMX:S:N",
 			  long_options, &option_index);
 
 	if (opt == EOF)
 	    break;
 	
 	switch(opt) {
+        case 'I':
+            im->extra_flags |= NOMINOR;
+            break;
 	case 'Y':
 	    im->extra_flags |= ALTYGRID;
 	    break;
