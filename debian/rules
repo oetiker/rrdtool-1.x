@@ -29,7 +29,7 @@ CFLAGS += -g
 endif
 
 # Whack the flags to compile additional dependent pieces
-CFLAGS += -I/usr/include/libart-2.0 -I/usr/local/include/freetype2
+CFLAGS += -I/usr/include/libart-2.0 -I/usr/include/freetype2
 
 ##NO_TCL CFLAGS += -I/usr/include/tcl8.4
 

@@ -1,3 +1,11 @@
+rrdtool (1.1.0-1) unstable; urgency=low
+
+  * Fixed build dependencies
+  * Added libfreetype6-dev to build dependencies
+  * Changed rules file to compile against Debian version of freetype.
+
+ -- Peter Hirdina <Peter.Hirdina@gmx.net>  Mon,  7 Jun 2004 17:10:10 +0200
+
 rrdtool (1.1.0) unstable; urgency=low
 
   * grafted "debian" directory from 1.0.46 source 
