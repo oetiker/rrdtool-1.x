@@ -1328,7 +1328,7 @@ leg_place(image_desc_t *im)
 		 gfx_get_text_width(leg_x,im->text_prop[TEXT_PROP_LEGEND].font,
 				      im->text_prop[TEXT_PROP_LEGEND].size,
 				      im->tabwidth,
-				      im->gdes[i].legend) 
+				      im->gdes[ii].legend) 
 		   + legspace[ii]
 		   + glue;
 		if (im->gdes[ii].gf != GF_GPRINT && 
