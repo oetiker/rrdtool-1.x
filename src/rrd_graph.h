@@ -184,7 +184,7 @@ enum gf_en gf_conv(char *);
 enum gfx_if_en if_conv(char *);
 enum tmt_en tmt_conv(char *);
 enum grc_en grc_conv(char *);
-enum grc_en text_prop_conv(char *);
+enum text_prop_en text_prop_conv(char *);
 int im_free(image_desc_t *);
 void auto_scale( image_desc_t *,  double *, char **, double *);
 void si_unit( image_desc_t *);
