@@ -198,9 +198,22 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
    node->halign = h_align;
    node->valign = v_align;
 #if 0
-  /* debugging: show text anchor */
-   gfx_new_line(canvas, x - 3, y + 0, x, y, 0.2, 0x00FF0000);
-   gfx_new_line(canvas, x - 0, y + 3, x, y, 0.2, 0x00FF0000);
+  /* debugging: show text anchor
+     green is along x-axis, red is downward y-axis */
+   if (1) {
+     double a = 2 * M_PI * -node->angle / 360.0;
+     double cos_a = cos(a);
+     double sin_a = sin(a);
+     double len = 3;
+     gfx_new_line(canvas,
+	 x, y,
+	 x + len * cos_a, y - len * sin_a,
+	 0.2, 0x00FF0000);
+     gfx_new_line(canvas,
+	 x, y,
+	 x + len * sin_a, y + len * cos_a,
+	 0.2, 0xFF000000);
+   }
 #endif
    return node;
 }
@@ -215,6 +228,8 @@ int           gfx_render(gfx_canvas_t *canvas,
     return gfx_render_svg (canvas, width, height, background, fp);
   case IF_EPS:
     return gfx_render_eps (canvas, width, height, background, fp);
+  case IF_PDF:
+    return gfx_render_pdf (canvas, width, height, background, fp);
   default:
     return -1;
   }
@@ -228,6 +243,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
     return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text);
   case IF_SVG: /* fall through */ 
   case IF_EPS:
+  case IF_PDF:
     return afm_get_text_width(start, font, size, tabwidth, text);
   default:
     return size * strlen(text);
@@ -652,11 +668,11 @@ static void svg_write_text(FILE *fp, const char *text)
    }
 }
  
-static void svg_write_number(FILE *fp, double d)
+static void svg_format_number(char *buf, int bufsize, double d)
 {
    /* omit decimals if integer to reduce filesize */
-   char buf[60], *p;
-   snprintf(buf, sizeof(buf), "%.2f", d);
+   char *p;
+   snprintf(buf, bufsize, "%.2f", d);
    p = buf; /* doesn't trust snprintf return value */
    while (*p)
      p++;
@@ -670,9 +686,15 @@ static void svg_write_number(FILE *fp, double d)
        *p = '\0'; /* zap trailing dot */
      break;
    }
-   fputs(buf, fp);
 }
  
+static void svg_write_number(FILE *fp, double d)
+{
+   char buf[60];
+   svg_format_number(buf, sizeof(buf), d);
+   fputs(buf, fp);
+}
+
 static int svg_color_is_black(int c)
 {
   /* gfx_color_t is RRGGBBAA */
@@ -727,6 +749,18 @@ static void svg_get_dash(gfx_node_t *node, svg_dash *d)
   d->dash_offset = offset - mult * d->dash_len;
   if (node->path[0].x < node->path[1].x || node->path[0].y < node->path[1].y)
     d->dash_offset = d->dash_len - d->dash_offset;
+}
+
+static int svg_dash_equal(svg_dash *a, svg_dash *b)
+{
+  if (a->dash_enable != b->dash_enable)
+    return 0;
+  if (a->adjusted_on != b->adjusted_on)
+    return 0;
+  if (a->adjusted_off != b->adjusted_off)
+    return 0;
+  /* rest of properties will be the same when on+off are */
+  return 1;
 }
 
 static void svg_common_path_attributes(FILE *fp, gfx_node_t *node)
@@ -1380,3 +1414,571 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
   }
   return 0;
 }
+
+/* ------- PDF -------
+   PDF references page:
+   http://partners.adobe.com/asn/developer/technotes/acrobatpdf.html
+*/
+
+typedef struct pdf_buffer
+{
+  int id, is_obj, is_dict, is_stream, pdf_file_pos;
+  char *data;
+  int alloc_size, current_size;
+  struct pdf_buffer *previous_buffer, *next_buffer;
+  struct pdf_state *state;
+} pdf_buffer;
+
+typedef struct pdf_font
+{
+  const char *ps_font;
+  pdf_buffer obj;
+  struct pdf_font *next;
+} pdf_font;
+
+typedef struct pdf_state
+{
+  FILE *fp;
+  gfx_canvas_t *canvas;
+  art_u32 page_width, page_height;
+  pdf_font *font_list;
+  pdf_buffer *first_buffer, *last_buffer;
+  int pdf_file_pos;
+  int has_failed;
+  /*--*/
+  gfx_color_t stroke_color, fill_color;
+  int font_id;
+  double font_size;
+  double line_width;
+  svg_dash dash;
+  int linecap, linejoin;
+  int last_obj_id;
+  /*--*/
+  pdf_buffer pdf_header;
+  pdf_buffer catalog_obj, pages_obj, page1_obj;
+  pdf_buffer fontsdict_obj;
+  pdf_buffer graph_stream;
+} pdf_state;
+
+static void pdf_init_buffer(pdf_state *state, pdf_buffer *buf)
+{
+  int initial_size = 32;
+  buf->state = state;
+  buf->id = -42;
+  buf->alloc_size = 0;
+  buf->current_size = 0;
+  buf->data = (char*)malloc(initial_size);
+  buf->is_obj = 0;
+  buf->previous_buffer = NULL;
+  buf->next_buffer = NULL;
+  if (buf->data == NULL) {
+    rrd_set_error("malloc for pdf_buffer data");
+    state->has_failed = 1;
+    return;
+  }
+  buf->alloc_size = initial_size;
+  if (state->last_buffer)
+    state->last_buffer->next_buffer = buf;
+  if (state->first_buffer == NULL)
+    state->first_buffer = buf;
+  buf->previous_buffer = state->last_buffer;
+  state->last_buffer = buf;
+}
+
+static void pdf_put(pdf_buffer *buf, const char *text, int len)
+{
+  if (len <= 0)
+    return;
+  if (buf->alloc_size < buf->current_size + len) {
+    int new_size = buf->alloc_size;
+    char *new_buf;
+    while (new_size < buf->current_size + len)
+      new_size *= 4;
+    new_buf = (char*)malloc(new_size);
+    if (new_buf == NULL) {
+      rrd_set_error("re-malloc for pdf_buffer data");
+      buf->state->has_failed = 1;
+      return;
+    }
+    memcpy(new_buf, buf->data, buf->current_size);
+    free(buf->data);
+    buf->data = new_buf;
+    buf->alloc_size = new_size;
+  }
+  memcpy(buf->data + buf->current_size, text, len);
+  buf->current_size += len;
+}
+
+static void pdf_puts(pdf_buffer *buf, const char *text)
+{
+  pdf_put(buf, text, strlen(text));
+}
+
+static void pdf_indent(pdf_buffer *buf)
+{
+  pdf_puts(buf, "\t");
+}
+
+static void pdf_putsi(pdf_buffer *buf, const char *text)
+{
+  pdf_indent(buf);
+  pdf_puts(buf, text);
+}
+
+static void pdf_putint(pdf_buffer *buf, int i)
+{
+  char tmp[20];
+  sprintf(tmp, "%d", i);
+  pdf_puts(buf, tmp);
+}
+
+static void pdf_putnumber(pdf_buffer *buf, double d)
+{
+  char tmp[50];
+  svg_format_number(tmp, sizeof(tmp), d);
+  pdf_puts(buf, tmp);
+}
+
+static void pdf_init_object(pdf_state *state, pdf_buffer *buf)
+{
+  pdf_init_buffer(state, buf);
+  buf->id = ++state->last_obj_id;
+  buf->is_obj = 1;
+}
+
+static void pdf_init_dict(pdf_state *state, pdf_buffer *buf)
+{
+  pdf_init_object(state, buf);
+  buf->is_dict = 1;
+}
+
+static void pdf_set_color(pdf_buffer *buf, gfx_color_t color,
+	gfx_color_t *current_color, const char *op)
+{
+   /* gfx_color_t is RRGGBBAA */
+  if (*current_color == color)
+    return;
+  pdf_putnumber(buf, ((color >> 24) & 255) / 255.0);
+  pdf_puts(buf, " ");
+  pdf_putnumber(buf, ((color >> 16) & 255) / 255.0);
+  pdf_puts(buf, " ");
+  pdf_putnumber(buf, ((color >>  8) & 255) / 255.0);
+  pdf_puts(buf, " ");
+  pdf_puts(buf, op);
+  pdf_puts(buf, "\n");
+  *current_color = color;
+}
+
+static void pdf_set_stroke_color(pdf_buffer *buf, gfx_color_t color)
+{
+    pdf_set_color(buf, color, &buf->state->stroke_color, "RG");
+}
+
+static void pdf_set_fill_color(pdf_buffer *buf, gfx_color_t color)
+{
+    pdf_set_color(buf, color, &buf->state->fill_color, "rg");
+}
+
+static pdf_font *pdf_find_font(pdf_state *state, gfx_node_t *node)
+{
+  const char *ps_font = afm_get_font_postscript_name(node->filename);
+  pdf_font *ef;
+  for (ef = state->font_list; ef; ef = ef->next) {
+    if (!strcmp(ps_font, ef->ps_font))
+      return ef;
+  }
+  return NULL;
+}
+
+static void pdf_add_font(pdf_state *state, gfx_node_t *node)
+{
+  pdf_font *ef = pdf_find_font(state, node);
+  if (ef)
+    return;
+  ef = malloc(sizeof(pdf_font));
+  if (ef == NULL) {
+    rrd_set_error("malloc for pdf_font");
+    state->has_failed = 1;
+    return;
+  }
+  pdf_init_dict(state, &ef->obj);
+  ef->next = state->font_list;
+  ef->ps_font = afm_get_font_postscript_name(node->filename);
+  state->font_list = ef;
+  /* fonts dict */
+  pdf_putsi(&state->fontsdict_obj, "/F");
+  pdf_putint(&state->fontsdict_obj, ef->obj.id);
+  pdf_puts(&state->fontsdict_obj, " ");
+  pdf_putint(&state->fontsdict_obj, ef->obj.id);
+  pdf_puts(&state->fontsdict_obj, " 0 R\n");
+  /* fonts def */
+  pdf_putsi(&ef->obj, "/Type /Font\n");
+  pdf_putsi(&ef->obj, "/Subtype /Type1\n");
+  pdf_putsi(&ef->obj, "/Name /F");
+  pdf_putint(&ef->obj, ef->obj.id);
+  pdf_puts(&ef->obj, "\n");
+  pdf_putsi(&ef->obj, "/BaseFont /");
+  pdf_puts(&ef->obj, ef->ps_font);
+  pdf_puts(&ef->obj, "\n");
+  pdf_putsi(&ef->obj, "/Encoding /WinAnsiEncoding\n");
+  /*  'Cp1252' (this is latin 1 extended with 27 characters;
+      the encoding is also known as 'winansi')
+      http://www.lowagie.com/iText/tutorial/ch09.html */
+}
+
+static void pdf_create_fonts(pdf_state *state)
+{
+  gfx_node_t *node;
+  for (node = state->canvas->firstnode; node; node = node->next) {
+    if (node->type == GFX_TEXT)
+      pdf_add_font(state, node);
+  }
+}
+
+static void pdf_write_linearea(pdf_state *state, gfx_node_t *node)
+{
+  int i;
+  pdf_buffer *s = &state->graph_stream;
+  if (node->type == GFX_LINE) {
+    svg_dash dash_info;
+    svg_get_dash(node, &dash_info);
+    if (!svg_dash_equal(&dash_info, &state->dash)) {
+      state->dash = dash_info;
+      if (dash_info.dash_enable) {
+	pdf_puts(s, "[");
+	pdf_putnumber(s, dash_info.adjusted_on);
+	pdf_puts(s, " ");
+	pdf_putnumber(s, dash_info.adjusted_off);
+	pdf_puts(s, "] ");
+	pdf_putnumber(s, dash_info.dash_offset);
+	pdf_puts(s, " d\n");
+      } else {
+	pdf_puts(s, "[] 0 d\n");
+      }
+    }
+    pdf_set_stroke_color(s, node->color);
+    if (state->linecap != 1) {
+      pdf_puts(s, "1 j\n");
+      state->linecap = 1;
+    }
+    if (state->linejoin != 1) {
+      pdf_puts(s, "1 J\n");
+      state->linejoin = 1;
+    }
+    if (node->size != state->line_width) {
+      state->line_width = node->size;
+      pdf_putnumber(s, state->line_width);
+      pdf_puts(s, " w\n");
+    }
+  } else {
+    pdf_set_fill_color(s, node->color);
+  }
+  for (i = 0; i < node->points; i++) {
+    ArtVpath *vec = node->path + i;
+    double x = vec->x;
+    double y = state->page_height - vec->y;
+    if (node->type == GFX_AREA) {
+      x += LINEOFFSET; /* adjust for libart handling of areas */
+      y -= LINEOFFSET;
+    }
+    switch (vec->code) {
+    case ART_MOVETO_OPEN: /* fall-through */
+    case ART_MOVETO:
+      pdf_putnumber(s, x);
+      pdf_puts(s, " ");
+      pdf_putnumber(s, y);
+      pdf_puts(s, " m\n");
+      break;
+    case ART_LINETO:
+      pdf_putnumber(s, x);
+      pdf_puts(s, " ");
+      pdf_putnumber(s, y);
+      pdf_puts(s, " l\n");
+      break;
+    case ART_CURVETO: break; /* unsupported */
+    case ART_END: break; /* nop */
+    }
+  }
+  if (node->type == GFX_LINE) {
+    pdf_puts(s, node->closed_path ? "s\n" : "S\n");
+   } else {
+    pdf_puts(s, "f\n");
+   }
+}
+
+static void pdf_write_text(pdf_state *state, gfx_node_t *node, 
+    int last_was_text, int next_is_text)
+{
+  char tmp[30];
+  pdf_buffer *s = &state->graph_stream;
+  const unsigned char *p;
+  pdf_font *font = pdf_find_font(state, node);
+  double x = node->x;
+  double y = state->page_height - node->y;
+  double dx = 0, dy = 0;
+  double cos_a = 0, sin_a = 0;
+  if (font == NULL) {
+    rrd_set_error("font disappeared");
+    state->has_failed = 1;
+    return;
+  }
+  switch(node->valign){
+  case GFX_V_TOP:    dy = -node->size; break;
+  case GFX_V_CENTER: dy = -node->size / 3.0; break;          
+  case GFX_V_BOTTOM: break;          
+  case GFX_V_NULL: break;          
+  }
+  switch (node->halign) {
+  case GFX_H_RIGHT:  dx = -afm_get_text_width(0, font->ps_font, 
+			 node->size, node->tabwidth, node->text);
+		     break;
+  case GFX_H_CENTER: dx = -afm_get_text_width(0, font->ps_font, 
+			 node->size, node->tabwidth, node->text) / 2;
+		     break;
+  case GFX_H_LEFT: break;
+  case GFX_H_NULL: break;
+  }
+  pdf_set_fill_color(s, node->color);
+  if (node->angle != 0) {
+    double a = 2 * M_PI * -node->angle / 360.0;
+    double new_x, new_y;
+    cos_a = cos(a);
+    sin_a = sin(a);
+    new_x = cos_a * dx - sin_a * dy + x;
+    new_y = sin_a * dx + cos_a * dy + y;
+    x = new_x;
+    y = new_y;
+  } else {
+    x += dx;
+    y += dy;
+  }
+  if (!last_was_text)
+    pdf_puts(s, "BT\n");
+  if (state->font_id != font->obj.id || node->size != state->font_size) {
+    state->font_id = font->obj.id;
+    state->font_size = node->size;
+    pdf_puts(s, "/F");
+    pdf_putint(s, font->obj.id);
+    pdf_puts(s, " ");
+    pdf_putnumber(s, node->size);
+    pdf_puts(s, " Tf\n");
+  }
+  if (node->angle == 0) {
+    pdf_puts(s, "1 0 0 1 ");
+  } else {
+    pdf_putnumber(s, cos_a);
+    pdf_puts(s, " ");
+    pdf_putnumber(s, sin_a);
+    pdf_puts(s, " ");
+    pdf_putnumber(s, -sin_a);
+    pdf_puts(s, " ");
+    pdf_putnumber(s, cos_a);
+    pdf_puts(s, " ");
+  }
+  pdf_putnumber(s, x);
+  pdf_puts(s, " ");
+  pdf_putnumber(s, y);
+  pdf_puts(s, " Tm\n");
+  pdf_puts(s, "(");
+  for (p = (const unsigned char*)node->text; *p; p++) {
+    switch (*p) {
+      case '(':
+      case ')':
+      case '\\':
+      case '\n':
+      case '\r':
+      case '\t':
+        pdf_puts(s, "\\");
+        /* fall-through */
+      default:
+        if (*p >= 126) {
+          snprintf(tmp, sizeof(tmp), "\\%03o", *p);
+	  pdf_puts(s, tmp);
+	} else {
+          pdf_put(s, (const char*)p, 1);
+	}
+    }
+  }
+  pdf_puts(s, ") Tj\n");
+  if (!next_is_text)
+    pdf_puts(s, "ET\n");
+}
+ 
+static void pdf_write_content(pdf_state *state)
+{
+  gfx_node_t *node;
+  int last_was_text = 0, next_is_text;
+  for (node = state->canvas->firstnode; node; node = node->next) {
+    switch (node->type) {
+    case GFX_LINE:
+    case GFX_AREA:
+      pdf_write_linearea(state, node);
+      break;
+    case GFX_TEXT:
+      next_is_text = node->next && node->next->type == GFX_TEXT;
+      pdf_write_text(state, node, last_was_text, next_is_text);
+      break;
+    }
+    last_was_text = node->type == GFX_TEXT;
+  }
+}
+
+static void pdf_init_document(pdf_state *state)
+{
+  pdf_init_buffer(state, &state->pdf_header);
+  pdf_init_dict(state, &state->catalog_obj);
+  pdf_init_dict(state, &state->pages_obj);
+  pdf_init_dict(state, &state->page1_obj);
+  pdf_init_dict(state, &state->fontsdict_obj);
+  state->graph_stream.is_stream = 1;
+  pdf_create_fonts(state);
+  if (state->has_failed)
+    return;
+  /* make stream last object in file */
+  pdf_init_object(state, &state->graph_stream);
+}
+
+static void pdf_setup_document(pdf_state *state)
+{
+  /* all objects created by now, so init code can reference them */
+  /* HEADER */
+  pdf_puts(&state->pdf_header, "%PDF-1.3\n");
+  /* following 8 bit comment is recommended by Adobe for
+     indicating binary file to file transfer applications */
+  pdf_puts(&state->pdf_header, "%\xE2\xE3\xCF\xD3\n");
+  /* CATALOG */
+  pdf_putsi(&state->catalog_obj, "/Type /Catalog\n");
+  pdf_putsi(&state->catalog_obj, "/Pages ");
+  pdf_putint(&state->catalog_obj, state->pages_obj.id);
+  pdf_puts(&state->catalog_obj, " 0 R\n");
+  /* PAGES */
+  pdf_putsi(&state->pages_obj, "/Type /Pages\n");
+  pdf_putsi(&state->pages_obj, "/Kids [");
+  pdf_putint(&state->pages_obj, state->page1_obj.id);
+  pdf_puts(&state->pages_obj, " 0 R]\n");
+  pdf_putsi(&state->pages_obj, "/Count 1\n");
+  /* PAGE 1 */
+  pdf_putsi(&state->page1_obj, "/Type /Page\n");
+  pdf_putsi(&state->page1_obj, "/Parent ");
+  pdf_putint(&state->page1_obj, state->pages_obj.id);
+  pdf_puts(&state->page1_obj, " 0 R\n");
+  pdf_putsi(&state->page1_obj, "/MediaBox [0 0 ");
+  pdf_putint(&state->page1_obj, state->page_width);
+  pdf_puts(&state->page1_obj, " ");
+  pdf_putint(&state->page1_obj, state->page_height);
+  pdf_puts(&state->page1_obj, "]\n");
+  pdf_putsi(&state->page1_obj, "/Contents ");
+  pdf_putint(&state->page1_obj, state->graph_stream.id);
+  pdf_puts(&state->page1_obj, " 0 R\n");
+  pdf_putsi(&state->page1_obj, "/Resources << /Font ");
+  pdf_putint(&state->page1_obj, state->fontsdict_obj.id);
+  pdf_puts(&state->page1_obj, " 0 R >>\n");
+}
+
+static void pdf_write_string_to_file(pdf_state *state, const char *text)
+{
+    fputs(text, state->fp);
+    state->pdf_file_pos += strlen(text);
+}
+
+static void pdf_write_buf_to_file(pdf_state *state, pdf_buffer *buf)
+{
+  char tmp[40];
+  buf->pdf_file_pos = state->pdf_file_pos;
+  if (buf->is_obj) {
+    snprintf(tmp, sizeof(tmp), "%d 0 obj\n", buf->id);
+    pdf_write_string_to_file(state, tmp);
+  }
+  if (buf->is_dict)
+    pdf_write_string_to_file(state, "<<\n");
+  if (buf->is_stream) {
+    snprintf(tmp, sizeof(tmp), "<< /Length %d >>\n", buf->current_size);
+    pdf_write_string_to_file(state, tmp);
+    pdf_write_string_to_file(state, "stream\n");
+  }
+  fwrite(buf->data, 1, buf->current_size, state->fp);
+  state->pdf_file_pos += buf->current_size;
+  if (buf->is_stream)
+    pdf_write_string_to_file(state, "endstream\n");
+  if (buf->is_dict)
+    pdf_write_string_to_file(state, ">>\n");
+  if (buf->is_obj)
+    pdf_write_string_to_file(state, "endobj\n");
+}
+
+static void pdf_write_to_file(pdf_state *state)
+{
+  pdf_buffer *buf = state->first_buffer;
+  int xref_pos;
+  state->pdf_file_pos = 0;
+  pdf_write_buf_to_file(state, &state->pdf_header);
+  while (buf) {
+    if (buf->is_obj)
+      pdf_write_buf_to_file(state, buf);
+    buf = buf->next_buffer;
+  }
+  xref_pos = state->pdf_file_pos;
+  fprintf(state->fp, "xref\n");
+  fprintf(state->fp, "%d %d\n", 0, state->last_obj_id + 1);
+  /* TOC lines must be exactly 20 bytes including \n */
+  fprintf(state->fp, "%010d %05d f\x20\n", 0, 65535);
+  for (buf = state->first_buffer; buf; buf = buf->next_buffer) {
+    if (buf->is_obj)
+      fprintf(state->fp, "%010d %05d n\x20\n", buf->pdf_file_pos, 0);
+  }
+  fprintf(state->fp, "trailer\n");
+  fprintf(state->fp, "<<\n");
+  fprintf(state->fp, "\t/Size %d\n", state->last_obj_id + 1);
+  fprintf(state->fp, "\t/Root %d 0 R\n", state->catalog_obj.id);
+  fprintf(state->fp, ">>\n");
+  fprintf(state->fp, "startxref\n");
+  fprintf(state->fp, "%d\n", xref_pos);
+  fputs("%%EOF\n", state->fp);
+}
+
+static void pdf_free_resources(pdf_state *state)
+{
+  pdf_buffer *buf = state->first_buffer;
+  while (buf) {
+    free(buf->data);
+    buf->data = NULL;
+    buf->alloc_size = buf->current_size = 0;
+    buf = buf->next_buffer;
+  }
+  while (state->font_list) {
+    pdf_font *next = state->font_list->next;
+    free(state->font_list);
+    state->font_list = next;
+  }
+}
+
+int       gfx_render_pdf (gfx_canvas_t *canvas,
+                 art_u32 width, art_u32 height,
+                 gfx_color_t background, FILE *fp){
+  struct pdf_state state;
+  memset(&state, 0, sizeof(pdf_state));
+  state.fp = fp;
+  state.canvas = canvas;
+  state.page_width = width;
+  state.page_height = height;
+  state.font_id = -1;
+  state.font_size = -1;
+  state.font_list = NULL;
+  state.linecap = -1;
+  state.linejoin = -1;
+  pdf_init_document(&state);
+  /*
+  pdf_set_color(&state, background);
+  fprintf(fp, "0 0 M 0 %d L %d %d L %d 0 L fill\n",
+      height, width, height, width);
+  */
+  if (!state.has_failed)
+    pdf_write_content(&state);
+  if (!state.has_failed)
+    pdf_setup_document(&state);
+  if (!state.has_failed)
+    pdf_write_to_file(&state);
+  pdf_free_resources(&state);
+  return state.has_failed ? -1 : 0;
+}
+

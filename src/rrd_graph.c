@@ -194,6 +194,7 @@ enum gfx_if_en if_conv(char *string){
     conv_if(PNG,IF_PNG)
     conv_if(SVG,IF_SVG)
     conv_if(EPS,IF_EPS)
+    conv_if(PDF,IF_PDF)
 
     return (-1);
 }
