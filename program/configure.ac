@@ -250,12 +250,6 @@ AC_SUBST(MULTITHREAD_LDFLAGS)
 AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
 
-dnl since we use lots of *_r functions all over the code we better
-dnl make sure they are known
-
-if test  "x$x_rflag" != "xno"; then
-   CPPFLAGS="$CPPFLAGS $x_rflag"
-fi
 
 if test $enable_pthread != no; then 
  ACX_PTHREAD([
@@ -265,6 +259,12 @@ if test $enable_pthread != no; then
 	     [])
 fi
 
+dnl since we use lots of *_r functions all over the code we better
+dnl make sure they are known
+
+if test  "x$x_rflag" != "xno"; then
+   CPPFLAGS="$CPPFLAGS $x_rflag"
+fi
 
  
 AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
