@@ -405,7 +405,7 @@ rrd_write(char *file_name, rrd_t *rrd)
     FILE             *rrd_file=NULL;
 
     if (strcmp("-",file_name)==0){
-      *rrd_file= *stdout;
+      rrd_file= stdout;
     } else {
       int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL,0666);
       if (fd == -1 || (rrd_file = fdopen(fd,"wb")) == NULL) {
