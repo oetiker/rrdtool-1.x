@@ -1008,7 +1008,7 @@ data_proc( image_desc_t *im ){
 			paintval = 0.0;
 		case GF_STACK:
 		    value = im->gdes[ii].yrule;
-		    if (isnan(value)) { /* not a number or VDEF */
+		    if (isnan(value) || (im->gdes[ii].gf == GF_TICK)) {
 			/* The time of the data doesn't necessarily match
 			** the time of the graph. Beware.
 			*/
