@@ -41,6 +41,7 @@ AH_TOP([
 
 /* realloc does not support NULL as argument */
 #undef NO_NULL_REALLOC
+
  ])
 
 AH_BOTTOM([
@@ -168,6 +169,16 @@ dnl for each function found we get a definition in config.h
 dnl of the form HAVE_FUNCTION
 
 AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+
+dnl Use mmap in rrd_update instead of seek+write
+AC_ARG_ENABLE([mmap],
+[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
+[],
+[enable_mmap=yes])
+
+if test "x$enable_mmap" = xyes; then
+  AC_FUNC_MMAP
+fi
 
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we need
 dnl actual code to check if this works
@@ -322,6 +333,7 @@ AC_SUBST(PERL_MAKE_OPTIONS)
 AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
 AC_SUBST(PERL_VERSION)
+
 
 dnl Check for Tcl.
 withval=""
