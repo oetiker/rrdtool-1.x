@@ -10,3 +10,12 @@ rrdupdate
 rrdcgi
 configure
 config.cache
+autoscan.log
+config.guess
+config.sub
+ltmain.sh
+aclocal.m4
+configure.scan
+config.log
+libtool
+config.status
