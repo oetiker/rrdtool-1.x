@@ -3,6 +3,8 @@
  ****************************************************************************
  * rrd_rpncalc.h  RPN calculator functions
  ****************************************************************************/
+#ifndef _RRD_RPNCALC_H
+#define _RRD_RPNCALC_H
 
 /* WARNING: if new operators are added, they MUST be added after OP_END.
  * This is because COMPUTE (CDEF) DS store OP nodes by number (name is not
@@ -50,3 +52,5 @@ rpnp_t * rpn_expand(rpn_cdefds_t *rpnc);
 void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str);
 rpnp_t * rpn_parse(void *key_hash,char *expr, long (*lookup)(void *,char *));
 short rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, rrd_value_t *output, int output_idx);
+
+#endif

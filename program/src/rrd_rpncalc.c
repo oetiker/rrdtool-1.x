@@ -6,6 +6,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_graph.h"
 #include <limits.h>
 
 short addop2str(enum op_en op, enum op_en op_type, char *op_str, 
@@ -323,7 +324,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 #undef match_op
 
 
-            else if ((sscanf(expr,"%29[_A-Za-z0-9]%n",
+            else if ((sscanf(expr, DEF_NAM_FMT "%n",
                              vname,&pos) == 1) 
                      && ((rpnp[steps].ptr = (*lookup)(key_hash,vname)) != -1)){
                 rpnp[steps].op = OP_VARIABLE;

@@ -1,3 +1,6 @@
+#ifndef _RRD_GRAPH_H
+#define _RRD_GRAPH_H
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_gfx.h"
@@ -218,3 +221,5 @@ int vdef_parse(struct graph_desc_t *,char *);
 int vdef_calc(image_desc_t *, int);
 int vdef_percent_compar(const void *,const void *);
 int graph_size_location(image_desc_t *, int, int);
+
+#endif
