@@ -30,6 +30,11 @@ struct rrd_context *rrd_get_context() {
     return &global_ctx;
 }
 
+/* how ugly that is!!! - make sure strerror is what it should be. It
+   might be redefined to help in keeping other modules thread safe by
+   silently turning misplaced strerror into rrd_strerror, but here
+   this turns recursive! */
+#undef strerror
 const char *rrd_strerror(int err) {
     return strerror(err);
 }
