@@ -80,6 +80,29 @@ room. Internally, derive works exaclty like COUNTER but without
 overflow checks. So if your counter does not reset at 32 or 64 bit you
 might want to use DERIVE and combine it with a MIN value of 0.
 
+=over
+
+=item NOTE on COUNTER vs DERIVE
+
+by Don Baarda E<lt>don.baarda@baesystems.comE<gt>
+
+If you cannot tolerate ever mistaking the occasional counter reset for a
+legitimate counter wrap, and would prefer "Unknowns" for all legitimate
+counter wraps and resets, always use DERIVE with min=0. Otherwise, using
+COUNTER with a suitable max will return correct values for all legitimate
+counter wraps, mark some counter resets as "Unknown", but can mistake some
+counter resets for a legitimate counter wrap.
+
+For a 5 minute step and 32-bit counter, the probability of mistaking a
+counter reset for a legitimate wrap is arguably about 0.8% per 1Mbps of
+maximum bandwidth. Note that this equates to 80% for 100Mbps interfaces, so
+for high bandwidth interfaces and a 32bit counter, DERIVE with min=0 is
+probably preferable. If you are using a 64bit counter, just about any max
+setting will eliminate the possibility of mistaking a reset for a counter
+wrap.
+
+=back
+
 =item B<ABSOLUTE> 
 
 is for counters which get reset upon reading. This is used for fast counters
