@@ -491,7 +491,7 @@ be able to monitor other types of values like temperature.
 Most people will use the counter that keeps track
 of octets (bytes) transfered by a network device so we have to do just
 that. We will start with a description of how to collect data.
-Some people will make a remark that there are tools that can do this data
+Some people will make a remark that there are tools which can do this data
 collection for you. They are right!  However, I feel it is important that
 you understand they are not necessary.  When you have to determine why
 things went wrong you need to know how they work.
