@@ -1,10 +1,13 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
  *****************************************************************************
  * rrd_fetch.c  read date from an rrd to use for further processing
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.4  2002/02/01 20:34:49  oetiker
+ * fixed version number and date/time
+ *
  * Revision 1.3  2001/12/24 06:51:49  alex
  * A patch of size 44Kbytes... in short:
  *

@@ -1,10 +1,13 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
  *****************************************************************************
  * change header parameters of an rrd
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2002/02/01 20:34:49  oetiker
+ * fixed version number and date/time
+ *
  * Revision 1.4  2001/08/22 22:29:07  jake
  * Contents of this patch:
  * (1) Adds/revises documentation for rrd tune in rrd_tool.c and pod files.

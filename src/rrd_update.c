@@ -1,10 +1,13 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2002/02/01 20:34:49  oetiker
+ * fixed version number and date/time
+ *
  * Revision 1.5  2001/05/09 05:31:01  oetiker
  * Bug fix: when update of multiple PDP/CDP RRAs coincided
  * with interpolation of multiple PDPs an incorrect value was
@@ -60,7 +63,7 @@ int
 main(int argc, char **argv){
         rrd_update(argc,argv);
         if (rrd_test_error()) {
-                printf("RRDtool 1.0.33  Copyright 1997-2000 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
+                printf("RRDtool 1.1.x  Copyright 1997-2000 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"
