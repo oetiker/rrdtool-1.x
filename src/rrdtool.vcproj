@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="rrdtool"
 	SccProjectName=""
 	SccLocalPath="">
@@ -20,10 +20,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
-				OptimizeForProcessor="2"
+				Optimization="4"
 				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,_CTYPE_DISABLE_MACROS"
+				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_CTYPE_DISABLE_MACROS;MAKE_TIMESTAMP=\&quot;WIN32\&quot;"
 				RuntimeLibrary="0"
 				PrecompiledHeaderFile=".\toolrelease/rrdtool.pch"
 				AssemblerListingLocation=".\toolrelease/"
@@ -36,17 +35,18 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\release\png.lib ..\libraries\zlib-1.1.4\release\zlib.lib ..\libraries\libart_lgpl-2.3.7\release\libart.lib ..\libraries\freetype-2.0.5\release\freetype.lib"
 				OutputFile=".\toolrelease/rrdtool.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\toolrelease/rrdtool.pdb"
-				SubSystem="1"/>
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\toolrelease/rrdtool.tlb"/>
+				TypeLibraryName=".\toolrelease/rrdtool.tlb"
+				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -60,7 +60,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
@@ -74,8 +80,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="4"
+				PreprocessorDefinitions="_DEBUG;_CONSOLE;WIN32;_CTYPE_DISABLE_MACROS;MAKE_TIMESTAMP=\&quot;WIN32\&quot;"
+				RuntimeLibrary="1"
 				PrecompiledHeaderFile=".\tooldebug/rrdtool.pch"
 				AssemblerListingLocation=".\tooldebug/"
 				ObjectFile=".\tooldebug/"
@@ -89,17 +95,18 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\Debug\png.lib ..\libraries\zlib-1.1.4\Debug\zlib.lib ..\libraries\libart_lgpl-2.3.7\Debug\libart.lib ..\libraries\freetype-2.0.5\Debug\freetype.lib"
 				OutputFile=".\tooldebug/rrdtool.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\tooldebug/rrdtool.pdb"
-				SubSystem="1"/>
+				SubSystem="1"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\tooldebug/rrdtool.tlb"/>
+				TypeLibraryName=".\tooldebug/rrdtool.tlb"
+				HeaderFileName=""/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -113,12 +120,36 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<File
-			RelativePath=".\rrd_tool.c">
+			RelativePath="rrd_tool.c">
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories=""
+					PreprocessorDefinitions=""/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					Optimization="0"
+					AdditionalIncludeDirectories=""
+					PreprocessorDefinitions=""
+					BrowseInformation="1"/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

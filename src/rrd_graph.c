@@ -27,15 +27,16 @@
 /* some constant definitions */
 
 
-#ifndef RRD_DEFAULT_FONT
 #ifdef WIN32
-/* this is set in confignt/config.h */
-#else
+char rrd_win_default_font[80];
+#endif
+
+#ifndef RRD_DEFAULT_FONT
+#ifndef WIN32
 #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" 
 /* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/Arial.ttf" */
 #endif
 #endif
-
 
 text_prop_t text_prop[] = {   
      { 10.0, RRD_DEFAULT_FONT }, /* default */
@@ -2674,7 +2675,19 @@ rrd_graph_init(image_desc_t *im)
 
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];
-
+#ifdef WIN32
+    {
+    char *windir; 
+    windir = getenv("windir");
+    /* %windir% is something like D:\windows or C:\winnt */
+    if (windir != NULL) {
+        strcpy(rrd_win_default_font,windir);
+        strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
+        for(i=0;i<DIM(text_prop);i++)
+           text_prop[i].font = rrd_win_default_font;
+    }
+    }
+#endif
     for(i=0;i<DIM(text_prop);i++){        
       im->text_prop[i].size = text_prop[i].size;
       im->text_prop[i].font = text_prop[i].font;

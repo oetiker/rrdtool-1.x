@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="png"
 	SccProjectName=""
 	SccLocalPath="">
@@ -22,9 +22,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\zlib-1.1.3"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="4"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Debug/png.pch"
 				AssemblerListingLocation=".\Debug/"
@@ -54,6 +54,12 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -65,10 +71,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
-				OptimizeForProcessor="2"
+				Optimization="4"
 				AdditionalIncludeDirectories="..\zlib-1.1.3"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Release/png.pch"
@@ -98,235 +103,303 @@
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath=".\png.c">
+				RelativePath="png.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngerror.c">
+				RelativePath="pngerror.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngget.c">
+				RelativePath="pngget.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngmem.c">
+				RelativePath="pngmem.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngpread.c">
+				RelativePath="pngpread.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngread.c">
+				RelativePath="pngread.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngrio.c">
+				RelativePath="pngrio.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngrtran.c">
+				RelativePath="pngrtran.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngrutil.c">
+				RelativePath="pngrutil.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngset.c">
+				RelativePath="pngset.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngtrans.c">
+				RelativePath="pngtrans.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngwio.c">
+				RelativePath="pngwio.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngwrite.c">
+				RelativePath="pngwrite.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngwtran.c">
+				RelativePath="pngwtran.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\pngwutil.c">
+				RelativePath="pngwutil.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						Optimization="0"
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""
+						BasicRuntimeChecks="3"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="..\zlib-1.1.3;..\zlib-1.1.4;$(NoInherit)"/>
+						AdditionalIncludeDirectories="..\zlib-1.1.4;$(NoInherit)"
+						PreprocessorDefinitions=""/>
 				</FileConfiguration>
 			</File>
 		</Filter>
