@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+*.txt
+*.pdf
+*.1
+*.pm
+*.html
