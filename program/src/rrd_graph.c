@@ -3254,13 +3254,13 @@ int bad_format(char *fmt) {
 				ptr++;
 			}
 			if (*ptr == '\0') return 1;
+			else if (*ptr == ' ') ptr++;
+			else if (*ptr == '-') ptr++;
+			else if (*ptr == '+') ptr++;				
 			if (*ptr == 'l') {
 				ptr++;
 				n++;
 				if (*ptr == '\0') return 1;
-				else if (*ptr == ' ') ptr++;
-				else if (*ptr == '-') ptr++;
-				else if (*ptr == '+') ptr++;				
 				if (*ptr == 'e' || *ptr == 'f') { 
 					ptr++; 
 					} else { return 1; }
