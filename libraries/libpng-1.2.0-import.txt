@@ -1,4 +1,0 @@
-cd libpng-1.2.0/
-rm -rf contrib/ projects/ scripts/ configure
-
----- create Makefile.am
