@@ -1,3 +1,7 @@
+rrdgraph_examples.pod
+rrdgraph_rpn.pod
+rrdgraph_data.pod
+rrdgraph_graph.pod
 Makefile
 Makefile.in
 *.txt
