@@ -1324,6 +1324,9 @@ leg_place(image_desc_t *im)
 		    continue;
 		im->gdes[ii].leg_x = leg_x;
 		im->gdes[ii].leg_y = leg_y;
+printf("DEBUG: using font %s with width %lf\n",
+	im->text_prop[TEXT_PROP_LEGEND].font,
+	im->text_prop[TEXT_PROP_LEGEND].size);
 	        leg_x += 
 		 gfx_get_text_width(leg_x,im->text_prop[TEXT_PROP_LEGEND].font,
 				      im->text_prop[TEXT_PROP_LEGEND].size,
@@ -2511,27 +2514,48 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             }
             break;        
         case 'n':{
-          char *prop = "";
-          double size = 1;
-          char *font = "dummy";
+			/* originally this used char *prop = "" and
+			** char *font = "dummy" however this results
+			** in a SEG fault, at least on RH7.1
+			**
+			** The current implementation isn't proper
+			** either, font is never freed and prop uses
+			** a fixed width string
+			*/
+	    char prop[100];
+	    double size = 1;
+	    char *font;
 
-          if(sscanf(optarg,
-                    "%10[A-Z]:%lf:%s",
-                    prop,&size,font) == 3){
-            int sindex;
-            if((sindex=text_prop_conv(prop)) != -1){
-              im->text_prop[sindex].size=size;              
-              im->text_prop[sindex].font=font;
-              
-            }  else {
-              rrd_set_error("invalid color name '%s'",col_nam);
-            }
-          } else {
-            rrd_set_error("invalid text property format");
-            return;
-          }
-          break;          
-        }
+	    font=malloc(255);
+	    if(sscanf(optarg,
+				"%10[A-Z]:%lf:%s",
+				prop,&size,font) == 3){
+		int sindex;
+		if((sindex=text_prop_conv(prop)) != -1){
+printf("DEBUG: setting all to the default of font %s with width %lf\n",
+font,size);
+		    im->text_prop[sindex].size=size;              
+		    im->text_prop[sindex].font=font;
+		    if (sindex==0) { /* the default */
+			im->text_prop[TEXT_PROP_TITLE].size=size;
+			im->text_prop[TEXT_PROP_TITLE].font=font;
+			im->text_prop[TEXT_PROP_AXIS].size=size;
+			im->text_prop[TEXT_PROP_AXIS].font=font;
+			im->text_prop[TEXT_PROP_UNIT].size=size;
+			im->text_prop[TEXT_PROP_UNIT].font=font;
+			im->text_prop[TEXT_PROP_LEGEND].size=size;
+			im->text_prop[TEXT_PROP_LEGEND].font=font;
+		    }
+		} else {
+		    rrd_set_error("invalid fonttag '%s'",prop);
+		    return;
+		}
+	    } else {
+		rrd_set_error("invalid text property format");
+		return;
+	    }
+	    break;          
+	}
         case 'm':
 	    im->zoom= atof(optarg);
 	    if (im->zoom <= 0.0) {
