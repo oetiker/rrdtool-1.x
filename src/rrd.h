@@ -69,7 +69,7 @@ int    rrd_fetch(int, char **, time_t *, time_t *, unsigned long *,
 int    rrd_restore(int, char **);
 int    rrd_dump(int, char **);
 int    rrd_tune(int, char **);
-time_t rrd_last(int, const char **);
+time_t rrd_last(int, char **);
 int    rrd_resize(int, char **);
 int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 unsigned long *, unsigned long *,

@@ -9,7 +9,7 @@
 #include "rrd_tool.h"
 
 time_t
-rrd_last(int argc, const char **argv)
+rrd_last(int argc, char **argv)
 {
     if(argc < 2){
         rrd_set_error("please specify an rrd");

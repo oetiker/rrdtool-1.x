@@ -1,9 +1,7 @@
 #! @PERL@
 
 #makes things work when run without install
-use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
-# this is for after install
-use lib qw( @prefix@/lib/perl ../lib/perl );
+use lib qw( @prefix@/lib/perl );
 
 use RRDs;
 

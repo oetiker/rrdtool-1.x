@@ -14,11 +14,8 @@ sub ok
     print "ok $ok_count $what\n";
 }
 
-#makes things work when run without install
-use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
-
 #makes programm work AFTER install
-use lib qw( @prefix@/lib/perl ../lib/perl );
+use lib qw( @prefix@/lib/perl );
 
 use strict;
 use vars qw(@ISA $loaded);

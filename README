@@ -37,7 +37,7 @@ To compile:
                 -I/scratch/oetiker/lib/include/freetype2" \
        LDFLAGS="-L/scratch/oetiker/lib/lib -R/scratch/oetiker/lib/lib \
                 -L/scratch/oetiker/cgilib-0.5" \
-      ./configure --prefix=/scratch/oetiker/lib
+      ./configure --prefix=/scratch/oetiker/rrdtool
 
   make             <------ GNU make
 
@@ -58,10 +58,11 @@ directory. This will require you to use a 'use lib' statement in your
 RRDtool perl programs. If you do not care what happens to your site-perl
 directory, you can also use
 
-  make site-perl-install
+   --enable-perl-site-install 
 
-this will install the perl modules whereever you keep your local perl
-modules. Doing this reliefs you from using 'use lib' in your scripts.
+when running configure to have the RRD perl modules installed  whereever you
+keep your local perl modules. Doing this reliefs you from using 'use lib' in
+your scripts.
 
 Configure will also look for an TCL installation on your system. If it finds
 one it will build a TCL interface for RRDtool. If you keep tcl in a non
