@@ -1,10 +1,13 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.15  2004/05/25 20:51:49  oetiker
+ * Update displayed copyright messages to be consistent. -- Mike Slifcak
+ *
  * Revision 1.14  2003/11/11 19:46:21  oetiker
  * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
  *
@@ -149,7 +152,7 @@ int
 main(int argc, char **argv){
         rrd_update(argc,argv);
         if (rrd_test_error()) {
-                printf("RRDtool 1.1.x  Copyright 1997-2000 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
+                printf("RRDtool 1.1.x  Copyright (C) 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"
