@@ -1,10 +1,17 @@
 RRDTOOL NEWS
 ============
 
+x
+
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
-2001/03/21 Tobias Oetiker <oetiker@ee.ethz.ch>
+2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch>
+  Integrated complete rewrite of rrdgraph documentation by
+  Alex van den Bogaerdt <alex@slot.hollandcasino.nl>. THis also contains
+  info on his planned changes to the rrdgraph module
+
+2001/03/02 Tobias Oetiker <oetiker@ee.ethz.ch>
   Added Aberrant Patch from Jake Brutlag <jakeb@microsoft.com>
   From now one, new rrd files use version tag 0002. They can
   NOT be read by the old 1.0.x rrdtools

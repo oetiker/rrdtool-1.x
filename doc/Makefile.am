@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-SUFFIXES = .pod .1 .man .html .txt .pm .pdf
+SUFFIXES = .pod .1 .man .html .txt .pm .pdf .src .inc
 
 #AUTOMAKE_OPTIONS        =  foreign
 
@@ -8,10 +8,13 @@ SUFFIXES = .pod .1 .man .html .txt .pm .pdf
 
 CLEANFILES = *.1 *.html *.txt *-dircache *.pm *.pdf *~ core *itemcache *.rej *.orig
 
+SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
+      rrdgraph_data.src rrdgraph_graph.src    
+
 POD = rrdtool.pod rrdlast.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
-	cdeftutorial.pod rpntutorial.pod rrdgraph.pod  bin_dec_hex.pod \
+	cdeftutorial.pod rpntutorial.pod rrdgraph-old.pod  bin_dec_hex.pod \
 	rrdfetch.pod rrdrestore.pod rrddump.pod rrdtune.pod rrdresize.pod \
-	rrdcgi.pod rrdtutorial.pod rrdinfo.pod
+	rrdcgi.pod rrdtutorial.pod rrdinfo.pod $(SRC:.src=.pod)
 
 PMP = RRDs.pm RRDp.pm
 
@@ -32,6 +35,9 @@ imandir = $(prefix)/man/man1
 iman_DATA = $(MAN)
 
 all-local: link txt man html
+
+.src.pod:
+	perl -n -e 'if (/^=include\s+(\S+)/){open F,"$$1.inc" || die $$?;print <F>; close F} else {print}'  $<  > $@ 
 
 .pod.1 .pm.1 .pl.1:
 	pod2man --release=$(VERSION) --center=rrdtool $<  > $@

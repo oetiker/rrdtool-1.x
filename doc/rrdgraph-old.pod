@@ -1,0 +1,660 @@
+=head1 NAME
+
+rrdtool graph - Create a graph based on data from one or several RRD
+
+=for html <div align="right"><a href="rrdgraph.pdf">PDF</a> version.</div> 
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<graph> I<filename> 
+S<[B<-s>|B<--start> I<seconds>]> 
+S<[B<-e>|B<--end> I<seconds>]>
+S<[B<-x>|B<--x-grid> I<x-axis grid and label>]>
+S<[B<-y>|B<--y-grid> I<y-axis grid and label>]>
+S<[B<--alt-y-grid>]>
+S<[B<--alt-autoscale>]>
+S<[B<--alt-autoscale-max>]>
+S<[B<--units-exponent>]> I<value>]>
+S<[B<-v>|B<--vertical-label> I<text>]>
+S<[B<-w>|B<--width> I<pixels>]>
+S<[B<-h>|B<--height> I<pixels>]> 
+S<[B<-i>|B<--interlaced>]> 
+S<[B<-f>|B<--imginfo> I<formatstring>]> 
+S<[B<-a>|B<--imgformat> B<GIF>|B<PNG>]> 
+S<[B<-z>|B<--lazy>]> 
+S<[B<-o>|B<--logarithmic>]>
+S<[B<-u>|B<--upper-limit> I<value>]> 
+S<[B<-l>|B<--lower-limit> I<value>]>
+S<[B<-g>|B<--no-legend>]>
+S<[B<-r>|B<--rigid>]>
+S<[B<--step> I<value>]>
+S<[B<-b>|B<--base> I<value>]>
+S<[B<-c>|B<--color> I<COLORTAG>B<#>I<rrggbb>]>
+S<[B<-t>|B<--title> I<title>]>
+S<[B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>]>
+S<[B<CDEF:>I<vname>B<=>I<rpn-expression>]>
+S<[B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>]>
+S<[B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>]>
+S<[B<COMMENT:>I<text>]>
+S<[B<HRULE:>I<value>B<#>I<rrggbb>[B<:>I<legend>]]>
+S<[B<VRULE:>I<time>B<#>I<rrggbb>[B<:>I<legend>]]>
+S<[B<LINE>{B<1>|B<2>|B<3>}B<:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]]>
+S<[B<AREA:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]]>
+S<[B<STACK:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]]>
+S<[B<TICK:>I<vname>B<#>I<rrggbb>[B<:>I<axis-fraction>[B<:>I<legend>]]]>
+
+=head1 DESCRIPTION
+
+The B<graph> functions main purpose is to create graphical
+representations of the data stored in one or several B<RRD>s. Apart
+from generating graphs, it can also extract numerical reports.
+
+=over
+
+=item I<filename> 
+
+The name of the graph to generate. Since B<rrdtool> outputs
+GIFs and PNGs, it's recommended that the filename end in either
+F<.gif> or F<.png>.  B<rrdtool> does not enforce this, however.
+If the  I<filename> is set to '-' the image file will be written
+to standard out.  All other output will get suppressed.
+
+PNG output is recommended, since it takes up to 40% less disk space
+and 20-30% less time to generate than a GIF file.
+
+If no graph functions are called, the graph will not be created.
+
+=item B<-s>|B<--start> I<seconds> (default end-1day)
+
+The time when the graph should begin. Time in seconds since
+epoch (1970-01-01) is required. Negative numbers are relative to the
+current time. By default one day worth of data will be graphed.
+See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
+documentation for a detailed explanation on how to specify time.
+
+=item B<-e>|B<--end> I<seconds> (default now)
+
+The time when the graph should end. Time in seconds since epoch.
+See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
+documentation for a detailed explanation of ways to specify time.
+
+=item B<-x>|B<--x-grid> I<x-axis grid and label> (default autoconfigure)
+
+The x-axis label is quite complex to configure. So if you don't have
+very special needs, you can rely on the autoconfiguration to get this
+right.
+
+If you want no x-grid at all, use the magic setting B<none>.
+
+The x-axis label and grid can be configured, using the following format:
+
+I<GTM>B<:>I<GST>B<:>I<MTM>B<:>I<MST>B<:>I<LTM>:I<LST>B<:>I<LPR>B<:>I<LFM>
+
+You have to configure three elements making up the x-axis labels and
+grid. The base grid (I<G??>), the major grid (I<M??>) and the labels
+(I<L??>). The configuration is based on the idea that you first
+specify a well known amount of time (I<?TM>) and then say how many
+times it has to pass between each grid line or label (I<?ST>). For the
+label you have to define two additional items: The precision of the
+label in seconds (I<LPR>) and the strftime format used to generate the
+text of the label (I<LFM>).
+
+The I<?TM> elements must be one of the following keywords: B<SECOND>,
+B<MINUTE>, B<HOUR>, B<DAY>, B<WEEK>, B<MONTH> or B<YEAR>.
+
+If you wanted a graph with a base grid every 10 minutes and a major
+one every hour, with labels every hour you would use the following
+x-axis definition.
+
+C<MINUTE:10:HOUR:1:HOUR:1:0:%X>
+
+The precision in this example is 0 because the %X format is exact. If
+the label was the name of the day, we would have had a precision of 24
+hours, because when you say something like 'Monday' you mean the whole
+day and not Monday morning 00:00. Thus the label should be positioned
+at noon. By defining a precision of 24 hours or rather 86400 seconds,
+you make sure that this happens.
+
+=item B<-y>|B<--y-grid> I<grid step>:I<label factor> (default autoconfigure)
+
+Makes vertical grid lines appear at I<grid step> interval. Every
+I<label factor> gridstep, a major grid line is printed, along with
+label showing the value of the grid line.
+
+If you want no y-grid at all set specify the magic word B<none>.
+
+=item B<--alt-y-grid>
+
+Place Y grid dynamically based on graph Y range. Algorithm ensures
+that you always have grid, that there are enough but not too many
+grid lines and the grid is metric. That is grid lines are placed 
+every 1, 2, 5 or 10 units.  (contributed by Sasha Mikheev)
+
+
+=item B<--alt-autoscale>
+
+Compute Y range  based on function absolute minimum and 
+maximum values. Default algorithm uses predefined set of ranges.  
+This is good in many cases but it fails miserably when you need
+to graph something like 260 + 0.001 * sin(x). Default algorithm 
+will use Y range from 250 to 300 and on the graph you will see
+almost straight line. With --alt-autoscale Y range will be
+from slightly less the 260 - 0.001 to slightly more then 260 + 0.001
+and periodic behavior will be seen.   (contributed by Sasha Mikheev)
+
+=item B<--alt-autoscale-max>
+
+Where --alt-autoscale will modify both the absolute maximum AND minimum
+values, this option will only affect the maximum value. The minimum 
+value, if not defined on the command line, will be 0. This option can
+be useful when graphing router traffic when the WAN line uses compression,
+and thus the throughput may be higher than the WAN line speed.
+
+=item B<--units-exponent> I<value> (default autoconfigure)
+
+This sets the 10**exponent scaling of the y-axis values.  Normally
+values will be scaled to the appropriate units (k, M, etc.).  However
+you may wish to display units always in k (Kilo, 10e3) even if the data
+is in the M (Mega, 10e6) range for instance.  Value should be an
+integer which is a multiple of 3 between -18 and 18 inclusive.  It is
+the exponent on the units you which to use.  For example, use 3 to
+display the y-axis values in k (Kilo, 10e3, thousands), use -6 to
+display the y-axis values in u (Micro, 10e-6, millionths).  Use a value
+of 0 to prevent any scaling of the y-axis values.
+
+=item B<-v>|B<--vertical-label> I<text>
+
+vertical label on the left side of the graph. This is normally used to
+specify the units used.
+
+=item B<-w>|B<--width> I<pixels> (default 400 pixel)
+
+Width of the drawing area within the graph. This affects the size of the
+gif.
+
+=item B<-h>|B<--height> I<pixels> (default 100 pixel)
+
+Width of the drawing area within the graph. This affects the size of the
+gif.
+
+=item B<-i>|B<--interlaced> (default: false)
+
+If you set this option, then the resulting GIF will be interlaced.
+Most web browsers display these incrementally as they load. If
+you do not use this option, the GIFs default to being progressive
+scanned. The only effect of this option is to control the format
+of the GIF on disk. It makes no changes to the layout or contents
+of the graph.
+
+=item B<-f>|B<--imginfo> I<formatstring>
+
+After the image has been created, the graph function uses printf
+together with this format string to create output similar to the PRINT
+function, only that the printf is supplied with the parameters
+I<filename>, I<xsize> and I<ysize>. In order to generate an B<IMG> tag
+suitable for including the graph into a web page, the command line
+would look like this:
+
+ --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
+
+=item B<-a>|B<--imgformat> B<GIF>|B<PNG> (default: GIF)
+
+Allows you to produce PNG output from rrdtool. 
+
+=item B<-z>|B<--lazy> (default: false)
+
+Only generate the graph, if the current gif is out of date or not
+existent.
+
+=item B<-u>|B<--upper-limit> I<value> (default autoconfigure)
+
+Defines the value normally located at the upper border of the
+graph. If the graph contains higher values, the upper border will
+move upwards to accomodate these values as well.
+
+If you want to define an upper-limit which will not move in any
+event you have to set the B<--rigid> option as well.
+
+=item B<-l>|B<--lower-limit> I<value> (default autoconfigure)
+
+This is not the lower limit of a graph.  But rather, this is the
+maximum lower bound of a graph.  For example, the value -100 will
+result in a graph that has a lower limit of -100 or less.  Use this
+keyword to expand graphs down.
+
+=item B<-r>|B<--rigid>
+
+rigid boundaries mode.  Normally rrdgraph will automatically expand the
+lower and upper limit if the graph contains a value outside the valid
+range. With the r option you can disable this behavior
+
+=item B<-b>|B<--base> I<value>
+
+if you are graphing memory (and NOT network traffic) this switch
+should be set to 1024 so that one Kb is 1024 byte. For traffic
+measurement, 1 kb/s is 1000 b/s.
+
+=item B<-o>|B<--logarithmic>
+
+logarithmic y-axis scaling
+
+=item B<-c>|B<--color> I<COLORTAG>B<#>I<rrggbb> (default colors)
+
+override the colors for the standard elements of the graph. The I<COLORTAG>
+must be one of the following symbolic names: B<BACK> ground, B<CANVAS>,
+B<SHADEA> left/top border, B<SHADEB> right/bottom border, B<GRID>, B<MGRID>
+major grid, B<FONT>, B<FRAME> and axis of the graph or B<ARROW>. This option
+can be called multiple times to set several colors.
+
+=item B<-g>|B<--no-legend>
+
+Suppress generation of legend; only render the graph.
+
+=item B<-t>|B<--title> I<text> (default no title)
+
+Define a title to be written into the graph
+
+=item B<--step> I<value> (default automatic)
+
+By default rrdgraph calculates the width of one pixle in the time domain and
+tries to get data at that resolution from the RRD. With this switch you can
+override this behaviour. If you want rrdgraph to get data at 1 hour
+resolution from the RRD, then you can set the step to 3600 seconds. Note,
+that a step smaller than 1 pixle will be silently ignored.
+
+=item B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>
+
+Define virtual name for a data source. This name can then be used
+in the functions explained below. The
+DEF call automatically chooses an B<RRA> which contains I<CF> consolidated data in a
+resolution appropriate for the size of the graph to be drawn.  Ideally
+this means that one data point from the B<RRA> should be represented
+by one pixel in the graph.  If the resolution of the B<RRA> is higher
+than the resolution of the graph, the data in the RRA will be further
+consolidated according to the consolidation function (I<CF>) chosen.
+
+=item B<CDEF:>I<vname>B<=>I<rpn-expression>
+
+Create a new virtual data source by evaluating a mathematical expression,
+specified in Reverse Polish Notation (RPN). If you have ever used a traditional
+HP calculator you already know RPN. The idea behind RPN notation is, 
+that you have a stack and push your data onto this stack. When ever
+you execute an operation, it takes as many data values from the stack
+as needed. The pushing of data is implicit, so when ever you specify a number
+or a variable, it gets pushed automatically. 
+
+If this is all a big load of incomprehensible words for you, maybe an
+example helps (a more complete explanation is given in [1]): The
+expression I<vname+3/2> becomes C<vname,3,2,/,+> in RPN. First the three
+values get pushed onto the stack (which now contains (the current
+value of) vname, a 3 and a 2).  Then the / operator pops two values
+from the stack (3 and 2), divides the first argument by the second
+(3/2) and pushes the result (1.5) back onto the stack. Then the +
+operator pops two values (vname and 1.5) from the stack; both values
+are added up and the result gets pushes back onto the stack. In the
+end there is only one value left on the stack: The result of the
+expression.
+
+The I<rpn-expression> in the B<CDEF> function takes both, constant values
+as well as I<vname> variables. The following operators can be used on these
+values: 
+
+=over
+
+=item +, -, *, /, %
+
+pops two values from the stack applies the selected operator and pushes 
+the result back onto the stack. The % operator stands for the modulo
+operation.
+
+=item SIN, COS, LOG, EXP, FLOOR, CEIL
+
+pops one value from the stack, applies the selected function and pushes
+the result back onto the stack.
+
+=item LT, LE, GT, GE, EQ
+
+pops two values from the stack, compares them according to the selected
+condition and pushes either 1 back onto the stack if the condition is true
+and 0 if the condition was not true.
+
+=item IF
+
+pops three values from the stack. If the last value is not 0, the
+second value will be pushed back onto the stack, otherwise the
+first value is pushed back.
+
+If the stack contains the values A, B, C, D, E are presently on the
+stack, the IF operator will pop the values E D and C of the stack. It will
+look at C and if it is not 0 it will push D back onto the stack, otherwise
+E will be sent back to the stack.
+
+=item MIN, MAX
+
+selects the lesser or larger of the two top stack values respectively
+
+=item LIMIT
+
+replaces the value with I<*UNKNOWN*> if it is outside the limits specified
+by the two values above it on the stack.
+
+ CDEF:a=alpha,0,100,LIMIT
+
+=item DUP, EXC, POP
+
+These manipulate the stack directly.  DUP will duplicate the top of the
+stack, pushing the result back onto the stack.  EXC will exchange the top
+two elements of the stack, and POP will pop off the top element of the
+stack.  Having insufficient elements on the stack for these operations is
+an error.
+
+=item UN
+
+Pops one value off the stack, if it is I<*UNKNOWN*>, 1 will be pushed
+back otherwise 0.
+
+=item UNKN
+
+Push an I<*UNKNOWN*> value onto the stack.
+
+=item PREV
+
+Push I<*UNKNOWN*> if its at the first value of a data set or otherwise
+the value of this CDEF at the previous time step. This allows you to
+perform calculations across the data.
+
+=item INF, NEGINF
+
+Push a positive or negative infinite (oo) value onto the stack. When
+drawing an infinite number it appears right at the top or bottom edge of the
+graph, depending whether you have a positive or negative infinite number.
+
+=item NOW
+
+Push the current (real world) time onto the stack.
+
+=item TIME
+
+Push the time the current sample was taken onto the stack. This is the
+number of non-skip seconds since 0:00:00 January 1, 1970.
+
+=item LTIME
+
+This is like TIME B<+ current timezone offset in seconds>. The current
+offset takes daylight saving time into account, given your OS supports
+this. If you were looking at a sample, in Zurich, in summer, the
+offset would be 2*3600 seconds, as Zurich at that time of year is 2
+hours ahead of UTC.
+
+Note that the timezone offset is always calculated for the time the
+current sample was taken at. It has nuthing todo with the time you are
+doing the calculation.
+
+=back
+
+Please note that you may only use I<vname> variables that you
+previously defined by either B<DEF> or B<CDEF>. Furthermore, as of
+this writing (version 0.99.25), you must use at least one I<vname>
+per expression, that is "CDEF:fourtytwo=2,40,+" will yield an error
+message but not a I<vname> fourtytwo that's always equal to 42.
+
+=item B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>
+
+Calculate the chosen consolidation function I<CF> over the data-source
+variable I<vname> and C<printf> the result to stdout using I<format>.
+In the I<format> string there should be a '%lf' or '%le' marker in the
+place where the number should be printed.
+
+If an additional '%s' is found AFTER the marker, the value will be scaled
+and an appropriate SI magnitude unit will be printed in place of the '%s'
+marker. The scaling will take the '--base' argument into consideration!
+
+If a '%S' is used instead of a '%s', then instead of calculating the
+appropriate SI magnitude unit for this value, the previously calculated
+SI magnitude unit will be used.  This is useful if you want all the values
+in a PRINT statement to have the same SI magnitude unit.  If there was
+no previous SI magnitude calculation made, then '%S' behaves like a '%s',
+unless the value is 0, in which case it does not remember a SI magnitude
+unit and a SI magnitude unit will only be calculated when the next '%s' is
+seen or the next '%S' for a non-zero value.
+
+If you want to put a '%' into your PRINT string, use '%%' instead.
+
+=item B<GPRINT:>I<vname>B<:>I<CF>B<:>I<format>
+
+Same as B<PRINT> but the result is printed into the graph below the legend.
+
+=back
+
+B<Caveat:> When using the B<PRINT> and B<GRPRINT> functions to
+calculate data summaries over time periods bounded by the current
+time, it is important to note that the last sample will almost always
+yield a value of UNKNOWN as it lies after the last update time.  This
+can result in slight data skewing, particularly with the B<AVERAGE>
+function.  In order to avoid this, make sure that your end time is at
+least one heartbeat prior to the current time.
+
+=over
+
+
+=item B<COMMENT:>I<text>
+
+Like B<GPRINT> but the I<text> is simply printed into the graph.
+
+=item B<HRULE:>I<value>B<#>I<rrggbb>[B<:>I<legend>]
+
+Draw a horizontal rule into the graph and optionally add a legend
+
+=item B<VRULE:>I<time>B<#>I<rrggbb>[B<:>I<legend>]
+
+Draw a vertical rule into the graph and optionally add a legend
+
+=item B<LINE>{B<1>|B<2>|B<3>}B<:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
+
+Plot for the requested data, using the color specified. Write a legend
+into the graph. The 3 possible keywords B<LINE1>, B<LINE2>, and B<LINE3> 
+generate increasingly wide lines. If no color is defined, 
+the drawing is done 'blind' this is useful in connection with the 
+B<STACK> function when you want to ADD the values of two 
+data-sources without showing it in the graph.
+
+=item B<AREA>:I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
+
+Does the same as B<LINE?>, but the area between 0 and 
+the graph will be filled with the color specified.
+
+=item B<STACK>:I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
+
+Does the same as B<LINE?>, but the graph gets stacked on top of the previous
+B<LINE?>, B<AREA> or B<STACK> graph. Depending on the type of the
+previous graph, the B<STACK> will be either a B<LINE?> or an B<AREA>.
+This obviously implies that the first B<STACK> must be preceded by an
+B<AREA> or B<LINE?> -- you need something to stack something onto in
+the first place ;) 
+
+Note, that when you STACK onto *UNKNOWN* data, rrdtool will not draw
+any graphics ... *UNKNOWN* is not zero ... if you want it to be zero
+then you might want to use a CDEF argument with IF and UN functions to
+turn *UNKNOWN* into zero ...
+
+=item B<TICK:>I<vname>B<#>I<rrggbb>[B<:>I<axis-fraction>[B<:>I<legend>]]
+
+Plot a tick mark (a vertical line) for each value of I<vname> that is
+non-zero and not *UNKNOWN*. The I<axis-fraction> argument specifies the
+length of the tick mark as a fraction of the y-axis; the default value
+is 0.1 (10% of the axis). Note that the color specification is not
+optional.
+
+=back
+
+=head1 NOTES on legend arguments
+
+=head2 Escaping the colon
+
+In a ':' in a I<legend> argument will mark the end of the legend. To
+enter a ':' into a legend, the colon must be escaped with a backslash '\:'.
+Beware, that many environments look for backslashes themselves, so it may
+be necessary to write two backslashes so that one is passed onto rrd_graph.
+
+=head2 String Formatting
+
+The text printed below the actual graph can be formated by appending special
+escaped characters at the end of a text. When ever such a character occurs,
+all pending text is pushed onto the graph according to the character
+specified.
+
+Valid markers are: B<\j> for justified, B<\l> for left aligned, B<\r> for
+right aligned and B<\c> for centered. In the next section there is an
+example showing how to use centered formating.
+
+Normally there are two space characters inserted between every two items
+printed into the graph. The space following a string can be suppressed by
+putting a B<\g> at the end of the string. The B<\g> also squshes any space
+inside the string if it is at the very end of the string. This can be used
+in connection with B<%s> to supress empty unit strings.
+
+ GPRINT:a:MAX:%lf%s\g
+
+A special case is COMMENT:B<\s> this inserts some additional vertical space
+before placing the next row of legends.
+
+=head1 NOTE on Return Values
+
+Whenever rrd_graph gets called, it prints a line telling the size of
+the gif it has just created to STDOUT. This line looks like this: XSIZExYSIZE.
+
+=head1 EXAMPLE 1
+
+  rrdtool graph demo.gif --title="Demo Graph" \
+          DEF:cel=demo.rrd:exhaust:AVERAGE \
+          "CDEF:far=cel,1.8,*,32,+"" \
+          LINE2:cel#00a000:"D. Celsius" \
+          LINE2:far#ff0000:"D. Fahrenheit\c"
+
+=head1 EXAMPLE 2
+
+This example demonstrates the syntax for using IF and UN to set
+I<*UNKNOWN*> values to 0.  This technique is useful if you are
+aggregating interface data where the start dates of the data sets
+doesn't match.
+
+  rrdtool graph demo.gif --title="Demo Graph" \
+         DEF:idat1=interface1.rrd:ds0:AVERAGE \
+         DEF:idat2=interface2.rrd:ds0:AVERAGE \
+         DEF:odat1=interface1.rrd:ds1:AVERAGE \
+         DEF:odat2=interface2.rrd:ds1:AVERAGE \
+         CDEF:agginput=idat1,UN,0,idat1,IF,idat2,UN,0,idat2,IF,+,8,* \
+         CDEF:aggoutput=odat1,UN,0,odat1,IF,odat2,UN,0,odat2,IF,+,8,* \
+         AREA:agginput#00cc00:Input Aggregate \
+         LINE1:agginput#0000FF:Output Aggregate
+         
+Assuming that idat1 has a data value of I<*UNKNOWN*>, the CDEF expression 
+
+ idat1,UN,0,idat1,IF 
+
+leaves us with a stack with contents of 1,0,NaN and the IF function
+will pop off the 3 values and replace them with 0.  If idat1 had a
+real value like 7942099, then the stack would have 0,0,7942099 and the
+real value would be the replacement.  
+
+=head1 EXAMPLE 3
+
+This example shows two ways to use the INF function. First it makes
+the background change color during half of the hours. Then, it uses
+AREA and STACK to draw a picture. If one of the inputs was UNKNOWN,
+all inputs are overlaid with another AREA.
+
+  rrdtool graph example.png --title="INF demo" \
+         DEF:val1=some.rrd:ds0:AVERAGE \
+         DEF:val2=some.rrd:ds1:AVERAGE \
+         DEF:val3=some.rrd:ds2:AVERAGE \
+         DEF:val4=other.rrd:ds0:AVERAGE \
+         CDEF:background=val4,POP,TIME,7200,%,3600,LE,INF,UNKN,IF \
+         CDEF:wipeout=val1,val2,val3,val4,+,+,+,UN,INF,UNKN,IF \
+         AREA:background#F0F0F0 \
+         AREA:val1#0000FF:Value1 \
+         STACK:val2#00C000:Value2 \
+         STACK:val3#FFFF00:Value3 \
+         STACK:val4#FFC000:Value4 \
+         AREA:wipeout#FF0000:Unknown
+
+The first CDEF uses val4 as a dummy value. It's value is removed immediately
+from the stack. Then a decision is made based on the time that a sample was
+taken. If it is an even hour (UTC time !) then the area will be filled. If
+it is not, the value is set to UNKN and is not plotted.
+
+The second CDEF looks if any of val1,val2,val3,val4 is unknown. It does so by
+checking the outcome of sum(val1,val2,val3,val4). Again, INF is returned when
+the condition is true, UNKN is used to not plot the data.
+
+The different items are plotted in a particular order. First do the background, then use a
+normal area to overlay it with data. Stack the other data until they are all plotted. Last but
+not least, overlay everything with eye-hurting red
+to signal any unknown data.
+
+Note that this example assumes that your data is in the positive half of the y-axis
+otherwhise you would would have to add NEGINF in order to extend the coverage
+of the rea to whole graph.
+
+=head1 EXAMPLE 4
+
+If the specialized function B<RRAs> exist for aberrant behavior detection, they
+can be used to generate the graph of a time series with confidence bands and
+failures.
+
+   rrdtool graph example.gif \
+          DEF:obs=monitor.rrd:ifOutOctets:AVERAGE \
+          DEF:pred=monitor.rrd:ifOutOctets:HWPREDICT \
+          DEF:dev=monitor.rrd:ifOutOctets:DEVPREDICT \
+          DEF:fail=monitor.rrd:ifOutOctets:FAILURES \
+          TICK:fail#ffffa0:1.0:"Failures\: Average bits out" \
+          CDEF:scaledobs=obs,8,* \
+          CDEF:upper=pred,dev,2,*,+ \
+          CDEF:lower=pred,dev,2,*,- \
+          CDEF:scaledupper=upper,8,* \
+          CDEF:scaledlower=lower,8,* \
+          LINE2:scaledobs#0000ff:"Average bits out" \
+          LINE1:scaledupper#ff0000:"Upper Confidence Bound: Average bits out" \
+          LINE1:scaledlower#ff0000:"Lower Confidence Bound: Average bits out"
+
+This example generates a graph of the data series in blue (LINE2 with the scaledobs
+virtual data source), confidence bounds in red (scaledupper and scaledlower virtual
+data sources), and potential failures (i.e. potential aberrant aberrant behavior)
+marked by vertical yellow lines (the fail data source).
+
+The raw data comes from an AVERAGE B<RRA>, the finest resolution of the observed
+time series (one consolidated data point per primary data point). The predicted
+(or smoothed) values are stored in the HWPREDICT B<RRA>. The predicted deviations
+(think standard deviation) values are stored in the DEVPREDICT B<RRA>. Finally,
+the FAILURES B<RRA> contains indicators, with 1 denoting a potential failure.
+
+All of the data is rescaled to bits (instead of Octets) by multiplying by 8.
+The confidence bounds are computed by an offset of 2 deviations both above
+and below the predicted values (the CDEFs upper and lower). Vertical lines
+indicated potential failures are graphed via the TICK graph element, which
+converts non-zero values in an B<RRA> into tick marks. Here an axis-fraction
+argument of 1.0 means the tick marks span the entire y-axis, and hence become
+vertical lines on the graph.
+
+The choice of 2 deviations (a scaling factor) matches the default used internally
+by the FAILURES B<RRA>. If the internal value is changed (see L<rrdtune>), this
+graphing command should be changed to be consistent.
+
+=head2 A note on data reduction:
+
+The B<rrdtool> I<graph> command is designed to plot data at a specified temporal
+resolution, regardless of the actually resolution of the data in the RRD file.
+This can present a problem for the specialized consolidation functions which
+maintain a one-to-one mapping between primary data points and consolidated
+data points. If a graph insists on viewing the contents of these B<RRAs> on a
+coarser temporal scale, the I<graph> command tries to do something intelligent,
+but the confidence bands and failures no longer have the same meaning and may
+be misleading.
+
+=head1 AUTHOR
+
+Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+
+=head1 REFERENCES
+
+[1] http://www.dotpoint.com/xnumber/rpn_or_adl.htm

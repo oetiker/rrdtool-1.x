@@ -5,15 +5,17 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.3  2001/03/07 21:21:54  oetiker
+ * complete rewrite of rrdgraph documentation. This also includs info
+ * on upcomming/planned changes to the rrdgraph interface and functionality
+ * -- Alex van den Bogaerdt <alex@slot.hollandcasino.nl>
+ *
  * Revision 1.2  2001/03/04 13:01:55  oetiker
  * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
  * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
  * This is backwards compatible! But new files using the Aberrant stuff are not readable
  * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
  * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
- * checkin
  *
  *****************************************************************************/
 
