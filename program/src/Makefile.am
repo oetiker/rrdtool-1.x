@@ -29,6 +29,7 @@ RRD_C_FILES =		\
 	rrd_graph.c	\
 	rrd_graph_helper.c	\
 	rrd_last.c	\
+	rrd_first.c	\
 	rrd_open.c	\
 	rrd_resize.c	\
 	rrd_restore.c	\

@@ -13,7 +13,7 @@ SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
 
 PODOLD = rrdgraph-old.pod
 
-POD = rrdtool.pod rrdlast.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
+POD = rrdtool.pod rrdlast.pod rrdfirst.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
 	cdeftutorial.pod rpntutorial.pod rrdthreads.pod bin_dec_hex.pod \
 	rrdfetch.pod rrdrestore.pod rrddump.pod rrdtune.pod rrdresize.pod \
 	rrdcgi.pod rrdtutorial.pod rrdinfo.pod rrdxport.pod rrd-beginners.pod \
