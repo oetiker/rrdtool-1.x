@@ -5,6 +5,12 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2001/05/09 05:31:01  oetiker
+ * Bug fix: when update of multiple PDP/CDP RRAs coincided
+ * with interpolation of multiple PDPs an incorrect value was
+ * stored as the CDP. Especially evident for GAUGE data sources.
+ * Minor changes to rrdcreate.pod. -- Jake Brutlag <jakeb@corp.webtv.net>
+ *
  * Revision 1.4  2001/03/10 23:54:41  oetiker
  * Support for COMPUTE data sources (CDEF data sources). Removes the RPN
  * parser and calculator from rrd_graph and puts then in a new file,
@@ -426,7 +432,7 @@ rrd_update(int argc, char **argv)
 	       rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
 	       double rate = DNAN;
 	       /* the data source type defines how to process the data */
-		/* pdp_temp contains rate * time ... eg the bytes
+		/* pdp_new contains rate * time ... eg the bytes
 		 * transferred during the interval. Doing it this way saves
 		 * a lot of math operations */
 		
@@ -760,7 +766,7 @@ rrd_update(int argc, char **argv)
 						  cum_val = IFDNAN(rrd.cdp_prep[iii].scratch[CDP_val].u_val, 0.0);
 						  cur_val = IFDNAN(pdp_temp[ii],0.0);
                           rrd.cdp_prep[iii].scratch[CDP_primary_val].u_val =
-					       (cum_val + cur_val) /
+					       (cum_val + cur_val * start_pdp_offset) /
 				           (rrd.rra_def[i].pdp_cnt
 					       -rrd.cdp_prep[iii].scratch[CDP_unkn_pdp_cnt].u_cnt);
 						   /* initialize carry over value */
