@@ -11,6 +11,8 @@ void PrintUsage(char *cmd);
 int CountArgs(char *aLine);
 int CreateArgs(char *, char *, int, char **);
 int HandleInputLine(int, char **, FILE*);
+int RemoteMode=0;
+int ChangeRoot=0;
 #define TRUE		1
 #define FALSE		0
 #define MAX_LENGTH	10000
@@ -26,6 +28,10 @@ void PrintUsage(char *cmd)
     char help_list[] =
 	   "Valid commands: create, update, graph, dump, restore,\n"
 	   "\t\tlast, info, fetch, tune, resize, xport\n\n";
+
+    char help_listremote[] =
+           "Valid remote commands: quit, ls, cd, mkdir\n\n";
+
 
     char help_create[] =
 	   "* create - create a new RRD\n\n"
@@ -123,6 +129,22 @@ void PrintUsage(char *cmd)
 	   "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n";
 
+    char help_quit[] =
+	   " * quit - closeing a session in remote mode\n\n"
+	   "\trrdtool quit\n\n";
+
+    char help_ls[] =
+	   " * ls - lists all *.rrd files in current directory\n\n"
+	   "\trrdtool ls\n\n";
+
+    char help_cd[] =
+	   " * cd - changes the current directory\n\n"
+	   "\trrdtool cd new direcotry\n\n";
+
+    char help_mkdir[] =
+	   " * mkdir - creates a new direcotry\n\n"
+	   "\trrdtool mkdir newdirecotryname\n\n";
+
     char help_lic[] =
 	   "RRDtool is distributed under the Terms of the GNU General\n"
 	   "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
@@ -130,7 +152,8 @@ void PrintUsage(char *cmd)
 	   "For more information read the RRD manpages\n\n";
 
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
-	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT };
+	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
+           C_QUIT, C_LS, C_CD, C_MKDIR };
 
     int help_cmd = C_NONE;
 
@@ -158,12 +181,23 @@ void PrintUsage(char *cmd)
 		help_cmd = C_RESIZE;
     	    else if (!strcmp(cmd,"xport"))
 		help_cmd = C_XPORT;
+            else if (!strcmp(cmd,"quit"))
+                help_cmd = C_QUIT;
+            else if (!strcmp(cmd,"ls"))
+                help_cmd = C_LS;
+            else if (!strcmp(cmd,"cd"))
+                help_cmd = C_CD;
+            else if (!strcmp(cmd,"mkdir"))
+                help_cmd = C_MKDIR;
 	}
     fputs(help_main, stdout);
     switch (help_cmd)
 	{
 	    case C_NONE:
 		fputs(help_list, stdout);
+                if (RemoteMode){
+                   fputs(help_listremote, stdout);
+                }
 		break;
 	    case C_CREATE:
 		fputs(help_create, stdout);
@@ -198,6 +232,18 @@ void PrintUsage(char *cmd)
 	    case C_XPORT:
 		fputs(help_xport, stdout);
 		break;
+	    case C_QUIT:
+		fputs(help_quit, stdout);
+		break;
+	    case C_LS:
+		fputs(help_ls, stdout);
+		break;
+	    case C_CD:
+		fputs(help_cd, stdout);
+		break;
+	    case C_MKDIR:
+		fputs(help_mkdir, stdout);
+		break;
 	}
     fputs(help_lic, stdout);
 }
@@ -207,6 +253,7 @@ int main(int argc, char *argv[])
 {
     char **myargv;
     char aLine[MAX_LENGTH];
+    char *firstdir="";
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE,SIG_IGN);
 #endif
@@ -219,7 +266,7 @@ int main(int argc, char *argv[])
 	    return 0;
 	}
     
-    if ((argc == 2) && !strcmp("-",argv[1]))
+    if (((argc == 2)||(argc == 3)) && !strcmp("-",argv[1]))
 	{
 #if HAVE_GETRUSAGE
 	  struct rusage  myusage;
@@ -230,6 +277,35 @@ int main(int argc, char *argv[])
 	    tz.tz_minuteswest =0;
 	    tz.tz_dsttime=0;
 	    gettimeofday(&starttime,&tz);
+#endif
+	  RemoteMode=1;
+#ifndef WIN32
+          if ((argc == 3) && strcmp("",argv[2])){
+             if (getuid()==0){
+                chroot(argv[2]);
+                if (errno!=0){
+                   fprintf(stderr,"ERROR: can't change root to '%s' errno=%d\n",
+                           argv[2],errno);
+                    exit(errno);
+                }
+                ChangeRoot=1;
+                firstdir="/";
+             }
+             else{
+                firstdir=argv[2];
+             }
+          }
+          if (strcmp(firstdir,"")){
+             chdir(firstdir);
+             if (errno!=0){
+                fprintf(stderr,"ERROR: %s\n",strerror(errno));
+                exit(errno);
+             }
+          }
+#else
+          fprintf(stderr,"ERROR: change root only in unix "
+                         "enviroment posible\n");
+          exit(1);
 #endif
 
 	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
@@ -272,6 +348,11 @@ int main(int argc, char *argv[])
 		PrintUsage(argv[1]);
 		exit(0);
 	}
+    else if (argc == 3 && !strcmp(argv[1],"help"))
+	{
+		PrintUsage(argv[2]);
+		exit(0);
+	}
     else
 	HandleInputLine(argc, argv, stderr);    
     return 0;
@@ -279,9 +360,83 @@ int main(int argc, char *argv[])
 
 int HandleInputLine(int argc, char **argv, FILE* out)
 {
+    DIR           *curdir; /* to read current dir with ls */
+    struct dirent *dent;
+    struct stat   st;
     optind=0; /* reset gnu getopt */
     opterr=0; /* no error messages */
 
+    if (RemoteMode){
+       if (argc>1 && strcmp("quit", argv[1]) == 0){
+          if (argc>2){
+             printf("ERROR: invalid parameter count for quit\n");
+             return(0);
+          }
+          exit(0);
+       }
+       if (argc>1 && strcmp("cd", argv[1]) == 0){
+          if (argc>3){
+             printf("ERROR: invalid parameter count for cd\n");
+             return(0);
+          }
+#ifndef WIN32
+          if (getuid()==0 && ! ChangeRoot){
+             printf("ERROR: chdir security problem - rrdtool is runnig as "
+                    "root an no chroot!\n");
+             return(0); 
+          }
+#endif
+          chdir(argv[2]);
+          if (errno!=0){
+             printf("ERROR: %s\n",strerror(errno));
+          }
+          return(0);
+       }
+       if (argc>1 && strcmp("mkdir", argv[1]) == 0){
+          if (argc>3){
+             printf("ERROR: invalid parameter count for mkdir\n");
+             return(0);
+          }
+#ifndef WIN32
+          if (getuid()==0 && ! ChangeRoot){
+             printf("ERROR: mkdir security problem - rrdtool is runnig as "
+                    "root an no chroot!\n");
+             return(0); 
+          }
+#endif
+          mkdir(argv[2],0777);
+          if (errno!=0){
+             printf("ERROR: %s\n",strerror(errno));
+          }
+          return(0);
+       }
+       if (argc>1 && strcmp("ls", argv[1]) == 0){
+          if (argc>2){
+             printf("ERROR: invalid parameter count for ls\n");
+             return(0);
+          }
+          if ((curdir=opendir("."))!=NULL){
+             while((dent=readdir(curdir))!=NULL){
+                if (!stat(dent->d_name,&st)){
+                   if (S_ISDIR(st.st_mode)){
+                      printf("d %s\n",dent->d_name);
+                   }
+                   if (strlen(dent->d_name)>4 && S_ISREG(st.st_mode)){
+                      if (!strcmp(dent->d_name+strlen(dent->d_name)-4,".rrd") ||
+                          !strcmp(dent->d_name+strlen(dent->d_name)-4,".RRD")){
+                         printf("- %s\n",dent->d_name);
+                      }
+                   }
+                }
+             }
+          }
+          else{
+             printf("ERROR: %s\n",strerror(errno));
+             return(errno);
+          }
+          return(0);
+       }
+    }
     if (argc < 3 
 	|| strcmp("help", argv[1]) == 0
 	|| strcmp("--help", argv[1]) == 0
