@@ -6,6 +6,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include <fcntl.h>
 
 /* Prototypes */
 
