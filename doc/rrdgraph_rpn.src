@@ -190,17 +190,35 @@ Z<>
 
 =item MAXIMUM, MINIMUM, AVERAGE
 
-Return the corresponding value
+Return the corresponding value, MAXIMUM and MINIMUM also return
+the first occurance of that value in the time component.
+
+Example: C<VDEF:avg=mydata,AVERAGE>
 
 Z<>
 
 =item LAST, FIRST
 
-Return the last,first value including its time 
+Return the last,first value including its time.  The time for
+FIRST is actually the start of the corresponding interval, where
+LASTs time component returns the end of the corresponding interval.
+
+Example: C<VDEF:first=mydata,FIRST>
 
 Z<>
 
-=item PERCENTILE
+=item TOTAL
+
+Returns the rate from each defined timeslot multiplied with the
+step size.  This can for instance return total bytes transfered
+when you have logged bytes per second. The time component returns
+the amount of seconds 
+
+Example: C<VDEF:total=mydata,TOTAL>
+
+Z<>
+
+=item PERCENT
 
 Should follow a B<DEF> or B<CDEF> I<vname>. This I<vname> is popped,
 another number is popped which is a certain percentage (0..100). The
@@ -208,9 +226,10 @@ data set is then sorted and the value returned is chosen such that
 I<percentage> percent of the values is lower or equal than the result.
 I<Unknown> values are considered lower than any finite number for this
 purpose so if this operator returns an I<unknown> you have quite a lot
-of them in your data...
+of them in your data.  B<Inf>inite numbers are lesser, or more, than the
+finite numbers and are always more than the I<Unknown> numbers.
 
-Example: C<VDEF:perc95=95,mydata,PERCENTILE>
+Example: C<VDEF:perc95=mydata,95,PERCENT>
 
 =back
 
