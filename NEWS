@@ -5,6 +5,13 @@ RRDTOOL NEWS
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
+2002/03/23 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
+  Several visible changes made to rrd_graph
+  * Pie chart support workable
+  * Elements that are not used do not take up space on the img
+  * Hack for the missing rotated text (see --vertical-label)
+  * Tiny boxes in front of labels now scale with the text
+
 2002/01/15 Tobias Oetiker <tobi@oetiker.ch>
   The BIG graph update
   * Replace libgd with libart
@@ -42,7 +49,7 @@ for details check the cvs ChangeLog
 2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch> 
   Integrated complete rewrite
   of rrdgraph documentation by Alex van den Bogaerdt
-  <alex@slot.hollandcasino.nl>. This also contains info on his planned
+  <alex@ergens.op.Het.Net>. This also contains info on his planned
   changes to the rrdgraph module
 
 2001/03/02 Tobias Oetiker <oetiker@ee.ethz.ch>
