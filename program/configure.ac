@@ -279,7 +279,7 @@ AC_FUNC_VPRINTF
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset setlocale strerror snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro
 AC_CHECK_FUNCS(fpclassify, ,
