@@ -9,3 +9,5 @@
 #define HAVE_MATH_H 1
 
 #define rrd_realloc(a,b) realloc((a), (b))
+
+#define snprintf _snprintf

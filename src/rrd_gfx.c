@@ -11,11 +11,10 @@
 #else
 # define DPRINT(x)
 #endif
-
+#include "rrd_tool.h"
 #include <png.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <math.h>
 
 #include "rrd_gfx.h"
 

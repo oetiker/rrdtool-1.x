@@ -41,8 +41,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "." /I "..\gd1.3" /I "..\libpng-1.0.3" /I "..\zlib-1.1.3" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
-# SUBTRACT CPP /X /YX
+# ADD CPP /nologo /W3 /GX /I "..\libraries\libpng-1.2.0" /I "..\libraries\zlib-1.1.4" /I "..\libraries\libart_lgpl-2.3.7" /I "..\libraries\freetype-2.0.5\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
+# SUBTRACT CPP /O<none> /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x100c
 BSC32=bscmake.exe
@@ -65,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "." /I "..\gd1.3" /I "..\libpng-1.0.3" /I "..\zlib-1.1.3" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
+# ADD CPP /nologo /ML /W3 /Gm /GX /ZI /Od /I "..\libraries\libpng-1.2.0" /I "..\libraries\zlib-1.1.4" /I "..\libraries\libart_lgpl-2.3.7" /I "..\libraries\freetype-2.0.5\include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x100c
@@ -84,10 +84,6 @@ LIB32=link.exe -lib
 # Name "rrd - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\gdpng.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\getopt.c
 # End Source File
 # Begin Source File
@@ -96,7 +92,7 @@ SOURCE=.\getopt1.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\gifsize.c
+SOURCE=.\hash_32.c
 # End Source File
 # Begin Source File
 
@@ -132,7 +128,23 @@ SOURCE=.\rrd_format.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\rrd_gfx.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\rrd_graph.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_graph_helper.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_hw.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_info.c
 # End Source File
 # Begin Source File
 
@@ -149,6 +161,10 @@ SOURCE=.\rrd_resize.c
 # Begin Source File
 
 SOURCE=.\rrd_restore.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_rpncalc.c
 # End Source File
 # Begin Source File
 

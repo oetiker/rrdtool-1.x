@@ -11,10 +11,10 @@ extern "C" {
 }
 #endif
 
-#include "../src/rrd_tool.h"
+#include "../../src/rrd_tool.h"
 
 /* perl 5.004 compatibility */
-#if PERLPATCHLEVEL < 5
+#if PERLPATCHLEVEL < 5 
 #define PL_sv_undef sv_undef
 #endif
 
@@ -39,12 +39,14 @@ extern "C" {
 		\
 		if (rrd_test_error()) XSRETURN_UNDEF;
 
-
+/*
+ * should not be needed if libc is linked (see ntmake.pl)
 #ifdef WIN32
  #define free free
  #define malloc malloc
  #define realloc realloc
-#endif /*WIN32*/
+#endif
+*/
 
 
 MODULE = RRDs	PACKAGE = RRDs	PREFIX = rrd_

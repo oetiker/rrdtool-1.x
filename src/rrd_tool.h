@@ -12,7 +12,7 @@ extern "C" {
 #define _RRD_TOOL_H
 
 #ifdef WIN32
-# include "ntconfig.h"
+#include "../confignt/config.h"
 #else
 #ifdef HAVE_CONFIG_H
 #include <config.h>
