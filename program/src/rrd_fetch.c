@@ -5,8 +5,11 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:05  oetiker
- * Initial revision
+ * Revision 1.2  2001/12/17 12:48:43  oetiker
+ * fix overflow error ...
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
+ * checkin
  *
  *****************************************************************************/
 
@@ -257,8 +260,8 @@ rrd_fetch_fn(
 		    - (rrd.live_head->last_up % *step));
     rra_start_time = (rra_end_time
 		 - ( *step * (rrd.rra_def[chosen_rra].row_cnt-1)));
-    start_offset = (*start - rra_start_time) / (long)*step;
-    end_offset = (rra_end_time - *end ) / (long)*step; 
+    start_offset =(long)(*start - rra_start_time) / (long)*step;
+    end_offset = (long)(rra_end_time - *end ) / (long)*step; 
 #ifdef DEBUG
     fprintf(stderr,"rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
 	    rra_start_time,rra_end_time,start_offset,end_offset);
