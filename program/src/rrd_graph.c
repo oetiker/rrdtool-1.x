@@ -33,7 +33,8 @@ char rrd_win_default_font[80];
 
 #ifndef RRD_DEFAULT_FONT
 #ifndef WIN32
-#define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" 
+#define RRD_DEFAULT_FONT "VeraMono.ttf"
+/* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/openoffice/ariosor.ttf" */
 /* #define RRD_DEFAULT_FONT "/usr/share/fonts/truetype/Arial.ttf" */
 #endif
 #endif
@@ -1402,7 +1403,7 @@ leg_place(image_desc_t *im)
 				      im->text_prop[TEXT_PROP_LEGEND].font,
 				      im->text_prop[TEXT_PROP_LEGEND].size,
 				      im->tabwidth,
-				      im->gdes[i].legend);
+				      im->gdes[i].legend, 0);
 	    leg_c++;
 	} else {
 	   legspace[i]=0;
@@ -1450,7 +1451,7 @@ leg_place(image_desc_t *im)
 				      im->text_prop[TEXT_PROP_LEGEND].font,
 				      im->text_prop[TEXT_PROP_LEGEND].size,
 				      im->tabwidth,
-				      im->gdes[ii].legend) 
+				      im->gdes[ii].legend, 0) 
 		   + legspace[ii]
 		   + glue;
 		if (im->gdes[ii].gf != GF_GPRINT && 
@@ -1888,13 +1889,14 @@ grid_paint(image_desc_t   *im)
     }
 
     /* yaxis description */
-	if (im->canvas->imgformat != IF_PNG) {
+/*	if (im->canvas->imgformat != IF_PNG) {*/
+	if (1) {
 	    gfx_new_text( im->canvas,
 			  7, (im->yorigin - im->ysize/2),
 			  im->graph_col[GRC_FONT],
 			  im->text_prop[TEXT_PROP_AXIS].font,
 			  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
-			  GFX_H_CENTER, GFX_V_CENTER,
+			  GFX_H_LEFT, GFX_V_CENTER,
 			  im->ylegend);
 	} else {
 	    /* horrible hack until we can actually print vertically */
@@ -1905,7 +1907,7 @@ grid_paint(image_desc_t   *im)
 		for (n=0;n<strlen(im->ylegend);n++) {
 		    s[0]=im->ylegend[n];
 		    s[1]='\0';
-		    gfx_new_text(im->canvas,7,im->text_prop[TEXT_PROP_AXIS].size*(l-n),
+		    gfx_new_text(im->canvas,7,im->text_prop[TEXT_PROP_AXIS].size*(n+1),
 			im->graph_col[GRC_FONT],
 			im->text_prop[TEXT_PROP_AXIS].font,
 			im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
@@ -1941,7 +1943,7 @@ grid_paint(image_desc_t   *im)
 		    boxH = gfx_get_text_width(im->canvas, 0,
 				im->text_prop[TEXT_PROP_AXIS].font,
 				im->text_prop[TEXT_PROP_AXIS].size,
-				im->tabwidth,"M") * 1.25;
+				im->tabwidth,"M", 0) * 1.25;
 		    boxV = boxH;
 
 		    node = gfx_new_area(im->canvas,
@@ -2093,7 +2095,7 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
 		im->text_prop[TEXT_PROP_TITLE].font,
 		im->text_prop[TEXT_PROP_TITLE].size,
 		im->tabwidth,
-		im->title) + 2*Xspacing;
+		im->title, 0) + 2*Xspacing;
 	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2;
     }
 

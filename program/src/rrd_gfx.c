@@ -15,12 +15,41 @@
 #include <png.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 #include "rrd_gfx.h"
 #include "rrd_afm.h"
 
 /* lines are better drawn on the pixle than between pixles */
 #define LINEOFFSET 0.5
+
+typedef struct gfx_char_s *gfx_char;
+struct gfx_char_s {
+  FT_UInt     index;    /* glyph index */
+  FT_Vector   pos;      /* location from baseline in 26.6 */
+  FT_Glyph    image;    /* glyph bitmap */
+};
+
+typedef struct gfx_string_s *gfx_string;
+struct gfx_string_s {
+  unsigned int    width;
+  unsigned int    height;
+  size_t          count;  /* number of characters */
+  gfx_char        glyphs;
+  size_t          num_glyphs;
+  FT_BBox         bbox;
+  FT_Matrix       transform;
+};
+
+/* compute string bbox */
+static void compute_string_bbox(gfx_string string);
+
+/* create a freetype glyph string */
+gfx_string gfx_string_create ( FT_Face face,
+                               const char *text, int rotation);
+
+/* create a freetype glyph string */
+static void gfx_string_destroy ( gfx_string string );
 
 static
 gfx_node_t *gfx_new_node( gfx_canvas_t *canvas,enum gfx_en type){
@@ -182,10 +211,10 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
 			      enum gfx_v_align_en v_align,
                               char* text){
    gfx_node_t *node = gfx_new_node(canvas,GFX_TEXT);
-   if (angle != 0.0){
+/*   if (angle != 0.0){*/
        /* currently we only support 0 and 270 */
-       angle = 270.0;
-   }
+/*       angle = 270.0;
+   }*/
    
    node->text = strdup(text);
    node->size = size;
@@ -235,12 +264,23 @@ int           gfx_render(gfx_canvas_t *canvas,
   }
 }
 
+static void gfx_string_destroy ( gfx_string string ) {
+  unsigned int n;
+  if (string->glyphs) {
+    for (n=0; n<string->num_glyphs; ++n)
+      FT_Done_Glyph (string->glyphs[n].image);
+    free (string->glyphs);
+  }
+  free (string);
+}
+
+
 double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
-			    double tabwidth, char* text){
+			    double tabwidth, char* text, int rotation){
   switch (canvas->imgformat) {
   case IF_PNG: 
-    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text);
+    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text, rotation);
   case IF_SVG: /* fall through */ 
   case IF_EPS:
   case IF_PDF:
@@ -252,52 +292,27 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 
 double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
-			    double tabwidth, char* text){
+			    double tabwidth, char* text, int rotation){
 
-  FT_GlyphSlot  slot;
-  FT_UInt       previous=0;
-  FT_UInt       glyph_index=0;
-  FT_Bool       use_kerning;
   int           error;
+  double        text_width=0;
   FT_Face       face;
   FT_Library    library=NULL;  
-  double        text_width=0;
+  gfx_string    string;
+
   FT_Init_FreeType( &library );
   error = FT_New_Face( library, font, 0, &face );
   if ( error ) return -1;
   error = FT_Set_Char_Size(face,  size*64,size*64,  100,100);
   if ( error ) return -1;
 
-  use_kerning = FT_HAS_KERNING(face);
-  slot = face->glyph;
-  for(;*text;text++) {	
-    previous = glyph_index;
-    glyph_index = FT_Get_Char_Index( face, *text);
-    
-    if (use_kerning && previous && glyph_index){
-      FT_Vector  delta;
-      FT_Get_Kerning( face, previous, glyph_index,
-		      0, &delta );
-      text_width += (double)delta.x / 64.0;
-      
-    }
-    error = FT_Load_Glyph( face, glyph_index, 0 );
-    if ( error ) {
-      FT_Done_FreeType(library);
-      return -1;
-    }
-    if (! previous) {
-      text_width -= (double)slot->metrics.horiBearingX / 64.0; /* add just char width */	
-    }
-    text_width += (double)slot->metrics.horiAdvance / 64.0;
-  }
-  text_width -= (double)slot->metrics.horiAdvance / 64.0; /* remove last step */
-  text_width += (double)slot->metrics.width / 64.0; /* add just char width */
-  text_width += (double)slot->metrics.horiBearingX / 64.0; /* add just char width */
+  string = gfx_string_create( face, text, rotation);
+  text_width = string->width;
+  gfx_string_destroy(string);
   FT_Done_FreeType(library);
-  return text_width;
+  return text_width/64;
 }
- 
+
 static void gfx_libart_close_path(gfx_canvas_t *canvas,
 	gfx_node_t *node, ArtVpath **vec)
 {
@@ -321,9 +336,147 @@ static void gfx_round_scaled_coordinates(gfx_canvas_t *canvas,
     }
 }
 
+/* find bbox of a string */
+static void compute_string_bbox(gfx_string string) {
+    unsigned int n;
+    FT_BBox bbox;
+
+    bbox.xMin = bbox.yMin = 32000;
+    bbox.xMax = bbox.yMax = -32000;
+    for ( n = 0; n < string->num_glyphs; n++ ) {
+      FT_BBox glyph_bbox;
+      FT_Glyph_Get_CBox( string->glyphs[n].image, ft_glyph_bbox_gridfit,
+       &glyph_bbox );
+      if (glyph_bbox.xMin < bbox.xMin) {
+         bbox.xMin = glyph_bbox.xMin;
+      }
+      if (glyph_bbox.yMin < bbox.yMin) {
+        bbox.yMin = glyph_bbox.yMin;
+      }
+      if (glyph_bbox.xMax > bbox.xMax) {
+         bbox.xMax = glyph_bbox.xMax;
+      }
+      if (glyph_bbox.yMax > bbox.yMax) {
+         bbox.yMax = glyph_bbox.yMax;
+      }
+    }
+    if ( bbox.xMin > bbox.xMax ) { 
+      bbox.xMin = 0;
+      bbox.yMin = 0;
+      bbox.xMax = 0;
+      bbox.yMax = 0;
+    }
+    string->bbox.xMin = bbox.xMin;
+    string->bbox.xMax = bbox.xMax;
+    string->bbox.yMin = bbox.yMin;
+    string->bbox.yMax = bbox.yMax;
+} 
+
+/* create a free type glyph string */
+gfx_string gfx_string_create(FT_Face face,const char *text,
+        int rotation)
+{
+
+  FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
+  FT_Bool       use_kerning;
+  FT_UInt       previous;
+  FT_Vector     ft_pen;
+
+  gfx_string    string;
+  gfx_char      glyph;          /* current glyph in table */
+  unsigned int  n;
+  int           error;
+
+  ft_pen.x = 0;   /* start at (0,0) !! */
+  ft_pen.y = 0;
+
+  string = (gfx_string) malloc (sizeof(struct gfx_string_s));
+  string->width = 0;
+  string->height = 0;
+  string->count = strlen (text);
+  string->glyphs = (gfx_char) calloc (string->count,sizeof(struct gfx_char_s));
+  string->num_glyphs = 0;
+  string->transform.xx = (FT_Fixed)( cos(M_PI*(rotation)/180.0)*0x10000);
+  string->transform.xy = (FT_Fixed)(-sin(M_PI*(rotation)/180.0)*0x10000);
+  string->transform.yx = (FT_Fixed)( sin(M_PI*(rotation)/180.0)*0x10000);
+  string->transform.yy = (FT_Fixed)( cos(M_PI*(rotation)/180.0)*0x10000);
+
+  use_kerning = FT_HAS_KERNING(face);
+  previous    = 0;
+  glyph = string->glyphs;
+  for (n=0; n<string->count; n++, glyph++) {
+    FT_Vector   vec;
+
+    /* initialize each struct gfx_char_s */
+    glyph->index = 0;
+    glyph->pos.x = 0;
+    glyph->pos.y = 0;
+    glyph->image = NULL;
+
+    glyph->index = FT_Get_Char_Index( face, text[n] );
+
+    /* compute glyph origin */
+    if ( use_kerning && previous && glyph->index ) {
+      FT_Vector kerning;
+      FT_Get_Kerning (face, previous, glyph->index,
+          ft_kerning_default, &kerning);
+      ft_pen.x += kerning.x;
+      ft_pen.y += kerning.y;
+    }
+
+    /* store current pen position */
+    glyph->pos.x = ft_pen.x;
+    glyph->pos.y = ft_pen.y;
+
+    /* load the glyph image (in its native format) */
+    /* for now, we take a monochrome glyph bitmap */
+    error = FT_Load_Glyph (face, glyph->index, FT_LOAD_DEFAULT);
+    if (error) {
+      fprintf (stderr, "couldn't load glyph:  %c\n", text[n]);
+      continue;
+    }
+    error = FT_Get_Glyph (slot, &glyph->image);
+    if (error) {
+      fprintf (stderr, "couldn't get glyph from slot:  %c\n", text[n]);
+      continue;
+    }
+
+    ft_pen.x   += slot->advance.x;
+    ft_pen.y   += slot->advance.y;
+
+    /* rotate glyph */
+    vec = glyph->pos;
+    FT_Vector_Transform (&vec, &string->transform);
+    error = FT_Glyph_Transform (glyph->image, &string->transform, &vec);
+    if (error) {
+      fprintf (stderr, "couldn't transform glyph\n");
+      continue;
+    }
+
+    /* convert to a bitmap - destroy native image */
+    error = FT_Glyph_To_Bitmap (&glyph->image, ft_render_mode_normal, 0, 1);
+    if (error) {
+      fprintf (stderr, "couldn't convert glyph to bitmap\n");
+      continue;
+    }
+
+    /* increment number of glyphs */
+    previous = glyph->index;
+    string->num_glyphs++;
+  }
+/*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
+  compute_string_bbox( string );
+  string->width = string->bbox.xMax - string->bbox.xMin;
+  string->height = string->bbox.yMax - string->bbox.yMin;
+
+  return string;
+}
+
+
 static int gfx_save_png (art_u8 *buffer, FILE *fp,
                      long width, long height, long bytes_per_pixel);
 /* render grafics into png image */
+
 int           gfx_render_png (gfx_canvas_t *canvas, 
 			      art_u32 width, art_u32 height, 
 			      gfx_color_t background, FILE *fp){
@@ -366,15 +519,13 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             break;
         }
         case GFX_TEXT: {
+            unsigned int  n;
             int  error;
-            float text_width=0.0, text_height = 0.0;
-            unsigned char *text;
             art_u8 fcolor[3],falpha;
             FT_Face       face;
-            FT_GlyphSlot  slot;
-            FT_UInt       previous=0;
-            FT_UInt       glyph_index=0;
-	    FT_Bool       use_kerning;
+            gfx_char      glyph;
+            gfx_string    string;
+            FT_Vector     vec;  /* 26.6 */
 
             float pen_x = 0.0 , pen_y = 0.0;
             /* double x,y; */
@@ -389,7 +540,6 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  0,
                                  &face );
 	    if ( error ) break;
-            use_kerning = FT_HAS_KERNING(face);
 
             error = FT_Set_Char_Size(face,   /* handle to face object            */
                                      (long)(node->size*64),
@@ -399,75 +549,68 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             if ( error ) break;
             pen_x = node->x * canvas->zoom;
             pen_y = node->y * canvas->zoom;
-            slot = face->glyph;
 
-            for(text=(unsigned char *)node->text;*text;text++) {	
-                previous = glyph_index;
-                glyph_index = FT_Get_Char_Index( face, *text);
-                
-                if (use_kerning && previous && glyph_index){
-                    FT_Vector  delta;
-                    FT_Get_Kerning( face, previous, glyph_index,
-                                    0, &delta );
-                    text_width += (double)delta.x / 64.0;
-                    
-                }
-                error = FT_Load_Glyph( face, glyph_index, 0 );
-                if ( error ) break;
-		if (previous == 0){
-		  pen_x -= (double)slot->metrics.horiBearingX / 64.0; /* adjust pos for first char */	
-		  text_width -= (double)slot->metrics.horiBearingX / 64.0; /* add just char width */	
-                }
-		if ( text_height < (double)slot->metrics.horiBearingY / 64.0 ) {
-		  text_height = (double)slot->metrics.horiBearingY / 64.0;
-		}
-                text_width += (double)slot->metrics.horiAdvance / 64.0;
-            }
-            text_width -= (double)slot->metrics.horiAdvance / 64.0; /* remove last step */
-            text_width += (double)slot->metrics.width / 64.0; /* add just char width */
-            text_width += (double)slot->metrics.horiBearingX / 64.0; /* add just char width */
-            
+            string = gfx_string_create (face, node->text, node->angle);
             switch(node->halign){
-            case GFX_H_RIGHT:  pen_x -= text_width; break;
-            case GFX_H_CENTER: pen_x -= text_width / 2.0; break;          
-            case GFX_H_LEFT: break;          
-            case GFX_H_NULL: break;          
+            case GFX_H_RIGHT:  vec.x = -string->bbox.xMax;
+                               break;          
+            case GFX_H_CENTER: vec.x = abs(string->bbox.xMax) >= abs(string->bbox.xMin) ?
+                                       -string->bbox.xMax/2:-string->bbox.xMin/2;
+                               break;          
+            case GFX_H_LEFT:   vec.x = -string->bbox.xMin;
+			       break;
+            case GFX_H_NULL:   vec.x = 0;
+                               break;          
             }
 
             switch(node->valign){
-            case GFX_V_TOP:    pen_y += text_height; break;
-            case GFX_V_CENTER: pen_y += text_height / 2.0; break;          
-            case GFX_V_BOTTOM: break;          
-            case GFX_V_NULL: break;          
+            case GFX_V_TOP:    vec.y = string->bbox.yMax;
+                               break;
+            case GFX_V_CENTER: vec.y = abs(string->bbox.yMax) >= abs(string->bbox.yMin) ?
+                                       string->bbox.yMax/2:string->bbox.yMin/2;
+                               break;
+            case GFX_V_BOTTOM: vec.y = 0;
+                               break;
+            case GFX_V_NULL:   vec.y = 0;
+                               break;
             }
+	    pen_x += vec.x/64;
+	    pen_y += vec.y/64;
+            glyph = string->glyphs;
+            for(n=0; n<string->num_glyphs; ++n, ++glyph) {
+                int gr;
+                FT_Glyph        image;
+                FT_BitmapGlyph  bit;
 
-            glyph_index=0;
-            for(text=(unsigned char *)node->text;*text;text++) {
-                int gr;          
-                previous = glyph_index;
-                glyph_index = FT_Get_Char_Index( face, *text);
-                
-                if (use_kerning && previous && glyph_index){
-                    FT_Vector  delta;
-                    FT_Get_Kerning( face, previous, glyph_index,
-                                    0, &delta );
-                    pen_x += (double)delta.x / 64.0;
-                    
+	        /* make copy to transform */
+                if (! glyph->image) {
+                  fprintf (stderr, "no image\n");
+                  continue;
                 }
-                error = FT_Load_Glyph( face, glyph_index, FT_LOAD_RENDER );
-                if ( error ) break;
-                gr = slot->bitmap.num_grays -1;
-                for (iy=0; iy < slot->bitmap.rows; iy++){
-                    long buf_y = iy+(pen_y+0.5)-slot->bitmap_top;
+                error = FT_Glyph_Copy (glyph->image, &image);
+                if (error) {
+                  fprintf (stderr, "couldn't copy image\n");
+                  continue;
+                }
+
+                /* transform it */
+                vec = glyph->pos;
+                FT_Vector_Transform (&vec, &string->transform);
+
+                bit = (FT_BitmapGlyph) image;
+
+                gr = bit->bitmap.num_grays -1;
+                for (iy=0; iy < bit->bitmap.rows; iy++){
+                    long buf_y = iy+(pen_y+0.5)-bit->top;
                     if (buf_y < 0 || buf_y >= pys_height) continue;
                     buf_y *= rowstride;
-                    for (ix=0;ix < slot->bitmap.width;ix++){
-                        long buf_x = ix + (pen_x + 0.5) + (double)slot->bitmap_left ;
+                    for (ix=0;ix < bit->bitmap.width;ix++){
+                        long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
                         art_u8 font_alpha;
                         
                         if (buf_x < 0 || buf_x >= pys_width) continue;
                         buf_x *=  bytes_per_pixel ;
-                        font_alpha =  *(slot->bitmap.buffer + iy * slot->bitmap.width + ix);
+                        font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
                         font_alpha =  (art_u8)((double)font_alpha / gr * falpha);
                         for (iz = 0; iz < 3; iz++){
                             art_u8 *orig = buffer + buf_y + buf_x + iz;
@@ -476,8 +619,9 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                         }
                     }
                 }
-                pen_x += (double)slot->metrics.horiAdvance / 64.0;
+                FT_Done_Glyph (image);
             }
+            gfx_string_destroy(string);
         }
         }
         node = node->next;

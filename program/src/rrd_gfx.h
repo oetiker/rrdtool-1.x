@@ -45,7 +45,6 @@ typedef struct gfx_canvas_t
     double         zoom;           /* zoom for graph */
 } gfx_canvas_t;
 
-
 gfx_canvas_t *gfx_new_canvas (void);
 
 /* create a new line */
@@ -86,7 +85,7 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
 /* measure width of a text string */
 double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
-			    double tabwidth, char* text);
+			    double tabwidth, char* text, int rotation);
 
 /* save image to file */
 int       gfx_render (gfx_canvas_t *canvas,
@@ -104,7 +103,7 @@ int       gfx_render_png (gfx_canvas_t *canvas,
                               gfx_color_t background, FILE *fo);
 double gfx_get_text_width_libart ( gfx_canvas_t *canvas,
 			    double start, char* font, double size,
-			    double tabwidth, char* text);
+			    double tabwidth, char* text, int rotation);
 
 /* SVG support */
 int       gfx_render_svg (gfx_canvas_t *canvas,
