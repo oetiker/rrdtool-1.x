@@ -15,7 +15,7 @@ int skip(char **);
 int eat_tag(char **, char *);
 int read_tag(char **, char *, char *, void *);
 int xml2rrd(char*, rrd_t*, char);
-int rrd_write(char *, rrd_t *);
+int rrd_write(char *, rrd_t *, char);
 void parse_patch1028_RRA_params(char **buf, rrd_t *rrd, int rra_index);
 void parse_patch1028_CDP_params(char **buf, rrd_t *rrd, int rra_index, int ds_index);
 void parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index);
@@ -405,15 +405,21 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 /* create and empty rrd file according to the specs given */
 
 int
-rrd_write(char *file_name, rrd_t *rrd)
+rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
 {
     unsigned long    i,ii,val_cnt;
     FILE             *rrd_file=NULL;
+    int			fdflags;
+    int			fd;
 
     if (strcmp("-",file_name)==0){
       rrd_file= stdout;
     } else {
-      int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL,0666);
+      fdflags = O_WRONLY|O_CREAT;
+      if (force_overwrite == 0) {
+      	fdflags |= O_EXCL;
+      }
+      fd = open(file_name,fdflags,0666);
       if (fd == -1 || (rrd_file = fdopen(fd,"wb")) == NULL) {
 	rrd_set_error("creating '%s': %s",file_name,rrd_strerror(errno));
         if (fd != -1)
@@ -469,11 +475,12 @@ rrd_restore(int argc, char **argv)
     rrd_t          rrd;
     char          *buf;
 	char			rc = 0;
+	char			force_overwrite = 0;	
 
     /* init rrd clean */
     rrd_init(&rrd);
     if (argc<3) {
-		rrd_set_error("usage rrdtool %s [--range-check/-r] file.xml file.rrd",argv[0]);
+		rrd_set_error("usage rrdtool %s [--range-check/-r] [--force-overwrite/-f] file.xml file.rrd",argv[0]);
 		return -1;
     }
 	
@@ -481,13 +488,14 @@ rrd_restore(int argc, char **argv)
 		static struct option long_options[] =
 		{
 			{"range-check",      required_argument, 0,  'r'},
+			{"force-overwrite",	required_argument, 0,	'f'},
 			{0,0,0,0}
 		};
 		int option_index = 0;
 		int opt;
 		
 		
-		opt = getopt_long(argc, argv, "r", long_options, &option_index);
+		opt = getopt_long(argc, argv, "r:f", long_options, &option_index);
 		
 		if (opt == EOF)
 			break;
@@ -495,6 +503,9 @@ rrd_restore(int argc, char **argv)
 		switch(opt) {
 		case 'r':
 			rc=1;
+			break;
+		case 'f':
+			force_overwrite=1;
 			break;
 		default:
 			rrd_set_error("usage rrdtool %s [--range-check|-r] file.xml file.rrd",argv[0]);
@@ -512,7 +523,7 @@ rrd_restore(int argc, char **argv)
 	return -1;
     }
     free(buf);
-    if(rrd_write(argv[optind+1],&rrd)==-1){
+    if(rrd_write(argv[optind+1],&rrd,force_overwrite)==-1){
 	rrd_free(&rrd);	
 	return -1;	
     };
