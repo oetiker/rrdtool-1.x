@@ -2346,6 +2346,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
         
 	switch(im->gdes[i].gf){
 	case GF_HRULE:
+printf("DEBUG: HRULE at %f\n",im->gdes[i].yrule);
 	    if(isnan(im->gdes[i].yrule)) { /* fetch variable */
 		im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
 	    };
@@ -2820,25 +2821,67 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	    strcpy(im.gdes[im.gdes_c-1].legend, &argv[i][argstart]);
 	    break;
 	case GF_HRULE:
-	    if(sscanf(
-		&argv[i][argstart],
-		"%lf#%2x%2x%2x:%n",
-		&im.gdes[im.gdes_c-1].yrule,
-		&col_red,&col_green,&col_blue,
-		&strstart) >=  4){
-		im.gdes[im.gdes_c-1].col.red = col_red;
-		im.gdes[im.gdes_c-1].col.green = col_green;
-		im.gdes[im.gdes_c-1].col.blue = col_blue;
-		if(strstart <= 0){
-		    im.gdes[im.gdes_c-1].legend[0] = '\0';
-		} else { 
-		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+	    /* scan for either "HRULE:vname#..." or "HRULE:num#..."
+	     *
+	     * If a vname is used, the value NaN is set; this is catched
+	     * when graphing.  Setting value NaN from the script is not
+	     * permitted
+	     */
+	    strstart=0;
+	    sscanf(&argv[i][argstart], "%lf#%n"
+		,&im.gdes[im.gdes_c-1].yrule
+		,&strstart
+	    );
+	    if (strstart==0) { /* no number, should be vname */
+		sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
+		    ,varname
+		    ,&strstart
+		);
+		if (strstart) {
+		    im.gdes[im.gdes_c-1].yrule = DNAN;/* signal use of vname */
+		    if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
+			im_free(&im);
+			rrd_set_error("unknown variable '%s' in HRULE",varname);
+			return -1;
+		    }		
+		    if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
+			im_free(&im);
+			rrd_set_error("Only VDEF is allowed in HRULE",varname);
+			return -1;
+		    }
 		}
 	    } else {
+printf("DEBUG: matched HRULE:num\n");
+printf("DEBUG: strstart==%i\n",strstart);
+	    };
+	    if (strstart==0) {
 		im_free(&im);
 		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
 		return -1;
-	    } 
+	    } else {
+		int n=0;
+		if(sscanf(
+			&argv[i][argstart+strstart],
+			"%2x%2x%2x:%n",
+			&col_red,
+			&col_green,
+			&col_blue,
+			&n)>=3) {
+		    im.gdes[im.gdes_c-1].col.red = col_red;
+		    im.gdes[im.gdes_c-1].col.green = col_green;
+		    im.gdes[im.gdes_c-1].col.blue = col_blue;
+		    if (n==0) {
+			im.gdes[im.gdes_c-1].legend[0] = '\0';
+		    } else {
+			scan_for_col(&argv[i][argstart+strstart+n],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+		    }
+		} else {
+		    im_free(&im);
+		    rrd_set_error("can't parse '%s'",&argv[i][argstart]);
+		    return -1;
+		}
+	    }
+	    
 	    break;
 	case GF_VRULE:
 	    /* scan for either "VRULE:vname#..." or "VRULE:num#..."
@@ -2848,30 +2891,33 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	     * permitted
 	     */
 	    strstart=0;
-	    sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
-		,varname
+	    sscanf(&argv[i][argstart], "%lu#%n"
+		,(long unsigned int *)&im.gdes[im.gdes_c-1].xrule
 		,&strstart
-		);
-	    if (strstart==0) {
-		sscanf(&argv[i][argstart], "%lu#%n"
-		    ,(long unsigned int *)&im.gdes[im.gdes_c-1].xrule
+	    );
+	    if (strstart==0) { /* no number, should be vname */
+		sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
+		    ,varname
 		    ,&strstart
 		);
+		if (strstart!=0) { /* vname matched */
+		    im.gdes[im.gdes_c-1].xrule = 0;/* signal use of vname */
+		    if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
+			im_free(&im);
+			rrd_set_error("unknown variable '%s' in VRULE",varname);
+			return -1;
+		    }		
+		    if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
+			im_free(&im);
+			rrd_set_error("Only VDEF is allowed in VRULE",varname);
+			return -1;
+		    }
+		}
+	    } else {
 		if (im.gdes[im.gdes_c-1].xrule==0)
 		    strstart=0;
-	    } else {
-		im.gdes[im.gdes_c-1].xrule = 0;	/* signal use of vname */
-		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
-		    im_free(&im);
-		    rrd_set_error("unknown variable '%s' in VRULE",varname);
-		    return -1;
-		}		
-		if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
-		    im_free(&im);
-		    rrd_set_error("Only VDEF is allowed in VRULE",varname);
-		    return -1;
-		}
-	    };
+	    }
+
 	    if (strstart==0) {
 		im_free(&im);
 		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
@@ -3301,9 +3347,9 @@ printf("DEBUG: start == %lu, end == %lu, %lu steps\n"
 		field = (steps-1)*dst->vf.param/100;
 		dst->vf.val  = array[field];
 		dst->vf.when = 0;	/* no time component */
-#if 0
+#if 1
 for(step=0;step<steps;step++)
-printf("DEBUG: %3i:%10.2f %c\n",step,array[step],step==field?'*':' ');
+printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 #endif
 	    }
 	    break;
