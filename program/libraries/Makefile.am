@@ -13,7 +13,7 @@ endif
 if !USE_INSTALLED_libpng
 BUILD_LIBPNG=$(LIBPNG)
 endif
-if !USE_INSTALLED_libart_lgpl
+if !USE_INSTALLED_libart_lgpl_2
 BUILD_LIBART=$(LIBART)
 endif
 if !USE_INSTALLED_libfreetype

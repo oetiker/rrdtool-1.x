@@ -14,19 +14,19 @@ PERL
 }
 
 
-if vcheck 1.4.2 "libtool --version"
+if vcheck 1.5 "libtool --version"
 then
-  echo "get a copy of GNU libtool >= 1.4.2"
+  echo "get a copy of GNU libtool >= 1.5"
   exit 1
 fi
 
-if vcheck 1.7  "automake-1.7 --version"
+if vcheck 1.7.9  "automake --version"
 then
-  echo "get a copy of GNU automake >= 1.7"
+  echo "get a copy of GNU automake >= 1.7.9"
   exit 1
 fi
 
-if vcheck 2.54 "autoconf --version"
+if vcheck 2.58 "autoconf --version"
 then
   echo "get a copy of GNU autoconf >= 2.54"
   exit 1
@@ -36,22 +36,25 @@ set -x
 find . -name Makefile | xargs rm -f
 find . -name "*.la" | xargs rm -f
 find . -name Makefile.in | xargs rm -f
+find . -name .libs | xargs rm -r
+find . -name .debs | xargs rm -r
 
 
-
-# wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.4.2.tar.gz
+rm -rf config
+mkdir config
+# wget ftp://ftp.gnu.org/gnu/libtool/libtool-1.5.tar.gz
 libtoolize --copy --force
-cp ltmain.sh config
+#cp ltmain.sh config
 
-# wget ftp://sources.redhat.com/pub/automake/automake-1.5.tar.gz
+# wget ftp://sources.redhat.com/pub/automake/automake-1.7.9.tar.gz
 # If autoconf generates undefined MACRO errors, it may be unable
 # to find libtool.m4. Add the -I flag to aclocal to specify the
 # directory location of this file.
-aclocal
-autoheader --warnings=all
-automake-1.7 --foreign --add-missing --force-missing --copy 
-
-# wget ftp://ftp.gnu.org/gnu/autoconf/autoconf-2.52.tar.gz
-autoconf 
+aclocal -I /usr/pack/libtool-1.5-to/share/aclocal
+automake --foreign --add-missing --force-missing --copy --warnings=all
+# wget ftp://ftp.gnu.org/gnu/autoconf/autoconf-2.58.tar.gz
+autoconf --warnings=all --force
+rm config.h.in
+autoheader --warnings=all --force  
 
 

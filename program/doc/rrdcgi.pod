@@ -111,7 +111,7 @@ folks to figure out than "-2weeks".
 =item RRD::GRAPH I<rrdgraph arguments>
 
 This tag creates the RRD graph defined in its argument and then gets
-replaced by an appropriate E<lt>IMGE<gt> tag referring to the graph.
+replaced by an appropriate E<lt>IMG<gt> tag referring to the graph.
 The B<--lazy> option in RRD graph can be used to make sure that graphs
 are only regenerated when they are out of date. The arguments
 to the B<RRD::GRAPH> tag work as described in the B<rrdgraph> manual page.

@@ -10,7 +10,7 @@ AC_INIT(src/rrd_tool.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_TARGET([])
 AM_INIT_AUTOMAKE(rrdtool, 1.1.0)
-AM_CONFIG_HEADER(config/config.h)
+AM_CONFIG_HEADER(config.h)
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -136,26 +136,55 @@ char *strchr (), *strrchr ();
 ])
 
 
-dnl Define library subdirectory names here.
-CGI_LIB_DIR=cgilib-0.4
-FREETYPE_LIB_DIR=freetype-2.0.5
-ART_LIB_DIR=libart_lgpl-2.3.7
-PNG_LIB_DIR=libpng-1.2.0
-ZLIB_LIB_DIR=zlib-1.1.4
+
+dnl Check for the compiler and static/shared library creation.
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_LIBTOOL
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_HEADER_TIME
+AC_STRUCT_TM
 
 dnl substitute them in all the files listed in AC_OUTPUT
-AC_SUBST(CGI_LIB_DIR)
-AC_SUBST(ART_LIB_DIR)
-AC_SUBST(PNG_LIB_DIR)
-AC_SUBST(FREETYPE_LIB_DIR)
-AC_SUBST(ZLIB_LIB_DIR)
 AC_SUBST(PERLFLAGS)
 
-INCLUDED_LIB(cgi,cgiInit)
-INCLUDED_LIB(art_lgpl,art_vpath_add_point)
-INCLUDED_LIB(png,png_access_version_number)
-INCLUDED_LIB(freetype,FT_Init_FreeType)
-INCLUDED_LIB(z,zlibVersion)
+dnl Checks for libraries.
+AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
+
+AC_DEFUN(EX_CHECK_ALL,
+[ AC_CHECK_LIB($1,$2,
+  [ AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}"],AC_MSG_ERROR([Adjust CPPFLAGS so that the $4 header $3 gets found])) ],
+  [ AC_MSG_ERROR([
+############################################################################
+I could not find a working copy of $4. Check config.log for hints on why
+this is the case. Maybe you need to set LDFLAGS appropriately so that the
+linker can find lib$1. If you have not installed $4, you can get it
+either from its original home on
+
+   $6
+
+Or you can find an archive copy on
+
+   http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
+
+The last tested version of $4 is $5.
+############################################################################
+])] )
+]
+)
+ 
+EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart_lgpl, 2.3.16, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
+EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.5,  http://prdownloads.sourceforge.net/libpng/)
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.5,  http://prdownloads.sourceforge.net/freetype/)
 
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
@@ -219,27 +248,7 @@ AC_SUBST(TCL_SHLIB_SUFFIX)
 AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
 
-dnl Check for the compiler and static/shared library creation.
-AC_PROG_CC
-AC_PROG_CPP
 
-dnl don't build a shared library ...
-dnl this can be changed when running configure
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
-
-dnl Checks for header files.
-AC_HEADER_STDC
-AC_HEADER_DIRENT
-AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_HEADER_TIME
-AC_STRUCT_TM
-
-dnl Checks for libraries.
-AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
 dnl Check for nroff
 AC_PATH_PROGS(NROFF, gnroff nroff)
@@ -444,13 +453,6 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           examples/cgi-demo.cgi				\
           examples/Makefile				\
           doc/Makefile					\
-          libraries/Makefile                            \
-          libraries/cgilib-0.4/Makefile                 \
-          libraries/libart_lgpl-2.3.7/Makefile		\
-          libraries/libpng-1.2.0/Makefile		\
-          libraries/zlib-1.1.4/Makefile			\
-          libraries/freetype-2.0.5/Makefile		\
-          libraries/afm/Makefile		        \
           src/Makefile					\
           bindings/Makefile                             \
           bindings/tcl/Makefile				\

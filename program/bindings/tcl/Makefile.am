@@ -14,7 +14,7 @@ TCL_LD_SEARCH_FLAGS = @TCL_LD_SEARCH_FLAGS@
 GD_LIB_DIR       = $(top_srcdir)/@GD_LIB_DIR@
 
 SRC_DIR            = $(top_srcdir)/src
-INCLUDES           = -I$(TCL_PREFIX)/include -I$(SRC_DIR)  -I$(GD_LIB_DIR)
+AM_CPPFLAGS        = -I$(TCL_PREFIX)/include -I$(SRC_DIR)  -I$(GD_LIB_DIR)
 LIBDIRS            = -L$(libdir) -L$(SRC_DIR)  -L../src/.libs
 LIB_RUNTIME_DIR    = $(libdir)
 
