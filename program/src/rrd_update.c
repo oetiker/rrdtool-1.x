@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.16  2004/05/25 20:52:16  oetiker
+ * fix spelling and syntax, especially in messages that are printed -- Mike Slifcak
+ *
  * Revision 1.15  2004/05/25 20:51:49  oetiker
  * Update displayed copyright messages to be consistent. -- Mike Slifcak
  *
@@ -647,7 +650,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
                        }
 		       pdp_new[i]= rrd_diff(updvals[i+1],rrd.pdp_prep[i].last_ds);
 		       if(dst_idx == DST_COUNTER) {
-			  /* simple overflow catcher sugestet by andres kroonmaa */
+			  /* simple overflow catcher suggested by Andres Kroonmaa */
 			  /* this will fail terribly for non 32 or 64 bit counters ... */
 			  /* are there any others in SNMP land ? */
 			  if (pdp_new[i] < (double)0.0 ) 

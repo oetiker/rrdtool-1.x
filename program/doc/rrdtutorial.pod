@@ -42,7 +42,7 @@ will not grow in size and therefore requires no maintenance.
 RRDtool works with with Round Robin Databases (RRDs). It stores and retrieves
 data from them.
 
-=head2 What data can be put into an RDD ?
+=head2 What data can be put into an RRD ?
 
 You name it, it will probably fit. You should be able to measure some value
 at several points in time and provide this information to RRDtool. If you
@@ -80,7 +80,7 @@ measure the data and be able to feed the numbers to RRDtool.
 
 First of all: read it again! You may have missed something.
 If you are unable to compile the sources and you have a fairly common
-OS, it will probably not be the fault of RRDtool. There may be precompiled
+OS, it will probably not be the fault of RRDtool. There may be pre-compiled
 versions around on the Internet. If they come from trusted sources, get
 one of those.
 If on the other hand the program works but does not give you the
@@ -220,9 +220,9 @@ which starts at noon the day I started (7th of march, 1999) writing
 this document. It holds one data source (DS) named "speed" that gets
 built from a counter. This counter is read every five minutes (default)
 In the same database two round robin archives (RRAs) are kept, one
-averages the data every time it is read (eg there's nothing to average)
+averages the data every time it is read (e.g., there's nothing to average)
 and keeps 24 samples (24 times 5 minutes is 2 hours). The other averages
-6 values (half hour) and contains 10 of such averages (eg 5 hours)
+6 values (half hour) and contains 10 of such averages (e.g., 5 hours)
 The remaining options will be discussed later on.
 
 RRDtool works with special time stamps coming from the UNIX world.
@@ -533,7 +533,7 @@ worse, they have several default prefixes ...
 
 Right, lets continue to the start of our OID: we had 1.3.6.1.2.1
 From there, we are especially interested in the branch "interfaces"
-which has number 2 (eg 1.3.6.1.2.1.2 or 1.3.6.1.2.1.interfaces).
+which has number 2 (e.g., 1.3.6.1.2.1.2 or 1.3.6.1.2.1.interfaces).
 
 First, we have to get some SNMP program. First look if there is a
 pre-compiled package available for your OS. This is the preferred way.
@@ -1044,7 +1044,7 @@ Next time you are at exactly the right time. This means that the current
 interval is 297 seconds and also the counter increased with 297. Again
 RRDtool alters the value and stores 300 as it should be.
 
-      in the RDD                 in reality
+      in the RRD                 in reality
 
  time+000:   0 delta="U"   time+000:    0 delta="U"
  time+300: 300 delta=300   time+300:  300 delta=300

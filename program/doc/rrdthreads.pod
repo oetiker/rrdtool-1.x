@@ -128,7 +128,7 @@ Do not use the C<parsetime> function!
 
 It uses lots of global vars. You may use it in functions not designed
 to be thread-safe like functions wrapping the C<_r> version of some
-operation (eg. C<rrd_create>, but not in C<rrd_create_r>)
+operation (e.g., C<rrd_create>, but not in C<rrd_create_r>)
 
 =back
 
