@@ -354,43 +354,51 @@ short
 rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, 
 		rrd_value_t *output, int output_idx)
 {
-   int rpi;
-   long stptr = -1;
+    int rpi;
+    long stptr = -1;
    
-   /* process each op from the rpn in turn */
-   for (rpi=0; rpnp[rpi].op != OP_END; rpi++){
-       /* allocate or grow the stack */
-       if (stptr + 5 > rpnstack -> dc_stacksize){
-           /* could move this to a separate function */
-           rpnstack -> dc_stacksize += rpnstack -> dc_stackblock;		
-           rpnstack -> s = rrd_realloc(rpnstack -> s,
-                                       (rpnstack -> dc_stacksize)*sizeof(*(rpnstack -> s)));
-           if (rpnstack -> s == NULL){
-               rrd_set_error("RPN stack overflow");
-               return -1;
-           }
-       }
-       switch (rpnp[rpi].op){
-       case OP_NUMBER:
-           rpnstack -> s[++stptr] = rpnp[rpi].val;
-           break;
-       case OP_VARIABLE:
-           /* make sure we pull the correct value from the *.data array 
-            * adjust the pointer into the array acordingly. 
-            * Advance the ptr one row in the rra (skip over
-            * non-relevant data sources) */
-           if (data_idx % rpnp[rpi].step == 0){
-               rpnp[rpi].data += rpnp[rpi].ds_cnt;
-           }
-           rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
-           break;
-       case OP_PREV:
-           if ((output_idx-1) <= 0) {
-               rpnstack -> s[++stptr] = DNAN;
-           } else {
-               rpnstack -> s[++stptr] = output[output_idx-1];
-           }
-           break;
+    /* process each op from the rpn in turn */
+    for (rpi=0; rpnp[rpi].op != OP_END; rpi++){
+	/* allocate or grow the stack */
+	if (stptr + 5 > rpnstack -> dc_stacksize){
+	    /* could move this to a separate function */
+	    rpnstack -> dc_stacksize += rpnstack -> dc_stackblock;		
+	    rpnstack -> s = rrd_realloc(rpnstack -> s,
+			(rpnstack -> dc_stacksize)*sizeof(*(rpnstack -> s)));
+	    if (rpnstack -> s == NULL){
+		rrd_set_error("RPN stack overflow");
+		return -1;
+	    }
+	}
+	switch (rpnp[rpi].op){
+	    case OP_NUMBER:
+		rpnstack -> s[++stptr] = rpnp[rpi].val;
+		break;
+	    case OP_VARIABLE:
+		/* Sanity check: VDEFs shouldn't make it here */
+		if (rpnp[rpi].ds_cnt == 0) {
+		    rrd_set_error("VDEF made it into rpn_calc... aborting");
+		    return -1;
+		} else {
+		    /* make sure we pull the correct value from
+		     * the *.data array. Adjust the pointer into
+		     * the array acordingly. Advance the ptr one
+		     * row in the rra (skip over non-relevant
+		     * data sources)
+		     */
+		    if (data_idx % rpnp[rpi].step == 0){
+			rpnp[rpi].data += rpnp[rpi].ds_cnt;
+		    }
+		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		}
+		break;
+	    case OP_PREV:
+		if ((output_idx-1) <= 0) {
+		    rpnstack -> s[++stptr] = DNAN;
+		} else {
+		    rpnstack -> s[++stptr] = output[output_idx-1];
+		}
+		break;
        case OP_UNKN:
            rpnstack -> s[++stptr] = DNAN; 
            break;
