@@ -362,9 +362,13 @@ int main(int argc, char *argv[])
 
 int HandleInputLine(int argc, char **argv, FILE* out)
 {
+#if defined(HAVE_OPENDIR) && defined (HAVE_READDIR)
     DIR           *curdir; /* to read current dir with ls */
     struct dirent *dent;
+#endif
+#if defined(HAVE_SYS_STAT_H)
     struct stat   st;
+#endif
     optind=0; /* reset gnu getopt */
     opterr=0; /* no error messages */
 

@@ -1,6 +1,6 @@
 Compiling RRDtool 1.1.x on Win32 (WinXP/Win2K with Visual C++):
 ---------------------------------------------------------------
-4/1/02 Jake Brutlag (jakeb@corp.webtv.net)
+5/14/02 Jake Brutlag (jakeb@corp.webtv.net)
 
 These notes share some insight I gained compiling 1.1.x with
 MS Visual C++ 6.0 (using project files). This information may or
@@ -19,6 +19,10 @@ configure script-- but of course not on Win32 platforms). ..\..\confignt
 the include path.
 (4) Fonts are located in the %windir%\fonts, so the default font
 is c:\winnt\fonts\cour.ttf.
+(5) libart requires a custom build step to generate art_config.h; this
+is done manually via the commands:
+cl -I..\..\confignt gen_art_config.c
+gen_art_config.exe > art_config.h
 
 Currently, to compile rrd.lib and rrdtool.exe using
 the MSVC++ project files, first start MSVC++ 6.0. Open the rrdtool

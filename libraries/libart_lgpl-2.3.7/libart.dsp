@@ -42,7 +42,6 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # ADD CPP /nologo /W3 /GX /I "..\..\confignt" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "LIBART_COMPILATION" /YX /FD /c
-# SUBTRACT CPP /O<none>
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -235,6 +234,37 @@ SOURCE=.\art_vpath_dash.c
 # Begin Source File
 
 SOURCE=.\art_vpath_svp.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\gen_art_config.c
+
+!IF  "$(CFG)" == "libart - Win32 Release"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build
+InputPath=.\gen_art_config.c
+
+"art_config.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	cl -I..\..\confignt gen_art_config.c 
+	gen_art_config.exe > art_config.h 
+	
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libart - Win32 Debug"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build
+InputPath=.\gen_art_config.c
+
+"art_config.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	cl -I..\..\confignt gen_art_config.c 
+	gen_art_config.exe > art_config.h 
+	
+# End Custom Build
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

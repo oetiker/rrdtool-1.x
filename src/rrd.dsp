@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
 # ADD CPP /nologo /W3 /GX /I "..\libraries\libpng-1.2.0" /I "..\libraries\zlib-1.1.4" /I "..\libraries\libart_lgpl-2.3.7" /I "..\libraries\freetype-2.0.5\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
-# SUBTRACT CPP /O<none> /X /YX
+# SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x100c
 BSC32=bscmake.exe
@@ -101,6 +101,14 @@ SOURCE=.\parsetime.c
 # Begin Source File
 
 SOURCE=.\pngsize.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_afm.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_afm_data.c
 # End Source File
 # Begin Source File
 
@@ -173,6 +181,10 @@ SOURCE=.\rrd_tune.c
 # Begin Source File
 
 SOURCE=.\rrd_update.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rrd_xport.c
 # End Source File
 # End Target
 # End Project
