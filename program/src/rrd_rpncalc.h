@@ -13,7 +13,7 @@ enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_DIV,OP_SIN, OP_DUP, OP_EXC, OP_POP,
 	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
 	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
-	    OP_UN,OP_END,OP_LTIME};
+	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF};
 
 typedef struct rpnp_t {
     enum op_en   op;
