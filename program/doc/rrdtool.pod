@@ -78,6 +78,10 @@ Alter setup of an RRD. Check L<rrdtune>.
 
 Find last update time of an RRD. Check L<rrdlast>.
 
+=item B<info>
+
+Get information about an RRD. Check L<rrdinfo>.
+
 =item B<rrdresize>
 
 Change the size of individual RRAs ... Dangerous! Check L<rrdresize>.
