@@ -172,6 +172,18 @@ value, if not defined on the command line, will be 0. This option can
 be useful when graphing router traffic when the WAN line uses compression,
 and thus the throughput may be higher than the WAN line speed.
 
+B<[--no-gridfit]>
+
+To avoid antialiasing effects gridlines are placed on 
+integer pixel values. This is by default done by extending 
+the scale so gridlines happends to be spaced using an 
+integer number of pixels, and starts on integer pixel value.
+This might extend the scale too much for some logarithmic scales
+and for linear scales where --alt-autoscale is needed.
+Using --no-gridfit disables modification of the scale,
+and just truncates y-coordinates to integer values for bitmap
+formats.
+
 Z<>
 
 =item Grid
