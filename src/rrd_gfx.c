@@ -211,10 +211,6 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
 			      enum gfx_v_align_en v_align,
                               char* text){
    gfx_node_t *node = gfx_new_node(canvas,GFX_TEXT);
-/*   if (angle != 0.0){*/
-       /* currently we only support 0 and 270 */
-/*       angle = 270.0;
-   }*/
    
    node->text = strdup(text);
    node->size = size;
@@ -384,7 +380,7 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   gfx_char      glyph;          /* current glyph in table */
   unsigned int  n;
   int           error;
-  int        gottab;    
+  int        gottab = 0;    
 
   ft_pen.x = 0;   /* start at (0,0) !! */
   ft_pen.y = 0;
@@ -521,25 +517,31 @@ int           gfx_render_png (gfx_canvas_t *canvas,
         switch (node->type) {
         case GFX_LINE:
         case GFX_AREA: {   
-            ArtVpath *vec;
+            ArtVpath *vec,*pvec;
             double dst[6];     
-            ArtSVP *svp;
+            ArtSVP *svp,*usvp,*rsvp;
             art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
 		gfx_libart_close_path(node, &vec);
 	    gfx_round_scaled_coordinates(vec);
+            pvec = art_vpath_perturb(vec);
+	    art_free(vec);
             if(node->type == GFX_LINE){
-                svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
+                svp = art_svp_vpath_stroke ( pvec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
                                              node->size*canvas->zoom,1,1);
             } else {
-                svp = art_svp_from_vpath ( vec );
+                svp = art_svp_from_vpath ( pvec );
             }
-            art_free(vec);
-            art_rgb_svp_alpha (svp ,0,0, pys_width, pys_height,
-                               node->color, buffer, rowstride, NULL);
+            art_free(pvec);
+            usvp=art_svp_uncross(svp);
             art_free(svp);
+	    rsvp=art_svp_rewind_uncrossed(usvp,ART_WIND_RULE_ODDEVEN); 
+            art_free(usvp); 
+            art_rgb_svp_alpha (rsvp ,0,0, pys_width, pys_height,
+                               node->color, buffer, rowstride, NULL);
+            art_free(rsvp);
             break;
         }
         case GFX_TEXT: {

@@ -1805,15 +1805,15 @@ vertical_grid(
        
     }
     /* paint the labels below the graph */
-    for(ti = find_first_time(im->start,
+    for(ti = find_first_time(im->start - im->xlab_user.precis/2,
 			    im->xlab_user.labtm,
 			    im->xlab_user.labst);
-	ti <= im->end; 
+	ti <= im->end - im->xlab_user.precis/2; 
 	ti = find_next_time(ti,im->xlab_user.labtm,im->xlab_user.labst)
 	){
         tilab= ti + im->xlab_user.precis/2; /* correct time for the label */
 	/* are we inside the graph ? */
-	if (ti < im->start || ti > im->end) continue;
+	if (tilab < im->start || tilab > im->end) continue;
 
 #if HAVE_STRFTIME
 	localtime_r(&tilab, &tm);
@@ -1962,6 +1962,14 @@ grid_paint(image_desc_t   *im)
                                                       im->tabwidth,"M", 0)*1.2;
                             boxV = boxH;
                             
+                            /* make sure transparent colors show up all the same */
+			    node = gfx_new_area(im->canvas,
+                                                X0,Y0-boxV,
+                                                X0,Y0,
+                                                X0+boxH,Y0,
+                                                im->graph_col[GRC_CANVAS]);
+                            gfx_add_point ( node, X0+boxH, Y0-boxV );
+
                             node = gfx_new_area(im->canvas,
                                                 X0,Y0-boxV,
                                                 X0,Y0,
@@ -1970,7 +1978,7 @@ grid_paint(image_desc_t   *im)
                             gfx_add_point ( node, X0+boxH, Y0-boxV );
                             node = gfx_new_line(im->canvas,
                                                 X0,Y0-boxV, X0,Y0,
-                                                1,0x000000FF);
+                                                1,im->graph_col[GRC_FONT]);
                             gfx_add_point(node,X0+boxH,Y0);
                             gfx_add_point(node,X0+boxH,Y0-boxV);
                             gfx_close_path(node);
