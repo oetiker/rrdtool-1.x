@@ -36,9 +36,25 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 
 
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE1,
-	    GF_LINE2,GF_LINE3,GF_AREA,GF_STACK,GF_TICK,GF_DEF, GF_CDEF};
+	    GF_LINE2,GF_LINE3,GF_AREA,GF_STACK,GF_TICK,
+	    GF_DEF, GF_CDEF, GF_VDEF};
 
 enum if_en {IF_GIF=0,IF_PNG=1};
+
+enum vdef_op_en {
+		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
+		,VDEF_MINIMUM	/* like the MIN in (G)PRINT */
+		,VDEF_AVERAGE	/* like the AVERAGE in (G)PRINT */
+		,VDEF_PERCENT	/* Nth percentile */
+		,VDEF_FIRST	/* first non-unknown value and time */
+		,VDEF_LAST	/* last  non-unknown value and time */
+		};
+typedef struct vdef_t {
+    enum vdef_op_en	op;
+    double		param;	/* parameter for function, if applicable */
+    double		val;	/* resulting value */
+    time_t		when;	/* timestamp, if applicable */
+} vdef_t;
 
 typedef struct col_trip_t {
     int red; /* red = -1 is no color */
@@ -149,8 +165,9 @@ typedef  struct graph_desc_t {
     char           format[FMT_LEG_LEN+5]; /* format for PRINT AND GPRINT */
     char           legend[FMT_LEG_LEN+5]; /* legend*/
     gdPoint        legloc;     /* location of legend */   
-    double         yrule;      /* value for y rule line */
-    time_t         xrule;      /* value for x rule line */
+    double         yrule;      /* value for y rule line and for VDEF */
+    time_t         xrule;      /* time for x rule line and for VDEF */
+    vdef_t         vf;         /* instruction for VDEF function */
     rpnp_t         *rpnp;     /* instructions for CDEF function */
 
     /* description of data fetched for the graph element */
@@ -251,6 +268,9 @@ int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *);
 int bad_format(char *);
+int vdef_parse(struct graph_desc_t *,char *);
+int vdef_calc(image_desc_t *, int);
+int vdef_percent_compar(const void *,const void *);
 
 /* translate time values into x coordinates */   
 /*#define xtr(x) (int)((double)im->xorigin \
@@ -331,6 +351,7 @@ enum gf_en gf_conv(char *string){
 	conv_if(TICK,GF_TICK)
     conv_if(DEF,GF_DEF)
     conv_if(CDEF,GF_CDEF)
+    conv_if(VDEF,GF_VDEF)
     
     return (-1);
 }
@@ -816,6 +837,7 @@ find_var(image_desc_t *im, char *key){
     long ii;
     for(ii=0;ii<im->gdes_c-1;ii++){
 	if((im->gdes[ii].gf == GF_DEF 
+	    || im->gdes[ii].gf == GF_VDEF
 	    || im->gdes[ii].gf == GF_CDEF) 
 	   && (strcmp(im->gdes[ii].vname,key) == 0)){
 	    return ii; 
@@ -841,7 +863,7 @@ lcd(long *num){
       return num[i];
 }
 
-/* run the rpn calculator on all the CDEF arguments */
+/* run the rpn calculator on all the VDEF and CDEF arguments */
 int
 data_calc( image_desc_t *im){
 
@@ -850,106 +872,150 @@ data_calc( image_desc_t *im){
     long      *steparray, rpi;
     int       stepcnt;
     time_t    now;
-	rpnstack_t rpnstack;
+    rpnstack_t rpnstack;
 
-	rpnstack_init(&rpnstack);
+    rpnstack_init(&rpnstack);
 
     for (gdi=0;gdi<im->gdes_c;gdi++){
-	/* only GF_CDEF elements are of interest */
-	if (im->gdes[gdi].gf != GF_CDEF) 
-	    continue;
-	im->gdes[gdi].ds_cnt = 1;
-	im->gdes[gdi].ds = 0;
-	im->gdes[gdi].data_first = 1;
-	im->gdes[gdi].start = 0;
-	im->gdes[gdi].end = 0;
-	steparray=NULL;
-	stepcnt = 0;
-	dataidx=-1;
+	/* Look for GF_VDEF and GF_CDEF in the same loop,
+	 * so CDEFs can use VDEFs and vice versa
+	 */
+	switch (im->gdes[gdi].gf) {
+	    case GF_VDEF:
+		/* A VDEF has no DS.  This also signals other parts
+		 * of rrdtool that this is a VDEF value, not a CDEF.
+		 */
+		im->gdes[gdi].ds_cnt = 0;
+		if (vdef_calc(im,gdi)) {
+		    rrd_set_error("Error processing VDEF '%s'"
+			,im->gdes[gdi].vname
+			);
+		    rpnstack_free(&rpnstack);
+		    return -1;
+		}
+		break;
+	    case GF_CDEF:
+		im->gdes[gdi].ds_cnt = 1;
+		im->gdes[gdi].ds = 0;
+		im->gdes[gdi].data_first = 1;
+		im->gdes[gdi].start = 0;
+		im->gdes[gdi].end = 0;
+		steparray=NULL;
+		stepcnt = 0;
+		dataidx=-1;
 
-	/* find the variables in the expression. And calc the lowest
-	   common denominator of all step sizes of the data sources involved.
-	   this will be the step size for the cdef created data source*/
+		/* Find the variables in the expression.
+		 * - VDEF variables are substituted by their values
+		 *   and the opcode is changed into OP_NUMBER.
+******************
+* Note to Jake: I cannot oversee the implications for your
+* COMPUTE DS stuff.  Please check if VDEF and COMPUTE are
+* compatible (or can be made so).
+******************
+		 * - CDEF variables are analized for their step size,
+		 *   the lowest common denominator of all the step
+		 *   sizes of the data sources involved is calculated
+		 *   and the resulting number is the step size for the
+		 *   resulting data source.
+		 */
+		for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
+		    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE){
+			long ptr = im->gdes[gdi].rpnp[rpi].ptr;
+			if (im->gdes[ptr].ds_cnt == 0) {
+#if 0
+printf("DEBUG: inside CDEF '%s' processing VDEF '%s'\n",
+	im->gdes[gdi].vname,
+	im->gdes[ptr].vname);
+printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
+#endif
+			    im->gdes[gdi].rpnp[rpi].val = im->gdes[ptr].vf.val;
+			    im->gdes[gdi].rpnp[rpi].op  = OP_NUMBER;
+			} else {
+			    if ((steparray = rrd_realloc(steparray, (++stepcnt+1)*sizeof(*steparray)))==NULL){
+				rrd_set_error("realloc steparray");
+				rpnstack_free(&rpnstack);
+				return -1;
+			    };
 
-	for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-	    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE){
-		long ptr = im->gdes[gdi].rpnp[rpi].ptr;
-		if ((steparray = rrd_realloc(steparray, (++stepcnt+1)*sizeof(*steparray)))==NULL){
-		  rrd_set_error("realloc steparray");
-		  rpnstack_free(&rpnstack);
-		  return -1;
-		};
-	
+			    steparray[stepcnt-1] = im->gdes[ptr].step;
 
-		steparray[stepcnt-1] = im->gdes[ptr].step;
+			    /* adjust start and end of cdef (gdi) so
+			     * that it runs from the latest start point
+			     * to the earliest endpoint of any of the
+			     * rras involved (ptr)
+			     */
+			    if(im->gdes[gdi].start < im->gdes[ptr].start)
+				im->gdes[gdi].start = im->gdes[ptr].start;
 
-		/* adjust start and end of cdef (gdi) so that it runs from
-		   the latest start point to the earliest endpoint of any of the
-		   rras involved (ptr) */
-
-		if(im->gdes[gdi].start < im->gdes[ptr].start)
-		    im->gdes[gdi].start = im->gdes[ptr].start;
-
-		if(im->gdes[gdi].end == 0 
-		   || im->gdes[gdi].end > im->gdes[ptr].end)
-		    im->gdes[gdi].end = im->gdes[ptr].end;
+			    if(im->gdes[gdi].end == 0 ||
+					im->gdes[gdi].end > im->gdes[ptr].end)
+				im->gdes[gdi].end = im->gdes[ptr].end;
 		
-		/* store pointer to the first element of the rra providing
-		   data for variable, further save step size and data source count
-		   of this rra*/ 
-		im->gdes[gdi].rpnp[rpi].data = 
-		    im->gdes[ptr].data + im->gdes[ptr].ds; 
-		im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
-		im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
-		/* backoff the *.data ptr; this is done so rpncalc() function
-		 * doesn't have to treat the first case differently */
-		im->gdes[gdi].rpnp[rpi].data -= im->gdes[ptr].ds_cnt;
-	    }
+			    /* store pointer to the first element of
+			     * the rra providing data for variable,
+			     * further save step size and data source
+			     * count of this rra
+			     */ 
+			    im->gdes[gdi].rpnp[rpi].data = 
+					im->gdes[ptr].data + im->gdes[ptr].ds; 
+			    im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
+			    im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
 
-	}
-	if(steparray == NULL){
-	    rrd_set_error("rpn expressions without variables are not supported");
-		rpnstack_free(&rpnstack);
-	    return -1;    
-	}
-	steparray[stepcnt]=0;
-	/* now find the step for the result of the cdef. so that we land on
-	   each step in all of the variables rras */
+			    /* backoff the *.data ptr; this is done so
+			     * rpncalc() function doesn't have to treat
+			     * the first case differently
+			     */
+			    im->gdes[gdi].rpnp[rpi].data-=im->gdes[ptr].ds_cnt;
+			} /* if ds_cnt != 0 */
+		    } /* if OP_VARIABLE */
+		} /* loop through all rpi */
 
-	im->gdes[gdi].step = lcd(steparray);
-	
-	
-	free(steparray);
-
-	if((im->gdes[gdi].data = malloc(((im->gdes[gdi].end
-				     -im->gdes[gdi].start) 
+		if(steparray == NULL){
+		    rrd_set_error("rpn expressions without DEF"
+				" or CDEF variables are not supported");
+		    rpnstack_free(&rpnstack);
+		    return -1;    
+		}
+		steparray[stepcnt]=0;
+		/* Now find the resulting step.  All steps in all
+		 * used RRAs have to be visited
+		 */
+		im->gdes[gdi].step = lcd(steparray);
+		free(steparray);
+		if((im->gdes[gdi].data = malloc((
+				(im->gdes[gdi].end-im->gdes[gdi].start) 
 				    / im->gdes[gdi].step +1)
 				    * sizeof(double)))==NULL){
-	    rrd_set_error("malloc im->gdes[gdi].data");
-		rpnstack_free(&rpnstack);
-	    return -1;
-	}
+		    rrd_set_error("malloc im->gdes[gdi].data");
+		    rpnstack_free(&rpnstack);
+		    return -1;
+		}
 	
-	/* step through the new cdef results array and calculate the values */
-	for (now = im->gdes[gdi].start;
-	     now<=im->gdes[gdi].end;
-	     now += im->gdes[gdi].step){
-		rpnp_t      *rpnp = im -> gdes[gdi].rpnp;
-
-		/* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
-		 * in this case we are advancing by timesteps;
-		 * we use the fact that time_t is a synonym for long
+		/* Step through the new cdef results array and
+		 * calculate the values
 		 */
-		if (rpn_calc(rpnp,&rpnstack,(long) now, 
-			im->gdes[gdi].data,++dataidx) == -1) 
+		for (now = im->gdes[gdi].start;
+				now<=im->gdes[gdi].end;
+				now += im->gdes[gdi].step)
 		{
-		   /* rpn_calc sets the error string */
-		   rpnstack_free(&rpnstack); 
-		   return -1;
-		} 
+		    rpnp_t  *rpnp = im -> gdes[gdi].rpnp;
 
-    } /* enumerate over time steps within a CDEF */
-	} /* enumerate over CDEFs */
+		    /* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
+		     * in this case we are advancing by timesteps;
+		     * we use the fact that time_t is a synonym for long
+		     */
+		    if (rpn_calc(rpnp,&rpnstack,(long) now, 
+				im->gdes[gdi].data,++dataidx) == -1) {
+			/* rpn_calc sets the error string */
+			rpnstack_free(&rpnstack); 
+			return -1;
+		    } 
+		} /* enumerate over time steps within a CDEF */
+		break;
+	    default:
+		continue;
+	}
+    } /* enumerate over CDEFs */
     rpnstack_free(&rpnstack);
     return 0;
 }
@@ -1033,6 +1099,7 @@ data_proc( image_desc_t *im ){
 	    case GF_VRULE:
 	    case GF_DEF:	       
 	    case GF_CDEF:
+	    case GF_VDEF:
 		break;
 	    }
 	}
@@ -1337,6 +1404,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	    break;
 	case GF_DEF:
 	case GF_CDEF:	    
+	case GF_VDEF:	    
 	    break;
 	}
     }
@@ -2064,7 +2132,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
     if(data_fetch(im)==-1)
 	return -1;
 
-    /* evaluate CDEF  operations ... */
+    /* evaluate VDEF and CDEF operations ... */
     if(data_calc(im)==-1)
 	return -1;
 
@@ -2178,6 +2246,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
         
 	switch(im->gdes[i].gf){
 	case GF_CDEF:
+	case GF_VDEF:
 	case GF_DEF:
 	case GF_PRINT:
 	case GF_GPRINT:
@@ -2277,6 +2346,9 @@ graph_paint(image_desc_t *im, char ***calcpr)
         
 	switch(im->gdes[i].gf){
 	case GF_HRULE:
+	    if(isnan(im->gdes[i].yrule)) { /* fetch variable */
+		im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
+	    };
 	    if(im->gdes[i].yrule >= im->minval
 	       && im->gdes[i].yrule <= im->maxval)
 	      gdImageLine(gif,
@@ -2285,13 +2357,16 @@ graph_paint(image_desc_t *im, char ***calcpr)
 			  im->gdes[i].col.i); 
 	    break;
 	case GF_VRULE:
-	  if(im->gdes[i].xrule >= im->start
-	     && im->gdes[i].xrule <= im->end)
-	    gdImageLine(gif,
+	    if(im->gdes[i].xrule == 0) { /* fetch variable */
+		im->gdes[i].xrule = im->gdes[im->gdes[i].vidx].vf.when;
+	    };
+	    if(im->gdes[i].xrule >= im->start
+			&& im->gdes[i].xrule <= im->end)
+		gdImageLine(gif,
 			xtr(im,im->gdes[i].xrule),im->yorigin,
 			xtr(im,im->gdes[i].xrule),im->yorigin-im->ysize,
 			im->gdes[i].col.i); 
-	  break;
+	    break;
 	default:
 	    break;
 	}
@@ -2766,26 +2841,63 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 	    } 
 	    break;
 	case GF_VRULE:
-	    if(sscanf(
-		&argv[i][argstart],
-		"%lu#%2x%2x%2x:%n",
-		&im.gdes[im.gdes_c-1].xrule,
-		&col_red,
-		&col_green,
-		&col_blue,
-		&strstart) >=  4){
-		im.gdes[im.gdes_c-1].col.red = col_red;
-		im.gdes[im.gdes_c-1].col.green = col_green;
-		im.gdes[im.gdes_c-1].col.blue = col_blue;
-		if(strstart <= 0){                    
-		    im.gdes[im.gdes_c-1].legend[0] = '\0';
-		} else { 
-		    scan_for_col(&argv[i][argstart+strstart],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
-		}
+	    /* scan for either "VRULE:vname#..." or "VRULE:num#..."
+	     *
+	     * If a vname is used, the value 0 is set; this is catched
+	     * when graphing.  Setting value 0 from the script is not
+	     * permitted
+	     */
+	    strstart=0;
+	    sscanf(&argv[i][argstart], DEF_NAM_FMT "#%n"
+		,varname
+		,&strstart
+		);
+	    if (strstart==0) {
+		sscanf(&argv[i][argstart], "%lu#%n"
+		    ,(long unsigned int *)&im.gdes[im.gdes_c-1].xrule
+		    ,&strstart
+		);
+		if (im.gdes[im.gdes_c-1].xrule==0)
+		    strstart=0;
 	    } else {
+		im.gdes[im.gdes_c-1].xrule = 0;	/* signal use of vname */
+		if((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname))==-1){
+		    im_free(&im);
+		    rrd_set_error("unknown variable '%s' in VRULE",varname);
+		    return -1;
+		}		
+		if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_VDEF) {
+		    im_free(&im);
+		    rrd_set_error("Only VDEF is allowed in VRULE",varname);
+		    return -1;
+		}
+	    };
+	    if (strstart==0) {
 		im_free(&im);
 		rrd_set_error("can't parse '%s'",&argv[i][argstart]);
 		return -1;
+	    } else {
+		int n=0;
+		if(sscanf(
+			&argv[i][argstart+strstart],
+			"%2x%2x%2x:%n",
+			&col_red,
+			&col_green,
+			&col_blue,
+			&n)>=3) {
+		    im.gdes[im.gdes_c-1].col.red = col_red;
+		    im.gdes[im.gdes_c-1].col.green = col_green;
+		    im.gdes[im.gdes_c-1].col.blue = col_blue;
+		    if (n==0) {
+			im.gdes[im.gdes_c-1].legend[0] = '\0';
+		    } else {
+			scan_for_col(&argv[i][argstart+strstart+n],FMT_LEG_LEN,im.gdes[im.gdes_c-1].legend);
+		    }
+		} else {
+		    im_free(&im);
+		    rrd_set_error("can't parse '%s'",&argv[i][argstart]);
+		    return -1;
+		}
 	    }
 	    break;
 	case GF_TICK:
@@ -2886,7 +2998,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 		rrd_set_error("can't parse CDEF '%s'",&argv[i][argstart]);
 		return -1;
 	    }
-	    /* checking for duplicate DEF CDEFS */
+	    /* checking for duplicate variable names */
 	    if(find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
 		im_free(&im);
 		rrd_set_error("duplicate variable '%s'",
@@ -2900,6 +3012,64 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 		return -1;
 	    }
 	    free(rpnex);
+	    break;
+	case GF_VDEF:
+	    /*
+	     * strstart is set to zero and will NOT be changed
+	     * if the comma is not matched.  This means that it
+	     * remains zero. Although strstart is initialized to
+	     * zero at the beginning of this loop, we do it again
+	     * here just in case someone changes the code...
+	     *
+	     * According to the docs we cannot rely on the
+	     * returned value from sscanf; it can be 2 or 3,
+	     * depending on %n incrementing it or not.
+	     */
+	    strstart=0;
+	    sscanf(
+		    &argv[i][argstart],
+		    DEF_NAM_FMT "=" DEF_NAM_FMT ",%n",
+		    im.gdes[im.gdes_c-1].vname,
+		    varname,
+		    &strstart);
+	    if (strstart){
+		/* checking both variable names */
+		if (find_var(&im,im.gdes[im.gdes_c-1].vname) != -1){
+		    im_free(&im);
+		    rrd_set_error("duplicate variable '%s'",
+				im.gdes[im.gdes_c-1].vname);
+		    return -1; 
+		} else {
+		    if ((im.gdes[im.gdes_c-1].vidx=find_var(&im,varname)) == -1){
+			im_free(&im);
+			rrd_set_error("variable '%s' not known in VDEF '%s'",
+				varname,
+				im.gdes[im.gdes_c-1].vname);
+			return -1; 
+		    } else {
+			if(im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_DEF
+			&& im.gdes[im.gdes[im.gdes_c-1].vidx].gf != GF_CDEF){
+			    rrd_set_error("variable '%s' not DEF nor CDEF in VDEF '%s'",
+				varname,
+				im.gdes[im.gdes_c-1].vname);
+			    im_free(&im);
+			    return -1; 
+			}
+		    }
+		    /* parsed upto and including the first comma. Now
+		     * see what function is requested.  This function
+		     * sets the error string.
+		     */
+		    if (vdef_parse(&im.gdes[im.gdes_c-1],&argv[i][argstart+strstart])<0) {
+			im_free(&im);
+			return -1;
+		    };
+		}
+	    } else {
+		im_free(&im);
+		rrd_set_error("can't parse VDEF '%s'",&argv[i][argstart]);
+		return -1;
+	    }
 	    break;
 	case GF_DEF:
 	    if (sscanf(
@@ -3007,4 +3177,248 @@ int bad_format(char *fmt) {
 	}
 	return 0;
 }
+int
+vdef_parse(gdes,str)
+struct graph_desc_t *gdes;
+char *str;
+{
+    /* A VDEF currently is either "func" or "param,func"
+     * so the parsing is rather simple.  Change if needed.
+     */
+    double	param;
+    char	func[30];
+    int		n;
+    
+    n=0;
+    sscanf(str,"%le,%29[A-Z]%n",&param,func,&n);
+    if (n==strlen(str)) { /* matched */
+	;
+    } else {
+	n=0;
+	sscanf(str,"%29[A-Z]%n",func,&n);
+	if (n==strlen(str)) { /* matched */
+	    param=DNAN;
+	} else {
+	    rrd_set_error("Unknown function string '%s' in VDEF '%s'"
+		,str
+		,gdes->vname
+		);
+	    return -1;
+	}
+    }
+    if		(!strcmp("PERCENT",func)) gdes->vf.op = VDEF_PERCENT;
+    else if	(!strcmp("MAXIMUM",func)) gdes->vf.op = VDEF_MAXIMUM;
+    else if	(!strcmp("AVERAGE",func)) gdes->vf.op = VDEF_AVERAGE;
+    else if	(!strcmp("MINIMUM",func)) gdes->vf.op = VDEF_MINIMUM;
+    else if	(!strcmp("FIRST",  func)) gdes->vf.op = VDEF_FIRST;
+    else if	(!strcmp("LAST",   func)) gdes->vf.op = VDEF_LAST;
+    else {
+	rrd_set_error("Unknown function '%s' in VDEF '%s'\n"
+	    ,func
+	    ,gdes->vname
+	    );
+	return -1;
+    };
 
+    switch (gdes->vf.op) {
+	case VDEF_PERCENT:
+	    if (isnan(param)) { /* no parameter given */
+		rrd_set_error("Function '%s' needs parameter in VDEF '%s'\n"
+		    ,func
+		    ,gdes->vname
+		    );
+		return -1;
+	    };
+	    if (param>=0.0 && param<=100.0) {
+		gdes->vf.param = param;
+		gdes->vf.val   = DNAN;	/* undefined */
+		gdes->vf.when  = 0;	/* undefined */
+	    } else {
+		rrd_set_error("Parameter '%f' out of range in VDEF '%s'\n"
+		    ,param
+		    ,gdes->vname
+		    );
+		return -1;
+	    };
+	    break;
+	case VDEF_MAXIMUM:
+	case VDEF_AVERAGE:
+	case VDEF_MINIMUM:
+	case VDEF_FIRST:
+	case VDEF_LAST:
+	    if (isnan(param)) {
+		gdes->vf.param = DNAN;
+		gdes->vf.val   = DNAN;
+		gdes->vf.when  = 0;
+	    } else {
+		rrd_set_error("Function '%s' needs no parameter in VDEF '%s'\n"
+		    ,func
+		    ,gdes->vname
+		    );
+		return -1;
+	    };
+	    break;
+    };
+    return 0;
+}
+int
+vdef_calc(im,gdi)
+image_desc_t *im;
+int gdi;
+{
+    graph_desc_t	*src,*dst;
+    rrd_value_t		*data;
+    long		step,steps;
+
+    dst = &im->gdes[gdi];
+    src = &im->gdes[dst->vidx];
+    data = src->data + src->ds + src->ds_cnt; /* skip first value! */
+    steps = (src->end - src->start) / src->step;
+
+#if 0
+printf("DEBUG: start == %lu, end == %lu, %lu steps\n"
+    ,src->start
+    ,src->end
+    ,steps
+    );
+#endif
+
+    switch (im->gdes[gdi].vf.op) {
+	case VDEF_PERCENT: {
+		rrd_value_t *	array;
+		int		field;
+
+
+		if ((array = malloc(steps*sizeof(double)))==NULL) {
+		    rrd_set_error("malloc VDEV_PERCENT");
+		    return -1;
+		}
+		for (step=0;step < steps; step++) {
+		    array[step]=data[step*src->ds_cnt];
+		}
+		qsort(array,step,sizeof(double),vdef_percent_compar);
+
+		field = (steps-1)*dst->vf.param/100;
+		dst->vf.val  = array[field];
+		dst->vf.when = 0;	/* no time component */
+#if 0
+for(step=0;step<steps;step++)
+printf("DEBUG: %3i:%10.2f %c\n",step,array[step],step==field?'*':' ');
+#endif
+	    }
+	    break;
+	case VDEF_MAXIMUM:
+	    step=0;
+	    while (step != steps && isnan(data[step*src->ds_cnt])) step++;
+	    if (step == steps) {
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    } else {
+		dst->vf.val  = data[steps*src->ds_cnt];
+		dst->vf.when = src->start + (step+1)*src->step;
+	    }
+	    while (step != steps) {
+		if (finite(data[step*src->ds_cnt])) {
+		    if (data[step*src->ds_cnt] > dst->vf.val) {
+			dst->vf.val  = data[steps*src->ds_cnt];
+			dst->vf.when = src->start + (step+1)*src->step;
+		    }
+		}
+		step++;
+	    }
+	    break;
+	case VDEF_AVERAGE: {
+	    int cnt=0;
+	    double sum=0.0;
+	    for (step=0;step<steps;step++) {
+		if (finite(data[step*src->ds_cnt])) {
+		    sum += data[step*src->ds_cnt];
+		    cnt ++;
+		}
+		step++;
+	    }
+	    if (cnt) {
+		dst->vf.val  = sum/cnt;
+		dst->vf.when = 0;	/* no time component */
+	    } else {
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    }
+	    }
+	    break;
+	case VDEF_MINIMUM:
+	    step=0;
+	    while (step != steps && isnan(data[step*src->ds_cnt])) step++;
+	    if (step == steps) {
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    } else {
+		dst->vf.val  = data[steps*src->ds_cnt];
+		dst->vf.when = src->start + (step+1)*src->step;
+	    }
+	    while (step != steps) {
+		if (finite(data[step*src->ds_cnt])) {
+		    if (data[step*src->ds_cnt] < dst->vf.val) {
+			dst->vf.val  = data[steps*src->ds_cnt];
+			dst->vf.when = src->start + (step+1)*src->step;
+		    }
+		}
+		step++;
+	    }
+	    break;
+	case VDEF_FIRST:
+	    /* The time value returned here is one step before the
+	     * actual time value.  This is the start of the first
+	     * non-NaN interval.
+	     */
+	    step=0;
+	    while (step != steps && isnan(data[step*src->ds_cnt])) step++;
+	    if (step == steps) { /* all entries were NaN */
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    } else {
+		dst->vf.val  = data[step*src->ds_cnt];
+		dst->vf.when = src->start + step*src->step;
+	    }
+	    break;
+	case VDEF_LAST:
+	    /* The time value returned here is the
+	     * actual time value.  This is the end of the last
+	     * non-NaN interval.
+	     */
+	    step=steps-1;
+	    while (step >= 0 && isnan(data[step*src->ds_cnt])) step--;
+	    if (step < 0) { /* all entries were NaN */
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    } else {
+		dst->vf.val  = data[step*src->ds_cnt];
+		dst->vf.when = src->start + (step+1)*src->step;
+	    }
+	    break;
+    }
+    return 0;
+}
+
+/* NaN <= -INF <= finite_values <= INF */
+int
+vdef_percent_compar(a,b)
+const void *a,*b;
+{
+    /* Equality is not returned; this doesn't hurt except
+     * (maybe) for a little performance.
+     */
+
+    /* First catch NaN values. They are smallest */
+    if (isnan( *(double *)a )) return -1;
+    if (isnan( *(double *)b )) return  1;
+
+    /* NaN doestn't reach this part so INF and -INF are extremes.
+     * The sign from isinf() is compatible with the sign we return
+     */
+    if (isinf( *(double *)a )) return isinf( *(double *)a );
+    if (isinf( *(double *)b )) return isinf( *(double *)b );
+
+    /* If we reach this, both values must be finite */
+    if ( *(double *)a < *(double *)b ) return -1; else return 1;
+}
