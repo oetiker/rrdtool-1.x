@@ -230,7 +230,7 @@ AC_PROG_LIBTOOL
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
+AC_CHECK_HEADERS(fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -278,7 +278,7 @@ AC_FUNC_VPRINTF
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(strerror snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset setlocale strerror snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro
 AC_CHECK_FUNCS(fpclassify, ,
