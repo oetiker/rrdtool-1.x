@@ -309,7 +309,10 @@ AC_MSG_CHECKING(Perl Modules to build)
 AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
-PERL_MAKE_OPTIONS="PREFIX=$prefix LIB=$prefix/lib/perl/$PERL_VERSION"
+ppref=$prefix
+test "x$ppref" = xNONE && ppref=$ac_default_prefix
+
+PERL_MAKE_OPTIONS="PREFIX=$ppref LIB=$ppref/lib/perl/$PERL_VERSION"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
