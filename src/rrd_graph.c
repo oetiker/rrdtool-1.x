@@ -23,7 +23,6 @@
 #endif
 
 #include "rrd_graph.h"
-#include "rrd_graph_helper.h"
 
 /* some constant definitions */
 
@@ -241,14 +240,13 @@ enum text_prop_en text_prop_conv(char *string){
 
 #undef conv_if
 
-
-
 int
 im_free(image_desc_t *im)
 {
-    long i,ii;
+    unsigned long	i,ii;
+
     if (im == NULL) return 0;
-    for(i=0;i<im->gdes_c;i++){
+    for(i=0;i<(unsigned)im->gdes_c;i++){
       if (im->gdes[i].data_first){
 	/* careful here, because a single pointer can occur several times */
 	  free (im->gdes[i].data);
@@ -1005,22 +1003,25 @@ data_proc( image_desc_t *im ){
 		    if (!im->gdes[ii].stack)
 			paintval = 0.0;
 		case GF_STACK:
-		    /* The time of the data doesn't necessarily match
-		    ** the time of the graph. Beware.
-		    */
-		    vidx = im->gdes[ii].vidx;
-		    if (	(gr_time >= im->gdes[vidx].start) &&
+		    value = im->gdes[ii].yrule;
+		    if (isnan(value)) { /* not a number or VDEF */
+			/* The time of the data doesn't necessarily match
+			** the time of the graph. Beware.
+			*/
+			vidx = im->gdes[ii].vidx;
+			if (	(gr_time >= im->gdes[vidx].start) &&
 				(gr_time <= im->gdes[vidx].end) ) {
-			value = im->gdes[vidx].data[
-			    (unsigned long) floor(
+			    value = im->gdes[vidx].data[
+				(unsigned long) floor(
 				    (double)(gr_time - im->gdes[vidx].start)
 						/ im->gdes[vidx].step)
-			    * im->gdes[vidx].ds_cnt
-			    + im->gdes[vidx].ds
-			];
-		    } else {
-			value = DNAN;
-		    }
+				* im->gdes[vidx].ds_cnt
+				+ im->gdes[vidx].ds
+			    ];
+			} else {
+			    value = DNAN;
+			}
+		    };
 
 		    if (! isnan(value)) {
 			paintval += value;
@@ -2347,7 +2348,12 @@ graph_paint(image_desc_t *im, char ***calcpr)
                  && ! isnan(im->gdes[i].p_data[ii])){
               if (node == NULL){
                 float ybase = 0.0;
+/*
                 if (im->gdes[i].gf == GF_STACK) {
+*/
+		if ( (im->gdes[i].gf == GF_STACK)
+		  || (im->gdes[i].stack) ) {
+
                   ybase = ytr(im,lastgdes->p_data[ii-1]);
                 } else {
                   ybase =  ytr(im,areazero);
@@ -2366,7 +2372,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
             if ( node != NULL && (ii+1==im->xsize || isnan(im->gdes[i].p_data[ii]) )){
               /* GF_AREA STACK type*/
+/*
               if (im->gdes[i].gf == GF_STACK ) {
+*/
+	      if ( (im->gdes[i].gf == GF_STACK)
+		|| (im->gdes[i].stack) ) {
                 int iii;
                 for (iii=ii-1;iii>area_start;iii--){
                   gfx_add_point(node,iii+im->xorigin,ytr(im,lastgdes->p_data[iii]));
@@ -2490,6 +2500,7 @@ gdes_alloc(image_desc_t *im){
 
     im->gdes[im->gdes_c-1].step=def_step; 
     im->gdes[im->gdes_c-1].stack=0;
+    im->gdes[im->gdes_c-1].debug=0;
     im->gdes[im->gdes_c-1].start=im->start; 
     im->gdes[im->gdes_c-1].end=im->end; 
     im->gdes[im->gdes_c-1].vname[0]='\0'; 
@@ -2503,6 +2514,8 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].rrd[0]='\0';
     im->gdes[im->gdes_c-1].ds=-1;    
     im->gdes[im->gdes_c-1].p_data=NULL;    
+    im->gdes[im->gdes_c-1].yrule=DNAN;
+    im->gdes[im->gdes_c-1].xrule=0;
     return 0;
 }
 
@@ -2540,29 +2553,28 @@ int
 rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 {
     image_desc_t   im;
-
-#ifdef HAVE_TZSET
-    tzset();
-#endif
-#ifdef HAVE_SETLOCALE
-    setlocale(LC_TIME,"");
-#endif
-            
             
     rrd_graph_init(&im);
 
     rrd_graph_options(argc,argv,&im);
-    if (rrd_test_error()) return -1;
+    if (rrd_test_error()) {
+	im_free(&im);
+	return -1;
+    }
     
     if (strlen(argv[optind])>=MAXPATH) {
 	rrd_set_error("filename (including path) too long");
+	im_free(&im);
 	return -1;
     }
     strncpy(im.graphfile,argv[optind],MAXPATH-1);
     im.graphfile[MAXPATH-1]='\0';
 
     rrd_graph_script(argc,argv,&im);
-    if (rrd_test_error()) return -1;
+    if (rrd_test_error()) {
+	im_free(&im);
+	return -1;
+    }
 
     /* Everything is now read and the actual work can start */
 
@@ -2608,6 +2620,13 @@ void
 rrd_graph_init(image_desc_t *im)
 {
     int i;
+
+#ifdef HAVE_TZSET
+    tzset();
+#endif
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_TIME,"");
+#endif
 
     im->xlab_user.minsec = -1;
     im->ximg=0;
@@ -2956,675 +2975,6 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     im->end = end_tmp;
 }
 
-/* rrd_name_or_num()
-**
-** Scans for a VDEF-variable or a number
-**
-** Returns an integer describing what was found:
-**
-** 0: error
-** 1: found an integer; it is returned in both l and d
-** 2: found a float; it is returned in d
-** 3: found a vname; its index is returned in l
-**
-** l and d are undefined unless described above
-*/
-static int
-rrd_name_or_num(image_desc_t *im, char *param, long *l, double *d)
-{
-    int i1=0,i2=0,i3=0,i4=0,i5=0,i6=0;
-    char vname[MAX_VNAME_LEN+1];
-
-    sscanf(param, "%li%n%*s%n", l,&i1,&i2);
-    sscanf(param, "%lf%n%*s%n", d,&i3,&i4);
-    sscanf(param, DEF_NAM_FMT "%n%*s%n", vname, &i5,&i6);
-
-    if ( (i1) && (!i2) ) return 1;
-    if ( (i3) && (!i4) ) return 2;
-    if ( (i5) && (!i6) ) {
-	if ((*l = find_var(im,vname))!=-1) return 3;
-    }
-    return 0;
-}
-
-/* rrd_vname_color()
-**
-** Parses "[<vname|number>][#color]" where at least one
-** of the optional strings must exist.
-**
-** Returns an integer describing what was found.
-** If the result is 0, the rrd_error string may be set.
-**
-** ...CVVVV 
-** ---------:-----------------------------------
-** 00000000 : error
-** ....0000 : a value/variable was not found
-** ....0001 : an integer number was found, returned in both l and d
-** ....0010 : a floating point number was found, returned in d
-** ....0011 : reserved for future values
-** ....01xx : reserved for future values
-** ....1000 : an existing  DEF vname was found, idx returned in l
-** ....1001 : an existing CDEF vname was found, idx returned in l
-** ....1010 : an existing VDEF vname was found, idx returned in l
-** ....1011 : reserved for future variables
-** ....11xx : reserved for future variables
-** ...0.... : a color was not found, returned in color
-** ...1.... : a color was found, returned in color
-*/
-static int
-rrd_vname_color(image_desc_t *im, char * param,
-			long *l,
-			double *d,
-			gfx_color_t *color)
-{
-    int result=0,i=0;
-
-    if (param[0]!='#') { /* vname or num present, or empty string */
-	char *s,*c=param;
-	while ((*c!='\0')&&(*c!='#')) c++,i++;
-	if (*c!='\0') {
-	    s=malloc(i+1);
-	    if (s==NULL) {
-		rrd_set_error("Out of memory in function rrd_vname_color");
-		return 0;
-	    }
-	    strncpy(s,param,i);
-	    s[i]='\0';
-	    result=rrd_name_or_num(im, s, l, d);
-	    if (!result) {
-		rrd_set_error("Use of uninitialized vname %s",s);
-		free(s);
-	    }
-	} else {
-	    result=rrd_name_or_num(im, param, l, d);
-	    if (!result) {
-		rrd_set_error("Use of uninitialized vname %s",param);
-	    }
-	}
-	switch (result) {
-	    case 0: return 0; /* error set above */
-	    case 1:
-	    case 2: break;
-	    case 3:
-		switch (im->gdes[*l].gf) {
-		    case GF_DEF:	result=0x08;break;
-		    case GF_CDEF:	result=0x09;break;
-		    case GF_VDEF:	result=0x0A;break;
-		    default:
-			rrd_set_error("Unexpected GF result from function "
-			"rrd_name_or_num() called from rrd_vname_color");
-			return 0;
-		}
-		break;
-	    default:
-		rrd_set_error("Unexpected result from function "
-			"rrd_name_or_num() called from rrd_vname_color");
-		return 0;
-	}
-    }
-    /* Parse color, if any. */
-    if (param[i] == '\0') return result;
-    else {
-	unsigned int r=0,g=0,b=0,a=0xFF;
-	int i1=0,i2=0;
-	sscanf(&param[i], "#%02x%02x%02x%n%02x%n",
-				&r,&g,&b,&i1,&a,&i2);
-	if (!i1) {
-	    rrd_set_error("Unparsable color %s",&param[i]);
-	    return 0;
-	}
-	if (i2) i1=i2;
-	i2=0;
-	sscanf(&param[i+i1],"%*s%n",&i2);
-	if (i2) {
-	    rrd_set_error("Garbage after color %s",param[i]);
-	    return 0;
-	}
-	*color=r<<24|g<<16|b<<8|a;
-	return result|0x10;
-    }
-}
-
-/* rrd_find_function()
-**
-** Checks if the parameter is a valid function and
-** if so, returns it in the graph description pointer.
-**
-** The return value is a boolean; true if found
-*/
-static int
-rrd_find_function(char *param, graph_desc_t *gdp)
-{
-    size_t i1=0,i2=0;
-    char funcname[11];
-
-    sscanf(param,"%10[A-Z]%n%*1[1-3]%n",funcname,(int *)&i1,(int *)&i2);
-    gdp->gf=gf_conv(funcname);
-    if ((int)gdp->gf == -1) {
-	rrd_set_error("'%s' is not a valid function name",funcname);
-	return 0;
-    }
-    if (gdp->gf==GF_LINE) {
-	if (i2) {
-	    gdp->linewidth=param[i1]-'0';
-	} else {
-	    rrd_set_error("LINE should have a width");
-	    return 0;
-	}
-    } else {
-	if (i2) {
-	    rrd_set_error("Only LINE should have a width: %s",param);
-	    return 0;
-	} else {
-	    i2=i1;
-	}
-    }
-    if (strlen(param) != i2) {
-	rrd_set_error("Garbage after function name: %s",param);
-	return 0;
-    }
-    return 1;
-}
-/* rrd_split_line()
-**
-** Takes a string as input; splits this line into multiple
-** parameters on each ":" boundary.
-**
-** If this function returns successful, the caller will have
-** to free() the allocated memory for param.
-**
-** The input string is destroyed, its memory is used by the
-** output array.
-*/
-static int
-rrd_split_line(char *line,char ***param)
-{
-    int i=0,n=0,quoted=0;
-    char *src=line;
-    char *dst=line;
-
-    /* scan the amount of colons in the line.  We need
-    ** at most this amount+1 pointers for the array. If
-    ** any colons are escaped we waste some space.
-    */
-    if (*src!='\0') n=1;
-
-    while (*src != '\0')
-	if (*src++ == ':') n++;
-
-    if (n==0) {
-	rrd_set_error("No line to split. rrd_split_line was given the empty string.");
-	return -1;
-    }
-
-    src = line;
-
-    /* Allocate memory for an array of n char pointers */
-    *param=calloc(n,sizeof(char *));
-    if (*param==NULL) {
-	rrd_set_error("Memory allocation failed inside rrd_split_line");
-	return -1;
-    }
-
-    /* split the line and fill the array */
-   
-    i=0;
-    (*param)[i] = dst;
-    while (*src != '\0') {
-	switch (*src) {
-	    case '\'':
-		quoted^=1;
-		src++;
-		break;
-	    case '\\':	/* could be \:  but also \n */
-		src++;
-		switch (*src) {
-		    case '\0':
-			free(*param);
-			rrd_set_error("Lone backslash inside rrd_split_line");
-			return -1;
-		    case ':':
-			*dst++=*src++;
-			break;
-		    default:
-			*dst++='\\';
-			*dst++=*src++;
-		}
-		break;
-	    case ':':
-		if (quoted) *dst++=*src++;
-		else {
-		    *dst++ = '\0';
-		    src++;
-		    i++;
-		    (*param)[i] = dst;
-		}
-		break;
-	    default:
-		*dst++=*src++;
-	}
-    }
-    *dst='\0';
-    i++; /* i separators means i+1 parameters */
-
-    return i;
-}
-
-void
-rrd_graph_script_parse_def(int argc,char *argv[],int used,graph_desc_t *gdp) {
-    time_t		start_tmp=0,end_tmp=0;
-    struct time_value	start_tv, end_tv;
-    char		*parsetime_error = NULL;
-    struct option long_options[] = {
-	{ "step",	required_argument, NULL, 256 },
-	{ "start",	required_argument, NULL, 's' },
-	{ "end",	required_argument, NULL, 'e' },
-	{ NULL,0,NULL,0 }};
-    int option_index = 0;
-    int opt;
-
-    opterr=0;
-    optind=used;
-
-    start_tv.type=ABSOLUTE_TIME;
-    start_tv.offset=0;
-    end_tv.type=ABSOLUTE_TIME;
-    end_tv.offset=0;
-    memcpy(&start_tv.tm, gmtime(&gdp->start) , sizeof(struct tm) );
-    memcpy(&end_tv.tm,   gmtime(&gdp->end) ,   sizeof(struct tm) );
-
-    while (1) {
-	opt = getopt_long(argc,argv,"-s:e:", long_options,&option_index);
-	if (opt==-1) break;
-	switch (opt) {
-	    case   1:
-		printf("DEBUG: found non-option[%i] %s\n",optind,optarg);
-		break;
-	    case 's':
-		if ((parsetime_error = parsetime(optarg, &start_tv))) {
-		    rrd_set_error( "DEF start time: %s", parsetime_error );
-		    return;
-		}
-		break;
-	    case 'e':
-		if ((parsetime_error = parsetime(optarg, &end_tv))) {
-		    rrd_set_error( "DEF end time: %s", parsetime_error );
-		    return;
-		}
-		break;
-	    case 256:
-                gdp->step = atol(optarg);
-		break;
-	    case '?':
-		printf("DEBUG: unrecognized option %s\n",argv[optind]);
-		break;
-	    case ':':
-		printf("DEBUG: option %c needs parameter\n",optopt);
-		break;
-	    default:
-		printf("DEBUG: getopt returned unknown char %c\n",opt);
-		break;
-	}
-    }
-    if (optind < argc) {
-	printf("DEBUG: %i remaining parameters:\n",argc-optind);
-	while (optind<argc)
-	    printf("DEBUG: %3i: %s\n",optind,argv[optind++]);
-	printf("\n");
-    }
-
-    if (proc_start_end(&start_tv,&end_tv,&start_tmp,&end_tmp) == -1){
-	/* error string is set in parsetime.c */
-	return;
-    }  
-    
-    if (start_tmp < 3600*24*365*10){
-	rrd_set_error("the first entry to fetch should be after 1980 (%ld)",start_tmp);
-	return;
-    }
-    
-    if (end_tmp < start_tmp) {
-	rrd_set_error("start (%ld) should be less than end (%ld)", 
-	       start_tmp, end_tmp);
-	return;
-    }
-    
-    gdp->start = start_tmp;
-    gdp->end = end_tmp;
-}
-
-void
-rrd_graph_script(int argc, char *argv[], image_desc_t *im)
-{
-    int		i;
-    char	symname[100];
-    int		linepass = 0; /* stack must follow LINE*, AREA or STACK */    
-    char **	param;
-    int		paramcnt,paramused;
-
-    for (i=optind+1;i<argc;i++) {
-	int		argstart=0;
-	int		strstart=0;
-	graph_desc_t	*gdp;
-	char		*line;
-	char	tmpline[256];
-	char		vname[MAX_VNAME_LEN+1],sep[1];
-/*	double		d;	*/
-	int		j,k,l/*,m*/;
-
-	/* Each command is one element from *argv[].  This command is
-	** split at every unescaped colon.
-	**
-	** Each command defines the most current gdes inside struct im.
-	** In stead of typing "im->gdes[im->gdes_c-1]" we use "gdp".
-	*/
-	gdes_alloc(im);
-	gdp=&im->gdes[im->gdes_c-1];
-	strcpy(tmpline,argv[i]);
-	line=tmpline;
-	if ((paramcnt=rrd_split_line(argv[i],&param))==-1) return;
-	paramused=0;
-
-#ifdef DEBUG
-	printf("DEBUG: after splitting line:\n");
-	for (j=0;j<paramcnt;j++)
-	    printf("DEBUG: %3i: %s\n",j,param[j]);
-#endif
-
-	if (!rrd_find_function(param[paramused],gdp)) {
-	    im_free(im);
-	    free(param);
-	    return;
-	}
-	paramused++;
-
-	/* function:newvname=string[:ds-name:CF]	for xDEF
-	** function:vname[#color[:string]]		for LINEx,AREA,STACK
-	** function:vname#color[:num[:string]]		for TICK
-	** function:vname-or-num#color[:string]		for xRULE,PART
-	** function:vname:CF:string			for xPRINT
-	** function:string				for COMMENT
-	*/
-
-/*TEMP*/argstart=strlen(param[paramused-1])+1;
-
-	/* If anything fails just use rrd_set_error() and break from the
-	** switch.  Just after the switch we call rrd_test_error() and
-	** clean up if it is set.
-	*/
-	switch (gdp->gf) {
-	    case GF_XPORT:
-	        break;
-	    case GF_COMMENT:
-		if (paramcnt<2) {
-		    rrd_set_error("Not enough parameters for %s",param[0]);
-		    break;
-		}
-		if (strlen(param[1])>FMT_LEG_LEN) {
-		    rrd_set_error("Comment too long: %s:%s",param[0],param[1]);
-		    break;
-		}
-		strcpy(gdp->legend,param[1]);
-		paramused++;
-		break;
-	    case GF_PART:
-	    case GF_VRULE:
-	    case GF_HRULE:
-		if (paramcnt<2) {
-		    rrd_set_error("No name or number in %s",param[0]);
-		    break;
-		}
-		j=rrd_vname_color(im,param[1],
-				&gdp->xrule,&gdp->yrule,&gdp->col);
-		paramused++;
-		if (!j) break; /* error string set by function */
-		switch (j&0x0F) {
-		    case 0x00:
-			rrd_set_error("Cannot parse name nor number "
-				"in %s:%s",param[0],param[1]);
-			break;
-		    case 0x08:
-		    case 0x09:
-			rrd_set_error("Cannot use DEF or CDEF based "
-				"variable in %s:%s",param[0],param[1]);
-			break;
-		    case 0x0A:
-			gdp->vidx=gdp->xrule;
-			gdp->xrule=0;
-			gdp->yrule=DNAN;
-			break;
-		    case 0x01:
-		    case 0x02:
-			break;
-		    default:
-			rrd_set_error("Unexpected result while parsing "
-				"%s:%s, program error",param[0],param[1]);
-		}
-		if (rrd_test_error()) break;
-
-		if (paramcnt>paramused) {
-		    if (strlen(param[paramused])>FMT_LEG_LEN) {
-			rrd_set_error("Comment too long: %s:%s",
-						param[0],param[1]);
-			break;
-		    }
-		    strcpy(gdp->legend,param[paramused]);
-		    paramused++;
-		}
-		break;
-	    case GF_STACK:
-		if (linepass==0) {
-		    rrd_set_error("STACK must follow another graphing element");
-		    break;
-		}
-	    case GF_LINE:
-	    case GF_AREA:
-	    case GF_TICK:
-			/* LINEx:vname[#color[:legend]][:STACK]
-			** AREA:vname[#color[:legend]][:STACK]
-			** STACK:vname[#color[:legend]]
-			** TICK:vname#color[:num[:legend]]
-			*/
-		linepass=1;
-		j=rrd_vname_color(im,param[paramused++],
-				&gdp->vidx,&gdp->yrule,&gdp->col);
-		if (!j) break;	/* error string set by function */
-		switch (j&0x0F) {
-		    case 0x00:
-			rrd_set_error("Cannot parse name nor number "
-					"in %s:%s",param[0],param[1]);
-			break;
-		    case 0x01:
-		    case 0x02:
-			rrd_set_error("Cannot %s a number",param[0]);
-			break;
-		    case 0x08:
-		    case 0x09:
-			break;
-		    case 0x0A:
-			rrd_set_error("Cannot use VDEF based variable "
-					"with %s %s",param[0],gdp->vname);
-			break;
-		}
-		if (rrd_test_error()) break;
-
-		if (gdp->gf == GF_TICK) {
-		    if (!(j&0x10)) {
-			rrd_set_error("Color not optional for TICK");
-			break;
-		    } else { /* parse optional number */
-			k=l=0;
-			sscanf(param[paramused], "%lf%n%*s%n",
-						&gdp->yrule,&k,&l);
-			if ((k!=0)&&(l==0)) paramused++;
-			if (paramused<paramcnt)
-			    strcpy(gdp->legend,param[paramused++]);
-		    }
-		} else {
-		    if (j&0x10) { /* color present */
-			/* next should be legend or STACK.  If it
-			** is STACK then leave it at is, else parse
-			** the legend (if any)
-			*/
-			if (paramused<paramcnt)
-			    if (strcmp("STACK",param[paramused]))
-				strcpy(gdp->legend,param[paramused++]);
-		    }
-		    if (paramused<paramcnt)
-			if (!strcmp("STACK",param[paramused])) {
-			    gdp->stack=1;
-			    paramused++;
-			}
-		}
-		break;
-	    case GF_PRINT:
-		im->prt_c++;
-	    case GF_GPRINT:
-		j=0;
-		sscanf(&line[argstart], DEF_NAM_FMT ":%n",gdp->vname,&j);
-		if (j==0) {
-		    rrd_set_error("Cannot parse vname in line: '%s'",line);
-		    break;
-		}
-		argstart+=j;
-		if (rrd_graph_check_vname(im,gdp->vname,line)) return;
-		j=0;
-		sscanf(&line[argstart], CF_NAM_FMT ":%n",symname,&j);
-
-		k=(j!=0)?rrd_graph_check_CF(im,symname,line):1;
-#define VIDX im->gdes[gdp->vidx]
-		switch (k) {
-		    case -1: /* looks CF but is not really CF */
-			if (VIDX.gf == GF_VDEF) rrd_clear_error();
-			break;
-		    case  0: /* CF present and correct */
-			if (VIDX.gf == GF_VDEF)
-			    rrd_set_error("Don't use CF when printing VDEF");
-			argstart+=j;
-			break;
-		    case  1: /* CF not present */
-			if (VIDX.gf == GF_VDEF) rrd_clear_error();
-			else rrd_set_error("Printing DEF or CDEF needs CF");
-			break;
-		    default:
-			rrd_set_error("Oops, bug in GPRINT scanning");
-		}
-#undef VIDX
-		if (rrd_test_error()) break;
-
-		if (strlen(&line[argstart])!=0) {
-		    if (rrd_graph_legend(gdp,&line[argstart])==0)
-			rrd_set_error("Cannot parse legend in line: %s",line);
-		} else rrd_set_error("No legend in (G)PRINT line: %s",line);
-		strcpy(gdp->format, gdp->legend);
-		break;
-	    case GF_DEF:
-	    case GF_VDEF:
-	    case GF_CDEF:
-		j=0;
-		if (paramcnt<2) {
-		    rrd_set_error("Nothing following %s",param[0]);
-		    break;
-		}
-		sscanf(param[1], DEF_NAM_FMT "=%n",gdp->vname,&j);
-		if (j==0) {
-		    rrd_set_error("Could not parse %s:%s",param[0],param[1]);
-		    break;
-		}
-		if (find_var(im,gdp->vname)!=-1) {
-		    rrd_set_error("Variable '%s' in %s:%s' already in use\n",
-						gdp->vname,param[0],param[1]);
-		    break;
-		}
-		paramused++;
-		argstart+=j;	/* parsed upto and including "xDEF:vname=" */
-		switch (gdp->gf) {
-		    case GF_DEF:
-			if (strlen(&param[1][j])>MAXPATH) {
-			    rrd_set_error("Path too long: %s:%s",param[0],param[1]);
-			    break;
-			}
-			strcpy(gdp->rrd,&param[1][j]);
-
-			if (paramcnt<3) {
-			    rrd_set_error("No DS for %s:%s",param[0],param[1]);
-			    break;
-			}
-			j=k=0;
-			sscanf(param[2],DS_NAM_FMT "%n%*s%n",gdp->ds_nam,&j,&k);
-			if ((j==0)||(k!=0)) {
-			    rrd_set_error("Cannot parse DS in %s:%s:%s",
-						param[0],param[1],param[2]);
-			    break;
-			}
-			paramused++;
-			if (paramcnt<4) {
-			    rrd_set_error("No CF for %s:%s:%s",
-					param[0],param[1],param[2]);
-			    break;
-			}
-			j=k=0;
-			sscanf(param[3],CF_NAM_FMT "%n%*s%n",symname,&j,&k);
-			if ((j==0)||(k!=0)) {
-			    rrd_set_error("Cannot parse CF in %s:%s:%s:%s",
-					param[0],param[1],param[2],param[3]);
-			    break;
-			}
-			if ((gdp->cf = cf_conv(symname))==-1) {
-			    rrd_set_error("Unknown CF '%s' in %s:%s:%s:%s",
-					param[0],param[1],param[2],param[3]);
-			    break;
-			}
-			paramused++;
-			if (paramcnt>paramused) { /* optional parameters */
-rrd_graph_script_parse_def(paramcnt,param,paramused,gdp);
-			    if (rrd_test_error()) break;
-			}
-			break;
-		    case GF_VDEF:
-			k=0;
-			sscanf(&param[1][j],DEF_NAM_FMT ",%n",vname,&k);
-			if (k==0) {
-			    rrd_set_error("Cannot parse vname: %s:%s",
-							param[0],param[1]);
-			    break;
-			}
-			j+=k;
-			if (rrd_graph_check_vname(im,vname,line)) return;
-			if (       im->gdes[gdp->vidx].gf != GF_DEF
-				&& im->gdes[gdp->vidx].gf != GF_CDEF) {
-			    rrd_set_error("variable '%s' not DEF nor "
-				"CDEF in VDEF '%s'", vname,gdp->vname);
-			    break;
-			}
-			vdef_parse(gdp,&param[1][j]);
-			break;
-		    case GF_CDEF:
-			if ((gdp->rpnp = rpn_parse(
-						(void *)im,
-						&param[1][j],
-						&find_var_wrapper)
-				)==NULL)
-			    rrd_set_error("invalid rpn expression in: %s",param[1]);
-			break;
-		    default: break;
-		}
-		break;
-	    default: rrd_set_error("Big oops");
-	}
-	if (rrd_test_error()) {
-	    im_free(im);
-	    return;
-	}
-    }
-
-    if (im->gdes_c==0){
-	rrd_set_error("can't make a graph without contents");
-	im_free(im); /* ??? is this set ??? */
-	return; 
-    }
-}
-
 int
 rrd_graph_check_vname(image_desc_t *im, char *varname, char *err)
 {
@@ -3674,15 +3024,6 @@ rrd_graph_color(image_desc_t *im, char *var, char *err, int optional)
 	gdp->col = col;
 	return n;
     }
-}
-int
-rrd_graph_check_CF(image_desc_t *im, char *symname, char *err)
-{
-    if ((im->gdes[im->gdes_c-1].cf=cf_conv(symname))==-1) {
-	rrd_set_error("Unknown CF '%s' in %s",symname,err);
-	return -1;
-    }
-    return 0;
 }
 int
 rrd_graph_legend(graph_desc_t *gdp, char *line)
