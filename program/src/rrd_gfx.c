@@ -210,6 +210,10 @@ double gfx_get_text_width ( double start, char* font, double size,
       
     }
     error = FT_Load_Glyph( face, glyph_index, 0 );
+    if ( error ) {
+      FT_Done_FreeType(library);
+      return -1;
+    }
     if (! previous) {
       text_width -= (double)slot->metrics.horiBearingX / 64.0; /* add just char width */	
     }
@@ -218,6 +222,7 @@ double gfx_get_text_width ( double start, char* font, double size,
   text_width -= (double)slot->metrics.horiAdvance / 64.0; /* remove last step */
   text_width += (double)slot->metrics.width / 64.0; /* add just char width */
   text_width += (double)slot->metrics.horiBearingX / 64.0; /* add just char width */
+  FT_Done_FreeType(library);
   return text_width;
 }
  
@@ -289,14 +294,15 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  (char *)node->filename,
                                  0,
                                  &face );
+	    if ( error ) break;
             use_kerning = FT_HAS_KERNING(face);
 
-	    if ( error ) break;
             error = FT_Set_Char_Size(face,   /* handle to face object            */
                                      (long)(node->size*64),
                                      (long)(node->size*64),
                                      (long)(100*zoom),
                                      (long)(100*zoom));
+            if ( error ) break;
             pen_x = node->x * zoom;
             pen_y = node->y * zoom;
             slot = face->glyph;
@@ -313,6 +319,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                     
                 }
                 error = FT_Load_Glyph( face, glyph_index, 0 );
+                if ( error ) break;
 		if (previous == 0){
 		  pen_x -= (double)slot->metrics.horiBearingX / 64.0; /* adjust pos for first char */	
 		  text_width -= (double)slot->metrics.horiBearingX / 64.0; /* add just char width */	
@@ -352,6 +359,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                     
                 }
                 error = FT_Load_Glyph( face, glyph_index, FT_LOAD_RENDER );
+                if ( error ) break;
                 gr = slot->bitmap.num_grays -1;
                 for (iy=0; iy < slot->bitmap.rows; iy++){
                     long buf_y = iy+(pen_y+0.5)-slot->bitmap_top;
@@ -380,6 +388,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
     }  
     gfx_save_png(buffer,fp , pys_width,pys_height,bytes_per_pixel);
     art_free(buffer);
+    FT_Done_FreeType( library );
     return 0;    
 }
 
