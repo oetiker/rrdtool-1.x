@@ -32,7 +32,7 @@ idocdir = $(prefix)/doc
 idoc_DATA = $(POD) $(TXT)
 ihtmldir = $(prefix)/html
 ihtml_DATA = $(HTML)
-imandir = $(prefix)/man/man1
+imandir = $(mandir)/man1
 iman_DATA = $(MAN)
 
 all-local: link txt man html-local
