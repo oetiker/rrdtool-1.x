@@ -5,6 +5,7 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+#include "rrd_rpncalc.h"
 
 /* Prototypes */
 
@@ -14,6 +15,9 @@ int eat_tag(char **, char *);
 int read_tag(char **, char *, char *, void *);
 int xml2rrd(char*, rrd_t*, char);
 int rrd_write(char *, rrd_t *);
+void parse_patch1028_RRA_params(char **buf, rrd_t *rrd, int rra_index);
+void parse_patch1028_CDP_params(char **buf, rrd_t *rrd, int rra_index, int ds_index);
+void parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index);
 
 /* convert all ocurances of <BlaBlaBla> to <blablabla> */
 
@@ -99,7 +103,8 @@ int read_tag(char **buf, char *tag, char *format, void *value){
 int xml2rrd(char* buf, rrd_t* rrd, char rc){
   /* pass 1 identify number of RRAs  */
   char *ptr,*ptr2,*ptr3; /* walks thought the buffer */
-  long rows=0,mempool=0,i=0,ii;
+  long rows=0,mempool=0,i=0;
+  int rra_index;
   xml_lc(buf); /* lets lowercase all active parts of the xml */
   ptr=buf;
   ptr2=buf;
@@ -116,7 +121,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   strcpy(rrd->stat_head->cookie,RRD_COOKIE);
   read_tag(&ptr,"version","%4[0-9]",rrd->stat_head->version);
   /* added primitive version checking */
-  if (atoi(rrd -> stat_head -> version) < 2)
+  if (atoi(rrd -> stat_head -> version) != 2)
   {
     rrd_set_error("Incompatible file version, detected version %s, required version %s\n",
 		  rrd -> stat_head -> version, RRD_VERSION);
@@ -159,14 +164,21 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       /* test for valid type */
       if(dst_conv(rrd->ds_def[rrd->stat_head->ds_cnt-1].dst) == -1) return -1;      
 
+	  if (dst_conv(rrd->ds_def[rrd->stat_head->ds_cnt-1].dst) != DST_CDEF)
+	  {
       read_tag(&ptr2,"minimal_heartbeat","%lu",
 	       &(rrd->ds_def[rrd->stat_head->ds_cnt-1].par[DS_mrhb_cnt].u_cnt));
       read_tag(&ptr2,"min","%lf",&(rrd->ds_def[rrd->stat_head->ds_cnt-1].par[DS_min_val].u_val));
       read_tag(&ptr2,"max","%lf",&(rrd->ds_def[rrd->stat_head->ds_cnt-1].par[DS_max_val].u_val));
+	  } else { /* DST_CDEF */
+		 char buffer[1024];
+	     read_tag(&ptr2,"cdef","%s",buffer);
+		 parseCDEF_DS(buffer,rrd,rrd -> stat_head -> ds_cnt - 1);
+	  }
 
       read_tag(&ptr2,"last_ds","%30s",rrd->pdp_prep[rrd->stat_head->ds_cnt-1].last_ds);
       read_tag(&ptr2,"value","%lf",&(rrd->pdp_prep[rrd->stat_head->ds_cnt-1].scratch[PDP_val].u_val));
-      read_tag(&ptr2,"unknown_sec","%lu",&(rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt));      
+      read_tag(&ptr2,"unknown_sec","%lu",&(rrd->pdp_prep[rrd->stat_head->ds_cnt-1].scratch[PDP_unkn_sec_cnt].u_cnt));      
       eat_tag(&ptr2,"/ds");
       ptr=ptr2;
   }
@@ -195,47 +207,123 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       if(cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == -1) return -1;
 
       read_tag(&ptr2,"pdp_per_row","%lu",&(rrd->rra_def[rrd->stat_head->rra_cnt-1].pdp_cnt));
-      /* add support to read RRA parameters */
+      /* support to read RRA parameters */
       eat_tag(&ptr2, "params");
-      for (i = 0; i < MAX_RRA_PAR_EN; i++)
-      {
-	if (i == RRA_dependent_rra_idx || 
-		i == RRA_seasonal_smooth_idx ||
-		i == RRA_failure_threshold)
-	  read_tag(&ptr2, "value","%u",
-		   &(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[i].u_cnt));
-	else
-	  read_tag(&ptr2, "value","%lf",
-		   &(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[i].u_val));
+      skip(&ptr2);
+      rra_index = rrd->stat_head->rra_cnt - 1;
+      /* backwards compatibility w/ old patch */
+      if (strncmp(ptr2, "<value>",7) == 0) {
+         parse_patch1028_RRA_params(&ptr2,rrd,rra_index); 
+      } else {
+      switch(cf_conv(rrd -> rra_def[rra_index].cf_nam)) {
+      case CF_HWPREDICT:
+         read_tag(&ptr2, "hw_alpha", "%lf", 
+            &(rrd->rra_def[rra_index].par[RRA_hw_alpha].u_val));
+         read_tag(&ptr2, "hw_beta", "%lf", 
+            &(rrd->rra_def[rra_index].par[RRA_hw_beta].u_val));
+         read_tag(&ptr2, "dependent_rra_idx", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_dependent_rra_idx].u_cnt));
+         break;
+      case CF_SEASONAL:
+      case CF_DEVSEASONAL:
+         read_tag(&ptr2, "seasonal_gamma", "%lf", 
+            &(rrd->rra_def[rra_index].par[RRA_seasonal_gamma].u_val));
+         read_tag(&ptr2, "seasonal_smooth_idx", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_seasonal_smooth_idx].u_cnt));
+         read_tag(&ptr2, "dependent_rra_idx", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_dependent_rra_idx].u_cnt));
+         break;
+      case CF_FAILURES:
+         read_tag(&ptr2, "delta_pos", "%lf", 
+            &(rrd->rra_def[rra_index].par[RRA_delta_pos].u_val));
+         read_tag(&ptr2, "delta_neg", "%lf", 
+            &(rrd->rra_def[rra_index].par[RRA_delta_neg].u_val));
+         read_tag(&ptr2, "window_len", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_window_len].u_cnt));
+         read_tag(&ptr2, "failure_threshold", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_failure_threshold].u_cnt));
+         /* fall thru */
+      case CF_DEVPREDICT:
+         read_tag(&ptr2, "dependent_rra_idx", "%lu", 
+            &(rrd->rra_def[rra_index].par[RRA_dependent_rra_idx].u_cnt));
+         break;
+      case CF_AVERAGE:
+      case CF_MAXIMUM:
+      case CF_MINIMUM:
+      case CF_LAST:
+      default:
+         read_tag(&ptr2, "xff","%lf",
+            &(rrd->rra_def[rra_index].par[RRA_cdp_xff_val].u_val));
+      }
       }
       eat_tag(&ptr2, "/params");
       eat_tag(&ptr2,"cdp_prep");
       for(i=0;i<rrd->stat_head->ds_cnt;i++)
       {
-	eat_tag(&ptr2,"ds");
-	/* add suport to read CDP parameters */
-	for (ii = 0; ii < MAX_CDP_PAR_EN; ii++)
-	{
-      /* handle integer values as a special case */
-      if (cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == CF_FAILURES ||
-		  ii == CDP_unkn_pdp_cnt || 
-		  ii == CDP_null_count ||
-	      ii == CDP_last_null_count)
-	  {
-	    read_tag(&ptr2,"value","%lu",
-		     &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rrd->stat_head->rra_cnt-1)
-		     +i].scratch[ii].u_cnt));
-	  } else {
-	    read_tag(&ptr2,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt*
-		     (rrd->stat_head->rra_cnt-1) +i].scratch[ii].u_val));
-	  }
-
-#if 0
-	  read_tag(&ptr2,"unknown_datapoints","%lu",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
-		   *(rrd->stat_head->rra_cnt-1) +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
-#endif
-	} /* end for */
-	eat_tag(&ptr2,"/ds");
+      eat_tag(&ptr2,"ds");
+      /* support to read CDP parameters */
+      rra_index = rrd->stat_head->rra_cnt-1; 
+      skip(&ptr2);
+      if (strncmp(ptr2, "<value>",7) == 0) {
+         parse_patch1028_CDP_params(&ptr2,rrd,rra_index,i);
+      } else {
+         read_tag(&ptr2, "primary_value","%lf",
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_primary_val].u_val));
+         read_tag(&ptr2, "secondary_value","%lf",
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_secondary_val].u_val));
+         switch(cf_conv(rrd->rra_def[rra_index].cf_nam)) {
+         case CF_HWPREDICT:
+            read_tag(&ptr2,"intercept","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_intercept].u_val));
+            read_tag(&ptr2,"last_intercept","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_last_intercept].u_val));
+            read_tag(&ptr2,"slope","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_slope].u_val));
+            read_tag(&ptr2,"last_slope","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_last_slope].u_val));
+            read_tag(&ptr2,"nan_count","%lu", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_null_count].u_cnt));
+            read_tag(&ptr2,"last_nan_count","%lu", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_last_null_count].u_cnt));
+            break;
+         case CF_SEASONAL:
+         case CF_DEVSEASONAL:
+            read_tag(&ptr2,"seasonal","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_seasonal].u_val));
+            read_tag(&ptr2,"last_seasonal","%lf", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_hw_last_seasonal].u_val));
+            read_tag(&ptr2,"init_flag","%lu", 
+               &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+               +i].scratch[CDP_init_seasonal].u_cnt));
+            break;
+         case CF_DEVPREDICT:
+            break;
+         case CF_FAILURES:
+            parse_FAILURES_history(&ptr2,rrd,rra_index,i); 
+            break;
+         case CF_AVERAGE:
+         case CF_MAXIMUM:
+         case CF_MINIMUM:
+         case CF_LAST:
+         default:
+            read_tag(&ptr2,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
+               *(rra_index) +i].scratch[CDP_val].u_val));
+            read_tag(&ptr2,"unknown_datapoints","%lu",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
+               *(rra_index) +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
+            break;
+	 }
+      }
+      eat_tag(&ptr2,"/ds");
       }
       eat_tag(&ptr2,"/cdp_prep");
       rrd->rra_def[rrd->stat_head->rra_cnt-1].row_cnt=0;
@@ -264,6 +352,8 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 			  &&
 		      (!isnan(*value))	/* not a NAN value */
 		      &&
+			  (dst_conv(rrd->ds_def[i].dst) != DST_CDEF)
+			  &&
 		      (					/* min defined and in the range ? */
 			  (!isnan(rrd->ds_def[i].par[DS_min_val].u_val) 
 			  	&& (*value < rrd->ds_def[i].par[DS_min_val].u_val)) 
@@ -417,19 +507,60 @@ rrd_restore(int argc, char **argv)
     return 0;
 }
 
+/* a backwards compatibility routine that will parse the RRA params section
+ * generated by the aberrant patch to 1.0.28. */
+void
+parse_patch1028_RRA_params(char **buf, rrd_t *rrd, int rra_index)
+{
+   int i;
+   for (i = 0; i < MAX_RRA_PAR_EN; i++)
+   {
+   if (i == RRA_dependent_rra_idx ||
+       i == RRA_seasonal_smooth_idx ||
+       i == RRA_failure_threshold)
+      read_tag(buf, "value","%lu",
+         &(rrd->rra_def[rra_index].par[i].u_cnt));
+   else
+      read_tag(buf, "value","%lf",
+         &(rrd->rra_def[rra_index].par[i].u_val));
+   }
+}
 
+/* a backwards compatibility routine that will parse the CDP params section
+ * generated by the aberrant patch to 1.0.28. */
+void
+parse_patch1028_CDP_params(char **buf, rrd_t *rrd, int rra_index, int ds_index)
+{
+   int ii;
+   for (ii = 0; ii < MAX_CDP_PAR_EN; ii++)
+   {
+   if (cf_conv(rrd->rra_def[rra_index].cf_nam) == CF_FAILURES ||
+       ii == CDP_unkn_pdp_cnt ||
+       ii == CDP_null_count ||
+       ii == CDP_last_null_count)
+   {
+      read_tag(buf,"value","%lu",
+       &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index) + ds_index].scratch[ii].u_cnt));
+   } else {
+      read_tag(buf,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt*
+       (rra_index) + ds_index].scratch[ii].u_val));
+   }
+   }
+}
 
+void
+parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index)
+{
+   char history[MAX_FAILURES_WINDOW_LEN + 1];
+   char *violations_array;
+   short i;
 
+   /* 28 = MAX_FAILURES_WINDOW_LEN */ 
+   read_tag(buf, "history", "%28[0-1]", history);
+   violations_array = (char*) rrd -> cdp_prep[rrd->stat_head->ds_cnt*(rra_index)
+      + ds_index].scratch;
+   
+   for (i = 0; i < rrd -> rra_def[rra_index].par[RRA_window_len].u_cnt; ++i)
+      violations_array[i] = (history[i] == '1') ? 1 : 0;
 
-
-
-
-
-
-
-
-
-
-
-
-
+}

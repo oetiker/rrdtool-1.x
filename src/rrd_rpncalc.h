@@ -1,0 +1,52 @@
+/****************************************************************************
+ * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ ****************************************************************************
+ * rrd_rpncalc.h  RPN calculator functions
+ ****************************************************************************/
+
+/* WARNING: if new operators are added, they MUST be added after OP_END.
+ * This is because COMPUTE (CDEF) DS store OP nodes by number (name is not
+ * an option due to limited par array size). OP nodes must have the same
+ * numeric values, otherwise the stored numbers will mean something different. */
+enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
+	    OP_UNKN,OP_NOW,OP_TIME,OP_ADD,OP_MOD,OP_SUB,OP_MUL,
+	    OP_DIV,OP_SIN, OP_DUP, OP_EXC, OP_POP,
+	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
+	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
+	    OP_UN,OP_END,OP_LTIME};
+
+typedef struct rpnp_t {
+    enum op_en   op;
+    double val; /* value for a OP_NUMBER */
+    long ptr; /* pointer into the gdes array for OP_VAR */
+    double *data; /* pointer to the current value from OP_VAR DAS*/
+    long ds_cnt;   /* data source count for data pointer */
+    long step; /* time step for OP_VAR das */
+} rpnp_t;
+
+/* a compact representation of rpnp_t for computed data sources */
+typedef struct rpn_cdefds_t {
+	char op;  /* rpn operator type */
+	short val; /* used by OP_NUMBER and OP_VARIABLE */
+} rpn_cdefds_t;
+
+/* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
+#define DS_CDEF_MAX_RPN_NODES 26 
+
+typedef struct rpnstack_t {
+	double *s;
+	long dc_stacksize;
+	long dc_stackblock;
+} rpnstack_t;
+
+void rpnstack_init(rpnstack_t *rpnstack);
+void rpnstack_free(rpnstack_t *rpnstack);
+
+void parseCDEF_DS(char *def, rrd_t *rrd, int ds_idx);
+long lookup_DS(void *rrd_vptr, char *ds_name);
+
+short rpn_compact(rpnp_t *rpnp,rpn_cdefds_t **rpnc,short *count);
+rpnp_t * rpn_expand(rpn_cdefds_t *rpnc);
+void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str);
+rpnp_t * rpn_parse(void *key_hash,char *expr, long (*lookup)(void *,char *));
+short rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, rrd_value_t *output, int output_idx);

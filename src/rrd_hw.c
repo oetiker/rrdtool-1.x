@@ -1,17 +1,18 @@
 /*****************************************************************************
- * RRDtool 1.0.21  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
  *****************************************************************************
- * rrd_hw.c
+ * rrd_hw.c : Support for Holt-Winters Smoothing/ Aberrant Behavior Detection
  *****************************************************************************
  * Initial version by Jake Brutlag, WebTV Networks, 5/1/00
  *****************************************************************************/
 
 #include "rrd_tool.h"
+#include "rrd_hw.h"
 
 /* #define DEBUG */
 
+/* private functions */
 unsigned long MyMod(signed long val, unsigned long mod);
-
 int update_hwpredict(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx, 
                  unsigned long ds_idx, unsigned short CDP_scratch_idx);
 int update_seasonal(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx, 
@@ -352,12 +353,12 @@ update_devseasonal(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx,
 	  fprintf(stderr,"Initialization of seasonal deviation\n");
 #endif
 	  rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-	     abs(prediction - rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val);
+	     fabs(prediction - rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val);
    } else {
 	  /* exponential smoothing update */
 	  rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
 	    (rrd -> rra_def[rra_idx].par[RRA_seasonal_gamma].u_val)*
-	    abs(prediction - rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)
+	    fabs(prediction - rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)
 	    + (1 -  rrd -> rra_def[rra_idx].par[RRA_seasonal_gamma].u_val)*
 	    (rrd -> cdp_prep[cdp_idx].scratch[CDP_last_seasonal_deviation].u_val);
    }
@@ -442,9 +443,6 @@ update_failures(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx,
 
    /* determine if a failure has occurred and update the failure array */
    violation_cnt = violation;
-   /* WARNING: this cast makes XML files non-portable across platforms,
-	* because an array of longs on disk is treated as an array of chars
-	* in memory. */
    violations_array = (char *) ((void *) rrd -> cdp_prep[cdp_idx].scratch);
    for (i = current_rra -> par[RRA_window_len].u_cnt; i > 1; i--)
    {

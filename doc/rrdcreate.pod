@@ -9,7 +9,8 @@ rrdtool create - Set up a new Round Robin Database
 B<rrdtool> B<create> I<filename> 
 S<[B<--start>|B<-b> I<start time>]> 
 S<[B<--step>|B<-s> I<step>]> 
-S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<heartbeat>B<:>I<min>B<:>I<max>]>
+S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
+I<heartbeat>B<:>I<min>B<:>I<max>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
 =head1 DESCRIPTION
@@ -41,7 +42,7 @@ I<rrdfetch> documentation for more ways to specify time.
 Specifies the base interval in seconds with which data will be fed
 into the B<RRD>.
 
-=item B<DS:>I<ds-name>B<:>I<DST>B<:>I<heartbeat>B<:>I<min>B<:>I<max>
+=item B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
 
 A single B<RRD> can accept input from several data sources (B<DS>).
 (e.g. Incoming and Outgoing traffic on a specific communication
@@ -52,8 +53,18 @@ I<ds-name> is the name you will use to reference this particular data
 source from an B<RRD>. A I<ds-name> must be 1 to 19 characters long in
 the characters [a-zA-Z0-9_].
 
-I<DST> defines the Data Source Type. See the section on "How to Measure" below for further insight.
-The Datasource Type must be onw of the following:
+I<DST> defines the Data Source Type. The remaining arguments of a
+data source entry depend upon the data source type. For GAUGE, COUNTER,
+DERIVE, and ABSOLUTE the format for a data source entry is:
+
+B<DS:>I<ds-name>B<:>I<GAUGE | COUNTER | DERIVE | ABSOLUTE>B<:>I<heartbeat>B<:>I<min>B<:>I<max>
+
+For COMPUTE data sources, the format is:
+
+B<DS:>I<ds-name>B<:>I<COMPUTE>B<:>I<rpn-expression>
+
+To decide on a data source type, review the definitions that follow. 
+Consult the section on "HOW TO MEASURE" for further insight.
 
 =over 4
 
@@ -111,6 +122,16 @@ after every read to make sure you have a maximal time available before the
 next overflow. Another usage is for things you count like number of messages
 since the last update.
 
+=item B<COMPUTE>
+
+is for storing the result of a formula applied to other data sources in
+the B<RRD>. This data source is not supplied a value on update, but rather
+its Primary Data Points (PDPs) are computed from the PDPs of the data sources
+according to the rpn-expression that defines the formula. Consolidation 
+functions are then applied normally to the PDPs of the COMPUTE data source
+(that is the rpn-expression is only applied to generate PDPs). In database
+software, these are referred to as "virtual" or "computed" columns.
+
 =back
 
 I<heartbeat> defines the maximum number of seconds that may pass
@@ -129,6 +150,16 @@ I<If information on minimal/maximal expected values is available,
 always set the min and/or max properties. This will help RRDtool in
 doing a simple sanity check on the data supplied when running update.>
 
+I<rpn-expression> defines the formula used to compute the PDPs of a COMPUTE
+data source from other data sources in the same <RRD>. It is similar to defining
+a B<CDEF> argument for the graph command. Please refer to that manual page
+for a list and description of RPN operations supported. For
+COMPUTE data sources, the following RPN operations are not supported: PREV,
+TIME, and LTIME. In addition, in defining the RPN expression, the COMPUTE
+data source may only refer to the names of data source listed previously
+in the create command. This is similar to the restriction that B<CDEF>s must
+refer only to B<DEF>s and B<CDEF>s previously defined in the same graph command.
+
 =item B<RRA:>I<CF>B<:>I<cf arguments>
   
 The purpose of an B<RRD> is to store data in the round robin archives
@@ -141,7 +172,7 @@ the length defined with the B<-s> option becoming a I<primary data point>.
 The data is also processed with the consolidation function (I<CF>)
 of the archive. There are several consolidation functions that consolidate
 primary data points via an aggregate function: B<AVERAGE>, B<MIN>, B<MAX>, B<LAST>.
-The format of B<RRA> line for these consolidation function is:
+The format of B<RRA> line for these consolidation functions is:
 
 B<RRA:>I<AVERAGE | MIN | MAX | LAST>B<:>I<xff>B<:>I<steps>B<:>I<rows>
 
@@ -438,6 +469,29 @@ RRA:FAILURES:288:7:9:5>
 
 Of course, explicit creation need not replicate implicit create, a number of arguments 
 could be changed.
+
+=head1 EXAMPLE 3
+
+C<rrdtool create proxy.rrd --step 300 
+DS:TotalRequests:DERIVE:1800:0:U
+DS:AccumDuration:DERIVE:1800:0:U
+DS:AvgReqDuration:COMPUTE:AccumDuration,TotalRequests,0,EQ,1,TotalRequests,IF,/
+RRA:AVERAGE:0.5:1:2016>
+
+This example is monitoring the average request duration during each 300 sec 
+interval for requests processed by a web proxy during the interval.
+In this case, the proxy exposes two counters, the number of requests
+processed since boot and the total cumulative duration of all processed
+requests. Clearly these counters both have some rollover point, but using the
+DERIVE data source also handles the reset that occurs when the web proxy is
+stopped and restarted.
+
+In the B<RRD>, the first data source stores the requests per second rate
+during the interval. The second data source stores the total duration of all
+requests processed during the interval divided by 300. The COMPUTE data source
+divides each PDP of the AccumDuration by the corresponding PDP of
+TotalRequests and stores the average request duration. The remainder of the
+RPN expression handles the divide by zero case.
 
 =head1 AUTHOR
 

@@ -13,6 +13,7 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
+#include "rrd_rpncalc.h"
 
 #define SmallFont gdLucidaNormal10
 #define LargeFont gdLucidaBold12
@@ -37,25 +38,7 @@ enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
 enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE1,
 	    GF_LINE2,GF_LINE3,GF_AREA,GF_STACK,GF_TICK,GF_DEF, GF_CDEF};
 
-enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
-	    OP_UNKN,OP_NOW,OP_TIME,OP_LTIME,OP_ADD,OP_MOD,
-            OP_SUB,OP_MUL,
-	    OP_DIV,OP_SIN, OP_DUP, OP_EXC, OP_POP,
-	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
-	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
-	    OP_UN,OP_END};
-
 enum if_en {IF_GIF=0,IF_PNG=1};
-
-typedef struct rpnp_t {
-    enum op_en   op;
-    double val; /* value for a OP_NUMBER */
-    long ptr; /* pointer into the gdes array for OP_VAR */
-    double *data; /* pointer to the current value from OP_VAR DAS*/
-    long ds_cnt;   /* data source count for data pointer */
-    long step; /* time step for OP_VAR das */
-} rpnp_t;
- 
 
 typedef struct col_trip_t {
     int red; /* red = -1 is no color */
@@ -247,13 +230,13 @@ void expand_range(image_desc_t *);
 void reduce_data( enum cf_en,  unsigned long,  time_t *, time_t *,  unsigned long *,  unsigned long *,  rrd_value_t **);
 int data_fetch( image_desc_t *);
 long find_var(image_desc_t *, char *);
+long find_var_wrapper(void *arg1, char *key);
 long lcd(long *);
 int data_calc( image_desc_t *);
 int data_proc( image_desc_t *);
 time_t find_first_time( time_t,  enum tmt_en,  long);
 time_t find_next_time( time_t,  enum tmt_en,  long);
 void gator( gdImagePtr, int, int);
-int tzoffset(time_t);
 int print_calc(image_desc_t *, char ***);
 int leg_place(image_desc_t *);
 int horizontal_grid(gdImagePtr, image_desc_t *);
@@ -268,7 +251,6 @@ int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
 int rrd_graph(int, char **, char ***, int *, int *);
 int bad_format(char *);
-rpnp_t * str2rpn(image_desc_t *,char *);
 
 /* translate time values into x coordinates */   
 /*#define xtr(x) (int)((double)im->xorigin \
@@ -688,18 +670,18 @@ reduce_data(
 		if (isnan(newval)) newval = srcptr[i*(*ds_cnt)+col];
 		else {
 		    switch (cf) {
-                        case CF_HWPREDICT:
-                        case CF_DEVSEASONAL:
-                        case CF_DEVPREDICT:
-                        case CF_SEASONAL:
+			case CF_HWPREDICT:
+			case CF_DEVSEASONAL:
+			case CF_DEVPREDICT:
+			case CF_SEASONAL:
 			case CF_AVERAGE:
 			    newval += srcptr[i*(*ds_cnt)+col];
 			    break;
 			case CF_MINIMUM:
 			    newval = min (newval,srcptr[i*(*ds_cnt)+col]);
 			    break;
-                        case CF_FAILURES: 
-                        /* an interval contains a failure if any subintervals contained a failure */
+			case CF_FAILURES: 
+			/* an interval contains a failure if any subintervals contained a failure */
 			case CF_MAXIMUM:
 			    newval = max (newval,srcptr[i*(*ds_cnt)+col]);
 			    break;
@@ -711,15 +693,15 @@ reduce_data(
 	    }
 	    if (validval == 0){newval = DNAN;} else{
 		switch (cf) {
-                    case CF_HWPREDICT:
-                    case CF_DEVSEASONAL:
-                    case CF_DEVPREDICT:
-                    case CF_SEASONAL:
-                    case CF_AVERAGE:                
-                        newval /= validval;
+		    case CF_HWPREDICT:
+    	    case CF_DEVSEASONAL:
+		    case CF_DEVPREDICT:
+		    case CF_SEASONAL:
+		    case CF_AVERAGE:                
+		       newval /= validval;
 			break;
 		    case CF_MINIMUM:
-                    case CF_FAILURES:
+		    case CF_FAILURES:
  		    case CF_MAXIMUM:
 		    case CF_LAST:
 			break;
@@ -822,6 +804,12 @@ data_fetch( image_desc_t *im )
  * CDEF stuff 
  *************************************************************/
 
+long
+find_var_wrapper(void *arg1, char *key)
+{
+   return find_var((image_desc_t *) arg1, key);
+}
+
 /* find gdes containing var*/
 long
 find_var(image_desc_t *im, char *key){
@@ -853,144 +841,18 @@ lcd(long *num){
       return num[i];
 }
 
-
-/* convert string to rpnp */
-rpnp_t * 
-str2rpn(image_desc_t *im,char *expr){
-    int pos=0;
-    long steps=-1;    
-    rpnp_t  *rpnp;
-    char vname[30];
-
-    rpnp=NULL;
-
-    while(*expr){
-	if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2)* 
-				       sizeof(rpnp_t)))==NULL){
-	    return NULL;
-	}
-
-	else if((sscanf(expr,"%lf%n",&rpnp[steps].val,&pos) == 1) 
-	        && (expr[pos] == ',')){
- 	    rpnp[steps].op = OP_NUMBER;
-	    expr+=pos;
-	} 
-	
-#define match_op(VV,VVV) \
-        else if (strncmp(expr, #VVV, strlen(#VVV))==0 && \
-                (expr[strlen(#VVV)] == ',' || expr[strlen(#VVV)] == '\0') ){ \
-	    rpnp[steps].op = VV; \
-	    expr+=strlen(#VVV); \
-	}
-
-	match_op(OP_ADD,+)
-	match_op(OP_SUB,-)
-	match_op(OP_MUL,*)
-	match_op(OP_DIV,/)
-	match_op(OP_MOD,%)
-	match_op(OP_SIN,SIN)
-	match_op(OP_COS,COS)
-	match_op(OP_LOG,LOG)
-	match_op(OP_FLOOR,FLOOR)
-	match_op(OP_CEIL,CEIL)
-	match_op(OP_EXP,EXP)
-	match_op(OP_DUP,DUP)
-	match_op(OP_EXC,EXC)
-	match_op(OP_POP,POP)
-	match_op(OP_LT,LT)
-	match_op(OP_LE,LE)
-	match_op(OP_GT,GT)
-	match_op(OP_GE,GE)
-	match_op(OP_EQ,EQ)
-	match_op(OP_IF,IF)
-	match_op(OP_MIN,MIN)
-	match_op(OP_MAX,MAX)
-	match_op(OP_LIMIT,LIMIT)
-	  /* order is important here ! .. match longest first */
-	match_op(OP_UNKN,UNKN)
-	match_op(OP_UN,UN)
-	match_op(OP_NEGINF,NEGINF)
-	match_op(OP_PREV,PREV)
-	match_op(OP_INF,INF)
-	match_op(OP_NOW,NOW)
-	match_op(OP_LTIME,LTIME)
-	match_op(OP_TIME,TIME)
-
-
-#undef match_op
-
-
-	else if ((sscanf(expr,DEF_NAM_FMT "%n",
-			 vname,&pos) == 1) 
-		 && ((rpnp[steps].ptr = find_var(im,vname)) != -1)){
-	    rpnp[steps].op = OP_VARIABLE;
-	    expr+=pos;
-	}	   
-
-	else {
-	    free(rpnp);
-	    return NULL;
-	}
-	if (*expr == 0)
-	  break;
-	if (*expr == ',')
-	    expr++;
-	else {
-	    free(rpnp);
-	    return NULL;
-	}  
-    }
-    rpnp[steps+1].op = OP_END;
-    return rpnp;
-}
-
-/* figure out what the local timezone offset for any point in
-   time was. Return it in seconds */
-
-int
-tzoffset( time_t now ){
-  int gm_sec, gm_min, gm_hour, gm_yday, gm_year,
-    l_sec, l_min, l_hour, l_yday, l_year;
-  struct tm *t;
-  int off;
-  t = gmtime(&now);
-  gm_sec = t->tm_sec;
-  gm_min = t->tm_min;
-  gm_hour = t->tm_hour;
-  gm_yday = t->tm_yday;
-  gm_year = t->tm_year;
-  t = localtime(&now);
-  l_sec = t->tm_sec;
-  l_min = t->tm_min;
-  l_hour = t->tm_hour;
-  l_yday = t->tm_yday;
-  l_year = t->tm_year;
-  off = (l_sec-gm_sec)+(l_min-gm_min)*60+(l_hour-gm_hour)*3600; 
-  if ( l_yday > gm_yday || l_year > gm_year){
-        off += 24*3600;
-  } else if ( l_yday < gm_yday || l_year < gm_year){
-        off -= 24*3600;
-  }
-
-  return off;
-}
-
-    
-
-#define dc_stackblock 100
-
 /* run the rpn calculator on all the CDEF arguments */
-
 int
 data_calc( image_desc_t *im){
 
-    int       gdi,rpi;
+    int       gdi;
     int       dataidx;
-    long      *steparray;
+    long      *steparray, rpi;
     int       stepcnt;
     time_t    now;
-    double    *stack = NULL;
-    long      dc_stacksize = 0;
+	rpnstack_t rpnstack;
+
+	rpnstack_init(&rpnstack);
 
     for (gdi=0;gdi<im->gdes_c;gdi++){
 	/* only GF_CDEF elements are of interest */
@@ -1006,7 +868,7 @@ data_calc( image_desc_t *im){
 	dataidx=-1;
 
 	/* find the variables in the expression. And calc the lowest
-           common denominator of all step sizes of the data sources involved.
+	   common denominator of all step sizes of the data sources involved.
 	   this will be the step size for the cdef created data source*/
 
 	for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
@@ -1014,7 +876,7 @@ data_calc( image_desc_t *im){
 		long ptr = im->gdes[gdi].rpnp[rpi].ptr;
 		if ((steparray = rrd_realloc(steparray, (++stepcnt+1)*sizeof(*steparray)))==NULL){
 		  rrd_set_error("realloc steparray");
-		  free(stack);
+		  rpnstack_free(&rpnstack);
 		  return -1;
 		};
 	
@@ -1036,15 +898,18 @@ data_calc( image_desc_t *im){
 		   data for variable, further save step size and data source count
 		   of this rra*/ 
 		im->gdes[gdi].rpnp[rpi].data = 
-		    im->gdes[ptr].data + im->gdes[ptr].ds;
+		    im->gdes[ptr].data + im->gdes[ptr].ds; 
 		im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
 		im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
+		/* backoff the *.data ptr; this is done so rpncalc() function
+		 * doesn't have to treat the first case differently */
+		im->gdes[gdi].rpnp[rpi].data -= im->gdes[ptr].ds_cnt;
 	    }
 
 	}
 	if(steparray == NULL){
 	    rrd_set_error("rpn expressions without variables are not supported");
-	    free(stack);
+		rpnstack_free(&rpnstack);
 	    return -1;    
 	}
 	steparray[stepcnt]=0;
@@ -1061,7 +926,7 @@ data_calc( image_desc_t *im){
 				    / im->gdes[gdi].step +1)
 				    * sizeof(double)))==NULL){
 	    rrd_set_error("malloc im->gdes[gdi].data");
-	    free(stack);
+		rpnstack_free(&rpnstack);
 	    return -1;
 	}
 	
@@ -1069,319 +934,25 @@ data_calc( image_desc_t *im){
 	for (now = im->gdes[gdi].start;
 	     now<=im->gdes[gdi].end;
 	     now += im->gdes[gdi].step){
-	    long       stptr=-1;
-	    /* process each op from the rpn in turn */
-	    for (rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-		if (stptr +5 > dc_stacksize){
-		    dc_stacksize += dc_stackblock;		
-		    stack = rrd_realloc(stack,dc_stacksize*sizeof(*stack));
-		    if (stack==NULL){
-			rrd_set_error("RPN stack overflow");
-			return -1;
-		    }
-		}
-		switch (im->gdes[gdi].rpnp[rpi].op){
-		case OP_NUMBER:
-		    stack[++stptr] = im->gdes[gdi].rpnp[rpi].val;
-		    break;
-		case OP_VARIABLE:
-                    /* make sure we pull the correct value from the *.data array */
-		    /* adjust the pointer into the array acordingly. */
-		    if(now >  im->gdes[gdi].start &&
-		       now % im->gdes[gdi].rpnp[rpi].step == 0){
-			im->gdes[gdi].rpnp[rpi].data +=
-			    im->gdes[gdi].rpnp[rpi].ds_cnt;
-		    }
-		    stack[++stptr] =  *im->gdes[gdi].rpnp[rpi].data;
-		    break;
-		case OP_PREV:
-		    if (dataidx <= 0) {
-                       stack[++stptr] = DNAN;
-                    } else {
-                       stack[++stptr] = im->gdes[gdi].data[dataidx];
-                    }
-		    break;
-		case OP_UNKN:
-		    stack[++stptr] = DNAN; 
-		    break;
-		case OP_INF:
-		    stack[++stptr] = DINF; 
-		    break;
-		case OP_NEGINF:
-		    stack[++stptr] = -DINF; 
-		    break;
-		case OP_NOW:
-		    stack[++stptr] = (double)time(NULL);
-		    break;
-		case OP_TIME:
-		    stack[++stptr] = (double)now;
-		    break;
-		case OP_LTIME:
-		    stack[++stptr] = (double)tzoffset(now)+(double)now;
-		    break;
-		case OP_ADD:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-1] = stack[stptr-1] + stack[stptr];
-		    stptr--;
-		    break;
-		case OP_SUB:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-1] = stack[stptr-1] - stack[stptr];
-		    stptr--;
-		    break;
-		case OP_MUL:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-1] = stack[stptr-1] * stack[stptr];
-		    stptr--;
-		    break;
-		case OP_DIV:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-1] = stack[stptr-1] / stack[stptr];
-		    stptr--;
-		    break;
-		case OP_MOD:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-1] = fmod(stack[stptr-1],stack[stptr]);
-		    stptr--;
-		    break;
-		case OP_SIN:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = sin(stack[stptr]);
-		    break;
-		case OP_COS:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = cos(stack[stptr]);
-		    break;
-		case OP_CEIL:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = ceil(stack[stptr]);
-		    break;
-		case OP_FLOOR:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = floor(stack[stptr]);
-		    break;
-		case OP_LOG:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = log(stack[stptr]);
-		    break;
-		case OP_DUP:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr+1] = stack[stptr];
-		    stptr++;
-		    break;
-		case OP_POP:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stptr--;
-		    break;
-		case OP_EXC:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    } else {
-		      double dummy;
-		      dummy = stack[stptr] ;
-		      stack[stptr] = stack[stptr-1];
-		      stack[stptr-1] = dummy;
-		    }
-		    break;
-		case OP_EXP:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = exp(stack[stptr]);
-		    break;
-		case OP_LT:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1]) || isnan(stack[stptr]))
-		        stack[stptr-1] = 0.0;
-		    else
-			stack[stptr-1] = stack[stptr-1] < stack[stptr] ? 1.0 : 0.0;
-		    stptr--;
-		    break;
-		case OP_LE:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1]) || isnan(stack[stptr]))
-		        stack[stptr-1] = 0.0;
-		    else
-		        stack[stptr-1] = stack[stptr-1] <= stack[stptr] ? 1.0 : 0.0;
-		    stptr--;
-		    break;
-		case OP_GT:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1]) || isnan(stack[stptr]))
-		        stack[stptr-1] = 0.0;
-		    else
-		        stack[stptr-1] = stack[stptr-1] > stack[stptr] ? 1.0 : 0.0;
-		    stptr--;
-		    break;
-		case OP_GE:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1]) || isnan(stack[stptr]))
-		        stack[stptr-1] = 0.0;
-		    else
-		        stack[stptr-1] = stack[stptr-1] >= stack[stptr] ? 1.0 : 0.0;
-		    stptr--;
-		    break;
-		case OP_EQ:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1]) || isnan(stack[stptr]))
-		        stack[stptr-1] = 0.0;
-		    else
-		        stack[stptr-1] = stack[stptr-1] == stack[stptr] ? 1.0 : 0.0;
-		    stptr--;
-		    break;
-		case OP_IF:
-		    if(stptr<2){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr-2] = stack[stptr-2] != 0.0 ? stack[stptr-1] : stack[stptr];
-		    stptr--;
-		    stptr--;
-		    break;
-		case OP_MIN:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1])) 
-			;
-		    else if (isnan(stack[stptr]))
-		        stack[stptr-1] = stack[stptr];
-		    else if (stack[stptr-1] > stack[stptr])
-		        stack[stptr-1] = stack[stptr];
-		    stptr--;
-		    break;
-		case OP_MAX:
-		    if(stptr<1){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-1])) 
-			;
-		    else if (isnan(stack[stptr]))
-		        stack[stptr-1] = stack[stptr];
-		    else if (stack[stptr-1] < stack[stptr])
-		        stack[stptr-1] = stack[stptr];
-		    stptr--;
-		    break;
-		case OP_LIMIT:
-		    if(stptr<2){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    if (isnan(stack[stptr-2])) 
-			;
-		    else if (isnan(stack[stptr-1]))
-		        stack[stptr-2] = stack[stptr-1];
-		    else if (isnan(stack[stptr]))
-		        stack[stptr-2] = stack[stptr];
-		    else if (stack[stptr-2] < stack[stptr-1])
-		        stack[stptr-2] = DNAN;
-		    else if (stack[stptr-2] > stack[stptr])
-		        stack[stptr-2] = DNAN;
-		    stptr-=2;
-		    break;
-		case OP_UN:
-		    if(stptr<0){
-			rrd_set_error("RPN stack underflow");
-			free(stack);
-			return -1;
-		    }
-		    stack[stptr] = isnan(stack[stptr]) ? 1.0 : 0.0;
-		    break;
-		case OP_END:
-		    break;
-		}
-	    }
-	    if(stptr!=0){
-		rrd_set_error("RPN final stack size != 1");
-		free(stack);
-		return -1;
-	    }
-	    im->gdes[gdi].data[++dataidx] = stack[0];
-	}
-    }
-    free(stack);
+		rpnp_t      *rpnp = im -> gdes[gdi].rpnp;
+
+		/* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
+		 * in this case we are advancing by timesteps;
+		 * we use the fact that time_t is a synonym for long
+		 */
+		if (rpn_calc(rpnp,&rpnstack,(long) now, 
+			im->gdes[gdi].data,++dataidx) == -1) 
+		{
+		   /* rpn_calc sets the error string */
+		   rpnstack_free(&rpnstack); 
+		   return -1;
+		} 
+
+    } /* enumerate over time steps within a CDEF */
+	} /* enumerate over CDEFs */
+    rpnstack_free(&rpnstack);
     return 0;
 }
-
-#undef dc_stacksize
 
 /* massage data so, that we get one value for each x coordinate in the graph */
 int
@@ -3322,7 +2893,8 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
 			      im.gdes[im.gdes_c-1].vname);
 		return -1; 
 	    }	   
-	    if((im.gdes[im.gdes_c-1].rpnp = str2rpn(&im,rpnex))== NULL){
+	    if((im.gdes[im.gdes_c-1].rpnp = 
+		   rpn_parse((void*)&im,rpnex,&find_var_wrapper))== NULL){
 		rrd_set_error("invalid rpn expression '%s'", rpnex);
 		im_free(&im);		
 		return -1;

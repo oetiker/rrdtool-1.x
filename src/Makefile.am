@@ -23,7 +23,7 @@ RRD_C_FILES =		\
 	gifsize.c	\
 	parsetime.c	\
 	hash_32.c	\
-        rrd_hw.c	\
+	rrd_hw.c	\
 	pngsize.c	\
 	rrd_create.c	\
 	rrd_diff.c	\
@@ -37,9 +37,10 @@ RRD_C_FILES =		\
 	rrd_open.c	\
 	rrd_resize.c	\
 	rrd_restore.c	\
+	rrd_rpncalc.c \
 	rrd_tune.c	\
 	rrd_update.c	\
-	getopt.h ntconfig.h parsetime.h rrd_format.h rrd_tool.h rrd.h
+	getopt.h ntconfig.h parsetime.h rrd_format.h rrd_tool.h rrd.h rrd_hw.h rrd_rpncalc.h
 
 # Build two libraries.  One is a public one that gets installed in
 # $prefix/lib.  Libtool does not create an archive of the PIC compiled

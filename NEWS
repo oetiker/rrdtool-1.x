@@ -1,25 +1,33 @@
 RRDTOOL NEWS
 ============
 
-x
 
 In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
-2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch>
-  Integrated complete rewrite of rrdgraph documentation by
-  Alex van den Bogaerdt <alex@slot.hollandcasino.nl>. THis also contains
-  info on his planned changes to the rrdgraph module
+2001/03/10 Jake Brutlag <jakeb@corp.webtv.net>
+  Support for COMPUTE data sources (CDEF data sources). Removes the RPN
+  parser and calculator from rrd_graph and puts then in a new file,
+  rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
+  clean-up of aberrant behavior stuff, including a bug fix. 
+  Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
+ 
+  
+2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch> 
+  Integrated complete rewrite
+  of rrdgraph documentation by Alex van den Bogaerdt
+  <alex@slot.hollandcasino.nl>. This also contains info on his planned
+  changes to the rrdgraph module
 
 2001/03/02 Tobias Oetiker <oetiker@ee.ethz.ch>
   Added Aberrant Patch from Jake Brutlag <jakeb@microsoft.com>
   From now one, new rrd files use version tag 0002. They can
-  NOT be read by the old 1.0.x rrdtools
-
-  Jack:
+  NOT be read by the old 1.0.x rrdtools. 
+ 
+  Jake:
   Aberrant Behavior Detection support. A brief overview added to
   rrdtool.pod.  Major updates to rrd_update.c, rrd_create.c. Minor update to
   other core files.  Updated documentation: rrdcreate.pod, rrdgraph.pod,
-  rrdtune.pod.  This is backwards compatible!  See
-  http://cricket.sourceforge.net/aberrant/rrd_hw.htm
-
+  rrdtune.pod.  This is backwards compatible (i.e. new tool can read and will
+  leave the binary header unchanged for old files).
+  See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
