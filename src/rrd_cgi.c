@@ -243,7 +243,7 @@ char* rrdgoodfor(long argc, char **args){
  * */
 #define MAX_STRFTIME_SIZE 256
 char* printstrftime(long argc, char **args){
-	struct	time_value start_tv, end_tv;
+	struct	rrd_time_value start_tv, end_tv;
 	char    *parsetime_error = NULL;
 	char	formatted[MAX_STRFTIME_SIZE];
 	struct tm *the_tm;

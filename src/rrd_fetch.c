@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.7  2003/11/11 19:46:21  oetiker
+ * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
+ *
  * Revision 1.6  2003/01/16 23:27:54  oetiker
  * fix border condition in rra selection of rrd_fetch
  * -- Stanislav Sinyagin <ssinyagin@yahoo.com>
@@ -67,7 +70,7 @@ rrd_fetch(int argc,
     time_t   start_tmp=0, end_tmp=0;
     enum     cf_en cf_idx;
 
-    struct time_value start_tv, end_tv;
+    struct rrd_time_value start_tv, end_tv;
     char     *parsetime_error = NULL;
 
     /* init start and end time */

@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2003/11/11 19:46:21  oetiker
+ * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
+ *
  * Revision 1.5  2003/04/25 18:35:08  jake
  * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
  *
@@ -82,7 +85,7 @@ typedef enum {
 
 #define TIME_OK NULL
 
-struct time_value {
+struct rrd_time_value {
   timetype type;
   long offset;
   struct tm tm;
@@ -98,10 +101,10 @@ struct rrd_context {
 /* returns the current per-thread rrd_context */
 struct rrd_context *rrd_get_context(void);
 
-char *parsetime(char *spec, struct time_value *ptv);
+char *parsetime(char *spec, struct rrd_time_value *ptv);
 /* END parsetime.h */
 
-int proc_start_end (struct time_value *,  struct time_value *, time_t *, time_t *);
+int proc_start_end (struct rrd_time_value *,  struct rrd_time_value *, time_t *, time_t *);
 
 /* HELPER FUNCTIONS */
 void rrd_set_error(char *,...);

@@ -19,7 +19,7 @@ rrd_create(int argc, char **argv)
 {
     time_t            last_up = time(NULL)-10;
     unsigned long     pdp_step = 300;
-    struct time_value last_up_tv;
+    struct rrd_time_value last_up_tv;
     char *parsetime_error = NULL;
     long              long_tmp;
     int               rc;

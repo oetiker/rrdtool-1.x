@@ -287,7 +287,7 @@ rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *
     int			i=0;
     char 		command[6]; /* step, start, end */
     char		tmpstr[256];
-    struct time_value	start_tv,end_tv;
+    struct rrd_time_value	start_tv,end_tv;
     time_t		start_tmp=0,end_tmp=0;
     char		*parsetime_error=NULL;
 

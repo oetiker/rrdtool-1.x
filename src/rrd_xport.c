@@ -48,7 +48,7 @@ rrd_xport(int argc, char **argv, int *xsize,
     time_t	   start_tmp=0,end_tmp=0;
     char           symname[100];
     long           scancount;
-    struct time_value start_tv, end_tv;
+    struct rrd_time_value start_tv, end_tv;
     char           *parsetime_error = NULL;
 
     rrd_graph_init(&im);
