@@ -1072,6 +1072,11 @@ data_proc( image_desc_t *im ){
 	else
 	    im->maxval = maxval;
     }
+    /* make sure min is smaller than max */
+    if (im->minval > im->maxval) {
+            im->minval = 0.99 * im->maxval;
+    }
+                      
     /* make sure min and max are not equal */
     if (im->minval == im->maxval) {
 	im->maxval *= 1.01; 
