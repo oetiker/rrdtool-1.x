@@ -167,7 +167,7 @@ else
 	SO_EXT=`$PERL -e 'use Config; if (defined $Config{so} and $Config{so} ne 'a') {print "$Config{so}\n"} else {print "so\n"};'`
 	AC_MSG_RESULT($SO_EXT)
         AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
-        PROBLEMCC=`$PERL -e 'use Config; map {if (-x "$_/$Config{cc}"){exit 0}} split /:/, $ENV{PATH};print $Config{cc}'`
+        PROBLEMCC=`$PERL -e 'use Config; ($cc = $Config{cc}) =~ s/\s.*//; exit 0 if -x $cc; map {if (-x "$_/$cc"){exit 0}} split /:/, $ENV{PATH};print $Config{cc}'`
         if test x$PROBLEMCC != x; then
                 AC_MSG_RESULT(no)
                 echo Could not find the Compiler: '"'$PROBLEMCC'"'
