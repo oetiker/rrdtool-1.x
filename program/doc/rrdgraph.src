@@ -180,7 +180,9 @@ Z<>
 
 =item X-Axis
 
-B<[-x|--x-grid E<lt>I<GTMC<:>GSTC<:>MTMC<:>MSTC<:>LTMC<:>LSTC<:>LPRC<:>LFM>E<gt>|C<none>]>
+B<[-x|--x-grid E<lt>I<GTMC<:>GSTC<:>MTMC<:>MSTC<:>LTMC<:>LSTC<:>LPRC<:>LFM>E<gt>]>
+
+B<[-x|--x-grid C<none>]>
 
 The x-axis label is quite complex to configure, if you don't have
 very special needs it is probably best to rely on the autoconfiguration
@@ -215,7 +217,9 @@ Z<>
 
 =item Y-Axis
 
-B<[-y|--y-grid I<E<lt>grid stepE<gt>:E<lt>label factorE<gt>>|C<none>]>
+B<[-y|--y-grid I<E<lt>grid stepE<gt>:E<lt>label factorE<gt>>]>
+
+B<[-y|--y-grid C<none>]>
 
 Y-axis grid lines appear at each I<grid step> interval.  Labels are
 placed every I<label factor> lines.  You can specify C<-y none> to
@@ -269,7 +273,7 @@ would look like this:
 
     --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
 
-B<[-c|--color I<COLORTAGBB<#>I<rrggbb>B<[>I<aa>B<<]>
+B<[-c|--color I<COLORTAG>#I<rrggbb>[I<aa>]]>
 
 Override the default colors for the standard elements of the graph.
 The I<COLORTAG> is one of C<BACK> ground, C<CANVAS>, C<SHADEA> for the
@@ -277,15 +281,17 @@ left and top border, C<SHADEB> for the right and bottom border, C<GRID>,
 C<MGRID> for the major grid, C<FONT>, C<FRAME> and axis, C<ARROW>.
 Each color is composed out of three hexadecimal numbers specifying
 its color component (00 is off, FF is maximum) of red, green and blue.
+Optionally you may add another hexademimal number specifying the
+transparency (FF is solid).
 You may set this option several times to alter multiple defaults.
 
 A green arrow is made by: C<--color ARROW:00FF00>
 
-B<--zoom> I<factor>
+B<[--zoom I<factor>]>
 
-Zoom the graphics by the given amount ... The factor must be > 0
+Zoom the graphics by the given amount ... The factor must be E<gt> 0
 
-B<[-n|--font I<FONTTAG>B<:>I<size>B<:>I<font>
+B<[-n|--font I<FONTTAG>B<:>I<size>B<:>I<font>]>
 
 Lets you customize which font to use for the various text elements on the
 rrd graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
