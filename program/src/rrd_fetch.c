@@ -5,6 +5,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2002/06/23 22:29:40  alex
+ * Added "step=1800" and such to "DEF"
+ * Cleaned some of the signed vs. unsigned problems
+ *
  * Revision 1.4  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -134,7 +138,7 @@ rrd_fetch(int argc,
 	return -1;
     }
     
-    if ((cf_idx=cf_conv(argv[optind+1])) == -1 ){
+    if ((int)(cf_idx=cf_conv(argv[optind+1])) == -1 ){
 	return -1;
     }
 
@@ -187,7 +191,7 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
 	return(-1);
     }
     
-    for(i=0;i<rrd.stat_head->ds_cnt;i++){
+    for(i=0;(unsigned long)i<rrd.stat_head->ds_cnt;i++){
 	if ((((*ds_namv)[i]) = malloc(sizeof(char) * DS_NAM_SIZE))==NULL){
 	    rrd_set_error("malloc fetch ds_namv entry");
 	    rrd_free(&rrd);
@@ -201,7 +205,7 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
     }
     
     /* find the rra which best matches the requirements */
-    for(i=0;i<rrd.stat_head->rra_cnt;i++){
+    for(i=0;(unsigned)i<rrd.stat_head->rra_cnt;i++){
 	if(cf_conv(rrd.rra_def[i].cf_nam) == cf_idx){
 	    
 	    cal_end = (rrd.live_head->last_up - (rrd.live_head->last_up 
@@ -291,7 +295,7 @@ fprintf(stderr,"partial match, not best\n");
     *ds_cnt =   rrd.stat_head->ds_cnt; 
     if (((*data) = malloc(*ds_cnt * rows * sizeof(rrd_value_t)))==NULL){
 	rrd_set_error("malloc fetch data area");
-	for (i=0;i<*ds_cnt;i++)
+	for (i=0;(unsigned long)i<*ds_cnt;i++)
 	      free((*ds_namv)[i]);
 	free(*ds_namv);
 	rrd_free(&rrd);
@@ -333,7 +337,7 @@ fprintf(stderr,"partial match, not best\n");
 		      * *ds_cnt
 		      * sizeof(rrd_value_t))),SEEK_SET) != 0){
 	rrd_set_error("seek error in RRA");
-	for (i=0;i<*ds_cnt;i++)
+	for (i=0;(unsigned)i<*ds_cnt;i++)
 	      free((*ds_namv)[i]);
 	free(*ds_namv);
 	rrd_free(&rrd);
@@ -350,14 +354,14 @@ fprintf(stderr,"partial match, not best\n");
     /* step trough the array */
 
     for (i=start_offset;
-	 i<(long)(rrd.rra_def[chosen_rra].row_cnt-end_offset);
+	 i< (signed)rrd.rra_def[chosen_rra].row_cnt - end_offset;
 	 i++){
 	/* no valid data yet */
 	if (i<0) {
 #ifdef DEBUG
 	    fprintf(stderr,"pre fetch %li -- ",i);
 #endif
-	    for(ii=0;ii<*ds_cnt;ii++){
+	    for(ii=0;(unsigned)ii<*ds_cnt;ii++){
 		*(data_ptr++) = DNAN;
 #ifdef DEBUG
 		fprintf(stderr,"%10.2f ",*(data_ptr-1));
@@ -365,11 +369,11 @@ fprintf(stderr,"partial match, not best\n");
 	    }
 	} 
 	/* past the valid data area */
-	else if (i>=rrd.rra_def[chosen_rra].row_cnt) {
+	else if (i >= (signed)rrd.rra_def[chosen_rra].row_cnt) {
 #ifdef DEBUG
 	    fprintf(stderr,"post fetch %li -- ",i);
 #endif
-	    for(ii=0;ii<*ds_cnt;ii++){
+	    for(ii=0;(unsigned)ii<*ds_cnt;ii++){
 		*(data_ptr++) = DNAN;
 #ifdef DEBUG
 		fprintf(stderr,"%10.2f ",*(data_ptr-1));
@@ -378,13 +382,13 @@ fprintf(stderr,"partial match, not best\n");
 	} else {
 	    /* OK we are inside the valid area but the pointer has to 
 	     * be wrapped*/
-	    if (rra_pointer >= rrd.rra_def[chosen_rra].row_cnt) {
+	    if (rra_pointer >= (signed)rrd.rra_def[chosen_rra].row_cnt) {
 		rra_pointer -= rrd.rra_def[chosen_rra].row_cnt;
 		if(fseek(in_file,(rra_base+rra_pointer
 			       * *ds_cnt
 			       * sizeof(rrd_value_t)),SEEK_SET) != 0){
 		    rrd_set_error("wrap seek in RRA did fail");
-		    for (ii=0;ii<*ds_cnt;ii++)
+		    for (ii=0;(unsigned)ii<*ds_cnt;ii++)
 			free((*ds_namv)[ii]);
 		    free(*ds_namv);
 		    rrd_free(&rrd);
@@ -402,7 +406,7 @@ fprintf(stderr,"partial match, not best\n");
 		     sizeof(rrd_value_t),
 		     *ds_cnt,in_file) != rrd.stat_head->ds_cnt){
 		rrd_set_error("fetching cdp from rra");
-		for (ii=0;ii<*ds_cnt;ii++)
+		for (ii=0;(unsigned)ii<*ds_cnt;ii++)
 		    free((*ds_namv)[ii]);
 		free(*ds_namv);
 		rrd_free(&rrd);

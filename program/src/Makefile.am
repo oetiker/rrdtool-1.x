@@ -63,6 +63,7 @@ RRD_C_FILES =		\
 	rrd_tune.c	\
 	rrd_update.c	\
 	rrd_xport.c	\
+	rrd_nan_inf.c	\
 	rrd_gfx.c rrd_gfx.h \
 	rrd_afm.c rrd_afm_data.c \
 	getopt.h ntconfig.h parsetime.h \
