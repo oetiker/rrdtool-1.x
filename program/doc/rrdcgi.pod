@@ -30,7 +30,7 @@ Assume that rrdcgi is being run as a filter and not as a cgi.
 
 =back
 
-=head2 Pass 1
+=head2 Keywords
 
 =over 8
 
@@ -60,11 +60,6 @@ Get the value of an environment variable.
 might give you the name of the remote user given you are using
 some sort of access control on the directory
 
-=back
-
-=head2 Pass 2
-
-=over 8
 
 =item RRD::GOODFOR I<seconds>
 
@@ -86,6 +81,14 @@ could use
 to make sure everything is presented in Universal Time. Note that the
 values permitted to TZ depend on your OS.
 
+=item RRD::SETVAR I<variable> I<value>
+
+Analog to SETENV but for local variables
+
+=item RRD::GETVAR I<variable> 
+
+Analog to GETENV but for local variables
+
 =item RRD::TIME::LAST I<rrd-file> I<strftime-format>
 
 This gets replaced by the last modification time of the selected RRD. The
@@ -104,12 +107,6 @@ whether I<START> or I<END> is specified.  Both I<start-spec> and I<end-spec>
 must be supplied as either could be relative to the other.  This is intended
 to allow pretty titles on graphs with times that are easier for non rrdtool
 folks to figure out than "-2weeks".
-
-=back
-
-=head2 Pass 3
-
-=over 8
 
 =item RRD::GRAPH I<rrdgraph arguments>
 
