@@ -7,9 +7,7 @@ rrdcgi - create web pages containing RRD graphs based on templates
 =head1 SYNOPSIS
 
 #!/path/to/B<rrdcgi> 
-S<[B<--goodfor>|B<-g> I<seconds>]>
 S<[B<--filter>]>
-S<[B<--refresh>|B<-r>]>
 
 =head1 DESCRIPTION
 
@@ -29,11 +27,6 @@ The argument parser uses the same semantics as you are used from your c shell.
 =item B<--filter>
 
 Assume that rrdcgi is being run as a filter and not as a cgi.
-
-=item B<--refresh>|B<-r>
-
-If the B<--goodfor> flag is specified, then B<--refresh> will cause rrdcgi
-to output a Refresh header with the value of the B<--goodfor> value.
 
 =back
 
