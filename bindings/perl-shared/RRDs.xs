@@ -133,7 +133,7 @@ rrd_last(...)
             RETVAL
 
 int
-rrd_last(...)
+rrd_first(...)
       PROTOTYPE: @
       PREINIT:
       int i;
