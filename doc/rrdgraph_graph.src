@@ -262,4 +262,39 @@ a variable here.
 
 =back
 
+=head1 NOTES on legend arguments
+
+=head2 Escaping the colon
+
+In a ':' in a I<legend> argument will mark the end of the legend. To
+enter a ':' into a legend, the colon must be escaped with a backslash '\:'.
+Beware, that many environments look for backslashes themselves, so it may
+be necessary to write two backslashes so that one is passed onto rrd_graph.
+
+=head2 String Formatting
+
+The text printed below the actual graph can be formated by appending special
+escaped characters at the end of a text. When ever such a character occurs,
+all pending text is pushed onto the graph according to the character
+specified.
+
+Valid markers are: B<\j> for justified, B<\l> for left aligned, B<\r> for
+right aligned and B<\c> for centered. In the next section there is an
+example showing how to use centered formating.
+
+Normally there are two space characters inserted between every two items
+printed into the graph. The space following a string can be suppressed by
+putting a B<\g> at the end of the string. The B<\g> also ignores any space
+inside the string if it is at the very end of the string. This can be used
+in connection with B<%s> to suppress empty unit strings.
+
+ GPRINT:a:MAX:%lf%s\g
+
+A special case is COMMENT:B<\s> this inserts some additional vertical space
+before placing the next row of legends.
+
+If you are using the proportional font in your graph, you can use tab characters
+or the sequence B<\t> to lin-up legend elements. Note that the tabs inserted are
+relative to the start of the current legend element!
+
 =include see_also
