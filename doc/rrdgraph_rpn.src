@@ -42,15 +42,11 @@ would do C<a = b, 3, +, 5, *> and need no parentheses.
 
 B<LT, LE, GT, GE, EQ, NE>
 
-I<Note: NE is not yet implemented>
-
 Pop two elements from the stack, compare them for the selected condition
 and return 1 for true or 0 for false. Comparing an I<unknown> or an
 I<infinite> value will always result in 0 (false).
 
 B<UN, ISINF>
-
-I<Note: ISINF is not yet implemented>
 
 Pop one element from the stack, compare this to I<unknown> respectively
 to I<positive or negative infinity>. Returns 1 for true or 0 for false.
