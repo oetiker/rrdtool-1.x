@@ -7,6 +7,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.3  2002/04/01 18:31:22  oetiker
+ * "!" takes a higher preference than "||" this means rrd_update N:: would
+ * segfault -- Oliver Cook <ollie@uk.clara.net>
+ *
  * Revision 1.2  2002/02/01 20:34:49  oetiker
  * fixed version number and date/time
  *
@@ -35,13 +39,13 @@ rrd_diff(char *a, char *b)
     char res[LAST_DS_LEN+1], *a1, *b1, *r1, *fix;
     int c,x,m;
     
-    while (!isdigit((int)*a) || *a==0)
+    while (!(isdigit((int)*a) || *a==0))
         a++;
     fix=a;
     while (isdigit((int)*fix)) 
 	fix++;
     *fix = 0; /* maybe there is some non digit data in the string */ 
-    while (!isdigit((int)*b) || *b==0)
+    while (!(isdigit((int)*b) || *b==0))
         b++;
     fix=b;
     while (isdigit((int)*fix)) 
