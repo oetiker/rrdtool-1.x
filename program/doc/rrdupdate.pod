@@ -88,7 +88,7 @@ C<rrdtool update demo1.rrd N:3.44:3.15:U:23>
 Update the database file demo1.rrd with 3 known and one I<*UNKNOWN*>
 value. Use the current time as the update time.
 
-C<rrdtool update demo2.rrd 887457267:U 887457521:22 88745790:2.7>
+C<rrdtool update demo2.rrd 887457267:U 887457521:22 887457903:2.7>
 
 Update the database file demo2.rrd which expects data from a single
 data-source, three times. First with an I<*UNKNOWN*> value then with two
