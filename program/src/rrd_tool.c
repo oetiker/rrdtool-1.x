@@ -55,7 +55,7 @@ void PrintUsage(char *cmd)
 
     char help_restore[] =
 	   "* restore - restore an RRD file from its XML form\n\n"
-	   "\trrdtool restore [--range-check|-r] filename.xml filename.rrd\n\n";
+	   "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n";
 
     char help_last[] =
            "* last - show last update time for RRD\n\n"

@@ -29,6 +29,10 @@ The name of the B<RRD> to restore.
 Make sure the values in the RRAs do not exceed the limits defined for
 the different datasources.
 
+=item B<--force-overwrite>|B<-f>
+
+Allows B<rrdtool> to overwrite the destination B<RRD>.
+
 =back
 
 =head1 AUTHOR
