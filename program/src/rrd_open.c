@@ -5,6 +5,13 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.8  2003/04/11 19:43:44  oetiker
+ * New special value COUNT which allows calculations based on the position of a
+ * value within a data set. Bug fix in rrd_rpncalc.c. PREV returned erroneus
+ * value for the second value. Bug fix in rrd_restore.c. Bug causing seek error
+ * when accesing an RRD restored from an xml that holds an RRD version <3.
+ * --  Ruben Justo <ruben@ainek.com>
+ *
  * Revision 1.7  2003/03/31 21:22:12  oetiker
  * enables RRDtool updates with microsecond or in case of windows millisecond
  * precision. This is needed to reduce time measurement error when archive step
@@ -129,7 +136,8 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 		fclose(*in_file); 
 		return (-1);
 	    }
-            fread(&rrd->live_head->last_up, sizeof(long), 1, *in_file); 
+		fread(&rrd->live_head->last_up, sizeof(long), 1, *in_file); 
+		rrd->live_head->last_up_usec = 0;
     }
     else {
 	    MYFREAD(rrd->live_head, live_head_t, 1)

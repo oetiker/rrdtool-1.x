@@ -130,6 +130,13 @@ set or otherwise the result of vname variable at the previous time
 step. This allows you to do calculations across the data.  This
 function cannot be used in B<VDEF> instructions.
 
+B<COUNT>
+
+Pushes the number 1 if this is the first value of the data set, the 
+number 2 if it is the second, and so on. This special value, allows 
+you to make calculations based on the position of the value within 
+the data set. This function cannot be used in B<VDEF> instructions.
+
 Z<>
 
 =item Time
