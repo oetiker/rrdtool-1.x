@@ -19,7 +19,7 @@
  *****************************************************************************/
 
 #define RRD_COOKIE    "RRD"
-#define RRD_VERSION   "0001"
+#define RRD_VERSION   "0002"
 #define FLOAT_COOKIE  8.642135E130
 
 #if defined(WIN32)
@@ -143,7 +143,7 @@ enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
 					   * least every ds_mrhb seconds,
 					   * otherwise it is regarded dead and
 					   * will be set to UNKNOWN */             
-		     DS_min_val,	  /* the processed input of a ds must */
+		             DS_min_val,	  /* the processed input of a ds must */
                      DS_max_val };        /* be between max_val and min_val
 					   * both can be set to UNKNOWN if you
 					   * do not care. Data outside the limits
@@ -168,11 +168,67 @@ typedef struct ds_def_t {
 enum cf_en           { CF_AVERAGE=0,     /* data consolidation functions */ 
                        CF_MINIMUM, 
                        CF_MAXIMUM,
-                       CF_LAST};
+                       CF_LAST,
+					   CF_HWPREDICT, 
+					   /* An array of predictions using the seasonal 
+						* Holt-Winters algorithm. Requires an RRA of type
+						* CF_SEASONAL for this data source. */
+					   CF_SEASONAL,
+					   /* An array of seasonal effects. Requires an RRA of
+						* type CF_HWPREDICT for this data source. */
+					   CF_DEVPREDICT,
+					   /* An array of deviation predictions based upon
+						* smoothed seasonal deviations. Requires an RRA of
+						* type CF_DEVSEASONAL for this data source. */
+					   CF_DEVSEASONAL,
+					   /* An array of smoothed seasonal deviations. Requires
+						* an RRA of type CF_HWPREDICT for this data source.
+						* */
+					   CF_FAILURES};
+					   /* A binary array of failure indicators: 1 indicates
+						* that the number of violations in the prescribed
+						* window exceeded the prescribed threshold. */
 
-enum rra_par_en {   RRA_cdp_xff_val=0};   /* what part of the consolidated 
-					    datapoint may be unknown, while 
-					    still a valid entry in goes into the rra */
+#define MAX_RRA_PAR_EN 10
+enum rra_par_en {   RRA_cdp_xff_val=0,  /* what part of the consolidated
+                     * datapoint must be known, to produce a
+					 * valid entry in the rra */
+					RRA_hw_alpha,
+					/* exponential smoothing parameter for the intercept in
+					 * the Holt-Winters prediction algorithm. */
+					RRA_hw_beta,
+					/* exponential smoothing parameter for the slope in
+					 * the Holt-Winters prediction algorithm. */
+					RRA_dependent_rra_idx,
+					/* For CF_HWPREDICT: index of the RRA with the seasonal 
+					 * effects of the Holt-Winters algorithm (of type
+					 * CF_SEASONAL).
+					 * For CF_DEVPREDICT: index of the RRA with the seasonal
+					 * deviation predictions (of type CF_DEVSEASONAL).
+					 * For CF_SEASONAL: index of the RRA with the Holt-Winters
+					 * intercept and slope coefficient (of type CF_HWPREDICT).
+					 * For CF_DEVSEASONAL: index of the RRA with the 
+					 * Holt-Winters prediction (of type CF_HWPREDICT).
+					 * For CF_FAILURES: index of the CF_DEVSEASONAL array.
+					 * */
+					RRA_seasonal_smooth_idx,
+					/* For CF_SEASONAL and CF_DEVSEASONAL:
+					 * an integer between 0 and row_count - 1 which
+					 * is index in the seasonal cycle for applying
+					 * the period smoother. */
+				    RRA_failure_threshold,
+					/* For CF_FAILURES, number of violations within the last
+					 * window required to mark a failure. */
+                    RRA_seasonal_gamma = RRA_hw_alpha,
+					/* exponential smoothing parameter for seasonal effects.
+					 * */
+                    RRA_delta_pos = RRA_hw_alpha,
+                    RRA_delta_neg = RRA_hw_beta,
+					/* confidence bound scaling parameters for the
+					 * the FAILURES RRA. */
+                    RRA_window_len = RRA_seasonal_smooth_idx};
+					/* For CF_FAILURES, the length of the window for measuring
+					 * failures. */
 		   	
 #define CF_NAM_FMT    "%19[A-Z]"
 #define CF_NAM_SIZE   20
@@ -183,7 +239,7 @@ typedef struct rra_def_t {
     unsigned long    pdp_cnt;            /* how many primary data points are
 					  * required for a consolidated data
 					  * point?*/
-    unival           par[10];            /* index see rra_param_en */
+    unival           par[MAX_RRA_PAR_EN];            /* index see rra_param_en */
 
 } rra_def_t;
 
@@ -239,15 +295,56 @@ typedef struct pdp_prep_t{
 /****************************************************************************
  * POS 6: cdp_prep_t (* rra_cnt * ds_cnt )      data prep area for cdp values
  ****************************************************************************/
-enum cdp_par_en {  CDP_val=0,          /* the base_interval is always an
-					  * average */
-		   CDP_unkn_pdp_cnt };       /* how many unknown pdp were
-               				  * integrated. This and the cdp_xff
-					    will decide if this is going to
-					    be a UNKNOWN or a valid value */
+#define MAX_CDP_PAR_EN 10
+#define MAX_CDP_FAILURES_IDX 8 
+/* max CDP scratch entries avail to record violations for a FAILURES RRA */
+#define MAX_FAILURES_WINDOW_LEN 28
+enum cdp_par_en {  CDP_val=0,          
+                   /* the base_interval is always an
+					* average */
+		           CDP_unkn_pdp_cnt,       
+				   /* how many unknown pdp were
+               	    * integrated. This and the cdp_xff
+					* will decide if this is going to
+					* be a UNKNOWN or a valid value */
+				   CDP_hw_intercept,
+				   /* Current intercept coefficient for the Holt-Winters
+					* prediction algorithm. */
+				   CDP_hw_last_intercept,
+				   /* Last iteration intercept coefficient for the Holt-Winters
+					* prediction algorihtm. */
+				   CDP_hw_slope,
+				   /* Current slope coefficient for the Holt-Winters
+					* prediction algorithm. */
+				   CDP_hw_last_slope,
+				   /* Last iteration slope coeffient. */
+				   CDP_null_count,
+				   /* Number of sequential Unknown (DNAN) values + 1 preceding
+				    * the current prediction.
+					* */
+				   CDP_last_null_count,
+				   /* Last iteration count of Unknown (DNAN) values. */
+				   CDP_primary_val = 8,
+				   /* optimization for bulk updates: the value of the first CDP
+					* value to be written in the bulk update. */
+				   CDP_secondary_val = 9,
+				   /* optimization for bulk updates: the value of subsequent
+					* CDP values to be written in the bulk update. */
+                   CDP_hw_seasonal = CDP_hw_intercept,
+                   /* Current seasonal coefficient for the Holt-Winters
+                    * prediction algorithm. This is stored in CDP prep to avoid
+                    * redundant seek operations. */
+                   CDP_hw_last_seasonal = CDP_hw_last_intercept,
+                   /* Last iteration seasonal coeffient. */
+                   CDP_seasonal_deviation = CDP_hw_intercept,
+                   CDP_last_seasonal_deviation = CDP_hw_last_intercept,
+                   CDP_init_seasonal = CDP_null_count};
+                   /* init_seasonal is a flag which when > 0, forces smoothing updates
+                    * to occur when rra_ptr.cur_row == 0 */
 
 typedef struct cdp_prep_t{
-    unival         scratch[10];          /* contents according to cdp_par_en *
+    unival         scratch[MAX_CDP_PAR_EN];          
+										 /* contents according to cdp_par_en *
                                           * init state should be NAN */
 
 } cdp_prep_t;
@@ -283,7 +380,7 @@ typedef struct rrd_t {
  * Consolidated Data Points organized in Round Robin Archives.
  ****************************************************************************
  ****************************************************************************
- 
+
  *RRA 0
  (0,0) .................... ( ds_cnt -1 , 0)
  .

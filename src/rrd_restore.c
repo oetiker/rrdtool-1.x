@@ -99,7 +99,7 @@ int read_tag(char **buf, char *tag, char *format, void *value){
 int xml2rrd(char* buf, rrd_t* rrd, char rc){
   /* pass 1 identify number of RRAs  */
   char *ptr,*ptr2,*ptr3; /* walks thought the buffer */
-  long rows=0,mempool=0,i=0;
+  long rows=0,mempool=0,i=0,ii;
   xml_lc(buf); /* lets lowercase all active parts of the xml */
   ptr=buf;
   ptr2=buf;
@@ -115,6 +115,14 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 
   strcpy(rrd->stat_head->cookie,RRD_COOKIE);
   read_tag(&ptr,"version","%4[0-9]",rrd->stat_head->version);
+  /* added primitive version checking */
+  if (atoi(rrd -> stat_head -> version) < 2)
+  {
+    rrd_set_error("Incompatible file version, detected version %s, required version %s\n",
+		  rrd -> stat_head -> version, RRD_VERSION);
+    free(rrd -> stat_head);
+    return -1;
+  }
   rrd->stat_head->float_cookie = FLOAT_COOKIE;
   rrd->stat_head->ds_cnt = 0;
   rrd->stat_head->rra_cnt = 0;
@@ -187,21 +195,47 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       if(cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == -1) return -1;
 
       read_tag(&ptr2,"pdp_per_row","%lu",&(rrd->rra_def[rrd->stat_head->rra_cnt-1].pdp_cnt));
-      read_tag(&ptr2,"xff","%lf",&(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[RRA_cdp_xff_val].u_val));
-      if(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[RRA_cdp_xff_val].u_val > 1 ||
-         rrd->rra_def[rrd->stat_head->rra_cnt-1].par[RRA_cdp_xff_val].u_val < 0)
-          return -1;
-      
+      /* add support to read RRA parameters */
+      eat_tag(&ptr2, "params");
+      for (i = 0; i < MAX_RRA_PAR_EN; i++)
+      {
+	if (i == RRA_dependent_rra_idx || 
+		i == RRA_seasonal_smooth_idx ||
+		i == RRA_failure_threshold)
+	  read_tag(&ptr2, "value","%u",
+		   &(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[i].u_cnt));
+	else
+	  read_tag(&ptr2, "value","%lf",
+		   &(rrd->rra_def[rrd->stat_head->rra_cnt-1].par[i].u_val));
+      }
+      eat_tag(&ptr2, "/params");
       eat_tag(&ptr2,"cdp_prep");
-      for(i=0;i<rrd->stat_head->ds_cnt;i++){
-	   eat_tag(&ptr2,"ds");
-	   read_tag(&ptr2,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt*
-						       (rrd->stat_head->rra_cnt-1)
-						       +i].scratch[CDP_val].u_val));
-	   read_tag(&ptr2,"unknown_datapoints","%lu",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
-						      *(rrd->stat_head->rra_cnt-1)
-						      +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
-	   eat_tag(&ptr2,"/ds");
+      for(i=0;i<rrd->stat_head->ds_cnt;i++)
+      {
+	eat_tag(&ptr2,"ds");
+	/* add suport to read CDP parameters */
+	for (ii = 0; ii < MAX_CDP_PAR_EN; ii++)
+	{
+      /* handle integer values as a special case */
+      if (cf_conv(rrd->rra_def[rrd->stat_head->rra_cnt-1].cf_nam) == CF_FAILURES ||
+		  ii == CDP_unkn_pdp_cnt || 
+		  ii == CDP_null_count ||
+	      ii == CDP_last_null_count)
+	  {
+	    read_tag(&ptr2,"value","%lu",
+		     &(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rrd->stat_head->rra_cnt-1)
+		     +i].scratch[ii].u_cnt));
+	  } else {
+	    read_tag(&ptr2,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt*
+		     (rrd->stat_head->rra_cnt-1) +i].scratch[ii].u_val));
+	  }
+
+#if 0
+	  read_tag(&ptr2,"unknown_datapoints","%lu",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
+		   *(rrd->stat_head->rra_cnt-1) +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
+#endif
+	} /* end for */
+	eat_tag(&ptr2,"/ds");
       }
       eat_tag(&ptr2,"/cdp_prep");
       rrd->rra_def[rrd->stat_head->rra_cnt-1].row_cnt=0;
@@ -257,6 +291,9 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   }
 
   for(i=0; i <rrd->stat_head->rra_cnt; i++) {
+	  /* last row in the xml file is the most recent; as
+	   * rrd_update increments the current row pointer, set cur_row
+	   * here to the last row. */
       rrd->rra_ptr[i].cur_row = rrd->rra_def[i].row_cnt-1;
   }
   if (ptr==NULL)
@@ -379,3 +416,20 @@ rrd_restore(int argc, char **argv)
     rrd_free(&rrd);    
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -6,7 +6,10 @@
 
 #include "rrd_tool.h"
 
+/* prototype for FnvHash */
+unsigned long FnvHash(char *str);
 
+/* #define DEBUG */
 int
 rrd_create(int argc, char **argv) 
 {
@@ -15,7 +18,9 @@ rrd_create(int argc, char **argv)
     time_t             last_up;
     struct time_value last_up_tv;
     char *parsetime_error = NULL;
-
+    char *token;
+    unsigned short token_idx, error_flag, period=0;
+	unsigned long hashed_name;
     /* init last_up */
     last_up = time(NULL)-10;
     /* init rrd clean */
@@ -34,7 +39,8 @@ rrd_create(int argc, char **argv)
 
     /* set some defaults */
     strcpy(rrd.stat_head->cookie,RRD_COOKIE);
-    strcpy(rrd.stat_head->version,RRD_VERSION);
+	/* assume the will be version 1 compatible */
+    strcpy(rrd.stat_head->version,"0001");
     rrd.stat_head->float_cookie = FLOAT_COOKIE;
     rrd.stat_head->ds_cnt = 0; /* this will be adjusted later */
     rrd.stat_head->rra_cnt = 0; /* ditto */
@@ -103,7 +109,12 @@ rrd_create(int argc, char **argv)
 	}
     }
     rrd.live_head->last_up = last_up;
-
+	
+	/* optind points to the first non-option command line arg,
+	 * in this case, the file name. */
+	/* Compute the FNV hash value (used by SEASONAL and DEVSEASONAL
+	 * arrays. */
+	hashed_name = FnvHash(argv[optind]);
     for(i=optind+1;i<argc;i++){
 	char minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];	
 	int ii;
@@ -162,36 +173,217 @@ rrd_create(int argc, char **argv)
 	} else if (strncmp(argv[i],"RRA:",3)==0){
 	    size_t old_size = sizeof(rra_def_t)*(rrd.stat_head->rra_cnt);
 	    if((rrd.rra_def = rrd_realloc(rrd.rra_def,
-				      old_size+sizeof(rra_def_t)))==NULL){
-		rrd_set_error("allocating rrd.rra_def");
-		rrd_free(&rrd);
-		return(-1);	
+				      old_size+sizeof(rra_def_t)))==NULL)
+	    {
+		   rrd_set_error("allocating rrd.rra_def");
+		   rrd_free(&rrd);
+		   return(-1);	
 	    }
 	    memset(&rrd.rra_def[rrd.stat_head->rra_cnt], 0, sizeof(rra_def_t));
-	    if (sscanf(&argv[i][4],
-		       CF_NAM_FMT ":%lf:%lu:%lu",
-		       rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam,
-		       &rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val,
-		       &rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt,
-		       &rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt) == 4){
-		if(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) == -1){
-		    rrd_free(&rrd);
-		    return (-1);
-		}
-	        if (rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val<0.0 ||
-		    rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val>=1.0) {
-		    rrd_set_error("the xff must always be >= 0 and < 1");
-		    rrd_free(&rrd);
-		    return (-1);
-		}
-		rrd.stat_head->rra_cnt++;	    		
-	    }
-	    else {  
-		rrd_set_error("can't parse argument '%s'",argv[i]);
-		rrd_free(&rrd);
-		return (-1);		
-	    }
 
+	    token = strtok(&argv[i][4],":");
+	    token_idx = error_flag = 0;
+	    while (token != NULL)
+	    {
+	      switch(token_idx)
+	      {
+	      case 0:
+		if (sscanf(token,CF_NAM_FMT,
+			   rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) != 1)
+		  rrd_set_error("Failed to parse CF name");
+		switch(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam))
+		{
+		case CF_HWPREDICT:
+		  /* initialize some parameters */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].u_val = 0.1;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_beta].u_val = 1.0/288;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt = 
+		    rrd.stat_head -> rra_cnt;
+		  /* need to mark the file version */
+          strcpy(rrd.stat_head->version,RRD_VERSION);
+		  break;
+		case CF_DEVSEASONAL:
+		case CF_SEASONAL:
+		  /* initialize some parameters */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_seasonal_gamma].u_val = 0.1;
+		  /* fall through */
+		case CF_DEVPREDICT:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt = -1;
+		  break;
+		case CF_FAILURES:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_delta_pos].u_val = 2.0;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_delta_neg].u_val = 2.0;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_window_len].u_cnt = 3;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_failure_threshold].u_cnt = 2;
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt = -1;
+		  break;
+		/* invalid consolidation function */
+		case -1:
+		  rrd_set_error("Unrecognized consolidation function %s",
+			 rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam);
+		default:
+		  break;
+		}
+		/* default: 1 pdp per cdp */ 
+		rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt = 1;
+		break;
+	      case 1:
+		switch(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam))
+		{
+		case CF_HWPREDICT:
+		case CF_DEVSEASONAL:
+		case CF_SEASONAL:
+		case CF_DEVPREDICT:
+		case CF_FAILURES:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = atoi(token);
+		  break;
+		default:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val = atof(token);
+		  if (rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val<0.0 ||
+		      rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_cdp_xff_val].u_val>=1.0)
+		    rrd_set_error("Invalid xff: must be between 0 and 1");
+		  break;
+		}
+		break;
+	      case 2:
+		switch(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam))
+		{
+		case CF_HWPREDICT:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].u_val = atof(token);
+		  if (atof(token) <= 0.0 || atof(token) >= 1.0)
+		    rrd_set_error("Invalid alpha: must be between 0 and 1");
+		  break;
+		case CF_DEVSEASONAL:
+		case CF_SEASONAL:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_seasonal_gamma].u_val = 
+			atof(token);
+		  if (atof(token) <= 0.0 || atof(token) >= 1.0)
+		    rrd_set_error("Invalid gamma: must be between 0 and 1");
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_seasonal_smooth_idx].u_cnt
+			= hashed_name % rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt; 
+		  break;
+	    case CF_FAILURES:
+		  /* specifies the # of violations that constitutes the failure threshold */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_failure_threshold].u_cnt =
+			atoi(token);
+		  if (atoi(token) < 1 || atoi(token) > MAX_FAILURES_WINDOW_LEN)
+			rrd_set_error("Failure threshold is out of range %d, %d",1,
+			  MAX_FAILURES_WINDOW_LEN);
+		  break;
+		case CF_DEVPREDICT:
+		  /* specifies the index (1-based) of CF_DEVSEASONAL array
+		   * associated with this CF_DEVPREDICT array. */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt =
+		    atoi(token) - 1;
+		  break;
+		default:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt = atoi(token);
+		  break;
+		}
+		break;
+	      case 3:
+		switch(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam))
+		{
+		case CF_HWPREDICT:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_beta].u_val = atof(token);
+		  if (atof(token) < 0.0 || atof(token) > 1.0)
+		    rrd_set_error("Invalid beta: must be between 0 and 1");
+		  break;
+		case CF_DEVSEASONAL:
+		case CF_SEASONAL:
+		  /* specifies the index (1-based) of CF_HWPREDICT array
+		   * associated with this CF_DEVSEASONAL or CF_SEASONAL array. 
+		   * */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt =
+		    atoi(token) - 1;
+		  break;
+		case CF_FAILURES:
+		  /* specifies the window length */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_window_len].u_cnt =
+			atoi(token);
+		  if (atoi(token) < 1 || atoi(token) > MAX_FAILURES_WINDOW_LEN)
+			rrd_set_error("Window length is out of range %d, %d",1,
+			   MAX_FAILURES_WINDOW_LEN);
+		  /* verify that window length exceeds the failure threshold */
+		  if (rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_window_len].u_cnt <
+			  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_failure_threshold].u_cnt)
+		    rrd_set_error("Window length is shorter than the failure threshold");
+		  break;
+		case CF_DEVPREDICT:
+		  /* shouldn't be any more arguments */
+		  rrd_set_error("Unexpected extra argument for consolidation function DEVPREDICT");
+		  break;
+		default:
+		  rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = atoi(token);
+		  break;
+		}
+		break;
+	      case 4:
+		switch(cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam))
+		{
+		case CF_FAILURES:
+		  /* specifies the index (1-based) of CF_DEVSEASONAL array
+		   * associated with this CF_DEVFAILURES array. */
+		  rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt =
+		    atoi(token) - 1;
+		  break;
+		case CF_HWPREDICT:
+		  /* length of the associated CF_SEASONAL and CF_DEVSEASONAL arrays. */
+		  period = atoi(token);
+          if (period > rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt)
+		    rrd_set_error("Length of seasonal cycle exceeds length of HW prediction array");
+		  break;
+		default:
+		  /* shouldn't be any more arguments */
+		  rrd_set_error("Unexpected extra argument for consolidation function %s",
+				rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam);
+                  break;
+		}
+		break;
+	      case 5:
+		/* If we are here, this must be a CF_HWPREDICT RRA.
+		 * Specifies the index (1-based) of CF_SEASONAL array
+		 * associated with this CF_HWPREDICT array. If this argument 
+		 * is missing, then the CF_SEASONAL, CF_DEVSEASONAL, CF_DEVPREDICT,
+		 * CF_FAILURES.
+		 * arrays are created automatically. */
+		rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt =
+		  atoi(token) - 1;
+		break;
+	      default:
+		/* should never get here */
+		rrd_set_error("Unknown error");
+		break;
+	      } /* end switch */
+	      if (rrd_test_error())
+	      {
+		/* all errors are unrecoverable */
+		rrd_free(&rrd);
+		return (-1);
+	      }
+	      token = strtok(NULL,":");
+	      token_idx++;
+	    } /* end while */
+#ifdef DEBUG
+	    fprintf(stderr,"Creating RRA CF: %s, dep idx %lu, current idx %lu\n",
+		    rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam,
+		    rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt, 
+		    rrd.stat_head -> rra_cnt);
+#endif
+	    /* should we create CF_SEASONAL, CF_DEVSEASONAL, and CF_DEVPREDICT? */
+	    if (cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) == CF_HWPREDICT
+		&& rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt 
+		== rrd.stat_head -> rra_cnt)
+	    {
+#ifdef DEBUG
+	      fprintf(stderr,"Creating HW contingent RRAs\n");
+#endif
+	      if (create_hw_contingent_rras(&rrd,period,hashed_name) == -1) {
+		rrd_free(&rrd);
+		return -1;
+	      }
+	    }
+	    rrd.stat_head->rra_cnt++;	    		
 	} else {
 	    rrd_set_error("can't parse argument '%s'",argv[i]);
 	    rrd_free(&rrd);
@@ -212,6 +404,75 @@ rrd_create(int argc, char **argv)
 	return(-1);
     }
     return rrd_create_fn(argv[optind],&rrd);
+}
+
+/* Create the CF_DEVPREDICT, CF_DEVSEASONAL, CF_SEASONAL, and CF_FAILURES RRAs
+ * associated with a CF_HWPREDICT RRA. */
+int
+create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name)
+{
+   size_t old_size;
+   rra_def_t* current_rra;
+   
+   /* save index to CF_HWPREDICT */
+   unsigned long hw_index = rrd -> stat_head -> rra_cnt;
+   /* advance the pointer */
+   (rrd -> stat_head -> rra_cnt)++;	    		
+   /* allocate the memory for the 4 contingent RRAs */
+   old_size = sizeof(rra_def_t)*(rrd -> stat_head->rra_cnt);
+   if ((rrd -> rra_def = rrd_realloc(rrd -> rra_def,
+       old_size+4*sizeof(rra_def_t)))==NULL)
+   {
+     rrd_set_error("allocating rrd.rra_def");
+     return(-1);	
+   }
+   /* clear memory */
+   memset(&(rrd -> rra_def[rrd -> stat_head->rra_cnt]), 0, 4*sizeof(rra_def_t));
+
+   /* create the CF_SEASONAL RRA */
+   current_rra = &(rrd -> rra_def[rrd -> stat_head -> rra_cnt]);
+   strcpy(current_rra -> cf_nam,"SEASONAL");
+   current_rra -> row_cnt = period;
+   current_rra -> par[RRA_seasonal_smooth_idx].u_cnt = hashed_name % period;
+   current_rra -> pdp_cnt = 1;
+   current_rra -> par[RRA_seasonal_gamma].u_val = 
+     rrd -> rra_def[hw_index].par[RRA_hw_alpha].u_val;
+   current_rra -> par[RRA_dependent_rra_idx].u_cnt = hw_index; 
+   rrd -> rra_def[hw_index].par[RRA_dependent_rra_idx].u_cnt = rrd -> stat_head -> rra_cnt;
+
+   /* create the CF_DEVSEASONAL RRA */
+   (rrd -> stat_head -> rra_cnt)++; 
+   current_rra = &(rrd -> rra_def[rrd -> stat_head -> rra_cnt]);
+   strcpy(current_rra -> cf_nam,"DEVSEASONAL");
+   current_rra -> row_cnt = period;
+   current_rra -> par[RRA_seasonal_smooth_idx].u_cnt = hashed_name % period;
+   current_rra -> pdp_cnt = 1;
+   current_rra -> par[RRA_seasonal_gamma].u_val = 
+     rrd -> rra_def[hw_index].par[RRA_hw_alpha].u_val;
+   current_rra -> par[RRA_dependent_rra_idx].u_cnt = hw_index; 
+   
+   /* create the CF_DEVPREDICT RRA */
+   (rrd -> stat_head -> rra_cnt)++; 
+   current_rra = &(rrd -> rra_def[rrd -> stat_head -> rra_cnt]);
+   strcpy(current_rra -> cf_nam,"DEVPREDICT");
+   current_rra -> row_cnt = (rrd -> rra_def[hw_index]).row_cnt;
+   current_rra -> pdp_cnt = 1;
+   current_rra -> par[RRA_dependent_rra_idx].u_cnt 
+     = hw_index + 2; /* DEVSEASONAL */
+
+   /* create the CF_FAILURES RRA */
+   (rrd -> stat_head -> rra_cnt)++; 
+   current_rra = &(rrd -> rra_def[rrd -> stat_head -> rra_cnt]);
+   strcpy(current_rra -> cf_nam,"FAILURES");
+   current_rra -> row_cnt = period; 
+   current_rra -> pdp_cnt = 1;
+   current_rra -> par[RRA_delta_pos].u_val = 2.0;
+   current_rra -> par[RRA_delta_neg].u_val = 2.0;
+   current_rra -> par[RRA_failure_threshold].u_cnt = 7;
+   current_rra -> par[RRA_window_len].u_cnt = 9;
+   current_rra -> par[RRA_dependent_rra_idx].u_cnt = 
+	 hw_index + 2; /* DEVSEASONAL */
+   return 0;
 }
 
 /* create and empty rrd file according to the specs given */
@@ -266,21 +527,50 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
 	return(-1);
     }
 
-    /* can not be zero because we don't know nothing ... */
-    rrd->cdp_prep->scratch[CDP_val].u_val = DNAN;
+
     for(i=0; i < rrd->stat_head->rra_cnt; i++) {
+       switch (cf_conv(rrd->rra_def[i].cf_nam))
+	   {
+		  case CF_HWPREDICT:
+             rrd->cdp_prep->scratch[CDP_hw_intercept].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_hw_last_intercept].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_hw_slope].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_hw_last_slope].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_null_count].u_cnt = 1; 
+             rrd->cdp_prep->scratch[CDP_last_null_count].u_cnt = 1;
+			 break;
+		  case CF_SEASONAL:
+		  case CF_DEVSEASONAL:
+             rrd->cdp_prep->scratch[CDP_hw_seasonal].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_hw_last_seasonal].u_val = DNAN;
+             rrd->cdp_prep->scratch[CDP_init_seasonal].u_cnt = 1; 
+			 break;
+		  case CF_FAILURES:
+             /* initialize violation history to 0 */
+			 for (ii = 0; ii < MAX_CDP_PAR_EN; ii++)
+			 {
+				/* We can zero everything out, by setting u_val to the
+				 * NULL address. Each array entry in scratch is 8 bytes
+				 * (a double), but u_cnt only accessed 4 bytes (long) */
+				rrd->cdp_prep->scratch[ii].u_val = 0.0;
+			 }
+			 break;
+		  default:
+             /* can not be zero because we don't know anything ... */
+             rrd->cdp_prep->scratch[CDP_val].u_val = DNAN;
+	         /* startup missing pdp count */
+	         rrd->cdp_prep->scratch[CDP_unkn_pdp_cnt].u_cnt = 
+	         ((rrd->live_head->last_up -
+	         rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
+	         % (rrd->stat_head->pdp_step 
+	         * rrd->rra_def[i].pdp_cnt)) / rrd->stat_head->pdp_step;	
+		     break;
+	   }
 
-	/* startup missing pdp count */
-	rrd->cdp_prep->scratch[CDP_unkn_pdp_cnt].u_cnt = 
-	    ((rrd->live_head->last_up -
-	     rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
-	    % (rrd->stat_head->pdp_step 
-	       * rrd->rra_def[i].pdp_cnt)) / rrd->stat_head->pdp_step;	
-
-
-	for(ii=0; ii < rrd->stat_head->ds_cnt; ii++) {
-	    fwrite( rrd->cdp_prep,sizeof(cdp_prep_t),1,rrd_file);
-	}
+	   for(ii=0; ii < rrd->stat_head->ds_cnt; ii++) 
+	   {
+	      fwrite( rrd->cdp_prep,sizeof(cdp_prep_t),1,rrd_file);
+	   }
     }
 
     /* now, we must make sure that the rest of the rrd
@@ -292,13 +582,16 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
 	fclose(rrd_file);
 	return(-1);
     }
-
-    rrd->rra_ptr->cur_row = 0;
-    for(i=0; i <rrd->stat_head->rra_cnt; i++)
-	fwrite( rrd->rra_ptr,
-		sizeof(rra_ptr_t), 1,rrd_file);
-
-
+ 
+	/* changed this initialization to be consistent with
+	 * rrd_restore. With the old value (0), the first update
+	 * would occur for cur_row = 1 because rrd_update increments
+	 * the pointer a priori. */
+    for (i=0; i < rrd->stat_head->rra_cnt; i++)
+	{
+	   rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
+	   fwrite( rrd->rra_ptr, sizeof(rra_ptr_t),1,rrd_file);
+	}
 
     /* write the empty data area */
     for(i=0; 

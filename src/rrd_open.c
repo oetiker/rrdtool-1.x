@@ -5,6 +5,13 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.3  2001/03/04 13:01:55  oetiker
+ * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
+ * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
+ * This is backwards compatible! But new files using the Aberrant stuff are not readable
+ * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
+ * -- Jake Brutlag <jakeb@corp.webtv.net>
+ *
  * Revision 1.2  2001/03/04 10:29:20  oetiker
  * fixed filedescriptor leak
  * -- Mike Franusich <mike@franusich.com>
@@ -45,6 +52,15 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	rrd_set_error("opening '%s': %s",file_name, strerror(errno));
 	return (-1);
     }
+/*
+	if (rdwr == RRD_READWRITE)
+	{
+	   if (setvbuf((*in_file),NULL,_IONBF,2)) {
+		  rrd_set_error("failed to disable the stream buffer\n");
+		  return (-1);
+	   }
+	}
+*/
     
 #define MYFREAD(MYVAR,MYVART,MYCNT) \
     if ((MYVAR = malloc(sizeof(MYVART) * MYCNT)) == NULL) {\
@@ -63,7 +79,7 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	    fclose(*in_file);
 	    return(-1);}
 
-	if (strncmp(rrd->stat_head->version,RRD_VERSION,5) != 0){
+        if (atoi(rrd->stat_head->version) > atoi(RRD_VERSION)){
 	    rrd_set_error("can't handle RRD file version %s",
 			rrd->stat_head->version);
 	    free(rrd->stat_head);

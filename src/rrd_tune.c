@@ -5,12 +5,23 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:06  oetiker
- * Initial revision
+ * Revision 1.2  2001/03/04 13:01:55  oetiker
+ * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
+ * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
+ * This is backwards compatible! But new files using the Aberrant stuff are not readable
+ * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
+ * -- Jake Brutlag <jakeb@corp.webtv.net>
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
+ * checkin
  *
  *****************************************************************************/
 
 #include "rrd_tool.h"
+
+int set_hwarg(rrd_t *rrd,enum cf_en cf,enum rra_par_en rra_par,char *arg);
+int set_deltaarg(rrd_t *rrd,enum rra_par_en rra_par,char *arg);
+int set_windowarg(rrd_t *rrd,enum rra_par_en,char *arg);
 
 int
 rrd_tune(int argc, char **argv)    
@@ -41,11 +52,19 @@ rrd_tune(int argc, char **argv)
 	    {"maximum",          required_argument, 0, 'a'},
 	    {"data-source-type", required_argument, 0, 'd'},
 	    {"data-source-rename", required_argument, 0, 'r'},
+	    /* added parameter tuning options for aberrant behavior detection */
+		{"deltapos",required_argument,0,'p'},
+		{"deltaneg",required_argument,0,'n'},
+		{"window-length",required_argument,0,'w'},
+		{"failure-threshold",required_argument,0,'f'},
+	    {"alpha",required_argument,0,'x'},
+	    {"beta",required_argument,0,'y'},
+	    {"gamma",required_argument,0,'z'},
 	    {0,0,0,0}
 	};
 	int option_index = 0;
 	int opt;
-	opt = getopt_long(argc, argv, "h:i:a:d:r:", 
+	opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:", 
 			  long_options, &option_index);
 	if (opt == EOF)
 	    break;
@@ -145,6 +164,48 @@ rrd_tune(int argc, char **argv)
 	    strncpy(rrd.ds_def[ds].ds_nam,ds_new,DS_NAM_SIZE-1);
 	    rrd.ds_def[ds].ds_nam[DS_NAM_SIZE-1]='\0';
 	    break;
+    case 'p':
+		if (set_deltaarg(&rrd,RRA_delta_pos,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'n':
+		if (set_deltaarg(&rrd,RRA_delta_neg,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'f':
+		if (set_windowarg(&rrd,RRA_failure_threshold,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'w':
+		if (set_windowarg(&rrd,RRA_window_len,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'x':
+		if (set_hwarg(&rrd,CF_HWPREDICT,RRA_hw_alpha,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'y':
+		if (set_hwarg(&rrd,CF_HWPREDICT,RRA_hw_beta,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
+	case 'z':
+		if (set_hwarg(&rrd,CF_SEASONAL,RRA_seasonal_gamma,optarg)) {
+		   rrd_free(&rrd);
+		   return -1;
+		}
+		break;
 	case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
@@ -162,6 +223,9 @@ rrd_tune(int argc, char **argv)
 	       sizeof(stat_head_t),1, rrd_file);
 	fwrite(rrd.ds_def,
 	       sizeof(ds_def_t), rrd.stat_head->ds_cnt, rrd_file);
+	/* need to write rra_defs for RRA parameter changes */
+	fwrite(rrd.rra_def, sizeof(rra_def_t), rrd.stat_head->rra_cnt,
+		   rrd_file);
     } else {
 	int i;
 	for(i=0;i< rrd.stat_head->ds_cnt;i++)
@@ -177,3 +241,114 @@ rrd_tune(int argc, char **argv)
     return 0;
 }
 
+int set_hwarg(rrd_t *rrd,enum cf_en cf,enum rra_par_en rra_par,char *arg)
+{
+   double param;
+   unsigned long i;
+   signed short rra_idx = -1, devseasonal_idx = -1;
+   /* read the value */
+   param = atof(arg);
+   if (param <= 0.0 || param >= 1.0)
+   {
+	  rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+	  return -1;
+   }
+   /* does the appropriate RRA exist?  */
+   for (i =  0; i < rrd -> stat_head -> rra_cnt; ++i)
+   {
+	  if (cf_conv(rrd -> rra_def[i].cf_nam) == cf)
+	  {
+		 rra_idx = i;
+	  }
+	  /* find the DEVSEASONAL index separately, as it is optional */
+	  if (cf_conv(rrd -> rra_def[i].cf_nam) == CF_DEVSEASONAL)
+	  {
+		 devseasonal_idx = i;
+	  }
+   }
+   if (rra_idx == -1) 
+   {
+	  rrd_set_error("Holt-Winters RRA does not exist in this RRD");
+	  return -1;
+   }
+   
+   /* set the value */
+   rrd -> rra_def[rra_idx].par[rra_par].u_val = param;
+   if (devseasonal_idx > -1)
+	  rrd -> rra_def[devseasonal_idx].par[rra_par].u_val = param;
+   return 0;
+}
+
+int set_deltaarg(rrd_t *rrd,enum rra_par_en rra_par,char *arg)
+{
+   rrd_value_t param;
+   unsigned long i;
+   signed short rra_idx = -1;
+
+   param = atof(arg);
+   if (param < 0.1)
+   {
+	  rrd_set_error("Parameter specified is too small");
+	  return -1;
+   }
+   /* does the appropriate RRA exist?  */
+   for (i = 0; i < rrd -> stat_head -> rra_cnt; ++i)
+   {
+	  if (cf_conv(rrd -> rra_def[i].cf_nam) == CF_FAILURES) 
+	  {
+		 rra_idx = i;
+		 break;
+	  }
+   }
+   if (rra_idx == -1) 
+   {
+	  rrd_set_error("Failures RRA does not exist in this RRD");
+	  return -1;
+   }
+
+   /* set the value */
+   rrd -> rra_def[rra_idx].par[rra_par].u_val = param;
+   return 0;
+}
+
+int set_windowarg(rrd_t *rrd,enum rra_par_en rra_par,char *arg)
+{
+   unsigned long param;
+   unsigned long i, cdp_idx;
+   signed short rra_idx = -1;
+   /* read the value */
+   param = atoi(arg);
+   /* there are 4 chars to a long, reserve on CDP entry for future
+	* use. */
+   if (param < 1 || param > MAX_FAILURES_WINDOW_LEN)
+   {
+	  rrd_set_error("Parameter must be between %d and %d",
+		 1, MAX_CDP_PAR_EN - 1);
+	  return -1;
+   }
+   /* does the appropriate RRA exist?  */
+   for (i = 0; i < rrd -> stat_head -> rra_cnt; ++i)
+   {
+	  if (cf_conv(rrd -> rra_def[i].cf_nam) == CF_FAILURES) 
+	  {
+		 rra_idx = i;
+		 break;
+	  }
+   }
+   if (rra_idx == -1) 
+   {
+	  rrd_set_error("Failures RRA does not exist in this RRD");
+	  return -1;
+   }
+   
+   /* set the value */
+   rrd -> rra_def[rra_idx].par[rra_par].u_cnt = param;
+
+   /* erase existing violations */
+   for (i = 0; i < rrd -> stat_head -> ds_cnt; i++)
+   {
+	  cdp_idx = rra_idx * (rrd -> stat_head -> ds_cnt) + i;
+	  erase_violations(rrd,cdp_idx,rra_idx);
+   }
+   return 0;
+}

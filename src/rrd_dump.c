@@ -5,8 +5,15 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:05  oetiker
- * Initial revision
+ * Revision 1.2  2001/03/04 13:01:55  oetiker
+ * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
+ * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
+ * This is backwards compatible! But new files using the Aberrant stuff are not readable
+ * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
+ * -- Jake Brutlag <jakeb@corp.webtv.net>
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
+ * checkin
  *
  *****************************************************************************/
 
@@ -24,14 +31,15 @@ rrd_dump(int argc, char **argv)
     long         rra_base, rra_start, rra_next;
     FILE                  *in_file;
     rrd_t             rrd;
-
+    unival value;
 
     if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
 	return(-1);
     }
+
     puts("<!-- Round Robin Database Dump -->");
     puts("<rrd>");
-    printf("\t<version> %s </version>\n",rrd.stat_head->version);
+    printf("\t<version> %s </version>\n",RRD_VERSION);
     printf("\t<step> %lu </step> <!-- Seconds -->\n",rrd.stat_head->pdp_step);
 #if HAVE_STRFTIME
     strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z",
@@ -83,22 +91,56 @@ rrd_dump(int argc, char **argv)
                       * sizeof(rrd_value_t));
 	printf("\t<rra>\n");
 	printf("\t\t<cf> %s </cf>\n",rrd.rra_def[i].cf_nam);
-	printf("\t\t<pdp_per_row> %lu </pdp_per_row> <!-- %lu seconds -->\n",
+	printf("\t\t<pdp_per_row> %lu </pdp_per_row> <!-- %lu seconds -->\n\n",
 	       rrd.rra_def[i].pdp_cnt, rrd.rra_def[i].pdp_cnt
 	       *rrd.stat_head->pdp_step);
-	printf("\t\t<xff> %0.10e </xff>\n\n",rrd.rra_def[i].par[RRA_cdp_xff_val].u_val);
+	/* added support for RRA parameters */
+	printf("\t\t<params>");
+	for (ii = 0; ii < MAX_RRA_PAR_EN; ii++)
+	{
+	   value = rrd.rra_def[i].par[ii];
+	   if (ii == RRA_dependent_rra_idx ||
+		   ii == RRA_seasonal_smooth_idx ||
+		   ii == RRA_failure_threshold)
+	          printf("<value> %lu </value>", value.u_cnt);
+	   else {
+	          if (isnan(value.u_val)) {
+	              printf("<value> NaN </value>");
+	          } else {
+	              printf("<value> %0.10e </value>", value.u_val);
+	          }
+	   }
+	}
+	printf("\t\t</params>\n");
 	printf("\t\t<cdp_prep>\n");
 	for(ii=0;ii<rrd.stat_head->ds_cnt;ii++){
-	    double value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
-	    printf("\t\t\t<ds>");	
-	    if (isnan(value)){
-	      printf("<value> NaN </value>");
-	    } else {
-	      printf("<value> %0.10e </value>", value);
-	    }
-	    printf("  <unknown_datapoints> %lu </unknown_datapoints>",
-                   rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_unkn_pdp_cnt].u_cnt);
-	   printf("</ds>\n");	 
+#if 0
+	        double value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
+#endif 
+		printf("\t\t\t<ds>");
+		/* added support for exporting all CDP parameters */
+		for (iii=0; iii < MAX_CDP_PAR_EN ; iii++)
+		{
+		   value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt + ii].scratch[iii];
+           /* handle integer values as a special case */
+		   if (cf_conv(rrd.rra_def[i].cf_nam) == CF_FAILURES ||
+			   iii == CDP_unkn_pdp_cnt || 
+		       iii == CDP_null_count ||
+		       iii == CDP_last_null_count)
+		     printf("<value> %lu </value>", value.u_cnt);
+		   else {	
+		     if (isnan(value.u_val)) {
+		       printf("<value> NaN </value>");
+		     } else {
+		       printf("<value> %0.10e </value>", value.u_val);
+		     }
+		   }
+		}
+#if 0 
+		printf("  <unknown_datapoints> %lu </unknown_datapoints>",
+		       rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_unkn_pdp_cnt].u_cnt);
+#endif
+        printf("</ds>\n");	 
         }
 	printf("\t\t</cdp_prep>\n");
 

@@ -67,6 +67,7 @@ rrd_info(int argc, char **argv) {
     rrd_t        rrd;
     info_t       *data,*cd;
     infoval      info;
+	enum cf_en   current_cf;
 
     if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
 	return(NULL);
@@ -113,6 +114,7 @@ rrd_info(int argc, char **argv) {
     for(i=0;i<rrd.stat_head->rra_cnt;i++){
 	info.u_str=rrd.rra_def[i].cf_nam;
 	cd=push(cd,sprintf_alloc("rra[%d].cf",         i),  RD_I_STR,   info);
+	current_cf = cf_conv(rrd.rra_def[i].cf_nam);
 
 	info.u_cnt=rrd.rra_def[i].row_cnt;
 	cd=push(cd,sprintf_alloc("rra[%d].rows",i),  RD_I_CNT,   info);
@@ -120,23 +122,69 @@ rrd_info(int argc, char **argv) {
 	info.u_cnt=rrd.rra_def[i].pdp_cnt;
 	cd=push(cd,sprintf_alloc("rra[%d].pdp_per_row",i),  RD_I_CNT,   info);
 
-        info.u_val=rrd.rra_def[i].par[RRA_cdp_xff_val].u_val;
-        cd=push(cd,sprintf_alloc("rra[%d].xff",i),  RD_I_VAL,   info);
-        
+	switch(current_cf)
+	{
+	   case CF_HWPREDICT:
+		  info.u_val=rrd.rra_def[i].par[RRA_hw_alpha].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].alpha",i),RD_I_VAL,info);
+		  info.u_val=rrd.rra_def[i].par[RRA_hw_beta].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].beta",i),RD_I_VAL,info);
+		  break;
+	   case CF_SEASONAL:
+	   case CF_DEVSEASONAL:
+		  info.u_val=rrd.rra_def[i].par[RRA_seasonal_gamma].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].gamma",i),RD_I_VAL,info);
+		  break;
+	   case CF_FAILURES:
+		  info.u_val=rrd.rra_def[i].par[RRA_delta_pos].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].delta_pos",i),RD_I_VAL,info);
+		  info.u_val=rrd.rra_def[i].par[RRA_delta_neg].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].delta_neg",i),RD_I_VAL,info);
+		  info.u_cnt=rrd.rra_def[i].par[RRA_failure_threshold].u_cnt;
+		  cd=push(cd,sprintf_alloc("rra[%d].failure_threshold",i),RD_I_CNT,info);
+		  info.u_cnt=rrd.rra_def[i].par[RRA_window_len].u_cnt;
+		  cd=push(cd,sprintf_alloc("rra[%d].window_length",i),RD_I_CNT,info);
+		  break;
+	   case CF_DEVPREDICT:
+		  break;
+	   default:
+		  info.u_val=rrd.rra_def[i].par[RRA_cdp_xff_val].u_val;
+		  cd=push(cd,sprintf_alloc("rra[%d].xff",i),RD_I_VAL,info);
+		  break;
+	}
+
 	for(ii=0;ii<rrd.stat_head->ds_cnt;ii++){
 	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
 	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].value",i,ii), RD_I_VAL, info);
-
+        switch(current_cf)
+		{
+		case CF_HWPREDICT:
+	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_intercept].u_val;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].intercept",i,ii), RD_I_VAL, info);
+	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_slope].u_val;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].slope",i,ii), RD_I_VAL, info);
+	    info.u_cnt=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_null_count].u_cnt;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].NaN_count",i,ii), RD_I_CNT, info);
+		   break;
+		case CF_SEASONAL:
+	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_seasonal].u_val;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].seasonal",i,ii), RD_I_VAL, info);
+		   break;
+		case CF_DEVSEASONAL:
+	    info.u_val=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_seasonal_deviation].u_val;
+	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].deviation",i,ii), RD_I_VAL, info);
+		   break;
+		case CF_DEVPREDICT:
+		case CF_FAILURES:
+		   break;
+		default:
 	    info.u_cnt=rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_unkn_pdp_cnt].u_cnt;
 	    cd=push(cd,sprintf_alloc("rra[%d].cdp_prep[%d].unknown_datapoints",i,ii), RD_I_CNT, info);
+		   break;
         }
     }
-    rrd_free(&rrd);
+	}
+	rrd_free(&rrd);
     return(data);
 
 }
-
-
-
-
-

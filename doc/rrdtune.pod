@@ -12,6 +12,13 @@ S<[B<--minimum>|B<-i> I<ds-name>:I<min>]>
 S<[B<--maximum>|B<-a> I<ds-name>:I<max>]>
 S<[B<--data-source-type>|B<-d> I<ds-name>:I<DST>]>
 S<[B<--data-source-rename>|B<-r> I<old-name>:I<new-name>]>
+S<[B<--deltapos> I<scale-value>]>
+S<[B<--deltaneg> I<scale value>]>
+S<[B<--failure-threshold> I<failure-threshold>]>
+S<[B<--window-length> I<window-length>]>
+S<[B<--alpha> I<adaption-parameter>]>
+S<[B<--beta> I<adaption-parameter>]>
+S<[B<--gamma> I<adaption-parameter>]>
 
 =head1 DESCRIPTION
 
@@ -21,10 +28,13 @@ All these tunable parameters together decide when data fed into an
 B<RRD> is to be regarded as invalid. Invalid data is entered into the 
 database as *UNKNOWN*.
 
-The main application of the B<tune> function is to relax the 
+One application of the B<tune> function is to relax the 
 validation rules on an B<RRD>. This allows to fill a new B<RRD> with
 data available in larger intervals than what you would normally want
 to permit.
+
+A second application of the B<tune> function is to set or alter parameters
+used by the specialized function B<RRAs> for aberrant behavior detection.
 
 =over 8
 
@@ -51,13 +61,59 @@ Setting I<max> to 'U' will disable this limit.
 
 alter the type B<DST> of a data source.
 
-=item S<[B<--data-source-rename>|B<-r> I<old-name>:I<new-name>]>
+=item S<B<--data-source-rename>|B<-r> I<old-name>:I<new-name>>
 
 rename a data source
 
+=item S<B<--deltapos> I<scale-value>>
+
+Alter the deviation scaling factor for the upper bound of the confidence band
+used internally to calculate violations for the FAILURES B<RRA>. The default
+value is 2. Note that this parameter is not related to graphing confidence
+bounds, that scale factor is specified as a CDEV argument to generate a graph with
+confidence bounds. It need agree with the value used internally by the FAILURES
+B<RRA> (although common sense dictates it should).
+
+=item S<B<--deltaneg> I<scale-value>>
+
+Alter the deviation scaling factor for the lower bound of the confidence band
+used internally to calculate violations for the FAILURES B<RRA>. The default
+value is 2. As with B<--deltapos>, this argument is unrelated to the scale
+factor chosen when graphing confidence bounds.
+
+=item S<B<--failure-threshold> I<failure-threshold>>
+
+Alter the number of confidence bound violations that constitute a failure for
+purposes of the FAILURES B<RRA>. This must be an integer less than or equal to
+the window length of the FAILURES B<RRA>. This restriction is not verified by
+the tune option, so one can reset failure-threshold and window-length 
+simultaneously. Setting this option will reset the count of violations to 0.
+
+=item S<B<--window-length> I<window-length>>
+
+Alter the number of time points in the temporal window for determining failures.
+This must be an integer greater than or equal to the window length of the
+FAILURES B<RRA> and less than or equal to 28. Setting this option will reset the
+count of violations to 0.
+
+=item S<B<--alpha> I<adaption-parameter>>
+
+Alter the intercept adaptation parameter for the Holt-Winters forecasting algorithm.
+Must be between 0 and 1.
+
+=item S<B<--beta> I<adaption-parameter>>
+
+Alter the intercept adaptation parameter for the Holt-Winters forecasting algorithm.
+Must be between 0 and 1.
+
+=item S<B<--gamma> I<adaption-parameter>>
+
+Alter the seasonal coefficient and deviation adaptation parameters the SEASONAL and
+DEVSEAONAL B<RRAs>. Must be between 0 and 1.
+
 =back
 
-=head1 EXAMPLE
+=head1 EXAMPLE 1
 
 C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
 
@@ -65,6 +121,14 @@ Set the minimum required heartbeat for data sources 'in', 'out'
 and 'through' to 10000 seconds which is a little over one day in data.rrd.
 This would allow to feed old data from mrtg-2.0 right into
 rrdtool without generating *UNKNOWN* entries.
+
+=head1 EXAMPLE 2
+
+C<rrdtool tune monitor.rrd --window-length 5 --failure-threshold 3>
+
+If the FAILURES B<RRA> is implicitly created, the default window-length is 9 and 
+the default failure-thresold is 7. This command now defines a failure as 3 or more
+violations in a temporal window of 5 time points.
 
 =head1 AUTHOR
 
