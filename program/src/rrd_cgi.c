@@ -211,8 +211,13 @@ char* rrdsetenv(long argc, char **args){
 char* rrdgetenv(long argc, char **args){
   if (argc != 1) {
     return stralloc("[ERROR: getenv faild because it did not get 1 argument only]");
-  };
-  return stralloc(getenv(args[0]));
+  }
+  else if (getenv(args[0]) == NULL) {
+    return stralloc("");
+  }
+  else {
+    return stralloc(getenv(args[0]));
+  }
 }
 
 char* rrdgoodfor(long argc, char **args){
