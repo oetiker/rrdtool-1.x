@@ -1,88 +1,9 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
+ * RRDtool 1.2rc2  Copyright by Tobi Oetiker, 1997-2005
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
  * $Id$
- * $Log$
- * Revision 1.17  2004/05/26 22:11:12  oetiker
- * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
- *
- * Revision 1.16  2004/05/25 20:52:16  oetiker
- * fix spelling and syntax, especially in messages that are printed -- Mike Slifcak
- *
- * Revision 1.15  2004/05/25 20:51:49  oetiker
- * Update displayed copyright messages to be consistent. -- Mike Slifcak
- *
- * Revision 1.14  2003/11/11 19:46:21  oetiker
- * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
- *
- * Revision 1.13  2003/11/11 19:38:03  oetiker
- * rrd files should NOT change size ever ... bulk update code wa buggy.
- * -- David M. Grimes <dgrimes@navisite.com>
- *
- * Revision 1.12  2003/09/04 13:16:12  oetiker
- * should not assigne but compare ... grrrrr
- *
- * Revision 1.11  2003/09/02 21:58:35  oetiker
- * be pickier about what we accept in rrd_update. Complain if things do not work out
- *
- * Revision 1.10  2003/04/29 19:14:12  jake
- * Change updatev RRA return from index_number to cf_nam, pdp_cnt.
- * Also revert accidental addition of -I to aclocal MakeMakefile.
- *
- * Revision 1.9  2003/04/25 18:35:08  jake
- * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
- *
- * Revision 1.8  2003/03/31 21:22:12  oetiker
- * enables RRDtool updates with microsecond or in case of windows millisecond
- * precision. This is needed to reduce time measurement error when archive step
- * is small. (<30s) --  Sasha Mikheev <sasha@avalon-net.co.il>
- *
- * Revision 1.7  2003/02/13 07:05:27  oetiker
- * Find attached the patch I promised to send to you. Please note that there
- * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
- * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
- * library is identical to librrd, but it contains support code for per-thread
- * global variables currently used for error information only. This is similar
- * to how errno per-thread variables are implemented.  librrd_th must be linked
- * alongside of libpthred
- *
- * There is also a new file "THREADS", holding some documentation.
- *
- * -- Peter Stamfest <peter@stamfest.at>
- *
- * Revision 1.6  2002/02/01 20:34:49  oetiker
- * fixed version number and date/time
- *
- * Revision 1.5  2001/05/09 05:31:01  oetiker
- * Bug fix: when update of multiple PDP/CDP RRAs coincided
- * with interpolation of multiple PDPs an incorrect value was
- * stored as the CDP. Especially evident for GAUGE data sources.
- * Minor changes to rrdcreate.pod. -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.4  2001/03/10 23:54:41  oetiker
- * Support for COMPUTE data sources (CDEF data sources). Removes the RPN
- * parser and calculator from rrd_graph and puts then in a new file,
- * rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
- * clean-up of aberrant behavior stuff, including a bug fix.
- * Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
- * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.3  2001/03/04 13:01:55  oetiker
- * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
- * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
- * This is backwards compatible! But new files using the Aberrant stuff are not readable
- * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
- * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.2  2001/03/04 11:14:25  oetiker
- * added at-style-time@value:value syntax to rrd_update
- * --  Dave Bodenstab <imdave@mcs.net>
- *
- * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
- * checkin
- *
  *****************************************************************************/
 
 #include "rrd_tool.h"
@@ -168,7 +89,7 @@ int
 main(int argc, char **argv){
         rrd_update(argc,argv);
         if (rrd_test_error()) {
-                printf("RRDtool 1.1.x  Copyright (C) 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
+                printf("RRDtool 1.2rc2  Copyright by Tobi Oetiker, 1997-2005\n\n"
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"
