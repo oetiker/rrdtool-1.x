@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1999
+ * RRDtool 1.1.x  Copyright Tobias Oetiker, 1999
  * This code is stolen from rateup (mrtg-2.x) by Dave Rand
  *****************************************************************************
  * diff calculate the difference between two very long integers available as
@@ -7,8 +7,11 @@
  *****************************************************************************
  * $Id$
  * $Log$
- * Revision 1.1  2001/02/25 22:25:05  oetiker
- * Initial revision
+ * Revision 1.2  2002/02/01 20:34:49  oetiker
+ * fixed version number and date/time
+ *
+ * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
+ * checkin
  *
  * Revision 1.1  1998/10/08 18:21:45  oetiker
  * Initial revision
