@@ -103,12 +103,14 @@ rrd_create_r(char *filename,
     /* static header */
     if((rrd.stat_head = calloc(1,sizeof(stat_head_t)))==NULL){
 	rrd_set_error("allocating rrd.stat_head");
+	rrd_free(&rrd);
 	return(-1);
     }
 
     /* live header */
     if((rrd.live_head = calloc(1,sizeof(live_head_t)))==NULL){
 	rrd_set_error("allocating rrd.live_head");
+	rrd_free(&rrd);
 	return(-1);
     }
 
@@ -388,6 +390,7 @@ rrd_create_r(char *filename,
                 fprintf(stderr,"Creating HW contingent RRAs\n");
 #endif
                 if (create_hw_contingent_rras(&rrd,period,hashed_name) == -1) {
+                    rrd_set_error("creating contingent RRA");
                     rrd_free(&rrd);
                     return -1;
                 }

@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.7  2004/05/25 20:53:21  oetiker
+ * prevent small leak when resources are exhausted -- Mike Slifcak
+ *
  * Revision 1.6  2004/05/25 20:51:49  oetiker
  * Update displayed copyright messages to be consistent. -- Mike Slifcak
  *
@@ -72,6 +75,7 @@ rrd_dump_r(char *filename)
     rrd_value_t  value;
     struct tm    tm;
     if(rrd_open(filename, &in_file,&rrd, RRD_READONLY)==-1){
+	rrd_free(&rrd);
 	return(-1);
     }
 
