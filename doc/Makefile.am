@@ -11,11 +11,12 @@ CLEANFILES = *.1 *.html *.txt *-dircache *.pm *.pdf *~ core *itemcache *.rej *.o
 SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
       rrdgraph_data.src rrdgraph_graph.src
 
+PODOLD = rrdgraph-old.pod
+
 POD = rrdtool.pod rrdlast.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
-	cdeftutorial.pod rpntutorial.pod rrdgraph-old.pod  bin_dec_hex.pod \
+	cdeftutorial.pod rpntutorial.pod rrdthreads.pod bin_dec_hex.pod \
 	rrdfetch.pod rrdrestore.pod rrddump.pod rrdtune.pod rrdresize.pod \
-	rrdxport.pod rrdcgi.pod rrdtutorial.pod rrdinfo.pod rrdthreads.pod \
-	rrd-beginners.pod \
+	rrdcgi.pod rrdtutorial.pod rrdinfo.pod rrdxport.pod rrd-beginners.pod \
 	$(SRC:.src=.pod)
 
 PMP = RRDs.pm RRDp.pm
