@@ -5,6 +5,11 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.8  2003/03/31 21:22:12  oetiker
+ * enables RRDtool updates with microsecond or in case of windows millisecond
+ * precision. This is needed to reduce time measurement error when archive step
+ * is small. (<30s) --  Sasha Mikheev <sasha@avalon-net.co.il>
+ *
  * Revision 1.7  2003/02/13 07:05:27  oetiker
  * Find attached the patch I promised to send to you. Please note that there
  * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
@@ -66,6 +71,46 @@
 
 #include "rrd_is_thread_safe.h"
 
+#ifdef WIN32
+/*
+ * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
+ * replacement.
+ */
+#include <sys/timeb.h>
+
+struct timeval {
+	time_t tv_sec; /* seconds */
+	long tv_usec;  /* microseconds */
+};
+
+struct __timezone {
+	int  tz_minuteswest; /* minutes W of Greenwich */
+	int  tz_dsttime;     /* type of dst correction */
+};
+
+static gettimeofday(struct timeval *t, struct __timezone *tz) {
+	
+	struct timeb current_time;
+
+	_ftime(&current_time);
+	
+	t->tv_sec  = current_time.time;
+	t->tv_usec = current_time.millitm * 1000;
+}
+
+#endif
+/*
+ * normilize time as returned by gettimeofday. usec part must
+ * be always >= 0
+ */
+static void normalize_time(struct timeval *t)
+{
+	if(t->tv_usec < 0) {
+		t->tv_sec--;
+		t->tv_usec += 1000000L;
+	}
+}
+
 /* Local prototypes */
 int LockRRD(FILE *rrd_file);
 void write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
@@ -123,7 +168,6 @@ rrd_update(int argc, char **argv)
 			
 		case '?':
 			rrd_set_error("unknown option '%s'",argv[optind-1]);
-			/*            rrd_free(&rrd); */
 			return(-1);
 		}
     }
@@ -158,7 +202,7 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
     unsigned long    rra_current;        /* byte pointer to the current write
 					  * spot in the rrd file. */
     unsigned long    rra_pos_tmp;        /* temporary byte pointer. */
-    unsigned long    interval,
+    double           interval,
 	pre_int,post_int;                /* interval between this and
 					  * the last run */
     unsigned long    proc_pdp_st;        /* which pdp_st was the last
@@ -184,7 +228,10 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 
     FILE             *rrd_file;
     rrd_t            rrd;
-    time_t           current_time = time(NULL);
+    time_t           current_time;
+    unsigned long    current_time_usec;  /* microseconds part of current time */
+    struct timeval   tmp_time;           /* used for time conversion */
+
     char             **updvals;
     int              schedule_smooth = 0;
 	rrd_value_t      *seasonal_coef = NULL, *last_seasonal_coef = NULL;
@@ -203,6 +250,7 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
     enum cf_en       current_cf;
 					 /* numeric id of the current consolidation function */
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
+    int		     version;  /* rrd version */
 
     rpnstack_init(&rpnstack);
 
@@ -211,10 +259,24 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	rrd_set_error("Not enough arguments");
 	return -1;
     }
+    
+    
 
     if(rrd_open(filename,&rrd_file,&rrd, RRD_READWRITE)==-1){
 	return -1;
     }
+    /* initialize time */
+    version = atoi(rrd.stat_head->version);
+    gettimeofday(&tmp_time, 0);
+    normalize_time(&tmp_time);
+    current_time = tmp_time.tv_sec;
+    if(version >= 3) {
+        current_time_usec = tmp_time.tv_usec;
+    }
+    else {
+	current_time_usec = 0;
+    }
+
     rra_current = rra_start = rra_begin = ftell(rrd_file);
     /* This is defined in the ANSI C standard, section 7.9.5.3:
 
@@ -397,11 +459,22 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	    }
 
 	    current_time = mktime(&ds_tv.tm) + ds_tv.offset;
+	    current_time_usec = 0; /* FIXME: how to handle usecs here ? */
+	    
 	} else if (strcmp(updvals[0],"N")==0){
-	    current_time = time(NULL);
+	    gettimeofday(&tmp_time, 0);
+	    normalize_time(&tmp_time);
+	    current_time = tmp_time.tv_sec;
+	    current_time_usec = tmp_time.tv_usec;
 	} else {
-	    current_time = atol(updvals[0]);
+	    double tmp;
+	    tmp = strtod(updvals[0], 0);
+	    current_time = floor(tmp);
+	    current_time_usec = (long)((tmp - current_time) * 1000000L);
 	}
+	/* dont do any correction for old version RRDs */
+	if(version < 3) 
+	    current_time_usec = 0;
 	
 	if(current_time <= rrd.live_head->last_up){
 	    rrd_set_error("illegal attempt to update using time %ld when "
@@ -430,14 +503,17 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	/* when did the last pdp_st occur */
 	occu_pdp_age = current_time % rrd.stat_head->pdp_step;
 	occu_pdp_st = current_time - occu_pdp_age;
-	interval = current_time - rrd.live_head->last_up;
+	/* interval = current_time - rrd.live_head->last_up; */
+	interval    = current_time + ((double)current_time_usec - (double)rrd.live_head->last_up_usec)/1000000.0 - rrd.live_head->last_up;
     
 	if (occu_pdp_st > proc_pdp_st){
 	    /* OK we passed the pdp_st moment*/
 	    pre_int =  occu_pdp_st - rrd.live_head->last_up; /* how much of the input data
 							      * occurred before the latest
 							      * pdp_st moment*/
+	    pre_int -= ((double)rrd.live_head->last_up_usec)/1000000.0; /* adjust usecs */
 	    post_int = occu_pdp_age;			     /* how much after it */
+	    post_int += ((double)current_time_usec)/1000000.0;  /* adjust usecs */
 	} else {
 	    pre_int = interval;
 	    post_int = 0;
@@ -449,9 +525,9 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	       "proc_pdp_st %lu\t" 
 	       "occu_pfp_age %lu\t" 
 	       "occu_pdp_st %lu\t"
-	       "int %lu\t"
-	       "pre_int %lu\t"
-	       "post_int %lu\n", proc_pdp_age, proc_pdp_st, 
+	       "int %lf\t"
+	       "pre_int %lf\t"
+	       "post_int %lf\n", proc_pdp_age, proc_pdp_st, 
 		occu_pdp_age, occu_pdp_st,
 	       interval, pre_int, post_int);
 #endif
@@ -1075,6 +1151,7 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	    
 	} /* endif a pdp_st has occurred */ 
 	rrd.live_head->last_up = current_time;
+	rrd.live_head->last_up_usec = current_time_usec; 
 	free(step_start);
     } /* function argument loop */
 
@@ -1112,17 +1189,33 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	return(-1);
     }
 
-    if(fwrite( rrd.live_head,
-	       sizeof(live_head_t), 1, rrd_file) != 1){
-	rrd_set_error("fwrite live_head to rrd");
-	free(updvals);
-	rrd_free(&rrd);
-	free(tmpl_idx);
-	free(pdp_temp);
-	free(pdp_new);
-	fclose(rrd_file);
-	return(-1);
+    if(version >= 3) {
+	    if(fwrite( rrd.live_head,
+		       sizeof(live_head_t), 1, rrd_file) != 1){
+		rrd_set_error("fwrite live_head to rrd");
+		free(updvals);
+		rrd_free(&rrd);
+		free(tmpl_idx);
+		free(pdp_temp);
+		free(pdp_new);
+		fclose(rrd_file);
+		return(-1);
+	    }
     }
+    else {
+	    if(fwrite( &rrd.live_head->last_up,
+		       sizeof(time_t), 1, rrd_file) != 1){
+		rrd_set_error("fwrite live_head to rrd");
+		free(updvals);
+		rrd_free(&rrd);
+		free(tmpl_idx);
+		free(pdp_temp);
+		free(pdp_new);
+		fclose(rrd_file);
+		return(-1);
+	    }
+    }
+	    
 
     if(fwrite( rrd.pdp_prep,
 	       sizeof(pdp_prep_t),

@@ -5,6 +5,11 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.7  2003/03/31 21:22:12  oetiker
+ * enables RRDtool updates with microsecond or in case of windows millisecond
+ * precision. This is needed to reduce time measurement error when archive step
+ * is small. (<30s) --  Sasha Mikheev <sasha@avalon-net.co.il>
+ *
  * Revision 1.6  2003/02/13 07:05:27  oetiker
  * Find attached the patch I promised to send to you. Please note that there
  * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
@@ -52,6 +57,8 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 
     
     char *mode = NULL;
+    int version;
+    
     rrd_init(rrd);
     if (rdwr == RRD_READONLY) {
 #ifndef WIN32
@@ -90,7 +97,8 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 
 
     MYFREAD(rrd->stat_head, stat_head_t,  1)
-    
+    version = atoi(rrd->stat_head->version);
+
 	/* lets do some test if we are on track ... */
 	if (strncmp(rrd->stat_head->cookie,RRD_COOKIE,4) != 0){
 	    rrd_set_error("'%s' is not an RRD file",file_name);
@@ -98,7 +106,7 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	    fclose(*in_file);
 	    return(-1);}
 
-        if (atoi(rrd->stat_head->version) > atoi(RRD_VERSION)){
+        if (version > atoi(RRD_VERSION)){
 	    rrd_set_error("can't handle RRD file version %s",
 			rrd->stat_head->version);
 	    free(rrd->stat_head);
@@ -113,7 +121,19 @@ rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 
     MYFREAD(rrd->ds_def,    ds_def_t,     rrd->stat_head->ds_cnt)
     MYFREAD(rrd->rra_def,   rra_def_t,    rrd->stat_head->rra_cnt)
-    MYFREAD(rrd->live_head,   live_head_t,  1)
+    /* handle different format for the live_head */
+    if(version < 3) {
+	    rrd->live_head = (live_head_t *)malloc(sizeof(live_head_t));
+	    if(rrd->live_head == NULL) {
+		rrd_set_error("live_head_t malloc");
+		fclose(*in_file); 
+		return (-1);
+	    }
+            fread(&rrd->live_head->last_up, sizeof(long), 1, *in_file); 
+    }
+    else {
+	    MYFREAD(rrd->live_head, live_head_t, 1)
+    }
     MYFREAD(rrd->pdp_prep,  pdp_prep_t,   rrd->stat_head->ds_cnt)
     MYFREAD(rrd->cdp_prep,  cdp_prep_t,   (rrd->stat_head->rra_cnt
 	                                     * rrd->stat_head->ds_cnt))

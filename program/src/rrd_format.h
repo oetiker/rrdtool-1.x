@@ -19,7 +19,9 @@
  *****************************************************************************/
 
 #define RRD_COOKIE    "RRD"
-#define RRD_VERSION   "0002"
+/* #define RRD_VERSION   "0002" */
+/* changed because microsecond precision requires another field */
+#define RRD_VERSION   "0003"
 #define FLOAT_COOKIE  8.642135E130
 
 #include "rrd_nan_inf.h"
@@ -248,6 +250,8 @@ typedef struct rra_def_t {
 
 typedef struct live_head_t {
     time_t           last_up;            /* when was rrd last updated */
+    long	     last_up_usec;	 /* micro seconds part of the
+					    update timestamp. Always >= 0 */
 } live_head_t;
 
 
