@@ -129,7 +129,7 @@ xtr(image_desc_t *im,time_t mytime){
 }
 
 /* translate data values into y coordinates */
-int
+double
 ytr(image_desc_t *im, double value){
     static double pixie;
     double yval;
@@ -140,26 +140,25 @@ ytr(image_desc_t *im, double value){
 	pixie = (double) im->ysize / (log10(im->maxval) - log10(im->minval));
       yval = im->yorigin;
     } else if(!im->logarithmic) {
-      yval = im->yorigin - pixie * (value - im->minval) + 0.5;
+      yval = im->yorigin - pixie * (value - im->minval);
     } else {
       if (value < im->minval) {
 	yval = im->yorigin;
       } else {
-	yval = im->yorigin - pixie * (log10(value) - log10(im->minval)) + 0.5;
+	yval = im->yorigin - pixie * (log10(value) - log10(im->minval));
       }
     }
     /* make sure we don't return anything too unreasonable. GD lib can
        get terribly slow when drawing lines outside its scope. This is 
        especially problematic in connection with the rigid option */
     if (! im->rigid) {
-      return (int)yval;
-    } else if ((int)yval > im->yorigin) {
-      return im->yorigin+2;
-    } else if ((int) yval < im->yorigin - im->ysize){
-      return im->yorigin - im->ysize - 2;
-    } else {
-      return (int)yval;
+      /* keep yval as-is */
+    } else if (yval > im->yorigin) {
+      yval = im->yorigin+2;
+    } else if (yval < im->yorigin - im->ysize){
+      yval = im->yorigin - im->ysize - 2;
     } 
+    return yval;
 }
 
 
@@ -438,7 +437,73 @@ expand_range(image_desc_t *im)
 #endif
 }
 
-    
+void
+apply_gridfit(image_desc_t *im)
+{
+  if (isnan(im->minval) || isnan(im->maxval))
+    return;
+  ytr(im,DNAN);
+  if (im->logarithmic) {
+    double ya, yb, ypix, ypixfrac;
+    double log10_range = log10(im->maxval) - log10(im->minval);
+    ya = pow((double)10, floor(log10(im->minval)));
+    while (ya < im->minval)
+      ya *= 10;
+    if (ya > im->maxval)
+      return; /* don't have y=10^x gridline */
+    yb = ya * 10;
+    if (yb <= im->maxval) {
+      /* we have at least 2 y=10^x gridlines.
+	 Make sure distance between them in pixels
+	 are an integer by expanding im->maxval */
+      double y_pixel_delta = ytr(im, ya) - ytr(im, yb);
+      double factor = y_pixel_delta / floor(y_pixel_delta);
+      double new_log10_range = factor * log10_range;
+      double new_ymax_log10 = log10(im->minval) + new_log10_range;
+      im->maxval = pow(10, new_ymax_log10);
+      ytr(im, DNAN); /* reset precalc */
+      log10_range = log10(im->maxval) - log10(im->minval);
+    }
+    /* make sure first y=10^x gridline is located on 
+       integer pixel position by moving scale slightly 
+       downwards (sub-pixel movement) */
+    ypix = ytr(im, ya) + im->ysize; /* add im->ysize so it always is positive */
+    ypixfrac = ypix - floor(ypix);
+    if (ypixfrac > 0 && ypixfrac < 1) {
+      double yfrac = ypixfrac / im->ysize;
+      im->minval = pow(10, log10(im->minval) - yfrac * log10_range);
+      im->maxval = pow(10, log10(im->maxval) - yfrac * log10_range);
+      ytr(im, DNAN); /* reset precalc */
+    }
+  } else {
+    /* Make sure we have an integer pixel distance between
+       each minor gridline */
+    double ypos1 = ytr(im, im->minval);
+    double ypos2 = ytr(im, im->minval + im->ygrid_scale.gridstep);
+    double y_pixel_delta = ypos1 - ypos2;
+    double factor = y_pixel_delta / floor(y_pixel_delta);
+    double new_range = factor * (im->maxval - im->minval);
+    double gridstep = im->ygrid_scale.gridstep;
+    double minor_y, minor_y_px, minor_y_px_frac;
+    im->maxval = im->minval + new_range;
+    ytr(im, DNAN); /* reset precalc */
+    /* make sure first minor gridline is on integer pixel y coord */
+    minor_y = gridstep * floor(im->minval / gridstep);
+    while (minor_y < im->minval)
+      minor_y += gridstep;
+    minor_y_px = ytr(im, minor_y) + im->ysize; /* ensure > 0 by adding ysize */
+    minor_y_px_frac = minor_y_px - floor(minor_y_px);
+    if (minor_y_px_frac > 0 && minor_y_px_frac < 1) {
+      double yfrac = minor_y_px_frac / im->ysize;
+      double range = im->maxval - im->minval;
+      im->minval = im->minval - yfrac * range;
+      im->maxval = im->maxval - yfrac * range;
+      ytr(im, DNAN); /* reset precalc */
+    }
+    calc_horizontal_grid(im); /* recalc with changed im->maxval */
+  }
+}
+
 /* reduce data reimplementation by Alex */
 
 void
@@ -1385,21 +1450,15 @@ leg_place(image_desc_t *im)
 
 
 int
-horizontal_grid(image_desc_t   *im)
+calc_horizontal_grid(image_desc_t   *im)
 {
     double   range;
     double   scaledrange;
     int      pixel,i;
-    int      sgrid,egrid;
-    double   gridstep;
-    double   scaledstep;
-    char     graph_label[100];
-    double   X0,X1,Y0;
-    int      labfact,gridind;
+    int      gridind;
     int      decimals, fractionals;
-    char     labfmt[64];
 
-    labfact=2;
+    im->ygrid_scale.labfact=2;
     gridind=-1;
     range =  im->maxval - im->minval;
     scaledrange = range / im->magfact;
@@ -1421,25 +1480,25 @@ horizontal_grid(image_desc_t   *im)
 	    
 	    fractionals = floor(log10(range));
 	    if(fractionals < 0) /* small amplitude. */
-		sprintf(labfmt, "%%%d.%df", decimals - fractionals + 1, -fractionals + 1);
+		sprintf(im->ygrid_scale.labfmt, "%%%d.%df", decimals - fractionals + 1, -fractionals + 1);
 	    else
-		sprintf(labfmt, "%%%d.1f", decimals + 1);
-	    gridstep = pow((double)10, (double)fractionals);
-	    if(gridstep == 0) /* range is one -> 0.1 is reasonable scale */
-		gridstep = 0.1;
+		sprintf(im->ygrid_scale.labfmt, "%%%d.1f", decimals + 1);
+	    im->ygrid_scale.gridstep = pow((double)10, (double)fractionals);
+	    if(im->ygrid_scale.gridstep == 0) /* range is one -> 0.1 is reasonable scale */
+		im->ygrid_scale.gridstep = 0.1;
 	    /* should have at least 5 lines but no more then 15 */
-	    if(range/gridstep < 5)
-                gridstep /= 10;
-	    if(range/gridstep > 15)
-                gridstep *= 10;
-	    if(range/gridstep > 5) {
-		labfact = 1;
-		if(range/gridstep > 8)
-		    labfact = 2;
+	    if(range/im->ygrid_scale.gridstep < 5)
+                im->ygrid_scale.gridstep /= 10;
+	    if(range/im->ygrid_scale.gridstep > 15)
+                im->ygrid_scale.gridstep *= 10;
+	    if(range/im->ygrid_scale.gridstep > 5) {
+		im->ygrid_scale.labfact = 1;
+		if(range/im->ygrid_scale.gridstep > 8)
+		    im->ygrid_scale.labfact = 2;
 	    }
 	    else {
-		gridstep /= 5;
-		labfact = 5;
+		im->ygrid_scale.gridstep /= 5;
+		im->ygrid_scale.labfact = 5;
 	    }
 	}
 	else {
@@ -1453,33 +1512,40 @@ horizontal_grid(image_desc_t   *im)
 	    
 	    for(i=0; i<4;i++) {
 	       if (pixel * ylab[gridind].lfac[i] >=  2 * im->text_prop[TEXT_PROP_AXIS].size) {
-		  labfact =  ylab[gridind].lfac[i];
+		  im->ygrid_scale.labfact =  ylab[gridind].lfac[i];
 		  break;
 	       }		          
 	    } 
 	    
-	    gridstep = ylab[gridind].grid * im->magfact;
+	    im->ygrid_scale.gridstep = ylab[gridind].grid * im->magfact;
 	}
     } else {
-	gridstep = im->ygridstep;
-	labfact = im->ylabfact;
+	im->ygrid_scale.gridstep = im->ygridstep;
+	im->ygrid_scale.labfact = im->ylabfact;
     }
-    
-   X0=im->xorigin;
-   X1=im->xorigin+im->xsize;
+    return 1;
+}
+
+int draw_horizontal_grid(image_desc_t *im)
+{
+    int      i;
+    double   scaledstep;
+    char     graph_label[100];
+    double X0=im->xorigin;
+    double X1=im->xorigin+im->xsize;
    
-    sgrid = (int)( im->minval / gridstep - 1);
-    egrid = (int)( im->maxval / gridstep + 1);
-    scaledstep = gridstep/im->magfact;
+    int sgrid = (int)( im->minval / im->ygrid_scale.gridstep - 1);
+    int egrid = (int)( im->maxval / im->ygrid_scale.gridstep + 1);
+    scaledstep = im->ygrid_scale.gridstep/im->magfact;
     for (i = sgrid; i <= egrid; i++){
-       Y0=ytr(im,gridstep*i);
+       double Y0=ytr(im,im->ygrid_scale.gridstep*i);
        if ( Y0 >= im->yorigin-im->ysize
 	         && Y0 <= im->yorigin){       
-	    if(i % labfact == 0){		
+	    if(i % im->ygrid_scale.labfact == 0){		
 		if (i==0 || im->symbol == ' ') {
 		    if(scaledstep < 1){
 			if(im->extra_flags & ALTYGRID) {
-			    sprintf(graph_label,labfmt,scaledstep*i);
+			    sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*i);
 			}
 			else {
 			    sprintf(graph_label,"%4.1f",scaledstep*i);
@@ -1757,7 +1823,7 @@ grid_paint(image_desc_t   *im)
 	if(im->logarithmic){
 		res = horizontal_log_grid(im);
 	} else {
-		res = horizontal_grid(im);
+		res = draw_horizontal_grid(im);
 	}
 
 	/* dont draw horizontal grid if there is no min and max val */
@@ -2134,6 +2200,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
   if(!im->rigid && ! im->logarithmic)
     expand_range(im);   /* make sure the upper and lower limit are
                            sensible values */
+
+  if (!calc_horizontal_grid(im))
+    return -1;
+  if (im->gridfit)
+    apply_gridfit(im);
 
 /**************************************************************
  *** Calculating sizes and locations became a bit confusing ***
@@ -2521,6 +2592,7 @@ rrd_graph_init(image_desc_t *im)
     im->unitsexponent= 9999;
     im->extra_flags= 0;
     im->rigid = 0;
+    im->gridfit = 1;
     im->imginfo = NULL;
     im->lazy = 0;
     im->logarithmic = 0;
@@ -2585,6 +2657,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"alt-autoscale-max", no_argument,    0,   259 },
 	    {"units-exponent",required_argument, 0,  260},
 	    {"step",       required_argument, 0,   261},
+	    {"no-gridfit", no_argument,       0,   262},
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
@@ -2615,6 +2688,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    break;
 	case 261:
 	    im->step =  atoi(optarg);
+	    break;
+	case 262:
+	    im->gridfit = 0;
 	    break;
 	case 's':
 	    if ((parsetime_error = parsetime(optarg, &start_tv))) {
