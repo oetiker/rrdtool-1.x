@@ -50,9 +50,6 @@ The RRD Tools Perl modules.
 %build
 CPPFLAGS="-I/usr/include/libart-2.0 -I/usr/include/freetype2"
 export CPPFLAGS
-aclocal > /tmp/aclocal.out 2>&1
-automake
-autoconf
 %configure
 make
 
@@ -131,5 +128,7 @@ rm -rf %{buildroot}
 %{_mandir}/man1/RRDs.1*
 
 %changelog
+* Wed May 26 2004 Mike Slifcak <slif@bellsouth.net> 1.1.0-0.1.20040526
+- package examples with rrdtool-perl (decouple Perl from main package)
 * Thu Apr 29 2004 Chris Adams <cmadams@hiwaay.net> 1.1.0-0.1.20040430
 - initial build
