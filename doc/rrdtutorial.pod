@@ -368,7 +368,7 @@ gif file !
       --start 920804400 --end 920808000               \
       --vertical-label m/s                            \
       DEF:myspeed=test.rrd:speed:AVERAGE              \
-      CDEF:realspeed=myspeed,1000,*                   \
+      CDEF:realspeed=myspeed,1000,\*                  \
       LINE2:realspeed#FF0000
 
 After viewing this GIF, you notice the "m" has disappeared. This it what
