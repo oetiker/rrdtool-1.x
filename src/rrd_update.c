@@ -88,6 +88,9 @@
 #include "rrd_tool.h"
 #include <sys/types.h>
 #include <fcntl.h>
+#ifdef HAVE_MMAP
+ #include <sys/mman.h>
+#endif
 
 #ifdef WIN32
  #include <sys/locking.h>
@@ -142,10 +145,17 @@ static void normalize_time(struct timeval *t)
 
 /* Local prototypes */
 int LockRRD(FILE *rrd_file);
+#ifdef HAVE_MMAP
+info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
+					unsigned long *rra_current,
+					unsigned short CDP_scratch_idx, FILE *rrd_file,
+					info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file);
+#else
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
 					unsigned short CDP_scratch_idx, FILE *rrd_file,
 					info_t *pcdp_summary, time_t *rra_time);
+#endif
 int rrd_update_r(char *filename, char *template, int argc, char **argv);
 int _rrd_update(char *filename, char *template, int argc, char **argv, 
 					info_t*);
@@ -338,6 +348,10 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
     int		     version;  /* rrd version */
     char             *endptr; /* used in the conversion */
+#ifdef HAVE_MMAP
+    void	     *rrd_mmaped_file;
+    unsigned long    rrd_filesize;
+#endif
 
     rpnstack_init(&rpnstack);
 
@@ -374,7 +388,13 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         followed by output without an intervening call to a file
         positioning function, unless the input oepration encounters
         end-of-file. */
+#ifdef HAVE_MMAP
+    fseek(rrd_file, 0, SEEK_END);
+    rrd_filesize = ftell(rrd_file);
+    fseek(rrd_file, rra_current, SEEK_SET);
+#else
     fseek(rrd_file, 0, SEEK_CUR);
+#endif
 
     
     /* get exclusive lock to whole file.
@@ -471,6 +491,23 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	return(-1);
     }
 
+#ifdef HAVE_MMAP
+    rrd_mmaped_file = mmap(0, 
+		    	rrd_filesize, 
+			PROT_READ | PROT_WRITE, 
+			MAP_SHARED, 
+			fileno(rrd_file), 
+			0);
+    if (rrd_mmaped_file == MAP_FAILED) {
+        rrd_set_error("error mmapping file %s", filename);
+	free(updvals);
+	free(pdp_temp);
+	free(tmpl_idx);
+	rrd_free(&rrd);
+        fclose(rrd_file);
+	return(-1);
+    }
+#endif
     /* loop through the arguments. */
     for(arg_i=0; arg_i<argc;arg_i++) {
 	char *stepper = malloc((strlen(argv[arg_i])+1)*sizeof(char));
@@ -485,6 +522,9 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
                 free(pdp_temp);  
                 free(tmpl_idx);
                 rrd_free(&rrd);
+#ifdef HAVE_MMAP
+    		munmap(rrd_mmaped_file, rrd_filesize);
+#endif
                 fclose(rrd_file);
                 return(-1);
          }
@@ -574,11 +614,13 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	
 	/* seek to the beginning of the rra's */
 	if (rra_current != rra_begin) {
+#ifndef HAVE_MMAP
 	    if(fseek(rrd_file, rra_begin, SEEK_SET) != 0) {
 		rrd_set_error("seek error in rrd");
 		free(step_start);
 		break;
 	    }
+#endif
 	    rra_current = rra_begin;
 	}
 	rra_start = rra_begin;
@@ -1212,10 +1254,12 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		rra_pos_tmp = rra_start +
 		   (rrd.stat_head->ds_cnt)*(rrd.rra_ptr[i].cur_row)*sizeof(rrd_value_t);
 		if(rra_pos_tmp != rra_current) {
+#ifndef HAVE_MMAP
 		   if(fseek(rrd_file, rra_pos_tmp, SEEK_SET) != 0){
 		      rrd_set_error("seek error in rrd");
 		      break;
 		   }
+#endif
 		   rra_current = rra_pos_tmp;
 		}
 
@@ -1229,8 +1273,13 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		   % (rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step))
 		   - ((rra_step_cnt[i]-1)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
 		}
+#ifdef HAVE_MMAP
+		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file, 
+		   pcdp_summary, &rra_time, rrd_mmaped_file);
+#else
 		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file, 
 		   pcdp_summary, &rra_time);
+#endif
 		if (rrd_test_error()) break;
 
 		/* write other rows of the bulk update, if any */
@@ -1262,8 +1311,13 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		      % (rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step))
 		      - ((rra_step_cnt[i]-2)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
 		   }
+#ifdef HAVE_MMAP
+		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file,
+		      pcdp_summary, &rra_time, rrd_mmaped_file);
+#else
 		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file,
 		      pcdp_summary, &rra_time);
+#endif
 		}
 		
 		if (rrd_test_error())
@@ -1287,6 +1341,11 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	if (rra_step_cnt != NULL) free(rra_step_cnt);
     rpnstack_free(&rpnstack);
 
+#ifdef HAVE_MMAP
+    if (munmap(rrd_mmaped_file, rrd_filesize) == -1) {
+            rrd_set_error("error writing(unmapping) file: %s", filename);
+    }
+#endif    
     /* if we got here and if there is an error and if the file has not been
      * written to, then close things up and return. */
     if (rrd_test_error()) {
@@ -1472,10 +1531,17 @@ LockRRD(FILE *rrdfile)
 }
 
 
+#ifdef HAVE_MMAP
+info_t
+*write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
+	       unsigned short CDP_scratch_idx, FILE *rrd_file,
+		   info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file)
+#else
 info_t
 *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
 	       unsigned short CDP_scratch_idx, FILE *rrd_file,
 		   info_t *pcdp_summary, time_t *rra_time)
+#endif
 {
    unsigned long ds_idx, cdp_idx;
    infoval iv;
@@ -1499,12 +1565,18 @@ info_t
 		 rrd->rra_def[rra_idx].pdp_cnt, rrd->ds_def[ds_idx].ds_nam),
          RD_I_VAL, iv);
 	  }
+#ifdef HAVE_MMAP
+	  memcpy((char *)rrd_mmaped_file + *rra_current,
+			  &(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
+			  sizeof(rrd_value_t));
+#else
 	  if(fwrite(&(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
 		 sizeof(rrd_value_t),1,rrd_file) != 1)
 	  { 
 	     rrd_set_error("writing rrd");
 	     return 0;
 	  }
+#endif
 	  *rra_current += sizeof(rrd_value_t);
 	}
 	return (pcdp_summary);
