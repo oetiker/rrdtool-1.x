@@ -36,11 +36,11 @@ to-scp: to-dist
 
 site-perl-inst: site-perl-install
 
-site-perl-install: bindings/perl-piped/Makefile bindings/perl-shared/Makefile
+site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefile
 	cd bindings/perl-piped && $(MAKE) install
 	cd bindings/perl-shared && $(MAKE) install
 
-site-tcl-install:
+site-tcl-install: all
 	cd bindings/tcl && $(MAKE) tcl-install
 
 ##END##
