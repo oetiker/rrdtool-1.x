@@ -7,6 +7,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.4  2003/03/10 00:30:34  oetiker
+ * handle cases with two negative numbers
+ * --  Sasha Mikheev <sasha@avalon-net.co.il>
+ *
  * Revision 1.3  2002/04/01 18:31:22  oetiker
  * "!" takes a higher preference than "||" this means rrd_update N:: would
  * segfault -- Oliver Cook <ollie@uk.clara.net>
@@ -38,20 +42,30 @@ rrd_diff(char *a, char *b)
 {
     char res[LAST_DS_LEN+1], *a1, *b1, *r1, *fix;
     int c,x,m;
-    
-    while (!(isdigit((int)*a) || *a==0))
+    char a_neg=0, b_neg=0;
+    double result;
+   
+    while (!(isdigit((int)*a) || *a==0)) {
+        if(*a=='-') 
+	    a_neg = 1;
         a++;
+    }
     fix=a;
     while (isdigit((int)*fix)) 
 	fix++;
     *fix = 0; /* maybe there is some non digit data in the string */ 
-    while (!(isdigit((int)*b) || *b==0))
+    while (!(isdigit((int)*b) || *b==0)) {
+	if(*b=='-') 
+	    b_neg = 1;  
         b++;
+    }
     fix=b;
     while (isdigit((int)*fix)) 
 	fix++;
     *fix = 0; /* maybe there is some non digit data in the string */ 
     if(!isdigit((int)*a) || !isdigit((int)*b))
+	return DNAN;
+    if(a_neg+b_neg == 1) /* can not handle numbers with different signs yet */
 	return DNAN;
     a1 = &a[strlen(a)-1];
     m = max(strlen(a),strlen(b));
@@ -93,7 +107,12 @@ rrd_diff(char *a, char *b)
                 c=0;
             }
         }
-        return(-atof(res));
+        result = -atof(res);
     } else
-        return(atof(res));
+        result = atof(res);
+
+    if(a_neg+b_neg==2) /* both are negatives, reverse sign */
+        result = -result;
+    
+    return result;
 }                                                       
