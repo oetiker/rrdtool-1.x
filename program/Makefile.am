@@ -16,8 +16,8 @@ AUTOMAKE_OPTIONS= foreign
 # where we keep local rules for automake
 
 ACLOCAL_M4= $(top_srcdir)/aclocal.m4
-AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
-AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
+#AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
+#AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
 
 to-docs: to-versync
 	(cd doc && $(MAKE) clean && $(MAKE) && $(MAKE) pdf)

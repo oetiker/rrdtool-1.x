@@ -42,7 +42,11 @@ RRD_C_FILES =		\
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
 	rrd_is_thread_safe.h
 
-lib_LTLIBRARIES           = librrd.la librrd_th.la
+lib_LTLIBRARIES           = librrd.la 
+if BUILD_MULTITHREAD
+lib_LTLIBRARIES           += librrd_th.la
+endif
+
 #noinst_LTLIBRARIES        = librrd_private.la
 
 librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
@@ -52,8 +56,8 @@ librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
 librrd_la_LDFLAGS         = -version-info 1:2:0
 
 librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
-librrd_th_la_LIBADD          = -lpthread
-librrd_th_la_LDFLAGS         = -version-info 1:2:0
+librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
+librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 1:2:0
 
 
 include_HEADERS	= rrd.h
@@ -61,7 +65,10 @@ include_HEADERS	= rrd.h
 #librrd_private_la_LIBADD  = $(RRD_LIBS)
 #librrd_private_la_LDFLAGS = -static
 
-bin_PROGRAMS	= rrdcgi rrdtool rrdupdate
+bin_PROGRAMS	= rrdtool rrdupdate
+if BUILD_RRDCGI
+bin_PROGRAMS += rrdcgi
+endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
 rrdcgi_LDADD	= librrd.la
