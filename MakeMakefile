@@ -4,5 +4,16 @@
 # makefiles and friends
 set -x
 #
-automake --foreign --verbose
-autoconf --localdir=./config
+find . -name Makefile | xargs rm
+find . -name Makefile.in | xargs rm
+
+# libtool 1.4.2
+libtoolize --automake
+# automake 2.12
+aclocal
+autoheader --warnings=all
+automake --foreign --add-missing --force-missing --copy 
+# autoconf 2.52
+autoconf 
+
+

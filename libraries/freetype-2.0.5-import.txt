@@ -1,0 +1,7 @@
+wget http://prdownloads.sourceforge.net/freetype/freetype-2.0.5.tar.gz
+gtar zxvf freetype-2.0.5.tar.gz
+mv freetype-2.0.5 f
+mkdir freetype-2.0.5
+cp f/src/*/*.c freetype-2.0.5
+cp -r f/include freetype-2.0.5
+cp f/src/*/*.h freetype-2.0.5/include

@@ -1,9 +1,9 @@
-#! /usr/sepp/bin/perl
+#! /usr/bin/perl
 
 #makes things work when run without install
-use lib qw( ../libraries/perl-shared/blib/lib ../libraries/perl-shared/blib/arch );
+use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch );
 # this is for after install
-use lib qw( /usr/local/rrdtool-1.0.33/lib/perl ../lib/perl );
+use lib qw( /usr/local/rrdtool-1.1.0/lib/perl ../lib/perl );
 
 use RRDs;
 my $start=time;

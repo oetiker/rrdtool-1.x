@@ -1,7 +1,7 @@
 #! @PERL@ 
 
 #makes things work when run without install
-use lib qw( ../libraries/perl-piped/blib/lib  ../lib/perl );
+use lib qw( ../bindings/perl-piped/blib/lib  ../lib/perl );
 
 #makes programm work AFTER install 
 use lib qw( @prefix@/lib/perl );

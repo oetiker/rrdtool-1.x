@@ -144,7 +144,7 @@ enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
 					   * least every ds_mrhb seconds,
 					   * otherwise it is regarded dead and
 					   * will be set to UNKNOWN */             
-		             DS_min_val,	  /* the processed input of a ds must */
+	             DS_min_val,	  /* the processed input of a ds must */
                      DS_max_val,      /* be between max_val and min_val
 					   * both can be set to UNKNOWN if you
 					   * do not care. Data outside the limits
@@ -172,7 +172,7 @@ enum cf_en           { CF_AVERAGE=0,     /* data consolidation functions */
                        CF_MINIMUM, 
                        CF_MAXIMUM,
                        CF_LAST,
-					   CF_HWPREDICT, 
+         	       CF_HWPREDICT, 
 					   /* An array of predictions using the seasonal 
 						* Holt-Winters algorithm. Requires an RRA of type
 						* CF_SEASONAL for this data source. */
