@@ -108,7 +108,7 @@ Round down,up to the nearest integer
 
 Z<>
 
-=item Ordering Operations
+=item Set Operations
 
 B<SORT, REV>
 
@@ -119,6 +119,30 @@ Pop one element from the stack.  This is the I<count> of items to be sorted
 Example: C<CDEF:x=v1,v2,v3,v4,v5,v6,6,SORT,POP,5,REV,POP,+,+,+,4,/> will
 compute the average of the values v1..v6 after removing the smallest and
 largest.
+
+B<TREND>
+
+Create a "sliding window" average of another data series.
+
+Usage:
+CDEF:smoothed=x,1800,TREND
+
+This will create a half-hour (1800 second) sliding window average of x.  The
+average is essentially computed as shown here:
+
+                 +---!---!---!---!---!---!---!---!--->
+                                                     now
+                       delay     t0
+                 <--------------->
+                         delay       t1
+                     <--------------->  
+                              delay      t2
+                         <--------------->
+
+
+     Value at sample (t0) will be the average between (t0-delay) and  (t0)
+     Value at sample (t1) will be the average between (t1-delay) and  (t1)
+     Value at sample (t2) will be the average between (t2-delay) and  (t2)
 
 =item Special values
 

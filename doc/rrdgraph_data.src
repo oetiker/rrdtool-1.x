@@ -2,7 +2,7 @@
 
 =head1 SYNOPSIS
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>]
 
 B<VDEF>:I<vname>=I<RPN expression>
 
@@ -18,7 +18,7 @@ a language called B<RPN> which is described in its own manual page.
 
 =head1 DEF
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>]
 
 This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
@@ -38,6 +38,11 @@ from an B<RRA>.  For instance, if your B<RRD> has an B<RRA> with
 a resolution of 1800 seconds per B<CDP>, you should create an
 image with width 400 and time span 400*1800 seconds (use appropriate
 start and end times, such as C<--start end-8days8hours>).
+
+If consolidation needs to be done, the B<CF> of the B<RRA> specified in the
+B<DEF> itself will be used to reduce the data density.  This behaviour can
+be changed using C<:reduce=I<E<lt>B<CF>E<gt>>>.  This optional parameter
+specifies the B<CF> to use during the data reduction phase.
 
 Example:
 

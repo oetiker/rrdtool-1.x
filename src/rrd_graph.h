@@ -104,6 +104,7 @@ typedef  struct graph_desc_t {
     char           ds_nam[DS_NAM_SIZE]; /* data source name */
     long           ds;         /* data source number */
     enum cf_en     cf;         /* consolidation function */
+    enum cf_en     cf_reduce;  /* consolidation function for reduce_data() */
     gfx_color_t    col;        /* graph color */
     char  format[FMT_LEG_LEN+5]; /* format for PRINT AND GPRINT */
     char  legend[FMT_LEG_LEN+5]; /* legend*/

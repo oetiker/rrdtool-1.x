@@ -13,7 +13,7 @@
 int rrd_parse_find_gf (char *, unsigned int *, graph_desc_t *);
 int rrd_parse_legend  (char *, unsigned int *, graph_desc_t *);
 int rrd_parse_color   (char *, graph_desc_t *);
-int rrd_parse_CF      (char *, unsigned int *, graph_desc_t *);
+int rrd_parse_CF      (char *, unsigned int *, graph_desc_t *, enum cf_en *);
 int rrd_parse_print   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 int rrd_parse_shift   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 int rrd_parse_xport   (char *, unsigned int *, graph_desc_t *, image_desc_t *);
@@ -98,7 +98,7 @@ rrd_parse_color(char *string, graph_desc_t *gdp) {
 }
 
 int
-rrd_parse_CF(char *line, unsigned int *eaten, graph_desc_t *gdp) {
+rrd_parse_CF(char *line, unsigned int *eaten, graph_desc_t *gdp, enum cf_en *cf) {
     char 		symname[CF_NAM_SIZE];
     int			i=0;
 
@@ -110,7 +110,7 @@ rrd_parse_CF(char *line, unsigned int *eaten, graph_desc_t *gdp) {
     (*eaten)+=i;
     dprintf("- using CF '%s'\n",symname);
 
-    if ((int)(gdp->cf = cf_conv(symname))==-1) {
+    if ((int)(*cf = cf_conv(symname))==-1) {
 	rrd_set_error("Unknown CF '%s' in '%s'",symname,line);
 	return 1;
     }
@@ -145,7 +145,7 @@ rrd_parse_print(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
 	case GF_DEF:
 	case GF_CDEF:
 	    dprintf("- vname is of type DEF or CDEF, looking for CF\n");
-	    if (rrd_parse_CF(line,eaten,gdp)) return 1;
+	    if (rrd_parse_CF(line,eaten,gdp,&gdp->cf)) return 1;
 	    break;
 	case GF_VDEF:
 	    dprintf("- vname is of type VDEF\n");
@@ -307,7 +307,7 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
     if (colorfound) { /* no legend if no color */
 	if (gdp->gf == GF_TICK) {
 	    dprintf("- looking for optional number\n");
-	    sscanf(&line[*eaten],"%lf:%n",&gdp->yrule,&j);
+	    sscanf(&line[*eaten],"%lf%n",&gdp->yrule,&j);
 	    if (j) {
 		dprintf("- found number %f\n",gdp->yrule);
 		(*eaten)+=j;
@@ -315,6 +315,8 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 		    rrd_set_error("Tick factor should be <= 1.0");
 		    return 1;
 		}
+		if (line[*eaten] == ':')
+		    (*eaten)++;
 	    } else {
 		dprintf("- not found, defaulting to 0.1\n");
 		gdp->yrule=0.1;
@@ -379,7 +381,7 @@ rrd_parse_vname(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
 int
 rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *im) {
     int			i=0;
-    char 		command[6]; /* step, start, end */
+    char 		command[7]; /* step, start, end, reduce */
     char		tmpstr[256];
     struct rrd_time_value	start_tv,end_tv;
     time_t		start_tmp=0,end_tmp=0;
@@ -411,21 +413,26 @@ rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *
     (*eaten)+=i;
     dprintf("- using DS '%s'\n",gdp->ds_nam);
 
-    if (rrd_parse_CF(line,eaten,gdp)) return 1;
-
+    if (rrd_parse_CF(line,eaten,gdp,&gdp->cf)) return 1;
+    gdp->cf_reduce = gdp->cf;
+    
     if (line[*eaten]=='\0') return 0;
 
     while (1) {
 	dprintf("- optional parameter follows: %s\n", &line[*eaten]);
 	i=0;
-	sscanf(&line[*eaten], "%5[a-z]=%n", command, &i);
+	sscanf(&line[*eaten], "%6[a-z]=%n", command, &i);
 	if (!i) {
 	    rrd_set_error("Parse error in '%s'",line);
 	    return 1;
 	}
 	(*eaten)+=i;
 	dprintf("- processing '%s'\n",command);
-	if (!strcmp("step",command)) {
+	if (!strcmp("reduce",command)) {
+	  if (rrd_parse_CF(line,eaten,gdp,&gdp->cf_reduce)) return 1;
+	  if (line[*eaten] != '\0')
+	      (*eaten)--;
+	} else if (!strcmp("step",command)) {
 	    i=0;
 	    sscanf(&line[*eaten],"%lu%n",&gdp->step,&i);
 	    (*eaten)+=i;

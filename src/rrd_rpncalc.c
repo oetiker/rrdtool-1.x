@@ -157,7 +157,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_SQRT,SQRT)
 	  add_op(OP_SORT,SORT)
 	  add_op(OP_REV,REV)
-
+	  add_op(OP_TREND,TREND)
 #undef add_op
               }
     (*str)[offset] = '\0';
@@ -319,7 +319,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_NEGINF,NEGINF)
 	match_op(OP_NE,NE)
 	match_op(OP_COUNT,COUNT)
-	  match_op_param(OP_PREV_OTHER,PREV)
+	match_op_param(OP_PREV_OTHER,PREV)
 	match_op(OP_PREV,PREV)
 	match_op(OP_INF,INF)
 	match_op(OP_ISINF,ISINF)
@@ -329,6 +329,7 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_SQRT,SQRT)
 	match_op(OP_SORT,SORT)
 	match_op(OP_REV,REV)
+	match_op(OP_TREND,TREND)
 #undef match_op
 
 
@@ -703,6 +704,29 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 			    *q-- = *p;
 			    *p++ = x;
 		    }
+		}
+		break;
+	    case OP_TREND:
+		stackunderflow(1);
+		if ((rpi < 2) || (rpnp[rpi-2].op != OP_VARIABLE)) {
+		    rrd_set_error("malformed trend arguments");
+		    return -1;
+		} else {
+		    time_t dur = (time_t)rpnstack -> s[stptr];
+		    time_t step = (time_t)rpnp[rpi-2].step;
+
+		    if (output_idx > (int)ceil((float)dur / (float)step)) {
+			double accum = 0.0;
+			int i = 0;
+		
+			do {
+			    accum += rpnp[rpi-2].data[rpnp[rpi-2].ds_cnt * i--];
+			    dur -= step;
+			} while (dur > 0);
+
+			rpnstack -> s[--stptr] = (accum / -i);
+		    } else
+			rpnstack -> s[--stptr] = DNAN;
 		}
 		break;
 	    case OP_END:
