@@ -3,5 +3,3 @@ README
 Makefile.PL
 RRDp.pm
 t/base.t
-rrdpl.dsp
-rrdpl.dsw
