@@ -668,6 +668,7 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 
    fflush(rrd_file);
    free(rrd_values);
+   free(baseline);
    return 0;
 }
 
