@@ -698,6 +698,7 @@ data_fetch(image_desc_t *im )
 		continue;
 	    if ((strcmp(im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
 			&& (im->gdes[i].cf    == im->gdes[ii].cf)
+			&& (im->gdes[i].cf_reduce == im->gdes[ii].cf_reduce)
 			&& (im->gdes[i].start == im->gdes[ii].start)
 			&& (im->gdes[i].end   == im->gdes[ii].end)
 			&& (im->gdes[i].step  == im->gdes[ii].step)) {
@@ -730,9 +731,10 @@ data_fetch(image_desc_t *im )
 		return -1;
 	    }
 	    im->gdes[i].data_first = 1;	    
+	    im->gdes[i].step = im->step;
 	
 	    if (ft_step < im->gdes[i].step) {
-		reduce_data(im->gdes[i].cf,
+		reduce_data(im->gdes[i].cf_reduce,
 			    ft_step,
 			    &im->gdes[i].start,
 			    &im->gdes[i].end,
@@ -838,7 +840,7 @@ data_calc( image_desc_t *im){
 			vdp->shift = im->gdes[gdi].shval;
 
 		/* normalize shift to multiple of consolidated step */
-		vdp->shift = (vdp->shift / vdp->step) * vdp->step;
+		vdp->shift = (vdp->shift / (long)vdp->step) * (long)vdp->step;
 
 		/* apply shift */
 		vdp->start += vdp->shift;
@@ -934,8 +936,8 @@ data_calc( image_desc_t *im){
                 for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
 		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
 		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
-                        long	ptr  = im->gdes[gdi].rpnp[rpi].ptr;
-			long	diff = im->gdes[gdi].start - im->gdes[ptr].start;
+                        long ptr = im->gdes[gdi].rpnp[rpi].ptr;
+			long diff = im->gdes[gdi].start - im->gdes[ptr].start;
 
                         if(diff > 0)
 			    im->gdes[gdi].rpnp[rpi].data += (diff / im->gdes[ptr].step) * im->gdes[ptr].ds_cnt;
@@ -2570,13 +2572,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 int
 gdes_alloc(image_desc_t *im){
 
-    unsigned long def_step = (im->end-im->start)/im->xsize;
-    
-    if (im->step > def_step) /* step can be increassed ... no decreassed */
-      def_step = im->step;
-
     im->gdes_c++;
-    
     if ((im->gdes = (graph_desc_t *) rrd_realloc(im->gdes, (im->gdes_c)
 					   * sizeof(graph_desc_t)))==NULL){
 	rrd_set_error("realloc graph_descs");
@@ -2584,7 +2580,7 @@ gdes_alloc(image_desc_t *im){
     }
 
 
-    im->gdes[im->gdes_c-1].step=def_step; 
+    im->gdes[im->gdes_c-1].step=im->step;
     im->gdes[im->gdes_c-1].stack=0;
     im->gdes[im->gdes_c-1].debug=0;
     im->gdes[im->gdes_c-1].start=im->start; 
@@ -3081,6 +3077,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     
     im->start = start_tmp;
     im->end = end_tmp;
+    im->step = max((long)im->step, (im->end-im->start)/im->xsize);
 }
 
 int

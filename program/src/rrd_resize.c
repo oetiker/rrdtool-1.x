@@ -170,8 +170,10 @@ rrd_resize(int argc, char **argv)
     }
     /* Move the rest of the CDPs
     */
-    while (!(feof(infile))) {
-        fread(&buffer,sizeof(rrd_value_t),1,infile);
+    while (1) {
+	fread(&buffer,sizeof(rrd_value_t),1,infile);
+	if (feof(infile))
+	    break;
         fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
     }
     rrdnew.rra_def[target_rra].row_cnt += modify;

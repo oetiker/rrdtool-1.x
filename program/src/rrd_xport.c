@@ -116,7 +116,8 @@ rrd_xport(int argc, char **argv, int *xsize,
     
     im.start = start_tmp;
     im.end = end_tmp;
-
+    im.step = max((long)im.step, (im.end-im.start)/im.xsize);
+    
     rrd_graph_script(argc,argv,&im,0);
     if (rrd_test_error()) {
 	im_free(&im);
