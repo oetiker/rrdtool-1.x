@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.5  2003/04/25 18:35:08  jake
+ * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
+ *
  * Revision 1.4  2003/04/01 22:52:23  jake
  * Fix Win32 build. VC++ 6.0 and 7.0 now use the thread-safe code.
  *
@@ -63,7 +66,7 @@ int    rrd_xport(int, char **, int *, time_t *, time_t *,
 int    rrd_create_r(char *filename,
 		    unsigned long pdp_step, time_t last_up,
 		    int argc, char **argv);
-/* NOTE: rrd_update_r is only thread-safe if no at-style time
+/* NOTE: rrd_update_r are only thread-safe if no at-style time
    specifications get used!!! */
 int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);

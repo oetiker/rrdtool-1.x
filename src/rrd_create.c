@@ -170,6 +170,8 @@ rrd_create_r(char *filename,
                 break;
             case DST_CDEF:
                 parseCDEF_DS(&argv[i][offset+3],&rrd, rrd.stat_head->ds_cnt);
+                /* need to mark the file w/ current version */
+                strcpy(rrd.stat_head->version,RRD_VERSION);
                 break;
             default:
                 rrd_set_error("invalid DS type specified");
@@ -211,7 +213,7 @@ rrd_create_r(char *filename,
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_beta].u_val = 1.0/288;
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_dependent_rra_idx].u_cnt = 
                             rrd.stat_head -> rra_cnt;
-                        /* need to mark the file version */
+                        /* need to mark the file w/ current version */
                         strcpy(rrd.stat_head->version,RRD_VERSION);
                         break;
                     case CF_DEVSEASONAL:

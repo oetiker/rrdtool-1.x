@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.9  2003/04/25 18:35:08  jake
+ * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
+ *
  * Revision 1.8  2003/03/31 21:22:12  oetiker
  * enables RRDtool updates with microsecond or in case of windows millisecond
  * precision. This is needed to reduce time measurement error when archive step
@@ -113,10 +116,13 @@ static void normalize_time(struct timeval *t)
 
 /* Local prototypes */
 int LockRRD(FILE *rrd_file);
-void write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
+info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
-					unsigned short CDP_scratch_idx, FILE *rrd_file);
+					unsigned short CDP_scratch_idx, FILE *rrd_file,
+					info_t *pcdp_summary, time_t *rra_time);
 int rrd_update_r(char *filename, char *template, int argc, char **argv);
+int _rrd_update(char *filename, char *template, int argc, char **argv, 
+					info_t*);
 
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
 
@@ -140,6 +146,52 @@ main(int argc, char **argv){
         return 0;
 }
 #endif
+
+info_t *rrd_update_v(int argc, char **argv)
+{
+    char             *template = NULL;          
+	info_t *result = NULL;
+	infoval rc;
+
+    while (1) {
+		static struct option long_options[] =
+			{
+				{"template",      required_argument, 0, 't'},
+				{0,0,0,0}
+			};
+		int option_index = 0;
+		int opt;
+		opt = getopt_long(argc, argv, "t:", 
+						  long_options, &option_index);
+		
+		if (opt == EOF)
+			break;
+		
+		switch(opt) {
+		case 't':
+			template = optarg;
+			break;
+		
+		case '?':
+			rrd_set_error("unknown option '%s'",argv[optind-1]);
+            rc.u_int = -1;
+			goto end_tag;
+		}
+    }
+
+    /* need at least 2 arguments: filename, data. */
+    if (argc-optind < 2) {
+		rrd_set_error("Not enough arguments");
+        rc.u_int = -1;
+		goto end_tag;
+    }
+    result = info_push(NULL,sprintf_alloc("return_value"),RD_I_INT,rc);
+   	rc.u_int = _rrd_update(argv[optind], template,
+		      argc - optind - 1, argv + optind + 1, result);
+    result->value.u_int = rc.u_int;
+end_tag:
+    return result;
+}
 
 int
 rrd_update(int argc, char **argv)
@@ -165,7 +217,7 @@ rrd_update(int argc, char **argv)
 		case 't':
 			template = optarg;
 			break;
-			
+		
 		case '?':
 			rrd_set_error("unknown option '%s'",argv[optind-1]);
 			return(-1);
@@ -178,14 +230,21 @@ rrd_update(int argc, char **argv)
 
 		return -1;
     }
-
-    rc = rrd_update_r(argv[optind], template,
+ 
+   	rc = rrd_update_r(argv[optind], template,
 		      argc - optind - 1, argv + optind + 1);
     return rc;
 }
 
 int
 rrd_update_r(char *filename, char *template, int argc, char **argv)
+{
+   return _rrd_update(filename, template, argc, argv, NULL);
+}
+
+int
+_rrd_update(char *filename, char *template, int argc, char **argv, 
+   info_t *pcdp_summary)
 {
 
     int              arg_i = 2;
@@ -229,6 +288,7 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
     FILE             *rrd_file;
     rrd_t            rrd;
     time_t           current_time;
+	time_t           rra_time; /* time of update for a RRA */
     unsigned long    current_time_usec;  /* microseconds part of current time */
     struct timeval   tmp_time;           /* used for time conversion */
 
@@ -1109,7 +1169,14 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 	    fprintf(stderr,"  -- RRA Postseek %ld\n",ftell(rrd_file));
 #endif
 		scratch_idx = CDP_primary_val;
-		write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file);
+		if (pcdp_summary != NULL)
+		{
+		   rra_time = (current_time - current_time 
+		   % (rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step))
+		   - ((rra_step_cnt[i]-1)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
+		}
+		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file, 
+		   pcdp_summary, &rra_time);
 		if (rrd_test_error()) break;
 
 		/* write other rows of the bulk update, if any */
@@ -1136,7 +1203,14 @@ rrd_update_r(char *filename, char *template, int argc, char **argv)
 #endif
 			  rra_current = rra_start;
 		   }
-		   write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file);
+		   if (pcdp_summary != NULL)
+		   {
+		      rra_time = (current_time - current_time 
+		      % (rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step))
+		      - ((rra_step_cnt[i]-2)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
+		   }
+		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file,
+		      pcdp_summary, &rra_time);
 		}
 		
 		if (rrd_test_error())
@@ -1345,12 +1419,14 @@ LockRRD(FILE *rrdfile)
 }
 
 
-void
-write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-	       unsigned short CDP_scratch_idx, FILE *rrd_file)
+info_t
+*write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
+	       unsigned short CDP_scratch_idx, FILE *rrd_file,
+		   info_t *pcdp_summary, time_t *rra_time)
 {
    unsigned long ds_idx, cdp_idx;
-
+   infoval iv;
+  
    for (ds_idx = 0; ds_idx < rrd -> stat_head -> ds_cnt; ds_idx++)
    {
       /* compute the cdp index */
@@ -1360,7 +1436,15 @@ write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
 	     rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,ftell(rrd_file),
 	     rrd -> rra_def[rra_idx].cf_nam);
 #endif 
-
+      if (pcdp_summary != NULL)
+	  {
+	     iv.u_val = rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
+	     /* append info to the return hash */
+	  	 pcdp_summary = info_push(pcdp_summary,
+		 sprintf_alloc("[%d]RRA[%lu]DS[%s]",
+		 *rra_time, rra_idx, rrd->ds_def[ds_idx].ds_nam),
+         RD_I_VAL, iv);
+	  }
 	  if(fwrite(&(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
 		 sizeof(rrd_value_t),1,rrd_file) != 1)
 	  { 
@@ -1369,4 +1453,5 @@ write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
 	  }
 	  *rra_current += sizeof(rrd_value_t);
 	}
+	return (pcdp_summary);
 }

@@ -133,12 +133,14 @@ char *strtok_r(char *str, const char *sep, char **last);
 /* rrd info interface */
 enum info_type   { RD_I_VAL=0,
 	       RD_I_CNT,
-	       RD_I_STR  };
+	       RD_I_STR, 
+		   RD_I_INT };
 
 typedef union infoval { 
     unsigned long u_cnt; 
     rrd_value_t   u_val;
     char         *u_str;
+	int			  u_int;
 } infoval;
 
 typedef struct info_t {
@@ -148,8 +150,10 @@ typedef struct info_t {
     struct info_t   *next;
 } info_t;
 
-
 info_t *rrd_info(int, char **);
+info_t *rrd_update_v(int, char **);
+char * sprintf_alloc(char *, ...);
+info_t *info_push(info_t *, char *, enum info_type, infoval);
 
 /* HELPER FUNCTIONS */
 

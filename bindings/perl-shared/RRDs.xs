@@ -39,6 +39,58 @@ extern "C" {
 		\
 		if (rrd_test_error()) XSRETURN_UNDEF;
 
+#define hvs(VAL) hv_store_ent(hash, sv_2mortal(newSVpv(data->key,0)),VAL,0)		    
+
+#define rrdinfocode(name) \
+		/* prepare argument list */ \
+		argv = (char **) malloc((items+1)*sizeof(char *)); \
+		argv[0] = "dummy"; \
+		for (i = 0; i < items; i++) { \
+		    STRLEN len; \
+		    char *handle= SvPV(ST(i),len); \
+		    /* actually copy the data to make sure possible modifications \
+		       on the argv data does not backfire into perl */ \
+		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char)); \
+		    strcpy(argv[i+1],handle); \
+ 	        } \
+		optind=0; opterr=0; \
+                rrd_clear_error(); \
+                data=name(items+1, argv); \
+                for (i=0; i < items; i++) { \
+		    free(argv[i+1]); \
+		} \
+		free(argv); \
+                if (rrd_test_error()) XSRETURN_UNDEF; \
+                hash = newHV(); \
+                while (data) { \
+		    save=data; \
+		/* the newSV will get copied by hv so we create it as a mortal \
+           to make sure it does not keep hanging round after the fact */ \
+		    switch (data->type) { \
+		    case RD_I_VAL: \
+			if (isnan(data->value.u_val)) \
+			    hvs(&PL_sv_undef); \
+			else \
+			    hvs(newSVnv(data->value.u_val)); \
+			break; \
+			case RD_I_INT: \
+			hvs(newSViv(data->value.u_int)); \
+			break; \
+		    case RD_I_CNT: \
+			hvs(newSViv(data->value.u_cnt)); \
+			break; \
+		    case RD_I_STR: \
+			hvs(newSVpv(data->value.u_str,0)); \
+			rrd_freemem(data->value.u_str); \
+			break; \
+		    } \
+		    rrd_freemem(data->key); \
+		    data = data->next; \
+		    rrd_freemem(save); \
+		    } \
+            rrd_freemem(data); \
+            RETVAL = newRV_noinc((SV*)hash);
+
 /*
  * should not be needed if libc is linked (see ntmake.pl)
 #ifdef WIN32
@@ -289,54 +341,20 @@ rrd_info(...)
                 char **argv;
 		HV *hash;
 	CODE:
-		/* prepare argument list */
-		argv = (char **) malloc((items+1)*sizeof(char *));
-		argv[0] = "dummy";
-		for (i = 0; i < items; i++) { 
-		    STRLEN len;
-		    char *handle= SvPV(ST(i),len);
-		    /* actually copy the data to make sure possible modifications
-		       on the argv data does not backfire into perl */ 
-		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
-		    strcpy(argv[i+1],handle);
- 	        }
-		optind=0; opterr=0; 
-                rrd_clear_error();
-                data=rrd_info(items+1, argv);
-                for (i=0; i < items; i++) {
-		    free(argv[i+1]);
-		}
-		free(argv);
-                if (rrd_test_error()) XSRETURN_UNDEF;
-                hash = newHV();
-                while (data) {
-		    save=data;
-		/* the newSV will get copied by hv so we create it as a mortal to make sure
-                   it does not keep hanging round after the fact */
-#define hvs(VAL) hv_store_ent(hash, sv_2mortal(newSVpv(data->key,0)),VAL,0)		    
-		    switch (data->type) {
-		    case RD_I_VAL:
-			if (isnan(data->value.u_val))
-			    hvs(&PL_sv_undef);
-			else
-			    hvs(newSVnv(data->value.u_val));
-			break;
-		    case RD_I_CNT:
-			hvs(newSViv(data->value.u_cnt));
-			break;
-		    case RD_I_STR:
-			hvs(newSVpv(data->value.u_str,0));
-			rrd_freemem(data->value.u_str);
-			break;
-		    }
-#undefine hvs
-		    rrd_freemem(data->key);
-		    data = data->next;		    
-		    rrd_freemem(save);
-		}
-                rrd_freemem(data);
-                RETVAL = newRV_noinc((SV*)hash);
-       OUTPUT:
-		RETVAL
+		rrdinfocode(rrd_info);	
+    OUTPUT:
+	   RETVAL
 
+SV*
+rrd_updatev(...)
+	PROTOTYPE: @	
+	PREINIT:
+		info_t *data,*save;
+                int i;
+                char **argv;
+		HV *hash;
+	CODE:
+		rrdinfocode(rrd_update_v);	
+    OUTPUT:
+	   RETVAL
 
