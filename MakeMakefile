@@ -13,11 +13,12 @@ exit \$v
 PERL
 }
 
+ERROR=0
 
 if vcheck 1.5 "libtool --version"
 then
   echo "get a copy of GNU libtool >= 1.5"
-  exit 1
+  ERROR=1
 fi
 
 #if vcheck 1.8.2  "automake  --version"
@@ -40,7 +41,7 @@ then
   if vcheck 1.7.9  "automake-1.7 --version"
   then
     echo "get a copy of GNU automake >= 1.79"
-    exit 1
+    ERROR=1
   else
     automake=automake-1.7
     aclocal="aclocal-1.7  --acdir=/usr/share/aclocal-1.7 -I /usr/share/aclocal/"
@@ -52,7 +53,12 @@ fi
 
 if vcheck 2.58 "autoconf --version"
 then
-  echo "get a copy of GNU autoconf >= 2.54"
+  echo "get a copy of GNU autoconf >= 2.58"
+  ERROR=1
+fi
+
+if [ $ERROR -ne 0 ]
+then
   exit 1
 fi
 
