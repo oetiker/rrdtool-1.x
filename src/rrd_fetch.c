@@ -5,6 +5,10 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.6  2003/01/16 23:27:54  oetiker
+ * fix border condition in rra selection of rrd_fetch
+ * -- Stanislav Sinyagin <ssinyagin@yahoo.com>
+ *
  * Revision 1.5  2002/06/23 22:29:40  alex
  * Added "step=1800" and such to "DEF"
  * Cleaned some of the signed vs. unsigned problems
@@ -222,11 +226,12 @@ fprintf(stderr,"Considering: start %10lu end %10lu step %5lu ",
 							cal_start,cal_end,
 			rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt);
 #endif
+ 	    /* we need step difference in either full or partial case */
+ 	    tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
+					   * rrd.rra_def[i].pdp_cnt));
 	    /* best full match */
 	    if(cal_end >= *end 
 	       && cal_start <= *start){
-		tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
-					 * rrd.rra_def[i].pdp_cnt));
 		if (first_full || (tmp_step_diff < best_step_diff)){
 		    first_full=0;
 		    best_step_diff = tmp_step_diff;
@@ -247,12 +252,16 @@ fprintf(stderr,"full match, not best\n");
 		    tmp_match -= (cal_start-*start);
 		if (cal_end<*end)
 		    tmp_match -= (*end-cal_end);		
-		if (first_part || best_match < tmp_match){
+		if (first_part ||
+                    (best_match < tmp_match) ||
+                    (best_match == tmp_match && 
+                     tmp_step_diff < best_step_diff)){ 
 #ifdef DEBUG
 fprintf(stderr,"best partial so far\n");
 #endif
 		    first_part=0;
 		    best_match = tmp_match;
+		    best_step_diff = tmp_step_diff;
 		    best_part_rra =i;
 		} else {
 #ifdef DEBUG
