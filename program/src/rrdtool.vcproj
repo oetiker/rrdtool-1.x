@@ -21,9 +21,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="4"
-				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
+				AdditionalIncludeDirectories="\Program Files\GnuWin32\include,\Program Files\GnuWin32\include\freetype2"
 				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_CTYPE_DISABLE_MACROS;MAKE_TIMESTAMP=\&quot;WIN32\&quot;"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\toolrelease/rrdtool.pch"
 				AssemblerListingLocation=".\toolrelease/"
 				ObjectFile=".\toolrelease/"
@@ -35,10 +35,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\release\png.lib ..\libraries\zlib-1.1.4\release\zlib.lib ..\libraries\libart_lgpl-2.3.7\release\libart.lib ..\libraries\freetype-2.0.5\release\freetype.lib"
+				AdditionalDependencies="libpng.lib libz.lib libart_lgpl.lib libfreetype.lib"
 				OutputFile=".\toolrelease/rrdtool.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="\Program Files\GnuWin32\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\toolrelease/rrdtool.pdb"
 				SubSystem="1"
@@ -79,9 +80,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
+				AdditionalIncludeDirectories="\Program Files\GnuWin32\include\freetype2,\Program Files\GnuWin32\include"
 				PreprocessorDefinitions="_DEBUG;_CONSOLE;WIN32;_CTYPE_DISABLE_MACROS;MAKE_TIMESTAMP=\&quot;WIN32\&quot;"
-				RuntimeLibrary="1"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\tooldebug/rrdtool.pch"
 				AssemblerListingLocation=".\tooldebug/"
 				ObjectFile=".\tooldebug/"
@@ -95,10 +96,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib ..\libraries\libpng-1.2.0\Debug\png.lib ..\libraries\zlib-1.1.4\Debug\zlib.lib ..\libraries\libart_lgpl-2.3.7\Debug\libart.lib ..\libraries\freetype-2.0.5\Debug\freetype.lib"
+				AdditionalDependencies="libpng.lib libz.lib libart_lgpl.lib libfreetype.lib"
 				OutputFile=".\tooldebug/rrdtool.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="\Program Files\GnuWin32\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\tooldebug/rrdtool.pdb"
 				SubSystem="1"

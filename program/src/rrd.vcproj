@@ -21,9 +21,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="4"
-				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
+				AdditionalIncludeDirectories="\Program Files\GnuWin32\include,\Program Files\GnuWin32\include\freetype2"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\release/rrd.pch"
 				AssemblerListingLocation=".\release/"
 				ObjectFile=".\release/"
@@ -68,9 +68,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libraries\libpng-1.2.0,..\libraries\zlib-1.1.4,..\libraries\libart_lgpl-2.3.7,..\libraries\freetype-2.0.5\include"
+				AdditionalIncludeDirectories="\Program Files\GnuWin32\include\freetype2,\Program Files\GnuWin32\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="1"
+				RuntimeLibrary="2"
 				PrecompiledHeaderFile=".\debug/rrd.pch"
 				AssemblerListingLocation=".\debug/"
 				ObjectFile=".\debug/"

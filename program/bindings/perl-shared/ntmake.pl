@@ -2,21 +2,21 @@ use ExtUtils::MakeMaker;
 use Config;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
-# This file is current set to compile with ActiveState 5xx builds
-# (perl 5.005_03). Hopefully this lowest common denominator
-# approach will work with newer ActiveState builds (i.e. 6xx).
+# Run VCVARS32.BAT before generating makefile/compiling.
 WriteMakefile(
     'NAME'	=> 'RRDs',
     'VERSION_FROM' => 'RRDs.pm',
 #    'DEFINE'	   => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
+# keep compatible w/ ActiveState 5xx builds
     'DEFINE'	   => "-DPERLPATCHLEVEL=5",
 
-   'INC'	=> '-I../../src/ -I../../libraries/freetype-2.0.5/include -I ../../libraries/libart_lgpl-2.3.7 -I ../../libraries/zlib-1.1.4 -I ../../libraries/libpng-1.2.0',
-   'OPTIMIZE' => '-O2 -MT',
-# change this path to refer to your libc.lib
-# keep one line for MSVC++ 6.0 and one for 7.0
-    'MYEXTLIB'  => '"' . $ENV{'MSVCDir'} . '/lib/libc.lib" ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0/release/png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
-#   'MYEXTLIB'  => '"$(VCINSTALLDIR)/vc7/lib/libcmt.lib" ../../src/release/rrd.lib ../../libraries/libart_lgpl-2.3.7/release/libart.lib ../../libraries/zlib-1.1.4/release/zlib.lib ../../libraries/libpng-1.2.0\release\png.lib ../../libraries/freetype-2.0.5/release/freetype.lib', 
+   'INC'	=> '-I../../src/ "-I/Program Files/GnuWin32/include"',
+# Since we are now using GnuWin32 libraries dynamically (instead of static
+# complile with code redistributed with rrdtool), use /MD instead of /MT.
+# Yes, this means we need msvcrt.dll but GnuWin32 dlls already require it
+# and it is available on most versions of Windows.
+   'OPTIMIZE' => '-O2 -MD',
+   'LIBS'  => '../../src/release/rrd.lib "/Program Files/GnuWin32/lib/libart_lgpl.lib" "/Program Files/GnuWin32/lib/libz.lib" "/Program Files/GnuWin32/lib/libpng.lib" "/Program Files/GnuWin32/lib/libfreetype.lib"', 
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
     ($] ge '5.005') ? (
         'AUTHOR' => 'Tobias Oetiker (oetiker@ee.ethz.ch)',

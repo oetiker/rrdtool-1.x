@@ -4,7 +4,11 @@
  * rrd_afm.h  Parsing afm tables to find width of strings.
  ****************************************************************************/
 
+#ifdef WIN32
+#include "../confignt/config.h"
+#else
 #include "config.h"
+#endif
 
 #include "rrd_afm.h"
 #include "rrd_afm_data.h"

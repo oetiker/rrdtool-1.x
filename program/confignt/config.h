@@ -23,3 +23,7 @@
  * (2) windir might not be available in all environments
  */
 #define RRD_DEFAULT_FONT "c:/windows/fonts/cour.ttf"
+
+#define RRDGRAPH_YLEGEND_ANGLE 90.0
+
+#define HAVE_STRING_H 1
