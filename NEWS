@@ -6,13 +6,21 @@ In this file I am noting the Major changes to rrdtool
 for details check the cvs ChangeLog
 
 
+2001/07/26 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
+  Added TOTAL to the VDEF functions.
+
+2001/07/19 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
+  VDEF support.  This is a variable containing one value
+  and a time component.  This type of variable can hold
+  the result of a function over a complete time series
+  of data (DEF or CDEF) such as the maximum seen, and when.
+
 2001/03/10 Jake Brutlag <jakeb@corp.webtv.net>
   Support for COMPUTE data sources (CDEF data sources). Removes the RPN
   parser and calculator from rrd_graph and puts then in a new file,
   rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
   clean-up of aberrant behavior stuff, including a bug fix. 
   Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
- 
   
 2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch> 
   Integrated complete rewrite
