@@ -1,0 +1,12 @@
+Makefile.in
+Makefile
+.libs
+.deps
+*.la
+*.lo
+*.o
+rrdtool
+rrdupdate
+rrdcgi
+configure
+config.cache
