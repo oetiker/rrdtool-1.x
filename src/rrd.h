@@ -70,6 +70,7 @@ int    rrd_restore(int, char **);
 int    rrd_dump(int, char **);
 int    rrd_tune(int, char **);
 time_t rrd_last(int, char **);
+time_t rrd_first(int, char **);
 int    rrd_resize(int, char **);
 int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 unsigned long *, unsigned long *,
@@ -85,6 +86,7 @@ int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);
 int    rrd_dump_r(char *filename);
 time_t rrd_last_r(const char *filename);
+time_t rrd_first_r(const char *filename, int rraindex);
 
 /* Transplanted from parsetime.h */
 typedef enum {

@@ -32,7 +32,7 @@ void PrintUsage(char *cmd)
 
     char help_list[] =
 	   "Valid commands: create, update, updatev, graph, dump, restore,\n"
-	   "\t\tlast, info, fetch, tune, resize, xport\n\n";
+	   "\t\tlast, first, info, fetch, tune, resize, xport\n\n";
 
     char help_listremote[] =
            "Valid remote commands: quit, ls, cd, mkdir\n\n";
@@ -60,6 +60,10 @@ void PrintUsage(char *cmd)
     char help_last[] =
            "* last - show last update time for RRD\n\n"
            "\trrdtool last filename.rrd\n\n";
+
+    char help_first[] =
+           "* first - show first update time for RRA within an RRD\n\n"
+           "\trrdtool first filename.rrd [--rraindex number]\n\n";
 
     char help_update[] =
 	   "* update - update an RRD\n\n"
@@ -173,7 +177,7 @@ void PrintUsage(char *cmd)
 
 	   "For more information read the RRD manpages\n\n";
 
-    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
+    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST, C_FIRST,
 	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
            C_QUIT, C_LS, C_CD, C_MKDIR, C_UPDATEV };
 
@@ -191,6 +195,8 @@ void PrintUsage(char *cmd)
 		help_cmd = C_RESTORE;
     	    else if (!strcmp(cmd,"last"))
 		help_cmd = C_LAST;
+    	    else if (!strcmp(cmd,"first"))
+		help_cmd = C_FIRST;
     	    else if (!strcmp(cmd,"update"))
 		help_cmd = C_UPDATE;
     	    else if (!strcmp(cmd,"updatev"))
@@ -237,6 +243,9 @@ void PrintUsage(char *cmd)
 		break;
 	    case C_LAST:
 		fputs(help_last, stdout);
+		break;
+	    case C_FIRST:
+		fputs(help_first, stdout);
 		break;
 	    case C_UPDATE:
 		fputs(help_update, stdout);
@@ -544,6 +553,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	rrd_resize(argc-1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
         printf("%ld\n",rrd_last(argc-1, &argv[1]));
+    else if (strcmp("first", argv[1]) == 0)
+        printf("%ld\n",rrd_first(argc-1, &argv[1]));
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {

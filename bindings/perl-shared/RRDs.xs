@@ -132,6 +132,17 @@ rrd_last(...)
       OUTPUT:
             RETVAL
 
+int
+rrd_last(...)
+      PROTOTYPE: @
+      PREINIT:
+      int i;
+      char **argv;
+      CODE:
+              rrdcode(rrd_first);
+      OUTPUT:
+            RETVAL
+
 
 int
 rrd_create(...)
