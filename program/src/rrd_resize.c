@@ -69,7 +69,7 @@ rrd_resize(int argc, char **argv)
     }
 
     if (modify < 0)
-	if (rrdold.rra_def[target_rra].row_cnt <= modify) {
+	if (rrdold.rra_def[target_rra].row_cnt <= -modify) {
 	    rrd_set_error("This RRA is not that big");
 	    rrd_free(&rrdold);
 	    fclose(infile);
