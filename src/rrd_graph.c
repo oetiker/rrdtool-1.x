@@ -1851,8 +1851,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
 {
   int i,ii;
   int lazy =     lazy_check(im);
-  int piechart = 0, PieSize, PieCenterX, PieCenterY;
-  double PieStart=0.0;
+  int piechart = 0;
+  double PieStart=0.0, PieSize, PieCenterX, PieCenterY;
   FILE  *fo;
   gfx_canvas_t *canvas;
   gfx_node_t *node;
@@ -1933,13 +1933,14 @@ graph_paint(image_desc_t *im, char ***calcpr)
     PieCenterX = im->xorigin + im->xsize + 50 + PieSize*0.6;
     PieCenterY = im->yorigin - PieSize*0.5;
   }
-  
+
   /* determine where to place the legends onto the graphics.
      and set im->ygif to match space requirements for text */
   if(leg_place(im)==-1)
     return -1;
 
   canvas=gfx_new_canvas();
+
 
   /* the actual graph is created by going through the individual
      graph elements and then drawing them */
@@ -1960,22 +1961,54 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   gfx_add_point(node,im->xorigin, im->yorigin - im->ysize);
 
-  if (piechart) {
-#if 1
-    node=gfx_arc_sect (canvas,
-	PieCenterX,PieCenterY,
-	PieSize*0.6, PieSize*0.6,	/* 20% more as background */
-	0,M_PI*2,
-	im->graph_col[GRC_CANVAS]);
-#else
-    node=gfx_new_area ( canvas,
-	PieCenterX-0.6*PieSize, PieCenterY-0.6*PieSize,
-	PieCenterX+0.6*PieSize, PieCenterY-0.6*PieSize,
-	PieCenterX+0.6*PieSize, PieCenterY+0.6*PieSize,
-	im->graph_col[GRC_CANVAS]);
-    gfx_add_point(node,
-	PieCenterX-0.6*PieSize, PieCenterY+0.6*PieSize);
+#if 0
+/******************************************************************
+ ** Just to play around.  If you see this, I forgot to remove it **
+ ******************************************************************/
+  im->ygif+=100;
+  node=gfx_new_area(canvas,
+			0,		im->ygif-100,
+			im->xgif,	im->ygif-100,
+			im->xgif,	im->ygif,
+			im->graph_col[GRC_CANVAS]);
+  gfx_add_point(node,0,im->ygif);
+
+  node=gfx_new_line (canvas,
+		0,		im->ygif-100,
+		im->xgif-3,	im->ygif-100,
+		1.0,
+		0xFF0000FF);
+  gfx_add_point(node,im->xgif-3,im->ygif-3);
+  gfx_add_point(node,2,im->ygif-3);
+  gfx_add_point(node,2,im->ygif-100);
+
+
+#if 0
+  node=gfx_new_area ( canvas,
+			1,		im->ygif-99,
+			im->xgif-1,	im->ygif-99,
+			im->xgif-1,	im->ygif-1,
+			im->graph_col[GRC_CANVAS]);
+  gfx_add_point(node,1,im->ygif-1);
 #endif
+
+#endif
+
+  if (piechart) {
+	int n;
+
+	node=gfx_new_area(canvas,
+		PieCenterX,PieCenterY-PieSize*0.6,
+		PieCenterX,PieCenterY,
+		PieCenterX,PieCenterY-PieSize*0.6,
+		im->graph_col[GRC_CANVAS]);
+	for (n=1;n<500;n++) {
+		double angle;
+		angle=M_PI*2.0*n/500.0;
+		gfx_add_point(node,
+		PieCenterX+sin(angle)*PieSize*0.6,
+		PieCenterY-cos(angle)*PieSize*0.6 );
+	}
   }
 
   if (im->minval > 0.0)
@@ -2110,12 +2143,25 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
      
       if (finite(im->gdes[i].yrule)) {	/* even the fetched var can be NaN */
-	node=gfx_arc_sect(canvas,
-		PieCenterX, PieCenterY,
-		PieSize/2,PieSize/2,
-		M_PI*2.0*PieStart/100.0,
-		M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0,
+	double angle,endangle;
+	int n;
+
+	angle=M_PI*2.0*PieStart/100.0;
+	endangle=M_PI*2.0*(PieStart+im->gdes[i].yrule)/100.0;
+	node=gfx_new_area(canvas,
+		PieCenterX+sin(endangle)*PieSize/2,
+		PieCenterY-cos(endangle)*PieSize/2,
+		PieCenterX,
+		PieCenterY,
+		PieCenterX+sin(angle)*PieSize/2,
+		PieCenterY-cos(angle)*PieSize/2,
 		im->gdes[i].col);
+	for (n=1;n<100;n++) {
+		angle=M_PI*2.0*(PieStart+n/100.0*im->gdes[i].yrule)/100.0;
+		gfx_add_point(node,
+		PieCenterX+sin(angle)*PieSize/2,
+		PieCenterY-cos(angle)*PieSize/2 );
+	}
 	PieStart += im->gdes[i].yrule;
       }
       break;
