@@ -415,7 +415,7 @@ rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
     if (strcmp("-",file_name)==0){
       rrd_file= stdout;
     } else {
-      fdflags = O_WRONLY|O_CREAT;
+      fdflags = O_WRONLY|O_CREAT|O_BINARY|O_EXCL;
       if (force_overwrite == 0) {
       	fdflags |= O_EXCL;
       }
