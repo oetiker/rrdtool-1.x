@@ -94,11 +94,6 @@ B<%#.#lf> prints like 12345.6789, with optional field width and precision
 
 =item *
 
-B<%#.#lg> prints like 12345.6789, with optional field width and number of
-significant digits
-
-=item *
-
 B<%s> place this after B<%le>, B<%lf> or B<%lg>. This will be replaced by the
 appropriate SI magnitude unit and the value will be scaled
 accordingly (123456 -> 123.456 k)
