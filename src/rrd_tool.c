@@ -334,7 +334,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    for (i = 0; i<ds_cnt;i++)
 	        printf("%14s",ds_namv[i]);
 	    printf ("\n\n");
-	    for (i = start; i <= end; i += step){
+	    for (i = start+step; i <= end; i += step){
 	        printf("%10lu:", i);
 	        for (ii = 0; ii < ds_cnt; ii++)
 		    printf(" %0.10e", *(datai++));

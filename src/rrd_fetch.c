@@ -5,6 +5,28 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.3  2001/12/24 06:51:49  alex
+ * A patch of size 44Kbytes... in short:
+ *
+ * Found and repaired the off-by-one error in rrd_fetch_fn().
+ * As a result I had to remove the hacks in rrd_fetch_fn(),
+ * rrd_tool.c, vdef_calc(), data_calc(), data_proc() and
+ * reduce_data().  There may be other places which I didn't
+ * find so be careful.
+ *
+ * Enhanced debugging in rrd_fetch_fn(), it shows the RRA selection
+ * process.
+ *
+ * Added the ability to print VDEF timestamps.  At the moment it
+ * is a hack, I needed it now to fix the off-by-one error.
+ * If the format string is "%c" (and nothing else!), the time
+ * will be printed by both ctime() and as a long int.
+ *
+ * Moved some code around (slightly altering it) from rrd_graph()
+ *   initializing     now in rrd_graph_init()
+ *   options parsing  now in rrd_graph_options()
+ *   script parsing   now in rrd_graph_script()
+ *
  * Revision 1.2  2001/12/17 12:48:43  oetiker
  * fix overflow error ...
  *
@@ -142,7 +164,13 @@ rrd_fetch_fn(
     int            first_part = 1;
     rrd_t     rrd;
     rrd_value_t    *data_ptr;
-    unsigned long  rows;
+    unsigned long  rows = (*end - *start) / *step;
+
+#ifdef DEBUG
+fprintf(stderr,"Entered rrd_fetch_fn() searching for the best match\n");
+fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
+						*start,*end,*step,rows);
+#endif
 
     if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
 	return(-1);
@@ -173,7 +201,6 @@ rrd_fetch_fn(
     for(i=0;i<rrd.stat_head->rra_cnt;i++){
 	if(cf_conv(rrd.rra_def[i].cf_nam) == cf_idx){
 	    
-	       
 	    cal_end = (rrd.live_head->last_up - (rrd.live_head->last_up 
 			  % (rrd.rra_def[i].pdp_cnt 
 			     * rrd.stat_head->pdp_step)));
@@ -183,6 +210,11 @@ rrd_fetch_fn(
 			    * rrd.stat_head->pdp_step));
 
 	    full_match = *end -*start;
+#ifdef DEBUG
+fprintf(stderr,"Considering: start %10lu end %10lu step %5lu ",
+							cal_start,cal_end,
+			rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt);
+#endif
 	    /* best full match */
 	    if(cal_end >= *end 
 	       && cal_start <= *start){
@@ -192,7 +224,14 @@ rrd_fetch_fn(
 		    first_full=0;
 		    best_step_diff = tmp_step_diff;
 		    best_full_rra=i;
-		} 
+#ifdef DEBUG
+fprintf(stderr,"best full match so far\n");
+#endif
+		} else {
+#ifdef DEBUG
+fprintf(stderr,"full match, not best\n");
+#endif
+		}
 		
 	    } else {
 		/* best partial match */
@@ -202,16 +241,22 @@ rrd_fetch_fn(
 		if (cal_end<*end)
 		    tmp_match -= (*end-cal_end);		
 		if (first_part || best_match < tmp_match){
+#ifdef DEBUG
+fprintf(stderr,"best partial so far\n");
+#endif
 		    first_part=0;
 		    best_match = tmp_match;
 		    best_part_rra =i;
-		} 
+		} else {
+#ifdef DEBUG
+fprintf(stderr,"partial match, not best\n");
+#endif
+		}
 	    }
 	}
     }
 
     /* lets see how the matching went. */
-    
     if (first_full==0)
 	chosen_rra = best_full_rra;
     else if (first_part==0)
@@ -224,17 +269,22 @@ rrd_fetch_fn(
     }
 	
     /* set the wish parameters to their real values */
-    
     *step = rrd.stat_head->pdp_step * rrd.rra_def[chosen_rra].pdp_cnt;
     *start -= (*start % *step);
     if (*end % *step) *end += (*step - *end % *step);
-    rows = (*end - *start) / *step +1;
+    rows = (*end - *start) / *step;
 
 #ifdef DEBUG
-    fprintf(stderr,"start %lu end %lu step %lu rows  %lu\n",
-	    *start,*end,*step,rows);
+    fprintf(stderr,"We found:    start %10lu end %10lu step %5lu rows  %lu\n",
+						*start,*end,*step,rows);
 #endif
 
+/* Start and end are now multiples of the step size.  The amount of
+** steps we want is (end-start)/step and *not* an extra one.
+** Reasoning:  if step is s and we want to graph from t to t+s,
+** we need exactly ((t+s)-t)/s rows.  The row to collect from the
+** database is the one with time stamp (t+s) which means t to t+s.
+*/
     *ds_cnt =   rrd.stat_head->ds_cnt; 
     if (((*data) = malloc(*ds_cnt * rows * sizeof(rrd_value_t)))==NULL){
 	rrd_set_error("malloc fetch data area");
@@ -260,7 +310,8 @@ rrd_fetch_fn(
 		    - (rrd.live_head->last_up % *step));
     rra_start_time = (rra_end_time
 		 - ( *step * (rrd.rra_def[chosen_rra].row_cnt-1)));
-    start_offset =(long)(*start - rra_start_time) / (long)*step;
+    /* here's an error by one if we don't be careful */
+    start_offset =(long)(*start + *step - rra_start_time) / (long)*step;
     end_offset = (long)(rra_end_time - *end ) / (long)*step; 
 #ifdef DEBUG
     fprintf(stderr,"rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
