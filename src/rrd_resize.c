@@ -43,7 +43,7 @@ rrd_resize(int argc, char **argv)
     modify=strtol(argv[4],&endptr,0);
 
     if ((modify<1)) {
-        rrd_set_error("you must have at least one row in the RRA");
+        rrd_set_error("Please grow or shrink with at least 1 row");
         return(-1);
     }
 
@@ -67,12 +67,14 @@ rrd_resize(int argc, char **argv)
         fclose(infile);
         return(-1);
     }
-    if ((rrdold.rra_def[target_rra].row_cnt+modify)<0) {
-        rrd_set_error("This RRA is not that big");
-        rrd_free(&rrdold);
-        fclose(infile);
-        return(-1);
-    }
+
+    if (modify < 0)
+	if (rrdold.rra_def[target_rra].row_cnt <= modify) {
+	    rrd_set_error("This RRA is not that big");
+	    rrd_free(&rrdold);
+	    fclose(infile);
+	    return(-1);
+	}
 
     rrdnew.stat_head = rrdold.stat_head;
     rrdnew.ds_def    = rrdold.ds_def;
