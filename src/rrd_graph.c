@@ -2054,8 +2054,13 @@ graph_size_location(image_desc_t *im, int elements, int piechart )
     ** just below the title (if any) and with sufficient
     ** padding.
     */
-    im->pie_x = im->xgif - Xspacing - Xpie/2;
-    im->pie_y = im->yorigin-Ymain+Ypie/2;
+    if (elements) {
+	im->pie_x = im->xgif - Xspacing - Xpie/2;
+        im->pie_y = im->yorigin-Ymain+Ypie/2;
+    } else {
+	im->pie_x = im->xgif/2;
+        im->pie_y = im->yorigin-Ypie/2;
+    }
 
     return 0;
 }
