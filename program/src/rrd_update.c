@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.11  2003/09/02 21:58:35  oetiker
+ * be pickier about what we accept in rrd_update. Complain if things do not work out
+ *
  * Revision 1.10  2003/04/29 19:14:12  jake
  * Change updatev RRA return from index_number to cf_nam, pdp_cnt.
  * Also revert accidental addition of -I to aclocal MakeMakefile.
@@ -315,6 +318,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 					 /* numeric id of the current consolidation function */
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
     int		     version;  /* rrd version */
+    char             *endptr; /* used in the conversion */
 
     rpnstack_init(&rpnstack);
 
@@ -619,6 +623,15 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		case DST_COUNTER:
 		case DST_DERIVE:
 		    if(rrd.pdp_prep[i].last_ds[0] != 'U'){
+                      for(ii=0;updvals[i+1][ii] != '\0';ii++){
+                            if(updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9' || (ii=0 && updvals[i+1][ii] == '-')){
+                                 rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
+                                 break;
+                            }
+                       }
+                       if (rrd_test_error()){
+                            break;
+                       }
 		       pdp_new[i]= rrd_diff(updvals[i+1],rrd.pdp_prep[i].last_ds);
 		       if(dst_idx == DST_COUNTER) {
 			  /* simple overflow catcher sugestet by andres kroonmaa */
@@ -636,11 +649,29 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		   }
 		   break;
 		case DST_ABSOLUTE:
-		    pdp_new[i]= atof(updvals[i+1]);
+                    errno = 0;
+                    pdp_new[i] = strtod(updvals[i+1],&endptr);
+                    if (errno > 0){
+                        rrd_set_error("converting  '%s' to float: %s",updvals[i+1],rrd_strerror(errno));
+                        break;
+                    };
+                    if (endptr[0] != '\0'){
+                        rrd_set_error("conversion of '%s' to float not complete: tail '%s'",updvals[i+1],endptr);
+                        break;
+                    }
 		    rate = pdp_new[i] / interval;		  
 		    break;
 		case DST_GAUGE:
-		    pdp_new[i] = atof(updvals[i+1]) * interval;
+                    errno = 0;
+                    pdp_new[i] = strtod(updvals[i+1],&endptr) * interval;
+                    if (errno > 0){
+                        rrd_set_error("converting  '%s' to float: %s",updvals[i+1],rrd_strerror(errno));
+                        break;
+                    };
+                    if (endptr[0] != '\0'){
+                        rrd_set_error("conversion of '%s' to float not complete: tail '%s'",updvals[i+1],endptr);
+                        break;
+                    }
 		    rate = pdp_new[i] / interval;		   
 		    break;
 		default:
@@ -1454,7 +1485,7 @@ info_t
 		 sizeof(rrd_value_t),1,rrd_file) != 1)
 	  { 
 	     rrd_set_error("writing rrd");
-		 return;
+	     return 0;
 	  }
 	  *rra_current += sizeof(rrd_value_t);
 	}
