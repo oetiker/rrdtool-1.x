@@ -1900,7 +1900,8 @@ grid_paint(image_desc_t   *im)
 			  7, (im->yorigin - im->ysize/2),
 			  im->graph_col[GRC_FONT],
 			  im->text_prop[TEXT_PROP_AXIS].font,
-			  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 270.0,
+			  im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 
+			  RRDGRAPH_YLEGEND_ANGLE,
 			  GFX_H_LEFT, GFX_V_CENTER,
 			  im->ylegend);
 	} else {

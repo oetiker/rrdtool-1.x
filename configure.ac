@@ -189,6 +189,13 @@ EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib
 EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.5,  http://prdownloads.sourceforge.net/libpng/)
 EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,             freetype,    2.1.5,  http://prdownloads.sourceforge.net/freetype/)
 
+dnl How the vertical axis label is printed
+AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
+ [Vertical label angle: 90.0 (default) or 270.0])
+AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
+ [Vertical label angle: 90.0 (default) or 270.0])
+
+
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
 if test "x$PERL" = "xno"; then
