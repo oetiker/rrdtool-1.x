@@ -27,11 +27,11 @@ The name of the B<RRD> to restore.
 =item B<--range-check>|B<-r>
 
 Make sure the values in the RRAs do not exceed the limits defined for
-the different datasources.
+the different data sources.
 
 =item B<--force-overwrite>|B<-f>
 
-Allows B<rrdtool> to overwrite the destination B<RRD>.
+Allows B<RRDtool> to overwrite the destination B<RRD>.
 
 =back
 

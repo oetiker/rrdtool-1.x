@@ -1,6 +1,6 @@
 =include name
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 B<rrdtool graph> I<filename>
 [E<lt>B<L<option|rrdgraph/OPTIONS>>E<gt> ...]
@@ -60,7 +60,7 @@ statements (after all, most of them do define graph elements...).
 =item filename
 
 The name and path of the graph to generate. It is recommended to
-end this in C<.png>, C<.svg> or C<.eps> but B<rrdtool> does not enforce this.
+end this in C<.png>, C<.svg> or C<.eps> but B<RRDtool> does not enforce this.
 
 I<filename> can be 'C<->' to send the image to C<stdout>. In
 that case, no other output is generated.  
@@ -102,13 +102,13 @@ Z<>
 =item Size
 
 B<[-w|--width E<lt>pixelsE<gt>]>
-B<[-h|--heigth E<lt>pixelsE<gt>]>
+B<[-h|--height E<lt>pixelsE<gt>]>
 B<[-j|--only-graph]>
 
 The width and height of the B<canvas> (the part of the graph with
 the actual lines and such). Defaults are 400 pixels by 100 pixels.
 
-If you sepcify the B<--only-graph> and set the hight < 32 pixels you will
+If you specify the B<--only-graph> and set the height < 32 pixels you will
 get a tiny graph image to use as an icon in a potential overview. All
 labeling will be stripped off the graph.
 
@@ -138,7 +138,7 @@ By default the graph will be autoscaling so that it displays the
 portion of the y-axis that is actually used. You can change this
 behaviour by setting the limits.  The displayed y-axis will show
 at most B<maximum-upper-limit> and at least B<minimum-upper-limit>
-at the top, and similarily at least B<maximum-lower-limit> and
+at the top, and similarly at least B<maximum-lower-limit> and
 at most B<minimum-lower-limit> at the bottom.  The default is to
 display at most B<infinity> (so: no limit) and at least
 B<negative infinity> (no minimal value) at the top. The bottom of
@@ -178,9 +178,9 @@ and thus the throughput may be higher than the WAN line speed.
 
 B<[-N|--no-gridfit]>
 
-To avoid antialiasing effects gridlines are placed on 
+To avoid anti-aliasing effects gridlines are placed on 
 integer pixel values. This is by default done by extending 
-the scale so gridlines happends to be spaced using an 
+the scale so gridlines happens to be spaced using an 
 integer number of pixels, and starts on integer pixel value.
 This might extend the scale too much for some logarithmic scales
 and for linear scales where --alt-autoscale is needed.
@@ -215,7 +215,7 @@ in I<LPR> and a I<strftime> format string in I<LFM>.  I<LPR> defines
 where each label will be placed. If it is zero, the label will be
 placed right under the corresponding line (useful for hours, dates
 etcetera).  If you specify a number of seconds here the label is
-centered in this interval (useful for monday, januari etcetera).
+centered in this interval (useful for Monday, January etcetera).
 
 Example: C<--x-grid MINUTE:10:HOUR:1:HOUR:4:0:%X>
 
@@ -297,7 +297,7 @@ left and top border, C<SHADEB> for the right and bottom border, C<GRID>,
 C<MGRID> for the major grid, C<FONT>, C<FRAME> and axis, C<ARROW>.
 Each color is composed out of three hexadecimal numbers specifying
 its color component (00 is off, FF is maximum) of red, green and blue.
-Optionally you may add another hexademimal number specifying the
+Optionally you may add another hexadecimal number specifying the
 transparency (FF is solid).
 You may set this option several times to alter multiple defaults.
 
@@ -310,7 +310,7 @@ Zoom the graphics by the given amount ... The factor must be E<gt> 0
 B<[-n|--font I<FONTTAG>B<:>I<size>B<:>I<font>]>
 
 Lets you customize which font to use for the various text elements on the
-rrd graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
+RRD graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
 C<AXIS> for the axis labels, C<UNIT> for the vertical unit label, C<LEGEND>
 for the graph legend.
 

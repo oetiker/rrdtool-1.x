@@ -1,6 +1,6 @@
 =include name
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
 
@@ -13,7 +13,7 @@ B<CDEF>:I<vname>=I<RPN expression>
 These three instructions collect the data out of the B<RRD> files,
 optionally altering it (think of a bytes to bits conversion) and
 if desired you can define variables containing useful information
-such as maximum, mininimum etcetera. Two of the instructions use
+such as maximum, minimum etcetera. Two of the instructions use
 a language called B<RPN> which is described in its own manual page.
 
 =head1 DEF
@@ -24,8 +24,8 @@ This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
 default, an B<RRA> which contains the correct consolidated data
 at an appropriate resolution will be chosen.  The resolution can
-be overriden with the L<--step|rrdgraph/item_Time> option. 
-The resolution can again be overriden by specifying the B<step size>.
+be overridden with the L<--step|rrdgraph/item_Time> option. 
+The resolution can again be overridden by specifying the B<step size>.
 The time span of this data is the same as for the graph by default,
 you can override this by specifying B<start and end>.  Remember to
 escape colons in the time specification!

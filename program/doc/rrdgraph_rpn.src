@@ -1,6 +1,6 @@
 =include name
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 I<E<lt>RPN expressionE<gt>> := 
 I<E<lt>vnameE<gt>>|I<E<lt>operatorE<gt>>|I<E<lt>valueE<gt>>
@@ -205,7 +205,7 @@ Z<>
 =item MAXIMUM, MINIMUM, AVERAGE
 
 Return the corresponding value, MAXIMUM and MINIMUM also return
-the first occurance of that value in the time component.
+the first occurrence of that value in the time component.
 
 Example: C<VDEF:avg=mydata,AVERAGE>
 
@@ -215,7 +215,7 @@ Z<>
 
 Return the last,first value including its time.  The time for
 FIRST is actually the start of the corresponding interval, where
-LASTs time component returns the end of the corresponding interval.
+the LAST time component returns the end of the corresponding interval.
 
 Example: C<VDEF:first=mydata,FIRST>
 
@@ -223,7 +223,7 @@ Z<>
 
 =item TOTAL
 
-Returns the rate from each defined timeslot multiplied with the
+Returns the rate from each defined time slot multiplied with the
 step size.  This can for instance return total bytes transfered
 when you have logged bytes per second. The time component returns
 the amount of seconds 

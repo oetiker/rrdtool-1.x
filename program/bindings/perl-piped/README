@@ -1,4 +1,4 @@
-This is a Perl module for using rrdtool process via a set of pipes.
+This is a Perl module for using RRDtool process via a set of pipes.
 
 perl Makefile.PL
 make test

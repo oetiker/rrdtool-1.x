@@ -38,7 +38,7 @@ When the current data is read or written, the pointer moves to the next
 element. As we are on a circle there is no beginning nor an end, you can
 go on and on. After a while, all the available places will be used and
 the process automatically reuses old locations. This way, the database
-will not grow in size and therefore requires no mainenance.
+will not grow in size and therefore requires no maintenance.
 RRDtool works with with Round Robin Databases (RRDs). It stores and retrieves
 data from them.
 
@@ -177,7 +177,7 @@ You're driving a car. At 12:05 you read the counter in the dashboard
 and it tells you that the car has moved 12345 KM until that moment.
 At 12:10 you look again, it reads 12357 KM. This means you have
 traveled 12 KM in five minutes. A scientist would translate that
-into meters per second and this makes a nice comparison towards the
+into meters per second and this makes a nice comparison toward the
 problem of (bytes per five minutes) versus (bits per second).
 
 We traveled 12 kilometers which is 12000 meters. We did that in five
@@ -741,7 +741,7 @@ look at the graphs created from the five-minute averages you would
 get a totally different picture. You would see the same values on the
 average and maximum graphs (provided I measured every 300 seconds).
 You would be able to see when I stopped, when I was in top gear, when
-I drove over fast hiways etc. The granularity of the data is much
+I drove over fast highways etc. The granularity of the data is much
 higher, so you can see more. However, this takes 12 samples per hour,
 or 288 values per day, so it would be too much to keep for a long
 period of time. Therefore we average it, eventually to one value per
@@ -784,7 +784,7 @@ temperature from my router in three places namely the inlet, the
 so called hot-spot and the exhaust.  These values are not counters.
 If I take the difference of the two samples and divide that by
 300 seconds I would be asking for the temperature change per second.
-Hopefully this is zero! If not, the computerroom is on fire :)
+Hopefully this is zero! If not, the computer room is on fire :)
 
 So, what can we do ?  We can tell RRDtool to store the values we measure
 directly as they are (this is not entirely true but close enough). The
@@ -851,7 +851,7 @@ straight line at 1 (the deltas are 300, the time is 300).
 
 =item *
 
-Line B is of type gauge. These are "real" values so they should match
+Line B is of type GAUGE. These are "real" values so they should match
 what we put in: a sort of a wave.
 
 =item *

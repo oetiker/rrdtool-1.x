@@ -1,5 +1,5 @@
 I would like to thank to following people for helping to
-bring RRDTool into existence.
+bring RRDtool into existence.
 
 Planning and Inspiration
 
@@ -85,7 +85,7 @@ Internet Resources
            and DNS:NET Internet Services (www.dns-net.de)
               for http://rrdtool.org
 
-Further I would like to note, that rrdtool would not exist without
+Further I would like to note, that RRDtool would not exist without
 the following free software products:
 
 	Perl by Larry Wall
@@ -102,7 +102,7 @@ the following free software products:
 
 I would also like to thank the Department of Electrical Engineering
 at the Swiss Federal Institute of Technology who allow me to
-use their network resources to publish rrdtool ...
+use their network resources to publish RRDtool ...
 
 During Summer 1999 CAIDA (www.caida.org) has supported me in working full
 time on RRDtool ... A big thank you to them as well.

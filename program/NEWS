@@ -2,7 +2,7 @@ RRDTOOL NEWS
 ============
 
 
-In this file I am noting the Major changes to rrdtool
+In this file I am noting the major changes to RRDtool
 for details check the cvs ChangeLog
 
 2004/01/20 Tobi Oetiker <tobi@oetiker.ch>
@@ -26,7 +26,7 @@ for details check the cvs ChangeLog
   * Updated zlib and libpng
   * rrd_gfx.c intrduced as libart wrapper
   * LINE takes now a float as argument
-  * rrdtool uses truetype for fonts
+  * RRDtool uses truetype for fonts
   * thanks to libart there is now full alpha transparenc
     and antialiasing.
   * the new option --font lets customize the font
@@ -62,7 +62,7 @@ for details check the cvs ChangeLog
 2001/03/02 Tobias Oetiker <oetiker@ee.ethz.ch>
   Added Aberrant Patch from Jake Brutlag <jakeb@microsoft.com>
   From now one, new rrd files use version tag 0002. They can
-  NOT be read by the old 1.0.x rrdtools. 
+  NOT be read by the old 1.0.x RRDtools. 
  
   Jake:
   Aberrant Behavior Detection support. A brief overview added to

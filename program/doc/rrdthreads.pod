@@ -116,7 +116,7 @@ F<rrd_thread_safe.c> and F<rrd_non_thread_safe.c>
 Do not use C<getopt> or C<getopt_long> in *C<_r> (directly or
 indirectly)
 
-C<getopt> uses global variables and behaves badly in a multithreaded
+C<getopt> uses global variables and behaves badly in a multi-threaded
 application when called concurrently. Instead provide a *_r function
 taking all options as function parameters. You may provide argc and
 **argv arguments for variable length argument lists. See

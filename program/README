@@ -64,7 +64,7 @@ this will install the perl modules whereever you keep your local perl
 modules. Doing this reliefs you from using 'use lib' in your scripts.
 
 Configure will also look for an TCL installation on your system. If it finds
-one it will build a TCL interface for rrdtool. If you keep tcl in a non
+one it will build a TCL interface for RRDtool. If you keep tcl in a non
 standard location you can use
 
   sh configure --with-tcllib=/sw/tcl-8.3/lib

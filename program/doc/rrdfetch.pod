@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool fetch - fetch data from an rrd.
+rrdtool fetch - fetch data from an RRD.
 
 =for html <div align="right"><a href="rrdfetch.pdf">PDF</a> version.</div>
 
@@ -17,7 +17,7 @@ The B<fetch> function is normally used internally by the graph function,
 to get data from B<RRD>s. B<fetch> will analyze the B<RRD> and
 will try to retrieve the data in the resolution requested.
 The data fetched is printed to stdout. I<*UNKNOWN*> data is often
-represented by the string "NaN" depending on your OSs printf
+represented by the string "NaN" depending on your OS's printf
 function.
 
 =over 8
@@ -54,7 +54,7 @@ end time.
 
 =head2 RESOLUTION INTERVAL
 
-In order to get rrdtool to fetch anything other than the finest resolution RRA 
+In order to get RRDtool to fetch anything other than the finest resolution RRA 
 B<both> the start and end time must be specified on boundaries that are 
 multiples of the wanted resolution. Consider the following example:
 
@@ -102,7 +102,7 @@ In e.g. bash this could look as:
  TIME=$(date +%s); RRDRES=900; rrdtool fetch subdata.rrd AVERAGE -r $RRDRES \
  -e $(echo $(($TIME/$RRDRES*$RRDRES))) -s e-1h
 
-Or in perl:
+Or in Perl:
 
  perl -e '$ctime = time; $rrdres = 900; system "rrdtool fetch subdata.rrd AVERAGE \
  -r $rrdres -e @{[int($ctime/$rrdres)*$rrdres]} -s e-1h"'
@@ -110,7 +110,7 @@ Or in perl:
 
 =head2 AT-STYLE TIME SPECIFICATION
 
-Apart from the traditional I<Seconds since epoch>, rrdtool does also
+Apart from the traditional I<Seconds since epoch>, RRDtool does also
 understand at-style time specification.  The specification is called
 "at-style" after Unix command at(1) that has moderately complex ways
 to specify time to run your job at.  The at-style specification
@@ -148,7 +148,7 @@ Finally, you can use words B<now>, B<start>, or B<end> as your time
 reference. B<Now> refers to the current moment (and is also a default
 time reference). B<Start> (B<end>) can be used to specify time
 relative to the start (end) time for those tools that use these
-categories (rrdfetch, rrdgraph).
+categories (B<rrdfetch>, L<rrdgraph>).
 
 Month and weekday names can be used in their naturally abbreviated form
 (e.g., Dec for December, Sun for Sunday, etc.). The words B<now>,
@@ -249,7 +249,6 @@ I<931225537> -- 18:45  July 5th, 1999
 
 I<19970703 12:45> -- 12:45  July 3th, 1997
 (my favorite, and its even got an ISO number (8601))
-
 
 =head1 AUTHOR
 

@@ -2,7 +2,7 @@
  *  parsetime.c - parse time for at(1)
  *  Copyright (C) 1993, 1994  Thomas Koenig
  *
- *  modifications for english-language times
+ *  modifications for English-language times
  *  Copyright (C) 1993  David Parsons
  *
  *  A lot of modifications and extensions 
@@ -228,7 +228,7 @@ static struct SpecialToken TimeMultipliers[] = {
 
 /* File scope variables */
 
-/* context dependant list of specials for parser to recognize,
+/* context dependent list of specials for parser to recognize,
  * required for us to be able distinguish between 'mon' as 'month'
  * and 'mon' as 'monday'
  */
@@ -240,7 +240,7 @@ static char *sct;	/* scanner - next char pointer in current argument */
 static int need;	/* scanner - need to advance to next argument */
 
 static char *sc_token=NULL;	/* scanner - token buffer */
-static size_t sc_len;   /* scanner - lenght of token buffer */
+static size_t sc_len;   /* scanner - length of token buffer */
 static int sc_tokid;	/* scanner - token id */
 
 static int need_to_free = 0; /* means that we need deallocating memory */
@@ -263,12 +263,12 @@ void EnsureMemFree ()
  * should return TIME_OK (aka NULL) or pointer to the error message,
  * and should be called like this: try(func(args));
  *
- * if the try is not successfull it will reset the token pointer ...
+ * if the try is not successful it will reset the token pointer ...
  *
  * [NOTE: when try(...) is used as the only statement in the "if-true"
  *  part of the if statement that also has an "else" part it should be
  *  either enclosed in the curly braces (despite the fact that it looks
- *  like a single statement) or NOT follwed by the ";"]
+ *  like a single statement) or NOT followed by the ";"]
  */
 #define try(b)		{ \
 			char *_e; \
@@ -291,7 +291,7 @@ void EnsureMemFree ()
 
 /*
  * ve() and e() are used to set the return error,
- * the most aprropriate use for these is inside panic(...) 
+ * the most appropriate use for these is inside panic(...) 
  */
 #define MAX_ERR_MSG_LEN	1024
 static char errmsg[ MAX_ERR_MSG_LEN ];
@@ -320,7 +320,7 @@ e ( char *fmt, ... )
 }
 
 /* Compare S1 and S2, ignoring case, returning less than, equal to or
-   greater than zero if S1 is lexiographically less than,
+   greater than zero if S1 is lexicographically less than,
    equal to or greater than S2.  -- copied from GNU libc*/
 static int
 mystrcasecmp (s1, s2)
@@ -453,7 +453,7 @@ token()
 
 
 /* 
- * expect2() gets a token and complins if it's not the token we want
+ * expect2() gets a token and complains if it's not the token we want
  */
 static char *
 expect2(int desired, char *complain_fmt, ...)
@@ -472,7 +472,7 @@ expect2(int desired, char *complain_fmt, ...)
 /*
  * plus_minus() is used to parse a single NUMBER TIME-UNIT pair
  *              for the OFFSET-SPEC.
- *              It allso applies those m-guessing euristics.
+ *              It also applies those m-guessing heuristics.
  */
 static char *
 plus_minus(struct rrd_time_value *ptv, int doop)
@@ -747,7 +747,7 @@ day(struct rrd_time_value *ptv)
 		  token();
 		}
 		
-		/* flip months and days for european timing
+		/* flip months and days for European timing
 		 */
 		if (sep == DOT) {
 		  long x = mday;
@@ -849,7 +849,7 @@ parsetime(char *tspec, struct rrd_time_value *ptv)
 	    try(tod(ptv))
 	    break;
 
-	    /* evil coding for TEATIME|NOON|MIDNIGHT - we've initialised
+	    /* evil coding for TEATIME|NOON|MIDNIGHT - we've initialized
 	     * hr to zero up above, then fall into this case in such a
 	     * way so we add +12 +4 hours to it for teatime, +12 hours
 	     * to it for noon, and nothing at all for midnight, then

@@ -5,6 +5,9 @@
  *****************************************************************************
  * $Id$
  * $Log$
+ * Revision 1.8  2004/05/18 18:53:03  oetiker
+ * big spell checking patch -- slif@bellsouth.net
+ *
  * Revision 1.7  2003/11/11 19:46:21  oetiker
  * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
  *
@@ -189,7 +192,7 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
     if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
 	return(-1);
     
-    /* when was the realy last update of this file ? */
+    /* when was the really last update of this file ? */
 
     if (((*ds_namv) = (char **) malloc(rrd.stat_head->ds_cnt * sizeof(char*)))==NULL){
 	rrd_set_error("malloc fetch ds_namv array");

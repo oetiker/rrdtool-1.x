@@ -92,12 +92,12 @@ Analog to GETENV but for local variables
 =item RRD::TIME::LAST I<rrd-file> I<strftime-format>
 
 This gets replaced by the last modification time of the selected RRD. The
-time is I<strftime>-formated with the string specified in the second argument.
+time is I<strftime>-formatted with the string specified in the second argument.
 
 =item RRD::TIME::NOW I<strftime-format>
 
 This gets replaced by the current time of day. The
-time is I<strftime>-formated with the string specified in the argument.
+time is I<strftime>-formatted with the string specified in the argument.
 
 =item RRD::TIME::STRFTIME I<START|END> I<start-spec> I<end-spec> I<strftime-format>
 
@@ -105,7 +105,7 @@ This gets replaced by a strftime-formatted time using the format
 I<strftime-format> on either I<start-spec> or I<end-spec> depending on
 whether I<START> or I<END> is specified.  Both I<start-spec> and I<end-spec>
 must be supplied as either could be relative to the other.  This is intended
-to allow pretty titles on graphs with times that are easier for non rrdtool
+to allow pretty titles on graphs with times that are easier for non RRDtool
 folks to figure out than "-2weeks".
 
 =item RRD::GRAPH I<rrdgraph arguments>

@@ -743,7 +743,7 @@ data_fetch(image_desc_t *im )
 	    }
 	}
 	
-        /* lets see if the required data source is realy there */
+        /* lets see if the required data source is really there */
 	for(ii=0;ii<im->gdes[i].ds_cnt;ii++){
 	    if(strcmp(im->gdes[i].ds_namv[ii],im->gdes[i].ds_nam) == 0){
 		im->gdes[i].ds=ii; }

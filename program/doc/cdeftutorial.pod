@@ -76,7 +76,7 @@ You put the variables or numbers on a stack. You also put operations
 (things-to-do) on the stack and this stack is then processed. The result
 will be placed on the stack. At the end, there should be exactly one
 number left: the outcome of the series of operations. If there is not
-exactly one number left, rrdtool will complain loudly.
+exactly one number left, RRDtool will complain loudly.
 
 Above multiplication by eight will look like:
 
@@ -182,7 +182,7 @@ RRD router1.rrd)
    --------------------   +
    (outcome of the sum)
 
-As a mathmatical function, this could be written:
+As a mathematical function, this could be written:
 
 C<add(router1.rrd:link1in , router1.rrd:link2in , router2.rrd:link1in , router3.rrd:link1in , router3.rrd:link2.in)>
 
@@ -216,7 +216,7 @@ This is correct but it can be made more clear to humans. It does
 not matter if you add a to b and then add c to the result or first
 add b to c and then add a to the result. This makes it possible to
 rewrite the RPN into C<CDEF:result=a,b,c,d,e,+,+,+,+> which is
-evaluatated differently: 
+evaluated differently: 
 
    push value of variable a on the stack: a
    push value of variable b on the stack: a b
@@ -257,9 +257,9 @@ easy to write it in RPN: C<result=a,b,c,+,*>. Note that this is very
 similar to one of the expressions in the previous paragraph, only the
 multiplication and the addition changed places.
 
-When you have problems with RPN or when rrdtool is complaining, it's 
+When you have problems with RPN or when RRDtool is complaining, it's 
 usually a Good Thing to write down the stack on a piece of paper
-and see what happens. Have the manual ready and pretend to be rrdtool.
+and see what happens. Have the manual ready and pretend to be RRDtool.
 Just do all the math by hand to see what happens, I'm sure this will
 solve most, if not all, problems you encounter.
 
@@ -353,7 +353,7 @@ RRDtool is capable of representing (-not- graphing!) infinity by stopping
 at its current maximum (for positive infinity) or minimum (for negative
 infinity) without knowing this maximum (minimum).
 
-Infinity in rrdtool is mostly used to draw an AREA without knowing its
+Infinity in RRDtool is mostly used to draw an AREA without knowing its
 vertical dimensions. You can think of it as drawing an AREA with an
 infinite height and displaying only the part that is visible in the
 current graph. This is probably a good way to approximate infinity
@@ -399,8 +399,8 @@ possible to create a database filled with zeros, you have to put them in
 on purpose. Implementing the second method is described next:
 
 What we want is: "if the value is unknown, replace it with zero". This
-could be writte in pseudo-code as:  if (value is unknown) then (zero)
-else (value). When reading the rrdgraph manual you notice the "UN"
+could be written in pseudo-code as:  if (value is unknown) then (zero)
+else (value). When reading the L<rrdgraph> manual you notice the "UN"
 function that returns zero or one. You also notice the "IF" function
 that takes zero or one as input.
 
@@ -425,10 +425,10 @@ appropriate things for "a" and "b" we're finished:
 
 C<CDEF:result=value,UN,0,value,IF>
 
-You may want to read Steve Raders RPN guide if you have difficulties
+You may want to read Steve Rader's RPN guide if you have difficulties
 with the way I explained this last example.
 
-If you want to check this RPN expression, just mimic rrdtools behavior:
+If you want to check this RPN expression, just mimic RRDtool behavior:
 
    For any known value, the expression evaluates as follows:
    CDEF:result=value,UN,0,value,IF  (value,UN) is not true so it becomes 0
@@ -522,7 +522,7 @@ a constant number, we need "GT". The output of "GT" is true or false
 and this is good input to "IF". We want "if (time > 937521357) then
 (return a) else (return b)".
 
-This process was already described toroughly in the previous chapter
+This process was already described thoroughly in the previous chapter
 so lets do it quick:
 
    if (x) then a else b
@@ -571,7 +571,7 @@ or
 Pseudo code: if (number > 100) then 100 else number.
 
 The second "problem" may also be solved by using the rigid option of
-rrdtool graph, however this has not the same result. In this example
+RRDtool graph, however this has not the same result. In this example
 you can end up with a graph that does autoscaling. Also, if you use
 the numbers to display maxima they will be set to 100kb/s.
 
@@ -603,7 +603,7 @@ Comparing isn't difficult:
 These two parts of the CDEF produce either 0 for false or 1 for true.
 We can now check if they are both 0 (or 1) using a few IF statements
 but, as Wataru Satoh pointed out, we can use the "*" or "+" functions
-as locical AND and locical OR.
+as logical AND and logical OR.
 
 For "*", the result will be zero (false) if either one of the two
 operators is zero.  For "+", the result will only be false (0) when
@@ -694,7 +694,7 @@ will be drawn and because it starts at the X-axis and has infinite height
 it will effectively overwrite the STACKed parts.
 
 You could combine the two CDEF lines into one (we don't use "allusers")
-if you like.  But there are good reasons for writting two CDEFS:
+if you like.  But there are good reasons for writing two CDEFS:
 
 =over 4
 
@@ -721,9 +721,9 @@ If you do so, you won't be able to use these next GPRINTs:
    GPRINT:allusers:AVERAGE:"Average: %6.0lf"
    GPRINT:allusers:LAST:"Current: %6.0lf\n"
 
-=head1 The examples from the rrd graph manual page
+=head1 The examples from the RRD graph manual page
 
-=head2 Degrees Celcius vs. Degrees Fahrenheit
+=head2 Degrees Celsius vs. Degrees Fahrenheit
 
    rrdtool graph demo.png --title="Demo Graph" \
       DEF:cel=demo.rrd:exhaust:AVERAGE \
@@ -744,7 +744,7 @@ as follows:
    5. push function "multiply" and process it
    6. the resulting value is now "(cel-32)*0.55555"
 
-Note that if you take the celcius to fahrenheit function you should
+Note that if you take the Celsius to Fahrenheit function you should
 be doing "5/9*(cel-32)" so 0.55555 is not exactly correct. It is close
 enough for this purpose and it saves a calculation.
 
@@ -820,7 +820,7 @@ We now have to process the rest of the RPN and this is only a simple
 "IF" function that returns either "INF" or "UNKN" depending on the
 time. This is returned to variable "background".
 
-The second CDEF has been discussed earlyer in this document so we
+The second CDEF has been discussed earlier in this document so we
 won't do that here.
 
 Now you can draw the different layers. Start with the background
@@ -862,6 +862,7 @@ You may do some complex data filtering:
     CDEF:derivate=var,prev1,-,time,prevtime,-,/
     LINE3:derivate#000077:derivate
     LINE1:var#007700:'raw data'
+
 
 =head1 Out of ideas for now
 

@@ -16,7 +16,7 @@ __END__
 
 =head1 NAME
 
-RRDs - Access rrdtool as a shared module
+RRDs - Access RRDtool as a shared module
 
 =head1 SYNOPSIS
 
@@ -35,9 +35,9 @@ RRDs - Access rrdtool as a shared module
 
 =head2 Calling Sequence
 
-This module accesses rrdtool functionality directly from within perl. The
+This module accesses RRDtool functionality directly from within perl. The
 arguments to the functions listed in the SYNOPSIS are explained in the regular
-rrdtool documentation. The commandline call
+RRDtool documentation. The commandline call
 
  rrdtool update mydemo.rrd --template in:out N:12:13
 
@@ -53,7 +53,7 @@ is also valid.
 
 The RRDs::times function takes two parameters:  a "start" and "end" time.
 These should be specified in the B<AT-STYLE TIME SPECIFICATION> format
-used by rrdtool.  See the B<rrdfetch> documentation for a detailed
+used by RRDtool.  See the B<rrdfetch> documentation for a detailed
 explanation on how to specify time.
 
 =head2 Error Handling
@@ -87,7 +87,7 @@ created image and results of the PRINT arguments.
  print "Averages: ", (join ", ", @$averages);
 
 B<RRDs::info> returns a pointer to a hash. The keys of the hash
-represent the property names of the rrd and the values of the hash are
+represent the property names of the RRD and the values of the hash are
 the values of the properties.  
 
  $hash = RRDs::info "example.rrd";

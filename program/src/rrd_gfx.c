@@ -1306,7 +1306,7 @@ static int eps_prologue(eps_state *state)
     "%!PS-Adobe-3.0 EPSF-3.0\n"
     "%%Creator: RRDtool 1.1.x, Tobias Oetiker, http://tobi.oetiker.ch\n"
     /* can't like weird chars here */
-    "%%Title: (RRDTool output)\n"
+    "%%Title: (RRDtool output)\n"
     "%%DocumentData: Clean7Bit\n"
     "", state->fp);
   fprintf(state->fp, "%%%%BoundingBox: 0 0 %d %d\n",

@@ -26,6 +26,28 @@ The name of the B<RRD> you want to dump.
 
 =back
 
+=head1 EXAMPLES
+
+To transfer an RRD between architectures, follow these steps:
+
+=over 4
+
+=item 1.
+
+On the same system where the RRD was created, use B<rrdtool> B<dump>
+to export the data to XML format.
+
+=item 2. 
+
+Transfer the XML dump to the target system
+
+=item 3.
+
+Run B<rrdtool> B<restore> to create a new RRD from the XML dump.  See
+B<rrdrestore> for details.
+
+=back
+
 =head1 AUTHOR
 
 Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>

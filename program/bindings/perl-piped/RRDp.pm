@@ -2,13 +2,13 @@ package RRDp;
 
 =head1 NAME
 
-RRDp - Attach rrdtool from within a perl script via a set of pipes;
+RRDp - Attach RRDtool from within a perl script via a set of pipes;
 
 =head1 SYNOPSIS
 
 use B<RRDp>
 
-B<RRDp::start> I<path to rrdtool executable>
+B<RRDp::start> I<path to RRDtool executable>
 
 B<RRDp::cmd>  I<rrdtool commandline>
 
@@ -20,15 +20,15 @@ B<$RRDp::user>,  B<$RRDp::sys>, B<$RRDp::real>
 
 =head1 DESCRIPTION
 
-With this module you can safely communicate with the rrdtool. 
+With this module you can safely communicate with the RRDtool. 
 
 After every B<RRDp::cmd> you have to issue an B<RRDp::read> command to get
-B<rrdtool>s answer to your command. The answer is returned as a pointer,
+B<RRDtool>s answer to your command. The answer is returned as a pointer,
 in order to speed things up. If the last command did not return any
 data, B<RRDp::read> will return an undefined variable. 
 
 If you import the PERFORMANCE variables into your namespace, 
-you can access rrdtools internal performance measurements.
+you can access RRDtool's internal performance measurements.
 
 =over 8
 
@@ -36,34 +36,34 @@ you can access rrdtools internal performance measurements.
 
 Load the RRDp::pipe module.
 
-=item B<RRDp::start> I<path to rrdtool executable>
+=item B<RRDp::start> I<path to RRDtool executable>
 
-start rrdtool. The argument must be the path to the rrdtool executable
+start RRDtool. The argument must be the path to the RRDtool executable
 
 =item B<RRDp::cmd> I<rrdtool commandline>
 
-pass commands on to rrdtool. check the rrdtool documentation for
-more info on the rrdtool commands.
+pass commands on to RRDtool. check the RRDtool documentation for
+more info on the RRDtool commands.
 
 =item $answer = B<RRDp::read>
 
-read rrdtools response to your command. Note that the $answer variable will
+read RRDtool's response to your command. Note that the $answer variable will
 only contain a pointer to the returned data. The reason for this is, that
-rrdtool can potentially return quite excessive amounts of data
+RRDtool can potentially return quite excessive amounts of data
 and we don't want to copy this around in memory. So when you want to 
 access the contents of $answer you have to use $$answer which dereferences
 the variable.
 
 =item $status = B<RRDp::end>
 
-terminates rrdtool and returns rrdtools status ... 
+terminates RRDtool and returns RRDtool's status ... 
 
 =item B<$RRDp::user>,  B<$RRDp::sys>, B<$RRDp::real>
 
 these variables will contain totals of the user time, system time and
-real time as seen by rrdtool.  User time is the time rrdtool is
+real time as seen by RRDtool.  User time is the time RRDtool is
 running, System time is the time spend in system calls and real time
-is the total time rrdtool has been running.
+is the total time RRDtool has been running.
 
 The difference between user + system and real is the time spent
 waiting for things like the hard disk and new input from the perl
@@ -85,7 +85,7 @@ script.
 
 =head1 SEE ALSO
 
-For more information on how to use rrdtool, check the manpages.
+For more information on how to use RRDtool, check the manpages.
 
 =head1 AUTHOR
 

@@ -23,7 +23,7 @@ be ignored
 
 allow sub second presition for step definition
 
-modularise consolidation and aquisition functions
+modularise consolidation and acquisition functions
 
 Allow the user to define vertical scaling of graphs in a more flexible way.
 some thing like --inner-range 0-1000 and --outer-range 0-10000 which means

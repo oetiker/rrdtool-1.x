@@ -10,7 +10,7 @@ TCLRRD adds a dynamically loadable package to the Tcl 8.x interpreter
 to access all RRD functions as of RRDtool 1.0.13. All command names
 and arguments are equal to those of RRDtool. They are assigned to the
 namespace `Rrd', e.g.  `Rrd::create'. Return values are a bit
-different from plain rrdtool behavior to enable more native Tcl
+different from plain RRDtool behavior to enable more native Tcl
 usage. Errors are mapped to the TCL_ERROR return code together with
 the RRD error strings.
 
