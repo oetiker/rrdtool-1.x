@@ -50,6 +50,10 @@ Set up a new Round Robin Database (RRD). Check L<rrdcreate>.
 
 Store new data values into an RRD. Check L<rrdupdate>.
 
+=item B<updatev>
+
+Operation equivalent to B<update> except for output. Check L<rrdupdate>.
+
 =item B<graph>
 
 Create a graph from data stored in one or several RRD. Apart from

@@ -7,7 +7,7 @@ use vars qw(@ISA $VERSION);
 
 require DynaLoader;
 
-$VERSION = 1.000331;
+$VERSION = 1.100001;
 
 bootstrap RRDs $VERSION;
 
@@ -89,6 +89,11 @@ the values of the properties.
  foreach my $key (keys %$hash){
    print "$key = $$hash{$key}\n";
  }
+
+B<RRDs::updatev> also returns a pointer to hash. The keys of the hash
+are concatenated strings of a timestamp, RRA index, and data source name for
+each consolidated data point (CDP) written to disk as a result of the
+current update call. The hash values are CDP values.
 
 B<RRDs::fetch> is the most complex of
 the pack regarding return values. There are 4 values. Two normal

@@ -31,7 +31,7 @@ void PrintUsage(char *cmd)
 	   "Usage: rrdtool [options] command command_options\n\n";
 
     char help_list[] =
-	   "Valid commands: create, update, graph, dump, restore,\n"
+	   "Valid commands: create, update, updatev, graph, dump, restore,\n"
 	   "\t\tlast, info, fetch, tune, resize, xport\n\n";
 
     char help_listremote[] =
@@ -64,6 +64,15 @@ void PrintUsage(char *cmd)
     char help_update[] =
 	   "* update - update an RRD\n\n"
 	   "\trrdtool update filename\n"
+	   "\t\t--template|-t ds-name:ds-name:...\n"
+	   "\t\ttime|N:value[:value...]\n\n"
+           "\t\tat-time@value[:value...]\n\n"
+ 	   "\t\t[ time:value[:value...] ..]\n\n";
+    
+	char help_updatev[] =
+	   "* updatev - a verbose verion of update\n"
+	   "\treturns information about values, RRAs, and datasources updated\n\n"
+	   "\trrdtool updatev filename\n"
 	   "\t\t--template|-t ds-name:ds-name:...\n"
 	   "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
@@ -158,7 +167,7 @@ void PrintUsage(char *cmd)
 
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
 	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
-           C_QUIT, C_LS, C_CD, C_MKDIR };
+           C_QUIT, C_LS, C_CD, C_MKDIR, C_UPDATEV };
 
     int help_cmd = C_NONE;
 
@@ -176,6 +185,8 @@ void PrintUsage(char *cmd)
 		help_cmd = C_LAST;
     	    else if (!strcmp(cmd,"update"))
 		help_cmd = C_UPDATE;
+    	    else if (!strcmp(cmd,"updatev"))
+		help_cmd = C_UPDATEV;
     	    else if (!strcmp(cmd,"fetch"))
 		help_cmd = C_FETCH;
     	    else if (!strcmp(cmd,"graph"))
@@ -221,6 +232,9 @@ void PrintUsage(char *cmd)
 		break;
 	    case C_UPDATE:
 		fputs(help_update, stdout);
+		break;
+	    case C_UPDATEV:
+		fputs(help_updatev, stdout);
 		break;
 	    case C_FETCH:
 		fputs(help_fetch, stdout);
@@ -467,9 +481,13 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	rrd_create(argc-1, &argv[1]);
     else if (strcmp("dump", argv[1]) == 0)
 	rrd_dump(argc-1, &argv[1]);
-    else if (strcmp("info", argv[1]) == 0){
+    else if (strcmp("info", argv[1]) == 0 
+		|| strcmp("updatev", argv[1]) == 0){
 	info_t *data,*save;
-	data=rrd_info(argc-1, &argv[1]);
+	if (strcmp("info",argv[1]) == 0)
+	   data=rrd_info(argc-1, &argv[1]);
+    else
+	   data=rrd_update_v(argc-1, &argv[1]);
 	while (data) {
 	    save=data;
 	    printf ("%s = ", data->key);
@@ -484,6 +502,9 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 		break;
 	    case RD_I_CNT:
 		printf ("%lu", data->value.u_cnt);
+		break;
+	    case RD_I_INT:
+		printf ("%d", data->value.u_int);
 		break;
 	    case RD_I_STR:
 		printf ("\"%s\"", data->value.u_str);
