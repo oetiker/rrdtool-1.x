@@ -407,7 +407,7 @@ rrd_write(char *file_name, rrd_t *rrd)
     if (strcmp("-",file_name)==0){
       *rrd_file= *stdout;
     } else {
-      int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL);
+      int fd = open(file_name,O_RDWR|O_CREAT|O_EXCL,0666);
       if (fd == -1 || (rrd_file = fdopen(fd,"wb")) == NULL) {
 	rrd_set_error("creating '%s': %s",file_name,strerror(errno));
 	rrd_free(rrd);
