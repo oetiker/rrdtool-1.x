@@ -803,7 +803,7 @@ printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 			     * further save step size and data source
 			     * count of this rra
 			     */ 
-			    im->gdes[gdi].rpnp[rpi].data = im->gdes[ptr].data; 
+                            im->gdes[gdi].rpnp[rpi].data =  im->gdes[ptr].data + im->gdes[ptr].ds;
 			    im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
 			    im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
 
