@@ -2,7 +2,7 @@
 
 =head1 SYNOPSYS
 
-B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:step=I<step size>][:<time range>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
 
 B<VDEF>:I<vname>=I<RPN expression>
 
@@ -18,7 +18,7 @@ a language called B<RPN> which is described in its own manual page.
 
 =head1 DEF
 
-B<DEF>:I<vname>=I<RRD file>:I<ds name>:I<CF>[:step=I<step size>][:<time range>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
 
 This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
@@ -26,9 +26,9 @@ default, an B<RRA> which contains the correct consolidated data
 at an appropriate resolution will be chosen.  The resolution can
 be overriden with the L<--step|rrdgraph/item_Time> option. 
 The resolution can again be overriden by specifying the B<step size>.
-I<Not yet implemented:> [ The time span of this data
-is the same as for the graph by default, you can override this by
-specifying the B<time range>. ]
+The time span of this data is the same as for the graph by default,
+you can override this by specifying B<start and end>.  Remember to
+escape colons in the time specification!
 
 If the resolution of the data is higher than the resolution of off
 graph, the data will be further consolidated.  This may result in
@@ -43,6 +43,8 @@ Example:
 
         DEF:ds0=router.rrd:ds0:AVERAGE
         DEF:ds0weekly=router.rrd:ds0:AVERAGE:step=7200
+        DEF:ds0weekly=router.rrd:ds0:AVERAGE:start=end-1h
+        DEF:ds0weekly=router.rrd:ds0:AVERAGE:start=11\:00:end=start+1h
 
 =head1 VDEF
 

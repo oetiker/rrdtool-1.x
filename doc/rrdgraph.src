@@ -4,8 +4,7 @@
 
 B<rrdtool graph> I<filename>
 [E<lt>B<L<option|rrdgraph/OPTIONS>>E<gt> ...]
-E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt>
-[E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt> ...]
+E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt>[ ...]
 [E<lt>B<L<data calculation|rrdgraph_data/CDEF>>E<gt> ...]
 [E<lt>B<L<variable definition|rrdgraph_data/VDEF>>E<gt> ...]
 [E<lt>B<L<graph element|rrdgraph_graph/GRAPH>>E<gt> ...]
@@ -334,7 +333,7 @@ Z<>
 
 =item Data and variables
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:[I<E<lt>time rangeE<gt>>][:I<E<lt>step timeE<gt>>]]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
 
 B<CDEF:>I<E<lt>vnameE<gt>>=I<E<lt>RPN expressionE<gt>>
 
