@@ -697,6 +697,7 @@ day(struct time_value *ptv)
 	     */
 	    wday = (sc_tokid-SUN);
 	    ptv->tm.tm_mday += (wday - ptv->tm.tm_wday);
+            token();
 	    break;
 	    /*
 	    mday = ptv->tm.tm_mday;
@@ -835,7 +836,8 @@ parsetime(char *tspec, struct time_value *ptv)
     /* Only absolute time specifications below */
     case NUMBER:
 	    try(tod(ptv))
-	    if (sc_tokid != NUMBER) break; 
+            try(day(ptv))
+            break;
     /* fix month parsing */
     case JAN: case FEB: case MAR: case APR: case MAY: case JUN:
     case JUL: case AUG: case SEP: case OCT: case NOV: case DEC:
