@@ -220,6 +220,9 @@ rrd_expand_vars(char* buffer)
 		parse(&buffer, i, "<RRD::CV::PATH", cgigetqp);
 		parse(&buffer, i, "<RRD::GETENV", rrdgetenv);	 
 		parse(&buffer, i, "<RRD::GETVAR", rrdgetvar);	 
+                parse(&buffer, i, "<RRD::TIME::LAST", printtimelast);
+                parse(&buffer, i, "<RRD::TIME::NOW", printtimenow);
+                parse(&buffer, i, "<RRD::TIME::STRFTIME", printstrftime);
 	}
 	return buffer;
 }
@@ -315,6 +318,12 @@ int main(int argc, char *argv[]) {
 
 	/* initialize variable heap */
 	initvar();
+
+#ifdef DEBUG_PARSER
+       /* some fake header for testing */
+       printf ("Content-Type: text/html\nContent-Length: 10000000\n\n\n");
+#endif
+
 
 	/* expand rrd directives in buffer recursivly */
 	for (i=0; buffer[i]; i++) {
@@ -433,8 +442,12 @@ char* rrdgetenv(long argc, const char **args) {
 	if (envvar) {
 		return stralloc(envvar);
 	} else {
-		snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
-		return stralloc(buf);
+#ifdef WIN32
+               _snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
+#else
+                snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
+#endif         
+                return stralloc(buf);
 	}
 }
 
@@ -449,7 +462,11 @@ char* rrdgetvar(long argc, const char **args) {
 	if (value) {
 		return stralloc(value);
 	} else {
-		snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
+#ifdef WIN32
+               _snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
+#else
+                snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
+#endif
 		return stralloc(buf);
 	}
 }
@@ -527,7 +544,8 @@ char* printstrftime(long argc, const char **args){
 char* includefile(long argc, const char **args){
   char *buffer;
   if (argc >= 1) {
-      readfile(args[0], &buffer, 0);
+      char* filename = args[0];
+      readfile(filename, &buffer, 0);
       if (rrd_test_error()) {
 	  	char *err = malloc((strlen(rrd_get_error())+DS_NAM_SIZE));
 	  sprintf(err, "[ERROR: %s]",rrd_get_error());
@@ -604,55 +622,58 @@ char* cgigetq(long argc, const char **args){
    paths which came in via cgi do not go UP ... */
 
 char* cgigetqp(long argc, const char **args){
-  if (argc>= 1) {
-    char *buf = rrdstrip(cgiGetValue(cgiArg,args[0]));
-    char *buf2;
-    char *c,*d;
-    int  qc=0;
+       char* buf;
+    char* buf2;
+    char* p;
+        char* d;
 
-    if (buf==NULL) 
-		return NULL;
+        if (argc < 1)
+        {
+                return stralloc("[ERROR: not enough arguments for RRD::CV::PATH]");
+        }
 
-    for(c=buf;*c != '\0';c++) {
-    	if (*c == '"') {
-			qc++;
-		}
-	}
+        buf = rrdstrip(cgiGetValue(cgiArg, args[0]));
+    if (!buf)
+        {
+                return NULL;
+        }
 
-    if ((buf2 = malloc((strlen(buf) + 4 * qc + 4))) == NULL) {
-		perror("Malloc Buffer");
-		exit(1);
+        buf2 = malloc(strlen(buf)+1);
+    if (!buf2)
+        {
+                perror("cgigetqp(): Malloc Path Buffer");
+                exit(1);
     };
 
-    c=buf;
-    d=buf2;
+    p = buf;
+    d = buf2;
 
-    *(d++) = '"';
-    while (*c != '\0') {
-		if (*c == '"') {
-			*(d++) = '"';
-			*(d++) = '\'';
-			*(d++) = '"';
-			*(d++) = '\'';
-		}
-		if(*c == '/') {
-			*(d++) = '_';
-			c++;
-		} else {
-			if (*c=='.' && *(c+1) == '.') {
-				c += 2;
-				*(d++) = '_'; *(d++) ='_';	
-			} else {
-				*(d++) = *(c++);
-			}
-		}
+    while (*p)
+        {
+                /* prevent mallicious paths from entering the system */
+                if (p[0] == '.' && p[1] == '.')
+                {
+                        p += 2;
+                        *d++ = '_';
+                        *d++ = '_';     
+                }
+                else
+                {
+                        *d++ = *p++;
+                }
     }
-    *(d++) = '"';
-    *(d) = '\0';
+
+    *d = 0;
     free(buf);
+
+    /* Make sure the path is relative, e.g. does not start with '/' */
+    p = buf2;
+    while ('/' == *p)
+        {
+            *p++ = '_';
+    }
+
     return buf2;
-  }
-  return stralloc("[ERROR: not enough arguments for RRD::CV::PATH]");
 }
 
 
@@ -816,7 +837,7 @@ scanargs(char *line, int *argument_count, char ***arguments)
 		{
 		case ' ': 
 			if (Quote || tagcount) {
-				/* copy quoted/tagged string */
+				/* copy quoted/tagged (=RRD expanded) string */
 				*putP++ = c;
 			}
 			else if (in_arg)
@@ -842,7 +863,7 @@ scanargs(char *line, int *argument_count, char ***arguments)
 				}
 			} else {
 				if (!in_arg) {
-					/* reference argument string in argument array */
+					/* reference start of argument string in argument array */
 					argv[argc++] = putP;
 					in_arg=1;
 				}
@@ -851,7 +872,6 @@ scanargs(char *line, int *argument_count, char ***arguments)
 			break;
 
 		default:
-			if (!Quote) {
 				if (!in_arg) {
 					/* start new argument */
 					argv[argc++] = putP;
@@ -868,7 +888,6 @@ scanargs(char *line, int *argument_count, char ***arguments)
 						curarg_contains_rrd_directives = 1;
 					}
 				}
-			}
 			*putP++ = c;
 			break;
 		}
