@@ -1,5 +1,8 @@
+# 
 # INCLUDED_LIB(LIBRARY, FUNCTION, OTHER-LIBRARIES = none)
 # ---------------------------------------------
+# Contributed by Mat Zimmermann
+#
 AC_DEFUN(INCLUDED_LIB,
 [
 use_installed_lib$1=
