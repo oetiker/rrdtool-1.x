@@ -4,21 +4,22 @@
  * rrd__graph.c  make creates ne rrds
  ****************************************************************************/
 
-#if 0
-#include "rrd_tool.h"
-#endif
 
 #include <sys/stat.h>
 #ifdef WIN32
 #include <io.h>
 #include <fcntl.h>
 #endif
+
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
+
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
+
+#include "rrd_tool.h"
 
 #include "rrd_graph.h"
 #include "rrd_graph_helper.h"
@@ -2515,7 +2516,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize)
     tzset();
 #endif
 #ifdef HAVE_SETLOCALE
-    setlocale(LC_ALL,"");
+    setlocale(LC_TIME,"");
 #endif
             
             
