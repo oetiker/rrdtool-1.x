@@ -300,13 +300,15 @@ sub write_font_metrics
     my $kerning_index = 0;
     if (defined $kerningInfoR) {
       my @kerns = ();
+      my $numKernings = 0;
       foreach my $unicode2 (sort { $a <=> $b } keys %$kerningInfoR) {
         my $delta = $$kerningInfoR{$unicode2};
+        $numKernings++;
         append_escaped_16bit_int(\@kerns, $unicode2);
         push(@kerns, $delta);
         $had_kerning = 1;
       }
-      $kerning_index = append_8bit_subarray($kerning_dataA, 2, @kerns);
+      $kerning_index = append_8bit_subarray($kerning_dataA, $numKernings, @kerns);
     }
     append_to_array($kerning_indexA, $kerning_index);
   }
@@ -355,11 +357,12 @@ sub append_to_array
 
 sub append_8bit_subarray
 {
-  my ($aR, $elementsPerItem, @newElements) = @_;
+  my ($aR, $numItems, @newElements) = @_;
   push(@$aR, 42) if !array_size($aR); # initial dummy value
+  die if $numItems > $#newElements + 1;
   my $idx = $#{$aR} + 1;
 #print "append_8bit_subarray ", ($#newElements+1), " = (", join(", ", @newElements), ") -> $idx\n";
-  append_escaped_16bit_int($aR, ($#newElements + 1) / $elementsPerItem);
+  append_escaped_16bit_int($aR, $numItems);
   push(@$aR, @newElements);
   die "Can't handle that big sub array, sorry...\n" if $idx > 50000;
   return $idx;
