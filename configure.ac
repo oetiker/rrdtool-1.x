@@ -27,7 +27,7 @@ else
    xxpreinst = /usr/local
 fi
 
-AC_PREFIX_DEFAULT( $xxpreinst/local/rrdtool-$PACKAGE_VERSION )
+AC_PREFIX_DEFAULT( $xxpreinst/rrdtool-$PACKAGE_VERSION )
 
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
