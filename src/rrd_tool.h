@@ -11,7 +11,7 @@ extern "C" {
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include "../confignt/config.h"
 #else
 #ifdef HAVE_CONFIG_H
@@ -95,14 +95,7 @@ extern int getrusage(int, struct rusage *);
 
 #include "rrd.h"
 
-#ifndef WIN32
-
-/* unix-only includes */
-#ifndef isnan
-int isnan(double value);
-#endif
-
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
 /* Win32 only includes */
 
@@ -114,6 +107,14 @@ struct tm* localtime_r(const time_t *timep, struct tm* result);
 char* ctime_r(const time_t *timep, char* result);
 struct tm* gmtime_r(const time_t *timep, struct tm* result);
 char *strtok_r(char *str, const char *sep, char **last);
+
+#else
+
+/* unix-only includes */
+#ifndef isnan
+int isnan(double value);
+#endif
+
 #endif
 
 /* local include files -- need to be after the system ones */

@@ -23,10 +23,10 @@ void PrintUsage(char *cmd)
 
     char help_main[] =
 	   "RRDtool 1.2rc3  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n"
-#ifndef WIN32
-           "               Compiled " MAKE_TIMESTAMP "\n\n"
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
+#else
+           "               Compiled " MAKE_TIMESTAMP "\n\n"
 #endif          
 	   "Usage: rrdtool [options] command command_options\n\n";
 

@@ -443,7 +443,7 @@ char* rrdgetenv(long argc, const char **args) {
 	if (envvar) {
 		return stralloc(envvar);
 	} else {
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
                _snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
 #else
                 snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
@@ -463,7 +463,7 @@ char* rrdgetvar(long argc, const char **args) {
 	if (value) {
 		return stralloc(value);
 	} else {
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
                _snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
 #else
                 snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);

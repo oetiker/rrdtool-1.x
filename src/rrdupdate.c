@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
  #include <sys/locking.h>
  #include <sys/stat.h>
  #include <io.h>
@@ -1088,10 +1088,10 @@ rrd_update(int argc, char **argv)
 	 * critical except during the burning cycles. */
 	if (schedule_smooth)
 	{
-#ifndef WIN32
-	  rrd_file = fopen(argv[optind],"r+");
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 	  rrd_file = fopen(argv[optind],"rb+");
+#else
+	  rrd_file = fopen(argv[optind],"r+");
 #endif
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
@@ -1134,15 +1134,7 @@ LockRRD(FILE *rrdfile)
     rrd_fd = fileno(rrdfile);
 
 	{
-#ifndef WIN32    
-		struct flock	lock;
-    lock.l_type = F_WRLCK;    /* exclusive write lock */
-    lock.l_len = 0;	      /* whole file */
-    lock.l_start = 0;	      /* start of file */
-    lock.l_whence = SEEK_SET;   /* end of file */
-
-    stat = fcntl(rrd_fd, F_SETLK, &lock);
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 		struct _stat st;
 
 		if ( _fstat( rrd_fd, &st ) == 0 ) {
@@ -1150,6 +1142,14 @@ LockRRD(FILE *rrdfile)
 		} else {
 			stat = -1;
 		}
+#else
+		struct flock	lock;
+	        lock.l_type = F_WRLCK;    /* exclusive write lock */
+                lock.l_len = 0;	      /* whole file */
+                lock.l_start = 0;	      /* start of file */
+                lock.l_whence = SEEK_SET;   /* end of file */
+
+                stat = fcntl(rrd_fd, F_SETLK, &lock);
 #endif
 	}
 

@@ -10,7 +10,7 @@
 #include "rrd_graph.h"
 #include "rrd_xport.h"
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif

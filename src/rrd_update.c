@@ -13,7 +13,7 @@
  #include <sys/mman.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
  #include <sys/locking.h>
  #include <sys/stat.h>
  #include <io.h>
@@ -24,7 +24,7 @@
 
 #include "rrd_is_thread_safe.h"
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 /*
  * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
  * replacement.
@@ -1383,10 +1383,10 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	 * critical except during the burning cycles. */
 	if (schedule_smooth)
 	{
-#ifndef WIN32
-	  rrd_file = fopen(filename,"r+");
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 	  rrd_file = fopen(filename,"rb+");
+#else
+	  rrd_file = fopen(filename,"r+");
 #endif
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
@@ -1429,15 +1429,7 @@ LockRRD(FILE *rrdfile)
     rrd_fd = fileno(rrdfile);
 
 	{
-#ifndef WIN32    
-    struct flock	lock;
-    lock.l_type = F_WRLCK;    /* exclusive write lock */
-    lock.l_len = 0;	      /* whole file */
-    lock.l_start = 0;	      /* start of file */
-    lock.l_whence = SEEK_SET;   /* end of file */
-
-    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
-#else
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     struct _stat st;
 
     if ( _fstat( rrd_fd, &st ) == 0 ) {
@@ -1445,6 +1437,14 @@ LockRRD(FILE *rrdfile)
     } else {
 	    rcstat = -1;
     }
+#else
+    struct flock	lock;
+    lock.l_type = F_WRLCK;    /* exclusive write lock */
+    lock.l_len = 0;	      /* whole file */
+    lock.l_start = 0;	      /* start of file */
+    lock.l_whence = SEEK_SET;   /* end of file */
+
+    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
 #endif
 	}
 

@@ -97,7 +97,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
         
         if (rpnc[i].op == OP_NUMBER) {
             /* convert a short into a string */
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
             _itoa(rpnc[i].val,buffer,10);
 #else
             sprintf(buffer,"%d",rpnc[i].val);

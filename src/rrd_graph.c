@@ -9,7 +9,7 @@
 
 #include "rrd_tool.h"
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
@@ -27,9 +27,6 @@
 /* some constant definitions */
 
 
-#ifdef WIN32
-char rrd_win_default_font[80];
-#endif
 
 #ifndef RRD_DEFAULT_FONT
 /* there is special code later to pick Cour.ttf when running on windows */
@@ -2570,7 +2567,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   if (strcmp(im->graphfile,"-")==0) {
     fo = im->graphhandle ? im->graphhandle : stdout;
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     /* Change translation mode for stdout to BINARY */
     _setmode( _fileno( fo ), O_BINARY );
 #endif
@@ -2769,19 +2766,34 @@ rrd_graph_init(image_desc_t *im)
     
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];
-#ifdef WIN32
+
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     {
             char *windir; 
+	    char rrd_win_default_font[1000];
             windir = getenv("windir");
             /* %windir% is something like D:\windows or C:\winnt */
             if (windir != NULL) {
-                    strcpy(rrd_win_default_font,windir);
+                    strncpy(rrd_win_default_font,windir,999);
+                    rrd_win_default_font[999] = '\0';
                     strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
-                    for(i=0;i<DIM(text_prop);i++)
-                            strcpy(text_prop[i].font,rrd_win_default_font);
-            }
+                    for(i=0;i<DIM(text_prop);i++){
+                            strncpy(text_prop[i].font,rrd_win_default_font,sizeof(text_prop[i].font)-1);
+                            text_prop[i].font[sizeof(text_prop[i].font)-1] = '\0';
+                     }
     }
 #endif
+    {
+            char *deffont; 
+            deffont = getenv("RRD_DEFAULT_FONT");
+            /* %windir% is something like D:\windows or C:\winnt */
+            if (deffont != NULL) {
+                 for(i=0;i<DIM(text_prop);i++){
+                	strncpy(text_prop[i].font,deffont,sizeof(text_prop[i].font)-1);
+			text_prop[i].font[sizeof(text_prop[i].font)-1] = '\0';
+		 }
+            }
+    }
     for(i=0;i<DIM(text_prop);i++){        
       im->text_prop[i].size = text_prop[i].size;
       strcpy(im->text_prop[i].font,text_prop[i].font);
@@ -2911,6 +2923,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 		      &im->xlab_user.precis,
 		      &stroff) == 7 && stroff != 0){
                 strncpy(im->xlab_form, optarg+stroff, sizeof(im->xlab_form) - 1);
+		im->xlab_form[sizeof(im->xlab_form)-1] = '\0'; 
 		if((int)(im->xlab_user.gridtm = tmt_conv(scan_gtm)) == -1){
 		    rrd_set_error("unknown keyword %s",scan_gtm);
 		    return;
