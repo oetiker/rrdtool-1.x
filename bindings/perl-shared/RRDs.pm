@@ -29,6 +29,7 @@ RRDs - Access rrdtool as a shared module
   RRDs::graph ...
   RRDs::fetch ...
   RRDs::tune ...
+  RRDs::times(start, end)
 
 =head1 DESCRIPTION
 
@@ -51,6 +52,11 @@ Note that
 is also valid.
 
 
+The RRDs::times function takes two parameters:  a "start" and "end" time.
+These should be specified in the U<AT-STYLE TIME SPECIFICATION> format
+used by rrdtool.  See the U<rrdfetch> documentation for a detailed
+explanation on how to specify time.
+
 =head2 Error Handling
 
 The RRD functions will not abort your program even when they can not make
@@ -67,8 +73,8 @@ then the previous function has completed its task successfully.
 
 =head2 Return Values
 
-The functions RRDs::last, RRDs::graph, RRDs::info and RRDs::fetch return their
-findings.
+The functions RRDs::last, RRDs::graph, RRDs::info, RRDs::fetch and RRDs::times
+return their findings.
 
 B<RRDs::last> returns a single INTEGER representing the last update time.
 
@@ -113,6 +119,9 @@ integers, a pointer to an array and a pointer to a array of pointers.
     }
     print "\n";
   }
+
+B<RRDs::times> returns two integers which are the number of seconds since
+epoch (1970-01-01) for the supplied "start" and "end" arguments, respectively.
 
 See the examples directory for more ways to use this extension.
 
