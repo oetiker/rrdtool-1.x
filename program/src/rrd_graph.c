@@ -174,6 +174,7 @@ enum gf_en gf_conv(char *string){
     conv_if(DEF,GF_DEF)
     conv_if(CDEF,GF_CDEF)
     conv_if(VDEF,GF_VDEF)
+    conv_if(PART,GF_PART)
     
     return (-1);
 }
@@ -1209,6 +1210,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_LINE:
 	case GF_AREA:
 	case GF_TICK:
+	case GF_PART:
 	case GF_STACK:
 	case GF_HRULE:
 	case GF_VRULE:
@@ -1324,9 +1326,6 @@ leg_place(image_desc_t *im)
 		    continue;
 		im->gdes[ii].leg_x = leg_x;
 		im->gdes[ii].leg_y = leg_y;
-printf("DEBUG: using font %s with width %lf\n",
-	im->text_prop[TEXT_PROP_LEGEND].font,
-	im->text_prop[TEXT_PROP_LEGEND].size);
 	        leg_x += 
 		 gfx_get_text_width(leg_x,im->text_prop[TEXT_PROP_LEGEND].font,
 				      im->text_prop[TEXT_PROP_LEGEND].size,
@@ -1851,6 +1850,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
 {
   int i,ii;
   int lazy =     lazy_check(im);
+  int piechart = 0, PieSize, PieCenterX, PieCenterY;
+  double PieStart=0.0;
   FILE  *fo;
   gfx_canvas_t *canvas;
   gfx_node_t *node;
@@ -1907,8 +1908,27 @@ graph_paint(image_desc_t *im, char ***calcpr)
   if(im->title[0] != '\0')
     im->yorigin += im->text_prop[TEXT_PROP_TITLE].size*3+4;
   
-  im->xgif=20+im->xsize + im->xorigin;
+  im->xgif= 20 +im->xsize + im->xorigin;
   im->ygif= im->yorigin+2* im->text_prop[TEXT_PROP_LEGEND].size;
+
+  /* check if we need to draw a piechart */
+  for(i=0;i<im->gdes_c;i++){
+    if (im->gdes[i].gf == GF_PART) {
+      piechart=1;
+      break;
+    }
+  }
+
+  if (piechart) {
+    if (im->xsize < im->ysize)
+	PieSize = im->xsize;
+    else
+	PieSize = im->ysize;
+    im->xgif += PieSize + 50;
+
+    PieCenterX = im->xorigin + im->xsize + 50 + PieSize/2;
+    PieCenterY = im->yorigin - PieSize/2;
+  }
   
   /* determine where to place the legends onto the graphics.
      and set im->ygif to match space requirements for text */
@@ -1936,7 +1956,15 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   gfx_add_point(node,im->xorigin, im->yorigin - im->ysize);
 
-  
+  if (piechart) {
+    node=gfx_new_area ( canvas,
+		im->xorigin + im->xsize + 50,		im->yorigin,
+		im->xorigin + im->xsize + 50 + PieSize,	im->yorigin,
+		im->xorigin + im->xsize + 50 + PieSize,	im->yorigin - PieSize,
+		im->graph_col[GRC_CANVAS]);
+    gfx_add_point(node,im->xorigin+im->xsize+50, im->yorigin - PieSize);
+  }
+
   if (im->minval > 0.0)
     areazero = im->minval;
   if (im->maxval < 0.0)
@@ -1945,7 +1973,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   axis_paint(im,canvas);
 
 
-  for(i=0;i<im->gdes_c;i++){    
+  for(i=0;i<im->gdes_c;i++){
     switch(im->gdes[i].gf){
     case GF_CDEF:
     case GF_VDEF:
@@ -2064,6 +2092,48 @@ graph_paint(image_desc_t *im, char ***calcpr)
       } 
       lastgdes = &(im->gdes[i]);                         
       break;
+    case GF_PART: {
+      int x,y , counter;
+      double d1,d2,d3,d4;
+
+      /* This probably is not the most efficient algorithm...
+      ** If you know how to help, please do!
+      **
+      ** If you change this routine be aware that I optimized
+      ** the following algorithm:
+      **
+      ** Full circle == 100
+      **    relative X-position is sin(2*pi * position/100)
+      **    relative Y-position is cos(2*pi * position/100)
+      **
+      ** Position is incremented from start to end in a number
+      ** of steps.  This number of steps corresponds with the
+      ** size of the pie canvas, each step being 1/PieSize.
+      */
+
+      if(isnan(im->gdes[i].yrule)) /* fetch variable */
+	im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
+     
+      if (finite(im->gdes[i].yrule)) {
+	d1 = 2 * M_PI / 100;
+	d2 = im->gdes[i].yrule / PieSize;
+	d3 = PieSize/2;
+
+	for (counter=0;counter<=PieSize;counter++) {
+	  d4 = d1 * (PieStart + d2 * counter);
+	  x=sin(d4) * d3;
+	  y=cos(d4) * d3;
+
+	  gfx_new_line(canvas,
+	    PieCenterX,PieCenterY ,
+	    PieCenterX+x,PieCenterY-y,
+	    1.0,
+	    im->gdes[i].col);
+        }
+        PieStart += im->gdes[i].yrule;
+      }
+      break;
+      } /* GF_PART */
     } /* switch */
   }
   grid_paint(im,canvas);
@@ -2073,7 +2143,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
     
     switch(im->gdes[i].gf){
     case GF_HRULE:
-      printf("DEBUG: HRULE at %f\n",im->gdes[i].yrule);
       if(isnan(im->gdes[i].yrule)) { /* fetch variable */
         im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
       };
@@ -2532,8 +2601,6 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 				prop,&size,font) == 3){
 		int sindex;
 		if((sindex=text_prop_conv(prop)) != -1){
-printf("DEBUG: setting all to the default of font %s with width %lf\n",
-font,size);
 		    im->text_prop[sindex].size=size;              
 		    im->text_prop[sindex].font=font;
 		    if (sindex==0) { /* the default */
@@ -2636,7 +2703,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 	/* function:newvname=string[:ds-name:CF]	for xDEF
 	** function:vname[#color[:string]]		for LINEx,AREA,STACK
 	** function:vname#color[:num[:string]]		for TICK
-	** function:vname-or-num#color[:string]		for xRULE
+	** function:vname-or-num#color[:string]		for xRULE,PART
 	** function:vname:CF:string			for xPRINT
 	** function:string				for COMMENT
 	*/
@@ -2665,6 +2732,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im)
 		if (rrd_graph_legend(gdp,&line[argstart])==0)
 		    rrd_set_error("Cannot parse comment in line: %s",line);
 		break;
+	    case GF_PART:
 	    case GF_VRULE:
 	    case GF_HRULE:
 		j=k=l=m=0;
