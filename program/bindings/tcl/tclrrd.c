@@ -217,13 +217,14 @@ Rrd_Graph(clientData, interp, argc, argv)
 {
     char **calcpr;
     int xsize, ysize;
+    double ymin, ymax;
     Tcl_Obj *listPtr;
     char **argv2;
     
     calcpr = NULL;
 
     argv2 = getopt_init(argc, argv);
-    if (rrd_graph(argc, argv2, &calcpr, &xsize, &ysize) != -1 ) {
+    if (rrd_graph(argc, argv2, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
         listPtr = Tcl_GetObjResult(interp);
         Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewIntObj(xsize));
         Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewIntObj(ysize));

@@ -219,7 +219,7 @@ int graph_paint(image_desc_t *, char ***);
 void pie_part(image_desc_t *, gfx_color_t, double, double, double, double, double);
 int gdes_alloc(image_desc_t *);
 int scan_for_col(char *, int, char *);
-int rrd_graph(int, char **, char ***, int *, int *, FILE *);
+int rrd_graph(int, char **, char ***, int *, int *, FILE *, double *, double *);
 void rrd_graph_init(image_desc_t *);
 void rrd_graph_options(int, char **, image_desc_t *);
 void rrd_graph_script(int, char **, image_desc_t *, int);

@@ -178,6 +178,7 @@ rrd_graph(...)
 	PREINIT:
 	char **calcpr=NULL;
 	int i,xsize,ysize;
+	double ymin,ymax;
 	char **argv;
 	AV *retar;
 	PPCODE:
@@ -193,7 +194,7 @@ rrd_graph(...)
  	        }
 		optind=0; opterr=0; 
 		rrd_clear_error();
-		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL); 
+		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax); 
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}

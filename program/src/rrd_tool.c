@@ -623,9 +623,10 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	const char *imgfile = argv[2]; /* rrd_graph changes argv pointer */
 #endif
 	int xsize, ysize;
+	double ymin,ymax;
 	int i;
 	int tostdout = (strcmp(argv[2],"-") == 0);	
-	if( rrd_graph(argc-1, &argv[1], &calcpr, &xsize, &ysize, NULL) != -1 ) {
+	if( rrd_graph(argc-1, &argv[1], &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
 	    if (!tostdout) 
 		printf ("%dx%d\n",xsize,ysize);
 	    if (calcpr) {
