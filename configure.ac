@@ -22,10 +22,12 @@ AC_SUBST(VERSION)
 
 dnl where we install our stuff ...
 if [ -d /opt ]; then
-   AC_PREFIX_DEFAULT( /opt/rrdtool-$PACKAGE_VERSION )
-else
-   AC_PREFIX_DEFAULT( /usr/local/rrdtool-$PACKAGE_VERSION )
+   xxpreinst = /opt
+else 
+   xxpreinst = /usr/local
 fi
+
+AC_PREFIX_DEFAULT( $xxpreinst/local/rrdtool-$PACKAGE_VERSION )
 
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
