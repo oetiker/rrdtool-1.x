@@ -56,6 +56,9 @@ char* includefile(long, char **);
 /* for how long is the output of the cgi valid ? */
 char* rrdgoodfor(long, char **);
 
+/* format at-time specified times using strftime */
+char* printstrftime(long, char**);
+
 /** http protocol needs special format, and GMT time **/
 char *http_time(time_t *);
 
@@ -158,6 +161,7 @@ int main(int argc, char *argv[]) {
       i += parse(&buffer,i,"<RRD::INCLUDE",includefile);
       i += parse(&buffer,i,"<RRD::TIME::LAST",printtimelast);
       i += parse(&buffer,i,"<RRD::TIME::NOW",printtimenow);
+      i += parse(&buffer,i,"<RRD::TIME::STRFTIME",printstrftime);
   }
 
   /* pass 3 */
@@ -232,6 +236,62 @@ char* rrdgoodfor(long argc, char **args){
   }
    
   return stralloc("");
+}
+
+/* Format start or end times using strftime.  We always need both the
+ * start and end times, because, either might be relative to the other.
+ * */
+#define MAX_STRFTIME_SIZE 256
+char* printstrftime(long argc, char **args){
+	struct	time_value start_tv, end_tv;
+	char    *parsetime_error = NULL;
+	char	formatted[MAX_STRFTIME_SIZE];
+	struct tm *the_tm;
+	time_t	start_tmp, end_tmp;
+
+	/* Make sure that we were given the right number of args */
+	if( argc != 4) {
+		rrd_set_error( "wrong number of args %d", argc);
+		return (char *) -1;
+	}
+
+	/* Init start and end time */
+	parsetime("end-24h", &start_tv);
+	parsetime("now", &end_tv);
+
+	/* Parse the start and end times we were given */
+	if( (parsetime_error = parsetime( args[1], &start_tv))) {
+		rrd_set_error( "start time: %s", parsetime_error);
+		return (char *) -1;
+	}
+	if( (parsetime_error = parsetime( args[2], &end_tv))) {
+		rrd_set_error( "end time: %s", parsetime_error);
+		return (char *) -1;
+	}
+	if( proc_start_end( &start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+		return (char *) -1;
+	}
+
+	/* Do we do the start or end */
+	if( strcasecmp( args[0], "START") == 0) {
+		the_tm = localtime( &start_tmp);
+	}
+	else if( strcasecmp( args[0], "END") == 0) {
+		the_tm = localtime( &end_tmp);
+	}
+	else {
+		rrd_set_error( "start/end not found in '%s'", args[0]);
+		return (char *) -1;
+	}
+
+	/* now format it */
+	if( strftime( formatted, MAX_STRFTIME_SIZE, args[3], the_tm)) {
+		return( stralloc( formatted));
+	}
+	else {
+		rrd_set_error( "strftime failed");
+		return (char *) -1;
+	}
 }
 
 char* includefile(long argc, char **args){

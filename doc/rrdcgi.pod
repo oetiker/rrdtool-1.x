@@ -16,7 +16,7 @@ is to run as a cgi-program and parse a web page template containing special
 E<lt>RRD:: tags. B<rrdcgi> will interpret and act according to these tags.
 In the end it will printout a web page including the necessary CGI headers.
 
-B<rrdcgi> parses the contents of the template in 2 steps. In each step it looks
+B<rrdcgi> parses the contents of the template in 3 steps. In each step it looks
 only for a subset of tags. This allows to nest tags. 
 
 The argument parser uses the same semantics as you are used from your c shell.
@@ -95,6 +95,15 @@ time is I<strftime>-formated with the string specified in the second argument.
 
 This gets replaced by the current time of day. The
 time is I<strftime>-formated with the string specified in the argument.
+
+=item RRD::TIME::STRFTIME I<START|END> I<start-spec> I<end-spec> I<strftime-format>
+
+This gets replaced by a strftime-formatted time using the format
+I<strftime-format> on either I<start-spec> or I<end-spec> depending on
+whether I<START> or I<END> is specified.  Both I<start-spec> and I<end-spec>
+must be supplied as either could be relative to the other.  This is intended
+to allow pretty titles on graphs with times that are easier for non rrdtool
+folks to figure out than "-2weeks".
 
 =back
 
