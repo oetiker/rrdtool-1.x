@@ -434,14 +434,21 @@ echo
 echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
+echo "    With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
+echo "    Perl Modules: $COMP_PERL"
+echo "     Perl Binary: $PERL"
+echo "    Perl Version: $PERL_VERSION"
+echo "    Perl Options: $PERL_MAKE_OPTIONS"
+echo "      Tcl Config: $tcl_config"
+echo "    Build rrdcgi: $enable_rrdcgi"
+echo " Build librrd MT: $enable_pthread"
+echo
+ech
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
-echo
-echo "If you want to install the perl"
-echo "modules in site-perl, try 'make site-perl-install'."
 echo 
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://people.ee.ethz.ch/~oetiker/wish and"
+echo "make me happy. Go to http://people.ee.ethz.ch/oetiker/wish and"
 echo "place an order."
 echo 
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"
