@@ -29,7 +29,7 @@ other tutorial.
 
 =head2 More reading
 
-If you have difficulties with the way I try to explain them please read
+If you have difficulties with the way I try to explain it please read
 Steve Rader's L<rpntutorial>. It may help you understand how this all works.
 
 =head1 What are CDEFs ?
