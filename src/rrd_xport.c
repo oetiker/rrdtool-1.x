@@ -376,8 +376,10 @@ rrd_xport_fn(image_desc_t *im,
 	  if ((legend_list[j] = malloc(sizeof(char) * (FMT_LEG_LEN+5)))==NULL) {
 	    free(srcptr_list);
 	    free(ref_list);
+	    free(*data);  *data = NULL;
+	    while (--j > -1) free(legend_list[j]);
 	    free(legend_list);
-	    rrd_set_error("malloc xprint legend entry");
+	    rrd_set_error("malloc xport legend entry");
 	    return(-1);
 	  }
 
