@@ -555,6 +555,13 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 static int svg_indent = 0;
 static int svg_single_line = 0;
 static const char *svg_default_font = "Helvetica";
+typedef struct svg_dash
+{
+  int dash_enable;
+  double dash_adjust, dash_len, dash_offset;
+  double adjusted_on, adjusted_off;
+} svg_dash;
+
 
 static void svg_print_indent(FILE *fp)
 {
@@ -695,18 +702,52 @@ static void svg_write_color(FILE *fp, gfx_color_t c, const char *attr)
  }
 }
  
+static void svg_get_dash(gfx_node_t *node, svg_dash *d)
+{
+  double offset;
+  int mult;
+  if (node->dash_on <= 0 || node->dash_off <= 0) {
+    d->dash_enable = 0;
+    return;
+  }
+  d->dash_enable = 1;
+  d->dash_len = node->dash_on + node->dash_off;
+  /* dash on/off adjustment due to round caps */
+  d->dash_adjust = 0.8 * node->size;
+  d->adjusted_on = node->dash_on - d->dash_adjust;
+  if (d->adjusted_on < 0.01)
+      d->adjusted_on = 0.01;
+  d->adjusted_off = d->dash_len - d->adjusted_on;
+  /* dash offset calc */
+  if (node->path[0].x == node->path[1].x) /* only good for horz/vert lines */
+    offset = node->path[0].y;
+  else
+    offset = node->path[0].x;
+  mult = (int)fabs(offset / d->dash_len);
+  d->dash_offset = offset - mult * d->dash_len;
+  if (node->path[0].x < node->path[1].x || node->path[0].y < node->path[1].y)
+    d->dash_offset = d->dash_len - d->dash_offset;
+}
+
 static void svg_common_path_attributes(FILE *fp, gfx_node_t *node)
 {
+  svg_dash dash_info;
+  svg_get_dash(node, &dash_info);
   fputs(" stroke-width=\"", fp);
   svg_write_number(fp, node->size);
   fputs("\"", fp);
   svg_write_color(fp, node->color, "stroke");
   fputs(" fill=\"none\"", fp);
-  if (node->dash_on > 0 && node->dash_off > 0) {
+  if (dash_info.dash_enable) {
+    if (dash_info.dash_offset != 0) {
+      fputs(" stroke-dashoffset=\"", fp);
+      svg_write_number(fp, dash_info.dash_offset);
+      fputs("\"", fp);
+    }
     fputs(" stroke-dasharray=\"", fp);
-    svg_write_number(fp, node->dash_on);
+    svg_write_number(fp, dash_info.adjusted_on);
     fputs(",", fp);
-    svg_write_number(fp, node->dash_off);
+    svg_write_number(fp, dash_info.adjusted_off);
     fputs("\"", fp);
   }
 }
@@ -888,7 +929,7 @@ static void svg_text(FILE *fp, gfx_node_t *node)
    }
    switch (node->valign) {
    case GFX_V_TOP:  y += node->size; break;
-   case GFX_V_CENTER: y += node->size / 2; break;
+   case GFX_V_CENTER: y += node->size / 3; break;
    case GFX_V_BOTTOM: break;
    case GFX_V_NULL: break;
    }
@@ -998,6 +1039,7 @@ typedef struct eps_state
   double font_size;
   double line_width;
   int linecap, linejoin;
+  int has_dash;
 } eps_state;
 
 static void eps_set_color(eps_state *state, gfx_color_t color)
@@ -1125,13 +1167,23 @@ static int eps_prologue(eps_state *state)
   return 0;
 }
 
+static void eps_clear_dash(eps_state *state)
+{
+  if (!state->has_dash)
+    return;
+  state->has_dash = 0;
+  fputs("[1 0] 0 setdash\n", state->fp);
+}
+
 static void eps_write_linearea(eps_state *state, gfx_node_t *node)
 {
   int i;
   FILE *fp = state->fp;
   int useOffset = 0;
+  int clearDashIfAny = 1;
   eps_set_color(state, node->color);
   if (node->type == GFX_LINE) {
+    svg_dash dash_info;
     if (state->linecap != 1) {
       fputs("1 setlinecap\n", fp);
       state->linecap = 1;
@@ -1140,7 +1192,21 @@ static void eps_write_linearea(eps_state *state, gfx_node_t *node)
       fputs("1 setlinejoin\n", fp);
       state->linejoin = 1;
     }
+    svg_get_dash(node, &dash_info);
+    if (dash_info.dash_enable) {
+      clearDashIfAny = 0;
+      state->has_dash = 1;
+      fputs("[", fp);
+      svg_write_number(fp, dash_info.adjusted_on);
+      fputs(" ", fp);
+      svg_write_number(fp, dash_info.adjusted_off);
+      fputs("] ", fp);
+      svg_write_number(fp, dash_info.dash_offset);
+      fputs(" setdash\n", fp);
+    }
   }
+  if (clearDashIfAny)
+    eps_clear_dash(state);
   for (i = 0; i < node->points; i++) {
     ArtVpath *vec = node->path + i;
     double x = vec->x;
@@ -1297,6 +1363,7 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
   state.font_list = NULL;
   state.linecap = -1;
   state.linejoin = -1;
+  state.has_dash = 0;
   if (eps_prologue(&state) == -1)
     return -1;
   eps_set_color(&state, background);
