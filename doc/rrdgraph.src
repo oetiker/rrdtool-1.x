@@ -317,6 +317,9 @@ for the graph legend.
 
 Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
 
+RRDtool comes with a preset default font. You can set the environment
+variable C<RRD_DEFAULT_FONT> if you want to change this.
+
 B<[-a|--imgformat C<PNG>|C<SVG>|C<EPS>|C<PDF>]>
 
 Image format for the generated graph.
