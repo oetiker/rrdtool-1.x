@@ -2097,7 +2097,9 @@ graph_size_location(image_desc_t *im, int elements
 	Xtitle   =0,	Ytitle   =0,
 	Xylabel  =0,	Yylabel  =0,
 	Xmain    =0,	Ymain    =0,
+#ifdef WITH_PIECHART
 	Xpie     =0,	Ypie     =0,
+#endif
 	Xxlabel  =0,	Yxlabel  =0,
 #if 0
 	Xlegend  =0,	Ylegend  =0,
@@ -2105,17 +2107,21 @@ graph_size_location(image_desc_t *im, int elements
         Xspacing =10,  Yspacing =10;
 
     if (im->extra_flags & ONLY_GRAPH) {
-       Xspacing =0;
-       Yspacing =0;
-    } else {
-        if (im->ylegend[0] != '\0') {
+	im->xorigin =0;
+	im->ximg = im->xsize;
+        im->yimg = im->ysize;
+        im->yorigin = im->ysize;
+	return 0;
+    }
+
+    if (im->ylegend[0] != '\0' ) {
            Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
            Yvertical = gfx_get_text_width(im->canvas, 0,
                                           im->text_prop[TEXT_PROP_UNIT].font,
                                           im->text_prop[TEXT_PROP_UNIT].size,
                                           im->tabwidth,im->ylegend, 0);
-        }
     }
+
 
     if (im->title[0] != '\0') {
 	/* The title is placed "inbetween" two text lines so it
@@ -2162,23 +2168,22 @@ graph_size_location(image_desc_t *im, int elements
     ** forget about it at all; the legend will have to fit in the
     ** size already allocated.
     */
-    im->ximg = Xmain;
+    im->ximg = Xylabel + Xmain + 2 * Xspacing;
 
-    if ( !(im->extra_flags & ONLY_GRAPH) ) {
-        im->ximg = Xylabel + Xmain + Xpie + 2 * Xspacing;
-    }
+#ifdef WITH_PIECHART
+    im->ximg  += Xpie;
+#endif
 
     if (Xmain) im->ximg += Xspacing;
+#ifdef WITH_PIECHART
     if (Xpie) im->ximg += Xspacing;
+#endif
 
-    if (im->extra_flags & ONLY_GRAPH) {
-       im->xorigin = 0;
-    } else {
-       im->xorigin = Xspacing + Xylabel;
-    }
+    im->xorigin = Xspacing + Xylabel;
 
     if (Xtitle > im->ximg) im->ximg = Xtitle;
-    if (Xvertical) {
+
+    if (Xvertical) { /* unit description */
 	im->ximg += Xvertical;
 	im->xorigin += Xvertical;
     }
@@ -2195,19 +2200,13 @@ graph_size_location(image_desc_t *im, int elements
 
     /* reserve space for main and/or pie */
 
-    if (im->extra_flags & ONLY_GRAPH) {
-        im->yimg = Ymain;
-    } else {
-        im->yimg = Ymain + Yxlabel;
-    }
+    im->yimg = Ymain + Yxlabel;
 
+#ifdef WITH_PIECHART
     if (im->yimg < Ypie) im->yimg = Ypie;
+#endif
 
-    if (im->extra_flags & ONLY_GRAPH) {
-        im->yorigin = im->yimg;
-    } else {
-        im->yorigin = im->yimg - Yxlabel;
-    }
+    im->yorigin = im->yimg - Yxlabel;
 
     /* reserve space for the title *or* some padding above the graph */
     if (Ytitle) {
