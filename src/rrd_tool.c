@@ -356,15 +356,15 @@ int main(int argc, char *argv[])
 		if ((myargv = (char **) malloc((argc+1) * 
 					       sizeof(char *))) == NULL)   {
 		    perror("malloc");
-		    return -1;
+		    exit(1);
 		}
 		if ((argc=CreateArgs(argv[0], aLine, argc, myargv)) < 0) {
 		    fprintf(stderr, "ERROR: creating arguments\n");
-		    return -1;
+		    exit(1);
 		}
 
 		if (HandleInputLine(argc, myargv, stdout))
-		    return -1;
+		    exit(1);
 		free(myargv);
 
 #if HAVE_GETRUSAGE
@@ -395,9 +395,7 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
     else {
-        if(HandleInputLine(argc, argv, stderr)) {
-            return 1;
-        }
+        exit(HandleInputLine(argc, argv, stderr));
     }
     return 0;
 }
