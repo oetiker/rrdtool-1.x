@@ -8,13 +8,13 @@
 #define MAX_VNAME_LEN 29
 #define DEF_NAM_FMT "%29[-_A-Za-z0-9]"
 
-#define ALTYGRID	0x01	/* use alternative y grid algorithm */
-#define ALTAUTOSCALE	0x02	/* use alternative algorithm to find lower and upper bounds */
+#define ALTYGRID  	 0x01	/* use alternative y grid algorithm */
+#define ALTAUTOSCALE	 0x02	/* use alternative algorithm to find lower and upper bounds */
 #define ALTAUTOSCALE_MAX 0x04	/* use alternative algorithm to find upper bounds */
-#define NOLEGEND	0x08	/* use no legend */
-#define NOMINOR         0x20    /* Turn off minor gridlines */
-#define ONLY_GRAPH      0x24   /* use only graph */
-#define FORCE_RULES_LEGEND	0x40	/* force printing of HRULE and VRULE legend */
+#define NOLEGEND	 0x08	/* use no legend */
+#define NOMINOR          0x10    /* Turn off minor gridlines */
+#define ONLY_GRAPH       0x20   /* use only graph */
+#define FORCE_RULES_LEGEND 0x40	/* force printing of HRULE and VRULE legend */
 
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
@@ -35,7 +35,7 @@ enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
             GF_XPORT};
 
 enum vdef_op_en {
-		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
+		 VDEF_MAXIMUM=0	/* like the MAX in (G)PRINT */
 		,VDEF_MINIMUM	/* like the MIN in (G)PRINT */
 		,VDEF_AVERAGE	/* like the AVERAGE in (G)PRINT */
 		,VDEF_PERCENT	/* Nth percentile */
