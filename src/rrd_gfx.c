@@ -524,7 +524,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
 		gfx_libart_close_path(node, &vec);
-	    gfx_round_scaled_coordinates(vec);
+	    /* gfx_round_scaled_coordinates(vec); */
             pvec = art_vpath_perturb(vec);
 	    art_free(vec);
             if(node->type == GFX_LINE){
@@ -535,7 +535,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                 svp  = art_svp_from_vpath ( pvec );
                 svpt = art_svp_uncross( svp );
                 art_free(svp);
-	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_ODDEVEN); 
+	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
                 art_free(svpt);
             }
             art_free(pvec);
