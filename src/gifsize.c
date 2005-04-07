@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.2rc4  Copyright by Tobi Oetiker, 1997-2005
+ * RRDtool 1.2rc5  Copyright by Tobi Oetiker, 1997-2005
  ****************************************************************************
  * gifsize.c  provides the function gifsize which determines the size of a gif
  ****************************************************************************/
