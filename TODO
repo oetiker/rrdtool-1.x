@@ -46,8 +46,6 @@ add axis on the right and on top of the graph ...
 
 add configurable counter wrap
 
-95th percentile plotting
-
 build derivatives while plotting
 
 show trend by building moving average and represent it as an arrow
