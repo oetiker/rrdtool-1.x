@@ -558,7 +558,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  0,
                                  &face );
 	    if ( error ) {
-	        rrd_set_error("faild to load %s",node->filename);
+	        rrd_set_error("failed to load %s",node->filename);
 		break;
 	    }
             error = FT_Set_Char_Size(face,   /* handle to face object            */
