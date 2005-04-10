@@ -321,14 +321,6 @@ static void gfx_libart_close_path(gfx_node_t *node, ArtVpath **vec)
     art_vpath_add_point (vec, &points, &points_max, ART_END, 0, 0);
 }
 
-static void gfx_round_scaled_coordinates(ArtVpath *vec)
-{
-    while (vec->code != ART_END) {
-	vec->x = floor(vec->x - LINEOFFSET + 0.5) + LINEOFFSET;
-	vec->y = floor(vec->y - LINEOFFSET + 0.5) + LINEOFFSET;
-	vec++;
-    }
-}
 
 /* find bbox of a string */
 static void compute_string_bbox(gfx_string string) {
@@ -565,8 +557,10 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  (char *)node->filename,
                                  0,
                                  &face );
-	    if ( error ) break;
-
+	    if ( error ) {
+	        rrd_set_error("faild to load %s",node->filename);
+		break;
+	    }
             error = FT_Set_Char_Size(face,   /* handle to face object            */
                                      (long)(node->size*64),
                                      (long)(node->size*64),

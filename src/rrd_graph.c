@@ -2418,81 +2418,69 @@ graph_paint(image_desc_t *im, char ***calcpr)
           
         }
       } /* for */
-      
-      if (im->gdes[i].col != 0x0){               
+
+      /* *******************************************************
+                   ___ 
+		  |   |    ___
+              ____|   |   |   |
+              |       |___|
+       -------|---------------------------------------      
+                      
+      if we know the value of y at time t was a then 
+      we draw a square from t-1 to t with the value a.
+
+      ********************************************************* */
+      if (im->gdes[i].col != 0x0){   
         /* GF_LINE and friend */
         if(stack_gf == GF_LINE ){
           node = NULL;
           for(ii=1;ii<im->xsize;ii++){
-            if ( ! isnan(im->gdes[i].p_data[ii-1])
-                 && ! isnan(im->gdes[i].p_data[ii])){
-              if (node == NULL){
-                node = gfx_new_line(im->canvas,
-                                    ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii-1]),
+	    if (isnan(im->gdes[i].p_data[ii])){
+		node = NULL;
+		continue;
+	    }
+            if ( node == NULL ) {
+                 node = gfx_new_line(im->canvas,
+                                    ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
                                     ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
                                     im->gdes[i].linewidth,
                                     im->gdes[i].col);
-              } else {
-                gfx_add_point(node,ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
-              }
-            } else {
-              node = NULL;
-            }
+             } else {
+               gfx_add_point(node,ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+               gfx_add_point(node,ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+             };
+
           }
         } else {
-          int area_start=-1;
-          node = NULL;
           for(ii=1;ii<im->xsize;ii++){
-            /* open an area */
-            if ( ! isnan(im->gdes[i].p_data[ii-1])
-                 && ! isnan(im->gdes[i].p_data[ii])){
-              if (node == NULL){
-                float ybase = 0.0;
-/*
-                if (im->gdes[i].gf == GF_STACK) {
-*/
-		if ( (im->gdes[i].gf == GF_STACK)
-		  || (im->gdes[i].stack) ) {
-
-                  ybase = ytr(im,lastgdes->p_data[ii-1]);
-                } else {
-                  ybase =  ytr(im,areazero);
-                }
-                area_start = ii-1;
-                node = gfx_new_area(im->canvas,
-                                    ii-1+im->xorigin,ybase,
-                                    ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii-1]),
-                                    ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
-                                    im->gdes[i].col
-                                    );
-              } else {
-                gfx_add_point(node,ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
-              }
+	    /* keep things simple for now, just draw these bars
+	       do not try to build a big and complex area */
+	    float ybase;
+	    if ( isnan(im->gdes[i].p_data[ii]) ) {
+		continue;
+	    }
+ 	    if ( im->gdes[i].stack ) {
+                  ybase = ytr(im,lastgdes->p_data[ii]);
+            } else {
+                  ybase = ytr(im,areazero);
             }
-
-            if ( node != NULL && (ii+1==im->xsize || isnan(im->gdes[i].p_data[ii]) )){
-              /* GF_AREA STACK type*/
-/*
-              if (im->gdes[i].gf == GF_STACK ) {
-*/
-	      if ( (im->gdes[i].gf == GF_STACK)
-		|| (im->gdes[i].stack) ) {
-                int iii;
-                for (iii=ii-1;iii>area_start;iii--){
-                  gfx_add_point(node,iii+im->xorigin,ytr(im,lastgdes->p_data[iii]));
-                }
-              } else {
-                gfx_add_point(node,ii+im->xorigin,ytr(im,areazero));
-              };
-              node=NULL;
-            };
+            if ( ybase == im->gdes[i].p_data[ii] ){
+		continue;
+	    }
+            node = gfx_new_area(im->canvas,
+                                ii-1+im->xorigin,ybase,
+                                ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
+                                ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),				
+                                im->gdes[i].col
+                               );
+            gfx_add_point(node,ii+im->xorigin,ybase);
           }             
         } /* else GF_LINE */
       } /* if color != 0x0 */
       /* make sure we do not run into trouble when stacking on NaN */
       for(ii=0;ii<im->xsize;ii++){
         if (isnan(im->gdes[i].p_data[ii])) {
-          if (lastgdes && (im->gdes[i].gf == GF_STACK)) {
+          if (lastgdes && (im->gdes[i].stack)) {
             im->gdes[i].p_data[ii] = lastgdes->p_data[ii];
           } else {
             im->gdes[i].p_data[ii] =  ytr(im,areazero);

@@ -370,6 +370,10 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	    return 1;
 	}
     }
+    /* have simpler code in the drawing section */
+    if ( gdp->gf == GF_STACK ){
+	    gdp->stack=1;
+    }
     return 0;
 }
 
@@ -589,6 +593,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im, int optno) {
             case GF_COMMENT:	/* text */
 		if (rrd_parse_legend(argv[i],&eaten,gdp)) return;
 		break;
+	    case GF_STACK:	/* vname-or-value[#color[:legend]] */		
 #ifdef WITH_PIECHART
 	    case GF_PART:	/* value[#color[:legend]] */
 #endif
@@ -596,7 +601,6 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *im, int optno) {
 	    case GF_HRULE:	/* value#color[:legend] */
 	    case GF_LINE:	/* vname-or-value[#color[:legend]][:STACK] */
 	    case GF_AREA:	/* vname-or-value[#color[:legend]][:STACK] */
-	    case GF_STACK:	/* vname-or-value[#color[:legend]] */
 	    case GF_TICK:	/* vname#color[:num[:legend]] */
 		if (rrd_parse_PVHLAST(argv[i],&eaten,gdp,im)) return;
 		break;
