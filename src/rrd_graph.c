@@ -2773,7 +2773,6 @@ rrd_graph_init(image_desc_t *im)
     {
             char *deffont; 
             deffont = getenv("RRD_DEFAULT_FONT");
-            /* %windir% is something like D:\windows or C:\winnt */
             if (deffont != NULL) {
                  for(i=0;i<DIM(text_prop);i++){
                 	strncpy(text_prop[i].font,deffont,sizeof(text_prop[i].font)-1);
