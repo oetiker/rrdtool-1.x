@@ -1,5 +1,12 @@
 Compiling RRDtool 1.1.x on Win32 with Microsoft Visual C++:
 ---------------------------------------------------------------
+4/10/05 Tobi
+The windows implementation of strftime does not seem to support
+the ISO 8601 week number (%V) I have therfore included the file
+strftime.[ch] which provides strftime_ ... if you compile rrdtool
+with -Dstrftime=_strftime and link strftime.o then you will
+get propper support for %V.
+
 7/29/04 Jake Brutlag
 
 As of Jan 2004, code for libraries utilized by rrdtool 

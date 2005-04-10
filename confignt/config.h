@@ -27,3 +27,4 @@
 #define RRDGRAPH_YLEGEND_ANGLE 90.0
 
 #define HAVE_STRING_H 1
+
