@@ -2850,7 +2850,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
-
+        int col_start,col_end;
 
 	opt = getopt_long(argc, argv, 
 			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:S:NT:",
@@ -3021,13 +3021,25 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    break;
         case 'c':
             if(sscanf(optarg,
-                      "%10[A-Z]#%8lx",
-                      col_nam,&color) == 2){
+                      "%10[A-Z]#%n%8lx%n",
+                      col_nam,&col_start,&color,&col_end) == 2){
                 int ci;
+		int col_len = col_end - col_start;
+		switch (col_len){
+			case 6:
+		        	color = (color << 8) + 0xff /* shift left by 8 */;
+				break;
+			case 8:
+				break;
+			default:
+		                rrd_set_error("the color format is #RRGGBB[AA]");
+				return;
+		}
                 if((ci=grc_conv(col_nam)) != -1){
                     im->graph_col[ci]=color;
                 }  else {
                   rrd_set_error("invalid color name '%s'",col_nam);
+		  return;
                 }
             } else {
                 rrd_set_error("invalid color def format");
