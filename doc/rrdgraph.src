@@ -26,16 +26,15 @@ collect data from two or more databases (one per statement though).
 
 If you want to display averages, maxima, percentiles etcetera
 it is best to collect them now using the
-B<L<variable definition|rrdgraph_data/VDEF>> statement.  At this
-stage, this command works at the unprocessed data from the B<RRD>.
-I<(Note: this is not yet true; it works on consolidated information
-right now)>
+B<L<variable definition|rrdgraph_data/VDEF>> statement.
+Currently this makes no difference but in a future version
+of rrdtool you may want to collect these values before consolidation.
 
 The data fetched from the B<RRA> is then B<consolidated> so that
 there is exactly one datapoint per pixel in the graph. If you do
 not take care yourself, B<RRDtool> will expand the range slightly
-if necessary (in that case the first pixel may very well become
-unknown!).
+if necessary (in that case the first and/or last pixel may very
+well become unknown!).
 
 Sometimes data is not exactly as you would like to display it. For
 instance, you might be collecting B<bytes> per second but want to
@@ -43,17 +42,12 @@ display B<bits> per second. This is where the
 B<L<data calculation|rrdgraph_data/CDEF>> command is designed for.
 After B<consolidating> the data, a copy is made and this copy is
 modified using a rather flexible B<L<RPN|rrdgraph_rpn/>> command
-set.  If you use B<L<variable definition|rrdgraph_data/VDEF>>
-statements after this, they work on the consolidated data and may
-return other values for maximum, minimum etcetera!
+set.
 
 When you are done fetching and processing the data, it is time to
 graph it (or print it).  This ends the B<rrdtool graph> sequence.
 
 =head1 OPTIONS
-
-It is expected that most options will move to the graph definition
-statements (after all, most of them do define graph elements...).
 
 =over 4
 
@@ -93,9 +87,7 @@ B<[-t|--title E<lt>stringE<gt>]>
 B<[-v|--vertical-label E<lt>stringE<gt>]>
 
 A horizontal string at the top of the graph and/or a vertically
-placed string at the left hand side of the graph. I<New: (not
-yet implemented)> The string can contain formatter options that
-are used to include variables (from B<VDEF>s) and newlines.
+placed string at the left hand side of the graph.
 
 Z<>
 
@@ -108,15 +100,14 @@ B<[-j|--only-graph]>
 The width and height of the B<canvas> (the part of the graph with
 the actual lines and such). Defaults are 400 pixels by 100 pixels.
 
-If you specify the B<--only-graph> and set the height < 32 pixels you will
-get a tiny graph image to use as an icon in a potential overview. All
-labeling will be stripped off the graph.
+If you specify the B<--only-graph> option and set the height E<lt> 32
+pixels you will get a tiny graph image to use as an icon in a potential
+overview. All labeling will be stripped off the graph.
 
 Z<>
 
 =item Limits
 
-I<Old behaviour, until the new options are implemented>
 B<[-u|--upper-limit E<lt>valueE<gt>]>
 B<[-l|--lower-limit E<lt>valueE<gt>]>
 B<[-r|--rigid]>
@@ -127,36 +118,6 @@ behaviour by setting the limits.  The displayed y-axis will show
 at least from B<lower-limit> to B<upper-limit>.  Autoscaling will
 still permit those boundaries to be stretched unless the B<rigid>
 option is set.
-
-I<New behaviour, after the new options are implemented>
-B<[--maximum-upper-limit E<lt>valueE<gt>]>
-B<[--minimum-upper-limit E<lt>valueE<gt>]>
-B<[--maximum-lower-limit E<lt>valueE<gt>]>
-B<[--minimum-lower-limit E<lt>valueE<gt>]>
-
-By default the graph will be autoscaling so that it displays the
-portion of the y-axis that is actually used. You can change this
-behaviour by setting the limits.  The displayed y-axis will show
-at most B<maximum-upper-limit> and at least B<minimum-upper-limit>
-at the top, and similarly at least B<maximum-lower-limit> and
-at most B<minimum-lower-limit> at the bottom.  The default is to
-display at most B<infinity> (so: no limit) and at least
-B<negative infinity> (no minimal value) at the top. The bottom of
-the graph has similar defaults. Note that the minimum lower limit
-is the lowest one so you should compare this with maximum upper
-limit when you try to figure out what you should set.
-
-To make sure the graph shows the range of I<-1000> to I<2000>,
-optionally expanding to no more than I<-3000> to I<4000>,
-set the following options:
-
---maximum-upper-limit 4000 --minimum-upper-limit 2000
---maximum-lower-limit -1000 --minimum-lower-limit -3000
-
-To mimic the old B<rigid> option, you can do:
-
---maximum-upper-limit 4000 --minimum-upper-limit 4000
---maximum-lower-limit -3000 --minimum-lower-limit -3000
 
 B<[-A|--alt-autoscale]>
 

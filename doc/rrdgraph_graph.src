@@ -4,7 +4,7 @@
 
 =over 4
 
-=item B<to be deprecated commands>
+=item B<old-style commands, for compatibility>
 
 =over 4
 
@@ -18,6 +18,8 @@
 
 =back
 
+Z<>
+
 =item B<available commands>
 
 =over 8
@@ -30,9 +32,9 @@
 
 =item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
 
-=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ : STACK ]
+=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ C<:STACK> ]
 
-=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:> C<STACK> ]
+=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:STACK> ]
 
 =cut
 
@@ -174,11 +176,7 @@ Text is printed literally in the legend section of the graph
 
 =item B<HRULE> : I<value> # I<color> [ :I<legend> ]
 
-Draw an horizontal line at I<value>. Its color is composed from three
-hexadecimal numbers specifying the color components (00 is off, FF is
-maximum) red, green and blue.  Optionally a legend box and string is
-printed in the legend section. I<value> can be a variable from a B<VDEF>.
-It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
+I<Deprecated. Use B<LINEx> in new scripts.>
 
 =item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
 
@@ -188,7 +186,8 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<time> may be a number or a variable
 from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ : STACK ]
+=item B<LINE>{I<width>} : I<{vname or number}> # I<color> [ : I<legend> ]
+[ C<:STACK> ]
 
 Draw a line of the specified width into the graph. If the color
 is not specified, the drawing is done 'blind'.  This is useful when
@@ -199,26 +198,27 @@ B<CDEF>.  If the optional B<STACK> modifier is used, this line is
 stacked on top of the previous element which can be a B<LINEx> or
 an B<AREA>
 
-=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:> C<STACK> ]
+=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:STACK> ]
 
 See B<LINE>, however the area between the x-axis and the line will
 also be filled.
 
-=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
+=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
 
-I<Deprecated.  Use the B<STACK> modifiers on the other commands.>
-I<Note: the comments on stacking are still valid...>
-Repeats the last B<LINEx> or B<AREA> however it doesn't start at the
-x-axis but rather on top of the previous element. This implies that
-there needs to be something to stack on. An invisible B<LINEx> or
-B<AREA> is something you can stack on, an unknown value is not!
+Plot a tick mark (a vertical line) for each value of I<vname> that is
+non-zero and not *UNKNOWN*. The I<fraction> argument specifies the
+length of the tick mark as a fraction of the y-axis; the default value
+is 0.1 (10% of the axis). Note that the color specification is not
+optional.
 
-Note: When you stack on something that was I<unknown>, the whole
-stack will be I<unknown> for that point in time. If the beginning
-is undefined, there's no way to end somewhere...  If you want to
-graph this stacked variable anyway you need to make sure that the
-B<LINEx> or B<AREA> it gets stacked on is not unknown. Use a CDEF
-instruction with B<IF> and B<UN> to do so.
+=item B<SHIFT> : I<vname> : I<offset>
+
+Using this command B<RRDtool> will graph the following elements
+with the specified offset.  For instance, you can specify an
+offset of S<( 7*24*60*60 = ) 604800 seconds> to "look back" one
+week. Make sure to notify the viewer you did so...
+As with the other graphing elements, you can specify a number or
+a variable here.
 
 =cut
 
@@ -237,26 +237,27 @@ instruction with B<IF> and B<UN> to do so.
 
 =pod
 
-=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
+=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
 
-Plot a tick mark (a vertical line) for each value of I<vname> that is
-non-zero and not *UNKNOWN*. The I<fraction> argument specifies the
-length of the tick mark as a fraction of the y-axis; the default value
-is 0.1 (10% of the axis). Note that the color specification is not
-optional.
-
-=item B<SHIFT> : I<vname> : I<offset>
-
-Using this command B<RRDtool> will graph the following elements
-with the specified offset.  For instance, you can specify an
-offset of S<( 7*24*60*60 = ) 604800 seconds> to "look back" one
-week. Make sure to notify the viewer you did so...
-The offset will be valid until the next B<SHIFT> command, which
-can have an offset of zero to restore normal graphing.
-As with the other graphing elements, you can specify a number or
-a variable here.
+I<Deprecated.  Use the B<STACK> modifiers on the other commands.>
 
 =back
+
+B<Some notes on stacking>
+
+When stacking, an element is not placed above the X-axis but rather
+on top of the previous element.  There must be something to stack
+upon.
+
+An B<invisible> LINEx or AREA B<is> present and can be stacked upon.  
+
+An B<unknown> value makes the entire stack unknown from that moment on.
+You don't know where to begin (the unknown value) and therefore do
+not know where to end.
+
+If you want to make sure you will be displaying a certain variable,
+make sure never to stack upon the unknown value.  Use a CDEF instruction
+with B<IF> and B<UN> to do so.
 
 =head1 NOTES on legend arguments
 

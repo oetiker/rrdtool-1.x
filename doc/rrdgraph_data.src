@@ -61,8 +61,7 @@ functions used, have a value and a time component.  When you use
 this I<vname> in another B<RPN> expression, you are effectively
 inserting its value just as if you had put a number at that place.
 The variable can also be used in the various graph and print
-elements. I<Not yet implemented:> [ Everywhere you can insert a
-number, you can also use the B<VDEF> (provided that it is set of course) ]
+elements.
 
 Example: C<VDEF:avg=mydata,AVERAGE>
 

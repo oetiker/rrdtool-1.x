@@ -21,6 +21,11 @@ this is what is put into the I<vname>.  For B<CDEF> instructions,
 the stack is processed for each data point on the graph. B<VDEF>
 instructions work on an entire data set in one run.
 
+Example: C<VDEF:maximum=mydata,MAXIMUM>
+
+This will set variable "maximum" which you now can use in the rest
+of your RRD script.
+
 Example: C<CDEF:mydatabits=mydata,8,*>
 
 This means:  push variable I<mydata>, push the number 8, execute
@@ -56,9 +61,7 @@ B<IF>
 Pops three elements from the stack.  If the last element is 0 (false),
 the first value is pushed back onto the stack, otherwise the second
 popped value is pushed back. This does, indeed, mean that any value
-other than 0 is considered true.
-I<Note: Should this change? It should IMHO as all the other functions
-would return unknown if A,B or C were unknown>
+other than 0 is considered to be true.
 
 Example: C<A,B,C,IF> should be read as C<if (A) then (B) else (C)>
 
@@ -184,40 +187,20 @@ Z<>
 Time inside RRDtool is measured in seconds since the epoch. This
 epoch is defined to be S<C<Thu Jan  1 00:00:00 UTC 1970>>.
 
-Z<>
-
-=over 4
-
-=item NOW
+B<NOW>
 
 Pushes the current time on the stack.
 
-Z<>
-
-=item TIME
+B<TIME>
 
 Pushes the time the currently processed value was taken onto the stack.
 
-Z<>
-
-=item LTIME
+B<LTIME>
 
 Takes the time as defined by B<TIME>, applies the time zone offset
 valid at that time including daylight saving time if your OS supports
 it, and pushes the result on the stack.  There is an elaborate example
 in the examples section on how to use this.
-
-=back
-
-For B<VDEF> operations, B<TIME> and B<LTIME> have a different meaning
-I<not yet implemented>.  As the B<VDEF> statement does not work per
-value but rather on a complete time series, there is no such thing as
-the currently processed value.  However, if you have used an operator
-that returned a time component and would like to have this available
-in the value component in stead (so you can use it as a number), you
-can use B<TIME> or B<LTIME> for that.
-
-Z<>
 
 =item Processing the stack directly
 
@@ -228,13 +211,11 @@ top elements.
 
 Z<>
 
-=item Selecting characteristics
+=back
+
+=head1 VARIABLES
 
 These operators work only on B<VDEF> statements.
-I<We can make most of them work at DEF and CDEF statements. If we do
-so, we have a moving (not rolling!) average, max,min etcetera>
-
-Z<>
 
 =over 4
 
@@ -245,8 +226,6 @@ the first occurrence of that value in the time component.
 
 Example: C<VDEF:avg=mydata,AVERAGE>
 
-Z<>
-
 =item LAST, FIRST
 
 Return the last,first value including its time.  The time for
@@ -254,8 +233,6 @@ FIRST is actually the start of the corresponding interval, where
 the LAST time component returns the end of the corresponding interval.
 
 Example: C<VDEF:first=mydata,FIRST>
-
-Z<>
 
 =item TOTAL
 
@@ -265,8 +242,6 @@ when you have logged bytes per second. The time component returns
 the amount of seconds 
 
 Example: C<VDEF:total=mydata,TOTAL>
-
-Z<>
 
 =item PERCENT
 
@@ -280,8 +255,6 @@ of them in your data.  B<Inf>inite numbers are lesser, or more, than the
 finite numbers and are always more than the I<Unknown> numbers.
 
 Example: C<VDEF:perc95=mydata,95,PERCENT>
-
-=back
 
 =back
 

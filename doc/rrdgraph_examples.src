@@ -94,28 +94,16 @@ Note: the second line gets stacked on top of the first one
     Last 24 hours:   <nothing at all>
     Yesterday:       --end 00:00
 
-=head2 Viewing Januari+Februari 2000 and 2001 together
+=head2 Viewing This week and last week together
 
-Define a graph area of 31+29 days (!) spanning Jan. and Feb.
-    --start 20000101 --end 20000301
-    DEF:jan2000=router.rrd:ds0:AVERAGE:start 20000101 end start+31d
-    DEF:jan2001=router.rrd:ds0:AVERAGE:start 20010101 end start+31d
-Note: mind the extra day in 2000 ...
-    DEF:feb2000=router.rrd:ds0:AVERAGE:start 20000201 end start+29d
-Note: 29 feb 2001 is *unknown*
-    DEF:feb2001=router.rrd:ds0:AVERAGE:start 20010201 end start+28d
-    VDEF:offset=jan2001,FIRST,jan2000,FIRST,-,-1,*
+    --end now --start end-1w
+    DEF:thisweek=router.rrd:ds0:AVERAGE
+    DEF:lastweek=router.rrd:ds0:AVERAGE:end=now-1w:start=end-1w
+shift the data forward by one week (604800 seconds)
+    SHIFT:lastweek:604800
     [ more of the usual VDEF and CDEF stuff if you like ]
-    LINE1:jan2000#00003F:"Januari 2000"
-    [ gprint stuff ]
-    LINE1:feb2001#003F00:"Februari 2000"
-    [ gprint stuff ]
-Note: offset is made negative by the VDEF statement
-    SHIFT:offset
-    LINE1:jan2001#0000FF:"Januari 2001"
-    [ gprint stuff ]
-    LINE1:feb2001#00FF00:"Februari 2001"
-    [ gprint stuff ]
+    AREA:lastweek#0000FF:Last\ week
+    LINE1:thisweek#FF0000:This\ week
 
 =include see_also
 
