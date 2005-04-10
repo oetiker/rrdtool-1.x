@@ -280,31 +280,36 @@ We can now retrieve the data from our database using "rrdtool fetch":
 
 It should return the following output:
 
-                speed
+                          speed
 
- 920804700:       NaN
- 920805000:      0.04
- 920805300:      0.02
- 920805600:      0.00
- 920805900:      0.00
- 920806200:      0.03
- 920806500:      0.03
- 920806800:      0.03
- 920807100:      0.02
- 920807400:      0.02
- 920807700:      0.02
- 920808000:      0.01
- 920808300:      0.02
- 920808600:      0.01
- 920808900:      0.00
- 920809200:       NaN
+ 920804700: nan
+ 920805000: 4.0000000000e-02
+ 920805300: 2.0000000000e-02
+ 920805600: 0.0000000000e+00
+ 920805900: 0.0000000000e+00
+ 920806200: 3.3333333333e-02
+ 920806500: 3.3333333333e-02
+ 920806800: 3.3333333333e-02
+ 920807100: 2.0000000000e-02
+ 920807400: 2.0000000000e-02
+ 920807700: 2.0000000000e-02
+ 920808000: 1.3333333333e-02
+ 920808300: 1.6666666667e-02
+ 920808600: 6.6666666667e-03
+ 920808900: 3.3333333333e-03
+ 920809200: nan
 
 If it doesn't, something may be wrong.  Perhaps your OS will print
 "NaN" in a different form.  It represents "Not A Number".  If your OS
 writes "U" or "UNKN" or something similar that's okay.  If something
 else is wrong, it will probably be due to an error you made (assuming
 that my tutorial is correct of course :-). In that case: delete the
-database and try again.
+database and try again.  Sometimes things change.  This example used
+to provide numbers like "0.04" in stead of "4.00000e-02".  Those are
+really the same numbers, just written down differently.  Don't be
+alarmed if a future version of rrdtool displays a slightly different
+form of output.  The examples in this document are correct for version
+1.2.0
 
 What this output represents will become clear in the rest of the tutorial.
 
@@ -341,15 +346,18 @@ The "color" black is all colors off: 000000
    magenta #FF00FF     (mixed red with blue)
    gray    #555555     (one third of all components)
 
+Additionally you can add an alpha channel (transparency).  The default
+will be "FF" which means non-transparent.
+
 The PNG you just created can be displayed using your favorite image
 viewer.  Web browsers will display the PNG via the URL
-"file://the/path/to/speed.png"
+"file:///the/path/to/speed.png"
 
 =head2 Graphics with some math
 
 When looking at the image, you notice that the horizontal axis is labeled
-12:10, 12:20, 12:30, 12:40 and 12:50. The two remaining times (12:00 and
-13:00) would not be displayed nicely so they are skipped.
+12:10, 12:20, 12:30, 12:40 and 12:50. Sometimes a label doesn't fit (12:00
+and 13:00 would be candidates) so they are skipped.
 The vertical axis displays the range we entered. We provided kilometers
 and when divided by 300 seconds, we get very small numbers. To be exact,
 the first value was 12 (12357-12345) and divided by 300 this makes 0.04,
@@ -454,8 +462,8 @@ Name the file "speed.html" or similar, and view it.
 Now, all you have to do is measure the values regularly and update the
 database.  When you want to view the data, recreate the PNGs and make
 sure to refresh them in your browser. (Note: just clicking reload may
-not be enough; Netscape in particular has a problem doing so and you'll
-need to click reload while pressing the shift key).
+not be enough, especially when proxies are involved.  Try shift-reload
+or ctrl-F5).
 
 =head2 Updates in Reality
 
@@ -503,14 +511,17 @@ works:
 
    snmpget device password OID
 
+or
+
+   snmpget -v[version] -c[password] device OID
+
 For device you substitute the name, or the IP address, of your device.
 For password you use the "community read string" as it is called in the
 SNMP world.  For some devices the default of "public" might work, however
 this can be disabled, altered or protected for privacy and security
 reasons.  Read the documentation that comes with your device or program.
 
-Then there is this third parameter, called OID, which means "object
-identifier".
+Then there is this parameter, called OID, which means "object identifier".
 
 When you start to learn about SNMP it looks very confusing. It isn't
 all that difficult when you look at the Management Information Base
@@ -539,35 +550,32 @@ First, we have to get some SNMP program. First look if there is a
 pre-compiled package available for your OS. This is the preferred way.
 If not, you will have to get yourself the sources and compile those.
 The Internet is full of sources, programs etc. Find information using
-a search engine or whatever you prefer. As a suggestion: look for
-CMU-SNMP.  It is commonly used.
+a search engine or whatever you prefer.
 
 Assume you got the program. First try to collect some data that is
 available on most systems. Remember: there is a short name for the
 part of the tree that interests us most in the world we live in!
 
-I will use the short version as I think this document is large enough
-as it is. If that doesn't work for you, prefix with .1.3.6.1.2.1 and
-try again.  Also, Read The Fine Manual.  Skip the parts you cannot
-understand yet, you should be able to find out how to start the
-program and use it.
+I will give an example which can be used on Fedora Core 3.  If it
+doesn't work for you, work your way through the manual of snmp and
+adapt the example to make it work.
 
-   snmpget myrouter public system.sysDescr.0
+   snmpget -v2c -c public myrouter system.sysDescr.0
 
 The device should answer with a description of itself, perhaps empty.
 Until you got a valid answer from a device, perhaps using a different
 "password", or a different device, there is no point in continuing.
 
-   snmpget myrouter public interfaces.ifNumber.0
+   snmpget -v2c -c public myrouter interfaces.ifNumber.0
 
 Hopefully you get a number as a result, the number of interfaces.
 If so, you can carry on and try a different program called "snmpwalk".
 
-   snmpwalk myrouter public interfaces.ifTable.ifEntry.ifDescr
+   snmpwalk -v2c -c public myrouter interfaces.ifTable.ifEntry.ifDescr
 
 If it returns with a list of interfaces, you're almost there.
 Here's an example:
-   [user@host /home/alex]$ snmpwalk cisco public 2.2.1.2
+   [user@host /home/alex]$ snmpwalk -v2c -c public cisco 2.2.1.2
 
    interfaces.ifTable.ifEntry.ifDescr.1 = "BRI0: B-Channel 1"
    interfaces.ifTable.ifEntry.ifDescr.2 = "BRI0: B-Channel 2"
@@ -578,7 +586,7 @@ Here's an example:
 On this cisco equipment, I would like to monitor the "Ethernet0"
 interface and see that it is number four. I try:
 
-   [user@host /home/alex]$ snmpget cisco public 2.2.1.10.4 2.2.1.16.4
+   [user@host /home/alex]$ snmpget -v2c -c public cisco 2.2.1.10.4 2.2.1.16.4
 
    interfaces.ifTable.ifEntry.ifInOctets.4 = 2290729126
    interfaces.ifTable.ifEntry.ifOutOctets.4 = 1256486519
@@ -1059,14 +1067,20 @@ to 920805900 as this goes very well with the example numbers.
       DS:seconds:COUNTER:600:U:U \
       RRA:AVERAGE:0.5:1:24
 
+Make a copy
+
    for Unix: cp seconds1.rrd seconds2.rrd
    for Dos:  copy seconds1.rrd seconds2.rrd
    for vms:  how would I know :)
+
+Put in some data
 
    rrdtool update seconds1.rrd \
       920805000:000 920805300:300 920805600:600 920805900:900
    rrdtool update seconds2.rrd \
       920805000:000 920805300:300 920805603:603 920805900:900
+
+Create output
 
    rrdtool graph seconds1.png                       \
       --start 920804700 --end 920806200             \
@@ -1085,7 +1099,9 @@ to 920805900 as this goes very well with the example numbers.
       LINE2:seconds#0000FF                          \
       AREA:unknown#FF0000
 
-Both graphs should show the same.
+View both images together (add them to your index.html file)
+and compare.  Both graphs should show the same, despite the
+input being different.  
 
 =head1 WRAPUP
 
