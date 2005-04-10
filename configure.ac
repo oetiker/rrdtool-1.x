@@ -141,6 +141,19 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_LIBTOOL
 
+dnl Check if we run on a system that has fonts
+AC_ARG_WITH(rrd-default-font,
+[  --with-rrd-default-font=[OPTIONS]  set the full path to your default font.],
+[RRD_DEFAULT_FONT=$withval],[
+  if test -d ${WINDIR:-nodir}/cour.ttf ; then
+	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
+  else
+	RRD_DEFAULT_FONT='$(fontsdir)/$(fonts_DATA)'
+  fi
+])
+
+AC_SUBST(RRD_DEFAULT_FONT)
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
@@ -281,7 +294,12 @@ AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
   
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
-if test "x$PERL" = "xno"; then
+
+AC_ARG_ENABLE(perl,[  --disable-perl    do not build the perl modules],
+[],[enable_perl=yes])
+
+
+if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
 else
 	COMP_PERL="perl_piped perl_shared"
