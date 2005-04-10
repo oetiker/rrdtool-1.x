@@ -42,8 +42,8 @@ the number of rows you want to add or remove.
 =head1 NOTES
 
 The new .rrd file, with the modified RRAs, is written to the file 
-B<resize.rrd> in the current directory.  The original .rrd file is not
-modified.
+B<resize.rrd> in the current directory.  B<The original .rrd file is not
+modified>.
 
 It is possible to abuse this tool and get strange results
 by first removing some rows and then reinsert the same amount (effectively
