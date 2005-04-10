@@ -63,7 +63,7 @@ See I<rrdgraph> documentation.
 At least one I<XPORT> statement should be present. The values
 referenced by I<vname> are printed. Optionally add a legend.
 
-=over
+=back
 
 =head1 Output format
 

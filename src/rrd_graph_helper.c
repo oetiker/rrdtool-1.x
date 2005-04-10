@@ -2,7 +2,7 @@
  * RRDtool 1.2rc6  Copyright by Tobi Oetiker, 1997-2005
  ****************************************************************************
  * rrd_graph_helper.c  commandline parser functions 
- *                     this code was probably writtenn by Alex van den Bogaerdt
+ *                     this code initially written by Alex van den Bogaerdt
  ****************************************************************************/
 
 #include "rrd_graph.h"
@@ -97,9 +97,9 @@ rrd_parse_color(char *string, graph_desc_t *gdp) {
     sscanf(string, "#%02x%02x%02x%n%02x%n%*s%n",
 				&r,&g,&b,&i1,&a,&i2,&i3);
 
-    if (i3) return 1; /* garbage after color */
-    if (!i2) a=0xFF;
-    if (!i1) return 1; /* no color after '#' */
+    if (i3) return 1;	/* garbage after color */
+    if (!i2) a=0xFF;	/* default no transparency */
+    if (!i1) return 1;	/* no color after '#' */
     gdp->col = r<<24|g<<16|b<<8|a;
     return 0;
 }
@@ -163,7 +163,7 @@ rrd_parse_print(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t
     }
 
     if (rrd_parse_legend(line,eaten,gdp)) return 1;
-    /* for *PRINT the legend itself gets renderd later. We only
+    /* for *PRINT the legend itself gets rendered later. We only
        get the format at this juncture */
     strcpy(gdp->format,gdp->legend);
     gdp->legend[0]='\0';	

@@ -257,7 +257,7 @@ they are explicitly created, the creator should verify that all three
 I<seasonal period> arguments agree.
 
 I<alpha> is the adaption parameter of the intercept (or baseline)
-coefficient in the Holt-Winters forecasting algorithm. See L<RRDtool> for a
+coefficient in the Holt-Winters forecasting algorithm. See L<rrdtool> for a
 description of this algorithm. I<alpha> must lie between 0 and 1. A value
 closer to 1 means that more recent observations carry greater weight in
 predicting the baseline component of the forecast. A value closer to 0 mean

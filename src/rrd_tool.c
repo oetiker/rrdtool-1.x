@@ -116,12 +116,15 @@ void PrintUsage(char *cmd)
     char help_graph3[] =
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
+	   "\t\t[VDEF:vdefname=rpn-expression]\n"
 	   "\t\t[PRINT:vname:CF:format]\n"
 	   "\t\t[GPRINT:vname:CF:format]\n"
+	   "\t\t[PRINT:vdefname:format]\n"
+	   "\t\t[GPRINT:vdefname:format]\n"
 	   "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
 	   "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
-	   "\t\t[LINE{1|2|3}:vname[#rrggbb[aa][:legend]]]\n"
-	   "\t\t[AREA:vname[#rrggbb[aa][:legend]]]\n"
+	   "\t\t[LINE{1|2|3}:vname[#rrggbb[aa][:legend]][:STACK]]\n"
+	   "\t\t[AREA:vname[#rrggbb[aa][:legend]][:STACK]]\n"
 	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]]\n\n";
 
     char help_tune1[] =
