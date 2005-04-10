@@ -99,8 +99,8 @@ gfx_color_t graph_col[] =   /* default colors */
      0x90909080,   /* grid       */
      0xE0505080,   /* major grid */
      0x000000FF,   /* font       */ 
-     0xFF0000FF,   /* arrow      */
-     0x404040FF    /* axis       */
+     0x802020FF,   /* arrow      */
+     0x202020FF    /* axis       */
 };
 
 
@@ -1854,11 +1854,17 @@ axis_paint(
 		         MGRIDWIDTH, im->graph_col[GRC_AXIS]);
    
     
-    /* arrow for X axis direction */
+    /* arrow for X and Y axis direction */
     gfx_new_area ( im->canvas, 
-		   im->xorigin+im->xsize+3,  im->yorigin-3,
-		   im->xorigin+im->xsize+3,  im->yorigin+4,
-		   im->xorigin+im->xsize+8,  im->yorigin+0.5, /* LINEOFFSET */
+		   im->xorigin+im->xsize+2,  im->yorigin-2,
+		   im->xorigin+im->xsize+2,  im->yorigin+3,
+		   im->xorigin+im->xsize+7,  im->yorigin+0.5, /* LINEOFFSET */
+		   im->graph_col[GRC_ARROW]);
+
+    gfx_new_area ( im->canvas, 
+		   im->xorigin-2,  im->yorigin-im->ysize-2,
+		   im->xorigin+3,  im->yorigin-im->ysize-2,
+		   im->xorigin+0.5,    im->yorigin-im->ysize-7, /* LINEOFFSET */
 		   im->graph_col[GRC_ARROW]);
 
 }
@@ -2455,22 +2461,23 @@ graph_paint(image_desc_t *im, char ***calcpr)
           for(ii=1;ii<im->xsize;ii++){
 	    /* keep things simple for now, just draw these bars
 	       do not try to build a big and complex area */
-	    float ybase;
+	    float ybase,ytop;
 	    if ( isnan(im->gdes[i].p_data[ii]) ) {
 		continue;
 	    }
+            ytop = ytr(im,im->gdes[i].p_data[ii]);
  	    if ( im->gdes[i].stack ) {
                   ybase = ytr(im,lastgdes->p_data[ii]);
             } else {
                   ybase = ytr(im,areazero);
             }
-            if ( ybase == im->gdes[i].p_data[ii] ){
+            if ( ybase == ytop ){
 		continue;
 	    }
             node = gfx_new_area(im->canvas,
                                 ii-1+im->xorigin,ybase,
-                                ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
-                                ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),				
+                                ii-1+im->xorigin,ytop,
+                                ii+im->xorigin,ytop,				
                                 im->gdes[i].col
                                );
             gfx_add_point(node,ii+im->xorigin,ybase);
