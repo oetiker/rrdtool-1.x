@@ -1,16 +1,28 @@
 RRDTOOL NEWS
 ============
+Major Changes between 1.0.x and 1.2.x
+
+Graphing
+--------
+
+Logging
+-------
+* In addition to the PNG format, rrdtool
+  can produce output in SVN, EPS and PDF format.
+
+Behind the Scenes
+-----------------
+* In order to support Holt-Winters and Calculated Datasources,
+  the rrdtool dataformat has changed. While the new version of rrdtool can
+  read files created with rrdtool 1.0.x. It is not possible to read files
+  created by rrdtool-1.2.x with rrdtool-1.0.x
+
+* External libraries are not included with rrdtool anymore. This is in line
+  with todays trend of using shared libraries everywhere. With the exception
+  of the cgi library most things required by rrdtool will be found on every recent
+  system.
 
 
-In this file I am noting the major changes to RRDtool
-for details check the svn ChangeLog
-
-2005/04/04 Tobi Oetiker <tobi@oetiker.ch>
-  After adding lots of patches and doing a
-  autotools update we are ready for 1.2rc1
-
-2004/01/20 Tobi Oetiker <tobi@oetiker.ch>
-  Ripped out all foreign libraries and adapted
   Configure and Makefiles and accordingly.
 
 2002/03/26 Peter Speck <speck@ruc.dk>
