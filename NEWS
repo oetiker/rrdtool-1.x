@@ -36,6 +36,10 @@ Logging
 * COMPUTE datatype for artificial datasources calculating their
   input using RPN math and data from the other datasources.
  
+Incompatibilities
+-----------------
+* Colons in COMMENT arguments to rrdtool graph must be escaped with a backslash
+
 Behind the Scenes
 -----------------
 * In order to support Holt-Winters and Calculated Datasources,
