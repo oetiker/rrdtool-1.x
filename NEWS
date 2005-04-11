@@ -5,11 +5,37 @@ Major Changes between 1.0.x and 1.2.x
 Graphing
 --------
 
+* rewritten graphics generation based on libart.
+  - antialiased output
+  - alpha transparency support
+  - truetype fonts
+ 
+* additional graphics formats: EPS, PDF, SVG
+
+* extended multipart documentation
+
+* VDEF support; define and use variables.  Find, and use, the
+  maximum rate seen by rrdtool; compute and show the average
+
+* Sliding window (trend) analysis
+  Compute a smoother average, for instance over the last 6 CDPs
+
+* percentile (95th or other)
+  Remove peaks, 95 percent of all rates are at or below the
+  returned value
+
 Logging
 -------
-* In addition to the PNG format, rrdtool
-  can produce output in SVN, EPS and PDF format.
+* a second logging interface: rrdtool updatev
+  Verbose updating of the database; show CPDs being created
 
+* Aberrant Behavior Detection with Holt-Winters Forecasting
+  Compare current data with expected data, detect and log when
+  the rates are outside expected levels
+
+* COMPUTE datatype for artificial datasources calculating their
+  input using RPN math and data from the other datasources.
+ 
 Behind the Scenes
 -----------------
 * In order to support Holt-Winters and Calculated Datasources,
@@ -22,6 +48,9 @@ Behind the Scenes
   of the cgi library most things required by rrdtool will be found on every recent
   system.
 
+* Memory Mapped IO support for faster logging.
+
+---------------
 
   Configure and Makefiles and accordingly.
 
