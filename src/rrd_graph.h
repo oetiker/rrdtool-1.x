@@ -183,6 +183,7 @@ typedef struct image_desc_t {
     long         base;            /* 1000 or 1024 depending on what we graph */
     char           symbol;         /* magnitude symbol for y-axis */
     int            unitsexponent;    /* 10*exponent for units on y-asis */
+    int            unitslength;    /* width of the yaxis labels */
     int            extra_flags;    /* flags for boolean options */
     /* data elements */
 

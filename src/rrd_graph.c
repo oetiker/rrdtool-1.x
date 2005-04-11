@@ -338,7 +338,7 @@ si_unit(
         digits = floor( log( max( fabs(im->minval),fabs(im->maxval)))/log((double)im->base)); 
     }
     im->magfact = pow((double)im->base , digits);
-
+    
 #ifdef DEBUG
     printf("digits %6.3f  im->magfact %6.3f\n",digits,im->magfact);
 #endif
@@ -347,7 +347,7 @@ si_unit(
 		    ((digits+symbcenter) >= 0) )
         im->symbol = symbol[(int)digits+symbcenter];
     else
-	im->symbol = ' ';
+	im->symbol = '?';
  }
 
 /*  move min and max values around to become sensible */
@@ -423,6 +423,10 @@ expand_range(image_desc_t *im)
 		    -sensiblevalues[i] >=scaled_max)
 		    im->maxval = -sensiblevalues[i]*(im->magfact);
 	    }
+	    /* no sensiblevalues found. we switch to ALTYGRID mode */
+	    if (sensiblevalues[i] == 0){
+		im->extra_flags |= ALTYGRID;
+	    }		
 	}
     } else {
 	/* adjust min and max to the grid definition if there is one */
@@ -1535,10 +1539,15 @@ calc_horizontal_grid(image_desc_t   *im)
 		decimals = 1;
 	    
 	    fractionals = floor(log10(range));
-	    if(fractionals < 0) /* small amplitude. */
-		sprintf(im->ygrid_scale.labfmt, "%%%d.%df", decimals - fractionals + 1, -fractionals + 1);
-	    else
-		sprintf(im->ygrid_scale.labfmt, "%%%d.1f", decimals + 1);
+	    if(fractionals < 0) { /* small amplitude. */
+		int len = decimals - fractionals + 1;
+		if (im->unitslength < len) im->unitslength = len;
+		sprintf(im->ygrid_scale.labfmt, "%%%d.%df", len, -fractionals + 1);
+	    } else {
+		int len = decimals + 1;
+		if (im->unitslength < len) im->unitslength = len;
+		sprintf(im->ygrid_scale.labfmt, "%%%d.1f", len);
+	    }
 	    im->ygrid_scale.gridstep = pow((double)10, (double)fractionals);
 	    if(im->ygrid_scale.gridstep == 0) /* range is one -> 0.1 is reasonable scale */
 		im->ygrid_scale.gridstep = 0.1;
@@ -1560,7 +1569,7 @@ calc_horizontal_grid(image_desc_t   *im)
 	else {
 	    for(i=0;ylab[i].grid > 0;i++){
 		pixel = im->ysize / (scaledrange / ylab[i].grid);
-		if (gridind == -1 && pixel > 5) {
+		if (pixel > 5) {
 		    gridind = i;
 		    break;
 		}
@@ -1618,7 +1627,7 @@ int draw_horizontal_grid(image_desc_t *im)
 		}
 
 	       gfx_new_text ( im->canvas,
-			      X0-im->text_prop[TEXT_PROP_AXIS].size/1.5, Y0,
+			      X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
 			      im->graph_col[GRC_FONT],
 			      im->text_prop[TEXT_PROP_AXIS].font,
 			      im->text_prop[TEXT_PROP_AXIS].size,
@@ -1712,7 +1721,7 @@ horizontal_log_grid(image_desc_t   *im)
 	   
 	   sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
 	   gfx_new_text ( im->canvas,
-			  X0-im->text_prop[TEXT_PROP_AXIS].size/1.5, Y0,
+			  X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
 			  im->graph_col[GRC_FONT],
 			  im->text_prop[TEXT_PROP_AXIS].font,
 			  im->text_prop[TEXT_PROP_AXIS].size,
@@ -1819,7 +1828,7 @@ vertical_grid(
 # error "your libc has no strftime I guess we'll abort the exercise here."
 #endif
        gfx_new_text ( im->canvas,
-		      xtr(im,tilab), Y0+im->text_prop[TEXT_PROP_AXIS].size/1.5,
+		      xtr(im,tilab), Y0+im->text_prop[TEXT_PROP_AXIS].size,
 		      im->graph_col[GRC_FONT],
 		      im->text_prop[TEXT_PROP_AXIS].font,
 		      im->text_prop[TEXT_PROP_AXIS].size,
@@ -2101,16 +2110,16 @@ graph_size_location(image_desc_t *im, int elements
     */
     int Xvertical=0,	Yvertical=0,
 	Xtitle   =0,	Ytitle   =0,
-	Xylabel  =0,	Yylabel  =0,
+	Xylabel  =0,	
 	Xmain    =0,	Ymain    =0,
 #ifdef WITH_PIECHART
 	Xpie     =0,	Ypie     =0,
 #endif
-	Xxlabel  =0,	Yxlabel  =0,
+		        Yxlabel  =0,
 #if 0
 	Xlegend  =0,	Ylegend  =0,
 #endif
-        Xspacing =10,  Yspacing =10;
+        Xspacing =15,  Yspacing =15;
 
     if (im->extra_flags & ONLY_GRAPH) {
 	im->xorigin =0;
@@ -2146,12 +2155,14 @@ graph_size_location(image_desc_t *im, int elements
 	Xmain=im->xsize;
 	Ymain=im->ysize;
 	if (im->draw_x_grid) {
-	    Xxlabel=Xmain;
 	    Yxlabel=im->text_prop[TEXT_PROP_AXIS].size *2.5;
 	}
 	if (im->draw_y_grid) {
-	    Xylabel=im->text_prop[TEXT_PROP_AXIS].size *6;
-	    Yylabel=Ymain;
+	    Xylabel=gfx_get_text_width(im->canvas, 0,
+	                im->text_prop[TEXT_PROP_AXIS].font,
+        	        im->text_prop[TEXT_PROP_AXIS].size,
+                	im->tabwidth,
+                	"0", 0) * im->unitslength + im->text_prop[TEXT_PROP_AXIS].size * 2;
 	}
     }
 
@@ -2742,6 +2753,7 @@ rrd_graph_init(image_desc_t *im)
     im->minval = DNAN;
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
+    im->unitslength= 5; 
     im->extra_flags= 0;
     im->rigid = 0;
     im->gridfit = 1;
@@ -2839,17 +2851,18 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"no-minor",   no_argument,       0,  'I'},
 	    {"alt-autoscale", no_argument,    0,  'A'},
 	    {"alt-autoscale-max", no_argument, 0, 'M'},
+            {"no-gridfit", no_argument,       0,   'N'},
 	    {"units-exponent",required_argument, 0, 'X'},
+	    {"units-length",required_argument, 0, 'L'},
 	    {"step",       required_argument, 0,    'S'},
             {"tabwidth",   required_argument, 0,    'T'},            
-	    {"no-gridfit", no_argument,       0,   'N'},
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
         int col_start,col_end;
 
 	opt = getopt_long(argc, argv, 
-			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:S:NT:",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:L:S:T:N",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -2880,13 +2893,16 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	case 'X':
 	    im->unitsexponent = atoi(optarg);
 	    break;
+	case 'L':
+	    im->unitslength = atoi(optarg);
+	    break;
 	case 'T':
 	    im->tabwidth = atof(optarg);
 	    break;
 	case 'S':
 	    im->step =  atoi(optarg);
 	    break;
-	case 262:
+	case 'N':
 	    im->gridfit = 0;
 	    break;
 	case 's':

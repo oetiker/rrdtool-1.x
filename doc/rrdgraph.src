@@ -226,6 +226,16 @@ display the y-axis values in k (Kilo, 10e3, thousands), use -6 to
 display the y-axis values in u (Micro, 10e-6, millionths).  Use a value
 of 0 to prevent any scaling of the y-axis values.
 
+This option is very effective at confusing the heck out of the default
+rrdtool autoscaler and grid painter. If rrdtool detects that it is not
+successful in labeling the graph under the given circumstances, it will switch
+to the more robust B<--alt-y-grid> mode.
+
+B<[-L|--units-length E<lt>valueE<gt>]>
+
+How many digits should rrdtool assume the y-axis labels to be ? You may have to use this option
+to make enough space once you start fideling with the y-axis labeling.
+
 Z<>
 
 =back
