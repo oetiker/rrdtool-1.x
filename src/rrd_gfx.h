@@ -9,6 +9,8 @@
 #define LIBART_COMPILATION
 
 #include <libart_lgpl/libart.h>
+#include <libart_lgpl/art_rgba.h>
+#include "art_rgba_svp.h"
 
 enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS,IF_PDF};
 enum gfx_en { GFX_LINE=0,GFX_AREA,GFX_TEXT };
@@ -21,13 +23,12 @@ typedef struct  gfx_node_t {
   gfx_color_t   color;        /* color of element  0xRRGGBBAA  alpha 0xff is solid*/
   double        size;         /* font size, line width */
   double        dash_on, dash_off; /* dash line fragments lengths */
-  ArtVpath      *path;        /* path */
   int           closed_path;
   int           points;
   int           points_max;
-  ArtSVP        *svp;         /* svp */
   char *filename;             /* font or image filename */
   char *text;
+  ArtVpath      *path;        /* path */
   double        x,y;          /* position */
   double        angle;        /* text angle */
   enum gfx_h_align_en halign; /* text alignement */

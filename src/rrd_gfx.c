@@ -62,7 +62,6 @@ gfx_node_t *gfx_new_node( gfx_canvas_t *canvas,enum gfx_en type){
   node->points = 0;
   node->points_max =0;
   node->closed_path = 0;
-  node->svp = NULL;         /* svp */
   node->filename = NULL;             /* font or image filename */
   node->text = NULL;
   node->x = 0.0;
@@ -114,7 +113,7 @@ gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas,
   if (vec == NULL) return NULL;
   vec[0].code = ART_MOVETO_OPEN; vec[0].x=X0+LINEOFFSET; vec[0].y=Y0+LINEOFFSET;
   vec[1].code = ART_LINETO; vec[1].x=X1+LINEOFFSET; vec[1].y=Y1+LINEOFFSET;
-  vec[2].code = ART_END;
+  vec[2].code = ART_END; vec[2].x=0;vec[2].y=0;
   
   node->points = 3;
   node->points_max = 3;
@@ -143,7 +142,7 @@ gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas,
   vec[1].code = ART_LINETO; vec[1].x=X1; vec[1].y=Y1;
   vec[2].code = ART_LINETO; vec[2].x=X2; vec[2].y=Y2;
   vec[3].code = ART_LINETO; vec[3].x=X0; vec[3].y=Y0;
-  vec[4].code = ART_END;
+  vec[4].code = ART_END; vec[4].x=0; vec[4].y=0;
   
   node->points = 5;
   node->points_max = 5;
@@ -496,14 +495,23 @@ int           gfx_render_png (gfx_canvas_t *canvas,
     
     FT_Library    library;
     gfx_node_t *node = canvas->firstnode;    
+    /*
     art_u8 red = background >> 24, green = (background >> 16) & 0xff;
     art_u8 blue = (background >> 8) & 0xff, alpha = ( background & 0xff );
+    */
     unsigned long pys_width = width * canvas->zoom;
     unsigned long pys_height = height * canvas->zoom;
-    const int bytes_per_pixel = 3;
+    const int bytes_per_pixel = 4;
     unsigned long rowstride = pys_width*bytes_per_pixel; /* bytes per pixel */
     art_u8 *buffer = art_new (art_u8, rowstride*pys_height);
-    art_rgb_run_alpha (buffer, red, green, blue, alpha, pys_width*pys_height);
+    /* fill that buffer with out background color */
+    gfx_color_t *buffp;
+    long i;
+    for (i=0,buffp=(gfx_color_t *)buffer;
+         i<pys_width*pys_height;
+	 i++){
+	*(buffp++)=background;
+    }
     FT_Init_FreeType( &library );
     while(node){
         switch (node->type) {
@@ -526,20 +534,21 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             } else {
                 svp  = art_svp_from_vpath ( pvec );
                 svpt = art_svp_uncross( svp );
-                art_free(svp);
+                art_svp_free(svp);
 	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
-                art_free(svpt);
+                art_svp_free(svpt);
             }
             art_free(pvec);
-            art_rgb_svp_alpha (svp ,0,0, pys_width, pys_height,
-                               node->color, buffer, rowstride, NULL);
-            art_free(svp);
+	    /* this is from gnome since libart does not have this yet */
+            gnome_print_art_rgba_svp_alpha (svp ,0,0, pys_width, pys_height,
+                                node->color, buffer, rowstride, NULL);
+            art_svp_free(svp);
             break;
         }
         case GFX_TEXT: {
             unsigned int  n;
             int  error;
-            art_u8 fcolor[3],falpha;
+            art_u8 fcolor[4],falpha;
             FT_Face       face;
             gfx_char      glyph;
             gfx_string    string;
@@ -547,7 +556,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 
             float pen_x = 0.0 , pen_y = 0.0;
             /* double x,y; */
-            long   ix,iy,iz;
+            long   ix,iy;
             
             fcolor[0] = node->color >> 24;
             fcolor[1] = (node->color >> 16) & 0xff;
@@ -601,7 +610,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                 int gr;
                 FT_Glyph        image;
                 FT_BitmapGlyph  bit;
-
+		/* long buf_x,comp_n; */
 	        /* make copy to transform */
                 if (! glyph->image) {
                   fprintf (stderr, "no image\n");
@@ -618,9 +627,44 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                 FT_Vector_Transform (&vec, &string->transform);
 
                 bit = (FT_BitmapGlyph) image;
-
                 gr = bit->bitmap.num_grays -1;
-                for (iy=0; iy < bit->bitmap.rows; iy++){
+/* 
+  	        buf_x = (pen_x + 0.5) + (double)bit->left;
+		comp_n = buf_x + bit->bitmap.width > pys_width ? pys_width - buf_x : bit->bitmap.width;
+                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+		buf_x *=  bytes_per_pixel ;
+      		for (iy=0; iy < bit->bitmap.rows; iy++){		    
+		    long buf_y = iy+(pen_y+0.5)-(double)bit->top;
+		    if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                    buf_y *= rowstride;
+		    for (ix=0;ix < bit->bitmap.width;ix++){		
+			*(letter + (ix*bytes_per_pixel+3)) = *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
+		    }
+		    art_rgba_rgba_composite(buffer + buf_y + buf_x ,letter,comp_n);
+	         }
+		 art_free(letter);
+*/
+
+                for (iy=0; iy < bit->bitmap.rows; iy++){		    
+                    long buf_y = iy+(pen_y+0.5)-bit->top;
+                    if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                    buf_y *= rowstride;
+                    for (ix=0;ix < bit->bitmap.width;ix++){
+                        long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
+                        art_u8 font_alpha;
+                        
+                        if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+                        buf_x *=  bytes_per_pixel ;
+                        font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
+			if (font_alpha > 0){
+	                        fcolor[3] =  (art_u8)((double)font_alpha / gr * falpha);
+				art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                        }
+                    }
+                }
+
+/*
+                for (iy=0; iy < bit->bitmap.rows; iy++){		    
                     long buf_y = iy+(pen_y+0.5)-bit->top;
                     if (buf_y < 0 || buf_y >= (long)pys_height) continue;
                     buf_y *= rowstride;
@@ -639,6 +683,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                         }
                     }
                 }
+*/
                 FT_Done_Glyph (image);
             }
             gfx_string_destroy(string);
@@ -660,12 +705,12 @@ gfx_destroy    (gfx_canvas_t *canvas){
   while(node){
     next = node->next;
     art_free(node->path);
-    art_free(node->svp);
     free(node->text);
     free(node->filename);
     art_free(node);
     node = next;
   }
+  art_free(canvas);
   return 0;
 }
  
@@ -692,6 +737,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 
   if (info_ptr == NULL)
     {
+      png_free(png_ptr,row_pointers);
       png_destroy_write_struct(&png_ptr,  (png_infopp)NULL);
       return (1);
     }
@@ -705,7 +751,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 
   png_init_io(png_ptr, fp);
   png_set_IHDR (png_ptr, info_ptr,width, height,
-                8, PNG_COLOR_TYPE_RGB,
+                8, PNG_COLOR_TYPE_RGB_ALPHA,
                 PNG_INTERLACE_NONE,
                 PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
@@ -716,8 +762,9 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   png_set_text (png_ptr, info_ptr, text, 1);
 
   /* lets make this fast */
+  png_set_filter(png_ptr,0,PNG_FILTER_NONE);
   png_set_compression_level(png_ptr,1);
-  png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_NO_FILTERS);
+  png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
   /* 
   png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_FILTER_SUB);
   png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
@@ -730,6 +777,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   
   png_write_image(png_ptr, row_pointers);
   png_write_end(png_ptr, info_ptr);
+  png_free(png_ptr,row_pointers);
   png_destroy_write_struct(&png_ptr, &info_ptr);
   return 1;
 }

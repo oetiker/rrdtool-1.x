@@ -2728,7 +2728,9 @@ rrd_graph_init(image_desc_t *im)
 #ifdef HAVE_SETLOCALE
     setlocale(LC_TIME,"");
 #endif
-
+    im->yorigin=0;
+    im->xorigin=0;
+    im->minval=0;
     im->xlab_user.minsec = -1;
     im->ximg=0;
     im->yimg=0;

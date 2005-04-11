@@ -39,6 +39,11 @@ RRD_C_FILES =		\
 	rrd_update.c	\
 	rrd_xport.c	\
 	rrd_nan_inf.c	\
+        art_rgba_rgba_affine.c \
+        art_rgba_svp.c \
+        art_rgb_affine_private.h \
+	art_rgba_rgba_affine.h \
+        art_rgba_svp.h \
 	rrd_gfx.c rrd_gfx.h \
 	rrd_afm.c rrd_afm_data.c \
 	getopt.h parsetime.h \
@@ -92,4 +97,6 @@ rrdtool_SOURCES =
 rrdtool_DEPENDENCIES = rrd_tool.o
 rrdtool_LDADD	= librrd.la
 
-EXTRA_DIST= rrdtool.dsp rrdtool.dsw $(fonts_DATA)
+# strftime is here because we do not usually need it. unices have propper
+# iso date support
+EXTRA_DIST= rrdtool.dsp rrdtool.dsw strftime.c strftime.h $(fonts_DATA)
