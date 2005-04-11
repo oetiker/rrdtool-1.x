@@ -253,6 +253,7 @@ I<Unknown> values are considered lower than any finite number for this
 purpose so if this operator returns an I<unknown> you have quite a lot
 of them in your data.  B<Inf>inite numbers are lesser, or more, than the
 finite numbers and are always more than the I<Unknown> numbers.
+(NaN E<lt> -INF E<lt> finite values E<lt> INF)
 
 Example: C<VDEF:perc95=mydata,95,PERCENT>
 
