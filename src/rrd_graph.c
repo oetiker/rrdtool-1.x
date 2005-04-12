@@ -1,4 +1,4 @@
-/strfcmp/****************************************************************************
+/****************************************************************************
  * RRDtool 1.2rc8  Copyright by Tobi Oetiker, 1997-2005
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
@@ -1298,7 +1298,7 @@ print_calc(image_desc_t *im, char ***prdata)
 		char ctime_buf[128]; /* PS: for ctime_r, must be >= 26 chars */
 		int iii=0;
 		ctime_r(&printtime,ctime_buf); 
-		while(isprint(ctime_buf[iii])){iii++};
+		while(isprint(ctime_buf[iii])){iii++;}
 		ctime_buf[iii]='\0';
 		if (im->gdes[i].gf == GF_PRINT){
 		    (*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
