@@ -182,6 +182,7 @@ typedef struct image_desc_t {
     double         magfact;        /* numerical magnitude*/
     long         base;            /* 1000 or 1024 depending on what we graph */
     char           symbol;         /* magnitude symbol for y-axis */
+    float          viewfactor;     /* how should the numbers on the y-axis be scaled for viewing ? */
     int            unitsexponent;    /* 10*exponent for units on y-asis */
     int            unitslength;    /* width of the yaxis labels */
     int            extra_flags;    /* flags for boolean options */

@@ -1,4 +1,4 @@
-/****************************************************************************
+/strfcmp/****************************************************************************
  * RRDtool 1.2rc7  Copyright by Tobi Oetiker, 1997-2005
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
@@ -329,23 +329,30 @@ si_unit(
 		     'E'};/* 10e18  Exa */
 
     int   symbcenter = 6;
-    double digits;  
+    double digits,viewdigits=0;  
     
+    digits = floor( log( max( fabs(im->minval),fabs(im->maxval)))/log((double)im->base)); 
+
     if (im->unitsexponent != 9999) {
 	/* unitsexponent = 9, 6, 3, 0, -3, -6, -9, etc */
-        digits = floor(im->unitsexponent / 3);
+        viewdigits = floor(im->unitsexponent / 3);
     } else {
-        digits = floor( log( max( fabs(im->minval),fabs(im->maxval)))/log((double)im->base)); 
+	viewdigits = digits;
     }
+
     im->magfact = pow((double)im->base , digits);
     
 #ifdef DEBUG
     printf("digits %6.3f  im->magfact %6.3f\n",digits,im->magfact);
 #endif
 
-    if ( ((digits+symbcenter) < sizeof(symbol)) &&
-		    ((digits+symbcenter) >= 0) )
-        im->symbol = symbol[(int)digits+symbcenter];
+    im->viewfactor = im->magfact / pow((double)im->base , viewdigits);
+
+    pow((double)im->base , viewdigits);
+
+    if ( ((viewdigits+symbcenter) < sizeof(symbol)) &&
+		    ((viewdigits+symbcenter) >= 0) )
+        im->symbol = symbol[(int)viewdigits+symbcenter];
     else
 	im->symbol = '?';
  }
@@ -1289,14 +1296,16 @@ print_calc(image_desc_t *im, char ***prdata)
 
 	    if (!strcmp(im->gdes[i].format,"%c")) { /* VDEF time print */
 		char ctime_buf[128]; /* PS: for ctime_r, must be >= 26 chars */
+		int iii=0;
+		ctime_r(&printtime,ctime_buf); 
+		while(isprint(ctime_buf[iii])){iii++};
+		ctime_buf[iii]='\0';
 		if (im->gdes[i].gf == GF_PRINT){
 		    (*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
-		    sprintf((*prdata)[prlines-2],"%s (%lu)",
-					ctime_r(&printtime,ctime_buf),printtime);
+		    sprintf((*prdata)[prlines-2],"%s (%lu)",ctime_buf,printtime);
 		    (*prdata)[prlines-1] = NULL;
 		} else {
-		    sprintf(im->gdes[i].legend,"%s (%lu)",
-					ctime_r(&printtime,ctime_buf),printtime);
+		    sprintf(im->gdes[i].legend,"%s (%lu)",ctime_buf,printtime);
 		    graphelement = 1;
 		}
 	    } else {
@@ -1610,19 +1619,19 @@ int draw_horizontal_grid(image_desc_t *im)
 		if (i==0 || im->symbol == ' ') {
 		    if(scaledstep < 1){
 			if(im->extra_flags & ALTYGRID) {
-			    sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*i);
+			    sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i);
 			}
 			else {
-			    sprintf(graph_label,"%4.1f",scaledstep*i);
+			    sprintf(graph_label,"%4.1f",scaledstep*im->viewfactor*i);
 			}
 		    } else {
-			sprintf(graph_label,"%4.0f",scaledstep*i);
+			sprintf(graph_label,"%4.0f",scaledstep*im->viewfactor*i);
 		    }
 		}else {
 		    if(scaledstep < 1){
-			sprintf(graph_label,"%4.1f %c",scaledstep*i, im->symbol);
+			sprintf(graph_label,"%4.1f %c",scaledstep*im->viewfactor*i, im->symbol);
 		    } else {
-			sprintf(graph_label,"%4.0f %c",scaledstep*i, im->symbol);
+			sprintf(graph_label,"%4.0f %c",scaledstep*im->viewfactor*i, im->symbol);
 		    }
 		}
 
@@ -2754,6 +2763,8 @@ rrd_graph_init(image_desc_t *im)
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
     im->unitslength= 5; 
+    im->symbol = ' ';
+    im->viewfactor = 1.0;
     im->extra_flags= 0;
     im->rigid = 0;
     im->gridfit = 1;
@@ -2789,6 +2800,7 @@ rrd_graph_init(image_desc_t *im)
                             strncpy(text_prop[i].font,rrd_win_default_font,sizeof(text_prop[i].font)-1);
                             text_prop[i].font[sizeof(text_prop[i].font)-1] = '\0';
                      }
+             }
     }
 #endif
     {
