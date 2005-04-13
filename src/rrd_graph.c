@@ -36,7 +36,7 @@
 text_prop_t text_prop[] = {   
      { 8.0, RRD_DEFAULT_FONT }, /* default */
      { 9.0, RRD_DEFAULT_FONT }, /* title */
-     { 8.0,  RRD_DEFAULT_FONT }, /* axis */
+     { 7.0,  RRD_DEFAULT_FONT }, /* axis */
      { 8.0, RRD_DEFAULT_FONT }, /* unit */
      { 8.0, RRD_DEFAULT_FONT }  /* legend */
 };
@@ -2540,12 +2540,14 @@ graph_paint(image_desc_t *im, char ***calcpr)
   }
 #endif
 
-  if( !(im->extra_flags & ONLY_GRAPH) )  
-      axis_paint(im);
 
   /* grid_paint also does the text */
   if( !(im->extra_flags & ONLY_GRAPH) )  
     grid_paint(im);
+
+  
+  if( !(im->extra_flags & ONLY_GRAPH) )  
+      axis_paint(im);
   
   /* the RULES are the last thing to paint ... */
   for(i=0;i<im->gdes_c;i++){    
