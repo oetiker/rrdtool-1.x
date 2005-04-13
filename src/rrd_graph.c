@@ -34,11 +34,11 @@
 #endif
 
 text_prop_t text_prop[] = {   
-     { 9.0, RRD_DEFAULT_FONT }, /* default */
-     { 11.0, RRD_DEFAULT_FONT }, /* title */
+     { 8.0, RRD_DEFAULT_FONT }, /* default */
+     { 9.0, RRD_DEFAULT_FONT }, /* title */
      { 8.0,  RRD_DEFAULT_FONT }, /* axis */
-     { 9.0, RRD_DEFAULT_FONT }, /* unit */
-     { 9.0, RRD_DEFAULT_FONT }  /* legend */
+     { 8.0, RRD_DEFAULT_FONT }, /* unit */
+     { 8.0, RRD_DEFAULT_FONT }  /* legend */
 };
 
 xlab_t xlab[] = {
@@ -1497,7 +1497,7 @@ leg_place(image_desc_t *im)
 		   + legspace[ii]
 		   + glue;
 	    }	                
-	    leg_y += im->text_prop[TEXT_PROP_LEGEND].size*1.7;
+	    leg_y += im->text_prop[TEXT_PROP_LEGEND].size*1.8;
 	    if (prt_fctn == 's') leg_y -=  im->text_prop[TEXT_PROP_LEGEND].size;	   
 	    fill = 0;
 	    leg_c = 0;
@@ -2762,7 +2762,7 @@ rrd_graph_init(image_desc_t *im)
     im->minval = DNAN;
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
-    im->unitslength= 5; 
+    im->unitslength= 6; 
     im->symbol = ' ';
     im->viewfactor = 1.0;
     im->extra_flags= 0;
