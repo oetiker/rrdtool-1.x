@@ -762,9 +762,9 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   png_set_text (png_ptr, info_ptr, text, 1);
 
   /* lets make this fast */
-  png_set_filter(png_ptr,0,PNG_FILTER_NONE);
+  /* png_set_filter(png_ptr,0,PNG_FILTER_NONE); */
   png_set_compression_level(png_ptr,1);
-  png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
+  /* png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY); */
   /* 
   png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_FILTER_SUB);
   png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
