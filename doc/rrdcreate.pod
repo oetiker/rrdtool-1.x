@@ -196,17 +196,27 @@ functions that enable B<RRDtool> to provide data smoothing (via the
 Holt-Winters forecasting algorithm), confidence bands, and the flagging
 aberrant behavior in the data source time series:
 
-=over 4
+=over
 
-=item B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra-num>
+=item *
 
-=item B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra-num>
 
-=item B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+=item *
 
-=item B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra-num>
+B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
 
-=item B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
+=item *
+
+B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+
+=item *
+
+B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra-num>
+
+=item *
+
+B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
 
 =back
 
@@ -294,7 +304,7 @@ I<rra-num> argument is the 1-based index in the order of B<RRA> creation
 (that is, the order they appear in the I<create> command). The dependent
 B<RRA> for each B<RRA> requiring the I<rra-num> argument is listed here:
 
-=over 4
+=over
 
 =item *
 
