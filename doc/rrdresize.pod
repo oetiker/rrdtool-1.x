@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool resize - alters the size of an RRA and creates new .rrd file
+rrdresize - alters the size of an RRA and creates new .rrd file
 
 =for html <div align="right"><a href="rrdresize.pdf">PDF</a> version.</div>
 

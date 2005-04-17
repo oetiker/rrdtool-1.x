@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool xport - Export data in XML format based on data from one or several RRD
+rrdxport - Export data in XML format based on data from one or several RRD
 
 =for html <div align="right"><a href="rrdxport.pdf">PDF</a> version.</div> 
 
@@ -48,7 +48,7 @@ for details.
 
 =item B<--step> I<value> (default automatic)
 
-See I<rrdgraph> documentation.
+See L<rrdgraph> documentation.
 
 =item B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>
 

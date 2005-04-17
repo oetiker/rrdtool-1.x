@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool dump - dump the contents of an B<RRD> to XML format
+rrddump - dump the contents of an RRD to XML format
 
 =for html <div align="right"><a href="rrddump.pdf">PDF</a> version.</div>
 

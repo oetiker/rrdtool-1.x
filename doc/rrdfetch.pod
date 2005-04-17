@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool fetch - fetch data from an RRD.
+rrdfetch - Fetch data from an RRD.
 
 =for html <div align="right"><a href="rrdfetch.pdf">PDF</a> version.</div>
 

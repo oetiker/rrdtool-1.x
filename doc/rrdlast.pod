@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool last - Return the date of the last data sample in an B<RRD>
+rrdlast - Return the date of the last data sample in an RRD
 
 =for html <div align="right"><a href="rrdlast.pdf">PDF</a> version.</div>
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
- rrdthreads - Provisions for linking the RRD library to use in multi-threaded programs
+rrdthreads - Provisions for linking the RRD library to use in multi-threaded programs
 
 =head1 SYNOPSIS
 
@@ -18,7 +18,7 @@ way. They all end in the usual "C<_r>" prefix.
 
 In order to use the librrd in multi-threaded programs you must:
 
-=over 4
+=over
 
 =item * 
 
@@ -54,11 +54,11 @@ library. Otherwise the call might fail due to some earlier error.
 
 =back
 
-=head1 IMPORTANT NOTES FOR RRD CONTRIBUTORS:
+=head2 NOTES FOR RRD CONTRIBUTORS
 
 Some precautions must be followed when developing RRD from now on:
 
-=over 4
+=over
 
 =item *
 
@@ -66,7 +66,7 @@ Only use thread-safe functions in library code. Many often used libc
 functions aren't thread-safe. Take care in the following
 situations/when using the following library functions:
 
-=over 8
+=over
 
 =item *
 
@@ -97,7 +97,9 @@ Many other (lookup documentation)
 
 =back
 
-As an aide(?) a header file named F<rrd_is_thread_safe.h> is provided
+=item *
+
+A header file named F<rrd_is_thread_safe.h> is provided
 that works with the GNU C-preprocessor to "poison" some of the most
 common non-thread-safe functions using the C<#pragma GCC poison>
 directive. Just include this header in source files you want to keep
@@ -132,19 +134,11 @@ operation (e.g., C<rrd_create>, but not in C<rrd_create_r>)
 
 =back
 
-=head1 CURRENTLY IMPLEMENTED THREAD SAFE FUNCTIONS
+=head2 CURRENTLY IMPLEMENTED THREAD SAFE FUNCTIONS
 
 Currently there exit thread-safe variants of C<rrd_update>,
 C<rrd_create>, C<rrd_dump>, C<rrd_info> and C<rrd_last>.
 
 =head1 AUTHOR
 
-Initial multi-threading support was implemented by Peter Stamfest
-<peter@stamfest.at> in Feb. 2003.
-
-This documentation was written by Peter Stamfest.
-
-Changes to the RRD library and this documentation are (c) 2003 by
-Peter Stamfest and are distributed under the GPL.
-
-=cut
+Peter Stamfest E<lt>peter@stamfest.atE<gt>

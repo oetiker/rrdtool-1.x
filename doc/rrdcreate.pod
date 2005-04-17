@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool create - Set up a new Round Robin Database
+rrdcreate - Set up a new Round Robin Database
 
 =for html <div align="right"><a href="rrdcreate.pdf">PDF</a> version.</div>
 

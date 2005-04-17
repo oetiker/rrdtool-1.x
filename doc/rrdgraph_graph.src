@@ -1,54 +1,44 @@
-=include name
-
-=head1 SYNOPSIS
-
-=over 4
-
-=item B<old-style commands, for compatibility>
-
-=over 4
-
-=item B<PRINT> : I<vname> : I<CF> : I<format>
-
-=item B<GPRINT> : I<vname> : I<CF> : I<format>
-
-=item B<HRULE> : I<value> # I<color> [ :I<legend> ]
-
-=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
-
-=back
-
-Z<>
-
-=item B<available commands>
-
-=over 8
-
-=item B<PRINT> : I<vname> : I<format>
-
-=item B<GPRINT> : I<vname> : I<format>
-
-=item B<COMMENT> : I<text>
-
-=item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
-
-=item B<LINE>{I<width>} : I<vname> # I<color> [ : I<legend> ] [ C<:STACK> ]
-
-=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:STACK> ]
+=head1 NAME  
 
 =cut
 
-# =item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
 
 =pod
 
-=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
+rrdgraph_graph - rrdtool graph command reference
 
-=item B<SHIFT> : I<vname> , I<offset>
+=head1 SYNOPSIS
 
-=back
+B<PRINT>B<:>I<vname>B<B<:>>I<format>
 
-=back
+B<GPRINT>B<:>I<vname>B<:>I<format>
+
+B<COMMENT>B<:>I<text>
+
+B<VRULE>B<:>I<vname>B<#>I<color>[B<:>I<legend>]
+
+B<LINE>I<width>B<:>I<vname>B<#>I<color>[B<:>I<legend>][B<:>B<STACK>]
+
+B<AREA>B<:>I<vname>B<#>I<color>[B<:>I<legend>][B<:>B<STACK>]
+
+B<TICK>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<fraction>[B<:>I<legend>]]
+
+B<SHIFT>B<:>I<vname>B<:>I<offset>
+
+=cut
+
+B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
+
+=pod
+
+B<PRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
+
+B<GPRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
+
+B<HRULE>B<:>I<value>B<#>I<color>[B<:>I<legend>] (deprecated)
+
+B<STACK>B<:>I<vname>B<#>I<color>[B<:>I<legend>] (deprecated)
 
 =head1 DESCRIPTION
 
@@ -60,12 +50,12 @@ Similarly no report is generated if you don't use print options.
 
 =over 4
 
-=item B<PRINT> : I<vname> : I<CF> : I<format>
+=item B<PRINT:>I<vname>B<:>I<CF><:>I<format>
 
 I<Deprecated. Use the new form of this command in new scripts.>
 The first form of this command is to be used with B<CDEF> I<vname>s.
 
-=item B<PRINT> : I<vname> : I<format>
+=item B<PRINT:>I<vname>B<:>I<format>
 
 Depending on the context, either the value component or the time
 component of a B<VDEF> is printed using I<format>. It is an error
@@ -161,24 +151,24 @@ B<%Z> time zone
 
 =over 4
 
-=item B<GPRINT> : I<vname> : I<CF> : I<format>
+=item B<GPRINT>B<:>I<vname>B<:>I<CF>B<:>I<format>
 
 I<Deprecated. Use the new form of this command in new scripts.>
 This is the same as C<PRINT> but now it is printed inside the graph.
 
-=item B<GPRINT> : I<vname> : I<format>
+=item B<GPRINT>B<:>I<vname>B<:>I<format>
 
 This is the same as C<PRINT> but now it is printed inside the graph.
 
-=item B<COMMENT> : I<text>
+=item B<COMMENT>B<:>I<text>
 
 Text is printed literally in the legend section of the graph
 
-=item B<HRULE> : I<value> # I<color> [ :I<legend> ]
+=item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
 
 I<Deprecated. Use B<LINEx> in new scripts.>
 
-=item B<VRULE> : I<vname> # I<color> [ : I<legend> ]
+=item B<VRULE>B<:>I<vname>B<#>I<color> [B<:>I<legend> ]
 
 Draw a vertical line at I<time>.  Its color is composed from three
 hexadecimal numbers specifying the color components (00 is off, FF is
@@ -186,7 +176,7 @@ maximum) red, green and blue.  Optionally a legend box and string is
 printed in the legend section. I<time> may be a number or a variable
 from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
-=item B<LINE>{I<width>} : I<{vname or number}> # I<color> [ : I<legend> ]
+=item B<LINE>I<width>B<:>I<{vname or number}>B<#>I<color>[B<:>I<legend>]
 [ C<:STACK> ]
 
 Draw a line of the specified width into the graph. If the color
@@ -198,12 +188,12 @@ B<CDEF>.  If the optional B<STACK> modifier is used, this line is
 stacked on top of the previous element which can be a B<LINEx> or
 an B<AREA>
 
-=item B<AREA> C<:> I<vname> C<#> I<color> [ C<:> I<legend> ] [ C<:STACK> ]
+=item B<AREA>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>][B<:STACK>]
 
 See B<LINE>, however the area between the x-axis and the line will
 also be filled.
 
-=item B<TICK> : I<vname> B<#> I<rrggbbaa> [ : I<fraction> [ : I<legend> ] ]
+=item B<TICK>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<fraction>[B<:>I<legend>]]
 
 Plot a tick mark (a vertical line) for each value of I<vname> that is
 non-zero and not *UNKNOWN*. The I<fraction> argument specifies the
@@ -211,7 +201,7 @@ length of the tick mark as a fraction of the y-axis; the default value
 is 0.1 (10% of the axis). Note that the color specification is not
 optional.
 
-=item B<SHIFT> : I<vname> : I<offset>
+=item B<SHIFT>B<:>I<vname>B<:>I<offset>
 
 Using this command B<RRDtool> will graph the following elements
 with the specified offset.  For instance, you can specify an
@@ -222,22 +212,22 @@ a variable here.
 
 =cut
 
-#=item B<PART> : I<vname> B<#> I<rrggbbaa> [ B<:> I<legend> ]
-#
-#B<RRDtool> has now support for B<pie charts>. If you include the
-#B<PART> command, the canvas is extended to make room for a chart
-#The size of the canvas is determined by the lesser of
-#L<width and height|rrdgraph/item_Size>.
-#
-#Pie parts will be concatenated, the first one will start at the
-#top and parts will be created clockwise.  The size of the part
-#is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
-#function.  It should return a number between 0 and 100, being a
-#percentage.  Providing wrong input will produce undefined results.
+=item B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
+
+B<RRDtool> has now support for B<pie charts>. If you include the
+B<PART> command, the canvas is extended to make room for a chart
+The size of the canvas is determined by the lesser of
+L<width and height|rrdgraph/item_Size>.
+
+Pie parts will be concatenated, the first one will start at the
+top and parts will be created clockwise.  The size of the part
+is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
+function.  It should return a number between 0 and 100, being a
+percentage.  Providing wrong input will produce undefined results.
 
 =pod
 
-=item B<STACK> : I<vname> # I<color> [ :I<legend> ]
+=item B<STACK>B<:>I<vname>B<#>I<color>[B<:>I<legend>]
 
 I<Deprecated.  Use the B<STACK> modifiers on the other commands.>
 

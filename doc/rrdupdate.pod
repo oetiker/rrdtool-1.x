@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool update - Store a new set of values into the RRD
+rrdupdate - Store a new set of values into the RRD
 
 =for html <div align="right"><a href="rrdupdate.pdf">PDF</a> version.</div>
 

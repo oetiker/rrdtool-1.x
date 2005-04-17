@@ -1,14 +1,24 @@
+=head1 NAME
+
+=cut
+
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
+
+=pod
+
+rrdgraph - Round Robin Database tool grapher functions
+
 =include name
 
 =head1 SYNOPSIS
 
 B<rrdtool graph> I<filename>
-[E<lt>B<L<option|rrdgraph/OPTIONS>>E<gt> ...]
-[E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt> ...]
-[E<lt>B<L<data calculation|rrdgraph_data/CDEF>>E<gt> ...]
-[E<lt>B<L<variable definition|rrdgraph_data/VDEF>>E<gt> ...]
-[E<lt>B<L<graph element|rrdgraph_graph/GRAPH>>E<gt> ...]
-[E<lt>B<L<print element|rrdgraph_graph/PRINT>>E<gt> ...]
+[I<L<option|rrdgraph/OPTIONS>> ...]
+[I<L<data definition|rrdgraph_data/DEF>> ...]
+[I<L<data calculation|rrdgraph_data/CDEF>> ...]
+[I<L<variable definition|rrdgraph_data/VDEF>> ...]
+[I<L<graph element|rrdgraph_graph/GRAPH>> ...]
+[I<L<print element|rrdgraph_graph/PRINT>> ...]
 
 =head1 DESCRIPTION
 

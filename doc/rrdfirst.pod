@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdfirst - Return the date of the first data sample in an B<RRA> within an B<RRD>
+rrdfirst - Return the date of the first data sample in an RRA within an RRD
 
 =for html <div align="right"><a href="rrdfirst.pdf">PDF</a> version.</div>
 

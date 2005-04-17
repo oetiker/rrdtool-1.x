@@ -1,6 +1,6 @@
 =head1 NAME 
 
-rrd-beginners - Beginners guide
+rrd-beginners - RRDtool Beginners guide
 
 =head1 SYNOPSIS
 

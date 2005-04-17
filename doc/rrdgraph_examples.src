@@ -1,4 +1,12 @@
-=include name
+=head1 NAME
+
+=cut
+
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
+
+=pod
+
+rrdgraph_examples - Examples for rrdtool graph
 
 =head1 SYNOPSIS
 
@@ -36,16 +44,24 @@ ready because comments are intermixed with the examples.
     VDEF:ds1avg=ds1,AVERAGE,8,*
     VDEF:ds1min=ds1,MINIMUM,8,*
     VDEF:ds1pct=95,ds1,PERCENTILE,8,*
+
 Note: consolidation occurs here.
+
     CDEF:ds0bits=ds0,8,*
     CDEF:ds1bits=ds1,8,*
+
 Note: 10 spaces to move text to the right
+
     COMMENT:"          "
+
 Note: three times size == 11 chars, "###.## xBps"
+
     COMMENT:"Maximum    "
     COMMENT:"Average    "
     COMMENT:"Minimum    "
+
 Note: last line contains new-line character
+
     COMMENT:"95th percentile\n"
     AREA:ds0bits#00C000:"Inbound "
     GPRINT:ds0max:"%6.2lf %Sbps"
@@ -69,7 +85,9 @@ Depending on your needs you can do this in two ways:
 Offset the data, then graph this
 
     DEF:mydata=my.rrd:ds:AVERAGE
+
 Note: this will also influence anything that uses "data"
+
     CDEF:data=mydata,100,+
     LINE1:data#FF0000:"Data with offset"
 
@@ -78,9 +96,13 @@ Note: this will also influence anything that uses "data"
 Graph the original data, with an offset
 
     DEF:mydata=my.rrd:ds:AVERAGE
+
 Note: no color in the first line so it is not visible
+
     LINE1:100
+
 Note: the second line gets stacked on top of the first one
+
     LINE1:data#FF0000:"Data with offset":STACK
 
 =back
@@ -99,7 +121,9 @@ Note: the second line gets stacked on top of the first one
     --end now --start end-1w
     DEF:thisweek=router.rrd:ds0:AVERAGE
     DEF:lastweek=router.rrd:ds0:AVERAGE:end=now-1w:start=end-1w
+
 shift the data forward by one week (604800 seconds)
+
     SHIFT:lastweek:604800
     [ more of the usual VDEF and CDEF stuff if you like ]
     AREA:lastweek#0000FF:Last\ week

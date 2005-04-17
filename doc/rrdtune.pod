@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool tune - Modify some basic properties of a Round Robin Database
+rrdtune - Modify some basic properties of a Round Robin Database
 
 =for html <div align="right"><a href="rrdtune.pdf">PDF</a> version.</div>
 

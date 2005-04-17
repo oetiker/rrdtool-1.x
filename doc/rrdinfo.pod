@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool info - extract header information from an RRD
+rrdinfo - extract header information from an RRD
 
 =for html <div align="right"><a href="rrdinfo.pdf">PDF</a> version.</div>
 

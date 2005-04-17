@@ -1,4 +1,12 @@
-=include name
+=head1 NAME
+
+=cut
+
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
+
+=pod
+
+rrdgraph_data - preparing data for graphing in rrdtool graph
 
 =head1 SYNOPSIS
 

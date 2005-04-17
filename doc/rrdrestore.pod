@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdtool restore - restore the contents of an B<RRD> from its XML dump format
+rrdrestore - Restore the contents of an RRD from its XML dump format
 
 =for html <div align="right"><a href="rrdrestore.pdf">PDF</a> version.</div>
 

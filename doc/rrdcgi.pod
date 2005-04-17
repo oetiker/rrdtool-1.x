@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdcgi - create web pages containing RRD graphs based on templates
+rrdcgi - Create web pages containing RRD graphs based on templates
 
 =for html <div align="right"><a href="rrdcgi.pdf">PDF</a> version.</div>
 

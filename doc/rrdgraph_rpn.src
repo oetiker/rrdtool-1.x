@@ -1,10 +1,16 @@
-=include name
+=head1 NAME  
+
+=cut
+
+WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
+
+=pod
+
+rrdgraph_rpn - About RPN Math in rrdtool graph
 
 =head1 SYNOPSIS
 
-I<E<lt>RPN expressionE<gt>> := 
-I<E<lt>vnameE<gt>>|I<E<lt>operatorE<gt>>|I<E<lt>valueE<gt>>
-[ , I<E<lt>RPN expressionE<gt>>]
+I<RPN expression>:=I<vname>|I<operator>|I<value>[,I<RPN expression>]
 
 =head1 DESCRIPTION
 

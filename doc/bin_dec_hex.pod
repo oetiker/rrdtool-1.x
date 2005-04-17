@@ -1,6 +1,6 @@
 =head1 NAME
 
-Binary Decimal Hexadecimal - How does it work
+bin_dec_hex - How Binary, Decimal, Hexadecimal
 
 =for html <div align="right"><a href="bin_dec_hex.pdf">PDF</a> version.</div>
 
@@ -361,5 +361,4 @@ other people by pointing them to this document when they are asking
 basic questions. They will not only get their answer but at the same
 time learn a whole lot more.
 
-Alex van den Bogaerdt 
-<alex@ergens.op.het.net>
+Alex van den Bogaerdt  E<lt>alex@ergens.op.het.netE<gt>
