@@ -4,7 +4,7 @@
 
 B<rrdtool graph> I<filename>
 [E<lt>B<L<option|rrdgraph/OPTIONS>>E<gt> ...]
-E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt>[ ...]
+[E<lt>B<L<data definition|rrdgraph_data/DEF>>E<gt> ...]
 [E<lt>B<L<data calculation|rrdgraph_data/CDEF>>E<gt> ...]
 [E<lt>B<L<variable definition|rrdgraph_data/VDEF>>E<gt> ...]
 [E<lt>B<L<graph element|rrdgraph_graph/GRAPH>>E<gt> ...]
@@ -59,13 +59,11 @@ end this in C<.png>, C<.svg> or C<.eps> but B<RRDtool> does not enforce this.
 I<filename> can be 'C<->' to send the image to C<stdout>. In
 that case, no other output is generated.  
 
-Z<>
-
 =item Time range
 
-B<[-s|--start E<lt>timeE<gt>]>
-B<[-e|--end E<lt>timeE<gt>]>
-B<[-S|--step E<lt>secondsE<gt>]>
+[B<-s>|B<--start> I<time>]
+[B<-e>|B<--end> I<time>]
+[B<-S>|B<--step> I<seconds>]
 
 The start and end of what you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
@@ -79,23 +77,19 @@ If you want B<rrdtool graph> to get data at a one-hour resolution
 from the B<RRD>, set B<step> to 3600.  Note: a step smaller than
 one pixel will silently be ignored.
 
-Z<>
-
 =item Labels
 
-B<[-t|--title E<lt>stringE<gt>]>
-B<[-v|--vertical-label E<lt>stringE<gt>]>
+[B<-t>|B<--title> I<string>]
+[B<-v>|B<--vertical-label> I<string>]
 
 A horizontal string at the top of the graph and/or a vertically
 placed string at the left hand side of the graph.
 
-Z<>
-
 =item Size
 
-B<[-w|--width E<lt>pixelsE<gt>]>
-B<[-h|--height E<lt>pixelsE<gt>]>
-B<[-j|--only-graph]>
+[B<-w>|B<--width> I<pixels>]
+[B<-h>|B<--height> I<pixels>]
+[B<-j>|B<--only-graph>]
 
 The width and height of the B<canvas> (the part of the graph with
 the actual lines and such). Defaults are 400 pixels by 100 pixels.
@@ -104,13 +98,11 @@ If you specify the B<--only-graph> option and set the height E<lt> 32
 pixels you will get a tiny graph image to use as an icon in a potential
 overview. All labeling will be stripped off the graph.
 
-Z<>
-
 =item Limits
 
-B<[-u|--upper-limit E<lt>valueE<gt>]>
-B<[-l|--lower-limit E<lt>valueE<gt>]>
-B<[-r|--rigid]>
+[B<-u>|B<--upper-limit> I<value>]
+[B<-l>|B<--lower-limit> I<value>]
+[B<-r>|B<--rigid>]
 
 By default the graph will be autoscaling so that it displays the
 portion of the y-axis that is actually used. You can change this
@@ -119,7 +111,7 @@ at least from B<lower-limit> to B<upper-limit>.  Autoscaling will
 still permit those boundaries to be stretched unless the B<rigid>
 option is set.
 
-B<[-A|--alt-autoscale]>
+[B<-A>|B<--alt-autoscale>]
 
 Sometimes the default algorithm for selecting the y-axis scale is not
 performing very well.  Normally the scale is selected from a predefined
@@ -129,7 +121,7 @@ maximum y-axis from the actual minimum and maximum values. Our example
 would display slightly less than C<260-0.001> to slightly more than
 C<260+0.001> (Contributed by Sasha Mikheev).
 
-B<[-M|--alt-autoscale-max]>
+[B<-M>|B<--alt-autoscale-max>]
 
 Where C<--alt-autoscale> will modify both the absolute maximum AND minimum
 values, this option will only affect the maximum value. The minimum
@@ -137,19 +129,15 @@ value, if not defined on the command line, will be 0. This option can
 be useful when graphing router traffic when the WAN line uses compression,
 and thus the throughput may be higher than the WAN line speed.
 
-B<[-N|--no-gridfit]>
+[B<-N>|B<--no-gridfit>]
 
 To avoid anti-aliasing effects gridlines are placed on 
 integer pixel values. This is by default done by extending 
 the scale so gridlines happens to be spaced using an 
 integer number of pixels, and starts on integer pixel value.
 This might extend the scale too much for some logarithmic scales
-and for linear scales where --alt-autoscale is needed.
-Using --no-gridfit disables modification of the scale,
-and just truncates y-coordinates to integer values for bitmap
-formats.
-
-Z<>
+and for linear scales where B<--alt-autoscale> is needed.
+Using B<--no-gridfit> disables modification of the scale.
 
 =item Grid
 
@@ -157,9 +145,9 @@ Z<>
 
 =item X-Axis
 
-B<[-x|--x-grid E<lt>I<GTMC<:>GSTC<:>MTMC<:>MSTC<:>LTMC<:>LSTC<:>LPRC<:>LFM>E<gt>]>
+[B<-x>|B<--x-grid> I<GTM>B<:>I<GST>B<:>I<MTM>B<:>I<MST>B<:>I<LTM>B<:>I<LST>B<:>I<LPR>B<:>I<LFM>]
 
-B<[-x|--x-grid C<none>]>
+[B<-x>|B<--x-grid> B<none>]
 
 The x-axis label is quite complex to configure, if you don't have
 very special needs it is probably best to rely on the autoconfiguration
@@ -190,31 +178,29 @@ This places grid lines every 8 hours, major grid lines and labels
 each day. The labels are placed exactly between two major grid lines
 as they specify the complete day and not just midnight.
 
-Z<>
-
 =item Y-Axis
 
-B<[-y|--y-grid I<E<lt>grid stepE<gt>:E<lt>label factorE<gt>>]>
+[B<-y>|B<--y-grid> I<grid step>B<:>I<label factor>]
 
-B<[-y|--y-grid C<none>]>
+[B<-y>|B<--y-grid> B<none>]
 
 Y-axis grid lines appear at each I<grid step> interval.  Labels are
 placed every I<label factor> lines.  You can specify C<-y none> to
 skip the grid and labels altogether.  The default for this option is
 to automatically select sensible values.
 
-B<[-Y|--alt-y-grid]>
+[B<-Y>|B<--alt-y-grid>]
 
 Place Y grid dynamically based on graph Y range. Algorithm ensures
 that you always have grid, that there are enough but not too many
 grid lines and the grid is metric. That is grid lines are placed
 every 1, 2, 5 or 10 units.  (contributed by Sasha Mikheev)
 
-B<[-o|--logarithmic]>
+[B<-o>|B<--logarithmic>]
 
 Logarithmic y-axis scaling.
 
-B<[-X|--units-exponent E<lt>valueE<gt>]>
+[B<-X>|B<--units-exponent> I<value>]
 
 This sets the 10**exponent scaling of the y-axis values.  Normally
 values will be scaled to the appropriate units (k, M, etc.).  However
@@ -231,25 +217,21 @@ rrdtool autoscaler and grid painter. If rrdtool detects that it is not
 successful in labeling the graph under the given circumstances, it will switch
 to the more robust B<--alt-y-grid> mode.
 
-B<[-L|--units-length E<lt>valueE<gt>]>
+[B<-L>|B<--units-length> I<value>]
 
 How many digits should rrdtool assume the y-axis labels to be ? You may have to use this option
 to make enough space once you start fideling with the y-axis labeling.
 
-Z<>
-
 =back
-
-Z<>
 
 =item Miscellaneous
 
-B<[-z|--lazy]>
+[B<-z>|B<--lazy>]
 
 Only generate the graph, if the current graph is out of date or not
 existent.
 
-B<[-f|--imginfo E<lt>printfstrE<gt>]>
+[B<-f>|B<--imginfo> I<printfstr>]
 
 After the image has been created, the graph function uses printf
 together with this format string to create output similar to the PRINT
@@ -258,9 +240,9 @@ I<filename>, I<xsize> and I<ysize>. In order to generate an B<IMG> tag
 suitable for including the graph into a web page, the command line
 would look like this:
 
-    --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
+ --imginfo '<IMG SRC="/img/%s" WIDTH="%lu" HEIGHT="%lu" ALT="Demo">'
 
-B<[-c|--color I<COLORTAG>#I<rrggbb>[I<aa>]]>
+[B<-c>|B<--color> I<COLORTAG>#I<rrggbb>[I<aa>]]
 
 Override the default colors for the standard elements of the graph. The
 I<COLORTAG> is one of C<BACK> background, C<CANVAS> for the background of
@@ -275,11 +257,11 @@ several times to alter multiple defaults.
 
 A green arrow is made by: C<--color ARROW:00FF00>
 
-B<[--zoom I<factor>]>
+[B<--zoom> I<factor>]
 
 Zoom the graphics by the given amount ... The factor must be E<gt> 0
 
-B<[-n|--font I<FONTTAG>B<:>I<size>B<:>I<font>]>
+[B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>I<font>]
 
 Lets you customize which font to use for the various text elements on the
 RRD graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
@@ -291,47 +273,48 @@ Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
 RRDtool comes with a preset default font. You can set the environment
 variable C<RRD_DEFAULT_FONT> if you want to change this.
 
-B<[-a|--imgformat C<PNG>|C<SVG>|C<EPS>|C<PDF>]>
+Truetype fonts are only supported for PNG output. See below.
 
-Image format for the generated graph.
+[B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>]
 
-B<[-i|--interlaced]>
+Image format for the generated graph. For the vector formats you can choose among the standard Postscript fonts
+Courier-Bold, Courier-BoldOblique, Courier-Oblique, Courier, Helvetica-Bold,
+Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol, Times-Bold, Times-BoldItalic,
+Times-Italic, Times-Roman, ZapfDingbats 
+
+[B<-i>|B<--interlaced>]
 
 If images are interlaced they become visible on browsers more quickly.
 
-B<[-g|--no-legend]>
+[B<-g>|B<--no-legend>]
 
 Suppress generation of legend; only render the graph.
 
-B<[-F|--force-rules-legend]>
+[B<-F>|B<--force-rules-legend>]
 
 Force the generation of HRULE and VRULE legend even if those HRULE or VRULE will not be drawn because out of graph boundaries (mimics behaviour of pre 1.0.42 versions).
 
-B<[-T|--tabwidth E<lt>valueE<gt>]>
+[B<-T>|B<--tabwidth> I<value>]
 
 By default the tab-width is 40 pixels, use this option to change it.
 
-B<[-b|--base E<lt>valueE<gt>]>
+[B<-b>|B<--base> I<value>]
 
 If you are graphing memory (and NOT network traffic) this switch
 should be set to 1024 so that one Kb is 1024 byte. For traffic
 measurement, 1 kb/s is 1000 b/s.
 
-Z<>
-
 =item Data and variables
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>]
+B<DEF:>I<vname>B<=>I<rrdfile>B<:>I<ds-name>B<:>I<CF>[B<:step=>I<step>][B<:start=>I<time>][B<:end=>I<time>]
 
-B<CDEF:>I<E<lt>vnameE<gt>>=I<E<lt>RPN expressionE<gt>>
+B<CDEF:>I<vname>B<=>I<RPN expression>
 
-B<VDEF:>I<E<lt>vnameE<gt>>=I<E<lt>RPN expressionE<gt>>
+B<VDEF:>I<vname>B<=>I<RPN expression>
 
 You need at least one B<DEF> statement to generate anything. The
 other statements are useful but optional.
 See L<rrdgraph_data> and L<rrdgraph_rpn> for exact format.
-
-Z<>
 
 =item Graph and print elements
 
