@@ -73,3 +73,4 @@ txt: $(TXT)
 
 pdf-local: $(PDF)
 
+pod: $(POD)
