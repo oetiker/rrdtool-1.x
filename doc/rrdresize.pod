@@ -2,8 +2,6 @@
 
 rrdresize - alters the size of an RRA and creates new .rrd file
 
-=for html <div align="right"><a href="rrdresize.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<resize> I<filename> I<rra-num>  B<GROW>I<|>B<SHRINK> I<rows>

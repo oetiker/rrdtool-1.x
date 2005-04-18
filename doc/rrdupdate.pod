@@ -2,8 +2,6 @@
 
 rrdupdate - Store a new set of values into the RRD
 
-=for html <div align="right"><a href="rrdupdate.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> {B<update> | B<updatev>} I<filename> 

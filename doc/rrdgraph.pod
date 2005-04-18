@@ -1,11 +1,5 @@
 =head1 NAME
 
-=cut
-
-WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
-
-=pod
-
 rrdgraph - Round Robin Database tool grapher functions
 
 =head1 SYNOPSIS
@@ -174,13 +168,13 @@ placed right under the corresponding line (useful for hours, dates
 etcetera).  If you specify a number of seconds here the label is
 centered in this interval (useful for Monday, January etcetera).
 
-Example: C<--x-grid MINUTE:10:HOUR:1:HOUR:4:0:%X>
+ --x-grid MINUTE:10:HOUR:1:HOUR:4:0:%X
 
 This places grid lines every 10 minutes, major grid lines every hour
 and labels every 4 hours. The labels are placed under the major grid
 lines as they specify exactly that time.
 
-Example: C<--x-grid HOUR:8:DAY:1:DAY:1:0:%A>
+ --x-grid HOUR:8:DAY:1:DAY:1:0:%A
 
 This places grid lines every 8 hours, major grid lines and labels
 each day. The labels are placed exactly between two major grid lines
@@ -329,6 +323,8 @@ See L<rrdgraph_data> and L<rrdgraph_rpn> for exact format.
 You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.
 See L<rrdgraph_graph> for exact format.
+
+=back
 
 =head1 SEE ALSO
 

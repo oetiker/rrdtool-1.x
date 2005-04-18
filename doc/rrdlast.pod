@@ -2,8 +2,6 @@
 
 rrdlast - Return the date of the last data sample in an RRD
 
-=for html <div align="right"><a href="rrdlast.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<last> I<filename>

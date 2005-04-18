@@ -2,10 +2,6 @@
 
 rrdtutorial - Alex van den Bogaerdt's RRDtool tutorial
 
-=for html <div align="right">Go <a href="rrdtutorial.es.html">Spanish</a></div> 
-
-=for html <div align="right"><a href="rrdtutorial.pdf">PDF</a> version.</div> 
-
 =head1 DESCRIPTION
 
 RRDtool is written by Tobias Oetiker <oetiker@ee.ethz.ch> with

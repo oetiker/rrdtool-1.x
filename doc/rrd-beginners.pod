@@ -56,7 +56,7 @@ imperative to use scripts that runs at regular intervals to ensure a constant
 data flow to update the RRDtool database.
 
 =back
-  
+
 RRDtool has a lot to do with time. With every data update, it also needs to
 know the time when that update occurred. Time is always expressed in
 seconds passed since epoch (01-01-1971). RRDtool can be installed on Unix as
@@ -64,7 +64,7 @@ well as Windows. It has command set to carry out various
 operations on RRD database. This command set can be accessed from the command line,
 and from Shell or Perl scripts. The scripts
 act as wrappers for accessing data stored in RRDtool database.
-  
+
 =head2 Understanding by an example
 
 The structure of an RRD database is different than other linear databases.
@@ -83,11 +83,11 @@ terminologies related to RRDtool databases.
 The structure of a database and the terminology associated with it can be
 best explained with an example.
 
- rrdtool create target.rrd
-         --start 1023654125
-         --step 300
-         DS:mem:GAUGE:600:0:671744
-         RRA:AVERAGE:0.5:12:24
+ rrdtool create target.rrd \
+         --start 1023654125 \
+         --step 300 \
+         DS:mem:GAUGE:600:0:671744 \
+         RRA:AVERAGE:0.5:12:24 \
          RRA:AVERAGE:0.5:288:31
 
 This example creates a database named F<target.rrd>. Start time (1023654125) is
@@ -248,8 +248,8 @@ scripts are as shown below:
  use lib qw( /usr/local/rrdtool-1.0.41/lib/perl ../lib/perl );
  use RRDs;
  my $cur_time = time();                # setting current time
- my $end_time = $cur_time - 86400;     # setting end time to 24 hours behind current time
- my $start_time = $end_time - 2592000; # setting start time to 30 days from end time
+ my $end_time = $cur_time - 86400;     # setting end time 24 hours ago
+ my $start_time = $end_time - 2592000; # setting start 30 days in the future
 
  #fetching average values from RRD database between start and end time
  my ($start,$step,$ds_names,$data) = 
@@ -296,13 +296,13 @@ scripts are as shown below:
              "--rigid",                  \
              "--base=1024",              \
              "DEF:tot_mem=target.rrd:mem:AVERAGE", \
-             "CDEF:correct_tot_mem=tot_mem,0,671744,LIMIT,UN,0,tot_mem,IF,1024,/",\
+             "CDEF:tot_mem_cor=tot_mem,0,671744,LIMIT,UN,0,tot_mem,IF,1024,/",\
              "CDEF:machine_mem=tot_mem,656,+,tot_mem,-",\
              "COMMENT:Memory Consumption between $start_time",\
              "COMMENT:    and $end_time                     ",\
              "HRULE:656#000000:Maximum Available Memory - 656 MB",\
              "AREA:machine_mem#CCFFFF:Memory Unused",   \
-             "AREA:correct_tot_mem#6699CC:Total memory consumed in MB");
+             "AREA:tot_mem_cor#6699CC:Total memory consumed in MB");
  my $err=RRDs::error;
  if ($err) {print "problem generating the graph: $err\n";}
  #printing the output

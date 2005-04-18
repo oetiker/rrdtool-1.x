@@ -2,8 +2,6 @@
 
 rrdxport - Export data in XML format based on data from one or several RRD
 
-=for html <div align="right"><a href="rrdxport.pdf">PDF</a> version.</div> 
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<xport> 

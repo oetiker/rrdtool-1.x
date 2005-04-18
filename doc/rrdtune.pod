@@ -2,8 +2,6 @@
 
 rrdtune - Modify some basic properties of a Round Robin Database
 
-=for html <div align="right"><a href="rrdtune.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<tune> I<filename> 
