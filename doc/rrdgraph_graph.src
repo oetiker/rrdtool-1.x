@@ -10,7 +10,7 @@ rrdgraph_graph - rrdtool graph command reference
 
 =head1 SYNOPSIS
 
-B<PRINT>B<:>I<vname>B<B<:>>I<format>
+B<PRINT>B<:>I<vname>B<:>I<format>
 
 B<GPRINT>B<:>I<vname>B<:>I<format>
 
