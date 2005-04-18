@@ -2,8 +2,6 @@
 
 rrdfetch - Fetch data from an RRD.
 
-=for html <div align="right"><a href="rrdfetch.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<fetch> I<filename> I<CF> 
@@ -99,13 +97,16 @@ So, if time now is called "t",
 
 In e.g. bash this could look as:
 
- TIME=$(date +%s); RRDRES=900; rrdtool fetch subdata.rrd AVERAGE -r $RRDRES \
- -e $(echo $(($TIME/$RRDRES*$RRDRES))) -s e-1h
+ TIME=$(date +%s)
+ RRDRES=900
+ rrdtool fetch subdata.rrd AVERAGE -r $RRDRES \
+    -e $(echo $(($TIME/$RRDRES*$RRDRES))) -s e-1h
 
 Or in Perl:
 
- perl -e '$ctime = time; $rrdres = 900; system "rrdtool fetch subdata.rrd AVERAGE \
- -r $rrdres -e @{[int($ctime/$rrdres)*$rrdres]} -s e-1h"'
+ perl -e '$ctime = time; $rrdres = 900; \
+          system "rrdtool fetch subdata.rrd AVERAGE \
+                  -r $rrdres -e @{[int($ctime/$rrdres)*$rrdres]} -s e-1h"'
 
 
 =head2 AT-STYLE TIME SPECIFICATION
@@ -253,4 +254,3 @@ I<19970703 12:45> -- 12:45  July 3th, 1997
 =head1 AUTHOR
 
 Tobias Oetiker <oetiker@ee.ethz.ch>
-

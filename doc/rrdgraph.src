@@ -8,8 +8,6 @@ WARNING: DO NOT EDIT THE POD FILES. THEY ARE AUTO-GENERATED
 
 rrdgraph - Round Robin Database tool grapher functions
 
-=include name
-
 =head1 SYNOPSIS
 
 B<rrdtool graph> I<filename>
@@ -332,6 +330,18 @@ You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.
 See L<rrdgraph_graph> for exact format.
 
-=back
+=head1 SEE ALSO
 
-=include see_also
+L<rrdgraph> gives an overview of how B<rrdtool graph> works.
+L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail,
+L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements,
+L<rrdgraph_graph> page describes all of the graph and print functions.
+
+Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
+
+=head1 AUTHOR
+
+Program by Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+
+This manual page by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt>
+

@@ -1,8 +1,6 @@
 =head1 NAME
 
-rrdtool - round robin database tool
-
-=for html <div align="right"><a href="rrdtool.pdf">PDF</a> version.</div>
+rrdtool - Round Robin Database Tool
 
 =head1 SYNOPSIS
 

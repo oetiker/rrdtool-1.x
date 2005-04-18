@@ -2,8 +2,6 @@
 
 rrdcreate - Set up a new Round Robin Database
 
-=for html <div align="right"><a href="rrdcreate.pdf">PDF</a> version.</div>
-
 =head1 SYNOPSIS
 
 B<rrdtool> B<create> I<filename> 
@@ -188,8 +186,6 @@ I<rows> defines how many generations of data values are kept in an B<RRA>.
 =back
 
 =head1 Aberrant Behavior Detection with Holt-Winters Forecasting
-
-by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
 
 In addition to the aggregate functions, there are a set of specialized
 functions that enable B<RRDtool> to provide data smoothing (via the
@@ -424,9 +420,12 @@ days on the x axis and one bar for each day).
 
 =head1 EXAMPLE
 
-C<rrdtool create temperature.rrd --step 300 DS:temp:GAUGE:600:-273:5000
-RRA:AVERAGE:0.5:1:1200 RRA:MIN:0.5:12:2400 RRA:MAX:0.5:12:2400
-RRA:AVERAGE:0.5:12:2400>
+ rrdtool create temperature.rrd --step 300 \
+  DS:temp:GAUGE:600:-273:5000 \
+  RRA:AVERAGE:0.5:1:1200 \
+  RRA:MIN:0.5:12:2400 \
+  RRA:MAX:0.5:12:2400 \
+  RRA:AVERAGE:0.5:12:2400
 
 This sets up an B<RRD> called F<temperature.rrd> which accepts one
 temperature value every 300 seconds. If no new data is supplied for
@@ -442,10 +441,10 @@ average temperature, respectively.
 
 =head1 EXAMPLE 2
 
-C<rrdtool create monitor.rrd --step 300 
-DS:ifOutOctets:COUNTER:1800:0:4294967295
-RRA:AVERAGE:0.5:1:2016
-RRA:HWPREDICT:1440:0.1:0.0035:288>
+ rrdtool create monitor.rrd --step 300        \ 
+   DS:ifOutOctets:COUNTER:1800:0:4294967295   \ 
+   RRA:AVERAGE:0.5:1:2016                     \
+   RRA:HWPREDICT:1440:0.1:0.0035:288 
 
 This example is a monitor of a router interface. The first B<RRA> tracks the
 traffic flow in octets; the second B<RRA> generates the specialized
@@ -468,25 +467,25 @@ the FAILURES B<RRA>.
 The same RRD file and B<RRAs> are created with the following command, which explicitly
 creates all specialized function B<RRAs>.
 
-C<rrdtool create monitor.rrd --step 300 
-DS:ifOutOctets:COUNTER:1800:0:4294967295
-RRA:AVERAGE:0.5:1:2016
-RRA:HWPREDICT:1440:0.1:0.0035:288:3
-RRA:SEASONAL:288:0.1:2
-RRA:DEVPREDICT:1440:5
-RRA:DEVSEASONAL:288:0.1:2
-RRA:FAILURES:288:7:9:5>
+ rrdtool create monitor.rrd --step 300 \ 
+   DS:ifOutOctets:COUNTER:1800:0:4294967295 \ 
+   RRA:AVERAGE:0.5:1:2016 \ 
+   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \ 
+   RRA:SEASONAL:288:0.1:2 \ 
+   RRA:DEVPREDICT:1440:5 \ 
+   RRA:DEVSEASONAL:288:0.1:2 \ 
+   RRA:FAILURES:288:7:9:5 
 
 Of course, explicit creation need not replicate implicit create, a number of arguments 
 could be changed.
 
 =head1 EXAMPLE 3
 
-C<rrdtool create proxy.rrd --step 300 
-DS:TotalRequests:DERIVE:1800:0:U
-DS:AccumDuration:DERIVE:1800:0:U
-DS:AvgReqDuration:COMPUTE:AccumDuration,TotalRequests,0,EQ,1,TotalRequests,IF,/
-RRA:AVERAGE:0.5:1:2016>
+ rrdtool create proxy.rrd --step 300 \ 
+   DS:Total:DERIVE:1800:0:U  \ 
+   DS:Duration:DERIVE:1800:0:U  \ 
+   DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \ 
+   RRA:AVERAGE:0.5:1:2016 
 
 This example is monitoring the average request duration during each 300 sec 
 interval for requests processed by a web proxy during the interval.
