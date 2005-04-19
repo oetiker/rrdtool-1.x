@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrddump - dump the contents of an RRD to XML format
+rrddump - Dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 

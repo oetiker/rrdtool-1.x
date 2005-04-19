@@ -1,6 +1,6 @@
 =head1 NAME  
 
-rrdgraph_graph - rrdtool graph command reference
+rrdgraph_graph - Command reference
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdinfo - extract header information from an RRD
+rrdinfo - Extract header information from an RRD
 
 =head1 SYNOPSIS
 

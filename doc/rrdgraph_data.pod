@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdgraph_data - preparing data for graphing in rrdtool graph
+rrdgraph_data - Preparing data for graphing
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdresize - alters the size of an RRA and creates new .rrd file
+rrdresize - Alter the size of an RRA
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdgraph - Round Robin Database tool grapher functions
+rrdgraph - About drawing pretty graphs with rrdtool
 
 =head1 SYNOPSIS
 
