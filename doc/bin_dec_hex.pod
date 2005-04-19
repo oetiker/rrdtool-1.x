@@ -1,8 +1,6 @@
 =head1 NAME
 
-bin_dec_hex - How Binary, Decimal, Hexadecimal
-
-=for html <div align="right"><a href="bin_dec_hex.pdf">PDF</a> version.</div>
+bin_dec_hex - About Binary, Decimal, Hexadecimal
 
 =head1 DESCRIPTION
 
