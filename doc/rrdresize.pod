@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdresize - Alter the size of an RRA
+rrdresize - alters the size of an RRA and creates a new .rrd file
 
 =head1 SYNOPSIS
 
@@ -44,7 +44,7 @@ B<resize.rrd> in the current directory.  B<The original .rrd file is not
 modified>.
 
 It is possible to abuse this tool and get strange results
-by first removing some rows and then reinsert the same amount (effectively
+by first removing some rows and then reinserting the same amount (effectively
 clearing them to be Unknown). You may thus end up with unknown data in one
 RRA while at the same timestamp this data is available in another RRA.
 

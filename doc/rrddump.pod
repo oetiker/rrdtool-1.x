@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrddump - Dump the contents of an RRD to XML format
+rrddump - dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 
@@ -10,8 +10,8 @@ B<rrdtool> B<dump> I<filename.rrd> E<gt> I<filename.xml>
 
 The B<dump> function prints the contents of an B<RRD> in human
 readable (?) XML format. This format can be read by rrdrestore.
-Together they allow you to transfer your files from one architecture
-to another as well as manipulating the contents of an B<RRD> file in a
+Together they allow you to transfer your files from one computer architecture
+to another as well to manipulate the contents of an B<RRD> file in a
 somewhat more convenient manner.
 
 
@@ -37,11 +37,11 @@ to export the data to XML format.
 
 =item 2. 
 
-Transfer the XML dump to the target system
+Transfer the XML dump to the target system.
 
 =item 3.
 
-Run B<rrdtool> B<restore> to create a new RRD from the XML dump.  See
+Run B<rrdtool> B<restore> to create a new RRD from the XML dump. See
 B<rrdrestore> for details.
 
 =back
