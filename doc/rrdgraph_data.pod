@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdgraph_data - Preparing data for graphing
+rrdgraph_data - preparing data for graphing in rrdtool graph
 
 =head1 SYNOPSIS
 
@@ -12,11 +12,12 @@ B<CDEF>:I<vname>=I<RPN expression>
 
 =head1 DESCRIPTION
 
-These three instructions collect the data out of the B<RRD> files,
-optionally altering it (think of a bytes to bits conversion) and
-if desired you can define variables containing useful information
-such as maximum, minimum etcetera. Two of the instructions use
-a language called B<RPN> which is described in its own manual page.
+These three instructions extract data values out of the B<RRD> files,
+optionally altering them (think, for example, of a bytes to bits
+conversion). If so desired, you can also define variables containing
+useful information such as maximum, minimum etcetera. Two of the
+instructions use a language called B<RPN> which is described in its
+own manual page.
 
 =head1 DEF
 
@@ -32,17 +33,19 @@ The time span of this data is the same as for the graph by default,
 you can override this by specifying B<start and end>.  Remember to
 escape colons in the time specification!
 
-If the resolution of the data is higher than the resolution of off
-graph, the data will be further consolidated.  This may result in
+If the resolution of the data is higher than the resolution of the
+graph, the data will be further consolidated. This may result in
 a graph that spans slightly more time than requested.
 Ideally each point in the graph should correspond with one B<CDP>
 from an B<RRA>.  For instance, if your B<RRD> has an B<RRA> with
 a resolution of 1800 seconds per B<CDP>, you should create an
 image with width 400 and time span 400*1800 seconds (use appropriate
 start and end times, such as C<--start end-8days8hours>).
+=for comment
+XXX is the above start/end syntax correct? Fritz
 
 If consolidation needs to be done, the B<CF> of the B<RRA> specified in the
-B<DEF> itself will be used to reduce the data density.  This behaviour can
+B<DEF> itself will be used to reduce the data density. This behaviour can
 be changed using C<:reduce=I<E<lt>B<CF>E<gt>>>.  This optional parameter
 specifies the B<CF> to use during the data reduction phase.
 
@@ -82,8 +85,8 @@ Example: C<CDEF:mydatabits=mydata,8,*>
 =head1 SEE ALSO
 
 L<rrdgraph> gives an overview of how B<rrdtool graph> works.
-L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail,
-L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements,
+L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail.
+L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements.
 L<rrdgraph_graph> page describes all of the graph and print functions.
 
 Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.

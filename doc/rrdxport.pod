@@ -15,7 +15,7 @@ S<[B<XPORT>B<:>I<vname>[B<:>I<legend>]]>
 
 =head1 DESCRIPTION
 
-The B<xport> functions main purpose is to write XML formatted
+The B<xport> function's main purpose is to write an XML formatted
 representation of the data stored in one or several B<RRD>s. It
 can also extract numerical reports. 
 
@@ -65,7 +65,7 @@ referenced by I<vname> are printed. Optionally add a legend.
 
 =head1 Output format
 
-The output is enclosed in a B<xport> element and contains two
+The output is enclosed in an B<xport> element and contains two
 blocks. The first block is enclosed by a B<meta> element and
 contains some meta data. The second block is enclosed by a 
 B<data> element and contains the data rows.
@@ -80,7 +80,7 @@ Let's assume that the I<xport> command looks like this:
           XPORT:xx:"out bytes" \
           XPORT:aa:"in and out bits"
 
-The resulting meta data section (the values will depend on the
+The resulting meta data section is (the values will depend on the
 RRD characteristics):
  
   <meta>
@@ -95,7 +95,7 @@ RRD characteristics):
     </legend>
   </meta>
   
-The resulting data section:
+The resulting data section is:
 
   <data>
     <row><t>1020611700</t><v>3.4000000000e+00</v><v>5.4400000000e+01</v></row>

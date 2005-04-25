@@ -12,9 +12,9 @@ S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
 
 =head1 DESCRIPTION
 
-The B<update> function feeds new data values into an B<RRD>. The
-data gets time aligned according to the properties of the B<RRD> to
-which the data is written.
+The B<update> function feeds new data values into an B<RRD>. The data
+is time aligned (interpolated) according to the properties of the
+B<RRD> to which the data is written.
 
 =over 8
 
@@ -35,11 +35,12 @@ The name of the B<RRD> you want to update.
 
 =item B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...
 
-by default, the B<update> function expects the data input in the order
-the data sources are defined in the RRD, excluding any COMPUTE data sources 
-(i.e. if the third data source B<DST> is COMPUTE, the third input value
-will be mapped to the fourth data source in the B<RRD>). This is not very
-error resistant, as you might be sending the wrong data into a RRD.
+By default, the B<update> function expects its data input in the order
+the data sources are defined in the RRD, excluding any COMPUTE data
+sources (i.e. if the third data source B<DST> is COMPUTE, the third
+input value will be mapped to the fourth data source in the B<RRD> and
+so on). This is not very error resistant, as you might be sending the
+wrong data into an RRD.
 
 The template switch allows you to specify which data sources you are
 going to update and in which order. If the data sources specified in
@@ -50,32 +51,34 @@ While it appears possible with the template switch to update data sources
 asynchronously, B<RRDtool> implicitly assigns non-COMPUTE data sources missing
 from the template the I<*UNKNOWN*> value. 
 
-Do not specify a value for a COMPUTE B<DST> in the B<update> function. If
-this is done accidentally (and this can only be done using the template switch),
-B<RRDtool> will ignore the value specified for the COMPUTE B<DST>.
+Do not specify a value for a COMPUTE B<DST> in the B<update>
+function. If this is done accidentally (and this can only be done
+using the template switch), B<RRDtool> will ignore the value specified
+for the COMPUTE B<DST>.
 
 =item B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]
 
-The data used for updating the RRD was acquired at a certain time. This
-time can either be defined in seconds since 1970-01-01. Or by using the
-letter 'N' the update time is set to be the current time. Negative time
-values are subtracted from the current time.
-An AT_STYLE TIME SPECIFICATION (see the I<rrdfetch> documentation) may
-also be used by delimiting the end of the time specification with the '@' character
-instead of a ':'.
-Getting the timing right to the second is especially
-important when you are working with data-sources of type B<COUNTER>,
-B<DERIVE> or B<ABSOLUTE>. 
+The data used for updating the RRD was acquired at a certain
+time. This time can either be defined in seconds since 1970-01-01 or
+by using the letter 'N', in which case the update time is set to be
+the current time. Negative time values are subtracted from the current
+time. An AT_STYLE TIME SPECIFICATION (see the I<rrdfetch>
+documentation) may also be used by delimiting the end of the time
+specification with the '@' character instead of a ':'. Getting the
+timing right to the second is especially important when you are
+working with data-sources of type B<COUNTER>, B<DERIVE> or
+B<ABSOLUTE>.
 
-The remaining elements of the argument are DS updates. The order of this list is
-the same as the order the data sources were defined in the RRA.
-If there is no data for a certain data-source, the letter 
-B<U> (e.g., N:0.1:U:1) can be defined.
+The remaining elements of the argument are DS updates. The order of
+this list is the same as the order the data sources were defined in
+the RRA. If there is no data for a certain data-source, the letter
+B<U> (e.g., N:0.1:U:1) can be specified.
 
-The format of the value acquired from the data source is dependent of the
-data source type chosen. Normally it will be numeric, but the data acquisition
-modules may impose their very own parsing of this parameter as long as the colon
-(B<:>) remains the data source value separator.
+The format of the value acquired from the data source is dependent on
+the data source type chosen. Normally it will be numeric, but the data
+acquisition modules may impose their very own parsing of this
+parameter as long as the colon (B<:>) remains the data source value
+separator.
 
 =back
 
@@ -90,7 +93,7 @@ C<rrdtool update demo2.rrd 887457267:U 887457521:22 887457903:2.7>
 
 Update the database file demo2.rrd which expects data from a single
 data-source, three times. First with an I<*UNKNOWN*> value then with two
-normal readings. The update interval seems to be around 300 seconds.
+regular readings. The update interval seems to be around 300 seconds.
 
 =head1 AUTHOR
 

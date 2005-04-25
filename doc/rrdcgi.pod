@@ -14,16 +14,15 @@ E<lt>RRD:: tags. B<rrdcgi> will interpret and act according to these tags.
 In the end it will printout a web page including the necessary CGI headers.
 
 B<rrdcgi> parses the contents of the template in 3 steps. In each step it looks
-only for a subset of tags. This allows to nest tags. 
+only for a subset of tags. This allows nesting of tags. 
 
-The argument parser uses the same semantics as you are used from your c shell.
+The argument parser uses the same semantics as you are used from your C-shell.
 
 =over 8
 
-
 =item B<--filter>
 
-Assume that rrdcgi is being run as a filter and not as a cgi.
+Assume that rrdcgi is run as a filter and not as a cgi.
 
 =back
 
@@ -39,12 +38,12 @@ Inserts the CGI variable of the given name.
 
 Inserts the CGI variable of the given name but quotes it, ready for
 use as an argument in another RRD:: tag. So even when there are spaces in the
-value of the CGI variable it will still be considered as one argument.
+value of the CGI variable it will still be considered to be one argument.
 
 =item RRD::CV::PATH I<name>
 
 Inserts the CGI variable of the given name, quotes it and makes sure
-the it starts neither with a '/' nor contains '..'. This is to make
+it starts neither with a '/' nor contains '..'. This is to make
 sure that no problematic pathnames can be introduced through the 
 CGI interface.
 
@@ -55,18 +54,18 @@ Get the value of an environment variable.
  <RRD::GETENV REMOTE_USER>
 
 might give you the name of the remote user given you are using
-some sort of access control on the directory
+some sort of access control on the directory.
 
 
 =item RRD::GOODFOR I<seconds>
 
 Specify the number of seconds this page should remain valid. This will prompt
 the rrdcgi to output a Last-Modified, an Expire and if the number of
-seconds is I<negative> a Refresh headers.
+seconds is I<negative> a Refresh header.
 
 =item RRD::INCLUDE I<filename>
 
-Include the contents of the given file into the page returned from the cgi
+Include the contents of the specified file into the page returned from the cgi.
 
 =item RRD::SETENV I<variable> I<value>
 
@@ -80,11 +79,11 @@ values permitted to TZ depend on your OS.
 
 =item RRD::SETVAR I<variable> I<value>
 
-Analog to SETENV but for local variables
+Analog to SETENV but for local variables.
 
 =item RRD::GETVAR I<variable> 
 
-Analog to GETENV but for local variables
+Analog to GETENV but for local variables.
 
 =item RRD::TIME::LAST I<rrd-file> I<strftime-format>
 
@@ -96,8 +95,9 @@ time is I<strftime>-formatted with the string specified in the second argument.
 This gets replaced by the current time of day. The time is
 I<strftime>-formatted with the string specified in the argument.
 
-Note that if you return : from your strftime format you may have to escape
-them using \ if the time is to be used as an argument to a GRAPH command. 
+Note that if you return : (colons) from your strftime format you may
+have to escape them using \ if the time is to be used as an argument
+to a GRAPH command.
 
 =item RRD::TIME::STRFTIME I<START|END> I<start-spec> I<end-spec> I<strftime-format>
 
@@ -108,12 +108,16 @@ must be supplied as either could be relative to the other.  This is intended
 to allow pretty titles on graphs with times that are easier for non RRDtool
 folks to figure out than "-2weeks".
 
-Note that if you return : from your strftime format you may have to escape
-them using \ if the time is to be used as an argument to a GRAPH command.
+Note that again, if you return : (colon) from your strftime format,
+you may have to escape them using \ if the time is to be used as an
+argument to a GRAPH command.
 
 =item RRD::GRAPH I<rrdgraph arguments>
 
-This tag creates the RRD graph defined in its argument and then gets
+=for comment
+XXX Shouldn't it be IMAGE-tag below? Fritz
+
+This tag creates the RRD graph defined by its argument and then is
 replaced by an appropriate E<lt>IMGE<gt> tag referring to the graph.
 The B<--lazy> option in RRD graph can be used to make sure that graphs
 are only regenerated when they are out of date. The arguments
@@ -161,7 +165,7 @@ The example below creates a web pages with a single RRD graph.
 
 This script is slightly more elaborate, it allows you to run it from 
 a form which sets RRD_NAME. RRD_NAME is then used to select which RRD
-you want to use a source for your graph.
+you want to use as source for your graph.
 
  #!/usr/local/bin/rrdcgi
  <HTML>

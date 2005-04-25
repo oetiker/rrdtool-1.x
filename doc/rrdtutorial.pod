@@ -138,7 +138,7 @@ Most discussions about networking talk about bits per second so lets
 get used to that right away. Assume a byte is eight bits and start to
 think in bits not bytes. The counter, however, still counts bytes!
 In the SNMP world most of the counters are 32 bits. That means they are
-counting from 0 to 4294967295. We will use these values in the examples.
+counting from 0 to 4'294'967'295. We will use these values in the examples.
 The device, when asked, returns the current value of the counter. We
 know the time that has passes since we last asked so we now know how
 many bytes have been transfered ***on average*** per second. This is
@@ -172,21 +172,21 @@ most into miles per hour by dividing km by 1.6 (close enough).
 I will use the following abbreviations:
 
  M:    meter
- KM:   kilometer (= 1000 meters).
+ KM:   kilometer (= 1'000 meters).
  H:    hour
  S:    second
  KM/H: kilometers per hour
  M/S:  meters per second
 
 You are driving a car. At 12:05 you read the counter in the dashboard
-and it tells you that the car has moved 12345 KM until that moment.
-At 12:10 you look again, it reads 12357 KM. This means you have
+and it tells you that the car has moved 12'345 KM until that moment.
+At 12:10 you look again, it reads 12'357 KM. This means you have
 traveled 12 KM in five minutes. A scientist would translate that
 into meters per second and this makes a nice comparison toward the
 problem of (bytes per five minutes) versus (bits per second).
 
-We traveled 12 kilometers which is 12000 meters. We did that in five
-minutes or 300 seconds. Our speed is 12000M / 300S or 40 M/S.
+We traveled 12 kilometers which is 12'000 meters. We did that in five
+minutes or 300 seconds. Our speed is 12'000M / 300S or 40 M/S.
 
 We could also calculate the speed in KM/H: 12 times 5 minutes
 is an hour, so we have to multiply 12 KM by 12 to get 144 KM/H.
@@ -199,7 +199,7 @@ later on in this tutorial that explains this.
 
 I hope you understand that there is no difference in calculating M/S or
 bps; only the way we collect the data is different. Even the K from kilo
-is the same as in networking terms k also means 1000.
+is the same as in networking terms k also means 1'000.
 
 We will now create a database where we can keep all these interesting
 numbers. The method used to start the program may differ slightly from
@@ -221,7 +221,7 @@ and skip all of the '\' characters.
 
 We created the round robin database called test (test.rrd) which
 starts at noon the day I started writing this document, 7th of March,
-1999 (this date translates to 920804400 seconds as explained
+1999 (this date translates to 920'804'400 seconds as explained
 below). Our database holds one data source (DS) named "speed" that
 represents a counter. This counter is read every five minutes
 (default).  In the same database two round robin archives (RRAs) are
@@ -372,14 +372,14 @@ and 13:00 would be candidates) so they are skipped.
 
 The vertical axis displays the range we entered. We provided
 kilometers and when divided by 300 seconds, we get very small
-numbers. To be exact, the first value was 12 (12357-12345) and divided
+numbers. To be exact, the first value was 12 (12'357-12'345) and divided
 by 300 this makes 0.04, which is displayed by RRDtool as "40 m"
-meaning "40/1000". The "m" (milli) has nothing to do with meters,
+meaning "40/1'000". The "m" (milli) has nothing to do with meters,
 kilometers or millimeters! RRDtool doesn't know about the physical
 units of our data, it just works with dimensionless numbers.
 
 If we had measured our distances in meters, this would have been
-(12357000-12345000)/300 = 12000/300 = 40. 
+(12'357'000-12'345'000)/300 = 12'000/300 = 40. 
 
 As most people have a better feel for numbers in this range, we'll
 correct that. We could recreate our database and store the correct
@@ -410,20 +410,20 @@ those". Don't bother with RPN yet, it will be explained later on in
 more detail. Also, you may want to read my tutorial on CDEFs and Steve
 Rader's tutorial on RPN. But first finish this tutorial.
 
-Hang on! If we can multiply values with 1000, it should also be possible
+Hang on! If we can multiply values with 1'000, it should also be possible
 to display kilometers per hour from the same data!
 
 =for comment
 XXX strange format below: -*- ; Fritz
 
 To change a value that is measured in meters per second:
- -*- Calculate meters per hour:     value * 3600
- -*- Calculate kilometers per hour: value / 1000
- -*- Together this makes:           value * (3600/1000) or value * 3.6
+ -*- Calculate meters per hour:     value * 3'600
+ -*- Calculate kilometers per hour: value / 1'000
+ -*- Together this makes:           value * (3'600/1'000) or value * 3.6
 
 In our example database we made a mistake and we need to compensate for
-this by multiplying with 1000. Applying that correction:
- -*- value * 3.6  *1000 == value * 3600
+this by multiplying with 1'000. Applying that correction:
+ -*- value * 3.6  * 1'000 == value * 3'600
 
 Now let's create this PNG, and add some more magic ...
 
@@ -719,8 +719,8 @@ Then, after collecting data for a day, try to create an image using:
             LINE1:outoctets#0000FF:"Out traffic"
 
 This should produce a picture with one day worth of traffic.
-One day is 24 hours of 60 minutes of 60 seconds: 24*60*60=86400, we
-start at now minus 86400 seconds. We define (with DEFs) inoctets and
+One day is 24 hours of 60 minutes of 60 seconds: 24*60*60=86'400, we
+start at now minus 86'400 seconds. We define (with DEFs) inoctets and
 outoctets as the average values from the database myrouter.rrd and draw
 an area for the "in" traffic and a line for the "out" traffic.
 
@@ -849,7 +849,7 @@ The two additional types are DERIVE and ABSOLUTE. Absolute can be used like
 counter with one difference: RRDtool assumes the counter is reset when
 it's read. That is: its delta is known without calculation by RRDtool
 whereas RRDtool needs to calculate it for the counter type.
-Example: our first example (12345, 12357, 12363, 12363) would read:
+Example: our first example (12'345, 12'357, 12'363, 12'363) would read:
 unknown, 12, 6, 0. The rest of the calculations stay the same.
 The other one, derive, is like counter. Unlike counter, it can also
 decrease so it can have a negative delta. Again, the rest of the
@@ -899,7 +899,7 @@ what we put in: a sort of a wave.
 =item *
 
 Line C is of type DERIVE. It should be a counter that can decrease. It does
-so between 2400 and 0, with 1800 in-between.
+so between 2'400 and 0, with 1'800 in-between.
 
 =item *
 

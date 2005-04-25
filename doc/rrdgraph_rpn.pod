@@ -12,10 +12,10 @@ If you have ever used a traditional HP calculator you already know
 B<RPN>. The idea behind B<RPN> is that you have a stack and push
 your data onto this stack. Whenever you execute an operation, it
 takes as many elements from the stack as needed. Pushing is done
-implicit so whenever you specify a number or a variable, it gets
-pushed automatically.
+implicitly, so whenever you specify a number or a variable, it gets
+pushed onto the stack automatically.
 
-At the end of the calculation there should be one and exactly one
+At the end of the calculation there should be one and only one
 value left on the stack.  This is the outcome of the function and
 this is what is put into the I<vname>.  For B<CDEF> instructions,
 the stack is processed for each data point on the graph. B<VDEF>
@@ -37,7 +37,7 @@ fact that it is always clear in which order to process the input.
 For expressions like C<a = b + 3 * 5> you need to multiply 3 with
 5 first before you add I<b> to get I<a>. However, with parentheses
 you could change this order: C<a = (b + 3) * 5>. In B<RPN>, you
-would do C<a = b, 3, +, 5, *> and need no parentheses.
+would do C<a = b, 3, +, 5, *> without the need for parentheses.
 
 =head1 OPERATORS
 
@@ -58,10 +58,10 @@ to I<positive or negative infinity>. Returns 1 for true or 0 for false.
 
 B<IF>
 
-Pops three elements from the stack.  If the last element is 0 (false),
-the first value is pushed back onto the stack, otherwise the second
-popped value is pushed back. This does, indeed, mean that any value
-other than 0 is considered to be true.
+Pops three elements from the stack.  If the element popped last is 0
+(false), the value popped first is pushed back onto the stack,
+otherwise the value popped second is pushed back. This does, indeed,
+mean that any value other than 0 is considered to be true.
 
 Example: C<A,B,C,IF> should be read as C<if (A) then (B) else (C)>
 
@@ -71,9 +71,13 @@ Z<>
 
 B<MIN, MAX> 
 
-Pops two elements from the stack and returns the lesser or larger.
-The two numbers shouldn't be I<infinite> or I<unknown>, if they are
-that value is pushed back onto the stack as the result.
+Pops two elements from the stack and returns the smaller or larger,
+respectively.  The two numbers shouldn't be I<infinite> or I<unknown>,
+if they are that value is pushed back onto the stack as the result.
+
+= for comment
+XXX What happens above if both a infinite and undefined value are on the 
+XXX stack? Fritz
 
 B<LIMIT>
 
@@ -99,15 +103,16 @@ Add, subtract, multiply, divide, modulo
 
 B<SIN, COS, LOG, EXP, SQRT>
 
-Sine, cosine (input in radians), log, exp (natural logarithm), square root
+Sine and cosine (input in radians), log and exp (natural logarithm),
+square root.
 
 B<ATAN>
 
-Arctangent. Output in radians.
+Arctangent (output in radians).
 
 B<FLOOR, CEIL>
 
-Round down,up to the nearest integer
+Round down or up to the nearest integer.
 
 Z<>
 
@@ -120,7 +125,7 @@ Pop one element from the stack.  This is the I<count> of items to be sorted
 (or reversed) in place on the stack.
 
 Example: C<CDEF:x=v1,v2,v3,v4,v5,v6,6,SORT,POP,5,REV,POP,+,+,+,4,/> will
-compute the average of the values v1..v6 after removing the smallest and
+compute the average of the values v1 to v6 after removing the smallest and
 largest.
 
 B<TREND>
@@ -143,9 +148,9 @@ average is essentially computed as shown here:
                          <--------------->
 
 
-     Value at sample (t0) will be the average between (t0-delay) and  (t0)
-     Value at sample (t1) will be the average between (t1-delay) and  (t1)
-     Value at sample (t2) will be the average between (t2-delay) and  (t2)
+     Value at sample (t0) will be the average between (t0-delay) and (t0)
+     Value at sample (t1) will be the average between (t1-delay) and (t1)
+     Value at sample (t2) will be the average between (t2-delay) and (t2)
 
 =item Special values
 
@@ -169,14 +174,14 @@ function cannot be used in B<VDEF> instructions.
 B<PREV(vname)>
 
 Pushes an I<unknown> value if this is the first value of a data
-set or otherwise the result of vname variable at the previous time
-step. This allows you to do calculations across the data.  This
+set or otherwise the result of the vname variable at the previous time
+step. This allows you to do calculations across the data. This
 function cannot be used in B<VDEF> instructions.
 
 B<COUNT>
 
 Pushes the number 1 if this is the first value of the data set, the 
-number 2 if it is the second, and so on. This special value, allows 
+number 2 if it is the second, and so on. This special value allows 
 you to make calculations based on the position of the value within 
 the data set. This function cannot be used in B<VDEF> instructions.
 
@@ -184,7 +189,7 @@ Z<>
 
 =item Time
 
-Time inside RRDtool is measured in seconds since the epoch. This
+Time inside RRDtool is measured in seconds since the epoch. The
 epoch is defined to be S<C<Thu Jan  1 00:00:00 UTC 1970>>.
 
 B<NOW>
@@ -193,14 +198,14 @@ Pushes the current time on the stack.
 
 B<TIME>
 
-Pushes the time the currently processed value was taken onto the stack.
+Pushes the time the currently processed value was taken at onto the stack.
 
 B<LTIME>
 
 Takes the time as defined by B<TIME>, applies the time zone offset
 valid at that time including daylight saving time if your OS supports
 it, and pushes the result on the stack.  There is an elaborate example
-in the examples section on how to use this.
+in the examples section below on how to use this.
 
 =item Processing the stack directly
 
@@ -228,24 +233,24 @@ Example: C<VDEF:avg=mydata,AVERAGE>
 
 =item LAST, FIRST
 
-Return the last,first value including its time.  The time for
-FIRST is actually the start of the corresponding interval, where
-the LAST time component returns the end of the corresponding interval.
+Return the last/first value including its time.  The time for
+FIRST is actually the start of the corresponding interval, whereas
+LAST returns the end of the corresponding interval.
 
 Example: C<VDEF:first=mydata,FIRST>
 
 =item TOTAL
 
 Returns the rate from each defined time slot multiplied with the
-step size.  This can for instance return total bytes transfered
+step size.  This can, for instance, return total bytes transfered
 when you have logged bytes per second. The time component returns
-the amount of seconds 
+the number of seconds.
 
 Example: C<VDEF:total=mydata,TOTAL>
 
 =item PERCENT
 
-Should follow a B<DEF> or B<CDEF> I<vname>. This I<vname> is popped,
+This should follow a B<DEF> or B<CDEF> I<vname>. The I<vname> is popped,
 another number is popped which is a certain percentage (0..100). The
 data set is then sorted and the value returned is chosen such that
 I<percentage> percent of the values is lower or equal than the result.
@@ -262,8 +267,8 @@ Example: C<VDEF:perc95=mydata,95,PERCENT>
 =head1 SEE ALSO
 
 L<rrdgraph> gives an overview of how B<rrdtool graph> works.
-L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail,
-L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements,
+L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail.
+L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements.
 L<rrdgraph_graph> page describes all of the graph and print functions.
 
 Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
