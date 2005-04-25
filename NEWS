@@ -6,13 +6,13 @@ Graphing
 --------
 
 * rewritten graphics generation based on libart.
-  - antialiased output
+  - anti-aliased output
   - alpha transparency support
   - truetype fonts
  
 * additional graphics formats: EPS, PDF, SVG
 
-* extended multipart documentation
+* extended multi-part documentation
 
 * VDEF support; define and use variables.  Find, and use, the
   maximum rate seen by rrdtool; compute and show the average
@@ -33,8 +33,8 @@ Logging
   Compare current data with expected data, detect and log when
   the rates are outside expected levels
 
-* COMPUTE datatype for artificial datasources calculating their
-  input using RPN math and data from the other datasources.
+* COMPUTE data type for artificial data-sources calculating their
+  input using RPN math and data from the other data-sources.
  
 Incompatibilities
 -----------------
@@ -43,7 +43,7 @@ Incompatibilities
 Behind the Scenes
 -----------------
 * In order to support Holt-Winters and Calculated Datasources,
-  the rrdtool dataformat has changed. While the new version of rrdtool can
+  the rrdtool data format has changed. While the new version of rrdtool can
   read files created with rrdtool 1.0.x. It is not possible to read files
   created by rrdtool-1.2.x with rrdtool-1.0.x
 
