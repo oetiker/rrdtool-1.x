@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.2rc9  Copyright by Tobi Oetiker, 1997-2005
+ * RRDtool 1.2.0  Copyright by Tobi Oetiker, 1997-2005
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
@@ -45,7 +45,7 @@ int
 main(int argc, char **argv){
         rrd_update(argc,argv);
         if (rrd_test_error()) {
-                printf("RRDtool 1.2rc9  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
+                printf("RRDtool 1.2.0  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"

@@ -6,7 +6,7 @@ dnl
 dnl Inspiration from http://autoconf-archive.cryp.to
 
 dnl tell automake the this script is for rrdtool
-AC_INIT([rrdtool],[1.2rc9])
+AC_INIT([rrdtool],[1.2.0])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([config.h])

@@ -1,3 +1,5 @@
+=pod 
+
 =head1 NAME  
 
 rrdgraph_graph - rrdtool graph command reference
@@ -208,24 +210,23 @@ a variable here.
 
 =cut
 
-#### This section describes the curruently defunct
-#### PieChart code.
-
-=item B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
-
-B<RRDtool> has now support for B<pie charts>. If you include the
-B<PART> command, the canvas is extended to make room for a chart.
-The size of the canvas is determined by the lesser of
-L<width and height|rrdgraph/item_Size>.
-
-Pie parts will be concatenated, the first one will start at the
-top and parts will be created clockwise.  The size of the part
-is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
-function.  It should return a number between 0 and 100, being a
-percentage.  Providing wrong input will produce undefined results.
-
-####
-####
+# This section describes the curruently defunct
+# PieChart code.
+#
+# =item B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
+#
+# B<RRDtool> has now support for B<pie charts>. If you include the
+# B<PART> command, the canvas is extended to make room for a chart.
+# The size of the canvas is determined by the lesser of
+# L<width and height|rrdgraph/item_Size>.
+#
+# Pie parts will be concatenated, the first one will start at the
+# top and parts will be created clockwise.  The size of the part
+# is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
+# function.  It should return a number between 0 and 100, being a
+# percentage.  Providing wrong input will produce undefined results.
+#
+#
 
 =pod
 
