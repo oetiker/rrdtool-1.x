@@ -2,8 +2,6 @@
 
 rpntutorial - Reading RRDtool RPN Expressions by Steve Rader
 
-=for html <div align="right"><a href="rpntutorial.pdf">PDF</a> version.</div>
-
 =head1 DESCRIPTION
 
 This tutorial should help you get to grips with RRDtool RPN expressions
