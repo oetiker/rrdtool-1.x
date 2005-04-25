@@ -114,11 +114,8 @@ argument to a GRAPH command.
 
 =item RRD::GRAPH I<rrdgraph arguments>
 
-=for comment
-XXX Shouldn't it be IMAGE-tag below? Fritz
-
 This tag creates the RRD graph defined by its argument and then is
-replaced by an appropriate E<lt>IMGE<gt> tag referring to the graph.
+replaced by an appropriate E<lt>IMG ... E<gt> tag referring to the graph.
 The B<--lazy> option in RRD graph can be used to make sure that graphs
 are only regenerated when they are out of date. The arguments
 to the B<RRD::GRAPH> tag work as described in the B<rrdgraph> manual page.

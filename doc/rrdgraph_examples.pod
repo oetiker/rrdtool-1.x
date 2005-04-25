@@ -48,10 +48,7 @@ Note: 10 spaces to move text to the right
 
     COMMENT:"          "
 
-=for comment
-XXX I don't understand the following; Fritz
-
-Note: three times size == 11 chars, "###.## xBps"
+Note: the column titles have to be as wide as the columns
 
     COMMENT:"Maximum    "
     COMMENT:"Average    "

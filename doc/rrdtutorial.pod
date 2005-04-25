@@ -40,12 +40,12 @@ data from them.
 
 =head2 What data can be put into an RRD?
 
-XXX time series ??? XXX You name it, it will probably fit. You should
-be able to measure some value at several points in time and provide
-this information to RRDtool. If you can do this, RRDtool will be able
-to store it. The values must be numerical but don't have to be
-integers, as is the case with MRTG (the next section will give more
-details on this more specialized application).
+You name it, it will probably fit as long as it is some sort of time-series
+data. This means you have to be able to measure some value at several points in time and
+provide this information to RRDtool. If you can do this, RRDtool will be
+able to store it. The values must be numerical but don't have to be
+integers, as is the case with MRTG (the next section will give more details
+on this more specialized application).
 
 Many examples below talk about SNMP which is an acronym for Simple Network
 Management Protocol. "Simple" refers to the protocol -- it does not
@@ -227,12 +227,8 @@ represents a counter. This counter is read every five minutes
 (default).  In the same database two round robin archives (RRAs) are
 kept, one averages the data every time it is read (e.g., there's
 nothing to average) and keeps 24 samples (24 times 5 minutes is 2
-hours). The other averages 6 values (half hour) and contains 10 of
+hours). The other averages 6 values (half hour) and contains 10
 such averages (e.g., 5 hours).
-
-=for comment
-  XXX The remaining options will be discussed later on. (there aren't any
-  XXX in the example above, Fritz)
 
 RRDtool works with special time stamps coming from the UNIX world.
 This time stamp is the number of seconds that passed since January
@@ -413,21 +409,20 @@ Rader's tutorial on RPN. But first finish this tutorial.
 Hang on! If we can multiply values with 1'000, it should also be possible
 to display kilometers per hour from the same data!
 
-=for comment
-XXX strange format below: -*- ; Fritz
-
 To change a value that is measured in meters per second:
- -*- Calculate meters per hour:     value * 3'600
- -*- Calculate kilometers per hour: value / 1'000
- -*- Together this makes:           value * (3'600/1'000) or value * 3.6
+
+ Calculate meters per hour:     value * 3'600
+ Calculate kilometers per hour: value / 1'000
+ Together this makes:           value * (3'600/1'000) or value * 3.6
 
 In our example database we made a mistake and we need to compensate for
 this by multiplying with 1'000. Applying that correction:
- -*- value * 3.6  * 1'000 == value * 3'600
+
+ value * 3.6  * 1'000 == value * 3'600
 
 Now let's create this PNG, and add some more magic ...
 
-   rrdtool graph speed3.png                           \
+ rrdtool graph speed3.png                             \
       --start 920804400 --end 920808000               \
       --vertical-label km/h                           \
       DEF:myspeed=test.rrd:speed:AVERAGE              \

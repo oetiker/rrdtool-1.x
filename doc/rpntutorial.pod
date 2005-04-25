@@ -96,11 +96,7 @@ multiplication operator:
 Now let's go back to the first example of multiple logic operators,
 but replace the value 20 with the variable "input":
 
-=for comment
-XXX wo kommt das A ploetzlich her? Hier braucht es einen Satz, dass A als
-XXX placeholder  zum Lesbarmachen verwendet wird (shortcut).
-
- 1) input,10,GT,10,input,IF  eval is input,10,GT  result is A
+ 1) input,10,GT,10,input,IF  eval is input,10,GT  ( lets call this A )
 
 Read eval as "if input > 10 then true" and replace "input,10,GT"
 with "A":

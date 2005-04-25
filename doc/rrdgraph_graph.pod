@@ -208,6 +208,9 @@ a variable here.
 
 =cut
 
+#### This section describes the curruently defunct
+#### PieChart code.
+
 =item B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
 
 B<RRDtool> has now support for B<pie charts>. If you include the
@@ -221,8 +224,8 @@ is defined by the value part of the L<VDEF|rrdgraph_data/VDEF>
 function.  It should return a number between 0 and 100, being a
 percentage.  Providing wrong input will produce undefined results.
 
-=for comment
-XXX Above: shouldn't this be caught and and error be generated? Fritz
+####
+####
 
 =pod
 

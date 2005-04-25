@@ -135,14 +135,12 @@ or just B<HH>. You can suffix it with B<am> or B<pm> or use
 including B<midnight> (00:00), B<noon> (12:00) and British
 B<teatime> (16:00).
 
-=for comment
-XXX Wouldn't it be nice to have z'N\"uni and z'Vieri for Switzerland?
-
-The I<day> can be specified as I<month-name> I<day-of-the-month>
-and optional a 2- or 4-digit I<year> number (e.g. March 8 1999).
-Alternatively, you can use I<day-of-week-name> (e.g. Monday),
-or one of the words: B<yesterday>, B<today>, B<tomorrow>.
-You can also specify the I<day> as a full date in several numerical formats, including B<MM/DD/[YY]YY>, B<DD.MM.[YY]YY>, or B<YYYYMMDD>.
+The I<day> can be specified as I<month-name> I<day-of-the-month> and
+optional a 2- or 4-digit I<year> number (e.g. March 8 1999). Alternatively,
+you can use I<day-of-week-name> (e.g. Monday), or one of the words:
+B<yesterday>, B<today>, B<tomorrow>. You can also specify the I<day> as a
+full date in several numerical formats, including B<MM/DD/[YY]YY>,
+B<DD.MM.[YY]YY>, or B<YYYYMMDD>.
 
 I<NOTE1>: this is different from the original at(1) behavior, where a
 single-number date is interpreted as MMDD[YY]YY.

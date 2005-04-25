@@ -72,12 +72,9 @@ Z<>
 B<MIN, MAX> 
 
 Pops two elements from the stack and returns the smaller or larger,
-respectively.  The two numbers shouldn't be I<infinite> or I<unknown>,
-if they are that value is pushed back onto the stack as the result.
-
-= for comment
-XXX What happens above if both a infinite and undefined value are on the 
-XXX stack? Fritz
+respectively.  Note that I<infinite> is larger than anything else.
+If one of the input numbers is I<unknown> then the result of the operation will be
+I<unknown> too.
 
 B<LIMIT>
 
