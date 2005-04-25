@@ -659,7 +659,8 @@ assign_date(struct rrd_time_value *ptv, long mday, long mon, long year)
 static char *
 day(struct rrd_time_value *ptv)
 {
-    long mday=0, wday, mon, year = ptv->tm.tm_year;
+    /* using time_t seems to help portability with 64bit oses */    
+    time_t mday=0, wday, mon, year = ptv->tm.tm_year;
     int tlen;
 
     switch (sc_tokid) {
