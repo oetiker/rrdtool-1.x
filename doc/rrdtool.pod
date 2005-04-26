@@ -295,7 +295,7 @@ If all was setup correctly, you can access the server with perl
 sockets, tools like netcat, or in a quick interactive test by using
 'telnet localhost rrdsrv'.
 
-<B>NOTE</B> that there is no authentication with this feature! Do not setup
+B<NOTE:> that there is no authentication with this feature! Do not setup
 such a port unless you are sure what you are doing.
 
 =head1 SEE ALSO
