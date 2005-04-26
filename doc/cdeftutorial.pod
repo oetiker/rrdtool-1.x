@@ -5,13 +5,14 @@ cdeftutorial - Alex van den Bogaerdt's CDEF tutorial
 =head1 DESCRIPTION
 
 If you provide a question, I will try to provide an answer in the next
-release of this tutorial. No feedback equals no changes! Additions to this document are also welcome.
--- Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt>
+release of this tutorial. No feedback equals no changes! Additions to
+this document are also welcome.  -- Alex van den Bogaerdt
+E<lt>alex@ergens.op.het.netE<gt>
 
-=head2 Why this tutorial ?
+=head2 Why this tutorial?
 
 One of the powerful parts of RRDtool is its ability to do all sorts
-of calculations on the data retrieved from it's databases. However
+of calculations on the data retrieved from its databases. However,
 RRDtool's many options and syntax make it difficult for the average
 user to understand. The manuals are good at explaining what these
 options do; however they do not (and should not) explain in detail
@@ -20,14 +21,14 @@ simple document in simple language you should read this tutorial.
 If you are happy with the official documentation, you may find this
 document too simple or even boring. If you do choose to read this
 tutorial, I also expect you to have read and fully understand my
-other tutorial. 
+other tutorial.
 
 =head2 More reading
 
 If you have difficulties with the way I try to explain it please read
 Steve Rader's L<rpntutorial>. It may help you understand how this all works.
 
-=head1 What are CDEFs ?
+=head1 What are CDEFs?
 
 When retrieving data from an RRD, you are using a "DEF" to work with
 that data. Think of it as a variable that changes over time (where
@@ -57,12 +58,12 @@ instead of the original:
 
    CDEF:inbits=inbytes,8,*
 
-It tells to multiply inbytes by eight to get inbits. I'll explain later
-how this works. In the graphing or printing functions, you can now use
-inbits where you would use inbytes otherwise.
+This tells RRDtool to multiply inbytes by eight to get inbits. I'll
+explain later how this works. In the graphing or printing functions,
+you can now use inbits where you would use inbytes otherwise.
 
-Note that variable in the CDEF (inbits) must not be the same as the
-variable (inbytes) in the DEF!
+Note that the variable name used in the CDEF (inbits) must not be the
+same as the variable named in the DEF (inbytes)!
 
 =head1 RPN-expressions
 
@@ -138,13 +139,13 @@ Processing the stack (step 5) will retrieve one value from the stack
 (from the right at step 4). This is the operation multiply and this
 takes two values off the stack as input. The result is put back on the
 stack (the value 80 in this case). For multiplication the order doesn't
-matter but for other operations like subtraction and division it does.
+matter, but for other operations like subtraction and division it does.
 Generally speaking you have the following order:
 
    y = A - B  -->  y=minus(A,B)  -->  CDEF:y=A,B,-
 
 This is not very intuitive (at least most people don't think so). For
-the function f(A,B) you reverse the position of "f" but you do not
+the function f(A,B) you reverse the position of "f", but you do not
 reverse the order of the variables. 
 
 =head1 Converting your wishes to RPN
@@ -228,16 +229,16 @@ evaluated differently:
    and process it:                        S         (where S == a+R)
 
 As you can see the RPN expression C<a,b,c,d,e,+,+,+,+,+> will evaluate in
-C<((((d+e)+c)+b)+a)> and it has the same outcome as C<a,b,+,c,+,d,+,e,+> 
-According to Steve Rader this is called the commutative law of addition
+C<((((d+e)+c)+b)+a)> and it has the same outcome as C<a,b,+,c,+,d,+,e,+>. 
+This is called the commutative law of addition,
 but you may forget this right away, as long as you remember what it
-represents.
+means.
 
 Now look at an expression that contains a multiplication:
 
 First in normal math: C<let result = a+b*c>. In this case you can't
 choose the order yourself, you have to start with the multiplication
-and then add a to it. You may alter the position of b and c, you may
+and then add a to it. You may alter the position of b and c, you must
 not alter the position of a and b. 
 
 You have to take this in consideration when converting this expression
@@ -253,7 +254,7 @@ similar to one of the expressions in the previous paragraph, only the
 multiplication and the addition changed places.
 
 When you have problems with RPN or when RRDtool is complaining, it's 
-usually a Good Thing to write down the stack on a piece of paper
+usually a good thing to write down the stack on a piece of paper
 and see what happens. Have the manual ready and pretend to be RRDtool.
 Just do all the math by hand to see what happens, I'm sure this will
 solve most, if not all, problems you encounter.
@@ -264,7 +265,7 @@ solve most, if not all, problems you encounter.
 
 Sometimes collecting your data will fail. This can be very common,
 especially when querying over busy links. RRDtool can be configured
-to allow for one (or even more) unknown value and calculate the missing
+to allow for one (or even more) unknown value(s) and calculate the missing
 update. You can, for instance, query your device every minute. This is
 creating one so called PDP or primary data point per minute. If you
 defined your RRD to contain an RRA that stores 5-minute values, you need
@@ -275,7 +276,7 @@ These PDPs can become unknown in two cases:
 
 =item 1.
 
-The updates are too far apart. This is tuned using the "heartbeat" setting
+The updates are too far apart. This is tuned using the "heartbeat" setting.
 
 =item 2.
 
@@ -294,12 +295,12 @@ Suppose the counter increments with one per second and you retrieve it
 every minute:
 
    counter value    resulting rate
-   10000
-   10060            1; (10060-10000)/60 == 1
-   10120            1; (10120-10060)/60 == 1
-   unknown          unknown; you don't know the last value
-   10240            unknown; you don't know the previous value
-   10300            1; (10300-10240)/60 == 1
+   10'000
+   10'060            1; (10'060-10'000)/60 == 1
+   10'120            1; (10'120-10'060)/60 == 1
+   unknown           unknown; you don't know the last value
+   10'240            unknown; you don't know the previous value
+   10'300            1; (10'300-10'240)/60 == 1
 
 If the CDP was to be calculated from the last five updates, it would get
 two unknown PDPs and three known PDPs. If xff would have been set to 0.5
@@ -335,14 +336,14 @@ data into zero. The counters of the device were unknown (after all, it
 wasn't installed yet!) but you know that the data rate through the device
 had to be zero (because of the same reason: it was not installed).
 
-There are some examples further on that make this change.
+There are some examples below that make this change.
 
 =head2 Infinity
 
-Infinite data is another form of a special number. It cannot be graphed
-because by definition you would never reach the infinite value. You could
-think of positive and negative infinity (I'm not sure if mathematicians
-will agree) depending on the position relative to zero.
+Infinite data is another form of a special number. It cannot be
+graphed because by definition you would never reach the infinite
+value. You can think of positive and negative infinity depending on
+the position relative to zero.
 
 RRDtool is capable of representing (-not- graphing!) infinity by stopping
 at its current maximum (for positive infinity) or minimum (for negative
@@ -384,14 +385,14 @@ the other database.
 
 =item *
 
-Alternately you could use CDEF and alter unknown data to zero.
+Alternatively, you could use CDEF and alter unknown data to zero.
 
 =back
 
 Both methods have their pros and cons. The first method is troublesome and
 if you want to do that you have to figure it out yourself. It is not
 possible to create a database filled with zeros, you have to put them in
-on purpose. Implementing the second method is described next:
+manually. Implementing the second method is described next:
 
 What we want is: "if the value is unknown, replace it with zero". This
 could be written in pseudo-code as:  if (value is unknown) then (zero)
@@ -443,7 +444,7 @@ to remove this rule so that unknown data is properly displayed.
 
 =head2 Example: better handling of unknown data, by using time
 
-Above example has one drawback. If you do log unknown data in
+The above example has one drawback. If you do log unknown data in
 your database after installing your new equipment, it will also be
 translated into zero and therefore you won't see that there was a
 problem. This is not good and what you really want to do is:
@@ -452,28 +453,28 @@ problem. This is not good and what you really want to do is:
 
 =item *
 
-If there is unknown data, look at the time that this sample was taken
+If there is unknown data, look at the time that this sample was taken.
 
 =item *
 
-If the unknown value is before time xxx, make it zero
+If the unknown value is before time xxx, make it zero.
 
 =item *
 
-If it is after time xxx, leave it as unknown data
+If it is after time xxx, leave it as unknown data.
 
 =back
 
 This is doable: you can compare the time that the sample was taken
 to some known time. Assuming you started to monitor your device on
-Friday September 17, 00:35:57 MET DST. Translate this time in seconds
-since 1970-01-01 and it becomes 937521357. If you process unknown values
+Friday September 17, 1999, 00:35:57 MET DST. Translate this time in seconds
+since 1970-01-01 and it becomes 937'521'357. If you process unknown values
 that were received after this time, you want to leave them unknown and
 if they were "received" before this time, you want to translate them
 into zero (so you can effectively ignore them while adding them to your
 other routers counters).
 
-Translating Friday September 17, 00:35:57 MET DST into 937521357 can
+Translating Friday September 17, 1999, 00:35:57 MET DST into 937'521'357 can
 be done by, for instance, using gnu date:
 
    date -d "19990917 00:35:57" +%s
@@ -489,11 +490,11 @@ This is a three step process:
 
 =item 1.
 
-If the timestamp of the value is after 937521357, leave it as is
+If the timestamp of the value is after 937'521'357, leave it as is.
 
 =item 2.
 
-If the value is a known value, leave it as is
+If the value is a known value, leave it as is.
 
 =item 3.
 
@@ -535,13 +536,13 @@ so lets do it quick:
 We end up with:
 C<CDEF:result=TIME,937521357,GT,value,value,UN,0,value,IF,IF>
 
-This looks very complex however as you can see it was not too hard to
+This looks very complex, however, as you can see, it was not too hard to
 come up with.
 
 =head2 Example: Pretending weird data isn't there
 
 Suppose you have a problem that shows up as huge spikes in your graph.
-You know this happens and why so you decide to work around the problem.
+You know this happens and why, so you decide to work around the problem.
 Perhaps you're using your network to do a backup at night and by doing
 so you get almost 10mb/s while the rest of your network activity does
 not produce numbers higher than 100kb/s.
@@ -553,11 +554,11 @@ There are two options:
 =item 1.
 
 If the number exceeds 100kb/s it is wrong and you want it masked out
-by changing it into unknown
+by changing it into unknown.
 
 =item 2.
 
-You don't want the graph to show more than 100kb/s
+You don't want the graph to show more than 100kb/s.
 
 =back
 
@@ -573,7 +574,7 @@ the numbers to display maxima they will be set to 100kb/s.
 We use "IF" and "GT" again. "if (x) then (y) else (z)" is written
 down as "CDEF:result=x,y,z,IF"; now fill in x, y and z.
 For x you fill in "number greater than 100kb/s" becoming
-"number,100000,GT" (kilo is 1000 and b/s is what we measure!).
+"number,100000,GT" (kilo is 1'000 and b/s is what we measure!).
 The "z" part is "number" in both cases and the "y" part is either
 "UNKN" for unknown or "100000" for 100kb/s.
 
@@ -585,7 +586,7 @@ The two CDEF expressions would be:
 =head2 Example: working on a certain time span
 
 If you want a graph that spans a few weeks, but would only want to
-see some routers data for one week, you need to "hide" the rest of
+see some routers' data for one week, you need to "hide" the rest of
 the time frame. Don't ask me when this would be useful, it's just
 here for the example :)
 
@@ -695,11 +696,11 @@ if you like.  But there are good reasons for writing two CDEFS:
 
 =item *
 
-It improves the readability of the script
+It improves the readability of the script.
 
 =item *
 
-It can be used inside GPRINT to display the total number of users
+It can be used inside GPRINT to display the total number of users.
 
 =back
 
@@ -755,13 +756,15 @@ enough for this purpose and it saves a calculation.
       AREA:agginput#00cc00:Input Aggregate \
       LINE1:aggoutput#0000FF:Output Aggregate
 
-These two CDEFs are built from several functions. It helps to
-split them when viewing what they do.
-Starting with the first CDEF we would get:
-      idat1,UN --> a
-      0        --> b
-      idat1    --> c
-      if (a) then (b) else (c)
+These two CDEFs are built from several functions. It helps to split
+them when viewing what they do. Starting with the first CDEF we would
+get:
+
+ idat1,UN --> a 
+ 0        --> b  
+ idat1    --> c 
+ if (a) then (b) else (c)
+
 The result is therefore "0" if it is true that "idat1" equals "UN".
 If not, the original value of "idat1" is put back on the stack.
 Lets call this answer "d". The process is repeated for the next
@@ -797,10 +800,10 @@ to see what happens in the "background" CDEF.
 
 This RPN takes the value of "val4" as input and then immediately
 removes it from the stack using "POP". The stack is now empty but
-as a side result we now know the time that this sample was taken.
+as a side effect we now know the time that this sample was taken.
 This time is put on the stack by the "TIME" function.
 
-"TIME,7200,%" takes the modulo of time and 7200 (which is two hours).
+"TIME,7200,%" takes the modulo of time and 7'200 (which is two hours).
 The resulting value on the stack will be a number in the range from
 0 to 7199.
 
@@ -821,7 +824,8 @@ won't do that here.
 Now you can draw the different layers. Start with the background
 that is either unknown (nothing to see) or infinite (the whole
 positive part of the graph gets filled).
-Next you draw the data on top of this background. It will overlay
+
+Next you draw the data on top of this background, it will overlay
 the background. Suppose one of val1..val4 would be unknown, in that
 case you end up with only three bars stacked on top of each other.
 You don't want to see this because the data is only valid when all
@@ -861,10 +865,11 @@ You may do some complex data filtering:
 
 =head1 Out of ideas for now
 
-This document was created from questions asked by either myself or
-by other people on the list. Please let me know if you find errors
-in it or if you have trouble understanding it. If you think there
-should be an addition, mail me: E<lt>alex@ergens.op.het.netE<gt>
+This document was created from questions asked by either myself or by
+other people on the RRDtool mailing list. Please let me know if you
+find errors in it or if you have trouble understanding it. If you
+think there should be an addition, mail me:
+E<lt>alex@ergens.op.het.netE<gt>
 
 Remember: B<No feedback equals no changes!>
 

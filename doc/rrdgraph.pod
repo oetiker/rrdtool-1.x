@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdgraph - About drawing pretty graphs with rrdtool
+rrdgraph - Round Robin Database tool grapher functions
 
 =head1 SYNOPSIS
 
@@ -16,35 +16,34 @@ B<rrdtool graph> I<filename>
 
 The B<graph> function of B<RRDtool> is used to present the
 data from an B<RRD> to a human viewer.  Its main purpose is to
-create a nice graphical representation but it can also generate
+create a nice graphical representation, but it can also generate
 a numerical report.
 
 =head1 OVERVIEW
 
-B<rrdtool graph> needs data to work with, use one or more
+B<rrdtool graph> needs data to work with, so you must use one or more
 B<L<data definition|rrdgraph_data/DEF>> statements to collect this
 data.  You are not limited to one database, it's perfectly legal to
-collect data from two or more databases (one per statement though).
+collect data from two or more databases (one per statement, though).
 
-If you want to display averages, maxima, percentiles etcetera
+If you want to display averages, maxima, percentiles, etcetera
 it is best to collect them now using the
 B<L<variable definition|rrdgraph_data/VDEF>> statement.
-Currently this makes no difference but in a future version
+Currently this makes no difference, but in a future version
 of rrdtool you may want to collect these values before consolidation.
 
 The data fetched from the B<RRA> is then B<consolidated> so that
 there is exactly one datapoint per pixel in the graph. If you do
 not take care yourself, B<RRDtool> will expand the range slightly
-if necessary (in that case the first and/or last pixel may very
-well become unknown!).
+if necessary. Note, in that case the first and/or last pixel may very
+well become unknown!
 
-Sometimes data is not exactly as you would like to display it. For
-instance, you might be collecting B<bytes> per second but want to
-display B<bits> per second. This is where the
-B<L<data calculation|rrdgraph_data/CDEF>> command is designed for.
-After B<consolidating> the data, a copy is made and this copy is
-modified using a rather flexible B<L<RPN|rrdgraph_rpn/>> command
-set.
+Sometimes data is not exactly in the format you would like to display
+it. For instance, you might be collecting B<bytes> per second, but
+want to display B<bits> per second. This is what the B<L<data
+calculation|rrdgraph_data/CDEF>> command is designed for. After
+B<consolidating> the data, a copy is made and this copy is modified
+using a rather powerful B<L<RPN|rrdgraph_rpn/>> command set.
 
 When you are done fetching and processing the data, it is time to
 graph it (or print it).  This ends the B<rrdtool graph> sequence.
@@ -56,10 +55,10 @@ graph it (or print it).  This ends the B<rrdtool graph> sequence.
 =item filename
 
 The name and path of the graph to generate. It is recommended to
-end this in C<.png>, C<.svg> or C<.eps> but B<RRDtool> does not enforce this.
+end this in C<.png>, C<.svg> or C<.eps>, but B<RRDtool> does not enforce this.
 
 I<filename> can be 'C<->' to send the image to C<stdout>. In
-that case, no other output is generated.  
+this case, no other output is generated.
 
 =item Time range
 
@@ -67,7 +66,7 @@ that case, no other output is generated.
 [B<-e>|B<--end> I<time>]
 [B<-S>|B<--step> I<seconds>]
 
-The start and end of what you would like to display, and which
+The start and end of the time series you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
 now, with the best possible resolution. B<Start> and B<end> can 
 be specified in several formats, see
@@ -76,7 +75,7 @@ By default, B<rrdtool graph> calculates the width of one pixel in
 the time domain and tries to get data from an B<RRA> with that
 resolution.  With the B<step> option you can alter this behaviour.
 If you want B<rrdtool graph> to get data at a one-hour resolution
-from the B<RRD>, set B<step> to 3600.  Note: a step smaller than
+from the B<RRD>, set B<step> to 3'600. Note: a step smaller than
 one pixel will silently be ignored.
 
 =item Labels
@@ -94,11 +93,12 @@ placed string at the left hand side of the graph.
 [B<-j>|B<--only-graph>]
 
 The width and height of the B<canvas> (the part of the graph with
-the actual lines and such). Defaults are 400 pixels by 100 pixels.
+the actual data and such). This defaults to 400 pixels by 100 pixels.
 
 If you specify the B<--only-graph> option and set the height E<lt> 32
-pixels you will get a tiny graph image to use as an icon in a potential
-overview. All labeling will be stripped off the graph.
+pixels you will get a tiny graph image (thumbnail) to use as an icon
+for use in an overview, for example. All labeling will be stripped off
+the graph.
 
 =item Limits
 
@@ -106,22 +106,22 @@ overview. All labeling will be stripped off the graph.
 [B<-l>|B<--lower-limit> I<value>]
 [B<-r>|B<--rigid>]
 
-By default the graph will be autoscaling so that it displays the
-portion of the y-axis that is actually used. You can change this
-behaviour by setting the limits.  The displayed y-axis will show
-at least from B<lower-limit> to B<upper-limit>.  Autoscaling will
-still permit those boundaries to be stretched unless the B<rigid>
-option is set.
+By default the graph will be autoscaling so that it will adjust the
+y-axis to the range of the data. You can change this behaviour by
+explicitly setting the limits. The displayed y-axis will then range at
+least from B<lower-limit> to B<upper-limit>. Autoscaling will still
+permit those boundaries to be stretched unless the B<rigid> option is
+set.
 
 [B<-A>|B<--alt-autoscale>]
 
 Sometimes the default algorithm for selecting the y-axis scale is not
-performing very well.  Normally the scale is selected from a predefined
+satisfactory. Normally the scale is selected from a predefined
 set of ranges and this fails miserably when you need to graph something
 like C<260 + 0.001 * sin(x)>. This option calculates the minimum and
-maximum y-axis from the actual minimum and maximum values. Our example
+maximum y-axis from the actual minimum and maximum data values. Our example
 would display slightly less than C<260-0.001> to slightly more than
-C<260+0.001> (Contributed by Sasha Mikheev).
+C<260+0.001> (this feature was contributed by Sasha Mikheev).
 
 [B<-M>|B<--alt-autoscale-max>]
 
@@ -133,10 +133,10 @@ and thus the throughput may be higher than the WAN line speed.
 
 [B<-N>|B<--no-gridfit>]
 
-To avoid anti-aliasing effects gridlines are placed on 
+In order to avoid anti-aliasing effects gridlines are placed on 
 integer pixel values. This is by default done by extending 
-the scale so gridlines happens to be spaced using an 
-integer number of pixels, and starts on integer pixel value.
+the scale so that gridlines happens to be spaced using an 
+integer number of pixels and also start on an integer pixel value.
 This might extend the scale too much for some logarithmic scales
 and for linear scales where B<--alt-autoscale> is needed.
 Using B<--no-gridfit> disables modification of the scale.
@@ -151,9 +151,9 @@ Using B<--no-gridfit> disables modification of the scale.
 
 [B<-x>|B<--x-grid> B<none>]
 
-The x-axis label is quite complex to configure, if you don't have
+The x-axis label is quite complex to configure. If you don't have
 very special needs it is probably best to rely on the autoconfiguration
-to get this right.  You can specify the string C<none> to skip the grid
+to get this right. You can specify the string C<none> to suppress the grid
 and labels altogether.
 
 The grid is defined by specifying a certain amount of time in the I<?TM>
@@ -161,16 +161,16 @@ positions. You can choose from C<SECOND>, C<MINUTE>, C<HOUR>, C<DAY>,
 C<WEEK>, C<MONTH> or C<YEAR>. Then you define how many of these should
 pass between each line or label.  This pair (I<?TM:?ST>) needs to be
 specified for the base grid (I<G??>), the major grid (I<M??>) and the
-labels (I<L??>). For the labels you also need to define a precision
+labels (I<L??>). For the labels you also must define a precision
 in I<LPR> and a I<strftime> format string in I<LFM>.  I<LPR> defines
 where each label will be placed. If it is zero, the label will be
 placed right under the corresponding line (useful for hours, dates
 etcetera).  If you specify a number of seconds here the label is
-centered in this interval (useful for Monday, January etcetera).
+centered on this interval (useful for Monday, January etcetera).
 
  --x-grid MINUTE:10:HOUR:1:HOUR:4:0:%X
 
-This places grid lines every 10 minutes, major grid lines every hour
+This places grid lines every 10 minutes, major grid lines every hour,
 and labels every 4 hours. The labels are placed under the major grid
 lines as they specify exactly that time.
 
@@ -188,15 +188,16 @@ as they specify the complete day and not just midnight.
 
 Y-axis grid lines appear at each I<grid step> interval.  Labels are
 placed every I<label factor> lines.  You can specify C<-y none> to
-skip the grid and labels altogether.  The default for this option is
+suppress the grid and labels altogether.  The default for this option is
 to automatically select sensible values.
 
 [B<-Y>|B<--alt-y-grid>]
 
-Place Y grid dynamically based on graph Y range. Algorithm ensures
-that you always have grid, that there are enough but not too many
-grid lines and the grid is metric. That is grid lines are placed
-every 1, 2, 5 or 10 units.  (contributed by Sasha Mikheev)
+Place the Y grid dynamically based on the graph's Y range. The
+algorithm ensures that you always have a grid, that there are enough
+but not too many grid lines, and that the grid is metric. That is the
+grid lines are placed every 1, 2, 5 or 10 units.  (contributed by
+Sasha Mikheev)
 
 [B<-o>|B<--logarithmic>]
 
@@ -204,12 +205,12 @@ Logarithmic y-axis scaling.
 
 [B<-X>|B<--units-exponent> I<value>]
 
-This sets the 10**exponent scaling of the y-axis values.  Normally
-values will be scaled to the appropriate units (k, M, etc.).  However
+This sets the 10**exponent scaling of the y-axis values. Normally,
+values will be scaled to the appropriate units (k, M, etc.).  However,
 you may wish to display units always in k (Kilo, 10e3) even if the data
-is in the M (Mega, 10e6) range for instance.  Value should be an
-integer which is a multiple of 3 between -18 and 18 inclusive.  It is
-the exponent on the units you which to use.  For example, use 3 to
+is in the M (Mega, 10e6) range, for instance. Value should be an
+integer which is a multiple of 3 between -18 and 18 inclusively.  It is
+the exponent on the units you wish to use. For example, use 3 to
 display the y-axis values in k (Kilo, 10e3, thousands), use -6 to
 display the y-axis values in u (Micro, 10e-6, millionths).  Use a value
 of 0 to prevent any scaling of the y-axis values.
@@ -221,8 +222,9 @@ to the more robust B<--alt-y-grid> mode.
 
 [B<-L>|B<--units-length> I<value>]
 
-How many digits should rrdtool assume the y-axis labels to be ? You may have to use this option
-to make enough space once you start fideling with the y-axis labeling.
+How many digits should rrdtool assume the y-axis labels to be? You
+may have to use this option to make enough space once you start
+fideling with the y-axis labeling.
 
 =back
 
@@ -230,14 +232,14 @@ to make enough space once you start fideling with the y-axis labeling.
 
 [B<-z>|B<--lazy>]
 
-Only generate the graph, if the current graph is out of date or not
+Only generate the graph if the current graph is out of date or not
 existent.
 
 [B<-f>|B<--imginfo> I<printfstr>]
 
 After the image has been created, the graph function uses printf
 together with this format string to create output similar to the PRINT
-function, only that the printf is supplied with the parameters
+function, only that the printf function is supplied with the parameters
 I<filename>, I<xsize> and I<ysize>. In order to generate an B<IMG> tag
 suitable for including the graph into a web page, the command line
 would look like this:
@@ -250,9 +252,9 @@ Override the default colors for the standard elements of the graph. The
 I<COLORTAG> is one of C<BACK> background, C<CANVAS> for the background of
 the actual graph, C<SHADEA> for the left and top border, C<SHADEB> for the
 right and bottom border, C<GRID>, C<MGRID> for the major grid, C<FONT> for
-the color of the font, C<AXIS> for the axis of the graph and finaly C<ARROW>
+the color of the font, C<AXIS> for the axis of the graph and finally C<ARROW>
 for the arrow head pointing to the future. Each color is composed out of
-three hexadecimal numbers specifying its color component (00 is off, FF is
+three hexadecimal numbers specifying its rgb color component (00 is off, FF is
 maximum) of red, green and blue. Optionally you may add another hexadecimal
 number specifying the transparency (FF is solid). You may set this option
 several times to alter multiple defaults.
@@ -261,14 +263,14 @@ A green arrow is made by: C<--color ARROW:00FF00>
 
 [B<--zoom> I<factor>]
 
-Zoom the graphics by the given amount ... The factor must be E<gt> 0
+Zoom the graphics by the given amount. The factor must be E<gt> 0
 
 [B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>I<font>]
 
-Lets you customize which font to use for the various text elements on the
-RRD graphs. C<DEFAULT> sets the default value for all elements C<TITLE>,
-C<AXIS> for the axis labels, C<UNIT> for the vertical unit label, C<LEGEND>
-for the graph legend.
+This lets you customize which font to use for the various text
+elements on the RRD graphs. C<DEFAULT> sets the default value for all
+elements, C<TITLE> for the title, C<AXIS> for the axis labels, C<UNIT>
+for the vertical unit label, C<LEGEND> for the graph legend.
 
 Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
 
@@ -279,10 +281,11 @@ Truetype fonts are only supported for PNG output. See below.
 
 [B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>]
 
-Image format for the generated graph. For the vector formats you can choose among the standard Postscript fonts
-Courier-Bold, Courier-BoldOblique, Courier-Oblique, Courier, Helvetica-Bold,
-Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol, Times-Bold, Times-BoldItalic,
-Times-Italic, Times-Roman, ZapfDingbats 
+Image format for the generated graph. For the vector formats you can
+choose among the standard Postscript fonts Courier-Bold,
+Courier-BoldOblique, Courier-Oblique, Courier, Helvetica-Bold,
+Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol,
+Times-Bold, Times-BoldItalic, Times-Italic, Times-Roman, and ZapfDingbats.
 
 [B<-i>|B<--interlaced>]
 
@@ -290,11 +293,13 @@ If images are interlaced they become visible on browsers more quickly.
 
 [B<-g>|B<--no-legend>]
 
-Suppress generation of legend; only render the graph.
+Suppress generation of the legend; only render the graph.
 
 [B<-F>|B<--force-rules-legend>]
 
-Force the generation of HRULE and VRULE legend even if those HRULE or VRULE will not be drawn because out of graph boundaries (mimics behaviour of pre 1.0.42 versions).
+Force the generation of HRULE and VRULE legends even if those HRULE or
+VRULE will not be drawn because out of graph boundaries (mimics
+behaviour of pre 1.0.42 versions).
 
 [B<-T>|B<--tabwidth> I<value>]
 
@@ -316,21 +321,21 @@ B<VDEF:>I<vname>B<=>I<RPN expression>
 
 You need at least one B<DEF> statement to generate anything. The
 other statements are useful but optional.
-See L<rrdgraph_data> and L<rrdgraph_rpn> for exact format.
+See L<rrdgraph_data> and L<rrdgraph_rpn> for the exact format.
 
 =item Graph and print elements
 
 You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.
-See L<rrdgraph_graph> for exact format.
+See L<rrdgraph_graph> for the exact format.
 
 =back
 
 =head1 SEE ALSO
 
 L<rrdgraph> gives an overview of how B<rrdtool graph> works.
-L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail,
-L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements,
+L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail.
+L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements.
 L<rrdgraph_graph> page describes all of the graph and print functions.
 
 Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
