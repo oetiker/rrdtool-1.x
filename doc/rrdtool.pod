@@ -186,12 +186,12 @@ for more information on this.
 
 =item Aberrant Behavior Detection
 
-by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
+by Jake Brutlag
 
 B<RRDtool> provides the building blocks for near real-time aberrant
 behavior detection. These components include:
 
-=over 12
+=over
 
 =item *
 
@@ -295,6 +295,8 @@ If all was setup correctly, you can access the server with perl
 sockets, tools like netcat, or in a quick interactive test by using
 'telnet localhost rrdsrv'.
 
+<B>NOTE</B> that there is no authentication with this feature! Do not setup
+such a port unless you are sure what you are doing.
 
 =head1 SEE ALSO
 
