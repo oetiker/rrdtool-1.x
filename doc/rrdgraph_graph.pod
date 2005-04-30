@@ -46,10 +46,6 @@ Similarly, no report is generated if you don't use print options.
 
 =over 4
 
-=item B<PRINT:>I<vname>B<:>I<CF><:>I<format>
-
-I<Deprecated. Use the new form of this command in new scripts.>
-The first form of this command is to be used with B<CDEF> I<vname>s.
 
 =item B<PRINT:>I<vname>B<:>I<format>
 
@@ -143,24 +139,31 @@ B<%Z> prints the time zone.
 
 =back
 
+=item B<PRINT:>I<vname>B<:>I<CF><:>I<format>
+
+I<Deprecated. Use the new form of this command in new scripts.>
+The first form of this command is to be used with B<CDEF> I<vname>s.
+
 =back
 
 =head1 GRAPH
 
 =over 4
 
+=item B<GPRINT>B<:>I<vname>B<:>I<format>
+
+This is the same as C<PRINT>, but printed inside the graph.
+
 =item B<GPRINT>B<:>I<vname>B<:>I<CF>B<:>I<format>
 
 I<Deprecated. Use the new form of this command in new scripts.>
 This is the same as C<PRINT>, but printed inside the graph.
 
-=item B<GPRINT>B<:>I<vname>B<:>I<format>
-
-This is the same as C<PRINT>, but printed inside the graph.
-
 =item B<COMMENT>B<:>I<text>
 
-Text is printed literally in the legend section of the graph.
+Text is printed literally in the legend section of the graph. Note that in
+RRDtool 1.2 you have to escape colons in COMMENT text in the same way you
+have to escape them in B<*PRINT> commands by writing B<'\:'>.
 
 =item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
 
