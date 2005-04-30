@@ -14,15 +14,13 @@
 #define rrd_realloc(a,b) realloc((a), (b))
 
 #define snprintf _snprintf
-/* Code in rrd_graph.c:rrd_graph_init() uses the %windir%
- * environment variable to override this. This should
- * avoid the recompile problem if the system directory is
- * c:/windows vs. d:/winnt.
- * This #define can't be removed because:
- * (1) the constant is used outside of rrd_graph_init() to init a struct
- * (2) windir might not be available in all environments
+
+/* Code in rrd_graph.c:rrd_graph_init() uses the %windir% environment
+ * variable to find the actual location of this relative font path to avoid
+ * the recompile problem if the system directory is c:/windows vs. d:/winnt. 
  */
-#define RRD_DEFAULT_FONT "c:/windows/fonts/cour.ttf"
+
+#define RRD_DEFAULT_FONT "cour.ttf"
 
 #define RRDGRAPH_YLEGEND_ANGLE 90.0
 

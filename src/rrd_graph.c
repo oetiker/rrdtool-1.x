@@ -2797,7 +2797,8 @@ rrd_graph_init(image_desc_t *im)
             if (windir != NULL) {
                     strncpy(rrd_win_default_font,windir,999);
                     rrd_win_default_font[999] = '\0';
-                    strcat(rrd_win_default_font,"\\fonts\\cour.ttf");
+                    strcat(rrd_win_default_font,"\\fonts\\");
+	            strcat(rrd_win_default_font,RRD_DEFAULT_FONT);         
                     for(i=0;i<DIM(text_prop);i++){
                             strncpy(text_prop[i].font,rrd_win_default_font,sizeof(text_prop[i].font)-1);
                             text_prop[i].font[sizeof(text_prop[i].font)-1] = '\0';
