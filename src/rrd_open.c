@@ -78,17 +78,9 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
     
     rrd_init(rrd);
     if (rdwr == RRD_READONLY) {
-#if defined(WIN32)
 	mode = "rb";
-#else
-	mode = "r";
-#endif
     } else {
-#if defined(WIN32)
 	mode = "rb+";
-#else
-	mode = "r+";
-#endif
     }
     
     if (((*in_file) = fopen(file_name,mode)) == NULL ){

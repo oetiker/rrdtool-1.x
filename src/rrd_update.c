@@ -1383,11 +1383,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	 * critical except during the burning cycles. */
 	if (schedule_smooth)
 	{
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 	  rrd_file = fopen(filename,"rb+");
-#else
-	  rrd_file = fopen(filename,"r+");
-#endif
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
 	  {
