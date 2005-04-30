@@ -78,13 +78,13 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
     
     rrd_init(rrd);
     if (rdwr == RRD_READONLY) {
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(WIN32)
 	mode = "rb";
 #else
 	mode = "r";
 #endif
     } else {
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(WIN32)
 	mode = "rb+";
 #else
 	mode = "r+";
