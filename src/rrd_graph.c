@@ -2237,8 +2237,8 @@ graph_size_location(image_desc_t *im, int elements
 	im->yimg += Ytitle;
 	im->yorigin += Ytitle;
     } else {
-	im->yimg += Yspacing;
-	im->yorigin += Yspacing;
+	im->yimg += 1.5*Yspacing;
+	im->yorigin += 1.5*Yspacing;
     }
     /* reserve space for padding below the graph */
     im->yimg += Yspacing;
