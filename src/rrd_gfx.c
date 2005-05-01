@@ -395,7 +395,7 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     /* handle the tabs ...
        have a witespace glyph inserted, but set its width such that the distance
     of the new right edge is x times tabwidth from 0,0 where x is an integer. */    
-    char letter = text[n];
+    unsigned char letter = text[n];
     gottab = 0;
     if (letter == '\\' && n+1 < string->count && text[n+1] == 't'){
             /* we have a tab here so skip the backslash and
