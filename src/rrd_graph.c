@@ -1938,7 +1938,7 @@ grid_paint(image_desc_t   *im)
 
     /* yaxis unit description */
     gfx_new_text( im->canvas,
-                  7, (im->yorigin - im->ysize/2),
+                  12, (im->yorigin - im->ysize/2),
                   im->graph_col[GRC_FONT],
                   im->text_prop[TEXT_PROP_UNIT].font,
                   im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth, 
@@ -1948,7 +1948,7 @@ grid_paint(image_desc_t   *im)
 
     /* graph title */
     gfx_new_text( im->canvas,
-		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size*1.2,
+		  im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size*1.3+4,
 		  im->graph_col[GRC_FONT],
 		  im->text_prop[TEXT_PROP_TITLE].font,
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
@@ -2117,7 +2117,7 @@ graph_size_location(image_desc_t *im, int elements
     ** | |..............legends......................|
     ** +-+-------------------------------------------+
     */
-    int Xvertical=0,	Yvertical=0,
+    int Xvertical=0,	
 			Ytitle   =0,
 	Xylabel  =0,	
 	Xmain    =0,	Ymain    =0,
@@ -2140,10 +2140,6 @@ graph_size_location(image_desc_t *im, int elements
 
     if (im->ylegend[0] != '\0' ) {
            Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
-           Yvertical = gfx_get_text_width(im->canvas, 0,
-                                          im->text_prop[TEXT_PROP_UNIT].font,
-                                          im->text_prop[TEXT_PROP_UNIT].size,
-                                          im->tabwidth,im->ylegend, 0);
     }
 
 
@@ -2158,7 +2154,7 @@ graph_size_location(image_desc_t *im, int elements
 		im->text_prop[TEXT_PROP_TITLE].size,
 		im->tabwidth,
 		im->title, 0) + 2*Xspacing; */
-	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.5;
+	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.6+10;
     }
 
     if (elements) {
@@ -2254,8 +2250,6 @@ graph_size_location(image_desc_t *im, int elements
     if(leg_place(im)==-1)
 	return -1;
 
-    /* last of three steps: check total height of image */
-    if (im->yimg < Yvertical) im->yimg = Yvertical;
 
 #if 0
     if (Xlegend > im->ximg) {
