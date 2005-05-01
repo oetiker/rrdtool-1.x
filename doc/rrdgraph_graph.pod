@@ -12,7 +12,7 @@ B<GPRINT>B<:>I<vname>B<:>I<format>
 
 B<COMMENT>B<:>I<text>
 
-B<VRULE>B<:>I<vname>B<#>I<color>[B<:>I<legend>]
+B<VRULE>B<:>I<time>B<#>I<color>[B<:>I<legend>]
 
 B<LINE>[I<width>]B<:>I<vname>B<#>I<color>[B<:>I<legend>][B<:>B<STACK>]
 
@@ -167,9 +167,9 @@ have to escape them in B<*PRINT> commands by writing B<'\:'>.
 
 =item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
 
-I<Deprecated. Use B<LINEx> in new scripts.>
+I<Deprecated. Use B<LINE> in new scripts.>
 
-=item B<VRULE>B<:>I<vname>B<#>I<color> [B<:>I<legend> ]
+=item B<VRULE>B<:>I<time>B<#>I<color> [B<:>I<legend> ]
 
 Draw a vertical line at I<time>.  Its color is composed from three
 hexadecimal numbers specifying the rgb color components (00 is off, FF is
