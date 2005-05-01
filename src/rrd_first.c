@@ -14,6 +14,7 @@ rrd_first(int argc, char **argv)
 {
     int target_rraindex=0;
     char *endptr;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1){
         static struct option long_options[] =
@@ -23,6 +24,7 @@ rrd_first(int argc, char **argv)
         };
         int option_index = 0;
         int opt;
+	optind = 0; opterr = 0;  /* initialize getopt */
         opt = getopt_long(argc, argv, "", long_options, &option_index);
 
         if(opt == EOF)

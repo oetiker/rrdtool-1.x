@@ -29,7 +29,6 @@ extern "C" {
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char)); \
 		    strcpy(argv[i+1],handle); \
  	        } \
-		optind=0; opterr=0; \
 		rrd_clear_error();\
 		RETVAL=name(items+1,argv); \
 		for (i=0; i < items; i++) {\
@@ -53,7 +52,6 @@ extern "C" {
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char)); \
 		    strcpy(argv[i+1],handle); \
  	        } \
-		optind=0; opterr=0; \
                 rrd_clear_error(); \
                 data=name(items+1, argv); \
                 for (i=0; i < items; i++) { \
@@ -203,7 +201,6 @@ rrd_graph(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax); 
 		for (i=0; i < items; i++) {
@@ -251,7 +248,6 @@ rrd_fetch(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data); 
 		for (i=0; i < items; i++) {
@@ -330,7 +326,6 @@ rrd_xport(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data); 
 		for (i=0; i < items; i++) {

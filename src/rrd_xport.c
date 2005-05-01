@@ -46,6 +46,7 @@ rrd_xport(int argc, char **argv, int *xsize,
     time_t	   start_tmp=0,end_tmp=0;
     struct rrd_time_value start_tv, end_tv;
     char           *parsetime_error = NULL;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     rrd_graph_init(&im);
 

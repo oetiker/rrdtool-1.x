@@ -488,6 +488,7 @@ rrd_restore(int argc, char **argv)
 	char			force_overwrite = 0;	
 
     /* init rrd clean */
+    optind = 0; opterr = 0;  /* initialize getopt */
     rrd_init(&rrd);
     if (argc<3) {
 		rrd_set_error("usage rrdtool %s [--range-check/-r] [--force-overwrite/-f] file.xml file.rrd",argv[0]);

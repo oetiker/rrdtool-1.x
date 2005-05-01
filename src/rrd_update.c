@@ -109,6 +109,7 @@ info_t *rrd_update_v(int argc, char **argv)
     char             *template = NULL;          
 	info_t *result = NULL;
 	infoval rc;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
 		static struct option long_options[] =
@@ -155,6 +156,7 @@ rrd_update(int argc, char **argv)
 {
     char             *template = NULL;          
     int rc;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
 		static struct option long_options[] =

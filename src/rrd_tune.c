@@ -61,6 +61,7 @@ rrd_tune(int argc, char **argv)
     double              min;
     double              max;
     char                dst[DST_SIZE];
+    optind = 0; opterr = 0;  /* initialize getopt */
 
 
     if(rrd_open(argv[1],&rrd_file,&rrd, RRD_READWRITE)==-1){

@@ -266,6 +266,8 @@ int main(int argc, char *argv[]) {
 #ifdef MUST_DISABLE_FPMASK
 	fpsetmask(0);
 #endif
+        optind = 0; opterr = 0;  /* initialize getopt */
+
 	/* what do we get for cmdline arguments?
 	for (i=0;i<argc;i++)
 	printf("%d-'%s'\n",i,argv[i]); */
@@ -696,8 +698,6 @@ char* drawgraph(long argc, char **args){
     args[argc++] = "--imginfo";
     args[argc++] = "<IMG SRC=\"./%s\" WIDTH=\"%lu\" HEIGHT=\"%lu\">";
   }
-  optind=0; /* reset gnu getopt */
-  opterr=0; /* reset gnu getopt */
   calfree();
   if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize,NULL,&ymin,&ymax) != -1 ) {
     return stralloc(calcpr[0]);

@@ -75,6 +75,7 @@ rrd_fetch(int argc,
 
     struct rrd_time_value start_tv, end_tv;
     char     *parsetime_error = NULL;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     /* init start and end time */
     parsetime("end-24h", &start_tv);

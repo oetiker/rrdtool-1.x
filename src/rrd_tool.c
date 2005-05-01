@@ -416,8 +416,6 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #if defined(HAVE_SYS_STAT_H)
     struct stat   st;
 #endif
-    optind=0; /* reset gnu getopt */
-    opterr=0; /* no error messages */
 
     if (RemoteMode){
        if (argc>1 && strcmp("quit", argv[1]) == 0){

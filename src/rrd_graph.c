@@ -2673,7 +2673,6 @@ int
 rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *stream, double *ymin, double *ymax)
 {
     image_desc_t   im;
-            
     rrd_graph_init(&im);
     im.graphhandle = stream;
     
@@ -2832,6 +2831,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     long		long_tmp;
     struct rrd_time_value	start_tv, end_tv;
     gfx_color_t         color;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     parsetime("end-24h", &start_tv);
     parsetime("now", &end_tv);

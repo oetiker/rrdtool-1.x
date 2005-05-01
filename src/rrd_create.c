@@ -23,6 +23,7 @@ rrd_create(int argc, char **argv)
     char *parsetime_error = NULL;
     long              long_tmp;
     int               rc;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1){
 	static struct option long_options[] =
