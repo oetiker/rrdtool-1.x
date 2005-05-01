@@ -34,7 +34,7 @@ int rrd_parse_cdef    (char *, unsigned int *, graph_desc_t *, image_desc_t *);
 
 int
 rrd_parse_find_gf(char *line, unsigned int *eaten, graph_desc_t *gdp) {
-    char funcname[11],c1=0,c2=0;
+    char funcname[11],c1=0;
     int i=0;
 
     sscanf(&line[*eaten], "DEBUG%n", &i);
@@ -44,7 +44,7 @@ rrd_parse_find_gf(char *line, unsigned int *eaten, graph_desc_t *gdp) {
 	i=0;
 	dprintf("Scanning line '%s'\n",&line[*eaten]);
     }
-    sscanf(&line[*eaten], "%10[A-Z]%n%c%c", funcname, &i, &c1, &c2);
+    sscanf(&line[*eaten], "%10[A-Z]%n%c", funcname, &i, &c1);
     if (!i) {
 	rrd_set_error("Could not make sense out of '%s'",line);
 	return 1;
@@ -54,12 +54,22 @@ rrd_parse_find_gf(char *line, unsigned int *eaten, graph_desc_t *gdp) {
 	return 1;
     }
     if (gdp->gf == GF_LINE) {
-	if (c1 < '1' || c1 > '3' || c2 != ':') {
-	    rrd_set_error("Malformed LINE command: %s",line);
-	    return 1;
+	if (c1 == ':'){
+		gdp->linewidth=1;
+	} else {
+		double width;
+		*eaten+=i;
+		if (sscanf(&line[*eaten],"%lf%n:",&width,&i)){
+			if (width <= 0){
+				rrd_set_error("LINE width is %lf. It must be >= 0 though",width);
+				return 1;
+			}
+			gdp->linewidth=width;
+		} else {
+			rrd_set_error("LINE width: %s",line);
+                      	return 1;
+		}
 	}
-	gdp->linewidth=c1-'0';
-	i++;
     } else {
 	if (c1 != ':') {
 	    rrd_set_error("Malformed %s command: %s",funcname,line);
