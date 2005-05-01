@@ -2118,7 +2118,7 @@ graph_size_location(image_desc_t *im, int elements
     ** +-+-------------------------------------------+
     */
     int Xvertical=0,	Yvertical=0,
-	Xtitle   =0,	Ytitle   =0,
+			Ytitle   =0,
 	Xylabel  =0,	
 	Xmain    =0,	Ymain    =0,
 #ifdef WITH_PIECHART
@@ -2152,11 +2152,12 @@ graph_size_location(image_desc_t *im, int elements
 	** automatically has some vertical spacing.  The horizontal
 	** spacing is added here, on each side.
 	*/
-	Xtitle = gfx_get_text_width(im->canvas, 0,
+	/* don't care for the with of the title
+		Xtitle = gfx_get_text_width(im->canvas, 0,
 		im->text_prop[TEXT_PROP_TITLE].font,
 		im->text_prop[TEXT_PROP_TITLE].size,
 		im->tabwidth,
-		im->title, 0) + 2*Xspacing;
+		im->title, 0) + 2*Xspacing; */
 	Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.5;
     }
 
@@ -2207,7 +2208,8 @@ graph_size_location(image_desc_t *im, int elements
 
     im->xorigin = Xspacing + Xylabel;
 
-    if (Xtitle > im->ximg) im->ximg = Xtitle;
+    /* the length of the title should not influence with width of the graph
+       if (Xtitle > im->ximg) im->ximg = Xtitle; */
 
     if (Xvertical) { /* unit description */
 	im->ximg += Xvertical;
