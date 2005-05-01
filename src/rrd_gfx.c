@@ -372,6 +372,9 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   unsigned int  n;
   int           error;
   int        gottab = 0;    
+  #ifdef HAVE_MBSTOWCS
+  wchar_t*      w_text;
+  #endif
 
   ft_pen.x = 0;   /* start at (0,0) !! */
   ft_pen.y = 0;
@@ -386,6 +389,11 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   string->transform.xy = (FT_Fixed)(-sin(M_PI*(rotation)/180.0)*0x10000);
   string->transform.yx = (FT_Fixed)( sin(M_PI*(rotation)/180.0)*0x10000);
   string->transform.yy = (FT_Fixed)( cos(M_PI*(rotation)/180.0)*0x10000);
+
+  #ifdef HAVE_MBSTOWCS
+  w_text = (wchar_t) calloc (string->count,sizeof(wchar_t));
+  mbstowcs(w_text,text,string->count);
+  #endif
 
   use_kerning = FT_HAS_KERNING(face);
   previous    = 0;
@@ -414,7 +422,11 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     glyph->pos.y = 0;
     glyph->image = NULL;
 
+#ifdef HAVE_MBSTOWCS
+    glyph->index = FT_Get_Char_Index( face, w_text[n] );
+#else
     glyph->index = FT_Get_Char_Index( face, letter );
+#endif
 
     /* compute glyph origin */
     if ( use_kerning && previous && glyph->index ) {
@@ -480,6 +492,10 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
       string->width = string->bbox.xMax - string->bbox.xMin;
   }
   string->height = string->bbox.yMax - string->bbox.yMin;
+#ifdef HAVE_MBSTOWSC
+  free(w_text);
+#endif
+ 
   return string;
 }
 
