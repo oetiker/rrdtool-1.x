@@ -476,11 +476,11 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
 /*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
   compute_string_bbox( string );
   /* the last character was a tab */  
-  if (gottab) {
+  /* if (gottab) { */
       string->width = ft_pen.x;
-  } else {
+  /* } else {
       string->width = string->bbox.xMax - string->bbox.xMin;
-  }
+  } */
   string->height = string->bbox.yMax - string->bbox.yMin;
 
   return string;
