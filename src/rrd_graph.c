@@ -30,7 +30,7 @@
 
 #ifndef RRD_DEFAULT_FONT
 /* there is special code later to pick Cour.ttf when running on windows */
-#define RRD_DEFAULT_FONT "VeraMono.ttf"
+#define RRD_DEFAULT_FONT "DejaVuSansMono-Roman.ttf"
 #endif
 
 text_prop_t text_prop[] = {   
@@ -2168,7 +2168,7 @@ graph_size_location(image_desc_t *im, int elements
 	                im->text_prop[TEXT_PROP_AXIS].font,
         	        im->text_prop[TEXT_PROP_AXIS].size,
                 	im->tabwidth,
-                	"0", 0) * im->unitslength + im->text_prop[TEXT_PROP_AXIS].size * 2;
+                	"0", 0) * im->unitslength + Xspacing;
 	}
     }
 

@@ -6,7 +6,7 @@
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
 fontsdir =  $(datadir)/rrdtool/fonts
-fonts_DATA = VeraMono.ttf
+fonts_DATA = DejaVuSansMono-Roman.ttf
 
 #INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 #           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
