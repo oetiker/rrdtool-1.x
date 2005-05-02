@@ -60,8 +60,8 @@ rrd_parse_find_gf(char *line, unsigned int *eaten, graph_desc_t *gdp) {
 		double width;
 		*eaten+=i;
 		if (sscanf(&line[*eaten],"%lf%n:",&width,&i)){
-			if (width <= 0){
-				rrd_set_error("LINE width is %lf. It must be >= 0 though",width);
+			if (width < 0 || isnan(width) || isinf(width) ){
+				rrd_set_error("LINE width is %lf. It must be finite and >= 0 though",width);
 				return 1;
 			}
 			gdp->linewidth=width;
