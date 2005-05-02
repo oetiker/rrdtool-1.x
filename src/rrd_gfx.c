@@ -658,7 +658,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                         
                         if (buf_x < 0 || buf_x >= (long)pys_width) continue;
                         buf_x *=  bytes_per_pixel ;
-                        font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
+                        font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix);
 			if (font_alpha > 0){
 	                        fcolor[3] =  (art_u8)((double)font_alpha / gr * falpha);
 				art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
