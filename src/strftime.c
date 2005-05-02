@@ -278,7 +278,7 @@ typedef void *va_list;
  *
  */
 
-static int pow[5] = { 1, 10, 100, 1000, 10000 };
+static int powers[5] = { 1, 10, 100, 1000, 10000 };
 
 /**
  * static void strfmt(char *str, char *fmt);
@@ -316,8 +316,8 @@ static void strfmt(char *str, const char *fmt, ...)
                         ival = va_arg(vp, int);
                         while (ilen)
                         {
-                              ival %= pow[ilen--];
-                              *str++ = (char)('0' + ival / pow[ilen]);
+                              ival %= powers[ilen--];
+                              *str++ = (char)('0' + ival / powers[ilen]);
                         }
                   }
             }
