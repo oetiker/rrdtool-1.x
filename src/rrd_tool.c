@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 
 	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
 		if ((argc = CountArgs(aLine)) == 0)  {
-		    fprintf(stderr,"ERROR: not enough arguments\n");		    
+		    fprintf(stderr,"ERROR: not enough arguments\n");
 		}
 		if ((myargv = (char **) malloc((argc+1) * 
 					       sizeof(char *))) == NULL)   {
@@ -368,8 +368,7 @@ int main(int argc, char *argv[])
 		    exit(1);
 		}
 
-		if (HandleInputLine(argc, myargv, stdout))
-		    exit(1);
+		HandleInputLine(argc, myargv, stdout);
 		free(myargv);
 
 #if HAVE_GETRUSAGE
