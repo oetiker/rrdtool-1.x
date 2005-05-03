@@ -26,10 +26,11 @@ PDF = $(MAN:.1=.pdf)
 # what should go into the distribution
 EXTRA_DIST= $(POD) $(HTML) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
 
-# some install rules
-idocdir = $(prefix)/doc
+# some install rules if the install pat
+DOCPREFIX:=$(shell echo "@prefix@" | grep rrd >/dev/null && echo "rrdtool-@VERSION@/")
+idocdir = $(prefix)/shared/doc/$(DOCPREFIX)txt
 idoc_DATA = $(POD) $(TXT)
-ihtmldir = $(prefix)/html
+ihtmldir = $(prefix)/shared/doc/$(DOCPREFIX)html
 ihtml_DATA = $(HTML)
 imandir = $(mandir)/man1
 iman_DATA = $(MAN)
