@@ -2867,13 +2867,15 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    {"units-length",required_argument, 0, 'L'},
 	    {"step",       required_argument, 0,    'S'},
             {"tabwidth",   required_argument, 0,    'T'},            
+	    {"font-render-mode", required_argument, 0, 'R'},
+	    {"font-smoothing-threshold", required_argument, 0, 'B'},
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
         int col_start,col_end;
 
 	opt = getopt_long(argc, argv, 
-			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:L:S:T:N",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:L:S:T:NR:B:",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -3112,6 +3114,24 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    strncpy(im->title,optarg,150);
 	    im->title[150]='\0';
 	    break;
+
+	case 'R':
+		if ( strcmp( optarg, "normal" ) == 0 )
+			im->canvas->aa_type = AA_NORMAL;
+		else if ( strcmp( optarg, "light" ) == 0 )
+			im->canvas->aa_type = AA_LIGHT;
+		else if ( strcmp( optarg, "mono" ) == 0 )
+			im->canvas->aa_type = AA_NONE;
+		else
+		{
+			rrd_set_error("unknown font-render-mode '%s'", optarg );
+			return;
+		}
+		break;
+
+	case 'B':
+	    im->canvas->font_aa_threshold = atof(optarg);
+		break;
 
 	case '?':
             if (optopt != 0)

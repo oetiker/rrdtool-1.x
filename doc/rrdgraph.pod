@@ -279,6 +279,18 @@ variable C<RRD_DEFAULT_FONT> if you want to change this.
 
 Truetype fonts are only supported for PNG output. See below.
 
+[B<-R>|B<--font-render-mode> {I<normal>,I<light>,I<mono>}]
+
+This lets you customize the strength of the font smoothing,
+or disable it entirely using I<mono>. By default, I<normal>
+font smoothing is used.
+
+[B<-B>|B<--font-smoothing-threshold> I<size>]
+
+This specifies the largest font size which will be rendered
+bitmapped, that is, without any font smoothing. By default,
+no text is rendered bitmapped.
+
 [B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>]
 
 Image format for the generated graph. For the vector formats you can

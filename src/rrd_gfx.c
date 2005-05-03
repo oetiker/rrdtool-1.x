@@ -45,8 +45,8 @@ struct gfx_string_s {
 static void compute_string_bbox(gfx_string string);
 
 /* create a freetype glyph string */
-gfx_string gfx_string_create ( FT_Face face,
-                               const char *text, int rotation, double tabwidth);
+gfx_string gfx_string_create ( gfx_canvas_t *canvas, FT_Face face,
+                               const char *text, int rotation, double tabwidth, double size);
 
 /* create a freetype glyph string */
 static void gfx_string_destroy ( gfx_string string );
@@ -88,7 +88,9 @@ gfx_canvas_t *gfx_new_canvas (void) {
     canvas->imgformat = IF_PNG; /* we default to PNG output */
     canvas->interlaced = 0;
     canvas->zoom = 1.0;
-    return canvas;    
+    canvas->font_aa_threshold = -1.0;
+    canvas->aa_type = AA_NORMAL;
+    return canvas;
 }
 
 /* create a new line */
@@ -275,7 +277,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double tabwidth, char* text, int rotation){
   switch (canvas->imgformat) {
   case IF_PNG: 
-    return gfx_get_text_width_libart (start, font, size, tabwidth, text, rotation);
+    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text, rotation);
   case IF_SVG: /* fall through */ 
   case IF_EPS:
   case IF_PDF:
@@ -286,8 +288,8 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 }
 
 double gfx_get_text_width_libart (
-			    double start, char* font, double size,
-			    double tabwidth, char* text, int rotation){
+			    gfx_canvas_t *canvas, double start, char* font, double size,
+			    double tabwidth, char* text, int rotation ){
 
   int           error;
   double        text_width=0;
@@ -301,7 +303,7 @@ double gfx_get_text_width_libart (
   error = FT_Set_Char_Size(face,  size*64,size*64,  100,100);
   if ( error ) return -1;
 
-  string = gfx_string_create( face, text, rotation,tabwidth);
+  string = gfx_string_create( canvas, face, text, rotation, tabwidth, size );
   text_width = string->width;
   gfx_string_destroy(string);
   FT_Done_FreeType(library);
@@ -358,8 +360,8 @@ static void compute_string_bbox(gfx_string string) {
 } 
 
 /* create a free type glyph string */
-gfx_string gfx_string_create(FT_Face face,const char *text,
-        int rotation, double tabwidth)
+gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text,
+        int rotation, double tabwidth, double size )
 {
 
   FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
@@ -427,7 +429,10 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
 
     /* load the glyph image (in its native format) */
     /* for now, we take a monochrome glyph bitmap */
-    error = FT_Load_Glyph (face, glyph->index, FT_LOAD_DEFAULT);
+    error = FT_Load_Glyph (face, glyph->index, size > canvas->font_aa_threshold ?
+                            canvas->aa_type == AA_NORMAL ? FT_LOAD_TARGET_NORMAL :
+                            canvas->aa_type == AA_LIGHT ? FT_LOAD_TARGET_LIGHT :
+                            FT_LOAD_TARGET_MONO : FT_LOAD_TARGET_MONO);
     if (error) {
       fprintf (stderr, "couldn't load glyph:  %c\n", letter);
       continue;
@@ -461,7 +466,10 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     }
 
     /* convert to a bitmap - destroy native image */
-    error = FT_Glyph_To_Bitmap (&glyph->image, FT_RENDER_MODE_NORMAL, 0, 1);
+    error = FT_Glyph_To_Bitmap (&glyph->image, size > canvas->font_aa_threshold ?
+                            canvas->aa_type == AA_NORMAL ? FT_RENDER_MODE_NORMAL :
+                            canvas->aa_type == AA_LIGHT ? FT_RENDER_MODE_LIGHT :
+                            FT_RENDER_MODE_MONO : FT_RENDER_MODE_MONO, 0, 1);
     if (error) {
       fprintf (stderr, "couldn't convert glyph to bitmap\n");
       continue;
@@ -582,7 +590,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             pen_x = node->x * canvas->zoom;
             pen_y = node->y * canvas->zoom;
 
-            string = gfx_string_create (face, node->text, node->angle, node->tabwidth);
+            string = gfx_string_create (canvas, face, node->text, node->angle, node->tabwidth, node->size);
             switch(node->halign){
             case GFX_H_RIGHT:  vec.x = -string->bbox.xMax;
                                break;          
@@ -647,23 +655,46 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 	         }
 		 art_free(letter);
 */
+                switch ( bit->bitmap.pixel_mode ) {
+                    case FT_PIXEL_MODE_GRAY:
+                        for (iy=0; iy < bit->bitmap.rows; iy++){
+                            long buf_y = iy+(pen_y+0.5)-bit->top;
+                            if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                            buf_y *= rowstride;
+                            for (ix=0;ix < bit->bitmap.width;ix++){
+                                long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
+                                art_u8 font_alpha;
 
-                for (iy=0; iy < bit->bitmap.rows; iy++){		    
-                    long buf_y = iy+(pen_y+0.5)-bit->top;
-                    if (buf_y < 0 || buf_y >= (long)pys_height) continue;
-                    buf_y *= rowstride;
-                    for (ix=0;ix < bit->bitmap.width;ix++){
-                        long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
-                        art_u8 font_alpha;
-                        
-                        if (buf_x < 0 || buf_x >= (long)pys_width) continue;
-                        buf_x *=  bytes_per_pixel ;
-                        font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix);
-			if (font_alpha > 0){
-	                        fcolor[3] =  (art_u8)((double)font_alpha / gr * falpha);
-				art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+                                buf_x *=  bytes_per_pixel ;
+                                font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix);
+                    if (font_alpha > 0){
+                                    fcolor[3] =  (art_u8)((double)font_alpha / gr * falpha);
+                        art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                                }
+                            }
                         }
-                    }
+                        break;
+
+                    case FT_PIXEL_MODE_MONO:
+                        for (iy=0; iy < bit->bitmap.rows; iy++){
+                            long buf_y = iy+(pen_y+0.5)-bit->top;
+                            if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                            buf_y *= rowstride;
+                            for (ix=0;ix < bit->bitmap.width;ix++){
+                                long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
+
+                                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+                                buf_x *=  bytes_per_pixel ;
+                                if ( (fcolor[3] = falpha * ((*(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix/8) >> (7 - (ix % 8))) & 1)) > 0 )
+                                    art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                            }
+                        }
+                        break;
+
+                        default:
+                            rrd_set_error("unknown freetype pixel mode: %d", bit->bitmap.pixel_mode);
+                            break;
                 }
 
 /*
