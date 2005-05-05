@@ -183,7 +183,8 @@ rrd_create_r(char *filename,
                 return -1;
             }
             rrd.stat_head -> ds_cnt++;
-	} else if (strncmp(argv[i],"RRA:",3)==0){
+	} else if (strncmp(argv[i],"RRA:",4)==0){
+            char *argvcopy;
 	    char *tokptr;
 	    size_t old_size = sizeof(rra_def_t)*(rrd.stat_head->rra_cnt);
 	    if((rrd.rra_def = rrd_realloc(rrd.rra_def,
@@ -194,8 +195,9 @@ rrd_create_r(char *filename,
                 return(-1);	
 	    }
 	    memset(&rrd.rra_def[rrd.stat_head->rra_cnt], 0, sizeof(rra_def_t));
-            
-	    token = strtok_r(&argv[i][4],":", &tokptr);
+
+            argvcopy = strdup(argv[i]);
+	    token = strtok_r(&argvcopy[4],":", &tokptr);
 	    token_idx = error_flag = 0;
 	    while (token != NULL)
 	    {
@@ -370,12 +372,14 @@ rrd_create_r(char *filename,
                 if (rrd_test_error())
                 {
                     /* all errors are unrecoverable */
+                    free(argvcopy);
                     rrd_free(&rrd);
                     return (-1);
                 }
                 token = strtok_r(NULL,":", &tokptr);
                 token_idx++;
 	    } /* end while */
+	    free(argvcopy);
 #ifdef DEBUG
 	    fprintf(stderr,"Creating RRA CF: %s, dep idx %lu, current idx %lu\n",
 		    rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam,
