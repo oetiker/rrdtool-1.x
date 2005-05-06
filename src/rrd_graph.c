@@ -151,9 +151,9 @@ ytr(image_desc_t *im, double value){
     if (! im->rigid) {
       /* keep yval as-is */
     } else if (yval > im->yorigin) {
-      yval = im->yorigin+2;
+      yval = im->yorigin;
     } else if (yval < im->yorigin - im->ysize){
-      yval = im->yorigin - im->ysize - 2;
+      yval = im->yorigin - im->ysize;
     } 
     return yval;
 }
@@ -1923,7 +1923,7 @@ grid_paint(image_desc_t   *im)
 	} else {
 		res = draw_horizontal_grid(im);
 	}
-
+	
 	/* dont draw horizontal grid if there is no min and max val */
 	if (! res ) {
 	  char *nodata = "No Data found";
@@ -1954,6 +1954,14 @@ grid_paint(image_desc_t   *im)
 		  im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
 		  GFX_H_CENTER, GFX_V_CENTER,
 		  im->title);
+    /* rrdtool 'logo' */
+    gfx_new_text( im->canvas,
+		  im->ximg-7, 7,
+		  0xbfbfbfff,
+		  im->text_prop[TEXT_PROP_AXIS].font,
+		  5, im->tabwidth, 270,
+		  GFX_H_RIGHT, GFX_V_TOP,
+		  "RRDTOOL / TOBI OETIKER");
     
     /* graph labels */
     if( !(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH) ) {
@@ -2484,7 +2492,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
           }
         } else {
-	  float ybase0 = DNAN,ytop0;
+	  float ybase0 = DNAN,ytop0=DNAN;
           for(ii=0;ii<im->xsize;ii++){
 	    /* keep things simple for now, just draw these bars
 	       do not try to build a big and complex area */
