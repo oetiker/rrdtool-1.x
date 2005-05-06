@@ -536,20 +536,20 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 	    if (node->closed_path)
 		gfx_libart_close_path(node, &vec);
 	    /* gfx_round_scaled_coordinates(vec); */
-            pvec = art_vpath_perturb(vec);
-	    art_free(vec);
+            /* pvec = art_vpath_perturb(vec);
+	    art_free(vec); */
             if(node->type == GFX_LINE){
-                svp = art_svp_vpath_stroke ( pvec, ART_PATH_STROKE_JOIN_ROUND,
+                svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
                                              node->size*canvas->zoom,4,0.25);
             } else {
-                svp  = art_svp_from_vpath ( pvec );
-                svpt = art_svp_uncross( svp );
+                svp  = art_svp_from_vpath ( vec );
+/*                svpt = art_svp_uncross( svp );
                 art_svp_free(svp);
 	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
-                art_svp_free(svpt);
+                art_svp_free(svpt);*/
             }
-            art_free(pvec);
+            art_free(vec);
 	    /* this is from gnome since libart does not have this yet */
             gnome_print_art_rgba_svp_alpha (svp ,0,0, pys_width, pys_height,
                                 node->color, buffer, rowstride, NULL);

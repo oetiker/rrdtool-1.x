@@ -2442,13 +2442,13 @@ graph_paint(image_desc_t *im, char ***calcpr)
       } /* for */
 
       /* *******************************************************
-                   ___ 
-		  |   |    ___
+       a           ___. (a,t) 
+  		  |   |    ___
               ____|   |   |   |
               |       |___|
-       -------|---------------------------------------      
+       -------|--t-1--t--------------------------------      
                       
-      if we know the value of y at time t was a then 
+      if we know the value at time t was a then 
       we draw a square from t-1 to t with the value a.
 
       ********************************************************* */
@@ -2456,29 +2456,44 @@ graph_paint(image_desc_t *im, char ***calcpr)
         /* GF_LINE and friend */
         if(stack_gf == GF_LINE ){
           node = NULL;
-          for(ii=1;ii<im->xsize;ii++){
-	    if (isnan(im->gdes[i].p_data[ii])){
+          for(ii=1;ii<im->xsize;ii++){	    
+	    if (isnan(im->gdes[i].p_data[ii]) || (im->slopemode==1 && isnan(im->gdes[i].p_data[ii-1]))){
 		node = NULL;
 		continue;
 	    }
             if ( node == NULL ) {
-                 node = gfx_new_line(im->canvas,
+		if ( im->slopemode == 0 ){
+                  node = gfx_new_line(im->canvas,
                                     ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
                                     ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
                                     im->gdes[i].linewidth,
                                     im->gdes[i].col);
+	        } else {
+                  node = gfx_new_line(im->canvas,
+                                    ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii-1]),
+                                    ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
+                                    im->gdes[i].linewidth,
+                                    im->gdes[i].col);
+	        }
              } else {
-               gfx_add_point(node,ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+	       if ( im->slopemode==0 ){
+                   gfx_add_point(node,ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+	       };
                gfx_add_point(node,ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
              };
 
           }
         } else {
-          for(ii=1;ii<im->xsize;ii++){
+	  float ybase0 = DNAN,ytop0;
+          for(ii=0;ii<im->xsize;ii++){
 	    /* keep things simple for now, just draw these bars
 	       do not try to build a big and complex area */
 	    float ybase,ytop;
+	    if ( im->slopemode == 0 && ii==0){
+		continue;
+	    }
 	    if ( isnan(im->gdes[i].p_data[ii]) ) {
+		ybase0 = DNAN;
 		continue;
 	    }
             ytop = ytr(im,im->gdes[i].p_data[ii]);
@@ -2488,15 +2503,33 @@ graph_paint(image_desc_t *im, char ***calcpr)
                   ybase = ytr(im,areazero);
             }
             if ( ybase == ytop ){
-		continue;
+		ybase0 = DNAN;
+		continue;	
 	    }
-            node = gfx_new_area(im->canvas,
-                                ii-1+im->xorigin,ybase,
-                                ii-1+im->xorigin,ytop,
+	    /* every area has to be wound clock-wise,
+	       so we have to make sur base remains base  */		
+	    if (ybase > ytop){
+		float extra = ytop;
+		ytop = ybase;
+		ybase = extra;
+	    }
+	    if ( im->slopemode == 0){
+		 ybase0 = ybase;
+		 ytop0 = ytop;
+	    }
+	    if ( !isnan(ybase0) ){
+	            node = gfx_new_area(im->canvas,
+                                ii-1+im->xorigin,ybase0,
+                                ii-1+im->xorigin,ytop0,
                                 ii+im->xorigin,ytop,				
                                 im->gdes[i].col
                                );
-            gfx_add_point(node,ii+im->xorigin,ybase);
+        	    gfx_add_point(node,
+			        ii+im->xorigin,ybase
+                              );
+            }
+	    ybase0=ybase;
+	    ytop0=ytop;
           }             
         } /* else GF_LINE */
       } /* if color != 0x0 */
@@ -2767,6 +2800,7 @@ rrd_graph_init(image_desc_t *im)
     im->gridfit = 1;
     im->imginfo = NULL;
     im->lazy = 0;
+    im->slopemode = 0;
     im->logarithmic = 0;
     im->ygridstep = DNAN;
     im->draw_x_grid = 1;
@@ -2860,6 +2894,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"only-graph", no_argument,       0,  'j'},
 	    {"alt-y-grid", no_argument,       0,  'Y'},
             {"no-minor",   no_argument,       0,  'I'},
+	    {"slope-mode", no_argument,	      0,  'E'},
 	    {"alt-autoscale", no_argument,    0,  'A'},
 	    {"alt-autoscale-max", no_argument, 0, 'M'},
             {"no-gridfit", no_argument,       0,   'N'},
@@ -2875,7 +2910,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
         int col_start,col_end;
 
 	opt = getopt_long(argc, argv, 
-			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMX:L:S:T:NR:B:",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -3039,6 +3074,10 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	case 'z':
 	    im->lazy = 1;
 	    break;
+	case 'E':
+	    im->slopemode = 1;
+	    break;
+
 	case 'o':
 	    im->logarithmic = 1;
 	    if (isnan(im->minval))

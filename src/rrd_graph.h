@@ -170,6 +170,7 @@ typedef struct image_desc_t {
     int            lazy;           /* only update the image if there is
 				      reasonable probablility that the
 				      existing one is out of date */
+    int		   slopemode;	   /* connect the dots of the curve directly, not using a stair */
     int            logarithmic;    /* scale the yaxis logarithmic */
     
     /* status information */
