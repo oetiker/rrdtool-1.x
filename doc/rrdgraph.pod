@@ -291,6 +291,12 @@ This specifies the largest font size which will be rendered
 bitmapped, that is, without any font smoothing. By default,
 no text is rendered bitmapped.
 
+[B<-E>|B<--slope-mode>]
+
+RRDtool graphs are composed of stair case curves by default. This is in line with
+the way RRDtool calculates its data. Some people favor a more 'organic' look
+for their graphs even though it is not all that true.
+
 [B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>]
 
 Image format for the generated graph. For the vector formats you can
