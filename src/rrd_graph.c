@@ -2482,7 +2482,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 		continue;
 	    }
             ytop = ytr(im,im->gdes[i].p_data[ii]);
- 	    if ( im->gdes[i].stack ) {
+ 	    if ( lastgdes && im->gdes[i].stack ) {
                   ybase = ytr(im,lastgdes->p_data[ii]);
             } else {
                   ybase = ytr(im,areazero);
