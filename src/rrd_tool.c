@@ -85,8 +85,8 @@ void PrintUsage(char *cmd)
     char help_fetch[] =
 	   "* fetch - fetch data out of an RRD\n\n"
 	   "\trrdtool fetch filename.rrd CF\n"
-	   "\t\t[--resolution|-r resolution]\n"
-	   "\t\t[--start|-s start] [--end|-e end]\n\n";
+	   "\t\t[-r|--resolution resolution]\n"
+	   "\t\t[-s|--start start] [-e|--end end]\n\n";
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -94,7 +94,7 @@ void PrintUsage(char *cmd)
 	   "* graph - generate a graph from one or several RRD\n\n"
 	   "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
 	   "\t\t[-x|--x-grid x-axis grid and label]\n"
-	   "\t\t[--alt-y-grid]\n"
+	   "\t\t[-Y|--alt-y-grid]\n"
 	   "\t\t[-y|--y-grid y-axis grid and label]\n"
 	   "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
 	   "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
@@ -104,14 +104,17 @@ void PrintUsage(char *cmd)
     	   "\t\t[-F|--force-rules-legend]\n";
     char help_graph2[] =
            "\t\t[-j|--only-graph]\n"
-	   "\t\t[--font FONTTAG:size:font]\n"
-           "\t\t[--zoom factor]\n"       
-	   "\t\t[--alt-autoscale]\n"
-	   "\t\t[--alt-autoscale-max]\n"
-	   "\t\t[--no-gridfit]\n"
-	   "\t\t[--units-exponent value]\n"
-	   "\t\t[--units-length value]\n"
-	   "\t\t[--step seconds]\n"	   
+	   "\t\t[-n|--font FONTTAG:size:font]\n"
+           "\t\t[-m|--zoom factor]\n"       
+	   "\t\t[-A|--alt-autoscale]\n"
+	   "\t\t[-M|--alt-autoscale-max]\n"
+	   "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
+	   "\t\t[-B|--font-smoothing-threshold size]\n"
+	   "\t\t[-E|--slope-mode]\n"
+	   "\t\t[-N|--no-gridfit]\n"
+	   "\t\t[-X|--units-exponent value]\n"
+	   "\t\t[-L|--units-length value]\n"
+	   "\t\t[-S|--step seconds]\n"	   
 	   "\t\t[-f|--imginfo printfstr]\n"
 	   "\t\t[-a|--imgformat PNG]\n"
 	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n";
@@ -119,15 +122,18 @@ void PrintUsage(char *cmd)
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
 	   "\t\t[VDEF:vdefname=rpn-expression]\n"
-	   "\t\t[PRINT:vname:CF:format]\n"
-	   "\t\t[GPRINT:vname:CF:format]\n"
 	   "\t\t[PRINT:vdefname:format]\n"
 	   "\t\t[GPRINT:vdefname:format]\n"
+	   "\t\t[COMMENT:text]\n"
+	   "\t\t[SHIFT:vname:offset]\n"
+	   "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
 	   "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
 	   "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
-	   "\t\t[LINE{1|2|3}:vname[#rrggbb[aa][:legend]][:STACK]]\n"
-	   "\t\t[AREA:vname[#rrggbb[aa][:legend]][:STACK]]\n"
-	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]]\n\n";
+	   "\t\t[LINE[width]:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+	   "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+	   "\t\t[PRINT:vname:CF:format] (deprecated)\n"
+	   "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
+	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n";
 
     char help_tune1[] =
 	   " * tune -  Modify some basic properties of an RRD\n\n"
