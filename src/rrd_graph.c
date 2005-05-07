@@ -1961,9 +1961,9 @@ grid_paint(image_desc_t   *im)
     /* rrdtool 'logo' */
     gfx_new_text( im->canvas,
 		  im->ximg-7, 7,
-		  0xbfbfbfff,
+		  ( im->graph_col[GRC_FONT] & 0xffffff00 ) | 0x00000066,
 		  im->text_prop[TEXT_PROP_AXIS].font,
-		  5, im->tabwidth, 270,
+		  5.5, im->tabwidth, 270,
 		  GFX_H_RIGHT, GFX_V_TOP,
 		  "RRDTOOL / TOBI OETIKER");
     
