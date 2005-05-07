@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.2.1  Copyright by Tobi Oetiker, 1997-2005
+ * RRDtool 1.2.2  Copyright by Tobi Oetiker, 1997-2005
  ****************************************************************************
  * rrd_gfx.c  graphics wrapper for rrdtool
   **************************************************************************/
@@ -1417,7 +1417,7 @@ static int eps_prologue(eps_state *state)
   gfx_node_t *node;
   fputs(
     "%!PS-Adobe-3.0 EPSF-3.0\n"
-    "%%Creator: RRDtool 1.2.1 Tobias Oetiker, http://tobi.oetiker.ch\n"
+    "%%Creator: RRDtool 1.2.2 Tobias Oetiker, http://tobi.oetiker.ch\n"
     /* can't like weird chars here */
     "%%Title: (RRDtool output)\n"
     "%%DocumentData: Clean7Bit\n"

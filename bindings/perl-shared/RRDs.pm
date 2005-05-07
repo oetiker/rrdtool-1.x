@@ -7,7 +7,7 @@ use vars qw(@ISA $VERSION);
 
 require DynaLoader;
 
-$VERSION=1.2001;
+$VERSION=1.2002;
 
 bootstrap RRDs $VERSION;
 
