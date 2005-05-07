@@ -11,7 +11,7 @@ CLEANFILES = *.1 *.html *.txt *-dircache RRD?.pod *.pdf *~ core *itemcache *.rej
 POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdrestore.pod         rrdupdate.pod  \
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod                           \
-      rrd-beginners.pod      rrdinfo.pod            rrdtune.pod                                                  \
+      rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod                          \
       rrdcgi.pod             rrdgraph.pod           rrdlast.pod                                                  \
       rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod                       
 

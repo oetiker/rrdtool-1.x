@@ -24,7 +24,9 @@ B<SHIFT>B<:>I<vname>B<:>I<offset>
 
 =cut
 
-B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
+#
+#B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
+#
 
 =pod
 
