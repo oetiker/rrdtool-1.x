@@ -1209,7 +1209,7 @@ static void svg_text(FILE *fp, gfx_node_t *node)
      fputs(",", fp);
      svg_write_number(fp, y);
      fputs(") rotate(", fp);
-     svg_write_number(fp, node->angle);
+     svg_write_number(fp, -node->angle);
      fputs(")\"", fp);
      x = y = 0;
      svg_close_tag(fp);
@@ -1605,7 +1605,7 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
     fputc(' ', fp);
     svg_write_number(fp, y);
     fputs(" translate ", fp);
-    svg_write_number(fp, -node->angle);
+    svg_write_number(fp, node->angle);
     fputs(" rotate 0 ", fp);
     svg_write_number(fp, ydelta);
     fputs(" moveto ", fp);
@@ -1997,7 +1997,7 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
   }
   pdf_set_fill_color(s, node->color);
   if (node->angle != 0) {
-    double a = 2 * M_PI * -node->angle / 360.0;
+    double a = 2 * M_PI * node->angle / 360.0;
     double new_x, new_y;
     cos_a = cos(a);
     sin_a = sin(a);
