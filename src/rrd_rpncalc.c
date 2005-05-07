@@ -428,7 +428,8 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		rpnstack -> s[++stptr] = rpnp[rpi].val;
 		break;
 	    case OP_VARIABLE:
-		/* Sanity check: VDEFs shouldn't make it here */
+            case OP_PREV_OTHER:
+   	    /* Sanity check: VDEFs shouldn't make it here */
 		if (rpnp[rpi].ds_cnt == 0) {
 		    rrd_set_error("VDEF made it into rpn_calc... aborting");
 		    return -1;
@@ -439,7 +440,16 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		     * row in the rra (skip over non-relevant
 		     * data sources)
 		     */
-		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		    if (rpnp[rpi].op == OP_VARIABLE) {
+		        rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		    } else {
+   		        if ((output_idx) <= 0) {
+			    rpnstack -> s[++stptr] = DNAN;
+			} else {			    
+			    rpnstack -> s[++stptr] =  *(rpnp[rpi].data-rpnp[rpi].ds_cnt);
+			}
+		       
+		    }		   
 		    if (data_idx % rpnp[rpi].step == 0){
 			rpnp[rpi].data += rpnp[rpi].ds_cnt;
 		    }
@@ -454,15 +464,8 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		} else {
 		    rpnstack -> s[++stptr] = output[output_idx-1];
 		}
-		break;
-	case OP_PREV_OTHER:
-	  if ((output_idx) <= 0) {
-		rpnstack -> s[++stptr] = DNAN;
-	  } else {
-		rpnstack -> s[++stptr] = rpnp[rpnp[rpi].ptr].data[output_idx-1];
-	  }
-	  break;
-	    case OP_UNKN:
+	        break;
+	 case OP_UNKN:
 		rpnstack -> s[++stptr] = DNAN; 
 		break;
 	    case OP_INF:

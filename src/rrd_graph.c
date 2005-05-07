@@ -886,26 +886,29 @@ data_calc( image_desc_t *im){
 		 *   and the resulting number is the step size for the
 		 *   resulting data source.
 		 */
-		for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
-		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
-			long ptr = im->gdes[gdi].rpnp[rpi].ptr;
-			if (im->gdes[ptr].ds_cnt == 0) {
+	        for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
+	            if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE  ||
+		        im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
+		        long ptr = im->gdes[gdi].rpnp[rpi].ptr;
+		        if (im->gdes[ptr].ds_cnt == 0) { /* this is a VDEF data source */
 #if 0
-			printf("DEBUG: inside CDEF '%s' processing VDEF '%s'\n",
-	im->gdes[gdi].vname,
-	im->gdes[ptr].vname);
-			printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
+			    printf("DEBUG: inside CDEF '%s' processing VDEF '%s'\n",
+			       im->gdes[gdi].vname,
+			       im->gdes[ptr].vname);
+			    printf("DEBUG: value from vdef is %f\n",im->gdes[ptr].vf.val);
 #endif
 			    im->gdes[gdi].rpnp[rpi].val = im->gdes[ptr].vf.val;
 			    im->gdes[gdi].rpnp[rpi].op  = OP_NUMBER;
-			} else {
-			if ((steparray =
+			} else { /* normal variables and PREF(variables) */
+
+			    /* add one entry to the array that keeps track of the step sizes of the
+			     * data sources going into the CDEF. */
+			    if ((steparray =
 				 rrd_realloc(steparray,
 							 (++stepcnt+1)*sizeof(*steparray)))==NULL){
-				rrd_set_error("realloc steparray");
-				rpnstack_free(&rpnstack);
-				return -1;
+			 	 rrd_set_error("realloc steparray");
+			 	 rpnstack_free(&rpnstack);
+				 return -1;
 			    };
 
 			    steparray[stepcnt-1] = im->gdes[ptr].step;
@@ -915,6 +918,7 @@ data_calc( image_desc_t *im){
 			     * to the earliest endpoint of any of the
 			     * rras involved (ptr)
 			     */
+
 			    if(im->gdes[gdi].start < im->gdes[ptr].start)
 				im->gdes[gdi].start = im->gdes[ptr].start;
 
@@ -927,8 +931,8 @@ data_calc( image_desc_t *im){
 			     * further save step size and data source
 			     * count of this rra
 			     */ 
-                            im->gdes[gdi].rpnp[rpi].data =  im->gdes[ptr].data + im->gdes[ptr].ds;
-			    im->gdes[gdi].rpnp[rpi].step = im->gdes[ptr].step;
+                            im->gdes[gdi].rpnp[rpi].data   = im->gdes[ptr].data + im->gdes[ptr].ds;
+			    im->gdes[gdi].rpnp[rpi].step   = im->gdes[ptr].step;
 			    im->gdes[gdi].rpnp[rpi].ds_cnt = im->gdes[ptr].ds_cnt;
 
 			    /* backoff the *.data ptr; this is done so
@@ -941,9 +945,9 @@ data_calc( image_desc_t *im){
 
                 /* move the data pointers to the correct period */
                 for(rpi=0;im->gdes[gdi].rpnp[rpi].op != OP_END;rpi++){
-		if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
-		   im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
-                        long ptr = im->gdes[gdi].rpnp[rpi].ptr;
+		    if(im->gdes[gdi].rpnp[rpi].op == OP_VARIABLE ||
+		        im->gdes[gdi].rpnp[rpi].op == OP_PREV_OTHER){
+		        long ptr  = im->gdes[gdi].rpnp[rpi].ptr;
 			long diff = im->gdes[gdi].start - im->gdes[ptr].start;
 
                         if(diff > 0)
