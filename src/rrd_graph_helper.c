@@ -388,20 +388,19 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
     **   LINE:val::STACK	means no legend, and do STACK
     */
     if (colorfound) {
-	char c1,c2;
 	int err=0;
         char *linecp = strdup(line);
 	dprintf("- looking for optional legend\n");
-
-	/* The legend needs to be prefixed with "m ". This then gets
-	** replaced by the color box. */
-
+	
 	dprintf("- examining '%s'\n",&line[*eaten]);
-
-	(*eaten)--;
-	linecp[*eaten]=' ';
-	(*eaten)--;
-	linecp[*eaten]='m';
+	if (linecp[*eaten] != '\0' && linecp[*eaten] != ':') {
+	    /* If the legend is not empty, it has to be prefixed with "m ". This then gets
+	     * replaced by the color box later on. */
+	     (*eaten)--;
+	     linecp[*eaten]=' ';
+	     (*eaten)--;
+	     linecp[*eaten]='m';
+	}
 
 	if (rrd_parse_legend(linecp, eaten, gdp)) err=1;
 	
