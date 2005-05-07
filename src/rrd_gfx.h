@@ -8,9 +8,16 @@
 #define RRD_GFX_H
 #define LIBART_COMPILATION
 
+#define y0 libart_y0
+#define y1 libart_y1
+#define gamma libart_gamma
 #include <libart_lgpl/libart.h>
 #include <libart_lgpl/art_rgba.h>
 #include "art_rgba_svp.h"
+#undef gamma
+#undef y0
+#undef y1
+
 
 enum gfx_if_en {IF_PNG=0,IF_SVG,IF_EPS,IF_PDF};
 enum gfx_en { GFX_LINE=0,GFX_AREA,GFX_TEXT };

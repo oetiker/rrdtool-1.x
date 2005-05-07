@@ -45,7 +45,7 @@ struct _ArtRgbaSVPAlphaData {
   art_u8 r, g, b, alpha;
   art_u8 *buf;
   int rowstride;
-  int x0, x1;
+  int libart_x0, libart_x1;
 };
 
 static void
@@ -56,15 +56,15 @@ art_rgba_svp_alpha_callback (void *callback_data, int y,
   art_u8 *linebuf;
   int run_x0, run_x1;
   art_u32 running_sum = start;
-  int x0, x1;
+  int libart_x0, libart_x1;
   int k;
   art_u8 r, g, b;
   int *alphatab;
   int alpha;
 
   linebuf = data->buf;
-  x0 = data->x0;
-  x1 = data->x1;
+  libart_x0 = data->libart_x0;
+  libart_x1 = data->libart_x1;
 
   r = data->r;
   g = data->g;
@@ -74,13 +74,13 @@ art_rgba_svp_alpha_callback (void *callback_data, int y,
   if (n_steps > 0)
     {
       run_x1 = steps[0].x;
-      if (run_x1 > x0)
+      if (run_x1 > libart_x0)
 	{
 	  alpha = (running_sum >> 16) & 0xff;
 	  if (alpha)
 	    art_rgba_run_alpha (linebuf,
 			       r, g, b, alphatab[alpha],
-			       run_x1 - x0);
+			       run_x1 - libart_x0);
 	}
 
       /* render the steps into tmpbuf */
@@ -93,19 +93,19 @@ art_rgba_svp_alpha_callback (void *callback_data, int y,
 	    {
 	      alpha = (running_sum >> 16) & 0xff;
 	      if (alpha)
-		art_rgba_run_alpha (linebuf + (run_x0 - x0) * 4,
+		art_rgba_run_alpha (linebuf + (run_x0 - libart_x0) * 4,
 				   r, g, b, alphatab[alpha],
 				   run_x1 - run_x0);
 	    }
 	}
       running_sum += steps[k].delta;
-      if (x1 > run_x1)
+      if (libart_x1 > run_x1)
 	{
 	  alpha = (running_sum >> 16) & 0xff;
 	  if (alpha)
-	    art_rgba_run_alpha (linebuf + (run_x1 - x0) * 4,
+	    art_rgba_run_alpha (linebuf + (run_x1 - libart_x0) * 4,
 			       r, g, b, alphatab[alpha],
-			       x1 - run_x1);
+			       libart_x1 - run_x1);
 	}
     }
   else
@@ -114,7 +114,7 @@ art_rgba_svp_alpha_callback (void *callback_data, int y,
       if (alpha)
 	art_rgba_run_alpha (linebuf,
 			   r, g, b, alphatab[alpha],
-			   x1 - x0);
+			   libart_x1 - libart_x0);
     }
 
   data->buf += data->rowstride;
@@ -129,15 +129,15 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
   art_u8 *linebuf;
   int run_x0, run_x1;
   art_u32 running_sum = start;
-  int x0, x1;
+  int libart_x0, libart_x1;
   int k;
   art_u8 r, g, b;
   int *alphatab;
   int alpha;
 
   linebuf = data->buf;
-  x0 = data->x0;
-  x1 = data->x1;
+  libart_x0 = data->libart_x0;
+  libart_x1 = data->libart_x1;
 
   r = data->r;
   g = data->g;
@@ -147,7 +147,7 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
   if (n_steps > 0)
     {
       run_x1 = steps[0].x;
-      if (run_x1 > x0)
+      if (run_x1 > libart_x0)
 	{
 	  alpha = running_sum >> 16;
 	  if (alpha)
@@ -155,11 +155,11 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
 	      if (alpha >= 255)
 		art_rgba_fill_run (linebuf,
 				  r, g, b,
-				  run_x1 - x0);
+				  run_x1 - libart_x0);
 	      else
 		art_rgba_run_alpha (linebuf,
 				   r, g, b, alphatab[alpha],
-				   run_x1 - x0);
+				   run_x1 - libart_x0);
 	    }
 	}
 
@@ -175,30 +175,30 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
 	      if (alpha)
 		{
 		  if (alpha >= 255)
-		    art_rgba_fill_run (linebuf + (run_x0 - x0) * 4,
+		    art_rgba_fill_run (linebuf + (run_x0 - libart_x0) * 4,
 				      r, g, b,
 				      run_x1 - run_x0);
 		  else
-		    art_rgba_run_alpha (linebuf + (run_x0 - x0) * 4,
+		    art_rgba_run_alpha (linebuf + (run_x0 - libart_x0) * 4,
 				       r, g, b, alphatab[alpha],
 				       run_x1 - run_x0);
 		}
 	    }
 	}
       running_sum += steps[k].delta;
-      if (x1 > run_x1)
+      if (libart_x1 > run_x1)
 	{
 	  alpha = running_sum >> 16;
 	  if (alpha)
 	    {
 	      if (alpha >= 255)
-		art_rgba_fill_run (linebuf + (run_x1 - x0) * 4,
+		art_rgba_fill_run (linebuf + (run_x1 - libart_x0) * 4,
 				  r, g, b,
-				  x1 - run_x1);
+				  libart_x1 - run_x1);
 	      else
-		art_rgba_run_alpha (linebuf + (run_x1 - x0) * 4,
+		art_rgba_run_alpha (linebuf + (run_x1 - libart_x0) * 4,
 				   r, g, b, alphatab[alpha],
-				   x1 - run_x1);
+				   libart_x1 - run_x1);
 	    }
 	}
     }
@@ -210,11 +210,11 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
 	  if (alpha >= 255)
 	    art_rgba_fill_run (linebuf,
 			      r, g, b,
-			      x1 - x0);
+			      libart_x1 - libart_x0);
 	  else
 	    art_rgba_run_alpha (linebuf,
 			       r, g, b, alphatab[alpha],
-			       x1 - x0);
+			       libart_x1 - libart_x0);
 	}
     }
 
@@ -224,19 +224,19 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
 /**
  * gnome_print_art_rgba_svp_alpha: Alpha-composite sorted vector path over RGBA buffer.
  * @svp: The source sorted vector path.
- * @x0: Left coordinate of destination rectangle.
- * @y0: Top coordinate of destination rectangle.
- * @x1: Right coordinate of destination rectangle.
- * @y1: Bottom coordinate of destination rectangle.
+ * @libart_x0: Left coordinate of destination rectangle.
+ * @libart_y0: Top coordinate of destination rectangle.
+ * @libart_x1: Right coordinate of destination rectangle.
+ * @libart_y1: Bottom coordinate of destination rectangle.
  * @rgba: Color in 0xRRGGBBAA format.
  * @buf: Destination RGB buffer.
  * @rowstride: Rowstride of @buf buffer.
  * @alphagamma: #ArtAlphaGamma for gamma-correcting the compositing.
  *
  * Renders the shape specified with @svp over the @buf RGB buffer.
- * @x1 - @x0 specifies the width, and @y1 - @y0 specifies the height,
+ * @libart_x1 - @x0 specifies the width, and @libart_y1 - @libart_y0 specifies the height,
  * of the rectangle rendered. The new pixels are stored starting at
- * the first byte of @buf. Thus, the @x0 and @y0 parameters specify
+ * the first byte of @buf. Thus, the @x0 and @libart_y0 parameters specify
  * an offset within @svp, and may be tweaked as a way of doing
  * integer-pixel translations without fiddling with @svp itself.
  *
@@ -250,7 +250,7 @@ art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
  **/
 void
 gnome_print_art_rgba_svp_alpha (const ArtSVP *svp,
-				int x0, int y0, int x1, int y1,
+				int libart_x0, int libart_y0, int libart_x1, int libart_y1,
 				art_u32 rgba,
 				art_u8 *buf, int rowstride,
 				ArtAlphaGamma *alphagamma)
@@ -281,13 +281,13 @@ gnome_print_art_rgba_svp_alpha (const ArtSVP *svp,
 
   data.buf = buf;
   data.rowstride = rowstride;
-  data.x0 = x0;
-  data.x1 = x1;
+  data.libart_x0 = libart_x0;
+  data.libart_x1 = libart_x1;
   if (alpha == 255)
-    art_svp_render_aa (svp, x0, y0, x1, y1, art_rgba_svp_alpha_opaque_callback,
+    art_svp_render_aa (svp, libart_x0, libart_y0, libart_x1, libart_y1, art_rgba_svp_alpha_opaque_callback,
 		       &data);
   else
-    art_svp_render_aa (svp, x0, y0, x1, y1, art_rgba_svp_alpha_callback, &data);
+    art_svp_render_aa (svp, libart_x0, libart_y0, libart_x1, libart_y1, art_rgba_svp_alpha_callback, &data);
 }
 
 static void

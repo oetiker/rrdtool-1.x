@@ -514,12 +514,12 @@ int           gfx_render_png (gfx_canvas_t *canvas,
     unsigned long pys_height = height * canvas->zoom;
     const int bytes_per_pixel = 4;
     unsigned long rowstride = pys_width*bytes_per_pixel; /* bytes per pixel */
-    art_u8 *buffer = art_new (art_u8, rowstride*pys_height);
+    
     /* fill that buffer with out background color */
-    gfx_color_t *buffp;
-    long i;
-    for (i=0,buffp=(gfx_color_t *)buffer;
-         i<pys_width*pys_height;
+    gfx_color_t *buffp = art_new (gfx_color_t, pys_width*pys_height);
+    art_u8 *buffer = (art_u8 *)buffp;
+    unsigned long i;
+    for (i=0;i<pys_width*pys_height;
 	 i++){
 	*(buffp++)=background;
     }
@@ -528,26 +528,29 @@ int           gfx_render_png (gfx_canvas_t *canvas,
         switch (node->type) {
         case GFX_LINE:
         case GFX_AREA: {   
-            ArtVpath *vec,*pvec;
+            ArtVpath *vec;
             double dst[6];     
-            ArtSVP *svp,*svpt;
+            ArtSVP *svp;
             art_affine_scale(dst,canvas->zoom,canvas->zoom);
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
 		gfx_libart_close_path(node, &vec);
 	    /* gfx_round_scaled_coordinates(vec); */
             /* pvec = art_vpath_perturb(vec);
-	    art_free(vec); */
+	       art_free(vec); */
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
                                              node->size*canvas->zoom,4,0.25);
             } else {
                 svp  = art_svp_from_vpath ( vec );
-/*                svpt = art_svp_uncross( svp );
-                art_svp_free(svp);
-	        svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
-                art_svp_free(svpt);*/
+		/* this takes time and is unnecessary since we make
+	           sure elsewhere that the areas are going clock-whise */
+		/*  svpt = art_svp_uncross( svp );
+                    art_svp_free(svp);
+	            svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
+                    art_svp_free(svpt);
+                 */
             }
             art_free(vec);
 	    /* this is from gnome since libart does not have this yet */
@@ -795,8 +798,9 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   text[0].compression = PNG_TEXT_COMPRESSION_NONE;
   png_set_text (png_ptr, info_ptr, text, 1);
 
-  /* lets make this fast */
-  /* png_set_filter(png_ptr,0,PNG_FILTER_NONE); */
+  /* lets make this fast while ending up with some increass in image size */
+  png_set_filter(png_ptr,0,PNG_FILTER_NONE);
+  /* png_set_filter(png_ptr,0,PNG_FILTER_SUB); */
   png_set_compression_level(png_ptr,1);
   /* png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY); */
   /* 
