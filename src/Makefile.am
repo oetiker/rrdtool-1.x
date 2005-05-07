@@ -97,7 +97,7 @@ librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
 # your package will not be binary compatible with any other release.
 #
 # see http://www.gnu.org/software/libtool/manual.html#SEC32 for explanation
-librrd_la_LDFLAGS         = -version-info 2:1:0
+librrd_la_LDFLAGS         = -version-info 2:2:0
 
 librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
