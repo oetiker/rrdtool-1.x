@@ -70,7 +70,7 @@
  **/
 void
 gnome_print_art_rgba_rgba_affine (art_u8 *dst,
-		     int x0, int y0, int x1, int y1, int dst_rowstride,
+		     int libart_x0, int libart_y0, int libart_x1, int libart_y1, int dst_rowstride,
 		     const art_u8 *src,
 		     int src_width, int src_height, int src_rowstride,
 		     const double affine[6],
