@@ -23,6 +23,9 @@
 /* lines are better drawn on the pixle than between pixles */
 #define LINEOFFSET 0.5
 
+#define USE_PDF_FAKE_ALPHA 1
+#define USE_EPS_FAKE_ALPHA 1
+
 typedef struct gfx_char_s *gfx_char;
 struct gfx_char_s {
   FT_UInt     index;    /* glyph index */
@@ -821,6 +824,139 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 }
 
  
+/* ----- COMMON ROUTINES for pdf, svg and eps */
+#define min3(a, b, c) (a < b ? (a < c ? a : c) : (b < c ? b : c))
+#define max3(a, b, c) (a > b ? (a > c ? a : c) : (b > c ? b : c))
+
+#define PDF_CALC_DEBUG 0
+
+typedef struct pdf_point
+{
+	double x, y;
+} pdf_point;
+
+typedef struct
+{
+	double ascender, descender, baselineY;
+	pdf_point sizep, minp, maxp;
+	double x, y, tdx, tdy;
+	double r, cos_r, sin_r;
+	double ma, mb, mc, md, mx, my; /* pdf coord matrix */
+	double tmx, tmy; /* last 2 coords of text coord matrix */
+#if PDF_CALC_DEBUG
+	int debug;
+#endif
+} pdf_coords;
+
+#if PDF_CALC_DEBUG
+static void pdf_dump_calc(gfx_node_t *node, pdf_coords *g)
+{
+	fprintf(stderr, "PDF CALC =============================\n");
+	fprintf(stderr, "   '%s' at %f pt\n", node->text, node->size);
+	fprintf(stderr, "   align h = %s, v = %s,  sizep = %f, %f\n",
+		(node->halign == GFX_H_RIGHT ? "r" :
+			(node->halign == GFX_H_CENTER ? "c" :
+				(node->halign == GFX_H_LEFT ? "l" : "N"))),
+		(node->valign == GFX_V_TOP ? "t" :
+			(node->valign == GFX_V_CENTER ? "c" :
+				(node->valign == GFX_V_BOTTOM ? "b" : "N"))),
+			g->sizep.x, g->sizep.y);
+	fprintf(stderr, "   r = %f = %f, cos = %f, sin = %f\n",
+			g->r, node->angle, g->cos_r, g->sin_r);
+	fprintf(stderr, "   ascender = %f, descender = %f, baselineY = %f\n",
+		g->ascender, g->descender, g->baselineY);
+	fprintf(stderr, "   sizep: %f, %f\n", g->sizep.x, g->sizep.y);
+	fprintf(stderr, "   minp: %f, %f     maxp = %f, %f\n", 
+			g->minp.x, g->minp.y, g->maxp.x, g->maxp.y);
+	fprintf(stderr, "   x = %f, y = %f\n", g->x, g->y);
+	fprintf(stderr, "   tdx = %f, tdy = %f\n", g->tdx, g->tdy);
+	fprintf(stderr, "   GM = %f, %f, %f, %f, %f, %f\n",
+			g->ma, g->mb, g->mc, g->md, g->mx, g->my);
+	fprintf(stderr, "   TM = %f, %f, %f, %f, %f, %f\n",
+			g->ma, g->mb, g->mc, g->md, g->tmx, g->tmy);
+}
+#endif
+ 
+#if PDF_CALC_DEBUG
+#define PDF_DD(x) if (g->debug) x;
+#else
+#define PDF_DD(x)
+#endif
+
+static void pdf_rotate(pdf_coords *g, pdf_point *p)
+{
+    double x2 = g->cos_r * p->x - g->sin_r * p->y;
+    double y2 = g->sin_r * p->x + g->cos_r * p->y;
+	PDF_DD( fprintf(stderr, "  rotate(%f, %f) -> %f, %f\n", p->x, p->y, x2, y2))
+    p->x = x2;
+	p->y = y2;
+}
+
+
+static void pdf_calc(int page_height, gfx_node_t *node, pdf_coords *g)
+{
+	pdf_point a, b, c;
+#if PDF_CALC_DEBUG
+	/* g->debug = !!strstr(node->text, "RevProxy-1") || !!strstr(node->text, "08:00"); */
+	g->debug = !!strstr(node->text, "sekunder") || !!strstr(node->text, "Web");
+#endif
+	g->x = node->x;
+	g->y = page_height - node->y;
+	if (node->angle) {
+		g->r = 2 * M_PI * node->angle / 360.0;
+		g->cos_r = cos(g->r);
+		g->sin_r = sin(g->r);
+	} else {
+		g->r = 0;
+		g->cos_r = 1;
+		g->sin_r = 0;
+	}
+	g->ascender = afm_get_ascender(node->filename, node->size);
+	g->descender = afm_get_descender(node->filename, node->size);
+	g->sizep.x = afm_get_text_width(0, node->filename, node->size, node->tabwidth, node->text);
+	/* seems like libart ignores the descender when doing vertial-align = bottom,
+	   so we do that too, to get labels v-aligning properly */
+	g->sizep.y = -g->ascender; /* + afm_get_descender(font->ps_font, node->size); */
+	g->baselineY = -g->ascender - g->sizep.y / 2;
+	a.x = g->sizep.x; a.y = g->sizep.y;
+	b.x = g->sizep.x; b.y = 0;
+	c.x = 0; c.y = g->sizep.y;
+	if (node->angle) {
+		pdf_rotate(g, &a);
+		pdf_rotate(g, &b);
+		pdf_rotate(g, &c);
+	}
+	g->minp.x = min3(a.x, b.x, c.x);
+	g->minp.y = min3(a.y, b.y, c.y);
+	g->maxp.x = max3(a.x, b.x, c.x);
+	g->maxp.y = max3(a.y, b.y, c.y);
+  /* The alignment parameters in node->valign and node->halign
+     specifies the alignment in the non-rotated coordinate system
+     (very unlike pdf/postscript), which complicates matters.
+  */
+	switch (node->halign) {
+	case GFX_H_RIGHT:  g->tdx = -g->maxp.x; break;
+	case GFX_H_CENTER: g->tdx = -(g->maxp.x + g->minp.x) / 2; break;
+	case GFX_H_LEFT:   g->tdx = -g->minp.x; break;
+	case GFX_H_NULL:   g->tdx = 0; break;
+	}
+	switch(node->valign){
+	case GFX_V_TOP:    g->tdy = -g->maxp.y; break;
+	case GFX_V_CENTER: g->tdy = -(g->maxp.y + g->minp.y) / 2; break;
+	case GFX_V_BOTTOM: g->tdy = -g->minp.y; break;
+	case GFX_V_NULL:   g->tdy = 0; break;          
+	}
+	g->ma = g->cos_r;
+	g->mb = g->sin_r;
+	g->mc = -g->sin_r;
+	g->md = g->cos_r;
+	g->mx = g->x + g->tdx;
+	g->my = g->y + g->tdy;
+	g->tmx = g->mx - g->ascender * g->mc;
+	g->tmy = g->my - g->ascender * g->md;
+	PDF_DD(pdf_dump_calc(node, g))
+}
+
 /* ------- SVG -------
    SVG reference:
    http://www.w3.org/TR/SVG/
@@ -975,7 +1111,7 @@ static void svg_write_color(FILE *fp, gfx_color_t c, const char *attr)
    }
   fputs("\"", fp);
   if (opacity != 0xFF) {
-    fprintf(fp, " stroke-opacity=\"");
+    fprintf(fp, " opacity=\"");
     svg_write_number(fp, opacity / 255.0);
     fputs("\"", fp);
  }
@@ -1204,47 +1340,38 @@ static void svg_area(FILE *fp, gfx_node_t *node)
  
 static void svg_text(FILE *fp, gfx_node_t *node)
 {
-   double x = node->x - LINEOFFSET;
-   double y = node->y - LINEOFFSET;
+   pdf_coords g;
+   /* as svg has 0,0 in top-left corner (like most screens) instead of
+	  bottom-left corner like pdf and eps, we have to fake the coords
+	  using offset and inverse sin(r) value */
+   int page_height = 1000;
+   pdf_calc(page_height, node, &g);
    if (node->angle != 0) {
      svg_start_tag(fp, "g");
-     fputs(" transform=\"translate(", fp);
-     svg_write_number(fp, x);
-     fputs(",", fp);
-     svg_write_number(fp, y);
-     fputs(") rotate(", fp);
-     svg_write_number(fp, -node->angle);
-     fputs(")\"", fp);
-     x = y = 0;
+	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+		skewed text */
+     fprintf(fp, " transform=\"matrix(%f,%f,%f,%f,%f,%f)\"",
+			 g.ma, -g.mb, -g.mc, g.md, g.tmx, page_height - g.tmy);
      svg_close_tag(fp);
    }
-   switch (node->valign) {
-   case GFX_V_TOP:  y += node->size; break;
-   case GFX_V_CENTER: y += node->size / 3; break;
-   case GFX_V_BOTTOM: break;
-   case GFX_V_NULL: break;
-   }
    svg_start_tag(fp, "text");
-   fputs(" x=\"", fp);
-   svg_write_number(fp, x);
-   fputs("\" y=\"", fp);
-   svg_write_number(fp, y);
+   if (!node->angle) {
+     fputs(" x=\"", fp);
+     svg_write_number(fp, g.tmx);
+     fputs("\" y=\"", fp);
+     svg_write_number(fp, page_height - g.tmy);
+     fputs("\"", fp);
+   }
 
 /*  if (strcmp(node->filename, svg_default_font))
     fprintf(fp, " font-family=\"%s\"", node->filename);
     */
-   fputs("\" font-family=\"Helvetica", fp);
+   fputs(" font-family=\"Helvetica", fp);
    fputs("\" font-size=\"", fp);
    svg_write_number(fp, node->size);
    fputs("\"", fp);
   if (!svg_color_is_black(node->color))
     svg_write_color(fp, node->color, "fill");
-   switch (node->halign) {
-   case GFX_H_RIGHT:  fputs(" text-anchor=\"end\"", fp); break;
-   case GFX_H_CENTER: fputs(" text-anchor=\"middle\"", fp); break;
-   case GFX_H_LEFT: break;
-   case GFX_H_NULL: break;
-   }
    svg_close_tag_single_line(fp);
    /* support for node->tabwidth missing */
    svg_write_text(fp, node->text);
@@ -1338,13 +1465,26 @@ typedef struct eps_state
 
 static void eps_set_color(eps_state *state, gfx_color_t color)
 {
+#if USE_EPS_FAKE_ALPHA
+   double a1, a2;
+#endif
+   /* gfx_color_t is RRGGBBAA */
+  if (state->color == color)
+    return;
+#if USE_EPS_FAKE_ALPHA
+  a1 = (color & 255) / 255.0;
+  a2 = 255 * (1 - a1);
+#define eps_color_calc(x) (int)( ((x) & 255) * a1 + a2)
+#else
+#define eps_color_calc(x) (int)( (x) & 255)
+#endif
    /* gfx_color_t is RRGGBBAA */
   if (state->color == color)
     return;
   fprintf(state->fp, "%d %d %d Rgb\n",
-      (int)((color >> 24) & 255),
-      (int)((color >> 16) & 255),
-      (int)((color >>  8) & 255));
+      eps_color_calc(color >> 24),
+      eps_color_calc(color >> 16),
+      eps_color_calc(color >>  8));
   state->color = color;
 }
 
@@ -1447,12 +1587,9 @@ static int eps_prologue(eps_state *state)
       "/CP {closepath} bd\n"
       "/WS {setlinewidth stroke} bd\n"
       "/F {fill} bd\n"
-      "/TaL { } bd\n"
-      "/TaC {dup stringwidth pop neg 2 div 0 rmoveto } bd\n"
-      "/TaR {dup stringwidth pop neg 0 rmoveto } bd\n"
-      "/TL {moveto TaL show} bd\n"
-      "/TC {moveto TaC show} bd\n"
-      "/TR {moveto TaR show} bd\n"
+      "/T1 {gsave} bd\n"
+      "/T2 {concat 0 0 moveto show grestore} bd\n"
+      "/T   {moveto show} bd\n"
       "/Rgb { 255.0 div 3 1 roll\n"
       "       255.0 div 3 1 roll \n"
       "       255.0 div 3 1 roll setrgbcolor } bd\n"
@@ -1551,10 +1688,9 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
   FILE *fp = state->fp;
   const unsigned char *p;
   const char *ps_font = afm_get_font_postscript_name(node->filename);
-  char align = 'L';
-  double x = node->x;
-  double y = state->page_height - node->y, ydelta = 0;
   int lineLen = 0;
+  pdf_coords g;
+  pdf_calc(state->page_height, node, &g);
   eps_set_color(state, node->color);
   if (strcmp(ps_font, state->font) || node->size != state->font_size) {
     state->font = ps_font;
@@ -1562,6 +1698,8 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
     svg_write_number(fp, state->font_size);
     fprintf(fp, " SetFont-%s\n", state->font);
   }
+  if (node->angle)
+	  fputs("T1 ", fp);
   fputs("(", fp);
   lineLen = 20;
   for (p = (const unsigned char*)node->text; *p; p++) {
@@ -1587,41 +1725,17 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
         lineLen++;
     }
   }
-  fputs(") ", fp);
-  switch(node->valign){
-  case GFX_V_TOP:    ydelta = -node->size; break;
-  case GFX_V_CENTER: ydelta = -node->size / 3.0; break;          
-  case GFX_V_BOTTOM: break;          
-  case GFX_V_NULL: break;          
-  }
-  if (node->angle == 0)
-    y += ydelta;
-  switch (node->halign) {
-  case GFX_H_RIGHT:  align = 'R'; break;
-  case GFX_H_CENTER: align = 'C'; break;
-  case GFX_H_LEFT: align= 'L'; break;
-  case GFX_H_NULL: align= 'L'; break;
-  }
-  if (node->angle != 0) {
-    fputs("\n", fp);
-    fputs("  gsave ", fp);
-    svg_write_number(fp, x);
-    fputc(' ', fp);
-    svg_write_number(fp, y);
-    fputs(" translate ", fp);
-    svg_write_number(fp, node->angle);
-    fputs(" rotate 0 ", fp);
-    svg_write_number(fp, ydelta);
-    fputs(" moveto ", fp);
-    fprintf(fp, "Ta%c", align);
-    fputs(" show grestore\n", fp);
+  if (node->angle) {
+	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+		skewed text */
+	  fprintf(fp, ") [%f %f %f %f %f %f] T2\n",
+			  g.ma, g.mb, g.mc, g.md, g.tmx, g.tmy);
   } else {
-    svg_write_number(fp, x);
-    fputc(' ', fp);
-    svg_write_number(fp, y);
-    fputs(" T", fp);
-    fputc(align, fp);
-    fputc('\n', fp);
+	  fputs(") ", fp);
+	  svg_write_number(fp, g.tmx);
+	  fputs(" ", fp);
+	  svg_write_number(fp, g.tmy);
+	  fputs(" T\n", fp);
   }
 }
 
@@ -1677,7 +1791,7 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
 
 /* ------- PDF -------
    PDF references page:
-   http://partners.adobe.com/asn/developer/technotes/acrobatpdf.html
+   http://partners.adobe.com/public/developer/pdf/index_reference.html
 */
 
 typedef struct pdf_buffer
@@ -1816,14 +1930,24 @@ static void pdf_init_dict(pdf_state *state, pdf_buffer *buf)
 static void pdf_set_color(pdf_buffer *buf, gfx_color_t color,
 	gfx_color_t *current_color, const char *op)
 {
+#if USE_PDF_FAKE_ALPHA
+   double a1, a2;
+#endif
    /* gfx_color_t is RRGGBBAA */
   if (*current_color == color)
     return;
-  pdf_putnumber(buf, ((color >> 24) & 255) / 255.0);
+#if USE_PDF_FAKE_ALPHA
+  a1 = (color & 255) / 255.0;
+  a2 = 1 - a1;
+#define pdf_color_calc(x) ( ((x)  & 255) / 255.0 * a1 + a2)
+#else
+#define pdf_color_calc(x) ( ((x)  & 255) / 255.0)
+#endif
+  pdf_putnumber(buf, pdf_color_calc(color >> 24));
   pdf_puts(buf, " ");
-  pdf_putnumber(buf, ((color >> 16) & 255) / 255.0);
+  pdf_putnumber(buf, pdf_color_calc(color >> 16));
   pdf_puts(buf, " ");
-  pdf_putnumber(buf, ((color >>  8) & 255) / 255.0);
+  pdf_putnumber(buf, pdf_color_calc(color >>  8));
   pdf_puts(buf, " ");
   pdf_puts(buf, op);
   pdf_puts(buf, "\n");
@@ -1967,53 +2091,56 @@ static void pdf_write_linearea(pdf_state *state, gfx_node_t *node)
    }
 }
 
+
+static void pdf_write_matrix(pdf_state *state, gfx_node_t *node, pdf_coords *g, int useTM)
+{
+	char tmp[150];
+	pdf_buffer *s = &state->graph_stream;
+	if (node->angle == 0) {
+		pdf_puts(s, "1 0 0 1 ");
+		pdf_putnumber(s, useTM ? g->tmx : g->mx);
+		pdf_puts(s, " ");
+		pdf_putnumber(s, useTM ? g->tmy : g->my);
+	} else {
+		 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+			skewed text */
+		sprintf(tmp, "%f %f %f %f %f %f",
+				g->ma, g->mb, g->mc, g->md, 
+				useTM ? g->tmx : g->mx,
+				useTM ? g->tmy : g->my);
+		pdf_puts(s, tmp);
+	}
+}
+
 static void pdf_write_text(pdf_state *state, gfx_node_t *node, 
     int last_was_text, int next_is_text)
 {
-  char tmp[30];
+  pdf_coords g;
   pdf_buffer *s = &state->graph_stream;
   const unsigned char *p;
   pdf_font *font = pdf_find_font(state, node);
-  double x = node->x;
-  double y = state->page_height - node->y;
-  double dx = 0, dy = 0;
-  double cos_a = 0, sin_a = 0;
   if (font == NULL) {
     rrd_set_error("font disappeared");
     state->has_failed = 1;
     return;
   }
-  switch(node->valign){
-  case GFX_V_TOP:    dy = -node->size; break;
-  case GFX_V_CENTER: dy = -node->size / 3.0; break;          
-  case GFX_V_BOTTOM: break;          
-  case GFX_V_NULL: break;          
-  }
-  switch (node->halign) {
-  case GFX_H_RIGHT:  dx = -afm_get_text_width(0, font->ps_font, 
-			 node->size, node->tabwidth, node->text);
-		     break;
-  case GFX_H_CENTER: dx = -afm_get_text_width(0, font->ps_font, 
-			 node->size, node->tabwidth, node->text) / 2;
-		     break;
-  case GFX_H_LEFT: break;
-  case GFX_H_NULL: break;
-  }
+  pdf_calc(state->page_height, node, &g);
+#if PDF_CALC_DEBUG
+  pdf_puts(s, "q % debug green box\n");
+  pdf_write_matrix(state, node, &g, 0);
+  pdf_puts(s, " cm\n");
+  pdf_set_fill_color(s, 0x90FF9000);
+  pdf_puts(s, "0 0.4 0 rg\n");
+  pdf_puts(s, "0 0 ");
+  pdf_putnumber(s, g.sizep.x);
+  pdf_puts(s, " ");
+  pdf_putnumber(s, g.sizep.y);
+  pdf_puts(s, " re\n");
+  pdf_puts(s, "f\n");
+  pdf_puts(s, "Q\n");
+#endif
   pdf_set_fill_color(s, node->color);
-  if (node->angle != 0) {
-    double a = 2 * M_PI * node->angle / 360.0;
-    double new_x, new_y;
-    cos_a = cos(a);
-    sin_a = sin(a);
-    new_x = cos_a * dx - sin_a * dy + x;
-    new_y = sin_a * dx + cos_a * dy + y;
-    x = new_x;
-    y = new_y;
-  } else {
-    x += dx;
-    y += dy;
-  }
-  if (!last_was_text)
+  if (PDF_CALC_DEBUG || !last_was_text)
     pdf_puts(s, "BT\n");
   if (state->font_id != font->obj.id || node->size != state->font_size) {
     state->font_id = font->obj.id;
@@ -2024,24 +2151,11 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
     pdf_putnumber(s, node->size);
     pdf_puts(s, " Tf\n");
   }
-  if (node->angle == 0) {
-    pdf_puts(s, "1 0 0 1 ");
-  } else {
-    pdf_putnumber(s, cos_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, sin_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, -sin_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, cos_a);
-    pdf_puts(s, " ");
-  }
-  pdf_putnumber(s, x);
-  pdf_puts(s, " ");
-  pdf_putnumber(s, y);
+  pdf_write_matrix(state, node, &g, 1);
   pdf_puts(s, " Tm\n");
   pdf_puts(s, "(");
   for (p = (const unsigned char*)node->text; *p; p++) {
+    char tmp[30];
     switch (*p) {
       case '(':
       case ')':
@@ -2061,7 +2175,7 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
     }
   }
   pdf_puts(s, ") Tj\n");
-  if (!next_is_text)
+  if (PDF_CALC_DEBUG || !next_is_text)
     pdf_puts(s, "ET\n");
 }
  
