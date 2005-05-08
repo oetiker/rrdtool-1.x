@@ -298,6 +298,11 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 
     dprintf("- parsing '%s'\n",&line[*eaten]);
 
+    /* have simpler code in the drawing section */
+    if ( gdp->gf == GF_STACK ){
+	    gdp->stack=1;
+    }
+
     i=scan_for_col(&line[*eaten],MAX_VNAME_LEN+9,tmpstr);
     if (line[*eaten+i]!='\0' && line[*eaten+i]!=':') {
 	rrd_set_error("Cannot parse line '%s'",line);
@@ -455,10 +460,6 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
     (*eaten)++;
     dprintf("- parsing '%s'\n",&line[*eaten]);
 
-    /* have simpler code in the drawing section */
-    if ( gdp->gf == GF_STACK ){
-	    gdp->stack=1;
-    }
     return 0;
 }
 

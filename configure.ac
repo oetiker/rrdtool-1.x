@@ -311,7 +311,7 @@ else
 	AC_MSG_RESULT($perlcc)
 	if test ! -x $perlcc; then
  	       AC_PATH_PROG(PERLCC, ${perlcc}, no)
-	       if test -x $"x$PERLCC" = "xno"; then
+	       if test -x "x$PERLCC" = "xno"; then
                   AC_MSG_WARN([
 I would not find the Compiler ($perlcc) that was originally used to compile your
 perl binary. You should either make sure that this compiler is available on your
