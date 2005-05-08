@@ -1589,7 +1589,7 @@ calc_horizontal_grid(image_desc_t   *im)
 	    }
 	    
 	    for(i=0; i<4;i++) {
-	       if (pixel * ylab[gridind].lfac[i] >=  2 * im->text_prop[TEXT_PROP_AXIS].size) {
+	       if (pixel * ylab[gridind].lfac[i] >=  2.5 * im->text_prop[TEXT_PROP_AXIS].size) {
 		  im->ygrid_scale.labfact =  ylab[gridind].lfac[i];
 		  break;
 	       }		          
@@ -1942,7 +1942,7 @@ grid_paint(image_desc_t   *im)
 
     /* yaxis unit description */
     gfx_new_text( im->canvas,
-                  12, (im->yorigin - im->ysize/2),
+                  10, (im->yorigin - im->ysize/2),
                   im->graph_col[GRC_FONT],
                   im->text_prop[TEXT_PROP_UNIT].font,
                   im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth, 
@@ -2151,7 +2151,7 @@ graph_size_location(image_desc_t *im, int elements
     }
 
     if (im->ylegend[0] != '\0' ) {
-           Xvertical = im->text_prop[TEXT_PROP_UNIT].size *1.6;
+           Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
     }
 
 
@@ -2180,7 +2180,7 @@ graph_size_location(image_desc_t *im, int elements
 	                im->text_prop[TEXT_PROP_AXIS].font,
         	        im->text_prop[TEXT_PROP_AXIS].size,
                 	im->tabwidth,
-                	"0", 0) * im->unitslength + Xspacing;
+                	"0", 0) * im->unitslength;
 	}
     }
 
@@ -2804,7 +2804,7 @@ rrd_graph_init(image_desc_t *im)
     im->minval = DNAN;
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
-    im->unitslength= 5; 
+    im->unitslength= 6; 
     im->symbol = ' ';
     im->viewfactor = 1.0;
     im->extra_flags= 0;
