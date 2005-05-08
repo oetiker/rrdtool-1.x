@@ -39,10 +39,7 @@ RRD_C_FILES =		\
 	rrd_update.c	\
 	rrd_xport.c	\
 	rrd_nan_inf.c	\
-        art_rgba_rgba_affine.c \
         art_rgba_svp.c \
-        art_rgb_affine_private.h \
-	art_rgba_rgba_affine.h \
         art_rgba_svp.h \
 	rrd_gfx.c rrd_gfx.h \
 	rrd_afm.c rrd_afm_data.c \
