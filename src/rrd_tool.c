@@ -101,9 +101,9 @@ void PrintUsage(char *cmd)
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
            "\t\t[-g|--no-legend]\n"
-    	   "\t\t[-F|--force-rules-legend]\n";
+    	   "\t\t[-F|--force-rules-legend]\n"
+           "\t\t[-j|--only-graph]\n";
     char help_graph2[] =
-           "\t\t[-j|--only-graph]\n"
 	   "\t\t[-n|--font FONTTAG:size:font]\n"
            "\t\t[-m|--zoom factor]\n"       
 	   "\t\t[-A|--alt-autoscale]\n"
@@ -117,10 +117,10 @@ void PrintUsage(char *cmd)
 	   "\t\t[-S|--step seconds]\n"	   
 	   "\t\t[-f|--imginfo printfstr]\n"
 	   "\t\t[-a|--imgformat PNG]\n"
-	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n";
-    char help_graph3[] =
+	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
-	   "\t\t[CDEF:vname=rpn-expression]\n"
+	   "\t\t[CDEF:vname=rpn-expression]\n";
+    char help_graph3[] =
 	   "\t\t[VDEF:vdefname=rpn-expression]\n"
 	   "\t\t[PRINT:vdefname:format]\n"
 	   "\t\t[GPRINT:vdefname:format]\n"
@@ -586,13 +586,12 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    free (data);
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
-	int xxsize;
 	unsigned long int j = 0;
 	time_t        start,end, ti;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
-	if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
+	if(rrd_xport(argc-1, &argv[1], &start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
 	  row_cnt = (end-start)/step;
 	  ptr = data;
 	  printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n", XML_ENCODING);
