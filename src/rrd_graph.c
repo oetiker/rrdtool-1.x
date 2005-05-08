@@ -2151,7 +2151,7 @@ graph_size_location(image_desc_t *im, int elements
     }
 
     if (im->ylegend[0] != '\0' ) {
-           Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
+           Xvertical = im->text_prop[TEXT_PROP_UNIT].size *1.6;
     }
 
 
@@ -2804,7 +2804,7 @@ rrd_graph_init(image_desc_t *im)
     im->minval = DNAN;
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
-    im->unitslength= 6; 
+    im->unitslength= 5; 
     im->symbol = ' ';
     im->viewfactor = 1.0;
     im->extra_flags= 0;
