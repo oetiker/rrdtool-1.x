@@ -1582,7 +1582,7 @@ calc_horizontal_grid(image_desc_t   *im)
 	else {
 	    for(i=0;ylab[i].grid > 0;i++){
 		pixel = im->ysize / (scaledrange / ylab[i].grid);
-		if (pixel > 5) {
+		if (pixel > 7) {
 		    gridind = i;
 		    break;
 		}
