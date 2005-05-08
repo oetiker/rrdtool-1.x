@@ -12,6 +12,9 @@
 double afm_get_text_width ( double start, const char* font, double size,
 			    double tabwidth, const char* text);
 
+double afm_get_ascender(const char* font, double size);
+double afm_get_descender(const char* font, double size);
+
 /* get postscript name from fullname or postscript name */
 const char *afm_get_font_postscript_name ( const char* font);
 

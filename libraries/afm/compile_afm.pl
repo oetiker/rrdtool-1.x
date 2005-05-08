@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 require 5.005;
 use strict;
@@ -63,11 +63,15 @@ sub process_font
   $fi{FontSpecificUnicodeNameToChar} = {};
   $fi{filename} = $fn;
   $fi{filename} =~ s/.*\///;
+  $fi{Ascender} = 0;
+  $fi{Descender} = 0;
   open(FH, $fn) || die "Can't open $fn\n";
   print STDERR "Reads global font info\n" if $q;
   while (<FH>) {
     chomp;
     next if /^\s*$/ || /^\s*#/;
+    $fi{Ascender} = $1 if /^Ascender\s+(-?\d+)/;
+    $fi{Descender} = $1 if /^Descender\s+(-?\d+)/;
     last if /^StartCharMetrics/;
     next unless (/^(\S+)\s+(\S(.*\S)?)/);
     my $id = $1;
@@ -244,8 +248,8 @@ sub write_font
      $kerning_data_count + 2 * $highchars_count +
      3 * 2 * $ligatures_count;
   $info_code .= $indent1 . "{ /* $$fiR{filename}   $packedSize bytes */\n";
-    $info_code .= $i2 . "\"$$fiR{AfmFontName}\",";
-    $info_code .= " \"$$fiR{AfmFullName}\",\n";
+    $info_code .= $i2 . "\"$$fiR{AfmFontName}\", \"$$fiR{AfmFullName}\",\n";
+    $info_code .= $i2 . $$fiR{Ascender} . ", " . $$fiR{Descender} . ",\n";
     $info_code .= $i2 . $$fiR{widthsACName} . ",\n";
     $info_code .= $i2 . $$fiR{kerning_indexACName} . ",\n";
     $info_code .= $i2 . $$fiR{kerning_dataACName} . ",\n";
@@ -448,7 +452,7 @@ sub main
   print CFILE ${$font_code{$_}}{TABLES} foreach @fonts;
   print CFILE "const afm_fontinfo afm_fontinfolist[] = {\n";
   print CFILE ${$font_code{$_}}{INFO} foreach @fonts;
-  print CFILE $indent1 . "{ 0, 0, 0 }\n";
+  print CFILE $indent1 . "{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }\n";
   print CFILE $indent0 . "};\n";
   print CFILE $indent0 . "const int afm_fontinfo_count = ",
     ($#fonts + 1), ";\n";

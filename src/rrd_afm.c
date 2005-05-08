@@ -73,6 +73,18 @@ const char *afm_get_font_postscript_name(const char* font)
   return p ? p->postscript_name : "Helvetica";
 }
 
+double afm_get_ascender(const char* font, double size)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return p ? p->ascender : 10; /* just a guess to avoid really bad design if we don't know the font */
+}
+
+double afm_get_descender(const char* font, double size)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return p ? p->descender : 4; /* just a guess to avoid really bad design if we don't know the font */
+}
+
 static int afm_find_char_index(const afm_fontinfo *fontinfo,
     afm_cunicode ch1)
 {
