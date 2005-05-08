@@ -586,12 +586,13 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    free (data);
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
+       int xxsize;
 	unsigned long int j = 0;
 	time_t        start,end, ti;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
-	if(rrd_xport(argc-1, &argv[1], &start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
+       if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
 	  row_cnt = (end-start)/step;
 	  ptr = data;
 	  printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n", XML_ENCODING);
