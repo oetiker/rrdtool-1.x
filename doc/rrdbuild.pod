@@ -22,9 +22,9 @@ per-installed. Note that these instructions assume that your copies of
 B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
 could be that they are installed as B<gtar> and B<gmake> on your system.
 
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.3
- tar zxf rrdtool-1.2.3
- cd rrdtool-1.2.3
+ wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.4
+ tar zxf rrdtool-1.2.4
+ cd rrdtool-1.2.4
  ./configure --prefix=/path/to/installation && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
