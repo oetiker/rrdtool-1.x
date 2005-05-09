@@ -35,6 +35,7 @@
 #define ENABLE_LIGATURES 0
 
 static const afm_fontinfo *afm_last_used_font = NULL;
+static const char *last_unknown_font = NULL;
 
 #define is_font(p, name) \
   (!strcmp(p->postscript_name, name) || !strcmp(p->fullname, name))
@@ -55,8 +56,10 @@ static const afm_fontinfo *afm_searchfont(const char *name)
   return NULL;
 }
 
-static const char *last_unknown_font = NULL;
 
+/* returns always a font, never NULL.
+   The rest of the code depends on the result never being NULL.
+   See rrd_afm.h */
 static const afm_fontinfo *afm_findfont(const char *name)
 {
   const afm_fontinfo *p = afm_searchfont(name);
@@ -66,7 +69,7 @@ static const afm_fontinfo *afm_findfont(const char *name)
 	  fprintf(stderr, "Can't find font '%s'\n", name);
 	  last_unknown_font = name;
   }
-  p = afm_searchfont("Courier");
+  p = afm_searchfont(RRD_AFM_DEFAULT_FONT);
   if (p)
     return p;
   return afm_fontinfolist; // anything, just anything.
@@ -76,6 +79,12 @@ const char *afm_get_font_postscript_name(const char* font)
 {
   const afm_fontinfo *p = afm_findfont(font);
   return p->postscript_name;
+}
+
+const char *afm_get_font_name(const char* font)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return p->fullname;
 }
 
 double afm_get_ascender(const char* font, double size)

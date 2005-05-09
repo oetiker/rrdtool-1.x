@@ -963,7 +963,7 @@ static void pdf_calc(int page_height, gfx_node_t *node, pdf_coords *g)
 */
 static int svg_indent = 0;
 static int svg_single_line = 0;
-static const char *svg_default_font = "Helvetica";
+static const char *svg_default_font = "-dummy-";
 typedef struct svg_dash
 {
   int dash_enable;
@@ -1341,6 +1341,7 @@ static void svg_area(FILE *fp, gfx_node_t *node)
 static void svg_text(FILE *fp, gfx_node_t *node)
 {
    pdf_coords g;
+   const char *fontname;
    /* as svg has 0,0 in top-left corner (like most screens) instead of
 	  bottom-left corner like pdf and eps, we have to fake the coords
 	  using offset and inverse sin(r) value */
@@ -1362,12 +1363,10 @@ static void svg_text(FILE *fp, gfx_node_t *node)
      svg_write_number(fp, page_height - g.tmy);
      fputs("\"", fp);
    }
-
-/*  if (strcmp(node->filename, svg_default_font))
-    fprintf(fp, " font-family=\"%s\"", node->filename);
-    */
-   fputs(" font-family=\"Helvetica", fp);
-   fputs("\" font-size=\"", fp);
+   fontname = afm_get_font_name(node->filename);
+   if (strcmp(fontname, svg_default_font))
+     fprintf(fp, " font-family=\"%s\"", fontname);
+   fputs(" font-size=\"", fp);
    svg_write_number(fp, node->size);
    fputs("\"", fp);
   if (!svg_color_is_black(node->color))
@@ -1384,6 +1383,15 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
                  art_u32 width, art_u32 height,
                  gfx_color_t background, FILE *fp){
    gfx_node_t *node = canvas->firstnode;
+   /* Find the first font used, and assume it is the mostly used
+	  one. It reduces the number of font-familty attributes. */
+   while (node) {
+	   if (node->type == GFX_TEXT && node->filename) {
+		   svg_default_font = afm_get_font_name(node->filename);
+		   break;
+	   }
+	   node = node->next;
+   }
    fputs(
 "<?xml version=\"1.0\" standalone=\"no\"?>\n"
 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\"\n"
@@ -1419,6 +1427,7 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
    fprintf(fp, " x=\"0\" y=\"0\" width=\"%d\" height=\"%d\"", width, height);
   svg_write_color(fp, background, "fill");
    svg_close_tag_empty_node(fp);
+   node = canvas->firstnode;
    while (node) {
      switch (node->type) {
      case GFX_LINE:
