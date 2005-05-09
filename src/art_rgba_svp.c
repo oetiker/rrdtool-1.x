@@ -34,6 +34,7 @@
 #include <libart_lgpl/art_rgb.h>
 
 #include "art_rgba_svp.h"
+#include "unused.h"
 
 static void art_rgba_fill_run (art_u8 * linebuf, art_u8 r, art_u8 g, art_u8 b, int n);
 static void art_rgba_run_alpha (art_u8 * linebuf, art_u8 r, art_u8 g, art_u8 b, int alpha, int n);
@@ -49,7 +50,7 @@ struct _ArtRgbaSVPAlphaData {
 };
 
 static void
-art_rgba_svp_alpha_callback (void *callback_data, int y,
+art_rgba_svp_alpha_callback (void *callback_data, int UNUSED(y),
 			    int start, ArtSVPRenderAAStep *steps, int n_steps)
 {
   ArtRgbaSVPAlphaData *data = callback_data;
@@ -121,7 +122,7 @@ art_rgba_svp_alpha_callback (void *callback_data, int y,
 }
 
 static void
-art_rgba_svp_alpha_opaque_callback (void *callback_data, int y,
+art_rgba_svp_alpha_opaque_callback (void *callback_data, int UNUSED(y),
 				   int start,
 				   ArtSVPRenderAAStep *steps, int n_steps)
 {
@@ -253,7 +254,7 @@ gnome_print_art_rgba_svp_alpha (const ArtSVP *svp,
 				int libart_x0, int libart_y0, int libart_x1, int libart_y1,
 				art_u32 rgba,
 				art_u8 *buf, int rowstride,
-				ArtAlphaGamma *alphagamma)
+				ArtAlphaGamma UNUSED(*alphagamma))
 {
   ArtRgbaSVPAlphaData data;
   int r, g, b, alpha;

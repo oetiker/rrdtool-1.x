@@ -20,6 +20,8 @@
 #include <string.h>
 #endif
 
+#include "unused.h"
+
 #if 0
 # define DEBUG 1
 # define DLOG(x) fprintf x
@@ -185,8 +187,8 @@ static long afm_find_kern(const afm_fontinfo *fontinfo,
 }
 
 /* measure width of a text string */
-double afm_get_text_width ( double start, const char* font, double size,
-          double tabwidth, const char* text)
+double afm_get_text_width ( double UNUSED(start), const char* font, double size,
+          double UNUSED(tabwidth), const char* text)
 {
   const afm_fontinfo *fontinfo = afm_findfont(font);
   long width = 0;

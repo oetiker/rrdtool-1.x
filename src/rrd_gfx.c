@@ -19,6 +19,7 @@
 
 #include "rrd_gfx.h"
 #include "rrd_afm.h"
+#include "unused.h"
 
 /* lines are better drawn on the pixle than between pixles */
 #define LINEOFFSET 0.5
@@ -291,7 +292,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 }
 
 double gfx_get_text_width_libart (
-			    gfx_canvas_t *canvas, double start, char* font, double size,
+			    gfx_canvas_t *canvas, double UNUSED(start), char* font, double size,
 			    double tabwidth, char* text, int rotation ){
 
   int           error;
@@ -2354,7 +2355,7 @@ static void pdf_free_resources(pdf_state *state)
 
 int       gfx_render_pdf (gfx_canvas_t *canvas,
                  art_u32 width, art_u32 height,
-                 gfx_color_t background, FILE *fp){
+                 gfx_color_t UNUSED(background), FILE *fp){
   struct pdf_state state;
   memset(&state, 0, sizeof(pdf_state));
   state.fp = fp;

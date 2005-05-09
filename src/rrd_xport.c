@@ -9,6 +9,7 @@
 #include "rrd_tool.h"
 #include "rrd_graph.h"
 #include "rrd_xport.h"
+#include "unused.h"
 
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
@@ -30,7 +31,7 @@ int rrd_xport_fn(image_desc_t *,
 
 
 int 
-rrd_xport(int argc, char **argv, int *xsize,
+rrd_xport(int argc, char **argv, int UNUSED(*xsize),
 	  time_t         *start,
 	  time_t         *end,        /* which time frame do you want ?
 				       * will be changed to represent reality */

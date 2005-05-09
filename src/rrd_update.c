@@ -23,6 +23,7 @@
 #include "rrd_rpncalc.h"
 
 #include "rrd_is_thread_safe.h"
+#include "unused.h"
 
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 /*
@@ -69,7 +70,12 @@ int LockRRD(FILE *rrd_file);
 #ifdef HAVE_MMAP
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
-					unsigned short CDP_scratch_idx, FILE *rrd_file,
+					unsigned short CDP_scratch_idx,
+#ifndef DEBUG
+FILE UNUSED(*rrd_file),
+#else
+FILE *rrd_file,
+#endif
 					info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file);
 #else
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
@@ -1453,7 +1459,12 @@ LockRRD(FILE *rrdfile)
 #ifdef HAVE_MMAP
 info_t
 *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-	       unsigned short CDP_scratch_idx, FILE *rrd_file,
+	       unsigned short CDP_scratch_idx, 
+#ifndef DEBUG
+FILE UNUSED(*rrd_file),
+#else
+FILE *rrd_file,
+#endif
 		   info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file)
 #else
 info_t
