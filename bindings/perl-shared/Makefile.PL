@@ -4,7 +4,7 @@ use Config;
 # the contents of the Makefile that is written.
 
 # Specify the location of the archive containing PIC compiled object files.
-my $R = $^O eq 'Linux' ? "-Wl,--rpath -Wl," : "-R" ;
+my $R = $^O eq 'linux' ? "-Wl,--rpath -Wl," : "-R" ;
 my $librrd = "-L../../src/.libs/ $R\$(RPATH) -lrrd";
 
 WriteMakefile(
