@@ -1614,14 +1614,16 @@ int draw_horizontal_grid(image_desc_t *im)
    
     int sgrid = (int)( im->minval / im->ygrid_scale.gridstep - 1);
     int egrid = (int)( im->maxval / im->ygrid_scale.gridstep + 1);
+    double MaxY;
     scaledstep = im->ygrid_scale.gridstep/im->magfact;
+    MaxY = scaledstep*(double)im->viewfactor*(double)egrid;
     for (i = sgrid; i <= egrid; i++){
        double Y0=ytr(im,im->ygrid_scale.gridstep*i);
        if ( Y0 >= im->yorigin-im->ysize
 	         && Y0 <= im->yorigin){       
 	    if(i % im->ygrid_scale.labfact == 0){		
 		if (i==0 || im->symbol == ' ') {
-		    if(scaledstep < 1){
+		    if(MaxY < 10) {
 			if(im->extra_flags & ALTYGRID) {
 			    sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i);
 			}
@@ -1632,7 +1634,7 @@ int draw_horizontal_grid(image_desc_t *im)
 			sprintf(graph_label,"%4.0f",scaledstep*im->viewfactor*i);
 		    }
 		}else {
-		    if(scaledstep < 1){
+		    if(MaxY < 10){
 			sprintf(graph_label,"%4.1f %c",scaledstep*im->viewfactor*i, im->symbol);
 		    } else {
 			sprintf(graph_label,"%4.0f %c",scaledstep*im->viewfactor*i, im->symbol);
