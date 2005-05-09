@@ -34,7 +34,7 @@
 */
 #define ENABLE_LIGATURES 0
 
-static const afm_fontinfo *afm_last_used_font;
+static const afm_fontinfo *afm_last_used_font = NULL;
 
 #define is_font(p, name) \
   (!strcmp(p->postscript_name, name) || !strcmp(p->fullname, name))
@@ -55,34 +55,39 @@ static const afm_fontinfo *afm_searchfont(const char *name)
   return NULL;
 }
 
+static const char *last_unknown_font = NULL;
+
 static const afm_fontinfo *afm_findfont(const char *name)
 {
   const afm_fontinfo *p = afm_searchfont(name);
   if (p)
     return p;
-  if (1 || DEBUG) fprintf(stderr, "Can't find font '%s'\n", name);
-  p = afm_searchfont("Helvetica");
+  if (!last_unknown_font || strcmp(name, last_unknown_font)) {
+	  fprintf(stderr, "Can't find font '%s'\n", name);
+	  last_unknown_font = name;
+  }
+  p = afm_searchfont("Courier");
   if (p)
     return p;
-  return NULL;
+  return afm_fontinfolist; // anything, just anything.
 }
 
 const char *afm_get_font_postscript_name(const char* font)
 {
   const afm_fontinfo *p = afm_findfont(font);
-  return p ? p->postscript_name : "Helvetica";
+  return p->postscript_name;
 }
 
 double afm_get_ascender(const char* font, double size)
 {
   const afm_fontinfo *p = afm_findfont(font);
-  return p ? p->ascender : 10; /* just a guess to avoid really bad design if we don't know the font */
+  return size * p->ascender / 1000.0;
 }
 
 double afm_get_descender(const char* font, double size)
 {
   const afm_fontinfo *p = afm_findfont(font);
-  return p ? p->descender : 4; /* just a guess to avoid really bad design if we don't know the font */
+  return size * p->descender / 1000.0;
 }
 
 static int afm_find_char_index(const afm_fontinfo *fontinfo,

@@ -1389,8 +1389,8 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\"\n"
 "   \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
 "<!--\n"
-"   SVG file created by RRDtool,\n"
-"   Tobias Oetiker <tobi@oetike.ch>, http://tobi.oetiker.ch\n"
+"   SVG file created by\n"
+"        RRDtool 1.2.4 Tobias Oetiker, http://tobi.oetiker.ch\n"
 "\n"
 "   The width/height attributes in the outhermost svg node\n"
 "   are just default sizes for the browser which is used\n"
@@ -1829,7 +1829,7 @@ typedef struct pdf_state
   int last_obj_id;
   /*--*/
   pdf_buffer pdf_header;
-  pdf_buffer catalog_obj, pages_obj, page1_obj;
+  pdf_buffer info_obj, catalog_obj, pages_obj, page1_obj;
   pdf_buffer fontsdict_obj;
   pdf_buffer graph_stream;
 } pdf_state;
@@ -1911,6 +1911,35 @@ static void pdf_putnumber(pdf_buffer *buf, double d)
   char tmp[50];
   svg_format_number(tmp, sizeof(tmp), d);
   pdf_puts(buf, tmp);
+}
+
+static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
+{
+    const char *p = text;
+    while (1) {
+	char ch = *p;
+	switch (ch) {
+	    case 0: return;
+	    case '(':
+	    case ')':
+	    case '\\':
+	    case '\n':
+	    case '\r':
+	    case '\t':
+		pdf_puts(buf, "\\");
+		pdf_put(buf, (char)ch, 1);
+		break;
+	    default:
+		if (ch >= 126 || ch < 32) {
+		    char tmp[10];
+		    snprintf(tmp, sizeof(tmp), "\\%03o", ch);
+		    pdf_puts(buf, tmp);
+		} else {
+		    pdf_put(buf, p, 1);
+		}
+	}
+	p++;
+    }
 }
 
 static void pdf_init_object(pdf_state *state, pdf_buffer *buf)
@@ -2117,7 +2146,6 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
 {
   pdf_coords g;
   pdf_buffer *s = &state->graph_stream;
-  const unsigned char *p;
   pdf_font *font = pdf_find_font(state, node);
   if (font == NULL) {
     rrd_set_error("font disappeared");
@@ -2154,26 +2182,7 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
   pdf_write_matrix(state, node, &g, 1);
   pdf_puts(s, " Tm\n");
   pdf_puts(s, "(");
-  for (p = (const unsigned char*)node->text; *p; p++) {
-    char tmp[30];
-    switch (*p) {
-      case '(':
-      case ')':
-      case '\\':
-      case '\n':
-      case '\r':
-      case '\t':
-        pdf_puts(s, "\\");
-        /* fall-through */
-      default:
-        if (*p >= 126) {
-          snprintf(tmp, sizeof(tmp), "\\%03o", *p);
-	  pdf_puts(s, tmp);
-	} else {
-          pdf_put(s, (const char*)p, 1);
-	}
-    }
-  }
+  pdf_put_string_contents(s, node->text);
   pdf_puts(s, ") Tj\n");
   if (PDF_CALC_DEBUG || !next_is_text)
     pdf_puts(s, "ET\n");
@@ -2202,6 +2211,7 @@ static void pdf_init_document(pdf_state *state)
 {
   pdf_init_buffer(state, &state->pdf_header);
   pdf_init_dict(state, &state->catalog_obj);
+  pdf_init_dict(state, &state->info_obj);
   pdf_init_dict(state, &state->pages_obj);
   pdf_init_dict(state, &state->page1_obj);
   pdf_init_dict(state, &state->fontsdict_obj);
@@ -2215,12 +2225,17 @@ static void pdf_init_document(pdf_state *state)
 
 static void pdf_setup_document(pdf_state *state)
 {
+  const char *creator = "RRDtool 1.2.4 Tobias Oetiker, http://tobi.oetiker.ch";
   /* all objects created by now, so init code can reference them */
   /* HEADER */
   pdf_puts(&state->pdf_header, "%PDF-1.3\n");
   /* following 8 bit comment is recommended by Adobe for
      indicating binary file to file transfer applications */
   pdf_puts(&state->pdf_header, "%\xE2\xE3\xCF\xD3\n");
+  /* INFO */
+  pdf_putsi(&state->info_obj, "/Creator (");
+  pdf_put_string_contents(&state->info_obj, creator);
+  pdf_puts(&state->info_obj, ")\n");
   /* CATALOG */
   pdf_putsi(&state->catalog_obj, "/Type /Catalog\n");
   pdf_putsi(&state->catalog_obj, "/Pages ");
@@ -2305,6 +2320,7 @@ static void pdf_write_to_file(pdf_state *state)
   fprintf(state->fp, "<<\n");
   fprintf(state->fp, "\t/Size %d\n", state->last_obj_id + 1);
   fprintf(state->fp, "\t/Root %d 0 R\n", state->catalog_obj.id);
+  fprintf(state->fp, "\t/Info %d 0 R\n", state->info_obj.id);
   fprintf(state->fp, ">>\n");
   fprintf(state->fp, "startxref\n");
   fprintf(state->fp, "%d\n", xref_pos);
