@@ -402,9 +402,9 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	    /* If the legend is not empty, it has to be prefixed with "m ". This then gets
 	     * replaced by the color box later on. */
 	     (*eaten)--;
-	     linecp[*eaten]=' ';
+	     linecp[*eaten]='o';
 	     (*eaten)--;
-	     linecp[*eaten]='m';
+	     linecp[*eaten]='o';
 	}
 
 	if (rrd_parse_legend(linecp, eaten, gdp)) err=1;

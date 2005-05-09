@@ -1961,7 +1961,7 @@ grid_paint(image_desc_t   *im)
     /* rrdtool 'logo' */
     gfx_new_text( im->canvas,
 		  im->ximg-7, 7,
-		  ( im->graph_col[GRC_FONT] & 0xffffff00 ) | 0x00000066,
+		  ( im->graph_col[GRC_FONT] & 0xffffff00 ) | 0x00000044,
 		  im->text_prop[TEXT_PROP_AXIS].font,
 		  5.5, im->tabwidth, 270,
 		  GFX_H_RIGHT, GFX_V_TOP,
@@ -1987,30 +1987,38 @@ grid_paint(image_desc_t   *im)
                     if (	   im->gdes[i].gf != GF_PRINT &&
 				   im->gdes[i].gf != GF_GPRINT &&
                                    im->gdes[i].gf != GF_COMMENT) {
-                            int boxH, boxV;
+                            int boxL, boxH, boxV;
                             
-                            boxH = gfx_get_text_width(im->canvas, 0,
+                            boxL = gfx_get_text_width(im->canvas, 0,
                                                       im->text_prop[TEXT_PROP_LEGEND].font,
                                                       im->text_prop[TEXT_PROP_LEGEND].size,
-                                                      im->tabwidth,"M", 0)*1.2;
-                            boxV = boxH;
+                                                      im->tabwidth,"oo", 0);
+			    boxH = boxL / 1.9;
+                            boxV = boxH+1;
                             
                             /* make sure transparent colors show up all the same */
+			     node = gfx_new_area(im->canvas,
+                                                X0-1,Y0-boxV,
+                                                X0-1,Y0+1,
+                                                X0+boxL+0.5,Y0+1,
+                                                im->graph_col[GRC_BACK]);
+                            gfx_add_point ( node, X0+boxL+0.5, Y0-boxV );
 			    node = gfx_new_area(im->canvas,
-                                                X0,Y0-boxV,
-                                                X0,Y0,
+                                                X0-1,Y0-boxV,
+                                                X0-1,Y0,
                                                 X0+boxH,Y0,
                                                 im->graph_col[GRC_CANVAS]);
                             gfx_add_point ( node, X0+boxH, Y0-boxV );
 
                             node = gfx_new_area(im->canvas,
-                                                X0,Y0-boxV,
-                                                X0,Y0,
+                                                X0-1,Y0-boxV,
+                                                X0-1,Y0,
                                                 X0+boxH,Y0,
                                                 im->gdes[i].col);
                             gfx_add_point ( node, X0+boxH, Y0-boxV );
                             node = gfx_new_line(im->canvas,
-                                                X0,Y0-boxV, X0,Y0,
+                                                X0-1,Y0-boxV,
+                                                X0-1,Y0,
                                                 1,im->graph_col[GRC_FONT]);
                             gfx_add_point(node,X0+boxH,Y0);
                             gfx_add_point(node,X0+boxH,Y0-boxV);
