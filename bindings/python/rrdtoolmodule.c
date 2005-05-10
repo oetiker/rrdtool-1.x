@@ -35,7 +35,11 @@ static const char *__version__ = "$Revision: 1.14 $";
 #include "rrd_extra.h"
 
 static PyObject *ErrorObject;
-extern int optind, opterr;
+extern int optind;
+extern int opterr;
+
+/* forward declaration to keep compiler happy */
+void initrrdtool(void);
 
 static int
 create_args(char *command, PyObject *args, int *argc, char ***argv)
@@ -158,7 +162,7 @@ PyRRD_fetch(PyObject *self, PyObject *args)
         /* Return :
           ((start, end, step), (name1, name2, ...), [(data1, data2, ..), ...]) */
         PyObject    *range_tup, *dsnam_tup, *data_list, *t;
-        int          i, j, row;
+        unsigned long          i, j, row;
         rrd_value_t  dv;
 
         row = ((end - start) / step + 1);
@@ -360,7 +364,7 @@ PyRRD_info(PyObject *self, PyObject *args)
     rrd_t            rrd;
     FILE            *in_file;
     char            *filename;
-    int              i, j;
+    unsigned long   i, j;
 
     if (! PyArg_ParseTuple(args, "s:info", &filename))
         return NULL;
@@ -456,7 +460,7 @@ PyRRD_info(PyObject *self, PyObject *args)
 /* List of methods defined in the module */
 #define meth(name, func, doc) {name, (PyCFunction)func, METH_VARARGS, doc}
 
-static struct PyMethodDef _rrdtool_methods[] = {
+static PyMethodDef _rrdtool_methods[] = {
     meth("create",  PyRRD_create,   PyRRD_create__doc__),
     meth("update",  PyRRD_update,   PyRRD_update__doc__),
     meth("fetch",   PyRRD_fetch,    PyRRD_fetch__doc__),
@@ -465,7 +469,7 @@ static struct PyMethodDef _rrdtool_methods[] = {
     meth("last",    PyRRD_last,     PyRRD_last__doc__),
     meth("resize",  PyRRD_resize,   PyRRD_resize__doc__),
     meth("info",    PyRRD_info,     PyRRD_info__doc__),
-    {NULL, NULL},
+    {NULL, NULL}
 };
 
 #define SET_INTCONSTANT(dict, value) \
