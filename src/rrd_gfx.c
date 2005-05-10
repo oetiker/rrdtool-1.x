@@ -1696,7 +1696,7 @@ static void eps_write_linearea(eps_state *state, gfx_node_t *node)
 static void eps_write_text(eps_state *state, gfx_node_t *node)
 {
   FILE *fp = state->fp;
-  const unsigned char *p;
+  const char *p;
   const char *ps_font = afm_get_font_postscript_name(node->filename);
   int lineLen = 0;
   pdf_coords g;
@@ -1712,28 +1712,41 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
 	  fputs("T1 ", fp);
   fputs("(", fp);
   lineLen = 20;
-  for (p = (const unsigned char*)node->text; *p; p++) {
-    if (lineLen > 70) {
+  p = node->text;
+  while (1) {
+    unsigned char ch = *(unsigned char*)p;
+    if (!ch)
+      break;
+    if (++lineLen > 70) {
       fputs("\\\n", fp); /* backslash and \n */
       lineLen = 0;
     }
-    switch (*p) {
+    switch (ch) {
+      case '%':
       case '(':
       case ')':
       case '\\':
-      case '\n':
-      case '\r':
-      case '\t':
         fputc('\\', fp);
-        lineLen++;
-        /* fall-through */
+        fputc(ch, fp);
+        break;
+      case '\n':
+        fputs("\\n", fp);
+        break;
+      case '\r':
+        fputs("\\r", fp);
+        break;
+      case '\t':
+        fputs("\\t", fp);
+        break;
       default:
-        if (*p >= 126)
-          fprintf(fp, "\\%03o", *p);
-        else
-          fputc(*p, fp);
-        lineLen++;
-    }
+        if (ch >= 126 || ch < 32) {
+          fprintf(fp, "\\%03o", ch);
+          lineLen += 3;
+        } else {
+          fputc(ch, fp);
+        }
+      }
+      p++;
   }
   if (node->angle) {
 	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
@@ -1927,7 +1940,7 @@ static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
 {
     const char *p = text;
     while (1) {
-	char ch = *p;
+	unsigned char ch = *(unsigned char*)p;
 	switch (ch) {
 	    case 0: return;
 	    case '(':
