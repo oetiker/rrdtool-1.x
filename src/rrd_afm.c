@@ -74,7 +74,7 @@ static const afm_fontinfo *afm_findfont(const char *name)
   p = afm_searchfont(RRD_AFM_DEFAULT_FONT);
   if (p)
     return p;
-  return afm_fontinfolist; // anything, just anything.
+  return afm_fontinfolist; /* anything, just anything. */
 }
 
 const char *afm_get_font_postscript_name(const char* font)
