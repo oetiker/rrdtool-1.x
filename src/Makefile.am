@@ -41,6 +41,7 @@ RRD_C_FILES =		\
 	rrd_nan_inf.c	\
         art_rgba_svp.c \
         art_rgba_svp.h \
+	unused.h \
 	rrd_gfx.c rrd_gfx.h \
 	rrd_afm.c rrd_afm_data.c \
 	getopt.h parsetime.h \
