@@ -1,0 +1,2 @@
+*shared*
+_rrdtool _rrdtoolmodule.c -lrrd -I/usr/local/include -L/usr/local/lib

@@ -41,4 +41,7 @@ site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefil
 site-tcl-install: all
 	cd bindings/tcl && $(MAKE) tcl-install
 
+site-python-install: all
+	cd bindings/python && $(MAKE) python-install
+
 ##END##

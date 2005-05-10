@@ -385,6 +385,10 @@ AC_SUBST(TCL_SHLIB_SUFFIX)
 AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
 
+dnl Check for python
+AM_PATH_PYTHON(2.3)
+AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
+
 
 
 dnl Check for nroff
@@ -431,6 +435,7 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           src/Makefile					\
           bindings/Makefile                             \
           bindings/tcl/Makefile				\
+          bindings/python/Makefile			\
           Makefile])
 AC_CONFIG_COMMANDS([default],[[\
           chmod +x examples/*.cgi examples/*.pl]],[[]])
@@ -460,6 +465,7 @@ echo "     Perl Binary: $PERL"
 echo "    Perl Version: $PERL_VERSION"
 echo "    Perl Options: $PERL_MAKE_OPTIONS"
 echo "      Tcl Config: $tcl_config"
+echo "  Python Version: $PYTHON_VERSION"
 echo "    Build rrdcgi: $enable_rrdcgi"
 echo " Build librrd MT: $enable_pthread"
 echo

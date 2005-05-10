@@ -42,6 +42,16 @@ Requires: %{name} = %{version}
 %description perl
 The RRD Tools Perl modules.
 
+%package python
+Summary: RRD Tool Python interface
+Group: Applications/Databases
+Requires: %{name} = %{version} python >= 2.3
+
+%description python
+The RRD Tools Python modules.
+
+%prep
+%setup -q -n rrdtool-%{cvsdate}
 %prep
 %setup -q -n rrdtool-%{cvsdate}
 
@@ -127,7 +137,12 @@ rm -rf %{buildroot}
 %{_mandir}/man1/RRDp.1*
 %{_mandir}/man1/RRDs.1*
 
+%files python
+%{_libdir}/python*/site-packages/*
+
 %changelog
+* Wed May 11 2005 Alan Milligan <alan.milligan@last-bastion.net> 
+- python support
 * Wed May 26 2004 Mike Slifcak <slif@bellsouth.net> 1.1.0-0.1.20040526
 - package examples with rrdtool-perl (decouple Perl from main package)
 * Thu Apr 29 2004 Chris Adams <cmadams@hiwaay.net> 1.1.0-0.1.20040430

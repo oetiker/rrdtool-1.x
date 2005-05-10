@@ -2,6 +2,7 @@ I would like to thank to following people for helping to
 bring RRDtool into existence.
 
 Alan Lichty <alan_lichty with eli.net> 
+Alan Milligan <alan.milligan@last-bastion.net> Python bindings
 Alex van den Bogaerdt <alex with ergens.op.het.net> (rrd_resize.c and more)
 Amos Shapira <amos with gezernet.co.il>
 Andreas Kroomaa <andre with ml.ee>
