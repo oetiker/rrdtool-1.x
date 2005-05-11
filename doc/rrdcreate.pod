@@ -137,13 +137,12 @@ I<heartbeat> defines the maximum number of seconds that may pass
 between two updates of this data source before the value of the 
 data source is assumed to be I<*UNKNOWN*>.
 
-I<min> and I<max> are optional entries defining the expected range of
-the data supplied by this data source. If I<min> and/or I<max> are
-defined, any value outside the defined range will be regarded as
-I<*UNKNOWN*>. If you do not know or care about min and max, set them
-to U for unknown. Note that min and max always refer to the processed
-values of the DS. For a traffic-B<COUNTER> type DS this would be the
-maximum and minimum data-rate expected from the device.
+I<min> and I<max> define the expected range values for data supplied by a
+data source. If I<min> and/or I<max> any value outside the defined range
+will be regarded as I<*UNKNOWN*>. If you do not know or care about min and
+max, set them to U for unknown. Note that min and max always refer to the
+processed values of the DS. For a traffic-B<COUNTER> type DS this would be
+the maximum and minimum data-rate expected from the device.
 
 I<If information on minimal/maximal expected values is available,
 always set the min and/or max properties. This will help RRDtool in
