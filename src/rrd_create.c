@@ -95,7 +95,7 @@ rrd_create_r(char *filename,
     rrd_t             rrd;
     long              i;
     int               offset;
-    char *token;
+    char *token,dummychar1,dummychar2;
     unsigned short token_idx, error_flag, period=0;
     unsigned long hashed_name;
 
@@ -146,19 +146,31 @@ rrd_create_r(char *filename,
 	    }
 	    memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
             /* extract the name and type */
-	    if (sscanf(&argv[i][3],
-		       DS_NAM_FMT ":" DST_FMT ":%n",
-		       rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-		       rrd.ds_def[rrd.stat_head->ds_cnt].dst,&offset) == 2)
-            {
-                /* check for duplicate datasource names */
-                for(ii=0;ii<rrd.stat_head->ds_cnt;ii++)
-                    if(strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-                              rrd.ds_def[ii].ds_nam) == 0){
-                        rrd_set_error("Duplicate DS name: %s",rrd.ds_def[ii].ds_nam);
-                    }				                                
-            } else {
-                rrd_set_error("invalid DS format");
+	    switch (sscanf(&argv[i][3],
+			DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
+			rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
+			&dummychar1,
+			rrd.ds_def[rrd.stat_head->ds_cnt].dst,
+			&dummychar2,
+			&offset)) {
+		case 0:
+		case 1:	rrd_set_error("Invalid DS name"); break;
+		case 2:
+		case 3: rrd_set_error("Invalid DS type"); break;
+		case 4: /* (%n may or may not be counted) */
+		case 5: /* check for duplicate datasource names */
+		    for (ii=0;ii<rrd.stat_head->ds_cnt;ii++)
+			if(strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
+				rrd.ds_def[ii].ds_nam) == 0)
+			    rrd_set_error("Duplicate DS name: %s",
+					rrd.ds_def[ii].ds_nam);
+		    /* DS_type may be valid or not. Checked later */
+		    break;
+		default: rrd_set_error("invalid DS format");
+            }
+	    if (rrd_test_error()) {
+                rrd_free(&rrd);
+                return -1;
             }
             
             /* parse the remainder of the arguments */
