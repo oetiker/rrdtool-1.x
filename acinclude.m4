@@ -21,7 +21,7 @@ AC_DEFUN([EX_CHECK_ALL],
  ex_check_save_CPPFLAGS=${CPPFLAGS}
  ex_check_save_LDFLAGS=${LDPFLAGS}
  if test "x$7" != "x"; then
-   CPPFLAGS="-I$7 $CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS -I$7"
  fi
  dnl try compiling naked first
  AC_CHECK_LIB($1,$2, [
@@ -37,7 +37,10 @@ AC_DEFUN([EX_CHECK_ALL],
              LIBS=${LIBS}" "`$PKGCONFIG --libs-only-l $4`
 	     dnl remove the cached value and test again
 	     unset ac_cv_lib_$1_$2
-             AC_CHECK_LIB($1,$2,[ AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])],[])
+             AC_CHECK_LIB($1,$2,[
+	         unset ac_cv_header_`echo $3 | sed "s/[^a-z]/_/"`
+		 AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])
+	     ],[])
           else
              AC_MSG_WARN([
 ----------------------------------------------------------------------------
