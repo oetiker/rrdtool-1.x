@@ -2506,11 +2506,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
           }
         } else {
-	  float ybase0 = DNAN,ytop0=DNAN;
+	  double ybase0 = DNAN,ytop0=DNAN;
           for(ii=0;ii<im->xsize;ii++){
 	    /* keep things simple for now, just draw these bars
 	       do not try to build a big and complex area */
-	    float ybase,ytop;
+	    double ybase,ytop;
 	    if ( im->slopemode == 0 && ii==0){
 		continue;
 	    }
@@ -2531,7 +2531,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	    /* every area has to be wound clock-wise,
 	       so we have to make sur base remains base  */		
 	    if (ybase > ytop){
-		float extra = ytop;
+		double extra = ytop;
 		ytop = ybase;
 		ybase = extra;
 	    }
@@ -2541,13 +2541,13 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	    }
 	    if ( !isnan(ybase0) ){
 	            node = gfx_new_area(im->canvas,
-                                ii-1+im->xorigin,ybase0,
-                                ii-1+im->xorigin,ytop0,
-                                ii+im->xorigin,ytop,				
+                                (double)ii-1.1+(double)im->xorigin,ybase0-0.1,
+                                (double)ii-1.1+(double)im->xorigin,ytop0+0.1,
+                                (double)ii+0.1+(double)im->xorigin,ytop+0.1,
                                 im->gdes[i].col
                                );
         	    gfx_add_point(node,
-			        ii+im->xorigin,ybase
+			        (double)ii+0.01+im->xorigin,ybase-0.1
                               );
             }
 	    ybase0=ybase;
