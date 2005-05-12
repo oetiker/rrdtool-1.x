@@ -478,7 +478,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("last",    PyRRD_last,     PyRRD_last__doc__),
     meth("resize",  PyRRD_resize,   PyRRD_resize__doc__),
     meth("info",    PyRRD_info,     PyRRD_info__doc__),
-    {NULL, NULL}
+    {NULL, NULL,0,NULL}
 };
 
 #define SET_INTCONSTANT(dict, value) \
