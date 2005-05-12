@@ -2541,13 +2541,13 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	    }
 	    if ( !isnan(ybase0) ){
 	            node = gfx_new_area(im->canvas,
-                                (double)ii-1.1+(double)im->xorigin,ybase0-0.1,
-                                (double)ii-1.1+(double)im->xorigin,ytop0+0.1,
-                                (double)ii+0.1+(double)im->xorigin,ytop+0.1,
+                                (double)ii-1.2+(double)im->xorigin,ybase0-0.2,
+                                (double)ii-1.2+(double)im->xorigin,ytop0+0.2,
+                                (double)ii+0.2+(double)im->xorigin,ytop+0.2,
                                 im->gdes[i].col
                                );
         	    gfx_add_point(node,
-			        (double)ii+0.01+im->xorigin,ybase-0.1
+			        (double)ii+0.02+im->xorigin,ybase-0.2
                               );
             }
 	    ybase0=ybase;
