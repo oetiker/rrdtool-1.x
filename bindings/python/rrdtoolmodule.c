@@ -28,6 +28,15 @@
  *
  */
 
+#ifdef UNUSED
+#elif defined(__GNUC__)
+# define UNUSED(x) x __attribute__((unused))
+#elif defined(__LCLINT__)
+# define UNUSED(x) /*@unused@*/ x
+#else
+# define UNUSED(x) x
+#endif
+
 static const char *__version__ = "$Revision: 1.14 $";
 
 #include "Python.h"
@@ -85,7 +94,7 @@ static char PyRRD_create__doc__[] =
 [RRA:CF:xff:steps:rows]";
 
 static PyObject *
-PyRRD_create(PyObject *self, PyObject *args)
+PyRRD_create(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     char           **argv;
@@ -113,7 +122,7 @@ static char PyRRD_update__doc__[] =
 "N|timestamp:value[:value...] [timestamp:value[:value...] ...]";
 
 static PyObject *
-PyRRD_update(PyObject *self, PyObject *args)
+PyRRD_update(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     char           **argv;
@@ -141,7 +150,7 @@ static char PyRRD_fetch__doc__[] =
 "[--start|-s start] [--end|-e end]";
 
 static PyObject *
-PyRRD_fetch(PyObject *self, PyObject *args)
+PyRRD_fetch(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     rrd_value_t     *data, *datai;
@@ -232,7 +241,7 @@ static char PyRRD_graph__doc__[] =
 "[STACK:vname[#rrggbb[:legend]]]";
 
 static PyObject *
-PyRRD_graph(PyObject *self, PyObject *args)
+PyRRD_graph(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     char           **argv, **calcpr;
@@ -281,7 +290,7 @@ static char PyRRD_tune__doc__[] =
 "[--data-source-type|-d ds-name:DST] [--data-source-rename|-r old-name:new-name]";
 
 static PyObject *
-PyRRD_tune(PyObject *self, PyObject *args)
+PyRRD_tune(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     char           **argv;
@@ -307,7 +316,7 @@ static char PyRRD_last__doc__[] =
 "last(filename): Return the timestamp of the last data sample in an RRD";
 
 static PyObject *
-PyRRD_last(PyObject *self, PyObject *args)
+PyRRD_last(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     int              argc, ts;
@@ -332,7 +341,7 @@ static char PyRRD_resize__doc__[] =
 "    resize filename rra-num GROW|SHRINK rows";
 
 static PyObject *
-PyRRD_resize(PyObject *self, PyObject *args)
+PyRRD_resize(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r;
     char           **argv;
@@ -358,7 +367,7 @@ static char PyRRD_info__doc__[] =
 "info(filename): extract header information from an rrd";
 
 static PyObject *
-PyRRD_info(PyObject *self, PyObject *args)
+PyRRD_info(PyObject UNUSED(*self), PyObject *args)
 {
     PyObject        *r, *t, *ds;
     rrd_t            rrd;
