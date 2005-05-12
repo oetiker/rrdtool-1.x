@@ -18,6 +18,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
 
 =head1 EXAMPLE
 
+ sys.path.append('/path/to/rrdtool/lib/python2.3/site-packages/')
  import rrdtool, tempfile
 
  DAY = 86400
@@ -39,6 +40,11 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  info = rrdtool.info('downloads.rrd')
  print info['last_update']
  print info['ds']['downloads']['minimal_heartbeat']
+
+If you use the B<site-python-install> make target you can drop to first sys.path.append
+line since the rrdtool module will be available everywhere.
+
+If rrdtool runs into trouble, it will throw an exception which you might want to catch.
 
 =head1 SEE ALSO
 
