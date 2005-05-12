@@ -3112,6 +3112,22 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
                 int ci;
 		int col_len = col_end - col_start;
 		switch (col_len){
+			case 3:
+				color = (
+					((color & 0xF00) * 0x110000) |
+					((color & 0x0F0) * 0x011000) |
+					((color & 0x00F) * 0x001100) |
+					0x000000FF
+					);
+				break;
+			case 4:
+				color = (
+					((color & 0xF000) * 0x11000) |
+					((color & 0x0F00) * 0x01100) |
+					((color & 0x00F0) * 0x00110) |
+					((color & 0x000F) * 0x00011)
+					);
+				break;
 			case 6:
 		        	color = (color << 8) + 0xff /* shift left by 8 */;
 				break;
