@@ -101,11 +101,17 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
     if ((MYVAR = malloc(sizeof(MYVART) * MYCNT)) == NULL) {\
 	rrd_set_error("" #MYVAR " malloc"); \
         fclose(*in_file); \
-    return (-1); } \
+        return (-1); } \
     fread(MYVAR,sizeof(MYVART),MYCNT, *in_file); 
 
 
     MYFREAD(rrd->stat_head, stat_head_t,  1)
+    /* lets see if the first read worked */
+    if (ferror( *in_file )){
+	rrd_set_error("reading the cookie off %s faild",file_name);
+	fclose(*in_file);
+	return(-1);
+    }	
     version = atoi(rrd->stat_head->version);
 
 	/* lets do some test if we are on track ... */
