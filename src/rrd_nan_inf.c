@@ -1,6 +1,6 @@
 #include "rrd_nan_inf.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
 #include <math.h>
 

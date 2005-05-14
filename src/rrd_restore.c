@@ -8,7 +8,7 @@
 #include "rrd_rpncalc.h"
 #include <fcntl.h>
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #define open _open
 #define close _close
@@ -421,7 +421,7 @@ rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
     if (strcmp("-",file_name)==0){
       rrd_file= stdout;
     } else {
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
       fdflags = O_RDWR|O_BINARY|O_CREAT;
 #else
       fdflags = O_WRONLY|O_CREAT;

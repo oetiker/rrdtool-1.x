@@ -13,7 +13,7 @@
  #include <sys/mman.h>
 #endif
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
  #include <sys/locking.h>
  #include <sys/stat.h>
  #include <io.h>
@@ -25,7 +25,7 @@
 #include "rrd_is_thread_safe.h"
 #include "unused.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 /*
  * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
  * replacement.
@@ -1433,7 +1433,7 @@ LockRRD(FILE *rrdfile)
     rrd_fd = fileno(rrdfile);
 
 	{
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     struct _stat st;
 
     if ( _fstat( rrd_fd, &st ) == 0 ) {

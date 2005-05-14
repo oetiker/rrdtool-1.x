@@ -9,7 +9,7 @@
 
 #include "rrd_tool.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
@@ -2634,7 +2634,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   if (strcmp(im->graphfile,"-")==0) {
     fo = im->graphhandle ? im->graphhandle : stdout;
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     /* Change translation mode for stdout to BINARY */
     _setmode( _fileno( fo ), O_BINARY );
 #endif
@@ -2839,7 +2839,7 @@ rrd_graph_init(image_desc_t *im)
     for(i=0;i<DIM(graph_col);i++)
         im->graph_col[i]=graph_col[i];
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     {
             char *windir; 
 	    char rrd_win_default_font[1000];
