@@ -151,9 +151,9 @@ ytr(image_desc_t *im, double value){
     if (! im->rigid) {
       /* keep yval as-is */
     } else if (yval > im->yorigin) {
-      yval = im->yorigin;
+      yval = im->yorigin +0.00001;
     } else if (yval < im->yorigin - im->ysize){
-      yval = im->yorigin - im->ysize;
+      yval = im->yorigin - im->ysize - 0.00001;
     } 
     return yval;
 }
