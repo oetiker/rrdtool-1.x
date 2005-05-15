@@ -2387,11 +2387,11 @@ graph_paint(image_desc_t *im, char ***calcpr)
   
   node=gfx_new_area ( im->canvas,
                       0, 0,
-                      im->ximg, 0,
-                      im->ximg, im->yimg,
+                      0, im->yimg,
+		      im->ximg, im->yimg,                      
                       im->graph_col[GRC_BACK]);
 
-  gfx_add_point(node,0, im->yimg);
+  gfx_add_point(node,im->ximg, 0);
 
 #ifdef WITH_PIECHART
   if (piechart != 2) {
@@ -2645,7 +2645,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       return (-1);
     }
   }
-  gfx_render (im->canvas,im->ximg,im->yimg,0x0,fo);
+  gfx_render (im->canvas,im->ximg,im->yimg,0x00000000,fo);
   if (strcmp(im->graphfile,"-") != 0)
     fclose(fo);
   return 0;
