@@ -2928,6 +2928,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"tabwidth",   required_argument, 0,    'T'},            
 	    {"font-render-mode", required_argument, 0, 'R'},
 	    {"font-smoothing-threshold", required_argument, 0, 'B'},
+	    {"alt-y-mrtg", no_argument,       0,  1000}, /* this has no effect it is just here to save old apps from crashing when they use it */
 	    {0,0,0,0}};
 	int option_index = 0;
 	int opt;
