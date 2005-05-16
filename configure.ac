@@ -299,7 +299,7 @@ AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
 
-AC_ARG_ENABLE(perl,[  --disable-perl    do not build the perl modules],
+AC_ARG_ENABLE(perl,[  --disable-perl          do not build the perl modules],
 [],[enable_perl=yes])
 
 
@@ -314,8 +314,8 @@ else
 	perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
 	AC_MSG_RESULT($perlcc)
 	if test ! -x "$perlcc"; then
- 	       AC_PATH_PROG(PERLCC, ${perlcc}, no)
-	       if test "x$PERLCC" = "xno"; then
+ 	       AC_PATH_PROG(PERLCC, "${perlcc}", no)
+	       if test "$PERLCC" = "no"; then
                   AC_MSG_WARN([
 I would not find the Compiler ($perlcc) that was originally used to compile your
 perl binary. You should either make sure that this compiler is available on your
@@ -332,7 +332,7 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
 ppref=$prefix
-test "x$ppref" = xNONE && ppref=$ac_default_prefix
+test "$ppref" = "NONE" && ppref=$ac_default_prefix
 
 PERL_MAKE_OPTIONS="PREFIX=$ppref LIB=$ppref/lib/perl/$PERL_VERSION"
 
@@ -358,29 +358,32 @@ AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
 AC_SUBST(PERL_VERSION)
 
+AC_ARG_ENABLE(tcl,[  --disable-tcl           do not build the tcl modules],
+[],[enable_tcl=yes])
 
-dnl Check for Tcl.
-withval=""
-AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
-found=0
-AC_MSG_CHECKING(for tclConfig.sh in $withval)
-if test -f "$withval/tclConfig.sh" ; then
+if test  "$enable_tcl" = "yes"; then
+  dnl Check for Tcl.
+  withval=""
+  AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
+  enable_tcl=no
+  AC_MSG_CHECKING(for tclConfig.sh in $withval)
+  if test -f "$withval/tclConfig.sh" ; then
     	tcl_config=$withval/tclConfig.sh
-        found=1
+        enable_tcl=yes
         AC_MSG_RESULT(yes)
         break
-else
+  else
         AC_MSG_RESULT(no)
-fi
+  fi
 
-if test $found -eq 0 ; then
+  if test "$enable_tcl" = "no"; then
         AC_MSG_WARN([tclConfig.sh not found - Tcl interface won't be built])
-else
+  else
 	. $tcl_config
+  fi
 fi
 
-
-AM_CONDITIONAL(COMP_TCL, test x$found = x1 )
+AM_CONDITIONAL(BUILD_TCL, test "$enable_tcl" = "yes" )
 
 AC_SUBST(TCL_PREFIX)
 AC_SUBST(TCL_SHLIB_CFLAGS)
@@ -389,18 +392,23 @@ AC_SUBST(TCL_SHLIB_SUFFIX)
 AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
 
-dnl Check for python
-AM_PATH_PYTHON(2.3,[PYTHON_DIR=python],[PYTHON_DIR=''])
-AM_CHECK_PYTHON_HEADERS(,[PYTHON_DIR='';AC_MSG_WARN(could not find Python headers)])
-AC_SUBST(PYTHON_DIR)
+AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
+[],[enable_python=yes])
 
+if test  "$enable_python" = "yes"; then
+dnl Check for python
+AM_PATH_PYTHON(2.3,[],[enable_python=no])
+AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
+fi
+
+AM_CONDITIONAL(BUILD_PYTHON,[test "$enable_python" = "yes"])
 
 dnl Check for nroff
 AC_PATH_PROGS(NROFF, gnroff nroff)
 AC_PATH_PROGS(TROFF, groff troff)
 
 dnl Does the compiler like -Wall and -pedantic?
-if test "x$GCC" = "xyes"; then
+if test "$GCC" = "yes"; then
   oCFLAGS=$CFLAGS
   CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
   AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
@@ -463,15 +471,15 @@ echo
 echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
-echo "    With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
-echo "    Perl Modules: $COMP_PERL"
-echo "     Perl Binary: $PERL"
-echo "    Perl Version: $PERL_VERSION"
-echo "    Perl Options: $PERL_MAKE_OPTIONS"
-echo "      Tcl Config: $tcl_config"
-echo "  Python Version: $PYTHON_VERSION"
-echo "    Build rrdcgi: $enable_rrdcgi"
-echo " Build librrd MT: $enable_pthread"
+echo "          With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
+echo "          Perl Modules: $COMP_PERL"
+echo "           Perl Binary: $PERL"
+echo "          Perl Version: $PERL_VERSION"
+echo "          Perl Options: $PERL_MAKE_OPTIONS"
+echo "    Build Tcl Bindings: $enable_tcl"
+echo " Build Python Bindings: $enable_python"
+echo "          Build rrdcgi: $enable_rrdcgi"
+echo "       Build librrd MT: $enable_pthread"
 echo
 echo
 echo "Type 'make' to compile the software and use 'make install' to "

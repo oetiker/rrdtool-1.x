@@ -18,7 +18,7 @@ AM_CPPFLAGS        = -I$(TCL_PREFIX)/include -I$(SRC_DIR)  -I$(GD_LIB_DIR)
 LIBDIRS            = -L$(libdir) -L$(SRC_DIR)  -L../src/.libs
 LIB_RUNTIME_DIR    = $(libdir)
 
-if COMP_TCL
+if BUILD_TCL
 
 tclrrd$(TCL_SHLIB_SUFFIX): tclrrd.o
 	$(TCL_SHLIB_LD) $(LIBDIRS) $< -o $@ -lrrd_private -lm

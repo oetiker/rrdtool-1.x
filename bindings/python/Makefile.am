@@ -2,6 +2,8 @@ AM_CPPFLAGS = @CFLAGS@ -I../../src @PYTHON_INCLUDES@
 
 #pythondir = $(pyexecdir)/python@PYTHON_VERSION@/site-packages
 
+if BUILD_PYTHON
+
 python_PROGRAMS = rrdtoolmodule.so
 
 rrdtoolmodule_so_LDFLAGS = -module -shared -L../../src
@@ -12,3 +14,5 @@ noinst_HEADERS =                rrd_extra.h
 
 clean:
 	rm -rf build
+
+endif
