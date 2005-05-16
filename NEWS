@@ -40,6 +40,9 @@ Incompatibilities
 -----------------
 * Colons in COMMENT arguments to rrdtool graph must be escaped with a backslash
 
+* the --alt-y-mrtg option is gone or rather since 1.2.7 it is back but
+  without functionality.
+
 Behind the Scenes
 -----------------
 * In order to support Holt-Winters and Calculated Datasources,
