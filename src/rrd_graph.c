@@ -100,8 +100,9 @@ gfx_color_t graph_col[] =   /* default colors */
      0xE0505080,   /* major grid */
      0x000000FF,   /* font       */ 
      0x802020FF,   /* arrow      */
-     0x202020FF    /* axis       */
-};
+     0x202020FF,   /* axis       */
+     0x000000FF    /* frame      */ 
+};     
 
 
 /* #define DEBUG */
@@ -222,6 +223,7 @@ enum grc_en grc_conv(char *string){
     conv_if(FONT,GRC_FONT)
     conv_if(ARROW,GRC_ARROW)
     conv_if(AXIS,GRC_AXIS)
+    conv_if(FRAME,GRC_FRAME)
 
     return -1;	
 }
@@ -2021,7 +2023,7 @@ grid_paint(image_desc_t   *im)
                             node = gfx_new_line(im->canvas,
                                                 X0-1,Y0-boxV,
                                                 X0-1,Y0,
-                                                1,im->graph_col[GRC_FONT]);
+                                                1,im->graph_col[GRC_FRAME]);
                             gfx_add_point(node,X0+boxH,Y0);
                             gfx_add_point(node,X0+boxH,Y0-boxV);
                             gfx_close_path(node);

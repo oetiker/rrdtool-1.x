@@ -252,12 +252,13 @@ Override the default colors for the standard elements of the graph. The
 I<COLORTAG> is one of C<BACK> background, C<CANVAS> for the background of
 the actual graph, C<SHADEA> for the left and top border, C<SHADEB> for the
 right and bottom border, C<GRID>, C<MGRID> for the major grid, C<FONT> for
-the color of the font, C<AXIS> for the axis of the graph and finally C<ARROW>
-for the arrow head pointing to the future. Each color is composed out of
-three hexadecimal numbers specifying its rgb color component (00 is off, FF is
-maximum) of red, green and blue. Optionally you may add another hexadecimal
-number specifying the transparency (FF is solid). You may set this option
-several times to alter multiple defaults.
+the color of the font, C<AXIS> for the axis of the graph, C<FRAME> for the
+line around the color spots and finally C<ARROW> for the arrow head pointing
+up and forward. Each color is composed out of three hexadecimal numbers
+specifying its rgb color component (00 is off, FF is maximum) of red, green
+and blue. Optionally you may add another hexadecimal number specifying the
+transparency (FF is solid). You may set this option several times to alter
+multiple defaults.
 
 A green arrow is made by: C<--color ARROW:00FF00>
 
