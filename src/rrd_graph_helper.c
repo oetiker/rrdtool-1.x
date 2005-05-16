@@ -295,6 +295,21 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
     int i,j,k;
     int colorfound=0;
     char tmpstr[MAX_VNAME_LEN + 10];	/* vname#RRGGBBAA\0 */
+    static int spacecnt = 0;
+
+    if (spacecnt == 0) {        
+	float one_space = gfx_get_text_width(im->canvas, 0,
+                               im->text_prop[TEXT_PROP_LEGEND].font,
+                               im->text_prop[TEXT_PROP_LEGEND].size,
+                               im->tabwidth,"    ", 0) / 4.0;
+	float target_space = gfx_get_text_width(im->canvas, 0,
+                               im->text_prop[TEXT_PROP_LEGEND].font,
+                               im->text_prop[TEXT_PROP_LEGEND].size,
+                               im->tabwidth,"oo", 0);
+	spacecnt =  target_space / one_space;	
+        dprintf("- spacecnt: %i onespace: %f targspace: %f\n",spacecnt,one_space,target_space);
+    }
+
 
     dprintf("- parsing '%s'\n",&line[*eaten]);
 
@@ -399,16 +414,15 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	
 	dprintf("- examining '%s'\n",&line[*eaten]);
 	if (linecp[*eaten] != '\0' && linecp[*eaten] != ':') {
-	    /* If the legend is not empty, it has to be prefixed with "m ". This then gets
+	    int spi;		
+	    /* If the legend is not empty, it has to be prefixed with spacecnt ' ' characters. This then gets
 	     * replaced by the color box later on. */
-	     (*eaten)--;
-	     linecp[*eaten]='o';
-	     (*eaten)--;
-	     linecp[*eaten]='o';
+	    for (spi=0;spi<spacecnt && (*eaten) > 1;spi++){
+   	       linecp[--(*eaten)]=' ';
+	    }
 	}
 
 	if (rrd_parse_legend(linecp, eaten, gdp)) err=1;
-	
 	free(linecp);
 	if (err) return 1;
 
