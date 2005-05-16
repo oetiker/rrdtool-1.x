@@ -390,9 +390,9 @@ AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
 
 dnl Check for python
-AM_PATH_PYTHON(2.3)
-AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
-
+AM_PATH_PYTHON(2.3,[PYTHON_DIR=python],[PYTHON_DIR=''])
+AM_CHECK_PYTHON_HEADERS(,[PYTHON_DIR='';AC_MSG_WARN(could not find Python headers)])
+AC_SUBST(PYTHON_DIR)
 
 
 dnl Check for nroff
