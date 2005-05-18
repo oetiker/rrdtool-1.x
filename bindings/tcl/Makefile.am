@@ -15,16 +15,16 @@ GD_LIB_DIR       = $(top_srcdir)/@GD_LIB_DIR@
 
 SRC_DIR            = $(top_srcdir)/src
 AM_CPPFLAGS        = -I$(TCL_PREFIX)/include -I$(SRC_DIR)  -I$(GD_LIB_DIR)
-LIBDIRS            = -L$(libdir) -L$(SRC_DIR)  -L../src/.libs
+LIBDIRS            = -L$(libdir) -L$(SRC_DIR)  -L../../src/.libs
 LIB_RUNTIME_DIR    = $(libdir)
 
 if BUILD_TCL
 
 tclrrd$(TCL_SHLIB_SUFFIX): tclrrd.o
-	$(TCL_SHLIB_LD) $(LIBDIRS) $< -o $@ -lrrd_private -lm
+	$(TCL_SHLIB_LD) $(LIBDIRS) $< -o $@ -lrrd
 
 tclrrd.o: tclrrd.c
-	$(CC) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(INCLUDES) -c $< -DVERSION=\"$(VERSION)\"
+	$(CC) $(AM_CPPFLAGS) $(CPPFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(INCLUDES) -c $< -DVERSION=\"$(VERSION)\"
 
 all-local: tclrrd$(TCL_SHLIB_SUFFIX)
 

@@ -23,8 +23,7 @@ extern int __getopt_initialized;
 
 /*
  * some rrd_XXX() functions might modify the argv strings passed to it.
- * Furthermore, they use getopt() without initializing getopt's optind
- * variable themselves. Hence, we need to do some preparation before
+ * Hence, we need to do some preparation before
  * calling the rrd library functions.
  */
 static char ** getopt_init(argc, argv)
@@ -34,8 +33,6 @@ static char ** getopt_init(argc, argv)
     char **argv2;
     int i;
     
-    optind = 0;
-
     argv2 = calloc(argc, sizeof(char *));
     for (i = 0; i < argc; i++) {
 	argv2[i] = strdup(argv[i]);
