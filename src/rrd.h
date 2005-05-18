@@ -72,7 +72,7 @@ int    rrd_tune(int, char **);
 time_t rrd_last(int, char **);
 time_t rrd_first(int, char **);
 int    rrd_resize(int, char **);
-unsigned long rrd_version(int, char **);
+double rrd_version(void);
 int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 unsigned long *, unsigned long *,
 		 char ***, rrd_value_t **);
