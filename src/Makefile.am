@@ -37,6 +37,7 @@ RRD_C_FILES =		\
 	rrd_rpncalc.c \
 	rrd_tune.c	\
 	rrd_update.c	\
+	rrd_version.c	\
 	rrd_xport.c	\
 	rrd_nan_inf.c	\
         art_rgba_svp.c \

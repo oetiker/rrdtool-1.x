@@ -22,7 +22,7 @@ void PrintUsage(char *cmd)
 {
 
     char help_main[] =
-	   "RRDtool 1.2.8  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n"
+	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n"
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
 #else
@@ -81,7 +81,7 @@ void PrintUsage(char *cmd)
 	   "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
  	   "\t\t[ time:value[:value...] ..]\n\n";
-
+ 
     char help_fetch[] =
 	   "* fetch - fetch data out of an RRD\n\n"
 	   "\trrdtool fetch filename.rrd CF\n"
@@ -552,7 +552,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	     strcmp("v", argv[1]) == 0 ||
 	     strcmp("-v", argv[1]) == 0  ||
 	     strcmp("-version", argv[1]) == 0  )
-        printf("RRDtool 1.2.8  Copyright by Tobi Oetiker, 1997-2005\n");
+        printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2005 (v.%lu)\n",
+               rrd_version(0, NULL));
     else if (strcmp("restore", argv[1]) == 0)
 	rrd_restore(argc-1, &argv[1]);
     else if (strcmp("resize", argv[1]) == 0)

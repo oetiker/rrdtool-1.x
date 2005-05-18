@@ -17,7 +17,10 @@ extern "C" {
 #endif
 
 #undef strerror
+
+#if( 2 < __GNUC__ )
 #pragma GCC poison strtok asctime ctime gmtime localtime tmpnam strerror
+#endif
 
 #ifdef  __cplusplus
 }

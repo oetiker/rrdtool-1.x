@@ -1399,7 +1399,7 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
 "   \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
 "<!--\n"
 "   SVG file created by\n"
-"        RRDtool 1.2.8 Tobias Oetiker, http://tobi.oetiker.ch\n"
+"        RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch\n"
 "\n"
 "   The width/height attributes in the outhermost svg node\n"
 "   are just default sizes for the browser which is used\n"
@@ -1567,7 +1567,7 @@ static int eps_prologue(eps_state *state)
   gfx_node_t *node;
   fputs(
     "%!PS-Adobe-3.0 EPSF-3.0\n"
-    "%%Creator: RRDtool 1.2.8 Tobias Oetiker, http://tobi.oetiker.ch\n"
+    "%%Creator: RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch\n"
     /* can't like weird chars here */
     "%%Title: (RRDtool output)\n"
     "%%DocumentData: Clean7Bit\n"
@@ -2254,7 +2254,7 @@ static void pdf_init_document(pdf_state *state)
 
 static void pdf_setup_document(pdf_state *state)
 {
-  const char *creator = "RRDtool 1.2.8 Tobias Oetiker, http://tobi.oetiker.ch";
+  const char *creator = "RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch";
   /* all objects created by now, so init code can reference them */
   /* HEADER */
   pdf_puts(&state->pdf_header, "%PDF-1.3\n");
