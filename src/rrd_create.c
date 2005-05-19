@@ -95,7 +95,8 @@ rrd_create_r(char *filename,
     rrd_t             rrd;
     long              i;
     int               offset;
-    char *token,dummychar1,dummychar2;
+    char *token;
+    unsigned short dummychar1,dummychar2;
     unsigned short token_idx, error_flag, period=0;
     unsigned long hashed_name;
 
