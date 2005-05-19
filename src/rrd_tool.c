@@ -552,8 +552,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	     strcmp("v", argv[1]) == 0 ||
 	     strcmp("-v", argv[1]) == 0  ||
 	     strcmp("-version", argv[1]) == 0  )
-        printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2005 (v.%lu)\n",
-               rrd_version(0, NULL));
+        printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2005 (%f)\n",
+               rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
 	rrd_restore(argc-1, &argv[1]);
     else if (strcmp("resize", argv[1]) == 0)
