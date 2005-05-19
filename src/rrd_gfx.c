@@ -373,18 +373,32 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
   FT_UInt       previous;
   FT_Vector     ft_pen;
 
-  gfx_string    string;
+  gfx_string    string = (gfx_string) malloc (sizeof(struct gfx_string_s));
+
   gfx_char      glyph;          /* current glyph in table */
   unsigned int  n;
   int           error;
   int        gottab = 0;    
+
+#ifdef HAVE_MBSTOWCS
+  wchar_t	*cstr;
+  size_t	clen = strlen(text)+1;
+  cstr = malloc(sizeof(wchar_t) * clen); /* yes we are allocating probably too much here, I know */
+  string->count=mbstowcs(cstr,text,clen);
+  if ( string->count == -1){
+	string->count=mbstowcs(cstr,"Enc-Err",6);
+  }
+#else
+  char		*cstr = strdup(text);
+  string->count = strlen (text);
+#endif
+
   ft_pen.x = 0;   /* start at (0,0) !! */
   ft_pen.y = 0;
 
-  string = (gfx_string) malloc (sizeof(struct gfx_string_s));
+
   string->width = 0;
   string->height = 0;
-  string->count = strlen (text);
   string->glyphs = (gfx_char) calloc (string->count,sizeof(struct gfx_char_s));
   string->num_glyphs = 0;
   string->transform.xx = (FT_Fixed)( cos(M_PI*(rotation)/180.0)*0x10000);
@@ -400,10 +414,10 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     /* handle the tabs ...
        have a witespace glyph inserted, but set its width such that the distance
     of the new right edge is x times tabwidth from 0,0 where x is an integer. */    
-    unsigned char letter = text[n];
+    unsigned int letter = cstr[n];
           
     gottab = 0;
-    if (letter == '\\' && n+1 < string->count && text[n+1] == 't'){
+    if (letter == '\\' && n+1 < string->count && cstr[n+1] == 't'){
             /* we have a tab here so skip the backslash and
                set t to ' ' so that we get a white space */
             gottab = 1;
@@ -419,7 +433,6 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     glyph->pos.x = 0;
     glyph->pos.y = 0;
     glyph->image = NULL;
-
     glyph->index = FT_Get_Char_Index( face, letter );
 
     /* compute glyph origin */
@@ -485,6 +498,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     n++;
     
   }
+  free(cstr);
 /*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
   compute_string_bbox( string );
   /* the last character was a tab */  
@@ -494,7 +508,6 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
       string->width = string->bbox.xMax - string->bbox.xMin;
   } */
   string->height = string->bbox.yMax - string->bbox.yMin;
-
   return string;
 }
 
