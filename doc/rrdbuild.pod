@@ -39,7 +39,7 @@ Depending on the shell you are using, you can do either (bash,zsh):
 
 Or if you run tcsh:
 
- set BUILD_DIR=/tmp
+ set BUILD_DIR=/tmp/rrdbuild
  set INSTALL_DIR=/usr/local/rrdtool-1.2.8
 
 Now make sure the BUILD_DIR exists and go there:
