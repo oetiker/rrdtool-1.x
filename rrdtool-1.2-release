@@ -1,0 +1,39 @@
+#!/bin/sh
+set -e
+PATH=/usr/bin:/sbin:/usr/sbin:/usr/ccs/bin:/usr/sepp/bin:/home/oetiker/bin
+export PATH
+VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
+PERLVERS=`perl -n -e 'm/\QNUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
+set -x
+perl -i -p -e 's/^\$VERSION.+/\$VERSION=1.'$PERLVERS';/' bindings/perl-*/*.pm
+perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2005/' src/*.h src/*.c
+perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
+perl -i -p -e 's/rrdtool-[\.0-9]+(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
+svn diff 
+echo Tagging and releasing rrdtool $VERSION ($PERSVERS). Press any Key to continue.
+read somekey
+svn commit -m "prepare for the release of rrdtool-$VERSION"
+mkdir /tmp/rrdtool-$$
+cd /tmp/rrdtool-$$
+svn checkout svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program .
+svn log --stop-on-copy --xml --verbose svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program | \
+    xsltproc --stringparam strip-prefix branches/1.2/program /home/oetiker/data/svn-checkout/rrdtool/branches/1.2/program/svn2cl.xsl -  >CHANGES
+cp CHANGES /home/oetiker/public_html/webtools/rrdtool/pub/
+sh MakeMakefile
+PKG_CONFIG_PATH=/usr/pack/rrdtool-1.2svn-to/sun4u-sun-solaris2.8/lib/pkgconfig/
+export PKG_CONFIG_PATH
+./configure
+gmake dist
+# do a test build
+gtar zxvf rrdtool*.tar.gz
+cd rrdtool-$VERSION
+./configure
+gmake
+src/rrdtool
+cd ..
+cp rrdtool*.tar.gz  /home/oetiker/public_html/webtools/rrdtool/pub/
+(cd /home/oetiker/public_html/webtools/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz)
+cd ..
+rm -rf rrdtool-$$
+svn copy -m "tagging version $VERSION" svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program svn://svn.ee.ethz.ch/rrdtool/tags/$VERSION
+
