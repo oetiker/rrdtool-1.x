@@ -17,13 +17,43 @@ This document will tell you about all the necessary steps to get going.
 
 =head2 Building
 
+Before you start to build RRDtool, you have to decide two things:
+
+=over
+
+=item 1.
+
+In which directory you want to build the software.
+
+=item 2.
+
+Where you want to install the software.
+
+=back
+
+Once you have decided. Save the two locations into environment variables.
+Depending on the shell you are using, you can do either (bash,zsh):
+
+ BUILD_DIR=/tmp/rrdbuild
+ INSTALL_DIR=/usr/local/rrdtool-1.2.8
+
+Or if you run tcsh:
+
+ set BUILD_DIR=/tmp
+ set INSTALL_DIR=/usr/local/rrdtool-1.2.8
+
+Now make sure the BUILD_DIR exists and go there:
+
+ mkdir -p $BUILD_DIR
+ cd $BUILD_DIR
+
 Lets first assume you already have all the necessary libraries
 per-installed. Note that these instructions assume that your copies of
 B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
 could be that they are installed as B<gtar> and B<gmake> on your system.
 
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.8
- tar zxf rrdtool-1.2.8
+ wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.8.tar.gz
+ tar zxf rrdtool-1.2.8.tar.gz
  cd rrdtool-1.2.8
  ./configure --prefix=/path/to/installation && make && make install
 
@@ -41,25 +71,25 @@ compile your own copies of the required libraries. Here is how:
 
 =item Building cgilib
 
+ cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/cgilib-0.5.tar.gz
  tar zxf cgilib-0.5.tar.gz
  cd cgilib-0.5
  make CC=gcc CFLAGS="-O3 -fPIC -I."
- mkdir -p ../lb/include
- cp *.h ../lb/include
- mkdir -p ../lb/lib
- cp libcgi* ../lb/lib
- cd ..
+ mkdir -p $BUILD_DIR/lb/include
+ cp *.h $BUILD_DIR/lb/include
+ mkdir -p $BUILD_DIR/lb/lib
+ cp libcgi* $BUILD_DIR/lb/lib
 
 =item Building zlib
 
+ cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/zlib-1.2.2.tar.gz
  tar  zxf zlib-1.2.2.tar.gz
  cd zlib-1.2.2
- env CFLAGS="-O3 -fPIC" ./configure --prefix=`pwd`/../lb
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
  make 
  make install
- cd ..
 
 =item Building libpng
 
@@ -68,32 +98,35 @@ already have a copy of zlib on your system (which is very likley) you can
 drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of line 4 means that line 4 and line 5 are on one line.
 
+ cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/libpng-1.2.8-config.tar.gz
  tar zxvf libpng-1.2.8-config.tar.gz
  cd libpng-1.2.8-config
- env CPPFLAGS="-I../lb/include" LDFLAGS="-L../lb/lib" CFLAGS="-O3 -fPIC" \
-     ./configure --disable-shared --prefix=`pwd`/../lb
+ env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
+     ./configure --disable-shared --prefix=$BUILD_DIR/lb
  make
  make install
- cd ..
 
 =item Building freetype
 
+ cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/freetype-2.1.9.tar.gz
  tar zxvf freetype-2.1.9.tar.gz
  cd freetype-2.1.9
- env CPPFLAGS="-I../lb/include" LDFLAGS="-L../lb/lib" CFLAGS="-O3 -fPIC" \
-     ./configure --disable-shared --prefix=`pwd`/../lb
+ env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
+     ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ make
  make install
- cd ..
+
 
 =item Building libart_lgpl
 
+ cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
  cd libart_lgpl-2.3.17
- env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=`pwd`/../lb
+ env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ make
  make install
- cd ..
 
 =back
 
@@ -102,24 +135,24 @@ you tell configure where it should be looking for libraries and include
 files. This is done via environment variables. Depending on the shellyou are running, the syntax for setting
 environment variables is different. Under csh/tcsh you use:
 
- set IR=-I`pwd`/lb/include 
+ set IR=-I$BUILD_DIR/lb/include 
  setenv CPPFLAGS "$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
- setenv LDFLAGS  -L`pwd`/lb/lib
+ setenv LDFLAGS  -L$BUILD_DIR/lb/lib
  setenv CFLAGS -O3
 
 If you are running bash/sh/ash/ksh/zsh use this:
 
- IR=-I`pwd`/lb/include 
+ IR=-I$BUILD_DIR/lb/include 
  CPPFLAGS="$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
- LDFLAGS="-L`pwd`/lb/lib"
+ LDFLAGS="-L$BUILD_DIR/lb/lib"
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
 And finally try building again:
  
- ./configure --prefix=/path/to/installation && make && make install
+ ./configure --prefix=$INSTALL_DIR && make && make install
 
-Now go to I</path/to/installation>B</examples> and run them to see if your
+Now go to I<$INSTALL_DIR>B</examples> and run them to see if your
 build has been successful.
 
 =head1 AUTHOR
