@@ -27,7 +27,7 @@ This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
 default, an B<RRA> which contains the correct consolidated data
 at an appropriate resolution will be chosen.  The resolution can
-be overridden with the L<--step|rrdgraph/item_Time> option. 
+be overridden with the L<--step|rrdgraph/item_Time> option.
 The resolution can again be overridden by specifying the B<step size>.
 The time span of this data is the same as for the graph by default,
 you can override this by specifying B<start and end>.  Remember to

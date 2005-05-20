@@ -14,7 +14,7 @@ E<lt>RRD:: tags. B<rrdcgi> will interpret and act according to these tags.
 In the end it will printout a web page including the necessary CGI headers.
 
 B<rrdcgi> parses the contents of the template in 3 steps. In each step it looks
-only for a subset of tags. This allows nesting of tags. 
+only for a subset of tags. This allows nesting of tags.
 
 The argument parser uses the same semantics as you are used from your C-shell.
 
@@ -44,7 +44,7 @@ value of the CGI variable it will still be considered to be one argument.
 
 Inserts the CGI variable of the given name, quotes it and makes sure
 it starts neither with a '/' nor contains '..'. This is to make
-sure that no problematic pathnames can be introduced through the 
+sure that no problematic pathnames can be introduced through the
 CGI interface.
 
 =item RRD::GETENV I<variable>
@@ -81,7 +81,7 @@ values permitted to TZ depend on your OS.
 
 Analog to SETENV but for local variables.
 
-=item RRD::GETVAR I<variable> 
+=item RRD::GETVAR I<variable>
 
 Analog to GETENV but for local variables.
 
@@ -160,7 +160,7 @@ The example below creates a web pages with a single RRD graph.
 
 =head1 EXAMPLE 2
 
-This script is slightly more elaborate, it allows you to run it from 
+This script is slightly more elaborate, it allows you to run it from
 a form which sets RRD_NAME. RRD_NAME is then used to select which RRD
 you want to use as source for your graph.
 
@@ -175,7 +175,7 @@ you want to use as source for your graph.
        <INPUT TYPE=SUBMIT></FORM>
  <H2>Graph</H2>
  <P>
- <RRD::GRAPH <RRD::CV::PATH RRD_NAME>.png --lazy 
+ <RRD::GRAPH <RRD::CV::PATH RRD_NAME>.png --lazy
           --title "Temperatures for "<RRD::CV::QUOTE RRD_NAME>
           DEF:cel=<RRD::CV::PATH RRD_NAME>.rrd:exhaust:AVERAGE
           LINE2:cel#00a000:"D. Celsius">

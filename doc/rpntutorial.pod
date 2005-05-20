@@ -24,7 +24,7 @@ RPN expression 2,1,GT evaluates to 1.
 
 Now consider "2,1,LE".  This RPN expression could be read as "is
 two less than or equal to one?".   The natural response is "no"
-and thus the RPN expression 2,1,LE evaluates to 0. 
+and thus the RPN expression 2,1,LE evaluates to 0.
 
 =head1 Reading the IF Operator
 
@@ -76,7 +76,7 @@ with multiple logic operators:
  1) 20,10,GT,10,20,IF  eval is 20,10,GT = 1     result is 1,10,20,IF
 
 read the eval as pop "20 is greater than 10" so push 1
- 
+
  2) 1,10,20,IF         eval is 1,10,20,IF = 10  result is 10
 
 read pop "if 1 then 10 else 20" so push 10.  Only 10 is left so
@@ -98,7 +98,7 @@ but replace the value 20 with the variable "input":
 
 Read eval as "if input > 10 then true" and replace "input,10,GT"
 with "A":
-  
+
  2) A,10,input,IF            eval is A,10,input,IF
 
 read "if A then 10 else input".  Now replace A with it's verbose
@@ -139,7 +139,7 @@ traditional notation.  Explain why they have different answers.
 Answer 1:
 
     3*2+1 = 7 and 3*(2+1) = 9.  These expressions have
-    different answers because the altering of the plus and 
+    different answers because the altering of the plus and
     times operators alter the order of their evaluation.
 
 

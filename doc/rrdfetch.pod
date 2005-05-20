@@ -4,10 +4,10 @@ rrdfetch - Fetch data from an RRD.
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<fetch> I<filename> I<CF> 
-S<[B<--resolution>|B<-r> I<resolution>]> 
-S<[B<--start>|B<-s> I<start>]> 
-S<[B<--end>|B<-e> I<end>]> 
+B<rrdtool> B<fetch> I<filename> I<CF>
+S<[B<--resolution>|B<-r> I<resolution>]>
+S<[B<--start>|B<-s> I<start>]>
+S<[B<--end>|B<-e> I<end>]>
 
 =head1 DESCRIPTION
 
@@ -20,11 +20,11 @@ function.
 
 =over 8
 
-=item I<filename> 
+=item I<filename>
 
 the name of the B<RRD> you want to fetch the data from.
 
-=item I<CF> 
+=item I<CF>
 
 the consolidation function that is applied to the data you
 want to fetch (AVERAGE,MIN,MAX,LAST)
@@ -52,8 +52,8 @@ specify the end time.
 
 =head2 RESOLUTION INTERVAL
 
-In order to get RRDtool to fetch anything other than the finest resolution RRA 
-B<both> the start and end time must be specified on boundaries that are 
+In order to get RRDtool to fetch anything other than the finest resolution RRA
+B<both> the start and end time must be specified on boundaries that are
 multiples of the desired resolution. Consider the following example:
 
  rrdtool create subdata.rrd -s 10 DS:ds0:GAUGE:300:0:U \
@@ -92,10 +92,10 @@ both start and end time are within the desired RRA
 
 =back
 
-So, if time now is called "t", do 
+So, if time now is called "t", do
 
  end time == int(t/900)*900,
- start time == end time - 1hour, 
+ start time == end time - 1hour,
  resolution == 900.
 
 Using the bash shell, this could look be:

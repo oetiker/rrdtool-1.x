@@ -4,8 +4,8 @@ rrdtune - Modify some basic properties of a Round Robin Database
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<tune> I<filename> 
-S<[B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>]> 
+B<rrdtool> B<tune> I<filename>
+S<[B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>]>
 S<[B<--minimum>|B<-i> I<ds-name>:I<min>]>
 S<[B<--maximum>|B<-a> I<ds-name>:I<max>]>
 S<[B<--data-source-type>|B<-d> I<ds-name>:I<DST>]>
@@ -25,7 +25,7 @@ S<[B<--aberrant-reset> I<ds-name>]>
 The tune option allows you to alter some of the basic configuration
 values stored in the header area of a Round Robin Database (B<RRD>).
 
-One application of the B<tune> function is to relax the 
+One application of the B<tune> function is to relax the
 validation rules on an B<RRD>. This allows to fill a new B<RRD> with
 data available in larger intervals than what you would normally want
 to permit. Be very careful with tune operations for COMPUTE data sources.
@@ -87,7 +87,7 @@ factor chosen when graphing confidence bounds.
 Alter the number of confidence bound violations that constitute a failure for
 purposes of the FAILURES B<RRA>. This must be an integer less than or equal to
 the window length of the FAILURES B<RRA>. This restriction is not verified by
-the tune option, so one can reset failure-threshold and window-length 
+the tune option, so one can reset failure-threshold and window-length
 simultaneously. Setting this option will reset the count of violations to 0.
 
 =item S<B<--window-length> I<window-length>>
@@ -137,11 +137,11 @@ initialization this smoothing is deferred. For efficiency, the implementation
 of smoothing is not data source specific. This means that utilizing
 reset for one data source will delay running the smoothing algorithm
 for all data sources in the file. This is unlikely to have serious
-consequences, unless the data being collected for the non-reset data sources 
-is unusually volatile during the reinitialization period of the reset 
+consequences, unless the data being collected for the non-reset data sources
+is unusually volatile during the reinitialization period of the reset
 data source.
 
-Use of this tuning option is advised when the behavior of the data source 
+Use of this tuning option is advised when the behavior of the data source
 time series changes in a drastic and permanent manner.
 
 =back
@@ -150,7 +150,7 @@ time series changes in a drastic and permanent manner.
 
 C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
 
-Set the minimum required heartbeat for data sources 'in', 'out' 
+Set the minimum required heartbeat for data sources 'in', 'out'
 and 'through' to 10'000 seconds which is a little over one day in data.rrd.
 This would allow to feed old data from MRTG-2.0 right into
 RRDtool without generating *UNKNOWN* entries.

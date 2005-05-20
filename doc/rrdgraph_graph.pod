@@ -1,6 +1,6 @@
-=pod 
+=pod
 
-=head1 NAME  
+=head1 NAME
 
 rrdgraph_graph - rrdtool graph command reference
 
@@ -249,7 +249,7 @@ When stacking, an element is not placed above the X-axis but rather
 on top of the previous element.  There must be something to stack
 upon.
 
-You can use an B<invisible> LINE or AREA to stacked upon.  
+You can use an B<invisible> LINE or AREA to stacked upon.
 
 An B<unknown> value makes the entire stack unknown from that moment on.
 You don't know where to begin (the unknown value) and therefore do

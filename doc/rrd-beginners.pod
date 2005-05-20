@@ -1,4 +1,4 @@
-=head1 NAME 
+=head1 NAME
 
 rrd-beginners - RRDtool Beginners' Guide
 
@@ -135,9 +135,9 @@ explained better with the following example:
 
  Values       = 300, 600, 900, 1200
  Step         = 300 seconds
- COUNTER DS   =    1,  1,   1,    1 
+ COUNTER DS   =    1,  1,   1,    1
  DERIVE DS    =    1,  1,   1,    1
- ABSOLUTE DS  =    1,  2,   3,    4 
+ ABSOLUTE DS  =    1,  2,   3,    4
  GAUGE DS     = 300, 600, 900, 1200
 
 The next parameter is B<heartbeat>. In our example, heartbeat is 600
@@ -251,7 +251,7 @@ generation is done using Perl scripts. These scripts are shown below:
 =head3 Perl script (retrieves data from database and generates graphs and statistics)
 
  #!/usr/bin/perl -w
- # This script fetches data from target.rrd, creates a graph of memory 
+ # This script fetches data from target.rrd, creates a graph of memory
  # consumption on the target (Dual P3 Processor 1 GHz, 656 MB RAM)
 
  # call the RRD perl module
@@ -262,8 +262,8 @@ generation is done using Perl scripts. These scripts are shown below:
  my $start_time = $end_time - 2592000; # set start 30 days in the past
 
  # fetch average values from the RRD database between start and end time
- my ($start,$step,$ds_names,$data) = 
-     RRDs::fetch("target.rrd", "AVERAGE", 
+ my ($start,$step,$ds_names,$data) =
+     RRDs::fetch("target.rrd", "AVERAGE",
                  "-r", "600", "-s", "$start_time", "-e", "$end_time");
  # save fetched values in a 2-dimensional array
  my $rows = 0;

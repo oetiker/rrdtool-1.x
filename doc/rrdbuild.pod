@@ -88,7 +88,7 @@ compile your own copies of the required libraries. Here is how:
  tar  zxf zlib-1.2.2.tar.gz
  cd zlib-1.2.2
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
- make 
+ make
  make install
 
 =item Building libpng
@@ -135,21 +135,21 @@ you tell configure where it should be looking for libraries and include
 files. This is done via environment variables. Depending on the shellyou are running, the syntax for setting
 environment variables is different. Under csh/tcsh you use:
 
- set IR=-I$BUILD_DIR/lb/include 
+ set IR=-I$BUILD_DIR/lb/include
  setenv CPPFLAGS "$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
  setenv LDFLAGS  -L$BUILD_DIR/lb/lib
  setenv CFLAGS -O3
 
 If you are running bash/sh/ash/ksh/zsh use this:
 
- IR=-I$BUILD_DIR/lb/include 
+ IR=-I$BUILD_DIR/lb/include
  CPPFLAGS="$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
  LDFLAGS="-L$BUILD_DIR/lb/lib"
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
 And finally try building again:
- 
+
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Now go to I<$INSTALL_DIR>B</examples> and run them to see if your

@@ -4,8 +4,8 @@ rrdxport - Export data in XML format based on data from one or several RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<xport> 
-S<[B<-s>|B<--start> I<seconds>]> 
+B<rrdtool> B<xport>
+S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
@@ -17,7 +17,7 @@ S<[B<XPORT>B<:>I<vname>[B<:>I<legend>]]>
 
 The B<xport> function's main purpose is to write an XML formatted
 representation of the data stored in one or several B<RRD>s. It
-can also extract numerical reports. 
+can also extract numerical reports.
 
 If no I<XPORT> statements are found, there will be no output.
 
@@ -67,7 +67,7 @@ referenced by I<vname> are printed. Optionally add a legend.
 
 The output is enclosed in an B<xport> element and contains two
 blocks. The first block is enclosed by a B<meta> element and
-contains some meta data. The second block is enclosed by a 
+contains some meta data. The second block is enclosed by a
 B<data> element and contains the data rows.
 
 Let's assume that the I<xport> command looks like this:
@@ -82,7 +82,7 @@ Let's assume that the I<xport> command looks like this:
 
 The resulting meta data section is (the values will depend on the
 RRD characteristics):
- 
+
   <meta>
     <start>1020611700</start>
     <step>300</step>
@@ -94,7 +94,7 @@ RRD characteristics):
       <entry>in and out bits</entry>
     </legend>
   </meta>
-  
+
 The resulting data section is:
 
   <data>

@@ -37,7 +37,7 @@ number 9 can be seen as "00009" and when we should increment 9, we
 reset it to zero and increment the digit just before the 9 so the
 number becomes "00010". Leading zeros we don't write except if it is
 the only digit (number 0). And of course, we write zeros if they occur
-anywhere inside or at the end of a number: 
+anywhere inside or at the end of a number:
 
  "00010" -> " 0010" -> " 010" -> "  10", but not "  1 ".
 
@@ -115,7 +115,7 @@ representations, but with eight different symbols.
  (2)    (8) (10) (16)
  00000   0    0    0
  00001   1    1    1
- 00010   2    2    2 
+ 00010   2    2    2
  00011   3    3    3
  00100   4    4    4
  00101   5    5    5
@@ -276,7 +276,7 @@ and the number of positions will grow rapidly. Using the second method
 has the advantage that you can see very easily if you should write down
 a zero or a one: if you divide by two the remainder will be zero if it
 is an even number and one if it is an odd number:
- 
+
  41029 / 2 = 20514 remainder 1
  20514 / 2 = 10257 remainder 0
  10257 / 2 =  5128 remainder 1

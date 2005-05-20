@@ -20,26 +20,26 @@ In order to use librrd in multi-threaded programs you must:
 
 =over
 
-=item * 
+=item *
 
 Link with F<librrd_th> instead of F<librrd> (use C<-lrrd_th> when
 linking)
 
-=item * 
+=item *
 
 Use the "C<_r>" functions instead of the normal API-functions
 
-=item * 
+=item *
 
 Do not use any at-style time specifications. Parsing of such time
 specifications is terribly non-thread-safe.
 
-=item * 
+=item *
 
 Never use non *C<_r> functions unless it is explicitly documented that
 the function is tread-safe.
 
-=item * 
+=item *
 
 Every thread SHOULD call C<rrd_get_context()> before its first call to
 any C<librrd_th> function in order to set up thread specific data. This

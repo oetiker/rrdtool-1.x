@@ -154,7 +154,7 @@ The use of B<RRA>s guarantees that the B<RRD> does not grow over
 time and that old data is automatically eliminated. By using the
 consolidation feature, you can still keep data for a very long time,
 while gradually reducing the resolution of the data along the time
-axis. 
+axis.
 
 Using different consolidation functions (B<CF>) allows you to store
 exactly the type of information that actually interests you: the maximum
@@ -262,19 +262,19 @@ server commands type:
 
    rrdtool help cd|mkdir|ls|quit
 
-When a command is completed, RRDtool will print the string  'C<OK>', 
-followed by timing information of the form B<u:>I<usertime> 
-B<s:>I<systemtime>. Both values are the running totals of seconds 
-since RRDtool was started. If an error occurs, a line of the 
+When a command is completed, RRDtool will print the string  'C<OK>',
+followed by timing information of the form B<u:>I<usertime>
+B<s:>I<systemtime>. Both values are the running totals of seconds
+since RRDtool was started. If an error occurs, a line of the
 form 'C<ERROR:> I<Description of error>' will be printed. B<RRDtool>
 will not abort, if possible, but follow the ERROR line with an OK line.
-If a B<workdir> is specified and the UID is 0, RRDtool will do a 
+If a B<workdir> is specified and the UID is 0, RRDtool will do a
 chroot to that workdir. If the UID is not 0, RRDtool only changes the
 current directory to B<workdir>.
 
 =head2 RRD Server
 
-If you want to create a RRD-Server, you must choose a TCP/IP Service 
+If you want to create a RRD-Server, you must choose a TCP/IP Service
 number and add them to I</etc/services> like this:
 
  rrdsrv      13900/tcp                       # RRD server
@@ -285,7 +285,7 @@ server and the client system must use the same port, of course.
 
 With this configuration you can add RRDtool as meta-server to
 I</etc/inetd.conf>. For example:
-  
+
  rrdsrv stream tcp nowait root /opt/rrd/bin/rrdtool rrdtool - /var/rrd
 
 Don't forget to create the database directory /var/rrd and

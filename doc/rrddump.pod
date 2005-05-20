@@ -4,7 +4,7 @@ rrddump - dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<dump> I<filename.rrd> E<gt> I<filename.xml> 
+B<rrdtool> B<dump> I<filename.rrd> E<gt> I<filename.xml>
 
 =head1 DESCRIPTION
 
@@ -35,7 +35,7 @@ To transfer an RRD between architectures, follow these steps:
 On the same system where the RRD was created, use B<rrdtool> B<dump>
 to export the data to XML format.
 
-=item 2. 
+=item 2.
 
 Transfer the XML dump to the target system.
 

@@ -4,10 +4,10 @@ rrdupdate - Store a new set of values into the RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> {B<update> | B<updatev>} I<filename> 
-S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]> 
-S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]> 
-S<I<at-timestamp>B<@>I<value>[B<:>I<value>...]> 
+B<rrdtool> {B<update> | B<updatev>} I<filename>
+S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]>
+S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]>
+S<I<at-timestamp>B<@>I<value>[B<:>I<value>...]>
 S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
 
 =head1 DESCRIPTION
@@ -49,7 +49,7 @@ will abort with an error message.
 
 While it appears possible with the template switch to update data sources
 asynchronously, B<RRDtool> implicitly assigns non-COMPUTE data sources missing
-from the template the I<*UNKNOWN*> value. 
+from the template the I<*UNKNOWN*> value.
 
 Do not specify a value for a COMPUTE B<DST> in the B<update>
 function. If this is done accidentally (and this can only be done

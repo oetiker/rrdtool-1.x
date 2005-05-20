@@ -133,7 +133,7 @@ inbytes would have value 10, the stack would be:
 
 ||
 
-=back 
+=back
 
 Processing the stack (step 5) will retrieve one value from the stack
 (from the right at step 4). This is the operation multiply and this
@@ -146,7 +146,7 @@ Generally speaking you have the following order:
 
 This is not very intuitive (at least most people don't think so). For
 the function f(A,B) you reverse the position of "f", but you do not
-reverse the order of the variables. 
+reverse the order of the variables.
 
 =head1 Converting your wishes to RPN
 
@@ -174,7 +174,7 @@ RRD router1.rrd)
    router1.rrd:link2in
    router2.rrd:link1in
    router3.rrd:link1in
-   router3.rrd:link2in 
+   router3.rrd:link2in
    --------------------   +
    (outcome of the sum)
 
@@ -212,7 +212,7 @@ This is correct but it can be made more clear to humans. It does
 not matter if you add a to b and then add c to the result or first
 add b to c and then add a to the result. This makes it possible to
 rewrite the RPN into C<CDEF:result=a,b,c,d,e,+,+,+,+> which is
-evaluated differently: 
+evaluated differently:
 
    push value of variable a on the stack: a
    push value of variable b on the stack: a b
@@ -229,7 +229,7 @@ evaluated differently:
    and process it:                        S         (where S == a+R)
 
 As you can see the RPN expression C<a,b,c,d,e,+,+,+,+,+> will evaluate in
-C<((((d+e)+c)+b)+a)> and it has the same outcome as C<a,b,+,c,+,d,+,e,+>. 
+C<((((d+e)+c)+b)+a)> and it has the same outcome as C<a,b,+,c,+,d,+,e,+>.
 This is called the commutative law of addition,
 but you may forget this right away, as long as you remember what it
 means.
@@ -239,7 +239,7 @@ Now look at an expression that contains a multiplication:
 First in normal math: C<let result = a+b*c>. In this case you can't
 choose the order yourself, you have to start with the multiplication
 and then add a to it. You may alter the position of b and c, you must
-not alter the position of a and b. 
+not alter the position of a and b.
 
 You have to take this in consideration when converting this expression
 into RPN. Read it as: "Add the outcome of b*c to a" and then it is
@@ -253,7 +253,7 @@ easy to write it in RPN: C<result=a,b,c,+,*>. Note that this is very
 similar to one of the expressions in the previous paragraph, only the
 multiplication and the addition changed places.
 
-When you have problems with RPN or when RRDtool is complaining, it's 
+When you have problems with RPN or when RRDtool is complaining, it's
 usually a good thing to write down the stack on a piece of paper
 and see what happens. Have the manual ready and pretend to be RRDtool.
 Just do all the math by hand to see what happens, I'm sure this will
@@ -525,7 +525,7 @@ so lets do it quick:
       where x represents "time>937521357"
       where a represents the original value
       where b represents the outcome of the previous example
-      
+
    time>937521357       --> TIME,937521357,GT
 
    if (x) then a else b --> x,a,b,IF
@@ -760,9 +760,9 @@ These two CDEFs are built from several functions. It helps to split
 them when viewing what they do. Starting with the first CDEF we would
 get:
 
- idat1,UN --> a 
- 0        --> b  
- idat1    --> c 
+ idat1,UN --> a
+ 0        --> b
+ idat1    --> c
  if (a) then (b) else (c)
 
 The result is therefore "0" if it is true that "idat1" equals "UN".
@@ -836,7 +836,7 @@ If your data can also have negative values you also need to overwrite
 the other half of your graph. This can be done in a relatively simple
 way: what you need is the "wipeout" variable and place a negative
 sign before it:  "CDEF:wipeout2=wipeout,-1,*"
-    
+
 =head2 Filtering data
 
 You may do some complex data filtering:

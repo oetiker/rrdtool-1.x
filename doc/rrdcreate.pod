@@ -4,9 +4,9 @@ rrdcreate - Set up a new Round Robin Database
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<create> I<filename> 
-S<[B<--start>|B<-b> I<start time>]> 
-S<[B<--step>|B<-s> I<step>]> 
+B<rrdtool> B<create> I<filename>
+S<[B<--start>|B<-b> I<start time>]>
+S<[B<--step>|B<-s> I<step>]>
 S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
@@ -65,7 +65,7 @@ for further insight.
 
 =over 4
 
-=item B<GAUGE> 
+=item B<GAUGE>
 
 is for things like temperatures or number of people in a room or the
 value of a RedHat share.
@@ -112,7 +112,7 @@ wrap.
 
 =back
 
-=item B<ABSOLUTE> 
+=item B<ABSOLUTE>
 
 is for counters which get reset upon reading. This is used for fast counters
 which tend to overflow. So instead of reading them normally you reset them
@@ -134,7 +134,7 @@ to as "virtual" or "computed" columns.
 =back
 
 I<heartbeat> defines the maximum number of seconds that may pass
-between two updates of this data source before the value of the 
+between two updates of this data source before the value of the
 data source is assumed to be I<*UNKNOWN*>.
 
 I<min> and I<max> define the expected range values for data supplied by a
@@ -163,7 +163,7 @@ and B<CDEF>s previously defined in the same graph command.
 
 
 The purpose of an B<RRD> is to store data in the round robin archives
-(B<RRA>). An archive consists of a number of data values or statistics for 
+(B<RRA>). An archive consists of a number of data values or statistics for
 each of the defined data-sources (B<DS>) and is defined with an B<RRA> line.
 
 When data is entered into an B<RRD>, it is first fit into time slots
@@ -311,11 +311,11 @@ requiring the I<rra-num> argument is listed here:
 
 HWPREDICT I<rra-num> is the index of the SEASONAL B<RRA>.
 
-=item * 
+=item *
 
 SEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
-=item * 
+=item *
 
 DEVPREDICT I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
@@ -323,7 +323,7 @@ DEVPREDICT I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
 DEVSEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
-=item * 
+=item *
 
 FAILURES I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
@@ -447,10 +447,10 @@ average temperature, respectively.
 
 =head1 EXAMPLE 2
 
- rrdtool create monitor.rrd --step 300        \ 
-   DS:ifOutOctets:COUNTER:1800:0:4294967295   \ 
+ rrdtool create monitor.rrd --step 300        \
+   DS:ifOutOctets:COUNTER:1800:0:4294967295   \
    RRA:AVERAGE:0.5:1:2016                     \
-   RRA:HWPREDICT:1440:0.1:0.0035:288 
+   RRA:HWPREDICT:1440:0.1:0.0035:288
 
 This example is a monitor of a router interface. The first B<RRA> tracks the
 traffic flow in octets; the second B<RRA> generates the specialized
@@ -473,27 +473,27 @@ the FAILURES B<RRA>.
 The same RRD file and B<RRAs> are created with the following command,
 which explicitly creates all specialized function B<RRAs>.
 
- rrdtool create monitor.rrd --step 300 \ 
-   DS:ifOutOctets:COUNTER:1800:0:4294967295 \ 
-   RRA:AVERAGE:0.5:1:2016 \ 
-   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \ 
-   RRA:SEASONAL:288:0.1:2 \ 
-   RRA:DEVPREDICT:1440:5 \ 
-   RRA:DEVSEASONAL:288:0.1:2 \ 
-   RRA:FAILURES:288:7:9:5 
+ rrdtool create monitor.rrd --step 300 \
+   DS:ifOutOctets:COUNTER:1800:0:4294967295 \
+   RRA:AVERAGE:0.5:1:2016 \
+   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \
+   RRA:SEASONAL:288:0.1:2 \
+   RRA:DEVPREDICT:1440:5 \
+   RRA:DEVSEASONAL:288:0.1:2 \
+   RRA:FAILURES:288:7:9:5
 
 Of course, explicit creation need not replicate implicit create, a
 number of arguments could be changed.
 
 =head1 EXAMPLE 3
 
- rrdtool create proxy.rrd --step 300 \ 
-   DS:Total:DERIVE:1800:0:U  \ 
-   DS:Duration:DERIVE:1800:0:U  \ 
-   DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \ 
-   RRA:AVERAGE:0.5:1:2016 
+ rrdtool create proxy.rrd --step 300 \
+   DS:Total:DERIVE:1800:0:U  \
+   DS:Duration:DERIVE:1800:0:U  \
+   DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \
+   RRA:AVERAGE:0.5:1:2016
 
-This example is monitoring the average request duration during each 300 sec 
+This example is monitoring the average request duration during each 300 sec
 interval for requests processed by a web proxy during the interval.
 In this case, the proxy exposes two counters, the number of requests
 processed since boot and the total cumulative duration of all processed

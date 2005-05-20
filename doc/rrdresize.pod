@@ -13,25 +13,25 @@ an B<RRA>.
 
 =over 8
 
-=item I<filename> 
+=item I<filename>
 
 the name of the B<RRD> you want to alter.
 
-=item I<rra-num> 
+=item I<rra-num>
 
 the B<RRA> you want to alter. You can find the number using B<rrdtool info>.
 
-=item B<GROW> 
+=item B<GROW>
 
 used if you want to add extra rows to an RRA. The extra rows will be inserted
 as the rows that are oldest.
 
-=item B<SHRINK> 
+=item B<SHRINK>
 
 used if you want to remove rows from an RRA. The rows that will be removed
 are the oldest rows.
 
-=item I<rows> 
+=item I<rows>
 
 the number of rows you want to add or remove.
 
@@ -39,7 +39,7 @@ the number of rows you want to add or remove.
 
 =head1 NOTES
 
-The new .rrd file, with the modified RRAs, is written to the file 
+The new .rrd file, with the modified RRAs, is written to the file
 B<resize.rrd> in the current directory.  B<The original .rrd file is not
 modified>.
 

@@ -147,7 +147,7 @@ byte son 8 bits y empecemos a pensar en bits y no en bytes. ¡El
 contador, sin embargo, sigue contando en bytes! En el mundo
 SNMP, la mayoría de los contadores tienen una
 longitud de 32 bits. Esto significa que pueden contar desde 0 hasta
-4294967295. Usaremos estos valores en los ejemplos. El dispositivo, cuando 
+4294967295. Usaremos estos valores en los ejemplos. El dispositivo, cuando
 le preguntamos, retorna el valor actual del contador. Como sabemos el
 tiempo transcurrido desde la última vez que le preguntamos, sabemos
 cuantos bytes se han transferido C<***en promedio***> por
@@ -286,7 +286,7 @@ siguientes valores:
 
  fecha 920804700, valor 12345
  fecha 920805000, valor 12357
- 
+
  etcétera.
 
 Como ves, pueden introducirse más de un valor en la base de datos
@@ -300,7 +300,7 @@ Ahora podemos recuperar los datos usando ``rrdtool fetch'':
 Debes obtener esto como salida:
 
                     speed
- 
+
  920804400:        NaN
  920804700:        NaN
  920805000: 4.0000000000e-02
@@ -438,7 +438,7 @@ colores de la velocidad, y ahora paso de ser una línea a un área.
 
 Los cálculos son más complejos ahora. Para calcular la velocidad "aceptable":
 
-   Verifica si la velocidad en kmh es mayor que 100     ( kmh,100 ) GT           
+   Verifica si la velocidad en kmh es mayor que 100     ( kmh,100 ) GT
    Si es así, retorna 0, si no, retorna la velocidad    ((( kmh,100 ) GT ), 0, kmh) IF
 
 Para calcular la parte de velocidad "excesiva":
@@ -570,7 +570,7 @@ De acuerdo, sigamos con el inicio de nuestro OID: teníamos
 1.3.6.1.2.1 . Ahora, nos interesa la rama ``interfaces'', que tiene el
 número dos (o sea, 1.3.6.1.2.1.2, o 1.3.6.1.2.1.interfaces).
 
-Lo primero es hacernos con un programa SNMP. Busca algún 
+Lo primero es hacernos con un programa SNMP. Busca algún
 paquete pre-compilado para tu plataforma, si no, puedes
 buscar el código fuente y compilarlo tu mismo. En Internet encontrarás
 muchos programas, búscalos con un motor de búsqueda o como prefieras.
@@ -604,7 +604,7 @@ adelante con otro programa, llamado "snmpwalk"
 Si obtienes una lista de interfaces, ya casi hemos llegado. Aquí
 tienes un ejemplo del resultado:
 
-   [user@host /home/alex]$ snmpwalk cisco public 2.2.1.2   
+   [user@host /home/alex]$ snmpwalk cisco public 2.2.1.2
    interfaces.ifTable.ifEntry.ifDescr.1 = "BRI0: B-Channel 1"
    interfaces.ifTable.ifEntry.ifDescr.2 = "BRI0: B-Channel 2"
    interfaces.ifTable.ifEntry.ifDescr.3 = "BRI0" Hex: 42 52 49 30
@@ -615,16 +615,16 @@ En este equipo CISCO, quiero monitorizar la interfaz "Ethernet0".
 Viendo que es la cuarta, pruebo con:
 
    [user@host /home/alex]$ snmpget cisco public 2.2.1.10.4 2.2.1.16.4
- 
+
    interfaces.ifTable.ifEntry.ifInOctets.4 = 2290729126
    interfaces.ifTable.ifEntry.ifOutOctets.4 = 1256486519
 
 Entonces, tengo 2 OIDs que monitorizar, y son (en el formato largo, ahora):
 
    1.3.6.1.2.1.2.2.1.10
- 
+
         y
- 
+
    1.3.6.1.2.1.2.2.1.16
 
 , ambas con el número de interfaz de 4
@@ -693,7 +693,7 @@ buscar exactamente como hacerlo funcionar en tu sistema operativo.
 
    mientras no sea el fin del universo
    hacer
-      tomar el resultado de 
+      tomar el resultado de
           snmpget router community 2.2.1.10.4
       en la variable $in
       tomar el resultado de
@@ -944,13 +944,13 @@ empezaba en 0, así que no conocemos el valor de la diferencia
 
 =item *
 
-Línea B: 
+Línea B:
 No hay nada que calcular, los valores son los mismos que se
 introdujeron en la base de datos.
 
 =item *
 
-Línea C: 
+Línea C:
 De nuevo, no conocemos el valor
 inicial antes de la primera medición, así que se aplica el mismo
 razonamiento que para la línea A. En este
@@ -992,7 +992,7 @@ reinicializado! Si la diferencia es negativa, esto se compensa sumando
 el valor máximo del contador + 1. Para nuestro coche, tendríamos:
 
  Delta = 7 - 999987 = -999980    (en vez de 1000007-999987=20)
- 
+
  Delta real= -999980 + 999999 + 1 = 20
 
 Al momento de escribir este documento, RRDtool maneja contadores de
@@ -1032,14 +1032,14 @@ Números de corrección:
 
  - 32 bits: (4294967295+1) =                                 4294967296
  - 64 bits: (18446744073709551615+1)-correction1 = 18446744069414584320
- 
+
  Antes:          4294967200
  Incremento:            100
  Debería ser:    4294967300
  Pero es:                 4
  Diferencia:    -4294967196
  Corrección #1: -4294967196 + 4294967296 = 100
- 
+
  Antes:          18446744073709551000
  Incremento:                      800
  Debería ser:    18446744073709551800
@@ -1047,18 +1047,18 @@ Números de corrección:
  Diferencia:    -18446744073709550816
  Corrección #1: -18446744073709550816 +4294967296 = -18446744069414583520
  Corrección #2: -18446744069414583520 +18446744069414584320 = 800
- 
+
  Antes:          18446744073709551615 ( valor máximo )
- Incremento:     18446744069414584320 ( incremento absurdo, 
- Debería ser:    36893488143124135935   mínimo para que 
- Pero es:        18446744069414584319   funcione el ejemplo)       
+ Incremento:     18446744069414584320 ( incremento absurdo,
+ Debería ser:    36893488143124135935   mínimo para que
+ Pero es:        18446744069414584319   funcione el ejemplo)
  Diferencia:              -4294967296
  Corrección #1:  -4294967296 + 4294967296 = 0 (positivo,
-                                               por tanto no se hace 
+                                               por tanto no se hace
                                                la segunda corrección)
- 
+
  Antes:          18446744073709551615 ( valor máximo )
- Incremento:     18446744069414584319 
+ Incremento:     18446744069414584319
  Debería ser:    36893488143124135934
  Pero es:        18446744069414584318
  Diferencia:              -4294967297
@@ -1109,7 +1109,7 @@ debería ser 297. De nuevo, RRDtool altera el valor y guarda 300, como
 debe ser.
 
          en RRD                     en realidad
- tiempo+000:   0 delta="U"    tiempo+000:   0 delta="U" 
+ tiempo+000:   0 delta="U"    tiempo+000:   0 delta="U"
  tiempo+300: 300 delta=300    tiempo+300: 300 delta=300
  tiempo+600: 600 delta=300    tiempo+603: 603 delta=303
  tiempo+900: 900 delta=300    tiempo+900: 900 delta=297

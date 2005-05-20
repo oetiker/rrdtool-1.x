@@ -25,7 +25,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  YEAR = 365 * DAY
  fd,path = tempfile.mkstemp('.png')
 
- rrdtool.graph(path, 
+ rrdtool.graph(path,
               '--imgformat', 'PNG',
               '--width', '540',
               '--height', '100',

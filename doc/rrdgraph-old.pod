@@ -2,12 +2,12 @@
 
 rrdtool graph - Create a graph based on data from one or several RRD
 
-=for html <div align="right"><a href="rrdgraph.pdf">PDF</a> version.</div> 
+=for html <div align="right"><a href="rrdgraph.pdf">PDF</a> version.</div>
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<graph> I<filename> 
-S<[B<-s>|B<--start> I<seconds>]> 
+B<rrdtool> B<graph> I<filename>
+S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-x>|B<--x-grid> I<x-axis grid and label>]>
 S<[B<-y>|B<--y-grid> I<y-axis grid and label>]>
@@ -17,13 +17,13 @@ S<[B<-M>|B<--alt-autoscale-max>]>
 S<[B<-X>|B<--units-exponent>]> I<value>]>
 S<[B<-v>|B<--vertical-label> I<text>]>
 S<[B<-w>|B<--width> I<pixels>]>
-S<[B<-h>|B<--height> I<pixels>]> 
-S<[B<-i>|B<--interlaced>]> 
-S<[B<-f>|B<--imginfo> I<formatstring>]> 
-S<[B<-a>|B<--imgformat> B<SVG>|B<PNG>]> 
-S<[B<-z>|B<--lazy>]> 
+S<[B<-h>|B<--height> I<pixels>]>
+S<[B<-i>|B<--interlaced>]>
+S<[B<-f>|B<--imginfo> I<formatstring>]>
+S<[B<-a>|B<--imgformat> B<SVG>|B<PNG>]>
+S<[B<-z>|B<--lazy>]>
 S<[B<-o>|B<--logarithmic>]>
-S<[B<-u>|B<--upper-limit> I<value>]> 
+S<[B<-u>|B<--upper-limit> I<value>]>
 S<[B<-l>|B<--lower-limit> I<value>]>
 S<[B<-g>|B<--no-legend>]>
 S<[B<-r>|B<--rigid>]>
@@ -51,7 +51,7 @@ from generating graphs, it can also extract numerical reports.
 
 =over
 
-=item I<filename> 
+=item I<filename>
 
 The name of the graph to generate. Since B<RRDtool> outputs
 SVGs and PNGs, it's recommended that the filename end in either
@@ -124,16 +124,16 @@ If you want no y-grid at all set specify the magic word B<none>.
 
 Place Y grid dynamically based on graph Y range. Algorithm ensures
 that you always have grid, that there are enough but not too many
-grid lines and the grid is metric. That is grid lines are placed 
+grid lines and the grid is metric. That is grid lines are placed
 every 1, 2, 5 or 10 units.  (contributed by Sasha Mikheev)
 
 
 =item B<--alt-autoscale>
 
-Compute Y range  based on function absolute minimum and 
-maximum values. Default algorithm uses predefined set of ranges.  
+Compute Y range  based on function absolute minimum and
+maximum values. Default algorithm uses predefined set of ranges.
 This is good in many cases but it fails miserably when you need
-to graph something like 260 + 0.001 * sin(x). Default algorithm 
+to graph something like 260 + 0.001 * sin(x). Default algorithm
 will use Y range from 250 to 300 and on the graph you will see
 almost straight line. With --alt-autoscale Y range will be
 from slightly less the 260 - 0.001 to slightly more then 260 + 0.001
@@ -142,7 +142,7 @@ and periodic behavior will be seen.   (contributed by Sasha Mikheev)
 =item B<--alt-autoscale-max>
 
 Where --alt-autoscale will modify both the absolute maximum AND minimum
-values, this option will only affect the maximum value. The minimum 
+values, this option will only affect the maximum value. The minimum
 value, if not defined on the command line, will be 0. This option can
 be useful when graphing router traffic when the WAN line uses compression,
 and thus the throughput may be higher than the WAN line speed.
@@ -196,7 +196,7 @@ would look like this:
 
 =item B<-a>|B<--imgformat> B<SVG>|B<PNG> (default: PNG)
 
-Allows you to produce PNG output from RRDtool. 
+Allows you to produce PNG output from RRDtool.
 
 =item B<-z>|B<--lazy> (default: false)
 
@@ -274,11 +274,11 @@ consolidated according to the consolidation function (I<CF>) chosen.
 
 Create a new virtual data source by evaluating a mathematical expression,
 specified in Reverse Polish Notation (RPN). If you have ever used a traditional
-HP calculator you already know RPN. The idea behind RPN notation is, 
+HP calculator you already know RPN. The idea behind RPN notation is,
 that you have a stack and push your data onto this stack. When ever
 you execute an operation, it takes as many data values from the stack
 as needed. The pushing of data is implicit, so when ever you specify a number
-or a variable, it gets pushed automatically. 
+or a variable, it gets pushed automatically.
 
 If this is all a big load of incomprehensible words for you, maybe an
 example helps (a more complete explanation is given in [1]): The
@@ -294,13 +294,13 @@ expression.
 
 The I<rpn-expression> in the B<CDEF> function takes both, constant values
 as well as I<vname> variables. The following operators can be used on these
-values: 
+values:
 
 =over
 
 =item +, -, *, /, %
 
-pops two values from the stack applies the selected operator and pushes 
+pops two values from the stack applies the selected operator and pushes
 the result back onto the stack. The % operator stands for the modulo
 operation.
 
@@ -362,9 +362,9 @@ perform calculations across the data.
 
 =item COUNT
 
-Pushes the number 1 if it is at the first value of the data set, the 
-number 2 if it is at the second, and so on. This special value, allows 
-you to make calculations based on the position of the value within 
+Pushes the number 1 if it is at the first value of the data set, the
+number 2 if it is at the second, and so on. This special value, allows
+you to make calculations based on the position of the value within
 the data set.
 
 =item INF, NEGINF
@@ -456,15 +456,15 @@ Draw a vertical rule into the graph and optionally add a legend
 =item B<LINE>{B<1>|B<2>|B<3>}B<:>I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
 
 Plot for the requested data, using the color specified. Write a legend
-into the graph. The 3 possible keywords B<LINE1>, B<LINE2>, and B<LINE3> 
-generate increasingly wide lines. If no color is defined, 
-the drawing is done 'blind' this is useful in connection with the 
-B<STACK> function when you want to ADD the values of two 
+into the graph. The 3 possible keywords B<LINE1>, B<LINE2>, and B<LINE3>
+generate increasingly wide lines. If no color is defined,
+the drawing is done 'blind' this is useful in connection with the
+B<STACK> function when you want to ADD the values of two
 data-sources without showing it in the graph.
 
 =item B<AREA>:I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
 
-Does the same as B<LINE?>, but the area between 0 and 
+Does the same as B<LINE?>, but the area between 0 and
 the graph will be filled with the color specified.
 
 =item B<STACK>:I<vname>[B<#>I<rrggbb>[B<:>I<legend>]]
@@ -474,7 +474,7 @@ B<LINE?>, B<AREA> or B<STACK> graph. Depending on the type of the
 previous graph, the B<STACK> will be either a B<LINE?> or an B<AREA>.
 This obviously implies that the first B<STACK> must be preceded by an
 B<AREA> or B<LINE?> -- you need something to stack something onto in
-the first place ;) 
+the first place ;)
 
 Note, that when you STACK onto *UNKNOWN* data, RRDtool will not draw
 any graphics ... *UNKNOWN* is not zero ... if you want it to be zero
@@ -551,15 +551,15 @@ doesn't match.
          CDEF:aggoutput=odat1,UN,0,odat1,IF,odat2,UN,0,odat2,IF,+,8,* \
          AREA:agginput#00cc00:Input Aggregate \
          LINE1:agginput#0000FF:Output Aggregate
-         
-Assuming that idat1 has a data value of I<*UNKNOWN*>, the CDEF expression 
 
- idat1,UN,0,idat1,IF 
+Assuming that idat1 has a data value of I<*UNKNOWN*>, the CDEF expression
+
+ idat1,UN,0,idat1,IF
 
 leaves us with a stack with contents of 1,0,NaN and the IF function
 will pop off the 3 values and replace them with 0.  If idat1 had a
 real value like 7942099, then the stack would have 0,0,7942099 and the
-real value would be the replacement.  
+real value would be the replacement.
 
 =head1 EXAMPLE 3
 

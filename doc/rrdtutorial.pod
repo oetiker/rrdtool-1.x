@@ -61,7 +61,7 @@ RRDtool originated from MRTG (Multi Router Traffic Grapher). MRTG
 started as a tiny little script for graphing the use of a university's
 connection to the Internet. MRTG was later (ab-)used as a tool for
 graphing other data sources including temperature, speed, voltage,
-number of printouts and the like. 
+number of printouts and the like.
 
 Most likely you will start to use RRDtool to store and process data
 collected via SNMP. The data will most likely be bytes (or bits)
@@ -375,7 +375,7 @@ kilometers or millimeters! RRDtool doesn't know about the physical
 units of our data, it just works with dimensionless numbers.
 
 If we had measured our distances in meters, this would have been
-(12'357'000-12'345'000)/300 = 12'000/300 = 40. 
+(12'357'000-12'345'000)/300 = 12'000/300 = 40.
 
 As most people have a better feel for numbers in this range, we'll
 correct that. We could recreate our database and store the correct
@@ -1027,9 +1027,9 @@ Correction numbers:
  Should become: 18'446'744'073'709'551'800
  But really is:                        184
  Delta:        -18'446'744'073'709'550'816
- Correction1:  -18'446'744'073'709'550'816 
+ Correction1:  -18'446'744'073'709'550'816
 				+ 4'294'967'296 = -18'446'744'069'414'583'520
- Correction2:  -18'446'744'069'414'583'520 
+ Correction2:  -18'446'744'069'414'583'520
 	           + 18'446'744'069'414'584'320 = 800
 
  Before:        18'446'744'073'709'551'615 ( maximum value )
@@ -1138,7 +1138,7 @@ Create output
 
 View both images together (add them to your index.html file)
 and compare. Both graphs should show the same, despite the
-input being different.  
+input being different.
 
 =head1 WRAPUP
 

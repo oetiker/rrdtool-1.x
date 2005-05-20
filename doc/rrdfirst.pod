@@ -20,7 +20,7 @@ The name of the B<RRD> that contains the data.
 =item I<--rraindex number>
 
 The index number of the B<RRA> that is to be examined. If not specified, the
-index defaults to zero. B<RRA> index numbers can be determined through 
+index defaults to zero. B<RRA> index numbers can be determined through
 B<rrdtool info>.
 
 =back

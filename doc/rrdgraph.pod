@@ -68,7 +68,7 @@ this case, no other output is generated.
 
 The start and end of the time series you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
-now, with the best possible resolution. B<Start> and B<end> can 
+now, with the best possible resolution. B<Start> and B<end> can
 be specified in several formats, see
 L<AT-STYLE TIME SPECIFICATION|rrdfetch/> and L<rrdgraph_examples>.
 By default, B<rrdtool graph> calculates the width of one pixel in
@@ -133,9 +133,9 @@ and thus the throughput may be higher than the WAN line speed.
 
 [B<-N>|B<--no-gridfit>]
 
-In order to avoid anti-aliasing effects gridlines are placed on 
-integer pixel values. This is by default done by extending 
-the scale so that gridlines happens to be spaced using an 
+In order to avoid anti-aliasing effects gridlines are placed on
+integer pixel values. This is by default done by extending
+the scale so that gridlines happens to be spaced using an
 integer number of pixels and also start on an integer pixel value.
 This might extend the scale too much for some logarithmic scales
 and for linear scales where B<--alt-autoscale> is needed.

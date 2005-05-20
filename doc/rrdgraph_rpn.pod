@@ -1,4 +1,4 @@
-=head1 NAME  
+=head1 NAME
 
 rrdgraph_rpn - About RPN Math in rrdtool graph
 
@@ -69,7 +69,7 @@ Z<>
 
 =item Comparing values
 
-B<MIN, MAX> 
+B<MIN, MAX>
 
 Pops two elements from the stack and returns the smaller or larger,
 respectively.  Note that I<infinite> is larger than anything else.
@@ -140,7 +140,7 @@ average is essentially computed as shown here:
                        delay     t0
                  <--------------->
                          delay       t1
-                     <--------------->  
+                     <--------------->
                               delay      t2
                          <--------------->
 
@@ -177,9 +177,9 @@ function cannot be used in B<VDEF> instructions.
 
 B<COUNT>
 
-Pushes the number 1 if this is the first value of the data set, the 
-number 2 if it is the second, and so on. This special value allows 
-you to make calculations based on the position of the value within 
+Pushes the number 1 if this is the first value of the data set, the
+number 2 if it is the second, and so on. This special value allows
+you to make calculations based on the position of the value within
 the data set. This function cannot be used in B<VDEF> instructions.
 
 Z<>
