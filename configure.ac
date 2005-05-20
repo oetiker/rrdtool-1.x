@@ -175,10 +175,6 @@ AC_STRUCT_TM
 
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
-dnl Use libiconv if we have one but fall back to libc otherwhise
-AC_CHECK_LIB(iconv, iconv_open, , [
-         AC_CHECK_FUNC(iconv_open,,)
-         ])
 
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
