@@ -38,7 +38,7 @@ typedef struct gfx_string_s *gfx_string;
 struct gfx_string_s {
   unsigned int    width;
   unsigned int    height;
-  size_t          count;  /* number of characters */
+  int	          count;  /* number of characters */
   gfx_char        glyphs;
   size_t          num_glyphs;
   FT_BBox         bbox;
@@ -376,7 +376,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
   gfx_string    string = (gfx_string) malloc (sizeof(struct gfx_string_s));
 
   gfx_char      glyph;          /* current glyph in table */
-  unsigned int  n;
+  int		n;
   int           error;
   int        gottab = 0;    
 
@@ -409,7 +409,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
   use_kerning = FT_HAS_KERNING(face);
   previous    = 0;
   glyph = string->glyphs;
-  for (n=0; n<string->count;glyph++) {
+  for (n=0; n<string->count;glyph++,n++) {
     FT_Vector   vec;
     /* handle the tabs ...
        have a witespace glyph inserted, but set its width such that the distance
@@ -456,7 +456,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     }
     error = FT_Get_Glyph (slot, &glyph->image);
     if (error) {
-      fprintf (stderr, "couldn't get glyph from slot:  %c\n", letter);
+      fprintf (stderr, "couldn't get glyph %d from slot  %d\n", letter, (int)slot);
       continue;
     }
     /* if we are in tabbing mode, we replace the tab with a space and shift the position
@@ -478,7 +478,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     FT_Vector_Transform (&vec, &string->transform);
     error = FT_Glyph_Transform (glyph->image, &string->transform, &vec);
     if (error) {
-      fprintf (stderr, "couldn't transform glyph\n");
+      fprintf (stderr, "couldn't transform glyph id %d\n", letter);
       continue;
     }
 
@@ -488,15 +488,13 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
                             canvas->aa_type == AA_LIGHT ? FT_RENDER_MODE_LIGHT :
                             FT_RENDER_MODE_MONO : FT_RENDER_MODE_MONO, 0, 1);
     if (error) {
-      fprintf (stderr, "couldn't convert glyph to bitmap\n");
+      fprintf (stderr, "couldn't convert glyph id %d to bitmap\n", letter);
       continue;
     }
 
     /* increment number of glyphs */
     previous = glyph->index;
     string->num_glyphs++;
-    n++;
-    
   }
   free(cstr);
 /*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
