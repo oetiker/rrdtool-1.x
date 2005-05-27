@@ -7,9 +7,9 @@
 /* #define DEBUG */
 
 #ifdef DEBUG
-# define DPRINT(x)    (void)(printf x, printf("\n"))
+# define DPRINTF(x,...)  fprintf(stderr, x, ## __VA_ARGS__);
 #else
-# define DPRINT(x)
+# define DPRINTF(x,...)
 #endif
 #include "rrd_tool.h"
 #include <png.h>
@@ -451,12 +451,12 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
                             canvas->aa_type == AA_LIGHT ? FT_LOAD_TARGET_LIGHT :
                             FT_LOAD_TARGET_MONO : FT_LOAD_TARGET_MONO);
     if (error) {
-      fprintf (stderr, "couldn't load glyph:  %c\n", letter);
+      DPRINTF("couldn't load glyph:  %c\n", letter)
       continue;
     }
     error = FT_Get_Glyph (slot, &glyph->image);
     if (error) {
-      fprintf (stderr, "couldn't get glyph %d from slot  %d\n", letter, (int)slot);
+      DPRINTF("couldn't get glyph %c from slot %d\n", letter, (int)slot)
       continue;
     }
     /* if we are in tabbing mode, we replace the tab with a space and shift the position
@@ -478,7 +478,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     FT_Vector_Transform (&vec, &string->transform);
     error = FT_Glyph_Transform (glyph->image, &string->transform, &vec);
     if (error) {
-      fprintf (stderr, "couldn't transform glyph id %d\n", letter);
+      DPRINTF("couldn't transform glyph id %d\n", letter)
       continue;
     }
 
@@ -488,7 +488,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
                             canvas->aa_type == AA_LIGHT ? FT_RENDER_MODE_LIGHT :
                             FT_RENDER_MODE_MONO : FT_RENDER_MODE_MONO, 0, 1);
     if (error) {
-      fprintf (stderr, "couldn't convert glyph id %d to bitmap\n", letter);
+      DPRINTF("couldn't convert glyph id %d to bitmap\n", letter)
       continue;
     }
 
@@ -635,19 +635,19 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 	    pen_x += vec.x/64;
 	    pen_y += vec.y/64;
             glyph = string->glyphs;
-            for(n=0; n<string->num_glyphs; ++n, ++glyph) {
+            for(n=0; n<string->num_glyphs; n++, glyph++) {
                 int gr;
                 FT_Glyph        image;
                 FT_BitmapGlyph  bit;
 		/* long buf_x,comp_n; */
 	        /* make copy to transform */
                 if (! glyph->image) {
-                  fprintf (stderr, "no image\n");
+                  DPRINTF("no image\n")
                   continue;
                 }
                 error = FT_Glyph_Copy (glyph->image, &image);
                 if (error) {
-                  fprintf (stderr, "couldn't copy image\n");
+                  DPRINTF("couldn't copy image\n")
                   continue;
                 }
 
