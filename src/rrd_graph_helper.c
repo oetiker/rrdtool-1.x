@@ -119,7 +119,7 @@ rrd_parse_color(char *string, graph_desc_t *gdp) {
     */
 
     i=0;
-    while (string[i] && isxdigit(string[i])) i++;
+    while (string[i] && isxdigit((unsigned int)string[i])) i++;
     if (string[i] != '\0') return 1; /* garbage follows hexdigits */
     switch (i) {
 	case 3:
