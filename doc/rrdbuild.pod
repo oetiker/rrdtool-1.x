@@ -75,6 +75,13 @@ compile your own copies of the required libraries. Here is how:
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/cgilib-0.5.tar.gz
  tar zxf cgilib-0.5.tar.gz
  cd cgilib-0.5
+
+If you are on Mac OSX you want to fix a little header problem here by doing
+
+ touch malloc.h
+
+and now you are ready to build
+
  make CC=gcc CFLAGS="-O3 -fPIC -I."
  mkdir -p $BUILD_DIR/lb/include
  cp *.h $BUILD_DIR/lb/include
@@ -118,11 +125,11 @@ the end of line 4 means that line 4 and line 5 are on one line.
  make
  make install
 
-
 =item Building libart_lgpl
 
  cd $BUILD_DIR
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
+ tar zxvf libart_lgpl-2.3.17.tar.gz
  cd libart_lgpl-2.3.17
  env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=$BUILD_DIR/lb
  make
@@ -130,10 +137,17 @@ the end of line 4 means that line 4 and line 5 are on one line.
 
 =back
 
-Now all the dependent libraries are built and you can try again. This time
-you tell configure where it should be looking for libraries and include
-files. This is done via environment variables. Depending on the shellyou are running, the syntax for setting
-environment variables is different. Under csh/tcsh you use:
+Now all the dependent libraries are built and you can try again. Since these
+are static libraries, you may have to use F<ranlib> to make them accessible.
+Especially BSD systems like Mac OS X may require this, Linux and Solaris
+will do just fine without since their F<ar> command does ranlibs job as well.
+
+ ranlib $BUILD_DIR/lb/lib/*.a
+
+This time you tell configure where it should be looking for libraries and
+include files. This is done via environment variables. Depending on the
+shell you are running, the syntax for setting environment variables is
+different. Under csh/tcsh you use:
 
  set IR=-I$BUILD_DIR/lb/include
  setenv CPPFLAGS "$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
@@ -148,9 +162,13 @@ If you are running bash/sh/ash/ksh/zsh use this:
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
-And finally try building again:
+And finally try building again. We disable the python bindings because it
+seems that a fair number of people have ill configured python setups that
+would prevent rrdtool from building if they are included in their current
+state.
 
- ./configure --prefix=$INSTALL_DIR && make && make install
+ cd $BUILD_DIR
+ ./configure --prefix=$INSTALL_DIR --disable-python && make && make install
 
 Now go to I<$INSTALL_DIR>B</examples> and run them to see if your
 build has been successful.
