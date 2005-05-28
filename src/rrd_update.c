@@ -252,9 +252,9 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 
     FILE             *rrd_file;
     rrd_t            rrd;
-    time_t           current_time;
-	time_t           rra_time; /* time of update for a RRA */
-    unsigned long    current_time_usec;  /* microseconds part of current time */
+    time_t           current_time = 0;
+    time_t           rra_time = 0;  	 /* time of update for a RRA */
+    unsigned long    current_time_usec=0;/* microseconds part of current time */
     struct timeval   tmp_time;           /* used for time conversion */
 
     char             **updvals;

@@ -1806,6 +1806,7 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
   state.linecap = -1;
   state.linejoin = -1;
   state.has_dash = 0;
+  state.line_width = 1;
   if (eps_prologue(&state) == -1)
     return -1;
   eps_set_color(&state, background);
