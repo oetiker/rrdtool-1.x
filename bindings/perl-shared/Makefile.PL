@@ -4,14 +4,21 @@ use Config;
 # the contents of the Makefile that is written.
 
 # Specify the location of the archive containing PIC compiled object files.
-my $R = "-R" ;
+my $R = "";
+
 
 for ($^O){
-	/linux/ && do{ $R = "-Wl,--rpath -Wl,"};
-	/hpux/  && do{ $R = "+b"};
+        /linux/   && do{ $R = "-Wl,--rpath -Wl,\$(RPATH)"};
+        /hpux/    && do{ $R = "+b\$(RPATH)"};
+        /solaris/ && do{ $R = "-R\$(RPATH)"};
 }
 
-my $librrd = "-L../../src/.libs/ $R\$(RPATH) -lrrd";
+# darwin works without this because librrd contains its
+# install_name which will includes the final location of the
+# library after it is installed. This install_name gets transfered
+# to the perl shared object.
+
+my $librrd = "-L../../src/.libs/ $R -lrrd";
 
 WriteMakefile(
     'NAME'         => 'RRDs',
