@@ -4,7 +4,7 @@
 
 Summary: Round Robin Database Tools
 Name: rrdtool
-Version: 1.2.8
+Version: 1.2.9
 Release: %{cvsver}
 License: GPL
 Group: Applications/Databases

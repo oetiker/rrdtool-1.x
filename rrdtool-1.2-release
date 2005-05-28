@@ -3,14 +3,14 @@ set -e
 PATH=/usr/bin:/sbin:/usr/sbin:/usr/ccs/bin:/usr/sepp/bin:/home/oetiker/bin
 export PATH
 VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
-PERLVERS=`perl -n -e 'm/\QNUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
+PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
 set -x
-perl -i -p -e 's/^\$VERSION.+/\$VERSION=1.'$PERLVERS';/' bindings/perl-*/*.pm
+perl -i -p -e 's/^\$VERSION.+/\$VERSION='$PERLVERS';/' bindings/perl-*/*.pm
 perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2005/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
-perl -i -p -e 's/rrdtool-[\.0-9]+(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
+perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
 svn diff 
-echo Tagging and releasing rrdtool $VERSION ($PERSVERS). Press any Key to continue.
+echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to continue."
 read somekey
 svn commit -m "prepare for the release of rrdtool-$VERSION"
 mkdir /tmp/rrdtool-$$
