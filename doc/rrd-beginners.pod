@@ -59,7 +59,7 @@ data flow to update the RRDtool database.
 
 RRDtool is designed to store time series of data. With every data
 update, an assosiated time stamp is stored. Time is always expressed
-in seconds passed since epoch (01-01-1971). RRDtool can be installed
+in seconds passed since epoch (01-01-1970). RRDtool can be installed
 on Unix as well as Windows. It comes with a command set to carry out
 various operations on RRD databases. This command set can be accessed
 from the command line, as well as from Shell or Perl scripts. The
