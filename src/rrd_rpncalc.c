@@ -153,11 +153,14 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_NOW,NOW)
 	  add_op(OP_LTIME,LTIME)
 	  add_op(OP_TIME,TIME)
+         add_op(OP_ATAN2,ATAN2)
 	  add_op(OP_ATAN,ATAN)
 	  add_op(OP_SQRT,SQRT)
 	  add_op(OP_SORT,SORT)
 	  add_op(OP_REV,REV)
 	  add_op(OP_TREND,TREND)
+         add_op(OP_RAD2DEG,RAD2DEG)
+         add_op(OP_DEG2RAD,DEG2RAD)
 #undef add_op
               }
     (*str)[offset] = '\0';
@@ -325,11 +328,14 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_ISINF,ISINF)
 	match_op(OP_NOW,NOW)
 	match_op(OP_TIME,TIME)
+       match_op(OP_ATAN2,ATAN2)
 	match_op(OP_ATAN,ATAN)
 	match_op(OP_SQRT,SQRT)
 	match_op(OP_SORT,SORT)
 	match_op(OP_REV,REV)
 	match_op(OP_TREND,TREND)
+       match_op(OP_RAD2DEG,RAD2DEG)
+       match_op(OP_DEG2RAD,DEG2RAD)
 #undef match_op
 
 
@@ -524,6 +530,21 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		stackunderflow(0);
 		rpnstack -> s[stptr] = atan(rpnstack -> s[stptr]);
 		break;
+           case OP_RAD2DEG:
+               stackunderflow(0);
+               rpnstack -> s[stptr] = 57.29577951 * rpnstack -> s[stptr];
+               break;
+           case OP_DEG2RAD:
+               stackunderflow(0);
+               rpnstack -> s[stptr] = 0.0174532952 * rpnstack -> s[stptr];
+               break;
+           case OP_ATAN2:
+               stackunderflow(1);
+               rpnstack -> s[stptr-1]= atan2(
+                               rpnstack -> s[stptr-1],
+                               rpnstack -> s[stptr]);
+               stptr--;
+               break;
 	    case OP_COS:
 		stackunderflow(0);
 		rpnstack -> s[stptr] = cos(rpnstack -> s[stptr]);

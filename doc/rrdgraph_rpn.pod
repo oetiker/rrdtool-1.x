@@ -107,11 +107,24 @@ B<ATAN>
 
 Arctangent (output in radians).
 
+B<ATAN2>
+
+Arctangent of y,x components (output in radians).
+This pops one element from the stack, the x (cosine) component, and then
+a second, which is the y (sine) component.
+It then pushes the arctangent of their ratio, resolving the ambiguity between
+quadrants.
+
+Example: C<CDEF:angle=Y,X,ATAN2,RAD2DEG> will convert C<X,Y>
+components into an angle in degrees.
+
 B<FLOOR, CEIL>
 
 Round down or up to the nearest integer.
 
-Z<>
+B<DEG2RAD, RAD2DEG>
+
+Convert angle in degrees to radians, or radians to degrees.
 
 =item Set Operations
 
