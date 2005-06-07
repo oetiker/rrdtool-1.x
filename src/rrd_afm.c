@@ -13,7 +13,6 @@
 #include "rrd_afm.h"
 #include "rrd_afm_data.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 
 #ifdef HAVE_STRING_H
@@ -187,24 +186,49 @@ static long afm_find_kern(const afm_fontinfo *fontinfo,
 }
 
 /* measure width of a text string */
-double afm_get_text_width ( double UNUSED(start), const char* font, double size,
-          double UNUSED(tabwidth), const char* text)
+double afm_get_text_width( double start, const char* font, double size,
+          double tabwidth, const char* text)
+{
+#ifdef HAVE_MBSTOWCS     
+    size_t clen = strlen(text) + 1;
+    wchar_t *cstr = malloc(sizeof(wchar_t) * clen); /* yes we are allocating probably too much here, I know */
+    int text_count = mbstowcs(cstr, text, clen);
+    double w;
+    if (text_count == -1)
+	    text_count = mbstowcs(cstr, "Enc-Err", 6);
+#ifdef __APPLE__
+	while (text_count > 0) {
+		text_count--;
+		cstr[text_count] = afm_fix_osx_charset(cstr[text_count]); /* unsafe macro */
+	}
+#endif
+    w = afm_get_text_width_wide(start, font, size, tabwidth, cstr);
+    free(cstr);
+    return w;
+#else
+    return afm_get_text_width_wide(start, font, size, tabwidth, text);
+#endif
+}
+
+double afm_get_text_width_wide( double UNUSED(start), const char* font, double size,
+          double UNUSED(tabwidth), const afm_char* text)
 {
   const afm_fontinfo *fontinfo = afm_findfont(font);
   long width = 0;
   double widthf;
-  const unsigned char *up = (const unsigned char*)text;
+  const afm_char *up = text;
   DLOG((stderr, "================= %s\n", text));
-  if (fontinfo == NULL)
-    return size * strlen(text);
+  if (fontinfo == NULL) {
+      while (*up)
+	  up++;
+    return size * (up - text);
+  }
   while (1) {
     afm_unicode ch1, ch2;
     int idx1, kern_idx;
     if ((ch1 = *up) == 0)
-      break;
-    ch1 = afm_host2unicode(ch1); /* unsafe macro */
+        break;
     ch2 = *++up;
-    ch2 = afm_host2unicode(ch2); /* unsafe macro */
     DLOG((stderr, "------------- Loop: %d + %d (%c%c)   at %d\n",
           ch1, ch2, ch1, ch2 ? ch2 : ' ',
 	  (up - (const unsigned char*)text) - 1));
@@ -217,7 +241,7 @@ double afm_get_text_width ( double UNUSED(start), const char* font, double size,
       if (ch1_new) {
         ch1 = ch1_new;
         idx1 = afm_find_char_index(fontinfo, ch1);
-        ch2 = afm_host2unicode(*++up);
+        ch2 = *++up;
         DLOG((stderr, "  -> idx1 = %d, ch2 = %d (%c)\n", 
             idx1, ch2, ch2 ? ch2 : ' '));
       }

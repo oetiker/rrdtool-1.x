@@ -7,6 +7,13 @@
 #ifndef  RRD_AFM_H
 #define RRD_AFM_H
 
+#include <stdlib.h>
+ 
+#ifdef HAVE_MBSTOWCS
+#define afm_char wchar_t
+#else
+#define afm_char unsigned char
+#endif
 /*
    If the font specified by the name parameter in the routes below
    is not found
@@ -21,8 +28,10 @@
 
 /* measure width of a text string */
 /* fontname can be full name or postscript name */
-double afm_get_text_width ( double start, const char* font, double size,
+double afm_get_text_width( double start, const char* font, double size,
 			    double tabwidth, const char* text);
+double afm_get_text_width_wide( double start, const char* font, double size,
+			    double tabwidth, const afm_char* text);
 
 double afm_get_ascender(const char* font, double size);
 double afm_get_descender(const char* font, double size);
@@ -35,11 +44,11 @@ const char *afm_get_font_name(const char* font);
 #ifdef __APPLE__
 /* need charset conversion from macintosh to unicode. */
 extern const unsigned char afm_mac2iso[128];
-#define afm_host2unicode(c) \
-	( (c) >= 128 ? afm_mac2iso[(c) - 128] : (c))
+#define afm_fix_osx_charset(c) \
+	( (c) >= 128 && (c) <= 255 ? afm_mac2iso[(c) - 128] : (c))
 #else
 /* UNSAFE macro */
-#define afm_host2unicode(a_unsigned_char) ((unsigned int)(a_unsigned_char))
+#define afm_fix_osx_charset(x) (x)
 #endif
 
 #endif

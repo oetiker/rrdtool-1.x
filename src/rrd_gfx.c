@@ -415,6 +415,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
        have a witespace glyph inserted, but set its width such that the distance
     of the new right edge is x times tabwidth from 0,0 where x is an integer. */    
     unsigned int letter = cstr[n];
+	letter = afm_fix_osx_charset(letter); /* unsafe macro */
           
     gottab = 0;
     if (letter == '\\' && n+1 < string->count && cstr[n+1] == 't'){
@@ -1038,37 +1039,46 @@ static void svg_close_tag_empty_node(FILE *fp)
  
 static void svg_write_text(FILE *fp, const char *text)
 {
-   const unsigned char *p, *start, *last;
-   unsigned int ch;
-   p = (const unsigned char*)text;
-   if (!p)
-     return;
-   /* trim leading spaces */
-   while (*p == ' ')
-     p++;
-   start = p;
-   /* trim trailing spaces */
-   last = p - 1;
-   while ((ch = *p) != 0) {
-     if (ch != ' ')
-       last = p;
-     p++;
-  }
-  /* encode trimmed text */
-  p = start;
-  while (p <= last) {
+#ifdef HAVE_MBSTOWCS
+    size_t clen;
+    wchar_t *p, *cstr, ch;
+    int text_count;
+    if (!text)
+	return;
+    clen = strlen(text) + 1;
+    cstr = malloc(sizeof(wchar_t) * clen);
+    text_count = mbstowcs(cstr, text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    p = cstr;
+#else
+    const unsigned char *p = text, ch;
+    if (!p)
+	return;
+#endif
+  while (1) {
     ch = *p++;
-    ch = afm_host2unicode(ch); /* unsafe macro */
+    ch = afm_fix_osx_charset(ch); /* unsafe macro */
     switch (ch) {
+    case 0:
+#ifdef HAVE_MBSTOWCS     
+    free(cstr);
+#endif
+    return;
     case '&': fputs("&amp;", fp); break;
     case '<': fputs("&lt;", fp); break;
     case '>': fputs("&gt;", fp); break;
     case '"': fputs("&quot;", fp); break;
     default:
-      if (ch >= 127)
-	fprintf(fp, "&#%d;", ch);
+        if (ch == 32) {
+            if (p <= cstr + 1 || !*p || *p == 32)
+                fputs("&#160;", fp); /* non-breaking space in unicode */
+            else
+                fputc(32, fp);
+        } else if (ch < 32 || ch >= 127)
+	fprintf(fp, "&#%d;", (int)ch);
       else
-	putc(ch, fp);
+	putc((char)ch, fp);
      }
    }
 }
@@ -1707,10 +1717,26 @@ static void eps_write_linearea(eps_state *state, gfx_node_t *node)
 static void eps_write_text(eps_state *state, gfx_node_t *node)
 {
   FILE *fp = state->fp;
-  const char *p;
   const char *ps_font = afm_get_font_postscript_name(node->filename);
   int lineLen = 0;
   pdf_coords g;
+#ifdef HAVE_MBSTOWCS
+    size_t clen;
+    wchar_t *p, *cstr, ch;
+    int text_count;
+    if (!node->text)
+	return;
+    clen = strlen(node->text) + 1;
+    cstr = malloc(sizeof(wchar_t) * clen);
+    text_count = mbstowcs(cstr, node->text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    p = cstr;
+#else
+    const unsigned char *p = node->text, ch;
+    if (!p)
+	return;
+#endif
   pdf_calc(state->page_height, node, &g);
   eps_set_color(state, node->color);
   if (strcmp(ps_font, state->font) || node->size != state->font_size) {
@@ -1723,11 +1749,11 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
 	  fputs("T1 ", fp);
   fputs("(", fp);
   lineLen = 20;
-  p = node->text;
   while (1) {
-    unsigned char ch = *(unsigned char*)p;
+    ch = *p;
     if (!ch)
       break;
+	ch = afm_fix_osx_charset(ch); /* unsafe macro */
     if (++lineLen > 70) {
       fputs("\\\n", fp); /* backslash and \n */
       lineLen = 0;
@@ -1750,7 +1776,9 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
         fputs("\\t", fp);
         break;
       default:
-        if (ch >= 126 || ch < 32) {
+        if (ch > 255) {
+            fputc('?', fp);
+        } else if (ch >= 126 || ch < 32) {
           fprintf(fp, "\\%03o", ch);
           lineLen += 3;
         } else {
@@ -1759,6 +1787,9 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
       }
       p++;
   }
+#ifdef HAVE_MBSTOWCS
+  free(cstr);
+#endif
   if (node->angle) {
 	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
 		skewed text */
@@ -1918,6 +1949,17 @@ static void pdf_put(pdf_buffer *buf, const char *text, int len)
   buf->current_size += len;
 }
 
+static void pdf_put_char(pdf_buffer *buf, char c)
+{
+    if (buf->alloc_size >= buf->current_size + 1) {
+	buf->data[buf->current_size++] = c;
+    } else {
+	char tmp[1];
+	tmp[0] = (char)c;
+	pdf_put(buf, tmp, 1);
+    }
+}
+
 static void pdf_puts(pdf_buffer *buf, const char *text)
 {
   pdf_put(buf, text, strlen(text));
@@ -1948,18 +1990,23 @@ static void pdf_putnumber(pdf_buffer *buf, double d)
   pdf_puts(buf, tmp);
 }
 
-static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
+static void pdf_put_string_contents_wide(pdf_buffer *buf, const afm_char *text)
 {
-    const char *p = text;
+    const afm_char *p = text;
     while (1) {
-	unsigned char ch = *(unsigned char*)p;
+	afm_char ch = *p;
+	ch = afm_fix_osx_charset(ch); /* unsafe macro */
 	switch (ch) {
-	    case 0: return;
+	    case 0:
+		return;
 	    case '(':
+		pdf_puts(buf, "\\(");
+		break;
 	    case ')':
+		pdf_puts(buf, "\\)");
+		break;
 	    case '\\':
-		pdf_puts(buf, "\\");
-		pdf_put(buf, p, 1);
+		pdf_puts(buf, "\\\\");
 		break;
 	    case '\n':
 		pdf_puts(buf, "\\n");
@@ -1971,16 +2018,46 @@ static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
 		pdf_puts(buf, "\\t");
 		break;
 	    default:
-		if (ch >= 126 || ch < 32) {
+		if (ch > 255) {
+		    pdf_put_char(buf, '?');
+		} else if (ch >= 126 || ch < 32) {
+		    pdf_put_char(buf, ch);
+		} else if (ch >= 0 && ch <= 255) {
 		    char tmp[10];
-		    snprintf(tmp, sizeof(tmp), "\\%03o", ch);
+		    snprintf(tmp, sizeof(tmp), "\\%03o", (int)ch);
 		    pdf_puts(buf, tmp);
-		} else {
-		    pdf_put(buf, p, 1);
 		}
 	}
 	p++;
     }
+}
+
+static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
+{
+#ifdef HAVE_MBSTOWCS
+    size_t clen = strlen(text) + 1;
+    wchar_t *cstr = malloc(sizeof(wchar_t) * clen);
+    int text_count = mbstowcs(cstr, text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    pdf_put_string_contents_wide(buf, cstr);
+#if 0
+    if (*text == 'W') {
+	fprintf(stderr, "Decoding utf8 for '%s'\n", text);
+	wchar_t *p = cstr;
+	char *pp = text;
+	fprintf(stderr, "sz wc = %d\n", sizeof(wchar_t));
+	while (*p) {
+	    fprintf(stderr, "  %d = %c  versus %d = %c\n", *p, (char)*p, 255 & (int)*pp, *pp);
+	    p++;
+	    pp++;
+	}
+    }
+#endif
+    free(cstr);
+#else
+    pdf_put_string_contents_wide(buf, text);
+#endif
 }
 
 static void pdf_init_object(pdf_state *state, pdf_buffer *buf)
