@@ -55,7 +55,7 @@ could be that they are installed as B<gtar> and B<gmake> on your system.
  wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.9.tar.gz
  tar zxf rrdtool-1.2.9.tar.gz
  cd rrdtool-1.2.9
- ./configure --prefix=/path/to/installation && make && make install
+ ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
 B<configure> complaining about several missing libraries. If you are on a
@@ -167,8 +167,8 @@ seems that a fair number of people have ill configured python setups that
 would prevent rrdtool from building if they are included in their current
 state.
 
- cd $BUILD_DIR
- ./configure --prefix=$INSTALL_DIR --disable-python && make && make install
+ cd $BUILD_DIR/rrdtool-1.2.9
+ ./configure --prefix=$INSTALL_DIR --disable-python && make clean && make && make install
 
 Now go to I<$INSTALL_DIR>B</examples> and run them to see if your
 build has been successful.
