@@ -1779,7 +1779,7 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
         if (ch > 255) {
             fputc('?', fp);
         } else if (ch >= 126 || ch < 32) {
-          fprintf(fp, "\\%03o", ch);
+          fprintf(fp, "\\%03o", (unsigned int)ch);
           lineLen += 3;
         } else {
           fputc(ch, fp);
