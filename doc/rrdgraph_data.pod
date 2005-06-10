@@ -20,7 +20,7 @@ instructions use a language called B<RPN> which is described in its
 own manual page.
 
 Variable names (I<vname>) must be made up strings of the following characters
-C<A-Z, a-z, 0-9, -,_> with a maximum length of 255 characters.
+C<A-Z, a-z, 0-9, -,_>, starting with a letter and a maximum length of 255 characters.
 
 =head1 DEF
 
