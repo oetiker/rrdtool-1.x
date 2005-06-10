@@ -3152,20 +3152,17 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    if(sscanf(optarg,
 				"%10[A-Z]:%lf:%1000s",
 				prop,&size,font) == 3){
-		int sindex;
+		int sindex,propidx;
 		if((sindex=text_prop_conv(prop)) != -1){
-		    im->text_prop[sindex].size=size;              
-		    strcpy(im->text_prop[sindex].font,font);
-		    if (sindex==0) { /* the default */
-			im->text_prop[TEXT_PROP_TITLE].size=size;
-			strcpy(im->text_prop[TEXT_PROP_TITLE].font,font);
-			im->text_prop[TEXT_PROP_AXIS].size=size;
-			strcpy(im->text_prop[TEXT_PROP_AXIS].font,font);
-			im->text_prop[TEXT_PROP_UNIT].size=size;
-			strcpy(im->text_prop[TEXT_PROP_UNIT].font,font);
-			im->text_prop[TEXT_PROP_LEGEND].size=size;
-			strcpy(im->text_prop[TEXT_PROP_LEGEND].font,font);
-		    }
+                  for (propidx=sindex;propidx<TEXT_PROP_LAST;propidx++){  	              
+  	              if (size > 0){
+    		          im->text_prop[propidx].size=size;              
+                      }
+ 		      if (strlen(font) > 0){
+		          strcpy(im->text_prop[propidx].font,font);
+                      }
+                      if (propidx==sindex && sindex != 0) break;
+                  }
 		} else {
 		    rrd_set_error("invalid fonttag '%s'",prop);
 		    return;

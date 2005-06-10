@@ -266,7 +266,7 @@ A green arrow is made by: C<--color ARROW:00FF00>
 
 Zoom the graphics by the given amount. The factor must be E<gt> 0
 
-[B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>I<font>]
+[B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>[I<font>]]
 
 This lets you customize which font to use for the various text
 elements on the RRD graphs. C<DEFAULT> sets the default value for all
@@ -274,6 +274,13 @@ elements, C<TITLE> for the title, C<AXIS> for the axis labels, C<UNIT>
 for the vertical unit label, C<LEGEND> for the graph legend.
 
 Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
+
+If you do not give a font string you can modify just the sice of the default font:
+C<--font TITLE:13:>.
+
+If you specify the size 0 then you can modify just the font without touching
+the size. This is especially usefull for altering the default font without
+resetting the default fontsizes: C<--font DEFAULT:0:/usr/lib/fonts/times.ttf>.
 
 RRDtool comes with a preset default font. You can set the environment
 variable C<RRD_DEFAULT_FONT> if you want to change this.
