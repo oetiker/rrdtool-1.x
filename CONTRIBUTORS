@@ -37,6 +37,7 @@ Otmar Lendl <O.Lendl with Austria.EU.net> (lots of bugfixes)
 Paul Joslin <Paul.Joslin with sdrc.com>
 Peter Speck <speck with vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
 Peter Stamfest <peter with stamfest.at> initial multi-thread support
+Peter Breitenlohner <peb with mppmu.mpg.de>  many patches for rrdtool 1.2.x
 Philippe.Simonet <Philippe.Simonet with swisscom.com> (NT porting)
 Poul-Henning Kamp <phk with freebsd.org> CDEF enhancements
 REIBENSCHUH Alfred <alfred.reibenschuh with it-austria.com> AIX
