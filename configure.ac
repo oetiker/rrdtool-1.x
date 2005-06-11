@@ -371,20 +371,23 @@ if test  "$enable_tcl" = "yes"; then
   withval=""
   AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
   enable_tcl=no
-  AC_MSG_CHECKING(for tclConfig.sh in $withval)
-  if test -f "$withval/tclConfig.sh" ; then
-    	tcl_config=$withval/tclConfig.sh
+  for dir in $withval /usr/lib /usr/local/lib; do
+    AC_MSG_CHECKING(for tclConfig.sh in $dir)
+    if test -f "$dir/tclConfig.sh" ; then
+    	tcl_config=$dir/tclConfig.sh
         enable_tcl=yes
         AC_MSG_RESULT(yes)
         break
-  else
+    else
         AC_MSG_RESULT(no)
-  fi
+    fi
+  done
 
   if test "$enable_tcl" = "no"; then
         AC_MSG_WARN([tclConfig.sh not found - Tcl interface won't be built])
   else
 	. $tcl_config
+	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
   fi
 fi
 
@@ -396,6 +399,8 @@ AC_SUBST(TCL_SHLIB_LD)
 AC_SUBST(TCL_SHLIB_SUFFIX)
 AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
+AC_SUBST(TCL_VERSION)
+AC_SUBST(TCL_PACKAGE_DIR)
 
 AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
 [],[enable_python=yes])
@@ -452,6 +457,7 @@ AC_CONFIG_FILES([examples/shared-demo.pl			\
           src/Makefile					\
           bindings/Makefile                             \
           bindings/tcl/Makefile				\
+          bindings/tcl/ifOctets.tcl			\
           bindings/python/Makefile			\
           Makefile])
 AC_CONFIG_COMMANDS([default],[[\

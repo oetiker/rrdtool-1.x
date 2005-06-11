@@ -16,7 +16,7 @@
 #include <rrd_tool.h>
 #include <rrd_format.h>
 
-
+extern int Tclrrd_Init(Tcl_Interp *interp, int safe);
 
 extern int __getopt_initialized;
 
@@ -167,7 +167,7 @@ Rrd_Fetch(clientData, interp, argc, argv)
     int argc;
     char *argv[];
 {
-    time_t start, end;
+    time_t start, end, j;
     unsigned long step, ds_cnt, i, ii;
     rrd_value_t *data, *datai;
     char **ds_namv;
@@ -180,7 +180,7 @@ Rrd_Fetch(clientData, interp, argc, argv)
 		  &ds_cnt, &ds_namv, &data) != -1) {
         datai = data;
         listPtr = Tcl_GetObjResult(interp);
-        for (i = start; i <= end; i += step) {
+        for (j = start; j <= end; j += step) {
             for (ii = 0; ii < ds_cnt; ii++) {
 		sprintf(s, "%.2f", *(datai++));
                 Tcl_ListObjAppendElement(interp, listPtr,
