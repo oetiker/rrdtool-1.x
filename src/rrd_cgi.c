@@ -35,7 +35,7 @@ char* cgigetq(long , const char **);
 char* cgigetqp(long , const char **);
 
 /* call rrd_graph and insert appropriate image tag */
-char* drawgraph(long, char **);
+char* drawgraph(long, const char **);
 
 /* return PRINT functions from last rrd_graph call */
 char* drawprint(long, const char **);
@@ -547,7 +547,7 @@ char* printstrftime(long argc, const char **args){
 char* includefile(long argc, const char **args){
   char *buffer;
   if (argc >= 1) {
-      char* filename = args[0];
+      const char* filename = args[0];
       readfile(filename, &buffer, 0);
       if (rrd_test_error()) {
 	  	char *err = malloc((strlen(rrd_get_error())+DS_NAM_SIZE));
@@ -689,7 +689,7 @@ char* cgiget(long argc, const char **args){
 
 
 
-char* drawgraph(long argc, char **args){
+char* drawgraph(long argc, const char **args){
   int i,xsize, ysize;
   double ymin,ymax;
   for(i=0;i<argc;i++)
@@ -699,7 +699,7 @@ char* drawgraph(long argc, char **args){
     args[argc++] = "<IMG SRC=\"./%s\" WIDTH=\"%lu\" HEIGHT=\"%lu\">";
   }
   calfree();
-  if( rrd_graph(argc+1, args-1, &calcpr, &xsize, &ysize,NULL,&ymin,&ymax) != -1 ) {
+  if( rrd_graph(argc+1, (char **) args-1, &calcpr, &xsize, &ysize,NULL,&ymin,&ymax) != -1 ) {
     return stralloc(calcpr[0]);
   } else {
     if (rrd_test_error()) {
@@ -732,7 +732,7 @@ char* printtimelast(long argc, const char **args) {
     if (buf == NULL){	
 	return stralloc("[ERROR: allocating strftime buffer]");
     };
-    last = rrd_last(argc+1, args-1); 
+    last = rrd_last(argc+1, (char **) args-1); 
     if (rrd_test_error()) {
       char *err = malloc((strlen(rrd_get_error())+DS_NAM_SIZE)*sizeof(char));
       sprintf(err, "[ERROR: %s]",rrd_get_error());
@@ -981,7 +981,7 @@ parse(
 	if (end)
 	{
 		/* got arguments, call function for 'tag' with arguments */
-		val = func(argc, args);
+		val = func(argc, (const char **) args);
 		free(args);
 	}
 	else
