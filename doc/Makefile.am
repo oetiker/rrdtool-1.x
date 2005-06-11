@@ -24,13 +24,13 @@ HTML = $(POD:.pod=.html) $(PMP:.pod=.html)
 PDF = $(MAN:.1=.pdf)
 
 # what should go into the distribution
-EXTRA_DIST= $(POD) $(HTML) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
+EXTRA_DIST= $(POD) $(HTML) $(MAN) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
 
 # some install rules if the install pat
-DOCPREFIX:=$(shell echo "@prefix@" | grep rrd >/dev/null && echo "rrdtool-@VERSION@/")
-idocdir = $(prefix)/shared/doc/$(DOCPREFIX)txt
+DOCPREFIX:=$(shell echo "@prefix@" | grep rrd >/dev/null || echo "rrdtool-@VERSION@/")
+idocdir = $(prefix)/share/doc/$(DOCPREFIX)txt
 idoc_DATA = $(POD) $(TXT)
-ihtmldir = $(prefix)/shared/doc/$(DOCPREFIX)html
+ihtmldir = $(prefix)/share/doc/$(DOCPREFIX)html
 ihtml_DATA = $(HTML)
 imandir = $(mandir)/man1
 iman_DATA = $(MAN)
@@ -44,7 +44,7 @@ all-local: link txt man html-local
 	pod2man --release=$(VERSION) --center=rrdtool $<  > $@
 
 .1.txt:
-	@NROFF@ -man -Tlp $< > $@
+	GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
 
 .1.pdf:
 	@TROFF@ -man $< | ps2pdf - $@
@@ -58,10 +58,7 @@ RRDs.pod:
 RRDp.pod:
 	ln -s $(top_srcdir)/bindings/perl-piped/RRDp.pm RRDp.pod
 
-index.html:
-	rm -f index.html; ln -s rrdtool.html index.html
-
-link: RRDp.pod RRDs.pod index.html
+link: RRDp.pod RRDs.pod
 
 man: $(MAN)
 
@@ -72,3 +69,5 @@ txt: $(TXT)
 pdf-local: $(PDF)
 
 pod: $(POD)
+
+
