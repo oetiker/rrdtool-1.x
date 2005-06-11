@@ -96,7 +96,7 @@ rrd_create_r(char *filename,
     long              i;
     int               offset;
     char *token;
-    unsigned short dummychar1,dummychar2;
+    char dummychar1[2], dummychar2[2];
     unsigned short token_idx, error_flag, period=0;
     unsigned long hashed_name;
 
@@ -150,9 +150,9 @@ rrd_create_r(char *filename,
 	    switch (sscanf(&argv[i][3],
 			DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
 			rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-			&dummychar1,
+			dummychar1,
 			rrd.ds_def[rrd.stat_head->ds_cnt].dst,
-			&dummychar2,
+			dummychar2,
 			&offset)) {
 		case 0:
 		case 1:	rrd_set_error("Invalid DS name"); break;
