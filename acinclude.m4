@@ -19,7 +19,7 @@ AC_DEFUN([EX_CHECK_ALL],
  EX_CHECK_STATE=NO
  ex_check_save_LIBS=${LIBS}
  ex_check_save_CPPFLAGS=${CPPFLAGS}
- ex_check_save_LDFLAGS=${LDPFLAGS}
+ ex_check_save_LDFLAGS=${LDFLAGS}
  if test "x$7" != "x"; then
    CPPFLAGS="$CPPFLAGS -I$7"
  fi

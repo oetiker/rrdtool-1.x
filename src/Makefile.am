@@ -115,6 +115,8 @@ endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
 rrdcgi_LDADD	= librrd.la
+rrdcgi_CPPFLAGS = $(AM_CPPFLAGS) @CGI_CPPFLAGS@
+rrdcgi_LDFLAGS = @CGI_LDFLAGS@ @CGI_LIBS@
 
 rrdupdate_SOURCES = 
 rrdupdate_LDADD	= rrdupdate.o librrd.la

@@ -230,13 +230,30 @@ AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
 [],[enable_rrdcgi=yes])
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
-if test $enable_rrdcgi != no; then
-EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib, "")
-fi
 EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
 EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.2,  http://www.gzip.org/zlib/, "")
 EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/, "")
 EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+
+save_LIBS=${LIBS}
+save_CPPFLAGS=${CPPFLAGS}
+save_LDFLAGS=${LDFLAGS}
+
+if test $enable_rrdcgi != no; then
+EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib, "")
+fi
+
+CGI_LIBS=${LIBS}
+CGI_CPPFLAGS=${CPPFLAGS}
+CGI_LDFLAGS=${LDFLAGS}
+
+AC_SUBST(CGI_LIBS)
+AC_SUBST(CGI_CPPFLAGS)
+AC_SUBST(CGI_LDFLAGS)
+
+LIBS=${save_LIBS}
+CPPFLAGS=${save_CPPFLAGS}
+LDFLAGS=${save_LDFLAGS}
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
