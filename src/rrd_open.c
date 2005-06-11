@@ -107,7 +107,7 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 
     MYFREAD(rrd->stat_head, stat_head_t,  1)
     /* lets see if the first read worked */
-    if (ferror( *in_file )){
+    if (ferror( *in_file ) || feof(*in_file)) {
 	rrd_set_error("reading the cookie off %s faild",file_name);
 	fclose(*in_file);
 	return(-1);
