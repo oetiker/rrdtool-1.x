@@ -24,7 +24,6 @@ rrd_first(int argc, char **argv)
         };
         int option_index = 0;
         int opt;
-	optind = 0; opterr = 0;  /* initialize getopt */
         opt = getopt_long(argc, argv, "", long_options, &option_index);
 
         if(opt == EOF)
