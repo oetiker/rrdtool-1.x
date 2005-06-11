@@ -7,9 +7,9 @@
 /* #define DEBUG */
 
 #ifdef DEBUG
-# define DPRINTF(x,...)  fprintf(stderr, x, ## __VA_ARGS__);
+# define DPRINTF(...)  fprintf(stderr, __VA_ARGS__);
 #else
-# define DPRINTF(x,...)
+# define DPRINTF(...)
 #endif
 #include "rrd_tool.h"
 #include <png.h>
