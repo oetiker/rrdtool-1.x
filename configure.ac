@@ -265,7 +265,7 @@ AC_LINK_IFELSE(
                 [[#include <time.h>]],
                 [[ctime_r(NULL,NULL)]]
     	                 ),
-          [AC_MSG_RESULT(yes)],
+          [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
     ]  
