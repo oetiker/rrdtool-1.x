@@ -112,18 +112,10 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	fclose(*in_file);
 	return(-1);
     }	
-    version = atoi(rrd->stat_head->version);
 
 	/* lets do some test if we are on track ... */
 	if (strncmp(rrd->stat_head->cookie,RRD_COOKIE,4) != 0){
 	    rrd_set_error("'%s' is not an RRD file",file_name);
-	    free(rrd->stat_head);
-	    fclose(*in_file);
-	    return(-1);}
-
-        if (version > atoi(RRD_VERSION)){
-	    rrd_set_error("can't handle RRD file version %s",
-			rrd->stat_head->version);
 	    free(rrd->stat_head);
 	    fclose(*in_file);
 	    return(-1);}
@@ -133,6 +125,16 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	    free(rrd->stat_head);
 	    fclose(*in_file);
 	    return(-1);}
+
+    version = atoi(rrd->stat_head->version);
+
+        if (version > atoi(RRD_VERSION)){
+	    rrd_set_error("can't handle RRD file version %s",
+			rrd->stat_head->version);
+	    free(rrd->stat_head);
+	    fclose(*in_file);
+	    return(-1);}
+
 
     MYFREAD(rrd->ds_def,    ds_def_t,     rrd->stat_head->ds_cnt)
     MYFREAD(rrd->rra_def,   rra_def_t,    rrd->stat_head->rra_cnt)
