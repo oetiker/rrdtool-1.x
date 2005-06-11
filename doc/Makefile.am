@@ -53,10 +53,10 @@ all-local: link txt man html-local
 	pod2html --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
 
 RRDs.pod:
-	ln -s ../bindings/perl-shared/RRDs.pm RRDs.pod
+	ln -s $(top_srcdir)/bindings/perl-shared/RRDs.pm RRDs.pod
 
 RRDp.pod:
-	ln -s ../bindings/perl-piped/RRDp.pm RRDp.pod
+	ln -s $(top_srcdir)/bindings/perl-piped/RRDp.pm RRDp.pod
 
 index.html:
 	rm -f index.html; ln -s rrdtool.html index.html
