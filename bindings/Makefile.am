@@ -8,8 +8,8 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 all-local:  @COMP_PERL@
 
 install-data-local:
-	cd perl-piped && test -f Makefile && $(MAKE) install || true
-	cd perl-shared && test -f Makefile && $(MAKE) install || true
+	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
+	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
@@ -26,7 +26,7 @@ perl-shared/Makefile: perl-shared/Makefile.PL
 # LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
 clean-local:
-	cd perl-piped && test -f Makefile && $(MAKE) clean || true
-	cd perl-shared && test -f Makefile && $(MAKE) clean || true
+	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) clean || true
+	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || true
 
 ##END##

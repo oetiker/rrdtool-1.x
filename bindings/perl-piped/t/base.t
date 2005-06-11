@@ -23,7 +23,7 @@ $ok_count = 1;
 
 print "ok 1 module load\n";
 
-ok("RRDp::start", RRDp::start "../src/rrdtool" > 0);
+ok("RRDp::start", RRDp::start "../../src/rrdtool" > 0);
 
 $now=time();
 RRDp::cmd qw(create demo.rrd --start ), $now, qw(--step 100 ),
