@@ -595,10 +595,18 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	for(i=0;i<rrd.stat_head->ds_cnt;i++){
 	    enum dst_en dst_idx;
 	    dst_idx= dst_conv(rrd.ds_def[i].dst);
-		/* NOTE: DST_CDEF should never enter this if block, because
-		 * updvals[i+1][0] is initialized to 'U'; unless the caller
-		 * accidently specified a value for the DST_CDEF. To handle 
-		 * this case, an extra check is required. */
+
+            /* make sure we do not build diffs with old last_ds values */
+	    if(rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt < interval 
+	    	&& ( dst_idx == DST_COUNTER || dst_idx == DST_DERIVE)){
+		strncpy(rrd.pdp_prep[i].last_ds,"U",LAST_DS_LEN-1);
+	    }
+
+  	    /* NOTE: DST_CDEF should never enter this if block, because
+             * updvals[i+1][0] is initialized to 'U'; unless the caller
+	     * accidently specified a value for the DST_CDEF. To handle 
+	      * this case, an extra check is required. */
+
 	    if((updvals[i+1][0] != 'U') &&
 		   (dst_idx != DST_CDEF) &&
 	       rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
