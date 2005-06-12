@@ -394,7 +394,7 @@ expand_range(image_desc_t *im)
 	      delt = im->maxval - im->minval;
 	      adj = delt * 0.1;
 	      fact = 2.0 * pow(10.0,
-		    floor(log10(max(fabs(im->minval), fabs(im->maxval)))) - 2);
+		    floor(log10(max(fabs(im->minval), fabs(im->maxval))/im->magfact)) - 2);
 	      if (delt < fact) {
 		adj = (fact - delt) * 0.55;
 #ifdef DEBUG
@@ -432,10 +432,6 @@ expand_range(image_desc_t *im)
 		    -sensiblevalues[i] >=scaled_max)
 		    im->maxval = -sensiblevalues[i]*(im->magfact);
 	    }
-	    /* no sensiblevalues found. we switch to ALTYGRID mode */
-	    if (sensiblevalues[i] == 0){
-		im->extra_flags |= ALTYGRID;
-	    }		
 	}
     } else {
 	/* adjust min and max to the grid definition if there is one */
@@ -1549,21 +1545,12 @@ calc_horizontal_grid(image_desc_t   *im)
     if(isnan(im->ygridstep)){
 	if(im->extra_flags & ALTYGRID) {
 	    /* find the value with max number of digits. Get number of digits */
-	    decimals = ceil(log10(max(fabs(im->maxval), fabs(im->minval))));
+	    decimals = ceil(log10(max(fabs(im->maxval), fabs(im->minval))*im->viewfactor/im->magfact));
 	    if(decimals <= 0) /* everything is small. make place for zero */
 		decimals = 1;
 	    
-	    fractionals = floor(log10(range));
-	    if(fractionals < 0) { /* small amplitude. */
-		int len = decimals - fractionals + 1;
-		if (im->unitslength < len) im->unitslength = len;
-		sprintf(im->ygrid_scale.labfmt, "%%%d.%df", len, -fractionals + 1);
-	    } else {
-		int len = decimals + 1;
-		if (im->unitslength < len) im->unitslength = len;
-		sprintf(im->ygrid_scale.labfmt, "%%%d.1f", len);
-	    }
-	    im->ygrid_scale.gridstep = pow((double)10, (double)fractionals);
+	    im->ygrid_scale.gridstep = pow((double)10, floor(log10(range)));
+	    
 	    if(im->ygrid_scale.gridstep == 0) /* range is one -> 0.1 is reasonable scale */
 		im->ygrid_scale.gridstep = 0.1;
 	    /* should have at least 5 lines but no more then 15 */
@@ -1579,6 +1566,16 @@ calc_horizontal_grid(image_desc_t   *im)
 	    else {
 		im->ygrid_scale.gridstep /= 5;
 		im->ygrid_scale.labfact = 5;
+	    }
+	    fractionals = floor(log10(im->ygrid_scale.gridstep*(double)im->ygrid_scale.labfact*im->viewfactor/im->magfact));
+	    if(fractionals < 0) { /* small amplitude. */
+		int len = decimals - fractionals + 1;
+		if (im->unitslength < len+2) im->unitslength = len+2;
+		sprintf(im->ygrid_scale.labfmt, "%%%d.%df%s", len, -fractionals,(im->symbol != ' ' ? " %c" : ""));
+	    } else {
+		int len = decimals + 1;
+		if (im->unitslength < len+2) im->unitslength = len+2;
+		sprintf(im->ygrid_scale.labfmt, "%%%d.1f%s", len, ( im->symbol != ' ' ? " %c" : "" ));
 	    }
 	}
 	else {
@@ -1624,23 +1621,27 @@ int draw_horizontal_grid(image_desc_t *im)
        if ( Y0 >= im->yorigin-im->ysize
 	         && Y0 <= im->yorigin){       
 	    if(i % im->ygrid_scale.labfact == 0){		
-		if (i==0 || im->symbol == ' ') {
-		    if(MaxY < 10) {
-			if(im->extra_flags & ALTYGRID) {
-			    sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i);
-			}
-			else {
-			    sprintf(graph_label,"%4.1f",scaledstep*im->viewfactor*i);
-			}
-		    } else {
-			sprintf(graph_label,"%4.0f",scaledstep*im->viewfactor*i);
-		    }
+		if (im->symbol == ' ') {
+ 		    if(im->extra_flags & ALTYGRID) {
+		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i);
+                    } else {
+                        if(MaxY < 10) {
+		           sprintf(graph_label,"%4.1f",scaledstep*im->viewfactor*i);
+  		        } else {
+			   sprintf(graph_label,"%4.0f",scaledstep*im->viewfactor*i);
+		        }
+                    }
 		}else {
-		    if(MaxY < 10){
-			sprintf(graph_label,"%4.1f %c",scaledstep*im->viewfactor*i, im->symbol);
-		    } else {
-			sprintf(graph_label,"%4.0f %c",scaledstep*im->viewfactor*i, im->symbol);
-		    }
+		    char sisym = ( i == 0  ? ' ' : im->symbol);
+ 		    if(im->extra_flags & ALTYGRID) {
+		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i,sisym);
+                    } else {
+  		        if(MaxY < 10){
+		   	  sprintf(graph_label,"%4.1f %c",scaledstep*im->viewfactor*i, sisym);
+		        } else {
+		   	  sprintf(graph_label,"%4.0f %c",scaledstep*im->viewfactor*i, sisym);
+		        }
+                    }
 		}
 
 	       gfx_new_text ( im->canvas,
