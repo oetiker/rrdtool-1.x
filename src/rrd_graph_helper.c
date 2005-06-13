@@ -330,16 +330,28 @@ rrd_parse_PVHLAST(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc
 	tmpstr[j]='\0';
     }
 
+    /* Number or vname ?
+     * It is a number only if "k" equals either "j" or "i",
+     * depending on which is appropriate
+     */
     dprintf("- examining value '%s'\n",tmpstr);
     k=0;
     if (gdp->gf == GF_VRULE) {
 	sscanf(tmpstr,"%li%n",&gdp->xrule,&k);
-	if (k) dprintf("- found time: %li\n",gdp->xrule);
+	if (((j!=0)&&(k==j))||((j==0)&&(k==i))) {
+		dprintf("- found time: %li\n",gdp->xrule);
+	} else {
+		gdp->xrule=0;	/* reset the value to "none" */
+	}
     } else {
 	sscanf(tmpstr,"%lf%n",&gdp->yrule,&k);
-	if (k) dprintf("- found number: %f\n",gdp->yrule);
+	if (((j!=0)&&(k==j))||((j==0)&&(k==i))) {
+		dprintf("- found number: %f\n",gdp->yrule);
+	} else {
+		gdp->yrule=DNAN;	/* reset the value to "none" */
+	}
     }
-    if (!k) {
+    if (((j!=0)&&(k!=j))||((j==0)&&(k!=i))) {
 	if ((gdp->vidx=find_var(im,tmpstr))<0) {
 	    rrd_set_error("Not a valid vname: %s in line %s",tmpstr,line);
 	    return 1;
