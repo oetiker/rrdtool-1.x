@@ -193,11 +193,12 @@ to automatically select sensible values.
 
 [B<-Y>|B<--alt-y-grid>]
 
-Place the Y grid dynamically based on the graph's Y range. The
-algorithm ensures that you always have a grid, that there are enough
-but not too many grid lines, and that the grid is metric. That is the
-grid lines are placed every 1, 2, 5 or 10 units.  (contributed by
-Sasha Mikheev)
+Place the Y grid dynamically based on the graph's Y range. The algorithm
+ensures that you always have a grid, that there are enough but not too many
+grid lines, and that the grid is metric. That is the grid lines are placed
+every 1, 2, 5 or 10 units. This parameter will also ensure that you get
+enough decimals displayed even if your graph goes from 69.998 to 70.001. 
+(contributed by Sasha Mikheev).
 
 [B<-o>|B<--logarithmic>]
 
