@@ -386,7 +386,11 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
   cstr = malloc(sizeof(wchar_t) * clen); /* yes we are allocating probably too much here, I know */
   string->count=mbstowcs(cstr,text,clen);
   if ( string->count == -1){
-	string->count=mbstowcs(cstr,"Enc-Err",6);
+  /* conversion did not work, so lets fall back to just use what we got */
+	string->count=clen-1;
+        for(n=0;text[n] != '\0';n++){
+            cstr[n]=text[n];
+        }
   }
 #else
   char		*cstr = strdup(text);
