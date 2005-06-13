@@ -350,8 +350,6 @@ si_unit(
 
     im->viewfactor = im->magfact / pow((double)im->base , viewdigits);
 
-    pow((double)im->base , viewdigits);
-
     if ( ((viewdigits+symbcenter) < sizeof(symbol)) &&
 		    ((viewdigits+symbcenter) >= 0) )
         im->symbol = symbol[(int)viewdigits+symbcenter];
@@ -1614,8 +1612,8 @@ int draw_horizontal_grid(image_desc_t *im)
     int sgrid = (int)( im->minval / im->ygrid_scale.gridstep - 1);
     int egrid = (int)( im->maxval / im->ygrid_scale.gridstep + 1);
     double MaxY;
-    scaledstep = im->ygrid_scale.gridstep/im->magfact;
-    MaxY = scaledstep*(double)im->viewfactor*(double)egrid;
+    scaledstep = im->ygrid_scale.gridstep/(double)im->magfact*(double)im->viewfactor;
+    MaxY = scaledstep*(double)egrid;
     for (i = sgrid; i <= egrid; i++){
        double Y0=ytr(im,im->ygrid_scale.gridstep*i);
        if ( Y0 >= im->yorigin-im->ysize
@@ -1623,23 +1621,23 @@ int draw_horizontal_grid(image_desc_t *im)
 	    if(i % im->ygrid_scale.labfact == 0){		
 		if (im->symbol == ' ') {
  		    if(im->extra_flags & ALTYGRID) {
-		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i);
+		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*(double)i);
                     } else {
                         if(MaxY < 10) {
-		           sprintf(graph_label,"%4.1f",scaledstep*im->viewfactor*i);
+		           sprintf(graph_label,"%4.1f",scaledstep*(double)i);
   		        } else {
-			   sprintf(graph_label,"%4.0f",scaledstep*im->viewfactor*i);
+			   sprintf(graph_label,"%4.0f",scaledstep*(double)i);
 		        }
                     }
 		}else {
 		    char sisym = ( i == 0  ? ' ' : im->symbol);
  		    if(im->extra_flags & ALTYGRID) {
-		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*im->viewfactor*i,sisym);
+		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*(double)i,sisym);
                     } else {
   		        if(MaxY < 10){
-		   	  sprintf(graph_label,"%4.1f %c",scaledstep*im->viewfactor*i, sisym);
+		   	  sprintf(graph_label,"%4.1f %c",scaledstep*(double)i, sisym);
 		        } else {
-		   	  sprintf(graph_label,"%4.0f %c",scaledstep*im->viewfactor*i, sisym);
+		   	  sprintf(graph_label,"%4.0f %c",scaledstep*(double)i, sisym);
 		        }
                     }
 		}
