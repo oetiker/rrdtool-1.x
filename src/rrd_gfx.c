@@ -389,7 +389,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
   /* conversion did not work, so lets fall back to just use what we got */
 	string->count=clen-1;
         for(n=0;text[n] != '\0';n++){
-            cstr[n]=text[n];
+            cstr[n]=(unsigned char)text[n];
         }
   }
 #else
