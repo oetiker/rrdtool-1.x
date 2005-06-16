@@ -1547,7 +1547,7 @@ calc_horizontal_grid(image_desc_t   *im)
 	    if(decimals <= 0) /* everything is small. make place for zero */
 		decimals = 1;
 	    
-	    im->ygrid_scale.gridstep = pow((double)10, floor(log10(range)));
+	    im->ygrid_scale.gridstep = pow((double)10, floor(log10(range*im->viewfactor/im->magfact)))/im->viewfactor*im->magfact;
 	    
 	    if(im->ygrid_scale.gridstep == 0) /* range is one -> 0.1 is reasonable scale */
 		im->ygrid_scale.gridstep = 0.1;
