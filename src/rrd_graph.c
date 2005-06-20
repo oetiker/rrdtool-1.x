@@ -1573,7 +1573,7 @@ calc_horizontal_grid(image_desc_t   *im)
 	    } else {
 		int len = decimals + 1;
 		if (im->unitslength < len+2) im->unitslength = len+2;
-		sprintf(im->ygrid_scale.labfmt, "%%%d.1f%s", len, ( im->symbol != ' ' ? " %c" : "" ));
+		sprintf(im->ygrid_scale.labfmt, "%%%d.0f%s", len, ( im->symbol != ' ' ? " %c" : "" ));
 	    }
 	}
 	else {
@@ -1844,11 +1844,11 @@ vertical_grid(
 # error "your libc has no strftime I guess we'll abort the exercise here."
 #endif
        gfx_new_text ( im->canvas,
-		      xtr(im,tilab), Y0+im->text_prop[TEXT_PROP_AXIS].size,
+		      xtr(im,tilab), Y0+im->text_prop[TEXT_PROP_AXIS].size*1.4+5,
 		      im->graph_col[GRC_FONT],
 		      im->text_prop[TEXT_PROP_AXIS].font,
 		      im->text_prop[TEXT_PROP_AXIS].size,
-		      im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP,
+		      im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_BOTTOM,
 		      graph_label );
        
     }
