@@ -125,6 +125,11 @@ the end of line 4 means that line 4 and line 5 are on one line.
  make
  make install
 
+If you run into problems building freetype on Solaris, you may want to try to
+add the following at the end of the configure line:
+
+ GNUMAKE=gmake EGREP=egrep
+
 =item Building libart_lgpl
 
  cd $BUILD_DIR
@@ -162,13 +167,16 @@ If you are running bash/sh/ash/ksh/zsh use this:
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
-And finally try building again. We disable the python bindings because it
-seems that a fair number of people have ill configured python setups that
-would prevent rrdtool from building if they are included in their current
-state.
+And finally try building again. We disable the python and tcl bindings
+because it seems that a fair number of people have ill configured python and
+tcl setups that would prevent rrdtool from building if they are included in
+their current state.
 
  cd $BUILD_DIR/rrdtool-1.2.10
- ./configure --prefix=$INSTALL_DIR --disable-python && make clean && make && make install
+ ./configure --prefix=$INSTALL_DIR --disable-python --disable-tcl
+ make clean
+ make
+ make install
 
 Now go to I<$INSTALL_DIR>B</examples> and run them to see if your
 build has been successful.
