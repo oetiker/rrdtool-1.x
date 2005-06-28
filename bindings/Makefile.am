@@ -1,4 +1,14 @@
-SUBDIRS = tcl python
+
+if BUILD_TCL
+SUB_tcl = tcl
+endif
+
+if BUILD_PYTHON
+SUB_python = python
+endif
+
+SUBDIRS = $(SUB_tcl) $(SUB_python)
+
 # the following files are not mentioned in any other Makefile
 EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-piped/RRDp.pm perl-piped/t/base.t \
 	perl-shared/ntmake.pl perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm  perl-shared/RRDs.xs perl-shared/t/base.t

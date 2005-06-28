@@ -325,6 +325,11 @@ AC_ARG_ENABLE(perl,[  --disable-perl          do not build the perl modules],
 [],[enable_perl=yes])
 
 
+AC_ARG_VAR(PERLCC, [[] C compiler for Perl modules])
+AC_ARG_VAR(PERLCCFLAGS, [[] CC flags for Perl modules])
+AC_ARG_VAR(PERLLD, [[same as PERLCC] Linker for Perl modules])
+AC_ARG_VAR(PERLLDFLAGS, [[] LD flags for Perl modules])
+
 if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
 else
@@ -332,21 +337,24 @@ else
         AC_MSG_CHECKING(for the perl version you are running)
 	PERL_VERSION=`$PERL -MConfig -e 'print $Config{version}'`
 	AC_MSG_RESULT($PERL_VERSION)
-        AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
-	perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
-	AC_MSG_RESULT($perlcc)
-	if test ! -x "$perlcc"; then
- 	       AC_PATH_PROG(PERLCC, "${perlcc}", no)
-	       if test "$PERLCC" = "no"; then
-                  AC_MSG_WARN([
-I would not find the Compiler ($perlcc) that was originally used to compile your
-perl binary. You should either make sure that this compiler is available on your
-system, or use a different perl setup that was compiled with $CC.
+        if test -z "$PERLCC"; then
+            AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
+	    perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
+	    AC_MSG_RESULT($perlcc)
+	    if test ! -x "$perlcc"; then
+ 	        AC_PATH_PROG(PERL_CC, "${perlcc}", no)
+	        if test "$PERL_CC" = "no"; then
+                    AC_MSG_WARN([
+I would not find the Compiler ($perlcc) that was originally used to compile
+your perl binary. You should either make sure that this compiler is
+available on your system, pick an other compiler and set PERLCC
+appropriately, or use a different perl setup that was compiled locally.
 
-I will disable the compilation of the RRDs perl module.
+I will disable the compilation of the RRDs perl module for now.
 ])
-  		  COMP_PERL="perl_piped"
-	       fi
+  		    COMP_PERL="perl_piped"
+	        fi
+            fi    
         fi
 fi
 AC_MSG_CHECKING(Perl Modules to build)
@@ -368,6 +376,23 @@ AC_ARG_ENABLE(perl-site-install,
                           your perl setup thinks it is best.],
 [PERL_MAKE_OPTIONS=],[])
 
+if test ! -z "$PERLCC"; then
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC=$PERLCC"
+
+   if test ! -z "$PERLCCFLAGS"; then
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS=$PERLCCFLAGS"
+   fi
+   
+   if test -z "$PERLLD"; then
+       PERLLD=$PERLCC
+   fi
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD=$PERLLD"
+  
+   if test ! -z "$PERLLDFLAGS"; then
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
+   fi
+fi
+        
 AC_ARG_WITH(perl-options,
 [  --with-perl-options=[OPTIONS]  options to pass on command-line when
                           generating Makefile from Makefile.PL. If you set this
@@ -433,6 +458,10 @@ AM_CONDITIONAL(BUILD_PYTHON,[test "$enable_python" = "yes"])
 dnl Check for nroff
 AC_PATH_PROGS(NROFF, gnroff nroff)
 AC_PATH_PROGS(TROFF, groff troff)
+
+AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
+if test -z "$RRDDOCDIR"; then
+   RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
 
 dnl Does the compiler like -Wall and -pedantic?
 if test "$GCC" = "yes"; then

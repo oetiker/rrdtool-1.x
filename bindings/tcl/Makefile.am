@@ -21,8 +21,6 @@ LIB_RUNTIME_DIR    = $(libdir)
 
 pkglibdir = @TCL_PACKAGE_DIR@
 
-if BUILD_TCL
-
 # Automake doen't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
 # library name. So we build and install this library `by hand'.
 #
@@ -51,10 +49,4 @@ pkgIndex.tcl:
 install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)
 	$(INSTALL_PROGRAM) $(TCL_RRD_LIB) $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
-
-endif
-
-diff:
-	cd .. ; diff -c -u -r -N --exclude Makefile --exclude html --exclude doc --exclude Makefile.in --exclude Makefile.old --exclude perl --exclude aclocal.m4 --exclude configure rrdtool-1.0.13 rrdtool-1.0.13-ibr > rrdtool-1.0.13-ibr.patch
-	
 
