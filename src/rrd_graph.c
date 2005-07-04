@@ -3150,7 +3150,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 	    if(sscanf(optarg,
 				"%10[A-Z]:%lf:%1000s",
-				prop,&size,font) == 3){
+				prop,&size,font) >= 2){
 		int sindex,propidx;
 		if((sindex=text_prop_conv(prop)) != -1){
                   for (propidx=sindex;propidx<TEXT_PROP_LAST;propidx++){  	              
