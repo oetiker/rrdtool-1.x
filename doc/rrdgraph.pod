@@ -261,7 +261,7 @@ and blue. Optionally you may add another hexadecimal number specifying the
 transparency (FF is solid). You may set this option several times to alter
 multiple defaults.
 
-A green arrow is made by: C<--color ARROW:00FF00>
+A green arrow is made by: C<--color ARROW#00FF00>
 
 [B<--zoom> I<factor>]
 
