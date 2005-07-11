@@ -2501,10 +2501,44 @@ graph_paint(image_desc_t *im, char ***calcpr)
           }
         } else {
 	  double ybase0 = DNAN,ytop0=DNAN;
-          for(ii=0;ii<im->xsize;ii++){
+	  int idxI=-1;
+	  double *foreY=malloc(sizeof(double)*im->xsize*2);
+	  double *foreX=malloc(sizeof(double)*im->xsize*2);
+	  double *backY=malloc(sizeof(double)*im->xsize*2);
+	  double *backX=malloc(sizeof(double)*im->xsize*2);
+          for(ii=0;ii<=im->xsize;ii++){
+	    double ybase,ytop;
+	    if ( idxI >= 1 && ( ybase0 == DNAN || ii==im->xsize)){
+               int cntI=1;
+               int lastI=0;
+               while ( cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;}
+               node = gfx_new_area(im->canvas,
+                                backX[0],backY[0],
+                                foreX[0],foreY[0],
+                                foreX[cntI],foreY[cntI], im->gdes[i].col);
+               while (cntI < idxI) {
+                 lastI = cntI;
+                 cntI++;
+                 while ( cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;} 
+                 gfx_add_point(node,foreX[cntI],foreY[cntI]);
+
+               }
+               gfx_add_point(node,backX[idxI],backY[idxI]);
+               while (idxI > 1){
+                 lastI = idxI;
+                 idxI--;
+                 while ( idxI > 1 && backY[lastI] == backY[idxI] && backY[lastI] == backY[idxI-1]){idxI--;} 
+                 gfx_add_point(node,backX[idxI],backY[idxI]);
+               }
+               idxI=-1;
+            }
+            
+            if (ii == im->xsize) break;
+            
 	    /* keep things simple for now, just draw these bars
 	       do not try to build a big and complex area */
-	    double ybase,ytop;
+
+	                                         	      
 	    if ( im->slopemode == 0 && ii==0){
 		continue;
 	    }
@@ -2533,20 +2567,27 @@ graph_paint(image_desc_t *im, char ***calcpr)
 		 ybase0 = ybase;
 		 ytop0 = ytop;
 	    }
-	    if ( !isnan(ybase0) ){
-	            node = gfx_new_area(im->canvas,
-                                (double)ii-1.2+(double)im->xorigin,ybase0-0.2,
-                                (double)ii-1.2+(double)im->xorigin,ytop0+0.2,
-                                (double)ii+0.2+(double)im->xorigin,ytop+0.2,
-                                im->gdes[i].col
-                               );
-        	    gfx_add_point(node,
-			        (double)ii+0.02+im->xorigin,ybase-0.2
-                              );
+	    if (!isnan(ybase0)){ 
+                 if ( im->slopemode == 0 ){
+                    backY[++idxI] = ybase0-0.2;
+                    backX[idxI] = ii+im->xorigin-1;
+                    foreY[idxI] = ytop0+0.2;
+                    foreX[idxI] = ii+im->xorigin-1;
+                 }
+                 backY[++idxI] = ybase-0.2;
+                 backX[idxI] = ii+im->xorigin;
+                 foreY[idxI] = ytop+0.2;
+                 foreX[idxI] = ii+im->xorigin;
             }
+            
 	    ybase0=ybase;
 	    ytop0=ytop;
-          }             
+          }
+          /* close up any remaining area */             
+          free(foreY);
+          free(foreX);
+          free(backY);
+          free(backX);
         } /* else GF_LINE */
       } /* if color != 0x0 */
       /* make sure we do not run into trouble when stacking on NaN */
