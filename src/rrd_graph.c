@@ -2500,18 +2500,18 @@ graph_paint(image_desc_t *im, char ***calcpr)
 
           }
         } else {
-	  double ybase0 = DNAN,ytop0=DNAN;
 	  int idxI=-1;
 	  double *foreY=malloc(sizeof(double)*im->xsize*2);
 	  double *foreX=malloc(sizeof(double)*im->xsize*2);
 	  double *backY=malloc(sizeof(double)*im->xsize*2);
 	  double *backX=malloc(sizeof(double)*im->xsize*2);
+	  int drawem = 0;
           for(ii=0;ii<=im->xsize;ii++){
 	    double ybase,ytop;
-	    if ( idxI >= 1 && ( ybase0 == DNAN || ii==im->xsize)){
+	    if ( idxI > 0 && ( drawem != 0 || ii==im->xsize)){
                int cntI=1;
                int lastI=0;
-               while ( cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;}
+               while (cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;}
                node = gfx_new_area(im->canvas,
                                 backX[0],backY[0],
                                 foreX[0],foreY[0],
@@ -2521,7 +2521,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
                  cntI++;
                  while ( cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;} 
                  gfx_add_point(node,foreX[cntI],foreY[cntI]);
-
                }
                gfx_add_point(node,backX[idxI],backY[idxI]);
                while (idxI > 1){
@@ -2531,8 +2530,12 @@ graph_paint(image_desc_t *im, char ***calcpr)
                  gfx_add_point(node,backX[idxI],backY[idxI]);
                }
                idxI=-1;
+               drawem = 0;
             }
-            
+            if (drawem != 0){
+              drawem = 0;
+              idxI=-1;
+            }
             if (ii == im->xsize) break;
             
 	    /* keep things simple for now, just draw these bars
@@ -2543,7 +2546,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 		continue;
 	    }
 	    if ( isnan(im->gdes[i].p_data[ii]) ) {
-		ybase0 = DNAN;
+		drawem = 1;
 		continue;
 	    }
             ytop = ytr(im,im->gdes[i].p_data[ii]);
@@ -2553,7 +2556,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
                   ybase = ytr(im,areazero);
             }
             if ( ybase == ytop ){
-		ybase0 = DNAN;
+		drawem = 1;
 		continue;	
 	    }
 	    /* every area has to be wound clock-wise,
@@ -2563,25 +2566,16 @@ graph_paint(image_desc_t *im, char ***calcpr)
 		ytop = ybase;
 		ybase = extra;
 	    }
-	    if ( im->slopemode == 0){
-		 ybase0 = ybase;
-		 ytop0 = ytop;
-	    }
-	    if (!isnan(ybase0)){ 
-                 if ( im->slopemode == 0 ){
-                    backY[++idxI] = ybase0-0.2;
+            if ( im->slopemode == 0 ){
+                    backY[++idxI] = ybase-0.2;
                     backX[idxI] = ii+im->xorigin-1;
-                    foreY[idxI] = ytop0+0.2;
+                    foreY[idxI] = ytop+0.2;
                     foreX[idxI] = ii+im->xorigin-1;
-                 }
-                 backY[++idxI] = ybase-0.2;
-                 backX[idxI] = ii+im->xorigin;
-                 foreY[idxI] = ytop+0.2;
-                 foreX[idxI] = ii+im->xorigin;
             }
-            
-	    ybase0=ybase;
-	    ytop0=ytop;
+            backY[++idxI] = ybase-0.2;
+            backX[idxI] = ii+im->xorigin;
+            foreY[idxI] = ytop+0.2;
+            foreX[idxI] = ii+im->xorigin;
           }
           /* close up any remaining area */             
           free(foreY);
