@@ -205,16 +205,19 @@ dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we nee
 dnl actual code to check if this works
 AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; fpclassify(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f; ]], [[x = fpclassify(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
 AC_CHECK_FUNCS(finite, ,
   [AC_CHECK_FUNCS(isfinite, ,
     [AC_MSG_CHECKING(for isfinite with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isfinite(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f;  ]], [[x = isfinite(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isinf(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
 
 AC_FULL_IEEE
