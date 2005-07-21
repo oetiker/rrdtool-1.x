@@ -2590,7 +2590,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
           if (lastgdes && (im->gdes[i].stack)) {
             im->gdes[i].p_data[ii] = lastgdes->p_data[ii];
           } else {
-            im->gdes[i].p_data[ii] =  ytr(im,areazero);
+            im->gdes[i].p_data[ii] = areazero;
           }
         }
       } 
