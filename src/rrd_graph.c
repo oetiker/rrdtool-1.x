@@ -2242,13 +2242,12 @@ graph_size_location(image_desc_t *im, int elements
     /* reserve space for main and/or pie */
 
     im->yimg = Ymain + Yxlabel;
-
+    
 #ifdef WITH_PIECHART
     if (im->yimg < Ypie) im->yimg = Ypie;
 #endif
 
     im->yorigin = im->yimg - Yxlabel;
-    ytr(im,DNAN); 
 
     /* reserve space for the title *or* some padding above the graph */
     if (Ytitle) {
@@ -2260,7 +2259,7 @@ graph_size_location(image_desc_t *im, int elements
     }
     /* reserve space for padding below the graph */
     im->yimg += Yspacing;
-
+     
     /* Determine where to place the legends onto the image.
     ** Adjust im->yimg to match the space requirements.
     */
@@ -2289,6 +2288,7 @@ graph_size_location(image_desc_t *im, int elements
     }
 #endif
 
+    ytr(im,DNAN);
     return 0;
 }
 
