@@ -370,17 +370,17 @@ int main(int argc, char *argv[])
 		    exit(1);
 		}
 		if ((argc=CreateArgs(argv[0], aLine, argc, myargv)) < 0) {
-		    fprintf(stderr, "ERROR: creating arguments\n");
-		    exit(1);
-		}
-
-		HandleInputLine(argc, myargv, stdout);
-		free(myargv);
+		    printf("ERROR: creating arguments\n");
+		} else {
+	 	    int ret = HandleInputLine(argc, myargv, stdout);
+ 		    free(myargv);
+ 		    if (ret == 0){
+ 		    	
 
 #if HAVE_GETRUSAGE
-		getrusage(RUSAGE_SELF,&myusage);
-		gettimeofday(&currenttime,&tz);
-		printf("OK u:%1.2f s:%1.2f r:%1.2f\n",
+ 		     getrusage(RUSAGE_SELF,&myusage);
+		     gettimeofday(&currenttime,&tz);
+		     printf("OK u:%1.2f s:%1.2f r:%1.2f\n",
 		       (double)myusage.ru_utime.tv_sec+
 		       (double)myusage.ru_utime.tv_usec/1000000.0,
 		       (double)myusage.ru_stime.tv_sec+
@@ -389,8 +389,11 @@ int main(int argc, char *argv[])
 		       +(double)(currenttime.tv_usec-starttime.tv_usec)
 		       /1000000.0);
 #else
-		printf("OK\n");
-#endif
+		      printf("OK\n");
+		    
+#endif          
+		  }
+		}
 		fflush(stdout); /* this is important for pipes to work */
 	    }
 	}
@@ -426,7 +429,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
        if (argc>1 && strcmp("quit", argv[1]) == 0){
           if (argc>2){
              printf("ERROR: invalid parameter count for quit\n");
-             return(0);
+             return(1);
           }
           exit(0);
        }
@@ -434,43 +437,45 @@ int HandleInputLine(int argc, char **argv, FILE* out)
        if (argc>1 && strcmp("cd", argv[1]) == 0){
           if (argc>3){
              printf("ERROR: invalid parameter count for cd\n");
-             return(0);
+             return(1);
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: chdir security problem - rrdtool is running as "
                     "root an no chroot!\n");
-             return(0); 
+             return(1); 
           }
 #endif
           chdir(argv[2]);
           if (errno!=0){
              printf("ERROR: %s\n",rrd_strerror(errno));
+	     return(1);
           }
           return(0);
        }
        if (argc>1 && strcmp("mkdir", argv[1]) == 0){
           if (argc>3){
              printf("ERROR: invalid parameter count for mkdir\n");
-             return(0);
+             return(1);
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: mkdir security problem - rrdtool is running as "
                     "root an no chroot!\n");
-             return(0); 
+             return(1); 
           }
 #endif
           mkdir(argv[2],0777);
           if (errno!=0){
              printf("ERROR: %s\n",rrd_strerror(errno));
+             return(1);
           }
           return(0);
        }
        if (argc>1 && strcmp("ls", argv[1]) == 0){
           if (argc>2){
              printf("ERROR: invalid parameter count for ls\n");
-             return(0);
+             return(1);
           }
           if ((curdir=opendir("."))!=NULL){
              while((dent=readdir(curdir))!=NULL){
