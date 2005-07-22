@@ -469,7 +469,7 @@ apply_gridfit(image_desc_t *im)
       double new_log10_range = factor * log10_range;
       double new_ymax_log10 = log10(im->minval) + new_log10_range;
       im->maxval = pow(10, new_ymax_log10);
-      ytr(im, DNAN); /* reset precalc */
+      ytr(im,DNAN); /* reset precalc */
       log10_range = log10(im->maxval) - log10(im->minval);
     }
     /* make sure first y=10^x gridline is located on 
@@ -481,7 +481,7 @@ apply_gridfit(image_desc_t *im)
       double yfrac = ypixfrac / im->ysize;
       im->minval = pow(10, log10(im->minval) - yfrac * log10_range);
       im->maxval = pow(10, log10(im->maxval) - yfrac * log10_range);
-      ytr(im, DNAN); /* reset precalc */
+      ytr(im,DNAN); /* reset precalc */
     }
   } else {
     /* Make sure we have an integer pixel distance between
@@ -494,7 +494,7 @@ apply_gridfit(image_desc_t *im)
     double gridstep = im->ygrid_scale.gridstep;
     double minor_y, minor_y_px, minor_y_px_frac;
     im->maxval = im->minval + new_range;
-    ytr(im, DNAN); /* reset precalc */
+    ytr(im,DNAN); /* reset precalc */
     /* make sure first minor gridline is on integer pixel y coord */
     minor_y = gridstep * floor(im->minval / gridstep);
     while (minor_y < im->minval)
@@ -506,7 +506,7 @@ apply_gridfit(image_desc_t *im)
       double range = im->maxval - im->minval;
       im->minval = im->minval - yfrac * range;
       im->maxval = im->maxval - yfrac * range;
-      ytr(im, DNAN); /* reset precalc */
+      ytr(im,DNAN); /* reset precalc */
     }
     calc_horizontal_grid(im); /* recalc with changed im->maxval */
   }
@@ -2151,6 +2151,7 @@ graph_size_location(image_desc_t *im, int elements
 	im->ximg = im->xsize;
         im->yimg = im->ysize;
         im->yorigin = im->ysize;
+        ytr(im,DNAN); 
 	return 0;
     }
 
@@ -2247,6 +2248,7 @@ graph_size_location(image_desc_t *im, int elements
 #endif
 
     im->yorigin = im->yimg - Yxlabel;
+    ytr(im,DNAN); 
 
     /* reserve space for the title *or* some padding above the graph */
     if (Ytitle) {
@@ -2258,7 +2260,6 @@ graph_size_location(image_desc_t *im, int elements
     }
     /* reserve space for padding below the graph */
     im->yimg += Yspacing;
-    ytr(im,DNAN);
 
     /* Determine where to place the legends onto the image.
     ** Adjust im->yimg to match the space requirements.
