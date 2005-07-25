@@ -110,7 +110,7 @@ sub cmd (@);
 sub end ();
 sub read ();
 
-$VERSION=1.2010;
+$VERSION=1.2011;
 
 sub start ($){
   croak "rrdtool is already running"
