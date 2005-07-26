@@ -3182,7 +3182,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
         case 'n':{
 	    char prop[15];
 	    double size = 1;
-	    char font[1024];
+	    char font[1024] = "";
 
 	    if(sscanf(optarg,
 				"%10[A-Z]:%lf:%1000s",
