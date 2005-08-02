@@ -36,7 +36,7 @@ perl-shared/Makefile: perl-shared/Makefile.PL
 # LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
 clean-local:
-	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) clean || true
-	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || true
+	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) clean || rm Makefile || true
+	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || rm Makefile || true
 
 ##END##
