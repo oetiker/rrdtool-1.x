@@ -526,13 +526,15 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    double tmp;
 	    tmp = strtod(updvals[0], 0);
 	    current_time = floor(tmp);
-	    current_time_usec = (long)((tmp - current_time) * 1000000L);
+	    current_time_usec = (long)((tmp-(double)current_time) * 1000000.0);
 	}
 	/* dont do any correction for old version RRDs */
 	if(version < 3) 
 	    current_time_usec = 0;
 	
-	if(current_time <= rrd.live_head->last_up){
+	if(current_time < rrd.live_head->last_up || 
+	  (current_time == rrd.live_head->last_up && 
+	   (long)current_time_usec <= (long)rrd.live_head->last_up_usec)) {
 	    rrd_set_error("illegal attempt to update using time %ld when "
 			  "last update time is %ld (minimum one second step)",
 			  current_time, rrd.live_head->last_up);
@@ -561,12 +563,14 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	/* when did the last pdp_st occur */
 	occu_pdp_age = current_time % rrd.stat_head->pdp_step;
 	occu_pdp_st = current_time - occu_pdp_age;
+
 	/* interval = current_time - rrd.live_head->last_up; */
-	interval    = current_time + ((double)current_time_usec - (double)rrd.live_head->last_up_usec)/1000000.0 - rrd.live_head->last_up;
-    
+	interval    = (double)(current_time - rrd.live_head->last_up) 
+	            + (double)((long)current_time_usec - (long)rrd.live_head->last_up_usec)/1000000.0;
+
 	if (occu_pdp_st > proc_pdp_st){
 	    /* OK we passed the pdp_st moment*/
-	    pre_int =  occu_pdp_st - rrd.live_head->last_up; /* how much of the input data
+	    pre_int =  (long)occu_pdp_st - rrd.live_head->last_up; /* how much of the input data
 							      * occurred before the latest
 							      * pdp_st moment*/
 	    pre_int -= ((double)rrd.live_head->last_up_usec)/1000000.0; /* adjust usecs */
@@ -725,7 +729,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
 		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += interval;
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval-0.5);
 		else
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i];
 #ifdef DEBUG
@@ -749,10 +753,10 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
 		/* update pdp_prep to the current pdp_st */
 		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += pre_int;
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(pre_int+0.5);
 		else
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val += 
-			pdp_new[i]/(double)interval*(double)pre_int;
+			pdp_new[i]/interval*pre_int;
 
 		/* if too much of the pdp_prep is unknown we dump it */
 		if ((rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
@@ -763,8 +767,8 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		} else {
 		    pdp_temp[i] = rrd.pdp_prep[i].scratch[PDP_val].u_val
 			/ (double)( occu_pdp_st
-				   - proc_pdp_st
-				   - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+				    - proc_pdp_st
+				    - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
 		}
 
 		/* process CDEF data sources; remember each CDEF DS can
@@ -789,12 +793,12 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         
 		/* make pdp_prep ready for the next run */
 		if(isnan(pdp_new[i])){
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = post_int;
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int + 0.5);
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 0.0;
 		} else {
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = 0;
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 
-			pdp_new[i]/(double)interval*(double)post_int;
+			pdp_new[i]/interval*post_int;
 		}
 
 #ifdef DEBUG
