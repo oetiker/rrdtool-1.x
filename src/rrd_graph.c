@@ -2472,31 +2472,35 @@ graph_paint(image_desc_t *im, char ***calcpr)
       if (im->gdes[i].col != 0x0){   
         /* GF_LINE and friend */
         if(stack_gf == GF_LINE ){
+          double last_y=0;
           node = NULL;
-          for(ii=1;ii<im->xsize;ii++){	    
+          for(ii=1;ii<im->xsize;ii++){
 	    if (isnan(im->gdes[i].p_data[ii]) || (im->slopemode==1 && isnan(im->gdes[i].p_data[ii-1]))){
 		node = NULL;
 		continue;
 	    }
             if ( node == NULL ) {
+     	        last_y = ytr(im,im->gdes[i].p_data[ii]);
 		if ( im->slopemode == 0 ){
                   node = gfx_new_line(im->canvas,
-                                    ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
-                                    ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
+                                    ii-1+im->xorigin,last_y,
+                                    ii+im->xorigin,last_y,
                                     im->gdes[i].linewidth,
                                     im->gdes[i].col);
 	        } else {
                   node = gfx_new_line(im->canvas,
                                     ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii-1]),
-                                    ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]),
+                                    ii+im->xorigin,last_y,
                                     im->gdes[i].linewidth,
                                     im->gdes[i].col);
 	        }
              } else {
-	       if ( im->slopemode==0 ){
-                   gfx_add_point(node,ii-1+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+               double new_y = ytr(im,im->gdes[i].p_data[ii]);
+	       if ( im->slopemode==0 && new_y != last_y){
+                   gfx_add_point(node,ii-1+im->xorigin,new_y);
+                   last_y = new_y;
 	       };
-               gfx_add_point(node,ii+im->xorigin,ytr(im,im->gdes[i].p_data[ii]));
+               gfx_add_point(node,ii+im->xorigin,new_y);
              };
 
           }
