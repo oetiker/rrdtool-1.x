@@ -3406,6 +3406,9 @@ char *str;
     else if	(!strcmp("TOTAL",  func)) gdes->vf.op = VDEF_TOTAL;
     else if	(!strcmp("FIRST",  func)) gdes->vf.op = VDEF_FIRST;
     else if	(!strcmp("LAST",   func)) gdes->vf.op = VDEF_LAST;
+    else if     (!strcmp("LSLSLOPE", func)) gdes->vf.op = VDEF_LSLSLOPE;
+    else if     (!strcmp("LSLINT",   func)) gdes->vf.op = VDEF_LSLINT;
+    else if     (!strcmp("LSLCORREL",func)) gdes->vf.op = VDEF_LSLCORREL;
     else {
 	rrd_set_error("Unknown function '%s' in VDEF '%s'\n"
 	    ,func
@@ -3441,6 +3444,9 @@ char *str;
 	case VDEF_TOTAL:
 	case VDEF_FIRST:
 	case VDEF_LAST:
+	case VDEF_LSLSLOPE:
+	case VDEF_LSLINT:
+	case VDEF_LSLCORREL:
 	    if (isnan(param)) {
 		gdes->vf.param = DNAN;
 		gdes->vf.val   = DNAN;
@@ -3597,6 +3603,48 @@ printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 	    } else {
 		dst->vf.val  = data[step*src->ds_cnt];
 		dst->vf.when = src->start + (step+1)*src->step;
+	    }
+	    break;
+	case VDEF_LSLSLOPE:
+	case VDEF_LSLINT:
+	case VDEF_LSLCORREL:{
+	    /* Bestfit line by linear least squares method */ 
+
+	    int cnt=0;
+	    double SUMx, SUMy, SUMxy, SUMxx, SUMyy, slope, y_intercept, correl ;
+	    SUMx = 0; SUMy = 0; SUMxy = 0; SUMxx = 0; SUMyy = 0;
+
+	    for (step=0;step<steps;step++) {
+		if (finite(data[step*src->ds_cnt])) {
+		    cnt++;
+		    SUMx  += step;
+		    SUMxx += step * step;
+		    SUMxy += step * data[step*src->ds_cnt];
+		    SUMy  += data[step*src->ds_cnt];
+		    SUMyy  += data[step*src->ds_cnt]*data[step*src->ds_cnt];
+		};
+	    }
+
+	    slope = ( SUMx*SUMy - cnt*SUMxy ) / ( SUMx*SUMx - cnt*SUMxx );
+	    y_intercept = ( SUMy - slope*SUMx ) / cnt;
+	    correl = (SUMxy - (SUMx*SUMy)/cnt) / sqrt((SUMxx - (SUMx*SUMx)/cnt)*(SUMyy - (SUMy*SUMy)/cnt));
+
+	    if (cnt) {
+		    if (dst->vf.op == VDEF_LSLSLOPE) {
+			dst->vf.val  = slope;
+			dst->vf.when = cnt*src->step;
+		    } else if (dst->vf.op == VDEF_LSLINT)  {
+			dst->vf.val = y_intercept;
+			dst->vf.when = cnt*src->step;
+		    } else if (dst->vf.op == VDEF_LSLCORREL)  {
+			dst->vf.val = correl;
+			dst->vf.when = cnt*src->step;
+		    };
+		
+	    } else {
+		dst->vf.val  = DNAN;
+		dst->vf.when = 0;
+	    }
 	    }
 	    break;
     }

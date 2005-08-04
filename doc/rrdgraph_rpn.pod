@@ -272,6 +272,18 @@ finite numbers and are always more than the I<Unknown> numbers.
 
 Example: C<VDEF:perc95=mydata,95,PERCENT>
 
+=item LSLSLOPE, LSLINT, LSLCORREL
+
+Return the parameters for a B<L>east B<S>quares B<L>ine I<(y = mx +b)> 
+which approximate the provided dataset.  LSLSLOPE is the slope I<(m)> of
+the line related to the COUNT position of the data.  LSLINT is the 
+y-intercept I<(b)>, which happens also to be the first data point on the 
+graph. LSLCORREL is the Correlation Coefficient (also know as Pearson's 
+Product Moment Correlation Coefficient).  It will range from 0 to +/-1 
+and represents the quality of fit for the approximation.   
+
+Example: C<VDEF:slope=mydata,LSLSLOPE>
+
 =back
 
 =head1 SEE ALSO

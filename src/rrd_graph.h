@@ -42,6 +42,9 @@ enum vdef_op_en {
 		,VDEF_TOTAL	/* average multiplied by time */
 		,VDEF_FIRST	/* first non-unknown value and time */
 		,VDEF_LAST	/* last  non-unknown value and time */
+		,VDEF_LSLSLOPE  /* least squares line slope */
+		,VDEF_LSLINT    /* least squares line y_intercept */
+		,VDEF_LSLCORREL /* least squares line correlation coefficient */
 		};
 enum text_prop_en { TEXT_PROP_DEFAULT=0,   /* default settings */
 	            TEXT_PROP_TITLE,       /* properties for the title */
