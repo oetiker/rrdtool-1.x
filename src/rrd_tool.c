@@ -331,9 +331,9 @@ int main(int argc, char *argv[])
 	    gettimeofday(&starttime,&tz);
 #endif
 	  RemoteMode=1;
-#ifdef HAVE_CHROOT
           if ((argc == 3) && strcmp("",argv[2])){
              if (getuid()==0){
+#ifdef HAVE_CHROOT
                 chroot(argv[2]);
                 if (errno!=0){
                    fprintf(stderr,"ERROR: can't change root to '%s' errno=%d\n",
@@ -342,8 +342,12 @@ int main(int argc, char *argv[])
                 }
                 ChangeRoot=1;
                 firstdir="/";
-             }
-             else{
+#else
+                fprintf(stderr,"ERROR: change root is not supported by your OS "
+                         "or at least by this copy of rrdtool\n");
+                exit(1);
+#endif
+             } else {
                 firstdir=argv[2];
              }
           }
@@ -354,11 +358,6 @@ int main(int argc, char *argv[])
                 exit(errno);
              }
           }
-#else
-          fprintf(stderr,"ERROR: change root is not supported by your OS "
-                         "or at least by this copy of rrdtool\n");
-          exit(1);
-#endif
 
 	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
 		if ((argc = CountArgs(aLine)) == 0)  {
