@@ -15,11 +15,12 @@ takes as many elements from the stack as needed. Pushing is done
 implicitly, so whenever you specify a number or a variable, it gets
 pushed onto the stack automatically.
 
-At the end of the calculation there should be one and only one
-value left on the stack.  This is the outcome of the function and
-this is what is put into the I<vname>.  For B<CDEF> instructions,
-the stack is processed for each data point on the graph. B<VDEF>
-instructions work on an entire data set in one run.
+At the end of the calculation there should be one and only one value left on
+the stack.  This is the outcome of the function and this is what is put into
+the I<vname>.  For B<CDEF> instructions, the stack is processed for each
+data point on the graph. B<VDEF> instructions work on an entire data set in
+one run. Note, that currently B<VDEF> instructions only support a limited
+list of functions.
 
 Example: C<VDEF:maximum=mydata,MAXIMUM>
 
@@ -195,8 +196,6 @@ number 2 if it is the second, and so on. This special value allows
 you to make calculations based on the position of the value within
 the data set. This function cannot be used in B<VDEF> instructions.
 
-Z<>
-
 =item Time
 
 Time inside RRDtool is measured in seconds since the epoch. The
@@ -230,7 +229,7 @@ Z<>
 
 =head1 VARIABLES
 
-These operators work only on B<VDEF> statements.
+These operators work only on B<VDEF> statements. Note that currently ONLY these work for B<VDEF>.
 
 =over 4
 

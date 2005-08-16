@@ -71,6 +71,9 @@ elements.
 
 Example: C<VDEF:avg=mydata,AVERAGE>
 
+Note that currently only agregation functions work in VDEF rpn expressions.
+Patches to change this are welcome.
+
 =head1 CDEF
 
 B<CDEF>:I<vname>=I<RPN expression>

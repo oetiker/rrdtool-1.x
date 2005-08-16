@@ -30,14 +30,14 @@ ready because comments are intermixed with the examples.
 
     DEF:ds0=/home/rrdtool/data/router1.rrd:ds0:AVERAGE
     DEF:ds1=/home/rrdtool/data/router1.rrd:ds1:AVERAGE
-    VDEF:ds0max=ds0,MAXIMUM,8,*
-    VDEF:ds0avg=ds0,AVERAGE,8,*
-    VDEF:ds0min=ds0,MINIMUM,8,*
-    VDEF:ds0pct=95,ds0,PERCENTILE,8,*
-    VDEF:ds1max=ds1,MAXIMUM,8,*
-    VDEF:ds1avg=ds1,AVERAGE,8,*
-    VDEF:ds1min=ds1,MINIMUM,8,*
-    VDEF:ds1pct=95,ds1,PERCENTILE,8,*
+    VDEF:ds0max=ds0,MAXIMUM
+    VDEF:ds0avg=ds0,AVERAGE
+    VDEF:ds0min=ds0,MINIMUM
+    VDEF:ds0pct=ds0,95,PERCENT
+    VDEF:ds1max=ds1,MAXIMUM
+    VDEF:ds1avg=ds1,AVERAGE
+    VDEF:ds1min=ds1,MINIMUM
+    VDEF:ds1pct=ds1,95,PERCENT
 
 Note: consolidation occurs here.
 
