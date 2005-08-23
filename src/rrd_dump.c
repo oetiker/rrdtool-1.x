@@ -45,7 +45,9 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 
+#ifndef NETWARE
 extern char *tzname[2];
+#endif
 
 int
 rrd_dump(int argc, char **argv) 

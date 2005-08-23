@@ -4,7 +4,6 @@
 #
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
-DEFS += -DMAKE_TIMESTAMP=\""$(shell date)"\"
 fontsdir =  $(datadir)/rrdtool/fonts
 fonts_DATA = DejaVuSansMono-Roman.ttf
 
@@ -133,4 +132,5 @@ rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST= rrdtool.dsp rrdtool.dsw strftime.c strftime.h $(fonts_DATA)
+EXTRA_DIST= rrdtool.dsp rrdtool.dsw strftime.c strftime.h rrd.dsp $(fonts_DATA) \
+	Makefile.Win32 Makefile.NetWare get_ver.awk win32comp.c

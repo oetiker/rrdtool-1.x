@@ -11,7 +11,7 @@ extern "C" {
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
 #include "../confignt/config.h"
 #else
 #ifdef HAVE_CONFIG_H
@@ -100,6 +100,12 @@ extern int getrusage(int, struct rusage *);
 /* Win32 only includes */
 
 #include <float.h>        /* for _isnan  */
+#ifdef __MINGW32__
+#define localtime_r(a,b) localtime(a)
+#define ctime_r(a,b) ctime(a)
+#define gmtime_r(a,b) gmtime(a)
+#define strtok_r(a,b,c) strtok(a,b)
+#else
 #define isnan _isnan
 #define finite _finite
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
@@ -107,6 +113,7 @@ struct tm* localtime_r(const time_t *timep, struct tm* result);
 char* ctime_r(const time_t *timep, char* result);
 struct tm* gmtime_r(const time_t *timep, struct tm* result);
 char *strtok_r(char *str, const char *sep, char **last);
+#endif
 
 #else
 

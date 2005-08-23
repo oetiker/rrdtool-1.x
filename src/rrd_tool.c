@@ -23,11 +23,7 @@ void PrintUsage(char *cmd)
 
     char help_main[] =
 	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n"
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
-#else
-           "               Compiled " MAKE_TIMESTAMP "\n\n"
-#endif          
 	   "Usage: rrdtool [options] command command_options\n\n";
 
     char help_list[] =

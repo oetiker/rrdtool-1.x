@@ -32,24 +32,28 @@
  */
 #include <sys/timeb.h>
 
+#ifndef __MINGW32__
 struct timeval {
 	time_t tv_sec; /* seconds */
 	long tv_usec;  /* microseconds */
 };
+#endif
 
 struct __timezone {
 	int  tz_minuteswest; /* minutes W of Greenwich */
 	int  tz_dsttime;     /* type of dst correction */
 };
 
-static gettimeofday(struct timeval *t, struct __timezone *tz) {
-	
-	struct timeb current_time;
+static int gettimeofday(struct timeval *t, struct __timezone *tz) {
+
+	struct _timeb current_time;
 
 	_ftime(&current_time);
-	
+
 	t->tv_sec  = current_time.time;
 	t->tv_usec = current_time.millitm * 1000;
+
+	return 0;
 }
 
 #endif

@@ -4,10 +4,12 @@
  * rrd_afm.h  Parsing afm tables to find width of strings.
  ****************************************************************************/
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
 #include "../confignt/config.h"
 #else
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 #endif
 
 #include "rrd_afm.h"
