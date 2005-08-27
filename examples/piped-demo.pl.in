@@ -20,8 +20,8 @@ $prefix="@prefix@";
 
 if ( -x "@exec_prefix@/bin/rrdtool") {
    RRDp::start "@exec_prefix@/bin/rrdtool";
-} elsif ( -x "../../bin/rrdtool") {
-   RRDp::start "../../bin/rrdtool";
+} elsif ( -x "../../../bin/rrdtool") {
+   RRDp::start "../../../bin/rrdtool";
 } else {
    RRDp::start "../src/rrdtool";
 }
