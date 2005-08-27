@@ -733,9 +733,14 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
 		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval-0.5);
-		else
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i];
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval+0.5);
+		else {
+		     if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
+		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= pdp_new[i];
+		     } else {
+		        rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i];
+		     }
+		}
 #ifdef DEBUG
 		fprintf(stderr,
 			"NO PDP  ds[%lu]\t"
@@ -755,16 +760,25 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    pdp_temp[] will contain the rate for cdp */
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
-		/* update pdp_prep to the current pdp_st */
+		/* update pdp_prep to the current pdp_st. */
+		
 		if(isnan(pdp_new[i]))
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(pre_int+0.5);
-		else
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val += 
-			pdp_new[i]/interval*pre_int;
+		else {
+  	             if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
+		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= 	pdp_new[i]/interval*pre_int;
+		     } else {
+		        rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i]/interval*pre_int;
+		     }
+		 }
+		
 
 		/* if too much of the pdp_prep is unknown we dump it */
-		if ((rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
-		     > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) ||
+		if ( 
+		    /* removed because this does not agree with the definition
+		       a heart beat can be unknown */
+		    /* (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
+		     > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) || */
 		    (occu_pdp_st-proc_pdp_st <= 
 		     rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt)) {
 		    pdp_temp[i] = DNAN;
@@ -798,7 +812,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		/* make pdp_prep ready for the next run */
 		if(isnan(pdp_new[i])){
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int + 0.5);
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 0.0;
+		    rrd.pdp_prep[i].scratch[PDP_val].u_val = DNAN;
 		} else {
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = 0;
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 
