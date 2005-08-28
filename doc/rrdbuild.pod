@@ -178,7 +178,7 @@ their current state.
  make
  make install
 
-Now go to I<$INSTALL_DIR>B</examples> and run them to see if your
+Now go to I<$INSTALL_DIR>B</share/rrdtool/examples/> and run them to see if your
 build has been successful.
 
 =head1 AUTHOR
