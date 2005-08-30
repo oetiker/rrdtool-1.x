@@ -68,6 +68,7 @@ typedef struct vdef_t {
 
 typedef struct xlab_t {
     long         minsec;       /* minimum sec per pix */
+    long         length;       /* number of secs on the image */
     enum tmt_en  gridtm;       /* grid interval in what ?*/
     long         gridst;       /* how many whats per grid*/
     enum tmt_en  mgridtm;      /* label interval in what ?*/

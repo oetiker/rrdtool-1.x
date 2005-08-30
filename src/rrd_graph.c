@@ -42,22 +42,25 @@ text_prop_t text_prop[] = {
 };
 
 xlab_t xlab[] = {
-    {0,        TMT_SECOND,30, TMT_MINUTE,5,  TMT_MINUTE,5,         0,"%H:%M"},
-    {2,        TMT_MINUTE,1,  TMT_MINUTE,5,  TMT_MINUTE,5,         0,"%H:%M"},
-    {5,        TMT_MINUTE,2,  TMT_MINUTE,10, TMT_MINUTE,10,        0,"%H:%M"},
-    {10,       TMT_MINUTE,5,  TMT_MINUTE,20, TMT_MINUTE,20,        0,"%H:%M"},
-    {30,       TMT_MINUTE,10, TMT_HOUR,1,    TMT_HOUR,1,           0,"%H:%M"},
-    {60,       TMT_MINUTE,30, TMT_HOUR,2,    TMT_HOUR,2,           0,"%H:%M"},
-    {180,      TMT_HOUR,1,    TMT_HOUR,6,    TMT_HOUR,6,           0,"%H:%M"},
-    /*{300,      TMT_HOUR,3,    TMT_HOUR,12,   TMT_HOUR,12,    12*3600,"%a %p"},  this looks silly*/
-    {600,      TMT_HOUR,6,    TMT_DAY,1,     TMT_DAY,1,      24*3600,"%a"},
-    {1800,     TMT_HOUR,12,   TMT_DAY,1,     TMT_DAY,2,      24*3600,"%a"},
-    {3600,     TMT_DAY,1,     TMT_WEEK,1,     TMT_WEEK,1,    7*24*3600,"Week %V"},
-    {3*3600,   TMT_WEEK,1,      TMT_MONTH,1,     TMT_WEEK,2,    7*24*3600,"Week %V"},
-    {6*3600,   TMT_MONTH,1,   TMT_MONTH,1,   TMT_MONTH,1, 30*24*3600,"%b"},
-    {48*3600,  TMT_MONTH,1,   TMT_MONTH,3,   TMT_MONTH,3, 30*24*3600,"%b"},
-    {10*24*3600, TMT_YEAR,1,  TMT_YEAR,1,    TMT_YEAR,1, 365*24*3600,"%y"},
-    {-1,TMT_MONTH,0,TMT_MONTH,0,TMT_MONTH,0,0,""}
+    {0,                 0,   TMT_SECOND,30, TMT_MINUTE,5,  TMT_MINUTE,5,         0,"%H:%M"},
+    {2,                 0,   TMT_MINUTE,1,  TMT_MINUTE,5,  TMT_MINUTE,5,         0,"%H:%M"},
+    {5,                 0,   TMT_MINUTE,2,  TMT_MINUTE,10, TMT_MINUTE,10,        0,"%H:%M"},
+    {10,                0,   TMT_MINUTE,5,  TMT_MINUTE,20, TMT_MINUTE,20,        0,"%H:%M"},
+    {30,                0,   TMT_MINUTE,10, TMT_HOUR,1,    TMT_HOUR,1,           0,"%H:%M"},
+    {60,                0,   TMT_MINUTE,30, TMT_HOUR,2,    TMT_HOUR,2,           0,"%H:%M"},
+    {180,               0,   TMT_HOUR,1,    TMT_HOUR,6,    TMT_HOUR,6,           0,"%H:%M"},
+    {180,       1*24*3600,   TMT_HOUR,1,    TMT_HOUR,6,    TMT_HOUR,6,           0,"%a %H:%M"},
+    /*{300,             0,   TMT_HOUR,3,    TMT_HOUR,12,   TMT_HOUR,12,    12*3600,"%a %p"},  this looks silly*/
+    {600,               0,   TMT_HOUR,6,    TMT_DAY,1,     TMT_DAY,1,      24*3600,"%a"},
+    {600,       1*24*3600,   TMT_HOUR,6,    TMT_DAY,1,     TMT_DAY,1,      24*3600,"%a %d"},
+    {1800,              0,   TMT_HOUR,12,   TMT_DAY,1,     TMT_DAY,2,      24*3600,"%a"},
+    {1800,      1*24*3600,   TMT_HOUR,12,   TMT_DAY,1,     TMT_DAY,2,      24*3600,"%a %d"},
+    {3600,              0,   TMT_DAY,1,     TMT_WEEK,1,    TMT_WEEK,1,    7*24*3600,"Week %V"},
+    {3*3600,            0,   TMT_WEEK,1,    TMT_MONTH,1,   TMT_WEEK,2,    7*24*3600,"Week %V"},
+    {6*3600,            0,   TMT_MONTH,1,   TMT_MONTH,1,   TMT_MONTH,1, 30*24*3600,"%b"},
+    {48*3600,           0,   TMT_MONTH,1,   TMT_MONTH,3,   TMT_MONTH,3, 30*24*3600,"%b"},
+    {10*24*3600,        0,   TMT_YEAR,1,  TMT_YEAR,1,    TMT_YEAR,1, 365*24*3600,"%y"},
+    {-1,0,TMT_MONTH,0,TMT_MONTH,0,TMT_MONTH,0,0,""}
 };
 
 /* sensible logarithmic y label intervals ...
@@ -1768,7 +1771,9 @@ vertical_grid(
 	factor=(im->end - im->start)/im->xsize;
 	xlab_sel=0;
 	while ( xlab[xlab_sel+1].minsec != -1 
-		&& xlab[xlab_sel+1].minsec <= factor){ xlab_sel++; }
+		&& xlab[xlab_sel+1].minsec <= factor) { xlab_sel++; }	// pick the last one
+	while ( xlab[xlab_sel-1].minsec == xlab[xlab_sel].minsec
+		&& xlab[xlab_sel].length > (im->end - im->start)) { xlab_sel--; }	// go back to the smallest size
 	im->xlab_user.gridtm = xlab[xlab_sel].gridtm;
 	im->xlab_user.gridst = xlab[xlab_sel].gridst;
 	im->xlab_user.mgridtm = xlab[xlab_sel].mgridtm;
