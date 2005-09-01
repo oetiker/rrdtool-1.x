@@ -299,9 +299,7 @@ int main(int argc, char *argv[])
 {
     char **myargv;
     char aLine[MAX_LENGTH];
-#ifdef HAVE_CHROOT    
     char *firstdir="";
-#endif
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE,SIG_IGN);
 #endif
