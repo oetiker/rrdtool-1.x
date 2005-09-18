@@ -1771,9 +1771,9 @@ vertical_grid(
 	factor=(im->end - im->start)/im->xsize;
 	xlab_sel=0;
 	while ( xlab[xlab_sel+1].minsec != -1 
-		&& xlab[xlab_sel+1].minsec <= factor) { xlab_sel++; }	// pick the last one
+		&& xlab[xlab_sel+1].minsec <= factor) { xlab_sel++; }	/* pick the last one */
 	while ( xlab[xlab_sel-1].minsec == xlab[xlab_sel].minsec
-		&& xlab[xlab_sel].length > (im->end - im->start)) { xlab_sel--; }	// go back to the smallest size
+		&& xlab[xlab_sel].length > (im->end - im->start)) { xlab_sel--; }	/* go back to the smallest size */
 	im->xlab_user.gridtm = xlab[xlab_sel].gridtm;
 	im->xlab_user.gridst = xlab[xlab_sel].gridst;
 	im->xlab_user.mgridtm = xlab[xlab_sel].mgridtm;
@@ -2297,6 +2297,39 @@ graph_size_location(image_desc_t *im, int elements
     return 0;
 }
 
+/* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
+/* yes we are loosing precision by doing tos with floats instead of doubles
+   but it seems more stable this way. */
+   
+static int AlmostEqual2sComplement (float A, float B, int maxUlps)
+{
+
+    int aInt = *(int*)&A;
+    int bInt = *(int*)&B;
+    int intDiff;
+    /* Make sure maxUlps is non-negative and small enough that the
+       default NAN won't compare as equal to anything.  */
+
+    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
+
+    /* Make aInt lexicographically ordered as a twos-complement int */
+
+    if (aInt < 0)
+        aInt = 0x80000000l - aInt;
+
+    /* Make bInt lexicographically ordered as a twos-complement int */
+
+    if (bInt < 0)
+        bInt = 0x80000000l - bInt;
+
+    intDiff = abs(aInt - bInt);
+
+    if (intDiff <= maxUlps)
+        return 1;
+
+    return 0;
+}
+
 /* draw that picture thing ... */
 int
 graph_paint(image_desc_t *im, char ***calcpr)
@@ -2477,7 +2510,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       if (im->gdes[i].col != 0x0){   
         /* GF_LINE and friend */
         if(stack_gf == GF_LINE ){
-          double last_y=0;
+          double last_y=0.0;
           node = NULL;
           for(ii=1;ii<im->xsize;ii++){
 	    if (isnan(im->gdes[i].p_data[ii]) || (im->slopemode==1 && isnan(im->gdes[i].p_data[ii-1]))){
@@ -2501,10 +2534,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	        }
              } else {
                double new_y = ytr(im,im->gdes[i].p_data[ii]);
-	       if ( im->slopemode==0 && new_y != last_y){
+	       if ( im->slopemode==0 && ! AlmostEqual2sComplement(new_y,last_y,4)){
                    gfx_add_point(node,ii-1+im->xorigin,new_y);
-                   last_y = new_y;
 	       };
+               last_y = new_y;
                gfx_add_point(node,ii+im->xorigin,new_y);
              };
 
@@ -2521,7 +2554,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
 	    if ( idxI > 0 && ( drawem != 0 || ii==im->xsize)){
                int cntI=1;
                int lastI=0;
-               while (cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;}
+               while (cntI < idxI && AlmostEqual2sComplement(foreY[lastI],foreY[cntI],4) && AlmostEqual2sComplement(foreY[lastI],foreY[cntI+1],4)){cntI++;}
                node = gfx_new_area(im->canvas,
                                 backX[0],backY[0],
                                 foreX[0],foreY[0],
@@ -2529,14 +2562,14 @@ graph_paint(image_desc_t *im, char ***calcpr)
                while (cntI < idxI) {
                  lastI = cntI;
                  cntI++;
-                 while ( cntI < idxI && foreY[lastI] == foreY[cntI] && foreY[lastI] == foreY[cntI+1]){cntI++;} 
+                 while ( cntI < idxI && AlmostEqual2sComplement(foreY[lastI],foreY[cntI],4) && AlmostEqual2sComplement(foreY[lastI],foreY[cntI+1],4)){cntI++;} 
                  gfx_add_point(node,foreX[cntI],foreY[cntI]);
                }
                gfx_add_point(node,backX[idxI],backY[idxI]);
                while (idxI > 1){
                  lastI = idxI;
                  idxI--;
-                 while ( idxI > 1 && backY[lastI] == backY[idxI] && backY[lastI] == backY[idxI-1]){idxI--;} 
+                 while ( idxI > 1 && AlmostEqual2sComplement(backY[lastI], backY[idxI],4) && AlmostEqual2sComplement(backY[lastI],backY[idxI-1],4)){idxI--;} 
                  gfx_add_point(node,backX[idxI],backY[idxI]);
                }
                idxI=-1;
