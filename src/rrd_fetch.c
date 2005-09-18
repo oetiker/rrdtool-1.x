@@ -182,12 +182,12 @@ rrd_fetch_fn(
     int            first_part = 1;
     rrd_t     rrd;
     rrd_value_t    *data_ptr;
-    unsigned long  rows = (*end - *start) / *step;
+    unsigned long  rows;
 
 #ifdef DEBUG
 fprintf(stderr,"Entered rrd_fetch_fn() searching for the best match\n");
-fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
-						*start,*end,*step,rows);
+fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu\n",
+						*start,*end,*step);
 #endif
 
     if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
@@ -295,7 +295,7 @@ fprintf(stderr,"partial match, not best\n");
     *step = rrd.stat_head->pdp_step * rrd.rra_def[chosen_rra].pdp_cnt;
     *start -= (*start % *step);
     if (*end % *step) *end += (*step - *end % *step);
-    rows = (*end - *start) / *step;
+    rows = (*end - *start) / *step + 1;
 
 #ifdef DEBUG
     fprintf(stderr,"We found:    start %10lu end %10lu step %5lu rows  %lu\n",
