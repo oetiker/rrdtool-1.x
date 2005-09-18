@@ -15,6 +15,9 @@ STACK	= 49152
 # Comment the line below if you dont want to load protected automatically.
 #LDRING	= 3
 
+# Vertical label angle: 90.0 (default) or 270.0
+RRDGRAPH_YLEGEND_ANGLE = 90.0
+
 # Edit the path below to point to your Novell NDK.
 ifndef NDKBASE
 NDKBASE	= c:/novell
@@ -25,7 +28,7 @@ INSTDIR	= s:/mrtg/rrd
 
 # Base for the lib sources
 ifndef LIBBASE
-LIBBASE	= d:/projects/cw
+LIBBASE	= ..
 endif
 # All library code is statically linked to avoid problems with other lib NLMs. 
 # Edit the path below to point to your libgd sources or set environment var.
@@ -198,7 +201,6 @@ XLIBOBJS	= \
 	$(OBJDIR)/hash_32.o \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
-	$(OBJDIR)/strftime.o \
 	$(EOLIST)
 
 GD2LIBOBJS	= \
@@ -380,6 +382,7 @@ config.h: Makefile.NetWare
 	@echo $(DL)#define HAVE_ERRNO_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FCNTL_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FIONBIO 1$(DL) >> $@
+	@echo $(DL)#define HAVE_FLOAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_GETTIMEOFDAY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_INTTYPES_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIMITS_H 1$(DL) >> $@
@@ -388,7 +391,10 @@ config.h: Makefile.NetWare
 	@echo $(DL)#define HAVE_MALLOC_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MATH_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MBSTOWCS 1$(DL) >> $@
+	@echo $(DL)#define HAVE_MEMMOVE 1$(DL) >> $@
+	@echo $(DL)#define HAVE_MKTIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SELECT 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SETLOCALE 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SETJMP_H 1$(DL) >> $@
 #	@echo $(DL)#define HAVE_SIGNAL 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SNPRINTF 1$(DL) >> $@
@@ -407,15 +413,20 @@ config.h: Makefile.NetWare
 	@echo $(DL)#define HAVE_SYS_SELECT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_STAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_TIME_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SYS_TYPES_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TERMIOS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_TZSET 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
+	@echo $(DL)#define HAVE_VPRINTF 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNISTD_H 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ZLIB_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIBZ 1$(DL) >> $@
 	@echo $(DL)#define rrd_realloc(a,b) realloc((a), (b))$(DL) >> $@
-	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE 90.0$(DL) >> $@
+#	@echo $(DL)#define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))$(DL) >> $@
+	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
+	@echo $(DL)#define RRD_DEFAULT_FONT "arial.ttf"$(DL) >> $@
 
 
