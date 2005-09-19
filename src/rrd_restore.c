@@ -132,13 +132,11 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   {
     rrd_set_error("Incompatible file version, detected version %s is bigger than supported version %s\n",
 		  rrd -> stat_head -> version, RRD_VERSION );
-    free(rrd -> stat_head);
     return -1;
   }
   if (atoi(rrd -> stat_head -> version) < 2) 
   {
     rrd_set_error("Can only restore version >= 2 (Not %s). Dump your old rrd using a current rrdtool dump.",  rrd -> stat_head -> version );
-    free(rrd -> stat_head);
     return -1;
   }
   rrd->stat_head->float_cookie = FLOAT_COOKIE;
