@@ -691,7 +691,7 @@ data_fetch(image_desc_t *im )
     int i,ii;
     int		skip;
 
-    /* pull the data from the log files ... */
+    /* pull the data from the rrd files ... */
     for (i=0;i< (int)im->gdes_c;i++){
 	/* only GF_DEF elements fetch data */
 	if (im->gdes[i].gf != GF_DEF) 
@@ -705,9 +705,9 @@ data_fetch(image_desc_t *im )
 	    if ((strcmp(im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
 			&& (im->gdes[i].cf    == im->gdes[ii].cf)
 			&& (im->gdes[i].cf_reduce == im->gdes[ii].cf_reduce)
-			&& (im->gdes[i].start == im->gdes[ii].start)
-			&& (im->gdes[i].end   == im->gdes[ii].end)
-			&& (im->gdes[i].step  == im->gdes[ii].step)) {
+			&& (im->gdes[i].start_orig == im->gdes[ii].start_orig)
+			&& (im->gdes[i].end_orig   == im->gdes[ii].end_orig)
+			&& (im->gdes[i].step_orig  == im->gdes[ii].step_orig)) {
 		/* OK, the data is already there.
 		** Just copy the header portion
 		*/
@@ -2881,6 +2881,7 @@ rrd_graph_init(image_desc_t *im)
     im->xsize = 400;
     im->ysize = 100;
     im->step = 0;
+    im->step_orig = 0;
     im->ylegend[0] = '\0';
     im->title[0] = '\0';
     im->minval = DNAN;

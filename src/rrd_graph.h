@@ -129,7 +129,9 @@ typedef  struct graph_desc_t {
 
     /* description of data fetched for the graph element */
     time_t         start,end; /* timestaps for first and last data element */
+    time_t         start_orig,end_orig; /* timestaps for first and last data element */
     unsigned long  step;      /* time between samples */
+    unsigned long  step_orig;      /* time between samples */
     unsigned long  ds_cnt; /* how many data sources are there in the fetch */
     long           data_first; /* first pointer to this data */
     char           **ds_namv; /* name of datasources  in the fetch. */

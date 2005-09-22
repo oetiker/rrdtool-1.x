@@ -568,6 +568,7 @@ rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *
 	} else if (!strcmp("step",command)) {
 	    i=0;
 	    sscanf(&line[*eaten],"%lu%n",&gdp->step,&i);
+	    gdp->step_orig = gdp->step;
 	    (*eaten)+=i;
 	    dprintf("- using step %lu\n",gdp->step);
 	} else if (!strcmp("start",command)) {
@@ -617,6 +618,8 @@ rrd_parse_def(char *line, unsigned int *eaten, graph_desc_t *gdp, image_desc_t *
 
     gdp->start = start_tmp;
     gdp->end = end_tmp;
+    gdp->start_orig = start_tmp;
+    gdp->end_orig = end_tmp;
 
     dprintf("- start time %lu\n",gdp->start);
     dprintf("- end   time %lu\n",gdp->end);
