@@ -504,7 +504,7 @@ rrd_restore(int argc, char **argv)
 		int opt;
 		
 		
-		opt = getopt_long(argc, argv, "r:f", long_options, &option_index);
+		opt = getopt_long(argc, argv, "rf", long_options, &option_index);
 		
 		if (opt == EOF)
 			break;
