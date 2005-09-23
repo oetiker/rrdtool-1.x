@@ -2740,6 +2740,7 @@ gdes_alloc(image_desc_t *im){
 
 
     im->gdes[im->gdes_c-1].step=im->step;
+    im->gdes[im->gdes_c-1].step_orig=im->step;
     im->gdes[im->gdes_c-1].stack=0;
     im->gdes[im->gdes_c-1].debug=0;
     im->gdes[im->gdes_c-1].start=im->start; 
@@ -2881,7 +2882,6 @@ rrd_graph_init(image_desc_t *im)
     im->xsize = 400;
     im->ysize = 100;
     im->step = 0;
-    im->step_orig = 0;
     im->ylegend[0] = '\0';
     im->title[0] = '\0';
     im->minval = DNAN;
