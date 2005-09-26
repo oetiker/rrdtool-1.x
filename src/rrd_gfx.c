@@ -303,10 +303,15 @@ double gfx_get_text_width_libart (
 
   FT_Init_FreeType( &library );
   error = FT_New_Face( library, font, 0, &face );
-  if ( error ) return -1;
+  if ( error ) {
+    FT_Done_FreeType(library);
+    return -1;
+  }
   error = FT_Set_Char_Size(face,  size*64,size*64,  100,100);
-  if ( error ) return -1;
-
+  if ( error ) {
+    FT_Done_FreeType(library);
+    return -1;
+  }
   string = gfx_string_create( canvas, face, text, rotation, tabwidth, size );
   text_width = string->width;
   gfx_string_destroy(string);
@@ -602,6 +607,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  &face );
 	    if ( error ) {
 	        rrd_set_error("failed to load %s",node->filename);
+	        
 		break;
 	    }
             error = FT_Set_Char_Size(face,   /* handle to face object            */
