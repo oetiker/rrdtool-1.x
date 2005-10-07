@@ -16,9 +16,8 @@
 #include <rrd_tool.h>
 #include <rrd_format.h>
 
-extern int Tclrrd_Init(Tcl_Interp *interp, int safe);
-
-extern int __getopt_initialized;
+extern int Tclrrd_Init(Tcl_Interp *interp);
+extern int Tclrrd_SafeInit(Tcl_Interp *interp);
 
 
 /*
@@ -26,9 +25,7 @@ extern int __getopt_initialized;
  * Hence, we need to do some preparation before
  * calling the rrd library functions.
  */
-static char ** getopt_init(argc, argv)
-    int argc;
-    char *argv[];
+static char ** getopt_init(int argc, CONST84 char *argv[])
 {
     char **argv2;
     int i;
@@ -40,9 +37,7 @@ static char ** getopt_init(argc, argv)
     return argv2;
 }
 
-static void getopt_cleanup(argc, argv2)
-    int argc;
-    char *argv2[];
+static void getopt_cleanup(int argc, char **argv2)
 {
     int i;
     
@@ -55,11 +50,7 @@ static void getopt_cleanup(argc, argv2)
 
 
 static int
-Rrd_Create(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
 
@@ -80,17 +71,13 @@ Rrd_Create(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Dump(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     rrd_dump(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     /* NOTE: rrd_dump() writes to stdout. No interaction with TCL. */
 
@@ -107,18 +94,14 @@ Rrd_Dump(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Last(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Last(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     time_t t;
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     t = rrd_last(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
 
     if (rrd_test_error()) {
@@ -136,17 +119,13 @@ Rrd_Last(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Update(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     rrd_update(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -161,11 +140,7 @@ Rrd_Update(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Fetch(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Fetch(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     time_t start, end, j;
     unsigned long step, ds_cnt, i, ii;
@@ -191,7 +166,7 @@ Rrd_Fetch(clientData, interp, argc, argv)
         free(ds_namv);
         free(data);
     }
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -206,25 +181,20 @@ Rrd_Fetch(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Graph(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Graph(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **calcpr;
     int xsize, ysize;
     double ymin, ymax;
-    Tcl_Obj *listPtr;
+    char dimensions[50];
     char **argv2;
     
     calcpr = NULL;
 
     argv2 = getopt_init(argc, argv);
     if (rrd_graph(argc, argv2, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
-        listPtr = Tcl_GetObjResult(interp);
-        Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewIntObj(xsize));
-        Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewIntObj(ysize));
+        sprintf(dimensions, "%d %d", xsize, ysize);
+        Tcl_AppendResult(interp, dimensions, (char *) NULL);
         if (calcpr) {
 #if 0
 	    int i;
@@ -237,7 +207,7 @@ Rrd_Graph(clientData, interp, argc, argv)
             free(calcpr);
         }
     }
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -252,17 +222,13 @@ Rrd_Graph(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Tune(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Tune(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     rrd_tune(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -277,17 +243,13 @@ Rrd_Tune(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Resize(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Resize(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     rrd_resize(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -302,17 +264,13 @@ Rrd_Resize(clientData, interp, argc, argv)
 
 
 static int
-Rrd_Restore(clientData, interp, argc, argv)
-    ClientData clientData;
-    Tcl_Interp *interp;
-    int argc;
-    char *argv[];
+Rrd_Restore(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     char **argv2;
     
     argv2 = getopt_init(argc, argv);
     rrd_restore(argc, argv2);
-    getopt_cleanup(argv, argv2);
+    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -333,35 +291,45 @@ Rrd_Restore(clientData, interp, argc, argv)
 typedef struct {
     char *name;			/* Name of the command. */
     Tcl_CmdProc *proc;		/* Procedure for command. */
+    int hide;			/* Hide if safe interpreter */
 } CmdInfo;
 
 static CmdInfo rrdCmds[] = {
-    { "Rrd::create",	Rrd_Create		},
-    { "Rrd::dump",	Rrd_Dump		},
-    { "Rrd::last",	Rrd_Last		},
-    { "Rrd::update",	Rrd_Update		},
-    { "Rrd::fetch",	Rrd_Fetch		},
-    { "Rrd::graph",	Rrd_Graph		},
-    { "Rrd::tune",	Rrd_Tune		},
-    { "Rrd::resize",	Rrd_Resize		},
-    { "Rrd::restore",	Rrd_Restore		},
-    { (char *) NULL,	(Tcl_CmdProc *) NULL	}
+    { "Rrd::create",	Rrd_Create,	1 },
+    { "Rrd::dump",	Rrd_Dump,	0 },
+    { "Rrd::last",	Rrd_Last,	0 },
+    { "Rrd::update",	Rrd_Update,	1 },
+    { "Rrd::fetch",	Rrd_Fetch,	0 },
+    { "Rrd::graph",	Rrd_Graph,	1 }, /* Due to RRD's API, a safe
+						interpreter cannot create
+						a graph since it writes to
+					        a filename supplied by the
+					        caller */
+    { "Rrd::tune",	Rrd_Tune,	1 },
+    { "Rrd::resize",	Rrd_Resize,	1 },
+    { "Rrd::restore",	Rrd_Restore,	1 },
+    { (char *) NULL,	(Tcl_CmdProc *) NULL, 0	}
 };
 
 
 
-int
-Tclrrd_Init(interp, safe)
-    Tcl_Interp *interp;
-    int safe;
+static int
+init(Tcl_Interp *interp, int safe)
 { 
     CmdInfo *cmdInfoPtr;
     Tcl_CmdInfo info;
+
+    if ( Tcl_InitStubs(interp,TCL_VERSION,0) == NULL )
+	return TCL_ERROR;
 
     if (Tcl_PkgRequire(interp, "Tcl", TCL_VERSION, 1) == NULL) {
         return TCL_ERROR;
     }
 
+    /*
+     * Why a global array?  In keeping with the Rrd:: namespace, why
+     * not simply create a normal variable Rrd::version and set it?
+     */
     Tcl_SetVar2(interp, "rrd", "version", VERSION, TCL_GLOBAL_ONLY);
 
     for (cmdInfoPtr = rrdCmds; cmdInfoPtr->name != NULL; cmdInfoPtr++) {
@@ -375,7 +343,41 @@ Tclrrd_Init(interp, safe)
 			     "\" already exists", (char *) NULL);
 	    return TCL_ERROR;
 	}
-	Tcl_CreateCommand(interp, cmdInfoPtr->name, cmdInfoPtr->proc,
+	if (safe && cmdInfoPtr->hide) {
+#if 0
+	    /*
+	     * Turns out the one cannot hide a command in a namespace
+	     * due to a limitation of Tcl, one can only hide global
+	     * commands.  Thus, if we created the commands without
+	     * the Rrd:: namespace in a safe interpreter, then the
+	     * "unsafe" commands could be hidden -- which would allow
+	     * an owning interpreter either un-hiding them or doing
+	     * an "interp invokehidden".  If the Rrd:: namespace is
+	     * used, then it's still possible for the owning interpreter
+	     * to fake out the missing commands:
+	     *
+	     *   # Make all Rrd::* commands available in master interperter
+	     *   package require Rrd
+	     *   set safe [interp create -safe]
+	     *   # Make safe Rrd::* commands available in safe interperter
+	     *   interp invokehidden $safe -global load ./tclrrd1.2.11.so
+	     *   # Provide the safe interpreter with the missing commands
+	     *   $safe alias Rrd::update do_update $safe
+	     *   proc do_update {which_interp $args} {
+	     *     # Do some checking maybe...
+	     *       :
+	     *     return [eval Rrd::update $args]
+	     *   }
+	     *
+	     * Our solution for now is to just not create the "unsafe"
+	     * commands in a safe interpreter.
+	     */
+	    if (Tcl_HideCommand(interp, cmdInfoPtr->name, cmdInfoPtr->name) != TCL_OK)
+		return TCL_ERROR;
+#endif
+	}
+	else
+	    Tcl_CreateCommand(interp, cmdInfoPtr->name, cmdInfoPtr->proc,
 		          (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
     }
 
@@ -384,4 +386,21 @@ Tclrrd_Init(interp, safe)
     }
 
     return TCL_OK;
+}
+
+int
+Tclrrd_Init(Tcl_Interp *interp)
+{ 
+  return init(interp, 0);
+}
+
+/*
+ * See the comments above and note how few commands are considered "safe"...
+ * Using rrdtool in a safe interpreter has very limited functionality.  It's
+ * tempting to just return TCL_ERROR and forget about it.
+ */
+int
+Tclrrd_SafeInit(Tcl_Interp *interp)
+{ 
+  return init(interp, 1);
 }
