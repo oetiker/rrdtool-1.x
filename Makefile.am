@@ -6,7 +6,8 @@ SUBDIRS = src bindings doc examples
 
   # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
-	     rrdtool.spec confignt/config.h
+	     rrdtool.spec confignt/config.h favicon.ico
+	     
 
 CLEANFILES = config.cache
 
