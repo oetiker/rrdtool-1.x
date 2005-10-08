@@ -11,7 +11,10 @@
 
 
 
+#include <errno.h>
+#include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include <tcl.h>
 #include <rrd_tool.h>
 #include <rrd_format.h>
@@ -183,16 +186,79 @@ Rrd_Fetch(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *arg
 static int
 Rrd_Graph(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
-    char **calcpr;
-    int xsize, ysize;
+    Tcl_Channel channel;
+    int mode, fd2;
+    ClientData fd1;
+    FILE *stream = NULL;
+    char **calcpr = NULL;
+    int rc, xsize, ysize;
     double ymin, ymax;
     char dimensions[50];
     char **argv2;
+    CONST84 char *save;
     
-    calcpr = NULL;
+    /*
+     * If the "filename" is a Tcl fileID, then arrange for rrd_graph() to write to
+     * that file descriptor.  Will this work with windoze?  I have no idea.
+     */
+    if ((channel = Tcl_GetChannel(interp, argv[1], &mode)) != NULL) {
+	/*
+	 * It >is< a Tcl fileID
+	 */
+	if (!(mode & TCL_WRITABLE)) {
+	    Tcl_AppendResult(interp, "channel \"", argv[1],
+		"\" wasn't opened for writing", (char *) NULL);
+	    return TCL_ERROR;
+	}
+	/*
+	 * Must flush channel to make sure any buffered data is written before
+	 * rrd_graph() writes to the stream
+	 */
+	if (Tcl_Flush(channel) != TCL_OK) {
+	    Tcl_AppendResult(interp, "flush failed for \"", argv[1], "\": ",
+		strerror(Tcl_GetErrno()), (char *) NULL);
+	    return TCL_ERROR;
+	}
+	if (Tcl_GetChannelHandle(channel, TCL_WRITABLE, &fd1) != TCL_OK) {
+	    Tcl_AppendResult(interp, "cannot get file descriptor associated with \"",
+		argv[1], "\"", (char *) NULL);
+	    return TCL_ERROR;
+	}
+	/*
+	 * Must dup() file descriptor so we can fclose(stream), otherwise the fclose()
+	 * would close Tcl's file descriptor
+	 */
+	if ((fd2 = dup((int)fd1)) == -1) {
+	    Tcl_AppendResult(interp, "dup() failed for file descriptor associated with \"",
+		argv[1], "\": ", strerror(errno), (char *) NULL);
+	    return TCL_ERROR;
+	}
+	/*
+	 * rrd_graph() wants a FILE*
+	 */
+	if ((stream = fdopen(fd2, "wb")) == NULL) {
+	    Tcl_AppendResult(interp, "fdopen() failed for file descriptor associated with \"",
+		argv[1], "\": ", strerror(errno), (char *) NULL);
+	    close(fd2);		/* plug potential file descriptor leak */
+	    return TCL_ERROR;
+	}
 
-    argv2 = getopt_init(argc, argv);
-    if (rrd_graph(argc, argv2, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
+	save = argv[1];
+	argv[1] = "-";
+	argv2 = getopt_init(argc, argv);
+	argv[1] = save;
+    } else {
+	Tcl_ResetResult(interp);	/* clear error from Tcl_GetChannel() */
+	argv2 = getopt_init(argc, argv);
+    }
+
+    rc = rrd_graph(argc, argv2, &calcpr, &xsize, &ysize, stream, &ymin, &ymax);
+    getopt_cleanup(argc, argv2);
+
+    if (stream != NULL)
+	fclose(stream);		/* plug potential malloc & file descriptor leak */
+
+    if (rc != -1) {
         sprintf(dimensions, "%d %d", xsize, ysize);
         Tcl_AppendResult(interp, dimensions, (char *) NULL);
         if (calcpr) {
@@ -207,7 +273,6 @@ Rrd_Graph(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *arg
             free(calcpr);
         }
     }
-    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
