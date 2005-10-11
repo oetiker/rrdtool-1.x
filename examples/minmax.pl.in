@@ -44,7 +44,7 @@ RRDs::graph "$name.png",
 ;
 
 if ($ERROR = RRDs::error) {
-  print "ERROR: $ERROR\n";
+  die "ERROR: $ERROR\n";
 };
 
 

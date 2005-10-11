@@ -38,7 +38,7 @@ RRDs::graph "stripes.png",
   "COMMENT:alpha=TIME,1200,%,600,LT,a,UNKN,IF",
   "COMMENT:beta=TIME,1200,%,600,GE,b,UNKN,IF\\j";
 if ($ERROR = RRDs::error) {
-  print "ERROR: $ERROR\n";
+  die "ERROR: $ERROR\n";
 };
 
 

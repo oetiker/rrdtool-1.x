@@ -117,7 +117,7 @@ RRDs::graph "$name-sample.png",
 ;
 
 if ($ERROR = RRDs::error) {
-  print "ERROR: $ERROR\n";
+  die "ERROR: $ERROR\n";
 };
 
 print "This script has created $name.png in the current directory\n";
