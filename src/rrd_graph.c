@@ -2766,7 +2766,7 @@ gdes_alloc(image_desc_t *im){
 /* copies input untill the first unescaped colon is found
    or until input ends. backslashes have to be escaped as well */
 int
-scan_for_col(char *input, int len, char *output)
+scan_for_col(const char *const input, int len, char *const output)
 {
     int inp,outp=0;
     for (inp=0; 
@@ -3386,12 +3386,17 @@ int bad_format(char *fmt) {
              /* '%s', '%S' and '%%' are allowed */
              if (*ptr == 's' || *ptr == 'S' || *ptr == '%') ptr++;
 
+             /* %c is allowed (but use only with vdef!) */
+	     else if (*ptr == 'c') {
+		ptr++;
+		n=1;
+	     }
+
              /* or else '% 6.2lf' and such are allowed */
              else {
-   
                  /* optional padding character */
                  if (*ptr == ' ' || *ptr == '+' || *ptr == '-') ptr++;
-  
+
                  /* This should take care of 'm.n' with all three optional */
                  while (*ptr >= '0' && *ptr <= '9') ptr++;
                  if (*ptr == '.') ptr++;
@@ -3412,7 +3417,7 @@ int bad_format(char *fmt) {
 int
 vdef_parse(gdes,str)
 struct graph_desc_t *gdes;
-char *str;
+const char *const str;
 {
     /* A VDEF currently is either "func" or "param,func"
      * so the parsing is rather simple.  Change if needed.

@@ -52,7 +52,7 @@ long lookup_DS(void *rrd_vptr, char *ds_name);
 short rpn_compact(rpnp_t *rpnp,rpn_cdefds_t **rpnc,short *count);
 rpnp_t * rpn_expand(rpn_cdefds_t *rpnc);
 void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str);
-rpnp_t * rpn_parse(void *key_hash,char *expr, long (*lookup)(void *,char *));
+rpnp_t * rpn_parse(void *key_hash,const char *const expr, long (*lookup)(void *,char *));
 short rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, rrd_value_t *output, int output_idx);
 
 #endif

@@ -252,13 +252,15 @@ long lookup_DS(void *rrd_vptr,char *ds_name)
  * lookup(): a function that retrieves a numeric key given a variable name
  */
 rpnp_t * 
-rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
+rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char*)){
     int pos=0;
+    char *expr;
     long steps=-1;    
     rpnp_t  *rpnp;
     char vname[30];
     
     rpnp=NULL;
+    expr=(char *)expr_const;
     
     while(*expr){
 	if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2)* 

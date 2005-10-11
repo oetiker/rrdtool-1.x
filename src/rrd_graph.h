@@ -237,7 +237,7 @@ int graph_paint(image_desc_t *, char ***);
 void pie_part(image_desc_t *, gfx_color_t, double, double, double, double, double);
 #endif
 int gdes_alloc(image_desc_t *);
-int scan_for_col(char *, int, char *);
+int scan_for_col(const char *const , int, char *const);
 int rrd_graph(int, char **, char ***, int *, int *, FILE *, double *, double *);
 void rrd_graph_init(image_desc_t *);
 void rrd_graph_options(int, char **, image_desc_t *);
@@ -245,7 +245,7 @@ void rrd_graph_script(int, char **, image_desc_t *, int);
 int rrd_graph_check_vname(image_desc_t *, char *, char *);
 int rrd_graph_color(image_desc_t *, char *, char *, int);
 int bad_format(char *);
-int vdef_parse(struct graph_desc_t *,char *);
+int vdef_parse(struct graph_desc_t *,const char *const);
 int vdef_calc(image_desc_t *, int);
 int vdef_percent_compar(const void *,const void *);
 int graph_size_location(image_desc_t *, int
