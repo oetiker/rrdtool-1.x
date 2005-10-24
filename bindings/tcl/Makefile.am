@@ -39,7 +39,7 @@ pkglib_DATA = pkgIndex.tcl
 pkglib_SCRIPTS = ifOctets.tcl
 
 $(TCL_RRD_LIB): tclrrd.o
-	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd -lm $(TCL_STUB_LIB_SPEC) $(LIBS)
+	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd_th -lm $(TCL_STUB_LIB_SPEC) $(LIBS)
 
 tclrrd.o: tclrrd.c
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) -c $< -DVERSION=\"$(VERSION)\"

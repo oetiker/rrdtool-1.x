@@ -3,6 +3,8 @@
  *
  * Copyright (c) 1999,2000 Frank Strauss, Technical University of Braunschweig.
  *
+ * Thread-safe code copyright (c) 2005 Oleg Derevenetz, CenterTelecom Voronezh ISP.
+ *
  * See the file "COPYING" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  *
@@ -24,7 +26,8 @@ extern int Tclrrd_SafeInit(Tcl_Interp *interp);
 
 
 /*
- * some rrd_XXX() functions might modify the argv strings passed to it.
+ * some rrd_XXX() and new thread-safe versions of Rrd_XXX()
+ * functions might modify the argv strings passed to it.
  * Hence, we need to do some preparation before
  * calling the rrd library functions.
  */
@@ -45,20 +48,123 @@ static void getopt_cleanup(int argc, char **argv2)
     int i;
     
     for (i = 0; i < argc; i++) {
-	free(argv2[i]);
+	if (argv2[i] != NULL) {
+	    free(argv2[i]);
+	}
     }
     free(argv2);
 }
 
+static void getopt_free_element(argv2, argn)
+    char *argv2[];
+    int  argn;
+{
+    if (argv2[argn] != NULL) {
+	free(argv2[argn]);
+	argv2[argn] = NULL;
+    }
+}
+
+static void getopt_squieeze(argc, argv2)
+    int  *argc;
+    char *argv2[];
+{
+    int i, null_i = 0, argc_tmp = *argc;
+
+    for (i = 0; i < argc_tmp; i++) {
+	if (argv2[i] == NULL) {
+	    (*argc)--;
+	} else {
+	    argv2[null_i++] = argv2[i];
+	}
+    }
+}
 
 
+
+/* Thread-safe version */
 static int
 Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
-    char **argv2;
+    int				argv_i;
+    char			**argv2;
+    char			*parsetime_error = NULL;
+    time_t			last_up = time(NULL) - 10;
+    long int			long_tmp;
+    unsigned long int		pdp_step = 300;
+    struct rrd_time_value	last_up_tv;
 
     argv2 = getopt_init(argc, argv);
-    rrd_create(argc, argv2);
+
+    for (argv_i = 1; argv_i < argc; argv_i++) {
+	if (!strcmp(argv2[argv_i], "--start") || !strcmp(argv2[argv_i], "-b")) {
+	    if (argv_i++>=argc) {
+		Tcl_AppendResult(interp, "RRD Error: option '",
+				 argv2[argv_i - 1], "' needs an argument", (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    if ((parsetime_error = parsetime(argv2[argv_i], &last_up_tv))) {
+		Tcl_AppendResult(interp, "RRD Error: invalid time format: '",
+				 argv2[argv_i], "'", (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    if (last_up_tv.type == RELATIVE_TO_END_TIME ||
+		last_up_tv.type == RELATIVE_TO_START_TIME) {
+		Tcl_AppendResult(interp, "RRD Error: specifying time relative to the 'start' ",
+				 "or 'end' makes no sense here", (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    last_up = mktime(&last_up_tv.tm) + last_up_tv.offset;
+	    if (last_up < 3600*24*365*10) {
+		Tcl_AppendResult(interp, "RRD Error: the first entry to the RRD should be after 1980",
+				 (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    getopt_free_element(argv2, argv_i - 1);
+	    getopt_free_element(argv2, argv_i);
+	} else if (!strcmp(argv2[argv_i], "--step") || !strcmp(argv2[argv_i], "-s")) {
+	    if (argv_i++>=argc) {
+		Tcl_AppendResult(interp, "RRD Error: option '",
+				 argv2[argv_i - 1], "' needs an argument", (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    long_tmp = atol(argv2[argv_i]);
+	    if (long_tmp < 1) {
+		Tcl_AppendResult(interp, "RRD Error: step size should be no less than one second",
+				 (char *) NULL);
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    pdp_step = long_tmp;
+	    getopt_free_element(argv2, argv_i - 1);
+	    getopt_free_element(argv2, argv_i);
+	} else if (!strcmp(argv2[argv_i], "--")) {
+	    getopt_free_element(argv2, argv_i);
+	    break;
+	} else if (argv2[argv_i][0]=='-') {
+	    Tcl_AppendResult(interp, "RRD Error: unknown option '",
+			     argv2[argv_i], "'", (char *) NULL);
+	    getopt_cleanup(argc, argv2);
+	    return TCL_ERROR;
+	}
+    }
+
+    getopt_squieeze(&argc, argv2);
+
+    if (argc < 2) {
+	Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
+			 (char *) NULL);
+	getopt_cleanup(argc, argv2);
+	return TCL_ERROR;
+    }
+
+    rrd_create_r(argv2[1], pdp_step, last_up, argc - 2, argv2 + 2);
+
     getopt_cleanup(argc, argv2);
     
     if (rrd_test_error()) {
@@ -73,14 +179,17 @@ Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 
 
 
+/* Thread-safe version */
 static int
 Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
-    char **argv2;
-    
-    argv2 = getopt_init(argc, argv);
-    rrd_dump(argc, argv2);
-    getopt_cleanup(argc, argv2);
+    if (argc < 2) {
+	Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
+			 (char *) NULL);
+	return TCL_ERROR;
+    }
+
+    rrd_dump_r(argv[1]);
 
     /* NOTE: rrd_dump() writes to stdout. No interaction with TCL. */
 
@@ -96,16 +205,19 @@ Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv
 
 
 
+/* Thread-safe version */
 static int
 Rrd_Last(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
     time_t t;
-    char **argv2;
     
-    argv2 = getopt_init(argc, argv);
-    t = rrd_last(argc, argv2);
-    getopt_cleanup(argc, argv2);
+    if (argc < 2) {
+	Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
+			 (char *) NULL);
+	return TCL_ERROR;
+    }
 
+    t = rrd_last_r(argv[1]);
 
     if (rrd_test_error()) {
 	Tcl_AppendResult(interp, "RRD Error: ",
@@ -121,13 +233,63 @@ Rrd_Last(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv
 
 
 
+/* Thread-safe version */
 static int
 Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
-    char **argv2;
+    int		argv_i;
+    char	**argv2, *template = NULL;
     
     argv2 = getopt_init(argc, argv);
-    rrd_update(argc, argv2);
+
+    for (argv_i = 1; argv_i < argc; argv_i++) {
+	if (!strcmp(argv2[argv_i], "--template") || !strcmp(argv2[argv_i], "-t")) {
+	    if (argv_i++>=argc) {
+		Tcl_AppendResult(interp, "RRD Error: option '",
+				 argv2[argv_i - 1], "' needs an argument", (char *) NULL);
+		if (template != NULL) {
+		    free(template);
+		}
+		getopt_cleanup(argc, argv2);
+		return TCL_ERROR;
+	    }
+	    if (template != NULL) {
+		free(template);
+	    }
+	    template = strdup(argv2[argv_i]);
+	    getopt_free_element(argv2, argv_i - 1);
+	    getopt_free_element(argv2, argv_i);
+	} else if (!strcmp(argv2[argv_i], "--")) {
+	    getopt_free_element(argv2, argv_i);
+	    break;
+	} else if (argv2[argv_i][0]=='-') {
+	    Tcl_AppendResult(interp, "RRD Error: unknown option '",
+			     argv2[argv_i], "'", (char *) NULL);
+	    if (template != NULL) {
+		free(template);
+	    }
+	    getopt_cleanup(argc, argv2);
+	    return TCL_ERROR;
+	}
+    }
+
+    getopt_squieeze(&argc, argv2);
+
+    if (argc < 2) {
+	Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
+			 (char *) NULL);
+	if (template != NULL) {
+	    free(template);
+	}
+	getopt_cleanup(argc, argv2);
+	return TCL_ERROR;
+    }
+
+    rrd_update_r(argv2[1], template, argc - 2, argv2 + 2);
+
+    if (template != NULL) {
+	free(template);
+    }
     getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
@@ -360,10 +522,10 @@ typedef struct {
 } CmdInfo;
 
 static CmdInfo rrdCmds[] = {
-    { "Rrd::create",	Rrd_Create,	1 },
-    { "Rrd::dump",	Rrd_Dump,	0 },
-    { "Rrd::last",	Rrd_Last,	0 },
-    { "Rrd::update",	Rrd_Update,	1 },
+    { "Rrd::create",	Rrd_Create,	1 }, /* Thread-safe version */
+    { "Rrd::dump",	Rrd_Dump,	0 }, /* Thread-safe version */
+    { "Rrd::last",	Rrd_Last,	0 }, /* Thread-safe version */
+    { "Rrd::update",	Rrd_Update,	1 }, /* Thread-safe version */
     { "Rrd::fetch",	Rrd_Fetch,	0 },
     { "Rrd::graph",	Rrd_Graph,	1 }, /* Due to RRD's API, a safe
 						interpreter cannot create
