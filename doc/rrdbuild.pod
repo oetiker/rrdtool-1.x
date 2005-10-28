@@ -149,6 +149,10 @@ will do just fine without since their F<ar> command does ranlibs job as well.
 
  ranlib $BUILD_DIR/lb/lib/*.a
 
+Note for OpenBSD users: It seems that libcgi fails to build properly on some
+of these systems. Run F<ar rc libcgi.a cgi.o cookies.o> to get a propper
+library if you find that libcgi.a is only a few bytes in size.
+
 This time you tell configure where it should be looking for libraries and
 include files. This is done via environment variables. Depending on the
 shell you are running, the syntax for setting environment variables is
