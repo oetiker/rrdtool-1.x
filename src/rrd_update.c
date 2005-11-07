@@ -87,8 +87,8 @@ info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx,
 					unsigned short CDP_scratch_idx, FILE *rrd_file,
 					info_t *pcdp_summary, time_t *rra_time);
 #endif
-int rrd_update_r(char *filename, char *template, int argc, char **argv);
-int _rrd_update(char *filename, char *template, int argc, char **argv, 
+int rrd_update_r(char *filename, char *tmplt, int argc, char **argv);
+int _rrd_update(char *filename, char *tmplt, int argc, char **argv, 
 					info_t*);
 
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
@@ -116,7 +116,7 @@ main(int argc, char **argv){
 
 info_t *rrd_update_v(int argc, char **argv)
 {
-    char             *template = NULL;          
+    char             *tmplt = NULL;          
 	info_t *result = NULL;
 	infoval rc;
     optind = 0; opterr = 0;  /* initialize getopt */
@@ -137,7 +137,7 @@ info_t *rrd_update_v(int argc, char **argv)
 		
 		switch(opt) {
 		case 't':
-			template = optarg;
+			tmplt = optarg;
 			break;
 		
 		case '?':
@@ -154,7 +154,7 @@ info_t *rrd_update_v(int argc, char **argv)
 		goto end_tag;
     }
     result = info_push(NULL,sprintf_alloc("return_value"),RD_I_INT,rc);
-   	rc.u_int = _rrd_update(argv[optind], template,
+   	rc.u_int = _rrd_update(argv[optind], tmplt,
 		      argc - optind - 1, argv + optind + 1, result);
     result->value.u_int = rc.u_int;
 end_tag:
@@ -164,14 +164,14 @@ end_tag:
 int
 rrd_update(int argc, char **argv)
 {
-    char             *template = NULL;          
+    char             *tmplt = NULL;          
     int rc;
     optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
 		static struct option long_options[] =
 			{
-				{"template",      required_argument, 0, 't'},
+				{"tmplt",      required_argument, 0, 't'},
 				{0,0,0,0}
 			};
 		int option_index = 0;
@@ -184,7 +184,7 @@ rrd_update(int argc, char **argv)
 		
 		switch(opt) {
 		case 't':
-			template = optarg;
+			tmplt = optarg;
 			break;
 		
 		case '?':
@@ -200,19 +200,19 @@ rrd_update(int argc, char **argv)
 		return -1;
     }
  
-   	rc = rrd_update_r(argv[optind], template,
+   	rc = rrd_update_r(argv[optind], tmplt,
 		      argc - optind - 1, argv + optind + 1);
     return rc;
 }
 
 int
-rrd_update_r(char *filename, char *template, int argc, char **argv)
+rrd_update_r(char *filename, char *tmplt, int argc, char **argv)
 {
-   return _rrd_update(filename, template, argc, argv, NULL);
+   return _rrd_update(filename, tmplt, argc, argv, NULL);
 }
 
 int
-_rrd_update(char *filename, char *template, int argc, char **argv, 
+_rrd_update(char *filename, char *tmplt, int argc, char **argv, 
    info_t *pcdp_summary)
 {
 
@@ -251,7 +251,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 					  * cdp values */
 
     long             *tmpl_idx;          /* index representing the settings
-					    transported by the template index */
+					    transported by the tmplt index */
     unsigned long    tmpl_cnt = 2;       /* time and data */
 
     FILE             *rrd_file;
@@ -365,7 +365,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         fclose(rrd_file);
 	return(-1);
     }
-    /* initialize template redirector */
+    /* initialize tmplt redirector */
     /* default config example (assume DS 1 is a CDEF DS)
        tmpl_idx[0] -> 0; (time)
        tmpl_idx[1] -> 1; (DS 0)
@@ -379,17 +379,19 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	}
     tmpl_cnt= ii;
 
-    if (template) {
+    if (tmplt) {
+    	/* we should work on a writeable copy here */
 	char *dsname;
 	unsigned int tmpl_len;
-	dsname = template;
+    	tmplt = strdup(tmplt);
+	dsname = tmplt;
 	tmpl_cnt = 1; /* the first entry is the time */
-	tmpl_len = strlen(template);
+	tmpl_len = strlen(tmplt);
 	for(i=0;i<=tmpl_len ;i++) {
-	    if (template[i] == ':' || template[i] == '\0') {
-		template[i] = '\0';
+	    if (tmplt[i] == ':' || tmplt[i] == '\0') {
+		tmplt[i] = '\0';
 		if (tmpl_cnt>rrd.stat_head->ds_cnt){
-  		    rrd_set_error("Template contains more DS definitions than RRD");
+  		    rrd_set_error("tmplt contains more DS definitions than RRD");
 		    free(updvals); free(pdp_temp);
 		    free(tmpl_idx); rrd_free(&rrd);
 		    fclose(rrd_file); return(-1);
@@ -397,21 +399,23 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		if ((tmpl_idx[tmpl_cnt++] = ds_match(&rrd,dsname)) == -1){
   		    rrd_set_error("unknown DS name '%s'",dsname);
 		    free(updvals); free(pdp_temp);
+		    free(tmplt);
 		    free(tmpl_idx); rrd_free(&rrd);
 		    fclose(rrd_file); return(-1);
 		} else {
 		  /* the first element is always the time */
 		  tmpl_idx[tmpl_cnt-1]++; 
-		  /* go to the next entry on the template */
-		  dsname = &template[i+1];
+		  /* go to the next entry on the tmplt */
+		  dsname = &tmplt[i+1];
                   /* fix the damage we did before */
                   if (i<tmpl_len) {
-                     template[i]=':';
+                     tmplt[i]=':';
                   } 
 
 		}
 	    }	    
 	}
+	free(tmplt);
     }
     if ((pdp_new = malloc(sizeof(rrd_value_t)
 			  *rrd.stat_head->ds_cnt))==NULL){
