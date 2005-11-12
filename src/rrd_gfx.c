@@ -1440,9 +1440,9 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
 "-->\n", fp);
    svg_start_tag(fp, "svg");
    fputs(" width=\"", fp);
-  svg_write_number(fp, width * canvas->zoom);
+   svg_write_number(fp, width * canvas->zoom);
    fputs("\" height=\"", fp);
-  svg_write_number(fp, height * canvas->zoom);
+   svg_write_number(fp, height * canvas->zoom);
    fputs("\" x=\"0\" y=\"0\" viewBox=\"", fp);
    svg_write_number(fp, -LINEOFFSET);
    fputs(" ", fp);
@@ -1452,8 +1452,10 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
    fputs(" ", fp);
    svg_write_number(fp, height - LINEOFFSET);
    fputs("\" preserveAspectRatio=\"xMidYMid\"", fp);
-  fprintf(fp, " font-family=\"%s\"", svg_default_font); /* default font */
-  fputs(" stroke-linecap=\"round\" stroke-linejoin=\"round\"", fp);
+   fprintf(fp, " font-family=\"%s\"", svg_default_font); /* default font */
+   fputs(" stroke-linecap=\"round\" stroke-linejoin=\"round\"", fp);
+   fputs(" xmlns=\"http://www.w3.org/2000/svg\"", fp);
+   fputs(" xmlns:xlink=\"http://www.w3.org/1999/xlink\"", fp);
    svg_close_tag(fp);
    svg_start_tag(fp, "rect");
    fprintf(fp, " x=\"0\" y=\"0\" width=\"%d\" height=\"%d\"", width, height);
