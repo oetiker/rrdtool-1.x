@@ -7,7 +7,7 @@
 fontsdir =  $(datadir)/rrdtool/fonts
 fonts_DATA = DejaVuSansMono-Roman.ttf
 
-#INCLUDES = $(CGI_INCLUDES) $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
+#INCLUDES = $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 #           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
@@ -108,14 +108,13 @@ include_HEADERS	= rrd.h
 #librrd_private_la_LDFLAGS = -static
 
 bin_PROGRAMS	= rrdtool rrdupdate
+
 if BUILD_RRDCGI
 bin_PROGRAMS += rrdcgi
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
 rrdcgi_LDADD	= librrd.la
-rrdcgi_CPPFLAGS = $(AM_CPPFLAGS) @CGI_CPPFLAGS@
-rrdcgi_LDFLAGS = @CGI_LDFLAGS@ @CGI_LIBS@
 
 rrdupdate_SOURCES = 
 rrdupdate_LDADD	= rrdupdate.o librrd.la

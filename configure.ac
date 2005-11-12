@@ -78,6 +78,10 @@ char *strchr (), *strrchr ();
 # define rrd_realloc(a,b) realloc((a), (b))
 #endif      
 
+#if NEED_MALLOC_MALLOC_H
+#  include <malloc/malloc.h>
+#endif
+
 #if HAVE_MATH_H
 #  include <math.h>
 #endif
@@ -222,6 +226,29 @@ volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
 
 AC_FULL_IEEE
 
+AC_LANG_PUSH(C)
+dnl see if we have to include malloc/malloc.h
+AC_MSG_CHECKING([do we need malloc/malloc.h])
+AC_LINK_IFELSE(
+    AC_LANG_PROGRAM(
+           [[#include <stdlib.h>]],
+           [[malloc(1)]]
+                   ),
+    [ AC_MSG_RESULT([nope, works out of the box]) ],
+    [ AC_LINK_IFELSE(
+          AC_LANG_PROGRAM(
+                [[#include <stdlib.h>
+                  #include <malloc/malloc.h>]],
+                [[malloc(1)]]
+    	                 ),
+          [AC_DEFINE(NEED_MALLOC_MALLOC_H)
+           AC_MSG_RESULT([yes we do])],
+          [AC_MSG_ERROR([Can't figure how to compile malloc])]
+      )
+    ]  
+)
+AC_LANG_POP(C)
+
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
  [Vertical label angle: 90.0 (default) or 270.0])
@@ -237,26 +264,6 @@ EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   liba
 EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.2,  http://www.gzip.org/zlib/, "")
 EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/, "")
 EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
-
-save_LIBS=${LIBS}
-save_CPPFLAGS=${CPPFLAGS}
-save_LDFLAGS=${LDFLAGS}
-
-if test $enable_rrdcgi != no; then
-EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib, "")
-fi
-
-CGI_LIBS=${LIBS}
-CGI_CPPFLAGS=${CPPFLAGS}
-CGI_LDFLAGS=${LDFLAGS}
-
-AC_SUBST(CGI_LIBS)
-AC_SUBST(CGI_CPPFLAGS)
-AC_SUBST(CGI_LDFLAGS)
-
-LIBS=${save_LIBS}
-CPPFLAGS=${save_CPPFLAGS}
-LDFLAGS=${save_LDFLAGS}
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])

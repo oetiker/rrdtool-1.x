@@ -5,16 +5,19 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
-#include <cgi.h>
-#include <time.h>
 
 
 #define MEMBLK 1024
 /*#define DEBUG_PARSER
 #define DEBUG_VARS*/
 
-/* global variable for libcgi */
-s_cgi *cgiArg;
+typedef struct var_s {
+	char	*name, *value;
+} s_var;
+
+typedef struct cgi_s {
+	s_var **vars;
+} s_cgi;
 
 /* in arg[0] find tags beginning with arg[1] call arg[2] on them
    and replace by result of arg[2] call */
@@ -70,6 +73,64 @@ char *http_time(time_t *);
 /* return a pointer to newly allocated copy of this string */
 char *stralloc(const char *);
 
+/* global variable for rrdcgi */
+s_cgi *rrdcgiArg;
+
+/* rrdcgiHeader
+ * 
+ *  Prints a valid CGI Header (Content-type...) etc.
+ */
+void rrdcgiHeader(void);
+
+/* rrdcgiDecodeString
+ * decode html escapes
+ */
+ 
+char *rrdcgiDecodeString(char *text);
+
+/* rrdcgiDebug
+ * 
+ *  Set/unsets debugging
+ */
+void rrdcgiDebug(int level, int where);
+
+/* rrdcgiInit
+ *
+ *  Reads in variables set via POST or stdin.
+ */
+s_cgi *rrdcgiInit (void);
+
+/* rrdcgiGetValue
+ *
+ *  Returns the value of the specified variable or NULL if it's empty
+ *  or doesn't exist.
+ */
+char *rrdcgiGetValue (s_cgi *parms, const char *name);
+
+/* rrdcgiFreeList
+ *
+ * Frees a list as returned by rrdcgiGetVariables()
+ */
+void rrdcgiFreeList (char **list);
+
+/* rrdcgiFree
+ *
+ * Frees the internal data structures
+ */
+void rrdcgiFree (s_cgi *parms);
+
+/*  rrdcgiReadVariables()
+ *
+ *  Read from stdin if no string is provided via CGI.  Variables that
+ *  doesn't have a value associated with it doesn't get stored.
+ */
+s_var **rrdcgiReadVariables(void);
+
+
+int rrdcgiDebugLevel = 0;
+int rrdcgiDebugStderr = 1;
+char *rrdcgiHeaderString = NULL;
+char *rrdcgiType = NULL;
 
 /* rrd interface to the variable functions {put,get}var() */
 char* rrdgetvar(long argc, const char **args);
@@ -294,8 +355,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (!filter) {
-		cgiDebug(0,0);
-		cgiArg = cgiInit();
+		rrdcgiDebug(0,0);
+		rrdcgiArg = rrdcgiInit();
 		server_url = getenv("SERVER_URL");
 	}
 
@@ -588,7 +649,7 @@ char* rrdstrip(char *buf) {
 
 char* cgigetq(long argc, const char **args){
   if (argc>= 1){
-    char *buf = rrdstrip(cgiGetValue(cgiArg,args[0]));
+    char *buf = rrdstrip(rrdcgiGetValue(rrdcgiArg,args[0]));
     char *buf2;
     char *c,*d;
     int  qc=0;
@@ -635,7 +696,7 @@ char* cgigetqp(long argc, const char **args){
                 return stralloc("[ERROR: not enough arguments for RRD::CV::PATH]");
         }
 
-        buf = rrdstrip(cgiGetValue(cgiArg, args[0]));
+        buf = rrdstrip(rrdcgiGetValue(rrdcgiArg, args[0]));
     if (!buf)
         {
                 return NULL;
@@ -682,7 +743,7 @@ char* cgigetqp(long argc, const char **args){
 
 char* cgiget(long argc, const char **args){
   if (argc>= 1)
-    return rrdstrip(cgiGetValue(cgiArg,args[0]));
+    return rrdstrip(rrdcgiGetValue(rrdcgiArg,args[0]));
   else
     return stralloc("[ERROR: not enough arguments for RRD::CV]");
 }
@@ -1048,3 +1109,293 @@ http_time(time_t *now) {
         strftime(buf,sizeof(buf),"%a, %d %b %Y %H:%M:%S GMT",tmptime);
         return(buf);
 }
+
+void rrdcgiHeader(void)
+{
+    if (rrdcgiType)
+	printf ("Content-type: %s\n", rrdcgiType);
+    else
+	printf ("Content-type: text/html\n");
+    if (rrdcgiHeaderString)
+	printf ("%s", rrdcgiHeaderString);
+    printf ("\n");
+}
+
+void rrdcgiDebug(int level, int where)
+{
+    if (level > 0)
+	rrdcgiDebugLevel = level;
+    else
+	rrdcgiDebugLevel = 0;
+    if (where)
+	rrdcgiDebugStderr = 0;
+    else
+	rrdcgiDebugStderr = 1;
+}
+
+char *rrdcgiDecodeString(char *text)
+{
+    char *cp, *xp;
+
+    for (cp=text,xp=text; *cp; cp++) {
+	if (*cp == '%') {
+	    if (strchr("0123456789ABCDEFabcdef", *(cp+1))
+		&& strchr("0123456789ABCDEFabcdef", *(cp+2))) {
+		if (islower(*(cp+1)))
+		    *(cp+1) = toupper(*(cp+1));
+		if (islower(*(cp+2)))
+		    *(cp+2) = toupper(*(cp+2));
+		*(xp) = (*(cp+1) >= 'A' ? *(cp+1) - 'A' + 10 : *(cp+1) - '0' ) * 16
+		    + (*(cp+2) >= 'A' ? *(cp+2) - 'A' + 10 : *(cp+2) - '0');
+		xp++;cp+=2;
+	    }
+	} else {
+	    *(xp++) = *cp;
+	}
+    }
+    memset(xp, 0, cp-xp);
+    return text;
+}
+
+/*  rrdcgiReadVariables()
+ *
+ *  Read from stdin if no string is provided via CGI.  Variables that
+ *  doesn't have a value associated with it doesn't get stored.
+ */
+s_var **rrdcgiReadVariables(void)
+{
+    int length;
+    char *line = NULL;
+    int numargs;
+    char *cp, *ip, *esp, *sptr;
+    s_var **result;
+    int i, k, len;
+    char tmp[101];
+
+    cp = getenv("REQUEST_METHOD");
+    ip = getenv("CONTENT_LENGTH");
+
+    if (cp && !strcmp(cp, "POST")) {
+	if (ip) {
+	    length = atoi(ip);
+	    if ((line = (char *)malloc (length+2)) == NULL)
+		return NULL;
+	    fgets(line, length+1, stdin);
+	} else
+	    return NULL;
+    } else if (cp && !strcmp(cp, "GET")) {
+	esp = getenv("QUERY_STRING");
+	if (esp && strlen(esp)) {
+	    if ((line = (char *)malloc (strlen(esp)+2)) == NULL)
+		return NULL;
+	    sprintf (line, "%s", esp);
+	} else
+	    return NULL;
+    } else {
+        length = 0;
+	printf ("(offline mode: enter name=value pairs on standard input)\n");
+	memset (tmp, 0, sizeof(tmp));
+	while((cp = fgets (tmp, 100, stdin)) != NULL) {
+	    if (strlen(tmp)) {
+		if (tmp[strlen(tmp)-1] == '\n')
+		    tmp[strlen(tmp)-1] = '&';
+		if (length) {
+		    length += strlen(tmp);
+		    len = (length+1) * sizeof(char);
+		    if ((line = (char *)realloc (line, len)) == NULL)
+		        return NULL;
+		    strcat (line, tmp);
+		} else {
+		    length = strlen(tmp);
+		    len = (length+1) * sizeof(char);
+		    if ((line = (char *)malloc (len)) == NULL)
+		        return NULL;
+		    memset (line, 0, len);
+		    strcpy (line, tmp);
+		}
+	    }
+	    memset (tmp, 0, sizeof(tmp));
+	}
+	if (!line)
+	    return NULL;
+	if (line[strlen(line)-1] == '&')
+	    line[strlen(line)-1] = '\0';
+    }
+
+    /*
+     *  From now on all cgi variables are stored in the variable line
+     *  and look like  foo=bar&foobar=barfoo&foofoo=
+     */
+
+    if (rrdcgiDebugLevel > 0) {
+	if (rrdcgiDebugStderr)
+	    fprintf (stderr, "Received cgi input: %s\n", line);
+	else
+	    printf ("<b>Received cgi input</b><br>\n<pre>\n--\n%s\n--\n</pre>\n\n", line);
+    }
+
+    for (cp=line; *cp; cp++)
+	if (*cp == '+')
+	    *cp = ' ';
+
+    if (strlen(line)) {
+	for (numargs=1,cp=line; *cp; cp++)
+	    if (*cp == '&') numargs++;
+    } else
+	numargs = 0;
+    if (rrdcgiDebugLevel > 0) {
+	if (rrdcgiDebugStderr)
+	    fprintf (stderr, "%d cgi variables found.\n", numargs);
+	else
+	    printf ("%d cgi variables found.<br>\n", numargs);
+    }
+
+    len = (numargs+1) * sizeof(s_var *);
+    if ((result = (s_var **)malloc (len)) == NULL)
+	return NULL;
+    memset (result, 0, len);
+
+    cp = line;
+    i=0;
+    while (*cp) {
+	if ((ip = (char *)strchr(cp, '&')) != NULL) {
+	    *ip = '\0';
+	}else
+	    ip = cp + strlen(cp);
+
+	if ((esp=(char *)strchr(cp, '=')) == NULL) {
+	    cp = ++ip;
+	    continue;
+	}
+
+	if (!strlen(esp)) {
+	    cp = ++ip;
+	    continue;
+	}
+
+	if (i<numargs) {
+
+	    /* try to find out if there's already such a variable */
+	    for (k=0; k<i && (strncmp (result[k]->name,cp, esp-cp) || !(strlen (result[k]->name) == esp-cp)); k++);
+
+	    if (k == i) {	/* No such variable yet */
+		if ((result[i] = (s_var *)malloc(sizeof(s_var))) == NULL)
+		    return NULL;
+		if ((result[i]->name = (char *)malloc((esp-cp+1) * sizeof(char))) == NULL)
+		    return NULL;
+		memset (result[i]->name, 0, esp-cp+1);
+		strncpy(result[i]->name, cp, esp-cp);
+		cp = ++esp;
+		if ((result[i]->value = (char *)malloc((ip-esp+1) * sizeof(char))) == NULL)
+		    return NULL;
+		memset (result[i]->value, 0, ip-esp+1);
+		strncpy(result[i]->value, cp, ip-esp);
+		result[i]->value = rrdcgiDecodeString(result[i]->value);
+		if (rrdcgiDebugLevel) {
+		    if (rrdcgiDebugStderr)
+			fprintf (stderr, "%s: %s\n", result[i]->name, result[i]->value);
+		    else
+			printf ("<h3>Variable %s</h3>\n<pre>\n%s\n</pre>\n\n", result[i]->name, result[i]->value);
+		}
+		i++;
+	    } else {	/* There is already such a name, suppose a mutiple field */
+		cp = ++esp;
+		len = (strlen(result[k]->value)+(ip-esp)+2) * sizeof (char);
+		if ((sptr = (char *)malloc(len)) == NULL)
+		    return NULL;
+		memset (sptr, 0, len);
+		sprintf (sptr, "%s\n", result[k]->value);
+		strncat(sptr, cp, ip-esp);
+		free(result[k]->value);
+		result[k]->value = rrdcgiDecodeString (sptr);
+	    }
+	}
+	cp = ++ip;
+    }
+    return result;
+}
+
+/*  rrdcgiInit()
+ *
+ *  Read from stdin if no string is provided via CGI.  Variables that
+ *  doesn't have a value associated with it doesn't get stored.
+ */
+s_cgi *rrdcgiInit(void)
+{
+    s_cgi *res;
+    s_var **vars;
+
+    vars = rrdcgiReadVariables();
+
+    if (!vars)
+	return NULL;
+
+    if ((res = (s_cgi *)malloc (sizeof (s_cgi))) == NULL)
+	return NULL;
+    res->vars = vars;
+
+    return res;
+}
+
+char *rrdcgiGetValue(s_cgi *parms, const char *name)
+{
+    int i;
+
+    if (!parms || !parms->vars)
+	return NULL;
+    for (i=0;parms->vars[i]; i++)
+	if (!strcmp(name,parms->vars[i]->name)) {
+	    if (rrdcgiDebugLevel > 0) {
+		if (rrdcgiDebugStderr)
+		    fprintf (stderr, "%s found as %s\n", name, parms->vars[i]->value);
+		else
+		    printf ("%s found as %s<br>\n", name, parms->vars[i]->value);
+	    }
+	    return parms->vars[i]->value;
+	}
+    if (rrdcgiDebugLevel) {
+	if (rrdcgiDebugStderr)
+	    fprintf (stderr, "%s not found\n", name);
+	else
+	    printf ("%s not found<br>\n", name);
+    }
+    return NULL;
+}
+
+void rrdcgiFreeList (char **list)
+{
+    int i;
+
+    for (i=0; list[i] != NULL; i++)
+	free (list[i]);
+	free (list);
+}
+
+void rrdcgiFree (s_cgi *parms)
+{
+    int i;
+
+    if (!parms)
+	return;
+    if (parms->vars) {
+		for (i=0;parms->vars[i]; i++) {
+			if (parms->vars[i]->name)
+				free (parms->vars[i]->name);
+			if (parms->vars[i]->value)
+				free (parms->vars[i]->value);
+	    free (parms->vars[i]);
+		}
+		free (parms->vars);
+    }
+    free (parms);
+
+    if (rrdcgiHeaderString) {
+	free (rrdcgiHeaderString);
+	rrdcgiHeaderString = NULL;
+    }
+    if (rrdcgiType) {
+	free (rrdcgiType);
+	rrdcgiType = NULL;
+    }
+}
+
