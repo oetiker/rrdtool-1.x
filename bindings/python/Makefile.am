@@ -10,6 +10,6 @@ rrdtoolmodule_so_SOURCES =     rrdtoolmodule.c
 
 noinst_HEADERS =                rrd_extra.h
 
-clean:
+clean-local:
 	rm -rf build
 
