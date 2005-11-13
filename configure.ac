@@ -4,7 +4,7 @@ dnl
 dnl Created by Jeff Allen, Tobi Oetiker, Blair Zajac
 dnl
 dnl Inspiration from http://autoconf-archive.cryp.to
-
+ 
 dnl tell automake the this script is for rrdtool
 dnl the official version number is
 dnl a.b.c
@@ -147,12 +147,17 @@ char *strchr (), *strrchr ();
 #endif /* CONFIG_H */
 ])
 
+dnl Process Special Options
+dnl -----------------------------------
 
+dnl How the vertical axis label is printed
+AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
+ [Vertical label angle: 90.0 (default) or 270.0])
+AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
+ [Vertical label angle: 90.0 (default) or 270.0])
 
-dnl Check for the compiler and static/shared library creation.
-AC_PROG_CC
-AC_PROG_CPP
-AC_PROG_LIBTOOL
+AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
+[],[enable_rrdcgi=yes])
 
 dnl Check if we run on a system that has fonts
 AC_ARG_WITH(rrd-default-font,
@@ -165,8 +170,31 @@ AC_ARG_WITH(rrd-default-font,
   fi
 ])
 
+dnl Use mmap in rrd_update instead of seek+write
+AC_ARG_ENABLE([mmap],
+[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
+[],
+[enable_mmap=yes])
+
+
+ AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
+[],[enable_pthread=yes])
+
+
+
+CONFIGURE_PART(Audit Compilation Environment)
+
+
+dnl Check for the compiler and static/shared library creation.
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_LIBTOOL
+
+
 AC_SUBST(RRD_DEFAULT_FONT)
 
+CONFIGURE_PART(Checking for Header Files)
+ 
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
@@ -184,6 +212,8 @@ dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
 CFLAGS="$CFLAGS $pic_flag"
 
+CONFIGURE_PART(Test Library Functions)
+
 dnl Checks for library functions.
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
@@ -195,16 +225,14 @@ dnl of the form HAVE_FUNCTION
 
 AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
-dnl Use mmap in rrd_update instead of seek+write
-AC_ARG_ENABLE([mmap],
-[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
-[],
-[enable_mmap=yes])
 
 if test "x$enable_mmap" = xyes; then
   AC_FUNC_MMAP
 fi
 
+
+CONFIGURE_PART(IEEE Math Checks)
+ 
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we need
 dnl actual code to check if this works
 AC_CHECK_FUNCS(fpclassify, ,
@@ -226,47 +254,21 @@ volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
 
 AC_FULL_IEEE
 
-AC_LANG_PUSH(C)
-dnl see if we have to include malloc/malloc.h
-AC_MSG_CHECKING([do we need malloc/malloc.h])
-AC_LINK_IFELSE(
-    AC_LANG_PROGRAM(
-           [[#include <stdlib.h>]],
-           [[malloc(1)]]
-                   ),
-    [ AC_MSG_RESULT([nope, works out of the box]) ],
-    [ AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
-                [[#include <stdlib.h>
-                  #include <malloc/malloc.h>]],
-                [[malloc(1)]]
-    	                 ),
-          [AC_DEFINE(NEED_MALLOC_MALLOC_H)
-           AC_MSG_RESULT([yes we do])],
-          [AC_MSG_ERROR([Can't figure how to compile malloc])]
-      )
-    ]  
-)
-AC_LANG_POP(C)
+CONFIGURE_PART(Resolve Portability Issues)
 
-dnl How the vertical axis label is printed
-AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
- [Vertical label angle: 90.0 (default) or 270.0])
-AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
- [Vertical label angle: 90.0 (default) or 270.0])
+dnl what does realloc do if it gets called with a NULL pointer
 
+AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
+	      int main(void){
+              char *x = NULL;
+	      x = realloc (x,10);
+	      if (x==NULL) return 1;
+	      return 0;
+             }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
 
-AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
-[],[enable_rrdcgi=yes])
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
-
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
-EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.2,  http://www.gzip.org/zlib/, "")
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/, "")
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
-
-if test "$EX_CHECK_ALL_ERR" = "YES"; then
-  AC_MSG_ERROR([Please fix the library issues listed above and try again.])
+if test x"$rd_cv_null_realloc" = xnope; then
+AC_DEFINE(NO_NULL_REALLOC)
 fi
 
 AC_LANG_PUSH(C)
@@ -305,11 +307,6 @@ dnl http://autoconf-archive.cryp.to/acx_pthread.m4
 AC_SUBST(MULTITHREAD_CFLAGS)
 AC_SUBST(MULTITHREAD_LDFLAGS)
 
- 
-AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
-[],[enable_pthread=yes])
-
-
 if test $enable_pthread != no; then 
  ACX_PTHREAD([
     MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
@@ -325,8 +322,47 @@ if test  "x$x_rflag" != "xno"; then
    CPPFLAGS="$CPPFLAGS $x_rflag"
 fi
 
- 
 AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
+
+AC_LANG_PUSH(C)
+dnl see if we have to include malloc/malloc.h
+AC_MSG_CHECKING([do we need malloc/malloc.h])
+AC_LINK_IFELSE(
+    AC_LANG_PROGRAM(
+           [[#include <stdlib.h>]],
+           [[malloc(1)]]
+                   ),
+    [ AC_MSG_RESULT([nope, works out of the box]) ],
+    [ AC_LINK_IFELSE(
+          AC_LANG_PROGRAM(
+                [[#include <stdlib.h>
+                  #include <malloc/malloc.h>]],
+                [[malloc(1)]]
+    	                 ),
+          [AC_DEFINE(NEED_MALLOC_MALLOC_H)
+           AC_MSG_RESULT([yes we do])],
+          [AC_MSG_ERROR([Can't figure how to compile malloc])]
+      )
+    ]  
+)
+AC_LANG_POP(C)
+
+CONFIGURE_PART(Findr 3rd-Party Libraries)
+
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
+EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.2,  http://www.gzip.org/zlib/, "")
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/, "")
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+
+if test "$EX_CHECK_ALL_ERR" = "YES"; then
+  AC_MSG_ERROR([Please fix the library issues listed above and try again.])
+fi
+
+
+CONFIGURE_PART(Prep for Building Language Bindings)
   
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
@@ -367,6 +403,7 @@ I will disable the compilation of the RRDs perl module for now.
             fi    
         fi
 fi
+
 AC_MSG_CHECKING(Perl Modules to build)
 AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
@@ -487,21 +524,9 @@ if test "$GCC" = "yes"; then
   fi
 fi
 
-dnl what does realloc do if it gets called with a NULL pointer
 
-AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
-[AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
-	      int main(void){
-              char *x = NULL;
-	      x = realloc (x,10);
-	      if (x==NULL) return 1;
-	      return 0;
-             }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
-
-if test x"$rd_cv_null_realloc" = xnope; then
-AC_DEFINE(NO_NULL_REALLOC)
-fi
-
+CONFIGURE_PART(Apply Configuration Information)
+ 
 AC_CONFIG_FILES([examples/shared-demo.pl			\
           examples/piped-demo.pl			\
           examples/stripes.pl				\
