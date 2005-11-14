@@ -171,7 +171,7 @@ rrd_update(int argc, char **argv)
     while (1) {
 		static struct option long_options[] =
 			{
-				{"tmplt",      required_argument, 0, 't'},
+				{"template",      required_argument, 0, 't'},
 				{0,0,0,0}
 			};
 		int option_index = 0;
