@@ -227,7 +227,18 @@ AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale stre
 
 
 if test "x$enable_mmap" = xyes; then
-  AC_FUNC_MMAP
+  case "$host" in
+    *cygwin*)
+       # the normal mmap test does not work in cygwin
+       AC_CHECK_FUNCS(mmap)
+       if [ ${ac_cv_func_mmap} = yes ]; then
+         ac_cv_func_mmap_fixed_mapped=yes
+       fi
+    ;;
+    *)
+       AC_FUNC_MMAP
+    ;;
+  esac
 fi
 
 
@@ -527,23 +538,23 @@ fi
 
 CONFIGURE_PART(Apply Configuration Information)
  
-AC_CONFIG_FILES([examples/shared-demo.pl			\
-          examples/piped-demo.pl			\
-          examples/stripes.pl				\
-          examples/bigtops.pl				\
-          examples/minmax.pl				\
-          examples/cgi-demo.cgi				\
-          examples/4charts.pl  				\
-          examples/Makefile				\
-          doc/Makefile					\
-          src/Makefile					\
-          bindings/Makefile                             \
-          bindings/tcl/Makefile				\
-          bindings/tcl/ifOctets.tcl			\
-          bindings/python/Makefile			\
+AC_CONFIG_FILES([examples/shared-demo.pl			
+          examples/piped-demo.pl			
+          examples/stripes.pl				
+          examples/bigtops.pl				
+          examples/minmax.pl				
+          examples/cgi-demo.cgi				
+          examples/4charts.pl  				
+          examples/Makefile				
+          doc/Makefile					
+          src/Makefile					
+          bindings/Makefile                             
+          bindings/tcl/Makefile				
+          bindings/tcl/ifOctets.tcl			
+          bindings/python/Makefile
           Makefile])
-AC_CONFIG_COMMANDS([default],[[\
-          chmod +x examples/*.cgi examples/*.pl]],[[]])
+
+AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.cgi examples/*.pl]],[[]])
 AC_OUTPUT
 
 AC_MSG_CHECKING(in)
