@@ -231,7 +231,7 @@ if test "x$enable_mmap" = xyes; then
     *cygwin*)
        # the normal mmap test does not work in cygwin
        AC_CHECK_FUNCS(mmap)
-       if [ ${ac_cv_func_mmap} = yes ]; then
+       if [ "x${ac_cv_func_mmap}" = xyes ]; then
          ac_cv_func_mmap_fixed_mapped=yes
        fi
     ;;
@@ -539,20 +539,20 @@ fi
 CONFIGURE_PART(Apply Configuration Information)
  
 AC_CONFIG_FILES([examples/shared-demo.pl			
-          examples/piped-demo.pl			
-          examples/stripes.pl				
-          examples/bigtops.pl				
-          examples/minmax.pl				
-          examples/cgi-demo.cgi				
-          examples/4charts.pl  				
-          examples/Makefile				
-          doc/Makefile					
-          src/Makefile					
-          bindings/Makefile                             
-          bindings/tcl/Makefile				
-          bindings/tcl/ifOctets.tcl			
+          examples/piped-demo.pl
+          examples/stripes.pl
+          examples/bigtops.pl
+          examples/minmax.pl
+          examples/cgi-demo.cgi
+          examples/4charts.pl
+          examples/Makefile
+          doc/Makefile
+          src/Makefile
+          bindings/Makefile
+          bindings/tcl/Makefile
+          bindings/tcl/ifOctets.tcl
           bindings/python/Makefile
-          Makefile])
+          Makefile])          
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.cgi examples/*.pl]],[[]])
 AC_OUTPUT
