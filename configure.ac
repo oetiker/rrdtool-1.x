@@ -538,21 +538,21 @@ fi
 
 CONFIGURE_PART(Apply Configuration Information)
  
-AC_CONFIG_FILES([examples/shared-demo.pl			
-          examples/piped-demo.pl
-          examples/stripes.pl
-          examples/bigtops.pl
-          examples/minmax.pl
-          examples/cgi-demo.cgi
-          examples/4charts.pl
-          examples/Makefile
-          doc/Makefile
-          src/Makefile
-          bindings/Makefile
-          bindings/tcl/Makefile
-          bindings/tcl/ifOctets.tcl
-          bindings/python/Makefile
-          Makefile])          
+AC_CONFIG_FILES([examples/shared-demo.pl])
+AC_CONFIG_FILES([examples/piped-demo.pl])
+AC_CONFIG_FILES([examples/stripes.pl])
+AC_CONFIG_FILES([examples/bigtops.pl])
+AC_CONFIG_FILES([examples/minmax.pl])
+AC_CONFIG_FILES([examples/cgi-demo.cgi])
+AC_CONFIG_FILES([examples/4charts.pl])
+AC_CONFIG_FILES([examples/Makefile])
+AC_CONFIG_FILES([doc/Makefile])
+AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([bindings/Makefile])
+AC_CONFIG_FILES([bindings/tcl/Makefile])
+AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
+AC_CONFIG_FILES([bindings/python/Makefile])
+AC_CONFIG_FILES([Makefile])          
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.cgi examples/*.pl]],[[]])
 AC_OUTPUT
