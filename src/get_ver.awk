@@ -5,6 +5,7 @@ BEGIN {
       split($1, t, "=");
       my_ver_str = substr(t[2],2,length(t[2])-2);
       split(my_ver_str, v, ".");
+      gsub("[^0-9].*$", "", v[3]);
       my_ver = v[1] "," v[2] "," v[3];
     }
     if (match ($0, /^NUMVERS=/)) {
