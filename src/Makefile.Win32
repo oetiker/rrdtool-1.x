@@ -94,7 +94,7 @@ RC	= windres
 LDFLAGS	= -s
 LIBEXT	= a
 RCFLAGS	= -I rc -O coff -i
-CFLAGS	+= -Wall -Wno-format -Wno-unused # -pedantic
+CFLAGS  += -fno-strict-aliasing -Wall -Wno-format -Wno-unused # -pedantic
 endif
 
 ifndef COPYR
