@@ -783,6 +783,8 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		       a heart beat can be unknown */
 		    /* (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
 		     > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) || */
+		    /* if the interval is larger thatn mrhb we get NAN */
+	            (interval > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) ||
 		    (occu_pdp_st-proc_pdp_st <= 
 		     rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt)) {
 		    pdp_temp[i] = DNAN;
