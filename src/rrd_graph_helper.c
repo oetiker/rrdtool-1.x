@@ -797,6 +797,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *const im, int optno) {
 		if (rrd_parse_xport(argv[i],&eaten,gdp,im)) return;
 		break;
 	    case GF_PRINT:	/* vname:CF:format -or- vname:format */
+		im->prt_c++;		
 	    case GF_GPRINT:	/* vname:CF:format -or- vname:format */
 		if (rrd_parse_print(argv[i],&eaten,gdp,im)) return;
 		break;
