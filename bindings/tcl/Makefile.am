@@ -20,7 +20,9 @@ AM_CPPFLAGS        = -I$(TCL_PREFIX)/include -I$(SRC_DIR) -DUSE_TCL_STUBS
 LIBDIRS            = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdir)
 LIB_RUNTIME_DIR    = $(libdir)
 
+if BUILD_TCL_SITE
 pkglibdir = @TCL_PACKAGE_DIR@
+endif
 
 # Automake doen't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
 # library name. So we build and install this library `by hand'.
@@ -39,7 +41,7 @@ pkglib_DATA = pkgIndex.tcl
 pkglib_SCRIPTS = ifOctets.tcl
 
 $(TCL_RRD_LIB): tclrrd.o
-	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd_th -lm $(TCL_STUB_LIB_SPEC) $(LIBS)
+	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd_th -lm $(TCL_STUB_LIB_SPEC) $(LDFLAGS) $(LIBS)
 
 tclrrd.o: tclrrd.c
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) -c $< -DVERSION=\"$(VERSION)\"

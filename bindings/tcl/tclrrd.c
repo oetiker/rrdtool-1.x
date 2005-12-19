@@ -21,6 +21,12 @@
 #include <rrd_tool.h>
 #include <rrd_format.h>
 
+/* support pre-8.4 tcl */
+
+#ifndef CONST84
+#   define CONST84
+#endif
+
 extern int Tclrrd_Init(Tcl_Interp *interp);
 extern int Tclrrd_SafeInit(Tcl_Interp *interp);
 

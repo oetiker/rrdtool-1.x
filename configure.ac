@@ -463,6 +463,8 @@ AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
 AC_SUBST(PERL_VERSION)
 
+enable_tcl_site=no
+
 AC_ARG_ENABLE(tcl,[  --disable-tcl           do not build the tcl modules],
 [],[enable_tcl=yes])
 
@@ -489,9 +491,13 @@ if test  "$enable_tcl" = "yes"; then
 	. $tcl_config
 	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
   fi
+  AC_ARG_ENABLE(tcl,[  --enable-tcl-site        install the tcl extension in the tcl tree],
+  [],[enable_tcl_site=yes])
+
 fi
 
 AM_CONDITIONAL(BUILD_TCL, test "$enable_tcl" = "yes" )
+AM_CONDITIONAL(BUILD_TCL_SITE, test "$enable_tcl_site" = "yes" )
 
 AC_SUBST(TCL_PREFIX)
 AC_SUBST(TCL_SHLIB_CFLAGS)
