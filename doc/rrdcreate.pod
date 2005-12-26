@@ -378,6 +378,44 @@ sample. An extreme example of this might be a "step" of 5 minutes and a
 result in all the PDPs for that entire day period being set to the
 same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
 
+       time|
+       axis|
+ begin__|00|
+        |01|
+       u|02|----* sample1, restart "hb"-timer
+       u|03|   /
+       u|04|  /
+       u|05| /
+       u|06|/     "hbt" expired
+       u|07|
+        |08|----* sample2, restart "hb" 
+        |09|   / 
+        |10|  /
+       u|11|----* sample3, restart "hb"
+       u|12|   /
+       u|13|  /
+ step1_u|14| /
+       u|15|/     "swt" expired
+       u|16|
+        |17|----* sample4, restart "hb", create "pdp" for step1 = 
+        |18|   /  = unknown due to 10 "u" labled secs > "hb"
+        |19|  /
+        |20| /
+        |21|----* sample5, restart "hb"
+        |22|   /
+        |23|  /
+        |24|----* sample6, restart "hb"
+        |25|   /
+        |26|  /
+        |27|----* sample7, restart "hb"
+ step2__|28|   /
+        |22|  /
+        |23|----* sample8, restart "hb", create "pdp" for step1, create "cdp" 
+        |24|   /
+        |25|  /
+
+graphics by I<vladimir.lavrov@desy.de>.
+
 
 =head1 HOW TO MEASURE
 
