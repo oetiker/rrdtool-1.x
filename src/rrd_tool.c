@@ -326,7 +326,15 @@ int main(int argc, char *argv[])
 #endif
 	  RemoteMode=1;
           if ((argc == 3) && strcmp("",argv[2])){
-             if (getuid()==0){
+
+             if (
+#ifdef HAVE_GETUID
+		 getuid()
+#else
+		 1
+#endif
+		 == 0 ){
+
 #ifdef HAVE_CHROOT
                 chroot(argv[2]);
                 if (errno!=0){
@@ -435,7 +443,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: chdir security problem - rrdtool is running as "
-                    "root an no chroot!\n");
+                    "root but not chroot!\n");
              return(1); 
           }
 #endif
@@ -454,7 +462,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: mkdir security problem - rrdtool is running as "
-                    "root an no chroot!\n");
+                    "root but not chroot!\n");
              return(1); 
           }
 #endif
