@@ -1,23 +1,27 @@
-# Gnu Makefile for Win32 target * 20-Aug-2005
+# Gnu Makefile for Win32 target * 04-Jan-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.Win32 [all|clean|dist]
+# use with: make -f Makefile.Win32 [all|clean|dist] [BINEXT=cgi]
 
-SOURCE	= rrd_tool
-#SOURCE	= rrd_cgi
-TARGET	= $(subst _,,$(SOURCE))
-#DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
+# What to build
+ifndef BINEXT
+BINEXT	= exe
+endif
+
 DESCR	= Round Robin Database Tool
-COPYR	= Copyright (c) 1997-2005 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
 #WWWURL	= http://ee-staff.ethz.ch/~oetiker/webtools/rrdtool/
 WWWURL	= http://www.rrdtool.org/
+ICON	= ../favicon.ico
+
+# Vertical label angle: 90.0 (default) or 270.0
+RRDGRAPH_YLEGEND_ANGLE = 90.0
 
 # Edit the path below to point to your install destination.
-# INSTDIR = /mnt/sys/mrtg/rrd
 INSTDIR	= c:/mrtg/rrd
 
 # Base for the lib sources
 ifndef LIBBASE
-LIBBASE	= d:/projects/cw
+LIBBASE	= ../..
 endif
 # All library code is statically linked to avoid problems with other lib NLMs. 
 # Edit the path below to point to your libgd sources or set environment var.
@@ -35,7 +39,7 @@ LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.1.9
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBART
-LIBART	= $(LIBBASE)/libart_lgpl-2.3.3
+LIBART	= $(LIBBASE)/libart_lgpl-2.3.17
 endif
 # Edit the path below to point to your zlib sources or set environment var.
 ifndef ZLIBSDK
@@ -43,8 +47,7 @@ ZLIBSDK	= $(LIBBASE)/zlib-1.2.3
 endif
 # Edit the path below to point to your zlib sources or set environment var.
 ifndef LIBCGI
-#LIBCGI	= $(LIBBASE)/cgilib-0.4
-LIBCGI	= d:/rrdtool-1.0.50/cgilib-0.4
+LIBCGI	= $(LIBBASE)/cgilib-0.5
 endif
 
 # The following line defines your compiler.
@@ -54,7 +57,7 @@ else
 	CC = gcc
 endif
 # RM	= rm -f
-CP	= cp -fv
+CP	= cp -afv
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
@@ -76,29 +79,27 @@ CFLAGS	= $(OPT) -D$(DB) -DHAVE_CONFIG_H
 
 ifeq ($(CC),mwcc)
 LD	= mwld
-CFLAGS	+= -gccinc -msgstyle gcc -inline off -opt nointrinsics -inst mmx -proc 586
-#CFLAGS	+= -w on,nounused,nounusedexpr
-#CFLAGS	+= -ansi strict
-CFLAGS	+= -ir "$(METROWERKS)/MSL" -ir "$(METROWERKS)/Win32-x86 Support"
-LD	= mwld
 RC	= mwwinrc
 LDFLAGS	= -nostdlib
+LIBEXT	= lib
 LIBPATH	+= -lr "$(METROWERKS)/MSL" -lr "$(METROWERKS)/Win32-x86 Support"
 LDLIBS	+= -lkernel32.lib -luser32.lib
 LDLIBS	+= -lMSL_Runtime_x86.lib -lMSL_C_x86.lib -lMSL_Extras_x86.lib
-LIBEXT	= lib
 RCFLAGS	=
+CFLAGS	+= -gccinc -msgstyle gcc -inline off -opt nointrinsics -inst mmx -proc 586
+CFLAGS	+= -ir "$(METROWERKS)/MSL" -ir "$(METROWERKS)/Win32-x86 Support"
+#CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
 else
 LD	= gcc
 RC	= windres
 LDFLAGS	= -s
 LIBEXT	= a
 RCFLAGS	= -I rc -O coff -i
-CFLAGS  += -fno-strict-aliasing -Wall -Wno-format -Wno-unused # -pedantic
+CFLAGS	+= -fno-strict-aliasing -Wall -Wno-unused # -pedantic
 endif
 
 ifndef COPYR
-	COPYR = Copyright (c) 2005 The Open Source Community.
+	COPYR = Copyright (c) 2006 The Open Source Community.
 endif
 ifndef DESCR
 	DESCR = $(TARGET) Command Extension
@@ -106,7 +107,7 @@ endif
 DESCR += - $(CC) build
 
 INCLUDES += -I. -I$(LIBGD) -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
-ifeq ($(SOURCE),rrd_cgi)
+ifeq ($(BINEXT),cgi)
 INCLUDES += -I$(LIBCGI)
 endif
 
@@ -209,19 +210,28 @@ ZLIBOBJS	+= \
 	$(EOLIST)
 endif
 
+CGIOBJS	= \
+	$(OBJDIR)/cgi.o \
+	$(OBJDIR)/cookies.o \
+	$(EOLIST)
+
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
 OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(GD2LIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-ifeq ($(SOURCE),rrd_cgi)
-OBJS	+= $(OBJDIR)/cgi.o
+
+ifeq ($(BINEXT),cgi)
+OBJS	+= $(CGIOBJS) $(OBJDIR)/rrd_cgi.o
+TARGET	= rrdcgi
+else
+OBJS	+= $(OBJDIR)/rrd_tool.o
+TARGET	= rrdtool
 endif
-OBJS	+= $(OBJDIR)/$(SOURCE).o
 
-LDLIBS	= $(LIBFT2)/objs/freetype.$(LIBEXT)
+LDLIBS	+= $(LIBFT2)/objs/freetype.$(LIBEXT)
 
 
-all: $(OBJDIR) config.h $(OBJDIR)/$(TARGET).exe
+all: $(OBJDIR) config.h $(OBJDIR)/$(TARGET).$(BINEXT)
 
 dist: all
 	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/$(TARGET).map $(OBJDIR)/$(TARGET).ncv
@@ -229,7 +239,7 @@ dist: all
 
 install: all
 	@[ -d $(INSTDIR) ] || mkdir $(INSTDIR)
-	@$(CP) $(TARGET).exe $(INSTDIR)
+	@$(CP) $(TARGET).$(BINEXT) $(INSTDIR)
 
 clean:
 	-$(RM) -r $(OBJDIR)
@@ -238,7 +248,7 @@ clean:
 $(OBJDIR):
 	@mkdir $(OBJDIR)
 
-$(OBJDIR)/version.inc: ../configure $(OBJDIR) get_ver.awk
+$(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
 	@echo Creating $@
 	@awk -f get_ver.awk $< > $@
 
@@ -246,7 +256,7 @@ $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/$(TARGET).exe: $(OBJS) $(OBJDIR)/$(TARGET).res
+$(OBJDIR)/$(TARGET).$(BINEXT): $(OBJS) $(OBJDIR)/$(TARGET).res
 	@echo Linking $@
 	@-$(RM) $@
 	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
@@ -271,13 +281,13 @@ $(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo     BEGIN >> $@
 	@echo       VALUE "LegalCopyright","$(COPYR)\0" >> $@
 #	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
-	@echo       VALUE "ProductName","$(TARGET).exe\0" >> $@
+	@echo       VALUE "ProductName","$(TARGET).$(BINEXT)\0" >> $@
 	@echo       VALUE "ProductVersion","$(RRD_VERSION_STR)\0" >> $@
 	@echo       VALUE "License","Released under GPL.\0" >> $@
 	@echo       VALUE "FileDescription","$(DESCR)\0" >> $@
 	@echo       VALUE "FileVersion","$(RRD_VERSION_STR)\0" >> $@
 	@echo       VALUE "InternalName","$(TARGET)\0" >> $@
-	@echo       VALUE "OriginalFilename","$(TARGET).exe\0" >> $@
+	@echo       VALUE "OriginalFilename","$(TARGET).$(BINEXT)\0" >> $@
 ifdef WWWURL
 	@echo       VALUE "WWW","$(WWWURL)\0" >> $@
 endif
@@ -339,12 +349,12 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_TERMIOS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_UNISTD_H 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ZLIB_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIBZ 1$(DL) >> $@
 	@echo $(DL)#define rrd_realloc(a,b) realloc((a), (b))$(DL) >> $@
-	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE 90.0$(DL) >> $@
+	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
+	@echo $(DL)#define RRD_DEFAULT_FONT "arial.ttf"$(DL) >> $@
 
 

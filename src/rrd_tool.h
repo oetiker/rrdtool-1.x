@@ -100,6 +100,7 @@ extern int getrusage(int, struct rusage *);
 /* Win32 only includes */
 
 #include <float.h>        /* for _isnan  */
+#include <io.h>           /* for chdir   */
 #ifdef __MINGW32__
 #define localtime_r(a,b) localtime(a)
 #define ctime_r(a,b) ctime(a)
