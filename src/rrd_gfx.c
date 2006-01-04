@@ -1081,9 +1081,11 @@ static void svg_write_text(FILE *fp, const char *text)
     case '"': fputs("&quot;", fp); break;
     default:
         if (ch == 32) {
+#ifdef HAVE_MBSTOWCS     
             if (p <= cstr + 1 || !*p || *p == 32)
                 fputs("&#160;", fp); /* non-breaking space in unicode */
             else
+#endif
                 fputc(32, fp);
         } else if (ch < 32 || ch >= 127)
 	fprintf(fp, "&#%d;", (int)ch);
