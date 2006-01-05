@@ -28,10 +28,10 @@ perl-piped/Makefile: perl-piped/Makefile.PL
 	cd perl-piped && $(PERL) Makefile.PL $(PERL_MAKE_OPTIONS)
 
 perl_shared: perl-shared/Makefile
-	cd perl-shared && $(MAKE) RPATH=$(exec_prefix)/lib
+	cd perl-shared && $(MAKE)
 
 perl-shared/Makefile: perl-shared/Makefile.PL
-	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
+	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(exec_prefix)/lib
 # LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
 clean-local:

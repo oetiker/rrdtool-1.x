@@ -3,14 +3,18 @@ use Config;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 
-# Specify the location of the archive containing PIC compiled object files.
-my $R = "";
-
-
-for ($^O){
-        /linux/   && do{ $R = "-Wl,--rpath -Wl,\$(RPATH)"};
-        /hpux/    && do{ $R = "+b\$(RPATH)"};
-        /solaris/ && do{ $R = "-R\$(RPATH)"};
+# if the last argument when calling Makefile.PL is RPATH=/... and ... is the
+# path to librrd.so then the Makefile will be written such that RRDs.so knows
+# where to find librrd.so later on ... 
+my $R="";
+if ($ARGV[-1] =~ /RPATH=(\S+)/){
+	pop @ARGV;
+	my $rp = $1;
+	for ($^O){
+	        /linux/   && do{ $R = "-Wl,--rpath -Wl,$rp"};
+	        /hpux/    && do{ $R = "+b$rp"};
+	        /solaris/ && do{ $R = "-R$rp"};
+	}
 }
 
 # darwin works without this because librrd contains its
@@ -29,3 +33,4 @@ WriteMakefile(
     'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' }
 );
+
