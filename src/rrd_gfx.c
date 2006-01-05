@@ -2034,9 +2034,9 @@ static void pdf_put_string_contents_wide(pdf_buffer *buf, const afm_char *text)
 	    default:
 		if (ch > 255) {
 		    pdf_put_char(buf, '?');
-		} else if (ch >= 126 || ch < 32) {
+		} else if (ch > 125 || ch < 32) {
 		    pdf_put_char(buf, ch);
-		} else if (ch >= 0 && ch <= 255) {
+		} else {
 		    char tmp[10];
 		    snprintf(tmp, sizeof(tmp), "\\%03o", (int)ch);
 		    pdf_puts(buf, tmp);
