@@ -195,7 +195,7 @@ Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv
 	return TCL_ERROR;
     }
 
-    rrd_dump_r(argv[1]);
+    rrd_dump_r(argv[1], NULL);
 
     /* NOTE: rrd_dump() writes to stdout. No interaction with TCL. */
 
