@@ -1,4 +1,4 @@
-# Gnu Makefile for NetWare target * 04-Jan-2006
+# Gnu Makefile for NetWare target * 14-Jan-2006
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile.NetWare [all|clean|dist] [BINEXT=cgi]
 
@@ -17,6 +17,9 @@ STACK	= 65535
 # Comment the line below if you dont want to load protected automatically.
 #LDRING	= 3
 
+# Set the default font used in graphs.
+RRD_DEFAULT_FONT = "arial.ttf"
+
 # Vertical label angle: 90.0 (default) or 270.0
 RRDGRAPH_YLEGEND_ANGLE = 90.0
 
@@ -33,10 +36,6 @@ ifndef LIBBASE
 LIBBASE	= ../..
 endif
 # All library code is statically linked to avoid problems with other lib NLMs. 
-# Edit the path below to point to your libgd sources or set environment var.
-ifndef LIBGD
-LIBGD	= $(LIBBASE)/gd-2.0.33
-endif
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
 LIBPNG	= $(LIBBASE)/libpng-1.2.8
@@ -57,6 +56,9 @@ endif
 ifndef LIBCGI
 LIBCGI	= $(LIBBASE)/cgilib-0.5
 endif
+
+# whatever...
+# NO_NULL_REALLOC = 1
 
 # Edit the var below to point to your lib architecture.
 ifndef LIBARCH
@@ -151,7 +153,7 @@ NDK_ROOT = $(NDKBASE)/ndk
 SDK_CLIB = $(NDK_ROOT)/nwsdk
 SDK_LIBC = $(NDK_ROOT)/libc
 
-INCLUDES = -I. -I$(LIBGD) -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
+INCLUDES = -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
 ifeq ($(BINEXT),cgi)
 INCLUDES += -I$(LIBCGI)
 endif
@@ -163,7 +165,7 @@ endif
 
 CFLAGS += $(INCLUDES)
 
-vpath %.c . $(LIBGD) $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) $(LIBCGI)
+vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) $(LIBCGI)
 
 RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_afm.o \
@@ -200,20 +202,6 @@ XLIBOBJS	= \
 	$(OBJDIR)/hash_32.o \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
-	$(EOLIST)
-
-GD2LIBOBJS	= \
-	$(OBJDIR)/gd.o \
-	$(OBJDIR)/gd_io.o \
-	$(OBJDIR)/gd_io_dp.o \
-	$(OBJDIR)/gd_io_file.o \
-	$(OBJDIR)/gd_io_ss.o \
-	$(OBJDIR)/gd_png.o \
-	$(OBJDIR)/gd_ss.o \
-	$(OBJDIR)/gdcache.o \
-	$(OBJDIR)/gdfonts.o \
-	$(OBJDIR)/gdhelpers.o \
-	$(OBJDIR)/gdtables.o \
 	$(EOLIST)
 
 PNGLIBOBJS	= \
@@ -267,7 +255,7 @@ CGIOBJS	= \
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
-OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(GD2LIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
+OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
 
 ifeq ($(BINEXT),cgi)
 OBJS	+= $(CGIOBJS) $(OBJDIR)/rrd_cgi.o
@@ -432,9 +420,21 @@ config.h: Makefile.NetWare
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ZLIB_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIBZ 1$(DL) >> $@
+ifdef NO_NULL_REALLOC
+	@echo $(DL)#define NO_NULL_REALLOC 1$(DL) >> $@
+	@echo $(DL)#define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))$(DL) >> $@
+else
 	@echo $(DL)#define rrd_realloc(a,b) realloc((a), (b))$(DL) >> $@
-#	@echo $(DL)#define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))$(DL) >> $@
+endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
-	@echo $(DL)#define RRD_DEFAULT_FONT "arial.ttf"$(DL) >> $@
+	@echo $(DL)#define RRD_DEFAULT_FONT $(RRD_DEFAULT_FONT)$(DL) >> $@
+
+$(OBJDIR)/readme.txt: Makefile.NetWare
+	@echo Creating $@
+	@echo $(DL)This is a binary distribution for NetWare platform.$(DL) > $@
+	@echo $(DL)MRTG rrdtool version $(RRD_VERSION_STR)$(DL) >> $@
+	@echo $(DL)Please download the complete RRD package for$(DL) >> $@
+	@echo $(DL)any further documentation:$(DL) >> $@
+	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
 
 

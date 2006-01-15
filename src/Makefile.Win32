@@ -1,4 +1,4 @@
-# Gnu Makefile for Win32 target * 04-Jan-2006
+# Gnu Makefile for Win32 target * 14-Jan-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile.Win32 [all|clean|dist] [BINEXT=cgi]
 
@@ -13,6 +13,9 @@ COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 ICON	= ../favicon.ico
 
+# Set the default font used in graphs.
+RRD_DEFAULT_FONT = "arial.ttf"
+
 # Vertical label angle: 90.0 (default) or 270.0
 RRDGRAPH_YLEGEND_ANGLE = 90.0
 
@@ -23,11 +26,7 @@ INSTDIR	= c:/mrtg/rrd
 ifndef LIBBASE
 LIBBASE	= ../..
 endif
-# All library code is statically linked to avoid problems with other lib NLMs. 
-# Edit the path below to point to your libgd sources or set environment var.
-ifndef LIBGD
-LIBGD	= $(LIBBASE)/gd-2.0.15
-endif
+# All library code is statically linked to avoid problems with other lib DLLs. 
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
 LIBPNG	= $(LIBBASE)/libpng-1.2.8
@@ -49,6 +48,9 @@ endif
 ifndef LIBCGI
 LIBCGI	= $(LIBBASE)/cgilib-0.5
 endif
+
+# whatever...
+NO_NULL_REALLOC = 1
 
 # The following line defines your compiler.
 ifdef METROWERKS
@@ -86,9 +88,9 @@ LIBPATH	+= -lr "$(METROWERKS)/MSL" -lr "$(METROWERKS)/Win32-x86 Support"
 LDLIBS	+= -lkernel32.lib -luser32.lib
 LDLIBS	+= -lMSL_Runtime_x86.lib -lMSL_C_x86.lib -lMSL_Extras_x86.lib
 RCFLAGS	=
-CFLAGS	+= -gccinc -msgstyle gcc -inline off -opt nointrinsics -inst mmx -proc 586
+CFLAGS	+= -nostdinc -gccinc -msgstyle gcc -inline off -opt nointrinsics -proc 586
 CFLAGS	+= -ir "$(METROWERKS)/MSL" -ir "$(METROWERKS)/Win32-x86 Support"
-#CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
+CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
 else
 LD	= gcc
 RC	= windres
@@ -106,14 +108,14 @@ ifndef DESCR
 endif
 DESCR += - $(CC) build
 
-INCLUDES += -I. -I$(LIBGD) -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
+INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
 ifeq ($(BINEXT),cgi)
 INCLUDES += -I$(LIBCGI)
 endif
 
 CFLAGS += $(INCLUDES)
 
-vpath %.c . $(LIBGD) $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) $(LIBCGI)
+vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) $(LIBCGI)
 
 RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_afm.o \
@@ -140,7 +142,7 @@ RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_update.o \
 	$(OBJDIR)/rrd_version.o \
 	$(OBJDIR)/rrd_xport.o \
-	$(OBJDIR)/rrd_not_thread_safe.o \
+	$(OBJDIR)/rrd_thread_safe_nt.o \
 	$(EOLIST)
 
 XLIBOBJS	= \
@@ -151,20 +153,6 @@ XLIBOBJS	= \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
 	$(OBJDIR)/strftime.o \
-	$(EOLIST)
-
-GD2LIBOBJS	= \
-	$(OBJDIR)/gd.o \
-	$(OBJDIR)/gd_io.o \
-	$(OBJDIR)/gd_io_dp.o \
-	$(OBJDIR)/gd_io_file.o \
-	$(OBJDIR)/gd_io_ss.o \
-	$(OBJDIR)/gd_png.o \
-	$(OBJDIR)/gd_ss.o \
-	$(OBJDIR)/gdcache.o \
-	$(OBJDIR)/gdfonts.o \
-	$(OBJDIR)/gdhelpers.o \
-	$(OBJDIR)/gdtables.o \
 	$(EOLIST)
 
 PNGLIBOBJS	= \
@@ -218,7 +206,7 @@ CGIOBJS	= \
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
-OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(GD2LIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
+OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
 
 ifeq ($(BINEXT),cgi)
 OBJS	+= $(CGIOBJS) $(OBJDIR)/rrd_cgi.o
@@ -342,7 +330,7 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_STRLCAT 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRLCPY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRSTR 1$(DL) >> $@
-	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
+#	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_SELECT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_STAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_TIME_H 1$(DL) >> $@
@@ -353,8 +341,22 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ZLIB_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIBZ 1$(DL) >> $@
+ifdef NO_NULL_REALLOC
+	@echo $(DL)#define NO_NULL_REALLOC 1$(DL) >> $@
+	@echo $(DL)#define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))$(DL) >> $@
+else
 	@echo $(DL)#define rrd_realloc(a,b) realloc((a), (b))$(DL) >> $@
+endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
-	@echo $(DL)#define RRD_DEFAULT_FONT "arial.ttf"$(DL) >> $@
+	@echo $(DL)#define RRD_DEFAULT_FONT $(RRD_DEFAULT_FONT)$(DL) >> $@
+	@echo $(DL)#define strftime strftime_$(DL) >> $@
+
+$(OBJDIR)/readme.txt: Makefile.Win32
+	@echo Creating $@
+	@echo $(DL)This is a binary distribution for Win32 platform.$(DL) > $@
+	@echo $(DL)MRTG rrdtool version $(RRD_VERSION_STR)$(DL) >> $@
+	@echo $(DL)Please download the complete RRD package for$(DL) >> $@
+	@echo $(DL)any further documentation:$(DL) >> $@
+	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
 
 
