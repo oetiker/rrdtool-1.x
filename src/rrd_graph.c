@@ -1527,7 +1527,7 @@ calc_horizontal_grid(image_desc_t   *im)
     double   range;
     double   scaledrange;
     int      pixel,i;
-    int      gridind;
+    int      gridind=0;
     int      decimals, fractionals;
 
     im->ygrid_scale.labfact=2;
