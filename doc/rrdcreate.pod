@@ -200,7 +200,7 @@ flagging aberrant behavior in the data source time series:
 
 =item *
 
-B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra-num>
+B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>[B<:>I<rra-num>]
 
 =item *
 
