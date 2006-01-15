@@ -650,8 +650,15 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	double ymin,ymax;
 	int i;
 	int tostdout = (strcmp(argv[2],"-") == 0);	
+	int imginfo = 0;
+	for (i=2;i<argc;i++){
+		if (strcmp(argv[i],"--imginfo") == 0 || strcmp(argv[i],"-f") == 0){
+			imginfo = 1;
+			break;
+		}
+	}
 	if( rrd_graph(argc-1, &argv[1], &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
-	    if (!tostdout) 
+	    if (!tostdout && !imginfo) 
 		printf ("%dx%d\n",xsize,ysize);
 	    if (calcpr) {
 		for(i=0;calcpr[i];i++){
