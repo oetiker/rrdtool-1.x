@@ -1531,7 +1531,6 @@ calc_horizontal_grid(image_desc_t   *im)
     int      decimals, fractionals;
 
     im->ygrid_scale.labfact=2;
-    gridind=-1;
     range =  im->maxval - im->minval;
     scaledrange = range / im->magfact;
 
@@ -1582,17 +1581,16 @@ calc_horizontal_grid(image_desc_t   *im)
 	else {
 	    for(i=0;ylab[i].grid > 0;i++){
 		pixel = im->ysize / (scaledrange / ylab[i].grid);
-		if (pixel > 7) {
-		    gridind = i;
-		    break;
-		}
+   	        gridind = i;
+		if (pixel > 7)
+                    break;
 	    }
 	    
 	    for(i=0; i<4;i++) {
 	       if (pixel * ylab[gridind].lfac[i] >=  2.5 * im->text_prop[TEXT_PROP_AXIS].size) {
-		  im->ygrid_scale.labfact =  ylab[gridind].lfac[i];
+	          im->ygrid_scale.labfact =  ylab[gridind].lfac[i];
 		  break;
-	       }		          
+               }
 	    } 
 	    
 	    im->ygrid_scale.gridstep = ylab[gridind].grid * im->magfact;
