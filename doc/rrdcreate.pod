@@ -180,7 +180,9 @@ B<RRA:>I<AVERAGE | MIN | MAX | LAST>B<:>I<xff>B<:>I<steps>B<:>I<rows>
 
 I<xff> The xfiles factor defines what part of a consolidation interval may
 be made up from I<*UNKNOWN*> data while the consolidated value is still
-regarded as known.
+regarded as known. It is given as the ratio of allowed I<*UNKNOWN*> PDPs
+to the number of PDPs in the interval. Thus, it ranges from 0 to 1 (exclusive).
+
 
 I<steps> defines how many of these I<primary data points> are used to build
 a I<consolidated data point> which then goes into the archive.
