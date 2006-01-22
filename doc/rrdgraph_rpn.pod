@@ -30,7 +30,7 @@ of your RRD script.
 Example: C<CDEF:mydatabits=mydata,8,*>
 
 This means:  push variable I<mydata>, push the number 8, execute
-the operator I<+>. The operator needs two elements and uses those
+the operator I<*>. The operator needs two elements and uses those
 to return one value.  This value is then stored in I<mydatabits>.
 As you may have guessed, this instruction means nothing more than
 I<mydatabits = mydata * 8>.  The real power of B<RPN> lies in the
