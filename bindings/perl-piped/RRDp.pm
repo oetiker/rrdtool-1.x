@@ -16,7 +16,7 @@ $answer = B<RRD::read>
 
 $status = B<RRD::end>
 
-B<$RRDp::user>,  B<$RRDp::sys>, B<$RRDp::real>
+B<$RRDp::user>,  B<$RRDp::sys>, B<$RRDp::real>, B<$RRDp::error_mode>, B<$RRDp::error>
 
 =head1 DESCRIPTION
 
@@ -68,6 +68,16 @@ is the total time RRDtool has been running.
 The difference between user + system and real is the time spent
 waiting for things like the hard disk and new input from the perl
 script.
+
+=item B<$RRDp::error_mode> and B<$RRDp::error>
+
+If you set the variable $RRDp::error_mode to the value 'catch' before you run RRDp::read a potential
+ERROR message will not cause the program to abort but will be returned in this variable. If no error
+occurs the variable will be empty.
+
+ $RRDp::error_mode = 'catch';
+ RRDp::cmd qw(info file.rrd);
+ print $RRDp::error if $RRDp::error;
 
 =back
 
@@ -128,6 +138,7 @@ sub start ($){
 sub read () {
   croak "RRDp::read can only be called after RRDp::cmd" 
     unless $Sequence eq 'C';
+  $RRDp::error = undef;
   $Sequence = 'R';
   my $inmask = 0;
   my $srbuf;
@@ -148,9 +159,10 @@ sub read () {
     $minibuf .= $srbuf;
     while ($minibuf =~ s|^(.+?)\n||s) {
       my $line = $1;
-      # print $line,"\n";
-      if ($line =~  m|^ERROR|) {
-	croak $line;
+      # print $line,"\n";      
+      $RRDp::error = undef;
+      if ($line =~  m|^ERROR|) {	
+	$RRDp::error_mode eq 'catch' ? $RRDp::error = $line : croak $line;
 	$ERR = 1;
       } 
       elsif ($line =~ m|^OK u:([\d\.]+) s:([\d\.]+) r:([\d\.]+)|){
