@@ -1,11 +1,6 @@
-# Gnu Makefile for Win32 target * 14-Jan-2006
+# Gnu Makefile for Win32 target * 29-Jan-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.Win32 [all|clean|dist] [BINEXT=cgi]
-
-# What to build
-ifndef BINEXT
-BINEXT	= exe
-endif
+# use with: make -f Makefile.Win32 [all|clean|dist]
 
 DESCR	= Round Robin Database Tool
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
@@ -14,13 +9,20 @@ WWWURL	= http://www.rrdtool.org/
 ICON	= ../favicon.ico
 
 # Set the default font used in graphs.
+ifndef RRD_DEFAULT_FONT
 RRD_DEFAULT_FONT = "arial.ttf"
+#RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
+#RRD_DEFAULT_FONT = "VeraMono.ttf"
+endif
 
 # Vertical label angle: 90.0 (default) or 270.0
 RRDGRAPH_YLEGEND_ANGLE = 90.0
 
+# Set to one if you want to have piecharts.
+WITH_PIECHART = 1
+
 # Edit the path below to point to your install destination.
-INSTDIR	= c:/mrtg/rrd
+INSTDIR	= c:/rrdtool
 
 # Base for the lib sources
 ifndef LIBBASE
@@ -61,6 +63,9 @@ endif
 # RM	= rm -f
 CP	= cp -afv
 
+ZIP	= zip -qzR9
+ARCHIVE	= rrdtool-$(RRD_VERSION_STR)-w32.zip
+
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
 # DB	= DEBUG
@@ -83,6 +88,8 @@ ifeq ($(CC),mwcc)
 LD	= mwld
 RC	= mwwinrc
 LDFLAGS	= -nostdlib
+AR	= $(LD)
+ARFLAGS	= -type library -w nocmdline $(OBJS) -o
 LIBEXT	= lib
 LIBPATH	+= -lr "$(METROWERKS)/MSL" -lr "$(METROWERKS)/Win32-x86 Support"
 LDLIBS	+= -lkernel32.lib -luser32.lib
@@ -95,6 +102,8 @@ else
 LD	= gcc
 RC	= windres
 LDFLAGS	= -s
+AR	= ar
+ARFLAGS	= -cq
 LIBEXT	= a
 RCFLAGS	= -I rc -O coff -i
 CFLAGS	+= -fno-strict-aliasing -Wall -Wno-unused # -pedantic
@@ -104,14 +113,11 @@ ifndef COPYR
 	COPYR = Copyright (c) 2006 The Open Source Community.
 endif
 ifndef DESCR
-	DESCR = $(TARGET) Command Extension
+	DESCR = $(notdir $(@:.rc=)) Command Extension
 endif
 DESCR += - $(CC) build
 
-INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
-ifeq ($(BINEXT),cgi)
-INCLUDES += -I$(LIBCGI)
-endif
+INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK) -I$(LIBCGI)
 
 CFLAGS += $(INCLUDES)
 
@@ -198,7 +204,7 @@ ZLIBOBJS	+= \
 	$(EOLIST)
 endif
 
-CGIOBJS	= \
+CGILIBOBJS	= \
 	$(OBJDIR)/cgi.o \
 	$(OBJDIR)/cookies.o \
 	$(EOLIST)
@@ -206,32 +212,41 @@ CGIOBJS	= \
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
-OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-
-ifeq ($(BINEXT),cgi)
-OBJS	+= $(CGIOBJS) $(OBJDIR)/rrd_cgi.o
-TARGET	= rrdcgi
-else
-OBJS	+= $(OBJDIR)/rrd_tool.o
-TARGET	= rrdtool
-endif
+OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
+OBJCGI	:= $(OBJS) $(CGILIBOBJS) $(OBJDIR)/rrd_cgi.o
+OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
 LDLIBS	+= $(LIBFT2)/objs/freetype.$(LIBEXT)
 
 
-all: $(OBJDIR) config.h $(OBJDIR)/$(TARGET).$(BINEXT)
+all: rrdtool rrdcgi
 
-dist: all
-	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/$(TARGET).map $(OBJDIR)/$(TARGET).ncv
-	-$(RM) $(OBJDIR)/$(TARGET).def $(OBJDIR)/$(TARGET).res
+rrdtool: $(OBJDIR) config.h $(OBJDIR)/rrdtool.exe
+rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.exe
+librrd: $(OBJDIR) config.h $(OBJDIR)/librrd.$(LIBEXT)
+
+dist: all $(OBJDIR)/readme.txt
+	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/*.map $(OBJDIR)/*.ncv
+	-$(RM) $(OBJDIR)/*.def $(OBJDIR)/*.res $(OBJDIR)/*.rc
+	-$(RM) $(OBJDIR)/version.inc
+	@-$(CP) ../CHANGES $(OBJDIR)
+	@-$(CP) ../COPYING $(OBJDIR)
+	@-$(CP) ../COPYRIGHT $(OBJDIR)
+	@-$(CP) ../NEWS $(OBJDIR)
+	@-$(CP) ../README $(OBJDIR)
+	@echo Creating $(ARCHIVE)
+	@$(ZIP) $(ARCHIVE) $(OBJDIR)/* < $(OBJDIR)/readme.txt
 
 install: all
 	@[ -d $(INSTDIR) ] || mkdir $(INSTDIR)
-	@$(CP) $(TARGET).$(BINEXT) $(INSTDIR)
+	@$(CP) $(OBJDIR)/*.exe $(INSTDIR)
 
 clean:
 	-$(RM) -r $(OBJDIR)
 	-$(RM) config.h
+
+cleandist: clean
+	-$(RM) $(ARCHIVE)
 
 $(OBJDIR):
 	@mkdir $(OBJDIR)
@@ -244,10 +259,20 @@ $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/$(TARGET).$(BINEXT): $(OBJS) $(OBJDIR)/$(TARGET).res
+$(OBJDIR)/rrdcgi.exe: $(OBJCGI) $(OBJDIR)/rrdcgi.res
 	@echo Linking $@
 	@-$(RM) $@
 	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
+
+$(OBJDIR)/rrdtool.exe: $(OBJTOOL) $(OBJDIR)/rrdtool.res
+	@echo Linking $@
+	@-$(RM) $@
+	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
+
+$(OBJDIR)/librrd.$(LIBEXT): $(OBJS)
+	@echo Creating $@
+	@-$(RM) $@
+	@$(AR) $(ARFLAGS) $@ $^
 
 $(OBJDIR)/%.res: $(OBJDIR)/%.rc
 	@echo Creating $@
@@ -269,13 +294,13 @@ $(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo     BEGIN >> $@
 	@echo       VALUE "LegalCopyright","$(COPYR)\0" >> $@
 #	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
-	@echo       VALUE "ProductName","$(TARGET).$(BINEXT)\0" >> $@
+	@echo       VALUE "ProductName","$(notdir $(@:.rc=.exe))\0" >> $@
 	@echo       VALUE "ProductVersion","$(RRD_VERSION_STR)\0" >> $@
 	@echo       VALUE "License","Released under GPL.\0" >> $@
 	@echo       VALUE "FileDescription","$(DESCR)\0" >> $@
 	@echo       VALUE "FileVersion","$(RRD_VERSION_STR)\0" >> $@
-	@echo       VALUE "InternalName","$(TARGET)\0" >> $@
-	@echo       VALUE "OriginalFilename","$(TARGET).$(BINEXT)\0" >> $@
+	@echo       VALUE "InternalName","$(notdir $(@:.rc=))\0" >> $@
+	@echo       VALUE "OriginalFilename","$(notdir $(@:.rc=.exe))\0" >> $@
 ifdef WWWURL
 	@echo       VALUE "WWW","$(WWWURL)\0" >> $@
 endif
@@ -350,12 +375,15 @@ endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
 	@echo $(DL)#define RRD_DEFAULT_FONT $(RRD_DEFAULT_FONT)$(DL) >> $@
 	@echo $(DL)#define strftime strftime_$(DL) >> $@
+ifdef WITH_PIECHART
+	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
+endif
 
 $(OBJDIR)/readme.txt: Makefile.Win32
 	@echo Creating $@
 	@echo $(DL)This is a binary distribution for Win32 platform.$(DL) > $@
-	@echo $(DL)MRTG rrdtool version $(RRD_VERSION_STR)$(DL) >> $@
-	@echo $(DL)Please download the complete RRD package for$(DL) >> $@
+	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
+	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
 	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
 

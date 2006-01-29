@@ -1,27 +1,29 @@
-# Gnu Makefile for NetWare target * 14-Jan-2006
+# Gnu Makefile for NetWare target * 29-Jan-2006
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.NetWare [all|clean|dist] [BINEXT=cgi]
-
-# What to build
-ifndef BINEXT
-BINEXT	= nlm
-endif
+# use with: make -f Makefile.NetWare [all|clean|dist]
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
 #WWWURL	= http://ee-staff.ethz.ch/~oetiker/webtools/rrdtool/
 WWWURL	= http://www.rrdtool.org/
 MTSAFE	= YES
-#SCREEN	= $(TARGET)
+#SCREEN	= $(DESCR)
 STACK	= 65535
 # Comment the line below if you dont want to load protected automatically.
 #LDRING	= 3
 
 # Set the default font used in graphs.
-RRD_DEFAULT_FONT = "arial.ttf"
+ifndef RRD_DEFAULT_FONT
+#RRD_DEFAULT_FONT = "sys:/java/nwgfx/lib/x11/fonts/ttf/tt0003m_.ttf"
+#RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
+RRD_DEFAULT_FONT = "VeraMono.ttf"
+endif
 
 # Vertical label angle: 90.0 (default) or 270.0
 RRDGRAPH_YLEGEND_ANGLE = 90.0
+
+# Set to one if you want to have piecharts.
+WITH_PIECHART = 1
 
 # Edit the path below to point to your Novell NDK.
 ifndef NDKBASE
@@ -29,7 +31,7 @@ NDKBASE	= c:/novell
 endif
 # Edit the path below to point to your install destination.
 # INSTDIR = /mnt/sys/mrtg/rrd
-INSTDIR	= s:/mrtg/rrd
+INSTDIR	= s:/rrdtool
 
 # Base for the lib sources
 ifndef LIBBASE
@@ -79,6 +81,9 @@ CP	= cp -afv
 # http://www.gknw.com/development/prgtools/mkxdc.zip
 MPKXDC	= mkxdc
 
+ZIP	= zip -qzR9
+ARCHIVE	= rrdtool-$(RRD_VERSION_STR)-nw.zip
+
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
 # DB	= DEBUG
@@ -100,7 +105,9 @@ CFLAGS	+= -DHAVE_CONFIG_H
 
 ifeq ($(CC),mwccnlm)
 LD	= mwldnlm
-LDFLAGS	= -nostdlib $(PRELUDE) $(OBJS) $(LDLIBS) -o $(OBJDIR)/$(TARGET).nlm -commandfile
+LDFLAGS	= -nostdlib $^ $(PRELUDE) $(LDLIBS) -o $@ -commandfile
+AR	= $(LD)
+ARFLAGS	= -type library -w nocmdline $(OBJS) -o
 LIBEXT	= lib
 CFLAGS	+= -gccinc -inline off -opt nointrinsics -proc 586
 CFLAGS	+= -relax_pointers
@@ -116,6 +123,8 @@ endif
 else
 LD	= nlmconv
 LDFLAGS	= -T
+AR	= ar
+ARFLAGS	= -cq
 LIBEXT	= a
 CFLAGS	+= -fno-builtin -fpack-struct -fpcc-struct-return -fno-strict-aliasing
 CFLAGS	+= -Wall -Wno-unused # -pedantic
@@ -138,14 +147,11 @@ endif
 ifeq ($(MTSAFE),NO)
 	XDCOPT = -u
 endif
-ifdef XDCOPT
-	XDCDATA = $(OBJDIR)/$(TARGET).xdc
-endif
 ifndef COPYR
 	COPYR = Copyright (c) 2006 The Open Source Community.
 endif
 ifndef DESCR
-	DESCR = $(TARGET) Command Extension
+	DESCR = $(notdir $(@:.def=)) Command Extension
 endif
 DESCR += ($(LIBARCH)) - $(CC) build
 
@@ -153,10 +159,8 @@ NDK_ROOT = $(NDKBASE)/ndk
 SDK_CLIB = $(NDK_ROOT)/nwsdk
 SDK_LIBC = $(NDK_ROOT)/libc
 
-INCLUDES = -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
-ifeq ($(BINEXT),cgi)
-INCLUDES += -I$(LIBCGI)
-endif
+INCLUDES = -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK) -I$(LIBCGI)
+
 ifeq ($(LIBARCH),LIBC)
 	INCLUDES += -I$(SDK_LIBC)/include -I$(SDK_LIBC)/include/nks
 else
@@ -247,7 +251,7 @@ ZLIBOBJS	+= \
 	$(EOLIST)
 endif
 
-CGIOBJS	= \
+CGILIBOBJS	= \
 	$(OBJDIR)/cgi.o \
 	$(OBJDIR)/cookies.o \
 	$(EOLIST)
@@ -255,33 +259,42 @@ CGIOBJS	= \
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
-OBJS	= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-
-ifeq ($(BINEXT),cgi)
-OBJS	+= $(CGIOBJS) $(OBJDIR)/rrd_cgi.o
-TARGET	= rrdcgi
-else
-OBJS	+= $(OBJDIR)/rrd_tool.o
-TARGET	= rrdtool
-endif
+OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
+OBJCGI	:= $(OBJS) $(CGILIBOBJS) $(OBJDIR)/rrd_cgi.o
+OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
 LDLIBS	+= $(LIBFT2)/builds/netware/libc/libft2.$(LIBEXT)
 
 
-all: $(OBJDIR) config.h $(OBJDIR)/$(TARGET).$(BINEXT)
+all: rrdtool rrdcgi
 
-dist: all
-	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/$(TARGET).map $(OBJDIR)/$(TARGET).ncv
-	-$(RM) $(OBJDIR)/$(TARGET).def $(XDCDATA)
-	-$(RM) config.h
+rrdtool: $(OBJDIR) config.h $(OBJDIR)/rrdtool.nlm
+rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.nlm
+librrd: $(OBJDIR) config.h $(OBJDIR)/librrd.$(LIBEXT)
+
+dist: all $(OBJDIR)/readme.txt
+	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/*.map $(OBJDIR)/*.ncv
+	-$(RM) $(OBJDIR)/*.def $(OBJDIR)/*.xdc 
+	-$(RM) $(OBJDIR)/version.inc
+	@-$(CP) $(RRD_DEFAULT_FONT) $(OBJDIR)
+	@-$(CP) ../CHANGES $(OBJDIR)
+	@-$(CP) ../COPYING $(OBJDIR)
+	@-$(CP) ../COPYRIGHT $(OBJDIR)
+	@-$(CP) ../NEWS $(OBJDIR)
+	@-$(CP) ../README $(OBJDIR)
+	@echo Creating $(ARCHIVE)
+	@$(ZIP) $(ARCHIVE) $(OBJDIR)/* < $(OBJDIR)/readme.txt
 
 install: all
 	@[ -d $(INSTDIR) ] || mkdir $(INSTDIR)
-	@$(CP) $(TARGET).$(BINEXT) $(INSTDIR)
+	@$(CP) $(OBJDIR)/*.nlm $(INSTDIR)
 
 clean:
 	-$(RM) -r $(OBJDIR)
 	-$(RM) config.h
+
+cleandist: clean
+	-$(RM) $(ARCHIVE)
 
 $(OBJDIR):
 	@mkdir $(OBJDIR)
@@ -294,10 +307,20 @@ $(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
 	@echo Creating $@
 	@awk -f get_ver.awk $< > $@
 
-$(OBJDIR)/$(TARGET).$(BINEXT): $(OBJDIR) $(OBJS) $(OBJDIR)/version.inc $(OBJDIR)/$(TARGET).def $(XDCDATA)
+$(OBJDIR)/rrdcgi.nlm: $(OBJCGI) $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
 	@echo Linking $@
 	@-$(RM) $@
-	@$(LD) $(LDFLAGS) $(OBJDIR)/$(TARGET).def
+	@$(LD) $(LDFLAGS) $(@:.nlm=.def)
+
+$(OBJDIR)/rrdtool.nlm: $(OBJTOOL) $(OBJDIR)/rrdtool.def $(OBJDIR)/rrdtool.xdc
+	@echo Linking $@
+	@-$(RM) $@
+	@$(LD) $(LDFLAGS) $(@:.nlm=.def)
+
+$(OBJDIR)/librrd.$(LIBEXT): $(OBJS)
+	@echo Creating $@
+	@-$(RM) $@
+	@$(AR) $(ARFLAGS) $@ $^
 
 $(OBJDIR)/%.xdc: Makefile.NetWare
 	@echo Creating $@
@@ -320,7 +343,7 @@ endif
 ifdef STACK
 	@echo $(DL)stack $(STACK)$(DL) >> $@
 endif
-	@echo $(DL)threadname "$(TARGET)"$(DL) >> $@
+	@echo $(DL)threadname "$(notdir $(@:.def=))"$(DL) >> $@
 ifdef SCREEN
 	@echo $(DL)screenname "$(SCREEN)"$(DL) >> $@
 else
@@ -352,13 +375,13 @@ endif
 ifeq ($(LDRING),3)
 	@echo $(DL)flag_on 512$(DL) >> $@
 endif
-ifdef XDCDATA
-	@echo $(DL)xdcdata $(XDCDATA)$(DL) >> $@
+ifdef XDCOPT
+	@echo $(DL)xdcdata $(@:.def=.xdc)$(DL) >> $@
 endif
 ifeq ($(LD),nlmconv)
 	@echo $(DL)input $(OBJS) $(LDLIBS)$(DL) >> $@
 	@echo $(DL)input $(PRELUDE)$(DL) >> $@
-	@echo $(DL)output $(TARGET).nlm$(DL) >> $@
+	@echo $(DL)output $(notdir $(@:.def=.nlm))$(DL) >> $@
 endif
 
 config.h: Makefile.NetWare
@@ -428,12 +451,15 @@ else
 endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
 	@echo $(DL)#define RRD_DEFAULT_FONT $(RRD_DEFAULT_FONT)$(DL) >> $@
+ifdef WITH_PIECHART
+	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
+endif
 
 $(OBJDIR)/readme.txt: Makefile.NetWare
 	@echo Creating $@
 	@echo $(DL)This is a binary distribution for NetWare platform.$(DL) > $@
-	@echo $(DL)MRTG rrdtool version $(RRD_VERSION_STR)$(DL) >> $@
-	@echo $(DL)Please download the complete RRD package for$(DL) >> $@
+	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
+	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
 	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
 
