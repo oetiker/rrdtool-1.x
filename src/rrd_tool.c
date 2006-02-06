@@ -22,7 +22,7 @@ void PrintUsage(char *cmd)
 {
 
     char help_main[] =
-	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2005 by Tobias Oetiker <tobi@oetiker.ch>\n"
+	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2006 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
 	   "Usage: rrdtool [options] command command_options\n\n";
 
