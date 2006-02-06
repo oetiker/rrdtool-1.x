@@ -138,6 +138,12 @@ If the preceding  B<RRD::GRAPH> tag contained and B<PRINT> arguments,
 then you can access their output with this tag. The I<number> argument refers to the
 number of the B<PRINT> argument. This first B<PRINT> has I<number> 0.
 
+=item RRD::INTERNAL <var>
+
+This tag gets replaced by an internal var. Currently these vars are known:
+VERSION, COPYRIGHT, COMPILETIME, OS.
+These vars represent the compiled-in values. 
+
 =back
 
 =head1 EXAMPLE 1

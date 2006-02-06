@@ -61,6 +61,9 @@ char* includefile(long, const char **);
 /* for how long is the output of the cgi valid ? */
 char* rrdgoodfor(long, const char **);
 
+/* return rrdcgi version string */ 
+char* rrdgetinternal(long, const char **);
+
 char* rrdstrip(char *buf);
 char* scanargs(char *line, int *argc, char ***args);
 
@@ -284,6 +287,7 @@ rrd_expand_vars(char* buffer)
                 parse(&buffer, i, "<RRD::TIME::LAST", printtimelast);
                 parse(&buffer, i, "<RRD::TIME::NOW", printtimenow);
                 parse(&buffer, i, "<RRD::TIME::STRFTIME", printstrftime);
+		parse(&buffer, i, "<RRD::INTERNAL", rrdgetinternal);
 	}
 	return buffer;
 }
@@ -409,6 +413,7 @@ int main(int argc, char *argv[]) {
 		parse(&buffer, i, "<RRD::TIME::LAST", printtimelast);
 		parse(&buffer, i, "<RRD::TIME::NOW", printtimenow);
 		parse(&buffer, i, "<RRD::TIME::STRFTIME", printstrftime);
+		parse(&buffer, i, "<RRD::INTERNAL", rrdgetinternal);
 	}
 
 	if (!filter) {
@@ -506,11 +511,7 @@ char* rrdgetenv(long argc, const char **args) {
 	if (envvar) {
 		return stralloc(envvar);
 	} else {
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-               _snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
-#else
                 snprintf(buf, sizeof(buf), "[ERROR:_getenv_'%s'_failed", args[0]);
-#endif         
                 return stralloc(buf);
 	}
 }
@@ -526,11 +527,7 @@ char* rrdgetvar(long argc, const char **args) {
 	if (value) {
 		return stralloc(value);
 	} else {
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-               _snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
-#else
                 snprintf(buf, sizeof(buf), "[ERROR:_getvar_'%s'_failed", args[0]);
-#endif
 		return stralloc(buf);
 	}
 }
@@ -547,6 +544,24 @@ char* rrdgoodfor(long argc, const char **args){
   }
    
   return stralloc("");
+}
+
+char* rrdgetinternal(long argc, const char **args){
+  if (argc == 1) {
+    if( strcasecmp( args[0], "VERSION") == 0) {
+      return stralloc(PACKAGE_VERSION);
+    } else if( strcasecmp( args[0], "COPYRIGHT") == 0) {
+      return stralloc(PACKAGE_COPYRIGHT);
+    } else if( strcasecmp( args[0], "COMPILETIME") == 0) {
+      return stralloc(__DATE__ " " __TIME__);
+    } else if( strcasecmp( args[0], "OS") == 0) {
+      return stralloc(OS);
+    } else {
+      return stralloc("[ERROR: internal unknown argument]");
+    }
+  } else {
+    return stralloc("[ERROR: internal expected 1 argument]");
+  }
 }
 
 /* Format start or end times using strftime.  We always need both the
