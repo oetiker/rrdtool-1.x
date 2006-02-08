@@ -141,7 +141,7 @@ number of the B<PRINT> argument. This first B<PRINT> has I<number> 0.
 =item RRD::INTERNAL <var>
 
 This tag gets replaced by an internal var. Currently these vars are known:
-VERSION, COPYRIGHT, COMPILETIME, OS.
+VERSION, COMPILETIME.
 These vars represent the compiled-in values. 
 
 =back

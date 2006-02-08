@@ -550,12 +550,8 @@ char* rrdgetinternal(long argc, const char **args){
   if (argc == 1) {
     if( strcasecmp( args[0], "VERSION") == 0) {
       return stralloc(PACKAGE_VERSION);
-    } else if( strcasecmp( args[0], "COPYRIGHT") == 0) {
-      return stralloc(PACKAGE_COPYRIGHT);
     } else if( strcasecmp( args[0], "COMPILETIME") == 0) {
       return stralloc(__DATE__ " " __TIME__);
-    } else if( strcasecmp( args[0], "OS") == 0) {
-      return stralloc(OS);
     } else {
       return stralloc("[ERROR: internal unknown argument]");
     }
