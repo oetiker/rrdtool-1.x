@@ -104,8 +104,8 @@ Note: the second line gets stacked on top of the first one
 =head2 Time ranges
 
     Last four weeks: --start end-4w --end 00:00
-    January 2001:    --start 200101010000 --end start+31d
-    January 2001:    --start 200101010000 --end 200102010000
+    January 2001:    --start 20010101 --end start+31d
+    January 2001:    --start 20010101 --end 20010201
     Last hour:       --start end-1h
     Last 24 hours:   <nothing at all>
     Yesterday:       --end 00:00
