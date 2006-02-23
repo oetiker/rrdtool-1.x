@@ -175,7 +175,7 @@ rrd_fetch_fn(
     FILE           *in_file;
     time_t         cal_start,cal_end, rra_start_time,rra_end_time;
     long  best_full_rra=0, best_part_rra=0, chosen_rra=0, rra_pointer=0;
-    long  best_step_diff=0, tmp_step_diff=0, tmp_match=0, best_match=0;
+    long  best_full_step_diff=0, best_part_step_diff=0, tmp_step_diff=0, tmp_match=0, best_match=0;
     long  full_match, rra_base;
     long           start_offset, end_offset;
     int            first_full = 1;
@@ -239,9 +239,9 @@ fprintf(stderr,"Considering: start %10lu end %10lu step %5lu ",
 	    /* best full match */
 	    if(cal_end >= *end 
 	       && cal_start <= *start){
-		if (first_full || (tmp_step_diff < best_step_diff)){
+		if (first_full || (tmp_step_diff < best_full_step_diff)){
 		    first_full=0;
-		    best_step_diff = tmp_step_diff;
+		    best_full_step_diff = tmp_step_diff;
 		    best_full_rra=i;
 #ifdef DEBUG
 fprintf(stderr,"best full match so far\n");
@@ -262,13 +262,13 @@ fprintf(stderr,"full match, not best\n");
 		if (first_part ||
                     (best_match < tmp_match) ||
                     (best_match == tmp_match && 
-                     tmp_step_diff < best_step_diff)){ 
+                     tmp_step_diff < best_part_step_diff)){ 
 #ifdef DEBUG
 fprintf(stderr,"best partial so far\n");
 #endif
 		    first_part=0;
 		    best_match = tmp_match;
-		    best_step_diff = tmp_step_diff;
+		    best_part_step_diff = tmp_step_diff;
 		    best_part_rra =i;
 		} else {
 #ifdef DEBUG
