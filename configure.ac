@@ -26,7 +26,6 @@ dnl is in there
 
 dnl determine the type of system we are running on
 
-
 AC_SUBST(VERSION)
 
 AC_PREFIX_DEFAULT( /usr/local/rrdtool-$PACKAGE_VERSION )
@@ -566,7 +565,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://people.ee.ethz.ch/~oetiker/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from http://people.ee.ethz.ch/oetiker/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
