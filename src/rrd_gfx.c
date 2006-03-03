@@ -1062,7 +1062,7 @@ static void svg_write_text(FILE *fp, const char *text)
 	text_count = mbstowcs(cstr, "Enc-Err", 6);
     p = cstr;
 #else
-    const unsigned char *p = text, ch;
+    unsigned char *p = text, ch;
     if (!p)
 	return;
 #endif
@@ -1071,7 +1071,7 @@ static void svg_write_text(FILE *fp, const char *text)
     ch = afm_fix_osx_charset(ch); /* unsafe macro */
     switch (ch) {
     case 0:
-#ifdef HAVE_MBSTOWCS     
+#ifdef HAVE_MBSTOWCS
     free(cstr);
 #endif
     return;
@@ -1081,7 +1081,7 @@ static void svg_write_text(FILE *fp, const char *text)
     case '"': fputs("&quot;", fp); break;
     default:
         if (ch == 32) {
-#ifdef HAVE_MBSTOWCS     
+#ifdef HAVE_MBSTOWCS
             if (p <= cstr + 1 || !*p || *p == 32)
                 fputs("&#160;", fp); /* non-breaking space in unicode */
             else
@@ -1747,7 +1747,7 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
 	text_count = mbstowcs(cstr, "Enc-Err", 6);
     p = cstr;
 #else
-    const unsigned char *p = node->text, ch;
+    unsigned char *p = node->text, ch;
     if (!p)
 	return;
 #endif
