@@ -776,6 +776,9 @@ rrd_parse_cdef(const char *const line, unsigned int *const eaten, graph_desc_t *
 void
 rrd_graph_script(int argc, char *argv[], image_desc_t *const im, int optno) {
     int i;
+    /* save state for STACK backward compat function */
+    enum gf_en     last_gf=GF_PRINT;
+    float          last_linewidth=0.0;
 
     for (i=optind+optno;i<argc;i++) {
 	graph_desc_t *gdp;
@@ -788,7 +791,7 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *const im, int optno) {
 #endif
 
 	if (rrd_parse_find_gf(argv[i],&eaten,gdp)) return;
-
+        
 	switch (gdp->gf) {
 	    case GF_SHIFT:	/* vname:value */
 		if (rrd_parse_shift(argv[i],&eaten,gdp,im)) return;
@@ -804,7 +807,6 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *const im, int optno) {
             case GF_COMMENT:	/* text */
 		if (rrd_parse_legend(argv[i],&eaten,gdp)) return;
 		break;
-	    case GF_STACK:	/* vname-or-value[#color[:legend]] */		
 #ifdef WITH_PIECHART
 	    case GF_PART:	/* value[#color[:legend]] */
 #endif
@@ -813,7 +815,20 @@ rrd_graph_script(int argc, char *argv[], image_desc_t *const im, int optno) {
 	    case GF_LINE:	/* vname-or-value[#color[:legend]][:STACK] */
 	    case GF_AREA:	/* vname-or-value[#color[:legend]][:STACK] */
 	    case GF_TICK:	/* vname#color[:num[:legend]] */
-		if (rrd_parse_PVHLAST(argv[i],&eaten,gdp,im)) return;
+		if (rrd_parse_PVHLAST(argv[i],&eaten,gdp,im))return;
+                last_gf = gdp->gf;
+                last_linewidth = gdp->linewidth;
+		break;
+	    case GF_STACK:	/* vname-or-value[#color[:legend]] */		
+		if (rrd_parse_PVHLAST(argv[i],&eaten,gdp,im))return;
+                if (last_gf == GF_LINE || last_gf == GF_AREA){
+                   gdp->gf = last_gf;
+                   gdp->linewidth = last_linewidth;
+                } else {
+                   rrd_set_error("STACK must follow LINE or AREA! command:\n%s",
+                        &argv[i][eaten],argv[i]);
+                   return;
+                }
 		break;
 	/* data acquisition */
 	    case GF_DEF:	/* vname=x:DS:CF:[:step=#][:start=#][:end=#] */

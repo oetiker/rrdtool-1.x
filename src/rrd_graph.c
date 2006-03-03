@@ -179,7 +179,7 @@ enum gf_en gf_conv(char *string){
     conv_if(VRULE,GF_VRULE)
     conv_if(LINE,GF_LINE)
     conv_if(AREA,GF_AREA)
-    conv_if(STACK,GF_STACK)
+    conv_if(STACK,GF_STACK) 
     conv_if(TICK,GF_TICK)
     conv_if(DEF,GF_DEF)
     conv_if(CDEF,GF_CDEF)
@@ -1020,8 +1020,7 @@ data_proc( image_desc_t *im ){
     for(i=0;i<im->gdes_c;i++) {
 	if((im->gdes[i].gf==GF_LINE) ||
 		(im->gdes[i].gf==GF_AREA) ||
-		(im->gdes[i].gf==GF_TICK) ||
-		(im->gdes[i].gf==GF_STACK)) {
+		(im->gdes[i].gf==GF_TICK)) {
 	    if((im->gdes[i].p_data = malloc((im->xsize +1)
 					* sizeof(rrd_value_t)))==NULL){
 		rrd_set_error("malloc data_proc");
@@ -1043,7 +1042,6 @@ data_proc( image_desc_t *im ){
 		case GF_TICK:
 		    if (!im->gdes[ii].stack)
 			paintval = 0.0;
-		case GF_STACK:
 		    value = im->gdes[ii].yrule;
 		    if (isnan(value) || (im->gdes[ii].gf == GF_TICK)) {
 			/* The time of the data doesn't necessarily match
@@ -1082,6 +1080,10 @@ data_proc( image_desc_t *im ){
 			im->gdes[ii].p_data[i] = DNAN;
 		    }
 		    break;
+		case GF_STACK:
+                    rrd_set_error("STACK should already be turned into LINE or AREA here");
+                    return -1;
+                    break;
 		default:
 		    break;
 	    }
@@ -1361,7 +1363,6 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_LINE:
 	case GF_AREA:
 	case GF_TICK:
-	case GF_STACK:
 	case GF_HRULE:
 	case GF_VRULE:
 	    graphelement = 1;
@@ -1376,6 +1377,10 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_SHIFT:
 	case GF_XPORT:
 	    break;
+	case GF_STACK:
+            rrd_set_error("STACK should already be turned into LINE or AREA here");
+            return -1;
+            break;
 	}
     }
     return graphelement;
@@ -2342,7 +2347,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
   gfx_node_t *node;
   
   double areazero = 0.0;
-  enum gf_en stack_gf = GF_PRINT;
   graph_desc_t *lastgdes = NULL;    
 
   /* if we are lazy and there is nothing to PRINT ... quit now */
@@ -2466,22 +2470,27 @@ graph_paint(image_desc_t *im, char ***calcpr)
       for (ii = 0; ii < im->xsize; ii++)
         {
           if (!isnan(im->gdes[i].p_data[ii]) && 
-              im->gdes[i].p_data[ii] > 0.0)
-            { 
-              /* generate a tick */
-              gfx_new_line(im->canvas, im -> xorigin + ii, 
-                           im -> yorigin - (im -> gdes[i].yrule * im -> ysize),
-                           im -> xorigin + ii, 
-                           im -> yorigin,
-                           1.0,
-                           im -> gdes[i].col );
-            }
+              im->gdes[i].p_data[ii] != 0.0)
+           { 
+	      if (im -> gdes[i].yrule > 0 ) {
+	              gfx_new_line(im->canvas,
+                                   im -> xorigin + ii, im->yorigin,
+                	           im -> xorigin + ii, im->yorigin - im -> gdes[i].yrule * im -> ysize,
+	                           1.0,
+        	                   im -> gdes[i].col );
+              } else if ( im -> gdes[i].yrule < 0 ) {
+	              gfx_new_line(im->canvas,
+                                   im -> xorigin + ii, im->yorigin - im -> ysize,
+                	           im -> xorigin + ii, im->yorigin - ( 1 - im -> gdes[i].yrule ) * im -> ysize,
+	                           1.0,
+        	                   im -> gdes[i].col );
+	      
+              }
+           }
         }
       break;
     case GF_LINE:
     case GF_AREA:
-      stack_gf = im->gdes[i].gf;
-    case GF_STACK:          
       /* fix data points at oo and -oo */
       for(ii=0;ii<im->xsize;ii++){
         if (isinf(im->gdes[i].p_data[ii])){
@@ -2507,7 +2516,7 @@ graph_paint(image_desc_t *im, char ***calcpr)
       ********************************************************* */
       if (im->gdes[i].col != 0x0){   
         /* GF_LINE and friend */
-        if(stack_gf == GF_LINE ){
+        if(im->gdes[i].gf == GF_LINE ){
           double last_y=0.0;
           node = NULL;
           for(ii=1;ii<im->xsize;ii++){
@@ -2651,6 +2660,10 @@ graph_paint(image_desc_t *im, char ***calcpr)
       }
       break;
 #endif
+    case GF_STACK:
+      rrd_set_error("STACK should already be turned into LINE or AREA here");
+      return -1;
+      break;
 	
     } /* switch */
   }
@@ -2740,6 +2753,7 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].step=im->step;
     im->gdes[im->gdes_c-1].step_orig=im->step;
     im->gdes[im->gdes_c-1].stack=0;
+    im->gdes[im->gdes_c-1].linewidth=0;
     im->gdes[im->gdes_c-1].debug=0;
     im->gdes[im->gdes_c-1].start=im->start; 
     im->gdes[im->gdes_c-1].end=im->end; 

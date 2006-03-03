@@ -203,9 +203,9 @@ be filled.
 Plot a tick mark (a vertical line) for each value of I<vname> that is
 non-zero and not *UNKNOWN*. The I<fraction> argument specifies the length of
 the tick mark as a fraction of the y-axis; the default value is 0.1 (10% of
-the axis). Note that the color specification is not optional. The TICK marks
-start at y==0 if it is inside the graph. Else they start at the border that
-is closer to 0.
+the axis). Note that the color specification is not optional. The TICK marks normaly
+start at the lower edge of the graphing area. If the fraction is negative they start
+at the upper border of the graphing area.
 
 =item B<SHIFT>B<:>I<vname>B<:>I<offset>
 
