@@ -2884,6 +2884,9 @@ rrd_graph_init(image_desc_t *im)
 #endif
 #ifdef HAVE_SETLOCALE
     setlocale(LC_TIME,"");
+#ifdef HAVE_MBSTOWCS
+    setlocale(LC_CTYPE,"");
+#endif
 #endif
     im->yorigin=0;
     im->xorigin=0;
