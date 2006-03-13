@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
 
 	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
 		if ((argc = CountArgs(aLine)) == 0)  {
-		    fprintf(stderr,"ERROR: not enough arguments\n");
+		    printf("ERROR: not enough arguments\n");
 		}
 		if ((myargv = (char **) malloc((argc+1) * 
 					       sizeof(char *))) == NULL)   {
