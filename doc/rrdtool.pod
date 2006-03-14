@@ -264,13 +264,13 @@ server commands type:
 
 When a command is completed, RRDtool will print the string  'C<OK>',
 followed by timing information of the form B<u:>I<usertime>
-B<s:>I<systemtime>. Both values are the running totals of seconds
-since RRDtool was started. If an error occurs, a line of the
-form 'C<ERROR:> I<Description of error>' will be printed. B<RRDtool>
-will not abort, if possible, but follow the ERROR line with an OK line.
-If a B<workdir> is specified and the UID is 0, RRDtool will do a
-chroot to that workdir. If the UID is not 0, RRDtool only changes the
-current directory to B<workdir>.
+B<s:>I<systemtime>. Both values are the running totals of seconds since
+RRDtool was started. If an error occurs, a line of the form 'C<ERROR:>
+I<Description of error>' will be printed instead. B<RRDtool> will not abort,
+unless something realy serious happens. If
+a B<workdir> is specified and the UID is 0, RRDtool will do a chroot to that
+workdir. If the UID is not 0, RRDtool only changes the current directory to
+B<workdir>.
 
 =head2 RRD Server
 
