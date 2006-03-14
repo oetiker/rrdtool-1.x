@@ -43,6 +43,10 @@ Incompatibilities
 * the --alt-y-mrtg option is gone or rather since 1.2.7 it is back but
   without functionality.
 
+* In pipe mode, rrdtool answers with OK only if it was successful with the
+  command. Otherwhise the answer will be ERROR...
+
+
 Behind the Scenes
 -----------------
 * In order to support Holt-Winters and Calculated Datasources,
