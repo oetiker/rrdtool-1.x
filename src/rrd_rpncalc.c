@@ -257,7 +257,7 @@ rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char
     char *expr;
     long steps=-1;    
     rpnp_t  *rpnp;
-    char vname[30];
+    char vname[MAX_VNAME_LEN+10];
     
     rpnp=NULL;
     expr=(char *)expr_const;
