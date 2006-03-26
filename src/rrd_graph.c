@@ -2934,8 +2934,8 @@ rrd_graph_init(image_desc_t *im)
             windir = getenv("windir");
             /* %windir% is something like D:\windows or C:\winnt */
             if (windir != NULL) {
-                    strncpy(rrd_win_default_font,windir,999);
-                    rrd_win_default_font[999] = '\0';
+                    strncpy(rrd_win_default_font,windir,500);
+                    rrd_win_default_font[500] = '\0';
                     strcat(rrd_win_default_font,"\\fonts\\");
 	            strcat(rrd_win_default_font,RRD_DEFAULT_FONT);         
                     for(i=0;i<DIM(text_prop);i++){
