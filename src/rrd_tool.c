@@ -114,9 +114,10 @@ void PrintUsage(char *cmd)
 	   "\t\t[-f|--imginfo printfstr]\n"
 	   "\t\t[-a|--imgformat PNG]\n"
 	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
-	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
-	   "\t\t[CDEF:vname=rpn-expression]\n";
+	   "\t\t[-W|--watermark string]\n"
+	   "\t\t[DEF:vname=rrd:ds-name:CF]\n";
     char help_graph3[] =
+	   "\t\t[CDEF:vname=rpn-expression]\n"
 	   "\t\t[VDEF:vdefname=rpn-expression]\n"
 	   "\t\t[PRINT:vdefname:format]\n"
 	   "\t\t[GPRINT:vdefname:format]\n"

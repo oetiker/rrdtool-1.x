@@ -154,6 +154,7 @@ typedef struct image_desc_t {
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
     char           ylegend[200];   /* legend along the yaxis */
     char           title[200];     /* title for graph */
+    char           watermark[100];   /* watermark for graph */
     int            draw_x_grid;      /* no x-grid at all */
     int            draw_y_grid;      /* no x-grid at all */
     double         grid_dash_on, grid_dash_off;

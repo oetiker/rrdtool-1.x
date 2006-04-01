@@ -1977,6 +1977,17 @@ grid_paint(image_desc_t   *im)
 		  5.5, im->tabwidth, 270,
 		  GFX_H_RIGHT, GFX_V_TOP,
 		  "RRDTOOL / TOBI OETIKER");
+
+    /* graph watermark */
+    if(im->watermark[0] != '\0') {
+        gfx_new_text( im->canvas,
+                  im->ximg/2, im->yimg-6,
+		  ( im->graph_col[GRC_FONT] & 0xffffff00 ) | 0x00000044,
+		  im->text_prop[TEXT_PROP_AXIS].font,
+		  5.5, im->tabwidth, 0,
+		  GFX_H_CENTER, GFX_V_BOTTOM,
+		  im->watermark);
+    }
     
     /* graph labels */
     if( !(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH) ) {
@@ -2140,6 +2151,8 @@ graph_size_location(image_desc_t *im, int elements
     ** |v+--+-------------------------------+--------+
     ** | |..............legends......................|
     ** +-+-------------------------------------------+
+    ** |                 watermark                   |
+    ** +---------------------------------------------+
     */
     int Xvertical=0,	
 			Ytitle   =0,
@@ -2152,7 +2165,9 @@ graph_size_location(image_desc_t *im, int elements
 #if 0
 	Xlegend  =0,	Ylegend  =0,
 #endif
-        Xspacing =15,  Yspacing =15;
+        Xspacing =15,  Yspacing =15,
+       
+                      Ywatermark =4;
 
     if (im->extra_flags & ONLY_GRAPH) {
 	im->xorigin =0;
@@ -2239,12 +2254,13 @@ graph_size_location(image_desc_t *im, int elements
     xtr(im,0);
 
     /* The vertical size is interesting... we need to compare
-    ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend} with Yvertical
-    ** however we need to know {Ytitle+Ymain+Yxlabel} in order to
-    ** start even thinking about Ylegend.
+    ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend, Ywatermark} with 
+    ** Yvertical however we need to know {Ytitle+Ymain+Yxlabel}
+    ** in order to start even thinking about Ylegend or Ywatermark.
     **
     ** Do it in three portions: First calculate the inner part,
-    ** then do the legend, then adjust the total height of the img.
+    ** then do the legend, then adjust the total height of the img,
+    ** adding space for a watermark if one exists;
     */
 
     /* reserve space for main and/or pie */
@@ -2273,7 +2289,10 @@ graph_size_location(image_desc_t *im, int elements
     */
     if(leg_place(im)==-1)
 	return -1;
-
+	
+    if (im->watermark[0] != '\0') {
+        im->yimg += Ywatermark;
+    }
 
 #if 0
     if (Xlegend > im->ximg) {
@@ -2899,6 +2918,7 @@ rrd_graph_init(image_desc_t *im)
     im->step = 0;
     im->ylegend[0] = '\0';
     im->title[0] = '\0';
+    im->watermark[0] = '\0';
     im->minval = DNAN;
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
@@ -3014,6 +3034,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"tabwidth",   required_argument, 0,    'T'},            
 	    {"font-render-mode", required_argument, 0, 'R'},
 	    {"font-smoothing-threshold", required_argument, 0, 'B'},
+	    {"watermark",  required_argument, 0,  'W'},
 	    {"alt-y-mrtg", no_argument,       0,  1000}, /* this has no effect it is just here to save old apps from crashing when they use it */
 	    {0,0,0,0}};
 	int option_index = 0;
@@ -3021,7 +3042,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
         int col_start,col_end;
 
 	opt = getopt_long(argc, argv, 
-			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:",
+			 "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:",
 			  long_options, &option_index);
 
 	if (opt == EOF)
@@ -3295,6 +3316,11 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	case 'B':
 	    im->canvas->font_aa_threshold = atof(optarg);
 		break;
+
+        case 'W':
+            strncpy(im->watermark,optarg,100);
+            im->watermark[99]='\0';
+            break;
 
 	case '?':
             if (optopt != 0)

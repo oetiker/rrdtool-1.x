@@ -338,6 +338,11 @@ If you are graphing memory (and NOT network traffic) this switch
 should be set to 1024 so that one Kb is 1024 byte. For traffic
 measurement, 1 kb/s is 1000 b/s.
 
+[B<-W>|B<--watermark> I<string>]
+
+Adds the given string as a watermark, horizontally centred, at the bottom 
+of the graph.
+
 =item Data and variables
 
 B<DEF:>I<vname>B<=>I<rrdfile>B<:>I<ds-name>B<:>I<CF>[B<:step=>I<step>][B<:start=>I<time>][B<:end=>I<time>]
