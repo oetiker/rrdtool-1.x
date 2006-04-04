@@ -295,11 +295,34 @@ void PrintUsage(char *cmd)
     fputs(help_lic, stdout);
 }
 
+static char *fgetslong(char **aLinePtr, FILE *stream)
+{
+   char *linebuf;
+   size_t bufsize = MAX_LENGTH;
+   int eolpos = 0;
+
+   if (feof(stream)) return *aLinePtr = 0;
+   if (!(linebuf = malloc(bufsize))) {
+      perror("fgetslong: malloc");
+      exit(1);
+   }
+   linebuf[0] = '\0';
+   while (fgets(linebuf + eolpos, MAX_LENGTH, stream)) {
+      eolpos += strlen(linebuf + eolpos);
+      if (linebuf[eolpos - 1] == '\n') return *aLinePtr = linebuf;
+      bufsize += MAX_LENGTH;
+      if (!(linebuf = realloc(linebuf, bufsize))) {
+         perror("fgetslong: realloc");
+         exit(1);
+      }
+   }
+   return *aLinePtr = linebuf[0] ? linebuf : 0;
+}
 
 int main(int argc, char *argv[])
 {
     char **myargv;
-    char aLine[MAX_LENGTH];
+    char *aLine;
     char *firstdir="";
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE,SIG_IGN);
@@ -362,7 +385,7 @@ int main(int argc, char *argv[])
              }
           }
 
-	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
+	    while (fgetslong(&aLine, stdin)){
 		if ((argc = CountArgs(aLine)) == 0)  {
 		    printf("ERROR: not enough arguments\n");
 		}
@@ -397,6 +420,7 @@ int main(int argc, char *argv[])
 		  }
 		}
 		fflush(stdout); /* this is important for pipes to work */
+                free(aLine);
 	    }
 	}
     else if (argc == 2)
