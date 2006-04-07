@@ -159,6 +159,11 @@ their current state.
  make
  make install
 
+SOLARIS HINT: if you want to build  the perl module for the native perl (the
+one shipping with solaris) you will need the sun forte compiler
+installed on your box or you have to hand-tune bindings/perl-shared/Makefile
+while building!
+
 Now go to I<$INSTALL_DIR>B</share/rrdtool/examples/> and run them to see if your
 build has been successful.
 
