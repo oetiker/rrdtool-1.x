@@ -52,7 +52,7 @@ per-installed. Note that these instructions assume that your copies of
 B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
 could be that they are installed as B<gtar> and B<gmake> on your system.
 
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/rrdtool-1.2.12.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.12.tar.gz
  tar zxf rrdtool-1.2.12.tar.gz
  cd rrdtool-1.2.12
  ./configure --prefix=$INSTALL_DIR && make && make install
@@ -72,7 +72,7 @@ compile your own copies of the required libraries. Here is how:
 =item Building zlib
 
  cd $BUILD_DIR
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/zlib-1.2.2.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.2.tar.gz
  tar  zxf zlib-1.2.2.tar.gz
  cd zlib-1.2.2
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
@@ -87,7 +87,7 @@ drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of line 4 means that line 4 and line 5 are on one line.
 
  cd $BUILD_DIR
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/libpng-1.2.8-config.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.8-config.tar.gz
  tar zxvf libpng-1.2.8-config.tar.gz
  cd libpng-1.2.8-config
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
@@ -98,7 +98,7 @@ the end of line 4 means that line 4 and line 5 are on one line.
 =item Building freetype
 
  cd $BUILD_DIR
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/freetype-2.1.9.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.1.9.tar.gz
  tar zxvf freetype-2.1.9.tar.gz
  cd freetype-2.1.9
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
@@ -114,7 +114,7 @@ add the following at the end of the configure line:
 =item Building libart_lgpl
 
  cd $BUILD_DIR
- wget http://people.ee.ethz.ch/oetiker/webtools/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
  tar zxvf libart_lgpl-2.3.17.tar.gz
  cd libart_lgpl-2.3.17
  env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=$BUILD_DIR/lb

@@ -65,7 +65,7 @@ AC_DEFUN([EX_CHECK_ALL],
 
   You can find also find an archive copy on
 
-     http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
+     http://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of $4 is $5.
 
