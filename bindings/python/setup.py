@@ -41,7 +41,7 @@ setup(name = "py-rrdtool",
       author = "Hye-Shik Chang",
       author_email = "perky@fallin.lv",
       license = "LGPL",
-      url = "http://people.ee.ethz.ch/~oetiker/webtools/rrdtool",
+      url = "http://oss.oetiker.ch/rrdtool",
       #packages = ['rrdtool'],
       ext_modules = [
           Extension(

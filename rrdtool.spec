@@ -21,7 +21,7 @@ Version: 1.2.12
 Release: 1.test
 License: GPL
 Group: Applications/Databases
-URL: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
+URL: http://oss.oetiker.ch/rrdtool/
 
 Packager: Dag Wieers <dag@wieers.com>
 Vendor: Dag Apt Repository, http://dag.wieers.com/apt/
