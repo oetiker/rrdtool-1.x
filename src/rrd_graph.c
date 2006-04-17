@@ -1612,6 +1612,7 @@ int draw_horizontal_grid(image_desc_t *im)
     int      i;
     double   scaledstep;
     char     graph_label[100];
+    int      nlabels=0;
     double X0=im->xorigin;
     double X1=im->xorigin+im->xsize;
    
@@ -1622,9 +1623,13 @@ int draw_horizontal_grid(image_desc_t *im)
     MaxY = scaledstep*(double)egrid;
     for (i = sgrid; i <= egrid; i++){
        double Y0=ytr(im,im->ygrid_scale.gridstep*i);
+       double YN=ytr(im,im->ygrid_scale.gridstep*(i+1));
        if ( Y0 >= im->yorigin-im->ysize
 	         && Y0 <= im->yorigin){       
-	    if(i % im->ygrid_scale.labfact == 0){		
+	    /* Make sure at least 2 grid labels are shown, even if it doesn't agree
+	       with the chosen settings. Add a label if required by settings, or if
+	       there is only one label so far and the next grid line is out of bounds. */
+	    if(i % im->ygrid_scale.labfact == 0 || ( nlabels==1 && (YN < im->yorigin-im->ysize || YN > im->yorigin) )){		
 		if (im->symbol == ' ') {
  		    if(im->extra_flags & ALTYGRID) {
 		        sprintf(graph_label,im->ygrid_scale.labfmt,scaledstep*(double)i);
@@ -1647,6 +1652,7 @@ int draw_horizontal_grid(image_desc_t *im)
 		        }
                     }
 		}
+		nlabels++;
 
 	       gfx_new_text ( im->canvas,
 			      X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
