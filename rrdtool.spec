@@ -123,7 +123,7 @@ RRDtool bindings to the PHP HTML-embedded scripting language.
 %{_libdir}/librrd.so.*
 %{_libdir}/librrd_th.so.*
 %{_datadir}/rrdtool/
-%exclude %{_prefix}/shared/
+%exclude %{_prefix}/share/
 
 %files devel
 %defattr(-, root, root, 0755)
