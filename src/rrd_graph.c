@@ -2781,7 +2781,9 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].linewidth=0;
     im->gdes[im->gdes_c-1].debug=0;
     im->gdes[im->gdes_c-1].start=im->start; 
+    im->gdes[im->gdes_c-1].start_orig=im->start; 
     im->gdes[im->gdes_c-1].end=im->end; 
+    im->gdes[im->gdes_c-1].end_orig=im->end; 
     im->gdes[im->gdes_c-1].vname[0]='\0'; 
     im->gdes[im->gdes_c-1].data=NULL;
     im->gdes[im->gdes_c-1].ds_namv=NULL;
@@ -2794,6 +2796,8 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].format[0]='\0';
     im->gdes[im->gdes_c-1].rrd[0]='\0';
     im->gdes[im->gdes_c-1].ds=-1;    
+    im->gdes[im->gdes_c-1].cf_reduce=CF_AVERAGE;    
+    im->gdes[im->gdes_c-1].cf=CF_AVERAGE;    
     im->gdes[im->gdes_c-1].p_data=NULL;    
     im->gdes[im->gdes_c-1].yrule=DNAN;
     im->gdes[im->gdes_c-1].xrule=0;
