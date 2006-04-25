@@ -1062,7 +1062,9 @@ static void svg_write_text(FILE *fp, const char *text)
 	text_count = mbstowcs(cstr, "Enc-Err", 6);
     p = cstr;
 #else
-    unsigned char *p = text, ch;
+    unsigned char *p = text;
+    unsigned char *cstr;
+    char ch;
     if (!p)
 	return;
 #endif
@@ -1747,7 +1749,8 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
 	text_count = mbstowcs(cstr, "Enc-Err", 6);
     p = cstr;
 #else
-    unsigned char *p = node->text, ch;
+    const unsigned char *p = node->text;
+    unsigned char ch;
     if (!p)
 	return;
 #endif
