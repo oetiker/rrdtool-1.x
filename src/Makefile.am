@@ -126,7 +126,7 @@ rrdupdate.o: rrd_update.c
 	$(COMPILE) -DSTANDALONE -c -o $@ $^
 
 rrdtool_SOURCES = 
-rrdtool_DEPENDENCIES = rrd_tool.o
+rrdtool_DEPENDENCIES = rrd_tool.o librrd.la
 rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
