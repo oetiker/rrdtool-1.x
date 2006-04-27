@@ -312,14 +312,8 @@ auto_scale(
 }
 
 
-/* find SI magnitude symbol for the numbers on the y-axis*/
-void 
-si_unit(
-    image_desc_t *im   /* image description */
-)
-{
-
-    char symbol[] = {'a', /* 10e-18 Atto */ 
+static char si_symbol[] = {
+		     'a', /* 10e-18 Atto */ 
 		     'f', /* 10e-15 Femto */
 		     'p', /* 10e-12 Pico */
 		     'n', /* 10e-9  Nano */
@@ -331,9 +325,17 @@ si_unit(
 		     'G', /* 10e9   Giga */
 		     'T', /* 10e12  Tera */
 		     'P', /* 10e15  Peta */
-		     'E'};/* 10e18  Exa */
+		     'E', /* 10e18  Exa */
+};
+const static int si_symbcenter = 6;
 
-    int   symbcenter = 6;
+/* find SI magnitude symbol for the numbers on the y-axis*/
+void 
+si_unit(
+    image_desc_t *im   /* image description */
+)
+{
+
     double digits,viewdigits=0;  
     
     digits = floor( log( max( fabs(im->minval),fabs(im->maxval)))/log((double)im->base)); 
@@ -353,9 +355,9 @@ si_unit(
 
     im->viewfactor = im->magfact / pow((double)im->base , viewdigits);
 
-    if ( ((viewdigits+symbcenter) < sizeof(symbol)) &&
-		    ((viewdigits+symbcenter) >= 0) )
-        im->symbol = symbol[(int)viewdigits+symbcenter];
+    if ( ((viewdigits+si_symbcenter) < sizeof(si_symbol)) &&
+		    ((viewdigits+si_symbcenter) >= 0) )
+        im->symbol = si_symbol[(int)viewdigits+si_symbcenter];
     else
 	im->symbol = '?';
  }
@@ -1746,8 +1748,23 @@ horizontal_log_grid(image_desc_t   *im)
 			  X1+2,Y0,
 			  MGRIDWIDTH, im->graph_col[GRC_MGRID],
 			  im->grid_dash_on, im->grid_dash_off);
-	   
-	   sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
+
+	   if (im->extra_flags & FORCE_UNITS_SI) {
+	      double pvalue = value * yloglab[majoridx][i];
+	      double scale = floor( log10( fabs(pvalue)) / 3);
+	      pvalue /= pow(10, 3*scale);
+
+	      char symbol;
+	      if ( ((scale+si_symbcenter) < sizeof(si_symbol)) &&
+	           ((scale+si_symbcenter) >= 0) )
+	         symbol = si_symbol[(int)scale+si_symbcenter];
+	      else
+	         symbol = '?';
+
+	      sprintf(graph_label,"%3.0f %c", pvalue, symbol);
+	   } else
+	      sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
+
 	   gfx_new_text ( im->canvas,
 			  X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
 			  im->graph_col[GRC_FONT],
@@ -3006,6 +3023,10 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
     parsetime("end-24h", &start_tv);
     parsetime("now", &end_tv);
 
+    /* defines for long options without a short equivalent. should be bytes,
+       and may not collide with (the ASCII value of) short options */
+    #define LONGOPT_UNITS_SI 255
+
     while (1){
 	static struct option long_options[] =
 	{
@@ -3040,6 +3061,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"no-gridfit", no_argument,       0,   'N'},
 	    {"units-exponent",required_argument, 0, 'X'},
 	    {"units-length",required_argument, 0, 'L'},
+            {"units",      required_argument, 0,  LONGOPT_UNITS_SI },
 	    {"step",       required_argument, 0,    'S'},
             {"tabwidth",   required_argument, 0,    'T'},            
 	    {"font-render-mode", required_argument, 0, 'R'},
@@ -3079,6 +3101,18 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    break;
 	case 'F':
 	    im->extra_flags |= FORCE_RULES_LEGEND;
+	    break;
+	case LONGOPT_UNITS_SI:
+	    if(im->extra_flags & FORCE_UNITS) {
+		rrd_set_error("--units can only be used once!");
+		return;
+	    }
+	    if(strcmp(optarg,"si")==0)
+	        im->extra_flags |= FORCE_UNITS_SI;
+	    else {
+		rrd_set_error("invalid argument for --units: %s", optarg );
+		return;
+	    }
 	    break;
 	case 'X':
 	    im->unitsexponent = atoi(optarg);

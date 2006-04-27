@@ -16,6 +16,8 @@
 #define ONLY_GRAPH       0x20   /* use only graph */
 #define FORCE_RULES_LEGEND 0x40	/* force printing of HRULE and VRULE legend */
 
+#define FORCE_UNITS 0x80        /* mask for all FORCE_UNITS_* flags */
+#define FORCE_UNITS_SI 0x80     /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
 	     TMT_WEEK,TMT_MONTH,TMT_YEAR};

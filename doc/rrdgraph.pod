@@ -227,6 +227,12 @@ How many digits should rrdtool assume the y-axis labels to be? You
 may have to use this option to make enough space once you start
 fideling with the y-axis labeling.
 
+[B<--units=si>]
+
+With this option y-axis values on logarithmic graphs will be scaled to 
+the appropriate units (k, M, etc.) instead of using exponential notation.
+Note that for linear graphs, SI notation is used by default.
+
 =back
 
 =item Miscellaneous
