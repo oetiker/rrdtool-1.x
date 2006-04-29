@@ -48,7 +48,7 @@ Now make sure the BUILD_DIR exists and go there:
  cd $BUILD_DIR
 
 Lets first assume you already have all the necessary libraries
-per-installed. Note that these instructions assume that your copies of
+pre-installed. Note that these instructions assume that your copies of
 B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
 could be that they are installed as B<gtar> and B<gmake> on your system.
 
