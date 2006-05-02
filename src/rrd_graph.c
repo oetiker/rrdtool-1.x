@@ -1752,9 +1752,10 @@ horizontal_log_grid(image_desc_t   *im)
 	   if (im->extra_flags & FORCE_UNITS_SI) {
 	      double pvalue = value * yloglab[majoridx][i];
 	      double scale = floor( log10( fabs(pvalue)) / 3);
+	      char symbol;
+
 	      pvalue /= pow(10, 3*scale);
 
-	      char symbol;
 	      if ( ((scale+si_symbcenter) < sizeof(si_symbol)) &&
 	           ((scale+si_symbcenter) >= 0) )
 	         symbol = si_symbol[(int)scale+si_symbcenter];
