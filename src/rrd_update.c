@@ -231,7 +231,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 					  * spot in the rrd file. */
     unsigned long    rra_pos_tmp;        /* temporary byte pointer. */
     double           interval,
-	pre_int,post_int;                /* interval between this and
+                     pre_int,post_int;   /* interval between this and
 					  * the last run */
     unsigned long    proc_pdp_st;        /* which pdp_st was the last
 					  * to be processed */
@@ -623,7 +623,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		   (dst_idx != DST_CDEF) &&
 	       rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
 	       double rate = DNAN;
-	       /* the data source type defines how to process the data */
+     	       /* the data source type defines how to process the data */
 		/* pdp_new contains rate * time ... eg the bytes
 		 * transferred during the interval. Doing it this way saves
 		 * a lot of math operations */
@@ -707,6 +707,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		/* no news is news all the same */
 		pdp_new[i] = DNAN;
 	    }
+
 	    
 	    /* make a copy of the command line argument for the next run */
 #ifdef DEBUG
@@ -736,9 +737,12 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	    /* no we have not passed a pdp_st moment. therefore update is simple */
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
-		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval+0.5);
-		else {
+		if(isnan(pdp_new[i])) {		   
+	            /* this is not realy accurate if we use subsecond data arival time
+		       should have thought of it when going subsecond resolution ...
+                       sorry next format change we will have it! */
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval);	         
+		} else {
 		     if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
 		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= pdp_new[i];
 		     } else {
@@ -765,9 +769,12 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
 		/* update pdp_prep to the current pdp_st. */
-		
+                double pre_unknown = 0.0;		
 		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(pre_int+0.5);
+                    /* a final bit of unkonwn to be added bevore calculation
+		     * we use a tempaorary variable for this so that we 
+		     * don't have to turn integer lines before using the value */		 
+		    pre_unknown = pre_int;
 		else {
   	             if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
 		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= 	pdp_new[i]/interval*pre_int;
@@ -790,9 +797,9 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		    pdp_temp[i] = DNAN;
 		} else {
 		    pdp_temp[i] = rrd.pdp_prep[i].scratch[PDP_val].u_val
-			/ (double)( occu_pdp_st
-				    - proc_pdp_st
-				    - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+			/ ((double)(occu_pdp_st - proc_pdp_st
+                                    - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt)
+                            -pre_unknown);
 		}
 
 		/* process CDEF data sources; remember each CDEF DS can
@@ -817,7 +824,10 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
         
 		/* make pdp_prep ready for the next run */
 		if(isnan(pdp_new[i])){
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int + 0.5);
+	            /* this is not realy accurate if we use subsecond data arival time
+		       should have thought of it when going subsecond resolution ...
+                       sorry next format change we will have it! */
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int);
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val = DNAN;
 		} else {
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = 0;
