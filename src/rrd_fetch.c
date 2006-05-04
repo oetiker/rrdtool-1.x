@@ -294,7 +294,7 @@ fprintf(stderr,"partial match, not best\n");
     /* set the wish parameters to their real values */
     *step = rrd.stat_head->pdp_step * rrd.rra_def[chosen_rra].pdp_cnt;
     *start -= (*start % *step);
-    if (*end % *step) *end += (*step - *end % *step);
+    *end += (*step - *end % *step);
     rows = (*end - *start) / *step + 1;
 
 #ifdef DEBUG
