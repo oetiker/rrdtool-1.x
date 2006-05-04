@@ -191,8 +191,9 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       read_tag(&ptr2,"max","%lf",&(rrd->ds_def[rrd->stat_head->ds_cnt-1].par[DS_max_val].u_val));
 	  } else { /* DST_CDEF */
 		 char buffer[1024];
-	     read_tag(&ptr2,"cdef","%s",buffer);
+	         read_tag(&ptr2,"cdef","%1000s",buffer);
 		 parseCDEF_DS(buffer,rrd,rrd -> stat_head -> ds_cnt - 1);
+		 if (rrd_test_error()) return -1;
 	  }
 
       read_tag(&ptr2,"last_ds","%30s",rrd->pdp_prep[rrd->stat_head->ds_cnt-1].last_ds);

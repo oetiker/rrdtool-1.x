@@ -99,7 +99,7 @@ librrd_la_LDFLAGS         = -version-info 2:7:0
 
 librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
-librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 2:1:0
+librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 2:7:0
 
 
 include_HEADERS	= rrd.h

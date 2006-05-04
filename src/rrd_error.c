@@ -111,8 +111,8 @@ rrd_new_context(void) {
 
     if (rrd_ctx) {
 	rrd_ctx->len = 0;
-	rrd_ctx->rrd_error = malloc(MAXLEN);
-	rrd_ctx->lib_errstr = malloc(ERRBUFLEN);
+	rrd_ctx->rrd_error = malloc(MAXLEN+10);
+	rrd_ctx->lib_errstr = malloc(ERRBUFLEN+10);
 	if (rrd_ctx->rrd_error && rrd_ctx->lib_errstr) {
 	    *rrd_ctx->rrd_error = 0;
 	    *rrd_ctx->lib_errstr = 0;

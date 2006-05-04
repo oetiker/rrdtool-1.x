@@ -194,7 +194,7 @@ void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
     
     rpnp = rpn_parse((void*) rrd, def, &lookup_DS);
     if (rpnp == NULL) {
-        rrd_set_error("failed to parse computed data source %s", def);
+        rrd_set_error("failed to parse computed data source");
         return;
     }
     /* Check for OP nodes not permitted in COMPUTE DS.
