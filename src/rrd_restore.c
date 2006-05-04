@@ -130,10 +130,12 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   read_tag(&ptr,"version","%4[0-9]",rrd->stat_head->version);
   input_version = atoi(rrd->stat_head->version);
   /* added primitive version checking */
-  if (input_version > atoi(RRD_VERSION) )
+  if (input_version > atoi(RRD_VERSION) || input_version < 1)
   {
-    rrd_set_error("Incompatible file version, detected version %s is bigger than supported version %s\n",
+    rrd_set_error("Incompatible file version, detected version %s. This is not supported by the version %s restore tool.\n",
 		  rrd -> stat_head -> version, RRD_VERSION );
+    free(rrd -> stat_head); 
+    rrd->stat_head = NULL; 
     return -1;
   }
   /* make sure we output the right version */

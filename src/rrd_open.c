@@ -117,12 +117,14 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	if (strncmp(rrd->stat_head->cookie,RRD_COOKIE,4) != 0){
 	    rrd_set_error("'%s' is not an RRD file",file_name);
 	    free(rrd->stat_head);
+            rrd->stat_head = NULL; 
 	    fclose(*in_file);
 	    return(-1);}
 
 	if (rrd->stat_head->float_cookie != FLOAT_COOKIE){
 	    rrd_set_error("This RRD was created on other architecture");
 	    free(rrd->stat_head);
+            rrd->stat_head = NULL; 
 	    fclose(*in_file);
 	    return(-1);}
 
@@ -132,6 +134,7 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
 	    rrd_set_error("can't handle RRD file version %s",
 			rrd->stat_head->version);
 	    free(rrd->stat_head);
+            rrd->stat_head = NULL; 
 	    fclose(*in_file);
 	    return(-1);}
 
