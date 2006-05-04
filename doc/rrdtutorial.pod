@@ -4,7 +4,7 @@ rrdtutorial - Alex van den Bogaerdt's RRDtool tutorial
 
 =head1 DESCRIPTION
 
-RRDtool is written by Tobias Oetiker <oetiker@ee.ethz.ch> with
+RRDtool is written by Tobias Oetiker <tobi@oetiker.ch> with
 contributions from many people all around the world. This document is
 written by Alex van den Bogaerdt <alex@ergens.op.het.net> to help you
 understand what RRDtool is and what it can do for you.

@@ -550,4 +550,4 @@ RPN expression handles the divide by zero case.
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>

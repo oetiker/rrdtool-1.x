@@ -97,5 +97,5 @@ regular readings. The update interval seems to be around 300 seconds.
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
 

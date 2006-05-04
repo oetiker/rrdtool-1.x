@@ -72,8 +72,8 @@ compile your own copies of the required libraries. Here is how:
 =item Building zlib
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.2.tar.gz
- tar  zxf zlib-1.2.2.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
+ tar  zxf zlib-1.2.3.tar.gz
  cd zlib-1.2.2
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
  make
@@ -88,8 +88,8 @@ the end of line 4 means that line 4 and line 5 are on one line.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.8-config.tar.gz
- tar zxvf libpng-1.2.8-config.tar.gz
- cd libpng-1.2.8-config
+ tar zxvf libpng-1.2.10.tar.gz
+ cd libpng-1.2.10
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
      ./configure --disable-shared --prefix=$BUILD_DIR/lb
  make
@@ -98,9 +98,9 @@ the end of line 4 means that line 4 and line 5 are on one line.
 =item Building freetype
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.1.9.tar.gz
- tar zxvf freetype-2.1.9.tar.gz
- cd freetype-2.1.9
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.1.10.tar.bz2
+ tar jxvf freetype-2.1.10.tar.bz2
+ cd freetype-2.1.10
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
      ./configure --disable-shared --prefix=$BUILD_DIR/lb
  make
@@ -169,5 +169,5 @@ build has been successful.
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 

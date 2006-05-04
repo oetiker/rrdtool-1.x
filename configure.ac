@@ -363,9 +363,9 @@ CONFIGURE_PART(Findr 3rd-Party Libraries)
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
-EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.2,  http://www.gzip.org/zlib/, "")
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/, "")
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.10,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])

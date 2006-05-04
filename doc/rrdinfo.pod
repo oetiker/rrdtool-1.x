@@ -58,5 +58,5 @@ The name of the B<RRD> you want to examine.
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 

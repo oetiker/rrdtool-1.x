@@ -443,7 +443,7 @@ AC_IEEE([out of the box], works, , , ,
                    PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
                    AC_MSG_ERROR([
 Your Compiler does not do propper IEEE math ... Please find out how to
-make IEEE math work with your compiler and let me know (oetiker@ee.ethz.ch).
+make IEEE math work with your compiler and let me know (tobi@oetiker.ch).
 Check config.log to see what went wrong ...
 ]))])])])])])])])])])
 

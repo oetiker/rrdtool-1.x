@@ -259,4 +259,4 @@ I<19970703 12:45> -- 12:45  July 3th, 1997
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>

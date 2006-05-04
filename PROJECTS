@@ -3,7 +3,7 @@ NEW RRD DATAFORMAT with Accessor Functions
 
 Interested:
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
 Jake Brutlag <jakeb@microsoft.com>  
 - updating rrd_update to use accessor fks
 

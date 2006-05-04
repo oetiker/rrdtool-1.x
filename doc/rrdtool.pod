@@ -308,5 +308,5 @@ Bugs? Features!
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
 

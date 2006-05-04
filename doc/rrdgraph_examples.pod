@@ -134,6 +134,6 @@ Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
 
 =head1 AUTHOR
 
-Program by Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Program by Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 
 This manual page by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt>

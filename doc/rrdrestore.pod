@@ -35,4 +35,4 @@ Allows B<RRDtool> to overwrite the destination B<RRD>.
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
