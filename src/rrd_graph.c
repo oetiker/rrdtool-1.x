@@ -327,7 +327,7 @@ static char si_symbol[] = {
 		     'P', /* 10e15  Peta */
 		     'E', /* 10e18  Exa */
 };
-const static int si_symbcenter = 6;
+static const int si_symbcenter = 6;
 
 /* find SI magnitude symbol for the numbers on the y-axis*/
 void 
