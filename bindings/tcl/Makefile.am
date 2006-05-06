@@ -21,7 +21,12 @@ LIBDIRS            = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdi
 LIB_RUNTIME_DIR    = $(libdir)
 
 if BUILD_TCL_SITE
-pkglibdir = @TCL_PACKAGE_DIR@
+tclpkgdir = @TCL_PACKAGE_DIR@
+tclpkg_DATA = pkgIndex.tcl
+tclpkg_SCRIPTS = ifOctets.tcl
+else
+pkglib_DATA = pkgIndex.tcl
+pkglib_SCRIPTS = ifOctets.tcl
 endif
 
 # Automake doen't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
@@ -35,10 +40,6 @@ TCL_RRD_LIB = tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)
 lib_LIBRARIES =
 
 all-local: $(TCL_RRD_LIB)
-
-pkglib_DATA = pkgIndex.tcl
-
-pkglib_SCRIPTS = ifOctets.tcl
 
 $(TCL_RRD_LIB): tclrrd.o
 	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd_th -lm $(TCL_STUB_LIB_SPEC) $(LDFLAGS) $(LIBS)
