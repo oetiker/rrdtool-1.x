@@ -530,7 +530,7 @@ if test -z "$RRDDOCDIR"; then
 dnl Does the compiler like -Wall and -pedantic?
 if test "$GCC" = "yes"; then
   oCFLAGS=$CFLAGS
-  CFLAGS="$CFLAGS -fno-strict-aliasing -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
+  CFLAGS="$CFLAGS -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
   AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
                 [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[rd_cv_gcc_opt=yes],[rd_cv_gcc_opt=no ])
                ]
