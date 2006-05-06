@@ -85,7 +85,7 @@ int    rrd_create_r(char *filename,
    specifications get used!!! */
 int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);
-int    rrd_dump_r(char *filename, char *outname);
+int    rrd_dump_r(const char *filename, char *outname);
 time_t rrd_last_r(const char *filename);
 time_t rrd_first_r(const char *filename, int rraindex);
 

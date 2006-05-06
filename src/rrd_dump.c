@@ -71,7 +71,7 @@ rrd_dump(int argc, char **argv)
 }
 
 int
-rrd_dump_r(char *filename, char *outname)    
+rrd_dump_r(const char *filename, char *outname)    
 {   
     unsigned int i,ii,ix,iii=0;
     time_t       now;
