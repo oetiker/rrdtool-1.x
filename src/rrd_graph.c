@@ -1399,6 +1399,7 @@ leg_place(image_desc_t *im)
     int   fill=0, fill_last;
     int   leg_c = 0;
     int   leg_x = border, leg_y = im->yimg;
+    int   leg_y_prev = im->yimg;
     int   leg_cc;
     int   glue = 0;
     int   i,ii, mark = 0;
@@ -1507,14 +1508,22 @@ leg_place(image_desc_t *im)
 		   + legspace[ii]
 		   + glue;
 	    }	                
-	    leg_y += im->text_prop[TEXT_PROP_LEGEND].size*1.8;
-	    if (prt_fctn == 's') leg_y -=  im->text_prop[TEXT_PROP_LEGEND].size;	   
+            leg_y_prev = leg_y;
+            /* only add y space if there was text on the line */
+            if (leg_x > border || prt_fctn == 's')            
+	       leg_y += im->text_prop[TEXT_PROP_LEGEND].size*1.8;
+	    if (prt_fctn == 's')
+               leg_y -=  im->text_prop[TEXT_PROP_LEGEND].size;	   
 	    fill = 0;
 	    leg_c = 0;
 	    mark = ii;
 	}	   
     }
-    im->yimg = leg_y;
+    im->yimg = leg_y_prev;
+    /* if we did place some legends we have to add vertical space */
+    if (leg_y != im->yimg){
+	im->yimg += im->text_prop[TEXT_PROP_LEGEND].size*1.8;
+    }
     free(legspace);
   }
   return 0;
