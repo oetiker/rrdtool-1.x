@@ -78,7 +78,10 @@ rrd_create(int argc, char **argv)
 	    return(-1);
 	}
     }
-
+    if (optind == argc) {
+         rrd_set_error("what is the name of the rrd file you want to create?");
+         return -1;
+    }
     rc = rrd_create_r(argv[optind],
 		      pdp_step, last_up,
 		      argc - optind - 1, argv + optind + 1);
