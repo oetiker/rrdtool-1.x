@@ -63,19 +63,6 @@ xlab_t xlab[] = {
     {-1,0,TMT_MONTH,0,TMT_MONTH,0,TMT_MONTH,0,0,""}
 };
 
-/* sensible logarithmic y label intervals ...
-   the first element of each row defines the possible starting points on the
-   y axis ... the other specify the */
-
-double yloglab[][12]= {{ 1e9, 1,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0 },
-		       {  1e3, 1,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0 },
-		       {  1e1, 1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-		       /* {  1e1, 1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, */
-		       {  1e1, 1,  2.5,  5,  7.5,  0,  0,  0,  0,  0,  0,  0 },
-		       {  1e1, 1,  2,  4,  6,  8,  0,  0,  0,  0,  0,  0 },
-		       {  1e1, 1,  2,  3,  4,  5,  6,  7,  8,  9,  0,  0 },
-		       {  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }};
-
 /* sensible y label intervals ...*/
 
 ylab_t ylab[]= {
@@ -1096,20 +1083,30 @@ data_proc( image_desc_t *im ){
        there was no data in the graph ... this is not good ...
        lets set these to dummy values then ... */
 
-    if (isnan(minval)) minval = 0.0;
-    if (isnan(maxval)) maxval = 1.0;
+    if (im->logarithmic) {
+	if (isnan(minval)) minval = 0.2;
+	if (isnan(maxval)) maxval = 5.1;
+    }
+    else {
+	if (isnan(minval)) minval = 0.0;
+	if (isnan(maxval)) maxval = 1.0;
+    }
     
     /* adjust min and max values */
     if (isnan(im->minval) 
-	/* don't adjust low-end with log scale */
-	|| ((!im->logarithmic && !im->rigid) && im->minval > minval)
-	)
-	im->minval = minval;
+	/* don't adjust low-end with log scale */ /* why not? */
+	|| ((!im->rigid) && im->minval > minval)
+	) {
+	if (im->logarithmic)
+	    im->minval = minval * 0.5;
+	else
+	    im->minval = minval;
+    }
     if (isnan(im->maxval) 
 	|| (!im->rigid && im->maxval < maxval)
 	) {
 	if (im->logarithmic)
-	    im->maxval = maxval * 1.1;
+	    im->maxval = maxval * 2.0;
 	else
 	    im->maxval = maxval;
     }
@@ -1691,100 +1688,225 @@ int draw_horizontal_grid(image_desc_t *im)
     return 1;
 }
 
+/* this is frexp for base 10 */
+double frexp10(double, double *);
+double frexp10(double x, double *e) {
+    double mnt;
+    int iexp;
+
+    iexp = floor(log(fabs(x)) / log(10));
+    mnt = x / pow(10.0, iexp);
+    if(mnt >= 10.0) {
+	iexp++;
+	mnt = x / pow(10.0, iexp);
+    }
+    *e = iexp;
+    return mnt;
+}
+
 /* logaritmic horizontal grid */
 int
 horizontal_log_grid(image_desc_t   *im)   
 {
-    double   pixpex;
-    int      ii,i;
-    int      minoridx=0, majoridx=0;
-    char     graph_label[100];
-    double   X0,X1,Y0;   
-    double   value, pixperstep, minstep;
+    double yloglab[][10] = {
+	{1.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+	{1.0, 5.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+	{1.0, 2.0, 5.0, 7.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0},
+	{1.0, 2.0, 4.0, 6.0, 8.0, 10., 0.0, 0.0, 0.0, 0.0},
+	{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.}};
 
-    /* find grid spaceing */
-    pixpex= (double)im->ysize / (log10(im->maxval) - log10(im->minval));
+    int i, j, val_exp, min_exp;
+    double nex;		/* number of decades in data */
+    double logscale;	/* scale in logarithmic space */
+    int exfrac = 1;	/* decade spacing */
+    int mid = -1;	/* row in yloglab for major grid */
+    double mspac;	/* smallest major grid spacing (pixels) */
+    int flab;		/* first value in yloglab to use */
+    double value, tmp;
+    double X0,X1,Y0;   
+    char graph_label[100];
 
-	if (isnan(pixpex)) {
-		return 0;
-	}
+    nex = log10(im->maxval / im->minval);
+    logscale = im->ysize / nex;
 
-    for(i=0;yloglab[i][0] > 0;i++){
-	minstep = log10(yloglab[i][0]);
-	for(ii=1;yloglab[i][ii+1] > 0;ii++){
-	    if(yloglab[i][ii+2]==0){
-		minstep = log10(yloglab[i][ii+1])-log10(yloglab[i][ii]);
-		break;
+    /* major spacing for data with high dynamic range */
+    while(logscale * exfrac < 3 * im->text_prop[TEXT_PROP_LEGEND].size) {
+	if(exfrac == 1) exfrac = 3;
+	else exfrac += 3;
+    }
+
+    /* major spacing for less dynamic data */
+    do {
+	/* search best row in yloglab */
+	mid++;
+	for(i = 0; yloglab[mid][i + 1] < 10.0; i++);
+	mspac = logscale * log10(10.0 / yloglab[mid][i]);
+    } while(mspac > 2 * im->text_prop[TEXT_PROP_LEGEND].size && mid < 5);
+    if(mid) mid--;
+
+    /* find first value in yloglab */
+    for(flab = 0; frexp10(im->minval, &tmp) > yloglab[mid][flab]; flab++);
+    if(yloglab[mid][flab] == 10.0) {
+	tmp += 1.0;
+	flab = 0;
+    }
+    val_exp = tmp;
+    if(val_exp % exfrac) val_exp += abs(-val_exp % exfrac);
+
+    X0=im->xorigin;
+    X1=im->xorigin+im->xsize;
+
+    /* draw grid */
+    while(1) {
+	value = yloglab[mid][flab] * pow(10.0, val_exp);
+
+	Y0 = ytr(im, value);
+	if(Y0 <= im->yorigin - im->ysize) break;
+
+	/* major grid line */
+	gfx_new_dashed_line ( im->canvas,
+	    X0-2,Y0,
+	    X1+2,Y0,
+	    MGRIDWIDTH, im->graph_col[GRC_MGRID],
+	    im->grid_dash_on, im->grid_dash_off);
+
+	/* label */
+	if (im->extra_flags & FORCE_UNITS_SI) {
+	    int scale;
+	    double pvalue;
+	    char symbol;
+
+	    scale = floor(val_exp / 3.0);
+	    if( value >= 1.0 ) pvalue = pow(10.0, val_exp % 3);
+	    else pvalue = pow(10.0, ((val_exp + 1) % 3) + 2);
+	    pvalue *= yloglab[mid][flab];
+
+	    if ( ((scale+si_symbcenter) < (int)sizeof(si_symbol)) &&
+		((scale+si_symbcenter) >= 0) )
+		symbol = si_symbol[scale+si_symbcenter];
+	    else
+		symbol = '?';
+
+		sprintf(graph_label,"%3.0f %c", pvalue, symbol);
+        } else
+	    sprintf(graph_label,"%3.0e", value);
+	gfx_new_text ( im->canvas,
+	    X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
+	    im->graph_col[GRC_FONT],
+	    im->text_prop[TEXT_PROP_AXIS].font,
+	    im->text_prop[TEXT_PROP_AXIS].size,
+	    im->tabwidth,0.0, GFX_H_RIGHT, GFX_V_CENTER,
+	    graph_label );
+
+	/* minor grid */
+	if(mid < 4 && exfrac == 1) {
+	    /* find first and last minor line behind current major line
+	     * i is the first line and j tha last */
+	    if(flab == 0) {
+		min_exp = val_exp - 1;
+		for(i = 1; yloglab[mid][i] < 10.0; i++);
+		i = yloglab[mid][i - 1] + 1;
+		j = 10;
+	    }
+	    else {
+		min_exp = val_exp;
+		i = yloglab[mid][flab - 1] + 1;
+		j = yloglab[mid][flab];
+	    }
+
+	    /* draw minor lines below current major line */
+	    for(; i < j; i++) {
+
+		value = i * pow(10.0, min_exp);
+		if(value < im->minval) continue;
+
+		Y0 = ytr(im, value);
+		if(Y0 <= im->yorigin - im->ysize) break;
+
+		/* draw lines */
+		gfx_new_dashed_line ( im->canvas,
+		    X0-1,Y0,
+		    X1+1,Y0,
+		    GRIDWIDTH, im->graph_col[GRC_GRID],
+		    im->grid_dash_on, im->grid_dash_off);
 	    }
 	}
-	pixperstep = pixpex * minstep;
-	if(pixperstep > 5){minoridx = i;}
-       if(pixperstep > 2 *  im->text_prop[TEXT_PROP_LEGEND].size){majoridx = i;}
-    }
-   
-   X0=im->xorigin;
-   X1=im->xorigin+im->xsize;
-    /* paint minor grid */
-    for (value = pow((double)10, log10(im->minval) 
-			  - fmod(log10(im->minval),log10(yloglab[minoridx][0])));
-	 value  <= im->maxval;
-	 value *= yloglab[minoridx][0]){
-	if (value < im->minval) continue;
-	i=0;	
-	while(yloglab[minoridx][++i] > 0){	    
-	   Y0 = ytr(im,value * yloglab[minoridx][i]);
-	   if (Y0 <= im->yorigin - im->ysize) break;
-	   gfx_new_dashed_line ( im->canvas,
-			  X0-1,Y0,
-			  X1+1,Y0,
-			  GRIDWIDTH, im->graph_col[GRC_GRID],
-			  im->grid_dash_on, im->grid_dash_off);
+	else if(exfrac > 1) {
+	    for(i = val_exp - exfrac / 3 * 2; i < val_exp; i += exfrac / 3) {
+		value = pow(10.0, i);
+		if(value < im->minval) continue;
+
+		Y0 = ytr(im, value);
+		if(Y0 <= im->yorigin - im->ysize) break;
+
+		/* draw lines */
+		gfx_new_dashed_line ( im->canvas,
+		    X0-1,Y0,
+		    X1+1,Y0,
+		    GRIDWIDTH, im->graph_col[GRC_GRID],
+		    im->grid_dash_on, im->grid_dash_off);
+	    }
+	}
+
+	/* next decade */
+	if(yloglab[mid][++flab] == 10.0) {
+	    flab = 0;
+	    val_exp += exfrac;
 	}
     }
 
-    /* paint major grid and labels*/
-    for (value = pow((double)10, log10(im->minval) 
-			  - fmod(log10(im->minval),log10(yloglab[majoridx][0])));
-	 value <= im->maxval;
-	 value *= yloglab[majoridx][0]){
-	if (value < im->minval) continue;
-	i=0;	
-	while(yloglab[majoridx][++i] > 0){	    
-	   Y0 = ytr(im,value * yloglab[majoridx][i]);    
-	   if (Y0 <= im->yorigin - im->ysize) break;
-	   gfx_new_dashed_line ( im->canvas,
-			  X0-2,Y0,
-			  X1+2,Y0,
-			  MGRIDWIDTH, im->graph_col[GRC_MGRID],
-			  im->grid_dash_on, im->grid_dash_off);
+    /* draw minor lines after highest major line */
+    if(mid < 4 && exfrac == 1) {
+	/* find first and last minor line below current major line
+	 * i is the first line and j tha last */
+	if(flab == 0) {
+	    min_exp = val_exp - 1;
+	    for(i = 1; yloglab[mid][i] < 10.0; i++);
+	    i = yloglab[mid][i - 1] + 1;
+	    j = 10;
+	}
+	else {
+	    min_exp = val_exp;
+	    i = yloglab[mid][flab - 1] + 1;
+	    j = yloglab[mid][flab];
+	}
 
-	   if (im->extra_flags & FORCE_UNITS_SI) {
-	      double pvalue = value * yloglab[majoridx][i];
-	      double scale = floor( log10( fabs(pvalue)) / 3);
-	      char symbol;
+	/* draw minor lines below current major line */
+	for(; i < j; i++) {
 
-	      pvalue /= pow(10, 3*scale);
+	    value = i * pow(10.0, min_exp);
+	    if(value < im->minval) continue;
 
-	      if ( ((scale+si_symbcenter) < sizeof(si_symbol)) &&
-	           ((scale+si_symbcenter) >= 0) )
-	         symbol = si_symbol[(int)scale+si_symbcenter];
-	      else
-	         symbol = '?';
+	    Y0 = ytr(im, value);
+	    if(Y0 <= im->yorigin - im->ysize) break;
 
-	      sprintf(graph_label,"%3.0f %c", pvalue, symbol);
-	   } else
-	      sprintf(graph_label,"%3.0e",value * yloglab[majoridx][i]);
-
-	   gfx_new_text ( im->canvas,
-			  X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
-			  im->graph_col[GRC_FONT],
-			  im->text_prop[TEXT_PROP_AXIS].font,
-			  im->text_prop[TEXT_PROP_AXIS].size,
-			  im->tabwidth,0.0, GFX_H_RIGHT, GFX_V_CENTER,
-			  graph_label );
-	} 
+	    /* draw lines */
+	    gfx_new_dashed_line ( im->canvas,
+		X0-1,Y0,
+		X1+1,Y0,
+		GRIDWIDTH, im->graph_col[GRC_GRID],
+		im->grid_dash_on, im->grid_dash_off);
+	}
     }
-	return 1;
+    /* fancy minor gridlines */
+    else if(exfrac > 1) {
+	for(i = val_exp - exfrac / 3 * 2; i < val_exp; i += exfrac / 3) {
+	    value = pow(10.0, i);
+	    if(value < im->minval) continue;
+
+	    Y0 = ytr(im, value);
+	    if(Y0 <= im->yorigin - im->ysize) break;
+
+	    /* draw lines */
+	    gfx_new_dashed_line ( im->canvas,
+		X0-1,Y0,
+		X1+1,Y0,
+		GRIDWIDTH, im->graph_col[GRC_GRID],
+		im->grid_dash_on, im->grid_dash_off);
+	}
+    }
+
+    return 1;
 }
 
 
@@ -3266,8 +3388,6 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
 	case 'o':
 	    im->logarithmic = 1;
-	    if (isnan(im->minval))
-		im->minval=1;
 	    break;
         case 'c':
             if(sscanf(optarg,
@@ -3390,7 +3510,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
        return;
     }
 
-    if (im->logarithmic == 1 && (im->minval <= 0 || isnan(im->minval))){
+    if (im->logarithmic == 1 && im->minval <= 0){
 	rrd_set_error("for a logarithmic yaxis you must specify a lower-limit > 0");	
 	return;
     }
