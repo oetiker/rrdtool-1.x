@@ -1,6 +1,6 @@
-# Gnu Makefile for NetWare target * 29-Jan-2006
+# Gnu Makefile for NetWare target * 19-May-2006
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.NetWare [all|clean|dist]
+# use with: make -f Makefile.NetWare [all|clean|dist|distclean]
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
@@ -25,13 +25,15 @@ RRDGRAPH_YLEGEND_ANGLE = 90.0
 # Set to one if you want to have piecharts.
 WITH_PIECHART = 1
 
+# Set the extension used for rrdcgi.
+ifndef CGIEXT
+CGIEXT	= nlm
+endif
+
 # Edit the path below to point to your Novell NDK.
 ifndef NDKBASE
 NDKBASE	= c:/novell
 endif
-# Edit the path below to point to your install destination.
-# INSTDIR = /mnt/sys/mrtg/rrd
-INSTDIR	= s:/rrdtool
 
 # Base for the lib sources
 ifndef LIBBASE
@@ -40,11 +42,11 @@ endif
 # All library code is statically linked to avoid problems with other lib NLMs. 
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.8
+LIBPNG	= $(LIBBASE)/libpng-1.2.10
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-LIBFT2	= $(LIBBASE)/freetype-2.1.9
+LIBFT2	= $(LIBBASE)/freetype-2.1.10
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBART
@@ -58,6 +60,12 @@ endif
 ifndef LIBCGI
 LIBCGI	= $(LIBBASE)/cgilib-0.5
 endif
+
+# Edit the path below to point to your distribution folder.
+ifndef DISTDIR
+DISTDIR	= rrdtool-$(RRD_VERSION_STR)-nw
+endif
+ARCHIVE = $(DISTDIR).zip
 
 # whatever...
 # NO_NULL_REALLOC = 1
@@ -80,9 +88,13 @@ CP	= cp -afv
 # generating the xdc data for the linker; here's a minimal tool:
 # http://www.gknw.com/development/prgtools/mkxdc.zip
 MPKXDC	= mkxdc
+# CodeWarrior is too stupid to set the internal name properly when
+# the extension is not a NLM and not a registered type. So we need
+# to fix that after linking (since CGI isnt a known type - argh!):
+# http://www.gknw.de/development/prgtools/fixnlmname.zip
+FIXNLMN	= fixnlmname #-q
 
 ZIP	= zip -qzR9
-ARCHIVE	= rrdtool-$(RRD_VERSION_STR)-nw.zip
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
@@ -269,35 +281,35 @@ LDLIBS	+= $(LIBFT2)/builds/netware/libc/libft2.$(LIBEXT)
 all: rrdtool rrdcgi
 
 rrdtool: $(OBJDIR) config.h $(OBJDIR)/rrdtool.nlm
-rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.nlm
+rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.$(CGIEXT)
 librrd: $(OBJDIR) config.h $(OBJDIR)/librrd.$(LIBEXT)
 
-dist: all $(OBJDIR)/readme.txt
-	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/*.map $(OBJDIR)/*.ncv
-	-$(RM) $(OBJDIR)/*.def $(OBJDIR)/*.xdc 
-	-$(RM) $(OBJDIR)/version.inc
-	@-$(CP) $(RRD_DEFAULT_FONT) $(OBJDIR)
-	@-$(CP) ../CHANGES $(OBJDIR)
-	@-$(CP) ../COPYING $(OBJDIR)
-	@-$(CP) ../COPYRIGHT $(OBJDIR)
-	@-$(CP) ../NEWS $(OBJDIR)
-	@-$(CP) ../README $(OBJDIR)
+dist: all $(DISTDIR) $(DISTDIR)/readme.txt
+#	@-$(CP) $(OBJDIR)/librrd.$(LIBEXT) $(DISTDIR)
+	@-$(CP) $(OBJDIR)/rrdcgi.$(CGIEXT) $(DISTDIR)
+	@-$(CP) $(OBJDIR)/rrdtool.nlm $(DISTDIR)
+	@-$(CP) $(RRD_DEFAULT_FONT) $(DISTDIR)
+	@-$(CP) ../CHANGES $(DISTDIR)
+	@-$(CP) ../COPYING $(DISTDIR)
+	@-$(CP) ../COPYRIGHT $(DISTDIR)
+	@-$(CP) ../NEWS $(DISTDIR)
+	@-$(CP) ../README $(DISTDIR)
 	@echo Creating $(ARCHIVE)
-	@$(ZIP) $(ARCHIVE) $(OBJDIR)/* < $(OBJDIR)/readme.txt
-
-install: all
-	@[ -d $(INSTDIR) ] || mkdir $(INSTDIR)
-	@$(CP) $(OBJDIR)/*.nlm $(INSTDIR)
+	@$(ZIP) $(ARCHIVE) $(DISTDIR)/* < $(DISTDIR)/readme.txt
 
 clean:
 	-$(RM) -r $(OBJDIR)
 	-$(RM) config.h
 
-cleandist: clean
+distclean: clean
+	-$(RM) -r $(DISTDIR)
 	-$(RM) $(ARCHIVE)
 
 $(OBJDIR):
-	@mkdir $(OBJDIR)
+	@mkdir $@
+
+$(DISTDIR):
+	@mkdir $@
 
 $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
@@ -307,10 +319,15 @@ $(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
 	@echo Creating $@
 	@awk -f get_ver.awk $< > $@
 
-$(OBJDIR)/rrdcgi.nlm: $(OBJCGI) $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
+$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJCGI) $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
 	@echo Linking $@
 	@-$(RM) $@
-	@$(LD) $(LDFLAGS) $(@:.nlm=.def)
+	@$(LD) $(LDFLAGS) $(@:.$(CGIEXT)=.def)
+ifneq ($(CGIEXT),nlm)
+ifeq ($(LD),mwldnlm)
+	@$(FIXNLMN) $@
+endif
+endif
 
 $(OBJDIR)/rrdtool.nlm: $(OBJTOOL) $(OBJDIR)/rrdtool.def $(OBJDIR)/rrdtool.xdc
 	@echo Linking $@
@@ -455,7 +472,7 @@ ifdef WITH_PIECHART
 	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
 endif
 
-$(OBJDIR)/readme.txt: Makefile.NetWare
+$(DISTDIR)/readme.txt: Makefile.NetWare
 	@echo Creating $@
 	@echo $(DL)This is a binary distribution for NetWare platform.$(DL) > $@
 	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@

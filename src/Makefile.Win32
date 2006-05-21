@@ -1,6 +1,6 @@
-# Gnu Makefile for Win32 target * 29-Jan-2006
+# Gnu Makefile for Win32 target * 19-May-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.Win32 [all|clean|dist]
+# use with: make -f Makefile.Win32 [all|clean|dist|distclean]
 
 DESCR	= Round Robin Database Tool
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
@@ -10,9 +10,9 @@ ICON	= ../favicon.ico
 
 # Set the default font used in graphs.
 ifndef RRD_DEFAULT_FONT
-RRD_DEFAULT_FONT = "arial.ttf"
+#RRD_DEFAULT_FONT = "arial.ttf"
 #RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
-#RRD_DEFAULT_FONT = "VeraMono.ttf"
+RRD_DEFAULT_FONT = "VeraMono.ttf"
 endif
 
 # Vertical label angle: 90.0 (default) or 270.0
@@ -21,8 +21,10 @@ RRDGRAPH_YLEGEND_ANGLE = 90.0
 # Set to one if you want to have piecharts.
 WITH_PIECHART = 1
 
-# Edit the path below to point to your install destination.
-INSTDIR	= c:/rrdtool
+# Set the extension used for rrdcgi.
+ifndef CGIEXT
+CGIEXT	= exe
+endif
 
 # Base for the lib sources
 ifndef LIBBASE
@@ -31,12 +33,12 @@ endif
 # All library code is statically linked to avoid problems with other lib DLLs. 
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.8
+LIBPNG	= $(LIBBASE)/libpng-1.2.10
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.1.9
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.1.9
+#LIBFT2	= $(LIBBASE)/freetype-2.1.10
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.1.10
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBART
@@ -51,6 +53,12 @@ ifndef LIBCGI
 LIBCGI	= $(LIBBASE)/cgilib-0.5
 endif
 
+# Edit the path below to point to your distribution folder.
+ifndef DISTDIR
+DISTDIR	= rrdtool-$(RRD_VERSION_STR)-w32
+endif
+ARCHIVE = $(DISTDIR).zip
+
 # whatever...
 NO_NULL_REALLOC = 1
 
@@ -64,7 +72,6 @@ endif
 CP	= cp -afv
 
 ZIP	= zip -qzR9
-ARCHIVE	= rrdtool-$(RRD_VERSION_STR)-w32.zip
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
@@ -222,34 +229,35 @@ LDLIBS	+= $(LIBFT2)/objs/freetype.$(LIBEXT)
 all: rrdtool rrdcgi
 
 rrdtool: $(OBJDIR) config.h $(OBJDIR)/rrdtool.exe
-rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.exe
+rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.$(CGIEXT)
 librrd: $(OBJDIR) config.h $(OBJDIR)/librrd.$(LIBEXT)
 
-dist: all $(OBJDIR)/readme.txt
-	-$(RM) $(OBJDIR)/*.o $(OBJDIR)/*.map $(OBJDIR)/*.ncv
-	-$(RM) $(OBJDIR)/*.def $(OBJDIR)/*.res $(OBJDIR)/*.rc
-	-$(RM) $(OBJDIR)/version.inc
-	@-$(CP) ../CHANGES $(OBJDIR)
-	@-$(CP) ../COPYING $(OBJDIR)
-	@-$(CP) ../COPYRIGHT $(OBJDIR)
-	@-$(CP) ../NEWS $(OBJDIR)
-	@-$(CP) ../README $(OBJDIR)
+dist: all $(DISTDIR) $(DISTDIR)/readme.txt
+#	@-$(CP) $(OBJDIR)/librrd.$(LIBEXT) $(DISTDIR)
+	@-$(CP) $(OBJDIR)/rrdcgi.$(CGIEXT) $(DISTDIR)
+	@-$(CP) $(OBJDIR)/rrdtool.exe $(DISTDIR)
+	@-$(CP) $(RRD_DEFAULT_FONT) $(DISTDIR)
+	@-$(CP) ../CHANGES $(DISTDIR)
+	@-$(CP) ../COPYING $(DISTDIR)
+	@-$(CP) ../COPYRIGHT $(DISTDIR)
+	@-$(CP) ../NEWS $(DISTDIR)
+	@-$(CP) ../README $(DISTDIR)
 	@echo Creating $(ARCHIVE)
-	@$(ZIP) $(ARCHIVE) $(OBJDIR)/* < $(OBJDIR)/readme.txt
-
-install: all
-	@[ -d $(INSTDIR) ] || mkdir $(INSTDIR)
-	@$(CP) $(OBJDIR)/*.exe $(INSTDIR)
+	@$(ZIP) $(ARCHIVE) $(DISTDIR)/* < $(DISTDIR)/readme.txt
 
 clean:
 	-$(RM) -r $(OBJDIR)
 	-$(RM) config.h
 
-cleandist: clean
+distclean: clean
+	-$(RM) -r $(DISTDIR)
 	-$(RM) $(ARCHIVE)
 
 $(OBJDIR):
-	@mkdir $(OBJDIR)
+	@mkdir $@
+
+$(DISTDIR):
+	@mkdir $@
 
 $(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
 	@echo Creating $@
@@ -259,7 +267,7 @@ $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/rrdcgi.exe: $(OBJCGI) $(OBJDIR)/rrdcgi.res
+$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJCGI) $(OBJDIR)/rrdcgi.res
 	@echo Linking $@
 	@-$(RM) $@
 	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
@@ -379,7 +387,7 @@ ifdef WITH_PIECHART
 	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
 endif
 
-$(OBJDIR)/readme.txt: Makefile.Win32
+$(DISTDIR)/readme.txt: Makefile.Win32
 	@echo Creating $@
 	@echo $(DL)This is a binary distribution for Win32 platform.$(DL) > $@
 	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
