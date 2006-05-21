@@ -274,9 +274,9 @@ rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char
 	} 
 	
 #define match_op(VV,VVV) \
-        else if (strncmp(expr, #VVV, strlen(#VVV))==0){ \
-	    rpnp[steps].op = VV; \
-	    expr+=strlen(#VVV); \
+        else if (strncmp(expr, #VVV, strlen(#VVV))==0 && ( expr[strlen(#VVV)] == ',' || expr[strlen(#VVV)] == '\0' )){ \
+            rpnp[steps].op = VV; \
+            expr+=strlen(#VVV); \
 	}
 
 
