@@ -301,7 +301,9 @@ $(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo     BLOCK "040904E4" >> $@
 	@echo     BEGIN >> $@
 	@echo       VALUE "LegalCopyright","$(COPYR)\0" >> $@
-#	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
+ifdef COMPANY
+	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
+endif
 	@echo       VALUE "ProductName","$(notdir $(@:.rc=.exe))\0" >> $@
 	@echo       VALUE "ProductVersion","$(RRD_VERSION_STR)\0" >> $@
 	@echo       VALUE "License","Released under GPL.\0" >> $@
@@ -309,9 +311,7 @@ $(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo       VALUE "FileVersion","$(RRD_VERSION_STR)\0" >> $@
 	@echo       VALUE "InternalName","$(notdir $(@:.rc=))\0" >> $@
 	@echo       VALUE "OriginalFilename","$(notdir $(@:.rc=.exe))\0" >> $@
-ifdef WWWURL
 	@echo       VALUE "WWW","$(WWWURL)\0" >> $@
-endif
 	@echo     END >> $@
 	@echo   END >> $@
 	@echo   BLOCK "VarFileInfo" >> $@
@@ -393,6 +393,6 @@ $(DISTDIR)/readme.txt: Makefile.Win32
 	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
 	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
-	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
+	@echo $(DL)$(WWWURL)$(DL) >> $@
 
 

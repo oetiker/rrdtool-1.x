@@ -478,6 +478,6 @@ $(DISTDIR)/readme.txt: Makefile.NetWare
 	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
 	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
-	@echo $(DL)http://www.rrdtool.org/$(DL) >> $@
+	@echo $(DL)$(WWWURL)$(DL) >> $@
 
 
