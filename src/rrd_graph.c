@@ -1358,8 +1358,18 @@ print_calc(image_desc_t *im, char ***prdata)
 	case GF_LINE:
 	case GF_AREA:
 	case GF_TICK:
+	    graphelement = 1;
+	    break;
 	case GF_HRULE:
+            if(isnan(im->gdes[i].yrule)) { /* we must set this here or the legend printer can not decide to print the legend */
+               im->gdes[i].yrule=im->gdes[im->gdes[i].vidx].vf.val;
+            };
+	    graphelement = 1;
+	    break;
 	case GF_VRULE:
+            if(im->gdes[i].xrule == 0) { /* again ... the legend printer needs it*/
+              im->gdes[i].xrule = im->gdes[im->gdes[i].vidx].vf.when;
+            };
 	    graphelement = 1;
 	    break;
         case GF_COMMENT:
@@ -2858,9 +2868,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
     
     switch(im->gdes[i].gf){
     case GF_HRULE:
-      if(isnan(im->gdes[i].yrule)) { /* fetch variable */
-        im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
-      };
       if(im->gdes[i].yrule >= im->minval
          && im->gdes[i].yrule <= im->maxval)
         gfx_new_line(im->canvas,
@@ -2869,9 +2876,6 @@ graph_paint(image_desc_t *im, char ***calcpr)
                      1.0,im->gdes[i].col); 
       break;
     case GF_VRULE:
-      if(im->gdes[i].xrule == 0) { /* fetch variable */
-        im->gdes[i].xrule = im->gdes[im->gdes[i].vidx].vf.when;
-      };
       if(im->gdes[i].xrule >= im->start
          && im->gdes[i].xrule <= im->end)
         gfx_new_line(im->canvas,
@@ -3800,7 +3804,7 @@ printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 	    if (cnt) {
 		if (dst->vf.op == VDEF_TOTAL) {
 		    dst->vf.val  = sum*src->step;
-		    dst->vf.when = cnt*src->step;	/* not really "when" */
+		    dst->vf.when = 0;	/* no time component */
 		} else {
 		    dst->vf.val = sum/cnt;
 		    dst->vf.when = 0;	/* no time component */
@@ -3888,21 +3892,21 @@ printf("DEBUG: %3li:%10.2f %c\n",step,array[step],step==field?'*':' ');
 	    if (cnt) {
 		    if (dst->vf.op == VDEF_LSLSLOPE) {
 			dst->vf.val  = slope;
-			dst->vf.when = cnt*src->step;
+			dst->vf.when = 0;
 		    } else if (dst->vf.op == VDEF_LSLINT)  {
 			dst->vf.val = y_intercept;
-			dst->vf.when = cnt*src->step;
+			dst->vf.when = 0;
 		    } else if (dst->vf.op == VDEF_LSLCORREL)  {
 			dst->vf.val = correl;
-			dst->vf.when = cnt*src->step;
+			dst->vf.when = 0;
 		    };
 		
 	    } else {
 		dst->vf.val  = DNAN;
 		dst->vf.when = 0;
 	    }
-	    }
-	    break;
+	}
+	break;
     }
     return 0;
 }
