@@ -22,6 +22,10 @@ own manual page.
 Variable names (I<vname>) must be made up strings of the following characters
 C<A-Z, a-z, 0-9, -,_> and a maximum length of 255 characters.
 
+When picking variable names, make sure you do not choose a name that is
+already taken by an RPN operator. A save bet it to use lowercase or
+mixedcase names for variables since operators will always be in uppercase.
+
 =head1 DEF
 
 B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>]
