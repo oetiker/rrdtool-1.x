@@ -149,7 +149,7 @@ is much better than to assume a missing value was 0 (zero) or any
 other number which might also be a valid data value.  For example, the
 traffic flow counter on a router keeps increasing. Lets say, a value
 is missed for an interval and 0 is stored instead of UNKNOWN. Now when
-hte next value becomes available, it will calculate the difference
+the next value becomes available, it will calculate the difference
 between the current value and the previous value (0) which is not
 correct. So, inserting the value UNKNOWN makes much more sense here.
 
