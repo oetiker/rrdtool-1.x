@@ -1227,7 +1227,7 @@ print_calc(image_desc_t *im, char ***prdata)
 {
     long i,ii,validsteps;
     double printval;
-    time_t printtime;
+    struct tm tmvdef;
     int graphelement = 0;
     long vidx;
     int max_ii;	
@@ -1235,6 +1235,9 @@ print_calc(image_desc_t *im, char ***prdata)
     char *si_symb = "";
     char *percent_s;
     int prlines = 1;
+    /* wow initializing tmvdef is quite a task :-) */
+    time_t now = time(NULL);
+    localtime_r(&now,&tmvdef);
     if (im->imginfo) prlines++;
     for(i=0;i<im->gdes_c;i++){
 	switch(im->gdes[i].gf){
@@ -1252,7 +1255,7 @@ print_calc(image_desc_t *im, char ***prdata)
 	    vidx = im->gdes[i].vidx;
 	    if (im->gdes[vidx].gf==GF_VDEF) { /* simply use vals */
 		printval = im->gdes[vidx].vf.val;
-		printtime = im->gdes[vidx].vf.when;
+		localtime_r(&im->gdes[vidx].vf.when,&tmvdef);
 	    } else { /* need to calculate max,min,avg etcetera */
 		max_ii =((im->gdes[vidx].end 
 			- im->gdes[vidx].start)
@@ -1298,21 +1301,6 @@ print_calc(image_desc_t *im, char ***prdata)
 		}
 	    } /* prepare printval */
 
-	    if (!strcmp(im->gdes[i].format,"%c")) { /* VDEF time print */
-		char ctime_buf[128]; /* PS: for ctime_r, must be >= 26 chars */
-		int iii=0;
-		ctime_r(&printtime,ctime_buf); 
-		while(isprint(ctime_buf[iii])){iii++;}
-		ctime_buf[iii]='\0';
-		if (im->gdes[i].gf == GF_PRINT){
-		    (*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
-		    sprintf((*prdata)[prlines-2],"%s (%lu)",ctime_buf,printtime);
-		    (*prdata)[prlines-1] = NULL;
-		} else {
-		    sprintf(im->gdes[i].legend,"%s (%lu)",ctime_buf,printtime);
-		    graphelement = 1;
-		}
-	    } else {
 	    if ((percent_s = strstr(im->gdes[i].format,"%S")) != NULL) {
 		/* Magfact is set to -1 upon entry to print_calc.  If it
 		 * is still less than 0, then we need to run auto_scale.
@@ -1331,33 +1319,41 @@ print_calc(image_desc_t *im, char ***prdata)
 		auto_scale(im,&printval,&si_symb,&magfact);
 	    }
 
-	    if (im->gdes[i].gf == GF_PRINT){
+            if (im->gdes[i].gf == GF_PRINT){
 		(*prdata)[prlines-2] = malloc((FMT_LEG_LEN+2)*sizeof(char));
 		(*prdata)[prlines-1] = NULL;
-		if (bad_format(im->gdes[i].format)) {
-			rrd_set_error("bad format for PRINT in '%s'", im->gdes[i].format);
+                if (im->gdes[i].strftm){
+			strftime((*prdata)[prlines-2],FMT_LEG_LEN,im->gdes[i].format,&tmvdef);
+                } else {
+   		  if (bad_format(im->gdes[i].format)) {
+  			rrd_set_error("bad format for PRINT in '%s'", im->gdes[i].format);
 			return -1;
-		}
+		  }
+
 #ifdef HAVE_SNPRINTF
-		snprintf((*prdata)[prlines-2],FMT_LEG_LEN,im->gdes[i].format,printval,si_symb);
+		  snprintf((*prdata)[prlines-2],FMT_LEG_LEN,im->gdes[i].format,printval,si_symb);
 #else
-		sprintf((*prdata)[prlines-2],im->gdes[i].format,printval,si_symb);
+		  sprintf((*prdata)[prlines-2],im->gdes[i].format,printval,si_symb);
 #endif
-	    } else {
+               }
+             } else {
 		/* GF_GPRINT */
 
-		if (bad_format(im->gdes[i].format)) {
+                if (im->gdes[i].strftm){
+			strftime(im->gdes[i].legend,FMT_LEG_LEN,im->gdes[i].format,&tmvdef);
+                } else {
+  		  if (bad_format(im->gdes[i].format)) {
 			rrd_set_error("bad format for GPRINT in '%s'", im->gdes[i].format);
 			return -1;
-		}
+		  }
 #ifdef HAVE_SNPRINTF
-		snprintf(im->gdes[i].legend,FMT_LEG_LEN-2,im->gdes[i].format,printval,si_symb);
+		  snprintf(im->gdes[i].legend,FMT_LEG_LEN-2,im->gdes[i].format,printval,si_symb);
 #else
-		sprintf(im->gdes[i].legend,im->gdes[i].format,printval,si_symb);
+		  sprintf(im->gdes[i].legend,im->gdes[i].format,printval,si_symb);
 #endif
-		graphelement = 1;
-	    }
-	    }
+                }
+		graphelement = 1;               
+	    }	    
 	    break;
 	case GF_LINE:
 	case GF_AREA:
@@ -2943,6 +2939,7 @@ gdes_alloc(image_desc_t *im){
     im->gdes[im->gdes_c-1].col = 0x0;
     im->gdes[im->gdes_c-1].legend[0]='\0';
     im->gdes[im->gdes_c-1].format[0]='\0';
+    im->gdes[im->gdes_c-1].strftm=0;   
     im->gdes[im->gdes_c-1].rrd[0]='\0';
     im->gdes[im->gdes_c-1].ds=-1;    
     im->gdes[im->gdes_c-1].cf_reduce=CF_AVERAGE;    

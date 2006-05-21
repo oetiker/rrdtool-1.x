@@ -256,7 +256,7 @@ int
 rrd_parse_print(const char *const line, unsigned int *const eaten, graph_desc_t *const gdp, image_desc_t *const im) {
     /* vname:CF:format in case of DEF-based vname
     ** vname:CF:format in case of CDEF-based vname
-    ** vname:format in case of VDEF-based vname
+    ** vname:format[:strftime] in case of VDEF-based vname
     */
     if ((gdp->vidx=rrd_parse_find_vname(line,eaten,gdp,im))<0) return 1;
  
@@ -279,6 +279,11 @@ rrd_parse_print(const char *const line, unsigned int *const eaten, graph_desc_t 
        get the format at this juncture */
     strcpy(gdp->format,gdp->legend);
     gdp->legend[0]='\0';	
+    /* this is a very crud test, parsing :style flags should be in a function */
+    if (im->gdes[gdp->vidx].gf == GF_VDEF && strcmp(line+(*eaten),":strftime")==0){
+	gdp->strftm = 1;
+        (*eaten)+=strlen(":strftime");
+    }
     return 0;
 }
 

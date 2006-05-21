@@ -118,6 +118,7 @@ typedef  struct graph_desc_t {
     gfx_color_t    col;        /* graph color */
     char  format[FMT_LEG_LEN+5]; /* format for PRINT AND GPRINT */
     char  legend[FMT_LEG_LEN+5]; /* legend*/
+    int            strftm;     /* should the VDEF legend be formated with strftime */
     double         leg_x,leg_y;  /* location of legend */   
     double         yrule;      /* value for y rule line and for VDEF */
     time_t         xrule;      /* time for x rule line and for VDEF */

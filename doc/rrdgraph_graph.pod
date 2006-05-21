@@ -50,7 +50,7 @@ Similarly, no report is generated if you don't use print options.
 =over 4
 
 
-=item B<PRINT:>I<vname>B<:>I<format>
+=item B<PRINT:>I<vname>B<:>I<format>[B<:strftime>]
 
 Depending on the context, either the value component or the time
 component of a B<VDEF> is printed using I<format>. It is an error
@@ -64,29 +64,29 @@ For printing values:
 
 =over 4
 
-=item *
+=item B<%%>
 
-B<%%> just prints a literal '%' character
+just prints a literal '%' character
 
-=item *
+=item B<%#.#le>
 
-B<%#.#le> prints numbers like 1.2346e+04. The optional integers # denote field
+prints numbers like 1.2346e+04. The optional integers # denote field
 width and decimal precision.
 
-=item *
+=item B<%#.#lf>
 
-B<%#.#lf> prints numbers like 12345.6789, with optional field width
+prints numbers like 12345.6789, with optional field width
 and precision.
 
-=item *
+=item B<%s>
 
-B<%s> place this after B<%le>, B<%lf> or B<%lg>. This will be replaced by the
+place this after B<%le>, B<%lf> or B<%lg>. This will be replaced by the
 appropriate SI magnitude unit and the value will be scaled
 accordingly (123456 -> 123.456 k).
 
-=item *
+=item B<%S>
 
-B<%S> is similar to B<%s>. It does, however, use a previously defined
+is similar to B<%s>. It does, however, use a previously defined
 magnitude unit. If there is no such unit yet, it tries to define
 one (just like B<%s>) unless the value is zero, in which case the magnitude
 unit stays undefined. Thus, formatter strings using B<%S> and no B<%s>
@@ -94,51 +94,111 @@ will all use the same magnitude unit except for zero values.
 
 =back
 
-For printing times:
+If you PRINT a VDEF value, you can also print the time associated with it by appending the string
+B<:strftime> to the format. Note that rrdtool uses the strftime function of your OSs clibrary. This means that
+the conversion specifier may vary. Check the manual page if you are uncertain. The following is a list of
+conversion specifiers usually supported across the board. 
 
 =over 4
 
-=item *
+=item B<%a>
 
-B<%%> just prints a literal '%' character
+The abbreviated weekday name according to the current locale.
 
-=item *
+=item B<%A>
 
-B<%a, %A> print the abbreviated or full name of the day of the week.
+The full weekday name according to the current locale.
 
-=item *
+=item B<%b>
 
-B<%b, %B> print the abbreviated or full name of the month.
+The abbreviated month name according to the current locale.
 
-=item *
+=item B<%B>
 
-B<%d, %m, %y, %H, %M, %S> print day, month, year, hour, minute, and
-second in two-digit format.
+The full month name according to the current locale.
 
-=item *
+=item B<%c>
 
-B<%Y> prints the year in 4-digit format.
+The preferred date and time representation for the current locale.
 
-=item *
+=item B<%d>
 
-B<%I, %p> print the hour (01..12), 'am' or 'pm'.
+The day of the month as a decimal number (range 01 to 31).
 
-=item *
+=item B<%H>
 
-B<%j, %w> print day of the week (0..6), day of the year (1..366)
+The hour as a decimal number using a 24-hour clock (range 00 to 23).
 
-=item *
+=item B<%I>
 
-B<%c, %x, %X> print date+time, date only, time only.
+The hour as a decimal number using a 12-hour clock (range 01 to 12).
 
-=item *
+=item B<%j>
 
-B<%U, %W> number of the week of the current year, with either the
-first Sunday (%U) or the first Monday (%W) determining the first week.
+The day of the year as a decimal number (range 001 to 366).
 
-=item *
+=item B<%m>
 
-B<%Z> prints the time zone.
+The month as a decimal number (range 01 to 12).
+
+=item B<%M>
+
+The minute as a decimal number (range 00 to 59).
+
+=item B<%p>
+
+Either `AM' or `PM' according to the given time value, or the corresponding
+strings for the current locale.  Noon is treated as `pm' and midnight as
+`am'.  Note that in many locales and `pm' notation is unsupported and in
+such cases %p will return an empty string.
+
+=item B<%S>
+
+The second as a decimal number (range 00 to 61).
+
+=item B<%U>
+
+The  week  number  of  the current year as a decimal number, range 00 to 53, starting with the
+first Sunday as the first day of week 01. See also %V and %W.
+
+=item B<%V>
+
+The ISO 8601:1988 week number of the current year as a decimal number, range 01 to  53,  where
+week  1 is the first week that has at least 4 days in the current year, and with Monday as the
+first day of the week. See also %U and %W.
+
+=item B<%w>
+
+The day of the week as a decimal, range 0 to 6, Sunday being 0.  See also %u.
+
+=item B<%W>
+
+The week number of the current year as a decimal number, range 00 to  53,  starting  with  the
+first Monday as the first day of week 01.
+
+=item B<%x>
+
+The preferred date representation for the current locale without the time.
+
+=item B<%X>
+
+The preferred time representation for the current locale without the date.
+
+=item B<%y>
+
+The year as a decimal number without a century (range 00 to 99).
+
+=item B<%Y>
+
+The year as a decimal number including the century.
+
+=item B<%Z>
+
+The time zone or name or abbreviation.
+
+=item B<%%>
+
+A literal `%' character.
 
 =back
 
