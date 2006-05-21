@@ -189,6 +189,21 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_LIBTOOL
 
+dnl which flags does the compile support?
+if test "$GCC" = "yes"; then
+  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W; do
+    oCFLAGS=$CFLAGS
+    CFLAGS="$CFLAGS $flag"
+    cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
+    AC_CACHE_CHECK([if gcc likes the $flag flag], $cachename,
+       [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
+    if eval test \$$cachename = no; then
+         CFLAGS=$oCFLAGS
+    fi
+  done
+fi
+
+
 
 AC_SUBST(RRD_DEFAULT_FONT)
 
@@ -526,19 +541,6 @@ AC_PATH_PROGS(TROFF, groff troff)
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
-
-dnl Does the compiler like -Wall and -pedantic?
-if test "$GCC" = "yes"; then
-  oCFLAGS=$CFLAGS
-  CFLAGS="$CFLAGS -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
-  AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
-                [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[rd_cv_gcc_opt=yes],[rd_cv_gcc_opt=no ])
-               ]
-        )
-  if test $rd_cv_gcc_opt = no; then
-         CFLAGS=$oCFLAGS
-  fi
-fi
 
 
 CONFIGURE_PART(Apply Configuration Information)
