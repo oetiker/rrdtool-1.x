@@ -14,6 +14,8 @@ B<COMMENT>B<:>I<text>
 
 B<VRULE>B<:>I<time>B<#>I<color>[B<:>I<legend>]
 
+B<HRULE>B<:>I<value>B<#>I<color>[B<:>I<legend>]
+
 B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>]]
 
 B<AREA>B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>]]
@@ -34,7 +36,6 @@ B<PRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
 
 B<GPRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
 
-B<HRULE>B<:>I<value>B<#>I<color>[B<:>I<legend>] (deprecated)
 
 B<STACK>B<:>I<vname>B<#>I<color>[B<:>I<legend>] (deprecated)
 
@@ -167,17 +168,19 @@ Text is printed literally in the legend section of the graph. Note that in
 RRDtool 1.2 you have to escape colons in COMMENT text in the same way you
 have to escape them in B<*PRINT> commands by writing B<'\:'>.
 
-=item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
-
-I<Deprecated. Use B<LINE> in new scripts.>
-
 =item B<VRULE>B<:>I<time>B<#>I<color> [B<:>I<legend> ]
 
 Draw a vertical line at I<time>.  Its color is composed from three
 hexadecimal numbers specifying the rgb color components (00 is off, FF is
-maximum) red, green and blue. Optionally, a legend box and string is
+maximum) red, green and blue followed by an optional alpha. Optionally, a legend box and string is
 printed in the legend section. I<time> may be a number or a variable
 from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
+
+=item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
+
+Draw a horyzontal line at I<value>.  HRULE acts much like LINE except that
+will have no effect on the scale of the graph. If a HRULE is outside the
+graphing area it will just not be visible.
 
 =item B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>]]
 
