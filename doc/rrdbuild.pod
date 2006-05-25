@@ -65,7 +65,12 @@ package for each library you install. Once you have the missing bits on
 board, just re-run the last line of the instructions above.
 
 But again this may have been too optimistic, and you actually have to
-compile your own copies of the required libraries. Here is how:
+compile your own copies of the required libraries.
+
+If you are woking with AIX, you may find the the B<--disable-shared> option
+will cause things to break for you. In that case you may have to install the
+shared libraries into the rrdtool PREFIX and work with B<--disable-static>
+instead. (Better instructions for AIX welcome!)
 
 =over
 
