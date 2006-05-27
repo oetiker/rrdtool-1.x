@@ -48,7 +48,8 @@ extern int optind;
 extern int opterr;
 
 /* forward declaration to keep compiler happy */
-void initrrdtool(void);
+/*void initrrdtool(void);*/
+void initrrdtoolmodule(void);
 
 static int
 create_args(char *command, PyObject *args, int *argc, char ***argv)
@@ -492,18 +493,19 @@ static PyMethodDef _rrdtool_methods[] = {
 
 /* Initialization function for the module */
 void
-initrrdtool(void)
+/*initrrdtool(void)*/
+initrrdtoolmodule(void)
 {
     PyObject    *m, *d, *t;
 
     /* Create the module and add the functions */
-    m = Py_InitModule("rrdtool", _rrdtool_methods);
+    m = Py_InitModule("rrdtoolmodule", _rrdtool_methods);
 
     /* Add some symbolic constants to the module */
     d = PyModule_GetDict(m);
 
     SET_STRCONSTANT(d, __version__);
-    ErrorObject = PyErr_NewException("_rrdtool.error", NULL, NULL);
+    ErrorObject = PyErr_NewException("rrdtoolmodule.error", NULL, NULL);
     PyDict_SetItemString(d, "error", ErrorObject);
 
     /* Check for errors */
