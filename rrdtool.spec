@@ -1,177 +1,208 @@
-# $Id$
-# Authority: matthias
-# Upstream: Tobi Oetiker <oetiker$ee,ethz,ch>
-
-# Tag: test
-
-%{?fc1:%define _without_python 1}
-%{?el3:%define _without_python 1}
-%{?rh9:%define _without_python 1}
-%{?rh7:%define _without_python 1}
-%{?el2:%define _without_python 1}
-
-%define perl_vendorarch %(eval "`perl -V:installvendorarch`"; echo $installvendorarch)
-%define perl_vendorlib %(eval "`perl -V:installvendorlib`"; echo $installvendorlib)
-%define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib(1)')
-%define python_version %(%{__python} -c 'import sys; print sys.version.split(" ")[0]')
-
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
 Version: 1.2.13
-Release: 1.test
+Release: 3%{?dist}
 License: GPL
 Group: Applications/Databases
-URL: http://oss.oetiker.ch/rrdtool/
+URL: http://oss.oetiker.ch/%{name}/
+Source: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires: gcc-c++, openssl-devel
+BuildRequires: libpng-devel, zlib-devel, libart_lgpl-devel >= 2.0
+BuildRequires: freetype-devel, python-devel >= 2.3
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 
-Packager: Dag Wieers <dag@wieers.com>
-Vendor: Dag Apt Repository, http://dag.wieers.com/apt/
-
-Source: http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/rrdtool-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-
-BuildRequires: gcc-c++, openssl-devel, libart_lgpl-devel >= 2.0, cgilib-devel
-BuildRequires: libpng-devel, zlib-devel, freetype-devel
-%{!?_without_python:BuildRequires: python-devel >= 2.3}
-Requires: perl >= %(rpm -q --qf '%%{epoch}:%%{version}' perl)
+%{!?python_sitearch: %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib(1)')}
+%{!?python_version: %define python_version %(%{__python} -c 'import sys; print sys.version.split(" ")[0]')}
 
 %description
-RRD is the Acronym for Round Robin Database. RRD is a system to store and 
-display time-series data (i.e. network bandwidth, machine-room temperature, 
-server load average). It stores the data in a very compact way that will not 
-expand over time, and it presents useful graphs by processing the data to 
-enforce a certain data density. It can be used either via simple wrapper 
-scripts (from shell or Perl) or via frontends that poll network devices and 
+RRD is the Acronym for Round Robin Database. RRD is a system to store and
+display time-series data (i.e. network bandwidth, machine-room temperature,
+server load average). It stores the data in a very compact way that will not
+expand over time, and it presents useful graphs by processing the data to
+enforce a certain data density. It can be used either via simple wrapper
+scripts (from shell or Perl) or via frontends that poll network devices and
 put a friendly user interface on it.
 
 %package devel
-Summary: RRDtool static libraries and header files
+Summary: RRDtool libraries and header files
 Group: Development/Libraries
-Requires: %{name} = %{version}
+Requires: %{name} = %{version}-%{release}
 
 %description devel
 RRD is the Acronym for Round Robin Database. RRD is a system to store and
 display time-series data (i.e. network bandwidth, machine-room temperature,
 server load average). This package allow you to use directly this library.
 
-%package -n perl-rrdtool
+%package doc
+Summary: RRDtool documentation
+Group: Documentation
+
+%description doc
+RRD is the Acronym for Round Robin Database. RRD is a system to store and
+display time-series data (i.e. network bandwidth, machine-room temperature,
+server load average). This package contains documentation on using RRD.
+
+%package -n perl-%{name}
 Summary: Perl RRDtool bindings
 Group: Development/Languages
-Requires: %{name} = %{version}
-Obsoletes: rrdtool-perl <= %{version}
+Requires: %{name} = %{version}-%{release}
+Obsoletes: %{name}-perl <= %{version}
+Provides: %{name}-perl = %{version}
 
-%description -n perl-rrdtool
+%description -n perl-%{name}
 The Perl RRDtool bindings
 
-%package -n python-rrdtool
+%package -n python-%{name}
 Summary: Python RRDtool bindings
 Group: Development/Languages
 BuildRequires: python
 Requires: python >= %{python_version}
-Requires: %{name} = %{version}
+Requires: %{name} = %{version}-%{release}
 
-%description -n python-rrdtool
+%description -n python-%{name}
 Python RRDtool bindings.
-
-%package -n php-rrdtool
-Summary: RRDtool module for PHP
-Group: Development/Languages
-Requires: %{name} = %{version}, php >= 4.0
-
-%description -n php-rrdtool
-The php-%{name} package includes a dynamic shared object (DSO) that adds
-RRDtool bindings to the PHP HTML-embedded scripting language.
 
 %prep
 %setup
 
-### FIXME: Fixes to /usr/lib(64) for x86_64
-%{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' configure Makefile.in
+# Fix to find correct python dir on lib64
+%{__perl} -pi -e 's|get_python_lib\(0,0,prefix|get_python_lib\(1,0,prefix|g' \
+    configure
+
+# Shouldn't be necessary when using --libdir, but
+# introduces hardcoded rpaths where it shouldn't,
+# if not done...
+%{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' \
+    configure Makefile.in
 
 %build
 %configure \
-	--enable-perl-site-install \
-	--with-perl-options='INSTALLDIRS="vendor"'
-#	--with-tcllib="%{_libdir}"
+    --program-prefix="%{?_program_prefix}" \
+    --libdir=%{_libdir} \
+    --disable-static \
+    --with-pic \
+    --with-perl-options='INSTALLDIRS="vendor"'
+
+# Fix another rpath issue
+%{__perl} -pi.orig -e 's|-Wl,--rpath -Wl,\$rp||g' \
+    bindings/perl-shared/Makefile.PL
+
+# Force RRDp bits where we want 'em, not sure yet why the
+# --with-perl-options and --libdir don't take
+pushd bindings/perl-piped/
+%{__perl} Makefile.PL INSTALLDIRS=vendor
+%{__perl} -pi.orig -e 's|/lib/perl|/%{_lib}/perl|g' Makefile
+popd
+
 %{__make} %{?_smp_mflags}
 
+# Fix @perl@ and @PERL@
+find examples/ -type f \
+    -exec %{__perl} -pi -e 's|^#! \@perl\@|#!%{__perl}|gi' {} \;
+find examples/ -name "*.pl" \
+    -exec %{__perl} -pi -e 's|\015||gi' {} \;
+
 %install
-%{__rm} -rf %{buildroot}
-%{__make} install DESTDIR="%{buildroot}"
+rm -rf $RPM_BUILD_ROOT
+make DESTDIR="$RPM_BUILD_ROOT" install
 
-### We only want .txt and .html files for the main documentation
-%{__mkdir_p} rpm-doc/docs/
-%{__cp} -ap doc/*.txt doc/*.html rpm-doc/docs/
+# Pesky RRDp.pm...
+%{__mv} $RPM_BUILD_ROOT%{perl_vendorarch}/../RRDp.pm $RPM_BUILD_ROOT%{perl_vendorarch}/
 
+# We only want .txt and .html files for the main documentation
+%{__mkdir_p} doc2/html doc2/txt
+%{__cp} -a doc/*.txt doc2/txt/
+%{__cp} -a doc/*.html doc2/html/
+
+# Put perl docs in perl package
+%{__mkdir_p} doc3/html
+%{__mv} doc2/html/RRD*.html doc3/html/
+
+# Clean up the examples
 %{__rm} -f examples/Makefile* examples/*.in
 
-### Clean up buildroot
-%{__rm} -rf %{buildroot}%{perl_archlib} \
-		%{buildroot}%{perl_vendorarch}/auto/*{,/*{,/*}}/.packlist
-%{__rm} -f %{buildroot}%{perl_vendorarch}/ntmake.pl
+# This is so rpm doesn't pick up perl module dependencies automatically
+find examples/ -type f -exec chmod 0644 {} \;
+
+# Clean up the buildroot
+%{__rm} -rf $RPM_BUILD_ROOT%{_datadir}/doc/%{name}-%{version}/{txt,html}/ \
+	$RPM_BUILD_ROOT%{perl_vendorarch}/ntmake.pl \
+	$RPM_BUILD_ROOT%{perl_archlib}/perllocal.pod \
+        $RPM_BUILD_ROOT%{_datadir}/%{name}/examples \
+        $RPM_BUILD_ROOT%{perl_vendorarch}/auto/*/{.packlist,*.bs}
 
 %clean
-%{__rm} -rf %{buildroot}
- 
+%{__rm} -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
 %files
-%defattr(-, root, root, 0755)
-%doc CHANGES CONTRIBUTORS COPYING COPYRIGHT NEWS README THREADS TODO
-%doc rpm-doc/docs/ examples/
-%doc %{_mandir}/man1/*.1*
-%{_bindir}/rrdcgi
-%{_bindir}/rrdtool
-%{_bindir}/rrdupdate
-%{_libdir}/librrd.so.*
-%{_libdir}/librrd_th.so.*
-%{_datadir}/rrdtool/
-%exclude %{_prefix}/share/
+%{_bindir}/*
+%{_libdir}/*.so.*
+%{_datadir}/%{name}/fonts/*
+%{_mandir}/man1/*
 
 %files devel
-%defattr(-, root, root, 0755)
-%{_includedir}/rrd.h
-%{_libdir}/librrd.a
-%{_libdir}/librrd_th.a
-%exclude %{_libdir}/librrd.la
-%exclude %{_libdir}/librrd_th.la
-%{_libdir}/librrd.so
-%{_libdir}/librrd_th.so
+%defattr(-,root,root,-)
+%{_includedir}/*.h
+%exclude %{_libdir}/*.la
+%{_libdir}/*.so
 
-%files -n perl-rrdtool
-%defattr(-, root, root, 0755)
-%doc examples/
-%doc %{_mandir}/man3/RRDp.3*
-%doc %{_mandir}/man3/RRDs.3*
-%{perl_vendorlib}/RRDp.pm
-%{perl_vendorarch}/RRDs.pm
-%{perl_vendorarch}/auto/RRDs/
-%exclude %{_prefix}/examples/
+%files doc
+%defattr(-,root,root,-)
+%doc CHANGES CONTRIBUTORS COPYING COPYRIGHT README TODO NEWS THREADS doc2/html doc2/txt
+%doc examples
 
-%if %{!?_without_python:1}0
-%files -n python-rrdtool
-%defattr(-, root, root, 0755)
+%files -n perl-%{name}
+%defattr(-,root,root,-)
+%doc doc3/html
+%{_mandir}/man3/*
+%{perl_vendorarch}/*.pm
+%attr(0755,root,root) %{perl_vendorarch}/auto/RRDs/*
+
+%files -n python-%{name}
+%defattr(-,root,root,-)
+%doc bindings/python/AUTHORS bindings/python/COPYING bindings/python/README
 %{python_sitearch}/rrdtoolmodule.so
-%endif
 
 %changelog
-* Sat Jun 04 2005 Dag Wieers <dag@wieers.com> - 1.2.9-1 - 3221+/dag
-- Updated to release 1.2.9.
+* Mon Jun 05 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-3
+- Merge spec fixes from bz 185909
 
-* Wed May 18 2005 Dag Wieers <dag@wieers.com> - 1.2.8-1
-- Updated to release 1.2.8.
+* Sun Jun 04 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-2
+- Remove explicit perl dep, version grabbing using rpm during
+  rpmbuild not guaranteed to work (fails on ppc in plague),
+  and auto-gen perl deps are sufficient
 
-* Tue May 10 2005 Dag Wieers <dag@wieers.com> - 1.2.6-1
-- Updated to release 1.2.6.
+* Sat Jun 03 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-1
+- Update to release 1.2.13
+- Merge spec changes from dag, atrpms and mdk builds
+- Additional hacktastic contortions for lib64 & rpath messiness
+- Add missing post/postun ldconfig
+- Fix a bunch of rpmlint errors
+- Disable static libs, per FE guidelines
+- Split off docs
 
-* Sat May 07 2005 Dag Wieers <dag@wieers.com> - 1.2.2-1
-- Updated to release 1.2.2.
+* Wed Apr 19 2006 Chris Ricker <kaboom@oobleck.net> 1.2.12-1
+- Rev to 1.2
 
-* Sat May 07 2005 Dag Wieers <dag@wieers.com> - 1.2.1-1
-- Updated to release 1.2.1.
+* Fri May 20 2005 Matthias Saou <http://freshrpms.net/> 1.0.49-5
+- Include patch from Michael to fix perl module compilation on FC4 (#156242).
 
-* Fri Apr 29 2005 Dag Wieers <dag@wieers.com> - 1.2.0-1
-- Updated to release 1.2.0.
+* Fri May 20 2005 Matthias Saou <http://freshrpms.net/> 1.0.49-4
+- Fix for the php module patch (Joe Pruett, Dag Wieers), #156716.
+- Update source URL to new location since 1.2 is now the default stable.
+- Don't (yet) update to 1.0.50, as it introduces some changes in the perl
+  modules install.
 
-* Mon Apr 04 2005 Dag Wieers <dag@wieers.com> - 1.0.49-2
-- Fix for the php-rrdtool patch. (Joe Pruett)
+* Mon Jan 31 2005 Matthias Saou <http://freshrpms.net/> 1.0.49-3
+- Put perl modules in vendor_perl and not site_perl. #146513
+
+* Thu Jan 13 2005 Matthias Saou <http://freshrpms.net/> 1.0.49-2
+- Minor cleanups.
 
 * Thu Aug 25 2004 Dag Wieers <dag@wieers.com> - 1.0.49-1
 - Updated to release 1.0.49.
