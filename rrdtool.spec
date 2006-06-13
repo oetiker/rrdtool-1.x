@@ -142,6 +142,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 %files
 %{_bindir}/*
 %{_libdir}/*.so.*
+%{_libdir}/rrdtool/*
 %{_datadir}/%{name}/fonts/*
 %{_mandir}/man1/*
 
