@@ -42,6 +42,9 @@ Or if you run tcsh:
  set BUILD_DIR=/tmp/rrdbuild
  set INSTALL_DIR=/usr/local/rrdtool-1.2.13
 
+If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
+a different directory!
+
 Now make sure the BUILD_DIR exists and go there:
 
  mkdir -p $BUILD_DIR
@@ -90,7 +93,7 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
  tar  zxf zlib-1.2.3.tar.gz
- cd zlib-1.2.2
+ cd zlib-1.2.3
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
  make
  make install
