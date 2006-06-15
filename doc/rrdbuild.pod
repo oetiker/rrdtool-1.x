@@ -106,7 +106,7 @@ drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of line 4 means that line 4 and line 5 are on one line.
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.8-config.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.10.tar.gz
  tar zxvf libpng-1.2.10.tar.gz
  cd libpng-1.2.10
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
