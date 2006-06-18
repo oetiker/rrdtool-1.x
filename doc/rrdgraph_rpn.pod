@@ -139,6 +139,13 @@ Example: C<CDEF:x=v1,v2,v3,v4,v5,v6,6,SORT,POP,5,REV,POP,+,+,+,4,/> will
 compute the average of the values v1 to v6 after removing the smallest and
 largest.
 
+B<AVG>
+
+Pop one element (I<count>) from the stack. Now pop I<count> elements and build the
+average, ignoring all UNKNOWN values in the process.
+
+Example: C<CDEF:x=a,b,c,d,4,AVG>
+
 B<TREND>
 
 Create a "sliding window" average of another data series.

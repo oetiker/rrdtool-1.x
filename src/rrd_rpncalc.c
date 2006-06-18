@@ -161,6 +161,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_TREND,TREND)
          add_op(OP_RAD2DEG,RAD2DEG)
          add_op(OP_DEG2RAD,DEG2RAD)
+         add_op(OP_AVG,AVG)
 #undef add_op
               }
     (*str)[offset] = '\0';
@@ -338,6 +339,7 @@ rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char
 	match_op(OP_TREND,TREND)
        match_op(OP_RAD2DEG,RAD2DEG)
        match_op(OP_DEG2RAD,DEG2RAD)
+       match_op(OP_AVG,AVG)
 #undef match_op
 
 
@@ -755,6 +757,28 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 			rpnstack -> s[--stptr] = DNAN;
 		}
 		break;
+           case OP_AVG:
+               stackunderflow(0);
+                {
+                   int i=rpnstack -> s[stptr--];
+                   double sum=0;
+                   int count=0;
+                   stackunderflow(i-1);
+                   while(i>0) {
+                     double val=rpnstack -> s[stptr--];
+                     i--;
+                    if (isnan(val)) { continue; }
+                     count++;
+                     sum+=val;
+                   }
+                   // now push the result bavk on stack
+                   if (count>0) {
+                     rpnstack -> s[++stptr]=sum/count;
+                   } else {
+                     rpnstack -> s[++stptr]=DNAN;
+                   }
+                }
+                break;
 	    case OP_END:
 		break;
        }
