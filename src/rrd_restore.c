@@ -18,6 +18,7 @@
 
 void xml_lc(char*);
 int skip(char **);
+int skipxml(char **);
 int eat_tag(char **, char *);
 int read_tag(char **, char *, char *, void *);
 int xml2rrd(char*, rrd_t*, char);
@@ -42,6 +43,24 @@ void xml_lc(char* buf){
     }
     buf++;    
   }
+}
+
+int skipxml(char **buf){
+  char *ptr;  
+  ptr=(*buf);
+  do {
+    (*buf)=ptr;
+    while((*(ptr+1)) && ((*ptr)==' ' ||  (*ptr)=='\r' || (*ptr)=='\n' || (*ptr)=='\t')) ptr++;
+    if (strncmp(ptr,"<?xml",4) == 0) {
+      ptr= strstr(ptr,"?>");
+      if (ptr) ptr+=2; else {
+	rrd_set_error("Dangling XML header");
+	(*buf) = NULL;
+	return -1;
+      }
+    }
+  } while ((*buf)!=ptr);  
+  return 1;
 }
 
 int skip(char **buf){
@@ -118,6 +137,8 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   ptr2=buf;
   ptr3=buf;
   /* start with an RRD tag */
+  
+  skipxml(&ptr);
 
   eat_tag(&ptr,"rrd");
   /* allocate static header */
