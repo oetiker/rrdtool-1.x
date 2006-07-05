@@ -56,10 +56,6 @@ endif
 ifndef ZLIBSDK
 ZLIBSDK	= $(LIBBASE)/zlib-1.2.3
 endif
-# Edit the path below to point to your zlib sources or set environment var.
-ifndef LIBCGI
-LIBCGI	= $(LIBBASE)/cgilib-0.5
-endif
 
 # Edit the path below to point to your distribution folder.
 ifndef DISTDIR
@@ -171,7 +167,7 @@ NDK_ROOT = $(NDKBASE)/ndk
 SDK_CLIB = $(NDK_ROOT)/nwsdk
 SDK_LIBC = $(NDK_ROOT)/libc
 
-INCLUDES = -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK) -I$(LIBCGI)
+INCLUDES = -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK) 
 
 ifeq ($(LIBARCH),LIBC)
 	INCLUDES += -I$(SDK_LIBC)/include -I$(SDK_LIBC)/include/nks
@@ -181,7 +177,7 @@ endif
 
 CFLAGS += $(INCLUDES)
 
-vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) $(LIBCGI)
+vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK)
 
 RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_afm.o \
