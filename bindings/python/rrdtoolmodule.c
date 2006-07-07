@@ -313,6 +313,30 @@ PyRRD_tune(PyObject UNUSED(*self), PyObject *args)
     return r;
 }
 
+static char PyRRD_first__doc__[] =
+"first(filename): Return the timestamp of the first data sample in an RRD";
+
+static PyObject *
+PyRRD_first(PyObject UNUSED(*self), PyObject *args)
+{
+    PyObject        *r;
+    int              argc, ts;
+    char           **argv;
+
+    if (create_args("first", args, &argc, &argv) < 0)
+        return NULL;
+
+    if ((ts = rrd_first(argc, argv)) == -1) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        r = NULL;
+    } else
+        r = PyInt_FromLong((long)ts);
+
+    destroy_args(&argv);
+    return r;
+}
+
 static char PyRRD_last__doc__[] =
 "last(filename): Return the timestamp of the last data sample in an RRD";
 
@@ -476,6 +500,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("fetch",   PyRRD_fetch,    PyRRD_fetch__doc__),
     meth("graph",   PyRRD_graph,    PyRRD_graph__doc__),
     meth("tune",    PyRRD_tune,     PyRRD_tune__doc__),
+    meth("first",   PyRRD_first,    PyRRD_first__doc__),
     meth("last",    PyRRD_last,     PyRRD_last__doc__),
     meth("resize",  PyRRD_resize,   PyRRD_resize__doc__),
     meth("info",    PyRRD_info,     PyRRD_info__doc__),

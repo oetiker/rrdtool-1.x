@@ -61,6 +61,7 @@ Tobias Weingartner <weingart with cs.ualberta.ca>
 Tom Crawley <Tom.Crawley with hi.riotinto.com.au> (GCC&HP configuration)
 Travis Brown <tebrown with csh.rit.edu> 
 Tuc <ttsg with ttsg.com>
+Ulf Lilleengen <lulf with pvv.ntnu.no> Python binding for 'rrdtool first'
 Ulrich Schilling <schilling with netz.uni-essen.de> AIX
 Wim Heirman <wim.heirman elis.ugent.be> --units=si option
 Wolfgang Schrimm <wschrimm with uni-hd.de> xport function
