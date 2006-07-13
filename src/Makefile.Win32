@@ -1,4 +1,4 @@
-# Gnu Makefile for Win32 target * 19-May-2006
+# Gnu Makefile for Win32 target * 11-Jul-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile.Win32 [all|clean|dist|distclean]
 
@@ -207,16 +207,11 @@ ZLIBOBJS	+= \
 	$(EOLIST)
 endif
 
-CGILIBOBJS	= \
-	$(OBJDIR)/cgi.o \
-	$(OBJDIR)/cookies.o \
-	$(EOLIST)
-
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
 OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-OBJCGI	:= $(OBJS) $(CGILIBOBJS) $(OBJDIR)/rrd_cgi.o
+OBJCGI	:= $(OBJS) $(OBJDIR)/rrd_cgi.o
 OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
 LDLIBS	+= $(LIBFT2)/objs/freetype.$(LIBEXT)

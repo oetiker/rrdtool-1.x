@@ -1,4 +1,4 @@
-# Gnu Makefile for NetWare target * 19-May-2006
+# Gnu Makefile for NetWare target * 11-Jul-2006
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile.NetWare [all|clean|dist|distclean]
 
@@ -259,16 +259,11 @@ ZLIBOBJS	+= \
 	$(EOLIST)
 endif
 
-CGILIBOBJS	= \
-	$(OBJDIR)/cgi.o \
-	$(OBJDIR)/cookies.o \
-	$(EOLIST)
-
 ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
 OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-OBJCGI	:= $(OBJS) $(CGILIBOBJS) $(OBJDIR)/rrd_cgi.o
+OBJCGI	:= $(OBJS) $(OBJDIR)/rrd_cgi.o
 OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
 LDLIBS	+= $(LIBFT2)/builds/netware/libc/libft2.$(LIBEXT)
