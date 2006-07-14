@@ -545,6 +545,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
                    }
                 }
              }
+	     closedir(curdir);
           }
           else{
              printf("ERROR: %s\n",rrd_strerror(errno));
