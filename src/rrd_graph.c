@@ -714,7 +714,7 @@ data_fetch(image_desc_t *im )
 		break;
 	}
 	if (! skip) {
-	    unsigned long  ft_step = im->gdes[i].step ;
+	    unsigned long  ft_step = im->gdes[i].step ; /* ft_step will record what we got from fetch */
 	    
 	    if((rrd_fetch_fn(im->gdes[i].rrd,
 			     im->gdes[i].cf,
@@ -727,7 +727,6 @@ data_fetch(image_desc_t *im )
 		return -1;
 	    }
 	    im->gdes[i].data_first = 1;	    
-	    im->gdes[i].step = im->step;
 	
 	    if (ft_step < im->gdes[i].step) {
 		reduce_data(im->gdes[i].cf_reduce,
