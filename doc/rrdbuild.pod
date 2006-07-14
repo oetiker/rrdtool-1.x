@@ -84,8 +84,6 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
 
 (Better instructions for AIX welcome!)
 
-=over
-
 =head2 Building Libraries
 
 =over 
