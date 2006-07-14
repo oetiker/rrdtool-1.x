@@ -260,7 +260,7 @@ accepts the same arguments as on the command line and some special
 commands like B<quit, cd, mkdir> and B<ls>. For detailed help on the
 server commands type:
 
-   rrdtool help cd|mkdir|ls|quit
+   rrdtool help cd|mkdir|pwd|ls|quit
 
 When a command is completed, RRDtool will print the string  'C<OK>',
 followed by timing information of the form B<u:>I<usertime>

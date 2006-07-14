@@ -31,7 +31,7 @@ void PrintUsage(char *cmd)
 	   "\t\tlast, first, info, fetch, tune, resize, xport\n\n";
 
     char help_listremote[] =
-           "Valid remote commands: quit, ls, cd, mkdir\n\n";
+           "Valid remote commands: quit, ls, cd, mkdir, pwd\n\n";
 
 
     char help_create[] =
@@ -179,6 +179,10 @@ void PrintUsage(char *cmd)
 	   " * mkdir - creates a new directory\n\n"
 	   "\trrdtool mkdir newdirectoryname\n\n";
 
+    char help_pwd[] =
+	   " * pwd - returns the current working directory\n\n"
+	   "\trrdtool pwd\n\n";
+
     char help_lic[] =
 	   "RRDtool is distributed under the Terms of the GNU General\n"
 	   "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
@@ -187,7 +191,7 @@ void PrintUsage(char *cmd)
 
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST, C_FIRST,
 	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
-           C_QUIT, C_LS, C_CD, C_MKDIR, C_UPDATEV };
+           C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD, C_UPDATEV };
 
     int help_cmd = C_NONE;
 
@@ -227,6 +231,8 @@ void PrintUsage(char *cmd)
                 help_cmd = C_CD;
             else if (!strcmp(cmd,"mkdir"))
                 help_cmd = C_MKDIR;
+            else if (!strcmp(cmd,"pwd"))
+                help_cmd = C_PWD;
 	}
     fputs(help_main, stdout);
     switch (help_cmd)
@@ -290,6 +296,9 @@ void PrintUsage(char *cmd)
 		break;
 	    case C_MKDIR:
 		fputs(help_mkdir, stdout);
+		break;
+	    case C_PWD:
+		fputs(help_pwd, stdout);
 		break;
 	}
     fputs(help_lic, stdout);
@@ -450,6 +459,11 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #if defined(HAVE_SYS_STAT_H)
     struct stat   st;
 #endif
+    char* cwd; /* To hold current working dir on call to pwd */
+
+    /* Reset errno to 0 before we start.
+    */
+    errno = 0;
 
     if (RemoteMode){
        if (argc>1 && strcmp("quit", argv[1]) == 0){
@@ -477,6 +491,20 @@ int HandleInputLine(int argc, char **argv, FILE* out)
              printf("ERROR: %s\n",rrd_strerror(errno));
 	     return(1);
           }
+          return(0);
+       }
+       if (argc>1 && strcmp("pwd", argv[1]) == 0){
+          if (argc>2){
+             printf("ERROR: invalid parameter count for pwd\n");
+             return(1);
+          }
+          cwd = getcwd(NULL, MAXPATH);
+          if(cwd == NULL) {
+             printf("ERROR: %s\n",rrd_strerror(errno));
+             return(1);
+          }
+          printf("%s\n", cwd);
+          free(cwd);
           return(0);
        }
        if (argc>1 && strcmp("mkdir", argv[1]) == 0){
