@@ -48,6 +48,16 @@ for details.
 
 See L<rrdgraph> documentation.
 
+=item B<--enumds> 
+
+The generated xml should contain the data values in enumerated tags.
+
+ <v0>val</v0><v1>val</v1>
+
+=item B<--unknwonaszero>
+
+Turn UNKNWON into '0' on output.
+
 =item B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>
 
 See I<rrdgraph> documentation.

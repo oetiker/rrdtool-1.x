@@ -159,6 +159,8 @@ void PrintUsage(char *cmd)
 	   "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
 	   "\t\t[-m|--maxrows rows]\n"
 	   "\t\t[--step seconds]\n"	   
+	   "\t\t[--enumds]\n"	   
+	   "\t\t[--unknownaszero]\n"	   
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n";
@@ -647,13 +649,25 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    free (data);
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
-       int xxsize;
+        int xxsize;
 	unsigned long int j = 0;
 	time_t        start,end, ti;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
-       if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
+        int           enumds = 0;
+        int           unknownaszero = 0;
+        int           i;
+        char *vtag = NULL;
+        vtag = malloc( strlen(COL_DATA_TAG)+10);
+	for ( i = 2; i < argc; i++){
+		if (strcmp("--enumds", argv[i]) == 0)
+			enumds = 1;
+		if (strcmp("--unknownaszero", argv[i]) == 0)
+			unknownaszero = 1;
+	}
+
+        if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
 	  row_cnt = (end-start)/step;
 	  ptr = data;
 	  printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n", XML_ENCODING);
@@ -679,12 +693,20 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    printf ("    <%s>", DATA_ROW_TAG);
 	    printf ("<%s>%lu</%s>", COL_TIME_TAG, ti, COL_TIME_TAG);
 	    for (j = 0; j < col_cnt; j++) {
+              if (enumds == 1)
+		snprintf(vtag,15,"%s%lu", COL_DATA_TAG, j);
+	      else
+		snprintf(vtag,15,"%s",COL_DATA_TAG);
+              
 	      rrd_value_t newval = DNAN;
 	      newval = *ptr;
 	      if(isnan(newval)){
-		printf("<%s>NaN</%s>", COL_DATA_TAG, COL_DATA_TAG);
+	 	  if (unknownaszero == 1) 
+		      printf("<%s>0</%s>", vtag,vtag);
+		  else
+		      printf("<%s>NaN</%s>", vtag,vtag);
 	      } else {
-		printf("<%s>%0.10e</%s>", COL_DATA_TAG, newval, COL_DATA_TAG);
+		printf("<%s>%0.10e</%s>", vtag, newval, vtag);
 	      };
 	      ptr++;
 	    }
@@ -694,6 +716,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	  printf("  </%s>\n", DATA_TAG);
 	  printf("</%s>\n", ROOT_TAG);
 	}
+        free(vtag);
     }
     else if (strcmp("graph", argv[1]) == 0) {
 	char **calcpr;
