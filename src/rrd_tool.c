@@ -160,7 +160,6 @@ void PrintUsage(char *cmd)
 	   "\t\t[-m|--maxrows rows]\n"
 	   "\t\t[--step seconds]\n"	   
 	   "\t\t[--enumds]\n"	   
-	   "\t\t[--unknownaszero]\n"	   
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n";
@@ -656,15 +655,12 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
         int           enumds = 0;
-        int           unknownaszero = 0;
         int           i;
         char *vtag = NULL;
         vtag = malloc( strlen(COL_DATA_TAG)+10);
 	for ( i = 2; i < argc; i++){
 		if (strcmp("--enumds", argv[i]) == 0)
 			enumds = 1;
-		if (strcmp("--unknownaszero", argv[i]) == 0)
-			unknownaszero = 1;
 	}
 
         if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
@@ -701,10 +697,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	      rrd_value_t newval = DNAN;
 	      newval = *ptr;
 	      if(isnan(newval)){
-	 	  if (unknownaszero == 1) 
-		      printf("<%s>0</%s>", vtag,vtag);
-		  else
-		      printf("<%s>NaN</%s>", vtag,vtag);
+                printf("<%s>NaN</%s>", vtag,vtag);
 	      } else {
 		printf("<%s>%0.10e</%s>", vtag, newval, vtag);
 	      };

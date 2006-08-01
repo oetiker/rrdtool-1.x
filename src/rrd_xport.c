@@ -62,7 +62,6 @@ rrd_xport(int argc, char **argv, int UNUSED(*xsize),
 	    {"maxrows",    required_argument, 0,  'm'},
 	    {"step",       required_argument, 0,   261},
 	    {"enumds",     no_argument,       0,   262}, /* these are handled in the frontend ... */
-	    {"unknownaszero",  no_argument,       0,   263}, /* just ignore them here */
 	    {0,0,0,0}
 	};
 	int option_index = 0;
@@ -79,7 +78,6 @@ rrd_xport(int argc, char **argv, int UNUSED(*xsize),
 	    im.step =  atoi(optarg);
 	    break;
 	case 262:
-	case 263:
 	    break;
 	case 's':
 	    if ((parsetime_error = parsetime(optarg, &start_tv))) {
