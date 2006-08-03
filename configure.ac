@@ -103,6 +103,12 @@ char *strchr (), *strrchr ();
 #  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
 #endif
 
+/* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
+#if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
+#  undef isnan
+#  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
+#endif
+
 /* for OSF1 Digital Unix */
 #if (! defined(HAVE_ISINF) && defined(HAVE_FP_CLASS) && defined(HAVE_FP_CLASS_H))
 #  define HAVE_ISINF 1
