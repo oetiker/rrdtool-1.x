@@ -392,21 +392,21 @@ AC_CACHE_VAL([rd_cv_ieee_$2],
 
 #include <stdio.h>
 int main(void){
-    double nan,inf,c,zero;
+    double rrdnan,rrdinf,rrdc,rrdzero;
     $4;
     /* some math to see if we get a floating point exception */
-    zero=sin(0.0); /* don't let the compiler optimize us away */
-    nan=0.0/zero; /* especially here */
-    inf=1.0/zero; /* and here. I want to know if it can do the magic */
+    rrdzero=sin(0.0); /* don't let the compiler optimize us away */
+    rrdnan=0.0/rrdzero; /* especially here */
+    rrdinf=1.0/rrdzero; /* and here. I want to know if it can do the magic */
 		  /* at run time without sig fpe */
-    c = inf + nan;
-    c = inf / nan;
-    if (! isnan(nan)) {printf ("not isnan(NaN) ... "); return 1;}
-    if (nan == nan) {printf ("nan == nan ... "); return 1;}
-    if (! isinf(inf)) {printf ("not isinf(oo) ... "); return 1;}
-    if (! isinf(-inf)) {printf ("not isinf(-oo) ... "); return 1;}
-    if (! inf > 0) {printf ("not inf > 0 ... "); return 1;}
-    if (! -inf < 0) {printf ("not -inf < 0 ... "); return 1;}
+    rrdc = rrdinf + rrdnan;
+    rrdc = rrdinf / rrdnan;
+    if (! isnan(rrdnan)) {printf ("not isnan(NaN) ... "); return 1;}
+    if (rrdnan == rrdnan) {printf ("nan == nan ... "); return 1;}
+    if (! isinf(rrdinf)) {printf ("not isinf(oo) ... "); return 1;}
+    if (! isinf(-rrdinf)) {printf ("not isinf(-oo) ... "); return 1;}
+    if (! rrdinf > 0) {printf ("not inf > 0 ... "); return 1;}
+    if (! -rrdinf < 0) {printf ("not -inf < 0 ... "); return 1;}
     return 0;
  }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
 dnl these we run regardles is cached or not
