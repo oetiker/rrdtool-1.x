@@ -689,12 +689,12 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    printf ("    <%s>", DATA_ROW_TAG);
 	    printf ("<%s>%lu</%s>", COL_TIME_TAG, ti, COL_TIME_TAG);
 	    for (j = 0; j < col_cnt; j++) {
+	      rrd_value_t newval = DNAN;
               if (enumds == 1)
 		snprintf(vtag,15,"%s%lu", COL_DATA_TAG, j);
 	      else
 		snprintf(vtag,15,"%s",COL_DATA_TAG);
               
-	      rrd_value_t newval = DNAN;
 	      newval = *ptr;
 	      if(isnan(newval)){
                 printf("<%s>NaN</%s>", vtag,vtag);
