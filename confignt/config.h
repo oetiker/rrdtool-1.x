@@ -23,15 +23,17 @@
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
 
-//#define PACKAGE "rrdtool"
-//#define PACKAGE_NAME "rrdtool"
-//#define PACKAGE_STRING "rrdtool 1.2rc6"
-//#define PACKAGE_VERSION "1.2rc6"
-//#define VERSION "1.2rc6"
-
+/* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
-#define RRD_DEFAULT_FONT "arial.ttf"
 
+#define NUMVERS 1.2015
+#define PACKAGE_NAME "rrdtool"
+#define PACKAGE_VERSION "1.2.15"
+#define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
+
+#define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
+#define isnan _isnan
+#define finite _finite
 #define snprintf _snprintf
 #define strftime strftime_ 
 
@@ -42,13 +44,15 @@
 # define rrd_realloc(a,b) realloc((a), (b))
 #endif      
 
-//#define DEBUG 1
-
 /* Vertical label angle: 90.0 (default) or 270.0 */
 #define RRDGRAPH_YLEGEND_ANGLE 90.0
 
-/* Define to 1 if you have the ANSI C header files. */
+#define RRD_DEFAULT_FONT "arial.ttf"
+/* #define RRD_DEFAULT_FONT "DejaVuSansMono-Roman.ttf" */
 
+/* #define WITH_PIECHART 1 */
+
+//#define DEBUG 1
 
 #endif /* CONFIG_H */
 
