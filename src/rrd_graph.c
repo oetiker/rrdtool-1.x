@@ -56,10 +56,11 @@ xlab_t xlab[] = {
     {1200,       	0,   TMT_HOUR,6,    TMT_DAY,1,     TMT_DAY,1,      24*3600,"%d"},
     {1800,              0,   TMT_HOUR,12,   TMT_DAY,1,     TMT_DAY,2,      24*3600,"%a %d"},
     {2400,              0,   TMT_HOUR,12,   TMT_DAY,1,     TMT_DAY,2,      24*3600,"%a"},
-    {3600,              0,   TMT_DAY,1,     TMT_WEEK,1,    TMT_WEEK,1,    7*24*3600,"Week %V"},
-    {3*3600,            0,   TMT_WEEK,1,    TMT_MONTH,1,   TMT_WEEK,2,    7*24*3600,"Week %V"},
+    {3600,              0,   TMT_DAY,1,     TMT_WEEK,1,    TMT_WEEK,1,   7*24*3600,"Week %V"},
+    {3*3600,            0,   TMT_WEEK,1,    TMT_MONTH,1,   TMT_WEEK,2,   7*24*3600,"Week %V"},
     {6*3600,            0,   TMT_MONTH,1,   TMT_MONTH,1,   TMT_MONTH,1, 30*24*3600,"%b"},
     {48*3600,           0,   TMT_MONTH,1,   TMT_MONTH,3,   TMT_MONTH,3, 30*24*3600,"%b"},
+    {315360,            0,   TMT_MONTH,3,   TMT_YEAR,1,    TMT_YEAR,1,  365*24*3600,"%Y"},
     {10*24*3600,        0,   TMT_YEAR,1,  TMT_YEAR,1,    TMT_YEAR,1, 365*24*3600,"%y"},
     {-1,0,TMT_MONTH,0,TMT_MONTH,0,TMT_MONTH,0,0,""}
 };
