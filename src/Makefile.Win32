@@ -1,4 +1,4 @@
-# Gnu Makefile for Win32 target * 11-Jul-2006
+# Gnu Makefile for Win32 target * 11-Aug-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile.Win32 [all|clean|dist|distclean]
 
@@ -11,8 +11,8 @@ ICON	= ../favicon.ico
 # Set the default font used in graphs.
 ifndef RRD_DEFAULT_FONT
 #RRD_DEFAULT_FONT = "arial.ttf"
-#RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
-RRD_DEFAULT_FONT = "VeraMono.ttf"
+RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
+#RRD_DEFAULT_FONT = "VeraMono.ttf"
 endif
 
 # Vertical label angle: 90.0 (default) or 270.0
@@ -30,17 +30,17 @@ endif
 ifndef LIBBASE
 LIBBASE	= ../..
 endif
-# All library code is statically linked to avoid problems with other lib DLLs. 
+# All library code is statically linked to avoid problems with other lib DLLs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.10
+LIBPNG	= $(LIBBASE)/libpng-1.2.12
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.1.10
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.1.10
+#LIBFT2	= $(LIBBASE)/freetype-2.2.1
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.2.1
 endif
-# Edit the path below to point to your freetype sources or set environment var.
+# Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
 LIBART	= $(LIBBASE)/libart_lgpl-2.3.17
 endif
@@ -66,7 +66,9 @@ else
 endif
 # RM	= rm -f
 CP	= cp -afv
-
+# Here you can find a native Win32 binary of the original awk:
+# http://www.gknw.net/development/prgtools/awk.zip
+AWK	= awk
 ZIP	= zip -qzR9
 
 # must be equal to DEBUG or NDEBUG
@@ -120,11 +122,11 @@ ifndef DESCR
 endif
 DESCR += - $(CC) build
 
-INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK) 
+INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
 
 CFLAGS += $(INCLUDES)
 
-vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK) 
+vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK)
 
 RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_afm.o \
@@ -252,7 +254,7 @@ $(DISTDIR):
 
 $(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
 	@echo Creating $@
-	@awk -f get_ver.awk $< > $@
+	@$(AWK) -f get_ver.awk $< > $@
 
 $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
@@ -277,7 +279,7 @@ $(OBJDIR)/%.res: $(OBJDIR)/%.rc
 	@echo Creating $@
 	@$(RC) $(RCFLAGS) $< -o $@
 
-$(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc 
+$(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo 1 VERSIONINFO > $@
 	@echo  FILEVERSION $(RRD_VERSION),0 >> $@
 	@echo  PRODUCTVERSION $(RRD_VERSION),0 >> $@
