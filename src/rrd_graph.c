@@ -7,6 +7,10 @@
 
 #include <sys/stat.h>
 
+#ifdef WIN32
+#include "strftime.h"
+#endif
+
 #include "rrd_tool.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
