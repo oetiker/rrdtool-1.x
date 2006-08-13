@@ -17,6 +17,13 @@
 #include <time.h>       /* for struct tm */
 #include "strftime.h"
 
+/* Define your own defaults in config.h if necessary */
+#if defined(TZNAME_STD) && defined(TZNAME_DST)
+char *tzname_[2] = {TZNAME_STD, TZNAME_DST};
+#else
+#define tzname_ tzname
+#endif
+
 static char *aday[] = {
     "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
@@ -35,8 +42,6 @@ static char *month[] = {
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 };
-
-char *tzname_[2] = {"CST", "CDT"};        /* Add your own defaults here */
 
 static char buf[26];
 

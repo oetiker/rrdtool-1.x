@@ -13,6 +13,8 @@
 
 size_t strftime_(char *s, size_t maxs, const char *f, const struct tm *t);
 
+#if defined(TZNAME_STD) && defined(TZNAME_DST)
 extern char * tzname_[2];
+#endif
 
 #endif /* STRFTIME__H */
