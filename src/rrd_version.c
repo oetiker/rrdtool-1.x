@@ -14,4 +14,10 @@ rrd_version(void)
   return NUMVERS;
 }
 
+char *
+rrd_strversion(void)
+{
+  return PACKAGE_VERSION;
+}
+
 
