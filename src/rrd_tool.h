@@ -102,11 +102,6 @@ extern int getrusage(int, struct rusage *);
 #include <float.h>        /* for _isnan  */
 #include <io.h>           /* for chdir   */
 
-#ifndef __MINGW32__
-#define isnan _isnan
-#define finite _finite
-#define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
-#endif
 struct tm* localtime_r(const time_t *timep, struct tm* result);
 char* ctime_r(const time_t *timep, char* result);
 struct tm* gmtime_r(const time_t *timep, struct tm* result);
