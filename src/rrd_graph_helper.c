@@ -133,6 +133,10 @@ rrd_parse_find_gf(const char *const line, unsigned int *const eaten, graph_desc_
 	    rrd_set_error("Malformed '%s' command in line '%s'\n",&line[*eaten],line);
 	    return 1;
     }
+    if (line[*eaten] == '\0') {
+       rrd_set_error("Expected some arguments after '%s'\n",line);
+       return 1;
+    }
     return 0;
 }
 
