@@ -68,6 +68,8 @@ rrd_first_r(const char *filename, const int rraindex)
 
     if((rraindex < 0) || (rraindex >= (int)rrd.stat_head->rra_cnt)) {
         rrd_set_error("invalid rraindex number");
+        rrd_free(&rrd);
+        fclose(in_file);
         return(-1);
     }
 
