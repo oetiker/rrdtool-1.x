@@ -1712,6 +1712,35 @@ double frexp10(double x, double *e) {
     return mnt;
 }
 
+static int AlmostEqual2sComplement (float A, float B, int maxUlps)
+{
+
+    int aInt = *(int*)&A;
+    int bInt = *(int*)&B;
+    int intDiff;
+    /* Make sure maxUlps is non-negative and small enough that the
+       default NAN won't compare as equal to anything.  */
+
+    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
+
+    /* Make aInt lexicographically ordered as a twos-complement int */
+
+    if (aInt < 0)
+        aInt = 0x80000000l - aInt;
+
+    /* Make bInt lexicographically ordered as a twos-complement int */
+
+    if (bInt < 0)
+        bInt = 0x80000000l - bInt;
+
+    intDiff = abs(aInt - bInt);
+
+    if (intDiff <= maxUlps)
+        return 1;
+
+    return 0;
+}
+
 /* logaritmic horizontal grid */
 int
 horizontal_log_grid(image_desc_t   *im)   
@@ -1721,7 +1750,8 @@ horizontal_log_grid(image_desc_t   *im)
 	{1.0, 5.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
 	{1.0, 2.0, 5.0, 7.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0},
 	{1.0, 2.0, 4.0, 6.0, 8.0, 10., 0.0, 0.0, 0.0, 0.0},
-	{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.}};
+	{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.},
+	{0,0,0,0,0, 0,0,0,0,0} /* last line */ };
 
     int i, j, val_exp, min_exp;
     double nex;		/* number of decades in data */
@@ -1730,7 +1760,7 @@ horizontal_log_grid(image_desc_t   *im)
     int mid = -1;	/* row in yloglab for major grid */
     double mspac;	/* smallest major grid spacing (pixels) */
     int flab;		/* first value in yloglab to use */
-    double value, tmp;
+    double value, tmp, pre_value;
     double X0,X1,Y0;   
     char graph_label[100];
 
@@ -1749,11 +1779,11 @@ horizontal_log_grid(image_desc_t   *im)
 	mid++;
 	for(i = 0; yloglab[mid][i + 1] < 10.0; i++);
 	mspac = logscale * log10(10.0 / yloglab[mid][i]);
-    } while(mspac > 2 * im->text_prop[TEXT_PROP_LEGEND].size && mid < 5);
+    } while(mspac > 2 * im->text_prop[TEXT_PROP_LEGEND].size && yloglab[mid][0] > 0);
     if(mid) mid--;
 
     /* find first value in yloglab */
-    for(flab = 0; frexp10(im->minval, &tmp) > yloglab[mid][flab]; flab++);
+    for(flab = 0; yloglab[mid][flab] < 10 && frexp10(im->minval, &tmp) > yloglab[mid][flab] ; flab++);
     if(yloglab[mid][flab] == 10.0) {
 	tmp += 1.0;
 	flab = 0;
@@ -1765,8 +1795,13 @@ horizontal_log_grid(image_desc_t   *im)
     X1=im->xorigin+im->xsize;
 
     /* draw grid */
-    while(1) {
+    pre_value = DNAN;
+    while(1) {       
+
 	value = yloglab[mid][flab] * pow(10.0, val_exp);
+        if (  AlmostEqual2sComplement(value,pre_value,4) ) break; /* it seems we are not converging */
+
+        pre_value = value;
 
 	Y0 = ytr(im, value);
 	if(Y0 <= im->yorigin - im->ysize) break;
@@ -2486,34 +2521,6 @@ graph_size_location(image_desc_t *im, int elements
 /* yes we are loosing precision by doing tos with floats instead of doubles
    but it seems more stable this way. */
    
-static int AlmostEqual2sComplement (float A, float B, int maxUlps)
-{
-
-    int aInt = *(int*)&A;
-    int bInt = *(int*)&B;
-    int intDiff;
-    /* Make sure maxUlps is non-negative and small enough that the
-       default NAN won't compare as equal to anything.  */
-
-    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
-
-    /* Make aInt lexicographically ordered as a twos-complement int */
-
-    if (aInt < 0)
-        aInt = 0x80000000l - aInt;
-
-    /* Make bInt lexicographically ordered as a twos-complement int */
-
-    if (bInt < 0)
-        bInt = 0x80000000l - bInt;
-
-    intDiff = abs(aInt - bInt);
-
-    if (intDiff <= maxUlps)
-        return 1;
-
-    return 0;
-}
 
 /* draw that picture thing ... */
 int
