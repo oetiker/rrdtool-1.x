@@ -1,6 +1,6 @@
-# Gnu Makefile for Win32 target * 11-Aug-2006
+# Gnu Makefile for Win32 target * 17-Aug-2006
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.Win32 [all|clean|dist|distclean]
+# use with: make -f Makefile.Win32 [all|clean|dist|distclean|help]
 
 DESCR	= Round Robin Database Tool
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
@@ -387,5 +387,22 @@ $(DISTDIR)/readme.txt: Makefile.Win32
 	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
 	@echo $(DL)$(WWWURL)$(DL) >> $@
+
+help:
+	@echo $(DL)===========================================================$(DL)
+	@echo $(DL)libpng Source   = $(LIBPNG)$(DL)
+	@echo $(DL)libart Source   = $(LIBART)$(DL)
+	@echo $(DL)Freetype 2 SDK  = $(LIBFT2)$(DL)
+	@echo $(DL)Zlib SDK        = $(ZLIBSDK)$(DL)
+	@echo $(DL)===========================================================$(DL)
+	@echo $(DL)RRDTool $(RRD_VERSION_STR) - available targets are:$(DL)
+	@echo $(DL)$(MAKE) all$(DL)
+	@echo $(DL)$(MAKE) rrdtool$(DL)
+	@echo $(DL)$(MAKE) rrdcgi$(DL)
+	@echo $(DL)$(MAKE) librrd$(DL)
+	@echo $(DL)$(MAKE) clean$(DL)
+	@echo $(DL)$(MAKE) dist$(DL)
+	@echo $(DL)$(MAKE) distclean$(DL)
+	@echo $(DL)===========================================================$(DL)
 
 

@@ -221,3 +221,115 @@ Tamas Kovacshazy  E-mail: khazy@mit.bme.hu
 WWW: http://www.mit.bme.hu/~khazy
 Technical University of Budapest 
 Department of Measurement and Information Systems
+
+
+Compiling RRDtool 1.2.x on Win32 with MingW32 gcc:
+---------------------------------------------------------------
+
+1. Obtain and install the current version of the MingW package.
+
+     http://www.mingw.org/download.shtml
+
+   In the MinGW set you will need the gcc and binutils as a minimum.
+
+2. Obtain either of the following awk versions and install in a directory
+   on your System Path:
+
+   - awk.exe
+
+     http://cm.bell-labs.com/cm/cs/awkbook/index.html
+
+     Note: This version has no dependencies to other libs.
+
+   - gawk.exe  (GnuWin32 version)
+
+     http://gnuwin32.sourceforge.net/packages/gawk.htm
+
+     Note: Also fetch the dependant libraries for it from the same page.
+
+3. If you plan to create a 'distribution' release of the RRD Tools, the
+   Makefile.Win32 will copy all the needed files to an output directory and
+   then zip the entire directory. A suitable zip utility can be obtained here:
+
+     http://www.info-zip.org/
+
+   Install in a directory on your System Path.
+
+4. Obtain the following libraries, ideally install them all under a common
+   directory:
+
+   = zlib
+
+     http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
+     http://www.zlib.net/
+
+   = libpng
+
+     http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.12.tar.gz
+     http://libpng.sourceforge.net/
+
+   = freetype
+
+     http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.2.1.tar.gz
+     http://freetype.sourceforge.net/index2.html
+ 
+   = libart_lgpl
+
+     http://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
+     http://www.levien.com/libart/
+
+     Note: libart_lgpl needs a special tweak because the archive contains
+     only the base directory, but the libart headers are usually included with
+     a directory prefix; therefore create a subfolder 'libart_lgpl' and move
+     all files into this subfolder.
+
+5. Set up for DOS environment.
+
+   Add MingW\bin and MSYS\bin directories to your System path.
+
+   If the libraries share a common directory set the following environment var:
+
+     set LIBBASE=<shared director>
+     e.g set LIBBASE=C:\Libraries
+
+   If the libraries are scattered, set the following environment vers:
+
+     set ZLIBSDK=<path to zlib>
+     e.g set ZLIBSDK=C:\mytest\zlib-1.2.3
+     set LIBPNG=<path to libpng>
+     set LIBFT2=<path to freetype>
+     set LIBART=<path to libart>
+
+   If using the Gnu Awk (gawk.exe), edit the Makefile.Win32 and change the line:
+
+      AWK	= awk
+
+   to
+
+      AWK	= gawk
+
+6. Compile the project.
+
+   All dependent libs are statically linked in. This has the benefit that the
+   binaries do not depend on any other DLLs.
+   In order to build the static freetype lib enter the freetype base directory
+   and type 'make'. If everything is fine a message appears that gcc is detected,
+   and that you should again type 'make'. Follow that in order to build freetype.
+   All other libs are build from the sources with the RRDTool Makefile.Win32.
+
+   Switch to the RRDTOOL .\src directory. Then:
+
+      make -f Makefile.Win32 help
+
+   to see the build options, or
+
+      make -f Makefile.Win32 all
+
+   should build the entire package.
+
+6. Happy Graphing!
+
+
+written by normw & gk.
+
+
