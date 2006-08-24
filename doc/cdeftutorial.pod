@@ -4,8 +4,13 @@ cdeftutorial - Alex van den Bogaerdt's CDEF tutorial
 
 =head1 DESCRIPTION
 
-If you provide a question, I will try to provide an answer in the next
-release of this tutorial. No feedback equals no changes! Additions to
+Intention of this document: to provide some examples of the commonly
+used parts of RRDtool's CDEF language.
+
+If you think some important feature is not explained properly, and if
+adding it to this document would benefit most users, please do ask me
+to add it.  I will then try to provide an answer in the next release
+of this tutorial.  No feedback equals no changes! Additions to
 this document are also welcome.  -- Alex van den Bogaerdt
 E<lt>alex@ergens.op.het.netE<gt>
 
