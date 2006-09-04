@@ -1062,8 +1062,9 @@ data_proc( image_desc_t *im ){
 			** relevant for min and max
 			*/
 			if (finite(paintval) && im->gdes[ii].gf != GF_TICK ) {
-			    if (isnan(minval) || paintval <  minval)
-				minval = paintval;
+			    if ((isnan(minval) || paintval <  minval ) &&
+			      ! (im->logarithmic && paintval <= 0.0)) 
+					minval = paintval;
 			    if (isnan(maxval) || paintval >  maxval)
 				maxval = paintval;
 			}
