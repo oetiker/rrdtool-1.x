@@ -44,7 +44,7 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 
-#ifndef NETWARE
+#if !(defined(NETWARE) || defined(WIN32))
 extern char *tzname[2];
 #endif
 

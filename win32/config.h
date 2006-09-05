@@ -1,9 +1,10 @@
-/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* config.h.msvc.  Hand-tweaked config.h for MSVC compiler.  */
 #ifndef CONFIG_H
 #define CONFIG_H
 
 #include <math.h>
 #include <float.h>
+#include <direct.h>
 
 /* realloc does not support NULL as argument */
 
@@ -19,7 +20,7 @@
 #define HAVE_MKTIME 1
 #define HAVE_STRFTIME 1
 #define HAVE_STRING_H 1
-#define HAVE_VPRINTF 1
+#define HAVE_VSNPRINTF 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
 
@@ -35,6 +36,7 @@
 #define isnan _isnan
 #define finite _finite
 #define snprintf _snprintf
+#define vsnprintf _vsnprintf
 #define strftime strftime_ 
 
 #define NO_NULL_REALLOC 1
@@ -52,7 +54,7 @@
 
 /* #define WITH_PIECHART 1 */
 
-//#define DEBUG 1
+/* #define DEBUG 1 */
 
 #endif /* CONFIG_H */
 

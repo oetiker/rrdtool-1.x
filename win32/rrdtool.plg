@@ -1,0 +1,253 @@
+<html>
+<body>
+<pre>
+<h1>Erstellungsprotokoll</h1>
+<h3>
+--------------------Konfiguration: rrd - Win32 Release--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Erstellen der temporären Datei  "C:\WINNT\TEMP\RSP68.tmp" mit Inhalten
+[
+/nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /Fo"release/" /Fd"release/" /FD /c 
+"D:\projects\msvc\program_883_new\src\rrd_afm.c"
+"D:\projects\msvc\program_883_new\src\rrd_afm_data.c"
+"D:\projects\msvc\program_883_new\src\rrd_create.c"
+"D:\projects\msvc\program_883_new\src\rrd_diff.c"
+"D:\projects\msvc\program_883_new\src\rrd_dump.c"
+"D:\projects\msvc\program_883_new\src\rrd_error.c"
+"D:\projects\msvc\program_883_new\src\rrd_fetch.c"
+"D:\projects\msvc\program_883_new\src\rrd_first.c"
+"D:\projects\msvc\program_883_new\src\rrd_format.c"
+"D:\projects\msvc\program_883_new\src\rrd_gfx.c"
+"D:\projects\msvc\program_883_new\src\rrd_graph.c"
+"D:\projects\msvc\program_883_new\src\rrd_graph_helper.c"
+"D:\projects\msvc\program_883_new\src\rrd_hw.c"
+"D:\projects\msvc\program_883_new\src\rrd_info.c"
+"D:\projects\msvc\program_883_new\src\rrd_last.c"
+"D:\projects\msvc\program_883_new\src\rrd_nan_inf.c"
+"D:\projects\msvc\program_883_new\src\rrd_open.c"
+"D:\projects\msvc\program_883_new\src\rrd_resize.c"
+"D:\projects\msvc\program_883_new\src\rrd_restore.c"
+"D:\projects\msvc\program_883_new\src\rrd_rpncalc.c"
+"D:\projects\msvc\program_883_new\src\rrd_thread_safe_nt.c"
+"D:\projects\msvc\program_883_new\src\rrd_tune.c"
+"D:\projects\msvc\program_883_new\src\rrd_update.c"
+"D:\projects\msvc\program_883_new\src\rrd_version.c"
+"D:\projects\msvc\program_883_new\src\rrd_xport.c"
+"D:\projects\msvc\program_883_new\src\art_rgba_svp.c"
+"D:\projects\msvc\program_883_new\src\getopt.c"
+"D:\projects\msvc\program_883_new\src\getopt1.c"
+"D:\projects\msvc\program_883_new\src\hash_32.c"
+"D:\projects\msvc\program_883_new\src\parsetime.c"
+"D:\projects\msvc\program_883_new\src\pngsize.c"
+"D:\projects\msvc\program_883_new\src\strftime.c"
+]
+Creating command line "cl.exe @C:\WINNT\TEMP\RSP68.tmp" 
+Erstellen der temporären Datei  "C:\WINNT\TEMP\RSP69.tmp" mit Inhalten
+[
+/nologo /out:"release\rrd.lib" 
+.\release\rrd_afm.obj
+.\release\rrd_afm_data.obj
+.\release\rrd_create.obj
+.\release\rrd_diff.obj
+.\release\rrd_dump.obj
+.\release\rrd_error.obj
+.\release\rrd_fetch.obj
+.\release\rrd_first.obj
+.\release\rrd_format.obj
+.\release\rrd_gfx.obj
+.\release\rrd_graph.obj
+.\release\rrd_graph_helper.obj
+.\release\rrd_hw.obj
+.\release\rrd_info.obj
+.\release\rrd_last.obj
+.\release\rrd_nan_inf.obj
+.\release\rrd_open.obj
+.\release\rrd_resize.obj
+.\release\rrd_restore.obj
+.\release\rrd_rpncalc.obj
+.\release\rrd_thread_safe_nt.obj
+.\release\rrd_tune.obj
+.\release\rrd_update.obj
+.\release\rrd_version.obj
+.\release\rrd_xport.obj
+.\release\art_rgba_svp.obj
+.\release\getopt.obj
+.\release\getopt1.obj
+.\release\hash_32.obj
+.\release\parsetime.obj
+.\release\pngsize.obj
+.\release\strftime.obj
+]
+Erstellen der Befehlzeile "link.exe -lib @C:\WINNT\TEMP\RSP69.tmp"
+<h3>Ausgabefenster</h3>
+Kompilierung läuft...
+rrd_afm.c
+rrd_afm_data.c
+rrd_create.c
+rrd_diff.c
+rrd_dump.c
+D:\projects\msvc\program_883_new\src\rrd_dump.c(321) : warning C4146: Einem vorzeichenlosen Typ wurde ein unaerer Minus-Operator zugewiesen; das Ergebnis ist weiterhin vorzeichenlos
+rrd_error.c
+rrd_fetch.c
+rrd_first.c
+D:\projects\msvc\program_883_new\src\rrd_first.c(57) : warning C4028: Formaler Parameter 2 unterscheidet sich von der Deklaration
+D:\projects\msvc\program_883_new\src\rrd_first.c(83) : warning C4146: Einem vorzeichenlosen Typ wurde ein unaerer Minus-Operator zugewiesen; das Ergebnis ist weiterhin vorzeichenlos
+rrd_format.c
+rrd_gfx.c
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(316) : warning C4244: 'function' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(316) : warning C4244: 'function' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(470) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(475) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(482) : warning C4244: '=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(497) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(507) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(544) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(545) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(606) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned char ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(607) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned char ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(608) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned char ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(609) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned char ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(625) : warning C4244: '=' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(626) : warning C4244: '=' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(628) : warning C4244: 'function' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(662) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(667) : warning C4002: Zu viele uebergebene Parameter fuer das Makro 'DPRINTF'
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(696) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(700) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(716) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(720) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(1071) : warning C4090: 'initializing' : Unterschiedliche 'const'-Bezeichner
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(1072) : warning C4101: 'cstr' : Unreferenzierte lokale Variable
+rrd_graph.c
+D:\projects\msvc\program_883_new\src\rrd_graph.c(294) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(348) : warning C4244: '=' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(524) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(836) : warning C4244: '=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1027) : warning C4244: '=' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1404) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1405) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1466) : warning C4244: '+=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1501) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1516) : warning C4244: '+=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1521) : warning C4244: '+=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1523) : warning C4244: '-=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1532) : warning C4244: '+=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1571) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1593) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1606) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1707) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1793) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1804) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1804) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1824) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1853) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1858) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1859) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1910) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1915) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(1916) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2217) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2218) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2382) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2397) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2404) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2411) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2481) : warning C4244: '+=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2482) : warning C4244: '+=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2735) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2735) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2755) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2755) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2755) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2755) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2763) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2763) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2763) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2763) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2770) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2770) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2770) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(2770) : warning C4244: 'function' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph.c(3775) : warning C4244: '=' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+rrd_graph_helper.c
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(201) : warning C4028: Formaler Parameter 4 unterscheidet sich von der Deklaration
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(386) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(390) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(391) : warning C4244: '=' : Konvertierung von 'float ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(786) : warning C4028: Formaler Parameter 3 unterscheidet sich von der Deklaration
+D:\projects\msvc\program_883_new\src\rrd_graph_helper.c(829) : warning C4244: '=' : Konvertierung von 'double ' in 'float ', moeglicher Datenverlust
+rrd_hw.c
+D:\projects\msvc\program_883_new\src\rrd_hw.c(447) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned short ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_hw.c(461) : warning C4244: 'return' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_hw.c(496) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'unsigned short ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_hw.c(526) : warning C4244: '=' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+rrd_info.c
+rrd_last.c
+rrd_nan_inf.c
+rrd_open.c
+rrd_resize.c
+rrd_restore.c
+rrd_rpncalc.c
+D:\projects\msvc\program_883_new\src\rrd_rpncalc.c(763) : warning C4244: 'initializing' : Konvertierung von 'double ' in 'int ', moeglicher Datenverlust
+Generieren von Code...
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(316) : warning C4761: Größenkonflikt im Argument. Konvertierung vorgenommen
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(316) : warning C4761: Größenkonflikt im Argument. Konvertierung vorgenommen
+D:\projects\msvc\program_883_new\src\rrd_gfx.c(628) : warning C4761: Größenkonflikt im Argument. Konvertierung vorgenommen
+Kompilieren...
+rrd_thread_safe_nt.c
+rrd_tune.c
+D:\projects\msvc\program_883_new\src\rrd_tune.c(321) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'short ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_tune.c(353) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'short ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_tune.c(386) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'short ', moeglicher Datenverlust
+rrd_update.c
+D:\projects\msvc\program_883_new\src\rrd_update.c(536) : warning C4244: '=' : Konvertierung von 'double ' in 'long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_update.c(744) : warning C4244: '+=' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_update.c(830) : warning C4244: '=' : Konvertierung von 'double ' in 'unsigned long ', moeglicher Datenverlust
+D:\projects\msvc\program_883_new\src\rrd_update.c(1176) : warning C4244: '=' : Konvertierung von 'unsigned long ' in 'short ', moeglicher Datenverlust
+rrd_version.c
+rrd_xport.c
+art_rgba_svp.c
+getopt.c
+D:\projects\msvc\program_883_new\src\getopt.c(215) : warning C4273: 'getenv' : Inkonsistente DLL-Bindung. dllexport angenommen.
+getopt1.c
+hash_32.c
+parsetime.c
+pngsize.c
+strftime.c
+Generieren von Code...
+D:\projects\msvc\program_883_new\src\rrd_update.c(156) : warning C4700: Lokale Variable 'rc' wurde ohne Initialisierung verwendet
+Bibliothek wird erstellt...
+<h3>
+--------------------Konfiguration: rrdtool - Win32 Release--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Erstellen der temporären Datei  "C:\WINNT\TEMP\RSP6A.tmp" mit Inhalten
+[
+/nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /Fo"toolrelease/" /Fd"toolrelease/" /FD /c 
+"D:\projects\msvc\program_883_new\src\rrd_tool.c"
+]
+Creating command line "cl.exe @C:\WINNT\TEMP\RSP6A.tmp" 
+Erstellen der temporären Datei  "C:\WINNT\TEMP\RSP6B.tmp" mit Inhalten
+[
+libpng.lib zlib.lib libart.lib freetype221MT.lib kernel32.lib user32.lib /nologo /subsystem:console /incremental:yes /pdb:"toolrelease/rrdtool.pdb" /debug /machine:I386 /out:"toolrelease/rrdtool.exe" /libpath:"../../libpng-1.2.12/projects/visualc6/Win32_LIB_Release" /libpath:"../../zlib-1.2.3" /libpath:"../../libart_lgpl-2.3.17/win32/release" /libpath:"../../freetype-2.2.1/objs" 
+.\toolrelease\rrd_tool.obj
+.\release\rrd.lib
+]
+Erstellen der Befehlzeile "link.exe @C:\WINNT\TEMP\RSP6B.tmp"
+<h3>Ausgabefenster</h3>
+Kompilierung läuft...
+rrd_tool.c
+D:\projects\msvc\program_883_new\src\rrd_tool.c(461) : warning C4101: 'st' : Unreferenzierte lokale Variable
+D:\projects\msvc\program_883_new\src\rrd_tool.c(463) : warning C4101: 'cwd' : Unreferenzierte lokale Variable
+Linker-Vorgang läuft...
+MSVCRT.lib(cinitexe.obj) : warning LNK4098: Standardbibliothek "libcmt.lib" steht in Konflikt mit anderen Bibliotheken; /NODEFAULT:Bibliothek verwenden
+LINK : warning LNK4049: Lokal definiertes Symbol "_strftime_" importiert
+
+
+
+<h3>Ergebnisse</h3>
+rrdtool.exe - 0 Fehler, 104 Warnung(en)
+</pre>
+</body>
+</html>

@@ -5,7 +5,7 @@
  ****************************************************************************/
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../confignt/config.h"
+#include "../win32/config.h"
 #else
 #ifdef HAVE_CONFIG_H
 #include "config.h"

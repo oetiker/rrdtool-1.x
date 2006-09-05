@@ -6,11 +6,16 @@
 
 /* #define DEBUG */
 
-#ifdef DEBUG
-# define DPRINTF(...)  fprintf(stderr, __VA_ARGS__);
-#else
-# define DPRINTF(...)
-#endif
+/* stupid MSVC doesnt support variadic macros = no debug for now! */
+#ifdef _MSC_VER
+# define DPRINTF()
+#else 
+# ifdef DEBUG
+#  define DPRINTF(...)  fprintf(stderr, __VA_ARGS__);
+# else
+#  define DPRINTF(...)
+# endif /* DEBUG */
+#endif /* _MSC_VER */
 #include "rrd_tool.h"
 #include <png.h>
 #include <ft2build.h>

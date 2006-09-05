@@ -1,44 +1,49 @@
-# Gnu Makefile for Win32 target * 17-Aug-2006
-# for use with MingW32 gcc or Metrowerks CodeWarrior compiler
-# use with: make -f Makefile.Win32 [all|clean|dist|distclean|help]
+# Gnu Makefile for NetWare target * 25-Aug-2006
+# for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
+# use with: make -f Makefile [all|clean|dist|distclean|help]
 
-DESCR	= Round Robin Database Tool
+DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
 COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
-#WWWURL	= http://ee-staff.ethz.ch/~oetiker/webtools/rrdtool/
 WWWURL	= http://www.rrdtool.org/
-ICON	= ../favicon.ico
+MTSAFE	= YES
+#SCREEN	= $(DESCR)
+STACK	= 65535
+# Comment the line below if you dont want to load protected automatically.
+#LDRING	= 3
 
-# Set the default font used in graphs.
-ifndef RRD_DEFAULT_FONT
-#RRD_DEFAULT_FONT = "arial.ttf"
-RRD_DEFAULT_FONT = "DejaVuSansMono-Roman.ttf"
+# You can set the default font used in graphs.
+# If not set here RRD defaults to DejaVuSansMono-Roman.ttf
+#RRD_DEFAULT_FONT = "sys:/java/nwgfx/lib/x11/fonts/ttf/tt0003m_.ttf"
 #RRD_DEFAULT_FONT = "VeraMono.ttf"
-endif
 
 # Vertical label angle: 90.0 (default) or 270.0
 RRDGRAPH_YLEGEND_ANGLE = 90.0
 
 # Set to one if you want to have piecharts.
-WITH_PIECHART = 1
+WITH_PIECHART = 0
 
 # Set the extension used for rrdcgi.
 ifndef CGIEXT
-CGIEXT	= exe
+CGIEXT	= nlm
+endif
+
+# Edit the path below to point to your Novell NDK.
+ifndef NDKBASE
+NDKBASE	= c:/novell
 endif
 
 # Base for the lib sources
 ifndef LIBBASE
 LIBBASE	= ../..
 endif
-# All library code is statically linked to avoid problems with other lib DLLs.
+# All library code is statically linked to avoid problems with other lib NLMs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
 LIBPNG	= $(LIBBASE)/libpng-1.2.12
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.2.1
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.2.1
+LIBFT2	= $(LIBBASE)/freetype-2.2.1
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -51,21 +56,36 @@ endif
 
 # Edit the path below to point to your distribution folder.
 ifndef DISTDIR
-DISTDIR	= rrdtool-$(RRD_VERSION_STR)-w32
+DISTDIR	= rrdtool-$(RRD_VERSION_STR)-nw
 endif
 ARCHIVE = $(DISTDIR).zip
 
 # whatever...
-NO_NULL_REALLOC = 1
+# NO_NULL_REALLOC = 1
+
+# Edit the var below to point to your lib architecture.
+ifndef LIBARCH
+# LIBARCH = CLIB
+LIBARCH = LIBC
+endif
 
 # The following line defines your compiler.
 ifdef METROWERKS
-	CC = mwcc
+	CC = mwccnlm
 else
 	CC = gcc
 endif
 # RM	= rm -f
 CP	= cp -afv
+# if you want to mark the target as MTSAFE you will need a tool for
+# generating the xdc data for the linker; here's a minimal tool:
+# http://www.gknw.net/development/prgtools/mkxdc.zip
+MPKXDC	= mkxdc
+# CodeWarrior is too stupid to set the internal name properly when
+# the extension is not a NLM and not a registered type. So we need
+# to fix that after linking (since CGI isnt a known type - argh!):
+# http://www.gknw.net/development/prgtools/fixnlmname.zip
+FIXNLMN	= fixnlmname #-q
 # Here you can find a native Win32 binary of the original awk:
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
@@ -83,50 +103,83 @@ else
 	OBJDIR	= debug
 endif
 
+# Project root
+PROOT	= ..
+
 # Include the version info retrieved from source.
 -include $(OBJDIR)/version.inc
 
 # Global flags for all compilers
-CFLAGS	= $(OPT) -D$(DB) -DHAVE_CONFIG_H
+CFLAGS	= $(OPT) -D$(DB) -nostdinc -DNETWARE -DN_PLAT_NLM -D_POSIX_SOURCE
+CFLAGS	+= -DHAVE_CONFIG_H
 
-ifeq ($(CC),mwcc)
-LD	= mwld
-RC	= mwwinrc
-LDFLAGS	= -nostdlib
+ifeq ($(CC),mwccnlm)
+LD	= mwldnlm
+LDFLAGS	= -nostdlib $^ $(PRELUDE) $(LDLIBS) -o $@ -commandfile
 AR	= $(LD)
 ARFLAGS	= -type library -w nocmdline $(OBJS) -o
 LIBEXT	= lib
-LIBPATH	+= -lr "$(METROWERKS)/MSL" -lr "$(METROWERKS)/Win32-x86 Support"
-LDLIBS	+= -lkernel32.lib -luser32.lib
-LDLIBS	+= -lMSL_Runtime_x86.lib -lMSL_C_x86.lib -lMSL_Extras_x86.lib
-RCFLAGS	=
-CFLAGS	+= -nostdinc -gccinc -msgstyle gcc -inline off -opt nointrinsics -proc 586
-CFLAGS	+= -ir "$(METROWERKS)/MSL" -ir "$(METROWERKS)/Win32-x86 Support"
-CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
+CFLAGS	+= -gccinc -inline off -opt nointrinsics -proc 586
+CFLAGS	+= -relax_pointers
+#CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
+ifeq ($(LIBARCH),LIBC)
+	PRELUDE = $(SDK_LIBC)/imports/libcpre.o
+	CFLAGS += -align 4
 else
-LD	= gcc
-RC	= windres
-LDFLAGS	= -s
+	PRELUDE = "$(METROWERKS)/Novell Support/libraries/runtime/prelude.obj"
+	CFLAGS += -include "$(METROWERKS)/Novell Support/headers/nlm_prefix.h"
+	CFLAGS += -align 1
+endif
+else
+LD	= nlmconv
+LDFLAGS	= -T
 AR	= ar
 ARFLAGS	= -cq
 LIBEXT	= a
-RCFLAGS	= -I rc -O coff -i
-CFLAGS	+= -fno-strict-aliasing -Wall -Wno-unused # -pedantic
+CFLAGS	+= -fno-builtin -fpack-struct -fpcc-struct-return -fno-strict-aliasing
+CFLAGS	+= -Wall -Wno-unused # -pedantic
+ifeq ($(LIBARCH),LIBC)
+	PRELUDE = $(SDK_LIBC)/imports/libcpre.gcc.o
+else
+	PRELUDE = $(NDK_ROOT)/pre/prelude.o
+	CFLAGS += -include $(NDKBASE)/nlmconv/genlm.h
+endif
 endif
 
+ifeq ($(findstring linux,$(OSTYPE)),linux)
+#include $(NDKBASE)/nlmconv/ncpfs.inc
+DL	= '
+endif
+
+ifeq ($(MTSAFE),YES)
+	XDCOPT = -n
+endif
+ifeq ($(MTSAFE),NO)
+	XDCOPT = -u
+endif
 ifndef COPYR
 	COPYR = Copyright (c) 2006 The Open Source Community.
 endif
 ifndef DESCR
-	DESCR = $(notdir $(@:.rc=)) Command Extension
+	DESCR = $(notdir $(@:.def=)) Command Extension
 endif
-DESCR += - $(CC) build
+DESCR += ($(LIBARCH)) - $(CC) build
 
-INCLUDES += -I. -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
+NDK_ROOT = $(NDKBASE)/ndk
+SDK_CLIB = $(NDK_ROOT)/nwsdk
+SDK_LIBC = $(NDK_ROOT)/libc
+
+INCLUDES += -I$(PROOT) -I$(PROOT)/src -I$(LIBPNG) -I$(LIBFT2)/include -I$(LIBART) -I$(ZLIBSDK)
+
+ifeq ($(LIBARCH),LIBC)
+	INCLUDES += -I$(SDK_LIBC)/include -I$(SDK_LIBC)/include/nks
+else
+	INCLUDES += -I$(SDK_CLIB)/include/nlm -I$(SDK_CLIB)/include
+endif
 
 CFLAGS += $(INCLUDES)
 
-vpath %.c . $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK)
+vpath %.c $(PROOT)/src $(LIBPNG) $(LIBART)/libart_lgpl $(ZLIBSDK)
 
 RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_afm.o \
@@ -153,7 +206,7 @@ RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_update.o \
 	$(OBJDIR)/rrd_version.o \
 	$(OBJDIR)/rrd_xport.o \
-	$(OBJDIR)/rrd_thread_safe_nt.o \
+	$(OBJDIR)/rrd_thread_safe.o \
 	$(EOLIST)
 
 XLIBOBJS	= \
@@ -163,7 +216,6 @@ XLIBOBJS	= \
 	$(OBJDIR)/hash_32.o \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
-	$(OBJDIR)/strftime.o \
 	$(EOLIST)
 
 PNGLIBOBJS	= \
@@ -216,31 +268,31 @@ OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
 OBJCGI	:= $(OBJS) $(OBJDIR)/rrd_cgi.o
 OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
-LDLIBS	+= $(LIBFT2)/objs/freetype.$(LIBEXT)
+LDLIBS	+= $(LIBFT2)/builds/netware/libc/libft2.$(LIBEXT)
 
 
 all: rrdtool rrdcgi
 
-rrdtool: $(OBJDIR) config.h $(OBJDIR)/rrdtool.exe
-rrdcgi: $(OBJDIR) config.h $(OBJDIR)/rrdcgi.$(CGIEXT)
-librrd: $(OBJDIR) config.h $(OBJDIR)/librrd.$(LIBEXT)
+rrdtool: $(OBJDIR) $(PROOT)/config.h $(OBJDIR)/rrdtool.nlm
+rrdcgi: $(OBJDIR) $(PROOT)/config.h $(OBJDIR)/rrdcgi.$(CGIEXT)
+librrd: $(OBJDIR) $(PROOT)/config.h $(OBJDIR)/librrd.$(LIBEXT)
 
 dist: all $(DISTDIR) $(DISTDIR)/readme.txt
 #	@-$(CP) $(OBJDIR)/librrd.$(LIBEXT) $(DISTDIR)
 	@-$(CP) $(OBJDIR)/rrdcgi.$(CGIEXT) $(DISTDIR)
-	@-$(CP) $(OBJDIR)/rrdtool.exe $(DISTDIR)
-	@-$(CP) $(RRD_DEFAULT_FONT) $(DISTDIR)
-	@-$(CP) ../CHANGES $(DISTDIR)
-	@-$(CP) ../COPYING $(DISTDIR)
-	@-$(CP) ../COPYRIGHT $(DISTDIR)
-	@-$(CP) ../NEWS $(DISTDIR)
-	@-$(CP) ../README $(DISTDIR)
+	@-$(CP) $(OBJDIR)/rrdtool.nlm $(DISTDIR)
+	@-$(CP) $(PROOT)/src/*.ttf $(DISTDIR)
+	@-$(CP) $(PROOT)/CHANGES $(DISTDIR)
+	@-$(CP) $(PROOT)/COPYING $(DISTDIR)
+	@-$(CP) $(PROOT)/COPYRIGHT $(DISTDIR)
+	@-$(CP) $(PROOT)/NEWS $(DISTDIR)
+	@-$(CP) $(PROOT)/README $(DISTDIR)
 	@echo Creating $(ARCHIVE)
 	@$(ZIP) $(ARCHIVE) $(DISTDIR)/* < $(DISTDIR)/readme.txt
 
 clean:
 	-$(RM) -r $(OBJDIR)
-	-$(RM) config.h
+	-$(RM) $(PROOT)/config.h
 
 distclean: clean
 	-$(RM) -r $(DISTDIR)
@@ -252,77 +304,103 @@ $(OBJDIR):
 $(DISTDIR):
 	@mkdir $@
 
-$(OBJDIR)/version.inc: ../configure.ac $(OBJDIR) get_ver.awk
-	@echo Creating $@
-	@$(AWK) -f get_ver.awk $< > $@
-
 $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJCGI) $(OBJDIR)/rrdcgi.res
-	@echo Linking $@
-	@-$(RM) $@
-	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
+$(OBJDIR)/version.inc: $(PROOT)/configure.ac $(OBJDIR) $(PROOT)/src/get_ver.awk
+	@echo Creating $@
+	@$(AWK) -f $(PROOT)/src/get_ver.awk $< > $@
 
-$(OBJDIR)/rrdtool.exe: $(OBJTOOL) $(OBJDIR)/rrdtool.res
+$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJCGI) $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
 	@echo Linking $@
 	@-$(RM) $@
-	@$(LD) $(LDFLAGS) $^ -o $@ $(LIBPATH) $(LDLIBS)
+	@$(LD) $(LDFLAGS) $(@:.$(CGIEXT)=.def)
+ifneq ($(CGIEXT),nlm)
+ifeq ($(LD),mwldnlm)
+	@$(FIXNLMN) $@
+endif
+endif
+
+$(OBJDIR)/rrdtool.nlm: $(OBJTOOL) $(OBJDIR)/rrdtool.def $(OBJDIR)/rrdtool.xdc
+	@echo Linking $@
+	@-$(RM) $@
+	@$(LD) $(LDFLAGS) $(@:.nlm=.def)
 
 $(OBJDIR)/librrd.$(LIBEXT): $(OBJS)
 	@echo Creating $@
 	@-$(RM) $@
 	@$(AR) $(ARFLAGS) $@ $^
 
-$(OBJDIR)/%.res: $(OBJDIR)/%.rc
+$(OBJDIR)/%.xdc: Makefile
 	@echo Creating $@
-	@$(RC) $(RCFLAGS) $< -o $@
+	@$(MPKXDC) $(XDCOPT) $@
 
-$(OBJDIR)/%.rc: Makefile.Win32 $(OBJDIR)/version.inc
-	@echo 1 VERSIONINFO > $@
-	@echo  FILEVERSION $(RRD_VERSION),0 >> $@
-	@echo  PRODUCTVERSION $(RRD_VERSION),0 >> $@
-	@echo  FILEFLAGSMASK 0x3fL >> $@
-	@echo  FILEOS 0x40004L >> $@
-	@echo  FILEFLAGS 0x0L >> $@
-	@echo  FILETYPE 0x1L >> $@
-	@echo  FILESUBTYPE 0x0L >> $@
-	@echo BEGIN >> $@
-	@echo   BLOCK "StringFileInfo" >> $@
-	@echo   BEGIN >> $@
-	@echo     BLOCK "040904E4" >> $@
-	@echo     BEGIN >> $@
-	@echo       VALUE "LegalCopyright","$(COPYR)\0" >> $@
-ifdef COMPANY
-	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
+$(OBJDIR)/%.def: Makefile $(OBJDIR)/version.inc
+	@echo $(DL)# DEF Linker File for use with gcc and nlmconv$(DL) > $@
+	@echo $(DL)# or with Codewarrior command line compiler.$(DL) >> $@
+	@echo $(DL)# Do not edit this file - it is created by make!$(DL) >> $@
+	@echo $(DL)# All your changes will be lost!!$(DL) >> $@
+	@echo $(DL)#$(DL) >> $@
+	@echo $(DL)copyright "$(COPYR)"$(DL) >> $@
+	@echo $(DL)description "$(DESCR)"$(DL) >> $@
+	@echo $(DL)version $(RRD_VERSION)$(DL) >> $@
+ifdef NLMTYPE
+	@echo $(DL)type $(NLMTYPE)$(DL) >> $@
+else
+	@echo $(DL)type 0$(DL) >> $@
 endif
-	@echo       VALUE "ProductName","$(notdir $(@:.rc=.exe))\0" >> $@
-	@echo       VALUE "ProductVersion","$(RRD_VERSION_STR)\0" >> $@
-	@echo       VALUE "License","Released under GPL.\0" >> $@
-	@echo       VALUE "FileDescription","$(DESCR)\0" >> $@
-	@echo       VALUE "FileVersion","$(RRD_VERSION_STR)\0" >> $@
-	@echo       VALUE "InternalName","$(notdir $(@:.rc=))\0" >> $@
-	@echo       VALUE "OriginalFilename","$(notdir $(@:.rc=.exe))\0" >> $@
-	@echo       VALUE "WWW","$(WWWURL)\0" >> $@
-	@echo     END >> $@
-	@echo   END >> $@
-	@echo   BLOCK "VarFileInfo" >> $@
-	@echo   BEGIN >> $@
-	@echo     VALUE "Translation", 0x409, 1252 >> $@
-	@echo   END >> $@
-	@echo END >> $@
-ifdef ICON
-	@echo 1 ICON DISCARDABLE "$(ICON)" >> $@
+ifdef STACK
+	@echo $(DL)stack $(STACK)$(DL) >> $@
+endif
+	@echo $(DL)threadname "$(notdir $(@:.def=))"$(DL) >> $@
+ifdef SCREEN
+	@echo $(DL)screenname "$(SCREEN)"$(DL) >> $@
+else
+	@echo $(DL)screenname "DEFAULT"$(DL) >> $@
+endif
+ifeq ($(DB),DEBUG)
+	@echo $(DL)debug$(DL) >> $@
+endif
+ifeq ($(LIBARCH),CLIB)
+	@echo $(DL)start _Prelude$(DL) >> $@
+	@echo $(DL)exit _Stop$(DL) >> $@
+	@echo $(DL)import @$(NDK_ROOT)/nwsdk/imports/clib.imp$(DL) >> $@
+	@echo $(DL)import @$(NDK_ROOT)/nwsdk/imports/threads.imp$(DL) >> $@
+	@echo $(DL)import @$(NDK_ROOT)/nwsdk/imports/nlmlib.imp$(DL) >> $@
+	@echo $(DL)module clib$(DL) >> $@
+else
+	@echo $(DL)start _LibCPrelude$(DL) >> $@
+	@echo $(DL)exit _LibCPostlude$(DL) >> $@
+	@echo $(DL)check _LibCCheckUnload$(DL) >> $@
+	@echo $(DL)import @$(NDK_ROOT)/libc/imports/libc.imp$(DL) >> $@
+	@echo $(DL)import @$(NDK_ROOT)/libc/imports/netware.imp$(DL) >> $@
+	@echo $(DL)module libc$(DL) >> $@
+	@echo $(DL)pseudopreemption$(DL) >> $@
+	@echo $(DL)flag_on 64$(DL) >> $@
+endif
+ifeq ($(LDRING),0)
+	@echo $(DL)flag_on 16$(DL) >> $@
+endif
+ifeq ($(LDRING),3)
+	@echo $(DL)flag_on 512$(DL) >> $@
+endif
+ifdef XDCOPT
+	@echo $(DL)xdcdata $(@:.def=.xdc)$(DL) >> $@
+endif
+ifeq ($(LD),nlmconv)
+	@echo $(DL)input $(OBJS) $(LDLIBS)$(DL) >> $@
+	@echo $(DL)input $(PRELUDE)$(DL) >> $@
+	@echo $(DL)output $(notdir $(@:.def=.nlm))$(DL) >> $@
 endif
 
-config.h: Makefile.Win32 $(OBJDIR)/version.inc
+$(PROOT)/config.h: Makefile
 	@echo Creating $@
 	@echo $(DL)/* $@ for NetWare target.$(DL) > $@
 	@echo $(DL)** Do not edit this file - it is created by make!$(DL) >> $@
 	@echo $(DL)** All your changes will be lost!!$(DL) >> $@
 	@echo $(DL)*/$(DL) >> $@
-	@echo $(DL)#define OS "i586-pc-Win32"$(DL) >> $@
+	@echo $(DL)#define OS "i586-pc-NetWare"$(DL) >> $@
 	@echo $(DL)#define PACKAGE_VERSION "$(RRD_VERSION_STR)"$(DL) >> $@
 	@echo $(DL)#define PACKAGE_BUGREPORT "tobi@oetiker.ch"$(DL) >> $@
 	@echo $(DL)#define NUMVERS $(RRD_NUMVERS)$(DL) >> $@
@@ -333,7 +411,8 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_ERRNO_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FCNTL_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FIONBIO 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_GETTIMEOFDAY 1$(DL) >> $@
+	@echo $(DL)#define HAVE_FLOAT_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_GETTIMEOFDAY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_INTTYPES_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIMITS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LONGLONG 1$(DL) >> $@
@@ -341,7 +420,10 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_MALLOC_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MATH_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MBSTOWCS 1$(DL) >> $@
+	@echo $(DL)#define HAVE_MEMMOVE 1$(DL) >> $@
+	@echo $(DL)#define HAVE_MKTIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SELECT 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SETLOCALE 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SETJMP_H 1$(DL) >> $@
 #	@echo $(DL)#define HAVE_SIGNAL 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SNPRINTF 1$(DL) >> $@
@@ -349,20 +431,23 @@ config.h: Makefile.Win32 $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_STDDEF_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDINT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDLIB_H 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_STRCASECMP 1$(DL) >> $@
+	@echo $(DL)#define HAVE_STRCASECMP 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRDUP 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRFTIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRING_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRLCAT 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRLCPY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRSTR 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_SELECT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_STAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_TIME_H 1$(DL) >> $@
-	@echo $(DL)#define HAVE_TERMIOS_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SYS_TYPES_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_TZSET 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
+	@echo $(DL)#define HAVE_UNISTD_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_VSNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ZLIB_H 1$(DL) >> $@
@@ -373,16 +458,17 @@ ifdef NO_NULL_REALLOC
 else
 	@echo $(DL)#define rrd_realloc(a,b) realloc((a), (b))$(DL) >> $@
 endif
-	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
+ifdef RRD_DEFAULT_FONT
 	@echo $(DL)#define RRD_DEFAULT_FONT $(RRD_DEFAULT_FONT)$(DL) >> $@
-	@echo $(DL)#define strftime strftime_$(DL) >> $@
+endif
+	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
 ifdef WITH_PIECHART
 	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
 endif
 
-$(DISTDIR)/readme.txt: Makefile.Win32
+$(DISTDIR)/readme.txt: Makefile
 	@echo Creating $@
-	@echo $(DL)This is a binary distribution for Win32 platform.$(DL) > $@
+	@echo $(DL)This is a binary distribution for NetWare platform.$(DL) > $@
 	@echo $(DL)RRDTool version $(RRD_VERSION_STR)$(DL) >> $@
 	@echo $(DL)Please download the complete RRDTool package for$(DL) >> $@
 	@echo $(DL)any further documentation:$(DL) >> $@
@@ -390,6 +476,7 @@ $(DISTDIR)/readme.txt: Makefile.Win32
 
 help:
 	@echo $(DL)===========================================================$(DL)
+	@echo $(DL)Novell NDK Base = $(NDKBASE)$(DL)
 	@echo $(DL)libpng Source   = $(LIBPNG)$(DL)
 	@echo $(DL)libart Source   = $(LIBART)$(DL)
 	@echo $(DL)Freetype 2 SDK  = $(LIBFT2)$(DL)

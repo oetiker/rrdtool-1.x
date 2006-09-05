@@ -41,10 +41,10 @@ RSC=rc.exe
 # PROP Intermediate_Dir "release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /I "\Program Files\GnuWin32\include" /I "\Program Files\GnuWin32\include\freetype2" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
-# ADD RSC /l 0x100c
+# ADD RSC /l 0x409
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
@@ -65,10 +65,10 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "\Program Files\GnuWin32\include\freetype2" /I "\Program Files\GnuWin32\include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
+# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
-# ADD RSC /l 0x100c
+# ADD RSC /l 0x409
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo /o"rrd.bsc"
@@ -84,115 +84,131 @@ LIB32=link.exe -lib
 # Name "rrd - Win32 Debug"
 # Begin Source File
 
-SOURCE=.\getopt.c
+SOURCE=..\src\rrd_afm.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\getopt1.c
+SOURCE=..\src\rrd_afm_data.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\hash_32.c
+SOURCE=..\src\rrd_create.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\parsetime.c
+SOURCE=..\src\rrd_diff.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\pngsize.c
+SOURCE=..\src\rrd_dump.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_afm.c
+SOURCE=..\src\rrd_error.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_afm_data.c
+SOURCE=..\src\rrd_fetch.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_create.c
+SOURCE=..\src\rrd_first.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_diff.c
+SOURCE=..\src\rrd_format.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_dump.c
+SOURCE=..\src\rrd_gfx.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_error.c
+SOURCE=..\src\rrd_graph.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_fetch.c
+SOURCE=..\src\rrd_graph_helper.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_format.c
+SOURCE=..\src\rrd_hw.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_gfx.c
+SOURCE=..\src\rrd_info.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_graph.c
+SOURCE=..\src\rrd_last.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_graph_helper.c
+SOURCE=..\src\rrd_nan_inf.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_hw.c
+SOURCE=..\src\rrd_open.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_info.c
+SOURCE=..\src\rrd_resize.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_last.c
+SOURCE=..\src\rrd_restore.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_nan_inf.c
+SOURCE=..\src\rrd_rpncalc.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_open.c
+SOURCE=..\src\rrd_thread_safe_nt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_resize.c
+SOURCE=..\src\rrd_tune.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_restore.c
+SOURCE=..\src\rrd_update.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_rpncalc.c
+SOURCE=..\src\rrd_version.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_thread_safe_nt.c
+SOURCE=..\src\rrd_xport.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_tune.c
+SOURCE=..\src\art_rgba_svp.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_update.c
+SOURCE=..\src\getopt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\rrd_xport.c
+SOURCE=..\src\getopt1.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\hash_32.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\parsetime.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\pngsize.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\strftime.c
 # End Source File
 # End Target
 # End Project
