@@ -103,7 +103,7 @@ Using the bash shell, this could look be:
  TIME=$(date +%s)
  RRDRES=900
  rrdtool fetch subdata.rrd AVERAGE -r $RRDRES \
-    -e $(echo $(($TIME/$RRDRES*$RRDRES))) -s e-1h
+    -e $(($TIME/$RRDRES*$RRDRES)) -s e-1h
 
 Or in Perl:
 
