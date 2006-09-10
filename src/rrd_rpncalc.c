@@ -760,7 +760,7 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
            case OP_AVG:
                stackunderflow(0);
                 {
-                   int i=rpnstack -> s[stptr--];
+                   int i=(int)rpnstack -> s[stptr--];
                    double sum=0;
                    int count=0;
                    stackunderflow(i-1);
