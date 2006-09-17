@@ -24,7 +24,7 @@ extern "C" {
  */
 #define VERSION_SAVED VERSION
 #undef VERSION
-#include "../../config.h"
+#include "../../rrd_config.h"
 #include "../../src/rrd_tool.h"
 #undef VERSION
 #define VERSION VERSION_SAVED

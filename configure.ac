@@ -18,7 +18,7 @@ NUMVERS=1.2015
 AC_SUBST(NUMVERS)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([rrd_config.h])
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -37,8 +37,8 @@ dnl At the TOP of the HEADER
 
 AH_TOP([
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef RRD_CONFIG_H
+#define RRD_CONFIG_H
 /* IEEE can be prevented from raising signals with fpsetmask(0) */
 #undef MUST_DISABLE_FPMASK
 
@@ -149,7 +149,7 @@ char *strchr (), *strrchr ();
 #error "Can't compile without isinf function"
 #endif
 
-#endif /* CONFIG_H */
+#endif /* RRD_CONFIG_H */
 ])
 
 dnl Process Special Options
@@ -573,7 +573,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://people.ee.ethz.ch/oetiker/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1

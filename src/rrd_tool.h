@@ -15,7 +15,7 @@ extern "C" {
 #include "../win32/config.h"
 #else
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "../rrd_config.h"
 #endif
 #endif
 

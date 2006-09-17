@@ -63,4 +63,5 @@ $aclocal
 $automake --foreign --add-missing --force-missing --copy --warnings=all
 autoconf --warnings=all --force
 # one again to make every body happy
+
 autoreconf
