@@ -119,6 +119,7 @@ info_t *rrd_update_v(int argc, char **argv)
     char             *tmplt = NULL;          
 	info_t *result = NULL;
 	infoval rc;
+      rc.u_int = -1;
     optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
@@ -142,7 +143,6 @@ info_t *rrd_update_v(int argc, char **argv)
 		
 		case '?':
 			rrd_set_error("unknown option '%s'",argv[optind-1]);
-            rc.u_int = -1;
 			goto end_tag;
 		}
     }
@@ -150,9 +150,9 @@ info_t *rrd_update_v(int argc, char **argv)
     /* need at least 2 arguments: filename, data. */
     if (argc-optind < 2) {
 		rrd_set_error("Not enough arguments");
-        rc.u_int = -1;
 		goto end_tag;
     }
+    rc.u_int = 0;
     result = info_push(NULL,sprintf_alloc("return_value"),RD_I_INT,rc);
    	rc.u_int = _rrd_update(argv[optind], tmplt,
 		      argc - optind - 1, argv + optind + 1, result);
