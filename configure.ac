@@ -556,7 +556,6 @@ AC_CONFIG_FILES([examples/piped-demo.pl])
 AC_CONFIG_FILES([examples/stripes.pl])
 AC_CONFIG_FILES([examples/bigtops.pl])
 AC_CONFIG_FILES([examples/minmax.pl])
-AC_CONFIG_FILES([examples/cgi-demo.cgi])
 AC_CONFIG_FILES([examples/4charts.pl])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
@@ -567,7 +566,7 @@ AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([bindings/python/Makefile])
 AC_CONFIG_FILES([Makefile])          
 
-AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.cgi examples/*.pl]],[[]])
+AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 AC_OUTPUT
 
 AC_MSG_CHECKING(in)
