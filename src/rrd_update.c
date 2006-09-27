@@ -94,26 +94,6 @@ int _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
 
 
-#ifdef STANDALONE
-int 
-main(int argc, char **argv){
-        rrd_update(argc,argv);
-        if (rrd_test_error()) {
-                printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2005\n\n"
-                        "Usage: rrdupdate filename\n"
-                        "\t\t\t[--template|-t ds-name:ds-name:...]\n"
-                        "\t\t\ttime|N:value[:value...]\n\n"
-                        "\t\t\tat-time@value[:value...]\n\n"
-                        "\t\t\t[ time:value[:value...] ..]\n\n");
-                                   
-                printf("ERROR: %s\n",rrd_get_error());
-                rrd_clear_error();                                                            
-                return 1;
-        }
-        return 0;
-}
-#endif
-
 info_t *rrd_update_v(int argc, char **argv)
 {
     char             *tmplt = NULL;          

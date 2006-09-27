@@ -12,55 +12,61 @@ fonts_DATA = DejaVuSansMono-Roman.ttf
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
+UPD_C_FILES =		\
+	parsetime.c	\
+	rrd_hw.c	\
+	rrd_diff.c	\
+	rrd_format.c	\
+	rrd_info.c	\
+	rrd_error.c	\
+	rrd_open.c	\
+	rrd_nan_inf.c	\
+	rrd_rpncalc.c	\
+	rrd_update.c
+
 RRD_C_FILES =		\
 	getopt.c	\
 	getopt1.c	\
-	parsetime.c	\
 	hash_32.c	\
-	rrd_hw.c	\
 	pngsize.c	\
 	rrd_create.c	\
-	rrd_diff.c	\
 	rrd_dump.c	\
-	rrd_info.c	\
-	rrd_error.c	\
 	rrd_fetch.c	\
-	rrd_format.c	\
 	rrd_graph.c	\
 	rrd_graph_helper.c	\
 	rrd_last.c	\
 	rrd_first.c	\
-	rrd_open.c	\
 	rrd_resize.c	\
 	rrd_restore.c	\
-	rrd_rpncalc.c \
 	rrd_tune.c	\
-	rrd_update.c	\
 	rrd_version.c	\
 	rrd_xport.c	\
-	rrd_nan_inf.c	\
         art_rgba_svp.c \
+	rrd_gfx.c \
+	rrd_afm.c rrd_afm_data.c \
+	rrd_tool.c
+
+noinst_HEADERS = \
         art_rgba_svp.h \
 	unused.h \
-	rrd_gfx.c rrd_gfx.h \
-	rrd_afm.c rrd_afm_data.c \
+	rrd_gfx.h \
 	getopt.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
-	rrd_tool.c \
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
 	rrd_is_thread_safe.h
+
+noinst_LTLIBRARIES        = librrdupd.la
 
 lib_LTLIBRARIES           = librrd.la 
 if BUILD_MULTITHREAD
 lib_LTLIBRARIES           += librrd_th.la
 endif
 
-#noinst_LTLIBRARIES        = librrd_private.la
+librrdupd_la_SOURCES      = $(UPD_C_FILES) rrd_not_thread_safe.c
+librrdupd_la_LIBADD       = $(CORE_LIBS)
 
-librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
-#librrd_private_la_SOURCES = $(RRD_C_FILES) rrd_not_thread_safe.c
-
-# librrd_la_LIBADD          = $(RRD_LIBS)
+librrd_la_SOURCES         = $(RRD_C_FILES)
+librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS)
 
 # This flag accepts an argument of the form current[:revision[:age]]. So,
 # passing -version-info 3:12:1 sets current to 3, revision to 12, and age to 1.
@@ -97,15 +103,12 @@ librrd_la_SOURCES         = $(RRD_C_FILES) rrd_not_thread_safe.c
 # see http://www.gnu.org/software/libtool/manual.html#SEC32 for explanation
 librrd_la_LDFLAGS         = -version-info 2:8:0
 
-librrd_th_la_SOURCES         = $(RRD_C_FILES) rrd_thread_safe.c
+librrd_th_la_SOURCES         = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
 librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 2:8:0
-
+librrd_th_la_LIBADD          = $(ALL_LIBS)
 
 include_HEADERS	= rrd.h
-
-#librrd_private_la_LIBADD  = $(RRD_LIBS)
-#librrd_private_la_LDFLAGS = -static
 
 bin_PROGRAMS	= rrdtool rrdupdate
 
@@ -116,14 +119,8 @@ endif
 rrdcgi_SOURCES	= rrd_cgi.c
 rrdcgi_LDADD	= librrd.la
 
-rrdupdate_SOURCES = 
-rrdupdate_LDADD	= rrdupdate.o librrd.la
-
-# rrdupdate.c: rrd_update.c
-#	-ln -s ${srcdir}/rrdupdate.c rrd_update.c
-
-rrdupdate.o: rrd_update.c
-	$(COMPILE) -DSTANDALONE -c -o $@ $^
+rrdupdate_SOURCES = rrdupdate.c
+rrdupdate_LDADD	  = librrdupd.la
 
 rrdtool_SOURCES = 
 rrdtool_DEPENDENCIES = rrd_tool.o librrd.la
