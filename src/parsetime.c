@@ -839,6 +839,7 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
     case NUMBER:
 	    try(tod(ptv))
             try(day(ptv))
+            try(tod(ptv))
             break;
     /* fix month parsing */
     case JAN: case FEB: case MAR: case APR: case MAY: case JUN:
