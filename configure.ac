@@ -372,7 +372,7 @@ AC_LINK_IFELSE(
     	                 ),
           [AC_DEFINE(NEED_MALLOC_MALLOC_H)
            AC_MSG_RESULT([yes we do])],
-          [AC_MSG_ERROR([Can't figure how to compile malloc])]
+          [AC_MSG_ERROR([Can not figure how to compile malloc])]
       )
     ]  
 )
@@ -383,6 +383,8 @@ CONFIGURE_PART(Findr 3rd-Party Libraries)
 
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
+CORE_LIBS="$LIBS"
+
 EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
 EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
 EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
@@ -392,6 +394,11 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
+ALL_LIBS="$LIBS"
+LIBS=
+
+AC_SUBST(CORE_LIBS)
+AC_SUBST(ALL_LIBS)
 
 CONFIGURE_PART(Prep for Building Language Bindings)
   
@@ -482,6 +489,44 @@ AC_SUBST(PERL_MAKE_OPTIONS)
 AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
 AC_SUBST(PERL_VERSION)
+
+dnl Check for Ruby.
+AC_PATH_PROG(RUBY, ruby, no)
+
+AC_ARG_ENABLE(ruby,[  --disable-ruby          do not build the ruby modules],
+[],[enable_ruby=yes])
+
+
+if test "x$RUBY" = "xno" -o  x$enable_ruby = xno; then
+	COMP_RUBY=
+else
+	COMP_RUBY="ruby"
+
+fi
+
+AC_MSG_CHECKING(Ruby Modules to build)
+AC_MSG_RESULT(${COMP_RUBY:-No Ruby Modules will be built})
+
+dnl pass additional ruby options when generating Makefile from Makefile.PL
+AC_ARG_ENABLE(ruby-site-install,
+[  --enable-ruby-site-install   by default the rrdtool ruby modules are installed
+		  	  together with rrdtool in $prefix/lib/ruby. You have to
+                          add $prefix/lib/ruby/$ruby_version/$sitearch to you $: variable
+                          for ruby to find the RRD.so file.],
+[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$prefix/lib/ruby"])
+
+    
+AC_ARG_WITH(ruby-options,
+[  --with-ruby-options=[OPTIONS]  options to pass on command-line when
+                          generating Makefile from extconf.rb. If you set this
+                          option, interesting things may happen unless you know
+                          what you are doing!],
+[RUBY_MAKE_OPTIONS=$withval])
+
+AC_SUBST(RUBY_MAKE_OPTIONS)
+AC_SUBST(RUBY)
+AC_SUBST(COMP_RUBY)
+
 
 enable_tcl_site=no
 
@@ -592,6 +637,9 @@ echo "          Perl Modules: $COMP_PERL"
 echo "           Perl Binary: $PERL"
 echo "          Perl Version: $PERL_VERSION"
 echo "          Perl Options: $PERL_MAKE_OPTIONS"
+echo "          Ruby Modules: $COMP_RUBY"
+echo "           Ruby Binary: $RUBY"
+echo "          Ruby Options: $RUBY_MAKE_OPTIONS"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"
@@ -602,7 +650,7 @@ echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
 echo 
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://people.ee.ethz.ch/oetiker/wish and"
+echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo 
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"

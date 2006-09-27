@@ -1,0 +1,3 @@
+2006-07-25 Loïs Lherbier
+ add y_min and y_max parameters to rrd_graph
+ update test.rb to send only strings to RRD.fetch
