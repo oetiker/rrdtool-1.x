@@ -1,0 +1,82 @@
+=head1 NAME
+
+rrdruby - About the RRD Ruby bindings
+
+=head1 SYNOPSIS
+
+ require "RRD"
+ RRD.create(
+    rrd,
+    "--start", "#{start - 1}",
+    "--step", "300",
+        "DS:a:GAUGE:600:U:U",
+    "DS:b:GAUGE:600:U:U",
+    "RRA:AVERAGE:0.5:1:300")
+
+=head1 DESCRIPTION
+
+The B<rrdtool> functions are directly callable via the Ruby programming
+language. This wrapper implementation has been written from the scratch
+(without  SWIG)
+
+The API's simply expects string parameters to the functions.  Please refer
+to the other B<rrdtool> documentation for functions and valid arguments.
+
+=head1 EXAMPLE
+
+ $: << '/path/to/rrdtool/lib/ruby/1.8/i386-linux'
+ require "RRD" 
+ RRD.create(    
+    rrd,
+    "--start", "#{start - 1}",
+    "--step", "300",
+        "DS:a:GAUGE:600:U:U",
+    "DS:b:GAUGE:600:U:U",
+    "RRA:AVERAGE:0.5:1:300")
+ puts
+
+ puts "updating #{rrd}"
+ start.to_i.step(start.to_i + 300 * 300, 300) { |i|
+    RRD.update(rrd, "#{i}:#{rand(100)}:#{Math.sin(i / 800) * 50 + 50}")
+ }
+ puts
+
+ puts "fetching data from #{rrd}"
+ (fstart, fend, data) = RRD.fetch(rrd, "--start", start.to_s, "--end", 
+      (start + 300 * 300).to_s, "AVERAGE")
+ puts "got #{data.length} data points from #{fstart} to #{fend}"
+ puts
+
+ puts "generating graph #{name}.png"
+ RRD.graph(
+   "#{name}.png",
+    "--title", " RubyRRD Demo", 
+    "--start", "#{start+3600}",
+    "--end", "start + 1000 min",
+    "--interlace", 
+    "--imgformat", "PNG",
+    "--width=450",
+    "DEF:a=#{rrd}:a:AVERAGE",
+    "DEF:b=#{rrd}:b:AVERAGE",
+    "CDEF:line=TIME,2400,%,300,LT,a,UNKN,IF",
+    "AREA:b#00b6e4:beta",
+    "AREA:line#0022e9:alpha",
+    "LINE3:line#ff0000") 
+ puts
+
+If you use the B<--ruby-site-install> configure option you can drop the $:
+line since the rrdtool module will be found automatically.
+
+If rrdtool runs into trouble, it will throw an exception which you might
+want to catch.
+
+=head1 SEE ALSO
+
+rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast,
+rrdxport, rrdinfo
+
+=head1 AUTHOR
+
+Loïs Lherbier E<lt>lois.lherbier@covadis.chE<gt>
+
+Miles Egan E<lt>miles@caddr.comE<gt>
