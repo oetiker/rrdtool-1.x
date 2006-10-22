@@ -1446,6 +1446,18 @@ leg_place(image_desc_t *im)
 	} else {
 	    prt_fctn = '\0';
 	}
+	/* only valid control codes */
+        if (prt_fctn != 'l' && 
+	    prt_fctn != 'r' &&
+	    prt_fctn != 'j' &&
+            prt_fctn != 't' &&
+            prt_fctn != '\0' &&
+            prt_fctn != 'g' ) {
+	       free(legspace);
+	       rrd_set_error("Uknown control code at the end of '%s\\%c'",im->gdes[i].legend,prt_fctn);
+       	       return -1;
+
+	}
         /* remove exess space */
         while (prt_fctn=='g' && 
 	       leg_cc > 0 && 
