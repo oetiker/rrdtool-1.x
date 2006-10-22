@@ -2,6 +2,8 @@
 # $Id: test.rb,v 1.2 2002/10/22 17:34:00 miles Exp $
 # Driver does not carry cash.
 
+$: << '/scratch/rrd12build/lib/ruby/1.8/i386-linux/'
+
 require "RRD"
 
 name = "test"
@@ -33,8 +35,8 @@ puts "generating graph #{name}.png"
 RRD.graph(
    "#{name}.png",
     "--title", " RubyRRD Demo", 
-    "--start", "#{start} + 1 h",
-    "--end", "#{start} + 1000 min",
+    "--start", "#{start+3600}",
+    "--end", "start + 1000 min",
     "--interlace", 
     "--imgformat", "PNG",
     "--width=450",
