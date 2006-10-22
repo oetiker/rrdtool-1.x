@@ -99,7 +99,7 @@ For more information on how to use RRDtool, check the manpages.
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
 
 =cut
 #'  this is to make cperl.el happy

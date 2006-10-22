@@ -140,6 +140,6 @@ operating in the timezone of your choice.
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 
 =cut
