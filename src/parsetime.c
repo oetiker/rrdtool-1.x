@@ -837,9 +837,23 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
 
     /* Only absolute time specifications below */
     case NUMBER:
-	    try(tod(ptv))
-            try(day(ptv))
-            try(tod(ptv))
+	    {
+	      long hour_sv = ptv->tm.tm_hour;
+	      long year_sv = ptv->tm.tm_year;
+              ptv->tm.tm_hour = 30;
+              ptv->tm.tm_year = 30000;
+  	      try(tod(ptv))
+      	      try(day(ptv))
+	      if ( ptv->tm.tm_hour == 30 &&  ptv->tm.tm_year != 30000 ){
+		try(tod(ptv))
+              }
+	      if ( ptv->tm.tm_hour == 30 ){
+		ptv->tm.tm_hour = hour_sv;
+              }
+	      if ( ptv->tm.tm_hour == 30000 ){
+		ptv->tm.tm_year = year_sv;
+              }
+	    };	    
             break;
     /* fix month parsing */
     case JAN: case FEB: case MAR: case APR: case MAY: case JUN:
