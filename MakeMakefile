@@ -56,8 +56,8 @@ fi
 
 # cleanup
 set -x
-find . -name Makefile | xargs rm -f _UNKNONW_
-find . -name "*.la" | xargs rm -f
+find . -name Makefile | grep -v win32 | grep -v netware | xargs rm -f _UNKNONW_
+find . -name "*.la" | xargs rm -f _UNKNOWN_
 find . -name Makefile.in | xargs rm -f _UNKNONW_
 find . -name .libs | xargs rm -r 
 find . -name .debs | xargs rm -r
