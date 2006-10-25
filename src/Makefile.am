@@ -128,6 +128,6 @@ rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST= rrdtool.dsp rrdtool.dsw strftime.c strftime.h rrd.dsp $(fonts_DATA) \
-	Makefile.Win32 Makefile.NetWare get_ver.awk win32comp.c  rrd_thread_safe_nt.c   
+EXTRA_DIST= strftime.c strftime.h $(fonts_DATA) \
+	win32comp.c  rrd_thread_safe_nt.c   
 
