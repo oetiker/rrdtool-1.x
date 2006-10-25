@@ -29,7 +29,7 @@ then
     ERROR=1
   else
     automake=automake-1.9
-    aclocal="aclocal-1.9  --acdir=/usr/share/aclocal-1.9 -I /usr/share/aclocal/"
+    aclocal="aclocal-1.9"
   fi
 else
     automake="automake"
