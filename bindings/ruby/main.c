@@ -142,7 +142,7 @@ VALUE rb_rrd_graph(VALUE self, VALUE args)
     string_arr a;
     char **calcpr, **p;
     VALUE result, print_results;
-    int i, xsize, ysize;
+    int xsize, ysize;
     double ymin, ymax;
 
     a = string_arr_new(args);

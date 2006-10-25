@@ -47,6 +47,6 @@ clean-local:
 	test -f perl-piped/Makefile && rm perl-piped/Makefile || true
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || true
 	test -f perl-shared/Makefile && rm -f perl-shared/Makefile || true 
-	test -f ruby/Makefile && rm -f ruby/Makefile || true 
+	test -f ruby/Makefile && cd ruby && $(MAKE) clean && rm Makefile || true 
 
 ##END##
