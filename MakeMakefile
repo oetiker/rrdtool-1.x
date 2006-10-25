@@ -3,6 +3,9 @@
 # Run this script after the first cvs checkout to build
 # makefiles and friends
 
+PATH="/usr/sepp/bin:$PATH"
+export PATH
+
 vcheck (){
   perl <<PERL
 @t = split /\./, "$1";
@@ -29,7 +32,10 @@ then
     ERROR=1
   else
     automake=automake-1.9
-    aclocal="aclocal-1.9 -I /usr/pack/automake-1.9.5-to/share/aclocal-1.9/ -I /usr/share/aclocal-1.9/"
+    aclocal="aclocal-1.9"
+    for d in /usr/pack/automake-1.9.5-to/share/aclocal-1.9 /usr/share/aclocal-1.9; do
+      [ -d $d ] && aclocal="$aclocal -I $d"
+    done
   fi
 else
     automake="automake"
