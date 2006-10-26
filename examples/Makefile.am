@@ -8,7 +8,7 @@ EXTRA_DIST = cgi-demo.cgi.in
 
 examplesdir = $(pkgdatadir)/examples
 examples_SCRIPTS = cgi-demo.cgi piped-demo.pl shared-demo.pl \
-	stripes.pl bigtops.pl minmax.pl 4charts.pl
+	stripes.pl bigtops.pl minmax.pl 4charts.pl perftest.pl
 
 cgi-demo.cgi: cgi-demo.cgi.in $(top_builddir)/config.status
 	sed 's,@''exec_prefix@,$(exec_prefix),' $< > $@
