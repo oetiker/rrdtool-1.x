@@ -28,7 +28,7 @@ use RRDs;
 
 sub create($){
   my $file = shift;
-  my $start = time;
+  my $start = int(time);
   RRDs::create  ( $file.".rrd", qw(
 			-s300
 		        DS:in:GAUGE:400:U:U
