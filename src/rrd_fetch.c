@@ -237,7 +237,7 @@ fprintf(stderr,"Considering: start %10lu end %10lu step %5lu ",
  	    tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
 					   * rrd.rra_def[i].pdp_cnt));
 	    /* best full match */
-	    if(cal_end >= *end 
+	    if(cal_end  + (rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt) >= *end 
 	       && cal_start <= *start){
 		if (first_full || (tmp_step_diff < best_full_step_diff)){
 		    first_full=0;
