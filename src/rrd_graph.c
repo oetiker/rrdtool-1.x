@@ -1454,7 +1454,7 @@ leg_place(image_desc_t *im)
             prt_fctn != '\0' &&
             prt_fctn != 'g' ) {
 	       free(legspace);
-	       rrd_set_error("Uknown control code at the end of '%s\\%c'",im->gdes[i].legend,prt_fctn);
+	       rrd_set_error("Unknown control code at the end of '%s\\%c'",im->gdes[i].legend,prt_fctn);
        	       return -1;
 
 	}
