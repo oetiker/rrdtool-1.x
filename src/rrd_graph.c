@@ -1450,6 +1450,7 @@ leg_place(image_desc_t *im)
         if (prt_fctn != 'l' && 
 	    prt_fctn != 'r' &&
 	    prt_fctn != 'j' &&
+	    prt_fctn != 'c' &&
             prt_fctn != 't' &&
             prt_fctn != '\0' &&
             prt_fctn != 'g' ) {
