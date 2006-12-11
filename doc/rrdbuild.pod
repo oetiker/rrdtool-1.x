@@ -70,7 +70,7 @@ board, just re-run the last line of the instructions above.
 But again this may have been too optimistic, and you actually have to
 compile your own copies of the required libraries.
 
-=head2 Building on AIX
+=head3 Build Tipps for AIX
 
 If you are woking with AIX, you may find the the B<--disable-shared> option
 will cause things to break for you. In that case you may have to install the
@@ -85,6 +85,19 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
 (Better instructions for AIX welcome!)
 
 =head2 Building Libraries
+
+In order to build the libraries you need a compiler on your system.
+Unfortunately compilers are not all alike. This has an effect on the CFLAGS
+you want to set. The examples below are for the popular GCC compiler suite.
+If you have an other compile you have to use the following settings:
+
+=over
+
+=item Sun Forte
+
+ CFLAGS="-xO3 -kPIC"
+
+=back
 
 =over 
 
