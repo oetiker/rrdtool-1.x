@@ -266,6 +266,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
     unsigned long    rrd_filesize;
 #endif
 
+
     rpnstack_init(&rpnstack);
 
     /* need at least 1 arguments: data. */
@@ -427,7 +428,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 #endif
     /* loop through the arguments. */
     for(arg_i=0; arg_i<argc;arg_i++) {
-	char *stepper = malloc((strlen(argv[arg_i])+1)*sizeof(char));
+	char *stepper = strdup(argv[arg_i]);
         char *step_start = stepper;
 	char *p;
 	char *parsetime_error = NULL;
@@ -435,6 +436,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	struct rrd_time_value ds_tv;
         if (stepper == NULL){
                 rrd_set_error("failed duplication argv entry");
+		free(step_start);
                 free(updvals);
                 free(pdp_temp);  
                 free(tmpl_idx);
@@ -448,7 +450,6 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	/* initialize all ds input to unknown except the first one
            which has always got to be set */
 	for(ii=1;ii<=rrd.stat_head->ds_cnt;ii++) updvals[ii] = "U";
-	strcpy(stepper,argv[arg_i]);
 	updvals[0]=stepper;
 	/* separate all ds elements; first must be examined separately
 	   due to alternate time syntax */
@@ -461,7 +462,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	    *p = '\0';
 	    stepper = p+1;
 	} else {
-	    rrd_set_error("expected timestamp not found in data source from %s:...",
+	    rrd_set_error("expected timestamp not found in data source from %s",
 			  argv[arg_i]);
 	    free(step_start);
 	    break;
@@ -480,7 +481,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	}
 
 	if (ii != tmpl_cnt-1) {
-	    rrd_set_error("expected %lu data source readings (got %lu) from %s:...",
+	    rrd_set_error("expected %lu data source readings (got %lu) from %s",
 			  tmpl_cnt-1, ii, argv[arg_i]);
 	    free(step_start);
 	    break;
@@ -592,6 +593,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	    if(rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt < interval 
 	    	&& ( dst_idx == DST_COUNTER || dst_idx == DST_DERIVE)){
 		strncpy(rrd.pdp_prep[i].last_ds,"U",LAST_DS_LEN-1);
+		rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
 	    }
 
   	    /* NOTE: DST_CDEF should never enter this if block, because
