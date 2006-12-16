@@ -14,20 +14,20 @@
 #define MAXLEN 4096
 #define ERRBUFLEN 256
 
-static char rrd_error[MAXLEN] = "\0";
-static char rrd_liberror[ERRBUFLEN] = "\0";
+static char rrd_error[MAXLEN+10];
+static char rrd_liberror[ERRBUFLEN+10];
 /* The global context is very useful in the transition period to even
    more thread-safe stuff, it can be used whereever we need a context
    and do not need to worry about concurrency. */
 static struct rrd_context global_ctx = {
-    sizeof(rrd_error),
-    sizeof(rrd_liberror),
+    MAXLEN,
+    ERRBUFLEN,
     rrd_error, 
     rrd_liberror
 };
-#include <stdarg.h>
+/* #include <stdarg.h> */
 
-struct rrd_context *rrd_get_context() {
+struct rrd_context *rrd_get_context(void) {
     return &global_ctx;
 }
 
