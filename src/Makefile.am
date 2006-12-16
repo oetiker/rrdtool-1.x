@@ -13,6 +13,8 @@ RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
 UPD_C_FILES =		\
+	getopt.c	\
+	getopt1.c	\
 	parsetime.c	\
 	rrd_hw.c	\
 	rrd_diff.c	\
@@ -25,8 +27,6 @@ UPD_C_FILES =		\
 	rrd_update.c
 
 RRD_C_FILES =		\
-	getopt.c	\
-	getopt1.c	\
 	hash_32.c	\
 	pngsize.c	\
 	rrd_create.c	\
