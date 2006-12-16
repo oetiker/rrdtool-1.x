@@ -61,6 +61,7 @@ const char *rrd_strerror(int err) {
     ctx = rrd_get_context();
     pthread_mutex_lock(&mtx);
     strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
+    ctx->lib_errstr[ctx->errlen]='\0';
     pthread_mutex_unlock(&mtx);
     return ctx->lib_errstr;
 }

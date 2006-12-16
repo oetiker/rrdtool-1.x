@@ -63,7 +63,8 @@ const char *rrd_strerror(int err) {
 
     EnterCriticalSection(&CriticalSection); 
     strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
-	LeaveCriticalSection(&CriticalSection); 
+    ctx->lib_errstr[ctx->errlen] = '\0';
+    LeaveCriticalSection(&CriticalSection); 
 
     return ctx->lib_errstr;
 }
