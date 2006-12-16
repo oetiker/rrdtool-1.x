@@ -84,6 +84,7 @@ int    rrd_create_r(char *filename,
 		    int argc, char **argv);
 /* NOTE: rrd_update_r are only thread-safe if no at-style time
    specifications get used!!! */
+
 int    rrd_update_r(char *filename, char *_template,
 		    int argc, char **argv);
 int    rrd_dump_r(const char *filename, char *outname);
@@ -105,6 +106,9 @@ struct rrd_time_value {
   struct tm tm;
 };
 
+char *parsetime(const char *spec, struct rrd_time_value *ptv);
+/* END parsetime.h */
+
 struct rrd_context {
     int len;
     int errlen;
@@ -115,8 +119,6 @@ struct rrd_context {
 /* returns the current per-thread rrd_context */
 struct rrd_context *rrd_get_context(void);
 
-char *parsetime(const char *spec, struct rrd_time_value *ptv);
-/* END parsetime.h */
 
 int proc_start_end (struct rrd_time_value *,  struct rrd_time_value *, time_t *, time_t *);
 
