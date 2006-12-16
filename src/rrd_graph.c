@@ -3519,7 +3519,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 
         case 'W':
             strncpy(im->watermark,optarg,100);
-            im->watermark[99]='\0';
+            im->watermark[100]='\0';
             break;
 
 	case '?':
