@@ -155,14 +155,14 @@ typedef struct image_desc_t {
 #endif
     gfx_color_t    graph_col[__GRC_END__]; /* real colors for the graph */   
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
-    char           ylegend[200];   /* legend along the yaxis */
-    char           title[200];     /* title for graph */
-    char           watermark[100];   /* watermark for graph */
+    char           ylegend[210];   /* legend along the yaxis */
+    char           title[210];     /* title for graph */
+    char           watermark[110];   /* watermark for graph */
     int            draw_x_grid;      /* no x-grid at all */
     int            draw_y_grid;      /* no x-grid at all */
     double         grid_dash_on, grid_dash_off;
     xlab_t         xlab_user;      /* user defined labeling for xaxis */
-    char           xlab_form[200]; /* format for the label on the xaxis */
+    char           xlab_form[210]; /* format for the label on the xaxis */
 
     double         ygridstep;      /* user defined step for y grid */
     int            ylabfact;       /* every how many y grid shall a label be written ? */
