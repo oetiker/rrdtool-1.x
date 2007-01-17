@@ -152,6 +152,7 @@ RRDLIBOBJS	= \
 	$(OBJDIR)/rrd_hw.o \
 	$(OBJDIR)/rrd_info.o \
 	$(OBJDIR)/rrd_last.o \
+	$(OBJDIR)/rrd_lastupdate.o \
 	$(OBJDIR)/rrd_nan_inf.o \
 	$(OBJDIR)/rrd_open.o \
 	$(OBJDIR)/rrd_resize.o \
