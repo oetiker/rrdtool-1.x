@@ -28,7 +28,8 @@ void PrintUsage(char *cmd)
 
     char help_list[] =
 	   "Valid commands: create, update, updatev, graph, dump, restore,\n"
-	   "\t\tlast, first, info, fetch, tune, resize, xport\n\n";
+	   "\t\tlast, lastupdate, first, info, fetch, tune,\n"
+	   " resize, xport\n\n";
 
     char help_listremote[] =
            "Valid remote commands: quit, ls, cd, mkdir, pwd\n\n";
@@ -56,6 +57,11 @@ void PrintUsage(char *cmd)
     char help_last[] =
            "* last - show last update time for RRD\n\n"
            "\trrdtool last filename.rrd\n\n";
+
+    char help_lastupdate[] =
+          "* lastupdate - returns the most recent datum stored for\n"
+          "  each DS in an RRD\n\n"
+          "\trrdtool lastupdate filename.rrd\n\n"; 
 
     char help_first[] =
            "* first - show first update time for RRA within an RRD\n\n"
@@ -190,9 +196,10 @@ void PrintUsage(char *cmd)
 
 	   "For more information read the RRD manpages\n\n";
 
-    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST, C_FIRST,
-	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
-           C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD, C_UPDATEV };
+    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
+    	   C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_TUNE,
+	   C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
+	   C_UPDATEV };
 
     int help_cmd = C_NONE;
 
@@ -208,6 +215,8 @@ void PrintUsage(char *cmd)
 		help_cmd = C_RESTORE;
     	    else if (!strcmp(cmd,"last"))
 		help_cmd = C_LAST;
+    	    else if (!strcmp(cmd,"lastupdate"))
+		help_cmd = C_LASTUPDATE;
     	    else if (!strcmp(cmd,"first"))
 		help_cmd = C_FIRST;
     	    else if (!strcmp(cmd,"update"))
@@ -258,6 +267,9 @@ void PrintUsage(char *cmd)
 		break;
 	    case C_LAST:
 		fputs(help_last, stdout);
+		break;
+	    case C_LASTUPDATE:
+		fputs(help_lastupdate, stdout);
 		break;
 	    case C_FIRST:
 		fputs(help_first, stdout);
@@ -607,7 +619,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	}
 	free(data);
     }
-	
+
     else if (strcmp("--version", argv[1]) == 0 ||
 	     strcmp("version", argv[1]) == 0 || 
 	     strcmp("v", argv[1]) == 0 ||
@@ -621,7 +633,28 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	rrd_resize(argc-1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
         printf("%ld\n",rrd_last(argc-1, &argv[1]));
-    else if (strcmp("first", argv[1]) == 0)
+    else if (strcmp("lastupdate", argv[1]) == 0) {
+	   time_t      last_update;
+           char        **ds_namv;
+           char        **last_ds;
+           unsigned long ds_cnt,
+                       i;
+          if (rrd_lastupdate(argc-1, &argv[1], &last_update,
+                       &ds_cnt, &ds_namv, &last_ds) == 0) {
+               for (i=0; i<ds_cnt; i++)
+                       printf(" %s", ds_namv[i]);
+               printf("\n\n");
+               printf("%10lu:", last_update);
+               for (i=0; i<ds_cnt; i++) {
+                       printf(" %s", last_ds[i]);
+                       free(last_ds[i]);
+                       free(ds_namv[i]);
+               }
+               printf("\n");
+               free(last_ds);
+               free(ds_namv);
+          }
+    } else if (strcmp("first", argv[1]) == 0)
         printf("%ld\n",rrd_first(argc-1, &argv[1]));
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);

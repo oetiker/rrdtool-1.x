@@ -308,7 +308,42 @@ Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
     return TCL_OK;
 }
 
+static int
+Rrd_Lastupdate(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
+  {
+   time_t last_update;
+   char **argv2;
+   char **ds_namv;
+   char **last_ds;
+   char s[30];
+   Tcl_Obj *listPtr;
+   unsigned long ds_cnt, i;
 
+   argv2 = getopt_init(argc, argv);
+   if (rrd_lastupdate(argc-1, argv2, &last_update,
+       &ds_cnt, &ds_namv, &last_ds) == 0) {
+	   listPtr = Tcl_GetObjResult(interp);
+           for (i=0; i<ds_cnt; i++) {
+	       sprintf(s, " %28s", ds_namv[i]);
+	       Tcl_ListObjAppendElement(interp, listPtr,
+	               Tcl_NewStringObj(s, -1));
+           sprintf(s, "\n\n%10lu:", last_update);
+	       Tcl_ListObjAppendElement(interp, listPtr,
+	               Tcl_NewStringObj(s, -1));
+           for (i=0; i<ds_cnt; i++) {
+               sprintf(s, " %s", last_ds[i]);
+	       Tcl_ListObjAppendElement(interp, listPtr,
+	               Tcl_NewStringObj(s, -1));
+               free(last_ds[i]);
+               free(ds_namv[i]);
+           }
+           sprintf(s, "\n");
+	   Tcl_ListObjAppendElement(interp, listPtr,
+	            Tcl_NewStringObj(s, -1));
+           free(last_ds);
+           free(ds_namv);
+          }
+}
 
 static int
 Rrd_Fetch(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
@@ -528,20 +563,21 @@ typedef struct {
 } CmdInfo;
 
 static CmdInfo rrdCmds[] = {
-    { "Rrd::create",	Rrd_Create,	1 }, /* Thread-safe version */
-    { "Rrd::dump",	Rrd_Dump,	0 }, /* Thread-safe version */
-    { "Rrd::last",	Rrd_Last,	0 }, /* Thread-safe version */
-    { "Rrd::update",	Rrd_Update,	1 }, /* Thread-safe version */
-    { "Rrd::fetch",	Rrd_Fetch,	0 },
-    { "Rrd::graph",	Rrd_Graph,	1 }, /* Due to RRD's API, a safe
+    { "Rrd::create",	 Rrd_Create,	 1 }, /* Thread-safe version */
+    { "Rrd::dump",	 Rrd_Dump,	 0 }, /* Thread-safe version */
+    { "Rrd::last",	 Rrd_Last,	 0 }, /* Thread-safe version */
+    { "Rrd::lastupdate", Rrd_Lastupdate, 0 }, /* Thread-safe version */
+    { "Rrd::update",	 Rrd_Update,	 1 }, /* Thread-safe version */
+    { "Rrd::fetch",	 Rrd_Fetch,	 0 },
+    { "Rrd::graph",	 Rrd_Graph,	 1 }, /* Due to RRD's API, a safe
 						interpreter cannot create
 						a graph since it writes to
 					        a filename supplied by the
 					        caller */
-    { "Rrd::tune",	Rrd_Tune,	1 },
-    { "Rrd::resize",	Rrd_Resize,	1 },
-    { "Rrd::restore",	Rrd_Restore,	1 },
-    { (char *) NULL,	(Tcl_CmdProc *) NULL, 0	}
+    { "Rrd::tune",	 Rrd_Tune,	 1 },
+    { "Rrd::resize",	 Rrd_Resize,	 1 },
+    { "Rrd::restore",	 Rrd_Restore,	 1 },
+    { (char *) NULL,	(Tcl_CmdProc *)  NULL, 0	}
 };
 
 

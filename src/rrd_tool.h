@@ -151,6 +151,8 @@ typedef struct info_t {
 } info_t;
 
 info_t *rrd_info(int, char **);
+int rrd_lastupdate(int argc, char **argv, time_t *last_update,
+                unsigned long *ds_cnt, char ***ds_namv, char ***last_ds);
 info_t *rrd_update_v(int, char **);
 char * sprintf_alloc(char *, ...);
 info_t *info_push(info_t *, char *, enum info_type, infoval);

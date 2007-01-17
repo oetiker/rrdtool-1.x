@@ -590,8 +590,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 	    dst_idx= dst_conv(rrd.ds_def[i].dst);
 
             /* make sure we do not build diffs with old last_ds values */
-	    if(rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt < interval 
-	    	&& ( dst_idx == DST_COUNTER || dst_idx == DST_DERIVE)){
+	    if(rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt < interval) {
 		strncpy(rrd.pdp_prep[i].last_ds,"U",LAST_DS_LEN-1);
 		rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
 	    }
@@ -702,11 +701,8 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		    rrd.pdp_prep[i].last_ds,
 		    updvals[i+1], pdp_new[i]);
 #endif
-	    if(dst_idx == DST_COUNTER || dst_idx == DST_DERIVE){
-		strncpy(rrd.pdp_prep[i].last_ds,
-			updvals[i+1],LAST_DS_LEN-1);
-		rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
-	    }
+	    strncpy(rrd.pdp_prep[i].last_ds, updvals[i+1],LAST_DS_LEN-1);
+	    rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
 	}
 	/* break out of the argument parsing loop if the error_string is set */
 	if (rrd_test_error()){
