@@ -13,12 +13,11 @@ read somekey
 svn commit -m "prepare for the release of rrdtool-$VERSION"
 mkdir /tmp/rrdtool-$$
 cd /tmp/rrdtool-$$
-svn checkout svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program .
-svn log --stop-on-copy --xml --verbose svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program | \
+svn checkout svn://svn.oetiker.ch/rrdtool/branches/1.2/program .
+svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/branches/1.2/program | \
     xsltproc --stringparam strip-prefix branches/1.2/program /home/oetiker/data/svn-checkout/rrdtool/branches/1.2/program/svn2cl.xsl -  >CHANGES
-cp CHANGES /home/oetiker/public_html/webtools/rrdtool/pub/
 sh MakeMakefile
-PKG_CONFIG_PATH=/usr/pack/rrdtool-1.2svn-to/sun4u-sun-solaris2.8/lib/pkgconfig/
+PKG_CONFIG_PATH=/usr/pack/rrdtool-1.2svn-to/i686-debian-linux3.1/lib/pkgconfig/
 export PKG_CONFIG_PATH
 ./configure
 gmake dist
@@ -29,9 +28,9 @@ cd rrdtool-$VERSION
 gmake
 src/rrdtool
 cd ..
-cp rrdtool*.tar.gz  /home/oetiker/public_html/webtools/rrdtool/pub/
+scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub/
 (cd /home/oetiker/public_html/webtools/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz)
 cd ..
 rm -rf rrdtool-$$
-svn copy -m "tagging version $VERSION" svn://svn.ee.ethz.ch/rrdtool/branches/1.2/program svn://svn.ee.ethz.ch/rrdtool/tags/$VERSION
+svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/branches/1.2/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
 
