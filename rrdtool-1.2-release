@@ -12,10 +12,11 @@ echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to conti
 read somekey
 svn commit -m "prepare for the release of rrdtool-$VERSION"
 mkdir /tmp/rrdtool-$$
+OPWD=`pwd`
 cd /tmp/rrdtool-$$
 svn checkout svn://svn.oetiker.ch/rrdtool/branches/1.2/program .
 svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/branches/1.2/program | \
-    xsltproc --stringparam strip-prefix branches/1.2/program /home/oetiker/data/svn-checkout/rrdtool/branches/1.2/program/svn2cl.xsl -  >CHANGES
+    xsltproc --stringparam strip-prefix branches/1.2/program $OPWD/svn2cl.xsl -  >CHANGES
 sh MakeMakefile
 PKG_CONFIG_PATH=/usr/pack/rrdtool-1.2svn-to/i686-debian-linux3.1/lib/pkgconfig/
 export PKG_CONFIG_PATH
