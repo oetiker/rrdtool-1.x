@@ -22,7 +22,7 @@ install-data-local:
 	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
 
 # rules for buildung the ruby module
-ruby: ruby/Makefile
+ruby: 
 	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS)
 
 # rules for building the perl module
