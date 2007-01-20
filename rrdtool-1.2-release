@@ -21,12 +21,12 @@ sh MakeMakefile
 PKG_CONFIG_PATH=/usr/pack/rrdtool-1.2svn-to/i686-debian-linux3.1/lib/pkgconfig/
 export PKG_CONFIG_PATH
 ./configure
-gmake dist
+make dist
 # do a test build
-gtar zxvf rrdtool*.tar.gz
+tar zxvf rrdtool*.tar.gz
 cd rrdtool-$VERSION
 ./configure
-gmake
+make
 src/rrdtool
 cd ..
 scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub/
