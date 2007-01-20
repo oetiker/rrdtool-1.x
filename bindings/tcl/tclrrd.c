@@ -310,7 +310,7 @@ Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 
 static int
 Rrd_Lastupdate(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
-  {
+{
    time_t last_update;
    char **argv2;
    char **ds_namv;
@@ -343,6 +343,8 @@ Rrd_Lastupdate(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char
            free(last_ds);
            free(ds_namv);
           }
+    }
+    return TCL_OK;
 }
 
 static int
