@@ -1,7 +1,5 @@
 #!/bin/sh
 set -e
-PATH=/usr/sepp/bin:/usr/bin:/sbin:/usr/sbin:/usr/sepp/bin:/home/oetiker/bin
-export PATH
 VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
 set -x
