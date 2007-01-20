@@ -23,11 +23,8 @@ install-data-local:
 
 # rules for buildung the ruby module
 ruby: ruby/Makefile
-	cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS)
+	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS)
 
-ruby/Makefile: ruby/extconf.rb
-	cd ruby && $(RUBY) extconf.rb
-        
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
 	cd perl-piped && $(MAKE)
