@@ -8,7 +8,7 @@ dnl Inspiration from http://autoconf-archive.cryp.to
 dnl tell automake the this script is for rrdtool
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.2.15])
+AC_INIT([rrdtool],[1.2.16])
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc

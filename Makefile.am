@@ -25,7 +25,6 @@ ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 
 to-docs: to-versync
 	(cd doc && $(MAKE) clean && $(MAKE) && $(MAKE) pdf)
-	(cd website && wmk-1.7.4 -f manual tutorial contributors.wml && ./site-sync )
 
 to-dist: to-docs dist
 	mv $(PACKAGE)-$(VERSION).tar.gz archive
