@@ -4,7 +4,7 @@ rrdgraph_examples - Examples for rrdtool graph
 
 =head1 SYNOPSIS
 
-B<rrdtool graph /home/httpd/html/test.png --img-format PNG \>
+B<rrdtool graph /home/httpd/html/test.png --img-format PNG>
 
 followed by any of the examples below
 
@@ -22,9 +22,9 @@ ready because comments are intermixed with the examples.
     DEF:ds0a=/home/rrdtool/data/router1.rrd:ds0:AVERAGE
     DEF:ds0b=/home/rrdtool/data/router1.rrd:ds0:AVERAGE:step=1800
     DEF:ds0c=/home/rrdtool/data/router1.rrd:ds0:AVERAGE:step=7200
-    LINE1:ds0a#0000FF:"default resolution\n"
-    LINE1:ds0b#00CCFF:"resolution 1800 seconds per interval\n"
-    LINE1:ds0c#FF00FF:"resolution 7200 seconds per interval\n"
+    LINE1:ds0a#0000FF:"default resolution\l"
+    LINE1:ds0b#00CCFF:"resolution 1800 seconds per interval\l"
+    LINE1:ds0c#FF00FF:"resolution 7200 seconds per interval\l"
 
 =head2 Nicely formatted legend section
 
@@ -54,19 +54,17 @@ Note: the column titles have to be as wide as the columns
     COMMENT:"Average    "
     COMMENT:"Minimum    "
 
-Note: some lines contains the new-line character "\n"
-
-    COMMENT:"95th percentile\n"
+    COMMENT:"95th percentile\l"
     AREA:ds0bits#00C000:"Inbound "
     GPRINT:ds0max:"%6.2lf %Sbps"
     GPRINT:ds0avg:"%6.2lf %Sbps"
     GPRINT:ds0min:"%6.2lf %Sbps"
-    GPRINT:ds0pct:"%6.2lf %Sbps\n"
+    GPRINT:ds0pct:"%6.2lf %Sbps\l"
     LINE1:ds1bits#0000FF:"Outbound"
     GPRINT:ds1max:"%6.2lf %Sbps"
     GPRINT:ds1avg:"%6.2lf %Sbps"
     GPRINT:ds1min:"%6.2lf %Sbps"
-    GPRINT:ds1pct:"%6.2lf %Sbps\n"
+    GPRINT:ds1pct:"%6.2lf %Sbps\l"
 
 =head2 Offsetting a line on the y-axis
 
@@ -127,7 +125,7 @@ Shift the data forward by one week (604800 seconds)
 
 L<rrdgraph> gives an overview of how B<rrdtool graph> works.
 L<rrdgraph_data> describes B<DEF>,B<CDEF> and B<VDEF> in detail.
-L<rrdgraph_rpn> describes the B<RPN> language used in the B<?DEF> statements.
+L<rrdgraph_rpn> describes the B<RPN> language used in the B<xDEF> statements.
 L<rrdgraph_graph> page describes all the graph and print functions.
 
 Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
