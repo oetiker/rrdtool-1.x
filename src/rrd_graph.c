@@ -1462,8 +1462,8 @@ leg_place(image_desc_t *im)
 	}
 
         /* remove exess space */
-        if ( prt_fcnt == 'n' ){
-            prt_fcnt='l';
+        if ( prt_fctn == 'n' ){
+            prt_fctn='l';
         }
 
         while (prt_fctn=='g' && 
