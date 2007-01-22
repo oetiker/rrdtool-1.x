@@ -1448,6 +1448,7 @@ leg_place(image_desc_t *im)
 	}
 	/* only valid control codes */
         if (prt_fctn != 'l' && 
+	    prt_fctn != 'n' && /* a synonym for l */
 	    prt_fctn != 'r' &&
 	    prt_fctn != 'j' &&
 	    prt_fctn != 'c' &&
@@ -1459,7 +1460,12 @@ leg_place(image_desc_t *im)
        	       return -1;
 
 	}
+
         /* remove exess space */
+        if ( prt_fcnt == 'n' ){
+            prt_fcnt='l';
+        }
+
         while (prt_fctn=='g' && 
 	       leg_cc > 0 && 
 	       im->gdes[i].legend[leg_cc-1]==' '){

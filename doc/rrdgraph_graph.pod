@@ -344,6 +344,9 @@ Valid markers are: B<\j> for justified, B<\l> for left aligned, B<\r> for
 right aligned, and B<\c> for centered. In the next section there is an
 example showing how to use centered formatting.
 
+B<\n> is a valid alias for B<\l> since incomplete parsing in earlier
+versions of rrdtool lead to this behaviour and a number of people has been using it.
+
 Normally there are two space characters inserted between every two items
 printed into the graph. The space following a string can be suppressed by
 putting a B<\g> at the end of the string. The B<\g> also ignores any space
