@@ -202,7 +202,7 @@ A literal `%' character.
 
 =back
 
-=item B<PRINT:>I<vname>B<:>I<CF><:>I<format>
+=item B<PRINT:>I<vname>B<:>I<CF>B<:>I<format>
 
 I<Deprecated. Use the new form of this command in new scripts.>
 The first form of this command is to be used with B<CDEF> I<vname>s.
