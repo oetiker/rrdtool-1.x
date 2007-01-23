@@ -633,7 +633,7 @@ rrd_parse_def(const char *const line, unsigned int *const eaten, graph_desc_t *c
     dprintf("- from line '%s'\n",line);
 
     if (rrd_parse_make_vname(line,eaten,gdp,im)) return 1;
-    i=scan_for_col(&line[*eaten],254,gdp->rrd);
+    i=scan_for_col(&line[*eaten],sizeof(gdp->rrd)-1,gdp->rrd);
     if (line[*eaten+i]!=':') {
 	rrd_set_error("Problems reading database name");
 	return 1;
