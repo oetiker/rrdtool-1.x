@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.2.17  Copyright by Tobi Oetiker, 1997-2006
+ * RRDtool 1.2.18  Copyright by Tobi Oetiker, 1997-2006
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -22,7 +22,7 @@ void PrintUsage(char *cmd)
 {
 
     char help_main[] =
-	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2006 by Tobias Oetiker <tobi@oetiker.ch>\n"
+	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
 	   "Usage: rrdtool [options] command command_options\n\n";
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.2.17  Copyright by Tobi Oetiker, 1997-2006
+ * RRDtool 1.2.18  Copyright by Tobi Oetiker, 1997-2006
  *****************************************************************************
  * rrd_datalang  A system for passing named and typed parameters between
  *               the different parts of rrdtool
