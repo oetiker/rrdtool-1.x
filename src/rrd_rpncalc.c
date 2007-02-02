@@ -771,7 +771,7 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
                      count++;
                      sum+=val;
                    }
-                   // now push the result bavk on stack
+                   /* now push the result back on stack */
                    if (count>0) {
                      rpnstack -> s[++stptr]=sum/count;
                    } else {

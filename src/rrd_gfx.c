@@ -1,4 +1,4 @@
-/****************************************************************************
+****************************************************************************
  * RRDtool 1.2.19  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_gfx.c  graphics wrapper for rrdtool
@@ -13,7 +13,7 @@
 # ifdef DEBUG
 #  define DPRINTF(...)  fprintf(stderr, __VA_ARGS__);
 # else
-#  define DPRINTF(...)
+#  define DPRINTF()
 # endif /* DEBUG */
 #endif /* _MSC_VER */
 #include "rrd_tool.h"
