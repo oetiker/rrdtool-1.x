@@ -1,30 +1,34 @@
+.PHONY: python ruby
+
 if BUILD_TCL
 SUB_tcl = tcl
 endif
 
-if BUILD_PYTHON
-SUB_python = python
-endif
-
-SUBDIRS = $(SUB_tcl) $(SUB_python)
+SUBDIRS = $(SUB_tcl)
 
 # the following files are not mentioned in any other Makefile
 EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-piped/RRDp.pm perl-piped/t/base.t \
-	perl-shared/ntmake.pl perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm  perl-shared/RRDs.xs perl-shared/t/base.t \
-	ruby/CHANGES     ruby/README      ruby/extconf.rb  ruby/main.c      ruby/test.rb
+	     perl-shared/ntmake.pl perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm  perl-shared/RRDs.xs perl-shared/t/base.t \
+	     ruby/CHANGES     ruby/README      ruby/extconf.rb  ruby/main.c      ruby/test.rb \
+             python/ACKNOWLEDGEMENT python/AUTHORS python/COPYING python/README python/rrd_extra.h python/rrdtoolmodule.c python/setup.py
 
 
 # add the following to the all target
-all-local:  @COMP_PERL@ @COMP_RUBY@
+all-local:  @COMP_PERL@ @COMP_RUBY@ @COMP_PYTHON@
 
 install-data-local:
 	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
 	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
+	test -d python/build && cd python && rm -rf build && env LIBDIR=$(libdir) $(PYTHON) setup.py install --prefix=$(prefix) --exec-prefix=$(exec_prefix) || true
 
 # rules for buildung the ruby module
 ruby: 
 	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS)
+
+# rules for buildung the pyton module
+python:
+	cd python && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
@@ -46,5 +50,5 @@ clean-local:
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || true
 	test -f perl-shared/Makefile && rm -f perl-shared/Makefile || true 
 	test -f ruby/Makefile && cd ruby && $(MAKE) clean && rm Makefile || true 
-
+	test -d python/build && cd python &&  rm -rf build || true
 ##END##
