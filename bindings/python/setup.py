@@ -48,6 +48,7 @@ setup(name = "py-rrdtool",
             "rrdtoolmodule",
             ["rrdtoolmodule.c"],
             libraries=['rrd'],
+            runtime_library_dirs=[library_dir],
             library_dirs=[library_dir],
             include_dirs=[include_dir],
           )
