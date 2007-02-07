@@ -1,4 +1,4 @@
-****************************************************************************
+/****************************************************************************
  * RRDtool 1.2.19  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_gfx.c  graphics wrapper for rrdtool
@@ -8,12 +8,12 @@
 
 /* stupid MSVC doesnt support variadic macros = no debug for now! */
 #ifdef _MSC_VER
-# define DPRINTF()
+# define RRDPRINTF()
 #else 
 # ifdef DEBUG
-#  define DPRINTF(...)  fprintf(stderr, __VA_ARGS__);
+#  define RRDPRINTF(...)  fprintf(stderr, __VA_ARGS__);
 # else
-#  define DPRINTF()
+#  define RRDPRINTF(...)
 # endif /* DEBUG */
 #endif /* _MSC_VER */
 #include "rrd_tool.h"
@@ -466,12 +466,12 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
                             canvas->aa_type == AA_LIGHT ? FT_LOAD_TARGET_LIGHT :
                             FT_LOAD_TARGET_MONO : FT_LOAD_TARGET_MONO);
     if (error) {
-      DPRINTF("couldn't load glyph:  %c\n", letter)
+      RRDPRINTF("couldn't load glyph:  %c\n", letter)
       continue;
     }
     error = FT_Get_Glyph (slot, &glyph->image);
     if (error) {
-      DPRINTF("couldn't get glyph %c from slot %d\n", letter, (int)slot)
+      RRDPRINTF("couldn't get glyph %c from slot %d\n", letter, (int)slot)
       continue;
     }
     /* if we are in tabbing mode, we replace the tab with a space and shift the position
@@ -493,7 +493,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
     FT_Vector_Transform (&vec, &string->transform);
     error = FT_Glyph_Transform (glyph->image, &string->transform, &vec);
     if (error) {
-      DPRINTF("couldn't transform glyph id %d\n", letter)
+      RRDPRINTF("couldn't transform glyph id %d\n", letter)
       continue;
     }
 
@@ -503,7 +503,7 @@ gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text
                             canvas->aa_type == AA_LIGHT ? FT_RENDER_MODE_LIGHT :
                             FT_RENDER_MODE_MONO : FT_RENDER_MODE_MONO, 0, 1);
     if (error) {
-      DPRINTF("couldn't convert glyph id %d to bitmap\n", letter)
+      RRDPRINTF("couldn't convert glyph id %d to bitmap\n", letter)
       continue;
     }
 
@@ -658,12 +658,12 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 		/* long buf_x,comp_n; */
 	        /* make copy to transform */
                 if (! glyph->image) {
-                  DPRINTF("no image\n")
+                  RRDPRINTF("no image\n")
                   continue;
                 }
                 error = FT_Glyph_Copy (glyph->image, &image);
                 if (error) {
-                  DPRINTF("couldn't copy image\n")
+                  RRDPRINTF("couldn't copy image\n")
                   continue;
                 }
 
