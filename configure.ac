@@ -504,6 +504,7 @@ else
 
 fi
 
+
 AC_MSG_CHECKING(Ruby Modules to build)
 AC_MSG_RESULT(${COMP_RUBY:-No Ruby Modules will be built})
 
@@ -583,7 +584,13 @@ AM_PATH_PYTHON(2.3,[],[enable_python=no])
 AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
 fi
 
-AM_CONDITIONAL(BUILD_PYTHON,[test "$enable_python" = "yes"])
+if test  x$enable_python = xno; then
+	COMP_PYTHON=
+else
+	COMP_PYTHON="python"
+fi
+
+AC_SUBST(COMP_PYTHON)
 
 dnl Check for nroff
 AC_PATH_PROGS(NROFF, gnroff nroff)

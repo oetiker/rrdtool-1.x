@@ -45,6 +45,6 @@ site-tcl-install: all
 	cd bindings/tcl && $(MAKE) tcl-install
 
 site-python-install: all
-	cd bindings/python && $(MAKE) python-install
+	cd bindings/python && $(PYTHON) setup.py install
 
 ##END##
