@@ -1,9 +1,9 @@
-# Gnu Makefile for NetWare target * 09-Sep-2006
+# Gnu Makefile for NetWare target * 29-Jan-2007
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
-COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 MTSAFE	= YES
 #SCREEN	= $(DESCR)
@@ -39,11 +39,11 @@ endif
 # All library code is statically linked to avoid problems with other lib NLMs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.12
+LIBPNG	= $(LIBBASE)/libpng-1.2.16
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-LIBFT2	= $(LIBBASE)/freetype-2.2.1
+LIBFT2	= $(LIBBASE)/freetype-2.3.1
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART

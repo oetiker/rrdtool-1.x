@@ -1,9 +1,9 @@
-# Gnu Makefile for Win32 target * 09-Sep-2006
+# Gnu Makefile for Win32 target * 29-Jan-2007
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
 
 DESCR	= Round Robin Database Tool
-COPYR	= Copyright (c) 1997-2006 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 ICON	= $(PROOT)/favicon.ico
 
@@ -30,12 +30,12 @@ endif
 # All library code is statically linked to avoid problems with other lib DLLs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.12
+LIBPNG	= $(LIBBASE)/libpng-1.2.16
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
 #LIBFT2	= $(LIBBASE)/freetype-2.2.1
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.2.1
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.1
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -116,14 +116,19 @@ LDFLAGS	= -s
 AR	= ar
 ARFLAGS	= -cq
 LIBEXT	= a
-RCFLAGS	= -I rc -O coff -i
+RCFLAGS	= -O coff -i
 CFLAGS	+= -fno-strict-aliasing -Wall -Wno-unused # -pedantic
 endif
 
+ifeq ($(findstring msys,$(OSTYPE)),msys)
+DL	= '
+DS	= /
+else
 DS	= \\
+endif
 
 ifndef COPYR
-	COPYR = Copyright (c) 2006 The Open Source Community.
+	COPYR = Copyright (c) 2007 The Open Source Community.
 endif
 ifndef DESCR
 	DESCR = $(notdir $(@:.rc=)) Command Extension
@@ -312,40 +317,40 @@ $(OBJDIR)/%.res: $(OBJDIR)/%.rc
 	@$(RC) $(RCFLAGS) $< -o $@
 
 $(OBJDIR)/%.rc: Makefile $(OBJDIR)/version.inc
-	@echo 1 VERSIONINFO > $@
-	@echo  FILEVERSION $(RRD_VERSION),0 >> $@
-	@echo  PRODUCTVERSION $(RRD_VERSION),0 >> $@
-	@echo  FILEFLAGSMASK 0x3fL >> $@
-	@echo  FILEOS 0x40004L >> $@
-	@echo  FILEFLAGS 0x0L >> $@
-	@echo  FILETYPE 0x1L >> $@
-	@echo  FILESUBTYPE 0x0L >> $@
-	@echo BEGIN >> $@
-	@echo   BLOCK "StringFileInfo" >> $@
-	@echo   BEGIN >> $@
-	@echo     BLOCK "040904E4" >> $@
-	@echo     BEGIN >> $@
-	@echo       VALUE "LegalCopyright","$(COPYR)\0" >> $@
+	@echo $(DL)1 VERSIONINFO$(DL) > $@
+	@echo $(DL) FILEVERSION $(RRD_VERSION),0$(DL) >> $@
+	@echo $(DL) PRODUCTVERSION $(RRD_VERSION),0$(DL) >> $@
+	@echo $(DL) FILEFLAGSMASK 0x3fL$(DL) >> $@
+	@echo $(DL) FILEOS 0x40004L$(DL) >> $@
+	@echo $(DL) FILEFLAGS 0x0L$(DL) >> $@
+	@echo $(DL) FILETYPE 0x1L$(DL) >> $@
+	@echo $(DL) FILESUBTYPE 0x0L$(DL) >> $@
+	@echo $(DL)BEGIN$(DL) >> $@
+	@echo $(DL)  BLOCK "StringFileInfo"$(DL) >> $@
+	@echo $(DL)  BEGIN$(DL) >> $@
+	@echo $(DL)    BLOCK "040904E4"$(DL) >> $@
+	@echo $(DL)    BEGIN$(DL) >> $@
+	@echo $(DL)      VALUE "LegalCopyright","$(COPYR)\0"$(DL) >> $@
 ifdef COMPANY
-	@echo       VALUE "CompanyName","$(COMPANY)\0" >> $@
+	@echo $(DL)      VALUE "CompanyName","$(COMPANY)\0"$(DL) >> $@
 endif
-	@echo       VALUE "ProductName","$(notdir $(@:.rc=.exe))\0" >> $@
-	@echo       VALUE "ProductVersion","$(RRD_VERSION_STR)\0" >> $@
-	@echo       VALUE "License","Released under GPL.\0" >> $@
-	@echo       VALUE "FileDescription","$(DESCR)\0" >> $@
-	@echo       VALUE "FileVersion","$(RRD_VERSION_STR)\0" >> $@
-	@echo       VALUE "InternalName","$(notdir $(@:.rc=))\0" >> $@
-	@echo       VALUE "OriginalFilename","$(notdir $(@:.rc=.exe))\0" >> $@
-	@echo       VALUE "WWW","$(WWWURL)\0" >> $@
-	@echo     END >> $@
-	@echo   END >> $@
-	@echo   BLOCK "VarFileInfo" >> $@
-	@echo   BEGIN >> $@
-	@echo     VALUE "Translation", 0x409, 1252 >> $@
-	@echo   END >> $@
-	@echo END >> $@
+	@echo $(DL)      VALUE "ProductName","$(notdir $(@:.rc=.exe))\0"$(DL) >> $@
+	@echo $(DL)      VALUE "ProductVersion","$(RRD_VERSION_STR)\0"$(DL) >> $@
+	@echo $(DL)      VALUE "License","Released under GPL.\0"$(DL) >> $@
+	@echo $(DL)      VALUE "FileDescription","$(DESCR)\0"$(DL) >> $@
+	@echo $(DL)      VALUE "FileVersion","$(RRD_VERSION_STR)\0"$(DL) >> $@
+	@echo $(DL)      VALUE "InternalName","$(notdir $(@:.rc=))\0"$(DL) >> $@
+	@echo $(DL)      VALUE "OriginalFilename","$(notdir $(@:.rc=.exe))\0"$(DL) >> $@
+	@echo $(DL)      VALUE "WWW","$(WWWURL)\0"$(DL) >> $@
+	@echo $(DL)    END$(DL) >> $@
+	@echo $(DL)  END$(DL) >> $@
+	@echo $(DL)  BLOCK "VarFileInfo"$(DL) >> $@
+	@echo $(DL)  BEGIN$(DL) >> $@
+	@echo $(DL)    VALUE "Translation", 0x409, 1252$(DL) >> $@
+	@echo $(DL)  END$(DL) >> $@
+	@echo $(DL)END$(DL) >> $@
 ifdef ICON
-	@echo 10 ICON DISCARDABLE "$(ICON)" >> $@
+	@echo $(DL)10 ICON DISCARDABLE "$(ICON)"$(DL) >> $@
 endif
 
 $(PROOT)/rrd_config.h: Makefile $(OBJDIR)/version.inc
