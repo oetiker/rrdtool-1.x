@@ -130,5 +130,5 @@ rrdtool_LDADD	= librrd.la
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
 EXTRA_DIST= strftime.c strftime.h $(fonts_DATA) \
-	win32comp.c  rrd_thread_safe_nt.c   
+	win32comp.c  rrd_thread_safe_nt.c get_ver.awk
 
