@@ -616,7 +616,6 @@ AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
-AC_CONFIG_FILES([bindings/python/Makefile])
 AC_CONFIG_FILES([Makefile])          
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
