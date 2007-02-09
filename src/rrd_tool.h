@@ -11,12 +11,10 @@ extern "C" {
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../win32/config.h"
-#else
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
-#endif
+#elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#include "../win32/config.h"
 #endif
 
 #ifdef MUST_DISABLE_SIGFPE
