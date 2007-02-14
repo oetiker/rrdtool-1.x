@@ -574,7 +574,7 @@ char* printstrftime(long argc, const char **args){
 	/* Make sure that we were given the right number of args */
 	if( argc != 4) {
 		rrd_set_error( "wrong number of args %d", argc);
-		return (char *) -1;
+		return stralloc("");
 	}
 
 	/* Init start and end time */
@@ -584,14 +584,14 @@ char* printstrftime(long argc, const char **args){
 	/* Parse the start and end times we were given */
 	if( (parsetime_error = parsetime( args[1], &start_tv))) {
 		rrd_set_error( "start time: %s", parsetime_error);
-		return (char *) -1;
+		return stralloc("");
 	}
 	if( (parsetime_error = parsetime( args[2], &end_tv))) {
 		rrd_set_error( "end time: %s", parsetime_error);
-		return (char *) -1;
+		return stralloc("");
 	}
 	if( proc_start_end( &start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
-		return (char *) -1;
+		return stralloc("");
 	}
 
 	/* Do we do the start or end */
@@ -603,7 +603,7 @@ char* printstrftime(long argc, const char **args){
 	}
 	else {
 		rrd_set_error( "start/end not found in '%s'", args[0]);
-		return (char *) -1;
+		return stralloc("");
 	}
 
 	/* now format it */
@@ -612,7 +612,7 @@ char* printstrftime(long argc, const char **args){
 	}
 	else {
 		rrd_set_error( "strftime failed");
-		return (char *) -1;
+		return stralloc("");
 	}
 }
 
