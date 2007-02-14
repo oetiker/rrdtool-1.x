@@ -29,7 +29,7 @@ void PrintUsage(char *cmd)
     char help_list[] =
 	   "Valid commands: create, update, updatev, graph, dump, restore,\n"
 	   "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-	   " resize, xport\n\n";
+	   "\t\tresize, xport\n\n";
 
     char help_listremote[] =
            "Valid remote commands: quit, ls, cd, mkdir, pwd\n\n";
