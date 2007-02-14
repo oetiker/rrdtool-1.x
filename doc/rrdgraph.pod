@@ -191,6 +191,10 @@ placed every I<label factor> lines.  You can specify C<-y none> to
 suppress the grid and labels altogether.  The default for this option is
 to automatically select sensible values.
 
+If you have set --y-grid to 'none' not only the labels get supressed, also
+the space reserved for the labels is removed. You can still add space
+manually if you use the --units-length command to explicitly reserve space.
+
 [B<-Y>|B<--alt-y-grid>]
 
 Place the Y grid dynamically based on the graph's Y range. The algorithm

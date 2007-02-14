@@ -2424,7 +2424,7 @@ graph_size_location(image_desc_t *im, int elements
 	if (im->draw_x_grid) {
 	    Yxlabel=im->text_prop[TEXT_PROP_AXIS].size *2.5;
 	}
-	if (im->draw_y_grid) {
+	if (im->draw_y_grid || im->forceleftspace ) {
 	    Xylabel=gfx_get_text_width(im->canvas, 0,
 	                im->text_prop[TEXT_PROP_AXIS].font,
         	        im->text_prop[TEXT_PROP_AXIS].size,
@@ -3115,6 +3115,7 @@ rrd_graph_init(image_desc_t *im)
     im->maxval = DNAN;    
     im->unitsexponent= 9999;
     im->unitslength= 6; 
+    im->forceleftspace = 0;
     im->symbol = ' ';
     im->viewfactor = 1.0;
     im->extra_flags= 0;
@@ -3284,6 +3285,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 	    break;
 	case 'L':
 	    im->unitslength = atoi(optarg);
+            im->forceleftspace = 1;
 	    break;
 	case 'T':
 	    im->tabwidth = atof(optarg);
