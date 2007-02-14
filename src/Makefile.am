@@ -13,8 +13,8 @@ RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
 UPD_C_FILES =		\
-	getopt.c	\
-	getopt1.c	\
+	rrd_getopt.c	\
+	rrd_getopt1.c	\
 	parsetime.c	\
 	rrd_hw.c	\
 	rrd_diff.c	\
@@ -51,7 +51,7 @@ noinst_HEADERS = \
         art_rgba_svp.h \
 	unused.h \
 	rrd_gfx.h \
-	getopt.h parsetime.h \
+	rrd_getopt.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
 	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
 	rrd_is_thread_safe.h

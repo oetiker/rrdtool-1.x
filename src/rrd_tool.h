@@ -115,7 +115,7 @@ int isnan(double value);
 #endif
 
 /* local include files -- need to be after the system ones */
-#include "getopt.h"
+#include "rrd_getopt.h"
 #include "rrd_format.h"
 
 #ifndef max
