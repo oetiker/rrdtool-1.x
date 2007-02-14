@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.16" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.3.1/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x409
@@ -65,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.12" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.2.1/include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
+# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.16" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.3.1/include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x409
@@ -82,6 +82,35 @@ LIB32=link.exe -lib
 
 # Name "rrd - Win32 Release"
 # Name "rrd - Win32 Debug"
+# Begin Source File
+
+SOURCE="..\src\get_ver.awk"
+
+!IF  "$(CFG)" == "rrd - Win32 Release"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build - Creating ..\rrd_config.h
+InputPath="..\src\get_ver.awk"
+
+"..\rrd_config.h" : $(SOURCE) "..\configure.ac" "..\win32\rrd_config.h.msvc"
+	awk -f ..\src\get_ver.awk ..\configure.ac ..\win32\rrd_config.h.msvc > ..\rrd_config.h
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "rrd - Win32 Debug"
+
+# PROP Ignore_Default_Tool 1
+# Begin Custom Build - Creating ..\rrd_config.h
+InputPath="..\src\get_ver.awk"
+
+"..\rrd_config.h" : $(SOURCE) "..\configure.ac" "..\win32\rrd_config.h.msvc"
+	awk -f ..\src\get_ver.awk ..\configure.ac ..\win32\rrd_config.h.msvc > ..\rrd_config.h
+
+# End Custom Build
+
+!ENDIF
+
+# End Source File
 # Begin Source File
 
 SOURCE=..\src\rrd_afm.c
@@ -141,6 +170,10 @@ SOURCE=..\src\rrd_info.c
 # Begin Source File
 
 SOURCE=..\src\rrd_last.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\rrd_lastupdate.c
 # End Source File
 # Begin Source File
 
