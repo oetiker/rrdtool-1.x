@@ -127,6 +127,10 @@ B<DEG2RAD, RAD2DEG>
 
 Convert angle in degrees to radians, or radians to degrees.
 
+B<ABS>
+
+Take the absolute value.
+
 =item Set Operations
 
 B<SORT, REV>

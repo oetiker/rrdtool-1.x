@@ -18,7 +18,7 @@ enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER,OP_COUNT,
            OP_ATAN,OP_SQRT,OP_SORT,OP_REV,OP_TREND,
            OP_ATAN2,OP_RAD2DEG,OP_DEG2RAD,
-           OP_AVG};
+           OP_AVG,OP_ABS};
 
 typedef struct rpnp_t {
     enum op_en   op;

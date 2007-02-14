@@ -162,6 +162,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
          add_op(OP_RAD2DEG,RAD2DEG)
          add_op(OP_DEG2RAD,DEG2RAD)
          add_op(OP_AVG,AVG)
+         add_op(OP_ABS,ABS)
 #undef add_op
               }
     (*str)[offset] = '\0';
@@ -340,6 +341,7 @@ rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char
        match_op(OP_RAD2DEG,RAD2DEG)
        match_op(OP_DEG2RAD,DEG2RAD)
        match_op(OP_AVG,AVG)
+       match_op(OP_ABS,ABS)
 #undef match_op
 
 
@@ -778,6 +780,10 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
                      rpnstack -> s[++stptr]=DNAN;
                    }
                 }
+                break;
+            case OP_ABS:
+                stackunderflow(0);
+                rpnstack -> s[stptr] = fabs(rpnstack -> s[stptr]);
                 break;
 	    case OP_END:
 		break;
