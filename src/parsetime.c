@@ -850,7 +850,7 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
 	      if ( ptv->tm.tm_hour == 30 ){
 		ptv->tm.tm_hour = hour_sv;
               }
-	      if ( ptv->tm.tm_hour == 30000 ){
+	      if ( ptv->tm.tm_year == 30000 ){
 		ptv->tm.tm_year = year_sv;
               }
 	    };	    
