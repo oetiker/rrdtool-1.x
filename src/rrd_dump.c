@@ -115,39 +115,39 @@ rrd_dump_r(const char *filename, char *outname)
     fprintf(out_file, "\t<lastupdate> %ld </lastupdate> <!-- %s -->\n\n",
 	   rrd.live_head->last_up,somestring);
     for(i=0;i<rrd.stat_head->ds_cnt;i++){
-	fprintf(out_file, "\t<ds>\n");
-	fprintf(out_file, "\t\t<name> %s </name>\n",rrd.ds_def[i].ds_nam);
-	fprintf(out_file, "\t\t<type> %s </type>\n",rrd.ds_def[i].dst);
-    if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
-	fprintf(out_file, "\t\t<minimal_heartbeat> %lu </minimal_heartbeat>\n",rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
-	if (isnan(rrd.ds_def[i].par[DS_min_val].u_val)){
-	  fprintf(out_file, "\t\t<min> NaN </min>\n");
-	} else {
-	  fprintf(out_file, "\t\t<min> %0.10e </min>\n",rrd.ds_def[i].par[DS_min_val].u_val);
-	}
-	if (isnan(rrd.ds_def[i].par[DS_max_val].u_val)){
-	  fprintf(out_file, "\t\t<max> NaN </max>\n");
-	} else {
-	  fprintf(out_file, "\t\t<max> %0.10e </max>\n",rrd.ds_def[i].par[DS_max_val].u_val);
-	}
-    } else { /* DST_CDEF */
-	  char *str;
-	  rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),rrd.ds_def,&str);
-	  fprintf(out_file, "\t\t<cdef> %s </cdef>\n", str);
-	  free(str);
-	}
-	fprintf(out_file, "\n\t\t<!-- PDP Status -->\n");
-	fprintf(out_file, "\t\t<last_ds> %s </last_ds>\n",rrd.pdp_prep[i].last_ds);
-	if (isnan(rrd.pdp_prep[i].scratch[PDP_val].u_val)){
-	  fprintf(out_file, "\t\t<value> NaN </value>\n");
-	} else {
-	  fprintf(out_file, "\t\t<value> %0.10e </value>\n",rrd.pdp_prep[i].scratch[PDP_val].u_val);
-	}
-	fprintf(out_file, "\t\t<unknown_sec> %lu </unknown_sec>\n",
-	       rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+	   fprintf(out_file, "\t<ds>\n");
+	   fprintf(out_file, "\t\t<name> %s </name>\n",rrd.ds_def[i].ds_nam);
+	   fprintf(out_file, "\t\t<type> %s </type>\n",rrd.ds_def[i].dst);
+       if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
+          fprintf(out_file, "\t\t<minimal_heartbeat> %lu </minimal_heartbeat>\n",rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
+	      if (isnan(rrd.ds_def[i].par[DS_min_val].u_val)){
+	          fprintf(out_file, "\t\t<min> NaN </min>\n");
+	      } else {
+	          fprintf(out_file, "\t\t<min> %0.10e </min>\n",rrd.ds_def[i].par[DS_min_val].u_val);
+	      }
+	      if (isnan(rrd.ds_def[i].par[DS_max_val].u_val)){
+	          fprintf(out_file, "\t\t<max> NaN </max>\n");
+	      } else {
+	          fprintf(out_file, "\t\t<max> %0.10e </max>\n",rrd.ds_def[i].par[DS_max_val].u_val);
+	      }
+       } else { /* DST_CDEF */
+	      char *str=NULL;
+	      rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),rrd.ds_def,&str);
+	      fprintf(out_file, "\t\t<cdef> %s </cdef>\n", str);
+	      free(str);
+	   }
+	   fprintf(out_file, "\n\t\t<!-- PDP Status -->\n");
+	   fprintf(out_file, "\t\t<last_ds> %s </last_ds>\n",rrd.pdp_prep[i].last_ds);
+	   if (isnan(rrd.pdp_prep[i].scratch[PDP_val].u_val)){
+	      fprintf(out_file, "\t\t<value> NaN </value>\n");
+	   } else {
+	      fprintf(out_file, "\t\t<value> %0.10e </value>\n",rrd.pdp_prep[i].scratch[PDP_val].u_val);
+	   }
+	      fprintf(out_file, "\t\t<unknown_sec> %lu </unknown_sec>\n",
+	              rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
 	
-	fprintf(out_file, "\t</ds>\n\n");
-    }
+	      fprintf(out_file, "\t</ds>\n\n");
+       }
 
     fputs("<!-- Round Robin Archives -->", out_file);
 
