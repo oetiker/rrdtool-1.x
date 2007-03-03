@@ -1,3 +1,4 @@
+
 dnl RRDtool AutoConf script ... 
 dnl ---------------------------
 dnl
@@ -496,17 +497,21 @@ AC_PATH_PROG(RUBY, ruby, no)
 AC_ARG_ENABLE(ruby,[  --disable-ruby          do not build the ruby modules],
 [],[enable_ruby=yes])
 
+AC_MSG_CHECKING(if ruby modules can be built)
 
 if test "x$RUBY" = "xno" -o  x$enable_ruby = xno; then
 	COMP_RUBY=
+ 	AC_MSG_RESULT(No .. Ruby not found or disabled)
 else
-	COMP_RUBY="ruby"
-
+	if $RUBY -e 'require "mkmf"' >/dev/null 2>&1; then
+		COMP_RUBY="ruby"
+	 	AC_MSG_RESULT(YES)
+	else
+		COMP_RUBY=
+	 	AC_MSG_RESULT(Ruby found but mkmf is missing! Install the -dev package)		
+	fi				
 fi
 
-
-AC_MSG_CHECKING(Ruby Modules to build)
-AC_MSG_RESULT(${COMP_RUBY:-No Ruby Modules will be built})
 
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,

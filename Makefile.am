@@ -2,7 +2,7 @@
 RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
-SUBDIRS = src bindings doc examples
+SUBDIRS = src doc examples bindings
 
   # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \

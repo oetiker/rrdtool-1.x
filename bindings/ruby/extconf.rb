@@ -8,7 +8,7 @@ if /linux/ =~ RUBY_PLATFORM
 elsif /solaris/ =~ RUBY_PLATFORM
    $LDFLAGS += '-R$(EPREFIX)/lib'
 elsif /hpux/ =~ RUBY_PLATFORM
-   $LDFLAGS += '+b$(EPREFIX)/lib';
+   $LDFLAGS += '+b$(EPREFIX)/lib'
 elsif /aix/ =~ RUBY_PLATFORM
    $LDFLAGS += '-Wl,-blibpath:$(EPREFIX)/lib'
 end
