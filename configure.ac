@@ -427,7 +427,7 @@ else
 	    perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
 	    AC_MSG_RESULT($perlcc)
 	    if test ! -x "$perlcc"; then
- 	        AC_PATH_PROG(PERL_CC, "${perlcc}", no)
+ 	        AC_PATH_PROG(PERL_CC, ${perlcc}, no)
 	        if test "$PERL_CC" = "no"; then
                     AC_MSG_WARN([
 I would not find the Compiler ($perlcc) that was originally used to compile
