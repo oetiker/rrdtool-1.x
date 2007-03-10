@@ -615,7 +615,7 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		case DST_DERIVE:
 		    if(rrd.pdp_prep[i].last_ds[0] != 'U'){
                       for(ii=0;updvals[i+1][ii] != '\0';ii++){
-                            if(updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9' || (ii==0 && updvals[i+1][ii] == '-')){
+                            if((updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9') && (ii != 0 && updvals[i+1][ii] != '-')){
                                  rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
                                  break;
                             }
