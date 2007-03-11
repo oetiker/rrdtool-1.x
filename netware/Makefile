@@ -1,4 +1,4 @@
-# Gnu Makefile for NetWare target * 08-Feb-2007
+# Gnu Makefile for NetWare target * 22-Feb-2007
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
 
@@ -127,8 +127,9 @@ AR	= $(LD)
 ARFLAGS	= -type library -w nocmdline $(OBJS) -o
 LIBEXT	= lib
 CFLAGS	+= -gccinc -inline off -opt nointrinsics -proc 586
-CFLAGS	+= -relax_pointers
+CFLAGS	+= -relax_pointers # -r
 #CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
+CFLAGS	+= -w noerror,noiserror
 ifeq ($(LIBARCH),LIBC)
 	PRELUDE = $(SDK_LIBC)/imports/libcpre.o
 	CFLAGS += -align 4
@@ -218,9 +219,9 @@ RRDLIBOBJS	= \
 	$(EOLIST)
 
 XLIBOBJS	= \
+	$(OBJDIR)/rrd_getopt.o \
+	$(OBJDIR)/rrd_getopt1.o \
 	$(OBJDIR)/art_rgba_svp.o \
-	$(OBJDIR)/getopt.o \
-	$(OBJDIR)/getopt1.o \
 	$(OBJDIR)/hash_32.o \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
@@ -468,7 +469,6 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_SELECT 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SETLOCALE 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SETJMP_H 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_SIGNAL 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDARG_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDDEF_H 1$(DL) >> $@
@@ -506,7 +506,7 @@ ifdef RRD_DEFAULT_FONT
 endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
 ifdef WITH_PIECHART
-	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
+	@echo $(DL)#define WITH_PIECHART $(WITH_PIECHART)$(DL) >> $@
 endif
 	@echo $(DL)#endif /* RRD_CONFIG_H */$(DL) >> $@
 
