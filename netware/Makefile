@@ -1,4 +1,4 @@
-# Gnu Makefile for NetWare target * 22-Feb-2007
+# Gnu Makefile for NetWare target * 15-Feb-2007
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
 
@@ -127,9 +127,8 @@ AR	= $(LD)
 ARFLAGS	= -type library -w nocmdline $(OBJS) -o
 LIBEXT	= lib
 CFLAGS	+= -gccinc -inline off -opt nointrinsics -proc 586
-CFLAGS	+= -relax_pointers # -r
+CFLAGS	+= -relax_pointers
 #CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
-CFLAGS	+= -w noerror,noiserror
 ifeq ($(LIBARCH),LIBC)
 	PRELUDE = $(SDK_LIBC)/imports/libcpre.o
 	CFLAGS += -align 4
@@ -489,7 +488,6 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TZSET 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
-	@echo $(DL)#define HAVE_UNISTD_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_VSNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@

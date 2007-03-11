@@ -1,4 +1,4 @@
-# Gnu Makefile for Win32 target * 08-Feb-2007
+# Gnu Makefile for Win32 target * 15-Feb-2007
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
 
@@ -170,9 +170,9 @@ RRDLIBOBJS	= \
 	$(EOLIST)
 
 XLIBOBJS	= \
+	$(OBJDIR)/rrd_getopt.o \
+	$(OBJDIR)/rrd_getopt1.o \
 	$(OBJDIR)/art_rgba_svp.o \
-	$(OBJDIR)/getopt.o \
-	$(OBJDIR)/getopt1.o \
 	$(OBJDIR)/hash_32.o \
 	$(OBJDIR)/parsetime.o \
 	$(OBJDIR)/pngsize.o \
@@ -371,11 +371,9 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_ASSERT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_DLFCN_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_DLOPEN 1$(DL) >> $@
-	@echo $(DL)#define HAVE_ERR_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_ERRNO_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FCNTL_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FIONBIO 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_GETTIMEOFDAY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_INTTYPES_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIMITS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LONGLONG 1$(DL) >> $@
@@ -383,9 +381,7 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_MALLOC_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MATH_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_MBSTOWCS 1$(DL) >> $@
-	@echo $(DL)#define HAVE_SELECT 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SETJMP_H 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_SIGNAL 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDARG_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STDDEF_H 1$(DL) >> $@
@@ -398,12 +394,10 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_STRLCAT 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRLCPY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_STRSTR 1$(DL) >> $@
-#	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
-	@echo $(DL)#define HAVE_SYS_SELECT_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_SYS_PARAM_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_STAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_SYS_TIME_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
-	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
 	@echo $(DL)#define HAVE_VSNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@
@@ -421,7 +415,7 @@ endif
 	@echo $(DL)#define RRDGRAPH_YLEGEND_ANGLE $(RRDGRAPH_YLEGEND_ANGLE)$(DL) >> $@
 	@echo $(DL)#define strftime strftime_$(DL) >> $@
 ifdef WITH_PIECHART
-	@echo $(DL)#define WITH_PIECHART 1$(DL) >> $@
+	@echo $(DL)#define WITH_PIECHART $(WITH_PIECHART)$(DL) >> $@
 endif
 	@echo $(DL)#endif /* RRD_CONFIG_H */$(DL) >> $@
 
