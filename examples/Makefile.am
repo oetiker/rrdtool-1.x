@@ -11,6 +11,6 @@ examples_SCRIPTS = cgi-demo.cgi piped-demo.pl shared-demo.pl \
 	stripes.pl bigtops.pl minmax.pl 4charts.pl perftest.pl
 
 cgi-demo.cgi: cgi-demo.cgi.in $(top_builddir)/config.status
-	sed 's,@''exec_prefix@,$(exec_prefix),' $< > $@
+	sed 's,@''exec_prefix@,$(exec_prefix),' cgi-demo.cgi.in > $@
 	chmod a+x $@
 
