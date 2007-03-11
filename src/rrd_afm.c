@@ -2,7 +2,9 @@
  * RRDtool 1.2.19  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_afm.h  Parsing afm tables to find width of strings.
- ****************************************************************************/
+ ****************************************************************************
+ * $Id$
+*/
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
 #include "../win32/config.h"
