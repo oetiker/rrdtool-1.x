@@ -689,8 +689,8 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	char          **legend_v;
         int           enumds = 0;
         int           i;
-        char *vtag = NULL;
-        vtag = malloc( strlen(COL_DATA_TAG)+10);
+        size_t       vtag_s = strlen(COL_DATA_TAG) + 10; 
+        char         *vtag = malloc(vtag_s); 
 	for ( i = 2; i < argc; i++){
 		if (strcmp("--enumds", argv[i]) == 0)
 			enumds = 1;
@@ -724,9 +724,9 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    for (j = 0; j < col_cnt; j++) {
 	      rrd_value_t newval = DNAN;
               if (enumds == 1)
-		snprintf(vtag,sizeof(vtag),"%s%lu", COL_DATA_TAG, j);
+		snprintf(vtag,vtag_s,"%s%lu", COL_DATA_TAG, j);
 	      else
-		snprintf(vtag,sizeof(vtag),"%s",COL_DATA_TAG);
+		snprintf(vtag,vtag_s,"%s",COL_DATA_TAG);
               
 	      newval = *ptr;
 	      if(isnan(newval)){
