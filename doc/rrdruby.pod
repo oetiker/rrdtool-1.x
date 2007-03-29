@@ -7,9 +7,8 @@ rrdruby - About the RRD Ruby bindings
  require "RRD"
  RRD.create(
     rrd,
-    "--start", "#{start - 1}",
     "--step", "300",
-        "DS:a:GAUGE:600:U:U",
+    "DS:a:GAUGE:600:U:U",
     "DS:b:GAUGE:600:U:U",
     "RRA:AVERAGE:0.5:1:300")
 
@@ -26,6 +25,11 @@ to the other B<rrdtool> documentation for functions and valid arguments.
 
  $: << '/path/to/rrdtool/lib/ruby/1.8/i386-linux'
  require "RRD" 
+
+ name = "test"
+ rrd = "#{name}.rrd"
+ start = Time.now.to_i
+
  RRD.create(    
     rrd,
     "--start", "#{start - 1}",
