@@ -65,7 +65,7 @@ enum dst_en dst_conv(char *string)
 }
 
 
-enum cf_en cf_conv(char *string)
+enum cf_en cf_conv(const char *string)
 {
 
     converter(AVERAGE,CF_AVERAGE)

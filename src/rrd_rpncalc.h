@@ -47,7 +47,7 @@ typedef struct rpnstack_t {
 void rpnstack_init(rpnstack_t *rpnstack);
 void rpnstack_free(rpnstack_t *rpnstack);
 
-void parseCDEF_DS(char *def, rrd_t *rrd, int ds_idx);
+void parseCDEF_DS(const char *def, rrd_t *rrd, int ds_idx);
 long lookup_DS(void *rrd_vptr, char *ds_name);
 
 short rpn_compact(rpnp_t *rpnp,rpn_cdefds_t **rpnc,short *count);

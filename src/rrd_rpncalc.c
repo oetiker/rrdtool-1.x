@@ -188,7 +188,7 @@ short addop2str(enum op_en op, enum op_en op_type, char *op_str,
     return 0;
 }
 
-void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
+void parseCDEF_DS(const char *def,rrd_t *rrd, int ds_idx)
 {
     rpnp_t *rpnp = NULL;
     rpn_cdefds_t *rpnc = NULL;

@@ -87,8 +87,8 @@ info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx,
 					unsigned short CDP_scratch_idx, FILE *rrd_file,
 					info_t *pcdp_summary, time_t *rra_time);
 #endif
-int rrd_update_r(char *filename, char *tmplt, int argc, char **argv);
-int _rrd_update(char *filename, char *tmplt, int argc, char **argv, 
+int rrd_update_r(const char *filename, const char *tmplt, int argc, const char **argv);
+int _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv, 
 					info_t*);
 
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
@@ -186,13 +186,13 @@ rrd_update(int argc, char **argv)
 }
 
 int
-rrd_update_r(char *filename, char *tmplt, int argc, char **argv)
+rrd_update_r(const char *filename, const char *tmplt, int argc, const char **argv)
 {
    return _rrd_update(filename, tmplt, argc, argv, NULL);
 }
 
 int
-_rrd_update(char *filename, char *tmplt, int argc, char **argv, 
+_rrd_update(const char *filename, const char *tmplt, int argc, const char **argv, 
    info_t *pcdp_summary)
 {
 
@@ -364,13 +364,13 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
     	/* we should work on a writeable copy here */
 	char *dsname;
 	unsigned int tmpl_len;
-    	tmplt = strdup(tmplt);
-	dsname = tmplt;
+    	char *tmplt_copy = strdup(tmplt);
+	dsname = tmplt_copy;
 	tmpl_cnt = 1; /* the first entry is the time */
-	tmpl_len = strlen(tmplt);
+	tmpl_len = strlen(tmplt_copy);
 	for(i=0;i<=tmpl_len ;i++) {
-	    if (tmplt[i] == ':' || tmplt[i] == '\0') {
-		tmplt[i] = '\0';
+	    if (tmplt_copy[i] == ':' || tmplt_copy[i] == '\0') {
+		tmplt_copy[i] = '\0';
 		if (tmpl_cnt>rrd.stat_head->ds_cnt){
   		    rrd_set_error("tmplt contains more DS definitions than RRD");
 		    free(updvals); free(pdp_temp);
@@ -380,23 +380,23 @@ _rrd_update(char *filename, char *tmplt, int argc, char **argv,
 		if ((tmpl_idx[tmpl_cnt++] = ds_match(&rrd,dsname)) == -1){
   		    rrd_set_error("unknown DS name '%s'",dsname);
 		    free(updvals); free(pdp_temp);
-		    free(tmplt);
+		    free(tmplt_copy);
 		    free(tmpl_idx); rrd_free(&rrd);
 		    fclose(rrd_file); return(-1);
 		} else {
 		  /* the first element is always the time */
 		  tmpl_idx[tmpl_cnt-1]++; 
-		  /* go to the next entry on the tmplt */
-		  dsname = &tmplt[i+1];
+		  /* go to the next entry on the tmplt_copy */
+		  dsname = &tmplt_copy[i+1];
                   /* fix the damage we did before */
                   if (i<tmpl_len) {
-                     tmplt[i]=':';
+                     tmplt_copy[i]=':';
                   } 
 
 		}
 	    }	    
 	}
-	free(tmplt);
+	free(tmplt_copy);
     }
     if ((pdp_new = malloc(sizeof(rrd_value_t)
 			  *rrd.stat_head->ds_cnt))==NULL){

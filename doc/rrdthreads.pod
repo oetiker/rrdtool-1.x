@@ -137,7 +137,7 @@ operation (e.g., C<rrd_create>, but not in C<rrd_create_r>)
 =head2 CURRENTLY IMPLEMENTED THREAD SAFE FUNCTIONS
 
 Currently there exist thread-safe variants of C<rrd_update>,
-C<rrd_create>, C<rrd_dump>, C<rrd_info> and C<rrd_last>.
+C<rrd_create>, C<rrd_dump>, C<rrd_info>, C<rrd_last>, and C<rrd_fetch>.
 
 =head1 AUTHOR
 

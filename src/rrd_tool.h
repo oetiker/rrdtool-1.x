@@ -159,8 +159,8 @@ info_t *info_push(info_t *, char *, enum info_type, infoval);
 
 int PngSize(FILE *, long *, long *);
 
-int rrd_create_fn(char *file_name, rrd_t *rrd);
-int rrd_fetch_fn(char *filename, enum cf_en cf_idx,
+int rrd_create_fn(const char *file_name, rrd_t *rrd);
+int rrd_fetch_fn(const char *filename, enum cf_en cf_idx,
 		 time_t *start,time_t *end,
 		 unsigned long *step,
 		 unsigned long *ds_cnt,
@@ -177,7 +177,7 @@ int readfile(const char *file, char **buffer, int skipfirst);
 #define RRD_READONLY    0
 #define RRD_READWRITE   1
 
-enum cf_en cf_conv(char *string);
+enum cf_en cf_conv(const char *string);
 enum dst_en dst_conv(char *string);
 long ds_match(rrd_t *rrd,char *ds_nam);
 double rrd_diff(char *a, char *b);

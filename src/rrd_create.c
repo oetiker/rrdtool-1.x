@@ -10,9 +10,9 @@
 
 #include "rrd_is_thread_safe.h"
 
-unsigned long FnvHash(char *str);
+unsigned long FnvHash(const char *str);
 int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
-void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx);
+void parseGENERIC_DS(const char *def,rrd_t *rrd, int ds_idx);
 
 int
 rrd_create(int argc, char **argv) 
@@ -91,9 +91,9 @@ rrd_create(int argc, char **argv)
 
 /* #define DEBUG */
 int
-rrd_create_r(char *filename,
+rrd_create_r(const char *filename,
 	     unsigned long pdp_step, time_t last_up,
-	     int argc, char **argv) 
+	     int argc, const char **argv) 
 {
     rrd_t             rrd;
     long              i;
@@ -439,7 +439,7 @@ rrd_create_r(char *filename,
     return rrd_create_fn(filename, &rrd);
 }
 
-void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx)
+void parseGENERIC_DS(const char *def,rrd_t *rrd, int ds_idx)
 {
     char minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];	
     /*
@@ -547,7 +547,7 @@ create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashe
 /* create and empty rrd file according to the specs given */
 
 int
-rrd_create_fn(char *file_name, rrd_t *rrd)
+rrd_create_fn(const char *file_name, rrd_t *rrd)
 {
     unsigned long    i,ii;
     FILE             *rrd_file;

@@ -53,6 +53,8 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+
+#include "rrd_is_thread_safe.h"
 /*#define DEBUG*/
 
 int
@@ -71,7 +73,7 @@ rrd_fetch(int argc,
 
     long     step_tmp =1;
     time_t   start_tmp=0, end_tmp=0;
-    enum     cf_en cf_idx;
+    const char *cf;
 
     struct rrd_time_value start_tv, end_tv;
     char     *parsetime_error = NULL;
@@ -148,19 +150,39 @@ rrd_fetch(int argc,
 	rrd_set_error("not enough arguments");
 	return -1;
     }
-    
-    if ((int)(cf_idx=cf_conv(argv[optind+1])) == -1 ){
-	return -1;
-    }
 
-    if (rrd_fetch_fn(argv[optind],cf_idx,start,end,step,ds_cnt,ds_namv,data) == -1)
+    cf = argv[optind+1];
+
+    if (rrd_fetch_r(argv[optind],cf,start,end,step,ds_cnt,ds_namv,data) == -1)
 	return(-1);
     return (0);
 }
 
 int
+rrd_fetch_r(
+    const char           *filename,  /* name of the rrd */
+    const char           *cf,        /* which consolidation function ?*/
+    time_t         *start,
+    time_t         *end,       /* which time frame do you want ?
+                                * will be changed to represent reality */
+    unsigned long  *step,      /* which stepsize do you want? 
+                                * will be changed to represent reality */
+    unsigned long  *ds_cnt,    /* number of data sources in file */
+    char           ***ds_namv, /* names of data_sources */
+    rrd_value_t    **data)     /* two dimensional array containing the data */
+{
+    enum     cf_en cf_idx;
+
+    if ((int)(cf_idx=cf_conv(cf)) == -1 ){
+        return -1;
+    }
+
+    return (rrd_fetch_fn(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data));
+}
+
+int
 rrd_fetch_fn(
-    char           *filename,  /* name of the rrd */
+    const char     *filename,  /* name of the rrd */
     enum cf_en     cf_idx,         /* which consolidation function ?*/
     time_t         *start,
     time_t         *end,       /* which time frame do you want ?

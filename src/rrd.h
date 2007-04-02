@@ -79,14 +79,20 @@ int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 char ***, rrd_value_t **);
 
 /* thread-safe (hopefully) */
-int    rrd_create_r(char *filename,
+int    rrd_create_r(const char *filename,
 		    unsigned long pdp_step, time_t last_up,
-		    int argc, char **argv);
+		    int argc, const char **argv);
 /* NOTE: rrd_update_r are only thread-safe if no at-style time
    specifications get used!!! */
 
-int    rrd_update_r(char *filename, char *_template,
-		    int argc, char **argv);
+int    rrd_update_r(const char *filename, const char *_template,
+		    int argc, const char **argv);
+int    rrd_fetch_r(const char *filename, const char* cf,
+                   time_t *start, time_t *end,
+                   unsigned long *step,
+                   unsigned long *ds_cnt,
+                   char        ***ds_namv,
+                   rrd_value_t **data);
 int    rrd_dump_r(const char *filename, char *outname);
 time_t rrd_last_r(const char *filename);
 time_t rrd_first_r(const char *filename, int rraindex);
