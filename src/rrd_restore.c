@@ -64,7 +64,9 @@ int skipxml(char **buf){
 }
 
 int skip(char **buf){
-  char *ptr;  
+  char *ptr;
+  if ((buf == NULL) || (*buf == NULL))
+    return -1;  
   ptr=(*buf);
   do {
     (*buf)=ptr;
@@ -237,7 +239,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       if((rrd->cdp_prep = rrd_realloc(rrd->cdp_prep,
 				  rrd->stat_head->rra_cnt
 				  *rrd->stat_head->ds_cnt*sizeof(cdp_prep_t)))==NULL){
-	  rrd_set_error("allocating cdp_prep"); return -1; }
+         rrd_set_error("allocating cdp_prep"); return -1; }
 
       memset(&(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rrd->stat_head->rra_cnt-1)]), 
 	     0, rrd->stat_head->ds_cnt*sizeof(cdp_prep_t));
@@ -254,7 +256,10 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
          read_tag(&ptr2, "xff","%lf",
             &(rrd->rra_def[rra_index].par[RRA_cdp_xff_val].u_val));
       } else {
-        eat_tag(&ptr2, "params");
+        if (eat_tag(&ptr2, "params") != 1) {
+    	  rrd_set_error("could not find params tag to eat and skip");
+          return -1;
+        }
         skip(&ptr2);
         /* backwards compatibility w/ old patch */
       if (strncmp(ptr2, "<value>",7) == 0) {
