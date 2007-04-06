@@ -620,11 +620,16 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                      (long)(node->size*64),
                                      (long)(100*canvas->zoom),
                                      (long)(100*canvas->zoom));
-            if ( error ) break;
+            if ( error ) {
+                FT_Done_Face(face);
+                break;
+            }
             pen_x = node->x * canvas->zoom;
             pen_y = node->y * canvas->zoom;
 
             string = gfx_string_create (canvas, face, node->text, node->angle, node->tabwidth, node->size);
+            FT_Done_Face(face);
+
             switch(node->halign){
             case GFX_H_RIGHT:  vec.x = -string->bbox.xMax;
                                break;          
