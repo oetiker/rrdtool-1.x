@@ -1367,13 +1367,13 @@ print_calc(image_desc_t *im, char ***prdata)
 	    break;
 	case GF_HRULE:
             if(isnan(im->gdes[i].yrule)) { /* we must set this here or the legend printer can not decide to print the legend */
-               im->gdes[i].yrule=im->gdes[im->gdes[i].vidx].vf.val;
+               im->gdes[i].yrule=im->gdes[vidx].vf.val;
             };
 	    graphelement = 1;
 	    break;
 	case GF_VRULE:
             if(im->gdes[i].xrule == 0) { /* again ... the legend printer needs it*/
-              im->gdes[i].xrule = im->gdes[im->gdes[i].vidx].vf.when;
+              im->gdes[i].xrule = im->gdes[vidx].vf.when;
             };
 	    graphelement = 1;
 	    break;
