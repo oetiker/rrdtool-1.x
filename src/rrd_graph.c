@@ -3572,15 +3572,6 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
 }
 
 int
-rrd_graph_check_vname(image_desc_t *im, char *varname, char *err)
-{
-    if ((im->gdes[im->gdes_c-1].vidx=find_var(im,varname))==-1) {
-	rrd_set_error("Unknown variable '%s' in %s",varname,err);
-	return -1;
-    }
-    return 0;
-}
-int
 rrd_graph_color(image_desc_t *im, char *var, char *err, int optional)
 {
     char *color;
