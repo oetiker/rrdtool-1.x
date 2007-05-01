@@ -135,7 +135,7 @@ info_t *rrd_update_v(int argc, char **argv)
     rc.u_int = 0;
     result = info_push(NULL,sprintf_alloc("return_value"),RD_I_INT,rc);
    	rc.u_int = _rrd_update(argv[optind], tmplt,
-		      argc - optind - 1, argv + optind + 1, result);
+		      argc - optind - 1, (const char **)(argv + optind + 1), result);
     result->value.u_int = rc.u_int;
 end_tag:
     return result;
@@ -181,7 +181,7 @@ rrd_update(int argc, char **argv)
     }
  
    	rc = rrd_update_r(argv[optind], tmplt,
-		      argc - optind - 1, argv + optind + 1);
+		      argc - optind - 1, (const char **)(argv + optind + 1));
     return rc;
 }
 

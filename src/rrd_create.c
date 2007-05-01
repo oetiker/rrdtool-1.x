@@ -84,7 +84,7 @@ rrd_create(int argc, char **argv)
     }
     rc = rrd_create_r(argv[optind],
 		      pdp_step, last_up,
-		      argc - optind - 1, argv + optind + 1);
+		      argc - optind - 1, (const char **)(argv + optind + 1));
     
     return rc;
 }
