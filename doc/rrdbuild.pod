@@ -35,12 +35,12 @@ Once you have decided. Save the two locations into environment variables.
 Depending on the shell you are using, you can do either (bash,zsh):
 
  BUILD_DIR=/tmp/rrdbuild
- INSTALL_DIR=/usr/local/rrdtool-1.2.19
+ INSTALL_DIR=/usr/local/rrdtool-1.2.20
 
 Or if you run tcsh:
 
  set BUILD_DIR=/tmp/rrdbuild
- set INSTALL_DIR=/usr/local/rrdtool-1.2.19
+ set INSTALL_DIR=/usr/local/rrdtool-1.2.20
 
 If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
 a different directory!
@@ -55,9 +55,9 @@ pre-installed. Note that these instructions assume that your copies of
 B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
 could be that they are installed as B<gtar> and B<gmake> on your system.
 
- wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.19.tar.gz
- tar zxf rrdtool-1.2.19.tar.gz
- cd rrdtool-1.2.19
+ wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.20.tar.gz
+ tar zxf rrdtool-1.2.20.tar.gz
+ cd rrdtool-1.2.20
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
@@ -185,7 +185,7 @@ because it seems that a fair number of people have ill configured python and
 tcl setups that would prevent rrdtool from building if they are included in
 their current state.
 
- cd $BUILD_DIR/rrdtool-1.2.19
+ cd $BUILD_DIR/rrdtool-1.2.20
  ./configure --prefix=$INSTALL_DIR --disable-python --disable-tcl
  make clean
  make
