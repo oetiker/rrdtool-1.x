@@ -10,14 +10,15 @@
 
 #define ALTYGRID  	 0x01	/* use alternative y grid algorithm */
 #define ALTAUTOSCALE	 0x02	/* use alternative algorithm to find lower and upper bounds */
-#define ALTAUTOSCALE_MAX 0x04	/* use alternative algorithm to find upper bounds */
-#define NOLEGEND	 0x08	/* use no legend */
-#define NOMINOR          0x10    /* Turn off minor gridlines */
-#define ONLY_GRAPH       0x20   /* use only graph */
-#define FORCE_RULES_LEGEND 0x40	/* force printing of HRULE and VRULE legend */
+#define ALTAUTOSCALE_MIN 0x04	/* use alternative algorithm to find lower bounds */
+#define ALTAUTOSCALE_MAX 0x08	/* use alternative algorithm to find upper bounds */
+#define NOLEGEND	 0x10	/* use no legend */
+#define NOMINOR          0x20    /* Turn off minor gridlines */
+#define ONLY_GRAPH       0x40   /* use only graph */
+#define FORCE_RULES_LEGEND 0x80	/* force printing of HRULE and VRULE legend */
 
-#define FORCE_UNITS 0x80        /* mask for all FORCE_UNITS_* flags */
-#define FORCE_UNITS_SI 0x80     /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
+#define FORCE_UNITS 0x100        /* mask for all FORCE_UNITS_* flags */
+#define FORCE_UNITS_SI 0x100     /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
 	     TMT_WEEK,TMT_MONTH,TMT_YEAR};

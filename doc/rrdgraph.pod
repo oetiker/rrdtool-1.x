@@ -123,6 +123,14 @@ maximum y-axis from the actual minimum and maximum data values. Our example
 would display slightly less than C<260-0.001> to slightly more than
 C<260+0.001> (this feature was contributed by Sasha Mikheev).
 
+[B<-J>|B<--alt-autoscale-min>]
+
+Where C<--alt-autoscale> will modify both the absolute maximum AND minimum
+values, this option will only affect the minimum value. The maximum
+value, if not defined on the command line, will be 0. This option can
+be useful when graphing router traffic when the WAN line uses compression,
+and thus the throughput may be higher than the WAN line speed.
+
 [B<-M>|B<--alt-autoscale-max>]
 
 Where C<--alt-autoscale> will modify both the absolute maximum AND minimum

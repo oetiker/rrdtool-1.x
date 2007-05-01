@@ -399,6 +399,13 @@ expand_range(image_desc_t *im)
               im->minval -= adj;
               im->maxval += adj;
         }
+	else if(im->extra_flags & ALTAUTOSCALE_MIN) {
+	    /* measure the amplitude of the function. Make sure that
+	       graph boundaries are slightly lower than min vals
+	       so we can see amplitude on the graph */
+	      adj = (im->maxval - im->minval) * 0.1;
+	      im->minval -= adj;
+	}
         else if(im->extra_flags & ALTAUTOSCALE_MAX) {
             /* measure the amplitude of the function. Make sure that
                graph boundaries are slightly higher than max vals
@@ -3223,6 +3230,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"no-minor",   no_argument,       0,  'I'},
             {"slope-mode", no_argument,              0,  'E'},
             {"alt-autoscale", no_argument,    0,  'A'},
+	    {"alt-autoscale-min", no_argument, 0, 'J'},
             {"alt-autoscale-max", no_argument, 0, 'M'},
             {"no-gridfit", no_argument,       0,   'N'},
             {"units-exponent",required_argument, 0, 'X'},
@@ -3255,6 +3263,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             break;
         case 'A':
             im->extra_flags |= ALTAUTOSCALE;
+	    break;
+	case 'J':
+	    im->extra_flags |= ALTAUTOSCALE_MIN;
             break;
         case 'M':
             im->extra_flags |= ALTAUTOSCALE_MAX;
