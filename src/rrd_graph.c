@@ -497,7 +497,10 @@ apply_gridfit(image_desc_t *im)
     double new_range = factor * (im->maxval - im->minval);
     double gridstep = im->ygrid_scale.gridstep;
     double minor_y, minor_y_px, minor_y_px_frac;
-    im->maxval = im->minval + new_range;
+    if (im->maxval > 0.0)
+      im->maxval = im->minval + new_range;
+    else
+      im->minval = im->maxval - new_range;
     ytr(im,DNAN); /* reset precalc */
     /* make sure first minor gridline is on integer pixel y coord */
     minor_y = gridstep * floor(im->minval / gridstep);
