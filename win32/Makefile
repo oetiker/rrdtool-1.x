@@ -1,6 +1,9 @@
-# Gnu Makefile for Win32 target * 15-Feb-2007
+# Gnu Makefile for Win32 target
 # for use with MingW32 gcc or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
+#
+# $id: $
+#
 
 DESCR	= Round Robin Database Tool
 COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
@@ -34,8 +37,8 @@ LIBPNG	= $(LIBBASE)/libpng-1.2.16
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.3.1
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.1
+#LIBFT2	= $(LIBBASE)/freetype-2.3.4
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.4
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -72,7 +75,7 @@ CP	= cp -afv
 # Here you can find a native Win32 binary of the original awk:
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
-ZIP	= zip -qzR9
+ZIP	= zip -qzr9
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG

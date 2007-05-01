@@ -1,6 +1,9 @@
-# Gnu Makefile for NetWare target * 15-Feb-2007
+# Gnu Makefile for NetWare target
 # for use with gcc/nlmconv or Metrowerks CodeWarrior compiler
 # use with: make -f Makefile [help|all|clean|dev|devclean|dist|distclean]
+#
+# $id: $
+#
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
 COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
@@ -43,7 +46,7 @@ LIBPNG	= $(LIBBASE)/libpng-1.2.16
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-LIBFT2	= $(LIBBASE)/freetype-2.3.1
+LIBFT2	= $(LIBBASE)/freetype-2.3.4
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -95,7 +98,7 @@ FIXNLMN	= fixnlmname #-q
 # Here you can find a native Win32 binary of the original awk:
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
-ZIP	= zip -qzR9
+ZIP	= zip -qzr9
 MV	= mv -fv
 
 # must be equal to DEBUG or NDEBUG
@@ -124,8 +127,9 @@ ifeq ($(CC),mwccnlm)
 LD	= mwldnlm
 LDFLAGS	= -nostdlib $^ $(PRELUDE) $(LDLIBS) -o $@ -commandfile
 AR	= $(LD)
-ARFLAGS	= -type library -w nocmdline $(OBJS) -o
+ARFLAGS	= -nostdlib -type library -o
 LIBEXT	= lib
+#RANLIB	=
 CFLAGS	+= -gccinc -inline off -opt nointrinsics -proc 586
 CFLAGS	+= -relax_pointers
 #CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
@@ -143,6 +147,7 @@ LDFLAGS	= -T
 AR	= ar
 ARFLAGS	= -cq
 LIBEXT	= a
+RANLIB	= ranlib
 CFLAGS	+= -fno-builtin -fpcc-struct-return -fno-strict-aliasing
 CFLAGS	+= -Wall -Wno-unused # -pedantic
 ifeq ($(LIBARCH),LIBC)
@@ -369,6 +374,9 @@ $(OBJDIR)/librrd.$(LIBEXT): $(OBJS)
 	@echo Creating $@
 	@-$(RM) $@
 	@$(AR) $(ARFLAGS) $@ $^
+ifdef RANLIB
+	@$(RANLIB) $@
+endif
 
 $(OBJDIR)/%.xdc: Makefile
 	@echo Creating $@
