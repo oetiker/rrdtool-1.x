@@ -98,7 +98,7 @@ and not only for this particular one. Look in the documentation that
 came with RRDtool for the location and usage of the list.
 
 I suggest you take a moment to subscribe to the mailing list right now
-by sending an email to E<lt>rrd-users-request@list.ee.ethz.chE<gt> with a
+by sending an email to E<lt>rrd-users-request@lists.oetiker.chE<gt> with a
 subject of "subscribe". If you ever want to leave this list, just write
 an email to the same address but now with a subject of "unsubscribe".
 

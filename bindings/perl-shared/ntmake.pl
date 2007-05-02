@@ -19,7 +19,7 @@ WriteMakefile(
    'LIBS'  => '../../src/release/rrd.lib "/Program Files/GnuWin32/lib/libart_lgpl.lib" "/Program Files/GnuWin32/lib/libz.lib" "/Program Files/GnuWin32/lib/libpng.lib" "/Program Files/GnuWin32/lib/libfreetype.lib"', 
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
     ($] ge '5.005') ? (
-        'AUTHOR' => 'Tobias Oetiker (oetiker@ee.ethz.ch)',
+        'AUTHOR' => 'Tobias Oetiker (tobi@oetiker.ch)',
         'ABSTRACT' => 'Round Robin Database Tool',
     ) : ()
 

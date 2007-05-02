@@ -107,7 +107,7 @@ las listas de correo, no sólo esta. Examina la documentación que vino
 con RRDtool para ver donde está el archivo y como usarlo.
 
 Te sugiero que te tomes un momento y te subscribas a la lista ahora
-mismo, enviando un mensaje a rrd-users-request@list.ee.ethz.ch
+mismo, enviando un mensaje a rrd-users-request@lists.oetiker.ch
 con título C<subscribe>. Si eventualmente deseas salirte de la lista,
 envía otro correo a la misma dirección, con título C<unsubscribe>.
 

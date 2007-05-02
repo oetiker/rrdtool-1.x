@@ -39,7 +39,7 @@ How to make Tobi happy:
 -----------------------
 
 If you want to show your appreciation for RRDtool you could make me happy
-by going to http://people.ee.ethz.ch/oetiker/wish and ordering a CD from
+by going to http://tobi.oetiker.ch/wish and ordering a CD from
 my CD wish list ... 
 
 
@@ -53,7 +53,7 @@ rrd-users       For discussion amongst people who use RRDtool in their applicati
 rrd-developers  For people who actually HACK RRDtool code
 
 To subscribe to <MAILGLIST> send a message with the subject 'subscribe'
-to <MAILGLIST>-request@list.ee.ethz.ch.
+to <MAILGLIST>-request@lists.oetiker.ch
 
 Note, that postings to rrd-announce will always be cross-posted 
 to rrd-users and rrd-developers as well.
@@ -69,7 +69,7 @@ Use GNU   diff --unified --recursive olddir newdir   to build your patches.
 
 The latest Version:
 -------------------
-Is available from http://people.ee.ethz.ch/oetiker/webtools/rrdtool/
+Is available from http://oss.oetiker.ch/rrdtool/
 
 
 Tobias Oetiker <tobi@oetiker.ch>
