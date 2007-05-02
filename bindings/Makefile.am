@@ -20,7 +20,7 @@ install-data-local:
 	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
 	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
-	test -d python/build && cd python && rm -rf build && env LIBDIR=$(libdir) $(PYTHON) setup.py install --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
+	test -d python/build && cd python && env LIBDIR=$(libdir) $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
 
 # rules for buildung the ruby module
 ruby: 
