@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <tcl.h>
 #include "../../src/rrd_tool.h"
-#include "../../rrd_format.h"
+#include "../../src/rrd_format.h"
 
 /* support pre-8.4 tcl */
 
