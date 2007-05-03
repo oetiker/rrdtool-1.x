@@ -1673,8 +1673,8 @@ int draw_horizontal_grid(image_desc_t *im)
     for (i = sgrid; i <= egrid; i++){
        double Y0=ytr(im,im->ygrid_scale.gridstep*i);
        double YN=ytr(im,im->ygrid_scale.gridstep*(i+1));
-       if ( Y0 >= im->yorigin-im->ysize
-                 && Y0 <= im->yorigin){       
+       if ( round(Y0) >= im->yorigin-im->ysize 
+            && round(Y0) <= im->yorigin){       
             /* Make sure at least 2 grid labels are shown, even if it doesn't agree
                with the chosen settings. Add a label if required by settings, or if
                there is only one label so far and the next grid line is out of bounds. */
