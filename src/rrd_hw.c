@@ -474,7 +474,7 @@ erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx)
    {
 #ifdef DEBUG
 	  fprintf(stderr,"erase_violations called for non-FAILURES RRA: %s\n",
-	     rrd -> rra_def[rra_idx].cf);
+	     rrd -> rra_def[rra_idx].cf_nam);
 #endif
 	  return;
    }
