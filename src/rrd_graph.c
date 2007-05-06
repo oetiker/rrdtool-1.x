@@ -1673,8 +1673,8 @@ int draw_horizontal_grid(image_desc_t *im)
     for (i = sgrid; i <= egrid; i++){
        double Y0=ytr(im,im->ygrid_scale.gridstep*i);
        double YN=ytr(im,im->ygrid_scale.gridstep*(i+1));
-       if ( round(Y0) >= im->yorigin-im->ysize 
-            && round(Y0) <= im->yorigin){       
+       if ( floor(Y0+0.5) >= im->yorigin-im->ysize 
+            && floor(Y0+0.5) <= im->yorigin){       
             /* Make sure at least 2 grid labels are shown, even if it doesn't agree
                with the chosen settings. Add a label if required by settings, or if
                there is only one label so far and the next grid line is out of bounds. */
@@ -1837,7 +1837,7 @@ horizontal_log_grid(image_desc_t   *im)
         pre_value = value;
 
         Y0 = ytr(im, value);
-        if(round(Y0) <= im->yorigin - im->ysize) break;
+        if(floor(Y0+0.5) <= im->yorigin - im->ysize) break;
 
         /* major grid line */
         gfx_new_dashed_line ( im->canvas,
@@ -1897,7 +1897,7 @@ horizontal_log_grid(image_desc_t   *im)
                 if(value < im->minval) continue;
 
                 Y0 = ytr(im, value);
-                if(round(Y0) <= im->yorigin - im->ysize) break;
+                if(floor(Y0+0.5) <= im->yorigin - im->ysize) break;
 
                 /* draw lines */
                 gfx_new_dashed_line ( im->canvas,
@@ -1913,7 +1913,7 @@ horizontal_log_grid(image_desc_t   *im)
                 if(value < im->minval) continue;
 
                 Y0 = ytr(im, value);
-                if(round(Y0) <= im->yorigin - im->ysize) break;
+                if(floor(Y0+0.5) <= im->yorigin - im->ysize) break;
 
                 /* draw lines */
                 gfx_new_dashed_line ( im->canvas,
@@ -1954,7 +1954,7 @@ horizontal_log_grid(image_desc_t   *im)
             if(value < im->minval) continue;
 
             Y0 = ytr(im, value);
-            if(round(Y0) <= im->yorigin - im->ysize) break;
+            if(floor(Y0+0.5) <= im->yorigin - im->ysize) break;
 
             /* draw lines */
             gfx_new_dashed_line ( im->canvas,
@@ -1971,7 +1971,7 @@ horizontal_log_grid(image_desc_t   *im)
             if(value < im->minval) continue;
 
             Y0 = ytr(im, value);
-            if(round(Y0) <= im->yorigin - im->ysize) break;
+            if(floor(Y0+0.5) <= im->yorigin - im->ysize) break;
 
             /* draw lines */
             gfx_new_dashed_line ( im->canvas,
