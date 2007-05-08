@@ -23,8 +23,10 @@ install-data-local:
 	test -d python/build && cd python && env LIBDIR=$(libdir) $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
 
 # rules for buildung the ruby module
+# RUBYARCHDIR= is to work around in a makefile quirk not sure 
+# it is is the right thing todo, but it makes rrdtool build on freebsd as well
 ruby: 
-	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS)
+	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) RUBYARCHDIR=
 
 # rules for buildung the pyton module
 python:
