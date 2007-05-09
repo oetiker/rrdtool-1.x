@@ -32,7 +32,8 @@ from distutils.core import setup, Extension
 import sys, os
 
 RRDBASE = os.environ.get('LOCALBASE', '../../src')
-library_dir = os.environ.get('LIBDIR', os.path.join(RRDBASE, 'lib'))
+runtime_library_dir = os.environ.get('RUNTIMELIBDIR')
+library_dir = os.environ.get('BUILDLIBDIR', os.path.join(RRDBASE, 'lib'))
 include_dir = os.environ.get('INCDIR', RRDBASE)
 
 setup(name = "py-rrdtool",
@@ -48,7 +49,7 @@ setup(name = "py-rrdtool",
             "rrdtoolmodule",
             ["rrdtoolmodule.c"],
             libraries=['rrd'],
-            runtime_library_dirs=[library_dir],
+            runtime_library_dirs=[runtime_library_dir],
             library_dirs=[library_dir],
             include_dirs=[include_dir],
           )
