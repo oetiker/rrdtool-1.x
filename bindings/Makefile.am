@@ -20,7 +20,7 @@ install-data-local:
 	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
 	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
-	test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs RUNTIMELIBDIR=$(exec_prefix)/lib $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
+	test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
 
 # rules for buildung the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
@@ -30,7 +30,7 @@ ruby:
 
 # rules for buildung the pyton module
 python:
-	cd python && env BUILDLIBDIR=../../src/.libs RUNTIMELIBDIR=$(exec_prefix)/lib $(PYTHON) setup.py build
+	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(exec_prefix)/lib && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
