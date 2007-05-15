@@ -19,7 +19,7 @@ all-local:  @COMP_PERL@ @COMP_RUBY@ @COMP_PYTHON@
 install-data-local:
 	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
-	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
+	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
 	test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
 
 # rules for buildung the ruby module
@@ -30,7 +30,7 @@ ruby:
 
 # rules for buildung the pyton module
 python:
-	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(exec_prefix)/lib && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
+	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
@@ -43,7 +43,7 @@ perl_shared: perl-shared/Makefile
 	cd perl-shared && $(MAKE)
 
 perl-shared/Makefile: perl-shared/Makefile.PL
-	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(exec_prefix)/lib
+	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir)
 # LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
 clean-local:
