@@ -88,7 +88,7 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
         return (-1);
     }
 
-#ifdef POSIX_FADVISE
+#ifdef HAVE_POSIX_FADVISE
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and diskaccess (and buffer cache).

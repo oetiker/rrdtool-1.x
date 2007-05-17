@@ -690,7 +690,7 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
 	return(-1);
     }
     
-#ifdef POSIX_FADVISE
+#ifdef HAVE_POSIX_FADVISE
     /* this file is not going to be read again any time
        soon, so we drop everything except the header portion from
        the buffer cache. for this to work, we have to fdsync the file

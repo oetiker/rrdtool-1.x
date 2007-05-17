@@ -456,11 +456,11 @@ fprintf(stderr,"partial match, not best\n");
 		fclose(in_file);
 		return(-1);
 	    }
-#ifdef POSIX_FADVISE
+#ifdef HAVE_POSIX_FADVISE
        /* don't pollute the buffer cache with data read from the file. We do this while reading to 
           keep damage minimal */
        if (0 != posix_fadvise(fileno(in_file), rrd_head_size, ftell(in_file), POSIX_FADV_DONTNEED)) {
-           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
            fclose(in_file);
            return(-1);
        } 
@@ -480,10 +480,10 @@ fprintf(stderr,"partial match, not best\n");
 	
     }
     rrd_free(&rrd);
-#ifdef POSIX_FADVISE
+#ifdef HAVE_POSIX_FADVISE
     /* and just to be sure we drop everything except the header at the end */
     if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
-           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
            fclose(in_file);
            return(-1);
     } 
