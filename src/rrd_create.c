@@ -553,7 +553,9 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
     FILE             *rrd_file;
     rrd_value_t      *unknown;
     int	unkn_cnt;
-    
+
+    long rrd_head_size;
+
     if ((rrd_file = fopen(file_name,"wb")) == NULL ) {
 	rrd_set_error("creating '%s': %s",file_name, rrd_strerror(errno));
 	free(rrd->stat_head);
@@ -658,7 +660,8 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
         rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
         fwrite( rrd->rra_ptr, sizeof(rra_ptr_t),1,rrd_file);
     }
-    
+    rrd_head_size = ftell(rrd_file);
+
     /* write the empty data area */
     if ((unknown = (rrd_value_t *)malloc(512 * sizeof(rrd_value_t))) == NULL) {
 	rrd_set_error("allocating unknown");
@@ -687,6 +690,23 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
 	return(-1);
     }
     
+#ifdef POSIX_FADVISE
+    /* this file is not going to be read again any time
+       soon, so we drop everything except the header portion from
+       the buffer cache. for this to work, we have to fdsync the file
+       first though. This will not be all that fast, but 'good' data
+       like other rrdfiles headers will stay in cache. Now this only works if creating
+       a single rrd file is not too large, but I assume this should not be the case
+       in general. Otherwhise we would have to sync and release while writing all
+       the unknown data. */
+    fdatasync(fileno(rrd_file));
+    if (0 != posix_fadvise(fileno(rrd_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+        rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+        fclose(rrd_file);
+        return(-1);
+    }    
+#endif
+
     fclose(rrd_file);    
     rrd_free(rrd);
     return (0);

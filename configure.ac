@@ -56,7 +56,7 @@ AH_BOTTOM([
 /* define strrchr, strchr and memcpy, memmove in terms of bsd funcs
    make sure you are NOT using bcopy, index or rindex in the code */
       
-#if STDC_HEADERS
+#ifdef STDC_HEADERS
 # include <string.h>
 #else
 # ifndef HAVE_STRCHR
@@ -70,30 +70,34 @@ char *strchr (), *strrchr ();
 # endif
 #endif
 
+/* enable posix_fadvise on linux */
+#ifdef HAVE_POSIX_FADVISE
+#define __USE_XOPEN2K 1
+#endif
 
-#if NO_NULL_REALLOC
+#ifdef NO_NULL_REALLOC
 # define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #else
 # define rrd_realloc(a,b) realloc((a), (b))
 #endif      
 
-#if NEED_MALLOC_MALLOC_H
+#ifdef NEED_MALLOC_MALLOC_H
 #  include <malloc/malloc.h>
 #endif
 
-#if HAVE_MATH_H
+#ifdef HAVE_MATH_H
 #  include <math.h>
 #endif
 
-#if HAVE_FLOAT_H
+#ifdef HAVE_FLOAT_H
 #  include <float.h>
 #endif
 
-#if HAVE_IEEEFP_H
+#ifdef HAVE_IEEEFP_H
 #  include <ieeefp.h>
 #endif
 
-#if HAVE_FP_CLASS_H
+#ifdef HAVE_FP_CLASS_H
 #  include <fp_class.h>
 #endif
 
@@ -243,7 +247,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise)
 
 
 if test "x$enable_mmap" = xyes; then

@@ -261,6 +261,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
     int		     version;  /* rrd version */
     char             *endptr; /* used in the conversion */
+
 #ifdef HAVE_MMAP
     void	     *rrd_mmaped_file;
     unsigned long    rrd_filesize;
@@ -280,6 +281,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
     if(rrd_open(filename,&rrd_file,&rrd, RRD_READWRITE)==-1){
 	return -1;
     }
+
     /* initialize time */
     version = atoi(rrd.stat_head->version);
     gettimeofday(&tmp_time, 0);
@@ -1396,6 +1398,19 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	fclose(rrd_file);
 	return(-1);
     }
+#ifdef POSIX_FADVISE
+
+    /* with update we have write ops, so they will probably not be done by now, this means
+       the buffers will not get freed. But calling this for the whole file - header
+       will let the data off the hook as soon as it is written when if it is from a previous
+       update cycle. Calling fdsync to force things is much too hard here. */
+
+    if (0 != posix_fadvise(fileno(in_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
+         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+         fclose(in_file);
+         return(-1);
+    } 
+#endif
 
     /* OK now close the files and free the memory */
     if(fclose(rrd_file) != 0){
@@ -1416,6 +1431,8 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	if (schedule_smooth)
 	{
 	  rrd_file = fopen(filename,"rb+");
+          
+
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
 	  {
@@ -1432,6 +1449,14 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	    rra_start += rrd.rra_def[i].row_cnt
 	      *rrd.stat_head->ds_cnt*sizeof(rrd_value_t);
 	  }
+#ifdef POSIX_FADVISE
+          /* same procedure as above ... */
+          if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+             rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+             fclose(in_file);
+             return(-1);
+          } 
+#endif
 	  fclose(rrd_file);
 	}
     rrd_free(&rrd);

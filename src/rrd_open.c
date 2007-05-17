@@ -87,6 +87,19 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
         rrd_set_error("opening '%s': %s",file_name, rrd_strerror(errno));
         return (-1);
     }
+
+#ifdef POSIX_FADVISE
+    /* In general we need no read-ahead when dealing with rrd_files.
+       When we stop reading, it is highly unlikely that we start up again.
+       In this manner we actually save time and diskaccess (and buffer cache).
+       Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */       
+    if (0 != posix_fadvise(fileno(*in_file), 0, 0, POSIX_FADV_RANDOM)) {
+        rrd_set_error("setting POSIX_FADV_RANDOM on '%s': %s",file_name, rrd_strerror(errno));
+        fclose(*in_file);
+        return(-1);
+     }    
+#endif
+
 /*
         if (rdwr == RRD_READWRITE)
         {
