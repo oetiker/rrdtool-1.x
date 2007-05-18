@@ -427,7 +427,12 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
         fclose(rrd_file);
 	return(-1);
     }
+#ifdef HAVE_MADVISE
+    /* when we use mmaping we tell the kernel the mmap equivalent
+       of POSIX_FADV_RANDOM */
+    madvise(rrd_mmaped_file,rrd_filesize,MADV_RANDOM);
 #endif
+#endif    
     /* loop through the arguments. */
     for(arg_i=0; arg_i<argc;arg_i++) {
 	char *stepper = strdup(argv[arg_i]);
