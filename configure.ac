@@ -72,8 +72,8 @@ char *strchr (), *strrchr ();
 
 /* enable posix_fadvise on linux */
 #if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
-#include <fcntl.h>
 #define __USE_XOPEN2K 1
+#include <fcntl.h>
 #endif
 
 #ifdef NO_NULL_REALLOC

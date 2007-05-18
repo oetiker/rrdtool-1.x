@@ -1195,7 +1195,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		i < rrd.stat_head->rra_cnt;
 	    rra_start += rrd.rra_def[i].row_cnt * rrd.stat_head -> ds_cnt * sizeof(rrd_value_t),
 		i++) {
-		/* is there anything to write for this RRA? If not, continue. */
+		/* is th5Aere anything to write for this RRA? If not, continue. */
         if (rra_step_cnt[i] == 0) continue;
 
 		/* write the first row */
@@ -1398,7 +1398,8 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	fclose(rrd_file);
 	return(-1);
     }
-#ifdef HAVE_POSIX_FADVISE
+    
+#ifdef HAVE_POSIX_FADVISExxx
 
     /* with update we have write ops, so they will probably not be done by now, this means
        the buffers will not get freed. But calling this for the whole file - header
@@ -1449,7 +1450,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	    rra_start += rrd.rra_def[i].row_cnt
 	      *rrd.stat_head->ds_cnt*sizeof(rrd_value_t);
 	  }
-#ifdef HAVE_POSIX_FADVISE
+#ifdef HAVE_POSIX_FADVISExxx
           /* same procedure as above ... */
           if (0 != posix_fadvise(fileno(rrd_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
              rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));

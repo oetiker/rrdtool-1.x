@@ -699,6 +699,7 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
        a single rrd file is not too large, but I assume this should not be the case
        in general. Otherwhise we would have to sync and release while writing all
        the unknown data. */
+    fflush(rrd_file);
     fdatasync(fileno(rrd_file));
     if (0 != posix_fadvise(fileno(rrd_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));

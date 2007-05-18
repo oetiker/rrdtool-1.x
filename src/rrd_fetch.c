@@ -459,7 +459,7 @@ fprintf(stderr,"partial match, not best\n");
 #ifdef HAVE_POSIX_FADVISE
        /* don't pollute the buffer cache with data read from the file. We do this while reading to 
           keep damage minimal */
-       if (0 != posix_fadvise(fileno(in_file), rrd_head_size, ftell(in_file), POSIX_FADV_DONTNEED)) {
+       if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
            rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
            fclose(in_file);
            return(-1);
