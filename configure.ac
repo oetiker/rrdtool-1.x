@@ -72,7 +72,7 @@ char *strchr (), *strrchr ();
 
 /* enable posix_fadvise on linux */
 #if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
-#define __USE_XOPEN2K 1
+#define _XOPEN_SOURCE 600
 #include <fcntl.h>
 #endif
 
