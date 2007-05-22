@@ -386,7 +386,7 @@ AC_LINK_IFELSE(
 )
 AC_LANG_POP(C)
 
-CONFIGURE_PART(Findr 3rd-Party Libraries)
+CONFIGURE_PART(Find 3rd-Party Libraries)
 
 
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
