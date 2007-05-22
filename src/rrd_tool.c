@@ -364,11 +364,8 @@ int main(int argc, char *argv[])
 	  struct rusage  myusage;
 	  struct timeval starttime;
 	  struct timeval currenttime;
-	  struct timezone tz;
 
-	    tz.tz_minuteswest =0;
-	    tz.tz_dsttime=0;
-	    gettimeofday(&starttime,&tz);
+	  gettimeofday(&starttime, NULL);
 #endif
 	  RemoteMode=1;
           if ((argc == 3) && strcmp("",argv[2])){
@@ -426,7 +423,7 @@ int main(int argc, char *argv[])
 
 #if HAVE_GETRUSAGE
  		     getrusage(RUSAGE_SELF,&myusage);
-		     gettimeofday(&currenttime,&tz);
+		     gettimeofday(&currenttime,NULL);
 		     printf("OK u:%1.2f s:%1.2f r:%1.2f\n",
 		       (double)myusage.ru_utime.tv_sec+
 		       (double)myusage.ru_utime.tv_usec/1000000.0,

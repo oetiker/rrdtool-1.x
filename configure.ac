@@ -52,6 +52,11 @@ AH_TOP([
  ])
 
 AH_BOTTOM([
+/* enable posix_fadvise on linux */
+#if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
+#define _XOPEN_SOURCE 600
+#include <fcntl.h>
+#endif
 
 /* define strrchr, strchr and memcpy, memmove in terms of bsd funcs
    make sure you are NOT using bcopy, index or rindex in the code */
@@ -70,17 +75,11 @@ char *strchr (), *strrchr ();
 # endif
 #endif
 
-/* enable posix_fadvise on linux */
-#if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
-#define _XOPEN_SOURCE 600
-#include <fcntl.h>
-#endif
-
 #ifdef NO_NULL_REALLOC
 # define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #else
 # define rrd_realloc(a,b) realloc((a), (b))
-#endif      
+#endif
 
 #ifdef NEED_MALLOC_MALLOC_H
 #  include <malloc/malloc.h>
@@ -223,7 +222,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
+AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -250,6 +249,10 @@ dnl of the form HAVE_FUNCTION
 
 AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise madvise)
 
+AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
+#include <fcntl.h>])
+AC_CHECK_DECLS(madvise, [], [], [#include <sys/mman.h>])
 
 if test "x$enable_mmap" = xyes; then
   case "$host" in
