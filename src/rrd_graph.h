@@ -5,23 +5,26 @@
 #include "rrd_rpncalc.h"
 #include "rrd_gfx.h"
 
-#define MAX_VNAME_LEN 29
-#define DEF_NAM_FMT "%29[-_A-Za-z0-9]"
+#define MAX_VNAME_LEN 255
+#define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
 
-#define ALTYGRID	0x01	/* use alternative y grid algorithm */
-#define ALTAUTOSCALE	0x02	/* use alternative algorithm to find lower and upper bounds */
-#define ALTAUTOSCALE_MAX 0x04	/* use alternative algorithm to find upper bounds */
-#define NOLEGEND	0x08	/* use no legend */
-#define NOMINOR         0x20    /* Turn off minor gridlines */
-#define ONLY_GRAPH      0x24   /* use only graph */
-#define FORCE_RULES_LEGEND	0x40	/* force printing of HRULE and VRULE legend */
+#define ALTYGRID  	 0x01	/* use alternative y grid algorithm */
+#define ALTAUTOSCALE	 0x02	/* use alternative algorithm to find lower and upper bounds */
+#define ALTAUTOSCALE_MIN 0x04	/* use alternative algorithm to find lower bounds */
+#define ALTAUTOSCALE_MAX 0x08	/* use alternative algorithm to find upper bounds */
+#define NOLEGEND	 0x10	/* use no legend */
+#define NOMINOR          0x20    /* Turn off minor gridlines */
+#define ONLY_GRAPH       0x40   /* use only graph */
+#define FORCE_RULES_LEGEND 0x80	/* force printing of HRULE and VRULE legend */
 
+#define FORCE_UNITS 0x100        /* mask for all FORCE_UNITS_* flags */
+#define FORCE_UNITS_SI 0x100     /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
 
 enum tmt_en {TMT_SECOND=0,TMT_MINUTE,TMT_HOUR,TMT_DAY,
 	     TMT_WEEK,TMT_MONTH,TMT_YEAR};
 
 enum grc_en {GRC_CANVAS=0,GRC_BACK,GRC_SHADEA,GRC_SHADEB,
-	     GRC_GRID,GRC_MGRID,GRC_FONT,GRC_ARROW,GRC_AXIS,__GRC_END__};
+	     GRC_GRID,GRC_MGRID,GRC_FONT,GRC_ARROW,GRC_AXIS,GRC_FRAME,__GRC_END__};
 
 #define MGRIDWIDTH 0.6
 #define GRIDWIDTH  0.4
@@ -35,13 +38,16 @@ enum gf_en {GF_PRINT=0,GF_GPRINT,GF_COMMENT,GF_HRULE,GF_VRULE,GF_LINE,
             GF_XPORT};
 
 enum vdef_op_en {
-		 VDEF_MAXIMUM	/* like the MAX in (G)PRINT */
+		 VDEF_MAXIMUM=0	/* like the MAX in (G)PRINT */
 		,VDEF_MINIMUM	/* like the MIN in (G)PRINT */
 		,VDEF_AVERAGE	/* like the AVERAGE in (G)PRINT */
 		,VDEF_PERCENT	/* Nth percentile */
 		,VDEF_TOTAL	/* average multiplied by time */
 		,VDEF_FIRST	/* first non-unknown value and time */
 		,VDEF_LAST	/* last  non-unknown value and time */
+		,VDEF_LSLSLOPE  /* least squares line slope */
+		,VDEF_LSLINT    /* least squares line y_intercept */
+		,VDEF_LSLCORREL /* least squares line correlation coefficient */
 		};
 enum text_prop_en { TEXT_PROP_DEFAULT=0,   /* default settings */
 	            TEXT_PROP_TITLE,       /* properties for the title */
@@ -65,6 +71,7 @@ typedef struct vdef_t {
 
 typedef struct xlab_t {
     long         minsec;       /* minimum sec per pix */
+    long         length;       /* number of secs on the image */
     enum tmt_en  gridtm;       /* grid interval in what ?*/
     long         gridst;       /* how many whats per grid*/
     enum tmt_en  mgridtm;      /* label interval in what ?*/
@@ -112,6 +119,7 @@ typedef  struct graph_desc_t {
     gfx_color_t    col;        /* graph color */
     char  format[FMT_LEG_LEN+5]; /* format for PRINT AND GPRINT */
     char  legend[FMT_LEG_LEN+5]; /* legend*/
+    int            strftm;     /* should the VDEF legend be formated with strftime */
     double         leg_x,leg_y;  /* location of legend */   
     double         yrule;      /* value for y rule line and for VDEF */
     time_t         xrule;      /* time for x rule line and for VDEF */
@@ -125,7 +133,9 @@ typedef  struct graph_desc_t {
 
     /* description of data fetched for the graph element */
     time_t         start,end; /* timestaps for first and last data element */
+    time_t         start_orig,end_orig; /* timestaps for first and last data element */
     unsigned long  step;      /* time between samples */
+    unsigned long  step_orig;      /* time between samples */
     unsigned long  ds_cnt; /* how many data sources are there in the fetch */
     long           data_first; /* first pointer to this data */
     char           **ds_namv; /* name of datasources  in the fetch. */
@@ -146,13 +156,14 @@ typedef struct image_desc_t {
 #endif
     gfx_color_t    graph_col[__GRC_END__]; /* real colors for the graph */   
     text_prop_t    text_prop[TEXT_PROP_LAST]; /* text properties */
-    char           ylegend[200];   /* legend along the yaxis */
-    char           title[200];     /* title for graph */
+    char           ylegend[210];   /* legend along the yaxis */
+    char           title[210];     /* title for graph */
+    char           watermark[110];   /* watermark for graph */
     int            draw_x_grid;      /* no x-grid at all */
     int            draw_y_grid;      /* no x-grid at all */
     double         grid_dash_on, grid_dash_off;
     xlab_t         xlab_user;      /* user defined labeling for xaxis */
-    char           xlab_form[200]; /* format for the label on the xaxis */
+    char           xlab_form[210]; /* format for the label on the xaxis */
 
     double         ygridstep;      /* user defined step for y grid */
     int            ylabfact;       /* every how many y grid shall a label be written ? */
@@ -170,6 +181,7 @@ typedef struct image_desc_t {
     int            lazy;           /* only update the image if there is
 				      reasonable probablility that the
 				      existing one is out of date */
+    int		   slopemode;	   /* connect the dots of the curve directly, not using a stair */
     int            logarithmic;    /* scale the yaxis logarithmic */
     
     /* status information */
@@ -180,9 +192,13 @@ typedef struct image_desc_t {
 #endif
     long           ximg,yimg;      /* total size of the image */
     double         magfact;        /* numerical magnitude*/
-    long         base;            /* 1000 or 1024 depending on what we graph */
+    long         base;             /* 1000 or 1024 depending on what we graph */
     char           symbol;         /* magnitude symbol for y-axis */
-    int            unitsexponent;    /* 10*exponent for units on y-asis */
+    float          viewfactor;     /* how should the numbers on the y-axis be scaled for viewing ? */
+    int            unitsexponent;  /* 10*exponent for units on y-asis */
+    int            unitslength;    /* width of the yaxis labels */
+    int            forceleftspace; /* do not kill the space to the left of the y-axis if there is no grid */
+
     int            extra_flags;    /* flags for boolean options */
     /* data elements */
 
@@ -228,15 +244,14 @@ int graph_paint(image_desc_t *, char ***);
 void pie_part(image_desc_t *, gfx_color_t, double, double, double, double, double);
 #endif
 int gdes_alloc(image_desc_t *);
-int scan_for_col(char *, int, char *);
+int scan_for_col(const char *const , int, char *const);
 int rrd_graph(int, char **, char ***, int *, int *, FILE *, double *, double *);
 void rrd_graph_init(image_desc_t *);
 void rrd_graph_options(int, char **, image_desc_t *);
 void rrd_graph_script(int, char **, image_desc_t *, int);
-int rrd_graph_check_vname(image_desc_t *, char *, char *);
 int rrd_graph_color(image_desc_t *, char *, char *, int);
 int bad_format(char *);
-int vdef_parse(struct graph_desc_t *,char *);
+int vdef_parse(struct graph_desc_t *,const char *const);
 int vdef_calc(image_desc_t *, int);
 int vdef_percent_compar(const void *,const void *);
 int graph_size_location(image_desc_t *, int

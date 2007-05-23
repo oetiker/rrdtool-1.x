@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.0.37  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_xport.c  export RRD data 
  ****************************************************************************/
@@ -9,8 +9,9 @@
 #include "rrd_tool.h"
 #include "rrd_graph.h"
 #include "rrd_xport.h"
+#include "unused.h"
 
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
@@ -30,7 +31,7 @@ int rrd_xport_fn(image_desc_t *,
 
 
 int 
-rrd_xport(int argc, char **argv, int *xsize,
+rrd_xport(int argc, char **argv, int UNUSED(*xsize),
 	  time_t         *start,
 	  time_t         *end,        /* which time frame do you want ?
 				       * will be changed to represent reality */
@@ -46,6 +47,7 @@ rrd_xport(int argc, char **argv, int *xsize,
     time_t	   start_tmp=0,end_tmp=0;
     struct rrd_time_value start_tv, end_tv;
     char           *parsetime_error = NULL;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     rrd_graph_init(&im);
 
@@ -59,6 +61,7 @@ rrd_xport(int argc, char **argv, int *xsize,
 	    {"end",        required_argument, 0,  'e'},
 	    {"maxrows",    required_argument, 0,  'm'},
 	    {"step",       required_argument, 0,   261},
+	    {"enumds",     no_argument,       0,   262}, /* these are handled in the frontend ... */
 	    {0,0,0,0}
 	};
 	int option_index = 0;
@@ -73,6 +76,8 @@ rrd_xport(int argc, char **argv, int *xsize,
 	switch(opt) {
 	case 261:
 	    im.step =  atoi(optarg);
+	    break;
+	case 262:
 	    break;
 	case 's':
 	    if ((parsetime_error = parsetime(optarg, &start_tv))) {
@@ -94,7 +99,7 @@ rrd_xport(int argc, char **argv, int *xsize,
 	    }
 	    break;
 	case '?':
-	    rrd_set_error("unknown option '%c'", optopt);
+            rrd_set_error("unknown option '%s'",argv[optind-1]);
             return -1;
 	}
     }

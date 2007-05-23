@@ -1,72 +1,62 @@
 RRDTOOL NEWS
 ============
+Major Changes between 1.0.x and 1.2.x
 
-In this file I am noting the major changes to RRDtool
-for details check the cvs ChangeLog
+Graphing
+--------
 
-2004/01/20 Tobi Oetiker <tobi@oetiker.ch>
-  Ripped out all foreign libraries and adapted
-  Configure and Makefiles and accordingly.
-
-2002/03/26 Peter Speck <speck@ruc.dk>
-  Contribution of an svg output routine for the new gfx graphing part
-
-2002/03/23 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
-  Several visible changes made to rrd_graph
-  * Pie chart support workable
-  * Elements that are not used do not take up space on the img
-  * Hack for the missing rotated text (see --vertical-label)
-  * Tiny boxes in front of labels now scale with the text
-
-2002/01/15 Tobias Oetiker <tobi@oetiker.ch>
-  The BIG graph update
-  * Replace libgd with libart
-  * Added freetype
-  * Updated zlib and libpng
-  * rrd_gfx.c intrduced as libart wrapper
-  * LINE takes now a float as argument
-  * RRDtool uses truetype for fonts
-  * thanks to libart there is now full alpha transparenc
-    and antialiasing.
-  * the new option --font lets customize the font
-    and size for various graph elements
-  * Updated to -> libtool 1.4.2 automake 2.12 autoconf 2.52
-  * new --zoom commandline option for zoom ans shrinking
-  ---- Still missing is rotatet text for the yaxis description
-  ---- Still missing is tab support in the text rendere
-  ---- Still missing is autoconf support for a default truetype font
-
-2001/07/26 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
-  Added TOTAL to the VDEF functions.
-
-2001/07/19 Alex van den Bogaerdt <alex@ergens.op.Het.Net>
-  VDEF support.  This is a variable containing one value
-  and a time component.  This type of variable can hold
-  the result of a function over a complete time series
-  of data (DEF or CDEF) such as the maximum seen, and when.
-
-2001/03/10 Jake Brutlag <jakeb@corp.webtv.net>
-  Support for COMPUTE data sources (CDEF data sources). Removes the RPN
-  parser and calculator from rrd_graph and puts then in a new file,
-  rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
-  clean-up of aberrant behavior stuff, including a bug fix. 
-  Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
-  
-2001/03/07 Tobias Oetiker <oetiker@ee.ethz.ch> 
-  Integrated complete rewrite
-  of rrdgraph documentation by Alex van den Bogaerdt
-  <alex@ergens.op.Het.Net>. This also contains info on his planned
-  changes to the rrdgraph module
-
-2001/03/02 Tobias Oetiker <oetiker@ee.ethz.ch>
-  Added Aberrant Patch from Jake Brutlag <jakeb@microsoft.com>
-  From now one, new rrd files use version tag 0002. They can
-  NOT be read by the old 1.0.x RRDtools. 
+* rewritten graphics generation based on libart.
+  - anti-aliased output
+  - alpha transparency support
+  - truetype fonts
  
-  Jake:
-  Aberrant Behavior Detection support. A brief overview added to
-  rrdtool.pod.  Major updates to rrd_update.c, rrd_create.c. Minor update to
-  other core files.  Updated documentation: rrdcreate.pod, rrdgraph.pod,
-  rrdtune.pod.  This is backwards compatible (i.e. new tool can read and will
-  leave the binary header unchanged for old files).
-  See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
+* additional graphics formats: EPS, PDF, SVG
+
+* extended multi-part documentation
+
+* VDEF support; define and use variables.  Find, and use, the
+  maximum rate seen by rrdtool; compute and show the average
+
+* Sliding window (trend) analysis
+  Compute a smoother average, for instance over the last 6 CDPs
+
+* percentile (95th or other)
+  Remove peaks, 95 percent of all rates are at or below the
+  returned value
+
+Logging
+-------
+* a second logging interface: rrdtool updatev
+  Verbose updating of the database; show CPDs being created
+
+* Aberrant Behavior Detection with Holt-Winters Forecasting
+  Compare current data with expected data, detect and log when
+  the rates are outside expected levels
+
+* COMPUTE data type for artificial data-sources calculating their
+  input using RPN math and data from the other data-sources.
+ 
+Incompatibilities
+-----------------
+* Colons in COMMENT arguments to rrdtool graph must be escaped with a backslash
+
+* the --alt-y-mrtg option is gone or rather since 1.2.7 it is back but
+  without functionality.
+
+* In pipe mode, rrdtool answers with OK only if it was successful with the
+  command. Otherwhise the answer will be ERROR...
+
+
+Behind the Scenes
+-----------------
+* In order to support Holt-Winters and Calculated Datasources,
+  the rrdtool data format has changed. While the new version of rrdtool can
+  read files created with rrdtool 1.0.x. It is not possible to read files
+  created by rrdtool-1.2.x with rrdtool-1.0.x
+
+* External libraries are not included with rrdtool anymore. This is in line
+  with todays trend of using shared libraries everywhere. With the exception
+  of the cgi library most things required by rrdtool will be found on every recent
+  system.
+
+* Memory Mapped IO support for faster logging.

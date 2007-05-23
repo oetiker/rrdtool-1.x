@@ -1,98 +1,19 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
  * $Id$
- * $Log$
- * Revision 1.17  2004/05/26 22:11:12  oetiker
- * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
- *
- * Revision 1.16  2004/05/25 20:52:16  oetiker
- * fix spelling and syntax, especially in messages that are printed -- Mike Slifcak
- *
- * Revision 1.15  2004/05/25 20:51:49  oetiker
- * Update displayed copyright messages to be consistent. -- Mike Slifcak
- *
- * Revision 1.14  2003/11/11 19:46:21  oetiker
- * replaced time_value with rrd_time_value as MacOS X introduced a struct of that name in their standard headers
- *
- * Revision 1.13  2003/11/11 19:38:03  oetiker
- * rrd files should NOT change size ever ... bulk update code wa buggy.
- * -- David M. Grimes <dgrimes@navisite.com>
- *
- * Revision 1.12  2003/09/04 13:16:12  oetiker
- * should not assigne but compare ... grrrrr
- *
- * Revision 1.11  2003/09/02 21:58:35  oetiker
- * be pickier about what we accept in rrd_update. Complain if things do not work out
- *
- * Revision 1.10  2003/04/29 19:14:12  jake
- * Change updatev RRA return from index_number to cf_nam, pdp_cnt.
- * Also revert accidental addition of -I to aclocal MakeMakefile.
- *
- * Revision 1.9  2003/04/25 18:35:08  jake
- * Alternate update interface, updatev. Returns info about CDPs written to disk as result of update. Output format is similar to rrd_info, a hash of key-values.
- *
- * Revision 1.8  2003/03/31 21:22:12  oetiker
- * enables RRDtool updates with microsecond or in case of windows millisecond
- * precision. This is needed to reduce time measurement error when archive step
- * is small. (<30s) --  Sasha Mikheev <sasha@avalon-net.co.il>
- *
- * Revision 1.7  2003/02/13 07:05:27  oetiker
- * Find attached the patch I promised to send to you. Please note that there
- * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
- * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
- * library is identical to librrd, but it contains support code for per-thread
- * global variables currently used for error information only. This is similar
- * to how errno per-thread variables are implemented.  librrd_th must be linked
- * alongside of libpthred
- *
- * There is also a new file "THREADS", holding some documentation.
- *
- * -- Peter Stamfest <peter@stamfest.at>
- *
- * Revision 1.6  2002/02/01 20:34:49  oetiker
- * fixed version number and date/time
- *
- * Revision 1.5  2001/05/09 05:31:01  oetiker
- * Bug fix: when update of multiple PDP/CDP RRAs coincided
- * with interpolation of multiple PDPs an incorrect value was
- * stored as the CDP. Especially evident for GAUGE data sources.
- * Minor changes to rrdcreate.pod. -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.4  2001/03/10 23:54:41  oetiker
- * Support for COMPUTE data sources (CDEF data sources). Removes the RPN
- * parser and calculator from rrd_graph and puts then in a new file,
- * rrd_rpncalc.c. Changes to core files rrd_create and rrd_update. Some
- * clean-up of aberrant behavior stuff, including a bug fix.
- * Documentation update (rrdcreate.pod, rrdupdate.pod). Change xml format.
- * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.3  2001/03/04 13:01:55  oetiker
- * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
- * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
- * This is backwards compatible! But new files using the Aberrant stuff are not readable
- * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
- * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.2  2001/03/04 11:14:25  oetiker
- * added at-style-time@value:value syntax to rrd_update
- * --  Dave Bodenstab <imdave@mcs.net>
- *
- * Revision 1.1.1.1  2001/02/25 22:25:06  oetiker
- * checkin
- *
  *****************************************************************************/
 
 #include "rrd_tool.h"
 #include <sys/types.h>
 #include <fcntl.h>
 #ifdef HAVE_MMAP
- #include <sys/mman.h>
+# include <sys/mman.h>
 #endif
 
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
  #include <sys/locking.h>
  #include <sys/stat.h>
  #include <io.h>
@@ -102,32 +23,37 @@
 #include "rrd_rpncalc.h"
 
 #include "rrd_is_thread_safe.h"
+#include "unused.h"
 
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 /*
  * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
  * replacement.
  */
 #include <sys/timeb.h>
 
+#ifndef __MINGW32__
 struct timeval {
 	time_t tv_sec; /* seconds */
 	long tv_usec;  /* microseconds */
 };
+#endif
 
 struct __timezone {
 	int  tz_minuteswest; /* minutes W of Greenwich */
 	int  tz_dsttime;     /* type of dst correction */
 };
 
-static gettimeofday(struct timeval *t, struct __timezone *tz) {
-	
-	struct timeb current_time;
+static int gettimeofday(struct timeval *t, struct __timezone *tz) {
+
+	struct _timeb current_time;
 
 	_ftime(&current_time);
-	
+
 	t->tv_sec  = current_time.time;
 	t->tv_usec = current_time.millitm * 1000;
+
+	return 0;
 }
 
 #endif
@@ -148,7 +74,12 @@ int LockRRD(FILE *rrd_file);
 #ifdef HAVE_MMAP
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
-					unsigned short CDP_scratch_idx, FILE *rrd_file,
+					unsigned short CDP_scratch_idx,
+#ifndef DEBUG
+FILE UNUSED(*rrd_file),
+#else
+FILE *rrd_file,
+#endif
 					info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file);
 #else
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
@@ -156,38 +87,20 @@ info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx,
 					unsigned short CDP_scratch_idx, FILE *rrd_file,
 					info_t *pcdp_summary, time_t *rra_time);
 #endif
-int rrd_update_r(char *filename, char *template, int argc, char **argv);
-int _rrd_update(char *filename, char *template, int argc, char **argv, 
+int rrd_update_r(const char *filename, const char *tmplt, int argc, const char **argv);
+int _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv, 
 					info_t*);
 
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
 
 
-#ifdef STANDALONE
-int 
-main(int argc, char **argv){
-        rrd_update(argc,argv);
-        if (rrd_test_error()) {
-                printf("RRDtool 1.1.x  Copyright (C) 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n\n"
-                        "Usage: rrdupdate filename\n"
-                        "\t\t\t[--template|-t ds-name:ds-name:...]\n"
-                        "\t\t\ttime|N:value[:value...]\n\n"
-                        "\t\t\tat-time@value[:value...]\n\n"
-                        "\t\t\t[ time:value[:value...] ..]\n\n");
-                                   
-                printf("ERROR: %s\n",rrd_get_error());
-                rrd_clear_error();                                                            
-                return 1;
-        }
-        return 0;
-}
-#endif
-
 info_t *rrd_update_v(int argc, char **argv)
 {
-    char             *template = NULL;          
+    char             *tmplt = NULL;          
 	info_t *result = NULL;
 	infoval rc;
+      rc.u_int = -1;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
 		static struct option long_options[] =
@@ -205,12 +118,11 @@ info_t *rrd_update_v(int argc, char **argv)
 		
 		switch(opt) {
 		case 't':
-			template = optarg;
+			tmplt = optarg;
 			break;
 		
 		case '?':
 			rrd_set_error("unknown option '%s'",argv[optind-1]);
-            rc.u_int = -1;
 			goto end_tag;
 		}
     }
@@ -218,12 +130,12 @@ info_t *rrd_update_v(int argc, char **argv)
     /* need at least 2 arguments: filename, data. */
     if (argc-optind < 2) {
 		rrd_set_error("Not enough arguments");
-        rc.u_int = -1;
 		goto end_tag;
     }
+    rc.u_int = 0;
     result = info_push(NULL,sprintf_alloc("return_value"),RD_I_INT,rc);
-   	rc.u_int = _rrd_update(argv[optind], template,
-		      argc - optind - 1, argv + optind + 1, result);
+   	rc.u_int = _rrd_update(argv[optind], tmplt,
+		      argc - optind - 1, (const char **)(argv + optind + 1), result);
     result->value.u_int = rc.u_int;
 end_tag:
     return result;
@@ -232,8 +144,9 @@ end_tag:
 int
 rrd_update(int argc, char **argv)
 {
-    char             *template = NULL;          
+    char             *tmplt = NULL;          
     int rc;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1) {
 		static struct option long_options[] =
@@ -251,7 +164,7 @@ rrd_update(int argc, char **argv)
 		
 		switch(opt) {
 		case 't':
-			template = optarg;
+			tmplt = optarg;
 			break;
 		
 		case '?':
@@ -267,19 +180,19 @@ rrd_update(int argc, char **argv)
 		return -1;
     }
  
-   	rc = rrd_update_r(argv[optind], template,
-		      argc - optind - 1, argv + optind + 1);
+   	rc = rrd_update_r(argv[optind], tmplt,
+		      argc - optind - 1, (const char **)(argv + optind + 1));
     return rc;
 }
 
 int
-rrd_update_r(char *filename, char *template, int argc, char **argv)
+rrd_update_r(const char *filename, const char *tmplt, int argc, const char **argv)
 {
-   return _rrd_update(filename, template, argc, argv, NULL);
+   return _rrd_update(filename, tmplt, argc, argv, NULL);
 }
 
 int
-_rrd_update(char *filename, char *template, int argc, char **argv, 
+_rrd_update(const char *filename, const char *tmplt, int argc, const char **argv, 
    info_t *pcdp_summary)
 {
 
@@ -298,7 +211,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 					  * spot in the rrd file. */
     unsigned long    rra_pos_tmp;        /* temporary byte pointer. */
     double           interval,
-	pre_int,post_int;                /* interval between this and
+                     pre_int,post_int;   /* interval between this and
 					  * the last run */
     unsigned long    proc_pdp_st;        /* which pdp_st was the last
 					  * to be processed */
@@ -318,14 +231,14 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 					  * cdp values */
 
     long             *tmpl_idx;          /* index representing the settings
-					    transported by the template index */
+					    transported by the tmplt index */
     unsigned long    tmpl_cnt = 2;       /* time and data */
 
     FILE             *rrd_file;
     rrd_t            rrd;
-    time_t           current_time;
-	time_t           rra_time; /* time of update for a RRA */
-    unsigned long    current_time_usec;  /* microseconds part of current time */
+    time_t           current_time = 0;
+    time_t           rra_time = 0;  	 /* time of update for a RRA */
+    unsigned long    current_time_usec=0;/* microseconds part of current time */
     struct timeval   tmp_time;           /* used for time conversion */
 
     char             **updvals;
@@ -348,10 +261,12 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
     int		     version;  /* rrd version */
     char             *endptr; /* used in the conversion */
+
 #ifdef HAVE_MMAP
     void	     *rrd_mmaped_file;
     unsigned long    rrd_filesize;
 #endif
+
 
     rpnstack_init(&rpnstack);
 
@@ -366,6 +281,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
     if(rrd_open(filename,&rrd_file,&rrd, RRD_READWRITE)==-1){
 	return -1;
     }
+
     /* initialize time */
     version = atoi(rrd.stat_head->version);
     gettimeofday(&tmp_time, 0);
@@ -432,7 +348,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         fclose(rrd_file);
 	return(-1);
     }
-    /* initialize template redirector */
+    /* initialize tmplt redirector */
     /* default config example (assume DS 1 is a CDEF DS)
        tmpl_idx[0] -> 0; (time)
        tmpl_idx[1] -> 1; (DS 0)
@@ -446,17 +362,19 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	}
     tmpl_cnt= ii;
 
-    if (template) {
+    if (tmplt) {
+    	/* we should work on a writeable copy here */
 	char *dsname;
 	unsigned int tmpl_len;
-	dsname = template;
+    	char *tmplt_copy = strdup(tmplt);
+	dsname = tmplt_copy;
 	tmpl_cnt = 1; /* the first entry is the time */
-	tmpl_len = strlen(template);
+	tmpl_len = strlen(tmplt_copy);
 	for(i=0;i<=tmpl_len ;i++) {
-	    if (template[i] == ':' || template[i] == '\0') {
-		template[i] = '\0';
+	    if (tmplt_copy[i] == ':' || tmplt_copy[i] == '\0') {
+		tmplt_copy[i] = '\0';
 		if (tmpl_cnt>rrd.stat_head->ds_cnt){
-  		    rrd_set_error("Template contains more DS definitions than RRD");
+  		    rrd_set_error("tmplt contains more DS definitions than RRD");
 		    free(updvals); free(pdp_temp);
 		    free(tmpl_idx); rrd_free(&rrd);
 		    fclose(rrd_file); return(-1);
@@ -464,21 +382,23 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		if ((tmpl_idx[tmpl_cnt++] = ds_match(&rrd,dsname)) == -1){
   		    rrd_set_error("unknown DS name '%s'",dsname);
 		    free(updvals); free(pdp_temp);
+		    free(tmplt_copy);
 		    free(tmpl_idx); rrd_free(&rrd);
 		    fclose(rrd_file); return(-1);
 		} else {
 		  /* the first element is always the time */
 		  tmpl_idx[tmpl_cnt-1]++; 
-		  /* go to the next entry on the template */
-		  dsname = &template[i+1];
+		  /* go to the next entry on the tmplt_copy */
+		  dsname = &tmplt_copy[i+1];
                   /* fix the damage we did before */
                   if (i<tmpl_len) {
-                     template[i]=':';
+                     tmplt_copy[i]=':';
                   } 
 
 		}
 	    }	    
 	}
+	free(tmplt_copy);
     }
     if ((pdp_new = malloc(sizeof(rrd_value_t)
 			  *rrd.stat_head->ds_cnt))==NULL){
@@ -507,10 +427,15 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         fclose(rrd_file);
 	return(-1);
     }
+#ifdef HAVE_MADVISE
+    /* when we use mmaping we tell the kernel the mmap equivalent
+       of POSIX_FADV_RANDOM */
+    madvise(rrd_mmaped_file,rrd_filesize,POSIX_MADV_RANDOM);
+#endif
 #endif
     /* loop through the arguments. */
     for(arg_i=0; arg_i<argc;arg_i++) {
-	char *stepper = malloc((strlen(argv[arg_i])+1)*sizeof(char));
+	char *stepper = strdup(argv[arg_i]);
         char *step_start = stepper;
 	char *p;
 	char *parsetime_error = NULL;
@@ -518,6 +443,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	struct rrd_time_value ds_tv;
         if (stepper == NULL){
                 rrd_set_error("failed duplication argv entry");
+		free(step_start);
                 free(updvals);
                 free(pdp_temp);  
                 free(tmpl_idx);
@@ -531,7 +457,6 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	/* initialize all ds input to unknown except the first one
            which has always got to be set */
 	for(ii=1;ii<=rrd.stat_head->ds_cnt;ii++) updvals[ii] = "U";
-	strcpy(stepper,argv[arg_i]);
 	updvals[0]=stepper;
 	/* separate all ds elements; first must be examined separately
 	   due to alternate time syntax */
@@ -544,7 +469,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    *p = '\0';
 	    stepper = p+1;
 	} else {
-	    rrd_set_error("expected timestamp not found in data source from %s:...",
+	    rrd_set_error("expected timestamp not found in data source from %s",
 			  argv[arg_i]);
 	    free(step_start);
 	    break;
@@ -563,7 +488,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	}
 
 	if (ii != tmpl_cnt-1) {
-	    rrd_set_error("expected %lu data source readings (got %lu) from %s:...",
+	    rrd_set_error("expected %lu data source readings (got %lu) from %s",
 			  tmpl_cnt-1, ii, argv[arg_i]);
 	    free(step_start);
 	    break;
@@ -597,13 +522,15 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    double tmp;
 	    tmp = strtod(updvals[0], 0);
 	    current_time = floor(tmp);
-	    current_time_usec = (long)((tmp - current_time) * 1000000L);
+	    current_time_usec = (long)((tmp-(double)current_time) * 1000000.0);
 	}
 	/* dont do any correction for old version RRDs */
 	if(version < 3) 
 	    current_time_usec = 0;
 	
-	if(current_time <= rrd.live_head->last_up){
+	if(current_time < rrd.live_head->last_up || 
+	  (current_time == rrd.live_head->last_up && 
+	   (long)current_time_usec <= (long)rrd.live_head->last_up_usec)) {
 	    rrd_set_error("illegal attempt to update using time %ld when "
 			  "last update time is %ld (minimum one second step)",
 			  current_time, rrd.live_head->last_up);
@@ -632,12 +559,14 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	/* when did the last pdp_st occur */
 	occu_pdp_age = current_time % rrd.stat_head->pdp_step;
 	occu_pdp_st = current_time - occu_pdp_age;
+
 	/* interval = current_time - rrd.live_head->last_up; */
-	interval    = current_time + ((double)current_time_usec - (double)rrd.live_head->last_up_usec)/1000000.0 - rrd.live_head->last_up;
-    
+	interval    = (double)(current_time - rrd.live_head->last_up) 
+	            + (double)((long)current_time_usec - (long)rrd.live_head->last_up_usec)/1000000.0;
+
 	if (occu_pdp_st > proc_pdp_st){
 	    /* OK we passed the pdp_st moment*/
-	    pre_int =  occu_pdp_st - rrd.live_head->last_up; /* how much of the input data
+	    pre_int =  (long)occu_pdp_st - rrd.live_head->last_up; /* how much of the input data
 							      * occurred before the latest
 							      * pdp_st moment*/
 	    pre_int -= ((double)rrd.live_head->last_up_usec)/1000000.0; /* adjust usecs */
@@ -666,15 +595,23 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	for(i=0;i<rrd.stat_head->ds_cnt;i++){
 	    enum dst_en dst_idx;
 	    dst_idx= dst_conv(rrd.ds_def[i].dst);
-		/* NOTE: DST_CDEF should never enter this if block, because
-		 * updvals[i+1][0] is initialized to 'U'; unless the caller
-		 * accidently specified a value for the DST_CDEF. To handle 
-		 * this case, an extra check is required. */
+
+            /* make sure we do not build diffs with old last_ds values */
+	    if(rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt < interval) {
+		strncpy(rrd.pdp_prep[i].last_ds,"U",LAST_DS_LEN-1);
+		rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
+	    }
+
+  	    /* NOTE: DST_CDEF should never enter this if block, because
+             * updvals[i+1][0] is initialized to 'U'; unless the caller
+	     * accidently specified a value for the DST_CDEF. To handle 
+	      * this case, an extra check is required. */
+
 	    if((updvals[i+1][0] != 'U') &&
 		   (dst_idx != DST_CDEF) &&
 	       rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
 	       double rate = DNAN;
-	       /* the data source type defines how to process the data */
+     	       /* the data source type defines how to process the data */
 		/* pdp_new contains rate * time ... eg the bytes
 		 * transferred during the interval. Doing it this way saves
 		 * a lot of math operations */
@@ -685,7 +622,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		case DST_DERIVE:
 		    if(rrd.pdp_prep[i].last_ds[0] != 'U'){
                       for(ii=0;updvals[i+1][ii] != '\0';ii++){
-                            if(updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9' || (ii==0 && updvals[i+1][ii] == '-')){
+                            if((updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9') && (ii != 0 && updvals[i+1][ii] != '-')){
                                  rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
                                  break;
                             }
@@ -758,6 +695,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		/* no news is news all the same */
 		pdp_new[i] = DNAN;
 	    }
+
 	    
 	    /* make a copy of the command line argument for the next run */
 #ifdef DEBUG
@@ -770,11 +708,8 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		    rrd.pdp_prep[i].last_ds,
 		    updvals[i+1], pdp_new[i]);
 #endif
-	    if(dst_idx == DST_COUNTER || dst_idx == DST_DERIVE){
-		strncpy(rrd.pdp_prep[i].last_ds,
-			updvals[i+1],LAST_DS_LEN-1);
-		rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
-	    }
+	    strncpy(rrd.pdp_prep[i].last_ds, updvals[i+1],LAST_DS_LEN-1);
+	    rrd.pdp_prep[i].last_ds[LAST_DS_LEN-1]='\0';
 	}
 	/* break out of the argument parsing loop if the error_string is set */
 	if (rrd_test_error()){
@@ -787,10 +722,18 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    /* no we have not passed a pdp_st moment. therefore update is simple */
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
-		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += interval;
-		else
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i];
+		if(isnan(pdp_new[i])) {		   
+	            /* this is not realy accurate if we use subsecond data arival time
+		       should have thought of it when going subsecond resolution ...
+                       sorry next format change we will have it! */
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval);	         
+		} else {
+		     if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
+		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= pdp_new[i];
+		     } else {
+		        rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i];
+		     }
+		}
 #ifdef DEBUG
 		fprintf(stderr,
 			"NO PDP  ds[%lu]\t"
@@ -810,24 +753,38 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    pdp_temp[] will contain the rate for cdp */
 
 	    for(i=0;i<rrd.stat_head->ds_cnt;i++){
-		/* update pdp_prep to the current pdp_st */
+		/* update pdp_prep to the current pdp_st. */
+                double pre_unknown = 0.0;		
 		if(isnan(pdp_new[i]))
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += pre_int;
-		else
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val += 
-			pdp_new[i]/(double)interval*(double)pre_int;
+                    /* a final bit of unkonwn to be added bevore calculation
+		     * we use a tempaorary variable for this so that we 
+		     * don't have to turn integer lines before using the value */		 
+		    pre_unknown = pre_int;
+		else {
+  	             if (isnan( rrd.pdp_prep[i].scratch[PDP_val].u_val )){
+		     	rrd.pdp_prep[i].scratch[PDP_val].u_val= 	pdp_new[i]/interval*pre_int;
+		     } else {
+		        rrd.pdp_prep[i].scratch[PDP_val].u_val+= pdp_new[i]/interval*pre_int;
+		     }
+		 }
+		
 
 		/* if too much of the pdp_prep is unknown we dump it */
-		if ((rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
-		     > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) ||
+		if ( 
+		    /* removed because this does not agree with the definition
+		       a heart beat can be unknown */
+		    /* (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
+		     > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) || */
+		    /* if the interval is larger thatn mrhb we get NAN */
+	            (interval > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) ||
 		    (occu_pdp_st-proc_pdp_st <= 
 		     rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt)) {
 		    pdp_temp[i] = DNAN;
 		} else {
 		    pdp_temp[i] = rrd.pdp_prep[i].scratch[PDP_val].u_val
-			/ (double)( occu_pdp_st
-				   - proc_pdp_st
-				   - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+			/ ((double)(occu_pdp_st - proc_pdp_st
+                                    - rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt)
+                            -pre_unknown);
 		}
 
 		/* process CDEF data sources; remember each CDEF DS can
@@ -852,12 +809,15 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
         
 		/* make pdp_prep ready for the next run */
 		if(isnan(pdp_new[i])){
-		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = post_int;
-		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 0.0;
+	            /* this is not realy accurate if we use subsecond data arival time
+		       should have thought of it when going subsecond resolution ...
+                       sorry next format change we will have it! */
+		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int);
+		    rrd.pdp_prep[i].scratch[PDP_val].u_val = DNAN;
 		} else {
 		    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt = 0;
 		    rrd.pdp_prep[i].scratch[PDP_val].u_val = 
-			pdp_new[i]/(double)interval*(double)post_int;
+			pdp_new[i]/interval*post_int;
 		}
 
 #ifdef DEBUG
@@ -1240,7 +1200,7 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 		i < rrd.stat_head->rra_cnt;
 	    rra_start += rrd.rra_def[i].row_cnt * rrd.stat_head -> ds_cnt * sizeof(rrd_value_t),
 		i++) {
-		/* is there anything to write for this RRA? If not, continue. */
+		/* is th5Aere anything to write for this RRA? If not, continue. */
         if (rra_step_cnt[i] == 0) continue;
 
 		/* write the first row */
@@ -1443,6 +1403,20 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	fclose(rrd_file);
 	return(-1);
     }
+    
+#ifdef HAVE_POSIX_FADVISExxx
+
+    /* with update we have write ops, so they will probably not be done by now, this means
+       the buffers will not get freed. But calling this for the whole file - header
+       will let the data off the hook as soon as it is written when if it is from a previous
+       update cycle. Calling fdsync to force things is much too hard here. */
+
+    if (0 != posix_fadvise(fileno(rrd_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
+         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
+         fclose(rrd_file);
+         return(-1);
+    } 
+#endif
 
     /* OK now close the files and free the memory */
     if(fclose(rrd_file) != 0){
@@ -1462,11 +1436,9 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	 * critical except during the burning cycles. */
 	if (schedule_smooth)
 	{
-#ifndef WIN32
-	  rrd_file = fopen(filename,"r+");
-#else
 	  rrd_file = fopen(filename,"rb+");
-#endif
+          
+
 	  rra_start = rra_begin;
 	  for (i = 0; i < rrd.stat_head -> rra_cnt; ++i)
 	  {
@@ -1483,6 +1455,14 @@ _rrd_update(char *filename, char *template, int argc, char **argv,
 	    rra_start += rrd.rra_def[i].row_cnt
 	      *rrd.stat_head->ds_cnt*sizeof(rrd_value_t);
 	  }
+#ifdef HAVE_POSIX_FADVISExxx
+          /* same procedure as above ... */
+          if (0 != posix_fadvise(fileno(rrd_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
+             rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
+             fclose(rrd_file);
+             return(-1);
+          } 
+#endif
 	  fclose(rrd_file);
 	}
     rrd_free(&rrd);
@@ -1508,15 +1488,7 @@ LockRRD(FILE *rrdfile)
     rrd_fd = fileno(rrdfile);
 
 	{
-#ifndef WIN32    
-    struct flock	lock;
-    lock.l_type = F_WRLCK;    /* exclusive write lock */
-    lock.l_len = 0;	      /* whole file */
-    lock.l_start = 0;	      /* start of file */
-    lock.l_whence = SEEK_SET;   /* end of file */
-
-    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
-#else
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     struct _stat st;
 
     if ( _fstat( rrd_fd, &st ) == 0 ) {
@@ -1524,6 +1496,14 @@ LockRRD(FILE *rrdfile)
     } else {
 	    rcstat = -1;
     }
+#else
+    struct flock	lock;
+    lock.l_type = F_WRLCK;    /* exclusive write lock */
+    lock.l_len = 0;	      /* whole file */
+    lock.l_start = 0;	      /* start of file */
+    lock.l_whence = SEEK_SET;   /* end of file */
+
+    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
 #endif
 	}
 
@@ -1534,7 +1514,12 @@ LockRRD(FILE *rrdfile)
 #ifdef HAVE_MMAP
 info_t
 *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-	       unsigned short CDP_scratch_idx, FILE *rrd_file,
+	       unsigned short CDP_scratch_idx, 
+#ifndef DEBUG
+FILE UNUSED(*rrd_file),
+#else
+FILE *rrd_file,
+#endif
 		   info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file)
 #else
 info_t

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_fetch.c  read date from an rrd to use for further processing
  *****************************************************************************
@@ -53,6 +53,8 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+
+#include "rrd_is_thread_safe.h"
 /*#define DEBUG*/
 
 int
@@ -71,10 +73,11 @@ rrd_fetch(int argc,
 
     long     step_tmp =1;
     time_t   start_tmp=0, end_tmp=0;
-    enum     cf_en cf_idx;
+    const char *cf;
 
     struct rrd_time_value start_tv, end_tv;
     char     *parsetime_error = NULL;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     /* init start and end time */
     parsetime("end-24h", &start_tv);
@@ -147,19 +150,39 @@ rrd_fetch(int argc,
 	rrd_set_error("not enough arguments");
 	return -1;
     }
-    
-    if ((int)(cf_idx=cf_conv(argv[optind+1])) == -1 ){
-	return -1;
-    }
 
-    if (rrd_fetch_fn(argv[optind],cf_idx,start,end,step,ds_cnt,ds_namv,data) == -1)
+    cf = argv[optind+1];
+
+    if (rrd_fetch_r(argv[optind],cf,start,end,step,ds_cnt,ds_namv,data) == -1)
 	return(-1);
     return (0);
 }
 
 int
+rrd_fetch_r(
+    const char           *filename,  /* name of the rrd */
+    const char           *cf,        /* which consolidation function ?*/
+    time_t         *start,
+    time_t         *end,       /* which time frame do you want ?
+                                * will be changed to represent reality */
+    unsigned long  *step,      /* which stepsize do you want? 
+                                * will be changed to represent reality */
+    unsigned long  *ds_cnt,    /* number of data sources in file */
+    char           ***ds_namv, /* names of data_sources */
+    rrd_value_t    **data)     /* two dimensional array containing the data */
+{
+    enum     cf_en cf_idx;
+
+    if ((int)(cf_idx=cf_conv(cf)) == -1 ){
+        return -1;
+    }
+
+    return (rrd_fetch_fn(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data));
+}
+
+int
 rrd_fetch_fn(
-    char           *filename,  /* name of the rrd */
+    const char     *filename,  /* name of the rrd */
     enum cf_en     cf_idx,         /* which consolidation function ?*/
     time_t         *start,
     time_t         *end,       /* which time frame do you want ?
@@ -174,23 +197,26 @@ rrd_fetch_fn(
     FILE           *in_file;
     time_t         cal_start,cal_end, rra_start_time,rra_end_time;
     long  best_full_rra=0, best_part_rra=0, chosen_rra=0, rra_pointer=0;
-    long  best_step_diff=0, tmp_step_diff=0, tmp_match=0, best_match=0;
+    long  best_full_step_diff=0, best_part_step_diff=0, tmp_step_diff=0, tmp_match=0, best_match=0;
     long  full_match, rra_base;
     long           start_offset, end_offset;
     int            first_full = 1;
     int            first_part = 1;
     rrd_t     rrd;
     rrd_value_t    *data_ptr;
-    unsigned long  rows = (*end - *start) / *step;
+    unsigned long  rows;
+    long  rrd_head_size;
 
 #ifdef DEBUG
 fprintf(stderr,"Entered rrd_fetch_fn() searching for the best match\n");
-fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu rows  %lu\n",
-						*start,*end,*step,rows);
+fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu\n",
+						*start,*end,*step);
 #endif
 
     if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
 	return(-1);
+
+    rrd_head_size = ftell(in_file);
     
     /* when was the really last update of this file ? */
 
@@ -238,9 +264,9 @@ fprintf(stderr,"Considering: start %10lu end %10lu step %5lu ",
 	    /* best full match */
 	    if(cal_end >= *end 
 	       && cal_start <= *start){
-		if (first_full || (tmp_step_diff < best_step_diff)){
+		if (first_full || (tmp_step_diff < best_full_step_diff)){
 		    first_full=0;
-		    best_step_diff = tmp_step_diff;
+		    best_full_step_diff = tmp_step_diff;
 		    best_full_rra=i;
 #ifdef DEBUG
 fprintf(stderr,"best full match so far\n");
@@ -261,13 +287,13 @@ fprintf(stderr,"full match, not best\n");
 		if (first_part ||
                     (best_match < tmp_match) ||
                     (best_match == tmp_match && 
-                     tmp_step_diff < best_step_diff)){ 
+                     tmp_step_diff < best_part_step_diff)){ 
 #ifdef DEBUG
 fprintf(stderr,"best partial so far\n");
 #endif
 		    first_part=0;
 		    best_match = tmp_match;
-		    best_step_diff = tmp_step_diff;
+		    best_part_step_diff = tmp_step_diff;
 		    best_part_rra =i;
 		} else {
 #ifdef DEBUG
@@ -293,8 +319,8 @@ fprintf(stderr,"partial match, not best\n");
     /* set the wish parameters to their real values */
     *step = rrd.stat_head->pdp_step * rrd.rra_def[chosen_rra].pdp_cnt;
     *start -= (*start % *step);
-    if (*end % *step) *end += (*step - *end % *step);
-    rows = (*end - *start) / *step;
+    *end += (*step - *end % *step);
+    rows = (*end - *start) / *step + 1;
 
 #ifdef DEBUG
     fprintf(stderr,"We found:    start %10lu end %10lu step %5lu rows  %lu\n",
@@ -430,6 +456,16 @@ fprintf(stderr,"partial match, not best\n");
 		fclose(in_file);
 		return(-1);
 	    }
+#ifdef HAVE_POSIX_FADVISE
+       /* don't pollute the buffer cache with data read from the file. We do this while reading to 
+          keep damage minimal */
+       if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
+           fclose(in_file);
+           return(-1);
+       } 
+#endif
+
 #ifdef DEBUG
 	    fprintf(stderr,"post fetch %li -- ",i);
 	    for(ii=0;ii<*ds_cnt;ii++)
@@ -444,6 +480,14 @@ fprintf(stderr,"partial match, not best\n");
 	
     }
     rrd_free(&rrd);
+#ifdef HAVE_POSIX_FADVISE
+    /* and just to be sure we drop everything except the header at the end */
+    if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
+           fclose(in_file);
+           return(-1);
+    } 
+#endif	    
     fclose(in_file);
     return(0);
 }

@@ -2,8 +2,6 @@
 
 rpntutorial - Reading RRDtool RPN Expressions by Steve Rader
 
-=for html <div align="right"><a href="rpntutorial.pdf">PDF</a> version.</div>
-
 =head1 DESCRIPTION
 
 This tutorial should help you get to grips with RRDtool RPN expressions
@@ -15,18 +13,18 @@ The LT, LE, GT, GE and EQ RPN logic operators are not as tricky as
 they appear.  These operators act on the two values on the stack
 preceding them (to the left).  Read these two values on the stack
 from left to right inserting the operator in the middle.  If the
-resulting statement is true, the replace the three values from the
+resulting statement is true, then replace the three values from the
 stack with "1".  If the statement if false, replace the three values
 with "0".
 
-For example think about "2,1,GT".  This RPN expression could be
+For example, think about "2,1,GT".  This RPN expression could be
 read as "is two greater than one?"  The answer to that question is
 "true".  So the three values should be replaced with "1".  Thus the
 RPN expression 2,1,GT evaluates to 1.
 
-Now also consider "2,1,LE".  This RPN expression could be read as "is
+Now consider "2,1,LE".  This RPN expression could be read as "is
 two less than or equal to one?".   The natural response is "no"
-and thus the RPN expression 2,1,LE evaluates to 0. 
+and thus the RPN expression 2,1,LE evaluates to 0.
 
 =head1 Reading the IF Operator
 
@@ -58,14 +56,14 @@ GT, GE and EQ operators.
 While compound expressions can look overly complex, they can be
 considered elegantly simple.  To quickly comprehend RPN expressions,
 you must know the the algorithm for evaluating RPN expressions:
-iterate searches from the left to the right looking for an operator,
-when it's found, apply that operator by popping the operator and some
+iterate searches from the left to the right looking for an operator.
+When it's found, apply that operator by popping the operator and some
 number of values (and by definition, not operators) off the stack.
 
 For example, the stack "1,2,3,+,+" gets "2,3,+" evaluated (as "2+3")
-during the first iteration which is replaced by 5.  This results in
+during the first iteration and is replaced by 5.  This results in
 the stack "1,5,+".  Finally, "1,5,+" is evaluated resulting in the
-answer 6.  For convenience sake, it's useful to write this set of
+answer 6.  For convenience, it's useful to write this set of
 operations as:
 
  1) 1,2,3,+,+    eval is 2,3,+ = 5    result is 1,5,+
@@ -78,7 +76,7 @@ with multiple logic operators:
  1) 20,10,GT,10,20,IF  eval is 20,10,GT = 1     result is 1,10,20,IF
 
 read the eval as pop "20 is greater than 10" so push 1
- 
+
  2) 1,10,20,IF         eval is 1,10,20,IF = 10  result is 10
 
 read pop "if 1 then 10 else 20" so push 10.  Only 10 is left so
@@ -93,23 +91,23 @@ multiplication operator:
  4) 0,7000,1024,IF                                      result is 1024
 
 
-Now let's go back to the first example of multiple logic operators
+Now let's go back to the first example of multiple logic operators,
 but replace the value 20 with the variable "input":
 
- 1) input,10,GT,10,input,IF  eval is input,10,GT  result is A
+ 1) input,10,GT,10,input,IF  eval is input,10,GT  ( lets call this A )
 
 Read eval as "if input > 10 then true" and replace "input,10,GT"
-with "A:
-  
+with "A":
+
  2) A,10,input,IF            eval is A,10,input,IF
 
-read "if A then 10 else input".  Now replace A it's verbose
-description and--voila!--you have a easily readable description
+read "if A then 10 else input".  Now replace A with it's verbose
+description againg and--voila!--you have a easily readable description
 of the expression:
 
  if input > 10 then 10 else input
 
-Lastly, let's to back the first most complex example and replace
+Finally, let's go back to the first most complex example and replace
 the value 128 with "input":
 
  1) input,8,*,7000,GT,7000,input,8,*,IF  eval input,8,*     result is A
@@ -141,7 +139,7 @@ traditional notation.  Explain why they have different answers.
 Answer 1:
 
     3*2+1 = 7 and 3*(2+1) = 9.  These expressions have
-    different answers because the altering of the plus and 
+    different answers because the altering of the plus and
     times operators alter the order of their evaluation.
 
 
@@ -155,8 +153,8 @@ by removing the redundant use of "input,8,*" like so:
 
  input,56000,GT,56000,input,IF,8,*
 
-Use tradition notation to show these expressions are not the same.
-Write an expression that's equivalent to the first expression but
+Use traditional notation to show these expressions are not the same.
+Write an expression that's equivalent to the first expression, but
 uses the LE and DIV operators.
 
 Answer 2:
@@ -183,7 +181,7 @@ Answer 3:
 
 Exercise 4:
 
-Explain why it is desirable for the RRDtool developers to implement
+Explain why it was desirable for the RRDtool developers to implement
 RPN notation instead of traditional mathematical notation.
 
 Answer 4:

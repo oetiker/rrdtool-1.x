@@ -8,6 +8,7 @@ use RRDs;
 my $start=time;
 my $rrd="randome.rrd";
 my $name = $0;
+$name =~ s/.*\///g;
 $name =~ s/\.pl.*//g;
 
 RRDs::create ($rrd, "--start",$start-1, "--step",300,
@@ -116,7 +117,7 @@ RRDs::graph "$name-sample.png",
 ;
 
 if ($ERROR = RRDs::error) {
-  print "ERROR: $ERROR\n";
+  die "ERROR: $ERROR\n";
 };
 
 print "This script has created $name.png in the current directory\n";

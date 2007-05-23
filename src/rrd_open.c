@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_open.c  Open an RRD File
  *****************************************************************************
@@ -78,83 +78,99 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
     
     rrd_init(rrd);
     if (rdwr == RRD_READONLY) {
-#ifndef WIN32
-	mode = "r";
-#else
-	mode = "rb";
-#endif
+        mode = "rb";
     } else {
-#ifndef WIN32
-	mode = "r+";
-#else
-	mode = "rb+";
-#endif
+        mode = "rb+";
     }
     
     if (((*in_file) = fopen(file_name,mode)) == NULL ){
-	rrd_set_error("opening '%s': %s",file_name, rrd_strerror(errno));
-	return (-1);
+        rrd_set_error("opening '%s': %s",file_name, rrd_strerror(errno));
+        return (-1);
     }
+
+#ifdef HAVE_POSIX_FADVISE
+    /* In general we need no read-ahead when dealing with rrd_files.
+       When we stop reading, it is highly unlikely that we start up again.
+       In this manner we actually save time and diskaccess (and buffer cache).
+       Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */       
+    if (0 != posix_fadvise(fileno(*in_file), 0, 0, POSIX_FADV_RANDOM)) {
+        rrd_set_error("setting POSIX_FADV_RANDOM on '%s': %s",file_name, rrd_strerror(errno));
+        fclose(*in_file);
+        return(-1);
+     }    
+#endif
+
 /*
-	if (rdwr == RRD_READWRITE)
-	{
-	   if (setvbuf((*in_file),NULL,_IONBF,2)) {
-		  rrd_set_error("failed to disable the stream buffer\n");
-		  return (-1);
-	   }
-	}
+        if (rdwr == RRD_READWRITE)
+        {
+           if (setvbuf((*in_file),NULL,_IONBF,2)) {
+                  rrd_set_error("failed to disable the stream buffer\n");
+                  return (-1);
+           }
+        }
 */
     
 #define MYFREAD(MYVAR,MYVART,MYCNT) \
     if ((MYVAR = malloc(sizeof(MYVART) * MYCNT)) == NULL) {\
-	rrd_set_error("" #MYVAR " malloc"); \
+        rrd_set_error("" #MYVAR " malloc"); \
         fclose(*in_file); \
-    return (-1); } \
+        return (-1); } \
     fread(MYVAR,sizeof(MYVART),MYCNT, *in_file); 
 
 
     MYFREAD(rrd->stat_head, stat_head_t,  1)
+    /* lets see if the first read worked */
+    if (ferror( *in_file ) || feof(*in_file)) {
+        rrd_set_error("reading the cookie off %s faild",file_name);
+        fclose(*in_file);
+        return(-1);
+    }        
+
+        /* lets do some test if we are on track ... */
+        if (strncmp(rrd->stat_head->cookie,RRD_COOKIE,4) != 0){
+            rrd_set_error("'%s' is not an RRD file",file_name);
+            free(rrd->stat_head);
+            rrd->stat_head = NULL; 
+            fclose(*in_file);
+            return(-1);}
+
+        if (rrd->stat_head->float_cookie != FLOAT_COOKIE){
+            rrd_set_error("This RRD was created on other architecture");
+            free(rrd->stat_head);
+            rrd->stat_head = NULL; 
+            fclose(*in_file);
+            return(-1);}
+
     version = atoi(rrd->stat_head->version);
 
-	/* lets do some test if we are on track ... */
-	if (strncmp(rrd->stat_head->cookie,RRD_COOKIE,4) != 0){
-	    rrd_set_error("'%s' is not an RRD file",file_name);
-	    free(rrd->stat_head);
-	    fclose(*in_file);
-	    return(-1);}
-
         if (version > atoi(RRD_VERSION)){
-	    rrd_set_error("can't handle RRD file version %s",
-			rrd->stat_head->version);
-	    free(rrd->stat_head);
-	    fclose(*in_file);
-	    return(-1);}
+            rrd_set_error("can't handle RRD file version %s",
+                        rrd->stat_head->version);
+            free(rrd->stat_head);
+            rrd->stat_head = NULL; 
+            fclose(*in_file);
+            return(-1);}
 
-	if (rrd->stat_head->float_cookie != FLOAT_COOKIE){
-	    rrd_set_error("This RRD was created on other architecture");
-	    free(rrd->stat_head);
-	    fclose(*in_file);
-	    return(-1);}
 
     MYFREAD(rrd->ds_def,    ds_def_t,     rrd->stat_head->ds_cnt)
     MYFREAD(rrd->rra_def,   rra_def_t,    rrd->stat_head->rra_cnt)
     /* handle different format for the live_head */
     if(version < 3) {
-	    rrd->live_head = (live_head_t *)malloc(sizeof(live_head_t));
-	    if(rrd->live_head == NULL) {
-		rrd_set_error("live_head_t malloc");
-		fclose(*in_file); 
-		return (-1);
-	    }
-		fread(&rrd->live_head->last_up, sizeof(long), 1, *in_file); 
-		rrd->live_head->last_up_usec = 0;
+            rrd->live_head = (live_head_t *)malloc(sizeof(live_head_t));
+            if(rrd->live_head == NULL) {
+                rrd_set_error("live_head_t malloc");
+                fclose(*in_file); 
+                return (-1);
+            }
+                fread(&rrd->live_head->last_up, sizeof(long), 1, *in_file); 
+                rrd->live_head->last_up_usec = 0;
     }
     else {
-	    MYFREAD(rrd->live_head, live_head_t, 1)
+            MYFREAD(rrd->live_head, live_head_t, 1)
     }
     MYFREAD(rrd->pdp_prep,  pdp_prep_t,   rrd->stat_head->ds_cnt)
     MYFREAD(rrd->cdp_prep,  cdp_prep_t,   (rrd->stat_head->rra_cnt
-	                                     * rrd->stat_head->ds_cnt))
+                                             * rrd->stat_head->ds_cnt))
     MYFREAD(rrd->rra_ptr,   rra_ptr_t,    rrd->stat_head->rra_cnt)
 #undef MYFREAD
 
@@ -201,8 +217,8 @@ int readfile(const char *file_name, char **buffer, int skipfirst){
     if ((strcmp("-",file_name) == 0)) { input = stdin; }
     else {
       if ((input = fopen(file_name,"rb")) == NULL ){
-	rrd_set_error("opening '%s': %s",file_name,rrd_strerror(errno));
-	return (-1);
+        rrd_set_error("opening '%s': %s",file_name,rrd_strerror(errno));
+        return (-1);
       }
     }
     if (skipfirst){
@@ -213,21 +229,21 @@ int readfile(const char *file_name, char **buffer, int skipfirst){
       /* have extra space for detecting EOF without realloc */
       totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
       if (totalcnt < MEMBLK)
-	totalcnt = MEMBLK; /* sanitize */
+        totalcnt = MEMBLK; /* sanitize */
       fseek(input, offset * sizeof(char), SEEK_SET);
     }
     if (((*buffer) = (char *) malloc((totalcnt+4) * sizeof(char))) == NULL) {
-	perror("Allocate Buffer:");
-	exit(1);
+        perror("Allocate Buffer:");
+        exit(1);
     };
     do{
       writecnt += fread((*buffer)+writecnt, 1, (totalcnt - writecnt) * sizeof(char),input);
       if (writecnt >= totalcnt){
-	totalcnt += MEMBLK;
-	if (((*buffer)=rrd_realloc((*buffer), (totalcnt+4) * sizeof(char)))==NULL){
-	    perror("Realloc Buffer:");
-	    exit(1);
-	};
+        totalcnt += MEMBLK;
+        if (((*buffer)=rrd_realloc((*buffer), (totalcnt+4) * sizeof(char)))==NULL){
+            perror("Realloc Buffer:");
+            exit(1);
+        };
       }
     } while (! feof(input));
     (*buffer)[writecnt] = '\0';

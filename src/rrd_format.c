@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1999
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_format.c  RRD Database Format helper functions
  *****************************************************************************
@@ -65,7 +65,7 @@ enum dst_en dst_conv(char *string)
 }
 
 
-enum cf_en cf_conv(char *string)
+enum cf_en cf_conv(const char *string)
 {
 
     converter(AVERAGE,CF_AVERAGE)

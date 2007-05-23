@@ -3,6 +3,9 @@
 # Run this script after the first cvs checkout to build
 # makefiles and friends
 
+PATH="/usr/sepp/bin:$PATH"
+export PATH
+
 vcheck (){
   perl <<PERL
 @t = split /\./, "$1";
@@ -29,7 +32,10 @@ then
     ERROR=1
   else
     automake=automake-1.9
-    aclocal="aclocal-1.9  --acdir=/usr/share/aclocal-1.9 -I /usr/share/aclocal/"
+    aclocal="aclocal-1.9"
+    for d in /usr/pack/automake-1.9.5-to/share/aclocal-1.9 /usr/share/aclocal-1.9; do
+      [ -d $d ] && aclocal="$aclocal -I $d"
+    done
   fi
 else
     automake="automake"
@@ -50,17 +56,15 @@ fi
 
 # cleanup
 set -x
-find . -name Makefile | xargs rm -f _UNKNONW_
-find . -name "*.la" | xargs rm -f
+find . -name Makefile | grep -v win32 | grep -v netware | xargs rm -f _UNKNONW_
+find . -name "*.la" | xargs rm -f _UNKNOWN_
 find . -name Makefile.in | xargs rm -f _UNKNONW_
 find . -name .libs | xargs rm -r 
 find . -name .debs | xargs rm -r
 
 $aclocal
 libtoolize --copy --force
-autoheader --warnings=all --force  
+autoheader --force  
 $aclocal
-$automake --foreign --add-missing --force-missing --copy --warnings=all
-autoconf --warnings=all --force
-# one again to make every body happy
-autoreconf
+$automake --foreign --add-missing --force-missing --copy 
+autoconf --force

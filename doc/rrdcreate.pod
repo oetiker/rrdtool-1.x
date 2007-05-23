@@ -1,23 +1,20 @@
 =head1 NAME
 
-rrdtool create - Set up a new Round Robin Database
-
-=for html <div align="right"><a href="rrdcreate.pdf">PDF</a> version.</div>
+rrdcreate - Set up a new Round Robin Database
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<create> I<filename> 
-S<[B<--start>|B<-b> I<start time>]> 
-S<[B<--step>|B<-s> I<step>]> 
+B<rrdtool> B<create> I<filename>
+S<[B<--start>|B<-b> I<start time>]>
+S<[B<--step>|B<-s> I<step>]>
 S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
 =head1 DESCRIPTION
 
-The create function of the RRDtool lets you set up new
-Round Robin Database (B<RRD>) files. 
-The file is created at its final, full size and filled
-with I<*UNKNOWN*> data.
+The create function of RRDtool lets you set up new Round Robin
+Database (B<RRD>) files.  The file is created at its final, full size
+and filled with I<*UNKNOWN*> data.
 
 =over 8
 
@@ -34,7 +31,7 @@ value should be added to the B<RRD>. B<RRDtool> will not accept
 any data timed before or at the time specified.
 
 See also AT-STYLE TIME SPECIFICATION section in the
-I<rrdfetch> documentation for more ways to specify time.
+I<rrdfetch> documentation for other ways to specify time.
 
 =item B<--step>|B<-s> I<step> (default: 300 seconds)
 
@@ -43,17 +40,17 @@ into the B<RRD>.
 
 =item B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
 
-A single B<RRD> can accept input from several data sources (B<DS>).
-(e.g. Incoming and Outgoing traffic on a specific communication
-line). With the B<DS> configuration option you must define some basic
-properties of each data source you want to use to feed the B<RRD>.
+A single B<RRD> can accept input from several data sources (B<DS>),
+for example incoming and outgoing traffic on a specific communication
+line. With the B<DS> configuration option you must define some basic
+properties of each data source you want to store in the B<RRD>.
 
 I<ds-name> is the name you will use to reference this particular data
 source from an B<RRD>. A I<ds-name> must be 1 to 19 characters long in
 the characters [a-zA-Z0-9_].
 
 I<DST> defines the Data Source Type. The remaining arguments of a
-data source entry depend upon the data source type. For GAUGE, COUNTER,
+data source entry depend on the data source type. For GAUGE, COUNTER,
 DERIVE, and ABSOLUTE the format for a data source entry is:
 
 B<DS:>I<ds-name>B<:>I<GAUGE | COUNTER | DERIVE | ABSOLUTE>B<:>I<heartbeat>B<:>I<min>B<:>I<max>
@@ -62,24 +59,26 @@ For COMPUTE data sources, the format is:
 
 B<DS:>I<ds-name>B<:>I<COMPUTE>B<:>I<rpn-expression>
 
-To decide on a data source type, review the definitions that follow. 
-Consult the section on "HOW TO MEASURE" for further insight.
+In order to decide which data source type to use, review the
+definitions that follow. Also consult the section on "HOW TO MEASURE"
+for further insight.
 
 =over 4
 
-=item B<GAUGE> 
+=item B<GAUGE>
 
-is for things like temperatures or number of people in a
-room or value of a RedHat share.
+is for things like temperatures or number of people in a room or the
+value of a RedHat share.
 
 =item B<COUNTER>
 
-is for continuous incrementing counters like the
-ifInOctets counter in a router. The B<COUNTER> data source assumes that
-the counter never decreases, except when a counter overflows.  The update
-function takes the overflow into account.  The counter is stored as a
-per-second rate. When the counter overflows, RRDtool checks if the overflow happened at
-the 32bit or 64bit border and acts accordingly by adding an appropriate value to the result.
+is for continuous incrementing counters like the ifInOctets counter in
+a router. The B<COUNTER> data source assumes that the counter never
+decreases, except when a counter overflows.  The update function takes
+the overflow into account.  The counter is stored as a per-second
+rate. When the counter overflows, RRDtool checks if the overflow
+happened at the 32bit or 64bit border and acts accordingly by adding
+an appropriate value to the result.
 
 =item B<DERIVE>
 
@@ -113,72 +112,77 @@ wrap.
 
 =back
 
-=item B<ABSOLUTE> 
+=item B<ABSOLUTE>
 
 is for counters which get reset upon reading. This is used for fast counters
 which tend to overflow. So instead of reading them normally you reset them
-after every read to make sure you have a maximal time available before the
+after every read to make sure you have a maximum time available before the
 next overflow. Another usage is for things you count like number of messages
 since the last update.
 
 =item B<COMPUTE>
 
-is for storing the result of a formula applied to other data sources in
-the B<RRD>. This data source is not supplied a value on update, but rather
-its Primary Data Points (PDPs) are computed from the PDPs of the data sources
-according to the rpn-expression that defines the formula. Consolidation 
-functions are then applied normally to the PDPs of the COMPUTE data source
-(that is the rpn-expression is only applied to generate PDPs). In database
-software, these are referred to as "virtual" or "computed" columns.
+is for storing the result of a formula applied to other data sources
+in the B<RRD>. This data source is not supplied a value on update, but
+rather its Primary Data Points (PDPs) are computed from the PDPs of
+the data sources according to the rpn-expression that defines the
+formula. Consolidation functions are then applied normally to the PDPs
+of the COMPUTE data source (that is the rpn-expression is only applied
+to generate PDPs). In database software, such data sets are referred
+to as "virtual" or "computed" columns.
 
 =back
 
 I<heartbeat> defines the maximum number of seconds that may pass
-between two updates of this data source before the value of the 
+between two updates of this data source before the value of the
 data source is assumed to be I<*UNKNOWN*>.
 
-I<min> and I<max> are optional entries defining the expected range of
-the data supplied by this data source. If I<min> and/or I<max> are
-defined, any value outside the defined range will be regarded as
-I<*UNKNOWN*>. If you do not know or care about min and max, set them
-to U for unknown. Note that min and max always refer to the processed values
-of the DS. For a traffic-B<COUNTER> type DS this would be the max and min
-data-rate expected from the device.
+I<min> and I<max> define the expected range values for data supplied by a
+data source. If I<min> and/or I<max> any value outside the defined range
+will be regarded as I<*UNKNOWN*>. If you do not know or care about min and
+max, set them to U for unknown. Note that min and max always refer to the
+processed values of the DS. For a traffic-B<COUNTER> type DS this would be
+the maximum and minimum data-rate expected from the device.
 
 I<If information on minimal/maximal expected values is available,
 always set the min and/or max properties. This will help RRDtool in
 doing a simple sanity check on the data supplied when running update.>
 
-I<rpn-expression> defines the formula used to compute the PDPs of a COMPUTE
-data source from other data sources in the same <RRD>. It is similar to defining
-a B<CDEF> argument for the graph command. Please refer to that manual page
-for a list and description of RPN operations supported. For
-COMPUTE data sources, the following RPN operations are not supported: COUNT, PREV,
-TIME, and LTIME. In addition, in defining the RPN expression, the COMPUTE
-data source may only refer to the names of data source listed previously
-in the create command. This is similar to the restriction that B<CDEF>s must
-refer only to B<DEF>s and B<CDEF>s previously defined in the same graph command.
+I<rpn-expression> defines the formula used to compute the PDPs of a
+COMPUTE data source from other data sources in the same <RRD>. It is
+similar to defining a B<CDEF> argument for the graph command. Please
+refer to that manual page for a list and description of RPN operations
+supported. For COMPUTE data sources, the following RPN operations are
+not supported: COUNT, PREV, TIME, and LTIME. In addition, in defining
+the RPN expression, the COMPUTE data source may only refer to the
+names of data source listed previously in the create command. This is
+similar to the restriction that B<CDEF>s must refer only to B<DEF>s
+and B<CDEF>s previously defined in the same graph command.
 
 =item B<RRA:>I<CF>B<:>I<cf arguments>
 
 
 The purpose of an B<RRD> is to store data in the round robin archives
-(B<RRA>). An archive consists of a number of data values or statistics for 
+(B<RRA>). An archive consists of a number of data values or statistics for
 each of the defined data-sources (B<DS>) and is defined with an B<RRA> line.
 
-When data is entered into an B<RRD>, it is first fit into time slots of
-the length defined with the B<-s> option becoming a I<primary data point>.
+When data is entered into an B<RRD>, it is first fit into time slots
+of the length defined with the B<-s> option, thus becoming a I<primary
+data point>.
 
-The data is also processed with the consolidation function (I<CF>)
-of the archive. There are several consolidation functions that consolidate
-primary data points via an aggregate function: B<AVERAGE>, B<MIN>, B<MAX>, B<LAST>.
-The format of B<RRA> line for these consolidation functions is:
+The data is also processed with the consolidation function (I<CF>) of
+the archive. There are several consolidation functions that
+consolidate primary data points via an aggregate function: B<AVERAGE>,
+B<MIN>, B<MAX>, B<LAST>. The format of B<RRA> line for these
+consolidation functions is:
 
 B<RRA:>I<AVERAGE | MIN | MAX | LAST>B<:>I<xff>B<:>I<steps>B<:>I<rows>
 
 I<xff> The xfiles factor defines what part of a consolidation interval may
 be made up from I<*UNKNOWN*> data while the consolidated value is still
-regarded as known.
+regarded as known. It is given as the ratio of allowed I<*UNKNOWN*> PDPs
+to the number of PDPs in the interval. Thus, it ranges from 0 to 1 (exclusive).
+
 
 I<steps> defines how many of these I<primary data points> are used to build
 a I<consolidated data point> which then goes into the archive.
@@ -189,52 +193,60 @@ I<rows> defines how many generations of data values are kept in an B<RRA>.
 
 =head1 Aberrant Behavior Detection with Holt-Winters Forecasting
 
-by Jake Brutlag E<lt>jakeb@corp.webtv.netE<gt>
-
 In addition to the aggregate functions, there are a set of specialized
 functions that enable B<RRDtool> to provide data smoothing (via the
-Holt-Winters forecasting algorithm), confidence bands, and the flagging
-aberrant behavior in the data source time series:
+Holt-Winters forecasting algorithm), confidence bands, and the
+flagging aberrant behavior in the data source time series:
 
-=over 4
+=over
 
-=item B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>B<:>I<rra-num>
+=item *
 
-=item B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>[B<:>I<rra-num>]
 
-=item B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+=item *
 
-=item B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra-num>
+B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
 
-=item B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
+=item *
+
+B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+
+=item *
+
+B<RRA:>I<DEVPREDICT>B<:>I<rows>B<:>I<rra-num>
+
+=item *
+
+B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
 
 =back
 
 These B<RRAs> differ from the true consolidation functions in several ways.
 First, each of the B<RRA>s is updated once for every primary data point.
 Second, these B<RRAs> are interdependent. To generate real-time confidence
-bounds, then a matched set of HWPREDICT, SEASONAL, DEVSEASONAL, and
+bounds, a matched set of HWPREDICT, SEASONAL, DEVSEASONAL, and
 DEVPREDICT must exist. Generating smoothed values of the primary data points
 requires both a HWPREDICT B<RRA> and SEASONAL B<RRA>. Aberrant behavior
 detection requires FAILURES, HWPREDICT, DEVSEASONAL, and SEASONAL.
 
 The actual predicted, or smoothed, values are stored in the HWPREDICT
-B<RRA>. The predicted deviations are store in DEVPREDICT (think a standard
+B<RRA>. The predicted deviations are stored in DEVPREDICT (think a standard
 deviation which can be scaled to yield a confidence band). The FAILURES
-B<RRA> stores binary indicators. A 1 marks the indexed observation a
+B<RRA> stores binary indicators. A 1 marks the indexed observation as
 failure; that is, the number of confidence bounds violations in the
 preceding window of observations met or exceeded a specified threshold. An
 example of using these B<RRAs> to graph confidence bounds and failures
 appears in L<rrdgraph>.
 
 The SEASONAL and DEVSEASONAL B<RRAs> store the seasonal coefficients for the
-Holt-Winters forecasting algorithm and the seasonal deviations respectively.
+Holt-Winters forecasting algorithm and the seasonal deviations, respectively.
 There is one entry per observation time point in the seasonal cycle. For
-example, if primary data points are generated every five minutes, and the
-seasonal cycle is 1 day, both SEASONAL and DEVSEASONAL with have 288 rows.
+example, if primary data points are generated every five minutes and the
+seasonal cycle is 1 day, both SEASONAL and DEVSEASONAL will have 288 rows.
 
 In order to simplify the creation for the novice user, in addition to
-supporting explicit creation the HWPREDICT, SEASONAL, DEVPREDICT,
+supporting explicit creation of the HWPREDICT, SEASONAL, DEVPREDICT,
 DEVSEASONAL, and FAILURES B<RRAs>, the B<RRDtool> create command supports
 implicit creation of the other four when HWPREDICT is specified alone and
 the final argument I<rra-num> is omitted.
@@ -247,7 +259,7 @@ default number of rows is the same as the HWPREDICT I<rows> argument. If the
 FAILURES B<RRA> is implicitly created, I<rows> will be set to the I<seasonal
 period> argument of the HWPREDICT B<RRA>. Of course, the B<RRDtool>
 I<resize> command is available if these defaults are not sufficient and the
-create wishes to avoid explicit creations of the other specialized function
+creator wishes to avoid explicit creations of the other specialized function
 B<RRAs>.
 
 I<seasonal period> specifies the number of primary data points in a seasonal
@@ -257,11 +269,11 @@ they are explicitly created, the creator should verify that all three
 I<seasonal period> arguments agree.
 
 I<alpha> is the adaption parameter of the intercept (or baseline)
-coefficient in the Holt-Winters forecasting algorithm. See L<RRDtool> for a
+coefficient in the Holt-Winters forecasting algorithm. See L<rrdtool> for a
 description of this algorithm. I<alpha> must lie between 0 and 1. A value
 closer to 1 means that more recent observations carry greater weight in
-predicting the baseline component of the forecast. A value closer to 0 mean
-that past history carries greater weight in predicted the baseline
+predicting the baseline component of the forecast. A value closer to 0 means
+that past history carries greater weight in predicting the baseline
 component.
 
 I<beta> is the adaption parameter of the slope (or linear trend) coefficient
@@ -286,25 +298,26 @@ be the same for both. Note that I<gamma> can also be changed via the
 B<RRDtool> I<tune> command.
 
 I<rra-num> provides the links between related B<RRAs>. If HWPREDICT is
-specified alone and the other B<RRAs> created implicitly, then there is no
-need to worry about this argument. If B<RRAs> are created explicitly, then
-pay careful attention to this argument. For each B<RRA> which includes this
-argument, there is a dependency between that B<RRA> and another B<RRA>. The
-I<rra-num> argument is the 1-based index in the order of B<RRA> creation
-(that is, the order they appear in the I<create> command). The dependent
-B<RRA> for each B<RRA> requiring the I<rra-num> argument is listed here:
+specified alone and the other B<RRAs> are created implicitly, then
+there is no need to worry about this argument. If B<RRAs> are created
+explicitly, then carefully pay attention to this argument. For each
+B<RRA> which includes this argument, there is a dependency between
+that B<RRA> and another B<RRA>. The I<rra-num> argument is the 1-based
+index in the order of B<RRA> creation (that is, the order they appear
+in the I<create> command). The dependent B<RRA> for each B<RRA>
+requiring the I<rra-num> argument is listed here:
 
-=over 4
+=over
 
 =item *
 
 HWPREDICT I<rra-num> is the index of the SEASONAL B<RRA>.
 
-=item * 
+=item *
 
 SEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
-=item * 
+=item *
 
 DEVPREDICT I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
@@ -312,7 +325,7 @@ DEVPREDICT I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
 DEVSEASONAL I<rra-num> is the index of the HWPREDICT B<RRA>.
 
-=item * 
+=item *
 
 FAILURES I<rra-num> is the index of the DEVSEASONAL B<RRA>.
 
@@ -335,7 +348,7 @@ It may help you to sort out why all this *UNKNOWN* data is popping
 up in your databases:
 
 RRDtool gets fed samples at arbitrary times. From these it builds Primary
-Data Points (PDPs) at exact times every "step" interval. The PDPs are
+Data Points (PDPs) at exact times on every "step" interval. The PDPs are
 then accumulated into RRAs.
 
 The "heartbeat" defines the maximum acceptable interval between
@@ -350,7 +363,7 @@ The known rates during a PDP's "step" interval are used to calculate
 an average rate for that PDP. Also, if the total "unknown" time during
 the "step" interval exceeds the "heartbeat", the entire PDP is marked
 as "unknown". This means that a mixture of known and "unknown" sample
-time in a single PDP "step" may or may not add up to enough "unknown"
+times in a single PDP "step" may or may not add up to enough "unknown"
 time to exceed "heartbeat" and hence mark the whole PDP "unknown". So
 "heartbeat" is not only the maximum acceptable interval between
 samples, but also the maximum acceptable amount of "unknown" time per
@@ -367,6 +380,44 @@ sample. An extreme example of this might be a "step" of 5 minutes and a
 result in all the PDPs for that entire day period being set to the
 same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
 
+       time|
+       axis|
+ begin__|00|
+        |01|
+       u|02|----* sample1, restart "hb"-timer
+       u|03|   /
+       u|04|  /
+       u|05| /
+       u|06|/     "hbt" expired
+       u|07|
+        |08|----* sample2, restart "hb" 
+        |09|   / 
+        |10|  /
+       u|11|----* sample3, restart "hb"
+       u|12|   /
+       u|13|  /
+ step1_u|14| /
+       u|15|/     "swt" expired
+       u|16|
+        |17|----* sample4, restart "hb", create "pdp" for step1 = 
+        |18|   /  = unknown due to 10 "u" labled secs > "hb"
+        |19|  /
+        |20| /
+        |21|----* sample5, restart "hb"
+        |22|   /
+        |23|  /
+        |24|----* sample6, restart "hb"
+        |25|   /
+        |26|  /
+        |27|----* sample7, restart "hb"
+ step2__|28|   /
+        |22|  /
+        |23|----* sample8, restart "hb", create "pdp" for step1, create "cdp" 
+        |24|   /
+        |25|  /
+
+graphics by I<vladimir.lavrov@desy.de>.
+
 
 =head1 HOW TO MEASURE
 
@@ -377,17 +428,17 @@ Here are a few hints on how to measure:
 
 =item Temperature
 
-Normally you have some type of meter you can read to get the temperature.
+Usually you have some type of meter you can read to get the temperature.
 The temperature is not really connected with a time. The only connection is
 that the temperature reading happened at a certain time. You can use the
-B<GAUGE> data source type for this. RRDtool will the record your reading
+B<GAUGE> data source type for this. RRDtool will then record your reading
 together with the time.
 
 =item Mail Messages
 
 Assume you have a method to count the number of messages transported by
-your mailserver in a certain amount of time, this give you data like '5
-messages in the last 65 seconds'. If you look at the count of 5 like and
+your mailserver in a certain amount of time, giving you data like '5
+messages in the last 65 seconds'. If you look at the count of 5 like an
 B<ABSOLUTE> data type you can simply update the RRD with the number 5 and the
 end time of your monitoring period. RRDtool will then record the number of
 messages per second. If at some later stage you want to know the number of
@@ -398,87 +449,91 @@ precision should be acceptable.
 
 =item It's always a Rate
 
-RRDtool stores rates in amount/second for COUNTER, DERIVE and ABSOLUTE data.
-When you plot the data, you will get on the y axis amount/second which you
-might be tempted to convert to absolute amount volume by multiplying by the
-delta-time between the points. RRDtool plots continuous data, and as such is
-not appropriate for plotting absolute volumes as for example "total bytes"
-sent and received in a router. What you probably want is plot rates that you
-can scale to for example bytes/hour or plot volumes with another tool that
-draws bar-plots, where the delta-time is clear on the plot for each point
-(such that when you read the graph you see for example GB on the y axis,
-days on the x axis and one bar for each day).
+RRDtool stores rates in amount/second for COUNTER, DERIVE and ABSOLUTE
+data.  When you plot the data, you will get on the y axis
+amount/second which you might be tempted to convert to an absolute
+amount by multiplying by the delta-time between the points. RRDtool
+plots continuous data, and as such is not appropriate for plotting
+absolute amounts as for example "total bytes" sent and received in a
+router. What you probably want is plot rates that you can scale to
+bytes/hour, for example, or plot absolute amounts with another tool
+that draws bar-plots, where the delta-time is clear on the plot for
+each point (such that when you read the graph you see for example GB
+on the y axis, days on the x axis and one bar for each day).
 
 =back
 
 
 =head1 EXAMPLE
 
-C<rrdtool create temperature.rrd --step 300 DS:temp:GAUGE:600:-273:5000
-RRA:AVERAGE:0.5:1:1200 RRA:MIN:0.5:12:2400 RRA:MAX:0.5:12:2400
-RRA:AVERAGE:0.5:12:2400>
+ rrdtool create temperature.rrd --step 300 \
+  DS:temp:GAUGE:600:-273:5000 \
+  RRA:AVERAGE:0.5:1:1200 \
+  RRA:MIN:0.5:12:2400 \
+  RRA:MAX:0.5:12:2400 \
+  RRA:AVERAGE:0.5:12:2400
 
 This sets up an B<RRD> called F<temperature.rrd> which accepts one
 temperature value every 300 seconds. If no new data is supplied for
 more than 600 seconds, the temperature becomes I<*UNKNOWN*>.  The
-minimum acceptable value is -273 and the maximum is 5000.
+minimum acceptable value is -273 and the maximum is 5'000.
 
-A few archives areas are also defined. The first stores the
-temperatures supplied for 100 hours (1200 * 300 seconds = 100
+A few archive areas are also defined. The first stores the
+temperatures supplied for 100 hours (1'200 * 300 seconds = 100
 hours). The second RRA stores the minimum temperature recorded over
-every hour (12 * 300 seconds = 1 hour), for 100 days (2400 hours). The
+every hour (12 * 300 seconds = 1 hour), for 100 days (2'400 hours). The
 third and the fourth RRA's do the same for the maximum and
 average temperature, respectively.
 
 =head1 EXAMPLE 2
 
-C<rrdtool create monitor.rrd --step 300 
-DS:ifOutOctets:COUNTER:1800:0:4294967295
-RRA:AVERAGE:0.5:1:2016
-RRA:HWPREDICT:1440:0.1:0.0035:288>
+ rrdtool create monitor.rrd --step 300        \
+   DS:ifOutOctets:COUNTER:1800:0:4294967295   \
+   RRA:AVERAGE:0.5:1:2016                     \
+   RRA:HWPREDICT:1440:0.1:0.0035:288
 
 This example is a monitor of a router interface. The first B<RRA> tracks the
 traffic flow in octets; the second B<RRA> generates the specialized
 functions B<RRAs> for aberrant behavior detection. Note that the I<rra-num>
-argument of HWPREDICT is missing, so the other B<RRAs> will be implicitly be
+argument of HWPREDICT is missing, so the other B<RRAs> will implicitly be
 created with default parameter values. In this example, the forecasting
 algorithm baseline adapts quickly; in fact the most recent one hour of
-observations (each at 5 minute intervals) account for 75% of the baseline
+observations (each at 5 minute intervals) accounts for 75% of the baseline
 prediction. The linear trend forecast adapts much more slowly. Observations
-made in during the last day (at 288 observations per day) account for only
+made during the last day (at 288 observations per day) account for only
 65% of the predicted linear trend. Note: these computations rely on an
-exponential smoothing formula described in a forthcoming LISA 2000 paper.
+exponential smoothing formula described in the LISA 2000 paper.
 
 The seasonal cycle is one day (288 data points at 300 second intervals), and
 the seasonal adaption parameter will be set to 0.1. The RRD file will store 5
-days (1440 data points) of forecasts and deviation predictions before wrap
+days (1'440 data points) of forecasts and deviation predictions before wrap
 around. The file will store 1 day (a seasonal cycle) of 0-1 indicators in
 the FAILURES B<RRA>.
 
-The same RRD file and B<RRAs> are created with the following command, which explicitly
-creates all specialized function B<RRAs>.
+The same RRD file and B<RRAs> are created with the following command,
+which explicitly creates all specialized function B<RRAs>.
 
-C<rrdtool create monitor.rrd --step 300 
-DS:ifOutOctets:COUNTER:1800:0:4294967295
-RRA:AVERAGE:0.5:1:2016
-RRA:HWPREDICT:1440:0.1:0.0035:288:3
-RRA:SEASONAL:288:0.1:2
-RRA:DEVPREDICT:1440:5
-RRA:DEVSEASONAL:288:0.1:2
-RRA:FAILURES:288:7:9:5>
+ rrdtool create monitor.rrd --step 300 \
+   DS:ifOutOctets:COUNTER:1800:0:4294967295 \
+   RRA:AVERAGE:0.5:1:2016 \
+   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \
+   RRA:SEASONAL:288:0.1:2 \
+   RRA:DEVPREDICT:1440:5 \
+   RRA:DEVSEASONAL:288:0.1:2 \
+   RRA:FAILURES:288:7:9:5
 
-Of course, explicit creation need not replicate implicit create, a number of arguments 
-could be changed.
+Of course, explicit creation need not replicate implicit create, a
+number of arguments could be changed.
 
 =head1 EXAMPLE 3
 
-C<rrdtool create proxy.rrd --step 300 
-DS:TotalRequests:DERIVE:1800:0:U
-DS:AccumDuration:DERIVE:1800:0:U
-DS:AvgReqDuration:COMPUTE:AccumDuration,TotalRequests,0,EQ,1,TotalRequests,IF,/
-RRA:AVERAGE:0.5:1:2016>
+ rrdtool create proxy.rrd --step 300 \
+   DS:Total:DERIVE:1800:0:U  \
+   DS:Duration:DERIVE:1800:0:U  \
+   DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \
+   RRA:AVERAGE:0.5:1:2016
 
-This example is monitoring the average request duration during each 300 sec 
+This example is monitoring the average request duration during each 300 sec
 interval for requests processed by a web proxy during the interval.
 In this case, the proxy exposes two counters, the number of requests
 processed since boot and the total cumulative duration of all processed
@@ -495,4 +550,4 @@ RPN expression handles the divide by zero case.
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>

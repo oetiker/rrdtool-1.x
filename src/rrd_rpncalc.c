@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.0.28  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_rpncalc.c  RPN calculator functions
  ****************************************************************************/
@@ -97,7 +97,7 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
         
         if (rpnc[i].op == OP_NUMBER) {
             /* convert a short into a string */
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
             _itoa(rpnc[i].val,buffer,10);
 #else
             sprintf(buffer,"%d",rpnc[i].val);
@@ -153,11 +153,16 @@ void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str)
 	  add_op(OP_NOW,NOW)
 	  add_op(OP_LTIME,LTIME)
 	  add_op(OP_TIME,TIME)
+         add_op(OP_ATAN2,ATAN2)
 	  add_op(OP_ATAN,ATAN)
 	  add_op(OP_SQRT,SQRT)
 	  add_op(OP_SORT,SORT)
 	  add_op(OP_REV,REV)
 	  add_op(OP_TREND,TREND)
+         add_op(OP_RAD2DEG,RAD2DEG)
+         add_op(OP_DEG2RAD,DEG2RAD)
+         add_op(OP_AVG,AVG)
+         add_op(OP_ABS,ABS)
 #undef add_op
               }
     (*str)[offset] = '\0';
@@ -183,7 +188,7 @@ short addop2str(enum op_en op, enum op_en op_type, char *op_str,
     return 0;
 }
 
-void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
+void parseCDEF_DS(const char *def,rrd_t *rrd, int ds_idx)
 {
     rpnp_t *rpnp = NULL;
     rpn_cdefds_t *rpnc = NULL;
@@ -191,7 +196,7 @@ void parseCDEF_DS(char *def,rrd_t *rrd, int ds_idx)
     
     rpnp = rpn_parse((void*) rrd, def, &lookup_DS);
     if (rpnp == NULL) {
-        rrd_set_error("failed to parse computed data source %s", def);
+        rrd_set_error("failed to parse computed data source");
         return;
     }
     /* Check for OP nodes not permitted in COMPUTE DS.
@@ -249,13 +254,15 @@ long lookup_DS(void *rrd_vptr,char *ds_name)
  * lookup(): a function that retrieves a numeric key given a variable name
  */
 rpnp_t * 
-rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
+rpn_parse(void *key_hash,const char *const expr_const,long (*lookup)(void *,char*)){
     int pos=0;
+    char *expr;
     long steps=-1;    
     rpnp_t  *rpnp;
-    char vname[30];
+    char vname[MAX_VNAME_LEN+10];
     
     rpnp=NULL;
+    expr=(char *)expr_const;
     
     while(*expr){
 	if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2)* 
@@ -269,9 +276,9 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	} 
 	
 #define match_op(VV,VVV) \
-        else if (strncmp(expr, #VVV, strlen(#VVV))==0){ \
-	    rpnp[steps].op = VV; \
-	    expr+=strlen(#VVV); \
+        else if (strncmp(expr, #VVV, strlen(#VVV))==0 && ( expr[strlen(#VVV)] == ',' || expr[strlen(#VVV)] == '\0' )){ \
+            rpnp[steps].op = VV; \
+            expr+=strlen(#VVV); \
 	}
 
 
@@ -325,11 +332,16 @@ rpn_parse(void *key_hash,char *expr,long (*lookup)(void *,char*)){
 	match_op(OP_ISINF,ISINF)
 	match_op(OP_NOW,NOW)
 	match_op(OP_TIME,TIME)
+       match_op(OP_ATAN2,ATAN2)
 	match_op(OP_ATAN,ATAN)
 	match_op(OP_SQRT,SQRT)
 	match_op(OP_SORT,SORT)
 	match_op(OP_REV,REV)
 	match_op(OP_TREND,TREND)
+       match_op(OP_RAD2DEG,RAD2DEG)
+       match_op(OP_DEG2RAD,DEG2RAD)
+       match_op(OP_AVG,AVG)
+       match_op(OP_ABS,ABS)
 #undef match_op
 
 
@@ -428,7 +440,8 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		rpnstack -> s[++stptr] = rpnp[rpi].val;
 		break;
 	    case OP_VARIABLE:
-		/* Sanity check: VDEFs shouldn't make it here */
+            case OP_PREV_OTHER:
+   	    /* Sanity check: VDEFs shouldn't make it here */
 		if (rpnp[rpi].ds_cnt == 0) {
 		    rrd_set_error("VDEF made it into rpn_calc... aborting");
 		    return -1;
@@ -439,7 +452,16 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		     * row in the rra (skip over non-relevant
 		     * data sources)
 		     */
-		    rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		    if (rpnp[rpi].op == OP_VARIABLE) {
+		        rpnstack -> s[++stptr] =  *(rpnp[rpi].data);
+		    } else {
+   		        if ((output_idx) <= 0) {
+			    rpnstack -> s[++stptr] = DNAN;
+			} else {			    
+			    rpnstack -> s[++stptr] =  *(rpnp[rpi].data-rpnp[rpi].ds_cnt);
+			}
+		       
+		    }		   
 		    if (data_idx % rpnp[rpi].step == 0){
 			rpnp[rpi].data += rpnp[rpi].ds_cnt;
 		    }
@@ -454,15 +476,8 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		} else {
 		    rpnstack -> s[++stptr] = output[output_idx-1];
 		}
-		break;
-	case OP_PREV_OTHER:
-	  if ((output_idx) <= 0) {
-		rpnstack -> s[++stptr] = DNAN;
-	  } else {
-		rpnstack -> s[++stptr] = rpnp[rpnp[rpi].ptr].data[output_idx-1];
-	  }
-	  break;
-	    case OP_UNKN:
+	        break;
+	 case OP_UNKN:
 		rpnstack -> s[++stptr] = DNAN; 
 		break;
 	    case OP_INF:
@@ -521,6 +536,21 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 		stackunderflow(0);
 		rpnstack -> s[stptr] = atan(rpnstack -> s[stptr]);
 		break;
+           case OP_RAD2DEG:
+               stackunderflow(0);
+               rpnstack -> s[stptr] = 57.29577951 * rpnstack -> s[stptr];
+               break;
+           case OP_DEG2RAD:
+               stackunderflow(0);
+               rpnstack -> s[stptr] = 0.0174532952 * rpnstack -> s[stptr];
+               break;
+           case OP_ATAN2:
+               stackunderflow(1);
+               rpnstack -> s[stptr-1]= atan2(
+                               rpnstack -> s[stptr-1],
+                               rpnstack -> s[stptr]);
+               stptr--;
+               break;
 	    case OP_COS:
 		stackunderflow(0);
 		rpnstack -> s[stptr] = cos(rpnstack -> s[stptr]);
@@ -729,6 +759,32 @@ rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx,
 			rpnstack -> s[--stptr] = DNAN;
 		}
 		break;
+           case OP_AVG:
+               stackunderflow(0);
+                {
+                   int i=(int)rpnstack -> s[stptr--];
+                   double sum=0;
+                   int count=0;
+                   stackunderflow(i-1);
+                   while(i>0) {
+                     double val=rpnstack -> s[stptr--];
+                     i--;
+                    if (isnan(val)) { continue; }
+                     count++;
+                     sum+=val;
+                   }
+                   /* now push the result back on stack */
+                   if (count>0) {
+                     rpnstack -> s[++stptr]=sum/count;
+                   } else {
+                     rpnstack -> s[++stptr]=DNAN;
+                   }
+                }
+                break;
+            case OP_ABS:
+                stackunderflow(0);
+                rpnstack -> s[stptr] = fabs(rpnstack -> s[stptr]);
+                break;
 	    case OP_END:
 		break;
        }

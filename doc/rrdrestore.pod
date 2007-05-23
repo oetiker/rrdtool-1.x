@@ -1,8 +1,6 @@
 =head1 NAME
 
-rrdtool restore - restore the contents of an B<RRD> from its XML dump format
-
-=for html <div align="right"><a href="rrdrestore.pdf">PDF</a> version.</div>
+rrdrestore - Restore the contents of an RRD from its XML dump format
 
 =head1 SYNOPSIS
 
@@ -12,13 +10,13 @@ S<[B<--range-check>|B<-r>]>
 =head1 DESCRIPTION
 
 The B<restore> function reads the XML representation of an RRD and converts
-it into the native B<RRD> format.
+it to the native B<RRD> format.
 
 =over 8
 
 =item I<filename.xml>
 
-The name of the B<XML> you want to restore.
+The name of the B<XML> file you want to restore.
 
 =item I<filename.rrd>
 
@@ -27,7 +25,7 @@ The name of the B<RRD> to restore.
 =item B<--range-check>|B<-r>
 
 Make sure the values in the RRAs do not exceed the limits defined for
-the different data sources.
+the various data sources.
 
 =item B<--force-overwrite>|B<-f>
 
@@ -37,4 +35,4 @@ Allows B<RRDtool> to overwrite the destination B<RRD>.
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>

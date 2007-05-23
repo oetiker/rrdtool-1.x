@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_error.c   Common Header File
  *****************************************************************************
@@ -80,6 +80,7 @@ rrd_set_error_r(struct rrd_context *rrd_ctx, char *fmt, ...)
     va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
     vsnprintf((char *)rrd_ctx->rrd_error, rrd_ctx->len, fmt, argp);
+    rrd_ctx->rrd_error[rrd_ctx->len]='\0';
 #else
     vsprintf((char *)rrd_ctx->rrd_error, fmt, argp);
 #endif
@@ -110,9 +111,8 @@ rrd_new_context(void) {
 	(struct rrd_context *) malloc(sizeof(struct rrd_context));
 
     if (rrd_ctx) {
-	rrd_ctx->len = 0;
-	rrd_ctx->rrd_error = malloc(MAXLEN);
-	rrd_ctx->lib_errstr = malloc(ERRBUFLEN);
+	rrd_ctx->rrd_error = malloc(MAXLEN+10);
+	rrd_ctx->lib_errstr = malloc(ERRBUFLEN+10);
 	if (rrd_ctx->rrd_error && rrd_ctx->lib_errstr) {
 	    *rrd_ctx->rrd_error = 0;
 	    *rrd_ctx->lib_errstr = 0;

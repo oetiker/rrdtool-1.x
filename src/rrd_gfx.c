@@ -1,16 +1,21 @@
 /****************************************************************************
- * RRDtool 1.2.x  Copyright Tobias Oetiker, 1997 - 2005
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_gfx.c  graphics wrapper for rrdtool
   **************************************************************************/
 
 /* #define DEBUG */
 
-#ifdef DEBUG
-# define DPRINT(x)    (void)(printf x, printf("\n"))
-#else
-# define DPRINT(x)
-#endif
+/* stupid MSVC doesnt support variadic macros = no debug for now! */
+#ifdef _MSC_VER
+# define RRDPRINTF()
+#else 
+# ifdef DEBUG
+#  define RRDPRINTF(...)  fprintf(stderr, __VA_ARGS__);
+# else
+#  define RRDPRINTF(...)
+# endif /* DEBUG */
+#endif /* _MSC_VER */
 #include "rrd_tool.h"
 #include <png.h>
 #include <ft2build.h>
@@ -19,9 +24,13 @@
 
 #include "rrd_gfx.h"
 #include "rrd_afm.h"
+#include "unused.h"
 
 /* lines are better drawn on the pixle than between pixles */
 #define LINEOFFSET 0.5
+
+#define USE_PDF_FAKE_ALPHA 1
+#define USE_EPS_FAKE_ALPHA 1
 
 typedef struct gfx_char_s *gfx_char;
 struct gfx_char_s {
@@ -34,7 +43,7 @@ typedef struct gfx_string_s *gfx_string;
 struct gfx_string_s {
   unsigned int    width;
   unsigned int    height;
-  size_t          count;  /* number of characters */
+  int	          count;  /* number of characters */
   gfx_char        glyphs;
   size_t          num_glyphs;
   FT_BBox         bbox;
@@ -45,8 +54,8 @@ struct gfx_string_s {
 static void compute_string_bbox(gfx_string string);
 
 /* create a freetype glyph string */
-gfx_string gfx_string_create ( FT_Face face,
-                               const char *text, int rotation, double tabwidth);
+gfx_string gfx_string_create ( gfx_canvas_t *canvas, FT_Face face,
+                               const char *text, int rotation, double tabwidth, double size);
 
 /* create a freetype glyph string */
 static void gfx_string_destroy ( gfx_string string );
@@ -62,7 +71,6 @@ gfx_node_t *gfx_new_node( gfx_canvas_t *canvas,enum gfx_en type){
   node->points = 0;
   node->points_max =0;
   node->closed_path = 0;
-  node->svp = NULL;         /* svp */
   node->filename = NULL;             /* font or image filename */
   node->text = NULL;
   node->x = 0.0;
@@ -89,7 +97,9 @@ gfx_canvas_t *gfx_new_canvas (void) {
     canvas->imgformat = IF_PNG; /* we default to PNG output */
     canvas->interlaced = 0;
     canvas->zoom = 1.0;
-    return canvas;    
+    canvas->font_aa_threshold = -1.0;
+    canvas->aa_type = AA_NORMAL;
+    return canvas;
 }
 
 /* create a new line */
@@ -114,7 +124,7 @@ gfx_node_t  *gfx_new_dashed_line(gfx_canvas_t *canvas,
   if (vec == NULL) return NULL;
   vec[0].code = ART_MOVETO_OPEN; vec[0].x=X0+LINEOFFSET; vec[0].y=Y0+LINEOFFSET;
   vec[1].code = ART_LINETO; vec[1].x=X1+LINEOFFSET; vec[1].y=Y1+LINEOFFSET;
-  vec[2].code = ART_END;
+  vec[2].code = ART_END; vec[2].x=0;vec[2].y=0;
   
   node->points = 3;
   node->points_max = 3;
@@ -143,7 +153,7 @@ gfx_node_t   *gfx_new_area   (gfx_canvas_t *canvas,
   vec[1].code = ART_LINETO; vec[1].x=X1; vec[1].y=Y1;
   vec[2].code = ART_LINETO; vec[2].x=X2; vec[2].y=Y2;
   vec[3].code = ART_LINETO; vec[3].x=X0; vec[3].y=Y0;
-  vec[4].code = ART_END;
+  vec[4].code = ART_END; vec[4].x=0; vec[4].y=0;
   
   node->points = 5;
   node->points_max = 5;
@@ -211,10 +221,6 @@ gfx_node_t   *gfx_new_text   (gfx_canvas_t *canvas,
 			      enum gfx_v_align_en v_align,
                               char* text){
    gfx_node_t *node = gfx_new_node(canvas,GFX_TEXT);
-/*   if (angle != 0.0){*/
-       /* currently we only support 0 and 270 */
-/*       angle = 270.0;
-   }*/
    
    node->text = strdup(text);
    node->size = size;
@@ -280,7 +286,7 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 			    double tabwidth, char* text, int rotation){
   switch (canvas->imgformat) {
   case IF_PNG: 
-    return gfx_get_text_width_libart (start, font, size, tabwidth, text, rotation);
+    return gfx_get_text_width_libart (canvas, start, font, size, tabwidth, text, rotation);
   case IF_SVG: /* fall through */ 
   case IF_EPS:
   case IF_PDF:
@@ -291,8 +297,8 @@ double gfx_get_text_width ( gfx_canvas_t *canvas,
 }
 
 double gfx_get_text_width_libart (
-			    double start, char* font, double size,
-			    double tabwidth, char* text, int rotation){
+			    gfx_canvas_t *canvas, double UNUSED(start), char* font, double size,
+			    double tabwidth, char* text, int rotation ){
 
   int           error;
   double        text_width=0;
@@ -302,11 +308,16 @@ double gfx_get_text_width_libart (
 
   FT_Init_FreeType( &library );
   error = FT_New_Face( library, font, 0, &face );
-  if ( error ) return -1;
+  if ( error ) {
+    FT_Done_FreeType(library);
+    return -1;
+  }
   error = FT_Set_Char_Size(face,  size*64,size*64,  100,100);
-  if ( error ) return -1;
-
-  string = gfx_string_create( face, text, rotation,tabwidth);
+  if ( error ) {
+    FT_Done_FreeType(library);
+    return -1;
+  }
+  string = gfx_string_create( canvas, face, text, rotation, tabwidth, size );
   text_width = string->width;
   gfx_string_destroy(string);
   FT_Done_FreeType(library);
@@ -325,14 +336,6 @@ static void gfx_libart_close_path(gfx_node_t *node, ArtVpath **vec)
     art_vpath_add_point (vec, &points, &points_max, ART_END, 0, 0);
 }
 
-static void gfx_round_scaled_coordinates(ArtVpath *vec)
-{
-    while (vec->code != ART_END) {
-	vec->x = floor(vec->x - LINEOFFSET + 0.5) + LINEOFFSET;
-	vec->y = floor(vec->y - LINEOFFSET + 0.5) + LINEOFFSET;
-	vec++;
-    }
-}
 
 /* find bbox of a string */
 static void compute_string_bbox(gfx_string string) {
@@ -371,8 +374,8 @@ static void compute_string_bbox(gfx_string string) {
 } 
 
 /* create a free type glyph string */
-gfx_string gfx_string_create(FT_Face face,const char *text,
-        int rotation, double tabwidth)
+gfx_string gfx_string_create(gfx_canvas_t *canvas, FT_Face face,const char *text,
+        int rotation, double tabwidth, double size )
 {
 
   FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
@@ -380,19 +383,36 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   FT_UInt       previous;
   FT_Vector     ft_pen;
 
-  gfx_string    string;
+  gfx_string    string = (gfx_string) malloc (sizeof(struct gfx_string_s));
+
   gfx_char      glyph;          /* current glyph in table */
-  unsigned int  n;
+  int		n;
   int           error;
-  int        gottab;    
+  int        gottab = 0;    
+
+#ifdef HAVE_MBSTOWCS
+  wchar_t	*cstr;
+  size_t	clen = strlen(text)+1;
+  cstr = malloc(sizeof(wchar_t) * clen); /* yes we are allocating probably too much here, I know */
+  string->count=mbstowcs(cstr,text,clen);
+  if ( string->count == -1){
+  /* conversion did not work, so lets fall back to just use what we got */
+	string->count=clen-1;
+        for(n=0;text[n] != '\0';n++){
+            cstr[n]=(unsigned char)text[n];
+        }
+  }
+#else
+  char		*cstr = strdup(text);
+  string->count = strlen (text);
+#endif
 
   ft_pen.x = 0;   /* start at (0,0) !! */
   ft_pen.y = 0;
 
-  string = (gfx_string) malloc (sizeof(struct gfx_string_s));
+
   string->width = 0;
   string->height = 0;
-  string->count = strlen (text);
   string->glyphs = (gfx_char) calloc (string->count,sizeof(struct gfx_char_s));
   string->num_glyphs = 0;
   string->transform.xx = (FT_Fixed)( cos(M_PI*(rotation)/180.0)*0x10000);
@@ -403,14 +423,16 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
   use_kerning = FT_HAS_KERNING(face);
   previous    = 0;
   glyph = string->glyphs;
-  for (n=0; n<string->count; n++, glyph++) {
+  for (n=0; n<string->count;glyph++,n++) {
     FT_Vector   vec;
     /* handle the tabs ...
        have a witespace glyph inserted, but set its width such that the distance
     of the new right edge is x times tabwidth from 0,0 where x is an integer. */    
-    char letter = text[n];
+    unsigned int letter = cstr[n];
+	letter = afm_fix_osx_charset(letter); /* unsafe macro */
+          
     gottab = 0;
-    if (letter == '\\' && n+1 < string->count && text[n+1] == 't'){
+    if (letter == '\\' && n+1 < string->count && cstr[n+1] == 't'){
             /* we have a tab here so skip the backslash and
                set t to ' ' so that we get a white space */
             gottab = 1;
@@ -426,7 +448,6 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     glyph->pos.x = 0;
     glyph->pos.y = 0;
     glyph->image = NULL;
-
     glyph->index = FT_Get_Char_Index( face, letter );
 
     /* compute glyph origin */
@@ -440,14 +461,17 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
 
     /* load the glyph image (in its native format) */
     /* for now, we take a monochrome glyph bitmap */
-    error = FT_Load_Glyph (face, glyph->index, FT_LOAD_DEFAULT);
+    error = FT_Load_Glyph (face, glyph->index, size > canvas->font_aa_threshold ?
+                            canvas->aa_type == AA_NORMAL ? FT_LOAD_TARGET_NORMAL :
+                            canvas->aa_type == AA_LIGHT ? FT_LOAD_TARGET_LIGHT :
+                            FT_LOAD_TARGET_MONO : FT_LOAD_TARGET_MONO);
     if (error) {
-      fprintf (stderr, "couldn't load glyph:  %c\n", letter);
+      RRDPRINTF("couldn't load glyph:  %c\n", letter)
       continue;
     }
     error = FT_Get_Glyph (slot, &glyph->image);
     if (error) {
-      fprintf (stderr, "couldn't get glyph from slot:  %c\n", letter);
+      RRDPRINTF("couldn't get glyph %c from slot %d\n", letter, (int)slot)
       continue;
     }
     /* if we are in tabbing mode, we replace the tab with a space and shift the position
@@ -469,14 +493,17 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     FT_Vector_Transform (&vec, &string->transform);
     error = FT_Glyph_Transform (glyph->image, &string->transform, &vec);
     if (error) {
-      fprintf (stderr, "couldn't transform glyph\n");
+      RRDPRINTF("couldn't transform glyph id %d\n", letter)
       continue;
     }
 
     /* convert to a bitmap - destroy native image */
-    error = FT_Glyph_To_Bitmap (&glyph->image, FT_RENDER_MODE_NORMAL, 0, 1);
+    error = FT_Glyph_To_Bitmap (&glyph->image, size > canvas->font_aa_threshold ?
+                            canvas->aa_type == AA_NORMAL ? FT_RENDER_MODE_NORMAL :
+                            canvas->aa_type == AA_LIGHT ? FT_RENDER_MODE_LIGHT :
+                            FT_RENDER_MODE_MONO : FT_RENDER_MODE_MONO, 0, 1);
     if (error) {
-      fprintf (stderr, "couldn't convert glyph to bitmap\n");
+      RRDPRINTF("couldn't convert glyph id %d to bitmap\n", letter)
       continue;
     }
 
@@ -484,14 +511,15 @@ gfx_string gfx_string_create(FT_Face face,const char *text,
     previous = glyph->index;
     string->num_glyphs++;
   }
+  free(cstr);
 /*  printf ("number of glyphs = %d\n", string->num_glyphs);*/
   compute_string_bbox( string );
   /* the last character was a tab */  
-  if (gottab) {
+  /* if (gottab) { */
       string->width = ft_pen.x;
-  } else {
+  /* } else {
       string->width = string->bbox.xMax - string->bbox.xMin;
-  }
+  } */
   string->height = string->bbox.yMax - string->bbox.yMin;
   return string;
 }
@@ -508,14 +536,23 @@ int           gfx_render_png (gfx_canvas_t *canvas,
     
     FT_Library    library;
     gfx_node_t *node = canvas->firstnode;    
+    /*
     art_u8 red = background >> 24, green = (background >> 16) & 0xff;
     art_u8 blue = (background >> 8) & 0xff, alpha = ( background & 0xff );
+    */
     unsigned long pys_width = width * canvas->zoom;
     unsigned long pys_height = height * canvas->zoom;
-    const int bytes_per_pixel = 3;
+    const int bytes_per_pixel = 4;
     unsigned long rowstride = pys_width*bytes_per_pixel; /* bytes per pixel */
-    art_u8 *buffer = art_new (art_u8, rowstride*pys_height);
-    art_rgb_run_alpha (buffer, red, green, blue, alpha, pys_width*pys_height);
+    
+    /* fill that buffer with out background color */
+    gfx_color_t *buffp = art_new (gfx_color_t, pys_width*pys_height);
+    art_u8 *buffer = (art_u8 *)buffp;
+    unsigned long i;
+    for (i=0;i<pys_width*pys_height;
+	 i++){
+	*(buffp++)=background;
+    }
     FT_Init_FreeType( &library );
     while(node){
         switch (node->type) {
@@ -528,24 +565,34 @@ int           gfx_render_png (gfx_canvas_t *canvas,
             vec = art_vpath_affine_transform(node->path,dst);
 	    if (node->closed_path)
 		gfx_libart_close_path(node, &vec);
-	    gfx_round_scaled_coordinates(vec);
+	    /* gfx_round_scaled_coordinates(vec); */
+            /* pvec = art_vpath_perturb(vec);
+	       art_free(vec); */
             if(node->type == GFX_LINE){
                 svp = art_svp_vpath_stroke ( vec, ART_PATH_STROKE_JOIN_ROUND,
                                              ART_PATH_STROKE_CAP_ROUND,
-                                             node->size*canvas->zoom,1,1);
+                                             node->size*canvas->zoom,4,0.25);
             } else {
-                svp = art_svp_from_vpath ( vec );
+                svp  = art_svp_from_vpath ( vec );
+		/* this takes time and is unnecessary since we make
+	           sure elsewhere that the areas are going clock-whise */
+		/*  svpt = art_svp_uncross( svp );
+                    art_svp_free(svp);
+	            svp  = art_svp_rewind_uncrossed(svpt,ART_WIND_RULE_NONZERO); 
+                    art_svp_free(svpt);
+                 */
             }
             art_free(vec);
-            art_rgb_svp_alpha (svp ,0,0, pys_width, pys_height,
-                               node->color, buffer, rowstride, NULL);
-            art_free(svp);
+	    /* this is from gnome since libart does not have this yet */
+            gnome_print_art_rgba_svp_alpha (svp ,0,0, pys_width, pys_height,
+                                node->color, buffer, rowstride, NULL);
+            art_svp_free(svp);
             break;
         }
         case GFX_TEXT: {
             unsigned int  n;
             int  error;
-            art_u8 fcolor[3],falpha;
+            art_u8 fcolor[4],falpha;
             FT_Face       face;
             gfx_char      glyph;
             gfx_string    string;
@@ -553,7 +600,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 
             float pen_x = 0.0 , pen_y = 0.0;
             /* double x,y; */
-            long   ix,iy,iz;
+            long   ix,iy;
             
             fcolor[0] = node->color >> 24;
             fcolor[1] = (node->color >> 16) & 0xff;
@@ -563,18 +610,26 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                                  (char *)node->filename,
                                  0,
                                  &face );
-	    if ( error ) break;
-
+	    if ( error ) {
+	        rrd_set_error("failed to load %s",node->filename);
+	        
+		break;
+	    }
             error = FT_Set_Char_Size(face,   /* handle to face object            */
                                      (long)(node->size*64),
                                      (long)(node->size*64),
                                      (long)(100*canvas->zoom),
                                      (long)(100*canvas->zoom));
-            if ( error ) break;
+            if ( error ) {
+                FT_Done_Face(face);
+                break;
+            }
             pen_x = node->x * canvas->zoom;
             pen_y = node->y * canvas->zoom;
 
-            string = gfx_string_create (face, node->text, node->angle, node->tabwidth);
+            string = gfx_string_create (canvas, face, node->text, node->angle, node->tabwidth, node->size);
+            FT_Done_Face(face);
+
             switch(node->halign){
             case GFX_H_RIGHT:  vec.x = -string->bbox.xMax;
                                break;          
@@ -601,19 +656,19 @@ int           gfx_render_png (gfx_canvas_t *canvas,
 	    pen_x += vec.x/64;
 	    pen_y += vec.y/64;
             glyph = string->glyphs;
-            for(n=0; n<string->num_glyphs; ++n, ++glyph) {
+            for(n=0; n<string->num_glyphs; n++, glyph++) {
                 int gr;
                 FT_Glyph        image;
                 FT_BitmapGlyph  bit;
-
+		/* long buf_x,comp_n; */
 	        /* make copy to transform */
                 if (! glyph->image) {
-                  fprintf (stderr, "no image\n");
+                  RRDPRINTF("no image\n")
                   continue;
                 }
                 error = FT_Glyph_Copy (glyph->image, &image);
                 if (error) {
-                  fprintf (stderr, "couldn't copy image\n");
+                  RRDPRINTF("couldn't copy image\n")
                   continue;
                 }
 
@@ -622,9 +677,67 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                 FT_Vector_Transform (&vec, &string->transform);
 
                 bit = (FT_BitmapGlyph) image;
-
                 gr = bit->bitmap.num_grays -1;
-                for (iy=0; iy < bit->bitmap.rows; iy++){
+/* 
+  	        buf_x = (pen_x + 0.5) + (double)bit->left;
+		comp_n = buf_x + bit->bitmap.width > pys_width ? pys_width - buf_x : bit->bitmap.width;
+                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+		buf_x *=  bytes_per_pixel ;
+      		for (iy=0; iy < bit->bitmap.rows; iy++){		    
+		    long buf_y = iy+(pen_y+0.5)-(double)bit->top;
+		    if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                    buf_y *= rowstride;
+		    for (ix=0;ix < bit->bitmap.width;ix++){		
+			*(letter + (ix*bytes_per_pixel+3)) = *(bit->bitmap.buffer + iy * bit->bitmap.width + ix);
+		    }
+		    art_rgba_rgba_composite(buffer + buf_y + buf_x ,letter,comp_n);
+	         }
+		 art_free(letter);
+*/
+                switch ( bit->bitmap.pixel_mode ) {
+                    case FT_PIXEL_MODE_GRAY:
+                        for (iy=0; iy < bit->bitmap.rows; iy++){
+                            long buf_y = iy+(pen_y+0.5)-bit->top;
+                            if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                            buf_y *= rowstride;
+                            for (ix=0;ix < bit->bitmap.width;ix++){
+                                long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
+                                art_u8 font_alpha;
+
+                                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+                                buf_x *=  bytes_per_pixel ;
+                                font_alpha =  *(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix);
+                    if (font_alpha > 0){
+                                    fcolor[3] =  (art_u8)((double)font_alpha / gr * falpha);
+                        art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                                }
+                            }
+                        }
+                        break;
+
+                    case FT_PIXEL_MODE_MONO:
+                        for (iy=0; iy < bit->bitmap.rows; iy++){
+                            long buf_y = iy+(pen_y+0.5)-bit->top;
+                            if (buf_y < 0 || buf_y >= (long)pys_height) continue;
+                            buf_y *= rowstride;
+                            for (ix=0;ix < bit->bitmap.width;ix++){
+                                long buf_x = ix + (pen_x + 0.5) + (double)bit->left ;
+
+                                if (buf_x < 0 || buf_x >= (long)pys_width) continue;
+                                buf_x *=  bytes_per_pixel ;
+                                if ( (fcolor[3] = falpha * ((*(bit->bitmap.buffer + iy * bit->bitmap.pitch + ix/8) >> (7 - (ix % 8))) & 1)) > 0 )
+                                    art_rgba_rgba_composite(buffer + buf_y + buf_x ,fcolor,1);
+                            }
+                        }
+                        break;
+
+                        default:
+                            rrd_set_error("unknown freetype pixel mode: %d", bit->bitmap.pixel_mode);
+                            break;
+                }
+
+/*
+                for (iy=0; iy < bit->bitmap.rows; iy++){		    
                     long buf_y = iy+(pen_y+0.5)-bit->top;
                     if (buf_y < 0 || buf_y >= (long)pys_height) continue;
                     buf_y *= rowstride;
@@ -643,6 +756,7 @@ int           gfx_render_png (gfx_canvas_t *canvas,
                         }
                     }
                 }
+*/
                 FT_Done_Glyph (image);
             }
             gfx_string_destroy(string);
@@ -664,12 +778,12 @@ gfx_destroy    (gfx_canvas_t *canvas){
   while(node){
     next = node->next;
     art_free(node->path);
-    art_free(node->svp);
     free(node->text);
     free(node->filename);
     art_free(node);
     node = next;
   }
+  art_free(canvas);
   return 0;
 }
  
@@ -696,6 +810,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 
   if (info_ptr == NULL)
     {
+      png_free(png_ptr,row_pointers);
       png_destroy_write_struct(&png_ptr,  (png_infopp)NULL);
       return (1);
     }
@@ -709,7 +824,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
 
   png_init_io(png_ptr, fp);
   png_set_IHDR (png_ptr, info_ptr,width, height,
-                8, PNG_COLOR_TYPE_RGB,
+                8, PNG_COLOR_TYPE_RGB_ALPHA,
                 PNG_INTERLACE_NONE,
                 PNG_COMPRESSION_TYPE_DEFAULT,
                 PNG_FILTER_TYPE_DEFAULT);
@@ -719,9 +834,11 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   text[0].compression = PNG_TEXT_COMPRESSION_NONE;
   png_set_text (png_ptr, info_ptr, text, 1);
 
-  /* lets make this fast */
+  /* lets make this fast while ending up with some increass in image size */
+  png_set_filter(png_ptr,0,PNG_FILTER_NONE);
+  /* png_set_filter(png_ptr,0,PNG_FILTER_SUB); */
   png_set_compression_level(png_ptr,1);
-  png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_NO_FILTERS);
+  /* png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY); */
   /* 
   png_set_filter(png_ptr,PNG_FILTER_TYPE_BASE,PNG_FILTER_SUB);
   png_set_compression_strategy(png_ptr,Z_HUFFMAN_ONLY);
@@ -734,18 +851,152 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
   
   png_write_image(png_ptr, row_pointers);
   png_write_end(png_ptr, info_ptr);
+  png_free(png_ptr,row_pointers);
   png_destroy_write_struct(&png_ptr, &info_ptr);
   return 1;
 }
 
  
+/* ----- COMMON ROUTINES for pdf, svg and eps */
+#define min3(a, b, c) (a < b ? (a < c ? a : c) : (b < c ? b : c))
+#define max3(a, b, c) (a > b ? (a > c ? a : c) : (b > c ? b : c))
+
+#define PDF_CALC_DEBUG 0
+
+typedef struct pdf_point
+{
+	double x, y;
+} pdf_point;
+
+typedef struct
+{
+	double ascender, descender, baselineY;
+	pdf_point sizep, minp, maxp;
+	double x, y, tdx, tdy;
+	double r, cos_r, sin_r;
+	double ma, mb, mc, md, mx, my; /* pdf coord matrix */
+	double tmx, tmy; /* last 2 coords of text coord matrix */
+#if PDF_CALC_DEBUG
+	int debug;
+#endif
+} pdf_coords;
+
+#if PDF_CALC_DEBUG
+static void pdf_dump_calc(gfx_node_t *node, pdf_coords *g)
+{
+	fprintf(stderr, "PDF CALC =============================\n");
+	fprintf(stderr, "   '%s' at %f pt\n", node->text, node->size);
+	fprintf(stderr, "   align h = %s, v = %s,  sizep = %f, %f\n",
+		(node->halign == GFX_H_RIGHT ? "r" :
+			(node->halign == GFX_H_CENTER ? "c" :
+				(node->halign == GFX_H_LEFT ? "l" : "N"))),
+		(node->valign == GFX_V_TOP ? "t" :
+			(node->valign == GFX_V_CENTER ? "c" :
+				(node->valign == GFX_V_BOTTOM ? "b" : "N"))),
+			g->sizep.x, g->sizep.y);
+	fprintf(stderr, "   r = %f = %f, cos = %f, sin = %f\n",
+			g->r, node->angle, g->cos_r, g->sin_r);
+	fprintf(stderr, "   ascender = %f, descender = %f, baselineY = %f\n",
+		g->ascender, g->descender, g->baselineY);
+	fprintf(stderr, "   sizep: %f, %f\n", g->sizep.x, g->sizep.y);
+	fprintf(stderr, "   minp: %f, %f     maxp = %f, %f\n", 
+			g->minp.x, g->minp.y, g->maxp.x, g->maxp.y);
+	fprintf(stderr, "   x = %f, y = %f\n", g->x, g->y);
+	fprintf(stderr, "   tdx = %f, tdy = %f\n", g->tdx, g->tdy);
+	fprintf(stderr, "   GM = %f, %f, %f, %f, %f, %f\n",
+			g->ma, g->mb, g->mc, g->md, g->mx, g->my);
+	fprintf(stderr, "   TM = %f, %f, %f, %f, %f, %f\n",
+			g->ma, g->mb, g->mc, g->md, g->tmx, g->tmy);
+}
+#endif
+ 
+#if PDF_CALC_DEBUG
+#define PDF_DD(x) if (g->debug) x;
+#else
+#define PDF_DD(x)
+#endif
+
+static void pdf_rotate(pdf_coords *g, pdf_point *p)
+{
+    double x2 = g->cos_r * p->x - g->sin_r * p->y;
+    double y2 = g->sin_r * p->x + g->cos_r * p->y;
+	PDF_DD( fprintf(stderr, "  rotate(%f, %f) -> %f, %f\n", p->x, p->y, x2, y2))
+    p->x = x2;
+	p->y = y2;
+}
+
+
+static void pdf_calc(int page_height, gfx_node_t *node, pdf_coords *g)
+{
+	pdf_point a, b, c;
+#if PDF_CALC_DEBUG
+	/* g->debug = !!strstr(node->text, "RevProxy-1") || !!strstr(node->text, "08:00"); */
+	g->debug = !!strstr(node->text, "sekunder") || !!strstr(node->text, "Web");
+#endif
+	g->x = node->x;
+	g->y = page_height - node->y;
+	if (node->angle) {
+		g->r = 2 * M_PI * node->angle / 360.0;
+		g->cos_r = cos(g->r);
+		g->sin_r = sin(g->r);
+	} else {
+		g->r = 0;
+		g->cos_r = 1;
+		g->sin_r = 0;
+	}
+	g->ascender = afm_get_ascender(node->filename, node->size);
+	g->descender = afm_get_descender(node->filename, node->size);
+	g->sizep.x = afm_get_text_width(0, node->filename, node->size, node->tabwidth, node->text);
+	/* seems like libart ignores the descender when doing vertial-align = bottom,
+	   so we do that too, to get labels v-aligning properly */
+	g->sizep.y = -g->ascender; /* + afm_get_descender(font->ps_font, node->size); */
+	g->baselineY = -g->ascender - g->sizep.y / 2;
+	a.x = g->sizep.x; a.y = g->sizep.y;
+	b.x = g->sizep.x; b.y = 0;
+	c.x = 0; c.y = g->sizep.y;
+	if (node->angle) {
+		pdf_rotate(g, &a);
+		pdf_rotate(g, &b);
+		pdf_rotate(g, &c);
+	}
+	g->minp.x = min3(a.x, b.x, c.x);
+	g->minp.y = min3(a.y, b.y, c.y);
+	g->maxp.x = max3(a.x, b.x, c.x);
+	g->maxp.y = max3(a.y, b.y, c.y);
+  /* The alignment parameters in node->valign and node->halign
+     specifies the alignment in the non-rotated coordinate system
+     (very unlike pdf/postscript), which complicates matters.
+  */
+	switch (node->halign) {
+	case GFX_H_RIGHT:  g->tdx = -g->maxp.x; break;
+	case GFX_H_CENTER: g->tdx = -(g->maxp.x + g->minp.x) / 2; break;
+	case GFX_H_LEFT:   g->tdx = -g->minp.x; break;
+	case GFX_H_NULL:   g->tdx = 0; break;
+	}
+	switch(node->valign){
+	case GFX_V_TOP:    g->tdy = -g->maxp.y; break;
+	case GFX_V_CENTER: g->tdy = -(g->maxp.y + g->minp.y) / 2; break;
+	case GFX_V_BOTTOM: g->tdy = -g->minp.y; break;
+	case GFX_V_NULL:   g->tdy = 0; break;          
+	}
+	g->ma = g->cos_r;
+	g->mb = g->sin_r;
+	g->mc = -g->sin_r;
+	g->md = g->cos_r;
+	g->mx = g->x + g->tdx;
+	g->my = g->y + g->tdy;
+	g->tmx = g->mx - g->ascender * g->mc;
+	g->tmy = g->my - g->ascender * g->md;
+	PDF_DD(pdf_dump_calc(node, g))
+}
+
 /* ------- SVG -------
    SVG reference:
    http://www.w3.org/TR/SVG/
 */
 static int svg_indent = 0;
 static int svg_single_line = 0;
-static const char *svg_default_font = "Helvetica";
+static const char *svg_default_font = "-dummy-";
 typedef struct svg_dash
 {
   int dash_enable;
@@ -808,37 +1059,50 @@ static void svg_close_tag_empty_node(FILE *fp)
  
 static void svg_write_text(FILE *fp, const char *text)
 {
-   const unsigned char *p, *start, *last;
-   unsigned int ch;
-   p = (const unsigned char*)text;
-   if (!p)
-     return;
-   /* trim leading spaces */
-   while (*p == ' ')
-     p++;
-   start = p;
-   /* trim trailing spaces */
-   last = p - 1;
-   while ((ch = *p) != 0) {
-     if (ch != ' ')
-       last = p;
-     p++;
-  }
-  /* encode trimmed text */
-  p = start;
-  while (p <= last) {
+#ifdef HAVE_MBSTOWCS
+    size_t clen;
+    wchar_t *p, *cstr, ch;
+    int text_count;
+    if (!text)
+	return;
+    clen = strlen(text) + 1;
+    cstr = malloc(sizeof(wchar_t) * clen);
+    text_count = mbstowcs(cstr, text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    p = cstr;
+#else
+    unsigned char *p = text;
+    unsigned char *cstr;
+    char ch;
+    if (!p)
+	return;
+#endif
+  while (1) {
     ch = *p++;
-    ch = afm_host2unicode(ch); /* unsafe macro */
+    ch = afm_fix_osx_charset(ch); /* unsafe macro */
     switch (ch) {
+    case 0:
+#ifdef HAVE_MBSTOWCS
+    free(cstr);
+#endif
+    return;
     case '&': fputs("&amp;", fp); break;
     case '<': fputs("&lt;", fp); break;
     case '>': fputs("&gt;", fp); break;
     case '"': fputs("&quot;", fp); break;
     default:
-      if (ch >= 127)
-	fprintf(fp, "&#%d;", ch);
+        if (ch == 32) {
+#ifdef HAVE_MBSTOWCS
+            if (p <= cstr + 1 || !*p || *p == 32)
+                fputs("&#160;", fp); /* non-breaking space in unicode */
+            else
+#endif
+                fputc(32, fp);
+        } else if (ch < 32 || ch >= 127)
+	fprintf(fp, "&#%d;", (int)ch);
       else
-	putc(ch, fp);
+	putc((char)ch, fp);
      }
    }
 }
@@ -893,7 +1157,7 @@ static void svg_write_color(FILE *fp, gfx_color_t c, const char *attr)
    }
   fputs("\"", fp);
   if (opacity != 0xFF) {
-    fprintf(fp, " stroke-opacity=\"");
+    fprintf(fp, " opacity=\"");
     svg_write_number(fp, opacity / 255.0);
     fputs("\"", fp);
  }
@@ -1122,47 +1386,37 @@ static void svg_area(FILE *fp, gfx_node_t *node)
  
 static void svg_text(FILE *fp, gfx_node_t *node)
 {
-   double x = node->x - LINEOFFSET;
-   double y = node->y - LINEOFFSET;
+   pdf_coords g;
+   const char *fontname;
+   /* as svg has 0,0 in top-left corner (like most screens) instead of
+	  bottom-left corner like pdf and eps, we have to fake the coords
+	  using offset and inverse sin(r) value */
+   int page_height = 1000;
+   pdf_calc(page_height, node, &g);
    if (node->angle != 0) {
      svg_start_tag(fp, "g");
-     fputs(" transform=\"translate(", fp);
-     svg_write_number(fp, x);
-     fputs(",", fp);
-     svg_write_number(fp, y);
-     fputs(") rotate(", fp);
-     svg_write_number(fp, node->angle);
-     fputs(")\"", fp);
-     x = y = 0;
+	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+		skewed text */
+     fprintf(fp, " transform=\"matrix(%f,%f,%f,%f,%f,%f)\"",
+			 g.ma, -g.mb, -g.mc, g.md, g.tmx, page_height - g.tmy);
      svg_close_tag(fp);
    }
-   switch (node->valign) {
-   case GFX_V_TOP:  y += node->size; break;
-   case GFX_V_CENTER: y += node->size / 3; break;
-   case GFX_V_BOTTOM: break;
-   case GFX_V_NULL: break;
-   }
    svg_start_tag(fp, "text");
-   fputs(" x=\"", fp);
-   svg_write_number(fp, x);
-   fputs("\" y=\"", fp);
-   svg_write_number(fp, y);
-
-/*  if (strcmp(node->filename, svg_default_font))
-    fprintf(fp, " font-family=\"%s\"", node->filename);
-    */
-   fputs("\" font-family=\"Helvetica", fp);
-   fputs("\" font-size=\"", fp);
+   if (!node->angle) {
+     fputs(" x=\"", fp);
+     svg_write_number(fp, g.tmx);
+     fputs("\" y=\"", fp);
+     svg_write_number(fp, page_height - g.tmy);
+     fputs("\"", fp);
+   }
+   fontname = afm_get_font_name(node->filename);
+   if (strcmp(fontname, svg_default_font))
+     fprintf(fp, " font-family=\"%s\"", fontname);
+   fputs(" font-size=\"", fp);
    svg_write_number(fp, node->size);
    fputs("\"", fp);
   if (!svg_color_is_black(node->color))
     svg_write_color(fp, node->color, "fill");
-   switch (node->halign) {
-   case GFX_H_RIGHT:  fputs(" text-anchor=\"end\"", fp); break;
-   case GFX_H_CENTER: fputs(" text-anchor=\"middle\"", fp); break;
-   case GFX_H_LEFT: break;
-   case GFX_H_NULL: break;
-   }
    svg_close_tag_single_line(fp);
    /* support for node->tabwidth missing */
    svg_write_text(fp, node->text);
@@ -1175,13 +1429,22 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
                  art_u32 width, art_u32 height,
                  gfx_color_t background, FILE *fp){
    gfx_node_t *node = canvas->firstnode;
+   /* Find the first font used, and assume it is the mostly used
+	  one. It reduces the number of font-familty attributes. */
+   while (node) {
+	   if (node->type == GFX_TEXT && node->filename) {
+		   svg_default_font = afm_get_font_name(node->filename);
+		   break;
+	   }
+	   node = node->next;
+   }
    fputs(
 "<?xml version=\"1.0\" standalone=\"no\"?>\n"
 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\"\n"
 "   \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n"
 "<!--\n"
-"   SVG file created by RRDtool,\n"
-"   Tobias Oetiker <tobi@oetike.ch>, http://tobi.oetiker.ch\n"
+"   SVG file created by\n"
+"        RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch\n"
 "\n"
 "   The width/height attributes in the outhermost svg node\n"
 "   are just default sizes for the browser which is used\n"
@@ -1191,9 +1454,9 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
 "-->\n", fp);
    svg_start_tag(fp, "svg");
    fputs(" width=\"", fp);
-  svg_write_number(fp, width * canvas->zoom);
+   svg_write_number(fp, width * canvas->zoom);
    fputs("\" height=\"", fp);
-  svg_write_number(fp, height * canvas->zoom);
+   svg_write_number(fp, height * canvas->zoom);
    fputs("\" x=\"0\" y=\"0\" viewBox=\"", fp);
    svg_write_number(fp, -LINEOFFSET);
    fputs(" ", fp);
@@ -1203,13 +1466,16 @@ int       gfx_render_svg (gfx_canvas_t *canvas,
    fputs(" ", fp);
    svg_write_number(fp, height - LINEOFFSET);
    fputs("\" preserveAspectRatio=\"xMidYMid\"", fp);
-  fprintf(fp, " font-family=\"%s\"", svg_default_font); /* default font */
-  fputs(" stroke-linecap=\"round\" stroke-linejoin=\"round\"", fp);
+   fprintf(fp, " font-family=\"%s\"", svg_default_font); /* default font */
+   fputs(" stroke-linecap=\"round\" stroke-linejoin=\"round\"", fp);
+   fputs(" xmlns=\"http://www.w3.org/2000/svg\"", fp);
+   fputs(" xmlns:xlink=\"http://www.w3.org/1999/xlink\"", fp);
    svg_close_tag(fp);
    svg_start_tag(fp, "rect");
    fprintf(fp, " x=\"0\" y=\"0\" width=\"%d\" height=\"%d\"", width, height);
   svg_write_color(fp, background, "fill");
    svg_close_tag_empty_node(fp);
+   node = canvas->firstnode;
    while (node) {
      switch (node->type) {
      case GFX_LINE:
@@ -1256,13 +1522,26 @@ typedef struct eps_state
 
 static void eps_set_color(eps_state *state, gfx_color_t color)
 {
+#if USE_EPS_FAKE_ALPHA
+   double a1, a2;
+#endif
+   /* gfx_color_t is RRGGBBAA */
+  if (state->color == color)
+    return;
+#if USE_EPS_FAKE_ALPHA
+  a1 = (color & 255) / 255.0;
+  a2 = 255 * (1 - a1);
+#define eps_color_calc(x) (int)( ((x) & 255) * a1 + a2)
+#else
+#define eps_color_calc(x) (int)( (x) & 255)
+#endif
    /* gfx_color_t is RRGGBBAA */
   if (state->color == color)
     return;
   fprintf(state->fp, "%d %d %d Rgb\n",
-      (int)((color >> 24) & 255),
-      (int)((color >> 16) & 255),
-      (int)((color >>  8) & 255));
+      eps_color_calc(color >> 24),
+      eps_color_calc(color >> 16),
+      eps_color_calc(color >>  8));
   state->color = color;
 }
 
@@ -1335,7 +1614,7 @@ static int eps_prologue(eps_state *state)
   gfx_node_t *node;
   fputs(
     "%!PS-Adobe-3.0 EPSF-3.0\n"
-    "%%Creator: RRDtool 1.1.x, Tobias Oetiker, http://tobi.oetiker.ch\n"
+    "%%Creator: RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch\n"
     /* can't like weird chars here */
     "%%Title: (RRDtool output)\n"
     "%%DocumentData: Clean7Bit\n"
@@ -1365,12 +1644,9 @@ static int eps_prologue(eps_state *state)
       "/CP {closepath} bd\n"
       "/WS {setlinewidth stroke} bd\n"
       "/F {fill} bd\n"
-      "/TaL { } bd\n"
-      "/TaC {dup stringwidth pop neg 2 div 0 rmoveto } bd\n"
-      "/TaR {dup stringwidth pop neg 0 rmoveto } bd\n"
-      "/TL {moveto TaL show} bd\n"
-      "/TC {moveto TaC show} bd\n"
-      "/TR {moveto TaR show} bd\n"
+      "/T1 {gsave} bd\n"
+      "/T2 {concat 0 0 moveto show grestore} bd\n"
+      "/T   {moveto show} bd\n"
       "/Rgb { 255.0 div 3 1 roll\n"
       "       255.0 div 3 1 roll \n"
       "       255.0 div 3 1 roll setrgbcolor } bd\n"
@@ -1467,12 +1743,28 @@ static void eps_write_linearea(eps_state *state, gfx_node_t *node)
 static void eps_write_text(eps_state *state, gfx_node_t *node)
 {
   FILE *fp = state->fp;
-  const unsigned char *p;
   const char *ps_font = afm_get_font_postscript_name(node->filename);
-  char align = 'L';
-  double x = node->x;
-  double y = state->page_height - node->y, ydelta = 0;
   int lineLen = 0;
+  pdf_coords g;
+#ifdef HAVE_MBSTOWCS
+    size_t clen;
+    wchar_t *p, *cstr, ch;
+    int text_count;
+    if (!node->text)
+	return;
+    clen = strlen(node->text) + 1;
+    cstr = malloc(sizeof(wchar_t) * clen);
+    text_count = mbstowcs(cstr, node->text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    p = cstr;
+#else
+    const unsigned char *p = node->text;
+    unsigned char ch;
+    if (!p)
+	return;
+#endif
+  pdf_calc(state->page_height, node, &g);
   eps_set_color(state, node->color);
   if (strcmp(ps_font, state->font) || node->size != state->font_size) {
     state->font = ps_font;
@@ -1480,66 +1772,62 @@ static void eps_write_text(eps_state *state, gfx_node_t *node)
     svg_write_number(fp, state->font_size);
     fprintf(fp, " SetFont-%s\n", state->font);
   }
+  if (node->angle)
+	  fputs("T1 ", fp);
   fputs("(", fp);
   lineLen = 20;
-  for (p = (const unsigned char*)node->text; *p; p++) {
-    if (lineLen > 70) {
+  while (1) {
+    ch = *p;
+    if (!ch)
+      break;
+	ch = afm_fix_osx_charset(ch); /* unsafe macro */
+    if (++lineLen > 70) {
       fputs("\\\n", fp); /* backslash and \n */
       lineLen = 0;
     }
-    switch (*p) {
+    switch (ch) {
+      case '%':
       case '(':
       case ')':
       case '\\':
-      case '\n':
-      case '\r':
-      case '\t':
         fputc('\\', fp);
-        lineLen++;
-        /* fall-through */
+        fputc(ch, fp);
+        break;
+      case '\n':
+        fputs("\\n", fp);
+        break;
+      case '\r':
+        fputs("\\r", fp);
+        break;
+      case '\t':
+        fputs("\\t", fp);
+        break;
       default:
-        if (*p >= 126)
-          fprintf(fp, "\\%03o", *p);
-        else
-          fputc(*p, fp);
-        lineLen++;
-    }
+        if (ch > 255) {
+            fputc('?', fp);
+        } else if (ch >= 126 || ch < 32) {
+          fprintf(fp, "\\%03o", (unsigned int)ch);
+          lineLen += 3;
+        } else {
+          fputc(ch, fp);
+        }
+      }
+      p++;
   }
-  fputs(") ", fp);
-  switch(node->valign){
-  case GFX_V_TOP:    ydelta = -node->size; break;
-  case GFX_V_CENTER: ydelta = -node->size / 3.0; break;          
-  case GFX_V_BOTTOM: break;          
-  case GFX_V_NULL: break;          
-  }
-  if (node->angle == 0)
-    y += ydelta;
-  switch (node->halign) {
-  case GFX_H_RIGHT:  align = 'R'; break;
-  case GFX_H_CENTER: align = 'C'; break;
-  case GFX_H_LEFT: align= 'L'; break;
-  case GFX_H_NULL: align= 'L'; break;
-  }
-  if (node->angle != 0) {
-    fputs("\n", fp);
-    fputs("  gsave ", fp);
-    svg_write_number(fp, x);
-    fputc(' ', fp);
-    svg_write_number(fp, y);
-    fputs(" translate ", fp);
-    svg_write_number(fp, -node->angle);
-    fputs(" rotate 0 ", fp);
-    svg_write_number(fp, ydelta);
-    fputs(" moveto ", fp);
-    fprintf(fp, "Ta%c", align);
-    fputs(" show grestore\n", fp);
+#ifdef HAVE_MBSTOWCS
+  free(cstr);
+#endif
+  if (node->angle) {
+	 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+		skewed text */
+	  fprintf(fp, ") [%f %f %f %f %f %f] T2\n",
+			  g.ma, g.mb, g.mc, g.md, g.tmx, g.tmy);
   } else {
-    svg_write_number(fp, x);
-    fputc(' ', fp);
-    svg_write_number(fp, y);
-    fputs(" T", fp);
-    fputc(align, fp);
-    fputc('\n', fp);
+	  fputs(") ", fp);
+	  svg_write_number(fp, g.tmx);
+	  fputs(" ", fp);
+	  svg_write_number(fp, g.tmy);
+	  fputs(" T\n", fp);
   }
 }
 
@@ -1576,6 +1864,7 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
   state.linecap = -1;
   state.linejoin = -1;
   state.has_dash = 0;
+  state.line_width = 1;
   if (eps_prologue(&state) == -1)
     return -1;
   eps_set_color(&state, background);
@@ -1595,7 +1884,7 @@ int       gfx_render_eps (gfx_canvas_t *canvas,
 
 /* ------- PDF -------
    PDF references page:
-   http://partners.adobe.com/asn/developer/technotes/acrobatpdf.html
+   http://partners.adobe.com/public/developer/pdf/index_reference.html
 */
 
 typedef struct pdf_buffer
@@ -1633,7 +1922,7 @@ typedef struct pdf_state
   int last_obj_id;
   /*--*/
   pdf_buffer pdf_header;
-  pdf_buffer catalog_obj, pages_obj, page1_obj;
+  pdf_buffer info_obj, catalog_obj, pages_obj, page1_obj;
   pdf_buffer fontsdict_obj;
   pdf_buffer graph_stream;
 } pdf_state;
@@ -1687,6 +1976,17 @@ static void pdf_put(pdf_buffer *buf, const char *text, int len)
   buf->current_size += len;
 }
 
+static void pdf_put_char(pdf_buffer *buf, char c)
+{
+    if (buf->alloc_size >= buf->current_size + 1) {
+	buf->data[buf->current_size++] = c;
+    } else {
+	char tmp[1];
+	tmp[0] = (char)c;
+	pdf_put(buf, tmp, 1);
+    }
+}
+
 static void pdf_puts(pdf_buffer *buf, const char *text)
 {
   pdf_put(buf, text, strlen(text));
@@ -1717,6 +2017,76 @@ static void pdf_putnumber(pdf_buffer *buf, double d)
   pdf_puts(buf, tmp);
 }
 
+static void pdf_put_string_contents_wide(pdf_buffer *buf, const afm_char *text)
+{
+    const afm_char *p = text;
+    while (1) {
+	afm_char ch = *p;
+	ch = afm_fix_osx_charset(ch); /* unsafe macro */
+	switch (ch) {
+	    case 0:
+		return;
+	    case '(':
+		pdf_puts(buf, "\\(");
+		break;
+	    case ')':
+		pdf_puts(buf, "\\)");
+		break;
+	    case '\\':
+		pdf_puts(buf, "\\\\");
+		break;
+	    case '\n':
+		pdf_puts(buf, "\\n");
+		break;
+	    case '\r':
+		pdf_puts(buf, "\\r");
+		break;
+	    case '\t':
+		pdf_puts(buf, "\\t");
+		break;
+	    default:
+		if (ch > 255) {
+		    pdf_put_char(buf, '?');
+		} else if (ch > 125 || ch < 32) {
+		    pdf_put_char(buf, ch);
+		} else {
+		    char tmp[10];
+		    snprintf(tmp, sizeof(tmp), "\\%03o", (int)ch);
+		    pdf_puts(buf, tmp);
+		}
+	}
+	p++;
+    }
+}
+
+static void pdf_put_string_contents(pdf_buffer *buf, const char *text)
+{
+#ifdef HAVE_MBSTOWCS
+    size_t clen = strlen(text) + 1;
+    wchar_t *cstr = malloc(sizeof(wchar_t) * clen);
+    int text_count = mbstowcs(cstr, text, clen);
+    if (text_count == -1)
+	text_count = mbstowcs(cstr, "Enc-Err", 6);
+    pdf_put_string_contents_wide(buf, cstr);
+#if 0
+    if (*text == 'W') {
+	fprintf(stderr, "Decoding utf8 for '%s'\n", text);
+	wchar_t *p = cstr;
+	char *pp = text;
+	fprintf(stderr, "sz wc = %d\n", sizeof(wchar_t));
+	while (*p) {
+	    fprintf(stderr, "  %d = %c  versus %d = %c\n", *p, (char)*p, 255 & (int)*pp, *pp);
+	    p++;
+	    pp++;
+	}
+    }
+#endif
+    free(cstr);
+#else
+    pdf_put_string_contents_wide(buf, text);
+#endif
+}
+
 static void pdf_init_object(pdf_state *state, pdf_buffer *buf)
 {
   pdf_init_buffer(state, buf);
@@ -1734,14 +2104,24 @@ static void pdf_init_dict(pdf_state *state, pdf_buffer *buf)
 static void pdf_set_color(pdf_buffer *buf, gfx_color_t color,
 	gfx_color_t *current_color, const char *op)
 {
+#if USE_PDF_FAKE_ALPHA
+   double a1, a2;
+#endif
    /* gfx_color_t is RRGGBBAA */
   if (*current_color == color)
     return;
-  pdf_putnumber(buf, ((color >> 24) & 255) / 255.0);
+#if USE_PDF_FAKE_ALPHA
+  a1 = (color & 255) / 255.0;
+  a2 = 1 - a1;
+#define pdf_color_calc(x) ( ((x)  & 255) / 255.0 * a1 + a2)
+#else
+#define pdf_color_calc(x) ( ((x)  & 255) / 255.0)
+#endif
+  pdf_putnumber(buf, pdf_color_calc(color >> 24));
   pdf_puts(buf, " ");
-  pdf_putnumber(buf, ((color >> 16) & 255) / 255.0);
+  pdf_putnumber(buf, pdf_color_calc(color >> 16));
   pdf_puts(buf, " ");
-  pdf_putnumber(buf, ((color >>  8) & 255) / 255.0);
+  pdf_putnumber(buf, pdf_color_calc(color >>  8));
   pdf_puts(buf, " ");
   pdf_puts(buf, op);
   pdf_puts(buf, "\n");
@@ -1885,53 +2265,55 @@ static void pdf_write_linearea(pdf_state *state, gfx_node_t *node)
    }
 }
 
+
+static void pdf_write_matrix(pdf_state *state, gfx_node_t *node, pdf_coords *g, int useTM)
+{
+	char tmp[150];
+	pdf_buffer *s = &state->graph_stream;
+	if (node->angle == 0) {
+		pdf_puts(s, "1 0 0 1 ");
+		pdf_putnumber(s, useTM ? g->tmx : g->mx);
+		pdf_puts(s, " ");
+		pdf_putnumber(s, useTM ? g->tmy : g->my);
+	} else {
+		 /* can't use svg_write_number as 2 decimals is far from enough to avoid
+			skewed text */
+		sprintf(tmp, "%f %f %f %f %f %f",
+				g->ma, g->mb, g->mc, g->md, 
+				useTM ? g->tmx : g->mx,
+				useTM ? g->tmy : g->my);
+		pdf_puts(s, tmp);
+	}
+}
+
 static void pdf_write_text(pdf_state *state, gfx_node_t *node, 
     int last_was_text, int next_is_text)
 {
-  char tmp[30];
+  pdf_coords g;
   pdf_buffer *s = &state->graph_stream;
-  const unsigned char *p;
   pdf_font *font = pdf_find_font(state, node);
-  double x = node->x;
-  double y = state->page_height - node->y;
-  double dx = 0, dy = 0;
-  double cos_a = 0, sin_a = 0;
   if (font == NULL) {
     rrd_set_error("font disappeared");
     state->has_failed = 1;
     return;
   }
-  switch(node->valign){
-  case GFX_V_TOP:    dy = -node->size; break;
-  case GFX_V_CENTER: dy = -node->size / 3.0; break;          
-  case GFX_V_BOTTOM: break;          
-  case GFX_V_NULL: break;          
-  }
-  switch (node->halign) {
-  case GFX_H_RIGHT:  dx = -afm_get_text_width(0, font->ps_font, 
-			 node->size, node->tabwidth, node->text);
-		     break;
-  case GFX_H_CENTER: dx = -afm_get_text_width(0, font->ps_font, 
-			 node->size, node->tabwidth, node->text) / 2;
-		     break;
-  case GFX_H_LEFT: break;
-  case GFX_H_NULL: break;
-  }
+  pdf_calc(state->page_height, node, &g);
+#if PDF_CALC_DEBUG
+  pdf_puts(s, "q % debug green box\n");
+  pdf_write_matrix(state, node, &g, 0);
+  pdf_puts(s, " cm\n");
+  pdf_set_fill_color(s, 0x90FF9000);
+  pdf_puts(s, "0 0.4 0 rg\n");
+  pdf_puts(s, "0 0 ");
+  pdf_putnumber(s, g.sizep.x);
+  pdf_puts(s, " ");
+  pdf_putnumber(s, g.sizep.y);
+  pdf_puts(s, " re\n");
+  pdf_puts(s, "f\n");
+  pdf_puts(s, "Q\n");
+#endif
   pdf_set_fill_color(s, node->color);
-  if (node->angle != 0) {
-    double a = 2 * M_PI * -node->angle / 360.0;
-    double new_x, new_y;
-    cos_a = cos(a);
-    sin_a = sin(a);
-    new_x = cos_a * dx - sin_a * dy + x;
-    new_y = sin_a * dx + cos_a * dy + y;
-    x = new_x;
-    y = new_y;
-  } else {
-    x += dx;
-    y += dy;
-  }
-  if (!last_was_text)
+  if (PDF_CALC_DEBUG || !last_was_text)
     pdf_puts(s, "BT\n");
   if (state->font_id != font->obj.id || node->size != state->font_size) {
     state->font_id = font->obj.id;
@@ -1942,44 +2324,12 @@ static void pdf_write_text(pdf_state *state, gfx_node_t *node,
     pdf_putnumber(s, node->size);
     pdf_puts(s, " Tf\n");
   }
-  if (node->angle == 0) {
-    pdf_puts(s, "1 0 0 1 ");
-  } else {
-    pdf_putnumber(s, cos_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, sin_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, -sin_a);
-    pdf_puts(s, " ");
-    pdf_putnumber(s, cos_a);
-    pdf_puts(s, " ");
-  }
-  pdf_putnumber(s, x);
-  pdf_puts(s, " ");
-  pdf_putnumber(s, y);
+  pdf_write_matrix(state, node, &g, 1);
   pdf_puts(s, " Tm\n");
   pdf_puts(s, "(");
-  for (p = (const unsigned char*)node->text; *p; p++) {
-    switch (*p) {
-      case '(':
-      case ')':
-      case '\\':
-      case '\n':
-      case '\r':
-      case '\t':
-        pdf_puts(s, "\\");
-        /* fall-through */
-      default:
-        if (*p >= 126) {
-          snprintf(tmp, sizeof(tmp), "\\%03o", *p);
-	  pdf_puts(s, tmp);
-	} else {
-          pdf_put(s, (const char*)p, 1);
-	}
-    }
-  }
+  pdf_put_string_contents(s, node->text);
   pdf_puts(s, ") Tj\n");
-  if (!next_is_text)
+  if (PDF_CALC_DEBUG || !next_is_text)
     pdf_puts(s, "ET\n");
 }
  
@@ -2006,6 +2356,7 @@ static void pdf_init_document(pdf_state *state)
 {
   pdf_init_buffer(state, &state->pdf_header);
   pdf_init_dict(state, &state->catalog_obj);
+  pdf_init_dict(state, &state->info_obj);
   pdf_init_dict(state, &state->pages_obj);
   pdf_init_dict(state, &state->page1_obj);
   pdf_init_dict(state, &state->fontsdict_obj);
@@ -2019,12 +2370,17 @@ static void pdf_init_document(pdf_state *state)
 
 static void pdf_setup_document(pdf_state *state)
 {
+  const char *creator = "RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch";
   /* all objects created by now, so init code can reference them */
   /* HEADER */
   pdf_puts(&state->pdf_header, "%PDF-1.3\n");
   /* following 8 bit comment is recommended by Adobe for
      indicating binary file to file transfer applications */
   pdf_puts(&state->pdf_header, "%\xE2\xE3\xCF\xD3\n");
+  /* INFO */
+  pdf_putsi(&state->info_obj, "/Creator (");
+  pdf_put_string_contents(&state->info_obj, creator);
+  pdf_puts(&state->info_obj, ")\n");
   /* CATALOG */
   pdf_putsi(&state->catalog_obj, "/Type /Catalog\n");
   pdf_putsi(&state->catalog_obj, "/Pages ");
@@ -2109,6 +2465,7 @@ static void pdf_write_to_file(pdf_state *state)
   fprintf(state->fp, "<<\n");
   fprintf(state->fp, "\t/Size %d\n", state->last_obj_id + 1);
   fprintf(state->fp, "\t/Root %d 0 R\n", state->catalog_obj.id);
+  fprintf(state->fp, "\t/Info %d 0 R\n", state->info_obj.id);
   fprintf(state->fp, ">>\n");
   fprintf(state->fp, "startxref\n");
   fprintf(state->fp, "%d\n", xref_pos);
@@ -2133,7 +2490,7 @@ static void pdf_free_resources(pdf_state *state)
 
 int       gfx_render_pdf (gfx_canvas_t *canvas,
                  art_u32 width, art_u32 height,
-                 gfx_color_t background, FILE *fp){
+                 gfx_color_t UNUSED(background), FILE *fp){
   struct pdf_state state;
   memset(&state, 0, sizeof(pdf_state));
   state.fp = fp;

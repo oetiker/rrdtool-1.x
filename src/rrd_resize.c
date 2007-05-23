@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_resize.c Alters size of an RRA
  *****************************************************************************
@@ -11,15 +11,16 @@
 int
 rrd_resize(int argc, char **argv)
 {
-    char             *infilename,outfilename[11]="resize.rrd";
-    FILE             *infile,*outfile;
-    rrd_t             rrdold,rrdnew;
-    rrd_value_t       buffer;
-    unsigned long     l,rra;
-    long              modify;
-    unsigned long     target_rra;
-    int               grow=0,shrink=0;
-    char             *endptr;
+    char		*infilename,outfilename[11]="resize.rrd";
+    FILE		*infile,*outfile;
+    rrd_t		rrdold,rrdnew;
+    rrd_value_t		buffer;
+    int			version;
+    unsigned long	l,rra;
+    long		modify;
+    unsigned long	target_rra;
+    int			grow=0,shrink=0;
+    char		*endptr;
 
     infilename=argv[1];
     if (!strcmp(infilename,"resize.rrd")) {
@@ -83,6 +84,19 @@ rrd_resize(int argc, char **argv)
     rrdnew.pdp_prep  = rrdold.pdp_prep;
     rrdnew.cdp_prep  = rrdold.cdp_prep;
     rrdnew.rra_ptr   = rrdold.rra_ptr;
+
+    version = atoi(rrdold.stat_head->version);
+    switch (version) {
+	case 3: break;
+	case 1: rrdold.stat_head->version[3]='3';
+		break;
+	default: {
+		rrd_set_error("Do not know how to handle RRD version %s",rrdold.stat_head->version);
+		rrd_free(&rrdold);	
+		fclose(infile);
+		return(-1);
+		}
+    }
 
     if ((outfile=fopen(outfilename,"wb"))==NULL) {
         rrd_set_error("Can't create '%s'",outfilename);

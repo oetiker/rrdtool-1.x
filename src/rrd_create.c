@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_create.c  creates new rrds
  *****************************************************************************/
@@ -10,9 +10,9 @@
 
 #include "rrd_is_thread_safe.h"
 
-unsigned long FnvHash(char *str);
+unsigned long FnvHash(const char *str);
 int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
-void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx);
+void parseGENERIC_DS(const char *def,rrd_t *rrd, int ds_idx);
 
 int
 rrd_create(int argc, char **argv) 
@@ -23,6 +23,7 @@ rrd_create(int argc, char **argv)
     char *parsetime_error = NULL;
     long              long_tmp;
     int               rc;
+    optind = 0; opterr = 0;  /* initialize getopt */
 
     while (1){
 	static struct option long_options[] =
@@ -77,24 +78,28 @@ rrd_create(int argc, char **argv)
 	    return(-1);
 	}
     }
-
+    if (optind == argc) {
+         rrd_set_error("what is the name of the rrd file you want to create?");
+         return -1;
+    }
     rc = rrd_create_r(argv[optind],
 		      pdp_step, last_up,
-		      argc - optind - 1, argv + optind + 1);
+		      argc - optind - 1, (const char **)(argv + optind + 1));
     
     return rc;
 }
 
 /* #define DEBUG */
 int
-rrd_create_r(char *filename,
+rrd_create_r(const char *filename,
 	     unsigned long pdp_step, time_t last_up,
-	     int argc, char **argv) 
+	     int argc, const char **argv) 
 {
     rrd_t             rrd;
     long              i;
     int               offset;
     char *token;
+    char dummychar1[2], dummychar2[2];
     unsigned short token_idx, error_flag, period=0;
     unsigned long hashed_name;
 
@@ -145,19 +150,31 @@ rrd_create_r(char *filename,
 	    }
 	    memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
             /* extract the name and type */
-	    if (sscanf(&argv[i][3],
-		       DS_NAM_FMT ":" DST_FMT ":%n",
-		       rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-		       rrd.ds_def[rrd.stat_head->ds_cnt].dst,&offset) == 2)
-            {
-                /* check for duplicate datasource names */
-                for(ii=0;ii<rrd.stat_head->ds_cnt;ii++)
-                    if(strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-                              rrd.ds_def[ii].ds_nam) == 0){
-                        rrd_set_error("Duplicate DS name: %s",rrd.ds_def[ii].ds_nam);
-                    }				                                
-            } else {
-                rrd_set_error("invalid DS format");
+	    switch (sscanf(&argv[i][3],
+			DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
+			rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
+			dummychar1,
+			rrd.ds_def[rrd.stat_head->ds_cnt].dst,
+			dummychar2,
+			&offset)) {
+		case 0:
+		case 1:	rrd_set_error("Invalid DS name"); break;
+		case 2:
+		case 3: rrd_set_error("Invalid DS type"); break;
+		case 4: /* (%n may or may not be counted) */
+		case 5: /* check for duplicate datasource names */
+		    for (ii=0;ii<rrd.stat_head->ds_cnt;ii++)
+			if(strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
+				rrd.ds_def[ii].ds_nam) == 0)
+			    rrd_set_error("Duplicate DS name: %s",
+					rrd.ds_def[ii].ds_nam);
+		    /* DS_type may be valid or not. Checked later */
+		    break;
+		default: rrd_set_error("invalid DS format");
+            }
+	    if (rrd_test_error()) {
+                rrd_free(&rrd);
+                return -1;
             }
             
             /* parse the remainder of the arguments */
@@ -182,7 +199,8 @@ rrd_create_r(char *filename,
                 return -1;
             }
             rrd.stat_head -> ds_cnt++;
-	} else if (strncmp(argv[i],"RRA:",3)==0){
+	} else if (strncmp(argv[i],"RRA:",4)==0){
+            char *argvcopy;
 	    char *tokptr;
 	    size_t old_size = sizeof(rra_def_t)*(rrd.stat_head->rra_cnt);
 	    if((rrd.rra_def = rrd_realloc(rrd.rra_def,
@@ -193,8 +211,9 @@ rrd_create_r(char *filename,
                 return(-1);	
 	    }
 	    memset(&rrd.rra_def[rrd.stat_head->rra_cnt], 0, sizeof(rra_def_t));
-            
-	    token = strtok_r(&argv[i][4],":", &tokptr);
+
+            argvcopy = strdup(argv[i]);
+	    token = strtok_r(&argvcopy[4],":", &tokptr);
 	    token_idx = error_flag = 0;
 	    while (token != NULL)
 	    {
@@ -369,12 +388,14 @@ rrd_create_r(char *filename,
                 if (rrd_test_error())
                 {
                     /* all errors are unrecoverable */
+                    free(argvcopy);
                     rrd_free(&rrd);
                     return (-1);
                 }
                 token = strtok_r(NULL,":", &tokptr);
                 token_idx++;
 	    } /* end while */
+	    free(argvcopy);
 #ifdef DEBUG
 	    fprintf(stderr,"Creating RRA CF: %s, dep idx %lu, current idx %lu\n",
 		    rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam,
@@ -418,7 +439,7 @@ rrd_create_r(char *filename,
     return rrd_create_fn(filename, &rrd);
 }
 
-void parseGENERIC_DS(char *def,rrd_t *rrd, int ds_idx)
+void parseGENERIC_DS(const char *def,rrd_t *rrd, int ds_idx)
 {
     char minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];	
     /*
@@ -526,18 +547,23 @@ create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashe
 /* create and empty rrd file according to the specs given */
 
 int
-rrd_create_fn(char *file_name, rrd_t *rrd)
+rrd_create_fn(const char *file_name, rrd_t *rrd)
 {
     unsigned long    i,ii;
     FILE             *rrd_file;
     rrd_value_t      *unknown;
     int	unkn_cnt;
-    
+
+    long rrd_head_size;
+
     if ((rrd_file = fopen(file_name,"wb")) == NULL ) {
 	rrd_set_error("creating '%s': %s",file_name, rrd_strerror(errno));
 	free(rrd->stat_head);
+        rrd->stat_head = NULL; 
 	free(rrd->ds_def);
+        rrd->ds_def = NULL; 
 	free(rrd->rra_def);
+        rrd->rra_def = NULL;
 	return(-1);
     }
     
@@ -634,7 +660,8 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
         rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
         fwrite( rrd->rra_ptr, sizeof(rra_ptr_t),1,rrd_file);
     }
-    
+    rrd_head_size = ftell(rrd_file);
+
     /* write the empty data area */
     if ((unknown = (rrd_value_t *)malloc(512 * sizeof(rrd_value_t))) == NULL) {
 	rrd_set_error("allocating unknown");
@@ -663,6 +690,24 @@ rrd_create_fn(char *file_name, rrd_t *rrd)
 	return(-1);
     }
     
+#ifdef HAVE_POSIX_FADVISE
+    /* this file is not going to be read again any time
+       soon, so we drop everything except the header portion from
+       the buffer cache. for this to work, we have to fdsync the file
+       first though. This will not be all that fast, but 'good' data
+       like other rrdfiles headers will stay in cache. Now this only works if creating
+       a single rrd file is not too large, but I assume this should not be the case
+       in general. Otherwhise we would have to sync and release while writing all
+       the unknown data. */
+    fflush(rrd_file);
+    fdatasync(fileno(rrd_file));
+    if (0 != posix_fadvise(fileno(rrd_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+        rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",file_name, rrd_strerror(errno));
+        fclose(rrd_file);
+        return(-1);
+    }    
+#endif
+
     fclose(rrd_file);    
     rrd_free(rrd);
     return (0);

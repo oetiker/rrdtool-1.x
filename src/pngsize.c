@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * pngsize.c  determine the size of a PNG image
  *****************************************************************************/
@@ -21,6 +21,13 @@ PngSize(FILE *fd, long *width, long *height)
 
   (*width)=0;
   (*height)=0;
+
+/* this is to make compile on aix work since they seem to define jmpbuf
+   to be _jmpbuf which breaks compilation */
+
+#ifdef jmpbuf
+#undef jmpbuf
+#endif
 
   if (setjmp(png_read_ptr->jmpbuf)){
     png_destroy_read_struct(&png_read_ptr, &info_ptr, (png_infopp)NULL);

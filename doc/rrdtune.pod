@@ -1,13 +1,11 @@
 =head1 NAME
 
-rrdtool tune - Modify some basic properties of a Round Robin Database
-
-=for html <div align="right"><a href="rrdtune.pdf">PDF</a> version.</div>
+rrdtune - Modify some basic properties of a Round Robin Database
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<tune> I<filename> 
-S<[B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>]> 
+B<rrdtool> B<tune> I<filename>
+S<[B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>]>
 S<[B<--minimum>|B<-i> I<ds-name>:I<min>]>
 S<[B<--maximum>|B<-a> I<ds-name>:I<max>]>
 S<[B<--data-source-type>|B<-d> I<ds-name>:I<DST>]>
@@ -27,7 +25,7 @@ S<[B<--aberrant-reset> I<ds-name>]>
 The tune option allows you to alter some of the basic configuration
 values stored in the header area of a Round Robin Database (B<RRD>).
 
-One application of the B<tune> function is to relax the 
+One application of the B<tune> function is to relax the
 validation rules on an B<RRD>. This allows to fill a new B<RRD> with
 data available in larger intervals than what you would normally want
 to permit. Be very careful with tune operations for COMPUTE data sources.
@@ -47,7 +45,7 @@ The name of the B<RRD> you want to tune.
 =item S<B<--heartbeat>|B<-h> I<ds-name>:I<heartbeat>>
 
 modify the I<heartbeat> of a data source. By setting this to a high
-value the RRD will accept things like one value per day ...
+value the RRD will accept things like one value per day.
 
 =item S<B<--minimum>|B<-i> I<ds-name>:I<min>>
 
@@ -65,16 +63,17 @@ alter the type B<DST> of a data source.
 
 =item S<B<--data-source-rename>|B<-r> I<old-name>:I<new-name>>
 
-rename a data source
+rename a data source.
 
 =item S<B<--deltapos> I<scale-value>>
 
-Alter the deviation scaling factor for the upper bound of the confidence band
-used internally to calculate violations for the FAILURES B<RRA>. The default
-value is 2. Note that this parameter is not related to graphing confidence
-bounds, that scale factor must be specified as a CDEF argument to generate 
-a graph with confidence bounds. The graph scale factor need not agree with the 
-value used internally by the FAILURES B<RRA>.
+Alter the deviation scaling factor for the upper bound of the
+confidence band used internally to calculate violations for the
+FAILURES B<RRA>. The default value is 2. Note that this parameter is
+not related to graphing confidence bounds which must be specified as a
+CDEF argument to generate a graph with confidence bounds. The graph
+scale factor need not to agree with the value used internally by the
+FAILURES B<RRA>.
 
 =item S<B<--deltaneg> I<scale-value>>
 
@@ -88,40 +87,40 @@ factor chosen when graphing confidence bounds.
 Alter the number of confidence bound violations that constitute a failure for
 purposes of the FAILURES B<RRA>. This must be an integer less than or equal to
 the window length of the FAILURES B<RRA>. This restriction is not verified by
-the tune option, so one can reset failure-threshold and window-length 
+the tune option, so one can reset failure-threshold and window-length
 simultaneously. Setting this option will reset the count of violations to 0.
 
 =item S<B<--window-length> I<window-length>>
 
-Alter the number of time points in the temporal window for determining failures.
-This must be an integer greater than or equal to the window length of the
-FAILURES B<RRA> and less than or equal to 28. Setting this option will reset the
-count of violations to 0.
+Alter the number of time points in the temporal window for determining
+failures. This must be an integer greater than or equal to the window
+length of the FAILURES B<RRA> and less than or equal to 28. Setting
+this option will reset the count of violations to 0.
 
 =item S<B<--alpha> I<adaption-parameter>>
 
-Alter the intercept adaptation parameter for the Holt-Winters forecasting algorithm.
-Must be between 0 and 1.
+Alter the intercept adaptation parameter for the Holt-Winters
+forecasting algorithm. This parameter must be between 0 and 1.
 
 =item S<B<--beta> I<adaption-parameter>>
 
-Alter the slope adaptation parameter for the Holt-Winters forecasting algorithm.
-Must be between 0 and 1.
+Alter the slope adaptation parameter for the Holt-Winters forecasting
+algorithm. This parameter must be between 0 and 1.
 
 =item S<B<--gamma> I<adaption-parameter>>
 
 Alter the seasonal coefficient adaptation parameter for the SEASONAL
-B<RRA>. Must be between 0 and 1.
+B<RRA>. This parameter must be between 0 and 1.
 
 =item S<B<--gamma-deviation> I<adaption-parameter>>
 
 Alter the seasonal deviation adaptation parameter for the DEVSEASONAL
-B<RRA>. Must be between 0 and 1.
+B<RRA>. This parameter must be between 0 and 1.
 
 =item S<B<--aberrant-reset> I<ds-name>>
 
 This option causes the aberrant behavior detection algorithm to reset
-for the specified data source; that is, forget all it is has learn.
+for the specified data source; that is, forget all it is has learnt so far.
 Specifically, for the HWPREDICT B<RRA>, it sets the intercept and slope
 coefficients to unknown. For the SEASONAL B<RRA>, it sets all seasonal
 coefficients to unknown. For the DEVSEASONAL B<RRA>, it sets all seasonal
@@ -138,11 +137,11 @@ initialization this smoothing is deferred. For efficiency, the implementation
 of smoothing is not data source specific. This means that utilizing
 reset for one data source will delay running the smoothing algorithm
 for all data sources in the file. This is unlikely to have serious
-consequences, unless the data being collected for the non-reset data sources 
-is unusually volatile during the reinitialization period of the reset 
+consequences, unless the data being collected for the non-reset data sources
+is unusually volatile during the reinitialization period of the reset
 data source.
 
-Use of this tuning option is advised when the behavior of the data source 
+Use of this tuning option is advised when the behavior of the data source
 time series changes in a drastic and permanent manner.
 
 =back
@@ -151,8 +150,8 @@ time series changes in a drastic and permanent manner.
 
 C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
 
-Set the minimum required heartbeat for data sources 'in', 'out' 
-and 'through' to 10000 seconds which is a little over one day in data.rrd.
+Set the minimum required heartbeat for data sources 'in', 'out'
+and 'through' to 10'000 seconds which is a little over one day in data.rrd.
 This would allow to feed old data from MRTG-2.0 right into
 RRDtool without generating *UNKNOWN* entries.
 
@@ -160,11 +159,12 @@ RRDtool without generating *UNKNOWN* entries.
 
 C<rrdtool tune monitor.rrd --window-length 5 --failure-threshold 3>
 
-If the FAILURES B<RRA> is implicitly created, the default window-length is 9 and 
-the default failure-threshold is 7. This command now defines a failure as 3 or more
-violations in a temporal window of 5 time points.
+If the FAILURES B<RRA> is implicitly created, the default
+window-length is 9 and the default failure-threshold is 7. This
+command now defines a failure as 3 or more violations in a temporal
+window of 5 time points.
 
 =head1 AUTHOR
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>
 

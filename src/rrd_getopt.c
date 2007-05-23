@@ -31,7 +31,7 @@
 #endif
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "../rrd_config.h"
 #endif
 
 #if !defined (__STDC__) || !__STDC__
@@ -79,7 +79,7 @@
 #endif
 #endif
 
-#if defined (WIN32) && !defined (__CYGWIN32__)
+#if defined (_WIN32) && !defined (__CYGWIN32__)
 /* It's not Unix, really.  See?  Capital letters.  */
 #include <windows.h>
 #define getpid() GetCurrentProcessId()
@@ -110,7 +110,7 @@
    GNU application programs can use a third alternative mode in which
    they can distinguish the relative order of options and other arguments.  */
 
-#include "getopt.h"
+#include "rrd_getopt.h"
 
 /* For communication from `getopt' to the caller.
    When `getopt' finds an option that takes an argument,

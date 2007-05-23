@@ -1,0 +1,27 @@
+=head1 NAME
+
+rrdlastupdate - Return the most recent update to an RRD
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<lastupdate> I<filename>
+
+=head1 DESCRIPTION
+
+The B<lastupdate> function returns the UNIX timestamp and the 
+value stored for each datum in the most recent update of an RRD.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> that contains the data.
+
+=back
+
+=head1 AUTHOR
+
+Andy Riebs <andy.riebs@hp.com>
+
+
+

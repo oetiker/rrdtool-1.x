@@ -1,24 +1,29 @@
 /****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_afm.h  Parsing afm tables to find width of strings.
- ****************************************************************************/
+ ****************************************************************************
+ * $Id$
+*/
 
-#ifdef WIN32
-#include "../confignt/config.h"
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
+#include "../win32/config.h"
 #else
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
+#endif
 #endif
 
 #include "rrd_afm.h"
 #include "rrd_afm_data.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+
+#include "unused.h"
 
 #if 0
 # define DEBUG 1
@@ -34,7 +39,8 @@
 */
 #define ENABLE_LIGATURES 0
 
-static const afm_fontinfo *afm_last_used_font;
+static const afm_fontinfo *afm_last_used_font = NULL;
+static const char *last_unknown_font = NULL;
 
 #define is_font(p, name) \
   (!strcmp(p->postscript_name, name) || !strcmp(p->fullname, name))
@@ -55,22 +61,47 @@ static const afm_fontinfo *afm_searchfont(const char *name)
   return NULL;
 }
 
+
+/* returns always a font, never NULL.
+   The rest of the code depends on the result never being NULL.
+   See rrd_afm.h */
 static const afm_fontinfo *afm_findfont(const char *name)
 {
   const afm_fontinfo *p = afm_searchfont(name);
   if (p)
     return p;
-  if (1 || DEBUG) fprintf(stderr, "Can't find font '%s'\n", name);
-  p = afm_searchfont("Helvetica");
+  if (!last_unknown_font || strcmp(name, last_unknown_font)) {
+	  fprintf(stderr, "Can't find font '%s'\n", name);
+	  last_unknown_font = name;
+  }
+  p = afm_searchfont(RRD_AFM_DEFAULT_FONT);
   if (p)
     return p;
-  return NULL;
+  return afm_fontinfolist; /* anything, just anything. */
 }
 
 const char *afm_get_font_postscript_name(const char* font)
 {
   const afm_fontinfo *p = afm_findfont(font);
-  return p ? p->postscript_name : "Helvetica";
+  return p->postscript_name;
+}
+
+const char *afm_get_font_name(const char* font)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return p->fullname;
+}
+
+double afm_get_ascender(const char* font, double size)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return size * p->ascender / 1000.0;
+}
+
+double afm_get_descender(const char* font, double size)
+{
+  const afm_fontinfo *p = afm_findfont(font);
+  return size * p->descender / 1000.0;
 }
 
 static int afm_find_char_index(const afm_fontinfo *fontinfo,
@@ -159,24 +190,49 @@ static long afm_find_kern(const afm_fontinfo *fontinfo,
 }
 
 /* measure width of a text string */
-double afm_get_text_width ( double start, const char* font, double size,
+double afm_get_text_width( double start, const char* font, double size,
           double tabwidth, const char* text)
+{
+#ifdef HAVE_MBSTOWCS     
+    size_t clen = strlen(text) + 1;
+    wchar_t *cstr = malloc(sizeof(wchar_t) * clen); /* yes we are allocating probably too much here, I know */
+    int text_count = mbstowcs(cstr, text, clen);
+    double w;
+    if (text_count == -1)
+	    text_count = mbstowcs(cstr, "Enc-Err", 6);
+#ifdef __APPLE__
+	while (text_count > 0) {
+		text_count--;
+		cstr[text_count] = afm_fix_osx_charset(cstr[text_count]); /* unsafe macro */
+	}
+#endif
+    w = afm_get_text_width_wide(start, font, size, tabwidth, cstr);
+    free(cstr);
+    return w;
+#else
+    return afm_get_text_width_wide(start, font, size, tabwidth, text);
+#endif
+}
+
+double afm_get_text_width_wide( double UNUSED(start), const char* font, double size,
+          double UNUSED(tabwidth), const afm_char* text)
 {
   const afm_fontinfo *fontinfo = afm_findfont(font);
   long width = 0;
   double widthf;
-  const unsigned char *up = (const unsigned char*)text;
+  const afm_char *up = text;
   DLOG((stderr, "================= %s\n", text));
-  if (fontinfo == NULL)
-    return size * strlen(text);
+  if (fontinfo == NULL) {
+      while (*up)
+	  up++;
+    return size * (up - text);
+  }
   while (1) {
     afm_unicode ch1, ch2;
     int idx1, kern_idx;
     if ((ch1 = *up) == 0)
-      break;
-    ch1 = afm_host2unicode(ch1); /* unsafe macro */
+        break;
     ch2 = *++up;
-    ch2 = afm_host2unicode(ch2); /* unsafe macro */
     DLOG((stderr, "------------- Loop: %d + %d (%c%c)   at %d\n",
           ch1, ch2, ch1, ch2 ? ch2 : ' ',
 	  (up - (const unsigned char*)text) - 1));
@@ -189,7 +245,7 @@ double afm_get_text_width ( double start, const char* font, double size,
       if (ch1_new) {
         ch1 = ch1_new;
         idx1 = afm_find_char_index(fontinfo, ch1);
-        ch2 = afm_host2unicode(*++up);
+        ch2 = *++up;
         DLOG((stderr, "  -> idx1 = %d, ch2 = %d (%c)\n", 
             idx1, ch2, ch2 ? ch2 : ' '));
       }

@@ -1,116 +1,74 @@
 I would like to thank to following people for helping to
 bring RRDtool into existence.
 
-Planning and Inspiration
-
-	Daniel Wesemann
-	Krister Karlson
-	Simon Leinen
-
-Debugging and code contributions
-
-	Andreas Kroomaa <andre@ml.ee>
-	Andrew Turner <turner@mint.net> (LAST consolidator)
-	Bernard Fischer <bfischer@syslog.ch> 64bit stuff and --alt-autoscale-max
-	Bill Fenner <fenner@research.att.com>
-	Blair Zajac <bzajac@geostaff.com>
-	Dan Dunn <dandunn@computer.org>
-	Hermann Hueni <hueni@glue.ch> (SunOS porting)
-	Jeff R. Allen <jeff.allen@acm.org> (autoconfigure, portability)  
-	Joel Becker <jlbec@raleigh.ibm.com> AIX
-	Joey Miller <joeym@inficad.com>	php3 and php4 bindings
-	Jost.Krieger <Jost.Krieger@ruhr-uni-bochum.de>
-	Larry Leszczynski <larryl@furph.com>
-	Otmar Lendl <O.Lendl@Austria.EU.net> (lots of bugfixes)
-	Paul Joslin <Paul.Joslin@sdrc.com>
-	Philippe.Simonet <Philippe.Simonet@swisscom.com> (NT porting)
-	Poul-Henning Kamp <phk@freebsd.org> CDEF enhancements
-	REIBENSCHUH Alfred <alfred.reibenschuh@it-austria.com> AIX
-        Roman Hoogant <rhoogant@ee.ethz.ch>
-	Russ Wright <rwwright@home.com>
-	Simon Leinen <simon@switch.ch>
-	Stefan Mueller <s.mueller@computer.org> HPUX 11
-	Steve Rader <rader@teak.wiscnet.net> (rrd_cgi debugging and LAST)
-        Terminator rAT <karl_schilke@eli.net>
-        Christophe VG <Christophe.VanGinneken@ubizen.com>
-        Shane O'Donnell <shaneo@opennms.org>
-        Tuc <ttsg@ttsg.com>
-        Mike Mitchell <mcm@unx.sas.com>
-	Ulrich Schilling <schilling@netz.uni-essen.de> AIX
-	Wrolf Courtney <wrolf@wrolf.net> (HP-UX)
-        Alan Lichty <alan_lichty@eli.net>
-        Alex van den Bogaerdt <alex@ergens.op.het.net> (rrd_resize.c and more)
-        Frank Strauss <strauss@escape.de> TCL bindings
-        Jakob Ilves <jilves@se.oracle.com> HPUX 11
-        Jeremy Fischer <jeremy@pobox.com> (Makefile changes & RPM builds)
-        Oleg Cherevko <olwi@icyb.kiev.ua>
-        Rainer Bawidamann <Rainer.Bawidamann@informatik.uni-ulm.de>
-        Selena M Brewington <smbrewin@ichips.intel.com> add_ds
-        Steen Linden <Steen.Linden@ebone.net>
-        Steve Harris <steveh@wesley.com.au> AIX portability
-        Tom Crawley <Tom.Crawley@hi.riotinto.com.au> (GCC&HP configuration)
-	Albert Chin-A-Young <china@thewrittenword.com>
-	Sean McCreary mccreary@xoanon.colorado.edu
-	Bruce Campbell <bruce.campbell@apnic.net>
-	Sean Summers <sean@Fenstermaker.com> (RPM .spec)
-	Christophe Van Ginneken <Christophe.VanGinneken@ubizen.com> (--no-legend)
-	Wolfgang Schrimm <wschrimm@uni-hd.de> xport function
-        Travis Brown <tebrown@csh.rit.edu> 
-	Peter Stamfest <peter@stamfest.at> initial multi-thread support
-	David L. Barker <dave@ncomtech.com> xport function bug fixes
-	Mike Slifcak <slif@bellsouth.net> many rrdtool-1.1.x fixes
-	Peter Speck <speck@vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
-	David Grimes <dgrimes@navisite.com> SQRT/SORT/REV/SHIFT/TREND
-	Henrik Storner <henrik@hswn.dk> make rrd_graph() provide the min/max values of data in graph
-	Radoslaw Karas <rkaras@tyndall.ie>
-
-Documentation
-
-	Alan Lichty <alan_lichty@eli.net>
-	Alex van den Bogaerdt <alex@ergens.op.het.net>
-        Amos Shapira <amos@gezernet.co.il>
-        Kai Siering <kai.siering@mediaways.net>
-        Russ Wright <rwwright@home.com>
-	Steve Rader <rader@teak.wiscnet.net>  
-        Wrolf Courtney <wrolf@wrolf.net>      
-	Tobias Weingartner <weingart@cs.ualberta.ca>
-	hendrik visage <hvisage@is.co.za>
-	Steve Rader <rader@teak.wiscnet.net>
-        Jesús Couto Fandiño
-
-Packaging
-        Henri GOMEZ -- Redhat RPMs
-        Philippe Simonet -- NT Binaries
-
-
-Internet Resources
-        LAN Services AG (www.lan.ch) 
-           for the http://rrdtool.eu.org domain reflector
-
-        Alexander Lucke (lucke@dns-net.de) 
-           and DNS:NET Internet Services (www.dns-net.de)
-              for http://rrdtool.org
-
-Further I would like to note, that RRDtool would not exist without
-the following free software products:
-
-	Perl by Larry Wall
-	libart by Raph Levien
-	freetype by David Turner, Robert Wilhelm, and Werner Lemberg
-	libpng by Glenn Randers-Pehrson / Andreas Eric Dilger / Guy Eric Schalnat
-	cgilib by Martin Schulze
-	zlib by Jean-loup Gailly and Mark Adler
-	SNMP Perl-Module by Simon Leinen
-
-	and last but not least
-	
-	Linux by Linus Torvalds	
-
-I would also like to thank the Department of Electrical Engineering
-at the Swiss Federal Institute of Technology who allow me to
-use their network resources to publish RRDtool ...
-
-During Summer 1999 CAIDA (www.caida.org) has supported me in working full
-time on RRDtool ... A big thank you to them as well.
-
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Alan Lichty <alan_lichty with eli.net> 
+Alan Milligan <alan.milligan@last-bastion.net> Python bindings
+Alex van den Bogaerdt <alex with ergens.op.het.net> (rrd_resize.c and more)
+Amos Shapira <amos with gezernet.co.il>
+Andreas Kroomaa <andre with ml.ee>
+Andrew Turner <turner with mint.net> (LAST consolidator)
+Bernard Fischer <bfischer with syslog.ch> 64bit stuff and --alt-autoscale-max
+Bill Fenner <fenner with research.att.com>
+Blair Zajac <bzajac with geostaff.com>
+Bruce Campbell <bruce.campbell with apnic.net>
+Chin-A-Young <china with thewrittenword.com>
+Christophe VG <Christophe.VanGinneken with ubizen.com>
+Christophe Van Ginneken <Christophe.VanGinneken with ubizen.com> (--no-legend)
+Dan Dunn <dandunn with computer.org>
+Dave Bodenstab <dave@bodenstab.org> AT style time in update, tclfixes
+David Grimes <dgrimes with navisite.com> SQRT/SORT/REV/SHIFT/TREND
+David L. Barker <dave with ncomtech.com> xport function bug fixes
+Frank Strauss <strauss with escape.de> TCL bindings
+Henrik Storner <henrik with hswn.dk> functions for min/max values of data in graph
+Hermann Hueni <hueni with glue.ch> (SunOS porting)
+Jakob Ilves <jilves with se.oracle.com> HPUX 11
+Jeff R. Allen <jeff.allen with acm.org> (autoconfigure, portability)  
+Jeremy Fischer <jeremy with pobox.com> (Makefile changes & RPM builds)
+Jesús Couto Fandiño
+Joel Becker <jlbec with raleigh.ibm.com> AIX
+Joey Miller <joeym with inficad.com>php3 and php4 bindings
+Jost.Krieger <Jost.Krieger with ruhr-uni-bochum.de>
+Kai Siering <kai.siering with mediaways.net>
+Larry Leszczynski <larryl with furph.com>
+McCreary mccreary with xoanon.colorado.edu
+Mike Mitchell <mcm with unx.sas.com>
+Mike Slifcak <slif with bellsouth.net> many rrdtool-1.1.x fixes
+Oleg Cherevko <olwi with icyb.kiev.ua>
+Otmar Lendl <O.Lendl with Austria.EU.net> (lots of bugfixes)
+Paul Joslin <Paul.Joslin with sdrc.com>
+Peter Speck <speck with vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
+Peter Stamfest <peter with stamfest.at> initial multi-thread support
+Peter Breitenlohner <peb with mppmu.mpg.de>  many patches for rrdtool 1.2.x
+Philippe.Simonet <Philippe.Simonet with swisscom.com> (NT porting)
+Poul-Henning Kamp <phk with freebsd.org> CDEF enhancements
+REIBENSCHUH Alfred <alfred.reibenschuh with it-austria.com> AIX
+Radoslaw Karas <rkaras with tyndall.ie>
+Rainer Bawidamann <Rainer.Bawidamann with informatik.uni-ulm.de>
+Roman Hoogant <rhoogant with ee.ethz.ch>
+Ronan Mullally <ronan in 4L.ie>
+Roger J. Meier <roger.meier in terreactive.ch> (arbitrary linelength in rrdtool)
+Russ Wright <rwwright with home.com>
+Sean Summers <sean with Fenstermaker.com> (RPM .spec)
+Selena M Brewington <smbrewin with ichips.intel.com> add_ds
+Shane O'Donnell <shaneo with opennms.org>
+Simon Leinen <simon with switch.ch>
+Steen Linden <Steen.Linden with ebone.net>
+Stefan Mueller <s.mueller with computer.org> HPUX 11
+Steve Harris <steveh with wesley.com.au> AIX portability
+Steve Rader <rader with teak.wiscnet.net> (rrd_cgi debugging and LAST)
+Terminator rAT <karl_schilke with eli.net>
+Tobias Weingartner <weingart with cs.ualberta.ca>
+Tom Crawley <Tom.Crawley with hi.riotinto.com.au> (GCC&HP configuration)
+Travis Brown <tebrown with csh.rit.edu> 
+Tuc <ttsg with ttsg.com>
+Ulf Lilleengen <lulf with pvv.ntnu.no> Python binding for 'rrdtool first'
+Ulrich Schilling <schilling with netz.uni-essen.de> AIX
+Wim Heirman <wim.heirman elis.ugent.be> --units=si option
+Wolfgang Schrimm <wschrimm with uni-hd.de> xport function
+Wrolf Courtney <wrolf with wrolf.net> (HP-UX)
+hendrik visage <hvisage with is.co.za>
+Philippe Simonet <philippe.simonet with swisscom.ch> (Windows Binaries)
+Alexander Lucke (lucke with dns-net.de) 
+ of DNS:NET Internet Services (www.dns-net.de) http://rrdtool.org
+Hedley Simons <heds@metahusky.net>
+Nicola Worthington <nicolaw@cpan.org>

@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_afm_data.c  Encoded afm (Adobe Font Metrics) for selected fonts.
  ****************************************************************************
@@ -3223,6 +3223,7 @@ static afm_cunicode afm_Times_Roman_ligatures[] = { /* 3 */
 const afm_fontinfo afm_fontinfolist[] = {
   { /* Courier.afm   761 bytes */
       "Courier", "Courier",
+      629, -157,
       afm_Courier_widths,
       NULL,
       NULL,
@@ -3230,6 +3231,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Courier_ligatures, 1},
   { /* Courier-Bold.afm   761 bytes */
       "Courier-Bold", "Courier Bold",
+      629, -157,
       afm_Courier_Bold_widths,
       NULL,
       NULL,
@@ -3237,6 +3239,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Courier_Bold_ligatures, 1},
   { /* Courier-BoldOblique.afm   761 bytes */
       "Courier-BoldOblique", "Courier Bold Oblique",
+      629, -157,
       afm_Courier_BoldOblique_widths,
       NULL,
       NULL,
@@ -3244,6 +3247,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Courier_BoldOblique_ligatures, 1},
   { /* Courier-Oblique.afm   761 bytes */
       "Courier-Oblique", "Courier Oblique",
+      629, -157,
       afm_Courier_Oblique_widths,
       NULL,
       NULL,
@@ -3251,6 +3255,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Courier_Oblique_ligatures, 1},
   { /* Helvetica.afm   7841 bytes */
       "Helvetica", "Helvetica",
+      718, -207,
       afm_Helvetica_widths,
       afm_Helvetica_kerning_index,
       afm_Helvetica_kerning_data,
@@ -3258,6 +3263,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Helvetica_ligatures, 1},
   { /* Helvetica-Bold.afm   7336 bytes */
       "Helvetica-Bold", "Helvetica Bold",
+      718, -207,
       afm_Helvetica_Bold_widths,
       afm_Helvetica_Bold_kerning_index,
       afm_Helvetica_Bold_kerning_data,
@@ -3265,6 +3271,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Helvetica_Bold_ligatures, 1},
   { /* Helvetica-BoldOblique.afm   7336 bytes */
       "Helvetica-BoldOblique", "Helvetica Bold Oblique",
+      718, -207,
       afm_Helvetica_BoldOblique_widths,
       afm_Helvetica_BoldOblique_kerning_index,
       afm_Helvetica_BoldOblique_kerning_data,
@@ -3272,6 +3279,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Helvetica_BoldOblique_ligatures, 1},
   { /* Helvetica-Oblique.afm   7841 bytes */
       "Helvetica-Oblique", "Helvetica Oblique",
+      718, -207,
       afm_Helvetica_Oblique_widths,
       afm_Helvetica_Oblique_kerning_index,
       afm_Helvetica_Oblique_kerning_data,
@@ -3279,6 +3287,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Helvetica_Oblique_ligatures, 1},
   { /* ZapfDingbats.afm   416 bytes */
       "ZapfDingbats", "ITC Zapf Dingbats",
+      0, 0,
       afm_ZapfDingbats_widths,
       NULL,
       NULL,
@@ -3286,6 +3295,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       NULL, 0},
   { /* Symbol.afm   563 bytes */
       "Symbol", "Symbol",
+      0, 0,
       afm_Symbol_widths,
       NULL,
       NULL,
@@ -3293,6 +3303,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       NULL, 0},
   { /* Times-Bold.afm   6761 bytes */
       "Times-Bold", "Times Bold",
+      683, -217,
       afm_Times_Bold_widths,
       afm_Times_Bold_kerning_index,
       afm_Times_Bold_kerning_data,
@@ -3300,6 +3311,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Times_Bold_ligatures, 1},
   { /* Times-BoldItalic.afm   6270 bytes */
       "Times-BoldItalic", "Times Bold Italic",
+      683, -217,
       afm_Times_BoldItalic_widths,
       afm_Times_BoldItalic_kerning_index,
       afm_Times_BoldItalic_kerning_data,
@@ -3307,6 +3319,7 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Times_BoldItalic_ligatures, 1},
   { /* Times-Italic.afm   6975 bytes */
       "Times-Italic", "Times Italic",
+      683, -217,
       afm_Times_Italic_widths,
       afm_Times_Italic_kerning_index,
       afm_Times_Italic_kerning_data,
@@ -3314,11 +3327,12 @@ const afm_fontinfo afm_fontinfolist[] = {
       afm_Times_Italic_ligatures, 1},
   { /* Times-Roman.afm   6287 bytes */
       "Times-Roman", "Times Roman",
+      683, -217,
       afm_Times_Roman_widths,
       afm_Times_Roman_kerning_index,
       afm_Times_Roman_kerning_data,
       afm_Times_Roman_highchars_index, 220,
       afm_Times_Roman_ligatures, 1},
-  { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 };
 const int afm_fontinfo_count = 14;

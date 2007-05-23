@@ -1,8 +1,6 @@
 =head1 NAME
 
-rrdtool last - Return the date of the last data sample in an B<RRD>
-
-=for html <div align="right"><a href="rrdlast.pdf">PDF</a> version.</div>
+rrdlast - Return the date of the last data sample in an RRD
 
 =head1 SYNOPSIS
 
@@ -10,8 +8,8 @@ B<rrdtool> B<last> I<filename>
 
 =head1 DESCRIPTION
 
-The B<last> function returns the UNIX timestamp when the RRD was last
-updated.
+The B<last> function returns the UNIX timestamp of the most recent
+update of the RRD.
 
 =over 8
 

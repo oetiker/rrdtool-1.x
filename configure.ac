@@ -4,12 +4,21 @@ dnl
 dnl Created by Jeff Allen, Tobi Oetiker, Blair Zajac
 dnl
 dnl Inspiration from http://autoconf-archive.cryp.to
-
+ 
 dnl tell automake the this script is for rrdtool
-AC_INIT([rrdtool],[1.1.9901])
+dnl the official version number is
+dnl a.b.c
+AC_INIT([rrdtool],[1.2.23])
+dnl for testing a numberical version number comes handy
+dnl the released version are
+dnl a.bccc
+dnl the devl versions will be something like
+dnl a.b999yymmddhh 
+NUMVERS=1.2023
+AC_SUBST(NUMVERS)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([rrd_config.h])
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -17,10 +26,8 @@ dnl is in there
 
 dnl determine the type of system we are running on
 
-
 AC_SUBST(VERSION)
 
-dnl where we install our stuff ...
 AC_PREFIX_DEFAULT( /usr/local/rrdtool-$PACKAGE_VERSION )
 
 dnl Minimum Autoconf version required.
@@ -30,8 +37,8 @@ dnl At the TOP of the HEADER
 
 AH_TOP([
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef RRD_CONFIG_H
+#define RRD_CONFIG_H
 /* IEEE can be prevented from raising signals with fpsetmask(0) */
 #undef MUST_DISABLE_FPMASK
 
@@ -45,11 +52,16 @@ AH_TOP([
  ])
 
 AH_BOTTOM([
+/* enable posix_fadvise on linux */
+#if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
+#define _XOPEN_SOURCE 600
+#include <fcntl.h>
+#endif
 
 /* define strrchr, strchr and memcpy, memmove in terms of bsd funcs
    make sure you are NOT using bcopy, index or rindex in the code */
       
-#if STDC_HEADERS
+#ifdef STDC_HEADERS
 # include <string.h>
 #else
 # ifndef HAVE_STRCHR
@@ -63,26 +75,29 @@ char *strchr (), *strrchr ();
 # endif
 #endif
 
-
-#if NO_NULL_REALLOC
+#ifdef NO_NULL_REALLOC
 # define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #else
 # define rrd_realloc(a,b) realloc((a), (b))
-#endif      
+#endif
 
-#if HAVE_MATH_H
+#ifdef NEED_MALLOC_MALLOC_H
+#  include <malloc/malloc.h>
+#endif
+
+#ifdef HAVE_MATH_H
 #  include <math.h>
 #endif
 
-#if HAVE_FLOAT_H
+#ifdef HAVE_FLOAT_H
 #  include <float.h>
 #endif
 
-#if HAVE_IEEEFP_H
+#ifdef HAVE_IEEEFP_H
 #  include <ieeefp.h>
 #endif
 
-#if HAVE_FP_CLASS_H
+#ifdef HAVE_FP_CLASS_H
 #  include <fp_class.h>
 #endif
 
@@ -90,6 +105,12 @@ char *strchr (), *strrchr ();
 #if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
 #  define HAVE_ISINF 1
 #  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
+#endif
+
+/* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
+#if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
+#  undef isnan
+#  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
 #endif
 
 /* for OSF1 Digital Unix */
@@ -132,9 +153,45 @@ char *strchr (), *strrchr ();
 #error "Can't compile without isinf function"
 #endif
 
-#endif /* CONFIG_H */
+#endif /* RRD_CONFIG_H */
 ])
 
+dnl Process Special Options
+dnl -----------------------------------
+
+dnl How the vertical axis label is printed
+AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
+ [Vertical label angle: 90.0 (default) or 270.0])
+AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
+ [Vertical label angle: 90.0 (default) or 270.0])
+
+AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
+[],[enable_rrdcgi=yes])
+
+dnl Check if we run on a system that has fonts
+AC_ARG_WITH(rrd-default-font,
+[  --with-rrd-default-font=[OPTIONS]  set the full path to your default font.],
+[RRD_DEFAULT_FONT=$withval],[
+  if test -d ${WINDIR:-nodir}/cour.ttf ; then
+	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
+  else
+	RRD_DEFAULT_FONT='$(fontsdir)/$(fonts_DATA)'
+  fi
+])
+
+dnl Use mmap in rrd_update instead of seek+write
+AC_ARG_ENABLE([mmap],
+[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
+[],
+[enable_mmap=yes])
+
+
+ AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
+[],[enable_pthread=yes])
+
+
+
+CONFIGURE_PART(Audit Compilation Environment)
 
 
 dnl Check for the compiler and static/shared library creation.
@@ -142,10 +199,30 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_LIBTOOL
 
+dnl which flags does the compile support?
+if test "$GCC" = "yes"; then
+  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W; do
+    oCFLAGS=$CFLAGS
+    CFLAGS="$CFLAGS $flag"
+    cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
+    AC_CACHE_CHECK([if gcc likes the $flag flag], $cachename,
+       [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
+    if eval test \$$cachename = no; then
+         CFLAGS=$oCFLAGS
+    fi
+  done
+fi
+
+
+
+AC_SUBST(RRD_DEFAULT_FONT)
+
+CONFIGURE_PART(Checking for Header Files)
+ 
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h time.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/time.h sys/times.h sys/param.h sys/resource.h float.h)
+AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -159,6 +236,8 @@ dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
 CFLAGS="$CFLAGS $pic_flag"
 
+CONFIGURE_PART(Test Library Functions)
+
 dnl Checks for library functions.
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
@@ -168,57 +247,67 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise madvise)
 
-dnl Use mmap in rrd_update instead of seek+write
-AC_ARG_ENABLE([mmap],
-[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
-[],
-[enable_mmap=yes])
+AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
+#include <fcntl.h>])
+AC_CHECK_DECLS(madvise, [], [], [#include <sys/mman.h>])
 
 if test "x$enable_mmap" = xyes; then
-  AC_FUNC_MMAP
+  case "$host" in
+    *cygwin*)
+       # the normal mmap test does not work in cygwin
+       AC_CHECK_FUNCS(mmap)
+       if [ "x${ac_cv_func_mmap}" = xyes ]; then
+         ac_cv_func_mmap_fixed_mapped=yes
+       fi
+    ;;
+    *)
+       AC_FUNC_MMAP
+    ;;
+  esac
 fi
 
+
+CONFIGURE_PART(IEEE Math Checks)
+ 
 dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we need
 dnl actual code to check if this works
 AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; fpclassify(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f; ]], [[x = fpclassify(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
 AC_CHECK_FUNCS(finite, ,
   [AC_CHECK_FUNCS(isfinite, ,
     [AC_MSG_CHECKING(for isfinite with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isfinite(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f;  ]], [[x = isfinite(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>]], [[float f = 0.0; isinf(f)]])],[AC_MSG_RESULT(yes)
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
 
 AC_FULL_IEEE
 
-dnl How the vertical axis label is printed
-AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
- [Vertical label angle: 90.0 (default) or 270.0])
-AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
- [Vertical label angle: 90.0 (default) or 270.0])
+CONFIGURE_PART(Resolve Portability Issues)
 
+dnl what does realloc do if it gets called with a NULL pointer
 
-AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
-[],[enable_rrdcgi=yes])
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
- 
-if test $enable_rrdcgi != no; then
-EX_CHECK_ALL(cgi,        cgiInit,                   cgi.h,                  cgilib,      0.5,    http://www.infodrom.org/projects/cgilib)
-fi
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/)
-EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.1,  http://www.gzip.org/zlib/)
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.8,  http://prdownloads.sourceforge.net/libpng/)
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		     freetype2,   2.1.9,  http://prdownloads.sourceforge.net/freetype/)
+AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
+	      int main(void){
+              char *x = NULL;
+	      x = realloc (x,10);
+	      if (x==NULL) return 1;
+	      return 0;
+             }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
 
-if test "$EX_CHECK_ALL_ERR" = "YES"; then
-  AC_MSG_ERROR([Please fix the library issues listed above and try again.])
+if test x"$rd_cv_null_realloc" = xnope; then
+AC_DEFINE(NO_NULL_REALLOC)
 fi
 
 AC_LANG_PUSH(C)
@@ -244,7 +333,7 @@ AC_LINK_IFELSE(
                 [[#include <time.h>]],
                 [[ctime_r(NULL,NULL)]]
     	                 ),
-          [AC_MSG_RESULT(yes)],
+          [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
     ]  
@@ -256,11 +345,6 @@ dnl http://autoconf-archive.cryp.to/acx_pthread.m4
  
 AC_SUBST(MULTITHREAD_CFLAGS)
 AC_SUBST(MULTITHREAD_LDFLAGS)
-
- 
-AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
-[],[enable_pthread=yes])
-
 
 if test $enable_pthread != no; then 
  ACX_PTHREAD([
@@ -277,40 +361,103 @@ if test  "x$x_rflag" != "xno"; then
    CPPFLAGS="$CPPFLAGS $x_rflag"
 fi
 
- 
 AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
+
+AC_LANG_PUSH(C)
+dnl see if we have to include malloc/malloc.h
+AC_MSG_CHECKING([do we need malloc/malloc.h])
+AC_LINK_IFELSE(
+    AC_LANG_PROGRAM(
+           [[#include <stdlib.h>]],
+           [[malloc(1)]]
+                   ),
+    [ AC_MSG_RESULT([nope, works out of the box]) ],
+    [ AC_LINK_IFELSE(
+          AC_LANG_PROGRAM(
+                [[#include <stdlib.h>
+                  #include <malloc/malloc.h>]],
+                [[malloc(1)]]
+    	                 ),
+          [AC_DEFINE(NEED_MALLOC_MALLOC_H)
+           AC_MSG_RESULT([yes we do])],
+          [AC_MSG_ERROR([Can not figure how to compile malloc])]
+      )
+    ]  
+)
+AC_LANG_POP(C)
+
+CONFIGURE_PART(Find 3rd-Party Libraries)
+
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
+CORE_LIBS="$LIBS"
+
+EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
+EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
+EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.10,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+
+if test "$EX_CHECK_ALL_ERR" = "YES"; then
+  AC_MSG_ERROR([Please fix the library issues listed above and try again.])
+fi
+
+ALL_LIBS="$LIBS"
+LIBS=
+
+AC_SUBST(CORE_LIBS)
+AC_SUBST(ALL_LIBS)
+
+CONFIGURE_PART(Prep for Building Language Bindings)
   
 dnl Check for Perl.
 AC_PATH_PROG(PERL, perl, no)
-if test "x$PERL" = "xno"; then
+
+AC_ARG_ENABLE(perl,[  --disable-perl          do not build the perl modules],
+[],[enable_perl=yes])
+
+
+AC_ARG_VAR(PERLCC, [[] C compiler for Perl modules])
+AC_ARG_VAR(PERLCCFLAGS, [[] CC flags for Perl modules])
+AC_ARG_VAR(PERLLD, [[same as PERLCC] Linker for Perl modules])
+AC_ARG_VAR(PERLLDFLAGS, [[] LD flags for Perl modules])
+
+if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
 else
 	COMP_PERL="perl_piped perl_shared"
         AC_MSG_CHECKING(for the perl version you are running)
 	PERL_VERSION=`$PERL -MConfig -e 'print $Config{version}'`
 	AC_MSG_RESULT($PERL_VERSION)
-        AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
-	perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
-	AC_MSG_RESULT($perlcc)
-	if test ! -x $perlcc; then
- 	       AC_PATH_PROG(PERLCC, ${perlcc}, no)
-	       if test -x $"x$PERLCC" = "xno"; then
-                  AC_MSG_WARN([
-I would not find the Compiler ($perlcc) that was originally used to compile your
-perl binary. You should either make sure that this compiler is available on your
-system, or use a different perl setup that was compiled with $CC.
+        if test -z "$PERLCC"; then
+            AC_MSG_CHECKING(for the C compiler perl wants to use to build its modules)
+	    perlcc=`$PERL -MConfig -e 'print $Config{cc}'`
+	    AC_MSG_RESULT($perlcc)
+	    if test ! -x "$perlcc"; then
+ 	        AC_PATH_PROG(PERL_CC, ${perlcc}, no)
+	        if test "$PERL_CC" = "no"; then
+                    AC_MSG_WARN([
+I would not find the Compiler ($perlcc) that was originally used to compile
+your perl binary. You should either make sure that this compiler is
+available on your system, pick an other compiler and set PERLCC
+appropriately, or use a different perl setup that was compiled locally.
 
-I will disable the compilation of the RRDs perl module.
+I will disable the compilation of the RRDs perl module for now.
 ])
-  		  COMP_PERL="perl_piped"
-	       fi
+  		    COMP_PERL="perl_piped"
+	        fi
+            fi    
         fi
 fi
+
 AC_MSG_CHECKING(Perl Modules to build)
 AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
-PERL_MAKE_OPTIONS="PREFIX=$prefix LIB=$prefix/lib/perl/$PERL_VERSION"
+ppref=$prefix
+test "$ppref" = "NONE" && ppref=$ac_default_prefix
+
+PERL_MAKE_OPTIONS="PREFIX=$ppref LIB=$ppref/lib/perl/$PERL_VERSION"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
@@ -322,6 +469,23 @@ AC_ARG_ENABLE(perl-site-install,
                           your perl setup thinks it is best.],
 [PERL_MAKE_OPTIONS=],[])
 
+if test ! -z "$PERLCC"; then
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC=$PERLCC"
+
+   if test ! -z "$PERLCCFLAGS"; then
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS=$PERLCCFLAGS"
+   fi
+   
+   if test -z "$PERLLD"; then
+       PERLLD=$PERLCC
+   fi
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD=$PERLLD"
+  
+   if test ! -z "$PERLLDFLAGS"; then
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
+   fi
+fi
+        
 AC_ARG_WITH(perl-options,
 [  --with-perl-options=[OPTIONS]  options to pass on command-line when
                           generating Makefile from Makefile.PL. If you set this
@@ -334,29 +498,84 @@ AC_SUBST(PERL)
 AC_SUBST(COMP_PERL)
 AC_SUBST(PERL_VERSION)
 
+dnl Check for Ruby.
+AC_PATH_PROG(RUBY, ruby, no)
 
-dnl Check for Tcl.
-withval=""
-AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
-found=0
-AC_MSG_CHECKING(for tclConfig.sh in $withval)
-if test -f "$withval/tclConfig.sh" ; then
-    	tcl_config=$withval/tclConfig.sh
-        found=1
+AC_ARG_ENABLE(ruby,[  --disable-ruby          do not build the ruby modules],
+[],[enable_ruby=yes])
+
+AC_MSG_CHECKING(if ruby modules can be built)
+
+if test "x$RUBY" = "xno" -o  x$enable_ruby = xno; then
+	COMP_RUBY=
+ 	AC_MSG_RESULT(No .. Ruby not found or disabled)
+else
+	if $RUBY -e 'require "mkmf"' >/dev/null 2>&1; then
+		COMP_RUBY="ruby"
+	 	AC_MSG_RESULT(YES)
+	else
+		COMP_RUBY=
+	 	AC_MSG_RESULT(Ruby found but mkmf is missing! Install the -dev package)		
+	fi				
+fi
+
+
+dnl pass additional ruby options when generating Makefile from Makefile.PL
+AC_ARG_ENABLE(ruby-site-install,
+[  --enable-ruby-site-install   by default the rrdtool ruby modules are installed
+		  	  together with rrdtool in $prefix/lib/ruby. You have to
+                          add $prefix/lib/ruby/$ruby_version/$sitearch to you $: variable
+                          for ruby to find the RRD.so file.],
+[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$prefix/lib/ruby"])
+
+    
+AC_ARG_WITH(ruby-options,
+[  --with-ruby-options=[OPTIONS]  options to pass on command-line when
+                          generating Makefile from extconf.rb. If you set this
+                          option, interesting things may happen unless you know
+                          what you are doing!],
+[RUBY_MAKE_OPTIONS=$withval])
+
+AC_SUBST(RUBY_MAKE_OPTIONS)
+AC_SUBST(RUBY)
+AC_SUBST(COMP_RUBY)
+
+
+enable_tcl_site=no
+
+AC_ARG_ENABLE(tcl,[  --disable-tcl           do not build the tcl modules],
+[],[enable_tcl=yes])
+
+if test  "$enable_tcl" = "yes"; then
+  dnl Check for Tcl.
+  withval=""
+  AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
+  enable_tcl=no
+  for dir in $withval /usr/lib /usr/local/lib; do
+    AC_MSG_CHECKING(for tclConfig.sh in $dir)
+    if test -f "$dir/tclConfig.sh" ; then
+    	tcl_config=$dir/tclConfig.sh
+        enable_tcl=yes
         AC_MSG_RESULT(yes)
         break
-else
+    else
         AC_MSG_RESULT(no)
-fi
+    fi
+  done
 
-if test $found -eq 0 ; then
+  if test "$enable_tcl" = "no"; then
         AC_MSG_WARN([tclConfig.sh not found - Tcl interface won't be built])
-else
+  else
 	. $tcl_config
+	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
+  fi
+  AC_ARG_ENABLE(tcl,[  --enable-tcl-site        install the tcl extension in the tcl tree],
+  [],[enable_tcl_site=yes])
+
 fi
 
-
-AM_CONDITIONAL(COMP_TCL, test x$found = x1 )
+AM_CONDITIONAL(BUILD_TCL, test "$enable_tcl" = "yes" )
+AM_CONDITIONAL(BUILD_TCL_SITE, test "$enable_tcl_site" = "yes" )
 
 AC_SUBST(TCL_PREFIX)
 AC_SUBST(TCL_SHLIB_CFLAGS)
@@ -364,62 +583,60 @@ AC_SUBST(TCL_SHLIB_LD)
 AC_SUBST(TCL_SHLIB_SUFFIX)
 AC_SUBST(TCL_PACKAGE_PATH)
 AC_SUBST(TCL_LD_SEARCH_FLAGS)
+AC_SUBST(TCL_STUB_LIB_SPEC)
+AC_SUBST(TCL_VERSION)
+AC_SUBST(TCL_PACKAGE_DIR)
 
+AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
+[],[enable_python=yes])
 
+if test  "$enable_python" = "yes"; then
+dnl Check for python
+AM_PATH_PYTHON(2.3,[],[enable_python=no])
+AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
+fi
+
+if test  x$enable_python = xno; then
+	COMP_PYTHON=
+else
+	COMP_PYTHON="python"
+fi
+
+AC_SUBST(COMP_PYTHON)
 
 dnl Check for nroff
 AC_PATH_PROGS(NROFF, gnroff nroff)
 AC_PATH_PROGS(TROFF, groff troff)
 
-dnl Does the compiler like -Wall and -pedantic?
-if test "x$GCC" = "xyes"; then
-  oCFLAGS=$CFLAGS
-  CFLAGS="$CFLAGS -Wall -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W"
-  AC_CACHE_CHECK(if we can use GCC-specific compiler options, rd_cv_gcc_opt,
-                [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[rd_cv_gcc_opt=yes],[rd_cv_gcc_opt=no ])
-               ]
-        )
-  if test $rd_cv_gcc_opt = no; then
-         CFLAGS=$oCFLAGS
-  fi
-fi
+AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
+if test -z "$RRDDOCDIR"; then
+   RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
 
-dnl what does realloc do if it gets called with a NULL pointer
 
-AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
-[AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdlib.h>
-	      int main(void){
-              char *x = NULL;
-	      x = realloc (x,10);
-	      if (x==NULL) return 1;
-	      return 0;
-             }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
+CONFIGURE_PART(Apply Configuration Information)
+ 
+AC_CONFIG_FILES([examples/shared-demo.pl])
+AC_CONFIG_FILES([examples/piped-demo.pl])
+AC_CONFIG_FILES([examples/stripes.pl])
+AC_CONFIG_FILES([examples/bigtops.pl])
+AC_CONFIG_FILES([examples/minmax.pl])
+AC_CONFIG_FILES([examples/4charts.pl])
+AC_CONFIG_FILES([examples/perftest.pl])
+AC_CONFIG_FILES([examples/Makefile])
+AC_CONFIG_FILES([doc/Makefile])
+AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([bindings/Makefile])
+AC_CONFIG_FILES([bindings/tcl/Makefile])
+AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
+AC_CONFIG_FILES([Makefile])          
 
-if test x"$rd_cv_null_realloc" = xnope; then
-AC_DEFINE(NO_NULL_REALLOC)
-fi
-
-AC_CONFIG_FILES([examples/shared-demo.pl			\
-          examples/piped-demo.pl			\
-          examples/stripes.pl				\
-          examples/bigtops.pl				\
-          examples/minmax.pl				\
-          examples/cgi-demo.cgi				\
-          examples/4charts.pl  				\
-          examples/Makefile				\
-          doc/Makefile					\
-          src/Makefile					\
-          bindings/Makefile                             \
-          bindings/tcl/Makefile				\
-          Makefile])
-AC_CONFIG_COMMANDS([default],[[\
-          chmod +x examples/*.cgi examples/*.pl]],[[]])
+AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 AC_OUTPUT
 
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://people.ee.ethz.ch/~oetiker/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -434,21 +651,25 @@ echo
 echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
-echo "    With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
-echo "    Perl Modules: $COMP_PERL"
-echo "     Perl Binary: $PERL"
-echo "    Perl Version: $PERL_VERSION"
-echo "    Perl Options: $PERL_MAKE_OPTIONS"
-echo "      Tcl Config: $tcl_config"
-echo "    Build rrdcgi: $enable_rrdcgi"
-echo " Build librrd MT: $enable_pthread"
+echo "          With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
+echo "          Perl Modules: $COMP_PERL"
+echo "           Perl Binary: $PERL"
+echo "          Perl Version: $PERL_VERSION"
+echo "          Perl Options: $PERL_MAKE_OPTIONS"
+echo "          Ruby Modules: $COMP_RUBY"
+echo "           Ruby Binary: $RUBY"
+echo "          Ruby Options: $RUBY_MAKE_OPTIONS"
+echo "    Build Tcl Bindings: $enable_tcl"
+echo " Build Python Bindings: $enable_python"
+echo "          Build rrdcgi: $enable_rrdcgi"
+echo "       Build librrd MT: $enable_pthread"
 echo
-ech
+echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
 echo 
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://people.ee.ethz.ch/oetiker/wish and"
+echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo 
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"

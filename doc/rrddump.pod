@@ -1,20 +1,23 @@
 =head1 NAME
 
-rrdtool dump - dump the contents of an B<RRD> to XML format
-
-=for html <div align="right"><a href="rrddump.pdf">PDF</a> version.</div>
+rrddump - dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<dump> I<filename.rrd> E<gt> I<filename.xml> 
+B<rrdtool> B<dump> I<filename.rrd> E<gt> I<filename.xml>
+
+or 
+
+B<rrdtool> B<dump> I<filename.rrd> I<filename.xml>
 
 =head1 DESCRIPTION
 
-The B<dump> function prints the contents of an B<RRD> in human
-readable (?) XML format. This format can be read by rrdrestore.
-Together they allow you to transfer your files from one architecture
-to another as well as manipulating the contents of an B<RRD> file in a
-somewhat more convenient manner.
+The B<dump> function writes the contents of an B<RRD> in human
+readable (?) XML format to a file or to stdout. This format can
+be read by rrdrestore. Together they allow you to transfer your
+files from one computer architecture to another as well to
+manipulate the contents of an B<RRD> file in a somewhat more
+convenient manner.
 
 
 
@@ -23,6 +26,11 @@ somewhat more convenient manner.
 =item I<filename.rrd>
 
 The name of the B<RRD> you want to dump.
+
+=item I<filename.xml>
+
+The (optional) filename that you want to write the XML output to.
+If not specified, the XML will be printed to stdout.
 
 =back
 
@@ -37,18 +45,18 @@ To transfer an RRD between architectures, follow these steps:
 On the same system where the RRD was created, use B<rrdtool> B<dump>
 to export the data to XML format.
 
-=item 2. 
+=item 2.
 
-Transfer the XML dump to the target system
+Transfer the XML dump to the target system.
 
 =item 3.
 
-Run B<rrdtool> B<restore> to create a new RRD from the XML dump.  See
+Run B<rrdtool> B<restore> to create a new RRD from the XML dump. See
 B<rrdrestore> for details.
 
 =back
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 

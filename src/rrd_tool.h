@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_tool.h   Common Header File
  *****************************************************************************/
@@ -11,12 +11,10 @@ extern "C" {
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
-#ifdef WIN32
-#include "../confignt/config.h"
-#else
 #ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "../rrd_config.h"
+#elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#include "../win32/config.h"
 #endif
 
 #ifdef MUST_DISABLE_SIGFPE
@@ -26,12 +24,11 @@ extern "C" {
 #ifdef MUST_DISABLE_FPMASK
 #include <floatingpoint.h>
 #endif
-    
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <time.h>
 #include <ctype.h>
 
 #if HAVE_SYS_PARAM_H
@@ -74,16 +71,26 @@ extern "C" {
 # include <sys/stat.h>
 #endif
 
-
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
-#if HAVE_SYS_TIME_H
+
+#if TIME_WITH_SYS_TIME
 # include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
 #endif
+
 #if HAVE_SYS_TIMES_H
 # include <sys/times.h>
 #endif
+
+
 #if HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #if (defined(__svr4__) && defined(__sun__))
@@ -95,29 +102,29 @@ extern int getrusage(int, struct rusage *);
 
 #include "rrd.h"
 
-#ifndef WIN32
-
-/* unix-only includes */
-#ifndef isnan
-int isnan(double value);
-#endif
-
-#else
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
 /* Win32 only includes */
 
 #include <float.h>        /* for _isnan  */
-#define isnan _isnan
-#define finite _finite
-#define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
+#include <io.h>           /* for chdir   */
+
 struct tm* localtime_r(const time_t *timep, struct tm* result);
 char* ctime_r(const time_t *timep, char* result);
 struct tm* gmtime_r(const time_t *timep, struct tm* result);
 char *strtok_r(char *str, const char *sep, char **last);
+
+#else
+
+/* unix-only includes */
+#if !defined isnan && !defined HAVE_ISNAN
+int isnan(double value);
+#endif
+
 #endif
 
 /* local include files -- need to be after the system ones */
-#include "getopt.h"
+#include "rrd_getopt.h"
 #include "rrd_format.h"
 
 #ifndef max
@@ -151,6 +158,8 @@ typedef struct info_t {
 } info_t;
 
 info_t *rrd_info(int, char **);
+int rrd_lastupdate(int argc, char **argv, time_t *last_update,
+                unsigned long *ds_cnt, char ***ds_namv, char ***last_ds);
 info_t *rrd_update_v(int, char **);
 char * sprintf_alloc(char *, ...);
 info_t *info_push(info_t *, char *, enum info_type, infoval);
@@ -159,8 +168,8 @@ info_t *info_push(info_t *, char *, enum info_type, infoval);
 
 int PngSize(FILE *, long *, long *);
 
-int rrd_create_fn(char *file_name, rrd_t *rrd);
-int rrd_fetch_fn(char *filename, enum cf_en cf_idx,
+int rrd_create_fn(const char *file_name, rrd_t *rrd);
+int rrd_fetch_fn(const char *filename, enum cf_en cf_idx,
 		 time_t *start,time_t *end,
 		 unsigned long *step,
 		 unsigned long *ds_cnt,
@@ -177,7 +186,7 @@ int readfile(const char *file, char **buffer, int skipfirst);
 #define RRD_READONLY    0
 #define RRD_READWRITE   1
 
-enum cf_en cf_conv(char *string);
+enum cf_en cf_conv(const char *string);
 enum dst_en dst_conv(char *string);
 long ds_match(rrd_t *rrd,char *ds_nam);
 double rrd_diff(char *a, char *b);

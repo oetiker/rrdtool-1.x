@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_afm_data.h  Encoded afm (Adobe Font Metrics) for selected fonts.
  ****************************************************************************/
@@ -168,6 +168,7 @@ typedef const afm_unicode afm_cunicode;
 typedef struct afm_fontinfo {
   const char   *fullname; /* e.g. "Futura Bold Oblique" */
   const char   *postscript_name; /* e.g. "Futura-BoldOblique" */
+  afm_cuint16 ascender, descender;
   afm_cuint8   *widths;
   afm_csint16  *kerning_index;
   afm_cuint8   *kerning_data;

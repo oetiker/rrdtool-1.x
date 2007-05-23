@@ -1,0 +1,205 @@
+=head1 NAME
+
+rrdbuild - Instructions for building RRDtool
+
+=head1 DESCRIPTION
+
+=head2 Overview
+
+If you downloaded the source of rrdtool you have to compile it. This
+document will give some information on how this is done.
+
+RRDtool relies on services of thrid part libraries. Some of these libraries
+may already be installed on your system. You have to compile copies of the other
+ones before you can build RRDtool.
+
+This document will tell you about all the necessary steps to get going.
+
+=head2 Building
+
+Before you start to build RRDtool, you have to decide two things:
+
+=over
+
+=item 1.
+
+In which directory you want to build the software.
+
+=item 2.
+
+Where you want to install the software.
+
+=back
+
+Once you have decided. Save the two locations into environment variables.
+Depending on the shell you are using, you can do either (bash,zsh):
+
+ BUILD_DIR=/tmp/rrdbuild
+ INSTALL_DIR=/usr/local/rrdtool-1.2.23
+
+Or if you run tcsh:
+
+ set BUILD_DIR=/tmp/rrdbuild
+ set INSTALL_DIR=/usr/local/rrdtool-1.2.23
+
+If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
+a different directory!
+
+Now make sure the BUILD_DIR exists and go there:
+
+ mkdir -p $BUILD_DIR
+ cd $BUILD_DIR
+
+Lets first assume you already have all the necessary libraries
+pre-installed. Note that these instructions assume that your copies of
+B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
+could be that they are installed as B<gtar> and B<gmake> on your system.
+
+ wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.23.tar.gz
+ tar zxf rrdtool-1.2.23.tar.gz
+ cd rrdtool-1.2.23
+ ./configure --prefix=$INSTALL_DIR && make && make install
+
+Ok, this was very optimistic. This try will probably have ended with
+B<configure> complaining about several missing libraries. If you are on a
+Linux or *bsd system you may want to just install the missing bits from your
+software repository. When you do that, make sure you also get the B<-dev>
+package for each library you install. Once you have the missing bits on
+board, just re-run the last line of the instructions above.
+
+But again this may have been too optimistic, and you actually have to
+compile your own copies of the required libraries.
+
+=head3 Build Tipps for AIX
+
+If you are woking with AIX, you may find the the B<--disable-shared> option
+will cause things to break for you. In that case you may have to install the
+shared libraries into the rrdtool PREFIX and work with B<--disable-static>
+instead.
+
+Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
+
+ export CC=/usr/vac/bin/cc
+ export PERLCC=$CC
+
+(Better instructions for AIX welcome!)
+
+=head2 Building Libraries
+
+In order to build the libraries you need a compiler on your system.
+Unfortunately compilers are not all alike. This has an effect on the CFLAGS
+you want to set. The examples below are for the popular GCC compiler suite.
+If you have an other compile you have to use the following settings:
+
+=over
+
+=item Sun Forte
+
+ CFLAGS="-xO3 -kPIC"
+
+=back
+
+=over 
+
+=item Building zlib
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
+ tar  zxf zlib-1.2.3.tar.gz
+ cd zlib-1.2.3
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
+ make
+ make install
+
+=item Building libpng
+
+Libpng itself requires zlib to build, so we need to help a bit. If you
+already have a copy of zlib on your system (which is very likley) you can
+drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
+the end of line 4 means that line 4 and line 5 are on one line.
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.10.tar.gz
+ tar zxvf libpng-1.2.10.tar.gz
+ cd libpng-1.2.10
+ env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
+     ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ make
+ make install
+
+=item Building freetype
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.1.10.tar.bz2
+ tar jxvf freetype-2.1.10.tar.bz2
+ cd freetype-2.1.10
+ env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
+     ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ make
+ make install
+
+If you run into problems building freetype on Solaris, you may want to try to
+add the following at the end of the configure line:
+
+ GNUMAKE=gmake EGREP=egrep
+
+=item Building libart_lgpl
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
+ tar zxvf libart_lgpl-2.3.17.tar.gz
+ cd libart_lgpl-2.3.17
+ env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ make
+ make install
+
+=back
+
+Now all the dependent libraries are built and you can try again. Since these
+are static libraries, you may have to use F<ranlib> to make them accessible.
+Especially BSD systems like Mac OS X may require this, Linux and Solaris
+will do just fine without since their F<ar> command does ranlibs job as well.
+
+ ranlib $BUILD_DIR/lb/lib/*.a
+
+This time you tell configure where it should be looking for libraries and
+include files. This is done via environment variables. Depending on the
+shell you are running, the syntax for setting environment variables is
+different. Under csh/tcsh you use:
+
+ set IR=-I$BUILD_DIR/lb/include
+ setenv CPPFLAGS "$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
+ setenv LDFLAGS  -L$BUILD_DIR/lb/lib
+ setenv CFLAGS -O3
+
+If you are running bash/sh/ash/ksh/zsh use this:
+
+ IR=-I$BUILD_DIR/lb/include
+ CPPFLAGS="$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
+ LDFLAGS="-L$BUILD_DIR/lb/lib"
+ CFLAGS=-O3
+ export CPPFLAGS LDFLAGS CFLAGS
+
+And finally try building again. We disable the python and tcl bindings
+because it seems that a fair number of people have ill configured python and
+tcl setups that would prevent rrdtool from building if they are included in
+their current state.
+
+ cd $BUILD_DIR/rrdtool-1.2.23
+ ./configure --prefix=$INSTALL_DIR --disable-python --disable-tcl
+ make clean
+ make
+ make install
+
+SOLARIS HINT: if you want to build  the perl module for the native perl (the
+one shipping with solaris) you will need the sun forte compiler
+installed on your box or you have to hand-tune bindings/perl-shared/Makefile
+while building!
+
+Now go to I<$INSTALL_DIR>B</share/rrdtool/examples/> and run them to see if your
+build has been successful.
+
+=head1 AUTHOR
+
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
+

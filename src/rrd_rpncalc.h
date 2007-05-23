@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997 - 2000
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  ****************************************************************************
  * rrd_rpncalc.h  RPN calculator functions
  ****************************************************************************/
@@ -16,7 +16,9 @@ enum op_en {OP_NUMBER=0,OP_VARIABLE,OP_INF,OP_PREV,OP_NEGINF,
 	    OP_COS,OP_LOG,OP_EXP,OP_LT,OP_LE,OP_GT,OP_GE,OP_EQ,OP_IF,
 	    OP_MIN,OP_MAX,OP_LIMIT, OP_FLOOR, OP_CEIL,
 	    OP_UN,OP_END,OP_LTIME,OP_NE,OP_ISINF,OP_PREV_OTHER,OP_COUNT,
-	    OP_ATAN,OP_SQRT,OP_SORT,OP_REV,OP_TREND};
+           OP_ATAN,OP_SQRT,OP_SORT,OP_REV,OP_TREND,
+           OP_ATAN2,OP_RAD2DEG,OP_DEG2RAD,
+           OP_AVG,OP_ABS};
 
 typedef struct rpnp_t {
     enum op_en   op;
@@ -45,13 +47,13 @@ typedef struct rpnstack_t {
 void rpnstack_init(rpnstack_t *rpnstack);
 void rpnstack_free(rpnstack_t *rpnstack);
 
-void parseCDEF_DS(char *def, rrd_t *rrd, int ds_idx);
+void parseCDEF_DS(const char *def, rrd_t *rrd, int ds_idx);
 long lookup_DS(void *rrd_vptr, char *ds_name);
 
 short rpn_compact(rpnp_t *rpnp,rpn_cdefds_t **rpnc,short *count);
 rpnp_t * rpn_expand(rpn_cdefds_t *rpnc);
 void rpn_compact2str(rpn_cdefds_t *rpnc,ds_def_t *ds_def,char **str);
-rpnp_t * rpn_parse(void *key_hash,char *expr, long (*lookup)(void *,char *));
+rpnp_t * rpn_parse(void *key_hash,const char *const expr, long (*lookup)(void *,char *));
 short rpn_calc(rpnp_t *rpnp, rpnstack_t *rpnstack, long data_idx, rrd_value_t *output, int output_idx);
 
 #endif

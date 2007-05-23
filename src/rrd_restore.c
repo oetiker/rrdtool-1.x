@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_restore.c  creates new rrd from data dumped by rrd_dump.c
  *****************************************************************************/
@@ -8,7 +8,7 @@
 #include "rrd_rpncalc.h"
 #include <fcntl.h>
 
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #define open _open
 #define close _close
@@ -18,6 +18,7 @@
 
 void xml_lc(char*);
 int skip(char **);
+int skipxml(char **);
 int eat_tag(char **, char *);
 int read_tag(char **, char *, char *, void *);
 int xml2rrd(char*, rrd_t*, char);
@@ -44,8 +45,28 @@ void xml_lc(char* buf){
   }
 }
 
-int skip(char **buf){
+int skipxml(char **buf){
   char *ptr;  
+  ptr=(*buf);
+  do {
+    (*buf)=ptr;
+    while((*(ptr+1)) && ((*ptr)==' ' ||  (*ptr)=='\r' || (*ptr)=='\n' || (*ptr)=='\t')) ptr++;
+    if (strncmp(ptr,"<?xml",4) == 0) {
+      ptr= strstr(ptr,"?>");
+      if (ptr) ptr+=2; else {
+	rrd_set_error("Dangling XML header");
+	(*buf) = NULL;
+	return -1;
+      }
+    }
+  } while ((*buf)!=ptr);  
+  return 1;
+}
+
+int skip(char **buf){
+  char *ptr;
+  if ((buf == NULL) || (*buf == NULL))
+    return -1;  
   ptr=(*buf);
   do {
     (*buf)=ptr;
@@ -112,11 +133,14 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
   char *ptr,*ptr2,*ptr3; /* walks thought the buffer */
   long rows=0,mempool=0,i=0;
   int rra_index;
+  int input_version;
   xml_lc(buf); /* lets lowercase all active parts of the xml */
   ptr=buf;
   ptr2=buf;
   ptr3=buf;
   /* start with an RRD tag */
+  
+  skipxml(&ptr);
 
   eat_tag(&ptr,"rrd");
   /* allocate static header */
@@ -127,20 +151,25 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 
   strcpy(rrd->stat_head->cookie,RRD_COOKIE);
   read_tag(&ptr,"version","%4[0-9]",rrd->stat_head->version);
+  input_version = atoi(rrd->stat_head->version);
   /* added primitive version checking */
-  if (atoi(rrd -> stat_head -> version) > atoi(RRD_VERSION) )
+  if (input_version > atoi(RRD_VERSION) || input_version < 1)
   {
-    rrd_set_error("Incompatible file version, detected version %s is bigger than supported version %s\n",
+    rrd_set_error("Incompatible file version, detected version %s. This is not supported by the version %s restore tool.\n",
 		  rrd -> stat_head -> version, RRD_VERSION );
-    free(rrd -> stat_head);
+    free(rrd -> stat_head); 
+    rrd->stat_head = NULL; 
     return -1;
   }
-  if (atoi(rrd -> stat_head -> version) < 2) 
+  /* make sure we output the right version */
+  strcpy(rrd->stat_head->version,RRD_VERSION);
+
+  /*  if (atoi(rrd -> stat_head -> version) < 2) 
   {
-    rrd_set_error("Can only restore version >= 2 (Not %s). Dump your rrd using a current rrdtool dump.",  rrd -> stat_head -> version );
-    free(rrd -> stat_head);
+    rrd_set_error("Can only restore version >= 2 (Not %s). Dump your old rrd using a current rrdtool dump.",  rrd -> stat_head -> version );
     return -1;
-  }
+  } */
+
   rrd->stat_head->float_cookie = FLOAT_COOKIE;
   rrd->stat_head->ds_cnt = 0;
   rrd->stat_head->rra_cnt = 0;
@@ -185,8 +214,9 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       read_tag(&ptr2,"max","%lf",&(rrd->ds_def[rrd->stat_head->ds_cnt-1].par[DS_max_val].u_val));
 	  } else { /* DST_CDEF */
 		 char buffer[1024];
-	     read_tag(&ptr2,"cdef","%s",buffer);
+	         read_tag(&ptr2,"cdef","%1000s",buffer);
 		 parseCDEF_DS(buffer,rrd,rrd -> stat_head -> ds_cnt - 1);
+		 if (rrd_test_error()) return -1;
 	  }
 
       read_tag(&ptr2,"last_ds","%30s",rrd->pdp_prep[rrd->stat_head->ds_cnt-1].last_ds);
@@ -209,7 +239,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       if((rrd->cdp_prep = rrd_realloc(rrd->cdp_prep,
 				  rrd->stat_head->rra_cnt
 				  *rrd->stat_head->ds_cnt*sizeof(cdp_prep_t)))==NULL){
-	  rrd_set_error("allocating cdp_prep"); return -1; }
+         rrd_set_error("allocating cdp_prep"); return -1; }
 
       memset(&(rrd->cdp_prep[rrd->stat_head->ds_cnt*(rrd->stat_head->rra_cnt-1)]), 
 	     0, rrd->stat_head->ds_cnt*sizeof(cdp_prep_t));
@@ -221,12 +251,19 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 
       read_tag(&ptr2,"pdp_per_row","%lu",&(rrd->rra_def[rrd->stat_head->rra_cnt-1].pdp_cnt));
       /* support to read RRA parameters */
-      eat_tag(&ptr2, "params");
-      skip(&ptr2);
       rra_index = rrd->stat_head->rra_cnt - 1;
-      /* backwards compatibility w/ old patch */
+      if ( input_version < 2 ){
+         read_tag(&ptr2, "xff","%lf",
+            &(rrd->rra_def[rra_index].par[RRA_cdp_xff_val].u_val));
+      } else {
+        if (eat_tag(&ptr2, "params") != 1) {
+    	  rrd_set_error("could not find params tag to eat and skip");
+          return -1;
+        }
+        skip(&ptr2);
+        /* backwards compatibility w/ old patch */
       if (strncmp(ptr2, "<value>",7) == 0) {
-         parse_patch1028_RRA_params(&ptr2,rrd,rra_index); 
+          parse_patch1028_RRA_params(&ptr2,rrd,rra_index); 
       } else {
       switch(cf_conv(rrd -> rra_def[rra_index].cf_nam)) {
       case CF_HWPREDICT:
@@ -270,6 +307,9 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       }
       }
       eat_tag(&ptr2, "/params");
+   }
+
+
       eat_tag(&ptr2,"cdp_prep");
       for(i=0;i< (int)rrd->stat_head->ds_cnt;i++)
       {
@@ -277,6 +317,15 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
       /* support to read CDP parameters */
       rra_index = rrd->stat_head->rra_cnt-1; 
       skip(&ptr2);
+      if ( input_version < 2 ){
+          rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)+i].scratch[CDP_primary_val].u_val = 0.0;
+          rrd->cdp_prep[rrd->stat_head->ds_cnt*(rra_index)+i].scratch[CDP_secondary_val].u_val = 0.0;
+          read_tag(&ptr2,"value","%lf",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
+               *(rra_index) +i].scratch[CDP_val].u_val));
+          read_tag(&ptr2,"unknown_datapoints","%lu",&(rrd->cdp_prep[rrd->stat_head->ds_cnt
+              *(rra_index) +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
+      } else {
+
       if (strncmp(ptr2, "<value>",7) == 0) {
          parse_patch1028_CDP_params(&ptr2,rrd,rra_index,i);
       } else {
@@ -335,6 +384,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
                *(rra_index) +i].scratch[CDP_unkn_pdp_cnt].u_cnt));
             break;
 	 }
+      }
       }
       eat_tag(&ptr2,"/ds");
       }
@@ -421,7 +471,7 @@ rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
     if (strcmp("-",file_name)==0){
       rrd_file= stdout;
     } else {
-#ifdef WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
       fdflags = O_RDWR|O_BINARY|O_CREAT;
 #else
       fdflags = O_WRONLY|O_CREAT;
@@ -446,11 +496,7 @@ rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
     fwrite(rrd->rra_def,
 	   sizeof(rra_def_t), rrd->stat_head->rra_cnt, rrd_file);
 
-	 /* maybe the xml hold an old formatted rrd */
-    if (atoi(rrd->stat_head->version) < 3)
-      fwrite(&(rrd->live_head->last_up), sizeof(long),1, rrd_file);
-    else
-      fwrite(rrd->live_head, sizeof(live_head_t),1, rrd_file);
+    fwrite(rrd->live_head, sizeof(live_head_t),1, rrd_file);
 
     fwrite( rrd->pdp_prep, sizeof(pdp_prep_t),rrd->stat_head->ds_cnt,rrd_file);
     
@@ -488,24 +534,19 @@ rrd_restore(int argc, char **argv)
 	char			force_overwrite = 0;	
 
     /* init rrd clean */
-    rrd_init(&rrd);
-    if (argc<3) {
-		rrd_set_error("usage rrdtool %s [--range-check/-r] [--force-overwrite/-f] file.xml file.rrd",argv[0]);
-		return -1;
-    }
-	
+    optind = 0; opterr = 0;  /* initialize getopt */
 	while (1) {
 		static struct option long_options[] =
 		{
-			{"range-check",      required_argument, 0,  'r'},
-			{"force-overwrite",	required_argument, 0,	'f'},
+			{"range-check",      no_argument, 0,  'r'},
+			{"force-overwrite",  no_argument, 0,  'f'},
 			{0,0,0,0}
 		};
 		int option_index = 0;
 		int opt;
 		
 		
-		opt = getopt_long(argc, argv, "r:f", long_options, &option_index);
+		opt = getopt_long(argc, argv, "rf", long_options, &option_index);
 		
 		if (opt == EOF)
 			break;
@@ -523,16 +564,26 @@ rrd_restore(int argc, char **argv)
 			break;
 		}
     }
+
+    if (argc-optind != 2) {
+		rrd_set_error("usage rrdtool %s [--range-check/-r] [--force-overwrite/-f] file.xml file.rrd",argv[0]);
+		return -1;
+    }
 	
     if (readfile(argv[optind],&buf,0)==-1){
       return -1;
     }
+
+    rrd_init(&rrd);
+
     if (xml2rrd(buf,&rrd,rc)==-1) {
 	rrd_free(&rrd);
 	free(buf);
 	return -1;
     }
+
     free(buf);
+
     if(rrd_write(argv[optind+1],&rrd,force_overwrite)==-1){
 	rrd_free(&rrd);	
 	return -1;	

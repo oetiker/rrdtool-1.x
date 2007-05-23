@@ -1,9 +1,9 @@
 #!/bin/sh
 # the next line restarts using tclsh -*- tcl -*- \
-exec tclsh8.2 "$0" "$@"
+exec tclsh@TCL_VERSION@ "$0" "$@"
 
 #package require Tnm 3.0
-package require Rrd 1.0.13
+package require Rrd @VERSION@
 
 set rrdfile "[lindex $argv 0]-[lindex $argv 1].rrd"
 

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * change header parameters of an rrd
  *****************************************************************************
@@ -61,6 +61,7 @@ rrd_tune(int argc, char **argv)
     double              min;
     double              max;
     char                dst[DST_SIZE];
+    optind = 0; opterr = 0;  /* initialize getopt */
 
 
     if(rrd_open(argv[1],&rrd_file,&rrd, RRD_READWRITE)==-1){
@@ -289,7 +290,7 @@ rrd_tune(int argc, char **argv)
 		   rrd.ds_def[i].par[DS_min_val].u_val,
 		   rrd.ds_def[i].par[DS_max_val].u_val);
 		} else {
-		char *buffer;
+		char *buffer = NULL;
 		rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),rrd.ds_def,&buffer);
 		printf("DS[%s] typ: %s\tcdef: %s\n", rrd.ds_def[i].ds_nam,rrd.ds_def[i].dst,buffer);
 	    free(buffer);

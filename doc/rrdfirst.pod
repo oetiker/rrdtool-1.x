@@ -1,8 +1,6 @@
 =head1 NAME
 
-rrdfirst - Return the date of the first data sample in an B<RRA> within an B<RRD>
-
-=for html <div align="right"><a href="rrdfirst.pdf">PDF</a> version.</div>
+rrdfirst - Return the date of the first data sample in an RRA within an RRD
 
 =head1 SYNOPSIS
 
@@ -10,8 +8,8 @@ B<rrdtool> B<first> I<filename> [I<--rraindex number>]
 
 =head1 DESCRIPTION
 
-The B<first> function returns the UNIX timestamp of the first data sample for
-the specified RRA of the RRD file.
+The B<first> function returns the UNIX timestamp of the first data
+sample entered into the specified RRA of the RRD file.
 
 =over 8
 
@@ -21,8 +19,8 @@ The name of the B<RRD> that contains the data.
 
 =item I<--rraindex number>
 
-The index number of the B<RRA> that is to be examined.  If not specified, the
-index defaults to zero. B<RRA> index numbers can be determined through 
+The index number of the B<RRA> that is to be examined. If not specified, the
+index defaults to zero. B<RRA> index numbers can be determined through
 B<rrdtool info>.
 
 =back

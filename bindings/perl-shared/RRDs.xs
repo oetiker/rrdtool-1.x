@@ -10,7 +10,25 @@ extern "C" {
 }
 #endif
 
+/*
+ * rrd_tool.h includes config.h, but at least on Ubuntu Breezy Badger
+ * 5.10 with gcc 4.0.2, the C preprocessor picks up Perl's config.h
+ * which is included from the Perl includes and never reads rrdtool's
+ * config.h.  Without including rrdtool's config.h, this module does
+ * not compile, so include it here with an explicit path.
+ *
+ * Because rrdtool's config.h redefines VERSION which is originally
+ * set via Perl's Makefile.PL and passed down to the C compiler's
+ * command line, save the original value and reset it after the
+ * includes.
+ */
+#define VERSION_SAVED VERSION
+#undef VERSION
+#include "../../rrd_config.h"
 #include "../../src/rrd_tool.h"
+#undef VERSION
+#define VERSION VERSION_SAVED
+#undef VERSION_SAVED
 
 /* perl 5.004 compatibility */
 #if PERLPATCHLEVEL < 5 
@@ -29,7 +47,6 @@ extern "C" {
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char)); \
 		    strcpy(argv[i+1],handle); \
  	        } \
-		optind=0; opterr=0; \
 		rrd_clear_error();\
 		RETVAL=name(items+1,argv); \
 		for (i=0; i < items; i++) {\
@@ -53,7 +70,6 @@ extern "C" {
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char)); \
 		    strcpy(argv[i+1],handle); \
  	        } \
-		optind=0; opterr=0; \
                 rrd_clear_error(); \
                 data=name(items+1, argv); \
                 for (i=0; i < items; i++) { \
@@ -203,7 +219,6 @@ rrd_graph(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax); 
 		for (i=0; i < items; i++) {
@@ -251,7 +266,6 @@ rrd_fetch(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data); 
 		for (i=0; i < items; i++) {
@@ -330,7 +344,6 @@ rrd_xport(...)
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
-		optind=0; opterr=0; 
 		rrd_clear_error();
 		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data); 
 		for (i=0; i < items; i++) {

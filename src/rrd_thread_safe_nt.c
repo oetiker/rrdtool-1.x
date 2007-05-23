@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  * This file:     Copyright 2003 Peter Stamfest <peter@stamfest.at> 
  *                             & Tobias Oetiker
  * Distributed under the GPL
@@ -63,7 +63,8 @@ const char *rrd_strerror(int err) {
 
     EnterCriticalSection(&CriticalSection); 
     strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
-	LeaveCriticalSection(&CriticalSection); 
+    ctx->lib_errstr[ctx->errlen] = '\0';
+    LeaveCriticalSection(&CriticalSection); 
 
     return ctx->lib_errstr;
 }

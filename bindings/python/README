@@ -1,0 +1,28 @@
+Python-RRDtool 0.2.1
+--------------------
+
+The python-rrdtool provides a interface to rrdtool, the wonderful
+graphing and logging utility. This wrapper implementation has
+worked from the scratch (without SWIG), and it's under LGPL.
+
+This module have not documented yet. Please refer pydoc.
+
+
+Project
+-------
+
+Homepage: http://www.nongnu.org/py-rrdtool/
+
+Mailing Lists:
+
+  CVS Checkins     py-rrdtool-cvs@nongnu.org
+  Users & Hackers  py-rrdtool-users@nongnu.org
+
+
+Author
+------
+
+Hye-Shik Chang <perky@FreeBSD.org>
+
+Any comments, suggestions, and/or patches are very welcome.
+Thank you for using py-rrdtool!

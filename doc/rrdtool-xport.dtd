@@ -2,7 +2,7 @@
 <!-- the attributes of the row and the t elements are used -->
 <!-- in the examples/shared-demo.pl, but not in the output -->
 <!-- of the native xport command.                          -->
-<!-- wolfgang{dot}schrimm{at}urz{dot}uni-heidelberg{dot}de                -->
+<!-- wolfgang{dot}schrimm{at}urz{dot}uni-heidelberg{dot}de -->
 
 <!-- root element -->
 <!ELEMENT xport (meta, data)>

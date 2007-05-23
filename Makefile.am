@@ -2,11 +2,15 @@
 RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
-SUBDIRS = src bindings doc examples
+SUBDIRS = src doc examples bindings
 
   # the following files are not mentioned in any other Makefile
-EXTRA_DIST = COPYRIGHT CHANGES NT-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
-	     rrdtool.spec
+EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
+	     rrdtool.spec favicon.ico win32/config.h win32/rrd.dsp win32/rrd.vcproj \
+	     win32/rrdtool.dsp win32/rrdtool.dsw win32/rrdtool.vcproj win32/Makefile \
+	     win32/rrd_config.h.msvc netware/Makefile
+
+	     
 
 CLEANFILES = config.cache
 
@@ -21,11 +25,6 @@ ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 
 to-docs: to-versync
 	(cd doc && $(MAKE) clean && $(MAKE) && $(MAKE) pdf)
-	(cd website && wmk-1.7.4 -f manual tutorial contributors.wml && ./site-sync )
-
-to-versync: 
-	perl -i -p -e '"$(VERSION)" =~ /(\d+)\.(\d+)\.(\d+)/; $$v=sprintf("%1d.%02d0%02d1" ,$${1},$${2},$${3}); s|VERSION\s*=\s*[\d.]+|VERSION = $$v|' perl-*/RRD?.pm
-	perl -i -p -e 's|RRDtool\s+\d+\.\d+\.\d+ |RRDtool $(VERSION) |' src/*.[ch]
 
 to-dist: to-docs dist
 	mv $(PACKAGE)-$(VERSION).tar.gz archive
@@ -44,5 +43,8 @@ site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefil
 
 site-tcl-install: all
 	cd bindings/tcl && $(MAKE) tcl-install
+
+site-python-install: all
+	cd bindings/python && $(PYTHON) setup.py install
 
 ##END##

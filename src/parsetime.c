@@ -659,7 +659,8 @@ assign_date(struct rrd_time_value *ptv, long mday, long mon, long year)
 static char *
 day(struct rrd_time_value *ptv)
 {
-    long mday=0, wday, mon, year = ptv->tm.tm_year;
+    /* using time_t seems to help portability with 64bit oses */    
+    time_t mday=0, wday, mon, year = ptv->tm.tm_year;
     int tlen;
 
     switch (sc_tokid) {
@@ -836,8 +837,23 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
 
     /* Only absolute time specifications below */
     case NUMBER:
-	    try(tod(ptv))
-            try(day(ptv))
+	    {
+	      long hour_sv = ptv->tm.tm_hour;
+	      long year_sv = ptv->tm.tm_year;
+              ptv->tm.tm_hour = 30;
+              ptv->tm.tm_year = 30000;
+  	      try(tod(ptv))
+      	      try(day(ptv))
+	      if ( ptv->tm.tm_hour == 30 &&  ptv->tm.tm_year != 30000 ){
+		try(tod(ptv))
+              }
+	      if ( ptv->tm.tm_hour == 30 ){
+		ptv->tm.tm_hour = hour_sv;
+              }
+	      if ( ptv->tm.tm_year == 30000 ){
+		ptv->tm.tm_year = year_sv;
+              }
+	    };	    
             break;
     /* fix month parsing */
     case JAN: case FEB: case MAR: case APR: case MAY: case JUN:

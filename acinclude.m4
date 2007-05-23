@@ -9,8 +9,8 @@ dnl if this check fails set the environment variable EX_CHECK_ALL_ERR to YES
 dnl and prints out a helful message
 dnl
 dnl
-dnl EX_CHECK_ALL(library, function, header, pkgconf name, tested-version, homepage)
-dnl              $1       $2        $3      $4            $5              $6
+dnl EX_CHECK_ALL(library, function, header, pkgconf name, tested-version, homepage, cppflags)
+dnl              $1       $2        $3      $4            $5              $6        $7
 dnl
 dnl
 AC_DEFUN([EX_CHECK_ALL],
@@ -19,7 +19,10 @@ AC_DEFUN([EX_CHECK_ALL],
  EX_CHECK_STATE=NO
  ex_check_save_LIBS=${LIBS}
  ex_check_save_CPPFLAGS=${CPPFLAGS}
- ex_check_save_LDFLAGS=${LDPFLAGS}
+ ex_check_save_LDFLAGS=${LDFLAGS}
+ if test "x$7" != "x"; then
+   CPPFLAGS="$CPPFLAGS -I$7"
+ fi
  dnl try compiling naked first
  AC_CHECK_LIB($1,$2, [
     AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}";EX_CHECK_STATE=YES],[])],[])
@@ -34,7 +37,10 @@ AC_DEFUN([EX_CHECK_ALL],
              LIBS=${LIBS}" "`$PKGCONFIG --libs-only-l $4`
 	     dnl remove the cached value and test again
 	     unset ac_cv_lib_$1_$2
-             AC_CHECK_LIB($1,$2,[ AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])],[])
+             AC_CHECK_LIB($1,$2,[
+	         unset ac_cv_header_`echo $3 | sed ['s/[^a-zA-Z0-9_]/_/g;s/^[0-9]/_/']`
+		 AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])
+	     ],[])
           else
              AC_MSG_WARN([
 ----------------------------------------------------------------------------
@@ -59,7 +65,7 @@ AC_DEFUN([EX_CHECK_ALL],
 
   You can find also find an archive copy on
 
-     http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
+     http://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of $4 is $5.
 
@@ -77,6 +83,7 @@ AC_DEFUN([EX_CHECK_ALL],
     AC_LANG_POP(C)
 ]
 )
+
 dnl
 dnl  Ptherad check from http://autoconf-archive.cryp.to/acx_pthread.m4
 dnl
@@ -282,6 +289,12 @@ if test "x$acx_pthread_ok" = xyes; then
         case "${host_cpu}-${host_os}" in
             *-aix* | *-freebsd* | *-darwin*) x_rflag="-D_THREAD_SAFE";;
             *solaris* | *-osf* | *-hpux*) x_rflag="-D_REENTRANT";;
+            *-linux*)
+            if test x"$PTHREAD_CFLAGS" = "x-pthread"; then
+                # For Linux/gcc "-pthread" implies "-lpthread". We need, however, to make this explicit
+                # in PTHREAD_LIBS such that a shared library to be built properly depends on libpthread.
+                PTHREAD_LIBS="-lpthread $PTHREAD_LIBS"
+            fi;;
         esac
         AC_MSG_RESULT(${x_rflag})
         if test "x$x_rflag" != xno; then
@@ -349,6 +362,12 @@ AC_CACHE_VAL([rd_cv_ieee_$2],
 #  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
 #endif
 
+/* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
+#if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
+#  undef isnan
+#  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
+#endif
+
 /* Digital UNIX */
 #if (! defined(HAVE_ISINF) && defined(HAVE_FP_CLASS) && defined(HAVE_FP_CLASS_H))
 #  define HAVE_ISINF 1
@@ -373,21 +392,21 @@ AC_CACHE_VAL([rd_cv_ieee_$2],
 
 #include <stdio.h>
 int main(void){
-    double nan,inf,c,zero;
+    double rrdnan,rrdinf,rrdc,rrdzero;
     $4;
     /* some math to see if we get a floating point exception */
-    zero=sin(0.0); /* don't let the compiler optimize us away */
-    nan=0.0/zero; /* especially here */
-    inf=1.0/zero; /* and here. I want to know if it can do the magic */
+    rrdzero=sin(0.0); /* don't let the compiler optimize us away */
+    rrdnan=0.0/rrdzero; /* especially here */
+    rrdinf=1.0/rrdzero; /* and here. I want to know if it can do the magic */
 		  /* at run time without sig fpe */
-    c = inf + nan;
-    c = inf / nan;
-    if (! isnan(nan)) {printf ("not isnan(NaN) ... "); return 1;}
-    if (nan == nan) {printf ("nan == nan ... "); return 1;}
-    if (! isinf(inf)) {printf ("not isinf(oo) ... "); return 1;}
-    if (! isinf(-inf)) {printf ("not isinf(-oo) ... "); return 1;}
-    if (! inf > 0) {printf ("not inf > 0 ... "); return 1;}
-    if (! -inf < 0) {printf ("not -inf < 0 ... "); return 1;}
+    rrdc = rrdinf + rrdnan;
+    rrdc = rrdinf / rrdnan;
+    if (! isnan(rrdnan)) {printf ("not isnan(NaN) ... "); return 1;}
+    if (rrdnan == rrdnan) {printf ("nan == nan ... "); return 1;}
+    if (! isinf(rrdinf)) {printf ("not isinf(oo) ... "); return 1;}
+    if (! isinf(-rrdinf)) {printf ("not isinf(-oo) ... "); return 1;}
+    if (! rrdinf > 0) {printf ("not inf > 0 ... "); return 1;}
+    if (! -rrdinf < 0) {printf ("not -inf < 0 ... "); return 1;}
     return 0;
  }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
 dnl these we run regardles is cached or not
@@ -430,10 +449,100 @@ AC_IEEE([out of the box], works, , , ,
                    PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
                    AC_MSG_ERROR([
 Your Compiler does not do propper IEEE math ... Please find out how to
-make IEEE math work with your compiler and let me know (oetiker@ee.ethz.ch).
+make IEEE math work with your compiler and let me know (tobi@oetiker.ch).
 Check config.log to see what went wrong ...
 ]))])])])])])])])])])
 
 AC_LANG_POP(C)
 
 ])
+
+
+dnl a macro to check for ability to create python extensions
+dnl  AM_CHECK_PYTHON_HEADERS([ACTION-IF-POSSIBLE], [ACTION-IF-NOT-POSSIBLE])
+dnl function also defines PYTHON_INCLUDES
+AC_DEFUN([AM_CHECK_PYTHON_HEADERS],
+[AC_REQUIRE([AM_PATH_PYTHON])
+AC_MSG_CHECKING(for headers required to compile python extensions)
+dnl deduce PYTHON_INCLUDES
+py_prefix=`$PYTHON -c "import sys; print sys.prefix"`
+py_exec_prefix=`$PYTHON -c "import sys; print sys.exec_prefix"`
+PYTHON_INCLUDES="-I${py_prefix}/include/python${PYTHON_VERSION}"
+if test "$py_prefix" != "$py_exec_prefix"; then
+  PYTHON_INCLUDES="$PYTHON_INCLUDES -I${py_exec_prefix}/include/python${PYTHON_VERSION}"
+fi
+AC_SUBST(PYTHON_INCLUDES)
+dnl check if the headers exist:
+save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $PYTHON_INCLUDES"
+AC_TRY_CPP([#include <Python.h>],dnl
+[AC_MSG_RESULT(found)
+$1],dnl
+[AC_MSG_RESULT(not found)
+$2])
+CPPFLAGS="$save_CPPFLAGS"
+])
+
+dnl a macro to add some color to the build process.
+dnl CONFIGURE_PART(MESSAGE)
+
+AC_DEFUN([CONFIGURE_PART],[
+case $TERM in
+       #   for the most important terminal types we directly know the sequences
+       xterm|xterm*|vt220|vt220*)
+               T_MD=`awk 'BEGIN { printf("%c%c%c%c", 27, 91, 49, 109); }' </dev/null 2>/dev/null`
+               T_ME=`awk 'BEGIN { printf("%c%c%c", 27, 91, 109); }' </dev/null 2>/dev/null`
+       ;;
+       vt100|vt100*|cygwin)
+               T_MD=`awk 'BEGIN { printf("%c%c%c%c%c%c", 27, 91, 49, 109, 0, 0); }' </dev/null 2>/dev/null`
+               T_ME=`awk 'BEGIN { printf("%c%c%c%c%c", 27, 91, 109, 0, 0); }' </dev/null 2>/dev/null`
+       ;;
+       *)
+               T_MD=''
+               T_ME=''
+       ;;
+esac
+  AC_MSG_RESULT()
+  AC_MSG_RESULT([${T_MD}$1${T_ME}])
+])
+
+
+dnl ---------------------------------------------------------------------------
+dnl CF_DISABLE_ECHO version: 10 updated: 2003/04/17 22:27:11
+dnl ---------------
+dnl stolen from xterm aclocal.m4
+dnl
+dnl You can always use "make -n" to see the actual options, but it's hard to
+dnl pick out/analyze warning messages when the compile-line is long.
+dnl
+dnl Sets:
+dnl     ECHO_LT - symbol to control if libtool is verbose
+dnl     ECHO_LD - symbol to prefix "cc -o" lines
+dnl     RULE_CC - symbol to put before implicit "cc -c" lines (e.g., .c.o)
+dnl     SHOW_CC - symbol to put before explicit "cc -c" lines
+dnl     ECHO_CC - symbol to put before any "cc" line
+dnl
+AC_DEFUN([CF_DISABLE_ECHO],[
+AC_MSG_CHECKING(if you want to see long compiling messages)
+CF_ARG_DISABLE(echo,
+        [  --disable-echo          display "compiling" commands],
+        [
+    ECHO_LT='--silent'
+    ECHO_LD='@echo linking [$]@;'
+    RULE_CC='   @echo compiling [$]<'
+    SHOW_CC='   @echo compiling [$]@'
+    ECHO_CC='@'
+],[
+    ECHO_LT=''
+    ECHO_LD=''
+    RULE_CC='# compiling'
+    SHOW_CC='# compiling'
+    ECHO_CC=''
+])
+AC_MSG_RESULT($enableval)
+AC_SUBST(ECHO_LT)
+AC_SUBST(ECHO_LD)
+AC_SUBST(RULE_CC)
+AC_SUBST(SHOW_CC)
+AC_SUBST(ECHO_CC)
+])dnl

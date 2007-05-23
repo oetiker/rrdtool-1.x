@@ -1,13 +1,11 @@
 =head1 NAME
 
-rrdtool xport - Export data in XML format based on data from one or several RRD
-
-=for html <div align="right"><a href="rrdxport.pdf">PDF</a> version.</div> 
+rrdxport - Export data in XML format based on data from one or several RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<xport> 
-S<[B<-s>|B<--start> I<seconds>]> 
+B<rrdtool> B<xport>
+S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
@@ -17,9 +15,9 @@ S<[B<XPORT>B<:>I<vname>[B<:>I<legend>]]>
 
 =head1 DESCRIPTION
 
-The B<xport> functions main purpose is to write XML formatted
+The B<xport> function's main purpose is to write an XML formatted
 representation of the data stored in one or several B<RRD>s. It
-can also extract numerical reports. 
+can also extract numerical reports.
 
 If no I<XPORT> statements are found, there will be no output.
 
@@ -48,7 +46,13 @@ for details.
 
 =item B<--step> I<value> (default automatic)
 
-See I<rrdgraph> documentation.
+See L<rrdgraph> documentation.
+
+=item B<--enumds> 
+
+The generated xml should contain the data values in enumerated tags.
+
+ <v0>val</v0><v1>val</v1>
 
 =item B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>
 
@@ -63,13 +67,13 @@ See I<rrdgraph> documentation.
 At least one I<XPORT> statement should be present. The values
 referenced by I<vname> are printed. Optionally add a legend.
 
-=over
+=back
 
 =head1 Output format
 
-The output is enclosed in a B<xport> element and contains two
+The output is enclosed in an B<xport> element and contains two
 blocks. The first block is enclosed by a B<meta> element and
-contains some meta data. The second block is enclosed by a 
+contains some meta data. The second block is enclosed by a
 B<data> element and contains the data rows.
 
 Let's assume that the I<xport> command looks like this:
@@ -82,9 +86,9 @@ Let's assume that the I<xport> command looks like this:
           XPORT:xx:"out bytes" \
           XPORT:aa:"in and out bits"
 
-The resulting meta data section (the values will depend on the
+The resulting meta data section is (the values will depend on the
 RRD characteristics):
- 
+
   <meta>
     <start>1020611700</start>
     <step>300</step>
@@ -96,8 +100,8 @@ RRD characteristics):
       <entry>in and out bits</entry>
     </legend>
   </meta>
-  
-The resulting data section:
+
+The resulting data section is:
 
   <data>
     <row><t>1020611700</t><v>3.4000000000e+00</v><v>5.4400000000e+01</v></row>
@@ -136,5 +140,5 @@ The resulting data section:
 
 =head1 AUTHOR
 
-Tobias Oetiker E<lt>oetiker@ee.ethz.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 

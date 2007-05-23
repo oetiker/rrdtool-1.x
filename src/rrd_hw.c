@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_hw.c : Support for Holt-Winters Smoothing/ Aberrant Behavior Detection
  *****************************************************************************
@@ -474,7 +474,7 @@ erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx)
    {
 #ifdef DEBUG
 	  fprintf(stderr,"erase_violations called for non-FAILURES RRA: %s\n",
-	     rrd -> rra_def[rra_idx].cf);
+	     rrd -> rra_def[rra_idx].cf_nam);
 #endif
 	  return;
    }

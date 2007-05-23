@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_info  Get Information about the configuration of an RRD
  *****************************************************************************/
@@ -117,7 +117,7 @@ rrd_info_r(char *filename) {
     switch (current_ds) {
 	   case DST_CDEF:
 		  {
-		  char *buffer = 0;
+		  char *buffer = NULL;
 		  rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
 			 rrd.ds_def, &buffer);
 		  info.u_str = buffer;

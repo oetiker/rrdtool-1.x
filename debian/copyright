@@ -4,9 +4,9 @@ Fri, 10 Sep 1999 10:53:19 -0700.
 Copied from 1.0.46 to 1.1.0 snapshot by Mike Slifcak on Wed May 12 20:53:16 EDT 2004
 
 The source package was downloaded from 
-   http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/beta/
+   http://oss.oetiker.ch/rrdtool/pub/
 
-Upstream Author(s): Tobias Oetiker <oetiker@ee.ethz.ch>
+Upstream Author(s): Tobias Oetiker <tobi@oetiker.ch>
 
 Modifications to upstream source:
 	- Build and install shared libraries

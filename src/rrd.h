@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.0.33  Copyright Tobias Oetiker, 1997,1998, 1999
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrdlib.h   Public header file for librrd
  *****************************************************************************
@@ -72,19 +72,28 @@ int    rrd_tune(int, char **);
 time_t rrd_last(int, char **);
 time_t rrd_first(int, char **);
 int    rrd_resize(int, char **);
+char * rrd_strversion(void);
+double rrd_version(void);
 int    rrd_xport(int, char **, int *, time_t *, time_t *,
 		 unsigned long *, unsigned long *,
 		 char ***, rrd_value_t **);
 
 /* thread-safe (hopefully) */
-int    rrd_create_r(char *filename,
+int    rrd_create_r(const char *filename,
 		    unsigned long pdp_step, time_t last_up,
-		    int argc, char **argv);
+		    int argc, const char **argv);
 /* NOTE: rrd_update_r are only thread-safe if no at-style time
    specifications get used!!! */
-int    rrd_update_r(char *filename, char *_template,
-		    int argc, char **argv);
-int    rrd_dump_r(char *filename);
+
+int    rrd_update_r(const char *filename, const char *_template,
+		    int argc, const char **argv);
+int    rrd_fetch_r(const char *filename, const char* cf,
+                   time_t *start, time_t *end,
+                   unsigned long *step,
+                   unsigned long *ds_cnt,
+                   char        ***ds_namv,
+                   rrd_value_t **data);
+int    rrd_dump_r(const char *filename, char *outname);
 time_t rrd_last_r(const char *filename);
 time_t rrd_first_r(const char *filename, int rraindex);
 
@@ -103,6 +112,9 @@ struct rrd_time_value {
   struct tm tm;
 };
 
+char *parsetime(const char *spec, struct rrd_time_value *ptv);
+/* END parsetime.h */
+
 struct rrd_context {
     int len;
     int errlen;
@@ -113,8 +125,6 @@ struct rrd_context {
 /* returns the current per-thread rrd_context */
 struct rrd_context *rrd_get_context(void);
 
-char *parsetime(const char *spec, struct rrd_time_value *ptv);
-/* END parsetime.h */
 
 int proc_start_end (struct rrd_time_value *,  struct rrd_time_value *, time_t *, time_t *);
 

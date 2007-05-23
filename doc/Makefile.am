@@ -1,38 +1,34 @@
 ## Process this file with automake to produce Makefile.in
 
-SUFFIXES = .pod .1 .man .html .txt .pm .pdf .src .inc
+SUFFIXES = .pod .1 .man .html .txt .pm .pdf .inc
 
 #AUTOMAKE_OPTIONS        =  foreign
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
-CLEANFILES = *.1 *.html *.txt *-dircache *.pm *.pdf *~ core *itemcache *.rej *.orig rrdgraph_*.pod *.tmp rrdgraph.pod
+CLEANFILES = *.1 *.html *.txt *-dircache RRD?.pod *.pdf *~ core *itemcache *.rej *.orig *.tmp
 
-SRC = rrdgraph.src rrdgraph_examples.src  rrdgraph_rpn.src \
-      rrdgraph_data.src rrdgraph_graph.src
+POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdrestore.pod         rrdupdate.pod  \
+      cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
+      rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod                           \
+      rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod                          \
+      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
+      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod                       
 
-PODOLD = rrdgraph-old.pod
 
-POD = rrdtool.pod rrdlast.pod rrdfirst.pod rrdcreate.pod rrdupdate.pod  rrdtutorial.es.pod \
-	cdeftutorial.pod rpntutorial.pod rrdthreads.pod bin_dec_hex.pod \
-	rrdfetch.pod rrdrestore.pod rrddump.pod rrdtune.pod rrdresize.pod \
-	rrdcgi.pod rrdtutorial.pod rrdinfo.pod rrdxport.pod rrd-beginners.pod \
-	$(SRC:.src=.pod)
+PMP = RRDs.pod RRDp.pod
 
-PMP = RRDs.pm RRDp.pm
-
-MAN = $(POD:.pod=.1) $(PMP:.pm=.1)
+MAN = $(POD:.pod=.1)
 TXT = $(MAN:.1=.txt)
-HTML = $(POD:.pod=.html) $(PMP:.pm=.html)
+HTML = $(POD:.pod=.html) $(PMP:.pod=.html)
 PDF = $(MAN:.1=.pdf)
 
 # what should go into the distribution
-EXTRA_DIST= $(POD) $(HTML) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
+EXTRA_DIST= $(POD) $(HTML) $(MAN) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd
 
-# some install rules
-idocdir = $(prefix)/doc
+idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
-ihtmldir = $(prefix)/html
+ihtmldir = $(RRDDOCDIR)/html
 ihtml_DATA = $(HTML)
 imandir = $(mandir)/man1
 iman_DATA = $(MAN)
@@ -46,7 +42,7 @@ all-local: link txt man html-local
 	pod2man --release=$(VERSION) --center=rrdtool $<  > $@
 
 .1.txt:
-	@NROFF@ -man -Tlp $< > $@
+	GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
 
 .1.pdf:
 	@TROFF@ -man $< | ps2pdf - $@
@@ -54,16 +50,13 @@ all-local: link txt man html-local
 .pm.html .pod.html .pl.html:
 	pod2html --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
 
-RRDs.pm:
-	ln -s ../bindings/perl-shared/RRDs.pm .
+RRDs.pod:
+	$(LN_S) $(top_srcdir)/bindings/perl-shared/RRDs.pm RRDs.pod
 
-RRDp.pm:
-	ln -s ../bindings/perl-piped/RRDp.pm .
+RRDp.pod:
+	$(LN_S) $(top_srcdir)/bindings/perl-piped/RRDp.pm RRDp.pod
 
-index.html:
-	rm -f index.html; ln -s rrdtool.html index.html
-
-link: RRDp.pm RRDs.pm index.html
+link: RRDp.pod RRDs.pod
 
 man: $(MAN)
 
@@ -73,3 +66,7 @@ txt: $(TXT)
 
 pdf-local: $(PDF)
 
+pod: $(POD)
+
+install-data-hook:
+	cd $(DESTDIR)$(ihtmldir) && rm -f index.html && $(LN_S) rrdtool.html index.html

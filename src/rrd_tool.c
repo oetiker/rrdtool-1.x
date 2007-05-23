@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2004
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -22,20 +22,17 @@ void PrintUsage(char *cmd)
 {
 
     char help_main[] =
-	   "RRDtool 1.1.x  Copyright 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n"
-#ifndef WIN32
-           "               Compiled " MAKE_TIMESTAMP "\n\n"
-#else
+	   "RRDtool " PACKAGE_VERSION "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled " __DATE__ " " __TIME__ "\n\n"
-#endif          
 	   "Usage: rrdtool [options] command command_options\n\n";
 
     char help_list[] =
 	   "Valid commands: create, update, updatev, graph, dump, restore,\n"
-	   "\t\tlast, first, info, fetch, tune, resize, xport\n\n";
+	   "\t\tlast, lastupdate, first, info, fetch, tune,\n"
+	   "\t\tresize, xport\n\n";
 
     char help_listremote[] =
-           "Valid remote commands: quit, ls, cd, mkdir\n\n";
+           "Valid remote commands: quit, ls, cd, mkdir, pwd\n\n";
 
 
     char help_create[] =
@@ -61,6 +58,11 @@ void PrintUsage(char *cmd)
            "* last - show last update time for RRD\n\n"
            "\trrdtool last filename.rrd\n\n";
 
+    char help_lastupdate[] =
+          "* lastupdate - returns the most recent datum stored for\n"
+          "  each DS in an RRD\n\n"
+          "\trrdtool lastupdate filename.rrd\n\n"; 
+
     char help_first[] =
            "* first - show first update time for RRA within an RRD\n\n"
            "\trrdtool first filename.rrd [--rraindex number]\n\n";
@@ -81,12 +83,12 @@ void PrintUsage(char *cmd)
 	   "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
  	   "\t\t[ time:value[:value...] ..]\n\n";
-
+ 
     char help_fetch[] =
 	   "* fetch - fetch data out of an RRD\n\n"
 	   "\trrdtool fetch filename.rrd CF\n"
-	   "\t\t[--resolution|-r resolution]\n"
-	   "\t\t[--start|-s start] [--end|-e end]\n\n";
+	   "\t\t[-r|--resolution resolution]\n"
+	   "\t\t[-s|--start start] [-e|--end end]\n\n";
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -94,35 +96,47 @@ void PrintUsage(char *cmd)
 	   "* graph - generate a graph from one or several RRD\n\n"
 	   "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
 	   "\t\t[-x|--x-grid x-axis grid and label]\n"
-	   "\t\t[--alt-y-grid]\n"
+	   "\t\t[-Y|--alt-y-grid]\n"
 	   "\t\t[-y|--y-grid y-axis grid and label]\n"
 	   "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
 	   "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
            "\t\t[-g|--no-legend]\n"
-    	   "\t\t[-F|--force-rules-legend]\n";
+    	   "\t\t[-F|--force-rules-legend]\n"
+           "\t\t[-j|--only-graph]\n";
     char help_graph2[] =
-           "\t\t[-j|--only-graph]\n"
-	   "\t\t[--font FONTTAG:size:font]\n"
-           "\t\t[--zoom factor]\n"       
-	   "\t\t[--alt-autoscale]\n"
-	   "\t\t[--alt-autoscale-max]\n"
-	   "\t\t[--units-exponent value]\n"	   
-	   "\t\t[--step seconds]\n"	   
+	   "\t\t[-n|--font FONTTAG:size:font]\n"
+           "\t\t[-m|--zoom factor]\n"       
+	   "\t\t[-A|--alt-autoscale]\n"
+	   "\t\t[-M|--alt-autoscale-max]\n"
+	   "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
+	   "\t\t[-B|--font-smoothing-threshold size]\n"
+	   "\t\t[-E|--slope-mode]\n"
+	   "\t\t[-N|--no-gridfit]\n"
+	   "\t\t[-X|--units-exponent value]\n"
+	   "\t\t[-L|--units-length value]\n"
+	   "\t\t[-S|--step seconds]\n"	   
 	   "\t\t[-f|--imginfo printfstr]\n"
 	   "\t\t[-a|--imgformat PNG]\n"
-	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n";
+	   "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
+	   "\t\t[-W|--watermark string]\n"
+	   "\t\t[DEF:vname=rrd:ds-name:CF]\n";
     char help_graph3[] =
-	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
-	   "\t\t[PRINT:vname:CF:format]\n"
-	   "\t\t[GPRINT:vname:CF:format]\n"
+	   "\t\t[VDEF:vdefname=rpn-expression]\n"
+	   "\t\t[PRINT:vdefname:format]\n"
+	   "\t\t[GPRINT:vdefname:format]\n"
+	   "\t\t[COMMENT:text]\n"
+	   "\t\t[SHIFT:vname:offset]\n"
+	   "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
 	   "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
 	   "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
-	   "\t\t[LINE{1|2|3}:vname[#rrggbb[aa][:legend]]]\n"
-	   "\t\t[AREA:vname[#rrggbb[aa][:legend]]]\n"
-	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]]\n\n";
+	   "\t\t[LINE[width]:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+	   "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+	   "\t\t[PRINT:vname:CF:format] (deprecated)\n"
+	   "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
+	   "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n";
 
     char help_tune1[] =
 	   " * tune -  Modify some basic properties of an RRD\n\n"
@@ -151,6 +165,7 @@ void PrintUsage(char *cmd)
 	   "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
 	   "\t\t[-m|--maxrows rows]\n"
 	   "\t\t[--step seconds]\n"	   
+	   "\t\t[--enumds]\n"	   
 	   "\t\t[DEF:vname=rrd:ds-name:CF]\n"
 	   "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n";
@@ -171,15 +186,20 @@ void PrintUsage(char *cmd)
 	   " * mkdir - creates a new directory\n\n"
 	   "\trrdtool mkdir newdirectoryname\n\n";
 
+    char help_pwd[] =
+	   " * pwd - returns the current working directory\n\n"
+	   "\trrdtool pwd\n\n";
+
     char help_lic[] =
 	   "RRDtool is distributed under the Terms of the GNU General\n"
 	   "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
 
 	   "For more information read the RRD manpages\n\n";
 
-    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST, C_FIRST,
-	   C_UPDATE, C_FETCH, C_GRAPH, C_TUNE, C_RESIZE, C_XPORT,
-           C_QUIT, C_LS, C_CD, C_MKDIR, C_UPDATEV };
+    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
+    	   C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_TUNE,
+	   C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
+	   C_UPDATEV };
 
     int help_cmd = C_NONE;
 
@@ -195,6 +215,8 @@ void PrintUsage(char *cmd)
 		help_cmd = C_RESTORE;
     	    else if (!strcmp(cmd,"last"))
 		help_cmd = C_LAST;
+    	    else if (!strcmp(cmd,"lastupdate"))
+		help_cmd = C_LASTUPDATE;
     	    else if (!strcmp(cmd,"first"))
 		help_cmd = C_FIRST;
     	    else if (!strcmp(cmd,"update"))
@@ -219,6 +241,8 @@ void PrintUsage(char *cmd)
                 help_cmd = C_CD;
             else if (!strcmp(cmd,"mkdir"))
                 help_cmd = C_MKDIR;
+            else if (!strcmp(cmd,"pwd"))
+                help_cmd = C_PWD;
 	}
     fputs(help_main, stdout);
     switch (help_cmd)
@@ -243,6 +267,9 @@ void PrintUsage(char *cmd)
 		break;
 	    case C_LAST:
 		fputs(help_last, stdout);
+		break;
+	    case C_LASTUPDATE:
+		fputs(help_lastupdate, stdout);
 		break;
 	    case C_FIRST:
 		fputs(help_first, stdout);
@@ -283,18 +310,42 @@ void PrintUsage(char *cmd)
 	    case C_MKDIR:
 		fputs(help_mkdir, stdout);
 		break;
+	    case C_PWD:
+		fputs(help_pwd, stdout);
+		break;
 	}
     fputs(help_lic, stdout);
 }
 
+static char *fgetslong(char **aLinePtr, FILE *stream)
+{
+   char *linebuf;
+   size_t bufsize = MAX_LENGTH;
+   int eolpos = 0;
+
+   if (feof(stream)) return *aLinePtr = 0;
+   if (!(linebuf = malloc(bufsize))) {
+      perror("fgetslong: malloc");
+      exit(1);
+   }
+   linebuf[0] = '\0';
+   while (fgets(linebuf + eolpos, MAX_LENGTH, stream)) {
+      eolpos += strlen(linebuf + eolpos);
+      if (linebuf[eolpos - 1] == '\n') return *aLinePtr = linebuf;
+      bufsize += MAX_LENGTH;
+      if (!(linebuf = realloc(linebuf, bufsize))) {
+         perror("fgetslong: realloc");
+         exit(1);
+      }
+   }
+   return *aLinePtr = linebuf[0] ? linebuf : 0;
+}
 
 int main(int argc, char *argv[])
 {
     char **myargv;
-    char aLine[MAX_LENGTH];
-#ifdef HAVE_CHROOT    
+    char *aLine;
     char *firstdir="";
-#endif
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE,SIG_IGN);
 #endif
@@ -313,16 +364,21 @@ int main(int argc, char *argv[])
 	  struct rusage  myusage;
 	  struct timeval starttime;
 	  struct timeval currenttime;
-	  struct timezone tz;
 
-	    tz.tz_minuteswest =0;
-	    tz.tz_dsttime=0;
-	    gettimeofday(&starttime,&tz);
+	  gettimeofday(&starttime, NULL);
 #endif
 	  RemoteMode=1;
-#ifdef HAVE_CHROOT
           if ((argc == 3) && strcmp("",argv[2])){
-             if (getuid()==0){
+
+             if (
+#ifdef HAVE_GETUID
+		 getuid()
+#else
+		 1
+#endif
+		 == 0 ){
+
+#ifdef HAVE_CHROOT
                 chroot(argv[2]);
                 if (errno!=0){
                    fprintf(stderr,"ERROR: can't change root to '%s' errno=%d\n",
@@ -331,8 +387,12 @@ int main(int argc, char *argv[])
                 }
                 ChangeRoot=1;
                 firstdir="/";
-             }
-             else{
+#else
+                fprintf(stderr,"ERROR: change root is not supported by your OS "
+                         "or at least by this copy of rrdtool\n");
+                exit(1);
+#endif
+             } else {
                 firstdir=argv[2];
              }
           }
@@ -343,34 +403,28 @@ int main(int argc, char *argv[])
                 exit(errno);
              }
           }
-#else
-          fprintf(stderr,"ERROR: change root is not supported by your OS "
-                         "or at least by this copy of rrdtool\n");
-          exit(1);
-#endif
 
-	    while (fgets(aLine, sizeof(aLine)-1, stdin)){
+	    while (fgetslong(&aLine, stdin)){
 		if ((argc = CountArgs(aLine)) == 0)  {
-		    fprintf(stderr,"ERROR: not enough arguments\n");		    
+		    printf("ERROR: not enough arguments\n");
 		}
 		if ((myargv = (char **) malloc((argc+1) * 
 					       sizeof(char *))) == NULL)   {
 		    perror("malloc");
-		    return -1;
+		    exit(1);
 		}
 		if ((argc=CreateArgs(argv[0], aLine, argc, myargv)) < 0) {
-		    fprintf(stderr, "ERROR: creating arguments\n");
-		    return -1;
-		}
-
-		if (HandleInputLine(argc, myargv, stdout))
-		    return -1;
-		free(myargv);
+		    printf("ERROR: creating arguments\n");
+		} else {
+	 	    int ret = HandleInputLine(argc, myargv, stdout);
+ 		    free(myargv);
+ 		    if (ret == 0){
+ 		    	
 
 #if HAVE_GETRUSAGE
-		getrusage(RUSAGE_SELF,&myusage);
-		gettimeofday(&currenttime,&tz);
-		printf("OK u:%1.2f s:%1.2f r:%1.2f\n",
+ 		     getrusage(RUSAGE_SELF,&myusage);
+		     gettimeofday(&currenttime,NULL);
+		     printf("OK u:%1.2f s:%1.2f r:%1.2f\n",
 		       (double)myusage.ru_utime.tv_sec+
 		       (double)myusage.ru_utime.tv_usec/1000000.0,
 		       (double)myusage.ru_stime.tv_sec+
@@ -379,9 +433,13 @@ int main(int argc, char *argv[])
 		       +(double)(currenttime.tv_usec-starttime.tv_usec)
 		       /1000000.0);
 #else
-		printf("OK\n");
-#endif
+		      printf("OK\n");
+		    
+#endif          
+		  }
+		}
 		fflush(stdout); /* this is important for pipes to work */
+                free(aLine);
 	    }
 	}
     else if (argc == 2)
@@ -395,9 +453,7 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
     else {
-        if(HandleInputLine(argc, argv, stderr)) {
-            return 1;
-        }
+        exit(HandleInputLine(argc, argv, stderr));
     }
     return 0;
 }
@@ -413,14 +469,17 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 #if defined(HAVE_SYS_STAT_H)
     struct stat   st;
 #endif
-    optind=0; /* reset gnu getopt */
-    opterr=0; /* no error messages */
+    char* cwd; /* To hold current working dir on call to pwd */
+
+    /* Reset errno to 0 before we start.
+    */
+    errno = 0;
 
     if (RemoteMode){
        if (argc>1 && strcmp("quit", argv[1]) == 0){
           if (argc>2){
              printf("ERROR: invalid parameter count for quit\n");
-             return(0);
+             return(1);
           }
           exit(0);
        }
@@ -428,43 +487,59 @@ int HandleInputLine(int argc, char **argv, FILE* out)
        if (argc>1 && strcmp("cd", argv[1]) == 0){
           if (argc>3){
              printf("ERROR: invalid parameter count for cd\n");
-             return(0);
+             return(1);
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: chdir security problem - rrdtool is running as "
-                    "root an no chroot!\n");
-             return(0); 
+                    "root but not chroot!\n");
+             return(1); 
           }
 #endif
           chdir(argv[2]);
           if (errno!=0){
              printf("ERROR: %s\n",rrd_strerror(errno));
+	     return(1);
           }
+          return(0);
+       }
+       if (argc>1 && strcmp("pwd", argv[1]) == 0){
+          if (argc>2){
+             printf("ERROR: invalid parameter count for pwd\n");
+             return(1);
+          }
+          cwd = getcwd(NULL, MAXPATH);
+          if(cwd == NULL) {
+             printf("ERROR: %s\n",rrd_strerror(errno));
+             return(1);
+          }
+          printf("%s\n", cwd);
+          free(cwd);
           return(0);
        }
        if (argc>1 && strcmp("mkdir", argv[1]) == 0){
           if (argc>3){
              printf("ERROR: invalid parameter count for mkdir\n");
-             return(0);
+             return(1);
           }
 #if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
           if (getuid()==0 && ! ChangeRoot){
              printf("ERROR: mkdir security problem - rrdtool is running as "
-                    "root an no chroot!\n");
-             return(0); 
+                    "root but not chroot!\n");
+             return(1); 
           }
 #endif
           mkdir(argv[2],0777);
           if (errno!=0){
              printf("ERROR: %s\n",rrd_strerror(errno));
+             return(1);
           }
           return(0);
        }
        if (argc>1 && strcmp("ls", argv[1]) == 0){
           if (argc>2){
              printf("ERROR: invalid parameter count for ls\n");
-             return(0);
+             return(1);
           }
           if ((curdir=opendir("."))!=NULL){
              while((dent=readdir(curdir))!=NULL){
@@ -480,6 +555,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
                    }
                 }
              }
+	     closedir(curdir);
           }
           else{
              printf("ERROR: %s\n",rrd_strerror(errno));
@@ -540,20 +616,42 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	}
 	free(data);
     }
-	
+
     else if (strcmp("--version", argv[1]) == 0 ||
 	     strcmp("version", argv[1]) == 0 || 
 	     strcmp("v", argv[1]) == 0 ||
 	     strcmp("-v", argv[1]) == 0  ||
 	     strcmp("-version", argv[1]) == 0  )
-        printf("RRDtool 1.1.x  Copyright (C) 1997-2004 by Tobias Oetiker <tobi@oetiker.ch>\n");
+        printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2005 (%f)\n",
+               rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
 	rrd_restore(argc-1, &argv[1]);
     else if (strcmp("resize", argv[1]) == 0)
 	rrd_resize(argc-1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
         printf("%ld\n",rrd_last(argc-1, &argv[1]));
-    else if (strcmp("first", argv[1]) == 0)
+    else if (strcmp("lastupdate", argv[1]) == 0) {
+	   time_t      last_update;
+           char        **ds_namv;
+           char        **last_ds;
+           unsigned long ds_cnt,
+                       i;
+          if (rrd_lastupdate(argc-1, &argv[1], &last_update,
+                       &ds_cnt, &ds_namv, &last_ds) == 0) {
+               for (i=0; i<ds_cnt; i++)
+                       printf(" %s", ds_namv[i]);
+               printf("\n\n");
+               printf("%10lu:", last_update);
+               for (i=0; i<ds_cnt; i++) {
+                       printf(" %s", last_ds[i]);
+                       free(last_ds[i]);
+                       free(ds_namv[i]);
+               }
+               printf("\n");
+               free(last_ds);
+               free(ds_namv);
+          }
+    } else if (strcmp("first", argv[1]) == 0)
         printf("%ld\n",rrd_first(argc-1, &argv[1]));
     else if (strcmp("update", argv[1]) == 0)
 	rrd_update(argc-1, &argv[1]);
@@ -580,13 +678,22 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    free (data);
 	}
     } else if (strcmp("xport", argv[1]) == 0) {
-	int xxsize;
+        int xxsize;
 	unsigned long int j = 0;
 	time_t        start,end, ti;
 	unsigned long step, col_cnt,row_cnt;
 	rrd_value_t   *data,*ptr;
 	char          **legend_v;
-	if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
+        int           enumds = 0;
+        int           i;
+        size_t       vtag_s = strlen(COL_DATA_TAG) + 10; 
+        char         *vtag = malloc(vtag_s); 
+	for ( i = 2; i < argc; i++){
+		if (strcmp("--enumds", argv[i]) == 0)
+			enumds = 1;
+	}
+
+        if(rrd_xport(argc-1, &argv[1], &xxsize,&start,&end,&step,&col_cnt,&legend_v,&data) != -1) {
 	  row_cnt = (end-start)/step;
 	  ptr = data;
 	  printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n", XML_ENCODING);
@@ -613,11 +720,16 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	    printf ("<%s>%lu</%s>", COL_TIME_TAG, ti, COL_TIME_TAG);
 	    for (j = 0; j < col_cnt; j++) {
 	      rrd_value_t newval = DNAN;
+              if (enumds == 1)
+		snprintf(vtag,vtag_s,"%s%lu", COL_DATA_TAG, j);
+	      else
+		snprintf(vtag,vtag_s,"%s",COL_DATA_TAG);
+              
 	      newval = *ptr;
 	      if(isnan(newval)){
-		printf("<%s>NaN</%s>", COL_DATA_TAG, COL_DATA_TAG);
+                printf("<%s>NaN</%s>", vtag,vtag);
 	      } else {
-		printf("<%s>%0.10e</%s>", COL_DATA_TAG, newval, COL_DATA_TAG);
+		printf("<%s>%0.10e</%s>", vtag, newval, vtag);
 	      };
 	      ptr++;
 	    }
@@ -627,6 +739,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	  printf("  </%s>\n", DATA_TAG);
 	  printf("</%s>\n", ROOT_TAG);
 	}
+        free(vtag);
     }
     else if (strcmp("graph", argv[1]) == 0) {
 	char **calcpr;
@@ -637,8 +750,15 @@ int HandleInputLine(int argc, char **argv, FILE* out)
 	double ymin,ymax;
 	int i;
 	int tostdout = (strcmp(argv[2],"-") == 0);	
+	int imginfo = 0;
+	for (i=2;i<argc;i++){
+		if (strcmp(argv[i],"--imginfo") == 0 || strcmp(argv[i],"-f") == 0){
+			imginfo = 1;
+			break;
+		}
+	}
 	if( rrd_graph(argc-1, &argv[1], &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) != -1 ) {
-	    if (!tostdout) 
+	    if (!tostdout && !imginfo) 
 		printf ("%dx%d\n",xsize,ysize);
 	    if (calcpr) {
 		for(i=0;calcpr[i];i++){

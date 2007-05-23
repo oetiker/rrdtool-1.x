@@ -142,7 +142,7 @@ for (my $i=0;$i<$GRUNS;$i++) {
           "VRULE:".($now-7200)."#008877:120 Minutes ago";
 
     if ($ERROR = RRDs::error) {
-      print "ERROR: $ERROR\n";
+      die "ERROR: $ERROR\n";
     } else {
       print "Image Size: ${xs}x${ys}\n";
       print "Graph Return:\n",(join "\n", @$graphret),"\n\n";
@@ -154,7 +154,7 @@ for (my $i=0;$i<$GRUNS;$i++) {
 
 my ($start,$step,$names,$array) = RRDs::fetch $RRD1, "AVERAGE";
 $ERROR = RRDs::error;
-print "ERROR: $ERROR\n" if $ERROR ;
+die "ERROR: $ERROR\n" if $ERROR ;
 print "start=$start, step=$step\n";
 print "                    "; 
 map {printf("%12s",$_)} @$names ;

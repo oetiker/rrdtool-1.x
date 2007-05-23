@@ -1,6 +1,6 @@
 =head1 NAME
 
- rrdthreads - Provisions for linking the RRD library to use in multi-threaded programs
+rrdthreads - Provisions for linking the RRD library to use in multi-threaded programs
 
 =head1 SYNOPSIS
 
@@ -9,37 +9,37 @@ precautions, as the RRD library in its original form was not
 thread-safe at all. This document describes requirements and pitfalls
 on the way to use the multi-threaded version of librrd in your own
 programs. It also gives hints for future RRD development to keep the
-library thread-safe..
+library thread-safe.
 
 Currently only some RRD operations are implemented in a thread-safe
-way. They all end in the usual "C<_r>" prefix.
+way. They all end in the usual "C<_r>" suffix.
 
 =head1 DESCRIPTION
 
-In order to use the librrd in multi-threaded programs you must:
+In order to use librrd in multi-threaded programs you must:
 
-=over 4
+=over
 
-=item * 
+=item *
 
-Link with F<librrd_th> instead of with F<librrd> (use C<-lrrd_th> when
+Link with F<librrd_th> instead of F<librrd> (use C<-lrrd_th> when
 linking)
 
-=item * 
+=item *
 
-Use the "C<_r>" functions instead or the normal API-functions
+Use the "C<_r>" functions instead of the normal API-functions
 
-=item * 
+=item *
 
 Do not use any at-style time specifications. Parsing of such time
 specifications is terribly non-thread-safe.
 
-=item * 
+=item *
 
 Never use non *C<_r> functions unless it is explicitly documented that
-the function is tread-safe
+the function is tread-safe.
 
-=item * 
+=item *
 
 Every thread SHOULD call C<rrd_get_context()> before its first call to
 any C<librrd_th> function in order to set up thread specific data. This
@@ -54,19 +54,19 @@ library. Otherwise the call might fail due to some earlier error.
 
 =back
 
-=head1 IMPORTANT NOTES FOR RRD CONTRIBUTORS:
+=head2 NOTES FOR RRD CONTRIBUTORS
 
 Some precautions must be followed when developing RRD from now on:
 
-=over 4
+=over
 
 =item *
 
 Only use thread-safe functions in library code. Many often used libc
 functions aren't thread-safe. Take care in the following
-situations/when using the following library functions:
+situations or when using the following library functions:
 
-=over 8
+=over
 
 =item *
 
@@ -93,11 +93,13 @@ C<tmpnam>: use C<tmpnam_r>
 
 =item *
 
-Many other (lookup documentation)
+Many others (lookup documentation)
 
 =back
 
-As an aide(?) a header file named F<rrd_is_thread_safe.h> is provided
+=item *
+
+A header file named F<rrd_is_thread_safe.h> is provided
 that works with the GNU C-preprocessor to "poison" some of the most
 common non-thread-safe functions using the C<#pragma GCC poison>
 directive. Just include this header in source files you want to keep
@@ -113,8 +115,8 @@ F<rrd_thread_safe.c> and F<rrd_non_thread_safe.c>
 
 =item *
 
-Do not use C<getopt> or C<getopt_long> in *C<_r> (directly or
-indirectly)
+Do not use C<getopt> or C<getopt_long> in *C<_r> (neither directly nor
+indirectly).
 
 C<getopt> uses global variables and behaves badly in a multi-threaded
 application when called concurrently. Instead provide a *_r function
@@ -126,25 +128,17 @@ C<rrd_update_r> as an example.
 
 Do not use the C<parsetime> function!
 
-It uses lots of global vars. You may use it in functions not designed
-to be thread-safe like functions wrapping the C<_r> version of some
+It uses lots of global variables. You may use it in functions not designed
+to be thread-safe, like in functions wrapping the C<_r> version of some
 operation (e.g., C<rrd_create>, but not in C<rrd_create_r>)
 
 =back
 
-=head1 CURRENTLY IMPLEMENTED THREAD SAFE FUNCTIONS
+=head2 CURRENTLY IMPLEMENTED THREAD SAFE FUNCTIONS
 
-Currently there exit thread-safe variants of C<rrd_update>,
-C<rrd_create>, C<rrd_dump>, C<rrd_info> and C<rrd_last>.
+Currently there exist thread-safe variants of C<rrd_update>,
+C<rrd_create>, C<rrd_dump>, C<rrd_info>, C<rrd_last>, and C<rrd_fetch>.
 
 =head1 AUTHOR
 
-Initial multi-threading support was implemented by Peter Stamfest
-<peter@stamfest.at> in Feb. 2003.
-
-This documentation was written by Peter Stamfest.
-
-Changes to the RRD library and this documentation are (c) 2003 by
-Peter Stamfest and are distributed under the GPL.
-
-=cut
+Peter Stamfest E<lt>peter@stamfest.atE<gt>

@@ -99,10 +99,10 @@ typedef unsigned long Fnv32_t;
  */
 #define FNV1_32_INIT ((Fnv32_t)0x811c9dc5)
 
-Fnv32_t fnv_32_buf(void *, size_t, Fnv32_t);
+Fnv32_t fnv_32_buf(const void *, size_t, Fnv32_t);
 
-Fnv32_t fnv_32_str(char *, Fnv32_t );
+Fnv32_t fnv_32_str(const char *, Fnv32_t );
 
-unsigned long FnvHash(char *);
+unsigned long FnvHash(const char *);
 
 #endif /* __FNV_H__ */

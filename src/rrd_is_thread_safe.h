@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  * This file:     Copyright 2003 Peter Stamfest <peter@stamfest.at> 
  *                             & Tobias Oetiker
  * Distributed under the GPL
@@ -17,7 +17,10 @@ extern "C" {
 #endif
 
 #undef strerror
+
+#if( 2 < __GNUC__ )
 #pragma GCC poison strtok asctime ctime gmtime localtime tmpnam strerror
+#endif
 
 #ifdef  __cplusplus
 }

@@ -14,75 +14,7 @@ values collected over a definable time period.
 To compile:
 -----------
 
-you need the following libraries installed on your system.
-
-   cgilib-0.5.tar.gz
-   freetype-2.1.5.tar.gz
-   libart_lgpl-2.3.16.tar.gz
-   libpng-1.2.5.tar.gz
-   zlib-1.2.1.tar.gz
-
-you can either get these libraries directly from their original sites
-or you can get copies from 
-
-   http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/pub/libs
-
-the configure program will try to use the libraries with out adding any extra
-flags apart from the ones defined in CPPFLAGS and LDFLAGS. If this does not
-work it will try to get information from pkgconfig.
-
-If your libraries are not installed in standard places and you do not have
-pkgconfig support, then you may want to set CPPFLAGS and LDFLAGS to help
-configure while it tries to find the libraries.
-
-  env CPPFLAGS="-I/scratch/oetiker/cgilib-0.5 \
-                -I/scratch/oetiker/libs/include/libart-2.0 \
-                -I/scratch/oetiker/libs/include \
-                -I/scratch/oetiker/libs/include/freetype2" \
-       LDFLAGS="-L/scratch/oetiker/libs/lib -R/scratch/oetiker/libs/lib \
-                -L/scratch/oetiker/cgilib-0.5" ./configure 
-
-  make             <------ GNU make
-
-  make install     <------ GNU make
-
-This will configure, compile and install RRDtool in
-/usr/local/rrdtool-VERSION. If you prefer to install RRDtool in some other
-place, use
-
-  ./configure --prefix=/some/other/RRDtool-dir
-
-The configure script will try to find your perl installation (5.008
-preferred). If it does not find it, you can still build RRDtool but no perl
-modules will be generated.
-
-By default the perl modules will be installed under the RRDtool install
-directory. This will require you to use a 'use lib' statement in your
-RRDtool perl programs. If you do not care what happens to your site-perl
-directory, you can also use
-
-   --enable-perl-site-install 
-
-when running configure to have the RRD perl modules installed  wherever you
-keep your local perl modules. Doing this reliefs you from using 'use lib' in
-your scripts.
-
-Configure will also look for an TCL installation on your system. If it finds
-one it will build a TCL interface for RRDtool. If you keep tcl in a non
-standard location you can use
-
-  sh configure --with-tcllib=/sw/tcl-8.3/lib
-
-to indicte the right version (note, this must point to the directory where
-tclConfig.sh is located). Note that install will integrate the tcl bindings
-into your tcl installation. It will use a separate directory for each
-version though, so this is not much of a problem. Nevertheless the Tcl
-module will not get intalled by default as Tcl wants its module in the base
-tcl installation where you might not be able to write to. So if you want the
-tcl stuff installed, type
-
-  make site-tcl-install
-
+check out the instructions in doc/rrdbuild.txt
 
 Getting Started:
 ----------------
@@ -107,7 +39,7 @@ How to make Tobi happy:
 -----------------------
 
 If you want to show your appreciation for RRDtool you could make me happy
-by going to ee-staff.ethz.ch/~oetiker/wish and ordering a CD from
+by going to http://tobi.oetiker.ch/wish and ordering a CD from
 my CD wish list ... 
 
 
@@ -121,7 +53,7 @@ rrd-users       For discussion amongst people who use RRDtool in their applicati
 rrd-developers  For people who actually HACK RRDtool code
 
 To subscribe to <MAILGLIST> send a message with the subject 'subscribe'
-to <MAILGLIST>-request@list.ee.ethz.ch.
+to <MAILGLIST>-request@lists.oetiker.ch
 
 Note, that postings to rrd-announce will always be cross-posted 
 to rrd-users and rrd-developers as well.
@@ -137,7 +69,7 @@ Use GNU   diff --unified --recursive olddir newdir   to build your patches.
 
 The latest Version:
 -------------------
-Is available from http://people.ee.ethz.ch/~oetiker/webtools/rrdtool/
+Is available from http://oss.oetiker.ch/rrdtool/
 
 
-Tobias Oetiker <oetiker@ee.ethz.ch>
+Tobias Oetiker <tobi@oetiker.ch>

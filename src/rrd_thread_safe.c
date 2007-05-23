@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.1.x  Copyright Tobias Oetiker, 1997 - 2002
+ * RRDtool 1.2.23  Copyright by Tobi Oetiker, 1997-2007
  * This file:     Copyright 2003 Peter Stamfest <peter@stamfest.at> 
  *                             & Tobias Oetiker
  * Distributed under the GPL
@@ -51,7 +51,10 @@ struct rrd_context *rrd_get_context(void) {
 #ifdef HAVE_STRERROR_R
 const char *rrd_strerror(int err) {
     struct rrd_context *ctx = rrd_get_context();
-    return strerror_r(err, ctx->lib_errstr, ctx->errlen);
+    if (strerror_r(err, ctx->lib_errstr, ctx->errlen)) 
+         return "strerror_r faild. sorry!"; 
+    else 
+         return ctx->lib_errstr; 
 }
 #else
 #undef strerror
@@ -61,6 +64,7 @@ const char *rrd_strerror(int err) {
     ctx = rrd_get_context();
     pthread_mutex_lock(&mtx);
     strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
+    ctx->lib_errstr[ctx->errlen]='\0';
     pthread_mutex_unlock(&mtx);
     return ctx->lib_errstr;
 }
