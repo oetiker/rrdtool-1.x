@@ -194,7 +194,6 @@ rrd_fetch_fn(
     rrd_value_t    **data)     /* two dimensional array containing the data */
 {
     long           i,ii;
-    FILE           *in_file;
     time_t         cal_start,cal_end, rra_start_time,rra_end_time;
     long  best_full_rra=0, best_part_rra=0, chosen_rra=0, rra_pointer=0;
     long  best_full_step_diff=0, best_part_step_diff=0, tmp_step_diff=0, tmp_match=0, best_match=0;
@@ -203,9 +202,12 @@ rrd_fetch_fn(
     int            first_full = 1;
     int            first_part = 1;
     rrd_t     rrd;
+    rrd_file_t     *rrd_file;
     rrd_value_t    *data_ptr;
     unsigned long  rows;
+#ifdef HAVE_POSIX_FADVISE
     long  rrd_head_size;
+#endif
 
 #ifdef DEBUG
 fprintf(stderr,"Entered rrd_fetch_fn() searching for the best match\n");
@@ -213,17 +215,19 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu\n",
 						*start,*end,*step);
 #endif
 
-    if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
+    rrd_file = rrd_open(filename,&rrd, RRD_READONLY);
+    if (rrd_file == NULL)
 	return(-1);
 
-    rrd_head_size = ftell(in_file);
-    
+#ifdef HAVE_POSIX_FADVISE
+    rrd_head_size = rrd_file->header_len;
+#endif
     /* when was the really last update of this file ? */
 
     if (((*ds_namv) = (char **) malloc(rrd.stat_head->ds_cnt * sizeof(char*)))==NULL){
 	rrd_set_error("malloc fetch ds_namv array");
 	rrd_free(&rrd);
-	fclose(in_file);
+	close(rrd_file->fd);
 	return(-1);
     }
     
@@ -232,7 +236,7 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu\n",
 	    rrd_set_error("malloc fetch ds_namv entry");
 	    rrd_free(&rrd);
 	    free(*ds_namv);
-	    fclose(in_file);
+	    close(rrd_file->fd);
 	    return(-1);
 	}
 	strncpy((*ds_namv)[i],rrd.ds_def[i].ds_nam,DS_NAM_SIZE-1);
@@ -312,7 +316,7 @@ fprintf(stderr,"partial match, not best\n");
     else {
 	rrd_set_error("the RRD does not contain an RRA matching the chosen CF");
 	rrd_free(&rrd);
-	fclose(in_file);
+	close(rrd_file->fd);
 	return(-1);
     }
 	
@@ -340,14 +344,14 @@ fprintf(stderr,"partial match, not best\n");
 	      free((*ds_namv)[i]);
 	free(*ds_namv);
 	rrd_free(&rrd);
-	fclose(in_file);
+	close(rrd_file->fd);
 	return(-1);
     }
     
     data_ptr=(*data);
     
     /* find base address of rra */
-    rra_base=ftell(in_file);
+    rra_base = rrd_file->header_len;
     for(i=0;i<chosen_rra;i++)
 	rra_base += ( *ds_cnt
 		      * rrd.rra_def[i].row_cnt
@@ -373,7 +377,7 @@ fprintf(stderr,"partial match, not best\n");
     else 
 	rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1+start_offset;
     
-    if(fseek(in_file,(rra_base 
+    if(rrd_seek(rrd_file,(rra_base 
 		   + (rra_pointer
 		      * *ds_cnt
 		      * sizeof(rrd_value_t))),SEEK_SET) != 0){
@@ -384,7 +388,7 @@ fprintf(stderr,"partial match, not best\n");
 	rrd_free(&rrd);
 	free(*data);
 	*data = NULL;
-	fclose(in_file);
+	close(rrd_file->fd);
 	return(-1);
 
     }
@@ -425,7 +429,7 @@ fprintf(stderr,"partial match, not best\n");
 	     * be wrapped*/
 	    if (rra_pointer >= (signed)rrd.rra_def[chosen_rra].row_cnt) {
 		rra_pointer -= rrd.rra_def[chosen_rra].row_cnt;
-		if(fseek(in_file,(rra_base+rra_pointer
+		if(rrd_seek(rrd_file,(rra_base+rra_pointer
 			       * *ds_cnt
 			       * sizeof(rrd_value_t)),SEEK_SET) != 0){
 		    rrd_set_error("wrap seek in RRA did fail");
@@ -435,17 +439,17 @@ fprintf(stderr,"partial match, not best\n");
 		    rrd_free(&rrd);
 		    free(*data);
 		    *data = NULL;
-		    fclose(in_file);
+		    close(rrd_file->fd);
 		    return(-1);
 		}
 #ifdef DEBUG
 		fprintf(stderr,"wrap seek ...\n");
-#endif	    
+#endif
 	    }
-	    
-	    if(fread(data_ptr,
-		     sizeof(rrd_value_t),
-		     *ds_cnt,in_file) != rrd.stat_head->ds_cnt){
+
+	    if(rrd_read(rrd_file,data_ptr,
+		     sizeof(rrd_value_t)* (*ds_cnt))
+		    != (ssize_t)(sizeof(rrd_value_t)*(*ds_cnt)*rrd.stat_head->ds_cnt)){
 		rrd_set_error("fetching cdp from rra");
 		for (ii=0;(unsigned)ii<*ds_cnt;ii++)
 		    free((*ds_namv)[ii]);
@@ -453,15 +457,15 @@ fprintf(stderr,"partial match, not best\n");
 		rrd_free(&rrd);
 		free(*data);
 		*data = NULL;
-		fclose(in_file);
+		close(rrd_file->fd);
 		return(-1);
 	    }
 #ifdef HAVE_POSIX_FADVISE
        /* don't pollute the buffer cache with data read from the file. We do this while reading to 
           keep damage minimal */
-       if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+       if (0 != posix_fadvise(rrd_file->fd, rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
            rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-           fclose(in_file);
+           close(rrd_file->fd);
            return(-1);
        } 
 #endif
@@ -482,12 +486,12 @@ fprintf(stderr,"partial match, not best\n");
     rrd_free(&rrd);
 #ifdef HAVE_POSIX_FADVISE
     /* and just to be sure we drop everything except the header at the end */
-    if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+    if (0 != posix_fadvise(rrd_file->fd, rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
            rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-           fclose(in_file);
+           close(rrd_file->fd);
            return(-1);
     } 
 #endif	    
-    fclose(in_file);
+    close(rrd_file->fd);
     return(0);
 }

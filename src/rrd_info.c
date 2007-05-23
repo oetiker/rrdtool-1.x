@@ -83,17 +83,18 @@ rrd_info(int argc, char **argv) {
 info_t *
 rrd_info_r(char *filename) {   
     unsigned int i,ii=0;
-    FILE         *in_file;
     rrd_t        rrd;
     info_t       *data,*cd;
     infoval      info;
+    rrd_file_t*  rrd_file;
 	enum cf_en   current_cf;
 	enum dst_en  current_ds;
 
-    if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1){
+    rrd_file = rrd_open(filename,&rrd, RRD_READONLY);
+    if (rrd_file == NULL) {
 	return(NULL);
     }
-    fclose(in_file);
+    close(rrd_file->fd);
 
     info.u_str=filename;
     cd=info_push(NULL,sprintf_alloc("filename"),    RD_I_STR, info);
@@ -233,6 +234,7 @@ rrd_info_r(char *filename) {
     }
 	}
 	rrd_free(&rrd);
+    rrd_close(rrd_file);
     return(data);
 
 }

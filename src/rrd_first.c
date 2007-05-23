@@ -55,13 +55,14 @@ rrd_first(int argc, char **argv)
 time_t
 rrd_first_r(const char *filename, const int rraindex)
 {
-    long rra_start,
+    off_t rra_start,
          timer;
     time_t then;
-    FILE *in_file;
     rrd_t rrd;
+    rrd_file_t *rrd_file;
 
-    if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1){
+    rrd_file = rrd_open(filename,&rrd, RRD_READONLY);
+    if (rrd_file == NULL) {
         rrd_set_error("could not open RRD");
         return(-1);
     }
@@ -69,12 +70,12 @@ rrd_first_r(const char *filename, const int rraindex)
     if((rraindex < 0) || (rraindex >= (int)rrd.stat_head->rra_cnt)) {
         rrd_set_error("invalid rraindex number");
         rrd_free(&rrd);
-        fclose(in_file);
+        close(rrd_file->fd);
         return(-1);
     }
 
-    rra_start = ftell(in_file);    
-    fseek(in_file,
+    rra_start = rrd_file->header_len;
+    rrd_seek(rrd_file,
           (rra_start +
            (rrd.rra_ptr[rraindex].cur_row+1) *
            rrd.stat_head->ds_cnt *
@@ -82,7 +83,7 @@ rrd_first_r(const char *filename, const int rraindex)
           SEEK_SET);
     timer = - (rrd.rra_def[rraindex].row_cnt-1);
     if (rrd.rra_ptr[rraindex].cur_row + 1 > rrd.rra_def[rraindex].row_cnt) {
-      fseek(in_file,rra_start,SEEK_SET);
+      rrd_seek(rrd_file,rra_start,SEEK_SET);
     }
     then = (rrd.live_head->last_up -
             rrd.live_head->last_up %
@@ -91,10 +92,8 @@ rrd_first_r(const char *filename, const int rraindex)
             rrd.rra_def[rraindex].pdp_cnt*rrd.stat_head->pdp_step);
 
     rrd_free(&rrd);
-    fclose(in_file);
+    close(rrd_file->fd);
+    rrd_close(rrd_file);
     return(then);
 }
-
-
-
 

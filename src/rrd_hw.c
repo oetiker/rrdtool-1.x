@@ -108,7 +108,7 @@ update_hwpredict(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx,
 
 int
 lookup_seasonal(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
-				FILE *rrd_file, unsigned long offset, rrd_value_t **seasonal_coef)
+				rrd_file_t* rrd_file, unsigned long offset, rrd_value_t **seasonal_coef)
 {
    unsigned long pos_tmp;
    /* rra_ptr[].cur_row points to the rra row to be written; this function
@@ -131,10 +131,10 @@ lookup_seasonal(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 	  return -1;
    }
 
-   if (!fseek(rrd_file,pos_tmp,SEEK_SET))
+   if (!rrd_seek(rrd_file,pos_tmp,SEEK_SET))
    {
-      if (fread(*seasonal_coef,sizeof(rrd_value_t),rrd->stat_head->ds_cnt,rrd_file)
-		  == rrd -> stat_head -> ds_cnt)
+      if (rrd_read(rrd_file,*seasonal_coef,sizeof(rrd_value_t)*rrd->stat_head->ds_cnt)
+		  == (ssize_t)(sizeof(rrd_value_t)*rrd->stat_head->ds_cnt))
 	  {
 		 /* success! */
          /* we can safely ignore the rule requiring a seek operation between read
@@ -511,7 +511,7 @@ erase_violations(rrd_t *rrd, unsigned long cdp_idx, unsigned long rra_idx)
  * length = 5% of the period. */
 int
 apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
-               FILE *rrd_file)
+               rrd_file_t *rrd_file)
 {
    unsigned long i, j, k;
    unsigned long totalbytes;
@@ -536,21 +536,23 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    }
 
    /* rra_start is at the beginning of this rra */
-   if (fseek(rrd_file,rra_start,SEEK_SET))
+   if (rrd_seek(rrd_file,rra_start,SEEK_SET))
    {
 	  rrd_set_error("seek to rra %d failed", rra_start);
 	  free(rrd_values);
 	  return -1;
    }
-   fflush(rrd_file);
+   rrd_flush(rrd_file);
    /* could read all data in a single block, but we need to
     * check for NA values */
    for (i = 0; i < row_count; ++i)
    {
 	  for (j = 0; j < row_length; ++j)
 	  {
-		 fread(&(rrd_values[i*row_length + j]),sizeof(rrd_value_t),1,rrd_file);
-		 /* should check fread for errors... */
+		 if (rrd_read(rrd_file, &(rrd_values[i*row_length + j]),sizeof(rrd_value_t)*1)
+			 != (ssize_t)(sizeof(rrd_value_t)*1)) {
+			 rrd_set_error("reading value failed: %s", rrd_strerror(errno));
+		 }
 		 if (isnan(rrd_values[i*row_length + j])) {
 			/* can't apply smoothing, still uninitialized values */
 #ifdef DEBUG
@@ -627,8 +629,8 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 	 (rrd->cdp_prep[offset]).scratch[CDP_hw_intercept].u_val += baseline[j];
    }
    /* flush cdp to disk */
-   fflush(rrd_file);
-   if (fseek(rrd_file,sizeof(stat_head_t) + 
+   rrd_flush(rrd_file);
+   if (rrd_seek(rrd_file,sizeof(stat_head_t) + 
 	  rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
 	  rrd->stat_head->rra_cnt * sizeof(rra_def_t) + 
 	  sizeof(live_head_t) +
@@ -638,11 +640,11 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 	  free(rrd_values);
 	  return -1;
    }
-   if (fwrite( rrd -> cdp_prep,
-	  sizeof(cdp_prep_t),
-	  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt, rrd_file) 
-	  != (rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt) )
-   { 
+   if (rrd_write(rrd_file, rrd -> cdp_prep,
+	  sizeof(cdp_prep_t)*
+		  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt) 
+	  != (ssize_t)(sizeof(cdp_prep_t)*(rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt)))
+   {
 	  rrd_set_error("apply_smoother: cdp_prep write failed");
 	  free(rrd_values);
 	  return -1;
@@ -650,23 +652,23 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
    } /* endif CF_SEASONAL */ 
 
    /* flush updated values to disk */
-   fflush(rrd_file);
-   if (fseek(rrd_file,rra_start,SEEK_SET))
+   rrd_flush(rrd_file);
+   if (rrd_seek(rrd_file,rra_start,SEEK_SET))
    {
 	  rrd_set_error("apply_smoother: seek to pos %d failed", rra_start);
 	  free(rrd_values);
 	  return -1;
    }
    /* write as a single block */
-   if (fwrite(rrd_values,sizeof(rrd_value_t),row_length*row_count,rrd_file)
-	  != row_length*row_count)
+   if (rrd_write(rrd_file,rrd_values,sizeof(rrd_value_t)*row_length*row_count)
+	  != (ssize_t)(sizeof(rrd_value_t)*row_length*row_count))
    {
 	  rrd_set_error("apply_smoother: write failed to %lu",rra_start);
 	  free(rrd_values);
 	  return -1;
    }
 
-   fflush(rrd_file);
+   rrd_flush(rrd_file);
    free(rrd_values);
    free(baseline);
    return 0;
@@ -675,7 +677,7 @@ apply_smoother(rrd_t *rrd, unsigned long rra_idx, unsigned long rra_start,
 /* Reset aberrant behavior model coefficients, including intercept, slope,
  * seasonal, and seasonal deviation for the specified data source. */
 void
-reset_aberrant_coefficients(rrd_t *rrd, FILE *rrd_file, unsigned long ds_idx)
+reset_aberrant_coefficients(rrd_t *rrd, rrd_file_t *rrd_file, unsigned long ds_idx)
 {
    unsigned long cdp_idx, rra_idx, i;
    unsigned long cdp_start, rra_start;
@@ -709,19 +711,19 @@ reset_aberrant_coefficients(rrd_t *rrd, FILE *rrd_file, unsigned long ds_idx)
 	        rrd->cdp_prep[cdp_idx].scratch[CDP_hw_seasonal].u_val = DNAN;
 	        rrd->cdp_prep[cdp_idx].scratch[CDP_hw_last_seasonal].u_val = DNAN;
 			/* move to first entry of data source for this rra */
-			fseek(rrd_file,rra_start + ds_idx * sizeof(rrd_value_t),SEEK_SET);
+			rrd_seek(rrd_file,rra_start + ds_idx * sizeof(rrd_value_t),SEEK_SET);
 			/* entries for the same data source are not contiguous, 
 			 * temporal entries are contiguous */
 	        for (i = 0; i < rrd->rra_def[rra_idx].row_cnt; ++i)
 			{
-			   if (fwrite(&nan_buffer,sizeof(rrd_value_t),1,rrd_file) != 1)
+			   if (rrd_write(rrd_file,&nan_buffer,sizeof(rrd_value_t)*1) != sizeof(rrd_value_t)*1)
 			   {
                   rrd_set_error(
 				  "reset_aberrant_coefficients: write failed data source %lu rra %s",
 				  ds_idx,rrd->rra_def[rra_idx].cf_nam);
 				  return;
 			   } 
-			   fseek(rrd_file,(rrd->stat_head->ds_cnt - 1) * 
+			   rrd_seek(rrd_file,(rrd->stat_head->ds_cnt - 1) * 
 				  sizeof(rrd_value_t),SEEK_CUR);
 			}
 			break;
@@ -735,14 +737,14 @@ reset_aberrant_coefficients(rrd_t *rrd, FILE *rrd_file, unsigned long ds_idx)
 	  rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt * 
 		 sizeof(rrd_value_t);
    }
-   fseek(rrd_file,cdp_start,SEEK_SET);
-   if (fwrite( rrd -> cdp_prep,
-	  sizeof(cdp_prep_t),
-	  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt, rrd_file) 
-	  != (rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt) )
+   rrd_seek(rrd_file,cdp_start,SEEK_SET);
+   if (rrd_write(rrd_file,rrd->cdp_prep,
+	  sizeof(cdp_prep_t)*
+	  (rrd->stat_head->rra_cnt) * rrd->stat_head->ds_cnt) 
+	  != (ssize_t)(sizeof(cdp_prep_t)*(rrd->stat_head->rra_cnt) * (rrd->stat_head->ds_cnt)))
    {
 	  rrd_set_error("reset_aberrant_coefficients: cdp_prep write failed");
-	  return;
+	  return;/*XXX: delme */
    }
 }
 

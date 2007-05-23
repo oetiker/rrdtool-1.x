@@ -70,21 +70,21 @@ static void normalize_time(struct timeval *t)
 }
 
 /* Local prototypes */
-int LockRRD(FILE *rrd_file);
+int LockRRD(int in_file);
 #ifdef HAVE_MMAP
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
 					unsigned short CDP_scratch_idx,
 #ifndef DEBUG
-FILE UNUSED(*rrd_file),
+int UNUSED(in_file),
 #else
-FILE *rrd_file,
+int in_file,
 #endif
 					info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file);
 #else
 info_t *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, 
 					unsigned long *rra_current,
-					unsigned short CDP_scratch_idx, FILE *rrd_file,
+					unsigned short CDP_scratch_idx, int in_file,
 					info_t *pcdp_summary, time_t *rra_time);
 #endif
 int rrd_update_r(const char *filename, const char *tmplt, int argc, const char **argv);
@@ -234,7 +234,6 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 					    transported by the tmplt index */
     unsigned long    tmpl_cnt = 2;       /* time and data */
 
-    FILE             *rrd_file;
     rrd_t            rrd;
     time_t           current_time = 0;
     time_t           rra_time = 0;  	 /* time of update for a RRA */
@@ -261,12 +260,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
     rpnstack_t       rpnstack; /* used for COMPUTE DS */
     int		     version;  /* rrd version */
     char             *endptr; /* used in the conversion */
-
-#ifdef HAVE_MMAP
-    void	     *rrd_mmaped_file;
-    unsigned long    rrd_filesize;
-#endif
-
+    rrd_file_t*      rrd_file;
 
     rpnstack_init(&rpnstack);
 
@@ -275,10 +269,9 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	rrd_set_error("Not enough arguments");
 	return -1;
     }
-    
-    
 
-    if(rrd_open(filename,&rrd_file,&rrd, RRD_READWRITE)==-1){
+    rrd_file = rrd_open(filename,&rrd, RRD_READWRITE);
+    if (rrd_file == NULL) {
 	return -1;
     }
 
@@ -294,39 +287,40 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	current_time_usec = 0;
     }
 
-    rra_current = rra_start = rra_begin = ftell(rrd_file);
+    rra_current = rra_start = rra_begin = rrd_file->header_len;
     /* This is defined in the ANSI C standard, section 7.9.5.3:
 
         When a file is opened with udpate mode ('+' as the second
         or third character in the ... list of mode argument
-        variables), both input and ouptut may be performed on the
+        variables), both input and output may be performed on the
         associated stream.  However, ...  input may not be directly
         followed by output without an intervening call to a file
-        positioning function, unless the input oepration encounters
+        positioning function, unless the input operation encounters
         end-of-file. */
-#ifdef HAVE_MMAP
-    fseek(rrd_file, 0, SEEK_END);
-    rrd_filesize = ftell(rrd_file);
-    fseek(rrd_file, rra_current, SEEK_SET);
+#if 0//def HAVE_MMAP
+rrd_filesize = rrd_file->file_size;
+    fseek(rrd_file->fd, 0, SEEK_END);
+    rrd_filesize = ftell(rrd_file->fd);
+    fseek(rrd_file->fd, rra_current, SEEK_SET);
 #else
-    fseek(rrd_file, 0, SEEK_CUR);
+//    fseek(rrd_file->fd, 0, SEEK_CUR);
 #endif
 
     
     /* get exclusive lock to whole file.
      * lock gets removed when we close the file.
      */
-    if (LockRRD(rrd_file) != 0) {
+    if (LockRRD(rrd_file->fd) != 0) {
       rrd_set_error("could not lock RRD");
       rrd_free(&rrd);
-      fclose(rrd_file);
+      close(rrd_file->fd);
       return(-1);   
     } 
 
     if((updvals = malloc( sizeof(char*) * (rrd.stat_head->ds_cnt+1)))==NULL){
 	rrd_set_error("allocating updvals pointer array");
 	rrd_free(&rrd);
-        fclose(rrd_file);
+        close(rrd_file->fd);
 	return(-1);
     }
 
@@ -335,7 +329,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	rrd_set_error("allocating pdp_temp ...");
 	free(updvals);
 	rrd_free(&rrd);
-        fclose(rrd_file);
+        close(rrd_file->fd);
 	return(-1);
     }
 
@@ -345,7 +339,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	free(pdp_temp);
 	free(updvals);
 	rrd_free(&rrd);
-        fclose(rrd_file);
+        close(rrd_file->fd);
 	return(-1);
     }
     /* initialize tmplt redirector */
@@ -377,14 +371,14 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
   		    rrd_set_error("tmplt contains more DS definitions than RRD");
 		    free(updvals); free(pdp_temp);
 		    free(tmpl_idx); rrd_free(&rrd);
-		    fclose(rrd_file); return(-1);
+		    close(rrd_file->fd); return(-1);
 		}
 		if ((tmpl_idx[tmpl_cnt++] = ds_match(&rrd,dsname)) == -1){
   		    rrd_set_error("unknown DS name '%s'",dsname);
 		    free(updvals); free(pdp_temp);
 		    free(tmplt_copy);
 		    free(tmpl_idx); rrd_free(&rrd);
-		    fclose(rrd_file); return(-1);
+		    close(rrd_file->fd); return(-1);
 		} else {
 		  /* the first element is always the time */
 		  tmpl_idx[tmpl_cnt-1]++; 
@@ -407,16 +401,16 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	free(pdp_temp);
 	free(tmpl_idx);
 	rrd_free(&rrd);
-        fclose(rrd_file);
+        close(rrd_file->fd);
 	return(-1);
     }
 
-#ifdef HAVE_MMAP
+#if 0//def HAVE_MMAP
     rrd_mmaped_file = mmap(0, 
-		    	rrd_filesize, 
+		    	rrd_file->file_len, 
 			PROT_READ | PROT_WRITE, 
 			MAP_SHARED, 
-			fileno(rrd_file), 
+			fileno(in_file), 
 			0);
     if (rrd_mmaped_file == MAP_FAILED) {
         rrd_set_error("error mmapping file %s", filename);
@@ -424,10 +418,10 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	free(pdp_temp);
 	free(tmpl_idx);
 	rrd_free(&rrd);
-        fclose(rrd_file);
+        close(rrd_file->fd);
 	return(-1);
     }
-#ifdef HAVE_MADVISE
+#ifdef USE_MADVISE
     /* when we use mmaping we tell the kernel the mmap equivalent
        of POSIX_FADV_RANDOM */
     madvise(rrd_mmaped_file,rrd_filesize,POSIX_MADV_RANDOM);
@@ -449,9 +443,9 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
                 free(tmpl_idx);
                 rrd_free(&rrd);
 #ifdef HAVE_MMAP
-    		munmap(rrd_mmaped_file, rrd_filesize);
+		rrd_close(rrd_file);
 #endif
-                fclose(rrd_file);
+                close(rrd_file->fd);
                 return(-1);
          }
 	/* initialize all ds input to unknown except the first one
@@ -542,7 +536,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	/* seek to the beginning of the rra's */
 	if (rra_current != rra_begin) {
 #ifndef HAVE_MMAP
-	    if(fseek(rrd_file, rra_begin, SEEK_SET) != 0) {
+	    if(rrd_seek(rrd_file, rra_begin, SEEK_SET) != 0) {
 		rrd_set_error("seek error in rrd");
 		free(step_start);
 		break;
@@ -939,7 +933,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 			 }
 		  }
 
-	      rra_current = ftell(rrd_file); 
+	      rra_current = rrd_tell(rrd_file);
 		} /* if cf is DEVSEASONAL or SEASONAL */
 
         if (rrd_test_error()) break;
@@ -1174,7 +1168,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		         lookup_seasonal(&rrd,i,rra_start,rrd_file,
 				    elapsed_pdp_st + (scratch_idx == CDP_primary_val ? 1 : 2),
 			        &seasonal_coef);
-                 rra_current = ftell(rrd_file);
+                 rra_current = rrd_tell(rrd_file);
 			  }
 			  if (rrd_test_error()) break;
 		      /* loop over data soures within each RRA */
@@ -1205,7 +1199,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 
 		/* write the first row */
 #ifdef DEBUG
-        fprintf(stderr,"  -- RRA Preseek %ld\n",ftell(rrd_file));
+        fprintf(stderr,"  -- RRA Preseek %ld\n",rrd_file->pos);
 #endif
 	    rrd.rra_ptr[i].cur_row++;
 	    if (rrd.rra_ptr[i].cur_row >= rrd.rra_def[i].row_cnt)
@@ -1215,7 +1209,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		   (rrd.stat_head->ds_cnt)*(rrd.rra_ptr[i].cur_row)*sizeof(rrd_value_t);
 		if(rra_pos_tmp != rra_current) {
 #ifndef HAVE_MMAP
-		   if(fseek(rrd_file, rra_pos_tmp, SEEK_SET) != 0){
+		   if(rrd_seek(rrd_file, rra_pos_tmp, SEEK_SET) != 0){
 		      rrd_set_error("seek error in rrd");
 		      break;
 		   }
@@ -1224,7 +1218,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		}
 
 #ifdef DEBUG
-	    fprintf(stderr,"  -- RRA Postseek %ld\n",ftell(rrd_file));
+	    fprintf(stderr,"  -- RRA Postseek %ld\n",rrd_file->pos);
 #endif
 		scratch_idx = CDP_primary_val;
 		if (pcdp_summary != NULL)
@@ -1234,10 +1228,10 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		   - ((rra_step_cnt[i]-1)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
 		}
 #ifdef HAVE_MMAP
-		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file, 
-		   pcdp_summary, &rra_time, rrd_mmaped_file);
+		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file->fd, 
+		   pcdp_summary, &rra_time, rrd_file->file_start);
 #else
-		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file, 
+		pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file->fd, 
 		   pcdp_summary, &rra_time);
 #endif
 		if (rrd_test_error()) break;
@@ -1255,13 +1249,13 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 			  /* wrap */
 			  rrd.rra_ptr[i].cur_row = 0;
 			  /* seek back to beginning of current rra */
-		      if (fseek(rrd_file, rra_start, SEEK_SET) != 0)
+		      if (rrd_seek(rrd_file, rra_start, SEEK_SET) != 0)
 			  {
 		         rrd_set_error("seek error in rrd");
 		         break;
 			  }
 #ifdef DEBUG
-	          fprintf(stderr,"  -- Wraparound Postseek %ld\n",ftell(rrd_file));
+	          fprintf(stderr,"  -- Wraparound Postseek %ld\n",rrd_file->pos);
 #endif
 			  rra_current = rra_start;
 		   }
@@ -1272,10 +1266,10 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		      - ((rra_step_cnt[i]-2)*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
 		   }
 #ifdef HAVE_MMAP
-		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file,
-		      pcdp_summary, &rra_time, rrd_mmaped_file);
+		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file->fd,
+		      pcdp_summary, &rra_time, rrd_file->file_start);
 #else
-		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file,
+		   pcdp_summary = write_RRA_row(&rrd, i, &rra_current, scratch_idx, rrd_file->fd,
 		      pcdp_summary, &rra_time);
 #endif
 		}
@@ -1302,7 +1296,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
     rpnstack_free(&rpnstack);
 
 #ifdef HAVE_MMAP
-    if (munmap(rrd_mmaped_file, rrd_filesize) == -1) {
+    if (munmap(rrd_file->file_start, rrd_file->file_len) == -1) {
             rrd_set_error("error writing(unmapping) file: %s", filename);
     }
 #endif    
@@ -1314,14 +1308,14 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	rrd_free(&rrd);
 	free(pdp_temp);
 	free(pdp_new);
-	fclose(rrd_file);
+	close(rrd_file->fd);
 	return(-1);
     }
 
     /* aargh ... that was tough ... so many loops ... anyway, its done.
      * we just need to write back the live header portion now*/
 
-    if (fseek(rrd_file, (sizeof(stat_head_t)
+    if (rrd_seek(rrd_file, (sizeof(stat_head_t)
 			 + sizeof(ds_def_t)*rrd.stat_head->ds_cnt 
 			 + sizeof(rra_def_t)*rrd.stat_head->rra_cnt),
 	      SEEK_SET) != 0) {
@@ -1331,76 +1325,75 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	rrd_free(&rrd);
 	free(pdp_temp);
 	free(pdp_new);
-	fclose(rrd_file);
+	close(rrd_file->fd);
 	return(-1);
     }
 
     if(version >= 3) {
-	    if(fwrite( rrd.live_head,
-		       sizeof(live_head_t), 1, rrd_file) != 1){
-		rrd_set_error("fwrite live_head to rrd");
+	    if(rrd_write(rrd_file, rrd.live_head,
+		       sizeof(live_head_t)*1) != sizeof(live_head_t)*1){
+		rrd_set_error("rrd_write live_head to rrd");
 		free(updvals);
 		rrd_free(&rrd);
 		free(tmpl_idx);
 		free(pdp_temp);
 		free(pdp_new);
-		fclose(rrd_file);
+		close(rrd_file->fd);
 		return(-1);
 	    }
     }
     else {
-	    if(fwrite( &rrd.live_head->last_up,
-		       sizeof(time_t), 1, rrd_file) != 1){
-		rrd_set_error("fwrite live_head to rrd");
+	    if(rrd_write(rrd_file, &rrd.live_head->last_up,
+		       sizeof(time_t)*1) != sizeof(time_t)*1){
+		rrd_set_error("rrd_write live_head to rrd");
 		free(updvals);
 		rrd_free(&rrd);
 		free(tmpl_idx);
 		free(pdp_temp);
 		free(pdp_new);
-		fclose(rrd_file);
+		close(rrd_file->fd);
 		return(-1);
 	    }
     }
 	    
 
-    if(fwrite( rrd.pdp_prep,
-	       sizeof(pdp_prep_t),
-	       rrd.stat_head->ds_cnt, rrd_file) != rrd.stat_head->ds_cnt){
-	rrd_set_error("ftwrite pdp_prep to rrd");
+    if(rrd_write(rrd_file, rrd.pdp_prep,
+	       sizeof(pdp_prep_t)*rrd.stat_head->ds_cnt)
+	    != (ssize_t)(sizeof(pdp_prep_t)*rrd.stat_head->ds_cnt)){
+	rrd_set_error("rrd_write pdp_prep to rrd");
 	free(updvals);
 	rrd_free(&rrd);
 	free(tmpl_idx);
 	free(pdp_temp);
 	free(pdp_new);
-	fclose(rrd_file);
+	close(rrd_file->fd);
 	return(-1);
     }
 
-    if(fwrite( rrd.cdp_prep,
-	       sizeof(cdp_prep_t),
-	       rrd.stat_head->rra_cnt *rrd.stat_head->ds_cnt, rrd_file) 
-       != rrd.stat_head->rra_cnt *rrd.stat_head->ds_cnt){
+    if(rrd_write(rrd_file, rrd.cdp_prep,
+	       sizeof(cdp_prep_t)*rrd.stat_head->rra_cnt *rrd.stat_head->ds_cnt)
+       != (ssize_t)(sizeof(cdp_prep_t)*rrd.stat_head->rra_cnt *rrd.stat_head->ds_cnt)){
 
-	rrd_set_error("ftwrite cdp_prep to rrd");
+	rrd_set_error("rrd_write cdp_prep to rrd");
 	free(updvals);
 	free(tmpl_idx);
 	rrd_free(&rrd);
 	free(pdp_temp);
 	free(pdp_new);
-	fclose(rrd_file);
+	close(rrd_file->fd);
 	return(-1);
     }
 
-    if(fwrite( rrd.rra_ptr,
-	       sizeof(rra_ptr_t), 
-	       rrd.stat_head->rra_cnt,rrd_file) != rrd.stat_head->rra_cnt){
-	rrd_set_error("fwrite rra_ptr to rrd");
+    if(rrd_write(rrd_file, rrd.rra_ptr,
+	       sizeof(rra_ptr_t)* rrd.stat_head->rra_cnt)
+	    != (ssize_t)(sizeof(rra_ptr_t)*rrd.stat_head->rra_cnt)){
+	rrd_set_error("rrd_write rra_ptr to rrd");
 	free(updvals);
 	free(tmpl_idx);
 	rrd_free(&rrd);
 	free(pdp_temp);
 	free(pdp_new);
-	fclose(rrd_file);
+	close(rrd_file->fd);
 	return(-1);
     }
     
@@ -1411,23 +1404,13 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
        will let the data off the hook as soon as it is written when if it is from a previous
        update cycle. Calling fdsync to force things is much too hard here. */
 
-    if (0 != posix_fadvise(fileno(rrd_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
+    if (0 != posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
          rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-         fclose(rrd_file);
+         close(rrd_file->fd);
          return(-1);
     } 
 #endif
-
-    /* OK now close the files and free the memory */
-    if(fclose(rrd_file) != 0){
-	rrd_set_error("closing rrd");
-	free(updvals);
-	free(tmpl_idx);
-	rrd_free(&rrd);
-	free(pdp_temp);
-	free(pdp_new);
-	return(-1);
-    }
+    /*XXX: ? */rrd_flush(rrd_file);
 
     /* calling the smoothing code here guarantees at most
  	 * one smoothing operation per rrd_update call. Unfortunately,
@@ -1436,7 +1419,7 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	 * critical except during the burning cycles. */
 	if (schedule_smooth)
 	{
-	  rrd_file = fopen(filename,"rb+");
+//	  in_file = fopen(filename,"rb+");
           
 
 	  rra_start = rra_begin;
@@ -1457,14 +1440,26 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	  }
 #ifdef HAVE_POSIX_FADVISExxx
           /* same procedure as above ... */
-          if (0 != posix_fadvise(fileno(rrd_file), rra_begin, 0, POSIX_FADV_DONTNEED)) {
+          if (0 != posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
              rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-             fclose(rrd_file);
+             close(rrd_file->fd);
              return(-1);
           } 
 #endif
-	  fclose(rrd_file);
+	  close(rrd_file->fd);
 	}
+
+    /* OK now close the files and free the memory */
+    if(close(rrd_file->fd) != 0){
+	rrd_set_error("closing rrd");
+	free(updvals);
+	free(tmpl_idx);
+	rrd_free(&rrd);
+	free(pdp_temp);
+	free(pdp_new);
+	return(-1);
+    }
+
     rrd_free(&rrd);
     free(updvals);
     free(tmpl_idx);
@@ -1480,19 +1475,16 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
  * returns 0 on success
  */
 int
-LockRRD(FILE *rrdfile)
+LockRRD(int in_file)
 {
-    int	rrd_fd;		/* File descriptor for RRD */
     int	rcstat;
-
-    rrd_fd = fileno(rrdfile);
 
 	{
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     struct _stat st;
 
-    if ( _fstat( rrd_fd, &st ) == 0 ) {
-	    rcstat = _locking ( rrd_fd, _LK_NBLCK, st.st_size );
+    if ( _fstat( in_file, &st ) == 0 ) {
+	    rcstat = _locking ( in_file, _LK_NBLCK, st.st_size );
     } else {
 	    rcstat = -1;
     }
@@ -1503,7 +1495,7 @@ LockRRD(FILE *rrdfile)
     lock.l_start = 0;	      /* start of file */
     lock.l_whence = SEEK_SET;   /* end of file */
 
-    rcstat = fcntl(rrd_fd, F_SETLK, &lock);
+    rcstat = fcntl(in_file, F_SETLK, &lock);
 #endif
 	}
 
@@ -1516,15 +1508,15 @@ info_t
 *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
 	       unsigned short CDP_scratch_idx, 
 #ifndef DEBUG
-FILE UNUSED(*rrd_file),
+int UNUSED(in_file),
 #else
-FILE *rrd_file,
+int in_file,
 #endif
 		   info_t *pcdp_summary, time_t *rra_time, void *rrd_mmaped_file)
 #else
 info_t
 *write_RRA_row (rrd_t *rrd, unsigned long rra_idx, unsigned long *rra_current,
-	       unsigned short CDP_scratch_idx, FILE *rrd_file,
+	       unsigned short CDP_scratch_idx, int in_file,
 		   info_t *pcdp_summary, time_t *rra_time)
 #endif
 {
@@ -1537,7 +1529,7 @@ info_t
       cdp_idx =rra_idx * (rrd -> stat_head->ds_cnt) + ds_idx;
 #ifdef DEBUG
 	  fprintf(stderr,"  -- RRA WRITE VALUE %e, at %ld CF:%s\n",
-	     rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,ftell(rrd_file),
+	     rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,rrd_file->pos,
 	     rrd -> rra_def[rra_idx].cf_nam);
 #endif 
       if (pcdp_summary != NULL)
@@ -1555,8 +1547,8 @@ info_t
 			  &(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
 			  sizeof(rrd_value_t));
 #else
-	  if(fwrite(&(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
-		 sizeof(rrd_value_t),1,rrd_file) != 1)
+	  if(rrd_write(rrd_file,&(rrd -> cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
+		 sizeof(rrd_value_t)*1) != sizeof(rrd_value_t)*1)
 	  { 
 	     rrd_set_error("writing rrd");
 	     return 0;

@@ -23,17 +23,18 @@ rrd_last(int argc, char **argv)
 time_t
 rrd_last_r(const char *filename)
 {
-    FILE	*in_file;
     time_t       lastup;
+    rrd_file_t*	rrd_file;
 
     rrd_t	 rrd;
 
-    if(rrd_open(filename, &in_file, &rrd, RRD_READONLY)==-1){
+    rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+    if (rrd_file == NULL)
         return(-1);
-    }
+
     lastup = rrd.live_head->last_up;
     rrd_free(&rrd);
-    fclose(in_file);
+    rrd_close(rrd_file);
     return(lastup);
 }
 

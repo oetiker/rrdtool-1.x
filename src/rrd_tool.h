@@ -7,7 +7,6 @@
 extern "C" {
 #endif
 
-
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
@@ -15,89 +14,6 @@ extern "C" {
 #include "../rrd_config.h"
 #elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include "../win32/config.h"
-#endif
-
-#ifdef MUST_DISABLE_SIGFPE
-#include <signal.h>
-#endif
-
-#ifdef MUST_DISABLE_FPMASK
-#include <floatingpoint.h>
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <ctype.h>
-
-#if HAVE_SYS_PARAM_H
-#  include <sys/param.h>
-#endif
-
-#ifndef MAXPATH
-#  define MAXPATH 1024
-#endif
-
-#if HAVE_MATH_H
-# include <math.h>
-#endif
-/* Sorry: don't know autoconf as well how to check the exist of
-   dirent.h ans sys/stat.h
-*/
-
-#if HAVE_DIRENT_H
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-# endif
-#endif
-
-#if HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#endif
-
-#if HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#endif
-
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
-#endif
-
-#if HAVE_SYS_TIMES_H
-# include <sys/times.h>
-#endif
-
-
-#if HAVE_SYS_RESOURCE_H
-# include <sys/resource.h>
-#if (defined(__svr4__) && defined(__sun__))
-/* Solaris headers (pre 2.6) don't have a getrusage prototype.
-   Use this instead. */
-extern int getrusage(int, struct rusage *);
-#endif /* __svr4__ && __sun__ */
 #endif
 
 #include "rrd.h"
@@ -133,7 +49,7 @@ int isnan(double value);
 
 #ifndef min
 #define min(a,b) ((a) < (b) ? (a) : (b))
-#endif                                                   
+#endif
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
@@ -180,11 +96,18 @@ void rrd_free(rrd_t *rrd);
 void rrd_freemem(void *mem);
 void rrd_init(rrd_t *rrd);
 
-int rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
+rrd_file_t* rrd_open(const char * const file_name, rrd_t *rrd, unsigned rdwr);
+int rrd_close(rrd_file_t* rrd_file);
+ssize_t rrd_read(rrd_file_t* rrd_file, void*buf, size_t count);
+ssize_t rrd_write(rrd_file_t* rrd_file, const void*buf, size_t count);
+void rrd_flush(rrd_file_t* rrd_file);
+off_t rrd_seek(rrd_file_t* rrd_file, off_t off, int whence);
+off_t rrd_tell(rrd_file_t* rrd_file);
 int readfile(const char *file, char **buffer, int skipfirst);
 
 #define RRD_READONLY    0
 #define RRD_READWRITE   1
+#define RRD_CREAT       2
 
 enum cf_en cf_conv(const char *string);
 enum dst_en dst_conv(char *string);

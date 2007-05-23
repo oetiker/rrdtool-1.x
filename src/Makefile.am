@@ -30,22 +30,22 @@ RRD_C_FILES =		\
 	hash_32.c	\
 	pngsize.c	\
 	rrd_create.c	\
-	rrd_dump.c	\
-	rrd_fetch.c	\
 	rrd_graph.c	\
 	rrd_graph_helper.c	\
+	rrd_version.c	\
 	rrd_last.c	\
 	rrd_lastupdate.c	\
 	rrd_first.c	\
-	rrd_resize.c	\
 	rrd_restore.c	\
-	rrd_tune.c	\
-	rrd_version.c	\
 	rrd_xport.c	\
         art_rgba_svp.c \
 	rrd_gfx.c \
 	rrd_afm.c rrd_afm_data.c \
-	rrd_tool.c
+	rrd_dump.c	\
+	rrd_fetch.c	\
+	rrd_tool.c	\
+	rrd_resize.c \
+	rrd_tune.c
 
 noinst_HEADERS = \
         art_rgba_svp.h \

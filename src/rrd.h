@@ -52,6 +52,8 @@ extern "C" {
 #ifndef _RRDLIB_H
 #define _RRDLIB_H
 
+#include <sys/types.h> /* for off_t */
+#include <unistd.h> /* for off_t */
 #include <time.h>
 #include <stdio.h> /* for FILE */
 
@@ -59,6 +61,15 @@ extern "C" {
 typedef double       rrd_value_t;         /* the data storage type is
                                            * double */
 /* END rrd_format.h */
+
+/* information about an rrd file */
+typedef struct rrd_file_t {
+	int   fd;         /* file descriptor if this rrd file */
+	char* file_start; /* start address of an open rrd file */
+	off_t header_len; /* length of the header of this rrd file */
+	off_t file_len;   /* total size of the rrd file */
+	off_t pos;        /* current pos in file */
+} rrd_file_t;
 
 /* main function blocks */
 int    rrd_create(int, char **);
@@ -143,7 +154,7 @@ void   rrd_free_context (struct rrd_context *buf);
 /* int    rrd_test_error_r (struct rrd_context *); */
 /* char  *rrd_get_error_r  (struct rrd_context *); */
 
-int  LockRRD(FILE *);
+int  LockRRD(int in_file);
 
 #endif /* _RRDLIB_H */
 

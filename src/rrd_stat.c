@@ -6,6 +6,8 @@
 
 #include "rrd_tool.h"
 
+XXX: This file is not compiled. Is this on purpose?
+
 extern char *tzname[2];
 
 stat_node
@@ -16,11 +18,12 @@ rrd_stat(int argc, char **argv)
     char         somestring[255];
     rrd_value_t  my_cdp;
     long         rra_base, rra_start, rra_next;
-    FILE                  *in_file;
     rrd_t             rrd;
+    rrd_file_t  *rrd_file;
 
 
-    if(rrd_open(argv[1],&in_file,&rrd, RRD_READONLY)==-1){
+    rrd_file = rrd_open(argv[1],&rrd, RRD_READONLY);
+    if (rrd_file == NULL) {
 	return(-1);
     }
     puts("<!-- Round Robin Database Dump -->");
@@ -66,7 +69,7 @@ rrd_stat(int argc, char **argv)
 
     puts("<!-- Round Robin Archives -->");
 
-    rra_base=ftell(in_file);    
+    rra_base = rrd_file->header_len;
     rra_next = rra_base;
 
     for(i=0;i<rrd.stat_head->rra_cnt;i++){
@@ -97,7 +100,7 @@ rrd_stat(int argc, char **argv)
 	printf("\t\t</cdp_prep>\n");
 
 	printf("\t\t<database>\n");
-	fseek(in_file,(rra_start
+	rrd_seek(rrd_file,(rra_start
 		       +(rrd.rra_ptr[i].cur_row+1)
 		       * rrd.stat_head->ds_cnt
 		       * sizeof(rrd_value_t)),SEEK_SET);
@@ -106,7 +109,7 @@ rrd_stat(int argc, char **argv)
 	for(ix=0;ix<rrd.rra_def[i].row_cnt;ix++){	    
 	    ii++;
 	    if (ii>=rrd.rra_def[i].row_cnt) {
-		fseek(in_file,rra_start,SEEK_SET);
+		rrd_seek(rrd_file,rra_start,SEEK_SET);
 		ii=0; /* wrap if max row cnt is reached */
 	    }
 	    now = (rrd.live_head->last_up 
@@ -122,7 +125,7 @@ rrd_stat(int argc, char **argv)
 #endif
 	    printf("\t\t\t<!-- %s --> <row>",somestring);
 	    for(iii=0;iii<rrd.stat_head->ds_cnt;iii++){			 
-		fread(&my_cdp,sizeof(rrd_value_t),1,in_file);		
+		rrd_read(rrd_file,&my_cdp,sizeof(rrd_value_t)*1);
 		if (isnan(my_cdp)){
 		  printf("<v> NaN </v>");
 		} else {
@@ -136,7 +139,7 @@ rrd_stat(int argc, char **argv)
     }
     printf("</rrd>\n");
     rrd_free(&rrd);
-    fclose(in_file);
+    close(rrd_file->fd);
     return(0);
 }
 

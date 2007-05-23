@@ -12,7 +12,6 @@ int
 rrd_resize(int argc, char **argv)
 {
     char		*infilename,outfilename[11]="resize.rrd";
-    FILE		*infile,*outfile;
     rrd_t		rrdold,rrdnew;
     rrd_value_t		buffer;
     int			version;
@@ -21,6 +20,7 @@ rrd_resize(int argc, char **argv)
     unsigned long	target_rra;
     int			grow=0,shrink=0;
     char		*endptr;
+    rrd_file_t		*rrd_file, *rrd_out_file;
 
     infilename=argv[1];
     if (!strcmp(infilename,"resize.rrd")) {
@@ -51,21 +51,22 @@ rrd_resize(int argc, char **argv)
     if (shrink) modify = -modify;
 
 
-    if (rrd_open(infilename, &infile, &rrdold, RRD_READWRITE)==-1) {
+    rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE);
+    if (rrd_file == NULL) {
         rrd_set_error("could not open RRD");
         return(-1);
     }
-    if (LockRRD(infile) != 0) {
+    if (LockRRD(rrd_file->fd) != 0) {
         rrd_set_error("could not lock original RRD");
         rrd_free(&rrdold);
-        fclose(infile);
+        close(rrd_file->fd);
         return(-1);
     }
 
     if (target_rra >= rrdold.stat_head->rra_cnt) {
         rrd_set_error("no such RRA in this RRD");
         rrd_free(&rrdold);
-        fclose(infile);
+        close(rrd_file->fd);
         return(-1);
     }
 
@@ -73,10 +74,23 @@ rrd_resize(int argc, char **argv)
 	if ((long)rrdold.rra_def[target_rra].row_cnt <= -modify) {
 	    rrd_set_error("This RRA is not that big");
 	    rrd_free(&rrdold);
-	    fclose(infile);
+	    close(rrd_file->fd);
 	    return(-1);
 	}
 
+    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_CREAT);
+    if (rrd_out_file == NULL) {
+        rrd_set_error("Can't create '%s': %s",outfilename, rrd_strerror(errno));
+        return(-1);
+    }
+    if (LockRRD(rrd_out_file->fd) != 0) {
+        rrd_set_error("could not lock new RRD");
+        rrd_free(&rrdold);
+        close(rrd_file->fd);
+        close(rrd_out_file->fd);
+        return(-1);
+    }
+/*XXX: do one write for those parts of header that are unchanged */
     rrdnew.stat_head = rrdold.stat_head;
     rrdnew.ds_def    = rrdold.ds_def;
     rrdnew.rra_def   = rrdold.rra_def;
@@ -93,29 +107,20 @@ rrd_resize(int argc, char **argv)
 	default: {
 		rrd_set_error("Do not know how to handle RRD version %s",rrdold.stat_head->version);
 		rrd_free(&rrdold);	
-		fclose(infile);
+		close(rrd_file->fd);
 		return(-1);
 		}
     }
 
-    if ((outfile=fopen(outfilename,"wb"))==NULL) {
-        rrd_set_error("Can't create '%s'",outfilename);
-        return(-1);
-    }
-    if (LockRRD(outfile) != 0) {
-        rrd_set_error("could not lock new RRD");
-        rrd_free(&rrdold);
-        fclose(infile);
-        fclose(outfile);
-        return(-1);
-    }
-    fwrite(rrdnew.stat_head, sizeof(stat_head_t),1,outfile);
-    fwrite(rrdnew.ds_def,sizeof(ds_def_t),rrdnew.stat_head->ds_cnt,outfile);
-    fwrite(rrdnew.rra_def,sizeof(rra_def_t),rrdnew.stat_head->rra_cnt,outfile);
-    fwrite(rrdnew.live_head,sizeof(live_head_t),1,outfile);
-    fwrite(rrdnew.pdp_prep,sizeof(pdp_prep_t),rrdnew.stat_head->ds_cnt,outfile);
-    fwrite(rrdnew.cdp_prep,sizeof(cdp_prep_t),rrdnew.stat_head->ds_cnt*rrdnew.stat_head->rra_cnt,outfile);
-    fwrite(rrdnew.rra_ptr,sizeof(rra_ptr_t),rrdnew.stat_head->rra_cnt,outfile);
+
+/* XXX: Error checking? */
+    rrd_write(rrd_out_file,rrdnew.stat_head, sizeof(stat_head_t)*1);
+    rrd_write(rrd_out_file,rrdnew.ds_def,sizeof(ds_def_t)*rrdnew.stat_head->ds_cnt);
+    rrd_write(rrd_out_file,rrdnew.rra_def,sizeof(rra_def_t)*rrdnew.stat_head->rra_cnt);
+    rrd_write(rrd_out_file,rrdnew.live_head,sizeof(live_head_t)*1);
+    rrd_write(rrd_out_file,rrdnew.pdp_prep,sizeof(pdp_prep_t)*rrdnew.stat_head->ds_cnt);
+    rrd_write(rrd_out_file,rrdnew.cdp_prep,sizeof(cdp_prep_t)*rrdnew.stat_head->ds_cnt*rrdnew.stat_head->rra_cnt);
+    rrd_write(rrd_out_file,rrdnew.rra_ptr,sizeof(rra_ptr_t)*rrdnew.stat_head->rra_cnt);
 
     /* Move the CDPs from the old to the new database.
     ** This can be made (much) faster but isn't worth the effort. Clarity
@@ -129,8 +134,8 @@ rrd_resize(int argc, char **argv)
         l+=rrdnew.stat_head->ds_cnt * rrdnew.rra_def[rra].row_cnt;
     }
     while (l>0) {
-        fread(&buffer,sizeof(rrd_value_t),1,infile);
-        fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
+        rrd_read(rrd_file,&buffer,sizeof(rrd_value_t)*1);
+        rrd_write(rrd_out_file,&buffer,sizeof(rrd_value_t)*1);
         l--;
     }
     /* Move data in this RRA, either removing or adding some rows
@@ -141,14 +146,14 @@ rrd_resize(int argc, char **argv)
         */
         l = rrdnew.stat_head->ds_cnt * (rrdnew.rra_ptr[target_rra].cur_row+1);
         while (l>0) {
-            fread(&buffer,sizeof(rrd_value_t),1,infile);
-            fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
+            rrd_read(rrd_file,&buffer,sizeof(rrd_value_t)*1);
+            rrd_write(rrd_out_file,&buffer,sizeof(rrd_value_t)*1);
             l--;
         }
         buffer=DNAN;
         l=rrdnew.stat_head->ds_cnt * modify;
         while (l>0) {
-            fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
+            rrd_write(rrd_out_file,&buffer,sizeof(rrd_value_t)*1);
             l--;
         }
     } else {
@@ -161,7 +166,7 @@ rrd_resize(int argc, char **argv)
         remove_end=(rrdnew.rra_ptr[target_rra].cur_row-modify)%rrdnew.rra_def[target_rra].row_cnt;
         if (remove_end <= (signed long int)rrdnew.rra_ptr[target_rra].cur_row) {
             while (remove_end >= 0) {
-                fseek(infile,sizeof(rrd_value_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
+                rrd_seek(rrd_file,sizeof(rrd_value_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
                 rrdnew.rra_ptr[target_rra].cur_row--;
                 rrdnew.rra_def[target_rra].row_cnt--;
                 remove_end--;
@@ -172,12 +177,12 @@ rrd_resize(int argc, char **argv)
         for (l=0;l<=rrdnew.rra_ptr[target_rra].cur_row;l++) {
             unsigned int tmp;
             for (tmp=0;tmp<rrdnew.stat_head->ds_cnt;tmp++) {
-                fread(&buffer,sizeof(rrd_value_t),1,infile);
-                fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
+                rrd_read(rrd_file,&buffer,sizeof(rrd_value_t)*1);
+                rrd_write(rrd_out_file,&buffer,sizeof(rrd_value_t)*1);
             }
         }
         while (modify<0) {
-            fseek(infile,sizeof(rrd_value_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
+            rrd_seek(rrd_file,sizeof(rrd_value_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
             rrdnew.rra_def[target_rra].row_cnt--;
             modify++;
         }
@@ -185,21 +190,20 @@ rrd_resize(int argc, char **argv)
     /* Move the rest of the CDPs
     */
     while (1) {
-	fread(&buffer,sizeof(rrd_value_t),1,infile);
-	if (feof(infile))
+	if (rrd_read(rrd_file,&buffer,sizeof(rrd_value_t)*1) <= 0)
 	    break;
-        fwrite(&buffer,sizeof(rrd_value_t),1,outfile);
+        rrd_write(rrd_out_file,&buffer,sizeof(rrd_value_t)*1);
     }
     rrdnew.rra_def[target_rra].row_cnt += modify;
-    fseek(outfile,sizeof(stat_head_t)+sizeof(ds_def_t)*rrdnew.stat_head->ds_cnt,SEEK_SET);
-    fwrite(rrdnew.rra_def,sizeof(rra_def_t),rrdnew.stat_head->rra_cnt, outfile);
-    fseek(outfile,sizeof(live_head_t),SEEK_CUR);
-    fseek(outfile,sizeof(pdp_prep_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
-    fseek(outfile,sizeof(cdp_prep_t)*rrdnew.stat_head->ds_cnt*rrdnew.stat_head->rra_cnt,SEEK_CUR);
-    fwrite(rrdnew.rra_ptr,sizeof(rra_ptr_t),rrdnew.stat_head->rra_cnt, outfile);
-    
-    fclose(outfile);
+    rrd_seek(rrd_out_file,sizeof(stat_head_t)+sizeof(ds_def_t)*rrdnew.stat_head->ds_cnt,SEEK_SET);
+    rrd_write(rrd_out_file,rrdnew.rra_def,sizeof(rra_def_t)*rrdnew.stat_head->rra_cnt);
+    rrd_seek(rrd_out_file,sizeof(live_head_t),SEEK_CUR);
+    rrd_seek(rrd_out_file,sizeof(pdp_prep_t)*rrdnew.stat_head->ds_cnt,SEEK_CUR);
+    rrd_seek(rrd_out_file,sizeof(cdp_prep_t)*rrdnew.stat_head->ds_cnt*rrdnew.stat_head->rra_cnt,SEEK_CUR);
+    rrd_write(rrd_out_file,rrdnew.rra_ptr,sizeof(rra_ptr_t)*rrdnew.stat_head->rra_cnt);
+
+    close(rrd_out_file->fd);
     rrd_free(&rrdold);
-    fclose(infile);
+    close(rrd_file->fd);
     return(0);
 }

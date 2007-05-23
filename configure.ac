@@ -52,11 +52,88 @@ AH_TOP([
  ])
 
 AH_BOTTOM([
+/* make sure that we pickup the correct stuff from all headers */
+#define _XOPEN_SOURCE 600
+#if HAVE_FEATURES_H
+# include <features.h>
+#endif
+
+#if HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+
+#if HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+#ifndef MAXPATH
+# ifdef PATH_MAX
+#  define MAXPATH PATH_MAX
+# endif
+#endif
+#ifndef MAXPATH
+/* else try the BSD variant */
+# ifdef MAXPATHLEN
+#  define MAXPATH MAXPATHLEN
+# endif
+#endif
+
+#if HAVE_ERRNO_H
+# include <errno.h>
+#endif
+
+#if HAVE_SYS_MMAN_H
+# include <sys/mman.h>
+#endif
+#if !defined HAVE_MADVISE && defined HAVE_POSIX_MADVISE
+/* use posix_madvise family */
+# define madvise posix_madvise
+# define MADV_NORMAL POSIX_MADV_NORMAL
+# define MADV_RANDOM POSIX_MADV_RANDOM
+# define MADV_SEQUENTIAL POSIX_MADV_SEQUENTIAL
+# define MADV_WILLNEED POSIX_MADV_WILLNEED
+# define MADV_DONTNEED POSIX_MADV_DONTNEED
+#endif
+#if defined HAVE_MADVISE || defined HAVE_POSIX_MADVISE
+# define USE_MADVISE 1
+#endif
+
+#if HAVE_SYS_STAT_H
+# include <sys/stat.h>
+#endif
+
 /* enable posix_fadvise on linux */
 #if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
-#define _XOPEN_SOURCE 600
 #include <fcntl.h>
 #endif
+
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+
+#if HAVE_SYS_TIMES_H
+# include <sys/times.h>
+#endif
+
+#if HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#if (defined(__svr4__) && defined(__sun__))
+/* Solaris headers (pre 2.6) don't have a getrusage prototype.
+   Use this instead. */
+extern int getrusage(int, struct rusage *);
+#endif /* __svr4__ && __sun__ */
+#endif
+
 
 /* define strrchr, strchr and memcpy, memmove in terms of bsd funcs
    make sure you are NOT using bcopy, index or rindex in the code */
@@ -85,20 +162,58 @@ char *strchr (), *strrchr ();
 #  include <malloc/malloc.h>
 #endif
 
+#if HAVE_STDIO_H
+# include <stdio.h>
+#endif
+
+#if HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
+#if HAVE_CTYPE_H
+# include <ctype.h>
+#endif
+
+#if HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# if HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# if HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# if HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
+
+#ifdef MUST_DISABLE_SIGFPE
+# include <signal.h>
+#endif
+
+#ifdef MUST_DISABLE_FPMASK
+# include <floatingpoint.h>
+#endif
+
+
 #ifdef HAVE_MATH_H
-#  include <math.h>
+# include <math.h>
 #endif
 
 #ifdef HAVE_FLOAT_H
-#  include <float.h>
+# include <float.h>
 #endif
 
 #ifdef HAVE_IEEEFP_H
-#  include <ieeefp.h>
+# include <ieeefp.h>
 #endif
 
 #ifdef HAVE_FP_CLASS_H
-#  include <fp_class.h>
+# include <fp_class.h>
 #endif
 
 /* for Solaris */
@@ -199,16 +314,16 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_LIBTOOL
 
-dnl which flags does the compile support?
-if test "$GCC" = "yes"; then
-  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W; do
-    oCFLAGS=$CFLAGS
+dnl which flags does the compiler support?
+if test "x$GCC" = "xyes"; then
+  for flag in -fno-strict-aliasing -Wall -std=c99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -W; do
+    oCFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $flag"
     cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
     AC_CACHE_CHECK([if gcc likes the $flag flag], $cachename,
        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
     if eval test \$$cachename = no; then
-         CFLAGS=$oCFLAGS
+         CFLAGS="$oCFLAGS"
     fi
   done
 fi
@@ -222,7 +337,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h)
+AC_CHECK_HEADERS(features.h sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -247,49 +362,101 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise madvise)
+AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise)
 
-AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
-AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
-#include <fcntl.h>])
-AC_CHECK_DECLS(madvise, [], [], [#include <sys/mman.h>])
+dnl Could use these to know if we need to provide a prototype
+dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+dnl AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
+dnl #include <fcntl.h>])
 
-if test "x$enable_mmap" = xyes; then
+dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
+if test "x$enable_mmap" = "xyes"; then
   case "$host" in
-    *cygwin*)
-       # the normal mmap test does not work in cygwin
-       AC_CHECK_FUNCS(mmap)
-       if [ "x${ac_cv_func_mmap}" = xyes ]; then
-         ac_cv_func_mmap_fixed_mapped=yes
-       fi
-    ;;
-    *)
-       AC_FUNC_MMAP
-    ;;
+  *cygwin*)
+    # the normal mmap test does not work in cygwin
+    AC_CHECK_FUNCS(mmap)
+    if test "x$ac_cv_func_mmap" = "xyes"; then
+      ac_cv_func_mmap_fixed_mapped=yes
+    fi
+  ;;
+  *)
+    AC_CHECK_HEADERS(sys/mman.h)
+    AC_FUNC_MMAP
+    AC_CHECK_FUNCS(mmap munmap)
+    AC_CHECK_DECLS(madvise, [], [], [#if HAVE_SYS_MMAN_H
+				     # include <sys/mman.h>
+				     #endif])
+    if test "x$ac_cv_have_decl_madvise" = "xyes";
+    then
+      AC_CHECK_FUNCS(madvise)
+    else
+      AC_CHECK_FUNCS(posix_madvise)
+      if test "x$ac_cv_func_posix_madvise" != "xyes"; then
+        AC_MSG_WARN([madvise() nor posix_madvise() found.])
+      fi
+    fi
+  ;;
   esac
+  if test "x$ac_cv_func_mmap" != "xyes";
+  then
+    AC_MSG_ERROR([--enable-mmap requested but mmap() was not detected])
+  fi
 fi
 
 
 CONFIGURE_PART(IEEE Math Checks)
  
-dnl HP-UX 11.00 does not have finite but does have isfinite as a macro so we need
+
 dnl actual code to check if this works
 AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
 volatile int x;volatile float f; ]], [[x = fpclassify(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
-AC_CHECK_FUNCS(finite, ,
-  [AC_CHECK_FUNCS(isfinite, ,
-    [AC_MSG_CHECKING(for isfinite with <math.h>)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
-volatile int x;volatile float f;  ]], [[x = isfinite(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
+
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
 volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_ISINF)],[AC_MSG_RESULT(no)])])
+
+dnl finite is BSD, isfinite is C99, so prefer the latter
+AC_CACHE_CHECK([whether isfinite is broken],[have_broken_isfinite],[
+AC_TRY_RUN([
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+int main ()
+{
+#ifdef isfinite
+#ifdef LDBL_MAX
+  if (!isfinite(LDBL_MAX)) return 1;
+#endif
+#ifdef DBL_MAX
+  if (!isfinite(DBL_MAX)) return 1;
+#endif
+#endif
+return 0;
+}],[
+have_broken_isfinite=no],have_broken_isfinite=yes,[
+case "${target}" in
+  hppa*-*-hpux*) have_broken_isfinite=yes ;;
+  *) have_broken_isfinite=no ;;
+esac])
+])
+if test "x$have_broken_isfinite" = "xno"; then
+  AC_DEFINE(HAVE_ISFINITE)
+else
+AC_CHECK_FUNCS(finite,[],
+  [AC_CHECK_FUNCS(isfinite,[],
+      [AC_MSG_CHECKING(for isfinite with <math.h>)
+       AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
+volatile int x;volatile float f;  ]],[[x = isfinite(f)]])],[AC_MSG_RESULT(yes)
+	        AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
+fi
 
 AC_FULL_IEEE
 

@@ -22,7 +22,7 @@ int skipxml(char **);
 int eat_tag(char **, char *);
 int read_tag(char **, char *, char *, void *);
 int xml2rrd(char*, rrd_t*, char);
-int rrd_write(char *, rrd_t *, char);
+int rrd_creat(char *, rrd_t *, char);
 void parse_patch1028_RRA_params(char **buf, rrd_t *rrd, int rra_index);
 void parse_patch1028_CDP_params(char **buf, rrd_t *rrd, int rra_index, int ds_index);
 void parse_FAILURES_history(char **buf, rrd_t *rrd, int rra_index, int ds_index);
@@ -461,7 +461,7 @@ int xml2rrd(char* buf, rrd_t* rrd, char rc){
 /* create and empty rrd file according to the specs given */
 
 int
-rrd_write(char *file_name, rrd_t *rrd, char force_overwrite)
+rrd_creat(char *file_name, rrd_t *rrd, char force_overwrite)
 {
     unsigned long    i,ii,val_cnt;
     FILE             *rrd_file=NULL;
@@ -584,7 +584,7 @@ rrd_restore(int argc, char **argv)
 
     free(buf);
 
-    if(rrd_write(argv[optind+1],&rrd,force_overwrite)==-1){
+    if(rrd_creat(argv[optind+1],&rrd,force_overwrite)==-1){
 	rrd_free(&rrd);	
 	return -1;	
     };
