@@ -8,7 +8,7 @@
 #define RRD_AFM_H
 
 #include <stdlib.h>
- 
+
 #ifdef HAVE_MBSTOWCS
 #define afm_char wchar_t
 #else
@@ -28,22 +28,37 @@
 
 /* measure width of a text string */
 /* fontname can be full name or postscript name */
-double afm_get_text_width( double start, const char* font, double size,
-			    double tabwidth, const char* text);
-double afm_get_text_width_wide( double start, const char* font, double size,
-			    double tabwidth, const afm_char* text);
+double    afm_get_text_width(
+    double start,
+    const char *font,
+    double size,
+    double tabwidth,
+    const char *text);
+double    afm_get_text_width_wide(
+    double start,
+    const char *font,
+    double size,
+    double tabwidth,
+    const afm_char * text);
 
-double afm_get_ascender(const char* font, double size);
-double afm_get_descender(const char* font, double size);
+double    afm_get_ascender(
+    const char *font,
+    double size);
+double    afm_get_descender(
+    const char *font,
+    double size);
 
 /* get postscript name from fullname or postscript name */
-const char *afm_get_font_postscript_name ( const char* font);
-const char *afm_get_font_name(const char* font);
+const char *afm_get_font_postscript_name(
+    const char *font);
+const char *afm_get_font_name(
+    const char *font);
 
 /* cc -E -dM /dev/null */
 #ifdef __APPLE__
 /* need charset conversion from macintosh to unicode. */
 extern const unsigned char afm_mac2iso[128];
+
 #define afm_fix_osx_charset(c) \
 	( (c) >= 128 && (c) <= 255 ? afm_mac2iso[(c) - 128] : (c))
 #else

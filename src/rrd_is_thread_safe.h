@@ -13,7 +13,7 @@
 #define _RRD_IS_THREAD_SAFE_H
 
 #ifdef  __cplusplus
-extern "C" {
+extern    "C" {
 #endif
 
 #undef strerror
@@ -25,5 +25,4 @@ extern "C" {
 #ifdef  __cplusplus
 }
 #endif
-
 #endif /*_RRD_IS_THREAD_SAFE_H */

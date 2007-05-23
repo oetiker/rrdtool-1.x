@@ -26,9 +26,9 @@
 
 #include "rrd_nan_inf.h"
 
-typedef union unival { 
-    unsigned long u_cnt; 
-    rrd_value_t   u_val;
+typedef union unival {
+    unsigned long u_cnt;
+    rrd_value_t u_val;
 } unival;
 
 
@@ -101,21 +101,21 @@ typedef union unival {
 
 typedef struct stat_head_t {
 
-    /* Data Base Identification Section ***/
-    char             cookie[4];          /* RRD */
-    char             version[5];         /* version of the format */
-    double           float_cookie;       /* is it the correct double
-				  	  * representation ?  */
+    /* Data Base Identification Section ** */
+    char      cookie[4];    /* RRD */
+    char      version[5];   /* version of the format */
+    double    float_cookie; /* is it the correct double
+                             * representation ?  */
 
-    /* Data Base Structure Definition *****/
-    unsigned long    ds_cnt;             /* how many different ds provide
-					  * input to the rrd */
-    unsigned long    rra_cnt;            /* how many rras will be maintained
-					  * in the rrd */
-    unsigned long    pdp_step;           /* pdp interval in seconds */
+    /* Data Base Structure Definition **** */
+    unsigned long ds_cnt;   /* how many different ds provide
+                             * input to the rrd */
+    unsigned long rra_cnt;  /* how many rras will be maintained
+                             * in the rrd */
+    unsigned long pdp_step; /* pdp interval in seconds */
 
-    unival           par[10];            /* global parameters ... unused
-					    at the moment */
+    unival    par[10];  /* global parameters ... unused
+                           at the moment */
 } stat_head_t;
 
 
@@ -123,24 +123,26 @@ typedef struct stat_head_t {
  * POS 2: ds_def_t  (* ds_cnt)                        Data Source definitions
  ****************************************************************************/
 
-enum dst_en          { DST_COUNTER=0,     /* data source types available */
-                       DST_ABSOLUTE, 
-                       DST_GAUGE,
-                       DST_DERIVE,
-					   DST_CDEF};
+enum dst_en { DST_COUNTER = 0,  /* data source types available */
+    DST_ABSOLUTE,
+    DST_GAUGE,
+    DST_DERIVE,
+    DST_CDEF
+};
 
-enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
-					   * data source must provide input at
-					   * least every ds_mrhb seconds,
-					   * otherwise it is regarded dead and
-					   * will be set to UNKNOWN */             
-	             DS_min_val,	  /* the processed input of a ds must */
-                     DS_max_val,      /* be between max_val and min_val
-					   * both can be set to UNKNOWN if you
-					   * do not care. Data outside the limits
- 					   * set to UNKNOWN */
-                     DS_cdef = DS_mrhb_cnt}; /* pointer to encoded rpn
-					   * expression only applies to DST_CDEF */
+enum ds_param_en { DS_mrhb_cnt = 0, /* minimum required heartbeat. A
+                                     * data source must provide input at
+                                     * least every ds_mrhb seconds,
+                                     * otherwise it is regarded dead and
+                                     * will be set to UNKNOWN */
+    DS_min_val,         /* the processed input of a ds must */
+    DS_max_val,         /* be between max_val and min_val
+                         * both can be set to UNKNOWN if you
+                         * do not care. Data outside the limits
+                         * set to UNKNOWN */
+    DS_cdef = DS_mrhb_cnt
+};                      /* pointer to encoded rpn
+                         * expression only applies to DST_CDEF */
 
 /* The magic number here is one less than DS_NAM_SIZE */
 #define DS_NAM_FMT    "%19[a-zA-Z0-9_-]"
@@ -150,89 +152,93 @@ enum ds_param_en {   DS_mrhb_cnt=0,       /* minimum required heartbeat. A
 #define DST_SIZE   20
 
 typedef struct ds_def_t {
-    char             ds_nam[DS_NAM_SIZE]; /* Name of the data source (null terminated)*/
-    char             dst[DST_SIZE];       /* Type of data source (null terminated)*/
-    unival           par[10];             /* index of this array see ds_param_en */
+    char      ds_nam[DS_NAM_SIZE];  /* Name of the data source (null terminated) */
+    char      dst[DST_SIZE];    /* Type of data source (null terminated) */
+    unival    par[10];  /* index of this array see ds_param_en */
 } ds_def_t;
 
 /****************************************************************************
  * POS 3: rra_def_t ( *  rra_cnt)         one for each store to be maintained
  ****************************************************************************/
-enum cf_en           { CF_AVERAGE=0,     /* data consolidation functions */ 
-                       CF_MINIMUM, 
-                       CF_MAXIMUM,
-                       CF_LAST,
-         	       CF_HWPREDICT, 
-					   /* An array of predictions using the seasonal 
-						* Holt-Winters algorithm. Requires an RRA of type
-						* CF_SEASONAL for this data source. */
-					   CF_SEASONAL,
-					   /* An array of seasonal effects. Requires an RRA of
-						* type CF_HWPREDICT for this data source. */
-					   CF_DEVPREDICT,
-					   /* An array of deviation predictions based upon
-						* smoothed seasonal deviations. Requires an RRA of
-						* type CF_DEVSEASONAL for this data source. */
-					   CF_DEVSEASONAL,
-					   /* An array of smoothed seasonal deviations. Requires
-						* an RRA of type CF_HWPREDICT for this data source.
-						* */
-					   CF_FAILURES};
-					   /* A binary array of failure indicators: 1 indicates
-						* that the number of violations in the prescribed
-						* window exceeded the prescribed threshold. */
+enum cf_en { CF_AVERAGE = 0,    /* data consolidation functions */
+    CF_MINIMUM,
+    CF_MAXIMUM,
+    CF_LAST,
+    CF_HWPREDICT,
+    /* An array of predictions using the seasonal 
+     * Holt-Winters algorithm. Requires an RRA of type
+     * CF_SEASONAL for this data source. */
+    CF_SEASONAL,
+    /* An array of seasonal effects. Requires an RRA of
+     * type CF_HWPREDICT for this data source. */
+    CF_DEVPREDICT,
+    /* An array of deviation predictions based upon
+     * smoothed seasonal deviations. Requires an RRA of
+     * type CF_DEVSEASONAL for this data source. */
+    CF_DEVSEASONAL,
+    /* An array of smoothed seasonal deviations. Requires
+     * an RRA of type CF_HWPREDICT for this data source.
+     * */
+    CF_FAILURES
+};
+
+                       /* A binary array of failure indicators: 1 indicates
+                        * that the number of violations in the prescribed
+                        * window exceeded the prescribed threshold. */
 
 #define MAX_RRA_PAR_EN 10
-enum rra_par_en {   RRA_cdp_xff_val=0,  /* what part of the consolidated
-                     * datapoint must be known, to produce a
-					 * valid entry in the rra */
-					RRA_hw_alpha,
-					/* exponential smoothing parameter for the intercept in
-					 * the Holt-Winters prediction algorithm. */
-					RRA_hw_beta,
-					/* exponential smoothing parameter for the slope in
-					 * the Holt-Winters prediction algorithm. */
-					RRA_dependent_rra_idx,
-					/* For CF_HWPREDICT: index of the RRA with the seasonal 
-					 * effects of the Holt-Winters algorithm (of type
-					 * CF_SEASONAL).
-					 * For CF_DEVPREDICT: index of the RRA with the seasonal
-					 * deviation predictions (of type CF_DEVSEASONAL).
-					 * For CF_SEASONAL: index of the RRA with the Holt-Winters
-					 * intercept and slope coefficient (of type CF_HWPREDICT).
-					 * For CF_DEVSEASONAL: index of the RRA with the 
-					 * Holt-Winters prediction (of type CF_HWPREDICT).
-					 * For CF_FAILURES: index of the CF_DEVSEASONAL array.
-					 * */
-					RRA_seasonal_smooth_idx,
-					/* For CF_SEASONAL and CF_DEVSEASONAL:
-					 * an integer between 0 and row_count - 1 which
-					 * is index in the seasonal cycle for applying
-					 * the period smoother. */
-				    RRA_failure_threshold,
-					/* For CF_FAILURES, number of violations within the last
-					 * window required to mark a failure. */
-                    RRA_seasonal_gamma = RRA_hw_alpha,
-					/* exponential smoothing parameter for seasonal effects.
-					 * */
-                    RRA_delta_pos = RRA_hw_alpha,
-                    RRA_delta_neg = RRA_hw_beta,
-					/* confidence bound scaling parameters for the
-					 * the FAILURES RRA. */
-                    RRA_window_len = RRA_seasonal_smooth_idx};
-					/* For CF_FAILURES, the length of the window for measuring
-					 * failures. */
-		   	
+enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
+                                         * datapoint must be known, to produce a
+                                         * valid entry in the rra */
+    RRA_hw_alpha,
+    /* exponential smoothing parameter for the intercept in
+     * the Holt-Winters prediction algorithm. */
+    RRA_hw_beta,
+    /* exponential smoothing parameter for the slope in
+     * the Holt-Winters prediction algorithm. */
+    RRA_dependent_rra_idx,
+    /* For CF_HWPREDICT: index of the RRA with the seasonal 
+     * effects of the Holt-Winters algorithm (of type
+     * CF_SEASONAL).
+     * For CF_DEVPREDICT: index of the RRA with the seasonal
+     * deviation predictions (of type CF_DEVSEASONAL).
+     * For CF_SEASONAL: index of the RRA with the Holt-Winters
+     * intercept and slope coefficient (of type CF_HWPREDICT).
+     * For CF_DEVSEASONAL: index of the RRA with the 
+     * Holt-Winters prediction (of type CF_HWPREDICT).
+     * For CF_FAILURES: index of the CF_DEVSEASONAL array.
+     * */
+    RRA_seasonal_smooth_idx,
+    /* For CF_SEASONAL and CF_DEVSEASONAL:
+     * an integer between 0 and row_count - 1 which
+     * is index in the seasonal cycle for applying
+     * the period smoother. */
+    RRA_failure_threshold,
+    /* For CF_FAILURES, number of violations within the last
+     * window required to mark a failure. */
+    RRA_seasonal_gamma = RRA_hw_alpha,
+    /* exponential smoothing parameter for seasonal effects.
+     * */
+    RRA_delta_pos = RRA_hw_alpha,
+    RRA_delta_neg = RRA_hw_beta,
+    /* confidence bound scaling parameters for the
+     * the FAILURES RRA. */
+    RRA_window_len = RRA_seasonal_smooth_idx
+};
+
+                    /* For CF_FAILURES, the length of the window for measuring
+                     * failures. */
+
 #define CF_NAM_FMT    "%19[A-Z]"
 #define CF_NAM_SIZE   20
 
 typedef struct rra_def_t {
-    char             cf_nam[CF_NAM_SIZE];/* consolidation function (null term) */
-    unsigned long    row_cnt;            /* number of entries in the store */
-    unsigned long    pdp_cnt;            /* how many primary data points are
-					  * required for a consolidated data
-					  * point?*/
-    unival           par[MAX_RRA_PAR_EN];            /* index see rra_param_en */
+    char      cf_nam[CF_NAM_SIZE];  /* consolidation function (null term) */
+    unsigned long row_cnt;  /* number of entries in the store */
+    unsigned long pdp_cnt;  /* how many primary data points are
+                             * required for a consolidated data
+                             * point?*/
+    unival    par[MAX_RRA_PAR_EN];  /* index see rra_param_en */
 
 } rra_def_t;
 
@@ -249,30 +255,31 @@ typedef struct rra_def_t {
  ****************************************************************************/
 
 typedef struct live_head_t {
-    time_t           last_up;            /* when was rrd last updated */
-    long	     last_up_usec;	 /* micro seconds part of the
-					    update timestamp. Always >= 0 */
+    time_t    last_up;  /* when was rrd last updated */
+    long      last_up_usec; /* micro seconds part of the
+                               update timestamp. Always >= 0 */
 } live_head_t;
 
 
 /****************************************************************************
  * POS 5: pdp_prep_t  (* ds_cnt)                     here we prepare the pdps 
  ****************************************************************************/
-#define LAST_DS_LEN 30 /* DO NOT CHANGE THIS ... */
+#define LAST_DS_LEN 30  /* DO NOT CHANGE THIS ... */
 
-enum pdp_par_en {   PDP_unkn_sec_cnt=0,  /* how many seconds of the current
-					  * pdp value is unknown data? */
+enum pdp_par_en { PDP_unkn_sec_cnt = 0, /* how many seconds of the current
+                                         * pdp value is unknown data? */
 
-		    PDP_val};	         /* current value of the pdp.
-					    this depends on dst */
+    PDP_val
+};                      /* current value of the pdp.
+                           this depends on dst */
 
-typedef struct pdp_prep_t{    
-    char last_ds[LAST_DS_LEN];           /* the last reading from the data
-					  * source.  this is stored in ASCII
-					  * to cater for very large counters
-					  * we might encounter in connection
-					  * with SNMP. */
-    unival          scratch[10];         /* contents according to pdp_par_en */
+typedef struct pdp_prep_t {
+    char      last_ds[LAST_DS_LEN]; /* the last reading from the data
+                                     * source.  this is stored in ASCII
+                                     * to cater for very large counters
+                                     * we might encounter in connection
+                                     * with SNMP. */
+    unival    scratch[10];  /* contents according to pdp_par_en */
 } pdp_prep_t;
 
 /* data is passed from pdp to cdp when seconds since epoch modulo pdp_step == 0
@@ -291,56 +298,58 @@ typedef struct pdp_prep_t{
  * POS 6: cdp_prep_t (* rra_cnt * ds_cnt )      data prep area for cdp values
  ****************************************************************************/
 #define MAX_CDP_PAR_EN 10
-#define MAX_CDP_FAILURES_IDX 8 
+#define MAX_CDP_FAILURES_IDX 8
 /* max CDP scratch entries avail to record violations for a FAILURES RRA */
 #define MAX_FAILURES_WINDOW_LEN 28
-enum cdp_par_en {  CDP_val=0,          
-                   /* the base_interval is always an
-					* average */
-		           CDP_unkn_pdp_cnt,       
-				   /* how many unknown pdp were
-               	    * integrated. This and the cdp_xff
-					* will decide if this is going to
-					* be a UNKNOWN or a valid value */
-				   CDP_hw_intercept,
-				   /* Current intercept coefficient for the Holt-Winters
-					* prediction algorithm. */
-				   CDP_hw_last_intercept,
-				   /* Last iteration intercept coefficient for the Holt-Winters
-					* prediction algorihtm. */
-				   CDP_hw_slope,
-				   /* Current slope coefficient for the Holt-Winters
-					* prediction algorithm. */
-				   CDP_hw_last_slope,
-				   /* Last iteration slope coeffient. */
-				   CDP_null_count,
-				   /* Number of sequential Unknown (DNAN) values + 1 preceding
-				    * the current prediction.
-					* */
-				   CDP_last_null_count,
-				   /* Last iteration count of Unknown (DNAN) values. */
-				   CDP_primary_val = 8,
-				   /* optimization for bulk updates: the value of the first CDP
-					* value to be written in the bulk update. */
-				   CDP_secondary_val = 9,
-				   /* optimization for bulk updates: the value of subsequent
-					* CDP values to be written in the bulk update. */
-                   CDP_hw_seasonal = CDP_hw_intercept,
-                   /* Current seasonal coefficient for the Holt-Winters
-                    * prediction algorithm. This is stored in CDP prep to avoid
-                    * redundant seek operations. */
-                   CDP_hw_last_seasonal = CDP_hw_last_intercept,
-                   /* Last iteration seasonal coeffient. */
-                   CDP_seasonal_deviation = CDP_hw_intercept,
-                   CDP_last_seasonal_deviation = CDP_hw_last_intercept,
-                   CDP_init_seasonal = CDP_null_count};
+enum cdp_par_en { CDP_val = 0,
+    /* the base_interval is always an
+     * average */
+    CDP_unkn_pdp_cnt,
+    /* how many unknown pdp were
+     * integrated. This and the cdp_xff
+     * will decide if this is going to
+     * be a UNKNOWN or a valid value */
+    CDP_hw_intercept,
+    /* Current intercept coefficient for the Holt-Winters
+     * prediction algorithm. */
+    CDP_hw_last_intercept,
+    /* Last iteration intercept coefficient for the Holt-Winters
+     * prediction algorihtm. */
+    CDP_hw_slope,
+    /* Current slope coefficient for the Holt-Winters
+     * prediction algorithm. */
+    CDP_hw_last_slope,
+    /* Last iteration slope coeffient. */
+    CDP_null_count,
+    /* Number of sequential Unknown (DNAN) values + 1 preceding
+     * the current prediction.
+     * */
+    CDP_last_null_count,
+    /* Last iteration count of Unknown (DNAN) values. */
+    CDP_primary_val = 8,
+    /* optimization for bulk updates: the value of the first CDP
+     * value to be written in the bulk update. */
+    CDP_secondary_val = 9,
+    /* optimization for bulk updates: the value of subsequent
+     * CDP values to be written in the bulk update. */
+    CDP_hw_seasonal = CDP_hw_intercept,
+    /* Current seasonal coefficient for the Holt-Winters
+     * prediction algorithm. This is stored in CDP prep to avoid
+     * redundant seek operations. */
+    CDP_hw_last_seasonal = CDP_hw_last_intercept,
+    /* Last iteration seasonal coeffient. */
+    CDP_seasonal_deviation = CDP_hw_intercept,
+    CDP_last_seasonal_deviation = CDP_hw_last_intercept,
+    CDP_init_seasonal = CDP_null_count
+};
+
                    /* init_seasonal is a flag which when > 0, forces smoothing updates
                     * to occur when rra_ptr.cur_row == 0 */
 
-typedef struct cdp_prep_t{
-    unival         scratch[MAX_CDP_PAR_EN];          
-										 /* contents according to cdp_par_en *
-                                          * init state should be NAN */
+typedef struct cdp_prep_t {
+    unival    scratch[MAX_CDP_PAR_EN];
+    /* contents according to cdp_par_en *
+     * init state should be NAN */
 
 } cdp_prep_t;
 
@@ -349,7 +358,7 @@ typedef struct cdp_prep_t{
  ****************************************************************************/
 
 typedef struct rra_ptr_t {
-    unsigned long    cur_row;            /* current row in the rra*/
+    unsigned long cur_row;  /* current row in the rra */
 } rra_ptr_t;
 
 
@@ -359,14 +368,14 @@ typedef struct rra_ptr_t {
  ****************************************************************************
  ****************************************************************************/
 typedef struct rrd_t {
-    stat_head_t      *stat_head;          /* the static header */
-    ds_def_t         *ds_def;             /* list of data source definitions */
-    rra_def_t        *rra_def;            /* list of round robin archive def */
-    live_head_t      *live_head;
-    pdp_prep_t       *pdp_prep;           /* pdp data prep area */  
-    cdp_prep_t       *cdp_prep;           /* cdp prep area */
-    rra_ptr_t        *rra_ptr;            /* list of rra pointers */
-    rrd_value_t      *rrd_value;          /* list of rrd values */
+    stat_head_t *stat_head; /* the static header */
+    ds_def_t *ds_def;   /* list of data source definitions */
+    rra_def_t *rra_def; /* list of round robin archive def */
+    live_head_t *live_head;
+    pdp_prep_t *pdp_prep;   /* pdp data prep area */
+    cdp_prep_t *cdp_prep;   /* cdp prep area */
+    rra_ptr_t *rra_ptr; /* list of rra pointers */
+    rrd_value_t *rrd_value; /* list of rrd values */
 } rrd_t;
 
 /****************************************************************************
@@ -392,7 +401,3 @@ typedef struct rrd_t {
 
 
 #endif
-
-
-
-

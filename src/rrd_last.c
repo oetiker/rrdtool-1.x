@@ -8,34 +8,33 @@
 
 #include "rrd_tool.h"
 
-time_t
-rrd_last(int argc, char **argv)
+time_t rrd_last(
+    int argc,
+    char **argv)
 {
-    if(argc < 2){
+    if (argc < 2) {
         rrd_set_error("please specify an rrd");
-        return(-1);
+        return (-1);
     }
 
-    return( rrd_last_r(argv[1]) );
+    return (rrd_last_r(argv[1]));
 }
- 
 
-time_t
-rrd_last_r(const char *filename)
+
+time_t rrd_last_r(
+    const char *filename)
 {
-    time_t       lastup;
-    rrd_file_t*	rrd_file;
+    time_t    lastup;
+    rrd_file_t *rrd_file;
 
-    rrd_t	 rrd;
+    rrd_t     rrd;
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL)
-        return(-1);
+        return (-1);
 
     lastup = rrd.live_head->last_up;
     rrd_free(&rrd);
     rrd_close(rrd_file);
-    return(lastup);
+    return (lastup);
 }
-
-

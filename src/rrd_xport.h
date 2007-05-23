@@ -4,7 +4,7 @@
  * rrd_xport.h  contains XML related constants
  ****************************************************************************/
 #ifdef  __cplusplus
-extern "C" {
+extern    "C" {
 #endif
 
 #ifndef _RRD_XPORT_H

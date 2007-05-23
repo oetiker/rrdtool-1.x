@@ -1,6 +1,7 @@
 --blank-lines-after-declarations
 --blank-lines-after-procedures
 --break-before-boolean-operator
+--break-function-decl-args
 --no-blank-lines-after-commas
 --braces-on-if-line
 --braces-on-struct-decl-line
@@ -13,7 +14,7 @@
 --else-endif-column33
 --space-after-cast
 --line-comments-indentation0
---declaration-indentation1
+--declaration-indentation10
 --dont-format-first-column-comments
 --dont-format-comments
 --honour-newlines
@@ -32,3 +33,8 @@
 --case-brace-indentation0
 --leave-preprocessor-space
 --no-tabs
+-T rrd_t
+-T info_t
+-T time_t
+-T off_t
+

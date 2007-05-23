@@ -65,7 +65,7 @@
 /* 
  * 32 bit magic FNV-0 and FNV-1 prime 
  */
-#define FNV_32_PRIME ((Fnv32_t)0x01000193)	
+#define FNV_32_PRIME ((Fnv32_t)0x01000193)
 
 
 /*
@@ -85,22 +85,24 @@
  * NOTE: To use the recommended 32 bit FNV-1 hash, use FNV1_32_INIT as the hval
  *	 argument on the first call to either fnv_32_buf() or fnv_32_str().
  */
-Fnv32_t
-fnv_32_buf(const void *buf, size_t len, Fnv32_t hval)
+Fnv32_t fnv_32_buf(
+    const void *buf,
+    size_t len,
+    Fnv32_t hval)
 {
-    const unsigned char *bp = (const unsigned char *)buf;	/* start of buffer */
-    const unsigned char *be = bp + len;		/* beyond end of buffer */
+    const unsigned char *bp = (const unsigned char *) buf;  /* start of buffer */
+    const unsigned char *be = bp + len; /* beyond end of buffer */
 
     /*
      * FNV-1 hash each octet in the buffer
      */
     while (bp < be) {
 
-	/* multiply by the 32 bit FNV magic prime mod 2^64 */
-	hval *= FNV_32_PRIME;
+        /* multiply by the 32 bit FNV magic prime mod 2^64 */
+        hval *= FNV_32_PRIME;
 
-	/* xor the bottom with the current octet */
-	hval ^= (Fnv32_t)*bp++;
+        /* xor the bottom with the current octet */
+        hval ^= (Fnv32_t) * bp++;
     }
 
     /* return our new hash value */
@@ -124,21 +126,22 @@ fnv_32_buf(const void *buf, size_t len, Fnv32_t hval)
  * NOTE: To use the recommended 32 bit FNV-1 hash, use FNV1_32_INIT as the hval
  *	 argument on the first call to either fnv_32_buf() or fnv_32_str().
  */
-Fnv32_t
-fnv_32_str(const char *str, Fnv32_t hval)
+Fnv32_t fnv_32_str(
+    const char *str,
+    Fnv32_t hval)
 {
-    const unsigned char *s = (const unsigned char *)str;	/* unsigned string */
+    const unsigned char *s = (const unsigned char *) str;   /* unsigned string */
 
     /*
      * FNV-1 hash each octet in the buffer
      */
     while (*s) {
 
-	/* multiply by the 32 bit FNV magic prime mod 2^64 */
-	hval *= FNV_32_PRIME;
+        /* multiply by the 32 bit FNV magic prime mod 2^64 */
+        hval *= FNV_32_PRIME;
 
-	/* xor the bottom with the current octet */
-	hval ^= (Fnv32_t)*s++;
+        /* xor the bottom with the current octet */
+        hval ^= (Fnv32_t) * s++;
     }
 
     /* return our new hash value */
@@ -146,7 +149,8 @@ fnv_32_str(const char *str, Fnv32_t hval)
 }
 
 /* a wrapper function for fnv_32_str */
-unsigned long FnvHash(const char *str)
+unsigned long FnvHash(
+    const char *str)
 {
-  return fnv_32_str(str,FNV1_32_INIT);
+    return fnv_32_str(str, FNV1_32_INIT);
 }

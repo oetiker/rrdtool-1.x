@@ -1,10 +1,10 @@
 #include "rrd_nan_inf.h"
 
-int done_nan = 0;
-int done_inf = 0;
+int       done_nan = 0;
+int       done_inf = 0;
 
-double dnan;
-double dinf;
+double    dnan;
+double    dinf;
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <math.h>
@@ -19,14 +19,22 @@ double dinf;
 
 #endif
 
-double set_to_DNAN(void)
+double set_to_DNAN(
+    void)
 {
-  if ( !done_nan ) { dnan = NAN_FUNC; done_nan = 1; }
-  return dnan;
+    if (!done_nan) {
+        dnan = NAN_FUNC;
+        done_nan = 1;
+    }
+    return dnan;
 }
 
-double set_to_DINF(void)
+double set_to_DINF(
+    void)
 {
-  if ( !done_inf ) { dinf = INF_FUNC; done_inf = 1; }
-  return dinf;
+    if (!done_inf) {
+        dinf = INF_FUNC;
+        done_inf = 1;
+    }
+    return dinf;
 }

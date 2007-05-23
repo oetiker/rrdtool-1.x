@@ -8,16 +8,14 @@
 
 #include "rrd_tool.h"
 
-double
-rrd_version(void)
+double rrd_version(
+    void)
 {
-  return NUMVERS;
+    return NUMVERS;
 }
 
-char *
-rrd_strversion(void)
+char     *rrd_strversion(
+    void)
 {
-  return PACKAGE_VERSION;
+    return PACKAGE_VERSION;
 }
-
-

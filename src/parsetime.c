@@ -119,7 +119,7 @@
 
 /* Structures and unions */
 
-enum {	/* symbols */
+enum {                  /* symbols */
     MIDNIGHT, NOON, TEATIME,
     PM, AM, YESTERDAY, TODAY, TOMORROW, NOW, START, END,
     SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS,
@@ -128,7 +128,7 @@ enum {	/* symbols */
     JAN, FEB, MAR, APR, MAY, JUN,
     JUL, AUG, SEP, OCT, NOV, DEC,
     SUN, MON, TUE, WED, THU, FRI, SAT
-    };
+};
 
 /* the below is for plus_minus() */
 #define PREVIOUS_OP	(-1)
@@ -136,94 +136,94 @@ enum {	/* symbols */
 /* parse translation table - table driven parsers can be your FRIEND!
  */
 struct SpecialToken {
-    char *name;	/* token name */
-    int value;	/* token id */
+    char     *name;     /* token name */
+    int       value;    /* token id */
 };
 static struct SpecialToken VariousWords[] = {
-    { "midnight", MIDNIGHT },	/* 00:00:00 of today or tomorrow */
-    { "noon", NOON },		/* 12:00:00 of today or tomorrow */
-    { "teatime", TEATIME },	/* 16:00:00 of today or tomorrow */
-    { "am", AM },		/* morning times for 0-12 clock */
-    { "pm", PM },		/* evening times for 0-12 clock */
-    { "tomorrow", TOMORROW },
-    { "yesterday", YESTERDAY },
-    { "today", TODAY },
-    { "now", NOW },
-    { "n", NOW },
-    { "start", START },
-    { "s", START },	
-    { "end", END },
-    { "e", END },
+    {"midnight", MIDNIGHT}, /* 00:00:00 of today or tomorrow */
+    {"noon", NOON},     /* 12:00:00 of today or tomorrow */
+    {"teatime", TEATIME},   /* 16:00:00 of today or tomorrow */
+    {"am", AM},         /* morning times for 0-12 clock */
+    {"pm", PM},         /* evening times for 0-12 clock */
+    {"tomorrow", TOMORROW},
+    {"yesterday", YESTERDAY},
+    {"today", TODAY},
+    {"now", NOW},
+    {"n", NOW},
+    {"start", START},
+    {"s", START},
+    {"end", END},
+    {"e", END},
 
-    { "jan", JAN },
-    { "feb", FEB },
-    { "mar", MAR },
-    { "apr", APR },
-    { "may", MAY },
-    { "jun", JUN },
-    { "jul", JUL },
-    { "aug", AUG },
-    { "sep", SEP },
-    { "oct", OCT },
-    { "nov", NOV },
-    { "dec", DEC },
-    { "january", JAN },
-    { "february", FEB },
-    { "march", MAR },
-    { "april", APR },
-    { "may", MAY },
-    { "june", JUN },
-    { "july", JUL },
-    { "august", AUG },
-    { "september", SEP },
-    { "october", OCT },
-    { "november", NOV },
-    { "december", DEC },
-    { "sunday", SUN },
-    { "sun", SUN },
-    { "monday", MON },
-    { "mon", MON },
-    { "tuesday", TUE },
-    { "tue", TUE },
-    { "wednesday", WED },
-    { "wed", WED },
-    { "thursday", THU },
-    { "thu", THU },
-    { "friday", FRI },
-    { "fri", FRI },
-    { "saturday", SAT },
-    { "sat", SAT },
-    { NULL, 0 }			/*** SENTINEL ***/
+    {"jan", JAN},
+    {"feb", FEB},
+    {"mar", MAR},
+    {"apr", APR},
+    {"may", MAY},
+    {"jun", JUN},
+    {"jul", JUL},
+    {"aug", AUG},
+    {"sep", SEP},
+    {"oct", OCT},
+    {"nov", NOV},
+    {"dec", DEC},
+    {"january", JAN},
+    {"february", FEB},
+    {"march", MAR},
+    {"april", APR},
+    {"may", MAY},
+    {"june", JUN},
+    {"july", JUL},
+    {"august", AUG},
+    {"september", SEP},
+    {"october", OCT},
+    {"november", NOV},
+    {"december", DEC},
+    {"sunday", SUN},
+    {"sun", SUN},
+    {"monday", MON},
+    {"mon", MON},
+    {"tuesday", TUE},
+    {"tue", TUE},
+    {"wednesday", WED},
+    {"wed", WED},
+    {"thursday", THU},
+    {"thu", THU},
+    {"friday", FRI},
+    {"fri", FRI},
+    {"saturday", SAT},
+    {"sat", SAT},
+    {NULL, 0}           /*** SENTINEL ***/
 };
 
 static struct SpecialToken TimeMultipliers[] = {
-    { "second", SECONDS },	/* seconds multiplier */
-    { "seconds", SECONDS },	/* (pluralized) */
-    { "sec", SECONDS },		/* (generic) */
-    { "s", SECONDS },		/* (short generic) */
-    { "minute", MINUTES },	/* minutes multiplier */
-    { "minutes", MINUTES },	/* (pluralized) */
-    { "min", MINUTES },		/* (generic) */
-    { "m", MONTHS_MINUTES },	/* (short generic) */
-    { "hour", HOURS },		/* hours ... */
-    { "hours", HOURS },		/* (pluralized) */
-    { "hr", HOURS },		/* (generic) */
-    { "h", HOURS },		/* (short generic) */
-    { "day", DAYS },		/* days ... */
-    { "days", DAYS },		/* (pluralized) */
-    { "d", DAYS },		/* (short generic) */
-    { "week", WEEKS },		/* week ... */
-    { "weeks", WEEKS },		/* (pluralized) */
-    { "wk", WEEKS },		/* (generic) */
-    { "w", WEEKS },		/* (short generic) */
-    { "month", MONTHS },	/* week ... */
-    { "months", MONTHS },	/* (pluralized) */
-    { "mon", MONTHS },		/* (generic) */
-    { "year", YEARS },		/* year ... */
-    { "years", YEARS },		/* (pluralized) */
-    { "yr", YEARS },		/* (generic) */
-    { "y", YEARS },		/* (short generic) */
-    { NULL, 0 }			/*** SENTINEL ***/
+    {"second", SECONDS},    /* seconds multiplier */
+    {"seconds", SECONDS},   /* (pluralized) */
+    {"sec", SECONDS},   /* (generic) */
+    {"s", SECONDS},     /* (short generic) */
+    {"minute", MINUTES},    /* minutes multiplier */
+    {"minutes", MINUTES},   /* (pluralized) */
+    {"min", MINUTES},   /* (generic) */
+    {"m", MONTHS_MINUTES},  /* (short generic) */
+    {"hour", HOURS},    /* hours ... */
+    {"hours", HOURS},   /* (pluralized) */
+    {"hr", HOURS},      /* (generic) */
+    {"h", HOURS},       /* (short generic) */
+    {"day", DAYS},      /* days ... */
+    {"days", DAYS},     /* (pluralized) */
+    {"d", DAYS},        /* (short generic) */
+    {"week", WEEKS},    /* week ... */
+    {"weeks", WEEKS},   /* (pluralized) */
+    {"wk", WEEKS},      /* (generic) */
+    {"w", WEEKS},       /* (short generic) */
+    {"month", MONTHS},  /* week ... */
+    {"months", MONTHS}, /* (pluralized) */
+    {"mon", MONTHS},    /* (generic) */
+    {"year", YEARS},    /* year ... */
+    {"years", YEARS},   /* (pluralized) */
+    {"yr", YEARS},      /* (generic) */
+    {"y", YEARS},       /* (short generic) */
+    {NULL, 0}           /*** SENTINEL ***/
 };
 
 /* File scope variables */
@@ -234,24 +234,25 @@ static struct SpecialToken TimeMultipliers[] = {
  */
 static struct SpecialToken *Specials;
 
-static const char **scp;	/* scanner - pointer at arglist */
-static char scc;	/* scanner - count of remaining arguments */
-static const char *sct;	/* scanner - next char pointer in current argument */
-static int need;	/* scanner - need to advance to next argument */
+static const char **scp;    /* scanner - pointer at arglist */
+static char scc;        /* scanner - count of remaining arguments */
+static const char *sct; /* scanner - next char pointer in current argument */
+static int need;        /* scanner - need to advance to next argument */
 
-static char *sc_token=NULL;	/* scanner - token buffer */
+static char *sc_token = NULL;   /* scanner - token buffer */
 static size_t sc_len;   /* scanner - length of token buffer */
-static int sc_tokid;	/* scanner - token id */
+static int sc_tokid;    /* scanner - token id */
 
 /* Local functions */
-static void EnsureMemFree (void);
+static void EnsureMemFree(
+    void);
 
-static void EnsureMemFree (void)
+static void EnsureMemFree(
+    void)
 {
-  if( sc_token )
-    {
-    free(sc_token);
-    sc_token = NULL;
+    if (sc_token) {
+        free(sc_token);
+        sc_token = NULL;
     }
 }
 
@@ -293,178 +294,189 @@ static void EnsureMemFree (void)
  * the most appropriate use for these is inside panic(...) 
  */
 #define MAX_ERR_MSG_LEN	1024
-static char errmsg[ MAX_ERR_MSG_LEN ];
+static char errmsg[MAX_ERR_MSG_LEN];
 
-static char *
-ve ( char *fmt, va_list ap )
+static char *ve(
+    char *fmt,
+    va_list ap)
 {
 #ifdef HAVE_VSNPRINTF
-  vsnprintf( errmsg, MAX_ERR_MSG_LEN, fmt, ap );
+    vsnprintf(errmsg, MAX_ERR_MSG_LEN, fmt, ap);
 #else
-  vsprintf( errmsg, fmt, ap );
+    vsprintf(errmsg, fmt, ap);
 #endif
-  EnsureMemFree();
-  return( errmsg );
+    EnsureMemFree();
+    return (errmsg);
 }
 
-static char *
-e ( char *fmt, ... )
+static char *e(
+    char *fmt,
+    ...)
 {
-  char *err;
-  va_list ap;
-  va_start( ap, fmt );
-  err = ve( fmt, ap );
-  va_end( ap );
-  return( err );
+    char     *err;
+    va_list   ap;
+
+    va_start(ap, fmt);
+    err = ve(fmt, ap);
+    va_end(ap);
+    return (err);
 }
 
 /* Compare S1 and S2, ignoring case, returning less than, equal to or
    greater than zero if S1 is lexicographically less than,
    equal to or greater than S2.  -- copied from GNU libc*/
-static int
-mystrcasecmp (s1, s2)
-     const char *s1;
-     const char *s2;
+static int mystrcasecmp(
+    s1,
+    s2)
+    const char *s1;
+    const char *s2;
 {
-  const unsigned char *p1 = (const unsigned char *) s1;
-  const unsigned char *p2 = (const unsigned char *) s2;
-  unsigned char c1, c2;
+    const unsigned char *p1 = (const unsigned char *) s1;
+    const unsigned char *p2 = (const unsigned char *) s2;
+    unsigned char c1, c2;
 
-  if (p1 == p2)
-    return 0;
+    if (p1 == p2)
+        return 0;
 
-  do
-    {
-      c1 = tolower (*p1++);
-      c2 = tolower (*p2++);
-      if (c1 == '\0')
-	break;
+    do {
+        c1 = tolower(*p1++);
+        c2 = tolower(*p2++);
+        if (c1 == '\0')
+            break;
     }
-  while (c1 == c2);
+    while (c1 == c2);
 
-  return c1 - c2;
+    return c1 - c2;
 }
 
 /*
  * parse a token, checking if it's something special to us
  */
-static int
-parse_token(char *arg)
+static int parse_token(
+    char *arg)
 {
-    int i;
+    int       i;
 
-    for (i=0; Specials[i].name != NULL; i++)
-	if (mystrcasecmp(Specials[i].name, arg) == 0)
-	    return sc_tokid = Specials[i].value;
+    for (i = 0; Specials[i].name != NULL; i++)
+        if (mystrcasecmp(Specials[i].name, arg) == 0)
+            return sc_tokid = Specials[i].value;
 
     /* not special - must be some random id */
     return sc_tokid = ID;
-} /* parse_token */
+}                       /* parse_token */
 
 
 
 /*
  * init_scanner() sets up the scanner to eat arguments
  */
-static char *
-init_scanner(int argc, const char **argv)
+static char *init_scanner(
+    int argc,
+    const char **argv)
 {
     scp = argv;
     scc = argc;
     need = 1;
     sc_len = 1;
     while (argc-- > 0)
-	sc_len += strlen(*argv++);
+        sc_len += strlen(*argv++);
 
-    sc_token = (char *) malloc(sc_len*sizeof(char));
-    if( sc_token == NULL )
-      return "Failed to allocate memory";
+    sc_token = (char *) malloc(sc_len * sizeof(char));
+    if (sc_token == NULL)
+        return "Failed to allocate memory";
     return TIME_OK;
-} /* init_scanner */
+}                       /* init_scanner */
 
 /*
  * token() fetches a token from the input stream
  */
-static int
-token()
+static int token(
+    )
 {
-    int idx;
+    int       idx;
 
     while (1) {
-	memset(sc_token, '\0', sc_len);
-	sc_tokid = EOF;
-	idx = 0;
+        memset(sc_token, '\0', sc_len);
+        sc_tokid = EOF;
+        idx = 0;
 
-	/* if we need to read another argument, walk along the argument list;
-	 * when we fall off the arglist, we'll just return EOF forever
-	 */
-	if (need) {
-	    if (scc < 1)
-		return sc_tokid;
-	    sct = *scp;
-	    scp++;
-	    scc--;
-	    need = 0;
-	}
-	/* eat whitespace now - if we walk off the end of the argument,
-	 * we'll continue, which puts us up at the top of the while loop
-	 * to fetch the next argument in
-	 */
-	while (isspace((unsigned char)*sct) || *sct == '_' || *sct == ',' )
-	    ++sct;
-	if (!*sct) {
-	    need = 1;
-	    continue;
-	}
+        /* if we need to read another argument, walk along the argument list;
+         * when we fall off the arglist, we'll just return EOF forever
+         */
+        if (need) {
+            if (scc < 1)
+                return sc_tokid;
+            sct = *scp;
+            scp++;
+            scc--;
+            need = 0;
+        }
+        /* eat whitespace now - if we walk off the end of the argument,
+         * we'll continue, which puts us up at the top of the while loop
+         * to fetch the next argument in
+         */
+        while (isspace((unsigned char) *sct) || *sct == '_' || *sct == ',')
+            ++sct;
+        if (!*sct) {
+            need = 1;
+            continue;
+        }
 
-	/* preserve the first character of the new token
-	 */
-	sc_token[0] = *sct++;
+        /* preserve the first character of the new token
+         */
+        sc_token[0] = *sct++;
 
-	/* then see what it is
-	 */
-	if (isdigit((unsigned char)(sc_token[0]))) {
-	    while (isdigit((unsigned char)(*sct)))
-		sc_token[++idx] = *sct++;
-	    sc_token[++idx] = '\0';
-	    return sc_tokid = NUMBER;
-	}
-	else if (isalpha((unsigned char)(sc_token[0]))) {
-	    while (isalpha((unsigned char)(*sct)))
-		sc_token[++idx] = *sct++;
-	    sc_token[++idx] = '\0';
-	    return parse_token(sc_token);
-	}
-	else switch(sc_token[0]) {
-	    case ':': return sc_tokid = COLON;
-	    case '.': return sc_tokid = DOT;
-	    case '+': return sc_tokid = PLUS;
-	    case '-': return sc_tokid = MINUS;
-	    case '/': return sc_tokid = SLASH;
-	default:
-        /*OK, we did not make it ... */
-	    sct--;
-	    return sc_tokid = EOF;
-	}
-    } /* while (1) */
-} /* token */
+        /* then see what it is
+         */
+        if (isdigit((unsigned char) (sc_token[0]))) {
+            while (isdigit((unsigned char) (*sct)))
+                sc_token[++idx] = *sct++;
+            sc_token[++idx] = '\0';
+            return sc_tokid = NUMBER;
+        } else if (isalpha((unsigned char) (sc_token[0]))) {
+            while (isalpha((unsigned char) (*sct)))
+                sc_token[++idx] = *sct++;
+            sc_token[++idx] = '\0';
+            return parse_token(sc_token);
+        } else
+            switch (sc_token[0]) {
+            case ':':
+                return sc_tokid = COLON;
+            case '.':
+                return sc_tokid = DOT;
+            case '+':
+                return sc_tokid = PLUS;
+            case '-':
+                return sc_tokid = MINUS;
+            case '/':
+                return sc_tokid = SLASH;
+            default:
+                /*OK, we did not make it ... */
+                sct--;
+                return sc_tokid = EOF;
+            }
+    }                   /* while (1) */
+}                       /* token */
 
 
 /* 
  * expect2() gets a token and complains if it's not the token we want
  */
-static char *
-expect2(int desired, char *complain_fmt, ...)
+static char *expect2(
+    int desired,
+    char *complain_fmt,
+    ...)
 {
-    va_list ap;
-    va_start( ap, complain_fmt );
+    va_list   ap;
+
+    va_start(ap, complain_fmt);
     if (token() != desired) {
-	panic(ve( complain_fmt, ap ));
+        panic(ve(complain_fmt, ap));
     }
-    va_end( ap );
+    va_end(ap);
     return TIME_OK;
-    
-} /* expect2 */
+
+}                       /* expect2 */
 
 
 /*
@@ -472,303 +484,327 @@ expect2(int desired, char *complain_fmt, ...)
  *              for the OFFSET-SPEC.
  *              It also applies those m-guessing heuristics.
  */
-static char *
-plus_minus(struct rrd_time_value *ptv, int doop)
+static char *plus_minus(
+    struct rrd_time_value *ptv,
+    int doop)
 {
     static int op = PLUS;
     static int prev_multiplier = -1;
-    int delta;
+    int       delta;
 
-    if( doop >= 0 ) 
-      {
-      op = doop;
-      try(expect2(NUMBER,"There should be number after '%c'", op == PLUS ? '+' : '-'));
-      prev_multiplier = -1; /* reset months-minutes guessing mechanics */
-      }
+    if (doop >= 0) {
+        op = doop;
+        try(expect2
+            (NUMBER, "There should be number after '%c'",
+             op == PLUS ? '+' : '-'));
+        prev_multiplier = -1;   /* reset months-minutes guessing mechanics */
+    }
     /* if doop is < 0 then we repeat the previous op
      * with the prefetched number */
 
     delta = atoi(sc_token);
 
-    if( token() == MONTHS_MINUTES )
-      {
-      /* hard job to guess what does that -5m means: -5mon or -5min? */
-      switch(prev_multiplier)
-	{
+    if (token() == MONTHS_MINUTES) {
+        /* hard job to guess what does that -5m means: -5mon or -5min? */
+        switch (prev_multiplier) {
         case DAYS:
         case WEEKS:
         case MONTHS:
         case YEARS:
-             sc_tokid = MONTHS;
-	     break;
+            sc_tokid = MONTHS;
+            break;
 
         case SECONDS:
         case MINUTES:
         case HOURS:
-	     sc_tokid = MINUTES;
-	     break;
+            sc_tokid = MINUTES;
+            break;
 
         default:
-             if( delta < 6 ) /* it may be some other value but in the context
-			       * of RRD who needs less than 6 min deltas? */
-               sc_tokid = MONTHS;
-             else
-	       sc_tokid = MINUTES;
+            if (delta < 6)  /* it may be some other value but in the context
+                             * of RRD who needs less than 6 min deltas? */
+                sc_tokid = MONTHS;
+            else
+                sc_tokid = MINUTES;
         }
-      }
+    }
     prev_multiplier = sc_tokid;
     switch (sc_tokid) {
     case YEARS:
-	    ptv->tm.tm_year += (op == PLUS) ? delta : -delta;
-	    return TIME_OK;
+        ptv->tm.tm_year += (op == PLUS) ? delta : -delta;
+        return TIME_OK;
     case MONTHS:
-	    ptv->tm.tm_mon += (op == PLUS) ? delta : -delta;
-	    return TIME_OK;
+        ptv->tm.tm_mon += (op == PLUS) ? delta : -delta;
+        return TIME_OK;
     case WEEKS:
-	    delta *= 7;
-	    /* FALLTHRU */
+        delta *= 7;
+        /* FALLTHRU */
     case DAYS:
-      	    ptv->tm.tm_mday += (op == PLUS) ? delta : -delta;
-	    return TIME_OK;
+        ptv->tm.tm_mday += (op == PLUS) ? delta : -delta;
+        return TIME_OK;
     case HOURS:
-	    ptv->offset += (op == PLUS) ? delta*60*60 : -delta*60*60;
-	    return TIME_OK;
+        ptv->offset += (op == PLUS) ? delta * 60 * 60 : -delta * 60 * 60;
+        return TIME_OK;
     case MINUTES:
-	    ptv->offset += (op == PLUS) ? delta*60 : -delta*60;
-	    return TIME_OK;
+        ptv->offset += (op == PLUS) ? delta * 60 : -delta * 60;
+        return TIME_OK;
     case SECONDS:
-	    ptv->offset += (op == PLUS) ? delta : -delta;
-	    return TIME_OK;
-    default: /*default unit is seconds */
-	ptv->offset += (op == PLUS) ? delta : -delta;
-	return TIME_OK;
+        ptv->offset += (op == PLUS) ? delta : -delta;
+        return TIME_OK;
+    default:           /*default unit is seconds */
+        ptv->offset += (op == PLUS) ? delta : -delta;
+        return TIME_OK;
     }
     panic(e("well-known time unit expected after %d", delta));
     /* NORETURN */
-    return TIME_OK; /* to make compiler happy :) */
-} /* plus_minus */
+    return TIME_OK;     /* to make compiler happy :) */
+}                       /* plus_minus */
 
 
 /*
  * tod() computes the time of day (TIME-OF-DAY-SPEC)
  */
-static char *
-tod(struct rrd_time_value *ptv)
+static char *tod(
+    struct rrd_time_value *ptv)
 {
-    int hour, minute = 0;
-    int tlen;
+    int       hour, minute = 0;
+    int       tlen;
+
     /* save token status in  case we must abort */
-    int scc_sv = scc; 
-    const char *sct_sv = sct; 
-    int sc_tokid_sv = sc_tokid;
+    int       scc_sv = scc;
+    const char *sct_sv = sct;
+    int       sc_tokid_sv = sc_tokid;
 
     tlen = strlen(sc_token);
-    
+
     /* first pick out the time of day - we assume a HH (COLON|DOT) MM time
-     */    
+     */
     if (tlen > 2) {
-      return TIME_OK;
+        return TIME_OK;
     }
-    
+
     hour = atoi(sc_token);
 
     token();
     if (sc_tokid == SLASH || sc_tokid == DOT) {
-      /* guess we are looking at a date */
-      scc = scc_sv;
-      sct = sct_sv;
-      sc_tokid = sc_tokid_sv;
-      sprintf (sc_token,"%d", hour);
-      return TIME_OK;
+        /* guess we are looking at a date */
+        scc = scc_sv;
+        sct = sct_sv;
+        sc_tokid = sc_tokid_sv;
+        sprintf(sc_token, "%d", hour);
+        return TIME_OK;
     }
-    if (sc_tokid == COLON ) {
-	try(expect2(NUMBER,
-            "Parsing HH:MM syntax, expecting MM as number, got none"));
-	minute = atoi(sc_token);
-	if (minute > 59) {
-	    panic(e("parsing HH:MM syntax, got MM = %d (>59!)", minute ));
-	}
-	token();
+    if (sc_tokid == COLON) {
+        try(expect2(NUMBER,
+                    "Parsing HH:MM syntax, expecting MM as number, got none"));
+        minute = atoi(sc_token);
+        if (minute > 59) {
+            panic(e("parsing HH:MM syntax, got MM = %d (>59!)", minute));
+        }
+        token();
     }
 
     /* check if an AM or PM specifier was given
      */
     if (sc_tokid == AM || sc_tokid == PM) {
-	if (hour > 12) {
-	    panic(e("there cannot be more than 12 AM or PM hours"));
-	}
-	if (sc_tokid == PM) {
-	    if (hour != 12)	/* 12:xx PM is 12:xx, not 24:xx */
-			hour += 12;
-	} else {
-	    if (hour == 12)	/* 12:xx AM is 00:xx, not 12:xx */
-			hour = 0;
-	}
-	token();
-    } 
-    else if (hour > 23) {
-      /* guess it was not a time then ... */
-      scc = scc_sv;
-      sct = sct_sv;
-      sc_tokid = sc_tokid_sv;
-      sprintf (sc_token,"%d", hour);
-      return TIME_OK;
+        if (hour > 12) {
+            panic(e("there cannot be more than 12 AM or PM hours"));
+        }
+        if (sc_tokid == PM) {
+            if (hour != 12) /* 12:xx PM is 12:xx, not 24:xx */
+                hour += 12;
+        } else {
+            if (hour == 12) /* 12:xx AM is 00:xx, not 12:xx */
+                hour = 0;
+        }
+        token();
+    } else if (hour > 23) {
+        /* guess it was not a time then ... */
+        scc = scc_sv;
+        sct = sct_sv;
+        sc_tokid = sc_tokid_sv;
+        sprintf(sc_token, "%d", hour);
+        return TIME_OK;
     }
     ptv->tm.tm_hour = hour;
     ptv->tm.tm_min = minute;
     ptv->tm.tm_sec = 0;
     if (ptv->tm.tm_hour == 24) {
-	ptv->tm.tm_hour = 0;
-	ptv->tm.tm_mday++;
+        ptv->tm.tm_hour = 0;
+        ptv->tm.tm_mday++;
     }
-  return TIME_OK;
-} /* tod */
+    return TIME_OK;
+}                       /* tod */
 
 
 /*
  * assign_date() assigns a date, adjusting year as appropriate
  */
-static char *
-assign_date(struct rrd_time_value *ptv, long mday, long mon, long year)
+static char *assign_date(
+    struct rrd_time_value *ptv,
+    long mday,
+    long mon,
+    long year)
 {
     if (year > 138) {
-	if (year > 1970)
-	    year -= 1900;
-	else {
-	    panic(e("invalid year %d (should be either 00-99 or >1900)",
+        if (year > 1970)
+            year -= 1900;
+        else {
+            panic(e("invalid year %d (should be either 00-99 or >1900)",
                     year));
-	}
-    } else if( year >= 0 && year < 38 ) {
-	year += 100;	     /* Allow year 2000-2037 to be specified as   */
-    }			     /* 00-37 until the problem of 2038 year will */
-			     /* arise for unices with 32-bit time_t :)    */
+        }
+    } else if (year >= 0 && year < 38) {
+        year += 100;    /* Allow year 2000-2037 to be specified as   */
+    }
+    /* 00-37 until the problem of 2038 year will */
+    /* arise for unices with 32-bit time_t :)    */
     if (year < 70) {
-      panic(e("won't handle dates before epoch (01/01/1970), sorry"));
+        panic(e("won't handle dates before epoch (01/01/1970), sorry"));
     }
 
     ptv->tm.tm_mday = mday;
     ptv->tm.tm_mon = mon;
     ptv->tm.tm_year = year;
-  return TIME_OK;
-} /* assign_date */
+    return TIME_OK;
+}                       /* assign_date */
 
 
 /* 
  * day() picks apart DAY-SPEC-[12]
  */
-static char *
-day(struct rrd_time_value *ptv)
+static char *day(
+    struct rrd_time_value *ptv)
 {
-    /* using time_t seems to help portability with 64bit oses */    
-    time_t mday=0, wday, mon, year = ptv->tm.tm_year;
-    int tlen;
+    /* using time_t seems to help portability with 64bit oses */
+    time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
+    int       tlen;
 
     switch (sc_tokid) {
     case YESTERDAY:
-	    ptv->tm.tm_mday--;
-	    /* FALLTRHU */
-    case TODAY:	/* force ourselves to stay in today - no further processing */
-	    token();
-	    break;
+        ptv->tm.tm_mday--;
+        /* FALLTRHU */
+    case TODAY:        /* force ourselves to stay in today - no further processing */
+        token();
+        break;
     case TOMORROW:
-	    ptv->tm.tm_mday++;
-	    token();
-	    break;
+        ptv->tm.tm_mday++;
+        token();
+        break;
 
-    case JAN: case FEB: case MAR: case APR: case MAY: case JUN:
-    case JUL: case AUG: case SEP: case OCT: case NOV: case DEC:
-	    /* do month mday [year]
-	     */
-	    mon = (sc_tokid-JAN);
-	    try(expect2(NUMBER,
-		"the day of the month should follow month name"));
-	    mday = atol(sc_token);
-	    if (token() == NUMBER) {
-		year = atol(sc_token);
-		token();
-	    }
-	    else
-		year = ptv->tm.tm_year;
-	    try(assign_date(ptv, mday, mon, year));
-	    break;
-
-    case SUN: case MON: case TUE:
-    case WED: case THU: case FRI:
-    case SAT:
-	    /* do a particular day of the week
-	     */
-	    wday = (sc_tokid-SUN);
-	    ptv->tm.tm_mday += (wday - ptv->tm.tm_wday);
+    case JAN:
+    case FEB:
+    case MAR:
+    case APR:
+    case MAY:
+    case JUN:
+    case JUL:
+    case AUG:
+    case SEP:
+    case OCT:
+    case NOV:
+    case DEC:
+        /* do month mday [year]
+         */
+        mon = (sc_tokid - JAN);
+        try(expect2(NUMBER, "the day of the month should follow month name"));
+        mday = atol(sc_token);
+        if (token() == NUMBER) {
+            year = atol(sc_token);
             token();
-	    break;
-	    /*
-	    mday = ptv->tm.tm_mday;
-	    mday += (wday - ptv->tm.tm_wday);
-	    ptv->tm.tm_wday = wday;
+        } else
+            year = ptv->tm.tm_year;
+        try(assign_date(ptv, mday, mon, year));
+        break;
 
-	    try(assign_date(ptv, mday, ptv->tm.tm_mon, ptv->tm.tm_year));
-	    break;
-	    */
+    case SUN:
+    case MON:
+    case TUE:
+    case WED:
+    case THU:
+    case FRI:
+    case SAT:
+        /* do a particular day of the week
+         */
+        wday = (sc_tokid - SUN);
+        ptv->tm.tm_mday += (wday - ptv->tm.tm_wday);
+        token();
+        break;
+        /*
+           mday = ptv->tm.tm_mday;
+           mday += (wday - ptv->tm.tm_wday);
+           ptv->tm.tm_wday = wday;
+
+           try(assign_date(ptv, mday, ptv->tm.tm_mon, ptv->tm.tm_year));
+           break;
+         */
 
     case NUMBER:
-	    /* get numeric <sec since 1970>, MM/DD/[YY]YY, or DD.MM.[YY]YY
-	     */
-	    tlen = strlen(sc_token);
-	    mon = atol(sc_token);
-            if (mon > 10*365*24*60*60) {
-		ptv->tm=*localtime(&mon);
-		token();
-		break;
-	    }
+        /* get numeric <sec since 1970>, MM/DD/[YY]YY, or DD.MM.[YY]YY
+         */
+        tlen = strlen(sc_token);
+        mon = atol(sc_token);
+        if (mon > 10 * 365 * 24 * 60 * 60) {
+            ptv->tm = *localtime(&mon);
+            token();
+            break;
+        }
 
-	    if (mon > 19700101 && mon < 24000101){ /*works between 1900 and 2400 */
-		char  cmon[3],cmday[3],cyear[5];
-		strncpy(cyear,sc_token,4);cyear[4]='\0';	      
-		year = atol(cyear);	      
-		strncpy(cmon,&(sc_token[4]),2);cmon[2]='\0';
-		mon = atol(cmon);
-		strncpy(cmday,&(sc_token[6]),2);cmday[2]='\0';
-		mday = atol(cmday);
-		token();
-	    } else { 
-	      token();
-	      
-	      if (mon <= 31 && (sc_tokid == SLASH || sc_tokid == DOT)) {
-		int sep;		    
-		sep = sc_tokid;
-		try(expect2(NUMBER,"there should be %s number after '%c'",
-			   sep == DOT ? "month" : "day", sep == DOT ? '.' : '/'));
-		mday = atol(sc_token);
-		if (token() == sep) {
-		  try(expect2(NUMBER,"there should be year number after '%c'",
-			     sep == DOT ? '.' : '/'));
-		  year = atol(sc_token);
-		  token();
-		}
-		
-		/* flip months and days for European timing
-		 */
-		if (sep == DOT) {
-		  long x = mday;
-		  mday = mon;
-		  mon = x;
-		}
-	      }
-	    }
+        if (mon > 19700101 && mon < 24000101) { /*works between 1900 and 2400 */
+            char      cmon[3], cmday[3], cyear[5];
 
-	    mon--;
-	    if(mon < 0 || mon > 11 ) {
-	        panic(e("did you really mean month %d?", mon+1));
-	    }
-	    if(mday < 1 || mday > 31) {
-	        panic(e("I'm afraid that %d is not a valid day of the month",
-			mday));
-	    }	   
-	    try(assign_date(ptv, mday, mon, year));
-	    break;
-    } /* case */
+            strncpy(cyear, sc_token, 4);
+            cyear[4] = '\0';
+            year = atol(cyear);
+            strncpy(cmon, &(sc_token[4]), 2);
+            cmon[2] = '\0';
+            mon = atol(cmon);
+            strncpy(cmday, &(sc_token[6]), 2);
+            cmday[2] = '\0';
+            mday = atol(cmday);
+            token();
+        } else {
+            token();
+
+            if (mon <= 31 && (sc_tokid == SLASH || sc_tokid == DOT)) {
+                int       sep;
+
+                sep = sc_tokid;
+                try(expect2(NUMBER, "there should be %s number after '%c'",
+                            sep == DOT ? "month" : "day",
+                            sep == DOT ? '.' : '/'));
+                mday = atol(sc_token);
+                if (token() == sep) {
+                    try(expect2
+                        (NUMBER, "there should be year number after '%c'",
+                         sep == DOT ? '.' : '/'));
+                    year = atol(sc_token);
+                    token();
+                }
+
+                /* flip months and days for European timing
+                 */
+                if (sep == DOT) {
+                    long      x = mday;
+
+                    mday = mon;
+                    mon = x;
+                }
+            }
+        }
+
+        mon--;
+        if (mon < 0 || mon > 11) {
+            panic(e("did you really mean month %d?", mon + 1));
+        }
+        if (mday < 1 || mday > 31) {
+            panic(e("I'm afraid that %d is not a valid day of the month",
+                    mday));
+        }
+        try(assign_date(ptv, mday, mon, year));
+        break;
+    }                   /* case */
     return TIME_OK;
-} /* month */
+}                       /* month */
 
 
 /* Global functions */
@@ -783,199 +819,209 @@ day(struct rrd_time_value *ptv)
  * mktime() The return value is either TIME_OK (aka NULL) or
  * the pointer to the error message in the case of problems
  */
-char *
-parsetime(const char *tspec, struct rrd_time_value *ptv)
+char     *parsetime(
+    const char *tspec,
+    struct rrd_time_value *ptv)
 {
-    time_t now = time(NULL);
-    int hr = 0;
+    time_t    now = time(NULL);
+    int       hr = 0;
+
     /* this MUST be initialized to zero for midnight/noon/teatime */
 
-    Specials = VariousWords; /* initialize special words context */
+    Specials = VariousWords;    /* initialize special words context */
 
-    try(init_scanner( 1, &tspec ));
+    try(init_scanner(1, &tspec));
 
     /* establish the default time reference */
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
     ptv->tm = *localtime(&now);
-    ptv->tm.tm_isdst = -1; /* mk time can figure this out for us ... */
+    ptv->tm.tm_isdst = -1;  /* mk time can figure this out for us ... */
 
     token();
     switch (sc_tokid) {
     case PLUS:
     case MINUS:
-	    break; /* jump to OFFSET-SPEC part */
+        break;          /* jump to OFFSET-SPEC part */
 
     case START:
-	    ptv->type = RELATIVE_TO_START_TIME;
-	    goto KeepItRelative;
+        ptv->type = RELATIVE_TO_START_TIME;
+        goto KeepItRelative;
     case END:
-	    ptv->type = RELATIVE_TO_END_TIME;
-	 KeepItRelative:
-	    ptv->tm.tm_sec  = 0;
-	    ptv->tm.tm_min  = 0;
-	    ptv->tm.tm_hour = 0;
-	    ptv->tm.tm_mday = 0;
-	    ptv->tm.tm_mon  = 0;
-	    ptv->tm.tm_year = 0;
-	    /* FALLTHRU */
+        ptv->type = RELATIVE_TO_END_TIME;
+      KeepItRelative:
+        ptv->tm.tm_sec = 0;
+        ptv->tm.tm_min = 0;
+        ptv->tm.tm_hour = 0;
+        ptv->tm.tm_mday = 0;
+        ptv->tm.tm_mon = 0;
+        ptv->tm.tm_year = 0;
+        /* FALLTHRU */
     case NOW:
-	    {
-	    int time_reference = sc_tokid;
-	    token();
-	    if( sc_tokid == PLUS || sc_tokid == MINUS )
-	      break;
-	    if( time_reference != NOW ) {
-	      panic(e("'start' or 'end' MUST be followed by +|- offset"));
-	    }
-	    else
-	      if( sc_tokid != EOF ) {
-	 	panic(e("if 'now' is followed by a token it must be +|- offset"));	
-	      }
-	    };
-	    break;
+    {
+        int       time_reference = sc_tokid;
 
-    /* Only absolute time specifications below */
-    case NUMBER:
-	    {
-	      long hour_sv = ptv->tm.tm_hour;
-	      long year_sv = ptv->tm.tm_year;
-              ptv->tm.tm_hour = 30;
-              ptv->tm.tm_year = 30000;
-  	      try(tod(ptv))
-      	      try(day(ptv))
-	      if ( ptv->tm.tm_hour == 30 &&  ptv->tm.tm_year != 30000 ){
-		try(tod(ptv))
-              }
-	      if ( ptv->tm.tm_hour == 30 ){
-		ptv->tm.tm_hour = hour_sv;
-              }
-	      if ( ptv->tm.tm_year == 30000 ){
-		ptv->tm.tm_year = year_sv;
-              }
-	    };	    
+        token();
+        if (sc_tokid == PLUS || sc_tokid == MINUS)
             break;
-    /* fix month parsing */
-    case JAN: case FEB: case MAR: case APR: case MAY: case JUN:
-    case JUL: case AUG: case SEP: case OCT: case NOV: case DEC:
-            try(day(ptv));
-	    if (sc_tokid != NUMBER) break;
-	    try(tod(ptv))
-	    break;
+        if (time_reference != NOW) {
+            panic(e("'start' or 'end' MUST be followed by +|- offset"));
+        } else if (sc_tokid != EOF) {
+            panic(e("if 'now' is followed by a token it must be +|- offset"));
+        }
+    };
+        break;
 
-	    /* evil coding for TEATIME|NOON|MIDNIGHT - we've initialized
-	     * hr to zero up above, then fall into this case in such a
-	     * way so we add +12 +4 hours to it for teatime, +12 hours
-	     * to it for noon, and nothing at all for midnight, then
-	     * set our rettime to that hour before leaping into the
-	     * month scanner
-	     */
+        /* Only absolute time specifications below */
+    case NUMBER:
+    {
+        long      hour_sv = ptv->tm.tm_hour;
+        long      year_sv = ptv->tm.tm_year;
+
+        ptv->tm.tm_hour = 30;
+        ptv->tm.tm_year = 30000;
+        try(tod(ptv))
+            try(day(ptv))
+            if (ptv->tm.tm_hour == 30 && ptv->tm.tm_year != 30000) {
+            try(tod(ptv))
+        }
+        if (ptv->tm.tm_hour == 30) {
+            ptv->tm.tm_hour = hour_sv;
+        }
+        if (ptv->tm.tm_year == 30000) {
+            ptv->tm.tm_year = year_sv;
+        }
+    };
+        break;
+        /* fix month parsing */
+    case JAN:
+    case FEB:
+    case MAR:
+    case APR:
+    case MAY:
+    case JUN:
+    case JUL:
+    case AUG:
+    case SEP:
+    case OCT:
+    case NOV:
+    case DEC:
+        try(day(ptv));
+        if (sc_tokid != NUMBER)
+            break;
+        try(tod(ptv))
+            break;
+
+        /* evil coding for TEATIME|NOON|MIDNIGHT - we've initialized
+         * hr to zero up above, then fall into this case in such a
+         * way so we add +12 +4 hours to it for teatime, +12 hours
+         * to it for noon, and nothing at all for midnight, then
+         * set our rettime to that hour before leaping into the
+         * month scanner
+         */
     case TEATIME:
-	    hr += 4;
-	    /* FALLTHRU */
+        hr += 4;
+        /* FALLTHRU */
     case NOON:
-	    hr += 12;
-	    /* FALLTHRU */
+        hr += 12;
+        /* FALLTHRU */
     case MIDNIGHT:
-            /* if (ptv->tm.tm_hour >= hr) {
-		ptv->tm.tm_mday++;
-		ptv->tm.tm_wday++;
-	    } */ /* shifting does not makes sense here ... noon is noon */ 
-	    ptv->tm.tm_hour = hr;
-	    ptv->tm.tm_min = 0;
-	    ptv->tm.tm_sec = 0;
-	    token();
-	    try(day(ptv));
-	    break;
+        /* if (ptv->tm.tm_hour >= hr) {
+           ptv->tm.tm_mday++;
+           ptv->tm.tm_wday++;
+           } *//* shifting does not makes sense here ... noon is noon */
+        ptv->tm.tm_hour = hr;
+        ptv->tm.tm_min = 0;
+        ptv->tm.tm_sec = 0;
+        token();
+        try(day(ptv));
+        break;
     default:
-    	    panic(e("unparsable time: %s%s",sc_token,sct));
-	    break;
-    } /* ugly case statement */
+        panic(e("unparsable time: %s%s", sc_token, sct));
+        break;
+    }                   /* ugly case statement */
 
     /*
      * the OFFSET-SPEC part
      *
      * (NOTE, the sc_tokid was prefetched for us by the previous code)
      */
-    if( sc_tokid == PLUS || sc_tokid == MINUS ) {
-	Specials = TimeMultipliers; /* switch special words context */
-	while( sc_tokid == PLUS || sc_tokid == MINUS ||
-			       sc_tokid == NUMBER ) {
-	    if( sc_tokid == NUMBER ) {
-	        try(plus_minus(ptv, PREVIOUS_OP ));
-	    } else
-	        try(plus_minus(ptv, sc_tokid));
-	    token(); /* We will get EOF eventually but that's OK, since
-			    token() will return us as many EOFs as needed */
-	}
+    if (sc_tokid == PLUS || sc_tokid == MINUS) {
+        Specials = TimeMultipliers; /* switch special words context */
+        while (sc_tokid == PLUS || sc_tokid == MINUS || sc_tokid == NUMBER) {
+            if (sc_tokid == NUMBER) {
+                try(plus_minus(ptv, PREVIOUS_OP));
+            } else
+                try(plus_minus(ptv, sc_tokid));
+            token();    /* We will get EOF eventually but that's OK, since
+                           token() will return us as many EOFs as needed */
+        }
     }
 
     /* now we should be at EOF */
-    if( sc_tokid != EOF ) {
-      panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
+    if (sc_tokid != EOF) {
+        panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
     }
 
-    ptv->tm.tm_isdst = -1; /* for mktime to guess DST status */
-    if( ptv->type == ABSOLUTE_TIME )
-      if( mktime( &ptv->tm ) == -1 ) { /* normalize & check */
-        /* can happen for "nonexistent" times, e.g. around 3am */
-	/* when winter -> summer time correction eats a hour */
-        panic(e("the specified time is incorrect (out of range?)"));
-      }
+    ptv->tm.tm_isdst = -1;  /* for mktime to guess DST status */
+    if (ptv->type == ABSOLUTE_TIME)
+        if (mktime(&ptv->tm) == -1) {   /* normalize & check */
+            /* can happen for "nonexistent" times, e.g. around 3am */
+            /* when winter -> summer time correction eats a hour */
+            panic(e("the specified time is incorrect (out of range?)"));
+        }
     EnsureMemFree();
     return TIME_OK;
-} /* parsetime */
+}                       /* parsetime */
 
 
-int proc_start_end (struct rrd_time_value *start_tv, 
-		    struct rrd_time_value *end_tv, 
-		    time_t *start, 
-		    time_t *end){
-    if (start_tv->type == RELATIVE_TO_END_TIME  && /* same as the line above */
-	end_tv->type == RELATIVE_TO_START_TIME) {
-	rrd_set_error("the start and end times cannot be specified "
-		      "relative to each other");
-	return -1;
+int proc_start_end(
+    struct rrd_time_value *start_tv,
+    struct rrd_time_value *end_tv,
+    time_t *start,
+    time_t *end)
+{
+    if (start_tv->type == RELATIVE_TO_END_TIME &&   /* same as the line above */
+        end_tv->type == RELATIVE_TO_START_TIME) {
+        rrd_set_error("the start and end times cannot be specified "
+                      "relative to each other");
+        return -1;
     }
 
     if (start_tv->type == RELATIVE_TO_START_TIME) {
-	rrd_set_error("the start time cannot be specified relative to itself");
-	return -1;
+        rrd_set_error
+            ("the start time cannot be specified relative to itself");
+        return -1;
     }
 
     if (end_tv->type == RELATIVE_TO_END_TIME) {
-	rrd_set_error("the end time cannot be specified relative to itself");
-	return -1;
+        rrd_set_error("the end time cannot be specified relative to itself");
+        return -1;
     }
 
-    if( start_tv->type == RELATIVE_TO_END_TIME) {
-	struct tm tmtmp;
-	*end = mktime(&(end_tv->tm)) + end_tv->offset;    
-	tmtmp = *localtime(end); /* reinit end including offset */
-	tmtmp.tm_mday += start_tv->tm.tm_mday;
-	tmtmp.tm_mon += start_tv->tm.tm_mon;
-	tmtmp.tm_year += start_tv->tm.tm_year;	
-	*start = mktime(&tmtmp) + start_tv->offset;
+    if (start_tv->type == RELATIVE_TO_END_TIME) {
+        struct tm tmtmp;
+
+        *end = mktime(&(end_tv->tm)) + end_tv->offset;
+        tmtmp = *localtime(end);    /* reinit end including offset */
+        tmtmp.tm_mday += start_tv->tm.tm_mday;
+        tmtmp.tm_mon += start_tv->tm.tm_mon;
+        tmtmp.tm_year += start_tv->tm.tm_year;
+        *start = mktime(&tmtmp) + start_tv->offset;
     } else {
-	*start = mktime(&(start_tv->tm)) + start_tv->offset;
+        *start = mktime(&(start_tv->tm)) + start_tv->offset;
     }
     if (end_tv->type == RELATIVE_TO_START_TIME) {
-	struct tm tmtmp;
-	*start = mktime(&(start_tv->tm)) + start_tv->offset;
-	tmtmp = *localtime(start);
-	tmtmp.tm_mday += end_tv->tm.tm_mday;
-	tmtmp.tm_mon += end_tv->tm.tm_mon;
-	tmtmp.tm_year += end_tv->tm.tm_year;	
-	*end = mktime(&tmtmp) + end_tv->offset;
+        struct tm tmtmp;
+
+        *start = mktime(&(start_tv->tm)) + start_tv->offset;
+        tmtmp = *localtime(start);
+        tmtmp.tm_mday += end_tv->tm.tm_mday;
+        tmtmp.tm_mon += end_tv->tm.tm_mon;
+        tmtmp.tm_year += end_tv->tm.tm_year;
+        *end = mktime(&tmtmp) + end_tv->offset;
     } else {
-	*end = mktime(&(end_tv->tm)) + end_tv->offset;
-    }    
+        *end = mktime(&(end_tv->tm)) + end_tv->offset;
+    }
     return 0;
-} /* proc_start_end */
-
-
-
-
-
-
-
+}                       /* proc_start_end */

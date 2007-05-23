@@ -153,36 +153,36 @@ Implementation design:
     and 490 Kb for a set of 276 Adobe fonts.
 */
 
-typedef unsigned char  afm_uint8;
-typedef signed   char  afm_sint8;
+typedef unsigned char afm_uint8;
+typedef signed char afm_sint8;
 typedef unsigned short afm_uint16;
-typedef signed   short afm_sint16;
+typedef signed short afm_sint16;
 typedef unsigned short afm_unicode;
 
-typedef const afm_uint8   afm_cuint8;
-typedef const afm_sint8   afm_csint8;
-typedef const afm_uint16  afm_cuint16;
-typedef const afm_sint16  afm_csint16;
+typedef const afm_uint8 afm_cuint8;
+typedef const afm_sint8 afm_csint8;
+typedef const afm_uint16 afm_cuint16;
+typedef const afm_sint16 afm_csint16;
 typedef const afm_unicode afm_cunicode;
 
 typedef struct afm_fontinfo {
-  const char   *fullname; /* e.g. "Futura Bold Oblique" */
-  const char   *postscript_name; /* e.g. "Futura-BoldOblique" */
-  afm_cuint16 ascender, descender;
-  afm_cuint8   *widths;
-  afm_csint16  *kerning_index;
-  afm_cuint8   *kerning_data;
-  afm_cuint16  *highchars_index;
-  afm_cuint16   highchars_count;
-  afm_cunicode *ligatures;
-  afm_cuint16   ligatures_count;
-}      afm_fontinfo;
+    const char *fullname;   /* e.g. "Futura Bold Oblique" */
+    const char *postscript_name;    /* e.g. "Futura-BoldOblique" */
+    afm_cuint16 ascender, descender;
+    afm_cuint8 *widths;
+    afm_csint16 *kerning_index;
+    afm_cuint8 *kerning_data;
+    afm_cuint16 *highchars_index;
+    afm_cuint16 highchars_count;
+    afm_cunicode *ligatures;
+    afm_cuint16 ligatures_count;
+} afm_fontinfo;
 
 typedef struct old_afm_fontinfo {
-  const char *fontname, *fullname;
-  const unsigned short *charinfo, *intarray;
-  const unsigned short charinfocount;
-  const unsigned short fixedpitch;
+    const char *fontname, *fullname;
+    const unsigned short *charinfo, *intarray;
+    const unsigned short charinfocount;
+    const unsigned short fixedpitch;
 } old_afm_fontinfo;
 
 extern const afm_fontinfo afm_fontinfolist[];

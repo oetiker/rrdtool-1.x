@@ -48,318 +48,382 @@
 extern char *tzname[2];
 #endif
 
-int
-rrd_dump(int argc, char **argv) 
+int rrd_dump(
+    int argc,
+    char **argv)
 {
-    int                 rc;
+    int       rc;
 
     if (argc < 2) {
-	rrd_set_error("Not enough arguments");
-	return -1;
+        rrd_set_error("Not enough arguments");
+        return -1;
     }
 
-    if (argc == 3)
-    {
-      rc = rrd_dump_r(argv[1], argv[2]);
-    }
-    else
-    {
-      rc = rrd_dump_r(argv[1], NULL);			
+    if (argc == 3) {
+        rc = rrd_dump_r(argv[1], argv[2]);
+    } else {
+        rc = rrd_dump_r(argv[1], NULL);
     }
 
     return rc;
 }
 
-int
-rrd_dump_r(const char *filename, char *outname)    
-{   
-    unsigned int i,ii,ix,iii=0;
-    time_t       now;
-    char         somestring[255];
-    rrd_value_t  my_cdp;
-    off_t         rra_base, rra_start, rra_next;
-    rrd_file_t	 *rrd_file;
-		FILE				*out_file;
-    rrd_t        rrd;
-    rrd_value_t  value;
-    struct tm    tm;
+int rrd_dump_r(
+    const char *filename,
+    char *outname)
+{
+    unsigned int i, ii, ix, iii = 0;
+    time_t    now;
+    char      somestring[255];
+    rrd_value_t my_cdp;
+    off_t     rra_base, rra_start, rra_next;
+    rrd_file_t *rrd_file;
+    FILE     *out_file;
+    rrd_t     rrd;
+    rrd_value_t value;
+    struct tm tm;
+
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL) {
-	rrd_free(&rrd);
-	return(-1);
+        rrd_free(&rrd);
+        return (-1);
     }
 
     out_file = NULL;
-    if (outname)
-    {
-      if (!(out_file = fopen(outname, "w")))
-      {
-        return (-1);	  
-      }
+    if (outname) {
+        if (!(out_file = fopen(outname, "w"))) {
+            return (-1);
+        }
+    } else {
+        out_file = stdout;
     }
-    else 
-    {
-      out_file = stdout;
-    }
-		
+
     fputs("<!-- Round Robin Database Dump -->", out_file);
     fputs("<rrd>", out_file);
-    fprintf(out_file, "\t<version> %s </version>\n",RRD_VERSION);
-    fprintf(out_file, "\t<step> %lu </step> <!-- Seconds -->\n",rrd.stat_head->pdp_step);
+    fprintf(out_file, "\t<version> %s </version>\n", RRD_VERSION);
+    fprintf(out_file, "\t<step> %lu </step> <!-- Seconds -->\n",
+            rrd.stat_head->pdp_step);
 #if HAVE_STRFTIME
     localtime_r(&rrd.live_head->last_up, &tm);
-    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z",
-	     &tm);
+    strftime(somestring, 200, "%Y-%m-%d %H:%M:%S %Z", &tm);
 #else
 # error "Need strftime"
 #endif
     fprintf(out_file, "\t<lastupdate> %ld </lastupdate> <!-- %s -->\n\n",
-	   rrd.live_head->last_up,somestring);
-    for(i=0;i<rrd.stat_head->ds_cnt;i++){
-	   fprintf(out_file, "\t<ds>\n");
-	   fprintf(out_file, "\t\t<name> %s </name>\n",rrd.ds_def[i].ds_nam);
-	   fprintf(out_file, "\t\t<type> %s </type>\n",rrd.ds_def[i].dst);
-       if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
-          fprintf(out_file, "\t\t<minimal_heartbeat> %lu </minimal_heartbeat>\n",rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
-	      if (isnan(rrd.ds_def[i].par[DS_min_val].u_val)){
-	          fprintf(out_file, "\t\t<min> NaN </min>\n");
-	      } else {
-	          fprintf(out_file, "\t\t<min> %0.10e </min>\n",rrd.ds_def[i].par[DS_min_val].u_val);
-	      }
-	      if (isnan(rrd.ds_def[i].par[DS_max_val].u_val)){
-	          fprintf(out_file, "\t\t<max> NaN </max>\n");
-	      } else {
-	          fprintf(out_file, "\t\t<max> %0.10e </max>\n",rrd.ds_def[i].par[DS_max_val].u_val);
-	      }
-       } else { /* DST_CDEF */
-	      char *str=NULL;
-	      rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),rrd.ds_def,&str);
-	      fprintf(out_file, "\t\t<cdef> %s </cdef>\n", str);
-	      free(str);
-	   }
-	   fprintf(out_file, "\n\t\t<!-- PDP Status -->\n");
-	   fprintf(out_file, "\t\t<last_ds> %s </last_ds>\n",rrd.pdp_prep[i].last_ds);
-	   if (isnan(rrd.pdp_prep[i].scratch[PDP_val].u_val)){
-	      fprintf(out_file, "\t\t<value> NaN </value>\n");
-	   } else {
-	      fprintf(out_file, "\t\t<value> %0.10e </value>\n",rrd.pdp_prep[i].scratch[PDP_val].u_val);
-	   }
-	      fprintf(out_file, "\t\t<unknown_sec> %lu </unknown_sec>\n",
-	              rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
-	
-	      fprintf(out_file, "\t</ds>\n\n");
-       }
+            rrd.live_head->last_up, somestring);
+    for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        fprintf(out_file, "\t<ds>\n");
+        fprintf(out_file, "\t\t<name> %s </name>\n", rrd.ds_def[i].ds_nam);
+        fprintf(out_file, "\t\t<type> %s </type>\n", rrd.ds_def[i].dst);
+        if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
+            fprintf(out_file,
+                    "\t\t<minimal_heartbeat> %lu </minimal_heartbeat>\n",
+                    rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
+            if (isnan(rrd.ds_def[i].par[DS_min_val].u_val)) {
+                fprintf(out_file, "\t\t<min> NaN </min>\n");
+            } else {
+                fprintf(out_file, "\t\t<min> %0.10e </min>\n",
+                        rrd.ds_def[i].par[DS_min_val].u_val);
+            }
+            if (isnan(rrd.ds_def[i].par[DS_max_val].u_val)) {
+                fprintf(out_file, "\t\t<max> NaN </max>\n");
+            } else {
+                fprintf(out_file, "\t\t<max> %0.10e </max>\n",
+                        rrd.ds_def[i].par[DS_max_val].u_val);
+            }
+        } else {        /* DST_CDEF */
+            char     *str = NULL;
+
+            rpn_compact2str((rpn_cdefds_t *) & (rrd.ds_def[i].par[DS_cdef]),
+                            rrd.ds_def, &str);
+            fprintf(out_file, "\t\t<cdef> %s </cdef>\n", str);
+            free(str);
+        }
+        fprintf(out_file, "\n\t\t<!-- PDP Status -->\n");
+        fprintf(out_file, "\t\t<last_ds> %s </last_ds>\n",
+                rrd.pdp_prep[i].last_ds);
+        if (isnan(rrd.pdp_prep[i].scratch[PDP_val].u_val)) {
+            fprintf(out_file, "\t\t<value> NaN </value>\n");
+        } else {
+            fprintf(out_file, "\t\t<value> %0.10e </value>\n",
+                    rrd.pdp_prep[i].scratch[PDP_val].u_val);
+        }
+        fprintf(out_file, "\t\t<unknown_sec> %lu </unknown_sec>\n",
+                rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+
+        fprintf(out_file, "\t</ds>\n\n");
+    }
 
     fputs("<!-- Round Robin Archives -->", out_file);
 
     rra_base = rrd_file->header_len;
     rra_next = rra_base;
 
-    for(i=0;i<rrd.stat_head->rra_cnt;i++){
-	
-	long timer=0;
-	rra_start= rra_next;
-	rra_next +=  ( rrd.stat_head->ds_cnt
-                      * rrd.rra_def[i].row_cnt
-                      * sizeof(rrd_value_t));
-	fprintf(out_file, "\t<rra>\n");
-	fprintf(out_file, "\t\t<cf> %s </cf>\n",rrd.rra_def[i].cf_nam);
-	fprintf(out_file, "\t\t<pdp_per_row> %lu </pdp_per_row> <!-- %lu seconds -->\n\n",
-	       rrd.rra_def[i].pdp_cnt, rrd.rra_def[i].pdp_cnt
-	       *rrd.stat_head->pdp_step);
-	/* support for RRA parameters */
-	fprintf(out_file, "\t\t<params>\n");
-	switch(cf_conv(rrd.rra_def[i].cf_nam)) {
-	case CF_HWPREDICT:
-	   fprintf(out_file, "\t\t<hw_alpha> %0.10e </hw_alpha>\n", 
-		  rrd.rra_def[i].par[RRA_hw_alpha].u_val);
-	   fprintf(out_file, "\t\t<hw_beta> %0.10e </hw_beta>\n", 
-		  rrd.rra_def[i].par[RRA_hw_beta].u_val);
-	   fprintf(out_file, "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
-		  rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
-	   break;
-	case CF_SEASONAL:
-	case CF_DEVSEASONAL:
-	   fprintf(out_file, "\t\t<seasonal_gamma> %0.10e </seasonal_gamma>\n", 
-		  rrd.rra_def[i].par[RRA_seasonal_gamma].u_val);
-	   fprintf(out_file, "\t\t<seasonal_smooth_idx> %lu </seasonal_smooth_idx>\n",
-		  rrd.rra_def[i].par[RRA_seasonal_smooth_idx].u_cnt);
-	   fprintf(out_file, "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
-		  rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
-	   break;
-	case CF_FAILURES:
-	   fprintf(out_file, "\t\t<delta_pos> %0.10e </delta_pos>\n", 
-		  rrd.rra_def[i].par[RRA_delta_pos].u_val);
-	   fprintf(out_file, "\t\t<delta_neg> %0.10e </delta_neg>\n", 
-		  rrd.rra_def[i].par[RRA_delta_neg].u_val);
-	   fprintf(out_file, "\t\t<window_len> %lu </window_len>\n",
-		  rrd.rra_def[i].par[RRA_window_len].u_cnt);
-	   fprintf(out_file, "\t\t<failure_threshold> %lu </failure_threshold>\n",
-		  rrd.rra_def[i].par[RRA_failure_threshold].u_cnt);
-		  /* fall thru */
-	case CF_DEVPREDICT:
-	   fprintf(out_file, "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
-		  rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
-	   break;
-	case CF_AVERAGE:
-	case CF_MAXIMUM:
-	case CF_MINIMUM:
-	case CF_LAST:
-	default:
-	   fprintf(out_file, "\t\t<xff> %0.10e </xff>\n", rrd.rra_def[i].par[RRA_cdp_xff_val].u_val);
-	   break;
-	}
-	fprintf(out_file, "\t\t</params>\n");
-	fprintf(out_file, "\t\t<cdp_prep>\n");
-	for(ii=0;ii<rrd.stat_head->ds_cnt;ii++){
-		unsigned long ivalue;
-		fprintf(out_file, "\t\t\t<ds>\n");
-		/* support for exporting all CDP parameters */
-		/* parameters common to all CFs */
-		    /* primary_val and secondary_val do not need to be saved between updates
-			 * so strictly speaking they could be omitted.
-			 * However, they can be useful for diagnostic purposes, so are included here. */
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt
-			   +ii].scratch[CDP_primary_val].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<primary_value> NaN </primary_value>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<primary_value> %0.10e </primary_value>\n", value);
-			}
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_secondary_val].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<secondary_value> NaN </secondary_value>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<secondary_value> %0.10e </secondary_value>\n", value);
-			}
-		switch(cf_conv(rrd.rra_def[i].cf_nam)) {
-		case CF_HWPREDICT:
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_intercept].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<intercept> NaN </intercept>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<intercept> %0.10e </intercept>\n", value);
-			}
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_last_intercept].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<last_intercept> NaN </last_intercept>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<last_intercept> %0.10e </last_intercept>\n", value);
-			}
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_slope].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<slope> NaN </slope>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<slope> %0.10e </slope>\n", value);
-			}
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_last_slope].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<last_slope> NaN </last_slope>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<last_slope> %0.10e </last_slope>\n", value);
-			}
-			ivalue = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_null_count].u_cnt;
-			fprintf(out_file, "\t\t\t<nan_count> %lu </nan_count>\n", ivalue);
-			ivalue = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_last_null_count].u_cnt;
-			fprintf(out_file, "\t\t\t<last_nan_count> %lu </last_nan_count>\n", ivalue);
-			break;
-		case CF_SEASONAL:
-		case CF_DEVSEASONAL:
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_seasonal].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<seasonal> NaN </seasonal>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<seasonal> %0.10e </seasonal>\n", value);
-			}
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_hw_last_seasonal].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<last_seasonal> NaN </last_seasonal>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<last_seasonal> %0.10e </last_seasonal>\n", value);
-			}
-	        ivalue = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_init_seasonal].u_cnt;
-			fprintf(out_file, "\t\t\t<init_flag> %lu </init_flag>\n", ivalue);
-			break;
-		case CF_DEVPREDICT:
-			break;
-		case CF_FAILURES:
-		    {
-            unsigned short vidx;
-			char *violations_array = (char *) ((void*) 
-			   rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch);
-			fprintf(out_file, "\t\t\t<history> ");
-			for (vidx = 0; vidx < rrd.rra_def[i].par[RRA_window_len].u_cnt; ++vidx)
-			{
-				fprintf(out_file, "%d",violations_array[vidx]);
-			}
-			fprintf(out_file, " </history>\n");
-			}
-			break;
-		case CF_AVERAGE:
-		case CF_MAXIMUM:
-		case CF_MINIMUM:
-		case CF_LAST:
-		default:
-	        value = rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_val].u_val;
-			if (isnan(value)) {
-			   fprintf(out_file, "\t\t\t<value> NaN </value>\n");
-			} else {
-			   fprintf(out_file, "\t\t\t<value> %0.10e </value>\n", value);
-			}
-		    fprintf(out_file, "\t\t\t<unknown_datapoints> %lu </unknown_datapoints>\n",
-		       rrd.cdp_prep[i*rrd.stat_head->ds_cnt+ii].scratch[CDP_unkn_pdp_cnt].u_cnt);
-			break;
-		}
-        fprintf(out_file, "\t\t\t</ds>\n");	 
-    }
-	fprintf(out_file, "\t\t</cdp_prep>\n");
+    for (i = 0; i < rrd.stat_head->rra_cnt; i++) {
 
-	fprintf(out_file, "\t\t<database>\n");
-	rrd_seek(rrd_file,(rra_start
-		       +(rrd.rra_ptr[i].cur_row+1)
-		       * rrd.stat_head->ds_cnt
-		       * sizeof(rrd_value_t)),SEEK_SET);
-	timer = - (rrd.rra_def[i].row_cnt-1);
-	ii=rrd.rra_ptr[i].cur_row;
-	for(ix=0;ix<rrd.rra_def[i].row_cnt;ix++){	    
-	    ii++;
-	    if (ii>=rrd.rra_def[i].row_cnt) {
-		rrd_seek(rrd_file,rra_start,SEEK_SET);
-		ii=0; /* wrap if max row cnt is reached */
-	    }
-	    now = (rrd.live_head->last_up 
-		   - rrd.live_head->last_up 
-		   % (rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step)) 
-		+ (timer*rrd.rra_def[i].pdp_cnt*rrd.stat_head->pdp_step);
+        long      timer = 0;
 
-	    timer++;
+        rra_start = rra_next;
+        rra_next += (rrd.stat_head->ds_cnt
+                     * rrd.rra_def[i].row_cnt * sizeof(rrd_value_t));
+        fprintf(out_file, "\t<rra>\n");
+        fprintf(out_file, "\t\t<cf> %s </cf>\n", rrd.rra_def[i].cf_nam);
+        fprintf(out_file,
+                "\t\t<pdp_per_row> %lu </pdp_per_row> <!-- %lu seconds -->\n\n",
+                rrd.rra_def[i].pdp_cnt,
+                rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step);
+        /* support for RRA parameters */
+        fprintf(out_file, "\t\t<params>\n");
+        switch (cf_conv(rrd.rra_def[i].cf_nam)) {
+        case CF_HWPREDICT:
+            fprintf(out_file, "\t\t<hw_alpha> %0.10e </hw_alpha>\n",
+                    rrd.rra_def[i].par[RRA_hw_alpha].u_val);
+            fprintf(out_file, "\t\t<hw_beta> %0.10e </hw_beta>\n",
+                    rrd.rra_def[i].par[RRA_hw_beta].u_val);
+            fprintf(out_file,
+                    "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
+                    rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
+            break;
+        case CF_SEASONAL:
+        case CF_DEVSEASONAL:
+            fprintf(out_file,
+                    "\t\t<seasonal_gamma> %0.10e </seasonal_gamma>\n",
+                    rrd.rra_def[i].par[RRA_seasonal_gamma].u_val);
+            fprintf(out_file,
+                    "\t\t<seasonal_smooth_idx> %lu </seasonal_smooth_idx>\n",
+                    rrd.rra_def[i].par[RRA_seasonal_smooth_idx].u_cnt);
+            fprintf(out_file,
+                    "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
+                    rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
+            break;
+        case CF_FAILURES:
+            fprintf(out_file, "\t\t<delta_pos> %0.10e </delta_pos>\n",
+                    rrd.rra_def[i].par[RRA_delta_pos].u_val);
+            fprintf(out_file, "\t\t<delta_neg> %0.10e </delta_neg>\n",
+                    rrd.rra_def[i].par[RRA_delta_neg].u_val);
+            fprintf(out_file, "\t\t<window_len> %lu </window_len>\n",
+                    rrd.rra_def[i].par[RRA_window_len].u_cnt);
+            fprintf(out_file,
+                    "\t\t<failure_threshold> %lu </failure_threshold>\n",
+                    rrd.rra_def[i].par[RRA_failure_threshold].u_cnt);
+            /* fall thru */
+        case CF_DEVPREDICT:
+            fprintf(out_file,
+                    "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
+                    rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);
+            break;
+        case CF_AVERAGE:
+        case CF_MAXIMUM:
+        case CF_MINIMUM:
+        case CF_LAST:
+        default:
+            fprintf(out_file, "\t\t<xff> %0.10e </xff>\n",
+                    rrd.rra_def[i].par[RRA_cdp_xff_val].u_val);
+            break;
+        }
+        fprintf(out_file, "\t\t</params>\n");
+        fprintf(out_file, "\t\t<cdp_prep>\n");
+        for (ii = 0; ii < rrd.stat_head->ds_cnt; ii++) {
+            unsigned long ivalue;
+
+            fprintf(out_file, "\t\t\t<ds>\n");
+            /* support for exporting all CDP parameters */
+            /* parameters common to all CFs */
+            /* primary_val and secondary_val do not need to be saved between updates
+             * so strictly speaking they could be omitted.
+             * However, they can be useful for diagnostic purposes, so are included here. */
+            value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt
+                                 + ii].scratch[CDP_primary_val].u_val;
+            if (isnan(value)) {
+                fprintf(out_file,
+                        "\t\t\t<primary_value> NaN </primary_value>\n");
+            } else {
+                fprintf(out_file,
+                        "\t\t\t<primary_value> %0.10e </primary_value>\n",
+                        value);
+            }
+            value =
+                rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                             ii].scratch[CDP_secondary_val].u_val;
+            if (isnan(value)) {
+                fprintf(out_file,
+                        "\t\t\t<secondary_value> NaN </secondary_value>\n");
+            } else {
+                fprintf(out_file,
+                        "\t\t\t<secondary_value> %0.10e </secondary_value>\n",
+                        value);
+            }
+            switch (cf_conv(rrd.rra_def[i].cf_nam)) {
+            case CF_HWPREDICT:
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_intercept].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file, "\t\t\t<intercept> NaN </intercept>\n");
+                } else {
+                    fprintf(out_file,
+                            "\t\t\t<intercept> %0.10e </intercept>\n", value);
+                }
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_last_intercept].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file,
+                            "\t\t\t<last_intercept> NaN </last_intercept>\n");
+                } else {
+                    fprintf(out_file,
+                            "\t\t\t<last_intercept> %0.10e </last_intercept>\n",
+                            value);
+                }
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_slope].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file, "\t\t\t<slope> NaN </slope>\n");
+                } else {
+                    fprintf(out_file, "\t\t\t<slope> %0.10e </slope>\n",
+                            value);
+                }
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_last_slope].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file,
+                            "\t\t\t<last_slope> NaN </last_slope>\n");
+                } else {
+                    fprintf(out_file,
+                            "\t\t\t<last_slope> %0.10e </last_slope>\n",
+                            value);
+                }
+                ivalue =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_null_count].u_cnt;
+                fprintf(out_file, "\t\t\t<nan_count> %lu </nan_count>\n",
+                        ivalue);
+                ivalue =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_last_null_count].u_cnt;
+                fprintf(out_file,
+                        "\t\t\t<last_nan_count> %lu </last_nan_count>\n",
+                        ivalue);
+                break;
+            case CF_SEASONAL:
+            case CF_DEVSEASONAL:
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_seasonal].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file, "\t\t\t<seasonal> NaN </seasonal>\n");
+                } else {
+                    fprintf(out_file, "\t\t\t<seasonal> %0.10e </seasonal>\n",
+                            value);
+                }
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_hw_last_seasonal].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file,
+                            "\t\t\t<last_seasonal> NaN </last_seasonal>\n");
+                } else {
+                    fprintf(out_file,
+                            "\t\t\t<last_seasonal> %0.10e </last_seasonal>\n",
+                            value);
+                }
+                ivalue =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_init_seasonal].u_cnt;
+                fprintf(out_file, "\t\t\t<init_flag> %lu </init_flag>\n",
+                        ivalue);
+                break;
+            case CF_DEVPREDICT:
+                break;
+            case CF_FAILURES:
+            {
+                unsigned short vidx;
+                char     *violations_array = (char *) ((void *)
+                                                       rrd.cdp_prep[i *
+                                                                    rrd.
+                                                                    stat_head->
+                                                                    ds_cnt +
+                                                                    ii].
+                                                       scratch);
+                fprintf(out_file, "\t\t\t<history> ");
+                for (vidx = 0;
+                     vidx < rrd.rra_def[i].par[RRA_window_len].u_cnt;
+                     ++vidx) {
+                    fprintf(out_file, "%d", violations_array[vidx]);
+                }
+                fprintf(out_file, " </history>\n");
+            }
+                break;
+            case CF_AVERAGE:
+            case CF_MAXIMUM:
+            case CF_MINIMUM:
+            case CF_LAST:
+            default:
+                value =
+                    rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                 ii].scratch[CDP_val].u_val;
+                if (isnan(value)) {
+                    fprintf(out_file, "\t\t\t<value> NaN </value>\n");
+                } else {
+                    fprintf(out_file, "\t\t\t<value> %0.10e </value>\n",
+                            value);
+                }
+                fprintf(out_file,
+                        "\t\t\t<unknown_datapoints> %lu </unknown_datapoints>\n",
+                        rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
+                                     ii].scratch[CDP_unkn_pdp_cnt].u_cnt);
+                break;
+            }
+            fprintf(out_file, "\t\t\t</ds>\n");
+        }
+        fprintf(out_file, "\t\t</cdp_prep>\n");
+
+        fprintf(out_file, "\t\t<database>\n");
+        rrd_seek(rrd_file, (rra_start + (rrd.rra_ptr[i].cur_row + 1)
+                            * rrd.stat_head->ds_cnt
+                            * sizeof(rrd_value_t)), SEEK_SET);
+        timer = -(rrd.rra_def[i].row_cnt - 1);
+        ii = rrd.rra_ptr[i].cur_row;
+        for (ix = 0; ix < rrd.rra_def[i].row_cnt; ix++) {
+            ii++;
+            if (ii >= rrd.rra_def[i].row_cnt) {
+                rrd_seek(rrd_file, rra_start, SEEK_SET);
+                ii = 0; /* wrap if max row cnt is reached */
+            }
+            now = (rrd.live_head->last_up
+                   - rrd.live_head->last_up
+                   % (rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step))
+                + (timer * rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step);
+
+            timer++;
 #if HAVE_STRFTIME
-	    localtime_r(&now, &tm);
-	    strftime(somestring,200,"%Y-%m-%d %H:%M:%S %Z", &tm);
+            localtime_r(&now, &tm);
+            strftime(somestring, 200, "%Y-%m-%d %H:%M:%S %Z", &tm);
 #else
 # error "Need strftime"
 #endif
-	    fprintf(out_file, "\t\t\t<!-- %s / %d --> <row>",somestring,(int)now);
-	    for(iii=0;iii<rrd.stat_head->ds_cnt;iii++){
-		rrd_read(rrd_file, &my_cdp,sizeof(rrd_value_t)*1);
-		if (isnan(my_cdp)){
-		  fprintf(out_file, "<v> NaN </v>");
-		} else {
-		  fprintf(out_file, "<v> %0.10e </v>",my_cdp);
-		};
-	    }
-	    fprintf(out_file, "</row>\n");
-	}
-	fprintf(out_file, "\t\t</database>\n\t</rra>\n");
+            fprintf(out_file, "\t\t\t<!-- %s / %d --> <row>", somestring,
+                    (int) now);
+            for (iii = 0; iii < rrd.stat_head->ds_cnt; iii++) {
+                rrd_read(rrd_file, &my_cdp, sizeof(rrd_value_t) * 1);
+                if (isnan(my_cdp)) {
+                    fprintf(out_file, "<v> NaN </v>");
+                } else {
+                    fprintf(out_file, "<v> %0.10e </v>", my_cdp);
+                };
+            }
+            fprintf(out_file, "</row>\n");
+        }
+        fprintf(out_file, "\t\t</database>\n\t</rra>\n");
 
     }
     fprintf(out_file, "</rrd>\n");
     rrd_free(&rrd);
     close(rrd_file->fd);
-    if (out_file != stdout)
-    {
-      fclose(out_file);
+    if (out_file != stdout) {
+        fclose(out_file);
     }
-    return(0);
+    return (0);
 }
-
