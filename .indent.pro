@@ -31,3 +31,4 @@
 /* additions by Mark */
 --case-brace-indentation0
 --leave-preprocessor-space
+--no-tabs
