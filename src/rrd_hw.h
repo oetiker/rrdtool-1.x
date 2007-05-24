@@ -13,7 +13,7 @@ int       update_aberrant_CF(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_coef);
+    rrd_value_t *seasonal_coef);
 int       create_hw_contingent_rras(
     rrd_t *rrd,
     unsigned short period,
@@ -22,9 +22,9 @@ int       lookup_seasonal(
     rrd_t *rrd,
     unsigned long rra_idx,
     unsigned long rra_start,
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     unsigned long offset,
-    rrd_value_t ** seasonal_coef);
+    rrd_value_t **seasonal_coef);
 void      erase_violations(
     rrd_t *rrd,
     unsigned long cdp_idx,
@@ -33,10 +33,10 @@ int       apply_smoother(
     rrd_t *rrd,
     unsigned long rra_idx,
     unsigned long rra_start,
-    rrd_file_t * rrd_file);
+    rrd_file_t *rrd_file);
 void      reset_aberrant_coefficients(
     rrd_t *rrd,
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     unsigned long ds_idx);
 void      init_hwpredict_cdp(
     cdp_prep_t *);
@@ -52,14 +52,14 @@ typedef struct FIFOqueue {
 } FIFOqueue;
 
 int       queue_alloc(
-    FIFOqueue ** q,
+    FIFOqueue **q,
     int capacity);
 void      queue_dealloc(
-    FIFOqueue * q);
+    FIFOqueue *q);
 void      queue_push(
-    FIFOqueue * q,
+    FIFOqueue *q,
     rrd_value_t value);
 int       queue_isempty(
-    FIFOqueue * q);
+    FIFOqueue *q);
 rrd_value_t queue_pop(
-    FIFOqueue * q);
+    FIFOqueue *q);

@@ -28,7 +28,7 @@
  *
  *****************************************************************************/
 #ifdef  __cplusplus
-extern "C" {
+extern    "C" {
 #endif
 
 #ifndef _RRD_EXTRA_H
@@ -37,19 +37,29 @@ extern "C" {
 #include "rrd_format.h"
 
 #ifndef WIN32
-#ifndef isnan /* POSIX */
-int isnan(double value);
+#ifndef isnan           /* POSIX */
+    int       isnan(
+    double value);
 #endif
-#else /* Windows only */
+#else                   /* Windows only */
 #include <float.h>
 #define isnan _isnan
 #endif
 
-void rrd_free(rrd_t *rrd);
-void rrd_init(rrd_t *rrd);
+    void      rrd_free(
+    rrd_t *rrd);
+    void      rrd_init(
+    rrd_t *rrd);
 
-int rrd_open(char *file_name, FILE **in_file, rrd_t *rrd, int rdwr);
-int readfile(char *file, char **buffer, int skipfirst);
+    int       rrd_open(
+    char *file_name,
+    FILE ** in_file,
+    rrd_t *rrd,
+    int rdwr);
+    int       readfile(
+    char *file,
+    char **buffer,
+    int skipfirst);
 
 #define RRD_READONLY    0
 #define RRD_READWRITE   1

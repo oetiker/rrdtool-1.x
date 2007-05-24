@@ -19,8 +19,8 @@ int       tzoffset(
     time_t);            /* used to implement LTIME */
 
 short rpn_compact(
-    rpnp_t * rpnp,
-    rpn_cdefds_t ** rpnc,
+    rpnp_t *rpnp,
+    rpn_cdefds_t **rpnc,
     short *count)
 {
     short     i;
@@ -61,7 +61,7 @@ short rpn_compact(
 }
 
 rpnp_t   *rpn_expand(
-    rpn_cdefds_t * rpnc)
+    rpn_cdefds_t *rpnc)
 {
     short     i;
     rpnp_t   *rpnp;
@@ -93,8 +93,8 @@ rpnp_t   *rpn_expand(
  *  str: out string, memory is allocated by the function, must be freed by the
  *   the caller */
 void rpn_compact2str(
-    rpn_cdefds_t * rpnc,
-    ds_def_t * ds_def,
+    rpn_cdefds_t *rpnc,
+    ds_def_t *ds_def,
     char **str)
 {
     unsigned short i, offset = 0;
@@ -278,8 +278,8 @@ long lookup_DS(
 rpnp_t   *rpn_parse(
     void *key_hash,
     const char *const expr_const,
-    long (*lookup) (void *,
-                    char *))
+    long      (*lookup) (void *,
+                         char *))
 {
     int       pos = 0;
     char     *expr;
@@ -394,7 +394,7 @@ rpnp_t   *rpn_parse(
 }
 
 void rpnstack_init(
-    rpnstack_t * rpnstack)
+    rpnstack_t *rpnstack)
 {
     rpnstack->s = NULL;
     rpnstack->dc_stacksize = 0;
@@ -402,7 +402,7 @@ void rpnstack_init(
 }
 
 void rpnstack_free(
-    rpnstack_t * rpnstack)
+    rpnstack_t *rpnstack)
 {
     if (rpnstack->s != NULL)
         free(rpnstack->s);
@@ -434,10 +434,10 @@ static int rpn_compare_double(
  *           0 on success
  */
 short rpn_calc(
-    rpnp_t * rpnp,
-    rpnstack_t * rpnstack,
+    rpnp_t *rpnp,
+    rpnstack_t *rpnstack,
     long data_idx,
-    rrd_value_t * output,
+    rrd_value_t *output,
     int output_idx)
 {
     int       rpi;

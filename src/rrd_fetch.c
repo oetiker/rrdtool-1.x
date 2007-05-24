@@ -67,7 +67,7 @@ int rrd_fetch(
                              * will be changed to represent reality */
     unsigned long *ds_cnt,  /* number of data sources in file */
     char ***ds_namv,    /* names of data sources */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
 
 
@@ -171,7 +171,7 @@ int rrd_fetch_r(
                              * will be changed to represent reality */
     unsigned long *ds_cnt,  /* number of data sources in file */
     char ***ds_namv,    /* names of data_sources */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
     enum cf_en cf_idx;
 
@@ -193,7 +193,7 @@ int rrd_fetch_fn(
                              * will be changed to represent reality */
     unsigned long *ds_cnt,  /* number of data sources in file */
     char ***ds_namv,    /* names of data_sources */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
     long      i, ii;
     time_t    cal_start, cal_end, rra_start_time, rra_end_time;

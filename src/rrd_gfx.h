@@ -61,7 +61,7 @@ gfx_canvas_t *gfx_new_canvas(
 
 /* create a new line */
 gfx_node_t *gfx_new_line(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -70,7 +70,7 @@ gfx_node_t *gfx_new_line(
     gfx_color_t color);
 
 gfx_node_t *gfx_new_dashed_line(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -82,7 +82,7 @@ gfx_node_t *gfx_new_dashed_line(
 
 /* create a new area */
 gfx_node_t *gfx_new_area(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -93,18 +93,18 @@ gfx_node_t *gfx_new_area(
 
 /* add a point to a line or to an area */
 int       gfx_add_point(
-    gfx_node_t * node,
+    gfx_node_t *node,
     double x,
     double y);
 
 /* close current path so it ends at the same point as it started */
 void      gfx_close_path(
-    gfx_node_t * node);
+    gfx_node_t *node);
 
 
 /* create a text node */
 gfx_node_t *gfx_new_text(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double x,
     double y,
     gfx_color_t color,
@@ -118,7 +118,7 @@ gfx_node_t *gfx_new_text(
 
 /* measure width of a text string */
 double    gfx_get_text_width(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double start,
     char *font,
     double size,
@@ -128,7 +128,7 @@ double    gfx_get_text_width(
 
 /* save image to file */
 int       gfx_render(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -137,18 +137,18 @@ int       gfx_render(
 /* free memory used by nodes this will also remove memory required for
    node chain and associated material */
 int       gfx_destroy(
-    gfx_canvas_t * canvas);
+    gfx_canvas_t *canvas);
 
 
 /* PNG support*/
 int       gfx_render_png(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
     FILE * fo);
 double    gfx_get_text_width_libart(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double start,
     char *font,
     double size,
@@ -158,7 +158,7 @@ double    gfx_get_text_width_libart(
 
 /* SVG support */
 int       gfx_render_svg(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -166,7 +166,7 @@ int       gfx_render_svg(
 
 /* EPS support */
 int       gfx_render_eps(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -174,7 +174,7 @@ int       gfx_render_eps(
 
 /* PDF support */
 int       gfx_render_pdf(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,

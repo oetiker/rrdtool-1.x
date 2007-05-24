@@ -51,7 +51,7 @@ int rrd_xport(
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
 
     image_desc_t im;
@@ -159,7 +159,7 @@ int rrd_xport(
 
 
 int rrd_xport_fn(
-    image_desc_t * im,
+    image_desc_t *im,
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */
@@ -167,7 +167,7 @@ int rrd_xport_fn(
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
 
     int       i = 0, j = 0;

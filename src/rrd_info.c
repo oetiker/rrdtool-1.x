@@ -136,7 +136,7 @@ info_t   *rrd_info_r(
         {
             char     *buffer = NULL;
 
-            rpn_compact2str((rpn_cdefds_t *) & (rrd.ds_def[i].par[DS_cdef]),
+            rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
                             rrd.ds_def, &buffer);
             info.u_str = buffer;
             cd = info_push(cd,

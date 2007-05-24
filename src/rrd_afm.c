@@ -119,7 +119,7 @@ double afm_get_descender(
 }
 
 static int afm_find_char_index(
-    const afm_fontinfo * fontinfo,
+    const afm_fontinfo *fontinfo,
     afm_cunicode ch1)
 {
     int       idx = ch1 - 32;
@@ -155,7 +155,7 @@ static int afm_find_char_index(
 
 #if ENABLE_LIGATURES
 static afm_cunicode afm_find_combined_ligature(
-    const afm_fontinfo * fontinfo,
+    const afm_fontinfo *fontinfo,
     afm_cunicode ch1,
     afm_cunicode ch2)
 {
@@ -188,7 +188,7 @@ static afm_cunicode afm_find_combined_ligature(
 
 
 static long afm_find_kern(
-    const afm_fontinfo * fontinfo,
+    const afm_fontinfo *fontinfo,
     int kern_idx,
     afm_cunicode ch2)
 {

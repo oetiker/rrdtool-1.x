@@ -27,7 +27,7 @@ int       update_seasonal(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_coef);
+    rrd_value_t *seasonal_coef);
 int       update_devpredict(
     rrd_t *rrd,
     unsigned long cdp_idx,
@@ -40,7 +40,7 @@ int       update_devseasonal(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_dev);
+    rrd_value_t *seasonal_dev);
 int       update_failures(
     rrd_t *rrd,
     unsigned long cdp_idx,
@@ -146,9 +146,9 @@ int lookup_seasonal(
     rrd_t *rrd,
     unsigned long rra_idx,
     unsigned long rra_start,
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     unsigned long offset,
-    rrd_value_t ** seasonal_coef)
+    rrd_value_t **seasonal_coef)
 {
     unsigned long pos_tmp;
 
@@ -205,7 +205,7 @@ int update_seasonal(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_coef)
+    rrd_value_t *seasonal_coef)
 {
 /* TODO: extract common if subblocks in the wake of I/O optimization */
     rrd_value_t intercept, seasonal;
@@ -342,7 +342,7 @@ int update_devseasonal(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_dev)
+    rrd_value_t *seasonal_dev)
 {
     rrd_value_t prediction = 0, seasonal_coef = DNAN;
     rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
@@ -591,7 +591,7 @@ int apply_smoother(
     rrd_t *rrd,
     unsigned long rra_idx,
     unsigned long rra_start,
-    rrd_file_t * rrd_file)
+    rrd_file_t *rrd_file)
 {
     unsigned long i, j, k;
     unsigned long totalbytes;
@@ -753,7 +753,7 @@ int apply_smoother(
  * seasonal, and seasonal deviation for the specified data source. */
 void reset_aberrant_coefficients(
     rrd_t *rrd,
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     unsigned long ds_idx)
 {
     unsigned long cdp_idx, rra_idx, i;
@@ -823,7 +823,7 @@ void reset_aberrant_coefficients(
 }
 
 void init_hwpredict_cdp(
-    cdp_prep_t * cdp)
+    cdp_prep_t *cdp)
 {
     cdp->scratch[CDP_hw_intercept].u_val = DNAN;
     cdp->scratch[CDP_hw_last_intercept].u_val = DNAN;
@@ -834,7 +834,7 @@ void init_hwpredict_cdp(
 }
 
 void init_seasonal_cdp(
-    cdp_prep_t * cdp)
+    cdp_prep_t *cdp)
 {
     cdp->scratch[CDP_hw_seasonal].u_val = DNAN;
     cdp->scratch[CDP_hw_last_seasonal].u_val = DNAN;
@@ -849,7 +849,7 @@ int update_aberrant_CF(
     unsigned long rra_idx,
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
-    rrd_value_t * seasonal_coef)
+    rrd_value_t *seasonal_coef)
 {
     rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = pdp_val;
     switch (current_cf) {
@@ -895,7 +895,7 @@ unsigned long MyMod(
 /* a standard fixed-capacity FIF0 queue implementation
  * No overflow checking is performed. */
 int queue_alloc(
-    FIFOqueue ** q,
+    FIFOqueue **q,
     int capacity)
 {
     *q = (FIFOqueue *) malloc(sizeof(FIFOqueue));
@@ -913,13 +913,13 @@ int queue_alloc(
 }
 
 int queue_isempty(
-    FIFOqueue * q)
+    FIFOqueue *q)
 {
     return (q->head % q->capacity == q->tail);
 }
 
 void queue_push(
-    FIFOqueue * q,
+    FIFOqueue *q,
     rrd_value_t value)
 {
     q->queue[(q->tail)++] = value;
@@ -927,14 +927,14 @@ void queue_push(
 }
 
 rrd_value_t queue_pop(
-    FIFOqueue * q)
+    FIFOqueue *q)
 {
     q->head = q->head % q->capacity;
     return q->queue[(q->head)++];
 }
 
 void queue_dealloc(
-    FIFOqueue * q)
+    FIFOqueue *q)
 {
     free(q->queue);
     free(q);

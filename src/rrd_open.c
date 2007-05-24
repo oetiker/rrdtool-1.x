@@ -240,7 +240,7 @@ rrd_file_t *rrd_open(
 
 /* Close a reference to an rrd_file.  */
 int rrd_close(
-    rrd_file_t * rrd_file)
+    rrd_file_t *rrd_file)
 {
     int       ret = 0;
 
@@ -256,7 +256,7 @@ int rrd_close(
 
 /* Set position of rrd_file.  */
 off_t rrd_seek(
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     off_t off,
     int whence)
 {
@@ -281,7 +281,7 @@ off_t rrd_seek(
 
 /* Get current position in rrd_file.  */
 off_t rrd_tell(
-    rrd_file_t * rrd_file)
+    rrd_file_t *rrd_file)
 {
     return rrd_file->pos;
 }
@@ -289,7 +289,7 @@ off_t rrd_tell(
 /* read count bytes into buffer buf, starting at rrd_file->pos.
  * Returns the number of bytes read.  */
 ssize_t rrd_read(
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     void *buf,
     size_t count)
 {
@@ -310,7 +310,7 @@ ssize_t rrd_read(
 /* write count bytes from buffer buf to the current position
  * rrd_file->pos of rrd_file->fd.  */
 ssize_t rrd_write(
-    rrd_file_t * rrd_file,
+    rrd_file_t *rrd_file,
     const void *buf,
     size_t count)
 {
@@ -330,7 +330,7 @@ ssize_t rrd_write(
 
 /* flush all data pending to be written to FD.  */
 void rrd_flush(
-    rrd_file_t * rrd_file)
+    rrd_file_t *rrd_file)
 {
     if (fdatasync(rrd_file->fd) != 0) {
         rrd_set_error("flushing fd %d: %s", rrd_file->fd,

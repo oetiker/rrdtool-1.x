@@ -46,9 +46,9 @@ typedef struct rpnstack_t {
 } rpnstack_t;
 
 void      rpnstack_init(
-    rpnstack_t * rpnstack);
+    rpnstack_t *rpnstack);
 void      rpnstack_free(
-    rpnstack_t * rpnstack);
+    rpnstack_t *rpnstack);
 
 void      parseCDEF_DS(
     const char *def,
@@ -59,14 +59,14 @@ long      lookup_DS(
     char *ds_name);
 
 short     rpn_compact(
-    rpnp_t * rpnp,
-    rpn_cdefds_t ** rpnc,
+    rpnp_t *rpnp,
+    rpn_cdefds_t **rpnc,
     short *count);
 rpnp_t   *rpn_expand(
-    rpn_cdefds_t * rpnc);
+    rpn_cdefds_t *rpnc);
 void      rpn_compact2str(
-    rpn_cdefds_t * rpnc,
-    ds_def_t * ds_def,
+    rpn_cdefds_t *rpnc,
+    ds_def_t *ds_def,
     char **str);
 rpnp_t   *rpn_parse(
     void *key_hash,
@@ -74,10 +74,10 @@ rpnp_t   *rpn_parse(
     long      (*lookup) (void *,
                          char *));
 short     rpn_calc(
-    rpnp_t * rpnp,
-    rpnstack_t * rpnstack,
+    rpnp_t *rpnp,
+    rpnstack_t *rpnstack,
     long data_idx,
-    rrd_value_t * output,
+    rrd_value_t *output,
     int output_idx);
 
 #endif

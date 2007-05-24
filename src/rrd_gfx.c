@@ -56,7 +56,7 @@ static void compute_string_bbox(
 
 /* create a freetype glyph string */
 gfx_string gfx_string_create(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     FT_Face face,
     const char *text,
     int rotation,
@@ -69,7 +69,7 @@ static void gfx_string_destroy(
 
 static
 gfx_node_t *gfx_new_node(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     enum gfx_en type)
 {
     gfx_node_t *node = art_new(gfx_node_t, 1);
@@ -119,7 +119,7 @@ gfx_canvas_t *gfx_new_canvas(
 
 /* create a new line */
 gfx_node_t *gfx_new_line(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -131,7 +131,7 @@ gfx_node_t *gfx_new_line(
 }
 
 gfx_node_t *gfx_new_dashed_line(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -173,7 +173,7 @@ gfx_node_t *gfx_new_dashed_line(
 
 /* create a new area */
 gfx_node_t *gfx_new_area(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double X0,
     double Y0,
     double X1,
@@ -218,7 +218,7 @@ gfx_node_t *gfx_new_area(
 
 /* add a point to a line or to an area */
 int gfx_add_point(
-    gfx_node_t * node,
+    gfx_node_t *node,
     double x,
     double y)
 {
@@ -256,7 +256,7 @@ int gfx_add_point(
 }
 
 void gfx_close_path(
-    gfx_node_t * node)
+    gfx_node_t *node)
 {
     node->closed_path = 1;
     if (node->path[0].code == ART_MOVETO_OPEN)
@@ -265,7 +265,7 @@ void gfx_close_path(
 
 /* create a text node */
 gfx_node_t *gfx_new_text(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double x,
     double y,
     gfx_color_t color,
@@ -308,7 +308,7 @@ gfx_node_t *gfx_new_text(
 }
 
 int gfx_render(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -343,7 +343,7 @@ static void gfx_string_destroy(
 
 
 double gfx_get_text_width(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double start,
     char *font,
     double size,
@@ -365,7 +365,7 @@ double gfx_get_text_width(
 }
 
 double gfx_get_text_width_libart(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     double UNUSED(start),
     char *font,
     double size,
@@ -399,7 +399,7 @@ double gfx_get_text_width_libart(
 }
 
 static void gfx_libart_close_path(
-    gfx_node_t * node,
+    gfx_node_t *node,
     ArtVpath ** vec)
 {
     /* libart must have end==start for closed paths,
@@ -455,7 +455,7 @@ static void compute_string_bbox(
 
 /* create a free type glyph string */
 gfx_string gfx_string_create(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     FT_Face face,
     const char *text,
     int rotation,
@@ -644,7 +644,7 @@ static int gfx_save_png(
 /* render grafics into png image */
 
 int gfx_render_png(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -926,7 +926,7 @@ int gfx_render_png(
 /* free memory used by nodes this will also remove memory required for
    associated paths and svcs ... but not for text strings */
 int gfx_destroy(
-    gfx_canvas_t * canvas)
+    gfx_canvas_t *canvas)
 {
     gfx_node_t *next, *node = canvas->firstnode;
 
@@ -1040,7 +1040,7 @@ typedef struct {
 
 #if PDF_CALC_DEBUG
 static void pdf_dump_calc(
-    gfx_node_t * node,
+    gfx_node_t *node,
     pdf_coords * g)
 {
     fprintf(stderr, "PDF CALC =============================\n");
@@ -1077,7 +1077,7 @@ static void pdf_dump_calc(
 
 static void pdf_rotate(
     pdf_coords * g,
-    pdf_point * p)
+    pdf_point *p)
 {
     double    x2 = g->cos_r * p->x - g->sin_r * p->y;
     double    y2 = g->sin_r * p->x + g->cos_r * p->y;
@@ -1091,7 +1091,7 @@ static void pdf_rotate(
 
 static void pdf_calc(
     int page_height,
-    gfx_node_t * node,
+    gfx_node_t *node,
     pdf_coords * g)
 {
     pdf_point a, b, c;
@@ -1385,8 +1385,8 @@ static void svg_write_color(
 }
 
 static void svg_get_dash(
-    gfx_node_t * node,
-    svg_dash * d)
+    gfx_node_t *node,
+    svg_dash *d)
 {
     double    offset;
     int       mult;
@@ -1416,8 +1416,8 @@ static void svg_get_dash(
 }
 
 static int svg_dash_equal(
-    svg_dash * a,
-    svg_dash * b)
+    svg_dash *a,
+    svg_dash *b)
 {
     if (a->dash_enable != b->dash_enable)
         return 0;
@@ -1431,7 +1431,7 @@ static int svg_dash_equal(
 
 static void svg_common_path_attributes(
     FILE * fp,
-    gfx_node_t * node)
+    gfx_node_t *node)
 {
     svg_dash  dash_info;
 
@@ -1469,7 +1469,7 @@ static int svg_path_straight_segment(
     double lastA,
     double currentA,
     double currentB,
-    gfx_node_t * node,
+    gfx_node_t *node,
     int segment_idx,
     int isx,
     char absChar,
@@ -1501,7 +1501,7 @@ static int svg_path_straight_segment(
 
 static void svg_path(
     FILE * fp,
-    gfx_node_t * node,
+    gfx_node_t *node,
     int multi)
 {
     int       i;
@@ -1563,7 +1563,7 @@ static void svg_path(
 
 static void svg_multi_path(
     FILE * fp,
-    gfx_node_t ** nodeR)
+    gfx_node_t **nodeR)
 {
     /* optimize for multiple paths with the same color, penwidth, etc. */
     int       num = 1;
@@ -1599,7 +1599,7 @@ static void svg_multi_path(
 
 static void svg_area(
     FILE * fp,
-    gfx_node_t * node)
+    gfx_node_t *node)
 {
     int       i;
     double    startX = 0, startY = 0;
@@ -1645,7 +1645,7 @@ static void svg_area(
 
 static void svg_text(
     FILE * fp,
-    gfx_node_t * node)
+    gfx_node_t *node)
 {
     pdf_coords g;
     const char *fontname;
@@ -1689,7 +1689,7 @@ static void svg_text(
 }
 
 int gfx_render_svg(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -1786,7 +1786,7 @@ typedef struct eps_state {
 } eps_state;
 
 static void eps_set_color(
-    eps_state * state,
+    eps_state *state,
     gfx_color_t color)
 {
 #if USE_EPS_FAKE_ALPHA
@@ -1812,8 +1812,8 @@ static void eps_set_color(
 }
 
 static int eps_add_font(
-    eps_state * state,
-    gfx_node_t * node)
+    eps_state *state,
+    gfx_node_t *node)
 {
     /* The fonts list could be postponed to the end using
        (atend), but let's be nice and have them in the header. */
@@ -1836,7 +1836,7 @@ static int eps_add_font(
 }
 
 static void eps_list_fonts(
-    eps_state * state,
+    eps_state *state,
     const char *dscName)
 {
     eps_font *ef;
@@ -1863,7 +1863,7 @@ static void eps_list_fonts(
 }
 
 static void eps_define_fonts(
-    eps_state * state)
+    eps_state *state)
 {
     eps_font *ef;
 
@@ -1885,7 +1885,7 @@ static void eps_define_fonts(
 }
 
 static int eps_prologue(
-    eps_state * state)
+    eps_state *state)
 {
     gfx_node_t *node;
 
@@ -1926,7 +1926,7 @@ static int eps_prologue(
 }
 
 static void eps_clear_dash(
-    eps_state * state)
+    eps_state *state)
 {
     if (!state->has_dash)
         return;
@@ -1935,8 +1935,8 @@ static void eps_clear_dash(
 }
 
 static void eps_write_linearea(
-    eps_state * state,
-    gfx_node_t * node)
+    eps_state *state,
+    gfx_node_t *node)
 {
     int       i;
     FILE     *fp = state->fp;
@@ -2020,8 +2020,8 @@ static void eps_write_linearea(
 }
 
 static void eps_write_text(
-    eps_state * state,
-    gfx_node_t * node)
+    eps_state *state,
+    gfx_node_t *node)
 {
     FILE     *fp = state->fp;
     const char *ps_font = afm_get_font_postscript_name(node->filename);
@@ -2116,7 +2116,7 @@ static void eps_write_text(
 }
 
 static int eps_write_content(
-    eps_state * state)
+    eps_state *state)
 {
     gfx_node_t *node;
 
@@ -2136,7 +2136,7 @@ static int eps_write_content(
 }
 
 int gfx_render_eps(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t background,
@@ -2217,8 +2217,8 @@ typedef struct pdf_state {
 } pdf_state;
 
 static void pdf_init_buffer(
-    pdf_state * state,
-    pdf_buffer * buf)
+    pdf_state *state,
+    pdf_buffer *buf)
 {
     int       initial_size = 32;
 
@@ -2245,7 +2245,7 @@ static void pdf_init_buffer(
 }
 
 static void pdf_put(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     const char *text,
     int len)
 {
@@ -2273,7 +2273,7 @@ static void pdf_put(
 }
 
 static void pdf_put_char(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     char c)
 {
     if (buf->alloc_size >= buf->current_size + 1) {
@@ -2287,20 +2287,20 @@ static void pdf_put_char(
 }
 
 static void pdf_puts(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     const char *text)
 {
     pdf_put(buf, text, strlen(text));
 }
 
 static void pdf_indent(
-    pdf_buffer * buf)
+    pdf_buffer *buf)
 {
     pdf_puts(buf, "\t");
 }
 
 static void pdf_putsi(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     const char *text)
 {
     pdf_indent(buf);
@@ -2308,7 +2308,7 @@ static void pdf_putsi(
 }
 
 static void pdf_putint(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     int i)
 {
     char      tmp[20];
@@ -2318,7 +2318,7 @@ static void pdf_putint(
 }
 
 static void pdf_putnumber(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     double d)
 {
     char      tmp[50];
@@ -2328,7 +2328,7 @@ static void pdf_putnumber(
 }
 
 static void pdf_put_string_contents_wide(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     const afm_char * text)
 {
     const afm_char *p = text;
@@ -2375,7 +2375,7 @@ static void pdf_put_string_contents_wide(
 }
 
 static void pdf_put_string_contents(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     const char *text)
 {
 #ifdef HAVE_MBSTOWCS
@@ -2408,8 +2408,8 @@ static void pdf_put_string_contents(
 }
 
 static void pdf_init_object(
-    pdf_state * state,
-    pdf_buffer * buf)
+    pdf_state *state,
+    pdf_buffer *buf)
 {
     pdf_init_buffer(state, buf);
     buf->id = ++state->last_obj_id;
@@ -2418,17 +2418,17 @@ static void pdf_init_object(
 }
 
 static void pdf_init_dict(
-    pdf_state * state,
-    pdf_buffer * buf)
+    pdf_state *state,
+    pdf_buffer *buf)
 {
     pdf_init_object(state, buf);
     buf->is_dict = 1;
 }
 
 static void pdf_set_color(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     gfx_color_t color,
-    gfx_color_t * current_color,
+    gfx_color_t *current_color,
     const char *op)
 {
 #if USE_PDF_FAKE_ALPHA
@@ -2456,22 +2456,22 @@ static void pdf_set_color(
 }
 
 static void pdf_set_stroke_color(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     gfx_color_t color)
 {
     pdf_set_color(buf, color, &buf->state->stroke_color, "RG");
 }
 
 static void pdf_set_fill_color(
-    pdf_buffer * buf,
+    pdf_buffer *buf,
     gfx_color_t color)
 {
     pdf_set_color(buf, color, &buf->state->fill_color, "rg");
 }
 
 static pdf_font *pdf_find_font(
-    pdf_state * state,
-    gfx_node_t * node)
+    pdf_state *state,
+    gfx_node_t *node)
 {
     const char *ps_font = afm_get_font_postscript_name(node->filename);
     pdf_font *ef;
@@ -2484,8 +2484,8 @@ static pdf_font *pdf_find_font(
 }
 
 static void pdf_add_font(
-    pdf_state * state,
-    gfx_node_t * node)
+    pdf_state *state,
+    gfx_node_t *node)
 {
     pdf_font *ef = pdf_find_font(state, node);
 
@@ -2523,7 +2523,7 @@ static void pdf_add_font(
 }
 
 static void pdf_create_fonts(
-    pdf_state * state)
+    pdf_state *state)
 {
     gfx_node_t *node;
 
@@ -2534,8 +2534,8 @@ static void pdf_create_fonts(
 }
 
 static void pdf_write_linearea(
-    pdf_state * state,
-    gfx_node_t * node)
+    pdf_state *state,
+    gfx_node_t *node)
 {
     int       i;
     pdf_buffer *s = &state->graph_stream;
@@ -2613,8 +2613,8 @@ static void pdf_write_linearea(
 
 
 static void pdf_write_matrix(
-    pdf_state * state,
-    gfx_node_t * node,
+    pdf_state *state,
+    gfx_node_t *node,
     pdf_coords * g,
     int useTM)
 {
@@ -2637,8 +2637,8 @@ static void pdf_write_matrix(
 }
 
 static void pdf_write_text(
-    pdf_state * state,
-    gfx_node_t * node,
+    pdf_state *state,
+    gfx_node_t *node,
     int last_was_text,
     int next_is_text)
 {
@@ -2688,7 +2688,7 @@ static void pdf_write_text(
 }
 
 static void pdf_write_content(
-    pdf_state * state)
+    pdf_state *state)
 {
     gfx_node_t *node;
     int       last_was_text = 0, next_is_text;
@@ -2709,7 +2709,7 @@ static void pdf_write_content(
 }
 
 static void pdf_init_document(
-    pdf_state * state)
+    pdf_state *state)
 {
     pdf_init_buffer(state, &state->pdf_header);
     pdf_init_dict(state, &state->catalog_obj);
@@ -2726,7 +2726,7 @@ static void pdf_init_document(
 }
 
 static void pdf_setup_document(
-    pdf_state * state)
+    pdf_state *state)
 {
     const char *creator =
         "RRDtool " PACKAGE_VERSION " Tobias Oetiker, http://tobi.oetiker.ch";
@@ -2770,7 +2770,7 @@ static void pdf_setup_document(
 }
 
 static void pdf_write_string_to_file(
-    pdf_state * state,
+    pdf_state *state,
     const char *text)
 {
     fputs(text, state->fp);
@@ -2778,8 +2778,8 @@ static void pdf_write_string_to_file(
 }
 
 static void pdf_write_buf_to_file(
-    pdf_state * state,
-    pdf_buffer * buf)
+    pdf_state *state,
+    pdf_buffer *buf)
 {
     char      tmp[40];
 
@@ -2806,7 +2806,7 @@ static void pdf_write_buf_to_file(
 }
 
 static void pdf_write_to_file(
-    pdf_state * state)
+    pdf_state *state)
 {
     pdf_buffer *buf = state->first_buffer;
     int       xref_pos;
@@ -2839,7 +2839,7 @@ static void pdf_write_to_file(
 }
 
 static void pdf_free_resources(
-    pdf_state * state)
+    pdf_state *state)
 {
     pdf_buffer *buf = state->first_buffer;
 
@@ -2858,7 +2858,7 @@ static void pdf_free_resources(
 }
 
 int gfx_render_pdf(
-    gfx_canvas_t * canvas,
+    gfx_canvas_t *canvas,
     art_u32 width,
     art_u32 height,
     gfx_color_t UNUSED(background),

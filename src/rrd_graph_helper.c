@@ -51,71 +51,71 @@
 int       rrd_parse_find_gf(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const);
+    graph_desc_t *const);
 int       rrd_parse_legend(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const);
+    graph_desc_t *const);
 int       rrd_parse_color(
     const char *const,
-    graph_desc_t * const);
+    graph_desc_t *const);
 int       rrd_parse_CF(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
+    graph_desc_t *const,
     enum cf_en *const);
 int       rrd_parse_print(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_shift(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_xport(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_PVHLAST(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_make_vname(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_find_vname(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_def(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_vdef(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 int       rrd_parse_cdef(
     const char *const,
     unsigned int *const,
-    graph_desc_t * const,
-    image_desc_t * const);
+    graph_desc_t *const,
+    image_desc_t *const);
 
 
 
 int rrd_parse_find_gf(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp)
+    graph_desc_t *const gdp)
 {
     char      funcname[11], c1 = 0;
     int       i = 0;
@@ -207,7 +207,7 @@ int rrd_parse_find_gf(
 int rrd_parse_legend(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp)
+    graph_desc_t *const gdp)
 {
     int       i;
 
@@ -230,7 +230,7 @@ int rrd_parse_legend(
 
 int rrd_parse_color(
     const char *const string,
-    graph_desc_t * const gdp)
+    graph_desc_t *const gdp)
 {
     unsigned int r = 0, g = 0, b = 0, a = 0, i;
 
@@ -273,7 +273,7 @@ int rrd_parse_color(
 int rrd_parse_CF(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
+    graph_desc_t *const gdp,
     enum cf_en *cf)
 {
     char      symname[CF_NAM_SIZE];
@@ -308,8 +308,8 @@ int rrd_parse_CF(
 int rrd_parse_find_vname(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     char      tmpstr[MAX_VNAME_LEN + 1];
     int       i;
@@ -343,8 +343,8 @@ int rrd_parse_find_vname(
 int rrd_parse_print(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     /* vname:CF:format in case of DEF-based vname
      ** vname:CF:format in case of CDEF-based vname
@@ -389,8 +389,8 @@ int rrd_parse_print(
 int rrd_parse_shift(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     int       i;
 
@@ -449,8 +449,8 @@ int rrd_parse_shift(
 int rrd_parse_xport(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     if ((gdp->vidx = rrd_parse_find_vname(line, eaten, gdp, im)) < 0)
         return 1;
@@ -488,8 +488,8 @@ int rrd_parse_xport(
 int rrd_parse_PVHLAST(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     int       i, j, k;
     int       colorfound = 0;
@@ -739,8 +739,8 @@ int rrd_parse_PVHLAST(
 int rrd_parse_make_vname(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     char      tmpstr[MAX_VNAME_LEN + 10];
     int       i = 0;
@@ -765,8 +765,8 @@ int rrd_parse_make_vname(
 int rrd_parse_def(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     int       i = 0;
     char      command[7];   /* step, start, end, reduce */
@@ -890,8 +890,8 @@ int rrd_parse_def(
 int rrd_parse_vdef(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     char      tmpstr[MAX_VNAME_LEN + 1];    /* vname\0 */
     int       i = 0;
@@ -928,8 +928,8 @@ int rrd_parse_vdef(
 int rrd_parse_cdef(
     const char *const line,
     unsigned int *const eaten,
-    graph_desc_t * const gdp,
-    image_desc_t * const im)
+    graph_desc_t *const gdp,
+    image_desc_t *const im)
 {
     dprintf("- parsing '%s'\n", &line[*eaten]);
     if (rrd_parse_make_vname(line, eaten, gdp, im))
@@ -947,7 +947,7 @@ int rrd_parse_cdef(
 void rrd_graph_script(
     int argc,
     char *argv[],
-    image_desc_t * const im,
+    image_desc_t *const im,
     int optno)
 {
     int       i;

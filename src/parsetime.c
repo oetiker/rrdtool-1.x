@@ -531,16 +531,22 @@ static char *plus_minus(
     prev_multiplier = sc_tokid;
     switch (sc_tokid) {
     case YEARS:
-        ptv->tm.tm_year += (op == PLUS) ? delta : -delta;
+        ptv->tm.  tm_year += (
+    op == PLUS) ? delta : -delta;
+
         return TIME_OK;
     case MONTHS:
-        ptv->tm.tm_mon += (op == PLUS) ? delta : -delta;
+        ptv->tm.  tm_mon += (
+    op == PLUS) ? delta : -delta;
+
         return TIME_OK;
     case WEEKS:
         delta *= 7;
         /* FALLTHRU */
     case DAYS:
-        ptv->tm.tm_mday += (op == PLUS) ? delta : -delta;
+        ptv->tm.  tm_mday += (
+    op == PLUS) ? delta : -delta;
+
         return TIME_OK;
     case HOURS:
         ptv->offset += (op == PLUS) ? delta * 60 * 60 : -delta * 60 * 60;
@@ -626,12 +632,13 @@ static char *tod(
         sprintf(sc_token, "%d", hour);
         return TIME_OK;
     }
-    ptv->tm.tm_hour = hour;
-    ptv->tm.tm_min = minute;
-    ptv->tm.tm_sec = 0;
+    ptv->tm.  tm_hour = hour;
+    ptv->tm.  tm_min = minute;
+    ptv->tm.  tm_sec = 0;
+
     if (ptv->tm.tm_hour == 24) {
-        ptv->tm.tm_hour = 0;
-        ptv->tm.tm_mday++;
+        ptv->tm.  tm_hour = 0;
+        ptv->tm.  tm_mday++;
     }
     return TIME_OK;
 }                       /* tod */
@@ -662,9 +669,10 @@ static char *assign_date(
         panic(e("won't handle dates before epoch (01/01/1970), sorry"));
     }
 
-    ptv->tm.tm_mday = mday;
-    ptv->tm.tm_mon = mon;
-    ptv->tm.tm_year = year;
+    ptv->tm.  tm_mday = mday;
+    ptv->tm.  tm_mon = mon;
+    ptv->tm.  tm_year = year;
+
     return TIME_OK;
 }                       /* assign_date */
 
@@ -681,13 +689,15 @@ static char *day(
 
     switch (sc_tokid) {
     case YESTERDAY:
-        ptv->tm.tm_mday--;
+        ptv->tm.  tm_mday--;
+
         /* FALLTRHU */
     case TODAY:        /* force ourselves to stay in today - no further processing */
         token();
         break;
     case TOMORROW:
-        ptv->tm.tm_mday++;
+        ptv->tm.  tm_mday++;
+
         token();
         break;
 
@@ -713,6 +723,7 @@ static char *day(
             token();
         } else
             year = ptv->tm.tm_year;
+
         try(assign_date(ptv, mday, mon, year));
         break;
 
@@ -726,7 +737,9 @@ static char *day(
         /* do a particular day of the week
          */
         wday = (sc_tokid - SUN);
-        ptv->tm.tm_mday += (wday - ptv->tm.tm_wday);
+        ptv->tm.  tm_mday += (
+    wday - ptv->tm.tm_wday);
+
         token();
         break;
         /*
@@ -745,6 +758,7 @@ static char *day(
         mon = atol(sc_token);
         if (mon > 10 * 365 * 24 * 60 * 60) {
             ptv->tm = *localtime(&mon);
+
             token();
             break;
         }
@@ -836,7 +850,7 @@ char     *parsetime(
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
     ptv->tm = *localtime(&now);
-    ptv->tm.tm_isdst = -1;  /* mk time can figure this out for us ... */
+    ptv->tm.  tm_isdst = -1;    /* mk time can figure this out for us ... */
 
     token();
     switch (sc_tokid) {
@@ -850,12 +864,13 @@ char     *parsetime(
     case END:
         ptv->type = RELATIVE_TO_END_TIME;
       KeepItRelative:
-        ptv->tm.tm_sec = 0;
-        ptv->tm.tm_min = 0;
-        ptv->tm.tm_hour = 0;
-        ptv->tm.tm_mday = 0;
-        ptv->tm.tm_mon = 0;
-        ptv->tm.tm_year = 0;
+        ptv->tm.  tm_sec = 0;
+        ptv->tm.  tm_min = 0;
+        ptv->tm.  tm_hour = 0;
+        ptv->tm.  tm_mday = 0;
+        ptv->tm.  tm_mon = 0;
+        ptv->tm.  tm_year = 0;
+
         /* FALLTHRU */
     case NOW:
     {
@@ -878,18 +893,19 @@ char     *parsetime(
         long      hour_sv = ptv->tm.tm_hour;
         long      year_sv = ptv->tm.tm_year;
 
-        ptv->tm.tm_hour = 30;
-        ptv->tm.tm_year = 30000;
+        ptv->tm.  tm_hour = 30;
+        ptv->tm.  tm_year = 30000;
+
         try(tod(ptv))
             try(day(ptv))
             if (ptv->tm.tm_hour == 30 && ptv->tm.tm_year != 30000) {
             try(tod(ptv))
         }
         if (ptv->tm.tm_hour == 30) {
-            ptv->tm.tm_hour = hour_sv;
+            ptv->tm.  tm_hour = hour_sv;
         }
         if (ptv->tm.tm_year == 30000) {
-            ptv->tm.tm_year = year_sv;
+            ptv->tm.  tm_year = year_sv;
         }
     };
         break;
@@ -930,9 +946,10 @@ char     *parsetime(
            ptv->tm.tm_mday++;
            ptv->tm.tm_wday++;
            } *//* shifting does not makes sense here ... noon is noon */
-        ptv->tm.tm_hour = hr;
-        ptv->tm.tm_min = 0;
-        ptv->tm.tm_sec = 0;
+        ptv->tm.  tm_hour = hr;
+        ptv->tm.  tm_min = 0;
+        ptv->tm.  tm_sec = 0;
+
         token();
         try(day(ptv));
         break;
@@ -963,7 +980,8 @@ char     *parsetime(
         panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
     }
 
-    ptv->tm.tm_isdst = -1;  /* for mktime to guess DST status */
+    ptv->tm.  tm_isdst = -1;    /* for mktime to guess DST status */
+
     if (ptv->type == ABSOLUTE_TIME)
         if (mktime(&ptv->tm) == -1) {   /* normalize & check */
             /* can happen for "nonexistent" times, e.g. around 3am */
@@ -1007,6 +1025,7 @@ int proc_start_end(
         tmtmp.tm_mday += start_tv->tm.tm_mday;
         tmtmp.tm_mon += start_tv->tm.tm_mon;
         tmtmp.tm_year += start_tv->tm.tm_year;
+
         *start = mktime(&tmtmp) + start_tv->offset;
     } else {
         *start = mktime(&(start_tv->tm)) + start_tv->offset;
@@ -1019,6 +1038,7 @@ int proc_start_end(
         tmtmp.tm_mday += end_tv->tm.tm_mday;
         tmtmp.tm_mon += end_tv->tm.tm_mon;
         tmtmp.tm_year += end_tv->tm.tm_year;
+
         *end = mktime(&tmtmp) + end_tv->offset;
     } else {
         *end = mktime(&(end_tv->tm)) + end_tv->offset;

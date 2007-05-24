@@ -551,6 +551,7 @@ int _rrd_update(
             }
 
             current_time = mktime(&ds_tv.tm) + ds_tv.offset;
+
             current_time_usec = 0;  /* FIXME: how to handle usecs here ? */
 
         } else if (strcmp(updvals[0], "N") == 0) {

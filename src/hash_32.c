@@ -102,7 +102,7 @@ Fnv32_t fnv_32_buf(
         hval *= FNV_32_PRIME;
 
         /* xor the bottom with the current octet */
-        hval ^= (Fnv32_t) * bp++;
+        hval ^= (Fnv32_t) *bp++;
     }
 
     /* return our new hash value */
@@ -141,7 +141,7 @@ Fnv32_t fnv_32_str(
         hval *= FNV_32_PRIME;
 
         /* xor the bottom with the current octet */
-        hval ^= (Fnv32_t) * s++;
+        hval ^= (Fnv32_t) *s++;
     }
 
     /* return our new hash value */

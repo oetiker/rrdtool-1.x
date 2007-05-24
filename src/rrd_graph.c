@@ -164,7 +164,7 @@ gfx_color_t graph_col[] =   /* default colors */
 
 /* initialize with xtr(im,0); */
 int xtr(
-    image_desc_t * im,
+    image_desc_t *im,
     time_t mytime)
 {
     static double pixie;
@@ -178,7 +178,7 @@ int xtr(
 
 /* translate data values into y coordinates */
 double ytr(
-    image_desc_t * im,
+    image_desc_t *im,
     double value)
 {
     static double pixie;
@@ -306,7 +306,7 @@ enum text_prop_en text_prop_conv(
 #undef conv_if
 
 int im_free(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     unsigned long i, ii;
 
@@ -332,7 +332,7 @@ int im_free(
 
 /* find SI magnitude symbol for the given number*/
 void auto_scale(
-    image_desc_t * im,  /* image description */
+    image_desc_t *im,   /* image description */
     double *value,
     char **symb_ptr,
     double *magfact)
@@ -391,7 +391,7 @@ static const int si_symbcenter = 6;
 
 /* find SI magnitude symbol for the numbers on the y-axis*/
 void si_unit(
-    image_desc_t * im   /* image description */
+    image_desc_t *im    /* image description */
     )
 {
 
@@ -426,7 +426,7 @@ void si_unit(
 /*  move min and max values around to become sensible */
 
 void expand_range(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     double    sensiblevalues[] = { 1000.0, 900.0, 800.0, 750.0, 700.0,
         600.0, 500.0, 400.0, 300.0, 250.0,
@@ -521,7 +521,7 @@ void expand_range(
 }
 
 void apply_gridfit(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     if (isnan(im->minval) || isnan(im->maxval))
         return;
@@ -604,7 +604,7 @@ void reduce_data(
     time_t *end,        /* ... by the application will be   ... */
     unsigned long *step,    /* ... adjusted to represent reality    */
     unsigned long *ds_cnt,  /* number of data sources in file */
-    rrd_value_t ** data)
+    rrd_value_t **data)
 {                       /* two dimensional array containing the data */
     int       i, reduce_factor = ceil((double) (*step) / (double) cur_step);
     unsigned long col, dst_row, row_cnt, start_offset, end_offset, skiprows =
@@ -772,7 +772,7 @@ void reduce_data(
    relevant rrds ... */
 
 int data_fetch(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     int       i, ii;
     int       skip;
@@ -867,7 +867,7 @@ long find_var_wrapper(
 
 /* find gdes containing var*/
 long find_var(
-    image_desc_t * im,
+    image_desc_t *im,
     char *key)
 {
     long      ii;
@@ -904,7 +904,7 @@ long lcd(
 
 /* run the rpn calculator on all the VDEF and CDEF arguments */
 int data_calc(
-    image_desc_t * im)
+    image_desc_t *im)
 {
 
     int       gdi;
@@ -1102,7 +1102,7 @@ int data_calc(
 
 /* massage data so, that we get one value for each x coordinate in the graph */
 int data_proc(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     long      i, ii;
     double    pixstep = (double) (im->end - im->start)
@@ -1261,49 +1261,58 @@ time_t find_first_time(
     struct tm tm;
 
     localtime_r(&start, &tm);
+
     switch (baseint) {
     case TMT_SECOND:
-        tm.tm_sec -= tm.tm_sec % basestep;
+        tm.       tm_sec -= tm.tm_sec % basestep;
+
         break;
     case TMT_MINUTE:
-        tm.tm_sec = 0;
-        tm.tm_min -= tm.tm_min % basestep;
+        tm.       tm_sec = 0;
+        tm.       tm_min -= tm.tm_min % basestep;
+
         break;
     case TMT_HOUR:
-        tm.tm_sec = 0;
-        tm.tm_min = 0;
-        tm.tm_hour -= tm.tm_hour % basestep;
+        tm.       tm_sec = 0;
+        tm.       tm_min = 0;
+        tm.       tm_hour -= tm.tm_hour % basestep;
+
         break;
     case TMT_DAY:
         /* we do NOT look at the basestep for this ... */
-        tm.tm_sec = 0;
-        tm.tm_min = 0;
-        tm.tm_hour = 0;
+        tm.       tm_sec = 0;
+        tm.       tm_min = 0;
+        tm.       tm_hour = 0;
+
         break;
     case TMT_WEEK:
         /* we do NOT look at the basestep for this ... */
-        tm.tm_sec = 0;
-        tm.tm_min = 0;
-        tm.tm_hour = 0;
-        tm.tm_mday -= tm.tm_wday - 1;   /* -1 because we want the monday */
+        tm.       tm_sec = 0;
+        tm.       tm_min = 0;
+        tm.       tm_hour = 0;
+        tm.       tm_mday -= tm.tm_wday - 1;    /* -1 because we want the monday */
+
         if (tm.tm_wday == 0)
-            tm.tm_mday -= 7;    /* we want the *previous* monday */
+            tm.       tm_mday -= 7; /* we want the *previous* monday */
+
         break;
     case TMT_MONTH:
-        tm.tm_sec = 0;
-        tm.tm_min = 0;
-        tm.tm_hour = 0;
-        tm.tm_mday = 1;
-        tm.tm_mon -= tm.tm_mon % basestep;
+        tm.       tm_sec = 0;
+        tm.       tm_min = 0;
+        tm.       tm_hour = 0;
+        tm.       tm_mday = 1;
+        tm.       tm_mon -= tm.tm_mon % basestep;
+
         break;
 
     case TMT_YEAR:
-        tm.tm_sec = 0;
-        tm.tm_min = 0;
-        tm.tm_hour = 0;
-        tm.tm_mday = 1;
-        tm.tm_mon = 0;
-        tm.tm_year -= (tm.tm_year + 1900) % basestep;
+        tm.       tm_sec = 0;
+        tm.       tm_min = 0;
+        tm.       tm_hour = 0;
+        tm.       tm_mday = 1;
+        tm.       tm_mon = 0;
+        tm.       tm_year -= (
+    tm.tm_year + 1900) %basestep;
 
     }
     return mktime(&tm);
@@ -1320,28 +1329,35 @@ time_t find_next_time(
     time_t    madetime;
 
     localtime_r(&current, &tm);
+
     do {
         switch (baseint) {
         case TMT_SECOND:
-            tm.tm_sec += basestep;
+            tm.       tm_sec += basestep;
+
             break;
         case TMT_MINUTE:
-            tm.tm_min += basestep;
+            tm.       tm_min += basestep;
+
             break;
         case TMT_HOUR:
-            tm.tm_hour += basestep;
+            tm.       tm_hour += basestep;
+
             break;
         case TMT_DAY:
-            tm.tm_mday += basestep;
+            tm.       tm_mday += basestep;
+
             break;
         case TMT_WEEK:
-            tm.tm_mday += 7 * basestep;
+            tm.       tm_mday += 7 * basestep;
+
             break;
         case TMT_MONTH:
-            tm.tm_mon += basestep;
+            tm.       tm_mon += basestep;
+
             break;
         case TMT_YEAR:
-            tm.tm_year += basestep;
+            tm.       tm_year += basestep;
         }
         madetime = mktime(&tm);
     } while (madetime == -1);   /* this is necessary to skip impssible times
@@ -1354,7 +1370,7 @@ time_t find_next_time(
 /* calculate values required for PRINT and GPRINT functions */
 
 int print_calc(
-    image_desc_t * im,
+    image_desc_t *im,
     char ***prdata)
 {
     long      i, ii, validsteps;
@@ -1536,7 +1552,7 @@ int print_calc(
 
 /* place legends with color spots */
 int leg_place(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     /* graph labels */
     int       interleg = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
@@ -1708,7 +1724,7 @@ int leg_place(
 
 
 int calc_horizontal_grid(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     double    range;
     double    scaledrange;
@@ -1804,7 +1820,7 @@ int calc_horizontal_grid(
 }
 
 int draw_horizontal_grid(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     int       i;
     double    scaledstep;
@@ -1946,7 +1962,7 @@ static int AlmostEqual2sComplement(
 
 /* logaritmic horizontal grid */
 int horizontal_log_grid(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     double    yloglab[][10] = {
         {1.0, 10., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -2174,7 +2190,7 @@ int horizontal_log_grid(
 
 
 void vertical_grid(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     int       xlab_sel; /* which sort of label and grid ? */
     time_t    ti, tilab, timajor;
@@ -2291,7 +2307,7 @@ void vertical_grid(
 
 
 void axis_paint(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     /* draw x and y axis */
     /* gfx_new_line ( im->canvas, im->xorigin+im->xsize,im->yorigin,
@@ -2321,7 +2337,7 @@ void axis_paint(
 }
 
 void grid_paint(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     long      i;
     int       res = 0;
@@ -2458,7 +2474,7 @@ void grid_paint(
  *****************************************************/
 
 int lazy_check(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     FILE     *fd = NULL;
     int       size = 1;
@@ -2487,7 +2503,7 @@ int lazy_check(
 
 #ifdef WITH_PIECHART
 void pie_part(
-    image_desc_t * im,
+    image_desc_t *im,
     gfx_color_t color,
     double PieCenterX,
     double PieCenterY,
@@ -2539,7 +2555,7 @@ void pie_part(
 #endif
 
 int graph_size_location(
-    image_desc_t * im,
+    image_desc_t *im,
     int elements
 #ifdef WITH_PIECHART
     ,
@@ -2737,7 +2753,7 @@ int graph_size_location(
 
 /* draw that picture thing ... */
 int graph_paint(
-    image_desc_t * im,
+    image_desc_t *im,
     char ***calcpr)
 {
     int       i, ii;
@@ -3190,7 +3206,7 @@ int graph_paint(
  *****************************************************/
 
 int gdes_alloc(
-    image_desc_t * im)
+    image_desc_t *im)
 {
 
     im->gdes_c++;
@@ -3344,7 +3360,7 @@ int rrd_graph(
 }
 
 void rrd_graph_init(
-    image_desc_t * im)
+    image_desc_t *im)
 {
     unsigned int i;
 
@@ -3439,7 +3455,7 @@ void rrd_graph_init(
 void rrd_graph_options(
     int argc,
     char *argv[],
-    image_desc_t * im)
+    image_desc_t *im)
 {
     int       stroff;
     char     *parsetime_error = NULL;
@@ -3841,7 +3857,7 @@ void rrd_graph_options(
 }
 
 int rrd_graph_color(
-    image_desc_t * im,
+    image_desc_t *im,
     char *var,
     char *err,
     int optional)

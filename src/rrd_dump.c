@@ -134,7 +134,7 @@ int rrd_dump_r(
         } else {        /* DST_CDEF */
             char     *str = NULL;
 
-            rpn_compact2str((rpn_cdefds_t *) & (rrd.ds_def[i].par[DS_cdef]),
+            rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
                             rrd.ds_def, &str);
             fprintf(out_file, "\t\t<cdef> %s </cdef>\n", str);
             free(str);

@@ -152,7 +152,7 @@ extern    "C" {
     unsigned long *step,
     unsigned long *ds_cnt,
     char ***ds_namv,
-    rrd_value_t ** data);
+    rrd_value_t **data);
     int       rrd_dump_r(
     const char *filename,
     char *outname);

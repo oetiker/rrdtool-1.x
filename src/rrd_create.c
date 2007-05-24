@@ -62,7 +62,7 @@ int rrd_create(
                 return (-1);
             }
 
-            last_up = mktime(&last_up_tv.tm) + last_up_tv.offset;
+            last_up = mktime(&last_up_tv.tm) +last_up_tv.offset;
 
             if (last_up < 3600 * 24 * 365 * 10) {
                 rrd_set_error
