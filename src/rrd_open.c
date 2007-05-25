@@ -302,13 +302,16 @@ rrd_file_t *rrd_open(
 int rrd_close(
     rrd_file_t *rrd_file)
 {
-    int       ret = 0;
+    int       ret;
 
 #ifdef HAVE_MMAP
     ret = munmap(rrd_file->file_start, rrd_file->file_len);
-//  if (ret != 0)
-//      rrd_set_error("munmap rrd_file");
+    if (ret != 0)
+        rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));
 #endif
+    ret = close(rrd_file->fd);
+    if (ret != 0)
+        rrd_set_error("closing file: %s", rrd_strerror(errno));
     free(rrd_file);
     rrd_file = NULL;
     return ret;
@@ -377,18 +380,12 @@ ssize_t rrd_write(
     const void *buf,
     size_t count)
 {
-    ssize_t   ret = count;
-
 #ifdef HAVE_MMAP
-    char     *off, *new_pos;
-
-    off = rrd_file->file_start + rrd_file->pos;
-    new_pos = memmove(rrd_file->file_start + rrd_file->pos, buf, count);
-    ret = new_pos - off;
+    memmove(rrd_file->file_start + rrd_file->pos, buf, count);
+    return count;       /* mimmic write() semantics */
 #else
-    ret = write(rrd_file->fd, buf, count);
+    return write(rrd_file->fd, buf, count);
 #endif
-    return ret;
 }
 
 /* flush all data pending to be written to FD.  */
@@ -427,6 +424,7 @@ void rrd_free(
     free(rrd->pdp_prep);
     free(rrd->cdp_prep);
     free(rrd->rrd_value);
+//XXX: ? rrd_init(rrd);
 #endif
 }
 

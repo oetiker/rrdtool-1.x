@@ -105,7 +105,7 @@ static info_t *write_RRA_row(
             (rrd_file,
              &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
              sizeof(rrd_value_t) * 1) != sizeof(rrd_value_t) * 1) {
-            rrd_set_error("writing rrd");
+            rrd_set_error("writing rrd: %s", rrd_strerror(errno));
             return 0;
         }
         *rra_current += sizeof(rrd_value_t);
@@ -1458,10 +1458,12 @@ int _rrd_update(
         free(rra_step_cnt);
     rpnstack_free(&rpnstack);
 
-#ifdef HAVE_MMAP
+#if 0                   //def HAVE_MMAP
     if (munmap(rrd_file->file_start, rrd_file->file_len) == -1) {
         rrd_set_error("error writing(unmapping) file: %s", filename);
     }
+#else
+    rrd_flush(rrd_file);    //XXX: really needed?
 #endif
     /* if we got here and if there is an error and if the file has not been
      * written to, then close things up and return. */
@@ -1609,20 +1611,9 @@ int _rrd_update(
             return (-1);
         }
 #endif
-        close(rrd_file->fd);
     }
 
-    /* OK now close the files and free the memory */
-    if (close(rrd_file->fd) != 0) {
-        rrd_set_error("closing rrd");
-        free(updvals);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        free(pdp_temp);
-        free(pdp_new);
-        return (-1);
-    }
-
+    rrd_close(rrd_file);
     rrd_free(&rrd);
     free(updvals);
     free(tmpl_idx);

@@ -378,10 +378,9 @@ int rrd_fetch_fn(
     else
         rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
 
-    if (rrd_seek(rrd_file, (rra_base
-                            + (rra_pointer
-                               * (*ds_cnt)
-                               * sizeof(rrd_value_t))), SEEK_SET) != 0) {
+    if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
+                                        * sizeof(rrd_value_t))),
+                 SEEK_SET) != 0) {
         rrd_set_error("seek error in RRA");
         for (i = 0; (unsigned) i < *ds_cnt; i++)
             free((*ds_namv)[i]);
@@ -429,8 +428,7 @@ int rrd_fetch_fn(
              * be wrapped*/
             if (rra_pointer >= (signed) rrd.rra_def[chosen_rra].row_cnt) {
                 rra_pointer -= rrd.rra_def[chosen_rra].row_cnt;
-                if (rrd_seek(rrd_file, (rra_base + rra_pointer
-                                        * (*ds_cnt)
+                if (rrd_seek(rrd_file, (rra_base + rra_pointer * (*ds_cnt)
                                         * sizeof(rrd_value_t)),
                              SEEK_SET) != 0) {
                     rrd_set_error("wrap seek in RRA did fail");
