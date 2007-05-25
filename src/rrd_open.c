@@ -66,7 +66,20 @@
 #include "unused.h"
 #define MEMBLK 8192
 
-/* open a database file, return its header and a open filehandle */
+#ifdef HAVE_MMAP
+#define __rrd_read(dst, dst_t, cnt) \
+	(dst) = (dst_t*) (data + offset); \
+	offset += sizeof(dst_t) * (cnt)
+#else
+#define __rrd_read(dst, dst_t, cnt) \
+	if ((dst = malloc(sizeof(dst_t)*(cnt))) == NULL) { \
+		rrd_set_error(#dst " malloc"); \
+		goto out_nullify_head; \
+	} \
+	offset += read (rrd_file->fd, dst, sizeof(dst_t)*(cnt))
+#endif
+
+/* open a database file, return its header and an open filehandle */
 /* positioned to the first cdp in the first rra */
 
 rrd_file_t *rrd_open(
@@ -76,9 +89,13 @@ rrd_file_t *rrd_open(
 {
     int       flags = 0;
     mode_t    mode = S_IRUSR;
-    int       version, prot = PROT_READ;
-    off_t     offset = 0;
+    int       version;
+
+#ifdef HAVE_MMAP
+    int       mm_prot = PROT_READ, mm_flags = 0;
     char     *data;
+#endif
+    off_t     offset = 0;
     struct stat statb;
     rrd_file_t *rrd_file = malloc(sizeof(rrd_file_t));
 
@@ -88,25 +105,59 @@ rrd_file_t *rrd_open(
     }
     memset(rrd_file, 0, sizeof(rrd_file_t));
     rrd_init(rrd);
-    if (rdwr == RRD_READWRITE) {
-        mode |= S_IWUSR;
-        prot |= PROT_WRITE;
-    } else if (rdwr == RRD_CREAT) {
-        mode |= S_IWUSR;
-        prot |= PROT_WRITE;
-        flags |= (O_CREAT | O_TRUNC);
+#ifdef DEBUG
+    if ((rdwr & (RRD_READONLY | RRD_READWRITE)) ==
+        (RRD_READONLY | RRD_READWRITE)) {
+        /* Both READONLY and READWRITE were given, which is invalid.  */
+        rrd_set_error("in read/write request mask");
+        exit(-1);
     }
-#ifdef O_NONBLOCK
-    flags |= O_NONBLOCK;
 #endif
+    if (rdwr & RRD_READONLY) {
+        flags |= O_RDONLY;
+#ifdef HAVE_MMAP
+        mm_flags = MAP_PRIVATE;
+# ifdef MAP_NORESERVE
+        mm_flags |= MAP_NORESERVE;
+# endif
+        mm_flags |= MAP_PRIVATE;
+#endif
+    } else {
+        if (rdwr & RRD_READWRITE) {
+            mode |= S_IWUSR;
+            flags |= O_RDWR;
+#ifdef HAVE_MMAP
+            mm_flags = MAP_SHARED;
+            mm_prot |= PROT_WRITE;
+#endif
+        }
+        if (rdwr & RRD_CREAT) {
+            flags |= (O_CREAT | O_TRUNC);
+        }
+    }
+    if (rdwr & RRD_READAHEAD) {
+#ifdef MAP_POPULATE
+        mm_flags |= MAP_POPULATE;
+#endif
+#if defined MAP_NONBLOCK && !defined USE_DIRECT_IO
+        mm_flags |= MAP_NONBLOCK;   /* just populage ptes */
+#endif
+    } else {
+#ifdef USE_DIRECT_IO
+        flags |= O_DIRECT;
+#endif
+#if 0                   //def O_NONBLOCK
+        flags |= O_NONBLOCK;
+#endif
+    }
 
     if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         return NULL;
     }
 
-    /* ???: length = lseek(rrd_file->fd, 0, SEEK_END); */
-    /* ??? locking the whole area of the file may overdo it a bit, does it? */
+    /* Better try to avoid seeks as much as possible. stat may be heavy but
+     * many concurrent seeks are even worse.  */
     if ((fstat(rrd_file->fd, &statb)) < 0) {
         rrd_set_error("fstat '%s': %s", file_name, rrd_strerror(errno));
         goto out_close;
@@ -126,7 +177,7 @@ rrd_file_t *rrd_open(
 #endif
 
 /*
-        if (rdwr == RRD_READWRITE)
+        if (rdwr & RRD_READWRITE)
         {
            if (setvbuf((rrd_file->fd),NULL,_IONBF,2)) {
                   rrd_set_error("failed to disable the stream buffer\n");
@@ -134,17 +185,21 @@ rrd_file_t *rrd_open(
            }
         }
 */
-    data = mmap(0, rrd_file->file_len, prot, MAP_SHARED,
+#ifdef HAVE_MMAP
+    data = mmap(0, rrd_file->file_len, mm_prot, mm_flags,
                 rrd_file->fd, offset);
 
     /* lets see if the first read worked */
     if (data == MAP_FAILED) {
-        rrd_set_error("error mmaping file '%s'", file_name);
+        rrd_set_error("error mmaping file '%s': %s", file_name,
+                      rrd_strerror(errno));
         goto out_close;
     }
     rrd_file->file_start = data;
+#else
+#endif
 #ifdef USE_MADVISE
-    if (rrd == NULL) {  /*XXX: currently not used! */
+    if (rdwr & RRD_COPY) {  /*XXX: currently not used! */
         /* We will read everything in a moment (copying) */
         madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
         goto out_done;
@@ -158,8 +213,8 @@ rrd_file_t *rrd_open(
     madvise(data + offset, sizeof(stat_head_t), MADV_WILLNEED);
 #endif
 
-    rrd->stat_head = (stat_head_t *) (data + offset);
-    offset += sizeof(stat_head_t);
+    __rrd_read(rrd->stat_head, stat_head_t,
+               1);
 
     /* lets do some test if we are on track ... */
     if (memcmp(rrd->stat_head->cookie, RRD_COOKIE, sizeof(RRD_COOKIE)) != 0) {
@@ -184,16 +239,16 @@ rrd_file_t *rrd_open(
     madvise(data + offset, sizeof(ds_def_t) * rrd->stat_head->ds_cnt,
             MADV_WILLNEED);
 #endif
-    rrd->ds_def = (ds_def_t *) (data + offset);
-    offset += sizeof(ds_def_t) * rrd->stat_head->ds_cnt;
+    __rrd_read(rrd->ds_def, ds_def_t,
+               rrd->stat_head->ds_cnt);
 
 #ifdef USE_MADVISE
     /* the rra_def will be needed soonish, so hint accordingly */
     madvise(data + offset, sizeof(rra_def_t) * rrd->stat_head->rra_cnt,
             MADV_WILLNEED);
 #endif
-    rrd->rra_def = (rra_def_t *) (data + offset);
-    offset += sizeof(rra_def_t) * rrd->stat_head->rra_cnt;
+    __rrd_read(rrd->rra_def, rra_def_t,
+               rrd->stat_head->rra_cnt);
 
     /* handle different format for the live_head */
     if (version < 3) {
@@ -202,28 +257,33 @@ rrd_file_t *rrd_open(
             rrd_set_error("live_head_t malloc");
             goto out_close;
         }
+#ifdef HAVE_MMAP
         memmove(&rrd->live_head->last_up, data + offset, sizeof(long));
+        offset += sizeof(long);
+#else
+        offset += read(rrd_file->fd, &rrd->live_head->last_up, sizeof(long));
+#endif
         rrd->live_head->last_up_usec = 0;
     } else {
 #ifdef USE_MADVISE
         /* the live_head will be needed soonish, so hint accordingly */
         madvise(data + offset, sizeof(live_head_t), MADV_WILLNEED);
 #endif
-        rrd->live_head = (live_head_t *) (data + offset);
-        offset += sizeof(live_head_t);
+        __rrd_read(rrd->live_head, live_head_t,
+                   1);
     }
-// This doesn't look like it needs madvise
-    rrd->pdp_prep = (pdp_prep_t *) (data + offset);
-    offset += sizeof(pdp_prep_t) * rrd->stat_head->ds_cnt;
+//XXX: This doesn't look like it needs madvise
+    __rrd_read(rrd->pdp_prep, pdp_prep_t,
+               rrd->stat_head->ds_cnt);
 
-// This could benefit from madvise()ing
-    rrd->cdp_prep = (cdp_prep_t *) (data + offset);
-    offset += sizeof(cdp_prep_t) *
-        (rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
+//XXX: This could benefit from madvise()ing
+    __rrd_read(rrd->cdp_prep, cdp_prep_t,
+               rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
 
-// This could benefit from madvise()ing
-    rrd->rra_ptr = (rra_ptr_t *) (data + offset);
-    offset += sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt;
+//XXX: This could benefit from madvise()ing
+    __rrd_read(rrd->rra_ptr, rra_ptr_t,
+               rrd->stat_head->rra_cnt);
+
 #ifdef USE_MADVISE
   out_done:
 #endif
@@ -280,7 +340,7 @@ off_t rrd_seek(
 }
 
 /* Get current position in rrd_file.  */
-off_t rrd_tell(
+inline off_t rrd_tell(
     rrd_file_t *rrd_file)
 {
     return rrd_file->pos;
@@ -297,18 +357,21 @@ ssize_t rrd_read(
     char     *pos = rrd_file->file_start + rrd_file->pos;
 
     buf = memmove(buf, pos, count);
+    rrd_file->pos += count; /* mimmic read() semantics */
     return count;
 #else
     ssize_t   ret;
 
     ret = read(rrd_file->fd, buf, count);
     //XXX: eventually add generic rrd_set_error(""); here
+    rrd_file->pos += count; /* mimmic read() semantics */
     return ret;
 #endif
 }
 
 /* write count bytes from buffer buf to the current position
- * rrd_file->pos of rrd_file->fd.  */
+ * rrd_file->pos of rrd_file->fd.
+ * Returns the number of bytes written.  */
 ssize_t rrd_write(
     rrd_file_t *rrd_file,
     const void *buf,
@@ -323,13 +386,13 @@ ssize_t rrd_write(
     new_pos = memmove(rrd_file->file_start + rrd_file->pos, buf, count);
     ret = new_pos - off;
 #else
-    ret = write(rrd_file->fd, buf, count)
+    ret = write(rrd_file->fd, buf, count);
 #endif
-        return ret;
+    return ret;
 }
 
 /* flush all data pending to be written to FD.  */
-void rrd_flush(
+inline void rrd_flush(
     rrd_file_t *rrd_file)
 {
     if (fdatasync(rrd_file->fd) != 0) {

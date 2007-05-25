@@ -7,11 +7,6 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
-#include <sys/types.h>
-#include <fcntl.h>
-#ifdef HAVE_MMAP
-# include <sys/mman.h>
-#endif
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <sys/locking.h>
@@ -73,34 +68,51 @@ static void normalize_time(
     }
 }
 
-/* Local prototypes */
-int       LockRRD(
-    int in_file);
+static info_t *write_RRA_row(
+    rrd_file_t *rrd_file,
+    rrd_t *rrd,
+    unsigned long rra_idx,
+    unsigned long *rra_current,
+    unsigned short CDP_scratch_idx,
+    info_t *pcdp_summary,
+    time_t *rra_time)
+{
+    unsigned long ds_idx, cdp_idx;
+    infoval   iv;
 
-#ifdef HAVE_MMAP
-info_t   *write_RRA_row(
-    rrd_t *rrd,
-    unsigned long rra_idx,
-    unsigned long *rra_current,
-    unsigned short CDP_scratch_idx,
-#ifndef DEBUG
-    int UNUSED(in_file),
-#else
-    int in_file,
+    for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
+        /* compute the cdp index */
+        cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
+#ifdef DEBUG
+        fprintf(stderr, "  -- RRA WRITE VALUE %e, at %ld CF:%s\n",
+                rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,
+                rrd_file->pos, rrd->rra_def[rra_idx].cf_nam);
 #endif
-    info_t *pcdp_summary,
-    time_t *rra_time,
-    void *rrd_mmaped_file);
-#else
-info_t   *write_RRA_row(
-    rrd_t *rrd,
-    unsigned long rra_idx,
-    unsigned long *rra_current,
-    unsigned short CDP_scratch_idx,
-    int in_file,
-    info_t *pcdp_summary,
-    time_t *rra_time);
-#endif
+        if (pcdp_summary != NULL) {
+            iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
+            /* append info to the return hash */
+            pcdp_summary = info_push(pcdp_summary,
+                                     sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
+                                                   *rra_time,
+                                                   rrd->rra_def[rra_idx].
+                                                   cf_nam,
+                                                   rrd->rra_def[rra_idx].
+                                                   pdp_cnt,
+                                                   rrd->ds_def[ds_idx].
+                                                   ds_nam), RD_I_VAL, iv);
+        }
+        if (rrd_write
+            (rrd_file,
+             &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
+             sizeof(rrd_value_t) * 1) != sizeof(rrd_value_t) * 1) {
+            rrd_set_error("writing rrd");
+            return 0;
+        }
+        *rra_current += sizeof(rrd_value_t);
+    }
+    return (pcdp_summary);
+}
+
 int       rrd_update_r(
     const char *filename,
     const char *tmplt,
@@ -1380,16 +1392,9 @@ int _rrd_update(
                           1) * rrd.rra_def[i].pdp_cnt *
                          rrd.stat_head->pdp_step);
                 }
-#ifdef HAVE_MMAP
                 pcdp_summary =
-                    write_RRA_row(&rrd, i, &rra_current, scratch_idx,
-                                  rrd_file->fd, pcdp_summary, &rra_time,
-                                  rrd_file->file_start);
-#else
-                pcdp_summary =
-                    write_RRA_row(&rrd, i, &rra_current, scratch_idx,
-                                  rrd_file->fd, pcdp_summary, &rra_time);
-#endif
+                    write_RRA_row(rrd_file, &rrd, i, &rra_current,
+                                  scratch_idx, pcdp_summary, &rra_time);
                 if (rrd_test_error())
                     break;
 
@@ -1424,16 +1429,9 @@ int _rrd_update(
                               2) * rrd.rra_def[i].pdp_cnt *
                              rrd.stat_head->pdp_step);
                     }
-#ifdef HAVE_MMAP
                     pcdp_summary =
-                        write_RRA_row(&rrd, i, &rra_current, scratch_idx,
-                                      rrd_file->fd, pcdp_summary, &rra_time,
-                                      rrd_file->file_start);
-#else
-                    pcdp_summary =
-                        write_RRA_row(&rrd, i, &rra_current, scratch_idx,
-                                      rrd_file->fd, pcdp_summary, &rra_time);
-#endif
+                        write_RRA_row(rrd_file, &rrd, i, &rra_current,
+                                      scratch_idx, pcdp_summary, &rra_time);
                 }
 
                 if (rrd_test_error())
@@ -1666,90 +1664,4 @@ int LockRRD(
     }
 
     return (rcstat);
-}
-
-
-#ifdef HAVE_MMAP
-info_t
-
-
-
-
-
-
-
-
-         *write_RRA_row(
-    rrd_t *rrd,
-    unsigned long rra_idx,
-    unsigned long *rra_current,
-    unsigned short CDP_scratch_idx,
-#ifndef DEBUG
-    int UNUSED(in_file),
-#else
-    int in_file,
-#endif
-    info_t *pcdp_summary,
-    time_t *rra_time,
-    void *rrd_mmaped_file)
-#else
-info_t
-
-
-
-
-
-
-
-
-         *write_RRA_row(
-    rrd_t *rrd,
-    unsigned long rra_idx,
-    unsigned long *rra_current,
-    unsigned short CDP_scratch_idx,
-    int in_file,
-    info_t *pcdp_summary,
-    time_t *rra_time)
-#endif
-{
-    unsigned long ds_idx, cdp_idx;
-    infoval   iv;
-
-    for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
-        /* compute the cdp index */
-        cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-#ifdef DEBUG
-        fprintf(stderr, "  -- RRA WRITE VALUE %e, at %ld CF:%s\n",
-                rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,
-                rrd_file->pos, rrd->rra_def[rra_idx].cf_nam);
-#endif
-        if (pcdp_summary != NULL) {
-            iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
-            /* append info to the return hash */
-            pcdp_summary = info_push(pcdp_summary,
-                                     sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
-                                                   *rra_time,
-                                                   rrd->rra_def[rra_idx].
-                                                   cf_nam,
-                                                   rrd->rra_def[rra_idx].
-                                                   pdp_cnt,
-                                                   rrd->ds_def[ds_idx].
-                                                   ds_nam), RD_I_VAL, iv);
-        }
-#ifdef HAVE_MMAP
-        memcpy((char *) rrd_mmaped_file + *rra_current,
-               &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
-               sizeof(rrd_value_t));
-#else
-        if (rrd_write
-            (rrd_file,
-             &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
-             sizeof(rrd_value_t) * 1) != sizeof(rrd_value_t) * 1) {
-            rrd_set_error("writing rrd");
-            return 0;
-        }
-#endif
-        *rra_current += sizeof(rrd_value_t);
-    }
-    return (pcdp_summary);
 }

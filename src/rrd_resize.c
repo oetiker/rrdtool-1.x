@@ -82,7 +82,7 @@ int rrd_resize(
             return (-1);
         }
 
-    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_CREAT);
+    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE|RRD_CREAT);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
                       rrd_strerror(errno));

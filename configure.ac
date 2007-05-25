@@ -299,7 +299,10 @@ AC_ARG_ENABLE([mmap],
 [  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
 [],
 [enable_mmap=yes])
-
+AC_ARG_ENABLE([direct-io],
+[  --enable-direct-io      enable O_DIRECT],
+[],
+[enable_direct_io=yes])
 
  AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
@@ -403,6 +406,11 @@ if test "x$enable_mmap" = "xyes"; then
   fi
 fi
 
+
+dnl if test "x$enable_direct_io" = "xyes"; then
+dnl check for working O_DIRECT
+dnl fi
+AC_SUBST([USE_DIRECT_IO])
 
 CONFIGURE_PART(IEEE Math Checks)
  

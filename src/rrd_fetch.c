@@ -210,10 +210,6 @@ int rrd_fetch_fn(
     rrd_value_t *data_ptr;
     unsigned long rows;
 
-#ifdef HAVE_POSIX_FADVISE
-    long      rrd_head_size;
-#endif
-
 #ifdef DEBUG
     fprintf(stderr, "Entered rrd_fetch_fn() searching for the best match\n");
     fprintf(stderr, "Looking for: start %10lu end %10lu step %5lu\n",
@@ -224,9 +220,6 @@ int rrd_fetch_fn(
     if (rrd_file == NULL)
         return (-1);
 
-#ifdef HAVE_POSIX_FADVISE
-    rrd_head_size = rrd_file->header_len;
-#endif
     /* when was the really last update of this file ? */
 
     if (((*ds_namv) =
@@ -387,7 +380,7 @@ int rrd_fetch_fn(
 
     if (rrd_seek(rrd_file, (rra_base
                             + (rra_pointer
-                               * *ds_cnt
+                               * (*ds_cnt)
                                * sizeof(rrd_value_t))), SEEK_SET) != 0) {
         rrd_set_error("seek error in RRA");
         for (i = 0; (unsigned) i < *ds_cnt; i++)
@@ -423,7 +416,7 @@ int rrd_fetch_fn(
         /* past the valid data area */
         else if (i >= (signed) rrd.rra_def[chosen_rra].row_cnt) {
 #ifdef DEBUG
-            fprintf(stderr, "post fetch %li -- ", i);
+            fprintf(stderr, "past fetch %li -- ", i);
 #endif
             for (ii = 0; (unsigned) ii < *ds_cnt; ii++) {
                 *(data_ptr++) = DNAN;
@@ -437,7 +430,7 @@ int rrd_fetch_fn(
             if (rra_pointer >= (signed) rrd.rra_def[chosen_rra].row_cnt) {
                 rra_pointer -= rrd.rra_def[chosen_rra].row_cnt;
                 if (rrd_seek(rrd_file, (rra_base + rra_pointer
-                                        * *ds_cnt
+                                        * (*ds_cnt)
                                         * sizeof(rrd_value_t)),
                              SEEK_SET) != 0) {
                     rrd_set_error("wrap seek in RRA did fail");
@@ -456,8 +449,7 @@ int rrd_fetch_fn(
             }
 
             if (rrd_read(rrd_file, data_ptr, sizeof(rrd_value_t) * (*ds_cnt))
-                != (ssize_t) (sizeof(rrd_value_t) * (*ds_cnt) *
-                              rrd.stat_head->ds_cnt)) {
+                != (ssize_t) (sizeof(rrd_value_t) * (*ds_cnt))) {
                 rrd_set_error("fetching cdp from rra");
                 for (ii = 0; (unsigned) ii < *ds_cnt; ii++)
                     free((*ds_namv)[ii]);
@@ -472,7 +464,7 @@ int rrd_fetch_fn(
             /* don't pollute the buffer cache with data read from the file. We do this while reading to 
                keep damage minimal */
             if (0 !=
-                posix_fadvise(rrd_file->fd, rrd_head_size, 0,
+                posix_fadvise(rrd_file->fd, rrd_file->header_len, 0,
                               POSIX_FADV_DONTNEED)) {
                 rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",
                               filename, rrd_strerror(errno));
@@ -498,7 +490,8 @@ int rrd_fetch_fn(
 #ifdef HAVE_POSIX_FADVISE
     /* and just to be sure we drop everything except the header at the end */
     if (0 !=
-        posix_fadvise(rrd_file->fd, rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
+        posix_fadvise(rrd_file->fd, rrd_file->header_len, 0,
+                      POSIX_FADV_DONTNEED)) {
         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
                       rrd_strerror(errno));
         close(rrd_file->fd);

@@ -83,7 +83,7 @@ int rrd_dump_r(
     rrd_value_t value;
     struct tm tm;
 
-    rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+    rrd_file = rrd_open(filename, &rrd, RRD_READONLY|RRD_READAHEAD);
     if (rrd_file == NULL) {
         rrd_free(&rrd);
         return (-1);

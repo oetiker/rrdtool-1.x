@@ -160,9 +160,11 @@ extern    "C" {
     char **buffer,
     int skipfirst);
 
-#define RRD_READONLY    0
-#define RRD_READWRITE   1
-#define RRD_CREAT       2
+#define RRD_READONLY    (1<<0)
+#define RRD_READWRITE   (1<<1)
+#define RRD_CREAT       (1<<2)
+#define RRD_READAHEAD   (1<<3)
+#define RRD_COPY        (1<<4)
 
     enum cf_en cf_conv(
     const char *string);

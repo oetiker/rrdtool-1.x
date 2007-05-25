@@ -49,6 +49,6 @@ site-python-install: all
 
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
-	find . -name "*.c" -or -name "*.h" | xargs indent
+	find ./ -name "*.[ch]" | xargs indent
 
 ##END##
