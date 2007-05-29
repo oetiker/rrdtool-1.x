@@ -101,8 +101,7 @@ AH_BOTTOM([
 # include <sys/stat.h>
 #endif
 
-/* enable posix_fadvise on linux */
-#if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
 
@@ -299,10 +298,12 @@ AC_ARG_ENABLE([mmap],
 [  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
 [],
 [enable_mmap=yes])
+
+dnl will most likely not work on compressed filesystems, i think.. *shrug*
 AC_ARG_ENABLE([direct-io],
-[  --enable-direct-io      enable O_DIRECT],
-[],
-[enable_direct_io=yes])
+[  --enable-direct-io      enable O_DIRECT if available],
+[enable_direct_io=yes],
+[])
 
  AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
@@ -316,6 +317,9 @@ dnl Check for the compiler and static/shared library creation.
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_LIBTOOL
+
+dnl Try to detect/use GNU features
+CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 dnl which flags does the compiler support?
 if test "x$GCC" = "xyes"; then
@@ -342,6 +346,26 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_CHECK_HEADERS(features.h sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
+if test "x$enable_direct_io" = "xyes"; then
+AC_CACHE_CHECK([for O_DIRECT flag to open(2)],rrd_cv_HAVE_OPEN_O_DIRECT,[
+AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif],
+[int fd = open("/dev/null", O_DIRECT);],
+rrd_cv_HAVE_OPEN_O_DIRECT=yes,rrd_cv_HAVE_OPEN_O_DIRECT=no)])
+  if test "x$rrd_cv_HAVE_OPEN_O_DIRECT" = "xyes"; then
+    AC_DEFINE(USE_DIRECT_IO,1,[Whether the open(2) accepts O_DIRECT])
+  else
+    enable_direct_io="no"
+  fi 
+else
+  enable_direct_io="no"
+fi
+
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_TIME
@@ -365,12 +389,10 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise)
+AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
 dnl Could use these to know if we need to provide a prototype
 dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
-dnl AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
-dnl #include <fcntl.h>])
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
 if test "x$enable_mmap" = "xyes"; then
@@ -403,14 +425,17 @@ if test "x$enable_mmap" = "xyes"; then
   if test "x$ac_cv_func_mmap" != "xyes";
   then
     AC_MSG_ERROR([--enable-mmap requested but mmap() was not detected])
+dnl enable_mmap="no"
   fi
 fi
 
+dnl use FD based I/O ?
+if test "x$enable_mmap" = "xno";then
+    AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
+#include <fcntl.h>])
+    AC_CHECK_FUNCS(posix_fadvise)
+fi
 
-dnl if test "x$enable_direct_io" = "xyes"; then
-dnl check for working O_DIRECT
-dnl fi
-AC_SUBST([USE_DIRECT_IO])
 
 CONFIGURE_PART(IEEE Math Checks)
  
@@ -826,7 +851,8 @@ echo
 echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
-echo "          With MMAP IO: $ac_cv_func_mmap_fixed_mapped"
+echo "          With MMAP IO: $enable_mmap"
+echo "          Use O_DIRECT: $enable_direct_io"
 echo "          Perl Modules: $COMP_PERL"
 echo "           Perl Binary: $PERL"
 echo "          Perl Version: $PERL_VERSION"

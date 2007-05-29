@@ -818,7 +818,6 @@ void reset_aberrant_coefficients(
         != (ssize_t) (sizeof(cdp_prep_t) * (rrd->stat_head->rra_cnt) *
                       (rrd->stat_head->ds_cnt))) {
         rrd_set_error("reset_aberrant_coefficients: cdp_prep write failed");
-        return;         /*XXX: delme */
     }
 }
 

@@ -54,6 +54,7 @@ int rrd_lastupdate(
     }
 
     rrd_free(&rrd);
+    close(rrd_file->fd);
     rrd_close(rrd_file);
     return (0);
 }

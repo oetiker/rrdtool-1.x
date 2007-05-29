@@ -66,6 +66,15 @@
 #include "unused.h"
 #define MEMBLK 8192
 
+/* DEBUG 2 prints information obtained via mincore(2) */
+// #define DEBUG 2
+/* do not calculate exact madvise hints but assume 2 pages for headers and
+ * set DONTNEED for the rest, which is assumed to be data */
+//#define TWO_PAGES 1
+/* Avoid calling madvise on areas that were already hinted. May be benefical if
+ * your syscalls are very slow */
+//#define CHECK_MADVISE_OVERLAPS 1
+
 #ifdef HAVE_MMAP
 #define __rrd_read(dst, dst_t, cnt) \
 	(dst) = (dst_t*) (data + offset); \
@@ -77,6 +86,35 @@
 		goto out_nullify_head; \
 	} \
 	offset += read (rrd_file->fd, dst, sizeof(dst_t)*(cnt))
+#endif
+
+/* next page-aligned (i.e. page-align up) */
+#ifndef PAGE_ALIGN
+#define PAGE_ALIGN(addr) (((addr)+_page_size-1)&(~(_page_size-1)))
+#endif
+/* previous page-aligned (i.e. page-align down) */
+#ifndef PAGE_ALIGN_DOWN
+#define PAGE_ALIGN_DOWN(addr) (((addr)+_page_size-1)&(~(_page_size-1)))
+#endif
+
+#ifdef HAVE_MMAP
+/* vector of last madvise hint */
+typedef struct _madvise_vec_t {
+    void     *start;
+    ssize_t   length;
+} _madvise_vec_t;
+_madvise_vec_t _madv_vec = { NULL, 0 };
+#endif
+
+#if defined CHECK_MADVISE_OVERLAPS
+#define _madvise(_start, _off, _hint) \
+    if ((_start) != _madv_vec.start && (ssize_t)(_off) != _madv_vec.length) { \
+        _madv_vec.start = (_start) ; _madv_vec.length = (_off); \
+        madvise((_start), (_off), (_hint)); \
+    }
+#else
+#define _madvise(_start, _off, _hint) \
+    madvise((_start), (_off), (_hint))
 #endif
 
 /* open a database file, return its header and an open filehandle */
@@ -92,6 +130,7 @@ rrd_file_t *rrd_open(
     int       version;
 
 #ifdef HAVE_MMAP
+    ssize_t   _page_size = sysconf(_SC_PAGESIZE);
     int       mm_prot = PROT_READ, mm_flags = 0;
     char     *data;
 #endif
@@ -118,9 +157,8 @@ rrd_file_t *rrd_open(
 #ifdef HAVE_MMAP
         mm_flags = MAP_PRIVATE;
 # ifdef MAP_NORESERVE
-        mm_flags |= MAP_NORESERVE;
+        mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
 # endif
-        mm_flags |= MAP_PRIVATE;
 #endif
     } else {
         if (rdwr & RRD_READWRITE) {
@@ -137,19 +175,19 @@ rrd_file_t *rrd_open(
     }
     if (rdwr & RRD_READAHEAD) {
 #ifdef MAP_POPULATE
-        mm_flags |= MAP_POPULATE;
+        mm_flags |= MAP_POPULATE;   /* populate ptes and data */
 #endif
-#if defined MAP_NONBLOCK && !defined USE_DIRECT_IO
-        mm_flags |= MAP_NONBLOCK;   /* just populage ptes */
+#if defined MAP_NONBLOCK
+        mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
-    } else {
 #ifdef USE_DIRECT_IO
+    } else {
         flags |= O_DIRECT;
 #endif
-#if 0                   //def O_NONBLOCK
-        flags |= O_NONBLOCK;
-#endif
     }
+#ifdef O_NONBLOCK
+    flags |= O_NONBLOCK;
+#endif
 
     if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
@@ -196,21 +234,32 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
     rrd_file->file_start = data;
-#else
 #endif
 #ifdef USE_MADVISE
-    if (rdwr & RRD_COPY) {  /*XXX: currently not used! */
+    if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
+        _madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
         goto out_done;
     }
     /* We do not need to read anything in for the moment */
-    madvise(data, rrd_file->file_len, MADV_DONTNEED);
+#ifndef TWO_PAGES
+    _madvise(data, rrd_file->file_len, MADV_DONTNEED);
+//    _madvise(data, rrd_file->file_len, MADV_RANDOM);
+#else
+/* alternatively: keep 2 pages worth of data, likely headers,
+ * don't need the rest.  */
+    _madvise(data, _page_size * 2, MADV_WILLNEED | MADV_SEQUENTIAL);
+    _madvise(data + _page_size * 2, (rrd_file->file_len >= _page_size * 2)
+             ? rrd_file->file_len - _page_size * 2 : 0, MADV_DONTNEED);
+#endif
 #endif
 
-#ifdef USE_MADVISE
+#if defined USE_MADVISE && !defined TWO_PAGES
     /* the stat_head will be needed soonish, so hint accordingly */
-    madvise(data + offset, sizeof(stat_head_t), MADV_WILLNEED);
+// too finegrained to calc the individual sizes, just keep 2 pages worth of hdr
+    _madvise(data + PAGE_ALIGN_DOWN(offset), PAGE_ALIGN(sizeof(stat_head_t)),
+             MADV_WILLNEED);
+
 #endif
 
     __rrd_read(rrd->stat_head, stat_head_t,
@@ -234,18 +283,20 @@ rrd_file_t *rrd_open(
                       rrd->stat_head->version);
         goto out_nullify_head;
     }
-#ifdef USE_MADVISE
+#if defined USE_MADVISE && !defined TWO_PAGES
     /* the ds_def will be needed soonish, so hint accordingly */
-    madvise(data + offset, sizeof(ds_def_t) * rrd->stat_head->ds_cnt,
-            MADV_WILLNEED);
+    _madvise(data + PAGE_ALIGN_DOWN(offset),
+             PAGE_ALIGN(sizeof(ds_def_t) * rrd->stat_head->ds_cnt),
+             MADV_WILLNEED);
 #endif
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
 
-#ifdef USE_MADVISE
+#if defined USE_MADVISE && !defined TWO_PAGES
     /* the rra_def will be needed soonish, so hint accordingly */
-    madvise(data + offset, sizeof(rra_def_t) * rrd->stat_head->rra_cnt,
-            MADV_WILLNEED);
+    _madvise(data + PAGE_ALIGN_DOWN(offset),
+             PAGE_ALIGN(sizeof(rra_def_t) * rrd->stat_head->rra_cnt),
+             MADV_WILLNEED);
 #endif
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
@@ -265,9 +316,10 @@ rrd_file_t *rrd_open(
 #endif
         rrd->live_head->last_up_usec = 0;
     } else {
-#ifdef USE_MADVISE
+#if defined USE_MADVISE && !defined TWO_PAGES
         /* the live_head will be needed soonish, so hint accordingly */
-        madvise(data + offset, sizeof(live_head_t), MADV_WILLNEED);
+        _madvise(data + PAGE_ALIGN_DOWN(offset),
+                 PAGE_ALIGN(sizeof(live_head_t)), MADV_WILLNEED);
 #endif
         __rrd_read(rrd->live_head, live_head_t,
                    1);
@@ -289,7 +341,7 @@ rrd_file_t *rrd_open(
 #endif
     rrd_file->header_len = offset;
     rrd_file->pos = offset;
-/* we could close(rrd_file->fd); here, the mapping is still valid anyway */
+
     return (rrd_file);
   out_nullify_head:
     rrd->stat_head = NULL;
@@ -298,26 +350,86 @@ rrd_file_t *rrd_open(
     return NULL;
 }
 
+
 /* Close a reference to an rrd_file.  */
+
 int rrd_close(
     rrd_file_t *rrd_file)
 {
     int       ret;
 
+#if defined HAVE_MMAP
+    ssize_t   _page_size = sysconf(_SC_PAGESIZE);
+#endif
+#if defined DEBUG && DEBUG > 1
+    /* pretty print blocks in core */
+    off_t     off;
+    unsigned char *vec;
+
+    off =
+        rrd_file->file_len +
+        ((rrd_file->file_len + sysconf(_SC_PAGESIZE) -
+          1) / sysconf(_SC_PAGESIZE));
+    vec = malloc(off);
+    if (vec != NULL) {
+        memset(vec, 0, off);
+        if (mincore(rrd_file->file_start, rrd_file->file_len, vec) == 0) {
+            int       prev;
+            unsigned  is_in = 0, was_in = 0;
+
+            for (off = 0, prev = 0; off < rrd_file->file_len; ++off) {
+                is_in = vec[off] & 1;   /* if lsb set then is core resident */
+                if (off == 0)
+                    was_in = is_in;
+                if (was_in != is_in) {
+                    fprintf(stderr, "%sin core: %p len %ld\n",
+                            was_in ? "" : "not ", vec + prev, off - prev);
+                    was_in = is_in;
+                    prev = off;
+                }
+            }
+            fprintf(stderr,
+                    "%sin core: %p len %ld\n",
+                    was_in ? "" : "not ", vec + prev, off - prev);
+        } else
+            fprintf(stderr, "mincore: %s", rrd_strerror(errno));
+    }
+#endif                          /* DEBUG */
+
+#ifdef USE_MADVISE
+#ifdef TWO_PAGES
+//XXX: ?
+    /* Keep 2 pages worth of headers around, round up to next page boundary.  */
+    ret =
+        PAGE_ALIGN(rrd_file->header_len % _page_size + rrd_file->header_len);
+    if (rrd_file->file_len > ret)
+        _madvise(rrd_file->file_start + ret,
+                 rrd_file->file_len - ret, MADV_DONTNEED);
+#else
+    /* ignoring errors from RRDs that are smaller then the file_len+rounding */
+    _madvise(rrd_file->file_start + PAGE_ALIGN_DOWN(rrd_file->header_len),
+             rrd_file->file_len - PAGE_ALIGN(rrd_file->header_len),
+             MADV_DONTNEED);
+#endif
+#endif
 #ifdef HAVE_MMAP
     ret = munmap(rrd_file->file_start, rrd_file->file_len);
     if (ret != 0)
         rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));
+#else
+    ret = 0;
 #endif
-    ret = close(rrd_file->fd);
-    if (ret != 0)
-        rrd_set_error("closing file: %s", rrd_strerror(errno));
+//    ret = close(rrd_file->fd);
+//    if (ret != 0)
+//        rrd_set_error("closing file: %s", rrd_strerror(errno));
     free(rrd_file);
     rrd_file = NULL;
     return ret;
 }
 
+
 /* Set position of rrd_file.  */
+
 off_t rrd_seek(
     rrd_file_t *rrd_file,
     off_t off,
@@ -342,24 +454,25 @@ off_t rrd_seek(
     return ret == -1;   //XXX: or just ret to mimic lseek
 }
 
+
 /* Get current position in rrd_file.  */
-inline off_t rrd_tell(
-    rrd_file_t *rrd_file)
+
+inline off_t rrd_tell(rrd_file_t *rrd_file)
 {
     return rrd_file->pos;
 }
 
+
 /* read count bytes into buffer buf, starting at rrd_file->pos.
  * Returns the number of bytes read.  */
+
 ssize_t rrd_read(
     rrd_file_t *rrd_file,
     void *buf,
     size_t count)
 {
 #ifdef HAVE_MMAP
-    char     *pos = rrd_file->file_start + rrd_file->pos;
-
-    buf = memmove(buf, pos, count);
+    buf = memmove(buf, rrd_file->file_start + rrd_file->pos, count);
     rrd_file->pos += count; /* mimmic read() semantics */
     return count;
 #else
@@ -372,9 +485,11 @@ ssize_t rrd_read(
 #endif
 }
 
+
 /* write count bytes from buffer buf to the current position
  * rrd_file->pos of rrd_file->fd.
  * Returns the number of bytes written.  */
+
 ssize_t rrd_write(
     rrd_file_t *rrd_file,
     const void *buf,
@@ -388,7 +503,9 @@ ssize_t rrd_write(
 #endif
 }
 
+
 /* flush all data pending to be written to FD.  */
+
 inline void rrd_flush(
     rrd_file_t *rrd_file)
 {
@@ -397,6 +514,9 @@ inline void rrd_flush(
                       rrd_strerror(errno));
     }
 }
+
+
+/* Initialize RRD header.  */
 
 void rrd_init(
     rrd_t *rrd)
@@ -411,6 +531,9 @@ void rrd_init(
     rrd->rrd_value = NULL;
 }
 
+
+/* free RRD header data.  */
+
 void rrd_free(
     rrd_t UNUSED(*rrd))
 {
@@ -424,19 +547,24 @@ void rrd_free(
     free(rrd->pdp_prep);
     free(rrd->cdp_prep);
     free(rrd->rrd_value);
-//XXX: ? rrd_init(rrd);
 #endif
 }
 
+
 /* routine used by external libraries to free memory allocated by
  * rrd library */
+
 void rrd_freemem(
     void *mem)
 {
     free(mem);
 }
 
-int readfile(
+
+/* XXX: FIXME: missing documentation.  */
+/*XXX: FIXME should be renamed to rrd_readfile or _rrd_readfile */
+
+int /*_rrd_*/ readfile(
     const char *file_name,
     char **buffer,
     int skipfirst)

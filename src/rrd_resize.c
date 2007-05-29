@@ -55,7 +55,7 @@ int rrd_resize(
         modify = -modify;
 
 
-    rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE);
+    rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE | RRD_COPY);
     if (rrd_file == NULL) {
         rrd_set_error("could not open RRD");
         return (-1);
@@ -111,15 +111,14 @@ int rrd_resize(
     case 1:
         rrdold.stat_head->version[3] = '3';
         break;
-    default:{
+    default:
         rrd_set_error("Do not know how to handle RRD version %s",
                       rrdold.stat_head->version);
+        rrd_close(rrd_file);
         rrd_free(&rrdold);
-        close(rrd_file->fd);
         return (-1);
+        break;
     }
-    }
-
 
 /* XXX: Error checking? */
     rrd_write(rrd_out_file, rrdnew.stat_head, sizeof(stat_head_t) * 1);
@@ -231,8 +230,13 @@ int rrd_resize(
     rrd_write(rrd_out_file, rrdnew.rra_ptr,
               sizeof(rra_ptr_t) * rrdnew.stat_head->rra_cnt);
 
-    close(rrd_out_file->fd);
     rrd_free(&rrdold);
     close(rrd_file->fd);
+    rrd_close(rrd_file);
+
+    rrd_free(&rrdnew);
+    close(rrd_out_file->fd);
+    rrd_close(rrd_out_file);
+
     return (0);
 }

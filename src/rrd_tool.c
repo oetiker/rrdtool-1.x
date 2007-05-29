@@ -432,8 +432,6 @@ int main(
 
                 free(myargv);
                 if (ret == 0) {
-
-
 #if HAVE_GETRUSAGE
                     getrusage(RUSAGE_SELF, &myusage);
                     gettimeofday(&currenttime, NULL);

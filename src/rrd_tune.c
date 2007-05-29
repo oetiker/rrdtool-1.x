@@ -289,7 +289,6 @@ int rrd_tune(
         }
     }
     if (optcnt > 0) {
-
         rrd_seek(rrd_file, 0, SEEK_SET);
         rrd_write(rrd_file, rrd.stat_head, sizeof(stat_head_t) * 1);
         rrd_write(rrd_file, rrd.ds_def,

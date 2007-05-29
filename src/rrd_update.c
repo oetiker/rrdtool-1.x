@@ -56,10 +56,10 @@ static int gettimeofday(
 
 #endif
 /*
- * normilize time as returned by gettimeofday. usec part must
+ * normalize time as returned by gettimeofday. usec part must
  * be always >= 0
  */
-static void normalize_time(
+static inline void normalize_time(
     struct timeval *t)
 {
     if (t->tv_usec < 0) {
@@ -271,7 +271,7 @@ int _rrd_update(
     rrd_value_t *pdp_new;   /* prepare the incoming data
                              * to be added the the
                              * existing entry */
-    rrd_value_t *pdp_temp;  /* prepare the pdp values 
+    rrd_value_t *pdp_temp;  /* prepare the pdp values
                              * to be added the the
                              * cdp values */
 
@@ -318,12 +318,12 @@ int _rrd_update(
     /* need at least 1 arguments: data. */
     if (argc < 1) {
         rrd_set_error("Not enough arguments");
-        return -1;
+        goto err_out;
     }
 
     rrd_file = rrd_open(filename, &rrd, RRD_READWRITE);
     if (rrd_file == NULL) {
-        return -1;
+        goto err_out;
     }
 
     /* initialize time */
@@ -362,36 +362,25 @@ int _rrd_update(
      */
     if (LockRRD(rrd_file->fd) != 0) {
         rrd_set_error("could not lock RRD");
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_close;
     }
 
     if ((updvals =
          malloc(sizeof(char *) * (rrd.stat_head->ds_cnt + 1))) == NULL) {
         rrd_set_error("allocating updvals pointer array");
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_close;
     }
 
     if ((pdp_temp = malloc(sizeof(rrd_value_t)
                            * rrd.stat_head->ds_cnt)) == NULL) {
         rrd_set_error("allocating pdp_temp ...");
-        free(updvals);
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_updvals;
     }
 
     if ((tmpl_idx = malloc(sizeof(unsigned long)
                            * (rrd.stat_head->ds_cnt + 1))) == NULL) {
         rrd_set_error("allocating tmpl_idx ...");
-        free(pdp_temp);
-        free(updvals);
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_temp;
     }
     /* initialize tmplt redirector */
     /* default config example (assume DS 1 is a CDEF DS)
@@ -421,22 +410,11 @@ int _rrd_update(
                 if (tmpl_cnt > rrd.stat_head->ds_cnt) {
                     rrd_set_error
                         ("tmplt contains more DS definitions than RRD");
-                    free(updvals);
-                    free(pdp_temp);
-                    free(tmpl_idx);
-                    rrd_free(&rrd);
-                    close(rrd_file->fd);
-                    return (-1);
+                    goto err_free_tmpl_idx;
                 }
                 if ((tmpl_idx[tmpl_cnt++] = ds_match(&rrd, dsname)) == -1) {
                     rrd_set_error("unknown DS name '%s'", dsname);
-                    free(updvals);
-                    free(pdp_temp);
-                    free(tmplt_copy);
-                    free(tmpl_idx);
-                    rrd_free(&rrd);
-                    close(rrd_file->fd);
-                    return (-1);
+                    goto err_free_tmpl_idx;
                 } else {
                     /* the first element is always the time */
                     tmpl_idx[tmpl_cnt - 1]++;
@@ -455,12 +433,7 @@ int _rrd_update(
     if ((pdp_new = malloc(sizeof(rrd_value_t)
                           * rrd.stat_head->ds_cnt)) == NULL) {
         rrd_set_error("allocating pdp_new ...");
-        free(updvals);
-        free(pdp_temp);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_tmpl_idx;
     }
 #if 0                   //def HAVE_MMAP
     rrd_mmaped_file = mmap(0,
@@ -494,20 +467,11 @@ int _rrd_update(
         if (stepper == NULL) {
             rrd_set_error("failed duplication argv entry");
             free(step_start);
-            free(updvals);
-            free(pdp_temp);
-            free(tmpl_idx);
-            rrd_free(&rrd);
-#ifdef HAVE_MMAP
-            rrd_close(rrd_file);
-#endif
-            close(rrd_file->fd);
-            return (-1);
+            goto err_free_pdp_new;
         }
         /* initialize all ds input to unknown except the first one
            which has always got to be set */
-        for (ii = 1; ii <= rrd.stat_head->ds_cnt; ii++)
-            updvals[ii] = "U";
+        memset(updvals + 1, 'U', rrd.stat_head->ds_cnt);
         updvals[0] = stepper;
         /* separate all ds elements; first must be examined separately
            due to alternate time syntax */
@@ -660,7 +624,7 @@ int _rrd_update(
 
             /* NOTE: DST_CDEF should never enter this if block, because
              * updvals[i+1][0] is initialized to 'U'; unless the caller
-             * accidently specified a value for the DST_CDEF. To handle 
+             * accidently specified a value for the DST_CDEF. To handle
              * this case, an extra check is required. */
 
             if ((updvals[i + 1][0] != 'U') &&
@@ -672,8 +636,6 @@ int _rrd_update(
                 /* pdp_new contains rate * time ... eg the bytes
                  * transferred during the interval. Doing it this way saves
                  * a lot of math operations */
-
-
                 switch (dst_idx) {
                 case DST_COUNTER:
                 case DST_DERIVE:
@@ -715,7 +677,7 @@ int _rrd_update(
                     errno = 0;
                     pdp_new[i] = strtod(updvals[i + 1], &endptr);
                     if (errno > 0) {
-                        rrd_set_error("converting  '%s' to float: %s",
+                        rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));
                         break;
                     };
@@ -731,7 +693,7 @@ int _rrd_update(
                     errno = 0;
                     pdp_new[i] = strtod(updvals[i + 1], &endptr) * interval;
                     if (errno > 0) {
-                        rrd_set_error("converting  '%s' to float: %s",
+                        rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));
                         break;
                     };
@@ -817,21 +779,21 @@ int _rrd_update(
         } else {
             /* an pdp_st has occurred. */
 
-            /* in pdp_prep[].scratch[PDP_val].u_val we have collected rate*seconds which 
-             * occurred up to the last run.        
-             pdp_new[] contains rate*seconds from the latest run.
-             pdp_temp[] will contain the rate for cdp */
+            /* in pdp_prep[].scratch[PDP_val].u_val we have collected
+               rate*seconds which occurred up to the last run.
+               pdp_new[] contains rate*seconds from the latest run.
+               pdp_temp[] will contain the rate for cdp */
 
             for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
                 /* update pdp_prep to the current pdp_st. */
                 double    pre_unknown = 0.0;
 
-                if (isnan(pdp_new[i]))
+                if (isnan(pdp_new[i])) {
                     /* a final bit of unkonwn to be added bevore calculation
-                     * we use a tempaorary variable for this so that we 
-                     * don't have to turn integer lines before using the value */
+                       we use a temporary variable for this so that we
+                       don't have to turn integer lines before using the value */
                     pre_unknown = pre_int;
-                else {
+                } else {
                     if (isnan(rrd.pdp_prep[i].scratch[PDP_val].u_val)) {
                         rrd.pdp_prep[i].scratch[PDP_val].u_val =
                             pdp_new[i] / interval * pre_int;
@@ -844,9 +806,9 @@ int _rrd_update(
 
                 /* if too much of the pdp_prep is unknown we dump it */
                 if (
-                       /* removed because this does not agree with the definition
-                          a heart beat can be unknown */
-                       /* (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt 
+                       /* removed because this does not agree with the
+                          definition that a heartbeat can be unknown */
+                       /* (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt
                           > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) || */
                        /* if the interval is larger thatn mrhb we get NAN */
                        (interval > rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt) ||
@@ -944,16 +906,17 @@ int _rrd_update(
                 }
 
                 if (current_cf == CF_SEASONAL || current_cf == CF_DEVSEASONAL) {
-                    /* If this is a bulk update, we need to skip ahead in the seasonal
-                     * arrays so that they will be correct for the next observed value;
-                     * note that for the bulk update itself, no update will occur to
-                     * DEVSEASONAL or SEASONAL; futhermore, HWPREDICT and DEVPREDICT will
-                     * be set to DNAN. */
+                    /* If this is a bulk update, we need to skip ahead in
+                       the seasonal arrays so that they will be correct for
+                       the next observed value;
+                       note that for the bulk update itself, no update will
+                       occur to DEVSEASONAL or SEASONAL; futhermore, HWPREDICT
+                       and DEVPREDICT will be set to DNAN. */
                     if (rra_step_cnt[i] > 2) {
                         /* skip update by resetting rra_step_cnt[i],
-                         * note that this is not data source specific; this is due
-                         * to the bulk update, not a DNAN value for the specific data
-                         * source. */
+                           note that this is not data source specific; this is
+                           due to the bulk update, not a DNAN value for the
+                           specific data source. */
                         rra_step_cnt[i] = 0;
                         lookup_seasonal(&rrd, i, rra_start, rrd_file,
                                         elapsed_pdp_st, &last_seasonal_coef);
@@ -1463,18 +1426,12 @@ int _rrd_update(
         rrd_set_error("error writing(unmapping) file: %s", filename);
     }
 #else
-    rrd_flush(rrd_file);    //XXX: really needed?
+    //rrd_flush(rrd_file);    //XXX: really needed?
 #endif
     /* if we got here and if there is an error and if the file has not been
      * written to, then close things up and return. */
     if (rrd_test_error()) {
-        free(updvals);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        free(pdp_temp);
-        free(pdp_new);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 
     /* aargh ... that was tough ... so many loops ... anyway, its done.
@@ -1485,38 +1442,20 @@ int _rrd_update(
                             + sizeof(rra_def_t) * rrd.stat_head->rra_cnt),
                  SEEK_SET) != 0) {
         rrd_set_error("seek rrd for live header writeback");
-        free(updvals);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        free(pdp_temp);
-        free(pdp_new);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 
     if (version >= 3) {
         if (rrd_write(rrd_file, rrd.live_head,
                       sizeof(live_head_t) * 1) != sizeof(live_head_t) * 1) {
             rrd_set_error("rrd_write live_head to rrd");
-            free(updvals);
-            rrd_free(&rrd);
-            free(tmpl_idx);
-            free(pdp_temp);
-            free(pdp_new);
-            close(rrd_file->fd);
-            return (-1);
+            goto err_free_pdp_new;
         }
     } else {
         if (rrd_write(rrd_file, &rrd.live_head->last_up,
                       sizeof(time_t) * 1) != sizeof(time_t) * 1) {
             rrd_set_error("rrd_write live_head to rrd");
-            free(updvals);
-            rrd_free(&rrd);
-            free(tmpl_idx);
-            free(pdp_temp);
-            free(pdp_new);
-            close(rrd_file->fd);
-            return (-1);
+            goto err_free_pdp_new;
         }
     }
 
@@ -1525,13 +1464,7 @@ int _rrd_update(
                   sizeof(pdp_prep_t) * rrd.stat_head->ds_cnt)
         != (ssize_t) (sizeof(pdp_prep_t) * rrd.stat_head->ds_cnt)) {
         rrd_set_error("rrd_write pdp_prep to rrd");
-        free(updvals);
-        rrd_free(&rrd);
-        free(tmpl_idx);
-        free(pdp_temp);
-        free(pdp_new);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 
     if (rrd_write(rrd_file, rrd.cdp_prep,
@@ -1541,26 +1474,14 @@ int _rrd_update(
                       rrd.stat_head->ds_cnt)) {
 
         rrd_set_error("rrd_write cdp_prep to rrd");
-        free(updvals);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        free(pdp_temp);
-        free(pdp_new);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 
     if (rrd_write(rrd_file, rrd.rra_ptr,
                   sizeof(rra_ptr_t) * rrd.stat_head->rra_cnt)
         != (ssize_t) (sizeof(rra_ptr_t) * rrd.stat_head->rra_cnt)) {
         rrd_set_error("rrd_write rra_ptr to rrd");
-        free(updvals);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        free(pdp_temp);
-        free(pdp_new);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 #ifdef HAVE_POSIX_FADVISExxx
 
@@ -1572,11 +1493,10 @@ int _rrd_update(
     if (0 != posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
                       rrd_strerror(errno));
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_pdp_new;
     }
 #endif
-    /*XXX: ? */ rrd_flush(rrd_file);
+    /* rrd_flush(rrd_file); */
 
     /* calling the smoothing code here guarantees at most
      * one smoothing operation per rrd_update call. Unfortunately,
@@ -1584,8 +1504,6 @@ int _rrd_update(
      * for smoothing to occur off-schedule. This really isn't
      * critical except during the burning cycles. */
     if (schedule_smooth) {
-//    in_file = fopen(filename,"rb+");
-
 
         rra_start = rra_begin;
         for (i = 0; i < rrd.stat_head->rra_cnt; ++i) {
@@ -1607,19 +1525,35 @@ int _rrd_update(
             posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
             rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
                           rrd_strerror(errno));
-            close(rrd_file->fd);
-            return (-1);
+            goto err_free_pdp_new;
         }
 #endif
     }
 
-    rrd_close(rrd_file);
     rrd_free(&rrd);
-    free(updvals);
-    free(tmpl_idx);
+    close(rrd_file->fd);
+    rrd_close(rrd_file);
+
     free(pdp_new);
+    free(tmpl_idx);
     free(pdp_temp);
+    free(updvals);
     return (0);
+
+  err_free_pdp_new:
+    free(pdp_new);
+  err_free_tmpl_idx:
+    free(tmpl_idx);
+  err_free_pdp_temp:
+    free(pdp_temp);
+  err_free_updvals:
+    free(updvals);
+  err_close:
+    rrd_free(&rrd);
+    close(rrd_file->fd);
+    rrd_close(rrd_file);
+  err_out:
+    return (-1);
 }
 
 /*

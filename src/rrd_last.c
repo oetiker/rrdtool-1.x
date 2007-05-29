@@ -35,6 +35,7 @@ time_t rrd_last_r(
 
     lastup = rrd.live_head->last_up;
     rrd_free(&rrd);
+    close(rrd_file->fd);
     rrd_close(rrd_file);
     return (lastup);
 }
