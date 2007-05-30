@@ -54,12 +54,12 @@ int rrd_lastupdate(
     rrd_close(rrd_file);
     return (0);
 
-err_free_ds_namv:
+  err_free_ds_namv:
     free(*ds_namv);
-err_close:
+  err_close:
     rrd_close(rrd_file);
-err_free:
+  err_free:
     rrd_free(&rrd);
-err_out:
+  err_out:
     return (-1);
 }

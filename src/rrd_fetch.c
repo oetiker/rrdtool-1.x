@@ -430,7 +430,7 @@ int rrd_fetch_fn(
                               POSIX_FADV_DONTNEED)) {
                 rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",
                               filename, rrd_strerror(errno));
-                goto err_close;/*XXX: should use err_free_all_ds_namv */
+                goto err_close; /*XXX: should use err_free_all_ds_namv */
             }
 #endif
 
@@ -454,22 +454,22 @@ int rrd_fetch_fn(
                       POSIX_FADV_DONTNEED)) {
         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
                       rrd_strerror(errno));
-        goto err_free; /*XXX: should use err_free_all_ds_namv */
+        goto err_free;  /*XXX: should use err_free_all_ds_namv */
     }
 #endif
     rrd_close(rrd_file);
     return (0);
-err_free_data:
+  err_free_data:
     free(*data);
     *data = NULL;
-err_free_all_ds_namv:
-    for (i = 0; (unsigned long)i < rrd.stat_head->ds_cnt; ++i)
+  err_free_all_ds_namv:
+    for (i = 0; (unsigned long) i < rrd.stat_head->ds_cnt; ++i)
         free((*ds_namv)[i]);
-err_free_ds_namv:
+  err_free_ds_namv:
     free(*ds_namv);
-err_close:
+  err_close:
     rrd_close(rrd_file);
-err_free:
+  err_free:
     rrd_free(&rrd);
     return (-1);
 }

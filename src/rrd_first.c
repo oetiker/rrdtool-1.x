@@ -88,9 +88,9 @@ time_t rrd_first_r(
             rrd.live_head->last_up %
             (rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step)) +
         (timer * rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step);
-err_close:
+  err_close:
     rrd_close(rrd_file);
-err_free:
+  err_free:
     rrd_free(&rrd);
     return (then);
 }

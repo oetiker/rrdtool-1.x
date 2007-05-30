@@ -86,7 +86,7 @@ int rrd_resize(
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
                       rrd_strerror(errno));
-	rrd_free(&rrdnew);
+        rrd_free(&rrdnew);
         return (-1);
     }
     if (LockRRD(rrd_out_file->fd) != 0) {

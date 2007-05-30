@@ -20,7 +20,7 @@
 #define FORCE_UNITS 0x100   /* mask for all FORCE_UNITS_* flags */
 #define FORCE_UNITS_SI 0x100    /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
 
-#define FULL_SIZE_MODE     0x200   /* -width and -height indicate the total size of the image */
+#define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
@@ -279,7 +279,7 @@ int       print_calc(
     char ***);
 int       leg_place(
     image_desc_t *,
-    int*);
+    int *);
 int       calc_horizontal_grid(
     image_desc_t *);
 int       draw_horizontal_grid(

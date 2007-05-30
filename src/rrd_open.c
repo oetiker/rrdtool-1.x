@@ -457,7 +457,8 @@ off_t rrd_seek(
 
 /* Get current position in rrd_file.  */
 
-inline off_t rrd_tell(rrd_file_t *rrd_file)
+inline off_t rrd_tell(
+    rrd_file_t *rrd_file)
 {
     return rrd_file->pos;
 }
@@ -536,7 +537,9 @@ void rrd_init(
 
 #ifdef HAVE_MMAP
 inline void rrd_free(
-    rrd_t UNUSED(*rrd)) {}
+    rrd_t UNUSED(*rrd))
+{
+}
 #else
 void rrd_free(
     rrd_t *rrd)

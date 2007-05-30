@@ -306,7 +306,7 @@ info_t   *rrd_info_r(
     }
 
     rrd_close(rrd_file);
-err_free:
+  err_free:
     rrd_free(&rrd);
     return (data);
 }
