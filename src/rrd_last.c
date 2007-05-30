@@ -24,18 +24,16 @@ time_t rrd_last(
 time_t rrd_last_r(
     const char *filename)
 {
-    time_t    lastup;
+    time_t    lastup = -1;
     rrd_file_t *rrd_file;
 
     rrd_t     rrd;
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
-    if (rrd_file == NULL)
-        return (-1);
-
-    lastup = rrd.live_head->last_up;
+    if (rrd_file != NULL) {
+        lastup = rrd.live_head->last_up;
+        rrd_close(rrd_file);
+    }
     rrd_free(&rrd);
-    close(rrd_file->fd);
-    rrd_close(rrd_file);
     return (lastup);
 }

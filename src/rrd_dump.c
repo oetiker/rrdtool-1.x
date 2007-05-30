@@ -421,9 +421,8 @@ int rrd_dump_r(
     }
     fprintf(out_file, "</rrd>\n");
     rrd_free(&rrd);
-    close(rrd_file->fd);
     if (out_file != stdout) {
         fclose(out_file);
     }
-    return (0);
+    return rrd_close(rrd_file);
 }

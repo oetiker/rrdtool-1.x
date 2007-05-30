@@ -323,7 +323,7 @@ int _rrd_update(
 
     rrd_file = rrd_open(filename, &rrd, RRD_READWRITE);
     if (rrd_file == NULL) {
-        goto err_out;
+        goto err_free;
     }
 
     /* initialize time */
@@ -446,7 +446,7 @@ int _rrd_update(
         free(pdp_temp);
         free(tmpl_idx);
         rrd_free(&rrd);
-        close(rrd_file->fd);
+        rrd_close(rrd_file);
         return (-1);
     }
 #ifdef USE_MADVISE
@@ -1531,7 +1531,6 @@ int _rrd_update(
     }
 
     rrd_free(&rrd);
-    close(rrd_file->fd);
     rrd_close(rrd_file);
 
     free(pdp_new);
@@ -1549,9 +1548,9 @@ int _rrd_update(
   err_free_updvals:
     free(updvals);
   err_close:
-    rrd_free(&rrd);
-    close(rrd_file->fd);
     rrd_close(rrd_file);
+  err_free:
+    rrd_free(&rrd);
   err_out:
     return (-1);
 }

@@ -23,29 +23,26 @@ int rrd_lastupdate(
 
     if (argc < 2) {
         rrd_set_error("please specify an rrd");
-        return -1;
+        goto err_out;
     }
     filename = argv[1];
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL)
-        return (-1);
+        goto err_free;
 
     *last_update = rrd.live_head->last_up;
     *ds_cnt = rrd.stat_head->ds_cnt;
     if (((*ds_namv) =
          (char **) malloc(rrd.stat_head->ds_cnt * sizeof(char *))) == NULL) {
         rrd_set_error("malloc fetch ds_namv array");
-        rrd_free(&rrd);
-        return (-1);
+        goto err_close;
     }
 
     if (((*last_ds) =
          (char **) malloc(rrd.stat_head->ds_cnt * sizeof(char *))) == NULL) {
         rrd_set_error("malloc fetch last_ds array");
-        rrd_free(&rrd);
-        free(*ds_namv);
-        return (-1);
+        goto err_free_ds_namv;
     }
 
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
@@ -54,7 +51,15 @@ int rrd_lastupdate(
     }
 
     rrd_free(&rrd);
-    close(rrd_file->fd);
     rrd_close(rrd_file);
     return (0);
+
+err_free_ds_namv:
+    free(*ds_namv);
+err_close:
+    rrd_close(rrd_file);
+err_free:
+    rrd_free(&rrd);
+err_out:
+    return (-1);
 }

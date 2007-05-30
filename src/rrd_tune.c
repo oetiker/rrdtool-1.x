@@ -79,6 +79,7 @@ int rrd_tune(
 
     rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE);
     if (rrd_file == NULL) {
+        rrd_free(&rrd);
         return -1;
     }
 
@@ -117,12 +118,12 @@ int rrd_tune(
                         &heartbeat)) != 2) {
                 rrd_set_error("invalid arguments for heartbeat");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             rrd.ds_def[ds].par[DS_mrhb_cnt].u_cnt = heartbeat;
@@ -133,12 +134,12 @@ int rrd_tune(
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
                 rrd_set_error("invalid arguments for minimum ds value");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
 
@@ -152,12 +153,12 @@ int rrd_tune(
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
                 rrd_set_error("invalid arguments for maximum ds value");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if (matches == 1)
@@ -170,17 +171,17 @@ int rrd_tune(
                  sscanf(optarg, DS_NAM_FMT ":" DST_FMT, ds_nam, dst)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((int) dst_conv(dst) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             strncpy(rrd.ds_def[ds].dst, dst, DST_SIZE - 1);
@@ -199,12 +200,12 @@ int rrd_tune(
                         ds_new)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             strncpy(rrd.ds_def[ds].ds_nam, ds_new, DS_NAM_SIZE - 1);
@@ -262,19 +263,19 @@ int rrd_tune(
             if (sscanf(optarg, DS_NAM_FMT, ds_nam) != 1) {
                 rrd_set_error("invalid argument for aberrant-reset");
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 /* ds_match handles it own errors */
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             reset_aberrant_coefficients(&rrd, rrd_file, (unsigned long) ds);
             if (rrd_test_error()) {
                 rrd_free(&rrd);
-                close(rrd_file->fd);
+                rrd_close(rrd_file);
                 return -1;
             }
             break;
@@ -284,7 +285,7 @@ int rrd_tune(
             else
                 rrd_set_error("unknown option '%s'", argv[optind - 1]);
             rrd_free(&rrd);
-            close(rrd_file->fd);
+            rrd_close(rrd_file);
             return -1;
         }
     }
@@ -318,7 +319,7 @@ int rrd_tune(
                 free(buffer);
             }
     }
-    close(rrd_file->fd);
+    rrd_close(rrd_file);
     rrd_free(&rrd);
     return 0;
 }

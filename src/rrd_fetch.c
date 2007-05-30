@@ -156,7 +156,7 @@ int rrd_fetch(
     cf = argv[optind + 1];
 
     if (rrd_fetch_r(argv[optind], cf, start, end, step, ds_cnt, ds_namv, data)
-        == -1)
+        != 0)
         return (-1);
     return (0);
 }
@@ -218,25 +218,20 @@ int rrd_fetch_fn(
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL)
-        return (-1);
+        goto err_free;
 
     /* when was the really last update of this file ? */
 
     if (((*ds_namv) =
          (char **) malloc(rrd.stat_head->ds_cnt * sizeof(char *))) == NULL) {
         rrd_set_error("malloc fetch ds_namv array");
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_close;
     }
 
     for (i = 0; (unsigned long) i < rrd.stat_head->ds_cnt; i++) {
         if ((((*ds_namv)[i]) = malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
             rrd_set_error("malloc fetch ds_namv entry");
-            rrd_free(&rrd);
-            free(*ds_namv);
-            close(rrd_file->fd);
-            return (-1);
+            goto err_free_ds_namv;
         }
         strncpy((*ds_namv)[i], rrd.ds_def[i].ds_nam, DS_NAM_SIZE - 1);
         (*ds_namv)[i][DS_NAM_SIZE - 1] = '\0';
@@ -274,9 +269,7 @@ int rrd_fetch_fn(
                     best_full_rra = i;
 #ifdef DEBUG
                     fprintf(stderr, "best full match so far\n");
-#endif
                 } else {
-#ifdef DEBUG
                     fprintf(stderr, "full match, not best\n");
 #endif
                 }
@@ -316,9 +309,7 @@ int rrd_fetch_fn(
     else {
         rrd_set_error
             ("the RRD does not contain an RRA matching the chosen CF");
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_all_ds_namv;
     }
 
     /* set the wish parameters to their real values */
@@ -342,12 +333,7 @@ int rrd_fetch_fn(
     *ds_cnt = rrd.stat_head->ds_cnt;
     if (((*data) = malloc(*ds_cnt * rows * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("malloc fetch data area");
-        for (i = 0; (unsigned long) i < *ds_cnt; i++)
-            free((*ds_namv)[i]);
-        free(*ds_namv);
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free_all_ds_namv;
     }
 
     data_ptr = (*data);
@@ -382,15 +368,7 @@ int rrd_fetch_fn(
                                         * sizeof(rrd_value_t))),
                  SEEK_SET) != 0) {
         rrd_set_error("seek error in RRA");
-        for (i = 0; (unsigned) i < *ds_cnt; i++)
-            free((*ds_namv)[i]);
-        free(*ds_namv);
-        rrd_free(&rrd);
-        free(*data);
-        *data = NULL;
-        close(rrd_file->fd);
-        return (-1);
-
+        goto err_free_data;
     }
 #ifdef DEBUG
     fprintf(stderr, "First Seek: rra_base %lu rra_pointer %lu\n",
@@ -432,14 +410,7 @@ int rrd_fetch_fn(
                                         * sizeof(rrd_value_t)),
                              SEEK_SET) != 0) {
                     rrd_set_error("wrap seek in RRA did fail");
-                    for (ii = 0; (unsigned) ii < *ds_cnt; ii++)
-                        free((*ds_namv)[ii]);
-                    free(*ds_namv);
-                    rrd_free(&rrd);
-                    free(*data);
-                    *data = NULL;
-                    close(rrd_file->fd);
-                    return (-1);
+                    goto err_free_data;
                 }
 #ifdef DEBUG
                 fprintf(stderr, "wrap seek ...\n");
@@ -449,14 +420,7 @@ int rrd_fetch_fn(
             if (rrd_read(rrd_file, data_ptr, sizeof(rrd_value_t) * (*ds_cnt))
                 != (ssize_t) (sizeof(rrd_value_t) * (*ds_cnt))) {
                 rrd_set_error("fetching cdp from rra");
-                for (ii = 0; (unsigned) ii < *ds_cnt; ii++)
-                    free((*ds_namv)[ii]);
-                free(*ds_namv);
-                rrd_free(&rrd);
-                free(*data);
-                *data = NULL;
-                close(rrd_file->fd);
-                return (-1);
+                goto err_free_data;
             }
 #ifdef HAVE_POSIX_FADVISE
             /* don't pollute the buffer cache with data read from the file. We do this while reading to 
@@ -466,8 +430,7 @@ int rrd_fetch_fn(
                               POSIX_FADV_DONTNEED)) {
                 rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",
                               filename, rrd_strerror(errno));
-                close(rrd_file->fd);
-                return (-1);
+                goto err_close;/*XXX: should use err_free_all_ds_namv */
             }
 #endif
 
@@ -484,7 +447,6 @@ int rrd_fetch_fn(
 #endif
 
     }
-    rrd_free(&rrd);
 #ifdef HAVE_POSIX_FADVISE
     /* and just to be sure we drop everything except the header at the end */
     if (0 !=
@@ -492,10 +454,22 @@ int rrd_fetch_fn(
                       POSIX_FADV_DONTNEED)) {
         rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
                       rrd_strerror(errno));
-        close(rrd_file->fd);
-        return (-1);
+        goto err_free; /*XXX: should use err_free_all_ds_namv */
     }
 #endif
-    close(rrd_file->fd);
+    rrd_close(rrd_file);
     return (0);
+err_free_data:
+    free(*data);
+    *data = NULL;
+err_free_all_ds_namv:
+    for (i = 0; (unsigned long)i < rrd.stat_head->ds_cnt; ++i)
+        free((*ds_namv)[i]);
+err_free_ds_namv:
+    free(*ds_namv);
+err_close:
+    rrd_close(rrd_file);
+err_free:
+    rrd_free(&rrd);
+    return (-1);
 }

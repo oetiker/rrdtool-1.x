@@ -99,17 +99,15 @@ info_t   *rrd_info_r(
 {
     unsigned int i, ii = 0;
     rrd_t     rrd;
-    info_t   *data, *cd;
+    info_t   *data = NULL, *cd;
     infoval   info;
     rrd_file_t *rrd_file;
     enum cf_en current_cf;
     enum dst_en current_ds;
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
-    if (rrd_file == NULL) {
-        return (NULL);
-    }
-    close(rrd_file->fd);
+    if (rrd_file == NULL)
+        goto err_free;
 
     info.u_str = filename;
     cd = info_push(NULL, sprintf_alloc("filename"), RD_I_STR, info);
@@ -306,8 +304,9 @@ info_t   *rrd_info_r(
             }
         }
     }
-    rrd_free(&rrd);
-    rrd_close(rrd_file);
-    return (data);
 
+    rrd_close(rrd_file);
+err_free:
+    rrd_free(&rrd);
+    return (data);
 }

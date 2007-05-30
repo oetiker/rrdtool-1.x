@@ -61,21 +61,18 @@ time_t rrd_first_r(
     const int rraindex)
 {
     off_t     rra_start, timer;
-    time_t    then;
+    time_t    then = -1;
     rrd_t     rrd;
     rrd_file_t *rrd_file;
 
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL) {
-        rrd_set_error("could not open RRD");
-        return (-1);
+        goto err_free;
     }
 
     if ((rraindex < 0) || (rraindex >= (int) rrd.stat_head->rra_cnt)) {
         rrd_set_error("invalid rraindex number");
-        rrd_free(&rrd);
-        close(rrd_file->fd);
-        return (-1);
+        goto err_close;
     }
 
     rra_start = rrd_file->header_len;
@@ -91,9 +88,9 @@ time_t rrd_first_r(
             rrd.live_head->last_up %
             (rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step)) +
         (timer * rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step);
-
-    rrd_free(&rrd);
-    close(rrd_file->fd);
+err_close:
     rrd_close(rrd_file);
+err_free:
+    rrd_free(&rrd);
     return (then);
 }
