@@ -400,19 +400,19 @@ int rrd_close(
 #endif                          /* DEBUG */
 
 #ifdef USE_MADVISE
-#ifdef ONE_PAGE
+# ifdef ONE_PAGE
     /* Keep headers around, round up to next page boundary.  */
     ret =
         PAGE_ALIGN(rrd_file->header_len % _page_size + rrd_file->header_len);
     if (rrd_file->file_len > ret)
         _madvise(rrd_file->file_start + ret,
                  rrd_file->file_len - ret, MADV_DONTNEED);
-#else
+# else
     /* ignoring errors from RRDs that are smaller then the file_len+rounding */
     _madvise(rrd_file->file_start + PAGE_ALIGN_DOWN(rrd_file->header_len),
              rrd_file->file_len - PAGE_ALIGN(rrd_file->header_len),
              MADV_DONTNEED);
-#endif
+# endif
 #endif
 #ifdef HAVE_MMAP
     ret = munmap(rrd_file->file_start, rrd_file->file_len);
@@ -467,13 +467,13 @@ inline off_t rrd_tell(
 /* read count bytes into buffer buf, starting at rrd_file->pos.
  * Returns the number of bytes read.  */
 
-ssize_t rrd_read(
+inline ssize_t rrd_read(
     rrd_file_t *rrd_file,
     void *buf,
     size_t count)
 {
 #ifdef HAVE_MMAP
-    buf = memmove(buf, rrd_file->file_start + rrd_file->pos, count);
+    buf = memcpy(buf, rrd_file->file_start + rrd_file->pos, count);
     rrd_file->pos += count; /* mimmic read() semantics */
     return count;
 #else
@@ -491,16 +491,20 @@ ssize_t rrd_read(
  * rrd_file->pos of rrd_file->fd.
  * Returns the number of bytes written.  */
 
-ssize_t rrd_write(
+inline ssize_t rrd_write(
     rrd_file_t *rrd_file,
     const void *buf,
     size_t count)
 {
 #ifdef HAVE_MMAP
-    memmove(rrd_file->file_start + rrd_file->pos, buf, count);
+    memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
+    rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
 #else
-    return write(rrd_file->fd, buf, count);
+    ssize_t _sz = write(rrd_file->fd, buf, count);
+    if (_sz > 0)
+        rrd_file->pos += _sz;
+    return _sz;
 #endif
 }
 

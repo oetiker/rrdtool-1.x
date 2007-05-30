@@ -68,7 +68,7 @@ static inline void normalize_time(
     }
 }
 
-static info_t *write_RRA_row(
+static inline info_t *write_RRA_row(
     rrd_file_t *rrd_file,
     rrd_t *rrd,
     unsigned long rra_idx,
@@ -104,7 +104,7 @@ static info_t *write_RRA_row(
         if (rrd_write
             (rrd_file,
              &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
-             sizeof(rrd_value_t) * 1) != sizeof(rrd_value_t) * 1) {
+             sizeof(rrd_value_t)) != sizeof(rrd_value_t)) {
             rrd_set_error("writing rrd: %s", rrd_strerror(errno));
             return 0;
         }
