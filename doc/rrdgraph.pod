@@ -91,9 +91,14 @@ placed string at the left hand side of the graph.
 [B<-w>|B<--width> I<pixels>]
 [B<-h>|B<--height> I<pixels>]
 [B<-j>|B<--only-graph>]
+[B<-D>|B<--full-size-mode>]
 
-The width and height of the B<canvas> (the part of the graph with
+By default, the width and height of the B<canvas> (the part with
 the actual data and such). This defaults to 400 pixels by 100 pixels.
+
+If you specify the B<--full-size-mode> option, the width and height
+specify the final dimensions of the output image and the canvas
+is automatically resized to fit.
 
 If you specify the B<--only-graph> option and set the height E<lt> 32
 pixels you will get a tiny graph image (thumbnail) to use as an icon

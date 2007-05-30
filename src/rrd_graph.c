@@ -1552,7 +1552,8 @@ int print_calc(
 
 /* place legends with color spots */
 int leg_place(
-    image_desc_t *im)
+    image_desc_t *im,
+    int *gY)
 {
     /* graph labels */
     int       interleg = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
@@ -1573,10 +1574,13 @@ int leg_place(
             return -1;
         }
 
+        if (im->extra_flags & FULL_SIZE_MODE)
+            leg_y = leg_y_prev = leg_y - (int) (im->text_prop[TEXT_PROP_LEGEND].size*1.8);
+
         for (i = 0; i < im->gdes_c; i++) {
             fill_last = fill;
 
-            /* hid legends for rules which are not displayed */
+            /* hide legends for rules which are not displayed */
 
             if (!(im->extra_flags & FORCE_RULES_LEGEND)) {
                 if (im->gdes[i].gf == GF_HRULE &&
@@ -1695,20 +1699,34 @@ int leg_place(
                         + glue;
                 }
                 leg_y_prev = leg_y;
-                /* only add y space if there was text on the line */
-                if (leg_x > border || prt_fctn == 's')
-                    leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
-                if (prt_fctn == 's')
-                    leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
+                if (im->extra_flags & FULL_SIZE_MODE) {
+                    /* only add y space if there was text on the line */
+                    if (leg_x > border || prt_fctn == 's')
+                       leg_y -= im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+                    if (prt_fctn == 's')
+                       leg_y += im->text_prop[TEXT_PROP_LEGEND].size;
+                } else {
+                    if (leg_x > border || prt_fctn == 's')
+                       leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+                    if (prt_fctn == 's')
+                       leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
+                }
                 fill = 0;
                 leg_c = 0;
                 mark = ii;
             }
         }
-        im->yimg = leg_y_prev;
-        /* if we did place some legends we have to add vertical space */
-        if (leg_y != im->yimg) {
-            im->yimg += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+
+        if (im->extra_flags & FULL_SIZE_MODE) {
+           if (leg_y != leg_y_prev) {
+              *gY = leg_y - im->text_prop[TEXT_PROP_LEGEND].size*1.8;
+              im->yorigin = leg_y - im->text_prop[TEXT_PROP_LEGEND].size*1.8;
+           }
+        } else {
+           im->yimg = leg_y_prev;
+           /* if we did place some legends we have to add vertical space */
+           if (leg_y != im->yimg)
+              im->yimg += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
         }
         free(legspace);
     }
@@ -2569,22 +2587,6 @@ int graph_size_location(
      ** and other things outside the graph area
      */
 
-    /* +-+-------------------------------------------+
-     ** |l|.................title.....................|
-     ** |e+--+-------------------------------+--------+
-     ** |b| b|                               |        |
-     ** |a| a|                               |  pie   |
-     ** |l| l|          main graph area      | chart  |
-     ** |.| .|                               |  area  |
-     ** |t| y|                               |        |
-     ** |r+--+-------------------------------+--------+
-     ** |e|  | x-axis labels                 |        |
-     ** |v+--+-------------------------------+--------+
-     ** | |..............legends......................|
-     ** +-+-------------------------------------------+
-     ** |                 watermark                   |
-     ** +---------------------------------------------+
-     */
     int       Xvertical = 0, Ytitle = 0, Xylabel = 0, Xmain = 0, Ymain = 0,
 #ifdef WITH_PIECHART
         Xpie = 0, Ypie = 0,
@@ -2604,123 +2606,245 @@ int graph_size_location(
         return 0;
     }
 
-    if (im->ylegend[0] != '\0') {
-        Xvertical = im->text_prop[TEXT_PROP_UNIT].size * 2;
+    /** +---+--------------------------------------------+
+     ** | y |...............graph title..................|
+     ** |   +---+-------------------------------+--------+
+     ** | a | y |                               |        |
+     ** | x |   |                               |        |
+     ** | i | a |                               |  pie   |
+     ** | s | x |       main graph area         | chart  |
+     ** |   | i |                               |  area  |
+     ** | t | s |                               |        |
+     ** | i |   |                               |        |
+     ** | t | l |                               |        |
+     ** | l | b +-------------------------------+--------+
+     ** | e | l |       x axis labels           |        |
+     ** +---+---+-------------------------------+--------+
+     ** |....................legends.....................|
+     ** +------------------------------------------------+
+     ** |                   watermark                    |
+     ** +------------------------------------------------+
+     */
+    
+    if (im->ylegend[0] != '\0' ) {
+         Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
     }
 
-
     if (im->title[0] != '\0') {
-        /* The title is placed "inbetween" two text lines so it
+         /* The title is placed "inbetween" two text lines so it
          ** automatically has some vertical spacing.  The horizontal
          ** spacing is added here, on each side.
          */
-        /* don't care for the with of the title
-           Xtitle = gfx_get_text_width(im->canvas, 0,
-           im->text_prop[TEXT_PROP_TITLE].font,
-           im->text_prop[TEXT_PROP_TITLE].size,
-           im->tabwidth,
-           im->title, 0) + 2*Xspacing; */
-        Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
+         /* if necessary, reduce the font size of the title until it fits the image width */
+         Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.6+10;
     }
 
     if (elements) {
-        Xmain = im->xsize;
-        Ymain = im->ysize;
-        if (im->draw_x_grid) {
-            Yxlabel = im->text_prop[TEXT_PROP_AXIS].size * 2.5;
-        }
-        if (im->draw_y_grid || im->forceleftspace) {
-            Xylabel = gfx_get_text_width(im->canvas, 0,
-                                         im->text_prop[TEXT_PROP_AXIS].font,
-                                         im->text_prop[TEXT_PROP_AXIS].size,
-                                         im->tabwidth,
-                                         "0", 0) * im->unitslength;
-        }
+         if (im->draw_x_grid) {
+               Yxlabel=im->text_prop[TEXT_PROP_AXIS].size *2.5;
+         }
+         if (im->draw_y_grid || im->forceleftspace ) {
+               Xylabel=gfx_get_text_width(im->canvas, 0,
+                            im->text_prop[TEXT_PROP_AXIS].font,
+                            im->text_prop[TEXT_PROP_AXIS].size,
+                            im->tabwidth,
+                            "0", 0) * im->unitslength;
+         }
     }
-#ifdef WITH_PIECHART
-    if (piechart) {
-        im->piesize = im->xsize < im->ysize ? im->xsize : im->ysize;
-        Xpie = im->piesize;
-        Ypie = im->piesize;
-    }
-#endif
 
-    /* Now calculate the total size.  Insert some spacing where
-       desired.  im->xorigin and im->yorigin need to correspond
-       with the lower left corner of the main graph area or, if
-       this one is not set, the imaginary box surrounding the
-       pie chart area. */
+    if (im->extra_flags & FULL_SIZE_MODE) {
+        /* The actual size of the image to draw has been determined by the user.
+        ** The graph area is the space remaining after accounting for the legend,
+        ** the watermark, the pie chart, the axis labels, and the title.
+        */
+        im->xorigin =0;
+        im->ximg = im->xsize;
+        im->yimg = im->ysize;
+        im->yorigin = im->ysize;
+        Xmain=im->ximg;
+        Ymain=im->yimg;
 
-    /* The legend width cannot yet be determined, as a result we
-     ** have problems adjusting the image to it.  For now, we just
-     ** forget about it at all; the legend will have to fit in the
-     ** size already allocated.
-     */
-    im->ximg = Xylabel + Xmain + 2 * Xspacing;
-
-#ifdef WITH_PIECHART
-    im->ximg += Xpie;
-#endif
-
-    if (Xmain)
-        im->ximg += Xspacing;
-#ifdef WITH_PIECHART
-    if (Xpie)
-        im->ximg += Xspacing;
-#endif
-
-    im->xorigin = Xspacing + Xylabel;
-
-    /* the length of the title should not influence with width of the graph
-       if (Xtitle > im->ximg) im->ximg = Xtitle; */
-
-    if (Xvertical) {    /* unit description */
-        im->ximg += Xvertical;
-        im->xorigin += Xvertical;
-    }
-    xtr(im, 0);
-
-    /* The vertical size is interesting... we need to compare
-     ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend, Ywatermark} with 
-     ** Yvertical however we need to know {Ytitle+Ymain+Yxlabel}
-     ** in order to start even thinking about Ylegend or Ywatermark.
-     **
-     ** Do it in three portions: First calculate the inner part,
-     ** then do the legend, then adjust the total height of the img,
-     ** adding space for a watermark if one exists;
-     */
-
-    /* reserve space for main and/or pie */
-
-    im->yimg = Ymain + Yxlabel;
-
-#ifdef WITH_PIECHART
-    if (im->yimg < Ypie)
-        im->yimg = Ypie;
-#endif
-
-    im->yorigin = im->yimg - Yxlabel;
-
-    /* reserve space for the title *or* some padding above the graph */
-    if (Ytitle) {
-        im->yimg += Ytitle;
         im->yorigin += Ytitle;
-    } else {
-        im->yimg += 1.5 * Yspacing;
-        im->yorigin += 1.5 * Yspacing;
-    }
-    /* reserve space for padding below the graph */
-    im->yimg += Yspacing;
 
-    /* Determine where to place the legends onto the image.
-     ** Adjust im->yimg to match the space requirements.
-     */
-    if (leg_place(im) == -1)
-        return -1;
+#ifdef WITH_PIECHART
+        if (piechart) {
+            im->piesize=im->xsize<im->ysize?im->xsize:im->ysize;
+            Xpie=im->piesize;
+            Ypie=im->piesize;
+        }
+#endif
 
-    if (im->watermark[0] != '\0') {
-        im->yimg += Ywatermark;
+        /* Now calculate the total size.  Insert some spacing where
+           desired.  im->xorigin and im->yorigin need to correspond
+           with the lower left corner of the main graph area or, if
+           this one is not set, the imaginary box surrounding the
+           pie chart area. */
+
+        /* Initial size calculation for the main graph area */
+        Xmain = im->ximg - (Xylabel + 2 * Xspacing);
+        if (Xmain) Xmain -= Xspacing; /* put space between main graph area and right edge */
+
+#ifdef WITH_PIECHART
+        Xmain -= Xpie; /* remove pie width from main graph area */
+        if (Xpie) Xmain -= Xspacing; /* put space between pie and main graph area */
+#endif
+
+        im->xorigin = Xspacing + Xylabel;
+
+        /* the length of the title should not influence with width of the graph
+           if (Xtitle > im->ximg) im->ximg = Xtitle; */
+
+        if (Xvertical) { /* unit description */
+            Xmain -= Xvertical;
+            im->xorigin += Xvertical;
+        }
+        im->xsize = Xmain;
+        xtr(im,0);
+
+        /* The vertical size of the image is known in advance.  The main graph area
+        ** (Ymain) and im->yorigin must be set according to the space requirements
+        ** of the legend and the axis labels.
+        */
+
+        /* Determine where to place the legends onto the image.
+        ** Set Ymain and adjust im->yorigin to match the space requirements.
+        */
+        if (leg_place(im,&Ymain)==-1)
+            return -1;
+
+#ifdef WITH_PIECHART
+        /* if (im->yimg < Ypie) im->yimg = Ypie; * not sure what do about this */
+#endif
+
+        /* remove title space *or* some padding above the graph from the main graph area */
+        if (Ytitle) {
+            Ymain -= Ytitle;
+        } else {
+            Ymain -= 1.5*Yspacing;
+        }
+
+        /* watermark doesn't seem to effect the vertical size of the main graph area, oh well! */
+        if (im->watermark[0] != '\0') {
+            Ymain -= Ywatermark;
+        }
+
+        im->ysize = Ymain;
+
+    } else /* dimension options -width and -height refer to the dimensions of the main graph area */
+    {
+        /* The actual size of the image to draw is determined from
+        ** several sources.  The size given on the command line is
+        ** the graph area but we need more as we have to draw labels
+        ** and other things outside the graph area.
+        */
+
+        if (im->ylegend[0] != '\0' ) {
+               Xvertical = im->text_prop[TEXT_PROP_UNIT].size *2;
+        }
+
+
+        if (im->title[0] != '\0') {
+            /* The title is placed "inbetween" two text lines so it
+            ** automatically has some vertical spacing.  The horizontal
+            ** spacing is added here, on each side.
+            */
+            /* don't care for the with of the title
+                    Xtitle = gfx_get_text_width(im->canvas, 0,
+                    im->text_prop[TEXT_PROP_TITLE].font,
+                    im->text_prop[TEXT_PROP_TITLE].size,
+                    im->tabwidth,
+                    im->title, 0) + 2*Xspacing; */
+            Ytitle = im->text_prop[TEXT_PROP_TITLE].size*2.6+10;
+        }
+
+        if (elements) {
+            Xmain=im->xsize;
+            Ymain=im->ysize;
+        }
+
+#ifdef WITH_PIECHART
+        if (piechart) {
+            im->piesize=im->xsize<im->ysize?im->xsize:im->ysize;
+            Xpie=im->piesize;
+            Ypie=im->piesize;
+        }
+#endif
+
+        /* Now calculate the total size.  Insert some spacing where
+           desired.  im->xorigin and im->yorigin need to correspond
+           with the lower left corner of the main graph area or, if
+           this one is not set, the imaginary box surrounding the
+           pie chart area. */
+
+        /* The legend width cannot yet be determined, as a result we
+        ** have problems adjusting the image to it.  For now, we just
+        ** forget about it at all; the legend will have to fit in the
+        ** size already allocated.
+        */
+        im->ximg = Xylabel + Xmain + 2 * Xspacing;
+
+#ifdef WITH_PIECHART
+        im->ximg  += Xpie;
+#endif
+
+        if (Xmain) im->ximg += Xspacing;
+#ifdef WITH_PIECHART
+        if (Xpie) im->ximg += Xspacing;
+#endif
+
+        im->xorigin = Xspacing + Xylabel;
+
+        /* the length of the title should not influence with width of the graph
+           if (Xtitle > im->ximg) im->ximg = Xtitle; */
+
+        if (Xvertical) { /* unit description */
+            im->ximg += Xvertical;
+            im->xorigin += Xvertical;
+        }
+        xtr(im,0);
+
+        /* The vertical size is interesting... we need to compare
+        ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend, Ywatermark} with 
+        ** Yvertical however we need to know {Ytitle+Ymain+Yxlabel}
+        ** in order to start even thinking about Ylegend or Ywatermark.
+        **
+        ** Do it in three portions: First calculate the inner part,
+        ** then do the legend, then adjust the total height of the img,
+        ** adding space for a watermark if one exists;
+        */
+
+        /* reserve space for main and/or pie */
+
+        im->yimg = Ymain + Yxlabel;
+    
+#ifdef WITH_PIECHART
+        if (im->yimg < Ypie) im->yimg = Ypie;
+#endif
+
+        im->yorigin = im->yimg - Yxlabel;
+
+        /* reserve space for the title *or* some padding above the graph */
+        if (Ytitle) {
+            im->yimg += Ytitle;
+            im->yorigin += Ytitle;
+        } else {
+            im->yimg += 1.5*Yspacing;
+            im->yorigin += 1.5*Yspacing;
+        }
+        /* reserve space for padding below the graph */
+        im->yimg += Yspacing;
+     
+        /* Determine where to place the legends onto the image.
+        ** Adjust im->yimg to match the space requirements.
+        */
+        if(leg_place(im,0)==-1)
+            return -1;
+        
+        if (im->watermark[0] != '\0') {
+            im->yimg += Ywatermark;
+        }
     }
+
 #if 0
     if (Xlegend > im->ximg) {
         im->ximg = Xlegend;
@@ -2730,19 +2854,19 @@ int graph_size_location(
 
 #ifdef WITH_PIECHART
     /* The pie is placed in the upper right hand corner,
-     ** just below the title (if any) and with sufficient
-     ** padding.
-     */
+    ** just below the title (if any) and with sufficient
+    ** padding.
+    */
     if (elements) {
-        im->pie_x = im->ximg - Xspacing - Xpie / 2;
-        im->pie_y = im->yorigin - Ymain + Ypie / 2;
+        im->pie_x = im->ximg - Xspacing - Xpie/2;
+        im->pie_y = im->yorigin-Ymain+Ypie/2;
     } else {
-        im->pie_x = im->ximg / 2;
-        im->pie_y = im->yorigin - Ypie / 2;
+        im->pie_x = im->ximg/2;
+        im->pie_y = im->yorigin-Ypie/2;
     }
 #endif
 
-    ytr(im, DNAN);
+    ytr(im,DNAN);
     return 0;
 }
 
@@ -2813,6 +2937,17 @@ int graph_paint(
         piechart = 2;
 #endif
 
+/**************************************************************
+ *** Calculating sizes and locations became a bit confusing ***
+ *** so I moved this into a separate function.              ***
+ **************************************************************/
+    if (graph_size_location(im, i
+#ifdef WITH_PIECHART
+                            , piechart
+#endif
+        ) == -1)
+        return -1;
+
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
         return -1;
@@ -2830,18 +2965,6 @@ int graph_paint(
 
     if (im->gridfit)
         apply_gridfit(im);
-
-
-/**************************************************************
- *** Calculating sizes and locations became a bit confusing ***
- *** so I moved this into a separate function.              ***
- **************************************************************/
-    if (graph_size_location(im, i
-#ifdef WITH_PIECHART
-                            , piechart
-#endif
-        ) == -1)
-        return -1;
 
     /* the actual graph is created by going through the individual
        graph elements and then drawing them */
@@ -3484,6 +3607,7 @@ void rrd_graph_options(
             {"vertical-label", required_argument, 0, 'v'},
             {"width", required_argument, 0, 'w'},
             {"height", required_argument, 0, 'h'},
+            {"full-size-mode",  no_argument, 0, 'D'},
             {"interlaced", no_argument, 0, 'i'},
             {"upper-limit", required_argument, 0, 'u'},
             {"lower-limit", required_argument, 0, 'l'},
@@ -3523,7 +3647,7 @@ void rrd_graph_options(
         int       col_start, col_end;
 
         opt = getopt_long(argc, argv,
-                          "s:e:x:y:v:w:h:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:",
+                          "s:e:x:y:v:w:h:D:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:",
                           long_options, &option_index);
 
         if (opt == EOF)
@@ -3684,6 +3808,9 @@ void rrd_graph_options(
                 return;
             }
             im->ysize = long_tmp;
+            break;
+        case 'D':
+            im->extra_flags |= FULL_SIZE_MODE;
             break;
         case 'i':
             im->canvas->interlaced = 1;
