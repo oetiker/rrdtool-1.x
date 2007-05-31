@@ -73,7 +73,7 @@
 //#define ONE_PAGE 1
 /* Avoid calling madvise on areas that were already hinted. May be benefical if
  * your syscalls are very slow */
-//#define CHECK_MADVISE_OVERLAPS 1
+#define CHECK_MADVISE_OVERLAPS 1
 
 #ifdef HAVE_MMAP
 #define __rrd_read(dst, dst_t, cnt) \
@@ -196,7 +196,7 @@ rrd_file_t *rrd_open(
 
     if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
-        return NULL;
+        goto out_free;
     }
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
@@ -234,7 +234,7 @@ rrd_file_t *rrd_open(
 
     /* lets see if the first read worked */
     if (data == MAP_FAILED) {
-        rrd_set_error("error mmaping file '%s': %s", file_name,
+        rrd_set_error("mmaping file '%s': %s", file_name,
                       rrd_strerror(errno));
         goto out_close;
     }
@@ -277,7 +277,7 @@ rrd_file_t *rrd_open(
     }
 
     if (rrd->stat_head->float_cookie != FLOAT_COOKIE) {
-        rrd_set_error("This RRD was created on other architecture");
+        rrd_set_error("This RRD was created on another architecture");
         goto out_nullify_head;
     }
 
@@ -352,6 +352,8 @@ rrd_file_t *rrd_open(
     rrd->stat_head = NULL;
   out_close:
     close(rrd_file->fd);
+  out_free:
+    free(rrd_file);
     return NULL;
 }
 
