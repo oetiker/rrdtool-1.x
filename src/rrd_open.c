@@ -253,6 +253,7 @@ rrd_file_t *rrd_open(
     }
     rrd_file->file_start = data;
     if (rdwr & RRD_CREAT) {
+        memset(data, DNAN, newfile_size - 1);
         goto out_done;
     }
 #endif

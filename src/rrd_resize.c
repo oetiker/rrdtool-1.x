@@ -169,12 +169,17 @@ int rrd_resize(
             rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
             l--;
         }
+#ifndef HAVE_MMAP
         buffer = DNAN;
         l = rrdnew.stat_head->ds_cnt * modify;
         while (l > 0) {
             rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
             l--;
         }
+#else
+	/* for the mmap case, we did already fill the whole new file with DNAN
+	 * before we copied the old values, so nothing to do here.  */
+#endif
     } else {
         /* Removing rows. Normally this would be just after the cursor
          ** however this may also mean that we wrap to the beginning of
