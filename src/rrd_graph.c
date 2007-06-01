@@ -2710,11 +2710,19 @@ int graph_size_location(
          ** of the legend and the axis labels.
          */
 
-        /* Determine where to place the legends onto the image.
-         ** Set Ymain and adjust im->yorigin to match the space requirements.
-         */
-        if (leg_place(im, &Ymain) == -1)
-            return -1;
+        if (im->extra_flags & NOLEGEND)
+        {
+            /* set dimensions correctly if using full size mode with no legend */
+            im->yorigin = im->yimg - im->text_prop[TEXT_PROP_AXIS].size * 2.5 - Yspacing;
+            Ymain = im->yorigin;
+        } else
+        {
+            /* Determine where to place the legends onto the image.
+            ** Set Ymain and adjust im->yorigin to match the space requirements.
+            */
+            if (leg_place(im, &Ymain) == -1)
+               return -1;
+        }
 
 #ifdef WITH_PIECHART
         /* if (im->yimg < Ypie) im->yimg = Ypie; * not sure what do about this */
