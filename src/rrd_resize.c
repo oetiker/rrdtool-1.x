@@ -74,14 +74,18 @@ int rrd_resize(
         return (-1);
     }
 
-    if (modify < 0)
+    if (modify < 0) {
         if ((long) rrdold.rra_def[target_rra].row_cnt <= -modify) {
             rrd_set_error("This RRA is not that big");
             rrd_free(&rrdold);
             rrd_close(rrd_file);
             return (-1);
         }
-
+    } else {
+        /* the size of the new file */
+        rrdnew.stat_head = rrd_file->file_len +
+            (rrdold.stat_head->ds_cnt * sizeof(rrd_value_t) * modify);
+    }
     rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,

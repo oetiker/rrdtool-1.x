@@ -143,7 +143,10 @@ rrd_file_t *rrd_open(
     off_t     offset = 0;
     struct stat statb;
     rrd_file_t *rrd_file = NULL;
+    off_t     newfile_size = 0;
 
+    if (rdwr & RRD_CREAT)
+        newfile_size = (off_t) rrd->stat_head;
     rrd_init(rrd);
     rrd_file = malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
@@ -186,6 +189,7 @@ rrd_file_t *rrd_open(
         mm_flags |= MAP_POPULATE;   /* populate ptes and data */
 #endif
 #if defined MAP_NONBLOCK
+//  if (!(rdwr & RRD_COPY))
         mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
 #ifdef USE_DIRECT_IO
@@ -204,12 +208,18 @@ rrd_file_t *rrd_open(
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
      * many concurrent seeks are even worse.  */
-    if ((fstat(rrd_file->fd, &statb)) < 0) {
+    if (newfile_size == 0 && ((fstat(rrd_file->fd, &statb)) < 0)) {
         rrd_set_error("fstat '%s': %s", file_name, rrd_strerror(errno));
         goto out_close;
     }
-    rrd_file->file_len = statb.st_size;
-
+    if (newfile_size == 0) {
+        rrd_file->file_len = statb.st_size;
+    } else {
+        rrd_file->file_len = newfile_size;
+        lseek(rrd_file->fd, newfile_size - 1, SEEK_SET);
+        write(rrd_file->fd, "\0", 1);  /* poke */
+        lseek(rrd_file->fd, 0, SEEK_SET);
+    }
 #ifdef HAVE_POSIX_FADVISE
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
@@ -242,30 +252,31 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
     rrd_file->file_start = data;
+    if (rdwr & RRD_CREAT) {
+        goto out_done;
+    }
 #endif
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
         _madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
-        goto out_done;
-    }
+    } else {
 # ifndef ONE_PAGE
-    /* We do not need to read anything in for the moment */
-    _madvise(data, rrd_file->file_len, MADV_DONTNEED);
+        /* We do not need to read anything in for the moment */
+        _madvise(data, rrd_file->file_len, MADV_DONTNEED);
+        /* the stat_head will be needed soonish, so hint accordingly */
+        _madvise(data + PAGE_ALIGN_DOWN(offset),
+                 PAGE_ALIGN(sizeof(stat_head_t)),
+                 MADV_WILLNEED | MADV_RANDOM);
+
 # else
 /* alternatively: keep 1 page worth of data, likely headers,
  * don't need the rest.  */
-    _madvise(data, _page_size, MADV_WILLNEED | MADV_SEQUENTIAL);
-    _madvise(data + _page_size, (rrd_file->file_len >= _page_size)
-             ? rrd_file->file_len - _page_size : 0, MADV_DONTNEED);
+        _madvise(data, _page_size, MADV_WILLNEED | MADV_SEQUENTIAL);
+        _madvise(data + _page_size, (rrd_file->file_len >= _page_size)
+                 ? rrd_file->file_len - _page_size : 0, MADV_DONTNEED);
 # endif
-#endif
-
-#if defined USE_MADVISE && !defined ONE_PAGE
-    /* the stat_head will be needed soonish, so hint accordingly */
-    _madvise(data + PAGE_ALIGN_DOWN(offset), PAGE_ALIGN(sizeof(stat_head_t)),
-             MADV_WILLNEED | MADV_RANDOM);
-
+    }
 #endif
 
     __rrd_read(rrd->stat_head, stat_head_t,
@@ -342,12 +353,11 @@ rrd_file_t *rrd_open(
     __rrd_read(rrd->rra_ptr, rra_ptr_t,
                rrd->stat_head->rra_cnt);
 
+    rrd_file->header_len = offset;
+    rrd_file->pos = offset;
 #ifdef USE_MADVISE
   out_done:
 #endif
-    rrd_file->header_len = offset;
-    rrd_file->pos = offset;
-
     return (rrd_file);
   out_nullify_head:
     rrd->stat_head = NULL;
@@ -468,7 +478,7 @@ inline off_t rrd_tell(
 
 
 /* read count bytes into buffer buf, starting at rrd_file->pos.
- * Returns the number of bytes read.  */
+ * Returns the number of bytes read or <0 on error.  */
 
 inline ssize_t rrd_read(
     rrd_file_t *rrd_file,
@@ -476,15 +486,23 @@ inline ssize_t rrd_read(
     size_t count)
 {
 #ifdef HAVE_MMAP
-    buf = memcpy(buf, rrd_file->file_start + rrd_file->pos, count);
-    rrd_file->pos += count; /* mimmic read() semantics */
-    return count;
+    size_t _cnt = count;
+    ssize_t _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
+    if (_surplus > 0) { /* short read */
+        _cnt -= _surplus;
+    }
+    if (_cnt == 0)
+        return 0; /* EOF */
+    buf = memcpy(buf, rrd_file->file_start + rrd_file->pos, _cnt);
+
+    rrd_file->pos += _cnt; /* mimmic read() semantics */
+    return _cnt;
 #else
     ssize_t   ret;
 
     ret = read(rrd_file->fd, buf, count);
-    //XXX: eventually add generic rrd_set_error(""); here
-    rrd_file->pos += count; /* mimmic read() semantics */
+    if (ret > 0)
+        rrd_file->pos += ret; /* mimmic read() semantics */
     return ret;
 #endif
 }
@@ -504,7 +522,8 @@ inline ssize_t rrd_write(
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
 #else
-    ssize_t _sz = write(rrd_file->fd, buf, count);
+    ssize_t   _sz = write(rrd_file->fd, buf, count);
+
     if (_sz > 0)
         rrd_file->pos += _sz;
     return _sz;
