@@ -145,8 +145,10 @@ rrd_file_t *rrd_open(
     rrd_file_t *rrd_file = NULL;
     off_t     newfile_size = 0;
 
-    if (rdwr & RRD_CREAT)
-        newfile_size = (off_t) rrd->stat_head;
+    if (rdwr & RRD_CREAT) {
+        newfile_size = (off_t) rrd->stat_head->float_cookie;
+        free(rrd->stat_head);
+    }
     rrd_init(rrd);
     rrd_file = malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
@@ -189,7 +191,6 @@ rrd_file_t *rrd_open(
         mm_flags |= MAP_POPULATE;   /* populate ptes and data */
 #endif
 #if defined MAP_NONBLOCK
-//  if (!(rdwr & RRD_COPY))
         mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
 #ifdef USE_DIRECT_IO
@@ -217,7 +218,7 @@ rrd_file_t *rrd_open(
     } else {
         rrd_file->file_len = newfile_size;
         lseek(rrd_file->fd, newfile_size - 1, SEEK_SET);
-        write(rrd_file->fd, "\0", 1);  /* poke */
+        write(rrd_file->fd, "\0", 1);   /* poke */
         lseek(rrd_file->fd, 0, SEEK_SET);
     }
 #ifdef HAVE_POSIX_FADVISE
@@ -257,6 +258,8 @@ rrd_file_t *rrd_open(
         goto out_done;
     }
 #endif
+    if (rdwr & RRD_CREAT)
+        goto out_done;
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
@@ -356,9 +359,7 @@ rrd_file_t *rrd_open(
 
     rrd_file->header_len = offset;
     rrd_file->pos = offset;
-#ifdef USE_MADVISE
   out_done:
-#endif
     return (rrd_file);
   out_nullify_head:
     rrd->stat_head = NULL;
@@ -487,23 +488,24 @@ inline ssize_t rrd_read(
     size_t count)
 {
 #ifdef HAVE_MMAP
-    size_t _cnt = count;
-    ssize_t _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
+    size_t    _cnt = count;
+    ssize_t   _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
+
     if (_surplus > 0) { /* short read */
         _cnt -= _surplus;
     }
     if (_cnt == 0)
-        return 0; /* EOF */
+        return 0;       /* EOF */
     buf = memcpy(buf, rrd_file->file_start + rrd_file->pos, _cnt);
 
-    rrd_file->pos += _cnt; /* mimmic read() semantics */
+    rrd_file->pos += _cnt;  /* mimmic read() semantics */
     return _cnt;
 #else
     ssize_t   ret;
 
     ret = read(rrd_file->fd, buf, count);
     if (ret > 0)
-        rrd_file->pos += ret; /* mimmic read() semantics */
+        rrd_file->pos += ret;   /* mimmic read() semantics */
     return ret;
 #endif
 }
@@ -571,8 +573,7 @@ inline void rrd_free(
 void rrd_free(
     rrd_t *rrd)
 {
-    if (atoi(rrd->stat_head->version) < 3)
-        free(rrd->live_head);
+    free(rrd->live_head);
     free(rrd->stat_head);
     free(rrd->ds_def);
     free(rrd->rra_def);

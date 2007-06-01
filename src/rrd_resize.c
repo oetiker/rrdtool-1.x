@@ -74,18 +74,22 @@ int rrd_resize(
         return (-1);
     }
 
-    if (modify < 0) {
+    if (modify < 0)
         if ((long) rrdold.rra_def[target_rra].row_cnt <= -modify) {
             rrd_set_error("This RRA is not that big");
             rrd_free(&rrdold);
             rrd_close(rrd_file);
             return (-1);
         }
-    } else {
-        /* the size of the new file */
-        rrdnew.stat_head = rrd_file->file_len +
-            (rrdold.stat_head->ds_cnt * sizeof(rrd_value_t) * modify);
+    /* the size of the new file */
+    if ((rrdnew.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
+        rrd_set_error("allocating stat_head for new RRD");
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        return (-1);
     }
+    rrdnew.stat_head->float_cookie = rrd_file->file_len +
+        (rrdold.stat_head->ds_cnt * sizeof(rrd_value_t) * modify);
     rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
@@ -162,8 +166,8 @@ int rrd_resize(
         /* Adding extra rows; insert unknown values just after the
          ** current row number.
          */
-        l = rrdnew.stat_head->ds_cnt * (rrdnew.rra_ptr[target_rra].cur_row +
-                                        1);
+        l = rrdnew.stat_head->ds_cnt *
+            (rrdnew.rra_ptr[target_rra].cur_row + 1);
         while (l > 0) {
             rrd_read(rrd_file, &buffer, sizeof(rrd_value_t) * 1);
             rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
@@ -177,8 +181,8 @@ int rrd_resize(
             l--;
         }
 #else
-	/* for the mmap case, we did already fill the whole new file with DNAN
-	 * before we copied the old values, so nothing to do here.  */
+        /* for the mmap case, we did already fill the whole new file with DNAN
+         * before we copied the old values, so nothing to do here.  */
 #endif
     } else {
         /* Removing rows. Normally this would be just after the cursor
@@ -212,7 +216,8 @@ int rrd_resize(
             }
         }
         while (modify < 0) {
-            rrd_seek(rrd_file, sizeof(rrd_value_t) * rrdnew.stat_head->ds_cnt,
+            rrd_seek(rrd_file,
+                     sizeof(rrd_value_t) * rrdnew.stat_head->ds_cnt,
                      SEEK_CUR);
             rrdnew.rra_def[target_rra].row_cnt--;
             modify++;
@@ -243,7 +248,6 @@ int rrd_resize(
     rrd_free(&rrdold);
     rrd_close(rrd_file);
 
-    rrd_free(&rrdnew);
     rrd_close(rrd_out_file);
 
     return (0);
