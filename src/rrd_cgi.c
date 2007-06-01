@@ -494,7 +494,7 @@ int main(
 
     if (!filter) {
         printf("Content-Type: text/html\n"
-               "Content-Length: %d\n", strlen(buffer));
+               "Content-Length: %zd\n", strlen(buffer));
 
         if (labs(goodfor) > 0) {
             time_t    now;

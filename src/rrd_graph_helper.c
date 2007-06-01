@@ -1029,7 +1029,7 @@ void rrd_graph_script(
             break;
         }
         if (gdp->debug) {
-            dprintf("used %i out of %i chars\n", eaten, strlen(argv[i]));
+            dprintf("used %i out of %zi chars\n", eaten, strlen(argv[i]));
             dprintf("parsed line: '%s'\n", argv[i]);
             dprintf("remaining: '%s'\n", &argv[i][eaten]);
             if (eaten >= strlen(argv[i]))

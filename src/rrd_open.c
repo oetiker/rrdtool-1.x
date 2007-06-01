@@ -76,8 +76,11 @@
 #define CHECK_MADVISE_OVERLAPS 1
 
 #ifdef HAVE_MMAP
+/* the cast to void* is there to avoid this warning seen on ia64 with certain
+   versions of gcc: 'cast increases required alignment of target type'
+*/
 #define __rrd_read(dst, dst_t, cnt) \
-	(dst) = (dst_t*) (data + offset); \
+	(dst) = (dst_t*)(void*) (data + offset); \
 	offset += sizeof(dst_t) * (cnt)
 #else
 #define __rrd_read(dst, dst_t, cnt) \
@@ -246,24 +249,22 @@ rrd_file_t *rrd_open(
         _madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
         goto out_done;
     }
+# ifndef ONE_PAGE
     /* We do not need to read anything in for the moment */
-#ifndef ONE_PAGE
     _madvise(data, rrd_file->file_len, MADV_DONTNEED);
-//    _madvise(data, rrd_file->file_len, MADV_RANDOM);
-#else
-/* alternatively: keep 2 pages worth of data, likely headers,
+# else
+/* alternatively: keep 1 page worth of data, likely headers,
  * don't need the rest.  */
     _madvise(data, _page_size, MADV_WILLNEED | MADV_SEQUENTIAL);
     _madvise(data + _page_size, (rrd_file->file_len >= _page_size)
              ? rrd_file->file_len - _page_size : 0, MADV_DONTNEED);
-#endif
+# endif
 #endif
 
 #if defined USE_MADVISE && !defined ONE_PAGE
     /* the stat_head will be needed soonish, so hint accordingly */
-// too finegrained to calc the individual sizes, just keep 2 pages worth of hdr
     _madvise(data + PAGE_ALIGN_DOWN(offset), PAGE_ALIGN(sizeof(stat_head_t)),
-             MADV_WILLNEED);
+             MADV_WILLNEED | MADV_RANDOM);
 
 #endif
 
