@@ -305,9 +305,17 @@ AC_ARG_ENABLE([direct-io],
 [enable_direct_io=yes],
 [])
 
- AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
+AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
 
+AC_ARG_ENABLE(static-programs,
+     [  --enable-static-programs  Build static programs],
+     [case "${enableval}" in
+       yes) staticprogs=yes ;;
+       no)  staticprogs=no ;;
+       *) AC_MSG_ERROR(bad value ${enableval} for --enable-static-programs) ;;
+     esac],[staticprogs=no])
+AM_CONDITIONAL(STATIC_PROGRAMS,[test "x$staticprogs" = "xyes"])
 
 
 CONFIGURE_PART(Audit Compilation Environment)
@@ -853,6 +861,7 @@ echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
 echo "          Use O_DIRECT: $enable_direct_io"
+echo "       Static programs: $staticprogs"
 echo "          Perl Modules: $COMP_PERL"
 echo "           Perl Binary: $PERL"
 echo "          Perl Version: $PERL_VERSION"

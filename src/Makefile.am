@@ -7,6 +7,10 @@
 fontsdir =  $(datadir)/rrdtool/fonts
 fonts_DATA = DejaVuSansMono-Roman.ttf
 
+if STATIC_PROGRAMS
+AM_LDFLAGS = -all-static
+endif
+
 #INCLUDES = $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
 #           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
