@@ -11,8 +11,6 @@ if STATIC_PROGRAMS
 AM_LDFLAGS = -all-static
 endif
 
-#INCLUDES = $(FREETYPE_INCLUDES) $(ART_INCLUDES) \
-#           $(PNG_INCLUDES) $(ZLIB_INCLUDES)
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
@@ -42,9 +40,7 @@ RRD_C_FILES =		\
 	rrd_first.c	\
 	rrd_restore.c	\
 	rrd_xport.c	\
-        art_rgba_svp.c \
 	rrd_gfx.c \
-	rrd_afm.c rrd_afm_data.c \
 	rrd_dump.c	\
 	rrd_fetch.c	\
 	rrd_tool.c	\
@@ -52,12 +48,11 @@ RRD_C_FILES =		\
 	rrd_tune.c
 
 noinst_HEADERS = \
-        art_rgba_svp.h \
 	unused.h \
 	rrd_gfx.h \
 	rrd_getopt.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
-	rrd_nan_inf.h fnv.h rrd_graph.h rrd_afm.h rrd_afm_data.h \
+	rrd_nan_inf.h fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
 
 noinst_LTLIBRARIES        = librrdupd.la

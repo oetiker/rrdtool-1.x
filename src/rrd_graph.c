@@ -140,16 +140,17 @@ ylab_t    ylab[] = {
 
 
 gfx_color_t graph_col[] =   /* default colors */
-{ 0xFFFFFFFF,           /* canvas     */
-    0xF0F0F0FF,         /* background */
-    0xD0D0D0FF,         /* shade A    */
-    0xA0A0A0FF,         /* shade B    */
-    0x90909080,         /* grid       */
-    0xE0505080,         /* major grid */
-    0x000000FF,         /* font       */
-    0x802020FF,         /* arrow      */
-    0x202020FF,         /* axis       */
-    0x000000FF          /* frame      */
+{
+    {1.00, 1.00, 1.00, 1.00},   /* canvas     */
+    {0.95, 0.95, 0.95, 1.00},   /* background */
+    {0.81, 0.81, 0.81, 1.00},   /* shade A    */
+    {0.62, 0.62, 0.62, 1.00},   /* shade B    */
+    {0.56, 0.56, 0.56, 0.75},   /* grid       */
+    {0.87, 0.31, 0.31, 0.60},   /* major grid */
+    {0.00, 0.00, 0.00, 1.00},   /* font       */
+    {0.50, 0.12, 0.12, 1.00},   /* arrow      */
+    {0.12, 0.12, 0.12, 1.00},   /* axis       */
+    {0.00, 0.00, 0.00, 1.00}    /* frame      */
 };
 
 
@@ -225,81 +226,78 @@ enum gf_en gf_conv(
     char *string)
 {
 
-    conv_if(PRINT, GF_PRINT)
-        conv_if(GPRINT, GF_GPRINT)
-        conv_if(COMMENT, GF_COMMENT)
-        conv_if(HRULE, GF_HRULE)
-        conv_if(VRULE, GF_VRULE)
-        conv_if(LINE, GF_LINE)
-        conv_if(AREA, GF_AREA)
-        conv_if(STACK, GF_STACK)
-        conv_if(TICK, GF_TICK)
-        conv_if(DEF, GF_DEF)
-        conv_if(CDEF, GF_CDEF)
-        conv_if(VDEF, GF_VDEF)
-#ifdef WITH_PIECHART
-        conv_if(PART, GF_PART)
-#endif
-        conv_if(XPORT, GF_XPORT)
-        conv_if(SHIFT, GF_SHIFT)
+    conv_if(PRINT, GF_PRINT);
+    conv_if(GPRINT, GF_GPRINT);
+    conv_if(COMMENT, GF_COMMENT);
+    conv_if(HRULE, GF_HRULE);
+    conv_if(VRULE, GF_VRULE);
+    conv_if(LINE, GF_LINE);
+    conv_if(AREA, GF_AREA);
+    conv_if(STACK, GF_STACK);
+    conv_if(TICK, GF_TICK);
+    conv_if(DEF, GF_DEF);
+    conv_if(CDEF, GF_CDEF);
+    conv_if(VDEF, GF_VDEF);
+    conv_if(XPORT, GF_XPORT);
+    conv_if(SHIFT, GF_SHIFT);
 
-        return (-1);
+    return (-1);
 }
 
 enum gfx_if_en if_conv(
     char *string)
 {
 
-    conv_if(PNG, IF_PNG)
-        conv_if(SVG, IF_SVG)
-        conv_if(EPS, IF_EPS)
-        conv_if(PDF, IF_PDF)
+    conv_if(PNG, IF_PNG);
+    conv_if(SVG, IF_SVG);
+    conv_if(EPS, IF_EPS);
+    conv_if(PDF, IF_PDF);
 
-        return (-1);
+    return (-1);
 }
 
 enum tmt_en tmt_conv(
     char *string)
 {
 
-    conv_if(SECOND, TMT_SECOND)
-        conv_if(MINUTE, TMT_MINUTE)
-        conv_if(HOUR, TMT_HOUR)
-        conv_if(DAY, TMT_DAY)
-        conv_if(WEEK, TMT_WEEK)
-        conv_if(MONTH, TMT_MONTH)
-        conv_if(YEAR, TMT_YEAR)
-        return (-1);
+    conv_if(SECOND, TMT_SECOND);
+    conv_if(MINUTE, TMT_MINUTE);
+    conv_if(HOUR, TMT_HOUR);
+    conv_if(DAY, TMT_DAY);
+    conv_if(WEEK, TMT_WEEK);
+    conv_if(MONTH, TMT_MONTH);
+    conv_if(YEAR, TMT_YEAR);
+    return (-1);
 }
 
 enum grc_en grc_conv(
     char *string)
 {
 
-    conv_if(BACK, GRC_BACK)
-        conv_if(CANVAS, GRC_CANVAS)
-        conv_if(SHADEA, GRC_SHADEA)
-        conv_if(SHADEB, GRC_SHADEB)
-        conv_if(GRID, GRC_GRID)
-        conv_if(MGRID, GRC_MGRID)
-        conv_if(FONT, GRC_FONT)
-        conv_if(ARROW, GRC_ARROW)
-        conv_if(AXIS, GRC_AXIS)
-        conv_if(FRAME, GRC_FRAME)
+    conv_if(BACK, GRC_BACK);
+    conv_if(CANVAS, GRC_CANVAS);
+    conv_if(SHADEA, GRC_SHADEA);
+    conv_if(SHADEB, GRC_SHADEB);
+    conv_if(GRID, GRC_GRID);
+    conv_if(MGRID, GRC_MGRID);
+    conv_if(FONT, GRC_FONT);
+    conv_if(ARROW, GRC_ARROW);
+    conv_if(AXIS, GRC_AXIS);
+    conv_if(FRAME, GRC_FRAME);
 
-        return -1;
+    return -1;
 }
 
 enum text_prop_en text_prop_conv(
     char *string)
 {
 
-    conv_if(DEFAULT, TEXT_PROP_DEFAULT)
-        conv_if(TITLE, TEXT_PROP_TITLE)
-        conv_if(AXIS, TEXT_PROP_AXIS)
-        conv_if(UNIT, TEXT_PROP_UNIT)
-        conv_if(LEGEND, TEXT_PROP_LEGEND)
-        return -1;
+    conv_if(DEFAULT, TEXT_PROP_DEFAULT);
+    conv_if(TITLE, TEXT_PROP_TITLE);
+    conv_if(AXIS, TEXT_PROP_AXIS);
+    conv_if(UNIT, TEXT_PROP_UNIT);
+    conv_if(LEGEND, TEXT_PROP_LEGEND);
+    return -1;
 }
 
 
@@ -326,7 +324,8 @@ int im_free(
         free(im->gdes[i].rpnp);
     }
     free(im->gdes);
-    gfx_destroy(im->canvas);
+    if (im->surface)
+        cairo_surface_destroy(im->surface);
     return 0;
 }
 
@@ -519,6 +518,7 @@ void expand_range(
             im->minval, im->maxval, im->magfact);
 #endif
 }
+
 
 void apply_gridfit(
     image_desc_t *im)
@@ -1638,12 +1638,12 @@ int leg_place(
                     /* no interleg space if string ends in \g */
                     fill += legspace[i];
                 }
-                fill += gfx_get_text_width(im->canvas, fill + border,
+                fill += gfx_get_text_width(im->cr, fill + border,
                                            im->text_prop[TEXT_PROP_LEGEND].
                                            font,
                                            im->text_prop[TEXT_PROP_LEGEND].
                                            size, im->tabwidth,
-                                           im->gdes[i].legend, 0);
+                                           im->gdes[i].legend);
                 leg_c++;
             } else {
                 legspace[i] = 0;
@@ -1690,12 +1690,12 @@ int leg_place(
                     im->gdes[ii].leg_x = leg_x;
                     im->gdes[ii].leg_y = leg_y;
                     leg_x +=
-                        gfx_get_text_width(im->canvas, leg_x,
+                        gfx_get_text_width(im->cr, leg_x,
                                            im->text_prop[TEXT_PROP_LEGEND].
                                            font,
                                            im->text_prop[TEXT_PROP_LEGEND].
                                            size, im->tabwidth,
-                                           im->gdes[ii].legend, 0)
+                                           im->gdes[ii].legend)
                         + legspace[ii]
                         + glue;
                 }
@@ -1900,25 +1900,37 @@ int draw_horizontal_grid(
                 }
                 nlabels++;
 
-                gfx_new_text(im->canvas,
-                             X0 - im->text_prop[TEXT_PROP_AXIS].size, Y0,
-                             im->graph_col[GRC_FONT],
-                             im->text_prop[TEXT_PROP_AXIS].font,
-                             im->text_prop[TEXT_PROP_AXIS].size,
-                             im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER,
-                             graph_label);
-                gfx_new_dashed_line(im->canvas,
-                                    X0 - 2, Y0,
-                                    X1 + 2, Y0,
-                                    MGRIDWIDTH, im->graph_col[GRC_MGRID],
-                                    im->grid_dash_on, im->grid_dash_off);
+                gfx_text(im->cr,
+                         X0 - im->text_prop[TEXT_PROP_AXIS].size, Y0,
+                         im->graph_col[GRC_FONT],
+                         im->text_prop[TEXT_PROP_AXIS].font,
+                         im->text_prop[TEXT_PROP_AXIS].size,
+                         im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER,
+                         graph_label);
+                gfx_line(im->cr,
+                         X0 - 2, Y0,
+                         X0, Y0, MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+                gfx_line(im->cr,
+                         X1, Y0,
+                         X1 + 2, Y0, MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+                gfx_dashed_line(im->cr,
+                                X0 - 2, Y0,
+                                X1 + 2, Y0,
+                                MGRIDWIDTH, im->graph_col[GRC_MGRID],
+                                im->grid_dash_on, im->grid_dash_off);
 
             } else if (!(im->extra_flags & NOMINOR)) {
-                gfx_new_dashed_line(im->canvas,
-                                    X0 - 1, Y0,
-                                    X1 + 1, Y0,
-                                    GRIDWIDTH, im->graph_col[GRC_GRID],
-                                    im->grid_dash_on, im->grid_dash_off);
+                gfx_line(im->cr,
+                         X0 - 2, Y0,
+                         X0, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_line(im->cr,
+                         X1, Y0,
+                         X1 + 2, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_dashed_line(im->cr,
+                                X0 - 1, Y0,
+                                X1 + 1, Y0,
+                                GRIDWIDTH, im->graph_col[GRC_GRID],
+                                im->grid_dash_on, im->grid_dash_off);
 
             }
         }
@@ -2056,11 +2068,18 @@ int horizontal_log_grid(
             break;
 
         /* major grid line */
-        gfx_new_dashed_line(im->canvas,
-                            X0 - 2, Y0,
-                            X1 + 2, Y0,
-                            MGRIDWIDTH, im->graph_col[GRC_MGRID],
-                            im->grid_dash_on, im->grid_dash_off);
+
+        gfx_line(im->cr,
+                 X0 - 2, Y0, X0, Y0, MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+        gfx_line(im->cr,
+                 X1, Y0, X1 + 2, Y0, MGRIDWIDTH, im->graph_col[GRC_MGRID]);
+
+
+        gfx_dashed_line(im->cr,
+                        X0 - 2, Y0,
+                        X1 + 2, Y0,
+                        MGRIDWIDTH, im->graph_col[GRC_MGRID],
+                        im->grid_dash_on, im->grid_dash_off);
 
         /* label */
         if (im->extra_flags & FORCE_UNITS_SI) {
@@ -2084,13 +2103,12 @@ int horizontal_log_grid(
             sprintf(graph_label, "%3.0f %c", pvalue, symbol);
         } else
             sprintf(graph_label, "%3.0e", value);
-        gfx_new_text(im->canvas,
-                     X0 - im->text_prop[TEXT_PROP_AXIS].size, Y0,
-                     im->graph_col[GRC_FONT],
-                     im->text_prop[TEXT_PROP_AXIS].font,
-                     im->text_prop[TEXT_PROP_AXIS].size,
-                     im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER,
-                     graph_label);
+        gfx_text(im->cr,
+                 X0 - im->text_prop[TEXT_PROP_AXIS].size, Y0,
+                 im->graph_col[GRC_FONT],
+                 im->text_prop[TEXT_PROP_AXIS].font,
+                 im->text_prop[TEXT_PROP_AXIS].size,
+                 im->tabwidth, 0.0, GFX_H_RIGHT, GFX_V_CENTER, graph_label);
 
         /* minor grid */
         if (mid < 4 && exfrac == 1) {
@@ -2119,11 +2137,17 @@ int horizontal_log_grid(
                     break;
 
                 /* draw lines */
-                gfx_new_dashed_line(im->canvas,
-                                    X0 - 1, Y0,
-                                    X1 + 1, Y0,
-                                    GRIDWIDTH, im->graph_col[GRC_GRID],
-                                    im->grid_dash_on, im->grid_dash_off);
+                gfx_line(im->cr,
+                         X0 - 2, Y0,
+                         X0, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_line(im->cr,
+                         X1, Y0,
+                         X1 + 2, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_dashed_line(im->cr,
+                                X0 - 1, Y0,
+                                X1 + 1, Y0,
+                                GRIDWIDTH, im->graph_col[GRC_GRID],
+                                im->grid_dash_on, im->grid_dash_off);
             }
         } else if (exfrac > 1) {
             for (i = val_exp - exfrac / 3 * 2; i < val_exp; i += exfrac / 3) {
@@ -2136,11 +2160,17 @@ int horizontal_log_grid(
                     break;
 
                 /* draw lines */
-                gfx_new_dashed_line(im->canvas,
-                                    X0 - 1, Y0,
-                                    X1 + 1, Y0,
-                                    GRIDWIDTH, im->graph_col[GRC_GRID],
-                                    im->grid_dash_on, im->grid_dash_off);
+                gfx_line(im->cr,
+                         X0 - 2, Y0,
+                         X0, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_line(im->cr,
+                         X1, Y0,
+                         X1 + 2, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+                gfx_dashed_line(im->cr,
+                                X0 - 1, Y0,
+                                X1 + 1, Y0,
+                                GRIDWIDTH, im->graph_col[GRC_GRID],
+                                im->grid_dash_on, im->grid_dash_off);
             }
         }
 
@@ -2178,11 +2208,15 @@ int horizontal_log_grid(
                 break;
 
             /* draw lines */
-            gfx_new_dashed_line(im->canvas,
-                                X0 - 1, Y0,
-                                X1 + 1, Y0,
-                                GRIDWIDTH, im->graph_col[GRC_GRID],
-                                im->grid_dash_on, im->grid_dash_off);
+            gfx_line(im->cr,
+                     X0 - 2, Y0, X0, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+            gfx_line(im->cr,
+                     X1, Y0, X1 + 2, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+            gfx_dashed_line(im->cr,
+                            X0 - 1, Y0,
+                            X1 + 1, Y0,
+                            GRIDWIDTH, im->graph_col[GRC_GRID],
+                            im->grid_dash_on, im->grid_dash_off);
         }
     }
     /* fancy minor gridlines */
@@ -2197,11 +2231,15 @@ int horizontal_log_grid(
                 break;
 
             /* draw lines */
-            gfx_new_dashed_line(im->canvas,
-                                X0 - 1, Y0,
-                                X1 + 1, Y0,
-                                GRIDWIDTH, im->graph_col[GRC_GRID],
-                                im->grid_dash_on, im->grid_dash_off);
+            gfx_line(im->cr,
+                     X0 - 2, Y0, X0, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+            gfx_line(im->cr,
+                     X1, Y0, X1 + 2, Y0, GRIDWIDTH, im->graph_col[GRC_GRID]);
+            gfx_dashed_line(im->cr,
+                            X0 - 1, Y0,
+                            X1 + 1, Y0,
+                            GRIDWIDTH, im->graph_col[GRC_GRID],
+                            im->grid_dash_on, im->grid_dash_off);
         }
     }
 
@@ -2272,9 +2310,13 @@ void vertical_grid(
             if (ti == timajor)
                 continue;   /* skip as falls on major grid line */
             X0 = xtr(im, ti);
-            gfx_new_dashed_line(im->canvas, X0, Y0 + 1, X0, Y1 - 1, GRIDWIDTH,
-                                im->graph_col[GRC_GRID],
-                                im->grid_dash_on, im->grid_dash_off);
+            gfx_line(im->cr, X0, Y1 - 2, X0, Y1, GRIDWIDTH,
+                     im->graph_col[GRC_GRID]);
+            gfx_line(im->cr, X0, Y0, X0, Y0 + 2, GRIDWIDTH,
+                     im->graph_col[GRC_GRID]);
+            gfx_dashed_line(im->cr, X0, Y1 - 1, X0, Y0 + 1, GRIDWIDTH,
+                            im->graph_col[GRC_GRID],
+                            im->grid_dash_on, im->grid_dash_off);
 
         }
     }
@@ -2290,9 +2332,13 @@ void vertical_grid(
         if (ti < im->start || ti > im->end)
             continue;
         X0 = xtr(im, ti);
-        gfx_new_dashed_line(im->canvas, X0, Y0 + 3, X0, Y1 - 2, MGRIDWIDTH,
-                            im->graph_col[GRC_MGRID],
-                            im->grid_dash_on, im->grid_dash_off);
+        gfx_line(im->cr, X0, Y1 - 2, X0, Y1, MGRIDWIDTH,
+                 im->graph_col[GRC_MGRID]);
+        gfx_line(im->cr, X0, Y0, X0, Y0 + 3, MGRIDWIDTH,
+                 im->graph_col[GRC_MGRID]);
+        gfx_dashed_line(im->cr, X0, Y1 - 2, X0, Y0 + 3, MGRIDWIDTH,
+                        im->graph_col[GRC_MGRID],
+                        im->grid_dash_on, im->grid_dash_off);
 
     }
     /* paint the labels below the graph */
@@ -2313,13 +2359,13 @@ void vertical_grid(
 #else
 # error "your libc has no strftime I guess we'll abort the exercise here."
 #endif
-        gfx_new_text(im->canvas,
-                     xtr(im, tilab),
-                     Y0 + im->text_prop[TEXT_PROP_AXIS].size * 1.4 + 5,
-                     im->graph_col[GRC_FONT],
-                     im->text_prop[TEXT_PROP_AXIS].font,
-                     im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 0.0,
-                     GFX_H_CENTER, GFX_V_BOTTOM, graph_label);
+        gfx_text(im->cr,
+                 xtr(im, tilab),
+                 Y0 + 1,
+                 im->graph_col[GRC_FONT],
+                 im->text_prop[TEXT_PROP_AXIS].font,
+                 im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth, 0.0,
+                 GFX_H_CENTER, GFX_V_TOP, graph_label);
 
     }
 
@@ -2330,29 +2376,32 @@ void axis_paint(
     image_desc_t *im)
 {
     /* draw x and y axis */
-    /* gfx_new_line ( im->canvas, im->xorigin+im->xsize,im->yorigin,
+    /* gfx_line ( im->canvas, im->xorigin+im->xsize,im->yorigin,
        im->xorigin+im->xsize,im->yorigin-im->ysize,
        GRIDWIDTH, im->graph_col[GRC_AXIS]);
 
-       gfx_new_line ( im->canvas, im->xorigin,im->yorigin-im->ysize,
+       gfx_line ( im->canvas, im->xorigin,im->yorigin-im->ysize,
        im->xorigin+im->xsize,im->yorigin-im->ysize,
        GRIDWIDTH, im->graph_col[GRC_AXIS]); */
 
-    gfx_new_line(im->canvas, im->xorigin - 4, im->yorigin,
-                 im->xorigin + im->xsize + 4, im->yorigin,
-                 MGRIDWIDTH, im->graph_col[GRC_AXIS]);
+    gfx_line(im->cr, im->xorigin - 4, im->yorigin,
+             im->xorigin + im->xsize + 4, im->yorigin,
+             MGRIDWIDTH, im->graph_col[GRC_AXIS]);
 
-    gfx_new_line(im->canvas, im->xorigin, im->yorigin + 4,
-                 im->xorigin, im->yorigin - im->ysize - 4,
-                 MGRIDWIDTH, im->graph_col[GRC_AXIS]);
+    gfx_line(im->cr, im->xorigin, im->yorigin + 4,
+             im->xorigin, im->yorigin - im->ysize - 4,
+             MGRIDWIDTH, im->graph_col[GRC_AXIS]);
 
 
     /* arrow for X and Y axis direction */
-    gfx_new_area(im->canvas, im->xorigin + im->xsize + 2, im->yorigin - 2, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin + 0.5,    /* LINEOFFSET */
+    gfx_new_area(im->cr, im->xorigin + im->xsize + 2, im->yorigin - 2, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin + 0.5,    /* LINEOFFSET */
                  im->graph_col[GRC_ARROW]);
+    gfx_close_path(im->cr);
 
-    gfx_new_area(im->canvas, im->xorigin - 2, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin + 0.5, im->yorigin - im->ysize - 7,    /* LINEOFFSET */
+    gfx_new_area(im->cr, im->xorigin - 2, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin + 0.5, im->yorigin - im->ysize - 7,    /* LINEOFFSET */
                  im->graph_col[GRC_ARROW]);
+    gfx_close_path(im->cr);
+
 
 }
 
@@ -2362,23 +2411,23 @@ void grid_paint(
     long      i;
     int       res = 0;
     double    X0, Y0;   /* points for filled graph and more */
-    gfx_node_t *node;
+    struct gfx_color_t water_color;
 
     /* draw 3d border */
-    node = gfx_new_area(im->canvas, 0, im->yimg,
-                        2, im->yimg - 2, 2, 2, im->graph_col[GRC_SHADEA]);
-    gfx_add_point(node, im->ximg - 2, 2);
-    gfx_add_point(node, im->ximg, 0);
-    gfx_add_point(node, 0, 0);
-/*    gfx_add_point( node , 0,im->yimg ); */
+    gfx_new_area(im->cr, 0, im->yimg,
+                 2, im->yimg - 2, 2, 2, im->graph_col[GRC_SHADEA]);
+    gfx_add_point(im->cr, im->ximg - 2, 2);
+    gfx_add_point(im->cr, im->ximg, 0);
+    gfx_add_point(im->cr, 0, 0);
+    gfx_close_path(im->cr);
 
-    node = gfx_new_area(im->canvas, 2, im->yimg - 2,
-                        im->ximg - 2, im->yimg - 2,
-                        im->ximg - 2, 2, im->graph_col[GRC_SHADEB]);
-    gfx_add_point(node, im->ximg, 0);
-    gfx_add_point(node, im->ximg, im->yimg);
-    gfx_add_point(node, 0, im->yimg);
-/*    gfx_add_point( node , 0,im->yimg ); */
+    gfx_new_area(im->cr, 2, im->yimg - 2,
+                 im->ximg - 2, im->yimg - 2,
+                 im->ximg - 2, 2, im->graph_col[GRC_SHADEB]);
+    gfx_add_point(im->cr, im->ximg, 0);
+    gfx_add_point(im->cr, im->ximg, im->yimg);
+    gfx_add_point(im->cr, 0, im->yimg);
+    gfx_close_path(im->cr);
 
 
     if (im->draw_x_grid == 1)
@@ -2395,47 +2444,48 @@ void grid_paint(
         if (!res) {
             char     *nodata = "No Data found";
 
-            gfx_new_text(im->canvas, im->ximg / 2,
-                         (2 * im->yorigin - im->ysize) / 2,
-                         im->graph_col[GRC_FONT],
-                         im->text_prop[TEXT_PROP_AXIS].font,
-                         im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth,
-                         0.0, GFX_H_CENTER, GFX_V_CENTER, nodata);
+            gfx_text(im->cr, im->ximg / 2,
+                     (2 * im->yorigin - im->ysize) / 2,
+                     im->graph_col[GRC_FONT],
+                     im->text_prop[TEXT_PROP_AXIS].font,
+                     im->text_prop[TEXT_PROP_AXIS].size, im->tabwidth,
+                     0.0, GFX_H_CENTER, GFX_V_CENTER, nodata);
         }
     }
 
     /* yaxis unit description */
-    gfx_new_text(im->canvas,
-                 10, (im->yorigin - im->ysize / 2),
-                 im->graph_col[GRC_FONT],
-                 im->text_prop[TEXT_PROP_UNIT].font,
-                 im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth,
-                 RRDGRAPH_YLEGEND_ANGLE,
-                 GFX_H_LEFT, GFX_V_CENTER, im->ylegend);
+    gfx_text(im->cr,
+             10, (im->yorigin - im->ysize / 2),
+             im->graph_col[GRC_FONT],
+             im->text_prop[TEXT_PROP_UNIT].font,
+             im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth,
+             RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
 
     /* graph title */
-    gfx_new_text(im->canvas,
-                 im->ximg / 2, im->text_prop[TEXT_PROP_TITLE].size * 1.3 + 4,
-                 im->graph_col[GRC_FONT],
-                 im->text_prop[TEXT_PROP_TITLE].font,
-                 im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
-                 GFX_H_CENTER, GFX_V_CENTER, im->title);
+    gfx_text(im->cr,
+             im->ximg / 2, 4,
+             im->graph_col[GRC_FONT],
+             im->text_prop[TEXT_PROP_TITLE].font,
+             im->text_prop[TEXT_PROP_TITLE].size, im->tabwidth, 0.0,
+             GFX_H_CENTER, GFX_V_TOP, im->title);
     /* rrdtool 'logo' */
-    gfx_new_text(im->canvas,
-                 im->ximg - 7, 7,
-                 (im->graph_col[GRC_FONT] & 0xffffff00) | 0x00000044,
-                 im->text_prop[TEXT_PROP_AXIS].font,
-                 5.5, im->tabwidth, 270,
-                 GFX_H_RIGHT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
+    water_color = im->graph_col[GRC_FONT];
+    water_color.alpha = 0.3;
+    gfx_text(im->cr,
+             im->ximg - 4, 7,
+             water_color,
+             im->text_prop[TEXT_PROP_AXIS].font,
+             5.5, im->tabwidth, -90,
+             GFX_H_LEFT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
 
     /* graph watermark */
     if (im->watermark[0] != '\0') {
-        gfx_new_text(im->canvas,
-                     im->ximg / 2, im->yimg - 6,
-                     (im->graph_col[GRC_FONT] & 0xffffff00) | 0x00000044,
-                     im->text_prop[TEXT_PROP_AXIS].font,
-                     5.5, im->tabwidth, 0,
-                     GFX_H_CENTER, GFX_V_BOTTOM, im->watermark);
+        gfx_text(im->cr,
+                 im->ximg / 2, im->yimg - 6,
+                 water_color,
+                 im->text_prop[TEXT_PROP_AXIS].font,
+                 5.5, im->tabwidth, 0,
+                 GFX_H_CENTER, GFX_V_BOTTOM, im->watermark);
     }
 
     /* graph labels */
@@ -2447,42 +2497,54 @@ void grid_paint(
             /* im->gdes[i].leg_y is the bottom of the legend */
             X0 = im->gdes[i].leg_x;
             Y0 = im->gdes[i].leg_y;
-            gfx_new_text(im->canvas, X0, Y0,
-                         im->graph_col[GRC_FONT],
-                         im->text_prop[TEXT_PROP_LEGEND].font,
-                         im->text_prop[TEXT_PROP_LEGEND].size,
-                         im->tabwidth, 0.0, GFX_H_LEFT, GFX_V_BOTTOM,
-                         im->gdes[i].legend);
+            gfx_text(im->cr, X0, Y0,
+                     im->graph_col[GRC_FONT],
+                     im->text_prop[TEXT_PROP_LEGEND].font,
+                     im->text_prop[TEXT_PROP_LEGEND].size,
+                     im->tabwidth, 0.0, GFX_H_LEFT, GFX_V_BOTTOM,
+                     im->gdes[i].legend);
             /* The legend for GRAPH items starts with "M " to have
                enough space for the box */
             if (im->gdes[i].gf != GF_PRINT &&
                 im->gdes[i].gf != GF_GPRINT && im->gdes[i].gf != GF_COMMENT) {
                 int       boxH, boxV;
 
-                boxH = gfx_get_text_width(im->canvas, 0,
+                boxH = gfx_get_text_width(im->cr, 0,
                                           im->text_prop[TEXT_PROP_LEGEND].
                                           font,
                                           im->text_prop[TEXT_PROP_LEGEND].
-                                          size, im->tabwidth, "o", 0) * 1.2;
+                                          size, im->tabwidth, "o") * 1.2;
                 boxV = boxH * 1.1;
 
-                /* make sure transparent colors show up the same way as in the graph */
-                node = gfx_new_area(im->canvas,
-                                    X0, Y0 - boxV,
-                                    X0, Y0,
-                                    X0 + boxH, Y0, im->graph_col[GRC_BACK]);
-                gfx_add_point(node, X0 + boxH, Y0 - boxV);
+                /* shift the box up a bit */
+                Y0 -= boxV * 0.3;
 
-                node = gfx_new_area(im->canvas,
-                                    X0, Y0 - boxV,
-                                    X0, Y0, X0 + boxH, Y0, im->gdes[i].col);
-                gfx_add_point(node, X0 + boxH, Y0 - boxV);
-                node = gfx_new_line(im->canvas,
-                                    X0, Y0 - boxV,
-                                    X0, Y0, 1.0, im->graph_col[GRC_FRAME]);
-                gfx_add_point(node, X0 + boxH, Y0);
-                gfx_add_point(node, X0 + boxH, Y0 - boxV);
-                gfx_close_path(node);
+                /* make sure transparent colors show up the same way as in the graph */
+
+                gfx_new_area(im->cr,
+                             X0, Y0 - boxV,
+                             X0, Y0, X0 + boxH, Y0, im->graph_col[GRC_BACK]);
+                gfx_add_point(im->cr, X0 + boxH, Y0 - boxV);
+                gfx_close_path(im->cr);
+
+                gfx_new_area(im->cr,
+                             X0, Y0 - boxV,
+                             X0, Y0, X0 + boxH, Y0, im->gdes[i].col);
+                gfx_add_point(im->cr, X0 + boxH, Y0 - boxV);
+                gfx_close_path(im->cr);
+
+                gfx_line(im->cr,
+                         X0, Y0 - boxV,
+                         X0, Y0, 1.0, im->graph_col[GRC_FRAME]);
+                gfx_line(im->cr,
+                         X0, Y0,
+                         X0 + boxH, Y0, 1.0, im->graph_col[GRC_FRAME]);
+                gfx_line(im->cr,
+                         X0 + boxH, Y0,
+                         X0 + boxH, Y0 - boxV, 1.0, im->graph_col[GRC_FRAME]);
+                gfx_line(im->cr,
+                         X0 + boxH, Y0 - boxV,
+                         X0, Y0 - boxV, 1.0, im->graph_col[GRC_FRAME]);
             }
         }
     }
@@ -2510,7 +2572,7 @@ int lazy_check(
         return 0;
     if ((fd = fopen(im->graphfile, "rb")) == NULL)
         return 0;       /* the file does not exist */
-    switch (im->canvas->imgformat) {
+    switch (im->imgformat) {
     case IF_PNG:
         size = PngSize(fd, &(im->ximg), &(im->yimg));
         break;
@@ -2521,67 +2583,10 @@ int lazy_check(
     return size;
 }
 
-#ifdef WITH_PIECHART
-void pie_part(
-    image_desc_t *im,
-    gfx_color_t color,
-    double PieCenterX,
-    double PieCenterY,
-    double Radius,
-    double startangle,
-    double endangle)
-{
-    gfx_node_t *node;
-    double    angle;
-    double    step = M_PI / 50; /* Number of iterations for the circle;
-                                 ** 10 is definitely too low, more than
-                                 ** 50 seems to be overkill
-                                 */
-
-    /* Strange but true: we have to work clockwise or else
-     ** anti aliasing nor transparency don't work.
-     **
-     ** This test is here to make sure we do it right, also
-     ** this makes the for...next loop more easy to implement.
-     ** The return will occur if the user enters a negative number
-     ** (which shouldn't be done according to the specs) or if the
-     ** programmers do something wrong (which, as we all know, never
-     ** happens anyway :)
-     */
-    if (endangle < startangle)
-        return;
-
-    /* Hidden feature: Radius decreases each full circle */
-    angle = startangle;
-    while (angle >= 2 * M_PI) {
-        angle -= 2 * M_PI;
-        Radius *= 0.8;
-    }
-
-    node = gfx_new_area(im->canvas,
-                        PieCenterX + sin(startangle) * Radius,
-                        PieCenterY - cos(startangle) * Radius,
-                        PieCenterX,
-                        PieCenterY,
-                        PieCenterX + sin(endangle) * Radius,
-                        PieCenterY - cos(endangle) * Radius, color);
-    for (angle = endangle; angle - startangle >= step; angle -= step) {
-        gfx_add_point(node,
-                      PieCenterX + sin(angle) * Radius,
-                      PieCenterY - cos(angle) * Radius);
-    }
-}
-
-#endif
 
 int graph_size_location(
     image_desc_t *im,
-    int elements
-#ifdef WITH_PIECHART
-    ,
-    int piechart
-#endif
-    )
+    int elements)
 {
     /* The actual size of the image to draw is determined from
      ** several sources.  The size given on the command line is
@@ -2590,14 +2595,7 @@ int graph_size_location(
      */
 
     int       Xvertical = 0, Ytitle = 0, Xylabel = 0, Xmain = 0, Ymain = 0,
-#ifdef WITH_PIECHART
-        Xpie = 0, Ypie = 0,
-#endif
-        Yxlabel = 0,
-#if 0
-        Xlegend = 0, Ylegend = 0,
-#endif
-        Xspacing = 15, Yspacing = 15, Ywatermark = 4;
+        Yxlabel = 0, Xspacing = 15, Yspacing = 15, Ywatermark = 4;
 
     if (im->extra_flags & ONLY_GRAPH) {
         im->xorigin = 0;
@@ -2646,11 +2644,10 @@ int graph_size_location(
             Yxlabel = im->text_prop[TEXT_PROP_AXIS].size * 2.5;
         }
         if (im->draw_y_grid || im->forceleftspace) {
-            Xylabel = gfx_get_text_width(im->canvas, 0,
+            Xylabel = gfx_get_text_width(im->cr, 0,
                                          im->text_prop[TEXT_PROP_AXIS].font,
                                          im->text_prop[TEXT_PROP_AXIS].size,
-                                         im->tabwidth,
-                                         "0", 0) * im->unitslength;
+                                         im->tabwidth, "0") * im->unitslength;
         }
     }
 
@@ -2668,14 +2665,6 @@ int graph_size_location(
 
         im->yorigin += Ytitle;
 
-#ifdef WITH_PIECHART
-        if (piechart) {
-            im->piesize = im->xsize < im->ysize ? im->xsize : im->ysize;
-            Xpie = im->piesize;
-            Ypie = im->piesize;
-        }
-#endif
-
         /* Now calculate the total size.  Insert some spacing where
            desired.  im->xorigin and im->yorigin need to correspond
            with the lower left corner of the main graph area or, if
@@ -2686,12 +2675,6 @@ int graph_size_location(
         Xmain = im->ximg - (Xylabel + 2 * Xspacing);
         if (Xmain)
             Xmain -= Xspacing;  /* put space between main graph area and right edge */
-
-#ifdef WITH_PIECHART
-        Xmain -= Xpie;  /* remove pie width from main graph area */
-        if (Xpie)
-            Xmain -= Xspacing;  /* put space between pie and main graph area */
-#endif
 
         im->xorigin = Xspacing + Xylabel;
 
@@ -2710,23 +2693,20 @@ int graph_size_location(
          ** of the legend and the axis labels.
          */
 
-        if (im->extra_flags & NOLEGEND)
-        {
+        if (im->extra_flags & NOLEGEND) {
             /* set dimensions correctly if using full size mode with no legend */
-            im->yorigin = im->yimg - im->text_prop[TEXT_PROP_AXIS].size * 2.5 - Yspacing;
+            im->yorigin =
+                im->yimg - im->text_prop[TEXT_PROP_AXIS].size * 2.5 -
+                Yspacing;
             Ymain = im->yorigin;
-        } else
-        {
+        } else {
             /* Determine where to place the legends onto the image.
-            ** Set Ymain and adjust im->yorigin to match the space requirements.
-            */
+             ** Set Ymain and adjust im->yorigin to match the space requirements.
+             */
             if (leg_place(im, &Ymain) == -1)
-               return -1;
+                return -1;
         }
 
-#ifdef WITH_PIECHART
-        /* if (im->yimg < Ypie) im->yimg = Ypie; * not sure what do about this */
-#endif
 
         /* remove title space *or* some padding above the graph from the main graph area */
         if (Ytitle) {
@@ -2773,14 +2753,6 @@ int graph_size_location(
             Xmain = im->xsize;
             Ymain = im->ysize;
         }
-#ifdef WITH_PIECHART
-        if (piechart) {
-            im->piesize = im->xsize < im->ysize ? im->xsize : im->ysize;
-            Xpie = im->piesize;
-            Ypie = im->piesize;
-        }
-#endif
-
         /* Now calculate the total size.  Insert some spacing where
            desired.  im->xorigin and im->yorigin need to correspond
            with the lower left corner of the main graph area or, if
@@ -2794,16 +2766,8 @@ int graph_size_location(
          */
         im->ximg = Xylabel + Xmain + 2 * Xspacing;
 
-#ifdef WITH_PIECHART
-        im->ximg += Xpie;
-#endif
-
         if (Xmain)
             im->ximg += Xspacing;
-#ifdef WITH_PIECHART
-        if (Xpie)
-            im->ximg += Xspacing;
-#endif
 
         im->xorigin = Xspacing + Xylabel;
 
@@ -2830,10 +2794,6 @@ int graph_size_location(
 
         im->yimg = Ymain + Yxlabel;
 
-#ifdef WITH_PIECHART
-        if (im->yimg < Ypie)
-            im->yimg = Ypie;
-#endif
 
         im->yorigin = im->yimg - Yxlabel;
 
@@ -2859,27 +2819,6 @@ int graph_size_location(
         }
     }
 
-#if 0
-    if (Xlegend > im->ximg) {
-        im->ximg = Xlegend;
-        /* reposition Pie */
-    }
-#endif
-
-#ifdef WITH_PIECHART
-    /* The pie is placed in the upper right hand corner,
-     ** just below the title (if any) and with sufficient
-     ** padding.
-     */
-    if (elements) {
-        im->pie_x = im->ximg - Xspacing - Xpie / 2;
-        im->pie_y = im->yorigin - Ymain + Ypie / 2;
-    } else {
-        im->pie_x = im->ximg / 2;
-        im->pie_y = im->yorigin - Ypie / 2;
-    }
-#endif
-
     ytr(im, DNAN);
     return 0;
 }
@@ -2897,14 +2836,9 @@ int graph_paint(
     int       i, ii;
     int       lazy = lazy_check(im);
 
-#ifdef WITH_PIECHART
-    int       piechart = 0;
-    double    PieStart = 0.0;
-#endif
-    FILE     *fo;
-    gfx_node_t *node;
-
     double    areazero = 0.0;
+    PangoFontMap *font_map = pango_cairo_font_map_get_default();
+
     graph_desc_t *lastgdes = NULL;
 
     /* if we are lazy and there is nothing to PRINT ... quit now */
@@ -2920,15 +2854,6 @@ int graph_paint(
     if (data_calc(im) == -1)
         return -1;
 
-#ifdef WITH_PIECHART
-    /* check if we need to draw a piechart */
-    for (i = 0; i < im->gdes_c; i++) {
-        if (im->gdes[i].gf == GF_PART) {
-            piechart = 1;
-            break;
-        }
-    }
-#endif
 
     /* calculate and PRINT and GPRINT definitions. We have to do it at
      * this point because it will affect the length of the legends
@@ -2938,28 +2863,14 @@ int graph_paint(
     i = print_calc(im, calcpr);
     if (i < 0)
         return -1;
-    if (((i == 0)
-#ifdef WITH_PIECHART
-         && (piechart == 0)
-#endif
-        ) || lazy)
+    if ((i == 0) || lazy)
         return 0;
-
-#ifdef WITH_PIECHART
-    /* If there's only the pie chart to draw, signal this */
-    if (i == 0)
-        piechart = 2;
-#endif
 
 /**************************************************************
  *** Calculating sizes and locations became a bit confusing ***
  *** so I moved this into a separate function.              ***
  **************************************************************/
-    if (graph_size_location(im, i
-#ifdef WITH_PIECHART
-                            , piechart
-#endif
-        ) == -1)
+    if (graph_size_location(im, i) == -1)
         return -1;
 
     /* get actual drawing data and find min and max values */
@@ -2982,39 +2893,57 @@ int graph_paint(
 
     /* the actual graph is created by going through the individual
        graph elements and then drawing them */
+    cairo_surface_destroy(im->surface);
 
-    node = gfx_new_area(im->canvas,
-                        0, 0,
-                        0, im->yimg,
-                        im->ximg, im->yimg, im->graph_col[GRC_BACK]);
+    switch (im->imgformat) {
+    case IF_PNG:
+        im->surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                       im->ximg * im->zoom,
+                                       im->yimg * im->zoom);
+        break;
+    case IF_PDF:
+        im->surface =
+            cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
+                                     im->yimg * im->zoom);
+        break;
+    case IF_EPS:
+        im->surface =
+            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
+                                    im->yimg * im->zoom);
+        break;
+    case IF_SVG:
+        im->surface =
+            cairo_svg_surface_create(im->graphfile, im->ximg * im->zoom,
+                                     im->yimg * im->zoom);
+        cairo_svg_surface_restrict_to_version(im->surface,
+                                              CAIRO_SVG_VERSION_1_1);
+        break;
+    };
+    im->cr = cairo_create(im->surface);
+    pango_cairo_font_map_set_resolution(font_map, 100);
+    cairo_scale(im->cr, im->zoom, im->zoom);
 
-    gfx_add_point(node, im->ximg, 0);
+    gfx_new_area(im->cr,
+                 0, 0,
+                 0, im->yimg, im->ximg, im->yimg, im->graph_col[GRC_BACK]);
 
-#ifdef WITH_PIECHART
-    if (piechart != 2) {
-#endif
-        node = gfx_new_area(im->canvas,
-                            im->xorigin, im->yorigin,
-                            im->xorigin + im->xsize, im->yorigin,
-                            im->xorigin + im->xsize, im->yorigin - im->ysize,
-                            im->graph_col[GRC_CANVAS]);
+    gfx_add_point(im->cr, im->ximg, 0);
+    gfx_close_path(im->cr);
 
-        gfx_add_point(node, im->xorigin, im->yorigin - im->ysize);
+    gfx_new_area(im->cr,
+                 im->xorigin, im->yorigin,
+                 im->xorigin + im->xsize, im->yorigin,
+                 im->xorigin + im->xsize, im->yorigin - im->ysize,
+                 im->graph_col[GRC_CANVAS]);
 
-        if (im->minval > 0.0)
-            areazero = im->minval;
-        if (im->maxval < 0.0)
-            areazero = im->maxval;
-#ifdef WITH_PIECHART
-    }
-#endif
+    gfx_add_point(im->cr, im->xorigin, im->yorigin - im->ysize);
+    gfx_close_path(im->cr);
 
-#ifdef WITH_PIECHART
-    if (piechart) {
-        pie_part(im, im->graph_col[GRC_CANVAS], im->pie_x, im->pie_y,
-                 im->piesize * 0.5, 0, 2 * M_PI);
-    }
-#endif
+    if (im->minval > 0.0)
+        areazero = im->minval;
+    if (im->maxval < 0.0)
+        areazero = im->maxval;
 
     for (i = 0; i < im->gdes_c; i++) {
         switch (im->gdes[i].gf) {
@@ -3034,20 +2963,20 @@ int graph_paint(
                 if (!isnan(im->gdes[i].p_data[ii]) &&
                     im->gdes[i].p_data[ii] != 0.0) {
                     if (im->gdes[i].yrule > 0) {
-                        gfx_new_line(im->canvas,
-                                     im->xorigin + ii, im->yorigin,
-                                     im->xorigin + ii,
-                                     im->yorigin -
-                                     im->gdes[i].yrule * im->ysize, 1.0,
-                                     im->gdes[i].col);
+                        gfx_line(im->cr,
+                                 im->xorigin + ii, im->yorigin,
+                                 im->xorigin + ii,
+                                 im->yorigin -
+                                 im->gdes[i].yrule * im->ysize, 1.0,
+                                 im->gdes[i].col);
                     } else if (im->gdes[i].yrule < 0) {
-                        gfx_new_line(im->canvas,
-                                     im->xorigin + ii,
-                                     im->yorigin - im->ysize,
-                                     im->xorigin + ii,
-                                     im->yorigin - (1 -
-                                                    im->gdes[i].yrule) *
-                                     im->ysize, 1.0, im->gdes[i].col);
+                        gfx_line(im->cr,
+                                 im->xorigin + ii,
+                                 im->yorigin - im->ysize,
+                                 im->xorigin + ii,
+                                 im->yorigin - (1 -
+                                                im->gdes[i].yrule) *
+                                 im->ysize, 1.0, im->gdes[i].col);
 
                     }
                 }
@@ -3078,52 +3007,74 @@ int graph_paint(
                we draw a square from t-1 to t with the value a.
 
                ********************************************************* */
-            if (im->gdes[i].col != 0x0) {
+            if (im->gdes[i].col.alpha != 0.0) {
                 /* GF_LINE and friend */
                 if (im->gdes[i].gf == GF_LINE) {
                     double    last_y = 0.0;
+                    int       draw_on = 0;
 
-                    node = NULL;
+                    cairo_save(im->cr);
+                    cairo_new_path(im->cr);
+
+                    cairo_set_line_width(im->cr, im->gdes[i].linewidth);
                     for (ii = 1; ii < im->xsize; ii++) {
                         if (isnan(im->gdes[i].p_data[ii])
                             || (im->slopemode == 1
                                 && isnan(im->gdes[i].p_data[ii - 1]))) {
-                            node = NULL;
+                            draw_on = 0;
                             continue;
                         }
-                        if (node == NULL) {
+                        if (draw_on == 0) {
                             last_y = ytr(im, im->gdes[i].p_data[ii]);
                             if (im->slopemode == 0) {
-                                node = gfx_new_line(im->canvas,
-                                                    ii - 1 + im->xorigin,
-                                                    last_y, ii + im->xorigin,
-                                                    last_y,
-                                                    im->gdes[i].linewidth,
-                                                    im->gdes[i].col);
+                                double    x = ii - 1 + im->xorigin;
+                                double    y = last_y;
+
+                                gfx_line_fit(im->cr, &x, &y);
+                                cairo_move_to(im->cr, x, y);
+                                x = ii + im->xorigin;
+                                y = last_y;
+                                gfx_line_fit(im->cr, &x, &y);
+                                cairo_line_to(im->cr, x, y);
                             } else {
-                                node = gfx_new_line(im->canvas,
-                                                    ii - 1 + im->xorigin,
-                                                    ytr(im,
-                                                        im->gdes[i].
-                                                        p_data[ii - 1]),
-                                                    ii + im->xorigin, last_y,
-                                                    im->gdes[i].linewidth,
-                                                    im->gdes[i].col);
+                                double    x = ii - 1 + im->xorigin;
+                                double    y = ytr(im,
+                                                  im->gdes[i].p_data[ii - 1]);
+
+                                gfx_line_fit(im->cr, &x, &y);
+                                cairo_move_to(im->cr, x, y);
+                                x = ii + im->xorigin;
+                                y = last_y;
+                                gfx_line_fit(im->cr, &x, &y);
+                                cairo_line_to(im->cr, x, y);
                             }
+                            draw_on = 1;
                         } else {
-                            double    new_y = ytr(im, im->gdes[i].p_data[ii]);
+                            double    x1 = ii + im->xorigin;
+                            double    y1 = ytr(im, im->gdes[i].p_data[ii]);
 
                             if (im->slopemode == 0
-                                && !AlmostEqual2sComplement(new_y, last_y,
-                                                            4)) {
-                                gfx_add_point(node, ii - 1 + im->xorigin,
-                                              new_y);
+                                && !AlmostEqual2sComplement(y1, last_y, 4)) {
+                                double    x = ii - 1 + im->xorigin;
+                                double    y = y1;
+
+                                gfx_line_fit(im->cr, &x, &y);
+                                cairo_line_to(im->cr, x, y);
                             };
-                            last_y = new_y;
-                            gfx_add_point(node, ii + im->xorigin, new_y);
+                            last_y = y1;
+                            gfx_line_fit(im->cr, &x1, &y1);
+                            cairo_line_to(im->cr, x1, y1);
                         };
 
                     }
+                    cairo_set_source_rgba(im->cr, im->gdes[i].col.red,
+                                          im->gdes[i].col.green,
+                                          im->gdes[i].col.blue,
+                                          im->gdes[i].col.alpha);
+                    cairo_set_line_cap(im->cr, CAIRO_LINE_CAP_ROUND);
+                    cairo_set_line_join(im->cr, CAIRO_LINE_JOIN_ROUND);
+                    cairo_stroke(im->cr);
+                    cairo_restore(im->cr);
                 } else {
                     int       idxI = -1;
                     double   *foreY = malloc(sizeof(double) * im->xsize * 2);
@@ -3147,11 +3098,11 @@ int graph_paint(
                                                               4)) {
                                 cntI++;
                             }
-                            node = gfx_new_area(im->canvas,
-                                                backX[0], backY[0],
-                                                foreX[0], foreY[0],
-                                                foreX[cntI], foreY[cntI],
-                                                im->gdes[i].col);
+                            gfx_new_area(im->cr,
+                                         backX[0], backY[0],
+                                         foreX[0], foreY[0],
+                                         foreX[cntI], foreY[cntI],
+                                         im->gdes[i].col);
                             while (cntI < idxI) {
                                 lastI = cntI;
                                 cntI++;
@@ -3165,9 +3116,10 @@ int graph_paint(
                                                                      1], 4)) {
                                     cntI++;
                                 }
-                                gfx_add_point(node, foreX[cntI], foreY[cntI]);
+                                gfx_add_point(im->cr, foreX[cntI],
+                                              foreY[cntI]);
                             }
-                            gfx_add_point(node, backX[idxI], backY[idxI]);
+                            gfx_add_point(im->cr, backX[idxI], backY[idxI]);
                             while (idxI > 1) {
                                 lastI = idxI;
                                 idxI--;
@@ -3181,10 +3133,12 @@ int graph_paint(
                                                                      1], 4)) {
                                     idxI--;
                                 }
-                                gfx_add_point(node, backX[idxI], backY[idxI]);
+                                gfx_add_point(im->cr, backX[idxI],
+                                              backY[idxI]);
                             }
                             idxI = -1;
                             drawem = 0;
+                            gfx_close_path(im->cr);
                         }
                         if (drawem != 0) {
                             drawem = 0;
@@ -3192,10 +3146,6 @@ int graph_paint(
                         }
                         if (ii == im->xsize)
                             break;
-
-                        /* keep things simple for now, just draw these bars
-                           do not try to build a big and complex area */
-
 
                         if (im->slopemode == 0 && ii == 0) {
                             continue;
@@ -3214,8 +3164,7 @@ int graph_paint(
                             drawem = 1;
                             continue;
                         }
-                        /* every area has to be wound clock-wise,
-                           so we have to make sur base remains base  */
+
                         if (ybase > ytop) {
                             double    extra = ytop;
 
@@ -3253,20 +3202,6 @@ int graph_paint(
             }
             lastgdes = &(im->gdes[i]);
             break;
-#ifdef WITH_PIECHART
-        case GF_PART:
-            if (isnan(im->gdes[i].yrule))   /* fetch variable */
-                im->gdes[i].yrule = im->gdes[im->gdes[i].vidx].vf.val;
-
-            if (finite(im->gdes[i].yrule)) {    /* even the fetched var can be NaN */
-                pie_part(im, im->gdes[i].col,
-                         im->pie_x, im->pie_y, im->piesize * 0.4,
-                         M_PI * 2.0 * PieStart / 100.0,
-                         M_PI * 2.0 * (PieStart + im->gdes[i].yrule) / 100.0);
-                PieStart += im->gdes[i].yrule;
-            }
-            break;
-#endif
         case GF_STACK:
             rrd_set_error
                 ("STACK should already be turned into LINE or AREA here");
@@ -3275,13 +3210,6 @@ int graph_paint(
 
         }               /* switch */
     }
-#ifdef WITH_PIECHART
-    if (piechart == 2) {
-        im->draw_x_grid = 0;
-        im->draw_y_grid = 0;
-    }
-#endif
-
 
     /* grid_paint also does the text */
     if (!(im->extra_flags & ONLY_GRAPH))
@@ -3298,19 +3226,19 @@ int graph_paint(
         case GF_HRULE:
             if (im->gdes[i].yrule >= im->minval
                 && im->gdes[i].yrule <= im->maxval)
-                gfx_new_line(im->canvas,
-                             im->xorigin, ytr(im, im->gdes[i].yrule),
-                             im->xorigin + im->xsize, ytr(im,
-                                                          im->gdes[i].yrule),
-                             1.0, im->gdes[i].col);
+                gfx_line(im->cr,
+                         im->xorigin, ytr(im, im->gdes[i].yrule),
+                         im->xorigin + im->xsize, ytr(im,
+                                                      im->gdes[i].yrule),
+                         1.0, im->gdes[i].col);
             break;
         case GF_VRULE:
             if (im->gdes[i].xrule >= im->start
                 && im->gdes[i].xrule <= im->end)
-                gfx_new_line(im->canvas,
-                             xtr(im, im->gdes[i].xrule), im->yorigin,
-                             xtr(im, im->gdes[i].xrule),
-                             im->yorigin - im->ysize, 1.0, im->gdes[i].col);
+                gfx_line(im->cr,
+                         xtr(im, im->gdes[i].xrule), im->yorigin,
+                         xtr(im, im->gdes[i].xrule),
+                         im->yorigin - im->ysize, 1.0, im->gdes[i].col);
             break;
         default:
             break;
@@ -3318,22 +3246,18 @@ int graph_paint(
     }
 
 
-    if (strcmp(im->graphfile, "-") == 0) {
-        fo = im->graphhandle ? im->graphhandle : stdout;
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-        /* Change translation mode for stdout to BINARY */
-        _setmode(_fileno(fo), O_BINARY);
-#endif
-    } else {
-        if ((fo = fopen(im->graphfile, "wb")) == NULL) {
-            rrd_set_error("Opening '%s' for write: %s", im->graphfile,
-                          rrd_strerror(errno));
-            return (-1);
+    switch (im->imgformat) {
+    case IF_PNG:
+        if (cairo_surface_write_to_png(im->surface, im->graphfile) !=
+            CAIRO_STATUS_SUCCESS) {
+            rrd_set_error("Could not save png to '%s'", im->graphfile);
+            return 1;
         }
+        break;
+    default:
+        cairo_show_page(im->cr);
+        break;
     }
-    gfx_render(im->canvas, im->ximg, im->yimg, 0x00000000, fo);
-    if (strcmp(im->graphfile, "-") != 0)
-        fclose(fo);
     return 0;
 }
 
@@ -3370,8 +3294,11 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].data_first = 0;
     im->gdes[im->gdes_c - 1].p_data = NULL;
     im->gdes[im->gdes_c - 1].rpnp = NULL;
-    im->gdes[im->gdes_c - 1].shift = 0;
-    im->gdes[im->gdes_c - 1].col = 0x0;
+    im->gdes[im->gdes_c - 1].shift = 0.0;
+    im->gdes[im->gdes_c - 1].col.red = 0.0;
+    im->gdes[im->gdes_c - 1].col.green = 0.0;
+    im->gdes[im->gdes_c - 1].col.blue = 0.0;
+    im->gdes[im->gdes_c - 1].col.alpha = 0.0;
     im->gdes[im->gdes_c - 1].legend[0] = '\0';
     im->gdes[im->gdes_c - 1].format[0] = '\0';
     im->gdes[im->gdes_c - 1].strftm = 0;
@@ -3426,6 +3353,13 @@ int rrd_graph(
     image_desc_t im;
 
     rrd_graph_init(&im);
+
+    /* a dummy surface so that we can measure text sizes for placements */
+    im.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
+    im.cr = cairo_create(im.surface);
+
+
+    /* not currently using this ... */
     im.graphhandle = stream;
 
     rrd_graph_options(argc, argv, &im);
@@ -3489,8 +3423,7 @@ int rrd_graph(
         }
 
         sprintf((*prdata)[0], im.imginfo, filename,
-                (long) (im.canvas->zoom * im.ximg),
-                (long) (im.canvas->zoom * im.yimg));
+                (long) (im.zoom * im.ximg), (long) (im.zoom * im.yimg));
     }
     im_free(&im);
     return 0;
@@ -3529,6 +3462,9 @@ void rrd_graph_init(
     im->forceleftspace = 0;
     im->symbol = ' ';
     im->viewfactor = 1.0;
+    im->imgformat = IF_PNG;
+    im->cr = NULL;
+    im->surface = NULL;
     im->extra_flags = 0;
     im->rigid = 0;
     im->gridfit = 1;
@@ -3543,10 +3479,10 @@ void rrd_graph_init(
     im->prt_c = 0;
     im->gdes_c = 0;
     im->gdes = NULL;
-    im->canvas = gfx_new_canvas();
     im->grid_dash_on = 1;
     im->grid_dash_off = 1;
     im->tabwidth = 40.0;
+    im->zoom = 1;
 
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
@@ -3600,7 +3536,7 @@ void rrd_graph_options(
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
     struct rrd_time_value start_tv, end_tv;
-    gfx_color_t color;
+    long unsigned int color;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -3827,7 +3763,7 @@ void rrd_graph_options(
             im->extra_flags |= FULL_SIZE_MODE;
             break;
         case 'i':
-            im->canvas->interlaced = 1;
+            /* interlaced png not supported at the moment */
             break;
         case 'r':
             im->rigid = 1;
@@ -3836,7 +3772,7 @@ void rrd_graph_options(
             im->imginfo = optarg;
             break;
         case 'a':
-            if ((int) (im->canvas->imgformat = if_conv(optarg)) == -1) {
+            if ((int) (im->imgformat = if_conv(optarg)) == -1) {
                 rrd_set_error("unsupported graphics format '%s'", optarg);
                 return;
             }
@@ -3881,7 +3817,7 @@ void rrd_graph_options(
                     return;
                 }
                 if ((ci = grc_conv(col_nam)) != -1) {
-                    im->graph_col[ci] = color;
+                    im->graph_col[ci] = gfx_hex_to_col(color);
                 } else {
                     rrd_set_error("invalid color name '%s'", col_nam);
                     return;
@@ -3922,8 +3858,8 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            im->canvas->zoom = atof(optarg);
-            if (im->canvas->zoom <= 0.0) {
+            im->zoom = atof(optarg);
+            if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
             }
@@ -3934,20 +3870,11 @@ void rrd_graph_options(
             break;
 
         case 'R':
-            if (strcmp(optarg, "normal") == 0)
-                im->canvas->aa_type = AA_NORMAL;
-            else if (strcmp(optarg, "light") == 0)
-                im->canvas->aa_type = AA_LIGHT;
-            else if (strcmp(optarg, "mono") == 0)
-                im->canvas->aa_type = AA_NONE;
-            else {
-                rrd_set_error("unknown font-render-mode '%s'", optarg);
-                return;
-            }
+            /* not supported curently */
             break;
 
         case 'B':
-            im->canvas->font_aa_threshold = atof(optarg);
+            /* not supported curently */
             break;
 
         case 'W':
@@ -4016,7 +3943,7 @@ int rrd_graph_color(
     } else {
         int       n = 0;
         char     *rest;
-        gfx_color_t col;
+        long unsigned int col;
 
         rest = strstr(color, ":");
         if (rest != NULL)
@@ -4040,7 +3967,7 @@ int rrd_graph_color(
         }
         if (rrd_test_error())
             return 0;
-        gdp->col = col;
+        gdp->col = gfx_hex_to_col(col);
         return n;
     }
 }

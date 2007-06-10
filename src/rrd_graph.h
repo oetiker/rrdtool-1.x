@@ -101,7 +101,6 @@ typedef struct ylab_t {
     int       lfac[4];  /* associated label spacing */
 } ylab_t;
 
-
 /* this structure describes the elements which can make up a graph.
    because they are quite diverse, not all elements will use all the
    possible parts of the structure. */
@@ -122,7 +121,7 @@ typedef struct graph_desc_t {
     long      ds;       /* data source number */
     enum cf_en cf;      /* consolidation function */
     enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
-    gfx_color_t col;    /* graph color */
+    struct gfx_color_t col; /* graph color */
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
     char      legend[FMT_LEG_LEN + 5];  /* legend */
     int       strftm;   /* should the VDEF legend be formated with strftime */
@@ -160,7 +159,7 @@ typedef struct image_desc_t {
 #ifdef WITH_PIECHART
     long      piesize;  /* size of the piechart */
 #endif
-    gfx_color_t graph_col[__GRC_END__]; /* real colors for the graph */
+    struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
     char      ylegend[210]; /* legend along the yaxis */
     char      title[210];   /* title for graph */
@@ -184,6 +183,7 @@ typedef struct image_desc_t {
                            grindlines falls in integer pixel values */
     char     *imginfo;  /* construct an <IMG ... tag and return 
                            as first retval */
+    enum gfx_if_en imgformat;   /* image format */
     int       lazy;     /* only update the image if there is
                            reasonable probablility that the
                            existing one is out of date */
@@ -197,6 +197,7 @@ typedef struct image_desc_t {
     long      pie_x, pie_y; /* where is the centerpoint */
 #endif
     long      ximg, yimg;   /* total size of the image */
+    double    zoom;
     double    magfact;  /* numerical magnitude */
     long      base;     /* 1000 or 1024 depending on what we graph */
     char      symbol;   /* magnitude symbol for y-axis */
@@ -211,7 +212,8 @@ typedef struct image_desc_t {
     long      prt_c;    /* number of print elements */
     long      gdes_c;   /* number of graphics elements */
     graph_desc_t *gdes; /* points to an array of graph elements */
-    gfx_canvas_t *canvas;   /* graphics library */
+    cairo_surface_t *surface;   /* graphics library */
+    cairo_t  *cr;       /* drawin context */
 } image_desc_t;
 
 /* Prototypes */

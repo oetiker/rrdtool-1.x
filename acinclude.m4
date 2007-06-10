@@ -36,9 +36,9 @@ AC_DEFUN([EX_CHECK_ALL],
              LDFLAGS=${LDFLAGS}" "`$PKGCONFIG --libs-only-other $4`
              LIBS=${LIBS}" "`$PKGCONFIG --libs-only-l $4`
 	     dnl remove the cached value and test again
-	     unset ac_cv_lib_$1_$2
+    	     unset ac_cv_lib_`echo $1 | sed ['s/[^_a-zA-Z0-9]/_/g;s/^[0-9]/_/']`_$2
              AC_CHECK_LIB($1,$2,[
-	         unset ac_cv_header_`echo $3 | sed ['s/[^a-zA-Z0-9_]/_/g;s/^[0-9]/_/']`
+	         unset ac_cv_header_`echo $3 | sed ['s/[^_a-zA-Z0-9]/_/g;s/^[0-9]/_/']`
 		 AC_CHECK_HEADER($3,[EX_CHECK_STATE=YES],[])
 	     ],[])
           else

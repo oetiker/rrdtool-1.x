@@ -275,9 +275,9 @@ dnl -----------------------------------
 
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
- [Vertical label angle: 90.0 (default) or 270.0])
+ [Vertical label angle: -90.0 (default) or 90.0])
 AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
- [Vertical label angle: 90.0 (default) or 270.0])
+ [Vertical label angle: -90.0 (default) or 90.0])
 
 AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
 [],[enable_rrdcgi=yes])
@@ -289,7 +289,7 @@ AC_ARG_WITH(rrd-default-font,
   if test -d ${WINDIR:-nodir}/cour.ttf ; then
 	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
   else
-	RRD_DEFAULT_FONT='$(fontsdir)/$(fonts_DATA)'
+	RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,Mono"'
   fi
 ])
 
@@ -601,10 +601,13 @@ AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 CORE_LIBS="$LIBS"
 
-EX_CHECK_ALL(art_lgpl_2, art_vpath_add_point,       libart_lgpl/libart.h,   libart-2.0,  2.3.17, ftp://ftp.gnome.org/pub/GNOME/sources/libart_lgpl/2.3/, /usr/include/libart-2.0)
-EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
-EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
-EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		    freetype2,   2.1.10,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+dnl EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.3,  http://www.gzip.org/zlib/, "")
+dnl EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.2.10,  http://prdownloads.sourceforge.net/libpng/, "")
+dnl EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		        freetype2,   2.1.10,  http://prdownloads.sourceforge.net/freetype/, /usr/include/freetype2)
+dnl EX_CHECK_ALL(fontconfig, FcInit,                    fontconfig.h,		    fontconfig,  2.3.1,  http://fontconfig.org/release/, /usr/include)
+EX_CHECK_ALL(cairo,      cairo_version,             cairo.h,                cairo-png,   1.4.6,  http://cairographics.org/releases/, "")
+dnl EX_CHECK_ALL(glib-2.0,   glib_check_version,        glib.h,                 glib-2.0,    2.12.12, ftp://ftp.gtk.org/pub/glib/2.12/, "")
+EX_CHECK_ALL(pango-1.0,  pango_version_check,       pango/pango.h,          pangocairo,  1.17,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.17, "")
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])

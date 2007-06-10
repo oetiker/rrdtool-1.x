@@ -266,7 +266,7 @@ int rrd_parse_color(
     default:
         return 1;       /* wrong number of digits */
     }
-    gdp->col = r << 24 | g << 16 | b << 8 | a;
+    gdp->col = gfx_hex_to_col(r << 24 | g << 16 | b << 8 | a);
     return 0;
 }
 
@@ -497,23 +497,22 @@ int rrd_parse_PVHLAST(
     static int spacecnt = 0;
 
     if (spacecnt == 0) {
-        float     one_space = gfx_get_text_width(im->canvas, 0,
+        float     one_space = gfx_get_text_width(im->cr, 0,
                                                  im->
                                                  text_prop[TEXT_PROP_LEGEND].
                                                  font,
                                                  im->
                                                  text_prop[TEXT_PROP_LEGEND].
                                                  size,
-                                                 im->tabwidth, "    ",
-                                                 0) / 4.0;
-        float     target_space = gfx_get_text_width(im->canvas, 0,
+                                                 im->tabwidth, "    ") / 4.0;
+        float     target_space = gfx_get_text_width(im->cr, 0,
                                                     im->
                                                     text_prop
                                                     [TEXT_PROP_LEGEND].font,
                                                     im->
                                                     text_prop
                                                     [TEXT_PROP_LEGEND].size,
-                                                    im->tabwidth, "oo", 0);
+                                                    im->tabwidth, "oo");
 
         spacecnt = target_space / one_space;
         dprintf("- spacecnt: %i onespace: %f targspace: %f\n", spacecnt,
@@ -607,7 +606,8 @@ int rrd_parse_PVHLAST(
             rrd_set_error("Could not parse color in '%s'", &tmpstr[j]);
             return 1;
         }
-        dprintf("- parsed color 0x%08x\n", (unsigned int) gdp->col);
+        dprintf("- parsed color %0.0f,%0.0f,%0.0f,%0.0f\n", gdp->col.red,
+                gdp->col.green, gdp->col.blue, gdp->col.alpha);
         colorfound = 1;
     } else {
         dprintf("- no color present in '%s'\n", tmpstr);
