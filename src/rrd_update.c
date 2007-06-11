@@ -325,6 +325,8 @@ int _rrd_update(
     if (rrd_file == NULL) {
         goto err_free;
     }
+    /* We are now at the beginning of the rra's */
+    rra_current = rra_start = rra_begin = rrd_file->header_len;
 
     /* initialize time */
     version = atoi(rrd.stat_head->version);
@@ -336,26 +338,6 @@ int _rrd_update(
     } else {
         current_time_usec = 0;
     }
-
-    rra_current = rra_start = rra_begin = rrd_file->header_len;
-    /* This is defined in the ANSI C standard, section 7.9.5.3:
-
-       When a file is opened with udpate mode ('+' as the second
-       or third character in the ... list of mode argument
-       variables), both input and output may be performed on the
-       associated stream.  However, ...  input may not be directly
-       followed by output without an intervening call to a file
-       positioning function, unless the input operation encounters
-       end-of-file. */
-#if 0                   //def HAVE_MMAP
-    rrd_filesize = rrd_file->file_size;
-    fseek(rrd_file->fd, 0, SEEK_END);
-    rrd_filesize = ftell(rrd_file->fd);
-    fseek(rrd_file->fd, rra_current, SEEK_SET);
-#else
-//    fseek(rrd_file->fd, 0, SEEK_CUR);
-#endif
-
 
     /* get exclusive lock to whole file.
      * lock gets removed when we close the file.
@@ -435,26 +417,6 @@ int _rrd_update(
         rrd_set_error("allocating pdp_new ...");
         goto err_free_tmpl_idx;
     }
-#if 0                   //def HAVE_MMAP
-    rrd_mmaped_file = mmap(0,
-                           rrd_file->file_len,
-                           PROT_READ | PROT_WRITE,
-                           MAP_SHARED, fileno(in_file), 0);
-    if (rrd_mmaped_file == MAP_FAILED) {
-        rrd_set_error("error mmapping file %s", filename);
-        free(updvals);
-        free(pdp_temp);
-        free(tmpl_idx);
-        rrd_free(&rrd);
-        rrd_close(rrd_file);
-        return (-1);
-    }
-#ifdef USE_MADVISE
-    /* when we use mmaping we tell the kernel the mmap equivalent
-       of POSIX_FADV_RANDOM */
-    madvise(rrd_mmaped_file, rrd_filesize, POSIX_MADV_RANDOM);
-#endif
-#endif
     /* loop through the arguments. */
     for (arg_i = 0; arg_i < argc; arg_i++) {
         char     *stepper = strdup(argv[arg_i]);
@@ -557,7 +519,6 @@ int _rrd_update(
             free(step_start);
             break;
         }
-
 
         /* seek to the beginning of the rra's */
         if (rra_current != rra_begin) {
@@ -1419,11 +1380,7 @@ int _rrd_update(
         free(rra_step_cnt);
     rpnstack_free(&rpnstack);
 
-#if 0                   //def HAVE_MMAP
-    if (munmap(rrd_file->file_start, rrd_file->file_len) == -1) {
-        rrd_set_error("error writing(unmapping) file: %s", filename);
-    }
-#else
+#if 0
     //rrd_flush(rrd_file);    //XXX: really needed?
 #endif
     /* if we got here and if there is an error and if the file has not been
@@ -1442,6 +1399,8 @@ int _rrd_update(
         rrd_set_error("seek rrd for live header writeback");
         goto err_free_pdp_new;
     }
+    /* for mmap, we did already write to the underlying mapping, so we do
+       not need to write again.  */
 #ifndef HAVE_MMAP
     if (version >= 3) {
         if (rrd_write(rrd_file, rrd.live_head,

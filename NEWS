@@ -2,6 +2,14 @@ RRDTOOL NEWS
 ============
 Major Changes between 1.2.x and 1.3.x
 
+File access methods
+-------------------
+* introduced file-accessor functions rrd_read/rrd_seek/rrd_write
+* implemented full mmap-based file access with madvise hints for improved
+  scalability, much reduced memory-footprint and much less blocking on
+  disk
+* implemented optional full file-descriptor access instead of FILE* access
+
 Graphing
 --------
 * libart has been replaced by cairo/pango
