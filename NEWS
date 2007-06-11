@@ -2,6 +2,9 @@ RRDTOOL NEWS
 ============
 Major Changes between 1.2.x and 1.3.x
 
+see http://oss.oetiker.ch/rrdtool-trac/wiki/RRDtool13
+for up to date information
+
 File access methods
 -------------------
 * introduced file-accessor functions rrd_read/rrd_seek/rrd_write
@@ -17,7 +20,10 @@ Graphing
 * full gridfitting 
 * --graph-render-mode=mono for non antialiased graphing
 * --font-render-mode=mono for non antialiased fonts
-
+* fonts come through fontconfig, use the Pango fontnameing
+  scheme -> 'Times 20' ... it is not possible to use
+  truetype fonts directly anymore.
+* Tabs are position independent.
 
 RRDTOOL NEWS
 ============
