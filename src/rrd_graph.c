@@ -1971,6 +1971,10 @@ double frexp10(
     return mnt;
 }
 
+/* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
+/* yes we are loosing precision by doing tos with floats instead of doubles
+   but it seems more stable this way. */
+
 static int AlmostEqual2sComplement(
     float A,
     float B,
@@ -2844,9 +2848,17 @@ int graph_size_location(
     return 0;
 }
 
-/* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
-/* yes we are loosing precision by doing tos with floats instead of doubles
-   but it seems more stable this way. */
+
+
+static cairo_status_t cairo_write_func_file(
+	void *closure,
+	const unsigned char *data,
+	unsigned int length)
+{
+	if (fwrite(data, length, 1, closure) != 1)
+		return CAIRO_STATUS_WRITE_ERROR;
+	return CAIRO_STATUS_SUCCESS;
+}
 
 
 /* draw that picture thing ... */
@@ -3276,11 +3288,20 @@ int graph_paint(
 
     switch (im->imgformat) {
     case IF_PNG:
-        if (cairo_surface_write_to_png(im->surface, im->graphfile) !=
-            CAIRO_STATUS_SUCCESS) {
-            rrd_set_error("Could not save png to '%s'", im->graphfile);
-            return 1;
-        }
+		{
+			cairo_status_t status;
+		
+			if (strcmp(im->graphfile, "-") == 0) {
+    	    	status = cairo_surface_write_to_png_stream(im->surface, &cairo_write_func_file, (void*)stdout);
+			} else {
+    	    	status = cairo_surface_write_to_png(im->surface, im->graphfile);
+			}
+		
+	        if (status != CAIRO_STATUS_SUCCESS) {
+    	        rrd_set_error("Could not save png to '%s'", im->graphfile);
+        	    return 1;
+	        }
+		}
         break;
     default:
         cairo_show_page(im->cr);
