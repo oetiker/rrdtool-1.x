@@ -297,27 +297,40 @@ elements on the RRD graphs. C<DEFAULT> sets the default value for all
 elements, C<TITLE> for the title, C<AXIS> for the axis labels, C<UNIT>
 for the vertical unit label, C<LEGEND> for the graph legend.
 
-Use Times for the title: C<--font TITLE:13:/usr/lib/fonts/times.ttf>
+Use Times for the title: C<--font TITLE:13:Times>
 
 If you do not give a font string you can modify just the sice of the default font:
 C<--font TITLE:13:>.
 
 If you specify the size 0 then you can modify just the font without touching
 the size. This is especially usefull for altering the default font without
-resetting the default fontsizes: C<--font DEFAULT:0:/usr/lib/fonts/times.ttf>.
+resetting the default fontsizes: C<--font DEFAULT:0:Courier>.
 
 RRDtool comes with a preset default font. You can set the environment
 variable C<RRD_DEFAULT_FONT> if you want to change this.
 
-Truetype fonts are only supported for PNG output. See below.
+RRDtool uses Pango for its font handling. This means you can to use
+the full Pango syntax when selecting your font:
+
+The font name has the form "[I<FAMILY-LIST>] [I<STYLE-OPTIONS>] [I<SIZE>]",
+where I<FAMILY-LIST> is a comma separated list of families optionally
+terminated by a comma, I<STYLE_OPTIONS> is a whitespace separated list of
+words where each WORD describes one of style, variant, weight, stretch, or
+gravity, and I<SIZE> is a decimal number (size in points) or optionally
+followed by the unit modifier "px" for absolute size. Any one of the options
+may be absent.
 
 [B<-R>|B<--font-render-mode> {I<normal>,I<light>,I<mono>}]
+
+(this gets ignored in 1.3 for now!)
 
 This lets you customize the strength of the font smoothing,
 or disable it entirely using I<mono>. By default, I<normal>
 font smoothing is used.
 
 [B<-B>|B<--font-smoothing-threshold> I<size>]
+
+(this gets ignored in 1.3 for now!)
 
 This specifies the largest font size which will be rendered
 bitmapped, that is, without any font smoothing. By default,
@@ -338,6 +351,8 @@ Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol,
 Times-Bold, Times-BoldItalic, Times-Italic, Times-Roman, and ZapfDingbats.
 
 [B<-i>|B<--interlaced>]
+
+(this gets ignored in 1.3 for now!)
 
 If images are interlaced they become visible on browsers more quickly.
 
@@ -383,6 +398,27 @@ See L<rrdgraph_data> and L<rrdgraph_rpn> for the exact format.
 You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.
 See L<rrdgraph_graph> for the exact format.
+
+=item Markup
+
+All text in rrdtool is rendered using Pango markup. This means text can contain embeded markup instructions.
+Simple html markup using 
+ 
+ <span key="value">text</span>
+
+can be used. Apart from the verbose syntax, there are also the following short tags available.
+
+ b     Bold
+ big   Makes font relatively larger, equivalent to <span size="larger">
+ i     Italic
+ s     Strikethrough
+ sub   Subscript
+ sup   Superscript
+ small Makes font relatively smaller, equivalent to <span size="smaller">
+ tt    Monospace font
+ u     Underline 
+ 
+More details on http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat.html.
 
 =back
 

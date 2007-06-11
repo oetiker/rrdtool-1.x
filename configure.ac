@@ -14,7 +14,7 @@ dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.299907052400
+NUMVERS=1.299907061100
 AC_SUBST(NUMVERS)
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
