@@ -151,6 +151,8 @@ points to device resolution pixels, this results in a crisper
 aperance. If this is not to your liking, you can use this switch
 to turn this behaviour off.
 
+Gridfitting is turned off for PDF, EPS, SVG output by default.
+
 =item Grid
 
 =over 4

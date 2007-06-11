@@ -327,16 +327,16 @@ int im_free(
     free(im->gdes);
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
-    
-    status = cairo_status (im->cr);
+
+    status = cairo_status(im->cr);
 
     if (im->cr)
         cairo_destroy(im->cr);
     if (im->surface)
         cairo_surface_destroy(im->surface);
     if (status)
-        fprintf(stderr,"OOPS: Cairo has issuesm it can't even die: %s\n",
-                         cairo_status_to_string (status));
+        fprintf(stderr, "OOPS: Cairo has issuesm it can't even die: %s\n",
+                cairo_status_to_string(status));
 
     return 0;
 }
@@ -2407,11 +2407,11 @@ void axis_paint(
 
     /* arrow for X and Y axis direction */
 
-    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 3, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin,    /* horyzontal */
+    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 3, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin,  /* horyzontal */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
 
-    gfx_new_area(im, im->xorigin - 3, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin, im->yorigin - im->ysize - 7,    /* vertical */
+    gfx_new_area(im, im->xorigin - 3, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin, im->yorigin - im->ysize - 7,  /* vertical */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
 
