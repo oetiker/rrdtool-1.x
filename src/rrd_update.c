@@ -1334,12 +1334,10 @@ int _rrd_update(
                     (rrd.stat_head->ds_cnt) * (rrd.rra_ptr[i].cur_row) *
                     sizeof(rrd_value_t);
                 if (rra_pos_tmp != rra_current) {
-#ifndef HAVE_MMAP
                     if (rrd_seek(rrd_file, rra_pos_tmp, SEEK_SET) != 0) {
                         rrd_set_error("seek error in rrd");
                         break;
                     }
-#endif
                     rra_current = rra_pos_tmp;
                 }
 #ifdef DEBUG
@@ -1444,7 +1442,7 @@ int _rrd_update(
         rrd_set_error("seek rrd for live header writeback");
         goto err_free_pdp_new;
     }
-
+#ifndef HAVE_MMAP
     if (version >= 3) {
         if (rrd_write(rrd_file, rrd.live_head,
                       sizeof(live_head_t) * 1) != sizeof(live_head_t) * 1) {
@@ -1483,6 +1481,7 @@ int _rrd_update(
         rrd_set_error("rrd_write rra_ptr to rrd");
         goto err_free_pdp_new;
     }
+#endif
 #ifdef HAVE_POSIX_FADVISExxx
 
     /* with update we have write ops, so they will probably not be done by now, this means
