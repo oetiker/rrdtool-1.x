@@ -150,7 +150,7 @@ average, ignoring all UNKNOWN values in the process.
 
 Example: C<CDEF:x=a,b,c,d,4,AVG>
 
-B<TREND>
+B<TREND, TRENDNAN>
 
 Create a "sliding window" average of another data series.
 
@@ -173,6 +173,12 @@ average is essentially computed as shown here:
      Value at sample (t0) will be the average between (t0-delay) and (t0)
      Value at sample (t1) will be the average between (t1-delay) and (t1)
      Value at sample (t2) will be the average between (t2-delay) and (t2)
+
+TRENDNAN is - in contrast to TREND - NAN-safe. If you use TREND and one 
+source value is NAN the complete sliding window is affected. The TRENDNAN 
+operation ignores all NAN-values in a sliding window and computes the 
+average of the remaining values.
+
 
 =item Special values
 

@@ -172,6 +172,7 @@ void rpn_compact2str(
             add_op(OP_SORT, SORT)
             add_op(OP_REV, REV)
             add_op(OP_TREND, TREND)
+            add_op(OP_TRENDNAN, TRENDNAN)
             add_op(OP_RAD2DEG, RAD2DEG)
             add_op(OP_DEG2RAD, DEG2RAD)
             add_op(OP_AVG, AVG)
@@ -364,6 +365,7 @@ rpnp_t   *rpn_parse(
             match_op(OP_SORT, SORT)
             match_op(OP_REV, REV)
             match_op(OP_TREND, TREND)
+            match_op(OP_TRENDNAN, TRENDNAN)
             match_op(OP_RAD2DEG, RAD2DEG)
             match_op(OP_DEG2RAD, DEG2RAD)
             match_op(OP_AVG, AVG)
@@ -757,6 +759,7 @@ short rpn_calc(
             }
             break;
         case OP_TREND:
+		case OP_TRENDNAN:
             stackunderflow(1);
             if ((rpi < 2) || (rpnp[rpi - 2].op != OP_VARIABLE)) {
                 rrd_set_error("malformed trend arguments");
@@ -766,16 +769,23 @@ short rpn_calc(
                 time_t    step = (time_t) rpnp[rpi - 2].step;
 
                 if (output_idx > (int) ceil((float) dur / (float) step)) {
-                    double    accum = 0.0;
-                    int       i = 0;
+					int 	ignorenan = (rpnp[rpi].op == OP_TREND);
+					double 	accum = 0.0;
+					int 	i = 0;
+					int 	count = 0;
 
-                    do {
-                        accum +=
-                            rpnp[rpi - 2].data[rpnp[rpi - 2].ds_cnt * i--];
-                        dur -= step;
-                    } while (dur > 0);
-
-                    rpnstack->s[--stptr] = (accum / -i);
+					do {
+			 			double val = 
+							rpnp[rpi - 2].data[rpnp[rpi - 2].ds_cnt * i--];
+						if (ignorenan || !isnan(val)) {
+							accum += val;
+							++count;
+			 			}
+				
+						dur -= step;
+					} while (dur > 0);
+			
+					rpnstack -> s[--stptr] = (count == 0) ? DNAN : (accum / count);
                 } else
                     rpnstack->s[--stptr] = DNAN;
             }
