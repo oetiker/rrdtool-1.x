@@ -2928,16 +2928,19 @@ int graph_paint(
                                        im->yimg * im->zoom);
         break;
     case IF_PDF:
+        im->gridfit = 0;
         im->surface =
             cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
                                      im->yimg * im->zoom);
         break;
     case IF_EPS:
+        im->gridfit = 0;
         im->surface =
             cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
                                     im->yimg * im->zoom);
         break;
     case IF_SVG:
+        im->gridfit = 0;
         im->surface =
             cairo_svg_surface_create(im->graphfile, im->ximg * im->zoom,
                                      im->yimg * im->zoom);
