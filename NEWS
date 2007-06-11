@@ -5,7 +5,7 @@ Major Changes between 1.2.x and 1.3.x
 see http://oss.oetiker.ch/rrdtool-trac/wiki/RRDtool13
 for up to date information
 
-File access methods
+File access methods (Bernhard Fischer)
 -------------------
 * introduced file-accessor functions rrd_read/rrd_seek/rrd_write
 * implemented full mmap-based file access with madvise hints for improved
@@ -13,7 +13,7 @@ File access methods
   disk
 * implemented optional full file-descriptor access instead of FILE* access
 
-Graphing
+Graphing (Tobi Oetiker)
 --------
 * libart has been replaced by cairo/pango
 * pango markup is supported
@@ -24,6 +24,8 @@ Graphing
   scheme -> 'Times 20' ... it is not possible to use
   truetype fonts directly anymore.
 * Tabs are position independent.
+* TRENDNAN filter that ignores NAN values while caculating the TREND data. (Timo Stripf)
+* --full-size-mode to specify the outer border of the image and not just of the graphing canvas (Matthew Chambers)
 
 RRDTOOL NEWS
 ============
