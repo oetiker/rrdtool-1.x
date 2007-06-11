@@ -307,6 +307,7 @@ int im_free(
     image_desc_t *im)
 {
     unsigned long i, ii;
+    cairo_status_t status;
 
     if (im == NULL)
         return 0;
@@ -324,10 +325,19 @@ int im_free(
         free(im->gdes[i].rpnp);
     }
     free(im->gdes);
-    if (im->surface)
-        cairo_surface_destroy(im->surface);
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
+    
+    status = cairo_status (im->cr);
+
+    if (im->cr)
+        cairo_destroy(im->cr);
+    if (im->surface)
+        cairo_surface_destroy(im->surface);
+    if (status)
+        fprintf(stderr,"OOPS: Cairo has issuesm it can't even die: %s\n",
+                         cairo_status_to_string (status));
+
     return 0;
 }
 

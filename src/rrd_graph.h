@@ -5,6 +5,7 @@
 #define y1 cairo_y1
 #define index cairo_index
 
+#include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-svg.h>
 #include <cairo-ps.h>
