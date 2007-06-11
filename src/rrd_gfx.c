@@ -18,12 +18,12 @@
 #endif                          /* _MSC_VER */
 
 #include "rrd_tool.h"
-#include "rrd_gfx.h"
+#include "rrd_graph.h"
 
 
 /* create a new line */
 void gfx_line(
-    cairo_t * cr,
+    image_desc_t *im,
     double X0,
     double Y0,
     double X1,
@@ -31,11 +31,11 @@ void gfx_line(
     double width,
     gfx_color_t color)
 {
-    gfx_dashed_line(cr, X0, Y0, X1, Y1, width, color, 0, 0);
+    gfx_dashed_line(im, X0, Y0, X1, Y1, width, color, 0, 0);
 }
 
 void gfx_dashed_line(
-    cairo_t * cr,
+    image_desc_t *im,
     double X0,
     double Y0,
     double X1,
@@ -45,6 +45,7 @@ void gfx_dashed_line(
     double dash_on,
     double dash_off)
 {
+    cairo_t  *cr = im->cr;
     double    dashes[] = { dash_on, dash_off };
     double    x = 0;
     double    y = 0;
@@ -52,10 +53,10 @@ void gfx_dashed_line(
     cairo_save(cr);
     cairo_new_path(cr);
     cairo_set_line_width(cr, width);
-    gfx_line_fit(cr, &x, &y);
-    gfx_line_fit(cr, &X0, &Y0);
+    gfx_line_fit(im, &x, &y);
+    gfx_line_fit(im, &X0, &Y0);
     cairo_move_to(cr, X0, Y0);
-    gfx_line_fit(cr, &X1, &Y1);
+    gfx_line_fit(im, &X1, &Y1);
     cairo_line_to(cr, X1, Y1);
     if (dash_on > 0 || dash_off > 0)
         cairo_set_dash(cr, dashes, 2, x);
@@ -67,7 +68,7 @@ void gfx_dashed_line(
 
 /* create a new area */
 void gfx_new_area(
-    cairo_t * cr,
+    image_desc_t *im,
     double X0,
     double Y0,
     double X1,
@@ -76,12 +77,14 @@ void gfx_new_area(
     double Y2,
     gfx_color_t color)
 {
+    cairo_t  *cr = im->cr;
+
     cairo_new_path(cr);
-    gfx_area_fit(cr, &X0, &Y0);
+    gfx_area_fit(im, &X0, &Y0);
     cairo_move_to(cr, X0, Y0);
-    gfx_area_fit(cr, &X1, &Y1);
+    gfx_area_fit(im, &X1, &Y1);
     cairo_line_to(cr, X1, Y1);
-    gfx_area_fit(cr, &X2, &Y2);
+    gfx_area_fit(im, &X2, &Y2);
     cairo_line_to(cr, X2, Y2);
     cairo_set_source_rgba(cr, color.red, color.green, color.blue,
                           color.alpha);
@@ -89,24 +92,28 @@ void gfx_new_area(
 
 /* add a point to a line or to an area */
 void gfx_add_point(
-    cairo_t * cr,
+    image_desc_t *im,
     double x,
     double y)
 {
-    gfx_area_fit(cr, &x, &y);
+    cairo_t  *cr = im->cr;
+
+    gfx_area_fit(im, &x, &y);
     cairo_line_to(cr, x, y);
 }
 
 void gfx_close_path(
-    cairo_t * cr)
+    image_desc_t *im)
 {
+    cairo_t  *cr = im->cr;
+
     cairo_close_path(cr);
     cairo_fill(cr);
 }
 
 /* create a text node */
 static PangoLayout *gfx_prep_text(
-    cairo_t * cr,
+    image_desc_t *im,
     double x,
     gfx_color_t color,
     char *font,
@@ -116,6 +123,7 @@ static PangoLayout *gfx_prep_text(
 {
     PangoLayout *layout;
     PangoFontDescription *font_desc;
+    cairo_t  *cr = im->cr;
 
     /* for performance reasons we might
        want todo that only once ... tabs will always
@@ -125,6 +133,7 @@ static PangoLayout *gfx_prep_text(
     long      tab_shift = fmod(x, tabwidth);
 
     PangoTabArray *tab_array;
+    PangoContext *pango_context;
 
     tab_array = pango_tab_array_new(tab_count, (gboolean) (1));
     for (i = 1; i <= tab_count; i++) {
@@ -135,6 +144,9 @@ static PangoLayout *gfx_prep_text(
     cairo_set_source_rgba(cr, color.red, color.green, color.blue,
                           color.alpha);
     layout = pango_cairo_create_layout(cr);
+    pango_context = pango_layout_get_context(layout);
+    pango_cairo_context_set_font_options(pango_context, im->font_options);
+    pango_cairo_update_context(cr, pango_context);
 
     pango_layout_set_tabs(layout, tab_array);
     font_desc = pango_font_description_from_string(font);
@@ -146,7 +158,7 @@ static PangoLayout *gfx_prep_text(
 
 /* Size Text Node */
 double gfx_get_text_width(
-    cairo_t * cr,
+    image_desc_t *im,
     double start,
     char *font,
     double size,
@@ -159,11 +171,11 @@ double gfx_get_text_width(
     char     *tab;
 
     /* turn \\t into tab */
-    while (tab = strstr(text, "\\t")) {
+    while ((tab = strstr(text, "\\t"))) {
         memmove(tab + 1, tab + 2, strlen(tab + 2));
         tab[0] = (char) 9;
     }
-    layout = gfx_prep_text(cr, start, color, font, size, tabwidth, text);
+    layout = gfx_prep_text(im, start, color, font, size, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
     pango_tab_array_free(pango_layout_get_tabs(layout));
     g_object_unref(layout);
@@ -171,7 +183,7 @@ double gfx_get_text_width(
 }
 
 void gfx_text(
-    cairo_t * cr,
+    image_desc_t *im,
     double x,
     double y,
     gfx_color_t color,
@@ -186,6 +198,7 @@ void gfx_text(
     PangoLayout *layout;
     PangoRectangle log_rect;
     PangoRectangle ink_rect;
+    cairo_t  *cr = im->cr;
     double    sx = 0;
     double    sy = 0;
 
@@ -193,11 +206,10 @@ void gfx_text(
     cairo_translate(cr, x, y);
 /*    gfx_line(cr,-2,0,2,0,1,color);
     gfx_line(cr,0,-2,0,2,1,color); */
-    layout = gfx_prep_text(cr, x, color, font, size, tabwidth, text);
+    layout = gfx_prep_text(im, x, color, font, size, tabwidth, text);
     pango_layout_get_pixel_extents(layout, &ink_rect, &log_rect);
     cairo_rotate(cr, -angle * G_PI / 180.0);
     sx = log_rect.x;
-    sy = ink_rect.y;
     switch (h_align) {
     case GFX_H_RIGHT:
         sx -= log_rect.width;
@@ -210,7 +222,7 @@ void gfx_text(
     case GFX_H_NULL:
         break;
     }
-    sy += log_rect.y;
+    sy = log_rect.y;
     switch (v_align) {
     case GFX_V_TOP:
         break;
@@ -248,20 +260,23 @@ struct gfx_color_t gfx_hex_to_col(
 /* gridfit_lines */
 
 void gfx_line_fit(
-    cairo_t * cr,
+    image_desc_t *im,
     double *x,
     double *y)
 {
+    cairo_t  *cr = im->cr;
     double    line_width;
     double    line_height;
 
+    if (!im->gridfit)
+        return;
     cairo_user_to_device(cr, x, y);
     line_width = cairo_get_line_width(cr);
     line_height = line_width;
     cairo_user_to_device_distance(cr, &line_width, &line_height);
     line_width = line_width / 2.0 - (long) (line_width / 2.0);
     line_height = line_height / 2.0 - (long) (line_height / 2.0);
-    *x = (double) ((long) (*x + 0.5)) + line_width;
+    *x = (double) ((long) (*x + 0.5)) - line_width;
     *y = (double) ((long) (*y + 0.5)) + line_height;
     cairo_device_to_user(cr, x, y);
 }
@@ -269,10 +284,14 @@ void gfx_line_fit(
 /* gridfit_areas */
 
 void gfx_area_fit(
-    cairo_t * cr,
+    image_desc_t *im,
     double *x,
     double *y)
 {
+    cairo_t  *cr = im->cr;
+
+    if (!im->gridfit)
+        return;
     cairo_user_to_device(cr, x, y);
     *x = (double) ((long) (*x + 0.5));
     *y = (double) ((long) (*y + 0.5));

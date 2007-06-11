@@ -497,7 +497,7 @@ int rrd_parse_PVHLAST(
     static int spacecnt = 0;
 
     if (spacecnt == 0) {
-        float     one_space = gfx_get_text_width(im->cr, 0,
+        float     one_space = gfx_get_text_width(im, 0,
                                                  im->
                                                  text_prop[TEXT_PROP_LEGEND].
                                                  font,
@@ -505,7 +505,7 @@ int rrd_parse_PVHLAST(
                                                  text_prop[TEXT_PROP_LEGEND].
                                                  size,
                                                  im->tabwidth, "    ") / 4.0;
-        float     target_space = gfx_get_text_width(im->cr, 0,
+        float     target_space = gfx_get_text_width(im, 0,
                                                     im->
                                                     text_prop
                                                     [TEXT_PROP_LEGEND].font,

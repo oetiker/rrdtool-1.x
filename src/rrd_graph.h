@@ -1,9 +1,17 @@
 #ifndef _RRD_GRAPH_H
 #define _RRD_GRAPH_H
 
+#define y0 cairo_y0
+#define y1 cairo_y1
+#define index cairo_index
+
+#include <cairo-pdf.h>
+#include <cairo-svg.h>
+#include <cairo-ps.h>
+#include <pango/pangocairo.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
-#include "rrd_gfx.h"
 
 #define MAX_VNAME_LEN 255
 #define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
@@ -36,9 +44,6 @@ enum grc_en { GRC_CANVAS = 0, GRC_BACK, GRC_SHADEA, GRC_SHADEB,
 enum gf_en { GF_PRINT = 0, GF_GPRINT, GF_COMMENT, GF_HRULE, GF_VRULE, GF_LINE,
     GF_AREA, GF_STACK, GF_TICK,
     GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
-#ifdef WITH_PIECHART
-    GF_PART,
-#endif
     GF_XPORT
 };
 
@@ -61,6 +66,21 @@ enum text_prop_en { TEXT_PROP_DEFAULT = 0,  /* default settings */
     TEXT_PROP_LEGEND,   /* fot the legend below the graph */
     TEXT_PROP_LAST
 };
+
+
+enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF };
+enum gfx_en { GFX_LINE = 0, GFX_AREA, GFX_TEXT };
+enum gfx_h_align_en { GFX_H_NULL = 0, GFX_H_LEFT, GFX_H_RIGHT, GFX_H_CENTER };
+enum gfx_v_align_en { GFX_V_NULL = 0, GFX_V_TOP, GFX_V_BOTTOM, GFX_V_CENTER };
+
+/* cairo color components */
+typedef struct gfx_color_t {
+    double    red;
+    double    green;
+    double    blue;
+    double    alpha;
+} gfx_color_t;
+
 
 typedef struct text_prop_t {
     double    size;
@@ -156,9 +176,6 @@ typedef struct image_desc_t {
     char      graphfile[MAXPATH];   /* filename for graphic */
     FILE     *graphhandle;  /* FILE to use if filename is "-" */
     long      xsize, ysize; /* graph area size in pixels */
-#ifdef WITH_PIECHART
-    long      piesize;  /* size of the piechart */
-#endif
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
     char      ylegend[210]; /* legend along the yaxis */
@@ -193,9 +210,6 @@ typedef struct image_desc_t {
     /* status information */
 
     long      xorigin, yorigin; /* where is (0,0) of the graph */
-#ifdef WITH_PIECHART
-    long      pie_x, pie_y; /* where is the centerpoint */
-#endif
     long      ximg, yimg;   /* total size of the image */
     double    zoom;
     double    magfact;  /* numerical magnitude */
@@ -214,6 +228,8 @@ typedef struct image_desc_t {
     graph_desc_t *gdes; /* points to an array of graph elements */
     cairo_surface_t *surface;   /* graphics library */
     cairo_t  *cr;       /* drawin context */
+    cairo_font_options_t *font_options; /* cairo font options */
+    cairo_antialias_t graph_antialias;  /* antialiasing for the graph */
 } image_desc_t;
 
 /* Prototypes */
@@ -300,16 +316,6 @@ int       graph_paint(
     image_desc_t *,
     char ***);
 
-#ifdef WITH_PIECHART
-void      pie_part(
-    image_desc_t *,
-    gfx_color_t,
-    double,
-    double,
-    double,
-    double,
-    double);
-#endif
 int       gdes_alloc(
     image_desc_t *);
 int       scan_for_col(
@@ -355,10 +361,88 @@ int       vdef_percent_compar(
 int       graph_size_location(
     image_desc_t *,
     int
-#ifdef WITH_PIECHART
-    ,
-    int
-#endif
     );
+
+
+/* create a new line */
+void      gfx_line(
+    image_desc_t *im,
+    double X0,
+    double Y0,
+    double X1,
+    double Y1,
+    double width,
+    gfx_color_t color);
+
+void      gfx_dashed_line(
+    image_desc_t *im,
+    double X0,
+    double Y0,
+    double X1,
+    double Y1,
+    double width,
+    gfx_color_t color,
+    double dash_on,
+    double dash_off);
+
+/* create a new area */
+void      gfx_new_area(
+    image_desc_t *im,
+    double X0,
+    double Y0,
+    double X1,
+    double Y1,
+    double X2,
+    double Y2,
+    gfx_color_t color);
+
+/* add a point to a line or to an area */
+void      gfx_add_point(
+    image_desc_t *im,
+    double x,
+    double y);
+
+/* close current path so it ends at the same point as it started */
+void      gfx_close_path(
+    image_desc_t *im);
+
+
+/* create a text node */
+void      gfx_text(
+    image_desc_t *im,
+    double x,
+    double y,
+    gfx_color_t color,
+    char *font,
+    double size,
+    double tabwidth,
+    double angle,
+    enum gfx_h_align_en h_align,
+    enum gfx_v_align_en v_align,
+    const char *text);
+
+/* measure width of a text string */
+double    gfx_get_text_width(
+    image_desc_t *im,
+    double start,
+    char *font,
+    double size,
+    double tabwidth,
+    char *text);
+
+
+/* convert color */
+gfx_color_t gfx_hex_to_col(
+    long unsigned int);
+
+void      gfx_line_fit(
+    image_desc_t *im,
+    double *x,
+    double *y);
+
+void      gfx_area_fit(
+    image_desc_t *im,
+    double *x,
+    double *y);
 
 #endif

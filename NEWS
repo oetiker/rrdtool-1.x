@@ -14,7 +14,10 @@ Graphing
 --------
 * libart has been replaced by cairo/pango
 * pango markup is supported
-* full gridfitting
+* full gridfitting 
+* --graph-render-mode=mono for non antialiased graphing
+* --font-render-mode=mono for non antialiased fonts
+
 
 RRDTOOL NEWS
 ============
