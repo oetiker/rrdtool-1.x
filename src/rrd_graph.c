@@ -2406,11 +2406,12 @@ void axis_paint(
 
 
     /* arrow for X and Y axis direction */
-    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 2, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin + 0.5,    /* LINEOFFSET */
+
+    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 3, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin,    /* horyzontal */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
 
-    gfx_new_area(im, im->xorigin - 2, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin + 0.5, im->yorigin - im->ysize - 7,    /* LINEOFFSET */
+    gfx_new_area(im, im->xorigin - 3, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin, im->yorigin - im->ysize - 7,    /* vertical */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
 
