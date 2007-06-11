@@ -1,5 +1,15 @@
 RRDTOOL NEWS
 ============
+Major Changes between 1.2.x and 1.3.x
+
+Graphing
+--------
+* libart has been replaced by cairo/pango
+* pango markup is supported
+* full gridfitting
+
+RRDTOOL NEWS
+============
 Major Changes between 1.0.x and 1.2.x
 
 Graphing
