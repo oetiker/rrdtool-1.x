@@ -183,6 +183,12 @@ int rrd_update(
     int argc,
     char **argv)
 {
+    struct option long_options[] = {
+        {"template", required_argument, 0, 't'},
+        {0, 0, 0, 0}
+    };
+    int       option_index = 0;
+    int       opt;
     char     *tmplt = NULL;
     int       rc;
 
@@ -190,13 +196,6 @@ int rrd_update(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        static struct option long_options[] = {
-            {"template", required_argument, 0, 't'},
-            {0, 0, 0, 0}
-        };
-        int       option_index = 0;
-        int       opt;
-
         opt = getopt_long(argc, argv, "t:", long_options, &option_index);
 
         if (opt == EOF)
@@ -204,7 +203,7 @@ int rrd_update(
 
         switch (opt) {
         case 't':
-            tmplt = optarg;
+            tmplt = strdup(optarg);
             break;
 
         case '?':
@@ -222,6 +221,7 @@ int rrd_update(
 
     rc = rrd_update_r(argv[optind], tmplt,
                       argc - optind - 1, (const char **) (argv + optind + 1));
+    free(tmplt);
     return rc;
 }
 
@@ -433,7 +433,8 @@ int _rrd_update(
         }
         /* initialize all ds input to unknown except the first one
            which has always got to be set */
-        memset(updvals + 1, 'U', rrd.stat_head->ds_cnt);
+        for (ii = 1; ii <= rrd.stat_head->ds_cnt; ii++)
+            updvals[ii] = "U";
         updvals[0] = stepper;
         /* separate all ds elements; first must be examined separately
            due to alternate time syntax */
