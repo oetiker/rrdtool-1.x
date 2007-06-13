@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <tcl.h>
+#include <stdlib.h>
 #include "../../src/rrd_tool.h"
 #include "../../src/rrd_format.h"
 
