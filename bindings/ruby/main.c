@@ -49,7 +49,7 @@ string_arr string_arr_new(
             a.strings[i + 1] = strdup(buf);
             break;
         default:
-            rb_raise(rb_eTypeError, "invalid argument");
+            rb_raise(rb_eTypeError, "invalid argument - %s, expected T_STRING or T_FIXNUM on index %d", rb_class2name(CLASS_OF(v)), i);
             break;
         }
     }
