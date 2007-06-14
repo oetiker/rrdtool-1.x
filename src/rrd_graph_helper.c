@@ -62,7 +62,7 @@ int       rrd_parse_color(
     const char *const,
     graph_desc_t *const);
 
-int rrd_parse_textalign(
+int       rrd_parse_textalign(
     const char *const,
     unsigned int *const,
     graph_desc_t *const);
@@ -496,17 +496,14 @@ int rrd_parse_textalign(
     unsigned int *const eaten,
     graph_desc_t *const gdp)
 {
-    if (strcmp(&line[*eaten],"left")==0){
-        gdp->txtalign=TXA_LEFT;
-    } 
-    else if (strcmp(&line[*eaten],"right")==0){
-        gdp->txtalign=TXA_RIGHT;
-    } 
-    else if (strcmp(&line[*eaten],"justified")==0){
-        gdp->txtalign=TXA_JUSTIFIED;
-    }
-    else if (strcmp(&line[*eaten],"center")==0){
-        gdp->txtalign=TXA_CENTER;
+    if (strcmp(&line[*eaten], "left") == 0) {
+        gdp->txtalign = TXA_LEFT;
+    } else if (strcmp(&line[*eaten], "right") == 0) {
+        gdp->txtalign = TXA_RIGHT;
+    } else if (strcmp(&line[*eaten], "justified") == 0) {
+        gdp->txtalign = TXA_JUSTIFIED;
+    } else if (strcmp(&line[*eaten], "center") == 0) {
+        gdp->txtalign = TXA_CENTER;
     } else {
         rrd_set_error("Unknown alignement type '%s'", &line[*eaten]);
         return 1;

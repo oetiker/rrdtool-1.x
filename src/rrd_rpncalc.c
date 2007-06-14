@@ -759,7 +759,7 @@ short rpn_calc(
             }
             break;
         case OP_TREND:
-		case OP_TRENDNAN:
+        case OP_TRENDNAN:
             stackunderflow(1);
             if ((rpi < 2) || (rpnp[rpi - 2].op != OP_VARIABLE)) {
                 rrd_set_error("malformed trend arguments");
@@ -769,23 +769,24 @@ short rpn_calc(
                 time_t    step = (time_t) rpnp[rpi - 2].step;
 
                 if (output_idx > (int) ceil((float) dur / (float) step)) {
-					int 	ignorenan = (rpnp[rpi].op == OP_TREND);
-					double 	accum = 0.0;
-					int 	i = 0;
-					int 	count = 0;
+                    int       ignorenan = (rpnp[rpi].op == OP_TREND);
+                    double    accum = 0.0;
+                    int       i = 0;
+                    int       count = 0;
 
-					do {
-			 			double val = 
-							rpnp[rpi - 2].data[rpnp[rpi - 2].ds_cnt * i--];
-						if (ignorenan || !isnan(val)) {
-							accum += val;
-							++count;
-			 			}
-				
-						dur -= step;
-					} while (dur > 0);
-			
-					rpnstack -> s[--stptr] = (count == 0) ? DNAN : (accum / count);
+                    do {
+                        double    val =
+                            rpnp[rpi - 2].data[rpnp[rpi - 2].ds_cnt * i--];
+                        if (ignorenan || !isnan(val)) {
+                            accum += val;
+                            ++count;
+                        }
+
+                        dur -= step;
+                    } while (dur > 0);
+
+                    rpnstack->s[--stptr] =
+                        (count == 0) ? DNAN : (accum / count);
                 } else
                     rpnstack->s[--stptr] = DNAN;
             }

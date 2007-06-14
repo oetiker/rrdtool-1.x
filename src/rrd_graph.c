@@ -1580,7 +1580,7 @@ int leg_place(
     int       glue = 0;
     int       i, ii, mark = 0;
     char      prt_fctn; /*special printfunctions */
-    char      default_txtalign = TXA_JUSTIFIED; /*default line orientation*/
+    char      default_txtalign = TXA_JUSTIFIED; /*default line orientation */
     int      *legspace;
 
     if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
@@ -1598,7 +1598,7 @@ int leg_place(
 
             /* hide legends for rules which are not displayed */
 
-            if (im->gdes[i].gf == GF_TEXTALIGN){
+            if (im->gdes[i].gf == GF_TEXTALIGN) {
                 default_txtalign = im->gdes[i].txtalign;
             }
 
@@ -1644,7 +1644,7 @@ int leg_place(
                 prt_fctn = 'l';
             }
 
-            /* remove exess space from the end of the legend for \g*/            
+            /* remove exess space from the end of the legend for \g */
             while (prt_fctn == 'g' &&
                    leg_cc > 0 && im->gdes[i].legend[leg_cc - 1] == ' ') {
                 leg_cc--;
@@ -1677,19 +1677,19 @@ int leg_place(
             if (prt_fctn == '\0') {
                 if (i == im->gdes_c - 1 || fill > im->ximg - 2 * border) {
                     /* just one legend item is left right or center */
-                    switch (default_txtalign){
+                    switch (default_txtalign) {
                     case TXA_RIGHT:
-                         prt_fctn = 'r';
-                         break;
+                        prt_fctn = 'r';
+                        break;
                     case TXA_CENTER:
-                         prt_fctn = 'c';
-                         break;
+                        prt_fctn = 'c';
+                        break;
                     case TXA_JUSTIFIED:
-                         prt_fctn = 'j';
-                         break;
+                        prt_fctn = 'j';
+                        break;
                     default:
-                         prt_fctn = 'l';
-                         break;
+                        prt_fctn = 'l';
+                        break;
                     }
                 }
                 /* is it time to place the legends ? */
@@ -1701,7 +1701,7 @@ int leg_place(
                         leg_c--;
                     }
                 }
-                if (leg_c == 1 && prt_fctn == 'j'){
+                if (leg_c == 1 && prt_fctn == 'j') {
                     prt_fctn = 'l';
                 }
             }
@@ -2874,13 +2874,13 @@ int graph_size_location(
 
 
 static cairo_status_t cairo_write_func_file(
-	void *closure,
-	const unsigned char *data,
-	unsigned int length)
+    void *closure,
+    const unsigned char *data,
+    unsigned int length)
 {
-	if (fwrite(data, length, 1, closure) != 1)
-		return CAIRO_STATUS_WRITE_ERROR;
-	return CAIRO_STATUS_SUCCESS;
+    if (fwrite(data, length, 1, closure) != 1)
+        return CAIRO_STATUS_WRITE_ERROR;
+    return CAIRO_STATUS_SUCCESS;
 }
 
 
@@ -3312,20 +3312,23 @@ int graph_paint(
 
     switch (im->imgformat) {
     case IF_PNG:
-		{
-			cairo_status_t status;
-		
-			if (strcmp(im->graphfile, "-") == 0) {
-    	    	status = cairo_surface_write_to_png_stream(im->surface, &cairo_write_func_file, (void*)stdout);
-			} else {
-    	    	status = cairo_surface_write_to_png(im->surface, im->graphfile);
-			}
-		
-	        if (status != CAIRO_STATUS_SUCCESS) {
-    	        rrd_set_error("Could not save png to '%s'", im->graphfile);
-        	    return 1;
-	        }
-		}
+    {
+        cairo_status_t status;
+
+        if (strcmp(im->graphfile, "-") == 0) {
+            status =
+                cairo_surface_write_to_png_stream(im->surface,
+                                                  &cairo_write_func_file,
+                                                  (void *) stdout);
+        } else {
+            status = cairo_surface_write_to_png(im->surface, im->graphfile);
+        }
+
+        if (status != CAIRO_STATUS_SUCCESS) {
+            rrd_set_error("Could not save png to '%s'", im->graphfile);
+            return 1;
+        }
+    }
         break;
     default:
         cairo_show_page(im->cr);
