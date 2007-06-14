@@ -235,6 +235,7 @@ enum gf_en gf_conv(
     conv_if(AREA, GF_AREA);
     conv_if(STACK, GF_STACK);
     conv_if(TICK, GF_TICK);
+    conv_if(TEXTALIGN, GF_TEXTALIGN);
     conv_if(DEF, GF_DEF);
     conv_if(CDEF, GF_CDEF);
     conv_if(VDEF, GF_VDEF);
@@ -1542,6 +1543,7 @@ int print_calc(
             graphelement = 1;
             break;
         case GF_COMMENT:
+        case GF_TEXTALIGN:
         case GF_DEF:
         case GF_CDEF:
         case GF_VDEF:
@@ -1578,6 +1580,7 @@ int leg_place(
     int       glue = 0;
     int       i, ii, mark = 0;
     char      prt_fctn; /*special printfunctions */
+    char      default_txtalign = TXA_JUSTIFIED; /*default line orientation*/
     int      *legspace;
 
     if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
@@ -1594,6 +1597,10 @@ int leg_place(
             fill_last = fill;
 
             /* hide legends for rules which are not displayed */
+
+            if (im->gdes[i].gf == GF_TEXTALIGN){
+                default_txtalign = im->gdes[i].txtalign;
+            }
 
             if (!(im->extra_flags & FORCE_RULES_LEGEND)) {
                 if (im->gdes[i].gf == GF_HRULE &&
@@ -1632,22 +1639,24 @@ int leg_place(
                 return -1;
 
             }
-
-            /* remove exess space */
+            /* \n -> \l */
             if (prt_fctn == 'n') {
                 prt_fctn = 'l';
             }
 
+            /* remove exess space from the end of the legend for \g*/            
             while (prt_fctn == 'g' &&
                    leg_cc > 0 && im->gdes[i].legend[leg_cc - 1] == ' ') {
                 leg_cc--;
                 im->gdes[i].legend[leg_cc] = '\0';
             }
+
             if (leg_cc != 0) {
+
+                /* no interleg space if string ends in \g */
                 legspace[i] = (prt_fctn == 'g' ? 0 : interleg);
 
                 if (fill > 0) {
-                    /* no interleg space if string ends in \g */
                     fill += legspace[i];
                 }
                 fill += gfx_get_text_width(im, fill + border,
@@ -1664,10 +1673,25 @@ int leg_place(
             if (prt_fctn == 'g') {
                 prt_fctn = '\0';
             }
-            if (prt_fctn == '\0') {
-                if (i == im->gdes_c - 1)
-                    prt_fctn = 'l';
 
+            if (prt_fctn == '\0') {
+                if (i == im->gdes_c - 1 || fill > im->ximg - 2 * border) {
+                    /* just one legend item is left right or center */
+                    switch (default_txtalign){
+                    case TXA_RIGHT:
+                         prt_fctn = 'r';
+                         break;
+                    case TXA_CENTER:
+                         prt_fctn = 'c';
+                         break;
+                    case TXA_JUSTIFIED:
+                         prt_fctn = 'j';
+                         break;
+                    default:
+                         prt_fctn = 'l';
+                         break;
+                    }
+                }
                 /* is it time to place the legends ? */
                 if (fill > im->ximg - 2 * border) {
                     if (leg_c > 1) {
@@ -1675,11 +1699,10 @@ int leg_place(
                         i--;
                         fill = fill_last;
                         leg_c--;
-                        prt_fctn = 'j';
-                    } else {
-                        prt_fctn = 'l';
                     }
-
+                }
+                if (leg_c == 1 && prt_fctn == 'j'){
+                    prt_fctn = 'l';
                 }
             }
 
@@ -2995,6 +3018,7 @@ int graph_paint(
         case GF_PRINT:
         case GF_GPRINT:
         case GF_COMMENT:
+        case GF_TEXTALIGN:
         case GF_HRULE:
         case GF_VRULE:
         case GF_XPORT:

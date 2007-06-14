@@ -43,10 +43,12 @@ enum grc_en { GRC_CANVAS = 0, GRC_BACK, GRC_SHADEA, GRC_SHADEB,
 #define GRIDWIDTH  0.4
 
 enum gf_en { GF_PRINT = 0, GF_GPRINT, GF_COMMENT, GF_HRULE, GF_VRULE, GF_LINE,
-    GF_AREA, GF_STACK, GF_TICK,
+    GF_AREA, GF_STACK, GF_TICK, GF_TEXTALIGN,
     GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
     GF_XPORT
 };
+
+enum txa_en { TXA_LEFT = 0, TXA_RIGHT, TXA_CENTER, TXA_JUSTIFIED };
 
 enum vdef_op_en {
     VDEF_MAXIMUM = 0    /* like the MAX in (G)PRINT */
@@ -168,6 +170,7 @@ typedef struct graph_desc_t {
     rrd_value_t *data;  /* the raw data drawn from the rrd */
     rrd_value_t *p_data;    /* processed data, xsize elments */
     double    linewidth;    /* linewideth */
+    enum txa_en txtalign;   /* change default alignment strategy for text */
 } graph_desc_t;
 
 typedef struct image_desc_t {

@@ -24,18 +24,11 @@ B<TICK>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<fraction>[B<:>I<legend>]]
 
 B<SHIFT>B<:>I<vname>B<:>I<offset>
 
-=cut
-
-#
-#B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
-#
-
-=pod
+B<TEXTALIGN>B<:>{B<left>|B<right>|B<justified>|B<center>}
 
 B<PRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
 
 B<GPRINT>B<:>I<vname>B<:>I<CF>B<:>I<format> (deprecated)
-
 
 B<STACK>B<:>I<vname>B<#>I<color>[B<:>I<legend>] (deprecated)
 
@@ -278,6 +271,14 @@ offset of S<( 7*24*60*60 = ) 604'800 seconds> to "look back" one
 week. Make sure to tell the viewer of your graph you did this ...
 As with the other graphing elements, you can specify a number or
 a variable here.
+
+=item B<TEXTALIGN>B<:>{B<left>|B<right>|B<justified>|B<center>}
+
+Labels are placed below the graph. When they overflow to the left, they wrap
+to the next line. By default, lines are justified left and right. The
+B<TEXTALIGN> function lets you change this default. This is a command and
+not an option, so that you can change the default several times in your
+argument list.
 
 =cut
 

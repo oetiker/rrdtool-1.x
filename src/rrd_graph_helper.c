@@ -52,65 +52,81 @@ int       rrd_parse_find_gf(
     const char *const,
     unsigned int *const,
     graph_desc_t *const);
+
 int       rrd_parse_legend(
     const char *const,
     unsigned int *const,
     graph_desc_t *const);
+
 int       rrd_parse_color(
     const char *const,
     graph_desc_t *const);
+
+int rrd_parse_textalign(
+    const char *const,
+    unsigned int *const,
+    graph_desc_t *const);
+
+
 int       rrd_parse_CF(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     enum cf_en *const);
+
 int       rrd_parse_print(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_shift(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_xport(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_PVHLAST(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_make_vname(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_find_vname(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_def(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_vdef(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
+
 int       rrd_parse_cdef(
     const char *const,
     unsigned int *const,
     graph_desc_t *const,
     image_desc_t *const);
-
-
 
 int rrd_parse_find_gf(
     const char *const line,
@@ -475,6 +491,31 @@ int rrd_parse_xport(
     return 0;
 }
 
+int rrd_parse_textalign(
+    const char *const line,
+    unsigned int *const eaten,
+    graph_desc_t *const gdp)
+{
+    if (strcmp(&line[*eaten],"left")==0){
+        gdp->txtalign=TXA_LEFT;
+    } 
+    else if (strcmp(&line[*eaten],"right")==0){
+        gdp->txtalign=TXA_RIGHT;
+    } 
+    else if (strcmp(&line[*eaten],"justified")==0){
+        gdp->txtalign=TXA_JUSTIFIED;
+    }
+    else if (strcmp(&line[*eaten],"center")==0){
+        gdp->txtalign=TXA_CENTER;
+    } else {
+        rrd_set_error("Unknown alignement type '%s'", &line[*eaten]);
+        return 1;
+    }
+    *eaten += strlen(&line[*eaten]);
+    return 0;
+}
+
+
 /* Parsing of PART, VRULE, HRULE, LINE, AREA, STACK and TICK
 ** is done in one function.
 **
@@ -701,9 +742,6 @@ int rrd_parse_PVHLAST(
     /* PART, HRULE, VRULE and TICK cannot be stacked. */
     if ((gdp->gf == GF_HRULE)
         || (gdp->gf == GF_VRULE)
-#ifdef WITH_PIECHART
-        || (gdp->gf == GF_PART)
-#endif
         || (gdp->gf == GF_TICK)
         )
         return 0;
@@ -714,7 +752,7 @@ int rrd_parse_PVHLAST(
         j = scan_for_col(&line[*eaten], 5, tmpstr);
         if (line[*eaten + j] != '\0' && line[*eaten + j] != ':') {
             /* not 5 chars */
-            rrd_set_error("Garbage found where STACK expected");
+            rrd_set_error("STACK expected and not found");
             return 1;
         }
         if (!strcmp("STACK", tmpstr)) {
@@ -722,7 +760,7 @@ int rrd_parse_PVHLAST(
             gdp->stack = 1;
             (*eaten) += j;
         } else {
-            rrd_set_error("Garbage found where STACK expected");
+            rrd_set_error("STACK expected and not found");
             return 1;
         }
     }
@@ -975,6 +1013,10 @@ void rrd_graph_script(
             if (rrd_parse_shift(argv[i], &eaten, gdp, im))
                 return;
             break;
+        case GF_TEXTALIGN: /* left|right|center|justified */
+            if (rrd_parse_textalign(argv[i], &eaten, gdp))
+                return;
+            break;
         case GF_XPORT:
             if (rrd_parse_xport(argv[i], &eaten, gdp, im))
                 return;
@@ -989,9 +1031,6 @@ void rrd_graph_script(
             if (rrd_parse_legend(argv[i], &eaten, gdp))
                 return;
             break;
-#ifdef WITH_PIECHART
-        case GF_PART:  /* value[#color[:legend]] */
-#endif
         case GF_VRULE: /* value#color[:legend] */
         case GF_HRULE: /* value#color[:legend] */
         case GF_LINE:  /* vname-or-value[#color[:legend]][:STACK] */
@@ -1036,7 +1075,7 @@ void rrd_graph_script(
                 dprintf("Command finished successfully\n");
         }
         if (eaten < strlen(argv[i])) {
-            rrd_set_error("Garbage '%s' after command:\n%s",
+            rrd_set_error("I don't understand '%s' in command: '%s'.",
                           &argv[i][eaten], argv[i]);
             return;
         }
