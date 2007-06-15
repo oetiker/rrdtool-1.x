@@ -91,6 +91,7 @@ extern    "C" {
     unsigned char *rrd_graph_in_memory(
     int argc,
     char **argv,
+    char ***prdata,
     int *xsize,
     int *ysize,
     double *ymin,
