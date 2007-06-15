@@ -26,6 +26,7 @@ Graphing (Tobi Oetiker)
 * Tabs are position independent.
 * TRENDNAN filter that ignores NAN values while caculating the TREND data. (Timo Stripf)
 * --full-size-mode to specify the outer border of the image and not just of the graphing canvas (Matthew Chambers)
+* TEXTALIGN command to alter default text alignment behaviour
 
 RRDTOOL NEWS
 ============
