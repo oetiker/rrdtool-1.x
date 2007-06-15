@@ -215,6 +215,7 @@ typedef struct image_desc_t {
 
     long      xorigin, yorigin; /* where is (0,0) of the graph */
     long      ximg, yimg;   /* total size of the image */
+    size_t    rendered_image_size;
     double    zoom;
     double    magfact;  /* numerical magnitude */
     long      base;     /* 1000 or 1024 depending on what we graph */
@@ -227,6 +228,7 @@ typedef struct image_desc_t {
     int       extra_flags;  /* flags for boolean options */
     /* data elements */
 
+    unsigned char *rendered_image;
     long      prt_c;    /* number of print elements */
     long      gdes_c;   /* number of graphics elements */
     graph_desc_t *gdes; /* points to an array of graph elements */

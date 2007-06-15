@@ -87,6 +87,16 @@ extern    "C" {
     FILE *,
     double *,
     double *);
+
+    unsigned char *rrd_graph_in_memory(
+    int argc,
+    char **argv,
+    int *xsize,
+    int *ysize,
+    double *ymin,
+    double *ymax,
+    size_t * img_size);
+
     int       rrd_fetch(
     int,
     char **,

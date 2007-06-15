@@ -2873,7 +2873,7 @@ int graph_size_location(
 
 
 
-static cairo_status_t cairo_write_func_file(
+static cairo_status_t cairo_write_func_filehandle(
     void *closure,
     const unsigned char *data,
     unsigned int length)
@@ -2883,6 +2883,25 @@ static cairo_status_t cairo_write_func_file(
     return CAIRO_STATUS_SUCCESS;
 }
 
+static cairo_status_t cairo_copy_to_buffer(
+    void *closure,
+    const unsigned char *data,
+    unsigned int length)
+{
+    image_desc_t *im = closure;
+
+    im->rendered_image =
+        realloc(im->rendered_image, im->rendered_image_size + length);
+    if (im->rendered_image == NULL) {
+        return CAIRO_STATUS_WRITE_ERROR;
+    }
+
+    memcpy(im->rendered_image + im->rendered_image_size, data, length);
+
+    im->rendered_image_size += length;
+
+    return CAIRO_STATUS_SUCCESS;
+}
 
 /* draw that picture thing ... */
 int graph_paint(
@@ -2965,21 +2984,30 @@ int graph_paint(
         break;
     case IF_PDF:
         im->gridfit = 0;
-        im->surface =
-            cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
-                                     im->yimg * im->zoom);
+        im->surface = strlen(im->graphfile)
+            ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
+                                       im->yimg * im->zoom)
+            : cairo_pdf_surface_create_for_stream(&cairo_copy_to_buffer, im,
+                                                  im->ximg * im->zoom,
+                                                  im->yimg * im->zoom);
         break;
     case IF_EPS:
         im->gridfit = 0;
-        im->surface =
-            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
-                                    im->yimg * im->zoom);
+        im->surface = strlen(im->graphfile)
+            ? cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
+                                      im->yimg * im->zoom)
+            : cairo_ps_surface_create_for_stream(&cairo_copy_to_buffer, im,
+                                                 im->ximg * im->zoom,
+                                                 im->yimg * im->zoom);
         break;
     case IF_SVG:
         im->gridfit = 0;
-        im->surface =
-            cairo_svg_surface_create(im->graphfile, im->ximg * im->zoom,
-                                     im->yimg * im->zoom);
+        im->surface = strlen(im->graphfile)
+            ? cairo_svg_surface_create(im->graphfile, im->ximg * im->zoom,
+                                       im->yimg * im->zoom)
+            : cairo_svg_surface_create_for_stream(&cairo_copy_to_buffer, im,
+                                                  im->ximg * im->zoom,
+                                                  im->yimg * im->zoom);
         cairo_svg_surface_restrict_to_version(im->surface,
                                               CAIRO_SVG_VERSION_1_1);
         break;
@@ -3315,10 +3343,14 @@ int graph_paint(
     {
         cairo_status_t status;
 
-        if (strcmp(im->graphfile, "-") == 0) {
+        if (strlen(im->graphfile) == 0) {
             status =
                 cairo_surface_write_to_png_stream(im->surface,
-                                                  &cairo_write_func_file,
+                                                  &cairo_copy_to_buffer, im);
+        } else if (strcmp(im->graphfile, "-") == 0) {
+            status =
+                cairo_surface_write_to_png_stream(im->surface,
+                                                  &cairo_write_func_filehandle,
                                                   (void *) stdout);
         } else {
             status = cairo_surface_write_to_png(im->surface, im->graphfile);
@@ -3331,7 +3363,11 @@ int graph_paint(
     }
         break;
     default:
-        cairo_show_page(im->cr);
+        if (strlen(im->graphfile)) {
+            cairo_show_page(im->cr);
+        } else {
+            cairo_surface_finish(im->surface);
+        }
         break;
     }
     return 0;
@@ -3433,9 +3469,6 @@ int rrd_graph(
     /* a dummy surface so that we can measure text sizes for placements */
     im.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
     im.cr = cairo_create(im.surface);
-
-
-    /* not currently using this ... */
     im.graphhandle = stream;
 
     rrd_graph_options(argc, argv, &im);
@@ -3444,11 +3477,17 @@ int rrd_graph(
         return -1;
     }
 
+    if (optind >= argc) {
+        rrd_set_error("missing filename");
+        return -1;
+    }
+
     if (strlen(argv[optind]) >= MAXPATH) {
         rrd_set_error("filename (including path) too long");
         im_free(&im);
         return -1;
     }
+
     strncpy(im.graphfile, argv[optind], MAXPATH - 1);
     im.graphfile[MAXPATH - 1] = '\0';
 
@@ -3505,6 +3544,60 @@ int rrd_graph(
     return 0;
 }
 
+/* a simplified version of the above that just creates the graph in memory 
+   and returns a pointer to it. */
+
+unsigned char *rrd_graph_in_memory(
+    int argc,
+    char **argv,
+    char ***prdata,
+    int *xsize,
+    int *ysize,
+    double *ymin,
+    double *ymax,
+    size_t * img_size)
+{
+    image_desc_t im;
+
+    rrd_graph_init(&im);
+
+    /* a dummy surface so that we can measure text sizes for placements */
+    im.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
+    im.cr = cairo_create(im.surface);
+
+    rrd_graph_options(argc, argv, &im);
+    if (rrd_test_error()) {
+        im_free(&im);
+        return NULL;
+    }
+
+    rrd_graph_script(argc, argv, &im, 1);
+    if (rrd_test_error()) {
+        im_free(&im);
+        return NULL;
+    }
+
+    /* Everything is now read and the actual work can start */
+
+    /* by not assigning a name to im.graphfile data will be written to
+       newly allocated memory on im.rendered_image ... */
+
+    (*prdata) = NULL;
+    if (graph_paint(&im, prdata) == -1) {
+        im_free(&im);
+        return NULL;
+    }
+
+    *xsize = im.ximg;
+    *ysize = im.yimg;
+    *ymin = im.minval;
+    *ymax = im.maxval;
+    *img_size = im.rendered_image_size;
+    im_free(&im);
+
+    return im.rendered_image;
+}
+
 void rrd_graph_init(
     image_desc_t *im)
 {
@@ -3527,6 +3620,8 @@ void rrd_graph_init(
     im->yimg = 0;
     im->xsize = 400;
     im->ysize = 100;
+    im->rendered_image_size = 0;
+    im->rendered_image = NULL;
     im->step = 0;
     im->ylegend[0] = '\0';
     im->title[0] = '\0';
@@ -3539,6 +3634,7 @@ void rrd_graph_init(
     im->symbol = ' ';
     im->viewfactor = 1.0;
     im->imgformat = IF_PNG;
+    im->graphfile[0] = '\0';
     im->cr = NULL;
     im->surface = NULL;
     im->extra_flags = 0;
@@ -4002,11 +4098,6 @@ void rrd_graph_options(
                 rrd_set_error("unknown option '%s'", argv[optind - 1]);
             return;
         }
-    }
-
-    if (optind >= argc) {
-        rrd_set_error("missing filename");
-        return;
     }
 
     if (im->logarithmic == 1 && im->minval <= 0) {
