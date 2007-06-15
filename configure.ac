@@ -289,7 +289,7 @@ AC_ARG_WITH(rrd-default-font,
   if test -d ${WINDIR:-nodir}/cour.ttf ; then
 	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
   else
-	RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,Mono"'
+	RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace,Courier"'
   fi
 ])
 
