@@ -7,7 +7,7 @@ Alex van den Bogaerdt <alex with ergens.op.het.net> (rrd_resize.c and more)
 Amos Shapira <amos with gezernet.co.il>
 Andreas Kroomaa <andre with ml.ee>
 Andrew Turner <turner with mint.net> (LAST consolidator)
-Bernard Fischer <bfischer with syslog.ch> 64bit stuff and --alt-autoscale-max
+Bernard Fischer <bfischer with syslog.ch> 64bit stuff, --alt-autoscale-max, MMAP rewrite
 Bill Fenner <fenner with research.att.com>
 Blair Zajac <bzajac with geostaff.com>
 Bruce Campbell <bruce.campbell with apnic.net>
@@ -18,6 +18,7 @@ Dan Dunn <dandunn with computer.org>
 Dave Bodenstab <dave@bodenstab.org> AT style time in update, tclfixes
 David Grimes <dgrimes with navisite.com> SQRT/SORT/REV/SHIFT/TREND
 David L. Barker <dave with ncomtech.com> xport function bug fixes
+Evan Miller <emiller with imvu.com> Multiplicative HW Enhancements
 Frank Strauss <strauss with escape.de> TCL bindings
 Henrik Storner <henrik with hswn.dk> functions for min/max values of data in graph
 Hermann Hueni <hueni with glue.ch> (SunOS porting)
