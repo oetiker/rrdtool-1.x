@@ -1,19 +1,28 @@
+%define with_python %{?_without_python: 0} %{?!_without_python: 1}
+%define with_php %{?_without_php: 0} %{?!_without_php: 1}
+%define with_tcl %{?_without_tcl: 0} %{?!_without_tcl: 1}
+%define with_ruby %{?_without_ruby: 0} %{?!_without_ruby: 1}
+%define php_rrd_svn 839
+%define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
+
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.2.23
-Release: 3%{?dist}
+Version: 1.2.99907052400
+Release: 0.1%{?dist}
 License: GPL
 Group: Applications/Databases
-URL: http://oss.oetiker.ch/%{name}/
-Source: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
+URL: http://oss.oetiker.ch/rrdtool/
+#Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
+Source0: http://oss.oetiker.ch/rrdtool/pub/beta/rrdtool-trunk-svn-snap.tar.gz
+Source1: php4-svn%{php_rrd_svn}.tar.gz
+Patch0: rrdtool-1.2.13-php.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires: gcc-c++, openssl-devel
-BuildRequires: libpng-devel, zlib-devel, libart_lgpl-devel >= 2.0
-BuildRequires: freetype-devel, python-devel >= 2.3
-Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
-
-%{!?python_sitearch: %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib(1)')}
-%{!?python_version: %define python_version %(%{__python} -c 'import sys; print sys.version.split(" ")[0]')}
+BuildRequires: gcc-c++, openssl-devel, freetype-devel
+BuildRequires: libpng-devel, zlib-devel, cairo-devel
+BuildRequires: perl-ExtUtils-MakeMaker
+%if "%{?fedora}" >= "7"
+BuildRequires: perl-devel
+%endif
 
 %description
 RRD is the Acronym for Round Robin Database. RRD is a system to store and
@@ -43,46 +52,121 @@ RRD is the Acronym for Round Robin Database. RRD is a system to store and
 display time-series data (i.e. network bandwidth, machine-room temperature,
 server load average). This package contains documentation on using RRD.
 
-%package -n perl-%{name}
+%package perl
 Summary: Perl RRDtool bindings
 Group: Development/Languages
 Requires: %{name} = %{version}-%{release}
-Obsoletes: %{name}-perl <= %{version}
-Provides: %{name}-perl = %{version}
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+Obsoletes: perl-%{name} < %{version}-%{release}
+Provides: perl-%{name} = %{version}-%{release}
 
-%description -n perl-%{name}
+%description perl
 The Perl RRDtool bindings
 
-%package -n python-%{name}
+%if %{with_python}
+%{!?python_sitearch: %define python_sitearch %(%{__python} -c 'from distutils import sysconfig; print sysconfig.get_python_lib(1)')}
+# eval to 2.3 if python isn't yet present, workaround for no python in fc4 minimal buildroot
+%{!?python_version: %define python_version %(%{__python} -c 'import sys; print sys.version.split(" ")[0]' || echo "2.3")}
+
+%package python
 Summary: Python RRDtool bindings
 Group: Development/Languages
-BuildRequires: python
+BuildRequires: python-devel >= 2.3
 Requires: python >= %{python_version}
 Requires: %{name} = %{version}-%{release}
+Obsoletes: python-%{name} < %{version}-%{release}
+Provides: python-%{name} = %{version}-%{release}
 
-%description -n python-%{name}
+%description python
 Python RRDtool bindings.
+%endif
+
+%ifarch ppc64
+# php bits busted on ppc64 at the moment
+%define with_php 0
+%endif
+
+%if %{with_php}
+%package php
+Summary: PHP RRDtool bindings
+Group: Development/Languages
+BuildRequires: php-devel >= 4.0
+Requires: php >= 4.0
+Requires: %{name} = %{version}-%{release}
+Obsoletes: php-%{name} < %{version}-%{release}
+Provides: php-%{name} = %{version}-%{release}
+
+%description php
+The %{name}-php package includes a dynamic shared object (DSO) that adds
+RRDtool bindings to the PHP HTML-embedded scripting language.
+%endif
+
+%if %{with_tcl}
+%package tcl
+Summary: Tcl RRDtool bindings
+Group: Development/Languages
+BuildRequires: tcl-devel >= 8.0
+Requires: tcl >= 8.0
+Requires: %{name} = %{version}-%{release}
+Obsoletes: tcl-%{name} < %{version}-%{release}
+Provides: tcl-%{name} = %{version}-%{release}
+
+%description tcl
+The %{name}-tcl package includes RRDtool bindings for Tcl.
+%endif
+
+%if %{with_ruby}
+%{!?ruby_sitearch: %define ruby_sitearch %(ruby -rrbconfig -e 'puts Config::CONFIG["sitearchdir"]')}
+
+%package ruby
+Summary: Ruby RRDtool bindings
+Group: Development/Languages
+BuildRequires: ruby, ruby-devel
+Requires: ruby(abi) = 1.8
+Requires: %{name} = %{version}-%{release}
+
+%description ruby
+The %{name}-ruby package includes RRDtool bindings for Ruby.
+%endif
 
 %prep
-%setup
+#setup -q
+%setup -q -n %{name}-%{version}
+%setup -q -T -D -a 1
+# Patch based on http://oss.oetiker.ch/rrdtool/pub/contrib/php_rrdtool.tgz
+%if %{with_php}
+%patch0 -p0 -b .php
+%{__perl} -pi -e 's|../config.h|../rrd_config.h|g' php4/rrdtool.c
+%endif
 
 # Fix to find correct python dir on lib64
 %{__perl} -pi -e 's|get_python_lib\(0,0,prefix|get_python_lib\(1,0,prefix|g' \
     configure
 
-# Shouldn't be necessary when using --libdir, but
-# introduces hardcoded rpaths where it shouldn't,
-# if not done...
+# Most edits shouldn't be necessary when using --libdir, but
+# w/o, some introduce hardcoded rpaths where they shouldn't,
 %{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' \
-    configure Makefile.in
+    configure Makefile.in php4/configure php4/ltconfig*
 
 %build
 %configure \
-    --program-prefix="%{?_program_prefix}" \
-    --libdir=%{_libdir} \
+    --with-perl-options='INSTALLDIRS="vendor"' \
+%if %{with_tcl}
+    --enable-tcl-site \
+    --with-tcllib=%{_libdir} \
+%else
+    --disable-tcl \
+%endif
+%if %{with_python}
+    --enable-python \
+%else
+    --disable-python \
+%endif
+%if %{with_ruby}
+    --enable-ruby \
+%endif
     --disable-static \
-    --with-pic \
-    --with-perl-options='INSTALLDIRS="vendor"'
+    --with-pic
 
 # Fix another rpath issue
 %{__perl} -pi.orig -e 's|-Wl,--rpath -Wl,\$rp||g' \
@@ -97,6 +181,19 @@ popd
 
 %{__make} %{?_smp_mflags}
 
+# Build the php module, the tmp install is required
+%if %{with_php}
+%define rrdtmp %{_tmppath}/%{name}-%{version}-tmpinstall
+%{__make} install DESTDIR="%{rrdtmp}"
+pushd php4/
+%configure \
+    --with-rrdtool="%{rrdtmp}%{_prefix}" \
+    --disable-static
+%{__make} %{?_smp_mflags}
+popd
+%{__rm} -rf %{rrdtmp}
+%endif
+
 # Fix @perl@ and @PERL@
 find examples/ -type f \
     -exec %{__perl} -pi -e 's|^#! \@perl\@|#!%{__perl}|gi' {} \;
@@ -106,6 +203,20 @@ find examples/ -name "*.pl" \
 %install
 rm -rf $RPM_BUILD_ROOT
 make DESTDIR="$RPM_BUILD_ROOT" install
+
+# Install the php module
+%if %{with_php}
+%{__install} -D -m0755 php4/modules/rrdtool.so \
+    %{buildroot}%{php_extdir}/rrdtool.so
+# Clean up the examples for inclusion as docs
+%{__rm} -rf php4/examples/.svn
+# Put the php config bit into place
+%{__mkdir_p} %{buildroot}%{_sysconfdir}/php.d
+%{__cat} << __EOF__ > %{buildroot}%{_sysconfdir}/php.d/rrdtool.ini
+; Enable rrdtool extension module
+extension=rrdtool.so
+__EOF__
+%endif
 
 # Pesky RRDp.pm...
 %{__mv} $RPM_BUILD_ROOT%{perl_vendorarch}/../RRDp.pm $RPM_BUILD_ROOT%{perl_vendorarch}/
@@ -140,10 +251,10 @@ find examples/ -type f -exec chmod 0644 {} \;
 %postun -p /sbin/ldconfig
 
 %files
+%defattr(-,root,root,-)
 %{_bindir}/*
 %{_libdir}/*.so.*
-%{_libdir}/rrdtool/*
-%{_datadir}/%{name}/fonts/*
+%{_datadir}/%{name}
 %{_mandir}/man1/*
 
 %files devel
@@ -154,22 +265,125 @@ find examples/ -type f -exec chmod 0644 {} \;
 
 %files doc
 %defattr(-,root,root,-)
-%doc CHANGES CONTRIBUTORS COPYING COPYRIGHT README TODO NEWS THREADS doc2/html doc2/txt
-%doc examples
+%doc CHANGES CONTRIBUTORS COPYING COPYRIGHT README TODO NEWS THREADS
+%doc examples doc2/html doc2/txt
 
-%files -n perl-%{name}
+%files perl
 %defattr(-,root,root,-)
 %doc doc3/html
 %{_mandir}/man3/*
 %{perl_vendorarch}/*.pm
-%attr(0755,root,root) %{perl_vendorarch}/auto/RRDs/*
+%attr(0755,root,root) %{perl_vendorarch}/auto/RRDs/
 
-%files -n python-%{name}
+%if %{with_python}
+%files python
 %defattr(-,root,root,-)
 %doc bindings/python/AUTHORS bindings/python/COPYING bindings/python/README
 %{python_sitearch}/rrdtoolmodule.so
+%endif
+
+%if %{with_php}
+%files php
+%defattr(-,root,root,0755)
+%doc php4/examples php4/README
+%config(noreplace) %{_sysconfdir}/php.d/rrdtool.ini
+%{php_extdir}/rrdtool.so
+%endif
+
+%if %{with_tcl}
+%files tcl
+%defattr(-,root,root,-)
+%doc bindings/tcl/README
+%{_libdir}/tclrrd*.so
+%{_libdir}/rrdtool/*.tcl
+%endif
+
+%if %{with_ruby}
+%files ruby
+%defattr(-,root,root,-)
+%doc bindings/ruby/README
+%{ruby_sitearch}/RRD.so
+%endif
 
 %changelog
+* Fri Jun 15 2007 Jarod Wilson <jwilson@redhat.com> 1.2.999050724000-0.1
+- Update for rrdtool pre-1.3 snapshot
+
+* Mon May 21 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-5
+- BR: ruby so %%ruby_sitearch gets set
+
+* Mon May 21 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-4
+- Build ruby bindings
+
+* Thu May 03 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-3
+- Disable php bits on ppc64 for now, they fail to build
+
+* Thu May 03 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-2
+- Add BR: perl-devel for Fedora 7 and later
+
+* Tue May 01 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-1
+- New upstream release
+
+* Tue May 01 2007 Jarod Wilson <jwilson@redhat.com> 1.2.21-1
+- New upstream release
+
+* Wed Apr 25 2007 Jarod Wilson <jwilson@redhat.com> 1.2.19-2
+- Define %%python_version *before* its needed (#237826)
+
+* Mon Apr 09 2007 Jarod Wilson <jwilson@redhat.com> 1.2.19-1
+- New upstream release
+
+* Tue Jan 23 2007 Jarod Wilson <jwilson@redhat.com> 1.2.18-1
+- New upstream release
+
+* Mon Jan 22 2007 Jarod Wilson <jwilson@redhat.com> 1.2.17-1
+- New upstream release
+
+* Tue Jan 02 2007 Jarod Wilson <jwilson@redhat.com> 1.2.15-9
+- Fix crash with long error strings (upstream
+  changesets 929 and 935)
+
+* Thu Dec 14 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-8
+- Fix for log grid memory leak (#201241)
+
+* Tue Dec 12 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-7
+- Rebuild for python 2.5
+
+* Tue Nov 14 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-6
+- Conditionalize python, php and tcl bits (Resolves #203275)
+
+* Wed Oct 25 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-5
+- Add tcl sub-package (#203275)
+
+* Tue Sep 05 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-4
+- Rebuild for new glibc
+
+* Wed Aug 02 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-3
+- One more addition to initrrdtool patch, to fully revert
+  and correct upstream changeset 839
+- Fix for no python in minimal fc4 buildroots
+
+* Tue Aug  1 2006 Mihai Ibanescu <misa@redhat.com> 1.2.15-2
+- Fixed rrdtool-python to import the module properly (patch
+  rrdtool-1.2.15-initrrdtool.patch)
+
+* Mon Jul 17 2006 Jarod Wilson <jwilson@redhat.com> 1.2.15-1
+- Update to 1.2.15
+- Minor spec cleanups
+
+* Sat Jun 24 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-7
+- Fix up Obsoletes
+
+* Mon Jun 19 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-6
+- Flip perl, php and python sub-package names around to 
+  conform with general practices
+
+* Sat Jun 10 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-5
+- Minor fixes to make package own created directories
+
+* Wed Jun 07 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-4
+- Add php bits back into the mix
+
 * Mon Jun 05 2006 Jarod Wilson <jwilson@redhat.com> 1.2.13-3
 - Merge spec fixes from bz 185909
 
