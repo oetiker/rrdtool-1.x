@@ -176,6 +176,7 @@ int rrd_dump_r(
         fprintf(out_file, "\t\t<params>\n");
         switch (cf_conv(rrd.rra_def[i].cf_nam)) {
         case CF_HWPREDICT:
+        case CF_MHWPREDICT:
             fprintf(out_file, "\t\t<hw_alpha> %0.10e </hw_alpha>\n",
                     rrd.rra_def[i].par[RRA_hw_alpha].u_val);
             fprintf(out_file, "\t\t<hw_beta> %0.10e </hw_beta>\n",
@@ -255,6 +256,7 @@ int rrd_dump_r(
             }
             switch (cf_conv(rrd.rra_def[i].cf_nam)) {
             case CF_HWPREDICT:
+            case CF_MHWPREDICT:
                 value =
                     rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
                                  ii].scratch[CDP_hw_intercept].u_val;

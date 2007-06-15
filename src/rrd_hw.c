@@ -8,139 +8,17 @@
 
 #include "rrd_tool.h"
 #include "rrd_hw.h"
+#include "rrd_hw_math.h"
+#include "rrd_hw_update.h"
+
+#define hw_dep_idx(rrd, rra_idx) rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt
 
 /* #define DEBUG */
 
 /* private functions */
-unsigned long MyMod(
+static unsigned long MyMod(
     signed long val,
     unsigned long mod);
-int       update_hwpredict(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx);
-int       update_seasonal(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx,
-    rrd_value_t *seasonal_coef);
-int       update_devpredict(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx);
-int       update_devseasonal(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx,
-    rrd_value_t *seasonal_dev);
-int       update_failures(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx);
-
-int update_hwpredict(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx)
-{
-    rrd_value_t prediction, seasonal_coef;
-    unsigned long dependent_rra_idx, seasonal_cdp_idx;
-    unival   *coefs = rrd->cdp_prep[cdp_idx].scratch;
-    rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
-
-    /* save coefficients from current prediction */
-    coefs[CDP_hw_last_intercept].u_val = coefs[CDP_hw_intercept].u_val;
-    coefs[CDP_hw_last_slope].u_val = coefs[CDP_hw_slope].u_val;
-    coefs[CDP_last_null_count].u_cnt = coefs[CDP_null_count].u_cnt;
-
-    /* retrieve the current seasonal coef */
-    dependent_rra_idx = current_rra->par[RRA_dependent_rra_idx].u_cnt;
-    seasonal_cdp_idx = dependent_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-    if (dependent_rra_idx < rra_idx)
-        seasonal_coef =
-            rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_last_seasonal].
-            u_val;
-    else
-        seasonal_coef =
-            rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_seasonal].u_val;
-
-    /* compute the prediction */
-    if (isnan(coefs[CDP_hw_intercept].u_val)
-        || isnan(coefs[CDP_hw_slope].u_val)
-        || isnan(seasonal_coef)) {
-        prediction = DNAN;
-
-        /* bootstrap initialization of slope and intercept */
-        if (isnan(coefs[CDP_hw_intercept].u_val) &&
-            !isnan(coefs[CDP_scratch_idx].u_val)) {
-#ifdef DEBUG
-            fprintf(stderr, "Initialization of slope/intercept\n");
-#endif
-            coefs[CDP_hw_intercept].u_val = coefs[CDP_scratch_idx].u_val;
-            coefs[CDP_hw_last_intercept].u_val = coefs[CDP_scratch_idx].u_val;
-            /* initialize the slope to 0 */
-            coefs[CDP_hw_slope].u_val = 0.0;
-            coefs[CDP_hw_last_slope].u_val = 0.0;
-            /* initialize null count to 1 */
-            coefs[CDP_null_count].u_cnt = 1;
-            coefs[CDP_last_null_count].u_cnt = 1;
-        }
-        /* if seasonal coefficient is NA, then don't update intercept, slope */
-    } else {
-        prediction = coefs[CDP_hw_intercept].u_val +
-            (coefs[CDP_hw_slope].u_val) * (coefs[CDP_null_count].u_cnt)
-            + seasonal_coef;
-#ifdef DEBUG
-        fprintf(stderr, "computed prediction: %f\n", prediction);
-#endif
-        if (isnan(coefs[CDP_scratch_idx].u_val)) {
-            /* NA value, no updates of intercept, slope;
-             * increment the null count */
-            (coefs[CDP_null_count].u_cnt)++;
-        } else {
-#ifdef DEBUG
-            fprintf(stderr, "Updating intercept, slope\n");
-#endif
-            /* update the intercept */
-            coefs[CDP_hw_intercept].u_val =
-                (current_rra->par[RRA_hw_alpha].u_val) *
-                (coefs[CDP_scratch_idx].u_val - seasonal_coef) + (1 -
-                                                                  current_rra->
-                                                                  par
-                                                                  [RRA_hw_alpha].
-                                                                  u_val) *
-                (coefs[CDP_hw_intercept].u_val +
-                 (coefs[CDP_hw_slope].u_val) * (coefs[CDP_null_count].u_cnt));
-            /* update the slope */
-            coefs[CDP_hw_slope].u_val =
-                (current_rra->par[RRA_hw_beta].u_val) *
-                (coefs[CDP_hw_intercept].u_val -
-                 coefs[CDP_hw_last_intercept].u_val) + (1 -
-                                                        current_rra->
-                                                        par[RRA_hw_beta].
-                                                        u_val) *
-                (coefs[CDP_hw_slope].u_val);
-            /* reset the null count */
-            coefs[CDP_null_count].u_cnt = 1;
-        }
-    }
-
-    /* store the prediction for writing */
-    coefs[CDP_scratch_idx].u_val = prediction;
-    return 0;
-}
 
 int lookup_seasonal(
     rrd_t *rrd,
@@ -197,348 +75,6 @@ int lookup_seasonal(
     }
 
     return -1;
-}
-
-int update_seasonal(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx,
-    rrd_value_t *seasonal_coef)
-{
-/* TODO: extract common if subblocks in the wake of I/O optimization */
-    rrd_value_t intercept, seasonal;
-    rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
-    rra_def_t *hw_rra =
-        &(rrd->rra_def[current_rra->par[RRA_dependent_rra_idx].u_cnt]);
-    /* obtain cdp_prep index for HWPREDICT */
-    unsigned long hw_cdp_idx = (current_rra->par[RRA_dependent_rra_idx].u_cnt)
-        * (rrd->stat_head->ds_cnt) + ds_idx;
-    unival   *coefs = rrd->cdp_prep[hw_cdp_idx].scratch;
-
-    /* update seasonal coefficient in cdp prep areas */
-    seasonal = rrd->cdp_prep[cdp_idx].scratch[CDP_hw_seasonal].u_val;
-    rrd->cdp_prep[cdp_idx].scratch[CDP_hw_last_seasonal].u_val = seasonal;
-    rrd->cdp_prep[cdp_idx].scratch[CDP_hw_seasonal].u_val =
-        seasonal_coef[ds_idx];
-
-    /* update seasonal value for disk */
-    if (current_rra->par[RRA_dependent_rra_idx].u_cnt < rra_idx)
-        /* associated HWPREDICT has already been updated */
-        /* check for possible NA values */
-        if (isnan(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)) {
-            /* no update, store the old value unchanged,
-             * doesn't matter if it is NA */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = seasonal;
-        } else if (isnan(coefs[CDP_hw_last_intercept].u_val)
-                   || isnan(coefs[CDP_hw_last_slope].u_val)) {
-            /* this should never happen, as HWPREDICT was already updated */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = DNAN;
-        } else if (isnan(seasonal)) {
-            /* initialization: intercept is not currently being updated */
-#ifdef DEBUG
-            fprintf(stderr, "Initialization of seasonal coef %lu\n",
-                    rrd->rra_ptr[rra_idx].cur_row);
-#endif
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val
-                -= coefs[CDP_hw_last_intercept].u_val;
-        } else {
-            intercept = coefs[CDP_hw_intercept].u_val;
-#ifdef DEBUG
-            fprintf(stderr,
-                    "Updating seasonal, params: gamma %f, new intercept %f, old seasonal %f\n",
-                    current_rra->par[RRA_seasonal_gamma].u_val,
-                    intercept, seasonal);
-#endif
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-                (current_rra->par[RRA_seasonal_gamma].u_val) *
-                (rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val -
-                 intercept) + (1 -
-                               current_rra->par[RRA_seasonal_gamma].u_val) *
-                seasonal;
-    } else {
-        /* SEASONAL array is updated first, which means the new intercept
-         * hasn't be computed; so we compute it here. */
-
-        /* check for possible NA values */
-        if (isnan(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)) {
-            /* no update, simple store the old value unchanged,
-             * doesn't matter if it is NA */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = seasonal;
-        } else if (isnan(coefs[CDP_hw_intercept].u_val)
-                   || isnan(coefs[CDP_hw_slope].u_val)) {
-            /* Initialization of slope and intercept will occur.
-             * force seasonal coefficient to 0. */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = 0.0;
-        } else if (isnan(seasonal)) {
-            /* initialization: intercept will not be updated
-             * CDP_hw_intercept = CDP_hw_last_intercept; just need to 
-             * subtract this baseline value. */
-#ifdef DEBUG
-            fprintf(stderr, "Initialization of seasonal coef %lu\n",
-                    rrd->rra_ptr[rra_idx].cur_row);
-#endif
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val -=
-                coefs[CDP_hw_intercept].u_val;
-        } else {
-            /* Note that we must get CDP_scratch_idx from SEASONAL array, as CDP_scratch_idx
-             * for HWPREDICT array will be DNAN. */
-            intercept = (hw_rra->par[RRA_hw_alpha].u_val) *
-                (rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val -
-                 seasonal)
-                + (1 -
-                   hw_rra->par[RRA_hw_alpha].u_val) *
-                (coefs[CDP_hw_intercept].u_val +
-                 (coefs[CDP_hw_slope].u_val) * (coefs[CDP_null_count].u_cnt));
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-                (current_rra->par[RRA_seasonal_gamma].u_val) *
-                (rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val -
-                 intercept) + (1 -
-                               current_rra->par[RRA_seasonal_gamma].u_val) *
-                seasonal;
-        }
-    }
-#ifdef DEBUG
-    fprintf(stderr, "seasonal coefficient set= %f\n",
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val);
-#endif
-    return 0;
-}
-
-int update_devpredict(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx)
-{
-    /* there really isn't any "update" here; the only reason this information
-     * is stored separately from DEVSEASONAL is to preserve deviation predictions
-     * for a longer duration than one seasonal cycle. */
-    unsigned long seasonal_cdp_idx =
-        (rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt)
-        * (rrd->stat_head->ds_cnt) + ds_idx;
-
-    if (rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt < rra_idx) {
-        /* associated DEVSEASONAL array already updated */
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val
-            =
-            rrd->cdp_prep[seasonal_cdp_idx].
-            scratch[CDP_last_seasonal_deviation].u_val;
-    } else {
-        /* associated DEVSEASONAL not yet updated */
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val
-            =
-            rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_seasonal_deviation].
-            u_val;
-    }
-    return 0;
-}
-
-int update_devseasonal(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx,
-    rrd_value_t *seasonal_dev)
-{
-    rrd_value_t prediction = 0, seasonal_coef = DNAN;
-    rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
-
-    /* obtain cdp_prep index for HWPREDICT */
-    unsigned long hw_rra_idx = current_rra->par[RRA_dependent_rra_idx].u_cnt;
-    unsigned long hw_cdp_idx = hw_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-    unsigned long seasonal_cdp_idx;
-    unival   *coefs = rrd->cdp_prep[hw_cdp_idx].scratch;
-
-    rrd->cdp_prep[cdp_idx].scratch[CDP_last_seasonal_deviation].u_val =
-        rrd->cdp_prep[cdp_idx].scratch[CDP_seasonal_deviation].u_val;
-    /* retrieve the next seasonal deviation value, could be NA */
-    rrd->cdp_prep[cdp_idx].scratch[CDP_seasonal_deviation].u_val =
-        seasonal_dev[ds_idx];
-
-    /* retrieve the current seasonal_coef (not to be confused with the
-     * current seasonal deviation). Could make this more readable by introducing
-     * some wrapper functions. */
-    seasonal_cdp_idx =
-        (rrd->rra_def[hw_rra_idx].par[RRA_dependent_rra_idx].u_cnt)
-        * (rrd->stat_head->ds_cnt) + ds_idx;
-    if (rrd->rra_def[hw_rra_idx].par[RRA_dependent_rra_idx].u_cnt < rra_idx)
-        /* SEASONAL array already updated */
-        seasonal_coef =
-            rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_last_seasonal].
-            u_val;
-    else
-        /* SEASONAL array not yet updated */
-        seasonal_coef =
-            rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_seasonal].u_val;
-
-    /* compute the abs value of the difference between the prediction and
-     * observed value */
-    if (hw_rra_idx < rra_idx) {
-        /* associated HWPREDICT has already been updated */
-        if (isnan(coefs[CDP_hw_last_intercept].u_val) ||
-            isnan(coefs[CDP_hw_last_slope].u_val) || isnan(seasonal_coef)) {
-            /* one of the prediction values is uinitialized */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = DNAN;
-            return 0;
-        } else {
-            prediction = coefs[CDP_hw_last_intercept].u_val +
-                (coefs[CDP_hw_last_slope].u_val) *
-                (coefs[CDP_last_null_count].u_cnt)
-                + seasonal_coef;
-        }
-    } else {
-        /* associated HWPREDICT has NOT been updated */
-        if (isnan(coefs[CDP_hw_intercept].u_val) ||
-            isnan(coefs[CDP_hw_slope].u_val) || isnan(seasonal_coef)) {
-            /* one of the prediction values is uinitialized */
-            rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = DNAN;
-            return 0;
-        } else {
-            prediction = coefs[CDP_hw_intercept].u_val +
-                (coefs[CDP_hw_slope].u_val) * (coefs[CDP_null_count].u_cnt)
-                + seasonal_coef;
-        }
-    }
-
-    if (isnan(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)) {
-        /* no update, store existing value unchanged, doesn't
-         * matter if it is NA */
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-            rrd->cdp_prep[cdp_idx].scratch[CDP_last_seasonal_deviation].u_val;
-    } else
-        if (isnan
-            (rrd->cdp_prep[cdp_idx].scratch[CDP_last_seasonal_deviation].
-             u_val)) {
-        /* initialization */
-#ifdef DEBUG
-        fprintf(stderr, "Initialization of seasonal deviation\n");
-#endif
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-            fabs(prediction -
-                 rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val);
-    } else {
-        /* exponential smoothing update */
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val =
-            (rrd->rra_def[rra_idx].par[RRA_seasonal_gamma].u_val) *
-            fabs(prediction -
-                 rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)
-            + (1 -
-               rrd->rra_def[rra_idx].par[RRA_seasonal_gamma].u_val) *
-            (rrd->cdp_prep[cdp_idx].scratch[CDP_last_seasonal_deviation].
-             u_val);
-    }
-    return 0;
-}
-
-/* Check for a failure based on a threshold # of violations within the specified
- * window. */
-int update_failures(
-    rrd_t *rrd,
-    unsigned long cdp_idx,
-    unsigned long rra_idx,
-    unsigned long ds_idx,
-    unsigned short CDP_scratch_idx)
-{
-    /* detection of a violation depends on 3 RRAs:
-     * HWPREDICT, SEASONAL, and DEVSEASONAL */
-    rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
-    unsigned long dev_rra_idx = current_rra->par[RRA_dependent_rra_idx].u_cnt;
-    rra_def_t *dev_rra = &(rrd->rra_def[dev_rra_idx]);
-    unsigned long hw_rra_idx = dev_rra->par[RRA_dependent_rra_idx].u_cnt;
-    rra_def_t *hw_rra = &(rrd->rra_def[hw_rra_idx]);
-    unsigned long seasonal_rra_idx = hw_rra->par[RRA_dependent_rra_idx].u_cnt;
-    unsigned long temp_cdp_idx;
-    rrd_value_t deviation = DNAN;
-    rrd_value_t seasonal_coef = DNAN;
-    rrd_value_t prediction = DNAN;
-    char      violation = 0;
-    unsigned short violation_cnt = 0, i;
-    char     *violations_array;
-
-    /* usual checks to determine the order of the RRAs */
-    temp_cdp_idx = dev_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-    if (rra_idx < seasonal_rra_idx) {
-        /* DEVSEASONAL not yet updated */
-        deviation =
-            rrd->cdp_prep[temp_cdp_idx].scratch[CDP_seasonal_deviation].u_val;
-    } else {
-        /* DEVSEASONAL already updated */
-        deviation =
-            rrd->cdp_prep[temp_cdp_idx].scratch[CDP_last_seasonal_deviation].
-            u_val;
-    }
-    if (!isnan(deviation)) {
-
-        temp_cdp_idx = seasonal_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-        if (rra_idx < seasonal_rra_idx) {
-            /* SEASONAL not yet updated */
-            seasonal_coef =
-                rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_seasonal].u_val;
-        } else {
-            /* SEASONAL already updated */
-            seasonal_coef =
-                rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_last_seasonal].
-                u_val;
-        }
-        /* in this code block, we know seasonal coef is not DNAN, because deviation is not
-         * null */
-
-        temp_cdp_idx = hw_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
-        if (rra_idx < hw_rra_idx) {
-            /* HWPREDICT not yet updated */
-            prediction =
-                rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_intercept].u_val +
-                (rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_slope].u_val)
-                * (rrd->cdp_prep[temp_cdp_idx].scratch[CDP_null_count].u_cnt)
-                + seasonal_coef;
-        } else {
-            /* HWPREDICT already updated */
-            prediction =
-                rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_last_intercept].
-                u_val +
-                (rrd->cdp_prep[temp_cdp_idx].scratch[CDP_hw_last_slope].u_val)
-                *
-                (rrd->cdp_prep[temp_cdp_idx].scratch[CDP_last_null_count].
-                 u_cnt)
-                + seasonal_coef;
-        }
-
-        /* determine if the observed value is a violation */
-        if (!isnan(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val)) {
-            if (rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val >
-                prediction +
-                (current_rra->par[RRA_delta_pos].u_val) * deviation
-                || rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val <
-                prediction -
-                (current_rra->par[RRA_delta_neg].u_val) * deviation)
-                violation = 1;
-        } else {
-            violation = 1;  /* count DNAN values as violations */
-        }
-
-    }
-
-    /* determine if a failure has occurred and update the failure array */
-    violation_cnt = violation;
-    violations_array = (char *) ((void *) rrd->cdp_prep[cdp_idx].scratch);
-    for (i = current_rra->par[RRA_window_len].u_cnt; i > 1; i--) {
-        /* shift */
-        violations_array[i - 1] = violations_array[i - 2];
-        violation_cnt += violations_array[i - 1];
-    }
-    violations_array[0] = violation;
-
-    if (violation_cnt < current_rra->par[RRA_failure_threshold].u_cnt)
-        /* not a failure */
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = 0.0;
-    else
-        rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = 1.0;
-
-    return (rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val);
 }
 
 /* For the specified CDP prep area and the FAILURES RRA,
@@ -693,14 +229,34 @@ int apply_smoother(
     free(working_average);
 
     if (cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
+        rrd_value_t (
+    *init_seasonality) (
+    rrd_value_t seasonal_coef,
+    rrd_value_t intercept);
+
+        switch (cf_conv(rrd->rra_def[hw_dep_idx(rrd, rra_idx)].cf_nam)) {
+        case CF_HWPREDICT:
+            init_seasonality = hw_additive_init_seasonality;
+            break;
+        case CF_MHWPREDICT:
+            init_seasonality = hw_multiplicative_init_seasonality;
+            break;
+        default:
+            rrd_set_error("apply smoother: SEASONAL rra doesn't have "
+                          "valid dependency: %s",
+                          rrd->rra_def[hw_dep_idx(rrd, rra_idx)].cf_nam);
+            return -1;
+        }
+
         for (j = 0; j < row_length; ++j) {
             for (i = 0; i < row_count; ++i) {
-                rrd_values[i * row_length + j] -= baseline[j];
+                rrd_values[i * row_length + j] =
+                    init_seasonality(rrd_values[i * row_length + j],
+                                     baseline[j]);
             }
             /* update the baseline coefficient,
              * first, compute the cdp_index. */
-            offset = (rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt)
-                * row_length + j;
+            offset = hw_dep_idx(rrd, rra_idx) * row_length + j;
             (rrd->cdp_prep[offset]).scratch[CDP_hw_intercept].u_val +=
                 baseline[j];
         }
@@ -775,6 +331,7 @@ void reset_aberrant_coefficients(
         cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
         switch (cf_conv(rrd->rra_def[rra_idx].cf_nam)) {
         case CF_HWPREDICT:
+        case CF_MHWPREDICT:
             init_hwpredict_cdp(&(rrd->cdp_prep[cdp_idx]));
             break;
         case CF_SEASONAL:
@@ -850,31 +407,88 @@ int update_aberrant_CF(
     unsigned short CDP_scratch_idx,
     rrd_value_t *seasonal_coef)
 {
+    static hw_functions_t hw_multiplicative_functions = {
+        hw_multiplicative_calculate_prediction,
+        hw_multiplicative_calculate_intercept,
+        hw_calculate_slope,
+        hw_multiplicative_calculate_seasonality,
+        hw_multiplicative_init_seasonality,
+        hw_calculate_seasonal_deviation,
+        hw_init_seasonal_deviation,
+        1.0             // identity value
+    };
+
+    static hw_functions_t hw_additive_functions = {
+        hw_additive_calculate_prediction,
+        hw_additive_calculate_intercept,
+        hw_calculate_slope,
+        hw_additive_calculate_seasonality,
+        hw_additive_init_seasonality,
+        hw_calculate_seasonal_deviation,
+        hw_init_seasonal_deviation,
+        0.0             // identity value 
+    };
+
     rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = pdp_val;
     switch (current_cf) {
-    case CF_AVERAGE:
-    default:
-        return 0;
     case CF_HWPREDICT:
         return update_hwpredict(rrd, cdp_idx, rra_idx, ds_idx,
-                                CDP_scratch_idx);
+                                CDP_scratch_idx, &hw_additive_functions);
+    case CF_MHWPREDICT:
+        return update_hwpredict(rrd, cdp_idx, rra_idx, ds_idx,
+                                CDP_scratch_idx,
+                                &hw_multiplicative_functions);
     case CF_DEVPREDICT:
         return update_devpredict(rrd, cdp_idx, rra_idx, ds_idx,
                                  CDP_scratch_idx);
     case CF_SEASONAL:
-        return update_seasonal(rrd, cdp_idx, rra_idx, ds_idx, CDP_scratch_idx,
-                               seasonal_coef);
+        switch (cf_conv(rrd->rra_def[hw_dep_idx(rrd, rra_idx)].cf_nam)) {
+        case CF_HWPREDICT:
+            return update_seasonal(rrd, cdp_idx, rra_idx, ds_idx,
+                                   CDP_scratch_idx, seasonal_coef,
+                                   &hw_additive_functions);
+        case CF_MHWPREDICT:
+            return update_seasonal(rrd, cdp_idx, rra_idx, ds_idx,
+                                   CDP_scratch_idx, seasonal_coef,
+                                   &hw_multiplicative_functions);
+        default:
+            return -1;
+        }
     case CF_DEVSEASONAL:
-        return update_devseasonal(rrd, cdp_idx, rra_idx, ds_idx,
-                                  CDP_scratch_idx, seasonal_coef);
+        switch (cf_conv(rrd->rra_def[hw_dep_idx(rrd, rra_idx)].cf_nam)) {
+        case CF_HWPREDICT:
+            return update_devseasonal(rrd, cdp_idx, rra_idx, ds_idx,
+                                      CDP_scratch_idx, seasonal_coef,
+                                      &hw_additive_functions);
+        case CF_MHWPREDICT:
+            return update_devseasonal(rrd, cdp_idx, rra_idx, ds_idx,
+                                      CDP_scratch_idx, seasonal_coef,
+                                      &hw_multiplicative_functions);
+        default:
+            return -1;
+        }
     case CF_FAILURES:
-        return update_failures(rrd, cdp_idx, rra_idx, ds_idx,
-                               CDP_scratch_idx);
+        switch (cf_conv
+                (rrd->rra_def[hw_dep_idx(rrd, hw_dep_idx(rrd, rra_idx))].
+                 cf_nam)) {
+        case CF_HWPREDICT:
+            return update_failures(rrd, cdp_idx, rra_idx, ds_idx,
+                                   CDP_scratch_idx, &hw_additive_functions);
+        case CF_MHWPREDICT:
+            return update_failures(rrd, cdp_idx, rra_idx, ds_idx,
+                                   CDP_scratch_idx,
+                                   &hw_multiplicative_functions);
+        default:
+            return -1;
+        }
+    case CF_AVERAGE:
+    default:
+        return 0;
     }
     return -1;
 }
 
-unsigned long MyMod(
+static unsigned long MyMod(
     signed long val,
     unsigned long mod)
 {

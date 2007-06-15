@@ -247,6 +247,7 @@ int rrd_create_r(
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].
                             u_val = 0.1;
@@ -293,6 +294,7 @@ int rrd_create_r(
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                     case CF_DEVSEASONAL:
                     case CF_SEASONAL:
                     case CF_DEVPREDICT:
@@ -316,6 +318,7 @@ int rrd_create_r(
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].
                             u_val = atof(token);
                         if (atof(token) <= 0.0 || atof(token) >= 1.0)
@@ -361,6 +364,7 @@ int rrd_create_r(
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_beta].
                             u_val = atof(token);
                         if (atof(token) < 0.0 || atof(token) > 1.0)
@@ -415,6 +419,7 @@ int rrd_create_r(
                             atoi(token) - 1;
                         break;
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                         /* length of the associated CF_SEASONAL and CF_DEVSEASONAL arrays. */
                         period = atoi(token);
                         if (period >
@@ -463,8 +468,10 @@ int rrd_create_r(
                     par[RRA_dependent_rra_idx].u_cnt, rrd.stat_head->rra_cnt);
 #endif
             /* should we create CF_SEASONAL, CF_DEVSEASONAL, and CF_DEVPREDICT? */
-            if (cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) ==
-                CF_HWPREDICT
+            if ((cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) ==
+                 CF_HWPREDICT
+                 || cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) ==
+                 CF_MHWPREDICT)
                 && rrd.rra_def[rrd.stat_head->rra_cnt].
                 par[RRA_dependent_rra_idx].u_cnt == rrd.stat_head->rra_cnt) {
 #ifdef DEBUG
@@ -671,6 +678,7 @@ int rrd_create_fn(
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         switch (cf_conv(rrd->rra_def[i].cf_nam)) {
         case CF_HWPREDICT:
+        case CF_MHWPREDICT:
             init_hwpredict_cdp(rrd->cdp_prep);
             break;
         case CF_SEASONAL:

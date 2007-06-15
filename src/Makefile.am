@@ -19,6 +19,8 @@ UPD_C_FILES =		\
 	rrd_getopt1.c	\
 	parsetime.c	\
 	rrd_hw.c	\
+	rrd_hw_math.c	\
+	rrd_hw_update.c	\
 	rrd_diff.c	\
 	rrd_format.c	\
 	rrd_info.c	\
@@ -50,7 +52,8 @@ RRD_C_FILES =		\
 noinst_HEADERS = \
 	unused.h \
 	rrd_getopt.h parsetime.h \
-	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_hw.h rrd_rpncalc.h \
+	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
+	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	rrd_nan_inf.h fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
 

@@ -75,6 +75,7 @@ enum cf_en cf_conv(
         converter(MAX, CF_MAXIMUM)
         converter(LAST, CF_LAST)
         converter(HWPREDICT, CF_HWPREDICT)
+        converter(MHWPREDICT, CF_MHWPREDICT)
         converter(DEVPREDICT, CF_DEVPREDICT)
         converter(SEASONAL, CF_SEASONAL)
         converter(DEVSEASONAL, CF_DEVSEASONAL)

@@ -366,6 +366,7 @@ int xml2rrd(
             } else {
                 switch (cf_conv(rrd->rra_def[rra_index].cf_nam)) {
                 case CF_HWPREDICT:
+                case CF_MHWPREDICT:
                     read_tag(&ptr2, "hw_alpha", "%lf",
                              &(rrd->rra_def[rra_index].par[RRA_hw_alpha].
                                u_val));
@@ -456,6 +457,7 @@ int xml2rrd(
                                         i].scratch[CDP_secondary_val].u_val));
                     switch (cf_conv(rrd->rra_def[rra_index].cf_nam)) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                         read_tag(&ptr2, "intercept", "%lf",
                                  &(rrd->
                                    cdp_prep[rrd->stat_head->ds_cnt *

@@ -121,14 +121,15 @@ B<RRA>. This parameter must be between 0 and 1.
 
 This option causes the aberrant behavior detection algorithm to reset
 for the specified data source; that is, forget all it is has learnt so far.
-Specifically, for the HWPREDICT B<RRA>, it sets the intercept and slope
-coefficients to unknown. For the SEASONAL B<RRA>, it sets all seasonal
+Specifically, for the HWPREDICT or MHWPREDICT B<RRA>, it sets the intercept and
+slope coefficients to unknown. For the SEASONAL B<RRA>, it sets all seasonal
 coefficients to unknown. For the DEVSEASONAL B<RRA>, it sets all seasonal
-deviation coefficients to unknown. For the FAILURES B<RRA>, it erases
-the violation history. Note that reset does not erase past predictions
-(the values of the HWPREDICT B<RRA>), predicted deviations (the values of the
-DEVPREDICT B<RRA>), or failure history (the values of the FAILURES B<RRA>).
-This option will function even if not all the listed B<RRAs> are present.
+deviation coefficients to unknown. For the FAILURES B<RRA>, it erases the
+violation history. Note that reset does not erase past predictions
+(the values of the HWPREDICT or MHWPREDICT B<RRA>), predicted deviations (the
+values of the DEVPREDICT B<RRA>), or failure history (the values of the 
+FAILURES B<RRA>).  This option will function even if not all the listed 
+B<RRAs> are present.
 
 Due to the implementation of this option, there is an indirect impact on
 other data sources in the RRD. A smoothing algorithm is applied to

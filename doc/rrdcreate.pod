@@ -206,6 +206,10 @@ B<RRA:>I<HWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>[B<:>
 
 =item *
 
+B<RRA:>I<MHWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>[B<:>I<rra-num>]
+
+=item *
+
 B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
 
 =item *
@@ -225,19 +229,32 @@ B<RRA:>I<FAILURES>B<:>I<rows>B<:>I<threshold>B<:>I<window length>B<:>I<rra-num>
 These B<RRAs> differ from the true consolidation functions in several ways.
 First, each of the B<RRA>s is updated once for every primary data point.
 Second, these B<RRAs> are interdependent. To generate real-time confidence
-bounds, a matched set of HWPREDICT, SEASONAL, DEVSEASONAL, and
-DEVPREDICT must exist. Generating smoothed values of the primary data points
-requires both a HWPREDICT B<RRA> and SEASONAL B<RRA>. Aberrant behavior
-detection requires FAILURES, HWPREDICT, DEVSEASONAL, and SEASONAL.
+bounds, a matched set of SEASONAL, DEVSEASONAL, DEVPREDICT, and either
+HWPREDICT or MHWPREDICT must exist. Generating smoothed values of the primary
+data points requires a SEASONAL B<RRA> and either an HWPREDICT or MHWPREDICT 
+B<RRA>. Aberrant behavior detection requires FAILURES, DEVSEASONAL, SEASONAL,
+and either HWPREDICT or MHWPREDICT.
 
-The actual predicted, or smoothed, values are stored in the HWPREDICT
-B<RRA>. The predicted deviations are stored in DEVPREDICT (think a standard
-deviation which can be scaled to yield a confidence band). The FAILURES
-B<RRA> stores binary indicators. A 1 marks the indexed observation as
-failure; that is, the number of confidence bounds violations in the
-preceding window of observations met or exceeded a specified threshold. An
-example of using these B<RRAs> to graph confidence bounds and failures
-appears in L<rrdgraph>.
+The predicted, or smoothed, values are stored in the HWPREDICT or MHWPREDICT
+B<RRA>. HWPREDICT and MHWPREDICT are actually two variations on the
+Holt-Winters method. They are interchangeable. Both attempt to decompose data
+into three components: a baseline, a trend, and a seasonal coefficient.
+HWPREDICT adds its seasonal coefficient to the baseline to form a prediction, whereas
+MHWPREDICT multiplies its seasonal coefficient by the baseline to form a
+prediction. The difference is noticeable when the baseline changes
+significantly in the course of a season; HWPREDICT will predict the seasonality
+to stay constant as the baseline changes, but MHWPREDICT will predict the
+seasonality to grow or shrink in proportion to the baseline. The proper choice
+of method depends on the thing being modeled. For simplicity, the rest of this
+discussion will refer to HWPREDICT, but MHWPREDICT may be substituted in its
+place.
+
+The predicted deviations are stored in DEVPREDICT (think a standard deviation
+which can be scaled to yield a confidence band). The FAILURES B<RRA> stores 
+binary indicators. A 1 marks the indexed observation as failure; that is, the 
+number of confidence bounds violations in the preceding window of observations 
+met or exceeded a specified threshold. An example of using these B<RRAs> to graph 
+confidence bounds and failures appears in L<rrdgraph>.
 
 The SEASONAL and DEVSEASONAL B<RRAs> store the seasonal coefficients for the
 Holt-Winters forecasting algorithm and the seasonal deviations, respectively.

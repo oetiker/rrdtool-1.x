@@ -237,14 +237,20 @@ int rrd_tune(
             break;
         case 'x':
             if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_alpha, optarg)) {
+                    rrd_free(&rrd);
+                    return -1;
+                }
+                rrd_clear_error();
             }
             break;
         case 'y':
             if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_beta, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_beta, optarg)) {
+                    rrd_free(&rrd);
+                    return -1;
+                }
+                rrd_clear_error();
             }
             break;
         case 'z':

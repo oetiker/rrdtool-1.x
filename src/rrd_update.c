@@ -1198,6 +1198,7 @@ int _rrd_update(
                                     u_val = seasonal_coef[ii];
                                 break;
                             case CF_HWPREDICT:
+                            case CF_MHWPREDICT:
                                 /* need to update the null_count and last_null_count.
                                  * even do this for non-DNAN pdp_temp because the
                                  * algorithm is not learning from batch updates. */

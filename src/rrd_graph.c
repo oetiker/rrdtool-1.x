@@ -717,6 +717,7 @@ void reduce_data(
                 else {
                     switch (cf) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                     case CF_DEVSEASONAL:
                     case CF_DEVPREDICT:
                     case CF_SEASONAL:
@@ -742,6 +743,7 @@ void reduce_data(
             } else {
                 switch (cf) {
                 case CF_HWPREDICT:
+                case CF_MHWPREDICT:
                 case CF_DEVSEASONAL:
                 case CF_DEVPREDICT:
                 case CF_SEASONAL:
@@ -1438,6 +1440,7 @@ int print_calc(
 
                     switch (im->gdes[i].cf) {
                     case CF_HWPREDICT:
+                    case CF_MHWPREDICT:
                     case CF_DEVPREDICT:
                     case CF_DEVSEASONAL:
                     case CF_SEASONAL:

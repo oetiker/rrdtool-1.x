@@ -192,6 +192,7 @@ info_t   *rrd_info_r(
 
         switch (current_cf) {
         case CF_HWPREDICT:
+        case CF_MHWPREDICT:
             info.u_val = rrd.rra_def[i].par[RRA_hw_alpha].u_val;
             cd = info_push(cd, sprintf_alloc("rra[%d].alpha", i), RD_I_VAL,
                            info);
@@ -231,6 +232,7 @@ info_t   *rrd_info_r(
         for (ii = 0; ii < rrd.stat_head->ds_cnt; ii++) {
             switch (current_cf) {
             case CF_HWPREDICT:
+            case CF_MHWPREDICT:
                 info.u_val =
                     rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
                                  ii].scratch[CDP_hw_intercept].u_val;
