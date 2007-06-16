@@ -7,7 +7,8 @@ Alex van den Bogaerdt <alex with ergens.op.het.net> (rrd_resize.c and more)
 Amos Shapira <amos with gezernet.co.il>
 Andreas Kroomaa <andre with ml.ee>
 Andrew Turner <turner with mint.net> (LAST consolidator)
-Bernard Fischer <bfischer with syslog.ch> 64bit stuff, --alt-autoscale-max, MMAP rewrite
+Bernard Fischer <bfischer with syslog.ch> 64bit stuff, --alt-autoscale-max
+Bernhard Fischer <rep dot dot dot nop with gmail.com> MMAP rewrite
 Bill Fenner <fenner with research.att.com>
 Blair Zajac <bzajac with geostaff.com>
 Bruce Campbell <bruce.campbell with apnic.net>
