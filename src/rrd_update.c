@@ -135,16 +135,16 @@ info_t   *rrd_update_v(
     char     *tmplt = NULL;
     info_t   *result = NULL;
     infoval   rc;
+    struct option long_options[] = {
+        {"template", required_argument, 0, 't'},
+        {0, 0, 0, 0}
+    };
 
     rc.u_int = -1;
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        static struct option long_options[] = {
-            {"template", required_argument, 0, 't'},
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
 

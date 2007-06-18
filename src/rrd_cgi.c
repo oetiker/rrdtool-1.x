@@ -220,8 +220,7 @@ static vardata *varheap = NULL;
 static size_t varheap_size = 0;
 
 /* allocate and initialize variable heap */
-static int initvar(
-    )
+static int initvar(void)
 {
     varheap = (vardata *) malloc(sizeof(vardata) * INIT_VARSTORE_SIZE);
     if (varheap == NULL) {
@@ -234,8 +233,7 @@ static int initvar(
 }
 
 /* cleanup: free allocated memory */
-static void donevar(
-    )
+static void donevar(void)
 {
     int       i;
 
@@ -288,13 +286,13 @@ static const char *putvar(
         if (0 == strcmp(name, varheap[i].name)) {
             /* overwrite existing entry */
             if (varheap[i].is_const) {
-#ifdef			DEBUG_VARS
+#ifdef	DEBUG_VARS
                 printf("<!-- setver(%s, %s): not assigning: "
                        "const variable -->\n", name, value);
-#				endif
+#endif
                 return varheap[i].value;
             }
-#ifdef		DEBUG_VARS
+#ifdef	DEBUG_VARS
             printf("<!-- setvar(%s, %s): overwriting old value (%s) -->\n",
                    name, value, varheap[i].value);
 #endif
@@ -398,6 +396,10 @@ int main(
     char     *server_url = NULL;
     long      i;
     long      filter = 0;
+    struct option long_options[] = {
+        {"filter", no_argument, 0, 'f'},
+        {0, 0, 0, 0}
+    };
 
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE, SIG_IGN);
@@ -412,10 +414,6 @@ int main(
        for (i=0;i<argc;i++)
        printf("%d-'%s'\n",i,argv[i]); */
     while (1) {
-        static struct option long_options[] = {
-            {"filter", no_argument, 0, 'f'},
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
 

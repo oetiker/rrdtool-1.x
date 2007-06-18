@@ -15,15 +15,15 @@ time_t rrd_first(
 {
     int       target_rraindex = 0;
     char     *endptr;
+    struct option long_options[] = {
+        {"rraindex", required_argument, 0, 129},
+        {0, 0, 0, 0}
+    };
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        static struct option long_options[] = {
-            {"rraindex", required_argument, 0, 129},
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
 

@@ -114,19 +114,19 @@ int main(
 {
     int       c;
     int       digit_optind = 0;
+    struct option long_options[] = {
+        {"add", 1, 0, 0},
+        {"append", 0, 0, 0},
+        {"delete", 1, 0, 0},
+        {"verbose", 0, 0, 0},
+        {"create", 0, 0, 0},
+        {"file", 1, 0, 0},
+        {0, 0, 0, 0}
+    };
 
     while (1) {
         int       this_option_optind = optind ? optind : 1;
         int       option_index = 0;
-        static struct option long_options[] = {
-            {"add", 1, 0, 0},
-            {"append", 0, 0, 0},
-            {"delete", 1, 0, 0},
-            {"verbose", 0, 0, 0},
-            {"create", 0, 0, 0},
-            {"file", 1, 0, 0},
-            {0, 0, 0, 0}
-        };
 
         c = getopt_long(argc, argv, "abc:d:0123456789",
                         long_options, &option_index);

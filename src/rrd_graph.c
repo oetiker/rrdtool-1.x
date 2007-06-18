@@ -3721,6 +3721,53 @@ void rrd_graph_options(
     long      long_tmp;
     struct rrd_time_value start_tv, end_tv;
     long unsigned int color;
+    /* defines for long options without a short equivalent. should be bytes,
+       and may not collide with (the ASCII value of) short options */
+#define LONGOPT_UNITS_SI 255
+	struct option long_options[] = {
+		{"start", required_argument, 0, 's'},
+		{"end", required_argument, 0, 'e'},
+		{"x-grid", required_argument, 0, 'x'},
+		{"y-grid", required_argument, 0, 'y'},
+		{"vertical-label", required_argument, 0, 'v'},
+		{"width", required_argument, 0, 'w'},
+		{"height", required_argument, 0, 'h'},
+		{"full-size-mode", no_argument, 0, 'D'},
+		{"interlaced", no_argument, 0, 'i'},
+		{"upper-limit", required_argument, 0, 'u'},
+		{"lower-limit", required_argument, 0, 'l'},
+		{"rigid", no_argument, 0, 'r'},
+		{"base", required_argument, 0, 'b'},
+		{"logarithmic", no_argument, 0, 'o'},
+		{"color", required_argument, 0, 'c'},
+		{"font", required_argument, 0, 'n'},
+		{"title", required_argument, 0, 't'},
+		{"imginfo", required_argument, 0, 'f'},
+		{"imgformat", required_argument, 0, 'a'},
+		{"lazy", no_argument, 0, 'z'},
+		{"zoom", required_argument, 0, 'm'},
+		{"no-legend", no_argument, 0, 'g'},
+		{"force-rules-legend", no_argument, 0, 'F'},
+		{"only-graph", no_argument, 0, 'j'},
+		{"alt-y-grid", no_argument, 0, 'Y'},
+		{"no-minor", no_argument, 0, 'I'},
+		{"slope-mode", no_argument, 0, 'E'},
+		{"alt-autoscale", no_argument, 0, 'A'},
+		{"alt-autoscale-min", no_argument, 0, 'J'},
+		{"alt-autoscale-max", no_argument, 0, 'M'},
+		{"no-gridfit", no_argument, 0, 'N'},
+		{"units-exponent", required_argument, 0, 'X'},
+		{"units-length", required_argument, 0, 'L'},
+		{"units", required_argument, 0, LONGOPT_UNITS_SI},
+		{"step", required_argument, 0, 'S'},
+		{"tabwidth", required_argument, 0, 'T'},
+		{"font-render-mode", required_argument, 0, 'R'},
+		{"graph-render-mode", required_argument, 0, 'G'},
+		{"font-smoothing-threshold", required_argument, 0, 'B'},
+		{"watermark", required_argument, 0, 'W'},
+		{"alt-y-mrtg", no_argument, 0, 1000},   /* this has no effect it is just here to save old apps from crashing when they use it */
+		{0, 0, 0, 0}
+	};
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -3728,55 +3775,7 @@ void rrd_graph_options(
     parsetime("end-24h", &start_tv);
     parsetime("now", &end_tv);
 
-    /* defines for long options without a short equivalent. should be bytes,
-       and may not collide with (the ASCII value of) short options */
-#define LONGOPT_UNITS_SI 255
-
     while (1) {
-        static struct option long_options[] = {
-            {"start", required_argument, 0, 's'},
-            {"end", required_argument, 0, 'e'},
-            {"x-grid", required_argument, 0, 'x'},
-            {"y-grid", required_argument, 0, 'y'},
-            {"vertical-label", required_argument, 0, 'v'},
-            {"width", required_argument, 0, 'w'},
-            {"height", required_argument, 0, 'h'},
-            {"full-size-mode", no_argument, 0, 'D'},
-            {"interlaced", no_argument, 0, 'i'},
-            {"upper-limit", required_argument, 0, 'u'},
-            {"lower-limit", required_argument, 0, 'l'},
-            {"rigid", no_argument, 0, 'r'},
-            {"base", required_argument, 0, 'b'},
-            {"logarithmic", no_argument, 0, 'o'},
-            {"color", required_argument, 0, 'c'},
-            {"font", required_argument, 0, 'n'},
-            {"title", required_argument, 0, 't'},
-            {"imginfo", required_argument, 0, 'f'},
-            {"imgformat", required_argument, 0, 'a'},
-            {"lazy", no_argument, 0, 'z'},
-            {"zoom", required_argument, 0, 'm'},
-            {"no-legend", no_argument, 0, 'g'},
-            {"force-rules-legend", no_argument, 0, 'F'},
-            {"only-graph", no_argument, 0, 'j'},
-            {"alt-y-grid", no_argument, 0, 'Y'},
-            {"no-minor", no_argument, 0, 'I'},
-            {"slope-mode", no_argument, 0, 'E'},
-            {"alt-autoscale", no_argument, 0, 'A'},
-            {"alt-autoscale-min", no_argument, 0, 'J'},
-            {"alt-autoscale-max", no_argument, 0, 'M'},
-            {"no-gridfit", no_argument, 0, 'N'},
-            {"units-exponent", required_argument, 0, 'X'},
-            {"units-length", required_argument, 0, 'L'},
-            {"units", required_argument, 0, LONGOPT_UNITS_SI},
-            {"step", required_argument, 0, 'S'},
-            {"tabwidth", required_argument, 0, 'T'},
-            {"font-render-mode", required_argument, 0, 'R'},
-            {"graph-render-mode", required_argument, 0, 'G'},
-            {"font-smoothing-threshold", required_argument, 0, 'B'},
-            {"watermark", required_argument, 0, 'W'},
-            {"alt-y-mrtg", no_argument, 0, 1000},   /* this has no effect it is just here to save old apps from crashing when they use it */
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
         int       col_start, col_end;
@@ -4234,10 +4233,8 @@ int bad_format(
 
 
 int vdef_parse(
-    gdes,
-    str)
-    struct graph_desc_t *gdes;
-    const char *const str;
+    struct graph_desc_t *gdes,
+    const char *const str)
 {
     /* A VDEF currently is either "func" or "param,func"
      * so the parsing is rather simple.  Change if needed.
@@ -4329,10 +4326,8 @@ int vdef_parse(
 
 
 int vdef_calc(
-    im,
-    gdi)
-    image_desc_t *im;
-    int gdi;
+    image_desc_t *im,
+    int gdi)
 {
     graph_desc_t *src, *dst;
     rrd_value_t *data;
@@ -4532,9 +4527,7 @@ int vdef_calc(
 
 /* NaN < -INF < finite_values < INF */
 int vdef_percent_compar(
-    a,
-    b)
-    const void *a, *b;
+    const void *a, const void *b)
 {
     /* Equality is not returned; this doesn't hurt except
      * (maybe) for a little performance.

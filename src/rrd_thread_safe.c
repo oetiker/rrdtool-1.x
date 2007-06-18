@@ -35,7 +35,7 @@ static void context_destroy_context(
 
 /* Allocate the key */
 static void context_get_key(
-    )
+    void)
 {
     pthread_key_create(&context_key, context_destroy_context);
 }

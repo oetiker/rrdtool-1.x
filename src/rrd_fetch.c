@@ -69,14 +69,18 @@ int rrd_fetch(
     char ***ds_namv,    /* names of data sources */
     rrd_value_t **data)
 {                       /* two dimensional array containing the data */
-
-
     long      step_tmp = 1;
     time_t    start_tmp = 0, end_tmp = 0;
     const char *cf;
 
     struct rrd_time_value start_tv, end_tv;
     char     *parsetime_error = NULL;
+    struct option long_options[] = {
+        {"resolution", required_argument, 0, 'r'},
+        {"start", required_argument, 0, 's'},
+        {"end", required_argument, 0, 'e'},
+        {0, 0, 0, 0}
+    };
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -86,12 +90,6 @@ int rrd_fetch(
     parsetime("now", &end_tv);
 
     while (1) {
-        static struct option long_options[] = {
-            {"resolution", required_argument, 0, 'r'},
-            {"start", required_argument, 0, 's'},
-            {"end", required_argument, 0, 'e'},
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
 

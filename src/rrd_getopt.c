@@ -190,7 +190,7 @@ int       optopt = '?';
    of the value of `ordering'.  In the case of RETURN_IN_ORDER, only
    `--' can cause `getopt' to return -1 with `optind' != ARGC.  */
 
-static enum {
+static const enum {
     REQUIRE_ORDER, PERMUTE, RETURN_IN_ORDER
 } ordering;
 

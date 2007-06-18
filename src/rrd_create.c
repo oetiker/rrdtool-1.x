@@ -25,6 +25,13 @@ int rrd_create(
     int argc,
     char **argv)
 {
+    struct option long_options[] = {
+        {"start", required_argument, 0, 'b'},
+        {"step", required_argument, 0, 's'},
+        {0, 0, 0, 0}
+    };
+    int       option_index = 0;
+    int       opt;
     time_t    last_up = time(NULL) - 10;
     unsigned long pdp_step = 300;
     struct rrd_time_value last_up_tv;
@@ -36,14 +43,6 @@ int rrd_create(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        static struct option long_options[] = {
-            {"start", required_argument, 0, 'b'},
-            {"step", required_argument, 0, 's'},
-            {0, 0, 0, 0}
-        };
-        int       option_index = 0;
-        int       opt;
-
         opt = getopt_long(argc, argv, "b:s:", long_options, &option_index);
 
         if (opt == EOF)

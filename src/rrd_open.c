@@ -4,62 +4,6 @@
  * rrd_open.c  Open an RRD File
  *****************************************************************************
  * $Id$
- * $Log$
- * Revision 1.10  2004/05/26 22:11:12  oetiker
- * reduce compiler warnings. Many small fixes. -- Mike Slifcak <slif@bellsouth.net>
- *
- * Revision 1.9  2003/04/29 21:56:49  oetiker
- * readline in rrd_open.c reads the file in 8 KB blocks, and calls realloc for
- * each block. realloc is very slow in Mac OS X for huge blocks, e.g. when
- * restoring databases from huge xml files. This patch finds the size of the
- * file, and starts out with malloc'ing the full size.
- * -- Peter Speck <speck@ruc.dk>
- *
- * Revision 1.8  2003/04/11 19:43:44  oetiker
- * New special value COUNT which allows calculations based on the position of a
- * value within a data set. Bug fix in rrd_rpncalc.c. PREV returned erroneus
- * value for the second value. Bug fix in rrd_restore.c. Bug causing seek error
- * when accesing an RRD restored from an xml that holds an RRD version <3.
- * --  Ruben Justo <ruben@ainek.com>
- *
- * Revision 1.7  2003/03/31 21:22:12  oetiker
- * enables RRDtool updates with microsecond or in case of windows millisecond
- * precision. This is needed to reduce time measurement error when archive step
- * is small. (<30s) --  Sasha Mikheev <sasha@avalon-net.co.il>
- *
- * Revision 1.6  2003/02/13 07:05:27  oetiker
- * Find attached the patch I promised to send to you. Please note that there
- * are three new source files (src/rrd_is_thread_safe.h, src/rrd_thread_safe.c
- * and src/rrd_not_thread_safe.c) and the introduction of librrd_th. This
- * library is identical to librrd, but it contains support code for per-thread
- * global variables currently used for error information only. This is similar
- * to how errno per-thread variables are implemented.  librrd_th must be linked
- * alongside of libpthred
- *
- * There is also a new file "THREADS", holding some documentation.
- *
- * -- Peter Stamfest <peter@stamfest.at>
- *
- * Revision 1.5  2002/06/20 00:21:03  jake
- * More Win32 build changes; thanks to Kerry Calvert.
- *
- * Revision 1.4  2002/02/01 20:34:49  oetiker
- * fixed version number and date/time
- *
- * Revision 1.3  2001/03/04 13:01:55  oetiker
- * Aberrant Behavior Detection support. A brief overview added to rrdtool.pod.
- * Major updates to rrd_update.c, rrd_create.c. Minor update to other core files.
- * This is backwards compatible! But new files using the Aberrant stuff are not readable
- * by old rrdtool versions. See http://cricket.sourceforge.net/aberrant/rrd_hw.htm
- * -- Jake Brutlag <jakeb@corp.webtv.net>
- *
- * Revision 1.2  2001/03/04 10:29:20  oetiker
- * fixed filedescriptor leak
- * -- Mike Franusich <mike@franusich.com>
- *
- * Revision 1.1.1.1  2001/02/25 22:25:05  oetiker
- * checkin
- *
  *****************************************************************************/
 
 #include "rrd_tool.h"

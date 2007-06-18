@@ -139,7 +139,7 @@ struct SpecialToken {
     char     *name;     /* token name */
     int       value;    /* token id */
 };
-static struct SpecialToken VariousWords[] = {
+static const struct SpecialToken VariousWords[] = {
     {"midnight", MIDNIGHT}, /* 00:00:00 of today or tomorrow */
     {"noon", NOON},     /* 12:00:00 of today or tomorrow */
     {"teatime", TEATIME},   /* 16:00:00 of today or tomorrow */
@@ -196,7 +196,7 @@ static struct SpecialToken VariousWords[] = {
     {NULL, 0}           /*** SENTINEL ***/
 };
 
-static struct SpecialToken TimeMultipliers[] = {
+static const struct SpecialToken TimeMultipliers[] = {
     {"second", SECONDS},    /* seconds multiplier */
     {"seconds", SECONDS},   /* (pluralized) */
     {"sec", SECONDS},   /* (generic) */
@@ -326,10 +326,8 @@ static char *e(
    greater than zero if S1 is lexicographically less than,
    equal to or greater than S2.  -- copied from GNU libc*/
 static int mystrcasecmp(
-    s1,
-    s2)
-    const char *s1;
-    const char *s2;
+    const char *s1,
+    const char *s2)
 {
     const unsigned char *p1 = (const unsigned char *) s1;
     const unsigned char *p2 = (const unsigned char *) s2;
@@ -391,7 +389,7 @@ static char *init_scanner(
  * token() fetches a token from the input stream
  */
 static int token(
-    )
+    void)
 {
     int       idx;
 

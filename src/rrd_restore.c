@@ -708,19 +708,18 @@ int rrd_restore(
     char     *buf;
     char      rc = 0;
     char      force_overwrite = 0;
+    struct option long_options[] = {
+        {"range-check", no_argument, 0, 'r'},
+        {"force-overwrite", no_argument, 0, 'f'},
+        {0, 0, 0, 0}
+    };
 
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */
     while (1) {
-        static struct option long_options[] = {
-            {"range-check", no_argument, 0, 'r'},
-            {"force-overwrite", no_argument, 0, 'f'},
-            {0, 0, 0, 0}
-        };
         int       option_index = 0;
         int       opt;
-
 
         opt = getopt_long(argc, argv, "rf", long_options, &option_index);
 
