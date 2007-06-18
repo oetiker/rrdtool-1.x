@@ -72,24 +72,24 @@ int rrd_tune(
     double    max;
     char      dst[DST_SIZE];
     rrd_file_t *rrd_file;
-	struct option long_options[] = {
-		{"heartbeat", required_argument, 0, 'h'},
-		{"minimum", required_argument, 0, 'i'},
-		{"maximum", required_argument, 0, 'a'},
-		{"data-source-type", required_argument, 0, 'd'},
-		{"data-source-rename", required_argument, 0, 'r'},
-		/* added parameter tuning options for aberrant behavior detection */
-		{"deltapos", required_argument, 0, 'p'},
-		{"deltaneg", required_argument, 0, 'n'},
-		{"window-length", required_argument, 0, 'w'},
-		{"failure-threshold", required_argument, 0, 'f'},
-		{"alpha", required_argument, 0, 'x'},
-		{"beta", required_argument, 0, 'y'},
-		{"gamma", required_argument, 0, 'z'},
-		{"gamma-deviation", required_argument, 0, 'v'},
-		{"aberrant-reset", required_argument, 0, 'b'},
-		{0, 0, 0, 0}
-	};
+    struct option long_options[] = {
+        {"heartbeat", required_argument, 0, 'h'},
+        {"minimum", required_argument, 0, 'i'},
+        {"maximum", required_argument, 0, 'a'},
+        {"data-source-type", required_argument, 0, 'd'},
+        {"data-source-rename", required_argument, 0, 'r'},
+        /* added parameter tuning options for aberrant behavior detection */
+        {"deltapos", required_argument, 0, 'p'},
+        {"deltaneg", required_argument, 0, 'n'},
+        {"window-length", required_argument, 0, 'w'},
+        {"failure-threshold", required_argument, 0, 'f'},
+        {"alpha", required_argument, 0, 'x'},
+        {"beta", required_argument, 0, 'y'},
+        {"gamma", required_argument, 0, 'z'},
+        {"gamma-deviation", required_argument, 0, 'v'},
+        {"aberrant-reset", required_argument, 0, 'b'},
+        {0, 0, 0, 0}
+    };
 
     optind = 0;
     opterr = 0;         /* initialize getopt */

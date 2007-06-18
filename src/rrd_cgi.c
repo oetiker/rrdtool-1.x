@@ -220,7 +220,8 @@ static vardata *varheap = NULL;
 static size_t varheap_size = 0;
 
 /* allocate and initialize variable heap */
-static int initvar(void)
+static int initvar(
+    void)
 {
     varheap = (vardata *) malloc(sizeof(vardata) * INIT_VARSTORE_SIZE);
     if (varheap == NULL) {
@@ -233,7 +234,8 @@ static int initvar(void)
 }
 
 /* cleanup: free allocated memory */
-static void donevar(void)
+static void donevar(
+    void)
 {
     int       i;
 
