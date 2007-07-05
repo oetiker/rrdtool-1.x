@@ -445,9 +445,11 @@ int rrd_parse_shift(
             return 1;
         }
     } else {
+        long time_tmp = 0;
         rrd_clear_error();
         i = 0;
-        sscanf(&line[*eaten], "%li%n", &gdp->shval, &i);
+        sscanf(&line[*eaten], "%li%n", &time_tmp, &i);
+        gdp->shval = time_tmp;
         if (i != (int) strlen(&line[*eaten])) {
             rrd_set_error("Not a valid offset: %s in line %s", &line[*eaten],
                           line);
@@ -608,11 +610,13 @@ int rrd_parse_PVHLAST(
         default:;
         }
     } else {
+        long time_tmp = 0;
         dprintf("- it is not an existing vname\n");
         switch (gdp->gf) {
         case GF_VRULE:
             k = 0;
-            sscanf(tmpstr, "%li%n", &gdp->xrule, &k);
+            sscanf(tmpstr, "%li%n",&time_tmp , &k);
+            gdp->xrule = time_tmp;
             if (((j != 0) && (k == j)) || ((j == 0) && (k == i))) {
                 dprintf("- found time: %li\n", gdp->xrule);
             } else {
@@ -626,9 +630,9 @@ int rrd_parse_PVHLAST(
             k = 0;
             sscanf(tmpstr, "%lf%n", &gdp->yrule, &k);
             if (((j != 0) && (k == j)) || ((j == 0) && (k == i))) {
-                dprintf("- found number: %f\n", gdp->yrule);
+                dprintf("- found number: %lf\n", gdp->yrule);
             } else {
-                dprintf("- is is not a valid number: %li\n", gdp->xrule);
+                dprintf("- is is not a valid number: %lf\n", gdp->yrule);
                 rrd_set_error
                     ("parameter '%s' does not represent a number in line %s\n",
                      tmpstr, line);
