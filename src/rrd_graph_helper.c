@@ -296,7 +296,7 @@ rrd_parse_print(const char *const line, unsigned int *const eaten, graph_desc_t 
 int
 rrd_parse_shift(const char *const line, unsigned int *const eaten, graph_desc_t *const gdp, image_desc_t *const im) {
     int i;
-
+    long time_tmp = 0;
     if ((gdp->vidx=rrd_parse_find_vname(line,eaten,gdp,im))<0) return 1;
 
     switch (im->gdes[gdp->vidx].gf) {
@@ -327,7 +327,8 @@ rrd_parse_shift(const char *const line, unsigned int *const eaten, graph_desc_t 
 	}
     } else {
 	rrd_clear_error();
-	i=0; sscanf(&line[*eaten],"%li%n",&gdp->shval,&i);
+	i=0; sscanf(&line[*eaten],"%li%n",&time_tmp,&i);
+    gdp->shval = time_tmp;
 	if (i!=(int)strlen(&line[*eaten])) {
 	    rrd_set_error("Not a valid offset: %s in line %s",&line[*eaten],line);
 	    return 1;
@@ -377,6 +378,7 @@ rrd_parse_PVHLAST(const char *const line, unsigned int *const eaten, graph_desc_
     int i,j,k;
     int colorfound=0;
     char tmpstr[MAX_VNAME_LEN + 10];	/* vname#RRGGBBAA\0 */
+    long time_tmp = 0;
     static int spacecnt = 0;
 
     if (spacecnt == 0) {        
@@ -443,7 +445,8 @@ rrd_parse_PVHLAST(const char *const line, unsigned int *const eaten, graph_desc_
 	dprintf("- it is not an existing vname\n");
 	switch (gdp->gf) {
 	    case GF_VRULE:
-		k=0;sscanf(tmpstr,"%li%n",&gdp->xrule,&k);
+		k=0;sscanf(tmpstr,"%li%n",&time_tmp,&k);
+        gdp->xrule = time_tmp;
 		if (((j!=0)&&(k==j))||((j==0)&&(k==i))) {
 		    dprintf("- found time: %li\n",gdp->xrule);
 		} else {
@@ -454,9 +457,9 @@ rrd_parse_PVHLAST(const char *const line, unsigned int *const eaten, graph_desc_
 	    default:
 		k=0;sscanf(tmpstr,"%lf%n",&gdp->yrule,&k);
 		if (((j!=0)&&(k==j))||((j==0)&&(k==i))) {
-		    dprintf("- found number: %f\n",gdp->yrule);
+		    dprintf("- found number: %lf\n",gdp->yrule);
 		} else {
-		    dprintf("- is is not a valid number: %li\n",gdp->xrule);
+		    dprintf("- is is not a valid number: %lf\n",gdp->yrule);
 		    rrd_set_error("parameter '%s' does not represent a number in line %s\n",tmpstr,line);
 		    return 1;
 		}
