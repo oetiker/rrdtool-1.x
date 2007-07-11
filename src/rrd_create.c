@@ -632,12 +632,7 @@ int rrd_create_fn(
 
     if ((rrd_file = fopen(file_name, "wb")) == NULL) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
-        free(rrd->stat_head);
-        rrd->stat_head = NULL;
-        free(rrd->ds_def);
-        rrd->ds_def = NULL;
-        free(rrd->rra_def);
-        rrd->rra_def = NULL;
+        rrd_free(rrd);
         return (-1);
     }
 
