@@ -762,7 +762,7 @@ if test  "$enable_tcl" = "yes"; then
   withval=""
   AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
   enable_tcl=no
-  for dir in $withval /usr/lib /usr/local/lib; do
+  for dir in $withval /usr/lib /usr/local/lib /usr/lib/tcl8.4 /usr/lib/tcl8.3 ; do
     AC_MSG_CHECKING(for tclConfig.sh in $dir)
     if test -f "$dir/tclConfig.sh" ; then
     	tcl_config=$dir/tclConfig.sh
@@ -797,6 +797,7 @@ AC_SUBST(TCL_LD_SEARCH_FLAGS)
 AC_SUBST(TCL_STUB_LIB_SPEC)
 AC_SUBST(TCL_VERSION)
 AC_SUBST(TCL_PACKAGE_DIR)
+AC_SUBST(TCL_INC_DIR)
 
 AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
 [],[enable_python=yes])
