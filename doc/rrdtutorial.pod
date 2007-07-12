@@ -4,9 +4,9 @@ rrdtutorial - Alex van den Bogaerdt's RRDtool tutorial
 
 =head1 DESCRIPTION
 
-RRDtool is written by Tobias Oetiker <tobi@oetiker.ch> with
+RRDtool is written by Tobias Oetiker E<lt>tobi@oetiker.chE<gt> with
 contributions from many people all around the world. This document is
-written by Alex van den Bogaerdt <alex@ergens.op.het.net> to help you
+written by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt> to help you
 understand what RRDtool is and what it can do for you.
 
 The documentation provided with RRDtool can be too technical for some
@@ -219,16 +219,15 @@ and skip all of the '\' characters.
 
 =head2 What has been created?
 
-We created the round robin database called test (test.rrd) which
-starts at noon the day I started writing this document, 7th of March,
-1999 (this date translates to 920'804'400 seconds as explained
-below). Our database holds one data source (DS) named "speed" that
-represents a counter. This counter is read every five minutes
-(default).  In the same database two round robin archives (RRAs) are
-kept, one averages the data every time it is read (e.g., there's
-nothing to average) and keeps 24 samples (24 times 5 minutes is 2
-hours). The other averages 6 values (half hour) and contains 10
-such averages (e.g., 5 hours).
+We created the round robin database called test (test.rrd) which starts at
+noon the day I started writing this document, 7th of March, 1999 (this date
+translates to 920'804'400 seconds as explained below). Our database holds
+one data source (DS) named "speed" that represents a counter. This counter
+is read every five minutes (this is the default therefore you don't have to
+put C<--step=300>).  In the same database two round robin archives (RRAs)
+are kept, one averages the data every time it is read (e.g., there's nothing
+to average) and keeps 24 samples (24 times 5 minutes is 2 hours). The other
+averages 6 values (half hour) and contains 10 such averages (e.g. 5 hours).
 
 RRDtool works with special time stamps coming from the UNIX world.
 This time stamp is the number of seconds that passed since January
@@ -491,7 +490,7 @@ or ctrl-F5).
 
 =head2 Updates in Reality
 
-We've already used the "update" command: it took one or more
+We've already used the C<update> command: it took one or more
 parameters in the form of "<time>:<value>". You'll be glad to know
 that you can specify the current time by filling in a "N" as the time.
 Or you could use the "time" function in Perl (the shortest example in
