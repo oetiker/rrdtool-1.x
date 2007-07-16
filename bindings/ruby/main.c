@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 #include <ruby.h>
-#include <rrd.h>
+#include "../../src/rrd_tool.h"
 
 typedef struct string_arr_t {
     int       len;
@@ -150,7 +150,7 @@ VALUE rb_rrd_fetch(
     rb_ary_store(result, 0, INT2FIX(start));
     rb_ary_store(result, 1, INT2FIX(end));
     rb_ary_store(result, 2, names);
-    rb_ary_store(result, 2, data);
+    rb_ary_store(result, 3, data);
     return result;
 }
 
@@ -184,11 +184,10 @@ VALUE rb_rrd_graph(
     return result;
 }
 
-/*
 VALUE rb_rrd_info(VALUE self, VALUE args)
 {
     string_arr a;
-    info_t *p;
+    info_t *p, *data;
     VALUE result;
 
     a = string_arr_new(args);
@@ -202,19 +201,19 @@ VALUE rb_rrd_info(VALUE self, VALUE args)
         VALUE key = rb_str_new2(data->key);
         switch (data->type) {
         case RD_I_VAL:
-            if (isnan(data->u_val)) {
+            if (isnan(data->value.u_val)) {
                 rb_hash_aset(result, key, Qnil);
             }
             else {
-                rb_hash_aset(result, key, rb_float_new(data->u_val));
+                rb_hash_aset(result, key, rb_float_new(data->value.u_val));
             }
             break;
         case RD_I_CNT:
-            rb_hash_aset(result, key, INT2FIX(data->u_cnt));
+            rb_hash_aset(result, key, INT2FIX(data->value.u_cnt));
             break;
         case RD_I_STR:
-            rb_hash_aset(result, key, rb_str_new2(data->u_str));
-            free(data->u_str);
+            rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
+            free(data->value.u_str);
             break;
         }
         p = data;
@@ -223,7 +222,6 @@ VALUE rb_rrd_info(VALUE self, VALUE args)
     }
     return result;
 }
-*/
 
 VALUE rb_rrd_last(
     VALUE self,
@@ -284,4 +282,5 @@ void Init_RRD(
     rb_define_module_function(mRRD, "restore", rb_rrd_restore, -2);
     rb_define_module_function(mRRD, "tune", rb_rrd_tune, -2);
     rb_define_module_function(mRRD, "update", rb_rrd_update, -2);
+    rb_define_module_function(mRRD, "info", rb_rrd_info, -2);
 }
