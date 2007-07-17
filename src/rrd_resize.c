@@ -82,6 +82,7 @@ int rrd_resize(
             return (-1);
         }
     /* the size of the new file */
+    /* yes we are abusing the float cookie for this, aargh */
     if ((rrdnew.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating stat_head for new RRD");
         rrd_free(&rrdold);

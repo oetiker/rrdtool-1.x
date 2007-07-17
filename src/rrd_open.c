@@ -90,6 +90,8 @@ rrd_file_t *rrd_open(
     off_t     newfile_size = 0;
 
     if (rdwr & RRD_CREAT) {
+        /* yes bad inline signaling alert, we are using the
+           floatcookie to pass the size in ... only used in resize */
         newfile_size = (off_t) rrd->stat_head->float_cookie;
         free(rrd->stat_head);
     }
