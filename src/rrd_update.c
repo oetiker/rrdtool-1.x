@@ -14,6 +14,8 @@
 #include <io.h>
 #endif
 
+#include <locale.h>
+
 #include "rrd_hw.h"
 #include "rrd_rpncalc.h"
 
@@ -500,8 +502,10 @@ int _rrd_update(
             current_time_usec = tmp_time.tv_usec;
         } else {
             double    tmp;
-
+            char    *old_locale;
+            old_locale = setlocale(LC_NUMERIC,"C");
             tmp = strtod(updvals[0], 0);
+            setlocale(LC_NUMERIC,old_locale);
             current_time = floor(tmp);
             current_time_usec =
                 (long) ((tmp - (double) current_time) * 1000000.0);
@@ -593,6 +597,7 @@ int _rrd_update(
                 (dst_idx != DST_CDEF) &&
                 rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
                 double    rate = DNAN;
+                char    *old_locale;
 
                 /* the data source type defines how to process the data */
                 /* pdp_new contains rate * time ... eg the bytes
@@ -636,8 +641,10 @@ int _rrd_update(
                     }
                     break;
                 case DST_ABSOLUTE:
+                    old_locale = setlocale(LC_NUMERIC,"C");
                     errno = 0;
                     pdp_new[i] = strtod(updvals[i + 1], &endptr);
+                    setlocale(LC_NUMERIC,old_locale);
                     if (errno > 0) {
                         rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));
@@ -653,7 +660,9 @@ int _rrd_update(
                     break;
                 case DST_GAUGE:
                     errno = 0;
+                    old_locale = setlocale(LC_NUMERIC,"C");
                     pdp_new[i] = strtod(updvals[i + 1], &endptr) * interval;
+                    setlocale(LC_NUMERIC,old_locale);
                     if (errno > 0) {
                         rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));

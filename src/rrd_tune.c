@@ -42,6 +42,7 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
+#include <locale.h>
 
 int       set_hwarg(
     rrd_t *rrd,
@@ -104,7 +105,7 @@ int rrd_tune(
     while (1) {
         int       option_index = 0;
         int       opt;
-
+        char *old_locale = "";
         opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
                           long_options, &option_index);
         if (opt == EOF)
@@ -113,14 +114,17 @@ int rrd_tune(
         optcnt++;
         switch (opt) {
         case 'h':
+            old_locale = setlocale(LC_NUMERIC,"C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%ld", ds_nam,
                         &heartbeat)) != 2) {
                 rrd_set_error("invalid arguments for heartbeat");
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
+                setlocale(LC_NUMERIC,old_locale);
                 return -1;
             }
+            setlocale(LC_NUMERIC,old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
@@ -130,13 +134,16 @@ int rrd_tune(
             break;
 
         case 'i':
+            old_locale = setlocale(LC_NUMERIC,"C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
                 rrd_set_error("invalid arguments for minimum ds value");
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
+                setlocale(LC_NUMERIC,old_locale);
                 return -1;
             }
+            setlocale(LC_NUMERIC,old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
@@ -149,13 +156,16 @@ int rrd_tune(
             break;
 
         case 'a':
+            old_locale = setlocale(LC_NUMERIC,"C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
                 rrd_set_error("invalid arguments for maximum ds value");
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
+                setlocale(LC_NUMERIC,old_locale);
                 return -1;
             }
+            setlocale(LC_NUMERIC,old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 rrd_free(&rrd);
                 rrd_close(rrd_file);

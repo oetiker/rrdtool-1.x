@@ -4,6 +4,8 @@
  * rrd_create.c  creates new rrds
  *****************************************************************************/
 
+#include <locale.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
@@ -512,7 +514,7 @@ void parseGENERIC_DS(
     int ds_idx)
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
-
+    char *old_locale;
     /*
        int temp;
 
@@ -520,6 +522,7 @@ void parseGENERIC_DS(
        &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
        minstr,maxstr);
      */
+    old_locale = setlocale(LC_NUMERIC,"C");
     if (sscanf(def, "%lu:%18[^:]:%18[^:]",
                &(rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
                minstr, maxstr) == 3) {
@@ -538,11 +541,13 @@ void parseGENERIC_DS(
             rrd->ds_def[ds_idx].par[DS_min_val].u_val
             >= rrd->ds_def[ds_idx].par[DS_max_val].u_val) {
             rrd_set_error("min must be less than max in DS definition");
+            setlocale(LC_NUMERIC,old_locale);
             return;
         }
     } else {
         rrd_set_error("failed to parse data source %s", def);
     }
+    setlocale(LC_NUMERIC,old_locale);
 }
 
 /* Create the CF_DEVPREDICT, CF_DEVSEASONAL, CF_SEASONAL, and CF_FAILURES RRAs

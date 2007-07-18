@@ -8,6 +8,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_graph.h"
 #include <limits.h>
+#include <locale.h>
 
 short     addop2str(
     enum op_en op,
@@ -287,6 +288,8 @@ rpnp_t   *rpn_parse(
     long      steps = -1;
     rpnp_t   *rpnp;
     char      vname[MAX_VNAME_LEN + 10];
+    char *old_locale;
+    old_locale = setlocale(LC_NUMERIC,"C");
 
     rpnp = NULL;
     expr = (char *) expr_const;
@@ -294,9 +297,10 @@ rpnp_t   *rpn_parse(
     while (*expr) {
         if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2) *
                                            sizeof(rpnp_t))) == NULL) {
+            setlocale(LC_NUMERIC,old_locale);
             return NULL;
         }
-
+    
         else if ((sscanf(expr, "%lf%n", &rpnp[steps].val, &pos) == 1)
                  && (expr[pos] == ',')) {
             rpnp[steps].op = OP_NUMBER;
@@ -306,8 +310,7 @@ rpnp_t   *rpn_parse(
         else if (strncmp(expr, #VVV, strlen(#VVV))==0 && ( expr[strlen(#VVV)] == ',' || expr[strlen(#VVV)] == '\0' )){ \
             rpnp[steps].op = VV; \
             expr+=strlen(#VVV); \
-	}
-
+    	}
 
 #define match_op_param(VV,VVV) \
         else if (sscanf(expr, #VVV "(" DEF_NAM_FMT ")",vname) == 1) { \
@@ -379,19 +382,23 @@ rpnp_t   *rpn_parse(
         }
 
         else {
+            setlocale(LC_NUMERIC,old_locale);
             free(rpnp);
             return NULL;
         }
+
         if (*expr == 0)
             break;
         if (*expr == ',')
             expr++;
         else {
+            setlocale(LC_NUMERIC,old_locale);
             free(rpnp);
             return NULL;
         }
     }
     rpnp[steps + 1].op = OP_END;
+    setlocale(LC_NUMERIC,old_locale);
     return rpnp;
 }
 
