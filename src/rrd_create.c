@@ -624,31 +624,31 @@ int rrd_create_fn(
     rrd_t *rrd)
 {
     unsigned long i, ii;
-    FILE     *rrd_file;
+    int    rrd_file;
     rrd_value_t *unknown;
     int       unkn_cnt;
+    rrd_file_t *rrd_file_dn;
+    rrd_t      rrd_dn;
 
-    long      rrd_head_size;
-
-    if ((rrd_file = fopen(file_name, "wb")) == NULL) {
+    if ((rrd_file = open(file_name, O_WRONLY|O_CREAT|O_TRUNC,0666)) == NULL) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
         rrd_free(rrd);
         return (-1);
     }
 
-    fwrite(rrd->stat_head, sizeof(stat_head_t), 1, rrd_file);
+    write(rrd_file,rrd->stat_head, sizeof(stat_head_t));
 
-    fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, rrd_file);
+    write(rrd_file,rrd->ds_def, sizeof(ds_def_t)*rrd->stat_head->ds_cnt);
 
-    fwrite(rrd->rra_def,
-           sizeof(rra_def_t), rrd->stat_head->rra_cnt, rrd_file);
+    write(rrd_file,rrd->rra_def,
+           sizeof(rra_def_t)* rrd->stat_head->rra_cnt);
 
-    fwrite(rrd->live_head, sizeof(live_head_t), 1, rrd_file);
+    write(rrd_file,rrd->live_head, sizeof(live_head_t));
 
     if ((rrd->pdp_prep = calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
         rrd_free(rrd);
-        fclose(rrd_file);
+        close(rrd_file);
         return (-1);
     }
 
@@ -659,12 +659,12 @@ int rrd_create_fn(
         rrd->live_head->last_up % rrd->stat_head->pdp_step;
 
     for (i = 0; i < rrd->stat_head->ds_cnt; i++)
-        fwrite(rrd->pdp_prep, sizeof(pdp_prep_t), 1, rrd_file);
+        write(rrd_file,rrd->pdp_prep, sizeof(pdp_prep_t));
 
     if ((rrd->cdp_prep = calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
         rrd_free(rrd);
-        fclose(rrd_file);
+        close(rrd_file);
         return (-1);
     }
 
@@ -701,7 +701,7 @@ int rrd_create_fn(
         }
 
         for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
-            fwrite(rrd->cdp_prep, sizeof(cdp_prep_t), 1, rrd_file);
+            write(rrd_file,rrd->cdp_prep, sizeof(cdp_prep_t));
         }
     }
 
@@ -711,7 +711,7 @@ int rrd_create_fn(
     if ((rrd->rra_ptr = calloc(1, sizeof(rra_ptr_t))) == NULL) {
         rrd_set_error("allocating rra_ptr");
         rrd_free(rrd);
-        fclose(rrd_file);
+        close(rrd_file);
         return (-1);
     }
 
@@ -721,15 +721,14 @@ int rrd_create_fn(
      * the pointer a priori. */
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
-        fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), 1, rrd_file);
+        write(rrd_file,rrd->rra_ptr, sizeof(rra_ptr_t));
     }
-    rrd_head_size = ftell(rrd_file);
 
     /* write the empty data area */
     if ((unknown = (rrd_value_t *) malloc(512 * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("allocating unknown");
         rrd_free(rrd);
-        fclose(rrd_file);
+        close(rrd_file);
         return (-1);
     }
     for (i = 0; i < 512; ++i)
@@ -740,40 +739,20 @@ int rrd_create_fn(
         unkn_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
 
     while (unkn_cnt > 0) {
-        fwrite(unknown, sizeof(rrd_value_t), min(unkn_cnt, 512), rrd_file);
+        write(rrd_file,unknown, sizeof(rrd_value_t) * min(unkn_cnt, 512));
+
         unkn_cnt -= 512;
     }
     free(unknown);
-
-    /* lets see if we had an error */
-    if (ferror(rrd_file)) {
-        rrd_set_error("a file error occurred while creating '%s'", file_name);
-        fclose(rrd_file);
-        rrd_free(rrd);
-        return (-1);
-    }
-#ifdef HAVE_POSIX_FADVISE
-    /* this file is not going to be read again any time
-       soon, so we drop everything except the header portion from
-       the buffer cache. for this to work, we have to fdsync the file
-       first though. This will not be all that fast, but 'good' data
-       like other rrdfiles headers will stay in cache. Now this only works if creating
-       a single rrd file is not too large, but I assume this should not be the case
-       in general. Otherwhise we would have to sync and release while writing all
-       the unknown data. */
-    fflush(rrd_file);
-    fdatasync(fileno(rrd_file));
-    if (0 !=
-        posix_fadvise(fileno(rrd_file), rrd_head_size, 0,
-                      POSIX_FADV_DONTNEED)) {
-        rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", file_name,
-                      rrd_strerror(errno));
-        fclose(rrd_file);
-        return (-1);
-    }
-#endif
-
-    fclose(rrd_file);
+    fdatasync(rrd_file);
     rrd_free(rrd);
+    if ( close(rrd_file) == -1 ) {
+        rrd_set_error("creating rrd: %s", rrd_strerror(errno));
+        return -1;
+    }
+    /* flush all we don't need out of the cache */
+    rrd_file_dn = rrd_open(file_name, &rrd_dn, RRD_READONLY);
+    rrd_dontneed(rrd_file_dn,&rrd_dn);
+    rrd_close(rrd_file_dn);
     return (0);
 }

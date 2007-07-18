@@ -1443,19 +1443,7 @@ int _rrd_update(
         goto err_free_pdp_new;
     }
 #endif
-#ifdef HAVE_POSIX_FADVISExxx
 
-    /* with update we have write ops, so they will probably not be done by now, this means
-       the buffers will not get freed. But calling this for the whole file - header
-       will let the data off the hook as soon as it is written when if it is from a previous
-       update cycle. Calling fdsync to force things is much too hard here. */
-
-    if (0 != posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
-        rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
-                      rrd_strerror(errno));
-        goto err_free_pdp_new;
-    }
-#endif
     /* rrd_flush(rrd_file); */
 
     /* calling the smoothing code here guarantees at most
@@ -1479,17 +1467,9 @@ int _rrd_update(
             rra_start += rrd.rra_def[i].row_cnt
                 * rrd.stat_head->ds_cnt * sizeof(rrd_value_t);
         }
-#ifdef HAVE_POSIX_FADVISExxx
-        /* same procedure as above ... */
-        if (0 !=
-            posix_fadvise(rrd_file->fd, rra_begin, 0, POSIX_FADV_DONTNEED)) {
-            rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
-                          rrd_strerror(errno));
-            goto err_free_pdp_new;
-        }
-#endif
     }
 
+    rrd_dontneed(rrd_file,&rrd);
     rrd_free(&rrd);
     rrd_close(rrd_file);
 
