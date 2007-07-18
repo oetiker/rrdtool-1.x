@@ -596,9 +596,6 @@ int rrd_parse_PVHLAST(
     if ((gdp->vidx = find_var(im, tmpstr)) >= 0) {
         dprintf("- found vname: '%s' vidx %li\n", tmpstr, gdp->vidx);
         switch (gdp->gf) {
-#ifdef WITH_PIECHART
-        case GF_PART:
-#endif
         case GF_VRULE:
         case GF_HRULE:
             if (im->gdes[gdp->vidx].gf != GF_VDEF) {
