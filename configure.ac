@@ -437,12 +437,11 @@ dnl enable_mmap="no"
   fi
 fi
 
-dnl use FD based I/O ?
-if test "x$enable_mmap" = "xno";then
-    AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
+dnl can we use posix_fadvise
+AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
 #include <fcntl.h>])
-    AC_CHECK_FUNCS(posix_fadvise)
-fi
+AC_CHECK_FUNCS(posix_fadvise)
+
 
 
 CONFIGURE_PART(IEEE Math Checks)
