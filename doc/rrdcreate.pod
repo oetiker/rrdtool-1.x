@@ -173,7 +173,35 @@ data point>.
 The data is also processed with the consolidation function (I<CF>) of
 the archive. There are several consolidation functions that
 consolidate primary data points via an aggregate function: B<AVERAGE>,
-B<MIN>, B<MAX>, B<LAST>. The format of B<RRA> line for these
+B<MIN>, B<MAX>, B<LAST>. 
+
+=over
+
+=item AVERAGE
+
+the average of the data points is stored.
+
+=item MIN
+
+the smallest of the data points is stored.
+
+=item MAX
+
+the largest of the data points is stored.
+
+=item LAST
+
+the last data points is used.
+
+=back
+
+Note that data aggregation inevitably leads to loss of precision and
+information. The trick is to pick the aggregate function such that the
+I<interesting> properties of your data is kept across the aggregation
+process.
+
+
+The format of B<RRA> line for these
 consolidation functions is:
 
 B<RRA:>I<AVERAGE | MIN | MAX | LAST>B<:>I<xff>B<:>I<steps>B<:>I<rows>
