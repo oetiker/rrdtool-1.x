@@ -420,17 +420,6 @@ int rrd_fetch_fn(
                 rrd_set_error("fetching cdp from rra");
                 goto err_free_data;
             }
-#ifdef HAVE_POSIX_FADVISE
-            /* don't pollute the buffer cache with data read from the file. We do this while reading to 
-               keep damage minimal */
-            if (0 !=
-                posix_fadvise(rrd_file->fd, rrd_file->header_len, 0,
-                              POSIX_FADV_DONTNEED)) {
-                rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",
-                              filename, rrd_strerror(errno));
-                goto err_close; /*XXX: should use err_free_all_ds_namv */
-            }
-#endif
 
 #ifdef DEBUG
             fprintf(stderr, "post fetch %li -- ", i);
@@ -445,16 +434,7 @@ int rrd_fetch_fn(
 #endif
 
     }
-#ifdef HAVE_POSIX_FADVISE
-    /* and just to be sure we drop everything except the header at the end */
-    if (0 !=
-        posix_fadvise(rrd_file->fd, rrd_file->header_len, 0,
-                      POSIX_FADV_DONTNEED)) {
-        rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s", filename,
-                      rrd_strerror(errno));
-        goto err_free;  /*XXX: should use err_free_all_ds_namv */
-    }
-#endif
+
     rrd_close(rrd_file);
     return (0);
   err_free_data:
