@@ -4,8 +4,6 @@
 #
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
-fontsdir =  $(datadir)/rrdtool/fonts
-fonts_DATA = DejaVuSansMono-Roman.ttf
 
 if STATIC_PROGRAMS
 AM_LDFLAGS = -all-static
@@ -130,6 +128,6 @@ rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST= strftime.c strftime.h $(fonts_DATA) \
+EXTRA_DIST= strftime.c strftime.h \
 	win32comp.c  rrd_thread_safe_nt.c get_ver.awk
 
