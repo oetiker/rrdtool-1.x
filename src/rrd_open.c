@@ -11,13 +11,11 @@
 #define MEMBLK 8192
 
 /* DEBUG 2 prints information obtained via mincore(2) */
-//#define DEBUG 2
+#define DEBUG 1
 /* do not calculate exact madvise hints but assume 1 page for headers and
  * set DONTNEED for the rest, which is assumed to be data */
-//#define ONE_PAGE 1
 /* Avoid calling madvise on areas that were already hinted. May be benefical if
  * your syscalls are very slow */
-#define CHECK_MADVISE_OVERLAPS 1
 
 #ifdef HAVE_MMAP
 /* the cast to void* is there to avoid this warning seen on ia64 with certain
@@ -40,25 +38,6 @@
 #define PAGE_START(addr) ((addr)&(~(_page_size-1)))
 #endif
 
-#ifdef HAVE_MMAP
-/* vector of last madvise hint */
-typedef struct _madvise_vec_t {
-    void     *start;
-    ssize_t   length;
-} _madvise_vec_t;
-_madvise_vec_t _madv_vec = { NULL, 0 };
-#endif
-
-#if defined CHECK_MADVISE_OVERLAPS
-#define _madvise(_start, _off, _hint) \
-    if ((_start) != _madv_vec.start && (ssize_t)(_off) != _madv_vec.length) { \
-        _madv_vec.start = (_start) ; _madv_vec.length = (_off); \
-        madvise((_start), (_off), (_hint)); \
-    }
-#else
-#define _madvise(_start, _off, _hint) \
-    madvise((_start), (_off), (_hint))
-#endif
 
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
@@ -135,14 +114,7 @@ rrd_file_t *rrd_open(
 #if defined MAP_NONBLOCK
         mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
-#ifdef USE_DIRECT_IO
-    } else {
-        flags |= O_DIRECT;
-#endif
     }
-#ifdef O_NONBLOCK
-    flags |= O_NONBLOCK;
-#endif
 
     if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
@@ -205,21 +177,12 @@ rrd_file_t *rrd_open(
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        _madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
+        madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
     } else {
-# ifndef ONE_PAGE
         /* We do not need to read anything in for the moment */
-        _madvise(data, rrd_file->file_len, MADV_RANDOM);
+        madvise(data, rrd_file->file_len, MADV_RANDOM);
         /* the stat_head will be needed soonish, so hint accordingly */
-        _madvise(data, sizeof(stat_head_t), MADV_WILLNEED | MADV_RANDOM);
-
-# else
-/* alternatively: keep 1 page worth of data, likely headers,
- * don't need the rest.  */
-        _madvise(data, _page_size, MADV_WILLNEED | MADV_SEQUENTIAL);
-        _madvise(data + _page_size, (rrd_file->file_len >= _page_size)
-                 ? rrd_file->file_len - _page_size : 0, MADV_DONTNEED);
-# endif
+        madvise(data, sizeof(stat_head_t), MADV_WILLNEED | MADV_RANDOM);
     }
 #endif
 
@@ -244,18 +207,18 @@ rrd_file_t *rrd_open(
                       rrd->stat_head->version);
         goto out_nullify_head;
     }
-#if defined USE_MADVISE && !defined ONE_PAGE
+#if defined USE_MADVISE
     /* the ds_def will be needed soonish, so hint accordingly */
-    _madvise(data + PAGE_START(offset),
+    madvise(data + PAGE_START(offset),
              sizeof(ds_def_t) * rrd->stat_head->ds_cnt,
              MADV_WILLNEED);
 #endif
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
 
-#if defined USE_MADVISE && !defined ONE_PAGE
+#if defined USE_MADVISE
     /* the rra_def will be needed soonish, so hint accordingly */
-    _madvise(data + PAGE_START(offset),
+    madvise(data + PAGE_START(offset),
              sizeof(rra_def_t) * rrd->stat_head->rra_cnt,
              MADV_WILLNEED);
 #endif
@@ -277,9 +240,9 @@ rrd_file_t *rrd_open(
 #endif
         rrd->live_head->last_up_usec = 0;
     } else {
-#if defined USE_MADVISE && !defined ONE_PAGE
+#if defined USE_MADVISE
         /* the live_head will be needed soonish, so hint accordingly */
-        _madvise(data + PAGE_START(offset),
+        madvise(data + PAGE_START(offset),
                  sizeof(live_head_t), MADV_WILLNEED);
 #endif
         __rrd_read(rrd->live_head, live_head_t,
@@ -370,15 +333,15 @@ rrd_dontneed (
     /* ignoring errors from RRDs that are smaller then the file_len+rounding */
     rra_start = rrd_file->header_len;
     dontneed_start = PAGE_START(rra_start)+_page_size;
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {        
        active_block =
               PAGE_START(rra_start
                          + rrd->rra_ptr[i].cur_row 
                          * rrd->stat_head->ds_cnt 
                          * sizeof(rrd_value_t));
-       if (active_block > dontneed_start){
+       if (active_block > dontneed_start) {
 #ifdef USE_MADVISE
-           _madvise(rrd_file->file_start + dontneed_start,
+           madvise(rrd_file->file_start + dontneed_start,
                    active_block-dontneed_start-1,
                    MADV_DONTNEED);
 #endif
@@ -387,11 +350,16 @@ rrd_dontneed (
             posix_fadvise(rrd_file->fd, dontneed_start, active_block-dontneed_start-1, POSIX_FADV_DONTNEED);
 #endif
        }
-       dontneed_start = active_block + _page_size;
+       dontneed_start = active_block;
+       /* do not relase 'hot' block if update for this RAA will occure within 10 minutes */
+       if (  rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt - 
+             rrd->live_head->last_up % (rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt) < 10*60 ){
+            dontneed_start += _page_size;
+       }
        rra_start += rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
     }
 #ifdef USE_MADVISE
-    _madvise(rrd_file->file_start + dontneed_start,
+    madvise(rrd_file->file_start + dontneed_start,
              rrd_file->file_len - dontneed_start,
              MADV_DONTNEED);
 #endif
