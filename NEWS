@@ -35,6 +35,9 @@ Forecasting (Evan Miller)
   method. It is a drop-in replacement for HWPREDICT, and is better suited for
   data whose seasonal variations grow or shrink in proportion to the average.
 
+* Due to the new aggregation function, we also get a new version of the
+  rrd file format.
+
 Locale Independent Input
 ------------------------
 * Regardles of locale you are in, rrdtool always expects input to be numbers (LC_NUMERIC)
