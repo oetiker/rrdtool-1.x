@@ -166,7 +166,6 @@ enum cf_en { CF_AVERAGE = 0,    /* data consolidation functions */
     CF_MAXIMUM,
     CF_LAST,
     CF_HWPREDICT,
-    CF_MHWPREDICT,
     /* An array of predictions using the seasonal 
      * Holt-Winters algorithm. Requires an RRA of type
      * CF_SEASONAL for this data source. */
@@ -181,7 +180,10 @@ enum cf_en { CF_AVERAGE = 0,    /* data consolidation functions */
     /* An array of smoothed seasonal deviations. Requires
      * an RRA of type CF_HWPREDICT for this data source.
      * */
-    CF_FAILURES
+    CF_FAILURES,
+    /* HWPREDICT that follows a moving baseline */
+    CF_MHWPREDICT
+    /* new entries must come last !!! */
 };
 
                        /* A binary array of failure indicators: 1 indicates
