@@ -223,14 +223,12 @@ int xml2rrd(
         rrd->stat_head = NULL;
         return -1;
     }
-    /* make sure we output the right version */
-    strcpy(rrd->stat_head->version, RRD_VERSION);
-
-    /*  if (atoi(rrd -> stat_head -> version) < 2) 
-       {
-       rrd_set_error("Can only restore version >= 2 (Not %s). Dump your old rrd using a current rrdtool dump.",  rrd -> stat_head -> version );
-       return -1;
-       } */
+    /* make sure we output the right version only go over 3 if input is over 3 too */
+    if (input_version > 3 ){
+        strcpy(rrd->stat_head->version, RRD_VERSION);
+    } else {
+        strcpy(rrd->stat_head->version, RRD_VERSION3);
+    }
 
     rrd->stat_head->float_cookie = FLOAT_COOKIE;
     rrd->stat_head->ds_cnt = 0;

@@ -133,8 +133,8 @@ int rrd_create_r(
     }
 
     /* set some defaults */
-    strcpy(rrd.stat_head->cookie, RRD_COOKIE);
-    strcpy(rrd.stat_head->version, RRD_VERSION);
+    strcpy(rrd.stat_head->cookie, RRD_COOKIE);    
+    strcpy(rrd.stat_head->version, RRD_VERSION3); /* by default we are still version 3 */
     rrd.stat_head->float_cookie = FLOAT_COOKIE;
     rrd.stat_head->ds_cnt = 0;  /* this will be adjusted later */
     rrd.stat_head->rra_cnt = 0; /* ditto */
@@ -247,8 +247,9 @@ int rrd_create_r(
                         rrd_set_error("Failed to parse CF name");
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
-                    case CF_HWPREDICT:
                     case CF_MHWPREDICT:
+                        strcpy(rrd.stat_head->version, RRD_VERSION); /* MHWPREDICT causes Version 4 */
+                    case CF_HWPREDICT:
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].
                             u_val = 0.1;
