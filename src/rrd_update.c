@@ -1478,7 +1478,7 @@ int _rrd_update(
         }
     }
 
-    rrd_dontneed(rrd_file,&rrd);
+/*    rrd_dontneed(rrd_file,&rrd); */
     rrd_free(&rrd);
     rrd_close(rrd_file);
 
