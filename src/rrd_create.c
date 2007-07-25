@@ -133,8 +133,8 @@ int rrd_create_r(
     }
 
     /* set some defaults */
-    strcpy(rrd.stat_head->cookie, RRD_COOKIE);    
-    strcpy(rrd.stat_head->version, RRD_VERSION3); /* by default we are still version 3 */
+    strcpy(rrd.stat_head->cookie, RRD_COOKIE);
+    strcpy(rrd.stat_head->version, RRD_VERSION3);   /* by default we are still version 3 */
     rrd.stat_head->float_cookie = FLOAT_COOKIE;
     rrd.stat_head->ds_cnt = 0;  /* this will be adjusted later */
     rrd.stat_head->rra_cnt = 0; /* ditto */
@@ -248,7 +248,7 @@ int rrd_create_r(
                     switch (cf_conv
                             (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
                     case CF_MHWPREDICT:
-                        strcpy(rrd.stat_head->version, RRD_VERSION); /* MHWPREDICT causes Version 4 */
+                        strcpy(rrd.stat_head->version, RRD_VERSION);    /* MHWPREDICT causes Version 4 */
                     case CF_HWPREDICT:
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].
@@ -515,7 +515,8 @@ void parseGENERIC_DS(
     int ds_idx)
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
-    char *old_locale;
+    char     *old_locale;
+
     /*
        int temp;
 
@@ -523,7 +524,7 @@ void parseGENERIC_DS(
        &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
        minstr,maxstr);
      */
-    old_locale = setlocale(LC_NUMERIC,"C");
+    old_locale = setlocale(LC_NUMERIC, "C");
     if (sscanf(def, "%lu:%18[^:]:%18[^:]",
                &(rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
                minstr, maxstr) == 3) {
@@ -542,13 +543,13 @@ void parseGENERIC_DS(
             rrd->ds_def[ds_idx].par[DS_min_val].u_val
             >= rrd->ds_def[ds_idx].par[DS_max_val].u_val) {
             rrd_set_error("min must be less than max in DS definition");
-            setlocale(LC_NUMERIC,old_locale);
+            setlocale(LC_NUMERIC, old_locale);
             return;
         }
     } else {
         rrd_set_error("failed to parse data source %s", def);
     }
-    setlocale(LC_NUMERIC,old_locale);
+    setlocale(LC_NUMERIC, old_locale);
 }
 
 /* Create the CF_DEVPREDICT, CF_DEVSEASONAL, CF_SEASONAL, and CF_FAILURES RRAs
@@ -630,26 +631,27 @@ int rrd_create_fn(
     rrd_t *rrd)
 {
     unsigned long i, ii;
-    int    rrd_file;
+    int       rrd_file;
     rrd_value_t *unknown;
     int       unkn_cnt;
     rrd_file_t *rrd_file_dn;
-    rrd_t      rrd_dn;
+    rrd_t     rrd_dn;
 
-    if ((rrd_file = open(file_name, O_WRONLY|O_CREAT|O_TRUNC,0666)) == NULL) {
+    if ((rrd_file =
+         open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == NULL) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
         rrd_free(rrd);
         return (-1);
     }
 
-    write(rrd_file,rrd->stat_head, sizeof(stat_head_t));
+    write(rrd_file, rrd->stat_head, sizeof(stat_head_t));
 
-    write(rrd_file,rrd->ds_def, sizeof(ds_def_t)*rrd->stat_head->ds_cnt);
+    write(rrd_file, rrd->ds_def, sizeof(ds_def_t) * rrd->stat_head->ds_cnt);
 
-    write(rrd_file,rrd->rra_def,
-           sizeof(rra_def_t)* rrd->stat_head->rra_cnt);
+    write(rrd_file, rrd->rra_def,
+          sizeof(rra_def_t) * rrd->stat_head->rra_cnt);
 
-    write(rrd_file,rrd->live_head, sizeof(live_head_t));
+    write(rrd_file, rrd->live_head, sizeof(live_head_t));
 
     if ((rrd->pdp_prep = calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
@@ -665,7 +667,7 @@ int rrd_create_fn(
         rrd->live_head->last_up % rrd->stat_head->pdp_step;
 
     for (i = 0; i < rrd->stat_head->ds_cnt; i++)
-        write(rrd_file,rrd->pdp_prep, sizeof(pdp_prep_t));
+        write(rrd_file, rrd->pdp_prep, sizeof(pdp_prep_t));
 
     if ((rrd->cdp_prep = calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
@@ -707,7 +709,7 @@ int rrd_create_fn(
         }
 
         for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
-            write(rrd_file,rrd->cdp_prep, sizeof(cdp_prep_t));
+            write(rrd_file, rrd->cdp_prep, sizeof(cdp_prep_t));
         }
     }
 
@@ -727,7 +729,7 @@ int rrd_create_fn(
      * the pointer a priori. */
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
-        write(rrd_file,rrd->rra_ptr, sizeof(rra_ptr_t));
+        write(rrd_file, rrd->rra_ptr, sizeof(rra_ptr_t));
     }
 
     /* write the empty data area */
@@ -745,20 +747,20 @@ int rrd_create_fn(
         unkn_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
 
     while (unkn_cnt > 0) {
-        write(rrd_file,unknown, sizeof(rrd_value_t) * min(unkn_cnt, 512));
+        write(rrd_file, unknown, sizeof(rrd_value_t) * min(unkn_cnt, 512));
 
         unkn_cnt -= 512;
     }
     free(unknown);
     fdatasync(rrd_file);
     rrd_free(rrd);
-    if ( close(rrd_file) == -1 ) {
+    if (close(rrd_file) == -1) {
         rrd_set_error("creating rrd: %s", rrd_strerror(errno));
         return -1;
     }
     /* flush all we don't need out of the cache */
     rrd_file_dn = rrd_open(file_name, &rrd_dn, RRD_READONLY);
-    rrd_dontneed(rrd_file_dn,&rrd_dn);
+    rrd_dontneed(rrd_file_dn, &rrd_dn);
     rrd_close(rrd_file_dn);
     return (0);
 }

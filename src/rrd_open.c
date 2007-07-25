@@ -210,8 +210,7 @@ rrd_file_t *rrd_open(
 #if defined USE_MADVISE
     /* the ds_def will be needed soonish, so hint accordingly */
     madvise(data + PAGE_START(offset),
-             sizeof(ds_def_t) * rrd->stat_head->ds_cnt,
-             MADV_WILLNEED);
+            sizeof(ds_def_t) * rrd->stat_head->ds_cnt, MADV_WILLNEED);
 #endif
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
@@ -219,8 +218,7 @@ rrd_file_t *rrd_open(
 #if defined USE_MADVISE
     /* the rra_def will be needed soonish, so hint accordingly */
     madvise(data + PAGE_START(offset),
-             sizeof(rra_def_t) * rrd->stat_head->rra_cnt,
-             MADV_WILLNEED);
+            sizeof(rra_def_t) * rrd->stat_head->rra_cnt, MADV_WILLNEED);
 #endif
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
@@ -243,7 +241,7 @@ rrd_file_t *rrd_open(
 #if defined USE_MADVISE
         /* the live_head will be needed soonish, so hint accordingly */
         madvise(data + PAGE_START(offset),
-                 sizeof(live_head_t), MADV_WILLNEED);
+                sizeof(live_head_t), MADV_WILLNEED);
 #endif
         __rrd_read(rrd->live_head, live_head_t,
                    1);
@@ -276,7 +274,10 @@ rrd_file_t *rrd_open(
 
 /* Close a reference to an rrd_file.  */
 static
-void mincore_print(rrd_file_t *rrd_file,char * mark){
+void mincore_print(
+    rrd_file_t *rrd_file,
+    char *mark)
+{
 #ifdef HAVE_MMAP
     /* pretty print blocks in core */
     off_t     off;
@@ -297,7 +298,7 @@ void mincore_print(rrd_file_t *rrd_file,char * mark){
                 if (off == 0)
                     was_in = is_in;
                 if (was_in != is_in) {
-                    fprintf(stderr, "%s: %sin core: %p len %ld\n",mark,
+                    fprintf(stderr, "%s: %sin core: %p len %ld\n", mark,
                             was_in ? "" : "not ", vec + prev, off - prev);
                     was_in = is_in;
                     prev = off;
@@ -310,64 +311,67 @@ void mincore_print(rrd_file_t *rrd_file,char * mark){
             fprintf(stderr, "mincore: %s", rrd_strerror(errno));
     }
 #else
-  fprintf(stderr, "sorry mincore only works with mmap");
+    fprintf(stderr, "sorry mincore only works with mmap");
 #endif
 }
 
 
 /* drop cache except for the header and the active pages */
-void
-rrd_dontneed (
+void rrd_dontneed(
     rrd_file_t *rrd_file,
-    rrd_t *rrd){
-    unsigned long      dontneed_start;
-    unsigned long      rra_start;
-    unsigned long      active_block;
-    unsigned long      i;
+    rrd_t *rrd)
+{
+    unsigned long dontneed_start;
+    unsigned long rra_start;
+    unsigned long active_block;
+    unsigned long i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
 #if defined DEBUG && DEBUG > 1
-    mincore_print(rrd_file,"before");
+    mincore_print(rrd_file, "before");
 #endif
 
     /* ignoring errors from RRDs that are smaller then the file_len+rounding */
     rra_start = rrd_file->header_len;
-    dontneed_start = PAGE_START(rra_start)+_page_size;
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {        
-       active_block =
-              PAGE_START(rra_start
-                         + rrd->rra_ptr[i].cur_row 
-                         * rrd->stat_head->ds_cnt 
-                         * sizeof(rrd_value_t));
-       if (active_block > dontneed_start) {
+    dontneed_start = PAGE_START(rra_start) + _page_size;
+    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        active_block =
+            PAGE_START(rra_start
+                       + rrd->rra_ptr[i].cur_row
+                       * rrd->stat_head->ds_cnt * sizeof(rrd_value_t));
+        if (active_block > dontneed_start) {
 #ifdef USE_MADVISE
-           madvise(rrd_file->file_start + dontneed_start,
-                   active_block-dontneed_start-1,
-                   MADV_DONTNEED);
+            madvise(rrd_file->file_start + dontneed_start,
+                    active_block - dontneed_start - 1, MADV_DONTNEED);
 #endif
 /* in linux at least only fadvise DONTNEED seems to purge pages from cache */
 #ifdef HAVE_POSIX_FADVISE
-            posix_fadvise(rrd_file->fd, dontneed_start, active_block-dontneed_start-1, POSIX_FADV_DONTNEED);
+            posix_fadvise(rrd_file->fd, dontneed_start,
+                          active_block - dontneed_start - 1,
+                          POSIX_FADV_DONTNEED);
 #endif
-       }
-       dontneed_start = active_block;
-       /* do not relase 'hot' block if update for this RAA will occure within 10 minutes */
-       if (  rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt - 
-             rrd->live_head->last_up % (rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt) < 10*60 ){
+        }
+        dontneed_start = active_block;
+        /* do not relase 'hot' block if update for this RAA will occure within 10 minutes */
+        if (rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt -
+            rrd->live_head->last_up % (rrd->stat_head->pdp_step *
+                                       rrd->rra_def[i].pdp_cnt) < 10 * 60) {
             dontneed_start += _page_size;
-       }
-       rra_start += rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
+        }
+        rra_start +=
+            rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt *
+            sizeof(rrd_value_t);
     }
 #ifdef USE_MADVISE
     madvise(rrd_file->file_start + dontneed_start,
-             rrd_file->file_len - dontneed_start,
-             MADV_DONTNEED);
+            rrd_file->file_len - dontneed_start, MADV_DONTNEED);
 #endif
 #ifdef HAVE_POSIX_FADVISE
-    posix_fadvise(rrd_file->fd, dontneed_start, rrd_file->file_len-dontneed_start, POSIX_FADV_DONTNEED);
+    posix_fadvise(rrd_file->fd, dontneed_start,
+                  rrd_file->file_len - dontneed_start, POSIX_FADV_DONTNEED);
 #endif
 #if defined DEBUG && DEBUG > 1
-    mincore_print(rrd_file,"after");
+    mincore_print(rrd_file, "after");
 #endif
 }
 
@@ -375,6 +379,7 @@ int rrd_close(
     rrd_file_t *rrd_file)
 {
     int       ret;
+
 #ifdef HAVE_MMAP
     ret = munmap(rrd_file->file_start, rrd_file->file_len);
     if (ret != 0)

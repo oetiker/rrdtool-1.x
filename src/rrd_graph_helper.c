@@ -445,7 +445,8 @@ int rrd_parse_shift(
             return 1;
         }
     } else {
-        long time_tmp = 0;
+        long      time_tmp = 0;
+
         rrd_clear_error();
         i = 0;
         sscanf(&line[*eaten], "%li%n", &time_tmp, &i);
@@ -607,12 +608,13 @@ int rrd_parse_PVHLAST(
         default:;
         }
     } else {
-        long time_tmp = 0;
+        long      time_tmp = 0;
+
         dprintf("- it is not an existing vname\n");
         switch (gdp->gf) {
         case GF_VRULE:
             k = 0;
-            sscanf(tmpstr, "%li%n",&time_tmp , &k);
+            sscanf(tmpstr, "%li%n", &time_tmp, &k);
             gdp->xrule = time_tmp;
             if (((j != 0) && (k == j)) || ((j == 0) && (k == i))) {
                 dprintf("- found time: %li\n", gdp->xrule);

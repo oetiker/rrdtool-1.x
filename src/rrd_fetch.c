@@ -420,7 +420,6 @@ int rrd_fetch_fn(
                 rrd_set_error("fetching cdp from rra");
                 goto err_free_data;
             }
-
 #ifdef DEBUG
             fprintf(stderr, "post fetch %li -- ", i);
             for (ii = 0; ii < *ds_cnt; ii++)

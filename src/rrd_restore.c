@@ -224,7 +224,7 @@ int xml2rrd(
         return -1;
     }
     /* make sure we output the right version only go over 3 if input is over 3 too */
-    if (input_version > 3 ){
+    if (input_version > 3) {
         strcpy(rrd->stat_head->version, RRD_VERSION);
     } else {
         strcpy(rrd->stat_head->version, RRD_VERSION3);

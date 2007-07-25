@@ -100,7 +100,7 @@ int rrd_dump_r(
 
     fputs("<!-- Round Robin Database Dump -->", out_file);
     fputs("<rrd>", out_file);
-    if ( atoi(rrd.stat_head->version) <= 3) {
+    if (atoi(rrd.stat_head->version) <= 3) {
         fprintf(out_file, "\t<version> %s </version>\n", RRD_VERSION3);
     } else {
         fprintf(out_file, "\t<version> %s </version>\n", RRD_VERSION);

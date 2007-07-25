@@ -137,7 +137,7 @@ extern    "C" {
     const char *const file_name,
     rrd_t *rrd,
     unsigned rdwr);
-    void rrd_dontneed(
+    void      rrd_dontneed(
     rrd_file_t *rrd_file,
     rrd_t *rrd);
     int       rrd_close(

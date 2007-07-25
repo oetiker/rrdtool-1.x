@@ -183,7 +183,7 @@ enum cf_en { CF_AVERAGE = 0,    /* data consolidation functions */
     CF_FAILURES,
     /* HWPREDICT that follows a moving baseline */
     CF_MHWPREDICT
-    /* new entries must come last !!! */
+        /* new entries must come last !!! */
 };
 
                        /* A binary array of failure indicators: 1 indicates
