@@ -502,10 +502,11 @@ int _rrd_update(
             current_time_usec = tmp_time.tv_usec;
         } else {
             double    tmp;
-            char    *old_locale;
-            old_locale = setlocale(LC_NUMERIC,"C");
+            char     *old_locale;
+
+            old_locale = setlocale(LC_NUMERIC, "C");
             tmp = strtod(updvals[0], 0);
-            setlocale(LC_NUMERIC,old_locale);
+            setlocale(LC_NUMERIC, old_locale);
             current_time = floor(tmp);
             current_time_usec =
                 (long) ((tmp - (double) current_time) * 1000000.0);
@@ -597,7 +598,7 @@ int _rrd_update(
                 (dst_idx != DST_CDEF) &&
                 rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt >= interval) {
                 double    rate = DNAN;
-                char    *old_locale;
+                char     *old_locale;
 
                 /* the data source type defines how to process the data */
                 /* pdp_new contains rate * time ... eg the bytes
@@ -606,23 +607,21 @@ int _rrd_update(
                 switch (dst_idx) {
                 case DST_COUNTER:
                 case DST_DERIVE:
-                    if (rrd.pdp_prep[i].last_ds[0] != 'U') {
-                        for (ii = 0; updvals[i + 1][ii] != '\0'; ii++) {
-                            if ((updvals[i + 1][ii] < '0'
-                                 || updvals[i + 1][ii] > '9') && (ii != 0
-                                                                  && updvals[i
-                                                                             +
-                                                                             1]
-                                                                  [ii] !=
-                                                                  '-')) {
-                                rrd_set_error("not a simple integer: '%s'",
-                                              updvals[i + 1]);
-                                break;
-                            }
-                        }
-                        if (rrd_test_error()) {
+                    for (ii = 0; updvals[i + 1][ii] != '\0'; ii++) {
+                        if ((updvals[i + 1][ii] < '0'
+                             || updvals[i + 1][ii] > '9') && (ii != 0
+                                                              && updvals[i
+                                                                         + 1]
+                                                              [ii] != '-')) {
+                            rrd_set_error("not a simple integer: '%s'",
+                                          updvals[i + 1]);
                             break;
                         }
+                    }
+                    if (rrd_test_error()) {
+                        break;
+                    }
+                    if (rrd.pdp_prep[i].last_ds[0] != 'U') {
                         pdp_new[i] =
                             rrd_diff(updvals[i + 1], rrd.pdp_prep[i].last_ds);
                         if (dst_idx == DST_COUNTER) {
@@ -641,10 +640,10 @@ int _rrd_update(
                     }
                     break;
                 case DST_ABSOLUTE:
-                    old_locale = setlocale(LC_NUMERIC,"C");
+                    old_locale = setlocale(LC_NUMERIC, "C");
                     errno = 0;
                     pdp_new[i] = strtod(updvals[i + 1], &endptr);
-                    setlocale(LC_NUMERIC,old_locale);
+                    setlocale(LC_NUMERIC, old_locale);
                     if (errno > 0) {
                         rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));
@@ -660,9 +659,9 @@ int _rrd_update(
                     break;
                 case DST_GAUGE:
                     errno = 0;
-                    old_locale = setlocale(LC_NUMERIC,"C");
+                    old_locale = setlocale(LC_NUMERIC, "C");
                     pdp_new[i] = strtod(updvals[i + 1], &endptr) * interval;
-                    setlocale(LC_NUMERIC,old_locale);
+                    setlocale(LC_NUMERIC, old_locale);
                     if (errno > 0) {
                         rrd_set_error("converting '%s' to float: %s",
                                       updvals[i + 1], rrd_strerror(errno));
