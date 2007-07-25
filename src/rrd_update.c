@@ -620,16 +620,16 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 		switch(dst_idx){
 		case DST_COUNTER:
 		case DST_DERIVE:
+            for(ii=0;updvals[i+1][ii] != '\0';ii++){
+                 if((updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9') && (ii != 0 && updvals[i+1][ii] != '-')){
+                      rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
+                      break;
+                 }
+            }
+            if (rrd_test_error()){
+                   break;
+            }
 		    if(rrd.pdp_prep[i].last_ds[0] != 'U'){
-                      for(ii=0;updvals[i+1][ii] != '\0';ii++){
-                            if((updvals[i+1][ii] < '0' || updvals[i+1][ii] > '9') && (ii != 0 && updvals[i+1][ii] != '-')){
-                                 rrd_set_error("not a simple integer: '%s'",updvals[i+1]);
-                                 break;
-                            }
-                       }
-                       if (rrd_test_error()){
-                            break;
-                       }
 		       pdp_new[i]= rrd_diff(updvals[i+1],rrd.pdp_prep[i].last_ds);
 		       if(dst_idx == DST_COUNTER) {
 			  /* simple overflow catcher suggested by Andres Kroonmaa */
