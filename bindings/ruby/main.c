@@ -184,27 +184,27 @@ VALUE rb_rrd_graph(
     return result;
 }
 
-VALUE rb_rrd_info(VALUE self, VALUE args)
+VALUE rb_rrd_info(
+    VALUE self,
+    VALUE args)
 {
     string_arr a;
-    info_t *p, *data;
-    VALUE result;
+    info_t   *p, *data;
+    VALUE     result;
 
     a = string_arr_new(args);
     data = rrd_info(a.len, a.strings);
     string_arr_delete(a);
 
-    RRD_CHECK_ERROR
-
-    result = rb_hash_new();
+    RRD_CHECK_ERROR result = rb_hash_new();
     while (data) {
-        VALUE key = rb_str_new2(data->key);
+        VALUE     key = rb_str_new2(data->key);
+
         switch (data->type) {
         case RD_I_VAL:
             if (isnan(data->value.u_val)) {
                 rb_hash_aset(result, key, Qnil);
-            }
-            else {
+            } else {
                 rb_hash_aset(result, key, rb_float_new(data->value.u_val));
             }
             break;
