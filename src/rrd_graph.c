@@ -308,7 +308,7 @@ int im_free(
     image_desc_t *im)
 {
     unsigned long i, ii;
-    cairo_status_t status;
+    cairo_status_t status = 0;
 
     if (im == NULL)
         return 0;
@@ -329,10 +329,10 @@ int im_free(
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
 
-    status = cairo_status(im->cr);
-
-    if (im->cr)
+    if (im->cr) {
+        status = cairo_status(im->cr);
         cairo_destroy(im->cr);
+    }
     if (im->surface)
         cairo_surface_destroy(im->surface);
     if (status)
