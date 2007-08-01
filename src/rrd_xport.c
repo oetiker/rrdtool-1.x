@@ -177,7 +177,7 @@ int rrd_xport_fn(
 
     unsigned long nof_xports = 0;
     unsigned long xport_counter = 0;
-    unsigned long *ref_list;
+    int *ref_list;
     rrd_value_t **srcptr_list;
     char    **legend_list;
     int       ii = 0;
@@ -204,7 +204,6 @@ int rrd_xport_fn(
             break;
         }
     }
-
     if (nof_xports == 0) {
         rrd_set_error("no XPORT found, nothing to do");
         return -1;
