@@ -165,7 +165,7 @@ rrd_xport_fn(image_desc_t *im,
 
     unsigned long nof_xports = 0;
     unsigned long xport_counter = 0;
-    unsigned long *ref_list;
+    int *ref_list;
     rrd_value_t **srcptr_list;
     char **legend_list;
     int ii = 0;
@@ -257,8 +257,8 @@ rrd_xport_fn(image_desc_t *im,
     if (((*data) = malloc((*col_cnt) * row_cnt * sizeof(rrd_value_t)))==NULL){
         free(srcptr_list);
         free(ref_list);
-	free(legend_list);
-	rrd_set_error("malloc xport data area");
+        free(legend_list);
+        rrd_set_error("malloc xport data area");
 	return(-1);
     }
     dstptr = (*data);
