@@ -101,11 +101,11 @@ librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS)
 # your package will not be binary compatible with any other release.
 #
 # see http://www.gnu.org/software/libtool/manual.html#SEC32 for explanation
-librrd_la_LDFLAGS         = -version-info 2:99:0
+librrd_la_LDFLAGS         = -version-info 2:10:0
 
 librrd_th_la_SOURCES         = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
-librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 2:99:0
+librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info 2:10:0
 librrd_th_la_LIBADD          = $(ALL_LIBS)
 
 include_HEADERS	= rrd.h
