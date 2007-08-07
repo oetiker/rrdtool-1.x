@@ -103,6 +103,8 @@ If you have an other compile you have to use the following settings:
 
 =item Building zlib
 
+Chances are very high that you already have that on your system ... 
+
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
  tar  zxf zlib-1.2.3.tar.gz
@@ -119,8 +121,8 @@ drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of line 4 means that line 4 and line 5 are on one line.
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.10.tar.gz
- tar zxvf libpng-1.2.10.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
+ tar zxvf libpng-1.2.18.tar.gz
  cd libpng-1.2.10
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
      ./configure --disable-shared --prefix=$BUILD_DIR/lb
@@ -130,9 +132,9 @@ the end of line 4 means that line 4 and line 5 are on one line.
 =item Building freetype
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.1.10.tar.bz2
- tar jxvf freetype-2.1.10.tar.bz2
- cd freetype-2.1.10
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
+ tar zxvf freetype-2.3.5.tar.gz
+ cd freetype-2.3.5
  env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
      ./configure --disable-shared --prefix=$BUILD_DIR/lb
  make
@@ -143,13 +145,51 @@ add the following at the end of the configure line:
 
  GNUMAKE=gmake EGREP=egrep
 
-=item Building libart_lgpl
+=item Building fontconfig
+
+Note that fontconfig has a runtime configuration file in INSTALL_DIR/etc you
+may want to adjust that so that fontconfig finds the fonts on your system.
+Run the fc-cache program to build the fontconfig cache after changeing the
+config file.
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
- tar zxvf libart_lgpl-2.3.17.tar.gz
- cd libart_lgpl-2.3.17
- env CFLAGS="-O3 -fPIC" ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/fontconfig-2.4.2.tar.gz
+ tar zxvf fontconfig-2.4.2.tar.gz  
+ cd fontconfig-2.4.2
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
+ make
+ make install
+
+=item Building Cairo
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.4.10.tar.gz
+ tar zxvf cairo-1.4.10.tar.gz  
+ cd cairo-1.4.10
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR \
+    --enable-xlib=no \
+    --enable-xlib-render=no \
+    --enable-win32=no
+ make
+ make install
+
+=item Building Glib
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.12.13.tar.gz
+ tar zxvf glib-2.12.13.tar.gz 
+ cd glib-2.12.13
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
+ make
+ make install
+
+=item Building Pango
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.17.5.tar.gz
+ tar zxvf pango-1.17.5.tar.gz 
+ cd pango-1.17.5
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
  make
  make install
 
@@ -167,16 +207,16 @@ include files. This is done via environment variables. Depending on the
 shell you are running, the syntax for setting environment variables is
 different. Under csh/tcsh you use:
 
- set IR=-I$BUILD_DIR/lb/include
- setenv CPPFLAGS "$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
- setenv LDFLAGS  -L$BUILD_DIR/lb/lib
+ set IR="-I$BUILD_DIR/lb/include -I$INSTALL_DIR/include"
+ setenv CPPFLAGS "$IR"
+ setenv LDFLAGS -L$BUILD_DIR/lb/lib
  setenv CFLAGS -O3
 
 If you are running bash/sh/ash/ksh/zsh use this:
 
- IR=-I$BUILD_DIR/lb/include
- CPPFLAGS="$IR $IR/libart-2.0 $IR/freetype2 $IR/libpng"
- LDFLAGS="-L$BUILD_DIR/lb/lib"
+ IR="-I$BUILD_DIR/lb/include -I$INSTALL_DIR/include"
+ CPPFLAGS="$IR"
+ LDFLAGS="-L$BUILD_DIR/lb/lib -R$INSTALL_DIR/lib -L$INSTALL_DIR/lib"
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
@@ -186,7 +226,7 @@ tcl setups that would prevent rrdtool from building if they are included in
 their current state.
 
  cd $BUILD_DIR/rrdtool-1.2.99907080300
- ./configure --prefix=$INSTALL_DIR --disable-python --disable-tcl
+ ./configure --prefix=$INSTALL_DIR --disable-tcl
  make clean
  make
  make install
