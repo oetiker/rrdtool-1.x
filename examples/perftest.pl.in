@@ -7,13 +7,15 @@
 #
 #makes programm work AFTER install
 
-use lib qw( @prefix@/lib/perl );
+my $Chunk = shift @ARGV || 10000;
+
+use lib qw( ../bindings/perl-shared/blib/lib ../bindings/perl-shared/blib/arch @prefix@/lib/perl );
 
 print <<NOTE;
 
 RRDtool Performance Tester
 --------------------------
-Runnion on $RRDs::VERSION;
+Running on $RRDs::VERSION;
 
 RRDtool update performance is ultimately disk-bound. Since very little data
 does actually get written to disk in a single update, the performance
@@ -21,11 +23,22 @@ is highly dependent on the cache situation in your machine.
 
 This test tries to cater for this. It works like this:
 
-1) Create 20k RRD files (and sync them to disk)
+1) Create $Chunk RRD files in a tree
 
-2) Update the RRD files several times in a row.
-   We run the Update several times to see the difference
-   it makes in the cache.
+2) For $Chunk -> Update RRD file, Sync
+
+3) goto 1)
+
+The numbers at the start of the row, show which
+RRA is being updated. So if several RRAs are being updated,
+you should see a slowdown as data has to be read from disk.
+
+The growning number in the second column shows how many RRD have been
+updated ... If everything is in cache, the number will Jump to $Chunk almost
+immediately. Then the system will seem to hang as 'sync' runs, to make sure
+all data has been written to disk prior to the next perftest run. This many
+not be 100% real-life, so you may want to remove the sync, just for fun
+(then it is even less real-life, but different)
 
 NOTE
 
@@ -64,9 +77,6 @@ sub update($$){
   my $out = rand(1000);
   my $start = time;
   my $ret = RRDs::updatev($file.".rrd", $time.":$in:$out");
-#  print join("",map {"  $_ " . $ret->{$_}."\n" } grep /AVERAGE.\[1\]/, sort keys %$ret)."\n** $time\n\n";
-  # sync updates to disk immediately  
-#  usleep(1) if (rand(3) <1 );
   my $total = time - $start;
   my $error =  RRDs::error;
   die $error if $error;
@@ -110,6 +120,7 @@ sub makerrds($$$$){
     my $list = shift;
     my $time = shift;
     my @files;
+    my $now = int(time);
     for (1..$count){
         my $id = sprintf ("%07d",$total);
         $id =~ s/^(.)(.)(.)(.)(.)//;
@@ -121,26 +132,19 @@ sub makerrds($$$$){
         -d "$1/$2/$3/$4/$5" or mkdir "$1/$2/$3/$4/$5";
 	push @files, $list->[$total];
         create $list->[$total++],$time-2;
-	print STDERR ".";
-    }
-   for (@files){ 
-	my $fd = new IO::File("$_.rrd","r");
-	if (defined $fd) {
-	    $fd->sync;
-	    $fd->close;
-        } else {
-            warn "failed to sync $_\n";
-        }        
+	if ($now < int(time)){
+	  $now = int(time);
+	  print STDERR "Creating RRDs: ", $count - $_," rrds to go. \r";
+        }
     }
     return $count;
 }
-    
-    
+ 
 sub main (){
     mkdir "db-$$" or die $!;
     chdir "db-$$";
 
-    my $step = 100000; # number of rrds to creat for every round
+    my $step = $Chunk; # number of rrds to creat for every round
     
     my @path;
     my $time=int(time);
@@ -154,39 +158,57 @@ sub main (){
     my %count =( cr => 0, up => 0 );
 
     my $printtime = time;
-    while (1) {
+    my %step;
+    for (qw(1 6 24 144)){
+          $step{$_} = int($time / 300 / $_);
+    }
+    
+    for (0..2) {
         # enhance the track
-  	    $time += 300;
+        $time += 300;
         $tracksize += makerrds $step,$tracksize,\@path,$time;            
         # run benchmark
-        for (0..10){
+    
+        for (0..50){
       	    $time += 300;
             my $count = 0;
             my $sum = 0;
             my $squaresum = 0;
+            my $prefix = "";
+            for (qw(1 6 24 144)){
+                if (int($time / 300 / $_) > $step{$_})  {
+                    $prefix .= "$_  ";
+                    $step{$_} = int($time / 300 / $_);
+                 }
+                 else {
+                    $prefix .= (" " x length("$_")) . "  ";
+                 }   
+            }
+            my $now = int(time);
             for (my $i = 0; $i<$tracksize;$i ++){
-               my $elapsed = update($path[$i],$time); 
+               my $ntime = int(time);
+               if ($now < $ntime or $i == $tracksize){
+                   printf STDERR "$prefix %7d \r",$i;
+                   $now = $ntime;
+               }
+               my $elapsed = update($path[$i],$time);                
                $sum += $elapsed;
                $squaresum += $elapsed**2;
                $count++;
             };
-#            for (my $i = 0; $i<$tracksize;$i ++){
-#    	       my $fh = new IO::File "$path[$i].rrd","r";
-#	       if (defined $fh) {
-#	           $fh->sync;
-#	           $fh->close;
-#                } else {
-#    	           warn "failed to sync $path[$i]\n";
-#	        }       
-#            }
+            my $startsync = time;
+            print STDERR 's';
+            system "sync";
+            print STDERR "\h";
+            my $synctime = time-$startsync;     
+            $sum += $synctime;
+            $squaresum += $synctime**2;
             my $ups = $count/$sum;
             my $sdv = stddev($sum,$squaresum,$count);
-            printf STDERR "%4d %6.0f Up/s (%6.5f sdv)\n",$count,$ups,$sdv;
+            printf STDERR "$prefix %7d %6.0f Up/s (%6.5f sdv)\n",$count,$ups,$sdv;
         }
 	print STDERR "\n";
-	exit ;
     }
 }
 
 main;
-
