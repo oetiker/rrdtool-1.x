@@ -231,7 +231,7 @@ from a B<VDEF>. It is an error to use I<vname>s from B<DEF> or B<CDEF> here.
 
 =item B<HRULE>B<:>I<value>B<#>I<color> [ :I<legend> ]
 
-Draw a horyzontal line at I<value>.  HRULE acts much like LINE except that
+Draw a horizontal line at I<value>.  HRULE acts much like LINE except that
 will have no effect on the scale of the graph. If a HRULE is outside the
 graphing area it will just not be visible.
 
