@@ -480,7 +480,7 @@ inline ssize_t rrd_write(
     if (count == 0)
        return 0;
     if (buf == NULL)
-       return -1 /* EINVAL */
+       return -1; /* EINVAL */
     memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
