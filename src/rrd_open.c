@@ -440,8 +440,13 @@ inline ssize_t rrd_read(
 {
 #ifdef HAVE_MMAP
     size_t    _cnt = count;
-    ssize_t   _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
+    ssize_t   _surplus;
 
+    if (rrd_file->pos > rrd_file->file_len || _cnt == 0) /* EOF */
+       return 0;
+    if (buf == NULL)
+       return -1; /* EINVAL */
+    _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
     if (_surplus > 0) { /* short read */
         _cnt -= _surplus;
     }
