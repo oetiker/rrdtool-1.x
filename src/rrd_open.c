@@ -469,7 +469,7 @@ inline ssize_t rrd_read(
 
 /* write count bytes from buffer buf to the current position
  * rrd_file->pos of rrd_file->fd.
- * Returns the number of bytes written.  */
+ * Returns the number of bytes written or <0 on error.  */
 
 inline ssize_t rrd_write(
     rrd_file_t *rrd_file,
@@ -477,6 +477,10 @@ inline ssize_t rrd_write(
     size_t count)
 {
 #ifdef HAVE_MMAP
+    if (count == 0)
+       return 0;
+    if (buf == NULL)
+       return -1 /* EINVAL */
     memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
