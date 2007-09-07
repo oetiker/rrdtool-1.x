@@ -19,7 +19,7 @@ Running on $RRDs::VERSION;
 
 RRDtool update performance is ultimately disk-bound. Since very little data
 does actually get written to disk in a single update, the performance
-is highly dependent on the cache situation in your machine.
+is highly dependent on the cache situation of your machine.
 
 This test tries to cater for this. It works like this:
 
@@ -36,8 +36,8 @@ you should see a slowdown as data has to be read from disk.
 The growning number in the second column shows how many RRD have been
 updated ... If everything is in cache, the number will Jump to $Chunk almost
 immediately. Then the system will seem to hang as 'sync' runs, to make sure
-all data has been written to disk prior to the next perftest run. This many
-not be 100% real-life, so you may want to remove the sync, just for fun
+all data has been written to disk prior to the next perftest run. This may
+not be 100% real-life, so you may want to remove the sync just for fun
 (then it is even less real-life, but different)
 
 NOTE
