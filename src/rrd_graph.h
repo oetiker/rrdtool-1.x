@@ -54,6 +54,7 @@ enum vdef_op_en {
     VDEF_MAXIMUM = 0    /* like the MAX in (G)PRINT */
         , VDEF_MINIMUM  /* like the MIN in (G)PRINT */
         , VDEF_AVERAGE  /* like the AVERAGE in (G)PRINT */
+        , VDEF_STDEV    /* the standard deviation */
         , VDEF_PERCENT  /* Nth percentile */
         , VDEF_TOTAL    /* average multiplied by time */
         , VDEF_FIRST    /* first non-unknown value and time */

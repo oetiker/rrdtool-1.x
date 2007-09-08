@@ -4285,6 +4285,8 @@ int vdef_parse(
         gdes->vf.op = VDEF_MAXIMUM;
     else if (!strcmp("AVERAGE", func))
         gdes->vf.op = VDEF_AVERAGE;
+    else if (!strcmp("STDEV", func))
+        gdes->vf.op = VDEF_STDEV;
     else if (!strcmp("MINIMUM", func))
         gdes->vf.op = VDEF_MINIMUM;
     else if (!strcmp("TOTAL", func))
@@ -4324,6 +4326,7 @@ int vdef_parse(
         break;
     case VDEF_MAXIMUM:
     case VDEF_AVERAGE:
+    case VDEF_STDEV:
     case VDEF_MINIMUM:
     case VDEF_TOTAL:
     case VDEF_FIRST:
@@ -4412,9 +4415,11 @@ int vdef_calc(
         }
         break;
     case VDEF_TOTAL:
+    case VDEF_STDEV:
     case VDEF_AVERAGE:{
         int       cnt = 0;
         double    sum = 0.0;
+        double    average = 0.0;
 
         for (step = 0; step < steps; step++) {
             if (finite(data[step * src->ds_cnt])) {
@@ -4426,9 +4431,19 @@ int vdef_calc(
             if (dst->vf.op == VDEF_TOTAL) {
                 dst->vf.val = sum * src->step;
                 dst->vf.when = 0;   /* no time component */
-            } else {
+            } else if (dst->vf.op == VDEF_AVERAGE){
                 dst->vf.val = sum / cnt;
                 dst->vf.when = 0;   /* no time component */
+            } else {
+                average = sum / cnt;
+                sum = 0.0;
+                for (step=0;step<steps;step++) {
+                    if (finite(data[step*src->ds_cnt])) {
+                        sum += pow((data[step*src->ds_cnt] - average),2.0);
+                    };
+                }
+                dst->vf.val  = pow(sum / cnt,0.5);
+                dst->vf.when = 0; /* no time component */
             };
         } else {
             dst->vf.val = DNAN;

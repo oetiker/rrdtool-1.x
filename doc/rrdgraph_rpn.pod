@@ -257,6 +257,12 @@ the first occurrence of that value in the time component.
 
 Example: C<VDEF:avg=mydata,AVERAGE>
 
+=item STDEV
+
+Returns the standard deviation of the values.
+
+Example: C<VDEF:stdev=mydata,STDEV>
+
 =item LAST, FIRST
 
 Return the last/first value including its time.  The time for
