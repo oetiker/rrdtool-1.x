@@ -88,6 +88,8 @@ int rrd_tune(
         {"beta", required_argument, 0, 'y'},
         {"gamma", required_argument, 0, 'z'},
         {"gamma-deviation", required_argument, 0, 'v'},
+        {"smoothing-window", required_argument, 0, 's'},
+        {"smoothing-window-deviation", required_argument, 0, 'S'},
         {"aberrant-reset", required_argument, 0, 'b'},
         {0, 0, 0, 0}
     };
@@ -293,6 +295,20 @@ int rrd_tune(
             if (rrd_test_error()) {
                 rrd_free(&rrd);
                 rrd_close(rrd_file);
+                return -1;
+            }
+            break;
+        case 's':
+            strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
+            if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
+                rrd_free(&rrd);
+                return -1;
+            }
+            break;
+        case 'S':
+            strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
+            if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window, optarg)) {
+                rrd_free(&rrd);
                 return -1;
             }
             break;

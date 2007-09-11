@@ -197,6 +197,11 @@ int rrd_dump_r(
             fprintf(out_file,
                     "\t\t<seasonal_smooth_idx> %lu </seasonal_smooth_idx>\n",
                     rrd.rra_def[i].par[RRA_seasonal_smooth_idx].u_cnt);
+            if (atoi(rrd.stat_head->version) >= 4) {
+                fprintf(out_file,
+                        "\t\t<smoothing_window> %0.10e </smoothing_window>\n",
+                        rrd.rra_def[i].par[RRA_seasonal_smoothing_window].u_val);
+            }
             fprintf(out_file,
                     "\t\t<dependent_rra_idx> %lu </dependent_rra_idx>\n",
                     rrd.rra_def[i].par[RRA_dependent_rra_idx].u_cnt);

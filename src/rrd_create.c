@@ -264,6 +264,8 @@ int rrd_create_r(
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].
                             par[RRA_seasonal_gamma].u_val = 0.1;
+                        rrd.rra_def[rrd.stat_head->rra_cnt].
+                            par[RRA_seasonal_smoothing_window].u_val = 0.05;
                         /* fall through */
                     case CF_DEVPREDICT:
                         rrd.rra_def[rrd.stat_head->rra_cnt].
@@ -419,6 +421,25 @@ int rrd_create_r(
                         rrd.rra_def[rrd.stat_head->rra_cnt].
                             par[RRA_dependent_rra_idx].u_cnt =
                             atoi(token) - 1;
+                        break;
+                    case CF_DEVSEASONAL:
+                    case CF_SEASONAL:
+                        /* optional smoothing window */
+                        if (sscanf(token, "smoothing-window=%lf", 
+                                &(rrd.rra_def[rrd.stat_head->rra_cnt].
+                                par[RRA_seasonal_smoothing_window].u_val))) {
+                            strcpy(rrd.stat_head->version, RRD_VERSION); /* smoothing-window causes Version 4 */
+                            if (rrd.rra_def[rrd.stat_head->rra_cnt].
+                                    par[RRA_seasonal_smoothing_window].u_val < 0.0 
+                                    || rrd.rra_def[rrd.stat_head->rra_cnt].
+                                            par[RRA_seasonal_smoothing_window].u_val > 1.0) {
+                                rrd_set_error("Invalid smoothing-window %f: must be between 0 and 1",
+                                    rrd.rra_def[rrd.stat_head->rra_cnt].
+                                            par[RRA_seasonal_smoothing_window].u_val);
+                            }
+                        } else {
+                            rrd_set_error("Invalid option %s", token);
+                        }
                         break;
                     case CF_HWPREDICT:
                     case CF_MHWPREDICT:

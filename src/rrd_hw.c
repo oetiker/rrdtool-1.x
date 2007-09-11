@@ -139,7 +139,14 @@ int apply_smoother(
     rrd_value_t *working_average;
     rrd_value_t *baseline;
 
-    offset = floor(0.025 * row_count);
+    if (atoi(rrd->stat_head->version) >= 4) {
+        offset = floor(rrd->rra_def[rra_idx].
+                        par[RRA_seasonal_smoothing_window].
+                        u_val / 2 * row_count);
+    } else {
+        offset = floor(0.05 / 2 * row_count);
+    }
+
     if (offset == 0)
         return 0;       /* no smoothing */
 

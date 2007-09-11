@@ -18,6 +18,8 @@ S<[B<--alpha> I<adaption-parameter>]>
 S<[B<--beta> I<adaption-parameter>]>
 S<[B<--gamma> I<adaption-parameter>]>
 S<[B<--gamma-deviation> I<adaption-parameter>]>
+S<[B<--smoothing-window> I<fraction-of-season>]>
+S<[B<--smoothing-window-deviation> I<fraction-of-season>]>
 S<[B<--aberrant-reset> I<ds-name>]>
 
 =head1 DESCRIPTION
@@ -116,6 +118,16 @@ B<RRA>. This parameter must be between 0 and 1.
 
 Alter the seasonal deviation adaptation parameter for the DEVSEASONAL
 B<RRA>. This parameter must be between 0 and 1.
+
+=item S<B<--smoothing-window> I<fraction-of-season>>
+
+Alter the size of the smoothing window for the SEASONAL B<RRA>. This must
+be between 0 and 1.
+
+=item S<B<--smoothing-window-deviation> I<fraction-of-season>>
+
+Alter the size of the smoothing window for the DEVSEASONAL B<RRA>. This must
+be between 0 and 1.
 
 =item S<B<--aberrant-reset> I<ds-name>>
 

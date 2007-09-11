@@ -238,11 +238,11 @@ B<RRA:>I<MHWPREDICT>B<:>I<rows>B<:>I<alpha>B<:>I<beta>B<:>I<seasonal period>[B<:
 
 =item *
 
-B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+B<RRA:>I<SEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>[B<:smoothing-window=>I<fraction>]
 
 =item *
 
-B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>
+B<RRA:>I<DEVSEASONAL>B<:>I<seasonal period>B<:>I<gamma>B<:>I<rra-num>[B<:smoothing-window=>I<fraction>]
 
 =item *
 
@@ -341,6 +341,13 @@ coefficient.
 If SEASONAL and DEVSEASONAL B<RRAs> are created explicitly, I<gamma> need not
 be the same for both. Note that I<gamma> can also be changed via the
 B<RRDtool> I<tune> command.
+
+I<smoothing-window> specifies the fraction of a season that should be
+averaged around each point. By default, the value of I<smoothing-window> is
+0.05, which means each value in SEASONAL and DEVSEASONAL will be occasionally
+replaced by averaging it with its (I<seasonal period>*0.05) nearest neighbors.
+Setting I<smoothing-window> to zero will disable the running-average smoother
+altogether.
 
 I<rra-num> provides the links between related B<RRAs>. If HWPREDICT is
 specified alone and the other B<RRAs> are created implicitly, then

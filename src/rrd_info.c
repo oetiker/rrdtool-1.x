@@ -205,6 +205,11 @@ info_t   *rrd_info_r(
             info.u_val = rrd.rra_def[i].par[RRA_seasonal_gamma].u_val;
             cd = info_push(cd, sprintf_alloc("rra[%d].gamma", i), RD_I_VAL,
                            info);
+            if (atoi(rrd.stat_head->version) >= 4) {
+                    info.u_val = rrd.rra_def[i].par[RRA_seasonal_smoothing_window].u_val;
+                    cd = info_push(cd, sprintf_alloc("rra[%d].smoothing_window", i), RD_I_VAL,
+                                   info);
+            }
             break;
         case CF_FAILURES:
             info.u_val = rrd.rra_def[i].par[RRA_delta_pos].u_val;

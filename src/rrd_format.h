@@ -194,13 +194,15 @@ enum cf_en { CF_AVERAGE = 0,    /* data consolidation functions */
 enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
                                          * datapoint must be known, to produce a
                                          * valid entry in the rra */
-    RRA_hw_alpha,
+    /* CF_HWPREDICT: */
+    RRA_hw_alpha = 1,
     /* exponential smoothing parameter for the intercept in
      * the Holt-Winters prediction algorithm. */
-    RRA_hw_beta,
+    RRA_hw_beta = 2,
     /* exponential smoothing parameter for the slope in
      * the Holt-Winters prediction algorithm. */
-    RRA_dependent_rra_idx,
+
+    RRA_dependent_rra_idx = 3,
     /* For CF_HWPREDICT: index of the RRA with the seasonal 
      * effects of the Holt-Winters algorithm (of type
      * CF_SEASONAL).
@@ -212,22 +214,30 @@ enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
      * Holt-Winters prediction (of type CF_HWPREDICT).
      * For CF_FAILURES: index of the CF_DEVSEASONAL array.
      * */
-    RRA_seasonal_smooth_idx,
-    /* For CF_SEASONAL and CF_DEVSEASONAL:
-     * an integer between 0 and row_count - 1 which
+
+    /* CF_SEASONAL and CF_DEVSEASONAL: */
+    RRA_seasonal_gamma = 1,
+    /* exponential smoothing parameter for seasonal effects. */
+
+    RRA_seasonal_smoothing_window = 2,
+    /* fraction of the season to include in the running average
+     * smoother */
+
+    /* RRA_dependent_rra_idx = 3, */
+
+    RRA_seasonal_smooth_idx = 4,
+    /* an integer between 0 and row_count - 1 which
      * is index in the seasonal cycle for applying
      * the period smoother. */
-    RRA_failure_threshold,
+
+    /* CF_FAILURES: */
+    RRA_delta_pos = 1, /* confidence bound scaling parameters */
+    RRA_delta_neg = 2,
+    /* RRA_dependent_rra_idx = 3, */
+    RRA_window_len = 4,
+    RRA_failure_threshold = 5,
     /* For CF_FAILURES, number of violations within the last
      * window required to mark a failure. */
-    RRA_seasonal_gamma = RRA_hw_alpha,
-    /* exponential smoothing parameter for seasonal effects.
-     * */
-    RRA_delta_pos = RRA_hw_alpha,
-    RRA_delta_neg = RRA_hw_beta,
-    /* confidence bound scaling parameters for the
-     * the FAILURES RRA. */
-    RRA_window_len = RRA_seasonal_smooth_idx
 };
 
                     /* For CF_FAILURES, the length of the window for measuring

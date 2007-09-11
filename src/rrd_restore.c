@@ -383,6 +383,11 @@ int xml2rrd(
                     read_tag(&ptr2, "seasonal_smooth_idx", "%lu",
                              &(rrd->rra_def[rra_index].
                                par[RRA_seasonal_smooth_idx].u_cnt));
+                    if (atoi(rrd->stat_head->version) >= 4) {
+                        read_tag(&ptr2, "smoothing_window", "%lf",
+                                &(rrd->rra_def[rra_index].
+                                  par[RRA_seasonal_smoothing_window].u_val));
+                    }
                     read_tag(&ptr2, "dependent_rra_idx", "%lu",
                              &(rrd->rra_def[rra_index].
                                par[RRA_dependent_rra_idx].u_cnt));
