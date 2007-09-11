@@ -299,12 +299,6 @@ AC_ARG_ENABLE([mmap],
 [],
 [enable_mmap=yes])
 
-dnl will most likely not work on compressed filesystems, i think.. *shrug*
-AC_ARG_ENABLE([direct-io],
-[  --enable-direct-io      enable O_DIRECT if available],
-[enable_direct_io=yes],
-[])
-
 AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
 [],[enable_pthread=yes])
 
@@ -354,26 +348,6 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_CHECK_HEADERS(features.h sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
-if test "x$enable_direct_io" = "xyes"; then
-AC_CACHE_CHECK([for O_DIRECT flag to open(2)],rrd_cv_HAVE_OPEN_O_DIRECT,[
-AC_TRY_COMPILE([
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif],
-[int fd = open("/dev/null", O_DIRECT);],
-rrd_cv_HAVE_OPEN_O_DIRECT=yes,rrd_cv_HAVE_OPEN_O_DIRECT=no)])
-  if test "x$rrd_cv_HAVE_OPEN_O_DIRECT" = "xyes"; then
-    AC_DEFINE(USE_DIRECT_IO,1,[Whether the open(2) accepts O_DIRECT])
-  else
-    enable_direct_io="no"
-  fi 
-else
-  enable_direct_io="no"
-fi
-
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_TIME
@@ -415,7 +389,7 @@ if test "x$enable_mmap" = "xyes"; then
   *)
     AC_CHECK_HEADERS(sys/mman.h)
     AC_FUNC_MMAP
-    AC_CHECK_FUNCS(mmap munmap)
+    AC_CHECK_FUNCS(mmap munmap msync)
     AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
 				     # include <sys/mman.h>
 				     #endif])
@@ -863,7 +837,6 @@ echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
-echo "          Use O_DIRECT: $enable_direct_io"
 echo "       Static programs: $staticprogs"
 echo "          Perl Modules: $COMP_PERL"
 echo "           Perl Binary: $PERL"
