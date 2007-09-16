@@ -140,11 +140,7 @@ rrd_file_t *rrd_open(
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and diskaccess (and buffer cache).
        Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */
-    if (0 != posix_fadvise(rrd_file->fd, 0, 0, POSIX_FADV_RANDOM)) {
-        rrd_set_error("setting POSIX_FADV_RANDOM on '%s': %s", file_name,
-                      rrd_strerror(errno));
-        goto out_close;
-    }
+    posix_fadvise(rrd_file->fd, 0, 0, POSIX_FADV_RANDOM);
 #endif
 
 /*
