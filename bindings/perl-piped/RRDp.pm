@@ -146,7 +146,6 @@ sub read () {
   my $buffer;
   my $nfound;
   my $timeleft;
-  my $ERR = 0;
   vec($inmask,fileno(RRDreadHand),1) = 1; # setup select mask for Reader
   while (1) {
     my $rout;    
@@ -163,11 +162,14 @@ sub read () {
       $RRDp::error = undef;
       if ($line =~  m|^ERROR|) {	
 	$RRDp::error_mode eq 'catch' ? $RRDp::error = $line : croak $line;
-	$ERR = 1;
+        $RRDp::sys = undef;
+        $RRDp::user = undef;
+        $RRDp::real = undef;
+	return undef;
       } 
-      elsif ($line =~ m|^OK u:([\d\.]+) s:([\d\.]+) r:([\d\.]+)|){
+      elsif ($line =~ m|^OK(?: u:([\d\.]+) s:([\d\.]+) r:([\d\.]+))?|){
 	($RRDp::sys,$RRDp::user,$RRDp::real)=($1,$2,$3);
-	return $ERR == 1 ? undef : \$buffer;
+	return \$buffer;
       } else {
 	$buffer .= $line. "\n";
       }
