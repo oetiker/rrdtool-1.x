@@ -101,6 +101,15 @@ If you have an other compile you have to use the following settings:
 
 =over 
 
+Some libraries want to know where other libraries are. For this to work,
+set the following environamen variable
+
+ export PKG_CONFIG_PATH=${INSTALLDIR}/lib/pkgconfig
+ 
+or in tcsh
+
+ setenv PKG_CONFIG_PATH ${INSTALLDIR}/lib/pkgconfig
+
 =item Building zlib
 
 Chances are very high that you already have that on your system ... 
@@ -109,7 +118,7 @@ Chances are very high that you already have that on your system ...
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
  tar  zxf zlib-1.2.3.tar.gz
  cd zlib-1.2.3
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$BUILD_DIR/lb
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
  make
  make install
 
@@ -124,8 +133,7 @@ the end of line 4 means that line 4 and line 5 are on one line.
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
  tar zxvf libpng-1.2.18.tar.gz
  cd libpng-1.2.10
- env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
-     ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
  make
  make install
 
@@ -135,8 +143,8 @@ the end of line 4 means that line 4 and line 5 are on one line.
  wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
  tar zxvf freetype-2.3.5.tar.gz
  cd freetype-2.3.5
- env CPPFLAGS="-I$BUILD_DIR/lb/include" LDFLAGS="-L$BUILD_DIR/lb/lib" CFLAGS="-O3 -fPIC" \
-     ./configure --disable-shared --prefix=$BUILD_DIR/lb
+ env CFLAGS="-O3 -fPIC" \
+     ./configure --prefix=$INSTALL_DIR
  make
  make install
 
@@ -195,28 +203,20 @@ config file.
 
 =back
 
-Now all the dependent libraries are built and you can try again. Since these
-are static libraries, you may have to use F<ranlib> to make them accessible.
-Especially BSD systems like Mac OS X may require this, Linux and Solaris
-will do just fine without since their F<ar> command does ranlibs job as well.
+Now all the dependent libraries are built and you can try again. This time
+you tell configure where it should be looking for libraries and include
+files. This is done via environment variables. Depending on the shell you
+are running, the syntax for setting environment variables is different.
+Under csh/tcsh you use:
 
- ranlib $BUILD_DIR/lb/lib/*.a
-
-This time you tell configure where it should be looking for libraries and
-include files. This is done via environment variables. Depending on the
-shell you are running, the syntax for setting environment variables is
-different. Under csh/tcsh you use:
-
- set IR="-I$BUILD_DIR/lb/include -I$INSTALL_DIR/include"
- setenv CPPFLAGS "$IR"
- setenv LDFLAGS -L$BUILD_DIR/lb/lib
+ setenv CPPFLAGS -I$INSTALL_DIR/include
+ setenv LDFLAGS "-L$INSTALL_DIR/lib -R$INSTALL_DIR/lib"
  setenv CFLAGS -O3
 
 If you are running bash/sh/ash/ksh/zsh use this:
 
- IR="-I$BUILD_DIR/lb/include -I$INSTALL_DIR/include"
- CPPFLAGS="$IR"
- LDFLAGS="-L$BUILD_DIR/lb/lib -R$INSTALL_DIR/lib -L$INSTALL_DIR/lib"
+ CPPFLAGS=-I$INSTALL_DIR/include
+ LDFLAGS="-R$INSTALL_DIR/lib -L$INSTALL_DIR/lib"
  CFLAGS=-O3
  export CPPFLAGS LDFLAGS CFLAGS
 
@@ -226,18 +226,18 @@ tcl setups that would prevent rrdtool from building if they are included in
 their current state.
 
  cd $BUILD_DIR/rrdtool-1.2.99907080300
- ./configure --prefix=$INSTALL_DIR --disable-tcl
+ ./configure --prefix=$INSTALL_DIR --disable-tcl --disable-python
  make clean
  make
  make install
 
 SOLARIS HINT: if you want to build  the perl module for the native perl (the
-one shipping with solaris) you will need the sun forte compiler
-installed on your box or you have to hand-tune bindings/perl-shared/Makefile
-while building!
+one shipping with solaris) you will need the sun forte compiler installed on
+your box or you have to hand-tune bindings/perl-shared/Makefile while
+building!
 
-Now go to I<$INSTALL_DIR>B</share/rrdtool/examples/> and run them to see if your
-build has been successful.
+Now go to I<$INSTALL_DIR>B</share/rrdtool/examples/> and run them to see if
+your build has been successful.
 
 =head1 AUTHOR
 
