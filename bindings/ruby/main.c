@@ -130,8 +130,8 @@ VALUE rb_rrd_fetch(VALUE self, VALUE args)
     free(raw_data);
    
     result = rb_ary_new2(4);
-    rb_ary_store(result, 0, INT2FIX(start));
-    rb_ary_store(result, 1, INT2FIX(end));
+    rb_ary_store(result, 0, INT2NUM(start));
+    rb_ary_store(result, 1, INT2NUM(end));
     rb_ary_store(result, 2, names);
     rb_ary_store(result, 3, data);
     return result;
