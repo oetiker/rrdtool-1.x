@@ -46,7 +46,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  puts
 
  puts "fetching data from #{rrd}"
- (fstart, fend, data) = RRD.fetch(rrd, "--start", start.to_s, "--end", 
+ (fstart, fend, data, step) = RRD.fetch(rrd, "--start", start.to_s, "--end", 
       (start + 300 * 300).to_s, "AVERAGE")
  puts "got #{data.length} data points from #{fstart} to #{fend}"
  puts

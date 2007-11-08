@@ -35,6 +35,10 @@ Forecasting (Evan Miller)
   method. It is a drop-in replacement for HWPREDICT, and is better suited for
   data whose seasonal variations grow or shrink in proportion to the average.
 
+Misc
+----
+* ruby rrd_fetch will return step as a last property -- Mike Perham
+
 Incompatibility
 ---------------
 * If you create an RRD with the new MHWPREDICT function, the resulting rrdfile will
