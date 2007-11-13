@@ -205,7 +205,6 @@ rrd_fetch_fn(
     rrd_t     rrd;
     rrd_value_t    *data_ptr;
     unsigned long  rows;
-    long  rrd_head_size;
 
 #ifdef DEBUG
 fprintf(stderr,"Entered rrd_fetch_fn() searching for the best match\n");
@@ -215,8 +214,6 @@ fprintf(stderr,"Looking for: start %10lu end %10lu step %5lu\n",
 
     if(rrd_open(filename,&in_file,&rrd, RRD_READONLY)==-1)
 	return(-1);
-
-    rrd_head_size = ftell(in_file);
     
     /* when was the really last update of this file ? */
 
@@ -456,16 +453,6 @@ fprintf(stderr,"partial match, not best\n");
 		fclose(in_file);
 		return(-1);
 	    }
-#ifdef HAVE_POSIX_FADVISE
-       /* don't pollute the buffer cache with data read from the file. We do this while reading to 
-          keep damage minimal */
-       if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
-           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-           fclose(in_file);
-           return(-1);
-       } 
-#endif
-
 #ifdef DEBUG
 	    fprintf(stderr,"post fetch %li -- ",i);
 	    for(ii=0;ii<*ds_cnt;ii++)
@@ -480,14 +467,6 @@ fprintf(stderr,"partial match, not best\n");
 	
     }
     rrd_free(&rrd);
-#ifdef HAVE_POSIX_FADVISE
-    /* and just to be sure we drop everything except the header at the end */
-    if (0 != posix_fadvise(fileno(in_file), rrd_head_size, 0, POSIX_FADV_DONTNEED)) {
-           rrd_set_error("setting POSIX_FADV_DONTNEED on '%s': %s",filename, rrd_strerror(errno));
-           fclose(in_file);
-           return(-1);
-    } 
-#endif	    
     fclose(in_file);
     return(0);
 }
