@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.2.24  Copyright by Tobi Oetiker, 1997-2007
+ * RRDtool 1.2.25  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * rrd_open.c  Open an RRD File
  *****************************************************************************
@@ -93,11 +93,15 @@ rrd_open(const char *file_name, FILE **in_file, rrd_t *rrd, int rdwr)
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and diskaccess (and buffer cache).
        Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */       
-    if (0 != posix_fadvise(fileno(*in_file), 0, 0, POSIX_FADV_RANDOM)) {
+    /* if (0 != posix_fadvise(fileno(*in_file), 0, 0, POSIX_FADV_RANDOM)) {
         rrd_set_error("setting POSIX_FADV_RANDOM on '%s': %s",file_name, rrd_strerror(errno));
         fclose(*in_file);
-        return(-1);
-     }    
+        return(-1); */
+
+        /* if it does not work, then this is sad, but we should not quit */
+     posix_fadvise(fileno(*in_file), 0, 0, POSIX_FADV_RANDOM);
+        
+     /*     }     */
 #endif
 
 /*
