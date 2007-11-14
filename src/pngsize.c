@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.2.24  Copyright by Tobi Oetiker, 1997-2007
+ * RRDtool 1.2.25  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
  * pngsize.c  determine the size of a PNG image
  *****************************************************************************/
@@ -29,7 +29,11 @@ PngSize(FILE *fd, long *width, long *height)
 #undef jmpbuf
 #endif
 
-  if (setjmp(png_read_ptr->jmpbuf)){
+#ifndef png_jmpbuf
+#  define png_jmpbuf(png_ptr)   ((png_ptr)->jmpbuf)
+#endif
+
+  if (setjmp(png_jmpbuf(png_read_ptr))){
     png_destroy_read_struct(&png_read_ptr, &info_ptr, (png_infopp)NULL);
     return 0;
   }
