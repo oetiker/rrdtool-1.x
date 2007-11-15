@@ -231,7 +231,7 @@ enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
      * the period smoother. */
 
     /* CF_FAILURES: */
-    RRA_delta_pos = 1, /* confidence bound scaling parameters */
+    RRA_delta_pos = 1,  /* confidence bound scaling parameters */
     RRA_delta_neg = 2,
     /* RRA_dependent_rra_idx = 3, */
     RRA_window_len = 4,

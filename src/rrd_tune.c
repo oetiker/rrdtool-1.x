@@ -300,14 +300,17 @@ int rrd_tune(
             break;
         case 's':
             strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
-            if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
+            if (set_hwarg
+                (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
                 rrd_free(&rrd);
                 return -1;
             }
             break;
         case 'S':
             strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
-            if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window, optarg)) {
+            if (set_hwarg
+                (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
+                 optarg)) {
                 rrd_free(&rrd);
                 return -1;
             }

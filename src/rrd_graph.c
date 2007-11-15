@@ -4431,19 +4431,19 @@ int vdef_calc(
             if (dst->vf.op == VDEF_TOTAL) {
                 dst->vf.val = sum * src->step;
                 dst->vf.when = 0;   /* no time component */
-            } else if (dst->vf.op == VDEF_AVERAGE){
+            } else if (dst->vf.op == VDEF_AVERAGE) {
                 dst->vf.val = sum / cnt;
                 dst->vf.when = 0;   /* no time component */
             } else {
                 average = sum / cnt;
                 sum = 0.0;
-                for (step=0;step<steps;step++) {
-                    if (finite(data[step*src->ds_cnt])) {
-                        sum += pow((data[step*src->ds_cnt] - average),2.0);
+                for (step = 0; step < steps; step++) {
+                    if (finite(data[step * src->ds_cnt])) {
+                        sum += pow((data[step * src->ds_cnt] - average), 2.0);
                     };
                 }
-                dst->vf.val  = pow(sum / cnt,0.5);
-                dst->vf.when = 0; /* no time component */
+                dst->vf.val = pow(sum / cnt, 0.5);
+                dst->vf.when = 0;   /* no time component */
             };
         } else {
             dst->vf.val = DNAN;

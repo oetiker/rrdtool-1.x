@@ -177,7 +177,7 @@ int rrd_xport_fn(
 
     unsigned long nof_xports = 0;
     unsigned long xport_counter = 0;
-    int *ref_list;
+    int      *ref_list;
     rrd_value_t **srcptr_list;
     char    **legend_list;
     int       ii = 0;

@@ -182,7 +182,8 @@ rrd_file_t *rrd_open(
     }
 #endif
 
-    __rrd_read(rrd->stat_head, stat_head_t, 1);
+    __rrd_read(rrd->stat_head, stat_head_t,
+               1);
 
     /* lets do some test if we are on track ... */
     if (memcmp(rrd->stat_head->cookie, RRD_COOKIE, sizeof(RRD_COOKIE)) != 0) {
@@ -348,7 +349,7 @@ void rrd_dontneed(
         }
         dontneed_start = active_block;
         /* do not release 'hot' block if update for this RAA will occur
-	 * within 10 minutes */
+         * within 10 minutes */
         if (rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt -
             rrd->live_head->last_up % (rrd->stat_head->pdp_step *
                                        rrd->rra_def[i].pdp_cnt) < 10 * 60) {
@@ -377,7 +378,7 @@ int rrd_close(
     int       ret;
 
 #ifdef HAVE_MMAP
-    ret = msync(rrd_file->file_start, rrd_file->file_len,MS_ASYNC);
+    ret = msync(rrd_file->file_start, rrd_file->file_len, MS_ASYNC);
     if (ret != 0)
         rrd_set_error("msync rrd_file: %s", rrd_strerror(errno));
     ret = munmap(rrd_file->file_start, rrd_file->file_len);
@@ -416,7 +417,7 @@ off_t rrd_seek(
     rrd_file->pos = ret;
 #endif
     /* mimic fseek, which returns 0 upon success */
-    return ret < 0;   //XXX: or just ret to mimic lseek
+    return ret < 0;     //XXX: or just ret to mimic lseek
 }
 
 
@@ -441,10 +442,10 @@ inline ssize_t rrd_read(
     size_t    _cnt = count;
     ssize_t   _surplus;
 
-    if (rrd_file->pos > rrd_file->file_len || _cnt == 0) /* EOF */
-       return 0;
+    if (rrd_file->pos > rrd_file->file_len || _cnt == 0)    /* EOF */
+        return 0;
     if (buf == NULL)
-       return -1; /* EINVAL */
+        return -1;      /* EINVAL */
     _surplus = rrd_file->pos + _cnt - rrd_file->file_len;
     if (_surplus > 0) { /* short read */
         _cnt -= _surplus;
@@ -477,9 +478,9 @@ inline ssize_t rrd_write(
 {
 #ifdef HAVE_MMAP
     if (count == 0)
-       return 0;
+        return 0;
     if (buf == NULL)
-       return -1; /* EINVAL */
+        return -1;      /* EINVAL */
     memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */

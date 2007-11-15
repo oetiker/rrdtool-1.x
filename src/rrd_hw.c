@@ -141,8 +141,8 @@ int apply_smoother(
 
     if (atoi(rrd->stat_head->version) >= 4) {
         offset = floor(rrd->rra_def[rra_idx].
-                        par[RRA_seasonal_smoothing_window].
-                        u_val / 2 * row_count);
+                       par[RRA_seasonal_smoothing_window].
+                       u_val / 2 * row_count);
     } else {
         offset = floor(0.05 / 2 * row_count);
     }

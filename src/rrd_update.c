@@ -73,112 +73,210 @@ int       _rrd_update(
     info_t *);
 
 static int allocate_data_structures(
-    rrd_t *rrd, char ***updvals, rrd_value_t **pdp_temp, const char *tmplt, 
-    long **tmpl_idx, unsigned long *tmpl_cnt, unsigned long **rra_step_cnt, 
-    unsigned long **skip_update, rrd_value_t **pdp_new);
+    rrd_t *rrd,
+    char ***updvals,
+    rrd_value_t **pdp_temp,
+    const char *tmplt,
+    long **tmpl_idx,
+    unsigned long *tmpl_cnt,
+    unsigned long **rra_step_cnt,
+    unsigned long **skip_update,
+    rrd_value_t **pdp_new);
 
-static int parse_template(rrd_t *rrd, const char *tmplt,
-    unsigned long *tmpl_cnt, long *tmpl_idx);
+static int parse_template(
+    rrd_t *rrd,
+    const char *tmplt,
+    unsigned long *tmpl_cnt,
+    long *tmpl_idx);
 
 static int process_arg(
-    char          *step_start, 
-    rrd_t         *rrd, 
-    rrd_file_t    *rrd_file, 
-    unsigned long  rra_begin,
+    char *step_start,
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long rra_begin,
     unsigned long *rra_current,
-    time_t        *current_time,
+    time_t *current_time,
     unsigned long *current_time_usec,
-    rrd_value_t   *pdp_temp,
-    rrd_value_t   *pdp_new,
+    rrd_value_t *pdp_temp,
+    rrd_value_t *pdp_new,
     unsigned long *rra_step_cnt,
-    char         **updvals,
-    long          *tmpl_idx,
-    unsigned long  tmpl_cnt,
-    info_t       **pcdp_summary,
-    int            version,
+    char **updvals,
+    long *tmpl_idx,
+    unsigned long tmpl_cnt,
+    info_t **pcdp_summary,
+    int version,
     unsigned long *skip_update,
-    int           *schedule_smooth);
+    int *schedule_smooth);
 
-static int parse_ds(rrd_t *rrd, char **updvals, long *tmpl_idx, char *input,
-    unsigned long tmpl_cnt, time_t *current_time, unsigned long *current_time_usec, 
+static int parse_ds(
+    rrd_t *rrd,
+    char **updvals,
+    long *tmpl_idx,
+    char *input,
+    unsigned long tmpl_cnt,
+    time_t *current_time,
+    unsigned long *current_time_usec,
     int version);
 
-static int get_time_from_reading(rrd_t *rrd, char timesyntax, char **updvals, 
-    time_t *current_time, unsigned long *current_time_usec, int version);
+static int get_time_from_reading(
+    rrd_t *rrd,
+    char timesyntax,
+    char **updvals,
+    time_t *current_time,
+    unsigned long *current_time_usec,
+    int version);
 
-static int update_pdp_prep(rrd_t *rrd, char **updvals, 
-    rrd_value_t *pdp_new, double interval);
+static int update_pdp_prep(
+    rrd_t *rrd,
+    char **updvals,
+    rrd_value_t *pdp_new,
+    double interval);
 
-static int calculate_elapsed_steps(rrd_t *rrd, 
-    unsigned long current_time, unsigned long current_time_usec,
-    double interval, double *pre_int, double *post_int, 
+static int calculate_elapsed_steps(
+    rrd_t *rrd,
+    unsigned long current_time,
+    unsigned long current_time_usec,
+    double interval,
+    double *pre_int,
+    double *post_int,
     unsigned long *proc_pdp_cnt);
 
-static void simple_update(rrd_t *rrd, double interval, rrd_value_t *pdp_new);
+static void simple_update(
+    rrd_t *rrd,
+    double interval,
+    rrd_value_t *pdp_new);
 
-static int process_all_pdp_st(rrd_t *rrd, double interval, 
-    double pre_int, double post_int, unsigned long elapsed_pdp_st, 
-    rrd_value_t *pdp_new, rrd_value_t *pdp_temp);
+static int process_all_pdp_st(
+    rrd_t *rrd,
+    double interval,
+    double pre_int,
+    double post_int,
+    unsigned long elapsed_pdp_st,
+    rrd_value_t *pdp_new,
+    rrd_value_t *pdp_temp);
 
-static int process_pdp_st(rrd_t *rrd, unsigned long ds_idx, double interval, 
-    double pre_int, double post_int, long diff_pdp_st, rrd_value_t *pdp_new, 
+static int process_pdp_st(
+    rrd_t *rrd,
+    unsigned long ds_idx,
+    double interval,
+    double pre_int,
+    double post_int,
+    long diff_pdp_st,
+    rrd_value_t *pdp_new,
     rrd_value_t *pdp_temp);
 
 static int update_all_cdp_prep(
-    rrd_t *rrd, unsigned long *rra_step_cnt, unsigned long rra_begin, 
-    rrd_file_t *rrd_file, unsigned long elapsed_pdp_st, unsigned long proc_pdp_cnt,
-    rrd_value_t **last_seasonal_coef, rrd_value_t **seasonal_coef,
-    rrd_value_t *pdp_temp, unsigned long *rra_current, 
-    unsigned long *skip_update, int *schedule_smooth);
+    rrd_t *rrd,
+    unsigned long *rra_step_cnt,
+    unsigned long rra_begin,
+    rrd_file_t *rrd_file,
+    unsigned long elapsed_pdp_st,
+    unsigned long proc_pdp_cnt,
+    rrd_value_t **last_seasonal_coef,
+    rrd_value_t **seasonal_coef,
+    rrd_value_t *pdp_temp,
+    unsigned long *rra_current,
+    unsigned long *skip_update,
+    int *schedule_smooth);
 
-static int do_schedule_smooth(rrd_t *rrd, unsigned long rra_idx, 
+static int do_schedule_smooth(
+    rrd_t *rrd,
+    unsigned long rra_idx,
     unsigned long elapsed_pdp_st);
 
-static int update_cdp_prep(rrd_t *rrd, unsigned long elapsed_pdp_st, 
-    unsigned long start_pdp_offset, unsigned long *rra_step_cnt, 
-    int rra_idx, rrd_value_t *pdp_temp, rrd_value_t *last_seasonal_coef, 
-    rrd_value_t *seasonal_coef, int current_cf);
+static int update_cdp_prep(
+    rrd_t *rrd,
+    unsigned long elapsed_pdp_st,
+    unsigned long start_pdp_offset,
+    unsigned long *rra_step_cnt,
+    int rra_idx,
+    rrd_value_t *pdp_temp,
+    rrd_value_t *last_seasonal_coef,
+    rrd_value_t *seasonal_coef,
+    int current_cf);
 
-static void update_cdp(unival *scratch, int current_cf, 
-    rrd_value_t pdp_temp_val, unsigned long rra_step_cnt, 
-    unsigned long elapsed_pdp_st, unsigned long start_pdp_offset, 
-    unsigned long pdp_cnt, rrd_value_t xff, int i, int ii);
+static void update_cdp(
+    unival *scratch,
+    int current_cf,
+    rrd_value_t pdp_temp_val,
+    unsigned long rra_step_cnt,
+    unsigned long elapsed_pdp_st,
+    unsigned long start_pdp_offset,
+    unsigned long pdp_cnt,
+    rrd_value_t xff,
+    int i,
+    int ii);
 
-static void initialize_cdp_val(unival *scratch, int current_cf,
-    rrd_value_t pdp_temp_val, unsigned long elapsed_pdp_st, 
-    unsigned long start_pdp_offset, unsigned long pdp_cnt);
+static void initialize_cdp_val(
+    unival *scratch,
+    int current_cf,
+    rrd_value_t pdp_temp_val,
+    unsigned long elapsed_pdp_st,
+    unsigned long start_pdp_offset,
+    unsigned long pdp_cnt);
 
-static void reset_cdp(rrd_t *rrd, unsigned long elapsed_pdp_st, 
-    rrd_value_t *pdp_temp, rrd_value_t *last_seasonal_coef, 
-    rrd_value_t *seasonal_coef, 
-    int rra_idx, int ds_idx, int cdp_idx, enum cf_en current_cf);
+static void reset_cdp(
+    rrd_t *rrd,
+    unsigned long elapsed_pdp_st,
+    rrd_value_t *pdp_temp,
+    rrd_value_t *last_seasonal_coef,
+    rrd_value_t *seasonal_coef,
+    int rra_idx,
+    int ds_idx,
+    int cdp_idx,
+    enum cf_en current_cf);
 
-static rrd_value_t initialize_average_carry_over(rrd_value_t pdp_temp_val,
-    unsigned long elapsed_pdp_st, unsigned long start_pdp_offset, 
+static rrd_value_t initialize_average_carry_over(
+    rrd_value_t pdp_temp_val,
+    unsigned long elapsed_pdp_st,
+    unsigned long start_pdp_offset,
     unsigned long pdp_cnt);
 
 static rrd_value_t calculate_cdp_val(
-    rrd_value_t cdp_val, rrd_value_t pdp_temp_val,
-    unsigned long elapsed_pdp_st, int current_cf, int i, int ii);
+    rrd_value_t cdp_val,
+    rrd_value_t pdp_temp_val,
+    unsigned long elapsed_pdp_st,
+    int current_cf,
+    int i,
+    int ii);
 
-static int update_aberrant_cdps(rrd_t *rrd, rrd_file_t *rrd_file, 
-    unsigned long rra_begin, unsigned long *rra_current, 
-    unsigned long elapsed_pdp_st, rrd_value_t *pdp_temp, rrd_value_t **seasonal_coef);
+static int update_aberrant_cdps(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long rra_begin,
+    unsigned long *rra_current,
+    unsigned long elapsed_pdp_st,
+    rrd_value_t *pdp_temp,
+    rrd_value_t **seasonal_coef);
 
-static int write_to_rras(rrd_t *rrd, rrd_file_t *rrd_file, 
-    unsigned long *rra_step_cnt, unsigned long rra_begin, 
-    unsigned long *rra_current, time_t current_time, 
-    unsigned long *skip_update, info_t **pcdp_summary);
+static int write_to_rras(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long *rra_step_cnt,
+    unsigned long rra_begin,
+    unsigned long *rra_current,
+    time_t current_time,
+    unsigned long *skip_update,
+    info_t **pcdp_summary);
 
-static int write_RRA_row(rrd_file_t *rrd_file, rrd_t *rrd, unsigned long rra_idx,
-    unsigned long *rra_current, unsigned short CDP_scratch_idx, info_t **pcdp_summary,
+static int write_RRA_row(
+    rrd_file_t *rrd_file,
+    rrd_t *rrd,
+    unsigned long rra_idx,
+    unsigned long *rra_current,
+    unsigned short CDP_scratch_idx,
+    info_t **pcdp_summary,
     time_t rra_time);
 
-static int smooth_all_rras(rrd_t *rrd, rrd_file_t *rrd_file, 
+static int smooth_all_rras(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
     unsigned long rra_begin);
 
 #ifndef HAVE_MMAP
-static int write_changes_to_disk(rrd_t *rrd, rrd_file_t *rrd_file, 
+static int write_changes_to_disk(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
     int version);
 #endif
 
@@ -200,8 +298,9 @@ static inline void normalize_time(
  * current_time_usec is set to 0 if the version number is 1 or 2.
  */
 static inline void initialize_time(
-    time_t *current_time, unsigned long *current_time_usec,
-    int version) 
+    time_t *current_time,
+    unsigned long *current_time_usec,
+    int version)
 {
     struct timeval tmp_time;    /* used for time conversion */
 
@@ -309,7 +408,7 @@ int rrd_update(
 
     rc = rrd_update_r(argv[optind], tmplt,
                       argc - optind - 1, (const char **) (argv + optind + 1));
-out:
+  out:
     free(tmplt);
     return rc;
 }
@@ -331,33 +430,33 @@ int _rrd_update(
     info_t *pcdp_summary)
 {
 
-    int           arg_i = 2;
+    int       arg_i = 2;
 
     unsigned long rra_begin;    /* byte pointer to the rra
                                  * area in the rrd file.  this
                                  * pointer never changes value */
     unsigned long rra_current;  /* byte pointer to the current write
                                  * spot in the rrd file. */
-    rrd_value_t   *pdp_new;     /* prepare the incoming data to be added 
-                                 * to the existing entry */
-    rrd_value_t   *pdp_temp;    /* prepare the pdp values to be added 
-                                 * to the cdp values */
+    rrd_value_t *pdp_new;   /* prepare the incoming data to be added 
+                             * to the existing entry */
+    rrd_value_t *pdp_temp;  /* prepare the pdp values to be added 
+                             * to the cdp values */
 
-    long          *tmpl_idx;    /* index representing the settings
-                                 * transported by the tmplt index */
+    long     *tmpl_idx; /* index representing the settings
+                         * transported by the tmplt index */
     unsigned long tmpl_cnt = 2; /* time and data */
-    rrd_t         rrd;
-    time_t        current_time = 0;
+    rrd_t     rrd;
+    time_t    current_time = 0;
     unsigned long current_time_usec = 0;    /* microseconds part of current time */
-    char        **updvals;
-    int           schedule_smooth = 0;
+    char    **updvals;
+    int       schedule_smooth = 0;
 
     /* number of elapsed PDP steps since last update */
     unsigned long *rra_step_cnt = NULL;
 
-    int            version;     /* rrd version */
-    rrd_file_t    *rrd_file;
-    char          *arg_copy;    /* for processing the argv */
+    int       version;  /* rrd version */
+    rrd_file_t *rrd_file;
+    char     *arg_copy; /* for processing the argv */
     unsigned long *skip_update; /* RRAs to advance but not write */
 
     /* need at least 1 arguments: data. */
@@ -384,9 +483,10 @@ int _rrd_update(
         goto err_close;
     }
 
-    if (allocate_data_structures(&rrd, &updvals, 
-                    &pdp_temp, tmplt, &tmpl_idx, &tmpl_cnt,
-                    &rra_step_cnt, &skip_update, &pdp_new) == -1) {
+    if (allocate_data_structures(&rrd, &updvals,
+                                 &pdp_temp, tmplt, &tmpl_idx, &tmpl_cnt,
+                                 &rra_step_cnt, &skip_update,
+                                 &pdp_new) == -1) {
         goto err_close;
     }
 
@@ -396,10 +496,11 @@ int _rrd_update(
             rrd_set_error("failed duplication argv entry");
             break;
         }
-        if (process_arg(arg_copy, &rrd, rrd_file, rra_begin, &rra_current, 
+        if (process_arg(arg_copy, &rrd, rrd_file, rra_begin, &rra_current,
                         &current_time, &current_time_usec, pdp_temp, pdp_new,
-                        rra_step_cnt, updvals, tmpl_idx, tmpl_cnt, &pcdp_summary, 
-                        version, skip_update, &schedule_smooth) == -1) {
+                        rra_step_cnt, updvals, tmpl_idx, tmpl_cnt,
+                        &pcdp_summary, version, skip_update,
+                        &schedule_smooth) == -1) {
             free(arg_copy);
             break;
         }
@@ -413,7 +514,6 @@ int _rrd_update(
     if (rrd_test_error()) {
         goto err_free_structures;
     }
-
 #ifndef HAVE_MMAP
     if (write_changes_to_disk(&rrd, rrd_file, version) == -1) {
         goto err_free_structures;
@@ -497,39 +597,44 @@ int LockRRD(
  * Returns 0 on success, -1 on error.
  */
 static int allocate_data_structures(
-    rrd_t         *rrd, 
-    char        ***updvals, 
-    rrd_value_t  **pdp_temp, 
-    const char    *tmplt, 
-    long         **tmpl_idx, 
-    unsigned long *tmpl_cnt, 
-    unsigned long **rra_step_cnt, 
+    rrd_t *rrd,
+    char ***updvals,
+    rrd_value_t **pdp_temp,
+    const char *tmplt,
+    long **tmpl_idx,
+    unsigned long *tmpl_cnt,
+    unsigned long **rra_step_cnt,
     unsigned long **skip_update,
-    rrd_value_t  **pdp_new) 
+    rrd_value_t **pdp_new)
 {
-    unsigned i, ii;
-    if ((*updvals = (char **)malloc(sizeof(char *) 
-                           * (rrd->stat_head->ds_cnt + 1))) == NULL) {
+    unsigned  i, ii;
+    if ((*updvals = (char **) malloc(sizeof(char *)
+                                     * (rrd->stat_head->ds_cnt + 1))) == NULL) {
         rrd_set_error("allocating updvals pointer array.");
         return -1;
     }
-    if ((*pdp_temp = (rrd_value_t *)malloc(sizeof(rrd_value_t)
-                           * rrd->stat_head->ds_cnt)) == NULL) {
+    if ((*pdp_temp = (rrd_value_t *) malloc(sizeof(rrd_value_t)
+                                            * rrd->stat_head->ds_cnt)) ==
+        NULL) {
         rrd_set_error("allocating pdp_temp.");
         goto err_free_updvals;
     }
-    if ((*skip_update = (unsigned long *)malloc(sizeof(unsigned long)
-                           * rrd->stat_head->rra_cnt)) == NULL) {
+    if ((*skip_update = (unsigned long *) malloc(sizeof(unsigned long)
+                                                 *
+                                                 rrd->stat_head->rra_cnt)) ==
+        NULL) {
         rrd_set_error("allocating skip_update.");
         goto err_free_pdp_temp;
     }
-    if ((*tmpl_idx = (long *)malloc(sizeof(unsigned long)
-                           * (rrd->stat_head->ds_cnt + 1))) == NULL) {
+    if ((*tmpl_idx = (long *) malloc(sizeof(unsigned long)
+                                     * (rrd->stat_head->ds_cnt + 1))) == NULL) {
         rrd_set_error("allocating tmpl_idx.");
         goto err_free_skip_update;
     }
-    if ((*rra_step_cnt = (unsigned long *)malloc(sizeof(unsigned long) 
-                           * (rrd->stat_head->rra_cnt))) == NULL) {
+    if ((*rra_step_cnt = (unsigned long *) malloc(sizeof(unsigned long)
+                                                  *
+                                                  (rrd->stat_head->
+                                                   rra_cnt))) == NULL) {
         rrd_set_error("allocating rra_step_cnt.");
         goto err_free_tmpl_idx;
     }
@@ -540,9 +645,9 @@ static int allocate_data_structures(
        tmpl_idx[1] -> 1; (DS 0)
        tmpl_idx[2] -> 3; (DS 2)
        tmpl_idx[3] -> 4; (DS 3) */
-    (*tmpl_idx)[0] = 0;    /* time */
+    (*tmpl_idx)[0] = 0; /* time */
     for (i = 1, ii = 1; i <= rrd->stat_head->ds_cnt; i++) {
-        if (dst_conv(rrd->ds_def[i-1].dst) != DST_CDEF)
+        if (dst_conv(rrd->ds_def[i - 1].dst) != DST_CDEF)
             (*tmpl_idx)[ii++] = i;
     }
     *tmpl_cnt = ii;
@@ -553,23 +658,23 @@ static int allocate_data_structures(
         }
     }
 
-    if ((*pdp_new = (rrd_value_t *)malloc(sizeof(rrd_value_t)
-                          * rrd->stat_head->ds_cnt)) == NULL) {
+    if ((*pdp_new = (rrd_value_t *) malloc(sizeof(rrd_value_t)
+                                           * rrd->stat_head->ds_cnt)) == NULL) {
         rrd_set_error("allocating pdp_new.");
         goto err_free_rra_step_cnt;
     }
 
     return 0;
 
-err_free_rra_step_cnt:
+  err_free_rra_step_cnt:
     free(*rra_step_cnt);
-err_free_tmpl_idx:
+  err_free_tmpl_idx:
     free(*tmpl_idx);
-err_free_skip_update:
+  err_free_skip_update:
     free(*skip_update);
-err_free_pdp_temp:
+  err_free_pdp_temp:
     free(*pdp_temp);
-err_free_updvals:
+  err_free_updvals:
     free(*updvals);
     return -1;
 }
@@ -580,20 +685,22 @@ err_free_updvals:
  * Returns 0 on success.
  */
 static int parse_template(
-    rrd_t *rrd, const char *tmplt, 
-    unsigned long *tmpl_cnt, long *tmpl_idx)
+    rrd_t *rrd,
+    const char *tmplt,
+    unsigned long *tmpl_cnt,
+    long *tmpl_idx)
 {
-    char          *dsname, *tmplt_copy;
-    unsigned int   tmpl_len, i;
-    int ret = 0;
+    char     *dsname, *tmplt_copy;
+    unsigned int tmpl_len, i;
+    int       ret = 0;
 
-    *tmpl_cnt = 1;   /* the first entry is the time */
+    *tmpl_cnt = 1;      /* the first entry is the time */
 
     /* we should work on a writeable copy here */
     if ((tmplt_copy = strdup(tmplt)) == NULL) {
         rrd_set_error("error copying tmplt '%s'", tmplt);
         ret = -1;
-	goto out;
+        goto out;
     }
 
     dsname = tmplt_copy;
@@ -606,19 +713,19 @@ static int parse_template(
                 ret = -1;
                 goto out_free_tmpl_copy;
             }
-            if ((tmpl_idx[(*tmpl_cnt)++] = ds_match(rrd, dsname)+1) == 0) {
+            if ((tmpl_idx[(*tmpl_cnt)++] = ds_match(rrd, dsname) + 1) == 0) {
                 rrd_set_error("unknown DS name '%s'", dsname);
                 ret = -1;
                 goto out_free_tmpl_copy;
-            } 
+            }
             /* go to the next entry on the tmplt_copy */
             if (i < tmpl_len)
-                dsname = &tmplt_copy[i+1];
+                dsname = &tmplt_copy[i + 1];
         }
     }
-out_free_tmpl_copy:
+  out_free_tmpl_copy:
     free(tmplt_copy);
-out:
+  out:
     return ret;
 }
 
@@ -629,23 +736,23 @@ out:
  * Returns 0 on success, -1 on error.
  */
 static int process_arg(
-    char           *step_start, 
-    rrd_t          *rrd, 
-    rrd_file_t     *rrd_file, 
-    unsigned long  rra_begin,
+    char *step_start,
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long rra_begin,
     unsigned long *rra_current,
-    time_t        *current_time,
+    time_t *current_time,
     unsigned long *current_time_usec,
-    rrd_value_t   *pdp_temp,
-    rrd_value_t   *pdp_new,
+    rrd_value_t *pdp_temp,
+    rrd_value_t *pdp_new,
     unsigned long *rra_step_cnt,
-    char         **updvals,
-    long          *tmpl_idx,
-    unsigned long  tmpl_cnt,
-    info_t       **pcdp_summary,
-    int            version,
+    char **updvals,
+    long *tmpl_idx,
+    unsigned long tmpl_cnt,
+    info_t **pcdp_summary,
+    int version,
     unsigned long *skip_update,
-    int           *schedule_smooth)
+    int *schedule_smooth)
 {
     rrd_value_t *seasonal_coef = NULL, *last_seasonal_coef = NULL;
 
@@ -657,8 +764,8 @@ static int process_arg(
     unsigned long proc_pdp_cnt;
     unsigned long rra_start;
 
-    if (parse_ds(rrd, updvals, tmpl_idx, step_start, tmpl_cnt, 
-            current_time, current_time_usec, version) == -1) {
+    if (parse_ds(rrd, updvals, tmpl_idx, step_start, tmpl_cnt,
+                 current_time, current_time_usec, version) == -1) {
         return -1;
     }
     /* seek to the beginning of the rra's */
@@ -674,8 +781,8 @@ static int process_arg(
     rra_start = rra_begin;
 
     interval = (double) (*current_time - rrd->live_head->last_up)
-            + (double) ((long) *current_time_usec -
-                            (long) rrd->live_head->last_up_usec) / 1e6f;
+        + (double) ((long) *current_time_usec -
+                    (long) rrd->live_head->last_up_usec) / 1e6f;
 
     /* process the data sources and update the pdp_prep 
      * area accordingly */
@@ -683,10 +790,11 @@ static int process_arg(
         return -1;
     }
 
-    elapsed_pdp_st = calculate_elapsed_steps(rrd, 
-                    *current_time, *current_time_usec, 
-                    interval, &pre_int, &post_int,
-                    &proc_pdp_cnt);
+    elapsed_pdp_st = calculate_elapsed_steps(rrd,
+                                             *current_time,
+                                             *current_time_usec, interval,
+                                             &pre_int, &post_int,
+                                             &proc_pdp_cnt);
 
     /* has a pdp_st moment occurred since the last run ? */
     if (elapsed_pdp_st == 0) {
@@ -694,35 +802,32 @@ static int process_arg(
         simple_update(rrd, interval, pdp_new);
     } else {
         /* an pdp_st has occurred. */
-        if (process_all_pdp_st(rrd, interval, 
+        if (process_all_pdp_st(rrd, interval,
                                pre_int, post_int,
-                               elapsed_pdp_st, 
-                               pdp_new, pdp_temp) == -1) 
-        {
+                               elapsed_pdp_st, pdp_new, pdp_temp) == -1) {
             return -1;
         }
-        if (update_all_cdp_prep(rrd, rra_step_cnt, 
+        if (update_all_cdp_prep(rrd, rra_step_cnt,
                                 rra_begin, rrd_file,
                                 elapsed_pdp_st,
                                 proc_pdp_cnt,
                                 &last_seasonal_coef,
                                 &seasonal_coef,
                                 pdp_temp, rra_current,
-                                skip_update, schedule_smooth) == -1)
-        {
+                                skip_update, schedule_smooth) == -1) {
             goto err_free_coefficients;
         }
-        if (update_aberrant_cdps(rrd, rrd_file, rra_begin, rra_current, 
-                elapsed_pdp_st, pdp_temp, &seasonal_coef) == -1)
-        {
+        if (update_aberrant_cdps(rrd, rrd_file, rra_begin, rra_current,
+                                 elapsed_pdp_st, pdp_temp,
+                                 &seasonal_coef) == -1) {
             goto err_free_coefficients;
         }
-        if (write_to_rras(rrd, rrd_file, rra_step_cnt, rra_begin, 
-                rra_current, *current_time, skip_update, pcdp_summary) == -1)
-        {
+        if (write_to_rras(rrd, rrd_file, rra_step_cnt, rra_begin,
+                          rra_current, *current_time, skip_update,
+                          pcdp_summary) == -1) {
             goto err_free_coefficients;
         }
-    }               /* endif a pdp_st has occurred */
+    }                   /* endif a pdp_st has occurred */
     rrd->live_head->last_up = *current_time;
     rrd->live_head->last_up_usec = *current_time_usec;
 
@@ -730,7 +835,7 @@ static int process_arg(
     free(last_seasonal_coef);
     return 0;
 
-err_free_coefficients:
+  err_free_coefficients:
     free(seasonal_coef);
     free(last_seasonal_coef);
     return -1;
@@ -743,13 +848,18 @@ err_free_coefficients:
  * Returns 0 on success, -1 on error.
  */
 static int parse_ds(
-    rrd_t *rrd, char **updvals, long *tmpl_idx, char *input,
-    unsigned long tmpl_cnt, time_t *current_time,
-    unsigned long *current_time_usec, int version)
+    rrd_t *rrd,
+    char **updvals,
+    long *tmpl_idx,
+    char *input,
+    unsigned long tmpl_cnt,
+    time_t *current_time,
+    unsigned long *current_time_usec,
+    int version)
 {
-    char *p;
+    char     *p;
     unsigned long i;
-    char timesyntax;
+    char      timesyntax;
 
     updvals[0] = input;
     /* initialize all ds input to unknown except the first one
@@ -765,30 +875,30 @@ static int parse_ds(
         timesyntax = ':';
     } else {
         rrd_set_error("expected timestamp not found in data source from %s",
-                 input);
+                      input);
         return -1;
     }
     *p = '\0';
     i = 1;
-    updvals[tmpl_idx[i++]] = p+1;
+    updvals[tmpl_idx[i++]] = p + 1;
     while (*(++p)) {
         if (*p == ':') {
             *p = '\0';
             if (i < tmpl_cnt) {
-                updvals[tmpl_idx[i++]] = p+1;
+                updvals[tmpl_idx[i++]] = p + 1;
             }
         }
     }
 
     if (i != tmpl_cnt) {
         rrd_set_error("expected %lu data source readings (got %lu) from %s",
-                 tmpl_cnt - 1, i, input);
+                      tmpl_cnt - 1, i, input);
         return -1;
     }
 
-    if (get_time_from_reading(rrd, timesyntax, updvals, 
-                            current_time, current_time_usec, 
-                            version) == -1) {
+    if (get_time_from_reading(rrd, timesyntax, updvals,
+                              current_time, current_time_usec,
+                              version) == -1) {
         return -1;
     }
     return 0;
@@ -802,8 +912,11 @@ static int parse_ds(
  * Returns 0 on success, -1 on error.
  */
 static int get_time_from_reading(
-    rrd_t *rrd, char timesyntax, char **updvals, 
-    time_t *current_time, unsigned long *current_time_usec,
+    rrd_t *rrd,
+    char timesyntax,
+    char **updvals,
+    time_t *current_time,
+    unsigned long *current_time_usec,
     int version)
 {
     double    tmp;
@@ -813,19 +926,19 @@ static int get_time_from_reading(
     struct timeval tmp_time;    /* used for time conversion */
 
     /* get the time from the reading ... handle N */
-    if (timesyntax == '@') { /* at-style */
+    if (timesyntax == '@') {    /* at-style */
         if ((parsetime_error = parsetime(updvals[0], &ds_tv))) {
             rrd_set_error("ds time: %s: %s", updvals[0], parsetime_error);
             return -1;
         }
         if (ds_tv.type == RELATIVE_TO_END_TIME ||
-                        ds_tv.type == RELATIVE_TO_START_TIME) {
+            ds_tv.type == RELATIVE_TO_START_TIME) {
             rrd_set_error("specifying time relative to the 'start' "
-                            "or 'end' makes no sense here: %s", updvals[0]);
+                          "or 'end' makes no sense here: %s", updvals[0]);
             return -1;
         }
-        *current_time = mktime(&ds_tv.tm) + ds_tv.offset;
-        *current_time_usec = 0;  /* FIXME: how to handle usecs here ? */
+        *current_time = mktime(&ds_tv.tm) +ds_tv.offset;
+        *current_time_usec = 0; /* FIXME: how to handle usecs here ? */
     } else if (strcmp(updvals[0], "N") == 0) {
         gettimeofday(&tmp_time, 0);
         normalize_time(&tmp_time);
@@ -843,12 +956,11 @@ static int get_time_from_reading(
         *current_time_usec = 0;
 
     if (*current_time < rrd->live_head->last_up ||
-                    (*current_time == rrd->live_head->last_up &&
-                     (long) *current_time_usec <=
-                     (long) rrd->live_head->last_up_usec)) {
+        (*current_time == rrd->live_head->last_up &&
+         (long) *current_time_usec <= (long) rrd->live_head->last_up_usec)) {
         rrd_set_error("illegal attempt to update using time %ld when "
-                          "last update time is %ld (minimum one second step)",
-                          *current_time, rrd->live_head->last_up);
+                      "last update time is %ld (minimum one second step)",
+                      *current_time, rrd->live_head->last_up);
         return -1;
     }
     return 0;
@@ -861,13 +973,15 @@ static int get_time_from_reading(
  * Returns 0 on success, -1 on error.
  */
 static int update_pdp_prep(
-    rrd_t *rrd, char **updvals, 
-    rrd_value_t *pdp_new, double interval) 
+    rrd_t *rrd,
+    char **updvals,
+    rrd_value_t *pdp_new,
+    double interval)
 {
-    unsigned long ds_idx; 
-    int ii;
+    unsigned long ds_idx;
+    int       ii;
     char     *endptr;   /* used in the conversion */
-    double rate;
+    double    rate;
     char     *old_locale;
     enum dst_en dst_idx;
 
@@ -885,79 +999,86 @@ static int update_pdp_prep(
          * accidently specified a value for the DST_CDEF. To handle this case,
          * an extra check is required. */
 
-        if ((updvals[ds_idx+1][0] != 'U') &&
-                        (dst_idx != DST_CDEF) &&
-                        rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt >= interval) {
+        if ((updvals[ds_idx + 1][0] != 'U') &&
+            (dst_idx != DST_CDEF) &&
+            rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt >= interval) {
             rate = DNAN;
 
             /* pdp_new contains rate * time ... eg the bytes transferred during
              * the interval. Doing it this way saves a lot of math operations
              */
             switch (dst_idx) {
-                    case DST_COUNTER:
-                    case DST_DERIVE:
-                            for (ii = 0; updvals[ds_idx + 1][ii] != '\0'; ii++) {
-                                if ((updvals[ds_idx + 1][ii] < '0' || updvals[ds_idx + 1][ii] > '9') 
-                                                && (ii != 0 && updvals[ds_idx + 1][ii] != '-')) {
-                                    rrd_set_error("not a simple integer: '%s'", updvals[ds_idx + 1]);
-                                    return -1;
-                                }
-                            }
-                            if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
-                                pdp_new[ds_idx] = rrd_diff(updvals[ds_idx+1], rrd->pdp_prep[ds_idx].last_ds);
-                                if (dst_idx == DST_COUNTER) {
-                                    /* simple overflow catcher. This will fail
-                                     * terribly for non 32 or 64 bit counters
-                                     * ... are there any others in SNMP land?
-                                     */
-                                    if (pdp_new[ds_idx] < (double) 0.0)
-                                        pdp_new[ds_idx] += (double) 4294967296.0; /* 2^32 */
-                                    if (pdp_new[ds_idx] < (double) 0.0)
-                                        pdp_new[ds_idx] += (double) 18446744069414584320.0; /* 2^64-2^32 */
-                                }
-                                rate = pdp_new[ds_idx] / interval;
-                            } else {
-                                pdp_new[ds_idx] = DNAN;
-                            }
-                            break;
-                    case DST_ABSOLUTE:
-                            old_locale = setlocale(LC_NUMERIC, "C");
-                            errno = 0;
-                            pdp_new[ds_idx] = strtod(updvals[ds_idx + 1], &endptr);
-                            setlocale(LC_NUMERIC, old_locale);
-                            if (errno > 0) {
-                                rrd_set_error("converting '%s' to float: %s",
-                                                updvals[ds_idx + 1], rrd_strerror(errno));
-                                return -1;
-                            };
-                            if (endptr[0] != '\0') {
-                                rrd_set_error("conversion of '%s' to float not complete: tail '%s'",
-                                         updvals[ds_idx + 1], endptr);
-                                return -1;
-                            }
-                            rate = pdp_new[ds_idx] / interval;
-                            break;
-                    case DST_GAUGE:
-                            errno = 0;
-                            old_locale = setlocale(LC_NUMERIC, "C");
-                            pdp_new[ds_idx] = strtod(updvals[ds_idx + 1], &endptr) * interval;
-                            setlocale(LC_NUMERIC, old_locale);
-                            if (errno) {
-                                rrd_set_error("converting '%s' to float: %s",
-                                                updvals[ds_idx + 1], rrd_strerror(errno));
-                                return -1;
-                            };
-                            if (endptr[0] != '\0') {
-                                rrd_set_error("conversion of '%s' to float not complete: tail '%s'",
-                                         updvals[ds_idx + 1], endptr);
-                                return -1;
-                            }
-                            rate = pdp_new[ds_idx] / interval;
-                            break;
-                    default:
-                            rrd_set_error("rrd contains unknown DS type : '%s'",
-                                            rrd->ds_def[ds_idx].dst);
-                            return -1;
+            case DST_COUNTER:
+            case DST_DERIVE:
+                for (ii = 0; updvals[ds_idx + 1][ii] != '\0'; ii++) {
+                    if ((updvals[ds_idx + 1][ii] < '0'
+                         || updvals[ds_idx + 1][ii] > '9')
+                        && (ii != 0 && updvals[ds_idx + 1][ii] != '-')) {
+                        rrd_set_error("not a simple integer: '%s'",
+                                      updvals[ds_idx + 1]);
+                        return -1;
+                    }
+                }
+                if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
+                    pdp_new[ds_idx] =
+                        rrd_diff(updvals[ds_idx + 1],
+                                 rrd->pdp_prep[ds_idx].last_ds);
+                    if (dst_idx == DST_COUNTER) {
+                        /* simple overflow catcher. This will fail
+                         * terribly for non 32 or 64 bit counters
+                         * ... are there any others in SNMP land?
+                         */
+                        if (pdp_new[ds_idx] < (double) 0.0)
+                            pdp_new[ds_idx] += (double) 4294967296.0;   /* 2^32 */
+                        if (pdp_new[ds_idx] < (double) 0.0)
+                            pdp_new[ds_idx] += (double) 18446744069414584320.0; /* 2^64-2^32 */
+                    }
+                    rate = pdp_new[ds_idx] / interval;
+                } else {
+                    pdp_new[ds_idx] = DNAN;
+                }
+                break;
+            case DST_ABSOLUTE:
+                old_locale = setlocale(LC_NUMERIC, "C");
+                errno = 0;
+                pdp_new[ds_idx] = strtod(updvals[ds_idx + 1], &endptr);
+                setlocale(LC_NUMERIC, old_locale);
+                if (errno > 0) {
+                    rrd_set_error("converting '%s' to float: %s",
+                                  updvals[ds_idx + 1], rrd_strerror(errno));
+                    return -1;
+                };
+                if (endptr[0] != '\0') {
+                    rrd_set_error
+                        ("conversion of '%s' to float not complete: tail '%s'",
+                         updvals[ds_idx + 1], endptr);
+                    return -1;
+                }
+                rate = pdp_new[ds_idx] / interval;
+                break;
+            case DST_GAUGE:
+                errno = 0;
+                old_locale = setlocale(LC_NUMERIC, "C");
+                pdp_new[ds_idx] =
+                    strtod(updvals[ds_idx + 1], &endptr) * interval;
+                setlocale(LC_NUMERIC, old_locale);
+                if (errno) {
+                    rrd_set_error("converting '%s' to float: %s",
+                                  updvals[ds_idx + 1], rrd_strerror(errno));
+                    return -1;
+                };
+                if (endptr[0] != '\0') {
+                    rrd_set_error
+                        ("conversion of '%s' to float not complete: tail '%s'",
+                         updvals[ds_idx + 1], endptr);
+                    return -1;
+                }
+                rate = pdp_new[ds_idx] / interval;
+                break;
+            default:
+                rrd_set_error("rrd contains unknown DS type : '%s'",
+                              rrd->ds_def[ds_idx].dst);
+                return -1;
             }
             /* break out of this for loop if the error string is set */
             if (rrd_test_error()) {
@@ -967,10 +1088,10 @@ static int update_pdp_prep(
              * if any of these occur it becomes unknown ...
              * sorry folks ... */
             if (!isnan(rate) &&
-                            ((!isnan(rrd->ds_def[ds_idx].par[DS_max_val].u_val) &&
-                              rate > rrd->ds_def[ds_idx].par[DS_max_val].u_val) ||
-                             (!isnan(rrd->ds_def[ds_idx].par[DS_min_val].u_val) &&
-                              rate < rrd->ds_def[ds_idx].par[DS_min_val].u_val))) {
+                ((!isnan(rrd->ds_def[ds_idx].par[DS_max_val].u_val) &&
+                  rate > rrd->ds_def[ds_idx].par[DS_max_val].u_val) ||
+                 (!isnan(rrd->ds_def[ds_idx].par[DS_min_val].u_val) &&
+                  rate < rrd->ds_def[ds_idx].par[DS_min_val].u_val))) {
                 pdp_new[ds_idx] = DNAN;
             }
         } else {
@@ -982,13 +1103,15 @@ static int update_pdp_prep(
         /* make a copy of the command line argument for the next run */
 #ifdef DEBUG
         fprintf(stderr, "prep ds[%lu]\t"
-                        "last_arg '%s'\t"
-                        "this_arg '%s'\t"
-                        "pdp_new %10.2f\n",
-                        ds_idx, rrd->pdp_prep[ds_idx].last_ds, updvals[ds_idx+1], pdp_new[ds_idx]);
+                "last_arg '%s'\t"
+                "this_arg '%s'\t"
+                "pdp_new %10.2f\n",
+                ds_idx, rrd->pdp_prep[ds_idx].last_ds, updvals[ds_idx + 1],
+                pdp_new[ds_idx]);
 #endif
-        strncpy(rrd->pdp_prep[ds_idx].last_ds, updvals[ds_idx+1], LAST_DS_LEN - 1);
-        rrd->pdp_prep[ds_idx].last_ds[LAST_DS_LEN-1] = '\0';
+        strncpy(rrd->pdp_prep[ds_idx].last_ds, updvals[ds_idx + 1],
+                LAST_DS_LEN - 1);
+        rrd->pdp_prep[ds_idx].last_ds[LAST_DS_LEN - 1] = '\0';
     }
     return 0;
 }
@@ -999,13 +1122,13 @@ static int update_pdp_prep(
  * and the time between the last PDP and the current time in post_int.
  */
 static int calculate_elapsed_steps(
-    rrd_t *rrd, 
-    unsigned long current_time, 
+    rrd_t *rrd,
+    unsigned long current_time,
     unsigned long current_time_usec,
     double interval,
     double *pre_int,
     double *post_int,
-    unsigned long *proc_pdp_cnt) 
+    unsigned long *proc_pdp_cnt)
 {
     unsigned long proc_pdp_st;  /* which pdp_st was the last to be processed */
     unsigned long occu_pdp_st;  /* when was the pdp_st before the last update
@@ -1024,11 +1147,11 @@ static int calculate_elapsed_steps(
 
     if (occu_pdp_st > proc_pdp_st) {
         /* OK we passed the pdp_st moment */
-        *pre_int = (long) occu_pdp_st - rrd->live_head->last_up;  /* how much of the input data
-                                                                 * occurred before the latest
-                                                                 * pdp_st moment*/
-        *pre_int -= ((double) rrd->live_head->last_up_usec) / 1e6f;  /* adjust usecs */
-        *post_int = occu_pdp_age;    /* how much after it */
+        *pre_int = (long) occu_pdp_st - rrd->live_head->last_up;    /* how much of the input data
+                                                                     * occurred before the latest
+                                                                     * pdp_st moment*/
+        *pre_int -= ((double) rrd->live_head->last_up_usec) / 1e6f; /* adjust usecs */
+        *post_int = occu_pdp_age;   /* how much after it */
         *post_int += ((double) current_time_usec) / 1e6f;   /* adjust usecs */
     } else {
         *pre_int = interval;
@@ -1039,13 +1162,13 @@ static int calculate_elapsed_steps(
 
 #ifdef DEBUG
     printf("proc_pdp_age %lu\t"
-                    "proc_pdp_st %lu\t"
-                    "occu_pfp_age %lu\t"
-                    "occu_pdp_st %lu\t"
-                    "int %lf\t"
-                    "pre_int %lf\t"
-                    "post_int %lf\n", proc_pdp_age, proc_pdp_st,
-                    occu_pdp_age, occu_pdp_st, interval, *pre_int, *post_int);
+           "proc_pdp_st %lu\t"
+           "occu_pfp_age %lu\t"
+           "occu_pdp_st %lu\t"
+           "int %lf\t"
+           "pre_int %lf\t"
+           "post_int %lf\n", proc_pdp_age, proc_pdp_st,
+           occu_pdp_age, occu_pdp_st, interval, *pre_int, *post_int);
 #endif
 
     /* compute the number of elapsed pdp_st moments */
@@ -1056,15 +1179,19 @@ static int calculate_elapsed_steps(
  * Increment the PDP values by the values in pdp_new, or else initialize them.
  */
 static void simple_update(
-    rrd_t *rrd, double interval, rrd_value_t *pdp_new) 
+    rrd_t *rrd,
+    double interval,
+    rrd_value_t *pdp_new)
 {
-    int i;
-    for (i = 0; i < (signed)rrd->stat_head->ds_cnt; i++) {
+    int       i;
+
+    for (i = 0; i < (signed) rrd->stat_head->ds_cnt; i++) {
         if (isnan(pdp_new[i])) {
             /* this is not really accurate if we use subsecond data arrival time
                should have thought of it when going subsecond resolution ...
                sorry next format change we will have it! */
-            rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt += floor(interval);
+            rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt +=
+                floor(interval);
         } else {
             if (isnan(rrd->pdp_prep[i].scratch[PDP_val].u_val)) {
                 rrd->pdp_prep[i].scratch[PDP_val].u_val = pdp_new[i];
@@ -1074,12 +1201,12 @@ static void simple_update(
         }
 #ifdef DEBUG
         fprintf(stderr,
-                        "NO PDP  ds[%i]\t"
-                        "value %10.2f\t"
-                        "unkn_sec %5lu\n",
-                        i,
-                        rrd->pdp_prep[i].scratch[PDP_val].u_val,
-                        rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+                "NO PDP  ds[%i]\t"
+                "value %10.2f\t"
+                "unkn_sec %5lu\n",
+                i,
+                rrd->pdp_prep[i].scratch[PDP_val].u_val,
+                rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
 #endif
     }
 }
@@ -1090,10 +1217,16 @@ static void simple_update(
  * Returns 0 on success, -1 on error.
  */
 static int process_all_pdp_st(
-    rrd_t *rrd, double interval, double pre_int, double post_int, 
-    unsigned long elapsed_pdp_st, rrd_value_t *pdp_new, rrd_value_t *pdp_temp) 
+    rrd_t *rrd,
+    double interval,
+    double pre_int,
+    double post_int,
+    unsigned long elapsed_pdp_st,
+    rrd_value_t *pdp_new,
+    rrd_value_t *pdp_temp)
 {
     unsigned long ds_idx;
+
     /* in pdp_prep[].scratch[PDP_val].u_val we have collected
        rate*seconds which occurred up to the last run.
        pdp_new[] contains rate*seconds from the latest run.
@@ -1101,18 +1234,18 @@ static int process_all_pdp_st(
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
         if (process_pdp_st(rrd, ds_idx, interval, pre_int, post_int,
-                                elapsed_pdp_st * rrd->stat_head->pdp_step, 
-                                pdp_new, pdp_temp) == -1) {
+                           elapsed_pdp_st * rrd->stat_head->pdp_step,
+                           pdp_new, pdp_temp) == -1) {
             return -1;
         }
 #ifdef DEBUG
         fprintf(stderr, "PDP UPD ds[%lu]\t"
-                        "pdp_temp %10.2f\t"
-                        "new_prep %10.2f\t"
-                        "new_unkn_sec %5lu\n",
-                        ds_idx, pdp_temp[ds_idx],
-                        rrd->pdp_prep[ds_idx].scratch[PDP_val].u_val,
-                        rrd->pdp_prep[ds_idx].scratch[PDP_unkn_sec_cnt].u_cnt);
+                "pdp_temp %10.2f\t"
+                "new_prep %10.2f\t"
+                "new_unkn_sec %5lu\n",
+                ds_idx, pdp_temp[ds_idx],
+                rrd->pdp_prep[ds_idx].scratch[PDP_val].u_val,
+                rrd->pdp_prep[ds_idx].scratch[PDP_unkn_sec_cnt].u_cnt);
 #endif
     }
     return 0;
@@ -1125,17 +1258,25 @@ static int process_all_pdp_st(
  *
  * Returns 0 on success, -1 on error.
  */
-static int process_pdp_st(rrd_t *rrd, unsigned long ds_idx, double interval, 
-    double pre_int, double post_int, long diff_pdp_st, 
-    rrd_value_t *pdp_new, rrd_value_t *pdp_temp) 
+static int process_pdp_st(
+    rrd_t *rrd,
+    unsigned long ds_idx,
+    double interval,
+    double pre_int,
+    double post_int,
+    long diff_pdp_st,
+    rrd_value_t *pdp_new,
+    rrd_value_t *pdp_temp)
 {
-    int i;
+    int       i;
+
     /* update pdp_prep to the current pdp_st. */
     double    pre_unknown = 0.0;
-    unival *scratch = rrd->pdp_prep[ds_idx].scratch;
+    unival   *scratch = rrd->pdp_prep[ds_idx].scratch;
     unsigned long mrhb = rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt;
 
-    rpnstack_t     rpnstack;    /* used for COMPUTE DS */
+    rpnstack_t rpnstack;    /* used for COMPUTE DS */
+
     rpnstack_init(&rpnstack);
 
 
@@ -1147,18 +1288,19 @@ static int process_pdp_st(rrd_t *rrd, unsigned long ds_idx, double interval,
     } else {
         if (isnan(scratch[PDP_val].u_val)) {
             scratch[PDP_val].u_val = 0;
-        } 
+        }
         scratch[PDP_val].u_val += pdp_new[ds_idx] / interval * pre_int;
     }
 
     /* if too much of the pdp_prep is unknown we dump it */
     /* if the interval is larger thatn mrhb we get NAN */
     if ((interval > mrhb) ||
-                    (diff_pdp_st <= (signed)scratch[PDP_unkn_sec_cnt].u_cnt)) {
+        (diff_pdp_st <= (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
         pdp_temp[ds_idx] = DNAN;
     } else {
-        pdp_temp[ds_idx] = scratch[PDP_val].u_val / 
-                ((double) (diff_pdp_st - scratch[PDP_unkn_sec_cnt].u_cnt) - pre_unknown);
+        pdp_temp[ds_idx] = scratch[PDP_val].u_val /
+            ((double) (diff_pdp_st - scratch[PDP_unkn_sec_cnt].u_cnt) -
+             pre_unknown);
     }
 
     /* process CDEF data sources; remember each CDEF DS can
@@ -1166,7 +1308,8 @@ static int process_pdp_st(rrd_t *rrd, unsigned long ds_idx, double interval,
     if (dst_conv(rrd->ds_def[ds_idx].dst) == DST_CDEF) {
         rpnp_t   *rpnp;
 
-        rpnp = rpn_expand((rpn_cdefds_t *)&(rrd->ds_def[ds_idx].par[DS_cdef]));
+        rpnp =
+            rpn_expand((rpn_cdefds_t *) &(rrd->ds_def[ds_idx].par[DS_cdef]));
         /* substitute data values for OP_VARIABLE nodes */
         for (i = 0; rpnp[i].op != OP_END; i++) {
             if (rpnp[i].op == OP_VARIABLE) {
@@ -1206,27 +1349,38 @@ static int process_pdp_st(rrd_t *rrd, unsigned long ds_idx, double interval,
  * Returns 0 on success, -1 on error
  */
 static int update_all_cdp_prep(
-    rrd_t *rrd, unsigned long *rra_step_cnt, unsigned long rra_begin, 
-    rrd_file_t *rrd_file, unsigned long elapsed_pdp_st, unsigned long proc_pdp_cnt,
-    rrd_value_t  **last_seasonal_coef, rrd_value_t  **seasonal_coef,
-    rrd_value_t *pdp_temp, unsigned long *rra_current, 
-    unsigned long *skip_update, int *schedule_smooth)
+    rrd_t *rrd,
+    unsigned long *rra_step_cnt,
+    unsigned long rra_begin,
+    rrd_file_t *rrd_file,
+    unsigned long elapsed_pdp_st,
+    unsigned long proc_pdp_cnt,
+    rrd_value_t **last_seasonal_coef,
+    rrd_value_t **seasonal_coef,
+    rrd_value_t *pdp_temp,
+    unsigned long *rra_current,
+    unsigned long *skip_update,
+    int *schedule_smooth)
 {
     unsigned long rra_idx;
+
     /* index into the CDP scratch array */
     enum cf_en current_cf;
     unsigned long rra_start;
+
     /* number of rows to be updated in an RRA for a data value. */
     unsigned long start_pdp_offset;
 
     rra_start = rra_begin;
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
         current_cf = cf_conv(rrd->rra_def[rra_idx].cf_nam);
-        start_pdp_offset = rrd->rra_def[rra_idx].pdp_cnt - proc_pdp_cnt % rrd->rra_def[rra_idx].pdp_cnt;
+        start_pdp_offset =
+            rrd->rra_def[rra_idx].pdp_cnt -
+            proc_pdp_cnt % rrd->rra_def[rra_idx].pdp_cnt;
         skip_update[rra_idx] = 0;
         if (start_pdp_offset <= elapsed_pdp_st) {
             rra_step_cnt[rra_idx] = (elapsed_pdp_st - start_pdp_offset) /
-                    rrd->rra_def[rra_idx].pdp_cnt + 1;
+                rrd->rra_def[rra_idx].pdp_cnt + 1;
         } else {
             rra_step_cnt[rra_idx] = 0;
         }
@@ -1246,9 +1400,11 @@ static int update_all_cdp_prep(
             /* periodically run a smoother for seasonal effects */
             if (do_schedule_smooth(rrd, rra_idx, elapsed_pdp_st)) {
 #ifdef DEBUG
-                fprintf(stderr, "schedule_smooth: cur_row %lu, elapsed_pdp_st %lu, smooth idx %lu\n",
-                                rrd->rra_ptr[rra_idx].cur_row, elapsed_pdp_st, 
-                                rrd->rra_def[rra_idx].par[RRA_seasonal_smooth_idx].u_cnt);
+                fprintf(stderr,
+                        "schedule_smooth: cur_row %lu, elapsed_pdp_st %lu, smooth idx %lu\n",
+                        rrd->rra_ptr[rra_idx].cur_row, elapsed_pdp_st,
+                        rrd->rra_def[rra_idx].par[RRA_seasonal_smooth_idx].
+                        u_cnt);
 #endif
                 *schedule_smooth = 1;
             }
@@ -1257,12 +1413,15 @@ static int update_all_cdp_prep(
         if (rrd_test_error())
             return -1;
 
-        if (update_cdp_prep(rrd, elapsed_pdp_st, start_pdp_offset, rra_step_cnt, 
-                                rra_idx, pdp_temp, *last_seasonal_coef, *seasonal_coef, 
-                                current_cf) == -1) {
+        if (update_cdp_prep
+            (rrd, elapsed_pdp_st, start_pdp_offset, rra_step_cnt, rra_idx,
+             pdp_temp, *last_seasonal_coef, *seasonal_coef,
+             current_cf) == -1) {
             return -1;
         }
-        rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
+        rra_start +=
+            rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt *
+            sizeof(rrd_value_t);
     }
     return 0;
 }
@@ -1271,14 +1430,17 @@ static int update_all_cdp_prep(
  * Are we due for a smooth? Also increments our position in the burn-in cycle.
  */
 static int do_schedule_smooth(
-    rrd_t *rrd, unsigned long rra_idx,
+    rrd_t *rrd,
+    unsigned long rra_idx,
     unsigned long elapsed_pdp_st)
 {
     unsigned long cdp_idx = rra_idx * (rrd->stat_head->ds_cnt);
     unsigned long cur_row = rrd->rra_ptr[rra_idx].cur_row;
     unsigned long row_cnt = rrd->rra_def[rra_idx].row_cnt;
-    unsigned long seasonal_smooth_idx = rrd->rra_def[rra_idx].par[RRA_seasonal_smooth_idx].u_cnt;
-    unsigned long *init_seasonal = &(rrd->cdp_prep[cdp_idx].scratch[CDP_init_seasonal].u_cnt);
+    unsigned long seasonal_smooth_idx =
+        rrd->rra_def[rra_idx].par[RRA_seasonal_smooth_idx].u_cnt;
+    unsigned long *init_seasonal =
+        &(rrd->cdp_prep[cdp_idx].scratch[CDP_init_seasonal].u_cnt);
 
     /* Need to use first cdp parameter buffer to track burnin (burnin requires
      * a specific smoothing schedule).  The CDP_init_seasonal parameter is
@@ -1291,12 +1453,12 @@ static int do_schedule_smooth(
             /* here elapsed_pdp_st = rra_step_cnt[rra_idx] because of 1-1 mapping
              * between PDP and CDP */
             return (cur_row + elapsed_pdp_st >= seasonal_smooth_idx);
-        } 
+        }
         /* can't rely on negative numbers because we are working with
          * unsigned values */
         return (cur_row + elapsed_pdp_st >= row_cnt
-                        && cur_row + elapsed_pdp_st >= row_cnt + seasonal_smooth_idx);
-    } 
+                && cur_row + elapsed_pdp_st >= row_cnt + seasonal_smooth_idx);
+    }
     /* mark off one of the burn-in cycles */
     return (cur_row + elapsed_pdp_st >= row_cnt && ++(*init_seasonal));
 }
@@ -1308,17 +1470,18 @@ static int do_schedule_smooth(
  * Returns 0 on success, -1 on error.
  */
 static int update_cdp_prep(
-    rrd_t *rrd, 
-    unsigned long elapsed_pdp_st, 
-    unsigned long start_pdp_offset, 
-    unsigned long *rra_step_cnt, 
-    int rra_idx, 
-    rrd_value_t *pdp_temp, 
-    rrd_value_t *last_seasonal_coef, 
-    rrd_value_t *seasonal_coef, 
-    int current_cf) 
+    rrd_t *rrd,
+    unsigned long elapsed_pdp_st,
+    unsigned long start_pdp_offset,
+    unsigned long *rra_step_cnt,
+    int rra_idx,
+    rrd_value_t *pdp_temp,
+    rrd_value_t *last_seasonal_coef,
+    rrd_value_t *seasonal_coef,
+    int current_cf)
 {
     unsigned long ds_idx, cdp_idx;
+
     /* update CDP_PREP areas */
     /* loop over data soures within each RRA */
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
@@ -1326,23 +1489,25 @@ static int update_cdp_prep(
         cdp_idx = rra_idx * rrd->stat_head->ds_cnt + ds_idx;
 
         if (rrd->rra_def[rra_idx].pdp_cnt > 1) {
-            update_cdp(rrd->cdp_prep[cdp_idx].scratch, current_cf, 
-                            pdp_temp[ds_idx], rra_step_cnt[rra_idx],
-                            elapsed_pdp_st, start_pdp_offset,
-                            rrd->rra_def[rra_idx].pdp_cnt,
-                            rrd->rra_def[rra_idx].par[RRA_cdp_xff_val].u_val, rra_idx, ds_idx);
-        } else { 
+            update_cdp(rrd->cdp_prep[cdp_idx].scratch, current_cf,
+                       pdp_temp[ds_idx], rra_step_cnt[rra_idx],
+                       elapsed_pdp_st, start_pdp_offset,
+                       rrd->rra_def[rra_idx].pdp_cnt,
+                       rrd->rra_def[rra_idx].par[RRA_cdp_xff_val].u_val,
+                       rra_idx, ds_idx);
+        } else {
             /* Nothing to consolidate if there's one PDP per CDP. However, if
              * we've missed some PDPs, let's update null counters etc. */
             if (elapsed_pdp_st > 2) {
-                reset_cdp(rrd, elapsed_pdp_st, pdp_temp, last_seasonal_coef, seasonal_coef, 
-                                rra_idx, ds_idx, cdp_idx, current_cf);
+                reset_cdp(rrd, elapsed_pdp_st, pdp_temp, last_seasonal_coef,
+                          seasonal_coef, rra_idx, ds_idx, cdp_idx,
+                          current_cf);
             }
         }
 
         if (rrd_test_error())
             return -1;
-    }       /* endif data sources loop */
+    }                   /* endif data sources loop */
     return 0;
 }
 
@@ -1359,12 +1524,13 @@ static void update_cdp(
     unsigned long start_pdp_offset,
     unsigned long pdp_cnt,
     rrd_value_t xff,
-    int i, int ii)
+    int i,
+    int ii)
 {
     /* shorthand variables */
-    rrd_value_t            *cdp_val = &scratch[CDP_val].u_val;
-    rrd_value_t    *cdp_primary_val = &scratch[CDP_primary_val].u_val;
-    rrd_value_t  *cdp_secondary_val = &scratch[CDP_secondary_val].u_val;
+    rrd_value_t *cdp_val = &scratch[CDP_val].u_val;
+    rrd_value_t *cdp_primary_val = &scratch[CDP_primary_val].u_val;
+    rrd_value_t *cdp_secondary_val = &scratch[CDP_secondary_val].u_val;
     unsigned long *cdp_unkn_pdp_cnt = &scratch[CDP_unkn_pdp_cnt].u_cnt;
 
     if (rra_step_cnt) {
@@ -1386,36 +1552,40 @@ static void update_cdp(
         if (*cdp_unkn_pdp_cnt > pdp_cnt * xff) {
             *cdp_primary_val = DNAN;
             if (current_cf == CF_AVERAGE) {
-                *cdp_val = initialize_average_carry_over(pdp_temp_val, elapsed_pdp_st,
-                                start_pdp_offset, pdp_cnt);
+                *cdp_val =
+                    initialize_average_carry_over(pdp_temp_val,
+                                                  elapsed_pdp_st,
+                                                  start_pdp_offset, pdp_cnt);
             } else {
                 *cdp_val = pdp_temp_val;
             }
         } else {
-            initialize_cdp_val(scratch, current_cf, pdp_temp_val, 
-                            elapsed_pdp_st, start_pdp_offset, pdp_cnt);
-        }   /* endif meets xff value requirement for a valid value */
+            initialize_cdp_val(scratch, current_cf, pdp_temp_val,
+                               elapsed_pdp_st, start_pdp_offset, pdp_cnt);
+        }               /* endif meets xff value requirement for a valid value */
         /* initialize carry over CDP_unkn_pdp_cnt, this must after CDP_primary_val
          * is set because CDP_unkn_pdp_cnt is required to compute that value. */
         if (isnan(pdp_temp_val))
             *cdp_unkn_pdp_cnt = (elapsed_pdp_st - start_pdp_offset) % pdp_cnt;
         else
             *cdp_unkn_pdp_cnt = 0;
-    } else {    /* rra_step_cnt[i]  == 0 */
+    } else {            /* rra_step_cnt[i]  == 0 */
 
 #ifdef DEBUG
         if (isnan(*cdp_val)) {
             fprintf(stderr, "schedule CDP_val update, RRA %d DS %d, DNAN\n",
-                            i, ii);
+                    i, ii);
         } else {
             fprintf(stderr, "schedule CDP_val update, RRA %d DS %d, %10.2f\n",
-                            i, ii, *cdp_val);
+                    i, ii, *cdp_val);
         }
 #endif
         if (isnan(pdp_temp_val)) {
             *cdp_unkn_pdp_cnt += elapsed_pdp_st;
         } else {
-            *cdp_val = calculate_cdp_val(*cdp_val, pdp_temp_val, elapsed_pdp_st, current_cf, i, ii);
+            *cdp_val =
+                calculate_cdp_val(*cdp_val, pdp_temp_val, elapsed_pdp_st,
+                                  current_cf, i, ii);
         }
     }
 }
@@ -1425,70 +1595,72 @@ static void update_cdp(
  * on the type of consolidation function.
  */
 static void initialize_cdp_val(
-    unival *scratch, 
+    unival *scratch,
     int current_cf,
     rrd_value_t pdp_temp_val,
-    unsigned long elapsed_pdp_st, 
+    unsigned long elapsed_pdp_st,
     unsigned long start_pdp_offset,
-    unsigned long pdp_cnt) 
+    unsigned long pdp_cnt)
 {
     rrd_value_t cum_val, cur_val;
 
     switch (current_cf) {
-            case CF_AVERAGE:
-                    cum_val = IFDNAN(scratch[CDP_val].u_val, 0.0);
-                    cur_val = IFDNAN(pdp_temp_val, 0.0);
-                    scratch[CDP_primary_val].u_val =
-                            (cum_val + cur_val * start_pdp_offset) /
-                            (pdp_cnt - scratch[CDP_unkn_pdp_cnt].u_cnt);
-                    scratch[CDP_val].u_val = initialize_average_carry_over(
-                                    pdp_temp_val, elapsed_pdp_st, start_pdp_offset, pdp_cnt);
-                    break;
-            case CF_MAXIMUM:
-                    cum_val = IFDNAN(scratch[CDP_val].u_val, -DINF);
-                    cur_val = IFDNAN(pdp_temp_val, -DINF);
+    case CF_AVERAGE:
+        cum_val = IFDNAN(scratch[CDP_val].u_val, 0.0);
+        cur_val = IFDNAN(pdp_temp_val, 0.0);
+        scratch[CDP_primary_val].u_val =
+            (cum_val + cur_val * start_pdp_offset) /
+            (pdp_cnt - scratch[CDP_unkn_pdp_cnt].u_cnt);
+        scratch[CDP_val].u_val =
+            initialize_average_carry_over(pdp_temp_val, elapsed_pdp_st,
+                                          start_pdp_offset, pdp_cnt);
+        break;
+    case CF_MAXIMUM:
+        cum_val = IFDNAN(scratch[CDP_val].u_val, -DINF);
+        cur_val = IFDNAN(pdp_temp_val, -DINF);
 #if 0
 #ifdef DEBUG
-                    if (isnan(scratch[CDP_val].u_val) && isnan(pdp_temp)) {
-                        fprintf(stderr,
-                                        "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!",
-                                        i, ii);
-                        exit(-1);
-                    }
+        if (isnan(scratch[CDP_val].u_val) && isnan(pdp_temp)) {
+            fprintf(stderr,
+                    "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!",
+                    i, ii);
+            exit(-1);
+        }
 #endif
 #endif
-                    if (cur_val > cum_val)
-                        scratch[CDP_primary_val].u_val = cur_val;
-                    else
-                        scratch[CDP_primary_val].u_val = cum_val;
-                    /* initialize carry over value */
-                    scratch[CDP_val].u_val = pdp_temp_val;
-                    break;
-            case CF_MINIMUM:
-                    cum_val = IFDNAN(scratch[CDP_val].u_val, DINF);
-                    cur_val = IFDNAN(pdp_temp_val, DINF);
+        if (cur_val > cum_val)
+            scratch[CDP_primary_val].u_val = cur_val;
+        else
+            scratch[CDP_primary_val].u_val = cum_val;
+        /* initialize carry over value */
+        scratch[CDP_val].u_val = pdp_temp_val;
+        break;
+    case CF_MINIMUM:
+        cum_val = IFDNAN(scratch[CDP_val].u_val, DINF);
+        cur_val = IFDNAN(pdp_temp_val, DINF);
 #if 0
 #ifdef DEBUG
-                    if (isnan(scratch[CDP_val].u_val) && isnan(pdp_temp)) {
-                        fprintf(stderr, "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!",
-                                        i, ii);
-                        exit(-1);
-                    }
+        if (isnan(scratch[CDP_val].u_val) && isnan(pdp_temp)) {
+            fprintf(stderr,
+                    "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!", i,
+                    ii);
+            exit(-1);
+        }
 #endif
 #endif
-                    if (cur_val < cum_val)
-                        scratch[CDP_primary_val].u_val = cur_val;
-                    else
-                        scratch[CDP_primary_val].u_val = cum_val;
-                    /* initialize carry over value */
-                    scratch[CDP_val].u_val = pdp_temp_val;
-                    break;
-            case CF_LAST:
-            default:
-                    scratch[CDP_primary_val].u_val = pdp_temp_val;
-                    /* initialize carry over value */
-                    scratch[CDP_val].u_val = pdp_temp_val;
-                    break;
+        if (cur_val < cum_val)
+            scratch[CDP_primary_val].u_val = cur_val;
+        else
+            scratch[CDP_primary_val].u_val = cum_val;
+        /* initialize carry over value */
+        scratch[CDP_val].u_val = pdp_temp_val;
+        break;
+    case CF_LAST:
+    default:
+        scratch[CDP_primary_val].u_val = pdp_temp_val;
+        /* initialize carry over value */
+        scratch[CDP_val].u_val = pdp_temp_val;
+        break;
     }
 }
 
@@ -1499,56 +1671,58 @@ static void initialize_cdp_val(
  */
 static void reset_cdp(
     rrd_t *rrd,
-    unsigned long elapsed_pdp_st, 
+    unsigned long elapsed_pdp_st,
     rrd_value_t *pdp_temp,
     rrd_value_t *last_seasonal_coef,
     rrd_value_t *seasonal_coef,
-    int rra_idx, int ds_idx, int cdp_idx, 
+    int rra_idx,
+    int ds_idx,
+    int cdp_idx,
     enum cf_en current_cf)
 {
-    unival *scratch = rrd->cdp_prep[cdp_idx].scratch;
+    unival   *scratch = rrd->cdp_prep[cdp_idx].scratch;
 
     switch (current_cf) {
-            case CF_AVERAGE:
-            default:
-                    scratch[CDP_primary_val].u_val = pdp_temp[ds_idx];
-                    scratch[CDP_secondary_val].u_val = pdp_temp[ds_idx];
-                    break;
-            case CF_SEASONAL:
-            case CF_DEVSEASONAL:
-                    /* need to update cached seasonal values, so they are consistent
-                     * with the bulk update */
-                    /* WARNING: code relies on the fact that CDP_hw_last_seasonal and
-                     * CDP_last_deviation are the same. */
-                    scratch[CDP_hw_last_seasonal].u_val = last_seasonal_coef[ds_idx];
-                    scratch[CDP_hw_seasonal].u_val = seasonal_coef[ds_idx];
-                    break;
-            case CF_HWPREDICT:
-            case CF_MHWPREDICT:
-                    /* need to update the null_count and last_null_count.
-                     * even do this for non-DNAN pdp_temp because the
-                     * algorithm is not learning from batch updates. */
-                    scratch[CDP_null_count].u_cnt += elapsed_pdp_st;
-                    scratch[CDP_last_null_count].u_cnt += elapsed_pdp_st - 1;
-                    /* fall through */
-            case CF_DEVPREDICT:
-                    scratch[CDP_primary_val].u_val = DNAN;
-                    scratch[CDP_secondary_val].u_val = DNAN;
-                    break;
-            case CF_FAILURES:
-                    /* do not count missed bulk values as failures */
-                    scratch[CDP_primary_val].u_val = 0;
-                    scratch[CDP_secondary_val].u_val = 0;
-                    /* need to reset violations buffer.
-                     * could do this more carefully, but for now, just
-                     * assume a bulk update wipes away all violations. */
-                    erase_violations(rrd, cdp_idx, rra_idx);
-                    break;
+    case CF_AVERAGE:
+    default:
+        scratch[CDP_primary_val].u_val = pdp_temp[ds_idx];
+        scratch[CDP_secondary_val].u_val = pdp_temp[ds_idx];
+        break;
+    case CF_SEASONAL:
+    case CF_DEVSEASONAL:
+        /* need to update cached seasonal values, so they are consistent
+         * with the bulk update */
+        /* WARNING: code relies on the fact that CDP_hw_last_seasonal and
+         * CDP_last_deviation are the same. */
+        scratch[CDP_hw_last_seasonal].u_val = last_seasonal_coef[ds_idx];
+        scratch[CDP_hw_seasonal].u_val = seasonal_coef[ds_idx];
+        break;
+    case CF_HWPREDICT:
+    case CF_MHWPREDICT:
+        /* need to update the null_count and last_null_count.
+         * even do this for non-DNAN pdp_temp because the
+         * algorithm is not learning from batch updates. */
+        scratch[CDP_null_count].u_cnt += elapsed_pdp_st;
+        scratch[CDP_last_null_count].u_cnt += elapsed_pdp_st - 1;
+        /* fall through */
+    case CF_DEVPREDICT:
+        scratch[CDP_primary_val].u_val = DNAN;
+        scratch[CDP_secondary_val].u_val = DNAN;
+        break;
+    case CF_FAILURES:
+        /* do not count missed bulk values as failures */
+        scratch[CDP_primary_val].u_val = 0;
+        scratch[CDP_secondary_val].u_val = 0;
+        /* need to reset violations buffer.
+         * could do this more carefully, but for now, just
+         * assume a bulk update wipes away all violations. */
+        erase_violations(rrd, cdp_idx, rra_idx);
+        break;
     }
 }
 
 static rrd_value_t initialize_average_carry_over(
-    rrd_value_t pdp_temp_val, 
+    rrd_value_t pdp_temp_val,
     unsigned long elapsed_pdp_st,
     unsigned long start_pdp_offset,
     unsigned long pdp_cnt)
@@ -1556,7 +1730,7 @@ static rrd_value_t initialize_average_carry_over(
     /* initialize carry over value */
     if (isnan(pdp_temp_val)) {
         return DNAN;
-    } 
+    }
     return pdp_temp_val * ((elapsed_pdp_st - start_pdp_offset) % pdp_cnt);
 }
 
@@ -1570,7 +1744,9 @@ static rrd_value_t calculate_cdp_val(
     rrd_value_t cdp_val,
     rrd_value_t pdp_temp_val,
     unsigned long elapsed_pdp_st,
-    int current_cf, int i, int ii)
+    int current_cf,
+    int i,
+    int ii)
 {
     if (isnan(cdp_val)) {
         if (current_cf == CF_AVERAGE) {
@@ -1578,11 +1754,11 @@ static rrd_value_t calculate_cdp_val(
         }
 #ifdef DEBUG
         fprintf(stderr, "Initialize CDP_val for RRA %d DS %d: %10.2f\n",
-                        i, ii, pdp_temp_val);
+                i, ii, pdp_temp_val);
 #endif
         return pdp_temp_val;
-    } 
-    if (current_cf == CF_AVERAGE) 
+    }
+    if (current_cf == CF_AVERAGE)
         return cdp_val + pdp_temp_val * elapsed_pdp_st;
     if (current_cf == CF_MINIMUM)
         return (pdp_temp_val < cdp_val) ? pdp_temp_val : cdp_val;
@@ -1599,9 +1775,13 @@ static rrd_value_t calculate_cdp_val(
  * Return 0 on success, -1 on error.
  */
 static int update_aberrant_cdps(
-    rrd_t *rrd, rrd_file_t *rrd_file, unsigned long rra_begin,
-    unsigned long *rra_current, unsigned long elapsed_pdp_st, 
-    rrd_value_t *pdp_temp, rrd_value_t  **seasonal_coef) 
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long rra_begin,
+    unsigned long *rra_current,
+    unsigned long elapsed_pdp_st,
+    rrd_value_t *pdp_temp,
+    rrd_value_t **seasonal_coef)
 {
     unsigned long rra_idx, ds_idx, j;
 
@@ -1609,12 +1789,12 @@ static int update_aberrant_cdps(
      * are assigned to the first CDP to be generated
      * since the last update. */
     unsigned short scratch_idx;
-    unsigned long  rra_start;
-    enum cf_en     current_cf;
+    unsigned long rra_start;
+    enum cf_en current_cf;
 
     /* this loop is only entered if elapsed_pdp_st < 3 */
     for (j = elapsed_pdp_st, scratch_idx = CDP_primary_val;
-                    j > 0 && j < 3; j--, scratch_idx = CDP_secondary_val) {
+         j > 0 && j < 3; j--, scratch_idx = CDP_secondary_val) {
         rra_start = rra_begin;
         for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
             if (rrd->rra_def[rra_idx].pdp_cnt == 1) {
@@ -1634,13 +1814,13 @@ static int update_aberrant_cdps(
                 /* loop over data soures within each RRA */
                 for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
                     update_aberrant_CF(rrd, pdp_temp[ds_idx], current_cf,
-                                    rra_idx * (rrd->stat_head->ds_cnt) + ds_idx,
-                                    rra_idx, ds_idx, scratch_idx, *seasonal_coef);
+                                       rra_idx * (rrd->stat_head->ds_cnt) +
+                                       ds_idx, rra_idx, ds_idx, scratch_idx,
+                                       *seasonal_coef);
                 }
             }
-            rra_start += rrd->rra_def[rra_idx].row_cnt 
-                    * rrd->stat_head->ds_cnt 
-                    * sizeof(rrd_value_t);
+            rra_start += rrd->rra_def[rra_idx].row_cnt
+                * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
         }
     }
     return 0;
@@ -1654,17 +1834,17 @@ static int update_aberrant_cdps(
  * Return 0 on success, -1 on error.
  */
 static int write_to_rras(
-    rrd_t *rrd, 
-    rrd_file_t *rrd_file, 
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
     unsigned long *rra_step_cnt,
-    unsigned long rra_begin, 
+    unsigned long rra_begin,
     unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
     info_t **pcdp_summary)
 {
     unsigned long rra_idx;
-    unsigned long rra_start;    
+    unsigned long rra_start;
     unsigned long rra_pos_tmp;  /* temporary byte pointer. */
     time_t    rra_time = 0; /* time of update for a RRA */
 
@@ -1678,12 +1858,13 @@ static int write_to_rras(
             fprintf(stderr, "  -- RRA Preseek %ld\n", rrd_file->pos);
 #endif
             rrd->rra_ptr[rra_idx].cur_row++;
-            if (rrd->rra_ptr[rra_idx].cur_row >= rrd->rra_def[rra_idx].row_cnt)
-                rrd->rra_ptr[rra_idx].cur_row = 0; /* wrap around */
+            if (rrd->rra_ptr[rra_idx].cur_row >=
+                rrd->rra_def[rra_idx].row_cnt)
+                rrd->rra_ptr[rra_idx].cur_row = 0;  /* wrap around */
             /* position on the first row */
             rra_pos_tmp = rra_start +
-                    (rrd->stat_head->ds_cnt) * (rrd->rra_ptr[rra_idx].cur_row) *
-                    sizeof(rrd_value_t);
+                (rrd->stat_head->ds_cnt) * (rrd->rra_ptr[rra_idx].cur_row) *
+                sizeof(rrd_value_t);
             if (rra_pos_tmp != *rra_current) {
                 if (rrd_seek(rrd_file, rra_pos_tmp, SEEK_SET) != 0) {
                     rrd_set_error("seek error in rrd");
@@ -1697,23 +1878,28 @@ static int write_to_rras(
             if (!skip_update[rra_idx]) {
                 if (*pcdp_summary != NULL) {
                     rra_time = (current_time - current_time
-                                    % (rrd->rra_def[rra_idx].pdp_cnt *
-                                            rrd->stat_head->pdp_step))
-                            - ((rra_step_cnt[rra_idx] - 1) * rrd->rra_def[rra_idx].pdp_cnt *
-                                            rrd->stat_head->pdp_step);
+                                % (rrd->rra_def[rra_idx].pdp_cnt *
+                                   rrd->stat_head->pdp_step))
+                        -
+                        ((rra_step_cnt[rra_idx] -
+                          1) * rrd->rra_def[rra_idx].pdp_cnt *
+                         rrd->stat_head->pdp_step);
                 }
-                if (write_RRA_row(rrd_file, rrd, rra_idx, rra_current, CDP_primary_val,
-                                        pcdp_summary, rra_time) == -1)
+                if (write_RRA_row
+                    (rrd_file, rrd, rra_idx, rra_current, CDP_primary_val,
+                     pcdp_summary, rra_time) == -1)
                     return -1;
             }
 
             /* write other rows of the bulk update, if any */
             for (; rra_step_cnt[rra_idx] > 1; rra_step_cnt[rra_idx]--) {
-                if (++rrd->rra_ptr[rra_idx].cur_row == rrd->rra_def[rra_idx].row_cnt) {
+                if (++rrd->rra_ptr[rra_idx].cur_row ==
+                    rrd->rra_def[rra_idx].row_cnt) {
 #ifdef DEBUG
                     fprintf(stderr,
-                                    "Wraparound for RRA %s, %lu updates left\n",
-                                    rrd->rra_def[rra_idx].cf_nam, rra_step_cnt[rra_idx] - 1);
+                            "Wraparound for RRA %s, %lu updates left\n",
+                            rrd->rra_def[rra_idx].cf_nam,
+                            rra_step_cnt[rra_idx] - 1);
 #endif
                     /* wrap */
                     rrd->rra_ptr[rra_idx].cur_row = 0;
@@ -1724,28 +1910,30 @@ static int write_to_rras(
                     }
 #ifdef DEBUG
                     fprintf(stderr, "  -- Wraparound Postseek %ld\n",
-                                    rrd_file->pos);
+                            rrd_file->pos);
 #endif
                     *rra_current = rra_start;
                 }
                 if (!skip_update[rra_idx]) {
                     if (*pcdp_summary != NULL) {
                         rra_time = (current_time - current_time
-                                        % (rrd->rra_def[rra_idx].pdp_cnt *
-                                                rrd->stat_head->pdp_step))
-                                -
-                                ((rra_step_cnt[rra_idx] - 2) * rrd->rra_def[rra_idx].pdp_cnt *
-                                 rrd->stat_head->pdp_step);
+                                    % (rrd->rra_def[rra_idx].pdp_cnt *
+                                       rrd->stat_head->pdp_step))
+                            -
+                            ((rra_step_cnt[rra_idx] -
+                              2) * rrd->rra_def[rra_idx].pdp_cnt *
+                             rrd->stat_head->pdp_step);
                     }
                     if (write_RRA_row(rrd_file, rrd, rra_idx, rra_current,
-                                            CDP_secondary_val, pcdp_summary, rra_time) == -1)
+                                      CDP_secondary_val, pcdp_summary,
+                                      rra_time) == -1)
                         return -1;
                 }
             }
         }
         rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt *
-                sizeof(rrd_value_t);
-    }           /* RRA LOOP */
+            sizeof(rrd_value_t);
+    }                   /* RRA LOOP */
 
     return 0;
 }
@@ -1779,14 +1967,18 @@ static int write_RRA_row(
             iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
             /* append info to the return hash */
             *pcdp_summary = info_push(*pcdp_summary,
-                     sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]", rra_time,
-                           rrd->rra_def[rra_idx].cf_nam,
-                           rrd->rra_def[rra_idx].pdp_cnt,
-                           rrd->ds_def[ds_idx].ds_nam), RD_I_VAL, iv);
+                                      sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
+                                                    rra_time,
+                                                    rrd->rra_def[rra_idx].
+                                                    cf_nam,
+                                                    rrd->rra_def[rra_idx].
+                                                    pdp_cnt,
+                                                    rrd->ds_def[ds_idx].
+                                                    ds_nam), RD_I_VAL, iv);
         }
         if (rrd_write(rrd_file,
-             &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val),
-             sizeof(rrd_value_t)) != sizeof(rrd_value_t)) {
+                      &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].
+                        u_val), sizeof(rrd_value_t)) != sizeof(rrd_value_t)) {
             rrd_set_error("writing rrd: %s", rrd_strerror(errno));
             return -1;
         }
@@ -1801,15 +1993,16 @@ static int write_RRA_row(
  * Returns 0 on success, -1 otherwise
  */
 static int smooth_all_rras(
-    rrd_t *rrd, 
-    rrd_file_t *rrd_file, 
-    unsigned long rra_begin) 
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    unsigned long rra_begin)
 {
     unsigned long rra_start = rra_begin;
     unsigned long rra_idx;
+
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; ++rra_idx) {
         if (cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_DEVSEASONAL ||
-                        cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
+            cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
 #ifdef DEBUG
             fprintf(stderr, "Running smoother for rra %lu\n", rra_idx);
 #endif
@@ -1818,7 +2011,7 @@ static int smooth_all_rras(
                 return -1;
         }
         rra_start += rrd->rra_def[rra_idx].row_cnt
-                * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
+            * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
     }
     return 0;
 }
@@ -1830,9 +2023,11 @@ static int smooth_all_rras(
  * Returns 0 on success, -1 otherwise
  */
 static int write_changes_to_disk(
-    rrd_t *rrd, rrd_file_t *rrd_file, int version) 
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    int version)
 {
-    /* we just need to write back the live header portion now*/
+    /* we just need to write back the live header portion now */
     if (rrd_seek(rrd_file, (sizeof(stat_head_t)
                             + sizeof(ds_def_t) * rrd->stat_head->ds_cnt
                             + sizeof(rra_def_t) * rrd->stat_head->rra_cnt),

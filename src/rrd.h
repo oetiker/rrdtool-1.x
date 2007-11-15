@@ -66,8 +66,10 @@ extern    "C" {
 #ifndef DINF
 # define DINF set_to_DINF()
 #endif
-double set_to_DNAN(void);
-double set_to_DINF(void);
+    double    set_to_DNAN(
+    void);
+    double    set_to_DINF(
+    void);
 /* end of rrd_nan_inf.h */
 
 /* Transplanted from rrd_format.h */

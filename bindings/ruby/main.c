@@ -198,6 +198,7 @@ VALUE rb_rrd_info(
     string_arr_delete(a);
 
     RRD_CHECK_ERROR result = rb_hash_new();
+
     while (data) {
         VALUE     key = rb_str_new2(data->key);
 
