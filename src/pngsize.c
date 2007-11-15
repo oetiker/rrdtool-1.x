@@ -31,10 +31,14 @@ int PngSize(
 #undef jmpbuf
 #endif
 
-    if (setjmp(png_read_ptr->jmpbuf)) {
-        png_destroy_read_struct(&png_read_ptr, &info_ptr, (png_infopp) NULL);
-        return 0;
-    }
+#ifndef png_jmpbuf
+#  define png_jmpbuf(png_ptr)   ((png_ptr)->jmpbuf)
+#endif
+
+  if (setjmp(png_jmpbuf(png_read_ptr))){
+    png_destroy_read_struct(&png_read_ptr, &info_ptr, (png_infopp)NULL);
+    return 0;
+  }
 
     png_init_io(png_read_ptr, fd);
     png_read_info(png_read_ptr, info_ptr);
