@@ -279,7 +279,7 @@ int rrd_update(
     int       option_index = 0;
     int       opt;
     char     *tmplt = NULL;
-    int       rc;
+    int       rc = -1;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -297,19 +297,19 @@ int rrd_update(
 
         case '?':
             rrd_set_error("unknown option '%s'", argv[optind - 1]);
-            return (-1);
+            goto out;
         }
     }
 
     /* need at least 2 arguments: filename, data. */
     if (argc - optind < 2) {
         rrd_set_error("Not enough arguments");
-
-        return -1;
+        goto out;
     }
 
     rc = rrd_update_r(argv[optind], tmplt,
                       argc - optind - 1, (const char **) (argv + optind + 1));
+out:
     free(tmplt);
     return rc;
 }
@@ -510,27 +510,27 @@ static int allocate_data_structures(
     unsigned i, ii;
     if ((*updvals = (char **)malloc(sizeof(char *) 
                            * (rrd->stat_head->ds_cnt + 1))) == NULL) {
-        rrd_set_error("allocating updvals pointer array");
+        rrd_set_error("allocating updvals pointer array.");
         return -1;
     }
     if ((*pdp_temp = (rrd_value_t *)malloc(sizeof(rrd_value_t)
                            * rrd->stat_head->ds_cnt)) == NULL) {
-        rrd_set_error("allocating pdp_temp ...");
+        rrd_set_error("allocating pdp_temp.");
         goto err_free_updvals;
     }
     if ((*skip_update = (unsigned long *)malloc(sizeof(unsigned long)
                            * rrd->stat_head->rra_cnt)) == NULL) {
-        rrd_set_error("allocating skip_update...");
+        rrd_set_error("allocating skip_update.");
         goto err_free_pdp_temp;
     }
     if ((*tmpl_idx = (long *)malloc(sizeof(unsigned long)
                            * (rrd->stat_head->ds_cnt + 1))) == NULL) {
-        rrd_set_error("allocating tmpl_idx ...");
+        rrd_set_error("allocating tmpl_idx.");
         goto err_free_skip_update;
     }
     if ((*rra_step_cnt = (unsigned long *)malloc(sizeof(unsigned long) 
                            * (rrd->stat_head->rra_cnt))) == NULL) {
-        rrd_set_error("allocating rra_step_cnt...");
+        rrd_set_error("allocating rra_step_cnt.");
         goto err_free_tmpl_idx;
     }
 
@@ -555,7 +555,7 @@ static int allocate_data_structures(
 
     if ((*pdp_new = (rrd_value_t *)malloc(sizeof(rrd_value_t)
                           * rrd->stat_head->ds_cnt)) == NULL) {
-        rrd_set_error("allocating pdp_new ...");
+        rrd_set_error("allocating pdp_new.");
         goto err_free_rra_step_cnt;
     }
 
@@ -585,13 +585,15 @@ static int parse_template(
 {
     char          *dsname, *tmplt_copy;
     unsigned int   tmpl_len, i;
+    int ret = 0;
 
     *tmpl_cnt = 1;   /* the first entry is the time */
 
     /* we should work on a writeable copy here */
     if ((tmplt_copy = strdup(tmplt)) == NULL) {
         rrd_set_error("error copying tmplt '%s'", tmplt);
-        return -1;
+        ret = -1;
+	goto out;
     }
 
     dsname = tmplt_copy;
@@ -601,21 +603,23 @@ static int parse_template(
             tmplt_copy[i] = '\0';
             if (*tmpl_cnt > rrd->stat_head->ds_cnt) {
                 rrd_set_error("tmplt contains more DS definitions than RRD");
-                free(tmplt_copy);
-                return -1;
+                ret = -1;
+                goto out_free_tmpl_copy;
             }
             if ((tmpl_idx[(*tmpl_cnt)++] = ds_match(rrd, dsname)+1) == 0) {
                 rrd_set_error("unknown DS name '%s'", dsname);
-                free(tmplt_copy);
-                return -1;
+                ret = -1;
+                goto out_free_tmpl_copy;
             } 
             /* go to the next entry on the tmplt_copy */
             if (i < tmpl_len)
                 dsname = &tmplt_copy[i+1];
         }
     }
+out_free_tmpl_copy:
     free(tmplt_copy);
-    return 0;
+out:
+    return ret;
 }
 
 /*
