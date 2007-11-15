@@ -182,8 +182,7 @@ rrd_file_t *rrd_open(
     }
 #endif
 
-    __rrd_read(rrd->stat_head, stat_head_t,
-               1);
+    __rrd_read(rrd->stat_head, stat_head_t, 1);
 
     /* lets do some test if we are on track ... */
     if (memcmp(rrd->stat_head->cookie, RRD_COOKIE, sizeof(RRD_COOKIE)) != 0) {
@@ -268,7 +267,7 @@ rrd_file_t *rrd_open(
 }
 
 
-/* Close a reference to an rrd_file.  */
+/* Print list of in-core pages of a the current rrd_file.  */
 static
 void mincore_print(
     rrd_file_t *rrd_file,
@@ -348,7 +347,8 @@ void rrd_dontneed(
 #endif
         }
         dontneed_start = active_block;
-        /* do not relase 'hot' block if update for this RAA will occure within 10 minutes */
+        /* do not release 'hot' block if update for this RAA will occur
+	 * within 10 minutes */
         if (rrd->stat_head->pdp_step * rrd->rra_def[i].pdp_cnt -
             rrd->live_head->last_up % (rrd->stat_head->pdp_step *
                                        rrd->rra_def[i].pdp_cnt) < 10 * 60) {
@@ -415,8 +415,8 @@ off_t rrd_seek(
         rrd_set_error("lseek: %s", rrd_strerror(errno));
     rrd_file->pos = ret;
 #endif
-//XXX: mimic fseek, which returns 0 upon success
-    return ret == -1;   //XXX: or just ret to mimic lseek
+    /* mimic fseek, which returns 0 upon success */
+    return ret < 0;   //XXX: or just ret to mimic lseek
 }
 
 
@@ -429,7 +429,7 @@ inline off_t rrd_tell(
 }
 
 
-/* read count bytes into buffer buf, starting at rrd_file->pos.
+/* Read count bytes into buffer buf, starting at rrd_file->pos.
  * Returns the number of bytes read or <0 on error.  */
 
 inline ssize_t rrd_read(
@@ -466,7 +466,7 @@ inline ssize_t rrd_read(
 }
 
 
-/* write count bytes from buffer buf to the current position
+/* Write count bytes from buffer buf to the current position
  * rrd_file->pos of rrd_file->fd.
  * Returns the number of bytes written or <0 on error.  */
 
