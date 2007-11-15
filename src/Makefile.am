@@ -52,7 +52,7 @@ noinst_HEADERS = \
 	rrd_getopt.h parsetime.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
-	rrd_nan_inf.h fnv.h rrd_graph.h \
+	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
 
 noinst_LTLIBRARIES        = librrdupd.la

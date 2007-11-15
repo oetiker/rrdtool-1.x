@@ -57,6 +57,19 @@ extern    "C" {
 #include <time.h>
 #include <stdio.h>      /* for FILE */
 
+
+/* Formerly rrd_nan_inf.h */
+#ifndef DNAN
+# define DNAN set_to_DNAN()
+#endif
+
+#ifndef DINF
+# define DINF set_to_DINF()
+#endif
+double set_to_DNAN(void);
+double set_to_DINF(void);
+/* end of rrd_nan_inf.h */
+
 /* Transplanted from rrd_format.h */
     typedef double rrd_value_t; /* the data storage type is
                                  * double */
