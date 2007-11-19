@@ -830,7 +830,7 @@ static int gfx_save_png (art_u8 *buffer, FILE *fp,  long width, long height, lon
                 PNG_FILTER_TYPE_DEFAULT);
 
   text[0].key = "Software";
-  text[0].text = "RRDtool, Tobias Oetiker <tobi@oetike.ch>, http://tobi.oetiker.ch";
+  text[0].text = "RRDtool, Tobias Oetiker <tobi@oetiker.ch>, http://tobi.oetiker.ch";
   text[0].compression = PNG_TEXT_COMPRESSION_NONE;
   png_set_text (png_ptr, info_ptr, text, 1);
 
