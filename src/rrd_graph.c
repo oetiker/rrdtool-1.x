@@ -423,7 +423,7 @@ expand_range(image_desc_t *im)
                     im->minval = sensiblevalues[i]*(im->magfact);
                 
                 if (-sensiblevalues[i-1]<=scaled_min &&
-                -sensiblevalues[i]>=scaled_min)
+                    -sensiblevalues[i]>=scaled_min)
                     im->minval = -sensiblevalues[i-1]*(im->magfact);
                 
                 if (sensiblevalues[i-1] >= scaled_max &&
@@ -497,11 +497,14 @@ apply_gridfit(image_desc_t *im)
     double new_range = factor * (im->maxval - im->minval);
     double gridstep = im->ygrid_scale.gridstep;
     double minor_y, minor_y_px, minor_y_px_frac;
+
+
     if (im->maxval > 0.0)
       im->maxval = im->minval + new_range;
     else
       im->minval = im->maxval - new_range;
     ytr(im,DNAN); /* reset precalc */
+
     /* make sure first minor gridline is on integer pixel y coord */
     minor_y = gridstep * floor(im->minval / gridstep);
     while (minor_y < im->minval)
@@ -1007,6 +1010,35 @@ data_calc( image_desc_t *im){
     return 0;
 }
 
+static int AlmostEqual2sComplement (float A, float B, int maxUlps)
+{
+
+    int aInt = *(int*)&A;
+    int bInt = *(int*)&B;
+    int intDiff;
+    /* Make sure maxUlps is non-negative and small enough that the
+       default NAN won't compare as equal to anything.  */
+
+    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
+
+    /* Make aInt lexicographically ordered as a twos-complement int */
+
+    if (aInt < 0)
+        aInt = 0x80000000l - aInt;
+
+    /* Make bInt lexicographically ordered as a twos-complement int */
+
+    if (bInt < 0)
+        bInt = 0x80000000l - bInt;
+
+    intDiff = abs(aInt - bInt);
+
+    if (intDiff <= maxUlps)
+        return 1;
+
+    return 0;
+}
+
 /* massage data so, that we get one value for each x coordinate in the graph */
 int
 data_proc( image_desc_t *im ){
@@ -1126,18 +1158,28 @@ data_proc( image_desc_t *im ){
             im->maxval = maxval;
     }
     /* make sure min is smaller than max */
-    if (im->minval > im->maxval) {
+    if (im->minval > im->maxval ) {             
+        if (im->maxval > 0)
             im->minval = 0.99 * im->maxval;
+        else 
+            im->minval = 1.01 * im->maxval;
     }
                       
     /* make sure min and max are not equal */
-    if (im->minval == im->maxval) {
-        im->maxval *= 1.01; 
+   if (  AlmostEqual2sComplement(im->minval,im->maxval,4)) {
+        if (im->maxval > 0)
+           im->maxval *= 1.01; 
+        else 
+           im->maxval *= 0.99;
+
         if (! im->logarithmic) {
-            im->minval *= 0.99;
+            if (im->minval > 0)
+               im->minval *= 0.99;
+            else 
+               im->minval *= 1.01;
         }
         /* make sure min and max are not both zero */
-        if (im->maxval == 0.0) {
+        if (AlmostEqual2sComplement(im->maxval,0,4)) {
             im->maxval = 1.0;
         }
     }
@@ -1745,34 +1787,6 @@ double frexp10(double x, double *e) {
     return mnt;
 }
 
-static int AlmostEqual2sComplement (float A, float B, int maxUlps)
-{
-
-    int aInt = *(int*)&A;
-    int bInt = *(int*)&B;
-    int intDiff;
-    /* Make sure maxUlps is non-negative and small enough that the
-       default NAN won't compare as equal to anything.  */
-
-    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
-
-    /* Make aInt lexicographically ordered as a twos-complement int */
-
-    if (aInt < 0)
-        aInt = 0x80000000l - aInt;
-
-    /* Make bInt lexicographically ordered as a twos-complement int */
-
-    if (bInt < 0)
-        bInt = 0x80000000l - bInt;
-
-    intDiff = abs(aInt - bInt);
-
-    if (intDiff <= maxUlps)
-        return 1;
-
-    return 0;
-}
 
 /* logaritmic horizontal grid */
 int
