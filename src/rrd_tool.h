@@ -75,6 +75,10 @@ extern "C" {
 # include <unistd.h>
 #endif
 
+#if HAVE_STRINGS_H
+# include <strings.h>
+#endif
+
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>
