@@ -49,6 +49,13 @@ AH_TOP([
 /* realloc does not support NULL as argument */
 #undef NO_NULL_REALLOC
 
+/* lets enable madvise defines in netbsd */ 
+#if defined(__NetBSD__)
+# if !defined(_NETBSD_SOURCE)
+#  define _NETBSD_SOURCE
+# endif
+#endif
+
  ])
 
 AH_BOTTOM([
