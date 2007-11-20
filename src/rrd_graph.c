@@ -1115,6 +1115,39 @@ int data_calc(
     return 0;
 }
 
+static int AlmostEqual2sComplement(
+    float A,
+    float B,
+    int maxUlps)
+{
+
+    int       aInt = *(int *) &A;
+    int       bInt = *(int *) &B;
+    int       intDiff;
+
+    /* Make sure maxUlps is non-negative and small enough that the
+       default NAN won't compare as equal to anything.  */
+
+    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
+
+    /* Make aInt lexicographically ordered as a twos-complement int */
+
+    if (aInt < 0)
+        aInt = 0x80000000l - aInt;
+
+    /* Make bInt lexicographically ordered as a twos-complement int */
+
+    if (bInt < 0)
+        bInt = 0x80000000l - bInt;
+
+    intDiff = abs(aInt - bInt);
+
+    if (intDiff <= maxUlps)
+        return 1;
+
+    return 0;
+}
+
 /* massage data so, that we get one value for each x coordinate in the graph */
 int data_proc(
     image_desc_t *im)
@@ -1227,8 +1260,8 @@ int data_proc(
     }
 
     /* adjust min and max values */
+    /* for logscale we add something on top */
     if (isnan(im->minval)
-        /* don't adjust low-end with log scale *//* why not? */
         || ((!im->rigid) && im->minval > minval)
         ) {
         if (im->logarithmic)
@@ -1244,19 +1277,24 @@ int data_proc(
         else
             im->maxval = maxval;
     }
+
     /* make sure min is smaller than max */
     if (im->minval > im->maxval) {
-        im->minval = 0.99 * im->maxval;
+        if (im->minval > 0)
+            im->minval = 0.99 * im->maxval;
+        else 
+            im->minval = 1.01 * im->maxval;
     }
 
     /* make sure min and max are not equal */
-    if (im->minval == im->maxval) {
-        im->maxval *= 1.01;
-        if (!im->logarithmic) {
-            im->minval *= 0.99;
-        }
+    if (AlmostEqual2sComplement(im->minval,im->maxval,4)) {
+        if (im->maxval > 0) 
+            im->maxval *= 1.01;
+        else
+            im->maxval *= 0.99;
+
         /* make sure min and max are not both zero */
-        if (im->maxval == 0.0) {
+        if (AlmostEqual2sComplement(im->maxval,0,4)) {
             im->maxval = 1.0;
         }
     }
@@ -2001,38 +2039,6 @@ double frexp10(
 /* yes we are loosing precision by doing tos with floats instead of doubles
    but it seems more stable this way. */
 
-static int AlmostEqual2sComplement(
-    float A,
-    float B,
-    int maxUlps)
-{
-
-    int       aInt = *(int *) &A;
-    int       bInt = *(int *) &B;
-    int       intDiff;
-
-    /* Make sure maxUlps is non-negative and small enough that the
-       default NAN won't compare as equal to anything.  */
-
-    /* assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024); */
-
-    /* Make aInt lexicographically ordered as a twos-complement int */
-
-    if (aInt < 0)
-        aInt = 0x80000000l - aInt;
-
-    /* Make bInt lexicographically ordered as a twos-complement int */
-
-    if (bInt < 0)
-        bInt = 0x80000000l - bInt;
-
-    intDiff = abs(aInt - bInt);
-
-    if (intDiff <= maxUlps)
-        return 1;
-
-    return 0;
-}
 
 /* logaritmic horizontal grid */
 int horizontal_log_grid(

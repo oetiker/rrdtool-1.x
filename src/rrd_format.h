@@ -25,8 +25,6 @@
 #define RRD_VERSION3  "0003"
 #define FLOAT_COOKIE  8.642135E130
 
-#include "rrd_nan_inf.h"
-
 typedef union unival {
     unsigned long u_cnt;
     rrd_value_t u_val;

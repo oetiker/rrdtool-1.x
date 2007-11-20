@@ -1,5 +1,3 @@
-#include "rrd_nan_inf.h"
-
 int       done_nan = 0;
 int       done_inf = 0;
 
@@ -8,6 +6,7 @@ double    dinf;
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <math.h>
+#include "rrd.h"
 
 #define NAN_FUNC (double)fmod(0.0,0.0)
 #define INF_FUNC (double)fabs((double)log(0.0))
