@@ -9,9 +9,6 @@
 #include "rrd_tool.h"
 #include <sys/types.h>
 #include <fcntl.h>
-#ifdef HAVE_MMAP
-# include <sys/mman.h>
-#endif
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
  #include <sys/locking.h>
@@ -427,10 +424,10 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
         fclose(rrd_file);
 	return(-1);
     }
-#ifdef HAVE_MADVISE
+#ifdef USE_MADVISE
     /* when we use mmaping we tell the kernel the mmap equivalent
        of POSIX_FADV_RANDOM */
-    madvise(rrd_mmaped_file,rrd_filesize,POSIX_MADV_RANDOM);
+    madvise(rrd_mmaped_file,rrd_filesize,MADV_RANDOM);
 #endif
 #endif
     /* loop through the arguments. */

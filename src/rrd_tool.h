@@ -71,37 +71,8 @@ extern "C" {
 # include <sys/stat.h>
 #endif
 
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
 #if HAVE_STRINGS_H
 # include <strings.h>
-#endif
-
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
-#endif
-
-#if HAVE_SYS_TIMES_H
-# include <sys/times.h>
-#endif
-
-
-#if HAVE_SYS_RESOURCE_H
-# include <sys/resource.h>
-#if (defined(__svr4__) && defined(__sun__))
-/* Solaris headers (pre 2.6) don't have a getrusage prototype.
-   Use this instead. */
-extern int getrusage(int, struct rusage *);
-#endif /* __svr4__ && __sun__ */
 #endif
 
 #include "rrd.h"

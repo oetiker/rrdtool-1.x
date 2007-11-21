@@ -30,8 +30,11 @@ WriteMakefile(
     'VERSION_FROM' => 'RRDs.pm', # finds $VERSION
     'DEFINE'	   => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
     'INC'          => '-I../../src',
+    'LIBS'         => '-lm -lpng -lz -lfreetype',
     # Perl will figure out which one is valid
-    'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
+    #'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
+    'depend'       => {'RRDs.c' => "../../src/librrd.la"},
+    'LDFROM'       => '$(OBJECT) '.$librrd,        
     'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' }
 );
 

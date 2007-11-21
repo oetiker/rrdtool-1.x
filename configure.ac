@@ -49,13 +49,103 @@ AH_TOP([
 /* realloc does not support NULL as argument */
 #undef NO_NULL_REALLOC
 
+/* lets enable madvise defines in netbsd */
+#if defined(__NetBSD__)
+# if !defined(_NETBSD_SOURCE)
+#  define _NETBSD_SOURCE
+# endif
+#endif
+
  ])
 
 AH_BOTTOM([
-/* enable posix_fadvise on linux */
-#if defined(HAVE_POSIX_FADVISE) && defined(HAVE_FCNTL_H)
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_FEATURES_H
+#define _XOPEN_SOURCE 600   
+#define _BSD_SOURCE 1
+# include <features.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
+# include <errno.h>
+#endif
+
+#if defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+#ifndef MAXPATH
+# ifdef PATH_MAX
+#  define MAXPATH PATH_MAX
+# endif
+#endif
+#ifndef MAXPATH
+/* else try the BSD variant */
+# ifdef MAXPATHLEN
+#  define MAXPATH MAXPATHLEN
+# endif
+#endif
+
+#if !defined HAVE_MADVISE && defined HAVE_POSIX_MADVISE
+/* use posix_madvise family */
+# define madvise posix_madvise
+# define MADV_NORMAL POSIX_MADV_NORMAL
+# define MADV_RANDOM POSIX_MADV_RANDOM
+# define MADV_SEQUENTIAL POSIX_MADV_SEQUENTIAL
+# define MADV_WILLNEED POSIX_MADV_WILLNEED
+# define MADV_DONTNEED POSIX_MADV_DONTNEED
+#endif
+
+#if defined POSIX_MADV_RANDOM && !defined MADV_RANDOM
+#define MADV_RANDOM POSIX_MADV_RANDOM
+#endif
+
+
+
+#if defined HAVE_MADVISE || defined HAVE_POSIX_MADVISE
+# define USE_MADVISE 1
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+# include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# ifdef HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+
+#ifdef HAVE_SYS_TIMES_H
+# include <sys/times.h>
+#endif
+
+#ifdef HAVE_SYS_RESOURCE_H
+# include <sys/resource.h>
+#if (defined(__svr4__) && defined(__sun__))
+/* Solaris headers (pre 2.6) don't have a getrusage prototype.
+   Use this instead. */
+extern int getrusage(int, struct rusage *);
+#endif /* __svr4__ && __sun__ */
 #endif
 
 /* define strrchr, strchr and memcpy, memmove in terms of bsd funcs
@@ -109,7 +199,7 @@ char *strchr (), *strrchr ();
 
 /* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
 #if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
-#  undef isnan
+#  undefine isnan
 #  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
 #endif
 
@@ -222,7 +312,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h strings.h)
+AC_CHECK_HEADERS( sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h strings.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -250,9 +340,46 @@ dnl of the form HAVE_FUNCTION
 AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday posix_fadvise madvise)
 
 AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+
+dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
+if test "x$enable_mmap" = "xyes"; then
+  case "$host" in
+  *cygwin*)
+    # the normal mmap test does not work in cygwin
+    AC_CHECK_FUNCS(mmap)
+    if test "x$ac_cv_func_mmap" = "xyes"; then
+      ac_cv_func_mmap_fixed_mapped=yes
+    fi
+  ;;
+  *)
+    AC_CHECK_HEADERS(sys/mman.h)
+    AC_FUNC_MMAP
+    AC_CHECK_FUNCS(mmap munmap msync)
+    AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
+                                     # include <sys/mman.h>
+                                     #endif])
+    if test "x$ac_cv_have_decl_madvise" = "xyes";
+    then
+      AC_CHECK_FUNCS(madvise)
+    else
+      AC_CHECK_FUNCS(posix_madvise)
+      if test "x$ac_cv_func_posix_madvise" != "xyes"; then
+        AC_MSG_WARN([madvise() nor posix_madvise() found.])
+      fi
+    fi
+  ;;
+  esac
+  if test "x$ac_cv_func_mmap" != "xyes";
+  then
+    AC_MSG_ERROR([--enable-mmap requested but mmap() was not detected])
+dnl enable_mmap="no"
+  fi
+fi
+
+dnl can we use posix_fadvise
 AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
 #include <fcntl.h>])
-AC_CHECK_DECLS(madvise, [], [], [#include <sys/mman.h>])
+AC_CHECK_FUNCS(posix_fadvise)   
 
 if test "x$enable_mmap" = xyes; then
   case "$host" in
