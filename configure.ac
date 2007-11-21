@@ -91,6 +91,7 @@ AH_BOTTOM([
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
+
 #if !defined HAVE_MADVISE && defined HAVE_POSIX_MADVISE
 /* use posix_madvise family */
 # define madvise posix_madvise
