@@ -36,6 +36,9 @@ struct timeval {
 };
 #endif
 
+#if !(defined(__MINGW32__) && \
+       ((__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 12) || __MINGW32_MAJOR_VERSION > 3))
+
 struct __timezone {
 	int  tz_minuteswest; /* minutes W of Greenwich */
 	int  tz_dsttime;     /* type of dst correction */
@@ -53,7 +56,9 @@ static int gettimeofday(struct timeval *t, struct __timezone *tz) {
 	return 0;
 }
 
+#endif /* mingw32 3.4.5 */
 #endif
+
 /*
  * normilize time as returned by gettimeofday. usec part must
  * be always >= 0
