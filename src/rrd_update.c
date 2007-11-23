@@ -29,15 +29,15 @@
  */
 #include <sys/timeb.h>
 
-#ifndef __MINGW32__
+#if (defined(__MINGW32__) && \
+       ((__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 12) || __MINGW32_MAJOR_VERSION > 3))
+#include <sys/time.h>
+#else
+
 struct timeval {
 	time_t tv_sec; /* seconds */
 	long tv_usec;  /* microseconds */
 };
-#endif
-
-#if !(defined(__MINGW32__) && \
-       ((__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 12) || __MINGW32_MAJOR_VERSION > 3))
 
 struct __timezone {
 	int  tz_minuteswest; /* minutes W of Greenwich */

@@ -33,12 +33,12 @@ endif
 # All library code is statically linked to avoid problems with other lib DLLs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.16
+LIBPNG	= $(LIBBASE)/libpng-1.2.23
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.3.4
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.4
+#LIBFT2	= $(LIBBASE)/freetype-2.3.5
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.5
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -53,13 +53,17 @@ endif
 ifndef DISTDIR
 DISTDIR	= rrdtool-$(RRD_VERSION_STR)-w32
 endif
-DISTARC = $(DISTDIR).zip
+ifndef DISTARC
+DISTARC = $(DISTDIR).$(ARCEXT)
+endif
 
 # Edit the path below to point to your distribution folder.
 ifndef DEVLDIR
 DEVLDIR	= rrdtool-$(RRD_VERSION_STR)-sdk-w32
 endif
-DEVLARC = $(DEVLDIR).zip
+ifndef DEVLARC
+DEVLARC = $(DEVLDIR).$(ARCEXT)
+endif
 
 # whatever...
 NO_NULL_REALLOC = 1
@@ -68,14 +72,19 @@ NO_NULL_REALLOC = 1
 ifdef METROWERKS
 	CC = mwcc
 else
-	CC = gcc
+	CC = $(CRPREFIX)gcc
 endif
 # RM	= rm -f
 CP	= cp -afv
 # Here you can find a native Win32 binary of the original awk:
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
-ZIP	= zip -qzr9
+ifndef ARCBIN
+ARCBIN	= zip -qzr9
+ARCEXT	= zip
+#ARCBIN	= 7za a
+#ARCEXT	= 7z
+endif
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG
@@ -114,8 +123,8 @@ CFLAGS	+= -nostdinc -gccinc -msgstyle gcc -inline off -opt nointrinsics -proc 58
 CFLAGS	+= -ir "$(METROWERKS)/MSL" -ir "$(METROWERKS)/Win32-x86 Support"
 CFLAGS	+= -w on,nounused,nounusedexpr # -ansi strict
 else
-LD	= gcc
-RC	= windres
+LD	= $(CRPREFIX)gcc
+RC	= $(CRPREFIX)windres
 LDFLAGS	= -s
 AR	= ar
 ARFLAGS	= -cq
@@ -125,7 +134,7 @@ CFLAGS	+= -fno-strict-aliasing
 CFLAGS	+= -Wall -Wno-unused # -pedantic
 endif
 
-ifeq ($(findstring msys,$(OSTYPE)),msys)
+ifdef __MSYS__
 DL	= '
 DS	= /
 else
@@ -253,7 +262,7 @@ dist: all $(DISTDIR) $(DISTDIR)/readme.txt
 	@-$(CP) $(PROOT)/NEWS $(DISTDIR)
 	@-$(CP) $(PROOT)/README $(DISTDIR)
 	@echo Creating $(DISTARC)
-	@$(ZIP) $(DISTARC) $(DISTDIR)/* < $(DISTDIR)/readme.txt
+	@$(ARCBIN) $(DISTARC) $(DISTDIR)/* < $(DISTDIR)/readme.txt
 
 dev: librrd $(DEVLDIR) $(DEVLDIR)/readme.txt
 	@-mkdir $(DEVLDIR)$(DS)include
@@ -269,7 +278,7 @@ dev: librrd $(DEVLDIR) $(DEVLDIR)/readme.txt
 	@-$(CP) $(PROOT)/NEWS $(DEVLDIR)
 	@-$(CP) $(PROOT)/README $(DEVLDIR)
 	@echo Creating $(DEVLARC)
-	@$(ZIP) $(DEVLARC) $(DEVLDIR)/* < $(DEVLDIR)/readme.txt
+	@$(ARCBIN) $(DEVLARC) $(DEVLDIR)/* < $(DEVLDIR)/readme.txt
 
 clean:
 	-$(RM) -r $(OBJDIR)
