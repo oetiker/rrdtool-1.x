@@ -32,7 +32,7 @@ from distutils.core import setup, Extension
 import sys, os
 
 RRDBASE = os.environ.get('LOCALBASE', '../../src')
-library_dir = os.environ.get('BUILDLIBDIR', os.path.join(RRDBASE, 'lib'))
+library_dir = os.environ.get('BUILDLIBDIR', os.path.join(RRDBASE, '.libs'))
 include_dir = os.environ.get('INCDIR', RRDBASE)
 
 setup(name = "py-rrdtool",
