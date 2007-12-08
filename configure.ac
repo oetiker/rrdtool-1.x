@@ -194,12 +194,15 @@ char *strchr (), *strrchr ();
 /* for Solaris */
 #if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
 #  define HAVE_ISINF 1
+#  ifdef isinf
+#  undef isinf /* confuse autoconf */
+#  endif
 #  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
 #endif
 
 /* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
 #if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
-#  undefine isnan
+#  undef isnan  /* confuse autoconf to NOT remove this */
 #  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
 #endif
 
