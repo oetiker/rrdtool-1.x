@@ -5,7 +5,9 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
-
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
 #define MEMBLK 1024
 /*#define DEBUG_PARSER
