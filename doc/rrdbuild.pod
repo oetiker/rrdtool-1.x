@@ -61,6 +61,7 @@ Now make sure the BUILD_DIR exists and go there:
 
 Lets first assume you already have all the necessary libraries
 pre-installed. 
+
  wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.99907080300.tar.gz
  gunzip -c rrdtool-1.2.99907080300.tar.gz | tar xf -
  cd rrdtool-1.2.99907080300
@@ -74,7 +75,11 @@ package for each library you install. Once you have the missing bits on
 board, just re-run the last line of the instructions above.
 
 But again this may have been too optimistic, and you actually have to
-compile your own copies of the required libraries.
+compile your own copies of some of the required libraries. Things like
+libpng and zlib are pretty standard so you will probably have them on your
+system anyway. Freetype, Fontinst, Cairo, Pango may be installed, but it is
+possible that they are pretty old and thus don't live up to the
+expectations, so you may want to compile their latest versions.
 
 =head3 Build Tipps for AIX
 
@@ -112,7 +117,31 @@ set the following environamen variable
 
  export PKG_CONFIG_PATH=${INSTALL_DIR}/lib/pkgconfig
  export PATH=$INSTALL_DIR/bin:$PATH
+
+Since we are compiling libraries dynamically, you they must further know
+where to find each other. This is done by setting an appropriate LDFLAG.
+Unfortunatly the syntax differs from system to system:
+
+=over
+
+=item Solaris
+
+ export LDFLAGS=-R${INSTALL_DIR}/lib 
+
+=item Linux
+
+ export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
+
+=item HPUX
  
+ export LDFLAGS="+b${INSTALL_DIR}/lib"
+
+=item AIX
+
+ export LDFLAGS="-Wl,-blibpath:${INSTALL_DIR}/lib"
+
+=back 
+
 If you have GNUmake installed and it is not called 'make',
 then do
 
