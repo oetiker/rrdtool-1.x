@@ -15,6 +15,15 @@ ones before you can build RRDtool.
 
 This document will tell you about all the necessary steps to get going.
 
+These instructions assume you are using a bash shell. If you use csh/tcsh,
+then you can either type 'bash' to switch to bash for the compilation or if
+you know what you are doing just replace replace the export bits with
+setenv.
+
+We further assume that your copies of B<tar> and B<make> are actually B<GNU
+tar> and B<GNU make> respectively. It could be that they are installed as
+B<gtar> and B<gmake> on your system.
+
 =head2 Building
 
 Before you start to build RRDtool, you have to decide two things:
@@ -51,12 +60,9 @@ Now make sure the BUILD_DIR exists and go there:
  cd $BUILD_DIR
 
 Lets first assume you already have all the necessary libraries
-pre-installed. Note that these instructions assume that your copies of
-B<tar> and B<make> are actually B<GNU tar> and B<GNU make> respectively. It
-could be that they are installed as B<gtar> and B<gmake> on your system.
-
+pre-installed. 
  wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.2.99907080300.tar.gz
- tar zxf rrdtool-1.2.99907080300.tar.gz
+ gunzip -c rrdtool-1.2.99907080300.tar.gz | tar xf -
  cd rrdtool-1.2.99907080300
  ./configure --prefix=$INSTALL_DIR && make && make install
 
@@ -104,23 +110,31 @@ If you have an other compile you have to use the following settings:
 Some libraries want to know where other libraries are. For this to work,
 set the following environamen variable
 
- export PKG_CONFIG_PATH=${INSTALLDIR}/lib/pkgconfig
+ export PKG_CONFIG_PATH=${INSTALL_DIR}/lib/pkgconfig
+ export PATH=$INSTALL_DIR/bin:$PATH
  
-or in tcsh
+If you have GNUmake installed and it is not called 'make',
+then do
 
- setenv PKG_CONFIG_PATH ${INSTALLDIR}/lib/pkgconfig
+ export MAKE=gmake
+ export GNUMAKE=gmake
 
+otherwhise just do
+
+ export MAKE=make
+
+ 
 =item Building zlib
 
 Chances are very high that you already have that on your system ... 
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
- tar  zxf zlib-1.2.3.tar.gz
+ gunzip -c zlib-1.2.3.tar.gz | tar xf -
  cd zlib-1.2.3
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
- make
- make install
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building libpng
 
@@ -131,27 +145,26 @@ the end of line 4 means that line 4 and line 5 are on one line.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
- tar zxvf libpng-1.2.18.tar.gz
+ gunzip -c libpng-1.2.18.tar.gz | tar xf -
  cd libpng-1.2.10
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
- make
- make install
+ $MAKE
+ $MAKE install
 
 =item Building freetype
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
- tar zxvf freetype-2.3.5.tar.gz
+ gunzip -c freetype-2.3.5.tar.gz | tar xf -
  cd freetype-2.3.5
- env CFLAGS="-O3 -fPIC" \
-     ./configure --prefix=$INSTALL_DIR
- make
- make install
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE   (or gmake)
+ $MAKE install (or gmake install)
 
 If you run into problems building freetype on Solaris, you may want to try to
-add the following at the end of the configure line:
+add the following at the start the configure line:
 
- GNUMAKE=gmake EGREP=egrep
+ env GNUMAKE=gmake EGREP=egrep
 
 =item Building fontconfig
 
@@ -162,44 +175,45 @@ config file.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/fontconfig-2.4.2.tar.gz
- tar zxvf fontconfig-2.4.2.tar.gz  
+ gunzip -c fontconfig-2.4.2.tar.gz   | tar xf -
  cd fontconfig-2.4.2
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
- make
- make install
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building Cairo
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.4.10.tar.gz
- tar zxvf cairo-1.4.10.tar.gz  
+ gunzip -c cairo-1.4.10.tar.gz   | tar xf -
  cd cairo-1.4.10
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR \
+ ./configure --prefix=$INSTALL_DIR \
     --enable-xlib=no \
     --enable-xlib-render=no \
-    --enable-win32=no
- make
- make install
+    --enable-win32=no \
+    CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building Glib
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.12.13.tar.gz
- tar zxvf glib-2.12.13.tar.gz 
+ gunzip -c glib-2.12.13.tar.gz  | tar xf -
  cd glib-2.12.13
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
- make
- make install
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building Pango
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.17.5.tar.gz
- tar zxvf pango-1.17.5.tar.gz 
+ gunzip -c pango-1.17.5.tar.gz  | tar xf -
  cd pango-1.17.5
- env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
- make
- make install
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =back
 
@@ -207,13 +221,6 @@ Now all the dependent libraries are built and you can try again. This time
 you tell configure where it should be looking for libraries and include
 files. This is done via environment variables. Depending on the shell you
 are running, the syntax for setting environment variables is different.
-Under csh/tcsh you use:
-
- setenv CPPFLAGS -I$INSTALL_DIR/include
- setenv LDFLAGS "-L$INSTALL_DIR/lib -R$INSTALL_DIR/lib"
- setenv CFLAGS -O3
-
-If you are running bash/sh/ash/ksh/zsh use this:
 
  CPPFLAGS=-I$INSTALL_DIR/include
  LDFLAGS="-R$INSTALL_DIR/lib -L$INSTALL_DIR/lib"
@@ -227,9 +234,9 @@ their current state.
 
  cd $BUILD_DIR/rrdtool-1.2.99907080300
  ./configure --prefix=$INSTALL_DIR --disable-tcl --disable-python
- make clean
- make
- make install
+ $MAKE clean
+ $MAKE
+ $MAKE install
 
 SOLARIS HINT: if you want to build  the perl module for the native perl (the
 one shipping with solaris) you will need the sun forte compiler installed on

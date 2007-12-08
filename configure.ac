@@ -227,12 +227,15 @@ char *strchr (), *strrchr ();
 /* for Solaris */
 #if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
 #  define HAVE_ISINF 1
+#  ifdef isinf
+#  undef isinf /* confuse autoconf */
+#  endif
 #  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
 #endif
 
 /* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
 #if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
-#  undef isnan
+#  undef isnan /* confuse autoconf to NOT remove this */
 #  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
 #endif
 
@@ -365,6 +368,7 @@ AC_STRUCT_TM
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
+
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
 CFLAGS="$CFLAGS $pic_flag"
@@ -382,8 +386,6 @@ dnl of the form HAVE_FUNCTION
 
 AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
-dnl Could use these to know if we need to provide a prototype
-dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
 if test "x$enable_mmap" = "xyes"; then
@@ -575,6 +577,14 @@ AC_LINK_IFELSE(
     ]  
 )
 AC_LANG_POP(C)
+
+dnl Could use these to know if we need to provide a prototype
+dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+
+dnl solaris has fdatasync in the librt
+
+AC_CHECK_FUNC(fdatasync, [],  AC_CHECK_LIB(rt, fdatasync, [LIBS="${LIBS} -lrt"],[]))
+
 
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
