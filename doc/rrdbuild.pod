@@ -15,9 +15,9 @@ ones before you can build RRDtool.
 
 This document will tell you about all the necessary steps to get going.
 
-These instructions assume you are using a bash shell. If you use csh/tcsh,
-then you can either type 'bash' to switch to bash for the compilation or if
-you know what you are doing just replace replace the export bits with
+These instructions assume you are using a B<bash> shell. If you use csh/tcsh,
+then you can either type F<bash> to switch to bash for the compilation or if
+you know what you are doing just replace the export bits with
 setenv.
 
 We further assume that your copies of B<tar> and B<make> are actually B<GNU
@@ -41,15 +41,10 @@ Where you want to install the software.
 =back
 
 Once you have decided. Save the two locations into environment variables.
-Depending on the shell you are using, you can do either (bash,zsh):
 
  BUILD_DIR=/tmp/rrdbuild
  INSTALL_DIR=/usr/local/rrdtool-1.2.99907080300
 
-Or if you run tcsh:
-
- set BUILD_DIR=/tmp/rrdbuild
- set INSTALL_DIR=/usr/local/rrdtool-1.2.99907080300
 
 If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
 a different directory!
@@ -187,13 +182,13 @@ the end of line 4 means that line 4 and line 5 are on one line.
  gunzip -c freetype-2.3.5.tar.gz | tar xf -
  cd freetype-2.3.5
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
- $MAKE   (or gmake)
- $MAKE install (or gmake install)
+ $MAKE
+ $MAKE install
 
 If you run into problems building freetype on Solaris, you may want to try to
 add the following at the start the configure line:
 
- env GNUMAKE=gmake EGREP=egrep
+ env EGREP=egrep
 
 =item Building fontconfig
 
@@ -250,11 +245,6 @@ Now all the dependent libraries are built and you can try again. This time
 you tell configure where it should be looking for libraries and include
 files. This is done via environment variables. Depending on the shell you
 are running, the syntax for setting environment variables is different.
-
- CPPFLAGS=-I$INSTALL_DIR/include
- LDFLAGS="-R$INSTALL_DIR/lib -L$INSTALL_DIR/lib"
- CFLAGS=-O3
- export CPPFLAGS LDFLAGS CFLAGS
 
 And finally try building again. We disable the python and tcl bindings
 because it seems that a fair number of people have ill configured python and
