@@ -1282,19 +1282,19 @@ int data_proc(
     if (im->minval > im->maxval) {
         if (im->minval > 0)
             im->minval = 0.99 * im->maxval;
-        else 
+        else
             im->minval = 1.01 * im->maxval;
     }
 
     /* make sure min and max are not equal */
-    if (AlmostEqual2sComplement(im->minval,im->maxval,4)) {
-        if (im->maxval > 0) 
+    if (AlmostEqual2sComplement(im->minval, im->maxval, 4)) {
+        if (im->maxval > 0)
             im->maxval *= 1.01;
         else
             im->maxval *= 0.99;
 
         /* make sure min and max are not both zero */
-        if (AlmostEqual2sComplement(im->maxval,0,4)) {
+        if (AlmostEqual2sComplement(im->maxval, 0, 4)) {
             im->maxval = 1.0;
         }
     }
