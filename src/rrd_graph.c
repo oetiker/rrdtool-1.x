@@ -322,6 +322,10 @@ int im_free(
                 free(im->gdes[i].ds_namv);
             }
         }
+        /* free allocated memory used for dashed lines */
+        if (im->gdes[i].p_dashes != NULL)
+            free(im->gdes[i].p_dashes);
+
         free(im->gdes[i].p_data);
         free(im->gdes[i].rpnp);
     }
@@ -2600,6 +2604,11 @@ void grid_paint(
                                       im->graph_col[GRC_FRAME].green,
                                       im->graph_col[GRC_FRAME].blue,
                                       im->graph_col[GRC_FRAME].alpha);
+                if (im->gdes[i].dash) {
+                    // make box borders in legend dashed if the graph is dashed
+                    double    dashes[] = { 3.0 };
+                    cairo_set_dash(im->cr, dashes, 1, 0.0);
+                }
                 cairo_stroke(im->cr);
                 cairo_restore(im->cr);
             }
@@ -3120,6 +3129,12 @@ int graph_paint(
                     cairo_new_path(im->cr);
 
                     cairo_set_line_width(im->cr, im->gdes[i].linewidth);
+
+                    if (im->gdes[i].dash) {
+                        cairo_set_dash(im->cr, im->gdes[i].p_dashes,
+                                       im->gdes[i].ndash, im->gdes[i].offset);
+                    }
+
                     for (ii = 1; ii < im->xsize; ii++) {
                         if (isnan(im->gdes[i].p_data[ii])
                             || (im->slopemode == 1
@@ -3180,10 +3195,14 @@ int graph_paint(
                     cairo_restore(im->cr);
                 } else {
                     int       idxI = -1;
-                    double   *foreY = malloc(sizeof(double) * im->xsize * 2);
-                    double   *foreX = malloc(sizeof(double) * im->xsize * 2);
-                    double   *backY = malloc(sizeof(double) * im->xsize * 2);
-                    double   *backX = malloc(sizeof(double) * im->xsize * 2);
+                    double   *foreY =
+                        (double *) malloc(sizeof(double) * im->xsize * 2);
+                    double   *foreX =
+                        (double *) malloc(sizeof(double) * im->xsize * 2);
+                    double   *backY =
+                        (double *) malloc(sizeof(double) * im->xsize * 2);
+                    double   *backX =
+                        (double *) malloc(sizeof(double) * im->xsize * 2);
                     int       drawem = 0;
 
                     for (ii = 0; ii <= im->xsize; ii++) {
@@ -3327,19 +3346,33 @@ int graph_paint(
         case GF_HRULE:
             if (im->gdes[i].yrule >= im->minval
                 && im->gdes[i].yrule <= im->maxval)
-                gfx_line(im,
-                         im->xorigin, ytr(im, im->gdes[i].yrule),
-                         im->xorigin + im->xsize, ytr(im,
-                                                      im->gdes[i].yrule),
-                         1.0, im->gdes[i].col);
+                cairo_save(im->cr);
+            if (im->gdes[i].dash) {
+                cairo_set_dash(im->cr, im->gdes[i].p_dashes,
+                               im->gdes[i].ndash, im->gdes[i].offset);
+            }
+            gfx_line(im,
+                     im->xorigin, ytr(im, im->gdes[i].yrule),
+                     im->xorigin + im->xsize, ytr(im,
+                                                  im->gdes[i].yrule),
+                     1.0, im->gdes[i].col);
+            cairo_stroke(im->cr);
+            cairo_restore(im->cr);
             break;
         case GF_VRULE:
             if (im->gdes[i].xrule >= im->start
                 && im->gdes[i].xrule <= im->end)
-                gfx_line(im,
-                         xtr(im, im->gdes[i].xrule), im->yorigin,
-                         xtr(im, im->gdes[i].xrule),
-                         im->yorigin - im->ysize, 1.0, im->gdes[i].col);
+                cairo_save(im->cr);
+            if (im->gdes[i].dash) {
+                cairo_set_dash(im->cr, im->gdes[i].p_dashes,
+                               im->gdes[i].ndash, im->gdes[i].offset);
+            }
+            gfx_line(im,
+                     xtr(im, im->gdes[i].xrule), im->yorigin,
+                     xtr(im, im->gdes[i].xrule),
+                     im->yorigin - im->ysize, 1.0, im->gdes[i].col);
+            cairo_stroke(im->cr);
+            cairo_restore(im->cr);
             break;
         default:
             break;
@@ -3415,6 +3448,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].data_first = 0;
     im->gdes[im->gdes_c - 1].p_data = NULL;
     im->gdes[im->gdes_c - 1].rpnp = NULL;
+    im->gdes[im->gdes_c - 1].p_dashes = NULL;
     im->gdes[im->gdes_c - 1].shift = 0.0;
     im->gdes[im->gdes_c - 1].col.red = 0.0;
     im->gdes[im->gdes_c - 1].col.green = 0.0;
@@ -3427,7 +3461,6 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].ds = -1;
     im->gdes[im->gdes_c - 1].cf_reduce = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
-    im->gdes[im->gdes_c - 1].p_data = NULL;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;
     return 0;

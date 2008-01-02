@@ -171,6 +171,13 @@ typedef struct graph_desc_t {
     rrd_value_t *data;  /* the raw data drawn from the rrd */
     rrd_value_t *p_data;    /* processed data, xsize elments */
     double    linewidth;    /* linewideth */
+
+    /* dashed line stuff */
+    int       dash;     /* boolean, draw dashed line? */
+    double   *p_dashes; /* pointer do dash array which keeps the lengths of dashes */
+    int       ndash;    /* number of dash segments */
+    double    offset;   /* dash offset along the line */
+
     enum txa_en txtalign;   /* change default alignment strategy for text */
 } graph_desc_t;
 

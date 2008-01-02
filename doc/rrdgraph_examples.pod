@@ -99,6 +99,22 @@ Note: the second line gets stacked on top of the first one
 
 =back
 
+=head2 Drawing dashed lines
+
+Also works for HRULE and VRULE
+
+=over
+
+=item *
+
+default style: - - - - -
+    LINE1:data#FF0000:"dashed line":DASHED
+
+=item *
+
+more fancy style with offset: - -  --- -  --- -
+    LINE1:data#FF0000:"another dashed line":DASHED:dashes=15,5,5,10:dash-offset=10
+
 =head2 Time ranges
 
     Last four weeks: --start end-4w --end 00:00
