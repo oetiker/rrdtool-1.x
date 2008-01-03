@@ -764,36 +764,30 @@ int rrd_parse_PVHLAST(
             dprintf("- not STACKing\n");
     }
 
-    dprintf("- still more, should be DASHED[:...]\n");
+    dprintf("- still more, should be dashes[=...]\n");
     dprintf("- parsing '%s'\n", &line[*eaten]);
     if (line[*eaten] != '\0') {
-        // parse dash arguments here. Possible options:
-        // DASHED
-        // DASHED:dashes=n_on,n_off,n_on,n_off
-        // DASHED:dashes=n_on,n_off,n_on,n_off:dash-offset=offset
-        // start with DASHED
-        j = scan_for_col(&line[*eaten], 6, tmpstr);
-        if (!strcmp("DASHED", tmpstr)) {
+        /* parse dash arguments here. Possible options:
+           - dashes
+           - dashes=n_on[,n_off[,n_on,n_off]]
+           - dashes[=n_on[,n_off[,n_on,n_off]]]:dash-offset=offset
+           allowing 64 characters for definition of dash style */
+        j = scan_for_col(&line[*eaten], 64, tmpstr);
+        /* start with dashes */
+        if (strcmp(tmpstr, "dashes") == 0) {
+            /* if line was "dashes" or "dashes:dash-offset=xdashes="
+               tmpstr will be "dashes" */
             dprintf("- found %s\n", tmpstr);
-            // initialise all required variables we need for dashed lines
-            // using default dash length of 5 pixels
+            /* initialise all required variables we need for dashed lines
+               using default dash length of 5 pixels */
             gdp->dash = 1;
             gdp->p_dashes = (double *) malloc(sizeof(double));
             gdp->p_dashes[0] = 5;
             gdp->ndash = 1;
             gdp->offset = 0;
             (*eaten) += j;
-            if (line[*eaten] == ':')
-                (*eaten) += 1;
-        }
-        if (line[*eaten] == '\0') {
-            dprintf("- done parsing line\n");
-            return 0;
-        }
-        // DASHED:dashes=n_on,n_off,n_on,n_off
-        // allowing 64 characters for definition of dash style
-        j = scan_for_col(&line[*eaten], 64, tmpstr);
-        if (sscanf(tmpstr, "dashes=%s", tmpstr)) {
+        } else if (sscanf(tmpstr, "dashes=%s", tmpstr)) {
+            /* dashes=n_on[,n_off[,n_on,n_off]] */
             char      csv[64];
             char     *pch;
             float     dsh;
@@ -806,36 +800,39 @@ int rrd_parse_PVHLAST(
                 pch = strtok(NULL, ",");
                 count++;
             }
-            dprintf("- %d dash values found: ", count);
-            gdp->ndash = count;
-            if (gdp->p_dashes != NULL)
-                free(gdp->p_dashes);
-            gdp->p_dashes = (double *) malloc(sizeof(double) * count);
-            pch = strtok(csv, ",");
-            count = 0;
-            while (pch != NULL) {
-                if (sscanf(pch, "%f", &dsh)) {
-                    gdp->p_dashes[count] = (double) dsh;
-                    dprintf("%.1f ", gdp->p_dashes[count]);
-                    count++;
+            dprintf("- %d dash value(s) found: ", count);
+            if (count > 0) {
+                gdp->dash = 1;
+                gdp->ndash = count;
+                gdp->p_dashes = (double *) malloc(sizeof(double) * count);
+                pch = strtok(csv, ",");
+                count = 0;
+                while (pch != NULL) {
+                    if (sscanf(pch, "%f", &dsh)) {
+                        gdp->p_dashes[count] = (double) dsh;
+                        dprintf("%.1f ", gdp->p_dashes[count]);
+                        count++;
+                    }
+                    pch = strtok(NULL, ",");
                 }
-                pch = strtok(NULL, ",");
-            }
-            dprintf("\n");
+                dprintf("\n");
+            } else
+                dprintf("- syntax error. No dash lengths found!\n");
             (*eaten) += j;
-            if (line[*eaten] == ':')
-                (*eaten) += 1;
-        }
-        if (line[*eaten] == '\0') {
+        } else
+            dprintf("- error: expected dashes[=...], found %s\n", tmpstr);
+        if (line[*eaten] == ':') {
+            (*eaten) += 1;
+        } else if (line[*eaten] == '\0') {
             dprintf("- done parsing line\n");
             return 0;
         }
-        // DASHED:dashes=n_on,n_off,n_on,n_off:dash-offset=offset
-        // allowing 16 characters for dash-offset=....
-        // => 4 characters for the offset value
+        /* dashes[=n_on[,n_off[,n_on,n_off]]]:dash-offset=offset
+           allowing 16 characters for dash-offset=....
+           => 4 characters for the offset value */
         j = scan_for_col(&line[*eaten], 16, tmpstr);
         if (sscanf(tmpstr, "dash-offset=%lf", &gdp->offset)) {
-            dprintf("- found %s\n", tmpstr);
+            dprintf("- found dash-offset=%.1f\n", gdp->offset);
             gdp->dash = 1;
             (*eaten) += j;
             if (line[*eaten] == ':')

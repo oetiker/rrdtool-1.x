@@ -108,12 +108,12 @@ Also works for HRULE and VRULE
 =item *
 
 default style: - - - - -
-    LINE1:data#FF0000:"dashed line":DASHED
+    LINE1:data#FF0000:"dashed line":dashes
 
 =item *
 
 more fancy style with offset: - -  --- -  --- -
-    LINE1:data#FF0000:"another dashed line":DASHED:dashes=15,5,5,10:dash-offset=10
+    LINE1:data#FF0000:"another dashed line":dashes=15,5,5,10:dash-offset=10
 
 =head2 Time ranges
 
