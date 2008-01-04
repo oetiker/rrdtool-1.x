@@ -340,7 +340,7 @@ int im_free(
     if (im->surface)
         cairo_surface_destroy(im->surface);
     if (status)
-        fprintf(stderr, "OOPS: Cairo has issuesm it can't even die: %s\n",
+        fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
                 cairo_status_to_string(status));
 
     return 0;
@@ -3031,9 +3031,9 @@ int graph_paint(
         break;
     };
     im->cr = cairo_create(im->surface);
-    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
     cairo_set_antialias(im->cr, im->graph_antialias);
     cairo_scale(im->cr, im->zoom, im->zoom);
+    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
 
     gfx_new_area(im,
                  0, 0,
