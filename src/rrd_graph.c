@@ -51,7 +51,7 @@ xlab_t xlab[] = {
     {10,                0,   TMT_MINUTE,5,  TMT_MINUTE,20, TMT_MINUTE,20,        0,"%H:%M"},
     {30,                0,   TMT_MINUTE,10, TMT_HOUR,1,    TMT_HOUR,1,           0,"%H:%M"},
     {60,                0,   TMT_MINUTE,30, TMT_HOUR,2,    TMT_HOUR,2,           0,"%H:%M"},
-    {60,          24*3600,   TMT_MINUTE,30, TMT_HOUR,2,    TMT_HOUR,4,           0,"%a %H:%M"},
+    {60,          24*3600,   TMT_MINUTE,30, TMT_HOUR,2,    TMT_HOUR,6,           0,"%a %H:%M"},
     {180,               0,   TMT_HOUR,1,    TMT_HOUR,6,    TMT_HOUR,6,           0,"%H:%M"},
     {180,         24*3600,   TMT_HOUR,1,    TMT_HOUR,6,    TMT_HOUR,12,          0,"%a %H:%M"},
     /*{300,             0,   TMT_HOUR,3,    TMT_HOUR,12,   TMT_HOUR,12,    12*3600,"%a %p"},  this looks silly*/
