@@ -146,7 +146,7 @@ static PangoLayout *gfx_prep_text(
     layout = pango_cairo_create_layout(cr);
     pango_context = pango_layout_get_context(layout);
     pango_cairo_context_set_font_options(pango_context, im->font_options);
-    pango_cairo_context_set_resolution(pango_context,100);
+    pango_cairo_context_set_resolution(pango_context, 100);
 
 /*     pango_cairo_update_context(cr, pango_context); */
 
