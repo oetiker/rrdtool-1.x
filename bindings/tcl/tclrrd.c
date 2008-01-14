@@ -69,10 +69,8 @@ static void getopt_cleanup(
 }
 
 static void getopt_free_element(
-    argv2,
-    argn)
-    char     *argv2[];
-    int argn;
+    char *argv2[],
+    int argn)
 {
     if (argv2[argn] != NULL) {
         free(argv2[argn]);
@@ -81,10 +79,8 @@ static void getopt_free_element(
 }
 
 static void getopt_squieeze(
-    argc,
-    argv2)
-    int      *argc;
-    char     *argv2[];
+    int *argc,
+    char *argv2[])
 {
     int       i, null_i = 0, argc_tmp = *argc;
 

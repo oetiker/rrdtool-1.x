@@ -61,6 +61,8 @@ AH_TOP([
 AH_BOTTOM([
 /* make sure that we pickup the correct stuff from all headers */
 #ifdef HAVE_FEATURES_H
+#undef _XOPEN_SOURCE /* keep unmodified */
+#undef _BSD_SOURCE /* keep unmodified */
 #define _XOPEN_SOURCE 600
 #define _BSD_SOURCE 1
 # include <features.h>

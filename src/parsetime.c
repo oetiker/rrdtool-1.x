@@ -232,7 +232,7 @@ static const struct SpecialToken TimeMultipliers[] = {
  * required for us to be able distinguish between 'mon' as 'month'
  * and 'mon' as 'monday'
  */
-static struct SpecialToken *Specials;
+static const struct SpecialToken *Specials;
 
 static const char **scp;    /* scanner - pointer at arglist */
 static char scc;        /* scanner - count of remaining arguments */

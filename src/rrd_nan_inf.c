@@ -12,6 +12,7 @@ double    dinf;
 #define INF_FUNC (double)fabs((double)log(0.0))
 
 #else
+#include "rrd.h"
 
 #define NAN_FUNC (double)(0.0/0.0)
 #define INF_FUNC (double)(1.0/0.0)

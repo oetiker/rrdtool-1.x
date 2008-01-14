@@ -663,7 +663,7 @@ int rrd_create_fn(
     rrd_t     rrd_dn;
 
     if ((rrd_file =
-         open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666)) == NULL) {
+         open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
         rrd_free(rrd);
         return (-1);
