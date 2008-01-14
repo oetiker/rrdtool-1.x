@@ -1430,8 +1430,8 @@ s_var   **rrdcgiReadVariables(
 
             /* try to find out if there's already such a variable */
             for (k = 0; k < i && (strncmp(result[k]->name, cp, esp - cp)
-                                  || !(strlen(result[k]->name) == (size_t)(esp - cp)));
-                 k++);
+                                  || !(strlen(result[k]->name) ==
+                                       (size_t) (esp - cp))); k++);
 
             if (k == i) {   /* No such variable yet */
                 if ((result[i] = (s_var *) malloc(sizeof(s_var))) == NULL)
