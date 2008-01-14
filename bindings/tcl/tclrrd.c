@@ -100,6 +100,8 @@ Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
     unsigned long int		pdp_step = 300;
     struct rrd_time_value	last_up_tv;
 
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
 
     for (argv_i = 1; argv_i < argc; argv_i++) {
@@ -169,7 +171,7 @@ Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 	return TCL_ERROR;
     }
 
-    rrd_create_r(argv2[1], pdp_step, last_up, argc - 2, argv2 + 2);
+    rrd_create_r(argv2[1], pdp_step, last_up, argc - 2, (const char **) argv2 + 2);
 
     getopt_cleanup(argc, argv2);
     
@@ -189,6 +191,8 @@ Rrd_Create(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 static int
 Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
+    (void) clientData;	/* slience gcc */
+
     if (argc < 2) {
 	Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
 			 (char *) NULL);
@@ -215,6 +219,8 @@ Rrd_Dump(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv
 static int
 Rrd_Last(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 {
+    (void) clientData;	/* slience gcc */
+
     time_t t;
     
     if (argc < 2) {
@@ -246,6 +252,8 @@ Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
     int		argv_i;
     char	**argv2, *template = NULL;
     
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
 
     for (argv_i = 1; argv_i < argc; argv_i++) {
@@ -291,7 +299,7 @@ Rrd_Update(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 	return TCL_ERROR;
     }
 
-    rrd_update_r(argv2[1], template, argc - 2, argv2 + 2);
+    rrd_update_r(argv2[1], template, argc - 2, (const char **) argv2 + 2);
 
     if (template != NULL) {
 	free(template);
@@ -318,6 +326,8 @@ Rrd_Lastupdate(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char
    char s[30];
    Tcl_Obj *listPtr;
    unsigned long ds_cnt, i;
+
+   (void) clientData;	/* slience gcc */
 
    argv2 = getopt_init(argc, argv);
    if (rrd_lastupdate(argc-1, argv2, &last_update,
@@ -358,6 +368,8 @@ Rrd_Fetch(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *arg
     char s[30];
     char **argv2;
     
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
     if (rrd_fetch(argc, argv2, &start, &end, &step,
 		  &ds_cnt, &ds_namv, &data) != -1) {
@@ -402,6 +414,8 @@ Rrd_Graph(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *arg
     char **argv2;
     CONST84 char *save;
     
+    (void) clientData;	/* slience gcc */
+
     /*
      * If the "filename" is a Tcl fileID, then arrange for rrd_graph() to write to
      * that file descriptor.  Will this work with windoze?  I have no idea.
@@ -496,6 +510,8 @@ Rrd_Tune(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *argv
 {
     char **argv2;
     
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
     rrd_tune(argc, argv2);
     getopt_cleanup(argc, argv2);
@@ -517,6 +533,8 @@ Rrd_Resize(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *ar
 {
     char **argv2;
     
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
     rrd_resize(argc, argv2);
     getopt_cleanup(argc, argv2);
@@ -538,6 +556,8 @@ Rrd_Restore(ClientData clientData, Tcl_Interp *interp, int argc, CONST84 char *a
 {
     char **argv2;
     
+    (void) clientData;	/* slience gcc */
+
     argv2 = getopt_init(argc, argv);
     rrd_restore(argc, argv2);
     getopt_cleanup(argc, argv2);

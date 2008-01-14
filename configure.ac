@@ -60,7 +60,8 @@ AH_TOP([
 
 AH_BOTTOM([
 #ifdef HAVE_FEATURES_H
-#define _XOPEN_SOURCE 600   
+#define _XOPEN_SOURCE 600
+#undef _BSD_SOURCE /* comment to prevent configure from modifying this line */   
 #define _BSD_SOURCE 1
 # include <features.h>
 #endif
@@ -315,7 +316,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS( sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h strings.h)
+AC_CHECK_HEADERS( features.h sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h float.h strings.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
