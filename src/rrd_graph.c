@@ -4066,10 +4066,10 @@ void rrd_graph_options(
         case 'n':{
             char      prop[15];
             double    size = 1;
-            char      font[1024] = "";
+            int       end;
 
             old_locale = setlocale(LC_NUMERIC, "C");
-            if (sscanf(optarg, "%10[A-Z]:%lf:%1000s", prop, &size, font) >= 2) {
+            if (sscanf(optarg, "%10[A-Z]:%lf%n", prop, &size, &end) >= 2) {
                 int       sindex, propidx;
 
                 setlocale(LC_NUMERIC, old_locale);
@@ -4079,8 +4079,17 @@ void rrd_graph_options(
                         if (size > 0) {
                             im->text_prop[propidx].size = size;
                         }
-                        if (strlen(font) > 0) {
-                            strcpy(im->text_prop[propidx].font, font);
+                        if (strlen(prop) > end) {
+                            if (prop[end] == ':') {
+                                strncpy(im->text_prop[propidx].font,
+                                        prop + end + 1, 255);
+                                im->text_prop[propidx].font[255] = '\0';
+                            } else {
+                                rrd_set_error
+                                    ("expected after font size in '%s'",
+                                     prop);
+                                return;
+                            }
                         }
                         if (propidx == sindex && sindex != 0)
                             break;
