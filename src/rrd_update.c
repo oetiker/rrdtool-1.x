@@ -1963,7 +1963,7 @@ static int write_RRA_row(
                 rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val,
                 rrd_file->pos, rrd->rra_def[rra_idx].cf_nam);
 #endif
-        if (pcdp_summary != NULL) {
+        if (*pcdp_summary != NULL) {
             iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
             /* append info to the return hash */
             *pcdp_summary = info_push(*pcdp_summary,
