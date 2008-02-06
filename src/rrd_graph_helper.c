@@ -791,13 +791,14 @@ int rrd_parse_PVHLAST(
             char      csv[64];
             char     *pch;
             float     dsh;
+            int       count = 0;
+            char     *saveptr;
 
             strcpy(csv, tmpstr);
-            int       count = 0;
-
-            pch = strtok(tmpstr, ",");
+            
+            pch = strtok_r(tmpstr, ",",&saveptr);
             while (pch != NULL) {
-                pch = strtok(NULL, ",");
+                pch = strtok_r(NULL, ",",&saveptr);
                 count++;
             }
             dprintf("- %d dash value(s) found: ", count);
@@ -805,7 +806,7 @@ int rrd_parse_PVHLAST(
                 gdp->dash = 1;
                 gdp->ndash = count;
                 gdp->p_dashes = (double *) malloc(sizeof(double) * count);
-                pch = strtok(csv, ",");
+                pch = strtok_r(csv, ",",&saveptr);
                 count = 0;
                 while (pch != NULL) {
                     if (sscanf(pch, "%f", &dsh)) {
@@ -813,7 +814,7 @@ int rrd_parse_PVHLAST(
                         dprintf("%.1f ", gdp->p_dashes[count]);
                         count++;
                     }
-                    pch = strtok(NULL, ",");
+                    pch = strtok_r(NULL, ",",&saveptr);
                 }
                 dprintf("\n");
             } else

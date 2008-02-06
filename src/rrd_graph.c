@@ -3450,6 +3450,9 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].rpnp = NULL;
     im->gdes[im->gdes_c - 1].p_dashes = NULL;
     im->gdes[im->gdes_c - 1].shift = 0.0;
+    im->gdes[im->gdes_c - 1].dash = 0;
+    im->gdes[im->gdes_c - 1].ndash = 0;
+    im->gdes[im->gdes_c - 1].offset = 0;
     im->gdes[im->gdes_c - 1].col.red = 0.0;
     im->gdes[im->gdes_c - 1].col.green = 0.0;
     im->gdes[im->gdes_c - 1].col.blue = 0.0;
