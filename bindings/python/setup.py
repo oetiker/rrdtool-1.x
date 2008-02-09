@@ -49,7 +49,7 @@ setup(name = "py-rrdtool",
       #packages = ['rrdtool'],
       ext_modules = [
           Extension(
-            "rrdtoolmodule",
+            "rrdtool",
             ["rrdtoolmodule.c"],
             libraries=['rrd'],
             library_dirs=[ os.path.join(TOP_BUILDDIR, 'src', '.libs') ],
