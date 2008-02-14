@@ -16,7 +16,7 @@ The create function of RRDtool lets you set up new Round Robin
 Database (B<RRD>) files.  The file is created at its final, full size
 and filled with I<*UNKNOWN*> data.
 
-=over 8
+=over
 
 =item I<filename>
 
@@ -63,7 +63,7 @@ In order to decide which data source type to use, review the
 definitions that follow. Also consult the section on "HOW TO MEASURE"
 for further insight.
 
-=over 4
+=over
 
 =item B<GAUGE>
 
@@ -89,9 +89,7 @@ room. Internally, derive works exactly like COUNTER but without
 overflow checks. So if your counter does not reset at 32 or 64 bit you
 might want to use DERIVE and combine it with a MIN value of 0.
 
-=over
-
-=item NOTE on COUNTER vs DERIVE
+NOTE on COUNTER vs DERIVE
 
 by Don Baarda E<lt>don.baarda@baesystems.comE<gt>
 
@@ -109,8 +107,6 @@ for high bandwidth interfaces and a 32bit counter, DERIVE with min=0 is
 probably preferable. If you are using a 64bit counter, just about any max
 setting will eliminate the possibility of mistaking a reset for a counter
 wrap.
-
-=back
 
 =item B<ABSOLUTE>
 

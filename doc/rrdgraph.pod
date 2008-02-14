@@ -43,7 +43,7 @@ it. For instance, you might be collecting B<bytes> per second, but
 want to display B<bits> per second. This is what the B<L<data
 calculation|rrdgraph_data/CDEF>> command is designed for. After
 B<consolidating> the data, a copy is made and this copy is modified
-using a rather powerful B<L<RPN|rrdgraph_rpn/>> command set.
+using a rather powerful L<rrdgraph_rpn> command set.
 
 When you are done fetching and processing the data, it is time to
 graph it (or print it).  This ends the B<rrdtool graph> sequence.
@@ -70,7 +70,7 @@ The start and end of the time series you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
 now, with the best possible resolution. B<Start> and B<end> can
 be specified in several formats, see
-L<AT-STYLE TIME SPECIFICATION|rrdfetch/> and L<rrdgraph_examples>.
+L<rrdfetch> and L<rrdgraph_examples>.
 By default, B<rrdtool graph> calculates the width of one pixel in
 the time domain and tries to get data from an B<RRA> with that
 resolution.  With the B<step> option you can alter this behaviour.
@@ -149,11 +149,7 @@ This might extend the scale too much for some logarithmic scales
 and for linear scales where B<--alt-autoscale> is needed.
 Using B<--no-gridfit> disables modification of the scale.
 
-=item Grid
-
-=over 4
-
-=item X-Axis
+=item X-Grid
 
 [B<-x>|B<--x-grid> I<GTM>B<:>I<GST>B<:>I<MTM>B<:>I<MST>B<:>I<LTM>B<:>I<LST>B<:>I<LPR>B<:>I<LFM>]
 
@@ -188,7 +184,7 @@ This places grid lines every 8 hours, major grid lines and labels
 each day. The labels are placed exactly between two major grid lines
 as they specify the complete day and not just midnight.
 
-=item Y-Axis
+=item Y-Grid
 
 [B<-y>|B<--y-grid> I<grid step>B<:>I<label factor>]
 
@@ -244,8 +240,6 @@ fideling with the y-axis labeling.
 With this option y-axis values on logarithmic graphs will be scaled to 
 the appropriate units (k, M, etc.) instead of using exponential notation.
 Note that for linear graphs, SI notation is used by default.
-
-=back
 
 =item Miscellaneous
 

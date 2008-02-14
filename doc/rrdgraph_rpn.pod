@@ -66,8 +66,6 @@ mean that any value other than 0 is considered to be true.
 
 Example: C<A,B,C,IF> should be read as C<if (A) then (B) else (C)>
 
-Z<>
-
 =item Comparing values
 
 B<MIN, MAX>
@@ -90,8 +88,6 @@ will always return an I<unknown>
 
 Example: C<CDEF:a=alpha,0,100,LIMIT> will return I<unknown> if
 alpha is lower than 0 or if it is higher than 100.
-
-Z<>
 
 =item Arithmetics
 
@@ -233,8 +229,6 @@ B<DUP, POP, EXC>
 
 Duplicate the top element, remove the top element, exchange the two
 top elements.
-
-Z<>
 
 =back
 
