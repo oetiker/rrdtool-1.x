@@ -9,6 +9,7 @@ if STATIC_PROGRAMS
 AM_LDFLAGS = -all-static
 endif
 
+INCLUDES = -DLOCALEDIR="\"$(datadir)/locale\""
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
@@ -50,6 +51,7 @@ RRD_C_FILES =		\
 noinst_HEADERS = \
 	unused.h \
 	rrd_getopt.h parsetime.h \
+	rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	fnv.h rrd_graph.h \

@@ -149,6 +149,11 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
     configure Makefile.in php4/configure php4/ltconfig*
 
 %build
+intltoolize --automake -c -f
+aclocal
+autoheader
+autoconf
+automake -a -c -f
 %configure \
     --with-perl-options='INSTALLDIRS="vendor"' \
 %if %{with_tcl}

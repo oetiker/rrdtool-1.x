@@ -4,8 +4,21 @@
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
 
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
+#include "../win32/config.h"
+#else
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
+#endif
+#endif
+
 #include "rrd_tool.h"
 #include "rrd_xport.h"
+#include "rrd_i18n.h"
+
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
 
 void      PrintUsage(
     char *cmd);
@@ -33,78 +46,78 @@ void PrintUsage(
 {
 
     char      help_main[] =
-        "RRDtool " PACKAGE_VERSION
+        N_("RRDtool %s"
         "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
-        "               Compiled " __DATE__ " " __TIME__ "\n\n"
-        "Usage: rrdtool [options] command command_options\n\n";
+        "               Compiled %s %s\n\n"
+        "Usage: rrdtool [options] command command_options\n\n");
 
     char      help_list[] =
-        "Valid commands: create, update, updatev, graph, dump, restore,\n"
+        N_("Valid commands: create, update, updatev, graph, dump, restore,\n"
         "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-        "\t\tresize, xport\n\n";
+        "\t\tresize, xport\n\n");
 
     char      help_listremote[] =
-        "Valid remote commands: quit, ls, cd, mkdir, pwd\n\n";
+        N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
 
 
     char      help_create[] =
-        "* create - create a new RRD\n\n"
+        N_("* create - create a new RRD\n\n"
         "\trrdtool create filename [--start|-b start time]\n"
         "\t\t[--step|-s step]\n"
         "\t\t[DS:ds-name:DST:dst arguments]\n"
-        "\t\t[RRA:CF:cf arguments]\n\n";
+        "\t\t[RRA:CF:cf arguments]\n\n");
 
     char      help_dump[] =
-        "* dump - dump an RRD to XML\n\n"
-        "\trrdtool dump filename.rrd >filename.xml\n\n";
+        N_("* dump - dump an RRD to XML\n\n"
+        "\trrdtool dump filename.rrd >filename.xml\n\n");
 
     char      help_info[] =
-        "* info - returns the configuration and status of the RRD\n\n"
-        "\trrdtool info filename.rrd\n\n";
+        N_("* info - returns the configuration and status of the RRD\n\n"
+        "\trrdtool info filename.rrd\n\n");
 
     char      help_restore[] =
-        "* restore - restore an RRD file from its XML form\n\n"
-        "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n";
+        N_("* restore - restore an RRD file from its XML form\n\n"
+        "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n");
 
     char      help_last[] =
-        "* last - show last update time for RRD\n\n"
-        "\trrdtool last filename.rrd\n\n";
+        N_("* last - show last update time for RRD\n\n"
+        "\trrdtool last filename.rrd\n\n");
 
     char      help_lastupdate[] =
-        "* lastupdate - returns the most recent datum stored for\n"
-        "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n";
+        N_("* lastupdate - returns the most recent datum stored for\n"
+        "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n");
 
     char      help_first[] =
-        "* first - show first update time for RRA within an RRD\n\n"
-        "\trrdtool first filename.rrd [--rraindex number]\n\n";
+        N_("* first - show first update time for RRA within an RRD\n\n"
+        "\trrdtool first filename.rrd [--rraindex number]\n\n");
 
     char      help_update[] =
-        "* update - update an RRD\n\n"
+        N_("* update - update an RRD\n\n"
         "\trrdtool update filename\n"
         "\t\t--template|-t ds-name:ds-name:...\n"
         "\t\ttime|N:value[:value...]\n\n"
         "\t\tat-time@value[:value...]\n\n"
-        "\t\t[ time:value[:value...] ..]\n\n";
+        "\t\t[ time:value[:value...] ..]\n\n");
 
     char      help_updatev[] =
-        "* updatev - a verbose version of update\n"
+        N_("* updatev - a verbose version of update\n"
         "\treturns information about values, RRAs, and datasources updated\n\n"
         "\trrdtool updatev filename\n"
         "\t\t--template|-t ds-name:ds-name:...\n"
         "\t\ttime|N:value[:value...]\n\n"
         "\t\tat-time@value[:value...]\n\n"
-        "\t\t[ time:value[:value...] ..]\n\n";
+        "\t\t[ time:value[:value...] ..]\n\n");
 
     char      help_fetch[] =
-        "* fetch - fetch data out of an RRD\n\n"
+        N_("* fetch - fetch data out of an RRD\n\n"
         "\trrdtool fetch filename.rrd CF\n"
         "\t\t[-r|--resolution resolution]\n"
-        "\t\t[-s|--start start] [-e|--end end]\n\n";
+        "\t\t[-s|--start start] [-e|--end end]\n\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
     char      help_graph1[] =
-        "* graph - generate a graph from one or several RRD\n\n"
+        N_("* graph - generate a graph from one or several RRD\n\n"
         "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
         "\t\t[-x|--x-grid x-axis grid and label]\n"
         "\t\t[-Y|--alt-y-grid]\n"
@@ -114,7 +127,7 @@ void PrintUsage(
         "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
         "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
         "\t\t[-g|--no-legend]\n"
-        "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n";
+        "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
     char      help_graph2[] =
         "\t\t[-n|--font FONTTAG:size:font]\n"
         "\t\t[-m|--zoom factor]\n"
@@ -148,7 +161,7 @@ void PrintUsage(
         "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n";
 
     char      help_tune1[] =
-        " * tune -  Modify some basic properties of an RRD\n\n"
+        N_(" * tune -  Modify some basic properties of an RRD\n\n"
         "\trrdtool tune filename\n"
         "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
         "\t\t[--data-source-type|-d ds-name:DST]\n"
@@ -157,50 +170,50 @@ void PrintUsage(
         "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
         "\t\t[--failure-threshold integer]\n"
         "\t\t[--window-length integer]\n"
-        "\t\t[--alpha adaptation-parameter]\n";
+        "\t\t[--alpha adaptation-parameter]\n");
     char      help_tune2[] =
-        " * tune -  Modify some basic properties of an RRD\n\n"
+        N_(" * tune -  Modify some basic properties of an RRD\n\n"
         "\t\t[--beta adaptation-parameter]\n"
         "\t\t[--gamma adaptation-parameter]\n"
         "\t\t[--gamma-deviation adaptation-parameter]\n"
-        "\t\t[--aberrant-reset ds-name]\n\n";
+        "\t\t[--aberrant-reset ds-name]\n\n");
 
     char      help_resize[] =
-        " * resize - alter the length of one of the RRAs in an RRD\n\n"
-        "\trrdtool resize filename rranum GROW|SHRINK rows\n\n";
+        N_(" * resize - alter the length of one of the RRAs in an RRD\n\n"
+        "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
 
     char      help_xport[] =
-        "* xport - generate XML dump from one or several RRD\n\n"
+        N_("* xport - generate XML dump from one or several RRD\n\n"
         "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
         "\t\t[-m|--maxrows rows]\n"
         "\t\t[--step seconds]\n"
         "\t\t[--enumds]\n"
         "\t\t[DEF:vname=rrd:ds-name:CF]\n"
-        "\t\t[CDEF:vname=rpn-expression]\n" "\t\t[XPORT:vname:legend]\n\n";
+        "\t\t[CDEF:vname=rpn-expression]\n" "\t\t[XPORT:vname:legend]\n\n");
 
     char      help_quit[] =
-        " * quit - closing a session in remote mode\n\n" "\trrdtool quit\n\n";
+        N_(" * quit - closing a session in remote mode\n\n" "\trrdtool quit\n\n");
 
     char      help_ls[] =
-        " * ls - lists all *.rrd files in current directory\n\n"
-        "\trrdtool ls\n\n";
+        N_(" * ls - lists all *.rrd files in current directory\n\n"
+        "\trrdtool ls\n\n");
 
     char      help_cd[] =
-        " * cd - changes the current directory\n\n"
-        "\trrdtool cd new directory\n\n";
+        N_(" * cd - changes the current directory\n\n"
+        "\trrdtool cd new directory\n\n");
 
     char      help_mkdir[] =
-        " * mkdir - creates a new directory\n\n"
-        "\trrdtool mkdir newdirectoryname\n\n";
+        N_(" * mkdir - creates a new directory\n\n"
+        "\trrdtool mkdir newdirectoryname\n\n");
 
     char      help_pwd[] =
-        " * pwd - returns the current working directory\n\n"
-        "\trrdtool pwd\n\n";
+        N_(" * pwd - returns the current working directory\n\n"
+        "\trrdtool pwd\n\n");
 
     char      help_lic[] =
-        "RRDtool is distributed under the Terms of the GNU General\n"
+        N_("RRDtool is distributed under the Terms of the GNU General\n"
         "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
-        "For more information read the RRD manpages\n\n";
+        "For more information read the RRD manpages\n\n");
 
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_TUNE,
@@ -250,76 +263,77 @@ void PrintUsage(
         else if (!strcmp(cmd, "pwd"))
             help_cmd = C_PWD;
     }
-    fputs(help_main, stdout);
+    fprintf (stdout, _(help_main), PACKAGE_VERSION, __DATE__, __TIME__);
+    fflush (stdout);
     switch (help_cmd) {
     case C_NONE:
-        fputs(help_list, stdout);
+        fputs(_(help_list), stdout);
         if (RemoteMode) {
-            fputs(help_listremote, stdout);
+            fputs(_(help_listremote), stdout);
         }
         break;
     case C_CREATE:
-        fputs(help_create, stdout);
+        fputs(_(help_create), stdout);
         break;
     case C_DUMP:
-        fputs(help_dump, stdout);
+        fputs(_(help_dump), stdout);
         break;
     case C_INFO:
-        fputs(help_info, stdout);
+        fputs(_(help_info), stdout);
         break;
     case C_RESTORE:
-        fputs(help_restore, stdout);
+        fputs(_(help_restore), stdout);
         break;
     case C_LAST:
-        fputs(help_last, stdout);
+        fputs(_(help_last), stdout);
         break;
     case C_LASTUPDATE:
-        fputs(help_lastupdate, stdout);
+        fputs(_(help_lastupdate), stdout);
         break;
     case C_FIRST:
-        fputs(help_first, stdout);
+        fputs(_(help_first), stdout);
         break;
     case C_UPDATE:
-        fputs(help_update, stdout);
+        fputs(_(help_update), stdout);
         break;
     case C_UPDATEV:
-        fputs(help_updatev, stdout);
+        fputs(_(help_updatev), stdout);
         break;
     case C_FETCH:
-        fputs(help_fetch, stdout);
+        fputs(_(help_fetch), stdout);
         break;
     case C_GRAPH:
-        fputs(help_graph1, stdout);
+        fputs(_(help_graph1), stdout);
         fputs(help_graph2, stdout);
         fputs(help_graph3, stdout);
         break;
     case C_TUNE:
-        fputs(help_tune1, stdout);
-        fputs(help_tune2, stdout);
+        fputs(_(help_tune1), stdout);
+        fputs(_(help_tune2), stdout);
         break;
     case C_RESIZE:
-        fputs(help_resize, stdout);
+        fputs(_(help_resize), stdout);
         break;
     case C_XPORT:
-        fputs(help_xport, stdout);
+        fputs(_(help_xport), stdout);
         break;
     case C_QUIT:
-        fputs(help_quit, stdout);
+        fputs(_(help_quit), stdout);
         break;
     case C_LS:
-        fputs(help_ls, stdout);
+        fputs(_(help_ls), stdout);
         break;
     case C_CD:
-        fputs(help_cd, stdout);
+        fputs(_(help_cd), stdout);
         break;
     case C_MKDIR:
-        fputs(help_mkdir, stdout);
+        fputs(_(help_mkdir), stdout);
         break;
     case C_PWD:
-        fputs(help_pwd, stdout);
+        fputs(_(help_pwd), stdout);
         break;
     }
-    fputs(help_lic, stdout);
+    fputs(_(help_lic), stdout);
 }
 
 static char *fgetslong(
@@ -363,6 +377,14 @@ int main(
 #endif
 #ifdef MUST_DISABLE_FPMASK
     fpsetmask(0);
+#endif
+#ifdef HAVE_LOCALE_H
+    setlocale (LC_ALL, "");
+#endif
+#ifdef HAVE_LIBINTL_H
+    bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
 #endif
     if (argc == 1) {
         PrintUsage("");

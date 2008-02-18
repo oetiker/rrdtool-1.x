@@ -62,6 +62,7 @@ find . -name Makefile.in | xargs rm -f _UNKNONW_
 find . -name .libs | xargs rm -r 
 find . -name .debs | xargs rm -r
 
+intltoolize --automake -c -f
 $aclocal
 libtoolize --copy --force
 autoheader --force  
