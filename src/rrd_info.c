@@ -155,6 +155,9 @@ rrd_info_r(char *filename) {
 	info.u_cnt=rrd.rra_def[i].row_cnt;
 	cd=info_push(cd,sprintf_alloc("rra[%d].rows",i),  RD_I_CNT,   info);
 
+	info.u_cnt=rrd.rra_ptr[i].cur_row;
+	cd=info_push(cd,sprintf_alloc("rra[%d].cur_row",i),  RD_I_CNT,   info);
+
 	info.u_cnt=rrd.rra_def[i].pdp_cnt;
 	cd=info_push(cd,sprintf_alloc("rra[%d].pdp_per_row",i),  RD_I_CNT,   info);
 

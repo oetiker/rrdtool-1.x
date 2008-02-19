@@ -4,6 +4,9 @@
  * rrd_create.c  creates new rrds
  *****************************************************************************/
 
+#include <stdlib.h>
+#include <time.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
@@ -13,6 +16,7 @@
 unsigned long FnvHash(const char *str);
 int create_hw_contingent_rras(rrd_t *rrd, unsigned short period, unsigned long hashed_name);
 void parseGENERIC_DS(const char *def,rrd_t *rrd, int ds_idx);
+long int rra_random_row(rra_def_t *);
 
 int
 rrd_create(int argc, char **argv) 
@@ -650,7 +654,7 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
      * the pointer a priori. */
     for (i=0; i < rrd->stat_head->rra_cnt; i++)
     {
-        rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
+        rrd->rra_ptr->cur_row = rra_random_row(&rrd->rra_def[i]);
         fwrite( rrd->rra_ptr, sizeof(rra_ptr_t),1,rrd_file);
     }
     
@@ -685,4 +689,18 @@ rrd_create_fn(const char *file_name, rrd_t *rrd)
     fclose(rrd_file);    
     rrd_free(rrd);
     return (0);
+}
+
+static int rand_init = 0;
+
+long int
+rra_random_row(rra_def_t *rra)
+{
+    if (!rand_init)
+    {
+        srandom((unsigned int)time(NULL) + (unsigned int)getpid());
+        rand_init++;
+    }
+    
+    return random() % rra->row_cnt;
 }
