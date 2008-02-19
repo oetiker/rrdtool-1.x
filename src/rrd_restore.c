@@ -52,6 +52,8 @@ void      parse_FAILURES_history(
     rrd_t *rrd,
     int rra_index,
     int ds_index);
+long int rra_random_row(
+    rra_def_t *);
 
 /* convert all occurrences of <BlaBlaBla> to <blablabla> */
 
@@ -617,12 +619,6 @@ int xml2rrd(
         return (-1);
     }
 
-    for (i = 0; i < (int) rrd->stat_head->rra_cnt; i++) {
-        /* last row in the xml file is the most recent; as
-         * rrd_update increments the current row pointer, set cur_row
-         * here to the last row. */
-        rrd->rra_ptr[i].cur_row = rrd->rra_def[i].row_cnt - 1;
-    }
     if (ptr == NULL)
         return -1;
     return 1;
@@ -639,7 +635,7 @@ int rrd_creat(
     rrd_t *rrd,
     char force_overwrite)
 {
-    unsigned long i, ii, val_cnt;
+    unsigned long i, ii, rra_offset;
     FILE     *rrd_file = NULL;
     int       fdflags;
     int       fd;
@@ -678,18 +674,30 @@ int rrd_creat(
 
     fwrite(rrd->cdp_prep, sizeof(cdp_prep_t), rrd->stat_head->rra_cnt *
            rrd->stat_head->ds_cnt, rrd_file);
+
+    for(i=0; i < rrd->stat_head->rra_cnt; i++)
+      rrd->rra_ptr[i].cur_row = rra_random_row(&rrd->rra_def[i]);
+
     fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt,
            rrd_file);
 
 
+    /* Dump RRD values */
+    rra_offset=0;
+    for(i=0; i <  rrd->stat_head->rra_cnt; i++)
+    {
+        unsigned long num_rows = rrd->rra_def[i].row_cnt;
+        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
+        unsigned long ds_cnt = rrd->stat_head->ds_cnt;
 
-    /* calculate the number of rrd_values to dump */
-    val_cnt = 0;
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++)
-        for (ii = 0; ii < rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt;
-             ii++)
-            val_cnt++;
-    fwrite(rrd->rrd_value, sizeof(rrd_value_t), val_cnt, rrd_file);
+        fwrite(rrd->rrd_value + (rra_offset + num_rows-1 - cur_row) * ds_cnt,
+               sizeof(rrd_value_t), (cur_row+1)*ds_cnt, rrd_file);
+
+        fwrite(rrd->rrd_value + rra_offset * ds_cnt,
+               sizeof(rrd_value_t), (num_rows-1 - cur_row)*ds_cnt, rrd_file);
+
+        rra_offset += num_rows;
+    }
 
     /* lets see if we had an error */
     if (ferror(rrd_file)) {

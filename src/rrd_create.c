@@ -4,6 +4,8 @@
  * rrd_create.c  creates new rrds
  *****************************************************************************/
 
+#include <stdlib.h>
+#include <time.h>
 #include <locale.h>
 
 #include "rrd_tool.h"
@@ -22,6 +24,8 @@ void      parseGENERIC_DS(
     const char *def,
     rrd_t *rrd,
     int ds_idx);
+long int  rra_random_row(
+    rra_def_t *);
 
 int rrd_create(
     int argc,
@@ -766,7 +770,7 @@ int rrd_create_fn(
      * would occur for cur_row = 1 because rrd_update increments
      * the pointer a priori. */
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        rrd->rra_ptr->cur_row = rrd->rra_def[i].row_cnt - 1;
+        rrd->rra_ptr->cur_row = rra_random_row(&rrd->rra_def[i]);
         write(rrd_file, rrd->rra_ptr, sizeof(rra_ptr_t));
     }
 
@@ -804,4 +808,18 @@ int rrd_create_fn(
     rrd_free(&rrd_dn);
     rrd_close(rrd_file_dn);
     return (0);
+}
+
+static int rand_init = 0;
+
+long int
+rra_random_row(rra_def_t *rra)
+{
+    if (!rand_init)
+    {
+        srandom((unsigned int)time(NULL) + (unsigned int)getpid());
+        rand_init++;
+    }
+    
+    return random() % rra->row_cnt;
 }
