@@ -291,8 +291,7 @@ dnl gettext
 GETTEXT_PACKAGE=rrdtool
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
-IT_PROG_INTLTOOL([0.35.0])
-
+IT_PROG_INTLTOOL([0.35.0],[no-xml])
 AM_GLIB_GNU_GETTEXT
 
 dnl How the vertical axis label is printed

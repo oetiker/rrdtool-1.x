@@ -33,7 +33,7 @@ then
   else
     automake=automake-1.9
     aclocal="aclocal-1.9"
-    for d in /usr/pack/automake-1.9.5-to/share/aclocal-1.9 /usr/share/aclocal-1.9; do
+    for d in /usr/pack/automake-1.9.5-to/share/aclocal-1.9 /usr/share/aclocal-1.9 /usr/pack/rrdtool-1.3svn-to/share/aclocal /usr/pack/intltool-0.37.0-to/share/aclocal ; do
       [ -d $d ] && aclocal="$aclocal -I $d"
     done
   fi

@@ -129,7 +129,7 @@ void PrintUsage(
         "\t\t[-g|--no-legend]\n"
         "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
     char      help_graph2[] =
-        "\t\t[-n|--font FONTTAG:size:font]\n"
+        N_("\t\t[-n|--font FONTTAG:size:font]\n"
         "\t\t[-m|--zoom factor]\n"
         "\t\t[-A|--alt-autoscale]\n"
         "\t\t[-M|--alt-autoscale-max]\n"
@@ -143,9 +143,9 @@ void PrintUsage(
         "\t\t[-f|--imginfo printfstr]\n"
         "\t\t[-a|--imgformat PNG]\n"
         "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
-        "\t\t[-W|--watermark string]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n";
+        "\t\t[-W|--watermark string]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     char      help_graph3[] =
-        "\t\t[CDEF:vname=rpn-expression]\n"
+        N_("\t\t[CDEF:vname=rpn-expression]\n"
         "\t\t[VDEF:vdefname=rpn-expression]\n"
         "\t\t[PRINT:vdefname:format]\n"
         "\t\t[GPRINT:vdefname:format]\n"
@@ -158,7 +158,7 @@ void PrintUsage(
         "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
         "\t\t[PRINT:vname:CF:format] (deprecated)\n"
         "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
-        "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n";
+        "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
 
     char      help_tune1[] =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
