@@ -429,7 +429,10 @@ int xml2rrd(
 
         eat_tag(&ptr2, "cdp_prep");
         for (i = 0; i < (int) rrd->stat_head->ds_cnt; i++) {
-            eat_tag(&ptr2, "ds");
+            if (eat_tag(&ptr2, "ds") != 1){
+                rrd_set_error("expected to find %lu <ds> entries in <cdp_prep>",rrd->stat_head->ds_cnt);
+                return -1;
+            }
             /* support to read CDP parameters */
             rra_index = rrd->stat_head->rra_cnt - 1;
             skip(&ptr2);
