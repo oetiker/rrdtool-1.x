@@ -47,14 +47,14 @@ void PrintUsage(
 
     char      help_main[] =
         N_("RRDtool %s"
-        "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
-        "               Compiled %s %s\n\n"
-        "Usage: rrdtool [options] command command_options\n\n");
+           "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "               Compiled %s %s\n\n"
+           "Usage: rrdtool [options] command command_options\n\n");
 
     char      help_list[] =
         N_("Valid commands: create, update, updatev, graph, dump, restore,\n"
-        "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-        "\t\tresize, xport\n\n");
+           "\t\tlast, lastupdate, first, info, fetch, tune,\n"
+           "\t\tresize, xport\n\n");
 
     char      help_listremote[] =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
@@ -62,158 +62,159 @@ void PrintUsage(
 
     char      help_create[] =
         N_("* create - create a new RRD\n\n"
-        "\trrdtool create filename [--start|-b start time]\n"
-        "\t\t[--step|-s step]\n"
-        "\t\t[DS:ds-name:DST:dst arguments]\n"
-        "\t\t[RRA:CF:cf arguments]\n\n");
+           "\trrdtool create filename [--start|-b start time]\n"
+           "\t\t[--step|-s step]\n"
+           "\t\t[DS:ds-name:DST:dst arguments]\n"
+           "\t\t[RRA:CF:cf arguments]\n\n");
 
     char      help_dump[] =
         N_("* dump - dump an RRD to XML\n\n"
-        "\trrdtool dump filename.rrd >filename.xml\n\n");
+           "\trrdtool dump filename.rrd >filename.xml\n\n");
 
     char      help_info[] =
         N_("* info - returns the configuration and status of the RRD\n\n"
-        "\trrdtool info filename.rrd\n\n");
+           "\trrdtool info filename.rrd\n\n");
 
     char      help_restore[] =
         N_("* restore - restore an RRD file from its XML form\n\n"
-        "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n");
+           "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n");
 
     char      help_last[] =
         N_("* last - show last update time for RRD\n\n"
-        "\trrdtool last filename.rrd\n\n");
+           "\trrdtool last filename.rrd\n\n");
 
     char      help_lastupdate[] =
         N_("* lastupdate - returns the most recent datum stored for\n"
-        "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n");
+           "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n");
 
     char      help_first[] =
         N_("* first - show first update time for RRA within an RRD\n\n"
-        "\trrdtool first filename.rrd [--rraindex number]\n\n");
+           "\trrdtool first filename.rrd [--rraindex number]\n\n");
 
     char      help_update[] =
         N_("* update - update an RRD\n\n"
-        "\trrdtool update filename\n"
-        "\t\t--template|-t ds-name:ds-name:...\n"
-        "\t\ttime|N:value[:value...]\n\n"
-        "\t\tat-time@value[:value...]\n\n"
-        "\t\t[ time:value[:value...] ..]\n\n");
+           "\trrdtool update filename\n"
+           "\t\t--template|-t ds-name:ds-name:...\n"
+           "\t\ttime|N:value[:value...]\n\n"
+           "\t\tat-time@value[:value...]\n\n"
+           "\t\t[ time:value[:value...] ..]\n\n");
 
     char      help_updatev[] =
         N_("* updatev - a verbose version of update\n"
-        "\treturns information about values, RRAs, and datasources updated\n\n"
-        "\trrdtool updatev filename\n"
-        "\t\t--template|-t ds-name:ds-name:...\n"
-        "\t\ttime|N:value[:value...]\n\n"
-        "\t\tat-time@value[:value...]\n\n"
-        "\t\t[ time:value[:value...] ..]\n\n");
+           "\treturns information about values, RRAs, and datasources updated\n\n"
+           "\trrdtool updatev filename\n"
+           "\t\t--template|-t ds-name:ds-name:...\n"
+           "\t\ttime|N:value[:value...]\n\n"
+           "\t\tat-time@value[:value...]\n\n"
+           "\t\t[ time:value[:value...] ..]\n\n");
 
     char      help_fetch[] =
         N_("* fetch - fetch data out of an RRD\n\n"
-        "\trrdtool fetch filename.rrd CF\n"
-        "\t\t[-r|--resolution resolution]\n"
-        "\t\t[-s|--start start] [-e|--end end]\n\n");
+           "\trrdtool fetch filename.rrd CF\n"
+           "\t\t[-r|--resolution resolution]\n"
+           "\t\t[-s|--start start] [-e|--end end]\n\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
     char      help_graph1[] =
         N_("* graph - generate a graph from one or several RRD\n\n"
-        "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
-        "\t\t[-x|--x-grid x-axis grid and label]\n"
-        "\t\t[-Y|--alt-y-grid]\n"
-        "\t\t[-y|--y-grid y-axis grid and label]\n"
-        "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
-        "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
-        "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
-        "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
-        "\t\t[-g|--no-legend]\n"
-        "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
+           "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
+           "\t\t[-x|--x-grid x-axis grid and label]\n"
+           "\t\t[-Y|--alt-y-grid]\n"
+           "\t\t[-y|--y-grid y-axis grid and label]\n"
+           "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
+           "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
+           "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
+           "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
+           "\t\t[-g|--no-legend]\n"
+           "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
     char      help_graph2[] =
         N_("\t\t[-n|--font FONTTAG:size:font]\n"
-        "\t\t[-m|--zoom factor]\n"
-        "\t\t[-A|--alt-autoscale]\n"
-        "\t\t[-M|--alt-autoscale-max]\n"
-        "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
-        "\t\t[-B|--font-smoothing-threshold size]\n"
-        "\t\t[-E|--slope-mode]\n"
-        "\t\t[-N|--no-gridfit]\n"
-        "\t\t[-X|--units-exponent value]\n"
-        "\t\t[-L|--units-length value]\n"
-        "\t\t[-S|--step seconds]\n"
-        "\t\t[-f|--imginfo printfstr]\n"
-        "\t\t[-a|--imgformat PNG]\n"
-        "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
-        "\t\t[-W|--watermark string]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n");
+           "\t\t[-m|--zoom factor]\n"
+           "\t\t[-A|--alt-autoscale]\n"
+           "\t\t[-M|--alt-autoscale-max]\n"
+           "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
+           "\t\t[-B|--font-smoothing-threshold size]\n"
+           "\t\t[-E|--slope-mode]\n"
+           "\t\t[-N|--no-gridfit]\n"
+           "\t\t[-X|--units-exponent value]\n"
+           "\t\t[-L|--units-length value]\n"
+           "\t\t[-S|--step seconds]\n"
+           "\t\t[-f|--imginfo printfstr]\n"
+           "\t\t[-a|--imgformat PNG]\n"
+           "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
+           "\t\t[-W|--watermark string]\n"
+           "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     char      help_graph3[] =
         N_("\t\t[CDEF:vname=rpn-expression]\n"
-        "\t\t[VDEF:vdefname=rpn-expression]\n"
-        "\t\t[PRINT:vdefname:format]\n"
-        "\t\t[GPRINT:vdefname:format]\n"
-        "\t\t[COMMENT:text]\n"
-        "\t\t[SHIFT:vname:offset]\n"
-        "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
-        "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
-        "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
-        "\t\t[LINE[width]:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
-        "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
-        "\t\t[PRINT:vname:CF:format] (deprecated)\n"
-        "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
-        "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
+           "\t\t[VDEF:vdefname=rpn-expression]\n"
+           "\t\t[PRINT:vdefname:format]\n" "\t\t[GPRINT:vdefname:format]\n"
+           "\t\t[COMMENT:text]\n" "\t\t[SHIFT:vname:offset]\n"
+           "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
+           "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
+           "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
+           "\t\t[LINE[width]:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+           "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
+           "\t\t[PRINT:vname:CF:format] (deprecated)\n"
+           "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
+           "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
 
     char      help_tune1[] =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
-        "\trrdtool tune filename\n"
-        "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
-        "\t\t[--data-source-type|-d ds-name:DST]\n"
-        "\t\t[--data-source-rename|-r old-name:new-name]\n"
-        "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n"
-        "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
-        "\t\t[--failure-threshold integer]\n"
-        "\t\t[--window-length integer]\n"
-        "\t\t[--alpha adaptation-parameter]\n");
+           "\trrdtool tune filename\n"
+           "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
+           "\t\t[--data-source-type|-d ds-name:DST]\n"
+           "\t\t[--data-source-rename|-r old-name:new-name]\n"
+           "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n"
+           "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
+           "\t\t[--failure-threshold integer]\n"
+           "\t\t[--window-length integer]\n"
+           "\t\t[--alpha adaptation-parameter]\n");
     char      help_tune2[] =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
-        "\t\t[--beta adaptation-parameter]\n"
-        "\t\t[--gamma adaptation-parameter]\n"
-        "\t\t[--gamma-deviation adaptation-parameter]\n"
-        "\t\t[--aberrant-reset ds-name]\n\n");
+           "\t\t[--beta adaptation-parameter]\n"
+           "\t\t[--gamma adaptation-parameter]\n"
+           "\t\t[--gamma-deviation adaptation-parameter]\n"
+           "\t\t[--aberrant-reset ds-name]\n\n");
 
     char      help_resize[] =
         N_(" * resize - alter the length of one of the RRAs in an RRD\n\n"
-        "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
+           "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
 
     char      help_xport[] =
         N_("* xport - generate XML dump from one or several RRD\n\n"
-        "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
-        "\t\t[-m|--maxrows rows]\n"
-        "\t\t[--step seconds]\n"
-        "\t\t[--enumds]\n"
-        "\t\t[DEF:vname=rrd:ds-name:CF]\n"
-        "\t\t[CDEF:vname=rpn-expression]\n" "\t\t[XPORT:vname:legend]\n\n");
+           "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
+           "\t\t[-m|--maxrows rows]\n"
+           "\t\t[--step seconds]\n"
+           "\t\t[--enumds]\n"
+           "\t\t[DEF:vname=rrd:ds-name:CF]\n"
+           "\t\t[CDEF:vname=rpn-expression]\n"
+           "\t\t[XPORT:vname:legend]\n\n");
 
     char      help_quit[] =
-        N_(" * quit - closing a session in remote mode\n\n" "\trrdtool quit\n\n");
+        N_(" * quit - closing a session in remote mode\n\n"
+           "\trrdtool quit\n\n");
 
     char      help_ls[] =
         N_(" * ls - lists all *.rrd files in current directory\n\n"
-        "\trrdtool ls\n\n");
+           "\trrdtool ls\n\n");
 
     char      help_cd[] =
         N_(" * cd - changes the current directory\n\n"
-        "\trrdtool cd new directory\n\n");
+           "\trrdtool cd new directory\n\n");
 
     char      help_mkdir[] =
         N_(" * mkdir - creates a new directory\n\n"
-        "\trrdtool mkdir newdirectoryname\n\n");
+           "\trrdtool mkdir newdirectoryname\n\n");
 
     char      help_pwd[] =
         N_(" * pwd - returns the current working directory\n\n"
-        "\trrdtool pwd\n\n");
+           "\trrdtool pwd\n\n");
 
     char      help_lic[] =
         N_("RRDtool is distributed under the Terms of the GNU General\n"
-        "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
-        "For more information read the RRD manpages\n\n");
+           "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
+           "For more information read the RRD manpages\n\n");
 
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_TUNE,
@@ -263,8 +264,8 @@ void PrintUsage(
         else if (!strcmp(cmd, "pwd"))
             help_cmd = C_PWD;
     }
-    fprintf (stdout, _(help_main), PACKAGE_VERSION, __DATE__, __TIME__);
-    fflush (stdout);
+    fprintf(stdout, _(help_main), PACKAGE_VERSION, __DATE__, __TIME__);
+    fflush(stdout);
     switch (help_cmd) {
     case C_NONE:
         fputs(_(help_list), stdout);
@@ -379,12 +380,12 @@ int main(
     fpsetmask(0);
 #endif
 #ifdef HAVE_LOCALE_H
-    setlocale (LC_ALL, "");
+    setlocale(LC_ALL, "");
 #endif
 #ifdef HAVE_LIBINTL_H
-    bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
+    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
+    bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
+    textdomain(GETTEXT_PACKAGE);
 #endif
     if (argc == 1) {
         PrintUsage("");
@@ -740,10 +741,11 @@ int HandleInputLine(
                    XML_ENCODING);
             printf("<%s>\n", ROOT_TAG);
             printf("  <%s>\n", META_TAG);
-            printf("    <%s>%lu</%s>\n", META_START_TAG, (unsigned long) start + step,
-                   META_START_TAG);
+            printf("    <%s>%lu</%s>\n", META_START_TAG,
+                   (unsigned long) start + step, META_START_TAG);
             printf("    <%s>%lu</%s>\n", META_STEP_TAG, step, META_STEP_TAG);
-            printf("    <%s>%lu</%s>\n", META_END_TAG, (unsigned long) end, META_END_TAG);
+            printf("    <%s>%lu</%s>\n", META_END_TAG, (unsigned long) end,
+                   META_END_TAG);
             printf("    <%s>%lu</%s>\n", META_ROWS_TAG, row_cnt,
                    META_ROWS_TAG);
             printf("    <%s>%lu</%s>\n", META_COLS_TAG, col_cnt,

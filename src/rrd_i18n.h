@@ -4,7 +4,7 @@
  * rrd_i18n.h   Common Header File
  *****************************************************************************/
 #ifdef  __cplusplus
-extern "C" {
+extern    "C" {
 #endif
 
 

@@ -52,7 +52,7 @@ void      parse_FAILURES_history(
     rrd_t *rrd,
     int rra_index,
     int ds_index);
-long int rra_random_row(
+long int  rra_random_row(
     rra_def_t *);
 
 /* convert all occurrences of <BlaBlaBla> to <blablabla> */
@@ -429,8 +429,10 @@ int xml2rrd(
 
         eat_tag(&ptr2, "cdp_prep");
         for (i = 0; i < (int) rrd->stat_head->ds_cnt; i++) {
-            if (eat_tag(&ptr2, "ds") != 1){
-                rrd_set_error("expected to find %lu <ds> entries in <cdp_prep>",rrd->stat_head->ds_cnt);
+            if (eat_tag(&ptr2, "ds") != 1) {
+                rrd_set_error
+                    ("expected to find %lu <ds> entries in <cdp_prep>",
+                     rrd->stat_head->ds_cnt);
                 return -1;
             }
             /* support to read CDP parameters */
@@ -678,26 +680,27 @@ int rrd_creat(
     fwrite(rrd->cdp_prep, sizeof(cdp_prep_t), rrd->stat_head->rra_cnt *
            rrd->stat_head->ds_cnt, rrd_file);
 
-    for(i=0; i < rrd->stat_head->rra_cnt; i++)
-      rrd->rra_ptr[i].cur_row = rra_random_row(&rrd->rra_def[i]);
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++)
+        rrd->rra_ptr[i].cur_row = rra_random_row(&rrd->rra_def[i]);
 
     fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt,
            rrd_file);
 
 
     /* Dump RRD values */
-    rra_offset=0;
-    for(i=0; i <  rrd->stat_head->rra_cnt; i++)
-    {
+    rra_offset = 0;
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         unsigned long num_rows = rrd->rra_def[i].row_cnt;
         unsigned long cur_row = rrd->rra_ptr[i].cur_row;
         unsigned long ds_cnt = rrd->stat_head->ds_cnt;
 
-        fwrite(rrd->rrd_value + (rra_offset + num_rows-1 - cur_row) * ds_cnt,
-               sizeof(rrd_value_t), (cur_row+1)*ds_cnt, rrd_file);
+        fwrite(rrd->rrd_value +
+               (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
+               sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, rrd_file);
 
         fwrite(rrd->rrd_value + rra_offset * ds_cnt,
-               sizeof(rrd_value_t), (num_rows-1 - cur_row)*ds_cnt, rrd_file);
+               sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt,
+               rrd_file);
 
         rra_offset += num_rows;
     }

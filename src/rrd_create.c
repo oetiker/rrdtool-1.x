@@ -694,8 +694,8 @@ int rrd_create_fn(
 
     if ((rrd->pdp_prep = calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
-        free(rrd->stat_head);       
-        free(rrd->live_head);       
+        free(rrd->stat_head);
+        free(rrd->live_head);
         close(rrd_file);
         return (-1);
     }
@@ -711,8 +711,8 @@ int rrd_create_fn(
 
     if ((rrd->cdp_prep = calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
-        free(rrd->stat_head);       
-        free(rrd->live_head);       
+        free(rrd->stat_head);
+        free(rrd->live_head);
         close(rrd_file);
         return (-1);
     }
@@ -759,8 +759,8 @@ int rrd_create_fn(
 
     if ((rrd->rra_ptr = calloc(1, sizeof(rra_ptr_t))) == NULL) {
         rrd_set_error("allocating rra_ptr");
-        free(rrd->stat_head);       
-        free(rrd->live_head);       
+        free(rrd->stat_head);
+        free(rrd->live_head);
         close(rrd_file);
         return (-1);
     }
@@ -777,8 +777,8 @@ int rrd_create_fn(
     /* write the empty data area */
     if ((unknown = (rrd_value_t *) malloc(512 * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("allocating unknown");
-        free(rrd->stat_head);       
-        free(rrd->live_head);       
+        free(rrd->stat_head);
+        free(rrd->live_head);
         close(rrd_file);
         return (-1);
     }
@@ -796,8 +796,8 @@ int rrd_create_fn(
     }
     free(unknown);
     fdatasync(rrd_file);
-    free(rrd->stat_head);       
-    free(rrd->live_head);       
+    free(rrd->stat_head);
+    free(rrd->live_head);
     if (close(rrd_file) == -1) {
         rrd_set_error("creating rrd: %s", rrd_strerror(errno));
         return -1;
@@ -812,14 +812,13 @@ int rrd_create_fn(
 
 static int rand_init = 0;
 
-long int
-rra_random_row(rra_def_t *rra)
+long int rra_random_row(
+    rra_def_t *rra)
 {
-    if (!rand_init)
-    {
-        srandom((unsigned int)time(NULL) + (unsigned int)getpid());
+    if (!rand_init) {
+        srandom((unsigned int) time(NULL) + (unsigned int) getpid());
         rand_init++;
     }
-    
+
     return random() % rra->row_cnt;
 }
