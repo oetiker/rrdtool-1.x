@@ -740,10 +740,10 @@ int HandleInputLine(
                    XML_ENCODING);
             printf("<%s>\n", ROOT_TAG);
             printf("  <%s>\n", META_TAG);
-            printf("    <%s>%lu</%s>\n", META_START_TAG, start + step,
+            printf("    <%s>%lu</%s>\n", META_START_TAG, (unsigned long) start + step,
                    META_START_TAG);
             printf("    <%s>%lu</%s>\n", META_STEP_TAG, step, META_STEP_TAG);
-            printf("    <%s>%lu</%s>\n", META_END_TAG, end, META_END_TAG);
+            printf("    <%s>%lu</%s>\n", META_END_TAG, (unsigned long) end, META_END_TAG);
             printf("    <%s>%lu</%s>\n", META_ROWS_TAG, row_cnt,
                    META_ROWS_TAG);
             printf("    <%s>%lu</%s>\n", META_COLS_TAG, col_cnt,

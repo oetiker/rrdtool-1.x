@@ -113,8 +113,8 @@ int rrd_dump_r(
 #else
 # error "Need strftime"
 #endif
-    fprintf(out_file, "\t<lastupdate> %ld </lastupdate> <!-- %s -->\n\n",
-            rrd.live_head->last_up, somestring);
+    fprintf(out_file, "\t<lastupdate> %lu </lastupdate> <!-- %s -->\n\n",
+            (unsigned long) rrd.live_head->last_up, somestring);
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
         fprintf(out_file, "\t<ds>\n");
         fprintf(out_file, "\t\t<name> %s </name>\n", rrd.ds_def[i].ds_nam);
