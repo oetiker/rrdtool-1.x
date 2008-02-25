@@ -260,7 +260,7 @@ int rrd_fetch_fn(
             tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
                                           * rrd.rra_def[i].pdp_cnt));
             /* best full match */
-            if (cal_end >= *end && cal_start <= *start) {
+            if (cal_start <= *start) {
                 if (first_full || (tmp_step_diff < best_full_step_diff)) {
                     first_full = 0;
                     best_full_step_diff = tmp_step_diff;
@@ -277,8 +277,6 @@ int rrd_fetch_fn(
                 tmp_match = full_match;
                 if (cal_start > *start)
                     tmp_match -= (cal_start - *start);
-                if (cal_end < *end)
-                    tmp_match -= (*end - cal_end);
                 if (first_part ||
                     (best_match < tmp_match) ||
                     (best_match == tmp_match &&
