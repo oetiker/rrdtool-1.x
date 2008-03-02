@@ -3346,6 +3346,7 @@ int graph_paint(
         case GF_HRULE:
             if (im->gdes[i].yrule >= im->minval
                 && im->gdes[i].yrule <= im->maxval)
+	    {	
                 cairo_save(im->cr);
             if (im->gdes[i].dash) {
                 cairo_set_dash(im->cr, im->gdes[i].p_dashes,
@@ -3358,10 +3359,12 @@ int graph_paint(
                      1.0, im->gdes[i].col);
             cairo_stroke(im->cr);
             cairo_restore(im->cr);
+	    }
             break;
         case GF_VRULE:
             if (im->gdes[i].xrule >= im->start
                 && im->gdes[i].xrule <= im->end)
+	    {	
                 cairo_save(im->cr);
             if (im->gdes[i].dash) {
                 cairo_set_dash(im->cr, im->gdes[i].p_dashes,
@@ -3373,6 +3376,7 @@ int graph_paint(
                      im->yorigin - im->ysize, 1.0, im->gdes[i].col);
             cairo_stroke(im->cr);
             cairo_restore(im->cr);
+	    }
             break;
         default:
             break;
