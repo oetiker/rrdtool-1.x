@@ -99,6 +99,11 @@ B<+, -, *, /, %>
 
 Add, subtract, multiply, divide, modulo
 
+B<ADDNAN>
+
+NAN-safe addition. If one parameter is NAN/UNKNOWN it'll be treated as
+zero. If both parameters are NAN/UNKNOWN, NAN/UNKNOWN will be returned.
+
 B<SIN, COS, LOG, EXP, SQRT>
 
 Sine and cosine (input in radians), log and exp (natural logarithm),
