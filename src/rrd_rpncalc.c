@@ -705,8 +705,8 @@ short rpn_calc(
             break;
         case OP_IF:
             stackunderflow(2);
-            rpnstack->s[stptr - 2] = rpnstack->s[stptr - 2] != 0.0 ?
-                rpnstack->s[stptr - 1] : rpnstack->s[stptr];
+            rpnstack->s[stptr - 2] = ( isnan(rpnstack->s[stptr - 2]) || rpnstack->s[stptr - 2] == 0.0 ) ?
+                rpnstack->s[stptr] : rpnstack->s[stptr - 1];
             stptr--;
             stptr--;
             break;
