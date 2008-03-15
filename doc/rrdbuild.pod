@@ -239,6 +239,16 @@ config file.
  $MAKE
  $MAKE install
 
+=item Building LibXML2
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
+ gunzip -c libxml2-sources-2.6.31.tar.gz | tar xf -
+ cd libxml2-sources-2.6.31
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
+
 =back
 
 Now all the dependent libraries are built and you can try again. This time

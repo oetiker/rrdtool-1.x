@@ -547,14 +547,14 @@ short rpn_calc(
             break;
         case OP_ADDNAN:
             stackunderflow(1);
-			if (isnan(rpnstack->s[stptr - 1])) {
-	            rpnstack->s[stptr - 1] = rpnstack->s[stptr];
-			} else if (isnan(rpnstack->s[stptr])) {
-	            //rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1];
-			} else {
- 	           rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1]
-    	            + rpnstack->s[stptr];
-			}
+            if (isnan(rpnstack->s[stptr - 1])) {
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            } else if (isnan(rpnstack->s[stptr])) {
+                //rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1];
+            } else {
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1]
+                    + rpnstack->s[stptr];
+            }
 
             stptr--;
             break;
@@ -705,8 +705,10 @@ short rpn_calc(
             break;
         case OP_IF:
             stackunderflow(2);
-            rpnstack->s[stptr - 2] = ( isnan(rpnstack->s[stptr - 2]) || rpnstack->s[stptr - 2] == 0.0 ) ?
-                rpnstack->s[stptr] : rpnstack->s[stptr - 1];
+            rpnstack->s[stptr - 2] = (isnan(rpnstack->s[stptr - 2])
+                                      || rpnstack->s[stptr - 2] ==
+                                      0.0) ? rpnstack->s[stptr] : rpnstack->
+                s[stptr - 1];
             stptr--;
             stptr--;
             break;
