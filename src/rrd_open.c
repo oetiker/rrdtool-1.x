@@ -268,6 +268,7 @@ rrd_file_t *rrd_open(
 }
 
 
+#if defined DEBUG && DEBUG > 1
 /* Print list of in-core pages of a the current rrd_file.  */
 static
 void mincore_print(
@@ -310,6 +311,7 @@ void mincore_print(
     fprintf(stderr, "sorry mincore only works with mmap");
 #endif
 }
+#endif                          /* defined DEBUG && DEBUG > 1 */
 
 
 /* drop cache except for the header and the active pages */
