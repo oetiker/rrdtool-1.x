@@ -45,53 +45,53 @@ void PrintUsage(
     char *cmd)
 {
 
-    char      help_main[] =
+    const char *help_main =
         N_("RRDtool %s"
            "  Copyright 1997-2007 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n\n");
 
-    char      help_list[] =
+    const char *help_list =
         N_("Valid commands: create, update, updatev, graph, dump, restore,\n"
            "\t\tlast, lastupdate, first, info, fetch, tune,\n"
            "\t\tresize, xport\n\n");
 
-    char      help_listremote[] =
+    const char *help_listremote =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
 
 
-    char      help_create[] =
+    const char *help_create =
         N_("* create - create a new RRD\n\n"
            "\trrdtool create filename [--start|-b start time]\n"
            "\t\t[--step|-s step]\n"
            "\t\t[DS:ds-name:DST:dst arguments]\n"
            "\t\t[RRA:CF:cf arguments]\n\n");
 
-    char      help_dump[] =
+    const char *help_dump =
         N_("* dump - dump an RRD to XML\n\n"
            "\trrdtool dump filename.rrd >filename.xml\n\n");
 
-    char      help_info[] =
+    const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
            "\trrdtool info filename.rrd\n\n");
 
-    char      help_restore[] =
+    const char *help_restore =
         N_("* restore - restore an RRD file from its XML form\n\n"
            "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n");
 
-    char      help_last[] =
+    const char *help_last =
         N_("* last - show last update time for RRD\n\n"
            "\trrdtool last filename.rrd\n\n");
 
-    char      help_lastupdate[] =
+    const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
            "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n");
 
-    char      help_first[] =
+    const char *help_first =
         N_("* first - show first update time for RRA within an RRD\n\n"
            "\trrdtool first filename.rrd [--rraindex number]\n\n");
 
-    char      help_update[] =
+    const char *help_update =
         N_("* update - update an RRD\n\n"
            "\trrdtool update filename\n"
            "\t\t--template|-t ds-name:ds-name:...\n"
@@ -99,7 +99,7 @@ void PrintUsage(
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n\n");
 
-    char      help_updatev[] =
+    const char *help_updatev =
         N_("* updatev - a verbose version of update\n"
            "\treturns information about values, RRAs, and datasources updated\n\n"
            "\trrdtool updatev filename\n"
@@ -108,7 +108,7 @@ void PrintUsage(
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n\n");
 
-    char      help_fetch[] =
+    const char *help_fetch =
         N_("* fetch - fetch data out of an RRD\n\n"
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
@@ -116,7 +116,7 @@ void PrintUsage(
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
-    char      help_graph1[] =
+    const char *help_graph1 =
         N_("* graph - generate a graph from one or several RRD\n\n"
            "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-x|--x-grid x-axis grid and label]\n"
@@ -128,7 +128,7 @@ void PrintUsage(
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
            "\t\t[-g|--no-legend]\n"
            "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
-    char      help_graph2[] =
+    const char *help_graph2 =
         N_("\t\t[-n|--font FONTTAG:size:font]\n"
            "\t\t[-m|--zoom factor]\n"
            "\t\t[-A|--alt-autoscale]\n"
@@ -145,7 +145,7 @@ void PrintUsage(
            "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
-    char      help_graph3[] =
+    const char *help_graph3 =
         N_("\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[VDEF:vdefname=rpn-expression]\n"
            "\t\t[PRINT:vdefname:format]\n" "\t\t[GPRINT:vdefname:format]\n"
@@ -159,7 +159,7 @@ void PrintUsage(
            "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
            "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
 
-    char      help_tune1[] =
+    const char *help_tune1 =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
            "\trrdtool tune filename\n"
            "\t\t[--heartbeat|-h ds-name:heartbeat]\n"
@@ -170,18 +170,18 @@ void PrintUsage(
            "\t\t[--failure-threshold integer]\n"
            "\t\t[--window-length integer]\n"
            "\t\t[--alpha adaptation-parameter]\n");
-    char      help_tune2[] =
+    const char *help_tune2 =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
            "\t\t[--beta adaptation-parameter]\n"
            "\t\t[--gamma adaptation-parameter]\n"
            "\t\t[--gamma-deviation adaptation-parameter]\n"
            "\t\t[--aberrant-reset ds-name]\n\n");
 
-    char      help_resize[] =
+    const char *help_resize =
         N_(" * resize - alter the length of one of the RRAs in an RRD\n\n"
            "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
 
-    char      help_xport[] =
+    const char *help_xport =
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n"
@@ -191,27 +191,27 @@ void PrintUsage(
            "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n");
 
-    char      help_quit[] =
+    const char *help_quit =
         N_(" * quit - closing a session in remote mode\n\n"
            "\trrdtool quit\n\n");
 
-    char      help_ls[] =
+    const char *help_ls =
         N_(" * ls - lists all *.rrd files in current directory\n\n"
            "\trrdtool ls\n\n");
 
-    char      help_cd[] =
+    const char *help_cd =
         N_(" * cd - changes the current directory\n\n"
            "\trrdtool cd new directory\n\n");
 
-    char      help_mkdir[] =
+    const char *help_mkdir =
         N_(" * mkdir - creates a new directory\n\n"
            "\trrdtool mkdir newdirectoryname\n\n");
 
-    char      help_pwd[] =
+    const char *help_pwd =
         N_(" * pwd - returns the current working directory\n\n"
            "\trrdtool pwd\n\n");
 
-    char      help_lic[] =
+    const char *help_lic =
         N_("RRDtool is distributed under the Terms of the GNU General\n"
            "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
            "For more information read the RRD manpages\n\n");
