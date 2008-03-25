@@ -3,28 +3,30 @@
  * This file:     Copyright 2008 Florian octo Forster
  * Distributed under the GPL
  *****************************************************************************
- * rrd_thread_safe.c   Contains routines used when thread safety is required
+ * rrd_restore.c   Contains logic to parse XML input and create an RRD file
  *****************************************************************************
  * $Id$
  *************************************************************************** */
-* *This program is free software;
-you can redistribute it and / or modify it
-    *
-    under the terms of the GNU General Public License as published by the Free
-    * Software Foundation;
-either    version 2 of the License, or(
-    at your option)
-* any later version.
-    * *This program is distributed in the hope that it will be useful,
-but WITHOUT * ANY WARRANTY;
-    without even the implied warranty of MERCHANTABILITY or
-        *
-        FITNESS FOR A PARTICULAR PURPOSE.
-        See the GNU General Public License for *more details. *
-        *You should have received a copy of the GNU General Public License
-        along * with this program; if not
-      , write to the Free Software Foundation, Inc., *51 Franklin St, Fifth Floor, Boston, MA 02110 - 1301 USA * *Authors:
-        *Florian octo Forster < octo at verplant.org > **/
+
+/*
+ * This program is free software; you can redistribute it and / or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (t your option)
+ * any later version.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin St, Fifth Floor, Boston, MA 02110 - 1301 USA
+ *
+ * Authors:
+ *   Florian octo Forster <octo at verplant.org>
+ **/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,13 +42,13 @@ but WITHOUT * ANY WARRANTY;
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof ((a)[0]))
-    static int opt_range_check = 0;
-    static int opt_force_overwrite = 0;
+static int opt_range_check = 0;
+static int opt_force_overwrite = 0;
 
 /*
  * Auxiliary functions
  */
-    static int get_string_from_node(
+static int get_string_from_node(
     xmlDoc * doc,
     xmlNode * node,
     char *buffer,
