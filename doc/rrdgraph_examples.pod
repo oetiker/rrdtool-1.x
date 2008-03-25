@@ -115,6 +115,8 @@ default style: - - - - -
 more fancy style with offset: - -  --- -  --- -
     LINE1:data#FF0000:"another dashed line":dashes=15,5,5,10:dash-offset=10
 
+=back
+
 =head2 Time ranges
 
     Last four weeks: --start end-4w --end 00:00
