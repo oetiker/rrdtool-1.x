@@ -1745,8 +1745,14 @@ static rrd_value_t calculate_cdp_val(
     rrd_value_t pdp_temp_val,
     unsigned long elapsed_pdp_st,
     int current_cf,
+#ifdef DEBUG
     int i,
-    int ii)
+    int ii
+#else
+    int UNUSED(i),
+    int UNUSED(ii)
+#endif
+)
 {
     if (isnan(cdp_val)) {
         if (current_cf == CF_AVERAGE) {
