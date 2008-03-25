@@ -98,7 +98,7 @@ int rrd_dump_r(
         out_file = stdout;
     }
 
-    fputs("<?xml version=" 1.0 " encoding=\"utf-8\"?>", out_file);
+    fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>", out_file);
     fputs
         ("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">",
          out_file);
