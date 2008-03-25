@@ -4084,7 +4084,7 @@ void rrd_graph_options(
                         if (size > 0) {
                             im->text_prop[propidx].size = size;
                         }
-                        if (strlen(prop) > end) {
+                        if ((int) strlen(prop) > end) {
                             if (prop[end] == ':') {
                                 strncpy(im->text_prop[propidx].font,
                                         prop + end + 1, 255);
