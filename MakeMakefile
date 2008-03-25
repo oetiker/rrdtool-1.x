@@ -10,7 +10,7 @@ vcheck (){
   perl <<PERL
 @t = split /\./, "$1";
 @v = map { int \$_ } split /\./, (split /\s+/, \`$2\`)[3];
-print "$2 = ", (join ".",@v), "  (expected $1)\n";
+print "$2 = ", (join ".",@v), "  (expecting $1 or later)\n";
 \$v = \$t[0]*1000000+\$t[1]*1000+\$t[2] <= \$v[0]*1000000+\$v[1]*1000+\$v[2];
 exit \$v
 PERL
@@ -49,18 +49,22 @@ then
   ERROR=1
 fi
 
+if vcheck 0.35.0 "intltoolize --version"
+then
+  echo "get a copy of GNU intltoolize >= 0.35.0"
+  ERROR=1
+fi
+	
 if [ $ERROR -ne 0 ]
 then
   exit 1
 fi
 
 # cleanup
-set -x
-find . -name Makefile | grep -v win32 | grep -v netware | xargs rm -f _UNKNONW_
-find . -name "*.la" | xargs rm -f _UNKNOWN_
-find . -name Makefile.in | xargs rm -f _UNKNONW_
-find . -name .libs | xargs rm -r 
-find . -name .debs | xargs rm -r
+if [ -e Makefile ]
+then
+  make clean >/dev/null
+fi
 
 intltoolize --automake -c -f
 $aclocal
@@ -69,3 +73,5 @@ autoheader --force
 $aclocal
 $automake --foreign --add-missing --force-missing --copy 
 autoconf --force
+
+# vim: set syntax=sh :
