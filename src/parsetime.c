@@ -848,7 +848,7 @@ char     *parsetime(
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
     ptv->tm = *localtime(&now);
-    ptv->tm.  tm_isdst = -1;    /* mk time can figure this out for us ... */
+    ptv->tm.  tm_isdst = -1;    /* mk time can figure dst by default ... */
 
     token();
     switch (sc_tokid) {
@@ -977,8 +977,6 @@ char     *parsetime(
     if (sc_tokid != EOF) {
         panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
     }
-
-    ptv->tm.  tm_isdst = -1;    /* for mktime to guess DST status */
 
     if (ptv->type == ABSOLUTE_TIME)
         if (mktime(&ptv->tm) == -1) {   /* normalize & check */
