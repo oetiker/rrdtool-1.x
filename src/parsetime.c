@@ -721,7 +721,7 @@ day(struct rrd_time_value *ptv)
 		break;
 	    }
 
-	    if (mon > 19700101 && mon < 24000101){ /*works between 1900 and 2400 */
+	    if (mon > 19700101 && mon < 24000101){ /*works between 1970 and 2400 */
 		char  cmon[3],cmday[3],cyear[5];
 		strncpy(cyear,sc_token,4);cyear[4]='\0';	      
 		year = atol(cyear);	      
@@ -798,7 +798,8 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
     ptv->tm = *localtime(&now);
-    ptv->tm.tm_isdst = -1; /* mk time can figure this out for us ... */
+    ptv->tm.tm_isdst = -1; /* by default lets mk time guess dst status ... */
+
 
     token();
     switch (sc_tokid) {
@@ -915,7 +916,6 @@ parsetime(const char *tspec, struct rrd_time_value *ptv)
       panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
     }
 
-    ptv->tm.tm_isdst = -1; /* for mktime to guess DST status */
     if( ptv->type == ABSOLUTE_TIME )
       if( mktime( &ptv->tm ) == -1 ) { /* normalize & check */
         /* can happen for "nonexistent" times, e.g. around 3am */
