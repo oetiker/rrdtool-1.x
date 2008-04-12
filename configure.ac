@@ -68,6 +68,11 @@ AH_BOTTOM([
 # include <features.h>
 #endif
 
+/* FreeBSD 4.8 wants this included BEFORE sys/types.h */
+#ifdef HAVE_SYS_MMAN_H
+# include <sys/mman.h>
+#endif
+
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
@@ -89,10 +94,6 @@ AH_BOTTOM([
 
 #ifdef HAVE_ERRNO_H
 # include <errno.h>
-#endif
-
-#ifdef HAVE_SYS_MMAN_H
-# include <sys/mman.h>
 #endif
 
 #if !defined HAVE_MADVISE && defined HAVE_POSIX_MADVISE
