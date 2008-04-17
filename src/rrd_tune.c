@@ -197,15 +197,17 @@ int rrd_tune(
                 rrd_close(rrd_file);
                 return -1;
             }
-            strncpy(rrd.ds_def[ds].dst, dst, DST_SIZE - 1);
-            rrd.ds_def[ds].dst[DST_SIZE - 1] = '\0';
+            /* only reset when something is changed */
+            if (strncmp(rrd.ds_def[ds].dst, dst, DST_SIZE - 1) != 0) {
+                strncpy(rrd.ds_def[ds].dst, dst, DST_SIZE - 1);
+                rrd.ds_def[ds].dst[DST_SIZE - 1] = '\0';
 
-            rrd.pdp_prep[ds].last_ds[0] = 'U';
-            rrd.pdp_prep[ds].last_ds[1] = 'N';
-            rrd.pdp_prep[ds].last_ds[2] = 'K';
-            rrd.pdp_prep[ds].last_ds[3] = 'N';
-            rrd.pdp_prep[ds].last_ds[4] = '\0';
-
+                rrd.pdp_prep[ds].last_ds[0] = 'U';
+                rrd.pdp_prep[ds].last_ds[1] = 'N';
+                rrd.pdp_prep[ds].last_ds[2] = 'K';
+                rrd.pdp_prep[ds].last_ds[3] = 'N';
+                rrd.pdp_prep[ds].last_ds[4] = '\0';
+            }
             break;
         case 'r':
             if ((matches =
