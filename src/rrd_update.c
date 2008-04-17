@@ -1752,7 +1752,7 @@ static rrd_value_t calculate_cdp_val(
     int UNUSED(i),
     int UNUSED(ii)
 #endif
-)
+    )
 {
     if (isnan(cdp_val)) {
         if (current_cf == CF_AVERAGE) {
