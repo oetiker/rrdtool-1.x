@@ -52,9 +52,10 @@ void PrintUsage(
            "Usage: rrdtool [options] command command_options\n\n");
 
     const char *help_list =
-        N_("Valid commands: create, update, updatev, graph, dump, restore,\n"
-           "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-           "\t\tresize, xport\n\n");
+        N_
+        ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
+         "\t\tlast, lastupdate, first, info, fetch, tune,\n"
+         "\t\tresize, xport\n\n");
 
     const char *help_listremote =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
@@ -116,10 +117,15 @@ void PrintUsage(
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
-    const char *help_graph1 =
+    const char *help_graph0 =
         N_("* graph - generate a graph from one or several RRD\n\n"
-           "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n"
-           "\t\t[-x|--x-grid x-axis grid and label]\n"
+           "\trrdtool graph filename [-s|--start seconds] [-e|--end seconds]\n");
+    const char *help_graphv0 =
+        N_("* graphv - generate a graph from one or several RRD\n"
+           "           with meta data printed before the graph\n\n"
+           "\trrdtool graphv filename [-s|--start seconds] [-e|--end seconds]\n");
+    const char *help_graph1 =
+        N_("\t\t[-x|--x-grid x-axis grid and label]\n"
            "\t\t[-Y|--alt-y-grid]\n"
            "\t\t[-y|--y-grid y-axis grid and label]\n"
            "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
@@ -148,8 +154,9 @@ void PrintUsage(
     const char *help_graph3 =
         N_("\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[VDEF:vdefname=rpn-expression]\n"
-           "\t\t[PRINT:vdefname:format]\n" "\t\t[GPRINT:vdefname:format]\n"
-           "\t\t[COMMENT:text]\n" "\t\t[SHIFT:vname:offset]\n"
+           "\t\t[PRINT:vdefname:format]\n"
+           "\t\t[GPRINT:vdefname:format]\n" "\t\t[COMMENT:text]\n"
+           "\t\t[SHIFT:vname:offset]\n"
            "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
            "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
            "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"
@@ -158,7 +165,6 @@ void PrintUsage(
            "\t\t[PRINT:vname:CF:format] (deprecated)\n"
            "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
            "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
-
     const char *help_tune1 =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
            "\trrdtool tune filename\n"
@@ -176,52 +182,42 @@ void PrintUsage(
            "\t\t[--gamma adaptation-parameter]\n"
            "\t\t[--gamma-deviation adaptation-parameter]\n"
            "\t\t[--aberrant-reset ds-name]\n\n");
-
     const char *help_resize =
-        N_(" * resize - alter the length of one of the RRAs in an RRD\n\n"
-           "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
-
+        N_
+        (" * resize - alter the length of one of the RRAs in an RRD\n\n"
+         "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
     const char *help_xport =
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
-           "\t\t[-m|--maxrows rows]\n"
-           "\t\t[--step seconds]\n"
-           "\t\t[--enumds]\n"
-           "\t\t[DEF:vname=rrd:ds-name:CF]\n"
+           "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
+           "\t\t[--enumds]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
            "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n\n");
-
     const char *help_quit =
         N_(" * quit - closing a session in remote mode\n\n"
            "\trrdtool quit\n\n");
-
     const char *help_ls =
         N_(" * ls - lists all *.rrd files in current directory\n\n"
            "\trrdtool ls\n\n");
-
     const char *help_cd =
         N_(" * cd - changes the current directory\n\n"
            "\trrdtool cd new directory\n\n");
-
     const char *help_mkdir =
         N_(" * mkdir - creates a new directory\n\n"
            "\trrdtool mkdir newdirectoryname\n\n");
-
     const char *help_pwd =
         N_(" * pwd - returns the current working directory\n\n"
            "\trrdtool pwd\n\n");
-
     const char *help_lic =
         N_("RRDtool is distributed under the Terms of the GNU General\n"
            "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
            "For more information read the RRD manpages\n\n");
-
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
-        C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_TUNE,
+        C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
+        C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
         C_UPDATEV
     };
-
     int       help_cmd = C_NONE;
 
     if (cmd) {
@@ -247,6 +243,8 @@ void PrintUsage(
             help_cmd = C_FETCH;
         else if (!strcmp(cmd, "graph"))
             help_cmd = C_GRAPH;
+        else if (!strcmp(cmd, "graphv"))
+            help_cmd = C_GRAPHV;
         else if (!strcmp(cmd, "tune"))
             help_cmd = C_TUNE;
         else if (!strcmp(cmd, "resize"))
@@ -304,9 +302,16 @@ void PrintUsage(
         fputs(_(help_fetch), stdout);
         break;
     case C_GRAPH:
+        fputs(_(help_graph0), stdout);
         fputs(_(help_graph1), stdout);
-        fputs(help_graph2, stdout);
-        fputs(help_graph3, stdout);
+        fputs(_(help_graph2), stdout);
+        fputs(_(help_graph3), stdout);
+        break;
+    case C_GRAPHV:
+        fputs(_(help_graphv0), stdout);
+        fputs(_(help_graph1), stdout);
+        fputs(_(help_graph2), stdout);
+        fputs(_(help_graph3), stdout);
         break;
     case C_TUNE:
         fputs(_(help_tune1), stdout);
@@ -469,7 +474,6 @@ int main(
                            / 1000000.0);
 #else
                     printf("OK\n");
-
 #endif
                 }
             }
@@ -507,7 +511,6 @@ int HandleInputLine(
     /* Reset errno to 0 before we start.
      */
     errno = 0;
-
     if (RemoteMode) {
         if (argc > 1 && strcmp("quit", argv[1]) == 0) {
             if (argc > 2) {
@@ -616,40 +619,15 @@ int HandleInputLine(
     else if (strcmp("dump", argv[1]) == 0)
         rrd_dump(argc - 1, &argv[1]);
     else if (strcmp("info", argv[1]) == 0 || strcmp("updatev", argv[1]) == 0) {
-        info_t   *data, *save;
+        info_t   *data;
 
         if (strcmp("info", argv[1]) == 0)
+
             data = rrd_info(argc - 1, &argv[1]);
         else
             data = rrd_update_v(argc - 1, &argv[1]);
-        while (data) {
-            save = data;
-            printf("%s = ", data->key);
-            free(data->key);
-
-            switch (data->type) {
-            case RD_I_VAL:
-                if (isnan(data->value.u_val))
-                    printf("NaN");
-                else
-                    printf("%0.10e", data->value.u_val);
-                break;
-            case RD_I_CNT:
-                printf("%lu", data->value.u_cnt);
-                break;
-            case RD_I_INT:
-                printf("%d", data->value.u_int);
-                break;
-            case RD_I_STR:
-                printf("\"%s\"", data->value.u_str);
-                free(data->value.u_str);
-                break;
-            }
-            data = data->next;
-            free(save);
-            printf("\n");
-        }
-        free(data);
+        info_print(data);
+        info_free(data);
     }
 
     else if (strcmp("--version", argv[1]) == 0 ||
@@ -657,7 +635,7 @@ int HandleInputLine(
              strcmp("v", argv[1]) == 0 ||
              strcmp("-v", argv[1]) == 0 || strcmp("-version", argv[1]) == 0)
         printf("RRDtool " PACKAGE_VERSION
-               "  Copyright by Tobi Oetiker, 1997-2005 (%f)\n",
+               "  Copyright by Tobi Oetiker, 1997-2008 (%f)\n",
                rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
         rrd_restore(argc - 1, &argv[1]);
@@ -770,10 +748,10 @@ int HandleInputLine(
                     rrd_value_t newval = DNAN;
 
                     if (enumds == 1)
+
                         snprintf(vtag, vtag_s, "%s%lu", COL_DATA_TAG, j);
                     else
                         snprintf(vtag, vtag_s, "%s", COL_DATA_TAG);
-
                     newval = *ptr;
                     if (isnan(newval)) {
                         printf("<%s>NaN</%s>", vtag, vtag);
@@ -821,6 +799,13 @@ int HandleInputLine(
                 }
                 free(calcpr);
             }
+        }
+
+    } else if (strcmp("graphv", argv[1]) == 0) {
+        info_t   *grinfo = NULL;    /* 1 to distinguish it from the NULL that rrd_graph sends in */
+        if (grinfo = rrd_graph_v(argc - 1, &argv[1])) {
+            info_print(grinfo);
+            info_free(grinfo);
         }
 
     } else if (strcmp("tune", argv[1]) == 0)
@@ -882,7 +867,6 @@ int CreateArgs(
     /* sikp leading blanks */
     while (*aLine && *aLine <= ' ')
         aLine++;
-
     pargv[0] = pName;
     argc = 1;
     getP = aLine;
@@ -925,7 +909,6 @@ int CreateArgs(
     }
 
     *putP = '\0';
-
     if (Quote)
         return -1;
     else

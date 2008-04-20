@@ -86,6 +86,35 @@ extern    "C" {
         off_t     pos;  /* current pos in file */
     } rrd_file_t;
 
+/* rrd info interface */
+    typedef struct rrd_blob_t {
+        unsigned long    size; /* size of the blob */
+        unsigned char *ptr;  /* pointer */
+    } rrd_blob_t;
+
+    enum info_type { RD_I_VAL = 0,
+        RD_I_CNT,
+        RD_I_STR,
+        RD_I_INT,
+        RD_I_BLO
+    };
+
+    typedef union infoval {
+        unsigned long u_cnt;
+        rrd_value_t u_val;
+        char     *u_str;
+        int       u_int;
+        struct rrd_blob_t u_blo;
+    } infoval;
+
+    typedef struct info_t {
+        char     *key;
+        enum info_type type;
+        union infoval value;
+        struct info_t *next;
+    } info_t;
+
+
 /* main function blocks */
     int       rrd_create(
     int,
@@ -102,16 +131,9 @@ extern    "C" {
     FILE *,
     double *,
     double *);
-
-    unsigned char *rrd_graph_in_memory(
-    int argc,
-    char **argv,
-    char ***prdata,
-    int *xsize,
-    int *ysize,
-    double *ymin,
-    double *ymax,
-    size_t * img_size);
+    info_t   *rrd_graph_v(
+    int,
+    char **);
 
     int       rrd_fetch(
     int,

@@ -98,6 +98,12 @@ the values of the properties.
    print "$key = $$hash{$key}\n";
  }
 
+B<RRDs::graphv> takes the same paramters as B<RRDs::graph> but it returns a
+pointer to hash. The hash returned contains meta information about the
+graph. Like its size as well as the position of the graph area on the image.
+When calling with and empty filename than the contents of the graph will be
+returned in the hash as well (key 'image').
+
 B<RRDs::updatev> also returns a pointer to hash. The keys of the hash
 are concatenated strings of a timestamp, RRA index, and data source name for
 each consolidated data point (CDP) written to disk as a result of the

@@ -80,6 +80,8 @@ void reset_rrd_state(
     rrd_clear_error();
 }
 
+/* Simple Calls */
+
 VALUE rrd_call(
     RRDFUNC func,
     VALUE args)
@@ -107,6 +109,105 @@ VALUE rb_rrd_dump(
 {
     return rrd_call(rrd_dump, args);
 }
+
+VALUE rb_rrd_resize(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_call(rrd_resize, args);
+}
+
+VALUE rb_rrd_restore(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_call(rrd_restore, args);
+}
+
+VALUE rb_rrd_tune(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_call(rrd_tune, args);
+}
+
+VALUE rb_rrd_update(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_call(rrd_update, args);
+}
+
+
+/* Calls Returning Data via the Info Interface */
+
+VALUE rb_rrd_infocall(
+    RRDFUNC func,
+    VALUE args)
+{
+    string_arr a;
+    info_t   *p, *data;
+    VALUE     result;
+
+    a = string_arr_new(args);
+    data = func(a.len, a.strings);
+    string_arr_delete(a);
+
+    RRD_CHECK_ERROR result = rb_hash_new();
+
+    while (data) {
+        VALUE     key = rb_str_new2(data->key);
+
+        switch (data->type) {
+        case RD_I_VAL:
+            if (isnan(data->value.u_val)) {
+                rb_hash_aset(result, key, Qnil);
+            } else {
+                rb_hash_aset(result, key, rb_float_new(data->value.u_val));
+            }
+            break;
+        case RD_I_CNT:
+            rb_hash_aset(result, key, INT2FIX(data->value.u_cnt));
+            break;
+        case RD_I_STR:
+            rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
+            free(data->value.u_str);
+            break;
+        case RD_I_BLO:
+            rb_hash_aset(result, key, rb_str_new(data->value.u_blo.ptr,data->value.u_blo.size));
+            free(data->value.u_blo.ptr);
+            break;
+        }
+        p = data;
+        data = data->next;
+        free(p);
+    }
+    return result;
+}
+
+VALUE rb_rrd_info(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_infocall(rrd_info, args);
+}
+
+VALUE rb_rrd_updatev(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_infocall(rrd_update_v, args);
+}
+
+VALUE rb_rrd_graphv(
+    VALUE self,
+    VALUE args)
+{
+    return rrd_infocall(rrd_graph_v, args);
+}
+
+
+/* Other Calls */
 
 VALUE rb_rrd_fetch(
     VALUE self,
@@ -185,45 +286,6 @@ VALUE rb_rrd_graph(
     return result;
 }
 
-VALUE rb_rrd_info(
-    VALUE self,
-    VALUE args)
-{
-    string_arr a;
-    info_t   *p, *data;
-    VALUE     result;
-
-    a = string_arr_new(args);
-    data = rrd_info(a.len, a.strings);
-    string_arr_delete(a);
-
-    RRD_CHECK_ERROR result = rb_hash_new();
-
-    while (data) {
-        VALUE     key = rb_str_new2(data->key);
-
-        switch (data->type) {
-        case RD_I_VAL:
-            if (isnan(data->value.u_val)) {
-                rb_hash_aset(result, key, Qnil);
-            } else {
-                rb_hash_aset(result, key, rb_float_new(data->value.u_val));
-            }
-            break;
-        case RD_I_CNT:
-            rb_hash_aset(result, key, INT2FIX(data->value.u_cnt));
-            break;
-        case RD_I_STR:
-            rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
-            free(data->value.u_str);
-            break;
-        }
-        p = data;
-        data = data->next;
-        free(p);
-    }
-    return result;
-}
 
 VALUE rb_rrd_last(
     VALUE self,
@@ -239,34 +301,6 @@ VALUE rb_rrd_last(
 
     RRD_CHECK_ERROR
         return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2FIX(last));
-}
-
-VALUE rb_rrd_resize(
-    VALUE self,
-    VALUE args)
-{
-    return rrd_call(rrd_resize, args);
-}
-
-VALUE rb_rrd_restore(
-    VALUE self,
-    VALUE args)
-{
-    return rrd_call(rrd_restore, args);
-}
-
-VALUE rb_rrd_tune(
-    VALUE self,
-    VALUE args)
-{
-    return rrd_call(rrd_tune, args);
-}
-
-VALUE rb_rrd_update(
-    VALUE self,
-    VALUE args)
-{
-    return rrd_call(rrd_update, args);
 }
 
 void Init_RRD(
@@ -285,4 +319,6 @@ void Init_RRD(
     rb_define_module_function(mRRD, "tune", rb_rrd_tune, -2);
     rb_define_module_function(mRRD, "update", rb_rrd_update, -2);
     rb_define_module_function(mRRD, "info", rb_rrd_info, -2);
+    rb_define_module_function(mRRD, "updatev", rb_rrd_updatev, -2);
+    rb_define_module_function(mRRD, "graphv", rb_rrd_graphv, -2);
 }

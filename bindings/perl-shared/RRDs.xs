@@ -99,6 +99,10 @@ extern "C" {
 			hvs(newSVpv(data->value.u_str,0)); \
 			rrd_freemem(data->value.u_str); \
 			break; \
+		    case RD_I_BLO: \
+			hvs(newSVpv(data->value.u_blo.ptr,data->value.u_blo.size)); \
+			rrd_freemem(data->value.u_blo.ptr); \
+			break; \
 		    } \
 		    rrd_freemem(data->key); \
 		    data = data->next; \
@@ -404,6 +408,19 @@ rrd_updatev(...)
 		HV *hash;
 	CODE:
 		rrdinfocode(rrd_update_v);	
+    OUTPUT:
+	   RETVAL
+
+SV*
+rrd_graphv(...)
+	PROTOTYPE: @	
+	PREINIT:
+		info_t *data,*save;
+                int i;
+                char **argv;
+		HV *hash;
+	CODE:
+		rrdinfocode(rrd_graph_v);	
     OUTPUT:
 	   RETVAL
 

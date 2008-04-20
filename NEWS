@@ -27,9 +27,11 @@ Graphing (Tobi Oetiker)
 * TRENDNAN filter that ignores NAN values while caculating the TREND data. (Timo Stripf)
 * --full-size-mode to specify the outer border of the image and not just of the graphing canvas (Matthew Chambers)
 * TEXTALIGN command to alter default text alignment behaviour
-* C API supports in-memory graphing with rrd_graph_in_memory (Evan Miller)
+* C API in-memory graphing with rrd_graph_v (Evan Miller)
 * draw dashed lines in graphs (Thomas Gutzler)
- 
+* new interface graphv which returns inforamation useing the rrd_info
+  interface (Tobi Oetiker and Mark Plaksin)
+
 Forecasting (Evan Miller)
 -----------
 * the new MHWPREDICT consolidation function uses a variation of the Holt-Winters

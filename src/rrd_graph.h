@@ -186,7 +186,6 @@ typedef struct image_desc_t {
     /* configuration of graph */
 
     char      graphfile[MAXPATH];   /* filename for graphic */
-    FILE     *graphhandle;  /* FILE to use if filename is "-" */
     long      xsize, ysize; /* graph area size in pixels */
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
@@ -218,6 +217,8 @@ typedef struct image_desc_t {
                            existing one is out of date */
     int       slopemode;    /* connect the dots of the curve directly, not using a stair */
     int       logarithmic;  /* scale the yaxis logarithmic */
+    double    force_scale_min;  /* Force a scale--min */
+    double    force_scale_max;  /* Force a scale--max */
 
     /* status information */
 
@@ -244,6 +245,9 @@ typedef struct image_desc_t {
     cairo_t  *cr;       /* drawin context */
     cairo_font_options_t *font_options; /* cairo font options */
     cairo_antialias_t graph_antialias;  /* antialiasing for the graph */
+
+    info_t   *grinfo;   /* root pointer to extra graph info */
+    info_t   *grinfo_current;   /* pointing to current entry */
 } image_desc_t;
 
 /* Prototypes */
@@ -307,8 +311,7 @@ time_t    find_next_time(
     enum tmt_en,
     long);
 int       print_calc(
-    image_desc_t *,
-    char ***);
+    image_desc_t *);
 int       leg_place(
     image_desc_t *,
     int *);
@@ -327,8 +330,7 @@ void      grid_paint(
 int       lazy_check(
     image_desc_t *);
 int       graph_paint(
-    image_desc_t *,
-    char ***);
+    image_desc_t *);
 
 int       gdes_alloc(
     image_desc_t *);
@@ -336,15 +338,6 @@ int       scan_for_col(
     const char *const,
     int,
     char *const);
-int       rrd_graph(
-    int,
-    char **,
-    char ***,
-    int *,
-    int *,
-    FILE *,
-    double *,
-    double *);
 void      rrd_graph_init(
     image_desc_t *);
 void      rrd_graph_options(
@@ -374,8 +367,7 @@ int       vdef_percent_compar(
     const void *);
 int       graph_size_location(
     image_desc_t *,
-    int
-    );
+    int);
 
 
 /* create a new line */
@@ -460,3 +452,9 @@ void      gfx_area_fit(
     double *y);
 
 #endif
+
+void      grinfo_push(
+    image_desc_t *im,
+    char *key,
+    enum info_type type,
+    infoval value);

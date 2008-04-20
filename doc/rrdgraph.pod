@@ -4,7 +4,7 @@ rrdgraph - Round Robin Database tool grapher functions
 
 =head1 SYNOPSIS
 
-B<rrdtool graph> I<filename>
+B<rrdtool graph|graphv> I<filename>
 [I<L<option|rrdgraph/OPTIONS>> ...]
 [I<L<data definition|rrdgraph_data/DEF>> ...]
 [I<L<data calculation|rrdgraph_data/CDEF>> ...]
@@ -51,6 +51,14 @@ graph it (or print it).  This ends the B<rrdtool graph> sequence.
 =head1 OPTIONS
 
 =over 4
+
+=item B<graphv>
+
+This alternate version of B<graph> takes the same arguments and performs the
+same function. The I<v> stands for I<verbose>, which describes the output
+returned. B<graphv> will return a lot of information about the graph using
+the same format as rrdtool info (key = value). See the bottom of the document for more information.
+
 
 =item filename
 
@@ -431,6 +439,34 @@ can be used. Apart from the verbose syntax, there are also the following short t
 More details on http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat.html.
 
 =back
+
+=head2 graphv
+
+Calling rrdtool with the graphv option will return information in the
+rrdtool info format. On the command line this means that all output will be
+in key=value format. When used from the perl and ruby bindings a hash
+pointer will be returned from the call.
+
+When the filename '-' is given, the contents of the graph itself will also
+be returned through this interface (hash key 'image'). On the command line
+the output will look like this:
+
+ print[0] = "0.020833"
+ print[1] = "0.0440833"
+ graph_left = 51
+ graph_top = 22
+ graph_width = 400
+ graph_height = 100
+ image_width = 481
+ image_height = 154
+ value_min = 0.0000000000e+00
+ value_max = 4.0000000000e-02
+ image = BLOB_SIZE:8196
+ [... 8196 bytes of image data ...]
+
+There is more information returned than in the standard interface.
+Especially the 'graph_*' keys are new. They help applications that want to
+know what is where on the graph.
 
 =head1 SEE ALSO
 

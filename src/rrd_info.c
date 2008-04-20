@@ -71,6 +71,11 @@ info_t
         next->value.u_str = malloc(sizeof(char) * (strlen(value.u_str) + 1));
         strcpy(next->value.u_str, value.u_str);
         break;
+    case RD_I_BLO:
+        next->value.u_blo.size = value.u_blo.size;
+        next->value.u_blo.ptr = malloc(sizeof(unsigned char)*value.u_blo.size);
+        memcpy(next->value.u_blo.ptr,value.u_blo.ptr,value.u_blo.size);
+        break;
     }
     return (next);
 }
@@ -322,4 +327,59 @@ info_t   *rrd_info_r(
   err_free:
     rrd_free(&rrd);
     return (data);
+}
+
+
+void info_print(
+    info_t *data)
+{
+    long      image_length = 0;
+
+    while (data) {
+        printf("%s = ", data->key);
+
+        switch (data->type) {
+        case RD_I_VAL:
+            if (isnan(data->value.u_val))
+                printf("NaN\n");
+            else
+                printf("%0.10e\n", data->value.u_val);
+            break;
+        case RD_I_CNT:
+            printf("%lu\n", data->value.u_cnt);
+            break;
+        case RD_I_INT:
+            printf("%d\n", data->value.u_int);
+            break;
+        case RD_I_STR:
+            printf("\"%s\"\n", data->value.u_str);
+            break;
+        case RD_I_BLO:            
+            printf("BLOB_SIZE:%lu\n", data->value.u_blo.size);
+            fwrite(data->value.u_blo.ptr, data->value.u_blo.size, 1, stdout);
+            break;
+        }
+        data = data->next;
+    }
+}
+
+void info_free(
+    info_t *data)
+{
+    info_t   *save;
+
+    while (data) {
+        save = data;
+        if (data->key) {
+            if (data->type == RD_I_STR) {
+                free(data->value.u_str);
+            }
+            if (data->type == RD_I_BLO) {
+                free(data->value.u_blo.ptr);
+            }
+            free(data->key);
+        }
+        data = data->next;
+        free(save);
+    }
 }

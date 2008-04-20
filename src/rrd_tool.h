@@ -63,27 +63,6 @@ extern    "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
-/* rrd info interface */
-    enum info_type { RD_I_VAL = 0,
-        RD_I_CNT,
-        RD_I_STR,
-        RD_I_INT
-    };
-
-    typedef union infoval {
-        unsigned long u_cnt;
-        rrd_value_t u_val;
-        char     *u_str;
-        int       u_int;
-    } infoval;
-
-    typedef struct info_t {
-        char     *key;
-        enum info_type type;
-        union infoval value;
-        struct info_t *next;
-    } info_t;
-
     info_t   *rrd_info(
     int,
     char **);
@@ -105,6 +84,10 @@ extern    "C" {
     char *,
     enum info_type,
     infoval);
+    void      info_print(
+    info_t *data);
+    void      info_free(
+    info_t *);
 
 /* HELPER FUNCTIONS */
 
