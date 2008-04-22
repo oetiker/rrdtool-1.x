@@ -53,7 +53,6 @@ extern    "C" {
 
     int       rrd_open(
     char *file_name,
-    FILE ** in_file,
     rrd_t *rrd,
     int rdwr);
     int       readfile(

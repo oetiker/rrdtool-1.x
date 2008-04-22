@@ -411,19 +411,17 @@ static PyObject *PyRRD_info(
 {
     PyObject *r, *t, *ds;
     rrd_t     rrd;
-    FILE     *in_file;
     char     *filename;
     unsigned long i, j;
 
     if (!PyArg_ParseTuple(args, "s:info", &filename))
         return NULL;
 
-    if (rrd_open(filename, &in_file, &rrd, RRD_READONLY) == -1) {
+    if (!rrd_open(filename, &rrd, RRD_READONLY) == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         return NULL;
     }
-    fclose(in_file);
 
 #define DICTSET_STR(dict, name, value) \
     t = PyString_FromString(value); \
