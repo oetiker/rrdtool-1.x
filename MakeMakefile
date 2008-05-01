@@ -60,12 +60,21 @@ then
   exit 1
 fi
 
-# cleanup
-if [ -e Makefile ]
-then
-  make clean >/dev/null
-fi
+# remove the bits we are going to recreate
 
+echo Removing old Makefiles
+touch Makefile
+find . -name "Makefile" -or -name "Makefile.in" -print0 | xargs -0 rm 
+echo Cleaning out other leftovers
+for x in configure install-sh intltool-merge.in rrd_config.h.in \
+         missing intltool-update po/Makefile.in.in config.sub \
+         intltool-extract intltool-extract.in config.guess \
+         depcomp intltool-update.in autom4te.cache \
+         intltool-merge compile; do
+  [ ! -L $x -a -d $x ] && rm -r "$x"
+  [ ! -L $x -a -f $x ] && rm "$x"
+done
+set -x
 intltoolize --automake -c -f
 $aclocal
 libtoolize --copy --force
