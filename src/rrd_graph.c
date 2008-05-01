@@ -2713,7 +2713,6 @@ int graph_size_location(
     int       Xvertical = 0, Ytitle =
         0, Xylabel = 0, Xmain = 0, Ymain =
         0, Yxlabel = 0, Xspacing = 15, Yspacing = 15, Ywatermark = 4;
-    infoval   info;
 
     if (im->extra_flags & ONLY_GRAPH) {
         im->xorigin = 0;
@@ -2923,18 +2922,6 @@ int graph_size_location(
     }
 
     ytr(im, DNAN);
-    info.u_cnt = im->xorigin;
-    grinfo_push(im, sprintf_alloc("graph_left"), RD_I_CNT, info);
-    info.u_cnt = im->yorigin - Ymain;
-    grinfo_push(im, sprintf_alloc("graph_top"), RD_I_CNT, info);
-    info.u_cnt = im->xsize;
-    grinfo_push(im, sprintf_alloc("graph_width"), RD_I_CNT, info);
-    info.u_cnt = im->ysize;
-    grinfo_push(im, sprintf_alloc("graph_height"), RD_I_CNT, info);
-    info.u_cnt = im->ximg;
-    grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
-    info.u_cnt = im->yimg;
-    grinfo_push(im, sprintf_alloc("image_height"), RD_I_CNT, info);
     return 0;
 }
 
@@ -2991,6 +2978,20 @@ int graph_paint(
  **************************************************************/
     if (graph_size_location(im, i) == -1)
         return -1;
+
+    info.u_cnt = im->xorigin;
+    grinfo_push(im, sprintf_alloc("graph_left"), RD_I_CNT, info);
+    info.u_cnt = im->yorigin - im->ysize;
+    grinfo_push(im, sprintf_alloc("graph_top"), RD_I_CNT, info);
+    info.u_cnt = im->xsize;
+    grinfo_push(im, sprintf_alloc("graph_width"), RD_I_CNT, info);
+    info.u_cnt = im->ysize;
+    grinfo_push(im, sprintf_alloc("graph_height"), RD_I_CNT, info);
+    info.u_cnt = im->ximg;
+    grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
+    info.u_cnt = im->yimg;
+    grinfo_push(im, sprintf_alloc("image_height"), RD_I_CNT, info);
+
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
         return -1;
@@ -3565,7 +3566,7 @@ int rrd_graph(
             *ymin = walker->value.u_val;
         } else if (strcmp(walker->key, "value_max") == 0) {
             *ymax = walker->value.u_val;
-        } else if (strncmp(walker->key, "print", 6) == 0) {    /* keys are prdate[0..] */
+        } else if (strncmp(walker->key, "print", 6) == 0) { /* keys are prdate[0..] */
             prlines++;
             if (((*prdata) =
                  rrd_realloc((*prdata),
@@ -3578,7 +3579,8 @@ int rrd_graph(
             (*prdata)[prlines] = NULL;
             strcpy((*prdata)[prlines - 1], walker->value.u_str);
         } else if (strcmp(walker->key, "image") == 0) {
-            fwrite(walker->value.u_blo.ptr, walker->value.u_blo.size, 1, (stream ? stream : stdout));
+            fwrite(walker->value.u_blo.ptr, walker->value.u_blo.size, 1,
+                   (stream ? stream : stdout));
         }
         /* skip anything else */
         walker = walker->next;
@@ -3594,12 +3596,13 @@ int rrd_graph(
 ** - options parsing  now in rrd_graph_options()
 ** - script parsing   now in rrd_graph_script()
 */
-info_t * rrd_graph_v(
+info_t   *rrd_graph_v(
     int argc,
     char **argv)
 {
     image_desc_t im;
-    info_t *grinfo;
+    info_t   *grinfo;
+
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
     im.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
@@ -3665,6 +3668,7 @@ info_t * rrd_graph_v(
     }
     if (im.rendered_image) {
         infoval   img;
+
         img.u_blo.size = im.rendered_image_size;
         img.u_blo.ptr = im.rendered_image;
         grinfo_push(&im, sprintf_alloc("image"), RD_I_BLO, img);
