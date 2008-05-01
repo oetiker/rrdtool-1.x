@@ -88,8 +88,8 @@ extern    "C" {
 
 /* rrd info interface */
     typedef struct rrd_blob_t {
-        unsigned long    size; /* size of the blob */
-        unsigned char *ptr;  /* pointer */
+        unsigned long size; /* size of the blob */
+        unsigned char *ptr; /* pointer */
     } rrd_blob_t;
 
     enum info_type { RD_I_VAL = 0,

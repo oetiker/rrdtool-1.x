@@ -174,7 +174,9 @@ VALUE rb_rrd_infocall(
             free(data->value.u_str);
             break;
         case RD_I_BLO:
-            rb_hash_aset(result, key, rb_str_new(data->value.u_blo.ptr,data->value.u_blo.size));
+            rb_hash_aset(result, key,
+                         rb_str_new(data->value.u_blo.ptr,
+                                    data->value.u_blo.size));
             free(data->value.u_blo.ptr);
             break;
         }

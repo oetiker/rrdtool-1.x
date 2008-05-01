@@ -73,8 +73,9 @@ info_t
         break;
     case RD_I_BLO:
         next->value.u_blo.size = value.u_blo.size;
-        next->value.u_blo.ptr = malloc(sizeof(unsigned char)*value.u_blo.size);
-        memcpy(next->value.u_blo.ptr,value.u_blo.ptr,value.u_blo.size);
+        next->value.u_blo.ptr =
+            malloc(sizeof(unsigned char) * value.u_blo.size);
+        memcpy(next->value.u_blo.ptr, value.u_blo.ptr, value.u_blo.size);
         break;
     }
     return (next);
@@ -354,7 +355,7 @@ void info_print(
         case RD_I_STR:
             printf("\"%s\"\n", data->value.u_str);
             break;
-        case RD_I_BLO:            
+        case RD_I_BLO:
             printf("BLOB_SIZE:%lu\n", data->value.u_blo.size);
             fwrite(data->value.u_blo.ptr, data->value.u_blo.size, 1, stdout);
             break;

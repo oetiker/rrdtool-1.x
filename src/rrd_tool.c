@@ -803,6 +803,7 @@ int HandleInputLine(
 
     } else if (strcmp("graphv", argv[1]) == 0) {
         info_t   *grinfo = NULL;    /* 1 to distinguish it from the NULL that rrd_graph sends in */
+
         if (grinfo = rrd_graph_v(argc - 1, &argv[1])) {
             info_print(grinfo);
             info_free(grinfo);
