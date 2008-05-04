@@ -30,16 +30,16 @@
 #define _NO_PROTO
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
-
 #if !defined (__STDC__) || !__STDC__
 /* This is a separate conditional since some stdc systems
    reject `defined (const)'.  */
 #ifndef const
 #define const
 #endif
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
 #endif
 
 #include <stdio.h>
