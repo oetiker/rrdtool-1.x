@@ -19,11 +19,6 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
-
-#include "rrd_getopt.h"
 
 #if !defined (__STDC__) || !__STDC__
 /* This is a separate conditional since some stdc systems
@@ -32,6 +27,12 @@
 #define const
 #endif
 #endif
+
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
+#endif
+
+#include "rrd_getopt.h"
 
 #include <stdio.h>
 
