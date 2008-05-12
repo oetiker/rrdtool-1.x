@@ -1,3 +1,4 @@
+
 /*****************************************************************************
  * RRDtool 1.2.99907080300  Copyright by Tobi Oetiker, 1997-2007
  *****************************************************************************
@@ -57,6 +58,8 @@ static int gettimeofday(
 }
 
 #endif
+
+#define DEBUG 1
 
 /* FUNCTION PROTOTYPES */
 
@@ -1240,10 +1243,13 @@ static int process_all_pdp_st(
         }
 #ifdef DEBUG
         fprintf(stderr, "PDP UPD ds[%lu]\t"
+                "elapsed_pdp_st %lu\t"
                 "pdp_temp %10.2f\t"
                 "new_prep %10.2f\t"
                 "new_unkn_sec %5lu\n",
-                ds_idx, pdp_temp[ds_idx],
+                ds_idx,
+                elapsed_pdp_st,
+                pdp_temp[ds_idx],
                 rrd->pdp_prep[ds_idx].scratch[PDP_val].u_val,
                 rrd->pdp_prep[ds_idx].scratch[PDP_unkn_sec_cnt].u_cnt);
 #endif
@@ -1264,7 +1270,7 @@ static int process_pdp_st(
     double interval,
     double pre_int,
     double post_int,
-    long diff_pdp_st,
+    long diff_pdp_st, /* number of seconds in full steps passed since last update */
     rrd_value_t *pdp_new,
     rrd_value_t *pdp_temp)
 {
@@ -1281,7 +1287,7 @@ static int process_pdp_st(
 
 
     if (isnan(pdp_new[ds_idx])) {
-        /* a final bit of unknown to be added bevore calculation
+        /* a final bit of unknown to be added before calculation
            we use a temporary variable for this so that we
            don't have to turn integer lines before using the value */
         pre_unknown = pre_int;
@@ -1295,7 +1301,7 @@ static int process_pdp_st(
     /* if too much of the pdp_prep is unknown we dump it */
     /* if the interval is larger thatn mrhb we get NAN */
     if ((interval > mrhb) ||
-        (diff_pdp_st <= (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
+        (rrd->stat_head->pdp_step/2.0 < (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
         pdp_temp[ds_idx] = DNAN;
     } else {
         pdp_temp[ds_idx] = scratch[PDP_val].u_val /

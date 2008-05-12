@@ -399,28 +399,24 @@ Here is an explanation by Don Baarda on the inner workings of RRDtool.
 It may help you to sort out why all this *UNKNOWN* data is popping
 up in your databases:
 
-RRDtool gets fed samples at arbitrary times. From these it builds Primary
-Data Points (PDPs) at exact times on every "step" interval. The PDPs are
-then accumulated into RRAs.
+RRDtool gets fed samples/updates at arbitrary times. From these it builds Primary
+Data Points (PDPs) on every "step" interval. The PDPs are
+then accumulated into the RRAs.
 
 The "heartbeat" defines the maximum acceptable interval between
-samples. If the interval between samples is less than "heartbeat",
+samples/updates. If the interval between samples is less than "heartbeat",
 then an average rate is calculated and applied for that interval. If
 the interval between samples is longer than "heartbeat", then that
 entire interval is considered "unknown". Note that there are other
 things that can make a sample interval "unknown", such as the rate
-exceeding limits, or even an "unknown" input sample.
+exceeding limits, or a sample that was explicitly marked as unknown.
 
 The known rates during a PDP's "step" interval are used to calculate
-an average rate for that PDP. Also, if the total "unknown" time during
-the "step" interval exceeds the "heartbeat", the entire PDP is marked
+an average rate for that PDP. If the total "unknown" time accounts for
+more than B<half> the "step", the entire PDP is marked
 as "unknown". This means that a mixture of known and "unknown" sample
-times in a single PDP "step" may or may not add up to enough "unknown"
-time to exceed "heartbeat" and hence mark the whole PDP "unknown". So
-"heartbeat" is not only the maximum acceptable interval between
-samples, but also the maximum acceptable amount of "unknown" time per
-PDP (obviously this is only significant if you have "heartbeat" less
-than "step").
+times in a single PDP "step" may or may not add up to enough "known"
+time to warrent for a known PDP.
 
 The "heartbeat" can be short (unusual) or long (typical) relative to
 the "step" interval between PDPs. A short "heartbeat" means you
@@ -452,7 +448,7 @@ same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
        u|15|/     "swt" expired
        u|16|
         |17|----* sample4, restart "hb", create "pdp" for step1 = 
-        |18|   /  = unknown due to 10 "u" labled secs > "hb"
+        |18|   /  = unknown due to 10 "u" labled secs > 0.5 * step
         |19|  /
         |20| /
         |21|----* sample5, restart "hb"
