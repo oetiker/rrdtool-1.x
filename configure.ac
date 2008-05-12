@@ -645,7 +645,7 @@ AC_SUBST(ALL_LIBS)
 CONFIGURE_PART(Prep for Building Language Bindings)
   
 dnl Check for Perl and friends
-PATH=/usr/perl5/bin:$PATH
+PATH=$PATH:/usr/perl5/bin
 export PATH
 AC_PATH_PROG(PERL, perl, no)
 AC_PATH_PROG(POD2MAN, pod2man, no)
