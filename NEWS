@@ -38,6 +38,15 @@ Forecasting (Evan Miller)
   method. It is a drop-in replacement for HWPREDICT, and is better suited for
   data whose seasonal variations grow or shrink in proportion to the average.
 
+Rewrites
+--------
+* rrd_restore now uses libxml for parsing which makes things much more
+  tolerant towards xml variations. The old code could mostly just parse the
+  xml as it was output by rrd_dump (by Florian octo Forster)
+
+* rrd_update rewritten to make it more modular. Fixed two longstanding
+  HW bugs in the process (Evan Miller)
+
 Misc
 ----
 * ruby rrd_fetch will return step as a last property -- Mike Perham
