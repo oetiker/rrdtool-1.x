@@ -422,7 +422,7 @@ int update_aberrant_CF(
         hw_multiplicative_init_seasonality,
         hw_calculate_seasonal_deviation,
         hw_init_seasonal_deviation,
-        1.0             // identity value
+        1.0             /* identity value */
     };
 
     static hw_functions_t hw_additive_functions = {
@@ -433,7 +433,7 @@ int update_aberrant_CF(
         hw_additive_init_seasonality,
         hw_calculate_seasonal_deviation,
         hw_init_seasonal_deviation,
-        0.0             // identity value 
+        0.0             /* identity value  */
     };
 
     rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val = pdp_val;

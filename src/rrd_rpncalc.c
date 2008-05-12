@@ -550,7 +550,8 @@ short rpn_calc(
             if (isnan(rpnstack->s[stptr - 1])) {
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr];
             } else if (isnan(rpnstack->s[stptr])) {
-                //rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1];
+                /* NOOP */
+                /* rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1]; */
             } else {
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1]
                     + rpnstack->s[stptr];

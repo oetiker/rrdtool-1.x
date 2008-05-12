@@ -1,4 +1,4 @@
-// compatibility routines, non reentrant ....
+/* compatibility routines, non reentrant .... */
 
 #include <string.h>
 #include <time.h>

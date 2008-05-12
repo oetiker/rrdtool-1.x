@@ -242,15 +242,10 @@ rrd_file_t *rrd_open(
         __rrd_read(rrd->live_head, live_head_t,
                    1);
     }
-//XXX: This doesn't look like it needs madvise
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
-
-//XXX: This could benefit from madvise()ing
     __rrd_read(rrd->cdp_prep, cdp_prep_t,
                rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
-
-//XXX: This could benefit from madvise()ing
     __rrd_read(rrd->rra_ptr, rra_ptr_t,
                rrd->stat_head->rra_cnt);
 
@@ -419,7 +414,7 @@ off_t rrd_seek(
     rrd_file->pos = ret;
 #endif
     /* mimic fseek, which returns 0 upon success */
-    return ret < 0;     //XXX: or just ret to mimic lseek
+    return ret < 0;     /*XXX: or just ret to mimic lseek */
 }
 
 

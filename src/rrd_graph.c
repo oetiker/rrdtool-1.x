@@ -2650,7 +2650,7 @@ void grid_paint(
                                       [GRC_FRAME].
                                       blue, im->graph_col[GRC_FRAME].alpha);
                 if (im->gdes[i].dash) {
-                    // make box borders in legend dashed if the graph is dashed
+                    /* make box borders in legend dashed if the graph is dashed */
                     double    dashes[] = {
                         3.0
                     };
