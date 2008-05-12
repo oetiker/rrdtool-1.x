@@ -39,7 +39,7 @@ all-local: link txt man html-local
 	perl -n -e 'if (/^=include\s+(\S+)/){open F,"$$1.inc" || die $$?;print <F>; close F} else {print}'  $<  > $@
 
 .pod.1 .pm.1 .pl.1:
-	-pod2man --release=$(VERSION) --center=rrdtool $<  > $@
+	@POD2MAN@ --release=$(VERSION) --center=rrdtool $<  > $@
 
 .1.txt:
 	GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
@@ -48,7 +48,7 @@ all-local: link txt man html-local
 	@TROFF@ -man $< | ps2pdf - $@
 
 .pm.html .pod.html .pl.html:
-	-pod2html --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
+	@POD2HTML@ --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
 
 RRDs.pod:
 	$(LN_S) $(top_srcdir)/bindings/perl-shared/RRDs.pm RRDs.pod

@@ -307,8 +307,10 @@ dnl gettext
 GETTEXT_PACKAGE=rrdtool
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
+AM_GLIB_GNU_GETTEXT()
 IT_PROG_INTLTOOL([0.35.0],[no-xml])
-AM_GLIB_GNU_GETTEXT
+
+AM_MAINTAINER_MODE
 
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
@@ -642,8 +644,13 @@ AC_SUBST(ALL_LIBS)
 
 CONFIGURE_PART(Prep for Building Language Bindings)
   
-dnl Check for Perl.
+dnl Check for Perl and friends
+PATH=/usr/perl5/bin:$PATH
+export PATH
 AC_PATH_PROG(PERL, perl, no)
+AC_PATH_PROG(POD2MAN, pod2man, no)
+AC_PATH_PROG(POD2HTML, pod2html, no)
+
 
 AC_ARG_ENABLE(perl,[  --disable-perl          do not build the perl modules],
 [],[enable_perl=yes])

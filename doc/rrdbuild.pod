@@ -2,9 +2,7 @@
 
 rrdbuild - Instructions for building RRDtool
 
-=head1 DESCRIPTION
-
-=head2 Overview
+=head1 OVERVIEW
 
 If you downloaded the source of rrdtool you have to compile it. This
 document will give some information on how this is done.
@@ -24,7 +22,7 @@ We further assume that your copies of B<tar> and B<make> are actually B<GNU
 tar> and B<GNU make> respectively. It could be that they are installed as
 B<gtar> and B<gmake> on your system.
 
-=head2 Building
+=head1 OPTIMISTIC BUILD
 
 Before you start to build RRDtool, you have to decide two things:
 
@@ -63,13 +61,40 @@ pre-installed.
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
-B<configure> complaining about several missing libraries. If you are on a
-Linux or *bsd system you may want to just install the missing bits from your
-software repository. When you do that, make sure you also get the B<-dev>
-package for each library you install. Once you have the missing bits on
-board, just re-run the last line of the instructions above.
+B<configure> complaining about several missing libraries.
 
-But again this may have been too optimistic, and you actually have to
+=head1 INSTALLING DEPENDENCIES
+
+If your OS lets you install additional packages from a software repository,
+you may get away with installing the missing packages. When the packages are
+installed, run configure again and try to compile again. Below you find some
+hints on getting your OS ready for the rrdtool compilation. Additions to
+this list are welcome.
+
+=head2 OpenSolaris 2008.05
+
+Just add a compiler and the gnome development package:
+
+ pkg install sunstudioexpress
+ pkg install SUNWgnome-common-devel
+
+There is a a problem with F<cairo.pc> on opensolaris. It suggests that
+xrender is required for compilation with cairo. This is not true and also
+bad since opensolaris does not include an F<xrender.pc> file. Use perl to
+fix this:
+
+ perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
+
+=head2 Debian / Ubuntu
+
+Use apt-get to make sure you have all that is required. A number
+of packages will get added through dependencies.
+
+ apt-get install libpango1.0-dev libxml2-dev
+
+=head1 BUILDING DEPENDENCIES
+
+But again this may have been too optimistic still, and you actually have to
 compile your own copies of some of the required libraries. Things like
 libpng and zlib are pretty standard so you will probably have them on your
 system anyway. Freetype, Fontinst, Cairo, Pango may be installed, but it is
@@ -147,7 +172,6 @@ otherwhise just do
 
  export MAKE=make
 
- 
 =item Building zlib
 
 Chances are very high that you already have that on your system ... 
