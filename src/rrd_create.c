@@ -700,7 +700,7 @@ int rrd_create_fn(
         return (-1);
     }
 
-    strcpy(rrd->pdp_prep->last_ds, "UNKN");
+    strcpy(rrd->pdp_prep->last_ds, "U");
 
     rrd->pdp_prep->scratch[PDP_val].u_val = 0.0;
     rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt =
