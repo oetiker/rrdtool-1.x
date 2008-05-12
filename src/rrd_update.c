@@ -59,8 +59,6 @@ static int gettimeofday(
 
 #endif
 
-#define DEBUG 1
-
 /* FUNCTION PROTOTYPES */
 
 int       rrd_update_r(
