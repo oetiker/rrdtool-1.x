@@ -6,6 +6,7 @@ SUBDIRS = po src examples doc bindings
 
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
+             intltool-extract.in  intltool-merge.in    intltool-update.in \
 	     rrdtool.spec favicon.ico win32/config.h win32/rrd.dsp \
 	     win32/rrd.vcproj win32/rrdtool.dsp win32/rrdtool.dsw \
 	     win32/rrdtool.vcproj win32/Makefile \
