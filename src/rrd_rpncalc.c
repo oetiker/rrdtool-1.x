@@ -6,7 +6,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
-#include "rrd_graph.h"
+// #include "rrd_graph.h"
 #include <limits.h>
 #include <locale.h>
 

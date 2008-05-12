@@ -36,6 +36,9 @@ typedef struct rpn_cdefds_t {
     short     val;      /* used by OP_NUMBER and OP_VARIABLE */
 } rpn_cdefds_t;
 
+#define MAX_VNAME_LEN 255
+#define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
+
 /* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
 #define DS_CDEF_MAX_RPN_NODES 26
 

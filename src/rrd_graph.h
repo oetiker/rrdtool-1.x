@@ -14,8 +14,6 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 
-#define MAX_VNAME_LEN 255
-#define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
 
 #define ALTYGRID  	 0x01   /* use alternative y grid algorithm */
 #define ALTAUTOSCALE	 0x02   /* use alternative algorithm to find lower and upper bounds */

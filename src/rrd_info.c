@@ -334,8 +334,6 @@ info_t   *rrd_info_r(
 void info_print(
     info_t *data)
 {
-    long      image_length = 0;
-
     while (data) {
         printf("%s = ", data->key);
 
