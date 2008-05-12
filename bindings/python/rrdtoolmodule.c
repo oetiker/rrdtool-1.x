@@ -422,7 +422,6 @@ static PyObject *PyRRD_info(
         rrd_clear_error();
         return NULL;
     }
-
 #define DICTSET_STR(dict, name, value) \
     t = PyString_FromString(value); \
     PyDict_SetItemString(dict, name, t); \

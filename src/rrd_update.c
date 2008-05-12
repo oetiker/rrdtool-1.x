@@ -1268,7 +1268,7 @@ static int process_pdp_st(
     double interval,
     double pre_int,
     double post_int,
-    long diff_pdp_st, /* number of seconds in full steps passed since last update */
+    long diff_pdp_st,   /* number of seconds in full steps passed since last update */
     rrd_value_t *pdp_new,
     rrd_value_t *pdp_temp)
 {
@@ -1299,7 +1299,8 @@ static int process_pdp_st(
     /* if too much of the pdp_prep is unknown we dump it */
     /* if the interval is larger thatn mrhb we get NAN */
     if ((interval > mrhb) ||
-        (rrd->stat_head->pdp_step/2.0 < (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
+        (rrd->stat_head->pdp_step / 2.0 <
+         (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
         pdp_temp[ds_idx] = DNAN;
     } else {
         pdp_temp[ds_idx] = scratch[PDP_val].u_val /
