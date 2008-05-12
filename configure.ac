@@ -6,16 +6,31 @@ dnl
 dnl Inspiration from http://autoconf-archive.cryp.to
  
 dnl tell automake the this script is for rrdtool
+
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.2.99908020600])
+AC_INIT([rrdtool],[1.3rc1])
+
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.299908020600
+NUMVERS=1.299908051200
 AC_SUBST(NUMVERS)
+
+dnl for the linker to understand which version the library is compatible with
+dnl we must keep a separate library version cout of the format c:r:a if any
+dnl functionality is changed do c++ prior to release
+dnl if only implementation changed but all interfaces are kept, do r++
+dnl when only functionality was added, do a++ if any functionality was
+dnl removed to a=0.
+dnl
+dnl see http://sourceware.org/autobook/autobook/autobook_91.html
+dnl 
+LIBVERS=3:0:1
+AC_SUBST(LIBVERS)
+
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([rrd_config.h])
@@ -139,7 +154,7 @@ AH_BOTTOM([
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #if (defined(__svr4__) && defined(__sun__))
-/* Solaris headers (pre 2.6) don't have a getrusage prototype.
+/* Solaris headers (pre 2.6) do not have a getrusage prototype. 
    Use this instead. */
 extern int getrusage(int, struct rusage *);
 #endif /* __svr4__ && __sun__ */
@@ -781,7 +796,7 @@ if test  "$enable_tcl" = "yes"; then
   done
 
   if test "$enable_tcl" = "no"; then
-        AC_MSG_WARN([tclConfig.sh not found - Tcl interface won't be built])
+        AC_MSG_WARN([tclConfig.sh not found - Tcl interface will not be built])
   else
 	. $tcl_config
 	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
