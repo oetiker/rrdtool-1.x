@@ -33,6 +33,8 @@ AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
+AM_MAINTAINER_MODE
+
 AC_CONFIG_HEADERS([rrd_config.h])
 
 dnl all our local stuff like install scripts and include files
@@ -297,20 +299,19 @@ char *strchr (), *strrchr ();
 #error "Can't compile without isinf function"
 #endif
 
+#if (! defined(HAVE_FDATASYNC) && defined(HAVE_FSYNC))
+#define fdatasync fsync
+#endif
+
+#if (!defined(HAVE_FDATASYNC) && !defined(HAVE_FSYNC))
+#error "Can't compile with without fsync and fdatasync"
+#endif
+
 #endif /* RRD_CONFIG_H */
 ])
 
 dnl Process Special Options
 dnl -----------------------------------
-
-dnl gettext
-GETTEXT_PACKAGE=rrdtool
-AC_SUBST(GETTEXT_PACKAGE)
-AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
-AM_GLIB_GNU_GETTEXT()
-IT_PROG_INTLTOOL([0.35.0],[no-xml])
-
-AM_MAINTAINER_MODE
 
 dnl How the vertical axis label is printed
 AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
@@ -385,22 +386,24 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(features.h sys/stat.h sys/types.h fcntl.h libintl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
+AC_CHECK_HEADERS(features.h sys/stat.h sys/types.h fcntl.h locale.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
 
+CONFIGURE_PART(Test Library Functions)
+
 dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
+
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
 CFLAGS="$CFLAGS $pic_flag"
 
-CONFIGURE_PART(Test Library Functions)
 
 dnl Checks for library functions.
 AC_FUNC_STRFTIME
@@ -411,7 +414,18 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset fsync mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+
+CONFIGURE_PART(Map/Fadvis/Madvise checking)
+
+dnl Could use these to know if we need to provide a prototype
+dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
+
+dnl check for fdatasync. Solaris has fdatasync in the librt
+
+AC_CHECK_FUNCS(fdatasync, [],  AC_CHECK_LIB(rt, fdatasync, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_FDATASYNC)],[]))
+dnl if there is no fdatasync we may get lucky with fsync
+AC_CHECK_FUNCS(fsync)
 
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
@@ -454,6 +468,36 @@ AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
 #include <fcntl.h>])
 AC_CHECK_FUNCS(posix_fadvise)
 
+CONFIGURE_PART(Libintl Processing)
+
+
+dnl gettext
+GETTEXT_PACKAGE=rrdtool
+AC_SUBST(GETTEXT_PACKAGE)
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
+
+AM_GLIB_GNU_GETTEXT()
+IT_PROG_INTLTOOL([0.35.0],[no-xml])
+
+AC_ARG_ENABLE(libintl,[  --disable-libintl        i18n support (libintl)],
+[],[enable_libintl=yes])
+
+if test x$enable_libintl = xyes; then
+
+  AC_CHECK_HEADERS(libintl.h,[],[AC_MSG_RESULT(disabeling libintl build); enable_libintl=no])
+
+  if test x$enable_libintl = xyes ; then
+dnl it seems bsd synstems need to link against libintl
+dnl when compiling rrdupdate. lets check        
+    AC_CHECK_LIB(intl, libintl_gettext,[LIB_LIBINTL="-lintl"])
+  fi
+fi
+
+dnl use for linking rrdupdate
+AC_SUBST(LIB_LIBINTL)
+
+dnl do not touch the po stuff if we are not going to build intl
+AM_CONDITIONAL(BUILD_LIBINTL,[test x$enable_libintl = xyes])
 
 
 CONFIGURE_PART(IEEE Math Checks)
@@ -464,7 +508,7 @@ AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
 volatile int x;volatile float f; ]], [[x = fpclassify(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
+      AC_DEFINE(HAVE_FPCLASSIFY,1)],[AC_MSG_RESULT(no)])])
 
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
@@ -605,18 +649,11 @@ AC_LINK_IFELSE(
 )
 AC_LANG_POP(C)
 
-dnl Could use these to know if we need to provide a prototype
-dnl AC_CHECK_DECLS(fdatasync, [], [], [#include <unistd.h>])
-
-dnl solaris has fdatasync in the librt
-
-AC_CHECK_FUNC(fdatasync, [],  AC_CHECK_LIB(rt, fdatasync, [LIBS="${LIBS} -lrt"],[]))
-
-
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
 
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
 
 CORE_LIBS="$LIBS"
 
@@ -816,6 +853,7 @@ fi
 AM_CONDITIONAL(BUILD_TCL, test "$enable_tcl" = "yes" )
 AM_CONDITIONAL(BUILD_TCL_SITE, test "$enable_tcl_site" = "yes" )
 
+
 AC_SUBST(TCL_PREFIX)
 AC_SUBST(TCL_SHLIB_CFLAGS)
 AC_SUBST(TCL_SHLIB_LD)
@@ -905,7 +943,9 @@ echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
+echo "     Link with libintl: $enable_libintl"
 echo
+echo "             Libraries: $ALL_LIBS"
 echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
