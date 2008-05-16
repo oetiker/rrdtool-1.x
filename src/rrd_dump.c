@@ -48,58 +48,6 @@
 extern char *tzname[2];
 #endif
 
-int rrd_dump(
-    int argc,
-    char **argv)
-{
-    int       rc;
-    int       opt_noheader = 0;
-    /* init rrd clean */
-
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-    
-    while (42) {
-        int       opt;  
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"no-header", no_argument, 0, 'n'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long(argc, argv, "n", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
-        switch (opt) {
-        case 'n':
-            opt_range_check = 1;
-            break;
-
-        default: 
-            rrd_set_error("usage rrdtool %s [--no-header|-n] "
-                      "file.rrd [file.xml]", argv[0]);
-            return (-1);
-            break;
-        }
-    }                   /* while (42) */
-
-    if ((argc - optind) < 2) {
-        rrd_set_error("usage rrdtool %s [--no-header|-n] "
-                      "file.rrd [file.xml]", argv[0]);
-        return (-1);
-    }
-
-    if (argc == 3) {
-        rc = rrd_dump_opt_r(argv[1], argv[2],opt_noheader);
-    } else {
-        rc = rrd_dump_opt_r(argv[1], NULL,opt_noheader);
-    }
-
-    return rc;
-}
-
 
 int rrd_dump_opt_r(
     const char *filename,
@@ -485,5 +433,58 @@ int rrd_dump_r(
     const char *filename,
     char *outname)
 {
-    rrd_dump_opt_r(filename,outname,0);    
+    return rrd_dump_opt_r(filename,outname,0);    
 }
+
+int rrd_dump(
+    int argc,
+    char **argv)
+{
+    int       rc;
+    int       opt_noheader = 0;
+    /* init rrd clean */
+
+    optind = 0;
+    opterr = 0;         /* initialize getopt */
+    
+    while (42) {
+        int       opt;  
+        int       option_index = 0;
+        static struct option long_options[] = {
+            {"no-header", no_argument, 0, 'n'},
+            {0, 0, 0, 0}
+        };
+
+        opt = getopt_long(argc, argv, "n", long_options, &option_index);
+
+        if (opt == EOF)
+            break;
+
+        switch (opt) {
+        case 'n':
+            opt_noheader = 1;
+            break;
+
+        default: 
+            rrd_set_error("usage rrdtool %s [--no-header|-n] "
+                      "file.rrd [file.xml]", argv[0]);
+            return (-1);
+            break;
+        }
+    }                   /* while (42) */
+
+    if ((argc - optind) < 2) {
+        rrd_set_error("usage rrdtool %s [--no-header|-n] "
+                      "file.rrd [file.xml]", argv[0]);
+        return (-1);
+    }
+
+    if (argc == 3) {
+        rc = rrd_dump_opt_r(argv[1], argv[2],opt_noheader);
+    } else {
+        rc = rrd_dump_opt_r(argv[1], NULL,opt_noheader);
+    }
+
+    return rc;
+}
+
