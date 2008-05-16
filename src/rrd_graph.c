@@ -1255,24 +1255,29 @@ int data_proc(
        lets set these to dummy values then ... */
 
     if (im->logarithmic) {
-        if (isnan(minval))
-            minval = 0.2;
-        if (isnan(maxval))
+        if (isnan(minval) || isnan(maxval) || maxval <= 0) {
+            minval = 0.0; /* catching this right away below */
             maxval = 5.1;
+        }
+        /* in logarithm mode, where minval is smaller or equal 
+           to 0 make the beast just way smaller than maxval */
+        if (minval <= 0) {
+            minval = maxval / 10e8;
+        }
     } else {
-        if (isnan(minval))
+        if (isnan(minval) || isnan(maxval)) {
             minval = 0.0;
-        if (isnan(maxval))
             maxval = 1.0;
+        }
     }
 
-    /* adjust min and max values */
+    /* adjust min and max values given by the user*/
     /* for logscale we add something on top */
     if (isnan(im->minval)
         || ((!im->rigid) && im->minval > minval)
         ) {
         if (im->logarithmic)
-            im->minval = minval * 0.5;
+            im->minval = minval / 2.0;
         else
             im->minval = minval;
     }
@@ -4277,7 +4282,7 @@ void rrd_graph_options(
         }
     }
 
-    if (im->logarithmic == 1 && im->minval <= 0) {
+    if (im->logarithmic && im->minval <= 0) {
         rrd_set_error
             ("for a logarithmic yaxis you must specify a lower-limit > 0");
         return;
