@@ -2,10 +2,17 @@ RRDTOOL NEWS
 ============
 Major Changes between 1.2.x and 1.3.x
 
-see http://oss.oetiker.ch/rrdtool-trac/wiki/RRDtool13
-for up to date information
+RRdtool dump / restore Incompatibilities
+----------------------------------------
+rrdtool dump 1.3 does emit completely legal xml. Basically this means that
+it contains an xml header and a DOCTYPE definition. Unfortunately this
+causes older versions of rrdtool restore to be unhappy.
 
-File access methods (Bernhard Fischer)
+To restore a new dump with ann old rrdtool restore version, either remove
+the xml header and the doctype by hand (both on the first line of the dump)
+or use rrdtool dump --no-header.
+
+NEW File access methods (Bernhard Fischer)
 -------------------
 * introduced file-accessor functions rrd_read/rrd_seek/rrd_write
 * implemented full mmap-based file access with madvise hints for improved
@@ -13,7 +20,7 @@ File access methods (Bernhard Fischer)
   disk
 * implemented optional full file-descriptor access instead of FILE* access
 
-Graphing (Tobi Oetiker)
+NEW Graphing (Tobi Oetiker)
 --------
 * libart has been replaced by cairo/pango
 * pango markup is supported
@@ -32,7 +39,7 @@ Graphing (Tobi Oetiker)
 * new interface graphv which returns inforamation useing the rrd_info
   interface (Tobi Oetiker and Mark Plaksin)
 
-Forecasting (Evan Miller)
+NEW Forecasting (Evan Miller)
 -----------
 * the new MHWPREDICT consolidation function uses a variation of the Holt-Winters
   method. It is a drop-in replacement for HWPREDICT, and is better suited for
@@ -42,7 +49,8 @@ Rewrites
 --------
 * rrd_restore now uses libxml for parsing which makes things much more
   tolerant towards xml variations. The old code could mostly just parse the
-  xml as it was output by rrd_dump (by Florian octo Forster)
+  xml as it was output by rrdtool dump. See also: 'incompatibilities' at the
+  top of this document. (by Florian octo Forster)
 
 * rrd_update rewritten to make it more modular. Fixed two longstanding
   HW bugs in the process (Evan Miller)
