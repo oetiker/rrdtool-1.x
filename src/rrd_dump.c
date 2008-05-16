@@ -81,7 +81,7 @@ int rrd_dump_opt_r(
         out_file = stdout;
     }
 
-    if (opt_noheader){
+    if (!opt_noheader){
       fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", out_file);
       fputs
         ("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n",
@@ -473,16 +473,16 @@ int rrd_dump(
         }
     }                   /* while (42) */
 
-    if ((argc - optind) < 2) {
+    if ((argc - optind) < 1 || (argc - optind) > 2) {
         rrd_set_error("usage rrdtool %s [--no-header|-n] "
                       "file.rrd [file.xml]", argv[0]);
         return (-1);
     }
 
-    if (argc == 3) {
-        rc = rrd_dump_opt_r(argv[1], argv[2],opt_noheader);
+    if ((argc - optind) == 2) {
+        rc = rrd_dump_opt_r(argv[optind], argv[optind+1],opt_noheader);
     } else {
-        rc = rrd_dump_opt_r(argv[1], NULL,opt_noheader);
+        rc = rrd_dump_opt_r(argv[optind], NULL,opt_noheader);
     }
 
     return rc;
