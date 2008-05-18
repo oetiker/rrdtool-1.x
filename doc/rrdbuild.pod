@@ -229,10 +229,20 @@ config file.
  $MAKE
  $MAKE install
 
+=item Building Pixman
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/pixman-0.10.0.tar.gz
+ gunzip -c pixman-0.10.0.tar.gz  | tar xf -
+ cd fontconfig-2.4.2
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
+
 =item Building Cairo
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.4.10.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
  gunzip -c cairo-1.4.10.tar.gz   | tar xf -
  cd cairo-1.4.10
  ./configure --prefix=$INSTALL_DIR \
@@ -246,7 +256,7 @@ config file.
 =item Building Glib
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.12.13.tar.gz
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.15.4.tar.gz
  gunzip -c glib-2.12.13.tar.gz  | tar xf -
  cd glib-2.12.13
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
@@ -256,10 +266,10 @@ config file.
 =item Building Pango
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.17.5.tar.gz
- gunzip -c pango-1.17.5.tar.gz  | tar xf -
- cd pango-1.17.5
- ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.gz
+ gunzip -c pango-1.21.1.tar.gz  | tar xf -
+ cd pango-1.21.1
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --without-x
  $MAKE
  $MAKE install
 
@@ -267,8 +277,8 @@ config file.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
- gunzip -c libxml2-sources-2.6.31.tar.gz | tar xf -
- cd libxml2-sources-2.6.31
+ gunzip -c libxml2-sources-2.6.32.tar.gz | tar xf -
+ cd libxml2-sources-2.6.32
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
  $MAKE
  $MAKE install
