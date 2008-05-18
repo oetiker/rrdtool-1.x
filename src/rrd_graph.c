@@ -201,16 +201,6 @@ double ytr(
             yval = im->yorigin - pixie * (log10(value) - log10(im->minval));
         }
     }
-    /* make sure we don't return anything too unreasonable. GD lib can
-       get terribly slow when drawing lines outside its scope. This is 
-       especially problematic in connection with the rigid option */
-    if (!im->rigid) {
-        /* keep yval as-is */
-    } else if (yval > im->yorigin) {
-        yval = im->yorigin + 0.00001;
-    } else if (yval < im->yorigin - im->ysize) {
-        yval = im->yorigin - im->ysize - 0.00001;
-    }
     return yval;
 }
 
@@ -1121,6 +1111,10 @@ int data_calc(
     rpnstack_free(&rpnstack);
     return 0;
 }
+
+/* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
+/* yes we are loosing precision by doing tos with floats instead of doubles
+   but it seems more stable this way. */
 
 static int AlmostEqual2sComplement(
     float A,
@@ -2048,10 +2042,6 @@ double frexp10(
     *e = iexp;
     return mnt;
 }
-
-/* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
-/* yes we are loosing precision by doing tos with floats instead of doubles
-   but it seems more stable this way. */
 
 
 /* logaritmic horizontal grid */
