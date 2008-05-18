@@ -387,7 +387,8 @@ int main(
 #ifdef HAVE_LOCALE_H
     setlocale(LC_ALL, "");
 #endif
-#ifdef HAVE_LIBINTL_H
+
+#if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
     bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
     bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
     textdomain(GETTEXT_PACKAGE);

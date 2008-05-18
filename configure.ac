@@ -477,20 +477,27 @@ AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
 
 AM_GLIB_GNU_GETTEXT()
-IT_PROG_INTLTOOL([0.35.0],[no-xml])
 
 AC_ARG_ENABLE(libintl,[  --disable-libintl        i18n support (libintl)],
 [],[enable_libintl=yes])
 
 if test x$enable_libintl = xyes; then
+  IT_PROG_INTLTOOL([0.35.0],[no-xml])
+fi
 
+if test x$enable_libintl = xyes -a x$MSGFMT = xno; then
+  AC_MSG_WARN(I could not find msgfmt. Diabeling libintl build.)
+  enable_libintl=no
+fi
+
+if test x$enable_libintl = xyes; then
   AC_CHECK_HEADERS(libintl.h,[],[AC_MSG_RESULT(disabeling libintl build); enable_libintl=no])
+fi
 
-  if test x$enable_libintl = xyes ; then
-dnl it seems bsd synstems need to link against libintl
-dnl when compiling rrdupdate. lets check        
-    AC_CHECK_LIB(intl, libintl_gettext,[LIB_LIBINTL="-lintl"])
-  fi
+if test x$enable_libintl = xyes ; then
+  dnl it seems bsd synstems need to link against libintl
+  dnl when compiling rrdupdate. lets check        
+  AC_CHECK_LIB(intl, libintl_gettext,[LIB_LIBINTL="-lintl"])
 fi
 
 dnl use for linking rrdupdate
@@ -499,6 +506,9 @@ AC_SUBST(LIB_LIBINTL)
 dnl do not touch the po stuff if we are not going to build intl
 AM_CONDITIONAL(BUILD_LIBINTL,[test x$enable_libintl = xyes])
 
+if test x$enable_libintl = xyes; then
+   AC_DEFINE([BUILD_LIBINTL], [], [Use this in code sections to mark them for libintl build])
+fi
 
 CONFIGURE_PART(IEEE Math Checks)
  
@@ -508,7 +518,7 @@ AC_CHECK_FUNCS(fpclassify, ,
   [AC_MSG_CHECKING(for fpclassify with <math.h>)
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
 volatile int x;volatile float f; ]], [[x = fpclassify(f)]])],[AC_MSG_RESULT(yes)
-      AC_DEFINE(HAVE_FPCLASSIFY,1)],[AC_MSG_RESULT(no)])])
+      AC_DEFINE(HAVE_FPCLASSIFY)],[AC_MSG_RESULT(no)])])
 
 AC_CHECK_FUNCS(isinf, ,
   [AC_MSG_CHECKING(for isinf with <math.h>)
