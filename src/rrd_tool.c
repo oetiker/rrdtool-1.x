@@ -141,6 +141,7 @@ void PrintUsage(
            "\t\t[-M|--alt-autoscale-max]\n"
            "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
            "\t\t[-B|--font-smoothing-threshold size]\n"
+           "\t\t[-T|--tabwidth width]\n"
            "\t\t[-E|--slope-mode]\n"
            "\t\t[-N|--no-gridfit]\n"
            "\t\t[-X|--units-exponent value]\n"

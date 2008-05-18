@@ -1620,6 +1620,7 @@ int leg_place(
     char      prt_fctn; /*special printfunctions */
     char      default_txtalign = TXA_JUSTIFIED; /*default line orientation */
     int      *legspace;
+    char     *tab;
 
     if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
         if ((legspace = malloc(im->gdes_c * sizeof(int))) == NULL) {
@@ -1648,13 +1649,16 @@ int leg_place(
                     im->gdes[i].legend[0] = '\0';
             }
 
+            /* turn \\t into tab */
+            while ((tab = strstr(im->gdes[i].legend, "\\t"))) {
+                memmove(tab, tab + 1, strlen(tab));
+                tab[0] = (char) 9;
+            }
             leg_cc = strlen(im->gdes[i].legend);
             /* is there a controle code ant the end of the legend string ? */
-            /* and it is not a tab \\t */
             if (leg_cc >= 2
                 && im->gdes[i].legend[leg_cc -
-                                      2] == '\\'
-                && im->gdes[i].legend[leg_cc - 1] != 't') {
+                                      2] == '\\' ) {
                 prt_fctn = im->gdes[i].legend[leg_cc - 1];
                 leg_cc -= 2;
                 im->gdes[i].legend[leg_cc] = '\0';
@@ -1667,7 +1671,7 @@ int leg_place(
                 prt_fctn != 'j' &&
                 prt_fctn != 'c' &&
                 prt_fctn != 's' &&
-                prt_fctn != 't' && prt_fctn != '\0' && prt_fctn != 'g') {
+                prt_fctn != '\0' && prt_fctn != 'g') {
                 free(legspace);
                 rrd_set_error
                     ("Unknown control code at the end of '%s\\%c'",

@@ -131,6 +131,7 @@ static PangoLayout *gfx_prep_text(
     long      i;
     long      tab_count = strlen(text);
     long      tab_shift = fmod(x, tabwidth);
+    int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
 
     PangoTabArray *tab_array;
     PangoContext *pango_context;
@@ -138,7 +139,7 @@ static PangoLayout *gfx_prep_text(
     tab_array = pango_tab_array_new(tab_count, (gboolean) (1));
     for (i = 1; i <= tab_count; i++) {
         pango_tab_array_set_tab(tab_array,
-                                i, PANGO_TAB_LEFT, tabwidth * i - tab_shift);
+                                i, PANGO_TAB_LEFT, tabwidth * i - tab_shift+border);
     }
     cairo_new_path(cr);
     cairo_set_source_rgba(cr, color.red, color.green, color.blue,
@@ -170,13 +171,6 @@ double gfx_get_text_width(
     PangoLayout *layout;
     PangoRectangle log_rect;
     gfx_color_t color = { 0, 0, 0, 0 };
-    char     *tab;
-
-    /* turn \\t into tab */
-    while ((tab = strstr(text, "\\t"))) {
-        memmove(tab + 1, tab + 2, strlen(tab + 2));
-        tab[0] = (char) 9;
-    }
     layout = gfx_prep_text(im, start, color, font, size, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
     pango_tab_array_free(pango_layout_get_tabs(layout));
