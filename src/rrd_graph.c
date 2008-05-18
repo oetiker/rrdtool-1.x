@@ -1256,7 +1256,7 @@ int data_proc(
 
     if (im->logarithmic) {
         if (isnan(minval) || isnan(maxval) || maxval <= 0) {
-            minval = 0.0; /* catching this right away below */
+            minval = 0.0;   /* catching this right away below */
             maxval = 5.1;
         }
         /* in logarithm mode, where minval is smaller or equal 
@@ -1271,7 +1271,7 @@ int data_proc(
         }
     }
 
-    /* adjust min and max values given by the user*/
+    /* adjust min and max values given by the user */
     /* for logscale we add something on top */
     if (isnan(im->minval)
         || ((!im->rigid) && im->minval > minval)
@@ -3033,31 +3033,29 @@ int graph_paint(
     case IF_PDF:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
-            ?
-            cairo_pdf_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom)
-            : cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
-                                       im->yimg * im->zoom);
+            ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
+                                       im->yimg * im->zoom)
+            : cairo_pdf_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
     case IF_EPS:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
             ?
-            cairo_ps_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom)
-            : cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
-                                      im->yimg * im->zoom);
+            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
+                                    im->yimg * im->zoom)
+            : cairo_ps_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
     case IF_SVG:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
             ?
-            cairo_svg_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom)
-            : cairo_svg_surface_create(im->
-                                       graphfile,
-                                       im->
-                                       ximg * im->zoom, im->yimg * im->zoom);
+            cairo_svg_surface_create(im->
+                                     graphfile,
+                                     im->ximg * im->zoom, im->yimg * im->zoom)
+            : cairo_svg_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         cairo_svg_surface_restrict_to_version
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
@@ -3433,8 +3431,8 @@ int graph_paint(
             rrd_set_error("Could not save png to '%s'", im->graphfile);
             return 1;
         }
-    }
         break;
+    }
     default:
         if (strlen(im->graphfile)) {
             cairo_show_page(im->cr);
