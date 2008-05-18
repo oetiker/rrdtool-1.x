@@ -41,7 +41,7 @@ Where you want to install the software.
 Once you have decided. Save the two locations into environment variables.
 
  BUILD_DIR=/tmp/rrdbuild
- INSTALL_DIR=/usr/local/rrdtool-1.3rc3
+ INSTALL_DIR=/usr/local/rrdtool-1.3rc4
 
 
 If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
@@ -55,9 +55,9 @@ Now make sure the BUILD_DIR exists and go there:
 Lets first assume you already have all the necessary libraries
 pre-installed. 
 
- wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.3rc3.tar.gz
- gunzip -c rrdtool-1.3rc3.tar.gz | tar xf -
- cd rrdtool-1.3rc3
+ wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.3rc4.tar.gz
+ gunzip -c rrdtool-1.3rc4.tar.gz | tar xf -
+ cd rrdtool-1.3rc4
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
@@ -152,6 +152,9 @@ Unfortunatly the syntax differs from system to system:
 
  export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
 
+If you are on a 64bit platform, but would like to continue to use the rrd files created
+on your old 32bit linux, you may be able 
+
 =item HPUX
  
  export LDFLAGS="+b${INSTALL_DIR}/lib"
@@ -180,7 +183,7 @@ Chances are very high that you already have that on your system ...
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
  gunzip -c zlib-1.2.3.tar.gz | tar xf -
  cd zlib-1.2.3
- ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --shared
  $MAKE
  $MAKE install
 
@@ -213,6 +216,16 @@ If you run into problems building freetype on Solaris, you may want to try to
 add the following at the start the configure line:
 
  env EGREP=egrep
+
+=item Building LibXML2
+
+ cd $BUILD_DIR
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
+ gunzip -c libxml2-sources-2.6.32.tar.gz | tar xf -
+ cd libxml2-sources-2.6.32
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building fontconfig
 
@@ -273,16 +286,6 @@ config file.
  $MAKE
  $MAKE install
 
-=item Building LibXML2
-
- cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
- gunzip -c libxml2-sources-2.6.32.tar.gz | tar xf -
- cd libxml2-sources-2.6.32
- ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
- $MAKE
- $MAKE install
-
 =back
 
 Now all the dependent libraries are built and you can try again. This time
@@ -295,7 +298,7 @@ because it seems that a fair number of people have ill configured python and
 tcl setups that would prevent rrdtool from building if they are included in
 their current state.
 
- cd $BUILD_DIR/rrdtool-1.3rc3
+ cd $BUILD_DIR/rrdtool-1.3rc4
  ./configure --prefix=$INSTALL_DIR --disable-tcl --disable-python
  $MAKE clean
  $MAKE

@@ -9,14 +9,14 @@ dnl tell automake the this script is for rrdtool
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.3rc3])
+AC_INIT([rrdtool],[1.3rc4])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.299908051601
+NUMVERS=1.299908051800
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which version the library is compatible with
@@ -24,11 +24,11 @@ dnl we must keep a separate library version cout of the format c:r:a if any
 dnl functionality is changed do c++ prior to release
 dnl if only implementation changed but all interfaces are kept, do r++
 dnl when only functionality was added, do a++ if any functionality was
-dnl removed to a=0.
+dnl removed do a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=3:1:1
+LIBVERS=3:2:1
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
