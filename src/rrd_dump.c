@@ -52,8 +52,7 @@ extern char *tzname[2];
 int rrd_dump_opt_r(
     const char *filename,
     char *outname,
-    int  opt_noheader
-)
+    int opt_noheader)
 {
     unsigned int i, ii, ix, iii = 0;
     time_t    now;
@@ -81,11 +80,11 @@ int rrd_dump_opt_r(
         out_file = stdout;
     }
 
-    if (!opt_noheader){
-      fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", out_file);
-      fputs
-        ("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n",
-         out_file);
+    if (!opt_noheader) {
+        fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", out_file);
+        fputs
+            ("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n",
+             out_file);
     }
     fputs("<!-- Round Robin Database Dump -->", out_file);
     fputs("<rrd>", out_file);
@@ -433,7 +432,7 @@ int rrd_dump_r(
     const char *filename,
     char *outname)
 {
-    return rrd_dump_opt_r(filename,outname,0);    
+    return rrd_dump_opt_r(filename, outname, 0);
 }
 
 int rrd_dump(
@@ -442,13 +441,14 @@ int rrd_dump(
 {
     int       rc;
     int       opt_noheader = 0;
+
     /* init rrd clean */
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
-    
+
     while (42) {
-        int       opt;  
+        int       opt;
         int       option_index = 0;
         static struct option long_options[] = {
             {"no-header", no_argument, 0, 'n'},
@@ -465,9 +465,9 @@ int rrd_dump(
             opt_noheader = 1;
             break;
 
-        default: 
+        default:
             rrd_set_error("usage rrdtool %s [--no-header|-n] "
-                      "file.rrd [file.xml]", argv[0]);
+                          "file.rrd [file.xml]", argv[0]);
             return (-1);
             break;
         }
@@ -480,11 +480,10 @@ int rrd_dump(
     }
 
     if ((argc - optind) == 2) {
-        rc = rrd_dump_opt_r(argv[optind], argv[optind+1],opt_noheader);
+        rc = rrd_dump_opt_r(argv[optind], argv[optind + 1], opt_noheader);
     } else {
-        rc = rrd_dump_opt_r(argv[optind], NULL,opt_noheader);
+        rc = rrd_dump_opt_r(argv[optind], NULL, opt_noheader);
     }
 
     return rc;
 }
-
