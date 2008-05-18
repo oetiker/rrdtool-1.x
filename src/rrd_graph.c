@@ -3571,7 +3571,7 @@ int rrd_graph(
             *ymin = walker->value.u_val;
         } else if (strcmp(walker->key, "value_max") == 0) {
             *ymax = walker->value.u_val;
-        } else if (strncmp(walker->key, "print", 6) == 0) { /* keys are prdate[0..] */
+        } else if (strncmp(walker->key, "print", 5) == 0) { /* keys are prdate[0..] */
             prlines++;
             if (((*prdata) =
                  rrd_realloc((*prdata),
