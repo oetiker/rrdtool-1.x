@@ -1,5 +1,5 @@
-Python-RRDtool 0.2.1
---------------------
+Based on Python-RRDtool 0.2.1
+-----------------------------
 
 The python-rrdtool provides a interface to rrdtool, the wonderful
 graphing and logging utility. This wrapper implementation has
@@ -19,10 +19,16 @@ Mailing Lists:
   Users & Hackers  py-rrdtool-users@nongnu.org
 
 
-Author
-------
+Original Author
+---------------
 
 Hye-Shik Chang <perky@FreeBSD.org>
 
 Any comments, suggestions, and/or patches are very welcome.
 Thank you for using py-rrdtool!
+
+
+CHANGES
+-------
+2008-05-19 - tobi
+* rewrote the info method to conform to rrdtool info standard

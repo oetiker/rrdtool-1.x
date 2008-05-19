@@ -40,8 +40,9 @@
 static const char *__version__ = "$Revision: 1.14 $";
 
 #include "Python.h"
-#include "rrd.h"
-#include "rrd_extra.h"
+#include "../../src/rrd_tool.h"
+//#include "rrd.h"
+//#include "rrd_extra.h"
 
 static PyObject *ErrorObject;
 extern int optind;
@@ -402,6 +403,40 @@ static PyObject *PyRRD_resize(
     return r;
 }
 
+static PyObject *PyDict_FromInfo(
+    info_t *data)
+{
+    PyObject *r;
+    r = PyDict_New();
+    while (data){
+        PyObject *val = NULL;
+        switch (data->type) {
+        case RD_I_VAL:
+            val = isnan(data->value.u_val)     
+                    ? (Py_INCREF(Py_None), Py_None)     
+                    : PyFloat_FromDouble(data->value.u_val);
+            break;
+        case RD_I_CNT:
+            val = PyLong_FromUnsignedLong(data->value.u_cnt);
+            break;
+        case RD_I_INT:
+            val = PyLong_FromLong(data->value.u_int);
+            break;
+        case RD_I_STR:
+            val = PyString_FromString(data->value.u_str);
+            break;
+        case RD_I_BLO:
+            val = PyString_FromStringAndSize((char*)data->value.u_blo.ptr, data->value.u_blo.size);
+            break;
+        }
+        if (val){
+            PyDict_SetItemString(r,data->key,val);
+        }
+        data = data->next;
+    }
+    return r;
+}
+
 static char PyRRD_info__doc__[] =
     "info(filename): extract header information from an rrd";
 
@@ -409,101 +444,71 @@ static PyObject *PyRRD_info(
     PyObject UNUSED(*self),
     PyObject * args)
 {
-    PyObject *r, *t, *ds;
-    rrd_t     rrd;
-    char     *filename;
-    unsigned long i, j;
+    PyObject *r;
+    int       argc;
+    char    **argv;
+    info_t   *data;
 
-    if (!PyArg_ParseTuple(args, "s:info", &filename))
+    if (create_args("info", args, &argc, &argv) < 0)  
         return NULL;
-
-    if (!rrd_open(filename, &rrd, RRD_READONLY) == -1) {
+     
+    if ((data = rrd_info(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         return NULL;
     }
-#define DICTSET_STR(dict, name, value) \
-    t = PyString_FromString(value); \
-    PyDict_SetItemString(dict, name, t); \
-    Py_DECREF(t);
+    r = PyDict_FromInfo(data);
+    info_free(data);
+    return r;
+}
 
-#define DICTSET_CNT(dict, name, value) \
-    t = PyInt_FromLong((long)value); \
-    PyDict_SetItemString(dict, name, t); \
-    Py_DECREF(t);
+static char PyRRD_graphv__doc__[] =
+    "graphv is called in the same manner as graph";
 
-#define DICTSET_VAL(dict, name, value) \
-    t = isnan(value) ? (Py_INCREF(Py_None), Py_None) :  \
-        PyFloat_FromDouble((double)value); \
-    PyDict_SetItemString(dict, name, t); \
-    Py_DECREF(t);
+static PyObject *PyRRD_graphv(
+    PyObject UNUSED(*self),
+    PyObject * args)
+{
+    PyObject *r;
+    int       argc;
+    char    **argv;
+    info_t   *data;
 
-    r = PyDict_New();
-
-    DICTSET_STR(r, "filename", filename);
-    DICTSET_STR(r, "rrd_version", rrd.stat_head->version);
-    DICTSET_CNT(r, "step", rrd.stat_head->pdp_step);
-    DICTSET_CNT(r, "last_update", rrd.live_head->last_up);
-
-    ds = PyDict_New();
-    PyDict_SetItemString(r, "ds", ds);
-    Py_DECREF(ds);
-
-    for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
-        PyObject *d;
-
-        d = PyDict_New();
-        PyDict_SetItemString(ds, rrd.ds_def[i].ds_nam, d);
-        Py_DECREF(d);
-
-        DICTSET_STR(d, "ds_name", rrd.ds_def[i].ds_nam);
-        DICTSET_STR(d, "type", rrd.ds_def[i].dst);
-        DICTSET_CNT(d, "minimal_heartbeat",
-                    rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
-        DICTSET_VAL(d, "min", rrd.ds_def[i].par[DS_min_val].u_val);
-        DICTSET_VAL(d, "max", rrd.ds_def[i].par[DS_max_val].u_val);
-        DICTSET_STR(d, "last_ds", rrd.pdp_prep[i].last_ds);
-        DICTSET_VAL(d, "value", rrd.pdp_prep[i].scratch[PDP_val].u_val);
-        DICTSET_CNT(d, "unknown_sec",
-                    rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
+    if (create_args("graphv", args, &argc, &argv) < 0)  
+        return NULL;
+     
+    if ((data = rrd_graph_v(argc, argv)) == NULL) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        return NULL;
     }
+    r = PyDict_FromInfo(data);
+    info_free(data);
+    return r;
+}
 
-    ds = PyList_New(rrd.stat_head->rra_cnt);
-    PyDict_SetItemString(r, "rra", ds);
-    Py_DECREF(ds);
+static char PyRRD_updatev__doc__[] =
+    "updatev is called in the same manner as update";
 
-    for (i = 0; i < rrd.stat_head->rra_cnt; i++) {
-        PyObject *d, *cdp;
+static PyObject *PyRRD_updatev(
+    PyObject UNUSED(*self),
+    PyObject * args)
+{
+    PyObject *r;
+    int       argc;
+    char    **argv;
+    info_t   *data;
 
-        d = PyDict_New();
-        PyList_SET_ITEM(ds, i, d);
-
-        DICTSET_STR(d, "cf", rrd.rra_def[i].cf_nam);
-        DICTSET_CNT(d, "rows", rrd.rra_def[i].row_cnt);
-        DICTSET_CNT(d, "pdp_per_row", rrd.rra_def[i].pdp_cnt);
-        DICTSET_VAL(d, "xff", rrd.rra_def[i].par[RRA_cdp_xff_val].u_val);
-
-        cdp = PyList_New(rrd.stat_head->ds_cnt);
-        PyDict_SetItemString(d, "cdp_prep", cdp);
-        Py_DECREF(cdp);
-
-        for (j = 0; j < rrd.stat_head->ds_cnt; j++) {
-            PyObject *cdd;
-
-            cdd = PyDict_New();
-            PyList_SET_ITEM(cdp, j, cdd);
-
-            DICTSET_VAL(cdd, "value",
-                        rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
-                                     j].scratch[CDP_val].u_val);
-            DICTSET_CNT(cdd, "unknown_datapoints",
-                        rrd.cdp_prep[i * rrd.stat_head->ds_cnt +
-                                     j].scratch[CDP_unkn_pdp_cnt].u_cnt);
-        }
+    if (create_args("updatev", args, &argc, &argv) < 0)  
+        return NULL;
+     
+    if ((data = rrd_update_v(argc, argv)) == NULL) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        return NULL;
     }
-
-    rrd_free(&rrd);
-
+    r = PyDict_FromInfo(data);
+    info_free(data);
     return r;
 }
 
@@ -520,6 +525,8 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("last", PyRRD_last, PyRRD_last__doc__),
     meth("resize", PyRRD_resize, PyRRD_resize__doc__),
     meth("info", PyRRD_info, PyRRD_info__doc__),
+    meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
+    meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
     {NULL, NULL, 0, NULL}
 };
 

@@ -1,6 +1,9 @@
 RRDTOOL NEWS
 ============
+
+#####################################
 Major Changes between 1.2.x and 1.3.x
+-------------------------------------
 
 RRdtool dump / restore Incompatibilities
 ----------------------------------------
@@ -66,9 +69,17 @@ Internationalization (Takao Fujiwara and Tobi Oetiker)
   available on your system. Use the configure option --disable-libintl if
   you want to disable this feature
 
-Misc
-----
+Language Bindings
+-----------------
 * ruby rrd_fetch will return step as a last property -- Mike Perham
+
+* python rrdtool.info does now conform with the data structure returned
+  by the other language bindings. This is incompatible with the
+  previous (broken) version --tobi
+
+* python bindings got updatev support --tobi
+
+* ruby, perl, python bindings support the new graphv interface --tobi
 
 Locale Independent Numeric Input
 --------------------------------
@@ -76,10 +87,9 @@ Locale Independent Numeric Input
   (LC_NUMERIC) in C or POSIX locale for numbers. (not 1,1 but 1.1) this is
   necessary to make things like RPN work as it uses , as a separator.
 
-RRDTOOL NEWS
-============
+######################################################################################
 Major Changes between 1.0.x and 1.2.x
-
+======================================================================================
 Graphing
 --------
 

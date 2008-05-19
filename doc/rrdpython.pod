@@ -18,6 +18,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
 
 =head1 EXAMPLE
 
+ import sys
  sys.path.append('/path/to/rrdtool/lib/python2.3/site-packages/')
  import rrdtool, tempfile
 
