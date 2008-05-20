@@ -10,7 +10,7 @@ SUBDIRS = $(SUB_tcl)
 EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-piped/RRDp.pm perl-piped/t/base.t \
 	     perl-shared/ntmake.pl perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm  perl-shared/RRDs.xs perl-shared/t/base.t \
 	     ruby/CHANGES     ruby/README      ruby/extconf.rb  ruby/main.c      ruby/test.rb \
-             python/ACKNOWLEDGEMENT python/AUTHORS python/COPYING python/README python/rrd_extra.h python/rrdtoolmodule.c python/setup.py
+             python/ACKNOWLEDGEMENT python/AUTHORS python/COPYING python/README python/rrdtoolmodule.c python/setup.py
 
 
 # add the following to the all target
