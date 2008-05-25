@@ -1612,7 +1612,8 @@ int leg_place(
     int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
     int       fill = 0, fill_last;
     int       leg_c = 0;
-    int       leg_x = border, leg_y = im->yimg;
+    int       leg_x = border;
+    int       leg_y = im->yimg;
     int       leg_y_prev = im->yimg;
     int       leg_cc;
     int       glue = 0;
@@ -1807,10 +1808,7 @@ int leg_place(
                     leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
             }
         } else {
-            im->yimg = leg_y_prev;
-            /* if we did place some legends we have to add vertical space */
-            if (leg_y != im->yimg)
-                im->yimg += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+            im->yimg = leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 + border * 0.6;
         }
         free(legspace);
     }
@@ -3070,7 +3068,9 @@ int graph_paint(
                  im->xsize,
                  im->yorigin - im->ysize, im->graph_col[GRC_CANVAS]);
     gfx_add_point(im, im->xorigin, im->yorigin - im->ysize);
-    gfx_close_path(im);
+    gfx_close_path(im);    
+    cairo_rectangle(im->cr, im->xorigin, im->yorigin-im->ysize-1.0, im->xsize,im->ysize+2.0);
+    cairo_clip(im->cr);
     if (im->minval > 0.0)
         areazero = im->minval;
     if (im->maxval < 0.0)
@@ -3358,6 +3358,7 @@ int graph_paint(
             break;
         }               /* switch */
     }
+    cairo_reset_clip(im->cr);
 
     /* grid_paint also does the text */
     if (!(im->extra_flags & ONLY_GRAPH))
