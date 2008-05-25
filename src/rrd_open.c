@@ -226,12 +226,14 @@ rrd_file_t *rrd_open(
             rrd_set_error("live_head_t malloc");
             goto out_close;
         }
-#ifdef HAVE_MMAP
-        memmove(&rrd->live_head->last_up, data + offset, sizeof(long));
-        offset += sizeof(long);
-#else
-        offset += read(rrd_file->fd, &rrd->live_head->last_up, sizeof(long));
-#endif
+
+#if defined USE_MADVISE
+        /* the live_head will be needed soonish, so hint accordingly */
+        madvise(data + PAGE_START(offset),
+                sizeof(time_t), MADV_WILLNEED);
+#endif        
+        __rrd_read(rrd->legacy_last_up,time_t,1);
+        rrd->live_head->last_up = *rrd->legacy_last_up;
         rrd->live_head->last_up_usec = 0;
     } else {
 #if defined USE_MADVISE
@@ -512,6 +514,7 @@ void rrd_init(
     rrd->ds_def = NULL;
     rrd->rra_def = NULL;
     rrd->live_head = NULL;
+    rrd->legacy_last_up = NULL;
     rrd->rra_ptr = NULL;
     rrd->pdp_prep = NULL;
     rrd->cdp_prep = NULL;
@@ -522,9 +525,12 @@ void rrd_init(
 /* free RRD header data.  */
 
 #ifdef HAVE_MMAP
-inline void rrd_free(
-    rrd_t UNUSED(*rrd))
+void rrd_free(
+    rrd_t *rrd)
 {
+    if (rrd->legacy_last_up){ /* this gets set for version < 3 only */
+        free(rrd->live_head);  
+    }
 }
 #else
 void rrd_free(

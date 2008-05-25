@@ -383,7 +383,8 @@ typedef struct rrd_t {
     stat_head_t *stat_head; /* the static header */
     ds_def_t *ds_def;   /* list of data source definitions */
     rra_def_t *rra_def; /* list of round robin archive def */
-    live_head_t *live_head;
+    live_head_t *live_head; /* rrd v >= 3 last_up with us */
+    time_t *legacy_last_up; /* rrd v < 3 last_up time */
     pdp_prep_t *pdp_prep;   /* pdp data prep area */
     cdp_prep_t *cdp_prep;   /* cdp prep area */
     rra_ptr_t *rra_ptr; /* list of rra pointers */

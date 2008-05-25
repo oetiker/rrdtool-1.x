@@ -832,6 +832,9 @@ static int process_arg(
     rrd->live_head->last_up = *current_time;
     rrd->live_head->last_up_usec = *current_time_usec;
 
+    if ( version < 3 ){
+        *rrd->legacy_last_up = rrd->live_head->last_up;
+    }
     free(seasonal_coef);
     free(last_seasonal_coef);
     return 0;
@@ -2053,7 +2056,7 @@ static int write_changes_to_disk(
             return -1;
         }
     } else {
-        if (rrd_write(rrd_file, &rrd->live_head->last_up,
+        if (rrd_write(rrd_file, rrd->legacy_last_up,
                       sizeof(time_t) * 1) != sizeof(time_t) * 1) {
             rrd_set_error("rrd_write live_head to rrd");
             return -1;
