@@ -1821,8 +1821,6 @@ int leg_place(
 /* the xaxis labels are determined from the number of seconds per pixel
    in the requested graph */
 
-
-
 int calc_horizontal_grid(
     image_desc_t
     *im)
@@ -1860,13 +1858,13 @@ int calc_horizontal_grid(
             if (im->ygrid_scale.gridstep == 0)  /* range is one -> 0.1 is reasonable scale */
                 im->ygrid_scale.gridstep = 0.1;
             /* should have at least 5 lines but no more then 15 */
-            if (range / im->ygrid_scale.gridstep < 5)
+            if (range / im->ygrid_scale.gridstep < 5 && im->ygrid_scale.gridstep >= 30 )
                 im->ygrid_scale.gridstep /= 10;
             if (range / im->ygrid_scale.gridstep > 15)
                 im->ygrid_scale.gridstep *= 10;
-            if (range / im->ygrid_scale.gridstep > 5) {
+            if (range / im->ygrid_scale.gridstep > 5 ) {
                 im->ygrid_scale.labfact = 1;
-                if (range / im->ygrid_scale.gridstep > 8)
+                if (range / im->ygrid_scale.gridstep > 8 || im->ygrid_scale.gridstep < 1.8 * im->text_prop[TEXT_PROP_AXIS].size )
                     im->ygrid_scale.labfact = 2;
             } else {
                 im->ygrid_scale.gridstep /= 5;
@@ -1893,17 +1891,17 @@ int calc_horizontal_grid(
                 sprintf(im->ygrid_scale.labfmt,
                         "%%%d.0f%s", len, (im->symbol != ' ' ? " %c" : ""));
             }
-        } else {
+        } else { /* classic rrd grid */
             for (i = 0; ylab[i].grid > 0; i++) {
                 pixel = im->ysize / (scaledrange / ylab[i].grid);
                 gridind = i;
-                if (pixel > 7)
+                if (pixel >= 5)
                     break;
             }
 
             for (i = 0; i < 4; i++) {
                 if (pixel * ylab[gridind].lfac[i] >=
-                    2.5 * im->text_prop[TEXT_PROP_AXIS].size) {
+                    1.8 * im->text_prop[TEXT_PROP_AXIS].size) {
                     im->ygrid_scale.labfact = ylab[gridind].lfac[i];
                     break;
                 }
