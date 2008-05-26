@@ -41,6 +41,8 @@ NEW Graphing (Tobi Oetiker)
 * draw dashed lines in graphs (Thomas Gutzler)
 * new interface graphv which returns inforamation using the rrd_info
   interface (Tobi Oetiker and Mark Plaksin)
+* improved horizontal grid. Have a bit more grid lines and y-axis labels
+  while keeping them fahr enough apart to not run into each other.
 
 NEW Forecasting (Evan Miller)
 -----------
