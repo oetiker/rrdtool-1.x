@@ -1,46 +1,18 @@
-What has to be done before the 1.2.0 Release
---------------------------------------------
-* Sync Docs with reality (there are things described which have not been
-  implemented)
+Random Feature Ideas for RRDtool
+--------------------------------
+Updated: 2008-05-26
 
-* Write Changes Document with all new features
-
-* Update Tutorials for new Release.
-
-Future Ideas
-------------
 reverse order of stacked graph entries prior to plotting ... this is to make
 plotting order more naturally fit with the ordering of the legend ...
 
 make it possible to define order of legend items independant of their order
 on the commandline ...
 
-use XDR to write architecture independant date
+architecture independant storage format.
 
-have drawing methode modifier for the LINE, AREA, STACK functions which allows
-to select wether the data points should be presented as stepes (todays state)
-or connected with lines.
+micro second precision
 
-LINEx:ds[#color][/method]:description
-
-be more clever in the fetch function when no complete data coverage for the
-desired area is possible.
-
-Let the user define the base resolution of the graph independently of
-the pixel resolution. If it is smaller than one pixel it will simply
-be ignored
-
-allow sub second precision for the step definition
-
-modularise consolidation and acquisition functions
-
-Allow the user to define vertical scaling of graphs in a more flexible way.
-some thing like --inner-range 0-1000 and --outer-range 0-10000 which means
-that the grapher can choose its vertical scaling in the given range ... 
-this would replace upper and lower limit
-
-make the inclusion of G?PRINT like output in to the lables of other graph 
-elements possible
+2036 stable time
 
 add axis on the right and on top of the graph ... 
 
