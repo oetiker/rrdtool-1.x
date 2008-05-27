@@ -20,18 +20,14 @@ char     *sprintf_alloc(
     char *fmt,
     ...)
 {
-#ifdef HAVE_VSNPRINTF
-    int       maxlen = 50;
-#else
-    int       maxlen = 1000;
-#endif
+    int       maxlen = 1024 + strlen(fmt);
     char     *str = NULL;
     va_list   argp;
-    str = malloc(sizeof(char) * (strlen(fmt) + maxlen));
+    str = malloc(sizeof(char) * (maxlen+1));
     if (str != NULL) {
         va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
-        vsnprintf(str, maxlen - 1, fmt, argp);
+        vsnprintf(str, maxlen, fmt, argp);
 #else
         vsprintf(str, fmt, argp);
 #endif
