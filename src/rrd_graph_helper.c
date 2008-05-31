@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.3rc6  Copyright by Tobi Oetiker, 1997-2008
+ * RRDtool 1.3rc7  Copyright by Tobi Oetiker, 1997-2008
  ****************************************************************************
  * rrd_graph_helper.c  commandline parser functions 
  *                     this code initially written by Alex van den Bogaerdt
