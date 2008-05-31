@@ -68,8 +68,9 @@ B<configure> complaining about several missing libraries.
 If your OS lets you install additional packages from a software repository,
 you may get away with installing the missing packages. When the packages are
 installed, run configure again and try to compile again. Below you find some
-hints on getting your OS ready for the rrdtool compilation. Additions to
-this list are welcome.
+hints on getting your OS ready for the rrdtool compilation.
+
+Additions to this list are welcome.
 
 =head2 OpenSolaris 2008.05
 
@@ -98,7 +99,7 @@ But again this may have been too optimistic still, and you actually have to
 compile your own copies of some of the required libraries. Things like
 libpng and zlib are pretty standard so you will probably have them on your
 system anyway. Freetype, Fontinst, Cairo, Pango may be installed, but it is
-possible that they are pretty old and thus don't live up to the
+possible that they are pretty old and thus don't live up to our
 expectations, so you may want to compile their latest versions.
 
 =head3 Build Tipps for AIX
@@ -120,7 +121,7 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
 In order to build the libraries you need a compiler on your system.
 Unfortunately compilers are not all alike. This has an effect on the CFLAGS
 you want to set. The examples below are for the popular GCC compiler suite.
-If you have an other compile you have to use the following settings:
+If you have an other compilers here are some ides:
 
 =over
 
@@ -138,9 +139,12 @@ set the following environamen variable
  export PKG_CONFIG_PATH=${INSTALL_DIR}/lib/pkgconfig
  export PATH=$INSTALL_DIR/bin:$PATH
 
-Since we are compiling libraries dynamically, you they must further know
+This relies on the presence of the F<pkgconfig> program. Below you find instructions
+on how to compile pkgconfig as well.
+
+Since we are compiling libraries dynamically, they must know
 where to find each other. This is done by setting an appropriate LDFLAG.
-Unfortunatly the syntax differs from system to system:
+Unfortunatly, the syntax again differs from system to system:
 
 =over
 
@@ -151,9 +155,6 @@ Unfortunatly the syntax differs from system to system:
 =item Linux
 
  export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
-
-If you are on a 64bit platform, but would like to continue to use the rrd files created
-on your old 32bit linux, you may be able 
 
 =item HPUX
  
@@ -174,6 +175,19 @@ then do
 otherwhise just do
 
  export MAKE=make
+
+=item Building pkgconfig
+
+As mentioned above, without pkgconfig the whole build process will be lots
+of pain and suffering, so make sure you have a copy on your system. If it is
+not available natively, here is how to compile it.
+
+ wget http://pkgconfig.freedesktop.org/releases/pkg-config-0.23.tar.gz
+ gunzip -c pkg-config-0.23.tar.gz | tar xf -
+ cd pkg-config-0.23
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ $MAKE
+ $MAKE install
 
 =item Building zlib
 
