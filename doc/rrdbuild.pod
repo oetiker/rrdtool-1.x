@@ -261,7 +261,7 @@ config file.
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/pixman-0.10.0.tar.gz
  gunzip -c pixman-0.10.0.tar.gz  | tar xf -
- cd fontconfig-2.4.2
+ cd pixman-0.10.0
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
  $MAKE
  $MAKE install
