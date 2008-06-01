@@ -60,7 +60,7 @@ const char *rrd_strerror(
 {
     struct rrd_context *ctx = rrd_get_context();
 
-    if (strerror_r(err, ctx->lib_errstr, ctx->errlen))
+    if (strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr)))
         return "strerror_r failed. sorry!";
     else
         return ctx->lib_errstr;
@@ -75,8 +75,8 @@ const char *rrd_strerror(
 
     ctx = rrd_get_context();
     pthread_mutex_lock(&mtx);
-    strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
-    ctx->lib_errstr[ctx->errlen] = '\0';
+    strncpy(ctx->lib_errstr, strerror(err), sizeof(ctx->lib_errstr));
+    ctx->lib_errstr[sizeof(ctx->lib_errstr) - 1] = '\0';
     pthread_mutex_unlock(&mtx);
     return ctx->lib_errstr;
 }

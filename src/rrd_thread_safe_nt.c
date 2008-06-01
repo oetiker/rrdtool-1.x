@@ -70,8 +70,8 @@ const char *rrd_strerror(
     ctx = rrd_get_context();
 
     EnterCriticalSection(&CriticalSection);
-    strncpy(ctx->lib_errstr, strerror(err), ctx->errlen);
-    ctx->lib_errstr[ctx->errlen] = '\0';
+    strncpy(ctx->lib_errstr, strerror(err), sizeof(ctx->lib_errstr));
+    ctx->lib_errstr[sizeof(ctx->lib_errstr) - 1] = '\0';
     LeaveCriticalSection(&CriticalSection);
 
     return ctx->lib_errstr;

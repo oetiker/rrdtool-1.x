@@ -46,7 +46,7 @@ void rrd_set_error(
     rrd_clear_error();
     va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
-    vsnprintf(CTX->rrd_error, CTX->len, fmt, argp);
+    vsnprintf(CTX->rrd_error, sizeof(CTX->rrd_error), fmt, argp);
 #else
     vsprintf(CTX->rrd_error, fmt, argp);
 #endif
@@ -87,10 +87,10 @@ void rrd_set_error_r(
     rrd_clear_error_r(rrd_ctx);
     va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
-    vsnprintf((char *) rrd_ctx->rrd_error, rrd_ctx->len, fmt, argp);
-    rrd_ctx->rrd_error[rrd_ctx->len] = '\0';
+    vsnprintf(rrd_ctx->rrd_error, sizeof(rrd_ctx->rrd_error), fmt, argp);
+    rrd_ctx->rrd_error[sizeof(rrd_ctx->rrd_error) - 1] = '\0';
 #else
-    vsprintf((char *) rrd_ctx->rrd_error, fmt, argp);
+    vsprintf(rrd_ctx->rrd_error, fmt, argp);
 #endif
     va_end(argp);
 }
@@ -110,7 +110,7 @@ void rrd_clear_error_r(
 char     *rrd_get_error_r(
     struct rrd_context *rrd_ctx)
 {
-    return (char *) rrd_ctx->rrd_error;
+    return rrd_ctx->rrd_error;
 }
 #endif
 
@@ -122,33 +122,19 @@ struct rrd_context *rrd_new_context(
     struct rrd_context *rrd_ctx =
         (struct rrd_context *) malloc(sizeof(struct rrd_context));
 
-    if (rrd_ctx) {
-        rrd_ctx->rrd_error = malloc(MAXLEN + 10);
-        rrd_ctx->lib_errstr = malloc(ERRBUFLEN + 10);
-        if (rrd_ctx->rrd_error && rrd_ctx->lib_errstr) {
-            *rrd_ctx->rrd_error = 0;
-            *rrd_ctx->lib_errstr = 0;
-            rrd_ctx->len = MAXLEN;
-            rrd_ctx->errlen = ERRBUFLEN;
-            return rrd_ctx;
-        }
-        if (rrd_ctx->rrd_error)
-            free(rrd_ctx->rrd_error);
-        if (rrd_ctx->lib_errstr)
-            free(rrd_ctx->lib_errstr);
-        free(rrd_ctx);
+    if (! rrd_ctx) {
+        return NULL;
     }
-    return NULL;
+
+    rrd_ctx->rrd_error[0] = '\0';
+    rrd_ctx->lib_errstr[0] = '\0';
+    return rrd_ctx;
 }
 
 void rrd_free_context(
     struct rrd_context *rrd_ctx)
 {
     if (rrd_ctx) {
-        if (rrd_ctx->rrd_error)
-            free(rrd_ctx->rrd_error);
-        if (rrd_ctx->lib_errstr)
-            free(rrd_ctx->lib_errstr);
         free(rrd_ctx);
     }
 }
