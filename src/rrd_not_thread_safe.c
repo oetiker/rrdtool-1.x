@@ -23,8 +23,8 @@ static int  rrd_context_init = 0;
 static struct rrd_context global_ctx = {
     MAXLEN,
     ERRBUFLEN,
+    rrd_liberror,
     rrd_error, 
-    rrd_liberror
 };
 /* #include <stdarg.h> */
 
