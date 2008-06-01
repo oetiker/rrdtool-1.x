@@ -7,7 +7,7 @@ rrdbuild - Instructions for building RRDtool
 If you downloaded the source of rrdtool you have to compile it. This
 document will give some information on how this is done.
 
-RRDtool relies on services of thrid part libraries. Some of these libraries
+RRDtool relies on services of third part libraries. Some of these libraries
 may already be installed on your system. You have to compile copies of the other
 ones before you can build RRDtool.
 
@@ -79,7 +79,7 @@ Just add a compiler and the gnome development package:
  pkg install sunstudioexpress
  pkg install SUNWgnome-common-devel
 
-There is a a problem with F<cairo.pc> on opensolaris. It suggests that
+There is a problem with F<cairo.pc> on opensolaris. It suggests that
 xrender is required for compilation with cairo. This is not true and also
 bad since opensolaris does not include an F<xrender.pc> file. Use perl to
 fix this:
@@ -93,6 +93,30 @@ of packages will get added through dependencies.
 
  apt-get install libpango1.0-dev libxml2-dev
 
+=head2 Gentoo
+
+In Gentoo installing rrdtool is really simple you just need to B<emerge
+rrdtool>. All dependencies will be handled automatically by the portage
+system. The only thing you should care about are USE flags, which allow you
+fine tune features rrdtool will be built with. Currently the following USE
+flags are available:
+
+ doc    - install .html and .txt documentation
+          into /usr/share/doc/rrdtool-1.x.xx/
+ perl   - build and install perl language bindings
+ python - build and install python language bindings
+ ruby   - build and install ruby language bindings
+ tcl    - build and install tcl language bindings
+ rrdcgi - build and install rrdcgi
+
+After you've decided which USE flags you need, set them either in
+F<make.conf> or F</etc/portage/package.use> and finally run:
+
+ # emerge -va rrdtool
+
+Take a look at Gentoo handbook for further details on how to manage USE
+flags: http://www.gentoo.org/doc/en/handbook/handbook-x86.xml?part=2
+
 =head1 BUILDING DEPENDENCIES
 
 But again this may have been too optimistic still, and you actually have to
@@ -102,9 +126,9 @@ system anyway. Freetype, Fontinst, Cairo, Pango may be installed, but it is
 possible that they are pretty old and thus don't live up to our
 expectations, so you may want to compile their latest versions.
 
-=head3 Build Tipps for AIX
+=head3 Build Tips for AIX
 
-If you are woking with AIX, you may find the the B<--disable-shared> option
+If you are working with AIX, you may find the the B<--disable-shared> option
 will cause things to break for you. In that case you may have to install the
 shared libraries into the rrdtool PREFIX and work with B<--disable-static>
 instead.
@@ -134,7 +158,7 @@ If you have an other compilers here are some ides:
 =over 
 
 Some libraries want to know where other libraries are. For this to work,
-set the following environamen variable
+set the following environment variable
 
  export PKG_CONFIG_PATH=${INSTALL_DIR}/lib/pkgconfig
  export PATH=$INSTALL_DIR/bin:$PATH
@@ -143,8 +167,8 @@ This relies on the presence of the F<pkgconfig> program. Below you find instruct
 on how to compile pkgconfig as well.
 
 Since we are compiling libraries dynamically, they must know
-where to find each other. This is done by setting an appropriate LDFLAG.
-Unfortunatly, the syntax again differs from system to system:
+where to find each other. This is done by setting an appropriate LDFLAGS.
+Unfortunately, the syntax again differs from system to system:
 
 =over
 
@@ -172,7 +196,7 @@ then do
  export MAKE=gmake
  export GNUMAKE=gmake
 
-otherwhise just do
+otherwise just do
 
  export MAKE=make
 
@@ -204,7 +228,7 @@ Chances are very high that you already have that on your system ...
 =item Building libpng
 
 Libpng itself requires zlib to build, so we need to help a bit. If you
-already have a copy of zlib on your system (which is very likley) you can
+already have a copy of zlib on your system (which is very likely) you can
 drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of line 4 means that line 4 and line 5 are on one line.
 
@@ -243,9 +267,9 @@ add the following at the start the configure line:
 
 =item Building fontconfig
 
-Note that fontconfig has a runtime configuration file in INSTALL_DIR/etc you
+Note that fontconfig has a run time configuration file in INSTALL_DIR/etc you
 may want to adjust that so that fontconfig finds the fonts on your system.
-Run the fc-cache program to build the fontconfig cache after changeing the
+Run the fc-cache program to build the fontconfig cache after changing the
 config file.
 
  cd $BUILD_DIR
@@ -319,7 +343,7 @@ their current state.
  $MAKE install
 
 SOLARIS HINT: if you want to build  the perl module for the native perl (the
-one shipping with solaris) you will need the sun forte compiler installed on
+one shipping with Solaris) you will need the sun forte compiler installed on
 your box or you have to hand-tune bindings/perl-shared/Makefile while
 building!
 
