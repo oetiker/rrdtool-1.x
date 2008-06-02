@@ -21,10 +21,9 @@ AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which version the library is compatible with
 dnl we must keep a separate library version cout of the format c:r:a if any
-dnl functionality is changed do c++ prior to release
 dnl if only implementation changed but all interfaces are kept, do r++
-dnl when only functionality was added, do a++ if any functionality was
-dnl removed do a=0.
+dnl when only functionality was added do c++,r=0,a++
+dnl if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
