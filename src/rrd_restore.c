@@ -163,7 +163,7 @@ static int value_check_range(
 
     if (((!isnan(min)) && (*rrd_value < min))
         || ((!isnan(max)) && (*rrd_value > max)))
-        *rrd_value = NAN;
+        *rrd_value = DNAN;
 
     return (0);
 }                       /* int value_check_range */
