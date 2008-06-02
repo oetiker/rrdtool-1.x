@@ -28,7 +28,7 @@ dnl removed do a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=3:5:1
+LIBVERS=4:0:0
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
