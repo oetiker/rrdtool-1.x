@@ -853,6 +853,9 @@ if test  "$enable_tcl" = "yes"; then
   else
 	. $tcl_config
 	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
+	if test -n "$TCL_INC_DIR"; then
+	  TCL_INCLUDE_SPEC="$TCL_INCLUDE_SPEC -I$TCL_INC_DIR"
+	fi
   fi
   AC_ARG_ENABLE(tcl,[  --enable-tcl-site        install the tcl extension in the tcl tree],
   [],[enable_tcl_site=yes])
@@ -872,7 +875,7 @@ AC_SUBST(TCL_LD_SEARCH_FLAGS)
 AC_SUBST(TCL_STUB_LIB_SPEC)
 AC_SUBST(TCL_VERSION)
 AC_SUBST(TCL_PACKAGE_DIR)
-AC_SUBST(TCL_INC_DIR)
+AC_SUBST(TCL_INCLUDE_SPEC)
 
 AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
 [],[enable_python=yes])
