@@ -346,6 +346,28 @@ This specifies the largest font size which will be rendered
 bitmapped, that is, without any font smoothing. By default,
 no text is rendered bitmapped.
 
+[B<-P>|B<--pango-markup>]
+
+All text in rrdtool is rendered using Pango. With the B<--pango-markup> option, all
+text will be processed by pango markup. This allows to embed some simple html
+like markup tags using 
+ 
+ <span key="value">text</span>
+
+Apart from the verbose syntax, there are also the following short tags available.
+
+ b     Bold
+ big   Makes font relatively larger, equivalent to <span size="larger">
+ i     Italic
+ s     Strikethrough
+ sub   Subscript
+ sup   Superscript
+ small Makes font relatively smaller, equivalent to <span size="smaller">
+ tt    Monospace font
+ u     Underline 
+ 
+More details on L<http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat.html>.
+
 [B<-G>|B<--graph-render-mode> {B<normal>,B<mono>}]
 
 There are 2 render modes:
@@ -417,26 +439,6 @@ You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.
 See L<rrdgraph_graph> for the exact format.
 
-=item Markup
-
-All text in rrdtool is rendered using Pango markup. This means text can contain embeded markup instructions.
-Simple html markup using 
- 
- <span key="value">text</span>
-
-can be used. Apart from the verbose syntax, there are also the following short tags available.
-
- b     Bold
- big   Makes font relatively larger, equivalent to <span size="larger">
- i     Italic
- s     Strikethrough
- sub   Subscript
- sup   Superscript
- small Makes font relatively smaller, equivalent to <span size="smaller">
- tt    Monospace font
- u     Underline 
- 
-More details on http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat.html.
 
 =back
 

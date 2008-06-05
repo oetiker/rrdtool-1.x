@@ -219,7 +219,7 @@ typedef struct image_desc_t {
     double    force_scale_max;  /* Force a scale--max */
 
     /* status information */
-
+    int       with_markup;
     long      xorigin, yorigin; /* where is (0,0) of the graph */
     long      ximg, yimg;   /* total size of the image */
     size_t    rendered_image_size;
