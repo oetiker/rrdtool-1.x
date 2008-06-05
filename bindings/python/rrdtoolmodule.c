@@ -407,14 +407,16 @@ static PyObject *PyDict_FromInfo(
     info_t *data)
 {
     PyObject *r;
+
     r = PyDict_New();
-    while (data){
+    while (data) {
         PyObject *val = NULL;
+
         switch (data->type) {
         case RD_I_VAL:
-            val = isnan(data->value.u_val)     
-                    ? (Py_INCREF(Py_None), Py_None)     
-                    : PyFloat_FromDouble(data->value.u_val);
+            val = isnan(data->value.u_val)
+                ? (Py_INCREF(Py_None), Py_None)
+                : PyFloat_FromDouble(data->value.u_val);
             break;
         case RD_I_CNT:
             val = PyLong_FromUnsignedLong(data->value.u_cnt);
@@ -426,11 +428,13 @@ static PyObject *PyDict_FromInfo(
             val = PyString_FromString(data->value.u_str);
             break;
         case RD_I_BLO:
-            val = PyString_FromStringAndSize((char*)data->value.u_blo.ptr, data->value.u_blo.size);
+            val =
+                PyString_FromStringAndSize((char *) data->value.u_blo.ptr,
+                                           data->value.u_blo.size);
             break;
         }
-        if (val){
-            PyDict_SetItemString(r,data->key,val);
+        if (val) {
+            PyDict_SetItemString(r, data->key, val);
         }
         data = data->next;
     }
@@ -449,9 +453,9 @@ static PyObject *PyRRD_info(
     char    **argv;
     info_t   *data;
 
-    if (create_args("info", args, &argc, &argv) < 0)  
+    if (create_args("info", args, &argc, &argv) < 0)
         return NULL;
-     
+
     if ((data = rrd_info(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
@@ -474,9 +478,9 @@ static PyObject *PyRRD_graphv(
     char    **argv;
     info_t   *data;
 
-    if (create_args("graphv", args, &argc, &argv) < 0)  
+    if (create_args("graphv", args, &argc, &argv) < 0)
         return NULL;
-     
+
     if ((data = rrd_graph_v(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
@@ -499,9 +503,9 @@ static PyObject *PyRRD_updatev(
     char    **argv;
     info_t   *data;
 
-    if (create_args("updatev", args, &argc, &argv) < 0)  
+    if (create_args("updatev", args, &argc, &argv) < 0)
         return NULL;
-     
+
     if ((data = rrd_update_v(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
