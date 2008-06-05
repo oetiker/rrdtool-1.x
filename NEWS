@@ -26,7 +26,7 @@ NEW File access methods (Bernhard Fischer)
 NEW Graphing (Tobi Oetiker)
 --------
 * libart has been replaced by cairo/pango
-* pango markup is supported
+* pango markup is supported (--pango-markup)
 * full gridfitting 
 * --graph-render-mode=mono for non antialiased graphing
 * --font-render-mode=mono for non antialiased fonts
