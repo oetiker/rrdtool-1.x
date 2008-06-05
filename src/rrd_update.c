@@ -832,7 +832,7 @@ static int process_arg(
     rrd->live_head->last_up = *current_time;
     rrd->live_head->last_up_usec = *current_time_usec;
 
-    if ( version < 3 ){
+    if (version < 3) {
         *rrd->legacy_last_up = rrd->live_head->last_up;
     }
     free(seasonal_coef);

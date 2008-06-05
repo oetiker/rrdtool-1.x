@@ -122,7 +122,7 @@ struct rrd_context *rrd_new_context(
     struct rrd_context *rrd_ctx =
         (struct rrd_context *) malloc(sizeof(struct rrd_context));
 
-    if (! rrd_ctx) {
+    if (!rrd_ctx) {
         return NULL;
     }
 

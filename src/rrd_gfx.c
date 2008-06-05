@@ -139,7 +139,8 @@ static PangoLayout *gfx_prep_text(
     tab_array = pango_tab_array_new(tab_count, (gboolean) (1));
     for (i = 1; i <= tab_count; i++) {
         pango_tab_array_set_tab(tab_array,
-                                i, PANGO_TAB_LEFT, tabwidth * i - tab_shift+border);
+                                i, PANGO_TAB_LEFT,
+                                tabwidth * i - tab_shift + border);
     }
     cairo_new_path(cr);
     cairo_set_source_rgba(cr, color.red, color.green, color.blue,
@@ -155,7 +156,8 @@ static PangoLayout *gfx_prep_text(
     font_desc = pango_font_description_from_string(font);
     pango_font_description_set_size(font_desc, size * PANGO_SCALE);
     pango_layout_set_font_description(layout, font_desc);
-    pango_layout_set_markup(layout, text, -1);
+    if (im->with_markup)
+        pango_layout_set_markup(layout, text, -1);
     return layout;
 }
 

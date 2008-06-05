@@ -226,13 +226,13 @@ rrd_file_t *rrd_open(
             rrd_set_error("live_head_t malloc");
             goto out_close;
         }
-
 #if defined USE_MADVISE
         /* the live_head will be needed soonish, so hint accordingly */
-        madvise(data + PAGE_START(offset),
-                sizeof(time_t), MADV_WILLNEED);
-#endif        
-        __rrd_read(rrd->legacy_last_up,time_t,1);
+        madvise(data + PAGE_START(offset), sizeof(time_t), MADV_WILLNEED);
+#endif
+        __rrd_read(rrd->legacy_last_up, time_t,
+                   1);
+
         rrd->live_head->last_up = *rrd->legacy_last_up;
         rrd->live_head->last_up_usec = 0;
     } else {
@@ -528,8 +528,8 @@ void rrd_init(
 void rrd_free(
     rrd_t *rrd)
 {
-    if (rrd->legacy_last_up){ /* this gets set for version < 3 only */
-        free(rrd->live_head);  
+    if (rrd->legacy_last_up) {  /* this gets set for version < 3 only */
+        free(rrd->live_head);
     }
 }
 #else

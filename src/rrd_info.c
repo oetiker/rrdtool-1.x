@@ -23,7 +23,7 @@ char     *sprintf_alloc(
     int       maxlen = 1024 + strlen(fmt);
     char     *str = NULL;
     va_list   argp;
-    str = malloc(sizeof(char) * (maxlen+1));
+    str = malloc(sizeof(char) * (maxlen + 1));
     if (str != NULL) {
         va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF

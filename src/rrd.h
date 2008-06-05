@@ -231,8 +231,8 @@ extern    "C" {
 /* END parsetime.h */
 
     struct rrd_context {
-        char     lib_errstr[256];
-        char     rrd_error[4096];
+        char      lib_errstr[256];
+        char      rrd_error[4096];
     };
 
 /* returns the current per-thread rrd_context */
