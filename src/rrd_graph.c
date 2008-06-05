@@ -1657,9 +1657,7 @@ int leg_place(
             }
             leg_cc = strlen(im->gdes[i].legend);
             /* is there a controle code ant the end of the legend string ? */
-            if (leg_cc >= 2
-                && im->gdes[i].legend[leg_cc -
-                                      2] == '\\' ) {
+            if (leg_cc >= 2 && im->gdes[i].legend[leg_cc - 2] == '\\') {
                 prt_fctn = im->gdes[i].legend[leg_cc - 1];
                 leg_cc -= 2;
                 im->gdes[i].legend[leg_cc] = '\0';
@@ -1671,8 +1669,7 @@ int leg_place(
                 prt_fctn != 'r' &&
                 prt_fctn != 'j' &&
                 prt_fctn != 'c' &&
-                prt_fctn != 's' &&
-                prt_fctn != '\0' && prt_fctn != 'g') {
+                prt_fctn != 's' && prt_fctn != '\0' && prt_fctn != 'g') {
                 free(legspace);
                 rrd_set_error
                     ("Unknown control code at the end of '%s\\%c'",
@@ -1808,7 +1805,9 @@ int leg_place(
                     leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
             }
         } else {
-            im->yimg = leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 + border * 0.6;
+            im->yimg =
+                leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 +
+                border * 0.6;
         }
         free(legspace);
     }
@@ -1858,13 +1857,16 @@ int calc_horizontal_grid(
             if (im->ygrid_scale.gridstep == 0)  /* range is one -> 0.1 is reasonable scale */
                 im->ygrid_scale.gridstep = 0.1;
             /* should have at least 5 lines but no more then 15 */
-            if (range / im->ygrid_scale.gridstep < 5 && im->ygrid_scale.gridstep >= 30 )
+            if (range / im->ygrid_scale.gridstep < 5
+                && im->ygrid_scale.gridstep >= 30)
                 im->ygrid_scale.gridstep /= 10;
             if (range / im->ygrid_scale.gridstep > 15)
                 im->ygrid_scale.gridstep *= 10;
-            if (range / im->ygrid_scale.gridstep > 5 ) {
+            if (range / im->ygrid_scale.gridstep > 5) {
                 im->ygrid_scale.labfact = 1;
-                if (range / im->ygrid_scale.gridstep > 8 || im->ygrid_scale.gridstep < 1.8 * im->text_prop[TEXT_PROP_AXIS].size )
+                if (range / im->ygrid_scale.gridstep > 8
+                    || im->ygrid_scale.gridstep <
+                    1.8 * im->text_prop[TEXT_PROP_AXIS].size)
                     im->ygrid_scale.labfact = 2;
             } else {
                 im->ygrid_scale.gridstep /= 5;
@@ -1891,7 +1893,7 @@ int calc_horizontal_grid(
                 sprintf(im->ygrid_scale.labfmt,
                         "%%%d.0f%s", len, (im->symbol != ' ' ? " %c" : ""));
             }
-        } else { /* classic rrd grid */
+        } else {        /* classic rrd grid */
             for (i = 0; ylab[i].grid > 0; i++) {
                 pixel = im->ysize / (scaledrange / ylab[i].grid);
                 gridind = i;
@@ -3066,8 +3068,9 @@ int graph_paint(
                  im->xsize,
                  im->yorigin - im->ysize, im->graph_col[GRC_CANVAS]);
     gfx_add_point(im, im->xorigin, im->yorigin - im->ysize);
-    gfx_close_path(im);    
-    cairo_rectangle(im->cr, im->xorigin, im->yorigin-im->ysize-1.0, im->xsize,im->ysize+2.0);
+    gfx_close_path(im);
+    cairo_rectangle(im->cr, im->xorigin, im->yorigin - im->ysize - 1.0,
+                    im->xsize, im->ysize + 2.0);
     cairo_clip(im->cr);
     if (im->minval > 0.0)
         areazero = im->minval;
@@ -3725,6 +3728,7 @@ void rrd_graph_init(
     im->unitslength = 6;
     im->viewfactor = 1.0;
     im->watermark[0] = '\0';
+    im->with_markup = 0;
     im->ximg = 0;
     im->xlab_user.minsec = -1;
     im->xorigin = 0;
@@ -3798,123 +3802,55 @@ void rrd_graph_options(
     /* defines for long options without a short equivalent. should be bytes,
        and may not collide with (the ASCII value of) short options */
 #define LONGOPT_UNITS_SI 255
+
+/* *INDENT-OFF* */
     struct option long_options[] = {
-        {
-         "start", required_argument, 0, 's'}, {
-                                               "end", required_argument, 0,
-                                               'e'}, {
-                                                      "x-grid",
-                                                      required_argument, 0,
-                                                      'x'}, {
-                                                             "y-grid",
-                                                             required_argument,
-                                                             0, 'y'}, {
-                                                                       "vertical-label",
-                                                                       required_argument,
-                                                                       0,
-                                                                       'v'}, {
-                                                                              "width",
-                                                                              required_argument,
-                                                                              0,
-                                                                              'w'},
-        {
-         "height", required_argument, 0, 'h'}, {
-                                                "full-size-mode", no_argument,
-                                                0, 'D'}, {
-                                                          "interlaced",
-                                                          no_argument, 0,
-                                                          'i'}, {
-                                                                 "upper-limit",
-                                                                 required_argument,
-                                                                 0,
-                                                                 'u'}, {
-                                                                        "lower-limit",
-                                                                        required_argument,
-                                                                        0,
-                                                                        'l'}, {
-                                                                               "rigid",
-                                                                               no_argument,
-                                                                               0,
-                                                                               'r'},
-        {
-         "base", required_argument, 0, 'b'}, {
-                                              "logarithmic", no_argument, 0,
-                                              'o'}, {
-                                                     "color",
-                                                     required_argument, 0,
-                                                     'c'}, {
-                                                            "font",
-                                                            required_argument,
-                                                            0, 'n'}, {
-                                                                      "title",
-                                                                      required_argument,
-                                                                      0, 't'},
-        {
-         "imginfo", required_argument, 0, 'f'}, {
-                                                 "imgformat",
-                                                 required_argument, 0, 'a'}, {
-                                                                              "lazy",
-                                                                              no_argument,
-                                                                              0,
-                                                                              'z'},
-        {
-         "zoom", required_argument, 0, 'm'}, {
-                                              "no-legend", no_argument, 0,
-                                              'g'}, {
-                                                     "force-rules-legend",
-                                                     no_argument,
-                                                     0, 'F'}, {
-                                                               "only-graph",
-                                                               no_argument, 0,
-                                                               'j'}, {
-                                                                      "alt-y-grid",
-                                                                      no_argument,
-                                                                      0, 'Y'},
-        {
-         "no-minor", no_argument, 0, 'I'}, {
-                                            "slope-mode", no_argument, 0,
-                                            'E'}, {
-                                                   "alt-autoscale",
-                                                   no_argument, 0, 'A'}, {
-                                                                          "alt-autoscale-min",
-                                                                          no_argument,
-                                                                          0,
-                                                                          'J'}, {
-                                                                                 "alt-autoscale-max",
-                                                                                 no_argument,
-                                                                                 0,
-                                                                                 'M'}, {
-                                                                                        "no-gridfit",
-                                                                                        no_argument,
-                                                                                        0,
-                                                                                        'N'},
-        {
-         "units-exponent", required_argument,
-         0, 'X'}, {
-                   "units-length", required_argument,
-                   0, 'L'}, {
-                             "units", required_argument, 0,
-                             LONGOPT_UNITS_SI}, {
-                                                 "step", required_argument, 0,
-                                                 'S'}, {
-                                                        "tabwidth",
-                                                        required_argument, 0,
-                                                        'T'}, {
-                                                               "font-render-mode",
-                                                               required_argument,
-                                                               0, 'R'}, {
-                                                                         "graph-render-mode",
-                                                                         required_argument,
-                                                                         0,
-                                                                         'G'},
-        {
-         "font-smoothing-threshold",
-         required_argument, 0, 'B'}, {
-                                      "watermark", required_argument, 0, 'W'}, {
-                                                                                "alt-y-mrtg", no_argument, 0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
-        {
-         0, 0, 0, 0}
-    };
+        { "start",              required_argument, 0, 's'}, 
+        { "end",                required_argument, 0, 'e'},
+        { "x-grid",             required_argument, 0, 'x'},
+        { "y-grid",             required_argument, 0, 'y'},
+        { "vertical-label",     required_argument, 0, 'v'},
+        { "width",              required_argument, 0, 'w'},
+        { "height",             required_argument, 0, 'h'},
+        { "full-size-mode",     no_argument,       0, 'D'},
+        { "interlaced",         no_argument,       0, 'i'},
+        { "upper-limit",        required_argument, 0, 'u'},
+        { "lower-limit",        required_argument, 0, 'l'},
+        { "rigid",              no_argument,       0, 'r'},
+        { "base",               required_argument, 0, 'b'},
+        { "logarithmic",        no_argument,       0, 'o'},
+        { "color",              required_argument, 0, 'c'},
+        { "font",               required_argument, 0, 'n'},
+        { "title",              required_argument, 0, 't'},
+        { "imginfo",            required_argument, 0, 'f'},
+        { "imgformat",          required_argument, 0, 'a'},
+        { "lazy",               no_argument,       0, 'z'},
+        { "zoom",               required_argument, 0, 'm'},
+        { "no-legend",          no_argument,       0, 'g'},
+        { "force-rules-legend", no_argument,       0, 'F'},
+        { "only-graph",         no_argument,       0, 'j'},
+        { "alt-y-grid",         no_argument,       0, 'Y'},
+        { "no-minor",           no_argument,       0, 'I'}, 
+        { "slope-mode",         no_argument,       0, 'E'},
+        { "alt-autoscale",      no_argument,       0, 'A'},
+        { "alt-autoscale-min",  no_argument,       0, 'J'},
+        { "alt-autoscale-max",  no_argument,       0, 'M'},
+        { "no-gridfit",         no_argument,       0, 'N'},
+        { "units-exponent",     required_argument, 0, 'X'},
+        { "units-length",       required_argument, 0, 'L'},
+        { "units",              required_argument, 0, LONGOPT_UNITS_SI},
+        { "step",               required_argument, 0, 'S'},
+        { "tabwidth",           required_argument, 0, 'T'},
+        { "font-render-mode",   required_argument, 0, 'R'},
+        { "graph-render-mode",  required_argument, 0, 'G'},
+        { "font-smoothing-threshold", required_argument, 0, 'B'},
+        { "watermark",          required_argument, 0, 'W'},
+        { "alt-y-mrtg",         no_argument,       0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
+        { "pango-markup",       no_argument,       0, 'P'},
+        {  0, 0, 0, 0}
+};
+/* *INDENT-ON* */
+
     optind = 0;
     opterr = 0;         /* initialize getopt */
     parsetime("end-24h", &start_tv);
@@ -3986,6 +3922,9 @@ void rrd_graph_options(
             break;
         case 'N':
             im->gridfit = 0;
+            break;
+        case 'P':
+            im->with_markup = 1;
             break;
         case 's':
             if ((parsetime_error = parsetime(optarg, &start_tv))) {
@@ -4515,7 +4454,10 @@ int vdef_calc(
     dst = &im->gdes[gdi];
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
-    end = src->end_orig % src->step == 0 ? src->end_orig : (src->end_orig + src->step - src->end_orig % src->step);
+    end =
+        src->end_orig % src->step ==
+        0 ? src->end_orig : (src->end_orig + src->step -
+                             src->end_orig % src->step);
 
     steps = (end - src->start) / src->step;
 #if 0
