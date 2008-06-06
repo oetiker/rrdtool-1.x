@@ -4126,18 +4126,20 @@ void rrd_graph_options(
                         if (size > 0) {
                             im->text_prop[propidx].size = size;
                         }
-                        if ((int) strlen(prop) > end) {
-                            if (prop[end] == ':') {
+                        if ((int) strlen(optarg) > end) {
+                            if (optarg[end] == ':') {
                                 strncpy(im->text_prop[propidx].font,
-                                        prop + end + 1, 255);
+                                        optarg + end + 1, 255);
                                 im->text_prop[propidx].font[255] = '\0';
                             } else {
                                 rrd_set_error
-                                    ("expected after font size in '%s'",
-                                     prop);
+                                    ("expected : after font size in '%s'",
+                                     optarg);
                                 return;
                             }
                         }
+                        /* only run the for loop for DEFAULT (0) for
+                           all others, we break here. woodo programming */
                         if (propidx == sindex && sindex != 0)
                             break;
                     }
