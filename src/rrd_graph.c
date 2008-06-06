@@ -3508,15 +3508,17 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
                         if (size > 0){
                               im->text_prop[propidx].size=size;              
                       }        
-                       if (strlen(prop) > end){
-                          if (prop[end] == ':'){
-                             strncpy(im->text_prop[propidx].font,prop+end+1,255);
+                       if (strlen(optarg) > end){
+                          if (optarg[end] == ':'){
+                             strncpy(im->text_prop[propidx].font,optarg+end+1,255);
                              im->text_prop[propidx].font[255] = '\0';
                           } else {
-                             rrd_set_error("expected after font size in '%s'",prop);
+                             rrd_set_error("expected : after font size in '%s'",optarg);
                             return;
                           }
                       }
+                      /* only run the for loop for DEFAULT (0) for
+                         all others, we break here. woodo programming */
                       if (propidx==sindex && sindex != 0) break;
                   }
                 } else {
