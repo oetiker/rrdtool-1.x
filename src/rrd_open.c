@@ -34,10 +34,11 @@
 #endif
 
 /* get the address of the start of this page */
+#if defined USE_MADVISE || defined HAVE_POSIX_FADVISE 
 #ifndef PAGE_START
 #define PAGE_START(addr) ((addr)&(~(_page_size-1)))
 #endif
-
+#endif
 
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
@@ -316,6 +317,7 @@ void rrd_dontneed(
     rrd_file_t *rrd_file,
     rrd_t *rrd)
 {
+#if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
     unsigned long dontneed_start;
     unsigned long rra_start;
     unsigned long active_block;
@@ -369,7 +371,12 @@ void rrd_dontneed(
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "after");
 #endif
+#endif /* without madvise and posix_fadvise ist does not make much sense todo anything */
 }
+
+
+
+
 
 int rrd_close(
     rrd_file_t *rrd_file)
