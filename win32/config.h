@@ -49,10 +49,7 @@
 /* Vertical label angle: 90.0 (default) or 270.0 */
 #define RRDGRAPH_YLEGEND_ANGLE 90.0
 
-#define RRD_DEFAULT_FONT "arial.ttf"
-/* #define RRD_DEFAULT_FONT "DejaVuSansMono-Roman.ttf" */
-
-/* #define WITH_PIECHART 1 */
+#define RRD_DEFAULT_FONT "Courier"
 
 /* #define DEBUG 1 */
 
