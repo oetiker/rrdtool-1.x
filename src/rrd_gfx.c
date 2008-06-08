@@ -158,6 +158,8 @@ static PangoLayout *gfx_prep_text(
     pango_layout_set_font_description(layout, font_desc);
     if (im->with_markup)
         pango_layout_set_markup(layout, text, -1);
+    else
+        pango_layout_set_text(layout, text, -1);
     return layout;
 }
 

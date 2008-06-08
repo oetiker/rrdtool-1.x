@@ -3861,7 +3861,7 @@ void rrd_graph_options(
         int       col_start, col_end;
 
         opt = getopt_long(argc, argv,
-                          "s:e:x:y:v:w:h:D:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:k",
+                          "s:e:x:y:v:w:h:D:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:kP",
                           long_options, &option_index);
         if (opt == EOF)
             break;
