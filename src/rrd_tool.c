@@ -621,15 +621,15 @@ int HandleInputLine(
     else if (strcmp("dump", argv[1]) == 0)
         rrd_dump(argc - 1, &argv[1]);
     else if (strcmp("info", argv[1]) == 0 || strcmp("updatev", argv[1]) == 0) {
-        info_t   *data;
+        rrd_info_t *data;
 
         if (strcmp("info", argv[1]) == 0)
 
             data = rrd_info(argc - 1, &argv[1]);
         else
             data = rrd_update_v(argc - 1, &argv[1]);
-        info_print(data);
-        info_free(data);
+        rrd_info_print(data);
+        rrd_info_free(data);
     }
 
     else if (strcmp("--version", argv[1]) == 0 ||
@@ -804,12 +804,12 @@ int HandleInputLine(
         }
 
     } else if (strcmp("graphv", argv[1]) == 0) {
-        info_t   *grinfo = NULL;    /* 1 to distinguish it from the NULL that rrd_graph sends in */
+        rrd_info_t *grinfo = NULL;    /* 1 to distinguish it from the NULL that rrd_graph sends in */
 
         grinfo = rrd_graph_v(argc - 1, &argv[1]);
         if (grinfo) {
-            info_print(grinfo);
-            info_free(grinfo);
+            rrd_info_print(grinfo);
+            rrd_info_free(grinfo);
         }
 
     } else if (strcmp("tune", argv[1]) == 0)

@@ -71,7 +71,7 @@ int       _rrd_update(
     const char *tmplt,
     int argc,
     const char **argv,
-    info_t *);
+    rrd_info_t *);
 
 static int allocate_data_structures(
     rrd_t *rrd,
@@ -104,7 +104,7 @@ static int process_arg(
     char **updvals,
     long *tmpl_idx,
     unsigned long tmpl_cnt,
-    info_t **pcdp_summary,
+    rrd_info_t **pcdp_summary,
     int version,
     unsigned long *skip_update,
     int *schedule_smooth);
@@ -258,7 +258,7 @@ static int write_to_rras(
     unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
-    info_t **pcdp_summary);
+    rrd_info_t **pcdp_summary);
 
 static int write_RRA_row(
     rrd_file_t *rrd_file,
@@ -266,7 +266,7 @@ static int write_RRA_row(
     unsigned long rra_idx,
     unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
-    info_t **pcdp_summary,
+    rrd_info_t **pcdp_summary,
     time_t rra_time);
 
 static int smooth_all_rras(
@@ -317,13 +317,13 @@ static inline void initialize_time(
 
 #define IFDNAN(X,Y) (isnan(X) ? (Y) : (X));
 
-info_t   *rrd_update_v(
+rrd_info_t *rrd_update_v(
     int argc,
     char **argv)
 {
     char     *tmplt = NULL;
-    info_t   *result = NULL;
-    infoval   rc;
+    rrd_info_t   *result = NULL;
+    rrd_infoval_t rc;
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
         {0, 0, 0, 0}
@@ -359,7 +359,7 @@ info_t   *rrd_update_v(
         goto end_tag;
     }
     rc.u_int = 0;
-    result = info_push(NULL, sprintf_alloc("return_value"), RD_I_INT, rc);
+    result = rrd_info_push(NULL, sprintf_alloc("return_value"), RD_I_INT, rc);
     rc.u_int = _rrd_update(argv[optind], tmplt,
                            argc - optind - 1,
                            (const char **) (argv + optind + 1), result);
@@ -428,7 +428,7 @@ int _rrd_update(
     const char *tmplt,
     int argc,
     const char **argv,
-    info_t *pcdp_summary)
+    rrd_info_t *pcdp_summary)
 {
 
     int       arg_i = 2;
@@ -479,7 +479,7 @@ int _rrd_update(
     /* get exclusive lock to whole file.
      * lock gets removed when we close the file.
      */
-    if (LockRRD(rrd_file->fd) != 0) {
+    if (rrd_lock(rrd_file) != 0) {
         rrd_set_error("could not lock RRD");
         goto err_close;
     }
@@ -560,8 +560,8 @@ int _rrd_update(
  *
  * returns 0 on success
  */
-int LockRRD(
-    int in_file)
+int rrd_lock(
+    rrd_file_t *file)
 {
     int       rcstat;
 
@@ -569,8 +569,8 @@ int LockRRD(
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
         struct _stat st;
 
-        if (_fstat(in_file, &st) == 0) {
-            rcstat = _locking(in_file, _LK_NBLCK, st.st_size);
+        if (_fstat(file->fd, &st) == 0) {
+            rcstat = _locking(file->fd, _LK_NBLCK, st.st_size);
         } else {
             rcstat = -1;
         }
@@ -582,7 +582,7 @@ int LockRRD(
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
 
-        rcstat = fcntl(in_file, F_SETLK, &lock);
+        rcstat = fcntl(file->fd, F_SETLK, &lock);
 #endif
     }
 
@@ -750,7 +750,7 @@ static int process_arg(
     char **updvals,
     long *tmpl_idx,
     unsigned long tmpl_cnt,
-    info_t **pcdp_summary,
+    rrd_info_t **pcdp_summary,
     int version,
     unsigned long *skip_update,
     int *schedule_smooth)
@@ -926,12 +926,12 @@ static int get_time_from_reading(
     double    tmp;
     char     *parsetime_error = NULL;
     char     *old_locale;
-    struct rrd_time_value ds_tv;
+    rrd_time_value_t ds_tv;
     struct timeval tmp_time;    /* used for time conversion */
 
     /* get the time from the reading ... handle N */
     if (timesyntax == '@') {    /* at-style */
-        if ((parsetime_error = parsetime(updvals[0], &ds_tv))) {
+        if ((parsetime_error = rrd_parsetime(updvals[0], &ds_tv))) {
             rrd_set_error("ds time: %s: %s", updvals[0], parsetime_error);
             return -1;
         }
@@ -1855,7 +1855,7 @@ static int write_to_rras(
     unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
-    info_t **pcdp_summary)
+    rrd_info_t **pcdp_summary)
 {
     unsigned long rra_idx;
     unsigned long rra_start;
@@ -1963,11 +1963,11 @@ static int write_RRA_row(
     unsigned long rra_idx,
     unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
-    info_t **pcdp_summary,
+    rrd_info_t **pcdp_summary,
     time_t rra_time)
 {
     unsigned long ds_idx, cdp_idx;
-    infoval   iv;
+    rrd_infoval_t iv;
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
         /* compute the cdp index */
@@ -1980,7 +1980,7 @@ static int write_RRA_row(
         if (*pcdp_summary != NULL) {
             iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
             /* append info to the return hash */
-            *pcdp_summary = info_push(*pcdp_summary,
+            *pcdp_summary = rrd_info_push(*pcdp_summary,
                                       sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
                                                     rra_time,
                                                     rrd->rra_def[rra_idx].

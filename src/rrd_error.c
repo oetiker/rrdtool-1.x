@@ -78,7 +78,7 @@ char     *rrd_get_error(
    context. Using these functions would require to change each and
    every function containing any of the non _r versions... */
 void rrd_set_error_r(
-    struct rrd_context *rrd_ctx,
+    rrd_context_t *rrd_ctx,
     char *fmt,
     ...)
 {
@@ -96,19 +96,19 @@ void rrd_set_error_r(
 }
 
 int rrd_test_error_r(
-    struct rrd_context *rrd_ctx)
+    rrd_context_t *rrd_ctx)
 {
     return rrd_ctx->rrd_error[0] != '\0';
 }
 
 void rrd_clear_error_r(
-    struct rrd_context *rrd_ctx)
+    rrd_context_t *rrd_ctx)
 {
     rrd_ctx->rrd_error[0] = '\0';
 }
 
 char     *rrd_get_error_r(
-    struct rrd_context *rrd_ctx)
+    rrd_context_t *rrd_ctx)
 {
     return rrd_ctx->rrd_error;
 }
@@ -116,11 +116,11 @@ char     *rrd_get_error_r(
 
 /* PS: Should we move this to some other file? It is not really error
    related. */
-struct rrd_context *rrd_new_context(
+rrd_context_t *rrd_new_context(
     void)
 {
-    struct rrd_context *rrd_ctx =
-        (struct rrd_context *) malloc(sizeof(struct rrd_context));
+    rrd_context_t *rrd_ctx =
+        (rrd_context_t *) malloc(sizeof(rrd_context_t));
 
     if (!rrd_ctx) {
         return NULL;
@@ -132,7 +132,7 @@ struct rrd_context *rrd_new_context(
 }
 
 void rrd_free_context(
-    struct rrd_context *rrd_ctx)
+    rrd_context_t *rrd_ctx)
 {
     if (rrd_ctx) {
         free(rrd_ctx);
@@ -141,7 +141,7 @@ void rrd_free_context(
 
 #if 0
 void rrd_globalize_error(
-    struct rrd_context *rrd_ctx)
+    rrd_context_t *rrd_ctx)
 {
     if (rrd_ctx) {
         rrd_set_error(rrd_ctx->rrd_error);

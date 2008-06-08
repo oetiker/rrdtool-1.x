@@ -16,7 +16,7 @@ AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 UPD_C_FILES =		\
 	rrd_getopt.c	\
 	rrd_getopt1.c	\
-	parsetime.c	\
+	rrd_parsetime.c	\
 	rrd_hw.c	\
 	rrd_hw_math.c	\
 	rrd_hw_update.c	\
@@ -44,13 +44,12 @@ RRD_C_FILES =		\
 	rrd_gfx.c \
 	rrd_dump.c	\
 	rrd_fetch.c	\
-	rrd_tool.c	\
 	rrd_resize.c \
 	rrd_tune.c
 
 noinst_HEADERS = \
 	unused.h \
-	rrd_getopt.h parsetime.h \
+	rrd_getopt.h rrd_parsetime.h \
 	rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
@@ -68,15 +67,16 @@ librrdupd_la_SOURCES      = $(UPD_C_FILES) rrd_not_thread_safe.c
 librrdupd_la_LIBADD       = $(CORE_LIBS) @LIB_LIBINTL@
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
+librrd_la_DEPENDENCIES    = librrdupd.la librrd.sym
 librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS)
-
-# see http://sourceware.org/autobook/autobook/autobook_91.html
-
 librrd_la_LDFLAGS         = -version-info @LIBVERS@
+librrd_la_LDFLAGS         += -export-symbols librrd.sym
 
 librrd_th_la_SOURCES         = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
+librrd_th_la_DEPENDENCIES    = librrd.sym
 librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
 librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
+librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
 librrd_th_la_LIBADD          = $(ALL_LIBS)
 
 include_HEADERS	= rrd.h
@@ -93,8 +93,8 @@ rrdcgi_LDADD	= librrd.la
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD	  = librrdupd.la
 
-rrdtool_SOURCES = 
-rrdtool_DEPENDENCIES = rrd_tool.o librrd.la
+rrdtool_SOURCES = rrd_tool.c
+rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper

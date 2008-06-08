@@ -19,7 +19,7 @@ double    dinf;
 
 #endif
 
-double set_to_DNAN(
+double rrd_set_to_DNAN(
     void)
 {
     if (!done_nan) {
@@ -29,7 +29,7 @@ double set_to_DNAN(
     return dnan;
 }
 
-double set_to_DINF(
+double rrd_set_to_DINF(
     void)
 {
     if (!done_inf) {

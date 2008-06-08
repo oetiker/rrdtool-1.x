@@ -44,10 +44,10 @@ static void context_init_context(
         atexit(context_destroy_context);
     }
 }
-struct rrd_context *rrd_get_context(
+rrd_context_t *rrd_get_context(
     void)
 {
-    struct rrd_context *ctx;
+    rrd_context_t *ctx;
 
     context_init_context();
 
@@ -63,7 +63,7 @@ struct rrd_context *rrd_get_context(
 const char *rrd_strerror(
     int err)
 {
-    struct rrd_context *ctx;
+    rrd_context_t *ctx;
 
     context_init_context();
 

@@ -1520,7 +1520,7 @@ int print_calc(
             }
 
             if (im->gdes[i].gf == GF_PRINT) {
-                infoval   prline;
+                rrd_infoval_t prline;
 
                 if (im->gdes[i].strftm) {
                     prline.u_str = malloc((FMT_LEG_LEN + 2) * sizeof(char));
@@ -2947,7 +2947,7 @@ int graph_paint(
     int       lazy = lazy_check(im);
     double    areazero = 0.0;
     graph_desc_t *lastgdes = NULL;
-    infoval   info;
+    rrd_infoval_t info;
     PangoFontMap *font_map = pango_cairo_font_map_get_default();
 
     /* if we are lazy and there is nothing to PRINT ... quit now */
@@ -3529,8 +3529,8 @@ int rrd_graph(
     double *ymax)
 {
     int       prlines = 0;
-    info_t   *grinfo = NULL;
-    info_t   *walker;
+    rrd_info_t *grinfo = NULL;
+    rrd_info_t *walker;
 
     grinfo = rrd_graph_v(argc, argv);
     if (grinfo == NULL)
@@ -3584,7 +3584,7 @@ int rrd_graph(
         /* skip anything else */
         walker = walker->next;
     }
-    info_free(grinfo);
+    rrd_info_free(grinfo);
     return 0;
 }
 
@@ -3595,12 +3595,12 @@ int rrd_graph(
 ** - options parsing  now in rrd_graph_options()
 ** - script parsing   now in rrd_graph_script()
 */
-info_t   *rrd_graph_v(
+rrd_info_t *rrd_graph_v(
     int argc,
     char **argv)
 {
     image_desc_t im;
-    info_t   *grinfo;
+    rrd_info_t  *grinfo;
 
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
@@ -3608,13 +3608,13 @@ info_t   *rrd_graph_v(
     im.cr = cairo_create(im.surface);
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
-        info_free(im.grinfo);
+        rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
     if (optind >= argc) {
-        info_free(im.grinfo);
+        rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
         return NULL;
@@ -3622,7 +3622,7 @@ info_t   *rrd_graph_v(
 
     if (strlen(argv[optind]) >= MAXPATH) {
         rrd_set_error("filename (including path) too long");
-        info_free(im.grinfo);
+        rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
@@ -3636,7 +3636,7 @@ info_t   *rrd_graph_v(
 
     rrd_graph_script(argc, argv, &im, 1);
     if (rrd_test_error()) {
-        info_free(im.grinfo);
+        rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
@@ -3644,7 +3644,7 @@ info_t   *rrd_graph_v(
     /* Everything is now read and the actual work can start */
 
     if (graph_paint(&im) == -1) {
-        info_free(im.grinfo);
+        rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
@@ -3655,7 +3655,7 @@ info_t   *rrd_graph_v(
      */
 
     if (im.imginfo) {
-        infoval   info;
+        rrd_infoval_t info;
 
         info.u_str =
             sprintf_alloc(im.imginfo,
@@ -3666,7 +3666,7 @@ info_t   *rrd_graph_v(
         free(info.u_str);
     }
     if (im.rendered_image) {
-        infoval   img;
+        rrd_infoval_t img;
 
         img.u_blo.size = im.rendered_image_size;
         img.u_blo.ptr = im.rendered_image;
@@ -3705,8 +3705,8 @@ void rrd_graph_init(
     im->grid_dash_off = 1;
     im->grid_dash_on = 1;
     im->gridfit = 1;
-    im->grinfo = (info_t *) NULL;
-    im->grinfo_current = (info_t *) NULL;
+    im->grinfo = (rrd_info_t *) NULL;
+    im->grinfo_current = (rrd_info_t *) NULL;
     im->imgformat = IF_PNG;
     im->imginfo = NULL;
     im->lazy = 0;
@@ -3795,7 +3795,7 @@ void rrd_graph_options(
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
-    struct rrd_time_value start_tv, end_tv;
+    rrd_time_value_t start_tv, end_tv;
     long unsigned int color;
     char     *old_locale = "";
 
@@ -3853,8 +3853,8 @@ void rrd_graph_options(
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
-    parsetime("end-24h", &start_tv);
-    parsetime("now", &end_tv);
+    rrd_parsetime("end-24h", &start_tv);
+    rrd_parsetime("now", &end_tv);
     while (1) {
         int       option_index = 0;
         int       opt;
@@ -3927,13 +3927,13 @@ void rrd_graph_options(
             im->with_markup = 1;
             break;
         case 's':
-            if ((parsetime_error = parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return;
             }
             break;
         case 'e':
-            if ((parsetime_error = parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return;
             }
@@ -4220,8 +4220,8 @@ void rrd_graph_options(
         return;
     }
 
-    if (proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
-        /* error string is set in parsetime.c */
+    if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+        /* error string is set in rrd_parsetime.c */
         return;
     }
 
@@ -4686,10 +4686,10 @@ int vdef_percent_compar(
 void grinfo_push(
     image_desc_t *im,
     char *key,
-    enum info_type type,
-    infoval value)
+    rrd_info_type_t type,
+    rrd_infoval_t value)
 {
-    im->grinfo_current = info_push(im->grinfo_current, key, type, value);
+    im->grinfo_current = rrd_info_push(im->grinfo_current, key, type, value);
     if (im->grinfo == NULL) {
         im->grinfo = im->grinfo_current;
     }

@@ -126,7 +126,7 @@ C<rrd_update_r> as an example.
 
 =item *
 
-Do not use the C<parsetime> function!
+Do not use the C<rrd_parsetime> function!
 
 It uses lots of global variables. You may use it in functions not designed
 to be thread-safe, like in functions wrapping the C<_r> version of some

@@ -1,5 +1,5 @@
 /*  
- *  parsetime.c - parse time for at(1)
+ *  rrd_parsetime.c - parse time for at(1)
  *  Copyright (C) 1993, 1994  Thomas Koenig
  *
  *  modifications for English-language times
@@ -483,7 +483,7 @@ static char *expect2(
  *              It also applies those m-guessing heuristics.
  */
 static char *plus_minus(
-    struct rrd_time_value *ptv,
+    rrd_time_value_t *ptv,
     int doop)
 {
     static int op = PLUS;
@@ -569,7 +569,7 @@ static char *plus_minus(
  * tod() computes the time of day (TIME-OF-DAY-SPEC)
  */
 static char *tod(
-    struct rrd_time_value *ptv)
+    rrd_time_value_t *ptv)
 {
     int       hour, minute = 0;
     int       tlen;
@@ -646,7 +646,7 @@ static char *tod(
  * assign_date() assigns a date, adjusting year as appropriate
  */
 static char *assign_date(
-    struct rrd_time_value *ptv,
+    rrd_time_value_t *ptv,
     long mday,
     long mon,
     long year)
@@ -679,7 +679,7 @@ static char *assign_date(
  * day() picks apart DAY-SPEC-[12]
  */
 static char *day(
-    struct rrd_time_value *ptv)
+    rrd_time_value_t *ptv)
 {
     /* using time_t seems to help portability with 64bit oses */
     time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
@@ -823,7 +823,7 @@ static char *day(
 
 
 /*
- * parsetime() is the external interface that takes tspec, parses
+ * rrd_parsetime() is the external interface that takes tspec, parses
  * it and puts the result in the rrd_time_value structure *ptv.
  * It can return either absolute times (these are ensured to be
  * correct) or relative time references that are expected to be
@@ -831,9 +831,9 @@ static char *day(
  * mktime() The return value is either TIME_OK (aka NULL) or
  * the pointer to the error message in the case of problems
  */
-char     *parsetime(
+char     *rrd_parsetime(
     const char *tspec,
-    struct rrd_time_value *ptv)
+    rrd_time_value_t *ptv)
 {
     time_t    now = time(NULL);
     int       hr = 0;
@@ -986,12 +986,12 @@ char     *parsetime(
         }
     EnsureMemFree();
     return TIME_OK;
-}                       /* parsetime */
+}                       /* rrd_parsetime */
 
 
-int proc_start_end(
-    struct rrd_time_value *start_tv,
-    struct rrd_time_value *end_tv,
+int rrd_proc_start_end(
+    rrd_time_value_t *start_tv,
+    rrd_time_value_t *end_tv,
     time_t *start,
     time_t *end)
 {
@@ -1040,4 +1040,4 @@ int proc_start_end(
         *end = mktime(&(end_tv->tm)) + end_tv->offset;
     }
     return 0;
-}                       /* proc_start_end */
+}                       /* rrd_proc_start_end */

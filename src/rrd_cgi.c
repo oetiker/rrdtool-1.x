@@ -391,6 +391,63 @@ char     *stralloc(
     return (nstr);
 }
 
+static int readfile(
+    const char *file_name,
+    char **buffer,
+    int skipfirst)
+{
+    long      writecnt = 0, totalcnt = MEMBLK;
+    long      offset = 0;
+    FILE     *input = NULL;
+    char      c;
+
+    if ((strcmp("-", file_name) == 0)) {
+        input = stdin;
+    } else {
+        if ((input = fopen(file_name, "rb")) == NULL) {
+            rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
+            return (-1);
+        }
+    }
+    if (skipfirst) {
+        do {
+            c = getc(input);
+            offset++;
+        } while (c != '\n' && !feof(input));
+    }
+    if (strcmp("-", file_name)) {
+        fseek(input, 0, SEEK_END);
+        /* have extra space for detecting EOF without realloc */
+        totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
+        if (totalcnt < MEMBLK)
+            totalcnt = MEMBLK;  /* sanitize */
+        fseek(input, offset * sizeof(char), SEEK_SET);
+    }
+    if (((*buffer) = (char *) malloc((totalcnt + 4) * sizeof(char))) == NULL) {
+        perror("Allocate Buffer:");
+        exit(1);
+    };
+    do {
+        writecnt +=
+            fread((*buffer) + writecnt, 1,
+                  (totalcnt - writecnt) * sizeof(char), input);
+        if (writecnt >= totalcnt) {
+            totalcnt += MEMBLK;
+            if (((*buffer) =
+                 rrd_realloc((*buffer),
+                             (totalcnt + 4) * sizeof(char))) == NULL) {
+                perror("Realloc Buffer:");
+                exit(1);
+            };
+        }
+    } while (!feof(input));
+    (*buffer)[writecnt] = '\0';
+    if (strcmp("-", file_name) != 0) {
+        fclose(input);
+    };
+    return writecnt;
+}
+
 int main(
     int argc,
     char *argv[])
@@ -666,7 +723,7 @@ char     *printstrftime(
     long argc,
     const char **args)
 {
-    struct rrd_time_value start_tv, end_tv;
+    rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
     char      formatted[MAX_STRFTIME_SIZE];
     struct tm *the_tm;
@@ -679,19 +736,19 @@ char     *printstrftime(
     }
 
     /* Init start and end time */
-    parsetime("end-24h", &start_tv);
-    parsetime("now", &end_tv);
+    rrd_parsetime("end-24h", &start_tv);
+    rrd_parsetime("now", &end_tv);
 
     /* Parse the start and end times we were given */
-    if ((parsetime_error = parsetime(args[1], &start_tv))) {
+    if ((parsetime_error = rrd_parsetime(args[1], &start_tv))) {
         rrd_set_error("start time: %s", parsetime_error);
         return stralloc("");
     }
-    if ((parsetime_error = parsetime(args[2], &end_tv))) {
+    if ((parsetime_error = rrd_parsetime(args[2], &end_tv))) {
         rrd_set_error("end time: %s", parsetime_error);
         return stralloc("");
     }
-    if (proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+    if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
         return stralloc("");
     }
 

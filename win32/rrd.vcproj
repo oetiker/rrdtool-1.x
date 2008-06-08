@@ -168,7 +168,7 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="parsetime.c">
+			RelativePath="rrd_parsetime.c">
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool

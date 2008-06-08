@@ -27,7 +27,7 @@ static pthread_once_t context_key_once = PTHREAD_ONCE_INIT;
 static void context_destroy_context(
     void *ctx_)
 {
-    struct rrd_context *ctx = ctx_;
+    rrd_context_t *ctx = ctx_;
 
     if (ctx)
         rrd_free_context(ctx);
@@ -40,10 +40,10 @@ static void context_get_key(
     pthread_key_create(&context_key, context_destroy_context);
 }
 
-struct rrd_context *rrd_get_context(
+rrd_context_t *rrd_get_context(
     void)
 {
-    struct rrd_context *ctx;
+    rrd_context_t *ctx;
 
     pthread_once(&context_key_once, context_get_key);
     ctx = pthread_getspecific(context_key);
@@ -58,7 +58,7 @@ struct rrd_context *rrd_get_context(
 const char *rrd_strerror(
     int err)
 {
-    struct rrd_context *ctx = rrd_get_context();
+    rrd_context_t *ctx = rrd_get_context();
 
     if (strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr)))
         return "strerror_r failed. sorry!";
@@ -71,7 +71,7 @@ const char *rrd_strerror(
     int err)
 {
     static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-    struct rrd_context *ctx;
+    rrd_context_t *ctx;
 
     ctx = rrd_get_context();
     pthread_mutex_lock(&mtx);

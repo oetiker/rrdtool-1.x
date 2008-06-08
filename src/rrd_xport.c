@@ -56,7 +56,7 @@ int rrd_xport(
 
     image_desc_t im;
     time_t    start_tmp = 0, end_tmp = 0;
-    struct rrd_time_value start_tv, end_tv;
+    rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
     struct option long_options[] = {
         {"start", required_argument, 0, 's'},
@@ -72,8 +72,8 @@ int rrd_xport(
 
     rrd_graph_init(&im);
 
-    parsetime("end-24h", &start_tv);
-    parsetime("now", &end_tv);
+    rrd_parsetime("end-24h", &start_tv);
+    rrd_parsetime("now", &end_tv);
 
     while (1) {
         int       option_index = 0;
@@ -91,13 +91,13 @@ int rrd_xport(
         case 262:
             break;
         case 's':
-            if ((parsetime_error = parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'e':
-            if ((parsetime_error = parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return -1;
             }
@@ -115,7 +115,7 @@ int rrd_xport(
         }
     }
 
-    if (proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+    if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
         return -1;
     }
 

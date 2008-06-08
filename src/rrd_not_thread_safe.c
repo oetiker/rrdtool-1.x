@@ -17,14 +17,14 @@
 /* The global context is very useful in the transition period to even
    more thread-safe stuff, it can be used whereever we need a context
    and do not need to worry about concurrency. */
-static struct rrd_context global_ctx = {
+static rrd_context_t global_ctx = {
     "",
     ""
 };
 
 /* #include <stdarg.h> */
 
-struct rrd_context *rrd_get_context(
+rrd_context_t *rrd_get_context(
     void)
 {
     return &global_ctx;

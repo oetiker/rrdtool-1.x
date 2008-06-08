@@ -63,31 +63,9 @@ extern    "C" {
 
 #define DIM(x) (sizeof(x)/sizeof(x[0]))
 
-    info_t   *rrd_info(
-    int,
-    char **);
-    int       rrd_lastupdate(
-    int argc,
-    char **argv,
-    time_t *last_update,
-    unsigned long *ds_cnt,
-    char ***ds_namv,
-    char ***last_ds);
-    info_t   *rrd_update_v(
-    int,
-    char **);
     char     *sprintf_alloc(
     char *,
     ...);
-    info_t   *info_push(
-    info_t *,
-    char *,
-    enum info_type,
-    infoval);
-    void      info_print(
-    info_t *data);
-    void      info_free(
-    info_t *);
 
 /* HELPER FUNCTIONS */
 
@@ -141,10 +119,8 @@ extern    "C" {
     int whence);
     off_t     rrd_tell(
     rrd_file_t *rrd_file);
-    int       readfile(
-    const char *file,
-    char **buffer,
-    int skipfirst);
+    int       rrd_lock(
+    rrd_file_t *file);
 
 #define RRD_READONLY    (1<<0)
 #define RRD_READWRITE   (1<<1)
@@ -162,12 +138,6 @@ extern    "C" {
     double    rrd_diff(
     char *a,
     char *b);
-
-    /* rrd_strerror is thread safe, but still it uses a global buffer
-       (but one per thread), thus subsequent calls within a single
-       thread overwrite the same buffer */
-    const char *rrd_strerror(
-    int err);
 
 #endif
 

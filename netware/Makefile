@@ -227,7 +227,7 @@ XLIBOBJS	= \
 	$(OBJDIR)/rrd_getopt1.o \
 	$(OBJDIR)/art_rgba_svp.o \
 	$(OBJDIR)/hash_32.o \
-	$(OBJDIR)/parsetime.o \
+	$(OBJDIR)/rrd_parsetime.o \
 	$(OBJDIR)/pngsize.o \
 	$(EOLIST)
 

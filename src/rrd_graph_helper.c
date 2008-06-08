@@ -889,7 +889,7 @@ int rrd_parse_def(
     int       i = 0;
     char      command[7];   /* step, start, end, reduce */
     char      tmpstr[256];
-    struct rrd_time_value start_tv, end_tv;
+    rrd_time_value_t start_tv, end_tv;
     time_t    start_tmp = 0, end_tmp = 0;
     char     *parsetime_error = NULL;
 
@@ -951,7 +951,7 @@ int rrd_parse_def(
         } else if (!strcmp("start", command)) {
             i = scan_for_col(&line[*eaten], 255, tmpstr);
             (*eaten) += i;
-            if ((parsetime_error = parsetime(tmpstr, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(tmpstr, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return 1;
             }
@@ -959,7 +959,7 @@ int rrd_parse_def(
         } else if (!strcmp("end", command)) {
             i = scan_for_col(&line[*eaten], 255, tmpstr);
             (*eaten) += i;
-            if ((parsetime_error = parsetime(tmpstr, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(tmpstr, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return 1;
             }
@@ -978,8 +978,8 @@ int rrd_parse_def(
         }
         (*eaten)++;
     }
-    if (proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
-        /* error string is set in parsetime.c */
+    if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+        /* error string is set in rrd_parsetime.c */
         return 1;
     }
     if (start_tmp < 3600 * 24 * 365 * 10) {

@@ -146,7 +146,7 @@ VALUE rb_rrd_infocall(
     VALUE args)
 {
     string_arr a;
-    info_t   *p, *data;
+    rrd_info_t *p, *data;
     VALUE     result;
 
     a = string_arr_new(args);

@@ -40,7 +40,7 @@ int rrd_create(
     int       opt;
     time_t    last_up = time(NULL) - 10;
     unsigned long pdp_step = 300;
-    struct rrd_time_value last_up_tv;
+    rrd_time_value_t last_up_tv;
     char     *parsetime_error = NULL;
     long      long_tmp;
     int       rc;
@@ -56,7 +56,7 @@ int rrd_create(
 
         switch (opt) {
         case 'b':
-            if ((parsetime_error = parsetime(optarg, &last_up_tv))) {
+            if ((parsetime_error = rrd_parsetime(optarg, &last_up_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return (-1);
             }

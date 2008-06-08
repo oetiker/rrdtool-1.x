@@ -60,7 +60,7 @@ int rrd_resize(
         rrd_free(&rrdold);
         return (-1);
     }
-    if (LockRRD(rrd_file->fd) != 0) {
+    if (rrd_lock(rrd_file) != 0) {
         rrd_set_error("could not lock original RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);
@@ -98,7 +98,7 @@ int rrd_resize(
         rrd_free(&rrdnew);
         return (-1);
     }
-    if (LockRRD(rrd_out_file->fd) != 0) {
+    if (rrd_lock(rrd_out_file) != 0) {
         rrd_set_error("could not lock new RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);

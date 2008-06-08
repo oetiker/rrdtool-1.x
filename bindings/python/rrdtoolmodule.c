@@ -404,7 +404,7 @@ static PyObject *PyRRD_resize(
 }
 
 static PyObject *PyDict_FromInfo(
-    info_t *data)
+    rrd_info_t *data)
 {
     PyObject *r;
 
@@ -451,7 +451,7 @@ static PyObject *PyRRD_info(
     PyObject *r;
     int       argc;
     char    **argv;
-    info_t   *data;
+    rrd_info_t *data;
 
     if (create_args("info", args, &argc, &argv) < 0)
         return NULL;
@@ -462,7 +462,7 @@ static PyObject *PyRRD_info(
         return NULL;
     }
     r = PyDict_FromInfo(data);
-    info_free(data);
+    rrd_info_free(data);
     return r;
 }
 
@@ -476,7 +476,7 @@ static PyObject *PyRRD_graphv(
     PyObject *r;
     int       argc;
     char    **argv;
-    info_t   *data;
+    rrd_info_t *data;
 
     if (create_args("graphv", args, &argc, &argv) < 0)
         return NULL;
@@ -487,7 +487,7 @@ static PyObject *PyRRD_graphv(
         return NULL;
     }
     r = PyDict_FromInfo(data);
-    info_free(data);
+    rrd_info_free(data);
     return r;
 }
 
@@ -501,7 +501,7 @@ static PyObject *PyRRD_updatev(
     PyObject *r;
     int       argc;
     char    **argv;
-    info_t   *data;
+    rrd_info_t *data;
 
     if (create_args("updatev", args, &argc, &argv) < 0)
         return NULL;
@@ -512,7 +512,7 @@ static PyObject *PyRRD_updatev(
         return NULL;
     }
     r = PyDict_FromInfo(data);
-    info_free(data);
+    rrd_info_free(data);
     return r;
 }
 

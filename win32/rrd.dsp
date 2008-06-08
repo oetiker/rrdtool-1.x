@@ -233,7 +233,7 @@ SOURCE=..\src\hash_32.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\parsetime.c
+SOURCE=..\src\rrd_parsetime.c
 # End Source File
 # Begin Source File
 

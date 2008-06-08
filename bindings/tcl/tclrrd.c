@@ -108,7 +108,7 @@ static int Rrd_Create(
     time_t    last_up = time(NULL) - 10;
     long int  long_tmp;
     unsigned long int pdp_step = 300;
-    struct rrd_time_value last_up_tv;
+    rrd_time_value_t last_up_tv;
 
     argv2 = getopt_init(argc, argv);
 
@@ -121,7 +121,7 @@ static int Rrd_Create(
                 getopt_cleanup(argc, argv2);
                 return TCL_ERROR;
             }
-            if ((parsetime_error = parsetime(argv2[argv_i], &last_up_tv))) {
+            if ((parsetime_error = rrd_parsetime(argv2[argv_i], &last_up_tv))) {
                 Tcl_AppendResult(interp, "RRD Error: invalid time format: '",
                                  argv2[argv_i], "'", (char *) NULL);
                 getopt_cleanup(argc, argv2);

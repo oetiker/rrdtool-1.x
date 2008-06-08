@@ -60,15 +60,15 @@ extern    "C" {
 
 /* Formerly rrd_nan_inf.h */
 #ifndef DNAN
-# define DNAN set_to_DNAN()
+# define DNAN rrd_set_to_DNAN()
 #endif
 
 #ifndef DINF
-# define DINF set_to_DINF()
+# define DINF rrd_set_to_DINF()
 #endif
-    double    set_to_DNAN(
+    double    rrd_set_to_DNAN(
     void);
-    double    set_to_DINF(
+    double    rrd_set_to_DINF(
     void);
 /* end of rrd_nan_inf.h */
 
@@ -92,34 +92,49 @@ extern    "C" {
         unsigned char *ptr; /* pointer */
     } rrd_blob_t;
 
-    enum info_type { RD_I_VAL = 0,
+    typedef enum rrd_info_type { RD_I_VAL = 0,
         RD_I_CNT,
         RD_I_STR,
         RD_I_INT,
         RD_I_BLO
-    };
+    } rrd_info_type_t;
 
-    typedef union infoval {
+    typedef union rrd_infoval {
         unsigned long u_cnt;
         rrd_value_t u_val;
         char     *u_str;
         int       u_int;
-        struct rrd_blob_t u_blo;
-    } infoval;
+        rrd_blob_t u_blo;
+    } rrd_infoval_t;
 
-    typedef struct info_t {
+    typedef struct rrd_info_t {
         char     *key;
-        enum info_type type;
-        union infoval value;
-        struct info_t *next;
-    } info_t;
+        rrd_info_type_t type;
+        rrd_infoval_t value;
+        struct rrd_info_t *next;
+    } rrd_info_t;
 
 
 /* main function blocks */
     int       rrd_create(
     int,
     char **);
+    rrd_info_t *rrd_info(
+    int,
+    char **);
+    rrd_info_t *rrd_info_push(
+    rrd_info_t *,
+    char *,
+    rrd_info_type_t,
+    rrd_infoval_t);
+    void      rrd_info_print(
+    rrd_info_t *data);
+    void      rrd_info_free(
+    rrd_info_t *);
     int       rrd_update(
+    int,
+    char **);
+    rrd_info_t *rrd_update_v(
     int,
     char **);
     int       rrd_graph(
@@ -131,7 +146,7 @@ extern    "C" {
     FILE *,
     double *,
     double *);
-    info_t   *rrd_graph_v(
+    rrd_info_t *rrd_graph_v(
     int,
     char **);
 
@@ -156,6 +171,13 @@ extern    "C" {
     time_t    rrd_last(
     int,
     char **);
+    int       rrd_lastupdate(
+    int argc,
+    char **argv,
+    time_t *last_update,
+    unsigned long *ds_cnt,
+    char ***ds_namv,
+    char ***last_ds);
     time_t    rrd_first(
     int,
     char **);
@@ -210,39 +232,39 @@ extern    "C" {
     const char *filename,
     int rraindex);
 
-/* Transplanted from parsetime.h */
+/* Transplanted from rrd_parsetime.h */
     typedef enum {
         ABSOLUTE_TIME,
         RELATIVE_TO_START_TIME,
         RELATIVE_TO_END_TIME
-    } timetype;
+    } rrd_timetype_t;
 
 #define TIME_OK NULL
 
-    struct rrd_time_value {
-        timetype  type;
+    typedef struct rrd_time_value {
+        rrd_timetype_t type;
         long      offset;
         struct tm tm;
-    };
+    } rrd_time_value_t;
 
-    char     *parsetime(
+    char     *rrd_parsetime(
     const char *spec,
-    struct rrd_time_value *ptv);
-/* END parsetime.h */
+    rrd_time_value_t *ptv);
+/* END rrd_parsetime.h */
 
-    struct rrd_context {
+    typedef struct rrd_context {
         char      lib_errstr[256];
         char      rrd_error[4096];
-    };
+    } rrd_context_t;
 
 /* returns the current per-thread rrd_context */
-    struct rrd_context *rrd_get_context(
+    rrd_context_t *rrd_get_context(
     void);
 
 
-    int       proc_start_end(
-    struct rrd_time_value *,
-    struct rrd_time_value *,
+    int       rrd_proc_start_end(
+    rrd_time_value_t *,
+    rrd_time_value_t *,
     time_t *,
     time_t *);
 
@@ -257,19 +279,22 @@ extern    "C" {
     char     *rrd_get_error(
     void);
 
+    /* rrd_strerror is thread safe, but still it uses a global buffer
+       (but one per thread), thus subsequent calls within a single
+       thread overwrite the same buffer */
+    const char *rrd_strerror(
+    int err);
+
 /** MULTITHREADED HELPER FUNCTIONS */
-    struct rrd_context *rrd_new_context(
+    rrd_context_t *rrd_new_context(
     void);
     void      rrd_free_context(
-    struct rrd_context *buf);
+    rrd_context_t *buf);
 
-/* void   rrd_set_error_r  (struct rrd_context *, char *, ...); */
-/* void   rrd_clear_error_r(struct rrd_context *); */
-/* int    rrd_test_error_r (struct rrd_context *); */
-/* char  *rrd_get_error_r  (struct rrd_context *); */
-
-    int       LockRRD(
-    int in_file);
+/* void   rrd_set_error_r  (rrd_context_t *, char *, ...); */
+/* void   rrd_clear_error_r(rrd_context_t *); */
+/* int    rrd_test_error_r (rrd_context_t *); */
+/* char  *rrd_get_error_r  (rrd_context_t *); */
 
 #endif                  /* _RRDLIB_H */
 

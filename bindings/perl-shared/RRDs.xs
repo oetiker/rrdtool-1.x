@@ -307,20 +307,20 @@ rrd_times(start, end)
 	  char *start
 	  char *end
 	PREINIT:
-		struct	rrd_time_value start_tv, end_tv;
+		rrd_time_value_t start_tv, end_tv;
 		char    *parsetime_error = NULL;
 		time_t	start_tmp, end_tmp;
 	PPCODE:
 		rrd_clear_error();
-		if( (parsetime_error = parsetime( start, &start_tv))) {
-			rrd_set_error( "start time: %s", parsetime_error);
+		if ((parsetime_error = rrd_parsetime(start, &start_tv))) {
+			rrd_set_error("start time: %s", parsetime_error);
 			XSRETURN_UNDEF;
 		}
-		if( (parsetime_error = parsetime( end, &end_tv))) {
-			rrd_set_error( "end time: %s", parsetime_error);
+		if ((parsetime_error = rrd_parsetime(end, &end_tv))) {
+			rrd_set_error("end time: %s", parsetime_error);
 			XSRETURN_UNDEF;
 		}
-		if( proc_start_end( &start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
+		if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
 			XSRETURN_UNDEF;
 		}
 		EXTEND(sp,2);
@@ -389,7 +389,7 @@ SV*
 rrd_info(...)
 	PROTOTYPE: @	
 	PREINIT:
-		info_t *data,*save;
+		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
@@ -402,7 +402,7 @@ SV*
 rrd_updatev(...)
 	PROTOTYPE: @	
 	PREINIT:
-		info_t *data,*save;
+		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
@@ -415,7 +415,7 @@ SV*
 rrd_graphv(...)
 	PROTOTYPE: @	
 	PREINIT:
-		info_t *data,*save;
+		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
