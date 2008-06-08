@@ -219,9 +219,9 @@ static PyObject *PyRRD_fetch(
         }
 
         for (i = 0; i < ds_cnt; i++)
-            free(ds_namv[i]);
-        free(ds_namv);  /* rrdtool don't use PyMem_Malloc :) */
-        free(data);
+            rrd_freemem(ds_namv[i]);
+        rrd_freemem(ds_namv);  /* rrdtool don't use PyMem_Malloc :) */
+        rrd_freemem(data);
     }
 
     destroy_args(&argv);
@@ -282,9 +282,9 @@ static PyObject *PyRRD_graph(
                 t = PyString_FromString(calcpr[i]);
                 PyList_Append(e, t);
                 Py_DECREF(t);
-                free(calcpr[i]);
+                rrd_freemem(calcpr[i]);
             }
-            free(calcpr);
+            rrd_freemem(calcpr);
         } else {
             Py_INCREF(Py_None);
             PyTuple_SET_ITEM(r, 2, Py_None);

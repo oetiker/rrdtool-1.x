@@ -171,18 +171,18 @@ VALUE rb_rrd_infocall(
             break;
         case RD_I_STR:
             rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
-            free(data->value.u_str);
+            rrd_freemem(data->value.u_str);
             break;
         case RD_I_BLO:
             rb_hash_aset(result, key,
                          rb_str_new(data->value.u_blo.ptr,
                                     data->value.u_blo.size));
-            free(data->value.u_blo.ptr);
+            rrd_freemem(data->value.u_blo.ptr);
             break;
         }
         p = data;
         data = data->next;
-        free(p);
+        rrd_freemem(p);
     }
     return result;
 }
@@ -232,9 +232,9 @@ VALUE rb_rrd_fetch(
 
     for (i = 0; i < ds_cnt; i++) {
         rb_ary_push(names, rb_str_new2(raw_names[i]));
-        free(raw_names[i]);
+        rrd_freemem(raw_names[i]);
     }
-    free(raw_names);
+    rrd_freemem(raw_names);
 
     k = 0;
     data = rb_ary_new();
@@ -247,7 +247,7 @@ VALUE rb_rrd_fetch(
         }
         rb_ary_push(data, line);
     }
-    free(raw_data);
+    rrd_freemem(raw_data);
 
     result = rb_ary_new2(5);
     rb_ary_store(result, 0, INT2NUM(start));
@@ -279,9 +279,9 @@ VALUE rb_rrd_graph(
     p = calcpr;
     for (p = calcpr; p && *p; p++) {
         rb_ary_push(print_results, rb_str_new2(*p));
-        free(*p);
+        rrd_freemem(*p);
     }
-    free(calcpr);
+    rrd_freemem(calcpr);
     rb_ary_store(result, 0, print_results);
     rb_ary_store(result, 1, INT2FIX(xsize));
     rb_ary_store(result, 2, INT2FIX(ysize));
