@@ -3600,7 +3600,7 @@ rrd_info_t *rrd_graph_v(
     char **argv)
 {
     image_desc_t im;
-    rrd_info_t  *grinfo;
+    rrd_info_t *grinfo;
 
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
@@ -3746,26 +3746,6 @@ void rrd_graph_init(
     cairo_font_options_set_antialias(im->font_options, CAIRO_ANTIALIAS_GRAY);
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-    {
-        char     *windir;
-        char      rrd_win_default_font[1000];
-
-        windir = getenv("windir");
-        /* %windir% is something like D:\windows or C:\winnt */
-        if (windir != NULL) {
-            strncpy(rrd_win_default_font, windir, 500);
-            rrd_win_default_font[500] = '\0';
-            strcat(rrd_win_default_font, "\\fonts\\");
-            strcat(rrd_win_default_font, RRD_DEFAULT_FONT);
-            for (i = 0; i < DIM(text_prop); i++) {
-                strncpy(text_prop[i].font,
-                        rrd_win_default_font, sizeof(text_prop[i].font) - 1);
-                text_prop[i].font[sizeof(text_prop[i].font) - 1] = '\0';
-            }
-        }
-    }
-#endif
     {
         char     *deffont;
 
