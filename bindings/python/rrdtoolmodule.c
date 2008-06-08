@@ -42,6 +42,7 @@ static const char *__version__ = "$Revision: 1.14 $";
 #include "Python.h"
 #include "rrd.h"
 #include "rrd_extra.h"
+#include "rrd_rpncalc.h"
 
 static PyObject *ErrorObject;
 extern int optind;
@@ -445,9 +446,22 @@ PyRRD_info(PyObject UNUSED(*self), PyObject *args)
 
         DICTSET_STR(d, "ds_name", rrd.ds_def[i].ds_nam);
         DICTSET_STR(d, "type", rrd.ds_def[i].dst);
-        DICTSET_CNT(d, "minimal_heartbeat", rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
-        DICTSET_VAL(d, "min", rrd.ds_def[i].par[DS_min_val].u_val);
-        DICTSET_VAL(d, "max", rrd.ds_def[i].par[DS_max_val].u_val);
+
+        switch(dst_conv(rrd.ds_def[i].dst)) {
+            case DST_CDEF:
+                {
+                char *buffer = NULL;
+                rpn_compact2str((rpn_cdefds_t *) &(rrd.ds_def[i].par[DS_cdef]),
+                    rrd.ds_def, &buffer);
+                DICTSET_STR(d, "cdef", buffer);
+                }
+                break;
+            default:
+            DICTSET_CNT(d, "minimal_heartbeat", rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt);
+            DICTSET_VAL(d, "min", rrd.ds_def[i].par[DS_min_val].u_val);
+            DICTSET_VAL(d, "max", rrd.ds_def[i].par[DS_max_val].u_val);
+            break;
+        }
         DICTSET_STR(d, "last_ds", rrd.pdp_prep[i].last_ds);
         DICTSET_VAL(d, "value", rrd.pdp_prep[i].scratch[PDP_val].u_val);
         DICTSET_CNT(d, "unknown_sec", rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt);
