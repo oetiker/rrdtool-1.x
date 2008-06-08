@@ -25,12 +25,16 @@ PngSize(FILE *fd, long *width, long *height)
 /* this is to make compile on aix work since they seem to define jmpbuf
    to be _jmpbuf which breaks compilation */
 
+
+#ifndef png_jmpbuf
+#ifdef PNG_SETJMP_SUPPORTED
+#  define png_jmpbuf(png_ptr)   ((png_ptr)->PNG_jmpbuf)
+#else
 #ifdef jmpbuf
 #undef jmpbuf
 #endif
-
-#ifndef png_jmpbuf
 #  define png_jmpbuf(png_ptr)   ((png_ptr)->jmpbuf)
+#endif
 #endif
 
   if (setjmp(png_jmpbuf(png_read_ptr))){
