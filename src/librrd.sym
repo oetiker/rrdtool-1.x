@@ -37,3 +37,8 @@ rrd_update_r
 rrd_update_v
 rrd_version
 rrd_xport
+rrd_open
+rrd_read
+rrd_close
+rrd_tell
+rrd_write
