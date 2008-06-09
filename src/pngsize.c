@@ -31,9 +31,9 @@ int PngSize(
 #ifdef PNG_SETJMP_SUPPORTED
 #  define png_jmpbuf(png_ptr)   ((png_ptr)->PNG_jmpbuf)
 #else
-#ifdef jmpbuf  
-#undef jmpbuf  
-#endif  
+#ifdef jmpbuf
+#undef jmpbuf
+#endif
 #  define png_jmpbuf(png_ptr)   ((png_ptr)->jmpbuf)
 #endif
 #endif

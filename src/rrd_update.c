@@ -104,7 +104,7 @@ static int process_arg(
     char **updvals,
     long *tmpl_idx,
     unsigned long tmpl_cnt,
-    rrd_info_t **pcdp_summary,
+    rrd_info_t ** pcdp_summary,
     int version,
     unsigned long *skip_update,
     int *schedule_smooth);
@@ -258,7 +258,7 @@ static int write_to_rras(
     unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
-    rrd_info_t **pcdp_summary);
+    rrd_info_t ** pcdp_summary);
 
 static int write_RRA_row(
     rrd_file_t *rrd_file,
@@ -266,7 +266,7 @@ static int write_RRA_row(
     unsigned long rra_idx,
     unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
-    rrd_info_t **pcdp_summary,
+    rrd_info_t ** pcdp_summary,
     time_t rra_time);
 
 static int smooth_all_rras(
@@ -322,7 +322,7 @@ rrd_info_t *rrd_update_v(
     char **argv)
 {
     char     *tmplt = NULL;
-    rrd_info_t   *result = NULL;
+    rrd_info_t *result = NULL;
     rrd_infoval_t rc;
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
@@ -428,7 +428,7 @@ int _rrd_update(
     const char *tmplt,
     int argc,
     const char **argv,
-    rrd_info_t *pcdp_summary)
+    rrd_info_t * pcdp_summary)
 {
 
     int       arg_i = 2;
@@ -750,7 +750,7 @@ static int process_arg(
     char **updvals,
     long *tmpl_idx,
     unsigned long tmpl_cnt,
-    rrd_info_t **pcdp_summary,
+    rrd_info_t ** pcdp_summary,
     int version,
     unsigned long *skip_update,
     int *schedule_smooth)
@@ -1855,7 +1855,7 @@ static int write_to_rras(
     unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
-    rrd_info_t **pcdp_summary)
+    rrd_info_t ** pcdp_summary)
 {
     unsigned long rra_idx;
     unsigned long rra_start;
@@ -1963,7 +1963,7 @@ static int write_RRA_row(
     unsigned long rra_idx,
     unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
-    rrd_info_t **pcdp_summary,
+    rrd_info_t ** pcdp_summary,
     time_t rra_time)
 {
     unsigned long ds_idx, cdp_idx;
@@ -1981,14 +1981,12 @@ static int write_RRA_row(
             iv.u_val = rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].u_val;
             /* append info to the return hash */
             *pcdp_summary = rrd_info_push(*pcdp_summary,
-                                      sprintf_alloc("[%d]RRA[%s][%lu]DS[%s]",
-                                                    rra_time,
-                                                    rrd->rra_def[rra_idx].
-                                                    cf_nam,
-                                                    rrd->rra_def[rra_idx].
-                                                    pdp_cnt,
-                                                    rrd->ds_def[ds_idx].
-                                                    ds_nam), RD_I_VAL, iv);
+                                          sprintf_alloc
+                                          ("[%d]RRA[%s][%lu]DS[%s]", rra_time,
+                                           rrd->rra_def[rra_idx].cf_nam,
+                                           rrd->rra_def[rra_idx].pdp_cnt,
+                                           rrd->ds_def[ds_idx].ds_nam),
+                                          RD_I_VAL, iv);
         }
         if (rrd_write(rrd_file,
                       &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].

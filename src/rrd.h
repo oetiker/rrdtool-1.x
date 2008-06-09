@@ -128,7 +128,7 @@ extern    "C" {
     rrd_info_type_t,
     rrd_infoval_t);
     void      rrd_info_print(
-    rrd_info_t *data);
+    rrd_info_t * data);
     void      rrd_info_free(
     rrd_info_t *);
     int       rrd_update(
@@ -249,7 +249,7 @@ extern    "C" {
 
     char     *rrd_parsetime(
     const char *spec,
-    rrd_time_value_t *ptv);
+    rrd_time_value_t * ptv);
 /* END rrd_parsetime.h */
 
     typedef struct rrd_context {
@@ -289,7 +289,7 @@ extern    "C" {
     rrd_context_t *rrd_new_context(
     void);
     void      rrd_free_context(
-    rrd_context_t *buf);
+    rrd_context_t * buf);
 
 /* void   rrd_set_error_r  (rrd_context_t *, char *, ...); */
 /* void   rrd_clear_error_r(rrd_context_t *); */

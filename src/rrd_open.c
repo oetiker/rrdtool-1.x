@@ -34,7 +34,7 @@
 #endif
 
 /* get the address of the start of this page */
-#if defined USE_MADVISE || defined HAVE_POSIX_FADVISE 
+#if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
 #ifndef PAGE_START
 #define PAGE_START(addr) ((addr)&(~(_page_size-1)))
 #endif
@@ -371,7 +371,7 @@ void rrd_dontneed(
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "after");
 #endif
-#endif /* without madvise and posix_fadvise ist does not make much sense todo anything */
+#endif                          /* without madvise and posix_fadvise ist does not make much sense todo anything */
 }
 
 
@@ -563,4 +563,3 @@ void rrd_freemem(
 {
     free(mem);
 }
-

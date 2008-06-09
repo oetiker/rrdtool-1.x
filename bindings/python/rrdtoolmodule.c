@@ -220,7 +220,7 @@ static PyObject *PyRRD_fetch(
 
         for (i = 0; i < ds_cnt; i++)
             rrd_freemem(ds_namv[i]);
-        rrd_freemem(ds_namv);  /* rrdtool don't use PyMem_Malloc :) */
+        rrd_freemem(ds_namv);   /* rrdtool don't use PyMem_Malloc :) */
         rrd_freemem(data);
     }
 
@@ -404,7 +404,7 @@ static PyObject *PyRRD_resize(
 }
 
 static PyObject *PyDict_FromInfo(
-    rrd_info_t *data)
+    rrd_info_t * data)
 {
     PyObject *r;
 

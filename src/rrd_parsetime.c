@@ -483,7 +483,7 @@ static char *expect2(
  *              It also applies those m-guessing heuristics.
  */
 static char *plus_minus(
-    rrd_time_value_t *ptv,
+    rrd_time_value_t * ptv,
     int doop)
 {
     static int op = PLUS;
@@ -569,7 +569,7 @@ static char *plus_minus(
  * tod() computes the time of day (TIME-OF-DAY-SPEC)
  */
 static char *tod(
-    rrd_time_value_t *ptv)
+    rrd_time_value_t * ptv)
 {
     int       hour, minute = 0;
     int       tlen;
@@ -646,7 +646,7 @@ static char *tod(
  * assign_date() assigns a date, adjusting year as appropriate
  */
 static char *assign_date(
-    rrd_time_value_t *ptv,
+    rrd_time_value_t * ptv,
     long mday,
     long mon,
     long year)
@@ -679,7 +679,7 @@ static char *assign_date(
  * day() picks apart DAY-SPEC-[12]
  */
 static char *day(
-    rrd_time_value_t *ptv)
+    rrd_time_value_t * ptv)
 {
     /* using time_t seems to help portability with 64bit oses */
     time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
@@ -833,7 +833,7 @@ static char *day(
  */
 char     *rrd_parsetime(
     const char *tspec,
-    rrd_time_value_t *ptv)
+    rrd_time_value_t * ptv)
 {
     time_t    now = time(NULL);
     int       hr = 0;
@@ -990,8 +990,8 @@ char     *rrd_parsetime(
 
 
 int rrd_proc_start_end(
-    rrd_time_value_t *start_tv,
-    rrd_time_value_t *end_tv,
+    rrd_time_value_t * start_tv,
+    rrd_time_value_t * end_tv,
     time_t *start,
     time_t *end)
 {
