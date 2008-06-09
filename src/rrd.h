@@ -199,6 +199,9 @@ extern    "C" {
     char ***,
     rrd_value_t **);
 
+    void      rrd_freemem(
+    void *mem);
+
 /* thread-safe (hopefully) */
     int       rrd_create_r(
     const char *filename,
@@ -295,6 +298,40 @@ extern    "C" {
 /* void   rrd_clear_error_r(rrd_context_t *); */
 /* int    rrd_test_error_r (rrd_context_t *); */
 /* char  *rrd_get_error_r  (rrd_context_t *); */
+
+/* low level file access */
+    void      rrd_init(
+    rrd_t *rrd);
+    void      rrd_free(
+    rrd_t *rrd);
+
+    rrd_file_t *rrd_open(
+    const char *const file_name,
+    rrd_t *rrd,
+    unsigned rdwr);
+    void      rrd_dontneed(
+    rrd_file_t *rrd_file,
+    rrd_t *rrd);
+    int       rrd_close(
+    rrd_file_t *rrd_file);
+    ssize_t   rrd_read(
+    rrd_file_t *rrd_file,
+    void *buf,
+    size_t count);
+    ssize_t   rrd_write(
+    rrd_file_t *rrd_file,
+    const void *buf,
+    size_t count);
+    void      rrd_flush(
+    rrd_file_t *rrd_file);
+    off_t     rrd_seek(
+    rrd_file_t *rrd_file,
+    off_t off,
+    int whence);
+    off_t     rrd_tell(
+    rrd_file_t *rrd_file);
+    int       rrd_lock(
+    rrd_file_t *file);
 
 #endif                  /* _RRDLIB_H */
 
