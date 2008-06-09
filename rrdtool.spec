@@ -2,26 +2,31 @@
 %define with_php %{?_without_php: 0} %{?!_without_php: 1}
 %define with_tcl %{?_without_tcl: 0} %{?!_without_tcl: 1}
 %define with_ruby %{?_without_ruby: 0} %{?!_without_ruby: 1}
-%define php_rrd_svn 839
 %define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
+%define svnrev r1190
+%define pre rc9
+#define pretag 1.2.99908020600
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.3rc9
-Release: 0.1%{?dist}
-License: GPL
+Version: 1.3
+Release: 0.20%{?pre:.%{pre}}%{?dist}
+License: GPLv2+ with exceptions
 Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
 #Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
-Source0: http://oss.oetiker.ch/rrdtool/pub/beta/rrdtool-trunk-svn-snap.tar.gz
-Source1: php4-svn%{php_rrd_svn}.tar.gz
-Patch0: rrdtool-1.2.13-php.patch
+Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}%{pre}.tar.gz
+Source1: php4-%{svnrev}.tar.gz
+Patch1: rrdtool-1.3.0-beta4-fix-rrd_update-in-php-bindings.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Requires: dejavu-lgc-fonts
 BuildRequires: gcc-c++, openssl-devel, freetype-devel
-BuildRequires: libpng-devel, zlib-devel, cairo-devel
-BuildRequires: perl-ExtUtils-MakeMaker
-%if "%{?fedora}" >= "7"
-BuildRequires: perl-devel
+BuildRequires: libpng-devel, zlib-devel, intltool >= 0.35.0
+BuildRequires: cairo-devel >= 1.4.6, pango-devel >= 1.17
+BuildRequires: libtool, groff
+BuildRequires: gettext, libxml2-devel
+%if 0%{?fedora} >= 7
+BuildRequires: perl-ExtUtils-MakeMaker perl-devel
 %endif
 
 %description
@@ -93,8 +98,15 @@ Group: Development/Languages
 BuildRequires: php-devel >= 4.0
 Requires: php >= 4.0
 Requires: %{name} = %{version}-%{release}
+%if 0%{?php_zend_api}
+Requires: php(zend-abi) = %{php_zend_api}
+Requires: php(api) = %{php_core_api}
+%else
+Requires: php-api = %{php_apiver}
+%endif
 Obsoletes: php-%{name} < %{version}-%{release}
 Provides: php-%{name} = %{version}-%{release}
+Provides: php-pecl(rrdtool)
 
 %description php
 The %{name}-php package includes a dynamic shared object (DSO) that adds
@@ -130,13 +142,9 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 %endif
 
 %prep
-#setup -q
-%setup -q -n %{name}-%{version}
-%setup -q -T -D -a 1
-# Patch based on http://oss.oetiker.ch/rrdtool/pub/contrib/php_rrdtool.tgz
+%setup -q -n %{name}-%{version}%{pre} %{?with_php: -a 1}
 %if %{with_php}
-%patch0 -p0 -b .php
-%{__perl} -pi -e 's|../config.h|../rrd_config.h|g' php4/rrdtool.c
+%patch1 -p1
 %endif
 
 # Fix to find correct python dir on lib64
@@ -144,16 +152,20 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
     configure
 
 # Most edits shouldn't be necessary when using --libdir, but
-# w/o, some introduce hardcoded rpaths where they shouldn't,
+# w/o, some introduce hardcoded rpaths where they shouldn't
 %{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' \
     configure Makefile.in php4/configure php4/ltconfig*
 
+# Perl 5.10 seems to not like long version strings, hack around it
+%{__perl} -pi.orig -e 's|1.299907080300|1.29990708|' \
+    bindings/perl-shared/RRDs.pm bindings/perl-piped/RRDp.pm
+
+#
+# fix config files for php4 bindings
+# workaround needed due to https://bugzilla.redhat.com/show_bug.cgi?id=211069
+cp -p /usr/lib/rpm/config.{guess,sub} php4/
+
 %build
-intltoolize --automake -c -f
-aclocal
-autoheader
-autoconf
-automake -a -c -f
 %configure \
     --with-perl-options='INSTALLDIRS="vendor"' \
 %if %{with_tcl}
@@ -184,7 +196,8 @@ pushd bindings/perl-piped/
 %{__perl} -pi.orig -e 's|/lib/perl|/%{_lib}/perl|g' Makefile
 popd
 
-%{__make} %{?_smp_mflags}
+#{__make} %{?_smp_mflags}
+make
 
 # Build the php module, the tmp install is required
 %if %{with_php}
@@ -194,7 +207,8 @@ pushd php4/
 %configure \
     --with-rrdtool="%{rrdtmp}%{_prefix}" \
     --disable-static
-%{__make} %{?_smp_mflags}
+#{__make} %{?_smp_mflags}
+make
 popd
 %{__rm} -rf %{rrdtmp}
 %endif
@@ -226,6 +240,9 @@ __EOF__
 # Pesky RRDp.pm...
 %{__mv} $RPM_BUILD_ROOT%{perl_vendorarch}/../RRDp.pm $RPM_BUILD_ROOT%{perl_vendorarch}/
 
+# Dunno why this is getting installed here...
+%{__rm} -f $RPM_BUILD_ROOT%{perl_vendorarch}/../leaktest.pl
+
 # We only want .txt and .html files for the main documentation
 %{__mkdir_p} doc2/html doc2/txt
 %{__cp} -a doc/*.txt doc2/txt/
@@ -242,7 +259,7 @@ __EOF__
 find examples/ -type f -exec chmod 0644 {} \;
 
 # Clean up the buildroot
-%{__rm} -rf $RPM_BUILD_ROOT%{_datadir}/doc/%{name}-%{version}/{txt,html}/ \
+%{__rm} -rf $RPM_BUILD_ROOT%{_docdir}/%{name}-* \
 	$RPM_BUILD_ROOT%{perl_vendorarch}/ntmake.pl \
 	$RPM_BUILD_ROOT%{perl_archlib}/perllocal.pod \
         $RPM_BUILD_ROOT%{_datadir}/%{name}/examples \
@@ -270,7 +287,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 
 %files doc
 %defattr(-,root,root,-)
-%doc CHANGES CONTRIBUTORS COPYING COPYRIGHT README TODO NEWS THREADS
+%doc CONTRIBUTORS COPYING COPYRIGHT README TODO NEWS THREADS
 %doc examples doc2/html doc2/txt
 
 %files perl
@@ -285,6 +302,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 %defattr(-,root,root,-)
 %doc bindings/python/AUTHORS bindings/python/COPYING bindings/python/README
 %{python_sitearch}/rrdtoolmodule.so
+%{python_sitearch}/py_rrdtool-*.egg-info
 %endif
 
 %if %{with_php}
@@ -311,8 +329,84 @@ find examples/ -type f -exec chmod 0644 {} \;
 %endif
 
 %changelog
-* Fri Jun 15 2007 Jarod Wilson <jwilson@redhat.com> 1.2.999050724000-0.1
-- Update for rrdtool pre-1.3 snapshot
+* Sun Jun 08 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.20.rc9
+- Update to rrdtool 1.3 rc9
+- Minor spec tweaks to permit building on older EL
+
+* Wed Jun 04 2008 Chris Ricker <kaboom@oobleck.net> 1.3-0.19.rc7
+- Update to rrdtool 1.3 rc7
+
+* Tue May 27 2008 Chris Ricker <kaboom@oobleck.net> 1.3-0.18.rc6
+- Update to rrdtool 1.3 rc6
+
+* Wed May 21 2008 Chris Ricker <kaboom@oobleck.net> 1.3-0.17.rc4
+- Bump version and rebuild
+
+* Wed May 21 2008 Chris Ricker <kaboom@oobleck.net> 1.3-0.16.rc4
+- Fix php bindings compile on x86_64
+
+* Mon May 19 2008 Chris Ricker <kaboom@oobleck.net> 1.3-0.15.rc4
+- Update to rrdtool 1.3 rc4
+
+* Tue May 13 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.15.rc1
+- Update to rrdtool 1.3 rc1
+- Fix versioning in changelog entries, had an extra 0 in there...
+- Drop cairo and python patches, they're in 1.3 rc1
+- Add Requires: gettext and libxml2-devel for new translations
+
+* Wed Apr 30 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.14.beta4
+- Drop some conditional flags, they're not working at the moment...
+
+* Wed Apr 30 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.13.beta4
+- Fix problem with cairo_save/cairo_restore (#444827)
+
+* Wed Apr 23 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.12.beta4
+- Fix python bindings rrdtool info implementation (#435468)
+
+* Tue Apr 08 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.11.beta4
+- Work around apparent version string length issue w/perl 5.10 (#441359)
+
+* Sat Apr 05 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.10.beta4
+- Fix use of rrd_update in php bindings (#437558)
+
+* Mon Mar  3 2008 Tom "spot" Callaway <tcallawa@redhat.com> 1.3-0.9.beta4
+- rebuild for new perl (again)
+
+* Wed Feb 13 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.8.beta4
+- Update to rrdtool 1.3 beta4
+
+* Tue Feb 05 2008 Tom "spot" Callaway <tcallawa@redhat.com> 1.3-0.7.beta3
+- rebuild for new perl (and fix license tag)
+
+* Mon Feb 04 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.6.beta3
+- Plug memory leak (#430879)
+
+* Mon Jan 07 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.5.beta3
+- Fix right-aligned text alignment and scaling (Resolves: #427609)
+
+* Wed Jan 02 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.4.beta3
+- Add newly built python egg to %%files
+
+* Wed Jan 02 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.3.beta3
+- Update to rrdtool 1.3 beta3
+- Return properly from errors in RRDp.pm (Resolves: #427040)
+- Requires: dejavu-lgc-fonts (Resolves: #426935)
+
+* Thu Dec 06 2007 Jarod Wilson <jwilson@redhat.com> 1.3-0.2.beta2
+- Update to rrdtool 1.3 beta2
+
+* Wed Aug 08 2007 Jarod Wilson <jwilson@redhat.com> 1.3-0.1.beta1
+- Update to rrdtool 1.3 beta1
+
+* Tue Jul 10 2007 Jarod Wilson <jwilson@redhat.com> 1.2.999-0.3.r1144
+- Update to latest rrdtool pre-1.3 svn snapshot (svn r1144)
+- Add php abi check (Resolves: #247339)
+
+* Fri Jun 15 2007 Jarod Wilson <jwilson@redhat.com> 1.2.999-0.2.r1127
+- Fix up BuildRequires
+
+* Fri Jun 15 2007 Jarod Wilson <jwilson@redhat.com> 1.2.999-0.1.r1127
+- Update to rrdtool pre-1.3 svn snapshot (svn r1127)
 
 * Mon May 21 2007 Jarod Wilson <jwilson@redhat.com> 1.2.23-5
 - BR: ruby so %%ruby_sitearch gets set
