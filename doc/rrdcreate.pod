@@ -216,6 +216,7 @@ I<steps> defines how many of these I<primary data points> are used to build
 a I<consolidated data point> which then goes into the archive.
 
 I<rows> defines how many generations of data values are kept in an B<RRA>.
+Obviously, this has to be greater than zero.
 
 =back
 

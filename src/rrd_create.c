@@ -232,6 +232,7 @@ int rrd_create_r(
             char     *argvcopy;
             char     *tokptr;
             size_t    old_size = sizeof(rra_def_t) * (rrd.stat_head->rra_cnt);
+            int       row_cnt;
 
             if ((rrd.rra_def = rrd_realloc(rrd.rra_def,
                                            old_size + sizeof(rra_def_t))) ==
@@ -312,8 +313,10 @@ int rrd_create_r(
                     case CF_SEASONAL:
                     case CF_DEVPREDICT:
                     case CF_FAILURES:
-                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt =
-                            atoi(token);
+                        row_cnt = atoi(token);
+                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
+                        if (row_cnt <= 0)
+                            rrd_set_error("Invalid row count: %i", row_cnt);
                         break;
                     default:
                         rrd.rra_def[rrd.stat_head->rra_cnt].
@@ -416,8 +419,10 @@ int rrd_create_r(
                             ("Unexpected extra argument for consolidation function DEVPREDICT");
                         break;
                     default:
-                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt =
-                            atoi(token);
+                        row_cnt = atoi(token);
+                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
+                        if (row_cnt <= 0)
+                            rrd_set_error("Invalid row count: %i", row_cnt);
                         break;
                     }
                     break;
