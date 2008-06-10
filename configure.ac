@@ -9,14 +9,14 @@ dnl tell automake the this script is for rrdtool
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.0])
+AC_INIT([rrdtool],[1.3.0])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.4000
+NUMVERS=1.3000
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which version the library is compatible with
