@@ -50,9 +50,8 @@ graph it (or print it).  This ends the B<rrdtool graph> sequence.
 
 =head1 OPTIONS
 
-=over 4
 
-=item B<graphv>
+=head2 B<graphv>
 
 This alternate version of B<graph> takes the same arguments and performs the
 same function. The I<v> stands for I<verbose>, which describes the output
@@ -60,7 +59,7 @@ returned. B<graphv> will return a lot of information about the graph using
 the same format as rrdtool info (key = value). See the bottom of the document for more information.
 
 
-=item filename
+=head2 I<filename>
 
 The name and path of the graph to generate. It is recommended to
 end this in C<.png>, C<.svg> or C<.eps>, but B<RRDtool> does not enforce this.
@@ -68,7 +67,7 @@ end this in C<.png>, C<.svg> or C<.eps>, but B<RRDtool> does not enforce this.
 I<filename> can be 'C<->' to send the image to C<stdout>. In
 this case, no other output is generated.
 
-=item Time range
+=head2 Time range
 
 [B<-s>|B<--start> I<time>]
 [B<-e>|B<--end> I<time>]
@@ -86,7 +85,7 @@ If you want B<rrdtool graph> to get data at a one-hour resolution
 from the B<RRD>, set B<step> to 3'600. Note: a step smaller than
 one pixel will silently be ignored.
 
-=item Labels
+=head2 Labels
 
 [B<-t>|B<--title> I<string>]
 [B<-v>|B<--vertical-label> I<string>]
@@ -94,7 +93,7 @@ one pixel will silently be ignored.
 A horizontal string at the top of the graph and/or a vertically
 placed string at the left hand side of the graph.
 
-=item Size
+=head2 Size
 
 [B<-w>|B<--width> I<pixels>]
 [B<-h>|B<--height> I<pixels>]
@@ -113,7 +112,7 @@ pixels you will get a tiny graph image (thumbnail) to use as an icon
 for use in an overview, for example. All labeling will be stripped off
 the graph.
 
-=item Limits
+=head2 Limits
 
 [B<-u>|B<--upper-limit> I<value>]
 [B<-l>|B<--lower-limit> I<value>]
@@ -161,9 +160,9 @@ to turn this behaviour off.
 
 Gridfitting is turned off for PDF, EPS, SVG output by default.
 
-=item Grid
+=head2 Grid
 
-=over 4
+=over
 
 =item X-Axis
 
@@ -259,7 +258,7 @@ Note that for linear graphs, SI notation is used by default.
 
 =back
 
-=item Miscellaneous
+=head2 Miscellaneous
 
 [B<-z>|B<--lazy>]
 
@@ -421,7 +420,7 @@ measurement, 1 kb/s is 1000 b/s.
 Adds the given string as a watermark, horizontally centred, at the bottom 
 of the graph.
 
-=item Data and variables
+=head2 Data and variables
 
 B<DEF:>I<vname>B<=>I<rrdfile>B<:>I<ds-name>B<:>I<CF>[B<:step=>I<step>][B<:start=>I<time>][B<:end=>I<time>]
 
@@ -433,7 +432,7 @@ You need at least one B<DEF> statement to generate anything. The
 other statements are useful but optional.
 See L<rrdgraph_data> and L<rrdgraph_rpn> for the exact format.
 
-=item Graph and print elements
+=head2 Graph and print elements
 
 You need at least one graph element to generate an image and/or
 at least one print statement to generate a report.

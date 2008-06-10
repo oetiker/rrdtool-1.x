@@ -41,7 +41,7 @@ Where you want to install the software.
 Once you have decided. Save the two locations into environment variables.
 
  BUILD_DIR=/tmp/rrdbuild
- INSTALL_DIR=/usr/local/rrdtool-1.3rc9
+ INSTALL_DIR=/usr/local/rrdtool-1.3.0
 
 
 If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
@@ -55,9 +55,9 @@ Now make sure the BUILD_DIR exists and go there:
 Lets first assume you already have all the necessary libraries
 pre-installed. 
 
- wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.3rc9.tar.gz
- gunzip -c rrdtool-1.3rc9.tar.gz | tar xf -
- cd rrdtool-1.3rc9
+ wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.3.0.tar.gz
+ gunzip -c rrdtool-1.3.0.tar.gz | tar xf -
+ cd rrdtool-1.3.0
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
@@ -336,7 +336,7 @@ because it seems that a fair number of people have ill configured python and
 tcl setups that would prevent rrdtool from building if they are included in
 their current state.
 
- cd $BUILD_DIR/rrdtool-1.3rc9
+ cd $BUILD_DIR/rrdtool-1.3.0
  ./configure --prefix=$INSTALL_DIR --disable-tcl --disable-python
  $MAKE clean
  $MAKE

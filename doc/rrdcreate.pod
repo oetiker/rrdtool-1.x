@@ -16,15 +16,13 @@ The create function of RRDtool lets you set up new Round Robin
 Database (B<RRD>) files.  The file is created at its final, full size
 and filled with I<*UNKNOWN*> data.
 
-=over 8
-
-=item I<filename>
+=head2 I<filename>
 
 The name of the B<RRD> you want to create. B<RRD> files should end
 with the extension F<.rrd>. However, B<RRDtool> will accept any
 filename.
 
-=item B<--start>|B<-b> I<start time> (default: now - 10s)
+=head2 B<--start>|B<-b> I<start time> (default: now - 10s)
 
 Specifies the time in seconds since 1970-01-01 UTC when the first
 value should be added to the B<RRD>. B<RRDtool> will not accept
@@ -33,12 +31,12 @@ any data timed before or at the time specified.
 See also AT-STYLE TIME SPECIFICATION section in the
 I<rrdfetch> documentation for other ways to specify time.
 
-=item B<--step>|B<-s> I<step> (default: 300 seconds)
+=head2 B<--step>|B<-s> I<step> (default: 300 seconds)
 
 Specifies the base interval in seconds with which data will be fed
 into the B<RRD>.
 
-=item B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
+=head2 B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
 
 A single B<RRD> can accept input from several data sources (B<DS>),
 for example incoming and outgoing traffic on a specific communication
@@ -63,7 +61,7 @@ In order to decide which data source type to use, review the
 definitions that follow. Also consult the section on "HOW TO MEASURE"
 for further insight.
 
-=over 4
+=over
 
 =item B<GAUGE>
 
@@ -89,9 +87,7 @@ room. Internally, derive works exactly like COUNTER but without
 overflow checks. So if your counter does not reset at 32 or 64 bit you
 might want to use DERIVE and combine it with a MIN value of 0.
 
-=over
-
-=item NOTE on COUNTER vs DERIVE
+B<NOTE on COUNTER vs DERIVE>
 
 by Don Baarda E<lt>don.baarda@baesystems.comE<gt>
 
@@ -109,8 +105,6 @@ for high bandwidth interfaces and a 32bit counter, DERIVE with min=0 is
 probably preferable. If you are using a 64bit counter, just about any max
 setting will eliminate the possibility of mistaking a reset for a counter
 wrap.
-
-=back
 
 =item B<ABSOLUTE>
 
@@ -159,8 +153,7 @@ names of data source listed previously in the create command. This is
 similar to the restriction that B<CDEF>s must refer only to B<DEF>s
 and B<CDEF>s previously defined in the same graph command.
 
-=item B<RRA:>I<CF>B<:>I<cf arguments>
-
+=head2 B<RRA:>I<CF>B<:>I<cf arguments>
 
 The purpose of an B<RRD> is to store data in the round robin archives
 (B<RRA>). An archive consists of a number of data values or statistics for
@@ -217,8 +210,6 @@ a I<consolidated data point> which then goes into the archive.
 
 I<rows> defines how many generations of data values are kept in an B<RRA>.
 Obviously, this has to be greater than zero.
-
-=back
 
 =head1 Aberrant Behavior Detection with Holt-Winters Forecasting
 
