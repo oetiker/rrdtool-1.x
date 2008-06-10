@@ -2,6 +2,7 @@
  * rrd_hw_math.c  Math functions for Holt-Winters computations
  *****************************************************************************/
 
+#include "rrd_tool.h"
 #include "rrd_hw_math.h"
 #include "rrd_config.h"
 

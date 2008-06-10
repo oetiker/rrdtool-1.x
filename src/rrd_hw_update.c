@@ -2,6 +2,7 @@
  * rrd_hw_update.c  Functions for updating a Holt-Winters RRA
  ****************************************************************************/
 
+#include "rrd_tool.h"
 #include "rrd_format.h"
 #include "rrd_config.h"
 #include "rrd_hw_math.h"

@@ -79,7 +79,7 @@ librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
 librrd_th_la_LIBADD          = $(ALL_LIBS)
 
-include_HEADERS	= rrd.h
+include_HEADERS	= rrd.h rrd_format.h
 
 bin_PROGRAMS	= rrdtool rrdupdate
 

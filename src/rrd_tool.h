@@ -87,41 +87,6 @@ extern    "C" {
     char ***ds_namv,
     rrd_value_t **data);
 
-    void      rrd_free(
-    rrd_t *rrd);
-    void      rrd_freemem(
-    void *mem);
-    void      rrd_init(
-    rrd_t *rrd);
-
-    rrd_file_t *rrd_open(
-    const char *const file_name,
-    rrd_t *rrd,
-    unsigned rdwr);
-    void      rrd_dontneed(
-    rrd_file_t *rrd_file,
-    rrd_t *rrd);
-    int       rrd_close(
-    rrd_file_t *rrd_file);
-    ssize_t   rrd_read(
-    rrd_file_t *rrd_file,
-    void *buf,
-    size_t count);
-    ssize_t   rrd_write(
-    rrd_file_t *rrd_file,
-    const void *buf,
-    size_t count);
-    void      rrd_flush(
-    rrd_file_t *rrd_file);
-    off_t     rrd_seek(
-    rrd_file_t *rrd_file,
-    off_t off,
-    int whence);
-    off_t     rrd_tell(
-    rrd_file_t *rrd_file);
-    int       rrd_lock(
-    rrd_file_t *file);
-
 #define RRD_READONLY    (1<<0)
 #define RRD_READWRITE   (1<<1)
 #define RRD_CREAT       (1<<2)
