@@ -1,6 +1,8 @@
 Random Feature Ideas for RRDtool
 --------------------------------
-Updated: 2008-05-26
+Updated: 2008-06-26
+
+add accessor functions for rrd manipulation
 
 reverse order of stacked graph entries prior to plotting ... this is to make
 plotting order more naturally fit with the ordering of the legend ...
