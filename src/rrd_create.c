@@ -314,9 +314,9 @@ int rrd_create_r(
                     case CF_DEVPREDICT:
                     case CF_FAILURES:
                         row_cnt = atoi(token);
-                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
                         if (row_cnt <= 0)
                             rrd_set_error("Invalid row count: %i", row_cnt);
+                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
                         break;
                     default:
                         rrd.rra_def[rrd.stat_head->rra_cnt].
@@ -420,9 +420,9 @@ int rrd_create_r(
                         break;
                     default:
                         row_cnt = atoi(token);
-                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
                         if (row_cnt <= 0)
                             rrd_set_error("Invalid row count: %i", row_cnt);
+                        rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
                         break;
                     }
                     break;
