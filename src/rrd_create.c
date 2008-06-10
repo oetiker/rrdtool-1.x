@@ -675,8 +675,12 @@ int rrd_create_fn(
     int       unkn_cnt;
     rrd_file_t *rrd_file_dn;
     rrd_t     rrd_dn;
+    unsigned flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+    flags |= O_BINARY;
+#endif
 
-    if ((rrd_file = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0) {
+    if ((rrd_file = open(file_name, flags, 0666)) < 0) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
         free(rrd->stat_head);
         free(rrd->live_head);

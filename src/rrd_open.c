@@ -117,6 +117,10 @@ rrd_file_t *rrd_open(
 #endif
     }
 
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+    flags |= O_BINARY;
+#endif
+
     if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
