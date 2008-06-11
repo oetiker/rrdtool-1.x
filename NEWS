@@ -5,89 +5,101 @@ RRDTOOL NEWS
 Major Changes between 1.2.x and 1.3.x
 -------------------------------------
 
-RRdtool dump / restore Incompatibilities
-----------------------------------------
-rrdtool dump 1.3 does emit completely legal xml. Basically this means that
-it contains an xml header and a DOCTYPE definition. Unfortunately this
-causes older versions of rrdtool restore to be unhappy.
-
-To restore a new dump with ann old rrdtool restore version, either remove
-the xml header and the doctype by hand (both on the first line of the dump)
-or use rrdtool dump --no-header.
-
-NEW File access methods (Bernhard Fischer)
--------------------
+NEW Fast file access methods (Bernhard Fischer / Tobi Oetiker)
+----------------------------
 * introduced file-accessor functions rrd_read/rrd_seek/rrd_write
-* implemented full mmap-based file access with madvise hints for improved
-  scalability, much reduced memory-footprint and much less blocking on
-  disk
-* implemented optional full file-descriptor access instead of FILE* access
+
+* implemented full mmap-based file access with madvise hints for
+  improved scalability, much reduced memory-footprint and much less
+  blocking while accessing the disk
+
+* implemented optional full file-descriptor access instead of FILE*
+  access
 
 NEW Graphing (Tobi Oetiker)
---------
+------------
 * libart has been replaced by cairo/pango
+
 * pango markup is supported (--pango-markup)
-* full gridfitting 
-* --graph-render-mode=mono for non antialiased graphing
-* --font-render-mode=mono for non antialiased fonts
-* fonts come through fontconfig, use the Pango fontnameing
-  scheme -> 'Times 20' ... it is not possible to use
-  truetype fonts directly anymore.
+
+* full grid fitting
+
+* --graph-render-mode=mono for non anti aliased graphing
+
+* --font-render-mode=mono for non anti aliased fonts
+
+* fonts come through fontconfig, use the Pango font nameing scheme
+  -> 'Times 20' ... it is not possible to use truetype fonts
+  directly anymore.
+
 * Tabs are position independent.
-* TRENDNAN filter that ignores NAN values while caculating the TREND data. (Timo Stripf)
-* --full-size-mode to specify the outer border of the image and not just of the graphing canvas (Matthew Chambers)
-* TEXTALIGN command to alter default text alignment behaviour
+
+* TRENDNAN filter that ignores NAN values while calculating the
+  TREND data. (Timo Stripf)
+
+* --full-size-mode to specify the outer border of the image and not
+  just of the graphing canvas (Matthew Chambers)
+
+* TEXTALIGN command to alter default text alignment behavior
+
 * C API in-memory graphing with rrd_graph_v (Evan Miller)
+
 * draw dashed lines in graphs (Thomas Gutzler)
-* new interface graphv which returns inforamation using the rrd_info
+
+* new interface graphv which returns information using the rrd_info
   interface (Tobi Oetiker and Mark Plaksin)
-* improved horizontal grid. Have a bit more grid lines and y-axis labels
-  while keeping them fahr enough apart to not run into each other.
+
+* improved horizontal grid. Have a bit more grid lines and y-axis
+  labels while keeping them far enough apart to not run into each
+  other.
 
 NEW Forecasting (Evan Miller)
------------
-* the new MHWPREDICT consolidation function uses a variation of the Holt-Winters
-  method. It is a drop-in replacement for HWPREDICT, and is better suited for
-  data whose seasonal variations grow or shrink in proportion to the average.
+---------------
+* the new MHWPREDICT consolidation function uses a variation of the
+  Holt-Winters method. It is a drop-in replacement for HWPREDICT,
+  and is better suited for data whose seasonal variations grow or
+  shrink in proportion to the average.
 
-* If you create an RRD with the new MHWPREDICT function, the resulting
-  rrdfile will be version 0004 and can only be used in rrdtool 1.3.
+* If you create an RRD with the new MHWPREDICT function, the
+  resulting rrd file will be version 0004 and can only be used in
+  rrdtool 1.3.
 
 Rewrites
 --------
-* rrd_restore now uses libxml for parsing which makes things much more
-  tolerant towards xml variations. The old code could mostly just parse the
-  xml as it was output by rrdtool dump. See also: 'incompatibilities' at the
-  top of this document. (by Florian octo Forster)
+* rrd_restore now uses libxml for parsing which makes things much
+  more tolerant towards xml variations. The old code could mostly
+  just parse the XML as it was output by rrdtool dump. See also:
+  the note at the bottom of this document. (by Florian octo
+  Forster)
 
-* rrd_update rewritten to make it more modular. Fixed two longstanding
-  HW bugs in the process (Evan Miller)
+* rrd_update rewritten to make it more modular. Fixed two
+  longstanding HW bugs in the process (Evan Miller)
 
 Internationalization (Takao Fujiwara and Tobi Oetiker)
 --------------------
-* The help output by rrdtool has been internationalized. There are no real
-  translations included with rrdtool yet, contributions are welcome.
-* The internationalization will only be compiled if libintl and friends are
-  available on your system. Use the configure option --disable-libintl if
-  you want to disable this feature
+* The help output by rrdtool has been internationalized. There are
+  no real translations included with rrdtool yet, contributions are
+  welcome.
+
+* The internationalization will only be compiled if libintl and
+  friends are available on your system. Use the configure option
+  --disable-libintl if you want to disable this feature
 
 Language Bindings
 -----------------
 * ruby rrd_fetch will return step as a last property -- Mike Perham
 
-* python rrdtool.info does now conform with the data structure returned
-  by the other language bindings. This is incompatible with the
-  previous (broken) version --tobi
+RRDtool dump / restore incompatibility
+--------------------------------------
+* rrdtool dump 1.3 does emit completely legal XML. Basically this
+  means that it contains an XML header and a DOCTYPE definition.
+  Unfortunately this causes older versions of rrdtool restore to be
+  unhappy.
 
-* python bindings got updatev support --tobi
+* To restore a new dump with an old rrdtool restore version, either
+  remove the XML header and the doctype by hand (both on the first
+  line of the dump) or use rrdtool dump --no-header.
 
-* ruby, perl, python bindings support the new graphv interface --tobi
-
-Locale Independent Numeric Input
---------------------------------
-* Regardles of locale you are in, rrdtool always expects input to be numbers
-  (LC_NUMERIC) in C or POSIX locale for numbers. (not 1,1 but 1.1) this is
-  necessary to make things like RPN work as it uses , as a separator.
 
 ######################################################################################
 Major Changes between 1.0.x and 1.2.x
