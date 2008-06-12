@@ -142,9 +142,13 @@ strings for the current locale.  Noon is treated as `pm' and midnight as
 `am'.  Note that in many locales and `pm' notation is unsupported and in
 such cases %p will return an empty string.
 
-=item B<%S>
+=item B<%s>
 
 The second as a decimal number (range 00 to 61).
+
+=item B<%S>
+
+The seconds since the epoch (1.1.1970) (libc dependant non standard!)
 
 =item B<%U>
 
