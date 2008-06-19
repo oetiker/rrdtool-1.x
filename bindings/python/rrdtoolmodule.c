@@ -184,7 +184,7 @@ static PyObject *PyRRD_fetch(
         unsigned long i, j, row;
         rrd_value_t dv;
 
-        row = ((end - start) / step + 1);
+        row = (end - start) / step;
 
         r = PyTuple_New(3);
         range_tup = PyTuple_New(3);
