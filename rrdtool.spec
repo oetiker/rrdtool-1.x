@@ -16,8 +16,10 @@ Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
 #Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
 Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}%{pre}.tar.gz
+%if %{with_php}
 Source1: php4-%{svnrev}.tar.gz
 Patch1: rrdtool-1.3.0-beta4-fix-rrd_update-in-php-bindings.patch
+%endif
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: dejavu-lgc-fonts
 BuildRequires: gcc-c++, openssl-devel, freetype-devel
@@ -142,9 +144,11 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 %endif
 
 %prep
-%setup -q -n %{name}-%{version}%{pre} %{?with_php: -a 1}
 %if %{with_php}
+%setup -q -n %{name}-%{version}%{pre} -a 1
 %patch1 -p1
+%else
+%setup -q -n %{name}-%{version}%{pre}
 %endif
 
 # Fix to find correct python dir on lib64
@@ -153,8 +157,10 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 
 # Most edits shouldn't be necessary when using --libdir, but
 # w/o, some introduce hardcoded rpaths where they shouldn't
-%{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' \
-    configure Makefile.in php4/configure php4/ltconfig*
+%{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' configure Makefile.in*
+%if %{with_php}
+%{__perl} -pi.orig -e 's|/lib\b|/%{_lib}|g' php4/configure php4/ltconfig*
+%endif
 
 # Perl 5.10 seems to not like long version strings, hack around it
 %{__perl} -pi.orig -e 's|1.299907080300|1.29990708|' \
@@ -163,7 +169,10 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 #
 # fix config files for php4 bindings
 # workaround needed due to https://bugzilla.redhat.com/show_bug.cgi?id=211069
+%if %{with_php}
 cp -p /usr/lib/rpm/config.{guess,sub} php4/
+%endif
+
 
 %build
 %configure \
