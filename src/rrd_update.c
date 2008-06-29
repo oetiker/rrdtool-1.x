@@ -533,9 +533,9 @@ _rrd_update(const char *filename, const char *tmplt, int argc, const char **argv
 	if(current_time < rrd.live_head->last_up || 
 	  (current_time == rrd.live_head->last_up && 
 	   (long)current_time_usec <= (long)rrd.live_head->last_up_usec)) {
-	    rrd_set_error("illegal attempt to update using time %ld when "
+	    rrd_set_error("%s: illegal attempt to update using time %ld when "
 			  "last update time is %ld (minimum one second step)",
-			  current_time, rrd.live_head->last_up);
+			  filename, current_time, rrd.live_head->last_up);
 	    free(step_start);
 	    break;
 	}
