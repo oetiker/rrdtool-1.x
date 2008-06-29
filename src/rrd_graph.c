@@ -2951,8 +2951,13 @@ int graph_paint(
     PangoFontMap *font_map = pango_cairo_font_map_get_default();
 
     /* if we are lazy and there is nothing to PRINT ... quit now */
-    if (lazy && im->prt_c == 0)
+    if (lazy && im->prt_c == 0) {
+        info.u_cnt = im->ximg;
+        grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
+        info.u_cnt = im->yimg;
+        grinfo_push(im, sprintf_alloc("image_height"), RD_I_CNT, info);
         return 0;
+    }
     /* pull the data from the rrd files ... */
     if (data_fetch(im) == -1)
         return -1;
@@ -2961,14 +2966,16 @@ int graph_paint(
         return -1;
     /* calculate and PRINT and GPRINT definitions. We have to do it at
      * this point because it will affect the length of the legends
-     * if there are no graph elements we stop here ... 
+     * if there are no graph elements (i==0) we stop here ... 
      * if we are lazy, try to quit ... 
      */
-    i = print_calc(im);
+    i = print_calc(im); 
     if (i < 0)
         return -1;
+
     if ((i == 0) || lazy)
         return 0;
+
 /**************************************************************
  *** Calculating sizes and locations became a bit confusing ***
  *** so I moved this into a separate function.              ***
@@ -3556,7 +3563,11 @@ int rrd_graph(
         walker = walker->next;
     }
     walker = grinfo;
-    while (walker) {
+    *xsize = 0;
+    *ysize = 0;
+    *ymin = 0;
+    *ymax = 0;
+    while (walker) {        
         if (strcmp(walker->key, "image_width") == 0) {
             *xsize = walker->value.u_int;
         } else if (strcmp(walker->key, "image_height") == 0) {
@@ -4437,9 +4448,9 @@ int vdef_calc(
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
     end =
-        src->end_orig % src->step ==
-        0 ? src->end_orig : (src->end_orig + src->step -
-                             src->end_orig % src->step);
+        src->end_orig % (long)src->step ==
+        0 ? src->end_orig : (src->end_orig + (long)src->step -
+                             src->end_orig % (long)src->step);
 
     steps = (end - src->start) / src->step;
 #if 0

@@ -262,8 +262,10 @@ Note that for linear graphs, SI notation is used by default.
 
 [B<-z>|B<--lazy>]
 
-Only generate the graph if the current graph is out of date or not
-existent.
+Only generate the graph if the current graph is out of date or not existent.
+Note, that only the image size will be returned, if you run with lazy even
+when using graphv.
+
 
 [B<-f>|B<--imginfo> I<printfstr>]
 
