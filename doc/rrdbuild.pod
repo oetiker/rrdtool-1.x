@@ -322,7 +322,7 @@ config file.
  $MAKE
  $MAKE install
 
-=head3 Building rrdtool (second try)
+=head2 Building rrdtool (second try)
 
 Now all the dependent libraries are built and you can try again. This time
 you tell configure where it should be looking for libraries and include
