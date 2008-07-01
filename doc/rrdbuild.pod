@@ -126,7 +126,7 @@ system anyway. Freetype, Fontinst, Cairo, Pango may be installed, but it is
 possible that they are pretty old and thus don't live up to our
 expectations, so you may want to compile their latest versions.
 
-=head3 Build Tips for AIX
+=head2 General build tips for AIX
 
 If you are working with AIX, you may find the the B<--disable-shared> option
 will cause things to break for you. In that case you may have to install the
@@ -140,12 +140,12 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
 
 (Better instructions for AIX welcome!)
 
-=head2 Building Libraries
+=head2 Build Instructions
 
-In order to build the libraries you need a compiler on your system.
-Unfortunately compilers are not all alike. This has an effect on the CFLAGS
-you want to set. The examples below are for the popular GCC compiler suite.
-If you have an other compilers here are some ides:
+In order to build rrdtool need a compiler on your system. Unfortunately
+compilers are not all alike. This has an effect on the CFLAGS you want to
+set. The examples below are for the popular GCC compiler suite. If you have
+an other compilers here are some ides:
 
 =over
 
@@ -155,20 +155,18 @@ If you have an other compilers here are some ides:
 
 =back
 
-=over 
-
 Some libraries want to know where other libraries are. For this to work,
 set the following environment variable
 
  export PKG_CONFIG_PATH=${INSTALL_DIR}/lib/pkgconfig
  export PATH=$INSTALL_DIR/bin:$PATH
 
-This relies on the presence of the F<pkgconfig> program. Below you find instructions
-on how to compile pkgconfig as well.
+The above relies on the presence of the F<pkgconfig> program. Below you find instructions
+on how to compile pkgconfig.
 
-Since we are compiling libraries dynamically, they must know
-where to find each other. This is done by setting an appropriate LDFLAGS.
-Unfortunately, the syntax again differs from system to system:
+Since we are compiling libraries dynamically, they must know where to find
+each other. This is done by setting an appropriate LDFLAGS. Unfortunately,
+the syntax again differs from system to system:
 
 =over
 
@@ -181,7 +179,7 @@ Unfortunately, the syntax again differs from system to system:
  export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
 
 =item HPUX
- 
+
  export LDFLAGS="+b${INSTALL_DIR}/lib"
 
 =item AIX
@@ -200,7 +198,7 @@ otherwise just do
 
  export MAKE=make
 
-=item Building pkgconfig
+=head3 Building pkgconfig
 
 As mentioned above, without pkgconfig the whole build process will be lots
 of pain and suffering, so make sure you have a copy on your system. If it is
@@ -213,7 +211,7 @@ not available natively, here is how to compile it.
  $MAKE
  $MAKE install
 
-=item Building zlib
+=head3 Building zlib
 
 Chances are very high that you already have that on your system ... 
 
@@ -225,7 +223,7 @@ Chances are very high that you already have that on your system ...
  $MAKE
  $MAKE install
 
-=item Building libpng
+=head3 Building libpng
 
 Libpng itself requires zlib to build, so we need to help a bit. If you
 already have a copy of zlib on your system (which is very likely) you can
@@ -240,7 +238,7 @@ the end of line 4 means that line 4 and line 5 are on one line.
  $MAKE
  $MAKE install
 
-=item Building freetype
+=head3 Building freetype
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
@@ -255,7 +253,7 @@ add the following at the start the configure line:
 
  env EGREP=egrep
 
-=item Building LibXML2
+=head3 Building LibXML2
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
@@ -265,7 +263,7 @@ add the following at the start the configure line:
  $MAKE
  $MAKE install
 
-=item Building fontconfig
+=head3 Building fontconfig
 
 Note that fontconfig has a run time configuration file in INSTALL_DIR/etc you
 may want to adjust that so that fontconfig finds the fonts on your system.
@@ -280,7 +278,7 @@ config file.
  $MAKE
  $MAKE install
 
-=item Building Pixman
+=head3 Building Pixman
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/pixman-0.10.0.tar.gz
@@ -290,7 +288,7 @@ config file.
  $MAKE
  $MAKE install
 
-=item Building Cairo
+=head3 Building Cairo
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
@@ -304,7 +302,7 @@ config file.
  $MAKE
  $MAKE install
 
-=item Building Glib
+=head3 Building Glib
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.15.4.tar.gz
@@ -314,7 +312,7 @@ config file.
  $MAKE
  $MAKE install
 
-=item Building Pango
+=head3 Building Pango
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.gz
@@ -324,7 +322,7 @@ config file.
  $MAKE
  $MAKE install
 
-=back
+=head3 Building rrdtool (second try)
 
 Now all the dependent libraries are built and you can try again. This time
 you tell configure where it should be looking for libraries and include
@@ -343,7 +341,7 @@ their current state.
  $MAKE install
 
 SOLARIS HINT: if you want to build  the perl module for the native perl (the
-one shipping with Solaris) you will need the sun forte compiler installed on
+one shipping with Solaris) you will need the Sun Forte compiler installed on
 your box or you have to hand-tune bindings/perl-shared/Makefile while
 building!
 
