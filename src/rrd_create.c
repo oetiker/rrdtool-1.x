@@ -312,6 +312,8 @@ rrd_create_r(const char *filename,
                         break;
                     default:
                         rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt = atoi(token);
+                        if (atoi(token) < 1) 
+                            rrd_set_error("Invalid step: must be >= 1"); 
                         break;
                     }
                     break;
