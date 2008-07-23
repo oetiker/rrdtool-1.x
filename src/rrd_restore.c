@@ -693,8 +693,8 @@ static int parse_tag_rra(
             break;
     }
 
-    /* Set the RRA pointer to the last value in the archive */
-    cur_rra_ptr->cur_row = cur_rra_def->row_cnt - 1;
+    /* Set the RRA pointer to a random location */
+    cur_rra_ptr->cur_row = random() % cur_rra_def->row_cnt;
 
     return (status);
 }                       /* int parse_tag_rra */
@@ -966,7 +966,7 @@ static int write_file(
 {
     FILE     *fh;
     unsigned int i;
-    unsigned int value_count;
+    unsigned int rra_offset;
 
     if (strcmp("-", file_name) == 0)
         fh = stdout;
@@ -1009,11 +1009,21 @@ static int write_file(
     fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
 
     /* calculate the number of rrd_values to dump */
-    value_count = 0;
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++)
-        value_count += (rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt);
+    rra_offset=0;
+    for(i=0; i <  rrd->stat_head->rra_cnt; i++)
+    {
+        unsigned long num_rows = rrd->rra_def[i].row_cnt;
+        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
+        unsigned long ds_cnt = rrd->stat_head->ds_cnt;
 
-    fwrite(rrd->rrd_value, sizeof(rrd_value_t), value_count, fh);
+        fwrite(rrd->rrd_value + (rra_offset + num_rows-1 - cur_row) * ds_cnt,
+               sizeof(rrd_value_t), (cur_row+1)*ds_cnt, fh);
+
+        fwrite(rrd->rrd_value + rra_offset * ds_cnt,
+               sizeof(rrd_value_t), (num_rows-1 - cur_row)*ds_cnt, fh);
+
+        rra_offset += num_rows;
+    }
 
     /* lets see if we had an error */
     if (ferror(fh)) {
@@ -1032,6 +1042,7 @@ int rrd_restore(
 {
     rrd_t    *rrd;
 
+    srandom((unsigned int)time(NULL) + (unsigned int)getpid());
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */
