@@ -29,7 +29,8 @@ cd rrdtool-$VERSION
 make
 src/rrdtool
 cd ..
-scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub/
+mv CHANGES CHANGES-1.2
+scp CHANGES-1.2 rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub/
 cd ..
 rm -rf rrdtool-$$
 svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/branches/1.2/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
