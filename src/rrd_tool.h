@@ -83,6 +83,10 @@ extern "C" {
 
 #include <float.h>        /* for _isnan  */
 #include <io.h>           /* for chdir   */
+#include <process.h>      /* for getpid  */
+
+#define random rand
+#define srandom srand
 
 struct tm* localtime_r(const time_t *timep, struct tm* result);
 char* ctime_r(const time_t *timep, char* result);

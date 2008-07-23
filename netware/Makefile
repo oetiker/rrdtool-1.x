@@ -6,7 +6,7 @@
 #
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
-COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2008 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 MTSAFE	= YES
 #SCREEN	= $(DESCR)
@@ -42,11 +42,11 @@ endif
 # All library code is statically linked to avoid problems with other lib NLMs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.23
+LIBPNG	= $(LIBBASE)/libpng-1.2.29
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-LIBFT2	= $(LIBBASE)/freetype-2.3.5
+LIBFT2	= $(LIBBASE)/freetype-2.3.7
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -103,13 +103,13 @@ FIXNLMN	= fixnlmname #-q
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
 MV	= mv -fv
-ifndef ARCBIN
+
+ifeq ($(ARCEXT),7z)
+ARCBIN	= 7za a
+else
 ARCBIN	= zip -qzr9
 ARCEXT	= zip
-#ARCBIN	= 7za a
-#ARCEXT	= 7z
 endif
-
 
 # must be equal to DEBUG or NDEBUG
 DB	= NDEBUG

@@ -6,7 +6,7 @@
 #
 
 DESCR	= Round Robin Database Tool
-COPYR	= Copyright (c) 1997-2007 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2008 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 ICON	= $(PROOT)/favicon.ico
 
@@ -33,12 +33,12 @@ endif
 # All library code is statically linked to avoid problems with other lib DLLs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.23
+LIBPNG	= $(LIBBASE)/libpng-1.2.29
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
-#LIBFT2	= $(LIBBASE)/freetype-2.3.5
-LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.5
+#LIBFT2	= $(LIBBASE)/freetype-2.3.7
+LIBFT2	= $(LIBBASE)/../mingw32/freetype-2.3.7
 endif
 # Edit the path below to point to your libart sources or set environment var.
 ifndef LIBART
@@ -79,11 +79,12 @@ CP	= cp -afv
 # Here you can find a native Win32 binary of the original awk:
 # http://www.gknw.net/development/prgtools/awk.zip
 AWK	= awk
-ifndef ARCBIN
+
+ifeq ($(ARCEXT),7z)
+ARCBIN	= 7za a
+else
 ARCBIN	= zip -qzr9
 ARCEXT	= zip
-#ARCBIN	= 7za a
-#ARCEXT	= 7z
 endif
 
 # must be equal to DEBUG or NDEBUG
