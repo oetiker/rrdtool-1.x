@@ -318,6 +318,10 @@ static int parse_tag_rra_cdp_prep_ds(
 
     status = 0;
     for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
+        if (atoi(rrd->stat_head->version) == 1){
+                cdp_prep->scratch[CDP_primary_val].u_val = 0.0;
+                cdp_prep->scratch[CDP_secondary_val].u_val = 0.0;
+        }
         if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
             || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
             /* ignore */ ;
@@ -385,45 +389,6 @@ static int parse_tag_rra_cdp_prep_ds(
             status = get_int_from_node(doc, child,
                                        (int *) &cdp_prep->
                                        scratch[CDP_unkn_pdp_cnt].u_cnt);
-        /*
-         * Compatibility code for 1.0.49
-         */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "value") == 0) {  /* {{{ */
-            unsigned int i = 0;
-            rra_def_t *rra_def = rrd->rra_def + (rrd->stat_head->rra_cnt - 1);
-
-            while (42) {
-                if (i >= ARRAY_LENGTH(cdp_prep->scratch)) {
-                    status = -1;
-                    break;
-                }
-
-                if ((cf_conv(rra_def->cf_nam) == CF_FAILURES)
-                    || (i == CDP_unkn_pdp_cnt)
-                    || (i == CDP_null_count)
-                    || (i == CDP_last_null_count))
-                    status = get_int_from_node(doc, child,
-                                               (int *) &cdp_prep->scratch[i].
-                                               u_cnt);
-                else
-                    status = get_double_from_node(doc, child,
-                                                  &cdp_prep->scratch[i].
-                                                  u_val);
-
-                if (status != 0)
-                    break;
-
-                /* When this loops exits (sucessfully) `child' points to the last
-                 * `value' tag in the list. */
-                if ((child->next == NULL)
-                    || (xmlStrcmp(child->name, (const xmlChar *) "value") !=
-                        0))
-                    break;
-
-                child = child->next;
-                i++;
-            }
-        } /* }}} */
         else {
             rrd_set_error("parse_tag_rra_cdp_prep: Unknown tag: %s",
                           child->name);
@@ -708,7 +673,12 @@ static int parse_tag_rra(
         else if (xmlStrcmp(child->name, (const xmlChar *) "pdp_per_row") == 0)
             status = get_int_from_node(doc, child,
                                        (int *) &cur_rra_def->pdp_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "params") == 0)
+        else if (atoi(rrd->stat_head->version) == 1
+                 && xmlStrcmp(child->name, (const xmlChar *) "xff") == 0)
+            status = get_double_from_node(doc, child,
+                                       (double *) &cur_rra_def->par[RRA_cdp_xff_val].u_val);
+        else if (atoi(rrd->stat_head->version) >= 2
+                 && xmlStrcmp(child->name, (const xmlChar *) "params") == 0)
             status = parse_tag_rra_params(doc, child, cur_rra_def);
         else if (xmlStrcmp(child->name, (const xmlChar *) "cdp_prep") == 0)
             status = parse_tag_rra_cdp_prep(doc, child, rrd, cur_cdp_prep);
@@ -1025,7 +995,10 @@ static int write_file(
             return (-1);
         }
     }
-
+    if (atoi(rrd->stat_head->version) < 3){
+        /* we output 3 or higher */
+        strcpy(rrd->stat_head->version,"0003");        
+    }
     fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
     fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
     fwrite(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
