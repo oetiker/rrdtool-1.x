@@ -23,7 +23,7 @@ Variable names (I<vname>) must be made up strings of the following characters
 C<A-Z, a-z, 0-9, -,_> and a maximum length of 255 characters.
 
 When picking variable names, make sure you do not choose a name that is
-already taken by an RPN operator. A save bet it to use lowercase or
+already taken by an RPN operator. A safe bet it to use lowercase or
 mixedcase names for variables since operators will always be in uppercase.
 
 =head1 DEF
