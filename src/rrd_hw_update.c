@@ -48,6 +48,7 @@ int update_hwpredict(
     unsigned long dependent_rra_idx, seasonal_cdp_idx;
     unival   *coefs = rrd->cdp_prep[cdp_idx].scratch;
     rra_def_t *current_rra = &(rrd->rra_def[rra_idx]);
+    rrd_value_t seasonal_coef;
 
     /* save coefficients from current prediction */
     coefs[CDP_hw_last_intercept].u_val = coefs[CDP_hw_intercept].u_val;
@@ -58,7 +59,7 @@ int update_hwpredict(
     dependent_rra_idx = current_rra->par[RRA_dependent_rra_idx].u_cnt;
     seasonal_cdp_idx = dependent_rra_idx * (rrd->stat_head->ds_cnt) + ds_idx;
 
-    rrd_value_t seasonal_coef = (dependent_rra_idx < rra_idx)
+    seasonal_coef = (dependent_rra_idx < rra_idx)
         ? rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_last_seasonal].u_val
         : rrd->cdp_prep[seasonal_cdp_idx].scratch[CDP_hw_seasonal].u_val;
 

@@ -46,9 +46,12 @@ void gfx_dashed_line(
     double dash_off)
 {
     cairo_t  *cr = im->cr;
-    double    dashes[] = { dash_on, dash_off };
+    double    dashes[2];
     double    x = 0;
     double    y = 0;
+
+    dashes[0] = dash_on;
+    dashes[1] = dash_off;
 
     cairo_save(cr);
     cairo_new_path(cr);
