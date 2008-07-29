@@ -203,7 +203,7 @@ rrd_tune(...)
 		RETVAL
 
 
-void
+SV *
 rrd_graph(...)
 	PROTOTYPE: @	
 	PREINIT:
@@ -249,7 +249,7 @@ rrd_graph(...)
 		PUSHs(sv_2mortal(newSViv(xsize)));
 		PUSHs(sv_2mortal(newSViv(ysize)));
 
-void
+SV *
 rrd_fetch(...)
 	PROTOTYPE: @	
 	PREINIT:
@@ -302,7 +302,7 @@ rrd_fetch(...)
 		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 
-void
+SV *
 rrd_times(start, end)
 	  char *start
 	  char *end
