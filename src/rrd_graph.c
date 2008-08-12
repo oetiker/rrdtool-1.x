@@ -3667,10 +3667,15 @@ rrd_info_t *rrd_graph_v(
 
     if (im.imginfo) {
         rrd_infoval_t info;
-
+        char *filename;
+        filename=im.graphfile+strlen(im.graphfile);
+        while(filename > im.graphfile) {
+            if (*(filename-1)=='/' || *(filename-1)=='\\' ) break;
+            filename--;
+        }
         info.u_str =
             sprintf_alloc(im.imginfo,
-                          im.graphfile,
+                          filename,
                           (long) (im.zoom *
                                   im.ximg), (long) (im.zoom * im.yimg));
         grinfo_push(&im, sprintf_alloc("image_info"), RD_I_STR, info);
