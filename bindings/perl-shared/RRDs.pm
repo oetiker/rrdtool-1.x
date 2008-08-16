@@ -82,10 +82,10 @@ B<RRDs::last> returns a single INTEGER representing the last update time.
 
  $lastupdate = RRDs::last ...
 
-B<RRDs::graph> returns an pointer to an ARRAY containing the x-size and y-size of the
-created image and results of the PRINT arguments.
+B<RRDs::graph> returns an ARRAY containing the x-size and y-size of the
+created image and a pointer to an array with the results of the PRINT arguments.
 
- ($averages,$xsize,$ysize) = RRDs::graph ...
+ ($result_arr,$xsize,$ysize) = RRDs::graph ...
  print "Imagesize: ${xsize}x${ysize}\n";
  print "Averages: ", (join ", ", @$averages);
 
@@ -119,10 +119,10 @@ integers, a pointer to an array and a pointer to a array of pointers.
   print "DS names:    ", join (", ", @$names)."\n";
   print "Data points: ", $#$data + 1, "\n";
   print "Data:\n";
-  foreach my $line (@$data) {
+  for my $line (@$data) {
     print "  ", scalar localtime($start), " ($start) ";
     $start += $step;
-    foreach my $val (@$line) {
+    for my $val (@$line) {
       printf "%12.1f ", $val;
     }
     print "\n";
