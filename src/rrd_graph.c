@@ -2950,8 +2950,8 @@ int graph_paint(
     rrd_infoval_t info;
     PangoFontMap *font_map = pango_cairo_font_map_get_default();
 
-    /* if we are lazy and there is nothing to PRINT ... quit now */
-    if (lazy && im->prt_c == 0) {
+    /* if we want and can be lazy ... quit now */
+    if (lazy) {
         info.u_cnt = im->ximg;
         grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
         info.u_cnt = im->yimg;
