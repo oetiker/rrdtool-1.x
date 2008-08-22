@@ -191,21 +191,21 @@ VALUE rb_rrd_info(
     VALUE self,
     VALUE args)
 {
-    return rrd_infocall(rrd_info, args);
+    return rb_rrd_infocall(rrd_info, args);
 }
 
 VALUE rb_rrd_updatev(
     VALUE self,
     VALUE args)
 {
-    return rrd_infocall(rrd_update_v, args);
+    return rb_rrd_infocall(rrd_update_v, args);
 }
 
 VALUE rb_rrd_graphv(
     VALUE self,
     VALUE args)
 {
-    return rrd_infocall(rrd_graph_v, args);
+    return rb_rrd_infocall(rrd_graph_v, args);
 }
 
 
