@@ -318,9 +318,9 @@ static int parse_tag_rra_cdp_prep_ds(
 
     status = 0;
     for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if (atoi(rrd->stat_head->version) == 1){
-                cdp_prep->scratch[CDP_primary_val].u_val = 0.0;
-                cdp_prep->scratch[CDP_secondary_val].u_val = 0.0;
+        if (atoi(rrd->stat_head->version) == 1) {
+            cdp_prep->scratch[CDP_primary_val].u_val = 0.0;
+            cdp_prep->scratch[CDP_secondary_val].u_val = 0.0;
         }
         if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
             || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
@@ -676,7 +676,8 @@ static int parse_tag_rra(
         else if (atoi(rrd->stat_head->version) == 1
                  && xmlStrcmp(child->name, (const xmlChar *) "xff") == 0)
             status = get_double_from_node(doc, child,
-                                       (double *) &cur_rra_def->par[RRA_cdp_xff_val].u_val);
+                                          (double *) &cur_rra_def->
+                                          par[RRA_cdp_xff_val].u_val);
         else if (atoi(rrd->stat_head->version) >= 2
                  && xmlStrcmp(child->name, (const xmlChar *) "params") == 0)
             status = parse_tag_rra_params(doc, child, cur_rra_def);
@@ -995,9 +996,9 @@ static int write_file(
             return (-1);
         }
     }
-    if (atoi(rrd->stat_head->version) < 3){
+    if (atoi(rrd->stat_head->version) < 3) {
         /* we output 3 or higher */
-        strcpy(rrd->stat_head->version,"0003");        
+        strcpy(rrd->stat_head->version, "0003");
     }
     fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
     fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
@@ -1009,18 +1010,18 @@ static int write_file(
     fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
 
     /* calculate the number of rrd_values to dump */
-    rra_offset=0;
-    for(i=0; i <  rrd->stat_head->rra_cnt; i++)
-    {
+    rra_offset = 0;
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         unsigned long num_rows = rrd->rra_def[i].row_cnt;
         unsigned long cur_row = rrd->rra_ptr[i].cur_row;
         unsigned long ds_cnt = rrd->stat_head->ds_cnt;
 
-        fwrite(rrd->rrd_value + (rra_offset + num_rows-1 - cur_row) * ds_cnt,
-               sizeof(rrd_value_t), (cur_row+1)*ds_cnt, fh);
+        fwrite(rrd->rrd_value +
+               (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
+               sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, fh);
 
         fwrite(rrd->rrd_value + rra_offset * ds_cnt,
-               sizeof(rrd_value_t), (num_rows-1 - cur_row)*ds_cnt, fh);
+               sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt, fh);
 
         rra_offset += num_rows;
     }
@@ -1042,7 +1043,7 @@ int rrd_restore(
 {
     rrd_t    *rrd;
 
-    srandom((unsigned int)time(NULL) + (unsigned int)getpid());
+    srandom((unsigned int) time(NULL) + (unsigned int) getpid());
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */
