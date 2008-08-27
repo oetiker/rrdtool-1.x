@@ -27,6 +27,9 @@ void      parseGENERIC_DS(
 long int  rra_random_row(
     rra_def_t *);
 
+static void rrd_free2(
+    rrd_t *rrd);        /* our onwn copy, immmune to mmap */
+
 int rrd_create(
     int argc,
     char **argv)
@@ -125,15 +128,14 @@ int rrd_create_r(
     /* static header */
     if ((rrd.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating rrd.stat_head");
-        free(rrd.stat_head);
+        rrd_free2(&rrd);
         return (-1);
     }
 
     /* live header */
     if ((rrd.live_head = calloc(1, sizeof(live_head_t))) == NULL) {
         rrd_set_error("allocating rrd.live_head");
-        free(rrd.stat_head);
-        free(rrd.live_head);
+        rrd_free2(&rrd);
         return (-1);
     }
 
@@ -166,8 +168,7 @@ int rrd_create_r(
                                           old_size + sizeof(ds_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.ds_def");
-                free(rrd.stat_head);
-                free(rrd.live_head);
+                rrd_free2(&rrd);
                 return (-1);
             }
             memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
@@ -199,8 +200,7 @@ int rrd_create_r(
                 rrd_set_error("invalid DS format");
             }
             if (rrd_test_error()) {
-                free(rrd.stat_head);
-                free(rrd.live_head);
+                rrd_free2(&rrd);
                 return -1;
             }
 
@@ -223,8 +223,7 @@ int rrd_create_r(
             }
 
             if (rrd_test_error()) {
-                free(rrd.stat_head);
-                free(rrd.live_head);
+                rrd_free2(&rrd);
                 return -1;
             }
             rrd.stat_head->ds_cnt++;
@@ -238,8 +237,7 @@ int rrd_create_r(
                                            old_size + sizeof(rra_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.rra_def");
-                free(rrd.stat_head);
-                free(rrd.live_head);
+                rrd_free2(&rrd);
                 return (-1);
             }
             memset(&rrd.rra_def[rrd.stat_head->rra_cnt], 0,
@@ -496,8 +494,7 @@ int rrd_create_r(
                 if (rrd_test_error()) {
                     /* all errors are unrecoverable */
                     free(argvcopy);
-                    free(rrd.stat_head);
-                    free(rrd.live_head);
+                    rrd_free2(&rrd);
                     return (-1);
                 }
                 token = strtok_r(NULL, ":", &tokptr);
@@ -524,16 +521,14 @@ int rrd_create_r(
                 if (create_hw_contingent_rras(&rrd, period, hashed_name) ==
                     -1) {
                     rrd_set_error("creating contingent RRA");
-                    free(rrd.stat_head);
-                    free(rrd.live_head);
+                    rrd_free2(&rrd);
                     return -1;
                 }
             }
             rrd.stat_head->rra_cnt++;
         } else {
             rrd_set_error("can't parse argument '%s'", argv[i]);
-            free(rrd.stat_head);
-            free(rrd.live_head);
+            rrd_free2(&rrd);
             return -1;
         }
     }
@@ -541,15 +536,13 @@ int rrd_create_r(
 
     if (rrd.stat_head->rra_cnt < 1) {
         rrd_set_error("you must define at least one Round Robin Archive");
-        free(rrd.stat_head);
-        free(rrd.live_head);
+        rrd_free2(&rrd);
         return (-1);
     }
 
     if (rrd.stat_head->ds_cnt < 1) {
         rrd_set_error("you must define at least one Data Source");
-        free(rrd.stat_head);
-        free(rrd.live_head);
+        rrd_free2(&rrd);
         return (-1);
     }
     return rrd_create_fn(filename, &rrd);
@@ -618,6 +611,7 @@ int create_hw_contingent_rras(
     if ((rrd->rra_def = rrd_realloc(rrd->rra_def,
                                     old_size + 4 * sizeof(rra_def_t))) ==
         NULL) {
+        rrd_free2(rrd);
         rrd_set_error("allocating rrd.rra_def");
         return (-1);
     }
@@ -682,15 +676,15 @@ int rrd_create_fn(
     int       unkn_cnt;
     rrd_file_t *rrd_file_dn;
     rrd_t     rrd_dn;
-    unsigned flags = O_WRONLY | O_CREAT | O_TRUNC;
+    unsigned  flags = O_WRONLY | O_CREAT | O_TRUNC;
+
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     flags |= O_BINARY;
 #endif
 
     if ((rrd_file = open(file_name, flags, 0666)) < 0) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
-        free(rrd->stat_head);
-        free(rrd->live_head);
+        rrd_free2(rrd);
         return (-1);
     }
 
@@ -705,8 +699,7 @@ int rrd_create_fn(
 
     if ((rrd->pdp_prep = calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
-        free(rrd->stat_head);
-        free(rrd->live_head);
+        rrd_free2(rrd);
         close(rrd_file);
         return (-1);
     }
@@ -722,8 +715,7 @@ int rrd_create_fn(
 
     if ((rrd->cdp_prep = calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
-        free(rrd->stat_head);
-        free(rrd->live_head);
+        rrd_free2(rrd);
         close(rrd_file);
         return (-1);
     }
@@ -770,8 +762,7 @@ int rrd_create_fn(
 
     if ((rrd->rra_ptr = calloc(1, sizeof(rra_ptr_t))) == NULL) {
         rrd_set_error("allocating rra_ptr");
-        free(rrd->stat_head);
-        free(rrd->live_head);
+        rrd_free2(rrd);
         close(rrd_file);
         return (-1);
     }
@@ -788,8 +779,7 @@ int rrd_create_fn(
     /* write the empty data area */
     if ((unknown = (rrd_value_t *) malloc(512 * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("allocating unknown");
-        free(rrd->stat_head);
-        free(rrd->live_head);
+        rrd_free2(rrd);
         close(rrd_file);
         return (-1);
     }
@@ -807,8 +797,7 @@ int rrd_create_fn(
     }
     free(unknown);
     fdatasync(rrd_file);
-    free(rrd->stat_head);
-    free(rrd->live_head);
+    rrd_free2(rrd);
     if (close(rrd_file) == -1) {
         rrd_set_error("creating rrd: %s", rrd_strerror(errno));
         return -1;
@@ -819,6 +808,20 @@ int rrd_create_fn(
     rrd_free(&rrd_dn);
     rrd_close(rrd_file_dn);
     return (0);
+}
+
+
+static void rrd_free2(
+    rrd_t *rrd)
+{
+    free(rrd->live_head);
+    free(rrd->stat_head);
+    free(rrd->ds_def);
+    free(rrd->rra_def);
+    free(rrd->rra_ptr);
+    free(rrd->pdp_prep);
+    free(rrd->cdp_prep);
+    free(rrd->rrd_value);
 }
 
 static int rand_init = 0;
