@@ -549,6 +549,7 @@ return 0;
 have_broken_isfinite=no],have_broken_isfinite=yes,[
 case "${target}" in
   hppa*-*-hpux*) have_broken_isfinite=yes ;;
+  sparc-sun-solaris2.8) have_broken_isfinite=yes ;;
   *) have_broken_isfinite=no ;;
 esac])
 ])
