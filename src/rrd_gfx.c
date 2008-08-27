@@ -158,10 +158,11 @@ static PangoLayout *gfx_prep_text(
 /*     pango_cairo_update_context(cr, pango_context); */
 
     pango_layout_set_tabs(layout, tab_array);
+    pango_tab_array_free(tab_array);
     font_desc = pango_font_description_from_string(font);
     pango_font_description_set_size(font_desc, size * PANGO_SCALE);
     pango_layout_set_font_description(layout, font_desc);
-
+    pango_font_description_free(font_desc);
     /* pango expects the string to be utf-8 encoded */
     utf8_text = g_locale_to_utf8((const gchar *) text, -1, NULL, NULL, NULL);
 
@@ -191,7 +192,6 @@ double gfx_get_text_width(
     gfx_color_t color = { 0, 0, 0, 0 };
     layout = gfx_prep_text(im, start, color, font, size, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
-    pango_tab_array_free(pango_layout_get_tabs(layout));
     g_object_unref(layout);
     return log_rect.width;
 }
@@ -252,7 +252,6 @@ void gfx_text(
     pango_cairo_update_layout(cr, layout);
     cairo_move_to(cr, sx, sy);
     pango_cairo_show_layout(cr, layout);
-    pango_tab_array_free(pango_layout_get_tabs(layout));
     g_object_unref(layout);
     cairo_restore(cr);
 
