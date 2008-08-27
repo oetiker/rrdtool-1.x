@@ -2969,7 +2969,7 @@ int graph_paint(
      * if there are no graph elements (i==0) we stop here ... 
      * if we are lazy, try to quit ... 
      */
-    i = print_calc(im); 
+    i = print_calc(im);
     if (i < 0)
         return -1;
 
@@ -3567,7 +3567,7 @@ int rrd_graph(
     *ysize = 0;
     *ymin = 0;
     *ymax = 0;
-    while (walker) {        
+    while (walker) {
         if (strcmp(walker->key, "image_width") == 0) {
             *xsize = walker->value.u_int;
         } else if (strcmp(walker->key, "image_height") == 0) {
@@ -3667,10 +3667,12 @@ rrd_info_t *rrd_graph_v(
 
     if (im.imginfo) {
         rrd_infoval_t info;
-        char *filename;
-        filename=im.graphfile+strlen(im.graphfile);
-        while(filename > im.graphfile) {
-            if (*(filename-1)=='/' || *(filename-1)=='\\' ) break;
+        char     *filename;
+
+        filename = im.graphfile + strlen(im.graphfile);
+        while (filename > im.graphfile) {
+            if (*(filename - 1) == '/' || *(filename - 1) == '\\')
+                break;
             filename--;
         }
         info.u_str =
@@ -4453,9 +4455,9 @@ int vdef_calc(
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
     end =
-        src->end_orig % (long)src->step ==
-        0 ? src->end_orig : (src->end_orig + (long)src->step -
-                             src->end_orig % (long)src->step);
+        src->end_orig % (long) src->step ==
+        0 ? src->end_orig : (src->end_orig + (long) src->step -
+                             src->end_orig % (long) src->step);
 
     steps = (end - src->start) / src->step;
 #if 0

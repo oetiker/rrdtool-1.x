@@ -116,7 +116,6 @@ rrd_file_t *rrd_open(
         mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
     }
-
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     flags |= O_BINARY;
 #endif

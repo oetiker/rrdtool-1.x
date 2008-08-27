@@ -502,15 +502,15 @@ int _rrd_update(
                         rra_step_cnt, updvals, tmpl_idx, tmpl_cnt,
                         &pcdp_summary, version, skip_update,
                         &schedule_smooth) == -1) {
-	    if (rrd_test_error()) { /* Should have error string always here */
-		char *save_error;
+            if (rrd_test_error()) { /* Should have error string always here */
+                char     *save_error;
 
-		/* Prepend file name to error message */
-		if ((save_error = strdup(rrd_get_error())) != NULL) {
-		    rrd_set_error("%s: %s", filename, save_error);
-		    free(save_error);
-		}
-	    }
+                /* Prepend file name to error message */
+                if ((save_error = strdup(rrd_get_error())) != NULL) {
+                    rrd_set_error("%s: %s", filename, save_error);
+                    free(save_error);
+                }
+            }
             free(arg_copy);
             break;
         }

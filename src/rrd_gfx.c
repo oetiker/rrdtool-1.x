@@ -136,7 +136,7 @@ static PangoLayout *gfx_prep_text(
     long      tab_shift = fmod(x, tabwidth);
     int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
 
-    gchar *utf8_text;
+    gchar    *utf8_text;
 
     PangoTabArray *tab_array;
     PangoContext *pango_context;
@@ -163,7 +163,7 @@ static PangoLayout *gfx_prep_text(
     pango_layout_set_font_description(layout, font_desc);
 
     /* pango expects the string to be utf-8 encoded */
-    utf8_text = g_locale_to_utf8((const gchar *)text, -1, NULL, NULL, NULL);
+    utf8_text = g_locale_to_utf8((const gchar *) text, -1, NULL, NULL, NULL);
 
     /* In case of an error, i.e. utf8_text == NULL (locale settings messed
      * up?), we fall back to a possible "invalid UTF-8 string" warning instead
