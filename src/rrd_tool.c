@@ -364,6 +364,7 @@ static char *fgetslong(
             return *aLinePtr = linebuf;
         bufsize += MAX_LENGTH;
         if (!(linebuf = realloc(linebuf, bufsize))) {
+            free(linebuf);
             perror("fgetslong: realloc");
             exit(1);
         }
@@ -448,6 +449,7 @@ int main(
 
         while (fgetslong(&aLine, stdin)) {
             if ((argc = CountArgs(aLine)) == 0) {
+                free(aLine);
                 printf("ERROR: not enough arguments\n");
             }
             if ((myargv = (char **) malloc((argc + 1) *
@@ -456,6 +458,8 @@ int main(
                 exit(1);
             }
             if ((argc = CreateArgs(argv[0], aLine, argc, myargv)) < 0) {
+                free(aLine);
+                free(myargv);
                 printf("ERROR: creating arguments\n");
             } else {
                 int       ret = HandleInputLine(argc, myargv, stdout);
