@@ -3059,6 +3059,7 @@ int graph_paint(
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
     };
+    cairo_destroy(im->cr);
     im->cr = cairo_create(im->surface);
     cairo_set_antialias(im->cr, im->graph_antialias);
     cairo_scale(im->cr, im->zoom, im->zoom);
