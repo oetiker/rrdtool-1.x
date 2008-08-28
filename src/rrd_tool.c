@@ -369,7 +369,11 @@ static char *fgetslong(
             exit(1);
         }
     }
-    return *aLinePtr = linebuf[0] ? linebuf : 0;
+    if (linebuf[0]){
+        return  *aLinePtr = linebuf;
+    }
+    free(linebuf);
+    return *aLinePtr = 0;
 }
 
 int main(
