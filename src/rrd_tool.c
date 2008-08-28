@@ -379,8 +379,7 @@ int main(int argc, char *argv[])
 		 == 0 ){
 
 #ifdef HAVE_CHROOT
-                chroot(argv[2]);
-                if (errno!=0){
+                if (chroot(argv[2]) != 0){
                    fprintf(stderr,"ERROR: can't change root to '%s' errno=%d\n",
                            argv[2],errno);
                     exit(errno);
@@ -397,8 +396,7 @@ int main(int argc, char *argv[])
              }
           }
           if (strcmp(firstdir,"")){
-             chdir(firstdir);
-             if (errno!=0){
+             if (chdir(firstdir)!=0){
                 fprintf(stderr,"ERROR: %s\n",rrd_strerror(errno));
                 exit(errno);
              }
@@ -496,8 +494,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
              return(1); 
           }
 #endif
-          chdir(argv[2]);
-          if (errno!=0){
+          if (chdir(argv[2]) != 0){
              printf("ERROR: %s\n",rrd_strerror(errno));
 	     return(1);
           }
@@ -529,8 +526,7 @@ int HandleInputLine(int argc, char **argv, FILE* out)
              return(1); 
           }
 #endif
-          mkdir(argv[2],0777);
-          if (errno!=0){
+          if (mkdir(argv[2],0777) != 0){
              printf("ERROR: %s\n",rrd_strerror(errno));
              return(1);
           }
