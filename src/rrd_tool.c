@@ -424,11 +424,8 @@ int main(
                    == 0) {
 
 #ifdef HAVE_CHROOT
-                chroot(argv[2]);
-                if (errno != 0) {
-                    fprintf(stderr,
-                            "ERROR: can't change root to '%s' errno=%d\n",
-                            argv[2], errno);
+                if (chroot(argv[2]) != 0){
+                    fprintf(stderr, "ERROR: chroot %s: %s\n", argv[2],rrd_strerror(errno));
                     exit(errno);
                 }
                 ChangeRoot = 1;
@@ -444,9 +441,8 @@ int main(
             }
         }
         if (strcmp(firstdir, "")) {
-            chdir(firstdir);
-            if (errno != 0) {
-                fprintf(stderr, "ERROR: %s\n", rrd_strerror(errno));
+            if (chdir(firstdir) != 0){
+                fprintf(stderr, "ERROR: chdir %s %s\n", firstdir,rrd_strerror(errno));
                 exit(errno);
             }
         }
@@ -520,7 +516,6 @@ int HandleInputLine(
 
     /* Reset errno to 0 before we start.
      */
-    errno = 0;
     if (RemoteMode) {
         if (argc > 1 && strcmp("quit", argv[1]) == 0) {
             if (argc > 2) {
@@ -543,9 +538,8 @@ int HandleInputLine(
                 return (1);
             }
 #endif
-            chdir(argv[2]);
-            if (errno != 0) {
-                printf("ERROR: %s\n", rrd_strerror(errno));
+            if (chdir(argv[2]) != 0){
+                printf("ERROR: chdir %s %s\n", argv[2], rrd_strerror(errno));
                 return (1);
             }
             return (0);
@@ -557,7 +551,7 @@ int HandleInputLine(
             }
             cwd = getcwd(NULL, MAXPATH);
             if (cwd == NULL) {
-                printf("ERROR: %s\n", rrd_strerror(errno));
+                printf("ERROR: getcwd %s\n", rrd_strerror(errno));
                 return (1);
             }
             printf("%s\n", cwd);
@@ -577,9 +571,8 @@ int HandleInputLine(
                 return (1);
             }
 #endif
-            mkdir(argv[2], 0777);
-            if (errno != 0) {
-                printf("ERROR: %s\n", rrd_strerror(errno));
+            if(mkdir(argv[2], 0777)!=0){
+                printf("ERROR: mkdir %s: %s\n", argv[2],rrd_strerror(errno));
                 return (1);
             }
             return (0);
@@ -607,7 +600,7 @@ int HandleInputLine(
                 }
                 closedir(curdir);
             } else {
-                printf("ERROR: %s\n", rrd_strerror(errno));
+                printf("ERROR: opendir .: %s\n", rrd_strerror(errno));
                 return (errno);
             }
             return (0);
