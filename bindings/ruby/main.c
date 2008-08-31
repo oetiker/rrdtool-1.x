@@ -155,6 +155,7 @@ VALUE rb_rrd_infocall(
 
     RRD_CHECK_ERROR result = rb_hash_new();
 
+    p = data;
     while (data) {
         VALUE     key = rb_str_new2(data->key);
 
@@ -171,19 +172,16 @@ VALUE rb_rrd_infocall(
             break;
         case RD_I_STR:
             rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
-            rrd_freemem(data->value.u_str);
             break;
         case RD_I_BLO:
             rb_hash_aset(result, key,
                          rb_str_new(data->value.u_blo.ptr,
                                     data->value.u_blo.size));
-            rrd_freemem(data->value.u_blo.ptr);
             break;
         }
-        p = data;
         data = data->next;
-        rrd_freemem(p);
     }
+    rrd_info_free(p);
     return result;
 }
 
