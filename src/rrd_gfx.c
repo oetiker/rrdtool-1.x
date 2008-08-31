@@ -155,9 +155,11 @@ static PangoLayout *gfx_prep_text(
         pango_tab_array_free(tab_array);
     }
    pfd = pango_layout_get_font_description(layout);
-   if (pfd && pango_font_description_equal (pfd,font_desc)){
+
+   if (!pfd || !pango_font_description_equal (pfd,font_desc)){
         pango_layout_set_font_description(layout, font_desc);
-   }
+  }
+//   fprintf(stderr,"%s\n",pango_font_description_to_string(pango_layout_get_font_description(layout))); 
 
    cairo_new_path(cr);
    cairo_set_source_rgba(cr, color.red, color.green, color.blue,

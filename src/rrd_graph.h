@@ -61,7 +61,8 @@ enum vdef_op_en {
         , VDEF_LSLINT   /* least squares line y_intercept */
         , VDEF_LSLCORREL    /* least squares line correlation coefficient */
 };
-enum text_prop_en { TEXT_PROP_DEFAULT = 0,  /* default settings */
+enum text_prop_en { 
+    TEXT_PROP_DEFAULT = 0,  /* default settings */
     TEXT_PROP_TITLE,    /* properties for the title */
     TEXT_PROP_AXIS,     /* for the numbers next to the axis */
     TEXT_PROP_UNIT,     /* for the vertical unit description */
