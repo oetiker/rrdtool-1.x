@@ -119,19 +119,17 @@ static PangoLayout *gfx_prep_text(
     image_desc_t *im,
     double x,
     gfx_color_t color,
-    char *font,
-    double size,
+    PangoFontDescription *font_desc,
     double tabwidth,
     const char *text)
 {
-    static PangoLayout  *layout = NULL;
-    static PangoContext *pango_context = NULL;
-    static PangoFontMap *pango_fontmap = NULL;
-    static char* last_font = NULL;
-    static double last_size = -1;
+    PangoLayout  *layout = im->layout;
+    PangoFontDescription *pfd;
+    cairo_t  *cr = im->cr;
+
     static double last_tabwidth = -1;
 
-    cairo_t  *cr = im->cr;
+
 
     /* for performance reasons we might
        want todo that only once ... tabs will always
@@ -143,25 +141,6 @@ static PangoLayout *gfx_prep_text(
     
     gchar    *utf8_text;
 
-    /* initialize pango only once ... */
-    if (!pango_fontmap){
-        pango_fontmap = pango_cairo_font_map_get_default ();
-    }
-    if (!pango_context){
-        // fprintf(stderr,"c");
-        pango_context = pango_cairo_font_map_create_context ((PangoCairoFontMap *) (pango_fontmap));
-        pango_cairo_context_set_resolution(pango_context, 100);
-    }
-    if (!layout){
-        // fprintf(stderr,"l");
-        layout =  pango_layout_new (pango_context);
-    }
-
-    pango_cairo_context_set_font_options(pango_context, im->font_options);
-
-    pango_cairo_update_context (cr, pango_context);
-
-        
     if (last_tabwidth < 0 || last_tabwidth != tabwidth){
         PangoTabArray *tab_array;
         // fprintf(stderr,"t");
@@ -175,27 +154,13 @@ static PangoLayout *gfx_prep_text(
         pango_layout_set_tabs(layout, tab_array);
         pango_tab_array_free(tab_array);
     }
-
-    if (last_font == NULL || strcmp(font,last_font) != 0){
-        PangoFontDescription *font_desc;
-        // fprintf(stderr,"f:%s",font);
-        if (last_font)
-           free(last_font);
-        last_font = strdup(font);       
-        font_desc = pango_font_description_from_string(font);
+   pfd = pango_layout_get_font_description(layout);
+   if (pfd && pango_font_description_equal (pfd,font_desc)){
         pango_layout_set_font_description(layout, font_desc);
-        pango_font_description_free(font_desc);
    }
 
-   if (last_size < 0 || last_size != size ){
-        PangoFontDescription *font_desc;
-        font_desc =  pango_layout_get_font_description (layout);
-        pango_font_description_set_size(font_desc, size * PANGO_SCALE);
-        pango_layout_set_font_description(layout, font_desc);
-    }          
-
-    cairo_new_path(cr);
-    cairo_set_source_rgba(cr, color.red, color.green, color.blue,
+   cairo_new_path(cr);
+   cairo_set_source_rgba(cr, color.red, color.green, color.blue,
                           color.alpha);
 /*     layout = pango_cairo_create_layout(cr); */
 
@@ -224,15 +189,14 @@ static PangoLayout *gfx_prep_text(
 double gfx_get_text_width(
     image_desc_t *im,
     double start,
-    char *font,
-    double size,
+    PangoFontDescription *font_desc,
     double tabwidth,
     char *text)
 {
     PangoLayout *layout;
     PangoRectangle log_rect;
     gfx_color_t color = { 0, 0, 0, 0 };
-    layout = gfx_prep_text(im, start, color, font, size, tabwidth, text);
+    layout = gfx_prep_text(im, start, color, font_desc, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
 /*    g_object_unref(layout); */
     return log_rect.width;
@@ -243,8 +207,7 @@ void gfx_text(
     double x,
     double y,
     gfx_color_t color,
-    char *font,
-    double size,
+    PangoFontDescription *font_desc,
     double tabwidth,
     double angle,
     enum gfx_h_align_en h_align,
@@ -261,7 +224,7 @@ void gfx_text(
     cairo_translate(cr, x, y);
 /*    gfx_line(cr,-2,0,2,0,1,color);
     gfx_line(cr,0,-2,0,2,1,color); */
-    layout = gfx_prep_text(im, x, color, font, size, tabwidth, text);
+    layout = gfx_prep_text(im, x, color, font_desc, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
     cairo_rotate(cr, -angle * G_PI / 180.0);
     sx = log_rect.x;

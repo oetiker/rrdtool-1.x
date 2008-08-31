@@ -65,7 +65,8 @@ enum text_prop_en { TEXT_PROP_DEFAULT = 0,  /* default settings */
     TEXT_PROP_TITLE,    /* properties for the title */
     TEXT_PROP_AXIS,     /* for the numbers next to the axis */
     TEXT_PROP_UNIT,     /* for the vertical unit description */
-    TEXT_PROP_LEGEND,   /* fot the legend below the graph */
+    TEXT_PROP_LEGEND,   /* for the legend below the graph */
+    TEXT_PROP_WATERMARK, /* for the little text to the side of the graph */
     TEXT_PROP_LAST
 };
 
@@ -87,6 +88,7 @@ typedef struct gfx_color_t {
 typedef struct text_prop_t {
     double    size;
     char      font[1024];
+    PangoFontDescription *font_desc;
 } text_prop_t;
 
 
@@ -243,7 +245,7 @@ typedef struct image_desc_t {
     cairo_t  *cr;       /* drawin context */
     cairo_font_options_t *font_options; /* cairo font options */
     cairo_antialias_t graph_antialias;  /* antialiasing for the graph */
-
+    PangoLayout *layout; /* the pango layout we use for writing fonts */
     rrd_info_t *grinfo; /* root pointer to extra graph info */
     rrd_info_t *grinfo_current; /* pointing to current entry */
 } image_desc_t;
@@ -338,6 +340,7 @@ int       scan_for_col(
     char *const);
 void      rrd_graph_init(
     image_desc_t *);
+
 void      rrd_graph_options(
     int,
     char **,
@@ -417,8 +420,7 @@ void      gfx_text(
     double x,
     double y,
     gfx_color_t color,
-    char *font,
-    double size,
+    PangoFontDescription *font_desc,
     double tabwidth,
     double angle,
     enum gfx_h_align_en h_align,
@@ -429,8 +431,7 @@ void      gfx_text(
 double    gfx_get_text_width(
     image_desc_t *im,
     double start,
-    char *font,
-    double size,
+    PangoFontDescription *font_desc,
     double tabwidth,
     char *text);
 
@@ -454,5 +455,4 @@ void      gfx_area_fit(
 void      grinfo_push(
     image_desc_t *im,
     char *key,
-    rrd_info_type_t type,
-    rrd_infoval_t value);
+    rrd_info_type_t type,    rrd_infoval_t value);

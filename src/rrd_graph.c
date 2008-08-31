@@ -37,15 +37,17 @@
 #endif
 
 text_prop_t text_prop[] = {
-    {8.0, RRD_DEFAULT_FONT}
+    {8.0, RRD_DEFAULT_FONT,NULL}
     ,                   /* default */
-    {9.0, RRD_DEFAULT_FONT}
+    {9.0, RRD_DEFAULT_FONT,NULL}
     ,                   /* title */
-    {7.0, RRD_DEFAULT_FONT}
+    {7.0, RRD_DEFAULT_FONT,NULL}
     ,                   /* axis */
-    {8.0, RRD_DEFAULT_FONT}
+    {8.0, RRD_DEFAULT_FONT,NULL}
     ,                   /* unit */
-    {8.0, RRD_DEFAULT_FONT} /* legend */
+    {8.0, RRD_DEFAULT_FONT,NULL} /* legend */
+    ,
+    {5.5, RRD_DEFAULT_FONT,NULL} /* watermark */
 };
 
 xlab_t    xlab[] = {
@@ -288,6 +290,7 @@ enum text_prop_en text_prop_conv(
     conv_if(AXIS, TEXT_PROP_AXIS);
     conv_if(UNIT, TEXT_PROP_UNIT);
     conv_if(LEGEND, TEXT_PROP_LEGEND);
+    conv_if(WATERMARK, TEXT_PROP_WATERMARK);
     return -1;
 }
 
@@ -330,12 +333,18 @@ int im_free(
     if (im->rendered_image) {
         free(im->rendered_image);
     }
+
+    if (im->layout) {
+        g_object_unref (im->layout);
+    }
+
     if (im->surface)
         cairo_surface_destroy(im->surface);
+
     if (status)
         fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
                 cairo_status_to_string(status));
-
+        
     return 0;
 }
 
@@ -1701,11 +1710,7 @@ int leg_place(
                                        im->
                                        text_prop
                                        [TEXT_PROP_LEGEND].
-                                       font,
-                                       im->
-                                       text_prop
-                                       [TEXT_PROP_LEGEND].
-                                       size,
+                                       font_desc,
                                        im->tabwidth, im->gdes[i].legend);
                 leg_c++;
             } else {
@@ -1770,11 +1775,7 @@ int leg_place(
                                            im->
                                            text_prop
                                            [TEXT_PROP_LEGEND].
-                                           font,
-                                           im->
-                                           text_prop
-                                           [TEXT_PROP_LEGEND].
-                                           size,
+                                           font_desc,
                                            im->tabwidth, im->gdes[ii].legend)
                         + legspace[ii]
                         + glue;
@@ -1990,10 +1991,8 @@ int draw_horizontal_grid(
                          im->graph_col[GRC_FONT],
                          im->
                          text_prop[TEXT_PROP_AXIS].
-                         font,
-                         im->
-                         text_prop[TEXT_PROP_AXIS].
-                         size, im->tabwidth, 0.0,
+                         font_desc,
+                         im->tabwidth, 0.0,
                          GFX_H_RIGHT, GFX_V_CENTER, graph_label);
                 gfx_line(im, X0 - 2, Y0, X0, Y0,
                          MGRIDWIDTH, im->graph_col[GRC_MGRID]);
@@ -2171,10 +2170,8 @@ int horizontal_log_grid(
                  im->graph_col[GRC_FONT],
                  im->
                  text_prop[TEXT_PROP_AXIS].
-                 font,
-                 im->
-                 text_prop[TEXT_PROP_AXIS].
-                 size, im->tabwidth, 0.0,
+                 font_desc,
+                 im->tabwidth, 0.0,
                  GFX_H_RIGHT, GFX_V_CENTER, graph_label);
         /* minor grid */
         if (mid < 4 && exfrac == 1) {
@@ -2442,10 +2439,8 @@ void vertical_grid(
                  im->graph_col[GRC_FONT],
                  im->
                  text_prop[TEXT_PROP_AXIS].
-                 font,
-                 im->
-                 text_prop[TEXT_PROP_AXIS].
-                 size, im->tabwidth, 0.0,
+                 font_desc,
+                 im->tabwidth, 0.0,
                  GFX_H_CENTER, GFX_V_TOP, graph_label);
     }
 
@@ -2523,10 +2518,8 @@ void grid_paint(
                      im->graph_col[GRC_FONT],
                      im->
                      text_prop[TEXT_PROP_AXIS].
-                     font,
-                     im->
-                     text_prop[TEXT_PROP_AXIS].
-                     size, im->tabwidth, 0.0,
+                     font_desc,
+                     im->tabwidth, 0.0,
                      GFX_H_CENTER, GFX_V_CENTER, nodata);
         }
     }
@@ -2539,10 +2532,8 @@ void grid_paint(
              im->graph_col[GRC_FONT],
              im->
              text_prop[TEXT_PROP_UNIT].
-             font,
-             im->
-             text_prop[TEXT_PROP_UNIT].
-             size, im->tabwidth,
+             font_desc,
+             im->tabwidth,
              RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
     /* graph title */
     gfx_text(im,
@@ -2550,18 +2541,16 @@ void grid_paint(
              im->graph_col[GRC_FONT],
              im->
              text_prop[TEXT_PROP_TITLE].
-             font,
-             im->
-             text_prop[TEXT_PROP_TITLE].
-             size, im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title);
+             font_desc,
+             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title);
     /* rrdtool 'logo' */
     water_color = im->graph_col[GRC_FONT];
     water_color.alpha = 0.3;
     gfx_text(im, im->ximg - 4, 5,
              water_color,
              im->
-             text_prop[TEXT_PROP_AXIS].
-             font, 5.5, im->tabwidth,
+             text_prop[TEXT_PROP_WATERMARK].
+             font_desc, im->tabwidth,
              -90, GFX_H_LEFT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
     /* graph watermark */
     if (im->watermark[0] != '\0') {
@@ -2569,8 +2558,8 @@ void grid_paint(
                  im->ximg / 2, im->yimg - 6,
                  water_color,
                  im->
-                 text_prop[TEXT_PROP_AXIS].
-                 font, 5.5, im->tabwidth, 0,
+                 text_prop[TEXT_PROP_WATERMARK].
+                 font_desc, im->tabwidth, 0,
                  GFX_H_CENTER, GFX_V_BOTTOM, im->watermark);
     }
 
@@ -2586,10 +2575,7 @@ void grid_paint(
                      im->graph_col[GRC_FONT],
                      im->
                      text_prop
-                     [TEXT_PROP_LEGEND].font,
-                     im->
-                     text_prop
-                     [TEXT_PROP_LEGEND].size,
+                     [TEXT_PROP_LEGEND].font_desc,
                      im->tabwidth, 0.0,
                      GFX_H_LEFT, GFX_V_BOTTOM, im->gdes[i].legend);
             /* The legend for GRAPH items starts with "M " to have
@@ -2603,11 +2589,8 @@ void grid_paint(
                                           im->
                                           text_prop
                                           [TEXT_PROP_LEGEND].
-                                          font,
-                                          im->
-                                          text_prop
-                                          [TEXT_PROP_LEGEND].
-                                          size, im->tabwidth, "o") * 1.2;
+                                          font_desc,
+                                          im->tabwidth, "o") * 1.2;
                 boxV = boxH;
                 /* shift the box up a bit */
                 Y0 -= boxV * 0.4;
@@ -2763,11 +2746,8 @@ int graph_size_location(
                                    im->
                                    text_prop
                                    [TEXT_PROP_AXIS].
-                                   font,
-                                   im->
-                                   text_prop
-                                   [TEXT_PROP_AXIS].
-                                   size, im->tabwidth, "0") * im->unitslength;
+                                   font_desc,
+                                   im->tabwidth, "0") * im->unitslength;
         }
     }
 
@@ -2948,7 +2928,8 @@ int graph_paint(
     double    areazero = 0.0;
     graph_desc_t *lastgdes = NULL;
     rrd_infoval_t info;
-    PangoFontMap *font_map = pango_cairo_font_map_get_default();
+
+//    PangoFontMap *font_map = pango_cairo_font_map_get_default();
 
     /* if we want and can be lazy ... quit now */
     if (lazy) {
@@ -3063,7 +3044,7 @@ int graph_paint(
     im->cr = cairo_create(im->surface);
     cairo_set_antialias(im->cr, im->graph_antialias);
     cairo_scale(im->cr, im->zoom, im->zoom);
-    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
+//    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
     gfx_new_area(im, 0, 0, 0, im->yimg,
                  im->ximg, im->yimg, im->graph_col[GRC_BACK]);
     gfx_add_point(im, im->ximg, 0);
@@ -3613,11 +3594,9 @@ rrd_info_t *rrd_graph_v(
 {
     image_desc_t im;
     rrd_info_t *grinfo;
-
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
-    im.surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
-    im.cr = cairo_create(im.surface);
+    
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
@@ -3696,11 +3675,39 @@ rrd_info_t *rrd_graph_v(
     return grinfo;
 }
 
+static void 
+rrd_set_font_desc (
+    image_desc_t *im,int prop,char *font, double size ){
+    static text_prop_t tp_cache[] = { {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}};
+    
+    if (tp_cache[prop].font_desc == NULL){        
+        tp_cache[prop].font_desc = pango_font_description_new();        
+        im->text_prop[prop].font_desc =  pango_font_description_copy (tp_cache[prop].font_desc);
+    }
+    
+    if (font != NULL && strcmp(tp_cache[prop].font,font) != 0){
+        pango_font_description_free(tp_cache[prop].font_desc);
+        pango_font_description_free(im->text_prop[prop].font_desc);
+        tp_cache[prop].font_desc = pango_font_description_from_string( font );
+        im->text_prop[prop].font_desc = pango_font_description_copy( tp_cache[prop].font_desc );
+        strncpy(tp_cache[prop].font, font, sizeof(text_prop[prop].font) - 1);        
+        tp_cache[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';   
+        strcpy(im->text_prop[prop].font,tp_cache[prop].font);          
+    }
+    if (size != 0 && size != (tp_cache[prop].size)){
+        pango_font_description_set_size(tp_cache[prop].font_desc, size * PANGO_SCALE);
+        pango_font_description_set_size(im->text_prop[prop].font_desc, size * PANGO_SCALE);
+        im->text_prop[prop].size = size;
+        tp_cache[prop].size = size;
+    }
+}
+
 void rrd_graph_init(
     image_desc_t
     *im)
 {
     unsigned int i;
+    char     *deffont = getenv("RRD_DEFAULT_FONT");
 
 #ifdef HAVE_TZSET
     tzset();
@@ -3712,7 +3719,6 @@ void rrd_graph_init(
 #endif
 #endif
     im->base = 1000;
-    im->cr = NULL;
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
     im->extra_flags = 0;
@@ -3739,7 +3745,6 @@ void rrd_graph_init(
     im->rendered_image = NULL;
     im->slopemode = 0;
     im->step = 0;
-    im->surface = NULL;
     im->symbol = ' ';
     im->tabwidth = 40.0;
     im->title[0] = '\0';
@@ -3758,30 +3763,31 @@ void rrd_graph_init(
     im->yorigin = 0;
     im->ysize = 100;
     im->zoom = 1;
+
+    im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);     
+    im->cr = cairo_create(im->surface);
+
+    for (i = 0; i < DIM(text_prop); i++) {
+         rrd_set_font_desc(im,i, deffont ? deffont : text_prop[i].font,text_prop[i].size);
+    }
+
+    im->layout = pango_cairo_create_layout(im->cr);    
+    pango_cairo_context_set_resolution(pango_layout_get_context(im->layout), 100);
+
     cairo_font_options_set_hint_style
         (im->font_options, CAIRO_HINT_STYLE_FULL);
     cairo_font_options_set_hint_metrics
         (im->font_options, CAIRO_HINT_METRICS_ON);
     cairo_font_options_set_antialias(im->font_options, CAIRO_ANTIALIAS_GRAY);
+
+
+
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
-    {
-        char     *deffont;
 
-        deffont = getenv("RRD_DEFAULT_FONT");
-        if (deffont != NULL) {
-            for (i = 0; i < DIM(text_prop); i++) {
-                strncpy(text_prop[i].font, deffont,
-                        sizeof(text_prop[i].font) - 1);
-                text_prop[i].font[sizeof(text_prop[i].font) - 1] = '\0';
-            }
-        }
-    }
-    for (i = 0; i < DIM(text_prop); i++) {
-        im->text_prop[i].size = text_prop[i].size;
-        strcpy(im->text_prop[i].font, text_prop[i].font);
-    }
+
 }
+
 
 void rrd_graph_options(
     int argc,
@@ -4123,13 +4129,11 @@ void rrd_graph_options(
                     for (propidx = sindex;
                          propidx < TEXT_PROP_LAST; propidx++) {
                         if (size > 0) {
-                            im->text_prop[propidx].size = size;
+                            rrd_set_font_desc(im,propidx,NULL,size);   
                         }
                         if ((int) strlen(optarg) > end) {
                             if (optarg[end] == ':') {
-                                strncpy(im->text_prop[propidx].font,
-                                        optarg + end + 1, 255);
-                                im->text_prop[propidx].font[255] = '\0';
+                                rrd_set_font_desc(im,propidx,optarg + end + 1,0);   
                             } else {
                                 rrd_set_error
                                     ("expected : after font size in '%s'",
@@ -4212,6 +4216,11 @@ void rrd_graph_options(
             return;
         }
     }
+    
+    pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);
+    pango_layout_context_changed(im->layout);
+
+
 
     if (im->logarithmic && im->minval <= 0) {
         rrd_set_error
