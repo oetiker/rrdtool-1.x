@@ -124,8 +124,13 @@ static PangoLayout *gfx_prep_text(
     double tabwidth,
     const char *text)
 {
-    PangoLayout *layout;
-    PangoFontDescription *font_desc;
+    static PangoLayout  *layout = NULL;
+    static PangoContext *pango_context = NULL;
+    static PangoFontMap *pango_fontmap = NULL;
+    static char* last_font = NULL;
+    static double last_size = -1;
+    static double last_tabwidth = -1;
+
     cairo_t  *cr = im->cr;
 
     /* for performance reasons we might
@@ -135,34 +140,71 @@ static PangoLayout *gfx_prep_text(
     long      tab_count = strlen(text);
     long      tab_shift = fmod(x, tabwidth);
     int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
-
+    
     gchar    *utf8_text;
 
-    PangoTabArray *tab_array;
-    PangoContext *pango_context;
-
-    tab_array = pango_tab_array_new(tab_count, (gboolean) (1));
-    for (i = 1; i <= tab_count; i++) {
-        pango_tab_array_set_tab(tab_array,
-                                i, PANGO_TAB_LEFT,
-                                tabwidth * i - tab_shift + border);
+    /* initialize pango only once ... */
+    if (!pango_fontmap){
+        pango_fontmap = pango_cairo_font_map_get_default ();
     }
+    if (!pango_context){
+        // fprintf(stderr,"c");
+        pango_context = pango_cairo_font_map_create_context ((PangoCairoFontMap *) (pango_fontmap));
+        pango_cairo_context_set_resolution(pango_context, 100);
+    }
+    if (!layout){
+        // fprintf(stderr,"l");
+        layout =  pango_layout_new (pango_context);
+    }
+
+    pango_cairo_context_set_font_options(pango_context, im->font_options);
+
+    pango_cairo_update_context (cr, pango_context);
+
+        
+    if (last_tabwidth < 0 || last_tabwidth != tabwidth){
+        PangoTabArray *tab_array;
+        // fprintf(stderr,"t");
+        last_tabwidth = tabwidth;
+        tab_array = pango_tab_array_new(tab_count, (gboolean) (1));
+        for (i = 1; i <= tab_count; i++) {
+             pango_tab_array_set_tab(tab_array,
+                                     i, PANGO_TAB_LEFT,
+                                     tabwidth * i - tab_shift + border);
+        }
+        pango_layout_set_tabs(layout, tab_array);
+        pango_tab_array_free(tab_array);
+    }
+
+    if (last_font == NULL || strcmp(font,last_font) != 0){
+        PangoFontDescription *font_desc;
+        // fprintf(stderr,"f:%s",font);
+        if (last_font)
+           free(last_font);
+        last_font = strdup(font);       
+        font_desc = pango_font_description_from_string(font);
+        pango_layout_set_font_description(layout, font_desc);
+        pango_font_description_free(font_desc);
+   }
+
+   if (last_size < 0 || last_size != size ){
+        PangoFontDescription *font_desc;
+        font_desc =  pango_layout_get_font_description (layout);
+        pango_font_description_set_size(font_desc, size * PANGO_SCALE);
+        pango_layout_set_font_description(layout, font_desc);
+    }          
+
     cairo_new_path(cr);
     cairo_set_source_rgba(cr, color.red, color.green, color.blue,
                           color.alpha);
-    layout = pango_cairo_create_layout(cr);
-    pango_context = pango_layout_get_context(layout);
-    pango_cairo_context_set_font_options(pango_context, im->font_options);
-    pango_cairo_context_set_resolution(pango_context, 100);
+/*     layout = pango_cairo_create_layout(cr); */
+
+//    pango_cairo_context_set_font_options(pango_context, im->font_options);
+//    pango_cairo_context_set_resolution(pango_context, 100);
 
 /*     pango_cairo_update_context(cr, pango_context); */
 
-    pango_layout_set_tabs(layout, tab_array);
-    pango_tab_array_free(tab_array);
-    font_desc = pango_font_description_from_string(font);
-    pango_font_description_set_size(font_desc, size * PANGO_SCALE);
-    pango_layout_set_font_description(layout, font_desc);
-    pango_font_description_free(font_desc);
+
     /* pango expects the string to be utf-8 encoded */
     utf8_text = g_locale_to_utf8((const gchar *) text, -1, NULL, NULL, NULL);
 
@@ -192,7 +234,7 @@ double gfx_get_text_width(
     gfx_color_t color = { 0, 0, 0, 0 };
     layout = gfx_prep_text(im, start, color, font, size, tabwidth, text);
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
-    g_object_unref(layout);
+/*    g_object_unref(layout); */
     return log_rect.width;
 }
 
@@ -211,7 +253,6 @@ void gfx_text(
 {
     PangoLayout *layout;
     PangoRectangle log_rect;
-    PangoRectangle ink_rect;
     cairo_t  *cr = im->cr;
     double    sx = 0;
     double    sy = 0;
@@ -221,7 +262,7 @@ void gfx_text(
 /*    gfx_line(cr,-2,0,2,0,1,color);
     gfx_line(cr,0,-2,0,2,1,color); */
     layout = gfx_prep_text(im, x, color, font, size, tabwidth, text);
-    pango_layout_get_pixel_extents(layout, &ink_rect, &log_rect);
+    pango_layout_get_pixel_extents(layout, NULL, &log_rect);
     cairo_rotate(cr, -angle * G_PI / 180.0);
     sx = log_rect.x;
     switch (h_align) {
@@ -252,7 +293,7 @@ void gfx_text(
     pango_cairo_update_layout(cr, layout);
     cairo_move_to(cr, sx, sy);
     pango_cairo_show_layout(cr, layout);
-    g_object_unref(layout);
+/*    g_object_unref(layout); */
     cairo_restore(cr);
 
 }
