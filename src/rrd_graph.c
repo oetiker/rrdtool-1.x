@@ -3678,41 +3678,11 @@ rrd_info_t *rrd_graph_v(
 static void 
 rrd_set_font_desc (
     image_desc_t *im,int prop,char *font, double size ){
-    static text_prop_t tp_cache[] = { {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}, {-1,"",NULL}};
-    
-    if (tp_cache[prop].font_desc == NULL){        
-        if (prop > 0 && tp_cache[0].font_desc != NULL){
-            tp_cache[prop].font_desc = pango_font_description_copy (tp_cache[0].font_desc);
-            strcpy(tp_cache[prop].font,tp_cache[0].font);
-            tp_cache[prop].size = tp_cache[0].size;
-        }
-        else {
-            tp_cache[prop].font_desc = pango_font_description_new();        
-        }
-        im->text_prop[prop].font_desc =  pango_font_description_copy (tp_cache[prop].font_desc);
-    }
-    
-    if (font != NULL && strcmp(tp_cache[prop].font,font) != 0){
-        pango_font_description_free(tp_cache[prop].font_desc);
-        pango_font_description_free(im->text_prop[prop].font_desc);
-        tp_cache[prop].font_desc = pango_font_description_from_string( font );
-        im->text_prop[prop].font_desc = pango_font_description_copy( tp_cache[prop].font_desc );
-        strncpy(tp_cache[prop].font, font, sizeof(text_prop[prop].font) - 1);        
-        tp_cache[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';   
-        strcpy(im->text_prop[prop].font,tp_cache[prop].font);          
-    }
-    if (size != 0 && size != (tp_cache[prop].size)){
-        pango_font_description_set_size(tp_cache[prop].font_desc, size * PANGO_SCALE);
-        pango_font_description_set_size(im->text_prop[prop].font_desc, size * PANGO_SCALE);
-        im->text_prop[prop].size = size;
-        tp_cache[prop].size = size;
-    }
-    if (im->text_prop[prop].size < 0){
-        im->text_prop[prop].size = tp_cache[prop].size;
-        im->text_prop[prop].font_desc = pango_font_description_copy( tp_cache[prop].font_desc );
-        strcpy(im->text_prop[prop].font,tp_cache[prop].font);
-    }
-    // fprintf(stderr,"%d %s\n",prop,pango_font_description_to_string(im->text_prop[prop].font_desc)); 
+    strncpy(im->text_prop[prop].font, font, sizeof(text_prop[prop].font) - 1);        
+    im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';   
+    im->text_prop[prop].size = size;
+    im->text_prop[prop].font_desc =   pango_font_description_from_string( font );
+    pango_font_description_set_size(im->text_prop[prop].font_desc, size * PANGO_SCALE);
 }
 
 void rrd_graph_init(
@@ -3721,6 +3691,8 @@ void rrd_graph_init(
 {
     unsigned int i;
     char     *deffont = getenv("RRD_DEFAULT_FONT");
+    static PangoFontMap *fontmap = NULL;
+    PangoContext *context;
 
 #ifdef HAVE_TZSET
     tzset();
@@ -3785,8 +3757,20 @@ void rrd_graph_init(
         rrd_set_font_desc(im,i, deffont ? deffont : text_prop[i].font,text_prop[i].size);
     }
 
-    im->layout = pango_cairo_create_layout(im->cr);    
-    pango_cairo_context_set_resolution(pango_layout_get_context(im->layout), 100);
+    if (fontmap == NULL){
+        fontmap = pango_cairo_font_map_get_default();
+    }
+
+    context =  pango_cairo_font_map_create_context((PangoCairoFontMap*)fontmap);
+
+    pango_cairo_context_set_resolution(context, 100);
+
+    pango_cairo_update_context(im->cr,context);
+
+    im->layout = pango_layout_new(context);
+
+//  im->layout = pango_cairo_create_layout(im->cr);
+
 
     cairo_font_options_set_hint_style
         (im->font_options, CAIRO_HINT_STYLE_FULL);
