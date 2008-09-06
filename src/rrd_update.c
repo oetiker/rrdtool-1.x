@@ -780,12 +780,10 @@ static int process_arg(
     }
     /* seek to the beginning of the rra's */
     if (*rra_current != rra_begin) {
-#ifndef HAVE_MMAP
         if (rrd_seek(rrd_file, rra_begin, SEEK_SET) != 0) {
             rrd_set_error("seek error in rrd");
             return -1;
         }
-#endif
         *rra_current = rra_begin;
     }
     rra_start = rra_begin;
@@ -1868,95 +1866,70 @@ static int write_to_rras(
 {
     unsigned long rra_idx;
     unsigned long rra_start;
-    unsigned long rra_pos_tmp;  /* temporary byte pointer. */
     time_t    rra_time = 0; /* time of update for a RRA */
 
+    unsigned long ds_cnt = rrd->stat_head->ds_cnt;
+    
     /* Ready to write to disk */
     rra_start = rra_begin;
+
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
-        /* skip unless there's something to write */
-        if (rra_step_cnt[rra_idx]) {
-            /* write the first row */
+        rra_def_t *rra_def = &rrd->rra_def[rra_idx];
+        rra_ptr_t *rra_ptr = &rrd->rra_ptr[rra_idx];
+
+        /* for cdp_prep */
+        unsigned short scratch_idx;
+        unsigned long step_subtract;
+
+        for (scratch_idx = CDP_primary_val,
+                 step_subtract = 1;
+             rra_step_cnt[rra_idx] > 0;
+             rra_step_cnt[rra_idx]--,
+                 scratch_idx = CDP_secondary_val,
+                 step_subtract = 2) {
+
+            unsigned long rra_pos_new;
 #ifdef DEBUG
             fprintf(stderr, "  -- RRA Preseek %ld\n", rrd_file->pos);
 #endif
-            rrd->rra_ptr[rra_idx].cur_row++;
-            if (rrd->rra_ptr[rra_idx].cur_row >=
-                rrd->rra_def[rra_idx].row_cnt)
-                rrd->rra_ptr[rra_idx].cur_row = 0;  /* wrap around */
-            /* position on the first row */
-            rra_pos_tmp = rra_start +
-                (rrd->stat_head->ds_cnt) * (rrd->rra_ptr[rra_idx].cur_row) *
-                sizeof(rrd_value_t);
-            if (rra_pos_tmp != *rra_current) {
-                if (rrd_seek(rrd_file, rra_pos_tmp, SEEK_SET) != 0) {
+            /* increment, with wrap-around */
+            if (++rra_ptr->cur_row >= rra_def->row_cnt)
+              rra_ptr->cur_row = 0;
+
+            /* we know what our position should be */
+            rra_pos_new = rra_start
+              + ds_cnt * rra_ptr->cur_row * sizeof(rrd_value_t);
+
+            /* re-seek if the position is wrong or we wrapped around */
+            if (rra_pos_new != *rra_current || rra_ptr->cur_row == 0) {
+                if (rrd_seek(rrd_file, rra_pos_new, SEEK_SET) != 0) {
                     rrd_set_error("seek error in rrd");
                     return -1;
                 }
-                *rra_current = rra_pos_tmp;
+                *rra_current = rra_pos_new;
             }
 #ifdef DEBUG
             fprintf(stderr, "  -- RRA Postseek %ld\n", rrd_file->pos);
 #endif
-            if (!skip_update[rra_idx]) {
-                if (*pcdp_summary != NULL) {
-                    rra_time = (current_time - current_time
-                                % (rrd->rra_def[rra_idx].pdp_cnt *
-                                   rrd->stat_head->pdp_step))
-                        -
-                        ((rra_step_cnt[rra_idx] -
-                          1) * rrd->rra_def[rra_idx].pdp_cnt *
-                         rrd->stat_head->pdp_step);
-                }
-                if (write_RRA_row
-                    (rrd_file, rrd, rra_idx, rra_current, CDP_primary_val,
-                     pcdp_summary, rra_time) == -1)
-                    return -1;
+
+            if (skip_update[rra_idx])
+                continue;
+
+            if (*pcdp_summary != NULL) {
+                unsigned long step_time = rra_def->pdp_cnt * rrd->stat_head->pdp_step;
+
+                rra_time = (current_time - current_time % step_time)
+                    - ((rra_step_cnt[rra_idx] - step_subtract) * step_time);
             }
 
-            /* write other rows of the bulk update, if any */
-            for (; rra_step_cnt[rra_idx] > 1; rra_step_cnt[rra_idx]--) {
-                if (++rrd->rra_ptr[rra_idx].cur_row ==
-                    rrd->rra_def[rra_idx].row_cnt) {
-#ifdef DEBUG
-                    fprintf(stderr,
-                            "Wraparound for RRA %s, %lu updates left\n",
-                            rrd->rra_def[rra_idx].cf_nam,
-                            rra_step_cnt[rra_idx] - 1);
-#endif
-                    /* wrap */
-                    rrd->rra_ptr[rra_idx].cur_row = 0;
-                    /* seek back to beginning of current rra */
-                    if (rrd_seek(rrd_file, rra_start, SEEK_SET) != 0) {
-                        rrd_set_error("seek error in rrd");
-                        return -1;
-                    }
-#ifdef DEBUG
-                    fprintf(stderr, "  -- Wraparound Postseek %ld\n",
-                            rrd_file->pos);
-#endif
-                    *rra_current = rra_start;
-                }
-                if (!skip_update[rra_idx]) {
-                    if (*pcdp_summary != NULL) {
-                        rra_time = (current_time - current_time
-                                    % (rrd->rra_def[rra_idx].pdp_cnt *
-                                       rrd->stat_head->pdp_step))
-                            -
-                            ((rra_step_cnt[rra_idx] -
-                              2) * rrd->rra_def[rra_idx].pdp_cnt *
-                             rrd->stat_head->pdp_step);
-                    }
-                    if (write_RRA_row(rrd_file, rrd, rra_idx, rra_current,
-                                      CDP_secondary_val, pcdp_summary,
-                                      rra_time) == -1)
-                        return -1;
-                }
-            }
+            if (write_RRA_row
+                (rrd_file, rrd, rra_idx, rra_current, scratch_idx,
+                 pcdp_summary, rra_time) == -1)
+                return -1;
         }
-        rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt *
-            sizeof(rrd_value_t);
-    }                   /* RRA LOOP */
+
+        rra_start += rra_def->row_cnt * ds_cnt * sizeof(rrd_value_t);
+    } /* RRA LOOP */
 
     return 0;
 }
