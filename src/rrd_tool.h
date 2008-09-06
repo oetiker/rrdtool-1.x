@@ -50,8 +50,12 @@ extern    "C" {
 #endif
 
 /* local include files -- need to be after the system ones */
+#ifdef HAVE_GETOPT_LONG
+#define _GNU_SOURCE
+#include <getopt.h>
+#else
 #include "rrd_getopt.h"
-#include "rrd_format.h"
+#endif
 
 #ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))

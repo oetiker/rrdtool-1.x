@@ -48,3 +48,4 @@ rrd_update_v
 rrd_version
 rrd_write
 rrd_xport
+@RRD_GETOPT_LONG@

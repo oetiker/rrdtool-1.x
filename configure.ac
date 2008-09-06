@@ -9,25 +9,25 @@ dnl tell automake the this script is for rrdtool
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.3.1])
+AC_INIT([rrdtool],[1.3.2])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.3001
+NUMVERS=1.3002
 AC_SUBST(NUMVERS)
 
-dnl for the linker to understand which version the library is compatible with
-dnl we must keep a separate library version cout of the format c:r:a if any
-dnl if only implementation changed but all interfaces are kept, do r++
-dnl when only functionality was added do c++,r=0,a++
-dnl if any functionality was removed do c++,r=0,a=0.
+dnl for the linker to understand which versions the library are compatible with
+dnl each other we must keep a separate library version cout of the format c:r:a.
+dnl - if only implementation changed but all interfaces are kept, do r++
+dnl - if only functionality was added do c++,r=0,a++
+dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=4:0:0
+LIBVERS=4:1:0
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -398,7 +398,6 @@ dnl Checks for libraries.
 AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
 
-
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag`
 CFLAGS="$CFLAGS $pic_flag"
@@ -549,7 +548,7 @@ return 0;
 have_broken_isfinite=no],have_broken_isfinite=yes,[
 case "${target}" in
   hppa*-*-hpux*) have_broken_isfinite=yes ;;
-  sparc-sun-solaris2.8) have_broken_isfinite=yes ;;
+  *-sun-solaris2.8) have_broken_isfinite=yes ;;
   *) have_broken_isfinite=no ;;
 esac])
 ])
@@ -567,6 +566,17 @@ fi
 AC_FULL_IEEE
 
 CONFIGURE_PART(Resolve Portability Issues)
+
+dnl Do we need getopt_long
+
+build_getopt=no
+RRD_GETOPT_LONG="#"
+AC_CHECK_FUNC(getopt_long,[],[
+RRD_GETOPT_LONG="getopt_long"
+build_getopt=yes
+])
+AC_SUBST(RRD_GETOPT_LONG)
+AM_CONDITIONAL(BUILD_GETOPT,[test $build_getopt = yes])
 
 dnl what does realloc do if it gets called with a NULL pointer
 
@@ -917,6 +927,7 @@ AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([src/librrd.sym])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
@@ -944,6 +955,7 @@ echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
+echo "      Build rrd_getopt: $build_getopt"
 echo "       Static programs: $staticprogs"
 echo "          Perl Modules: $COMP_PERL"
 echo "           Perl Binary: $PERL"

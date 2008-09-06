@@ -14,8 +14,6 @@ RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
 
 UPD_C_FILES =		\
-	rrd_getopt.c	\
-	rrd_getopt1.c	\
 	rrd_parsetime.c	\
 	rrd_hw.c	\
 	rrd_hw_math.c	\
@@ -55,6 +53,11 @@ noinst_HEADERS = \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
+
+if BUILD_GETOPT
+noinst_HEADERS += rrd_getopt.h
+UPD_C_FILES += rrd_getopt.c rrd_getopt1.c
+endif
 
 noinst_LTLIBRARIES        = librrdupd.la
 
@@ -99,6 +102,6 @@ rrdtool_LDADD	= librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST= strftime.c strftime.h \
+EXTRA_DIST= strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_getopt.h \
 	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym
 
