@@ -432,7 +432,7 @@ off_t rrd_seek(
 
 /* Get current position in rrd_file.  */
 
-inline off_t rrd_tell(
+off_t rrd_tell(
     rrd_file_t *rrd_file)
 {
     return rrd_file->pos;
@@ -442,7 +442,7 @@ inline off_t rrd_tell(
 /* Read count bytes into buffer buf, starting at rrd_file->pos.
  * Returns the number of bytes read or <0 on error.  */
 
-inline ssize_t rrd_read(
+ssize_t rrd_read(
     rrd_file_t *rrd_file,
     void *buf,
     size_t count)
@@ -480,7 +480,7 @@ inline ssize_t rrd_read(
  * rrd_file->pos of rrd_file->fd.
  * Returns the number of bytes written or <0 on error.  */
 
-inline ssize_t rrd_write(
+ssize_t rrd_write(
     rrd_file_t *rrd_file,
     const void *buf,
     size_t count)
@@ -505,7 +505,7 @@ inline ssize_t rrd_write(
 
 /* flush all data pending to be written to FD.  */
 
-inline void rrd_flush(
+void rrd_flush(
     rrd_file_t *rrd_file)
 {
     if (fdatasync(rrd_file->fd) != 0) {
