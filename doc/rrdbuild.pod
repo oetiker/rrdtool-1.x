@@ -86,6 +86,17 @@ fix this:
 
  perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
 
+Make sure rrdtool finds your new compiler
+
+ export PATH=/opt/SunStudioExpress/bin
+
+Since there does not seem to ba a viable msgfmt tool on opensolaris (short
+of installing it yourself). You have to call configure with the
+
+ --disable-libintl
+
+option.
+
 =head2 Debian / Ubuntu
 
 Use apt-get to make sure you have all that is required. A number
