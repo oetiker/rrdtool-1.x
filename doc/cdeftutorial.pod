@@ -749,7 +749,7 @@ as follows:
    5. push 32
    6. push function "plus" and process it
       the stack contains now the temperature in Fahrenheit
-   
+
 =head2 Changing unknown into zero
 
    rrdtool graph demo.png --title="Demo Graph" \

@@ -312,9 +312,7 @@ argument list.
 
 =head3 B<STACK>B<:>I<vname>B<#>I<color>[B<:>I<legend>]
 
-I<Deprecated.  Use the B<STACK> modifiers on the other commands.>
-
-=back
+I<Deprecated.  Use the B<STACK> modifiers on the other commands instead!>
 
 B<Some notes on stacking>
 

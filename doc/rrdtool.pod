@@ -34,8 +34,8 @@ While the man pages talk of command line switches you have to set in
 order to make B<RRDtool> work it is important to note that
 B<RRDtool> can be remotely controlled through a set of pipes. This
 saves a considerable amount of startup time when you plan to make
-B<RRDtool> do a lot of things quickly. Check the section on L<"Remote
-Control"> further down. There is also a number of language bindings
+B<RRDtool> do a lot of things quickly. Check the section on L<Remote_Control>
+further down. There is also a number of language bindings
 for RRDtool which allow you to use it directly from perl, python, tcl,
 php, etc.
 
