@@ -57,6 +57,8 @@ extern    "C" {
 #include "rrd_getopt.h"
 #endif
 
+#include "rrd_format.h"
+
 #ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
