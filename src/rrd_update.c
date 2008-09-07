@@ -95,7 +95,6 @@ static int process_arg(
     rrd_t *rrd,
     rrd_file_t *rrd_file,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     time_t *current_time,
     unsigned long *current_time_usec,
     rrd_value_t *pdp_temp,
@@ -176,7 +175,6 @@ static int update_all_cdp_prep(
     rrd_value_t **last_seasonal_coef,
     rrd_value_t **seasonal_coef,
     rrd_value_t *pdp_temp,
-    unsigned long *rra_current,
     unsigned long *skip_update,
     int *schedule_smooth);
 
@@ -245,7 +243,6 @@ static int update_aberrant_cdps(
     rrd_t *rrd,
     rrd_file_t *rrd_file,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     unsigned long elapsed_pdp_st,
     rrd_value_t *pdp_temp,
     rrd_value_t **seasonal_coef);
@@ -255,7 +252,6 @@ static int write_to_rras(
     rrd_file_t *rrd_file,
     unsigned long *rra_step_cnt,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
     rrd_info_t ** pcdp_summary);
@@ -264,7 +260,6 @@ static int write_RRA_row(
     rrd_file_t *rrd_file,
     rrd_t *rrd,
     unsigned long rra_idx,
-    unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
     rrd_info_t ** pcdp_summary,
     time_t rra_time);
@@ -436,8 +431,6 @@ int _rrd_update(
     unsigned long rra_begin;    /* byte pointer to the rra
                                  * area in the rrd file.  this
                                  * pointer never changes value */
-    unsigned long rra_current;  /* byte pointer to the current write
-                                 * spot in the rrd file. */
     rrd_value_t *pdp_new;   /* prepare the incoming data to be added 
                              * to the existing entry */
     rrd_value_t *pdp_temp;  /* prepare the pdp values to be added 
@@ -470,7 +463,7 @@ int _rrd_update(
         goto err_free;
     }
     /* We are now at the beginning of the rra's */
-    rra_current = rra_begin = rrd_file->header_len;
+    rra_begin = rrd_file->header_len;
 
     version = atoi(rrd.stat_head->version);
 
@@ -497,7 +490,7 @@ int _rrd_update(
             rrd_set_error("failed duplication argv entry");
             break;
         }
-        if (process_arg(arg_copy, &rrd, rrd_file, rra_begin, &rra_current,
+        if (process_arg(arg_copy, &rrd, rrd_file, rra_begin,
                         &current_time, &current_time_usec, pdp_temp, pdp_new,
                         rra_step_cnt, updvals, tmpl_idx, tmpl_cnt,
                         &pcdp_summary, version, skip_update,
@@ -750,7 +743,6 @@ static int process_arg(
     rrd_t *rrd,
     rrd_file_t *rrd_file,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     time_t *current_time,
     unsigned long *current_time_usec,
     rrd_value_t *pdp_temp,
@@ -772,21 +764,11 @@ static int process_arg(
     double    interval, pre_int, post_int;  /* interval between this and
                                              * the last run */
     unsigned long proc_pdp_cnt;
-    unsigned long rra_start;
 
     if (parse_ds(rrd, updvals, tmpl_idx, step_start, tmpl_cnt,
                  current_time, current_time_usec, version) == -1) {
         return -1;
     }
-    /* seek to the beginning of the rra's */
-    if (*rra_current != rra_begin) {
-        if (rrd_seek(rrd_file, rra_begin, SEEK_SET) != 0) {
-            rrd_set_error("seek error in rrd");
-            return -1;
-        }
-        *rra_current = rra_begin;
-    }
-    rra_start = rra_begin;
 
     interval = (double) (*current_time - rrd->live_head->last_up)
         + (double) ((long) *current_time_usec -
@@ -821,17 +803,17 @@ static int process_arg(
                                 proc_pdp_cnt,
                                 &last_seasonal_coef,
                                 &seasonal_coef,
-                                pdp_temp, rra_current,
+                                pdp_temp,
                                 skip_update, schedule_smooth) == -1) {
             goto err_free_coefficients;
         }
-        if (update_aberrant_cdps(rrd, rrd_file, rra_begin, rra_current,
+        if (update_aberrant_cdps(rrd, rrd_file, rra_begin,
                                  elapsed_pdp_st, pdp_temp,
                                  &seasonal_coef) == -1) {
             goto err_free_coefficients;
         }
         if (write_to_rras(rrd, rrd_file, rra_step_cnt, rra_begin,
-                          rra_current, *current_time, skip_update,
+                          *current_time, skip_update,
                           pcdp_summary) == -1) {
             goto err_free_coefficients;
         }
@@ -1373,7 +1355,6 @@ static int update_all_cdp_prep(
     rrd_value_t **last_seasonal_coef,
     rrd_value_t **seasonal_coef,
     rrd_value_t *pdp_temp,
-    unsigned long *rra_current,
     unsigned long *skip_update,
     int *schedule_smooth)
 {
@@ -1423,7 +1404,6 @@ static int update_all_cdp_prep(
 #endif
                 *schedule_smooth = 1;
             }
-            *rra_current = rrd_tell(rrd_file);
         }
         if (rrd_test_error())
             return -1;
@@ -1799,7 +1779,6 @@ static int update_aberrant_cdps(
     rrd_t *rrd,
     rrd_file_t *rrd_file,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     unsigned long elapsed_pdp_st,
     rrd_value_t *pdp_temp,
     rrd_value_t **seasonal_coef)
@@ -1828,7 +1807,6 @@ static int update_aberrant_cdps(
                         lookup_seasonal(rrd, rra_idx, rra_start, rrd_file,
                                         elapsed_pdp_st + 2, seasonal_coef);
                     }
-                    *rra_current = rrd_tell(rrd_file);
                 }
                 if (rrd_test_error())
                     return -1;
@@ -1859,7 +1837,6 @@ static int write_to_rras(
     rrd_file_t *rrd_file,
     unsigned long *rra_step_cnt,
     unsigned long rra_begin,
-    unsigned long *rra_current,
     time_t current_time,
     unsigned long *skip_update,
     rrd_info_t ** pcdp_summary)
@@ -1888,7 +1865,7 @@ static int write_to_rras(
                  scratch_idx = CDP_secondary_val,
                  step_subtract = 2) {
 
-            unsigned long rra_pos_new;
+            off_t rra_pos_new;
 #ifdef DEBUG
             fprintf(stderr, "  -- RRA Preseek %ld\n", rrd_file->pos);
 #endif
@@ -1901,12 +1878,11 @@ static int write_to_rras(
               + ds_cnt * rra_ptr->cur_row * sizeof(rrd_value_t);
 
             /* re-seek if the position is wrong or we wrapped around */
-            if (rra_pos_new != *rra_current || rra_ptr->cur_row == 0) {
+            if (rra_pos_new != rrd_file->pos) {
                 if (rrd_seek(rrd_file, rra_pos_new, SEEK_SET) != 0) {
                     rrd_set_error("seek error in rrd");
                     return -1;
                 }
-                *rra_current = rra_pos_new;
             }
 #ifdef DEBUG
             fprintf(stderr, "  -- RRA Postseek %ld\n", rrd_file->pos);
@@ -1923,7 +1899,7 @@ static int write_to_rras(
             }
 
             if (write_RRA_row
-                (rrd_file, rrd, rra_idx, rra_current, scratch_idx,
+                (rrd_file, rrd, rra_idx, scratch_idx,
                  pcdp_summary, rra_time) == -1)
                 return -1;
         }
@@ -1943,7 +1919,6 @@ static int write_RRA_row(
     rrd_file_t *rrd_file,
     rrd_t *rrd,
     unsigned long rra_idx,
-    unsigned long *rra_current,
     unsigned short CDP_scratch_idx,
     rrd_info_t ** pcdp_summary,
     time_t rra_time)
@@ -1976,7 +1951,6 @@ static int write_RRA_row(
             rrd_set_error("writing rrd: %s", rrd_strerror(errno));
             return -1;
         }
-        *rra_current += sizeof(rrd_value_t);
     }
     return 0;
 }
