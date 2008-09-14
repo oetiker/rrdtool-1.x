@@ -245,7 +245,7 @@ enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
     RRA_delta_neg = 2,
     /* RRA_dependent_rra_idx = 3, */
     RRA_window_len = 4,
-    RRA_failure_threshold = 5,
+    RRA_failure_threshold = 5
     /* For CF_FAILURES, number of violations within the last
      * window required to mark a failure. */
 };

@@ -285,7 +285,7 @@ I<COLORTAG> is one of C<BACK> background, C<CANVAS> for the background of
 the actual graph, C<SHADEA> for the left and top border, C<SHADEB> for the
 right and bottom border, C<GRID>, C<MGRID> for the major grid, C<FONT> for
 the color of the font, C<AXIS> for the axis of the graph, C<FRAME> for the
-line around the color spots and finally C<ARROW> for the arrow head pointing
+line around the color spots, and finally C<ARROW> for the arrow head pointing
 up and forward. Each color is composed out of three hexadecimal numbers
 specifying its rgb color component (00 is off, FF is maximum) of red, green
 and blue. Optionally you may add another hexadecimal number specifying the
@@ -300,10 +300,11 @@ Zoom the graphics by the given amount. The factor must be E<gt> 0
 
 [B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>[I<font>]]
 
-This lets you customize which font to use for the various text
-elements on the RRD graphs. C<DEFAULT> sets the default value for all
-elements, C<TITLE> for the title, C<AXIS> for the axis labels, C<UNIT>
-for the vertical unit label, C<LEGEND> for the graph legend.
+This lets you customize which font to use for the various text elements on
+the RRD graphs. C<DEFAULT> sets the default value for all elements, C<TITLE>
+for the title, C<AXIS> for the axis labels, C<UNIT> for the vertical unit
+label, C<LEGEND> for the graph legend, C<WATERMARK> for the watermark on the
+edge of the graph.
 
 Use Times for the title: C<--font TITLE:13:Times>
 

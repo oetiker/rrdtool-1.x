@@ -3678,11 +3678,17 @@ rrd_info_t *rrd_graph_v(
 static void 
 rrd_set_font_desc (
     image_desc_t *im,int prop,char *font, double size ){
-    strncpy(im->text_prop[prop].font, font, sizeof(text_prop[prop].font) - 1);        
-    im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';   
-    im->text_prop[prop].size = size;
-    im->text_prop[prop].font_desc =   pango_font_description_from_string( font );
-    pango_font_description_set_size(im->text_prop[prop].font_desc, size * PANGO_SCALE);
+    if (font){
+        strncpy(im->text_prop[prop].font, font, sizeof(text_prop[prop].font) - 1);        
+        im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';   
+        im->text_prop[prop].font_desc = pango_font_description_from_string( font );        
+    };
+    if (size > 0){  
+        im->text_prop[prop].size = size;
+    };
+    if (im->text_prop[prop].font_desc && im->text_prop[prop].size ){
+        pango_font_description_set_size(im->text_prop[prop].font_desc, im->text_prop[prop].size * PANGO_SCALE);
+    };
 }
 
 void rrd_graph_init(

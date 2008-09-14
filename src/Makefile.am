@@ -48,7 +48,7 @@ RRD_C_FILES =		\
 noinst_HEADERS = \
 	unused.h \
 	rrd_getopt.h rrd_parsetime.h \
-	rrd_i18n.h \
+	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	fnv.h rrd_graph.h \
