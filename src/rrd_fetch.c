@@ -53,6 +53,7 @@
  *****************************************************************************/
 
 #include "rrd_tool.h"
+#include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
 /*#define DEBUG*/
@@ -72,6 +73,8 @@ int rrd_fetch(
     long      step_tmp = 1;
     time_t    start_tmp = 0, end_tmp = 0;
     const char *cf;
+    char *opt_daemon = NULL;
+    int status;
 
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
@@ -79,6 +82,7 @@ int rrd_fetch(
         {"resolution", required_argument, 0, 'r'},
         {"start", required_argument, 0, 's'},
         {"end", required_argument, 0, 'e'},
+        {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
 
@@ -93,7 +97,7 @@ int rrd_fetch(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "r:s:e:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "r:s:e:d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -114,6 +118,18 @@ int rrd_fetch(
         case 'r':
             step_tmp = atol(optarg);
             break;
+
+        case 'd':
+            if (opt_daemon != NULL)
+                    free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
+
         case '?':
             rrd_set_error("unknown option '-%c'", optopt);
             return (-1);
@@ -151,10 +167,47 @@ int rrd_fetch(
         return -1;
     }
 
+    if (opt_daemon == NULL)
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            opt_daemon = strdup (temp);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error("strdup failed.");
+                return (-1);
+            }
+        }
+    }
+
+    if (opt_daemon != NULL)
+    {
+        status = rrdc_connect (opt_daemon);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_connect failed with status %i.", status);
+            return (-1);
+        }
+
+        status = rrdc_flush (argv[optind]);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_flush (%s) failed with status %i.",
+                    argv[optind], status);
+            return (-1);
+        }
+
+        rrdc_disconnect ();
+    } /* if (opt_daemon) */
+
     cf = argv[optind + 1];
 
-    if (rrd_fetch_r(argv[optind], cf, start, end, step, ds_cnt, ds_namv, data)
-        != 0)
+    status = rrd_fetch_r(argv[optind], cf, start, end, step,
+            ds_cnt, ds_namv, data);
+    if (status != 0)
         return (-1);
     return (0);
 }
@@ -179,7 +232,7 @@ int rrd_fetch_r(
 
     return (rrd_fetch_fn
             (filename, cf_idx, start, end, step, ds_cnt, ds_namv, data));
-}
+} /* int rrd_fetch_r */
 
 int rrd_fetch_fn(
     const char *filename,   /* name of the rrd */

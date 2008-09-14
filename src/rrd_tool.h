@@ -83,15 +83,14 @@ extern    "C" {
     int       rrd_create_fn(
     const char *file_name,
     rrd_t *rrd);
-    int       rrd_fetch_fn(
-    const char *filename,
-    enum cf_en cf_idx,
-    time_t *start,
-    time_t *end,
-    unsigned long *step,
-    unsigned long *ds_cnt,
-    char ***ds_namv,
-    rrd_value_t **data);
+    int rrd_fetch_fn (const char *filename,
+            enum cf_en cf_idx,
+            time_t *start,
+            time_t *end,
+            unsigned long *step,
+            unsigned long *ds_cnt,
+            char ***ds_namv,
+            rrd_value_t **data);
 
 #define RRD_READONLY    (1<<0)
 #define RRD_READWRITE   (1<<1)

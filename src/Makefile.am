@@ -23,6 +23,7 @@ UPD_C_FILES =		\
 	rrd_info.c	\
 	rrd_error.c	\
 	rrd_open.c	\
+	rrd_client.c	\
 	rrd_nan_inf.c	\
 	rrd_rpncalc.c	\
 	rrd_update.c
@@ -41,6 +42,7 @@ RRD_C_FILES =		\
 	rrd_xport.c	\
 	rrd_gfx.c \
 	rrd_dump.c	\
+	rrd_flush.c	\
 	rrd_fetch.c	\
 	rrd_resize.c \
 	rrd_tune.c
@@ -82,9 +84,9 @@ librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
 librrd_th_la_LIBADD          = $(ALL_LIBS)
 
-include_HEADERS	= rrd.h rrd_format.h
+include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
-bin_PROGRAMS	= rrdtool rrdupdate
+bin_PROGRAMS	= rrdtool rrdupdate rrdcached
 
 if BUILD_RRDCGI
 bin_PROGRAMS += rrdcgi
@@ -99,6 +101,11 @@ rrdupdate_LDADD	  = librrdupd.la
 rrdtool_SOURCES = rrd_tool.c
 rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
+
+rrdcached_SOURCES = rrd_daemon.c
+rrdcached_DEPENDENCIES = librrd.la
+rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
+rrdcached_LDADD = librrd.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support

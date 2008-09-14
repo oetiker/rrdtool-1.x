@@ -213,6 +213,7 @@ typedef struct image_desc_t {
     char     *imginfo;  /* construct an <IMG ... tag and return 
                            as first retval */
     enum gfx_if_en imgformat;   /* image format */
+    int       use_rrdcached;
     int       lazy;     /* only update the image if there is
                            reasonable probablility that the
                            existing one is out of date */

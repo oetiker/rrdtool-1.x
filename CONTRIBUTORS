@@ -21,7 +21,7 @@ David Grimes <dgrimes with navisite.com> SQRT/SORT/REV/SHIFT/TREND
 David L. Barker <dave with ncomtech.com> xport function bug fixes
 Evan Miller <emiller with imvu.com> Multiplicative HW Enhancements
 Frank Strauss <strauss with escape.de> TCL bindings
-Florian octo Forster <rrdtool nospam.verplant.org> rrd_restore libxml2 rewrite deprecated function export
+Florian octo Forster <rrdtool nospam.verplant.org> rrd_restore libxml2 rewrite, deprecated function export, rrdcached
 Henrik Storner <henrik with hswn.dk> functions for min/max values of data in graph
 Hermann Hueni <hueni with glue.ch> (SunOS porting)
 Jakob Ilves <jilves with se.oracle.com> HPUX 11

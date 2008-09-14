@@ -91,7 +91,11 @@ Change the size of individual RRAs. This is dangerous! Check L<rrdresize>.
 
 =item B<xport>
 
-Export data retrieved from one or several RRDs. Check L<rrdxport>
+Export data retrieved from one or several RRDs. Check L<rrdxport>.
+
+=item B<flush>
+
+Flush the values for a spcific RRD file from memory. Check L<rrdflush>.
 
 =item B<rrdcgi>
 
@@ -298,9 +302,17 @@ sockets, tools like netcat, or in a quick interactive test by using
 B<NOTE:> that there is no authentication with this feature! Do not setup
 such a port unless you are sure what you are doing.
 
+=head1 RRDCACHED, THE CACHING DAEMON
+
+For very big setups, updating thousands of RRD files often becomes a serious IO
+problem. If you run into such problems, you might want to take a look at
+L<rrdcached>, a caching daemon for RRDTool which may help you lessen the
+stress on your disks.
+
 =head1 SEE ALSO
 
-rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast, rrdxport
+rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast, rrdxport,
+rrdflush, rrdcached
 
 =head1 BUGS
 

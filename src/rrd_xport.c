@@ -10,6 +10,7 @@
 #include "rrd_graph.h"
 #include "rrd_xport.h"
 #include "unused.h"
+#include "rrd_client.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
@@ -53,7 +54,6 @@ int rrd_xport(
     char ***legend_v,   /* legend entries */
     rrd_value_t **data)
 {                       /* two dimensional array containing the data */
-
     image_desc_t im;
     time_t    start_tmp = 0, end_tmp = 0;
     rrd_time_value_t start_tv, end_tv;
@@ -64,6 +64,7 @@ int rrd_xport(
         {"maxrows", required_argument, 0, 'm'},
         {"step", required_argument, 0, 261},
         {"enumds", no_argument, 0, 262},    /* these are handled in the frontend ... */
+        {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
 
@@ -79,7 +80,7 @@ int rrd_xport(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "s:e:m:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "s:e:m:d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -109,6 +110,26 @@ int rrd_xport(
                 return -1;
             }
             break;
+        case 'd':
+        {
+            int status;
+            if (im.use_rrdcached)
+            {
+                rrd_set_error ("You cannot specify --daemon "
+                        "more than once.");
+                return (-1);
+            }
+            status = rrdc_connect (optarg);
+            if (status != 0)
+            {
+                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
+                        optarg, status);
+                return (-1);
+            }
+            im.use_rrdcached = 1;
+            break;
+        }
+
         case '?':
             rrd_set_error("unknown option '%s'", argv[optind - 1]);
             return -1;
@@ -145,6 +166,26 @@ int rrd_xport(
         rrd_set_error("can't make a graph without contents");
         im_free(&im);
         return (-1);
+    }
+
+    if (im.use_rrdcached == 0)
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            int status;
+
+            status = rrdc_connect (temp);
+            if (status != 0)
+            {
+                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
+                        temp, status);
+                return (-1);
+            }
+            im.use_rrdcached = 1;
+        }
     }
 
     if (rrd_xport_fn(&im, start, end, step, col_cnt, legend_v, data) == -1) {

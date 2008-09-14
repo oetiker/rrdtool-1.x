@@ -8,6 +8,7 @@ B<rrdtool> B<fetch> I<filename> I<CF>
 S<[B<--resolution>|B<-r> I<resolution>]>
 S<[B<--start>|B<-s> I<start>]>
 S<[B<--end>|B<-e> I<end>]>
+S<[B<--daemon> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -47,6 +48,17 @@ section for a detailed explanation on  ways to specify the start time.
 the end of the time series in seconds since epoch. See also AT-STYLE
 TIME SPECIFICATION section for a detailed explanation of how to
 specify the end time.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
+to the server before reading the RRD files. This allows B<rrdtool> to return
+fresh data even if the daemon is configured to cache values for a long time. To
+specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
+addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
+addresses in most cases.
+
+ rrdtool fetch --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd AVERAGE
 
 =back
 
@@ -257,6 +269,22 @@ I<931225537> -- 18:45  July 5th, 1999
 I<19970703 12:45> -- 12:45  July 3th, 1997
 (my favorite, and its even got an ISO number (8601)).
 
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>fetch>:
+
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
+
+=back
+
 =head1 AUTHOR
 
-Tobias Oetiker <tobi@oetiker.ch>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
+

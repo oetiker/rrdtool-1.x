@@ -171,13 +171,7 @@ extern    "C" {
     time_t    rrd_last(
     int,
     char **);
-    int       rrd_lastupdate(
-    int argc,
-    char **argv,
-    time_t *last_update,
-    unsigned long *ds_cnt,
-    char ***ds_namv,
-    char ***last_ds);
+    int rrd_lastupdate(int argc, char **argv);
     time_t    rrd_first(
     int,
     char **);
@@ -198,6 +192,7 @@ extern    "C" {
     unsigned long *,
     char ***,
     rrd_value_t **);
+    int       rrd_cmd_flush (int argc, char **argv);
 
     void      rrd_freemem(
     void *mem);
@@ -217,20 +212,24 @@ extern    "C" {
     const char *_template,
     int argc,
     const char **argv);
-    int       rrd_fetch_r(
-    const char *filename,
-    const char *cf,
-    time_t *start,
-    time_t *end,
-    unsigned long *step,
-    unsigned long *ds_cnt,
-    char ***ds_namv,
-    rrd_value_t **data);
+    int rrd_fetch_r (
+            const char *filename,
+            const char *cf,
+            time_t *start,
+            time_t *end,
+            unsigned long *step,
+            unsigned long *ds_cnt,
+            char ***ds_namv,
+            rrd_value_t **data);
     int       rrd_dump_r(
     const char *filename,
     char *outname);
-    time_t    rrd_last_r(
-    const char *filename);
+    time_t    rrd_last_r (const char *filename);
+    int rrd_lastupdate_r (const char *filename,
+            time_t *ret_last_update,
+            unsigned long *ret_ds_count,
+            char ***ret_ds_names,
+            char ***ret_last_ds);
     time_t    rrd_first_r(
     const char *filename,
     int rraindex);

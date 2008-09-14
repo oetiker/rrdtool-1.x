@@ -1,6 +1,6 @@
-
 /*****************************************************************************
  * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2008
+ *                Copyright by Florian Forster, 2008
  *****************************************************************************
  * rrd_update.c  RRD Update Function
  *****************************************************************************
@@ -22,6 +22,8 @@
 
 #include "rrd_is_thread_safe.h"
 #include "unused.h"
+
+#include "rrd_client.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 /*
@@ -369,18 +371,20 @@ int rrd_update(
 {
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
+        {"daemon",   required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
     int       option_index = 0;
     int       opt;
     char     *tmplt = NULL;
     int       rc = -1;
+    char     *opt_daemon = NULL;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "t:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "t:d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -388,6 +392,17 @@ int rrd_update(
         switch (opt) {
         case 't':
             tmplt = strdup(optarg);
+            break;
+
+        case 'd':
+            if (opt_daemon != NULL)
+                free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error("strdup failed.");
+                goto out;
+            }
             break;
 
         case '?':
@@ -402,10 +417,75 @@ int rrd_update(
         goto out;
     }
 
+    if ((tmplt != NULL) && (opt_daemon != NULL))
+    {
+        rrd_set_error("The caching opt_daemon cannot be used together with "
+                "templates yet.");
+        goto out;
+    }
+
+    if ((tmplt == NULL) && (opt_daemon == NULL))
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            opt_daemon = strdup (temp);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error("strdup failed.");
+                goto out;
+            }
+        }
+    }
+
+    if (opt_daemon != NULL)
+    {
+        int status;
+
+        status = rrdc_connect (opt_daemon);
+        if (status != 0)
+        {
+            rrd_set_error("Unable to connect to opt_daemon: %s",
+                    (status < 0)
+                    ? "Internal error"
+                    : rrd_strerror (status));
+            goto out;
+        }
+
+        status = rrdc_update (/* file = */ argv[optind],
+                /* values_num = */ argc - optind - 1,
+                /* values = */ (void *) (argv + optind + 1));
+        if (status != 0)
+        {
+            rrd_set_error("Failed sending the values to the opt_daemon: %s",
+                    (status < 0)
+                    ? "Internal error"
+                    : rrd_strerror (status));
+        }
+        else
+        {
+            rc = 0;
+        }
+
+        rrdc_disconnect ();
+        goto out;
+    } /* if (opt_daemon != NULL) */
+
     rc = rrd_update_r(argv[optind], tmplt,
                       argc - optind - 1, (const char **) (argv + optind + 1));
   out:
-    free(tmplt);
+    if (tmplt != NULL)
+    {
+        free(tmplt);
+        tmplt = NULL;
+    }
+    if (opt_daemon != NULL)
+    {
+        free (opt_daemon);
+        opt_daemon = NULL;
+    }
     return rc;
 }
 

@@ -43,6 +43,7 @@
  *****************************************************************************/
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_client.h"
 
 #if !(defined(NETWARE) || defined(WIN32))
 extern char *tzname[2];
@@ -441,6 +442,7 @@ int rrd_dump(
 {
     int       rc;
     int       opt_noheader = 0;
+    char     *opt_daemon = NULL;
 
     /* init rrd clean */
 
@@ -451,16 +453,28 @@ int rrd_dump(
         int       opt;
         int       option_index = 0;
         static struct option long_options[] = {
+            {"daemon", required_argument, 0, 'd'},
             {"no-header", no_argument, 0, 'n'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "n", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:n", long_options, &option_index);
 
         if (opt == EOF)
             break;
 
         switch (opt) {
+        case 'd':
+            if (opt_daemon != NULL)
+                    free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
+
         case 'n':
             opt_noheader = 1;
             break;
@@ -478,6 +492,44 @@ int rrd_dump(
                       "file.rrd [file.xml]", argv[0]);
         return (-1);
     }
+
+    if (opt_daemon == NULL)
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            opt_daemon = strdup (temp);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error("strdup failed.");
+                return (-1);
+            }
+        }
+    }
+
+    if (opt_daemon != NULL)
+    {
+        int status;
+
+        status = rrdc_connect (opt_daemon);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_connect failed with status %i.", status);
+            return (-1);
+        }
+
+        status = rrdc_flush (argv[optind]);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_flush (%s) failed with status %i.",
+                    argv[optind], status);
+            return (-1);
+        }
+
+        rrdc_disconnect ();
+    } /* if (opt_daemon) */
 
     if ((argc - optind) == 2) {
         rc = rrd_dump_opt_r(argv[optind], argv[optind + 1], opt_noheader);

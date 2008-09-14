@@ -9,6 +9,7 @@ S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
+S<[B<--daemon> I<address>]>
 S<[B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>]>
 S<[B<CDEF:>I<vname>B<=>I<rpn-expression>]>
 S<[B<XPORT>B<:>I<vname>[B<:>I<legend>]]>
@@ -47,6 +48,17 @@ for details.
 =item B<--step> I<value> (default automatic)
 
 See L<rrdgraph> documentation.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
+to the server before reading the RRD files. This allows B<rrdtool> to return
+fresh data even if the daemon is configured to cache values for a long time. To
+specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
+addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
+addresses in most cases.
+
+ rrdtool xport --daemon unix:/var/run/rrdcached.sock ...
 
 =item B<--enumds> 
 
@@ -137,6 +149,20 @@ The resulting data section is:
           XPORT:out2:"if2 out bytes" \
 	  XPORT:sum:"output sum"
 
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>xport>:
+
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
+
+=back
 
 =head1 AUTHOR
 

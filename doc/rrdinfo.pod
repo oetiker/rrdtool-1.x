@@ -4,7 +4,8 @@ rrdinfo - extract header information from an RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<info> I<filename.rrd>
+B<rrdtool> B<info> I<filename>
+S<[B<--daemon> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -13,6 +14,25 @@ a parsing friendly format.
 
 Check L<rrdcreate> if you are uncertain about the meaning of the
 individual keys.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> you want to examine.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
+to the server before reading the RRD files. This allows B<rrdtool> to return
+fresh data even if the daemon is configured to cache values for a long time. To
+specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
+addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
+addresses in most cases.
+
+ rrdtool info --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
+
+=back
 
 =head1 EXAMPLE
 
@@ -48,11 +68,18 @@ data sources.
  rra[0].cdp_prep[1].value = nan
  rra[0].cdp_prep[1].unknown_datapoints = 0
 
-=over 8
+=head1 ENVIRONMENT VARIABLES
 
-=item I<filename.rrd>
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>info>:
 
-The name of the B<RRD> you want to examine.
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
 
 =back
 

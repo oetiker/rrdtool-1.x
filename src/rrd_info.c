@@ -6,6 +6,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_client.h"
 #include <stdarg.h>
 
 /* proto */
@@ -80,18 +81,92 @@ rrd_info_t *rrd_info(
     char **argv)
 {
     rrd_info_t *info;
+    char *opt_daemon = NULL;
 
-    if (argc < 2) {
-        rrd_set_error("please specify an rrd");
-        return NULL;
+    optind = 0;
+    opterr = 0;         /* initialize getopt */
+
+    while (42) {
+        int       opt;
+        int       option_index = 0;
+        static struct option long_options[] = {
+            {"daemon", required_argument, 0, 'd'},
+            {0, 0, 0, 0}
+        };
+
+        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
+
+        if (opt == EOF)
+            break;
+
+        switch (opt) {
+        case 'd':
+            if (opt_daemon != NULL)
+                    free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (NULL);
+            }
+            break;
+
+        default:
+            rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+                    argv[0]);
+            return (NULL);
+            break;
+        }
+    }                   /* while (42) */
+
+    if ((argc - optind) != 1) {
+        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+                argv[0]);
+        return (NULL);
     }
 
-    info = rrd_info_r(argv[1]);
+    if (opt_daemon == NULL)
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            opt_daemon = strdup (temp);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error("strdup failed.");
+                return (NULL);
+            }
+        }
+    }
+
+    if (opt_daemon != NULL)
+    {
+        int status;
+
+        status = rrdc_connect (opt_daemon);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_connect failed with status %i.", status);
+            return (NULL);
+        }
+
+        status = rrdc_flush (argv[optind]);
+        if (status != 0)
+        {
+            rrd_set_error ("rrdc_flush (%s) failed with status %i.",
+                    argv[optind], status);
+            return (NULL);
+        }
+
+        rrdc_disconnect ();
+    } /* if (opt_daemon) */
+
+    info = rrd_info_r(argv[optind]);
 
     return (info);
-}
-
-
+} /* rrd_info_t *rrd_info */
 
 rrd_info_t *rrd_info_r(
     char *filename)

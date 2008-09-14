@@ -55,7 +55,7 @@ void PrintUsage(
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
          "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-         "\t\tresize, xport\n\n");
+         "\t\tresize, xport, flush\n\n");
 
     const char *help_listremote =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
@@ -95,7 +95,8 @@ void PrintUsage(
     const char *help_update =
         N_("* update - update an RRD\n\n"
            "\trrdtool update filename\n"
-           "\t\t--template|-t ds-name:ds-name:...\n"
+           "\t\t[--template|-t ds-name:ds-name:...]\n"
+	   "\t\t[--daemon <address>]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n\n");
@@ -104,7 +105,7 @@ void PrintUsage(
         N_("* updatev - a verbose version of update\n"
            "\treturns information about values, RRAs, and datasources updated\n\n"
            "\trrdtool updatev filename\n"
-           "\t\t--template|-t ds-name:ds-name:...\n"
+           "\t\t[--template|-t ds-name:ds-name:...]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n\n");
@@ -113,7 +114,13 @@ void PrintUsage(
         N_("* fetch - fetch data out of an RRD\n\n"
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
-           "\t\t[-s|--start start] [-e|--end end]\n\n");
+           "\t\t[-s|--start start] [-e|--end end]\n"
+	   "\t\t[--daemon <address>]\n\n");
+
+    const char *help_flush =
+        N_("* flush - flush cached data out to an RRD file\n\n"
+           "\trrdtool flush filename.rrd\n"
+	   "\t\t[--daemon <address>]\n\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -132,7 +139,7 @@ void PrintUsage(
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
-           "\t\t[-g|--no-legend]\n"
+           "\t\t[-g|--no-legend] [--daemon <address>]\n"
            "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
     const char *help_graph2 =
         N_("\t\t[-n|--font FONTTAG:size:font]\n"
@@ -217,7 +224,7 @@ void PrintUsage(
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
         C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
-        C_UPDATEV
+        C_UPDATEV, C_FLUSH
     };
     int       help_cmd = C_NONE;
 
@@ -242,6 +249,8 @@ void PrintUsage(
             help_cmd = C_UPDATEV;
         else if (!strcmp(cmd, "fetch"))
             help_cmd = C_FETCH;
+        else if (!strcmp(cmd, "flush"))
+            help_cmd = C_FLUSH;
         else if (!strcmp(cmd, "graph"))
             help_cmd = C_GRAPH;
         else if (!strcmp(cmd, "graphv"))
@@ -301,6 +310,9 @@ void PrintUsage(
         break;
     case C_FETCH:
         fputs(_(help_fetch), stdout);
+        break;
+    case C_FLUSH:
+        fputs(_(help_flush), stdout);
         break;
     case C_GRAPH:
         fputs(_(help_graph0), stdout);
@@ -647,26 +659,7 @@ int HandleInputLine(
     else if (strcmp("last", argv[1]) == 0)
         printf("%ld\n", rrd_last(argc - 1, &argv[1]));
     else if (strcmp("lastupdate", argv[1]) == 0) {
-        time_t    last_update;
-        char    **ds_namv;
-        char    **last_ds;
-        unsigned long ds_cnt, i;
-
-        if (rrd_lastupdate(argc - 1, &argv[1], &last_update,
-                           &ds_cnt, &ds_namv, &last_ds) == 0) {
-            for (i = 0; i < ds_cnt; i++)
-                printf(" %s", ds_namv[i]);
-            printf("\n\n");
-            printf("%10lu:", last_update);
-            for (i = 0; i < ds_cnt; i++) {
-                printf(" %s", last_ds[i]);
-                free(last_ds[i]);
-                free(ds_namv[i]);
-            }
-            printf("\n");
-            free(last_ds);
-            free(ds_namv);
-        }
+        rrd_lastupdate(argc - 1, &argv[1]);
     } else if (strcmp("first", argv[1]) == 0)
         printf("%ld\n", rrd_first(argc - 1, &argv[1]));
     else if (strcmp("update", argv[1]) == 0)
@@ -815,6 +808,8 @@ int HandleInputLine(
 
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
+    else if (strcmp("flush", argv[1]) == 0)
+        rrd_cmd_flush(argc - 1, &argv[1]);
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }

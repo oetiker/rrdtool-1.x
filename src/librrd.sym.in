@@ -1,5 +1,6 @@
 rrd_clear_error
 rrd_close
+rrd_cmd_flush
 rrd_create
 rrd_create_r
 rrd_dontneed
@@ -25,6 +26,7 @@ rrd_init
 rrd_last
 rrd_last_r
 rrd_lastupdate
+rrd_lastupdate_r
 rrd_lock
 rrd_new_context
 rrd_open
@@ -48,4 +50,8 @@ rrd_update_v
 rrd_version
 rrd_write
 rrd_xport
+rrdc_connect
+rrdc_disconnect
+rrdc_flush
+rrdc_update
 @RRD_GETOPT_LONG@

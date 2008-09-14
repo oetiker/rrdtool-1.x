@@ -248,7 +248,7 @@ to the more robust B<--alt-y-grid> mode.
 
 How many digits should rrdtool assume the y-axis labels to be? You
 may have to use this option to make enough space once you start
-fideling with the y-axis labeling.
+fiddling with the y-axis labeling.
 
 [B<--units=si>]
 
@@ -266,6 +266,17 @@ Only generate the graph if the current graph is out of date or not existent.
 Note, that only the image size will be returned, if you run with lazy even
 when using graphv and even when using PRINT.
 
+
+[B<--daemon> I<address>]
+
+Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
+to the server before reading the RRD files. This allows the graph to contain
+fresh data even if the daemon is configured to cache values for a long time. To
+specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
+addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
+addresses in most cases.
+
+ rrdtool graph [...] --daemon unix:/var/run/rrdcached.sock [...]
 
 [B<-f>|B<--imginfo> I<printfstr>]
 
@@ -468,6 +479,21 @@ the output will look like this:
 There is more information returned than in the standard interface.
 Especially the 'graph_*' keys are new. They help applications that want to
 know what is where on the graph.
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>graph>:
+
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
+
+=back
 
 =head1 SEE ALSO
 

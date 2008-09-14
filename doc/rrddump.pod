@@ -4,11 +4,16 @@ rrddump - dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<dump> S<[B<--no-header>|B<-n>]> I<filename.rrd> E<gt> I<filename.xml>
+B<rrdtool> B<dump> I<filename.rrd>
+S<[B<--no-header>|B<-n>]>
+S<[B<--daemon> I<address>]>
+S<E<gt> I<filename.xml>>
 
 or 
 
-B<rrdtool> B<dump> S<[B<--no-header>|B<-n>]> I<filename.rrd> I<filename.xml>
+B<rrdtool> B<dump> I<filename.rrd> I<filename.xml>
+S<[B<--no-header>|B<-n>]>
+S<[B<--daemon> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -31,12 +36,23 @@ The name of the B<RRD> you want to dump.
 The (optional) filename that you want to write the XML output to.
 If not specified, the XML will be printed to stdout.
 
-=item S<[B<--no-header>|B<-n>]>
+=item B<--no-header>|B<-n>
 
 In rrdtool 1.3, the dump function started producing correct xml-headers.
 Unfortunately the rrdtool restore function from the 1.2 series can not
 handle these headers. With this option you can supress the creatinon of
 the xml headers.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
+to the server before reading the RRD files. This allows B<rrdtool> to return
+fresh data even if the daemon is configured to cache values for a long time. To
+specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
+addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
+addresses in most cases.
+
+ rrdtool dump --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 
 =back
 
@@ -59,6 +75,21 @@ Transfer the XML dump to the target system.
 
 Run B<rrdtool> B<restore> to create a new RRD from the XML dump. See
 B<rrdrestore> for details.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>dump>:
+
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
 
 =back
 

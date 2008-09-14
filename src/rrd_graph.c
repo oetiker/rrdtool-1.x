@@ -26,6 +26,7 @@
 #endif
 
 #include "rrd_graph.h"
+#include "rrd_client.h"
 
 /* some constant definitions */
 
@@ -305,6 +306,13 @@ int im_free(
 
     if (im == NULL)
         return 0;
+
+    if (im->use_rrdcached)
+    {
+        rrdc_disconnect ();
+        im->use_rrdcached = 0;
+    }
+
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
             /* careful here, because a single pointer can occur several times */
@@ -832,6 +840,36 @@ int data_fetch(
         }
         if (!skip) {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
+
+            /* Flush the file if
+             * - a connection to the daemon has been established
+             * - this is the first occurrence of that RRD file
+             */
+            if (im->use_rrdcached)
+            {
+                int status;
+
+                status = 0;
+                for (ii = 0; ii < i; ii++)
+                {
+                    if (strcmp (im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
+                    {
+                        status = 1;
+                        break;
+                    }
+                }
+
+                if (status == 0)
+                {
+                    status = rrdc_flush (im->gdes[i].rrd);
+                    if (status != 0)
+                    {
+                        rrd_set_error ("rrdc_flush (%s) failed with status %i.",
+                                im->gdes[i].rrd, status);
+                        return (-1);
+                    }
+                }
+            } /* if (im->use_rrdcached) */
 
             if ((rrd_fetch_fn(im->gdes[i].rrd,
                               im->gdes[i].cf,
@@ -3725,6 +3763,7 @@ void rrd_graph_init(
     im->grinfo_current = (rrd_info_t *) NULL;
     im->imgformat = IF_PNG;
     im->imginfo = NULL;
+    im->use_rrdcached = 0;
     im->lazy = 0;
     im->logarithmic = 0;
     im->maxval = DNAN;
@@ -3856,6 +3895,7 @@ void rrd_graph_options(
         { "watermark",          required_argument, 0, 'W'},
         { "alt-y-mrtg",         no_argument,       0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
         { "pango-markup",       no_argument,       0, 'P'},
+        { "daemon",             required_argument, 0, 'd'},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -3870,7 +3910,7 @@ void rrd_graph_options(
         int       col_start, col_end;
 
         opt = getopt_long(argc, argv,
-                          "s:e:x:y:v:w:h:D:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:kP",
+                          "s:e:x:y:v:w:h:D:iu:l:rb:oc:n:m:t:f:a:I:zgjFYAMEX:L:S:T:NR:B:W:kPd:",
                           long_options, &option_index);
         if (opt == EOF)
             break;
@@ -4212,12 +4252,51 @@ void rrd_graph_options(
             strncpy(im->watermark, optarg, 100);
             im->watermark[99] = '\0';
             break;
+        case 'd':
+        {
+            int status;
+            if (im->use_rrdcached)
+            {
+                rrd_set_error ("You cannot specify --daemon "
+                        "more than once.");
+                return;
+            }
+            status = rrdc_connect (optarg);
+            if (status != 0)
+            {
+                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
+                        optarg, status);
+                return;
+            }
+            im->use_rrdcached = 1;
+            break;
+        }
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
             else
                 rrd_set_error("unknown option '%s'", argv[optind - 1]);
             return;
+        }
+    } /* while (1) */
+
+    if (im->use_rrdcached == 0)
+    {
+        char *temp;
+
+        temp = getenv (ENV_RRDCACHED_ADDRESS);
+        if (temp != NULL)
+        {
+            int status;
+
+            status = rrdc_connect (temp);
+            if (status != 0)
+            {
+                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
+                        temp, status);
+                return;
+            }
+            im->use_rrdcached = 1;
         }
     }
     
