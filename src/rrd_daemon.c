@@ -2033,17 +2033,19 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'h':
       case '?':
-        printf ("RRDd %s  Copyright (C) 2008 Florian octo Forster\n"
+        printf ("RRDCacheD %s  Copyright (C) 2008 Florian octo Forster\n"
             "\n"
             "Usage: rrdcached [options]\n"
             "\n"
             "Valid options are:\n"
             "  -l <address>  Socket address to listen to.\n"
             "  -w <seconds>  Interval in which to write data.\n"
-            "  -z <delay>    Delay writes up to <delay> seconds to spread load" \
+            "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
             "  -f <seconds>  Interval in which to flush dead data.\n"
             "  -p <file>     Location of the PID-file.\n"
             "  -b <dir>      Base directory to change to.\n"
+            "  -g            Do not fork and run in the foreground.\n"
+            "  -j <dir>      Directory in which to create the journal files.\n"
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"
