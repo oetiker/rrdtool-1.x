@@ -13,9 +13,9 @@ read somekey
 svn commit -m "prepare for the release of rrdtool-$VERSION"
 OPWD=`pwd`
 cd /tmp
-svn export svn://svn.oetiker.ch/rrdtool/trunk/program rrdtool-$$
+svn export svn://svn.oetiker.ch/rrdtool/branches/1.3/program rrdtool-$$
 cd rrdtool-$$
-svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
+svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/branches/1.3 | \
     xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
 sh MakeMakefile
 #PKG_CONFIG_PATH=/usr/pack/rrdtool-1.3svn-to/i686-debian-linux3.1/lib/pkgconfig/
@@ -33,5 +33,5 @@ scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub
 ssh oposs@james "cd public_html/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz"
 cd ..
 rm -rf rrdtool-$$
-svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/trunk/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
+svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/branches/1.3/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
 
