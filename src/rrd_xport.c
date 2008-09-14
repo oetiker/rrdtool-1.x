@@ -58,6 +58,8 @@ int rrd_xport(
     time_t    start_tmp = 0, end_tmp = 0;
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
+    char     *opt_daemon = NULL;
+
     struct option long_options[] = {
         {"start", required_argument, 0, 's'},
         {"end", required_argument, 0, 'e'},
@@ -112,21 +114,19 @@ int rrd_xport(
             break;
         case 'd':
         {
-            int status;
-            if (im.use_rrdcached)
+            if (opt_daemon != NULL)
             {
                 rrd_set_error ("You cannot specify --daemon "
                         "more than once.");
                 return (-1);
             }
-            status = rrdc_connect (optarg);
-            if (status != 0)
+
+            opt_daemon = strdup(optarg);
+            if (opt_daemon == NULL)
             {
-                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
-                        optarg, status);
-                return (-1);
+                rrd_set_error("strdup error");
+                return -1;
             }
-            im.use_rrdcached = 1;
             break;
         }
 
@@ -168,24 +168,10 @@ int rrd_xport(
         return (-1);
     }
 
-    if (im.use_rrdcached == 0)
-    {
-        char *temp;
-
-        temp = getenv (ENV_RRDCACHED_ADDRESS);
-        if (temp != NULL)
-        {
-            int status;
-
-            status = rrdc_connect (temp);
-            if (status != 0)
-            {
-                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
-                        temp, status);
-                return (-1);
-            }
-            im.use_rrdcached = 1;
-        }
+    {   /* try to connect to rrdcached */
+        int status = rrdc_connect(opt_daemon);
+        if (opt_daemon) free(opt_daemon);
+        if (status != 0) return status;
     }
 
     if (rrd_xport_fn(&im, start, end, step, col_cnt, legend_v, data) == -1) {

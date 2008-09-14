@@ -1,3 +1,4 @@
+
 /*****************************************************************************
  * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2008
  *                Copyright by Florian Forster, 2008
@@ -321,6 +322,7 @@ rrd_info_t *rrd_update_v(
     char     *tmplt = NULL;
     rrd_info_t *result = NULL;
     rrd_infoval_t rc;
+    char *opt_daemon = NULL;
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
         {0, 0, 0, 0}
@@ -348,6 +350,15 @@ rrd_info_t *rrd_update_v(
             rrd_set_error("unknown option '%s'", argv[optind - 1]);
             goto end_tag;
         }
+    }
+
+    opt_daemon = getenv (ENV_RRDCACHED_ADDRESS);
+    if (opt_daemon != NULL) {
+        rrd_set_error ("The \"%s\" environment variable is defined, "
+                "but \"%s\" cannot work with rrdcached. Either unset "
+                "the environment variable or use \"update\" instead.",
+                ENV_RRDCACHED_ADDRESS, argv[0]);
+        goto end_tag;
     }
 
     /* need at least 2 arguments: filename, data. */
@@ -417,64 +428,37 @@ int rrd_update(
         goto out;
     }
 
-    if ((tmplt != NULL) && (opt_daemon != NULL))
+    {   /* try to connect to rrdcached */
+        int status = rrdc_connect(opt_daemon);
+        if (status != 0) return status;
+    }
+
+    if ((tmplt != NULL) && rrdc_is_connected(opt_daemon))
     {
-        rrd_set_error("The caching opt_daemon cannot be used together with "
+        rrd_set_error("The caching daemon cannot be used together with "
                 "templates yet.");
         goto out;
     }
 
-    if ((tmplt == NULL) && (opt_daemon == NULL))
+    if (! rrdc_is_connected(opt_daemon))
     {
-        char *temp;
-
-        temp = getenv (ENV_RRDCACHED_ADDRESS);
-        if (temp != NULL)
+      rc = rrd_update_r(argv[optind], tmplt,
+                        argc - optind - 1, (const char **) (argv + optind + 1));
+    }
+    else /* we are connected */
+    {
+        rc = rrdc_update (argv[optind], /* file */
+                          argc - optind - 1, /* values_num */
+                          (void *) (argv + optind + 1)); /* values */
+        if (rc != 0)
         {
-            opt_daemon = strdup (temp);
-            if (opt_daemon == NULL)
-            {
-                rrd_set_error("strdup failed.");
-                goto out;
-            }
+            rrd_set_error("Failed sending the values to rrdcached: %s",
+                    (rc < 0)
+                    ? "Internal error"
+                    : rrd_strerror (rc));
         }
     }
 
-    if (opt_daemon != NULL)
-    {
-        int status;
-
-        status = rrdc_connect (opt_daemon);
-        if (status != 0)
-        {
-            rrd_set_error("Unable to connect to opt_daemon: %s",
-                    (status < 0)
-                    ? "Internal error"
-                    : rrd_strerror (status));
-            goto out;
-        }
-
-        status = rrdc_update (/* file = */ argv[optind],
-                /* values_num = */ argc - optind - 1,
-                /* values = */ (void *) (argv + optind + 1));
-        if (status != 0)
-        {
-            rrd_set_error("Failed sending the values to the opt_daemon: %s",
-                    (status < 0)
-                    ? "Internal error"
-                    : rrd_strerror (status));
-        }
-        else
-        {
-            rc = 0;
-        }
-
-        rrdc_disconnect ();
-        goto out;
-    } /* if (opt_daemon != NULL) */
-
-    rc = rrd_update_r(argv[optind], tmplt,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
   out:
     if (tmplt != NULL)
     {

@@ -62,41 +62,9 @@ int rrd_lastupdate (int argc, char **argv)
         return (-1);
     }
 
-    if (opt_daemon == NULL)
-    {
-        char *temp;
-
-        temp = getenv (ENV_RRDCACHED_ADDRESS);
-        if (temp != NULL)
-        {
-            opt_daemon = strdup (temp);
-            if (opt_daemon == NULL)
-            {
-                rrd_set_error("strdup failed.");
-                return (-1);
-            }
-        }
-    }
-
-    if (opt_daemon != NULL)
-    {
-        status = rrdc_connect (opt_daemon);
-        if (status != 0)
-        {
-            rrd_set_error ("rrdc_connect failed with status %i.", status);
-            return (-1);
-        }
-
-        status = rrdc_flush (argv[optind]);
-        if (status != 0)
-        {
-            rrd_set_error ("rrdc_flush (%s) failed with status %i.",
-                    argv[optind], status);
-            return (-1);
-        }
-
-        rrdc_disconnect ();
-    } /* if (opt_daemon) */
+    status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
+    if (opt_daemon) free (opt_daemon);
+    if (status) return (-1);
 
     status = rrd_lastupdate_r (argv[optind],
             &last_update, &ds_count, &ds_names, &last_ds);

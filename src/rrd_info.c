@@ -82,6 +82,7 @@ rrd_info_t *rrd_info(
 {
     rrd_info_t *info;
     char *opt_daemon = NULL;
+    int status;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -125,43 +126,9 @@ rrd_info_t *rrd_info(
         return (NULL);
     }
 
-    if (opt_daemon == NULL)
-    {
-        char *temp;
-
-        temp = getenv (ENV_RRDCACHED_ADDRESS);
-        if (temp != NULL)
-        {
-            opt_daemon = strdup (temp);
-            if (opt_daemon == NULL)
-            {
-                rrd_set_error("strdup failed.");
-                return (NULL);
-            }
-        }
-    }
-
-    if (opt_daemon != NULL)
-    {
-        int status;
-
-        status = rrdc_connect (opt_daemon);
-        if (status != 0)
-        {
-            rrd_set_error ("rrdc_connect failed with status %i.", status);
-            return (NULL);
-        }
-
-        status = rrdc_flush (argv[optind]);
-        if (status != 0)
-        {
-            rrd_set_error ("rrdc_flush (%s) failed with status %i.",
-                    argv[optind], status);
-            return (NULL);
-        }
-
-        rrdc_disconnect ();
-    } /* if (opt_daemon) */
+    status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
+    if (opt_daemon) free (opt_daemon);
+    if (status) return (NULL);
 
     info = rrd_info_r(argv[optind]);
 

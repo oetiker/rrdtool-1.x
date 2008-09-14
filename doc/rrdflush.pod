@@ -1,0 +1,54 @@
+=head1 NAME
+
+rrdflush - Flush the values for a spcific RRD file from memory.
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<flush> I<filename>
+S<[B<--daemon> I<address>]>
+
+=head1 DESCRIPTION
+
+The B<flush> function connects to L<rrdcached>, the RRD caching daemon, and
+issues a "flush" command for the given file. The daemon will put this file to
+the head of the update queue so it is written "soon". The status will be
+returned after the node has been B<dequeued> by the update thread. By the time
+execution of this command ends it is very likely that the update thread has
+just updated the requested file, though this is not guaranteed.
+
+=over 8
+
+=item I<filename>
+
+The name of the B<RRD> that is to be written to disk.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon. If not specified, the RRDCACHED_ADDRESS
+environment variable must be set (see below). To specify a UNIX domain socket
+use the prefix C<unix:>, see example below. Other addresses are interpreted as
+normal network addresses, i.E<nbsp>e. IPv4 or IPv6 addresses in most cases.
+
+ rrdtool flush --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>flush>:
+
+=over 4
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
+
+=back
+
+=head1 AUTHOR
+
+Florian Forster E<lt>octoE<nbsp>atE<nbsp>verplant.orgE<gt>
+

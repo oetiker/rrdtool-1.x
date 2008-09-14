@@ -6,7 +6,7 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l> I<address>] [B<-w> I<timeout>] [B<-f> I<timeout>]
+B<rrdcached> [B<-l> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>]
 
 =head1 DESCRIPTION
 
@@ -42,6 +42,13 @@ C<unix:/tmp/rrdcached.sock>, will be used.
 Data is written to disk every I<timeout> seconds. If this option is not
 specified the default interval of 300E<nbsp>seconds will be used.
 
+=item B<-z> I<delay>
+
+If specified, rrdcached will delay writing of each RRD for a random number
+of seconds in the rangeE<nbsp>[0,I<delay>).  This will avoid too many
+writes being queued simultaneously.  This value should be no greater than
+the value specified in B<-w>.  By default, there is no delay.
+
 =item B<-f> I<timeout>
 
 Every I<timeout> seconds the entire cache is searched for old values which are
@@ -53,6 +60,19 @@ cases. This timeout defaults to 3600E<nbsp>seconds.
 
 Sets the name and location of the PID-file. If not specified, the default,
 C<I<$localststedir>/run/rrdcached.pid> will be used.
+
+=item B<-j> I<dir>
+
+Write updates to a journal in I<dir>.  In the event of a program or system
+crash, this will allow the daemon to write any updates that were pending
+at the time of the crash.
+
+On startup, the daemon will check for journal files in this directory.  If
+found, all updates therein will be read into memory before the daemon
+starts accepting new connections.
+
+The journal will be rotated with the same frequency as the flush timer
+given by B<-f>.  On clean shutdown, the journal files are removed.
 
 =item B<-b> I<dir>
 
@@ -293,18 +313,29 @@ name of the value, a colon, one or more spaces and the actual value.
 
 Example:
 
- 5 Statistics follow
+ 9 Statistics follow
  QueueLength: 0
+ UpdatesReceived: 30
+ FlushesReceived: 2
  UpdatesWritten: 13
  DataSetsWritten: 390
  TreeNodesNumber: 13
  TreeDepth: 4
+ JournalBytes: 190
+ JournalRotate: 0
 
 =item B<UPDATE> I<filename> I<values> [I<values> ...]
 
 Adds more data to a filename. This is B<the> operation the daemon was designed
 for, so describing the mechanism again is unnecessary. Read L<HOW IT WORKS>
 above for a detailed explanation.
+
+=item B<WROTE> I<filename>
+
+This command is written to the journal after a file is successfully
+written out to disk.  It is used during journal replay to determine which
+updates have already been applied.  It is I<only> valid in the journal; it
+is not accepted from the other command channels.
 
 =back
 
@@ -318,18 +349,18 @@ The following counters are returned by the B<STATS> command:
 
 Number of nodes currently enqueued in the update queue.
 
-=item B<TreeDepth> I<(unsigned 64bit integer)>
+=item B<UpdatesReceived> I<(unsigned 64bit integer)>
 
-Depth of the tree used for fast key lookup.
+Number of UPDATE commands received.
 
-=item B<TreeNodesNumber> I<(unsigned 64bit integer)>
+=item B<FlushesReceived> I<(unsigned 64bit integer)>
 
-Number of nodes in the cache.
+Number of FLUSH commands received.
 
 =item B<UpdatesWritten> I<(unsigned 64bit integer)>
 
-Total number of updates, i.E<nbsp>e. calls to C<rrd_update_r>, since the daemon
-was started.
+Total number of updates, i.E<nbsp>e. calls to C<rrd_update_r>, since the
+daemon was started.
 
 =item B<DataSetsWritten> I<(unsigned 64bit integer)>
 
@@ -337,6 +368,22 @@ Total number of "data sets" written to disk since the daemon was started. A
 data set is one or more values passed to the B<UPDATE> command. For example:
 C<N:123:456> is one data set with two values. The term "data set" is used to
 prevent confusion whether individual values or groups of values are counted.
+
+=item B<TreeNodesNumber> I<(unsigned 64bit integer)>
+
+Number of nodes in the cache.
+
+=item B<TreeDepth> I<(unsigned 64bit integer)>
+
+Depth of the tree used for fast key lookup.
+
+=item B<JournalBytes> I<(unsigned 64bit integer)>
+
+Total number of bytes written to the journal since startup.
+
+=item B<JournalRotate> I<(unsigned 64bit integer)>
+
+Number of times the journal has been rotated since startup.
 
 =back
 
@@ -348,7 +395,14 @@ No known bugs at the moment.
 
 L<rrdtool>, L<rrdgraph>
 
-=head1 AUHOR
+=head1 AUTHOR
 
 B<rrdcached> and this manual page have been written by Florian Forster
 E<lt>octoE<nbsp>atE<nbsp>verplant.orgE<gt>.
+
+=head1 CONTRIBUTORS
+
+kevin brintnall E<lt>kbrint@rufus.netE<gt>
+
+=cut
+

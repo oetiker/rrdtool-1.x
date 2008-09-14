@@ -307,11 +307,8 @@ int im_free(
     if (im == NULL)
         return 0;
 
-    if (im->use_rrdcached)
-    {
-        rrdc_disconnect ();
-        im->use_rrdcached = 0;
-    }
+    if (im->daemon_addr != NULL)
+      free(im->daemon_addr);
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
@@ -845,7 +842,7 @@ int data_fetch(
              * - a connection to the daemon has been established
              * - this is the first occurrence of that RRD file
              */
-            if (im->use_rrdcached)
+            if (rrdc_is_connected(im->daemon_addr))
             {
                 int status;
 
@@ -869,7 +866,7 @@ int data_fetch(
                         return (-1);
                     }
                 }
-            } /* if (im->use_rrdcached) */
+            } /* if (rrdc_is_connected()) */
 
             if ((rrd_fetch_fn(im->gdes[i].rrd,
                               im->gdes[i].cf,
@@ -3748,6 +3745,7 @@ void rrd_graph_init(
 #endif
 #endif
     im->base = 1000;
+    im->daemon_addr = NULL;
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
     im->extra_flags = 0;
@@ -3763,7 +3761,6 @@ void rrd_graph_init(
     im->grinfo_current = (rrd_info_t *) NULL;
     im->imgformat = IF_PNG;
     im->imginfo = NULL;
-    im->use_rrdcached = 0;
     im->lazy = 0;
     im->logarithmic = 0;
     im->maxval = DNAN;
@@ -4254,21 +4251,20 @@ void rrd_graph_options(
             break;
         case 'd':
         {
-            int status;
-            if (im->use_rrdcached)
+            if (im->daemon_addr != NULL)
             {
                 rrd_set_error ("You cannot specify --daemon "
                         "more than once.");
                 return;
             }
-            status = rrdc_connect (optarg);
-            if (status != 0)
+
+            im->daemon_addr = strdup(optarg);
+            if (im->daemon_addr == NULL)
             {
-                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
-                        optarg, status);
-                return;
+              rrd_set_error("strdup failed");
+              return;
             }
-            im->use_rrdcached = 1;
+
             break;
         }
         case '?':
@@ -4280,24 +4276,9 @@ void rrd_graph_options(
         }
     } /* while (1) */
 
-    if (im->use_rrdcached == 0)
-    {
-        char *temp;
-
-        temp = getenv (ENV_RRDCACHED_ADDRESS);
-        if (temp != NULL)
-        {
-            int status;
-
-            status = rrdc_connect (temp);
-            if (status != 0)
-            {
-                rrd_set_error ("rrdc_connect(%s) failed with status %i.",
-                        temp, status);
-                return;
-            }
-            im->use_rrdcached = 1;
-        }
+    {   /* try to connect to rrdcached */
+        int status = rrdc_connect(im->daemon_addr);
+        if (status != 0) return;
     }
     
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);

@@ -51,7 +51,10 @@ rrd_version
 rrd_write
 rrd_xport
 rrdc_connect
+rrdc_is_connected
 rrdc_disconnect
 rrdc_flush
+rrdc_stats_free
+rrdc_stats_get
 rrdc_update
 @RRD_GETOPT_LONG@

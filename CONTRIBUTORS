@@ -32,6 +32,7 @@ Joel Becker <jlbec with raleigh.ibm.com> AIX
 Joey Miller <joeym with inficad.com>php3 and php4 bindings
 Jost.Krieger <Jost.Krieger with ruhr-uni-bochum.de>
 Kai Siering <kai.siering with mediaways.net>
+Kevin Brintnall <kbrint with rufus.net> bugfixes in and additions to rrdcached, including journaling support
 Larry Leszczynski <larryl with furph.com>
 Mark Plaksin <happy@usg.edu> rrd_graph_v
 Matt Chambers <matthew.chambers with vanderbilt.edu> --full-size-mode for rrdgraph

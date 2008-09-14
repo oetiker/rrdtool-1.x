@@ -109,7 +109,7 @@ extern    "C" {
     char *a,
     char *b);
 
-#endif
+#endif /* _RRD_TOOL_H */
 
 #ifdef  __cplusplus
 }
