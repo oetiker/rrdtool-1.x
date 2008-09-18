@@ -363,14 +363,19 @@ void rrd_dontneed(
             rrd->rra_def[i].row_cnt * rrd->stat_head->ds_cnt *
             sizeof(rrd_value_t);
     }
+
+    if (dontneed_start < rrd_file->file_len) {
 #ifdef USE_MADVISE
-    madvise(rrd_file->file_start + dontneed_start,
-            rrd_file->file_len - dontneed_start, MADV_DONTNEED);
+	    madvise(rrd_file->file_start + dontneed_start,
+		    rrd_file->file_len - dontneed_start, MADV_DONTNEED);
 #endif
 #ifdef HAVE_POSIX_FADVISE
-    posix_fadvise(rrd_file->fd, dontneed_start,
-                  rrd_file->file_len - dontneed_start, POSIX_FADV_DONTNEED);
+	    posix_fadvise(rrd_file->fd, dontneed_start,
+			  rrd_file->file_len - dontneed_start,
+			  POSIX_FADV_DONTNEED);
 #endif
+    }
+
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "after");
 #endif
