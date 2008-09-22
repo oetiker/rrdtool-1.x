@@ -532,9 +532,9 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
 ppref=$prefix
-test "$ppref" = "NONE" && ppref=$ac_default_prefix
+test "$ppref" = 'NONE' && ppref=$ac_default_prefix
 
-PERL_MAKE_OPTIONS="PREFIX=$ppref LIB=$ppref/lib/perl/$PERL_VERSION"
+PERL_MAKE_OPTIONS="PREFIX="'$(DESTDIR)'"$ppref LIB="'$(DESTDIR)'"$ppref/lib/perl/$PERL_VERSION"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
@@ -597,7 +597,7 @@ else
 fi
 
 rpref=$prefix
-test "$rpref" = "NONE" && rpref=$ac_default_prefix
+test "$rpref" = 'NONE' && rpref=$ac_default_prefix
 
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
