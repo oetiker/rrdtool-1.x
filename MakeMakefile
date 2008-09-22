@@ -3,8 +3,8 @@
 # Run this script after the first cvs checkout to build
 # makefiles and friends
 
-PATH="/usr/sepp/bin:$PATH"
-export PATH
+#PATH="/usr/sepp/bin:$PATH"
+#export PATH
 
 vcheck (){
   perl <<PERL

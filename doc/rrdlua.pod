@@ -1,0 +1,137 @@
+=head1 NAME
+
+RRDLua -  Lua binding for RRDTool
+
+=head1 SYNOPSIS
+
+  require 'rrd'
+  rrd.create(...)
+  rrd.dump(...)
+  rrd.fetch(...)
+  rrd.first(...)
+  rrd.graph(...)
+  rrd.graphv(...)
+  rrd.info(...)
+  rrd.last(...)
+  rrd.resize(...)
+  rrd.restore(...)
+  rrd.tune(...)
+  rrd.update(...)
+  rrd.updatev(...)
+
+=head1 DESCRIPTION
+
+=head2 Calling Sequence
+
+This module accesses RRDtool functionality directly from within Lua.
+The arguments to the functions listed in the SYNOPSIS are explained in
+the regular RRDtool documentation. The command-line call
+
+  rrdtool update mydemo.rrd --template in:out N:12:13
+
+gets turned into
+
+  rrd.update ("mydemo.rrd", "--template", "in:out", "N:12:13")
+
+Note that
+
+  --template=in:out is also valid.
+
+=head2 Error Handling
+
+The Lua RRDTool module functions will abort your program with a stack
+traceback when they can not make sense out of the arguments you fed them.
+
+  Ex:
+
+  -- If the Lua RRDTool module was installed together with RRDTool,
+  -- in $prefix/lib/lua/$lua_version, package.cpath must be set like
+  -- in the example below, so that 'require' can find the module:
+
+  package.cpath = '/usr/local/rrdtool-1.3.3/lib/lua/5.1/?.so;' ..
+                  package.cpath
+  local rrd = require 'rrd'
+  rrd.update ("mydemo.rrd","N:12:13")
+
+  $ lua t.lua
+
+  lua: t.lua:8: opening 'mydemo.rrd': No such file or directory
+  stack traceback:
+          [C]: in function 'update'
+          t.lua:8: in main chunk
+          [C]: ?
+
+You may capture and handle the errors yourself, instead of just letting
+the program abort, by calling the module functions through Lua protected
+calls - 'pcall' or 'xpcall'.
+
+=head2 Return Values
+
+The functions rrd.first, rrd.last, rrd.graph, rrd.info and rrd.fetch
+return their findings.
+
+B<rrd.first> returns a single INTEGER representing the timestamp of the
+first data sample in an RRA within an RRD file. Example returning the
+first timestamp of the third RRA (index 2):
+
+  local firstdate = rrd.first('example.rrd', '--rraindex', 2)
+
+B<rrd.last> returns a single INTEGER representing the last update time.
+
+  local lastupdate = rrd.last('example.rrd')
+
+B<rrd.graph> returns the x-size and y-size of the created image and a table
+with the results of the PRINT arguments.
+
+  local xsize, ysize, averages = rrd.graph ...
+  print(string.format("Image size: %dx%d", xsize, ysize)
+  print("Averages: ", table.concat(averages, ', '))
+
+B<rrd.info> returns a table where the keys and the values represent property
+names and property values of the RRD.
+
+  local info = rrd.info("test.rrd")
+  for key, value in pairs(info) do
+    print(key, ' = ', value)
+  end
+
+B<rrd.graphv> takes the same parameters as rrd.graph but it returns a table
+only. The table returned contains meta information about the graph, like
+its size as well as the position of the graph area on the image. When
+called with and empty filename, the contents of the graph will be returned
+in the table as well (key 'image').
+
+B<rrd.updatev> also returns a table. The keys of the table are strings
+formed by the concatenation of timestamp, RRA index and data source name
+for each consolidated data point (CDP) written to disk as a result of the
+current update call. The key values are CDP values.
+
+B<rrd.fetch> is the most complex of the pack regarding return values. It
+returns 5 values: the initial timestamp, the step, two parallel arrays
+containing the data source names and their data points respectively, and
+the final timestamp.
+
+  package.cpath = '/usr/local/rrdtool-1.3.3/lib/lua/5.1/?.so;' ..
+                   package.cpath
+  local rrd = require "rrd"
+  local first, last = rrd.first("test.rrd"), rrd.last("test.rrd")
+  local start, step, names, data =
+    rrd.fetch("test.rrd", "--start", first, "--end", last, "AVERAGE")
+  io.write(string.format("Start:       %s (%d)\n",
+                         os.date("%c", start),start))
+  io.write("Step size:   ", step, " seconds\n")
+  io.write("DS names:    ", table.concat(names, ', '), "\n")
+  io.write("Data points: ", #data[1], "\n")
+  io.write("Data:\n")
+  for i,dp in ipairs(data) do
+    io.write(os.date("%t", start), " (", start, "): ")
+    start = start + step
+    for j,v in ipairs(dp) do
+      io.write(v, " ")
+    end
+  io.write("\n")
+  end
+
+=head1 AUTHOR
+
+Fidelis Assis E<lt>fidelis@pobox.comE<gt>

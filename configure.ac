@@ -532,10 +532,11 @@ AC_MSG_CHECKING(Perl Modules to build)
 AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
-ppref=$prefix
-test "$ppref" = "NONE" && ppref=$ac_default_prefix
+langpref=$prefix
+test "$langpref" = "$(DESTDIR)NONE" && langpref='$(DESTDIR)'$ac_default_prefix
+test "$langpref" = "NONE" && langpref=$ac_default_prefix
 
-PERL_MAKE_OPTIONS="PREFIX=$ppref LIB=$ppref/lib/perl/$PERL_VERSION"
+PERL_MAKE_OPTIONS="PREFIX=$langpref LIB=$langpref/lib/perl/$PERL_VERSION"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
@@ -597,16 +598,13 @@ else
 	fi				
 fi
 
-rpref=$prefix
-test "$rpref" = "NONE" && rpref=$ac_default_prefix
-
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
 [  --enable-ruby-site-install   by default the rrdtool ruby modules are installed
 		  	  together with rrdtool in $prefix/lib/ruby. You have to
-                          add $prefix/lib/ruby/$ruby_version/$sitearch to you $: variable
+                          add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable
                           for ruby to find the RRD.so file.],
-[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir="'$(DESTDIR)'"$rpref/lib/ruby"])
+[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
 
     
 AC_ARG_WITH(ruby-options,
@@ -619,6 +617,49 @@ AC_ARG_WITH(ruby-options,
 AC_SUBST(RUBY_MAKE_OPTIONS)
 AC_SUBST(RUBY)
 AC_SUBST(COMP_RUBY)
+
+dnl Check for Lua.
+AC_PATH_PROG(LUA, lua, no)
+
+AC_ARG_ENABLE(lua,[  --disable-lua          do not build the lua modules],
+[],[enable_lua=yes])
+
+AC_MSG_CHECKING(if lua modules can be built)
+
+COMP_LUA=
+if test "x$LUA" = "xno" -o  x$enable_lua = xno; then
+  AC_MSG_RESULT(No .. Lua not found or disabled)
+else
+  for dir in /usr/include/lua /usr/include/lua5.1 /usr/local/include/lua5.1 /usr/include/lua5.2 /usr/local/include/lua5.2 ; do
+    if test -f "$dir/lualib.h" ; then
+      enable_lua=yes
+      COMP_LUA="lua"
+      break
+    fi
+  done
+
+  if test "$COMP_LUA" = "lua" ; then
+    AC_MSG_RESULT(YES)
+  else
+    AC_MSG_RESULT(Lua found but lualib.h is missing! Install the -dev package)
+  fi
+fi
+
+dnl pass additional lua options
+# if lua-site-install is set, don't set 'LIB' and let Lua setup decide
+# the best place.
+AC_ARG_ENABLE(lua-site-install,
+[  --enable-lua-site-install   by default the rrdtool lua modules are installed
+                          together with rrdtool in $prefix/lib/lua. You have to
+                          add $prefix/lib/lua/$lua_version/?.so to package.cpath
+                          for lua to find the rrd.so file.]. When you set this
+			  option the Lua module will get installed wherever
+                          your Lua setup thinks it is best.],
+[LUA_MAKE_OPTIONS=],[LUA_MAKE_OPTIONS="LIB=$langpref/lib/lua"])
+
+AC_SUBST(LUA_MAKE_OPTIONS)
+AC_SUBST(LUA)
+AC_SUBST(COMP_LUA)
 
 
 enable_tcl_site=no
@@ -748,6 +789,9 @@ echo "          Perl Options: $PERL_MAKE_OPTIONS"
 echo "          Ruby Modules: $COMP_RUBY"
 echo "           Ruby Binary: $RUBY"
 echo "          Ruby Options: $RUBY_MAKE_OPTIONS"
+echo "           Lua Modules: $COMP_LUA"
+echo "            Lua Binary: $LUA"
+echo "           Lua Options: $LUA_MAKE_OPTIONS"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"

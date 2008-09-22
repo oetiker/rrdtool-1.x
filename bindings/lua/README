@@ -1,0 +1,21 @@
+RRDLua is a Lua module for RRD functions.
+
+Compiling:
+
+Just run "configure" from the top RRDTool package dir and then 'make'.
+You should have lua and lua-dev packages installed before executing
+configure.
+
+Testing:
+
+Enter the bindings/lua dir, run 'make test' and use your preferred
+viewer to display the just created graph 'test.png'. If you can read
+"Enjoy Lua RRDtool module!" on the picture, everything went fine.
+
+Installation:
+
+Run 'make install' from the top dir of the RRDtool package. The Lua
+module will be installed in the same RRDtool installation dir,
+under the subdir lib/lua/<lua_version>.
+
+
