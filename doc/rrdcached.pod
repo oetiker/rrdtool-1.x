@@ -128,6 +128,15 @@ the disk itself. All other commands can send a B<FLUSH> command (see below) to
 the daemon before accessing the files, so they work with up-to-date data even
 if the cache timeout is large.
 
+=head1 ERROR REPORTING
+
+The daemon reports errors in one of two ways: During startup, error messages
+are printed to C<STDERR>. One of the steps when starting up is to fork to the
+background and closing C<STDERR> - after this writing directly to the user is
+no longer possible. Once this has happened, the daemon will send log messages
+to the system logging daemon using L<syslog(3)>. The facility used it
+C<LOG_DAEMON>.
+
 =head1 HOW IT WORKS
 
 When receiving an update, B<rrdcached> does not write to disk but looks for an
