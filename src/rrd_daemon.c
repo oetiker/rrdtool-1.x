@@ -1568,6 +1568,7 @@ static int open_listen_socket (const char *addr) /* {{{ */
   struct addrinfo ai_hints;
   struct addrinfo *ai_res;
   struct addrinfo *ai_ptr;
+  char *port;
   int status;
 
   assert (addr != NULL);
@@ -1585,8 +1586,14 @@ static int open_listen_socket (const char *addr) /* {{{ */
   ai_hints.ai_family = AF_UNSPEC;
   ai_hints.ai_socktype = SOCK_STREAM;
 
+  port = rindex(addr, ':');
+  if (port != NULL)
+    *port++ = '\0';
+
   ai_res = NULL;
-  status = getaddrinfo (addr, RRDCACHED_DEFAULT_PORT, &ai_hints, &ai_res);
+  status = getaddrinfo (addr,
+                        port == NULL ? RRDCACHED_DEFAULT_PORT : port,
+                        &ai_hints, &ai_res);
   if (status != 0)
   {
     RRDD_LOG (LOG_ERR, "open_listen_socket: getaddrinfo(%s) failed: "

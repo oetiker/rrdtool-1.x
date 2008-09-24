@@ -34,6 +34,9 @@ socket. If I<address> begins with C<unix:>, everything following that prefix is
 interpreted as the path to a UNIX domain socket. Otherwise the address or node
 name are resolved using L<getaddrinfo>.
 
+For network sockets, a port may be specified by using the form
+I<address>:I<port>.  The default port is 42217.
+
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
 
