@@ -1643,6 +1643,7 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
   {
     int fd;
     listen_socket_t *temp;
+    int one = 1;
 
     temp = (listen_socket_t *) realloc (listen_fds,
         sizeof (listen_fds[0]) * (listen_fds_num + 1));
@@ -1660,6 +1661,8 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
       RRDD_LOG (LOG_ERR, "open_listen_socket: socket(2) failed.");
       continue;
     }
+
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
