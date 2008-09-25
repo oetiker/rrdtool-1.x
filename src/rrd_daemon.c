@@ -1479,11 +1479,10 @@ static void *connection_thread_main (void *args) /* {{{ */
 
     status = handle_request (fd, buffer, /*buffer_size=*/ status);
     if (status != 0)
-    {
-      close (fd);
       break;
-    }
   }
+
+  close(fd);
 
   self = pthread_self ();
   /* Remove this thread from the connection threads list */
@@ -1748,8 +1747,12 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
       pollfds[i].revents = 0;
     }
 
-    status = poll (pollfds, pollfds_num, /* timeout = */ -1);
-    if (status < 1)
+    status = poll (pollfds, pollfds_num, /* timeout = */ 1000);
+    if (status == 0)
+    {
+      continue; /* timeout */
+    }
+    else if (status < 0)
     {
       status = errno;
       if (status != EINTR)
