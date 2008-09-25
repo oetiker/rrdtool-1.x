@@ -37,6 +37,13 @@ name are resolved using L<getaddrinfo>.
 For network sockets, a port may be specified by using the form
 I<address>:I<port>.  The default port is 42217.
 
+These formats are accepted:
+
+   unix:</path/to/unix.sock>
+   </path/to/unix.sock>
+   <hostname-or-ip>
+   <hostname-or-ip>:<port>
+
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
 

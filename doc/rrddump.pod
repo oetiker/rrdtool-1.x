@@ -47,10 +47,8 @@ the xml headers.
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return
-fresh data even if the daemon is configured to cache values for a long time. To
-specify a UNIX domain socket use the prefix C<unix:>, see example below. Other
-addresses are interpreted as normal network addresses, i.E<nbsp>e. IPv4 or IPv6
-addresses in most cases.
+fresh data even if the daemon is configured to cache values for a long time.
+For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool dump --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 

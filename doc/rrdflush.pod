@@ -24,10 +24,10 @@ The name of the B<RRD> that is to be written to disk.
 
 =item B<--daemon> I<address>
 
-Address of the L<rrdcached> daemon. If not specified, the RRDCACHED_ADDRESS
-environment variable must be set (see below). To specify a UNIX domain socket
-use the prefix C<unix:>, see example below. Other addresses are interpreted as
-normal network addresses, i.E<nbsp>e. IPv4 or IPv6 addresses in most cases.
+Address of the L<rrdcached> daemon. If not specified, the
+RRDCACHED_ADDRESS environment variable must be set (see below).  For a
+list of accepted formats, see the B<-l> option in the L<rrdcached>
+manual.
 
  rrdtool flush --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 

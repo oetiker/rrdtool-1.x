@@ -65,12 +65,9 @@ for the COMPUTE B<DST>.
 If given, B<RRDTool> will try to connect to the caching daemon L<rrdcached>
 at I<address> and will fail if the connection cannot be established. If the
 connection is successfully established the values will be sent to the daemon
-instead of accessing the files directly. If I<address> begins with C<unix:>
-then everything after this prefix will be considered to be a UNIX domain
-socket, see L<EXAMPLES> below. Otherwise the address is interpreted as network
-address or node name as understood by L<getaddrinfo>. One practical
-consequence is that both, IPv4 and IPv6, may be used if the system supports
-it. This option is available for the B<update> command only.
+instead of accessing the files directly.
+
+For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
 =item B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]
 
