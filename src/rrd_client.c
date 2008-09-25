@@ -347,15 +347,21 @@ static int rrdc_connect_unix (const char *path) /* {{{ */
   return (0);
 } /* }}} int rrdc_connect_unix */
 
-static int rrdc_connect_network (const char *addr) /* {{{ */
+static int rrdc_connect_network (const char *addr_orig) /* {{{ */
 {
   struct addrinfo ai_hints;
   struct addrinfo *ai_res;
   struct addrinfo *ai_ptr;
+  char addr_copy[NI_MAXHOST];
+  char *addr;
   char *port;
 
-  assert (addr != NULL);
+  assert (addr_orig != NULL);
   assert (sd == -1);
+
+  strncpy(addr_copy, addr_orig, sizeof(addr_copy));
+  addr_copy[sizeof(addr_copy) - 1] = '\0';
+  addr = addr_copy;
 
   int status;
   memset (&ai_hints, 0, sizeof (ai_hints));
@@ -366,9 +372,40 @@ static int rrdc_connect_network (const char *addr) /* {{{ */
   ai_hints.ai_family = AF_UNSPEC;
   ai_hints.ai_socktype = SOCK_STREAM;
 
-  port = rindex(addr, ':');
-  if (port != NULL)
-    *port++ = '\0';
+  port = NULL;
+  if (*addr == '[') /* IPv6+port format */
+  {
+    /* `addr' is something like "[2001:780:104:2:211:24ff:feab:26f8]:12345" */
+    addr++;
+
+    port = strchr (addr, ']');
+    if (port == NULL)
+    {
+      rrd_set_error("malformed address: %s", addr_orig);
+      return (-1);
+    }
+    *port = 0;
+    port++;
+
+    if (*port == ':')
+      port++;
+    else if (*port == 0)
+      port = NULL;
+    else
+    {
+      rrd_set_error("garbage after address: %s", port);
+      return (-1);
+    }
+  } /* if (*addr = ']') */
+  else if (strchr (addr, '.') != NULL) /* Hostname or IPv4 */
+  {
+    port = rindex(addr, ':');
+    if (port != NULL)
+    {
+      *port = 0;
+      port++;
+    }
+  }
 
   ai_res = NULL;
   status = getaddrinfo (addr,
