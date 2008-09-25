@@ -1563,15 +1563,21 @@ static int open_listen_socket_unix (const char *path) /* {{{ */
   return (0);
 } /* }}} int open_listen_socket_unix */
 
-static int open_listen_socket (const char *addr) /* {{{ */
+static int open_listen_socket (const char *addr_orig) /* {{{ */
 {
   struct addrinfo ai_hints;
   struct addrinfo *ai_res;
   struct addrinfo *ai_ptr;
+  char addr_copy[NI_MAXHOST];
+  char *addr;
   char *port;
   int status;
 
-  assert (addr != NULL);
+  assert (addr_orig != NULL);
+
+  strncpy (addr_copy, addr_orig, sizeof (addr_copy));
+  addr_copy[sizeof (addr_copy) - 1] = 0;
+  addr = addr_copy;
 
   if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
     return (open_listen_socket_unix (addr + strlen ("unix:")));
@@ -1586,10 +1592,42 @@ static int open_listen_socket (const char *addr) /* {{{ */
   ai_hints.ai_family = AF_UNSPEC;
   ai_hints.ai_socktype = SOCK_STREAM;
 
-  port = rindex(addr, ':');
-  if (port != NULL)
-    *port++ = '\0';
+  port = NULL;
+ if (*addr == '[') /* IPv6+port format */
+  {
+    /* `addr' is something like "[2001:780:104:2:211:24ff:feab:26f8]:12345" */
+    addr++;
 
+    port = strchr (addr, ']');
+    if (port == NULL)
+    {
+      RRDD_LOG (LOG_ERR, "open_listen_socket: Malformed address: %s",
+          addr_orig);
+      return (-1);
+    }
+    *port = 0;
+    port++;
+
+    if (*port == ':')
+      port++;
+    else if (*port == 0)
+      port = NULL;
+    else
+    {
+      RRDD_LOG (LOG_ERR, "open_listen_socket: Garbage after address: %s",
+          port);
+      return (-1);
+    }
+  } /* if (*addr = ']') */
+  else if (strchr (addr, '.') != NULL) /* Hostname or IPv4 */
+  {
+    port = rindex(addr, ':');
+    if (port != NULL)
+    {
+      *port = 0;
+      port++;
+    }
+  }
   ai_res = NULL;
   status = getaddrinfo (addr,
                         port == NULL ? RRDCACHED_DEFAULT_PORT : port,

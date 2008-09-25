@@ -35,14 +35,19 @@ interpreted as the path to a UNIX domain socket. Otherwise the address or node
 name are resolved using L<getaddrinfo>.
 
 For network sockets, a port may be specified by using the form
-I<address>:I<port>.  The default port is 42217.
+C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
+qualified domain name (i.E<nbsp>e. the address contains at least one dot
+(C<.>)), the square brackets can be omitted, resulting in the (simpler)
+C<I<address>B<:>I<port>> pattern.. The default port is B<42217/udp>.
 
-These formats are accepted:
+The following formats are accepted. Please note that the address of the UNIX
+domain socket B<must> start with a slash in the second case!
 
    unix:</path/to/unix.sock>
-   </path/to/unix.sock>
+   /<path/to/unix.sock>
    <hostname-or-ip>
-   <hostname-or-ip>:<port>
+   [<hostname-or-ip>]:<port>
+   <hostname-or-ipv4>:<port>
 
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
