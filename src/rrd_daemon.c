@@ -209,31 +209,34 @@ static void sig_term_handler (int s __attribute__((unused))) /* {{{ */
   pthread_cond_broadcast(&cache_cond);
 } /* }}} void sig_term_handler */
 
-static int write_pidfile (void) /* {{{ */
+static int open_pidfile(void) /* {{{ */
 {
-  pid_t pid;
-  char *file;
   int fd;
-  FILE *fh;
+  char *file;
 
-  pid = getpid ();
-  
   file = (config_pid_file != NULL)
     ? config_pid_file
     : LOCALSTATEDIR "/run/rrdcached.pid";
 
   fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IRGRP|S_IROTH);
   if (fd < 0)
-  {
-    RRDD_LOG(LOG_ERR, "FATAL: cannot create '%s' (%s)",
-             file, rrd_strerror(errno));
-    return (-1);
-  }
+    fprintf(stderr, "FATAL: cannot create '%s' (%s)\n",
+            file, rrd_strerror(errno));
+
+  return(fd);
+}
+
+static int write_pidfile (int fd) /* {{{ */
+{
+  pid_t pid;
+  FILE *fh;
+
+  pid = getpid ();
 
   fh = fdopen (fd, "w");
   if (fh == NULL)
   {
-    RRDD_LOG (LOG_ERR, "write_pidfile: Opening `%s' failed.", file);
+    RRDD_LOG (LOG_ERR, "write_pidfile: fopen() failed.");
     close(fd);
     return (-1);
   }
@@ -1816,12 +1819,16 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 static int daemonize (void) /* {{{ */
 {
   int status;
+  int fd;
 
   /* These structures are static, because `sigaction' behaves weird if the are
    * overwritten.. */
   static struct sigaction sa_int;
   static struct sigaction sa_term;
   static struct sigaction sa_pipe;
+
+  fd = open_pidfile();
+  if (fd < 0) return fd;
 
   if (!stay_foreground)
   {
@@ -1886,7 +1893,7 @@ static int daemonize (void) /* {{{ */
     return (-1);
   }
 
-  status = write_pidfile ();
+  status = write_pidfile (fd);
   return status;
 } /* }}} int daemonize */
 
