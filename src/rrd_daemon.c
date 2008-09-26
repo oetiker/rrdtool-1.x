@@ -119,7 +119,7 @@ struct cache_item_s
 #define CI_FLAGS_IN_TREE  (1<<0)
 #define CI_FLAGS_IN_QUEUE (1<<1)
   int flags;
-
+  pthread_cond_t  flushed;
   cache_item_t *next;
 };
 
@@ -164,8 +164,6 @@ static cache_item_t   *cache_queue_head = NULL;
 static cache_item_t   *cache_queue_tail = NULL;
 static pthread_mutex_t cache_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  cache_cond = PTHREAD_COND_INITIALIZER;
-
-static pthread_cond_t  flush_cond = PTHREAD_COND_INITIALIZER;
 
 static int config_write_interval = 300;
 static int config_write_jitter   = 0;
@@ -640,6 +638,7 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     journal_write("wrote", file);
+    pthread_cond_broadcast(&ci->flushed);
 
     for (i = 0; i < values_num; i++)
       free (values[i]);
@@ -656,7 +655,6 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     pthread_mutex_lock (&cache_lock);
-    pthread_cond_broadcast (&flush_cond);
 
     /* We're about to shut down, so lets flush the entire tree. */
     if ((do_shutdown != 0) && (cache_queue_head == NULL))
@@ -751,23 +749,9 @@ static int flush_file (const char *filename) /* {{{ */
   enqueue_cache_item (ci, HEAD);
   pthread_cond_signal (&cache_cond);
 
-  while ((ci->flags & CI_FLAGS_IN_QUEUE) != 0)
-  {
-    ci = NULL;
+  pthread_cond_wait(&ci->flushed, &cache_lock);
+  pthread_mutex_unlock(&cache_lock);
 
-    pthread_cond_wait (&flush_cond, &cache_lock);
-
-    ci = g_tree_lookup (cache_tree, filename);
-    if (ci == NULL)
-    {
-      RRDD_LOG (LOG_ERR, "flush_file: Tree node went away "
-          "while waiting for flush.");
-      pthread_mutex_unlock (&cache_lock);
-      return (-1);
-    }
-  }
-
-  pthread_mutex_unlock (&cache_lock);
   return (0);
 } /* }}} int flush_file */
 
@@ -1043,17 +1027,19 @@ static int handle_request_update (int fd, /* {{{ */
   pthread_mutex_unlock(&stats_lock);
 
   pthread_mutex_lock (&cache_lock);
-
   ci = g_tree_lookup (cache_tree, file);
+
   if (ci == NULL) /* {{{ */
   {
     struct stat statbuf;
+
+    /* don't hold the lock while we setup; stat(2) might block */
+    pthread_mutex_unlock(&cache_lock);
 
     memset (&statbuf, 0, sizeof (statbuf));
     status = stat (file, &statbuf);
     if (status != 0)
     {
-      pthread_mutex_unlock (&cache_lock);
       RRDD_LOG (LOG_NOTICE, "handle_request_update: stat (%s) failed.", file);
 
       status = errno;
@@ -1067,16 +1053,12 @@ static int handle_request_update (int fd, /* {{{ */
     }
     if (!S_ISREG (statbuf.st_mode))
     {
-      pthread_mutex_unlock (&cache_lock);
-
       snprintf (answer, sizeof (answer), "-1 Not a regular file: %s\n", file);
       RRDD_UPDATE_SEND;
       return (0);
     }
     if (access(file, R_OK|W_OK) != 0)
     {
-      pthread_mutex_unlock (&cache_lock);
-
       snprintf (answer, sizeof (answer), "-1 Cannot read/write %s: %s\n",
                 file, rrd_strerror(errno));
       RRDD_UPDATE_SEND;
@@ -1086,7 +1068,6 @@ static int handle_request_update (int fd, /* {{{ */
     ci = (cache_item_t *) malloc (sizeof (cache_item_t));
     if (ci == NULL)
     {
-      pthread_mutex_unlock (&cache_lock);
       RRDD_LOG (LOG_ERR, "handle_request_update: malloc failed.");
 
       strncpy (answer, "-1 malloc failed.\n", sizeof (answer));
@@ -1098,7 +1079,6 @@ static int handle_request_update (int fd, /* {{{ */
     ci->file = strdup (file);
     if (ci->file == NULL)
     {
-      pthread_mutex_unlock (&cache_lock);
       free (ci);
       RRDD_LOG (LOG_ERR, "handle_request_update: strdup failed.");
 
@@ -1110,6 +1090,7 @@ static int handle_request_update (int fd, /* {{{ */
     _wipe_ci_values(ci, now);
     ci->flags = CI_FLAGS_IN_TREE;
 
+    pthread_mutex_lock(&cache_lock);
     g_tree_insert (cache_tree, (void *) ci->file, (void *) ci);
   } /* }}} */
   assert (ci != NULL);

@@ -187,9 +187,8 @@ The downside of caching values is that they won't show up in graphs generated
 from the RRDE<nbsp>files. To get around this, the daemon provides the "flush
 command" to flush specific files. This means that the file is inserted at the
 B<head> of the update queue or moved there if it is already enqueued. The flush
-command will return after the update thread has dequeued the file, so there is
-a good chance that the file has been updated by the time the client receives
-the response from the daemon, but there is no guarantee.
+command will return only after the file's pending updates have been written
+to disk.
 
  +------+   +------+                               +------+
  ! head !   ! root !                               ! tail !

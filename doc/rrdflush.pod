@@ -12,9 +12,7 @@ S<[B<--daemon> I<address>]>
 The B<flush> function connects to L<rrdcached>, the RRD caching daemon, and
 issues a "flush" command for the given file. The daemon will put this file to
 the head of the update queue so it is written "soon". The status will be
-returned after the node has been B<dequeued> by the update thread. By the time
-execution of this command ends it is very likely that the update thread has
-just updated the requested file, though this is not guaranteed.
+returned only after the file's pending updates have been written to disk.
 
 =over 8
 
