@@ -17,18 +17,22 @@ PERL
 }
 
 ERROR=0
+LIBTOOL_VER="1.5.6"
+AUTOMAKE_VER="1.9.2"
+AUTOCONF_VER="2.59"
+INTLTOOL_VER="0.35.0"
 
-if vcheck 1.5.14 "libtool --version"
+if vcheck $LIBTOOL_VER "libtool --version"
 then
-  echo "get a copy of GNU libtool >= 1.5.14"
+  echo "get a copy of GNU libtool >= $LIBTOOL_VER"
   ERROR=1
 fi
 
-if vcheck 1.9.5  "automake  --version"
+if vcheck $AUTOMAKE_VER  "automake  --version"
 then
-  if vcheck 1.9.5  "automake-1.9 --version"
+  if vcheck $AUTOMAKE_VER  "automake-1.9 --version"
   then
-    echo "get a copy of GNU automake >= 1.9.5"
+    echo "get a copy of GNU automake >= $AUTOMAKE_VER"
     ERROR=1
   else
     automake=automake-1.9
@@ -43,15 +47,15 @@ else
 #    aclocal="aclocal -I /usr/pack/libtool-1.5.14-to/share/aclocal"
 fi
 
-if vcheck 2.59 "autoconf --version"
+if vcheck $AUTOCONF_VER "autoconf --version"
 then
-  echo "get a copy of GNU autoconf >= 2.59"
+  echo "get a copy of GNU autoconf >= $autoconf_ver"
   ERROR=1
 fi
 
-if vcheck 0.35.0 "intltoolize --version"
+if vcheck $INTLTOOL_VER "intltoolize --version"
 then
-  echo "get a copy of GNU intltoolize >= 0.35.0"
+  echo "get a copy of GNU intltoolize >= $INTLTOOL_VER"
   ERROR=1
 fi
 	
