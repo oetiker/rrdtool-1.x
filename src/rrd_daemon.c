@@ -273,7 +273,7 @@ static int open_pidfile(void) /* {{{ */
             file, rrd_strerror(errno));
 
   return(fd);
-}
+} /* }}} static int open_pidfile */
 
 static int write_pidfile (int fd) /* {{{ */
 {
@@ -1091,7 +1091,7 @@ static int handle_request_flushall(int fd) /* {{{ */
   }
 
   return (status);
-}
+} /* }}} static int handle_request_flushall */
 
 static int handle_request_update (int fd, /* {{{ */
     char *buffer, size_t buffer_size)
