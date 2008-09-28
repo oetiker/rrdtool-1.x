@@ -195,19 +195,45 @@ static void journal_rotate(void);
 /* 
  * Functions
  */
-static void sig_int_handler (int s __attribute__((unused))) /* {{{ */
+static void sig_common (const char *sig) /* {{{ */
 {
-  RRDD_LOG(LOG_NOTICE, "caught SIGINT");
+  RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
   do_shutdown++;
   pthread_cond_broadcast(&cache_cond);
+} /* }}} void sig_common */
+
+static void sig_int_handler (int s __attribute__((unused))) /* {{{ */
+{
+  sig_common("INT");
 } /* }}} void sig_int_handler */
 
 static void sig_term_handler (int s __attribute__((unused))) /* {{{ */
 {
-  RRDD_LOG(LOG_NOTICE, "caught SIGTERM");
-  do_shutdown++;
-  pthread_cond_broadcast(&cache_cond);
+  sig_common("TERM");
 } /* }}} void sig_term_handler */
+
+static void install_signal_handlers(void) /* {{{ */
+{
+  /* These structures are static, because `sigaction' behaves weird if the are
+   * overwritten.. */
+  static struct sigaction sa_int;
+  static struct sigaction sa_term;
+  static struct sigaction sa_pipe;
+
+  /* Install signal handlers */
+  memset (&sa_int, 0, sizeof (sa_int));
+  sa_int.sa_handler = sig_int_handler;
+  sigaction (SIGINT, &sa_int, NULL);
+
+  memset (&sa_term, 0, sizeof (sa_term));
+  sa_term.sa_handler = sig_term_handler;
+  sigaction (SIGTERM, &sa_term, NULL);
+
+  memset (&sa_pipe, 0, sizeof (sa_pipe));
+  sa_pipe.sa_handler = SIG_IGN;
+  sigaction (SIGPIPE, &sa_pipe, NULL);
+
+} /* }}} void install_signal_handlers */
 
 static int open_pidfile(void) /* {{{ */
 {
@@ -1860,12 +1886,6 @@ static int daemonize (void) /* {{{ */
   int status;
   int fd;
 
-  /* These structures are static, because `sigaction' behaves weird if the are
-   * overwritten.. */
-  static struct sigaction sa_int;
-  static struct sigaction sa_term;
-  static struct sigaction sa_pipe;
-
   fd = open_pidfile();
   if (fd < 0) return fd;
 
@@ -1909,18 +1929,7 @@ static int daemonize (void) /* {{{ */
     dup (0);
   } /* if (!stay_foreground) */
 
-  /* Install signal handlers */
-  memset (&sa_int, 0, sizeof (sa_int));
-  sa_int.sa_handler = sig_int_handler;
-  sigaction (SIGINT, &sa_int, NULL);
-
-  memset (&sa_term, 0, sizeof (sa_term));
-  sa_term.sa_handler = sig_term_handler;
-  sigaction (SIGTERM, &sa_term, NULL);
-
-  memset (&sa_pipe, 0, sizeof (sa_pipe));
-  sa_pipe.sa_handler = SIG_IGN;
-  sigaction (SIGPIPE, &sa_pipe, NULL);
+  install_signal_handlers();
 
   openlog ("rrdcached", LOG_PID, LOG_DAEMON);
   RRDD_LOG(LOG_INFO, "starting up");
