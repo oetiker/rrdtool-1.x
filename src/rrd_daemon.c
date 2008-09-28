@@ -500,7 +500,7 @@ static int flush_old_values (int max_age)
   if (max_age > 0)
     cfd.abs_timeout = cfd.now - max_age;
   else
-    cfd.abs_timeout = cfd.now + 1;
+    cfd.abs_timeout = cfd.now + 2*config_write_jitter + 1;
 
   /* `tree_callback_flush' will return the keys of all values that haven't
    * been touched in the last `config_flush_interval' seconds in `cfd'.
