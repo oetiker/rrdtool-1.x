@@ -428,6 +428,7 @@ static int enqueue_cache_item (cache_item_t *ci, /* {{{ */
 
   if (did_insert)
   {
+    pthread_cond_broadcast(&cache_cond);
     pthread_mutex_lock (&stats_lock);
     stats_queue_length++;
     pthread_mutex_unlock (&stats_lock);
@@ -750,7 +751,6 @@ static int flush_file (const char *filename) /* {{{ */
 
   /* Enqueue at head */
   enqueue_cache_item (ci, HEAD);
-  pthread_cond_signal (&cache_cond);
 
   pthread_cond_wait(&ci->flushed, &cache_lock);
   pthread_mutex_unlock(&cache_lock);
@@ -1135,7 +1135,6 @@ static int handle_request_update (int fd, /* {{{ */
       && (ci->values_num > 0))
   {
     enqueue_cache_item (ci, TAIL);
-    pthread_cond_signal (&cache_cond);
   }
 
   pthread_mutex_unlock (&cache_lock);
