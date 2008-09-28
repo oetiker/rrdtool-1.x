@@ -236,7 +236,7 @@ static int write_pidfile (int fd) /* {{{ */
   fh = fdopen (fd, "w");
   if (fh == NULL)
   {
-    RRDD_LOG (LOG_ERR, "write_pidfile: fopen() failed.");
+    RRDD_LOG (LOG_ERR, "write_pidfile: fdopen() failed.");
     close(fd);
     return (-1);
   }
