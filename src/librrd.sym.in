@@ -22,6 +22,7 @@ rrd_info
 rrd_info_free
 rrd_info_print
 rrd_info_push
+rrd_info_r
 rrd_init
 rrd_last
 rrd_last_r

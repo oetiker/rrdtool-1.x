@@ -204,6 +204,8 @@ extern    "C" {
     time_t last_up,
     int argc,
     const char **argv);
+    rrd_info_t *rrd_info_r(
+    char *);
 /* NOTE: rrd_update_r are only thread-safe if no at-style time
    specifications get used!!! */
 
