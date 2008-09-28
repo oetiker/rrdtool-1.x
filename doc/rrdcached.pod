@@ -122,7 +122,7 @@ used.
 
 =back
 
-=head1 EFFECTED RRDTOOL COMMANDS
+=head1 AFFECTED RRDTOOL COMMANDS
 
 The following commands may be made aware of the B<rrdcached> using the command
 line argument B<--daemon> or the environment variable B<RRDCACHED_ADDRESS>:
