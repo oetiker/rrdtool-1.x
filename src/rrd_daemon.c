@@ -769,8 +769,9 @@ static int handle_request_help (int fd, /* {{{ */
 
   char *help_help[] =
   {
-    "4 Command overview\n",
+    "5 Command overview\n",
     "FLUSH <filename>\n",
+    "FLUSHALL\n",
     "HELP [<command>]\n",
     "UPDATE <filename> <values> [<values> ...]\n",
     "STATS\n"
@@ -786,6 +787,15 @@ static int handle_request_help (int fd, /* {{{ */
     "after is has been dequeued.\n"
   };
   size_t help_flush_len = sizeof (help_flush) / sizeof (help_flush[0]);
+
+  char *help_flushall[] =
+  {
+    "3 Help for FLUSHALL\n",
+    "Usage: FLUSHALL\n",
+    "\n",
+    "Triggers writing of all pending updates.  Returns immediately.\n"
+  };
+  size_t help_flushall_len = sizeof(help_flushall) / sizeof(help_flushall[0]);
 
   char *help_update[] =
   {
@@ -829,6 +839,11 @@ static int handle_request_help (int fd, /* {{{ */
     {
       help_text = help_flush;
       help_text_len = help_flush_len;
+    }
+    else if (strcasecmp (command, "flushall") == 0)
+    {
+      help_text = help_flushall;
+      help_text_len = help_flushall_len;
     }
     else if (strcasecmp (command, "stats") == 0)
     {
@@ -991,6 +1006,27 @@ static int handle_request_flush (int fd, /* {{{ */
 
   return (0);
 } /* }}} int handle_request_flush */
+
+static int handle_request_flushall(int fd) /* {{{ */
+{
+  int status;
+  char answer[] ="0 Started flush.\n";
+
+  RRDD_LOG(LOG_DEBUG, "Received FLUSHALL");
+
+  pthread_mutex_lock(&cache_lock);
+  flush_old_values(-1);
+  pthread_mutex_unlock(&cache_lock);
+
+  status = swrite(fd, answer, strlen(answer));
+  if (status < 0)
+  {
+    status = errno;
+    RRDD_LOG(LOG_INFO, "handle_request_flushall: swrite returned an error.");
+  }
+
+  return (status);
+}
 
 static int handle_request_update (int fd, /* {{{ */
     char *buffer, size_t buffer_size)
@@ -1221,6 +1257,10 @@ static int handle_request (int fd, char *buffer, size_t buffer_size) /* {{{ */
   else if (strcasecmp (command, "flush") == 0)
   {
     return (handle_request_flush (fd, buffer_ptr, buffer_size));
+  }
+  else if (strcasecmp (command, "flushall") == 0)
+  {
+    return (handle_request_flushall(fd));
   }
   else if (strcasecmp (command, "stats") == 0)
   {

@@ -316,6 +316,11 @@ Causes the daemon to put I<filename> to the B<head> of the update queue
 (possibly moving it there if the node is already enqueued). The answer will be
 sent B<after> the node has been dequeued.
 
+=item B<FLUSHALL>
+
+Causes the daemon to start flushing ALL pending values to disk.  This
+returns immediately, even though the writes may take a long time.
+
 =item B<HELP> [I<command>]
 
 Returns a short usage message. If no command is given, or I<command> is
