@@ -6,7 +6,7 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>]
+B<rrdcached> [B<-l> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F]
 
 =head1 DESCRIPTION
 
@@ -87,7 +87,20 @@ found, all updates therein will be read into memory before the daemon
 starts accepting new connections.
 
 The journal will be rotated with the same frequency as the flush timer
-given by B<-f>.  On clean shutdown, the journal files are removed.
+given by B<-f>.
+
+When journaling is enabled, the daemon will use a fast shutdown procedure.
+Rather than flushing all files to disk, it will make sure the journal is
+properly written and exit immediately.  Although the RRD data files are
+not fully up-to-date, no information is lost; all pending updates will be
+replayed from the journal next time the daemon starts up.
+
+To disable fast shutdown, use the B<-F> option.
+
+=item B<-F>
+
+ALWAYS flush all updates to the RRD data files when the daemon is shut
+down, regardless of journal setting.
 
 =item B<-b> I<dir>
 
@@ -412,6 +425,29 @@ Total number of bytes written to the journal since startup.
 =item B<JournalRotate> I<(unsigned 64bit integer)>
 
 Number of times the journal has been rotated since startup.
+
+=back
+
+=head1 SIGNALS
+
+=over 4
+
+=item SIGINT and SIGTERM
+
+The daemon exits normally on receipt of either of these signals.  Pending
+updates are handled in accordance with the B<-j> and B<-F> options.
+
+=item SIGUSR1
+
+The daemon exits AFTER flushing all updates out to disk.  This may take a
+while.
+
+=item SIGUSR2
+
+The daemon exits immediately, without flushing updates out to disk.
+Pending updates will be replayed from the journal when the daemon starts
+up again.  B<WARNING: if journaling (-j) is NOT enabled, any pending
+updates WILL BE LOST>.
 
 =back
 

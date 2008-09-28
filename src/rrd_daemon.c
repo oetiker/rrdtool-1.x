@@ -168,6 +168,7 @@ static pthread_cond_t  cache_cond = PTHREAD_COND_INITIALIZER;
 static int config_write_interval = 300;
 static int config_write_jitter   = 0;
 static int config_flush_interval = 3600;
+static int config_flush_at_shutdown = 0;
 static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 
@@ -212,6 +213,18 @@ static void sig_term_handler (int s __attribute__((unused))) /* {{{ */
   sig_common("TERM");
 } /* }}} void sig_term_handler */
 
+static void sig_usr1_handler (int s __attribute__((unused))) /* {{{ */
+{
+  config_flush_at_shutdown = 1;
+  sig_common("USR1");
+} /* }}} void sig_usr1_handler */
+
+static void sig_usr2_handler (int s __attribute__((unused))) /* {{{ */
+{
+  config_flush_at_shutdown = 0;
+  sig_common("USR2");
+} /* }}} void sig_usr2_handler */
+
 static void install_signal_handlers(void) /* {{{ */
 {
   /* These structures are static, because `sigaction' behaves weird if the are
@@ -219,6 +232,8 @@ static void install_signal_handlers(void) /* {{{ */
   static struct sigaction sa_int;
   static struct sigaction sa_term;
   static struct sigaction sa_pipe;
+  static struct sigaction sa_usr1;
+  static struct sigaction sa_usr2;
 
   /* Install signal handlers */
   memset (&sa_int, 0, sizeof (sa_int));
@@ -232,6 +247,14 @@ static void install_signal_handlers(void) /* {{{ */
   memset (&sa_pipe, 0, sizeof (sa_pipe));
   sa_pipe.sa_handler = SIG_IGN;
   sigaction (SIGPIPE, &sa_pipe, NULL);
+
+  memset (&sa_pipe, 0, sizeof (sa_usr1));
+  sa_usr1.sa_handler = sig_usr1_handler;
+  sigaction (SIGUSR1, &sa_usr1, NULL);
+
+  memset (&sa_usr2, 0, sizeof (sa_usr2));
+  sa_usr2.sa_handler = sig_usr2_handler;
+  sigaction (SIGUSR2, &sa_usr2, NULL);
 
 } /* }}} void install_signal_handlers */
 
@@ -571,6 +594,7 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
 {
   struct timeval now;
   struct timespec next_flush;
+  int final_flush = 0; /* make sure we only flush once on shutdown */
 
   gettimeofday (&now, NULL);
   next_flush.tv_sec = now.tv_sec + config_flush_interval;
@@ -608,8 +632,9 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     /* Now, check if there's something to store away. If not, wait until
-     * something comes in or it's time to do the cache flush. */
-    if (cache_queue_head == NULL)
+     * something comes in or it's time to do the cache flush.  if we are
+     * shutting down, do not wait around.  */
+    if (cache_queue_head == NULL && !do_shutdown)
     {
       status = pthread_cond_timedwait (&cache_cond, &cache_lock, &next_flush);
       if ((status != 0) && (status != ETIMEDOUT))
@@ -619,9 +644,14 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
       }
     }
 
-    /* We're about to shut down, so lets flush the entire tree. */
-    if ((do_shutdown != 0) && (cache_queue_head == NULL))
-      flush_old_values (/* max age = */ -1);
+    /* We're about to shut down */
+    if (do_shutdown != 0 && !final_flush++)
+    {
+      if (config_flush_at_shutdown)
+        flush_old_values (-1); /* flush everything */
+      else
+        break;
+    }
 
     /* Check if a value has arrived. This may be NULL if we timed out or there
      * was an interrupt such as a signal. */
@@ -686,14 +716,23 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
 
     pthread_mutex_lock (&cache_lock);
 
-    /* We're about to shut down, so lets flush the entire tree. */
-    if ((do_shutdown != 0) && (cache_queue_head == NULL))
-      flush_old_values (/* max age = */ -1);
+    /* We're about to shut down */
+    if (do_shutdown != 0 && !final_flush++)
+    {
+      if (config_flush_at_shutdown)
+          flush_old_values (-1); /* flush everything */
+      else
+        break;
+    }
   } /* while ((do_shutdown == 0) || (cache_queue_head != NULL)) */
   pthread_mutex_unlock (&cache_lock);
 
-  assert(cache_queue_head == NULL);
-  RRDD_LOG(LOG_INFO, "clean shutdown; all RRDs flushed");
+  if (config_flush_at_shutdown)
+  {
+    assert(cache_queue_head == NULL);
+    RRDD_LOG(LOG_INFO, "clean shutdown; all RRDs flushed");
+  }
+
   journal_done();
 
   return (NULL);
@@ -1343,9 +1382,15 @@ static void journal_rotate(void) /* {{{ */
     fclose(old_fh);
 
   if (journal_fh == NULL)
+  {
     RRDD_LOG(LOG_CRIT,
              "JOURNALING DISABLED: Cannot open journal file '%s' : (%s)",
              journal_cur, rrd_strerror(errno));
+
+    RRDD_LOG(LOG_ERR,
+             "JOURNALING DISABLED: All values will be flushed at shutdown");
+    config_flush_at_shutdown = 1;
+  }
 
 } /* }}} static void journal_rotate */
 
@@ -1361,10 +1406,18 @@ static void journal_done(void) /* {{{ */
     journal_fh = NULL;
   }
 
-  RRDD_LOG(LOG_INFO, "removing journals");
+  if (config_flush_at_shutdown)
+  {
+    RRDD_LOG(LOG_INFO, "removing journals");
+    unlink(journal_old);
+    unlink(journal_cur);
+  }
+  else
+  {
+    RRDD_LOG(LOG_INFO, "expedited shutdown; "
+             "journals will be used at next startup");
+  }
 
-  unlink(journal_old);
-  unlink(journal_cur);
   pthread_mutex_unlock(&journal_lock);
 
 } /* }}} static void journal_done */
@@ -1490,7 +1543,9 @@ static void *connection_thread_main (void *args) /* {{{ */
     pollfd.revents = 0;
 
     status = poll (&pollfd, 1, /* timeout = */ 500);
-    if (status == 0) /* timeout */
+    if (do_shutdown)
+      break;
+    else if (status == 0) /* timeout */
       continue;
     else if (status < 0) /* error */
     {
@@ -1797,11 +1852,11 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     status = poll (pollfds, pollfds_num, /* timeout = */ 1000);
-    if (status == 0)
-    {
-      continue; /* timeout */
-    }
-    else if (status < 0)
+    if (do_shutdown)
+      break;
+    else if (status == 0) /* timeout */
+      continue;
+    else if (status < 0) /* error */
     {
       status = errno;
       if (status != EINTR)
@@ -1965,7 +2020,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  while ((option = getopt(argc, argv, "gl:f:w:b:z:p:j:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:f:w:b:z:p:j:h?F")) != -1)
   {
     switch (option)
     {
@@ -2083,6 +2138,10 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
+      case 'F':
+        config_flush_at_shutdown = 1;
+        break;
+
       case 'j':
       {
         struct stat statbuf;
@@ -2133,6 +2192,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -b <dir>      Base directory to change to.\n"
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
+            "  -F            Always flush all updates at shutdown\n"
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"
@@ -2150,6 +2210,9 @@ static int read_options (int argc, char **argv) /* {{{ */
   if (config_write_jitter > config_write_interval)
     fprintf(stderr, "WARNING: write delay (-z) should NOT be larger than"
             " write interval (-w) !\n");
+
+  if (journal_cur == NULL)
+    config_flush_at_shutdown = 1;
 
   return (status);
 } /* }}} int read_options */
