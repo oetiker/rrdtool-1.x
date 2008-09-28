@@ -4523,21 +4523,16 @@ int vdef_calc(
     graph_desc_t *src, *dst;
     rrd_value_t *data;
     long      step, steps;
-    unsigned long end;
 
     dst = &im->gdes[gdi];
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
-    end =
-        src->end_orig % (long) src->step ==
-        0 ? src->end_orig : (src->end_orig + (long) src->step -
-                             src->end_orig % (long) src->step);
 
-    steps = (end - src->start) / src->step;
+    steps = (src->end - src->start) / src->step;
 #if 0
     printf
         ("DEBUG: start == %lu, end == %lu, %lu steps\n",
-         src->start, src->end_orig, steps);
+         src->start, src->end, steps);
 #endif
     switch (dst->vf.op) {
     case VDEF_PERCENT:{
