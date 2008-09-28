@@ -10,12 +10,12 @@
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
 Version: 1.3.3
-Release: 0.20%{?pre:.%{pre}}%{?dist}
+Release: 1
 License: GPLv2+ with exceptions
 Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
 #Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
-Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}%{pre}.tar.gz
+Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}.tar.gz
 %if %{with_php}
 Source1: php4-%{svnrev}.tar.gz
 Patch1: rrdtool-1.3.0-beta4-fix-rrd_update-in-php-bindings.patch
@@ -145,10 +145,10 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 
 %prep
 %if %{with_php}
-%setup -q -n %{name}-%{version}%{pre} -a 1
+%setup -q -n %{name}-%{version} -a 1
 %patch1 -p1
 %else
-%setup -q -n %{name}-%{version}%{pre}
+%setup -q -n %{name}-%{version}
 %endif
 
 # Fix to find correct python dir on lib64
