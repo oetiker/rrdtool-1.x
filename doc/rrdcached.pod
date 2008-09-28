@@ -451,16 +451,6 @@ updates WILL BE LOST>.
 
 =back
 
-=head1 SIGNALS
-
-=over 4
-
-=item SIGINT and SIGTERM
-
-The daemon exits normally on receipt of either of these signals.
-
-=back
-
 =head1 BUGS
 
 No known bugs at the moment.

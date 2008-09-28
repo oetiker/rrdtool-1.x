@@ -814,10 +814,13 @@ static int flush_file (const char *filename) /* {{{ */
     return (ENOENT);
   }
 
-  /* Enqueue at head */
-  enqueue_cache_item (ci, HEAD);
+  if (ci->values_num > 0)
+  {
+    /* Enqueue at head */
+    enqueue_cache_item (ci, HEAD);
+    pthread_cond_wait(&ci->flushed, &cache_lock);
+  }
 
-  pthread_cond_wait(&ci->flushed, &cache_lock);
   pthread_mutex_unlock(&cache_lock);
 
   return (0);
