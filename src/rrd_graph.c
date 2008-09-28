@@ -3508,7 +3508,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
                         if (size > 0){
                               im->text_prop[propidx].size=size;              
                       }        
-                       if (strlen(optarg) > end){
+                        if ((int)strlen(optarg) > end){
                           if (optarg[end] == ':'){
                              strncpy(im->text_prop[propidx].font,optarg+end+1,255);
                              im->text_prop[propidx].font[255] = '\0';
@@ -3791,17 +3791,16 @@ int gdi;
 {
     graph_desc_t        *src,*dst;
     rrd_value_t                *data;
-    long                step,steps,end;
+    long                step,steps;
 
     dst = &im->gdes[gdi];
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
-    end = (src->end_orig % src->step) == 0 ? src->end_orig : (src->end_orig + src->step - src->end_orig % src->step);
-    steps = (end - src->start) / src->step;
+    steps = (src->end - src->start) / src->step;
 #if 0
 printf("DEBUG: start == %lu, end == %lu, %lu steps\n"
     ,src->start
-    ,src->end_orig
+    ,src->end
     ,steps
     );
 #endif
