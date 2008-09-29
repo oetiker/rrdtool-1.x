@@ -101,10 +101,18 @@
 /*
  * Types
  */
+typedef enum
+{
+  PRIV_LOW,
+  PRIV_HIGH
+} socket_privilege;
+
 struct listen_socket_s
 {
   int fd;
-  char path[PATH_MAX + 1];
+  char addr[PATH_MAX + 1];
+  int family;
+  socket_privilege privilege;
 };
 typedef struct listen_socket_s listen_socket_t;
 
@@ -172,7 +180,7 @@ static int config_flush_at_shutdown = 0;
 static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 
-static char **config_listen_address_list = NULL;
+static listen_socket_t **config_listen_address_list = NULL;
 static int config_listen_address_list_len = 0;
 
 static uint64_t stats_queue_length = 0;
@@ -1291,8 +1299,28 @@ static int handle_request_wrote (int fd __attribute__((unused)), /* {{{ */
   return (0);
 } /* }}} int handle_request_wrote */
 
+/* returns 1 if we have the required privilege level */
+static int has_privilege (socket_privilege priv, /* {{{ */
+                          socket_privilege required, int fd)
+{
+  int status;
+  char error[CMD_MAX];
+
+  if (priv >= required)
+    return 1;
+
+  sprintf(error, "-1 %s\n", rrd_strerror(EACCES));
+  status = swrite(fd, error, strlen(error));
+
+  if (status < 0)
+    return status;
+  else
+    return 0;
+} /* }}} static int has_privilege */
+
 /* if fd < 0, we are in journal replay mode */
-static int handle_request (int fd, char *buffer, size_t buffer_size) /* {{{ */
+static int handle_request (int fd, socket_privilege privilege, /* {{{ */
+                           char *buffer, size_t buffer_size)
 {
   char *buffer_ptr;
   char *command;
@@ -1315,6 +1343,10 @@ static int handle_request (int fd, char *buffer, size_t buffer_size) /* {{{ */
     if (fd >= 0)
       journal_write(command, buffer_ptr);
 
+    status = has_privilege(privilege, PRIV_HIGH, fd);
+    if (status <= 0)
+      return status;
+
     return (handle_request_update (fd, buffer_ptr, buffer_size));
   }
   else if (strcasecmp (command, "wrote") == 0 && fd < 0)
@@ -1328,6 +1360,10 @@ static int handle_request (int fd, char *buffer, size_t buffer_size) /* {{{ */
   }
   else if (strcasecmp (command, "flushall") == 0)
   {
+    status = has_privilege(privilege, PRIV_HIGH, fd);
+    if (status <= 0)
+      return status;
+
     return (handle_request_flushall(fd));
   }
   else if (strcasecmp (command, "stats") == 0)
@@ -1487,7 +1523,7 @@ static int journal_replay (const char *file) /* {{{ */
 
     entry[entry_len - 1] = '\0';
 
-    if (handle_request(-1, entry, entry_len) == 0)
+    if (handle_request(-1, PRIV_HIGH, entry, entry_len) == 0)
       ++entry_cnt;
     else
       ++fail_cnt;
@@ -1509,11 +1545,12 @@ static int journal_replay (const char *file) /* {{{ */
 static void *connection_thread_main (void *args) /* {{{ */
 {
   pthread_t self;
+  listen_socket_t *sock;
   int i;
   int fd;
-  
-  fd = *((int *) args);
-  free (args);
+
+  sock = (listen_socket_t *) args;
+  fd = sock->fd;
 
   pthread_mutex_lock (&connection_threads_lock);
   {
@@ -1584,12 +1621,13 @@ static void *connection_thread_main (void *args) /* {{{ */
       break;
     }
 
-    status = handle_request (fd, buffer, /*buffer_size=*/ status);
+    status = handle_request (fd, sock->privilege, buffer, status);
     if (status != 0)
       break;
   }
 
   close(fd);
+  free(args);
 
   self = pthread_self ();
   /* Remove this thread from the connection threads list */
@@ -1614,12 +1652,17 @@ static void *connection_thread_main (void *args) /* {{{ */
   return (NULL);
 } /* }}} void *connection_thread_main */
 
-static int open_listen_socket_unix (const char *path) /* {{{ */
+static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
 {
   int fd;
   struct sockaddr_un sa;
   listen_socket_t *temp;
   int status;
+  const char *path;
+
+  path = sock->addr;
+  if (strncmp(path, "unix:", strlen("unix:")) == 0)
+    path += strlen("unix:");
 
   temp = (listen_socket_t *) realloc (listen_fds,
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
@@ -1629,7 +1672,7 @@ static int open_listen_socket_unix (const char *path) /* {{{ */
     return (-1);
   }
   listen_fds = temp;
-  memset (listen_fds + listen_fds_num, 0, sizeof (listen_fds[0]));
+  memcpy (listen_fds + listen_fds_num, sock, sizeof (listen_fds[0]));
 
   fd = socket (PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
   if (fd < 0)
@@ -1659,17 +1702,17 @@ static int open_listen_socket_unix (const char *path) /* {{{ */
     unlink (path);
     return (-1);
   }
-  
+
   listen_fds[listen_fds_num].fd = fd;
-  snprintf (listen_fds[listen_fds_num].path,
-      sizeof (listen_fds[listen_fds_num].path) - 1,
-      "unix:%s", path);
+  listen_fds[listen_fds_num].family = PF_UNIX;
+  strncpy(listen_fds[listen_fds_num].addr, path,
+          sizeof (listen_fds[listen_fds_num].addr) - 1);
   listen_fds_num++;
 
   return (0);
 } /* }}} int open_listen_socket_unix */
 
-static int open_listen_socket (const char *addr_orig) /* {{{ */
+static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
 {
   struct addrinfo ai_hints;
   struct addrinfo *ai_res;
@@ -1679,16 +1722,9 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
   char *port;
   int status;
 
-  assert (addr_orig != NULL);
-
-  strncpy (addr_copy, addr_orig, sizeof (addr_copy));
+  strncpy (addr_copy, sock->addr, sizeof (addr_copy));
   addr_copy[sizeof (addr_copy) - 1] = 0;
   addr = addr_copy;
-
-  if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
-    return (open_listen_socket_unix (addr + strlen ("unix:")));
-  else if (addr[0] == '/')
-    return (open_listen_socket_unix (addr));
 
   memset (&ai_hints, 0, sizeof (ai_hints));
   ai_hints.ai_flags = 0;
@@ -1699,7 +1735,7 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
   ai_hints.ai_socktype = SOCK_STREAM;
 
   port = NULL;
- if (*addr == '[') /* IPv6+port format */
+  if (*addr == '[') /* IPv6+port format */
   {
     /* `addr' is something like "[2001:780:104:2:211:24ff:feab:26f8]:12345" */
     addr++;
@@ -1707,8 +1743,8 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
     port = strchr (addr, ']');
     if (port == NULL)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: Malformed address: %s",
-          addr_orig);
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: Malformed address: %s",
+          sock->addr);
       return (-1);
     }
     *port = 0;
@@ -1720,7 +1756,7 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
       port = NULL;
     else
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: Garbage after address: %s",
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: Garbage after address: %s",
           port);
       return (-1);
     }
@@ -1740,7 +1776,7 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
                         &ai_hints, &ai_res);
   if (status != 0)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket: getaddrinfo(%s) failed: "
+    RRDD_LOG (LOG_ERR, "open_listen_socket_network: getaddrinfo(%s) failed: "
         "%s", addr, gai_strerror (status));
     return (-1);
   }
@@ -1755,16 +1791,16 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
         sizeof (listen_fds[0]) * (listen_fds_num + 1));
     if (temp == NULL)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: realloc failed.");
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: realloc failed.");
       continue;
     }
     listen_fds = temp;
-    memset (listen_fds + listen_fds_num, 0, sizeof (listen_fds[0]));
+    memcpy (listen_fds + listen_fds_num, sock, sizeof (listen_fds[0]));
 
     fd = socket (ai_ptr->ai_family, ai_ptr->ai_socktype, ai_ptr->ai_protocol);
     if (fd < 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: socket(2) failed.");
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: socket(2) failed.");
       continue;
     }
 
@@ -1773,7 +1809,7 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: bind(2) failed.");
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: bind(2) failed.");
       close (fd);
       continue;
     }
@@ -1781,18 +1817,29 @@ static int open_listen_socket (const char *addr_orig) /* {{{ */
     status = listen (fd, /* backlog = */ 10);
     if (status != 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket: listen(2) failed.");
+      RRDD_LOG (LOG_ERR, "open_listen_socket_network: listen(2) failed.");
       close (fd);
       return (-1);
     }
 
     listen_fds[listen_fds_num].fd = fd;
-    strncpy (listen_fds[listen_fds_num].path, addr,
-        sizeof (listen_fds[listen_fds_num].path) - 1);
+    listen_fds[listen_fds_num].family = ai_ptr->ai_family;
     listen_fds_num++;
   } /* for (ai_ptr) */
 
   return (0);
+} /* }}} static int open_listen_socket_network */
+
+static int open_listen_socket (const listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  assert(sock->addr != NULL);
+
+  if (strncmp ("unix:", sock->addr, strlen ("unix:")) == 0
+      || sock->addr[0] == '/')
+    return (open_listen_socket_unix(sock));
+  else
+    return (open_listen_socket_network(sock));
 } /* }}} int open_listen_socket */
 
 static int close_listen_sockets (void) /* {{{ */
@@ -1802,8 +1849,9 @@ static int close_listen_sockets (void) /* {{{ */
   for (i = 0; i < listen_fds_num; i++)
   {
     close (listen_fds[i].fd);
-    if (strncmp ("unix:", listen_fds[i].path, strlen ("unix:")) == 0)
-      unlink (listen_fds[i].path + strlen ("unix:"));
+
+    if (listen_fds[i].family == PF_UNIX)
+      unlink(listen_fds[i].addr);
   }
 
   free (listen_fds);
@@ -1824,7 +1872,12 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
     open_listen_socket (config_listen_address_list[i]);
 
   if (config_listen_address_list_len < 1)
-    open_listen_socket (RRDCACHED_DEFAULT_ADDRESS);
+  {
+    listen_socket_t sock;
+    memset(&sock, 0, sizeof(sock));
+    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr));
+    open_listen_socket (&sock);
+  }
 
   if (listen_fds_num < 1)
   {
@@ -1871,7 +1924,7 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 
     for (i = 0; i < pollfds_num; i++)
     {
-      int *client_sd;
+      listen_socket_t *client_sock;
       struct sockaddr_storage client_sa;
       socklen_t client_sa_size;
       pthread_t tid;
@@ -1888,19 +1941,21 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
         continue;
       }
 
-      client_sd = (int *) malloc (sizeof (int));
-      if (client_sd == NULL)
+      client_sock = (listen_socket_t *) malloc (sizeof (listen_socket_t));
+      if (client_sock == NULL)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: malloc failed.");
         continue;
       }
+      memcpy(client_sock, &listen_fds[i], sizeof(listen_fds[0]));
 
       client_sa_size = sizeof (client_sa);
-      *client_sd = accept (pollfds[i].fd,
+      client_sock->fd = accept (pollfds[i].fd,
           (struct sockaddr *) &client_sa, &client_sa_size);
-      if (*client_sd < 0)
+      if (client_sock->fd < 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: accept(2) failed.");
+        free(client_sock);
         continue;
       }
 
@@ -1908,12 +1963,12 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
       pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 
       status = pthread_create (&tid, &attr, connection_thread_main,
-          /* args = */ (void *) client_sd);
+                               client_sock);
       if (status != 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: pthread_create failed.");
-        close (*client_sd);
-        free (client_sd);
+        close (client_sock->fd);
+        free (client_sock);
         continue;
       }
     } /* for (pollfds_num) */
@@ -2023,7 +2078,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  while ((option = getopt(argc, argv, "gl:f:w:b:z:p:j:h?F")) != -1)
+  while ((option = getopt(argc, argv, "gl:L:f:w:b:z:p:j:h?F")) != -1)
   {
     switch (option)
     {
@@ -2031,12 +2086,22 @@ static int read_options (int argc, char **argv) /* {{{ */
         stay_foreground=1;
         break;
 
+      case 'L':
       case 'l':
       {
-        char **temp;
+        listen_socket_t **temp;
+        listen_socket_t *new;
 
-        temp = (char **) realloc (config_listen_address_list,
-            sizeof (char *) * (config_listen_address_list_len + 1));
+        new = malloc(sizeof(listen_socket_t));
+        if (new == NULL)
+        {
+          fprintf(stderr, "read_options: malloc failed.\n");
+          return(2);
+        }
+        memset(new, 0, sizeof(listen_socket_t));
+
+        temp = (listen_socket_t **) realloc (config_listen_address_list,
+            sizeof (listen_socket_t *) * (config_listen_address_list_len + 1));
         if (temp == NULL)
         {
           fprintf (stderr, "read_options: realloc failed.\n");
@@ -2044,12 +2109,10 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         config_listen_address_list = temp;
 
-        temp[config_listen_address_list_len] = strdup (optarg);
-        if (temp[config_listen_address_list_len] == NULL)
-        {
-          fprintf (stderr, "read_options: strdup failed.\n");
-          return (2);
-        }
+        strncpy(new->addr, optarg, sizeof(new->addr)-1);
+        new->privilege = (option == 'l') ? PRIV_HIGH : PRIV_LOW;
+
+        temp[config_listen_address_list_len] = new;
         config_listen_address_list_len++;
       }
       break;
@@ -2188,6 +2251,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "\n"
             "Valid options are:\n"
             "  -l <address>  Socket address to listen to.\n"
+            "  -L <address>  Socket address to listen to ('FLUSH' only).\n"
             "  -w <seconds>  Interval in which to write data.\n"
             "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
             "  -f <seconds>  Interval in which to flush dead data.\n"

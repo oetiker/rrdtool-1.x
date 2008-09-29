@@ -6,7 +6,7 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F]
+B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F]
 
 =head1 DESCRIPTION
 
@@ -51,6 +51,11 @@ domain socket B<must> start with a slash in the second case!
 
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
+
+=item B<-L> I<address>
+
+Same as B<-l>, except creates a low-privilege socket.  See B<SECURITY
+CONSIDERATIONS> for more information.
 
 =item B<-w> I<timeout>
 
@@ -260,15 +265,32 @@ ASCII art rocks.
 
 =head1 SECURITY CONSIDERATIONS
 
-This daemon is meant to improve IOE<nbsp>performance for setups with thousands
-of RRDE<nbsp>file to be updated. So security measures built into the daemon can
-be summarized easily: B<There is no security built in!>
+The client/server protocol does not have any authentication or
+authorization mechanism.  Therefore, take care to restrict which users can
+connect to the daemon.
 
-There is no authentication and authorization, so B<you> will have to take care
-that only authorized clients can talk to the daemon. Since we assume that graph
-collection is done on a dedicated machine, i.E<nbsp>e. the box doesn't do
-anything else and especially does not have any interactive logins other than
-root, a UNIX domain socket should take care of that.
+Control sockets are divided into high-privilege (B<-l>) and low-privilege
+(B<-L>) sockets.  High-privilege sockets accept all commands, whereas
+low-privilege sockets accept only B<FLUSH>, B<STATS>, and B<HELP>.
+
+For a multi-user environment where only certain users require read/write
+access, the recommended configuration uses two sockets as follows:
+
+=over
+
+=item B<-l> I</protected/dir/rrd.sock>
+
+Create a high-privilege unix-domain socket.  This should be protected with
+the same Unix permissions that are used to protect the RRD files.  Updates
+should be directed to this socket.
+
+=item B<-L> I<127.0.0.1>
+
+Create a low-privilege TCP socket listening on localhost.  All users on
+the local system may use this to trigger FLUSH of individual files.  Users
+with read-only access should be directed to this socket.
+
+=back
 
 If you (want to) use the network capability, i.E<nbsp>e. let the daemon bind to
 an IPv4 or IPv6 socket, it is B<your> job to install a packet filter or similar
