@@ -1508,7 +1508,8 @@ static int journal_replay (const char *file) /* {{{ */
     size_t entry_len;
 
     ++line;
-    fgets(entry, sizeof(entry), fh);
+    if (fgets(entry, sizeof(entry), fh) == NULL)
+      break;
     entry_len = strlen(entry);
 
     /* check \n termination in case journal writing crashed mid-line */
