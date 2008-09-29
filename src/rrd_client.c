@@ -212,6 +212,8 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
 
   if (ret->status <= 0)
   {
+    if (ret->status < 0)
+      rrd_set_error("rrdcached: %s", ret->message);
     *ret_response = ret;
     return (0);
   }
@@ -266,6 +268,8 @@ static int request (const char *buffer, size_t buffer_size, /* {{{ */
   {
     close_connection ();
     pthread_mutex_unlock (&lock);
+    rrd_set_error("request: socket error (%d) while talking to rrdcached",
+                  status);
     return (-1);
   }
   fflush (sh);
@@ -276,7 +280,11 @@ static int request (const char *buffer, size_t buffer_size, /* {{{ */
   pthread_mutex_unlock (&lock);
 
   if (status != 0)
+  {
+    if (status < 0)
+      rrd_set_error("request: internal error while talking to rrdcached");
     return (status);
+  }
 
   *ret_response = res;
   return (0);
@@ -604,7 +612,7 @@ int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ *
       rrd_set_error ("rrdc_flush (%s) failed with status %i.",
                      filename, status);
     }
-  } /* if (daemon_addr) */
+  } /* if (rrdc_is_connected(..)) */
 
   return status;
 } /* }}} int rrdc_flush_if_daemon */

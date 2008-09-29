@@ -450,13 +450,9 @@ int rrd_update(
         rc = rrdc_update (argv[optind], /* file */
                           argc - optind - 1, /* values_num */
                           (void *) (argv + optind + 1)); /* values */
-        if (rc != 0)
-        {
+        if (rc > 0)
             rrd_set_error("Failed sending the values to rrdcached: %s",
-                    (rc < 0)
-                    ? "Internal error"
-                    : rrd_strerror (rc));
-        }
+                          rrd_strerror (rc));
     }
 
   out:
