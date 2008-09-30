@@ -1999,6 +1999,7 @@ static int daemonize (void) /* {{{ */
 {
   int status;
   int fd;
+  char *base_dir;
 
   fd = open_pidfile();
   if (fd < 0) return fd;
@@ -2006,7 +2007,6 @@ static int daemonize (void) /* {{{ */
   if (!stay_foreground)
   {
     pid_t child;
-    char *base_dir;
 
     child = fork ();
     if (child < 0)
@@ -2017,17 +2017,6 @@ static int daemonize (void) /* {{{ */
     else if (child > 0)
     {
       return (1);
-    }
-
-    /* Change into the /tmp directory. */
-    base_dir = (config_base_dir != NULL)
-      ? config_base_dir
-      : "/tmp";
-    status = chdir (base_dir);
-    if (status != 0)
-    {
-      fprintf (stderr, "daemonize: chdir (%s) failed.\n", base_dir);
-      return (-1);
     }
 
     /* Become session leader */
@@ -2042,6 +2031,17 @@ static int daemonize (void) /* {{{ */
     dup (0);
     dup (0);
   } /* if (!stay_foreground) */
+
+  /* Change into the /tmp directory. */
+  base_dir = (config_base_dir != NULL)
+    ? config_base_dir
+    : "/tmp";
+  status = chdir (base_dir);
+  if (status != 0)
+  {
+    fprintf (stderr, "daemonize: chdir (%s) failed.\n", base_dir);
+    return (-1);
+  }
 
   install_signal_handlers();
 
