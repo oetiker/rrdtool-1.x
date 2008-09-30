@@ -179,6 +179,8 @@ static int config_flush_interval = 3600;
 static int config_flush_at_shutdown = 0;
 static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
+static size_t _config_base_dir_len = 0;
+static int config_write_base_only = 0;
 
 static listen_socket_t **config_listen_address_list = NULL;
 static int config_listen_address_list_len = 0;
@@ -809,6 +811,38 @@ static int buffer_get_field (char **buffer_ret, /* {{{ */
   return (0);
 } /* }}} int buffer_get_field */
 
+/* if we're restricting writes to the base directory,
+ * check whether the file falls within the dir
+ * returns 1 if OK, otherwise 0
+ */
+static int check_file_access (const char *file, int fd) /* {{{ */
+{
+  char error[CMD_MAX];
+  assert(file != NULL);
+
+  if (!config_write_base_only
+      || fd < 0 /* journal replay */
+      || config_base_dir == NULL)
+    return 1;
+
+  if (strstr(file, "../") != NULL) goto err;
+
+  /* relative paths without "../" are ok */
+  if (*file != '/') return 1;
+
+  /* file must be of the format base + "/" + <1+ char filename> */
+  if (strlen(file) < _config_base_dir_len + 2) goto err;
+  if (strncmp(file, config_base_dir, _config_base_dir_len) != 0) goto err;
+  if (*(file + _config_base_dir_len) != '/') goto err;
+
+  return 1;
+
+err:
+  snprintf(error, sizeof(error)-1, "-1 %s\n", rrd_strerror(EACCES));
+  swrite(fd, error, strlen(error));
+  return 0;
+} /* }}} static int check_file_access */
+
 static int flush_file (const char *filename) /* {{{ */
 {
   cache_item_t *ci;
@@ -1051,6 +1085,8 @@ static int handle_request_flush (int fd, /* {{{ */
     stats_flush_received++;
     pthread_mutex_unlock(&stats_lock);
 
+    if (!check_file_access(file, fd)) return 0;
+
     status = flush_file (file);
     if (status == 0)
       snprintf (result, sizeof (result), "0 Successfully flushed %s.\n", file);
@@ -1140,6 +1176,8 @@ static int handle_request_update (int fd, /* {{{ */
   pthread_mutex_lock(&stats_lock);
   stats_updates_received++;
   pthread_mutex_unlock(&stats_lock);
+
+  if (!check_file_access(file, fd)) return 0;
 
   pthread_mutex_lock (&cache_lock);
   ci = g_tree_lookup (cache_tree, file);
@@ -2079,7 +2117,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  while ((option = getopt(argc, argv, "gl:L:f:w:b:z:p:j:h?F")) != -1)
+  while ((option = getopt(argc, argv, "gl:L:f:w:b:Bz:p:j:h?F")) != -1)
   {
     switch (option)
     {
@@ -2164,6 +2202,10 @@ static int read_options (int argc, char **argv) /* {{{ */
         break;
       }
 
+      case 'B':
+        config_write_base_only = 1;
+        break;
+
       case 'b':
       {
         size_t len;
@@ -2189,6 +2231,8 @@ static int read_options (int argc, char **argv) /* {{{ */
           fprintf (stderr, "Invalid base directory: %s\n", optarg);
           return (4);
         }
+
+        _config_base_dir_len = len;
       }
       break;
 
@@ -2258,6 +2302,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -f <seconds>  Interval in which to flush dead data.\n"
             "  -p <file>     Location of the PID-file.\n"
             "  -b <dir>      Base directory to change to.\n"
+            "  -B            Restrict file access to paths within -b <dir>\n"
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -F            Always flush all updates at shutdown\n"
@@ -2278,6 +2323,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   if (config_write_jitter > config_write_interval)
     fprintf(stderr, "WARNING: write delay (-z) should NOT be larger than"
             " write interval (-w) !\n");
+
+  if (config_write_base_only && config_base_dir == NULL)
+    fprintf(stderr, "WARNING: -B does not make sense without -b!\n"
+            "  Consult the rrdcached documentation\n");
 
   if (journal_cur == NULL)
     config_flush_at_shutdown = 1;

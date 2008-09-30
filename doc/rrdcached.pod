@@ -6,7 +6,7 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F]
+B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F] [B<-b> I<dir> [B<-B>]]
 
 =head1 DESCRIPTION
 
@@ -124,6 +124,11 @@ used.
   Paths given on the command  line and paths actually
   updated by the daemon,  assuming the base directory
   "/tmp".
+
+=item B<-B>
+
+Only permit writes into the base directory specified in B<-b>.  This does
+B<NOT> detect symbolic links.  Paths containing C<../> will also be blocked.
 
 =back
 
