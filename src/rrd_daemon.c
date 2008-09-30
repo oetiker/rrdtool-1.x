@@ -1339,13 +1339,13 @@ static int handle_request (int fd, socket_privilege privilege, /* {{{ */
 
   if (strcasecmp (command, "update") == 0)
   {
-    /* don't re-write updates in replay mode */
-    if (fd >= 0)
-      journal_write(command, buffer_ptr);
-
     status = has_privilege(privilege, PRIV_HIGH, fd);
     if (status <= 0)
       return status;
+
+    /* don't re-write updates in replay mode */
+    if (fd >= 0)
+      journal_write(command, buffer_ptr);
 
     return (handle_request_update (fd, buffer_ptr, buffer_size));
   }
