@@ -9,13 +9,13 @@
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.3.2
+Version: 1.3.99908093000
 Release: 0.20%{?pre:.%{pre}}%{?dist}
 License: GPLv2+ with exceptions
 Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
 #Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
-Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}%{pre}.tar.gz
+Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}.tar.gz
 %if %{with_php}
 Source1: php4-%{svnrev}.tar.gz
 Patch1: rrdtool-1.3.0-beta4-fix-rrd_update-in-php-bindings.patch
@@ -24,7 +24,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: dejavu-lgc-fonts
 BuildRequires: gcc-c++, openssl-devel, freetype-devel
 BuildRequires: libpng-devel, zlib-devel, intltool >= 0.35.0
-BuildRequires: cairo-devel >= 1.4.6, pango-devel >= 1.17
+BuildRequires: cairo-devel >= 1.2, pango-devel >= 1.14
 BuildRequires: libtool, groff
 BuildRequires: gettext, libxml2-devel
 %if 0%{?fedora} >= 7
@@ -145,10 +145,10 @@ The %{name}-ruby package includes RRDtool bindings for Ruby.
 
 %prep
 %if %{with_php}
-%setup -q -n %{name}-%{version}%{pre} -a 1
+%setup -q -n %{name}-%{version} -a 1
 %patch1 -p1
 %else
-%setup -q -n %{name}-%{version}%{pre}
+%setup -q -n %{name}-%{version}
 %endif
 
 # Fix to find correct python dir on lib64
@@ -176,6 +176,7 @@ cp -p /usr/lib/rpm/config.{guess,sub} php4/
 
 %build
 %configure \
+    CFLAGS="-g -O0" \
     --with-perl-options='INSTALLDIRS="vendor"' \
 %if %{with_tcl}
     --enable-tcl-site \
@@ -274,12 +275,27 @@ find examples/ -type f -exec chmod 0644 {} \;
         $RPM_BUILD_ROOT%{_datadir}/%{name}/examples \
         $RPM_BUILD_ROOT%{perl_vendorarch}/auto/*/{.packlist,*.bs}
 
+# Set up rrdcached
+%__install -d -m 0755 $RPM_BUILD_ROOT/%{_sysconfdir}/default
+%__install -d -m 0755 $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d
+%__install -m 0644 etc/rrdcached-default $RPM_BUILD_ROOT/%{_sysconfdir}/default/rrdcached
+%__install -m 0755 etc/rrdcached-init $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d/rrdcached
+%__install -d -m 0755 -o nobody -g nobody $RPM_BUILD_ROOT/%{_localstatedir}/run/rrdcached
+
 %clean
 %{__rm} -rf $RPM_BUILD_ROOT
 
-%post -p /sbin/ldconfig
+%post
+/sbin/ldconfig
+/sbin/chkconfig --add rrdcached
+/sbin/service rrdcached start
 
-%postun -p /sbin/ldconfig
+%preun
+/sbin/service rrdcached stop
+
+%postun
+/sbin/chkconfig --del rrdcached
+/sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
@@ -287,6 +303,9 @@ find examples/ -type f -exec chmod 0644 {} \;
 %{_libdir}/*.so.*
 %{_datadir}/%{name}
 %{_mandir}/man1/*
+%config %{_sysconfdir}/default/*
+%config %{_sysconfdir}/rc.d/init.d/*
+%attr(0775 nobody nobody) %dir %{_localstatedir}/run/rrdcached
 
 %files devel
 %defattr(-,root,root,-)
