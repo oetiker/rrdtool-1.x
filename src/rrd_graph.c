@@ -938,7 +938,7 @@ long find_var(
     return -1;
 }
 
-/* find the largest common denominator for all the numbers
+/* find the greatest common divisor for all the numbers
    in the 0 terminated num array */
 long lcd(
     long *num)
