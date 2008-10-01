@@ -224,7 +224,8 @@ to disk.
  +---+----+---+    +------+-----+             +---+----+---+
  ! File:  foo !    ! File:  bar !             ! File:  qux !
  ! First: 101 !    ! First: 119 !             ! First: 180 !
- ! Next:   ---+--->! Next:   ---+---> ... --->! Next:   -  !
+ ! Next:&bar -+--->! Next:&... -+---> ... --->! Next:NULL  !
+ | Prev:NULL  !<---+-Prev:&foo  !<--- ... ----+-Prev: &... !
  +============+    +============+             +============+
  ! Time:  100 !    ! Time:  120 !             ! Time:  180 !
  ! Value:  10 !    ! Value: 0.1 !             ! Value: 2,2 !
