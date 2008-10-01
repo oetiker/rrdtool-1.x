@@ -124,7 +124,7 @@ static PangoLayout *gfx_prep_text(
     const char *text)
 {
     PangoLayout  *layout = im->layout;
-    PangoFontDescription *pfd;
+    const PangoFontDescription *pfd;
     cairo_t  *cr = im->cr;
 
     static double last_tabwidth = -1;

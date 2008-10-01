@@ -49,8 +49,7 @@
 extern char *tzname[2];
 #endif
 
-
-int rrd_dump_opt_r(
+static int rrd_dump_opt_r(
     const char *filename,
     char *outname,
     int opt_noheader)

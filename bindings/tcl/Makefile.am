@@ -4,6 +4,7 @@ EXTRA_DIST = README tclrrd.c
 VERSION = @VERSION@
 
 AM_CFLAGS = @CFLAGS@
+### no including this by default @WERROR@
 
 TCL_PREFIX = @TCL_PREFIX@
 TCL_SHLIB_LD = @TCL_SHLIB_LD@

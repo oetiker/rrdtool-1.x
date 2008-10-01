@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <ruby.h>
+#include <math.h>
 #include "../../src/rrd_tool.h"
 
 typedef struct string_arr_t {
@@ -16,6 +17,11 @@ VALUE     rb_eRRDError;
 
 typedef int (
     *RRDFUNC) (
+    int argc,
+    char **argv);
+
+typedef rrd_info_t *(
+    *RRDINFOFUNC) (
     int argc,
     char **argv);
 
@@ -142,7 +148,7 @@ VALUE rb_rrd_update(
 /* Calls Returning Data via the Info Interface */
 
 VALUE rb_rrd_infocall(
-    RRDFUNC func,
+    RRDINFOFUNC func,
     VALUE args)
 {
     string_arr a;
@@ -173,9 +179,12 @@ VALUE rb_rrd_infocall(
         case RD_I_STR:
             rb_hash_aset(result, key, rb_str_new2(data->value.u_str));
             break;
+        case RD_I_INT:
+            rb_hash_aset(result, key, INT2FIX(data->value.u_int));
+            break;
         case RD_I_BLO:
             rb_hash_aset(result, key,
-                         rb_str_new(data->value.u_blo.ptr,
+                         rb_str_new((char *)data->value.u_blo.ptr,
                                     data->value.u_blo.size));
             break;
         }

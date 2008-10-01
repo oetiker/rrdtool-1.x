@@ -138,6 +138,21 @@ AC_PROG_LIBTOOL
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
+dnl check for -Werror separatly
+dnl (quite a few autotool checks don't work with -Werror; also, the
+dnl check for -Werror fails after checking and adding the other flags)
+AC_CACHE_CHECK([if gcc likes the -Werror flag], rd_cv_gcc_flag__Werror,
+  [AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[]], [[return 0 ]])],
+    [rd_cv_gcc_flag__Werror="yes"],
+    [rd_cv_gcc_flag__Werror="no"])])
+if test "x$rd_cv_gcc_flag__Werror" = "xyes"; then
+  WERROR="-Werror"
+else
+  WERROR=""
+fi
+AC_SUBST(WERROR)
+
 dnl which flags does the compiler support?
 if test "x$GCC" = "xyes"; then
   for flag in -fno-strict-aliasing -Wall -std=c99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do

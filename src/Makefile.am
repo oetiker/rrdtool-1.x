@@ -12,6 +12,8 @@ endif
 INCLUDES = -DLOCALEDIR="\"$(datadir)/locale\""
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
+AM_CFLAGS = @CFLAGS@
+## no including this by default @WERROR@
 
 UPD_C_FILES =		\
 	rrd_parsetime.c	\
@@ -79,7 +81,7 @@ librrd_la_LDFLAGS         += -export-symbols librrd.sym
 
 librrd_th_la_SOURCES         = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
 librrd_th_la_DEPENDENCIES    = librrd.sym
-librrd_th_la_CFLAGS          = $(MULTITHREAD_CFLAGS)
+librrd_th_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
 librrd_th_la_LIBADD          = $(ALL_LIBS)

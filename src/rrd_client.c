@@ -741,7 +741,7 @@ void rrdc_stats_free (rrdc_stats_t *ret_stats) /* {{{ */
 
     if (this->name != NULL)
     {
-      free (this->name);
+      free ((char *)this->name);
       this->name = NULL;
     }
     free (this);

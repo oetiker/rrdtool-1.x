@@ -321,9 +321,9 @@ void rrd_dontneed(
     rrd_t *rrd)
 {
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
-    unsigned long dontneed_start;
-    unsigned long rra_start;
-    unsigned long active_block;
+    off_t dontneed_start;
+    off_t rra_start;
+    off_t active_block;
     unsigned long i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
