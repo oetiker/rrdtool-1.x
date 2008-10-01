@@ -105,9 +105,9 @@ rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 
 rrdcached_SOURCES = rrd_daemon.c
-rrdcached_DEPENDENCIES = librrd.la
+rrdcached_DEPENDENCIES = librrd_th.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd.la
+rrdcached_LDADD = librrd_th.la
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
