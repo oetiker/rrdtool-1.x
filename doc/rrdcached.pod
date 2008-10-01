@@ -127,8 +127,9 @@ used.
 
 =item B<-B>
 
-Only permit writes into the base directory specified in B<-b>.  This does
-B<NOT> detect symbolic links.  Paths containing C<../> will also be blocked.
+Only permit writes into the base directory specified in B<-b> (and any
+sub-directories).  This does B<NOT> detect symbolic links.  Paths
+containing C<../> will also be blocked.
 
 =back
 
