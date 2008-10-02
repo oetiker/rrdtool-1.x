@@ -3,7 +3,7 @@
 
 require 'mkmf'
 
-$CFLAGS += '-Wall'
+$CFLAGS += ' -Wall '
 
 if /linux/ =~ RUBY_PLATFORM
    $LDFLAGS += '-Wl,--rpath -Wl,$(EPREFIX)/lib'
