@@ -9,6 +9,6 @@ PIDFILE="/var/run/rrdcached/rrdcached.pid"
 
 SOCKFILE="/var/run/rrdcached/rrdcached.sock"
 
-SOCKPERMS=0666
+SOCKPERMS=0660
 
 
