@@ -1112,7 +1112,7 @@ static int handle_request_flush (int fd, /* {{{ */
   }
 
   return (0);
-} /* }}} int handle_request_flush */
+} /* }}} int handle_request_slurp */
 
 static int handle_request_flushall(int fd) /* {{{ */
 {
