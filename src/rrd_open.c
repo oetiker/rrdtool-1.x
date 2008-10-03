@@ -21,16 +21,30 @@
 /* the cast to void* is there to avoid this warning seen on ia64 with certain
    versions of gcc: 'cast increases required alignment of target type'
 */
-#define __rrd_read(dst, dst_t, cnt) \
+#define __rrd_read(dst, dst_t, cnt) { \
+	size_t wanted = sizeof(dst_t)*(cnt); \
+	if (offset + wanted > rrd_file->file_len) { \
+		rrd_set_error("reached EOF while loading header " #dst); \
+		goto out_nullify_head; \
+	} \
 	(dst) = (dst_t*)(void*) (data + offset); \
-	offset += sizeof(dst_t) * (cnt)
+	offset += wanted; \
+    }
 #else
-#define __rrd_read(dst, dst_t, cnt) \
-	if ((dst = malloc(sizeof(dst_t)*(cnt))) == NULL) { \
+#define __rrd_read(dst, dst_t, cnt) { \
+	size_t wanted = sizeof(dst_t)*(cnt); \
+        size_t got; \
+	if ((dst = malloc(wanted)) == NULL) { \
 		rrd_set_error(#dst " malloc"); \
 		goto out_nullify_head; \
 	} \
-	offset += read (rrd_file->fd, dst, sizeof(dst_t)*(cnt))
+        got = read (rrd_file->fd, dst, wanted); \
+	if (got != wanted) { \
+		rrd_set_error("short read while reading header " #dst); \
+                goto out_nullify_head; \
+	} \
+	offset += got; \
+    }
 #endif
 
 /* get the address of the start of this page */
@@ -58,7 +72,7 @@ rrd_file_t *rrd_open(
 #ifdef HAVE_MMAP
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
     int       mm_prot = PROT_READ, mm_flags = 0;
-    char     *data;
+    char     *data = MAP_FAILED;
 #endif
     off_t     offset = 0;
     struct stat statb;
@@ -257,11 +271,34 @@ rrd_file_t *rrd_open(
 
     rrd_file->header_len = offset;
     rrd_file->pos = offset;
+
+    {
+      unsigned long row_cnt = 0;
+      unsigned long i;
+
+      for (i=0; i<rrd->stat_head->rra_cnt; i++)
+        row_cnt += rrd->rra_def[i].row_cnt;
+
+      off_t correct_len = rrd_file->header_len +
+        sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
+
+      if (correct_len > rrd_file->file_len)
+      {
+        rrd_set_error("'%s' is too small (should be %ld bytes)",
+                      file_name, (long long) correct_len);
+        goto out_nullify_head;
+      }
+    }
+
   out_done:
     return (rrd_file);
   out_nullify_head:
     rrd->stat_head = NULL;
   out_close:
+#ifdef HAVE_MMAP
+    if (data != MAP_FAILED)
+      munmap(data, rrd_file->file_len);
+#endif
     close(rrd_file->fd);
   out_free:
     free(rrd_file);
