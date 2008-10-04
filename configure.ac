@@ -16,7 +16,7 @@ dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.3003
+NUMVERS=1.3004
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -27,7 +27,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=4:2:0
+LIBVERS=4:3:0
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -713,6 +713,7 @@ AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/librrd.sym])
+AC_CONFIG_FILES([src/librrd.pc])          
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])

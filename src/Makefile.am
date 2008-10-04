@@ -100,8 +100,11 @@ rrdtool_SOURCES = rrd_tool.c
 rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = librrd.pc
+
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST= strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_getopt.h \
+EXTRA_DIST= librrd.pc.in strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_getopt.h \
 	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym
 
