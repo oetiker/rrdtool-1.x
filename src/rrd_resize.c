@@ -60,12 +60,14 @@ int rrd_resize(
         rrd_free(&rrdold);
         return (-1);
     }
+
     if (rrd_lock(rrd_file) != 0) {
         rrd_set_error("could not lock original RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);
         return (-1);
     }
+
 
     if (target_rra >= rrdold.stat_head->rra_cnt) {
         rrd_set_error("no such RRA in this RRD");
@@ -106,16 +108,46 @@ int rrd_resize(
         return (-1);
     }
 /*XXX: do one write for those parts of header that are unchanged */
-    rrdnew.stat_head = rrdold.stat_head;
+    if ((rrdnew.stat_head = malloc(sizeof(stat_head_t))) == NULL) {
+        rrd_set_error("allocating stat_head for new RRD");
+        rrd_free(&rrdnew);
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
+        return (-1);
+    }
+
+    if ((rrdnew.rra_ptr = malloc(sizeof(rra_ptr_t) * rrdold.stat_head->rra_cnt)) == NULL) {
+        rrd_set_error("allocating rra_ptr for new RRD");
+        rrd_free(&rrdnew);
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
+        return (-1);
+    }
+
+    if ((rrdnew.rra_def = malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
+        rrd_set_error("allocating rra_def for new RRD");
+        rrd_free(&rrdnew);
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
+        return (-1);
+    }
+     
+    memcpy(rrdnew.stat_head,rrdold.stat_head,sizeof(stat_head_t));
     rrdnew.ds_def = rrdold.ds_def;
-    rrdnew.rra_def = rrdold.rra_def;
+    memcpy(rrdnew.rra_def,rrdold.rra_def,sizeof(rra_def_t) * rrdold.stat_head->rra_cnt);    
     rrdnew.live_head = rrdold.live_head;
     rrdnew.pdp_prep = rrdold.pdp_prep;
     rrdnew.cdp_prep = rrdold.cdp_prep;
-    rrdnew.rra_ptr = rrdold.rra_ptr;
+    memcpy(rrdnew.rra_ptr,rrdold.rra_ptr,sizeof(rra_ptr_t) * rrdold.stat_head->rra_cnt);
+
 
     version = atoi(rrdold.stat_head->version);
     switch (version) {
+    case 4:
+        break;        
     case 3:
         break;
     case 1:
@@ -124,8 +156,10 @@ int rrd_resize(
     default:
         rrd_set_error("Do not know how to handle RRD version %s",
                       rrdold.stat_head->version);
-        rrd_close(rrd_file);
+        rrd_free(&rrdnew);
         rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
         return (-1);
         break;
     }
@@ -245,11 +279,9 @@ int rrd_resize(
              rrdnew.stat_head->rra_cnt, SEEK_CUR);
     rrd_write(rrd_out_file, rrdnew.rra_ptr,
               sizeof(rra_ptr_t) * rrdnew.stat_head->rra_cnt);
-
+    rrd_close(rrd_file);    
+    rrd_close(rrd_out_file);    
     rrd_free(&rrdold);
-    rrd_close(rrd_file);
-
-    rrd_close(rrd_out_file);
-
+    rrd_free(&rrdnew);
     return (0);
 }
