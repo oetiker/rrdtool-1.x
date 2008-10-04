@@ -9,7 +9,7 @@ dnl tell automake the this script is for rrdtool
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.3.3])
+AC_INIT([rrdtool],[1.3.4])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
@@ -323,14 +323,16 @@ return 0;
 case "${target}" in
   hppa*-*-hpux*) ac_cv_have_broken_isfinite=yes ;;
   *-sun-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-sun-solaris2.9) ac_cv_have_broken_isfinite=yes ;;
   *) ac_cv_have_broken_isfinite=no ;;
 esac])
 ])
 
-dnl the test does not seem to work on solaris 2.8
+dnl the test does not seem to work on solaris 2.8/9
 dnl so lets fix this by hand
 case "${target}" in
   *-sun-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-sun-solaris2.9) ac_cv_have_broken_isfinite=yes ;;
 esac
 
 if test "x$ac_cv_have_broken_isfinite" = "xno"; then
