@@ -52,7 +52,7 @@ struct rrd_context *rrd_get_context(void) {
 const char *rrd_strerror(int err) {
     struct rrd_context *ctx = rrd_get_context();
     if (strerror_r(err, ctx->lib_errstr, ctx->errlen)) 
-         return "strerror_r faild. sorry!"; 
+         return "strerror_r failed. sorry!"; 
     else 
          return ctx->lib_errstr; 
 }
