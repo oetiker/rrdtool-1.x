@@ -35,7 +35,7 @@ python:
 	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 lua:
-	cd lua && $(LUA) Makefile.lua "PREFIX=$(prefix) POD2MAN=$(POD2MAN) LUABIN=$(LUA) $(LUA_MAKE_OPTIONS)" > Makefile && $(MAKE)
+	cd lua && $(LUA) Makefile.lua > Makefile && $(MAKE)
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile

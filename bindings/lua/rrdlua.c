@@ -26,6 +26,14 @@
 #include "lualib.h"
 #include "../../src/rrd_tool.h"
 
+#ifdef LUA50
+  #ifdef HAVE_COMPAT51
+    #include "compat-5.1.h"
+  #else
+    #include "compat-5.1r5/compat-5.1.h"
+  #endif
+#endif
+
 extern void rrd_freemem(void *mem);
 
 extern int luaopen_rrd (lua_State * L);
@@ -354,7 +362,12 @@ static const struct luaL_reg rrd[] = {
 int
 luaopen_rrd (lua_State * L)
 {
+#if defined LUA50
+  /* luaL_module is defined in compat-5.1.c */
+  luaL_module (L, "rrd", rrd, 0);
+#else
   luaL_register (L, "rrd", rrd);
+#endif
   set_info (L);
   return 1;
 }

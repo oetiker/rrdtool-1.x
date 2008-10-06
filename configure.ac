@@ -636,45 +636,146 @@ AC_SUBST(COMP_RUBY)
 dnl Check for Lua.
 AC_PATH_PROG(LUA, lua, no)
 
-AC_ARG_ENABLE(lua,[  --disable-lua          do not build the lua modules],
+AC_ARG_ENABLE(lua,[  --disable-lua           do not build the lua modules],
 [],[enable_lua=yes])
 
-AC_MSG_CHECKING(if lua modules can be built)
-
 COMP_LUA=
-if test "x$LUA" = "xno" -o  x$enable_lua = xno; then
-  AC_MSG_RESULT(No .. Lua not found or disabled)
+if test "$LUA" = "no" -o "$enable_lua" = "no"; then
+  enable_lua=no
 else
-  for dir in /usr/include/lua /usr/include/lua5.1 /usr/local/include/lua5.1 /usr/include/lua5.2 /usr/local/include/lua5.2 ; do
-    if test -f "$dir/lualib.h" ; then
-      enable_lua=yes
-      COMP_LUA="lua"
-      break
-    fi
-  done
-
-  if test "$COMP_LUA" = "lua" ; then
-    AC_MSG_RESULT(YES)
+  AC_MSG_CHECKING(for lua >= 5.0)
+  read LUA_MAJOR LUA_MINOR LUA_POINT <<LUA_EOF
+    $($LUA -v 2>&1 | cut -f2 -d' ' | sed -e 's/\./ /g')
+LUA_EOF
+  if test 0$LUA_MAJOR -lt 5; then
+    AC_MSG_RESULT([no, version found is $LUA_MAJOR.$LUA_MINOR])
   else
-    AC_MSG_RESULT(Lua found but lualib.h is missing! Install the -dev package)
+    AC_MSG_RESULT([$LUA_MAJOR.$LUA_MINOR found])
+    vdot=$LUA_MAJOR.$LUA_MINOR
+    vndot=$LUA_MAJOR$LUA_MINOR
+    lua_version=$LUA_MAJOR.$LUA_MINOR.$LUA_POINT
+    AC_CHECK_HEADERS(lua$vndot/lua.h,
+      [AC_CHECK_HEADERS(lua$vndot/lualib.h,
+        [AC_CHECK_HEADER(lua$vndot/lauxlib.h,
+          [lua_headerdir=lua$vndot],
+          [])],
+        [])],
+      [AC_CHECK_HEADERS(lua$vdot/lua.h,
+        [AC_CHECK_HEADERS(lua$vdot/lualib.h,
+          [AC_CHECK_HEADER(lua$vdot/lauxlib.h,
+            [lua_headerdir=lua$vdot],
+            [])],
+          [])],
+        [AC_CHECK_HEADERS(lua.h,
+          [AC_CHECK_HEADERS(lualib.h,
+            [AC_CHECK_HEADER(lauxlib.h,
+              [lua_headerdir=""],
+              [lua_headerdir="no"])],
+            [])],
+          [])])])
+
+    if test "$lua_headerdir" = "no"; then
+      enable_lua=no
+    else
+      COMP_LUA=lua
+    fi
+
+    if test "$COMP_LUA" != "lua"; then
+      enable_lua=no
+      AC_MSG_WARN([Lua $vdot found but not lua.h, lualib.h and lauxlib.h! Please install the -dev packages for Lua $vdot])
+    else
+      # OK, headers found, let's check the libraries (LIBS is not used)
+      LIBS=
+      lua_havelib=no
+      LUA_HAVE_COMPAT51=DONT_HAVE_COMPAT51
+      AC_SEARCH_LIBS(lua_call, lua$vdot lua$vndot lua,
+        [AC_SEARCH_LIBS(luaL_register, lua$vdot lua$vndot lua,
+          [lua_havelib=LUA$vndot],
+          [AC_SEARCH_LIBS(luaL_module, lualib$vndot lualib$vdot lualib,
+            [lua_havelib=$vndot ;
+             AC_CHECK_HEADERS(lua$vndot/compat-5.1.h,
+               [LUA_HAVE_COMPAT51=HAVE_COMPAT51], [],
+                 [[#include <lua$vndot/lua.h>
+                   #include <lua$vndot/lauxlib.h> ]])],
+            [AC_SEARCH_LIBS(luaL_openlib, lualib$vdot lualib$vndot lualib,
+              [lua_havelib=$vndot],
+              [COMP_LUA=], [-lm])], [-lm])], [-lm])],
+        [COMP_LUA=], [-lm])
+      lua_libs=$LIBS
+      LIBS=
+
+      # Options to pass when configuring Lua module
+      if test  "$lua_havelib" != "no"; then
+        # OK, headers and libs found
+        # try to set lua include, lib and C installation dirs with pkg-config
+        if test "$PKGCONFIG" != "no"; then
+          if test "$vndot" = "50"; then
+            lua_pkg_prefix=lualib
+          else
+            lua_pkg_prefix=lua
+          fi
+          # try with dot, without dot and finally without version
+          for f in $lua_pkg_prefix$vdot $lua_pkg_prefix$vndot $lua_pkg_prefix; do
+            lua_cflags=$($PKGCONFIG --cflags $f 2>/dev/null)
+            if test "$lua_cflags" != ""; then
+              # OK, found CFLAGS. Get Lua LFLAGS and lib install dir
+              LUA_CFLAGS=$lua_cflags
+              LUA_LFLAGS=$($PKGCONFIG --libs $f)
+              LUA_INSTALL_CMOD=$($PKGCONFIG --variable=INSTALL_CMOD $f)
+              break
+            fi
+          done
+        fi
+
+        # if not set with pkg-config, use default values in src package
+        if test "$LUA_CFLAGS" = ""; then
+          AC_MSG_WARN(Setting Lua include and lib dirs to defaults in src package)
+          LUA_CFLAGS="-I/usr/local/include -I/usr/local/include/lua -I/usr/local/include/lua/$vdot"
+          LUA_LFLAGS="-L/usr/local/lib -L/usr/local/lib/lua -L/usr/local/lib/lua/$vdot $lua_libs"
+          LUA_INSTALL_CMOD="/usr/local/lib/lua/$vdot"
+        fi
+        LUA_SRCS=rrdlua.c
+        LUA_OBJS=rrdlua.o
+        # If Lua 5.0, we need compat-5.1. Add ours unless already
+        # integrated as in Debian/Ubuntu 5.0 -dev packages.
+        if test "$vdot" = "5.0" -a "$LUA_HAVE_COMPAT51" != "HAVE_COMPAT51"; then
+          LUA_SRCS="rrdlua.c compat-5.1r5/compat-5.1.c"
+          LUA_OBJS="rrdlua.o compat-5.1r5/compat-5.1.o"
+        fi
+
+        dnl pass additional lua options
+        # if lua-site-install is not set, overwrite LUA_INSTALL_CMOD already
+        # found and install together with RRDtool, under $langpref.
+        LUA_RRD_LANGPREF="$langpref/lib/lua"
+        AC_ARG_ENABLE(lua-site-install,
+        [  --enable-lua-site-install   by default the rrdtool lua modules are installed
+                                  together with rrdtool in $prefix/lib/lua. You have to
+                                  add $prefix/lib/lua/$lua_version/?.so to package.cpath
+                                  for lua to find the rrd.so file. When you set this
+                                  option the Lua module will get installed wherever
+                                  your Lua setup thinks it is best.],
+        [],
+        [LUA_INSTALL_CMOD="$LUA_RRD_LANGPREF/$vdot"])
+
+        AC_SUBST(LUA)
+        AC_SUBST(COMP_LUA)
+        AC_SUBST(LUA_MAJOR)
+        AC_SUBST(LUA_MINOR)
+        AC_SUBST(LUA_POINT)
+        AC_SUBST(LUA_RRD_LANGPREF)
+        AC_SUBST(LUA_INSTALL_CMOD)
+        AC_SUBST(LUA_HAVE_COMPAT51)
+        AC_SUBST(LUA_CFLAGS)
+        AC_SUBST(LUA_LFLAGS)
+        AC_SUBST(LUA_SRCS)
+        AC_SUBST(LUA_OBJS)
+      else
+        enable_lua=no
+        AC_MSG_RESULT([Lua headers found but not the libraries! Please reinstall the dev packages for Lua $LUA_MAJOR.$LUA_MINOR])
+      fi
+    fi
   fi
 fi
-
-dnl pass additional lua options
-# if lua-site-install is set, don't set 'LIB' and let Lua setup decide
-# the best place.
-AC_ARG_ENABLE(lua-site-install,
-[  --enable-lua-site-install   by default the rrdtool lua modules are installed
-                          together with rrdtool in $prefix/lib/lua. You have to
-                          add $prefix/lib/lua/$lua_version/?.so to package.cpath
-                          for lua to find the rrd.so file.]. When you set this
-			  option the Lua module will get installed wherever
-                          your Lua setup thinks it is best.],
-[LUA_MAKE_OPTIONS=],[LUA_MAKE_OPTIONS="LIB=$langpref/lib/lua"])
-
-AC_SUBST(LUA_MAKE_OPTIONS)
-AC_SUBST(LUA)
-AC_SUBST(COMP_LUA)
 
 
 enable_tcl_site=no
@@ -773,6 +874,7 @@ AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([Makefile])          
+AC_CONFIG_FILES([bindings/lua/Makefile.lua])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 AC_OUTPUT
@@ -805,9 +907,10 @@ echo "          Perl Options: $PERL_MAKE_OPTIONS"
 echo "          Ruby Modules: $COMP_RUBY"
 echo "           Ruby Binary: $RUBY"
 echo "          Ruby Options: $RUBY_MAKE_OPTIONS"
-echo "           Lua Modules: $COMP_LUA"
+echo "    Build Lua Bindings: $enable_lua"
 echo "            Lua Binary: $LUA"
-echo "           Lua Options: $LUA_MAKE_OPTIONS"
+echo "           Lua Version: $lua_version"
+echo "        Lua module dir: $LUA_INSTALL_CMOD"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"
