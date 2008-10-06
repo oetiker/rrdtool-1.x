@@ -107,12 +107,22 @@ typedef enum
   PRIV_HIGH
 } socket_privilege;
 
+typedef enum { RESP_ERR = -1, RESP_OK = 0 } response_code;
+
 struct listen_socket_s
 {
   int fd;
   char addr[PATH_MAX + 1];
   int family;
   socket_privilege privilege;
+
+  /* buffered IO */
+  char *rbuf;
+  off_t next_cmd;
+  off_t next_read;
+
+  char *wbuf;
+  ssize_t wbuf_len;
 };
 typedef struct listen_socket_s listen_socket_t;
 
@@ -150,6 +160,7 @@ typedef enum queue_side_e queue_side_t;
 
 /* max length of socket command or response */
 #define CMD_MAX 4096
+#define RBUF_SIZE (CMD_MAX*2)
 
 /*
  * Variables
@@ -322,86 +333,166 @@ static int remove_pidfile (void) /* {{{ */
   return (errno);
 } /* }}} int remove_pidfile */
 
-static ssize_t sread (int fd, void *buffer_void, size_t buffer_size) /* {{{ */
+static char *next_cmd (listen_socket_t *sock, ssize_t *len) /* {{{ */
 {
-  char    *buffer;
-  size_t   buffer_used;
-  size_t   buffer_free;
-  ssize_t  status;
+  char *eol;
 
-  buffer       = (char *) buffer_void;
-  buffer_used  = 0;
-  buffer_free  = buffer_size;
+  eol = memchr(sock->rbuf + sock->next_cmd, '\n',
+               sock->next_read - sock->next_cmd);
 
-  while (buffer_free > 0)
+  if (eol == NULL)
   {
-    status = read (fd, buffer + buffer_used, buffer_free);
-    if ((status < 0) && ((errno == EAGAIN) || (errno == EINTR)))
-      continue;
+    /* no commands left, move remainder back to front of rbuf */
+    memmove(sock->rbuf, sock->rbuf + sock->next_cmd,
+            sock->next_read - sock->next_cmd);
+    sock->next_read -= sock->next_cmd;
+    sock->next_cmd = 0;
+    *len = 0;
+    return NULL;
+  }
+  else
+  {
+    char *cmd = sock->rbuf + sock->next_cmd;
+    *eol = '\0';
 
-    if (status < 0)
-      return (-1);
+    sock->next_cmd = eol - sock->rbuf + 1;
 
-    if (status == 0)
-      return (0);
+    if (eol > sock->rbuf && *(eol-1) == '\r')
+      *(--eol) = '\0'; /* handle "\r\n" EOL */
 
-    assert ((0 > status) || (buffer_free >= (size_t) status));
+    *len = eol - cmd;
 
-    buffer_free = buffer_free - status;
-    buffer_used = buffer_used + status;
-
-    if (buffer[buffer_used - 1] == '\n')
-      break;
+    return cmd;
   }
 
-  assert (buffer_used > 0);
+  /* NOTREACHED */
+  assert(1==0);
+}
 
-  if (buffer[buffer_used - 1] != '\n')
-  {
-    errno = ENOBUFS;
-    return (-1);
-  }
-
-  buffer[buffer_used - 1] = 0;
-
-  /* Fix network line endings. */
-  if ((buffer_used > 1) && (buffer[buffer_used - 2] == '\r'))
-  {
-    buffer_used--;
-    buffer[buffer_used - 1] = 0;
-  }
-
-  return (buffer_used);
-} /* }}} ssize_t sread */
-
-static ssize_t swrite (int fd, const void *buf, size_t count) /* {{{ */
+/* add the characters directly to the write buffer */
+static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 {
-  const char *ptr;
-  size_t      nleft;
-  ssize_t     status;
+  char *new_buf;
 
-  /* special case for journal replay */
-  if (fd < 0) return 0;
+  assert(sock != NULL);
 
-  ptr   = (const char *) buf;
-  nleft = count;
-
-  while (nleft > 0)
+  new_buf = realloc(sock->wbuf, sock->wbuf_len + len + 1);
+  if (new_buf == NULL)
   {
-    status = write (fd, (const void *) ptr, nleft);
-
-    if ((status < 0) && ((errno == EAGAIN) || (errno == EINTR)))
-      continue;
-
-    if (status < 0)
-      return (status);
-
-    nleft -= status;
-    ptr   += status;
+    RRDD_LOG(LOG_ERR, "add_to_wbuf: realloc failed");
+    return -1;
   }
 
-  return (0);
-} /* }}} ssize_t swrite */
+  strncpy(new_buf + sock->wbuf_len, str, len + 1);
+
+  sock->wbuf = new_buf;
+  sock->wbuf_len += len;
+
+  return 0;
+} /* }}} static int add_to_wbuf */
+
+/* add the text to the "extra" info that's sent after the status line */
+static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
+{
+  va_list argp;
+  char buffer[CMD_MAX];
+  int len;
+
+  if (sock == NULL) return 0; /* journal replay mode */
+
+  va_start(argp, fmt);
+#ifdef HAVE_VSNPRINTF
+  len = vsnprintf(buffer, sizeof(buffer)-1, fmt, argp);
+#else
+  len = vsprintf(buffer, fmt, argp);
+#endif
+  va_end(argp);
+  if (len < 0)
+  {
+    RRDD_LOG(LOG_ERR, "add_response_info: vnsprintf failed");
+    return -1;
+  }
+
+  return add_to_wbuf(sock, buffer, len);
+} /* }}} static int add_response_info */
+
+static int count_lines(char *str) /* {{{ */
+{
+  int lines = 0;
+
+  if (str != NULL)
+  {
+    while ((str = strchr(str, '\n')) != NULL)
+    {
+      ++lines;
+      ++str;
+    }
+  }
+
+  return lines;
+} /* }}} static int count_lines */
+
+/* send the response back to the user.
+ * returns 0 on success, -1 on error
+ * write buffer is always zeroed after this call */
+static int send_response (listen_socket_t *sock, response_code rc,
+                          char *fmt, ...) /* {{{ */
+{
+  va_list argp;
+  char buffer[CMD_MAX];
+  int lines;
+  ssize_t wrote;
+  int rclen, len;
+
+  if (sock == NULL) return rc;  /* journal replay mode */
+
+  if (rc == RESP_OK)
+  {
+    lines = count_lines(sock->wbuf);
+  }
+  else
+    lines = -1;
+
+  rclen = sprintf(buffer, "%d ", lines);
+  va_start(argp, fmt);
+#ifdef HAVE_VSNPRINTF
+  len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen-1, fmt, argp);
+#else
+  len = vsprintf(buffer+rclen, fmt, argp);
+#endif
+  va_end(argp);
+  if (len < 0)
+    return -1;
+
+  len += rclen;
+
+  /* first write must be complete */
+  if (len != write(sock->fd, buffer, len))
+  {
+    RRDD_LOG(LOG_INFO, "send_response: could not write status message");
+    return -1;
+  }
+
+  if (sock->wbuf != NULL)
+  {
+    wrote = 0;
+    while (wrote < sock->wbuf_len)
+    {
+      ssize_t wb = write(sock->fd, sock->wbuf + wrote, sock->wbuf_len - wrote);
+      if (wb <= 0)
+      {
+        RRDD_LOG(LOG_INFO, "send_response: could not write results");
+        return -1;
+      }
+      wrote += wb;
+    }
+  }
+
+  free(sock->wbuf); sock->wbuf = NULL;
+  sock->wbuf_len = 0;
+
+  return 0;
+} /* }}} */
 
 static void wipe_ci_values(cache_item_t *ci, time_t when)
 {
@@ -810,13 +901,12 @@ static int buffer_get_field (char **buffer_ret, /* {{{ */
  * check whether the file falls within the dir
  * returns 1 if OK, otherwise 0
  */
-static int check_file_access (const char *file, int fd) /* {{{ */
+static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
 {
-  char error[CMD_MAX];
   assert(file != NULL);
 
   if (!config_write_base_only
-      || fd < 0 /* journal replay */
+      || sock == NULL /* journal replay */
       || config_base_dir == NULL)
     return 1;
 
@@ -833,8 +923,9 @@ static int check_file_access (const char *file, int fd) /* {{{ */
   return 1;
 
 err:
-  snprintf(error, sizeof(error)-1, "-1 %s\n", rrd_strerror(EACCES));
-  swrite(fd, error, strlen(error));
+  if (sock != NULL && sock->fd >= 0)
+    send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
+
   return 0;
 } /* }}} static int check_file_access */
 
@@ -863,126 +954,91 @@ static int flush_file (const char *filename) /* {{{ */
   return (0);
 } /* }}} int flush_file */
 
-static int handle_request_help (int fd, /* {{{ */
+static int handle_request_help (listen_socket_t *sock, /* {{{ */
     char *buffer, size_t buffer_size)
 {
   int status;
   char **help_text;
-  size_t help_text_len;
   char *command;
-  size_t i;
 
-  char *help_help[] =
+  char *help_help[2] =
   {
-    "5 Command overview\n",
-    "FLUSH <filename>\n",
-    "FLUSHALL\n",
-    "HELP [<command>]\n",
-    "UPDATE <filename> <values> [<values> ...]\n",
+    "Command overview\n"
+    ,
+    "FLUSH <filename>\n"
+    "FLUSHALL\n"
+    "HELP [<command>]\n"
+    "UPDATE <filename> <values> [<values> ...]\n"
     "STATS\n"
   };
-  size_t help_help_len = sizeof (help_help) / sizeof (help_help[0]);
 
-  char *help_flush[] =
+  char *help_flush[2] =
   {
-    "4 Help for FLUSH\n",
-    "Usage: FLUSH <filename>\n",
-    "\n",
-    "Adds the given filename to the head of the update queue and returns\n",
+    "Help for FLUSH\n"
+    ,
+    "Usage: FLUSH <filename>\n"
+    "\n"
+    "Adds the given filename to the head of the update queue and returns\n"
     "after is has been dequeued.\n"
   };
-  size_t help_flush_len = sizeof (help_flush) / sizeof (help_flush[0]);
 
-  char *help_flushall[] =
+  char *help_flushall[2] =
   {
-    "3 Help for FLUSHALL\n",
-    "Usage: FLUSHALL\n",
-    "\n",
+    "Help for FLUSHALL\n"
+    ,
+    "Usage: FLUSHALL\n"
+    "\n"
     "Triggers writing of all pending updates.  Returns immediately.\n"
   };
-  size_t help_flushall_len = sizeof(help_flushall) / sizeof(help_flushall[0]);
 
-  char *help_update[] =
+  char *help_update[2] =
   {
-    "9 Help for UPDATE\n",
+    "Help for UPDATE\n"
+    ,
     "Usage: UPDATE <filename> <values> [<values> ...]\n"
-    "\n",
-    "Adds the given file to the internal cache if it is not yet known and\n",
-    "appends the given value(s) to the entry. See the rrdcached(1) manpage\n",
-    "for details.\n",
-    "\n",
-    "Each <values> has the following form:\n",
-    "  <values> = <time>:<value>[:<value>[...]]\n",
+    "\n"
+    "Adds the given file to the internal cache if it is not yet known and\n"
+    "appends the given value(s) to the entry. See the rrdcached(1) manpage\n"
+    "for details.\n"
+    "\n"
+    "Each <values> has the following form:\n"
+    "  <values> = <time>:<value>[:<value>[...]]\n"
     "See the rrdupdate(1) manpage for details.\n"
   };
-  size_t help_update_len = sizeof (help_update) / sizeof (help_update[0]);
 
-  char *help_stats[] =
+  char *help_stats[2] =
   {
-    "4 Help for STATS\n",
-    "Usage: STATS\n",
-    "\n",
-    "Returns some performance counters, see the rrdcached(1) manpage for\n",
+    "Help for STATS\n"
+    ,
+    "Usage: STATS\n"
+    "\n"
+    "Returns some performance counters, see the rrdcached(1) manpage for\n"
     "a description of the values.\n"
   };
-  size_t help_stats_len = sizeof (help_stats) / sizeof (help_stats[0]);
 
   status = buffer_get_field (&buffer, &buffer_size, &command);
   if (status != 0)
-  {
     help_text = help_help;
-    help_text_len = help_help_len;
-  }
   else
   {
     if (strcasecmp (command, "update") == 0)
-    {
       help_text = help_update;
-      help_text_len = help_update_len;
-    }
     else if (strcasecmp (command, "flush") == 0)
-    {
       help_text = help_flush;
-      help_text_len = help_flush_len;
-    }
     else if (strcasecmp (command, "flushall") == 0)
-    {
       help_text = help_flushall;
-      help_text_len = help_flushall_len;
-    }
     else if (strcasecmp (command, "stats") == 0)
-    {
       help_text = help_stats;
-      help_text_len = help_stats_len;
-    }
     else
-    {
       help_text = help_help;
-      help_text_len = help_help_len;
-    }
   }
 
-  for (i = 0; i < help_text_len; i++)
-  {
-    status = swrite (fd, help_text[i], strlen (help_text[i]));
-    if (status < 0)
-    {
-      status = errno;
-      RRDD_LOG (LOG_ERR, "handle_request_help: swrite returned an error.");
-      return (status);
-    }
-  }
-
-  return (0);
+  add_response_info(sock, help_text[1]);
+  return send_response(sock, RESP_OK, help_text[0]);
 } /* }}} int handle_request_help */
 
-static int handle_request_stats (int fd, /* {{{ */
-    char *buffer __attribute__((unused)),
-    size_t buffer_size __attribute__((unused)))
+static int handle_request_stats (listen_socket_t *sock) /* {{{ */
 {
-  int status;
-  char outbuf[CMD_MAX];
-
   uint64_t copy_queue_length;
   uint64_t copy_updates_received;
   uint64_t copy_flush_received;
@@ -1009,70 +1065,36 @@ static int handle_request_stats (int fd, /* {{{ */
   tree_depth        = (uint64_t) g_tree_height (cache_tree);
   pthread_mutex_unlock (&cache_lock);
 
-#define RRDD_STATS_SEND \
-  outbuf[sizeof (outbuf) - 1] = 0; \
-  status = swrite (fd, outbuf, strlen (outbuf)); \
-  if (status < 0) \
-  { \
-    status = errno; \
-    RRDD_LOG (LOG_INFO, "handle_request_stats: swrite returned an error."); \
-    return (status); \
-  }
+  add_response_info(sock,
+                    "QueueLength: %"PRIu64"\n", copy_queue_length);
+  add_response_info(sock,
+                    "UpdatesReceived: %"PRIu64"\n", copy_updates_received);
+  add_response_info(sock,
+                    "FlushesReceived: %"PRIu64"\n", copy_flush_received);
+  add_response_info(sock,
+                    "UpdatesWritten: %"PRIu64"\n", copy_updates_written);
+  add_response_info(sock,
+                    "DataSetsWritten: %"PRIu64"\n", copy_data_sets_written);
+  add_response_info(sock, "TreeNodesNumber: %"PRIu64"\n", tree_nodes_number);
+  add_response_info(sock, "TreeDepth: %"PRIu64"\n", tree_depth);
+  add_response_info(sock, "JournalBytes: %"PRIu64"\n", copy_journal_bytes);
+  add_response_info(sock, "JournalRotate: %"PRIu64"\n", copy_journal_rotate);
 
-  strncpy (outbuf, "9 Statistics follow\n", sizeof (outbuf));
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "QueueLength: %"PRIu64"\n", copy_queue_length);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "UpdatesReceived: %"PRIu64"\n", copy_updates_received);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "FlushesReceived: %"PRIu64"\n", copy_flush_received);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "UpdatesWritten: %"PRIu64"\n", copy_updates_written);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "DataSetsWritten: %"PRIu64"\n", copy_data_sets_written);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "TreeNodesNumber: %"PRIu64"\n", tree_nodes_number);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof (outbuf),
-      "TreeDepth: %"PRIu64"\n", tree_depth);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof(outbuf),
-      "JournalBytes: %"PRIu64"\n", copy_journal_bytes);
-  RRDD_STATS_SEND;
-
-  snprintf (outbuf, sizeof(outbuf),
-      "JournalRotate: %"PRIu64"\n", copy_journal_rotate);
-  RRDD_STATS_SEND;
+  send_response(sock, RESP_OK, "Statistics follow\n");
 
   return (0);
-#undef RRDD_STATS_SEND
 } /* }}} int handle_request_stats */
 
-static int handle_request_flush (int fd, /* {{{ */
+static int handle_request_flush (listen_socket_t *sock, /* {{{ */
     char *buffer, size_t buffer_size)
 {
   char *file;
   int status;
-  char result[CMD_MAX];
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
   {
-    strncpy (result, "-1 Usage: flush <filename>\n", sizeof (result));
+    return send_response(sock, RESP_ERR, "Usage: flush <filename>\n");
   }
   else
   {
@@ -1080,11 +1102,11 @@ static int handle_request_flush (int fd, /* {{{ */
     stats_flush_received++;
     pthread_mutex_unlock(&stats_lock);
 
-    if (!check_file_access(file, fd)) return 0;
+    if (!check_file_access(file, sock)) return 0;
 
     status = flush_file (file);
     if (status == 0)
-      snprintf (result, sizeof (result), "0 Successfully flushed %s.\n", file);
+      return send_response(sock, RESP_OK, "Successfully flushed %s.\n", file);
     else if (status == ENOENT)
     {
       /* no file in our tree; see whether it exists at all */
@@ -1092,32 +1114,22 @@ static int handle_request_flush (int fd, /* {{{ */
 
       memset(&statbuf, 0, sizeof(statbuf));
       if (stat(file, &statbuf) == 0 && S_ISREG(statbuf.st_mode))
-        snprintf (result, sizeof (result), "0 Nothing to flush: %s.\n", file);
+        return send_response(sock, RESP_OK, "Nothing to flush: %s.\n", file);
       else
-        snprintf (result, sizeof (result), "-1 No such file: %s.\n", file);
+        return send_response(sock, RESP_ERR, "No such file: %s.\n", file);
     }
     else if (status < 0)
-      strncpy (result, "-1 Internal error.\n", sizeof (result));
+      return send_response(sock, RESP_ERR, "Internal error.\n");
     else
-      snprintf (result, sizeof (result), "-1 Failed with status %i.\n", status);
-  }
-  result[sizeof (result) - 1] = 0;
-
-  status = swrite (fd, result, strlen (result));
-  if (status < 0)
-  {
-    status = errno;
-    RRDD_LOG (LOG_INFO, "handle_request_flush: swrite returned an error.");
-    return (status);
+      return send_response(sock, RESP_ERR, "Failed with status %i.\n", status);
   }
 
-  return (0);
+  /* NOTREACHED */
+  assert(1==0);
 } /* }}} int handle_request_slurp */
 
-static int handle_request_flushall(int fd) /* {{{ */
+static int handle_request_flushall(listen_socket_t *sock) /* {{{ */
 {
-  int status;
-  char answer[] ="0 Started flush.\n";
 
   RRDD_LOG(LOG_DEBUG, "Received FLUSHALL");
 
@@ -1125,17 +1137,10 @@ static int handle_request_flushall(int fd) /* {{{ */
   flush_old_values(-1);
   pthread_mutex_unlock(&cache_lock);
 
-  status = swrite(fd, answer, strlen(answer));
-  if (status < 0)
-  {
-    status = errno;
-    RRDD_LOG(LOG_INFO, "handle_request_flushall: swrite returned an error.");
-  }
-
-  return (status);
+  return send_response(sock, RESP_OK, "Started flush.\n");
 } /* }}} static int handle_request_flushall */
 
-static int handle_request_update (int fd, /* {{{ */
+static int handle_request_update (listen_socket_t *sock, /* {{{ */
     char *buffer, size_t buffer_size)
 {
   char *file;
@@ -1143,36 +1148,20 @@ static int handle_request_update (int fd, /* {{{ */
   int status;
 
   time_t now;
-
   cache_item_t *ci;
-  char answer[CMD_MAX];
-
-#define RRDD_UPDATE_SEND \
-  answer[sizeof (answer) - 1] = 0; \
-  status = swrite (fd, answer, strlen (answer)); \
-  if (status < 0) \
-  { \
-    status = errno; \
-    RRDD_LOG (LOG_INFO, "handle_request_update: swrite returned an error."); \
-    return (status); \
-  }
 
   now = time (NULL);
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
-  {
-    strncpy (answer, "-1 Usage: UPDATE <filename> <values> [<values> ...]\n",
-        sizeof (answer));
-    RRDD_UPDATE_SEND;
-    return (0);
-  }
+    return send_response(sock, RESP_ERR,
+                         "Usage: UPDATE <filename> <values> [<values> ...]\n");
 
   pthread_mutex_lock(&stats_lock);
   stats_updates_received++;
   pthread_mutex_unlock(&stats_lock);
 
-  if (!check_file_access(file, fd)) return 0;
+  if (!check_file_access(file, sock)) return 0;
 
   pthread_mutex_lock (&cache_lock);
   ci = g_tree_lookup (cache_tree, file);
@@ -1192,35 +1181,24 @@ static int handle_request_update (int fd, /* {{{ */
 
       status = errno;
       if (status == ENOENT)
-        snprintf (answer, sizeof (answer), "-1 No such file: %s\n", file);
+        return send_response(sock, RESP_ERR, "No such file: %s\n", file);
       else
-        snprintf (answer, sizeof (answer), "-1 stat failed with error %i.\n",
-            status);
-      RRDD_UPDATE_SEND;
-      return (0);
+        return send_response(sock, RESP_ERR,
+                             "stat failed with error %i.\n", status);
     }
     if (!S_ISREG (statbuf.st_mode))
-    {
-      snprintf (answer, sizeof (answer), "-1 Not a regular file: %s\n", file);
-      RRDD_UPDATE_SEND;
-      return (0);
-    }
+      return send_response(sock, RESP_ERR, "Not a regular file: %s\n", file);
+
     if (access(file, R_OK|W_OK) != 0)
-    {
-      snprintf (answer, sizeof (answer), "-1 Cannot read/write %s: %s\n",
-                file, rrd_strerror(errno));
-      RRDD_UPDATE_SEND;
-      return (0);
-    }
+      return send_response(sock, RESP_ERR, "Cannot read/write %s: %s\n",
+                           file, rrd_strerror(errno));
 
     ci = (cache_item_t *) malloc (sizeof (cache_item_t));
     if (ci == NULL)
     {
       RRDD_LOG (LOG_ERR, "handle_request_update: malloc failed.");
 
-      strncpy (answer, "-1 malloc failed.\n", sizeof (answer));
-      RRDD_UPDATE_SEND;
-      return (0);
+      return send_response(sock, RESP_ERR, "malloc failed.\n");
     }
     memset (ci, 0, sizeof (cache_item_t));
 
@@ -1230,9 +1208,7 @@ static int handle_request_update (int fd, /* {{{ */
       free (ci);
       RRDD_LOG (LOG_ERR, "handle_request_update: strdup failed.");
 
-      strncpy (answer, "-1 strdup failed.\n", sizeof (answer));
-      RRDD_UPDATE_SEND;
-      return (0);
+      return send_response(sock, RESP_ERR, "strdup failed.\n");
     }
 
     wipe_ci_values(ci, now);
@@ -1285,25 +1261,19 @@ static int handle_request_update (int fd, /* {{{ */
   pthread_mutex_unlock (&cache_lock);
 
   if (values_num < 1)
-  {
-    strncpy (answer, "-1 No values updated.\n", sizeof (answer));
-  }
+    return send_response(sock, RESP_ERR, "No values updated.\n");
   else
-  {
-    snprintf (answer, sizeof (answer), "0 Enqueued %i value%s\n", values_num,
-        (values_num == 1) ? "" : "s");
-  }
-  RRDD_UPDATE_SEND;
-  return (0);
-#undef RRDD_UPDATE_SEND
+    return send_response(sock, RESP_OK, "Enqueued %i value(s).\n", values_num);
+
+  /* NOTREACHED */
+  assert(1==0);
+
 } /* }}} int handle_request_update */
 
 /* we came across a "WROTE" entry during journal replay.
  * throw away any values that we have accumulated for this file
  */
-static int handle_request_wrote (int fd __attribute__((unused)), /* {{{ */
-                                 const char *buffer,
-                                 size_t buffer_size __attribute__((unused)))
+static int handle_request_wrote (const char *buffer) /* {{{ */
 {
   int i;
   cache_item_t *ci;
@@ -1334,26 +1304,20 @@ static int handle_request_wrote (int fd __attribute__((unused)), /* {{{ */
 } /* }}} int handle_request_wrote */
 
 /* returns 1 if we have the required privilege level */
-static int has_privilege (socket_privilege priv, /* {{{ */
-                          socket_privilege required, int fd)
+static int has_privilege (listen_socket_t *sock, /* {{{ */
+                          socket_privilege priv)
 {
-  int status;
-  char error[CMD_MAX];
-
-  if (priv >= required)
+  if (sock == NULL) /* journal replay */
     return 1;
 
-  sprintf(error, "-1 %s\n", rrd_strerror(EACCES));
-  status = swrite(fd, error, strlen(error));
+  if (sock->privilege >= priv)
+    return 1;
 
-  if (status < 0)
-    return status;
-  else
-    return 0;
+  return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
 } /* }}} static int has_privilege */
 
-/* if fd < 0, we are in journal replay mode */
-static int handle_request (int fd, socket_privilege privilege, /* {{{ */
+/* if sock==NULL, we are in journal replay mode */
+static int handle_request (listen_socket_t *sock, /* {{{ */
                            char *buffer, size_t buffer_size)
 {
   char *buffer_ptr;
@@ -1373,57 +1337,40 @@ static int handle_request (int fd, socket_privilege privilege, /* {{{ */
 
   if (strcasecmp (command, "update") == 0)
   {
-    status = has_privilege(privilege, PRIV_HIGH, fd);
+    status = has_privilege(sock, PRIV_HIGH);
     if (status <= 0)
       return status;
 
     /* don't re-write updates in replay mode */
-    if (fd >= 0)
+    if (sock != NULL)
       journal_write(command, buffer_ptr);
 
-    return (handle_request_update (fd, buffer_ptr, buffer_size));
+    return (handle_request_update (sock, buffer_ptr, buffer_size));
   }
-  else if (strcasecmp (command, "wrote") == 0 && fd < 0)
+  else if (strcasecmp (command, "wrote") == 0 && sock == NULL)
   {
     /* this is only valid in replay mode */
-    return (handle_request_wrote (fd, buffer_ptr, buffer_size));
+    return (handle_request_wrote (buffer_ptr));
   }
   else if (strcasecmp (command, "flush") == 0)
-  {
-    return (handle_request_flush (fd, buffer_ptr, buffer_size));
-  }
+    return (handle_request_flush (sock, buffer_ptr, buffer_size));
   else if (strcasecmp (command, "flushall") == 0)
   {
-    status = has_privilege(privilege, PRIV_HIGH, fd);
+    status = has_privilege(sock, PRIV_HIGH);
     if (status <= 0)
       return status;
 
-    return (handle_request_flushall(fd));
+    return (handle_request_flushall(sock));
   }
   else if (strcasecmp (command, "stats") == 0)
-  {
-    return (handle_request_stats (fd, buffer_ptr, buffer_size));
-  }
+    return (handle_request_stats (sock));
   else if (strcasecmp (command, "help") == 0)
-  {
-    return (handle_request_help (fd, buffer_ptr, buffer_size));
-  }
+    return (handle_request_help (sock, buffer_ptr, buffer_size));
   else
-  {
-    char result[CMD_MAX];
+    return send_response(sock, RESP_ERR, "Unknown command: %s\n", command);
 
-    snprintf (result, sizeof (result), "-1 Unknown command: %s\n", command);
-    result[sizeof (result) - 1] = 0;
-
-    status = swrite (fd, result, strlen (result));
-    if (status < 0)
-    {
-      RRDD_LOG (LOG_ERR, "handle_request: swrite failed.");
-      return (-1);
-    }
-  }
-
-  return (0);
+  /* NOTREACHED */
+  assert(1==0);
 } /* }}} int handle_request */
 
 /* MUST NOT hold journal_lock before calling this */
@@ -1558,7 +1505,7 @@ static int journal_replay (const char *file) /* {{{ */
 
     entry[entry_len - 1] = '\0';
 
-    if (handle_request(-1, PRIV_HIGH, entry, entry_len) == 0)
+    if (handle_request(NULL, entry, entry_len) == 0)
       ++entry_cnt;
     else
       ++fail_cnt;
@@ -1577,6 +1524,15 @@ static int journal_replay (const char *file) /* {{{ */
 
 } /* }}} static int journal_replay */
 
+static void close_connection(listen_socket_t *sock)
+{
+  close(sock->fd) ;  sock->fd   = -1;
+  free(sock->rbuf);  sock->rbuf = NULL;
+  free(sock->wbuf);  sock->wbuf = NULL;
+
+  free(sock);
+}
+
 static void *connection_thread_main (void *args) /* {{{ */
 {
   pthread_t self;
@@ -1586,6 +1542,16 @@ static void *connection_thread_main (void *args) /* {{{ */
 
   sock = (listen_socket_t *) args;
   fd = sock->fd;
+
+  /* init read buffers */
+  sock->next_read = sock->next_cmd = 0;
+  sock->rbuf = malloc(RBUF_SIZE);
+  if (sock->rbuf == NULL)
+  {
+    RRDD_LOG(LOG_ERR, "connection_thread_main: cannot malloc read buffer");
+    close_connection(sock);
+    return NULL;
+  }
 
   pthread_mutex_lock (&connection_threads_lock);
   {
@@ -1608,7 +1574,9 @@ static void *connection_thread_main (void *args) /* {{{ */
 
   while (do_shutdown == 0)
   {
-    char buffer[CMD_MAX];
+    char *cmd;
+    ssize_t cmd_len;
+    ssize_t rbytes;
 
     struct pollfd pollfd;
     int status;
@@ -1633,7 +1601,7 @@ static void *connection_thread_main (void *args) /* {{{ */
 
     if ((pollfd.revents & POLLHUP) != 0) /* normal shutdown */
     {
-      close (fd);
+      close_connection(sock);
       break;
     }
     else if ((pollfd.revents & (POLLIN | POLLPRI)) == 0)
@@ -1641,28 +1609,32 @@ static void *connection_thread_main (void *args) /* {{{ */
       RRDD_LOG (LOG_WARNING, "connection_thread_main: "
           "poll(2) returned something unexpected: %#04hx",
           pollfd.revents);
-      close (fd);
+      close_connection(sock);
       break;
     }
 
-    status = (int) sread (fd, buffer, sizeof (buffer));
-    if (status <= 0)
+    rbytes = read(fd, sock->rbuf + sock->next_read,
+                  RBUF_SIZE - sock->next_read);
+    if (rbytes < 0)
     {
-      close (fd);
-
-      if (status < 0)
-        RRDD_LOG(LOG_ERR, "connection_thread_main: sread failed.");
-
+      RRDD_LOG(LOG_ERR, "connection_thread_main: read() failed.");
       break;
     }
+    else if (rbytes == 0)
+      break; /* eof */
 
-    status = handle_request (fd, sock->privilege, buffer, status);
-    if (status != 0)
-      break;
+    sock->next_read += rbytes;
+
+    while ((cmd = next_cmd(sock, &cmd_len)) != NULL)
+    {
+      status = handle_request (sock, cmd, cmd_len+1);
+      if (status != 0)
+        goto out_close;
+    }
   }
 
-  close(fd);
-  free(args);
+out_close:
+  close_connection(sock);
 
   self = pthread_self ();
   /* Remove this thread from the connection threads list */
@@ -2002,8 +1974,7 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
       if (status != 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: pthread_create failed.");
-        close (client_sock->fd);
-        free (client_sock);
+        close_connection(client_sock);
         continue;
       }
     } /* for (pollfds_num) */
