@@ -407,6 +407,32 @@ written out to disk.  It is used during journal replay to determine which
 updates have already been applied.  It is I<only> valid in the journal; it
 is not accepted from the other command channels.
 
+=item B<BATCH>
+
+This command initiates the bulk load of multiple commands.  This is
+designed for installations with extremely high update rates, since it
+permits more than one command to be issued per read() and write().
+
+All commands are executed just as they would be if given individually,
+except for output to the user.  Messages indicating success are
+suppressed, and error messages are delayed until the client is finished.
+
+Command processing is finished when the client sends a dot (".") on its
+own line.  After the client has finished, the server responds with an
+error count and the list of error messages (if any).  Each error messages
+indicates the number of the command to which it corresponds, and the error
+message itself.  The first user command after B<BATCH> is command number one.
+
+    client:  BATCH
+    server:  0 Go ahead.  End with dot '.' on its own line.
+    client:  UPDATE x.rrd N:1:2:3            <--- command #1
+    client:  UPDATE y.rrd N:3:4:5            <--- command #2
+    client:  and so on...
+    client:  .
+    server:  2 Errors
+    server:  1 message for command 1
+    server:  12 message for command 12
+
 =back
 
 =head2 Performance Values

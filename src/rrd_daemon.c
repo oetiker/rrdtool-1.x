@@ -116,6 +116,10 @@ struct listen_socket_s
   int family;
   socket_privilege privilege;
 
+  /* state for BATCH processing */
+  int batch_mode;
+  int batch_cmd;
+
   /* buffered IO */
   char *rbuf;
   off_t next_cmd;
@@ -399,6 +403,7 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
   int len;
 
   if (sock == NULL) return 0; /* journal replay mode */
+  if (sock->batch_mode) return 0; /* no extra info returned when in BATCH */
 
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
@@ -446,10 +451,14 @@ static int send_response (listen_socket_t *sock, response_code rc,
 
   if (sock == NULL) return rc;  /* journal replay mode */
 
-  if (rc == RESP_OK)
+  if (sock->batch_mode)
   {
-    lines = count_lines(sock->wbuf);
+    if (rc == RESP_OK)
+      return rc; /* no response on success during BATCH */
+    lines = sock->batch_cmd;
   }
+  else if (rc == RESP_OK)
+    lines = count_lines(sock->wbuf);
   else
     lines = -1;
 
@@ -465,6 +474,10 @@ static int send_response (listen_socket_t *sock, response_code rc,
     return -1;
 
   len += rclen;
+
+  /* append the result to the wbuf, don't write to the user */
+  if (sock->batch_mode)
+    return add_to_wbuf(sock, buffer, len);
 
   /* first write must be complete */
   if (len != write(sock->fd, buffer, len))
@@ -969,6 +982,7 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "FLUSHALL\n"
     "HELP [<command>]\n"
     "UPDATE <filename> <values> [<values> ...]\n"
+    "BATCH\n"
     "STATS\n"
   };
 
@@ -1016,6 +1030,28 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "a description of the values.\n"
   };
 
+  char *help_batch[2] =
+  {
+    "Help for BATCH\n"
+    ,
+    "The 'BATCH' command permits the client to initiate a bulk load\n"
+    "   of commands to rrdcached.\n"
+    "\n"
+    "Usage:\n"
+    "\n"
+    "    client: BATCH\n"
+    "    server: 0 Go ahead.  End with dot '.' on its own line.\n"
+    "    client: command #1\n"
+    "    client: command #2\n"
+    "    client: ... and so on\n"
+    "    client: .\n"
+    "    server: 2 errors\n"
+    "    server: 7 message for command #7\n"
+    "    server: 9 message for command #9\n"
+    "\n"
+    "For more information, consult the rrdcached(1) documentation.\n"
+  };
+
   status = buffer_get_field (&buffer, &buffer_size, &command);
   if (status != 0)
     help_text = help_help;
@@ -1029,6 +1065,8 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
       help_text = help_flushall;
     else if (strcasecmp (command, "stats") == 0)
       help_text = help_stats;
+    else if (strcasecmp (command, "batch") == 0)
+      help_text = help_batch;
     else
       help_text = help_help;
   }
@@ -1303,6 +1341,30 @@ static int handle_request_wrote (const char *buffer) /* {{{ */
   return (0);
 } /* }}} int handle_request_wrote */
 
+/* start "BATCH" processing */
+static int batch_start (listen_socket_t *sock) /* {{{ */
+{
+  int status;
+  if (sock->batch_mode)
+    return send_response(sock, RESP_ERR, "Already in BATCH\n");
+
+  status = send_response(sock, RESP_OK,
+                         "Go ahead.  End with dot '.' on its own line.\n");
+  sock->batch_mode = 1;
+  sock->batch_cmd = 0;
+
+  return status;
+} /* }}} static int batch_start */
+
+/* finish "BATCH" processing and return results to the client */
+static int batch_done (listen_socket_t *sock) /* {{{ */
+{
+  assert(sock->batch_mode);
+  sock->batch_mode = 0;
+  sock->batch_cmd  = 0;
+  return send_response(sock, RESP_OK, "errors\n");
+} /* }}} static int batch_done */
+
 /* returns 1 if we have the required privilege level */
 static int has_privilege (listen_socket_t *sock, /* {{{ */
                           socket_privilege priv)
@@ -1335,6 +1397,9 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
     return (-1);
   }
 
+  if (sock != NULL && sock->batch_mode)
+    sock->batch_cmd++;
+
   if (strcasecmp (command, "update") == 0)
   {
     status = has_privilege(sock, PRIV_HIGH);
@@ -1366,6 +1431,10 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
     return (handle_request_stats (sock));
   else if (strcasecmp (command, "help") == 0)
     return (handle_request_help (sock, buffer_ptr, buffer_size));
+  else if (strcasecmp (command, "batch") == 0 && sock != NULL)
+    return batch_start(sock);
+  else if (strcasecmp (command, ".") == 0 && sock != NULL && sock->batch_mode)
+    return batch_done(sock);
   else
     return send_response(sock, RESP_ERR, "Unknown command: %s\n", command);
 
