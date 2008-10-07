@@ -170,6 +170,7 @@ typedef enum queue_side_e queue_side_t;
  * Variables
  */
 static int stay_foreground = 0;
+static uid_t daemon_uid;
 
 static listen_socket_t *listen_fds = NULL;
 static size_t listen_fds_num = 0;
@@ -1446,6 +1447,7 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
 static void journal_rotate(void) /* {{{ */
 {
   FILE *old_fh = NULL;
+  int new_fd;
 
   if (journal_cur == NULL || journal_old == NULL)
     return;
@@ -1460,11 +1462,20 @@ static void journal_rotate(void) /* {{{ */
   if (journal_fh != NULL)
   {
     old_fh = journal_fh;
+    journal_fh = NULL;
     rename(journal_cur, journal_old);
     ++stats_journal_rotate;
   }
 
-  journal_fh = fopen(journal_cur, "a");
+  new_fd = open(journal_cur, O_WRONLY|O_CREAT|O_APPEND,
+                S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+  if (new_fd >= 0)
+  {
+    journal_fh = fdopen(new_fd, "a");
+    if (journal_fh == NULL)
+      close(new_fd);
+  }
+
   pthread_mutex_unlock(&journal_lock);
 
   if (old_fh != NULL)
@@ -1542,6 +1553,44 @@ static int journal_replay (const char *file) /* {{{ */
 
   if (file == NULL) return 0;
 
+  {
+    char *reason;
+    int status = 0;
+    struct stat statbuf;
+
+    memset(&statbuf, 0, sizeof(statbuf));
+    if (stat(file, &statbuf) != 0)
+    {
+      if (errno == ENOENT)
+        return 0;
+
+      reason = "stat error";
+      status = errno;
+    }
+    else if (!S_ISREG(statbuf.st_mode))
+    {
+      reason = "not a regular file";
+      status = EPERM;
+    }
+    if (statbuf.st_uid != daemon_uid)
+    {
+      reason = "not owned by daemon user";
+      status = EACCES;
+    }
+    if (statbuf.st_mode & (S_IWGRP|S_IWOTH))
+    {
+      reason = "must not be user/group writable";
+      status = EACCES;
+    }
+
+    if (status != 0)
+    {
+      RRDD_LOG(LOG_ERR, "journal_replay: %s : %s (%s)",
+               file, rrd_strerror(status), reason);
+      return 0;
+    }
+  }
+
   fh = fopen(file, "r");
   if (fh == NULL)
   {
@@ -1582,16 +1631,35 @@ static int journal_replay (const char *file) /* {{{ */
 
   fclose(fh);
 
-  if (entry_cnt > 0)
-  {
-    RRDD_LOG(LOG_INFO, "Replayed %d entries (%d failures)",
-             entry_cnt, fail_cnt);
-    return 1;
-  }
-  else
-    return 0;
+  RRDD_LOG(LOG_INFO, "Replayed %d entries (%d failures)",
+           entry_cnt, fail_cnt);
 
+  return entry_cnt > 0 ? 1 : 0;
 } /* }}} static int journal_replay */
+
+static void journal_init(void) /* {{{ */
+{
+  int had_journal = 0;
+
+  if (journal_cur == NULL) return;
+
+  pthread_mutex_lock(&journal_lock);
+
+  RRDD_LOG(LOG_INFO, "checking for journal files");
+
+  had_journal += journal_replay(journal_old);
+  had_journal += journal_replay(journal_cur);
+
+  /* it must have been a crash.  start a flush */
+  if (had_journal && config_flush_at_shutdown)
+    flush_old_values(-1);
+
+  pthread_mutex_unlock(&journal_lock);
+  journal_rotate();
+
+  RRDD_LOG(LOG_INFO, "journal processing complete");
+
+} /* }}} static void journal_init */
 
 static void close_connection(listen_socket_t *sock)
 {
@@ -2075,6 +2143,8 @@ static int daemonize (void) /* {{{ */
   int fd;
   char *base_dir;
 
+  daemon_uid = geteuid();
+
   fd = open_pidfile();
   if (fd < 0) return fd;
 
@@ -2399,25 +2469,7 @@ int main (int argc, char **argv)
     return (1);
   }
 
-  if (journal_cur != NULL)
-  {
-    int had_journal = 0;
-
-    pthread_mutex_lock(&journal_lock);
-
-    RRDD_LOG(LOG_INFO, "checking for journal files");
-
-    had_journal += journal_replay(journal_old);
-    had_journal += journal_replay(journal_cur);
-
-    if (had_journal)
-      flush_old_values(-1);
-
-    pthread_mutex_unlock(&journal_lock);
-    journal_rotate();
-
-    RRDD_LOG(LOG_INFO, "journal processing complete");
-  }
+  journal_init();
 
   /* start the queue thread */
   memset (&queue_thread, 0, sizeof (queue_thread));
