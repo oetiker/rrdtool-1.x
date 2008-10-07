@@ -364,6 +364,13 @@ void rrd_dontneed(
     unsigned long i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
+    if (rrd_file == NULL) {
+#if defined DEBUG && DEBUG
+	    fprintf (stderr, "rrd_dontneed: Argument 'rrd_file' is NULL.\n");
+#endif
+	    return;
+    }
+
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "before");
 #endif
