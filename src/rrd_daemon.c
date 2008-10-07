@@ -943,6 +943,20 @@ err:
   return 0;
 } /* }}} static int check_file_access */
 
+/* returns 1 if we have the required privilege level,
+ * otherwise issue an error to the user on sock */
+static int has_privilege (listen_socket_t *sock, /* {{{ */
+                          socket_privilege priv)
+{
+  if (sock == NULL) /* journal replay */
+    return 1;
+
+  if (sock->privilege >= priv)
+    return 1;
+
+  return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
+} /* }}} static int has_privilege */
+
 static int flush_file (const char *filename) /* {{{ */
 {
   cache_item_t *ci;
@@ -1169,6 +1183,11 @@ static int handle_request_flush (listen_socket_t *sock, /* {{{ */
 
 static int handle_request_flushall(listen_socket_t *sock) /* {{{ */
 {
+  int status;
+
+  status = has_privilege(sock, PRIV_HIGH);
+  if (status <= 0)
+    return status;
 
   RRDD_LOG(LOG_DEBUG, "Received FLUSHALL");
 
@@ -1185,11 +1204,19 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
   char *file;
   int values_num = 0;
   int status;
+  char orig_buf[CMD_MAX];
 
   time_t now;
   cache_item_t *ci;
 
   now = time (NULL);
+
+  status = has_privilege(sock, PRIV_HIGH);
+  if (status <= 0)
+    return status;
+
+  /* save it for the journal later */
+  strncpy(orig_buf, buffer, sizeof(orig_buf)-1);
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
@@ -1257,6 +1284,10 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
     g_tree_insert (cache_tree, (void *) ci->file, (void *) ci);
   } /* }}} */
   assert (ci != NULL);
+
+  /* don't re-write updates in replay mode */
+  if (sock != NULL)
+    journal_write("update", orig_buf);
 
   while (buffer_size > 0)
   {
@@ -1366,19 +1397,6 @@ static int batch_done (listen_socket_t *sock) /* {{{ */
   return send_response(sock, RESP_OK, "errors\n");
 } /* }}} static int batch_done */
 
-/* returns 1 if we have the required privilege level */
-static int has_privilege (listen_socket_t *sock, /* {{{ */
-                          socket_privilege priv)
-{
-  if (sock == NULL) /* journal replay */
-    return 1;
-
-  if (sock->privilege >= priv)
-    return 1;
-
-  return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
-} /* }}} static int has_privilege */
-
 /* if sock==NULL, we are in journal replay mode */
 static int handle_request (listen_socket_t *sock, /* {{{ */
                            char *buffer, size_t buffer_size)
@@ -1402,17 +1420,7 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
     sock->batch_cmd++;
 
   if (strcasecmp (command, "update") == 0)
-  {
-    status = has_privilege(sock, PRIV_HIGH);
-    if (status <= 0)
-      return status;
-
-    /* don't re-write updates in replay mode */
-    if (sock != NULL)
-      journal_write(command, buffer_ptr);
-
     return (handle_request_update (sock, buffer_ptr, buffer_size));
-  }
   else if (strcasecmp (command, "wrote") == 0 && sock == NULL)
   {
     /* this is only valid in replay mode */
@@ -1421,13 +1429,7 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
   else if (strcasecmp (command, "flush") == 0)
     return (handle_request_flush (sock, buffer_ptr, buffer_size));
   else if (strcasecmp (command, "flushall") == 0)
-  {
-    status = has_privilege(sock, PRIV_HIGH);
-    if (status <= 0)
-      return status;
-
     return (handle_request_flushall(sock));
-  }
   else if (strcasecmp (command, "stats") == 0)
     return (handle_request_stats (sock));
   else if (strcasecmp (command, "help") == 0)
