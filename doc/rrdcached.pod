@@ -363,6 +363,15 @@ sent B<after> the node has been dequeued.
 Causes the daemon to start flushing ALL pending values to disk.  This
 returns immediately, even though the writes may take a long time.
 
+=item B<PENDING> I<filename>
+
+Shows any "pending" updates for a file, in order.  The updates shown have
+not yet been written to the underlying RRD file.
+
+=item B<FORGET> I<filename>
+
+Removes I<filename> from the cache.  Any pending updates B<WILL BE LOST>.
+
 =item B<HELP> [I<command>]
 
 Returns a short usage message. If no command is given, or I<command> is
