@@ -4,13 +4,13 @@
 %define with_ruby %{?_without_ruby: 0} %{?!_without_ruby: 1}
 %define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
 %define svnrev r1190
-%define pre rc9
 #define pretag 1.2.99908020600
+%define rrdcached_user rrdcached
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
 Version: 1.3.99908093000
-Release: 0.20%{?pre:.%{pre}}%{?dist}
+Release: 0.20%{?dist}
 License: GPLv2+ with exceptions
 Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
@@ -142,6 +142,18 @@ Requires: %{name} = %{version}-%{release}
 %description ruby
 The %{name}-ruby package includes RRDtool bindings for Ruby.
 %endif
+
+%package cached
+Summary: Data caching daemon for RRDtool
+Group: Applications/Databases
+Requires: %{name} = %{version}-%{release}
+
+%description cached
+rrdcached is a daemon that receives updates to existing RRD files,
+accumulates them and, if enough have been received or a defined time has
+passed, writes the updates to the RRD file.  The daemon was written with
+big setups in mind which usually runs into I/O related problems.  This
+daemon was written to alleviate these problems.
 
 %prep
 %if %{with_php}
@@ -285,27 +297,35 @@ find examples/ -type f -exec chmod 0644 {} \;
 %clean
 %{__rm} -rf $RPM_BUILD_ROOT
 
-%post
-/sbin/ldconfig
+%pre cached
+/usr/sbin/groupadd %rrdcached_user &>/dev/null ||:
+/usr/sbin/useradd -s /sbin/nologin -g %rrdcached_user -c %rrdcached_user -d %{_localstatedir}/run/rrdcached  %rrdcached_user &>/dev/null || :
+
+%post -p /sbin/ldconfig
+
+%post cached
 /sbin/chkconfig --add rrdcached
 /sbin/service rrdcached start
 
-%preun
+%preun cached
 /sbin/service rrdcached stop
 
-%postun
-/sbin/chkconfig --del rrdcached
+%postun -p /sbin/ldconfig
 /sbin/ldconfig
+
+%postun cached
+/sbin/chkconfig --del rrdcached
+test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
+#test "$1" != 0 || /usr/sbin/groupdel %rrdcached_user &>/dev/null || :
 
 %files
 %defattr(-,root,root,-)
 %{_bindir}/*
+%exclude %{_bindir}/rrdcached
 %{_libdir}/*.so.*
 %{_datadir}/%{name}
 %{_mandir}/man1/*
-%config %{_sysconfdir}/default/*
-%config %{_sysconfdir}/rc.d/init.d/*
-%attr(0775 nobody nobody) %dir %{_localstatedir}/run/rrdcached
+%exclude %{_mandir}/man1/rrdcached*
 
 %files devel
 %defattr(-,root,root,-)
@@ -357,7 +377,18 @@ find examples/ -type f -exec chmod 0644 {} \;
 %{ruby_sitearch}/RRD.so
 %endif
 
+%files cached
+%{_bindir}/rrdcached
+%config %{_sysconfdir}/default/*
+%config %{_sysconfdir}/rc.d/init.d/*
+%{_mandir}/man1/rrdcached*
+%attr(0775 %rrdcached_user %rrdcached_user) %dir %{_localstatedir}/run/rrdcached
+
 %changelog
+* Wed Oct 08 2008 Bernard Li <bernard@vanhpc.org>
+- Split rrdcached related files to -cached subpackage
+- Create rrdcached user and make rrdcached related files owned by it
+
 * Tue Oct 07 2008 Bernard Li <bernard@vanhpc.org>
 - Include librrd.pc file in -devel package
 
