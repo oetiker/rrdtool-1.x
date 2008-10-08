@@ -173,7 +173,7 @@ The daemon reports errors in one of two ways: During startup, error messages
 are printed to C<STDERR>. One of the steps when starting up is to fork to the
 background and closing C<STDERR> - after this writing directly to the user is
 no longer possible. Once this has happened, the daemon will send log messages
-to the system logging daemon using L<syslog(3)>. The facility used it
+to the system logging daemon using L<syslog(3)>. The facility used is
 C<LOG_DAEMON>.
 
 =head1 HOW IT WORKS
