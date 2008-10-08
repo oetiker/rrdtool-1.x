@@ -312,6 +312,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 %{_includedir}/*.h
 %exclude %{_libdir}/*.la
 %{_libdir}/*.so
+%{_libdir}/pkgconfig/librrd.pc
 
 %files doc
 %defattr(-,root,root,-)
@@ -357,6 +358,9 @@ find examples/ -type f -exec chmod 0644 {} \;
 %endif
 
 %changelog
+* Tue Oct 07 2008 Bernard Li <bernard@vanhpc.org>
+- Include librrd.pc file in -devel package
+
 * Sun Jun 08 2008 Jarod Wilson <jwilson@redhat.com> 1.3-0.20.rc9
 - Update to rrdtool 1.3 rc9
 - Minor spec tweaks to permit building on older EL
