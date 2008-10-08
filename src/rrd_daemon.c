@@ -1844,23 +1844,18 @@ static void *connection_thread_main (void *args) /* {{{ */
     else if (status < 0) /* error */
     {
       status = errno;
-      if (status == EINTR)
-        continue;
-      RRDD_LOG (LOG_ERR, "connection_thread_main: poll(2) failed.");
+      if (status != EINTR)
+        RRDD_LOG (LOG_ERR, "connection_thread_main: poll(2) failed.");
       continue;
     }
 
     if ((pollfd.revents & POLLHUP) != 0) /* normal shutdown */
-    {
-      close_connection(sock);
       break;
-    }
     else if ((pollfd.revents & (POLLIN | POLLPRI)) == 0)
     {
       RRDD_LOG (LOG_WARNING, "connection_thread_main: "
           "poll(2) returned something unexpected: %#04hx",
           pollfd.revents);
-      close_connection(sock);
       break;
     }
 
