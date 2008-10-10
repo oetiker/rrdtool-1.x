@@ -36,7 +36,7 @@ case "$1" in
       killproc rrdcached
       RETVAL=$?
       echo
-      [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/rrdcached
+      [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/rrdcached && rm -rf $PIDFILE
       ;;
 
   restart|reload)
