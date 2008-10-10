@@ -1,7 +1,7 @@
 
 RUN_RRDCACHED=0
 
-RRDCACHED_USER="nobody"
+RRDCACHED_USER="rrdcached"
 
 OPTS="-w 300 -z 300"
 

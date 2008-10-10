@@ -23,7 +23,7 @@ case "$1" in
       echo -n "Starting rrdcached: "
       [ -f $RRDCACHED ] || exit 1
 
-      daemon --user=$RRDCACHED_USER --pidfile=$PIDFILE \
+      daemon --user=$RRDCACHED_USER \
         $RRDCACHED $OPTS -p $PIDFILE -l $SOCKFILE
       RETVAL=$?
       echo
