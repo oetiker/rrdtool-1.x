@@ -311,7 +311,6 @@ find examples/ -type f -exec chmod 0644 {} \;
 /sbin/service rrdcached stop
 
 %postun -p /sbin/ldconfig
-/sbin/ldconfig
 
 %postun cached
 /sbin/chkconfig --del rrdcached
