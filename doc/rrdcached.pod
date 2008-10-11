@@ -409,6 +409,10 @@ Adds more data to a filename. This is B<the> operation the daemon was designed
 for, so describing the mechanism again is unnecessary. Read L<HOW IT WORKS>
 above for a detailed explanation.
 
+Note that rrdcached only accepts absolute timestamps in the update values.
+Updates strings like "N:1:2:3" are automatically converted to absolute
+time by the RRD client library before sending to rrdcached.
+
 =item B<WROTE> I<filename>
 
 This command is written to the journal after a file is successfully
@@ -434,8 +438,8 @@ message itself.  The first user command after B<BATCH> is command number one.
 
     client:  BATCH
     server:  0 Go ahead.  End with dot '.' on its own line.
-    client:  UPDATE x.rrd N:1:2:3            <--- command #1
-    client:  UPDATE y.rrd N:3:4:5            <--- command #2
+    client:  UPDATE x.rrd 1223661439:1:2:3            <--- command #1
+    client:  UPDATE y.rrd 1223661440:3:4:5            <--- command #2
     client:  and so on...
     client:  .
     server:  2 Errors
@@ -469,10 +473,11 @@ daemon was started.
 
 =item B<DataSetsWritten> I<(unsigned 64bit integer)>
 
-Total number of "data sets" written to disk since the daemon was started. A
-data set is one or more values passed to the B<UPDATE> command. For example:
-C<N:123:456> is one data set with two values. The term "data set" is used to
-prevent confusion whether individual values or groups of values are counted.
+Total number of "data sets" written to disk since the daemon was
+started. A data set is one or more values passed to the B<UPDATE>
+command. For example: C<1223661439:123:456> is one data set with two
+values. The term "data set" is used to prevent confusion whether
+individual values or groups of values are counted.
 
 =item B<TreeNodesNumber> I<(unsigned 64bit integer)>
 
