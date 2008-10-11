@@ -488,7 +488,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
     return -1;
   }
 
-  if (sock->wbuf != NULL)
+  if (sock->wbuf != NULL && rc == RESP_OK)
   {
     wrote = 0;
     while (wrote < sock->wbuf_len)
