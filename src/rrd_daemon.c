@@ -1221,7 +1221,7 @@ static int handle_request_flush (listen_socket_t *sock, /* {{{ */
 
   /* NOTREACHED */
   assert(1==0);
-} /* }}} int handle_request_slurp */
+} /* }}} int handle_request_flush */
 
 static int handle_request_flushall(listen_socket_t *sock) /* {{{ */
 {
