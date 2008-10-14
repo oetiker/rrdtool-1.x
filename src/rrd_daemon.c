@@ -2493,6 +2493,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'b':
       {
         size_t len;
+        char base_realpath[PATH_MAX];
 
         if (config_base_dir != NULL)
           free (config_base_dir);
@@ -2501,6 +2502,27 @@ static int read_options (int argc, char **argv) /* {{{ */
         {
           fprintf (stderr, "read_options: strdup failed.\n");
           return (3);
+        }
+
+        /* make sure that the base directory is not resolved via
+         * symbolic links.  this makes some performance-enhancing
+         * assumptions possible (we don't have to resolve paths
+         * that start with a "/")
+         */
+        if (realpath(config_base_dir, base_realpath) == NULL)
+        {
+          fprintf (stderr, "Invalid base directory '%s'.\n", config_base_dir);
+          return 5;
+        }
+        else if (strncmp(config_base_dir,
+                         base_realpath, sizeof(base_realpath)) != 0)
+        {
+          fprintf(stderr,
+                  "Base directory (-b) resolved via file system links!\n"
+                  "Please consult rrdcached '-b' documentation!\n"
+                  "Consider specifying the real directory (%s)\n",
+                  base_realpath);
+          return 5;
         }
 
         len = strlen (config_base_dir);

@@ -125,6 +125,18 @@ used.
   updated by the daemon,  assuming the base directory
   "/tmp".
 
+B<WARNING:> The paths up to and including the base directory B<MUST NOT BE>
+symbolic links.  In other words, if the base directory is
+specified as:
+
+    -b /base/dir/somewhere
+
+... then B<NONE> of the following should be symbolic links:
+
+    /base
+    /base/dir
+    /base/dir/somewhere
+
 =item B<-B>
 
 Only permit writes into the base directory specified in B<-b> (and any
