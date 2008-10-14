@@ -518,6 +518,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   rrdc_response_t *res;
   int status;
   int i;
+  char file_path[PATH_MAX];
 
   memset (buffer, 0, sizeof (buffer));
   buffer_ptr = &buffer[0];
@@ -526,6 +527,10 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   status = buffer_add_string ("update", &buffer_ptr, &buffer_free);
   if (status != 0)
     return (ENOBUFS);
+
+  /* change to absolute path for rrdcached */
+  if (*filename != '/' && realpath(filename, file_path) != NULL)
+      filename = file_path;
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
@@ -562,6 +567,7 @@ int rrdc_flush (const char *filename) /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
+  char file_path[PATH_MAX];
 
   if (filename == NULL)
     return (-1);
@@ -573,6 +579,10 @@ int rrdc_flush (const char *filename) /* {{{ */
   status = buffer_add_string ("flush", &buffer_ptr, &buffer_free);
   if (status != 0)
     return (ENOBUFS);
+
+  /* change to absolute path for rrdcached */
+  if (*filename != '/' && realpath(filename, file_path) != NULL)
+      filename = file_path;
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
