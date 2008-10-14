@@ -1962,6 +1962,8 @@ static int write_to_rras(
                 (rrd_file, rrd, rra_idx, scratch_idx,
                  pcdp_summary, rra_time) == -1)
                 return -1;
+
+            rrd_notify_row(rrd_file, rra_idx, rra_pos_new, rra_time);
         }
 
         rra_start += rra_def->row_cnt * ds_cnt * sizeof(rrd_value_t);

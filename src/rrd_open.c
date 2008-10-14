@@ -54,6 +54,10 @@
 #endif
 #endif
 
+long int  rra_random_row(
+    rra_def_t *);
+
+
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
@@ -648,3 +652,46 @@ void rrd_freemem(
 {
     free(mem);
 }
+
+/*
+ * rra_update informs us about the RRAs being updated
+ * The low level storage API may use this information for
+ * aligning RRAs within stripes, or other performance enhancements
+ */
+void rrd_notify_row(
+    rrd_file_t *rrd_file,
+    int rra_idx,
+    unsigned long rra_row,
+    time_t rra_time)
+{
+}
+
+/*
+ * This function is called when creating a new RRD
+ * The storage implementation can use this opportunity to select
+ * a sensible starting row within the file.
+ * The default implementation is random, to ensure that all RRAs
+ * don't change to a new disk block at the same time
+ */
+unsigned long rrd_select_initial_row(
+    rrd_file_t *rrd_file,
+    int rra_idx,
+    rra_def_t *rra
+    )
+{
+    return rra_random_row(rra);
+}
+
+static int rand_init = 0;
+
+long int rra_random_row(
+    rra_def_t *rra)
+{
+    if (!rand_init) {
+        srandom((unsigned int) time(NULL) + (unsigned int) getpid());
+        rand_init++;
+    }
+
+    return random() % rra->row_cnt;
+}
+
