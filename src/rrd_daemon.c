@@ -748,8 +748,8 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
       flush_old_values (config_write_interval);
 
       /* Determine the time of the next cache flush. */
-      while (next_flush.tv_sec <= now.tv_sec)
-        next_flush.tv_sec += config_flush_interval;
+      next_flush.tv_sec =
+        now.tv_sec + next_flush.tv_sec % config_flush_interval;
 
       /* unlock the cache while we rotate so we don't block incoming
        * updates if the fsync() blocks on disk I/O */
