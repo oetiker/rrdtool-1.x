@@ -286,7 +286,7 @@ static void install_signal_handlers(void) /* {{{ */
 
 } /* }}} void install_signal_handlers */
 
-static int open_pidfile(void) /* {{{ */
+static int open_pidfile(char *action, int oflag) /* {{{ */
 {
   int fd;
   char *file;
@@ -295,13 +295,51 @@ static int open_pidfile(void) /* {{{ */
     ? config_pid_file
     : LOCALSTATEDIR "/run/rrdcached.pid";
 
-  fd = open(file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IRGRP|S_IROTH);
+  fd = open(file, oflag, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
   if (fd < 0)
-    fprintf(stderr, "FATAL: cannot create '%s' (%s)\n",
-            file, rrd_strerror(errno));
+    fprintf(stderr, "rrdcached: can't %s pid file '%s' (%s)\n",
+            action, file, rrd_strerror(errno));
 
   return(fd);
 } /* }}} static int open_pidfile */
+
+/* check existing pid file to see whether a daemon is running */
+static int check_pidfile(void)
+{
+  int pid_fd;
+  pid_t pid;
+  char pid_str[16];
+
+  pid_fd = open_pidfile("open", O_RDWR);
+  if (pid_fd < 0)
+    return pid_fd;
+
+  if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0)
+    return -1;
+
+  pid = atoi(pid_str);
+  if (pid <= 0)
+    return -1;
+
+  /* another running process that we can signal COULD be
+   * a competing rrdcached */
+  if (pid != getpid() && kill(pid, 0) == 0)
+  {
+    fprintf(stderr,
+            "FATAL: Another rrdcached daemon is running?? (pid %d)\n", pid);
+    close(pid_fd);
+    return -1;
+  }
+
+  lseek(pid_fd, 0, SEEK_SET);
+  ftruncate(pid_fd, 0);
+
+  fprintf(stderr,
+          "rrdcached: removed stale PID file (no rrdcached on pid %d)\n"
+          "rrdcached: starting normally.\n", pid);
+
+  return pid_fd;
+} /* }}} static int check_pidfile */
 
 static int write_pidfile (int fd) /* {{{ */
 {
@@ -2318,13 +2356,16 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 static int daemonize (void) /* {{{ */
 {
   int status;
-  int fd;
+  int pid_fd;
   char *base_dir;
 
   daemon_uid = geteuid();
 
-  fd = open_pidfile();
-  if (fd < 0) return fd;
+  pid_fd = open_pidfile("create", O_CREAT|O_EXCL|O_WRONLY);
+  if (pid_fd < 0)
+    pid_fd = check_pidfile();
+  if (pid_fd < 0)
+    return pid_fd;
 
   if (!stay_foreground)
   {
@@ -2377,7 +2418,7 @@ static int daemonize (void) /* {{{ */
     return (-1);
   }
 
-  status = write_pidfile (fd);
+  status = write_pidfile (pid_fd);
   return status;
 } /* }}} int daemonize */
 
