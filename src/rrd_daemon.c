@@ -956,6 +956,26 @@ err:
   return 0;
 } /* }}} static int check_file_access */
 
+/* when using a base dir, convert relative paths to absolute paths.
+ * if necessary, modifies the "filename" pointer to point
+ * to the new path created in "tmp".  "tmp" is provided
+ * by the caller and sizeof(tmp) must be >= PATH_MAX.
+ *
+ * this allows us to optimize for the expected case (absolute path)
+ * with a no-op.
+ */
+static void get_abs_path(char **filename, char *tmp)
+{
+  assert(tmp != NULL);
+  assert(filename != NULL && *filename != NULL);
+
+  if (config_base_dir == NULL || **filename == '/')
+    return;
+
+  snprintf(tmp, PATH_MAX, "%s/%s", config_base_dir, *filename);
+  *filename = tmp;
+} /* }}} static int get_abs_path */
+
 /* returns 1 if we have the required privilege level,
  * otherwise issue an error to the user on sock */
 static int has_privilege (listen_socket_t *sock, /* {{{ */
@@ -1183,7 +1203,7 @@ static int handle_request_stats (listen_socket_t *sock) /* {{{ */
 static int handle_request_flush (listen_socket_t *sock, /* {{{ */
     char *buffer, size_t buffer_size)
 {
-  char *file;
+  char *file, file_tmp[PATH_MAX];
   int status;
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
@@ -1197,6 +1217,7 @@ static int handle_request_flush (listen_socket_t *sock, /* {{{ */
     stats_flush_received++;
     pthread_mutex_unlock(&stats_lock);
 
+    get_abs_path(&file, file_tmp);
     if (!check_file_access(file, sock)) return 0;
 
     status = flush_file (file);
@@ -1244,7 +1265,7 @@ static int handle_request_pending(listen_socket_t *sock, /* {{{ */
                                   char *buffer, size_t buffer_size)
 {
   int status;
-  char *file;
+  char *file, file_tmp[PATH_MAX];
   cache_item_t *ci;
 
   status = buffer_get_field(&buffer, &buffer_size, &file);
@@ -1255,6 +1276,8 @@ static int handle_request_pending(listen_socket_t *sock, /* {{{ */
   status = has_privilege(sock, PRIV_HIGH);
   if (status <= 0)
     return status;
+
+  get_abs_path(&file, file_tmp);
 
   pthread_mutex_lock(&cache_lock);
   ci = g_tree_lookup(cache_tree, file);
@@ -1275,7 +1298,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
                                  char *buffer, size_t buffer_size)
 {
   int status;
-  char *file;
+  char *file, file_tmp[PATH_MAX];
 
   status = buffer_get_field(&buffer, &buffer_size, &file);
   if (status != 0)
@@ -1286,6 +1309,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
   if (status <= 0)
     return status;
 
+  get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) return 0;
 
   pthread_mutex_lock(&cache_lock);
@@ -1311,7 +1335,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
                                   time_t now,
                                   char *buffer, size_t buffer_size)
 {
-  char *file;
+  char *file, file_tmp[PATH_MAX];
   int values_num = 0;
   int bad_timestamps = 0;
   int status;
@@ -1335,6 +1359,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
   stats_updates_received++;
   pthread_mutex_unlock(&stats_lock);
 
+  get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) return 0;
 
   pthread_mutex_lock (&cache_lock);
