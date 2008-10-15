@@ -54,10 +54,6 @@
 #endif
 #endif
 
-long int  rra_random_row(
-    rra_def_t *);
-
-
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
@@ -83,14 +79,13 @@ rrd_file_t *rrd_open(
     rrd_file_t *rrd_file = NULL;
     off_t     newfile_size = 0;
 
-    if ((rdwr & RRD_CREAT) && (rdwr & RRD_CREAT_SETSIZE)) {
+    if (rdwr & RRD_CREAT) {
         /* yes bad inline signaling alert, we are using the
            floatcookie to pass the size in ... only used in resize */
         newfile_size = (off_t) rrd->stat_head->float_cookie;
         free(rrd->stat_head);
     }
-    if(!(rdwr & RRD_CREAT))
-        rrd_init(rrd);
+    rrd_init(rrd);
     rrd_file = malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
         rrd_set_error("allocating rrd_file descriptor for '%s'", file_name);
@@ -175,13 +170,7 @@ rrd_file_t *rrd_open(
            }
         }
 */
-
 #ifdef HAVE_MMAP
-    if(rrd_file->file_len == 0 && (rdwr & RRD_CREAT))
-    {
-        rrd_file->file_start = NULL;
-        goto out_done;
-    }
     data = mmap(0, rrd_file->file_len, mm_prot, mm_flags,
                 rrd_file->fd, offset);
 
@@ -546,36 +535,10 @@ ssize_t rrd_write(
     size_t count)
 {
 #ifdef HAVE_MMAP
-    /* These flags are used if creating a new RRD */
-    int       mm_prot = PROT_READ | PROT_WRITE, mm_flags = MAP_SHARED;
-    int old_size = rrd_file->file_len;
-    int new_size = rrd_file->file_len;
     if (count == 0)
         return 0;
     if (buf == NULL)
         return -1;      /* EINVAL */
-    
-    if((rrd_file->pos + count) > old_size)
-    {
-        new_size = rrd_file->pos + count; 
-        rrd_file->file_len = new_size;
-        lseek(rrd_file->fd, new_size - 1, SEEK_SET);
-        write(rrd_file->fd, "\0", 1);   /* poke */
-        lseek(rrd_file->fd, 0, SEEK_SET);
-        if(rrd_file->file_start == NULL)
-        {
-            rrd_file->file_start = mmap(0, new_size, mm_prot, mm_flags,
-                rrd_file->fd, 0);
-        }
-        else
-            rrd_file->file_start = mremap(rrd_file->file_start, old_size, new_size, MREMAP_MAYMOVE); 
-
-        if (rrd_file->file_start == MAP_FAILED) {
-            rrd_set_error("m(re)maping file : %s", 
-                      rrd_strerror(errno));
-            return -1;
-        }
-    }
     memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
@@ -652,46 +615,3 @@ void rrd_freemem(
 {
     free(mem);
 }
-
-/*
- * rra_update informs us about the RRAs being updated
- * The low level storage API may use this information for
- * aligning RRAs within stripes, or other performance enhancements
- */
-void rrd_notify_row(
-    rrd_file_t *rrd_file,
-    int rra_idx,
-    unsigned long rra_row,
-    time_t rra_time)
-{
-}
-
-/*
- * This function is called when creating a new RRD
- * The storage implementation can use this opportunity to select
- * a sensible starting row within the file.
- * The default implementation is random, to ensure that all RRAs
- * don't change to a new disk block at the same time
- */
-unsigned long rrd_select_initial_row(
-    rrd_file_t *rrd_file,
-    int rra_idx,
-    rra_def_t *rra
-    )
-{
-    return rra_random_row(rra);
-}
-
-static int rand_init = 0;
-
-long int rra_random_row(
-    rra_def_t *rra)
-{
-    if (!rand_init) {
-        srandom((unsigned int) time(NULL) + (unsigned int) getpid());
-        rand_init++;
-    }
-
-    return random() % rra->row_cnt;
-}
-

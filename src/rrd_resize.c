@@ -93,7 +93,7 @@ int rrd_resize(
     }
     rrdnew.stat_head->float_cookie = rrd_file->file_len +
         (rrdold.stat_head->ds_cnt * sizeof(rrd_value_t) * modify);
-    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT | RRD_CREAT_SETSIZE);
+    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
                       rrd_strerror(errno));

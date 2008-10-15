@@ -97,7 +97,6 @@ extern    "C" {
 #define RRD_CREAT       (1<<2)
 #define RRD_READAHEAD   (1<<3)
 #define RRD_COPY        (1<<4)
-#define RRD_CREAT_SETSIZE (1<<5)
 
     enum cf_en cf_conv(
     const char *string);
