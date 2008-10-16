@@ -351,6 +351,41 @@ void mincore_print(
 }
 #endif                          /* defined DEBUG && DEBUG > 1 */
 
+/*
+ * get exclusive lock to whole file.
+ * lock gets removed when we close the file
+ *
+ * returns 0 on success
+ */
+int rrd_lock(
+    rrd_file_t *file)
+{
+    int       rcstat;
+
+    {
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+        struct _stat st;
+
+        if (_fstat(file->fd, &st) == 0) {
+            rcstat = _locking(file->fd, _LK_NBLCK, st.st_size);
+        } else {
+            rcstat = -1;
+        }
+#else
+        struct flock lock;
+
+        lock.l_type = F_WRLCK;  /* exclusive write lock */
+        lock.l_len = 0; /* whole file */
+        lock.l_start = 0;   /* start of file */
+        lock.l_whence = SEEK_SET;   /* end of file */
+
+        rcstat = fcntl(file->fd, F_SETLK, &lock);
+#endif
+    }
+
+    return (rcstat);
+}
+
 
 /* drop cache except for the header and the active pages */
 void rrd_dontneed(
