@@ -259,8 +259,8 @@ add the following at the start the configure line:
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
- gunzip -c libxml2-sources-2.6.32.tar.gz | tar xf -
- cd libxml2-sources-2.6.32
+ gunzip -c libxml2-sources-2.6.31.tar.gz | tar xf -
+ cd libxml2-sources-2.6.31
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
  $MAKE
  $MAKE install
@@ -294,7 +294,7 @@ config file.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
- gunzip -c cairo-1.4.10.tar.gz   | tar xf -
+ gunzip -c cairo-1.6.4.tar.gz   | tar xf -
  cd cairo-1.4.10
  ./configure --prefix=$INSTALL_DIR \
     --enable-xlib=no \
