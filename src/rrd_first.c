@@ -65,6 +65,7 @@ time_t rrd_first_r(
     rrd_t     rrd;
     rrd_file_t *rrd_file;
 
+    rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL) {
         goto err_free;

@@ -99,6 +99,7 @@ int rrd_lastupdate_r(const char *filename,
     rrd_t     rrd;
     rrd_file_t *rrd_file;
 
+    rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL) {
         rrd_free(&rrd);

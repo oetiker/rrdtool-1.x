@@ -519,6 +519,7 @@ int _rrd_update(
         goto err_out;
     }
 
+    rrd_init(&rrd);
     if ((rrd_file = rrd_open(filename, &rrd, RRD_READWRITE)) == NULL) {
         goto err_free;
     }

@@ -84,6 +84,10 @@ extern    "C" {
         off_t     header_len;   /* length of the header of this rrd file */
         off_t     file_len; /* total size of the rrd file */
         off_t     pos;  /* current pos in file */
+#ifdef HAVE_MMAP
+        int       mm_prot;
+        int       mm_flags;
+#endif
     } rrd_file_t;
 
 /* rrd info interface */

@@ -58,6 +58,10 @@
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
  * before returning an error. Do not call rrd_close upon failure of rrd_open.
+ * If creating a new file, the parameter rrd must be initialised with
+ * details of the file content.
+ * If opening an existing file, then use rrd must be initialised by
+ * rrd_init(rrd) prior to invoking rrd_open
  */
 
 rrd_file_t *rrd_open(
@@ -65,27 +69,43 @@ rrd_file_t *rrd_open(
     rrd_t *rrd,
     unsigned rdwr)
 {
+    int i;
     int       flags = 0;
     mode_t    mode = S_IRUSR;
     int       version;
 
 #ifdef HAVE_MMAP
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
-    int       mm_prot = PROT_READ, mm_flags = 0;
     char     *data = MAP_FAILED;
 #endif
     off_t     offset = 0;
     struct stat statb;
     rrd_file_t *rrd_file = NULL;
     off_t     newfile_size = 0;
+    off_t header_len, value_cnt, data_len;
 
-    if (rdwr & RRD_CREAT) {
-        /* yes bad inline signaling alert, we are using the
-           floatcookie to pass the size in ... only used in resize */
-        newfile_size = (off_t) rrd->stat_head->float_cookie;
-        free(rrd->stat_head);
+    /* Are we creating a new file? */
+    if((rdwr & RRD_CREAT) && (rrd->stat_head != NULL))
+    {
+        header_len = \
+          sizeof(stat_head_t) + \
+          sizeof(ds_def_t) * rrd->stat_head->ds_cnt + \
+          sizeof(rra_def_t) * rrd->stat_head->rra_cnt + \
+          sizeof(time_t) + \
+          sizeof(live_head_t) + \
+          sizeof(pdp_prep_t) * rrd->stat_head->ds_cnt + \
+          sizeof(cdp_prep_t) * rrd->stat_head->ds_cnt * rrd->stat_head->rra_cnt + \
+          sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt;
+
+        value_cnt = 0;
+        for (i = 0; i < rrd->stat_head->rra_cnt; i++)
+            value_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
+
+        data_len = sizeof(rrd_value_t) * value_cnt;
+
+        newfile_size = header_len + data_len;
     }
-    rrd_init(rrd);
+    
     rrd_file = malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
         rrd_set_error("allocating rrd_file descriptor for '%s'", file_name);
@@ -101,12 +121,18 @@ rrd_file_t *rrd_open(
         exit(-1);
     }
 #endif
+
+#ifdef HAVE_MMAP
+    rrd_file->mm_prot = PROT_READ;
+    rrd_file->mm_flags = 0;
+#endif
+
     if (rdwr & RRD_READONLY) {
         flags |= O_RDONLY;
 #ifdef HAVE_MMAP
-        mm_flags = MAP_PRIVATE;
+        rrd_file->mm_flags = MAP_PRIVATE;
 # ifdef MAP_NORESERVE
-        mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
+        rrd_file->mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
 # endif
 #endif
     } else {
@@ -114,8 +140,8 @@ rrd_file_t *rrd_open(
             mode |= S_IWUSR;
             flags |= O_RDWR;
 #ifdef HAVE_MMAP
-            mm_flags = MAP_SHARED;
-            mm_prot |= PROT_WRITE;
+            rrd_file->mm_flags = MAP_SHARED;
+            rrd_file->mm_prot |= PROT_WRITE;
 #endif
         }
         if (rdwr & RRD_CREAT) {
@@ -124,10 +150,10 @@ rrd_file_t *rrd_open(
     }
     if (rdwr & RRD_READAHEAD) {
 #ifdef MAP_POPULATE
-        mm_flags |= MAP_POPULATE;   /* populate ptes and data */
+        rrd_file->mm_flags |= MAP_POPULATE;   /* populate ptes and data */
 #endif
 #if defined MAP_NONBLOCK
-        mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
+        rrd_file->mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
     }
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
@@ -170,8 +196,9 @@ rrd_file_t *rrd_open(
            }
         }
 */
+
 #ifdef HAVE_MMAP
-    data = mmap(0, rrd_file->file_len, mm_prot, mm_flags,
+    data = mmap(0, rrd_file->file_len, rrd_file->mm_prot, rrd_file->mm_flags,
                 rrd_file->fd, offset);
 
     /* lets see if the first read worked */
@@ -570,10 +597,17 @@ ssize_t rrd_write(
     size_t count)
 {
 #ifdef HAVE_MMAP
+    int old_size = rrd_file->file_len;
     if (count == 0)
         return 0;
     if (buf == NULL)
         return -1;      /* EINVAL */
+    
+    if((rrd_file->pos + count) > old_size)
+    {
+        rrd_set_error("attempting to write beyond end of file");
+        return -1;
+    }
     memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */

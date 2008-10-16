@@ -73,6 +73,7 @@ time_t rrd_last_r(
 
     rrd_t     rrd;
 
+    rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file != NULL) {
         lastup = rrd.live_head->last_up;

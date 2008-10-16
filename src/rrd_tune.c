@@ -98,6 +98,7 @@ int rrd_tune(
     opterr = 0;         /* initialize getopt */
 
 
+    rrd_init(&rrd);
     rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE);
     if (rrd_file == NULL) {
         rrd_free(&rrd);

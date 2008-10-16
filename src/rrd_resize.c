@@ -55,6 +55,7 @@ int rrd_resize(
         modify = -modify;
 
 
+    rrd_init(&rrdold);
     rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE | RRD_COPY);
     if (rrd_file == NULL) {
         rrd_free(&rrdold);
@@ -83,16 +84,32 @@ int rrd_resize(
             rrd_close(rrd_file);
             return (-1);
         }
-    /* the size of the new file */
-    /* yes we are abusing the float cookie for this, aargh */
+
+    rrd_init(&rrdnew);
+    /* These need to be initialised before calling rrd_open() with 
+       the RRD_CREATE flag */
     if ((rrdnew.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating stat_head for new RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);
         return (-1);
     }
-    rrdnew.stat_head->float_cookie = rrd_file->file_len +
-        (rrdold.stat_head->ds_cnt * sizeof(rrd_value_t) * modify);
+
+    if ((rrdnew.rra_def = malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
+        rrd_set_error("allocating rra_def for new RRD");
+        rrd_free(&rrdnew);
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
+        return (-1);
+    }
+
+    memcpy(rrdnew.stat_head,rrdold.stat_head,sizeof(stat_head_t));
+    memcpy(rrdnew.rra_def,rrdold.rra_def,sizeof(rra_def_t) * rrdold.stat_head->rra_cnt);
+
+    /* Set this so that the file will be created with the correct size */
+    rrdnew.rra_def[target_rra].row_cnt += modify;
+
     rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
@@ -108,15 +125,6 @@ int rrd_resize(
         return (-1);
     }
 /*XXX: do one write for those parts of header that are unchanged */
-    if ((rrdnew.stat_head = malloc(sizeof(stat_head_t))) == NULL) {
-        rrd_set_error("allocating stat_head for new RRD");
-        rrd_free(&rrdnew);
-        rrd_free(&rrdold);
-        rrd_close(rrd_file);
-        rrd_close(rrd_out_file);
-        return (-1);
-    }
-
     if ((rrdnew.rra_ptr = malloc(sizeof(rra_ptr_t) * rrdold.stat_head->rra_cnt)) == NULL) {
         rrd_set_error("allocating rra_ptr for new RRD");
         rrd_free(&rrdnew);
@@ -126,18 +134,11 @@ int rrd_resize(
         return (-1);
     }
 
-    if ((rrdnew.rra_def = malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
-        rrd_set_error("allocating rra_def for new RRD");
-        rrd_free(&rrdnew);
-        rrd_free(&rrdold);
-        rrd_close(rrd_file);
-        rrd_close(rrd_out_file);
-        return (-1);
-    }
-     
-    memcpy(rrdnew.stat_head,rrdold.stat_head,sizeof(stat_head_t));
+    /* Put this back the way it was so that the rest of the algorithm
+       below remains unchanged, it will be corrected later */
+    rrdnew.rra_def[target_rra].row_cnt -= modify;
+
     rrdnew.ds_def = rrdold.ds_def;
-    memcpy(rrdnew.rra_def,rrdold.rra_def,sizeof(rra_def_t) * rrdold.stat_head->rra_cnt);    
     rrdnew.live_head = rrdold.live_head;
     rrdnew.pdp_prep = rrdold.pdp_prep;
     rrdnew.cdp_prep = rrdold.cdp_prep;

@@ -235,6 +235,7 @@ int rrd_fetch_fn(
             *start, *end, *step);
 #endif
 
+    rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL)
         goto err_free;
