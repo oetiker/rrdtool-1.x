@@ -1710,6 +1710,8 @@ int draw_horizontal_grid(image_desc_t *im)
     int sgrid = (int)( im->minval / im->ygrid_scale.gridstep - 1);
     int egrid = (int)( im->maxval / im->ygrid_scale.gridstep + 1);
     double MaxY;
+    double second_axis_magfact = 0;
+    char *second_axis_symb = "";
     scaledstep = im->ygrid_scale.gridstep/(double)im->magfact*(double)im->viewfactor;
     MaxY = scaledstep*(double)egrid;
     for (i = sgrid; i <= egrid; i++){
@@ -1744,6 +1746,28 @@ int draw_horizontal_grid(image_desc_t *im)
                     }
                 }
                 nlabels++;
+                if (im->second_axis_scale != 0){
+                        char graph_label_right[100];
+                        double sval = im->ygrid_scale.gridstep*(double)i/im->second_axis_scale+im->second_axis_shift;
+                        if (!second_axis_magfact){
+                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0/im->second_axis_scale+im->second_axis_shift;
+                                auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
+                        }
+                        sval /= second_axis_magfact;
+ 
+                       if(MaxY < 10) { 
+                           sprintf(graph_label_right,"%5.1f %s",sval,second_axis_symb);
+                          } else {
+                           sprintf(graph_label_right,"%5.0f %s",sval,second_axis_symb);
+                        }
+                        gfx_new_text ( im->canvas,
+                               X1+7, Y0,
+                               im->graph_col[GRC_FONT],
+                               im->text_prop[TEXT_PROP_AXIS].font,
+                               im->text_prop[TEXT_PROP_AXIS].size,
+                               im->tabwidth,0.0, GFX_H_LEFT, GFX_V_CENTER,
+                               graph_label_right );
+                }
 
                gfx_new_text ( im->canvas,
                               X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
@@ -1786,7 +1810,6 @@ double frexp10(double x, double *e) {
     *e = iexp;
     return mnt;
 }
-
 
 /* logaritmic horizontal grid */
 int
@@ -1877,16 +1900,38 @@ horizontal_log_grid(image_desc_t   *im)
             else
                 symbol = '?';
 
-                sprintf(graph_label,"%3.0f %c", pvalue, symbol);
-        } else
+            sprintf(graph_label,"%3.0f %c", pvalue, symbol);
+        } else {
             sprintf(graph_label,"%3.0e", value);
+        }
+        if (im->second_axis_scale != 0){
+                char graph_label_right[100];
+                if (im->extra_flags & FORCE_UNITS_SI) {
+                        double sval = value/im->second_axis_scale+im->second_axis_shift;
+                        double mfac = 1;
+                        char   *symb = "";
+                        auto_scale(im,&sval,&symb,&mfac);
+                        sprintf(graph_label_right,"%4.0f %s", sval,symb);
+                }
+                else {        
+                        sprintf(graph_label_right,"%3.0e", value/im->second_axis_scale+im->second_axis_shift);
+                }
+                gfx_new_text ( im->canvas,
+                               X1+7, Y0,
+                               im->graph_col[GRC_FONT],
+                               im->text_prop[TEXT_PROP_AXIS].font,
+                               im->text_prop[TEXT_PROP_AXIS].size,
+                               im->tabwidth,0.0, GFX_H_LEFT, GFX_V_CENTER,
+                               graph_label_right );
+        }
+            
         gfx_new_text ( im->canvas,
-            X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
-            im->graph_col[GRC_FONT],
-            im->text_prop[TEXT_PROP_AXIS].font,
-            im->text_prop[TEXT_PROP_AXIS].size,
-            im->tabwidth,0.0, GFX_H_RIGHT, GFX_V_CENTER,
-            graph_label );
+                       X0-im->text_prop[TEXT_PROP_AXIS].size, Y0,
+                       im->graph_col[GRC_FONT],
+                       im->text_prop[TEXT_PROP_AXIS].font,
+                       im->text_prop[TEXT_PROP_AXIS].size,
+                       im->tabwidth,0.0, GFX_H_RIGHT, GFX_V_CENTER,
+                       graph_label );
 
         /* minor grid */
         if(mid < 4 && exfrac == 1) {
@@ -2145,6 +2190,16 @@ axis_paint(
                    im->xorigin+0.5,    im->yorigin-im->ysize-7, /* LINEOFFSET */
                    im->graph_col[GRC_ARROW]);
 
+    if (im->second_axis_scale != 0){
+       gfx_new_line ( im->canvas, im->xorigin+im->xsize,im->yorigin+4,
+                         im->xorigin+im->xsize,im->yorigin-im->ysize-4,
+                         MGRIDWIDTH, im->graph_col[GRC_AXIS]);
+       gfx_new_area ( im->canvas, 
+                   im->xorigin+im->xsize-2,  im->yorigin-im->ysize-2,
+                   im->xorigin+im->xsize+3,  im->yorigin-im->ysize-2,
+                   im->xorigin+im->xsize+0.5,    im->yorigin-im->ysize-7, /* LINEOFFSET */
+                   im->graph_col[GRC_ARROW]);
+    }
 }
 
 void
@@ -2197,7 +2252,8 @@ grid_paint(image_desc_t   *im)
     }
 
     /* yaxis unit description */
-    gfx_new_text( im->canvas,
+    if (im->ylegend[0] != '\0'){
+            gfx_new_text( im->canvas,
                   10, (im->yorigin - im->ysize/2),
                   im->graph_col[GRC_FONT],
                   im->text_prop[TEXT_PROP_UNIT].font,
@@ -2205,7 +2261,23 @@ grid_paint(image_desc_t   *im)
                   RRDGRAPH_YLEGEND_ANGLE,
                   GFX_H_LEFT, GFX_V_CENTER,
                   im->ylegend);
-
+    }
+    if (im->second_axis_legend[0] != '\0'){
+            double Xylabel=gfx_get_text_width(im->canvas, 0,
+                        im->text_prop[TEXT_PROP_AXIS].font,
+                        im->text_prop[TEXT_PROP_AXIS].size,
+                        im->tabwidth,
+                        "0", 0) * im->unitslength
+                    + im->text_prop[TEXT_PROP_UNIT].size *2;
+            gfx_new_text( im->canvas,
+                  im->xorigin+im->xsize+Xylabel+4, (im->yorigin - im->ysize/2),
+                  im->graph_col[GRC_FONT],
+                  im->text_prop[TEXT_PROP_UNIT].font,
+                  im->text_prop[TEXT_PROP_UNIT].size, im->tabwidth, 
+                  RRDGRAPH_YLEGEND_ANGLE,
+                  GFX_H_LEFT, GFX_V_CENTER,
+                  im->second_axis_legend);
+    }        
     /* graph title */
     gfx_new_text( im->canvas,
                   im->ximg/2, im->text_prop[TEXT_PROP_TITLE].size*1.3+4,
@@ -2215,14 +2287,15 @@ grid_paint(image_desc_t   *im)
                   GFX_H_CENTER, GFX_V_CENTER,
                   im->title);
     /* rrdtool 'logo' */
-    gfx_new_text( im->canvas,
+    if (!(im->extra_flags & NO_RRDTOOL_TAG)){
+            gfx_new_text( im->canvas,
                   im->ximg-7, 7,
                   ( im->graph_col[GRC_FONT] & 0xffffff00 ) | 0x00000044,
                   im->text_prop[TEXT_PROP_AXIS].font,
                   5.5, im->tabwidth, 270,
                   GFX_H_RIGHT, GFX_V_TOP,
                   "RRDTOOL / TOBI OETIKER");
-
+    }
     /* graph watermark */
     if(im->watermark[0] != '\0') {
         gfx_new_text( im->canvas,
@@ -2478,6 +2551,13 @@ graph_size_location(image_desc_t *im, int elements
     */
     im->ximg = Xylabel + Xmain + 2 * Xspacing;
 
+    if (im->second_axis_scale != 0){
+        im->ximg += Xylabel + Xspacing;
+    }
+    if (im->extra_flags & NO_RRDTOOL_TAG){
+        im->ximg -= Xspacing;
+    }
+
 #ifdef WITH_PIECHART
     im->ximg  += Xpie;
 #endif
@@ -2496,6 +2576,10 @@ graph_size_location(image_desc_t *im, int elements
         im->ximg += Xvertical;
         im->xorigin += Xvertical;
     }
+    if (im->second_axis_legend[0] != '\0' ) {
+        im->ximg += Xvertical;
+    }
+
     xtr(im,0);
 
     /* The vertical size is interesting... we need to compare
@@ -3133,6 +3217,9 @@ rrd_graph_init(image_desc_t *im)
     im->ysize = 100;
     im->step = 0;
     im->ylegend[0] = '\0';
+    im->second_axis_scale = 0; /* 0 disables it */
+    im->second_axis_shift = 0; /* no shift by default */
+    im->second_axis_legend[0] = '\0';
     im->title[0] = '\0';
     im->watermark[0] = '\0';
     im->minval = DNAN;
@@ -3259,6 +3346,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"font-smoothing-threshold", required_argument, 0, 'B'},
             {"watermark",  required_argument, 0,  'W'},
             {"alt-y-mrtg", no_argument,       0,  1000}, /* this has no effect it is just here to save old apps from crashing when they use it */
+            {"disable-rrdtool-tag", no_argument,  0,  1001},
+            {"right-axis", required_argument,  0,  1002},
+            {"right-axis-label", required_argument,  0,  1003},
             {0,0,0,0}};
         int option_index = 0;
         int opt;
@@ -3295,6 +3385,9 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             break;
         case 'F':
             im->extra_flags |= FORCE_RULES_LEGEND;
+            break;
+        case 1001:
+            im->extra_flags |= NO_RRDTOOL_TAG;
             break;
         case LONGOPT_UNITS_SI:
             if(im->extra_flags & FORCE_UNITS) {
@@ -3393,6 +3486,25 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
                 rrd_set_error("invalid y-grid format");
                 return;
             }
+            break;
+        case 1002: /* right y axis */
+
+            if(sscanf(optarg,
+                      "%lf:%lf",
+                      &im->second_axis_scale,
+                      &im->second_axis_shift) == 2) {
+                if(im->second_axis_scale==0){
+                    rrd_set_error("the second_axis_scale  must not be 0");
+                    return;
+                }
+            } else {
+                rrd_set_error("invalid right-axis format expected scale:shift");
+                return;
+            }
+            break;
+        case 1003:
+            strncpy(im->second_axis_legend,optarg,150);
+            im->second_axis_legend[150]='\0';
             break;
         case 'v':
             strncpy(im->ylegend,optarg,150);

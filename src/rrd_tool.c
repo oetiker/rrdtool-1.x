@@ -99,6 +99,7 @@ void PrintUsage(char *cmd)
 	   "\t\t[-Y|--alt-y-grid]\n"
 	   "\t\t[-y|--y-grid y-axis grid and label]\n"
 	   "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
+	   "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"
 	   "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
 	   "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
 	   "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
