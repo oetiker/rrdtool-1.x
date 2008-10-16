@@ -153,19 +153,6 @@ Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
 
 =head2 Build Instructions
 
-In order to build rrdtool need a compiler on your system. Unfortunately
-compilers are not all alike. This has an effect on the CFLAGS you want to
-set. The examples below are for the popular GCC compiler suite. If you have
-an other compilers here are some ides:
-
-=over
-
-=item Sun Forte
-
- CFLAGS="-xO3 -kPIC"
-
-=back
-
 Some libraries want to know where other libraries are. For this to work,
 set the following environment variable
 
@@ -184,6 +171,10 @@ the syntax again differs from system to system:
 =item Solaris
 
  export LDFLAGS=-R${INSTALL_DIR}/lib 
+
+if you are using the Sun Studio/Forte compiler, you may also want to set
+
+ CFLAGS="-xO3 -kPIC"
 
 =item Linux
 
@@ -317,8 +308,8 @@ config file.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.15.4.tar.gz
- gunzip -c glib-2.12.13.tar.gz  | tar xf -
- cd glib-2.12.13
+ gunzip -c glib-2.15.4.tar.gz  | tar xf -
+ cd glib-2.15.4
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
  $MAKE
  $MAKE install
