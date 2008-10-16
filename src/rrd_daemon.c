@@ -1525,6 +1525,9 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
 
   if (values_num < 1)
   {
+    /* journal replay mode */
+    if (sock == NULL) return RESP_ERR;
+
     /* if we had only one update attempt, then return the full
        error message... try to get the most information out
        of the limited error space allowed by the protocol
