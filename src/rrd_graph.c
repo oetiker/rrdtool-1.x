@@ -1656,11 +1656,11 @@ int leg_place(
     int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
     int       fill = 0, fill_last;
     int       leg_c = 0;
-    int       leg_x = border;
+    double    leg_x = border;
     int       leg_y = im->yimg;
     int       leg_y_prev = im->yimg;
     int       leg_cc;
-    int       glue = 0;
+    double    glue = 0;
     int       i, ii, mark = 0;
     char      prt_fctn; /*special printfunctions */
     char      default_txtalign = TXA_JUSTIFIED; /*default line orientation */
@@ -1792,12 +1792,12 @@ int leg_place(
             if (prt_fctn != '\0') {
                 leg_x = border;
                 if (leg_c >= 2 && prt_fctn == 'j') {
-                    glue = (im->ximg - fill - 2 * border) / (leg_c - 1);
+                    glue = (double)(im->ximg - fill - 2 * border) / (double)(leg_c - 1);
                 } else {
                     glue = 0;
                 }
                 if (prt_fctn == 'c')
-                    leg_x = (im->ximg - fill) / 2.0;
+                    leg_x = (double)(im->ximg - fill) / 2.0;
                 if (prt_fctn == 'r')
                     leg_x = im->ximg - fill - border;
                 for (ii = mark; ii <= i; ii++) {
@@ -1806,13 +1806,13 @@ int leg_place(
                     im->gdes[ii].leg_x = leg_x;
                     im->gdes[ii].leg_y = leg_y;
                     leg_x +=
-                        gfx_get_text_width(im, leg_x,
+                        (double)gfx_get_text_width(im, leg_x,
                                            im->
                                            text_prop
                                            [TEXT_PROP_LEGEND].
                                            font_desc,
                                            im->tabwidth, im->gdes[ii].legend)
-                        + legspace[ii]
+                        +(double)legspace[ii]
                         + glue;
                 }
                 leg_y_prev = leg_y;
