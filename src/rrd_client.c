@@ -615,7 +615,24 @@ int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ *
   rrdc_connect(opt_daemon);
 
   if (rrdc_is_connected(opt_daemon))
+  {
+    rrd_clear_error();
     status = rrdc_flush (filename);
+
+    if (status != 0 && !rrd_test_error())
+    {
+      if (status > 0)
+      {
+        rrd_set_error("rrdc_flush (%s) failed: %s",
+                      filename, rrd_strerror(status));
+      }
+      else if (status < 0)
+      {
+        rrd_set_error("rrdc_flush (%s) failed with status %i.",
+                      filename, status);
+      }
+    }
+  } /* if (rrdc_is_connected(..)) */
 
   return status;
 } /* }}} int rrdc_flush_if_daemon */
