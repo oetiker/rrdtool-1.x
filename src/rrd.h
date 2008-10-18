@@ -79,16 +79,21 @@ extern    "C" {
 
 /* information about an rrd file */
     typedef struct rrd_file_t {
-        int       fd;   /* file descriptor if this rrd file */
-        char     *file_start;   /* start address of an open rrd file */
         off_t     header_len;   /* length of the header of this rrd file */
         off_t     file_len; /* total size of the rrd file */
         off_t     pos;  /* current pos in file */
+        void      *pvt;
+    } rrd_file_t;
+
+/* information used for the conventional file access methods */
+    typedef struct rrd_simple_file_t {
+        int       fd;  /* file descriptor of this rrd file */
 #ifdef HAVE_MMAP
+        char     *file_start;   /* start address of an open rrd file */
         int       mm_prot;
         int       mm_flags;
 #endif
-    } rrd_file_t;
+    } rrd_simple_file_t;
 
 /* rrd info interface */
     typedef struct rrd_blob_t {

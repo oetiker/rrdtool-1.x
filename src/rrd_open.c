@@ -38,7 +38,7 @@
 		rrd_set_error(#dst " malloc"); \
 		goto out_nullify_head; \
 	} \
-        got = read (rrd_file->fd, dst, wanted); \
+        got = read (rrd_simple_file->fd, dst, wanted); \
 	if (got != wanted) { \
 		rrd_set_error("short read while reading header " #dst); \
                 goto out_nullify_head; \
@@ -81,6 +81,7 @@ rrd_file_t *rrd_open(
     off_t     offset = 0;
     struct stat statb;
     rrd_file_t *rrd_file = NULL;
+    rrd_simple_file_t *rrd_simple_file = NULL;
     off_t     newfile_size = 0;
     off_t header_len, value_cnt, data_len;
 
@@ -113,6 +114,14 @@ rrd_file_t *rrd_open(
     }
     memset(rrd_file, 0, sizeof(rrd_file_t));
 
+    rrd_file->pvt = malloc(sizeof(rrd_simple_file_t));
+    if(rrd_file->pvt == NULL) {
+        rrd_set_error("allocating rrd_simple_file for '%s'", file_name);
+        return NULL;
+    }
+    memset(rrd_file->pvt, 0, sizeof(rrd_simple_file_t));
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+
 #ifdef DEBUG
     if ((rdwr & (RRD_READONLY | RRD_READWRITE)) ==
         (RRD_READONLY | RRD_READWRITE)) {
@@ -123,16 +132,16 @@ rrd_file_t *rrd_open(
 #endif
 
 #ifdef HAVE_MMAP
-    rrd_file->mm_prot = PROT_READ;
-    rrd_file->mm_flags = 0;
+    rrd_simple_file->mm_prot = PROT_READ;
+    rrd_simple_file->mm_flags = 0;
 #endif
 
     if (rdwr & RRD_READONLY) {
         flags |= O_RDONLY;
 #ifdef HAVE_MMAP
-        rrd_file->mm_flags = MAP_PRIVATE;
+        rrd_simple_file->mm_flags = MAP_PRIVATE;
 # ifdef MAP_NORESERVE
-        rrd_file->mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
+        rrd_simple_file->mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
 # endif
 #endif
     } else {
@@ -140,8 +149,8 @@ rrd_file_t *rrd_open(
             mode |= S_IWUSR;
             flags |= O_RDWR;
 #ifdef HAVE_MMAP
-            rrd_file->mm_flags = MAP_SHARED;
-            rrd_file->mm_prot |= PROT_WRITE;
+            rrd_simple_file->mm_flags = MAP_SHARED;
+            rrd_simple_file->mm_prot |= PROT_WRITE;
 #endif
         }
         if (rdwr & RRD_CREAT) {
@@ -150,24 +159,24 @@ rrd_file_t *rrd_open(
     }
     if (rdwr & RRD_READAHEAD) {
 #ifdef MAP_POPULATE
-        rrd_file->mm_flags |= MAP_POPULATE;   /* populate ptes and data */
+        rrd_simple_file->mm_flags |= MAP_POPULATE;   /* populate ptes and data */
 #endif
 #if defined MAP_NONBLOCK
-        rrd_file->mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
+        rrd_simple_file->mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
 #endif
     }
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     flags |= O_BINARY;
 #endif
 
-    if ((rrd_file->fd = open(file_name, flags, mode)) < 0) {
+    if ((rrd_simple_file->fd = open(file_name, flags, mode)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
     }
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
      * many concurrent seeks are even worse.  */
-    if (newfile_size == 0 && ((fstat(rrd_file->fd, &statb)) < 0)) {
+    if (newfile_size == 0 && ((fstat(rrd_simple_file->fd, &statb)) < 0)) {
         rrd_set_error("fstat '%s': %s", file_name, rrd_strerror(errno));
         goto out_close;
     }
@@ -175,22 +184,22 @@ rrd_file_t *rrd_open(
         rrd_file->file_len = statb.st_size;
     } else {
         rrd_file->file_len = newfile_size;
-        lseek(rrd_file->fd, newfile_size - 1, SEEK_SET);
-        write(rrd_file->fd, "\0", 1);   /* poke */
-        lseek(rrd_file->fd, 0, SEEK_SET);
+        lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET);
+        write(rrd_simple_file->fd, "\0", 1);   /* poke */
+        lseek(rrd_simple_file->fd, 0, SEEK_SET);
     }
 #ifdef HAVE_POSIX_FADVISE
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and diskaccess (and buffer cache).
        Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */
-    posix_fadvise(rrd_file->fd, 0, 0, POSIX_FADV_RANDOM);
+    posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
 #endif
 
 /*
         if (rdwr & RRD_READWRITE)
         {
-           if (setvbuf((rrd_file->fd),NULL,_IONBF,2)) {
+           if (setvbuf((rrd_simple_file->fd),NULL,_IONBF,2)) {
                   rrd_set_error("failed to disable the stream buffer\n");
                   return (-1);
            }
@@ -198,8 +207,9 @@ rrd_file_t *rrd_open(
 */
 
 #ifdef HAVE_MMAP
-    data = mmap(0, rrd_file->file_len, rrd_file->mm_prot, rrd_file->mm_flags,
-                rrd_file->fd, offset);
+    data = mmap(0, rrd_file->file_len, 
+        rrd_simple_file->mm_prot, rrd_simple_file->mm_flags,
+        rrd_simple_file->fd, offset);
 
     /* lets see if the first read worked */
     if (data == MAP_FAILED) {
@@ -207,7 +217,7 @@ rrd_file_t *rrd_open(
                       rrd_strerror(errno));
         goto out_close;
     }
-    rrd_file->file_start = data;
+    rrd_simple_file->file_start = data;
     if (rdwr & RRD_CREAT) {
         memset(data, DNAN, newfile_size - 1);
         goto out_done;
@@ -326,8 +336,9 @@ rrd_file_t *rrd_open(
     if (data != MAP_FAILED)
       munmap(data, rrd_file->file_len);
 #endif
-    close(rrd_file->fd);
+    close(rrd_simple_file->fd);
   out_free:
+    free(rrd_file->pvt);
     free(rrd_file);
     return NULL;
 }
@@ -340,6 +351,8 @@ void mincore_print(
     rrd_file_t *rrd_file,
     char *mark)
 {
+    rrd_simple_file_t *rrd_simple_file;
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #ifdef HAVE_MMAP
     /* pretty print blocks in core */
     off_t     off;
@@ -351,7 +364,7 @@ void mincore_print(
     vec = malloc(off);
     if (vec != NULL) {
         memset(vec, 0, off);
-        if (mincore(rrd_file->file_start, rrd_file->file_len, vec) == 0) {
+        if (mincore(rrd_simple_file->file_start, rrd_file->file_len, vec) == 0) {
             int       prev;
             unsigned  is_in = 0, was_in = 0;
 
@@ -385,16 +398,18 @@ void mincore_print(
  * returns 0 on success
  */
 int rrd_lock(
-    rrd_file_t *file)
+    rrd_file_t *rrd_file)
 {
     int       rcstat;
+    rrd_simple_file_t *rrd_simple_file;
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 
     {
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
         struct _stat st;
 
-        if (_fstat(file->fd, &st) == 0) {
-            rcstat = _locking(file->fd, _LK_NBLCK, st.st_size);
+        if (_fstat(rrd_simple_file->fd, &st) == 0) {
+            rcstat = _locking(rrd_simple_file->fd, _LK_NBLCK, st.st_size);
         } else {
             rcstat = -1;
         }
@@ -406,7 +421,7 @@ int rrd_lock(
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
 
-        rcstat = fcntl(file->fd, F_SETLK, &lock);
+        rcstat = fcntl(rrd_simple_file->fd, F_SETLK, &lock);
 #endif
     }
 
@@ -419,6 +434,7 @@ void rrd_dontneed(
     rrd_file_t *rrd_file,
     rrd_t *rrd)
 {
+    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
     off_t dontneed_start;
     off_t rra_start;
@@ -447,12 +463,12 @@ void rrd_dontneed(
                        * rrd->stat_head->ds_cnt * sizeof(rrd_value_t));
         if (active_block > dontneed_start) {
 #ifdef USE_MADVISE
-            madvise(rrd_file->file_start + dontneed_start,
+            madvise(rrd_simple_file->file_start + dontneed_start,
                     active_block - dontneed_start - 1, MADV_DONTNEED);
 #endif
 /* in linux at least only fadvise DONTNEED seems to purge pages from cache */
 #ifdef HAVE_POSIX_FADVISE
-            posix_fadvise(rrd_file->fd, dontneed_start,
+            posix_fadvise(rrd_simple_file->fd, dontneed_start,
                           active_block - dontneed_start - 1,
                           POSIX_FADV_DONTNEED);
 #endif
@@ -472,11 +488,11 @@ void rrd_dontneed(
 
     if (dontneed_start < rrd_file->file_len) {
 #ifdef USE_MADVISE
-	    madvise(rrd_file->file_start + dontneed_start,
+	    madvise(rrd_simple_file->file_start + dontneed_start,
 		    rrd_file->file_len - dontneed_start, MADV_DONTNEED);
 #endif
 #ifdef HAVE_POSIX_FADVISE
-	    posix_fadvise(rrd_file->fd, dontneed_start,
+	    posix_fadvise(rrd_simple_file->fd, dontneed_start,
 			  rrd_file->file_len - dontneed_start,
 			  POSIX_FADV_DONTNEED);
 #endif
@@ -495,19 +511,22 @@ void rrd_dontneed(
 int rrd_close(
     rrd_file_t *rrd_file)
 {
+    rrd_simple_file_t *rrd_simple_file;
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
     int       ret;
 
 #ifdef HAVE_MMAP
-    ret = msync(rrd_file->file_start, rrd_file->file_len, MS_ASYNC);
+    ret = msync(rrd_simple_file->file_start, rrd_file->file_len, MS_ASYNC);
     if (ret != 0)
         rrd_set_error("msync rrd_file: %s", rrd_strerror(errno));
-    ret = munmap(rrd_file->file_start, rrd_file->file_len);
+    ret = munmap(rrd_simple_file->file_start, rrd_file->file_len);
     if (ret != 0)
         rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));
 #endif
-    ret = close(rrd_file->fd);
+    ret = close(rrd_simple_file->fd);
     if (ret != 0)
         rrd_set_error("closing file: %s", rrd_strerror(errno));
+    free(rrd_file->pvt);
     free(rrd_file);
     rrd_file = NULL;
     return ret;
@@ -522,6 +541,8 @@ off_t rrd_seek(
     int whence)
 {
     off_t     ret = 0;
+    rrd_simple_file_t *rrd_simple_file;
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 
 #ifdef HAVE_MMAP
     if (whence == SEEK_SET)
@@ -531,7 +552,7 @@ off_t rrd_seek(
     else if (whence == SEEK_END)
         rrd_file->pos = rrd_file->file_len + off;
 #else
-    ret = lseek(rrd_file->fd, off, whence);
+    ret = lseek(rrd_simple_file->fd, off, whence);
     if (ret < 0)
         rrd_set_error("lseek: %s", rrd_strerror(errno));
     rrd_file->pos = ret;
@@ -558,6 +579,7 @@ ssize_t rrd_read(
     void *buf,
     size_t count)
 {
+    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #ifdef HAVE_MMAP
     size_t    _cnt = count;
     ssize_t   _surplus;
@@ -572,14 +594,14 @@ ssize_t rrd_read(
     }
     if (_cnt == 0)
         return 0;       /* EOF */
-    buf = memcpy(buf, rrd_file->file_start + rrd_file->pos, _cnt);
+    buf = memcpy(buf, rrd_simple_file->file_start + rrd_file->pos, _cnt);
 
     rrd_file->pos += _cnt;  /* mimmic read() semantics */
     return _cnt;
 #else
     ssize_t   ret;
 
-    ret = read(rrd_file->fd, buf, count);
+    ret = read(rrd_simple_file->fd, buf, count);
     if (ret > 0)
         rrd_file->pos += ret;   /* mimmic read() semantics */
     return ret;
@@ -588,7 +610,7 @@ ssize_t rrd_read(
 
 
 /* Write count bytes from buffer buf to the current position
- * rrd_file->pos of rrd_file->fd.
+ * rrd_file->pos of rrd_simple_file->fd.
  * Returns the number of bytes written or <0 on error.  */
 
 ssize_t rrd_write(
@@ -596,6 +618,7 @@ ssize_t rrd_write(
     const void *buf,
     size_t count)
 {
+    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #ifdef HAVE_MMAP
     int old_size = rrd_file->file_len;
     if (count == 0)
@@ -608,11 +631,11 @@ ssize_t rrd_write(
         rrd_set_error("attempting to write beyond end of file");
         return -1;
     }
-    memcpy(rrd_file->file_start + rrd_file->pos, buf, count);
+    memcpy(rrd_simple_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
 #else
-    ssize_t   _sz = write(rrd_file->fd, buf, count);
+    ssize_t   _sz = write(rrd_simple_file->fd, buf, count);
 
     if (_sz > 0)
         rrd_file->pos += _sz;
@@ -626,8 +649,10 @@ ssize_t rrd_write(
 void rrd_flush(
     rrd_file_t *rrd_file)
 {
-    if (fdatasync(rrd_file->fd) != 0) {
-        rrd_set_error("flushing fd %d: %s", rrd_file->fd,
+    rrd_simple_file_t *rrd_simple_file;
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    if (fdatasync(rrd_simple_file->fd) != 0) {
+        rrd_set_error("flushing fd %d: %s", rrd_simple_file->fd,
                       rrd_strerror(errno));
     }
 }
