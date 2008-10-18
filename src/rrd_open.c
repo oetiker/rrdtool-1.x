@@ -71,7 +71,6 @@ rrd_file_t *rrd_open(
 {
     int i;
     int       flags = 0;
-    mode_t    mode = S_IRUSR;
     int       version;
 
 #ifdef HAVE_MMAP
@@ -146,7 +145,6 @@ rrd_file_t *rrd_open(
 #endif
     } else {
         if (rdwr & RRD_READWRITE) {
-            mode |= S_IWUSR;
             flags |= O_RDWR;
 #ifdef HAVE_MMAP
             rrd_simple_file->mm_flags = MAP_SHARED;
@@ -169,7 +167,7 @@ rrd_file_t *rrd_open(
     flags |= O_BINARY;
 #endif
 
-    if ((rrd_simple_file->fd = open(file_name, flags, mode)) < 0) {
+    if ((rrd_simple_file->fd = open(file_name, flags, 0666)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
     }
