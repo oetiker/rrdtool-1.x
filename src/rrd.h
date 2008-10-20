@@ -378,6 +378,18 @@ extern    "C" {
     int       rrd_lock(
     rrd_file_t *file)
               RRD_DEPRECATED;
+    void      rrd_notify_row(
+    rrd_file_t *rrd_file,
+    int rra_idx,
+    unsigned long rra_row,
+    time_t rra_time)
+              RRD_DEPRECATED;
+    unsigned long rrd_select_initial_row(
+    rrd_file_t *rrd_file,
+    int rra_idx,
+    rra_def_t *rra
+    )
+              RRD_DEPRECATED;
 #endif                  /* defined(_RRD_TOOL_H) || defined(RRD_EXPORT_DEPRECATED) */
 
 #endif                  /* _RRDLIB_H */

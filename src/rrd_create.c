@@ -24,8 +24,6 @@ void      parseGENERIC_DS(
     const char *def,
     rrd_t *rrd,
     int ds_idx);
-long int  rra_random_row(
-    rra_def_t *);
 
 static void rrd_free2(
     rrd_t *rrd);        /* our onwn copy, immmune to mmap */
@@ -771,7 +769,7 @@ int rrd_create_fn(
      * would occur for cur_row = 1 because rrd_update increments
      * the pointer a priori. */
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        rrd->rra_ptr->cur_row = rra_random_row(&rrd->rra_def[i]);
+        rrd->rra_ptr->cur_row = rrd_select_initial_row(rrd_file_dn, i, &rrd->rra_def[i]);
         rrd_write(rrd_file_dn, rrd->rra_ptr, sizeof(rra_ptr_t));
     }
 
@@ -825,15 +823,3 @@ static void rrd_free2(
     free(rrd->rrd_value);
 }
 
-static int rand_init = 0;
-
-long int rra_random_row(
-    rra_def_t *rra)
-{
-    if (!rand_init) {
-        srandom((unsigned int) time(NULL) + (unsigned int) getpid());
-        rand_init++;
-    }
-
-    return random() % rra->row_cnt;
-}
