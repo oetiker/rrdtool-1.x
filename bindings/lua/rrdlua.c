@@ -27,11 +27,11 @@
 #include "../../src/rrd_tool.h"
 
 #ifdef LUA50
-  #ifdef HAVE_COMPAT51
-    #include "compat-5.1.h"
-  #else
-    #include "compat-5.1r5/compat-5.1.h"
-  #endif
+#ifdef HAVE_COMPAT51
+#include "compat-5.1.h"
+#else
+#include "compat-5.1r5/compat-5.1.h"
+#endif
 #endif
 
 extern void rrd_freemem(void *mem);
