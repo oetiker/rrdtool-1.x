@@ -2031,7 +2031,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
   if (temp == NULL)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket_unix: realloc failed.");
+    fprintf (stderr, "rrdcached: open_listen_socket_unix: realloc failed.\n");
     return (-1);
   }
   listen_fds = temp;
@@ -2040,7 +2040,8 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   fd = socket (PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
   if (fd < 0)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket_unix: socket(2) failed.");
+    fprintf (stderr, "rrdcached: unix socket(2) failed: %s\n",
+             rrd_strerror(errno));
     return (-1);
   }
 
@@ -2048,19 +2049,26 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   sa.sun_family = AF_UNIX;
   strncpy (sa.sun_path, path, sizeof (sa.sun_path) - 1);
 
+  /* if we've gotten this far, we own the pid file.  any daemon started
+   * with the same args must not be alive.  therefore, ensure that we can
+   * create the socket...
+   */
+  unlink(path);
+
   status = bind (fd, (struct sockaddr *) &sa, sizeof (sa));
   if (status != 0)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket_unix: bind(2) failed.");
+    fprintf (stderr, "rrdcached: bind(%s) failed: %s.\n",
+             path, rrd_strerror(errno));
     close (fd);
-    unlink (path);
     return (-1);
   }
 
   status = listen (fd, /* backlog = */ 10);
   if (status != 0)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket_unix: listen(2) failed.");
+    fprintf (stderr, "rrdcached: listen(%s) failed: %s.\n",
+             path, rrd_strerror(errno));
     close (fd);
     unlink (path);
     return (-1);
@@ -2106,8 +2114,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     port = strchr (addr, ']');
     if (port == NULL)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: Malformed address: %s",
-          sock->addr);
+      fprintf (stderr, "rrdcached: Malformed address: %s\n", sock->addr);
       return (-1);
     }
     *port = 0;
@@ -2119,8 +2126,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       port = NULL;
     else
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: Garbage after address: %s",
-          port);
+      fprintf (stderr, "rrdcached: Garbage after address: %s\n", port);
       return (-1);
     }
   } /* if (*addr = ']') */
@@ -2139,8 +2145,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
                         &ai_hints, &ai_res);
   if (status != 0)
   {
-    RRDD_LOG (LOG_ERR, "open_listen_socket_network: getaddrinfo(%s) failed: "
-        "%s", addr, gai_strerror (status));
+    fprintf (stderr, "rrdcached: getaddrinfo(%s) failed: %s\n",
+             addr, gai_strerror (status));
     return (-1);
   }
 
@@ -2154,7 +2160,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
         sizeof (listen_fds[0]) * (listen_fds_num + 1));
     if (temp == NULL)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: realloc failed.");
+      fprintf (stderr,
+               "rrdcached: open_listen_socket_network: realloc failed.\n");
       continue;
     }
     listen_fds = temp;
@@ -2163,7 +2170,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     fd = socket (ai_ptr->ai_family, ai_ptr->ai_socktype, ai_ptr->ai_protocol);
     if (fd < 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: socket(2) failed.");
+      fprintf (stderr, "rrdcached: network socket(2) failed: %s.\n",
+               rrd_strerror(errno));
       continue;
     }
 
@@ -2172,7 +2180,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: bind(2) failed.");
+      fprintf (stderr, "rrdcached: bind(%s) failed: %s.\n",
+               sock->addr, rrd_strerror(errno));
       close (fd);
       continue;
     }
@@ -2180,7 +2189,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     status = listen (fd, /* backlog = */ 10);
     if (status != 0)
     {
-      RRDD_LOG (LOG_ERR, "open_listen_socket_network: listen(2) failed.");
+      fprintf (stderr, "rrdcached: listen(%s) failed: %s\n.",
+               sock->addr, rrd_strerror(errno));
       close (fd);
       return (-1);
     }
@@ -2231,21 +2241,9 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
   int status;
   int i;
 
-  for (i = 0; i < config_listen_address_list_len; i++)
-    open_listen_socket (config_listen_address_list[i]);
-
-  if (config_listen_address_list_len < 1)
-  {
-    listen_socket_t sock;
-    memset(&sock, 0, sizeof(sock));
-    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr));
-    open_listen_socket (&sock);
-  }
-
   if (listen_fds_num < 1)
   {
-    RRDD_LOG (LOG_ERR, "listen_thread_main: No listen sockets "
-        "could be opened. Sorry.");
+    RRDD_LOG(LOG_ERR, "listen_thread_main: no listen_fds !");
     return (NULL);
   }
 
@@ -2358,7 +2356,6 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 
 static int daemonize (void) /* {{{ */
 {
-  int status;
   int pid_fd;
   char *base_dir;
 
@@ -2370,6 +2367,26 @@ static int daemonize (void) /* {{{ */
   if (pid_fd < 0)
     return pid_fd;
 
+  /* open all the listen sockets */
+  if (config_listen_address_list_len > 0)
+  {
+    for (int i = 0; i < config_listen_address_list_len; i++)
+      open_listen_socket (config_listen_address_list[i]);
+  }
+  else
+  {
+    listen_socket_t sock;
+    memset(&sock, 0, sizeof(sock));
+    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr));
+    open_listen_socket (&sock);
+  }
+
+  if (listen_fds_num < 1)
+  {
+    fprintf (stderr, "rrdcached: FATAL: cannot open any listen sockets\n");
+    goto error;
+  }
+
   if (!stay_foreground)
   {
     pid_t child;
@@ -2378,12 +2395,10 @@ static int daemonize (void) /* {{{ */
     if (child < 0)
     {
       fprintf (stderr, "daemonize: fork(2) failed.\n");
-      return (-1);
+      goto error;
     }
     else if (child > 0)
-    {
-      return (1);
-    }
+      exit(0);
 
     /* Become session leader */
     setsid ();
@@ -2402,11 +2417,11 @@ static int daemonize (void) /* {{{ */
   base_dir = (config_base_dir != NULL)
     ? config_base_dir
     : "/tmp";
-  status = chdir (base_dir);
-  if (status != 0)
+
+  if (chdir (base_dir) != 0)
   {
     fprintf (stderr, "daemonize: chdir (%s) failed.\n", base_dir);
-    return (-1);
+    goto error;
   }
 
   install_signal_handlers();
@@ -2418,11 +2433,14 @@ static int daemonize (void) /* {{{ */
   if (cache_tree == NULL)
   {
     RRDD_LOG (LOG_ERR, "daemonize: g_tree_new failed.");
-    return (-1);
+    goto error;
   }
 
-  status = write_pidfile (pid_fd);
-  return status;
+  return write_pidfile (pid_fd);
+
+error:
+  remove_pidfile();
+  return -1;
 } /* }}} int daemonize */
 
 static int cleanup (void) /* {{{ */
@@ -2697,19 +2715,9 @@ int main (int argc, char **argv)
   }
 
   status = daemonize ();
-  if (status == 1)
+  if (status != 0)
   {
-    struct sigaction sigchld;
-
-    memset (&sigchld, 0, sizeof (sigchld));
-    sigchld.sa_handler = SIG_IGN;
-    sigaction (SIGCHLD, &sigchld, NULL);
-
-    return (0);
-  }
-  else if (status != 0)
-  {
-    fprintf (stderr, "daemonize failed, exiting.\n");
+    fprintf (stderr, "rrdcached: daemonize failed, exiting.\n");
     return (1);
   }
 
