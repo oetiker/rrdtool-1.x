@@ -564,6 +564,7 @@ static void wipe_ci_values(cache_item_t *ci, time_t when)
 static void remove_from_queue(cache_item_t *ci) /* {{{ */
 {
   if (ci == NULL) return;
+  if ((ci->flags & CI_FLAGS_IN_QUEUE) == 0) return; /* not queued */
 
   if (ci->prev == NULL)
     cache_queue_head = ci->next; /* reset head */
@@ -625,9 +626,8 @@ static int enqueue_cache_item (cache_item_t *ci, /* {{{ */
     if (cache_queue_head == ci)
       return 0;
 
-    /* remove from the double linked list */
-    if (ci->flags & CI_FLAGS_IN_QUEUE)
-      remove_from_queue(ci);
+    /* remove if further down in queue */
+    remove_from_queue(ci);
 
     ci->prev = NULL;
     ci->next = cache_queue_head;
@@ -681,20 +681,20 @@ static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
   ci = (cache_item_t *) value;
   cfd = (callback_flush_data_t *) data;
 
+  if (ci->flags & CI_FLAGS_IN_QUEUE)
+    return FALSE;
+
   if ((ci->last_flush_time <= cfd->abs_timeout)
-      && ((ci->flags & CI_FLAGS_IN_QUEUE) == 0)
       && (ci->values_num > 0))
   {
     enqueue_cache_item (ci, TAIL);
   }
   else if ((do_shutdown != 0)
-      && ((ci->flags & CI_FLAGS_IN_QUEUE) == 0)
       && (ci->values_num > 0))
   {
     enqueue_cache_item (ci, TAIL);
   }
   else if (((cfd->now - ci->last_flush_time) >= config_flush_interval)
-      && ((ci->flags & CI_FLAGS_IN_QUEUE) == 0)
       && (ci->values_num <= 0))
   {
     char **temp;
