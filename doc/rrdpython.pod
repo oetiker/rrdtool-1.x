@@ -5,7 +5,7 @@ rrdpython - About the RRD Python bindings
 =head1 SYNOPSIS
 
  import rrdtool
- rrdtool.create('/tmp/test.rrd', 'DS:foo:GUAGE:20:0:U')
+ rrdtool.create('/tmp/test.rrd', 'DS:foo:GAUGE:20:0:U')
 
 =head1 DESCRIPTION
 
