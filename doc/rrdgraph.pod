@@ -67,16 +67,14 @@ this case, no other output is generated.
 [B<-S>|B<--step> I<seconds>]
 
 The start and end of the time series you would like to display, and which
-B<RRA> the data should come from.  Defaults are: 1 day ago until
-now, with the best possible resolution. B<Start> and B<end> can
-be specified in several formats, see
-L<rrdfetch> and L<rrdgraph_examples>.
-By default, B<rrdtool graph> calculates the width of one pixel in
-the time domain and tries to get data from an B<RRA> with that
-resolution.  With the B<step> option you can alter this behaviour.
-If you want B<rrdtool graph> to get data at a one-hour resolution
-from the B<RRD>, set B<step> to 3'600. Note: a step smaller than
-one pixel will silently be ignored.
+B<RRA> the data should come from.  Defaults are: 1 day ago until now, with
+the best possible resolution. B<Start> and B<end> can be specified in
+several formats, see L<rrdfetch> and L<rrdgraph_examples>. By default,
+B<rrdtool graph> calculates the width of one pixel in the time domain and
+tries to get data from an B<RRA> with that resolution.  With the B<step>
+option you can alter this behaviour. If you want B<rrdtool graph> to get
+data at a one-hour resolution from the B<RRD>, set B<step> to 3'600. Note: a
+step smaller than one pixel will silently be ignored.
 
 =item Labels
 
@@ -92,7 +90,14 @@ placed string at the left hand side of the graph.
 [B<--right-axis-label> I<label>]
 
 A second axis will be drawn to the right of the graph. It is tied to the
-left axis via the scale and shift parameters. You can also define a label for the right axis.
+left axis via the scale and shift parameters. You can also define a label
+for the right axis.
+
+[B<--right-axis-format> I<format-string>]
+
+By default the format of the axis lables gets determined automatically. If
+you want todo this your self, use this option with the same %lf arguments
+you know from the PRING and GPRINT commands.
 
 =item Size
 

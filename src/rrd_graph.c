@@ -1748,18 +1748,23 @@ int draw_horizontal_grid(image_desc_t *im)
                 nlabels++;
                 if (im->second_axis_scale != 0){
                         char graph_label_right[100];
-                        double sval = im->ygrid_scale.gridstep*(double)i/im->second_axis_scale+im->second_axis_shift;
-                        if (!second_axis_magfact){
-                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0/im->second_axis_scale+im->second_axis_shift;
+                        double sval = im->ygrid_scale.gridstep*(double)i*im->second_axis_scale+im->second_axis_shift;
+                        if (im->second_axis_format[0] == '\0'){
+                            if (!second_axis_magfact){
+                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
                                 auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
-                        }
-                        sval /= second_axis_magfact;
+                            }
+                            sval /= second_axis_magfact;
  
-                       if(MaxY < 10) { 
-                           sprintf(graph_label_right,"%5.1f %s",sval,second_axis_symb);
-                          } else {
-                           sprintf(graph_label_right,"%5.0f %s",sval,second_axis_symb);
+                            if(MaxY < 10) { 
+                                sprintf(graph_label_right,"%5.1f %s",sval,second_axis_symb);
+                            } else {
+                                sprintf(graph_label_right,"%5.0f %s",sval,second_axis_symb);
+                            }
                         }
+                        else {
+                           sprintf(graph_label_right,im->second_axis_format,sval);
+                        }        
                         gfx_new_text ( im->canvas,
                                X1+7, Y0,
                                im->graph_col[GRC_FONT],
@@ -1906,16 +1911,22 @@ horizontal_log_grid(image_desc_t   *im)
         }
         if (im->second_axis_scale != 0){
                 char graph_label_right[100];
-                if (im->extra_flags & FORCE_UNITS_SI) {
-                        double sval = value/im->second_axis_scale+im->second_axis_shift;
-                        double mfac = 1;
-                        char   *symb = "";
-                        auto_scale(im,&sval,&symb,&mfac);
-                        sprintf(graph_label_right,"%4.0f %s", sval,symb);
+                double sval = value*im->second_axis_scale+im->second_axis_shift;
+                if (im->second_axis_format[0] == '\0'){
+                        if (im->extra_flags & FORCE_UNITS_SI) {
+                                double mfac = 1;
+                                char   *symb = "";
+                                auto_scale(im,&sval,&symb,&mfac);
+                                sprintf(graph_label_right,"%4.0f %s", sval,symb);
+                        }
+                        else {        
+                                sprintf(graph_label_right,"%3.0e", sval);
+                        }
                 }
-                else {        
-                        sprintf(graph_label_right,"%3.0e", value/im->second_axis_scale+im->second_axis_shift);
-                }
+                else {
+                      sprintf(graph_label_right,im->second_axis_format,sval);
+                }    
+    
                 gfx_new_text ( im->canvas,
                                X1+7, Y0,
                                im->graph_col[GRC_FONT],
@@ -3220,6 +3231,7 @@ rrd_graph_init(image_desc_t *im)
     im->second_axis_scale = 0; /* 0 disables it */
     im->second_axis_shift = 0; /* no shift by default */
     im->second_axis_legend[0] = '\0';
+    im->second_axis_format[0] = '\0';
     im->title[0] = '\0';
     im->watermark[0] = '\0';
     im->minval = DNAN;
@@ -3349,6 +3361,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
             {"disable-rrdtool-tag", no_argument,  0,  1001},
             {"right-axis", required_argument,  0,  1002},
             {"right-axis-label", required_argument,  0,  1003},
+            {"right-axis-format", required_argument,  0,  1004},
             {0,0,0,0}};
         int option_index = 0;
         int opt;
@@ -3505,6 +3518,14 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
         case 1003:
             strncpy(im->second_axis_legend,optarg,150);
             im->second_axis_legend[150]='\0';
+            break;
+        case 1004:
+            if (bad_format(optarg)){
+                rrd_set_error("use either %le or %lf formats");
+                return;
+            }
+            strncpy(im->second_axis_format,optarg,150);
+            im->second_axis_format[150]='\0';
             break;
         case 'v':
             strncpy(im->ylegend,optarg,150);
