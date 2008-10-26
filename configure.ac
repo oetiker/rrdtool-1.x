@@ -367,7 +367,7 @@ CONFIGURE_PART(Resolve Portability Issues)
 dnl Do we need getopt_long
 
 build_getopt=no
-RRD_GETOPT_LONG="#"
+RRD_GETOPT_LONG="LIBC_HAS_GETOPT_LONG"
 AC_CHECK_FUNC(getopt_long,[],[
 RRD_GETOPT_LONG="getopt_long"
 build_getopt=yes
@@ -873,7 +873,7 @@ AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([src/Makefile])
-AC_CONFIG_FILES([src/librrd.sym])
+AC_CONFIG_FILES([src/librrd.sym.in])
 AC_CONFIG_FILES([src/librrd.pc])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
