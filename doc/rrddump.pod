@@ -5,14 +5,14 @@ rrddump - dump the contents of an RRD to XML format
 =head1 SYNOPSIS
 
 B<rrdtool> B<dump> I<filename.rrd>
-S<[B<--no-header>|B<-n>]>
+S<[B<--header>|B<-h> {xsd,dtd}]>
 S<[B<--daemon> I<address>]>
 S<E<gt> I<filename.xml>>
 
 or 
 
 B<rrdtool> B<dump> I<filename.rrd> I<filename.xml>
-S<[B<--no-header>|B<-n>]>
+S<[B<--header>|B<-h> {xsd,dtd}]>
 S<[B<--daemon> I<address>]>
 
 =head1 DESCRIPTION
@@ -36,12 +36,9 @@ The name of the B<RRD> you want to dump.
 The (optional) filename that you want to write the XML output to.
 If not specified, the XML will be printed to stdout.
 
-=item B<--no-header>|B<-n>
+=item B<--header>|B<-h> {xsd,dtd}
 
-In rrdtool 1.3, the dump function started producing correct xml-headers.
-Unfortunately the rrdtool restore function from the 1.2 series can not
-handle these headers. With this option you can supress the creatinon of
-the xml headers.
+Optionally rrdtool can add a xsd or dtd header to the dump output.
 
 =item B<--daemon> I<address>
 

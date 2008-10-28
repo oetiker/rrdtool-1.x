@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	XML schema definition for the RRDTool dump output.
+
+	Author: 
+		Tobias Lindenmann <tobias.lindenmann at 1und1.de>
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:ns="http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
+	targetNamespace="http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
+	elementFormDefault="qualified">
+	
+	<!-- Root element -->
+	<xsd:element name="rrd" type="ns:RrdType">
+		<!-- Check datasource name of unique. -->
+		<xsd:unique name="Ds.Name">
+			<xsd:selector xpath="ns:ds/ns:name"/>
+			<xsd:field xpath="."/>
+		</xsd:unique>
+	</xsd:element>
+	
+	<!-- Start of complexTypes -->
+	<xsd:complexType name="RrdType">
+		<xsd:sequence>
+			<!-- RRD file version/RRD Archiv version number-->
+			<xsd:element name="version" type="xsd:nonNegativeInteger"/>
+			<!-- The primary RRD Archiv step in seconds.-->
+			<xsd:element name="step" type="xsd:nonNegativeInteger"/>
+			<!-- The unixtime from the last rrd_update.-->
+			<xsd:element name="lastupdate" type="xsd:nonNegativeInteger"/>
+			<xsd:element name="ds" type="ns:DsType" minOccurs="1" maxOccurs="unbounded"/>
+			<!-- Round Robin Archive (rra). This is the place where the
+			     consolidated data points (cdp) get stored. The data is
+			     organized in rows (row) and columns (col). The Round Robin
+			     Archive got its name from the method data is stored in
+			     there. An RRD database can contain several Round Robin
+			     Archives. Each Round Robin Archive can have a different row
+			     spacing along the time axis (pdp_cnt) and a different
+			     consolidation function (cf) used to build its consolidated
+			     data points (cdp). -->
+			<xsd:element name="rra" type="ns:RraType" minOccurs="1" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	
+	<xsd:complexType name="DsType">
+		<xsd:sequence>
+			<!-- The name of the data source. -->
+			<xsd:element name="name" type="ns:DataSourceNameType"/>
+			<!-- The Data Source Type (GAUGE, COUNTER, DERIVE, ABSOLUTE, COMPUTE)
+			     defines the applied to Build Primary Data Points from the 
+			     input provided by the data sources (ds). -->
+			<xsd:element name="type" type="ns:DataSourceType"/>
+			<!-- Chocie one groups of elements. -->
+			<xsd:choice>
+				<!-- Group with the elements min,max and heartbeat_min. -->
+				<xsd:group ref="ns:Ds.NormalType"/>
+				<!-- Group with the element cdef.-->
+				<xsd:group ref="ns:Ds.CdefType"/>
+			</xsd:choice>
+			<xsd:element name="last_ds" type="ns:NumberWithUNKNType"/>
+			<!-- Current value of the primary data point, this depends on the data source type. -->
+			<xsd:element name="value" type="ns:LexicalNumberWithNaNType"/>
+			<!-- How many seconds of the current 
+					* pdp value is unknown data?-->
+			<xsd:element name="unknown_sec" type="xsd:nonNegativeInteger"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="RraType">
+		<xsd:sequence>
+			<!-- Consolidation Function (cf). An arbitrary Consolidation Function (cf)
+			     (averaging, min, max) is applied to the primary data points (pdp) to
+			     calculate the consolidated data point. -->
+			<xsd:element name="cf" type="ns:ConsolidationFunctionType"/>
+			<xsd:element name="pdp_per_row" type="xsd:nonNegativeInteger"/>
+			<xsd:element name="params">
+				<!-- Chocie one groups of elements. -->
+				<xsd:complexType>
+					<xsd:choice>
+						<xsd:group ref="ns:Params.HwPredictType"/> 
+						<xsd:group ref="ns:Params.SeasonalType"/>
+						<xsd:group ref="ns:Params.FailuresType"/>
+						<xsd:group ref="ns:Params.DevPredictType"/>
+						<xsd:group ref="ns:Params.AvgMinMaxType"/>
+					</xsd:choice>
+				</xsd:complexType>
+			</xsd:element>
+			<!-- Data prep area for cdp values -->
+			<xsd:element name="cdp_prep" type="ns:CdpPrepType"/>
+			<xsd:element name="database" type="ns:DatabaseType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="DatabaseType">
+		<xsd:sequence>
+			<xsd:element name="row" type="ns:VType" minOccurs="1" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="VType">
+		<xsd:sequence>
+			<xsd:element name="v" type="ns:LexicalNumberWithNaNType" minOccurs="1" maxOccurs="unbounded"/>
+		</xsd:sequence>	
+	</xsd:complexType>
+
+	<xsd:complexType name="CdpPrepType">
+		<xsd:sequence>
+			<xsd:element name="ds" minOccurs="1" maxOccurs="unbounded">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:group ref="ns:Ds.Cdp"/>
+						<!-- Chocie one groups of elements. -->
+						<xsd:choice>
+							<xsd:group ref="ns:Ds.Cdp.HwPredictType"/>
+							<xsd:group ref="ns:Ds.Cdp.SeasonalType"/>
+							<xsd:group ref="ns:Ds.Cdp.FailuresType"/>
+							<xsd:group ref="ns:Ds.Cdp.AvgMinMaxType"/>
+						</xsd:choice>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+		 </xsd:sequence>
+	</xsd:complexType>
+	<!-- End of complexTypes -->
+
+	<!-- Start of groups -->
+	<!-- Start of groups for the element rrd/ds. -->
+	<xsd:group name="Ds.NormalType">
+		<xsd:sequence>
+			<!-- Minimum required heartbeat. A
+                                     * data source must provide input at
+                                     * least every ds_mrhb seconds,
+                                     * otherwise it is regarded dead and
+                                     * will be set to UNKNOWN -->
+			<xsd:element name="minimal_heartbeat" type="xsd:integer"/>
+			<!-- Min and max define the expected range values for data supplied by a data source. -->
+			<xsd:element name="min" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="max" type="ns:LexicalNumberWithNaNType"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Ds.CdefType">
+		<xsd:sequence>
+			<xsd:element name="cdef" type="xsd:string"/>
+		</xsd:sequence>
+	</xsd:group>
+	<!-- End of groups for the element rrd/ds. -->
+	<!-- Start of groups for the element rrd/rra/cd_prep/ds. -->
+	<xsd:group name="Ds.Cdp.HwPredictType">
+		<xsd:sequence>
+			<xsd:element name="intercept" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="last_intercept" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="slope" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="last_slope" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="nan_count" type="xsd:integer"/>
+			<xsd:element name="last_nan_count" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Ds.Cdp.SeasonalType">
+		<xsd:sequence>
+			<xsd:element name="seasonal" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="last_seasonal" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="init_flag" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Ds.Cdp.FailuresType">
+		<xsd:sequence>
+			<!-- History failures message.-->
+			<xsd:element name="history" type="xsd:string"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Ds.Cdp.AvgMinMaxType">
+		<xsd:sequence>
+			<xsd:element name="value" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="unknown_datapoints" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Ds.Cdp">
+		<xsd:sequence>
+			<xsd:element name="primary_value" type="ns:LexicalNumberWithNaNType"/>
+			<xsd:element name="secondary_value" type="ns:LexicalNumberWithNaNType"/>
+		</xsd:sequence>
+	</xsd:group>
+	<!-- End of groups for the element cd_prep/ds. -->
+	<!-- Start of groups for the element params. -->
+	<xsd:group name="Params.HwPredictType">
+		<xsd:sequence>
+                        <xsd:element name="hw_alpha" type="ns:LexicalNumberType"/>
+                        <xsd:element name="hw_beta" type="ns:LexicalNumberType"/>
+			<xsd:element name="dependent_rra_idx" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+	
+	<xsd:group name="Params.SeasonalType">
+		<xsd:sequence>
+                        <xsd:element name="seasonal_gamma" type="ns:LexicalNumberType"/>
+                        <xsd:element name="seasonal_smooth_idx" type="xsd:integer"/>
+			<xsd:element name="smoothing_window" type="ns:LexicalNumberType"/>
+			<xsd:element name="dependent_rra_idx" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Params.FailuresType">
+		<xsd:sequence>
+                        <xsd:element name="delta_pos" type="ns:LexicalNumberType"/>
+                        <xsd:element name="delta_neg" type="ns:LexicalNumberType"/>
+			<xsd:element name="window_len" type="xsd:integer"/>
+			<xsd:element name="failure_threshold" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Params.DevPredictType">
+		<xsd:sequence>
+			<xsd:element name="dependent_rra_idx" type="xsd:integer"/>
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:group name="Params.AvgMinMaxType">
+		<xsd:sequence>
+			<!-- The xfiles factor defines what part of a consolidation interval 
+			     may be made up from *UNKNOWN* data while the consolidated value
+			     is still regarded as known. It is given as the ratio of allowed
+			     *UNKNOWN* PDPs to the number of PDPs in the interval. Thus, it 
+			     ranges from 0 to 1 (exclusive). -->
+			<xsd:element name="xff" type="ns:LexicalNumberType"/>
+		</xsd:sequence>
+	</xsd:group>
+	<!-- End of Groups for the element params. -->
+	<!-- End of groups -->
+	
+	<!-- Start of simpleTypes -->
+	<!-- Allowed data source types. -->
+	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<xsd:simpleType name="DataSourceType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="GAUGE"/>
+			<xsd:enumeration value="COUNTER"/>
+			<xsd:enumeration value="DERIVE"/>
+			<xsd:enumeration value="ABSOLUTE"/>
+			<xsd:enumeration value="COMPUTE"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<!-- A ds-name must be 1 to 19 characters long in the characters [a-zA-Z0-9_]. -->
+	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<xsd:simpleType name="DataSourceNameType">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[a-zA-Z0-9_]{1,19}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<!-- Allowed consolidation function (cf). -->
+	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<xsd:simpleType name="ConsolidationFunctionType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="AVERAGE"/>
+			<xsd:enumeration value="MIN"/>
+			<xsd:enumeration value="MAX"/>
+			<xsd:enumeration value="LAST"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<!-- Allowed a lexical number or the string "NaN".-->
+        <xsd:simpleType name="LexicalNumberWithNaNType">
+                <xsd:restriction base="xsd:string">
+                        <xsd:pattern value="([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?|NaN)"/>
+                </xsd:restriction>
+        </xsd:simpleType>
+
+	<!-- Allowed only a lexical number. -->
+        <xsd:simpleType name="LexicalNumberType">
+                <xsd:restriction base="xsd:string">
+                        <xsd:pattern value="[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?"/>
+                </xsd:restriction>
+        </xsd:simpleType>
+	
+	<!-- Allowed a number or the string "UNKN"  or "U". -->
+	<xsd:simpleType name="NumberWithUNKNType">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="([\d]+|UNKN|U)"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!-- End of simpleTypes -->
+</xsd:schema>
