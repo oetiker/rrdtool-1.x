@@ -617,7 +617,7 @@ numbers (or zero) only.
 Let's compile the complete CDEF:
 
 	DEF:ds0=router1.rrd:AVERAGE
-	CDEF:ds0modified=TIME,begintime,GE,TIME,endtime,LE,*,UNKN,ds0,IF
+	CDEF:ds0modified=TIME,begintime,GT,TIME,endtime,LE,*,ds0,UNKN,IF
 
 This will return the value of ds0 if both comparisons return true. You
 could also do it the other way around:
