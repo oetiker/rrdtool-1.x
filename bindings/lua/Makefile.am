@@ -14,6 +14,7 @@ LUA_LFLAGS          = @LUA_LFLAGS@
 
 CLEANFILES = rrd.o rrd.so test.lua test.rrd test.png
 
+if BUILD_LUA
 lualibdir=$(LUA_INSTALL_CMOD)
 lualib_LTLIBRARIES = rrd.la
 if LUA_NEED_OUR_COMPAT51
@@ -64,4 +65,4 @@ endif
 test: test.lua
 	$(LUA) test.lua
 
-
+endif
