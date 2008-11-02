@@ -879,9 +879,7 @@ AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([Makefile])          
-if test "$enable_lua" = "yes"; then
-  AC_CONFIG_FILES([bindings/lua/Makefile])
-fi
+AC_CONFIG_FILES([bindings/lua/Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 AC_OUTPUT
