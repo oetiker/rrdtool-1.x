@@ -1450,7 +1450,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
 
     wipe_ci_values(ci, now);
     ci->flags = CI_FLAGS_IN_TREE;
-    ci->flushed = PTHREAD_COND_INITIALIZER;
+    pthread_cond_init(&ci->flushed, NULL);
 
     pthread_mutex_lock(&cache_lock);
     g_tree_insert (cache_tree, (void *) ci->file, (void *) ci);
