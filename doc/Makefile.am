@@ -13,8 +13,11 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflush.pod   \
       rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
-      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrdlua.pod
+      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod
 
+if BUILD_LUA
+  POD += rrdlua.pod
+endif
 
 PMP = RRDs.pod RRDp.pod
 

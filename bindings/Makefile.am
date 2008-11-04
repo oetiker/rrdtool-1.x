@@ -1,4 +1,4 @@
-.PHONY: python ruby lua
+.PHONY: python ruby
 
 if BUILD_TCL
 SUB_tcl = tcl
@@ -24,7 +24,6 @@ install-data-local:
 	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
 	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
 	test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
-	test -f lua/Makefile && cd lua && $(MAKE) install || true
 
 # rules for building the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
