@@ -92,6 +92,16 @@ extern    "C" {
             char ***ds_namv,
             rrd_value_t **data);
 
+
+#ifdef HAVE_LIBDBI
+int rrd_fetch_fn_libdbi(char *filename, enum cf_en cf_idx,
+ 			time_t *start,time_t *end,
+ 			unsigned long *step,
+ 			unsigned long *ds_cnt,
+ 			char        ***ds_namv,
+ 			rrd_value_t **data);
+#endif
+
 #define RRD_READONLY    (1<<0)
 #define RRD_READWRITE   (1<<1)
 #define RRD_CREAT       (1<<2)

@@ -468,6 +468,25 @@ AC_LANG_POP(C)
 
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
+AC_ARG_ENABLE(libdbi,[  --disable-libdbi        do not build in support for libdbi],[have_libdbi=no],[
+  XXX=$LIBS
+  LIBS="$LIBS -ldbi -ldl"
+  AC_MSG_CHECKING(for libdbi)
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <dbi/dbi.h>]], 
+                     [[dbi_initialize(NULL)]]
+                    )
+    ],[AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
+       AC_MSG_RESULT([yes])
+       have_libdbi=yes
+    ],[LIBS=$XXX
+       AC_MSG_RESULT([no])
+       have_libdbi=no
+       exit 1
+    ]
+  )
+])
+AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
@@ -926,6 +945,7 @@ echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
 echo "     Link with libintl: $enable_libintl"
+echo "           With libDBI: $have_libdbi"
 echo
 echo "             Libraries: $ALL_LIBS"
 echo

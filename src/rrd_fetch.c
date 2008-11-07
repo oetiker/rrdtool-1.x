@@ -235,6 +235,15 @@ int rrd_fetch_fn(
             *start, *end, *step);
 #endif
 
+#ifdef HAVE_LIBDBI
+    /* handle libdbi datasources */
+    if (strncmp("sql",filename,3)==0) {
+      if (filename[3]==filename[4]) {
+	return rrd_fetch_fn_libdbi(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data);
+      }
+    }
+#endif
+
     rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
     if (rrd_file == NULL)
