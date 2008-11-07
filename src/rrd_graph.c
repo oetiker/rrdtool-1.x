@@ -4172,7 +4172,7 @@ void rrd_graph_options(
                         if (size > 0) {
                             rrd_set_font_desc(im,propidx,NULL,size);   
                         }
-                        if ((int) strlen(optarg) > end) {
+                        if ((int) strlen(optarg) > end+2) {
                             if (optarg[end] == ':') {
                                 rrd_set_font_desc(im,propidx,optarg + end + 1,0);   
                             } else {
