@@ -3641,7 +3641,7 @@ rrd_graph_options(int argc, char *argv[],image_desc_t *im)
                         if (size > 0){
                               im->text_prop[propidx].size=size;              
                       }        
-                        if ((int)strlen(optarg) > end){
+                        if ((int)strlen(optarg) > end+2){
                           if (optarg[end] == ':'){
                              strncpy(im->text_prop[propidx].font,optarg+end+1,255);
                              im->text_prop[propidx].font[255] = '\0';
