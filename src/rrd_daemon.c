@@ -62,7 +62,16 @@
 /*
  * Now for some includes..
  */
-#include "rrd.h" /* {{{ */
+/* {{{ */
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
+#include "../win32/config.h"
+#else
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
+#endif
+#endif
+
+#include "rrd.h"
 #include "rrd_client.h"
 
 #include <stdlib.h>
