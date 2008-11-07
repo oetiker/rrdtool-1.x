@@ -1384,7 +1384,6 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
   int values_num = 0;
-  int bad_timestamps = 0;
   int status;
   char orig_buf[CMD_MAX];
 
@@ -1488,18 +1487,17 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
     stamp = strtol(value, &eostamp, 10);
     if (eostamp == value || eostamp == NULL || *eostamp != ':')
     {
-      ++bad_timestamps;
-      add_response_info(sock, "Cannot find timestamp in '%s'!\n", value);
-      continue;
+      pthread_mutex_unlock(&cache_lock);
+      return send_response(sock, RESP_ERR,
+                           "Cannot find timestamp in '%s'!\n", value);
     }
     else if (stamp <= ci->last_update_stamp)
     {
-      ++bad_timestamps;
-      add_response_info(sock,
-                        "illegal attempt to update using time %ld when"
-                        " last update time is %ld (minimum one second step)\n",
-                        stamp, ci->last_update_stamp);
-      continue;
+      pthread_mutex_unlock(&cache_lock);
+      return send_response(sock, RESP_ERR,
+                           "illegal attempt to update using time %ld when last"
+                           " update time is %ld (minimum one second step)\n",
+                           stamp, ci->last_update_stamp);
     }
     else
       ci->last_update_stamp = stamp;
@@ -1534,21 +1532,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
   pthread_mutex_unlock (&cache_lock);
 
   if (values_num < 1)
-  {
-    /* journal replay mode */
-    if (sock == NULL) return RESP_ERR;
-
-    /* if we had only one update attempt, then return the full
-       error message... try to get the most information out
-       of the limited error space allowed by the protocol
-    */
-    if (bad_timestamps == 1)
-      return send_response(sock, RESP_ERR, "%s", sock->wbuf);
-    else
-      return send_response(sock, RESP_ERR,
-                           "No values updated (%d bad timestamps).\n",
-                           bad_timestamps);
-  }
+    return send_response(sock, RESP_ERR, "No values updated.\n");
   else
     return send_response(sock, RESP_OK,
                          "errors, enqueued %i value(s).\n", values_num);
