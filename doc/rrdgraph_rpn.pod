@@ -184,6 +184,78 @@ source value is NAN the complete sliding window is affected. The TRENDNAN
 operation ignores all NAN-values in a sliding window and computes the 
 average of the remaining values.
 
+B<PREDICT, PREDICTSIGMA>
+
+Create a "sliding window" average/sigma of another data series, that also
+shifts the data series by given amounts of of time as well
+
+Usage - explicit stating shifts:
+CDEF:predict=<shift n>,...,<shift 1>,n,<window>,x,PREDICT
+CDEF:sigma=<shift n>,...,<shift 1>,n,<window>,x,PREDICTSIGMA
+
+Usage - shifts defined as a base shift and a number of time this is applied
+CDEF:predict=<shift multiplier>,-n,<window>,x,PREDICT
+CDEF:sigma=<shift multiplier>,-n,<window>,x,PREDICTSIGMA
+
+Example:
+CDEF:predict=172800,86400,2,1800,x,PREDICT
+
+This will create a half-hour (1800 second) sliding window average/sigma of x, that
+average is essentially computed as shown here:
+
+ +---!---!---!---!---!---!---!---!---!---!---!---!---!---!---!---!---!--->
+                                                                     now
+                                                  shift 1        t0
+                                         <----------------------->
+                               window
+                         <--------------->
+                                       shift 2
+                 <----------------------------------------------->
+       window
+ <--------------->
+                                                      shift 1        t1
+                                             <----------------------->
+                                   window
+                             <--------------->
+                                            shift 2
+                     <----------------------------------------------->
+           window
+     <--------------->
+
+ Value at sample (t0) will be the average between (t0-shift1-window) and (t0-shift1)
+                                      and between (t0-shift2-window) and (t0-shift2)
+ Value at sample (t1) will be the average between (t1-shift1-window) and (t1-shift1)
+                                      and between (t1-shift2-window) and (t1-shift2)
+
+
+The function is by design NAN-safe. 
+This also allows for extrapolation into the future (say a few days)
+- you may need to define the data series whit the optional start= parameter, so that 
+the source data series has enough data to provide prediction also at the beginning of a graph...
+
+Here an example, that will create a 10 day graph that also shows the 
+prediction 3 days into the future with its uncertainty value (as defined by avg+-4*sigma)
+This also shows if the prediction is exceeded at a certain point.
+
+rrdtool graph image.png --imgformat=PNG \
+ --start=-7days --end=+3days --width=1000 --height=200 --alt-autoscale-max \
+ DEF:value=value.rrd:value:AVERAGE:start=-14days \
+ LINE1:value#ff0000:value \
+ CDEF:predict=86400,-7,1800,value,PREDICT \
+ CDEF:sigma=86400,-7,1800,value,PREDICTSIGMA \
+ CDEF:upper=predict,sigma,3,*,+ \
+ CDEF:lower=predict,sigma,3,*,- \
+ LINE1:predict#00ff00:prediction \
+ LINE1:upper#0000ff:upper\ certainty\ limit \
+ LINE1:lower#0000ff:lower\ certainty\ limit \
+ CDEF:exceeds=value,UN,0,value,lower,upper,LIMIT,UN,IF \
+ TICK:exceeds#aa000080:1
+
+Note: Experience has shown that a factor between 3 and 5 to scale sigma is a good 
+discriminator to detect abnormal behaviour. This obviously depends also on the type 
+of data and how "noisy" the data series is.
+
+This prediction can only be used for short term extrapolations - say a few days into the future-
 
 =item Special values
 

@@ -77,6 +77,7 @@ Wim Heirman <wim.heirman elis.ugent.be> --units=si option
 Wolfgang Schrimm <wschrimm with uni-hd.de> xport function
 Wrolf Courtney <wrolf with wrolf.net> (HP-UX)
 hendrik visage <hvisage with is.co.za>
+Martin Sperl <rrdtool martin.sperl.org> (CDEF prediction functions)
 Philippe Simonet <philippe.simonet with swisscom.ch> (Windows Binaries)
 Alexander Lucke (lucke with dns-net.de) 
  of DNS:NET Internet Services (www.dns-net.de) http://rrdtool.org

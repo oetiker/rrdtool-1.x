@@ -174,6 +174,8 @@ void rpn_compact2str(
             add_op(OP_REV, REV)
             add_op(OP_TREND, TREND)
             add_op(OP_TRENDNAN, TRENDNAN)
+            add_op(OP_PREDICT, PREDICT)
+            add_op(OP_PREDICTSIGMA, PREDICTSIGMA)
             add_op(OP_RAD2DEG, RAD2DEG)
             add_op(OP_DEG2RAD, DEG2RAD)
             add_op(OP_AVG, AVG)
@@ -371,6 +373,8 @@ rpnp_t   *rpn_parse(
             match_op(OP_REV, REV)
             match_op(OP_TREND, TREND)
             match_op(OP_TRENDNAN, TRENDNAN)
+            match_op(OP_PREDICT, PREDICT)
+            match_op(OP_PREDICTSIGMA, PREDICTSIGMA)
             match_op(OP_RAD2DEG, RAD2DEG)
             match_op(OP_DEG2RAD, DEG2RAD)
             match_op(OP_AVG, AVG)
@@ -783,6 +787,84 @@ short rpn_calc(
                     *p++ = x;
                 }
             }
+            break;
+        case OP_PREDICT:
+        case OP_PREDICTSIGMA:
+            stackunderflow(2);
+	    {
+		/* the local averaging window (similar to trend, but better here, as we get better statistics thru numbers)*/
+		int   locstepsize = rpnstack->s[--stptr];
+		/* the number of shifts and range-checking*/
+		int     shifts = rpnstack->s[--stptr];
+                stackunderflow(shifts);
+		// handle negative shifts special
+		if (shifts<0) {
+		    stptr--;
+		} else {
+		    stptr-=shifts;
+		}
+		/* the real calculation */
+		double val=DNAN;
+		/* the info on the datasource */
+		time_t  dsstep = (time_t) rpnp[rpi - 1].step;
+		int    dscount = rpnp[rpi - 1].ds_cnt;
+		int   locstep = (int)ceil((float)locstepsize/(float)dsstep);
+
+		/* the sums */
+                double    sum = 0;
+		double    sum2 = 0;
+                int       count = 0;
+		/* now loop for each position */
+		int doshifts=shifts;
+		if (shifts<0) { doshifts=-shifts; }
+		for(int loop=0;loop<doshifts;loop++) {
+		    /* calculate shift step */
+		    int shiftstep=1;
+		    if (shifts<0) {
+			shiftstep = loop*rpnstack->s[stptr];
+		    } else { 
+			shiftstep = rpnstack->s[stptr+loop]; 
+		    }
+		    if(shiftstep <0) {
+			rrd_set_error("negative shift step not allowed: %i",shiftstep);
+			return -1;
+		    }
+		    shiftstep=(int)ceil((float)shiftstep/(float)dsstep);
+		    /* loop all local shifts */
+		    for(int i=0;i<=locstep;i++) {
+			/* now calculate offset into data-array - relative to output_idx*/
+			int offset=shiftstep+i;
+			/* and process if we have index 0 of above */
+			if ((offset>=0)&&(offset<output_idx)) {
+			    /* get the value */
+			    val =rpnp[rpi - 1].data[-dscount * offset];
+			    /* and handle the non NAN case only*/
+			    if (! isnan(val)) {
+				sum+=val;
+				sum2+=val*val;
+				count++;
+			    }
+			}
+		    }
+		}
+		/* do the final calculations */
+		val=DNAN;
+		if (rpnp[rpi].op == OP_PREDICT) {  /* the average */
+		    if (count>0) {
+			val = sum/(double)count;
+		    } 
+		} else {
+		    if (count>1) { /* the sigma case */
+			val=count*sum2-sum*sum;
+			if (val<0) {
+			    val=DNAN;
+			} else {
+			    val=sqrt(val/((float)count*((float)count-1.0)));
+			}
+		    }
+		}
+		rpnstack->s[stptr] = val;
+	    }
             break;
         case OP_TREND:
         case OP_TRENDNAN:
