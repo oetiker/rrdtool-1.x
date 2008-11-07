@@ -293,6 +293,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 %{_includedir}/*.h
 %exclude %{_libdir}/*.la
 %{_libdir}/*.so
+%{_libdir}/pkgconfig/librrd.pc
 
 %files doc
 %defattr(-,root,root,-)
