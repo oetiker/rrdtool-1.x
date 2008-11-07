@@ -524,7 +524,7 @@ rrd_fetch_fn_libdbi(
       }
       (*data)[idx*(*ds_cnt)+4]=r_value;
       /* now the average */
-      (*data)[idx*(*ds_cnt)+1]/=i;
+      (*data)[idx*(*ds_cnt)+1]/=count;
     }
   }
 
