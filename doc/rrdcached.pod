@@ -458,6 +458,10 @@ message itself.  The first user command after B<BATCH> is command number one.
     server:  1 message for command 1
     server:  12 message for command 12
 
+=item B<QUIT>
+
+Disconnect from rrdcached.
+
 =back
 
 =head2 Performance Values

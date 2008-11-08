@@ -1079,6 +1079,7 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "UPDATE <filename> <values> [<values> ...]\n"
     "BATCH\n"
     "STATS\n"
+    "QUIT\n"
   };
 
   char *help_flush[2] =
@@ -1167,6 +1168,13 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "For more information, consult the rrdcached(1) documentation.\n"
   };
 
+  char *help_quit[2] =
+  {
+    "Help for QUIT\n"
+    ,
+    "Disconnect from rrdcached.\n"
+  };
+
   status = buffer_get_field (&buffer, &buffer_size, &command);
   if (status != 0)
     help_text = help_help;
@@ -1186,6 +1194,8 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
       help_text = help_stats;
     else if (strcasecmp (command, "batch") == 0)
       help_text = help_batch;
+    else if (strcasecmp (command, "quit") == 0)
+      help_text = help_quit;
     else
       help_text = help_help;
   }
