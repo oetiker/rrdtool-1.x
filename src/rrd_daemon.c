@@ -587,6 +587,12 @@ static void remove_from_queue(cache_item_t *ci) /* {{{ */
 
   ci->next = ci->prev = NULL;
   ci->flags &= ~CI_FLAGS_IN_QUEUE;
+
+  pthread_mutex_lock (&stats_lock);
+  assert (stats_queue_length > 0);
+  stats_queue_length--;
+  pthread_mutex_unlock (&stats_lock);
+
 } /* }}} static void remove_from_queue */
 
 /* free the resources associated with the cache_item_t
@@ -845,11 +851,6 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
 
     wipe_ci_values(ci, time(NULL));
     remove_from_queue(ci);
-
-    pthread_mutex_lock (&stats_lock);
-    assert (stats_queue_length > 0);
-    stats_queue_length--;
-    pthread_mutex_unlock (&stats_lock);
 
     pthread_mutex_unlock (&cache_lock);
 
