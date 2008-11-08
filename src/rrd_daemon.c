@@ -589,18 +589,13 @@ static void remove_from_queue(cache_item_t *ci) /* {{{ */
   ci->flags &= ~CI_FLAGS_IN_QUEUE;
 } /* }}} static void remove_from_queue */
 
-/* remove an entry from the tree and free all its resources.
- * must hold 'cache lock' while calling this.
- * returns 0 on success, otherwise errno */
-static int forget_file(const char *file)
+/* free the resources associated with the cache_item_t
+ * must hold cache_lock when calling this function
+ */
+static void *free_cache_item(cache_item_t *ci) /* {{{ */
 {
-  cache_item_t *ci;
+  if (ci == NULL) return NULL;
 
-  ci = g_tree_lookup(cache_tree, file);
-  if (ci == NULL)
-    return ENOENT;
-
-  g_tree_remove (cache_tree, file);
   remove_from_queue(ci);
 
   for (int i=0; i < ci->values_num; i++)
@@ -614,8 +609,8 @@ static int forget_file(const char *file)
 
   free (ci);
 
-  return 0;
-} /* }}} static int forget_file */
+  return NULL;
+} /* }}} static void *free_cache_item */
 
 /*
  * enqueue_cache_item:
@@ -752,7 +747,7 @@ static int flush_old_values (int max_age)
   {
     /* should never fail, since we have held the cache_lock
      * the entire time */
-    assert( forget_file(cfd.keys[k]) == 0 );
+    assert( g_tree_remove(cache_tree, cfd.keys[k]) == TRUE );
   }
 
   if (cfd.keys != NULL)
@@ -1345,6 +1340,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
                                  char *buffer, size_t buffer_size)
 {
   int status;
+  gboolean found;
   char *file, file_tmp[PATH_MAX];
 
   status = buffer_get_field(&buffer, &buffer_size, &file);
@@ -1360,10 +1356,10 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
   if (!check_file_access(file, sock)) return 0;
 
   pthread_mutex_lock(&cache_lock);
-  status = forget_file(file);
+  found = g_tree_remove(cache_tree, file);
   pthread_mutex_unlock(&cache_lock);
 
-  if (status == 0)
+  if (found == TRUE)
   {
     if (sock != NULL)
       journal_write("forget", file);
@@ -1371,8 +1367,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
     return send_response(sock, RESP_OK, "Gone!\n");
   }
   else
-    return send_response(sock, RESP_ERR, "cannot forget: %s\n",
-                         status < 0 ? "Internal error" : rrd_strerror(status));
+    return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
 
   /* NOTREACHED */
   assert(1==0);
@@ -1461,7 +1456,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
     pthread_cond_init(&ci->flushed, NULL);
 
     pthread_mutex_lock(&cache_lock);
-    g_tree_insert (cache_tree, (void *) ci->file, (void *) ci);
+    g_tree_replace (cache_tree, (void *) ci->file, (void *) ci);
   } /* }}} */
   assert (ci != NULL);
 
@@ -1873,18 +1868,29 @@ static void journal_init(void) /* {{{ */
 
 } /* }}} static void journal_init */
 
-static void close_connection(listen_socket_t *sock)
+static void free_listen_socket(listen_socket_t *sock) /* {{{ */
 {
-  close(sock->fd) ;  sock->fd   = -1;
+  assert(sock != NULL);
+
   free(sock->rbuf);  sock->rbuf = NULL;
   free(sock->wbuf);  sock->wbuf = NULL;
-
   free(sock);
-}
+} /* }}} void free_listen_socket */
+
+static void close_connection(listen_socket_t *sock) /* {{{ */
+{
+  if (sock->fd >= 0)
+  {
+    close(sock->fd);
+    sock->fd = -1;
+  }
+
+  free_listen_socket(sock);
+
+} /* }}} void close_connection */
 
 static void *connection_thread_main (void *args) /* {{{ */
 {
-  pthread_t self;
   listen_socket_t *sock;
   int i;
   int fd;
@@ -1910,7 +1916,7 @@ static void *connection_thread_main (void *args) /* {{{ */
         sizeof (pthread_t) * (connection_threads_num + 1));
     if (temp == NULL)
     {
-      RRDD_LOG (LOG_ERR, "connection_thread_main: realloc failed.");
+      RRDD_LOG (LOG_ERR, "connection_thread_main: realloc(++) failed.");
     }
     else
     {
@@ -1986,24 +1992,36 @@ static void *connection_thread_main (void *args) /* {{{ */
 out_close:
   close_connection(sock);
 
-  self = pthread_self ();
   /* Remove this thread from the connection threads list */
   pthread_mutex_lock (&connection_threads_lock);
-  /* Find out own index in the array */
-  for (i = 0; i < connection_threads_num; i++)
-    if (pthread_equal (connection_threads[i], self) != 0)
-      break;
-  assert (i < connection_threads_num);
-
-  /* Move the trailing threads forward. */
-  if (i < (connection_threads_num - 1))
   {
-    memmove (connection_threads + i,
-        connection_threads + i + 1,
-        sizeof (pthread_t) * (connection_threads_num - i - 1));
-  }
+    pthread_t self;
+    pthread_t *temp;
 
-  connection_threads_num--;
+    /* Find out own index in the array */
+    self = pthread_self ();
+    for (i = 0; i < connection_threads_num; i++)
+      if (pthread_equal (connection_threads[i], self) != 0)
+        break;
+    assert (i < connection_threads_num);
+
+    /* Move the trailing threads forward. */
+    if (i < (connection_threads_num - 1))
+    {
+      memmove (connection_threads + i,
+               connection_threads + i + 1,
+               sizeof (pthread_t) * (connection_threads_num - i - 1));
+    }
+
+    connection_threads_num--;
+
+    temp = realloc(connection_threads,
+                   sizeof(*connection_threads) * connection_threads_num);
+    if (connection_threads_num > 0 && temp == NULL)
+      RRDD_LOG(LOG_ERR, "connection_thread_main: realloc(--) failed.");
+    else
+      connection_threads = temp;
+  }
   pthread_mutex_unlock (&connection_threads_lock);
 
   return (NULL);
@@ -2186,6 +2204,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       fprintf (stderr, "rrdcached: listen(%s) failed: %s\n.",
                sock->addr, rrd_strerror(errno));
       close (fd);
+      freeaddrinfo(ai_res);
       return (-1);
     }
 
@@ -2194,6 +2213,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     listen_fds_num++;
   } /* for (ai_ptr) */
 
+  freeaddrinfo(ai_res);
   return (0);
 } /* }}} static int open_listen_socket_network */
 
@@ -2254,7 +2274,6 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 
   while (do_shutdown == 0)
   {
-    assert (pollfds_num == ((int) listen_fds_num));
     for (i = 0; i < pollfds_num; i++)
     {
       pollfds[i].fd = listen_fds[i].fd;
@@ -2345,6 +2364,8 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
   }
   pthread_mutex_unlock (&connection_threads_lock);
 
+  free(pollfds);
+
   return (NULL);
 } /* }}} void *listen_thread_main */
 
@@ -2365,7 +2386,12 @@ static int daemonize (void) /* {{{ */
   if (config_listen_address_list_len > 0)
   {
     for (int i = 0; i < config_listen_address_list_len; i++)
+    {
       open_listen_socket (config_listen_address_list[i]);
+      free_listen_socket (config_listen_address_list[i]);
+    }
+
+    free(config_listen_address_list);
   }
   else
   {
@@ -2423,7 +2449,8 @@ static int daemonize (void) /* {{{ */
   openlog ("rrdcached", LOG_PID, LOG_DAEMON);
   RRDD_LOG(LOG_INFO, "starting up");
 
-  cache_tree = g_tree_new ((GCompareFunc) strcmp);
+  cache_tree = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, NULL,
+                                (GDestroyNotify) free_cache_item);
   if (cache_tree == NULL)
   {
     RRDD_LOG (LOG_ERR, "daemonize: g_tree_new failed.");
@@ -2445,6 +2472,14 @@ static int cleanup (void) /* {{{ */
   pthread_join (queue_thread, /* return = */ NULL);
 
   remove_pidfile ();
+
+  free(config_base_dir);
+  free(config_pid_file);
+  free(journal_cur);
+  free(journal_old);
+
+  pthread_mutex_lock(&cache_lock);
+  g_tree_destroy(cache_tree);
 
   RRDD_LOG(LOG_INFO, "goodbye");
   closelog ();
