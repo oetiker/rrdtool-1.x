@@ -429,7 +429,7 @@ static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 
   assert(sock != NULL);
 
-  new_buf = realloc(sock->wbuf, sock->wbuf_len + len + 1);
+  new_buf = rrd_realloc(sock->wbuf, sock->wbuf_len + len + 1);
   if (new_buf == NULL)
   {
     RRDD_LOG(LOG_ERR, "add_to_wbuf: realloc failed");
@@ -703,7 +703,7 @@ static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
   {
     char **temp;
 
-    temp = (char **) realloc (cfd->keys,
+    temp = (char **) rrd_realloc (cfd->keys,
         sizeof (char *) * (cfd->keys_num + 1));
     if (temp == NULL)
     {
@@ -1507,7 +1507,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
     else
       ci->last_update_stamp = stamp;
 
-    temp = (char **) realloc (ci->values,
+    temp = (char **) rrd_realloc (ci->values,
         sizeof (char *) * (ci->values_num + 1));
     if (temp == NULL)
     {
@@ -1924,7 +1924,7 @@ static void *connection_thread_main (void *args) /* {{{ */
   {
     pthread_t *temp;
 
-    temp = (pthread_t *) realloc (connection_threads,
+    temp = (pthread_t *) rrd_realloc (connection_threads,
         sizeof (pthread_t) * (connection_threads_num + 1));
     if (temp == NULL)
     {
@@ -2027,7 +2027,7 @@ out_close:
 
     connection_threads_num--;
 
-    temp = realloc(connection_threads,
+    temp = rrd_realloc(connection_threads,
                    sizeof(*connection_threads) * connection_threads_num);
     if (connection_threads_num > 0 && temp == NULL)
       RRDD_LOG(LOG_ERR, "connection_thread_main: realloc(--) failed.");
@@ -2051,7 +2051,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   if (strncmp(path, "unix:", strlen("unix:")) == 0)
     path += strlen("unix:");
 
-  temp = (listen_socket_t *) realloc (listen_fds,
+  temp = (listen_socket_t *) rrd_realloc (listen_fds,
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
   if (temp == NULL)
   {
@@ -2180,7 +2180,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     listen_socket_t *temp;
     int one = 1;
 
-    temp = (listen_socket_t *) realloc (listen_fds,
+    temp = (listen_socket_t *) rrd_realloc (listen_fds,
         sizeof (listen_fds[0]) * (listen_fds_num + 1));
     if (temp == NULL)
     {
@@ -2526,7 +2526,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         memset(new, 0, sizeof(listen_socket_t));
 
-        temp = (listen_socket_t **) realloc (config_listen_address_list,
+        temp = (listen_socket_t **) rrd_realloc (config_listen_address_list,
             sizeof (listen_socket_t *) * (config_listen_address_list_len + 1));
         if (temp == NULL)
         {
