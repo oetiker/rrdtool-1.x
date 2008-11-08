@@ -1640,6 +1640,8 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
     return batch_start(sock);
   else if (strcasecmp (command, ".") == 0 && sock != NULL && sock->batch_start)
     return batch_done(sock);
+  else if (strcasecmp (command, "quit") == 0)
+    return -1;
   else
     return send_response(sock, RESP_ERR, "Unknown command: %s\n", command);
 
