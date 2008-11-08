@@ -482,7 +482,6 @@ AC_ARG_ENABLE(libdbi,[  --disable-libdbi        do not build in support for libd
     ],[LIBS=$XXX
        AC_MSG_RESULT([no])
        have_libdbi=no
-       exit 1
     ]
   )
 ])
