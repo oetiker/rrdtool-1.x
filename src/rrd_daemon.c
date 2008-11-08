@@ -1076,6 +1076,7 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "FLUSHALL\n"
     "PENDING <filename>\n"
     "FORGET <filename>\n"
+    "QUEUE\n"
     "UPDATE <filename> <values> [<values> ...]\n"
     "BATCH\n"
     "STATS\n"
@@ -1119,6 +1120,18 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "\n"
     "Removes the file completely from the cache.\n"
     "Any pending updates for the file will be lost.\n"
+  };
+
+  char *help_queue[2] =
+  {
+    "Help for QUEUE\n"
+    ,
+    "Shows all files in the output queue.\n"
+    "The output is zero or more lines in the following format:\n"
+    "(where <num_vals> is the number of values to be written)\n"
+    "\n"
+    "<num_vals> <filename>\n"
+    "\n"
   };
 
   char *help_update[2] =
@@ -1190,6 +1203,8 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
       help_text = help_pending;
     else if (strcasecmp (command, "forget") == 0)
       help_text = help_forget;
+    else if (strcasecmp (command, "queue") == 0)
+      help_text = help_queue;
     else if (strcasecmp (command, "stats") == 0)
       help_text = help_stats;
     else if (strcasecmp (command, "batch") == 0)
@@ -1382,6 +1397,24 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
   /* NOTREACHED */
   assert(1==0);
 } /* }}} static int handle_request_forget */
+
+static int handle_request_queue (listen_socket_t *sock) /* {{{ */
+{
+  cache_item_t *ci;
+
+  pthread_mutex_lock(&cache_lock);
+
+  ci = cache_queue_head;
+  while (ci != NULL)
+  {
+    add_response_info(sock, "%d %s\n", ci->values_num, ci->file);
+    ci = ci->next;
+  }
+
+  pthread_mutex_unlock(&cache_lock);
+
+  return send_response(sock, RESP_OK, "in queue.\n");
+} /* }}} int handle_request_queue */
 
 static int handle_request_update (listen_socket_t *sock, /* {{{ */
                                   time_t now,
@@ -1642,6 +1675,8 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
     return (handle_request_pending(sock, buffer_ptr, buffer_size));
   else if (strcasecmp (command, "forget") == 0)
     return (handle_request_forget(sock, buffer_ptr, buffer_size));
+  else if (strcasecmp (command, "queue") == 0)
+    return (handle_request_queue(sock));
   else if (strcasecmp (command, "stats") == 0)
     return (handle_request_stats (sock));
   else if (strcasecmp (command, "help") == 0)

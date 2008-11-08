@@ -384,6 +384,14 @@ not yet been written to the underlying RRD file.
 
 Removes I<filename> from the cache.  Any pending updates B<WILL BE LOST>.
 
+=item B<QUEUE>
+
+Shows the files that are on the output queue.  Returns zero or more lines
+in the following format, where E<lt>num_valsE<gt> is the number of values
+to be written for the E<lt>fileE<gt>:
+
+    <num_vals> <file>
+
 =item B<HELP> [I<command>]
 
 Returns a short usage message. If no command is given, or I<command> is
