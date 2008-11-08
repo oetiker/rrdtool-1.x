@@ -1761,7 +1761,7 @@ static int journal_replay (const char *file) /* {{{ */
   if (file == NULL) return 0;
 
   {
-    char *reason;
+    char *reason = "unknown error";
     int status = 0;
     struct stat statbuf;
 
