@@ -4,6 +4,7 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_gfx.h"
+#include <libgen.h>
 
 #define MAX_VNAME_LEN 255
 #define DEF_NAM_FMT "%255[-_A-Za-z0-9]"

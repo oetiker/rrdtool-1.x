@@ -3180,6 +3180,7 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *s
     *ymax=im.maxval;
     if (im.imginfo) {
         char *filename;
+        char *path;
         if (!(*prdata)) {
             /* maybe prdata is not allocated yet ... lets do it now */
             if ((*prdata = calloc(2,sizeof(char *)))==NULL) {
@@ -3192,13 +3193,10 @@ rrd_graph(int argc, char **argv, char ***prdata, int *xsize, int *ysize, FILE *s
             rrd_set_error("malloc imginfo");
             return -1;
         }
-        filename=im.graphfile+strlen(im.graphfile);
-        while(filename > im.graphfile) {
-            if (*(filename-1)=='/' || *(filename-1)=='\\' ) break;
-            filename--;
-        }
-
+        path = strdup(im.graphfile);
+        filename = basename(path);
         sprintf((*prdata)[0],im.imginfo,filename,(long)(im.canvas->zoom*im.ximg),(long)(im.canvas->zoom*im.yimg));
+        free(path);
     }
     im_free(&im);
     return 0;
