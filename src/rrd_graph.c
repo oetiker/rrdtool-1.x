@@ -3682,14 +3682,11 @@ rrd_info_t *rrd_graph_v(
 
     if (im.imginfo) {
         rrd_infoval_t info;
+        char     *path;
         char     *filename;
 
-        filename = im.graphfile + strlen(im.graphfile);
-        while (filename > im.graphfile) {
-            if (*(filename - 1) == '/' || *(filename - 1) == '\\')
-                break;
-            filename--;
-        }
+        path = strdup(im.graphfile);
+        filename = basename(path);
         info.u_str =
             sprintf_alloc(im.imginfo,
                           filename,
@@ -3697,6 +3694,7 @@ rrd_info_t *rrd_graph_v(
                                   im.ximg), (long) (im.zoom * im.yimg));
         grinfo_push(&im, sprintf_alloc("image_info"), RD_I_STR, info);
         free(info.u_str);
+        free(path);
     }
     if (im.rendered_image) {
         rrd_infoval_t img;
