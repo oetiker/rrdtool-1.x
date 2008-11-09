@@ -338,7 +338,8 @@ return 0;
 }],[ac_cv_have_broken_isfinite=no],[ac_cv_have_broken_isfinite=yes],[
 case "${target}" in
   hppa*-*-hpux*) ac_cv_have_broken_isfinite=yes ;;
-  *-sun-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-solaris2.9) ac_cv_have_broken_isfinite=yes ;;
   *) ac_cv_have_broken_isfinite=no ;;
 esac])
 ])
@@ -346,7 +347,8 @@ esac])
 dnl the test does not seem to work on solaris 2.8
 dnl so lets fix this by hand
 case "${target}" in
-  *-sun-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
+  *-solaris2.9) ac_cv_have_broken_isfinite=yes ;;
 esac
 
 if test "x$ac_cv_have_broken_isfinite" = "xno"; then
