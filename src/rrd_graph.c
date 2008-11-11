@@ -6,6 +6,7 @@
 
 
 #include <sys/stat.h>
+#include <libgen.h>
 
 #ifdef WIN32
 #include "strftime.h"
