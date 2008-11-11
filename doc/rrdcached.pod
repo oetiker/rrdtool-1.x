@@ -6,7 +6,7 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-j> I<dir>] [-F] [B<-b> I<dir> [B<-B>]]
+B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-t> I<write_threads>] [B<-j> I<dir>] [-F] [B<-b> I<dir> [B<-B>]]
 
 =head1 DESCRIPTION
 
@@ -80,6 +80,13 @@ cases. This timeout defaults to 3600E<nbsp>seconds.
 
 Sets the name and location of the PID-file. If not specified, the default,
 C<I<$localststedir>/run/rrdcached.pid> will be used.
+
+=item B<-t> I<write_threads>
+
+Specifies the number of threads used for writing RRD files.  The default
+isE<nbsp>4.  Increasing this number will allow rrdcached to have more
+simultaneous I/O requests into the kernel.  This may allow the kernel to
+re-order disk writes, resulting in better disk throughput.
 
 =item B<-j> I<dir>
 

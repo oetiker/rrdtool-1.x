@@ -187,7 +187,12 @@ static size_t listen_fds_num = 0;
 
 static int do_shutdown = 0;
 
-static pthread_t queue_thread;
+static pthread_t *queue_threads;
+static pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
+static int config_queue_threads = 4;
+
+static pthread_t flush_thread;
+static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_t *connection_threads = NULL;
 static pthread_mutex_t connection_threads_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -198,7 +203,6 @@ static GTree          *cache_tree = NULL;
 static cache_item_t   *cache_queue_head = NULL;
 static cache_item_t   *cache_queue_tail = NULL;
 static pthread_mutex_t cache_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  cache_cond = PTHREAD_COND_INITIALIZER;
 
 static int config_write_interval = 300;
 static int config_write_jitter   = 0;
@@ -237,7 +241,8 @@ static void sig_common (const char *sig) /* {{{ */
 {
   RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
   do_shutdown++;
-  pthread_cond_broadcast(&cache_cond);
+  pthread_cond_broadcast(&flush_cond);
+  pthread_cond_broadcast(&queue_cond);
 } /* }}} void sig_common */
 
 static void sig_int_handler (int s __attribute__((unused))) /* {{{ */
@@ -669,7 +674,7 @@ static int enqueue_cache_item (cache_item_t *ci, /* {{{ */
 
   ci->flags |= CI_FLAGS_IN_QUEUE;
 
-  pthread_cond_broadcast(&cache_cond);
+  pthread_cond_signal(&queue_cond);
   pthread_mutex_lock (&stats_lock);
   stats_queue_length++;
   pthread_mutex_unlock (&stats_lock);
@@ -679,7 +684,7 @@ static int enqueue_cache_item (cache_item_t *ci, /* {{{ */
 
 /*
  * tree_callback_flush:
- * Called via `g_tree_foreach' in `queue_thread_main'. `cache_lock' is held
+ * Called via `g_tree_foreach' in `flush_thread_main'. `cache_lock' is held
  * while this is in progress.
  */
 static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
@@ -765,27 +770,20 @@ static int flush_old_values (int max_age)
   return (0);
 } /* int flush_old_values */
 
-static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
+static void *flush_thread_main (void *args __attribute__((unused))) /* {{{ */
 {
   struct timeval now;
   struct timespec next_flush;
-  int final_flush = 0; /* make sure we only flush once on shutdown */
+  int status;
 
   gettimeofday (&now, NULL);
   next_flush.tv_sec = now.tv_sec + config_flush_interval;
   next_flush.tv_nsec = 1000 * now.tv_usec;
 
-  pthread_mutex_lock (&cache_lock);
-  while ((do_shutdown == 0) || (cache_queue_head != NULL))
-  {
-    cache_item_t *ci;
-    char *file;
-    char **values;
-    int values_num;
-    int status;
-    int i;
+  pthread_mutex_lock(&cache_lock);
 
-    /* First, check if it's time to do the cache flush. */
+  while (!do_shutdown)
+  {
     gettimeofday (&now, NULL);
     if ((now.tv_sec > next_flush.tv_sec)
         || ((now.tv_sec == next_flush.tv_sec)
@@ -806,26 +804,46 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
       pthread_mutex_lock(&cache_lock);
     }
 
+    status = pthread_cond_timedwait(&flush_cond, &cache_lock, &next_flush);
+    if (status != 0 && status != ETIMEDOUT)
+    {
+      RRDD_LOG (LOG_ERR, "flush_thread_main: "
+                "pthread_cond_timedwait returned %i.", status);
+    }
+  }
+
+  if (config_flush_at_shutdown)
+    flush_old_values (-1); /* flush everything */
+
+  pthread_mutex_unlock(&cache_lock);
+
+  return NULL;
+} /* void *flush_thread_main */
+
+static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
+{
+  pthread_mutex_lock (&cache_lock);
+
+  while (!do_shutdown
+         || (cache_queue_head != NULL && config_flush_at_shutdown))
+  {
+    cache_item_t *ci;
+    char *file;
+    char **values;
+    int values_num;
+    int status;
+    int i;
+
     /* Now, check if there's something to store away. If not, wait until
-     * something comes in or it's time to do the cache flush.  if we are
-     * shutting down, do not wait around.  */
+     * something comes in.  if we are shutting down, do not wait around.  */
     if (cache_queue_head == NULL && !do_shutdown)
     {
-      status = pthread_cond_timedwait (&cache_cond, &cache_lock, &next_flush);
+      status = pthread_cond_wait (&queue_cond, &cache_lock);
       if ((status != 0) && (status != ETIMEDOUT))
       {
         RRDD_LOG (LOG_ERR, "queue_thread_main: "
-            "pthread_cond_timedwait returned %i.", status);
+            "pthread_cond_wait returned %i.", status);
       }
-    }
-
-    /* We're about to shut down */
-    if (do_shutdown != 0 && !final_flush++)
-    {
-      if (config_flush_at_shutdown)
-        flush_old_values (-1); /* flush everything */
-      else
-        break;
     }
 
     /* Check if a value has arrived. This may be NULL if we timed out or there
@@ -881,25 +899,8 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     pthread_mutex_lock (&cache_lock);
-
-    /* We're about to shut down */
-    if (do_shutdown != 0 && !final_flush++)
-    {
-      if (config_flush_at_shutdown)
-          flush_old_values (-1); /* flush everything */
-      else
-        break;
-    }
-  } /* while ((do_shutdown == 0) || (cache_queue_head != NULL)) */
-  pthread_mutex_unlock (&cache_lock);
-
-  if (config_flush_at_shutdown)
-  {
-    assert(cache_queue_head == NULL);
-    RRDD_LOG(LOG_INFO, "clean shutdown; all RRDs flushed");
   }
-
-  journal_done();
+  pthread_mutex_unlock (&cache_lock);
 
   return (NULL);
 } /* }}} void *queue_thread_main */
@@ -2516,11 +2517,23 @@ static int cleanup (void) /* {{{ */
 {
   do_shutdown++;
 
-  pthread_cond_signal (&cache_cond);
-  pthread_join (queue_thread, /* return = */ NULL);
+  pthread_cond_broadcast (&flush_cond);
+  pthread_join (flush_thread, NULL);
 
+  pthread_cond_broadcast (&queue_cond);
+  for (int i = 0; i < config_queue_threads; i++)
+    pthread_join (queue_threads[i], NULL);
+
+  if (config_flush_at_shutdown)
+  {
+    assert(cache_queue_head == NULL);
+    RRDD_LOG(LOG_INFO, "clean shutdown; all RRDs flushed");
+  }
+
+  journal_done();
   remove_pidfile ();
 
+  free(queue_threads);
   free(config_base_dir);
   free(config_pid_file);
   free(journal_cur);
@@ -2540,7 +2553,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  while ((option = getopt(argc, argv, "gl:L:f:w:b:Bz:p:j:h?F")) != -1)
+  while ((option = getopt(argc, argv, "gl:L:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
     {
@@ -2624,6 +2637,20 @@ static int read_options (int argc, char **argv) /* {{{ */
 
         break;
       }
+
+      case 't':
+      {
+        int threads;
+        threads = atoi(optarg);
+        if (threads >= 1)
+          config_queue_threads = threads;
+        else
+        {
+          fprintf (stderr, "Invalid thread count: -t %s\n", optarg);
+          return 1;
+        }
+      }
+      break;
 
       case 'B':
         config_write_base_only = 1;
@@ -2744,6 +2771,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -L <address>  Socket address to listen to ('FLUSH' only).\n"
             "  -w <seconds>  Interval in which to write data.\n"
             "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
+            "  -t <threads>  Number of write threads.\n"
             "  -f <seconds>  Interval in which to flush dead data.\n"
             "  -p <file>     Location of the PID-file.\n"
             "  -b <dir>      Base directory to change to.\n"
@@ -2800,15 +2828,32 @@ int main (int argc, char **argv)
 
   journal_init();
 
-  /* start the queue thread */
-  memset (&queue_thread, 0, sizeof (queue_thread));
-  status = pthread_create (&queue_thread,
-                           NULL, /* attr */
-                           queue_thread_main,
-                           NULL); /* args */
+  /* start the queue threads */
+  queue_threads = calloc(config_queue_threads, sizeof(*queue_threads));
+  if (queue_threads == NULL)
+  {
+    RRDD_LOG (LOG_ERR, "FATAL: cannot calloc queue threads");
+    cleanup();
+    return (1);
+  }
+  for (int i = 0; i < config_queue_threads; i++)
+  {
+    memset (&queue_threads[i], 0, sizeof (*queue_threads));
+    status = pthread_create (&queue_threads[i], NULL, queue_thread_main, NULL);
+    if (status != 0)
+    {
+      RRDD_LOG (LOG_ERR, "FATAL: cannot create queue thread");
+      cleanup();
+      return (1);
+    }
+  }
+
+  /* start the flush thread */
+  memset(&flush_thread, 0, sizeof(flush_thread));
+  status = pthread_create (&flush_thread, NULL, flush_thread_main, NULL);
   if (status != 0)
   {
-    RRDD_LOG (LOG_ERR, "FATAL: cannot create queue thread");
+    RRDD_LOG (LOG_ERR, "FATAL: cannot create flush thread");
     cleanup();
     return (1);
   }
