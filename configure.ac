@@ -93,7 +93,7 @@ AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE,
 AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
  [Vertical label angle: -90.0 (default) or 90.0])
 
-AC_ARG_ENABLE(rrdcgi,[  --disable-rrdcgi        disable building of rrdcgi],
+AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
 dnl Check if we run on a system that has fonts
@@ -109,15 +109,15 @@ AC_ARG_WITH(rrd-default-font,
 
 dnl Use mmap in rrd_update instead of seek+write
 AC_ARG_ENABLE([mmap],
-[  --disable-mmap          disable mmap in rrd_update, use seek+write instead],
+AS_HELP_STRING([--disable-mmap],[disable mmap in rrd_update, use seek+write instead]),
 [],
 [enable_mmap=yes])
 
-AC_ARG_ENABLE(pthread,[  --disable-pthread       disable multithread support],
+AC_ARG_ENABLE(pthread,AS_HELP_STRING([--disable-pthread][disable multithread support]),
 [],[enable_pthread=yes])
 
 AC_ARG_ENABLE(static-programs,
-     [  --enable-static-programs  Build static programs],
+     AS_HELP_STRING([--enable-static-programs],[Build static programs]),
      [case "${enableval}" in
        yes) staticprogs=yes ;;
        no)  staticprogs=no ;;
@@ -267,7 +267,7 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
 
 AM_GLIB_GNU_GETTEXT()
 
-AC_ARG_ENABLE(libintl,[  --disable-libintl        i18n support (libintl)],
+AC_ARG_ENABLE(libintl,AS_HELP_STRING([--disable-libintl],[i18n support (libintl)]),
 [],[enable_libintl=yes])
 
 if test x$enable_libintl = xyes; then
@@ -470,7 +470,7 @@ AC_LANG_POP(C)
 
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
-AC_ARG_ENABLE(libdbi,[  --disable-libdbi        do not build in support for libdbi],[have_libdbi=no],[
+AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[have_libdbi=no],[
   XXX=$LIBS
   LIBS="$LIBS -ldbi -ldl"
   AC_MSG_CHECKING(for libdbi)
@@ -526,7 +526,7 @@ AC_PATH_PROG(POD2MAN, pod2man, no)
 AC_PATH_PROG(POD2HTML, pod2html, no)
 
 
-AC_ARG_ENABLE(perl,[  --disable-perl          do not build the perl modules],
+AC_ARG_ENABLE(perl,AS_HELP_STRING([--disable-perl],[do not build the perl modules]),
 [],[enable_perl=yes])
 
 
@@ -575,12 +575,7 @@ PERL_MAKE_OPTIONS="PREFIX=$langpref LIB=$langpref/lib/perl/$PERL_VERSION"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
-[  --enable-perl-site-install   by default the rrdtool perl modules are installed
-		  	  together with rrdtool in $prefix/lib/perl. You have to
-                          put a 'use lib qw($prefix/lib/perl)' into your scripts
-                          when you want to use them. When you set this option
-                          the perl modules will get installed wherever
-                          your perl setup thinks it is best.],
+AS_HELP_STRING([--enable-perl-site-install],[by default the rrdtool perl modules are installed together with rrdtool in $prefix/lib/perl. You have to put a 'use lib qw($prefix/lib/perl)' into your scripts when you want to use them. When you set this option the perl modules will get installed wherever your perl setup thinks it is best.]),
 [PERL_MAKE_OPTIONS=],[])
 
 if test ! -z "$PERLCC"; then
@@ -615,7 +610,7 @@ AC_SUBST(PERL_VERSION)
 dnl Check for Ruby.
 AC_PATH_PROG(RUBY, ruby, no)
 
-AC_ARG_ENABLE(ruby,[  --disable-ruby          do not build the ruby modules],
+AC_ARG_ENABLE(ruby,AS_HELP_STRING([--disable-ruby],[do not build the ruby modules]),
 [],[enable_ruby=yes])
 
 AC_MSG_CHECKING(if ruby modules can be built)
@@ -635,10 +630,7 @@ fi
 
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
-[  --enable-ruby-site-install   by default the rrdtool ruby modules are installed
-		  	  together with rrdtool in $prefix/lib/ruby. You have to
-                          add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable
-                          for ruby to find the RRD.so file.],
+AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules are installed together with rrdtool in $prefix/lib/ruby. You have to add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable for ruby to find the RRD.so file.]),
 [RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
 
     
@@ -656,7 +648,7 @@ AC_SUBST(COMP_RUBY)
 dnl Check for Lua.
 AC_PATH_PROG(LUA, lua, no)
 
-AC_ARG_ENABLE(lua,[  --disable-lua           do not build the lua modules],
+AC_ARG_ENABLE(lua,AS_HELP_STRING([--disable-lua],[do not build the lua modules]),
 [],[enable_lua=yes])
 
 COMP_LUA=
@@ -766,16 +758,7 @@ LUA_EOF
         dnl if lua-site-install is not set, overwrite LUA_INSTALL_CMOD already
         dnl found and install together with RRDtool, under $langpref.
         AC_ARG_ENABLE(lua-site-install,
-        [  --enable-lua-site-install   by default the lua module is installed
-                          together with rrdtool in $prefix/lib/lua/$lua_version.
-                          You have to add $prefix/lib/lua/$lua_version/?.so to
-                          package.cpath for lua to find 'rrd.so'. For lua 5.0
-                          you may also need to change LUA_PATH to the same dir,
-                          to require 'compat-5.1'. When you set this option the
-                          lua modules will get installed wherever your Lua
-                          setup thinks it is best.
-                          WARNING: if you set this option, system lua modules
-                          compat-5.1.lua and rrd.so, if any, may be overwritten.],
+        AS_HELP_STRING([--enable-lua-site-install],[by default the lua module is installed together with rrdtool in $prefix/lib/lua/$lua_version. You have to add $prefix/lib/lua/$lua_version/?.so to package.cpath for lua to find 'rrd.so'. For lua 5.0 you may also need to change LUA_PATH to the same dir, to require 'compat-5.1'. When you set this option the lua modules will get installed wherever your Lua setup thinks it is best. WARNING: if you set this option, system lua modules compat-5.1.lua and rrd.so, if any, may be overwritten.]),
         [],
         [LUA_INSTALL_CMOD="$LUA_RRD_LIBDIR"; LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"])
 
@@ -805,7 +788,7 @@ AM_CONDITIONAL(BUILD_LUA, [test "$enable_lua" = "yes"])
 
 enable_tcl_site=no
 
-AC_ARG_ENABLE(tcl,[  --disable-tcl           do not build the tcl modules],
+AC_ARG_ENABLE(tcl,AS_HELP_STRING([--disable-tcl],[do not build the tcl modules]),
 [],[enable_tcl=yes])
 
 if test  "$enable_tcl" = "yes"; then
@@ -834,7 +817,7 @@ if test  "$enable_tcl" = "yes"; then
 	  TCL_INCLUDE_SPEC="$TCL_INCLUDE_SPEC -I$TCL_INC_DIR"
 	fi
   fi
-  AC_ARG_ENABLE(tcl,[  --enable-tcl-site        install the tcl extension in the tcl tree],
+  AC_ARG_ENABLE(tcl,AS_HELP_STRING([--enable-tcl-site],[install the tcl extension in the tcl tree]),
   [],[enable_tcl_site=yes])
 
 fi
@@ -854,7 +837,7 @@ AC_SUBST(TCL_VERSION)
 AC_SUBST(TCL_PACKAGE_DIR)
 AC_SUBST(TCL_INCLUDE_SPEC)
 
-AC_ARG_ENABLE(python,[  --disable-python        do not build the python modules],
+AC_ARG_ENABLE(python,AS_HELP_STRING([--disable-python],[do not build the python modules]),
 [],[enable_python=yes])
 
 if test  "$enable_python" = "yes"; then
