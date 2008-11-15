@@ -1092,7 +1092,7 @@ static int handle_request_help (listen_socket_t *sock, /* {{{ */
     "Usage: FLUSH <filename>\n"
     "\n"
     "Adds the given filename to the head of the update queue and returns\n"
-    "after is has been dequeued.\n"
+    "after it has been dequeued.\n"
   };
 
   char *help_flushall[2] =
