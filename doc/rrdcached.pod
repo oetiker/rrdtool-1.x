@@ -6,7 +6,16 @@ rrdcached - Data caching daemon for rrdtool
 
 =head1 SYNOPSIS
 
-B<rrdcached> [B<-l/-L> I<address>] [B<-w> I<timeout>] [B<-z> I<delay>] [B<-f> I<timeout>] [B<-t> I<write_threads>] [B<-j> I<dir>] [-F] [B<-b> I<dir> [B<-B>]]
+B<rrdcached>
+[B<-l/-L>E<nbsp>I<address>]
+[B<-w>E<nbsp>I<timeout>]
+[B<-z>E<nbsp>I<delay>]
+[B<-f>E<nbsp>I<timeout>]
+[B<-p>E<nbsp>I<pid_file>]
+[B<-t>E<nbsp>I<write_threads>]
+[B<-j>E<nbsp>I<journal_dir>]
+[-F]
+[B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
 
 =head1 DESCRIPTION
 
