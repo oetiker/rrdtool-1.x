@@ -15,6 +15,10 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
       rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod
 
+if BUILD_LIBDBI
+  POD += rrdgraph_libdbi.pod
+endif
+
 if BUILD_LUA
   POD += rrdlua.pod
 endif
