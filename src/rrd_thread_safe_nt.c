@@ -38,7 +38,7 @@ static void context_destroy_context(
 static void context_init_context(
     void)
 {
-    if (!InterlockedExchange(&context_key_once, 1)) {
+    if (!InterlockedExchange((LONG*)(&context_key_once), 1)) {
         context_key = TlsAlloc();
         InitializeCriticalSection(&CriticalSection);
         atexit(context_destroy_context);
@@ -51,13 +51,30 @@ rrd_context_t *rrd_get_context(
 
     context_init_context();
 
-    ctx = TlsGetValue(context_key);
+    ctx = (rrd_context_t*)TlsGetValue(context_key);
     if (!ctx) {
         ctx = rrd_new_context();
         TlsSetValue(context_key, ctx);
     }
     return ctx;
 }
+
+
+/* this was added by the win32 porters Christof.Wegmann@exitgames.com */
+
+rrd_context_t *rrd_force_new_context(
+    void)
+{
+    rrd_context_t *ctx;
+
+    context_init_context();
+
+    ctx = rrd_new_context();
+    TlsSetValue(context_key, ctx);
+
+    return ctx;
+}
+
 
 #undef strerror
 const char *rrd_strerror(

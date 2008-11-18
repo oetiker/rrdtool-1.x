@@ -236,7 +236,7 @@ enum gf_en gf_conv(
     conv_if(XPORT, GF_XPORT);
     conv_if(SHIFT, GF_SHIFT);
 
-    return (-1);
+    return (enum gf_en)(-1);
 }
 
 enum gfx_if_en if_conv(
@@ -248,7 +248,7 @@ enum gfx_if_en if_conv(
     conv_if(EPS, IF_EPS);
     conv_if(PDF, IF_PDF);
 
-    return (-1);
+    return (enum gfx_if_en)(-1);
 }
 
 enum tmt_en tmt_conv(
@@ -262,7 +262,7 @@ enum tmt_en tmt_conv(
     conv_if(WEEK, TMT_WEEK);
     conv_if(MONTH, TMT_MONTH);
     conv_if(YEAR, TMT_YEAR);
-    return (-1);
+    return (enum tmt_en)(-1);
 }
 
 enum grc_en grc_conv(
@@ -280,7 +280,7 @@ enum grc_en grc_conv(
     conv_if(AXIS, GRC_AXIS);
     conv_if(FRAME, GRC_FRAME);
 
-    return -1;
+    return (enum grc_en)(-1);
 }
 
 enum text_prop_en text_prop_conv(
@@ -293,7 +293,7 @@ enum text_prop_en text_prop_conv(
     conv_if(UNIT, TEXT_PROP_UNIT);
     conv_if(LEGEND, TEXT_PROP_LEGEND);
     conv_if(WATERMARK, TEXT_PROP_WATERMARK);
-    return -1;
+    return (enum text_prop_en)(-1);
 }
 
 
@@ -303,7 +303,7 @@ int im_free(
     image_desc_t *im)
 {
     unsigned long i, ii;
-    cairo_status_t status = 0;
+    cairo_status_t status = (cairo_status_t) 0;
 
     if (im == NULL)
         return 0;
@@ -427,7 +427,7 @@ void si_unit(
 
     if (im->unitsexponent != 9999) {
         /* unitsexponent = 9, 6, 3, 0, -3, -6, -9, etc */
-        viewdigits = floor(im->unitsexponent / 3);
+        viewdigits = floor((double)(im->unitsexponent / 3));
     } else {
         viewdigits = digits;
     }
@@ -1053,7 +1053,7 @@ int data_calc(
                         /* add one entry to the array that keeps track of the step sizes of the
                          * data sources going into the CDEF. */
                         if ((steparray =
-                             rrd_realloc(steparray,
+                             (long*)rrd_realloc(steparray,
                                          (++stepcnt +
                                           1) * sizeof(*steparray))) == NULL) {
                             rrd_set_error("realloc steparray");
@@ -1121,7 +1121,7 @@ int data_calc(
              */
             im->gdes[gdi].step = lcd(steparray);
             free(steparray);
-            if ((im->gdes[gdi].data = malloc(((im->gdes[gdi].end -
+            if ((im->gdes[gdi].data = (rrd_value_t*)malloc(((im->gdes[gdi].end -
                                                im->gdes[gdi].start)
                                               / im->gdes[gdi].step)
                                              * sizeof(double))) == NULL) {
@@ -1211,7 +1211,7 @@ int data_proc(
     for (i = 0; i < im->gdes_c; i++) {
         if ((im->gdes[i].gf == GF_LINE) ||
             (im->gdes[i].gf == GF_AREA) || (im->gdes[i].gf == GF_TICK)) {
-            if ((im->gdes[i].p_data = malloc((im->xsize + 1)
+            if ((im->gdes[i].p_data = (rrd_value_t*)malloc((im->xsize + 1)
                                              * sizeof(rrd_value_t))) == NULL) {
                 rrd_set_error("malloc data_proc");
                 return -1;
@@ -1568,7 +1568,7 @@ int print_calc(
                 rrd_infoval_t prline;
 
                 if (im->gdes[i].strftm) {
-                    prline.u_str = malloc((FMT_LEG_LEN + 2) * sizeof(char));
+                    prline.u_str = (char*)malloc((FMT_LEG_LEN + 2) * sizeof(char));
                     strftime(prline.u_str,
                              FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                 } else if (bad_format(im->gdes[i].format)) {
@@ -1669,7 +1669,7 @@ int leg_place(
     char     *tab;
 
     if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
-        if ((legspace = malloc(im->gdes_c * sizeof(int))) == NULL) {
+        if ((legspace = (int*)malloc(im->gdes_c * sizeof(int))) == NULL) {
             rrd_set_error("malloc for legspace");
             return -1;
         }
@@ -2070,7 +2070,7 @@ double frexp10(
     double    mnt;
     int       iexp;
 
-    iexp = floor(log(fabs(x)) / log(10));
+    iexp = floor(log((double)fabs(x)) / log((double)10));
     mnt = x / pow(10.0, iexp);
     if (mnt >= 10.0) {
         iexp++;
@@ -2944,10 +2944,10 @@ static cairo_status_t cairo_output(
     *data,
     unsigned int length)
 {
-    image_desc_t *im = closure;
+    image_desc_t *im = (image_desc_t*)closure;
 
     im->rendered_image =
-        realloc(im->rendered_image, im->rendered_image_size + length);
+        (unsigned char*)realloc(im->rendered_image, im->rendered_image_size + length);
     if (im->rendered_image == NULL)
         return CAIRO_STATUS_WRITE_ERROR;
     memcpy(im->rendered_image + im->rendered_image_size, data, length);
@@ -3566,13 +3566,13 @@ int rrd_graph(
         if (strcmp(walker->key, "image_info") == 0) {
             prlines++;
             if (((*prdata) =
-                 rrd_realloc((*prdata),
+                 (char**)rrd_realloc((*prdata),
                              (prlines + 1) * sizeof(char *))) == NULL) {
                 rrd_set_error("realloc prdata");
                 return 0;
             }
             /* imginfo goes to position 0 in the prdata array */
-            (*prdata)[prlines - 1] = malloc((strlen(walker->value.u_str)
+            (*prdata)[prlines - 1] = (char*)malloc((strlen(walker->value.u_str)
                                              + 2) * sizeof(char));
             strcpy((*prdata)[prlines - 1], walker->value.u_str);
             (*prdata)[prlines] = NULL;
@@ -3597,12 +3597,12 @@ int rrd_graph(
         } else if (strncmp(walker->key, "print", 5) == 0) { /* keys are prdate[0..] */
             prlines++;
             if (((*prdata) =
-                 rrd_realloc((*prdata),
+                 (char**)rrd_realloc((*prdata),
                              (prlines + 1) * sizeof(char *))) == NULL) {
                 rrd_set_error("realloc prdata");
                 return 0;
             }
-            (*prdata)[prlines - 1] = malloc((strlen(walker->value.u_str)
+            (*prdata)[prlines - 1] = (char*)malloc((strlen(walker->value.u_str)
                                              + 2) * sizeof(char));
             (*prdata)[prlines] = NULL;
             strcpy((*prdata)[prlines - 1], walker->value.u_str);
@@ -4537,7 +4537,7 @@ int vdef_calc(
     case VDEF_PERCENT:{
         rrd_value_t *array;
         int       field;
-        if ((array = malloc(steps * sizeof(double))) == NULL) {
+        if ((array = (rrd_value_t*)malloc(steps * sizeof(double))) == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }

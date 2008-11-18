@@ -20,6 +20,7 @@
 #define HAVE_MKTIME 1
 #define HAVE_STRFTIME 1
 #define HAVE_STRING_H 1
+#define HAVE_STDLIB_H 1
 #define HAVE_VSNPRINTF 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -27,17 +28,17 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
-#define NUMVERS 1.2015
+#define NUMVERS 1.3020
 #define PACKAGE_NAME "rrdtool"
-#define PACKAGE_VERSION "1.2.15"
+#define PACKAGE_VERSION "1.3.2"
 #define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
 
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
 #define finite _finite
 #define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#define strftime strftime_
+//#define vsnprintf _vsnprintf
+//#define strftime strftime_
 
 #define NO_NULL_REALLOC 1
 #if NO_NULL_REALLOC

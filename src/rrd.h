@@ -53,10 +53,17 @@ extern    "C" {
 #define _RRDLIB_H
 
 #include <sys/types.h>  /* for off_t */
+
+#ifndef WIN32
 #include <unistd.h>     /* for off_t */
+#else
+	typedef size_t ssize_t;
+	typedef long off_t;
+#endif 
+
 #include <time.h>
 #include <stdio.h>      /* for FILE */
-
+#include <string.h>
 
 /* Formerly rrd_nan_inf.h */
 #ifndef DNAN
@@ -79,9 +86,9 @@ extern    "C" {
 
 /* information about an rrd file */
     typedef struct rrd_file_t {
-        off_t     header_len;   /* length of the header of this rrd file */
-        off_t     file_len; /* total size of the rrd file */
-        off_t     pos;  /* current pos in file */
+        size_t     header_len;   /* length of the header of this rrd file */
+        size_t     file_len; /* total size of the rrd file */
+        size_t     pos;  /* current pos in file */
         void      *pvt;
     } rrd_file_t;
 
@@ -271,15 +278,18 @@ extern    "C" {
     } rrd_context_t;
 
 /* returns the current per-thread rrd_context */
-    rrd_context_t *rrd_get_context(
-    void);
+    rrd_context_t *rrd_get_context(void);
 
+#ifdef WIN32
+/* this was added by the win32 porters Christof.Wegmann@exitgames.com */
+    rrd_context_t *rrd_force_new_context(void);
 
     int       rrd_proc_start_end(
     rrd_time_value_t *,
     rrd_time_value_t *,
     time_t *,
     time_t *);
+#endif
 
 /* HELPER FUNCTIONS */
     void      rrd_set_error(

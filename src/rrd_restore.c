@@ -31,7 +31,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
+
+
+#ifndef WIN32
+#	include <unistd.h>     /* for off_t */
+#else
+#	define random() rand()
+#	define srandom(x) srand(x)
+#	define getpid() 0
+	typedef size_t ssize_t;
+	typedef long off_t;
+#endif 
+
 #include <fcntl.h>
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 # include <io.h>

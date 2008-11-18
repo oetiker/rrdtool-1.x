@@ -75,19 +75,24 @@
 #include "rrd_client.h"
 
 #include <stdlib.h>
+
+#ifndef WIN32
 #include <stdint.h>
-#include <stdio.h>
 #include <unistd.h>
-#include <string.h>
 #include <strings.h>
-#include <stdint.h>
 #include <inttypes.h>
+#	include <sys/socket.h>
+
+#else
+
+#endif
+#include <stdio.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/socket.h>
 #include <sys/un.h>
 #include <netdb.h>
 #include <poll.h>

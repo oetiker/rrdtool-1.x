@@ -24,7 +24,7 @@ char     *sprintf_alloc(
     int       maxlen = 1024 + strlen(fmt);
     char     *str = NULL;
     va_list   argp;
-    str = malloc(sizeof(char) * (maxlen + 1));
+    str = (char*)malloc(sizeof(char) * (maxlen + 1));
     if (str != NULL) {
         va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
@@ -45,7 +45,7 @@ rrd_info_t
 {
     rrd_info_t *next;
 
-    next = malloc(sizeof(*next));
+    next = (rrd_info_t*)malloc(sizeof(*next));
     next->next = (rrd_info_t *) 0;
     if (info)
         info->next = next;
@@ -62,13 +62,13 @@ rrd_info_t
         next->value.u_int = value.u_int;
         break;
     case RD_I_STR:
-        next->value.u_str = malloc(sizeof(char) * (strlen(value.u_str) + 1));
+        next->value.u_str = (char*)malloc(sizeof(char) * (strlen(value.u_str) + 1));
         strcpy(next->value.u_str, value.u_str);
         break;
     case RD_I_BLO:
         next->value.u_blo.size = value.u_blo.size;
         next->value.u_blo.ptr =
-            malloc(sizeof(unsigned char) * value.u_blo.size);
+            (unsigned char *)malloc(sizeof(unsigned char) * value.u_blo.size);
         memcpy(next->value.u_blo.ptr, value.u_blo.ptr, value.u_blo.size);
         break;
     }

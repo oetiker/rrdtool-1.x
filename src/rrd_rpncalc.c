@@ -4,11 +4,13 @@
  * rrd_rpncalc.c  RPN calculator functions
  ****************************************************************************/
 
+#include <limits.h>
+#include <locale.h>
+#include <stdlib.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 // #include "rrd_graph.h"
-#include <limits.h>
-#include <locale.h>
 
 short     addop2str(
     enum op_en op,
@@ -73,7 +75,7 @@ rpnp_t   *rpn_expand(
     if (rpnp == NULL)
         return NULL;
     for (i = 0; rpnc[i].op != OP_END; ++i) {
-        rpnp[i].op = (long) rpnc[i].op;
+        rpnp[i].op = rpnc[i].op;
         if (rpnp[i].op == OP_NUMBER) {
             rpnp[i].val = (double) rpnc[i].val;
         } else if (rpnp[i].op == OP_VARIABLE || rpnp[i].op == OP_PREV_OTHER) {
@@ -106,7 +108,7 @@ void rpn_compact2str(
             (*str)[offset++] = ',';
 
 #define add_op(VV,VVV) \
-	  if (addop2str(rpnc[i].op, VV, VVV, str, &offset) == 1) continue;
+	  if (addop2str((enum op_en)(rpnc[i].op), VV, VVV, str, &offset) == 1) continue;
 
         if (rpnc[i].op == OP_NUMBER) {
             /* convert a short into a string */
@@ -132,7 +134,7 @@ void rpn_compact2str(
 #undef add_op
 
 #define add_op(VV,VVV) \
-	  if (addop2str(rpnc[i].op, VV, #VVV, str, &offset) == 1) continue;
+	  if (addop2str((enum op_en)rpnc[i].op, VV, #VVV, str, &offset) == 1) continue;
 
         add_op(OP_ADD, +)
             add_op(OP_SUB, -)
@@ -465,7 +467,7 @@ short rpn_calc(
         if (stptr + 5 > rpnstack->dc_stacksize) {
             /* could move this to a separate function */
             rpnstack->dc_stacksize += rpnstack->dc_stackblock;
-            rpnstack->s = rrd_realloc(rpnstack->s,
+            rpnstack->s = (double*)rrd_realloc(rpnstack->s,
                                       (rpnstack->dc_stacksize) *
                                       sizeof(*(rpnstack->s)));
             if (rpnstack->s == NULL) {

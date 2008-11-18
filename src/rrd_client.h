@@ -22,7 +22,20 @@
 #ifndef __RRD_CLIENT_H
 #define __RRD_CLIENT_H 1
 
+#ifndef WIN32
 #include <stdint.h>
+#else
+#	include <stdlib.h>
+	typedef signed char 	int8_t;
+	typedef unsigned char 	uint8_t;
+	typedef signed int 	int16_t;
+	typedef unsigned int 	uint16_t;
+	typedef signed long int 	int32_t;
+	typedef unsigned long int 	uint32_t;
+	typedef signed long long int 	int64_t;
+	typedef unsigned long long int 	uint64_t;
+#endif
+
 
 #ifndef RRDCACHED_DEFAULT_ADDRESS
 # define RRDCACHED_DEFAULT_ADDRESS "unix:/tmp/rrdcached.sock"
@@ -31,6 +44,10 @@
 #define RRDCACHED_DEFAULT_PORT "42217"
 #define ENV_RRDCACHED_ADDRESS "RRDCACHED_ADDRESS"
 
+
+// Windows version has no daemon/client support
+
+#ifndef WIN32
 int rrdc_connect (const char *addr);
 int rrdc_is_connected(const char *daemon_addr);
 int rrdc_disconnect (void);
@@ -41,6 +58,13 @@ int rrdc_update (const char *filename, int values_num,
 int rrdc_flush (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
 
+#else
+#	define rrdc_flush_if_daemon(a,b) 0
+#	define rrdc_connect(a) 0
+#	define rrdc_is_connected(a) 0
+#	define rrdc_flush(a) 0
+#	define rrdc_update(a,b,c) 0
+#endif
 
 struct rrdc_stats_s
 {

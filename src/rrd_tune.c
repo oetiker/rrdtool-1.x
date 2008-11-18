@@ -39,10 +39,12 @@
  *
  *****************************************************************************/
 
+#include <stdlib.h>
+#include <locale.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
-#include <locale.h>
 
 int       set_hwarg(
     rrd_t *rrd,

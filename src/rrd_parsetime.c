@@ -114,8 +114,11 @@
 
 /* Local headers */
 
-#include "rrd_tool.h"
 #include <stdarg.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#include "rrd_tool.h"
 
 /* Structures and unions */
 

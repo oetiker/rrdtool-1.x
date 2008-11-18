@@ -62,7 +62,7 @@ enum dst_en dst_conv(
         converter(DERIVE, DST_DERIVE)
         converter(COMPUTE, DST_CDEF)
         rrd_set_error("unknown data acquisition function '%s'", string);
-    return (-1);
+    return (enum dst_en)(-1);
 }
 
 
@@ -81,7 +81,7 @@ enum cf_en cf_conv(
         converter(DEVSEASONAL, CF_DEVSEASONAL)
         converter(FAILURES, CF_FAILURES)
         rrd_set_error("unknown consolidation function '%s'", string);
-    return (-1);
+    return (enum cf_en)(-1);
 }
 
 #undef converter

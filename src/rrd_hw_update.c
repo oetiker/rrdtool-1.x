@@ -4,7 +4,6 @@
 
 #include "rrd_tool.h"
 #include "rrd_format.h"
-#include "rrd_config.h"
 #include "rrd_hw_math.h"
 #include "rrd_hw_update.h"
 

@@ -233,20 +233,20 @@ int rrd_xport_fn(
     }
 
     /* a list of referenced gdes */
-    ref_list = malloc(sizeof(int) * (*col_cnt));
+    ref_list = (int*)malloc(sizeof(int) * (*col_cnt));
     if (ref_list == NULL)
         return -1;
 
     /* a list to save pointers to the column's legend entry */
     /* this is a return value! */
-    legend_list = malloc(sizeof(char *) * (*col_cnt));
+    legend_list = (char**)malloc(sizeof(char *) * (*col_cnt));
     if (legend_list == NULL) {
         free(ref_list);
         return -1;
     }
 
     /* lets find the step size we have to use for xport */
-    step_list = malloc(sizeof(long)*((*col_cnt)+1));
+    step_list = (long*)malloc(sizeof(long)*((*col_cnt)+1));
     step_list_ptr = step_list;
     j = 0;
     for (i = 0; i < im->gdes_c; i++) {
@@ -259,7 +259,7 @@ int rrd_xport_fn(
             /* reserve room for one legend entry */
             /* is FMT_LEG_LEN + 5 the correct size? */
             if ((legend_list[j] =
-                malloc(sizeof(char) * (FMT_LEG_LEN + 5))) == NULL) {
+                (char*)malloc(sizeof(char) * (FMT_LEG_LEN + 5))) == NULL) {
                 free(ref_list);
                 *data = NULL;
                 while (--j > -1)
@@ -293,7 +293,7 @@ int rrd_xport_fn(
     /* this is a return value! */
     row_cnt = ((*end) - (*start)) / (*step);
     if (((*data) =
-         malloc((*col_cnt) * row_cnt * sizeof(rrd_value_t))) == NULL) {
+        (rrd_value_t*)malloc((*col_cnt) * row_cnt * sizeof(rrd_value_t))) == NULL) {
         free(ref_list);
         free(legend_list);
         rrd_set_error("malloc xport data area");

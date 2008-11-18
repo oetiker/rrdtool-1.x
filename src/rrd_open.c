@@ -6,9 +6,32 @@
  * $Id$
  *****************************************************************************/
 
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include "rrd_tool.h"
 #include "unused.h"
 #define MEMBLK 8192
+
+#ifdef WIN32
+#	define random() rand()
+#	define srandom(x) srand(x)
+#	define getpid() 0
+
+#define	_LK_UNLCK	0	/* Unlock */
+#define	_LK_LOCK	1	/* Lock */
+#define	_LK_NBLCK	2	/* Non-blocking lock */
+#define	_LK_RLCK	3	/* Lock for read only */
+#define	_LK_NBRLCK	4	/* Non-blocking lock for read only */
+
+
+#define	LK_UNLCK	_LK_UNLCK
+#define	LK_LOCK		_LK_LOCK
+#define	LK_NBLCK	_LK_NBLCK
+#define	LK_RLCK		_LK_RLCK
+#define	LK_NBRLCK	_LK_NBRLCK
+#endif
 
 /* DEBUG 2 prints information obtained via mincore(2) */
 #define DEBUG 1
@@ -34,7 +57,7 @@
 #define __rrd_read(dst, dst_t, cnt) { \
 	size_t wanted = sizeof(dst_t)*(cnt); \
         size_t got; \
-	if ((dst = malloc(wanted)) == NULL) { \
+	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
 		rrd_set_error(#dst " malloc"); \
 		goto out_nullify_head; \
 	} \
@@ -73,7 +96,7 @@ rrd_file_t *rrd_open(
     rrd_t *rrd,
     unsigned rdwr)
 {
-    int i;
+    unsigned long ui;
     int       flags = 0;
     int       version;
 
@@ -85,8 +108,8 @@ rrd_file_t *rrd_open(
     struct stat statb;
     rrd_file_t *rrd_file = NULL;
     rrd_simple_file_t *rrd_simple_file = NULL;
-    off_t     newfile_size = 0;
-    off_t header_len, value_cnt, data_len;
+    size_t     newfile_size = 0;
+    size_t header_len, value_cnt, data_len;
 
     /* Are we creating a new file? */
     if((rdwr & RRD_CREAT) && (rrd->stat_head != NULL))
@@ -102,15 +125,15 @@ rrd_file_t *rrd_open(
           sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt;
 
         value_cnt = 0;
-        for (i = 0; i < rrd->stat_head->rra_cnt; i++)
-            value_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
+            value_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[ui].row_cnt;
 
         data_len = sizeof(rrd_value_t) * value_cnt;
 
         newfile_size = header_len + data_len;
     }
     
-    rrd_file = malloc(sizeof(rrd_file_t));
+    rrd_file = (rrd_file_t*)malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
         rrd_set_error("allocating rrd_file descriptor for '%s'", file_name);
         return NULL;
@@ -313,12 +336,11 @@ rrd_file_t *rrd_open(
 
     {
       unsigned long row_cnt = 0;
-      unsigned long i;
 
-      for (i=0; i<rrd->stat_head->rra_cnt; i++)
-        row_cnt += rrd->rra_def[i].row_cnt;
+      for (ui=0; ui<rrd->stat_head->rra_cnt; ui++)
+        row_cnt += rrd->rra_def[ui].row_cnt;
 
-      off_t correct_len = rrd_file->header_len +
+      size_t  correct_len = rrd_file->header_len +
         sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
 
       if (correct_len > rrd_file->file_len)
@@ -357,7 +379,7 @@ void mincore_print(
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #ifdef HAVE_MMAP
     /* pretty print blocks in core */
-    off_t     off;
+    size_t     off;
     unsigned char *vec;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
@@ -438,9 +460,9 @@ void rrd_dontneed(
 {
     rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
-    off_t dontneed_start;
-    off_t rra_start;
-    off_t active_block;
+    size_t dontneed_start;
+    size_t rra_start;
+    size_t active_block;
     unsigned long i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
@@ -622,7 +644,7 @@ ssize_t rrd_write(
 {
     rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 #ifdef HAVE_MMAP
-    int old_size = rrd_file->file_len;
+    size_t old_size = rrd_file->file_len;
     if (count == 0)
         return 0;
     if (buf == NULL)
@@ -651,12 +673,14 @@ ssize_t rrd_write(
 void rrd_flush(
     rrd_file_t *rrd_file)
 {
+#ifndef WIN32
     rrd_simple_file_t *rrd_simple_file;
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
     if (fdatasync(rrd_simple_file->fd) != 0) {
         rrd_set_error("flushing fd %d: %s", rrd_simple_file->fd,
                       rrd_strerror(errno));
     }
+#endif
 }
 
 
@@ -718,10 +742,10 @@ void rrd_freemem(
  * aligning RRAs within stripes, or other performance enhancements
  */
 void rrd_notify_row(
-    rrd_file_t *rrd_file,
-    int rra_idx,
-    unsigned long rra_row,
-    time_t rra_time)
+    rrd_file_t *rrd_file  __attribute__((unused)),
+    int rra_idx  __attribute__((unused)),
+    unsigned long rra_row  __attribute__((unused)),
+    time_t rra_time  __attribute__((unused)))
 {
 }
 
@@ -733,8 +757,8 @@ void rrd_notify_row(
  * don't change to a new disk block at the same time
  */
 unsigned long rrd_select_initial_row(
-    rrd_file_t *rrd_file,
-    int rra_idx,
+    rrd_file_t *rrd_file  __attribute__((unused)),
+    int rra_idx  __attribute__((unused)),
     rra_def_t *rra
     )
 {

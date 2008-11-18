@@ -30,8 +30,10 @@
  *
  *************************************************************************** */
 
-#include "rrd_tool.h"
+#include <stdlib.h>
 #include <stdarg.h>
+
+#include "rrd_tool.h"
 
 #define MAXLEN 4096
 #define ERRBUFLEN 256

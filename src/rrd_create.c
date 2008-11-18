@@ -14,6 +14,10 @@
 
 #include "rrd_is_thread_safe.h"
 
+#ifdef WIN32
+# include <process.h>
+#endif
+
 unsigned long FnvHash(
     const char *str);
 int       create_hw_contingent_rras(
@@ -124,14 +128,14 @@ int rrd_create_r(
     /* init rrd clean */
     rrd_init(&rrd);
     /* static header */
-    if ((rrd.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
+    if ((rrd.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating rrd.stat_head");
         rrd_free2(&rrd);
         return (-1);
     }
 
     /* live header */
-    if ((rrd.live_head = calloc(1, sizeof(live_head_t))) == NULL) {
+    if ((rrd.live_head = (live_head_t*)calloc(1, sizeof(live_head_t))) == NULL) {
         rrd_set_error("allocating rrd.live_head");
         rrd_free2(&rrd);
         return (-1);
@@ -162,7 +166,7 @@ int rrd_create_r(
         if (strncmp(argv[i], "DS:", 3) == 0) {
             size_t    old_size = sizeof(ds_def_t) * (rrd.stat_head->ds_cnt);
 
-            if ((rrd.ds_def = rrd_realloc(rrd.ds_def,
+            if ((rrd.ds_def = (ds_def_t*)rrd_realloc(rrd.ds_def,
                                           old_size + sizeof(ds_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.ds_def");
@@ -231,7 +235,7 @@ int rrd_create_r(
             size_t    old_size = sizeof(rra_def_t) * (rrd.stat_head->rra_cnt);
             int       row_cnt;
 
-            if ((rrd.rra_def = rrd_realloc(rrd.rra_def,
+            if ((rrd.rra_def = (rra_def_t*)rrd_realloc(rrd.rra_def,
                                            old_size + sizeof(rra_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.rra_def");
@@ -606,7 +610,7 @@ int create_hw_contingent_rras(
     (rrd->stat_head->rra_cnt)++;
     /* allocate the memory for the 4 contingent RRAs */
     old_size = sizeof(rra_def_t) * (rrd->stat_head->rra_cnt);
-    if ((rrd->rra_def = rrd_realloc(rrd->rra_def,
+    if ((rrd->rra_def = (rra_def_t*)rrd_realloc(rrd->rra_def,
                                     old_size + 4 * sizeof(rra_def_t))) ==
         NULL) {
         rrd_free2(rrd);
@@ -694,7 +698,7 @@ int rrd_create_fn(
 
     rrd_write(rrd_file_dn, rrd->live_head, sizeof(live_head_t));
 
-    if ((rrd->pdp_prep = calloc(1, sizeof(pdp_prep_t))) == NULL) {
+    if ((rrd->pdp_prep = (pdp_prep_t*)calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
         rrd_free2(rrd);
         rrd_close(rrd_file_dn);
@@ -710,7 +714,7 @@ int rrd_create_fn(
     for (i = 0; i < rrd->stat_head->ds_cnt; i++)
         rrd_write(rrd_file_dn, rrd->pdp_prep, sizeof(pdp_prep_t));
 
-    if ((rrd->cdp_prep = calloc(1, sizeof(cdp_prep_t))) == NULL) {
+    if ((rrd->cdp_prep = (cdp_prep_t*)calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
         rrd_free2(rrd);
         rrd_close(rrd_file_dn);
@@ -757,7 +761,7 @@ int rrd_create_fn(
     /* now, we must make sure that the rest of the rrd
        struct is properly initialized */
 
-    if ((rrd->rra_ptr = calloc(1, sizeof(rra_ptr_t))) == NULL) {
+    if ((rrd->rra_ptr = (rra_ptr_t*)calloc(1, sizeof(rra_ptr_t))) == NULL) {
         rrd_set_error("allocating rra_ptr");
         rrd_free2(rrd);
         rrd_close(rrd_file_dn);

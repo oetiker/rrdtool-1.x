@@ -6,6 +6,8 @@
  * Initial version by Alex van den Bogaerdt
  *****************************************************************************/
 
+#include <stdlib.h>
+
 #include "rrd_tool.h"
 
 int rrd_resize(
@@ -88,14 +90,14 @@ int rrd_resize(
     rrd_init(&rrdnew);
     /* These need to be initialised before calling rrd_open() with 
        the RRD_CREATE flag */
-    if ((rrdnew.stat_head = calloc(1, sizeof(stat_head_t))) == NULL) {
+    if ((rrdnew.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating stat_head for new RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);
         return (-1);
     }
 
-    if ((rrdnew.rra_def = malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
+    if ((rrdnew.rra_def = (rra_def_t *)malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
         rrd_set_error("allocating rra_def for new RRD");
         rrd_free(&rrdnew);
         rrd_free(&rrdold);
@@ -125,7 +127,7 @@ int rrd_resize(
         return (-1);
     }
 /*XXX: do one write for those parts of header that are unchanged */
-    if ((rrdnew.rra_ptr = malloc(sizeof(rra_ptr_t) * rrdold.stat_head->rra_cnt)) == NULL) {
+    if ((rrdnew.rra_ptr = (rra_ptr_t *)malloc(sizeof(rra_ptr_t) * rrdold.stat_head->rra_cnt)) == NULL) {
         rrd_set_error("allocating rra_ptr for new RRD");
         rrd_free(&rrdnew);
         rrd_free(&rrdold);

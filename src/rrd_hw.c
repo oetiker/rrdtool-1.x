@@ -6,6 +6,8 @@
  * Initial version by Jake Brutlag, WebTV Networks, 5/1/00
  *****************************************************************************/
 
+#include <stdlib.h>
+
 #include "rrd_tool.h"
 #include "rrd_hw.h"
 #include "rrd_hw_math.h"

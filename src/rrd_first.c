@@ -6,6 +6,7 @@
  * Initial version by Burton Strauss, ntopSupport.com - 3/2005
  *****************************************************************************/
 
+#include <stdlib.h>
 #include "rrd_tool.h"
 
 

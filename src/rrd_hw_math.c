@@ -4,7 +4,6 @@
 
 #include "rrd_tool.h"
 #include "rrd_hw_math.h"
-#include "rrd_config.h"
 
 /*****************************************************************************
  * RRDtool supports both the additive and multiplicative Holt-Winters methods. 

@@ -258,7 +258,7 @@ int rrd_fetch_fn(
     }
 
     for (i = 0; (unsigned long) i < rrd.stat_head->ds_cnt; i++) {
-        if ((((*ds_namv)[i]) = malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
+        if ((((*ds_namv)[i]) = (char*)malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
             rrd_set_error("malloc fetch ds_namv entry");
             goto err_free_ds_namv;
         }
@@ -358,7 +358,7 @@ int rrd_fetch_fn(
 ** database is the one with time stamp (t+s) which means t to t+s.
 */
     *ds_cnt = rrd.stat_head->ds_cnt;
-    if (((*data) = malloc(*ds_cnt * rows * sizeof(rrd_value_t))) == NULL) {
+    if (((*data) = (rrd_value_t*)malloc(*ds_cnt * rows * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("malloc fetch data area");
         goto err_free_all_ds_namv;
     }
