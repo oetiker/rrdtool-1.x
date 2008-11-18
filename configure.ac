@@ -113,7 +113,7 @@ AS_HELP_STRING([--disable-mmap],[disable mmap in rrd_update, use seek+write inst
 [],
 [enable_mmap=yes])
 
-AC_ARG_ENABLE(pthread,AS_HELP_STRING([--disable-pthread][disable multithread support]),
+AC_ARG_ENABLE(pthread,AS_HELP_STRING([--disable-pthread],[disable multithread support]),
 [],[enable_pthread=yes])
 
 AC_ARG_ENABLE(static-programs,
