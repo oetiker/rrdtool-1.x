@@ -41,9 +41,10 @@ This pseudo-rrd-filename defines a sql datasource:
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
 
-=item B<E<lt>unixtimestamp columnE<gt>>
+=item B<E<lt>[*]unixtimestamp columnE<gt>>
 
-  defines the column of E<lt>tableE<gt> which contains the unix timestamp
+  defines the column of E<lt>tableE<gt> which contains the unix-timestamp 
+  - if this is a DATETIME field in the database, then prefix with leading '*'
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
 
@@ -144,6 +145,13 @@ To illustrate this here a command to create a graph that contains the actual val
   otherwise at least the perl module RRDs will fail because the dynamic linker can not find some symbols from libdbi.so.
   (this only happens when the libdbi driver is actually used the first time!)
   This is KNOWN to be the case with RHEL4 and FC4 and FC5! (But actually this is a bug with libdbi make files!)
+
+* at least version 0.8.1 of libdbiexhibits a bug with BINARY fields
+  (shorttext,text,mediumtext,longtext and possibly also BINARY and BLOB fields), 
+  that can result in coredumps of rrdtool. 
+  The tool will tell you on stderr if this occures, so that you know what may be the reason.
+  If you are not experiencing these coredumps, then set the environment variable RRD_NO_LIBDBI_BUG_WARNING, 
+  and then the message will not get shown.
 
 =head1 AUTHOR
 
