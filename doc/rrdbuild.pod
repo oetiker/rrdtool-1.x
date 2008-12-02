@@ -174,7 +174,8 @@ the syntax again differs from system to system:
 
 if you are using the Sun Studio/Forte compiler, you may also want to set
 
- CFLAGS="-xO3 -kPIC"
+ CFLAGS="-xO3 -xcode=pic13"   (SPARC)
+ CFLAGS="-xO3 -Kpic"          (x86)
 
 =item Linux
 
