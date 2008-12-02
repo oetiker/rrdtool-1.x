@@ -37,6 +37,10 @@
 
 #include "rrd_tool.h"
 
+#ifdef WIN32
+#include <ctype.h>
+#endif
+
 double rrd_diff(
     char *a,
     char *b)

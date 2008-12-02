@@ -14,6 +14,10 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 
+#ifdef WIN32
+#  include <windows.h>
+#  define MAXPATH MAX_PATH
+#endif
 
 #define ALTYGRID  	 0x01   /* use alternative y grid algorithm */
 #define ALTAUTOSCALE	 0x02   /* use alternative algorithm to find lower and upper bounds */

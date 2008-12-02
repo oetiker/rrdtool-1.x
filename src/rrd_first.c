@@ -8,6 +8,9 @@
 
 #include "rrd_tool.h"
 
+#ifdef WIN32
+#include <stdlib.h>
+#endif
 
 time_t rrd_first(
     int argc,

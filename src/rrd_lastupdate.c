@@ -8,6 +8,10 @@
 #include "rrd_rpncalc.h"
 #include <stdarg.h>
 
+#ifdef WIN32
+#include <stdlib.h>
+#endif
+
 int rrd_lastupdate(
     int argc,
     char **argv,

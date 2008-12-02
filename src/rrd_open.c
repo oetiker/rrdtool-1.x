@@ -8,6 +8,13 @@
 
 #include "rrd_tool.h"
 #include "unused.h"
+
+#ifdef WIN32
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
+
 #define MEMBLK 8192
 
 /* DEBUG 2 prints information obtained via mincore(2) */
@@ -34,7 +41,7 @@
 #define __rrd_read(dst, dst_t, cnt) { \
 	size_t wanted = sizeof(dst_t)*(cnt); \
         size_t got; \
-	if ((dst = malloc(wanted)) == NULL) { \
+	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
 		rrd_set_error(#dst " malloc"); \
 		goto out_nullify_head; \
 	} \
@@ -66,7 +73,13 @@ rrd_file_t *rrd_open(
     unsigned rdwr)
 {
     int       flags = 0;
+
+/* Win32 can't use S_IRUSR flag */
+#ifndef WIN32
     mode_t    mode = S_IRUSR;
+#else
+    int mode = 0;
+#endif
     int       version;
 
 #ifdef HAVE_MMAP
@@ -86,7 +99,7 @@ rrd_file_t *rrd_open(
         free(rrd->stat_head);
     }
     rrd_init(rrd);
-    rrd_file = malloc(sizeof(rrd_file_t));
+    rrd_file = (rrd_file_t*)malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
         rrd_set_error("allocating rrd_file descriptor for '%s'", file_name);
         return NULL;
@@ -111,7 +124,9 @@ rrd_file_t *rrd_open(
 #endif
     } else {
         if (rdwr & RRD_READWRITE) {
+#ifndef WIN32 // Win32 can't use this mode
             mode |= S_IWUSR;
+#endif
             flags |= O_RDWR;
 #ifdef HAVE_MMAP
             mm_flags = MAP_SHARED;
@@ -557,10 +572,16 @@ ssize_t rrd_write(
 void rrd_flush(
     rrd_file_t *rrd_file)
 {
+/*
+ * Win32 can only flush files by FlushFileBuffers function, 
+ * but it works with HANDLE hFile, not FILE. So skipping
+ */
+#ifndef WIN32
     if (fdatasync(rrd_file->fd) != 0) {
         rrd_set_error("flushing fd %d: %s", rrd_file->fd,
                       rrd_strerror(errno));
     }
+#endif
 }
 
 

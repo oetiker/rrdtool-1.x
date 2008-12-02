@@ -154,7 +154,7 @@ static PangoLayout *gfx_prep_text(
         pango_layout_set_tabs(layout, tab_array);
         pango_tab_array_free(tab_array);
     }
-   pfd = pango_layout_get_font_description(layout);
+   pfd = (PangoFontDescription*)(pango_layout_get_font_description(layout));
 
    if (!pfd || !pango_font_description_equal (pfd,font_desc)){
         pango_layout_set_font_description(layout, font_desc);

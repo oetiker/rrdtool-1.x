@@ -11,6 +11,10 @@
 #include "rrd_hw_math.h"
 #include "rrd_hw_update.h"
 
+#ifdef WIN32
+#include <stdlib.h>
+#endif
+
 #define hw_dep_idx(rrd, rra_idx) rrd->rra_def[rra_idx].par[RRA_dependent_rra_idx].u_cnt
 
 /* #define DEBUG */

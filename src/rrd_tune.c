@@ -44,6 +44,10 @@
 #include "rrd_hw.h"
 #include <locale.h>
 
+#ifdef WIN32
+#include <stdlib.h>
+#endif
+
 int       set_hwarg(
     rrd_t *rrd,
     enum cf_en cf,

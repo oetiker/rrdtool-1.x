@@ -31,13 +31,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
 #include <fcntl.h>
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#include <math.h>
 # include <io.h>
 # define open _open
 # define close _close
+#else
+# include <unistd.h>
 #endif
+
 #include <libxml/parser.h>
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
@@ -131,6 +135,15 @@ static int get_double_from_node(
         rrd_set_error("get_double_from_node: xmlNodeListGetString failed.");
         return (-1);
     }
+
+#ifdef WIN32
+    if (strcmp(str_ptr, " NaN ") == 0)
+    {
+        *value = DNAN;
+        xmlFree(str_ptr);
+        return 0;
+    }
+#endif
 
     end_ptr = NULL;
     temp = strtod(str_ptr, &end_ptr);
@@ -695,7 +708,11 @@ static int parse_tag_rra(
     }
 
     /* Set the RRA pointer to a random location */
+#ifdef WIN32
+    cur_rra_ptr->cur_row = rand() % cur_rra_def->row_cnt;
+#else
     cur_rra_ptr->cur_row = random() % cur_rra_def->row_cnt;
+#endif
 
     return (status);
 }                       /* int parse_tag_rra */
@@ -1043,7 +1060,11 @@ int rrd_restore(
 {
     rrd_t    *rrd;
 
+#ifdef WIN32
+    srand((unsigned int) time(NULL));
+#else
     srandom((unsigned int) time(NULL) + (unsigned int) getpid());
+#endif
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */

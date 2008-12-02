@@ -132,6 +132,20 @@ extern    "C" {
     int *longind,
     int long_only);
 #else                   /* not __STDC__ */
+
+#ifdef WIN32
+    int getopt_long(int argc,
+                    char **argv,
+                    const char *options,
+                    const struct option *long_options,
+                    int *opt_index);
+    int _getopt_internal(int argc,
+                         char **argv,
+                         const char *shortopts,
+                         const struct option *longopts,
+                         int *longind,
+                         int long_only);
+#else // WIN32
     extern int getopt(
         );
     extern int getopt_long(
@@ -141,6 +155,8 @@ extern    "C" {
 
     extern int _getopt_internal(
         );
+#endif // WIN32
+
 #endif                  /* __STDC__ */
 
 #ifdef	__cplusplus

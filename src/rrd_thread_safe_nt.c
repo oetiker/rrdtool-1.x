@@ -22,7 +22,7 @@ static CRITICAL_SECTION CriticalSection;
 
 
 /* Once-only initialisation of the key */
-static DWORD context_key_once = 0;
+static volatile LONG context_key_once = 0;
 
 
 /* Free the thread-specific rrd_context - we might actually use
@@ -51,13 +51,27 @@ rrd_context_t *rrd_get_context(
 
     context_init_context();
 
-    ctx = TlsGetValue(context_key);
+    ctx = (rrd_context_t*)(TlsGetValue(context_key));
     if (!ctx) {
         ctx = rrd_new_context();
         TlsSetValue(context_key, ctx);
     }
     return ctx;
 }
+
+#ifdef WIN32
+	rrd_context_t *rrd_force_new_context(void)
+	{
+		rrd_context_t *ctx;
+
+		context_init_context();
+
+		ctx = rrd_new_context();
+		TlsSetValue(context_key, ctx);
+
+		return ctx;
+	}
+#endif
 
 #undef strerror
 const char *rrd_strerror(

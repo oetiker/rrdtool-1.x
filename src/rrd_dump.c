@@ -41,6 +41,11 @@
  * checkin
  *
  *****************************************************************************/
+
+#ifdef WIN32
+#include <stdlib.h>
+#endif
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 

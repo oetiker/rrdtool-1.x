@@ -117,6 +117,11 @@
 #include "rrd_tool.h"
 #include <stdarg.h>
 
+#ifdef WIN32
+#include <stdlib.h>
+#include <ctype.h>
+#endif
+
 /* Structures and unions */
 
 enum {                  /* symbols */

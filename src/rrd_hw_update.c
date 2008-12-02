@@ -4,7 +4,9 @@
 
 #include "rrd_tool.h"
 #include "rrd_format.h"
+#ifndef WIN32
 #include "rrd_config.h"
+#endif
 #include "rrd_hw_math.h"
 #include "rrd_hw_update.h"
 

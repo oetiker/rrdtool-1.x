@@ -19,7 +19,7 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-
+#ifndef WIN32
 #if !defined (__STDC__) || !__STDC__
 /* This is a separate conditional since some stdc systems
    reject `defined (const)'.  */
@@ -27,6 +27,7 @@
 #define const
 #endif
 #endif
+#endif // WIN32
 
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
@@ -65,6 +66,13 @@
 #define NULL 0
 #endif
 
+#ifdef WIN32
+int getopt_long(int argc,
+                char** argv,
+                const char* options,
+                const struct option* long_options,
+                int* opt_index)
+#else // WIN32
 int getopt_long(
     argc,
     argv,
@@ -76,6 +84,7 @@ int getopt_long(
     const char *options;
     const struct option *long_options;
     int      *opt_index;
+#endif // WIN32
 {
     return _getopt_internal(argc, argv, options, long_options, opt_index, 0);
 }
@@ -85,6 +94,13 @@ int getopt_long(
    but does match a short option, it is parsed as a short option
    instead.  */
 
+#ifdef WIN32
+int getopt_long_only(int argc,
+                     char** argv,
+                     const char* options,
+                     const struct option* long_options,
+                     int* opt_index)
+#else // WIN32
 int getopt_long_only(
     argc,
     argv,
@@ -96,6 +112,7 @@ int getopt_long_only(
     const char *options;
     const struct option *long_options;
     int      *opt_index;
+#endif // WIN32
 {
     return _getopt_internal(argc, argv, options, long_options, opt_index, 1);
 }

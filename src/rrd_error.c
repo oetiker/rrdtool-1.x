@@ -33,6 +33,10 @@
 #include "rrd_tool.h"
 #include <stdarg.h>
 
+#ifdef WIN32
+#include <stdlib.h>
+#endif
+
 #define MAXLEN 4096
 #define ERRBUFLEN 256
 #define CTX (rrd_get_context())

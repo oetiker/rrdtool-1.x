@@ -53,7 +53,15 @@ extern    "C" {
 #define _RRDLIB_H
 
 #include <sys/types.h>  /* for off_t */
+
+#ifndef WIN32
 #include <unistd.h>     /* for off_t */
+#else
+#include <string.h>
+typedef size_t ssize_t;
+typedef long off_t;
+#endif 
+
 #include <time.h>
 #include <stdio.h>      /* for FILE */
 
@@ -264,6 +272,9 @@ extern    "C" {
     rrd_context_t *rrd_get_context(
     void);
 
+#ifdef WIN32
+rrd_context_t *rrd_force_new_context(void);
+#endif
 
     int       rrd_proc_start_end(
     rrd_time_value_t *,
