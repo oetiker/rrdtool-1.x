@@ -93,9 +93,13 @@ If you have an other compile you have to use the following settings:
 
 =over
 
-=item Sun Forte
+=item Sun Forte on SPARC
 
- CFLAGS="-xO3 -kPIC"
+ CFLAGS="-xO3 -xcode=pic13"
+
+=item Sun Forte on x86
+
+ CFLAGS="-xO3 -Kpic"
 
 =back
 
