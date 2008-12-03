@@ -359,21 +359,25 @@ int rrd_fetch_fn(
 
     /* fill the gap at the start if needs be */
 
-    if (start_offset <= 0)
-        rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1;
-    else
-        rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
+    if (*start <= rra_end_time && *end >= rra_start_time - *step){
+        
+        if (start_offset <= 0)
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1;
+        else
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
 
-    if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
-                                        * sizeof(rrd_value_t))),
+        if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
+                                            * sizeof(rrd_value_t))),
                  SEEK_SET) != 0) {
-        rrd_set_error("seek error in RRA");
-        goto err_free_data;
-    }
+            rrd_set_error("seek error in RRA");
+            goto err_free_data;
+        }        
 #ifdef DEBUG
-    fprintf(stderr, "First Seek: rra_base %lu rra_pointer %lu\n",
+        fprintf(stderr, "First Seek: rra_base %lu rra_pointer %lu\n",
             rra_base, rra_pointer);
 #endif
+    }
+    
     /* step trough the array */
 
     for (i = start_offset;
