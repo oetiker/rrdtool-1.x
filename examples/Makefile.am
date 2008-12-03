@@ -4,6 +4,8 @@
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
+SUBDIRS = rrdcached
+
 EXTRA_DIST = cgi-demo.cgi.in
 
 examplesdir = $(pkgdatadir)/examples
