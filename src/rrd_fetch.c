@@ -361,31 +361,34 @@ fprintf(stderr,"partial match, not best\n");
 #endif
 
     /* fill the gap at the start if needs be */
-
-    if (start_offset <= 0)
-	rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1;
-    else 
-	rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1+start_offset;
+    if (*start <= rra_end_time && *end >= rra_start_time - *step){
+        
+        if (start_offset <= 0)
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1;
+        else 
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1+start_offset;
     
-    if(fseek(in_file,(rra_base 
+        if(fseek(in_file,(rra_base 
 		   + (rra_pointer
 		      * *ds_cnt
 		      * sizeof(rrd_value_t))),SEEK_SET) != 0){
-	rrd_set_error("seek error in RRA");
-	for (i=0;(unsigned)i<*ds_cnt;i++)
-	      free((*ds_namv)[i]);
-	free(*ds_namv);
-	rrd_free(&rrd);
-	free(*data);
-	*data = NULL;
-	fclose(in_file);
-	return(-1);
+            rrd_set_error("seek error in RRA");
+            for (i=0;(unsigned)i<*ds_cnt;i++)
+                free((*ds_namv)[i]);
+            free(*ds_namv);
+            rrd_free(&rrd);
+            free(*data);
+            *data = NULL;
+            fclose(in_file);
+            return(-1);
 
-    }
+        }
 #ifdef DEBUG
-    fprintf(stderr,"First Seek: rra_base %lu rra_pointer %lu\n",
-	    rra_base, rra_pointer);
+        fprintf(stderr,"First Seek: rra_base %lu rra_pointer %lu\n",
+                rra_base, rra_pointer);
 #endif
+    }
+    
     /* step trough the array */
 
     for (i=start_offset;
