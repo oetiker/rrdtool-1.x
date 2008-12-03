@@ -56,7 +56,7 @@
 #include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
-/*#define DEBUG*/
+/* #define DEBUG */
 
 int rrd_fetch(
     int argc,
@@ -383,24 +383,25 @@ int rrd_fetch_fn(
             "rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
             rra_start_time, rra_end_time, start_offset, end_offset);
 #endif
+    /* only seek if the start time is before the end time */
+    if (*start <= rra_end_time && *end >= rra_start_time - step ){
+        if (start_offset <= 0)
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1;
+        else
+            rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
 
-    /* fill the gap at the start if needs be */
-
-    if (start_offset <= 0)
-        rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1;
-    else
-        rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
-
-    if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
+        if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
                                         * sizeof(rrd_value_t))),
                  SEEK_SET) != 0) {
-        rrd_set_error("seek error in RRA");
-        goto err_free_data;
-    }
+            rrd_set_error("seek error in RRA");
+            goto err_free_data;
+        }
 #ifdef DEBUG
-    fprintf(stderr, "First Seek: rra_base %lu rra_pointer %lu\n",
-            rra_base, rra_pointer);
+        fprintf(stderr, "First Seek: rra_base %lu rra_pointer %lu\n",
+                rra_base, rra_pointer);
 #endif
+    }
+    
     /* step trough the array */
 
     for (i = start_offset;
