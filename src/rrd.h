@@ -283,13 +283,13 @@ extern    "C" {
 #ifdef WIN32
 /* this was added by the win32 porters Christof.Wegmann@exitgames.com */
     rrd_context_t *rrd_force_new_context(void);
+#endif
 
-    int       rrd_proc_start_end(
+int       rrd_proc_start_end(
     rrd_time_value_t *,
     rrd_time_value_t *,
     time_t *,
     time_t *);
-#endif
 
 /* HELPER FUNCTIONS */
     void      rrd_set_error(
