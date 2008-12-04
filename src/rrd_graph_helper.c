@@ -606,6 +606,10 @@ rrd_parse_make_vname(const char *const line, unsigned int *const eaten, graph_de
 	rrd_set_error("Cannot parse vname from '%s'",line);
 	return 1;
     }
+    if (line[*eaten+i] == '\0') {
+        rrd_set_error("String ends after the = sign on '%s'", line);
+        return 1;
+    }
     dprintf("- found candidate '%s'\n",tmpstr);
 
     if ((gdp->vidx=find_var(im,tmpstr))>=0) {
