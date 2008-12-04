@@ -384,7 +384,7 @@ int rrd_fetch_fn(
             rra_start_time, rra_end_time, start_offset, end_offset);
 #endif
     /* only seek if the start time is before the end time */
-    if (*start <= rra_end_time && *end >= rra_start_time - step ){
+    if (*start <= rra_end_time && *end >= rra_start_time - *step ){
         if (start_offset <= 0)
             rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1;
         else
