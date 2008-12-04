@@ -1663,7 +1663,6 @@ int leg_place(
     int       leg_cc;
     double    glue = 0;
     int       i, ii, mark = 0;
-    char      prt_fctn; /*special printfunctions */
     char      default_txtalign = TXA_JUSTIFIED; /*default line orientation */
     int      *legspace;
     char     *tab;
@@ -1674,10 +1673,8 @@ int leg_place(
             return -1;
         }
 
-        if (im->extra_flags & FULL_SIZE_MODE)
-            leg_y = leg_y_prev =
-                leg_y - (int) (im->text_prop[TEXT_PROP_LEGEND].size * 1.8);
         for (i = 0; i < im->gdes_c; i++) {
+            char      prt_fctn; /*special printfunctions */
             fill_last = fill;
             /* hide legends for rules which are not displayed */
             if (im->gdes[i].gf == GF_TEXTALIGN) {
@@ -1701,7 +1698,7 @@ int leg_place(
                 tab[0] = (char) 9;
             }
             leg_cc = strlen(im->gdes[i].legend);
-            /* is there a controle code ant the end of the legend string ? */
+            /* is there a controle code at the end of the legend string ? */
             if (leg_cc >= 2 && im->gdes[i].legend[leg_cc - 2] == '\\') {
                 prt_fctn = im->gdes[i].legend[leg_cc - 1];
                 leg_cc -= 2;
@@ -1817,18 +1814,10 @@ int leg_place(
                         + glue;
                 }
                 leg_y_prev = leg_y;
-                if (im->extra_flags & FULL_SIZE_MODE) {
-                    /* only add y space if there was text on the line */
-                    if (leg_x > border || prt_fctn == 's')
-                        leg_y -= im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
-                    if (prt_fctn == 's')
-                        leg_y += im->text_prop[TEXT_PROP_LEGEND].size;
-                } else {
-                    if (leg_x > border || prt_fctn == 's')
-                        leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
-                    if (prt_fctn == 's')
-                        leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
-                }
+                if (leg_x > border || prt_fctn == 's')
+                    leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+                if (prt_fctn == 's')
+                    leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
                 fill = 0;
                 leg_c = 0;
                 mark = ii;
@@ -1836,11 +1825,15 @@ int leg_place(
         }
 
         if (im->extra_flags & FULL_SIZE_MODE) {
-            if (leg_y != leg_y_prev) {
-                *gY = leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
-                im->yorigin =
-                    leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
+            /* now for some backpaddeling. We have to shift up all the
+               legend items into the graph and tell the caller about the
+               space we used up. */
+            long shift_up = leg_y - im->yimg - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 + border * 0.7;
+            for (i = 0; i < im->gdes_c; i++) {
+                im->gdes[i].leg_y -= shift_up;
             }
+            im->yorigin = im->yorigin - leg_y + im->yimg - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 - border;            
+            *gY = im->yorigin;
         } else {
             im->yimg =
                 leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 +
@@ -2739,24 +2732,24 @@ int graph_size_location(
         return 0;
     }
 
-    /** +---+--------------------------------------------+
-     ** | y |...............graph title..................|
-     ** |   +---+-------------------------------+--------+
-     ** | a | y |                               |        |
-     ** | x |   |                               |        |
-     ** | i | a |                               |  pie   |
-     ** | s | x |       main graph area         | chart  |
-     ** |   | i |                               |  area  |
-     ** | t | s |                               |        |
-     ** | i |   |                               |        |
-     ** | t | l |                               |        |
-     ** | l | b +-------------------------------+--------+
-     ** | e | l |       x axis labels           |        |
-     ** +---+---+-------------------------------+--------+
-     ** |....................legends.....................|
-     ** +------------------------------------------------+
-     ** |                   watermark                    |
-     ** +------------------------------------------------+
+    /** +---+-----------------------------------+
+     ** | y |...............graph title.........|
+     ** |   +---+-------------------------------+
+     ** | a | y |                               |
+     ** | x |   |                               |
+     ** | i | a |                               |    
+     ** | s | x |       main graph area         |
+     ** |   | i |                               |
+     ** | t | s |                               |
+     ** | i |   |                               |
+     ** | t | l |                               |
+     ** | l | b +-------------------------------+
+     ** | e | l |       x axis labels           |
+     ** +---+---+-------------------------------+
+     ** |....................legends............|
+     ** +---------------------------------------+
+     ** |                   watermark           |
+     ** +---------------------------------------+
      */
 
     if (im->ylegend[0] != '\0') {
@@ -2790,7 +2783,7 @@ int graph_size_location(
     if (im->extra_flags & FULL_SIZE_MODE) {
         /* The actual size of the image to draw has been determined by the user.
          ** The graph area is the space remaining after accounting for the legend,
-         ** the watermark, the pie chart, the axis labels, and the title.
+         ** the watermark, the axis labels, and the title.
          */
         im->xorigin = 0;
         im->ximg = im->xsize;
@@ -2822,12 +2815,11 @@ int graph_size_location(
          ** of the legend and the axis labels.
          */
         if (im->extra_flags & NOLEGEND) {
-            /* set dimensions correctly if using full size mode with no legend */
-            im->yorigin =
-                im->yimg -
+            im->yorigin = im->yimg -
                 im->text_prop[TEXT_PROP_AXIS].size * 2.5 - Yspacing;
             Ymain = im->yorigin;
-        } else {
+        }
+        else {            
             /* Determine where to place the legends onto the image.
              ** Set Ymain and adjust im->yorigin to match the space requirements.
              */
