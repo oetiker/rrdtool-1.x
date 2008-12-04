@@ -6,6 +6,8 @@
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
 #include "../win32/config.h"
+#include <stdlib.h>
+#include <sys/stat.h>
 #else
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
