@@ -1,5 +1,61 @@
-Compiling RRDtool 1.1.x on Win32 with Microsoft Visual C++:
+Compiling RRDtool on Win32 with Microsoft Visual C++:
 ---------------------------------------------------------------
+2008-03-12 Stefan Ludewig stefan.ludewig@exitgames.com
+
+Here are step by step instructions for building rrdlib.lib and rrdtool.exe
+version 1.3.5 and newer with Microsoft Visual Studio 2008 (9.0.x).
+
+(1) Download and extract libraries rrdtool depends on:
+
+    - cairo:    http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/cairo_1.8.0-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/cairo-dev_1.8.0-1_win32.zip
+
+    - glib:     http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.18/glib_2.18.3-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.18/glib-dev_2.18.3-1_win32.zip
+
+    - libpng:   http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libpng_1.2.32-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libpng-dev_1.2.32-1_win32.zip
+
+    - libxml2:  http://downloads.sourceforge.net/gnuwin32/libxml2-2.4.12-bin.zip?modtime=1009062000&big_mirror=1
+      and       http://downloads.sourceforge.net/gnuwin32/libxml2-2.4.12-1-lib.zip?modtime=1024783200&big_mirror=1
+
+    - pango:    http://ftp.gnome.org/pub/gnome/binaries/win32/pango/1.22/pango_1.22.2-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/pango/1.22/pango-dev_1.22.2-1_win32.zip
+
+    - zlib: http://www.zlib.net/zlib123-dll.zip
+
+(2) Create a folder named "contrib" next to your rrdtool-folder.
+
+(3) Copy the following folders and files from the downloaded archieves into
+    the contrib-folder, you just created:
+
+    a) The folder "bin" from cairo_1.8.0-1_win32 and the folders "lib" and
+       "include" from cairo-dev_1.8.0-1_win32 into contrib/cairo.
+
+    b) The folder "bin" from glib_2.18.3-1_win32 and the folders "lib" and
+       "include" from glib-dev_2.18.3-1_win32 into contrib/glib
+
+    c) The folder "bin" from libpng_1.2.32-1_win32 and the folders "lib" and
+       "include" from libpng-dev_1.2.32-1_win32 into contrib/libpng
+
+    d) The file "libxml2.dll" from libxml2-2.4.12-bin/bin and the file
+       "libxml2.lib" from libxml2-2.4.12-1-lib\lib into contrib/libxml2/lib and
+       the folder "include" from from libxml2-2.4.12-1-lib into contrib/libxml2
+
+    e) The folder "bin" from pango_1.22.2-1_win32 and the folders "lib" and
+       "include" from pango-dev_1.22.2-1_win32 into contrib/pango
+
+    f) The folders "lib" and "include" and the file "zlib1.dll" into
+       contrib/zlib
+
+(4) Open the Visual Studio 2008 Solution "rrd.sln" in the win32 folder of
+    your rrdtool-folder and build either the project rrdlib (for the
+    rrdtool-library), rrdtool (for the rrdtool-executable depending on the
+    libraray) or the complete solution. A post-build event automatically copies
+    all the dlls, needed by rrdtool, next to the .exe, when you build the
+    executable. These DLLs must be available on all hosts where rrdtool will
+    run.
+
 5/1/05 Tobi
 to help windows deal with the reentrant versions of many unix
 calls link with win32comp.c

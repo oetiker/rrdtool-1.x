@@ -1,158 +1,203 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9,00"
 	Name="rrdtool"
-	SccProjectName=""
-	SccLocalPath="">
+	ProjectGUID="{11CD05F8-E5E1-476E-A75F-A112655D4E94}"
+	RootNamespace="rrdtool"
+	TargetFrameworkVersion="196613"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory=".\toolrelease"
-			IntermediateDirectory=".\toolrelease"
+			Name="Debug|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			CharacterSet="2"
+			>
 			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="4"
-				AdditionalIncludeDirectories="\Program Files\GnuWin32\include,\Program Files\GnuWin32\include\freetype2"
-				PreprocessorDefinitions="NDEBUG;_WINDOWS;WIN32;_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="2"
-				PrecompiledHeaderFile=".\toolrelease/rrdtool.pch"
-				AssemblerListingLocation=".\toolrelease/"
-				ObjectFile=".\toolrelease/"
-				ProgramDataBaseFileName=".\toolrelease/"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				CompileAs="0"/>
+				Name="VCPreBuildEventTool"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCCustomBuildTool"
+			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libpng.lib libz.lib libart_lgpl.lib libfreetype.lib"
-				OutputFile=".\toolrelease/rrdtool.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="\Program Files\GnuWin32\lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile=".\toolrelease/rrdtool.pdb"
-				SubSystem="1"
-				TargetMachine="1"/>
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
 			<Tool
 				Name="VCMIDLTool"
-				TypeLibraryName=".\toolrelease/rrdtool.tlb"
-				HeaderFileName=""/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="4108"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory=".\tooldebug"
-			IntermediateDirectory=".\tooldebug"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\Program Files\GnuWin32\include\freetype2,\Program Files\GnuWin32\include"
-				PreprocessorDefinitions="_DEBUG;_CONSOLE;WIN32;_CTYPE_DISABLE_MACROS"
-				RuntimeLibrary="2"
-				PrecompiledHeaderFile=".\tooldebug/rrdtool.pch"
-				AssemblerListingLocation=".\tooldebug/"
-				ObjectFile=".\tooldebug/"
-				ProgramDataBaseFileName=".\tooldebug/"
-				BrowseInformation="1"
+				AdditionalIncludeDirectories=".;../../contrib/cairo/include/cairo;&quot;../../contrib/pango/include/pango-1.0&quot;;&quot;../../contrib/glib/include/glib-2.0&quot;;&quot;../../contrib/glib/lib/glib-2.0/include&quot;;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
 				DebugInformationFormat="4"
-				CompileAs="0"/>
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libpng.lib libz.lib libart_lgpl.lib libfreetype.lib"
-				OutputFile=".\tooldebug/rrdtool.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="\Program Files\GnuWin32\lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile=".\tooldebug/rrdtool.pdb"
-				SubSystem="1"
-				TargetMachine="1"/>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\tooldebug/rrdtool.tlb"
-				HeaderFileName=""/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="4108"/>
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLinkerTool"
+				AdditionalDependencies="rrdlib.lib cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
+				AdditionalLibraryDirectories="$(ConfigurationName); ../../contrib/cairo/lib;../../contrib/pango/lib;../../contrib/glib/lib;../../contrib/libpng/lib;../../contrib/zlib/lib;../../contrib/libxml2/lib"
+				GenerateDebugInformation="true"
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="get all the dlls, needed for running"
+				CommandLine="copy $(ProjectDir)\..\..\contrib\cairo\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libpng\bin\libpng12-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\zlib\zlib1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libxml2\lib\libxml2.dll $(TargetDir)\&#x0D;&#x0A;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories=".;../../contrib/cairo/include/cairo;&quot;../../contrib/pango/include/pango-1.0&quot;;&quot;../../contrib/glib/include/glib-2.0&quot;;&quot;../../contrib/glib/lib/glib-2.0/include&quot;;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="rrdlib.lib cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
+				AdditionalLibraryDirectories="$(ConfigurationName); ../../contrib/cairo/lib;../../contrib/pango/lib;../../contrib/glib/lib;../../contrib/libpng/lib;../../contrib/zlib/lib;../../contrib/libxml2/lib"
+				GenerateDebugInformation="true"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="get all the dlls, needed for running"
+				CommandLine="copy $(ProjectDir)\..\..\contrib\cairo\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libpng\bin\libpng12-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\zlib\zlib1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libxml2\lib\libxml2.dll $(TargetDir)\&#x0D;&#x0A;"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
-		<File
-			RelativePath="rrd_tool.c">
-			<FileConfiguration
-				Name="Release|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Debug|Win32">
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="0"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					BrowseInformation="1"/>
-			</FileConfiguration>
-		</File>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			>
+			<File
+				RelativePath="..\src\rrd_tool.c"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
+			<File
+				RelativePath=".\config.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\rrd_tool.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+			>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
