@@ -174,6 +174,10 @@ rrd_file_t *rrd_open(
     } else {
         if (rdwr & RRD_READWRITE) {
             flags |= O_RDWR;
+#ifdef HAVE_MMAP 
+            rrd_simple_file->mm_flags = MAP_SHARED; 
+            rrd_simple_file->mm_prot |= PROT_WRITE; 
+#endif 
         }
         if (rdwr & RRD_CREAT) {
             flags |= (O_CREAT | O_TRUNC);
