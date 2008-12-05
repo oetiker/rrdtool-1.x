@@ -366,6 +366,8 @@ AC_FULL_IEEE
 
 CONFIGURE_PART(Resolve Portability Issues)
 
+CHECK_FOR_WORKING_MS_ASYNC
+
 dnl Do we need getopt_long
 
 build_getopt=no
