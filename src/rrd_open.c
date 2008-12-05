@@ -131,7 +131,6 @@ rrd_file_t *rrd_open(
 #ifdef HAVE_MMAP
             mm_flags = MAP_SHARED;
             mm_prot |= PROT_WRITE;
-#endif
         }
         if (rdwr & RRD_CREAT) {
             flags |= (O_CREAT | O_TRUNC);
@@ -153,6 +152,21 @@ rrd_file_t *rrd_open(
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
     }
+
+#ifdef HAVE_MMAP
+#ifdef HAVE_BROKEN_MS_ASYNC
+    if (rdwr & RRD_READWRITE) {
+        /* some unices, the files mtime does not get update
+           on msync MS_ASYNC, in order to help them,
+           we update the the timestamp at this point.
+           The thing happens pretty 'close' to the open
+           call so the chances of a race should be minimal.
+              
+           Maybe ask your vendor to fix your OS ... */
+           utime(file_name,NULL);
+    }
+#endif    
+#endif
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
      * many concurrent seeks are even worse.  */

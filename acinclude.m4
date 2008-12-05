@@ -506,43 +506,87 @@ esac
   AC_MSG_RESULT([${T_MD}$1${T_ME}])
 ])
 
+dnl check 
 
-dnl ---------------------------------------------------------------------------
-dnl CF_DISABLE_ECHO version: 10 updated: 2003/04/17 22:27:11
-dnl ---------------
-dnl stolen from xterm aclocal.m4
-dnl
-dnl You can always use "make -n" to see the actual options, but it's hard to
-dnl pick out/analyze warning messages when the compile-line is long.
-dnl
-dnl Sets:
-dnl     ECHO_LT - symbol to control if libtool is verbose
-dnl     ECHO_LD - symbol to prefix "cc -o" lines
-dnl     RULE_CC - symbol to put before implicit "cc -c" lines (e.g., .c.o)
-dnl     SHOW_CC - symbol to put before explicit "cc -c" lines
-dnl     ECHO_CC - symbol to put before any "cc" line
-dnl
-AC_DEFUN([CF_DISABLE_ECHO],[
-AC_MSG_CHECKING(if you want to see long compiling messages)
-CF_ARG_DISABLE(echo,
-        [  --disable-echo          display "compiling" commands],
-        [
-    ECHO_LT='--silent'
-    ECHO_LD='@echo linking [$]@;'
-    RULE_CC='   @echo compiling [$]<'
-    SHOW_CC='   @echo compiling [$]@'
-    ECHO_CC='@'
-],[
-    ECHO_LT=''
-    ECHO_LD=''
-    RULE_CC='# compiling'
-    SHOW_CC='# compiling'
-    ECHO_CC=''
+AC_DEFUN([CHECK_FOR_WORKING_MS_ASYNC], [
+AC_MSG_CHECKING([if msync with MS_ASYNC updates the files mtime])
+AC_CACHE_VAL([rd_cv_ms_async],
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <stdlib.h>
+#include <utime.h>
+int main(void){
+        int fd;
+        struct stat stbuf;
+        char *addr;
+        int res;
+        char temp[] = "mmaptestXXXXXX";
+        struct utimbuf newtime;
+
+        time_t create_ts;
+        fd = mkstemp(temp);
+        if (fd == -1){
+            perror(temp);
+            return 1;
+        }
+        write(fd,"12345\n", 6);        
+        stat(temp, &stbuf);
+        create_ts = stbuf.st_mtime;
+        newtime.actime = 0;
+        newtime.modtime = 0;
+        utime(temp,&newtime);
+        addr = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (addr == MAP_FAILED) {
+            perror("mmap");
+            goto bad_exit;
+        }
+        addr[0]='x';
+        res = msync(addr, 4, MS_ASYNC);
+        if (res == -1) {
+           perror("msync");
+           goto bad_exit;
+        }
+        res = close(fd);        
+        if (res == -1) {
+           perror("close");
+           goto bad_exit;
+        }
+        /* The ASYNC means that we schedule the msync and return immediately.
+           Since we want to see if the modification time is updated upon
+           msync(), we have to make sure that our asynchronous request
+           completes before we stat below. In a real application, the
+           request would be completed at a random time in the future
+           but for this test we do not want to wait an arbitrary amount of
+           time, so force a commit now.  */
+        sync();
+        stat(temp, &stbuf);
+        if (create_ts > stbuf.st_mtime){
+           goto bad_exit;
+        }      
+        unlink(temp);  
+        return 0;
+     bad_exit:
+        unlink(temp);
+        return 1;
+}
+]])],[rd_cv_ms_async=ok],[rd_cv_ms_async=broken],[:])])
+
+
+if test "${rd_cv_ms_async}" = "ok"; then
+ AC_MSG_RESULT(yes)
+else
+ AC_DEFINE_UNQUOTED(HAVE_BROKEN_MS_ASYNC, 1 , [set to 1 if msync with MS_ASYNC fails to update mtime])
+ AC_MSG_RESULT(no)
+ AC_MSG_WARN([With mmap access, your platform fails to update the files])
+ AC_MSG_WARN([mtime. RRDtool will work around this problem by calling utime on each])
+ AC_MSG_WARN([file it opens for rw access.])
+ sleep 2
+fi
+
 ])
-AC_MSG_RESULT($enableval)
-AC_SUBST(ECHO_LT)
-AC_SUBST(ECHO_LD)
-AC_SUBST(RULE_CC)
-AC_SUBST(SHOW_CC)
-AC_SUBST(ECHO_CC)
-])dnl
+
