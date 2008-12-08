@@ -309,7 +309,7 @@ VALUE rb_rrd_last(
     string_arr_delete(a);
 
     RRD_CHECK_ERROR
-        return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2FIX(last));
+        return rb_funcall(rb_cTime, rb_intern("at"), 1, UINT2NUM(last));
 }
 
 void Init_RRD(

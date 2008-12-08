@@ -8,12 +8,13 @@ require "RRD"
 
 name = "test"
 rrd = "#{name}.rrd"
-start = Time.now.to_i
+start_time = Time.now.to_i
+end_time = start_time.to_i + 300 * 300
 
 puts "creating #{rrd}"
 RRD.create(
     rrd,
-    "--start", "#{start - 1}",
+    "--start", "#{start_time - 1}",
     "--step", "300",
 	"DS:a:GAUGE:600:U:U",
     "DS:b:GAUGE:600:U:U",
@@ -21,13 +22,13 @@ RRD.create(
 puts
 
 puts "updating #{rrd}"
-start.to_i.step(start.to_i + 300 * 300, 300) { |i|
+start_time.step(end_time, 300) { |i|
     RRD.update(rrd, "#{i}:#{rand(100)}:#{Math.sin(i / 800) * 50 + 50}")
 }
 puts
 
 puts "fetching data from #{rrd}"
-(fstart, fend, data) = RRD.fetch(rrd, "--start", start.to_s, "--end", (start + 300 * 300).to_s, "AVERAGE")
+(fstart, fend, data) = RRD.fetch(rrd, "--start", start_time.to_s, "--end", end_time.to_s, "AVERAGE")
 puts "got #{data.length} data points from #{fstart} to #{fend}"
 puts
 
@@ -35,7 +36,7 @@ puts "generating graph #{name}.png"
 RRD.graph(
    "#{name}.png",
     "--title", " RubyRRD Demo", 
-    "--start", "#{start+3600}",
+    "--start", "#{start_time+3600}",
     "--end", "start + 1000 min",
     "--interlace", 
     "--imgformat", "PNG",
@@ -46,6 +47,13 @@ RRD.graph(
     "AREA:b#00b6e4:beta",
     "AREA:line#0022e9:alpha",
     "LINE3:line#ff0000")
+puts
+
+# last method test
+if end_time != RRD.last("#{rrd}").to_i
+    puts "last method expects #{Time.at(end_time)}."
+    puts "                But #{RRD.last("#{rrd}")} returns."
+end
 puts
 
 print "This script has created #{name}.png in the current directory\n";
