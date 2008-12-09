@@ -93,6 +93,21 @@ one pixel will silently be ignored.
 A horizontal string at the top of the graph and/or a vertically
 placed string at the left hand side of the graph.
 
+=item Right Axis
+
+[B<--right-axis> I<scale>B<:>I<shift>]
+[B<--right-axis-label> I<label>]
+
+A second axis will be drawn to the right of the graph. It is tied to the
+left axis via the scale and shift parameters. You can also define a label
+for the right axis.
+
+[B<--right-axis-format> I<format-string>]
+
+By default the format of the axis lables gets determined automatically. If
+you want todo this your self, use this option with the same %lf arguments
+you know from the PRING and GPRINT commands.
+
 =head2 Size
 
 [B<-w>|B<--width> I<pixels>]
