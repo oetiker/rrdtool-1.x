@@ -1961,7 +1961,9 @@ int draw_horizontal_grid(
     int       sgrid = (int) (im->minval / im->ygrid_scale.gridstep - 1);
     int       egrid = (int) (im->maxval / im->ygrid_scale.gridstep + 1);
     double    MaxY;
-
+    double second_axis_magfact = 0;
+    char *second_axis_symb = "";
+    
     scaledstep =
         im->ygrid_scale.gridstep /
         (double) im->magfact * (double) im->viewfactor;
@@ -2012,6 +2014,33 @@ int draw_horizontal_grid(
                     }
                 }
                 nlabels++;
+                if (im->second_axis_scale != 0){
+                        char graph_label_right[100];
+                        double sval = im->ygrid_scale.gridstep*(double)i*im->second_axis_scale+im->second_axis_shift;
+                        if (im->second_axis_format[0] == '\0'){
+                            if (!second_axis_magfact){
+                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
+                                auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
+                            }
+                            sval /= second_axis_magfact;
+ 
+                            if(MaxY < 10) { 
+                                sprintf(graph_label_right,"%5.1f %s",sval,second_axis_symb);
+                            } else {
+                                sprintf(graph_label_right,"%5.0f %s",sval,second_axis_symb);
+                            }
+                        }
+                        else {
+                           sprintf(graph_label_right,im->second_axis_format,sval);
+                        }        
+                        gfx_text ( im,
+                               X1+7, Y0,
+                               im->graph_col[GRC_FONT],
+                               im->text_prop[TEXT_PROP_AXIS].font_desc,
+                               im->tabwidth,0.0, GFX_H_LEFT, GFX_V_CENTER,
+                               graph_label_right );
+                }
+ 
                 gfx_text(im,
                          X0 -
                          im->
@@ -2189,8 +2218,35 @@ int horizontal_log_grid(
             else
                 symbol = '?';
             sprintf(graph_label, "%3.0f %c", pvalue, symbol);
-        } else
+        } else {            
             sprintf(graph_label, "%3.0e", value);
+        }
+        if (im->second_axis_scale != 0){
+                char graph_label_right[100];
+                double sval = value*im->second_axis_scale+im->second_axis_shift;
+                if (im->second_axis_format[0] == '\0'){
+                        if (im->extra_flags & FORCE_UNITS_SI) {
+                                double mfac = 1;
+                                char   *symb = "";
+                                auto_scale(im,&sval,&symb,&mfac);
+                                sprintf(graph_label_right,"%4.0f %s", sval,symb);
+                        }
+                        else {        
+                                sprintf(graph_label_right,"%3.0e", sval);
+                        }
+                }
+                else {
+                      sprintf(graph_label_right,im->second_axis_format,sval);
+                }    
+    
+                gfx_text ( im,
+                               X1+7, Y0,
+                               im->graph_col[GRC_FONT],
+                               im->text_prop[TEXT_PROP_AXIS].font_desc,
+                               im->tabwidth,0.0, GFX_H_LEFT, GFX_V_CENTER,
+                               graph_label_right );
+        }
+      
         gfx_text(im,
                  X0 -
                  im->
@@ -2504,6 +2560,18 @@ void axis_paint(
     gfx_new_area(im, im->xorigin - 3, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin, im->yorigin - im->ysize - 7,  /* vertical */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
+    if (im->second_axis_scale != 0){
+       gfx_line ( im, im->xorigin+im->xsize,im->yorigin+4,
+                         im->xorigin+im->xsize,im->yorigin-im->ysize-4,
+                         MGRIDWIDTH, im->graph_col[GRC_AXIS]);
+       gfx_new_area ( im, 
+                   im->xorigin+im->xsize-2,  im->yorigin-im->ysize-2,
+                   im->xorigin+im->xsize+3,  im->yorigin-im->ysize-2,
+                   im->xorigin+im->xsize,    im->yorigin-im->ysize-7, /* LINEOFFSET */
+                   im->graph_col[GRC_ARROW]);
+       gfx_close_path(im);
+    }
+
 }
 
 void grid_paint(
@@ -2554,16 +2622,34 @@ void grid_paint(
     }
 
     /* yaxis unit description */
-    gfx_text(im,
-             10,
-             (im->yorigin -
-              im->ysize / 2),
-             im->graph_col[GRC_FONT],
-             im->
-             text_prop[TEXT_PROP_UNIT].
-             font_desc,
-             im->tabwidth,
-             RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
+    if (im->ylegend[0] != '\0'){
+        gfx_text(im,
+                 10,
+                 (im->yorigin -
+                  im->ysize / 2),
+                 im->graph_col[GRC_FONT],
+                 im->
+                 text_prop[TEXT_PROP_UNIT].
+                 font_desc,
+                 im->tabwidth,
+                 RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
+    }
+    if (im->second_axis_legend[0] != '\0'){
+            double Xylabel=gfx_get_text_width(im, 0,
+                        im->text_prop[TEXT_PROP_AXIS].font_desc,
+                        im->tabwidth,
+                        "0") * im->unitslength
+                    + im->text_prop[TEXT_PROP_UNIT].size *2;
+            gfx_text( im,
+                  im->xorigin+im->xsize+Xylabel+8, (im->yorigin - im->ysize/2),
+                  im->graph_col[GRC_FONT],
+                  im->text_prop[TEXT_PROP_UNIT].font_desc,
+                  im->tabwidth, 
+                  RRDGRAPH_YLEGEND_ANGLE,
+                  GFX_H_CENTER, GFX_V_CENTER,
+                  im->second_axis_legend);
+    }        
+ 
     /* graph title */
     gfx_text(im,
              im->ximg / 2, 6,
@@ -2573,14 +2659,16 @@ void grid_paint(
              font_desc,
              im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title);
     /* rrdtool 'logo' */
-    water_color = im->graph_col[GRC_FONT];
-    water_color.alpha = 0.3;
-    gfx_text(im, im->ximg - 4, 5,
-             water_color,
-             im->
-             text_prop[TEXT_PROP_WATERMARK].
-             font_desc, im->tabwidth,
-             -90, GFX_H_LEFT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
+    if (!(im->extra_flags & NO_RRDTOOL_TAG)){
+        water_color = im->graph_col[GRC_FONT];
+        water_color.alpha = 0.3;
+        gfx_text(im, im->ximg - 4, 5,
+                 water_color,
+                 im->
+                 text_prop[TEXT_PROP_WATERMARK].
+                 font_desc, im->tabwidth,
+                 -90, GFX_H_LEFT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
+    }    
     /* graph watermark */
     if (im->watermark[0] != '\0') {
         gfx_text(im,
@@ -2791,24 +2879,34 @@ int graph_size_location(
         im->yorigin = im->ysize;
         Xmain = im->ximg;
         Ymain = im->yimg;
-        im->yorigin += Ytitle;
         /* Now calculate the total size.  Insert some spacing where
            desired.  im->xorigin and im->yorigin need to correspond
            with the lower left corner of the main graph area or, if
            this one is not set, the imaginary box surrounding the
            pie chart area. */
         /* Initial size calculation for the main graph area */
-        Xmain = im->ximg - (Xylabel + 2 * Xspacing);
-        if (Xmain)
-            Xmain -= Xspacing;  /* put space between main graph area and right edge */
+        Xmain = im->ximg - Xylabel - 3 * Xspacing;
+
         im->xorigin = Xspacing + Xylabel;
-        /* the length of the title should not influence with width of the graph
-           if (Xtitle > im->ximg) im->ximg = Xtitle; */
+
         if (Xvertical) {    /* unit description */
             Xmain -= Xvertical;
             im->xorigin += Xvertical;
         }
+
+        /* adjust space for second axis */
+        if (im->second_axis_scale != 0){
+            Xmain -= Xylabel + Xspacing;
+        }
+        if (im->extra_flags & NO_RRDTOOL_TAG){
+            Xmain += Xspacing;
+        }
+        if (im->second_axis_legend[0] != '\0' ) {
+            Xmain -= im->text_prop[TEXT_PROP_UNIT].size * 1.5;
+        }
+
         im->xsize = Xmain;
+
         xtr(im, 0);
         /* The vertical size of the image is known in advance.  The main graph area
          ** (Ymain) and im->yorigin must be set according to the space requirements
@@ -2861,8 +2959,7 @@ int graph_size_location(
              */
             /* don't care for the with of the title
                Xtitle = gfx_get_text_width(im->canvas, 0,
-               im->text_prop[TEXT_PROP_TITLE].font,
-               im->text_prop[TEXT_PROP_TITLE].size,
+               im->text_prop[TEXT_PROP_TITLE].font_desc,
                im->tabwidth,
                im->title, 0) + 2*Xspacing; */
             Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
@@ -2884,6 +2981,14 @@ int graph_size_location(
          ** size already allocated.
          */
         im->ximg = Xylabel + Xmain + 2 * Xspacing;
+
+        if (im->second_axis_scale != 0){
+            im->ximg += Xylabel + Xspacing;
+        }
+        if (im->extra_flags & NO_RRDTOOL_TAG){
+            im->ximg -= Xspacing;
+        }
+        
         if (Xmain)
             im->ximg += Xspacing;
         im->xorigin = Xspacing + Xylabel;
@@ -2893,6 +2998,10 @@ int graph_size_location(
             im->ximg += Xvertical;
             im->xorigin += Xvertical;
         }
+        if (im->second_axis_legend[0] != '\0' ) {
+            im->ximg += Xvertical;
+        }
+      
         xtr(im, 0);
         /* The vertical size is interesting... we need to compare
          ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend, Ywatermark} with 
@@ -3778,6 +3887,10 @@ void rrd_graph_init(
     im->ygridstep = DNAN;
     im->yimg = 0;
     im->ylegend[0] = '\0';
+    im->second_axis_scale = 0; /* 0 disables it */
+    im->second_axis_shift = 0; /* no shift by default */
+    im->second_axis_legend[0] = '\0';
+    im->second_axis_format[0] = '\0'; 
     im->yorigin = 0;
     im->ysize = 100;
     im->zoom = 1;
@@ -3866,6 +3979,10 @@ void rrd_graph_options(
         { "force-rules-legend", no_argument,       0, 'F'},
         { "only-graph",         no_argument,       0, 'j'},
         { "alt-y-grid",         no_argument,       0, 'Y'},
+        {"disable-rrdtool-tag", no_argument,       0,  1001},
+        {"right-axis",          required_argument, 0,  1002},
+        {"right-axis-label",    required_argument, 0,  1003},
+        {"right-axis-format",   required_argument, 0,  1004},     
         { "no-minor",           no_argument,       0, 'I'}, 
         { "slope-mode",         no_argument,       0, 'E'},
         { "alt-autoscale",      no_argument,       0, 'A'},
@@ -3927,6 +4044,9 @@ void rrd_graph_options(
         case 'F':
             im->extra_flags |= FORCE_RULES_LEGEND;
             break;
+        case 1001:
+            im->extra_flags |= NO_RRDTOOL_TAG;
+            break;              
         case LONGOPT_UNITS_SI:
             if (im->extra_flags & FORCE_UNITS) {
                 rrd_set_error("--units can only be used once!");
@@ -4034,6 +4154,33 @@ void rrd_graph_options(
                 rrd_set_error("invalid y-grid format");
                 return;
             }
+            break;
+        case 1002: /* right y axis */
+
+            if(sscanf(optarg,
+                      "%lf:%lf",
+                      &im->second_axis_scale,
+                      &im->second_axis_shift) == 2) {
+                if(im->second_axis_scale==0){
+                    rrd_set_error("the second_axis_scale  must not be 0");
+                    return;
+                }
+            } else {
+                rrd_set_error("invalid right-axis format expected scale:shift");
+                return;
+            }
+            break;
+        case 1003:
+            strncpy(im->second_axis_legend,optarg,150);
+            im->second_axis_legend[150]='\0';
+            break;
+        case 1004:
+            if (bad_format(optarg)){
+                rrd_set_error("use either %le or %lf formats");
+                return;
+            }
+            strncpy(im->second_axis_format,optarg,150);
+            im->second_axis_format[150]='\0';
             break;
         case 'v':
             strncpy(im->ylegend, optarg, 150);

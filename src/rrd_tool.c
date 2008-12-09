@@ -138,6 +138,8 @@ void PrintUsage(
            "\t\t[-Y|--alt-y-grid] [--full-size-mode]\n"
            "\t\t[-y|--y-grid y-axis grid and label]\n"
            "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
+           "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"
+           "\t\t[--right-axis-format format]\n"          
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"

@@ -32,6 +32,7 @@
 #define FORCE_UNITS_SI 0x100    /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
 
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
+#define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
 
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
@@ -202,6 +203,10 @@ typedef struct image_desc_t {
     double    grid_dash_on, grid_dash_off;
     xlab_t    xlab_user;    /* user defined labeling for xaxis */
     char      xlab_form[210];   /* format for the label on the xaxis */
+    double    second_axis_scale; /* relative to the first axis (0 to disable) */
+    double    second_axis_shift; /* how much is it shifted vs the first axis */
+    char      second_axis_legend[210]; /* label to put on the seond axis */
+    char      second_axis_format[210]; /* format for the numbers on the scond axis */    
 
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
