@@ -136,14 +136,12 @@ static int get_double_from_node(
         return (-1);
     }
 
-#ifdef WIN32
-    if (strcmp(str_ptr, " NaN ") == 0)
+    if (strstr(str_ptr, "NaN") != NULL)
     {
         *value = DNAN;
         xmlFree(str_ptr);
         return 0;
     }
-#endif
 
     end_ptr = NULL;
     temp = strtod(str_ptr, &end_ptr);
