@@ -4,16 +4,11 @@ rrddump - dump the contents of an RRD to XML format
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<dump> I<filename.rrd>
-S<[B<--header>|B<-h> {xsd,dtd}]>
+B<rrdtool> B<dump> I<filename.rrd> [I<filename.xml>]
+S<[B<--header>|B<-h> {none,xsd,dtd}]>
+S<[B<--no-header>]>
 S<[B<--daemon> I<address>]>
 S<E<gt> I<filename.xml>>
-
-or 
-
-B<rrdtool> B<dump> I<filename.rrd> I<filename.xml>
-S<[B<--header>|B<-h> {xsd,dtd}]>
-S<[B<--daemon> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -23,7 +18,6 @@ be read by rrdrestore. Together they allow you to transfer your
 files from one computer architecture to another as well to
 manipulate the contents of an B<RRD> file in a somewhat more
 convenient manner.
-
 
 =over 8
 
@@ -36,9 +30,18 @@ The name of the B<RRD> you want to dump.
 The (optional) filename that you want to write the XML output to.
 If not specified, the XML will be printed to stdout.
 
-=item B<--header>|B<-h> {xsd,dtd}
+=item B<--header>|B<-h> {none,xsd,dtd}
 
-Optionally rrdtool can add a xsd or dtd header to the dump output.
+By default rrdtool will add a dtd header to the xml file. Here
+you can customize this to and xsd header or no header at all.
+
+
+=item B<--no-header>
+
+A shortcut for S<--header=none>.
+
+If you want to restore the dump with rrdtool 1.2 you should use the
+S<--no-header> option since 1.2 can not deal with xml headers.
 
 =item B<--daemon> I<address>
 

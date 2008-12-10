@@ -13,4 +13,4 @@ tbd
 RRDdump
 -------
 * no more spaces in output
-* --no-header replaced with --header {xsd,dtd}
+* additional option: --header {none,xsd,dtd}

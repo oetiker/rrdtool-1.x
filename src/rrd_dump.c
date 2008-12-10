@@ -455,7 +455,7 @@ int rrd_dump(
      * 1 = dtd header
      * 2 = xsd header
      */
-    int       opt_header = 0;
+    int       opt_header = 1;
     char     *opt_daemon = NULL;
 
     /* init rrd clean */
@@ -463,16 +463,17 @@ int rrd_dump(
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
-    while (42) {
+    while (42) {/* ha ha */
         int       opt;
         int       option_index = 0;
         static struct option long_options[] = {
             {"daemon", required_argument, 0, 'd'},
             {"header", required_argument, 0, 'h'},
+            {"no-header", no_argument, 0, 'n'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "d:h:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:h:n", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -489,16 +490,22 @@ int rrd_dump(
             }
             break;
 
+        case 'n':
+           opt_header = 0;
+           break;
+
         case 'h':
 	   if (strcmp(optarg, "dtd") == 0) {
 	   	opt_header = 1;
 	   } else if (strcmp(optarg, "xsd") == 0) {
 	   	opt_header = 2;
+	   } else if (strcmp(optarg, "none") == 0) {
+	   	opt_header = 0;
 	   }
 	   break;
 
         default:
-            rrd_set_error("usage rrdtool %s [--header|-h {xsd,dtd}] "
+            rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}] [--no-header]"
                           "file.rrd [file.xml]", argv[0]);
             return (-1);
             break;
@@ -506,7 +513,7 @@ int rrd_dump(
     }                   /* while (42) */
 
     if ((argc - optind) < 1 || (argc - optind) > 2) {
-        rrd_set_error("usage rrdtool %s [--header|-h {xsd,dtd}] "
+        rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}] [--no-header]"
                       "file.rrd [file.xml]", argv[0]);
         return (-1);
     }
