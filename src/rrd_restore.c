@@ -143,6 +143,13 @@ static int get_double_from_node(
         return (-1);
     }
 
+    if (strstr(str_ptr, "NaN") != NULL)
+    {
+        *value = DNAN;   
+        xmlFree(str_ptr);
+        return 0;
+    }
+
     end_ptr = NULL;
     temp = strtod(str_ptr, &end_ptr);
     xmlFree(str_ptr);
