@@ -276,7 +276,7 @@ find examples/ -type f -exec chmod 0644 {} \;
 %files python
 %defattr(-,root,root,-)
 %doc bindings/python/AUTHORS bindings/python/COPYING bindings/python/README
-%{python_sitearch}/rrdtoolmodule.so
+%{python_sitearch}/*
 %endif
 
 %if %{with_php}
