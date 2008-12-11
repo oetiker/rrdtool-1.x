@@ -368,6 +368,8 @@ fprintf(stderr,"partial match, not best\n");
         else 
             rra_pointer = rrd.rra_ptr[chosen_rra].cur_row+1+start_offset;
     
+        rra_pointer = rra_pointer % (signed) rrd.rra_def[chosen_rra].row_cnt;
+         
         if(fseek(in_file,(rra_base 
 		   + (rra_pointer
 		      * *ds_cnt
