@@ -390,6 +390,8 @@ int rrd_fetch_fn(
         else
             rra_pointer = rrd.rra_ptr[chosen_rra].cur_row + 1 + start_offset;
 
+        rra_pointer = rra_pointer % (signed) rrd.rra_def[chosen_rra].row_cnt;
+         
         if (rrd_seek(rrd_file, (rra_base + (rra_pointer * (*ds_cnt)
                                         * sizeof(rrd_value_t))),
                  SEEK_SET) != 0) {
