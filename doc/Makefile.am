@@ -31,7 +31,7 @@ HTML = $(POD:.pod=.html) $(PMP:.pod=.html)
 PDF = $(MAN:.1=.pdf)
 
 # what should go into the distribution
-EXTRA_DIST= $(POD) $(HTML) $(MAN) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod
+EXTRA_DIST= $(POD) $(HTML) $(MAN) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
