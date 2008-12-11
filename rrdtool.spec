@@ -349,8 +349,7 @@ test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
 %files python
 %defattr(-,root,root,-)
 %doc bindings/python/AUTHORS bindings/python/COPYING bindings/python/README
-%{python_sitearch}/rrdtoolmodule.so
-%{python_sitearch}/py_rrdtool-*.egg-info
+%{python_sitearch}/*
 %endif
 
 %if %{with_php}
