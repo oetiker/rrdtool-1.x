@@ -10,7 +10,9 @@
 
 #ifdef WIN32
 #include "strftime.h"
+#include "plbasename.h"
 #endif
+
 #include "rrd_tool.h"
 
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)

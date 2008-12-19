@@ -1967,7 +1967,7 @@ static int write_RRA_row(
             /* append info to the return hash */
             *pcdp_summary = rrd_info_push(*pcdp_summary,
                                           sprintf_alloc
-                                          ("[%d]RRA[%s][%lu]DS[%s]", rra_time,
+                                          ("[%lli]RRA[%s][%lu]DS[%s]", rra_time,
                                            rrd->rra_def[rra_idx].cf_nam,
                                            rrd->rra_def[rra_idx].pdp_cnt,
                                            rrd->ds_def[ds_idx].ds_nam),
