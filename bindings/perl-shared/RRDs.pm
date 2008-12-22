@@ -38,9 +38,9 @@ RRDs - Access RRDtool as a shared module
 
 =head2 Calling Sequence
 
-This module accesses RRDtool functionality directly from within perl. The
+This module accesses RRDtool functionality directly from within Perl. The
 arguments to the functions listed in the SYNOPSIS are explained in the regular
-RRDtool documentation. The commandline call
+RRDtool documentation. The command line call
 
  rrdtool update mydemo.rrd --template in:out N:12:13
 
@@ -98,7 +98,7 @@ the values of the properties.
    print "$key = $$hash{$key}\n";
  }
 
-B<RRDs::graphv> takes the same paramters as B<RRDs::graph> but it returns a
+B<RRDs::graphv> takes the same parameters as B<RRDs::graph> but it returns a
 pointer to hash. The hash returned contains meta information about the
 graph. Like its size as well as the position of the graph area on the image.
 When calling with and empty filename than the contents of the graph will be
@@ -135,8 +135,8 @@ See the examples directory for more ways to use this extension.
 
 =head1 NOTE
 
-If you are manipulating the TZ variable you should also call the posixs
-function tzset to initialize all internal state of the library for properly
+If you are manipulating the TZ variable you should also call the POSIX
+function L<tzset(3)> to initialize all internal state of the library for properly
 operating in the timezone of your choice.
 
  use POSIX qw(tzset);
