@@ -36,8 +36,8 @@ B<RRDtool> can be remotely controlled through a set of pipes. This
 saves a considerable amount of startup time when you plan to make
 B<RRDtool> do a lot of things quickly. Check the section on L<Remote_Control>
 further down. There is also a number of language bindings
-for RRDtool which allow you to use it directly from perl, python, tcl,
-php, etc.
+for RRDtool which allow you to use it directly from Perl, python, Tcl,
+PHP, etc.
 
 =over 8
 
@@ -95,7 +95,7 @@ Export data retrieved from one or several RRDs. Check L<rrdxport>.
 
 =item B<flush>
 
-Flush the values for a spcific RRD file from memory. Check L<rrdflush>.
+Flush the values for a specific RRD file from memory. Check L<rrdflush>.
 
 =item B<rrdcgi>
 
@@ -115,7 +115,7 @@ data available at a constant time interval. Unfortunately, you may not
 always be able to fetch data at exactly the time you want
 to. Therefore B<RRDtool> lets you update the logfile at any time you
 want. It will automatically interpolate the value of the data-source
-(B<DS>) at the latest official time-slot (intervall) and write this
+(B<DS>) at the latest official time-slot (interval) and write this
 interpolated value to the log. The original value you have supplied is
 stored as well and is also taken into account when interpolating the
 next log entry.
@@ -271,7 +271,7 @@ followed by timing information of the form B<u:>I<usertime>
 B<s:>I<systemtime>. Both values are the running totals of seconds since
 RRDtool was started. If an error occurs, a line of the form 'C<ERROR:>
 I<Description of error>' will be printed instead. B<RRDtool> will not abort,
-unless something realy serious happens. If
+unless something really serious happens. If
 a B<workdir> is specified and the UID is 0, RRDtool will do a chroot to that
 workdir. If the UID is not 0, RRDtool only changes the current directory to
 B<workdir>.
@@ -295,7 +295,7 @@ I</etc/inetd.conf>. For example:
 Don't forget to create the database directory /var/rrd and
 reinitialize your inetd.
 
-If all was setup correctly, you can access the server with perl
+If all was setup correctly, you can access the server with Perl
 sockets, tools like netcat, or in a quick interactive test by using
 'telnet localhost rrdsrv'.
 

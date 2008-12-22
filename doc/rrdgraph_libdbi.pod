@@ -80,7 +80,7 @@ the returned value column-names, which can be used as ds-names, are:
 
 =head1 EXAMPLES
 
-Here an example of a table in a mysql database:
+Here an example of a table in a MySQL database:
 
   DB connect information
     dbhost=127.0.0.1
@@ -119,7 +119,7 @@ To illustrate this here a command to create a graph that contains the actual val
 
 =head1 NOTES
 
-* Naturally you can also use any other kind of driver that libdbi supports - e.g postgress,...
+* Naturally you can also use any other kind of driver that libdbi supports - e.g postgres, ...
 
 * From the way the datasource is joined, it should also be possible to do joins over different tables 
   (separate tables with "," in table and add in the WHERE Clauses the table equal joins. 

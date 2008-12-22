@@ -55,7 +55,7 @@ GT, GE and EQ operators.
 
 While compound expressions can look overly complex, they can be
 considered elegantly simple.  To quickly comprehend RPN expressions,
-you must know the the algorithm for evaluating RPN expressions:
+you must know the algorithm for evaluating RPN expressions:
 iterate searches from the left to the right looking for an operator.
 When it's found, apply that operator by popping the operator and some
 number of values (and by definition, not operators) off the stack.
@@ -102,7 +102,7 @@ with "A":
  2) A,10,input,IF            eval is A,10,input,IF
 
 read "if A then 10 else input".  Now replace A with it's verbose
-description againg and--voila!--you have a easily readable description
+description again and--voila!--you have a easily readable description
 of the expression:
 
  if input > 10 then 10 else input

@@ -785,7 +785,7 @@ day. From this one value, we cannot see much detail, of course.
 
 Make sure you understand the last few paragraphs. There is no value
 in only a line and a few axis, you need to know what they mean and
-interpret the data in ana appropriate way. This is true for all data.
+interpret the data in an appropriate way. This is true for all data.
 
 The biggest mistake you can make is to use the collected data for
 something that it is not suitable for. You would be better off if
@@ -796,8 +796,8 @@ you didn't have the graph at all.
 
 You know how to create a database and can put data in it. You can get
 the numbers out again by creating an image, do math on the data from
-the database and view the resulte instead of the raw data.  You know
-about the difference between averages and maxima, and when to use
+the database and view the result instead of the raw data.  You know
+about the difference between averages and maximum, and when to use
 which (or at least you should have an idea).
 
 RRDtool can do more than what we have learned up to now. Before you
@@ -1145,7 +1145,7 @@ It's time now to wrap up this tutorial. We covered all the basics for
 you to be able to work with RRDtool and to read the additional
 documentation available. There is plenty more to discover about
 RRDtool and you will find more and more uses for this package. You can
-easly create graphs using just the examples provided and using only
+easily create graphs using just the examples provided and using only
 RRDtool. You can also use one of the front ends to RRDtool that are
 available.
 

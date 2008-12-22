@@ -170,7 +170,7 @@ and thus the throughput may be higher than the WAN line speed.
 
 In order to avoid anti-aliasing blurring effects rrdtool snaps
 points to device resolution pixels, this results in a crisper
-aperance. If this is not to your liking, you can use this switch
+appearance. If this is not to your liking, you can use this switch
 to turn this behaviour off.
 
 Gridfitting is turned off for PDF, EPS, SVG output by default.
@@ -225,7 +225,7 @@ placed every I<label factor> lines.  You can specify C<-y none> to
 suppress the grid and labels altogether.  The default for this option is
 to automatically select sensible values.
 
-If you have set --y-grid to 'none' not only the labels get supressed, also
+If you have set --y-grid to 'none' not only the labels get suppressed, also
 the space reserved for the labels is removed. You can still add space
 manually if you use the --units-length command to explicitly reserve space.
 
@@ -332,11 +332,11 @@ edge of the graph.
 
 Use Times for the title: C<--font TITLE:13:Times>
 
-If you do not give a font string you can modify just the sice of the default font:
+If you do not give a font string you can modify just the size of the default font:
 C<--font TITLE:13:>.
 
 If you specify the size 0 then you can modify just the font without touching
-the size. This is especially usefull for altering the default font without
+the size. This is especially useful for altering the default font without
 resetting the default fontsizes: C<--font DEFAULT:0:Courier>.
 
 RRDtool comes with a preset default font. You can set the environment
@@ -469,7 +469,7 @@ See L<rrdgraph_graph> for the exact format.
 
 Calling rrdtool with the graphv option will return information in the
 rrdtool info format. On the command line this means that all output will be
-in key=value format. When used from the perl and ruby bindings a hash
+in key=value format. When used from the Perl and Ruby bindings a hash
 pointer will be returned from the call.
 
 When the filename '-' is given, the contents of the graph itself will also

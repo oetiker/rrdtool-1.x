@@ -79,9 +79,9 @@ Just add a compiler and the gnome development package:
  pkg install sunstudioexpress
  pkg install SUNWgnome-common-devel
 
-There is a problem with F<cairo.pc> on opensolaris. It suggests that
+There is a problem with F<cairo.pc> on OpenSolaris. It suggests that
 xrender is required for compilation with cairo. This is not true and also
-bad since opensolaris does not include an F<xrender.pc> file. Use perl to
+bad since OpenSolaris does not include an F<xrender.pc> file. Use Perl to
 fix this:
 
  perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
@@ -90,7 +90,7 @@ Make sure rrdtool finds your new compiler
 
  export PATH=/opt/SunStudioExpress/bin
 
-Since there does not seem to ba a viable msgfmt tool on opensolaris (short
+Since there does not seem to be a viable msgfmt tool on OpenSolaris (short
 of installing it yourself). You have to call configure with the
 
  --disable-libintl
@@ -139,7 +139,7 @@ expectations, so you may want to compile their latest versions.
 
 =head2 General build tips for AIX
 
-If you are working with AIX, you may find the the B<--disable-shared> option
+If you are working with AIX, you may find the B<--disable-shared> option
 will cause things to break for you. In that case you may have to install the
 shared libraries into the rrdtool PREFIX and work with B<--disable-static>
 instead.
@@ -191,7 +191,7 @@ if you are using the Sun Studio/Forte compiler, you may also want to set
 
 =back 
 
-If you have GNUmake installed and it is not called 'make',
+If you have GNU make installed and it is not called 'make',
 then do
 
  export MAKE=gmake
@@ -343,7 +343,7 @@ their current state.
  $MAKE
  $MAKE install
 
-SOLARIS HINT: if you want to build  the perl module for the native perl (the
+SOLARIS HINT: if you want to build  the Perl module for the native Perl (the
 one shipping with Solaris) you will need the Sun Forte compiler installed on
 your box or you have to hand-tune bindings/perl-shared/Makefile while
 building!
