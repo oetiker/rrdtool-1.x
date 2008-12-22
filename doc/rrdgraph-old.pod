@@ -161,7 +161,7 @@ of 0 to prevent any scaling of the y-axis values.
 
 =item B<-v>|B<--vertical-label> I<text>
 
-vertical label on the left side of the graph. This is normally used to
+Vertical label on the left side of the graph. This is normally used to
 specify the units used.
 
 =item B<-w>|B<--width> I<pixels> (default 400 pixel)
@@ -255,7 +255,7 @@ Define a title to be written into the graph
 
 By default rrdgraph calculates the width of one pixel in the time domain and
 tries to get data at that resolution from the RRD. With this switch you can
-override this behaviour. If you want rrdgraph to get data at 1 hour
+override this behavior. If you want rrdgraph to get data at 1 hour
 resolution from the RRD, then you can set the step to 3600 seconds. Note,
 that a step smaller than 1 pixel will be silently ignored.
 
@@ -300,24 +300,24 @@ values:
 
 =item +, -, *, /, %
 
-pops two values from the stack applies the selected operator and pushes
+Pops two values from the stack applies the selected operator and pushes
 the result back onto the stack. The % operator stands for the modulo
 operation.
 
 =item SIN, COS, LOG, EXP, FLOOR, CEIL
 
-pops one value from the stack, applies the selected function and pushes
+Pops one value from the stack, applies the selected function and pushes
 the result back onto the stack.
 
 =item LT, LE, GT, GE, EQ
 
-pops two values from the stack, compares them according to the selected
+Pops two values from the stack, compares them according to the selected
 condition and pushes either 1 back onto the stack if the condition is true
 and 0 if the condition was not true.
 
 =item IF
 
-pops three values from the stack. If the last value is not 0, the
+Pops three values from the stack. If the last value is not 0, the
 second value will be pushed back onto the stack, otherwise the
 first value is pushed back.
 
@@ -328,11 +328,11 @@ E will be sent back to the stack.
 
 =item MIN, MAX
 
-selects the lesser or larger of the two top stack values respectively
+Selects the lesser or larger of the two top stack values respectively
 
 =item LIMIT
 
-replaces the value with I<*UNKNOWN*> if it is outside the limits specified
+Replaces the value with I<*UNKNOWN*> if it is outside the limits specified
 by the two values above it on the stack.
 
  CDEF:a=alpha,0,100,LIMIT

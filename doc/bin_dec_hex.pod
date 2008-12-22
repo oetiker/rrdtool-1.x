@@ -160,7 +160,8 @@ you're writing in. Some of the prefixes are "0x" for C, "$" for
 Pascal, "#" for HTML.  It is common to assume that if a number starts
 with a zero, it is octal. It does not matter what is used as long as
 you know what it is. I will use "0x" for hexadecimal, "%" for binary
-and "0" for octal.  The following numbers are all the same, just their represenatation (base) is different: 021 0x11 17 %00010001
+and "0" for octal.  The following numbers are all the same, just their
+representation (base) is different: 021 0x11 17 %00010001
 
 To do arithmetics and conversions you need to understand one more thing.
 It is something you already know but perhaps you do not "see" it yet:
@@ -256,7 +257,7 @@ is therefore "0" and we now have 0xA0??.
 (which is just plain 16) four times and write down "4" to get 0xA04?.
 Subtract 64 from 69 (69 - 4*16) and the last digit is 5 --> 0xA045.
 
-The other method builds ub the number from the right. Let's try 41'029
+The other method builds up the number from the right. Let's try 41'029
 again.  Divide by 16 and do not use fractions (only whole numbers).
 
  41'029 / 16 is 2'564 with a remainder of 5. Write down 5.

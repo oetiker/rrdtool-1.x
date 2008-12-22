@@ -193,7 +193,7 @@ you want to use as source for your graph.
 =head1 EXAMPLE 3
 
 This example shows how to handle the case where the RRD, graphs and
-cgi-bins are seperate directories
+cgi-bins are separate directories
 
  #!/.../bin/rrdcgi
  <HTML>

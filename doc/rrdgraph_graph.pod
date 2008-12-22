@@ -85,7 +85,7 @@ will all use the same magnitude unit except for zero values.
 =back
 
 If you PRINT a VDEF value, you can also print the time associated with it by appending the string
-B<:strftime> to the format. Note that rrdtool uses the strftime function of your OSs clibrary. This means that
+B<:strftime> to the format. Note that rrdtool uses the strftime function of your OSs C library. This means that
 the conversion specifier may vary. Check the manual page if you are uncertain. The following is a list of
 conversion specifiers usually supported across the board. 
 
@@ -267,7 +267,7 @@ be filled.
 Plot a tick mark (a vertical line) for each value of I<vname> that is
 non-zero and not *UNKNOWN*. The I<fraction> argument specifies the length of
 the tick mark as a fraction of the y-axis; the default value is 0.1 (10% of
-the axis). Note that the color specification is not optional. The TICK marks normaly
+the axis). Note that the color specification is not optional. The TICK marks normally
 start at the lower edge of the graphing area. If the fraction is negative they start
 at the upper border of the graphing area.
 
@@ -290,7 +290,7 @@ argument list.
 
 =cut
 
-# This section describes the curruently defunct
+# This section describes the currently defunct
 # PieChart code.
 #
 # =item B<PART>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<legend>]
@@ -352,7 +352,7 @@ right aligned, and B<\c> for centered. In the next section there is an
 example showing how to use centered formatting.
 
 B<\n> is a valid alias for B<\l> since incomplete parsing in earlier
-versions of rrdtool lead to this behaviour and a number of people has been using it.
+versions of rrdtool lead to this behavior and a number of people has been using it.
 
 Normally there are two space characters inserted between every two items
 printed into the graph. The space following a string can be suppressed by
