@@ -443,6 +443,8 @@ int rrd_fetch_fn(
     }
 
     rrd_close(rrd_file);
+    rrd_free(&rrd);
+
     return (0);
   err_free_data:
     free(*data);
