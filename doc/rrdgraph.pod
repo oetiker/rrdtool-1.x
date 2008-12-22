@@ -93,7 +93,7 @@ one pixel will silently be ignored.
 A horizontal string at the top of the graph and/or a vertically
 placed string at the left hand side of the graph.
 
-=item Right Axis
+=head2 Right Axis
 
 [B<--right-axis> I<scale>B<:>I<shift>]
 [B<--right-axis-label> I<label>]
