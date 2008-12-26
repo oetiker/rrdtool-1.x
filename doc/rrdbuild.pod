@@ -68,9 +68,11 @@ B<configure> complaining about several missing libraries.
 If your OS lets you install additional packages from a software repository,
 you may get away with installing the missing packages. When the packages are
 installed, run configure again and try to compile again. Below you find some
-hints on getting your OS ready for the rrdtool compilation.
+hints on getting your OS ready for the rrdtool compilation. 
 
-Additions to this list are welcome.
+Additions to this list are welcome. In general rrdtool should work with the
+latest versions of the libraries. The versions listed here are just what was
+current when I tested this.
 
 =head2 OpenSolaris 2008.05
 
@@ -214,6 +216,11 @@ not available natively, here is how to compile it.
  $MAKE
  $MAKE install
 
+After installing pkgconfig in a custom directory, setting up the corresponding
+environment variable will be helpful.
+
+ export PKG_CONFIG=$INSTALL_DIR/bin/pkg-config
+
 =head3 Building zlib
 
 Chances are very high that you already have that on your system ... 
@@ -259,9 +266,9 @@ add the following at the start the configure line:
 =head3 Building LibXML2
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-sources-2.6.31.tar.gz
- gunzip -c libxml2-sources-2.6.31.tar.gz | tar xf -
- cd libxml2-sources-2.6.31
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-2.6.32.tar.gz
+ gunzip -c libxml2-2.6.32.tar.gz | tar xf -
+ cd libxml2-2.6.32
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
  $MAKE
  $MAKE install
@@ -277,7 +284,7 @@ config file.
  wget http://oss.oetiker.ch/rrdtool/pub/libs/fontconfig-2.4.2.tar.gz
  gunzip -c fontconfig-2.4.2.tar.gz   | tar xf -
  cd fontconfig-2.4.2
- ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
+ ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --with-freetype-config=$INSTALL_DIR/bin/freetype-config
  $MAKE
  $MAKE install
 
@@ -318,8 +325,8 @@ config file.
 =head3 Building Pango
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.gz
- gunzip -c pango-1.21.1.tar.gz  | tar xf -
+ wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.bz2
+ bunzip2 -c pango-1.21.1.tar.bz2 | tar xf -
  cd pango-1.21.1
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --without-x
  $MAKE
