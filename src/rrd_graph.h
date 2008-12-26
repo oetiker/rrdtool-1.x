@@ -11,6 +11,11 @@
 #include <cairo-ps.h>
 #include <pango/pangocairo.h>
 
+#ifdef HAVE_LIBGEN_H
+/* for basename */
+#  include <libgen.h>
+#endif
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 
