@@ -3225,7 +3225,7 @@ int graph_paint(
                     if (im->gdes[i].yrule > 0) {
                         gfx_line(im,
                                  im->xorigin + ii,
-                                 im->yorigin,
+                                 im->yorigin + 1.0,
                                  im->xorigin + ii,
                                  im->yorigin -
                                  im->gdes[i].yrule *
@@ -3233,11 +3233,11 @@ int graph_paint(
                     } else if (im->gdes[i].yrule < 0) {
                         gfx_line(im,
                                  im->xorigin + ii,
-                                 im->yorigin - im->ysize,
+                                 im->yorigin - im->ysize - 1.0,
                                  im->xorigin + ii,
-                                 im->yorigin - (1 -
+                                 im->yorigin - im->ysize -
                                                 im->gdes[i].
-                                                yrule) *
+                                                yrule *
                                  im->ysize, 1.0, im->gdes[i].col);
                     }
                 }
