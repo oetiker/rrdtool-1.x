@@ -90,23 +90,22 @@ int rrd_resize(
     rrd_init(&rrdnew);
     /* These need to be initialised before calling rrd_open() with 
        the RRD_CREATE flag */
+
     if ((rrdnew.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating stat_head for new RRD");
         rrd_free(&rrdold);
         rrd_close(rrd_file);
         return (-1);
     }
+    memcpy(rrdnew.stat_head,rrdold.stat_head,sizeof(stat_head_t));
 
     if ((rrdnew.rra_def = (rra_def_t *)malloc(sizeof(rra_def_t) * rrdold.stat_head->rra_cnt)) == NULL) {
         rrd_set_error("allocating rra_def for new RRD");
         rrd_free(&rrdnew);
         rrd_free(&rrdold);
         rrd_close(rrd_file);
-        rrd_close(rrd_out_file);
         return (-1);
     }
-
-    memcpy(rrdnew.stat_head,rrdold.stat_head,sizeof(stat_head_t));
     memcpy(rrdnew.rra_def,rrdold.rra_def,sizeof(rra_def_t) * rrdold.stat_head->rra_cnt);
 
     /* Set this so that the file will be created with the correct size */
@@ -117,10 +116,14 @@ int rrd_resize(
         rrd_set_error("Can't create '%s': %s", outfilename,
                       rrd_strerror(errno));
         rrd_free(&rrdnew);
+        rrd_free(&rrdold);
+        rrd_close(rrd_file);
+        rrd_close(rrd_out_file);
         return (-1);
     }
     if (rrd_lock(rrd_out_file) != 0) {
         rrd_set_error("could not lock new RRD");
+        rrd_free(&rrdnew);
         rrd_free(&rrdold);
         rrd_close(rrd_file);
         rrd_close(rrd_out_file);
@@ -154,7 +157,7 @@ int rrd_resize(
     case 3:
         break;
     case 1:
-        rrdold.stat_head->version[3] = '3';
+        rrdnew.stat_head->version[3] = '3';
         break;
     default:
         rrd_set_error("Do not know how to handle RRD version %s",
@@ -211,17 +214,12 @@ int rrd_resize(
             rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
             l--;
         }
-#ifndef HAVE_MMAP
         buffer = DNAN;
         l = rrdnew.stat_head->ds_cnt * modify;
         while (l > 0) {
             rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
             l--;
         }
-#else
-        /* for the mmap case, we did already fill the whole new file with DNAN
-         * before we copied the old values, so nothing to do here.  */
-#endif
     } else {
         /* Removing rows. Normally this would be just after the cursor
          ** however this may also mean that we wrap to the beginning of
