@@ -305,6 +305,7 @@ static void calfree (void){
     if (calcpr) {
 	    free(calcpr);
     }
+    calcpr=NULL;
   }
 }
 
@@ -778,7 +779,6 @@ char* drawgraph(long argc, const char **args){
       char *err = malloc((strlen(rrd_get_error())+DS_NAM_SIZE)*sizeof(char));
       sprintf(err, "[ERROR: %s]",rrd_get_error());
       rrd_clear_error();
-      calfree();
       return err;
     }
   }
