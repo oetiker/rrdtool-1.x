@@ -374,6 +374,7 @@ static void calfree(
         if (calcpr) {
             free(calcpr);
         }
+        calcpr = NULL;
     }
 }
 
@@ -953,7 +954,6 @@ char     *drawgraph(
                         DS_NAM_SIZE) * sizeof(char));
             sprintf(err, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
-            calfree();
             return err;
         }
     }
