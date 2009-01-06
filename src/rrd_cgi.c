@@ -374,6 +374,7 @@ static void calfree(
         if (calcpr) {
             free(calcpr);
         }
+        calcpr=NULL;
     }
 }
 
