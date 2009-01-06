@@ -2811,8 +2811,8 @@ graph_paint(image_desc_t *im, char ***calcpr)
                                    im -> gdes[i].col );
               } else if ( im -> gdes[i].yrule < 0 ) {
                       gfx_new_line(im->canvas,
-                                   im -> xorigin + ii, im->yorigin - im -> ysize,
-                                   im -> xorigin + ii, im->yorigin - ( 1 - im -> gdes[i].yrule ) * im -> ysize,
+                                   im -> xorigin + ii, im->yorigin - im->ysize,
+                                   im -> xorigin + ii, im->yorigin - im->ysize - im->gdes[i].yrule * im->ysize,
                                    1.0,
                                    im -> gdes[i].col );
               
