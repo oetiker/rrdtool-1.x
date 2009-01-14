@@ -4586,6 +4586,8 @@ int vdef_parse(
     }
     if (!strcmp("PERCENT", func))
         gdes->vf.op = VDEF_PERCENT;
+    else if (!strcmp("PERCENTNAN", func))
+        gdes->vf.op = VDEF_PERCENTNAN;
     else if (!strcmp("MAXIMUM", func))
         gdes->vf.op = VDEF_MAXIMUM;
     else if (!strcmp("AVERAGE", func))
@@ -4613,6 +4615,7 @@ int vdef_parse(
     };
     switch (gdes->vf.op) {
     case VDEF_PERCENT:
+    case VDEF_PERCENTNAN:
         if (isnan(param)) { /* no parameter given */
             rrd_set_error
                 ("Function '%s' needs parameter in VDEF '%s'\n",
@@ -4695,6 +4698,34 @@ int vdef_calc(
             printf("DEBUG: %3li:%10.2f %c\n",
                    step, array[step], step == field ? '*' : ' ');
 #endif
+    }
+        break;
+    case VDEF_PERCENTNAN:{
+        rrd_value_t *array;
+        int       field;
+       /* count number of "valid" values */
+       int nancount=0;
+       for (step = 0; step < steps; step++) {
+         if (!isnan(data[step * src->ds_cnt])) { nancount++; }
+       }
+       /* and allocate it */
+        if ((array = (rrd_value_t*)malloc(nancount * sizeof(double))) == NULL) {
+            rrd_set_error("malloc VDEV_PERCENT");
+            return -1;
+        }
+       /* and fill it in */
+       field=0;
+        for (step = 0; step < steps; step++) {
+           if (!isnan(data[step * src->ds_cnt])) {
+                array[field] = data[step * src->ds_cnt];
+               field++;
+            }
+        }
+        qsort(array, nancount, sizeof(double), vdef_percent_compar);
+        field = (nancount - 1) * dst->vf.param / 100;
+        dst->vf.val = array[field];
+        dst->vf.when = 0;   /* no time component */
+        free(array);
     }
         break;
     case VDEF_MAXIMUM:

@@ -14,3 +14,7 @@ RRDdump
 -------
 * no more spaces in output
 * additional option: --header {none,xsd,dtd}
+
+RRDgraph
+--------
+* VDEF PERCENTNAN (PRECENT that ignores NAN)

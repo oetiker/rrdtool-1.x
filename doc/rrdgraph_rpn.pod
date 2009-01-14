@@ -357,12 +357,13 @@ the number of seconds.
 
 Example: C<VDEF:total=mydata,TOTAL>
 
-=item PERCENT
+=item PERCENT, PERCENTNAN
 
 This should follow a B<DEF> or B<CDEF> I<vname>. The I<vname> is popped,
 another number is popped which is a certain percentage (0..100). The
 data set is then sorted and the value returned is chosen such that
 I<percentage> percent of the values is lower or equal than the result.
+For PERCENTNAN I<Unknown> values are ignored, but for PERCENT
 I<Unknown> values are considered lower than any finite number for this
 purpose so if this operator returns an I<unknown> you have quite a lot
 of them in your data.  B<Inf>inite numbers are lesser, or more, than the
@@ -370,6 +371,7 @@ finite numbers and are always more than the I<Unknown> numbers.
 (NaN E<lt> -INF E<lt> finite values E<lt> INF)
 
 Example: C<VDEF:perc95=mydata,95,PERCENT>
+         C<VDEF:percnan95=mydata,95,PERCENTNAN>
 
 =item LSLSLOPE, LSLINT, LSLCORREL
 

@@ -70,6 +70,7 @@ enum vdef_op_en {
         , VDEF_LSLSLOPE /* least squares line slope */
         , VDEF_LSLINT   /* least squares line y_intercept */
         , VDEF_LSLCORREL    /* least squares line correlation coefficient */
+        , VDEF_PERCENTNAN  /* Nth percentile ignoring NAN*/
 };
 enum text_prop_en { 
     TEXT_PROP_DEFAULT = 0,  /* default settings */
