@@ -3690,9 +3690,9 @@ int rrd_graph(
     *ymax = 0;
     while (walker) {
         if (strcmp(walker->key, "image_width") == 0) {
-            *xsize = walker->value.u_int;
+            *xsize = walker->value.u_cnt;
         } else if (strcmp(walker->key, "image_height") == 0) {
-            *ysize = walker->value.u_int;
+            *ysize = walker->value.u_cnt;
         } else if (strcmp(walker->key, "value_min") == 0) {
             *ymin = walker->value.u_val;
         } else if (strcmp(walker->key, "value_max") == 0) {
