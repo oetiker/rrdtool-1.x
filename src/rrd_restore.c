@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.3.5  Copyright by Tobi Oetiker, 1997-2008
+ * RRDtool 1.3.6  Copyright by Tobi Oetiker, 1997-2009
  * This file:     Copyright 2008 Florian octo Forster
  * Distributed under the GPL
  *****************************************************************************
