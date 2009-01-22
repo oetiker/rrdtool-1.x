@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <utime.h>
 #endif
 
 #define MEMBLK 8192
