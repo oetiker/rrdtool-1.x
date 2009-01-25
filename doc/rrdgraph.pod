@@ -482,6 +482,8 @@ the output will look like this:
  graph_top = 22
  graph_width = 400
  graph_height = 100
+ graph_start = 1232908800
+ graph_end = 1232914200
  image_width = 481
  image_height = 154
  value_min = 0.0000000000e+00
