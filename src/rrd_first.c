@@ -82,7 +82,7 @@ time_t rrd_first_r(
              (rra_start +
               (rrd.rra_ptr[rraindex].cur_row + 1) *
               rrd.stat_head->ds_cnt * sizeof(rrd_value_t)), SEEK_SET);
-    timer = -(rrd.rra_def[rraindex].row_cnt - 1);
+    timer = -(long)(rrd.rra_def[rraindex].row_cnt - 1);
     if (rrd.rra_ptr[rraindex].cur_row + 1 > rrd.rra_def[rraindex].row_cnt) {
         rrd_seek(rrd_file, rra_start, SEEK_SET);
     }

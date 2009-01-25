@@ -3115,6 +3115,10 @@ int graph_paint(
     grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
     info.u_cnt = im->yimg;
     grinfo_push(im, sprintf_alloc("image_height"), RD_I_CNT, info);
+    info.u_cnt = im->start;
+    grinfo_push(im, sprintf_alloc("graph_start"), RD_I_CNT, info);
+    info.u_cnt = im->end;
+    grinfo_push(im, sprintf_alloc("graph_end"), RD_I_CNT, info);
 
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
