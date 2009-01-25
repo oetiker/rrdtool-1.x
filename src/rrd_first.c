@@ -80,7 +80,7 @@ rrd_first_r(const char *filename, const int rraindex)
            rrd.stat_head->ds_cnt *
            sizeof(rrd_value_t)),
           SEEK_SET);
-    timer = - (rrd.rra_def[rraindex].row_cnt-1);
+    timer = - (long)(rrd.rra_def[rraindex].row_cnt-1);
     if (rrd.rra_ptr[rraindex].cur_row + 1 > rrd.rra_def[rraindex].row_cnt) {
       fseek(in_file,rra_start,SEEK_SET);
     }

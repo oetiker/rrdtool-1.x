@@ -318,7 +318,7 @@ rrd_dump_r(const char *filename, char *outname)
 		       +(rrd.rra_ptr[i].cur_row+1)
 		       * rrd.stat_head->ds_cnt
 		       * sizeof(rrd_value_t)),SEEK_SET);
-	timer = - (rrd.rra_def[i].row_cnt-1);
+	timer = - (long)(rrd.rra_def[i].row_cnt-1);
 	ii=rrd.rra_ptr[i].cur_row;
 	for(ix=0;ix<rrd.rra_def[i].row_cnt;ix++){	    
 	    ii++;
