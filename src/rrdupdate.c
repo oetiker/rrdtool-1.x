@@ -6,13 +6,7 @@
  * $Id$
  *****************************************************************************/
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../win32/config.h"
-#else
-#ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
-#endif
-#endif
 
 #include "rrd.h"
 
@@ -20,7 +14,7 @@ int
 main(int argc, char **argv){
         rrd_update(argc,argv);
         if (rrd_test_error()) {
-                printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2008\n\n"
+                printf("RRDtool " PACKAGE_VERSION "  Copyright by Tobi Oetiker, 1997-2009\n\n"
                         "Usage: rrdupdate filename\n"
                         "\t\t\t[--template|-t ds-name:ds-name:...]\n"
                         "\t\t\ttime|N:value[:value...]\n\n"

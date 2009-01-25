@@ -1,13 +1,9 @@
 /* rrd_config.h.msvc. Hand-tweaked rrd_config.h for MSVC compiler. */
-#ifndef WIN32 
+#ifndef _WIN32 
 #error This rrd_config.h is created for Win32 platform! 
 #endif 
 #ifndef RRD_CONFIG_H
 #define RRD_CONFIG_H
-
-#include <math.h>
-#include <float.h>
-#include <direct.h>
 
 /* the placeholders will be filled in by get_ver.awk */
 /* http://cm.bell-labs.com/cm/cs/awkbook/index.html */
@@ -41,6 +37,7 @@
 #define finite _finite
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
+#define strcasecmp stricmp
 #define strftime strftime_ 
 
 /* realloc does not support NULL as argument */
