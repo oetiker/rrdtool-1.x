@@ -6,7 +6,7 @@
 #
 
 DESCR	= Round Robin Database Tool $(RRD_VERSION_STR)
-COPYR	= Copyright (c) 1997-2008 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2009 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 MTSAFE	= YES
 #SCREEN	= $(DESCR)
@@ -42,7 +42,7 @@ endif
 # All library code is statically linked to avoid problems with other lib NLMs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.29
+LIBPNG	= $(LIBBASE)/libpng-1.2.32
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
@@ -132,10 +132,10 @@ PROOT	= ..
 # Global flags for all compilers
 CFLAGS	= $(OPT) -D$(DB) -nostdinc -DNETWARE -DN_PLAT_NLM -D_POSIX_SOURCE
 CFLAGS	+= -DHAVE_CONFIG_H
-
+                                                                              
 ifeq ($(CC),mwccnlm)
 LD	= mwldnlm
-LDFLAGS	= -nostdlib $^ $(PRELUDE) $(LDLIBS) -o $@ -commandfile
+LDFLAGS	= -nostdlib $^ $(PRELUDE) $(LDLIBS) -nlmversion=$(RRD_VERSION) -o $@ -commandfile
 AR	= $(LD)
 ARFLAGS	= -nostdlib -type library -o
 LIBEXT	= lib
@@ -159,7 +159,7 @@ ARFLAGS	= -cq
 LIBEXT	= a
 RANLIB	= ranlib
 CFLAGS	+= -fno-builtin -fpcc-struct-return -fno-strict-aliasing
-CFLAGS	+= -Wall -Wno-unused # -pedantic
+CFLAGS	+= -Wall -Wno-unused -Wno-return-type # -pedantic
 ifeq ($(LIBARCH),LIBC)
 	PRELUDE = $(SDK_LIBC)/imports/libcpre.gcc.o
 else
@@ -288,17 +288,16 @@ ARTLIBOBJS	= \
 	$(patsubst $(LIBART)/libart_lgpl/%.c,$(OBJDIR)/%.o,$(wildcard $(LIBART)/libart_lgpl/art_*.c))
 
 OBJS	:= $(RRDLIBOBJS) $(XLIBOBJS) $(PNGLIBOBJS) $(ARTLIBOBJS) $(ZLIBOBJS)
-OBJCGI	:= $(OBJS) $(OBJDIR)/rrd_cgi.o
-OBJTOOL	:= $(OBJS) $(OBJDIR)/rrd_tool.o
 
+LDLIBS	+= $(OBJDIR)/librrd.$(LIBEXT)
 LDLIBS	+= $(LIBFT2)/builds/netware/LIBC/libft2.$(LIBEXT)
 
 
 all: rrdtool rrdcgi
 
-rrdtool: $(OBJDIR) $(PROOT)/rrd_config.h $(OBJDIR)/rrdtool.nlm
-rrdcgi: $(OBJDIR) $(PROOT)/rrd_config.h $(OBJDIR)/rrdcgi.$(CGIEXT)
 librrd: $(OBJDIR) $(PROOT)/rrd_config.h $(OBJDIR)/librrd.$(LIBEXT)
+rrdcgi: librrd $(OBJDIR)/rrdcgi.$(CGIEXT)
+rrdtool: librrd $(OBJDIR)/rrdtool.nlm
 
 FORCE: ;
 
@@ -359,26 +358,20 @@ $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJCGI) $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
+$(OBJDIR)/rrdcgi.$(CGIEXT): $(OBJDIR)/rrd_cgi.o $(OBJDIR)/rrdcgi.def $(OBJDIR)/rrdcgi.xdc
 	@echo Linking $@
 	@-$(RM) $@
 	@$(LD) $(LDFLAGS) $(@:.$(CGIEXT)=.def)
-ifeq ($(LD),nlmconv)
-	@$(MV) $(notdir $@) $@
-endif
-ifneq ($(CGIEXT),nlm)
 ifeq ($(LD),mwldnlm)
+ifneq ($(CGIEXT),nlm)
 	@$(FIXNLMN) $@
 endif
 endif
 
-$(OBJDIR)/rrdtool.nlm: $(OBJTOOL) $(OBJDIR)/rrdtool.def $(OBJDIR)/rrdtool.xdc
+$(OBJDIR)/rrdtool.nlm: $(OBJDIR)/rrd_tool.o $(OBJDIR)/rrdtool.def $(OBJDIR)/rrdtool.xdc
 	@echo Linking $@
 	@-$(RM) $@
 	@$(LD) $(LDFLAGS) $(@:.nlm=.def)
-ifeq ($(LD),nlmconv)
-	@$(MV) $(notdir $@) $@
-endif
 
 $(OBJDIR)/librrd.$(LIBEXT): $(OBJS)
 	@echo Creating $@
@@ -400,7 +393,9 @@ $(OBJDIR)/%.def: Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#$(DL) >> $@
 	@echo $(DL)copyright "$(COPYR)"$(DL) >> $@
 	@echo $(DL)description "$(DESCR)"$(DL) >> $@
+ifeq ($(LD),nlmconv)
 	@echo $(DL)version $(RRD_VERSION)$(DL) >> $@
+endif
 ifdef NLMTYPE
 	@echo $(DL)type $(NLMTYPE)$(DL) >> $@
 else
@@ -409,7 +404,7 @@ endif
 ifdef STACK
 	@echo $(DL)stack $(STACK)$(DL) >> $@
 endif
-	@echo $(DL)threadname "$(notdir $(@:.def=))"$(DL) >> $@
+	@echo $(DL)threadname "T_$(notdir $(@:.def=))"$(DL) >> $@
 ifdef SCREEN
 	@echo $(DL)screenname "$(SCREEN)"$(DL) >> $@
 else
@@ -445,9 +440,10 @@ ifdef XDCOPT
 	@echo $(DL)xdcdata $(@:.def=.xdc)$(DL) >> $@
 endif
 ifeq ($(LD),nlmconv)
-	@echo $(DL)input $(OBJS) $(LDLIBS)$(DL) >> $@
+	@echo $(DL)input $(subst rrd,rrd_,$(@:.def=.o))$(DL) >> $@
+	@echo $(DL)input $(LDLIBS)$(DL) >> $@
 	@echo $(DL)input $(PRELUDE)$(DL) >> $@
-	@echo $(DL)output $(notdir $(@:.def=.nlm))$(DL) >> $@
+	@echo $(DL)output $(@:.def=.nlm)$(DL) >> $@
 endif
 
 $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
@@ -475,6 +471,7 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_FLOAT_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_GETTIMEOFDAY 1$(DL) >> $@
 	@echo $(DL)#define HAVE_INTTYPES_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_LIBGEN_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIMITS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LONGLONG 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LOCALE_H 1$(DL) >> $@
@@ -506,6 +503,7 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_TIME_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_TZSET 1$(DL) >> $@
 	@echo $(DL)#define HAVE_UNAME 1$(DL) >> $@
+	@echo $(DL)#define HAVE_UNISTD_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_VSNPRINTF 1$(DL) >> $@
 	@echo $(DL)#define STDC_HEADERS 1$(DL) >> $@
 	@echo $(DL)#define TIME_WITH_SYS_TIME 1$(DL) >> $@

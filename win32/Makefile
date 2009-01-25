@@ -6,7 +6,7 @@
 #
 
 DESCR	= Round Robin Database Tool
-COPYR	= Copyright (c) 1997-2008 by Tobias Oetiker
+COPYR	= Copyright (c) 1997-2009 by Tobias Oetiker
 WWWURL	= http://www.rrdtool.org/
 ICON	= $(PROOT)/favicon.ico
 
@@ -33,7 +33,7 @@ endif
 # All library code is statically linked to avoid problems with other lib DLLs.
 # Edit the path below to point to your libpng sources or set environment var.
 ifndef LIBPNG
-LIBPNG	= $(LIBBASE)/libpng-1.2.29
+LIBPNG	= $(LIBBASE)/libpng-1.2.32
 endif
 # Edit the path below to point to your freetype sources or set environment var.
 ifndef LIBFT2
@@ -388,6 +388,7 @@ $(PROOT)/rrd_config.h: FORCE Makefile $(OBJDIR)/version.inc
 	@echo $(DL)#define HAVE_FCNTL_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_FIONBIO 1$(DL) >> $@
 	@echo $(DL)#define HAVE_INTTYPES_H 1$(DL) >> $@
+	@echo $(DL)#define HAVE_LIBGEN_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LIMITS_H 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LONGLONG 1$(DL) >> $@
 	@echo $(DL)#define HAVE_LOCALE_H 1$(DL) >> $@

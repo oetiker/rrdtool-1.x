@@ -41,7 +41,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.16" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.3.1/include" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.34" /I "../../libart_lgpl-2.3.17" /I "../../fr
+eetype-2.3.7/include" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x409
@@ -65,7 +66,9 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.16" /I "../../libart_lgpl-2.3.17" /I "../../freetype-2.3.1/include" /D "HAVE_CONFIG_H" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR /FD /c
+# ADD CPP /nologo /MD /W3 /Gm /GX /ZI /Od /I "../src" /I "../../zlib-1.2.3" /I "../../libpng-1.2.34" /I "../../libart_lgpl-2.3.17"
+/I "../../freetype-2.3.7/include" /D "HAVE_CONFIG_H" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "_CTYPE_DISABLE_MACROS" /FR
+/FD /c
 # SUBTRACT CPP /X /YX
 # ADD BASE RSC /l 0x100c
 # ADD RSC /l 0x409
@@ -234,6 +237,10 @@ SOURCE=..\src\hash_32.c
 # Begin Source File
 
 SOURCE=..\src\parsetime.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\plbasename.c
 # End Source File
 # Begin Source File
 

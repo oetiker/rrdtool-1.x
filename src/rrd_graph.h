@@ -1,10 +1,22 @@
+/*****************************************************************************
+ * RRDtool 1.2.30  Copyright by Tobi Oetiker, 1997-2009
+ *****************************************************************************
+ * rrd_graph.h  RRD Common Graphic header
+ *****************************************************************************/
+
 #ifndef _RRD_GRAPH_H
 #define _RRD_GRAPH_H
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_gfx.h"
+
+/* for basename */
+#ifdef HAVE_LIBGEN_H
 #include <libgen.h>
+#else
+#include "plbasename.h"
+#endif
 
 #define MAX_VNAME_LEN 255
 #define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
