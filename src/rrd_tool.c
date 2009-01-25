@@ -528,7 +528,6 @@ int HandleInputLine(
 #if defined(HAVE_SYS_STAT_H)
     struct stat st;
 #endif
-    char     *cwd;      /* To hold current working dir on call to pwd */
 
     /* Reset errno to 0 before we start.
      */
@@ -561,6 +560,7 @@ int HandleInputLine(
             return (0);
         }
         if (argc > 1 && strcmp("pwd", argv[1]) == 0) {
+            char     *cwd;      /* To hold current working dir on call to pwd */
             if (argc > 2) {
                 printf("ERROR: invalid parameter count for pwd\n");
                 return (1);
