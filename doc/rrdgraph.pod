@@ -444,7 +444,7 @@ measurement, 1 kb/s is 1000 b/s.
 
 [B<-W>|B<--watermark> I<string>]
 
-Adds the given string as a watermark, horizontally centred, at the bottom 
+Adds the given string as a watermark, horizontally centered, at the bottom 
 of the graph.
 
 =head2 Data and variables
