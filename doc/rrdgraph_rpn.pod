@@ -9,7 +9,8 @@ I<RPN expression>:=I<vname>|I<operator>|I<value>[,I<RPN expression>]
 =head1 DESCRIPTION
 
 If you have ever used a traditional HP calculator you already know
-B<RPN>. The idea behind B<RPN> is that you have a stack and push
+B<RPN> (Reverse Polish Notation).
+The idea behind B<RPN> is that you have a stack and push
 your data onto this stack. Whenever you execute an operation, it
 takes as many elements from the stack as needed. Pushing is done
 implicitly, so whenever you specify a number or a variable, it gets
