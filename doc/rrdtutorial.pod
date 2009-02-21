@@ -1,3 +1,4 @@
+=for changes please consult me first. Thanks, Alex
 =head1 NAME
 
 rrdtutorial - Alex van den Bogaerdt's RRDtool tutorial
@@ -6,7 +7,7 @@ rrdtutorial - Alex van den Bogaerdt's RRDtool tutorial
 
 RRDtool is written by Tobias Oetiker E<lt>tobi@oetiker.chE<gt> with
 contributions from many people all around the world. This document is
-written by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt> to help you
+written by Alex van den Bogaerdt E<lt>alex@vandenbogaerdt.nlE<gt> to help you
 understand what RRDtool is and what it can do for you.
 
 The documentation provided with RRDtool can be too technical for some
@@ -23,13 +24,32 @@ Please don't skip ahead in this document!  The first part of this
 document explains the basics and may be boring.  But if you don't
 understand the basics, the examples will not be as meaningful to you.
 
+Sometimes things change.  This example used to provide numbers like
+"0.04" in stead of "4.00000e-02".  Those are really the same numbers,
+just written down differently.  Don't be alarmed if a future version
+of rrdtool displays a slightly different form of output. The examples
+in this document are correct for version 1.2.0 of RRDtool.
+
+Also, sometimes bugs do occur. They may also influence the outcome of
+the examples. Example speed4.png was suffering from this (the handling
+of unknown data in an if-statement was wrong). Normal data will be
+just fine (a bug in rrdtool wouldn't last long) but special cases like
+NaN, INF and so on may last a bit longer.  Try another version if you
+can, or just live with it.
+
+I fixed the speed4.png example (and added a note). There may be other
+examples which suffer from the same or a similar bug.  Try to fix it
+yourself, which is a great excercise. But please do not submit your
+result as a fix to the source of this document. Discuss it on the
+user's list, or write to me.
+
 =head2 What is RRDtool?
 
 RRDtool refers to Round Robin Database tool.
 Round robin is a technique that works with a fixed amount of data, and a
 pointer to the current element. Think of a circle with some dots plotted
-on the edge -- these dots are the places where data can be stored. Draw an
-arrow from the center of the circle to one of the dots -- this is the pointer.
+on the edge. These dots are the places where data can be stored. Draw an
+arrow from the center of the circle to one of the dots; this is the pointer.
 When the current data is read or written, the pointer moves to the next
 element. As we are on a circle there is neither a beginning nor an end, you can
 go on and on and on. After a while, all the available places will be used and
@@ -40,15 +60,15 @@ data from them.
 
 =head2 What data can be put into an RRD?
 
-You name it, it will probably fit as long as it is some sort of time-series
-data. This means you have to be able to measure some value at several points in time and
-provide this information to RRDtool. If you can do this, RRDtool will be
-able to store it. The values must be numerical but don't have to be
-integers, as is the case with MRTG (the next section will give more details
-on this more specialized application).
+You name it, it will probably fit as long as it is some sort of
+time-series data. This means you have to be able to measure some value
+at several points in time and provide this information to RRDtool. If
+you can do this, RRDtool will be able to store it. The values must be
+numerical but don't have to be integers, as is the case with MRTG (the
+next section will give more details on this more specialized application).
 
 Many examples below talk about SNMP which is an acronym for Simple Network
-Management Protocol. "Simple" refers to the protocol -- it does not
+Management Protocol. "Simple" refers to the protocol. It does not
 mean it is simple to manage or monitor a network. After working your
 way through this document, you should know enough to be able to
 understand what people are talking about. For now, just realize that
@@ -138,7 +158,7 @@ Most discussions about networking talk about bits per second so lets
 get used to that right away. Assume a byte is eight bits and start to
 think in bits not bytes. The counter, however, still counts bytes!
 In the SNMP world most of the counters are 32 bits. That means they are
-counting from 0 to 4'294'967'295. We will use these values in the examples.
+counting from 0 to 4294967295. We will use these values in the examples.
 The device, when asked, returns the current value of the counter. We
 know the time that has passes since we last asked so we now know how
 many bytes have been transfered ***on average*** per second. This is
@@ -171,35 +191,35 @@ People who are not used to think in kilometers per hour can translate
 most into miles per hour by dividing km by 1.6 (close enough).
 I will use the following abbreviations:
 
- M:    meter
- KM:   kilometer (= 1'000 meters).
- H:    hour
- S:    second
- KM/H: kilometers per hour
- M/S:  meters per second
+ m:    meter
+ km:   kilometer (= 1000 meters).
+ h:    hour
+ s:    second
+ km/h: kilometers per hour
+ m/s:  meters per second
 
 You are driving a car. At 12:05 you read the counter in the dashboard
-and it tells you that the car has moved 12'345 KM until that moment.
-At 12:10 you look again, it reads 12'357 KM. This means you have
-traveled 12 KM in five minutes. A scientist would translate that
+and it tells you that the car has moved 12345 km until that moment.
+At 12:10 you look again, it reads 12357 km. This means you have
+traveled 12 km in five minutes. A scientist would translate that
 into meters per second and this makes a nice comparison toward the
 problem of (bytes per five minutes) versus (bits per second).
 
-We traveled 12 kilometers which is 12'000 meters. We did that in five
-minutes or 300 seconds. Our speed is 12'000M / 300S or 40 M/S.
+We traveled 12 kilometers which is 12000 meters. We did that in five
+minutes or 300 seconds. Our speed is 12000m / 300s or 40 m/s.
 
-We could also calculate the speed in KM/H: 12 times 5 minutes
-is an hour, so we have to multiply 12 KM by 12 to get 144 KM/H.
-For our native English speaking friends: that's 90 MPH so don't
+We could also calculate the speed in km/h: 12 times 5 minutes
+is an hour, so we have to multiply 12 km by 12 to get 144 km/h.
+For our native English speaking friends: that's 90 mph so don't
 try this example at home or where I live :)
 
 Remember: these numbers are averages only.  There is no way to figure out
 from the numbers, if you drove at a constant speed.  There is an example
 later on in this tutorial that explains this.
 
-I hope you understand that there is no difference in calculating M/S or
-bps; only the way we collect the data is different. Even the K from kilo
-is the same as in networking terms k also means 1'000.
+I hope you understand that there is no difference in calculating m/s or
+bps; only the way we collect the data is different. Even the k from kilo
+is the same as in networking terms k also means 1000.
 
 We will now create a database where we can keep all these interesting
 numbers. The method used to start the program may differ slightly from
@@ -221,7 +241,7 @@ and skip all of the '\' characters.
 
 We created the round robin database called test (test.rrd) which starts at
 noon the day I started writing this document, 7th of March, 1999 (this date
-translates to 920'804'400 seconds as explained below). Our database holds
+translates to 920804400 seconds as explained below). Our database holds
 one data source (DS) named "speed" that represents a counter. This counter
 is read every five minutes (this is the default therefore you don't have to
 put C<--step=300>).  In the same database two round robin archives (RRAs)
@@ -243,21 +263,21 @@ As an example: where I will see "12:05" the UK folks will see "11:05".
 We now have to fill our database with some numbers. We'll pretend to
 have read the following numbers:
 
- 12:05	12345 KM
- 12:10	12357 KM
- 12:15	12363 KM
- 12:20	12363 KM
- 12:25	12363 KM
- 12:30	12373 KM
- 12:35	12383 KM
- 12:40	12393 KM
- 12:45	12399 KM
- 12:50	12405 KM
- 12:55	12411 KM
- 13:00	12415 KM
- 13:05	12420 KM
- 13:10	12422 KM
- 13:15	12423 KM
+ 12:05	12345 km
+ 12:10	12357 km
+ 12:15	12363 km
+ 12:20	12363 km
+ 12:25	12363 km
+ 12:30	12373 km
+ 12:35	12383 km
+ 12:40	12393 km
+ 12:45	12399 km
+ 12:50	12405 km
+ 12:55	12411 km
+ 13:00	12415 km
+ 13:05	12420 km
+ 13:10	12422 km
+ 13:15	12423 km
 
 We fill the database as follows:
 
@@ -308,12 +328,8 @@ If it doesn't, something may be wrong.  Perhaps your OS will print
 writes "U" or "UNKN" or something similar that's okay.  If something
 else is wrong, it will probably be due to an error you made (assuming
 that my tutorial is correct of course :-). In that case: delete the
-database and try again.  Sometimes things change.  This example used
-to provide numbers like "0.04" in stead of "4.00000e-02".  Those are
-really the same numbers, just written down differently.  Don't be
-alarmed if a future version of rrdtool displays a slightly different
-form of output. The examples in this document are correct for version
-1.2.0 of RRDtool.
+database and try again. 
+
 
 The meaning of the above output will become clear below.
 
@@ -352,8 +368,8 @@ The "color" black is all colors off: 000000
    magenta #FF00FF     (mixed red with blue)
    gray    #555555     (one third of all components)
 
-Additionally you can add an alpha channel (transparency).  The default
-will be "FF" which means non-transparent.
+Additionally you can (with a recent RRDtool)  add an alpha channel
+(transparency).  The default will be "FF" which means non-transparent.
 
 The PNG you just created can be displayed using your favorite image
 viewer.  Web browsers will display the PNG via the URL
@@ -363,18 +379,18 @@ viewer.  Web browsers will display the PNG via the URL
 
 When looking at the image, you notice that the horizontal axis is labeled
 12:10, 12:20, 12:30, 12:40 and 12:50. Sometimes a label doesn't fit (12:00
-and 13:00 would be candidates) so they are skipped.
+and 13:00 would be likely candidates) so they are skipped.
 
 The vertical axis displays the range we entered. We provided
 kilometers and when divided by 300 seconds, we get very small
-numbers. To be exact, the first value was 12 (12'357-12'345) and divided
+numbers. To be exact, the first value was 12 (12357-12345) and divided
 by 300 this makes 0.04, which is displayed by RRDtool as "40 m"
-meaning "40/1'000". The "m" (milli) has nothing to do with meters,
+meaning "40/1000". The "m" (milli) has nothing to do with meters (also m),
 kilometers or millimeters! RRDtool doesn't know about the physical
 units of our data, it just works with dimensionless numbers.
 
 If we had measured our distances in meters, this would have been
-(12'357'000-12'345'000)/300 = 12'000/300 = 40.
+(12357000-12345000)/300 = 12000/300 = 40.
 
 As most people have a better feel for numbers in this range, we'll
 correct that. We could recreate our database and store the correct
@@ -388,10 +404,17 @@ the png file!
       CDEF:realspeed=myspeed,1000,\*                  \
       LINE2:realspeed#FF0000
 
-Note: Make sure not to forget the backslash \ in front of the
-multiplication operator * above. The backslash is needed to "escape"
-the * as some operating systems might interpret and expand * instead
-of passing it to the rrdtool command.
+Note: I need to escape the multiplication operator * with a backslash.
+If I don't, the operating system may interpret it and use it for file
+name expansion. You could also place the line within quotation marks
+like so:
+
+      "CDEF:realspeed=myspeed,1000,*"                  \
+
+It boils down to: it is RRDtool which should see *, not your shell.
+And it is your shell interpreting \, not RRDtool. You may need to
+adjust examples accordingly if you happen to use an operating
+system or shell which behaves differently.
 
 After viewing this PNG, you notice the "m" (milli) has
 disappeared. This it what the correct result would be. Also, a label
@@ -405,19 +428,19 @@ those". Don't bother with RPN yet, it will be explained later on in
 more detail. Also, you may want to read my tutorial on CDEFs and Steve
 Rader's tutorial on RPN. But first finish this tutorial.
 
-Hang on! If we can multiply values with 1'000, it should also be possible
+Hang on! If we can multiply values with 1000, it should also be possible
 to display kilometers per hour from the same data!
 
 To change a value that is measured in meters per second:
 
- Calculate meters per hour:     value * 3'600
- Calculate kilometers per hour: value / 1'000
- Together this makes:           value * (3'600/1'000) or value * 3.6
+ Calculate meters per hour:     value * 3600
+ Calculate kilometers per hour: value / 1000
+ Together this makes:           value * (3600/1000) or value * 3.6
 
 In our example database we made a mistake and we need to compensate for
-this by multiplying with 1'000. Applying that correction:
+this by multiplying with 1000. Applying that correction:
 
- value * 3.6  * 1'000 == value * 3'600
+ value * 3.6  * 1000 == value * 3600
 
 Now let's create this PNG, and add some more magic ...
 
@@ -435,7 +458,7 @@ Now let's create this PNG, and add some more magic ...
 Note: here we use another means to escape the * operator by enclosing
 the whole string in double quotes.
 
-This graph looks much better. Speed is shown in KM/H and there is even
+This graph looks much better. Speed is shown in km/h and there is even
 an extra line with the maximum allowed speed (on the road I travel
 on). I also changed the colors used to display speed and changed it
 from a line into an area.
@@ -461,7 +484,8 @@ following PNG:
       --start 920804400 --end 920808000               \
       --vertical-label km/h                           \
       DEF:myspeed=test.rrd:speed:AVERAGE              \
-      "CDEF:kmh=myspeed,3600,*"                       \
+      CDEF:nonans=myspeed,UN,0,myspeed,IF             \
+      CDEF:kmh=nonans,3600,*                          \
       CDEF:fast=kmh,100,GT,100,0,IF                   \
       CDEF:over=kmh,100,GT,kmh,100,-,0,IF             \
       CDEF:good=kmh,100,GT,0,kmh,IF                   \
@@ -469,6 +493,10 @@ following PNG:
       AREA:good#00FF00:"Good speed"                   \
       AREA:fast#550000:"Too fast"                     \
       STACK:over#FF0000:"Over speed"
+
+Remember the note in the beginning?  I had to remove unknown data from
+this example. The 'nonans' CDEF is new, and the 6th line (which used to
+be the 5th line) used to read 'CDEF:kmh=myspeed,3600,*'
 
 Let's create a quick and dirty HTML page to view the three PNGs:
 
@@ -522,7 +550,7 @@ whatever. Any incrementing counter can be monitored and graphed using
 the stuff you learned so far. Later on we will also be able to monitor
 other types of values like temperature.
 
-Most (?) people interested in RRDtool will use the counter that keeps track
+Many people interested in RRDtool will use the counter that keeps track
 of octets (bytes) transfered by a network device. So let's do just
 that next. We will start with a description of how to collect data.
 
@@ -713,8 +741,8 @@ Then, after collecting data for a day, try to create an image using:
             LINE1:outoctets#0000FF:"Out traffic"
 
 This should produce a picture with one day worth of traffic.
-One day is 24 hours of 60 minutes of 60 seconds: 24*60*60=86'400, we
-start at now minus 86'400 seconds. We define (with DEFs) inoctets and
+One day is 24 hours of 60 minutes of 60 seconds: 24*60*60=86400, we
+start at now minus 86400 seconds. We define (with DEFs) inoctets and
 outoctets as the average values from the database myrouter.rrd and draw
 an area for the "in" traffic and a line for the "out" traffic.
 
@@ -733,16 +761,16 @@ the maximum values instead of the average values. Let's go
 into this a bit more.
 
 Recall all the stuff about the speed of the car. Suppose we drove at 144
-KM/H during 5 minutes and then were stopped by the police for 25 minutes.
+km/h during 5 minutes and then were stopped by the police for 25 minutes.
 At the end of the lecture we would take our laptop and create and view the
 image taken from the database. If we look at the second RRA we did
 create, we would have the average from 6 samples. The samples measured
 would be 144+0+0+0+0+0=144, divided by 30 minutes, corrected for the
-error by 1000, translated into KM/H, with a result of 24 KM/H.
+error by 1000, translated into km/h, with a result of 24 km/h.
 I would still get a ticket but not for speeding anymore :)
 
 Obviously, in this case we shouldn't look at the averages. In some
-cases they are handy. If you want to know how many KM you had traveled,
+cases they are handy. If you want to know how many km you had traveled,
 the averaged picture would be the right one to look at. On the other hand, for
 the speed that we traveled at, the maximum numbers seen is much more
 interesting. Later we will see more types.
@@ -754,9 +782,9 @@ we have created, there are two archives that keep data per day. The
 archive that keeps averages will show low numbers, the archive that
 shows maxima will have higher numbers.
 
-For my car this would translate in averages per day of 96/24=4 KM/H
+For my car this would translate in averages per day of 96/24=4 km/h
 (as I travel about 94 kilometers on a day) during working days, and
-maxima of 120 KM/H (my top speed that I reach every day).
+maxima of 120 km/h (my top speed that I reach every day).
 
 Big difference. Do not look at the second graph to estimate the
 distances that I travel and do not look at the first graph to
@@ -764,11 +792,11 @@ estimate my speed. This will work if the samples are close together,
 as they are in five minutes, but not if you average.
 
 On some days, I go for a long ride. If I go across Europe and travel
-for 12 hours, the first graph will rise to about 60 KM/H. The second
-one will show 180 KM/H. This means that I traveled a distance of 60
-KM/H times 24 H = 1440 KM. I did this with a higher speed and a
-maximum around 180 KM/H. However, it probably doesn't mean that I
-traveled for 8 hours at a constant speed of 180 KM/H!
+for 12 hours, the first graph will rise to about 60 km/h. The second
+one will show 180 km/h. This means that I traveled a distance of 60
+km/h times 24 h = 1440 km. I did this with a higher speed and a
+maximum around 180 km/h. However, it probably doesn't mean that I
+traveled for 8 hours at a constant speed of 180 km/h!
 
 This is a real example: go with the flow through Germany (fast!) and stop
 a few times for gas and coffee. Drive slowly through Austria and the
@@ -843,7 +871,7 @@ The two additional types are DERIVE and ABSOLUTE. Absolute can be used like
 counter with one difference: RRDtool assumes the counter is reset when
 it's read. That is: its delta is known without calculation by RRDtool
 whereas RRDtool needs to calculate it for the counter type.
-Example: our first example (12'345, 12'357, 12'363, 12'363) would read:
+Example: our first example (12345, 12357, 12363, 12363) would read:
 unknown, 12, 6, 0. The rest of the calculations stay the same.
 The other one, derive, is like counter. Unlike counter, it can also
 decrease so it can have a negative delta. Again, the rest of the
@@ -893,7 +921,7 @@ what we put in: a sort of a wave.
 =item *
 
 Line C is of type DERIVE. It should be a counter that can decrease. It does
-so between 2'400 and 0, with 1'800 in-between.
+so between 2400 and 0, with 1800 in-between.
 
 =item *
 
@@ -961,10 +989,10 @@ increasing values.
 
 There are a few more basics to show. Some important options are still to
 be covered and we haven't look at counter wraps yet. First the counter wrap:
-In our car we notice that the counter shows 999'987. We travel 20 KM and
-the counter should go to 1'000'007. Unfortunately, there are only six digits
-on our counter so it really shows 000'007. If we would plot that on a type
-DERIVE, it would mean that the counter was set back 999'980 KM. It wasn't,
+In our car we notice that the counter shows 999987. We travel 20 km and
+the counter should go to 1000007. Unfortunately, there are only six digits
+on our counter so it really shows 000007. If we would plot that on a type
+DERIVE, it would mean that the counter was set back 999980 km. It wasn't,
 and there has to be some protection for this. This protection is only
 available for type COUNTER which should be used for this kind of counter
 anyways. How does it work? Type counter should never decrease and
@@ -972,16 +1000,16 @@ therefore RRDtool must assume it wrapped if it does decrease!
 If the delta is negative, this can be compensated for by adding the
 maximum value of the counter + 1. For our car this would be:
 
- Delta = 7 - 999'987 = -999'980    (instead of 1'000'007-999'987=20)
+ Delta = 7 - 999987 = -999980    (instead of 1000007-999987=20)
 
- Real delta = -999'980 + 999'999 + 1 = 20
+ Real delta = -999980 + 999999 + 1 = 20
 
 At the time of writing this document, RRDtool knows of counters that
 are either 32 bits or 64 bits of size. These counters can handle the
 following different values:
 
- - 32 bits: 0 ..           4'294'967'295
- - 64 bits: 0 .. 18'446'744'073'709'551'615
+ - 32 bits: 0 ..           4294967295
+ - 64 bits: 0 .. 18446744073709551615
 
 If these numbers look strange to you, you can view them in
 their hexadecimal form:
@@ -1010,42 +1038,42 @@ can't handle the numbers :)
 
 Correction numbers:
 
- - 32 bits: (4'294'967'295 + 1) =                                4'294'967'296
- - 64 bits: (18'446'744'073'709'551'615 + 1)
-				    - correction1 = 18'446'744'069'414'584'320
+ - 32 bits: (4294967295 + 1) =                                4294967296
+ - 64 bits: (18446744073709551615 + 1)
+				    - correction1 = 18446744069414584320
 
- Before:        4'294'967'200
+ Before:        4294967200
  Increase:                100
- Should become: 4'294'967'300
+ Should become: 4294967300
  But really is:             4
- Delta:        -4'294'967'196
- Correction1:  -4'294'967'196 + 4'294'967'296 = 100
+ Delta:        -4294967196
+ Correction1:  -4294967196 + 4294967296 = 100
 
- Before:        18'446'744'073'709'551'000
+ Before:        18446744073709551000
  Increase:                             800
- Should become: 18'446'744'073'709'551'800
+ Should become: 18446744073709551800
  But really is:                        184
- Delta:        -18'446'744'073'709'550'816
- Correction1:  -18'446'744'073'709'550'816
-				+ 4'294'967'296 = -18'446'744'069'414'583'520
- Correction2:  -18'446'744'069'414'583'520
-	           + 18'446'744'069'414'584'320 = 800
+ Delta:        -18446744073709550816
+ Correction1:  -18446744073709550816
+				+ 4294967296 = -18446744069414583520
+ Correction2:  -18446744069414583520
+	           + 18446744069414584320 = 800
 
- Before:        18'446'744'073'709'551'615 ( maximum value )
- Increase:      18'446'744'069'414'584'320 ( absurd increase, minimum for
- Should become: 36'893'488'143'124'135'935             this example to work )
- But really is: 18'446'744'069'414'584'319
- Delta:                     -4'294'967'296
- Correction1:  -4'294'967'296 + 4'294'967'296 = 0
+ Before:        18446744073709551615 ( maximum value )
+ Increase:      18446744069414584320 ( absurd increase, minimum for
+ Should become: 36893488143124135935             this example to work )
+ But really is: 18446744069414584319
+ Delta:                     -4294967296
+ Correction1:  -4294967296 + 4294967296 = 0
  (not negative -> no correction2)
 
- Before:        18'446'744'073'709'551'615 ( maximum value )
- Increase:      18'446'744'069'414'584'319 ( one less increase )
- Should become: 36'893'488'143'124'135'934
- But really is: 18'446'744'069'414'584'318
- Delta:                     -4'294'967'297
- Correction1:  -4'294'967'297 + 4'294'967'296 = -1
- Correction2:  -1 + 18'446'744'069'414'584'320 = 18'446'744'069'414'584'319
+ Before:        18446744073709551615 ( maximum value )
+ Increase:      18446744069414584319 ( one less increase )
+ Should become: 36893488143124135934
+ But really is: 18446744069414584318
+ Delta:                     -4294967297
+ Correction1:  -4294967297 + 4294967296 = -1
+ Correction2:  -1 + 18446744069414584320 = 18446744069414584319
 
 As you can see from the last two examples, you need strange numbers
 for RRDtool to fail (provided it's bug free of course), so this should
@@ -1095,8 +1123,8 @@ RRDtool interpolates and stores 300 as it should be.
  time+600: 600 delta=300   time+603:  603 delta=303
  time+900: 900 delta=300   time+900:  900 delta=297
 
-Let's create two identical databases. I've chosen the time range 920'805'000
-to 920'805'900 as this goes very well with the example numbers.
+Let's create two identical databases. I've chosen the time range 920805000
+to 920805900 as this goes very well with the example numbers.
 
    rrdtool create seconds1.rrd   \
       --start 920804700          \
@@ -1173,5 +1201,5 @@ basic questions. They will not only get their answers, but at the same
 time learn a whole lot more.
 
 Alex van den Bogaerdt
-E<lt>alex@ergens.op.het.netE<gt>
+E<lt>alex@vandenbogaerdt.nlE<gt>
 

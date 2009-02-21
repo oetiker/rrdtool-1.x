@@ -1180,4 +1180,6 @@ Si es así, ayuda a otros refiriéndolos a este documento cuando te
 hagan preguntas básicas. No sólo obtendrán la respuesta, sino que
 aprenderán muchas otras cosas.
 
-Alex van den Bogaerdt <alex@ergens.op.het.net>
+¡No hablo español!
+Alex van den Bogaerdt <alex@vandenbogaerdt.nl>
+
