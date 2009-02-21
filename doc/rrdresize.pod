@@ -50,5 +50,5 @@ RRA while at the same timestamp this data is available in another RRA.
 
 =head1 AUTHOR
 
-Alex van den Bogaerdt <alex@ergens.op.het.net>
+Alex van den Bogaerdt <alex@vandenbogaerdt.nl>
 

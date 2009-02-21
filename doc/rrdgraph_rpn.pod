@@ -401,4 +401,5 @@ Make sure to read L<rrdgraph_examples> for tipsE<amp>tricks.
 
 Program by Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 
-This manual page by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt>
+This manual page by Alex van den Bogaerdt E<lt>alex@vandenbogaerdt.nlE<gt>
+with corrections and/or additions by several people

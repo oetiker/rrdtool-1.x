@@ -206,4 +206,5 @@ L<rrdgraph_graph> page describes all the graph and print functions.
 
 Program by Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
 
-This manual page by Alex van den Bogaerdt E<lt>alex@ergens.op.het.netE<gt>
+This manual page by Alex van den Bogaerdt E<lt>alex@vandenbogaerdt.nlE<gt>
+with corrections and/or additions by several people
