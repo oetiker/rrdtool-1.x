@@ -466,7 +466,7 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
 
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
-  len = vsnprintf(buffer, sizeof(buffer)-1, fmt, argp);
+  len = vsnprintf(buffer, sizeof(buffer), fmt, argp);
 #else
   len = vsprintf(buffer, fmt, argp);
 #endif
@@ -524,7 +524,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
   rclen = sprintf(buffer, "%d ", lines);
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
-  len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen-1, fmt, argp);
+  len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen, fmt, argp);
 #else
   len = vsprintf(buffer+rclen, fmt, argp);
 #endif
@@ -2159,7 +2159,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
   char *port;
   int status;
 
-  strncpy (addr_copy, sock->addr, sizeof (addr_copy));
+  strncpy (addr_copy, sock->addr, sizeof(addr_copy)-1);
   addr_copy[sizeof (addr_copy) - 1] = 0;
   addr = addr_copy;
 
@@ -2451,7 +2451,7 @@ static int daemonize (void) /* {{{ */
   {
     listen_socket_t sock;
     memset(&sock, 0, sizeof(sock));
-    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr));
+    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr)-1);
     open_listen_socket (&sock);
   }
 
