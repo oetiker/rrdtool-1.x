@@ -203,7 +203,9 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(tzset fsync mbstowcs opendir readdir chdir chroot getuid setlocale strerror strerror_r snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(tzset fsync mbstowcs opendir readdir chdir chroot getuid setlocale strerror snprintf vsnprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+
+AC_FUNC_STRERROR_R
 
 CONFIGURE_PART(Map/Fadvis/Madvise checking)
 

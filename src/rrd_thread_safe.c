@@ -59,11 +59,38 @@ const char *rrd_strerror(
     int err)
 {
     rrd_context_t *ctx = rrd_get_context();
+    char *ret = "unknown error";
 
-    if (strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr)))
-        return "strerror_r failed. sorry!";
-    else
-        return ctx->lib_errstr;
+    *ctx->lib_errstr = '\0';
+
+    /* Even though POSIX/XSI requires "strerror_r" to return an "int", some
+     * systems (e.g. the GNU libc) return a "char *" _and_ ignore the second
+     * argument ... -tokkee */
+#if STRERROR_R_CHAR_P
+    ret = strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr));
+    if ((! ret) || (*ret == '\0')) {
+        if (*ctx->lib_errstr != '\0')
+            ret = ctx->lib_errstr;
+        else {
+            /* according to the manpage this should not happen -
+               let's handle it somehow sanely anyway */
+            snprintf(ctx->lib_errstr, sizeof(ctx->lib_errstr),
+                    "unknown error %i - strerror_r did not return anything",
+                    err);
+            ctx->lib_errstr[sizeof(ctx->lib_errstr) - 1] = '\0';
+            ret = ctx->lib_errstr;
+        }
+    }
+#else /* ! STRERROR_R_CHAR_P */
+    if (strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr))) {
+        snprintf(ctx->lib_errstr, sizeof(ctx->lib_errstr),
+                "unknown error %i - strerror_r returned with errno = %i",
+                err, errno);
+        ctx->lib_errstr[sizeof(ctx->lib_errstr) - 1] = '\0';
+    }
+    ret = ctx->lib_errstr;
+#endif
+    return ret;
 }
 #else
 #undef strerror
