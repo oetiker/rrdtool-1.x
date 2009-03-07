@@ -4,21 +4,23 @@ rrdflush - Flush the values for a spcific RRD file from memory.
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<flush> I<filename>
+B<rrdtool> B<flush>
 S<[B<--daemon> I<address>]>
+I<filename> [I<filename> ...]
 
 =head1 DESCRIPTION
 
-The B<flush> function connects to L<rrdcached>, the RRD caching daemon, and
-issues a "flush" command for the given file. The daemon will put this file to
-the head of the update queue so it is written "soon". The status will be
-returned only after the file's pending updates have been written to disk.
+The B<flush> function connects to L<rrdcached>, the RRD caching daemon,
+and issues a "flush" command for the given files. The daemon will put the
+files to the head of the update queue so they are written "soon". The
+status will be returned only after the files' pending updates have been
+written to disk.
 
 =over 8
 
 =item I<filename>
 
-The name of the B<RRD> that is to be written to disk.
+The name(s) of the B<RRD> file(s) that are to be written to disk.
 
 =item B<--daemon> I<address>
 

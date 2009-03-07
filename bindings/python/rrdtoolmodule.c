@@ -516,6 +516,34 @@ static PyObject *PyRRD_updatev(
     return r;
 }
 
+static char PyRRD_flush__doc__[] =
+  "flush(args..): flush RRD files from memory\n"
+  "   flush [--daemon address] file [file ...]";
+
+static PyObject *PyRRD_flush(
+    PyObject UNUSED(*self),
+    PyObject * args)
+{
+    PyObject *r;
+    int       argc;
+    char    **argv;
+
+    if (create_args("flush", args, &argc, &argv) < 0)
+        return NULL;
+
+    if (rrd_cmd_flush(argc, argv) != 0) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        r = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        r = Py_None;
+    }
+
+    destroy_args(&argv);
+    return r;
+}
+
 /* List of methods defined in the module */
 #define meth(name, func, doc) {name, (PyCFunction)func, METH_VARARGS, doc}
 
@@ -531,6 +559,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("info", PyRRD_info, PyRRD_info__doc__),
     meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
     meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
+    meth("flush", PyRRD_flush, PyRRD_flush__doc__),
     {NULL, NULL, 0, NULL}
 };
 

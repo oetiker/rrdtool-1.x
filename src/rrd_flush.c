@@ -26,6 +26,7 @@ int rrd_cmd_flush (int argc, char **argv)
 {
     char *opt_daemon = NULL;
     int status;
+    int i;
 
     /* initialize getopt */
     optind = 0;
@@ -65,9 +66,9 @@ int rrd_cmd_flush (int argc, char **argv)
         }
     } /* while (42) */
 
-    if ((argc - optind) != 1)
+    if ((argc - optind) < 1)
     {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>", argv[0]);
+        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file> [<file> ...]", argv[0]);
         return (-1);
     }
 
@@ -85,7 +86,12 @@ int rrd_cmd_flush (int argc, char **argv)
         return (-1);
     }
 
-    status = rrdc_flush(argv[optind]);
+    status = 0;
+    for (int i = optind; i < argc; i++)
+    {
+        status = rrdc_flush(argv[i]);
+        if (status) break;
+    }
 
     return ((status == 0) ? 0 : -1);
 } /* int rrd_flush */

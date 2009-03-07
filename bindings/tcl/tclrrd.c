@@ -230,6 +230,30 @@ static int Rrd_Dump(
     return TCL_OK;
 }
 
+/* Thread-safe version */
+static int Rrd_Flush(
+    ClientData __attribute__((unused)) clientData,
+    Tcl_Interp *interp,
+    int argc,
+    CONST84 char *argv[])
+{
+    if (argc < 2) {
+        Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
+                         (char *) NULL);
+        return TCL_ERROR;
+    }
+
+    rrd_cmd_flush(argc, (char**)argv);
+
+    if (rrd_test_error()) {
+        Tcl_AppendResult(interp, "RRD Error: ",
+                         rrd_get_error(), (char *) NULL);
+        rrd_clear_error();
+        return TCL_ERROR;
+    }
+
+    return TCL_OK;
+}
 
 
 /* Thread-safe version */
@@ -626,6 +650,7 @@ typedef struct {
 static CmdInfo rrdCmds[] = {
     {"Rrd::create", Rrd_Create, 1}, /* Thread-safe version */
     {"Rrd::dump", Rrd_Dump, 0}, /* Thread-safe version */
+    {"Rrd::flush", Rrd_Flush, 0},
     {"Rrd::last", Rrd_Last, 0}, /* Thread-safe version */
     {"Rrd::lastupdate", Rrd_Lastupdate, 0}, /* Thread-safe version */
     {"Rrd::update", Rrd_Update, 1}, /* Thread-safe version */

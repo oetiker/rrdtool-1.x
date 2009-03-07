@@ -18,3 +18,7 @@ RRDdump
 RRDgraph
 --------
 * VDEF PERCENTNAN (PRECENT that ignores NAN)
+
+RRDflush
+--------
+* instruct the rrdcached to flush all its data
