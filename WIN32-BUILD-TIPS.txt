@@ -151,7 +151,7 @@ and cd to the bindings\perl-shared subdirectory.
 (8) Run vcvars32.bat; this batch file, in your vc98\bin directory will
 set necessary environment options for command line compiling.
 (9) In bindings\perl-shared, run
-perl ntmake.pl
+perl ntmake-build
 nmake
 nmake test
 If nmake test succeeds, you are good to go. RRDs.dll is in 
