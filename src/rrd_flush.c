@@ -90,7 +90,21 @@ int rrd_cmd_flush (int argc, char **argv)
     for (int i = optind; i < argc; i++)
     {
         status = rrdc_flush(argv[i]);
-        if (status) break;
+        if (status)
+        {
+            char *error;
+            int   remaining;
+
+            error     = strdup(rrd_get_error());
+            remaining = argc - optind - 1;
+
+            rrd_set_error("Flushing of file \"%s\" failed: %s. Skipping "
+                    "remaining %i file%s.", argv[i],
+                    ((! error) || (*error == '\0')) ? "unknown error" : error,
+                    remaining, (remaining == 1) ? "" : "s");
+            free(error);
+            break;
+        }
     }
 
     return ((status == 0) ? 0 : -1);
