@@ -38,6 +38,7 @@ Kevin Brintnall <kbrint with rufus.net> bugfixes in and additions to rrdcached, 
 Larry Leszczynski <larryl with furph.com>
 Mark Plaksin <happy@usg.edu> rrd_graph_v
 Matt Chambers <matthew.chambers with vanderbilt.edu> --full-size-mode for rrdgraph
+Melchior Rabe <rrdtool at mrab.de> -- legend position patch
 McCreary mccreary with xoanon.colorado.edu
 Mike Mitchell <mcm with unx.sas.com>
 Mike Slifcak <slif with bellsouth.net> many rrdtool-1.1.x fixes

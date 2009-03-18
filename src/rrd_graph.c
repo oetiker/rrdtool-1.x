@@ -1649,25 +1649,36 @@ int print_calc(
 }
 
 
+
 /* place legends with color spots */
 int leg_place(
     image_desc_t *im,
-    int *gY)
+    int calc_width)
 {
     /* graph labels */
     int       interleg = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
     int       border = im->text_prop[TEXT_PROP_LEGEND].size * 2.0;
     int       fill = 0, fill_last;
+    double    legendwidth; // = im->ximg - 2 * border;
     int       leg_c = 0;
     double    leg_x = border;
-    int       leg_y = im->yimg;
-    int       leg_y_prev = im->yimg;
+    int       leg_y = 0; //im->yimg;
+    int       leg_y_prev = 0; // im->yimg;
     int       leg_cc;
     double    glue = 0;
     int       i, ii, mark = 0;
     char      default_txtalign = TXA_JUSTIFIED; /*default line orientation */
     int      *legspace;
     char     *tab;
+    char      saved_legend[FMT_LEG_LEN + 5];
+
+    if(calc_width){
+        legendwidth = 0;
+    }
+    else{
+        legendwidth = im->legendwidth - 2 * border;
+    }
+
 
     if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
         if ((legspace = (int*)malloc(im->gdes_c * sizeof(int))) == NULL) {
@@ -1677,6 +1688,10 @@ int leg_place(
 
         for (i = 0; i < im->gdes_c; i++) {
             char      prt_fctn; /*special printfunctions */
+            if(calc_width){
+                strcpy(saved_legend, im->gdes[i].legend);
+            }
+
             fill_last = fill;
             /* hide legends for rules which are not displayed */
             if (im->gdes[i].gf == GF_TEXTALIGN) {
@@ -1699,6 +1714,7 @@ int leg_place(
                 memmove(tab, tab + 1, strlen(tab));
                 tab[0] = (char) 9;
             }
+
             leg_cc = strlen(im->gdes[i].legend);
             /* is there a controle code at the end of the legend string ? */
             if (leg_cc >= 2 && im->gdes[i].legend[leg_cc - 2] == '\\') {
@@ -1757,7 +1773,10 @@ int leg_place(
             }
 
             if (prt_fctn == '\0') {
-                if (i == im->gdes_c - 1 || fill > im->ximg - 2 * border) {
+                if(calc_width && (fill > legendwidth)){
+                    legendwidth = fill;
+                }
+                if (i == im->gdes_c - 1 || fill > legendwidth) {
                     /* just one legend item is left right or center */
                     switch (default_txtalign) {
                     case TXA_RIGHT:
@@ -1775,7 +1794,7 @@ int leg_place(
                     }
                 }
                 /* is it time to place the legends ? */
-                if (fill > im->ximg - 2 * border) {
+                if (fill > legendwidth) {
                     if (leg_c > 1) {
                         /* go back one */
                         i--;
@@ -1788,23 +1807,22 @@ int leg_place(
                 }
             }
 
-
             if (prt_fctn != '\0') {
                 leg_x = border;
                 if (leg_c >= 2 && prt_fctn == 'j') {
-                    glue = (double)(im->ximg - fill - 2 * border) / (double)(leg_c - 1);
+                    glue = (double)(legendwidth - fill) / (double)(leg_c - 1);
                 } else {
                     glue = 0;
                 }
                 if (prt_fctn == 'c')
-                    leg_x = (double)(im->ximg - fill) / 2.0;
+                    leg_x = (double)(legendwidth - fill) / 2.0;
                 if (prt_fctn == 'r')
-                    leg_x = im->ximg - fill - border;
+                    leg_x = legendwidth - fill - border;
                 for (ii = mark; ii <= i; ii++) {
                     if (im->gdes[ii].legend[0] == '\0')
                         continue;   /* skip empty legends */
                     im->gdes[ii].leg_x = leg_x;
-                    im->gdes[ii].leg_y = leg_y;
+                    im->gdes[ii].leg_y = leg_y + border;
                     leg_x +=
                         (double)gfx_get_text_width(im, leg_x,
                                            im->
@@ -1820,26 +1838,25 @@ int leg_place(
                     leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
                 if (prt_fctn == 's')
                     leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
+
+                if(calc_width && (fill > legendwidth)){
+                    legendwidth = fill;
+                }
                 fill = 0;
                 leg_c = 0;
                 mark = ii;
             }
+
+            if(calc_width){
+                strcpy(im->gdes[i].legend, saved_legend);
+            }
         }
 
-        if (im->extra_flags & FULL_SIZE_MODE) {
-            /* now for some backpaddeling. We have to shift up all the
-               legend items into the graph and tell the caller about the
-               space we used up. */
-            long shift_up = leg_y - im->yimg - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 + border * 0.7;
-            for (i = 0; i < im->gdes_c; i++) {
-                im->gdes[i].leg_y -= shift_up;
-            }
-            im->yorigin = im->yorigin - leg_y + im->yimg - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 - border;            
-            *gY = im->yorigin;
-        } else {
-            im->yimg =
-                leg_y - im->text_prop[TEXT_PROP_LEGEND].size * 1.8 +
-                border * 0.6;
+        if(calc_width){
+            im->legendwidth = legendwidth + 2 * border;
+        }
+        else{
+            im->legendheight = leg_y + border * 0.6;
         }
         free(legspace);
     }
@@ -2626,24 +2643,20 @@ void grid_paint(
     /* yaxis unit description */
     if (im->ylegend[0] != '\0'){
         gfx_text(im,
-                 10,
-                 (im->yorigin -
-                  im->ysize / 2),
+                 im->xOriginLegendY+10,
+                 im->yOriginLegendY,
                  im->graph_col[GRC_FONT],
                  im->
                  text_prop[TEXT_PROP_UNIT].
                  font_desc,
                  im->tabwidth,
                  RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
+
     }
     if (im->second_axis_legend[0] != '\0'){
-            double Xylabel=gfx_get_text_width(im, 0,
-                        im->text_prop[TEXT_PROP_AXIS].font_desc,
-                        im->tabwidth,
-                        "0") * im->unitslength
-                    + im->text_prop[TEXT_PROP_UNIT].size *2;
             gfx_text( im,
-                  im->xorigin+im->xsize+Xylabel+8, (im->yorigin - im->ysize/2),
+                  im->xOriginLegendY2+10, 
+                  im->yOriginLegendY2,
                   im->graph_col[GRC_FONT],
                   im->text_prop[TEXT_PROP_UNIT].font_desc,
                   im->tabwidth, 
@@ -2654,7 +2667,7 @@ void grid_paint(
  
     /* graph title */
     gfx_text(im,
-             im->ximg / 2, 6,
+             im->xOriginTitle, im->yOriginTitle+6,
              im->graph_col[GRC_FONT],
              im->
              text_prop[TEXT_PROP_TITLE].
@@ -2664,7 +2677,8 @@ void grid_paint(
     if (!(im->extra_flags & NO_RRDTOOL_TAG)){
         water_color = im->graph_col[GRC_FONT];
         water_color.alpha = 0.3;
-        gfx_text(im, im->ximg - 4, 5,
+        double xpos = im->legendposition == EAST ? im->xOriginLegendY : im->ximg - 4;
+        gfx_text(im, xpos, 5,
                  water_color,
                  im->
                  text_prop[TEXT_PROP_WATERMARK].
@@ -2673,6 +2687,8 @@ void grid_paint(
     }    
     /* graph watermark */
     if (im->watermark[0] != '\0') {
+        water_color = im->graph_col[GRC_FONT];
+        water_color.alpha = 0.3;
         gfx_text(im,
                  im->ximg / 2, im->yimg - 6,
                  water_color,
@@ -2688,8 +2704,8 @@ void grid_paint(
             if (im->gdes[i].legend[0] == '\0')
                 continue;
             /* im->gdes[i].leg_y is the bottom of the legend */
-            X0 = im->gdes[i].leg_x;
-            Y0 = im->gdes[i].leg_y;
+            X0 = im->xOriginLegend + im->gdes[i].leg_x;
+            Y0 = im->legenddirection == TOP_DOWN ? im->yOriginLegend + im->gdes[i].leg_y : im->yOriginLegend + im->legendheight - im->gdes[i].leg_y;
             gfx_text(im, X0, Y0,
                      im->graph_col[GRC_FONT],
                      im->
@@ -2806,21 +2822,11 @@ int graph_size_location(
     /* The actual size of the image to draw is determined from
      ** several sources.  The size given on the command line is
      ** the graph area but we need more as we have to draw labels
-     ** and other things outside the graph area
+     ** and other things outside the graph area. If the option 
+     ** --full-size-mode is selected the size defines the total 
+     ** image size and the size available for the graph is 
+     ** calculated.
      */
-
-    int       Xvertical = 0, Ytitle =
-        0, Xylabel = 0, Xmain = 0, Ymain =
-        0, Yxlabel = 0, Xspacing = 15, Yspacing = 15, Ywatermark = 4;
-
-    if (im->extra_flags & ONLY_GRAPH) {
-        im->xorigin = 0;
-        im->ximg = im->xsize;
-        im->yimg = im->ysize;
-        im->yorigin = im->ysize;
-        ytr(im, DNAN);
-        return 0;
-    }
 
     /** +---+-----------------------------------+
      ** | y |...............graph title.........|
@@ -2842,8 +2848,35 @@ int graph_size_location(
      ** +---------------------------------------+
      */
 
+    int       Xvertical = 0, Xvertical2 = 0, Ytitle =
+        0, Xylabel = 0, Xmain = 0, Ymain =
+        0, Yxlabel = 0, Xspacing = 15, Yspacing = 15, Ywatermark = 4;
+
+    // no legends and no the shall be plotted it's easy
+    if (im->extra_flags & ONLY_GRAPH) {
+        im->xorigin = 0;
+        im->ximg = im->xsize;
+        im->yimg = im->ysize;
+        im->yorigin = im->ysize;
+        ytr(im, DNAN);
+        return 0;
+    }
+
+    if(im->watermark[0] != '\0') {
+        Ywatermark = im->text_prop[TEXT_PROP_WATERMARK].size * 2;
+    }
+
+    // calculate the width of the left vertical legend
     if (im->ylegend[0] != '\0') {
         Xvertical = im->text_prop[TEXT_PROP_UNIT].size * 2;
+    }
+
+    // calculate the width of the right vertical legend
+    if (im->second_axis_legend[0] != '\0') {
+        Xvertical2 = im->text_prop[TEXT_PROP_UNIT].size * 2;
+    }
+    else{
+        Xvertical2 = Xspacing;
     }
 
     if (im->title[0] != '\0') {
@@ -2854,92 +2887,112 @@ int graph_size_location(
         /* if necessary, reduce the font size of the title until it fits the image width */
         Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
     }
+    else{
+        // we have no title; get a little clearing from the top
+        Ytitle = 1.5 * Yspacing;
+    }
 
     if (elements) {
         if (im->draw_x_grid) {
+            // calculate the height of the horizontal labelling
             Yxlabel = im->text_prop[TEXT_PROP_AXIS].size * 2.5;
         }
         if (im->draw_y_grid || im->forceleftspace) {
+            // calculate the width of the vertical labelling
             Xylabel =
                 gfx_get_text_width(im, 0,
-                                   im->
-                                   text_prop
-                                   [TEXT_PROP_AXIS].
-                                   font_desc,
+                                   im->text_prop[TEXT_PROP_AXIS].font_desc,
                                    im->tabwidth, "0") * im->unitslength;
         }
     }
 
+    // add some space to the labelling
+    Xylabel += Xspacing;
+
+    /* If the legend is printed besides the graph the width has to be
+     ** calculated first. Placing the legend north or south of the 
+     ** graph requires the width calculation first, so the legend is 
+     ** skipped for the moment.
+     */
+    im->legendheight = 0;
+    im->legendwidth = 0;
+    if (!(im->extra_flags & NOLEGEND)) {
+        if(im->legendposition == WEST || im->legendposition == EAST){
+            if (leg_place(im, 1) == -1){
+                return -1;
+            }
+        }
+    }
+
     if (im->extra_flags & FULL_SIZE_MODE) {
+
         /* The actual size of the image to draw has been determined by the user.
          ** The graph area is the space remaining after accounting for the legend,
          ** the watermark, the axis labels, and the title.
          */
-        im->xorigin = 0;
         im->ximg = im->xsize;
         im->yimg = im->ysize;
-        im->yorigin = im->ysize;
         Xmain = im->ximg;
         Ymain = im->yimg;
+
         /* Now calculate the total size.  Insert some spacing where
            desired.  im->xorigin and im->yorigin need to correspond
            with the lower left corner of the main graph area or, if
            this one is not set, the imaginary box surrounding the
            pie chart area. */
         /* Initial size calculation for the main graph area */
-        Xmain = im->ximg - Xylabel - 3 * Xspacing;
 
-        im->xorigin = Xspacing + Xylabel;
-
-        if (Xvertical) {    /* unit description */
-            Xmain -= Xvertical;
-            im->xorigin += Xvertical;
+        Xmain -= Xylabel;// + Xspacing;
+        if((im->legendposition == WEST || im->legendposition == EAST) && !(im->extra_flags & NOLEGEND) ){
+            Xmain -= im->legendwidth;// + Xspacing;
         }
-
-        /* adjust space for second axis */
         if (im->second_axis_scale != 0){
-            Xmain -= Xylabel + Xspacing;
+            Xmain -= Xylabel;
         }
-        if (im->extra_flags & NO_RRDTOOL_TAG){
-            Xmain += Xspacing;
-        }
-        if (im->second_axis_legend[0] != '\0' ) {
-            Xmain -= im->text_prop[TEXT_PROP_UNIT].size * 1.5;
+        if (!(im->extra_flags & NO_RRDTOOL_TAG)){
+            Xmain -= Xspacing;
         }
 
+        Xmain -= Xvertical + Xvertical2;
+
+        /* limit the remaining space to 0 */
+        if(Xmain < 1){
+            Xmain = 1;
+        }
         im->xsize = Xmain;
 
-        xtr(im, 0);
-        /* The vertical size of the image is known in advance.  The main graph area
-         ** (Ymain) and im->yorigin must be set according to the space requirements
-         ** of the legend and the axis labels.
-         */
+        /* Putting the legend north or south, the height can now be calculated */
+        if (!(im->extra_flags & NOLEGEND)) {
+            if(im->legendposition == NORTH || im->legendposition == SOUTH){
+                im->legendwidth = im->ximg;
+                if (leg_place(im, 0) == -1){
+                    return -1;
+                }
+            }
+        }
+
+        if( (im->legendposition == NORTH || im->legendposition == SOUTH)  && !(im->extra_flags & NOLEGEND) ){
+            Ymain -=  Yxlabel + im->legendheight;
+        }
+        else{
+            Ymain -= Yxlabel;
+        }
+        
+        /* reserve space for the title *or* some padding above the graph */
+        Ymain -= Ytitle;
+
+            /* reserve space for padding below the graph */
         if (im->extra_flags & NOLEGEND) {
-            im->yorigin = im->yimg -
-                im->text_prop[TEXT_PROP_AXIS].size * 2.5 - Yspacing;
-            Ymain = im->yorigin;
-        }
-        else {            
-            /* Determine where to place the legends onto the image.
-             ** Set Ymain and adjust im->yorigin to match the space requirements.
-             */
-            if (leg_place(im, &Ymain) == -1)
-                return -1;
+            Ymain -= Yspacing;
         }
 
-
-        /* remove title space *or* some padding above the graph from the main graph area */
-        if (Ytitle) {
-            Ymain -= Ytitle;
-        } else {
-            Ymain -= 1.5 * Yspacing;
-        }
-
-        /* watermark doesn't seem to effect the vertical size of the main graph area, oh well! */
         if (im->watermark[0] != '\0') {
             Ymain -= Ywatermark;
         }
-
+        /* limit the remaining height to 0 */
+        if(Ymain < 1){
+            Ymain = 1;
+        }
         im->ysize = Ymain;
     } else {            /* dimension options -width and -height refer to the dimensions of the main graph area */
 
@@ -2949,94 +3002,171 @@ int graph_size_location(
          ** and other things outside the graph area.
          */
 
-        if (im->ylegend[0] != '\0') {
-            Xvertical = im->text_prop[TEXT_PROP_UNIT].size * 2;
-        }
-
-
-        if (im->title[0] != '\0') {
-            /* The title is placed "inbetween" two text lines so it
-             ** automatically has some vertical spacing.  The horizontal
-             ** spacing is added here, on each side.
-             */
-            /* don't care for the with of the title
-               Xtitle = gfx_get_text_width(im->canvas, 0,
-               im->text_prop[TEXT_PROP_TITLE].font_desc,
-               im->tabwidth,
-               im->title, 0) + 2*Xspacing; */
-            Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
-        }
-
         if (elements) {
-            Xmain = im->xsize;
+            Xmain = im->xsize; // + Xspacing;
             Ymain = im->ysize;
         }
-        /* Now calculate the total size.  Insert some spacing where
-           desired.  im->xorigin and im->yorigin need to correspond
-           with the lower left corner of the main graph area or, if
-           this one is not set, the imaginary box surrounding the
-           pie chart area. */
 
-        /* The legend width cannot yet be determined, as a result we
-         ** have problems adjusting the image to it.  For now, we just
-         ** forget about it at all; the legend will have to fit in the
-         ** size already allocated.
-         */
-        im->ximg = Xylabel + Xmain + 2 * Xspacing;
-
-        if (im->second_axis_scale != 0){
-            im->ximg += Xylabel + Xspacing;
-        }
-        if (im->extra_flags & NO_RRDTOOL_TAG){
-            im->ximg -= Xspacing;
-        }
-        
-        if (Xmain)
+        im->ximg = Xmain + Xylabel;
+        if (!(im->extra_flags & NO_RRDTOOL_TAG)){
             im->ximg += Xspacing;
-        im->xorigin = Xspacing + Xylabel;
-        /* the length of the title should not influence with width of the graph
-           if (Xtitle > im->ximg) im->ximg = Xtitle; */
-        if (Xvertical) {    /* unit description */
-            im->ximg += Xvertical;
-            im->xorigin += Xvertical;
         }
-        if (im->second_axis_legend[0] != '\0' ) {
-            im->ximg += Xvertical;
+
+        if( (im->legendposition == WEST || im->legendposition == EAST) && !(im->extra_flags & NOLEGEND) ){
+            im->ximg += im->legendwidth;// + Xspacing;
+        }
+        if (im->second_axis_scale != 0){
+            im->ximg += Xylabel;
+        }
+
+        im->ximg += Xvertical + Xvertical2;
+
+        if (!(im->extra_flags & NOLEGEND)) {
+            if(im->legendposition == NORTH || im->legendposition == SOUTH){
+                im->legendwidth = im->ximg;
+                if (leg_place(im, 0) == -1){
+                    return -1;
+                }
+            }
         }
       
-        xtr(im, 0);
-        /* The vertical size is interesting... we need to compare
-         ** the sum of {Ytitle, Ymain, Yxlabel, Ylegend, Ywatermark} with 
-         ** Yvertical however we need to know {Ytitle+Ymain+Yxlabel}
-         ** in order to start even thinking about Ylegend or Ywatermark.
-         **
-         ** Do it in three portions: First calculate the inner part,
-         ** then do the legend, then adjust the total height of the img,
-         ** adding space for a watermark if one exists;
-         */
-        /* reserve space for main and/or pie */
         im->yimg = Ymain + Yxlabel;
-        im->yorigin = im->yimg - Yxlabel;
+        if( (im->legendposition == NORTH || im->legendposition == SOUTH)  && !(im->extra_flags & NOLEGEND) ){
+             im->yimg += im->legendheight;
+        }
+        
         /* reserve space for the title *or* some padding above the graph */
         if (Ytitle) {
             im->yimg += Ytitle;
-            im->yorigin += Ytitle;
         } else {
             im->yimg += 1.5 * Yspacing;
-            im->yorigin += 1.5 * Yspacing;
         }
         /* reserve space for padding below the graph */
-        im->yimg += Yspacing;
-        /* Determine where to place the legends onto the image.
-         ** Adjust im->yimg to match the space requirements.
-         */
-        if (leg_place(im, 0) == -1)
-            return -1;
+        if (im->extra_flags & NOLEGEND) {
+            im->yimg += Yspacing;
+        }
+
         if (im->watermark[0] != '\0') {
             im->yimg += Ywatermark;
         }
     }
 
+
+    /* In case of putting the legend in west or east position the first 
+     ** legend calculation might lead to wrong positions if some items 
+     ** are not aligned on the left hand side (e.g. centered) as the 
+     ** legendwidth wight have been increased after the item was placed.
+     ** In this case the positions have to be recalculated.
+     */
+    if (!(im->extra_flags & NOLEGEND)) {
+        if(im->legendposition == WEST || im->legendposition == EAST){
+            if (leg_place(im, 0) == -1){
+                return -1;
+            }
+        }
+    }
+
+    /* After calculating all dimensions
+     ** it is now possible to calculate 
+     ** all offsets.
+     */
+    switch(im->legendposition){
+        case NORTH:
+            im->xOriginTitle   = Xvertical + Xylabel + (im->xsize / 2);
+            im->yOriginTitle   = 0;
+
+            im->xOriginLegend  = 0;
+            im->yOriginLegend  = Ytitle;
+
+            im->xOriginLegendY = 0;
+            im->yOriginLegendY = Ytitle + im->legendheight + (Ymain / 2) + Yxlabel;
+
+            im->xorigin        = Xvertical + Xylabel;
+            im->yorigin        = Ytitle + im->legendheight + Ymain;
+
+            im->xOriginLegendY2 = Xvertical + Xylabel + Xmain;
+            if (im->second_axis_scale != 0){
+                im->xOriginLegendY2 += Xylabel;
+            }
+            im->yOriginLegendY2 = Ytitle + im->legendheight + (Ymain / 2) + Yxlabel;
+
+            break;
+
+        case WEST:
+            im->xOriginTitle   = im->legendwidth + Xvertical + Xylabel + im->xsize / 2;
+            im->yOriginTitle   = 0;
+
+            im->xOriginLegend  = 0;
+            im->yOriginLegend  = Ytitle;
+
+            im->xOriginLegendY = im->legendwidth;
+            im->yOriginLegendY = Ytitle + (Ymain / 2);
+
+            im->xorigin        = im->legendwidth + Xvertical + Xylabel;
+            im->yorigin        = Ytitle + Ymain;
+
+            im->xOriginLegendY2 = im->legendwidth + Xvertical + Xylabel + Xmain;
+            if (im->second_axis_scale != 0){
+                im->xOriginLegendY2 += Xylabel;
+            }
+            im->yOriginLegendY2 = Ytitle + (Ymain / 2);
+
+            break;
+
+        case SOUTH:
+            im->xOriginTitle   = Xvertical + Xylabel + im->xsize / 2;
+            im->yOriginTitle   = 0;
+
+            im->xOriginLegend  = 0;
+            im->yOriginLegend  = Ytitle + Ymain + Yxlabel;
+
+            im->xOriginLegendY = 0;
+            im->yOriginLegendY = Ytitle + (Ymain / 2);
+
+            im->xorigin        = Xvertical + Xylabel;
+            im->yorigin        = Ytitle + Ymain;
+
+            im->xOriginLegendY2 = Xvertical + Xylabel + Xmain;
+            if (im->second_axis_scale != 0){
+                im->xOriginLegendY2 += Xylabel;
+            }
+            im->yOriginLegendY2 = Ytitle + (Ymain / 2);
+
+            break;
+
+        case EAST:
+            im->xOriginTitle   = Xvertical + Xylabel + im->xsize / 2;
+            im->yOriginTitle   = 0;
+
+            im->xOriginLegend  = Xvertical + Xylabel + Xmain + Xvertical2;
+            if (im->second_axis_scale != 0){
+                im->xOriginLegend += Xylabel;
+            }
+            im->yOriginLegend  = Ytitle;
+
+            im->xOriginLegendY = 0;
+            im->yOriginLegendY = Ytitle + (Ymain / 2);
+
+            im->xorigin        = Xvertical + Xylabel;
+            im->yorigin        = Ytitle + Ymain;
+
+            im->xOriginLegendY2 = Xvertical + Xylabel + Xmain;
+            if (im->second_axis_scale != 0){
+                im->xOriginLegendY2 += Xylabel;
+            }
+            im->yOriginLegendY2 = Ytitle + (Ymain / 2);
+
+            if (!(im->extra_flags & NO_RRDTOOL_TAG)){
+                im->xOriginTitle    += Xspacing;
+                im->xOriginLegend   += Xspacing;
+                im->xOriginLegendY  += Xspacing;
+                im->xorigin         += Xspacing;
+                im->xOriginLegendY2 += Xspacing;
+            }
+            break;
+    }
+
+    xtr(im, 0);
     ytr(im, DNAN);
     return 0;
 }
@@ -3868,6 +3998,10 @@ void rrd_graph_init(
     im->imgformat = IF_PNG;
     im->imginfo = NULL;
     im->lazy = 0;
+    im->legenddirection = TOP_DOWN;
+    im->legendheight = 0;
+    im->legendposition = SOUTH;
+    im->legendwidth = 0;
     im->logarithmic = 0;
     im->maxval = DNAN;
     im->minval = 0;
@@ -3889,6 +4023,10 @@ void rrd_graph_init(
     im->ximg = 0;
     im->xlab_user.minsec = -1;
     im->xorigin = 0;
+    im->xOriginLegend = 0;
+    im->xOriginLegendY = 0;
+    im->xOriginLegendY2 = 0;
+    im->xOriginTitle = 0;
     im->xsize = 400;
     im->ygridstep = DNAN;
     im->yimg = 0;
@@ -3898,6 +4036,10 @@ void rrd_graph_init(
     im->second_axis_legend[0] = '\0';
     im->second_axis_format[0] = '\0'; 
     im->yorigin = 0;
+    im->yOriginLegend = 0;
+    im->yOriginLegendY = 0;
+    im->yOriginLegendY2 = 0;
+    im->yOriginTitle = 0;
     im->ysize = 100;
     im->zoom = 1;
 
@@ -3982,6 +4124,8 @@ void rrd_graph_options(
         { "lazy",               no_argument,       0, 'z'},
         { "zoom",               required_argument, 0, 'm'},
         { "no-legend",          no_argument,       0, 'g'},
+        { "legend-position",    required_argument, 0, 1005},
+        { "legend-direction",   required_argument, 0, 1006},
         { "force-rules-legend", no_argument,       0, 'F'},
         { "only-graph",         no_argument,       0, 'j'},
         { "alt-y-grid",         no_argument,       0, 'Y'},
@@ -4046,6 +4190,30 @@ void rrd_graph_options(
             break;
         case 'g':
             im->extra_flags |= NOLEGEND;
+            break;
+        case 1005:
+            if (strcmp(optarg, "north") == 0) {
+                im->legendposition = NORTH;
+            } else if (strcmp(optarg, "west") == 0) {
+                im->legendposition = WEST;
+            } else if (strcmp(optarg, "south") == 0) {
+                im->legendposition = SOUTH;
+            } else if (strcmp(optarg, "east") == 0) {
+                im->legendposition = EAST;
+            } else {
+                rrd_set_error("unknown legend-position '%s'", optarg);
+                return;
+            }
+            break;
+        case 1006:
+            if (strcmp(optarg, "topdown") == 0) {
+                im->legenddirection = TOP_DOWN;
+            } else if (strcmp(optarg, "bottomup") == 0) {
+                im->legenddirection = BOTTOM_UP;
+            } else {
+                rrd_set_error("unknown legend-position '%s'", optarg);
+                return;
+            }
             break;
         case 'F':
             im->extra_flags |= FORCE_RULES_LEGEND;

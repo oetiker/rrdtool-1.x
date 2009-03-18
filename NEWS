@@ -18,6 +18,7 @@ RRDdump
 RRDgraph
 --------
 * VDEF PERCENTNAN (PRECENT that ignores NAN)
+* new --legend-direction and --legend-positon placement option
 
 RRDflush
 --------
