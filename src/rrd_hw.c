@@ -166,7 +166,7 @@ int apply_smoother(
         free(rrd_values);
         return -1;
     }
-    rrd_flush(rrd_file);
+
     /* could read all data in a single block, but we need to
      * check for NA values */
     for (i = 0; i < row_count; ++i) {

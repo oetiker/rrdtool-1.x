@@ -542,7 +542,7 @@ void rrd_dontneed(
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "after");
 #endif
-#endif                          /* without madvise and posix_fadvise ist does not make much sense todo anything */
+#endif                          /* without madvise and posix_fadvise it does not make much sense todo anything */
 }
 
 
@@ -681,22 +681,6 @@ ssize_t rrd_write(
     if (_sz > 0)
         rrd_file->pos += _sz;
     return _sz;
-#endif
-}
-
-
-/* flush all data pending to be written to FD.  */
-
-void rrd_flush(
-    rrd_file_t *rrd_file)
-{
-#ifndef WIN32
-    rrd_simple_file_t *rrd_simple_file;
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
-    if (fdatasync(rrd_simple_file->fd) != 0) {
-        rrd_set_error("flushing fd %d: %s", rrd_simple_file->fd,
-                      rrd_strerror(errno));
-    }
 #endif
 }
 
