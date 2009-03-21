@@ -374,9 +374,6 @@ int       rrd_proc_start_end(
     const void *buf,
     size_t count)
               RRD_DEPRECATED;
-    void      rrd_flush(
-    rrd_file_t *rrd_file)
-              RRD_DEPRECATED;
     off_t     rrd_seek(
     rrd_file_t *rrd_file,
     off_t off,

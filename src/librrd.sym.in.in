@@ -10,7 +10,6 @@ rrd_fetch
 rrd_fetch_r
 rrd_first
 rrd_first_r
-rrd_flush
 rrd_free
 rrd_free_context
 rrd_freemem
