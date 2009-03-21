@@ -270,7 +270,6 @@ int apply_smoother(
                 baseline[j];
         }
         /* flush cdp to disk */
-        rrd_flush(rrd_file);
         if (rrd_seek(rrd_file, sizeof(stat_head_t) +
                      rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
                      rrd->stat_head->rra_cnt * sizeof(rra_def_t) +
@@ -293,7 +292,6 @@ int apply_smoother(
 
     /* endif CF_SEASONAL */
     /* flush updated values to disk */
-    rrd_flush(rrd_file);
     if (rrd_seek(rrd_file, rra_start, SEEK_SET)) {
         rrd_set_error("apply_smoother: seek to pos %d failed", rra_start);
         free(rrd_values);
@@ -308,7 +306,6 @@ int apply_smoother(
         return -1;
     }
 
-    rrd_flush(rrd_file);
     free(rrd_values);
     free(baseline);
     return 0;
