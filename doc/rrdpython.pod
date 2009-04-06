@@ -13,13 +13,15 @@ The B<rrdtool> functions are directly callable via the Python programming
 language. This wrapper implementation has been written from the scratch
 (without  SWIG)
 
-The API's simply expects string parameters to the functions.  Please refer
-to the other B<rrdtool> documentation for functions and valid arguments.
+The API's expects strings and/or list of strings as parameters to the functions.
+Please refer to the other B<rrdtool> documentation for functions and valid arguments.
 
-=head1 EXAMPLE
+=head1 EXAMPLES
+
+=head2 Example 1
 
  import sys
- sys.path.append('/path/to/rrdtool/lib/python2.3/site-packages/')
+ sys.path.append('/path/to/rrdtool/lib/python2.6/site-packages/')
  import rrdtool, tempfile
 
  DAY = 86400
@@ -42,6 +44,23 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  print info['last_update']
  print info['ds']['downloads']['minimal_heartbeat']
 
+=head2 Example 2
+
+ import sys
+ sys.path.append('/path/to/rrdtool/lib/python2.6/site-packages/')
+ import rrdtool
+
+ # in real life data_sources would be populated in loop or something similar
+ data_sources=[ 'DS:speed1:COUNTER:600:U:U',
+                'DS:speed2:COUNTER:600:U:U',
+                'DS:speed3:COUNTER:600:U:U' ]
+
+ rrdtool.create( 'speed.rrd',
+                 '--start', '920804400',
+                 data_sources,
+                 'RRA:AVERAGE:0.5:1:24',
+                 'RRA:AVERAGE:0.5:6:10' )
+
 If you use the B<site-python-install> make target you can drop to first sys.path.append
 line since the rrdtool module will be available everywhere.
 
@@ -57,4 +76,3 @@ rrdxport, rrdinfo
 Hye-Shik Chang E<lt>perky@i18n.orgE<gt>
 
 Alan Milligan E<lt>alan.milligan@last-bastion.netE<gt>
-
