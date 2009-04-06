@@ -3844,8 +3844,11 @@ int rrd_graph(
             (*prdata)[prlines] = NULL;
             strcpy((*prdata)[prlines - 1], walker->value.u_str);
         } else if (strcmp(walker->key, "image") == 0) {
-            fwrite(walker->value.u_blo.ptr, walker->value.u_blo.size, 1,
-                   (stream ? stream : stdout));
+            if ( fwrite(walker->value.u_blo.ptr, walker->value.u_blo.size, 1,
+                   (stream ? stream : stdout)) == 0 && ferror(stream ? stream : stdout)){
+                rrd_set_error("writing image");
+                return 0;
+            }
         }
         /* skip anything else */
         walker = walker->next;
