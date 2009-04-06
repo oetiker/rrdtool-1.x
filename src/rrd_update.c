@@ -1,4 +1,3 @@
-
 /*****************************************************************************
  * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2008
  *                Copyright by Florian Forster, 2008
@@ -1904,7 +1903,7 @@ static int write_to_rras(
               + ds_cnt * rra_ptr->cur_row * sizeof(rrd_value_t);
 
             /* re-seek if the position is wrong or we wrapped around */
-            if (rra_pos_new != rrd_file->pos) {
+            if ((size_t)rra_pos_new != rrd_file->pos) {
                 if (rrd_seek(rrd_file, rra_pos_new, SEEK_SET) != 0) {
                     rrd_set_error("seek error in rrd");
                     return -1;
@@ -1967,11 +1966,12 @@ static int write_RRA_row(
             /* append info to the return hash */
             *pcdp_summary = rrd_info_push(*pcdp_summary,
                                           sprintf_alloc
-                                          ("[%lli]RRA[%s][%lu]DS[%s]", rra_time,
+                                          ("[%lli]RRA[%s][%lu]DS[%s]", 
+                                           (long long)rra_time,
                                            rrd->rra_def[rra_idx].cf_nam,
                                            rrd->rra_def[rra_idx].pdp_cnt,
                                            rrd->ds_def[ds_idx].ds_nam),
-                                          RD_I_VAL, iv);
+                                           RD_I_VAL, iv);
         }
         if (rrd_write(rrd_file,
                       &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].
