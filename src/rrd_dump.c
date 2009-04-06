@@ -111,8 +111,8 @@ static int rrd_dump_opt_r(
 #else
 # error "Need strftime"
 #endif
-    fprintf(out_file, "\t<lastupdate>%lu</lastupdate> <!-- %s -->\n\n",
-            (unsigned long) rrd.live_head->last_up, somestring);
+    fprintf(out_file, "\t<lastupdate>%lld</lastupdate> <!-- %s -->\n\n",
+            (long long) rrd.live_head->last_up, somestring);
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
         fprintf(out_file, "\t<ds>\n");
         fprintf(out_file, "\t\t<name>%s</name>\n", rrd.ds_def[i].ds_nam);
@@ -414,8 +414,8 @@ static int rrd_dump_opt_r(
 #else
 # error "Need strftime"
 #endif
-            fprintf(out_file, "\t\t\t<!-- %s / %d --> <row>", somestring,
-                    (int) now);
+            fprintf(out_file, "\t\t\t<!-- %s / %lld --> <row>", somestring,
+                    (long long) now);
             for (iii = 0; iii < rrd.stat_head->ds_cnt; iii++) {
                 rrd_read(rrd_file, &my_cdp, sizeof(rrd_value_t) * 1);
                 if (isnan(my_cdp)) {
