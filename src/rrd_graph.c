@@ -3048,7 +3048,7 @@ int graph_paint(
     if (i < 0)
         return -1;
 
-    if ((i == 0))
+    if (i == 0)
         return 0;
 
 /**************************************************************
@@ -3076,9 +3076,8 @@ int graph_paint(
     grinfo_push(im, sprintf_alloc("graph_end"), RD_I_CNT, info);
 
     /* if we want and can be lazy ... quit now */
-    if (lazy){
-        return 0
-    };
+    if (lazy)
+        return 0;
 
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
