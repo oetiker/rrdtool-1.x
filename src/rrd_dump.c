@@ -45,6 +45,11 @@
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
 
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
+
 #if !(defined(NETWARE) || defined(WIN32))
 extern char *tzname[2];
 #endif
@@ -64,6 +69,7 @@ static int rrd_dump_opt_r(
     rrd_t     rrd;
     rrd_value_t value;
     struct tm tm;
+    char *old_locale = "";
 
     rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_READAHEAD);
@@ -80,6 +86,9 @@ static int rrd_dump_opt_r(
     } else {
         out_file = stdout;
     }
+#ifdef HAVE_SETLOCALE
+    old_locale = setlocale(LC_NUMERIC, "C");
+#endif
 
     if (opt_header == 1) {
         fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", out_file);
@@ -105,7 +114,7 @@ static int rrd_dump_opt_r(
     }
     fprintf(out_file, "\t<step>%lu</step> <!-- Seconds -->\n",
             rrd.stat_head->pdp_step);
-#if HAVE_STRFTIME
+#ifdef HAVE_STRFTIME
     localtime_r(&rrd.live_head->last_up, &tm);
     strftime(somestring, 200, "%Y-%m-%d %H:%M:%S %Z", &tm);
 #else
@@ -434,6 +443,9 @@ static int rrd_dump_opt_r(
     if (out_file != stdout) {
         fclose(out_file);
     }
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_NUMERIC, old_locale);
+#endif
     return rrd_close(rrd_file);
 }
 
