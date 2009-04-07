@@ -3200,14 +3200,6 @@ int graph_paint(
 
 //    PangoFontMap *font_map = pango_cairo_font_map_get_default();
 
-    /* if we want and can be lazy ... quit now */
-    if (lazy) {
-        info.u_cnt = im->ximg;
-        grinfo_push(im, sprintf_alloc("image_width"), RD_I_CNT, info);
-        info.u_cnt = im->yimg;
-        grinfo_push(im, sprintf_alloc("image_height"), RD_I_CNT, info);
-        return 0;
-    }
     /* pull the data from the rrd files ... */
     if (data_fetch(im) == -1)
         return -1;
@@ -3223,7 +3215,8 @@ int graph_paint(
     if (i < 0)
         return -1;
 
-    if ((i == 0) || lazy)
+    /* if we want and can be lazy ... quit now */
+    if (i == 0)
         return 0;
 
 /**************************************************************
@@ -3250,6 +3243,10 @@ int graph_paint(
     info.u_cnt = im->end;
     grinfo_push(im, sprintf_alloc("graph_end"), RD_I_CNT, info);
 
+    /* if we want and can be lazy ... quit now */
+    if (lazy)
+        return 0;
+
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
         return -1;
@@ -3266,6 +3263,7 @@ int graph_paint(
     grinfo_push(im, sprintf_alloc("value_min"), RD_I_VAL, info);
     info.u_val = im->maxval;
     grinfo_push(im, sprintf_alloc("value_max"), RD_I_VAL, info);
+
 
     if (!calc_horizontal_grid(im))
         return -1;

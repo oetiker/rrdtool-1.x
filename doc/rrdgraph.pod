@@ -301,9 +301,12 @@ stack of lines or areas.
 [B<-z>|B<--lazy>]
 
 Only generate the graph if the current graph is out of date or not existent.
-Note, that only the image size will be returned, if you run with lazy even
-when using graphv and even when using PRINT.
-
+Note, that all the calculations will happen regardless so that the output of
+PRINT and graphv will be complete regardless. Note that the behaviour of
+lazy in this regard has seen several changes over time. The only thing you
+can realy rely on before rrdtool 1.3.7 is that lazy will not generate the
+graph when it is already there and up to date, and also that it will output
+the size of the graph. 
 
 [B<--daemon> I<address>]
 
