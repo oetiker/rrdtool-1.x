@@ -34,6 +34,7 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([rrd_config.h])
 
 dnl all our local stuff like install scripts and include files
