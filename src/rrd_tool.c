@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.3.6  Copyright by Tobi Oetiker, 1997-2009
+ * RRDtool 1.3.7  Copyright by Tobi Oetiker, 1997-2009
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -49,7 +49,7 @@ void PrintUsage(
 
     const char *help_main =
         N_("RRDtool %s"
-           "  Copyright 1997-2008 by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "  Copyright 1997-2009 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n\n");
 

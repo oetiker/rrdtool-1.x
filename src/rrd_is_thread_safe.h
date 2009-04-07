@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.3.6  Copyright by Tobi Oetiker, 1997-2009
+ * RRDtool 1.3.7  Copyright by Tobi Oetiker, 1997-2009
  * This file:     Copyright 2003 Peter Stamfest <peter@stamfest.at> 
  *                             & Tobias Oetiker
  * Distributed under the GPL
