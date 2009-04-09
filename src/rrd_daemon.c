@@ -199,8 +199,8 @@ static int config_queue_threads = 4;
 static pthread_t flush_thread;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 
-static pthread_t *connection_threads = NULL;
 static pthread_mutex_t connection_threads_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  connection_threads_done = PTHREAD_COND_INITIALIZER;
 static int connection_threads_num = 0;
 
 /* Cache stuff */
@@ -1946,7 +1946,6 @@ static void close_connection(listen_socket_t *sock) /* {{{ */
 static void *connection_thread_main (void *args) /* {{{ */
 {
   listen_socket_t *sock;
-  int i;
   int fd;
 
   sock = (listen_socket_t *) args;
@@ -1963,22 +1962,7 @@ static void *connection_thread_main (void *args) /* {{{ */
   }
 
   pthread_mutex_lock (&connection_threads_lock);
-  {
-    pthread_t *temp;
-
-    temp = (pthread_t *) rrd_realloc (connection_threads,
-        sizeof (pthread_t) * (connection_threads_num + 1));
-    if (temp == NULL)
-    {
-      RRDD_LOG (LOG_ERR, "connection_thread_main: realloc(++) failed.");
-    }
-    else
-    {
-      connection_threads = temp;
-      connection_threads[connection_threads_num] = pthread_self ();
-      connection_threads_num++;
-    }
-  }
+  connection_threads_num++;
   pthread_mutex_unlock (&connection_threads_lock);
 
   while (do_shutdown == 0)
@@ -2048,34 +2032,9 @@ out_close:
 
   /* Remove this thread from the connection threads list */
   pthread_mutex_lock (&connection_threads_lock);
-  {
-    pthread_t self;
-    pthread_t *temp;
-
-    /* Find out own index in the array */
-    self = pthread_self ();
-    for (i = 0; i < connection_threads_num; i++)
-      if (pthread_equal (connection_threads[i], self) != 0)
-        break;
-    assert (i < connection_threads_num);
-
-    /* Move the trailing threads forward. */
-    if (i < (connection_threads_num - 1))
-    {
-      memmove (connection_threads + i,
-               connection_threads + i + 1,
-               sizeof (pthread_t) * (connection_threads_num - i - 1));
-    }
-
-    connection_threads_num--;
-
-    temp = rrd_realloc(connection_threads,
-                   sizeof(*connection_threads) * connection_threads_num);
-    if (connection_threads_num > 0 && temp == NULL)
-      RRDD_LOG(LOG_ERR, "connection_thread_main: realloc(--) failed.");
-    else
-      connection_threads = temp;
-  }
+  connection_threads_num--;
+  if (connection_threads_num <= 0)
+    pthread_cond_broadcast(&connection_threads_done);
   pthread_mutex_unlock (&connection_threads_lock);
 
   return (NULL);
@@ -2407,15 +2366,7 @@ static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
 
   pthread_mutex_lock (&connection_threads_lock);
   while (connection_threads_num > 0)
-  {
-    pthread_t wait_for;
-
-    wait_for = connection_threads[0];
-
-    pthread_mutex_unlock (&connection_threads_lock);
-    pthread_join (wait_for, /* retval = */ NULL);
-    pthread_mutex_lock (&connection_threads_lock);
-  }
+    pthread_cond_wait(&connection_threads_done, &connection_threads_lock);
   pthread_mutex_unlock (&connection_threads_lock);
 
   free(pollfds);
