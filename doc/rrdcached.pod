@@ -15,6 +15,7 @@ B<rrdcached>
 [B<-t>E<nbsp>I<write_threads>]
 [B<-j>E<nbsp>I<journal_dir>]
 [-F]
+[-g]
 [B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
 
 =head1 DESCRIPTION
@@ -122,6 +123,10 @@ To disable fast shutdown, use the B<-F> option.
 
 ALWAYS flush all updates to the RRD data files when the daemon is shut
 down, regardless of journal setting.
+
+=item B<-g>
+
+Run in the foreground.  The daemon will not fork().
 
 =item B<-b> I<dir>
 
