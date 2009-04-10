@@ -144,6 +144,31 @@ struct listen_socket_s
 };
 typedef struct listen_socket_s listen_socket_t;
 
+struct command;
+/* note: guard against "unused" warnings in the handlers */
+#define DISPATCH_PROTO	listen_socket_t *sock	__attribute__((unused)),\
+			time_t now		__attribute__((unused)),\
+			char  *buffer		__attribute__((unused)),\
+			size_t buffer_size	__attribute__((unused))
+
+#define HANDLER_PROTO	struct command *cmd	__attribute__((unused)),\
+			DISPATCH_PROTO
+
+struct command {
+  char   *cmd;
+  int (*handler)(HANDLER_PROTO);
+  socket_privilege min_priv;
+
+  char  context;		/* where we expect to see it */
+#define CMD_CONTEXT_CLIENT	(1<<0)
+#define CMD_CONTEXT_BATCH	(1<<1)
+#define CMD_CONTEXT_JOURNAL	(1<<2)
+#define CMD_CONTEXT_ANY		(0x7f)
+
+  char *syntax;
+  char *help;
+};
+
 struct cache_item_s;
 typedef struct cache_item_s cache_item_t;
 struct cache_item_s
@@ -238,6 +263,9 @@ static pthread_mutex_t journal_lock = PTHREAD_MUTEX_INITIALIZER;
 static int journal_write(char *cmd, char *args);
 static void journal_done(void);
 static void journal_rotate(void);
+
+/* prototypes for forward refernces */
+static int handle_request_help (HANDLER_PROTO);
 
 /* 
  * Functions
@@ -1067,166 +1095,17 @@ static int flush_file (const char *filename) /* {{{ */
   return (0);
 } /* }}} int flush_file */
 
-static int handle_request_help (listen_socket_t *sock, /* {{{ */
-    char *buffer, size_t buffer_size)
+static int syntax_error(listen_socket_t *sock, struct command *cmd) /* {{{ */
 {
-  int status;
-  char **help_text;
-  char *command;
+  char *err = "Syntax error.\n";
 
-  char *help_help[2] =
-  {
-    "Command overview\n"
-    ,
-    "HELP [<command>]\n"
-    "FLUSH <filename>\n"
-    "FLUSHALL\n"
-    "PENDING <filename>\n"
-    "FORGET <filename>\n"
-    "QUEUE\n"
-    "UPDATE <filename> <values> [<values> ...]\n"
-    "BATCH\n"
-    "STATS\n"
-    "QUIT\n"
-  };
+  if (cmd && cmd->syntax)
+    err = cmd->syntax;
 
-  char *help_flush[2] =
-  {
-    "Help for FLUSH\n"
-    ,
-    "Usage: FLUSH <filename>\n"
-    "\n"
-    "Adds the given filename to the head of the update queue and returns\n"
-    "after it has been dequeued.\n"
-  };
+  return send_response(sock, RESP_ERR, "Usage: %s", err);
+} /* }}} static int syntax_error() */
 
-  char *help_flushall[2] =
-  {
-    "Help for FLUSHALL\n"
-    ,
-    "Usage: FLUSHALL\n"
-    "\n"
-    "Triggers writing of all pending updates.  Returns immediately.\n"
-  };
-
-  char *help_pending[2] =
-  {
-    "Help for PENDING\n"
-    ,
-    "Usage: PENDING <filename>\n"
-    "\n"
-    "Shows any 'pending' updates for a file, in order.\n"
-    "The updates shown have not yet been written to the underlying RRD file.\n"
-  };
-
-  char *help_forget[2] =
-  {
-    "Help for FORGET\n"
-    ,
-    "Usage: FORGET <filename>\n"
-    "\n"
-    "Removes the file completely from the cache.\n"
-    "Any pending updates for the file will be lost.\n"
-  };
-
-  char *help_queue[2] =
-  {
-    "Help for QUEUE\n"
-    ,
-    "Shows all files in the output queue.\n"
-    "The output is zero or more lines in the following format:\n"
-    "(where <num_vals> is the number of values to be written)\n"
-    "\n"
-    "<num_vals> <filename>\n"
-    "\n"
-  };
-
-  char *help_update[2] =
-  {
-    "Help for UPDATE\n"
-    ,
-    "Usage: UPDATE <filename> <values> [<values> ...]\n"
-    "\n"
-    "Adds the given file to the internal cache if it is not yet known and\n"
-    "appends the given value(s) to the entry. See the rrdcached(1) manpage\n"
-    "for details.\n"
-    "\n"
-    "Each <values> has the following form:\n"
-    "  <values> = <time>:<value>[:<value>[...]]\n"
-    "See the rrdupdate(1) manpage for details.\n"
-  };
-
-  char *help_stats[2] =
-  {
-    "Help for STATS\n"
-    ,
-    "Usage: STATS\n"
-    "\n"
-    "Returns some performance counters, see the rrdcached(1) manpage for\n"
-    "a description of the values.\n"
-  };
-
-  char *help_batch[2] =
-  {
-    "Help for BATCH\n"
-    ,
-    "The 'BATCH' command permits the client to initiate a bulk load\n"
-    "   of commands to rrdcached.\n"
-    "\n"
-    "Usage:\n"
-    "\n"
-    "    client: BATCH\n"
-    "    server: 0 Go ahead.  End with dot '.' on its own line.\n"
-    "    client: command #1\n"
-    "    client: command #2\n"
-    "    client: ... and so on\n"
-    "    client: .\n"
-    "    server: 2 errors\n"
-    "    server: 7 message for command #7\n"
-    "    server: 9 message for command #9\n"
-    "\n"
-    "For more information, consult the rrdcached(1) documentation.\n"
-  };
-
-  char *help_quit[2] =
-  {
-    "Help for QUIT\n"
-    ,
-    "Disconnect from rrdcached.\n"
-  };
-
-  status = buffer_get_field (&buffer, &buffer_size, &command);
-  if (status != 0)
-    help_text = help_help;
-  else
-  {
-    if (strcasecmp (command, "update") == 0)
-      help_text = help_update;
-    else if (strcasecmp (command, "flush") == 0)
-      help_text = help_flush;
-    else if (strcasecmp (command, "flushall") == 0)
-      help_text = help_flushall;
-    else if (strcasecmp (command, "pending") == 0)
-      help_text = help_pending;
-    else if (strcasecmp (command, "forget") == 0)
-      help_text = help_forget;
-    else if (strcasecmp (command, "queue") == 0)
-      help_text = help_queue;
-    else if (strcasecmp (command, "stats") == 0)
-      help_text = help_stats;
-    else if (strcasecmp (command, "batch") == 0)
-      help_text = help_batch;
-    else if (strcasecmp (command, "quit") == 0)
-      help_text = help_quit;
-    else
-      help_text = help_help;
-  }
-
-  add_response_info(sock, help_text[1]);
-  return send_response(sock, RESP_OK, help_text[0]);
-} /* }}} int handle_request_help */
-
-static int handle_request_stats (listen_socket_t *sock) /* {{{ */
+static int handle_request_stats (HANDLER_PROTO) /* {{{ */
 {
   uint64_t copy_queue_length;
   uint64_t copy_updates_received;
@@ -1274,8 +1153,7 @@ static int handle_request_stats (listen_socket_t *sock) /* {{{ */
   return (0);
 } /* }}} int handle_request_stats */
 
-static int handle_request_flush (listen_socket_t *sock, /* {{{ */
-    char *buffer, size_t buffer_size)
+static int handle_request_flush (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
   int status;
@@ -1283,7 +1161,7 @@ static int handle_request_flush (listen_socket_t *sock, /* {{{ */
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
   {
-    return send_response(sock, RESP_ERR, "Usage: flush <filename>\n");
+    return syntax_error(sock,cmd);
   }
   else
   {
@@ -1318,14 +1196,8 @@ static int handle_request_flush (listen_socket_t *sock, /* {{{ */
   assert(1==0);
 } /* }}} int handle_request_flush */
 
-static int handle_request_flushall(listen_socket_t *sock) /* {{{ */
+static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
 {
-  int status;
-
-  status = has_privilege(sock, PRIV_HIGH);
-  if (status <= 0)
-    return status;
-
   RRDD_LOG(LOG_DEBUG, "Received FLUSHALL");
 
   pthread_mutex_lock(&cache_lock);
@@ -1335,8 +1207,7 @@ static int handle_request_flushall(listen_socket_t *sock) /* {{{ */
   return send_response(sock, RESP_OK, "Started flush.\n");
 } /* }}} static int handle_request_flushall */
 
-static int handle_request_pending(listen_socket_t *sock, /* {{{ */
-                                  char *buffer, size_t buffer_size)
+static int handle_request_pending(HANDLER_PROTO) /* {{{ */
 {
   int status;
   char *file, file_tmp[PATH_MAX];
@@ -1344,12 +1215,7 @@ static int handle_request_pending(listen_socket_t *sock, /* {{{ */
 
   status = buffer_get_field(&buffer, &buffer_size, &file);
   if (status != 0)
-    return send_response(sock, RESP_ERR,
-                         "Usage: PENDING <filename>\n");
-
-  status = has_privilege(sock, PRIV_HIGH);
-  if (status <= 0)
-    return status;
+    return syntax_error(sock,cmd);
 
   get_abs_path(&file, file_tmp);
 
@@ -1368,8 +1234,7 @@ static int handle_request_pending(listen_socket_t *sock, /* {{{ */
   return send_response(sock, RESP_OK, "updates pending\n");
 } /* }}} static int handle_request_pending */
 
-static int handle_request_forget(listen_socket_t *sock, /* {{{ */
-                                 char *buffer, size_t buffer_size)
+static int handle_request_forget(HANDLER_PROTO) /* {{{ */
 {
   int status;
   gboolean found;
@@ -1377,12 +1242,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
 
   status = buffer_get_field(&buffer, &buffer_size, &file);
   if (status != 0)
-    return send_response(sock, RESP_ERR,
-                         "Usage: FORGET <filename>\n");
-
-  status = has_privilege(sock, PRIV_HIGH);
-  if (status <= 0)
-    return status;
+    return syntax_error(sock,cmd);
 
   get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) return 0;
@@ -1405,7 +1265,7 @@ static int handle_request_forget(listen_socket_t *sock, /* {{{ */
   assert(1==0);
 } /* }}} static int handle_request_forget */
 
-static int handle_request_queue (listen_socket_t *sock) /* {{{ */
+static int handle_request_queue (HANDLER_PROTO) /* {{{ */
 {
   cache_item_t *ci;
 
@@ -1423,9 +1283,7 @@ static int handle_request_queue (listen_socket_t *sock) /* {{{ */
   return send_response(sock, RESP_OK, "in queue.\n");
 } /* }}} int handle_request_queue */
 
-static int handle_request_update (listen_socket_t *sock, /* {{{ */
-                                  time_t now,
-                                  char *buffer, size_t buffer_size)
+static int handle_request_update (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
   int values_num = 0;
@@ -1434,17 +1292,12 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
 
   cache_item_t *ci;
 
-  status = has_privilege(sock, PRIV_HIGH);
-  if (status <= 0)
-    return status;
-
   /* save it for the journal later */
   strncpy(orig_buf, buffer, sizeof(orig_buf)-1);
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
-    return send_response(sock, RESP_ERR,
-                         "Usage: UPDATE <filename> <values> [<values> ...]\n");
+    return syntax_error(sock,cmd);
 
   pthread_mutex_lock(&stats_lock);
   stats_updates_received++;
@@ -1590,7 +1443,7 @@ static int handle_request_update (listen_socket_t *sock, /* {{{ */
 /* we came across a "WROTE" entry during journal replay.
  * throw away any values that we have accumulated for this file
  */
-static int handle_request_wrote (const char *buffer, time_t now) /* {{{ */
+static int handle_request_wrote (HANDLER_PROTO) /* {{{ */
 {
   int i;
   cache_item_t *ci;
@@ -1621,7 +1474,7 @@ static int handle_request_wrote (const char *buffer, time_t now) /* {{{ */
 } /* }}} int handle_request_wrote */
 
 /* start "BATCH" processing */
-static int batch_start (listen_socket_t *sock) /* {{{ */
+static int batch_start (HANDLER_PROTO) /* {{{ */
 {
   int status;
   if (sock->batch_start)
@@ -1636,7 +1489,7 @@ static int batch_start (listen_socket_t *sock) /* {{{ */
 } /* }}} static int batch_start */
 
 /* finish "BATCH" processing and return results to the client */
-static int batch_done (listen_socket_t *sock) /* {{{ */
+static int batch_done (HANDLER_PROTO) /* {{{ */
 {
   assert(sock->batch_start);
   sock->batch_start = 0;
@@ -1644,20 +1497,231 @@ static int batch_done (listen_socket_t *sock) /* {{{ */
   return send_response(sock, RESP_OK, "errors\n");
 } /* }}} static int batch_done */
 
-/* if sock==NULL, we are in journal replay mode */
-static int handle_request (listen_socket_t *sock, /* {{{ */
-                           time_t now,
-                           char *buffer, size_t buffer_size)
+static int handle_request_quit (HANDLER_PROTO) /* {{{ */
 {
-  char *buffer_ptr;
-  char *command;
+  return -1;
+} /* }}} static int handle_request_quit */
+
+struct command COMMANDS[] = {
+  {
+    "UPDATE",
+    handle_request_update,
+    PRIV_HIGH,
+    CMD_CONTEXT_ANY,
+    "UPDATE <filename> <values> [<values> ...]\n"
+    ,
+    "Adds the given file to the internal cache if it is not yet known and\n"
+    "appends the given value(s) to the entry. See the rrdcached(1) manpage\n"
+    "for details.\n"
+    "\n"
+    "Each <values> has the following form:\n"
+    "  <values> = <time>:<value>[:<value>[...]]\n"
+    "See the rrdupdate(1) manpage for details.\n"
+  },
+  {
+    "WROTE",
+    handle_request_wrote,
+    PRIV_HIGH,
+    CMD_CONTEXT_JOURNAL,
+    NULL,
+    NULL
+  },
+  {
+    "FLUSH",
+    handle_request_flush,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "FLUSH <filename>\n"
+    ,
+    "Adds the given filename to the head of the update queue and returns\n"
+    "after it has been dequeued.\n"
+  },
+  {
+    "FLUSHALL",
+    handle_request_flushall,
+    PRIV_HIGH,
+    CMD_CONTEXT_CLIENT,
+    "FLUSHALL\n"
+    ,
+    "Triggers writing of all pending updates.  Returns immediately.\n"
+  },
+  {
+    "PENDING",
+    handle_request_pending,
+    PRIV_HIGH,
+    CMD_CONTEXT_CLIENT,
+    "PENDING <filename>\n"
+    ,
+    "Shows any 'pending' updates for a file, in order.\n"
+    "The updates shown have not yet been written to the underlying RRD file.\n"
+  },
+  {
+    "FORGET",
+    handle_request_forget,
+    PRIV_HIGH,
+    CMD_CONTEXT_ANY,
+    "FORGET <filename>\n"
+    ,
+    "Removes the file completely from the cache.\n"
+    "Any pending updates for the file will be lost.\n"
+  },
+  {
+    "QUEUE",
+    handle_request_queue,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT,
+    "QUEUE\n"
+    ,
+        "Shows all files in the output queue.\n"
+    "The output is zero or more lines in the following format:\n"
+    "(where <num_vals> is the number of values to be written)\n"
+    "\n"
+    "<num_vals> <filename>\n"
+  },
+  {
+    "STATS",
+    handle_request_stats,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT,
+    "STATS\n"
+    ,
+    "Returns some performance counters, see the rrdcached(1) manpage for\n"
+    "a description of the values.\n"
+  },
+  {
+    "HELP",
+    handle_request_help,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT,
+    "HELP [<command>]\n",
+    NULL, /* special! */
+  },
+  {
+    "BATCH",
+    batch_start,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT,
+    "BATCH\n"
+    ,
+    "The 'BATCH' command permits the client to initiate a bulk load\n"
+    "   of commands to rrdcached.\n"
+    "\n"
+    "Usage:\n"
+    "\n"
+    "    client: BATCH\n"
+    "    server: 0 Go ahead.  End with dot '.' on its own line.\n"
+    "    client: command #1\n"
+    "    client: command #2\n"
+    "    client: ... and so on\n"
+    "    client: .\n"
+    "    server: 2 errors\n"
+    "    server: 7 message for command #7\n"
+    "    server: 9 message for command #9\n"
+    "\n"
+    "For more information, consult the rrdcached(1) documentation.\n"
+  },
+  {
+    ".",   /* BATCH terminator */
+    batch_done,
+    PRIV_LOW,
+    CMD_CONTEXT_BATCH,
+    NULL,
+    NULL
+  },
+  {
+    "QUIT",
+    handle_request_quit,
+    PRIV_LOW,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "QUIT\n"
+    ,
+    "Disconnect from rrdcached.\n"
+  },
+  {NULL,NULL,0,0,NULL,NULL}  /* LAST ENTRY */
+};
+
+static struct command *find_command(char *cmd)
+{
+  struct command *c = COMMANDS;
+
+  while (c->cmd != NULL)
+  {
+    if (strcasecmp(cmd, c->cmd) == 0)
+      break;
+    c++;
+  }
+
+  if (c->cmd == NULL)
+    return NULL;
+  else
+    return c;
+}
+
+/* check whether commands are received in the expected context */
+static int command_check_context(listen_socket_t *sock, struct command *cmd)
+{
+  if (sock == NULL)
+    return (cmd->context & CMD_CONTEXT_JOURNAL);
+  else if (sock->batch_start)
+    return (cmd->context & CMD_CONTEXT_BATCH);
+  else
+    return (cmd->context & CMD_CONTEXT_CLIENT);
+
+  /* NOTREACHED */
+  assert(1==0);
+}
+
+static int handle_request_help (HANDLER_PROTO) /* {{{ */
+{
+  int status;
+  char *cmd_str;
+  char *resp_txt;
+  struct command *help = NULL;
+
+  status = buffer_get_field (&buffer, &buffer_size, &cmd_str);
+  if (status == 0)
+    help = find_command(cmd_str);
+
+  if (help && (help->syntax || help->help))
+  {
+    char tmp[CMD_MAX];
+
+    snprintf(tmp, sizeof(tmp)-1, "Help for %s\n", help->cmd);
+    resp_txt = tmp;
+
+    if (help->syntax)
+      add_response_info(sock, "Usage: %s\n", help->syntax);
+
+    if (help->help)
+      add_response_info(sock, "%s\n", help->help);
+  }
+  else
+  {
+    help = COMMANDS;
+    resp_txt = "Command overview\n";
+
+    while (help->cmd)
+    {
+      if (help->syntax)
+        add_response_info(sock, "%s", help->syntax);
+      help++;
+    }
+  }
+
+  return send_response(sock, RESP_OK, resp_txt);
+} /* }}} int handle_request_help */
+
+/* if sock==NULL, we are in journal replay mode */
+static int handle_request (DISPATCH_PROTO) /* {{{ */
+{
+  char *buffer_ptr = buffer;
+  char *cmd_str = NULL;
+  struct command *cmd = NULL;
   int status;
 
   assert (buffer[buffer_size - 1] == '\0');
 
-  buffer_ptr = buffer;
-  command = NULL;
-  status = buffer_get_field (&buffer_ptr, &buffer_size, &command);
+  status = buffer_get_field (&buffer_ptr, &buffer_size, &cmd_str);
   if (status != 0)
   {
     RRDD_LOG (LOG_INFO, "handle_request: Unable parse command.");
@@ -1667,38 +1731,18 @@ static int handle_request (listen_socket_t *sock, /* {{{ */
   if (sock != NULL && sock->batch_start)
     sock->batch_cmd++;
 
-  if (strcasecmp (command, "update") == 0)
-    return (handle_request_update (sock, now, buffer_ptr, buffer_size));
-  else if (strcasecmp (command, "wrote") == 0 && sock == NULL)
-  {
-    /* this is only valid in replay mode */
-    return (handle_request_wrote (buffer_ptr, now));
-  }
-  else if (strcasecmp (command, "flush") == 0)
-    return (handle_request_flush (sock, buffer_ptr, buffer_size));
-  else if (strcasecmp (command, "flushall") == 0)
-    return (handle_request_flushall(sock));
-  else if (strcasecmp (command, "pending") == 0)
-    return (handle_request_pending(sock, buffer_ptr, buffer_size));
-  else if (strcasecmp (command, "forget") == 0)
-    return (handle_request_forget(sock, buffer_ptr, buffer_size));
-  else if (strcasecmp (command, "queue") == 0)
-    return (handle_request_queue(sock));
-  else if (strcasecmp (command, "stats") == 0)
-    return (handle_request_stats (sock));
-  else if (strcasecmp (command, "help") == 0)
-    return (handle_request_help (sock, buffer_ptr, buffer_size));
-  else if (strcasecmp (command, "batch") == 0 && sock != NULL)
-    return batch_start(sock);
-  else if (strcasecmp (command, ".") == 0 && sock != NULL && sock->batch_start)
-    return batch_done(sock);
-  else if (strcasecmp (command, "quit") == 0)
-    return -1;
-  else
-    return send_response(sock, RESP_ERR, "Unknown command: %s\n", command);
+  cmd = find_command(cmd_str);
+  if (!cmd)
+    return send_response(sock, RESP_ERR, "Unknown command: %s\n", cmd_str);
 
-  /* NOTREACHED */
-  assert(1==0);
+  status = has_privilege(sock, cmd->min_priv);
+  if (status <= 0)
+    return status;
+
+  if (!command_check_context(sock, cmd))
+    return send_response(sock, RESP_ERR, "Can't use '%s' here.\n", cmd_str);
+
+  return cmd->handler(cmd, sock, now, buffer_ptr, buffer_size);
 } /* }}} int handle_request */
 
 /* MUST NOT hold journal_lock before calling this */
