@@ -38,7 +38,7 @@ string_arr string_arr_new(
     int       i;
 
     Check_Type(rb_strings, T_ARRAY);
-    a.len = RARRAY(rb_strings)->len + 1;
+    a.len = RARRAY_LEN(rb_strings) + 1;
 
     a.strings = malloc(a.len * sizeof(char *));
     a.strings[0] = "dummy"; /* first element is a dummy element */
