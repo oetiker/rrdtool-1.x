@@ -319,6 +319,10 @@ int       rrd_proc_start_end(
 /* int    rrd_test_error_r (rrd_context_t *); */
 /* char  *rrd_get_error_r  (rrd_context_t *); */
 
+/** UTILITY FUNCTIONS */
+
+    long rrd_random(void);
+
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and

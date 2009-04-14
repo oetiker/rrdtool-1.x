@@ -601,7 +601,7 @@ static void wipe_ci_values(cache_item_t *ci, time_t when)
 
   ci->last_flush_time = when;
   if (config_write_jitter > 0)
-    ci->last_flush_time += (random() % config_write_jitter);
+    ci->last_flush_time += (rrd_random() % config_write_jitter);
 }
 
 /* remove_from_queue

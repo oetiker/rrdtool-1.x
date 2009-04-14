@@ -16,10 +16,6 @@
 #define MEMBLK 8192
 
 #ifdef WIN32
-#	define random() rand()
-#	define srandom(x) srand(x)
-#	define getpid() 0
-
 #define	_LK_UNLCK	0	/* Unlock */
 #define	_LK_LOCK	1	/* Lock */
 #define	_LK_NBLCK	2	/* Non-blocking lock */
@@ -77,10 +73,6 @@
 #define PAGE_START(addr) ((addr)&(~(_page_size-1)))
 #endif
 #endif
-
-long int  rra_random_row(
-    rra_def_t *);
-
 
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
@@ -763,19 +755,5 @@ unsigned long rrd_select_initial_row(
     rra_def_t *rra
     )
 {
-    return rra_random_row(rra);
+    return rrd_random() % rra->row_cnt;
 }
-
-static int rand_init = 0;
-
-long int rra_random_row(
-    rra_def_t *rra)
-{
-    if (!rand_init) {
-        srandom((unsigned int) time(NULL) + (unsigned int) getpid());
-        rand_init++;
-    }
-
-    return random() % rra->row_cnt;
-}
-

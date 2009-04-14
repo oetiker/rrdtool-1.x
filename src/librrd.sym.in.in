@@ -32,6 +32,7 @@ rrd_new_context
 rrd_open
 rrd_parsetime
 rrd_proc_start_end
+rrd_random
 rrd_read
 rrd_resize
 rrd_restore

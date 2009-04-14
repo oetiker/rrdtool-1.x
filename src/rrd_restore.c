@@ -36,9 +36,6 @@
 #ifndef WIN32
 #	include <unistd.h>     /* for off_t */
 #else
-#	define random() rand()
-#	define srandom(x) srand(x)
-#	define getpid() 0
 	typedef size_t ssize_t;
 	typedef long off_t;
 #endif 
@@ -713,7 +710,7 @@ static int parse_tag_rra(
     }
 
     /* Set the RRA pointer to a random location */
-    cur_rra_ptr->cur_row = random() % cur_rra_def->row_cnt;
+    cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
 
     return (status);
 }                       /* int parse_tag_rra */
@@ -1061,7 +1058,6 @@ int rrd_restore(
 {
     rrd_t    *rrd;
 
-    srandom((unsigned int) time(NULL) + (unsigned int) getpid());
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */

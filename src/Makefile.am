@@ -28,6 +28,7 @@ UPD_C_FILES =		\
 	rrd_client.c	\
 	rrd_nan_inf.c	\
 	rrd_rpncalc.c	\
+	rrd_utils.c	\
 	rrd_update.c
 
 RRD_C_FILES =		\
