@@ -111,7 +111,7 @@ static int get_long_from_node(
     xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
-        rrd_set_error("get_long_from_node: Cannot parse buffer as int: %s",
+        rrd_set_error("get_long_from_node: Cannot parse buffer as long: %s",
                       str_ptr);
         return (-1);
     }
@@ -132,7 +132,7 @@ static int get_ulong_from_node(
 
     str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
     if (str_ptr == NULL) {
-        rrd_set_error("get_long_from_node: xmlNodeListGetString failed.");
+        rrd_set_error("get_ulong_from_node: xmlNodeListGetString failed.");
         return (-1);
     }
 
@@ -141,7 +141,7 @@ static int get_ulong_from_node(
     xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
-        rrd_set_error("get_long_from_node: Cannot parse buffer as int: %s",
+        rrd_set_error("get_ulong_from_node: Cannot parse buffer as unsigned long: %s",
                       str_ptr);
         return (-1);
     }
@@ -149,7 +149,7 @@ static int get_ulong_from_node(
     *value = temp;
 
     return (0);
-}                       /* int get_long_from_node */
+}                       /* int get_ulong_from_node */
 
 static int get_double_from_node(
     xmlDoc * doc,
