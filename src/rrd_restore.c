@@ -95,18 +95,18 @@ static int get_string_from_node(
     return (0);
 }                       /* int get_string_from_node */
 
-static int get_int_from_node(
+static int get_long_from_node(
     xmlDoc * doc,
     xmlNode * node,
-    int *value)
+    long *value)
 {
-    int       temp;
+    long       temp;
     char     *str_ptr;
     char     *end_ptr;
 
     str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
     if (str_ptr == NULL) {
-        rrd_set_error("get_int_from_node: xmlNodeListGetString failed.");
+        rrd_set_error("get_long_from_node: xmlNodeListGetString failed.");
         return (-1);
     }
 
@@ -115,7 +115,7 @@ static int get_int_from_node(
     xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
-        rrd_set_error("get_int_from_node: Cannot parse buffer as int: %s",
+        rrd_set_error("get_long_from_node: Cannot parse buffer as int: %s",
                       str_ptr);
         return (-1);
     }
@@ -123,7 +123,37 @@ static int get_int_from_node(
     *value = temp;
 
     return (0);
-}                       /* int get_int_from_node */
+}                       /* int get_long_from_node */
+
+static int get_ulong_from_node(
+    xmlDoc * doc,
+    xmlNode * node,
+    unsigned long *value)
+{
+    unsigned long       temp;
+    char     *str_ptr;
+    char     *end_ptr;
+
+    str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+    if (str_ptr == NULL) {
+        rrd_set_error("get_long_from_node: xmlNodeListGetString failed.");
+        return (-1);
+    }
+
+    end_ptr = NULL;
+    temp = strtoul(str_ptr, &end_ptr, 0);
+    xmlFree(str_ptr);
+
+    if (str_ptr == end_ptr) {
+        rrd_set_error("get_long_from_node: Cannot parse buffer as int: %s",
+                      str_ptr);
+        return (-1);
+    }
+
+    *value = temp;
+
+    return (0);
+}                       /* int get_long_from_node */
 
 static int get_double_from_node(
     xmlDoc * doc,
@@ -371,14 +401,14 @@ static int parse_tag_rra_cdp_prep_ds(
                                           &cdp_prep->
                                           scratch[CDP_hw_last_slope].u_val);
         else if (xmlStrcmp(child->name, (const xmlChar *) "nan_count") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cdp_prep->
+            status = get_ulong_from_node(doc, child,
+                                        &cdp_prep->
                                        scratch[CDP_null_count].u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "last_nan_count") ==
                  0)
             status =
-                get_int_from_node(doc, child,
-                                  (int *) &cdp_prep->
+                get_ulong_from_node(doc, child,
+                                   &cdp_prep->
                                   scratch[CDP_last_null_count].u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "seasonal") == 0)
             status = get_double_from_node(doc, child,
@@ -391,8 +421,8 @@ static int parse_tag_rra_cdp_prep_ds(
                                      &cdp_prep->scratch[CDP_hw_last_seasonal].
                                      u_val);
         else if (xmlStrcmp(child->name, (const xmlChar *) "init_flag") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cdp_prep->
+            status = get_ulong_from_node(doc, child,
+                                        &cdp_prep->
                                        scratch[CDP_init_seasonal].u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "history") == 0)
             status = parse_tag_rra_cdp_prep_ds_history(doc, child, cdp_prep);
@@ -401,8 +431,8 @@ static int parse_tag_rra_cdp_prep_ds(
                                           &cdp_prep->scratch[CDP_val].u_val);
         else if (xmlStrcmp(child->name,
                            (const xmlChar *) "unknown_datapoints") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cdp_prep->
+            status = get_ulong_from_node(doc, child,
+                                        &cdp_prep->
                                        scratch[CDP_unkn_pdp_cnt].u_cnt);
         else {
             rrd_set_error("parse_tag_rra_cdp_prep: Unknown tag: %s",
@@ -488,8 +518,8 @@ static int parse_tag_rra_params(
                                           &rra_def->par[RRA_hw_beta].u_val);
         else if (xmlStrcmp(child->name,
                            (const xmlChar *) "dependent_rra_idx") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &rra_def->
+            status = get_ulong_from_node(doc, child,
+                                        &rra_def->
                                        par[RRA_dependent_rra_idx].u_cnt);
         /*
          * Parameters for CF_SEASONAL and CF_DEVSEASONAL
@@ -502,8 +532,8 @@ static int parse_tag_rra_params(
         else if (xmlStrcmp
                  (child->name, (const xmlChar *) "seasonal_smooth_idx") == 0)
             status =
-                get_int_from_node(doc, child,
-                                  (int *) &rra_def->
+                get_ulong_from_node(doc, child,
+                                   &rra_def->
                                   par[RRA_seasonal_smooth_idx].u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "smoothing_window")
                  == 0)
@@ -523,14 +553,14 @@ static int parse_tag_rra_params(
             status = get_double_from_node(doc, child,
                                           &rra_def->par[RRA_delta_neg].u_val);
         else if (xmlStrcmp(child->name, (const xmlChar *) "window_len") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &rra_def->par[RRA_window_len].
+            status = get_ulong_from_node(doc, child,
+                                        &rra_def->par[RRA_window_len].
                                        u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "failure_threshold")
                  == 0)
             status =
-                get_int_from_node(doc, child,
-                                  (int *) &rra_def->
+                get_ulong_from_node(doc, child,
+                                   &rra_def->
                                   par[RRA_failure_threshold].u_cnt);
         /*
          * Parameters for CF_AVERAGE, CF_MAXIMUM, CF_MINIMUM, and CF_LAST
@@ -554,8 +584,8 @@ static int parse_tag_rra_params(
                 if ((i == RRA_dependent_rra_idx)
                     || (i == RRA_seasonal_smooth_idx)
                     || (i == RRA_failure_threshold))
-                    status = get_int_from_node(doc, child,
-                                               (int *) &rra_def->par[i].
+                    status = get_ulong_from_node(doc, child,
+                                                &rra_def->par[i].
                                                u_cnt);
                 else
                     status = get_double_from_node(doc, child,
@@ -686,8 +716,8 @@ static int parse_tag_rra(
         else if (xmlStrcmp(child->name, (const xmlChar *) "cf") == 0)
             status = parse_tag_rra_cf(doc, child, cur_rra_def);
         else if (xmlStrcmp(child->name, (const xmlChar *) "pdp_per_row") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cur_rra_def->pdp_cnt);
+            status = get_ulong_from_node(doc, child,
+                                        &cur_rra_def->pdp_cnt);
         else if (atoi(rrd->stat_head->version) == 1
                  && xmlStrcmp(child->name, (const xmlChar *) "xff") == 0)
             status = get_double_from_node(doc, child,
@@ -829,8 +859,8 @@ static int parse_tag_ds(
             status = parse_tag_ds_type(doc, child, cur_ds_def);
         else if (xmlStrcmp(child->name,
                            (const xmlChar *) "minimal_heartbeat") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cur_ds_def->par[DS_mrhb_cnt].
+            status = get_ulong_from_node(doc, child,
+                                        &cur_ds_def->par[DS_mrhb_cnt].
                                        u_cnt);
         else if (xmlStrcmp(child->name, (const xmlChar *) "min") == 0)
             status = get_double_from_node(doc, child,
@@ -849,8 +879,8 @@ static int parse_tag_ds(
                                           &cur_pdp_prep->scratch[PDP_val].
                                           u_val);
         else if (xmlStrcmp(child->name, (const xmlChar *) "unknown_sec") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &cur_pdp_prep->
+            status = get_ulong_from_node(doc, child,
+                                        &cur_pdp_prep->
                                        scratch[PDP_unkn_sec_cnt].u_cnt);
         else {
             rrd_set_error("parse_tag_ds: Unknown tag: %s", child->name);
@@ -885,11 +915,11 @@ static int parse_tag_rrd(
                                           rrd->stat_head->version,
                                           sizeof(rrd->stat_head->version));
         else if (xmlStrcmp(child->name, (const xmlChar *) "step") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &rrd->stat_head->pdp_step);
+            status = get_ulong_from_node(doc, child,
+                                        &rrd->stat_head->pdp_step);
         else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0)
-            status = get_int_from_node(doc, child,
-                                       (int *) &rrd->live_head->last_up);
+            status = get_long_from_node(doc, child,
+                                        &rrd->live_head->last_up);
         else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0)
             status = parse_tag_ds(doc, child, rrd);
         else if (xmlStrcmp(child->name, (const xmlChar *) "rra") == 0)
