@@ -150,6 +150,7 @@ void PrintUsage(
            "\t\t[-m|--zoom factor]\n"
            "\t\t[-A|--alt-autoscale]\n"
            "\t\t[-M|--alt-autoscale-max]\n"
+           "\t\t[-G|--graph-render-mode {normal,mono}]\n"
            "\t\t[-R|--font-render-mode {normal,light,mono}]\n"
            "\t\t[-B|--font-smoothing-threshold size]\n"
            "\t\t[-T|--tabwidth width]\n"
