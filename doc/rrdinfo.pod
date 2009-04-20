@@ -45,6 +45,7 @@ data sources.
  rrd_version = "0001"
  step = 300
  last_update = 955892996
+ header_size = 2872
  ds[a].type = "GAUGE"
  ds[a].minimal_heartbeat = 600
  ds[a].min = NaN

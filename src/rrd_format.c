@@ -98,3 +98,16 @@ long ds_match(
     rrd_set_error("unknown data source name '%s'", ds_nam);
     return -1;
 }
+
+off_t rrd_get_header_size(
+    rrd_t *rrd)
+{
+    return sizeof(stat_head_t) + \
+        sizeof(ds_def_t) * rrd->stat_head->ds_cnt + \
+        sizeof(rra_def_t) * rrd->stat_head->rra_cnt + \
+        sizeof(time_t) + \
+        sizeof(live_head_t) + \
+        sizeof(pdp_prep_t) * rrd->stat_head->ds_cnt + \
+        sizeof(cdp_prep_t) * rrd->stat_head->ds_cnt * rrd->stat_head->rra_cnt + \
+        sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt;
+}

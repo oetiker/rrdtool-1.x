@@ -107,15 +107,7 @@ rrd_file_t *rrd_open(
     /* Are we creating a new file? */
     if((rdwr & RRD_CREAT) && (rrd->stat_head != NULL))
     {
-        header_len = \
-          sizeof(stat_head_t) + \
-          sizeof(ds_def_t) * rrd->stat_head->ds_cnt + \
-          sizeof(rra_def_t) * rrd->stat_head->rra_cnt + \
-          sizeof(time_t) + \
-          sizeof(live_head_t) + \
-          sizeof(pdp_prep_t) * rrd->stat_head->ds_cnt + \
-          sizeof(cdp_prep_t) * rrd->stat_head->ds_cnt * rrd->stat_head->rra_cnt + \
-          sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt;
+        header_len = rrd_get_header_size(rrd);
 
         value_cnt = 0;
         for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)

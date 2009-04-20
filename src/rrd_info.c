@@ -164,6 +164,9 @@ rrd_info_t *rrd_info_r(
     info.u_cnt = rrd.live_head->last_up;
     cd = rrd_info_push(cd, sprintf_alloc("last_update"), RD_I_CNT, info);
 
+    info.u_cnt = rrd_get_header_size(&rrd);
+    cd = rrd_info_push(cd, sprintf_alloc("header_size"), RD_I_CNT, info);
+
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
 
         info.u_str = rrd.ds_def[i].dst;

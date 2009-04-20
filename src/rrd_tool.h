@@ -115,6 +115,8 @@ int rrd_fetch_fn_libdbi(char *filename, enum cf_en cf_idx,
     long      ds_match(
     rrd_t *rrd,
     char *ds_nam);
+    off_t rrd_get_header_size(
+    rrd_t *rrd);
     double    rrd_diff(
     char *a,
     char *b);
