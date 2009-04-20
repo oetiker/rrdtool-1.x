@@ -323,6 +323,10 @@ int       rrd_proc_start_end(
 
     long rrd_random(void);
 
+    int rrd_add_ptr(void ***dest, size_t *dest_size, void *src);
+    int rrd_add_strdup(char ***dest, size_t *dest_size, char *src);
+    void rrd_free_ptrs(void ***src, size_t *cnt);
+
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and

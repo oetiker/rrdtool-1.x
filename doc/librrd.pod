@@ -1,0 +1,61 @@
+=pod
+
+=head1 NAME
+
+librrd - RRD library functions
+
+=head1 DESCRIPTION
+
+B<librrd> contains most of the functionality in B<RRDTool>.  The command
+line utilities and language bindings are often just wrappers around the
+code contained in B<librrd>.
+
+This manual page documents the B<librrd> API.
+
+B<NOTE:> This document is a work in progress, and should be considered
+incomplete as long as this warning persists.  For more information about
+the B<librrd> functions, always consult the source code.
+
+=head1 UTILITY FUNCTIONS
+
+=over
+
+=item B<rrd_random()>
+
+Generates random numbers just like random().  This further ensures that
+the random number generator is seeded exactly once per process.
+
+=item B<rrd_add_ptr(void ***dest, size_t *dest_size, void *src)>
+
+Dynamically resize the array pointed to by C<dest>.  C<dest_size> is a
+pointer to the current size of C<dest>.  Upon successful realloc(), the
+C<dest_size> is incremented by 1 and the C<src> pointer is stored at the
+end of the new C<dest>.  Returns 1 on success, 0 on failure.
+
+    type **arr = NULL;
+    type *elem = "whatever";
+    size_t arr_size = 0;
+    if (!rrd_add_ptr(&arr, &arr_size, elem))
+        handle_failure();
+
+=item B<rrd_add_strdup(char ***dest, size_t *dest_size, char *src)>
+
+Like C<rrd_add_ptr>, except adds a C<strdup> of the source string.
+
+    char **arr = NULL;
+    size_t arr_size = NULL;
+    char *str  = "example text";
+    if (!rrd_add_strdup(&arr, &arr_size, str))
+        handle_failure();
+
+=item B<rrd_free_ptrs(void ***src, size_t *cnt)>
+
+Free an array of pointers allocated by C<rrd_add_ptr> or
+C<rrd_add_strdup>.  Also frees the array pointer itself.  On return, the
+source pointer will be NULL and the count will be zero.
+
+    /* created as above */
+    rrd_free_ptrs(&arr, &arr_size);
+    /* here, arr == NULL && arr_size == 0 */
+
+=back

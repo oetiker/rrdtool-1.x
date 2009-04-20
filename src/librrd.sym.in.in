@@ -1,3 +1,5 @@
+rrd_add_ptr
+rrd_add_strdup
 rrd_clear_error
 rrd_close
 rrd_cmd_flush
@@ -12,6 +14,7 @@ rrd_first
 rrd_first_r
 rrd_free
 rrd_free_context
+rrd_free_ptrs
 rrd_freemem
 rrd_get_context
 rrd_get_error

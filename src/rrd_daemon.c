@@ -175,7 +175,7 @@ struct cache_item_s
 {
   char *file;
   char **values;
-  int values_num;
+  size_t values_num;
   time_t last_flush_time;
   time_t last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
@@ -244,7 +244,7 @@ static size_t _config_base_dir_len = 0;
 static int config_write_base_only = 0;
 
 static listen_socket_t **config_listen_address_list = NULL;
-static int config_listen_address_list_len = 0;
+static size_t config_listen_address_list_len = 0;
 
 static uint64_t stats_queue_length = 0;
 static uint64_t stats_updates_received = 0;
@@ -642,7 +642,7 @@ static void *free_cache_item(cache_item_t *ci) /* {{{ */
 
   remove_from_queue(ci);
 
-  for (int i=0; i < ci->values_num; i++)
+  for (size_t i=0; i < ci->values_num; i++)
     free(ci->values[i]);
 
   free (ci->values);
@@ -745,20 +745,12 @@ static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
   else if (((cfd->now - ci->last_flush_time) >= config_flush_interval)
       && (ci->values_num <= 0))
   {
-    char **temp;
-
-    temp = (char **) rrd_realloc (cfd->keys,
-        sizeof (char *) * (cfd->keys_num + 1));
-    if (temp == NULL)
+    assert ((char *) key == ci->file);
+    if (!rrd_add_ptr((void ***)&cfd->keys, &cfd->keys_num, (void *)key))
     {
-      RRDD_LOG (LOG_ERR, "tree_callback_flush: realloc failed.");
+      RRDD_LOG (LOG_ERR, "tree_callback_flush: rrd_add_ptrs failed.");
       return (FALSE);
     }
-    cfd->keys = temp;
-    /* Make really sure this points to the _same_ place */
-    assert ((char *) key == ci->file);
-    cfd->keys[cfd->keys_num] = (char *) key;
-    cfd->keys_num++;
   }
 
   return (FALSE);
@@ -863,9 +855,8 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     cache_item_t *ci;
     char *file;
     char **values;
-    int values_num;
+    size_t values_num;
     int status;
-    int i;
 
     /* Now, check if there's something to store away. If not, wait until
      * something comes in.  if we are shutting down, do not wait around.  */
@@ -906,7 +897,7 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     pthread_mutex_unlock (&cache_lock);
 
     rrd_clear_error ();
-    status = rrd_update_r (file, NULL, values_num, (void *) values);
+    status = rrd_update_r (file, NULL, (int) values_num, (void *) values);
     if (status != 0)
     {
       RRDD_LOG (LOG_NOTICE, "queue_thread_main: "
@@ -917,10 +908,7 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     journal_write("wrote", file);
     pthread_cond_broadcast(&ci->flushed);
 
-    for (i = 0; i < values_num; i++)
-      free (values[i]);
-
-    free(values);
+    rrd_free_ptrs((void ***) &values, &values_num);
     free(file);
 
     if (status == 0)
@@ -1227,7 +1215,7 @@ static int handle_request_pending(HANDLER_PROTO) /* {{{ */
     return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
   }
 
-  for (int i=0; i < ci->values_num; i++)
+  for (size_t i=0; i < ci->values_num; i++)
     add_response_info(sock, "%s\n", ci->values[i]);
 
   pthread_mutex_unlock(&cache_lock);
@@ -1369,7 +1357,6 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
   while (buffer_size > 0)
   {
-    char **temp;
     char *value;
     time_t stamp;
     char *eostamp;
@@ -1400,22 +1387,11 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     else
       ci->last_update_stamp = stamp;
 
-    temp = (char **) rrd_realloc (ci->values,
-        sizeof (char *) * (ci->values_num + 1));
-    if (temp == NULL)
+    if (!rrd_add_strdup(&ci->values, &ci->values_num, value))
     {
-      RRDD_LOG (LOG_ERR, "handle_request_update: realloc failed.");
+      RRDD_LOG (LOG_ERR, "handle_request_update: rrd_add_strdup failed.");
       continue;
     }
-    ci->values = temp;
-
-    ci->values[ci->values_num] = strdup (value);
-    if (ci->values[ci->values_num] == NULL)
-    {
-      RRDD_LOG (LOG_ERR, "handle_request_update: strdup failed.");
-      continue;
-    }
-    ci->values_num++;
 
     values_num++;
   }
@@ -1445,7 +1421,6 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
  */
 static int handle_request_wrote (HANDLER_PROTO) /* {{{ */
 {
-  int i;
   cache_item_t *ci;
   const char *file = buffer;
 
@@ -1459,12 +1434,7 @@ static int handle_request_wrote (HANDLER_PROTO) /* {{{ */
   }
 
   if (ci->values)
-  {
-    for (i=0; i < ci->values_num; i++)
-      free(ci->values[i]);
-
-    free(ci->values);
-  }
+    rrd_free_ptrs((void ***) &ci->values, &ci->values_num);
 
   wipe_ci_values(ci, now);
   remove_from_queue(ci);
@@ -2434,13 +2404,11 @@ static int daemonize (void) /* {{{ */
   /* open all the listen sockets */
   if (config_listen_address_list_len > 0)
   {
-    for (int i = 0; i < config_listen_address_list_len; i++)
-    {
+    for (size_t i = 0; i < config_listen_address_list_len; i++)
       open_listen_socket (config_listen_address_list[i]);
-      free_listen_socket (config_listen_address_list[i]);
-    }
 
-    free(config_listen_address_list);
+    rrd_free_ptrs((void ***) &config_listen_address_list,
+                  &config_listen_address_list_len);
   }
   else
   {
@@ -2564,7 +2532,6 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'L':
       case 'l':
       {
-        listen_socket_t **temp;
         listen_socket_t *new;
 
         new = malloc(sizeof(listen_socket_t));
@@ -2575,20 +2542,15 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         memset(new, 0, sizeof(listen_socket_t));
 
-        temp = (listen_socket_t **) rrd_realloc (config_listen_address_list,
-            sizeof (listen_socket_t *) * (config_listen_address_list_len + 1));
-        if (temp == NULL)
-        {
-          fprintf (stderr, "read_options: realloc failed.\n");
-          return (2);
-        }
-        config_listen_address_list = temp;
-
         strncpy(new->addr, optarg, sizeof(new->addr)-1);
         new->privilege = (option == 'l') ? PRIV_HIGH : PRIV_LOW;
 
-        temp[config_listen_address_list_len] = new;
-        config_listen_address_list_len++;
+        if (!rrd_add_ptr((void ***)&config_listen_address_list,
+                         &config_listen_address_list_len, new))
+        {
+          fprintf(stderr, "read_options: rrd_add_ptr failed.\n");
+          return (2);
+        }
       }
       break;
 

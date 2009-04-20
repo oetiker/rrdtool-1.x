@@ -16,6 +16,7 @@
 #include "rrd_tool.h"
 
 #include <stdlib.h>
+#include <assert.h>
 
 #ifdef WIN32
 #	define random() rand()
@@ -33,4 +34,64 @@ long rrd_random(void)
     }
 
     return random();
+}
+
+/* rrd_add_ptr: add a pointer to a dynamically sized array of pointers,
+ * realloc as necessary.  returns 1 on success, 0 on failure.
+ */
+
+int rrd_add_ptr(void ***dest, size_t *dest_size, void *src)
+{
+    void **temp;
+
+    assert(dest != NULL);
+
+    temp = (void **) rrd_realloc(*dest, (*dest_size+1) * sizeof(*dest));
+    if (!temp)
+        return 0;
+
+    *dest = temp;
+    temp[*dest_size] = src;
+    (*dest_size)++;
+
+    return 1;
+}
+
+/* like rrd_add_ptr, but calls strdup() on a string first. */
+int rrd_add_strdup(char ***dest, size_t *dest_size, char *src)
+{
+    char *dup_src;
+    int add_ok;
+
+    assert(dest != NULL);
+    assert(src  != NULL);
+
+    dup_src = strdup(src);
+    if (!dup_src)
+        return 0;
+
+    add_ok = rrd_add_ptr((void ***)dest, dest_size, (void *)dup_src);
+    if (!add_ok)
+        free(dup_src);
+
+    return add_ok;
+}
+
+void rrd_free_ptrs(void ***src, size_t *cnt)
+{
+    void **sp;
+
+    assert(src != NULL);
+    sp = *src;
+
+    if (sp == NULL)
+        return;
+
+    while (*cnt > 0) {
+        (*cnt)--;
+        free(sp[*cnt]);
+    }
+
+    free (sp);
+    *src = NULL;
 }
