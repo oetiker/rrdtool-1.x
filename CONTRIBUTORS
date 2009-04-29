@@ -44,6 +44,7 @@ Mike Mitchell <mcm with unx.sas.com>
 Mike Slifcak <slif with bellsouth.net> many rrdtool-1.1.x fixes
 Oleg Cherevko <olwi with icyb.kiev.ua>
 Otmar Lendl <O.Lendl with Austria.EU.net> (lots of bugfixes)
+Pablo Sanchez <pablo at blueoakdb.com> (CDEF vs VDEF)
 Patrick Cherry <patrick with bytemark.co.uk>
 Paul Joslin <Paul.Joslin with sdrc.com>
 Peter Speck <speck with vitality.dk> eps/svg/pdf file format code in rrdtool-1.x
