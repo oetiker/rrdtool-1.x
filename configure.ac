@@ -372,6 +372,19 @@ CHECK_FOR_WORKING_MS_ASYNC
 
 dnl Do we need getopt_long
 
+dnl even when including our own getopt implementation
+dnl we may want to make sure we use the external
+dnl defined by libc to not run into linker resolve trouble
+
+AC_CACHE_CHECK([for opterr], rd_cv_var_int_opterr,
+[AC_TRY_LINK([#include <unistd.h>],
+  [extern int opterr; opterr = 1;],
+  [rd_cv_var_int_opterr=yes],
+  [rd_cv_var_int_opterr=no])])
+if test x"$rd_cv_var_int_opterr" = x"yes"; then
+  AC_DEFINE(HAVE_INT_OPTERR, 1, [Define to 1 if you have the global variable 'int opterr'.])
+fi
+
 build_getopt=no
 RRD_GETOPT_LONG="LIBC_HAS_GETOPT_LONG"
 AC_CHECK_FUNC(getopt_long,[],[
