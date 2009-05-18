@@ -435,6 +435,7 @@ static PyObject *PyDict_FromInfo(
         }
         if (val) {
             PyDict_SetItemString(r, data->key, val);
+            Py_DECREF(val);
         }
         data = data->next;
     }
@@ -459,10 +460,13 @@ static PyObject *PyRRD_info(
     if ((data = rrd_info(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
-        return NULL;
+        r = NULL;
+    } else {
+        r = PyDict_FromInfo(data);
+        rrd_info_free(data);
     }
-    r = PyDict_FromInfo(data);
-    rrd_info_free(data);
+
+    destroy_args(&argv);
     return r;
 }
 
@@ -484,10 +488,13 @@ static PyObject *PyRRD_graphv(
     if ((data = rrd_graph_v(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
-        return NULL;
+        r = NULL;
+    } else {
+        r = PyDict_FromInfo(data);
+        rrd_info_free(data);
     }
-    r = PyDict_FromInfo(data);
-    rrd_info_free(data);
+
+    destroy_args(&argv);
     return r;
 }
 
@@ -509,10 +516,13 @@ static PyObject *PyRRD_updatev(
     if ((data = rrd_update_v(argc, argv)) == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
-        return NULL;
+        r = NULL;
+    } else {
+        r = PyDict_FromInfo(data);
+        rrd_info_free(data);
     }
-    r = PyDict_FromInfo(data);
-    rrd_info_free(data);
+
+    destroy_args(&argv);
     return r;
 }
 
