@@ -48,15 +48,12 @@ using a rather powerful B<L<RPN|rrdgraph_rpn>> command set.
 When you are done fetching and processing the data, it is time to
 graph it (or print it).  This ends the B<rrdtool graph> sequence.
 
+Use B<graphv> instead of B<graph> to get detailed information about the
+graph geometry and data once it is drawn. See the bottom of the document for
+more information.
+
 =head1 OPTIONS
 
-
-=head2 B<graphv>
-
-This alternate version of B<graph> takes the same arguments and performs the
-same function. The I<v> stands for I<verbose>, which describes the output
-returned. B<graphv> will return a lot of information about the graph using
-the same format as rrdtool info (key = value). See the bottom of the document for more information.
 
 
 =head2 I<filename>
@@ -93,20 +90,6 @@ one pixel will silently be ignored.
 A horizontal string at the top of the graph and/or a vertically
 placed string at the left hand side of the graph.
 
-=head2 Right Axis
-
-[B<--right-axis> I<scale>B<:>I<shift>]
-[B<--right-axis-label> I<label>]
-
-A second axis will be drawn to the right of the graph. It is tied to the
-left axis via the scale and shift parameters. You can also define a label
-for the right axis.
-
-[B<--right-axis-format> I<format-string>]
-
-By default the format of the axis lables gets determined automatically. If
-you want todo this your self, use this option with the same %lf arguments
-you know from the PRING and GPRINT commands.
 
 =head2 Size
 
@@ -175,11 +158,7 @@ to turn this behaviour off.
 
 Gridfitting is turned off for PDF, EPS, SVG output by default.
 
-=head2 Grid
-
-=over
-
-=item X-Axis
+=head2 X-Axis
 
 [B<-x>|B<--x-grid> I<GTM>B<:>I<GST>B<:>I<MTM>B<:>I<MST>B<:>I<LTM>B<:>I<LST>B<:>I<LPR>B<:>I<LFM>]
 
@@ -214,7 +193,7 @@ This places grid lines every 8 hours, major grid lines and labels
 each day. The labels are placed exactly between two major grid lines
 as they specify the complete day and not just midnight.
 
-=item Y-Axis
+=head2 Y-Axis
 
 [B<-y>|B<--y-grid> I<grid step>B<:>I<label factor>]
 
@@ -271,7 +250,20 @@ With this option y-axis values on logarithmic graphs will be scaled to
 the appropriate units (k, M, etc.) instead of using exponential notation.
 Note that for linear graphs, SI notation is used by default.
 
-=back
+=head2 Right Y Axis
+
+[B<--right-axis> I<scale>B<:>I<shift>]
+[B<--right-axis-label> I<label>]
+
+A second axis will be drawn to the right of the graph. It is tied to the
+left axis via the scale and shift parameters. You can also define a label
+for the right axis.
+
+[B<--right-axis-format> I<format-string>]
+
+By default the format of the axis lables gets determined automatically. If
+you want todo this your self, use this option with the same %lf arguments
+you know from the PRING and GPRINT commands.
 
 =head2 Legend
 
