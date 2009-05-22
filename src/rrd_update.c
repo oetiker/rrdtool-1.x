@@ -282,7 +282,7 @@ static int write_changes_to_disk(
  * normalize time as returned by gettimeofday. usec part must
  * be always >= 0
  */
-static inline void normalize_time(
+static void normalize_time(
     struct timeval *t)
 {
     if (t->tv_usec < 0) {
@@ -295,7 +295,7 @@ static inline void normalize_time(
  * Sets current_time and current_time_usec based on the current time.
  * current_time_usec is set to 0 if the version number is 1 or 2.
  */
-static inline void initialize_time(
+static void initialize_time(
     time_t *current_time,
     unsigned long *current_time_usec,
     int version)
