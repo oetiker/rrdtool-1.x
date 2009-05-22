@@ -1081,8 +1081,8 @@ static int update_pdp_prep(
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
-                errno = 0;
                 old_locale = setlocale(LC_NUMERIC, "C");
+                errno = 0;
                 pdp_new[ds_idx] =
                     strtod(updvals[ds_idx + 1], &endptr) * interval;
                 if (errno) {
@@ -1979,6 +1979,7 @@ static int write_RRA_row(
                                            rrd->ds_def[ds_idx].ds_nam),
                                            RD_I_VAL, iv);
         }
+        errno = 0;
         if (rrd_write(rrd_file,
                       &(rrd->cdp_prep[cdp_idx].scratch[CDP_scratch_idx].
                         u_val), sizeof(rrd_value_t)) != sizeof(rrd_value_t)) {
