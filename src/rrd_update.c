@@ -964,7 +964,13 @@ static int get_time_from_reading(
         *current_time_usec = tmp_time.tv_usec;
     } else {
         old_locale = setlocale(LC_NUMERIC, "C");
+        errno = 0;
         tmp = strtod(updvals[0], 0);
+        if (errno > 0) {
+            rrd_set_error("converting '%s' to float: %s",
+                updvals[0], rrd_strerror(errno));
+            return -1;
+        };
         setlocale(LC_NUMERIC, old_locale);
         *current_time = floor(tmp);
         *current_time_usec = (long) ((tmp - (double) *current_time) * 1e6f);
@@ -1060,12 +1066,12 @@ static int update_pdp_prep(
                 old_locale = setlocale(LC_NUMERIC, "C");
                 errno = 0;
                 pdp_new[ds_idx] = strtod(updvals[ds_idx + 1], &endptr);
-                setlocale(LC_NUMERIC, old_locale);
                 if (errno > 0) {
                     rrd_set_error("converting '%s' to float: %s",
                                   updvals[ds_idx + 1], rrd_strerror(errno));
                     return -1;
                 };
+                setlocale(LC_NUMERIC, old_locale);
                 if (endptr[0] != '\0') {
                     rrd_set_error
                         ("conversion of '%s' to float not complete: tail '%s'",
@@ -1079,12 +1085,12 @@ static int update_pdp_prep(
                 old_locale = setlocale(LC_NUMERIC, "C");
                 pdp_new[ds_idx] =
                     strtod(updvals[ds_idx + 1], &endptr) * interval;
-                setlocale(LC_NUMERIC, old_locale);
                 if (errno) {
                     rrd_set_error("converting '%s' to float: %s",
                                   updvals[ds_idx + 1], rrd_strerror(errno));
                     return -1;
                 };
+                setlocale(LC_NUMERIC, old_locale);
                 if (endptr[0] != '\0') {
                     rrd_set_error
                         ("conversion of '%s' to float not complete: tail '%s'",
