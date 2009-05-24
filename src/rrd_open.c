@@ -310,7 +310,7 @@ rrd_file_t *rrd_open(
       for (i=0; i<rrd->stat_head->rra_cnt; i++)
         row_cnt += rrd->rra_def[i].row_cnt;
 
-      off_t correct_len = rrd_file->header_len +
+      size_t correct_len = rrd_file->header_len +
         sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
 
       if (correct_len > rrd_file->file_len)
@@ -389,10 +389,10 @@ void rrd_dontneed(
     rrd_t *rrd)
 {
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
-    unsigned long dontneed_start;
-    unsigned long rra_start;
-    unsigned long active_block;
-    unsigned long i;
+    size_t dontneed_start;
+    size_t rra_start;
+    size_t active_block;
+    size_t i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
     if (rrd_file == NULL) {
