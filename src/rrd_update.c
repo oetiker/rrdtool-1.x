@@ -1896,7 +1896,7 @@ static int write_to_rras(
                  scratch_idx = CDP_secondary_val,
                  step_subtract = 2) {
 
-            off_t rra_pos_new;
+            size_t rra_pos_new;
 #ifdef DEBUG
             fprintf(stderr, "  -- RRA Preseek %ld\n", rrd_file->pos);
 #endif

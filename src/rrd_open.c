@@ -464,7 +464,7 @@ void rrd_dontneed(
     size_t dontneed_start;
     size_t rra_start;
     size_t active_block;
-    unsigned long i;
+    size_t i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
     if (rrd_file == NULL) {
