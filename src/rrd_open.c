@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#endif
+
+#ifdef HAVE_BROKEN_MS_ASYNC
+#include <sys/types.h>       
 #include <utime.h>
 #endif
 
