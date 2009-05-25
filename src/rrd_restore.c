@@ -1,36 +1,17 @@
 /*****************************************************************************
- * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2008
- * This file:     Copyright 2008 Florian octo Forster
- * Distributed under the GPL
+ * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2009                    
  *****************************************************************************
- * rrd_restore.c   Contains logic to parse XML input and create an RRD file
+ * rrd_restore.c  Contains logic to parse XML input and create an RRD file
+ *                initial libxml2 version of rrd_restore (c) by Florian octo Forster
  *****************************************************************************
  * $Id$
  *************************************************************************** */
 
-/*
- * This program is free software; you can redistribute it and / or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (t your option)
- * any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin St, Fifth Floor, Boston, MA 02110 - 1301 USA
- *
- * Authors:
- *   Florian octo Forster <octo at verplant.org>
- **/
-
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <libxml/parser.h>
+#include <libxml/xmlreader.h>
 
 
 #ifndef WIN32
@@ -46,152 +27,259 @@
 # define open _open
 # define close _close
 #endif
-#include <libxml/parser.h>
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof ((a)[0]))
+
 static int opt_range_check = 0;
 static int opt_force_overwrite = 0;
 
 /*
- * Auxiliary functions
+ * Helpers
  */
-static int get_string_from_node(
-    xmlDoc * doc,
-    xmlNode * node,
-    char *buffer,
-    size_t buffer_size)
+
+/* skip all but tags. complain if we do not get the right tag */
+/* dept -1 causes depth to be ignored */
+static xmlChar* get_xml_element (
+    xmlTextReaderPtr reader
+    )
 {
-    xmlChar  *temp0;
-    char     *begin_ptr;
-    char     *end_ptr;
+    while(xmlTextReaderRead(reader)){
+        int type;
+        xmlChar *name;
+        type = xmlTextReaderNodeType(reader);
+        if (type == XML_READER_TYPE_TEXT){
+            xmlChar *value;
+            value = xmlTextReaderValue(reader);
+            rrd_set_error("line %d: expected element but found text '%s'",
+                          xmlTextReaderGetParserLineNumber(reader),value);
+            xmlFree(value);
+            return NULL;
+        }
+        /* skip all other non-elements */
+        if (type != XML_READER_TYPE_ELEMENT && type != XML_READER_TYPE_END_ELEMENT)
+            continue;
 
-    temp0 = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    if (temp0 == NULL) {
-        rrd_set_error("get_string_from_node: xmlNodeListGetString failed.");
-        return (-1);
+        name = xmlTextReaderName(reader);
+        if (type == XML_READER_TYPE_END_ELEMENT){
+            xmlChar *temp;
+            xmlChar *temp2;            
+            temp = (xmlChar*)sprintf_alloc("/%s",name);
+            temp2 = xmlStrdup(temp);
+            free(temp);
+            xmlFree(name);            
+            return temp2;            
+        }
+        /* all seems well, return the happy news */
+        return name;
     }
+    rrd_set_error("the xml ended while we were looking for an element");
+    return NULL;
+} /* get_xml_element */
 
-    begin_ptr = (char *) temp0;
-    while ((begin_ptr[0] != 0) && (isspace(begin_ptr[0])))
-        begin_ptr++;
+static void local_rrd_free (rrd_t *rrd)
+{    
+    free(rrd->live_head);
+    free(rrd->stat_head);
+    free(rrd->ds_def);
+    free(rrd->rra_def); 
+    free(rrd->rra_ptr);
+    free(rrd->pdp_prep);
+    free(rrd->cdp_prep);
+    free(rrd->rrd_value);
+    free(rrd);
+}
 
-    if (begin_ptr[0] == 0) {
-        xmlFree(temp0);
-        buffer[0] = 0;
-        return (0);
+
+static int expect_element (
+    xmlTextReaderPtr reader,
+    char *exp_name)
+{
+    xmlChar *name;
+    name = get_xml_element(reader);
+    if (!name)
+        return -1;    
+    if (xmlStrcasecmp(name,(xmlChar *)exp_name) != 0){
+        rrd_set_error("line %d: expected <%s> element but found <%s>",
+                      xmlTextReaderGetParserLineNumber(reader),name,exp_name);
+        xmlFree(name);            
+        return -1;            
     }
+    xmlFree(name);    
+    return 0;    
+} /* expect_element */
 
-    end_ptr = begin_ptr;
-    while ((end_ptr[0] != 0) && (!isspace(end_ptr[0])))
-        end_ptr++;
-    end_ptr[0] = 0;
+static int expect_element_end (
+    xmlTextReaderPtr reader,
+    char *exp_name)
+{
+    xmlChar *name;
+    name = get_xml_element(reader);
+    if (name == NULL)
+        return -1;    
+    if (xmlStrcasecmp(name+1,(xmlChar *)exp_name) != 0 || name[0] != '/'){
+        rrd_set_error("line %d: expected </%s> end element but found <%s>",
+                      xmlTextReaderGetParserLineNumber(reader),exp_name,name);
+        xmlFree(name);            
+        return -1;            
+    }
+    xmlFree(name);    
+    return 0;    
+} /* expect_element_end */
 
-    strncpy(buffer, begin_ptr, buffer_size);
-    buffer[buffer_size - 1] = 0;
 
-    xmlFree(temp0);
+static xmlChar* get_xml_text (
+    xmlTextReaderPtr reader
+    )
+{
+    while(xmlTextReaderRead(reader)){
+        xmlChar  *ret;    
+        xmlChar  *text;
+        xmlChar  *begin_ptr;
+        xmlChar  *end_ptr;
+        int type;        
+        type = xmlTextReaderNodeType(reader);
+        if (type == XML_READER_TYPE_ELEMENT){
+            xmlChar *name;
+            name = xmlTextReaderName(reader);
+            rrd_set_error("line %d: expected a value but found an <%s> element",
+                          xmlTextReaderGetParserLineNumber(reader),
+                          name);
+            xmlFree(name);            
+            return NULL;            
+        }
+        /* skip all other non-text */
+        if (xmlTextReaderNodeType(reader) != XML_READER_TYPE_TEXT)
+            continue;
+        
+        text = xmlTextReaderValue(reader);
 
-    return (0);
-}                       /* int get_string_from_node */
+        begin_ptr = text;
+        while ((begin_ptr[0] != 0) && (isspace(begin_ptr[0])))
+            begin_ptr++;
+        if (begin_ptr[0] == 0) {
+            xmlFree(text);
+            return xmlStrdup(BAD_CAST "");
+        }        
+        end_ptr = begin_ptr;
+        while ((end_ptr[0] != 0) && (!isspace(end_ptr[0])))
+            end_ptr++;
+        end_ptr[0] = 0;
+        
+        ret = xmlStrdup(begin_ptr);
+        xmlFree(text);
+        return ret;
+    }
+    rrd_set_error("file ended while looking for text");
+    return NULL;
+}  /* get_xml_text */ 
 
-static int get_long_from_node(
-    xmlDoc * doc,
-    xmlNode * node,
+
+static int get_xml_string(
+    xmlTextReaderPtr reader,
+    char *value,
+    int max_len)
+{
+    xmlChar *str;
+    str = get_xml_text(reader);
+    if (str != NULL){
+        strncpy(value,(char *)str,max_len);
+        xmlFree(str);
+        return 0;        
+    }
+    else
+        return -1;    
+}
+
+ 
+static int get_xml_long(
+    xmlTextReaderPtr reader,
     long *value)
-{
-    long       temp;
-    char     *str_ptr;
-    char     *end_ptr;
-
-    str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    if (str_ptr == NULL) {
-        rrd_set_error("get_long_from_node: xmlNodeListGetString failed.");
-        return (-1);
-    }
-
-    end_ptr = NULL;
-    temp = strtol(str_ptr, &end_ptr, 0);
-    xmlFree(str_ptr);
-
-    if (str_ptr == end_ptr) {
-        rrd_set_error("get_long_from_node: Cannot parse buffer as long: %s",
-                      str_ptr);
-        return (-1);
-    }
-
-    *value = temp;
-
-    return (0);
-}                       /* int get_long_from_node */
-
-static int get_ulong_from_node(
-    xmlDoc * doc,
-    xmlNode * node,
-    unsigned long *value)
-{
-    unsigned long       temp;
-    char     *str_ptr;
-    char     *end_ptr;
-
-    str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    if (str_ptr == NULL) {
-        rrd_set_error("get_ulong_from_node: xmlNodeListGetString failed.");
-        return (-1);
-    }
-
-    end_ptr = NULL;
-    temp = strtoul(str_ptr, &end_ptr, 0);
-    xmlFree(str_ptr);
-
-    if (str_ptr == end_ptr) {
-        rrd_set_error("get_ulong_from_node: Cannot parse buffer as unsigned long: %s",
-                      str_ptr);
-        return (-1);
-    }
-
-    *value = temp;
-
-    return (0);
-}                       /* int get_ulong_from_node */
-
-static int get_double_from_node(
-    xmlDoc * doc,
-    xmlNode * node,
-    double *value)
-{
-    double    temp;
-    char     *str_ptr;
-    char     *end_ptr;
-
-    str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
-    if (str_ptr == NULL) {
-        rrd_set_error("get_double_from_node: xmlNodeListGetString failed.");
-        return (-1);
-    }
-
-    if (strstr(str_ptr, "NaN") != NULL)
-    {
-        *value = DNAN;   
-        xmlFree(str_ptr);
+{    
+    xmlChar *text;
+    long temp;    
+    if ((text = get_xml_text(reader)) != NULL){
+        errno = 0;        
+        temp = strtol((char *)text,NULL, 0);
+        if (errno>0){
+            rrd_set_error("ling %d: get_xml_long from '%s' %s",
+                          xmlTextReaderGetParserLineNumber(reader),
+                          text,rrd_strerror(errno));
+            xmlFree(text);            
+            return -1;
+        }
+        xmlFree(text);            
+        *value = temp;
         return 0;
     }
+    return -1;
+} /* get_xml_long */
 
-    end_ptr = NULL;
-    temp = strtod(str_ptr, &end_ptr);
-    xmlFree(str_ptr);
-
-    if (str_ptr == end_ptr) {
-        rrd_set_error
-            ("get_double_from_node: Cannot parse buffer as double: %s",
-             str_ptr);
-        return (-1);
+static int get_xml_ulong(
+    xmlTextReaderPtr reader,
+    ulong *value)
+{
+    
+    xmlChar *text;
+    ulong temp;    
+    if ((text = get_xml_text(reader)) != NULL){
+        errno = 0;        
+        temp = strtoul((char *)text,NULL, 0);        
+        if (errno>0){
+            rrd_set_error("ling %d: get_xml_ulong from '%s' %s",
+                          xmlTextReaderGetParserLineNumber(reader),
+                          text,rrd_strerror(errno));
+            xmlFree(text);            
+            return -1;
+        }
+        xmlFree(text);
+        *value = temp;        
+        return 0;
     }
+    return -1;
+} /* get_xml_ulong */
 
-    *value = temp;
+static int get_xml_double(
+    xmlTextReaderPtr reader,
+    double *value)
+{
+    
+    char *text;
+    double temp;    
+    if ((text = (char *)get_xml_text(reader))!= NULL){
+        if (strcasestr(text,"nan")){
+            *value = DNAN;
+            xmlFree(text);
+            return 0;            
+        }
+        else if (strcasestr(text,"-inf")){
+            *value = -DINF;
+            xmlFree(text);
+            return 0;            
+        }
+        else if (strcasestr(text,"+inf")
+                 || strcasestr(text,"inf")){
+            *value = DINF;
+            xmlFree(text);
+            return 0;            
+        }        
+        errno = 0;
+        temp = strtod((char *)text,NULL);
+        xmlFree(text);        
+        if (errno>0){
+            rrd_set_error("ling %d: get_xml_double from '%s' %s",
+                          xmlTextReaderGetParserLineNumber(reader),
+                          text,rrd_strerror(errno));
+            return -1;
+        }
+        *value = temp;
+        return 0;
+    }
+    return -1;
+} /* get_xml_double */
 
-    return (0);
-}                       /* int get_double_from_node */
 
 static int value_check_range(
     rrd_value_t *rrd_value,
@@ -211,67 +299,47 @@ static int value_check_range(
         *rrd_value = DNAN;
 
     return (0);
-}                       /* int value_check_range */
+} /* int value_check_range */
 
 /*
  * Parse the <database> block within an RRA definition
  */
+
 static int parse_tag_rra_database_row(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd,
     rrd_value_t *rrd_value)
 {
     unsigned int values_count = 0;
-    xmlNode  *child;
     int       status;
-
+    
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "v") == 0) {
-            if (values_count < rrd->stat_head->ds_cnt) {
-                status =
-                    get_double_from_node(doc, child,
-                                         rrd_value + values_count);
-                if (status == 0)
-                    value_check_range(rrd_value + values_count,
-                                      rrd->ds_def + values_count);
-            }
-
-            values_count++;
-        } else {
-            rrd_set_error("parse_tag_rra_database_row: Unknown tag: %s",
-                          child->name);
-            status = -1;
+    for (values_count = 0;values_count <  rrd->stat_head->ds_cnt;values_count++){
+        if (expect_element(reader,"v") == 0){
+            status = get_xml_double(reader,rrd_value + values_count);
+            if (status == 0)
+                value_check_range(rrd_value + values_count,
+                                  rrd->ds_def + values_count);
+            else
+                break;            
+        } else
+            return -1;
+        if (expect_element(reader,"/v") == -1){
+            return -1;
         }
-
-        if (status != 0)
-            break;
-    }                   /* for (child = node->xmlChildrenNode) */
-
-    if (values_count != rrd->stat_head->ds_cnt) {
-        rrd_set_error("parse_tag_rra_database_row: Row has %u values "
-                      "and RRD has %lu data sources.",
-                      values_count, rrd->stat_head->ds_cnt);
-        status = -1;
     }
-
-    return (status);
+    return status;
 }                       /* int parse_tag_rra_database_row */
 
 static int parse_tag_rra_database(
-    xmlDoc * doc,
-    xmlNode * node,
-    rrd_t *rrd)
+    xmlTextReaderPtr reader,
+    rrd_t *rrd )
 {
     rra_def_t *cur_rra_def;
     unsigned int total_row_cnt;
-    xmlNode  *child;
     int       status;
     int       i;
+    xmlChar *element;
 
     total_row_cnt = 0;
     for (i = 0; i < (((int) rrd->stat_head->rra_cnt) - 1); i++)
@@ -280,15 +348,12 @@ static int parse_tag_rra_database(
     cur_rra_def = rrd->rra_def + i;
 
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "row") == 0) {
-            rrd_value_t *temp;
-            rrd_value_t *cur_rrd_value;
-            unsigned int total_values_count = rrd->stat_head->ds_cnt
-                * (total_row_cnt + 1);
+    while ((element = get_xml_element(reader)) != NULL){        
+        if (xmlStrcasecmp(element,(const xmlChar *)"row") == 0){
+           rrd_value_t *temp;
+           rrd_value_t *cur_rrd_value;
+           unsigned int total_values_count = rrd->stat_head->ds_cnt
+               * (total_row_cnt + 1);
 
             /* Allocate space for the new values.. */
             temp = (rrd_value_t *) realloc(rrd->rrd_value,
@@ -297,7 +362,7 @@ static int parse_tag_rra_database(
             if (temp == NULL) {
                 rrd_set_error("parse_tag_rra_database: realloc failed.");
                 status = -1;
-                break;
+               break;
             }
             rrd->rrd_value = temp;
             cur_rrd_value = rrd->rrd_value
@@ -308,18 +373,25 @@ static int parse_tag_rra_database(
             cur_rra_def->row_cnt++;
 
             status =
-                parse_tag_rra_database_row(doc, child, rrd, cur_rrd_value);
-        } /* if (xmlStrcmp (child->name, (const xmlChar *) "row") == 0) */
+                parse_tag_rra_database_row(reader, rrd, cur_rrd_value);
+            if (status == 0)
+                status =  expect_element(reader,"/row");
+        } /* if (xmlStrcasecmp(element,"row")) */
         else {
-            rrd_set_error("parse_tag_rra_database: Unknown tag: %s",
-                          child->name);
-            status = -1;
+            if ( xmlStrcasecmp(element,(const xmlChar *)"/database") == 0){
+                xmlFree(element);                
+                break;
+            }
+            else {
+                rrd_set_error("line %d: found unexpected tag: %s",
+                              xmlTextReaderGetParserLineNumber(reader),element);
+                status = -1;
+            }
         }
-
+        xmlFree(element);        
         if (status != 0)
-            break;
-    }                   /* for (child = node->xmlChildrenNode) */
-
+            break;        
+    }
     return (status);
 }                       /* int parse_tag_rra_database */
 
@@ -327,167 +399,146 @@ static int parse_tag_rra_database(
  * Parse the <cdp_prep> block within an RRA definition
  */
 static int parse_tag_rra_cdp_prep_ds_history(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     cdp_prep_t *cdp_prep)
 {
     /* Make `history_buffer' the same size as the scratch area, plus the
      * terminating NULL byte. */
-    char      history_buffer[sizeof(((cdp_prep_t *)0)->scratch) + 1];
+    xmlChar  *history;    
     char     *history_ptr;
-    int       status;
     int       i;
-
-    status = get_string_from_node(doc, node,
-                                  history_buffer, sizeof(history_buffer));
-    if (status != 0)
-        return (-1);
-
-    history_ptr = (char *) (&cdp_prep->scratch[0]);
-    for (i = 0; history_buffer[i] != '\0'; i++)
-        history_ptr[i] = (history_buffer[i] == '1') ? 1 : 0;
-
-    return (0);
-}                       /* int parse_tag_rra_cdp_prep_ds_history */
+    if ((history = get_xml_text(reader)) != NULL){
+        history_ptr = (char *) (&cdp_prep->scratch[0]);
+        for (i = 0; history[i] != '\0'; i++)
+            history_ptr[i] = (history[i] == '1') ? 1 : 0;
+        xmlFree(history);        
+        return 0;        
+    }    
+    return -1;    
+}  /* int parse_tag_rra_cdp_prep_ds_history */
 
 static int parse_tag_rra_cdp_prep_ds(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd,
     cdp_prep_t *cdp_prep)
 {
-    xmlNode  *child;
     int       status;
-
+    xmlChar *element;
     memset(cdp_prep, '\0', sizeof(cdp_prep_t));
 
-    status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if (atoi(rrd->stat_head->version) == 1) {
-            cdp_prep->scratch[CDP_primary_val].u_val = 0.0;
-            cdp_prep->scratch[CDP_secondary_val].u_val = 0.0;
-        }
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "primary_value") ==
-                 0)
-            status =
-                get_double_from_node(doc, child,
-                                     &cdp_prep->scratch[CDP_primary_val].
-                                     u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "secondary_value")
-                 == 0)
-            status =
-                get_double_from_node(doc, child,
-                                     &cdp_prep->scratch[CDP_secondary_val].
-                                     u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "intercept") == 0)
-            status = get_double_from_node(doc, child,
-                                          &cdp_prep->
-                                          scratch[CDP_hw_intercept].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "last_intercept") ==
-                 0)
-            status =
-                get_double_from_node(doc, child,
-                                     &cdp_prep->
-                                     scratch[CDP_hw_last_intercept].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "slope") == 0)
-            status = get_double_from_node(doc, child,
-                                          &cdp_prep->scratch[CDP_hw_slope].
-                                          u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "last_slope") == 0)
-            status = get_double_from_node(doc, child,
-                                          &cdp_prep->
-                                          scratch[CDP_hw_last_slope].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "nan_count") == 0)
-            status = get_ulong_from_node(doc, child,
-                                        &cdp_prep->
-                                       scratch[CDP_null_count].u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "last_nan_count") ==
-                 0)
-            status =
-                get_ulong_from_node(doc, child,
-                                   &cdp_prep->
-                                  scratch[CDP_last_null_count].u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "seasonal") == 0)
-            status = get_double_from_node(doc, child,
-                                          &cdp_prep->scratch[CDP_hw_seasonal].
-                                          u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "last_seasonal") ==
-                 0)
-            status =
-                get_double_from_node(doc, child,
-                                     &cdp_prep->scratch[CDP_hw_last_seasonal].
-                                     u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "init_flag") == 0)
-            status = get_ulong_from_node(doc, child,
-                                        &cdp_prep->
-                                       scratch[CDP_init_seasonal].u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "history") == 0)
-            status = parse_tag_rra_cdp_prep_ds_history(doc, child, cdp_prep);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "value") == 0)
-            status = get_double_from_node(doc, child,
-                                          &cdp_prep->scratch[CDP_val].u_val);
-        else if (xmlStrcmp(child->name,
-                           (const xmlChar *) "unknown_datapoints") == 0)
-            status = get_ulong_from_node(doc, child,
-                                        &cdp_prep->
-                                       scratch[CDP_unkn_pdp_cnt].u_cnt);
-        else {
-            rrd_set_error("parse_tag_rra_cdp_prep: Unknown tag: %s",
-                          child->name);
-            status = -1;
-        }
-
-        if (status != 0)
-            break;
+    status = -1;
+    
+    if (atoi(rrd->stat_head->version) == 1) {
+        cdp_prep->scratch[CDP_primary_val].u_val = 0.0;
+        cdp_prep->scratch[CDP_secondary_val].u_val = 0.0;
     }
 
+    while ((element = get_xml_element(reader)) != NULL){
+        if (xmlStrcasecmp(element, (const xmlChar *) "primary_value") == 0)
+            status =
+                get_xml_double(reader,&cdp_prep->scratch[CDP_primary_val].u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "secondary_value") == 0)
+            status =
+                get_xml_double(reader,&cdp_prep->scratch[CDP_secondary_val].u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "intercept") == 0)
+            status = get_xml_double(reader,
+                                          &cdp_prep->
+                                          scratch[CDP_hw_intercept].u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "last_intercept") ==
+                 0)
+            status =
+                get_xml_double(reader,
+                                     &cdp_prep->
+                                     scratch[CDP_hw_last_intercept].u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "slope") == 0)
+            status = get_xml_double(reader,
+                                    &cdp_prep->scratch[CDP_hw_slope].
+                                    u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "last_slope") == 0)
+            status = get_xml_double(reader,
+                                    &cdp_prep->
+                                    scratch[CDP_hw_last_slope].u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "nan_count") == 0)
+            status = get_xml_ulong(reader,
+                                   &cdp_prep->
+                                   scratch[CDP_null_count].u_cnt);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "last_nan_count") ==
+                 0)
+            status =
+                get_xml_ulong(reader,
+                              &cdp_prep->
+                              scratch[CDP_last_null_count].u_cnt);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "seasonal") == 0)
+            status = get_xml_double(reader,
+                                    &cdp_prep->scratch[CDP_hw_seasonal].
+                                    u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "last_seasonal") ==
+                 0)
+            status =
+                get_xml_double(reader,
+                                     &cdp_prep->scratch[CDP_hw_last_seasonal].
+                                     u_val);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "init_flag") == 0)
+            status = get_xml_ulong(reader,
+                                        &cdp_prep->
+                                       scratch[CDP_init_seasonal].u_cnt);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "history") == 0)
+            status = parse_tag_rra_cdp_prep_ds_history(reader, cdp_prep);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "value") == 0)
+            status = get_xml_double(reader,
+                                    &cdp_prep->scratch[CDP_val].u_val);
+        else if (xmlStrcasecmp(element,
+                           (const xmlChar *) "unknown_datapoints") == 0)
+            status = get_xml_ulong(reader,
+                                        &cdp_prep->
+                                       scratch[CDP_unkn_pdp_cnt].u_cnt);
+        else if (xmlStrcasecmp(element,
+                               (const xmlChar *) "/ds") == 0){
+            xmlFree(element);            
+            break;
+        }        
+        else {
+            rrd_set_error("parse_tag_rra_cdp_prep: Unknown tag: %s",
+                          element);
+            status = -1;
+            xmlFree(element);            
+            break;            
+        }
+        if (status != 0){
+            xmlFree(element);
+            break;
+        }
+        status = expect_element_end(reader,(char *)element);
+        xmlFree(element);        
+        if (status != 0)
+            break;
+    }    
     return (status);
 }                       /* int parse_tag_rra_cdp_prep_ds */
 
 static int parse_tag_rra_cdp_prep(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd,
     cdp_prep_t *cdp_prep)
 {
-    xmlNode  *child;
     int       status;
 
-    unsigned int ds_count = 0;
+    unsigned int ds_count;
 
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0) {
-            if (ds_count >= rrd->stat_head->ds_cnt)
-                status = -1;
-            else {
-                status = parse_tag_rra_cdp_prep_ds(doc, child, rrd,
-                                                   cdp_prep + ds_count);
-                ds_count++;
-            }
+    for ( ds_count = 0; ds_count < rrd->stat_head->ds_cnt;ds_count++){
+        if (expect_element(reader,"ds") == 0) {
+            status = parse_tag_rra_cdp_prep_ds(reader, rrd,
+                                               cdp_prep + ds_count);
+            if (status != 0)
+                break;
         } else {
-            rrd_set_error("parse_tag_rra_cdp_prep: Unknown tag: %s",
-                          child->name);
-            status = -1;
-        }
-
-        if (status != 0)
+            status = -1;            
             break;
+        }        
     }
-
-    if (ds_count != rrd->stat_head->ds_cnt) {
-        rrd_set_error("parse_tag_rra_cdp_prep: There are %i data sources in "
-                      "the RRD file, but %i in this cdp_prep block!",
-                      (int) rrd->stat_head->ds_cnt, ds_count);
-        status = -1;
-    }
-
+    if (status == 0)
+        status =  expect_element(reader,"/cdp_prep");
     return (status);
 }                       /* int parse_tag_rra_cdp_prep */
 
@@ -495,50 +546,46 @@ static int parse_tag_rra_cdp_prep(
  * Parse the <params> block within an RRA definition
  */
 static int parse_tag_rra_params(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rra_def_t *rra_def)
 {
-    xmlNode  *child;
+    xmlChar *element;
     int       status;
 
-    status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
+    status = -1;
+    while ((element = get_xml_element(reader)) != NULL){
         /*
          * Parameters for CF_HWPREDICT
          */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "hw_alpha") == 0)
-            status = get_double_from_node(doc, child,
+        if (xmlStrcasecmp(element, (const xmlChar *) "hw_alpha") == 0)
+            status = get_xml_double(reader,
                                           &rra_def->par[RRA_hw_alpha].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "hw_beta") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "hw_beta") == 0)
+            status = get_xml_double(reader,
                                           &rra_def->par[RRA_hw_beta].u_val);
-        else if (xmlStrcmp(child->name,
+        else if (xmlStrcasecmp(element,
                            (const xmlChar *) "dependent_rra_idx") == 0)
-            status = get_ulong_from_node(doc, child,
+            status = get_xml_ulong(reader,
                                         &rra_def->
                                        par[RRA_dependent_rra_idx].u_cnt);
         /*
          * Parameters for CF_SEASONAL and CF_DEVSEASONAL
          */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "seasonal_gamma") ==
+        else if (xmlStrcasecmp(element, (const xmlChar *) "seasonal_gamma") ==
                  0)
             status =
-                get_double_from_node(doc, child,
+                get_xml_double(reader,
                                      &rra_def->par[RRA_seasonal_gamma].u_val);
-        else if (xmlStrcmp
-                 (child->name, (const xmlChar *) "seasonal_smooth_idx") == 0)
+        else if (xmlStrcasecmp
+                 (element, (const xmlChar *) "seasonal_smooth_idx") == 0)
             status =
-                get_ulong_from_node(doc, child,
+                get_xml_ulong(reader,
                                    &rra_def->
                                   par[RRA_seasonal_smooth_idx].u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "smoothing_window")
+        else if (xmlStrcasecmp(element, (const xmlChar *) "smoothing_window")
                  == 0)
             status =
-                get_double_from_node(doc, child,
+                get_xml_double(reader,
                                      &rra_def->
                                      par[RRA_seasonal_smoothing_window].
                                      u_val);
@@ -546,75 +593,73 @@ static int parse_tag_rra_params(
         /*
          * Parameters for CF_FAILURES
          */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "delta_pos") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "delta_pos") == 0)
+            status = get_xml_double(reader,
                                           &rra_def->par[RRA_delta_pos].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "delta_neg") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "delta_neg") == 0)
+            status = get_xml_double(reader,
                                           &rra_def->par[RRA_delta_neg].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "window_len") == 0)
-            status = get_ulong_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "window_len") == 0)
+            status = get_xml_ulong(reader,
                                         &rra_def->par[RRA_window_len].
                                        u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "failure_threshold")
+        else if (xmlStrcasecmp(element, (const xmlChar *) "failure_threshold")
                  == 0)
             status =
-                get_ulong_from_node(doc, child,
+                get_xml_ulong(reader,
                                    &rra_def->
                                   par[RRA_failure_threshold].u_cnt);
         /*
          * Parameters for CF_AVERAGE, CF_MAXIMUM, CF_MINIMUM, and CF_LAST
          */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "xff") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "xff") == 0)
+            status = get_xml_double(reader,
                                           &rra_def->par[RRA_cdp_xff_val].
                                           u_val);
         /*
          * Compatibility code for 1.0.49
          */
-        else if (xmlStrcmp(child->name, (const xmlChar *) "value") == 0) {  /* {{{ */
+        else if (xmlStrcasecmp(element, (const xmlChar *) "value") == 0) {  /* {{{ */
             unsigned int i = 0;
 
-            while (42) {
-                if (i >= ARRAY_LENGTH(rra_def->par)) {
-                    status = -1;
-                    break;
-                }
-
+            for (i=0;i<ARRAY_LENGTH(rra_def->par);i++){
                 if ((i == RRA_dependent_rra_idx)
                     || (i == RRA_seasonal_smooth_idx)
                     || (i == RRA_failure_threshold))
-                    status = get_ulong_from_node(doc, child,
+                    status = get_xml_ulong(reader,
                                                 &rra_def->par[i].
                                                u_cnt);
                 else
-                    status = get_double_from_node(doc, child,
+                    status = get_xml_double(reader,
                                                   &rra_def->par[i].u_val);
 
                 if (status != 0)
                     break;
-
-                /* When this loops exits (sucessfully) `child' points to the last
-                 * `value' tag in the list. */
-                if ((child->next == NULL)
-                    || (xmlStrcmp(child->name, (const xmlChar *) "value") !=
-                        0))
-                    break;
-
-                child = child->next;
-                i++;
+                if ( i-1 < ARRAY_LENGTH(rra_def->par)){
+                    status = expect_element(reader,"/value");
+                    if (status == 0){
+                        status  = expect_element(reader,"value");
+                    }
+                }
+                if (status != 0){
+                    break;                    
+                }
             }
-        } /* }}} */
+        }  /* }}} */        
+        else if (xmlStrcasecmp(element,(const xmlChar *) "/params") == 0){
+            xmlFree(element);            
+            return status;
+        }  /* }}} */        
         else {
-            rrd_set_error("parse_tag_rra_params: Unknown tag: %s",
-                          child->name);
+            rrd_set_error("line %d: parse_tag_rra_params: Unknown tag: %s",
+                          xmlTextReaderGetParserLineNumber(reader),element);
             status = -1;
         }
-
+        status = expect_element_end(reader,(char *)element);
+        xmlFree(element);        
         if (status != 0)
             break;
     }
-
     return (status);
 }                       /* int parse_tag_rra_params */
 
@@ -622,35 +667,33 @@ static int parse_tag_rra_params(
  * Parse an RRA definition
  */
 static int parse_tag_rra_cf(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rra_def_t *rra_def)
 {
     int       status;
 
-    status = get_string_from_node(doc, node,
+    status = get_xml_string(reader,
                                   rra_def->cf_nam, sizeof(rra_def->cf_nam));
     if (status != 0)
-        return (-1);
+        return status;
 
     status = cf_conv(rra_def->cf_nam);
     if (status == -1) {
         rrd_set_error("parse_tag_rra_cf: Unknown consolidation function: %s",
                       rra_def->cf_nam);
-        return (-1);
+        return -1;
     }
 
-    return (0);
+    return 0;
 }                       /* int parse_tag_rra_cf */
 
 static int parse_tag_rra(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd)
 {
-    xmlNode  *child;
     int       status;
-
+    xmlChar *element;
+    
     rra_def_t *cur_rra_def;
     cdp_prep_t *cur_cdp_prep;
     rra_ptr_t *cur_rra_ptr;
@@ -709,36 +752,61 @@ static int parse_tag_rra(
     rrd->stat_head->rra_cnt++;
 
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "cf") == 0)
-            status = parse_tag_rra_cf(doc, child, cur_rra_def);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "pdp_per_row") == 0)
-            status = get_ulong_from_node(doc, child,
+    while ((element = get_xml_element(reader)) != NULL){
+        if (xmlStrcasecmp(element, (const xmlChar *) "cf") == 0)
+            status = parse_tag_rra_cf(reader, cur_rra_def);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "pdp_per_row") == 0)
+            status = get_xml_ulong(reader,
                                         &cur_rra_def->pdp_cnt);
         else if (atoi(rrd->stat_head->version) == 1
-                 && xmlStrcmp(child->name, (const xmlChar *) "xff") == 0)
-            status = get_double_from_node(doc, child,
+                 && xmlStrcasecmp(element, (const xmlChar *) "xff") == 0)
+            status = get_xml_double(reader,
                                           (double *) &cur_rra_def->
                                           par[RRA_cdp_xff_val].u_val);
         else if (atoi(rrd->stat_head->version) >= 2
-                 && xmlStrcmp(child->name, (const xmlChar *) "params") == 0)
-            status = parse_tag_rra_params(doc, child, cur_rra_def);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "cdp_prep") == 0)
-            status = parse_tag_rra_cdp_prep(doc, child, rrd, cur_cdp_prep);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "database") == 0)
-            status = parse_tag_rra_database(doc, child, rrd);
-        else {
-            rrd_set_error("parse_tag_rra: Unknown tag: %s", child->name);
-            status = -1;
+                 && xmlStrcasecmp(element, (const xmlChar *) "params") == 0){            
+            xmlFree(element);
+            status = parse_tag_rra_params(reader, cur_rra_def);
+            if (status == 0)
+                continue;
+            else
+                return status;
         }
-
-        if (status != 0)
-            break;
-    }
-
+        else if (xmlStrcasecmp(element, (const xmlChar *) "cdp_prep") == 0){
+            xmlFree(element);
+            status = parse_tag_rra_cdp_prep(reader, rrd, cur_cdp_prep);
+            if (status == 0)
+                continue;
+            else
+                return status;
+        }        
+        else if (xmlStrcasecmp(element, (const xmlChar *) "database") == 0){            
+            xmlFree(element);
+            status = parse_tag_rra_database(reader, rrd);
+            if (status == 0)
+                continue;
+            else
+                return status;
+        }
+        else if (xmlStrcasecmp(element,(const xmlChar *) "/rra") == 0){
+            xmlFree(element);            
+            return status;
+        }  /* }}} */        
+       else {
+            rrd_set_error("line %d: parse_tag_rra: Unknown tag: %s",
+                          xmlTextReaderGetParserLineNumber(reader), element);
+            status = -1;            
+        }
+        if (status != 0) {
+            xmlFree(element);
+            return status;
+        }        
+        status = expect_element_end(reader,(char *)element);
+        xmlFree(element);
+        if (status != 0) {
+            return status;
+        }        
+    }    
     /* Set the RRA pointer to a random location */
     cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
 
@@ -749,54 +817,54 @@ static int parse_tag_rra(
  * Parse a DS definition
  */
 static int parse_tag_ds_cdef(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd)
 {
-    char      buffer[1024];
-    int       status;
+    xmlChar *cdef;
 
-    status = get_string_from_node(doc, node, buffer, sizeof(buffer));
-    if (status != 0)
-        return (-1);
-
-    /* We're always working on the last DS that has been added to the structure
-     * when we get here */
-    parseCDEF_DS(buffer, rrd, rrd->stat_head->ds_cnt - 1);
-
-    return (0);
+    cdef = get_xml_text(reader);
+    if (cdef != NULL){
+        /* We're always working on the last DS that has been added to the structure
+         * when we get here */
+        parseCDEF_DS((char *)cdef, rrd, rrd->stat_head->ds_cnt - 1);
+        xmlFree(cdef);
+        if (rrd_test_error())
+            return -1;
+        else            
+            return 0;        
+    }
+    return -1;
 }                       /* int parse_tag_ds_cdef */
 
 static int parse_tag_ds_type(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     ds_def_t *ds_def)
 {
-    int       status;
-
-    status = get_string_from_node(doc, node,
-                                  ds_def->dst, sizeof(ds_def->dst));
-    if (status != 0)
-        return (-1);
-
-    status = dst_conv(ds_def->dst);
-    if (status == -1) {
-        rrd_set_error("parse_tag_ds_type: Unknown data source type: %s",
-                      ds_def->dst);
-        return (-1);
+    char *dst;
+    dst = (char *)get_xml_text(reader);
+    if (dst != NULL){
+        int status;
+        status = dst_conv(dst);
+        if (status == -1) {
+            rrd_set_error("parse_tag_ds_type: Unknown data source type: %s",
+                          dst);
+            return -1;
+        }
+        strncpy(ds_def->dst,dst,sizeof(ds_def->dst)-1);
+        ds_def->dst[sizeof(ds_def->dst)-1] = '\0';
+        xmlFree(dst);
+        return 0;        
     }
-
-    return (0);
+    return -1;
 }                       /* int parse_tag_ds_type */
 
 static int parse_tag_ds(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd)
 {
-    xmlNode  *child;
     int       status;
-
+    xmlChar  *element;
+    
     ds_def_t *cur_ds_def;
     pdp_prep_t *cur_pdp_prep;
 
@@ -847,50 +915,55 @@ static int parse_tag_ds(
     rrd->stat_head->ds_cnt++;
 
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "name") == 0)
-            status = get_string_from_node(doc, child,
-                                          cur_ds_def->ds_nam,
-                                          sizeof(cur_ds_def->ds_nam));
-        else if (xmlStrcmp(child->name, (const xmlChar *) "type") == 0)
-            status = parse_tag_ds_type(doc, child, cur_ds_def);
-        else if (xmlStrcmp(child->name,
+    while ((element = get_xml_element(reader)) != NULL){
+        if (xmlStrcasecmp(element, (const xmlChar *) "name") == 0){
+            status = get_xml_string(reader,cur_ds_def->ds_nam,sizeof(cur_ds_def->ds_nam));
+        }
+        else if (xmlStrcasecmp(element, (const xmlChar *) "type") == 0)
+            status = parse_tag_ds_type(reader, cur_ds_def);
+        else if (xmlStrcasecmp(element,
                            (const xmlChar *) "minimal_heartbeat") == 0)
-            status = get_ulong_from_node(doc, child,
+            status = get_xml_ulong(reader,
                                         &cur_ds_def->par[DS_mrhb_cnt].
                                        u_cnt);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "min") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "min") == 0)
+            status = get_xml_double(reader,
                                           &cur_ds_def->par[DS_min_val].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "max") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "max") == 0)
+            status = get_xml_double(reader,
                                           &cur_ds_def->par[DS_max_val].u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "cdef") == 0)
-            status = parse_tag_ds_cdef(doc, child, rrd);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "last_ds") == 0)
-            status = get_string_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "cdef") == 0)
+            status = parse_tag_ds_cdef(reader, rrd);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "last_ds") == 0)
+            status = get_xml_string(reader,
                                           cur_pdp_prep->last_ds,
                                           sizeof(cur_pdp_prep->last_ds));
-        else if (xmlStrcmp(child->name, (const xmlChar *) "value") == 0)
-            status = get_double_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "value") == 0)
+            status = get_xml_double(reader,
                                           &cur_pdp_prep->scratch[PDP_val].
                                           u_val);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "unknown_sec") == 0)
-            status = get_ulong_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "unknown_sec") == 0)
+            status = get_xml_ulong(reader,
                                         &cur_pdp_prep->
                                        scratch[PDP_unkn_sec_cnt].u_cnt);
-        else {
-            rrd_set_error("parse_tag_ds: Unknown tag: %s", child->name);
-            status = -1;
-        }
-
-        if (status != 0)
+        else if (xmlStrcasecmp(element, (const xmlChar *) "/ds") == 0) {
+            xmlFree(element);            
             break;
+        }        
+        else {
+            rrd_set_error("parse_tag_ds: Unknown tag: %s", element);
+            status = -1;
+        }        
+        if (status != 0) {            
+            xmlFree(element);        
+            break;
+        }
+        status = expect_element_end(reader,(char *)element);
+        xmlFree(element);        
+        if (status != 0)
+            break;        
     }
-
+    
     return (status);
 }                       /* int parse_tag_ds */
 
@@ -898,77 +971,85 @@ static int parse_tag_ds(
  * Parse root nodes
  */
 static int parse_tag_rrd(
-    xmlDoc * doc,
-    xmlNode * node,
+    xmlTextReaderPtr reader,
     rrd_t *rrd)
 {
-    xmlNode  *child;
     int       status;
-
+    xmlChar *element;
+    
     status = 0;
-    for (child = node->xmlChildrenNode; child != NULL; child = child->next) {
-        if ((xmlStrcmp(child->name, (const xmlChar *) "comment") == 0)
-            || (xmlStrcmp(child->name, (const xmlChar *) "text") == 0))
-            /* ignore */ ;
-        else if (xmlStrcmp(child->name, (const xmlChar *) "version") == 0)
-            status = get_string_from_node(doc, child,
+    while ((element = get_xml_element(reader)) != NULL ){
+        if (xmlStrcasecmp(element, (const xmlChar *) "version") == 0)
+            status = get_xml_string(reader,
                                           rrd->stat_head->version,
                                           sizeof(rrd->stat_head->version));
-        else if (xmlStrcmp(child->name, (const xmlChar *) "step") == 0)
-            status = get_ulong_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "step") == 0)
+            status = get_xml_ulong(reader,
                                         &rrd->stat_head->pdp_step);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0)
-            status = get_long_from_node(doc, child,
+        else if (xmlStrcasecmp(element, (const xmlChar *) "lastupdate") == 0)
+            status = get_xml_long(reader,
                                         &rrd->live_head->last_up);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0)
-            status = parse_tag_ds(doc, child, rrd);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "rra") == 0)
-            status = parse_tag_rra(doc, child, rrd);
+        else if (xmlStrcasecmp(element, (const xmlChar *) "ds") == 0){            
+            xmlFree(element);
+            status = parse_tag_ds(reader, rrd);
+            /* as we come back the </ds> tag is already gone */
+            if (status == 0)
+                continue;
+            else
+                return status;
+        }        
+        else if (xmlStrcasecmp(element, (const xmlChar *) "rra") == 0){            
+            xmlFree(element);
+            status = parse_tag_rra(reader, rrd);
+            if (status == 0)
+                continue;
+            else
+                return status;
+        }
+        else if (xmlStrcasecmp(element, (const xmlChar *) "/rrd") == 0) {
+            xmlFree(element);
+            return status;
+        }
         else {
-            rrd_set_error("parse_tag_rrd: Unknown tag: %s", child->name);
+            rrd_set_error("parse_tag_rrd: Unknown tag: %s", element);
             status = -1;
         }
 
-        if (status != 0)
+        if (status != 0){
+            xmlFree(element);
             break;
+        }        
+        status = expect_element_end(reader,(char *)element);
+        xmlFree(element);        
+        if (status != 0)
+            break;        
     }
-
     return (status);
 }                       /* int parse_tag_rrd */
 
 static rrd_t *parse_file(
     const char *filename)
 {
-    xmlDoc   *doc;
-    xmlNode  *cur;
+    xmlTextReaderPtr reader;
     int       status;
 
     rrd_t    *rrd;
 
-    doc = xmlParseFile(filename);
-    if (doc == NULL) {
-        rrd_set_error("Document not parsed successfully.");
+    reader = xmlNewTextReaderFilename(filename);
+    if (reader == NULL) {
+        rrd_set_error("Could not create xml reader for: %s",filename);
         return (NULL);
     }
 
-    cur = xmlDocGetRootElement(doc);
-    if (cur == NULL) {
-        rrd_set_error("Document is empty.");
-        xmlFreeDoc(doc);
-        return (NULL);
-    }
-
-    if (xmlStrcmp(cur->name, (const xmlChar *) "rrd") != 0) {
-        rrd_set_error
-            ("Document of the wrong type, root node is not \"rrd\".");
-        xmlFreeDoc(doc);
+    if (expect_element(reader,"rrd") != 0) {
+        xmlFreeTextReader(reader);
         return (NULL);
     }
 
     rrd = (rrd_t *) malloc(sizeof(rrd_t));
     if (rrd == NULL) {
         rrd_set_error("parse_file: malloc failed.");
-        xmlFreeDoc(doc);
+        xmlFreeTextReader(reader);
         return (NULL);
     }
     memset(rrd, '\0', sizeof(rrd_t));
@@ -976,7 +1057,7 @@ static rrd_t *parse_file(
     rrd->stat_head = (stat_head_t *) malloc(sizeof(stat_head_t));
     if (rrd->stat_head == NULL) {
         rrd_set_error("parse_tag_rrd: malloc failed.");
-        xmlFreeDoc(doc);
+        xmlFreeTextReader(reader);
         free(rrd);
         return (NULL);
     }
@@ -988,18 +1069,19 @@ static rrd_t *parse_file(
     rrd->live_head = (live_head_t *) malloc(sizeof(live_head_t));
     if (rrd->live_head == NULL) {
         rrd_set_error("parse_tag_rrd: malloc failed.");
-        xmlFreeDoc(doc);
+        xmlFreeTextReader(reader);
         free(rrd->stat_head);
         free(rrd);
         return (NULL);
     }
     memset(rrd->live_head, '\0', sizeof(live_head_t));
 
-    status = parse_tag_rrd(doc, cur, rrd);
+    status = parse_tag_rrd(reader, rrd);
 
-    xmlFreeDoc(doc);
+    xmlFreeTextReader(reader);
+
     if (status != 0) {
-        rrd_free(rrd);
+        local_rrd_free(rrd);
         rrd = NULL;
     }
 
@@ -1132,13 +1214,14 @@ int rrd_restore(
     rrd = parse_file(argv[optind]);
     if (rrd == NULL)
         return (-1);
-
+    
     if (write_file(argv[optind + 1], rrd) != 0) {
-        rrd_free(rrd);
+        local_rrd_free(rrd);
         return (-1);
     }
+    local_rrd_free(rrd);
 
-    rrd_free(rrd);
+
     return (0);
 }                       /* int rrd_restore */
 
