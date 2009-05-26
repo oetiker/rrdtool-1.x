@@ -2,7 +2,6 @@ rrd_add_ptr
 rrd_add_strdup
 rrd_clear_error
 rrd_close
-rrd_cmd_flush
 rrd_create
 rrd_create_r
 rrd_dontneed
@@ -10,8 +9,10 @@ rrd_dump
 rrd_dump_r
 rrd_fetch
 rrd_fetch_r
+rrd_flushcached
 rrd_first
 rrd_first_r
+rrd_flush
 rrd_free
 rrd_free_context
 rrd_free_ptrs

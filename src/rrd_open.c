@@ -675,6 +675,13 @@ ssize_t rrd_write(
 }
 
 
+/* this is a leftover from the old days, it serves no purpose
+   and is therefore turned into a no-op */
+void rrd_flush(
+    rrd_file_t *rrd_file  __attribute__((unused)))
+{
+}
+
 /* Initialize RRD header.  */
 
 void rrd_init(

@@ -208,7 +208,7 @@ extern    "C" {
     unsigned long *,
     char ***,
     rrd_value_t **);
-    int       rrd_cmd_flush (int argc, char **argv);
+    int       rrd_flushcached (int argc, char **argv);
 
     void      rrd_freemem(
     void *mem);
@@ -381,6 +381,9 @@ int       rrd_proc_start_end(
     rrd_file_t *rrd_file,
     const void *buf,
     size_t count)
+              RRD_DEPRECATED;
+    void      rrd_flush(
+    rrd_file_t *rrd_file)
               RRD_DEPRECATED;
     off_t     rrd_seek(
     rrd_file_t *rrd_file,

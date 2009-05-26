@@ -57,7 +57,7 @@ void PrintUsage(
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
          "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-         "\t\tresize, xport, flush\n\n");
+         "\t\tresize, xport, flushcached\n\n");
 
     const char *help_listremote =
         N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
@@ -119,9 +119,9 @@ void PrintUsage(
            "\t\t[-s|--start start] [-e|--end end]\n"
 	   "\t\t[--daemon <address>]\n\n");
 
-    const char *help_flush =
-        N_("* flush - flush cached data out to an RRD file\n\n"
-           "\trrdtool flush filename.rrd\n"
+    const char *help_flushcached =
+        N_("* flushcached - flush cached data out to an RRD file\n\n"
+           "\trrdtool flushcached filename.rrd\n"
 	   "\t\t[--daemon <address>]\n\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
@@ -229,7 +229,7 @@ void PrintUsage(
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
         C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
-        C_UPDATEV, C_FLUSH
+        C_UPDATEV, C_FLUSHCACHED
     };
     int       help_cmd = C_NONE;
 
@@ -254,8 +254,8 @@ void PrintUsage(
             help_cmd = C_UPDATEV;
         else if (!strcmp(cmd, "fetch"))
             help_cmd = C_FETCH;
-        else if (!strcmp(cmd, "flush"))
-            help_cmd = C_FLUSH;
+        else if (!strcmp(cmd, "flushcached"))
+            help_cmd = C_FLUSHCACHED;
         else if (!strcmp(cmd, "graph"))
             help_cmd = C_GRAPH;
         else if (!strcmp(cmd, "graphv"))
@@ -316,8 +316,8 @@ void PrintUsage(
     case C_FETCH:
         fputs(_(help_fetch), stdout);
         break;
-    case C_FLUSH:
-        fputs(_(help_flush), stdout);
+    case C_FLUSHCACHED:
+        fputs(_(help_flushcached), stdout);
         break;
     case C_GRAPH:
         fputs(_(help_graph0), stdout);
@@ -813,8 +813,8 @@ int HandleInputLine(
 
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
-    else if (strcmp("flush", argv[1]) == 0)
-        rrd_cmd_flush(argc - 1, &argv[1]);
+    else if (strcmp("flushcached", argv[1]) == 0)
+        rrd_flushcached(argc - 1, &argv[1]);
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }

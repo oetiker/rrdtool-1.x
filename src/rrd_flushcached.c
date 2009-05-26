@@ -1,5 +1,5 @@
 /**
- * RRDTool - src/rrd_flush.c
+ * RRDTool - src/rrd_flushcached.c
  * Copyright (C) 2008 Florian octo Forster
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -22,7 +22,7 @@
 #include "rrd_tool.h"
 #include "rrd_client.h"
 
-int rrd_cmd_flush (int argc, char **argv)
+int rrd_flushcached (int argc, char **argv)
 {
     char *opt_daemon = NULL;
     int status;
