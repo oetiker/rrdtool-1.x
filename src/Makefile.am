@@ -45,7 +45,7 @@ RRD_C_FILES =		\
 	rrd_xport.c	\
 	rrd_gfx.c \
 	rrd_dump.c	\
-	rrd_flush.c	\
+	rrd_flushcached.c \
 	rrd_fetch.c	\
 	rrd_resize.c \
 	rrd_tune.c
