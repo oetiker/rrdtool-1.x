@@ -93,9 +93,9 @@ Change the size of individual RRAs. This is dangerous! Check L<rrdresize>.
 
 Export data retrieved from one or several RRDs. Check L<rrdxport>.
 
-=item B<flush>
+=item B<flushcached>
 
-Flush the values for a specific RRD file from memory. Check L<rrdflush>.
+Flush the values for a specific RRD file from memory. Check L<rrdflushcached>.
 
 =item B<rrdcgi>
 
@@ -312,7 +312,7 @@ stress on your disks.
 =head1 SEE ALSO
 
 rrdcreate, rrdupdate, rrdgraph, rrddump, rrdfetch, rrdtune, rrdlast, rrdxport,
-rrdflush, rrdcached
+rrdflushcached, rrdcached
 
 =head1 BUGS
 
