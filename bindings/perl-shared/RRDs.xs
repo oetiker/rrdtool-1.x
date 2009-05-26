@@ -445,7 +445,7 @@ rrd_restore(...)
                RETVAL
 
 int
-rrd_flush(...)
+rrd_flushcached(...)
 	PROTOTYPE: @
 	PREINIT:
 	int i;

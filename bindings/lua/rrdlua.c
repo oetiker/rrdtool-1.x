@@ -293,9 +293,9 @@ lua_rrd_graph (lua_State * L)
 }
 
 static int
-lua_rrd_flush(lua_State *L)
+lua_rrd_flushcached(lua_State *L)
 {
-  return rrd_common_call(L, "flush", rrd_cmd_flush);
+  return rrd_common_call(L, "flushcached", rrd_flushcached);
 }
 
 #if defined(DINF)
@@ -353,7 +353,7 @@ static const struct luaL_reg rrd[] = {
   {"restore", lua_rrd_restore},
   {"tune", lua_rrd_tune},
   {"update", lua_rrd_update},
-  {"flush", lua_rrd_flush},
+  {"flushcached", lua_rrd_flushcached},
 #if defined(DINF)
   {"info", lua_rrd_info},
   {"updatev", lua_rrd_updatev},

@@ -557,11 +557,11 @@ static PyObject *PyRRD_updatev(
     return r;
 }
 
-static char PyRRD_flush__doc__[] =
+static char PyRRD_flushcached__doc__[] =
   "flush(args..): flush RRD files from memory\n"
   "   flush [--daemon address] file [file ...]";
 
-static PyObject *PyRRD_flush(
+static PyObject *PyRRD_flushcached(
     PyObject UNUSED(*self),
     PyObject * args)
 {
@@ -569,7 +569,7 @@ static PyObject *PyRRD_flush(
     int       argc;
     char    **argv;
 
-    if (create_args("flush", args, &argc, &argv) < 0)
+    if (create_args("flushcached", args, &argc, &argv) < 0)
         return NULL;
 
     if (rrd_cmd_flush(argc, argv) != 0) {
@@ -600,7 +600,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("info", PyRRD_info, PyRRD_info__doc__),
     meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
     meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
-    meth("flush", PyRRD_flush, PyRRD_flush__doc__),
+    meth("flushcached", PyRRD_flushcached, PyRRD_flushcached__doc__),
     {NULL, NULL, 0, NULL}
 };
 

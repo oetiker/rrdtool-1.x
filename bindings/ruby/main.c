@@ -144,7 +144,7 @@ VALUE rb_rrd_update(
     return rrd_call(rrd_update, args);
 }
 
-VALUE rb_rrd_flush(
+VALUE rb_rrd_flushcached(
     VALUE self,
     VALUE args)
 {
@@ -334,7 +334,7 @@ void Init_RRD(
     rb_define_module_function(mRRD, "restore", rb_rrd_restore, -2);
     rb_define_module_function(mRRD, "tune", rb_rrd_tune, -2);
     rb_define_module_function(mRRD, "update", rb_rrd_update, -2);
-    rb_define_module_function(mRRD, "flush", rb_rrd_flush, -2);
+    rb_define_module_function(mRRD, "flushcached", rb_rrd_flushcached, -2);
     rb_define_module_function(mRRD, "info", rb_rrd_info, -2);
     rb_define_module_function(mRRD, "updatev", rb_rrd_updatev, -2);
     rb_define_module_function(mRRD, "graphv", rb_rrd_graphv, -2);

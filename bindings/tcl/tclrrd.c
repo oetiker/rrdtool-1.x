@@ -231,7 +231,7 @@ static int Rrd_Dump(
 }
 
 /* Thread-safe version */
-static int Rrd_Flush(
+static int Rrd_Flushcached(
     ClientData __attribute__((unused)) clientData,
     Tcl_Interp *interp,
     int argc,
@@ -650,7 +650,7 @@ typedef struct {
 static CmdInfo rrdCmds[] = {
     {"Rrd::create", Rrd_Create, 1}, /* Thread-safe version */
     {"Rrd::dump", Rrd_Dump, 0}, /* Thread-safe version */
-    {"Rrd::flush", Rrd_Flush, 0},
+    {"Rrd::flushcached", Rrd_Flushcached, 0},
     {"Rrd::last", Rrd_Last, 0}, /* Thread-safe version */
     {"Rrd::lastupdate", Rrd_Lastupdate, 0}, /* Thread-safe version */
     {"Rrd::update", Rrd_Update, 1}, /* Thread-safe version */
