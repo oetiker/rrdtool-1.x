@@ -219,11 +219,11 @@ static int get_xml_long(
 
 static int get_xml_ulong(
     xmlTextReaderPtr reader,
-    ulong *value)
+    unsigned long *value)
 {
     
     xmlChar *text;
-    ulong temp;    
+    unsigned long temp;    
     if ((text = get_xml_text(reader)) != NULL){
         errno = 0;        
         temp = strtoul((char *)text,NULL, 0);        
