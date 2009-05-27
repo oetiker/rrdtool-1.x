@@ -6,11 +6,16 @@
 
 
 #include <sys/stat.h>
-#include <libgen.h>
+
+/* for basename */
+#ifdef HAVE_LIBGEN_H
+#  include <libgen.h>
+#eles
+#include "plbasename.h"
+#endif
 
 #ifdef WIN32
 #include "strftime.h"
-#include "plbasename.h"
 #endif
 
 #include "rrd_tool.h"
