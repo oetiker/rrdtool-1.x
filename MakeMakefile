@@ -3,7 +3,7 @@
 # Run this script after the first cvs checkout to build
 # makefiles and friends
 
-PATH="/usr/pack/automake-1.11-to/amd64-linux-ubuntu8.04/bin:$PATH"
+PATH="/usr/pack/automake-1.11-to/amd64-linux-debian3.1/:/usr/pack/automake-1.11-to/amd64-linux-ubuntu8.04/bin:$PATH"
 export PATH
 
 vcheck (){
