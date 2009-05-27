@@ -46,22 +46,22 @@ all-local: link txt man html-local
 	perl -n -e 'if (/^=include\s+(\S+)/){open F,"$$1.inc" || die $$?;print <F>; close F} else {print}'  $<  > $@
 
 .pod.1 .pm.1 .pl.1:
-	@POD2MAN@ --release=$(VERSION) --center=rrdtool $<  > $@
+	$(AM_V_GEN)@POD2MAN@ --release=$(VERSION) --center=rrdtool $<  > $@
 
 .1.txt:
-	GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
+	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
 
 .1.pdf:
-	@TROFF@ -man $< | ps2pdf - $@
+	$(AM_V_GEN)@TROFF@ -man $< | ps2pdf - $@
 
 .pm.html .pod.html .pl.html:
-	@POD2HTML@ --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
+	$(AM_V_GEN)@POD2HTML@ --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
 
 RRDs.pod:
-	$(LN_S) $(top_srcdir)/bindings/perl-shared/RRDs.pm RRDs.pod
+	$(AM_V_GEN)$(LN_S) $(top_srcdir)/bindings/perl-shared/RRDs.pm RRDs.pod
 
 RRDp.pod:
-	$(LN_S) $(top_srcdir)/bindings/perl-piped/RRDp.pm RRDp.pod
+	$(AM_V_GEN)$(LN_S) $(top_srcdir)/bindings/perl-piped/RRDp.pm RRDp.pod
 
 link: RRDp.pod RRDs.pod
 
@@ -76,4 +76,4 @@ pdf-local: $(PDF)
 pod: $(POD)
 
 install-data-hook:
-	cd $(DESTDIR)$(ihtmldir) && rm -f index.html && $(LN_S) rrdtool.html index.html
+	$(AM_V_GEN)cd $(DESTDIR)$(ihtmldir) && rm -f index.html && $(LN_S) rrdtool.html index.html

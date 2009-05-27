@@ -3,8 +3,8 @@
 # Run this script after the first cvs checkout to build
 # makefiles and friends
 
-#PATH="/usr/sepp/bin:$PATH"
-#export PATH
+PATH="/usr/pack/automake-1.11-to/amd64-linux-ubuntu8.04/bin:$PATH"
+export PATH
 
 vcheck (){
   perl <<PERL
@@ -17,10 +17,9 @@ PERL
 }
 
 ERROR=0
-LIBTOOL_VER="1.5.6"
-AUTOMAKE_VER="1.9.2"
-AUTOCONF_VER="2.59"
-INTLTOOL_VER="0.35.0"
+LIBTOOL_VER="2.2.6"
+AUTOMAKE_VER="1.11"
+AUTOCONF_VER="2.63"
 
 if vcheck $LIBTOOL_VER "libtool --version"
 then
@@ -30,22 +29,17 @@ fi
 
 if vcheck $AUTOMAKE_VER  "automake  --version"
 then
-  if vcheck $AUTOMAKE_VER  "automake-1.9 --version"
+  if vcheck $AUTOMAKE_VER  "automake-1.11 --version"
   then
     echo "get a copy of GNU automake >= $AUTOMAKE_VER"
     ERROR=1
   else
-    automake=automake-1.9
-    aclocal="aclocal-1.9"
-    for d in /usr/pack/automake-1.9.5-to/share/aclocal-1.9 /usr/share/aclocal-1.9 /usr/share/aclocal /usr/pack/rrdtool-1.3svn-to/share/aclocal /usr/pack/intltool-0.37.0-to/share/aclocal ; do
-      [ -d $d ] && aclocal="$aclocal -I $d"
-    done
+    AUTOMAKE="automake-1.11"
+    ACLOCAL="aclocal-1.11"
+    export AUTOMAKE ACLOCAL
   fi
-else
-    automake="automake"
-    aclocal="aclocal"
-#    aclocal="aclocal -I /usr/pack/libtool-1.5.14-to/share/aclocal"
 fi
+
 
 if vcheck $AUTOCONF_VER "autoconf --version"
 then
@@ -53,38 +47,11 @@ then
   ERROR=1
 fi
 
-if vcheck $INTLTOOL_VER "intltoolize --version"
-then
-  echo "get a copy of GNU intltoolize >= $INTLTOOL_VER"
-  ERROR=1
-fi
-	
 if [ $ERROR -ne 0 ]
 then
   exit 1
 fi
 
-# remove the bits we are going to recreate
-
-echo Removing old Makefiles
-touch Makefile
-find . -name "Makefile" -or -name "Makefile.in" -print0 | xargs -0 rm 
-echo Cleaning out other leftovers
-for x in configure install-sh intltool-merge.in rrd_config.h.in \
-         missing intltool-update po/Makefile.in.in config.sub \
-         intltool-extract intltool-extract.in config.guess \
-         depcomp intltool-update.in autom4te.cache \
-         intltool-merge compile; do
-  [ ! -L $x -a -d $x ] && rm -r "$x"
-  [ ! -L $x -a -f $x ] && rm "$x"
-done
-set -x
-intltoolize --automake -c -f
-$aclocal
-libtoolize --copy --force
-autoheader --force  
-$aclocal
-$automake --foreign --add-missing --force-missing --copy 
-autoconf --force
+./autogen.sh
 
 # vim: set syntax=sh :

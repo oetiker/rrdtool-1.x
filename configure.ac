@@ -9,14 +9,14 @@ dnl tell automake the this script is for rrdtool
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.3.2])
+AC_INIT([rrdtool],[1.3.999])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.3002
+NUMVERS=1.3999
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -27,14 +27,16 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=4:1:0
+LIBVERS=5:0:1
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE
+AC_USE_SYSTEM_EXTENSIONS
+AM_INIT_AUTOMAKE([silent-rules])
 AM_MAINTAINER_MODE
-
+AM_SILENT_RULES([yes])
 AC_CONFIG_HEADERS([rrd_config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 dnl all our local stuff like install scripts and include files
 dnl is in there
@@ -139,7 +141,7 @@ dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 dnl check for -Werror separatly
-dnl (quite a few autotool checks don't work with -Werror; also, the
+dnl (quite a few autotool checks do not work with -Werror; also, the
 dnl check for -Werror fails after checking and adding the other flags)
 AC_CACHE_CHECK([if gcc likes the -Werror flag], rd_cv_gcc_flag__Werror,
   [AC_COMPILE_IFELSE(
@@ -262,44 +264,8 @@ AC_CHECK_FUNCS(posix_fadvise)
 CONFIGURE_PART(Libintl Processing)
 
 
-dnl gettext
-GETTEXT_PACKAGE=rrdtool
-AC_SUBST(GETTEXT_PACKAGE)
-AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE",[Gettext package])
-
-AM_GLIB_GNU_GETTEXT()
-
-AC_ARG_ENABLE(libintl,AS_HELP_STRING([--disable-libintl],[i18n support (libintl)]),
-[],[enable_libintl=yes])
-
-if test x$enable_libintl = xyes; then
-  IT_PROG_INTLTOOL([0.35.0],[no-xml])
-fi
-
-if test x$enable_libintl = xyes -a x$MSGFMT = xno; then
-  AC_MSG_WARN(I could not find msgfmt. Diabeling libintl build.)
-  enable_libintl=no
-fi
-
-if test x$enable_libintl = xyes; then
-  AC_CHECK_HEADERS(libintl.h,[],[AC_MSG_RESULT(disabeling libintl build); enable_libintl=no])
-fi
-
-if test x$enable_libintl = xyes ; then
-  dnl it seems bsd synstems need to link against libintl
-  dnl when compiling rrdupdate. lets check        
-  AC_CHECK_LIB(intl, libintl_gettext,[LIB_LIBINTL="-lintl"])
-fi
-
-dnl use for linking rrdupdate
-AC_SUBST(LIB_LIBINTL)
-
-dnl do not touch the po stuff if we are not going to build intl
-AM_CONDITIONAL(BUILD_LIBINTL,[test x$enable_libintl = xyes])
-
-if test x$enable_libintl = xyes; then
-   AC_DEFINE([BUILD_LIBINTL], [], [Use this in code sections to mark them for libintl build])
-fi
+AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT()
 
 CONFIGURE_PART(IEEE Math Checks)
  
@@ -585,7 +551,7 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Options to pass when configuring perl module
 langpref=$prefix
-test "$langpref" = "$(DESTDIR)NONE" && langpref='$(DESTDIR)'$ac_default_prefix
+test "$langpref" = '$(DESTDIR)NONE' && langpref='$(DESTDIR)'$ac_default_prefix
 test "$langpref" = "NONE" && langpref=$ac_default_prefix
 
 PERL_MAKE_OPTIONS="PREFIX=$langpref LIB=$langpref/lib/perl/$PERL_VERSION"
@@ -892,7 +858,8 @@ AC_CONFIG_FILES([examples/perftest.pl])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([examples/rrdcached/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
-AC_CONFIG_FILES([po/Makefile.in])
+AC_CONFIG_FILES([po/Makefile.in]) 
+AC_CONFIG_FILES([intl/Makefile]) 
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/librrd.sym.in])
 AC_CONFIG_FILES([src/librrd.pc])
@@ -946,7 +913,7 @@ echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
-echo "     Link with libintl: $enable_libintl"
+echo "           Use gettext: $USE_NLS"
 echo "           With libDBI: $have_libdbi"
 echo
 echo "             Libraries: $ALL_LIBS"

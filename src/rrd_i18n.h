@@ -11,18 +11,18 @@ extern    "C" {
 #ifndef _RRD_I18N_H
 #define _RRD_I18N_H
 
-#ifndef _
-/* This is for other GNU distributions with internationalized messages.
-   When compiling libc, the _ macro is predefined.  */
-#if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
-#  include <libintl.h>
-#define _(String) gettext (String)
+#ifdef ENABLE_NLS
+#  ifdef _LIBC
+#    include <libintl.h>
+#  else
+#    include "gettext.h"
+#    define _(String) gettext (String)
+#  endif
 #else
-#define _(String) (String)
-#endif
-#define N_(String) (String)
+#  define _(String) (String)
 #endif
 
+#define N_(String) String
 
 #endif
 

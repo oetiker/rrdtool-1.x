@@ -124,4 +124,4 @@ EXTRA_DIST= librrd.pc.in strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_g
 
 
 librrd.sym: librrd.sym.in
-	grep -v LIBC_HAS_GETOPT_LONG librrd.sym.in >$@
+	$(AM_V_GEN)grep -v LIBC_HAS_GETOPT_LONG librrd.sym.in >$@

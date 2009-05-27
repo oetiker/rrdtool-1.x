@@ -20,10 +20,10 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 all-local:  @COMP_PERL@ @COMP_RUBY@ @COMP_PYTHON@
 
 install-data-local:
-	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
-	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
-	test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
-	test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
+	$(AM_V_GEN)test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
+	$(AM_V_GEN)test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
+	$(AM_V_GEN)test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
+	$(AM_V_GEN)test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
 
 # rules for building the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
