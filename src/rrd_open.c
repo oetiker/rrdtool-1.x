@@ -259,12 +259,14 @@ rrd_file_t *rrd_open(
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        madvise(data, rrd_file->file_len, MADV_WILLNEED | MADV_SEQUENTIAL);
+        madvise(data, rrd_file->file_len, MADV_WILLNEED );
+        madvise(data, rrd_file->file_len, MADV_SEQUENTIAL );
     } else {
         /* We do not need to read anything in for the moment */
         madvise(data, rrd_file->file_len, MADV_RANDOM);
         /* the stat_head will be needed soonish, so hint accordingly */
-        madvise(data, sizeof(stat_head_t), MADV_WILLNEED | MADV_RANDOM);
+        madvise(data, sizeof(stat_head_t), MADV_WILLNEED);
+        madvise(data, sizeof(stat_head_t), MADV_RANDOM);
     }
 #endif
 
