@@ -289,7 +289,7 @@ if test "x$acx_pthread_ok" = xyes; then
         case "${host_cpu}-${host_os}" in
             *-aix* | *-freebsd* | *-darwin*) x_rflag="-D_THREAD_SAFE";;
             *solaris* | *-osf* | *-hpux*) x_rflag="-D_REENTRANT";;
-            *-linux*)
+            *-linux* | *-k*bsd*-gnu*)                
             if test x"$PTHREAD_CFLAGS" = "x-pthread"; then
                 # For Linux/gcc "-pthread" implies "-lpthread". We need, however, to make this explicit
                 # in PTHREAD_LIBS such that a shared library to be built properly depends on libpthread.
