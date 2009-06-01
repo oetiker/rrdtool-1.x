@@ -972,6 +972,11 @@ static int get_time_from_reading(
             return -1;
         };
         setlocale(LC_NUMERIC, old_locale);
+        if (tmp < 0.0){
+            gettimeofday(&tmp_time, 0);
+            tmp = (double)tmp_time.tv_sec + (double)tmp_time.tv_usec * 1e-6f + tmp;
+        }
+
         *current_time = floor(tmp);
         *current_time_usec = (long) ((tmp - (double) *current_time) * 1e6f);
     }
