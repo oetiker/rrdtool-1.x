@@ -6,7 +6,7 @@ rrdupdate - Store a new set of values into the RRD
 
 B<rrdtool> {B<update> | B<updatev>} I<filename>
 S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]>
-S<[B<--daemon> I<address>]>
+S<[B<--daemon> I<address>]> [B<-->]
 S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]>
 S<I<at-timestamp>B<@>I<value>[B<:>I<value>...]>
 S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
@@ -82,6 +82,14 @@ timing right to the second is especially important when you are
 working with data-sources of type B<COUNTER>, B<DERIVE> or
 B<ABSOLUTE>.
 
+When using negative time values, options and data have to be separated
+by two dashes (B<-->), else the time value would be parsed as an option.
+See below for an example.
+
+When using negative time values, options and data have to be separated
+by two dashes (B<-->), else the time value would be parsed as an option.
+See below for an example.
+
 The remaining elements of the argument are DS updates. The order of
 this list is the same as the order the data sources were defined in
 the RRA. If there is no data for a certain data-source, the letter
@@ -128,6 +136,13 @@ C<rrdtool update demo2.rrd 887457267:U 887457521:22 887457903:2.7>
 Update the database file demo2.rrd which expects data from a single
 data-source, three times. First with an I<*UNKNOWN*> value then with two
 regular readings. The update interval seems to be around 300 seconds.
+
+=item *
+
+C<rrdtool update demo3.rrd -- -5:21 N:42>
+
+Update the database file demo3.rrd two times, using five seconds in the
+past and the current time as the update times.
 
 =item *
 
