@@ -243,7 +243,7 @@ static int Rrd_Flushcached(
         return TCL_ERROR;
     }
 
-    rrd_cmd_flush(argc, (char**)argv);
+    rrd_flushcached(argc, (char**)argv);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
@@ -504,7 +504,7 @@ static int Rrd_Graph(
          * Must dup() file descriptor so we can fclose(stream), otherwise the fclose()
          * would close Tcl's file descriptor
          */
-        if ((fd2 = dup((int) fd1)) == -1) {
+        if ((fd2 = dup((int)fd1)) == -1) {
             Tcl_AppendResult(interp,
                              "dup() failed for file descriptor associated with \"",
                              argv[1], "\": ", strerror(errno), (char *) NULL);
