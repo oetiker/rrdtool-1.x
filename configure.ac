@@ -1,5 +1,6 @@
 dnl RRDtool AutoConf script ... 
 dnl ---------------------------
+dnl $Id$
 dnl
 dnl Created by Jeff Allen, Tobi Oetiker, Blair Zajac
 dnl
