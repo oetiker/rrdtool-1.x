@@ -1,3 +1,5 @@
+# $Id$
+
 ## Process this file with automake to produce Makefile.in
 RSYNC = rsync --rsh=ssh
 
