@@ -216,7 +216,10 @@ rrd_file_t *rrd_open(
     } else {
         rrd_file->file_len = newfile_size;
         lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET);
-        write(rrd_simple_file->fd, "\0", 1);   /* poke */
+        if ( write(rrd_simple_file->fd, "\0", 1) == -1){    /* poke */
+            rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
         lseek(rrd_simple_file->fd, 0, SEEK_SET);
     }
 #ifdef HAVE_POSIX_FADVISE
