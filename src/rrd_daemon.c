@@ -379,7 +379,13 @@ static int check_pidfile(void)
   }
 
   lseek(pid_fd, 0, SEEK_SET);
-  ftruncate(pid_fd, 0);
+  if (ftruncate(pid_fd, 0) == -1)
+  {
+    fprintf(stderr,
+            "FATAL: Faild to truncate stale PID file. (pid %d)\n", pid);
+    close(pid_fd);
+    return -1;
+  }
 
   fprintf(stderr,
           "rrdcached: removed stale PID file (no rrdcached on pid %d)\n"
@@ -2446,8 +2452,9 @@ static int daemonize (void) /* {{{ */
     close (0);
 
     open ("/dev/null", O_RDWR);
-    dup (0);
-    dup (0);
+    if (dup(0) == -1 || dup(0) == -1){
+        RRDD_LOG (LOG_ERR, "faild to run dup.\n");
+    }
   } /* if (!stay_foreground) */
 
   /* Change into the /tmp directory. */
