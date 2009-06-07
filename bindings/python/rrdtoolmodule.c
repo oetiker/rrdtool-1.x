@@ -572,7 +572,7 @@ static PyObject *PyRRD_flushcached(
     if (create_args("flushcached", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_cmd_flush(argc, argv) != 0) {
+    if (rrd_flushcached(argc, argv) != 0) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;

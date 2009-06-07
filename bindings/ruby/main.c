@@ -148,7 +148,7 @@ VALUE rb_rrd_flushcached(
     VALUE self,
     VALUE args)
 {
-    return rrd_call(rrd_cmd_flush, args);
+    return rrd_call(rrd_flushcached, args);
 }
 
 

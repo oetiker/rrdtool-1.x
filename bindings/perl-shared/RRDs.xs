@@ -451,6 +451,6 @@ rrd_flushcached(...)
 	int i;
 	char **argv;
 	CODE:
-		rrdcode(rrd_cmd_flush);
+		rrdcode(rrd_flushcached);
 	OUTPUT:
 		RETVAL
