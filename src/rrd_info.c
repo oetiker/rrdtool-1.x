@@ -24,8 +24,12 @@ char     *sprintf_alloc(
     char     *str = NULL;
     va_list   argp;
 #ifdef HAVE_VASPRINTF
-	va_start( argp, fmt );
-	vasprintf( &str, fmt, argp );
+    va_start( argp, fmt );
+    if (vasprintf( &str, fmt, argp ) == -1){
+        va_end(argp);
+        rrd_set_error ("vasprintf failed.");
+        return(NULL);
+    }
 #else
     int       maxlen = 1024 + strlen(fmt);
     str = (char*)malloc(sizeof(char) * (maxlen + 1));
@@ -37,7 +41,7 @@ char     *sprintf_alloc(
         vsprintf(str, fmt, argp);
 #endif
     }
-#endif // HAVE_VASPRINTF
+#endif /* HAVE_VASPRINTF */
     va_end(argp);
     return str;
 }

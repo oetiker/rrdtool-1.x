@@ -87,7 +87,7 @@ int rrd_flushcached (int argc, char **argv)
     }
 
     status = 0;
-    for (int i = optind; i < argc; i++)
+    for (i = optind; i < argc; i++)
     {
         status = rrdc_flush(argv[i]);
         if (status)
