@@ -1387,7 +1387,8 @@ s_var   **rrdcgiReadVariables(
             length = atoi(ip);
             if ((line = (char *) malloc(length + 2)) == NULL)
                 return NULL;
-            fgets(line, length + 1, stdin);
+            if (fgets(line, length + 1, stdin) == NULL)
+                return NULL;
         } else
             return NULL;
     } else if (cp && !strcmp(cp, "GET")) {
