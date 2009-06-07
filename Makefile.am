@@ -10,7 +10,7 @@ SUBDIRS = po src examples doc bindings intl
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
 	     rrdtool.spec favicon.ico  win32/Makefile win32/config.h autogen.sh \
-             win32/rrd.dsp win32/rrd.sln win32/rrd.vcproj \
+             win32/rrd.dsp win32/rrd.sln win32/rrd.vcproj libtool \
              win32/rrd_config.h.msvc win32/rrdlib.vcproj win32/rrdtool.dsp \
              win32/rrdtool.dsw win32/rrdtool.vcproj netware/Makefile  \
              etc/rrdcached-default etc/rrdcached-init
