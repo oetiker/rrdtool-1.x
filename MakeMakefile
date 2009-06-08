@@ -17,9 +17,9 @@ PERL
 }
 
 ERROR=0
-LIBTOOL_VER="2.2.6"
-AUTOMAKE_VER="1.11"
-AUTOCONF_VER="2.63"
+LIBTOOL_VER="1.5.6"
+AUTOMAKE_VER="1.9.2"
+AUTOCONF_VER="2.59"
 
 if vcheck $LIBTOOL_VER "libtool --version"
 then
