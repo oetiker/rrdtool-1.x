@@ -703,6 +703,10 @@ AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([Makefile])          
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
+
+dnl intl requires our config to be called config.h. indulge it.
+AC_CONFIG_COMMANDS_POST([ test -f config.h || ln -s rrd_config.h config.h ])
+
 AC_OUTPUT
 
 AC_MSG_CHECKING(in)
