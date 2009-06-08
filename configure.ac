@@ -7,6 +7,9 @@ dnl Inspiration from http://autoconf-archive.cryp.to
  
 dnl tell automake the this script is for rrdtool
 
+dnl Minimum Autoconf version required.
+AC_PREREQ(2.59)
+
 dnl the official version number is
 dnl a.b.c
 AC_INIT([rrdtool],[1.3.8])
@@ -29,10 +32,11 @@ dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
 LIBVERS=4:7:0
 AC_SUBST(LIBVERS)
-AC_USE_SYSTEM_EXTENSIONS
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE
+m4_version_prereq(2.60, [AC_USE_SYSTEM_EXTENSIONS], [#])
+AM_INIT_AUTOMAKE(m4_version_prereq(2.63, [silent-rules], [[]]))
 AM_MAINTAINER_MODE
+m4_version_prereq(2.63, [AM_SILENT_RULES([yes])], [#])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([rrd_config.h])
@@ -46,9 +50,6 @@ dnl determine the type of system we are running on
 AC_SUBST(VERSION)
 
 AC_PREFIX_DEFAULT( /usr/local/rrdtool-$PACKAGE_VERSION )
-
-dnl Minimum Autoconf version required.
-AC_PREREQ(2.59)
 
 dnl At the TOP of the HEADER
 
