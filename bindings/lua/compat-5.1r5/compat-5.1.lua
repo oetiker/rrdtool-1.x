@@ -4,6 +4,21 @@
 -- According to Lua 5.1
 -- $Id: compat-5.1.lua,v 1.22 2006/02/20 21:12:47 carregal Exp $
 --
+-- Compat-5.1 is free software: it can be used for both academic and commercial
+-- purposes at absolutely no cost. There are no royalties or GNU-like
+-- "copyleft" restrictions. Compat-5.1 qualifies as Open Source software. Its
+-- licenses are compatible with GPL. Compat-5.1 is not in the public domain and
+-- the Kepler Project keep its copyright. The legal details are below.
+--   
+-- The spirit of the license is that you are free to use Compat-5.1 for any
+-- purpose at no cost without having to ask us. The only requirement is that if
+-- you do use Compat-5.1, then you should give us credit by including the
+-- appropriate copyright notice somewhere in your product or its documentation.
+--   
+-- The Compat-5.1 library is designed and implemented by Roberto Ierusalimschy,
+-- Diego Nehab, André Carregal and Tomás Guisasola. The implementation is not
+-- derived from licensed software.
+--
 
 _COMPAT51 = "Compat-5.1 R5"
 
