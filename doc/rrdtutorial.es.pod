@@ -3,8 +3,6 @@
 rrdtutorial - Tutorial sobre RRDtool por Alex van den Bogaerdt
 (Traducido al castellano por Jesús Couto Fandiño)
 
-=for html <div align="right">Versión <a href="rrdtutorial.es.pdf">PDF</a></div>
-
 =for html <div align="right"><a href="rrdtutorial.html">English</a></div>
 
 =head1 DESCRIPTION / DESCRIPCIÓN

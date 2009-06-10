@@ -2,8 +2,6 @@
 
 bin_dec_hex - How to use binary, decimal, and hexadecimal notation.
 
-=for html <div align="right"><a href="bin_dec_hex.pdf">PDF</a> version.</div>
-
 =head1 DESCRIPTION
 
 Most people use the decimal numbering system. This system uses ten
