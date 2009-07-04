@@ -151,6 +151,36 @@ static int get_ulong_from_node(
     return (0);
 }                       /* int get_ulong_from_node */
 
+static int get_long_long_from_node(
+    xmlDoc * doc,
+    xmlNode * node,
+    long long *value)
+{
+    long long       temp;
+    char     *str_ptr;
+    char     *end_ptr;
+
+    str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+    if (str_ptr == NULL) {
+        rrd_set_error("get_ulong_from_node: xmlNodeListGetString failed.");
+        return (-1);
+    }
+
+    end_ptr = NULL;
+    temp = strtoll(str_ptr, &end_ptr, 0);
+    xmlFree(str_ptr);
+
+    if (str_ptr == end_ptr) {
+        rrd_set_error("get_long_long_from_node: Cannot parse buffer as unsigned long long: %s",
+                      str_ptr);
+        return (-1);
+    }
+
+    *value = temp;
+
+    return (0);
+}                       /* int get_ulong_from_node */
+
 static int get_double_from_node(
     xmlDoc * doc,
     xmlNode * node,
@@ -918,8 +948,12 @@ static int parse_tag_rrd(
             status = get_ulong_from_node(doc, child,
                                         &rrd->stat_head->pdp_step);
         else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0)
-            status = get_long_from_node(doc, child,
-                                        &rrd->live_head->last_up);
+            if (sizeof(time_t) == sizeof(long)) {
+                    status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
+            }
+            else if (sizeof(time_t) == sizeof(long long)) {
+                    status = get_long_long_from_node(doc, child, (long long *)&rrd->live_head->last_up);
+            }
         else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0)
             status = parse_tag_ds(doc, child, rrd);
         else if (xmlStrcmp(child->name, (const xmlChar *) "rra") == 0)
