@@ -449,6 +449,33 @@ AC_LINK_IFELSE(
       )
     ]  
 )
+
+dnl is time_t long or long long ?
+AC_DEFINE([TIME_T_IS_LONG], [], [time_t is long])
+AC_DEFINE([TIME_T_IS_LONG_LONG], [], [time_t is long long])
+AC_MSG_CHECKING([the type of time_t])
+AC_RUN_IFELSE(
+    AC_LANG_PROGRAM(
+        [[#include <time.h>]],
+        [[if (sizeof(long) != sizeof(time_t)) return 1; ]]
+        ),
+    [ AC_MSG_RESULT([time_t is long])
+      AC_DEFINE([TIME_T_IS_LONG])
+    ],
+    [ AC_RUN_IFELSE(
+        AC_LANG_PROGRAM(
+        [[#include <time.h>]],
+        [[if (sizeof(long long) != sizeof(time_t)) return 1; ]]
+        ),
+        [
+          AC_MSG_RESULT([time_t is long long])
+          AC_DEFINE([TIME_T_IS_LONG_LONG])
+        ],
+        [AC_MSG_ERROR([can not figure type of time_t])]
+      )
+    ]  
+)
+
 AC_LANG_POP(C)
 
 CONFIGURE_PART(Find 3rd-Party Libraries)

@@ -42,6 +42,7 @@
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define strftime strftime_ 
+#define strtoll(p, e, b) _strtoi64(p, e, b)
 
 /* realloc does not support NULL as argument */
 #define NO_NULL_REALLOC 1
