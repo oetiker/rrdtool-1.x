@@ -151,6 +151,16 @@ static int get_ulong_from_node(
     return (0);
 }                       /* int get_ulong_from_node */
 
+
+#ifdef WIN32
+/* Gross Hack Alert */
+#if _MSC_VER < 1300
+#define strtoll(p, e, b) ((*(e) = (char*)(p) + (((b) == 10) ? strspn((p), "0123456789") : 0)), _atoi64(p))
+#else
+#define strtoll(p, e, b) _strtoi64(p, e, b)
+#endif
+#endif
+
 static int get_llong_from_node(
     xmlDoc * doc,
     xmlNode * node,
@@ -167,7 +177,7 @@ static int get_llong_from_node(
     }
 
     end_ptr = NULL;
-    temp = strtoll(str_ptr, &end_ptr, 0);
+    temp = strtoll(str_ptr, &end_ptr, 10);
     xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
