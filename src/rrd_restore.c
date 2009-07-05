@@ -151,7 +151,7 @@ static int get_ulong_from_node(
     return (0);
 }                       /* int get_ulong_from_node */
 
-static int get_long_long_from_node(
+static int get_llong_from_node(
     xmlDoc * doc,
     xmlNode * node,
     long long *value)
@@ -162,7 +162,7 @@ static int get_long_long_from_node(
 
     str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
     if (str_ptr == NULL) {
-        rrd_set_error("get_ulong_from_node: xmlNodeListGetString failed.");
+        rrd_set_error("get_llong_from_node: xmlNodeListGetString failed.");
         return (-1);
     }
 
@@ -171,7 +171,7 @@ static int get_long_long_from_node(
     xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
-        rrd_set_error("get_long_long_from_node: Cannot parse buffer as unsigned long long: %s",
+        rrd_set_error("get_llong_from_node: Cannot parse buffer as unsigned long long: %s",
                       str_ptr);
         return (-1);
     }
@@ -179,7 +179,7 @@ static int get_long_long_from_node(
     *value = temp;
 
     return (0);
-}                       /* int get_ulong_from_node */
+}                       /* int get_llong_from_node */
 
 static int get_double_from_node(
     xmlDoc * doc,
@@ -949,10 +949,14 @@ static int parse_tag_rrd(
                                         &rrd->stat_head->pdp_step);
         else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0)
             if (sizeof(time_t) == sizeof(long)) {
-                    status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
+               status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
             }
             else if (sizeof(time_t) == sizeof(long long)) {
-                    status = get_long_long_from_node(doc, child, (long long *)&rrd->live_head->last_up);
+               status = get_llong_from_node(doc, child, (long long *)&rrd->live_head->last_up);
+            }
+            else {
+               rrd_set_error("can't convert to time_t ...", child->name);
+               status = -1;    
             }
         else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0)
             status = parse_tag_ds(doc, child, rrd);
