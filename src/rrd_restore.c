@@ -957,17 +957,19 @@ static int parse_tag_rrd(
         else if (xmlStrcmp(child->name, (const xmlChar *) "step") == 0)
             status = get_ulong_from_node(doc, child,
                                         &rrd->stat_head->pdp_step);
-        else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0)
+        else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0) {
             if (sizeof(time_t) == sizeof(long)) {
                status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
             }
-            else if (sizeof(time_t) == sizeof(long long)) {
-               status = get_llong_from_node(doc, child, (long long *)&rrd->live_head->last_up);
+            else { if (sizeof(time_t) == sizeof(long long)) {
+                       status = get_llong_from_node(doc, child, (long long *)&rrd->live_head->last_up);
+                    }
+                    else {
+                       rrd_set_error("can't convert to time_t ...", child->name);
+                       status = -1;    
+                    }
             }
-            else {
-               rrd_set_error("can't convert to time_t ...", child->name);
-               status = -1;    
-            }
+        }
         else if (xmlStrcmp(child->name, (const xmlChar *) "ds") == 0)
             status = parse_tag_ds(doc, child, rrd);
         else if (xmlStrcmp(child->name, (const xmlChar *) "rra") == 0)
