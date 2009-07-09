@@ -1,8 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 
-SUFFIXES = .pod .1 .man .html .txt .pm .pdf .inc
+SUFFIXES = .pod .pl .1 .man .html .txt .pm .pdf .inc
 
-#AUTOMAKE_OPTIONS        =  foreign
+AUTOMAKE_OPTIONS        =  foreign
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 

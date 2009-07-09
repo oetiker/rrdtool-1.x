@@ -66,7 +66,7 @@ const char *rrd_strerror(
     /* Even though POSIX/XSI requires "strerror_r" to return an "int", some
      * systems (e.g. the GNU libc) return a "char *" _and_ ignore the second
      * argument ... -tokkee */
-#if STRERROR_R_CHAR_P
+#ifdef STRERROR_R_CHAR_P
     ret = strerror_r(err, ctx->lib_errstr, sizeof(ctx->lib_errstr));
     if ((! ret) || (*ret == '\0')) {
         if (*ctx->lib_errstr != '\0')
