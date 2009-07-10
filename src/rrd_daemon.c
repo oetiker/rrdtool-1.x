@@ -656,6 +656,7 @@ static void *free_cache_item(cache_item_t *ci) /* {{{ */
 
   /* in case anyone is waiting */
   pthread_cond_broadcast(&ci->flushed);
+  pthread_cond_destroy(&ci->flushed);
 
   free (ci);
 
