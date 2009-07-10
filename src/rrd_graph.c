@@ -7,18 +7,18 @@
 
 #include <sys/stat.h>
 
-/* for basename */
-#ifdef HAVE_LIBGEN_H
-#  include <libgen.h>
-#eles
-#include "plbasename.h"
-#endif
-
 #ifdef WIN32
 #include "strftime.h"
 #endif
 
 #include "rrd_tool.h"
+
+/* for basename */
+#ifdef HAVE_LIBGEN_H
+#  include <libgen.h>
+#else
+#include "plbasename.h"
+#endif
 
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
