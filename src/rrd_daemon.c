@@ -913,7 +913,14 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
     }
 
     journal_write("wrote", file);
-    pthread_cond_broadcast(&ci->flushed);
+
+    /* Search again in the tree.  It's possible someone issued a "FORGET"
+     * while we were writing the update values. */
+    pthread_mutex_lock(&cache_lock);
+    ci = (cache_item_t *) g_tree_lookup(cache_tree, file);
+    if (ci)
+      pthread_cond_broadcast(&ci->flushed);
+    pthread_mutex_unlock(&cache_lock);
 
     rrd_free_ptrs((void ***) &values, &values_num);
     free(file);
