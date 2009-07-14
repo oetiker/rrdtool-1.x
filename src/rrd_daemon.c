@@ -1314,6 +1314,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   if (ci == NULL) /* {{{ */
   {
     struct stat statbuf;
+    cache_item_t *tmp;
 
     /* don't hold the lock while we setup; stat(2) might block */
     pthread_mutex_unlock(&cache_lock);
@@ -1361,7 +1362,16 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     pthread_cond_init(&ci->flushed, NULL);
 
     pthread_mutex_lock(&cache_lock);
-    g_tree_replace (cache_tree, (void *) ci->file, (void *) ci);
+
+    /* another UPDATE might have added this entry in the meantime */
+    tmp = g_tree_lookup (cache_tree, file);
+    if (tmp == NULL)
+      g_tree_replace (cache_tree, (void *) ci->file, (void *) ci);
+    else
+    {
+      free_cache_item (ci);
+      ci = tmp;
+    }
   } /* }}} */
   assert (ci != NULL);
 
