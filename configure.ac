@@ -36,9 +36,12 @@ AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
 m4_version_prereq(2.60, [AC_USE_SYSTEM_EXTENSIONS], [#])
-AM_INIT_AUTOMAKE(m4_version_prereq(2.63, [silent-rules], [[]]))
+AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
-m4_version_prereq(2.63, [AM_SILENT_RULES([yes])], [#])
+# Enable silent build rules by default, requires at least
+# Automake-1.11. Disable by either passing --disable-silent-rules to
+# configure or passing V=1 to make
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_HEADERS([rrd_config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
