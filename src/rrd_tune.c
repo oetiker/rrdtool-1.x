@@ -305,7 +305,7 @@ int rrd_tune(
             break;
         case 's':
             strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
-            if (set_hwarg
+            if (set_hwsmootharg
                 (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
                 rrd_free(&rrd);
                 return -1;
@@ -313,7 +313,7 @@ int rrd_tune(
             break;
         case 'S':
             strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
-            if (set_hwarg
+            if (set_hwsmootharg
                 (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
                  optarg)) {
                 rrd_free(&rrd);
@@ -378,6 +378,41 @@ int set_hwarg(
     /* read the value */
     param = atof(arg);
     if (param <= 0.0 || param >= 1.0) {
+        rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        return -1;
+    }
+    /* does the appropriate RRA exist?  */
+    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        if (cf_conv(rrd->rra_def[i].cf_nam) == cf) {
+            rra_idx = i;
+            break;
+        }
+    }
+    if (rra_idx == -1) {
+        rrd_set_error("Holt-Winters RRA does not exist in this RRD");
+        return -1;
+    }
+
+    /* set the value */
+    rrd->rra_def[rra_idx].par[rra_par].u_val = param;
+    return 0;
+}
+
+int set_hwsmootharg(
+    rrd_t *rrd,
+    enum cf_en cf,
+    enum rra_par_en rra_par,
+    char *arg)
+{
+    double    param;
+    unsigned long i;
+    signed short rra_idx = -1;
+
+    /* read the value */
+    param = atof(arg);
+    /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
+     * the 0.0 value*/
+    if (param < 0.0 || param > 1.0) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
         return -1;
     }
