@@ -61,4 +61,7 @@ Miscellaneous Changes
 * various improvements to rrd_open functions and mmap handling
   by Daniel Pocock
 
+* allow the HW smoothing window size to be set to 0 with rrdtool tune
+  by sylvain luiset
+
 for more detail see the CHANGES file.
