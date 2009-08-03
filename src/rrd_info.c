@@ -178,6 +178,11 @@ rrd_info_t *rrd_info_r(
 
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
 
+        info.u_cnt=i;
+        cd=info_push(cd,sprintf_alloc("ds[%s].index",
+                                     rrd.ds_def[i].ds_nam),
+                     RD_I_CNT, info);
+    
         info.u_str = rrd.ds_def[i].dst;
         cd = rrd_info_push(cd, sprintf_alloc("ds[%s].type",
                                              rrd.ds_def[i].ds_nam),
