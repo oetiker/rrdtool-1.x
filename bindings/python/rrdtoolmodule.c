@@ -37,7 +37,9 @@
 # define UNUSED(x) x
 #endif
 
-static const char *__version__ = "$Revision: 1.14 $";
+
+#include "../../rrd_config.h"
+static const char *__version__ = PACKAGE_VERSION;
 
 #include "Python.h"
 #include "../../src/rrd_tool.h"
