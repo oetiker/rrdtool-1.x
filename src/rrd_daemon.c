@@ -2528,7 +2528,6 @@ static int cleanup (void) /* {{{ */
   }
 
   journal_done();
-  remove_pidfile ();
 
   free(queue_threads);
   free(config_base_dir);
@@ -2541,6 +2540,8 @@ static int cleanup (void) /* {{{ */
 
   RRDD_LOG(LOG_INFO, "goodbye");
   closelog ();
+
+  remove_pidfile ();
 
   return (0);
 } /* }}} int cleanup */
