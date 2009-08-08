@@ -820,13 +820,14 @@ static void *flush_thread_main (void *args __attribute__((unused))) /* {{{ */
         || ((now.tv_sec == next_flush.tv_sec)
           && ((1000 * now.tv_usec) > next_flush.tv_nsec)))
     {
+      RRDD_LOG(LOG_DEBUG, "flushing old values");
+
+      /* Determine the time of the next cache flush. */
+      next_flush.tv_sec = now.tv_sec + config_flush_interval;
+
       /* Flush all values that haven't been written in the last
        * `config_write_interval' seconds. */
       flush_old_values (config_write_interval);
-
-      /* Determine the time of the next cache flush. */
-      next_flush.tv_sec =
-        now.tv_sec + next_flush.tv_sec % config_flush_interval;
 
       /* unlock the cache while we rotate so we don't block incoming
        * updates if the fsync() blocks on disk I/O */
