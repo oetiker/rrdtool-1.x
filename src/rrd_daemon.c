@@ -924,9 +924,6 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
       pthread_cond_broadcast(&ci->flushed);
     pthread_mutex_unlock(&cache_lock);
 
-    rrd_free_ptrs((void ***) &values, &values_num);
-    free(file);
-
     if (status == 0)
     {
       pthread_mutex_lock (&stats_lock);
@@ -934,6 +931,9 @@ static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
       stats_data_sets_written += values_num;
       pthread_mutex_unlock (&stats_lock);
     }
+
+    rrd_free_ptrs((void ***) &values, &values_num);
+    free(file);
 
     pthread_mutex_lock (&cache_lock);
   }
