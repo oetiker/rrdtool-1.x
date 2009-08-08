@@ -292,26 +292,26 @@ generation is done using Perl scripts. These scripts are shown below:
  # calculate the average of the array
  my $tot_mem_ave = $tot_mem_sum/($count);
  # create the graph
- RRDs::graph ("/images/mem_$count.png",   \
-             "--title= Memory Usage",    \
-             "--vertical-label=Memory Consumption (MB)", \
-             "--start=$start_time",      \
-             "--end=$end_time",          \
-             "--color=BACK#CCCCCC",      \
-             "--color=CANVAS#CCFFFF",    \
-             "--color=SHADEB#9999CC",    \
-             "--height=125",             \
-             "--upper-limit=656", 	 \
-             "--lower-limit=0",          \
-             "--rigid",                  \
-             "--base=1024",              \
-             "DEF:tot_mem=target.rrd:mem:AVERAGE", \
-             "CDEF:tot_mem_cor=tot_mem,0,671744,LIMIT,UN,0,tot_mem,IF,1024,/",\
-             "CDEF:machine_mem=tot_mem,656,+,tot_mem,-",\
-             "COMMENT:Memory Consumption between $start_time",\
-             "COMMENT:    and $end_time                     ",\
-             "HRULE:656#000000:Maximum Available Memory - 656 MB",\
-             "AREA:machine_mem#CCFFFF:Memory Unused",   \
+ RRDs::graph ("/images/mem_$count.png",   
+             "--title= Memory Usage",    
+             "--vertical-label=Memory Consumption (MB)", 
+             "--start=$start_time",      
+             "--end=$end_time",          
+             "--color=BACK#CCCCCC",      
+             "--color=CANVAS#CCFFFF",    
+             "--color=SHADEB#9999CC",    
+             "--height=125",             
+             "--upper-limit=656", 	 
+             "--lower-limit=0",          
+             "--rigid",                  
+             "--base=1024",              
+             "DEF:tot_mem=target.rrd:mem:AVERAGE", 
+             "CDEF:tot_mem_cor=tot_mem,0,671744,LIMIT,UN,0,tot_mem,IF,1024,/",
+             "CDEF:machine_mem=tot_mem,656,+,tot_mem,-",
+             "COMMENT:Memory Consumption between $start_time",
+             "COMMENT:    and $end_time                     ",
+             "HRULE:656#000000:Maximum Available Memory - 656 MB",
+             "AREA:machine_mem#CCFFFF:Memory Unused",   
              "AREA:tot_mem_cor#6699CC:Total memory consumed in MB");
  my $err=RRDs::error;
  if ($err) {print "problem generating the graph: $err\n";}
