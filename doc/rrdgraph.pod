@@ -350,6 +350,10 @@ edge of the graph.
 
 Use Times for the title: C<--font TITLE:13:Times>
 
+Note that you need to quote the argument to B<--font> if the font-name
+contains whitespace:
+--font "TITLE:13:Some Font"
+
 If you do not give a font string you can modify just the size of the default font:
 C<--font TITLE:13:>.
 
