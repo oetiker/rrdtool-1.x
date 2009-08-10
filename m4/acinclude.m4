@@ -390,6 +390,10 @@ AC_CACHE_VAL([rd_cv_ieee_$2],
 #  define isinf(a) (fpclassify(a) == FP_INFINITE)
 #endif
 
+#if HAVE_MATH_H
+#include <math.h>
+#endif
+
 #include <stdio.h>
 int main(void){
     double rrdnan,rrdinf,rrdc,rrdzero;
