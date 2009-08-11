@@ -108,14 +108,14 @@ static int get_long_from_node(
 
     end_ptr = NULL;
     temp = strtol(str_ptr, &end_ptr, 0);
-    xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
         rrd_set_error("get_long_from_node: Cannot parse buffer as long: %s",
                       str_ptr);
+        xmlFree(str_ptr);
         return (-1);
     }
-
+    xmlFree(str_ptr);
     *value = temp;
 
     return (0);
@@ -138,14 +138,15 @@ static int get_ulong_from_node(
 
     end_ptr = NULL;
     temp = strtoul(str_ptr, &end_ptr, 0);
-    xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
         rrd_set_error("get_ulong_from_node: Cannot parse buffer as unsigned long: %s",
                       str_ptr);
+        xmlFree(str_ptr);
         return (-1);
     }
-
+ 
+    xmlFree(str_ptr);
     *value = temp;
 
     return (0);
@@ -178,14 +179,14 @@ static int get_llong_from_node(
 
     end_ptr = NULL;
     temp = strtoll(str_ptr, &end_ptr, 10);
-    xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
         rrd_set_error("get_llong_from_node: Cannot parse buffer as unsigned long long: %s",
                       str_ptr);
+        xmlFree(str_ptr);
         return (-1);
     }
-
+    xmlFree(str_ptr);
     *value = temp;
 
     return (0);
@@ -215,15 +216,15 @@ static int get_double_from_node(
 
     end_ptr = NULL;
     temp = strtod(str_ptr, &end_ptr);
-    xmlFree(str_ptr);
 
     if (str_ptr == end_ptr) {
         rrd_set_error
             ("get_double_from_node: Cannot parse buffer as double: %s",
              str_ptr);
+        xmlFree(str_ptr);
         return (-1);
     }
-
+    xmlFree(str_ptr);           
     *value = temp;
 
     return (0);
