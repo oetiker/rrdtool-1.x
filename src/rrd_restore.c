@@ -294,13 +294,14 @@ static int get_xml_double(
         }        
         errno = 0;
         temp = strtod((char *)text,NULL);
-        xmlFree(text);        
         if (errno>0){
             rrd_set_error("ling %d: get_xml_double from '%s' %s",
                           xmlTextReaderGetParserLineNumber(reader),
                           text,rrd_strerror(errno));
+            xmlFree(text);        
             return -1;
         }
+        xmlFree(text);        
         *value = temp;
         return 0;
     }
