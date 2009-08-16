@@ -543,10 +543,10 @@ AC_ARG_ENABLE(perl,AS_HELP_STRING([--disable-perl],[do not build the perl module
 [],[enable_perl=yes])
 
 
-AC_ARG_VAR(PERLCC, [[] C compiler for Perl modules])
-AC_ARG_VAR(PERLCCFLAGS, [[] CC flags for Perl modules])
-AC_ARG_VAR(PERLLD, [[same as PERLCC] Linker for Perl modules])
-AC_ARG_VAR(PERLLDFLAGS, [[] LD flags for Perl modules])
+AC_ARG_VAR(PERLCC, [C compiler for Perl modules])
+AC_ARG_VAR(PERLCCFLAGS, [CC flags for Perl modules])
+AC_ARG_VAR(PERLLD, [Linker for Perl modules])
+AC_ARG_VAR(PERLLDFLAGS, [LD flags for Perl modules])
 
 if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
