@@ -1,7 +1,7 @@
 /**
  * RRDTool - src/rrd_daemon.c
- * Copyright (C) 2008 Florian octo Forster
- * Copyright (C) 2008 Kevin Brintnall
+ * Copyright (C) 2008,2009 Florian octo Forster
+ * Copyright (C) 2008,2009 Kevin Brintnall
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -116,12 +116,6 @@
 /*
  * Types
  */
-typedef enum
-{
-  PRIV_LOW,
-  PRIV_HIGH
-} socket_privilege;
-
 typedef enum { RESP_ERR = -1, RESP_OK = 0 } response_code;
 
 struct listen_socket_s
@@ -129,7 +123,6 @@ struct listen_socket_s
   int fd;
   char addr[PATH_MAX + 1];
   int family;
-  socket_privilege privilege;
 
   /* state for BATCH processing */
   time_t batch_start;
@@ -142,23 +135,25 @@ struct listen_socket_s
 
   char *wbuf;
   ssize_t wbuf_len;
+
+  uint32_t permissions;
 };
 typedef struct listen_socket_s listen_socket_t;
 
-struct command;
+struct command_s;
+typedef struct command_s command_t;
 /* note: guard against "unused" warnings in the handlers */
 #define DISPATCH_PROTO	listen_socket_t *sock	__attribute__((unused)),\
 			time_t now		__attribute__((unused)),\
 			char  *buffer		__attribute__((unused)),\
 			size_t buffer_size	__attribute__((unused))
 
-#define HANDLER_PROTO	struct command *cmd	__attribute__((unused)),\
+#define HANDLER_PROTO	command_t *cmd	        __attribute__((unused)),\
 			DISPATCH_PROTO
 
-struct command {
+struct command_s {
   char   *cmd;
   int (*handler)(HANDLER_PROTO);
-  socket_privilege min_priv;
 
   char  context;		/* where we expect to see it */
 #define CMD_CONTEXT_CLIENT	(1<<0)
@@ -479,7 +474,7 @@ static char *next_cmd (listen_socket_t *sock, ssize_t *len) /* {{{ */
 
   /* NOTREACHED */
   assert(1==0);
-}
+} /* }}} char *next_cmd */
 
 /* add the characters directly to the write buffer */
 static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
@@ -1068,20 +1063,6 @@ static void get_abs_path(char **filename, char *tmp)
   *filename = tmp;
 } /* }}} static int get_abs_path */
 
-/* returns 1 if we have the required privilege level,
- * otherwise issue an error to the user on sock */
-static int has_privilege (listen_socket_t *sock, /* {{{ */
-                          socket_privilege priv)
-{
-  if (sock == NULL) /* journal replay */
-    return 1;
-
-  if (sock->privilege >= priv)
-    return 1;
-
-  return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
-} /* }}} static int has_privilege */
-
 static int flush_file (const char *filename) /* {{{ */
 {
   cache_item_t *ci;
@@ -1110,7 +1091,7 @@ static int flush_file (const char *filename) /* {{{ */
   return (0);
 } /* }}} int flush_file */
 
-static int syntax_error(listen_socket_t *sock, struct command *cmd) /* {{{ */
+static int syntax_error(listen_socket_t *sock, command_t *cmd) /* {{{ */
 {
   char *err = "Syntax error.\n";
 
@@ -1513,11 +1494,10 @@ static int handle_request_quit (HANDLER_PROTO) /* {{{ */
   return -1;
 } /* }}} static int handle_request_quit */
 
-struct command COMMANDS[] = {
+static command_t list_of_commands[] = { /* {{{ */
   {
     "UPDATE",
     handle_request_update,
-    PRIV_HIGH,
     CMD_CONTEXT_ANY,
     "UPDATE <filename> <values> [<values> ...]\n"
     ,
@@ -1532,7 +1512,6 @@ struct command COMMANDS[] = {
   {
     "WROTE",
     handle_request_wrote,
-    PRIV_HIGH,
     CMD_CONTEXT_JOURNAL,
     NULL,
     NULL
@@ -1540,7 +1519,6 @@ struct command COMMANDS[] = {
   {
     "FLUSH",
     handle_request_flush,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
     "FLUSH <filename>\n"
     ,
@@ -1550,7 +1528,6 @@ struct command COMMANDS[] = {
   {
     "FLUSHALL",
     handle_request_flushall,
-    PRIV_HIGH,
     CMD_CONTEXT_CLIENT,
     "FLUSHALL\n"
     ,
@@ -1559,7 +1536,6 @@ struct command COMMANDS[] = {
   {
     "PENDING",
     handle_request_pending,
-    PRIV_HIGH,
     CMD_CONTEXT_CLIENT,
     "PENDING <filename>\n"
     ,
@@ -1569,7 +1545,6 @@ struct command COMMANDS[] = {
   {
     "FORGET",
     handle_request_forget,
-    PRIV_HIGH,
     CMD_CONTEXT_ANY,
     "FORGET <filename>\n"
     ,
@@ -1579,7 +1554,6 @@ struct command COMMANDS[] = {
   {
     "QUEUE",
     handle_request_queue,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT,
     "QUEUE\n"
     ,
@@ -1592,7 +1566,6 @@ struct command COMMANDS[] = {
   {
     "STATS",
     handle_request_stats,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT,
     "STATS\n"
     ,
@@ -1602,7 +1575,6 @@ struct command COMMANDS[] = {
   {
     "HELP",
     handle_request_help,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT,
     "HELP [<command>]\n",
     NULL, /* special! */
@@ -1610,7 +1582,6 @@ struct command COMMANDS[] = {
   {
     "BATCH",
     batch_start,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT,
     "BATCH\n"
     ,
@@ -1634,7 +1605,6 @@ struct command COMMANDS[] = {
   {
     ".",   /* BATCH terminator */
     batch_done,
-    PRIV_LOW,
     CMD_CONTEXT_BATCH,
     NULL,
     NULL
@@ -1642,34 +1612,79 @@ struct command COMMANDS[] = {
   {
     "QUIT",
     handle_request_quit,
-    PRIV_LOW,
     CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
     "QUIT\n"
     ,
     "Disconnect from rrdcached.\n"
-  },
-  {NULL,NULL,0,0,NULL,NULL}  /* LAST ENTRY */
-};
-
-static struct command *find_command(char *cmd)
-{
-  struct command *c = COMMANDS;
-
-  while (c->cmd != NULL)
-  {
-    if (strcasecmp(cmd, c->cmd) == 0)
-      break;
-    c++;
   }
+}; /* }}} command_t list_of_commands[] */
+static size_t list_of_commands_len = sizeof (list_of_commands)
+  / sizeof (list_of_commands[0]);
 
-  if (c->cmd == NULL)
-    return NULL;
-  else
-    return c;
+static command_t *find_command(char *cmd)
+{
+  size_t i;
+
+  for (i = 0; i < list_of_commands_len; i++)
+    if (strcasecmp(cmd, list_of_commands[i].cmd) == 0)
+      return (&list_of_commands[i]);
+  return NULL;
 }
 
+/* We currently use the index in the `list_of_commands' array as a bit position
+ * in `listen_socket_t.permissions'. This member schould NEVER be accessed from
+ * outside these functions so that switching to a more elegant storage method
+ * is easily possible. */
+static ssize_t find_command_index (const char *cmd) /* {{{ */
+{
+  size_t i;
+
+  for (i = 0; i < list_of_commands_len; i++)
+    if (strcasecmp(cmd, list_of_commands[i].cmd) == 0)
+      return ((ssize_t) i);
+  return (-1);
+} /* }}} ssize_t find_command_index */
+
+static int socket_permission_check (listen_socket_t *sock, /* {{{ */
+    const char *cmd)
+{
+  ssize_t i;
+
+  if (cmd == NULL)
+    return (-1);
+
+  if ((strcasecmp ("QUIT", cmd) == 0)
+      || (strcasecmp ("HELP", cmd) == 0))
+    return (1);
+  else if (strcmp (".", cmd) == 0)
+    cmd = "BATCH";
+
+  i = find_command_index (cmd);
+  if (i < 0)
+    return (-1);
+  assert (i < 32);
+
+  if ((sock->permissions & (1 << i)) != 0)
+    return (1);
+  return (0);
+} /* }}} int socket_permission_check */
+
+static int socket_permission_add (listen_socket_t *sock, /* {{{ */
+    const char *cmd)
+{
+  ssize_t i;
+
+  i = find_command_index (cmd);
+  if (i < 0)
+    return (-1);
+  assert (i < 32);
+
+  sock->permissions |= (1 << i);
+  return (0);
+} /* }}} int socket_permission_add */
+
 /* check whether commands are received in the expected context */
-static int command_check_context(listen_socket_t *sock, struct command *cmd)
+static int command_check_context(listen_socket_t *sock, command_t *cmd)
 {
   if (sock == NULL)
     return (cmd->context & CMD_CONTEXT_JOURNAL);
@@ -1687,7 +1702,7 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
   int status;
   char *cmd_str;
   char *resp_txt;
-  struct command *help = NULL;
+  command_t *help = NULL;
 
   status = buffer_get_field (&buffer, &buffer_size, &cmd_str);
   if (status == 0)
@@ -1708,14 +1723,15 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
   }
   else
   {
-    help = COMMANDS;
+    size_t i;
+
     resp_txt = "Command overview\n";
 
-    while (help->cmd)
+    for (i = 0; i < list_of_commands_len; i++)
     {
-      if (help->syntax)
-        add_response_info(sock, "%s", help->syntax);
-      help++;
+      if (list_of_commands[i].syntax == NULL)
+        continue;
+      add_response_info (sock, "%s", list_of_commands[i].syntax);
     }
   }
 
@@ -1727,7 +1743,7 @@ static int handle_request (DISPATCH_PROTO) /* {{{ */
 {
   char *buffer_ptr = buffer;
   char *cmd_str = NULL;
-  struct command *cmd = NULL;
+  command_t *cmd = NULL;
   int status;
 
   assert (buffer[buffer_size - 1] == '\0');
@@ -1746,9 +1762,8 @@ static int handle_request (DISPATCH_PROTO) /* {{{ */
   if (!cmd)
     return send_response(sock, RESP_ERR, "Unknown command: %s\n", cmd_str);
 
-  status = has_privilege(sock, cmd->min_priv);
-  if (status <= 0)
-    return status;
+  if (!socket_permission_check (sock, cmd->cmd))
+    return send_response(sock, RESP_ERR, "Permission denied.\n");
 
   if (!command_check_context(sock, cmd))
     return send_response(sock, RESP_ERR, "Can't use '%s' here.\n", cmd_str);
@@ -2681,7 +2696,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  while ((option = getopt(argc, argv, "gl:L:f:w:z:t:Bb:p:Fj:h?")) != -1)
+  char **permissions = NULL;
+  size_t permissions_len = 0;
+
+  while ((option = getopt(argc, argv, "gl:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
     {
@@ -2689,7 +2707,6 @@ static int read_options (int argc, char **argv) /* {{{ */
         stay_foreground=1;
         break;
 
-      case 'L':
       case 'l':
       {
         listen_socket_t *new;
@@ -2703,7 +2720,40 @@ static int read_options (int argc, char **argv) /* {{{ */
         memset(new, 0, sizeof(listen_socket_t));
 
         strncpy(new->addr, optarg, sizeof(new->addr)-1);
-        new->privilege = (option == 'l') ? PRIV_HIGH : PRIV_LOW;
+
+        /* Add permissions to the socket {{{ */
+        if (permissions_len != 0)
+        {
+          size_t i;
+          for (i = 0; i < permissions_len; i++)
+          {
+            status = socket_permission_add (new, permissions[i]);
+            if (status != 0)
+            {
+              fprintf (stderr, "read_options: Adding permission \"%s\" to "
+                  "socket failed. Most likely, this permission doesn't "
+                  "exist. Check your command line.\n", permissions[i]);
+              status = 4;
+            }
+          }
+        }
+        else /* if (permissions_len == 0) */
+        {
+          /* Add permission for ALL commands to the socket. */
+          size_t i;
+          for (i = 0; i < list_of_commands_len; i++)
+          {
+            status = socket_permission_add (new, list_of_commands[i].cmd);
+            if (status != 0)
+            {
+              fprintf (stderr, "read_options: Adding permission \"%s\" to "
+                  "socket failed. This should never happen, ever! Sorry.\n",
+                  permissions[i]);
+              status = 4;
+            }
+          }
+        }
+        /* }}} Done adding permissions. */
 
         if (!rrd_add_ptr((void ***)&config_listen_address_list,
                          &config_listen_address_list_len, new))
@@ -2711,6 +2761,28 @@ static int read_options (int argc, char **argv) /* {{{ */
           fprintf(stderr, "read_options: rrd_add_ptr failed.\n");
           return (2);
         }
+      }
+      break;
+
+      case 'P':
+      {
+        char *optcopy;
+        char *saveptr;
+        char *dummy;
+        char *ptr;
+
+        rrd_free_ptrs ((void *) &permissions, &permissions_len);
+
+        optcopy = strdup (optarg);
+        dummy = optcopy;
+        saveptr = NULL;
+        while ((ptr = strtok_r (dummy, ", ", &saveptr)) != NULL)
+        {
+          dummy = NULL;
+          rrd_add_strdup ((void *) &permissions, &permissions_len, ptr);
+        }
+
+        free (optcopy);
       }
       break;
 
@@ -2871,13 +2943,15 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'h':
       case '?':
-        printf ("RRDCacheD %s  Copyright (C) 2008 Florian octo Forster\n"
+        printf ("RRDCacheD %s\n"
+            "Copyright (C) 2008,2009 Florian octo Forster and Kevin Brintnall\n"
             "\n"
             "Usage: rrdcached [options]\n"
             "\n"
             "Valid options are:\n"
             "  -l <address>  Socket address to listen to.\n"
-            "  -L <address>  Socket address to listen to ('FLUSH' only).\n"
+            "  -P <perms>    Sets the permissions to assign to all following "
+                            "sockets\n"
             "  -w <seconds>  Interval in which to write data.\n"
             "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
             "  -t <threads>  Number of write threads.\n"
@@ -2912,6 +2986,8 @@ static int read_options (int argc, char **argv) /* {{{ */
 
   if (journal_dir == NULL)
     config_flush_at_shutdown = 1;
+
+  rrd_free_ptrs ((void *) &permissions, &permissions_len);
 
   return (status);
 } /* }}} int read_options */

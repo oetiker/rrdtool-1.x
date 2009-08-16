@@ -7,7 +7,8 @@ rrdcached - Data caching daemon for rrdtool
 =head1 SYNOPSIS
 
 B<rrdcached>
-[B<-l/-L>E<nbsp>I<address>]
+[B<-P>E<nbsp>I<permissions>]
+[B<-l>E<nbsp>I<address>]
 [B<-w>E<nbsp>I<timeout>]
 [B<-z>E<nbsp>I<delay>]
 [B<-f>E<nbsp>I<timeout>]
@@ -48,7 +49,9 @@ For network sockets, a port may be specified by using the form
 C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
 qualified domain name (i.E<nbsp>e. the address contains at least one dot
 (C<.>)), the square brackets can be omitted, resulting in the (simpler)
-C<I<address>B<:>I<port>> pattern.. The default port is B<42217/udp>.
+C<I<address>B<:>I<port>> pattern. The default port is B<42217/udp>. If you
+specify a network socket, it is mandatory to read the
+L</"SECURITY CONSIDERATIONS"> section.
 
 The following formats are accepted. Please note that the address of the UNIX
 domain socket B<must> start with a slash in the second case!
@@ -62,10 +65,40 @@ domain socket B<must> start with a slash in the second case!
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
 
-=item B<-L> I<address>
+=item B<-P> I<command>[,I<command>[,...]]
 
-Same as B<-l>, except creates a low-privilege socket.  See B<SECURITY
-CONSIDERATIONS> for more information.
+Specifies the commands accepted via a network socket. This allows
+administrators of I<RRDCacheD> to control the actions accepted from various
+sources.
+
+The arguments given to the B<-P> option is a comma separated list of commands.
+For example, to allow the C<FLUSH> and C<PENDING> commands one could specify:
+
+  rrdcached -P FLUSH,PENDING $MORE_ARGUMENTS
+
+The B<-P> option effects the I<following> socket addresses (the following B<-l>
+options). In the following example, only the IPv4 network socket (address
+C<10.0.0.1>) will be restricted to the C<FLUSH> and C<PENDING> commands:
+
+  rrdcached -l unix:/some/path -P FLUSH,PENDING -l 10.0.0.1
+
+A complete list of available commands can be found in the section
+L</"Valid Commands"> below. There are two minor special exceptions:
+
+=over 4
+
+=item *
+
+The C<HELP> and C<QUIT> commands are always allowed.
+
+=item *
+
+If the C<BATCH> command is accepted, the B<.>E<nbsp>command will automatically
+be accepted, too.
+
+=back
+
+Please also read L</"SECURITY CONSIDERATIONS"> below.
 
 =item B<-w> I<timeout>
 
@@ -305,44 +338,67 @@ ASCII art rocks.
 
 =head1 SECURITY CONSIDERATIONS
 
-The client/server protocol does not have any authentication or
-authorization mechanism.  Therefore, take care to restrict which users can
-connect to the daemon.
+=head2 Authentication
 
-Control sockets are divided into high-privilege (B<-l>) and low-privilege
-(B<-L>) sockets.  High-privilege sockets accept all commands, whereas
-low-privilege sockets accept only B<FLUSH>, B<STATS>, and B<HELP>.
+There is no authentication.
 
-For a multi-user environment where only certain users require read/write
-access, the recommended configuration uses two sockets as follows:
+The client/server protocol does not yet have any authentication mechanism. It
+is likely that authentication and encryption will be added in a future version,
+but for the time being it is the administrator's responsibility to secure the
+traffic from/to the daemon!
 
-=over
+It is highly recommended to install a packet filter or similar mechanism to
+prevent unauthorized connections. Unless you have a dedicated VLAN or VPN for
+this, using network sockets is probably a bad idea!
 
-=item B<-l> I</protected/dir/rrd.sock>
+=head2 Authorization
 
-Create a high-privilege unix-domain socket.  This should be protected with
-the same Unix permissions that are used to protect the RRD files.  Updates
-should be directed to this socket.
+There is minimal per-socket authorization.
 
-=item B<-L> I<127.0.0.1>
+Authorization is currently done on a per-socket basis. That means each socket
+has a list of commands it will accept and it will accept. It will accept only
+those commands explicitly listed but it will (currently) accept these commands
+from anyone reaching the socket.
 
-Create a low-privilege TCP socket listening on localhost.  All users on
-the local system may use this to trigger FLUSH of individual files.  Users
-with read-only access should be directed to this socket.
+If the networking sockets are to be used, it is necessary to restrict the
+accepted commands to those needed by external clients. If, for example,
+external clients want to draw graphs of the cached data, they should only be
+allowed to use the C<FLUSH> command.
 
-=back
+=head2 Encryption
 
-If you (want to) use the network capability, i.E<nbsp>e. let the daemon bind to
-an IPv4 or IPv6 socket, it is B<your> job to install a packet filter or similar
-mechanism to prevent unauthorized connections. Unless you have a dedicated VLAN
-or VPN for this, using the network option is probably a bad idea!
+There is no encryption.
+
+Again, this may be added in the future, but for the time being it is your job
+to keep your private data private. Install a VPN or an encrypted tunnel if you
+statistics are confidential!
+
+=head2 Sanity checking
+
+There is no sanity checking.
 
 The daemon will blindly write to any file it gets told, so you really should
 create a separate user just for this daemon. Also it does not do any sanity
 checks, so if it gets told to write values for a time far in the future, your
 files will be messed up good!
 
+=head2 Conclusion
+
+=over 4
+
+=item *
+
+Security is the job of the administrator.
+
+=item *
+
+We recommend to allow write access via UNIX domain sockets only.
+
+=item *
+
 You have been warned.
+
+=back
 
 =head1 PROTOCOL
 
