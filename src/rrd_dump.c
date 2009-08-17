@@ -59,6 +59,10 @@ size_t rrd_dump_opt_cb_fileout(
     size_t len,
     void *user);
 
+int rrd_dump_opt_r(
+    const char *filename,
+    char *outname,
+    int opt_noheader);
 
 int rrd_dump_cb_r(
     const char *filename,

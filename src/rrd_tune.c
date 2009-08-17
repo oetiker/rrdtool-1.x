@@ -60,6 +60,12 @@ int       set_windowarg(
     enum rra_par_en,
     char *arg);
 
+int set_hwsmootharg(
+    rrd_t *rrd,
+    enum cf_en cf,
+    enum rra_par_en rra_par,
+    char *arg);
+
 int rrd_tune(
     int argc,
     char **argv)
