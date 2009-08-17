@@ -130,6 +130,10 @@ extern    "C" {
         struct rrd_info_t *next;
     } rrd_info_t;
 
+    typedef size_t (* rrd_output_callback_t)(
+    const void *,
+    size_t,
+    void *);
 
 /* main function blocks */
     int       rrd_create(
@@ -251,6 +255,12 @@ extern    "C" {
     time_t    rrd_first_r(
     const char *filename,
     int rraindex);
+
+    int rrd_dump_cb_r(
+    const char *filename,
+    int opt_header,
+    rrd_output_callback_t cb,
+    void *user);
 
 /* Transplanted from rrd_parsetime.h */
     typedef enum {
