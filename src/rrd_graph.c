@@ -1633,7 +1633,7 @@ int leg_place(
     int      *legspace;
     char     *tab;
 
-    if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
+    if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
         if ((legspace = (int*)(malloc(im->gdes_c * sizeof(int)))) == NULL) {
             rrd_set_error("malloc for legspace");
             return -1;
@@ -2647,7 +2647,7 @@ void grid_paint(
     }
 
     /* graph labels */
-    if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
+    if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
