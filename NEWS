@@ -64,4 +64,8 @@ Miscellaneous Changes
 * allow the HW smoothing window size to be set to 0 with rrdtool tune
   by sylvain luiset
 
+* new graph option --border to set the 3d border width 
+  by Bernhard Reutner-Fischer
+
+
 for more detail see the CHANGES file.

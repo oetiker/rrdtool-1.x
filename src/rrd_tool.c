@@ -161,7 +161,9 @@ void PrintUsage(
            "\t\t[-S|--step seconds]\n"
            "\t\t[-f|--imginfo printfstr]\n"
            "\t\t[-a|--imgformat PNG]\n"
-           "\t\t[-c|--color COLORTAG#rrggbb[aa]] [-t|--title string]\n"
+           "\t\t[-c|--color COLORTAG#rrggbb[aa]]\n"
+           "\t\t[-d|--border width\n"
+           "\t\t[-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     const char *help_graph3 =

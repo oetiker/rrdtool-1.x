@@ -1685,7 +1685,7 @@ int leg_place(
     }
 
 
-    if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
+    if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
         if ((legspace = (int*)malloc(im->gdes_c * sizeof(int))) == NULL) {
             rrd_set_error("malloc for legspace");
             return -1;
@@ -2606,20 +2606,23 @@ void grid_paint(
     double    X0, Y0;   /* points for filled graph and more */
     struct gfx_color_t water_color;
 
-    /* draw 3d border */
-    gfx_new_area(im, 0, im->yimg,
-                 2, im->yimg - 2, 2, 2, im->graph_col[GRC_SHADEA]);
-    gfx_add_point(im, im->ximg - 2, 2);
-    gfx_add_point(im, im->ximg, 0);
-    gfx_add_point(im, 0, 0);
-    gfx_close_path(im);
-    gfx_new_area(im, 2, im->yimg - 2,
-                 im->ximg - 2,
-                 im->yimg - 2, im->ximg - 2, 2, im->graph_col[GRC_SHADEB]);
-    gfx_add_point(im, im->ximg, 0);
-    gfx_add_point(im, im->ximg, im->yimg);
-    gfx_add_point(im, 0, im->yimg);
-    gfx_close_path(im);
+    if (im->draw_3d_border > 0) {
+	    /* draw 3d border */
+	    i = im->draw_3d_border;
+	    gfx_new_area(im, 0, im->yimg,
+			 i, im->yimg - i, i, i, im->graph_col[GRC_SHADEA]);
+	    gfx_add_point(im, im->ximg - i, i);
+	    gfx_add_point(im, im->ximg, 0);
+	    gfx_add_point(im, 0, 0);
+	    gfx_close_path(im);
+	    gfx_new_area(im, i, im->yimg - i,
+			 im->ximg - i,
+			 im->yimg - i, im->ximg - i, i, im->graph_col[GRC_SHADEB]);
+	    gfx_add_point(im, im->ximg, 0);
+	    gfx_add_point(im, im->ximg, im->yimg);
+	    gfx_add_point(im, 0, im->yimg);
+	    gfx_close_path(im);
+    }
     if (im->draw_x_grid == 1)
         vertical_grid(im);
     if (im->draw_y_grid == 1) {
@@ -2704,7 +2707,8 @@ void grid_paint(
     }
 
     /* graph labels */
-    if (!(im->extra_flags & NOLEGEND) & !(im->extra_flags & ONLY_GRAPH)) {
+/* didn't look closely, nor think.. but did you mean ') && !(' below? */
+    if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
@@ -3990,6 +3994,7 @@ void rrd_graph_init(
     im->daemon_addr = NULL;
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
+    im->draw_3d_border = 2;
     im->extra_flags = 0;
     im->font_options = cairo_font_options_create();
     im->forceleftspace = 0;
@@ -4123,6 +4128,7 @@ void rrd_graph_options(
         { "base",               required_argument, 0, 'b'},
         { "logarithmic",        no_argument,       0, 'o'},
         { "color",              required_argument, 0, 'c'},
+        { "border",             required_argument, 0, 1007},
         { "font",               required_argument, 0, 'n'},
         { "title",              required_argument, 0, 't'},
         { "imginfo",            required_argument, 0, 'f'},
@@ -4334,6 +4340,9 @@ void rrd_graph_options(
                 rrd_set_error("invalid y-grid format");
                 return;
             }
+            break;
+        case 1007:
+            im->draw_3d_border = atoi(optarg);
             break;
         case 1002: /* right y axis */
 
