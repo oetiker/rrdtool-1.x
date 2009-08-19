@@ -4624,7 +4624,7 @@ int vdef_calc(
             array[step] = data[step * src->ds_cnt];
         }
         qsort(array, step, sizeof(double), vdef_percent_compar);
-        field = (steps - 1) * dst->vf.param / 100;
+        field = round((dst->vf.param * (double)(steps - 1)) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
         free(array);
@@ -4633,7 +4633,7 @@ int vdef_calc(
             printf("DEBUG: %3li:%10.2f %c\n",
                    step, array[step], step == field ? '*' : ' ');
 #endif
-    }
+        }
         break;
     case VDEF_MAXIMUM:
         step = 0;
