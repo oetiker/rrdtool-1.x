@@ -139,7 +139,7 @@ void PrintUsage(
            "\t\t[-y|--y-grid y-axis grid and label]\n"
            "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
            "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"
-           "\t\t[--right-axis-format format]\n"          
+           "\t\t[--right-axis-format format]\n"
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
@@ -162,7 +162,7 @@ void PrintUsage(
            "\t\t[-f|--imginfo printfstr]\n"
            "\t\t[-a|--imgformat PNG]\n"
            "\t\t[-c|--color COLORTAG#rrggbb[aa]]\n"
-           "\t\t[-d|--border width\n"
+           "\t\t[--border width\n"
            "\t\t[-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
