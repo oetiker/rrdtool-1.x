@@ -175,7 +175,8 @@ char *strchr (), *strrchr ();
 #  ifdef isinf
 #  undef isinf
 #  endif
-#  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
+#  define isinf(a) (!!(fpclass(a) & (FP_SNAN|FP_QNAN)))
+
 #endif
 
 /* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
