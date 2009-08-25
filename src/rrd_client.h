@@ -22,8 +22,24 @@
 #ifndef __RRD_CLIENT_H
 #define __RRD_CLIENT_H 1
 
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
+#include "../win32/config.h"
+#else
+#ifdef HAVE_CONFIG_H
+#include "../rrd_config.h"
+#endif
+#endif
+
 #ifndef WIN32
-#include <stdint.h>
+# ifdef HAVE_STDINT_H
+#  include <stdint.h>
+# else
+#   ifdef HAVE_INTTYPES_H
+#      include <inttypes.h>
+#   else
+#      error "you should have stdint.h or inttypes.h to compile this"
+#   endif
+# endif
 #else
 #	include <stdlib.h>
 	typedef signed char 	int8_t;

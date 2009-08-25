@@ -77,11 +77,13 @@
 #include <stdlib.h>
 
 #ifndef WIN32
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 #include <unistd.h>
 #include <strings.h>
 #include <inttypes.h>
-#	include <sys/socket.h>
+#include <sys/socket.h>
 
 #else
 
