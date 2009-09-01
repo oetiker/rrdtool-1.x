@@ -67,5 +67,7 @@ Miscellaneous Changes
 * new graph option --border to set the 3d border width 
   by Bernhard Reutner-Fischer
 
+* draw different color swats depending on the type of line drawn in the
+  graph by Loïc Tortay
 
 for more detail see the CHANGES file.

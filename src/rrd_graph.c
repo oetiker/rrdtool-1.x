@@ -2737,41 +2737,62 @@ void grid_paint(
                 boxV = boxH;
                 /* shift the box up a bit */
                 Y0 -= boxV * 0.4;
-                /* make sure transparent colors show up the same way as in the graph */
-                gfx_new_area(im,
-                             X0, Y0 - boxV,
-                             X0, Y0, X0 + boxH, Y0, im->graph_col[GRC_BACK]);
-                gfx_add_point(im, X0 + boxH, Y0 - boxV);
-                gfx_close_path(im);
-                gfx_new_area(im, X0, Y0 - boxV, X0,
-                             Y0, X0 + boxH, Y0, im->gdes[i].col);
-                gfx_add_point(im, X0 + boxH, Y0 - boxV);
-                gfx_close_path(im);
-                cairo_save(im->cr);
-                cairo_new_path(im->cr);
-                cairo_set_line_width(im->cr, 1.0);
-                X1 = X0 + boxH;
-                Y1 = Y0 - boxV;
-                gfx_line_fit(im, &X0, &Y0);
-                gfx_line_fit(im, &X1, &Y1);
-                cairo_move_to(im->cr, X0, Y0);
-                cairo_line_to(im->cr, X1, Y0);
-                cairo_line_to(im->cr, X1, Y1);
-                cairo_line_to(im->cr, X0, Y1);
-                cairo_close_path(im->cr);
-                cairo_set_source_rgba(im->cr,
-                                      im->
-                                      graph_col
-                                      [GRC_FRAME].
-                                      red,
-                                      im->
-                                      graph_col
-                                      [GRC_FRAME].
-                                      green,
-                                      im->
-                                      graph_col
-                                      [GRC_FRAME].
-                                      blue, im->graph_col[GRC_FRAME].alpha);
+		if (im->gdes[i].gf == GF_HRULE) { /* [-] */ 
+			cairo_save(im->cr);
+			cairo_new_path(im->cr);
+			cairo_set_line_width(im->cr, 1.0);
+			gfx_line(im,
+				X0, Y0 - boxV / 2,
+				X0 + boxH, Y0 - boxV / 2,
+				1.0, im->gdes[i].col);
+            		gfx_close_path(im);
+		} else if (im->gdes[i].gf == GF_VRULE) { /* [|] */
+			cairo_save(im->cr);
+			cairo_new_path(im->cr);
+			cairo_set_line_width(im->cr, 1.0);
+			gfx_line(im,
+				X0 + boxH / 2, Y0,
+				X0 + boxH / 2, Y0 - boxV,
+				1.0, im->gdes[i].col);
+            		gfx_close_path(im);
+		} else if (im->gdes[i].gf == GF_LINE) { /* [/] */
+			cairo_save(im->cr);
+			cairo_new_path(im->cr);
+			cairo_set_line_width(im->cr, im->gdes[i].linewidth);
+			gfx_line(im,
+				X0, Y0,
+				X0 + boxH, Y0 - boxV,
+				im->gdes[i].linewidth, im->gdes[i].col);
+            		gfx_close_path(im);
+		} else {
+		/* make sure transparent colors show up the same way as in the graph */
+			gfx_new_area(im,
+				     X0, Y0 - boxV,
+				     X0, Y0, X0 + boxH, Y0, im->graph_col[GRC_BACK]);
+			gfx_add_point(im, X0 + boxH, Y0 - boxV);
+			gfx_close_path(im);
+			gfx_new_area(im, X0, Y0 - boxV, X0,
+				     Y0, X0 + boxH, Y0, im->gdes[i].col);
+			gfx_add_point(im, X0 + boxH, Y0 - boxV);
+			gfx_close_path(im);
+			cairo_save(im->cr);
+			cairo_new_path(im->cr);
+			cairo_set_line_width(im->cr, 1.0);
+			X1 = X0 + boxH;
+			Y1 = Y0 - boxV;
+			gfx_line_fit(im, &X0, &Y0);
+			gfx_line_fit(im, &X1, &Y1);
+			cairo_move_to(im->cr, X0, Y0);
+			cairo_line_to(im->cr, X1, Y0);
+			cairo_line_to(im->cr, X1, Y1);
+			cairo_line_to(im->cr, X0, Y1);
+			cairo_close_path(im->cr);
+			cairo_set_source_rgba(im->cr,
+					      im->graph_col[GRC_FRAME].red,
+					      im->graph_col[GRC_FRAME].green,
+					      im->graph_col[GRC_FRAME].blue,
+					      im->graph_col[GRC_FRAME].alpha);
+		}
                 if (im->gdes[i].dash) {
                     /* make box borders in legend dashed if the graph is dashed */
                     double    dashes[] = {
