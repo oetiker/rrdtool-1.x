@@ -24,7 +24,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: dejavu-lgc-fonts
 BuildRequires: gcc-c++, openssl-devel, freetype-devel
 BuildRequires: libpng-devel, zlib-devel, intltool >= 0.35.0
-BuildRequires: cairo-devel >= 1.4.6, pango-devel >= 1.17
+BuildRequires: cairo-devel >= 1.2.4, pango-devel >= 1.14
 BuildRequires: libtool, groff
 BuildRequires: gettext, libxml2-devel
 %if 0%{?fedora} >= 7
