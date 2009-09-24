@@ -2,7 +2,9 @@
  * RRDtool 1.3.2  Copyright by Tobi Oetiker, 1997-2009                    
  *****************************************************************************
  * rrd_restore.c  Contains logic to parse XML input and create an RRD file
- *                initial libxml2 version of rrd_restore (c) by Florian octo Forster
+ * This file:
+ * Copyright (C) 2008  Florian octo Forster  (original libxml2 code)
+ * Copyright (C) 2008,2009 Tobias Oetiker
  *****************************************************************************
  * $Id$
  *************************************************************************** */
