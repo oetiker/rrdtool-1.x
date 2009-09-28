@@ -58,6 +58,34 @@ source pointer will be NULL and the count will be zero.
     rrd_free_ptrs(&arr, &arr_size);
     /* here, arr == NULL && arr_size == 0 */
 
+=item B<rrd_mkdir_p(const char *pathname, mode_t mode)>
+
+Create the directory named C<pathname> including all of its parent
+directories (similar to C<mkdir -p> on the command line - see L<mkdir(1)> for
+more information). The argument C<mode> specifies the permissions to use. It
+is modified by the process's C<umask>. See L<mkdir(2)> for more details.
+
+The function returns 0 on success, a negative value else. In case of an error,
+C<errno> is set accordingly. Aside from the errors documented in L<mkdir(2)>,
+the function may fail with the following errors:
+
+=over 4
+
+=item B<EINVAL>
+
+C<pathname> is C<NULL> or the empty string.
+
+=item B<ENOMEM>
+
+Insufficient memory was available.
+
+=item B<any error returned by L<stat(2)>>
+
+=back
+
+In contrast to L<mkdir(2)>, the function does B<not> fail if C<pathname>
+already exists and is a directory.
+
 =item B<rrd_dump_cr_r(char *filename, int opt_header, rrd_output_callback_t cb, void *user)>
 
 In some situations it is necessary to get the output of C<rrd_dump> without
