@@ -2677,7 +2677,6 @@ static int cleanup (void) /* {{{ */
 
   free(queue_threads);
   free(config_base_dir);
-  free(config_pid_file);
 
   pthread_mutex_lock(&cache_lock);
   g_tree_destroy(cache_tree);
@@ -2689,6 +2688,7 @@ static int cleanup (void) /* {{{ */
   closelog ();
 
   remove_pidfile ();
+  free(config_pid_file);
 
   return (0);
 } /* }}} int cleanup */
