@@ -2923,18 +2923,17 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'j':
       {
-        struct stat statbuf;
         const char *dir = journal_dir = strdup(optarg);
 
-        status = stat(dir, &statbuf);
+        status = rrd_mkdir_p(dir, 0777);
         if (status != 0)
         {
-          fprintf(stderr, "Cannot stat '%s' : %s\n", dir, rrd_strerror(errno));
+          fprintf(stderr, "Failed to create journal directory '%s': %s\n",
+              dir, rrd_strerror(errno));
           return 6;
         }
 
-        if (!S_ISDIR(statbuf.st_mode)
-            || access(dir, R_OK|W_OK|X_OK) != 0)
+        if (access(dir, R_OK|W_OK|X_OK) != 0)
         {
           fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
                   errno ? rrd_strerror(errno) : "");
