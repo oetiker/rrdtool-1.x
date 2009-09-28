@@ -1,4 +1,8 @@
 /**
+ * RRDtool - src/rrd_utils.c
+ * Copyright (C) 2009 Kevin Brintnall
+ * Copyright (C) 2008 Sebastian Harl
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation; only version 2 of the License is applicable.
@@ -11,12 +15,22 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ *
+ * Authors:
+ *   kevin brintnall <kbrint@rufus.net>
+ *   Sebastian Harl <sh@tokkee.org>
  **/
 
 #include "rrd_tool.h"
 
-#include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
+#include <libgen.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #	define random() rand()
@@ -95,3 +109,51 @@ void rrd_free_ptrs(void ***src, size_t *cnt)
     free (sp);
     *src = NULL;
 }
+
+/* recursively create the directory named by 'pathname'
+ * (similar to "mkdir -p" on the command line) */
+int rrd_mkdir_p(const char *pathname, mode_t mode)
+{
+    struct stat sb;
+
+    char *pathname_copy;
+    char *base_dir;
+
+    if ((NULL == pathname) || ('\0' == *pathname)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (0 == stat(pathname, &sb)) {
+        if (! S_ISDIR(sb.st_mode)) {
+            errno = ENOTDIR;
+            return -1;
+        }
+        return 0;
+    }
+
+    /* keep errno as set by stat() */
+    if (ENOENT != errno)
+        return -1;
+
+    /* dirname might modify its first argument */
+    if (NULL == (pathname_copy = strdup(pathname)))
+        return -1;
+
+    base_dir = dirname(pathname_copy);
+
+    if (0 != rrd_mkdir_p(base_dir, mode)) {
+        int orig_errno = errno;
+        free(pathname_copy);
+        errno = orig_errno;
+        return -1;
+    }
+
+    free(pathname_copy);
+
+    /* keep errno as set by mkdir() */
+    if (0 != mkdir(pathname, mode))
+        return -1;
+    return 0;
+} /* rrd_mkdir_p */
+

@@ -33,6 +33,7 @@ rrd_last_r
 rrd_lastupdate
 rrd_lastupdate_r
 rrd_lock
+rrd_mkdir_p
 rrd_new_context
 rrd_open
 rrd_parsetime

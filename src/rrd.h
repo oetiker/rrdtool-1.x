@@ -337,6 +337,8 @@ int       rrd_proc_start_end(
     int rrd_add_strdup(char ***dest, size_t *dest_size, char *src);
     void rrd_free_ptrs(void ***src, size_t *cnt);
 
+    int rrd_mkdir_p(const char *pathname, mode_t mode);
+
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and
