@@ -94,7 +94,7 @@ extern    "C" {
 
 
 #ifdef HAVE_LIBDBI
-int rrd_fetch_fn_libdbi(char *filename, enum cf_en cf_idx,
+int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
  			time_t *start,time_t *end,
  			unsigned long *step,
  			unsigned long *ds_cnt,

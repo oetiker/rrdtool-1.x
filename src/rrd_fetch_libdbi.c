@@ -17,20 +17,20 @@ struct sql_table_helper {
 };
 
 /* the prototypes */
-void _sql_close(struct sql_table_helper* th);
-int _sql_setparam(struct sql_table_helper* th,char* key, char* value);
-int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_value_t *value,int ordered);
-char* _find_next_separator(char* start,char separator);
-char* _find_next_separator_twice(char*start,char separator);
-char _hexcharhelper(char c);
-int _inline_unescape (char* string);
-double rrd_fetch_dbi_double(dbi_result *result,int idx);
-long rrd_fetch_dbi_long(dbi_result *result,int idx);
+static void _sql_close(struct sql_table_helper* th);
+static int _sql_setparam(struct sql_table_helper* th,char* key, char* value);
+static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_value_t *value,int ordered);
+static char* _find_next_separator(char* start,char separator);
+static char* _find_next_separator_twice(char*start,char separator);
+static char _hexcharhelper(char c);
+static int _inline_unescape (char* string);
+static double rrd_fetch_dbi_double(dbi_result *result,int idx);
+static long rrd_fetch_dbi_long(dbi_result *result,int idx);
 
 /* the real code */
 
 /* helpers to get correctly converted values from DB*/
-long rrd_fetch_dbi_long(dbi_result *result,int idx) {
+static long rrd_fetch_dbi_long(dbi_result *result,int idx) {
   char *ptmp="";
   long value=DNAN;
   /* get the attributes for this filed */
@@ -87,7 +87,7 @@ long rrd_fetch_dbi_long(dbi_result *result,int idx) {
   return value;
 }
 
-double rrd_fetch_dbi_double(dbi_result *result,int idx) {
+static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
   char *ptmp="";
   double value=DNAN;
   /* get the attributes for this filed */
@@ -144,7 +144,7 @@ double rrd_fetch_dbi_double(dbi_result *result,int idx) {
   return value;
 }
 
-void _sql_close(struct sql_table_helper* th) {
+static void _sql_close(struct sql_table_helper* th) {
   /* close only if connected */
   if (th->conn) {
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: close connection\n",time(NULL) ); }
@@ -158,7 +158,7 @@ void _sql_close(struct sql_table_helper* th) {
   }
 }
 
-int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
+static int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
   char* dbi_errstr=NULL;
   dbi_driver driver;
   /* if not connected */
@@ -200,7 +200,7 @@ int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
   return 0;
 }
 
-int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_value_t *value,int ordered) {
+static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_value_t *value,int ordered) {
   char* dbi_errstr=NULL;
   char sql[10240];
   time_t startt=0,endt=0;
@@ -269,7 +269,7 @@ int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_value_t *va
   return 1;
 }
 
-char* _find_next_separator(char* start,char separator) {
+static char* _find_next_separator(char* start,char separator) {
   char* found=strchr(start,separator);
   /* have we found it */
   if (found) {
@@ -282,7 +282,7 @@ char* _find_next_separator(char* start,char separator) {
   return NULL;
 }
 
-char* _find_next_separator_twice(char*start,char separator) {
+static char* _find_next_separator_twice(char*start,char separator) {
   char *found=start;
   /* find next separator in string*/
   while (found) {
@@ -300,7 +300,7 @@ char* _find_next_separator_twice(char*start,char separator) {
   return NULL;
 }
 
-char _hexcharhelper(char c) {
+static char _hexcharhelper(char c) {
   switch (c) {
   case '0': return 0 ; break;
   case '1': return 1 ; break;
@@ -328,7 +328,7 @@ char _hexcharhelper(char c) {
   return -1;
 }
 
-int _inline_unescape (char* string) {
+static int _inline_unescape (char* string) {
   char *src=string;
   char *dst=string;
   char c,h1,h2;
@@ -341,9 +341,15 @@ int _inline_unescape (char* string) {
       } else {
 	/* try to calculate hex value from the next 2 values*/
 	h1=_hexcharhelper(*src);
-	if (h1<0) { rrd_set_error( "string escape error at: %s\n",string);return(1); }
+	if (h1 == (char)-1) {
+	  rrd_set_error("string escape error at: %s\n",string);
+	  return(1);
+	}
 	h2=_hexcharhelper(*(src+1));
-	if (h2<0) { rrd_set_error( "string escape error at: %s\n",string);return(1); }
+	if (h1 == (char)-1) {
+	  rrd_set_error("string escape error at: %s\n",string);
+	  return(1);
+	}
 	c=h2+(h1<<4);
 	/* increase src pointer by 2 skiping 2 chars */
 	src+=2;
@@ -358,8 +364,8 @@ int _inline_unescape (char* string) {
 
 int
 rrd_fetch_fn_libdbi(
-    char           *filename,  /* name of the rrd */
-    enum cf_en     cf_idx,     /* which consolidation function ?*/
+    const char     *filename,  /* name of the rrd */
+    enum cf_en     cf_idx __attribute__((unused)), /* consolidation function */
     time_t         *start,
     time_t         *end,       /* which time frame do you want ?
 			        * will be changed to represent reality */
