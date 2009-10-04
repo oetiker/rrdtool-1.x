@@ -4004,12 +4004,7 @@ void rrd_graph_init(
 #ifdef HAVE_TZSET
     tzset();
 #endif
-#ifdef HAVE_SETLOCALE
-    setlocale(LC_TIME, "");
-#ifdef HAVE_MBSTOWCS
-    setlocale(LC_CTYPE, "");
-#endif
-#endif
+
     im->base = 1000;
     im->daemon_addr = NULL;
     im->draw_x_grid = 1;
