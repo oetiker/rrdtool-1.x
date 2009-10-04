@@ -2907,6 +2907,13 @@ static int read_options (int argc, char **argv) /* {{{ */
           return (3);
         }
 
+        if (rrd_mkdir_p (config_base_dir, 0777) != 0)
+        {
+          fprintf (stderr, "Failed to create base directory '%s': %s\n",
+              config_base_dir, rrd_strerror (errno));
+          return (3);
+        }
+
         /* make sure that the base directory is not resolved via
          * symbolic links.  this makes some performance-enhancing
          * assumptions possible (we don't have to resolve paths
