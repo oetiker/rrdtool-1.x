@@ -1673,6 +1673,9 @@ static int socket_permission_check (listen_socket_t *sock, /* {{{ */
 {
   ssize_t i;
 
+  if (sock == NULL) /* journal replay */
+    return (1);
+
   if (cmd == NULL)
     return (-1);
 
