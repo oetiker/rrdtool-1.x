@@ -67,6 +67,7 @@ Selena M Brewington <smbrewin with ichips.intel.com> add_ds
 Shane O'Donnell <shaneo with opennms.org>
 Simon Leinen <simon with switch.ch>
 Steen Linden <Steen.Linden with ebone.net>
+Sebastian Harl <sh at tokkee.org> debian packaging, rrdcached fixes and ehancements
 Stefan Ludewig <Stefan.Ludewig at exitgames.com> 1.3 WIN32 Port
 Stefan Mueller <s.mueller with computer.org> HPUX 11
 Steve Harris <steveh with wesley.com.au> AIX portability
