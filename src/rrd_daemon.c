@@ -2914,7 +2914,8 @@ static int read_options (int argc, char **argv) /* {{{ */
          */
         if (realpath(config_base_dir, base_realpath) == NULL)
         {
-          fprintf (stderr, "Invalid base directory '%s'.\n", config_base_dir);
+          fprintf (stderr, "Failed to canonicalize the base directory '%s': "
+              "%s\n", config_base_dir, rrd_strerror(errno));
           return 5;
         }
         else if (strncmp(config_base_dir,
