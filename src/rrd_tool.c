@@ -410,12 +410,13 @@ int main(
     fpsetmask(0);
 #endif
 #ifdef HAVE_LOCALE_H
+    /* initialize locale settings
+       according to localeconv(3) */       
     setlocale(LC_ALL, "");
 #endif
 
 #if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
     bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
-    bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
     textdomain(GETTEXT_PACKAGE);
 #endif
     if (argc == 1) {
