@@ -452,7 +452,12 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
                         port == NULL ? RRDCACHED_DEFAULT_PORT : port,
                         &ai_hints, &ai_res);
   if (status != 0)
-    return (status);
+  {
+    rrd_set_error ("failed to resolve address `%s' (port %s): %s",
+        addr, port == NULL ? RRDCACHED_DEFAULT_PORT : port,
+        gai_strerror (status));
+    return (-1);
+  }
 
   for (ai_ptr = ai_res; ai_ptr != NULL; ai_ptr = ai_ptr->ai_next)
   {
@@ -510,6 +515,7 @@ int rrdc_connect (const char *addr) /* {{{ */
     close_connection();
   }
 
+  rrd_clear_error ();
   if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
     status = rrdc_connect_unix (addr + strlen ("unix:"));
   else if (addr[0] == '/')
@@ -520,10 +526,18 @@ int rrdc_connect (const char *addr) /* {{{ */
   if (status == 0 && sd >= 0)
     sd_path = strdup(addr);
   else
+  {
+    char *err = rrd_test_error () ? rrd_get_error () : "Internal error";
+    /* err points the string that gets written to by rrd_set_error(), thus we
+     * cannot pass it to that function */
+    err = strdup (err);
     rrd_set_error("Unable to connect to rrdcached: %s",
                   (status < 0)
-                  ? "Internal error"
+                  ? (err ? err : "Internal error")
                   : rrd_strerror (status));
+    if (err != NULL)
+      free (err);
+  }
 
   pthread_mutex_unlock (&lock);
   return (status);
