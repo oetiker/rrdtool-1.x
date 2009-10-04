@@ -74,7 +74,7 @@ int rrd_flushcached (int argc, char **argv)
 
     /* try to connect to rrdcached */
     status = rrdc_connect(opt_daemon);
-    if (status != 0) return status;
+    if (status != 0) goto out;
 
     if (! rrdc_is_connected(opt_daemon))
     {
@@ -82,7 +82,8 @@ int rrd_flushcached (int argc, char **argv)
                 "option to set an address on the command line or set the "
                 "\"%s\" environment variable.",
                 ENV_RRDCACHED_ADDRESS);
-        return (-1);
+        status = -1;
+        goto out;
     }
 
     status = 0;
@@ -106,9 +107,10 @@ int rrd_flushcached (int argc, char **argv)
         }
     }
 
+out:
     if (opt_daemon) free(opt_daemon);
 
-    return ((status == 0) ? 0 : -1);
+    return status;
 } /* int rrd_flush */
 
 /*
