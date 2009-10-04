@@ -163,7 +163,7 @@ int rrd_fetch(
     *step = step_tmp;
 
     if (optind + 1 >= argc) {
-        rrd_set_error("not enough arguments");
+        rrd_set_error("Usage: rrdtool %s <file> <CF> [options]", argv[0]);
         return -1;
     }
 
