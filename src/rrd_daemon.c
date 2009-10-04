@@ -105,6 +105,7 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <time.h>
+#include <libgen.h>
 
 #include <glib-2.0/glib.h>
 /* }}} */
@@ -348,11 +349,31 @@ static void install_signal_handlers(void) /* {{{ */
 static int open_pidfile(char *action, int oflag) /* {{{ */
 {
   int fd;
-  char *file;
+  const char *file;
+  char *file_copy, *dir;
 
   file = (config_pid_file != NULL)
     ? config_pid_file
     : LOCALSTATEDIR "/run/rrdcached.pid";
+
+  /* dirname may modify its argument */
+  file_copy = strdup(file);
+  if (file_copy == NULL)
+  {
+    fprintf(stderr, "rrdcached: strdup(): %s\n",
+        rrd_strerror(errno));
+    return -1;
+  }
+
+  dir = dirname(file_copy);
+  if (rrd_mkdir_p(dir, 0777) != 0)
+  {
+    fprintf(stderr, "Failed to create pidfile directory '%s': %s\n",
+        dir, rrd_strerror(errno));
+    return -1;
+  }
+
+  free(file_copy);
 
   fd = open(file, oflag, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
   if (fd < 0)
@@ -2239,10 +2260,30 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   listen_socket_t *temp;
   int status;
   const char *path;
+  char *path_copy, *dir;
 
   path = sock->addr;
   if (strncmp(path, "unix:", strlen("unix:")) == 0)
     path += strlen("unix:");
+
+  /* dirname may modify its argument */
+  path_copy = strdup(path);
+  if (path_copy == NULL)
+  {
+    fprintf(stderr, "rrdcached: strdup(): %s\n",
+        rrd_strerror(errno));
+    return (-1);
+  }
+
+  dir = dirname(path_copy);
+  if (rrd_mkdir_p(dir, 0777) != 0)
+  {
+    fprintf(stderr, "Failed to create socket directory '%s': %s\n",
+        dir, rrd_strerror(errno));
+    return (-1);
+  }
+
+  free(path_copy);
 
   temp = (listen_socket_t *) rrd_realloc (listen_fds,
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
