@@ -2918,16 +2918,6 @@ static int read_options (int argc, char **argv) /* {{{ */
               "%s\n", config_base_dir, rrd_strerror(errno));
           return 5;
         }
-        else if (strncmp(config_base_dir,
-                         base_realpath, sizeof(base_realpath)) != 0)
-        {
-          fprintf(stderr,
-                  "Base directory (-b) resolved via file system links!\n"
-                  "Please consult rrdcached '-b' documentation!\n"
-                  "Consider specifying the real directory (%s)\n",
-                  base_realpath);
-          return 5;
-        }
 
         len = strlen (config_base_dir);
         while ((len > 0) && (config_base_dir[len - 1] == '/'))
@@ -2943,6 +2933,24 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
 
         _config_base_dir_len = len;
+
+        len = strlen (base_realpath);
+        while ((len > 0) && (base_realpath[len - 1] == '/'))
+        {
+          base_realpath[len - 1] = '\0';
+          len--;
+        }
+
+        if (strncmp(config_base_dir,
+                         base_realpath, sizeof(base_realpath)) != 0)
+        {
+          fprintf(stderr,
+                  "Base directory (-b) resolved via file system links!\n"
+                  "Please consult rrdcached '-b' documentation!\n"
+                  "Consider specifying the real directory (%s)\n",
+                  base_realpath);
+          return 5;
+        }
       }
       break;
 
