@@ -436,8 +436,8 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
       rrd_set_error("garbage after address: %s", port);
       return (-1);
     }
-  } /* if (*addr = ']') */
-  else if (strchr (addr, '.') != NULL) /* Hostname or IPv4 */
+  } /* if (*addr == '[') */
+  else
   {
     port = rindex(addr, ':');
     if (port != NULL)

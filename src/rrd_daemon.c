@@ -2390,8 +2390,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       fprintf (stderr, "rrdcached: Garbage after address: %s\n", port);
       return (-1);
     }
-  } /* if (*addr = ']') */
-  else if (strchr (addr, '.') != NULL) /* Hostname or IPv4 */
+  } /* if (*addr == '[') */
+  else
   {
     port = rindex(addr, ':');
     if (port != NULL)
