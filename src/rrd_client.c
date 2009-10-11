@@ -21,8 +21,8 @@
  **/
 
 #include "rrd.h"
-#include "rrd_client.h"
 #include "rrd_tool.h"
+#include "rrd_client.h"
 
 #include <stdlib.h>
 #include <string.h>
