@@ -113,7 +113,7 @@ L<rrdcgi>.
 When monitoring the state of a system, it is convenient to have the
 data available at a constant time interval. Unfortunately, you may not
 always be able to fetch data at exactly the time you want
-to. Therefore B<RRDtool> lets you update the logfile at any time you
+to. Therefore B<RRDtool> lets you update the log file at any time you
 want. It will automatically interpolate the value of the data-source
 (B<DS>) at the latest official time-slot (interval) and write this
 interpolated value to the log. The original value you have supplied is
@@ -306,7 +306,7 @@ such a port unless you are sure what you are doing.
 
 For very big setups, updating thousands of RRD files often becomes a serious IO
 problem. If you run into such problems, you might want to take a look at
-L<rrdcached>, a caching daemon for RRDTool which may help you lessen the
+L<rrdcached>, a caching daemon for RRDtool which may help you lessen the
 stress on your disks.
 
 =head1 SEE ALSO

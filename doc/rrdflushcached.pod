@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdflush - Flush the values for a spcific RRD file from memory.
+rrdflushcached - Flush the values for a spcific RRD file from memory.
 
 =head1 SYNOPSIS
 

@@ -121,11 +121,11 @@ To illustrate this here a command to create a graph that contains the actual val
 
 * Naturally you can also use any other kind of driver that libdbi supports - e.g postgres, ...
 
-* From the way the datasource is joined, it should also be possible to do joins over different tables 
+* From the way the data source is joined, it should also be possible to do joins over different tables 
   (separate tables with "," in table and add in the WHERE Clauses the table equal joins. 
   This has not been tested!!!)
 
-* It should also be relatively simple to add to the database using the same datasource string.
+* It should also be relatively simple to add to the database using the same data source string.
   This has not been implemented...
 
 * The aggregation functions are ignored and several data columns are used instead 

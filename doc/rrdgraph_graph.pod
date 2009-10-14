@@ -85,7 +85,7 @@ will all use the same magnitude unit except for zero values.
 =back
 
 If you PRINT a VDEF value, you can also print the time associated with it by appending the string
-B<:strftime> to the format. Note that rrdtool uses the strftime function of your OSs C library. This means that
+B<:strftime> to the format. Note that RRDtool uses the strftime function of your OSs C library. This means that
 the conversion specifier may vary. Check the manual page if you are uncertain. The following is a list of
 conversion specifiers usually supported across the board. 
 
@@ -148,7 +148,7 @@ The second as a decimal number (range 00 to 61).
 
 =item B<%S>
 
-The seconds since the epoch (1.1.1970) (libc dependant non standard!)
+The seconds since the epoch (1.1.1970) (libc dependent non standard!)
 
 =item B<%U>
 
@@ -352,7 +352,7 @@ right aligned, and B<\c> for centered. In the next section there is an
 example showing how to use centered formatting.
 
 B<\n> is a valid alias for B<\l> since incomplete parsing in earlier
-versions of rrdtool lead to this behavior and a number of people has been using it.
+versions of RRDtool lead to this behavior and a number of people has been using it.
 
 Normally there are two space characters inserted between every two items
 printed into the graph. The space following a string can be suppressed by
@@ -439,7 +439,7 @@ Vertical displacement, in 10000ths of an em. Can be negative for subscript, posi
 
 =item B<strikethrough_color>
 
-The color of strikethrough lines; an RGB color specification such as '#00FF00' or a color name such as 'red'
+The color of crossed out lines; an RGB color specification such as '#00FF00' or a color name such as 'red'
 
 =item B<fallback>
 
@@ -481,7 +481,7 @@ Italic
 
 =item B<s>
 
-Strikethrough
+Strike through
 
 =item B<sub>
 

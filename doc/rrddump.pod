@@ -32,7 +32,7 @@ If not specified, the XML will be printed to stdout.
 
 =item B<--header>|B<-h> {none,xsd,dtd}
 
-By default rrdtool will add a dtd header to the xml file. Here
+By default RRDtool will add a dtd header to the xml file. Here
 you can customize this to and xsd header or no header at all.
 
 
@@ -40,7 +40,7 @@ you can customize this to and xsd header or no header at all.
 
 A shortcut for S<--header=none>.
 
-If you want to restore the dump with rrdtool 1.2 you should use the
+If you want to restore the dump with RRDtool 1.2 you should use the
 S<--no-header> option since 1.2 can not deal with xml headers.
 
 =item B<--daemon> I<address>

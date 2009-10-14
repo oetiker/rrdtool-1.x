@@ -253,7 +253,7 @@ rrdtool graph image.png --imgformat=PNG \
  TICK:exceeds#aa000080:1
 
 Note: Experience has shown that a factor between 3 and 5 to scale sigma is a good 
-discriminator to detect abnormal behaviour. This obviously depends also on the type 
+discriminator to detect abnormal behavior. This obviously depends also on the type 
 of data and how "noisy" the data series is.
 
 This prediction can only be used for short term extrapolations - say a few days into the future-
@@ -352,7 +352,7 @@ Example: C<VDEF:first=mydata,FIRST>
 =item TOTAL
 
 Returns the rate from each defined time slot multiplied with the
-step size.  This can, for instance, return total bytes transfered
+step size.  This can, for instance, return total bytes transferred
 when you have logged bytes per second. The time component returns
 the number of seconds.
 

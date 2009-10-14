@@ -1,6 +1,6 @@
 =head1 NAME
 
-rrdgraph - Round Robin Database tool grapher functions
+rrdgraph - Round Robin Database tool graphing functions
 
 =head1 SYNOPSIS
 
@@ -30,10 +30,10 @@ If you want to display averages, maxima, percentiles, etcetera
 it is best to collect them now using the
 B<L<variable definition|rrdgraph_data/VDEF>> statement.
 Currently this makes no difference, but in a future version
-of rrdtool you may want to collect these values before consolidation.
+of RRDtool you may want to collect these values before consolidation.
 
 The data fetched from the B<RRA> is then B<consolidated> so that
-there is exactly one datapoint per pixel in the graph. If you do
+there is exactly one data point per pixel in the graph. If you do
 not take care yourself, B<RRDtool> will expand the range slightly
 if necessary. Note, in that case the first and/or last pixel may very
 well become unknown!
@@ -77,7 +77,7 @@ be specified in several formats, see
 L<AT-STYLE TIME SPECIFICATION|rrdfetch> and L<rrdgraph_examples>.
 By default, B<rrdtool graph> calculates the width of one pixel in
 the time domain and tries to get data from an B<RRA> with that
-resolution.  With the B<step> option you can alter this behaviour.
+resolution.  With the B<step> option you can alter this behavior.
 If you want B<rrdtool graph> to get data at a one-hour resolution
 from the B<RRD>, set B<step> to 3'600. Note: a step smaller than
 one pixel will silently be ignored.
@@ -117,7 +117,7 @@ the graph.
 [B<-r>|B<--rigid>]
 
 By default the graph will be autoscaling so that it will adjust the
-y-axis to the range of the data. You can change this behaviour by
+y-axis to the range of the data. You can change this behavior by
 explicitly setting the limits. The displayed y-axis will then range at
 least from B<lower-limit> to B<upper-limit>. Autoscaling will still
 permit those boundaries to be stretched unless the B<rigid> option is
@@ -151,12 +151,12 @@ and thus the throughput may be higher than the WAN line speed.
 
 [B<-N>|B<--no-gridfit>]
 
-In order to avoid anti-aliasing blurring effects rrdtool snaps
+In order to avoid anti-aliasing blurring effects RRDtool snaps
 points to device resolution pixels, this results in a crisper
 appearance. If this is not to your liking, you can use this switch
-to turn this behaviour off.
+to turn this behavior off.
 
-Gridfitting is turned off for PDF, EPS, SVG output by default.
+Grid-fitting is turned off for PDF, EPS, SVG output by default.
 
 =head2 X-Axis
 
@@ -165,7 +165,7 @@ Gridfitting is turned off for PDF, EPS, SVG output by default.
 [B<-x>|B<--x-grid> B<none>]
 
 The x-axis label is quite complex to configure. If you don't have
-very special needs it is probably best to rely on the autoconfiguration
+very special needs it is probably best to rely on the auto configuration
 to get this right. You can specify the string C<none> to suppress the grid
 and labels altogether.
 
@@ -234,13 +234,13 @@ display the y-axis values in u (Micro, 10e-6, millionths).  Use a value
 of 0 to prevent any scaling of the y-axis values.
 
 This option is very effective at confusing the heck out of the default
-rrdtool autoscaler and grid painter. If rrdtool detects that it is not
+RRDtool autoscaling function and grid painter. If RRDtool detects that it is not
 successful in labeling the graph under the given circumstances, it will switch
 to the more robust B<--alt-y-grid> mode.
 
 [B<-L>|B<--units-length> I<value>]
 
-How many digits should rrdtool assume the y-axis labels to be? You
+How many digits should RRDtool assume the y-axis labels to be? You
 may have to use this option to make enough space once you start
 fiddling with the y-axis labeling.
 
@@ -261,8 +261,8 @@ for the right axis.
 
 [B<--right-axis-format> I<format-string>]
 
-By default the format of the axis lables gets determined automatically. If
-you want todo this your self, use this option with the same %lf arguments
+By default the format of the axis labels gets determined automatically. If
+you want to do this your self, use this option with the same %lf arguments
 you know from the PRING and GPRINT commands.
 
 =head2 Legend
@@ -275,7 +275,7 @@ Suppress generation of the legend; only render the graph.
 
 Force the generation of HRULE and VRULE legends even if those HRULE or
 VRULE will not be drawn because out of graph boundaries (mimics
-behaviour of pre 1.0.42 versions).
+behavior of pre 1.0.42 versions).
 
 [B<--legend-position>=(north|south|west|east)]
 
@@ -294,9 +294,9 @@ stack of lines or areas.
 
 Only generate the graph if the current graph is out of date or not existent.
 Note, that all the calculations will happen regardless so that the output of
-PRINT and graphv will be complete regardless. Note that the behaviour of
+PRINT and graphv will be complete regardless. Note that the behavior of
 lazy in this regard has seen several changes over time. The only thing you
-can realy rely on before rrdtool 1.3.7 is that lazy will not generate the
+can really rely on before RRDtool 1.3.7 is that lazy will not generate the
 graph when it is already there and up to date, and also that it will output
 the size of the graph. 
 
@@ -385,11 +385,11 @@ may be absent.
 
 There are 3 font render modes:
 
-B<normal>: Full Hinting and Antialiasing (default)
+B<normal>: Full Hinting and Anti-aliasing (default)
 
-B<light>: Slight Hinting and Antialiasing
+B<light>: Slight Hinting and Anti-aliasing
 
-B<mono>: Full Hinting and NO Antialiasing
+B<mono>: Full Hinting and NO Anti-aliasing
 
 
 [B<-B>|B<--font-smoothing-threshold> I<size>]
@@ -402,7 +402,7 @@ no text is rendered bitmapped.
 
 [B<-P>|B<--pango-markup>]
 
-All text in rrdtool is rendered using Pango. With the B<--pango-markup> option, all
+All text in RRDtool is rendered using Pango. With the B<--pango-markup> option, all
 text will be processed by pango markup. This allows to embed some simple html
 like markup tags using 
 
@@ -426,9 +426,9 @@ More details on L<http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat
 
 There are 2 render modes:
 
-B<normal>: Graphs are fully Antialiased (default)
+B<normal>: Graphs are fully Anti-aliased (default)
 
-B<mono>: No Antialiasing
+B<mono>: No Anti-aliasing
 
 [B<-E>|B<--slope-mode>]
 
@@ -485,8 +485,8 @@ See L<rrdgraph_graph> for the exact format.
 
 =head2 graphv
 
-Calling rrdtool with the graphv option will return information in the
-rrdtool info format. On the command line this means that all output will be
+Calling RRDtool with the graphv option will return information in the
+RRDtool info format. On the command line this means that all output will be
 in key=value format. When used from the Perl and Ruby bindings a hash
 pointer will be returned from the call.
 

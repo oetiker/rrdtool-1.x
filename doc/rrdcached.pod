@@ -29,7 +29,7 @@ work with up-to-date data.
 
 The daemon was written with big setups in mind. Those setups usually run into
 IOE<nbsp>related problems sooner or later for reasons that are beyond the scope
-of this document. Check the wiki at the RRDTool homepage for details. Also
+of this document. Check the wiki at the RRDtool homepage for details. Also
 check L<SECURITY CONSIDERATIONS> below before using this daemon! A detailed
 description of how the daemon operates can be found in the L<HOW IT WORKS>
 section below.

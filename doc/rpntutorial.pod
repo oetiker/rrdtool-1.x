@@ -102,7 +102,7 @@ with "A":
  2) A,10,input,IF            eval is A,10,input,IF
 
 read "if A then 10 else input".  Now replace A with it's verbose
-description again and--voila!--you have a easily readable description
+description again and--voila!--you have an easily readable description
 of the expression:
 
  if input > 10 then 10 else input

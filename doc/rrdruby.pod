@@ -69,9 +69,9 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  puts
 
 If you use the B<--ruby-site-install> configure option you can drop the $:
-line since the rrdtool module will be found automatically.
+line since the RRDtool module will be found automatically.
 
-If rrdtool runs into trouble, it will throw an exception which you might
+If RRDtool runs into trouble, it will throw an exception which you might
 want to catch.
 
 =head1 SEE ALSO

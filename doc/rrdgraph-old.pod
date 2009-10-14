@@ -78,7 +78,7 @@ documentation for a detailed explanation of ways to specify time.
 =item B<-x>|B<--x-grid> I<x-axis grid and label> (default autoconfigure)
 
 The x-axis label is quite complex to configure. So if you don't have
-very special needs, you can rely on the autoconfiguration to get this
+very special needs, you can rely on the auto configuration to get this
 right.
 
 If you want no x-grid at all, use the magic setting B<none>.
@@ -115,7 +115,7 @@ you make sure that this happens.
 =item B<-y>|B<--y-grid> I<grid step>:I<label factor> (default autoconfigure)
 
 Makes vertical grid lines appear at I<grid step> interval. Every
-I<label factor> gridstep, a major grid line is printed, along with
+I<label factor> grid step, a major grid line is printed, along with
 label showing the value of the grid line.
 
 If you want no y-grid at all set specify the magic word B<none>.

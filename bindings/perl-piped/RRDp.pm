@@ -42,7 +42,7 @@ start RRDtool. The argument must be the path to the RRDtool executable
 
 =item B<RRDp::cmd> I<rrdtool commandline>
 
-pass commands on to RRDtool. check the RRDtool documentation for
+pass commands on to RRDtool. Check the RRDtool documentation for
 more info on the RRDtool commands.
 
 B<Note>: Due to design limitations, B<RRDp::cmd> does not support the
@@ -69,7 +69,7 @@ running, System time is the time spend in system calls and real time
 is the total time RRDtool has been running.
 
 The difference between user + system and real is the time spent
-waiting for things like the hard disk and new input from the perl
+waiting for things like the hard disk and new input from the Perl
 script.
 
 =item B<$RRDp::error_mode> and B<$RRDp::error>

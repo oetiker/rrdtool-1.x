@@ -62,9 +62,9 @@ Please refer to the other B<rrdtool> documentation for functions and valid argum
                  'RRA:AVERAGE:0.5:6:10' )
 
 If you use the B<site-python-install> make target you can drop to first sys.path.append
-line since the rrdtool module will be available everywhere.
+line since the RRDtool module will be available everywhere.
 
-If rrdtool runs into trouble, it will throw an exception which you might want to catch.
+If RRDtool runs into trouble, it will throw an exception which you might want to catch.
 
 =head1 SEE ALSO
 

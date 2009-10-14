@@ -4,7 +4,7 @@ rrdbuild - Instructions for building RRDtool
 
 =head1 OVERVIEW
 
-If you downloaded the source of rrdtool you have to compile it. This
+If you downloaded the source of RRDtool you have to compile it. This
 document will give some information on how this is done.
 
 RRDtool relies on services of third part libraries. Some of these libraries
@@ -68,9 +68,9 @@ B<configure> complaining about several missing libraries.
 If your OS lets you install additional packages from a software repository,
 you may get away with installing the missing packages. When the packages are
 installed, run configure again and try to compile again. Below you find some
-hints on getting your OS ready for the rrdtool compilation. 
+hints on getting your OS ready for compiling RRDtool.
 
-Additions to this list are welcome. In general rrdtool should work with the
+Additions to this list are welcome. In general RRDtool should work with the
 latest versions of the libraries. The versions listed here are just what was
 current when I tested this.
 
@@ -88,7 +88,7 @@ fix this:
 
  perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
 
-Make sure rrdtool finds your new compiler
+Make sure the RRDtool build system finds your new compiler
 
  export PATH=/opt/SunStudioExpress/bin
 
@@ -108,10 +108,10 @@ of packages will get added through dependencies.
 
 =head2 Gentoo
 
-In Gentoo installing rrdtool is really simple you just need to B<emerge
+In Gentoo installing RRDtool is really simple you just need to B<emerge
 rrdtool>. All dependencies will be handled automatically by the portage
 system. The only thing you should care about are USE flags, which allow you
-fine tune features rrdtool will be built with. Currently the following USE
+fine tune features RRDtool will be built with. Currently the following USE
 flags are available:
 
  doc    - install .html and .txt documentation
@@ -143,10 +143,10 @@ expectations, so you may want to compile their latest versions.
 
 If you are working with AIX, you may find the B<--disable-shared> option
 will cause things to break for you. In that case you may have to install the
-shared libraries into the rrdtool PREFIX and work with B<--disable-static>
+shared libraries into the RRDtool PREFIX and work with B<--disable-static>
 instead.
 
-Another hint to get rrdtool working on AIX is to use the IBM XL C Compiler:
+Another hint to get RRDtool working on AIX is to use the IBM XL C Compiler:
 
  export CC=/usr/vac/bin/cc
  export PERLCC=$CC
@@ -341,7 +341,7 @@ are running, the syntax for setting environment variables is different.
 
 And finally try building again. We disable the python and tcl bindings
 because it seems that a fair number of people have ill configured python and
-tcl setups that would prevent rrdtool from building if they are included in
+tcl setups that would prevent RRDtool from building if they are included in
 their current state.
 
  cd $BUILD_DIR/rrdtool-1.3.2

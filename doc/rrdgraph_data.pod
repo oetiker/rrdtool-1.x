@@ -24,7 +24,7 @@ C<A-Z, a-z, 0-9, -,_> and a maximum length of 255 characters.
 
 When picking variable names, make sure you do not choose a name that is
 already taken by an RPN operator. A safe bet it to use lowercase or
-mixedcase names for variables since operators will always be in uppercase.
+mixed case names for variables since operators will always be in uppercase.
 
 =head1 DEF
 
@@ -50,7 +50,7 @@ image with width 400 and time span 400*1800 seconds (use appropriate
 start and end times, such as C<--start end-8days8hours>).
 
 If consolidation needs to be done, the B<CF> of the B<RRA> specified in the
-B<DEF> itself will be used to reduce the data density. This behaviour can
+B<DEF> itself will be used to reduce the data density. This behavior can
 be changed using C<:reduce=I<E<lt>B<CF>E<gt>>>.  This optional parameter
 specifies the B<CF> to use during the data reduction phase.
 
@@ -116,7 +116,7 @@ maximum value during the graph period).
 
 If you want to apply 'complex' operations to the result of a VDEF you have
 to use a CDEF again since VDEFs only look like RPN expressions, they aren't
-realy.
+really.
 
 =head1 SEE ALSO
 
