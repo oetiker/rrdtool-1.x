@@ -90,7 +90,7 @@ transferred from and to a network or a computer.  But it can also be
 used to display tidal waves, solar radiation, power consumption,
 number of visitors at an exhibition, noise levels near an airport,
 temperature on your favorite holiday location, temperature in the
-fridge and whatever you imagination can come up with.
+fridge and whatever your imagination can come up with.
 
 You only need a sensor to measure the data and be able to feed the
 numbers into RRDtool. RRDtool then lets you create a database, store
