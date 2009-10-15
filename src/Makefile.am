@@ -77,7 +77,7 @@ lib_LTLIBRARIES           += librrd_th.la
 endif
 
 librrdupd_la_SOURCES      = $(UPD_C_FILES) rrd_not_thread_safe.c
-librrdupd_la_LIBADD       = $(CORE_LIBS) @LIB_LIBINTL@
+librrdupd_la_LIBADD       = $(CORE_LIBS)
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
 librrd_la_DEPENDENCIES    = librrdupd.la librrd.sym
