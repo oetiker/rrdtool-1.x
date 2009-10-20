@@ -1138,6 +1138,7 @@ int rrd_restore(
     char **argv)
 {
     rrd_t    *rrd;
+    char*    old_locale;
 
 #ifdef WIN32
     srand((unsigned int) time(NULL));
@@ -1185,7 +1186,16 @@ int rrd_restore(
         return (-1);
     }
 
+#ifdef HAVE_SETLOCALE
+    old_locale = setlocale(LC_NUMERIC, "C");
+#endif
+
     rrd = parse_file(argv[optind]);
+
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_NUMERIC, old_locale);
+#endif
+
     if (rrd == NULL)
         return (-1);
 
