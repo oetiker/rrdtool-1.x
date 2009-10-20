@@ -1214,7 +1214,7 @@ int rrd_restore(
     char **argv)
 {
     rrd_t    *rrd;
-
+    char     *old_locale;
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -1256,7 +1256,16 @@ int rrd_restore(
         return (-1);
     }
 
+#ifdef HAVE_SETLOCALE
+    old_locale = setlocale(LC_NUMERIC, "C");
+#endif
+
     rrd = parse_file(argv[optind]);
+
+#ifdef HAVE_SETLOCALE
+    setlocale(LC_NUMERIC, old_locale);
+#endif
+
     if (rrd == NULL)
         return (-1);
     
