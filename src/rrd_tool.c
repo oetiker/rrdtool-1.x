@@ -29,7 +29,6 @@ int       CountArgs(
 int       CreateArgs(
     char *,
     char *,
-    int,
     char **);
 int       HandleInputLine(
     int,
@@ -468,24 +467,21 @@ int main(
         }
 
         while (fgetslong(&aLine, stdin)) {
+            char *aLineOrig = aLine;
             if ((argc = CountArgs(aLine)) == 0) {
                 free(aLine);
                 printf("ERROR: not enough arguments\n");
+                continue;                
             }
             if ((myargv = (char **) malloc((argc + 1) *
                                            sizeof(char *))) == NULL) {
                 perror("malloc");
                 exit(1);
             }
-            if ((argc = CreateArgs(argv[0], aLine, argc, myargv)) < 0) {
-                free(aLine);
-                free(myargv);
+            if ((argc = CreateArgs(argv[0], aLine, myargv)) < 0) {
                 printf("ERROR: creating arguments\n");
             } else {
-                int       ret = HandleInputLine(argc, myargv, stdout);
-
-                free(myargv);
-                if (ret == 0) {
+                if ( HandleInputLine(argc, myargv, stdout) == 0 ){
 #if HAVE_GETRUSAGE
                     getrusage(RUSAGE_SELF, &myusage);
                     gettimeofday(&currenttime, NULL);
@@ -504,7 +500,8 @@ int main(
                 }
             }
             fflush(stdout); /* this is important for pipes to work */
-            free(aLine);
+            free(myargv);
+            free(aLineOrig);
         }
     } else if (argc == 2) {
         PrintUsage(argv[1]);
@@ -857,7 +854,6 @@ int CountArgs(
 int CreateArgs(
     char *pName,
     char *aLine,
-    int argc,
     char **argv)
 {
     char     *getP, *putP;
@@ -865,6 +861,7 @@ int CreateArgs(
     char      Quote = 0;
     int       inArg = 0;
     int       len;
+    int       argc = 1;
 
     len = strlen(aLine);
     /* remove trailing space and newlines */
