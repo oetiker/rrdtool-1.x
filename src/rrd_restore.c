@@ -14,7 +14,7 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/xmlreader.h>
-
+#include <locale.h>
 
 #ifndef WIN32
 #	include <unistd.h>     /* for off_t */
