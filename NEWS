@@ -16,6 +16,7 @@ updates before writing them to the actual rrd file. When calling rrdtool
 graph in such a setup, the command will tell the daemon to flush out all
 pending updates for the rrd files, required to draw the graph.
 
+See rrdcached documentation.
 
 RRD Dumping and Restoring (rrdtool dump/restore)
 ------------------------------------------------
@@ -41,7 +42,7 @@ by Martin Sperl
   required for HoltWinters.
 
 * LibDBI integration provides a path to read data directly of a supported
-  SQL database into rrdtool graph.
+  SQL database into rrdtool graph. See rrdgraph_libdbi documentation.
 
 Miscellaneous Changes
 ---------------------
