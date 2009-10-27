@@ -18,9 +18,8 @@
 #include "rrd_xport.h"
 #include "rrd_i18n.h"
 
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
+
 
 void      PrintUsage(
     char *cmd);
@@ -408,11 +407,10 @@ int main(
 #ifdef MUST_DISABLE_FPMASK
     fpsetmask(0);
 #endif
-#ifdef HAVE_LOCALE_H
+
     /* initialize locale settings
        according to localeconv(3) */       
     setlocale(LC_ALL, "");
-#endif
 
 #if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
     bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);

@@ -25,13 +25,9 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif
 
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 #include "rrd_graph.h"
 #include "rrd_client.h"

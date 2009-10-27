@@ -45,9 +45,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
 
-#ifdef HAVE_LOCALE_H
 #include <locale.h>
-#endif
 
 #if !(defined(NETWARE) || defined(WIN32))
 extern char *tzname[2];
@@ -105,9 +103,8 @@ int rrd_dump_cb_r(
         return (-1);
     }
 
-#ifdef HAVE_SETLOCALE
     old_locale = setlocale(LC_NUMERIC, "C");
-#endif
+
 
     if (opt_header == 1) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -451,9 +448,7 @@ int rrd_dump_cb_r(
 
     rrd_free(&rrd);
 
-#ifdef HAVE_SETLOCALE
     setlocale(LC_NUMERIC, old_locale);
-#endif
 
     return rrd_close(rrd_file);
 
