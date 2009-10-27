@@ -3897,9 +3897,10 @@ rrd_info_t *rrd_graph_v(
 {
     image_desc_t im;
     rrd_info_t *grinfo;
+    char *old_locale;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
-
+    old_locale = setlocale(LC_NUMERIC, "C");
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
@@ -3929,6 +3930,8 @@ rrd_info_t *rrd_graph_v(
     }
 
     rrd_graph_script(argc, argv, &im, 1);
+    setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
+
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
         im_free(&im);
@@ -4120,7 +4123,6 @@ void rrd_graph_options(
     long      long_tmp;
     rrd_time_value_t start_tv, end_tv;
     long unsigned int color;
-    char     *old_locale = "";
 
     /* defines for long options without a short equivalent. should be bytes,
        and may not collide with (the ASCII value of) short options */
@@ -4252,7 +4254,6 @@ void rrd_graph_options(
         case LONGOPT_UNITS_SI:
             if (im->extra_flags & FORCE_UNITS) {
                 rrd_set_error("--units can only be used once!");
-                setlocale(LC_NUMERIC, old_locale);
                 return;
             }
             if (strcmp(optarg, "si") == 0)
@@ -4270,14 +4271,10 @@ void rrd_graph_options(
             im->forceleftspace = 1;
             break;
         case 'T':
-            old_locale = setlocale(LC_NUMERIC, "C");
             im->tabwidth = atof(optarg);
-            setlocale(LC_NUMERIC, old_locale);
             break;
         case 'S':
-            old_locale = setlocale(LC_NUMERIC, "C");
             im->step = atoi(optarg);
-            setlocale(LC_NUMERIC, old_locale);
             break;
         case 'N':
             im->gridfit = 0;
@@ -4341,9 +4338,7 @@ void rrd_graph_options(
                 im->draw_y_grid = 0;
                 break;
             };
-            old_locale = setlocale(LC_NUMERIC, "C");
             if (sscanf(optarg, "%lf:%d", &im->ygridstep, &im->ylabfact) == 2) {
-                setlocale(LC_NUMERIC, old_locale);
                 if (im->ygridstep <= 0) {
                     rrd_set_error("grid step must be > 0");
                     return;
@@ -4352,7 +4347,6 @@ void rrd_graph_options(
                     return;
                 }
             } else {
-                setlocale(LC_NUMERIC, old_locale);
                 rrd_set_error("invalid y-grid format");
                 return;
             }
@@ -4401,14 +4395,10 @@ void rrd_graph_options(
             im->ylegend[150] = '\0';
             break;
         case 'u':
-            old_locale = setlocale(LC_NUMERIC, "C");
             im->maxval = atof(optarg);
-            setlocale(LC_NUMERIC, old_locale);
             break;
         case 'l':
-            old_locale = setlocale(LC_NUMERIC, "C");
             im->minval = atof(optarg);
-            setlocale(LC_NUMERIC, old_locale);
             break;
         case 'b':
             im->base = atol(optarg);
@@ -4513,11 +4503,9 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            old_locale = setlocale(LC_NUMERIC, "C");
             if (sscanf(optarg, "%10[A-Z]:%lf%n", prop, &size, &end) >= 2) {
                 int       sindex, propidx;
 
-                setlocale(LC_NUMERIC, old_locale);
                 if ((sindex = text_prop_conv(prop)) != -1) {
                     for (propidx = sindex;
                          propidx < TEXT_PROP_LAST; propidx++) {
@@ -4544,16 +4532,13 @@ void rrd_graph_options(
                     return;
                 }
             } else {
-                setlocale(LC_NUMERIC, old_locale);
                 rrd_set_error("invalid text property format");
                 return;
             }
             break;
         }
         case 'm':
-            old_locale = setlocale(LC_NUMERIC, "C");
             im->zoom = atof(optarg);
-            setlocale(LC_NUMERIC, old_locale);
             if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
@@ -4776,12 +4761,9 @@ int vdef_parse(
     double    param;
     char      func[30];
     int       n;
-    char     *old_locale;
 
     n = 0;
-    old_locale = setlocale(LC_NUMERIC, "C");
     sscanf(str, "%le,%29[A-Z]%n", &param, func, &n);
-    setlocale(LC_NUMERIC, old_locale);
     if (n == (int) strlen(str)) {   /* matched */
         ;
     } else {
