@@ -336,6 +336,14 @@ multiple defaults.
 
 A green arrow is made by: C<--color ARROW#00FF00>
 
+[B<--grid-dash> I<on>B<:>I<off>]
+
+by default the grid is drawn in a 1 on, 1 off pattern. With this option you can set this yourself
+
+ --grid-dash 1:3    for a dot grid
+ 
+ --grid-dash 1:0    for uninterrupted grid lines
+
 [B<--border> I<width>]]
 
 Width in pixels for the 3d border drawn around the image. Default 2, 0

@@ -4178,6 +4178,7 @@ void rrd_graph_options(
         { "legend-position",    required_argument, 0, 1005},
         { "legend-direction",   required_argument, 0, 1006},
         { "border",             required_argument, 0, 1007},
+        { "grid-dash",          required_argument, 0, 1008},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4359,6 +4360,15 @@ void rrd_graph_options(
         case 1007:
             im->draw_3d_border = atoi(optarg);
             break;
+        case 1008: /* grid-dash */
+            if(sscanf(optarg,
+                      "%lf:%lf",
+                      &im->grid_dash_on,
+                      &im->grid_dash_off) != 2) {
+                rrd_set_error("expected grid-dash format float:float");
+                return;
+            }
+            break;            
         case 1002: /* right y axis */
 
             if(sscanf(optarg,
