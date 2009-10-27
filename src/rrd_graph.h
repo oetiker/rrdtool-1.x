@@ -5,15 +5,15 @@
 #define y1 cairo_y1
 #define index cairo_index
 
+/* this may configure __EXTENSIONS__ without which pango will fail to compile
+   so load this early */
+#include "../rrd_config.h"
+
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-svg.h>
 #include <cairo-ps.h>
 
-/* without this will not compile on solaris */
-#ifndef __EXTENSIONS__
-#define __EXTENSIONS__
-#endif
 #include <pango/pangocairo.h>
 
 

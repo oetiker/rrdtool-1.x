@@ -85,7 +85,7 @@ AH_BOTTOM([
 #  include <malloc/malloc.h>
 #endif
 
-#include <rrd_config_bottom.h>
+#include "src/rrd_config_bottom.h"
 
 #endif
 ])
@@ -223,6 +223,12 @@ dnl check for fdatasync. Solaris has fdatasync in the librt
 AC_CHECK_FUNCS(fdatasync, [],  AC_CHECK_LIB(rt, fdatasync, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_FDATASYNC)],[]))
 dnl if there is no fdatasync we may get lucky with fsync
 AC_CHECK_FUNCS(fsync)
+
+dnl check for socket and nsl solaris again ... we need this for the new rrd_daemon stuff
+
+AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
+AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
+
 
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?

@@ -9,6 +9,9 @@
  * $Id$
  *************************************************************************** */
 
+#include "rrd_tool.h"
+#include "rrd_rpncalc.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,8 +33,6 @@
 # define close _close
 #endif
 
-#include "rrd_tool.h"
-#include "rrd_rpncalc.h"
 
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof ((a)[0]))
 
@@ -277,12 +278,7 @@ static int get_xml_double(
     
     xmlChar *text;
     double temp;    
-    if ((text = (char *)get_xml_text(reader))!= NULL){
-        char *c = text;
-        while (c){
-            *c=tolower((unsigned char)(*c));
-            c++;
-        }
+    if ((text = get_xml_text(reader))!= NULL){
         if (xmlStrcasestr(text,(xmlChar *)"nan")){
             *value = DNAN;
             xmlFree(text);
