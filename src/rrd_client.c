@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <assert.h>
 #include <pthread.h>
@@ -33,6 +34,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netdb.h>
+#include <limits.h>
 
 #ifndef ENODATA
 #define ENODATA ENOENT

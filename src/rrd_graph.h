@@ -9,6 +9,11 @@
 #include <cairo-pdf.h>
 #include <cairo-svg.h>
 #include <cairo-ps.h>
+
+/* without this will not compile on solaris */
+#ifndef __EXTENSIONS__
+#define __EXTENSIONS__
+#endif
 #include <pango/pangocairo.h>
 
 

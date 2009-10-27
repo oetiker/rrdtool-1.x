@@ -275,21 +275,26 @@ static int get_xml_double(
     double *value)
 {
     
-    char *text;
+    xmlChar *text;
     double temp;    
     if ((text = (char *)get_xml_text(reader))!= NULL){
-        if (strcasestr(text,"nan")){
+        char *c = text;
+        while (c){
+            *c=tolower((unsigned char)(*c));
+            c++;
+        }
+        if (xmlStrcasestr(text,(xmlChar *)"nan")){
             *value = DNAN;
             xmlFree(text);
             return 0;            
         }
-        else if (strcasestr(text,"-inf")){
+        else if (xmlStrcasestr(text,(xmlChar *)"-inf")){
             *value = -DINF;
             xmlFree(text);
             return 0;            
         }
-        else if (strcasestr(text,"+inf")
-                 || strcasestr(text,"inf")){
+        else if (xmlStrcasestr(text,(xmlChar *)"+inf")
+                 || xmlStrcasestr(text,(xmlChar *)"inf")){
             *value = DINF;
             xmlFree(text);
             return 0;            
