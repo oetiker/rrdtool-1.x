@@ -1312,7 +1312,8 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   cache_item_t *ci;
 
   /* save it for the journal later */
-  strncpy(orig_buf, buffer, sizeof(orig_buf)-1);
+  if (sock != NULL)
+    strncpy(orig_buf, buffer, buffer_size);
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
