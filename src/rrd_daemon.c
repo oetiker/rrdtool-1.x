@@ -265,6 +265,7 @@ static uint64_t stats_journal_rotate = 0;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Journaled updates */
+#define JOURNAL_REPLAY(s) ((s) == NULL)
 #define JOURNAL_BASE "rrd.journal"
 static journal_set *journal_cur = NULL;
 static journal_set *journal_old = NULL;
@@ -528,7 +529,7 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
   char buffer[CMD_MAX];
   int len;
 
-  if (sock == NULL) return 0; /* journal replay mode */
+  if (JOURNAL_REPLAY(sock)) return 0;
   if (sock->batch_start) return 0; /* no extra info returned when in BATCH */
 
   va_start(argp, fmt);
@@ -575,7 +576,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
   ssize_t wrote;
   int rclen, len;
 
-  if (sock == NULL) return rc;  /* journal replay mode */
+  if (JOURNAL_REPLAY(sock)) return rc;
 
   if (sock->batch_start)
   {
@@ -1043,7 +1044,7 @@ static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
   assert(file != NULL);
 
   if (!config_write_base_only
-      || sock == NULL /* journal replay */
+      || JOURNAL_REPLAY(sock)
       || config_base_dir == NULL)
     return 1;
 
@@ -1272,7 +1273,7 @@ static int handle_request_forget(HANDLER_PROTO) /* {{{ */
 
   if (found == TRUE)
   {
-    if (sock != NULL)
+    if (!JOURNAL_REPLAY(sock))
       journal_write("forget", file);
 
     return send_response(sock, RESP_OK, "Gone!\n");
@@ -1312,7 +1313,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   cache_item_t *ci;
 
   /* save it for the journal later */
-  if (sock != NULL)
+  if (!JOURNAL_REPLAY(sock))
     strncpy(orig_buf, buffer, buffer_size);
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
@@ -1398,7 +1399,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   assert (ci != NULL);
 
   /* don't re-write updates in replay mode */
-  if (sock != NULL)
+  if (!JOURNAL_REPLAY(sock))
     journal_write("update", orig_buf);
 
   while (buffer_size > 0)
@@ -1674,7 +1675,7 @@ static int socket_permission_check (listen_socket_t *sock, /* {{{ */
 {
   ssize_t i;
 
-  if (sock == NULL) /* journal replay */
+  if (JOURNAL_REPLAY(sock))
     return (1);
 
   if (cmd == NULL)
@@ -1713,7 +1714,7 @@ static int socket_permission_add (listen_socket_t *sock, /* {{{ */
 /* check whether commands are received in the expected context */
 static int command_check_context(listen_socket_t *sock, command_t *cmd)
 {
-  if (sock == NULL)
+  if (JOURNAL_REPLAY(sock))
     return (cmd->context & CMD_CONTEXT_JOURNAL);
   else if (sock->batch_start)
     return (cmd->context & CMD_CONTEXT_BATCH);
@@ -1765,7 +1766,6 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
   return send_response(sock, RESP_OK, resp_txt);
 } /* }}} int handle_request_help */
 
-/* if sock==NULL, we are in journal replay mode */
 static int handle_request (DISPATCH_PROTO) /* {{{ */
 {
   char *buffer_ptr = buffer;
