@@ -30,8 +30,8 @@ work with up-to-date data.
 The daemon was written with big setups in mind. Those setups usually run into
 IOE<nbsp>related problems sooner or later for reasons that are beyond the scope
 of this document. Check the wiki at the RRDtool homepage for details. Also
-check L<SECURITY CONSIDERATIONS> below before using this daemon! A detailed
-description of how the daemon operates can be found in the L<HOW IT WORKS>
+check L</"SECURITY CONSIDERATIONS"> below before using this daemon! A detailed
+description of how the daemon operates can be found in the L</"HOW IT WORKS">
 section below.
 
 =head1 OPTIONS
@@ -43,7 +43,7 @@ section below.
 Tells the daemon to bind to I<address> and accept incoming connections on that
 socket. If I<address> begins with C<unix:>, everything following that prefix is
 interpreted as the path to a UNIX domain socket. Otherwise the address or node
-name are resolved using L<getaddrinfo>.
+name are resolved using getaddrinfo.
 
 For network sockets, a port may be specified by using the form
 C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
@@ -204,27 +204,47 @@ containing C<../> will also be blocked.
 The following commands may be made aware of the B<rrdcached> using the command
 line argument B<--daemon> or the environment variable B<RRDCACHED_ADDRESS>:
 
-=over 4
+=over
 
-=item B<dump>
+=item *
 
-=item B<fetch>
+dump
 
-=item B<flush>
+=item *
 
-=item B<graph>
+fetch
 
-=item B<graphv>
+=item *
 
-=item B<info>
+flush
 
-=item B<last>
+=item *
 
-=item B<lastupdate>
+graph
 
-=item B<update>
+=item *
 
-=item B<xport>
+graphv
+
+=item *
+
+info
+
+=item *
+
+last
+
+=item *
+
+lastupdate
+
+=item *
+
+update
+
+=item *
+
+xport
 
 =back
 
@@ -239,7 +259,7 @@ The daemon reports errors in one of two ways: During startup, error messages
 are printed to C<STDERR>. One of the steps when starting up is to fork to the
 background and closing C<STDERR> - after this writing directly to the user is
 no longer possible. Once this has happened, the daemon will send log messages
-to the system logging daemon using L<syslog(3)>. The facility used is
+to the system logging daemon using syslog(3). The facility used is
 C<LOG_DAEMON>.
 
 =head1 HOW IT WORKS
@@ -254,7 +274,7 @@ diagram below) are appended to the tree node.
 When appending a value to a tree node, it is checked whether it's time to write
 the values to disk. Values are written to disk if
 S<C<now() - First E<gt>= timeout>>, where C<timeout> is the timeout specified
-using the B<-w> option, see L<OPTIONS>. If the values are "old enough" they
+using the B<-w> option, see L</OPTIONS>. If the values are "old enough" they
 will be enqueued in the "update queue", i.E<nbsp>e. they will be appended to
 the linked list shown below.  Because the tree nodes and the elements of the
 linked list are the same data structures in memory, any update to a file that
@@ -404,7 +424,7 @@ You have been warned.
 
 The daemon communicates with clients using a line based ASCII protocol which is
 easy to read and easy to type. This makes it easy for scripts to implement the
-protocol and possible for users to use L<telnet> to connect to the daemon
+protocol and possible for users to use telnet to connect to the daemon
 and test stuff "by hand".
 
 The protocol is line based, this means that each record consists of one or more
@@ -415,7 +435,7 @@ C<E<lt>LFE<gt>> ("line feed").
 After the connection has been established, the client is expected to send a
 "command". A command consists of the command keyword, possibly some arguments,
 and a terminating newline character. For a list of commands, see
-L<Valid Commands> below.
+L</"Valid Commands"> below.
 
 Example:
 
@@ -481,7 +501,7 @@ commands and usage summaries are returned is not well defined.
 
 Returns a list of metrics which can be used to measure the daemons performance
 and check its status. For a description of the values returned, see
-L<Performance Values> below.
+L</"Performance Values"> below.
 
 The format in which the values are returned is similar to many other line based
 protocols: Each value is printed on a separate line, each consisting of the
@@ -503,7 +523,7 @@ Example:
 =item B<UPDATE> I<filename> I<values> [I<values> ...]
 
 Adds more data to a filename. This is B<the> operation the daemon was designed
-for, so describing the mechanism again is unnecessary. Read L<HOW IT WORKS>
+for, so describing the mechanism again is unnecessary. Read L</"HOW IT WORKS">
 above for a detailed explanation.
 
 Note that rrdcached only accepts absolute timestamps in the update values.
@@ -631,8 +651,9 @@ L<rrdtool>, L<rrdgraph>
 
 =head1 AUTHOR
 
-B<rrdcached> and this manual page have been written by Florian Forster
-E<lt>octoE<nbsp>atE<nbsp>verplant.orgE<gt>.
+Florian Forster E<lt>octoE<nbsp>atE<nbsp>verplant.orgE<gt>
+
+Both B<rrdcached> and this manual page have been written by Florian.
 
 =head1 CONTRIBUTORS
 

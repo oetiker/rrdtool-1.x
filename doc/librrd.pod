@@ -130,3 +130,7 @@ In contrast to L<mkdir(2)>, the function does B<not> fail if C<pathname>
 already exists and is a directory.
 
 =back
+
+=head1 AUTHOR
+
+RRD Contributors <rrd-developers@lists.oetiker.ch>
