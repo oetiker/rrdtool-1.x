@@ -712,6 +712,7 @@ int HandleInputLine(
         if (rrd_xport
             (argc - 1, &argv[1], &xxsize, &start, &end, &step, &col_cnt,
              &legend_v, &data) != -1) {
+            char *old_locale = setlocale(LC_NUMERIC, "C");
             row_cnt = (end - start) / step;
             ptr = data;
             printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n",
@@ -764,6 +765,7 @@ int HandleInputLine(
             free(data);
             printf("  </%s>\n", DATA_TAG);
             printf("</%s>\n", ROOT_TAG);
+            setlocale(LC_NUMERIC, old_locale);
         }
         free(vtag);
     } else if (strcmp("graph", argv[1]) == 0) {
