@@ -905,12 +905,16 @@ static int parse_ds(
             if (i < tmpl_cnt) {
                 updvals[tmpl_idx[i++]] = p + 1;
             }
+            else {
+                rrd_set_error("found extra data on update argument: %s",p+1);
+                return -1;
+            }                
         }
     }
 
     if (i != tmpl_cnt) {
         rrd_set_error("expected %lu data source readings (got %lu) from %s",
-                      tmpl_cnt - 1, i, input);
+                      tmpl_cnt - 1, i - 1, input);
         return -1;
     }
 
@@ -1039,10 +1043,20 @@ static int update_pdp_prep(
             switch (dst_idx) {
             case DST_COUNTER:
             case DST_DERIVE:
-                for (ii = 0; updvals[ds_idx + 1][ii] != '\0'; ii++) {
-                    if ((updvals[ds_idx + 1][ii] < '0'
-                         || updvals[ds_idx + 1][ii] > '9')
-                        && (ii != 0 && updvals[ds_idx + 1][ii] != '-')) {
+                if ( (   updvals[ds_idx + 1][0] < '0'
+                      || updvals[ds_idx + 1][0] > '9' )
+                     && updvals[ds_idx + 1][0] != '-'
+                     && updvals[ds_idx + 1][0] != 'U'
+                     && updvals[ds_idx + 1][0] == '\0'
+                   ) {
+                    rrd_set_error("not a simple integer: '%s'",
+                                  updvals[ds_idx + 1]);
+                    return -1;
+                }
+                for (ii = 1; updvals[ds_idx + 1][ii] != '\0'; ii++) {
+                    if (    updvals[ds_idx + 1][ii] < '0'
+                         || updvals[ds_idx + 1][ii] > '9'
+                       ) {
                         rrd_set_error("not a simple integer: '%s'",
                                       updvals[ds_idx + 1]);
                         return -1;
