@@ -49,16 +49,16 @@ void PrintUsage(
         N_("RRDtool %s"
            "  Copyright 1997-2009 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
-           "Usage: rrdtool [options] command command_options\n\n");
+           "Usage: rrdtool [options] command command_options\n");
 
     const char *help_list =
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
          "\t\tlast, lastupdate, first, info, fetch, tune,\n"
-         "\t\tresize, xport, flushcached\n\n");
+         "\t\tresize, xport, flushcached\n");
 
     const char *help_listremote =
-        N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n\n");
+        N_("Valid remote commands: quit, ls, cd, mkdir, pwd\n");
 
 
     const char *help_create =
@@ -66,31 +66,31 @@ void PrintUsage(
            "\trrdtool create filename [--start|-b start time]\n"
            "\t\t[--step|-s step]\n"
            "\t\t[DS:ds-name:DST:dst arguments]\n"
-           "\t\t[RRA:CF:cf arguments]\n\n");
+           "\t\t[RRA:CF:cf arguments]\n");
 
     const char *help_dump =
         N_("* dump - dump an RRD to XML\n\n"
-           "\trrdtool dump filename.rrd >filename.xml\n\n");
+           "\trrdtool dump filename.rrd >filename.xml\n");
 
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
-           "\trrdtool info filename.rrd\n\n");
+           "\trrdtool info filename.rrd\n");
 
     const char *help_restore =
         N_("* restore - restore an RRD file from its XML form\n\n"
-           "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n\n");
+           "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] filename.xml filename.rrd\n");
 
     const char *help_last =
         N_("* last - show last update time for RRD\n\n"
-           "\trrdtool last filename.rrd\n\n");
+           "\trrdtool last filename.rrd\n");
 
     const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
-           "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n\n");
+           "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n");
 
     const char *help_first =
         N_("* first - show first update time for RRA within an RRD\n\n"
-           "\trrdtool first filename.rrd [--rraindex number]\n\n");
+           "\trrdtool first filename.rrd [--rraindex number]\n");
 
     const char *help_update =
         N_("* update - update an RRD\n\n"
@@ -99,7 +99,7 @@ void PrintUsage(
 	   "\t\t[--daemon <address>]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
-           "\t\t[ time:value[:value...] ..]\n\n");
+           "\t\t[ time:value[:value...] ..]\n");
 
     const char *help_updatev =
         N_("* updatev - a verbose version of update\n"
@@ -108,19 +108,19 @@ void PrintUsage(
            "\t\t[--template|-t ds-name:ds-name:...]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
-           "\t\t[ time:value[:value...] ..]\n\n");
+           "\t\t[ time:value[:value...] ..]\n");
 
     const char *help_fetch =
         N_("* fetch - fetch data out of an RRD\n\n"
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
            "\t\t[-s|--start start] [-e|--end end]\n"
-	   "\t\t[--daemon <address>]\n\n");
+	   "\t\t[--daemon <address>]\n");
 
     const char *help_flushcached =
         N_("* flushcached - flush cached data out to an RRD file\n\n"
            "\trrdtool flushcached filename.rrd\n"
-	   "\t\t[--daemon <address>]\n\n");
+	   "\t\t[--daemon <address>]\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -177,7 +177,7 @@ void PrintUsage(
            "\t\t[AREA:vname[#rrggbb[aa][:[legend][:STACK]]]]\n"
            "\t\t[PRINT:vname:CF:format] (deprecated)\n"
            "\t\t[GPRINT:vname:CF:format] (deprecated)\n"
-           "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n\n");
+           "\t\t[STACK:vname[#rrggbb[aa][:legend]]] (deprecated)\n");
     const char *help_tune1 =
         N_(" * tune -  Modify some basic properties of an RRD\n\n"
            "\trrdtool tune filename\n"
@@ -193,37 +193,37 @@ void PrintUsage(
         N_("\t\t[--beta adaptation-parameter]\n"
            "\t\t[--gamma adaptation-parameter]\n"
            "\t\t[--gamma-deviation adaptation-parameter]\n"
-           "\t\t[--aberrant-reset ds-name]\n\n");
+           "\t\t[--aberrant-reset ds-name]\n");
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
-         "\trrdtool resize filename rranum GROW|SHRINK rows\n\n");
+         "\trrdtool resize filename rranum GROW|SHRINK rows\n");
     const char *help_xport =
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
            "\t\t[--enumds]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
            "\t\t[CDEF:vname=rpn-expression]\n"
-           "\t\t[XPORT:vname:legend]\n\n");
+           "\t\t[XPORT:vname:legend]\n");
     const char *help_quit =
         N_(" * quit - closing a session in remote mode\n\n"
-           "\trrdtool quit\n\n");
+           "\trrdtool quit\n");
     const char *help_ls =
         N_(" * ls - lists all *.rrd files in current directory\n\n"
-           "\trrdtool ls\n\n");
+           "\trrdtool ls\n");
     const char *help_cd =
         N_(" * cd - changes the current directory\n\n"
-           "\trrdtool cd new directory\n\n");
+           "\trrdtool cd new directory\n");
     const char *help_mkdir =
         N_(" * mkdir - creates a new directory\n\n"
-           "\trrdtool mkdir newdirectoryname\n\n");
+           "\trrdtool mkdir newdirectoryname\n");
     const char *help_pwd =
         N_(" * pwd - returns the current working directory\n\n"
-           "\trrdtool pwd\n\n");
+           "\trrdtool pwd\n");
     const char *help_lic =
         N_("RRDtool is distributed under the Terms of the GNU General\n"
            "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
-           "For more information read the RRD manpages\n\n");
+           "For more information read the RRD manpages\n");
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
         C_TUNE,
@@ -280,83 +280,83 @@ void PrintUsage(
     fflush(stdout);
     switch (help_cmd) {
     case C_NONE:
-        fputs(_(help_list), stdout);
+        puts(_(help_list));
         if (RemoteMode) {
-            fputs(_(help_listremote), stdout);
+            puts(_(help_listremote));
         }
         break;
     case C_CREATE:
-        fputs(_(help_create), stdout);
+        puts(_(help_create));
         break;
     case C_DUMP:
-        fputs(_(help_dump), stdout);
+        puts(_(help_dump));
         break;
     case C_INFO:
-        fputs(_(help_info), stdout);
+        puts(_(help_info));
         break;
     case C_RESTORE:
-        fputs(_(help_restore), stdout);
+        puts(_(help_restore));
         break;
     case C_LAST:
-        fputs(_(help_last), stdout);
+        puts(_(help_last));
         break;
     case C_LASTUPDATE:
-        fputs(_(help_lastupdate), stdout);
+        puts(_(help_lastupdate));
         break;
     case C_FIRST:
-        fputs(_(help_first), stdout);
+        puts(_(help_first));
         break;
     case C_UPDATE:
-        fputs(_(help_update), stdout);
+        puts(_(help_update));
         break;
     case C_UPDATEV:
-        fputs(_(help_updatev), stdout);
+        puts(_(help_updatev));
         break;
     case C_FETCH:
-        fputs(_(help_fetch), stdout);
+        puts(_(help_fetch));
         break;
     case C_FLUSHCACHED:
-        fputs(_(help_flushcached), stdout);
+        puts(_(help_flushcached));
         break;
     case C_GRAPH:
-        fputs(_(help_graph0), stdout);
-        fputs(_(help_graph1), stdout);
-        fputs(_(help_graph2), stdout);
-        fputs(_(help_graph3), stdout);
+        puts(_(help_graph0));
+        puts(_(help_graph1));
+        puts(_(help_graph2));
+        puts(_(help_graph3));
         break;
     case C_GRAPHV:
-        fputs(_(help_graphv0), stdout);
-        fputs(_(help_graph1), stdout);
-        fputs(_(help_graph2), stdout);
-        fputs(_(help_graph3), stdout);
+        puts(_(help_graphv0));
+        puts(_(help_graph1));
+        puts(_(help_graph2));
+        puts(_(help_graph3));
         break;
     case C_TUNE:
-        fputs(_(help_tune1), stdout);
-        fputs(_(help_tune2), stdout);
+        puts(_(help_tune1));
+        puts(_(help_tune2));
         break;
     case C_RESIZE:
-        fputs(_(help_resize), stdout);
+        puts(_(help_resize));
         break;
     case C_XPORT:
-        fputs(_(help_xport), stdout);
+        puts(_(help_xport));
         break;
     case C_QUIT:
-        fputs(_(help_quit), stdout);
+        puts(_(help_quit));
         break;
     case C_LS:
-        fputs(_(help_ls), stdout);
+        puts(_(help_ls));
         break;
     case C_CD:
-        fputs(_(help_cd), stdout);
+        puts(_(help_cd));
         break;
     case C_MKDIR:
-        fputs(_(help_mkdir), stdout);
+        puts(_(help_mkdir));
         break;
     case C_PWD:
-        fputs(_(help_pwd), stdout);
+        puts(_(help_pwd));
         break;
     }
-    fputs(_(help_lic), stdout);
+    puts(_(help_lic));
 }
 
 static char *fgetslong(
