@@ -190,8 +190,7 @@ void PrintUsage(
            "\t\t[--window-length integer]\n"
            "\t\t[--alpha adaptation-parameter]\n");
     const char *help_tune2 =
-        N_(" * tune -  Modify some basic properties of an RRD\n\n"
-           "\t\t[--beta adaptation-parameter]\n"
+        N_("\t\t[--beta adaptation-parameter]\n"
            "\t\t[--gamma adaptation-parameter]\n"
            "\t\t[--gamma-deviation adaptation-parameter]\n"
            "\t\t[--aberrant-reset ds-name]\n\n");
