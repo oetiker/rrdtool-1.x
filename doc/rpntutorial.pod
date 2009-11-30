@@ -87,7 +87,7 @@ multiplication operator:
 
  1) 128,8,*,7000,GT,7000,128,8,*,IF  eval 128,8,*       result is 1024
  2) 1024,7000,GT,7000,128,8,*,IF     eval 1024,7000,GT  result is 0
- 3) 0,700,0,128,8,*,IF               eval 128,8,*       result is 1024
+ 3) 0,700[C0,0,128,8,*,IF            eval 128,8,*       result is 1024
  4) 0,7000,1024,IF                                      result is 1024
 
 
