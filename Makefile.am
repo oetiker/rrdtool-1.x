@@ -34,10 +34,6 @@ to-docs: to-versync
 to-dist: to-docs dist
 	mv $(PACKAGE)-$(VERSION).tar.gz archive
 
-to-scp: to-dist
-	cp CHANGES  archive/$(PACKAGE)-$(VERSION).tar.gz /home/oetiker/public_html/webtools/rrdtool/pub/
-	(cd /home/oetiker/public_html/webtools/rrdtool/pub; rm $(PACKAGE).tar.gz; ln -s $(PACKAGE)-$(VERSION).tar.gz $(PACKAGE).tar.gz)
-
 #	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
 
 site-perl-inst: site-perl-install
