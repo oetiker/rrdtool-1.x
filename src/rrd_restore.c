@@ -119,7 +119,19 @@ static int expect_element_end (
     char *exp_name)
 {
     xmlChar *name;
-    name = get_xml_element(reader);
+    /* maybe we are already on the end element ... lets see */
+    if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT){
+         xmlChar *temp;
+         xmlChar *temp2;            
+         temp = xmlTextReaderName(reader);
+         temp2 = (xmlChar*)sprintf_alloc("/%s", temp);
+         name = xmlStrdup(temp2);
+         xmlFree(temp);
+         free(temp2);            
+    } else {     
+         name = get_xml_element(reader);
+    }
+
     if (name == NULL)
         return -1;    
     if (xmlStrcasecmp(name+1,(xmlChar *)exp_name) != 0 || name[0] != '/'){
@@ -147,14 +159,24 @@ static xmlChar* get_xml_text (
         if (type == XML_READER_TYPE_ELEMENT){
             xmlChar *name;
             name = xmlTextReaderName(reader);
-            rrd_set_error("line %d: expected a value but found an <%s> element",
+            rrd_set_error("line %d: expected a value but found a <%s> element",
                           xmlTextReaderGetParserLineNumber(reader),
                           name);
             xmlFree(name);            
             return NULL;            
         }
+
+        /* trying to read text from <a></a> we end up here
+           lets return an empty string insead. This is a tad optimistic
+           since we do not check if it is actually </a> and not </b>
+           we got, but first we do not know if we expect </a> and second
+           we the whole implementation is on the optimistic side. */
+        if (type == XML_READER_TYPE_END_ELEMENT){
+            return  xmlStrdup(BAD_CAST "");
+        }        
+
         /* skip all other non-text */
-        if (xmlTextReaderNodeType(reader) != XML_READER_TYPE_TEXT)
+        if (type != XML_READER_TYPE_TEXT)
             continue;
         
         text = xmlTextReaderValue(reader);
