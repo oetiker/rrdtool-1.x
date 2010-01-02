@@ -1248,7 +1248,7 @@ int data_proc(
                     } else
                         if (((long int) gr_time >=
                              (long int) im->gdes[vidx].start)
-                            && ((long int) gr_time <=
+                            && ((long int) gr_time <
                                 (long int) im->gdes[vidx].end)) {
                         value = im->gdes[vidx].data[(unsigned long)
                                                     floor((double)
