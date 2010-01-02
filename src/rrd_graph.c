@@ -1086,7 +1086,7 @@ data_proc( image_desc_t *im ){
                         if (im->gdes[vidx].gf == GF_VDEF) {
                             value = im->gdes[vidx].vf.val;
                         } else if (((long int)gr_time >= (long int)im->gdes[vidx].start) &&
-                                   ((long int)gr_time <= (long int)im->gdes[vidx].end) ) {
+                                   ((long int)gr_time < (long int)im->gdes[vidx].end) ) {
                             value = im->gdes[vidx].data[
                                 (unsigned long) floor(
                                     (double)(gr_time - im->gdes[vidx].start)
