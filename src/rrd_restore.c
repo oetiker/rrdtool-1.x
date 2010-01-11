@@ -960,7 +960,7 @@ static int parse_tag_rrd(
             status = get_ulong_from_node(doc, child,
                                         &rrd->stat_head->pdp_step);
         else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0) {
-            if (sizeof(time_t) == sizeof(long)) {
+            if (sizeof(time_t) == sizeof(int)) {
                status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
             }
             else { if (sizeof(time_t) == sizeof(long long)) {
