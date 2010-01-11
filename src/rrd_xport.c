@@ -286,7 +286,7 @@ int rrd_xport_fn(
     free(step_list);
     
     *start =  im->start - im->start % (*step);
-    *end = im->end - im->end % (*step);
+    *end = im->end - im->end % (*step) + (*step);
     
 
     /* room for rearranged data */
