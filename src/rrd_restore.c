@@ -219,17 +219,29 @@ static int get_xml_string(
 }
 
  
-static int get_xml_long(
+static int get_xml_time_t(
     xmlTextReaderPtr reader,
-    long *value)
+    time_t *value)
 {    
     xmlChar *text;
-    long temp;    
+    time_t temp;    
     if ((text = get_xml_text(reader)) != NULL){
         errno = 0;        
+#ifdef TIME_T_IS_32BIT
         temp = strtol((char *)text,NULL, 0);
+#else
+#ifdef TIME_T_IS_64BIT
+        temp = strtoll((char *)text,NULL, 0);        
+#else
+        if (sizeof(time_t) == 32){
+            temp = strtol((char *)text,NULL, 0);
+        } else {
+            temp = strtoll((char *)text,NULL, 0);
+        }
+#endif
+#endif    
         if (errno>0){
-            rrd_set_error("ling %d: get_xml_long from '%s' %s",
+            rrd_set_error("ling %d: get_xml_time_t from '%s' %s",
                           xmlTextReaderGetParserLineNumber(reader),
                           text,rrd_strerror(errno));
             xmlFree(text);            
@@ -240,7 +252,7 @@ static int get_xml_long(
         return 0;
     }
     return -1;
-} /* get_xml_long */
+} /* get_xml_time_t */
 
 static int get_xml_ulong(
     xmlTextReaderPtr reader,
@@ -265,33 +277,6 @@ static int get_xml_ulong(
     }
     return -1;
 } /* get_xml_ulong */
-
-#ifndef TIME_T_IS_LONG
-static int get_xml_llong(
-    xmlTextReaderPtr reader,
-    long long *value)
-{
-    
-    xmlChar *text;
-    long long temp;    
-    if ((text = get_xml_text(reader)) != NULL){
-        errno = 0;        
-        temp = strtoll((char *)text,NULL, 0);        
-        if (errno>0){
-            rrd_set_error("ling %d: get_xml_llong from '%s' %s",
-                          xmlTextReaderGetParserLineNumber(reader),
-                          text,rrd_strerror(errno));
-            xmlFree(text);            
-            return -1;
-        }
-        xmlFree(text);
-        *value = temp;        
-        return 0;
-    }
-    return -1;
-} /* get_xml_llong */
-
-#endif
 
 static int get_xml_double(
     xmlTextReaderPtr reader,
@@ -1040,22 +1025,7 @@ static int parse_tag_rrd(
             status = get_xml_ulong(reader,
                                         &rrd->stat_head->pdp_step);
         else if (xmlStrcasecmp(element, (const xmlChar *) "lastupdate") == 0) {
-#ifdef TIME_T_IS_LONG
-                status = get_xml_long(reader, &rrd->live_head->last_up);
-#else
-#ifdef TIME_T_IS_LONG_LONG
-                status = get_xml_llong(reader, &rrd->live_head->last_up); 
-#else
-            if (sizeof(time_t) == sizeof(long)) {
-                status = get_xml_long(reader,
-                                        (long *)&rrd->live_head->last_up);
-            }
-            else if (sizeof(time_t) == sizeof(long long)) {
-                status = get_xml_llong(reader,
-                                        (long long *)&rrd->live_head->last_up); 
-            }
-#endif
-#endif
+                status = get_xml_time_t(reader, &rrd->live_head->last_up);
         }
         else if (xmlStrcasecmp(element, (const xmlChar *) "ds") == 0){            
             xmlFree(element);
