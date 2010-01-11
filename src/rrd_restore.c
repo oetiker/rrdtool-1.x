@@ -92,18 +92,18 @@ static int get_string_from_node(
     return (0);
 }                       /* int get_string_from_node */
 
-static int get_long_from_node(
+static int get_int_from_node(
     xmlDoc * doc,
     xmlNode * node,
-    long *value)
+    int *value)
 {
-    long       temp;
+    int      temp;
     char     *str_ptr;
     char     *end_ptr;
 
     str_ptr = (char *) xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
     if (str_ptr == NULL) {
-        rrd_set_error("get_long_from_node: xmlNodeListGetString failed.");
+        rrd_set_error("get_int_from_node: xmlNodeListGetString failed.");
         return (-1);
     }
 
@@ -111,7 +111,7 @@ static int get_long_from_node(
     temp = strtol(str_ptr, &end_ptr, 0);
 
     if (str_ptr == end_ptr) {
-        rrd_set_error("get_long_from_node: Cannot parse buffer as long: %s",
+        rrd_set_error("get_int_from_node: Cannot parse buffer as long: %s",
                       str_ptr);
         xmlFree(str_ptr);
         return (-1);
@@ -120,7 +120,7 @@ static int get_long_from_node(
     *value = temp;
 
     return (0);
-}                       /* int get_long_from_node */
+}                       /* int get_int_from_node */
 
 static int get_ulong_from_node(
     xmlDoc * doc,
@@ -961,7 +961,7 @@ static int parse_tag_rrd(
                                         &rrd->stat_head->pdp_step);
         else if (xmlStrcmp(child->name, (const xmlChar *) "lastupdate") == 0) {
             if (sizeof(time_t) == sizeof(int)) {
-               status = get_long_from_node(doc, child, (long *)&rrd->live_head->last_up);
+               status = get_int_from_node(doc, child, (int *)&rrd->live_head->last_up);
             }
             else { if (sizeof(time_t) == sizeof(long long)) {
                        status = get_llong_from_node(doc, child, (long long *)&rrd->live_head->last_up);
