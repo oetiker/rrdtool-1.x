@@ -466,7 +466,7 @@ AC_MSG_CHECKING([the type of time_t])
 AC_RUN_IFELSE(
     AC_LANG_PROGRAM(
         [[#include <time.h>]],
-        [[if (sizeof(time_t) != 32) return 1; ]]
+        [[if (sizeof(time_t) != 4) return 1; ]]
         ),
     [ AC_MSG_RESULT([time_t is 32 bit])
       AC_DEFINE([TIME_T_IS_32BIT])
@@ -474,7 +474,7 @@ AC_RUN_IFELSE(
     [ AC_RUN_IFELSE(
         AC_LANG_PROGRAM(
         [[#include <time.h>]],
-        [[if (sizeof(time_t) != 64) return 1; ]]
+        [[if (sizeof(time_t) != 8) return 1; ]]
         ),
         [
           AC_MSG_RESULT([time_t is 64 bit])

@@ -233,7 +233,7 @@ static int get_xml_time_t(
 #ifdef TIME_T_IS_64BIT
         temp = strtoll((char *)text,NULL, 0);        
 #else
-        if (sizeof(time_t) == 32){
+        if (sizeof(time_t) == 4){
             temp = strtol((char *)text,NULL, 0);
         } else {
             temp = strtoll((char *)text,NULL, 0);
