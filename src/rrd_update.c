@@ -1047,7 +1047,6 @@ static int update_pdp_prep(
                       || updvals[ds_idx + 1][0] > '9' )
                      && updvals[ds_idx + 1][0] != '-'
                      && updvals[ds_idx + 1][0] != 'U'
-                     && updvals[ds_idx + 1][0] == '\0'
                    ) {
                     rrd_set_error("not a simple integer: '%s'",
                                   updvals[ds_idx + 1]);
