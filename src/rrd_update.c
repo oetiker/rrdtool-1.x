@@ -1043,24 +1043,22 @@ static int update_pdp_prep(
             switch (dst_idx) {
             case DST_COUNTER:
             case DST_DERIVE:
-                if ( (   updvals[ds_idx + 1][0] < '0'
-                      || updvals[ds_idx + 1][0] > '9' )
-                     && updvals[ds_idx + 1][0] != '-'
-                     && updvals[ds_idx + 1][0] != 'U'
-                   ) {
-                    rrd_set_error("not a simple integer: '%s'",
-                                  updvals[ds_idx + 1]);
-                    return -1;
-                }
-                for (ii = 1; updvals[ds_idx + 1][ii] != '\0'; ii++) {
-                    if (    updvals[ds_idx + 1][ii] < '0'
-                         || updvals[ds_idx + 1][ii] > '9'
-                       ) {
-                        rrd_set_error("not a simple integer: '%s'",
-                                      updvals[ds_idx + 1]);
+                /* Check if this is a valid integer. `U' is already handled in
+                 * another branch. */
+                for (ii = 0; updvals[ds_idx + 1][ii] != 0; ii++) {
+                    if ((ii == 0) && (dst_idx == DST_DERIVE)
+                            && (updvals[ds_idx + 1][ii] == '-'))
+                        continue;
+
+                    if ((updvals[ds_idx + 1][ii] < '0')
+                            || (updvals[ds_idx + 1][ii] > '9')) {
+                        rrd_set_error("not a simple %s integer: '%s'",
+                                (dst_idx == DST_DERIVE) ? "signed" : "unsigned",
+                                updvals[ds_idx + 1]);
                         return -1;
                     }
-                }
+                } /* for (ii = 0; updvals[ds_idx + 1][ii] != 0; ii++) */
+
                 if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
                     pdp_new[ds_idx] =
                         rrd_diff(updvals[ds_idx + 1],
