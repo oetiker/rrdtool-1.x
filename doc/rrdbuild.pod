@@ -303,7 +303,7 @@ config file.
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
  gunzip -c cairo-1.6.4.tar.gz   | tar xf -
- cd cairo-1.4.10
+ cd cairo-1.6.4
  ./configure --prefix=$INSTALL_DIR \
     --enable-xlib=no \
     --enable-xlib-render=no \
