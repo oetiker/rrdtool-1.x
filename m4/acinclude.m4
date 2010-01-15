@@ -524,6 +524,8 @@ AC_CACHE_VAL([rd_cv_ms_async],
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <utime.h>
+#include <signal.h>
+void timeout (int i) { exit (1); }
 int main(void){
         int fd;
         struct stat stbuf;
@@ -531,7 +533,6 @@ int main(void){
         int res;
         char temp[] = "mmaptestXXXXXX";
         struct utimbuf newtime;
-
         time_t create_ts;
         fd = mkstemp(temp);
         if (fd == -1){
@@ -560,13 +561,17 @@ int main(void){
            perror("close");
            goto bad_exit;
         }
+        /* there were reports of sync hanging
+           so we better set an alarm */
+        signal(SIGALRM,&timeout);
+        alarm(5);
         /* The ASYNC means that we schedule the msync and return immediately.
            Since we want to see if the modification time is updated upon
            msync(), we have to make sure that our asynchronous request
            completes before we stat below. In a real application, the
            request would be completed at a random time in the future
            but for this test we do not want to wait an arbitrary amount of
-           time, so force a commit now.  */
+           time, so force a commit now.  */        
         sync();
         stat(temp, &stbuf);
         if (create_ts > stbuf.st_mtime){
