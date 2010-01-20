@@ -210,6 +210,7 @@ typedef struct image_desc_t {
     int       draw_x_grid;  /* no x-grid at all */
     int       draw_y_grid;  /* no y-grid at all */
     unsigned int draw_3d_border; /* size of border in pixels, 0 for off */
+    unsigned int dynamic_labels; /* pick the label shape according to the line drawn */
     double    grid_dash_on, grid_dash_off;
     xlab_t    xlab_user;    /* user defined labeling for xaxis */
     char      xlab_form[210];   /* format for the label on the xaxis */

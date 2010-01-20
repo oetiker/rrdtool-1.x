@@ -350,6 +350,10 @@ Width in pixels for the 3d border drawn around the image. Default 2, 0
 disables the border. See C<SHADEA> and C<SHADEB> above for setting the border
 color.
 
+[B<--dynamic-labels>]
+
+Pick the shape of the color marker next to the label according to the element drawn on the graph.
+
 [B<--zoom> I<factor>]
 
 Zoom the graphics by the given amount. The factor must be E<gt> 0

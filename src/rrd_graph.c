@@ -2733,7 +2733,8 @@ void grid_paint(
                 boxV = boxH;
                 /* shift the box up a bit */
                 Y0 -= boxV * 0.4;
-		if (im->gdes[i].gf == GF_HRULE) { /* [-] */ 
+
+        if (im->dynamic_labels && im->gdes[i].gf == GF_HRULE) { /* [-] */ 
 			cairo_save(im->cr);
 			cairo_new_path(im->cr);
 			cairo_set_line_width(im->cr, 1.0);
@@ -2742,7 +2743,7 @@ void grid_paint(
 				X0 + boxH, Y0 - boxV / 2,
 				1.0, im->gdes[i].col);
             		gfx_close_path(im);
-		} else if (im->gdes[i].gf == GF_VRULE) { /* [|] */
+		} else if (im->dynamic_labels && im->gdes[i].gf == GF_VRULE) { /* [|] */
 			cairo_save(im->cr);
 			cairo_new_path(im->cr);
 			cairo_set_line_width(im->cr, 1.0);
@@ -2751,7 +2752,7 @@ void grid_paint(
 				X0 + boxH / 2, Y0 - boxV,
 				1.0, im->gdes[i].col);
             		gfx_close_path(im);
-		} else if (im->gdes[i].gf == GF_LINE) { /* [/] */
+		} else if (im->dynamic_labels && im->gdes[i].gf == GF_LINE) { /* [/] */
 			cairo_save(im->cr);
 			cairo_new_path(im->cr);
 			cairo_set_line_width(im->cr, im->gdes[i].linewidth);
@@ -4009,6 +4010,7 @@ void rrd_graph_init(
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
     im->draw_3d_border = 2;
+    im->dynamic_labels = 0;
     im->extra_flags = 0;
     im->font_options = cairo_font_options_create();
     im->forceleftspace = 0;
@@ -4177,6 +4179,7 @@ void rrd_graph_options(
         { "legend-direction",   required_argument, 0, 1006},
         { "border",             required_argument, 0, 1007},
         { "grid-dash",          required_argument, 0, 1008},
+        { "dynamic-labels",     no_argument,       0, 1009},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4358,7 +4361,10 @@ void rrd_graph_options(
                 rrd_set_error("expected grid-dash format float:float");
                 return;
             }
-            break;            
+            break;   
+        case 1009: /* enable dynamic labels */
+            im->dynamic_labels = 1;
+            break;         
         case 1002: /* right y axis */
 
             if(sscanf(optarg,
