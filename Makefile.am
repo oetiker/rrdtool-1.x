@@ -46,7 +46,7 @@ site-tcl-install: all
 	cd bindings/tcl && $(MAKE) tcl-install
 
 site-python-install: all
-	cd bindings/python && $(PYTHON) setup.py install
+	cd bindings/python && $(PYTHON) setup.py install $(if $(DESTDIR),--root=$(DESTDIR))
 
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
