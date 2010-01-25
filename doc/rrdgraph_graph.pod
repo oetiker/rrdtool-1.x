@@ -365,8 +365,15 @@ in connection with B<%s> to suppress empty unit strings.
 A special case is COMMENT:B<\s> which inserts some additional vertical space
 before placing the next row of legends.
 
-If you are using the proportional font in your graph, you can use tab
-characters or the sequence B<\t> to line-up legend elements. Note that
+If you want to have left and right aligned legends on the same line use COMMENT:B<\u>
+to go one line back like this:
+
+ COMMENT:left\l
+ COMMENT:\u
+ COMMENT:right\r
+
+When using a proportional font in your graph, the tab
+characters or the sequence B<\t> will line-up legend elements. Note that
 the tabs inserted are relative to the start of the current legend
 element!
 

@@ -1730,6 +1730,7 @@ int leg_place(
                 prt_fctn != 'r' &&
                 prt_fctn != 'j' &&
                 prt_fctn != 'c' &&
+                prt_fctn != 'u' &&
                 prt_fctn != 's' && prt_fctn != '\0' && prt_fctn != 'g') {
                 free(legspace);
                 rrd_set_error
@@ -1839,6 +1840,8 @@ int leg_place(
                     leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
                 if (prt_fctn == 's')
                     leg_y -= im->text_prop[TEXT_PROP_LEGEND].size;
+                if (prt_fctn == 'u')
+                    leg_y -= im->text_prop[TEXT_PROP_LEGEND].size *1.8;
 
                 if(calc_width && (fill > legendwidth)){
                     legendwidth = fill;
