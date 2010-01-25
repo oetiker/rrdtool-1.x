@@ -171,6 +171,7 @@ void PrintUsage(
            "\t\t[PRINT:vdefname:format]\n"
            "\t\t[GPRINT:vdefname:format]\n" "\t\t[COMMENT:text]\n"
            "\t\t[SHIFT:vname:offset]\n"
+           "\t\t[TEXTALIGN:{left|right|justified|center}]\n"
            "\t\t[TICK:vname#rrggbb[aa][:[fraction][:legend]]]\n"
            "\t\t[HRULE:value#rrggbb[aa][:legend]]\n"
            "\t\t[VRULE:value#rrggbb[aa][:legend]]\n"

@@ -1818,7 +1818,7 @@ int leg_place(
                 if (prt_fctn == 'c')
                     leg_x = (double)(legendwidth - fill) / 2.0;
                 if (prt_fctn == 'r')
-                    leg_x = legendwidth - fill - border;
+                    leg_x = legendwidth - fill + border;
                 for (ii = mark; ii <= i; ii++) {
                     if (im->gdes[ii].legend[0] == '\0')
                         continue;   /* skip empty legends */
