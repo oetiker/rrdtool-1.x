@@ -153,6 +153,7 @@ void PrintUsage(
            "\t\t[-B|--font-smoothing-threshold size]\n"
            "\t\t[-T|--tabwidth width]\n"
            "\t\t[-E|--slope-mode]\n"
+           "\t\t[-P|--pango-markup]\n"
            "\t\t[-N|--no-gridfit]\n"
            "\t\t[-X|--units-exponent value]\n"
            "\t\t[-L|--units-length value]\n"
