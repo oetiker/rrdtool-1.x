@@ -1053,7 +1053,7 @@ char     *scanargs(
     int       curarg_contains_rrd_directives;
 
     /* local array of arguments while parsing */
-    int       argc = 0;
+    int       argc = 1;
     char    **argv;
 
 #ifdef DEBUG_PARSER
@@ -1069,6 +1069,7 @@ char     *scanargs(
     if (!argv) {
         return NULL;
     }
+    argv[0] = "rrdcgi";
 
     /* skip leading blanks */
     while (isspace((int) *line)) {
@@ -1172,7 +1173,7 @@ char     *scanargs(
         argv[argc - 1] = rrd_expand_vars(stralloc(argv[argc - 1]));
     }
 #ifdef DEBUG_PARSER
-    if (argc > 0) {
+    if (argc > 1) {
         int       n;
 
         printf("<-- arguments found [%d]\n", argc);
@@ -1186,8 +1187,17 @@ char     *scanargs(
 #endif
 
     /* update caller's notion of the argument array and it's size */
-    *arguments = argv;
-    *argument_count = argc;
+
+    /* note this is a bit of a hack since the rrd_cgi code used to just put
+       its arguments into a normal array starting at 0 ... since the rrd_*
+       commands expect and argc/argv array we used to just shift everything
+       by -1 ... this in turn exploded when a rrd_* function tried to print
+       argv[0] ... hence we are now doing everything in argv style but hand
+       over seemingly the old array ... but doing argv-1 will actually end
+       up in a 'good' place now. */
+
+    *arguments = argv+1;
+    *argument_count = argc-1;
 
     if (Quote) {
         return NULL;
@@ -1241,7 +1251,7 @@ int parse(
     if (end) {
         /* got arguments, call function for 'tag' with arguments */
         val = func(argc, (const char **) args);
-        free(args);
+        free(args-1);
     } else {
         /* unable to parse arguments, undo 0-termination by scanargs */
         for (; argc > 0; argc--) {
