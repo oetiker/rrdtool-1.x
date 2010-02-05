@@ -319,6 +319,53 @@ VALUE rb_rrd_last(
         return rb_funcall(rb_cTime, rb_intern("at"), 1, UINT2NUM(last));
 }
 
+VALUE rb_rrd_xport(
+    VALUE self,
+    VALUE args)
+{
+    string_arr a;
+    unsigned long i, j, k, step, col_cnt;
+    int xxsize;
+    rrd_value_t *data;
+    char **legend_v;
+    VALUE legend, result, rdata;
+    time_t start, end;
+
+    a = string_arr_new(args);
+    rrd_xport(a.len, a.strings, &xxsize, &start, &end, &step, &col_cnt, &legend_v, &data);
+    string_arr_delete(a);
+
+    RRD_CHECK_ERROR;
+            
+    legend = rb_ary_new();
+    for (i = 0; i < col_cnt; i++) {
+        rb_ary_push(legend, rb_str_new2(legend_v[i]));
+        free(legend_v[i]);
+    }
+    free(legend_v);
+
+    k = 0;
+    rdata = rb_ary_new();
+    for (i = start; i <= end; i += step) {
+        VALUE line = rb_ary_new2(col_cnt);
+        for (j = 0; j < col_cnt; j++) {
+            rb_ary_store(line, j, rb_float_new(data[k]));
+            k++;
+        }
+        rb_ary_push(rdata, line);
+    }
+    free(data);
+
+    result = rb_ary_new2(6);
+    rb_ary_store(result, 0, INT2FIX(start));
+    rb_ary_store(result, 1, INT2FIX(end));
+    rb_ary_store(result, 2, INT2FIX(step));
+    rb_ary_store(result, 3, INT2FIX(col_cnt));
+    rb_ary_store(result, 4, legend);
+    rb_ary_store(result, 5, rdata);
+    return result;
+}
+
 void Init_RRD(
     )
 {
@@ -338,4 +385,5 @@ void Init_RRD(
     rb_define_module_function(mRRD, "info", rb_rrd_info, -2);
     rb_define_module_function(mRRD, "updatev", rb_rrd_updatev, -2);
     rb_define_module_function(mRRD, "graphv", rb_rrd_graphv, -2);
+    rb_define_module_function(mRRD, "xport", rb_rrd_xport, -2);
 }
