@@ -29,6 +29,10 @@
 
 #include <locale.h>
 
+#ifdef HAVE_LANGINFO_H
+#include <langinfo.h>
+#endif
+
 #include "rrd_graph.h"
 #include "rrd_client.h"
 
@@ -1356,6 +1360,17 @@ int data_proc(
 }
 
 
+static int find_first_weekday(void){
+    static int first_weekday = -1;
+    if (first_weekday == -1){
+#if defined(HAVE_NL_LANGINFO)
+        first_weekday = nl_langinfo(_NL_TIME_FIRST_WEEKDAY)[0] - 1;
+#else
+        first_weekday = 1;
+#endif
+    }
+    return first_weekday;
+}
 
 /* identify the point where the first gridline, label ... gets placed */
 
@@ -1397,10 +1412,10 @@ time_t find_first_time(
         tm.       tm_sec = 0;
         tm.       tm_min = 0;
         tm.       tm_hour = 0;
-        tm.       tm_mday -= tm.tm_wday - 1;    /* -1 because we want the monday */
+        tm.       tm_mday -= tm.tm_wday - find_first_weekday();
 
-        if (tm.tm_wday == 0)
-            tm.       tm_mday -= 7; /* we want the *previous* monday */
+        if (tm.tm_wday == 0 && find_first_weekday() > 0)
+            tm.       tm_mday -= 7; /* we want the *previous* week */
 
         break;
     case TMT_MONTH:
