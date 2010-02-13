@@ -1359,11 +1359,10 @@ int data_proc(
     return 0;
 }
 
-
 static int find_first_weekday(void){
     static int first_weekday = -1;
     if (first_weekday == -1){
-#if defined(HAVE_NL_LANGINFO)
+#ifdef HAVE__NL_TIME_WEEK_1STDAY
         /* according to http://sourceware.org/ml/libc-locales/2009-q1/msg00011.html */
         long week_1stday_l = (long) nl_langinfo (_NL_TIME_WEEK_1STDAY);
         if (week_1stday_l == 19971130) first_weekday = 0; /* Sun */

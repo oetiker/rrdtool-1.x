@@ -345,6 +345,12 @@ CONFIGURE_PART(Resolve Portability Issues)
 
 CHECK_FOR_WORKING_MS_ASYNC
 
+dnl do we have nl_langinfo(_NL_TIME_WEEK_1STDAY)
+AC_CHECK_FUNCS(_NL_TIME_WEEK_1STDAY, ,
+  [AC_MSG_CHECKING([for nl_langinfo(_NL_TIME_WEEK_1STDAY) with langinfo.h])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <langinfo.h>]], [[nl_langinfo(_NL_TIME_WEEK_1STDAY)]])],[AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE__NL_TIME_WEEK_1STDAY)],[AC_MSG_RESULT(no)])])
+
 dnl Do we need getopt_long
 
 dnl even when including our own getopt implementation
