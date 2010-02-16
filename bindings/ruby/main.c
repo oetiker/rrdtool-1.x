@@ -163,6 +163,7 @@ VALUE rb_rrd_infocall(
     VALUE     result;
 
     a = string_arr_new(args);
+    reset_rrd_state();
     data = func(a.len, a.strings);
     string_arr_delete(a);
 
