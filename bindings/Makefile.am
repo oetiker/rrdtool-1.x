@@ -28,11 +28,11 @@ install-data-local:
 # rules for building the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
 # it is is the right thing todo, but it makes rrdtool build on freebsd as well
-ruby: 
+ruby:   Makefile
 	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) RUBYARCHDIR=
 
 # rules for building the pyton module
-python:
+python: Makefile
 	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 # rules for building the perl module
@@ -45,7 +45,7 @@ perl-piped/Makefile: perl-piped/Makefile.PL
 perl_shared: perl-shared/Makefile
 	cd perl-shared && $(MAKE)
 
-perl-shared/Makefile: perl-shared/Makefile.PL
+perl-shared/Makefile: perl-shared/Makefile.PL Makefile
 	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir)
 # LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
 
