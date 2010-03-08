@@ -106,6 +106,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <libgen.h>
+#include <grp.h>
 
 #include <glib-2.0/glib.h>
 /* }}} */
@@ -219,6 +220,9 @@ static uid_t daemon_uid;
 
 static listen_socket_t *listen_fds = NULL;
 static size_t listen_fds_num = 0;
+
+static gboolean set_socket_group = FALSE;
+static gid_t socket_group;
 
 enum {
   RUNNING,		/* normal operation */
@@ -2326,6 +2330,16 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
     return (-1);
   }
 
+  /* tweak the sockets group ownership */
+  if (set_socket_group)
+  {
+    if ( (chown(path, getuid(), socket_group) != 0) ||
+	 (chmod(path, (S_IRUSR|S_IWUSR|S_IXUSR | S_IRGRP|S_IWGRP)) != 0) )
+    {
+      fprintf(stderr, "rrdcached: failed to set socket group permissions (%s)\n", strerror(errno));
+    }
+  }
+
   status = listen (fd, /* backlog = */ 10);
   if (status != 0)
   {
@@ -2746,7 +2760,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   char **permissions = NULL;
   size_t permissions_len = 0;
 
-  while ((option = getopt(argc, argv, "gl:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:s:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
     {
@@ -2808,6 +2822,37 @@ static int read_options (int argc, char **argv) /* {{{ */
           fprintf(stderr, "read_options: rrd_add_ptr failed.\n");
           return (2);
         }
+      }
+      break;
+
+      /* set socket group permissions */
+      case 's':
+      {
+	gid_t group_gid;
+	struct group *grp;
+
+	group_gid = strtoul(optarg, NULL, 10);
+	if (errno != EINVAL && group_gid>0)
+	{
+	  /* we were passed a number */
+	  grp = getgrgid(group_gid);
+	}
+	else
+	{
+	  grp = getgrnam(optarg);
+	}
+
+	if (grp)
+	{
+	  socket_group = grp->gr_gid;
+	  set_socket_group = TRUE;
+	}
+	else
+	{
+	  /* no idea what the user wanted... */
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", optarg);
+	  return (5);
+	}
       }
       break;
 
@@ -3024,6 +3069,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -F            Always flush all updates at shutdown\n"
+            "  -s <id|name>  Make socket g+rw to named group\n"
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"

@@ -9,6 +9,7 @@ rrdcached - Data caching daemon for rrdtool
 B<rrdcached>
 [B<-P>E<nbsp>I<permissions>]
 [B<-l>E<nbsp>I<address>]
+[B<-s>E<nbsp>I<group>]
 [B<-w>E<nbsp>I<timeout>]
 [B<-z>E<nbsp>I<delay>]
 [B<-f>E<nbsp>I<timeout>]
@@ -64,6 +65,15 @@ domain socket B<must> start with a slash in the second case!
 
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
+
+=item B<-s> I<id>
+
+Set the group permissions of the UNIX domain socket. The option accepts either
+a numeric group id or group name. That group will then have both read and write
+permissions to the socket and therefore able to send commands to the daemon. This
+may be useful in cases where you cannot easily run all RRD processes with the same
+user privileges (e.g. graph generating CGI scripts that typically run in the
+permission context of the web server).
 
 =item B<-P> I<command>[,I<command>[,...]]
 
