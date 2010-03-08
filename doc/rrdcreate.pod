@@ -7,6 +7,7 @@ rrdcreate - Set up a new Round Robin Database
 B<rrdtool> B<create> I<filename>
 S<[B<--start>|B<-b> I<start time>]>
 S<[B<--step>|B<-s> I<step>]>
+S<[B<--no-overwrite>]>
 S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
@@ -35,6 +36,10 @@ I<rrdfetch> documentation for other ways to specify time.
 
 Specifies the base interval in seconds with which data will be fed
 into the B<RRD>.
+
+=head2 B<--no-overwrite>
+
+Do not clobber an existing file of the same name.
 
 =head2 B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
 

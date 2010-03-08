@@ -13,6 +13,7 @@
 #include "rrd_hw.h"
 
 #include "rrd_is_thread_safe.h"
+static int opt_no_overwrite = 0;
 
 #ifdef WIN32
 #include <fcntl.h>
@@ -42,6 +43,7 @@ int rrd_create(
     struct option long_options[] = {
         {"start", required_argument, 0, 'b'},
         {"step", required_argument, 0, 's'},
+        {"no-overwrite", no_argument, 0, 'O'},
         {0, 0, 0, 0}
     };
     int       option_index = 0;
@@ -57,7 +59,7 @@ int rrd_create(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "b:s:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "Ob:s:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -92,6 +94,10 @@ int rrd_create(
             }
             pdp_step = long_tmp;
             break;
+
+        case 'O':
+            opt_no_overwrite = 1;
+	    break;
 
         case '?':
             if (optopt != 0)
@@ -686,6 +692,11 @@ int rrd_create_fn(
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
     flags |= O_BINARY;
 #endif
+
+    /* with O_CREAT (above) causes open to fail with EEXIST when if exists */
+    if (opt_no_overwrite) {
+      flags |= O_EXCL;
+    }
 
     if ((rrd_file = open(file_name, flags, 0666)) < 0) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
