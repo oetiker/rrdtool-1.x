@@ -13,6 +13,7 @@
 #include "rrd_hw.h"
 
 #include "rrd_is_thread_safe.h"
+static int opt_no_overwrite = 0;
 
 #ifdef WIN32
 # include <process.h>
@@ -39,6 +40,7 @@ int rrd_create(
     struct option long_options[] = {
         {"start", required_argument, 0, 'b'},
         {"step", required_argument, 0, 's'},
+        {"no-overwrite", no_argument, 0, 'O'},
         {0, 0, 0, 0}
     };
     int       option_index = 0;
@@ -54,7 +56,7 @@ int rrd_create(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "b:s:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "Ob:s:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -89,6 +91,10 @@ int rrd_create(
             }
             pdp_step = long_tmp;
             break;
+
+        case 'O':
+            opt_no_overwrite = 1;
+	    break;
 
         case '?':
             if (optopt != 0)
@@ -678,6 +684,10 @@ int rrd_create_fn(
     rrd_file_t *rrd_file_dn;
     rrd_t     rrd_dn;
     unsigned  rrd_flags = RRD_READWRITE | RRD_CREAT;
+
+    if (opt_no_overwrite) {
+      rrd_flags |= RRD_EXCL ;
+    }
 
     unkn_cnt = 0;
     for (i = 0; i < rrd->stat_head->rra_cnt; i++)

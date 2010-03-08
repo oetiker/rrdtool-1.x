@@ -172,6 +172,9 @@ rrd_file_t *rrd_open(
         if (rdwr & RRD_CREAT) {
             flags |= (O_CREAT | O_TRUNC);
         }
+        if (rdwr & RRD_EXCL) {
+            flags |= O_EXCL;
+        }
     }
     if (rdwr & RRD_READAHEAD) {
 #ifdef MAP_POPULATE

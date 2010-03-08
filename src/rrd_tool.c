@@ -65,6 +65,7 @@ void PrintUsage(
         N_("* create - create a new RRD\n\n"
            "\trrdtool create filename [--start|-b start time]\n"
            "\t\t[--step|-s step]\n"
+           "\t\t[--no-overwrite|-O]\n"
            "\t\t[DS:ds-name:DST:dst arguments]\n"
            "\t\t[RRA:CF:cf arguments]\n");
 
