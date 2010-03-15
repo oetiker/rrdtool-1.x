@@ -988,7 +988,10 @@ char     *printtimelast(
         if (buf == NULL) {
             return stralloc("[ERROR: allocating strftime buffer]");
         };
-        last = rrd_last(argc + 1, (char **) args - 1);
+        /* not raising argc in step with args - 1 since the last argument
+           will be used below for strftime  */
+
+        last = rrd_last(argc, (char **) args - 1);
         if (rrd_test_error()) {
             char     *err =
                 malloc((strlen(rrd_get_error()) +
@@ -1001,10 +1004,7 @@ char     *printtimelast(
         strftime(buf, 254, args[1], &tm_last);
         return buf;
     }
-    if (argc < 2) {
-        return stralloc("[ERROR: too few arguments for RRD::TIME::LAST]");
-    }
-    return stralloc("[ERROR: not enough arguments for RRD::TIME::LAST]");
+    return stralloc("[ERROR: expected <RRD::TIME::LAST file.rrd strftime-format>]");
 }
 
 char     *printtimenow(
