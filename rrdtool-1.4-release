@@ -15,8 +15,8 @@ OPWD=`pwd`
 cd /tmp
 svn export svn://svn.oetiker.ch/rrdtool/trunk/program rrdtool-$$
 cd rrdtool-$$
-svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
-    xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
+#svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
+#    xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
 sh MakeMakefile
 #PKG_CONFIG_PATH=/usr/pack/rrdtool-1.3svn-to/i686-debian-linux3.1/lib/pkgconfig/
 #export PKG_CONFIG_PATH
