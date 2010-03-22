@@ -28,7 +28,7 @@ New Features
 
 * ruby bindings: rb_rrd_xport function  -- Pavel Pachkovskij pavel.pachkovskij azati.com
 
-* use locale settings and _NL_TIME_WEEK_1STDAY to determin the first
+* use locale settings and _NL_TIME_WEEK_1STDAY to determine the first
   day of the week. Works on Linux at least -- Tobi Oetiker
 
 * rrd_graph: \u to backup one line for special legend placement tricks 
@@ -45,7 +45,7 @@ Bug Fixes
   
 * rrd_update: fix for max calculation ... the MAX value of the current
   consolidation interval was pre-initialized with the MAX value from the
-  previouse interval (an over optimization). -- Tobi Oetiker
+  previous interval (an over optimization). -- Tobi Oetiker
 
 * build: additional dependencies on Makefile to make sure bindings makefiles
   get rebuild after reconfig -- Tobi Oetiker
@@ -53,7 +53,7 @@ Bug Fixes
 * ruby bindings: reset rrd_state for grapv in ruby bindings -- Sven Engelhardt
 
 * rrd_cgi: make sure that (argv-1)[0] points to something sensible ... 
-  hack to undo the damage caused by a sensless optimization. see bug #251
+  hack to undo the damage caused by a senseless optimization. see bug #251
   -- tobi oetiker
 
 * rrd_graph: fix right aligned text -- tobi oetiker
