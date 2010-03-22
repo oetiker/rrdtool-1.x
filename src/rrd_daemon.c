@@ -821,9 +821,10 @@ static int flush_old_values (int max_age)
 
   for (k = 0; k < cfd.keys_num; k++)
   {
+    gboolean status = g_tree_remove(cache_tree, cfd.keys[k]);
     /* should never fail, since we have held the cache_lock
      * the entire time */
-    assert( g_tree_remove(cache_tree, cfd.keys[k]) == TRUE );
+    assert(status == TRUE);
   }
 
   if (cfd.keys != NULL)
