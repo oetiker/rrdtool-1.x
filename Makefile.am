@@ -28,12 +28,6 @@ ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 #AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
 
-to-docs: to-versync
-	(cd doc && $(MAKE) clean && $(MAKE) && $(MAKE) pdf)
-
-to-dist: to-docs dist
-	mv $(PACKAGE)-$(VERSION).tar.gz archive
-
 #	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
 
 site-perl-inst: site-perl-install
