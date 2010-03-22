@@ -29,6 +29,9 @@ cd rrdtool-$VERSION
 make
 src/rrdtool
 cd ..
+echo READY TO DIST ... press ENTER
+read x
+
 scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub
 ssh oposs@james "cd public_html/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz"
 cd ..
