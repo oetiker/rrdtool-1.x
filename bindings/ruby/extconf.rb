@@ -3,8 +3,6 @@
 
 require 'mkmf'
 
-$CFLAGS += ' -Wall '
-
 if /linux/ =~ RUBY_PLATFORM
    $LDFLAGS += '-Wl,--rpath -Wl,$(EPREFIX)/lib'
 elsif /solaris/ =~ RUBY_PLATFORM
