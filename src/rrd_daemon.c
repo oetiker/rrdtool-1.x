@@ -141,6 +141,8 @@ struct listen_socket_s
   ssize_t wbuf_len;
 
   uint32_t permissions;
+
+  gid_t socket_group;
 };
 typedef struct listen_socket_s listen_socket_t;
 
@@ -220,9 +222,6 @@ static uid_t daemon_uid;
 
 static listen_socket_t *listen_fds = NULL;
 static size_t listen_fds_num = 0;
-
-static gboolean set_socket_group = FALSE;
-static gid_t socket_group;
 
 enum {
   RUNNING,		/* normal operation */
@@ -2331,9 +2330,9 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   }
 
   /* tweak the sockets group ownership */
-  if (set_socket_group)
+  if (sock->socket_group != (gid_t)-1)
   {
-    if ( (chown(path, getuid(), socket_group) != 0) ||
+    if ( (chown(path, getuid(), sock->socket_group) != 0) ||
 	 (chmod(path, (S_IRUSR|S_IWUSR|S_IXUSR | S_IRGRP|S_IWGRP)) != 0) )
     {
       fprintf(stderr, "rrdcached: failed to set socket group permissions (%s)\n", strerror(errno));
@@ -2760,6 +2759,8 @@ static int read_options (int argc, char **argv) /* {{{ */
   char **permissions = NULL;
   size_t permissions_len = 0;
 
+  gid_t socket_group = (gid_t)-1;
+
   while ((option = getopt(argc, argv, "gl:s:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
@@ -2816,6 +2817,8 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         /* }}} Done adding permissions. */
 
+        new->socket_group = socket_group;
+
         if (!rrd_add_ptr((void ***)&config_listen_address_list,
                          &config_listen_address_list_len, new))
         {
@@ -2845,7 +2848,6 @@ static int read_options (int argc, char **argv) /* {{{ */
 	if (grp)
 	{
 	  socket_group = grp->gr_gid;
-	  set_socket_group = TRUE;
 	}
 	else
 	{

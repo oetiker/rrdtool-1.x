@@ -44,7 +44,7 @@ section below.
 Tells the daemon to bind to I<address> and accept incoming connections on that
 socket. If I<address> begins with C<unix:>, everything following that prefix is
 interpreted as the path to a UNIX domain socket. Otherwise the address or node
-name are resolved using getaddrinfo.
+name are resolved using C<getaddrinfo()>.
 
 For network sockets, a port may be specified by using the form
 C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
@@ -66,14 +66,22 @@ domain socket B<must> start with a slash in the second case!
 If the B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
 
-=item B<-s> I<id>
+=item B<-s> I<group_name>|I<gid>
 
 Set the group permissions of the UNIX domain socket. The option accepts either
 a numeric group id or group name. That group will then have both read and write
-permissions to the socket and therefore able to send commands to the daemon. This
+permissions (the socket will have file permissions 0750) for the socket and,
+therefore, is able to send commands to the daemon. This
 may be useful in cases where you cannot easily run all RRD processes with the same
 user privileges (e.g. graph generating CGI scripts that typically run in the
 permission context of the web server).
+
+This option affects the I<following> UNIX socket addresses (the following
+B<-l> options), i.e., you may specify different settings for different
+sockets.
+
+The default is not to change ownership or permissions of the socket and, thus,
+use the system default.
 
 =item B<-P> I<command>[,I<command>[,...]]
 
@@ -86,7 +94,7 @@ For example, to allow the C<FLUSH> and C<PENDING> commands one could specify:
 
   rrdcached -P FLUSH,PENDING $MORE_ARGUMENTS
 
-The B<-P> option effects the I<following> socket addresses (the following B<-l>
+The B<-P> option affects the I<following> socket addresses (the following B<-l>
 options). In the following example, only the IPv4 network socket (address
 C<10.0.0.1>) will be restricted to the C<FLUSH> and C<PENDING> commands:
 
