@@ -313,7 +313,7 @@ multiple defaults.
 
 A green arrow is made by: C<--color ARROW#00FF00>
 
-[B<--zoom> I<factor>]
+[B<-m>|B<--zoom> I<factor>]
 
 Zoom the graphics by the given amount. The factor must be E<gt> 0
 
