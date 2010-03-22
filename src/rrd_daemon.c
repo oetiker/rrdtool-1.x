@@ -142,7 +142,8 @@ struct listen_socket_s
 
   uint32_t permissions;
 
-  gid_t socket_group;
+  gid_t  socket_group;
+  mode_t socket_permissions;
 };
 typedef struct listen_socket_s listen_socket_t;
 
@@ -2339,6 +2340,13 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
     }
   }
 
+  if (sock->socket_permissions != (mode_t)-1)
+  {
+    if (chmod(path, sock->socket_permissions) != 0)
+      fprintf(stderr, "rrdcached: failed to set socket file permissions (%o): %s\n",
+          (unsigned int)sock->socket_permissions, strerror(errno));
+  }
+
   status = listen (fd, /* backlog = */ 10);
   if (status != 0)
   {
@@ -2759,9 +2767,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   char **permissions = NULL;
   size_t permissions_len = 0;
 
-  gid_t socket_group = (gid_t)-1;
+  gid_t  socket_group = (gid_t)-1;
+  mode_t socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "gl:s:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
     {
@@ -2818,6 +2827,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         /* }}} Done adding permissions. */
 
         new->socket_group = socket_group;
+        new->socket_permissions = socket_permissions;
 
         if (!rrd_add_ptr((void ***)&config_listen_address_list,
                          &config_listen_address_list_len, new))
@@ -2855,6 +2865,24 @@ static int read_options (int argc, char **argv) /* {{{ */
 	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", optarg);
 	  return (5);
 	}
+      }
+      break;
+
+      /* set socket file permissions */
+      case 'm':
+      {
+        long  tmp;
+        char *endptr = NULL;
+
+        tmp = strtol (optarg, &endptr, 8);
+        if ((endptr == optarg) || (! endptr) || (*endptr != '\0')
+            || (tmp > 07777) || (tmp < 0)) {
+          fprintf (stderr, "read_options: Invalid file mode \"%s\".\n",
+              optarg);
+          return (5);
+        }
+
+        socket_permissions = (mode_t)tmp;
       }
       break;
 

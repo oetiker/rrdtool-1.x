@@ -68,13 +68,31 @@ C<unix:/tmp/rrdcached.sock>, will be used.
 
 =item B<-s> I<group_name>|I<gid>
 
-Set the group permissions of the UNIX domain socket. The option accepts either
+Set the group permissions of a UNIX domain socket. The option accepts either
 a numeric group id or group name. That group will then have both read and write
 permissions (the socket will have file permissions 0750) for the socket and,
 therefore, is able to send commands to the daemon. This
 may be useful in cases where you cannot easily run all RRD processes with the same
 user privileges (e.g. graph generating CGI scripts that typically run in the
 permission context of the web server).
+
+This option affects the I<following> UNIX socket addresses (the following
+B<-l> options), i.e., you may specify different settings for different
+sockets.
+
+The default is not to change ownership or permissions of the socket and, thus,
+use the system default.
+
+=item B<-m> I<mode>
+
+Set the file permissions of a UNIX domain socket. The option accepts an octal
+number representing the bit pattern for the mode (see L<chmod(1)> for
+details).
+
+Please note that not all systems honor this setting. On Linux, read/write
+permissions are required to connect to a UNIX socket. However, many
+BSD-derived systems ignore permissions for UNIX sockets. See L<unix(7)> for
+details.
 
 This option affects the I<following> UNIX socket addresses (the following
 B<-l> options), i.e., you may specify different settings for different
