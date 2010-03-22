@@ -111,7 +111,12 @@
 #include <glib-2.0/glib.h>
 /* }}} */
 
-#define RRDD_LOG(severity, ...) syslog ((severity), __VA_ARGS__)
+#define RRDD_LOG(severity, ...) \
+  do { \
+    if (stay_foreground) \
+      fprintf(stderr, __VA_ARGS__); \
+    syslog ((severity), __VA_ARGS__); \
+  } while (0)
 
 #ifndef __GNUC__
 # define __attribute__(x) /**/
