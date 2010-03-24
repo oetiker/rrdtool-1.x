@@ -3105,13 +3105,20 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -F            Always flush all updates at shutdown\n"
-            "  -s <id|name>  Make socket g+rw to named group\n"
+            "  -s <id|name>  Group owner of all following UNIX sockets\n"
+            "                (the socket will also have read/write permissions "
+                            "for that group)\n"
+            "  -m <mode>     File permissions (octal) of all following UNIX "
+                            "sockets\n"
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"
             "to the rrdcached(1) manual page.\n",
             VERSION);
-        status = -1;
+        if (option == 'h')
+          status = -1;
+        else
+          status = 1;
         break;
     } /* switch (option) */
   } /* while (getopt) */
