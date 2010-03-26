@@ -312,6 +312,14 @@ config file.
  $MAKE
  $MAKE install
 
+When building on Solaris you may want todo
+
+ ./configure --prefix=$INSTALL_DIR \
+    --enable-xlib=no \
+    --enable-xlib-render=no \
+    --enable-win32=no \
+    CFLAGS="-O3 -fPIC -D_POSIX_PTHREAD_SEMANTICS"
+
 =head3 Building Glib
 
  cd $BUILD_DIR
