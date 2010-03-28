@@ -528,7 +528,7 @@ EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,            
 EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.4.6,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.4.6,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.12.12, ftp://ftp.gtk.org/pub/glib/2.12/, "")
-EX_CHECK_ALL(pango-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.17,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.17, "")
+EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.17,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.17, "")
 EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.6.31,  http://xmlsoft.org/downloads.html, /usr/include/libxml2)
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
