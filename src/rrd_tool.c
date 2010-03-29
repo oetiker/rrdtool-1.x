@@ -721,10 +721,10 @@ int HandleInputLine(
                    XML_ENCODING);
             printf("<%s>\n", ROOT_TAG);
             printf("  <%s>\n", META_TAG);
-            printf("    <%s>%lu</%s>\n", META_START_TAG,
-                   (unsigned long) start + step, META_START_TAG);
+            printf("    <%s>%lld</%s>\n", META_START_TAG,
+                   (long long int) start + step, META_START_TAG);
             printf("    <%s>%lu</%s>\n", META_STEP_TAG, step, META_STEP_TAG);
-            printf("    <%s>%lu</%s>\n", META_END_TAG, (unsigned long) end,
+            printf("    <%s>%lld</%s>\n", META_END_TAG, (long long int) end,
                    META_END_TAG);
             printf("    <%s>%lu</%s>\n", META_ROWS_TAG, row_cnt,
                    META_ROWS_TAG);
@@ -745,7 +745,7 @@ int HandleInputLine(
             printf("  <%s>\n", DATA_TAG);
             for (ti = start + step; ti <= end; ti += step) {
                 printf("    <%s>", DATA_ROW_TAG);
-                printf("<%s>%lu</%s>", COL_TIME_TAG, ti, COL_TIME_TAG);
+                printf("<%s>%lld</%s>", COL_TIME_TAG, (long long int)ti, COL_TIME_TAG);
                 for (j = 0; j < col_cnt; j++) {
                     rrd_value_t newval = DNAN;
 
