@@ -167,14 +167,17 @@ int rrd_fetch(
         return -1;
     }
 
-    status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
-    if (opt_daemon) free (opt_daemon);
-    if (status) return (-1);
-
     cf = argv[optind + 1];
 
-    status = rrd_fetch_r(argv[optind], cf, start, end, step,
-            ds_cnt, ds_namv, data);
+    rrdc_connect (opt_daemon);
+    if (rrdc_is_connected (opt_daemon))
+	    status = rrdc_fetch (argv[optind], cf, start, end, step,
+			    ds_cnt, ds_namv, data);
+
+    else
+	    status = rrd_fetch_r(argv[optind], cf, start, end, step,
+			    ds_cnt, ds_namv, data);
+
     if (status != 0)
         return (-1);
     return (0);
