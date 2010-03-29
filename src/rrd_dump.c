@@ -139,7 +139,7 @@ int rrd_dump_cb_r(
 # error "Need strftime"
 #endif
     CB_FMTS("\t<lastupdate>%lld</lastupdate> <!-- %s -->\n\n",
-        (long long) rrd.live_head->last_up, somestring);
+        (long long int) rrd.live_head->last_up, somestring);
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
         CB_PUTS("\t<ds>\n");
 
@@ -430,7 +430,7 @@ int rrd_dump_cb_r(
 #else
 # error "Need strftime"
 #endif
-            CB_FMTS("\t\t\t<!-- %s / %lld --> <row>",  somestring, (long long) now);
+            CB_FMTS("\t\t\t<!-- %s / %lld --> <row>",  somestring, (long long int) now);
             for (iii = 0; iii < rrd.stat_head->ds_cnt; iii++) {
                 rrd_read(rrd_file, &my_cdp, sizeof(rrd_value_t) * 1);
                 if (isnan(my_cdp)) {
