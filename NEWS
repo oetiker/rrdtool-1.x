@@ -1,7 +1,21 @@
 #####################################
-Major Changes between 1.3.x and 1.4.x
+Major Changes between 1.4.x and ...
 -------------------------------------
 $Id$
+
+RRD Graph
+---------
+* GRAD element for graph, it acts more or less like an AREA,
+  except you can specify a second color and a height which is used to
+  create a gradient from one color to the next
+  by Rian Shelley
+
+
+
+
+#####################################
+Major Changes between 1.3.x and 1.4.x
+-------------------------------------
 
 RRD Caching Daemon (rrdcached)
 ------------------------------

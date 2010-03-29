@@ -234,6 +234,7 @@ enum gf_en gf_conv(
     conv_if(VRULE, GF_VRULE);
     conv_if(LINE, GF_LINE);
     conv_if(AREA, GF_AREA);
+	conv_if(GRAD, GF_GRAD);
     conv_if(STACK, GF_STACK);
     conv_if(TICK, GF_TICK);
     conv_if(TEXTALIGN, GF_TEXTALIGN);
@@ -1216,8 +1217,11 @@ int data_proc(
 
     /* memory for the processed data */
     for (i = 0; i < im->gdes_c; i++) {
-        if ((im->gdes[i].gf == GF_LINE) ||
-            (im->gdes[i].gf == GF_AREA) || (im->gdes[i].gf == GF_TICK)) {
+        if ((im->gdes[i].gf == GF_LINE)
+         || (im->gdes[i].gf == GF_AREA) 
+         || (im->gdes[i].gf == GF_TICK)
+         || (im->gdes[i].gf == GF_GRAD)
+        ) {
             if ((im->gdes[i].p_data = (rrd_value_t*)malloc((im->xsize + 1)
                                              * sizeof(rrd_value_t))) == NULL) {
                 rrd_set_error("malloc data_proc");
@@ -1238,6 +1242,7 @@ int data_proc(
             switch (im->gdes[ii].gf) {
             case GF_LINE:
             case GF_AREA:
+			case GF_GRAD:
             case GF_TICK:
                 if (!im->gdes[ii].stack)
                     paintval = 0.0;
@@ -1631,6 +1636,7 @@ int print_calc(
             break;
         case GF_LINE:
         case GF_AREA:
+		case GF_GRAD:
         case GF_TICK:
             graphelement = 1;
             break;
@@ -3424,6 +3430,7 @@ int graph_paint(
             break;
         case GF_LINE:
         case GF_AREA:
+		case GF_GRAD:
             /* fix data points at oo and -oo */
             for (ii = 0; ii < im->xsize; ii++) {
                 if (isinf(im->gdes[i].p_data[ii])) {
@@ -3522,6 +3529,8 @@ int graph_paint(
                     cairo_stroke(im->cr);
                     cairo_restore(im->cr);
                 } else {
+					double lastx=0;
+					double lasty=0;
                     int       idxI = -1;
                     double   *foreY =
                         (double *) malloc(sizeof(double) * im->xsize * 2);
@@ -3552,12 +3561,17 @@ int graph_paint(
                                                            [cntI + 1], 4)) {
                                 cntI++;
                             }
-                            gfx_new_area(im,
-                                         backX[0], backY[0],
-                                         foreX[0], foreY[0],
-                                         foreX[cntI],
-                                         foreY[cntI], im->gdes[i].col);
-                            while (cntI < idxI) {
+							if (im->gdes[i].gf != GF_GRAD) {
+                            	gfx_new_area(im,
+                            	             backX[0], backY[0],
+                            	             foreX[0], foreY[0],
+                            	             foreX[cntI],
+                            	             foreY[cntI], im->gdes[i].col);
+							} else {
+								lastx = foreX[cntI];
+								lasty = foreY[cntI];
+							}
+							while (cntI < idxI) {
                                 lastI = cntI;
                                 cntI++;
                                 while (cntI < idxI
@@ -3573,9 +3587,32 @@ int graph_paint(
                                                                 + 1], 4)) {
                                     cntI++;
                                 }
-                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
+								if (im->gdes[i].gf != GF_GRAD) {
+	                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
+								} else {
+									gfx_add_rect_fadey(im, 
+										lastx, foreY[0],
+										foreX[cntI], foreY[cntI], lasty, 
+										im->gdes[i].col,
+										im->gdes[i].col2,
+										im->gdes[i].gradheight
+										);
+									lastx = foreX[cntI];
+									lasty = foreY[cntI];
+								}
                             }
-                            gfx_add_point(im, backX[idxI], backY[idxI]);
+							if (im->gdes[i].gf != GF_GRAD) {
+                            	gfx_add_point(im, backX[idxI], backY[idxI]);
+							} else {
+								gfx_add_rect_fadey(im,
+									lastx, foreY[0],
+									backX[idxI], backY[idxI], lasty,
+									im->gdes[i].col,
+									im->gdes[i].col2,
+									im->gdes[i].gradheight);
+								lastx = backX[idxI];
+								lasty = backY[idxI];
+							}
                             while (idxI > 1) {
                                 lastI = idxI;
                                 idxI--;
@@ -3592,11 +3629,23 @@ int graph_paint(
                                                                 - 1], 4)) {
                                     idxI--;
                                 }
-                                gfx_add_point(im, backX[idxI], backY[idxI]);
+								if (im->gdes[i].gf != GF_GRAD) {
+	                                gfx_add_point(im, backX[idxI], backY[idxI]);
+								} else {
+									gfx_add_rect_fadey(im,
+										lastx, foreY[0],
+										backX[idxI], backY[idxI], lasty,
+										im->gdes[i].col,
+										im->gdes[i].col2,
+										im->gdes[i].gradheight);
+									lastx = backX[idxI];
+									lasty = backY[idxI];
+								}
                             }
                             idxI = -1;
                             drawem = 0;
-                            gfx_close_path(im);
+							if (im->gdes[i].gf != GF_GRAD) 
+	                            gfx_close_path(im);
                         }
                         if (drawem != 0) {
                             drawem = 0;
@@ -3790,6 +3839,11 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].col.green = 0.0;
     im->gdes[im->gdes_c - 1].col.blue = 0.0;
     im->gdes[im->gdes_c - 1].col.alpha = 0.0;
+    im->gdes[im->gdes_c - 1].col2.red = 0.0;
+    im->gdes[im->gdes_c - 1].col2.green = 0.0;
+    im->gdes[im->gdes_c - 1].col2.blue = 0.0;
+    im->gdes[im->gdes_c - 1].col2.alpha = 0.0;
+    im->gdes[im->gdes_c - 1].gradheight = 50.0;
     im->gdes[im->gdes_c - 1].legend[0] = '\0';
     im->gdes[im->gdes_c - 1].format[0] = '\0';
     im->gdes[im->gdes_c - 1].strftm = 0;

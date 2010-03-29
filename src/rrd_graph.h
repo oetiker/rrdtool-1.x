@@ -52,7 +52,7 @@ enum grc_en { GRC_CANVAS = 0, GRC_BACK, GRC_SHADEA, GRC_SHADEB,
 #define GRIDWIDTH  0.4
 
 enum gf_en { GF_PRINT = 0, GF_GPRINT, GF_COMMENT, GF_HRULE, GF_VRULE, GF_LINE,
-    GF_AREA, GF_STACK, GF_TICK, GF_TEXTALIGN,
+    GF_AREA,GF_GRAD, GF_STACK, GF_TICK, GF_TEXTALIGN,
     GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
     GF_XPORT
 };
@@ -160,7 +160,8 @@ typedef struct graph_desc_t {
     long      ds;       /* data source number */
     enum cf_en cf;      /* consolidation function */
     enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
-    struct gfx_color_t col; /* graph color */
+    struct gfx_color_t col, col2; /* graph color */
+	double    gradheight;
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
     char      legend[FMT_LEG_LEN + 5];  /* legend */
     int       strftm;   /* should the VDEF legend be formated with strftime */
@@ -437,6 +438,25 @@ void      gfx_add_point(
     image_desc_t *im,
     double x,
     double y);
+
+/* create a rect that has a gradient from color1 to color2 in height pixels 
+ * height > 0:
+ * 		gradient starts at top and goes down a fixed number of pixels (fire style)
+ * height < 0:
+ * 		gradient starts at bottom and goes up a fixed number of pixels (constant style)
+ * height == 0:
+ * 		gradient is stretched between two points
+ */
+void gfx_add_rect_fadey(
+    image_desc_t *im,
+    double x1,double y1,
+    double x2,double y2,
+	double py,
+    gfx_color_t color1,
+	gfx_color_t color2,
+	double height);
+				
+
 
 /* close current path so it ends at the same point as it started */
 void      gfx_close_path(

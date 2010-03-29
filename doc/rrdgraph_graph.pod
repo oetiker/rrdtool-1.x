@@ -262,6 +262,14 @@ you want to use STACK, use the "LINEx:<value>::STACK" form.
 See B<LINE>, however the area between the x-axis and the line will
 be filled.
 
+=head3 B<GRAD>B<:>I<value>[B<#>I<color1>[B<#>I<color2>B<:>I<height>][B<:>[I<legend>][B<:STACK>]]
+
+Similar to B<AREA>, except the area between the line and the x-axis will contain a gradient from color1 to color2.
+
+The I<height> parameter can create three different behaviors. If I<height> > 0, then the gradient is a fixed height, starting at the line going down. If I<height> < 0, then the gradient starts at fixed height above the x-axis, going down to the x-axis. If I<height> == 0, then the gradient goes from the line to x-axis. 
+
+If not present, I<color2> defaults to #00000000 and I<height> defaults to 50.
+
 =head3 B<TICK>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<fraction>[B<:>I<legend>]]
 
 Plot a tick mark (a vertical line) for each value of I<vname> that is

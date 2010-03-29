@@ -105,6 +105,42 @@ void gfx_add_point(
     cairo_line_to(cr, x, y);
 }
 
+/* add a point to a line or to an area */
+void gfx_add_rect_fadey(
+    image_desc_t *im,
+    double x1,double y1,
+	double x2,double y2,
+	double py,
+    gfx_color_t color1,
+	gfx_color_t color2,
+	double height)
+{
+    cairo_t  *cr = im->cr;
+    
+	cairo_new_path(cr);
+    gfx_area_fit(im, &x1, &y1);
+    gfx_area_fit(im, &x2, &y2);
+    cairo_line_to(cr, x1, y1);
+    cairo_line_to(cr, x1, y2);
+	cairo_line_to(cr, x2, y2);
+	cairo_line_to(cr, x2, y1);
+	cairo_close_path(cr);
+	cairo_pattern_t* p;
+	if (height < 0) {
+		p = cairo_pattern_create_linear(x1,y1,x2,y1+height);
+	} else if (height > 0) {
+		p = cairo_pattern_create_linear(x1,(y2+py)/2+height,x2,(y2+py)/2);
+	} else {
+		p = cairo_pattern_create_linear(x1,y1,x2,(y2+py)/2);
+	}
+	//cairo_pattern_t* p = cairo_pattern_create_linear(x1,py+50,x2,py);
+	cairo_pattern_add_color_stop_rgba(p, 1, color1.red,color1.green,color1.blue,color1.alpha);
+	cairo_pattern_add_color_stop_rgba(p, 0, color2.red,color2.green,color2.blue,color2.alpha);
+    cairo_set_source(cr, p);
+	cairo_pattern_destroy(p);
+	cairo_fill(cr);
+}
+
 void gfx_close_path(
     image_desc_t *im)
 {

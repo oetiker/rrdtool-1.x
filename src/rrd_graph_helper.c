@@ -532,7 +532,7 @@ int rrd_parse_PVHLAST(
     graph_desc_t *const gdp,
     image_desc_t *const im)
 {
-    int       i, j, k;
+    int       i, j, k, j2;
     int       colorfound = 0;
     char      tmpstr[MAX_VNAME_LEN + 10];   /* vname#RRGGBBAA\0 */
     static int spacecnt = 0;
@@ -567,10 +567,22 @@ int rrd_parse_PVHLAST(
         rrd_set_error("Cannot parse line '%s'", line);
         return 1;
     }
-
-    j = i;
+    
+	j = i;
     while (j > 0 && tmpstr[j] != '#')
         j--;
+	//see if there is a second color
+	j2 = j-1;
+	while (j2 > 0 && tmpstr[j2] != '#')
+		j2--;
+	if (j && j2) {   //yes, swap j and j2, so that j is first color, j2 is second
+		int tmp = j;
+		j = j2;
+		j2 = tmp;
+		tmpstr[j2] = '\0';
+	} else {
+		j2 = 0;
+	}
 
     if (j) {
         tmpstr[j] = '\0';
@@ -578,8 +590,10 @@ int rrd_parse_PVHLAST(
     /* We now have:
      * tmpstr[0]    containing vname
      * tmpstr[j]    if j!=0 then containing color
-     * i            size of vname + color
+     * tmpstr[j2]   if j2!=0 then containing second color
+     * i            size of vname 
      * j            if j!=0 then size of vname
+     * j2			if j2!=0 then size of vname + first color
      */
 
     /* Number or vname ?
@@ -644,6 +658,33 @@ int rrd_parse_PVHLAST(
         dprintf("- parsed color %0.0f,%0.0f,%0.0f,%0.0f\n", gdp->col.red,
                 gdp->col.green, gdp->col.blue, gdp->col.alpha);
         colorfound = 1;
+		if (j2) { //second color?
+			j2++;
+			dprintf("- examining second color '%s'\n", &tmpstr[j2]);
+			//TODO: maybe rrd_parse_color should take a pointer to gdp->col instead of gdp
+			struct gfx_color_t firstcol = gdp->col;
+        	if (rrd_parse_color(&tmpstr[j2], gdp)) {
+            	rrd_set_error("Could not parse color in '%s'", &tmpstr[j2]);
+	            return 1;
+    	    }
+        	dprintf("- parsed color %0.0f,%0.0f,%0.0f,%0.0f\n", gdp->col.red,
+            	    gdp->col.green, gdp->col.blue, gdp->col.alpha);
+			gdp->col2 = gdp->col;
+			gdp->col = firstcol;
+			//we now have a mandatory grid height
+    		(*eaten) += i;
+			if (line[*eaten] != '\0') {
+				(*eaten)++;
+			}
+			dprintf("- examining gradient height\n");
+			i = scan_for_col(&line[*eaten], MAX_VNAME_LEN + 9, tmpstr);
+			sscanf(tmpstr, "%lf%n", &gdp->gradheight, &j);
+			if (i != j) {
+				rrd_set_error("Could not parse gradient height in '%s'", tmpstr);
+				return 1;
+			}
+			dprintf("- parsed gradientheight %0.0f\n", gdp->gradheight);
+		}
     } else {
         dprintf("- no color present in '%s'\n", tmpstr);
     }
@@ -1113,6 +1154,7 @@ void rrd_graph_script(
         case GF_HRULE: /* value#color[:legend] */
         case GF_LINE:  /* vname-or-value[#color[:legend]][:STACK] */
         case GF_AREA:  /* vname-or-value[#color[:legend]][:STACK] */
+		case GF_GRAD:  /* vname-or-value[#color[:legend][#color[:gradientheight]]][:STACK] */
         case GF_TICK:  /* vname#color[:num[:legend]] */
             if (rrd_parse_PVHLAST(argv[i], &eaten, gdp, im))
                 return;
@@ -1122,7 +1164,7 @@ void rrd_graph_script(
         case GF_STACK: /* vname-or-value[#color[:legend]] */
             if (rrd_parse_PVHLAST(argv[i], &eaten, gdp, im))
                 return;
-            if (last_gf == GF_LINE || last_gf == GF_AREA) {
+            if (last_gf == GF_LINE || last_gf == GF_AREA || last_gf == GF_GRAD) {
                 gdp->gf = last_gf;
                 gdp->linewidth = last_linewidth;
             } else {
