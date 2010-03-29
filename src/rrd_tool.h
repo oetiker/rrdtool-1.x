@@ -122,6 +122,8 @@ int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
     char *a,
     char *b);
 
+    const char *cf_to_string (enum cf_en cf);
+
 #endif /* _RRD_TOOL_H */
 
 #ifdef  __cplusplus

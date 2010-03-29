@@ -84,6 +84,26 @@ enum cf_en cf_conv(
     return (enum cf_en)(-1);
 }
 
+const char *cf_to_string (enum cf_en cf)
+{
+    switch (cf)
+    {
+        case CF_AVERAGE:     return "AVERAGE";
+        case CF_MINIMUM:     return "MIN";
+        case CF_MAXIMUM:     return "MAX";
+        case CF_LAST:        return "LAST";
+        case CF_HWPREDICT:   return "HWPREDICT";
+        case CF_SEASONAL:    return "SEASONAL";
+        case CF_DEVPREDICT:  return "DEVPREDICT";
+        case CF_DEVSEASONAL: return "DEVSEASONAL";
+        case CF_FAILURES:    return "FAILURES";
+        case CF_MHWPREDICT:  return "MHWPREDICT";
+
+        default:
+            return NULL;
+    }
+} /* char *cf_to_string */
+
 #undef converter
 
 long ds_match(
