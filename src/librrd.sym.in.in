@@ -1,5 +1,7 @@
 rrd_add_ptr
 rrd_add_strdup
+rrd_add_ptr_chunk
+rrd_add_strdup_chunk
 rrd_clear_error
 rrd_close
 rrd_create

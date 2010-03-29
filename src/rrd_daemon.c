@@ -2780,7 +2780,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   gid_t  socket_group = (gid_t)-1;
   mode_t socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:m:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:a:h?")) != -1)
   {
     switch (option)
     {
@@ -3088,7 +3088,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
-      case 'm':
+      case 'a':
       {
         int temp = atoi(optarg);
         if (temp > 0)
@@ -3096,7 +3096,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         else
         {
           fprintf(stderr, "Invalid allocation size: %s\n", optarg);
-          status = 10;
+          return 10;
         }
       }
       break;
@@ -3127,6 +3127,7 @@ static int read_options (int argc, char **argv) /* {{{ */
                             "for that group)\n"
             "  -m <mode>     File permissions (octal) of all following UNIX "
                             "sockets\n"
+            "  -a <size>     Memory allocation chunk size. Default is 1."
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"
