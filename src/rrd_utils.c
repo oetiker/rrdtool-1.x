@@ -50,29 +50,53 @@ long rrd_random(void)
     return random();
 }
 
-/* rrd_add_ptr: add a pointer to a dynamically sized array of pointers,
- * realloc as necessary.  returns 1 on success, 0 on failure.
+/* rrd_add_ptr_chunk: add a pointer to a dynamically sized array of
+ * pointers, realloc as necessary in multiples of "chunk".
+ *
+ * "alloc" is the number of pointers allocated
+ * "dest_size" is the number of valid pointers
+ *
+ * returns 1 on success, 0 on failure.
  */
 
-int rrd_add_ptr(void ***dest, size_t *dest_size, void *src)
+int rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src,
+                      size_t *alloc, size_t chunk)
 {
     void **temp;
 
     assert(dest != NULL);
+    assert(alloc != NULL);
+    assert(*alloc >= *dest_size);
 
-    temp = (void **) rrd_realloc(*dest, (*dest_size+1) * sizeof(*dest));
-    if (!temp)
-        return 0;
+    if (*alloc == *dest_size)
+    {
+        temp = (void **) rrd_realloc(*dest, (*alloc+chunk) * sizeof(*dest));
+        if (!temp)
+            return 0;
 
-    *dest = temp;
-    temp[*dest_size] = src;
+        *dest = temp;
+        *alloc += chunk;
+    }
+
+    (*dest)[*dest_size] = src;
     (*dest_size)++;
 
     return 1;
 }
 
-/* like rrd_add_ptr, but calls strdup() on a string first. */
-int rrd_add_strdup(char ***dest, size_t *dest_size, char *src)
+/* rrd_add_ptr: add a pointer to a dynamically sized array of pointers,
+ * realloc as necessary.  returns 1 on success, 0 on failure.
+ */
+int rrd_add_ptr(void ***dest, size_t *dest_size, void *src)
+{
+    size_t alloc = *dest_size;
+
+    return rrd_add_ptr_chunk(dest, dest_size, src, &alloc, 1);
+}
+
+/* like rrd_add_ptr_chunk, but calls strdup() on a string first. */
+int rrd_add_strdup_chunk(char ***dest, size_t *dest_size, char *src,
+                         size_t *alloc, size_t chunk)
 {
     char *dup_src;
     int add_ok;
@@ -84,11 +108,18 @@ int rrd_add_strdup(char ***dest, size_t *dest_size, char *src)
     if (!dup_src)
         return 0;
 
-    add_ok = rrd_add_ptr((void ***)dest, dest_size, (void *)dup_src);
+    add_ok = rrd_add_ptr_chunk((void ***)dest, dest_size, (void *)dup_src, alloc, chunk);
     if (!add_ok)
         free(dup_src);
 
     return add_ok;
+}
+
+int rrd_add_strdup(char ***dest, size_t *dest_size, char *src)
+{
+    size_t alloc = *dest_size;
+
+    return rrd_add_strdup_chunk(dest, dest_size, src, &alloc, 1);
 }
 
 void rrd_free_ptrs(void ***src, size_t *cnt)

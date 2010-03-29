@@ -183,7 +183,8 @@ struct cache_item_s
 {
   char *file;
   char **values;
-  size_t values_num;
+  size_t values_num;		/* number of valid pointers */
+  size_t values_alloc;		/* number of allocated pointers */
   time_t last_flush_time;
   time_t last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
@@ -260,6 +261,7 @@ static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 static size_t _config_base_dir_len = 0;
 static int config_write_base_only = 0;
+static size_t config_alloc_chunk = 1;
 
 static listen_socket_t **config_listen_address_list = NULL;
 static size_t config_listen_address_list_len = 0;
@@ -647,6 +649,7 @@ static void wipe_ci_values(cache_item_t *ci, time_t when)
 {
   ci->values = NULL;
   ci->values_num = 0;
+  ci->values_alloc = 0;
 
   ci->last_flush_time = when;
   if (config_write_jitter > 0)
@@ -1444,7 +1447,8 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     else
       ci->last_update_stamp = stamp;
 
-    if (!rrd_add_strdup(&ci->values, &ci->values_num, value))
+    if (!rrd_add_strdup_chunk(&ci->values, &ci->values_num, value,
+                              &ci->values_alloc, config_alloc_chunk))
     {
       RRDD_LOG (LOG_ERR, "handle_request_update: rrd_add_strdup failed.");
       continue;
@@ -2776,7 +2780,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   gid_t  socket_group = (gid_t)-1;
   mode_t socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:m:h?")) != -1)
   {
     switch (option)
     {
@@ -3080,6 +3084,19 @@ static int read_options (int argc, char **argv) /* {{{ */
           fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
                   errno ? rrd_strerror(errno) : "");
           return 6;
+        }
+      }
+      break;
+
+      case 'm':
+      {
+        int temp = atoi(optarg);
+        if (temp > 0)
+          config_alloc_chunk = temp;
+        else
+        {
+          fprintf(stderr, "Invalid allocation size: %s\n", optarg);
+          status = 10;
         }
       }
       break;

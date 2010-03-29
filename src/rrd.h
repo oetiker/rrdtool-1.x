@@ -333,8 +333,12 @@ int       rrd_proc_start_end(
 
     long rrd_random(void);
 
+    int rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src,
+                          size_t *alloc, size_t chunk);
     int rrd_add_ptr(void ***dest, size_t *dest_size, void *src);
     int rrd_add_strdup(char ***dest, size_t *dest_size, char *src);
+    int rrd_add_strdup_chunk(char ***dest, size_t *dest_size, char *src,
+                             size_t *alloc, size_t chunk);
     void rrd_free_ptrs(void ***src, size_t *cnt);
 
     int rrd_mkdir_p(const char *pathname, mode_t mode);

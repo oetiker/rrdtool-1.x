@@ -81,6 +81,16 @@ end of the new C<dest>.  Returns 1 on success, 0 on failure.
     if (!rrd_add_ptr(&arr, &arr_size, elem))
         handle_failure();
 
+=item B<rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src, size_t *alloc, size_t chunk)>
+
+Like C<rrd_add_ptr>, except the destination is allocated in chunks of
+C<chunk>.  C<alloc> points to the number of entries allocated, whereas
+C<dest_size> points to the number of valid pointers.  If more pointers are
+needed, C<chunk> pointers are allocated and C<alloc> is increased
+accordingly.  C<alloc> must be E<gt>= C<dest_size>.
+
+This method improves performance on hosts with expensive C<realloc()>.
+
 =item B<rrd_add_strdup(char ***dest, size_t *dest_size, char *src)>
 
 Like C<rrd_add_ptr>, except adds a C<strdup> of the source string.
@@ -90,6 +100,14 @@ Like C<rrd_add_ptr>, except adds a C<strdup> of the source string.
     char *str  = "example text";
     if (!rrd_add_strdup(&arr, &arr_size, str))
         handle_failure();
+
+=item B<rrd_add_strdup_chunk(char ***dest, size_t *dest_size, char *src, size_t *alloc, size_t chunk)>
+
+Like C<rrd_add_strdup>, except the destination is allocated in chunks of
+C<chunk>.  C<alloc> points to the number of entries allocated, whereas
+C<dest_size> points to the number of valid pointers.  If more pointers are
+needed, C<chunk> pointers are allocated and C<alloc> is increased
+accordingly.  C<alloc> must be E<gt>= C<dest_size>.
 
 =item B<rrd_free_ptrs(void ***src, size_t *cnt)>
 
