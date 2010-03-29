@@ -19,7 +19,7 @@ B<rrdcached>
 [-F]
 [-g]
 [B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
-[B<-m>E<nbsp>I<alloc_size>]
+[B<-a>E<nbsp>I<alloc_size>]
 
 =head1 DESCRIPTION
 
@@ -234,7 +234,7 @@ Only permit writes into the base directory specified in B<-b> (and any
 sub-directories).  This does B<NOT> detect symbolic links.  Paths
 containing C<../> will also be blocked.
 
-=item B<-m> I<alloc_size>
+=item B<-a> I<alloc_size>
 
 Allocate value pointers in chunks of I<alloc_size>.  This may improve CPU
 utilization on machines with slow C<realloc()> implementations, in
