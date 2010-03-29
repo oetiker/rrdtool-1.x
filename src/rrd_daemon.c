@@ -1,6 +1,6 @@
 /**
  * RRDTool - src/rrd_daemon.c
- * Copyright (C) 2008,2009 Florian octo Forster
+ * Copyright (C) 2008-2010 Florian octo Forster
  * Copyright (C) 2008,2009 Kevin Brintnall
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -1477,6 +1477,176 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
 } /* }}} int handle_request_update */
 
+static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
+{
+  char *file;
+  char *cf;
+
+  char *start_str;
+  char *end_str;
+  rrd_time_value_t start_tv;
+  rrd_time_value_t end_tv;
+  time_t start_tm;
+  time_t end_tm;
+
+  unsigned long step;
+  unsigned long ds_cnt;
+  char **ds_namv;
+  rrd_value_t *data;
+
+  int status;
+  unsigned long i;
+  time_t t;
+  rrd_value_t *data_ptr;
+
+  file = NULL;
+  cf = NULL;
+  start_str = NULL;
+  end_str = NULL;
+
+  /* Read the arguments */
+  do /* while (0) */
+  {
+    status = buffer_get_field (&buffer, &buffer_size, &file);
+    if (status != 0)
+      break;
+
+    status = buffer_get_field (&buffer, &buffer_size, &cf);
+    if (status != 0)
+      break;
+
+    status = buffer_get_field (&buffer, &buffer_size, &start_str);
+    if (status != 0)
+    {
+      start_str = NULL;
+      status = 0;
+      break;
+    }
+
+    status = buffer_get_field (&buffer, &buffer_size, &end_str);
+    if (status != 0)
+    {
+      end_str = NULL;
+      status = 0;
+      break;
+    }
+  } while (0);
+
+  if (status != 0)
+    return (syntax_error(sock,cmd));
+
+  status = flush_file (file);
+  if ((status != 0) && (status != ENOENT))
+    return (send_response (sock, RESP_ERR,
+          "flush_file (%s) failed with status %i.\n", file, status));
+
+  /* Parse start time */
+  if (start_str != NULL)
+  {
+    const char *errmsg;
+
+    errmsg = rrd_parsetime (start_str, &start_tv);
+    if (errmsg != NULL)
+      return (send_response(sock, RESP_ERR,
+            "Cannot parse start time `%s': %s\n", start_str, errmsg));
+  }
+  else
+    rrd_parsetime ("-86400", &start_tv);
+
+  /* Parse end time */
+  if (end_str != NULL)
+  {
+    const char *errmsg;
+
+    errmsg = rrd_parsetime (end_str, &end_tv);
+    if (errmsg != NULL)
+      return (send_response(sock, RESP_ERR,
+            "Cannot parse end time `%s': %s\n", end_str, errmsg));
+  }
+  else
+    rrd_parsetime ("now", &end_tv);
+
+  start_tm = 0;
+  end_tm = 0;
+  status = rrd_proc_start_end (&start_tv, &end_tv, &start_tm, &end_tm);
+  if (status != 0)
+    return (send_response(sock, RESP_ERR,
+          "rrd_proc_start_end failed: %s\n", rrd_get_error ()));
+
+  step = -1;
+  ds_cnt = 0;
+  ds_namv = NULL;
+  data = NULL;
+
+  status = rrd_fetch_r (file, cf, &start_tm, &end_tm, &step,
+      &ds_cnt, &ds_namv, &data);
+  if (status != 0)
+    return (send_response(sock, RESP_ERR,
+          "rrd_fetch_r failed: %s\n", rrd_get_error ()));
+
+  add_response_info (sock, "FlushVersion: %lu\n", 1);
+  add_response_info (sock, "Start: %lu\n", (unsigned long) start_tm);
+  add_response_info (sock, "End: %lu\n", (unsigned long) end_tm);
+  add_response_info (sock, "Step: %lu\n", step);
+  add_response_info (sock, "DSCount: %lu\n", ds_cnt);
+
+#define SSTRCAT(buffer,str,buffer_fill) do { \
+    size_t str_len = strlen (str); \
+    if ((buffer_fill + str_len) > sizeof (buffer)) \
+      str_len = sizeof (buffer) - buffer_fill; \
+    if (str_len > 0) { \
+      strncpy (buffer + buffer_fill, str, str_len); \
+      buffer_fill += str_len; \
+      assert (buffer_fill <= sizeof (buffer)); \
+      if (buffer_fill == sizeof (buffer)) \
+        buffer[buffer_fill - 1] = 0; \
+      else \
+        buffer[buffer_fill] = 0; \
+    } \
+  } while (0)
+
+  { /* Add list of DS names */
+    char linebuf[1024];
+    size_t linebuf_fill;
+
+    memset (linebuf, 0, sizeof (linebuf));
+    linebuf_fill = 0;
+    for (i = 0; i < ds_cnt; i++)
+    {
+      if (i > 0)
+        SSTRCAT (linebuf, " ", linebuf_fill);
+      SSTRCAT (linebuf, ds_namv[i], linebuf_fill);
+    }
+    add_response_info (sock, "DSName: %s\n", linebuf);
+  }
+
+  /* Add the actual data */
+  assert (step > 0);
+  data_ptr = data;
+  for (t = start_tm + step; t <= end_tm; t += step)
+  {
+    char linebuf[1024];
+    size_t linebuf_fill;
+    char tmp[128];
+
+    memset (linebuf, 0, sizeof (linebuf));
+    linebuf_fill = 0;
+    for (i = 0; i < ds_cnt; i++)
+    {
+      snprintf (tmp, sizeof (tmp), " %0.10e", *data_ptr);
+      tmp[sizeof (tmp) - 1] = 0;
+      SSTRCAT (linebuf, tmp, linebuf_fill);
+
+      data_ptr++;
+    }
+
+    add_response_info (sock, "%10lu:%s\n", (unsigned long) t, linebuf);
+  } /* for (t) */
+
+  return (send_response (sock, RESP_OK, "Success\n"));
+#undef SSTRCAT
+} /* }}} int handle_request_fetch */
+
 /* we came across a "WROTE" entry during journal replay.
  * throw away any values that we have accumulated for this file
  */
@@ -1647,6 +1817,14 @@ static command_t list_of_commands[] = { /* {{{ */
     CMD_CONTEXT_BATCH,
     NULL,
     NULL
+  },
+  {
+    "FETCH",
+    handle_request_fetch,
+    CMD_CONTEXT_CLIENT,
+    "FETCH <file> <CF> [<start> [<end>]]\n"
+    ,
+    "The 'FETCH' can be used by the client to retrieve values from an RRD file.\n"
   },
   {
     "QUIT",

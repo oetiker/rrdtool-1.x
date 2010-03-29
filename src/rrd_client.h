@@ -1,6 +1,6 @@
 /**
  * RRDTool - src/rrd_client.h
- * Copyright (C) 2008 Florian octo Forster
+ * Copyright (C) 2008-2010  Florian octo Forster
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -65,6 +65,14 @@ int rrdc_update (const char *filename, int values_num,
 
 int rrdc_flush (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
+
+int rrdc_fetch (const char *filename,
+    const char *cf,
+    time_t *ret_start, time_t *ret_end,
+    unsigned long *ret_step,
+    unsigned long *ret_ds_num,
+    char ***ret_ds_names,
+    rrd_value_t **ret_data);
 
 #else
 #	define rrdc_flush_if_daemon(a,b) 0

@@ -522,6 +522,13 @@ returns immediately, even though the writes may take a long time.
 Shows any "pending" updates for a file, in order.  The updates shown have
 not yet been written to the underlying RRD file.
 
+=item B<FETCH> I<filename> I<CF> [I<start> [I<end>]]
+
+Calls C<rrd_fetch> with the specified arguments and returns the result in text
+form. If necessary, the file is flushed to disk first. The client side function
+C<rrdc_fetch> (declared in C<rrd_client.h>) parses the output and behaves just
+like C<rrd_fetch_r> for easy integration of remote queries.
+
 =item B<FORGET> I<filename>
 
 Removes I<filename> from the cache.  Any pending updates B<WILL BE LOST>.
