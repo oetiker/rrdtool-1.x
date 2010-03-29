@@ -158,6 +158,7 @@ typedef struct graph_desc_t {
     char      rrd[1024];    /* name of the rrd_file containing data */
     char      ds_nam[DS_NAM_SIZE];  /* data source name */
     long      ds;       /* data source number */
+    char      daemon[256];
     enum cf_en cf;      /* consolidation function */
     enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
     struct gfx_color_t col, col2; /* graph color */

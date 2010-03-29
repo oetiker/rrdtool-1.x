@@ -846,46 +846,48 @@ int data_fetch(
         }
         if (!skip) {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
+            const char *daemon;
+            int status;
 
-            /* Flush the file if
-             * - a connection to the daemon has been established
-             * - this is the first occurrence of that RRD file
-             */
-            if (rrdc_is_connected(im->daemon_addr))
+            if (im->gdes[i].daemon[0] != 0)
+                daemon = im->gdes[i].daemon;
+            else
+                daemon = im->daemon_addr;
+
+            /* "daemon" may be NULL. ENV_RRDCACHED_ADDRESS is evaluated in that
+             * case. If "daemon" holds the same value as in the previous
+             * iteration, no actual new connection is established - the
+             * existing connection is re-used. */
+            rrdc_connect (daemon);
+
+            /* If connecting was successfull, use the daemon to query the data.
+             * If there is no connection, for example because no daemon address
+             * was specified, (try to) use the local file directly. */
+            if (rrdc_is_connected (daemon))
             {
-                int status;
-
-                status = 0;
-                for (ii = 0; ii < i; ii++)
-                {
-                    if (strcmp (im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
-                    {
-                        status = 1;
-                        break;
-                    }
+                status = rrdc_fetch (im->gdes[i].rrd,
+                        cf_to_string (im->gdes[i].cf),
+                        &im->gdes[i].start,
+                        &im->gdes[i].end,
+                        &ft_step,
+                        &im->gdes[i].ds_cnt,
+                        &im->gdes[i].ds_namv,
+                        &im->gdes[i].data);
+                if (status != 0)
+                    return (status);
+            }
+            else
+            {
+                if ((rrd_fetch_fn(im->gdes[i].rrd,
+                                im->gdes[i].cf,
+                                &im->gdes[i].start,
+                                &im->gdes[i].end,
+                                &ft_step,
+                                &im->gdes[i].ds_cnt,
+                                &im->gdes[i].ds_namv,
+                                &im->gdes[i].data)) == -1) {
+                    return -1;
                 }
-
-                if (status == 0)
-                {
-                    status = rrdc_flush (im->gdes[i].rrd);
-                    if (status != 0)
-                    {
-                        rrd_set_error ("rrdc_flush (%s) failed with status %i.",
-                                im->gdes[i].rrd, status);
-                        return (-1);
-                    }
-                }
-            } /* if (rrdc_is_connected()) */
-
-            if ((rrd_fetch_fn(im->gdes[i].rrd,
-                              im->gdes[i].cf,
-                              &im->gdes[i].start,
-                              &im->gdes[i].end,
-                              &ft_step,
-                              &im->gdes[i].ds_cnt,
-                              &im->gdes[i].ds_namv,
-                              &im->gdes[i].data)) == -1) {
-                return -1;
             }
             im->gdes[i].data_first = 1;
 
@@ -3853,6 +3855,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;
+    im->gdes[im->gdes_c - 1].daemon[0] = 0;
     return 0;
 }
 
@@ -4689,11 +4692,6 @@ void rrd_graph_options(
             return;
         }
     } /* while (1) */
-
-    {   /* try to connect to rrdcached */
-        int status = rrdc_connect(im->daemon_addr);
-        if (status != 0) return;
-    }
 
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);
     pango_layout_context_changed(im->layout);

@@ -4,7 +4,7 @@ rrdgraph_data - preparing data for graphing in rrdtool graph
 
 =head1 SYNOPSIS
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>][:daemon=I<E<lt>addressE<gt>>]
 
 B<VDEF>:I<vname>=I<RPN expression>
 
@@ -28,7 +28,7 @@ mixed case names for variables since operators will always be in uppercase.
 
 =head1 DEF
 
-B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>]
+B<DEF:>I<E<lt>vnameE<gt>>=I<E<lt>rrdfileE<gt>>:I<E<lt>ds-nameE<gt>>:I<E<lt>CFE<gt>>[:step=I<E<lt>stepE<gt>>][:start=I<E<lt>timeE<gt>>][:end=I<E<lt>timeE<gt>>][:reduce=I<E<lt>B<CF>E<gt>>][:daemon=I<E<lt>addressE<gt>>]
 
 This command fetches data from an B<RRD> file.  The virtual name
 I<vname> can then be used throughout the rest of the script. By
@@ -54,12 +54,20 @@ B<DEF> itself will be used to reduce the data density. This behavior can
 be changed using C<:reduce=I<E<lt>B<CF>E<gt>>>.  This optional parameter
 specifies the B<CF> to use during the data reduction phase.
 
+It is possible to request single data sources from a specific I<RRDCacheD>, see
+L<rrdcached(1)>, using the C<:daemon=I<E<lt>addressE<gt>>> parameter. The
+value given to this parameter follows the same syntax as other means to specify
+the address of the caching daemon. It is described in detail in the
+L<rrdcached(1)> manual page. Beware, however, that colons (in IPv6 addresses
+and as a port separator, for example) need to be escaped using a backslash.
+
 Example:
 
         DEF:ds0=router.rrd:ds0:AVERAGE
         DEF:ds0weekly=router.rrd:ds0:AVERAGE:step=7200
         DEF:ds0weekly=router.rrd:ds0:AVERAGE:start=end-1h
         DEF:ds0weekly=router.rrd:ds0:AVERAGE:start=11\:00:end=start+1h
+        DEF:ds0weekly=router.rrd:ds0:AVERAGE:daemon=collect1.example.com
 
 =head1 VDEF
 

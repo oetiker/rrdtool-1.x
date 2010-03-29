@@ -1003,6 +1003,11 @@ int rrd_parse_def(
                 return 1;
             }
             dprintf("- done parsing:  '%s'\n", &line[*eaten]);
+        } else if (!strcmp("daemon", command)) {
+            i = scan_for_col(&line[*eaten],
+                    sizeof (gdp->daemon), gdp->daemon);
+            (*eaten) += i;
+            dprintf("- using daemon '%s'\n", gdp->daemon);
         } else {
             rrd_set_error("Parse error in '%s'", line);
             return 1;

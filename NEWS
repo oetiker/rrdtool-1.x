@@ -10,6 +10,14 @@ RRD Graph
   create a gradient from one color to the next
   by Rian Shelley
 
+* RRDcached awareness. Instead of just flushing the file, data can now
+  be pulled in from remote RRDcached instances.
+
+RRDcached
+----------
+* New FETCH command allowing rrd_fetch to operate through the daemon and
+  thus work remotely. By Florian Forster
+
 
 
 
