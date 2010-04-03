@@ -42,7 +42,7 @@ Please refer to the other B<rrdtool> documentation for functions and valid argum
 
  info = rrdtool.info('downloads.rrd')
  print info['last_update']
- print info['ds']['downloads']['minimal_heartbeat']
+ print info['ds[downloads].minimal_heartbeat']
 
 =head2 Example 2
 
