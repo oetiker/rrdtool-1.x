@@ -1,4 +1,5 @@
 #include "rrd_tool.h"
+#include "unused.h"
 #include <dbi/dbi.h>
 #include <time.h>
 
@@ -365,7 +366,7 @@ static int _inline_unescape (char* string) {
 int
 rrd_fetch_fn_libdbi(
     const char     *filename,  /* name of the rrd */
-    enum cf_en     cf_idx __attribute__((unused)), /* consolidation function */
+    enum cf_en     UNUSED(cf_idx), /* consolidation function */
     time_t         *start,
     time_t         *end,       /* which time frame do you want ?
 			        * will be changed to represent reality */

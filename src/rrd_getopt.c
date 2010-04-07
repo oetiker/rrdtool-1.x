@@ -274,7 +274,8 @@ static char *const *original_argv;
    to getopt is that one passed to the process.  */
 static void store_args(
     int argc,
-    char *const *argv) __attribute__ ((unused));
+    char *const *argv);
+
 static void store_args(
     int argc,
     char *const *argv)

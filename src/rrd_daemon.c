@@ -73,6 +73,7 @@
 
 #include "rrd.h"
 #include "rrd_client.h"
+#include "unused.h"
 
 #include <stdlib.h>
 
@@ -118,10 +119,6 @@
     syslog ((severity), __VA_ARGS__); \
   } while (0)
 
-#ifndef __GNUC__
-# define __attribute__(x) /**/
-#endif
-
 /*
  * Types
  */
@@ -155,12 +152,12 @@ typedef struct listen_socket_s listen_socket_t;
 struct command_s;
 typedef struct command_s command_t;
 /* note: guard against "unused" warnings in the handlers */
-#define DISPATCH_PROTO	listen_socket_t *sock	__attribute__((unused)),\
-			time_t now		__attribute__((unused)),\
-			char  *buffer		__attribute__((unused)),\
-			size_t buffer_size	__attribute__((unused))
+#define DISPATCH_PROTO	listen_socket_t UNUSED(*sock),\
+			time_t UNUSED(now),\
+			char  UNUSED(*buffer),\
+			size_t UNUSED(buffer_size)
 
-#define HANDLER_PROTO	command_t *cmd	        __attribute__((unused)),\
+#define HANDLER_PROTO	command_t UNUSED(*cmd),\
 			DISPATCH_PROTO
 
 struct command_s {
@@ -303,23 +300,23 @@ static void sig_common (const char *sig) /* {{{ */
   pthread_cond_broadcast(&queue_cond);
 } /* }}} void sig_common */
 
-static void sig_int_handler (int s __attribute__((unused))) /* {{{ */
+static void sig_int_handler (int UNUSED(s)) /* {{{ */
 {
   sig_common("INT");
 } /* }}} void sig_int_handler */
 
-static void sig_term_handler (int s __attribute__((unused))) /* {{{ */
+static void sig_term_handler (int UNUSED(s)) /* {{{ */
 {
   sig_common("TERM");
 } /* }}} void sig_term_handler */
 
-static void sig_usr1_handler (int s __attribute__((unused))) /* {{{ */
+static void sig_usr1_handler (int UNUSED(s)) /* {{{ */
 {
   config_flush_at_shutdown = 1;
   sig_common("USR1");
 } /* }}} void sig_usr1_handler */
 
-static void sig_usr2_handler (int s __attribute__((unused))) /* {{{ */
+static void sig_usr2_handler (int UNUSED(s)) /* {{{ */
 {
   config_flush_at_shutdown = 0;
   sig_common("USR2");
@@ -844,7 +841,7 @@ static int flush_old_values (int max_age)
   return (0);
 } /* int flush_old_values */
 
-static void *flush_thread_main (void *args __attribute__((unused))) /* {{{ */
+static void *flush_thread_main (void UNUSED(*args)) /* {{{ */
 {
   struct timeval now;
   struct timespec next_flush;
@@ -897,7 +894,7 @@ static void *flush_thread_main (void *args __attribute__((unused))) /* {{{ */
   return NULL;
 } /* void *flush_thread_main */
 
-static void *queue_thread_main (void *args __attribute__((unused))) /* {{{ */
+static void *queue_thread_main (void UNUSED(*args)) /* {{{ */
 {
   pthread_mutex_lock (&cache_lock);
 
@@ -2707,7 +2704,7 @@ static int close_listen_sockets (void) /* {{{ */
   return (0);
 } /* }}} int close_listen_sockets */
 
-static void *listen_thread_main (void *args __attribute__((unused))) /* {{{ */
+static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
 {
   struct pollfd *pollfds;
   int pollfds_num;

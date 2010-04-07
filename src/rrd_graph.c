@@ -846,24 +846,24 @@ int data_fetch(
         }
         if (!skip) {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
-            const char *daemon;
+            const char *rrd_daemon;
             int status;
 
             if (im->gdes[i].daemon[0] != 0)
-                daemon = im->gdes[i].daemon;
+                rrd_daemon = im->gdes[i].daemon;
             else
-                daemon = im->daemon_addr;
+                rrd_daemon = im->daemon_addr;
 
             /* "daemon" may be NULL. ENV_RRDCACHED_ADDRESS is evaluated in that
              * case. If "daemon" holds the same value as in the previous
              * iteration, no actual new connection is established - the
              * existing connection is re-used. */
-            rrdc_connect (daemon);
+            rrdc_connect (rrd_daemon);
 
             /* If connecting was successfull, use the daemon to query the data.
              * If there is no connection, for example because no daemon address
              * was specified, (try to) use the local file directly. */
-            if (rrdc_is_connected (daemon))
+            if (rrdc_is_connected (rrd_daemon))
             {
                 status = rrdc_fetch (im->gdes[i].rrd,
                         cf_to_string (im->gdes[i].cf),

@@ -686,7 +686,7 @@ ssize_t rrd_write(
 /* this is a leftover from the old days, it serves no purpose
    and is therefore turned into a no-op */
 void rrd_flush(
-    rrd_file_t *rrd_file  __attribute__((unused)))
+    rrd_file_t UNUSED(*rrd_file))
 {
 }
 
@@ -748,10 +748,10 @@ void rrd_freemem(
  * aligning RRAs within stripes, or other performance enhancements
  */
 void rrd_notify_row(
-    rrd_file_t *rrd_file  __attribute__((unused)),
-    int rra_idx  __attribute__((unused)),
-    unsigned long rra_row  __attribute__((unused)),
-    time_t rra_time  __attribute__((unused)))
+    rrd_file_t UNUSED(*rrd_file),
+    int UNUSED(rra_idx),
+    unsigned long UNUSED(rra_row),
+    time_t UNUSED(rra_time))
 {
 }
 
@@ -763,8 +763,8 @@ void rrd_notify_row(
  * don't change to a new disk block at the same time
  */
 unsigned long rrd_select_initial_row(
-    rrd_file_t *rrd_file  __attribute__((unused)),
-    int rra_idx  __attribute__((unused)),
+    rrd_file_t UNUSED(*rrd_file),
+    int UNUSED(rra_idx),
     rra_def_t *rra
     )
 {
