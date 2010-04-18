@@ -35,7 +35,7 @@
 /* changed because microsecond precision requires another field */
 #define RRD_VERSION   "0004"
 #define RRD_VERSION3  "0003"
-#define FLOAT_COOKIE  8.642135E130
+#define FLOAT_COOKIE  ((double)8.642135E130)
 
 typedef union unival {
     unsigned long u_cnt;
