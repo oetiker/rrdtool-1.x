@@ -192,7 +192,8 @@ AC_STRUCT_TM
 CONFIGURE_PART(Test Library Functions)
 
 dnl Checks for libraries.
-AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
+AC_CHECK_FUNC(acos,  , AC_CHECK_LIB(m, acos))
+AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
