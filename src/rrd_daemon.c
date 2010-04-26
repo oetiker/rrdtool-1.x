@@ -2293,6 +2293,10 @@ static void journal_init(void) /* {{{ */
   }
 
   dir = opendir(journal_dir);
+  if (!dir) {
+    RRDD_LOG(LOG_CRIT, "journal_init: opendir(%s) failed\n", journal_dir);
+    return;
+  }
   while ((dent = readdir(dir)) != NULL)
   {
     /* looks like a journal file? */
@@ -3244,7 +3248,9 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'j':
       {
-        const char *dir = journal_dir = strdup(optarg);
+        char journal_dir_actual[PATH_MAX];
+        const char *dir;
+        dir = journal_dir = strdup(realpath((const char *)optarg, journal_dir_actual));
 
         status = rrd_mkdir_p(dir, 0777);
         if (status != 0)
