@@ -1481,8 +1481,6 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 
   char *start_str;
   char *end_str;
-  rrd_time_value_t start_tv;
-  rrd_time_value_t end_tv;
   time_t start_tm;
   time_t end_tm;
 
@@ -1537,38 +1535,55 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
     return (send_response (sock, RESP_ERR,
           "flush_file (%s) failed with status %i.\n", file, status));
 
+  t = time (NULL); /* "now" */
+
   /* Parse start time */
   if (start_str != NULL)
   {
-    const char *errmsg;
+    char *endptr;
+    long value;
 
-    errmsg = rrd_parsetime (start_str, &start_tv);
-    if (errmsg != NULL)
+    endptr = NULL;
+    errno = 0;
+    value = strtol (start_str, &endptr, /* base = */ 0);
+    if ((endptr == start_str) || (errno != 0))
       return (send_response(sock, RESP_ERR,
-            "Cannot parse start time `%s': %s\n", start_str, errmsg));
+            "Cannot parse start time `%s': Only simple integers are allowed.\n",
+            start_str));
+
+    if (value > 0)
+      start_tm = (time_t) value;
+    else
+      start_tm = (time_t) (t + value);
   }
   else
-    rrd_parsetime ("-86400", &start_tv);
+  {
+    start_tm = t - 86400;
+  }
 
   /* Parse end time */
   if (end_str != NULL)
   {
-    const char *errmsg;
+    char *endptr;
+    long value;
 
-    errmsg = rrd_parsetime (end_str, &end_tv);
-    if (errmsg != NULL)
+    endptr = NULL;
+    errno = 0;
+    value = strtol (end_str, &endptr, /* base = */ 0);
+    if ((endptr == end_str) || (errno != 0))
       return (send_response(sock, RESP_ERR,
-            "Cannot parse end time `%s': %s\n", end_str, errmsg));
+            "Cannot parse start time `%s': Only simple integers are allowed.\n",
+            end_str));
+
+    if (value > 0)
+      end_tm = (time_t) value;
+    else
+      end_tm = (time_t) (t + value);
   }
   else
-    rrd_parsetime ("now", &end_tv);
-
-  start_tm = 0;
-  end_tm = 0;
-  status = rrd_proc_start_end (&start_tv, &end_tv, &start_tm, &end_tm);
-  if (status != 0)
-    return (send_response(sock, RESP_ERR,
-          "rrd_proc_start_end failed: %s\n", rrd_get_error ()));
+  {
+    end_tm = t;
+  }
 
   step = -1;
   ds_cnt = 0;
