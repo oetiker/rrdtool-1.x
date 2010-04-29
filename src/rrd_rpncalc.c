@@ -72,8 +72,10 @@ rpnp_t   *rpn_expand(
     /* DS_CDEF_MAX_RPN_NODES is small, so at the expense of some wasted
      * memory we avoid any reallocs */
     rpnp = (rpnp_t *) calloc(DS_CDEF_MAX_RPN_NODES, sizeof(rpnp_t));
-    if (rpnp == NULL)
+    if (rpnp == NULL) {
+        rrd_set_error("failed allocating rpnp array");
         return NULL;
+    }
     for (i = 0; rpnc[i].op != OP_END; ++i) {
         rpnp[i].op = rpnc[i].op;
         if (rpnp[i].op == OP_NUMBER) {
