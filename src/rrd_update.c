@@ -1333,6 +1333,10 @@ static int process_pdp_st(
 
         rpnp =
             rpn_expand((rpn_cdefds_t *) &(rrd->ds_def[ds_idx].par[DS_cdef]));
+        if(rpnp == NULL) {
+          rpnstack_free(&rpnstack);
+          return -1;
+        }
         /* substitute data values for OP_VARIABLE nodes */
         for (i = 0; rpnp[i].op != OP_END; i++) {
             if (rpnp[i].op == OP_VARIABLE) {
@@ -1346,6 +1350,7 @@ static int process_pdp_st(
             rpnstack_free(&rpnstack);
             return -1;
         }
+        free(rpnp);
     }
 
     /* make pdp_prep ready for the next run */
