@@ -376,14 +376,17 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   ret->lines_num = 0;
 
   buffer_ptr = fgets (buffer, sizeof (buffer), sh);
-  if (buffer_ptr == NULL)
+  if (buffer_ptr == NULL) {
+    close_connection();
     return (-3);
+  }
   chomp (buffer);
 
   ret->status = strtol (buffer, &ret->message, 0);
   if (buffer == ret->message)
   {
     response_free (ret);
+    close_connection();
     return (-4);
   }
   /* Skip leading whitespace of the status message */
@@ -401,6 +404,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   if (ret->lines == NULL)
   {
     response_free (ret);
+    close_connection();
     return (-5);
   }
   memset (ret->lines, 0, sizeof (char *) * ret->status);
@@ -412,6 +416,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
     if (buffer_ptr == NULL)
     {
       response_free (ret);
+      close_connection();
       return (-6);
     }
     chomp (buffer);
@@ -420,6 +425,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
     if (ret->lines[i] == NULL)
     {
       response_free (ret);
+      close_connection();
       return (-7);
     }
   }
