@@ -1572,7 +1572,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
     value = strtol (end_str, &endptr, /* base = */ 0);
     if ((endptr == end_str) || (errno != 0))
       return (send_response(sock, RESP_ERR,
-            "Cannot parse start time `%s': Only simple integers are allowed.\n",
+            "Cannot parse end time `%s': Only simple integers are allowed.\n",
             end_str));
 
     if (value > 0)
