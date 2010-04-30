@@ -58,6 +58,13 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool fetch --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd AVERAGE
 
+Please note that due to thread-safety reasons, the time specified with B<-s>
+and B<-e> cannot use the complex forms described in
+L<"AT-STYLE TIME SPECIFICATION">. The only accepted arguments are "simple
+integers". Positive values are interpreted as seconds since epoch, negative
+values (and zero) are interpreted as relative to I<now>. So "1272535035" refers
+to "09:57:15 (UCT), April 29th 2010" and "-3600" means "one hour ago".
+
 =back
 
 =head2 RESOLUTION INTERVAL
