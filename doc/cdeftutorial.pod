@@ -862,7 +862,7 @@ You may do some complex data filtering:
 
     DEF:var=database.rrd:traffic:AVERAGE
     CDEF:prev1=PREV(var)
-    CDEF:time=TIME
+    CDEF:time=var,POP,TIME
     CDEF:prevtime=PREV(time)
     CDEF:derivate=var,prev1,-,time,prevtime,-,/
     LINE3:derivate#000077:derivate
