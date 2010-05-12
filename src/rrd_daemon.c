@@ -1628,7 +1628,9 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
       if (i > 0)
         SSTRCAT (linebuf, " ", linebuf_fill);
       SSTRCAT (linebuf, ds_namv[i], linebuf_fill);
+      rrd_freemem(ds_namv[i]);
     }
+    rrd_freemem(ds_namv);
     add_response_info (sock, "DSName: %s\n", linebuf);
   }
 
@@ -1654,6 +1656,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 
     add_response_info (sock, "%10lu:%s\n", (unsigned long) t, linebuf);
   } /* for (t) */
+  rrd_freemem(data);
 
   return (send_response (sock, RESP_OK, "Success\n"));
 #undef SSTRCAT
