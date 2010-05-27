@@ -58,7 +58,6 @@ int rrd_xport(
     time_t    start_tmp = 0, end_tmp = 0;
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
-    char     *opt_daemon = NULL;
 
     struct option long_options[] = {
         {"start", required_argument, 0, 's'},
@@ -114,15 +113,15 @@ int rrd_xport(
             break;
         case 'd':
         {
-            if (opt_daemon != NULL)
+            if (im.daemon_addr != NULL)
             {
                 rrd_set_error ("You cannot specify --daemon "
                         "more than once.");
                 return (-1);
             }
 
-            opt_daemon = strdup(optarg);
-            if (opt_daemon == NULL)
+            im.daemon_addr = strdup(optarg);
+            if (im.daemon_addr == NULL)
             {
                 rrd_set_error("strdup error");
                 return -1;
@@ -169,8 +168,7 @@ int rrd_xport(
     }
 
     {   /* try to connect to rrdcached */
-        int status = rrdc_connect(opt_daemon);
-        if (opt_daemon) free(opt_daemon);
+        int status = rrdc_connect(im.daemon_addr);
         if (status != 0) return status;
     }
 
