@@ -77,26 +77,24 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
       || (strncmp ("unix:", sd_path, strlen ("unix:")) == 0))
     is_unix = 1;
 
-  if (*path == '/') /* absolute path */
+  if (is_unix)
   {
-    if (! is_unix)
+    ret = realpath(path, resolved_path);
+    if (ret == NULL)
+      rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
+    return ret;
+  }
+  else
+  {
+    if (*path == '/') /* not absolute path */
     {
       rrd_set_error ("absolute path names not allowed when talking "
           "to a remote daemon");
-      return (NULL);
+      return NULL;
     }
-    /* else: nothing to do */
   }
-  else /* relative path */
-  {
-    if (is_unix)
-    {
-      realpath (path, resolved_path);
-      ret = resolved_path;
-    }
-    /* else: nothing to do */
-  }
-  return (ret);
+
+  return path;
 } /* }}} char *get_path */
 
 static size_t strsplit (char *string, char **fields, size_t size) /* {{{ */
