@@ -828,7 +828,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   char path_buffer[PATH_MAX];
-  char *path_ptr;
+  const char *path_ptr;
 
   char *str_tmp;
   unsigned long flush_version;
