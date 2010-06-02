@@ -6,19 +6,21 @@
  * $Id$
  *****************************************************************************/
 
+#include "rrd_tool.h"
+#include "unused.h"
+
 #ifdef WIN32
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #endif
 
+
 #ifdef HAVE_BROKEN_MS_ASYNC
 #include <sys/types.h>
 #include <utime.h>
 #endif
 
-#include "rrd_tool.h"
-#include "unused.h"
 #define MEMBLK 8192
 
 #ifdef WIN32
