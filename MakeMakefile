@@ -20,8 +20,15 @@ ERROR=0
 LIBTOOL_VER="1.5.6"
 AUTOMAKE_VER="1.9.2"
 AUTOCONF_VER="2.59"
+LIBTOOL_BIN="libtool"
 
-if vcheck $LIBTOOL_VER "libtool --version"
+# On MAC OS X, GNU libtool is named 'glibtool':
+if [ `(uname -s) 2>/dev/null` == 'Darwin' ]
+then
+  LIBTOOL_BIN="glibtool"
+fi
+
+if vcheck $LIBTOOL_VER "$LIBTOOL_BIN --version"
 then
   echo "get a copy of GNU libtool >= $LIBTOOL_VER"
   ERROR=1
