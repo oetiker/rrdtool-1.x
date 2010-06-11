@@ -13,6 +13,9 @@ RRD Graph
 * RRDcached awareness. Instead of just flushing the file, data can now
   be pulled in from remote RRDcached instances.
 
+* VDEF results do now explicitly KNOW when they have no time associated
+  and can behave appropriately. -- Jean-Edouard Babin
+
 RRDcached
 ----------
 * New FETCH command allowing rrd_fetch to operate through the daemon and

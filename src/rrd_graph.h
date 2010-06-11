@@ -112,6 +112,7 @@ typedef struct vdef_t {
     double    param;    /* parameter for function, if applicable */
     double    val;      /* resulting value */
     time_t    when;     /* timestamp, if applicable */
+    int       never;    /* boolean, indicate that when value mean never */
 } vdef_t;
 
 typedef struct xlab_t {
@@ -372,6 +373,10 @@ int       scan_for_col(
 void      rrd_graph_init(
     image_desc_t *);
 
+void      time_clean(
+    char *result,
+    char *format);
+
 void      rrd_graph_options(
     int,
     char **,
@@ -506,3 +511,5 @@ void      grinfo_push(
     image_desc_t *im,
     char *key,
     rrd_info_type_t type,    rrd_infoval_t value);
+
+

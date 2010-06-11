@@ -1597,8 +1597,12 @@ int print_calc(
 
                 if (im->gdes[i].strftm) {
                     prline.u_str = (char*)malloc((FMT_LEG_LEN + 2) * sizeof(char));
-                    strftime(prline.u_str,
-                             FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
+                    if (im->gdes[vidx].vf.never == 1) {
+                       time_clean(prline.u_str, im->gdes[i].format);
+                    } else {
+                        strftime(prline.u_str,
+                                 FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
+                    }
                 } else if (bad_format(im->gdes[i].format)) {
                     rrd_set_error
                         ("bad format for PRINT in '%s'", im->gdes[i].format);
@@ -1615,8 +1619,12 @@ int print_calc(
                 /* GF_GPRINT */
 
                 if (im->gdes[i].strftm) {
-                    strftime(im->gdes[i].legend,
-                             FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
+                    if (im->gdes[vidx].vf.never == 1) {
+                       time_clean(im->gdes[i].legend, im->gdes[i].format);
+                    } else {
+                        strftime(im->gdes[i].legend,
+                                 FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
+                    }
                 } else {
                     if (bad_format(im->gdes[i].format)) {
                         rrd_set_error
@@ -4895,6 +4903,7 @@ int vdef_parse(
             gdes->vf.param = param;
             gdes->vf.val = DNAN;    /* undefined */
             gdes->vf.when = 0;  /* undefined */
+            gdes->vf.never = 1;
         } else {
             rrd_set_error
                 ("Parameter '%f' out of range in VDEF '%s'\n",
@@ -4916,6 +4925,7 @@ int vdef_parse(
             gdes->vf.param = DNAN;
             gdes->vf.val = DNAN;
             gdes->vf.when = 0;
+            gdes->vf.never = 1;
         } else {
             rrd_set_error
                 ("Function '%s' needs no parameter in VDEF '%s'\n",
@@ -4961,6 +4971,7 @@ int vdef_calc(
         field = round((dst->vf.param * (double)(steps - 1)) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
+        dst->vf.never = 1;
         free(array);
 #if 0
         for (step = 0; step < steps; step++)
@@ -4994,6 +5005,7 @@ int vdef_calc(
         field = round( dst->vf.param * (double)(nancount - 1) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
+        dst->vf.never = 1;
         free(array);
     }
         break;
@@ -5004,15 +5016,18 @@ int vdef_calc(
         if (step == steps) {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
+            dst->vf.never = 0;
         }
         while (step != steps) {
             if (finite(data[step * src->ds_cnt])) {
                 if (data[step * src->ds_cnt] > dst->vf.val) {
                     dst->vf.val = data[step * src->ds_cnt];
                     dst->vf.when = src->start + (step + 1) * src->step;
+                    dst->vf.never = 0;
                 }
             }
             step++;
@@ -5035,9 +5050,11 @@ int vdef_calc(
             if (dst->vf.op == VDEF_TOTAL) {
                 dst->vf.val = sum * src->step;
                 dst->vf.when = 0;   /* no time component */
+                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_AVERAGE) {
                 dst->vf.val = sum / cnt;
                 dst->vf.when = 0;   /* no time component */
+                dst->vf.never = 1;
             } else {
                 average = sum / cnt;
                 sum = 0.0;
@@ -5048,10 +5065,12 @@ int vdef_calc(
                 }
                 dst->vf.val = pow(sum / cnt, 0.5);
                 dst->vf.when = 0;   /* no time component */
+                dst->vf.never = 1;
             };
         } else {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         }
     }
         break;
@@ -5062,15 +5081,18 @@ int vdef_calc(
         if (step == steps) {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
+            dst->vf.never = 0;
         }
         while (step != steps) {
             if (finite(data[step * src->ds_cnt])) {
                 if (data[step * src->ds_cnt] < dst->vf.val) {
                     dst->vf.val = data[step * src->ds_cnt];
                     dst->vf.when = src->start + (step + 1) * src->step;
+                    dst->vf.never = 0;
                 }
             }
             step++;
@@ -5087,9 +5109,11 @@ int vdef_calc(
         if (step == steps) {    /* all entries were NaN */
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + step * src->step;
+            dst->vf.never = 0;
         }
         break;
     case VDEF_LAST:
@@ -5103,9 +5127,11 @@ int vdef_calc(
         if (step < 0) { /* all entries were NaN */
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
+            dst->vf.never = 0;
         }
         break;
     case VDEF_LSLSLOPE:
@@ -5143,16 +5169,20 @@ int vdef_calc(
             if (dst->vf.op == VDEF_LSLSLOPE) {
                 dst->vf.val = slope;
                 dst->vf.when = 0;
+                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_LSLINT) {
                 dst->vf.val = y_intercept;
                 dst->vf.when = 0;
+                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_LSLCORREL) {
                 dst->vf.val = correl;
                 dst->vf.when = 0;
+                dst->vf.never = 1;
             };
         } else {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
+            dst->vf.never = 1;
         }
     }
         break;
@@ -5200,4 +5230,60 @@ void grinfo_push(
     if (im->grinfo == NULL) {
         im->grinfo = im->grinfo_current;
     }
+}
+
+void time_clean(
+    char *result,
+    char *format)
+{
+    int       j, jj;
+    
+    jj = 0;
+    for(j = 0; j < FMT_LEG_LEN - 1; j++) { /* we don't need to parse the last char */
+        if (format[j] == '%') {
+            if ((format[j+1] == 'A') || (format[j+1] == 'a') ||
+                (format[j+1] == 'B') || (format[j+1] == 'b') ||
+                (format[j+1] == 'C') || (format[j+1] == 'c') ||
+                (format[j+1] == 'D') || (format[j+1] == 'd') ||
+                (format[j+1] == 'E') || (format[j+1] == 'e') ||
+                (format[j+1] == 'F') ||
+                (format[j+1] == 'G') || (format[j+1] == 'g') ||
+                (format[j+1] == 'H') || (format[j+1] == 'h') ||
+                (format[j+1] == 'I') ||
+                                        (format[j+1] == 'j') ||
+                                        (format[j+1] == 'k') ||
+                                        (format[j+1] == 'l') ||
+                (format[j+1] == 'M') || (format[j+1] == 'm') ||
+                (format[j+1] == 'O') ||
+                (format[j+1] == 'P') || (format[j+1] == 'p') ||
+                (format[j+1] == 'R') || (format[j+1] == 'r') ||
+                (format[j+1] == 'S') || (format[j+1] == 's') ||
+                (format[j+1] == 'T') ||
+                (format[j+1] == 'U') || (format[j+1] == 'u') ||
+                (format[j+1] == 'V') || (format[j+1] == 'v') ||
+                (format[j+1] == 'W') || (format[j+1] == 'w') ||
+                (format[j+1] == 'X') || (format[j+1] == 'x') ||
+                (format[j+1] == 'Y') || (format[j+1] == 'y') ||
+                (format[j+1] == 'Z') || (format[j+1] == 'z') ||
+                (format[j+1] == '+')) {
+                result[jj++] = '-';
+                j++; /* We skip the following char */
+            } else if (format[j+1] == '%') {
+                result[jj++] = '%';
+                j++; /* We skip the following char */
+            } else if (format[j+1] == 'n') {
+                result[jj++] = '\r';
+                result[jj++] = '\n';
+                j++; /* We skip the following char */
+            } else if (format[j+1] == 't') {
+                result[jj++] = '\t';
+                j++; /* We skip the following char */
+            } else {
+                result[jj++] = format[j];
+            }
+        } else {
+            result[jj++] = format[j];
+        }
+    }
+    result[jj] = '\0'; /* We must force the end of the string */
 }
