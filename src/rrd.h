@@ -226,14 +226,20 @@ extern    "C" {
     const char **argv);
     rrd_info_t *rrd_info_r(
     char *);
-/* NOTE: rrd_update_r are only thread-safe if no at-style time
-   specifications get used!!! */
+/* NOTE: rrd_update_r and rrd_update_v_r are only thread-safe if no at-style
+   time specifications get used!!! */
 
     int       rrd_update_r(
     const char *filename,
     const char *_template,
     int argc,
     const char **argv);
+    int       rrd_update_v_r(
+    const char *filename,
+    const char *_template,
+    int argc,
+    const char **argv,
+    rrd_info_t * pcdp_summary);
     int rrd_fetch_r (
             const char *filename,
             const char *cf,

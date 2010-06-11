@@ -477,6 +477,16 @@ int rrd_update_r(
     return _rrd_update(filename, tmplt, argc, argv, NULL);
 }
 
+int rrd_update_v_r(
+    const char *filename,
+    const char *tmplt,
+    int argc,
+    const char **argv,
+    rrd_info_t * pcdp_summary)
+{
+    return _rrd_update(filename, tmplt, argc, argv, pcdp_summary);
+}
+
 int _rrd_update(
     const char *filename,
     const char *tmplt,
