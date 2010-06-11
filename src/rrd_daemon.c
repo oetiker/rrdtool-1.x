@@ -1476,7 +1476,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
 static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 {
-  char *file;
+  char *file, file_tmp[PATH_MAX];
   char *cf;
 
   char *start_str;
@@ -1529,6 +1529,9 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 
   if (status != 0)
     return (syntax_error(sock,cmd));
+
+  get_abs_path(&file, file_tmp);
+  if (!check_file_access(file, sock)) return 0;
 
   status = flush_file (file);
   if ((status != 0) && (status != ENOENT))
