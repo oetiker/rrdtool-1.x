@@ -263,7 +263,7 @@ for the right axis.
 
 By default the format of the axis labels gets determined automatically. If
 you want to do this your self, use this option with the same %lf arguments
-you know from the PRING and GPRINT commands.
+you know from the PRINT and GPRINT commands.
 
 =head2 Legend
 
