@@ -73,6 +73,9 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
   const char *ret = path;
   int is_unix = 0;
 
+  if ((path == NULL) || (resolved_path == NULL) || (sd_path == NULL))
+    return (NULL);
+
   if ((*sd_path == '/')
       || (strncmp ("unix:", sd_path, strlen ("unix:")) == 0))
     is_unix = 1;
