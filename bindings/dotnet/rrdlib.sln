@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dnrrdlib", "dnrrdlib.csproj", "{0688ED86-0E5F-4469-A7DB-D51024DE99E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dnrrd_binding_test", "dnrrd_binding_test.csproj", "{2BB82CAE-A379-46D9-B2B5-13DC4DB3209C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0688ED86-0E5F-4469-A7DB-D51024DE99E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0688ED86-0E5F-4469-A7DB-D51024DE99E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0688ED86-0E5F-4469-A7DB-D51024DE99E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0688ED86-0E5F-4469-A7DB-D51024DE99E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BB82CAE-A379-46D9-B2B5-13DC4DB3209C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BB82CAE-A379-46D9-B2B5-13DC4DB3209C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BB82CAE-A379-46D9-B2B5-13DC4DB3209C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BB82CAE-A379-46D9-B2B5-13DC4DB3209C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

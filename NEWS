@@ -21,9 +21,14 @@ RRDcached
 * New FETCH command allowing rrd_fetch to operate through the daemon and
   thus work remotely. By Florian Forster
 
+
 API
 ---
 * exported rrd_update_v_r for theadsave rrd_update calls
+
+Bindings
+--------
+* dotnet by Euphoria Audio  
 
 
 #####################################

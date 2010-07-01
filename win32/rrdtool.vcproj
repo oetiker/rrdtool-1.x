@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="rrdtool"
 	ProjectGUID="{11CD05F8-E5E1-476E-A75F-A112655D4E94}"
 	RootNamespace="rrdtool"
@@ -40,13 +40,15 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../../contrib/cairo/include/cairo;&quot;../../contrib/pango/include/pango-1.0&quot;;&quot;../../contrib/glib/include/glib-2.0&quot;;&quot;../../contrib/glib/lib/glib-2.0/include&quot;;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				InlineFunctionExpansion="0"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+				DisableSpecificWarnings="4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -59,9 +61,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="rrdlib.lib cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
-				AdditionalLibraryDirectories="$(ConfigurationName); ../../contrib/cairo/lib;../../contrib/pango/lib;../../contrib/glib/lib;../../contrib/libpng/lib;../../contrib/zlib/lib;../../contrib/libxml2/lib"
+				AdditionalDependencies="rrdlib.lib"
+				ShowProgress="2"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;"
+				IgnoreDefaultLibraryNames="LIBCMTD.lib;LIBCMT.lib"
 				GenerateDebugInformation="true"
+				SubSystem="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -85,7 +90,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="get all the dlls, needed for running"
-				CommandLine="copy $(ProjectDir)\..\..\contrib\cairo\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libpng\bin\libpng12-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\zlib\zlib1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libxml2\lib\libxml2.dll $(TargetDir)\&#x0D;&#x0A;"
+				CommandLine="copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgthread-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -164,8 +169,90 @@
 				CommandLine="copy $(ProjectDir)\..\..\contrib\cairo\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\glib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libpng\bin\libpng12-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\pango\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\zlib\zlib1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\..\contrib\libxml2\lib\libxml2.dll $(TargetDir)\&#x0D;&#x0A;"
 			/>
 		</Configuration>
+		<Configuration
+			Name="Static Debug|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				InlineFunctionExpansion="0"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				WarningLevel="3"
+				DebugInformationFormat="4"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="rrdlib.lib cairo.lib"
+				ShowProgress="2"
+				AdditionalLibraryDirectories="&quot;$(ConfigurationName)&quot;;../contrib/lib"
+				IgnoreDefaultLibraryNames=""
+				GenerateDebugInformation="true"
+				SubSystem="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="get all the dlls, needed for running"
+				CommandLine="copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgobject-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libgthread-2.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpango-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangocairo-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\&#x0D;&#x0A;copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\&#x0D;&#x0A;&#x0D;&#x0A;&#x0D;&#x0A;"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{CC158E1D-1364-43CA-9B2D-4AF54225C7CA}"
+			RelativePathToProject=".\rrdlib.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter

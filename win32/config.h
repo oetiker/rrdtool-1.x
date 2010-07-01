@@ -5,6 +5,7 @@
 #include <math.h>
 #include <float.h>
 #include <direct.h>
+#include <ctype.h>
 
 /* realloc does not support NULL as argument */
 
@@ -28,9 +29,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
-#define NUMVERS 1.3020
+#define NUMVERS 1.4030
 #define PACKAGE_NAME "rrdtool"
-#define PACKAGE_VERSION "1.3.2"
+#define PACKAGE_VERSION "1.4.3"
 #define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
 
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
@@ -53,5 +54,7 @@
 #define RRD_DEFAULT_FONT "Courier"
 
 /* #define DEBUG 1 */
+
+__inline int round(double a){int x = (a + 0.5); return x;}
 
 #endif                          /* CONFIG_H */

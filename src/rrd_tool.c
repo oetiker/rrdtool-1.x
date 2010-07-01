@@ -815,8 +815,10 @@ int HandleInputLine(
 
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
+#ifndef WIN32
     else if (strcmp("flushcached", argv[1]) == 0)
         rrd_flushcached(argc - 1, &argv[1]);
+#endif
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }

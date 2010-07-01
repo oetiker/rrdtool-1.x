@@ -1558,7 +1558,7 @@ static int update_cdp_prep(
             if (elapsed_pdp_st > 2) {
                 reset_cdp(rrd, elapsed_pdp_st, pdp_temp, last_seasonal_coef,
                           seasonal_coef, rra_idx, ds_idx, cdp_idx,
-                          current_cf);
+                          (cf_en)current_cf);
             }
         }
 

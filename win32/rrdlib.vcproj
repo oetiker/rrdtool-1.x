@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="rrdlib"
 	ProjectGUID="{CC158E1D-1364-43CA-9B2D-4AF54225C7CA}"
 	RootNamespace="rrdlib"
@@ -41,13 +41,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../../contrib/cairo/include/cairo;&quot;../../contrib/pango/include/pango-1.0&quot;;&quot;../../contrib/glib/include/glib-2.0&quot;;&quot;../../contrib/glib/lib/glib-2.0/include&quot;;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				AdditionalIncludeDirectories=".;../contrib/include/cairo;&quot;../contrib/include/pango-1.0&quot;;&quot;../contrib/include/glib-2.0&quot;;&quot;../contrib/lib/glib-2.0/include&quot;;../contrib/include;../contrib/include/libpng12;../contrib/include/libxml2"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderThrough="precompiled.h"
+				PrecompiledHeaderThrough=""
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -65,7 +65,8 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
-				AdditionalLibraryDirectories="../../contrib/cairo/lib;../../contrib/pango/lib;../../contrib/glib/lib;../../contrib/libpng/lib;../../contrib/zlib/lib;../../contrib/libxml2/lib"
+				AdditionalLibraryDirectories="../contrib/lib"
+				ModuleDefinitionFile=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -134,6 +135,149 @@
 				Name="VCLibrarianTool"
 				AdditionalDependencies="cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
 				AdditionalLibraryDirectories="../../contrib/cairo/lib;../../contrib/pango/lib;../../contrib/glib/lib;../../contrib/libpng/lib;../../contrib/zlib/lib;../../contrib/libxml2/lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="DebugDLL|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories=".;../contrib/include/cairo;&quot;../contrib/include/pango-1.0&quot;;&quot;../contrib/include/glib-2.0&quot;;&quot;../contrib/lib/glib-2.0/include&quot;;../contrib/include;../contrib/include/libpng12;../contrib/include/libxml2"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUG;_USE_32BIT_TIME_T"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough=""
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				CompileAs="2"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="cairo.lib glib-2.0.lib gobject-2.0.lib libpng.lib libxml2.lib pango-1.0.lib pangocairo-1.0.lib"
+				AdditionalLibraryDirectories="../contrib/lib"
+				ModuleDefinitionFile="rrdlib.def"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Static Debug|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories=".;../contrib/include/cairo;&quot;../contrib/include/pango-1.0&quot;;&quot;../contrib/include/glib-2.0&quot;;&quot;../contrib/lib/glib-2.0/include&quot;;../contrib/include;../contrib/include/libpng12;../contrib/include/libxml2"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough=""
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				CompileAs="2"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				AdditionalDependencies="cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
+				AdditionalLibraryDirectories="../contrib/lib"
+				ModuleDefinitionFile=""
+				IgnoreDefaultLibraryNames="LIBCMTD.lib;LIBCMT.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -281,6 +425,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\rrd_utils.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\rrd_version.c"
 				>
 			</File>
@@ -368,6 +516,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\rrdlib.def"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
