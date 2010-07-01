@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Run this script after the first cvs checkout to build
 # makefiles and friends
