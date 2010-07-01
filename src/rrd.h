@@ -57,6 +57,10 @@ extern    "C" {
 #ifndef WIN32
 #include <unistd.h>     /* for off_t */
 #else
+#ifdef _MSC_VER
+	typedef int mode_t;
+	#define strtoll _strtoi64 
+#endif
 	typedef size_t ssize_t;
 	typedef long off_t;
 #endif 

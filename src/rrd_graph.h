@@ -7,7 +7,11 @@
 
 /* this may configure __EXTENSIONS__ without which pango will fail to compile
    so load this early */
+#ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
+#elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#include "../win32/config.h"
+#endif
 
 #include <cairo.h>
 #include <cairo-pdf.h>

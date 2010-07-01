@@ -1,21 +1,13 @@
-/* rrd_config.h.msvc. Hand-tweaked rrd_config.h for MSVC compiler. */
-#ifndef WIN32 
-#error This rrd_config.h is created for Win32 platform! 
-#endif 
-#ifndef RRD_CONFIG_H
-#define RRD_CONFIG_H
+/* config.h.msvc.  Hand-tweaked config.h for MSVC compiler.  */
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include <math.h>
 #include <float.h>
 #include <direct.h>
+#include <ctype.h>
 
-/* the placeholders will be filled in by get_ver.awk */
-/* http://cm.bell-labs.com/cm/cs/awkbook/index.html */
-#define NUMVERS @@NUMVERS@@
-#define PACKAGE_VERSION "@@PACKAGE_VERSION@@"
-
-#define PACKAGE_NAME "rrdtool"
-#define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
+/* realloc does not support NULL as argument */
 
 #define HAVE_STRFTIME 1
 #define HAVE_TIME_H 1
@@ -29,6 +21,7 @@
 #define HAVE_MKTIME 1
 #define HAVE_STRFTIME 1
 #define HAVE_STRING_H 1
+#define HAVE_STDLIB_H 1
 #define HAVE_VSNPRINTF 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -36,31 +29,32 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+#define NUMVERS 1.4030
+#define PACKAGE_NAME "rrdtool"
+#define PACKAGE_VERSION "1.4.3"
+#define PACKAGE_STRING PACKAGE_NAME " " PACKAGE_VERSION
+
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
 #define finite _finite
 #define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#define strftime strftime_ 
-#define strtoll(p, e, b) _strtoi64(p, e, b)
+//#define vsnprintf _vsnprintf
+//#define strftime strftime_
 
-/* realloc does not support NULL as argument */
 #define NO_NULL_REALLOC 1
 #if NO_NULL_REALLOC
 # define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #else
 # define rrd_realloc(a,b) realloc((a), (b))
-#endif      
+#endif
 
 /* Vertical label angle: 90.0 (default) or 270.0 */
 #define RRDGRAPH_YLEGEND_ANGLE 90.0
 
-#define RRD_DEFAULT_FONT "arial.ttf"
-/* #define RRD_DEFAULT_FONT "DejaVuSansMono-Roman.ttf" */
-
-/* #define WITH_PIECHART 1 */
+#define RRD_DEFAULT_FONT "Courier"
 
 /* #define DEBUG 1 */
 
-#endif /* RRD_CONFIG_H */
+__inline int round(double a){int x = (a + 0.5); return x;}
 
+#endif                          /* CONFIG_H */

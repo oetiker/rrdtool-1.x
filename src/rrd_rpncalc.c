@@ -77,7 +77,7 @@ rpnp_t   *rpn_expand(
         return NULL;
     }
     for (i = 0; rpnc[i].op != OP_END; ++i) {
-        rpnp[i].op = rpnc[i].op;
+        rpnp[i].op = (op_en)rpnc[i].op;
         if (rpnp[i].op == OP_NUMBER) {
             rpnp[i].val = (double) rpnc[i].val;
         } else if (rpnp[i].op == OP_VARIABLE || rpnp[i].op == OP_PREV_OTHER) {
