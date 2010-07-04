@@ -190,12 +190,12 @@ char *strchr (), *strrchr ();
 #  define isinf(a) (fp_class(a) == FP_NEG_INF || fp_class(a) == FP_POS_INF)
 #endif
 
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY))
+#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_MINUS_INF) && defined(FP_PLUS_INF))
 #  define HAVE_ISINF 1
 #  define isinf(a) (fpclassify(a) == FP_MINUS_INF || fpclassify(a) == FP_PLUS_INF)
 #endif
 
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY))
+#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_INFINITE))
 #  define HAVE_ISINF 1
 #  define isinf(a) (fpclassify(a) == FP_INFINITE)
 #endif
