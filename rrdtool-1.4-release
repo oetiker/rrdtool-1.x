@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
