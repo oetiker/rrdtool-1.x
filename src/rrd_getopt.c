@@ -360,7 +360,7 @@ static const char *_getopt_initialize(
     const char *);
 #endif
 static const char* _getopt_initialize(int argc,
-                                      char** argv,
+                                      char* const* argv,
                                       const char* optstring)
 {
     /* Start processing options with ARGV-element 1 (since ARGV-element 0
@@ -465,7 +465,7 @@ static const char* _getopt_initialize(int argc,
    long-named options.  */
 
 int _getopt_internal(int argc,
-                     char** argv,
+                     char* const* argv,
                      const char *optstring,
                      const struct option *longopts,
                      int* longind,
@@ -867,15 +867,6 @@ int _getopt_internal(int argc,
         }
         return c;
     }
-}
-
-int getopt(
-    int argc,
-    char** argv,
-    const char* optstring)
-{
-    return _getopt_internal(argc, argv, optstring,
-                            (const struct option *) 0, (int *) 0, 0);
 }
 
 #endif                          /* Not ELIDE_CODE.  */

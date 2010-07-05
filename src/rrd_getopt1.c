@@ -66,7 +66,7 @@
 #endif
 
 int getopt_long(int argc,
-                char** argv,
+                char* const* argv,
                 const char* options,
                 const struct option* long_options,
                 int* opt_index)
@@ -80,7 +80,7 @@ int getopt_long(int argc,
    instead.  */
 
 int getopt_long_only(int argc,
-                     char** argv,
+                     char* const* argv,
                      const char* options,
                      const struct option* long_options,
                      int* opt_index)
