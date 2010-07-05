@@ -247,8 +247,8 @@ AC_CHECK_FUNCS(posix_fadvise)
 
 CONFIGURE_PART(Libintl Processing)
 
-AM_GNU_GETTEXT_VERSION(0.14.4)
-AM_GNU_GETTEXT()
+AM_GNU_GETTEXT_VERSION(0.18)
+AM_GNU_GETTEXT(external)
 
 CONFIGURE_PART(IEEE Math Checks)
  
@@ -693,7 +693,6 @@ AC_CONFIG_FILES([examples/perftest.pl])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
-AC_CONFIG_FILES([intl/Makefile])  
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/librrd.sym.in])
 AC_CONFIG_FILES([src/librrd.pc])          

@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
 RSYNC = rsync --rsh=ssh
 
-SUBDIRS = po src examples doc bindings intl
+SUBDIRS = po src examples doc bindings
 
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
