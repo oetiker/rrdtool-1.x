@@ -178,6 +178,11 @@ char *strchr (), *strrchr ();
 # define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
 #endif
 
+/* solaris 8/9 has rint but not round */
+#if (! defined(HAVE_ROUND) && defined(HAVE_RINT))
+# define round rint
+#endif
+
 /* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
 #if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS))
 #  undef isnan

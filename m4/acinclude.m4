@@ -339,61 +339,7 @@ AC_DEFUN([AC_IEEE], [
 AC_MSG_CHECKING([if IEEE math works $1])
 AC_CACHE_VAL([rd_cv_ieee_$2],
 [AC_RUN_IFELSE([AC_LANG_SOURCE([[$3
-
-#if HAVE_MATH_H
-#  include <math.h>
-#endif
-
-#if HAVE_FLOAT_H
-#  include <float.h>  
-#endif
-
-#if HAVE_IEEEFP_H
-#  include <ieeefp.h>
-#endif
-
-#if HAVE_FP_CLASS_H
-#  include <fp_class.h>
-#endif
-
-/* Solaris */
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASS))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclass(a) == FP_NINF || fpclass(a) == FP_PINF)
-#endif
-
-/* solaris 10 it defines isnan such that only forte can compile it ... bad bad  */
-#if (defined(HAVE_ISNAN) && defined(isnan) && defined(HAVE_FPCLASS) && defined(FP_SNAN) && defined(FP_QNAN))
-#  undef isnan
-#  define isnan(a) (fpclass(a) == FP_SNAN || fpclass(a) == FP_QNAN)
-#endif
-
-/* Digital UNIX */
-#if (! defined(HAVE_ISINF) && defined(HAVE_FP_CLASS) && defined(HAVE_FP_CLASS_H) && defined(FP_NEG_INF) && defined( FP_POS_INF) )
-#  define HAVE_ISINF 1
-#  define isinf(a) (fp_class(a) == FP_NEG_INF || fp_class(a) == FP_POS_INF)
-#endif 
-
-/* AIX */
-#if (! defined(HAVE_ISINF) && defined(HAVE_CLASS))
-#  define HAVE_ISINF 1
-#  define isinf(a) (class(a) == FP_MINUS_INF || class(a) == FP_PLUS_INF)
-#endif
-
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_PLUS_INF) && defined(FP_MINUS_INF))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclassify(a) == FP_MINUS_INF || fpclassify(a) == FP_PLUS_INF)
-#endif
-
-#if (! defined(HAVE_ISINF) && defined(HAVE_FPCLASSIFY) && defined(FP_INFINITE))
-#  define HAVE_ISINF 1
-#  define isinf(a) (fpclassify(a) == FP_INFINITE)
-#endif
-
-#if HAVE_MATH_H
-#include <math.h>
-#endif
-
+#include "src/rrd_config_bottom.h"
 #include <stdio.h>
 int main(void){
     double rrdnan,rrdinf,rrdc,rrdzero;

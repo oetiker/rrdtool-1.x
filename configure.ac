@@ -161,7 +161,7 @@ AC_SUBST(WERROR)
 
 dnl which flags does the compiler support?
 if test "x$GCC" = "xyes"; then
-  for flag in -fno-strict-aliasing -Wall -std=c99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
+  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
     oCFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $flag"
     cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
@@ -209,7 +209,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(nl_langinfo tzset round rint fsync mbstowcs opendir readdir chdir chroot getuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
 AC_FUNC_STRERROR_R
 

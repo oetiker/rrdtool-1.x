@@ -92,10 +92,11 @@ Make sure the RRDtool build system finds your new compiler
 
  export PATH=/opt/SunStudioExpress/bin
 
-Since there does not seem to be a viable msgfmt tool on OpenSolaris (short
-of installing it yourself). You have to call configure with the
+=head2 Solaris 8/9
 
- --disable-libintl
+Getting NLS to work on old solaris is an open issue ... use 
+
+ --disable-nls
 
 option.
 

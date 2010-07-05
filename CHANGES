@@ -3,7 +3,7 @@ RRDtool 1.4.4 - 2010-07-05
 Bugfixes:
 
   * compile: multiple fixes isnan and isinf defines to make rrdtool compile
-    on solaris ... -- Tobi
+    with gcc on solaris (with --disable-nls) -- Tobi
   * rrd_client: fix potential segfaults -- Florian Forster
   * rrd_client: resolve synmlinks properly -- Kevin Brintnall
   * compile: fix libtool and libtoolize names for OSX compiles -- Antoine Musso
