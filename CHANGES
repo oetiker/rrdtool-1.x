@@ -4,6 +4,8 @@ Bugfixes:
 
   * compile: multiple fixes isnan and isinf defines to make rrdtool compile
     with gcc on solaris (with --disable-nls) -- Tobi
+  * handle gettext/libintl like any other feature, do not try to supply
+    our own ... rrdtool can work fine without it -- tobi
   * rrd_client: fix potential segfaults -- Florian Forster
   * rrd_client: resolve synmlinks properly -- Kevin Brintnall
   * compile: fix libtool and libtoolize names for OSX compiles -- Antoine Musso
