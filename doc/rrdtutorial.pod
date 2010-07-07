@@ -56,7 +56,7 @@ element. As we are on a circle there is neither a beginning nor an end, you can
 go on and on and on. After a while, all the available places will be used and
 the process automatically reuses old locations. This way, the dataset
 will not grow in size and therefore requires no maintenance.
-RRDtool works with with Round Robin Databases (RRDs). It stores and retrieves
+RRDtool works with Round Robin Databases (RRDs). It stores and retrieves
 data from them.
 
 =head2 What data can be put into an RRD?

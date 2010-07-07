@@ -92,14 +92,6 @@ Make sure the RRDtool build system finds your new compiler
 
  export PATH=/opt/SunStudioExpress/bin
 
-=head2 Solaris 8/9
-
-Getting NLS to work on old solaris is an open issue ... use 
-
- --disable-nls
-
-option.
-
 =head2 Debian / Ubuntu
 
 Use apt-get to make sure you have all that is required. A number
