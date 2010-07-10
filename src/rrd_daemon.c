@@ -114,8 +114,9 @@
 
 #define RRDD_LOG(severity, ...) \
   do { \
-    if (stay_foreground) \
+    if (stay_foreground) { \
       fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, "\n"); } \
     syslog ((severity), __VA_ARGS__); \
   } while (0)
 
