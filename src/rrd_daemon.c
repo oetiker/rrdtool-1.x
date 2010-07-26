@@ -228,6 +228,8 @@ static uid_t daemon_uid;
 static listen_socket_t *listen_fds = NULL;
 static size_t listen_fds_num = 0;
 
+static listen_socket_t default_socket;
+
 enum {
   RUNNING,		/* normal operation */
   FLUSHING,		/* flushing remaining values */
@@ -1922,6 +1924,17 @@ static int socket_permission_add (listen_socket_t *sock, /* {{{ */
   return (0);
 } /* }}} int socket_permission_add */
 
+static void socket_permission_clear (listen_socket_t *sock) /* {{{ */
+{
+  sock->permissions = 0;
+} /* }}} socket_permission_clear */
+
+static void socket_permission_copy (listen_socket_t *dest, /* {{{ */
+    listen_socket_t *src)
+{
+  dest->permissions = src->permissions;
+} /* }}} socket_permission_copy */
+
 /* check whether commands are received in the expected context */
 static int command_check_context(listen_socket_t *sock, command_t *cmd)
 {
@@ -2867,10 +2880,10 @@ static int daemonize (void) /* {{{ */
   }
   else
   {
-    listen_socket_t sock;
-    memset(&sock, 0, sizeof(sock));
-    strncpy(sock.addr, RRDCACHED_DEFAULT_ADDRESS, sizeof(sock.addr)-1);
-    open_listen_socket (&sock);
+    strncpy(default_socket.addr, RRDCACHED_DEFAULT_ADDRESS,
+        sizeof(default_socket.addr) - 1);
+    default_socket.addr[sizeof(default_socket.addr) - 1] = '\0';
+    open_listen_socket (&default_socket);
   }
 
   if (listen_fds_num < 1)
@@ -2975,11 +2988,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   int option;
   int status = 0;
 
-  char **permissions = NULL;
-  size_t permissions_len = 0;
+  socket_permission_clear (&default_socket);
 
-  gid_t  socket_group = (gid_t)-1;
-  mode_t socket_permissions = (mode_t)-1;
+  default_socket.socket_group = (gid_t)-1;
+  default_socket.socket_permissions = (mode_t)-1;
 
   while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:a:h?")) != -1)
   {
@@ -3004,22 +3016,11 @@ static int read_options (int argc, char **argv) /* {{{ */
         strncpy(new->addr, optarg, sizeof(new->addr)-1);
 
         /* Add permissions to the socket {{{ */
-        if (permissions_len != 0)
+        if (default_socket.permissions != 0)
         {
-          size_t i;
-          for (i = 0; i < permissions_len; i++)
-          {
-            status = socket_permission_add (new, permissions[i]);
-            if (status != 0)
-            {
-              fprintf (stderr, "read_options: Adding permission \"%s\" to "
-                  "socket failed. Most likely, this permission doesn't "
-                  "exist. Check your command line.\n", permissions[i]);
-              status = 4;
-            }
-          }
+          socket_permission_copy (new, &default_socket);
         }
-        else /* if (permissions_len == 0) */
+        else /* if (default_socket.permissions == 0) */
         {
           /* Add permission for ALL commands to the socket. */
           size_t i;
@@ -3030,15 +3031,15 @@ static int read_options (int argc, char **argv) /* {{{ */
             {
               fprintf (stderr, "read_options: Adding permission \"%s\" to "
                   "socket failed. This should never happen, ever! Sorry.\n",
-                  permissions[i]);
+                  list_of_commands[i].cmd);
               status = 4;
             }
           }
         }
         /* }}} Done adding permissions. */
 
-        new->socket_group = socket_group;
-        new->socket_permissions = socket_permissions;
+        new->socket_group = default_socket.socket_group;
+        new->socket_permissions = default_socket.socket_permissions;
 
         if (!rrd_add_ptr((void ***)&config_listen_address_list,
                          &config_listen_address_list_len, new))
@@ -3068,7 +3069,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 
 	if (grp)
 	{
-	  socket_group = grp->gr_gid;
+	  default_socket.socket_group = grp->gr_gid;
 	}
 	else
 	{
@@ -3093,7 +3094,7 @@ static int read_options (int argc, char **argv) /* {{{ */
           return (5);
         }
 
-        socket_permissions = (mode_t)tmp;
+        default_socket.socket_permissions = (mode_t)tmp;
       }
       break;
 
@@ -3104,7 +3105,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         char *dummy;
         char *ptr;
 
-        rrd_free_ptrs ((void *) &permissions, &permissions_len);
+        socket_permission_clear (&default_socket);
 
         optcopy = strdup (optarg);
         dummy = optcopy;
@@ -3112,7 +3113,14 @@ static int read_options (int argc, char **argv) /* {{{ */
         while ((ptr = strtok_r (dummy, ", ", &saveptr)) != NULL)
         {
           dummy = NULL;
-          rrd_add_strdup ((void *) &permissions, &permissions_len, ptr);
+          status = socket_permission_add (&default_socket, ptr);
+          if (status != 0)
+          {
+            fprintf (stderr, "read_options: Adding permission \"%s\" to "
+                "socket failed. Most likely, this permission doesn't "
+                "exist. Check your command line.\n", ptr);
+            status = 4;
+          }
         }
 
         free (optcopy);
@@ -3358,8 +3366,6 @@ static int read_options (int argc, char **argv) /* {{{ */
 
   if (journal_dir == NULL)
     config_flush_at_shutdown = 1;
-
-  rrd_free_ptrs ((void *) &permissions, &permissions_len);
 
   return (status);
 } /* }}} int read_options */

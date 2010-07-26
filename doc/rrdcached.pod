@@ -78,7 +78,8 @@ user privileges (e.g. graph generating CGI scripts that typically run in the
 permission context of the web server).
 
 This option affects the I<following> UNIX socket addresses (the following
-B<-l> options), i.e., you may specify different settings for different
+B<-l> options) or the default socket (if no B<-l> options have been
+specified), i.e., you may specify different settings for different
 sockets.
 
 The default is not to change ownership or permissions of the socket and, thus,
@@ -96,7 +97,8 @@ BSD-derived systems ignore permissions for UNIX sockets. See L<unix(7)> for
 details.
 
 This option affects the I<following> UNIX socket addresses (the following
-B<-l> options), i.e., you may specify different settings for different
+B<-l> options) or the default socket (if no B<-l> options have been
+specified), i.e., you may specify different settings for different
 sockets.
 
 The default is not to change ownership or permissions of the socket and, thus,
@@ -114,7 +116,8 @@ For example, to allow the C<FLUSH> and C<PENDING> commands one could specify:
   rrdcached -P FLUSH,PENDING $MORE_ARGUMENTS
 
 The B<-P> option affects the I<following> socket addresses (the following B<-l>
-options). In the following example, only the IPv4 network socket (address
+options) or the default socket (if no B<-l> options have been
+specified). In the following example, only the IPv4 network socket (address
 C<10.0.0.1>) will be restricted to the C<FLUSH> and C<PENDING> commands:
 
   rrdcached -l unix:/some/path -P FLUSH,PENDING -l 10.0.0.1
