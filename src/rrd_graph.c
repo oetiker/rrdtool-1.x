@@ -337,6 +337,12 @@ int im_free(
         free(im->gdes[i].rpnp);
     }
     free(im->gdes);
+
+    for (i = 0; i < DIM(text_prop);i++){
+        pango_font_description_free(im->text_prop[i].font_desc);
+        im->text_prop[i].font_desc = NULL;
+    }
+
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
 
@@ -344,6 +350,8 @@ int im_free(
         status = cairo_status(im->cr);
         cairo_destroy(im->cr);
     }
+
+
     if (im->rendered_image) {
         free(im->rendered_image);
     }
@@ -4068,6 +4076,8 @@ rrd_set_font_desc (
     if (font){
         strncpy(im->text_prop[prop].font, font, sizeof(text_prop[prop].font) - 1);
         im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';
+        /* if we already got one, drop it first */
+        pango_font_description_free(im->text_prop[prop].font_desc);
         im->text_prop[prop].font_desc = pango_font_description_from_string( font );
     };
     if (size > 0){
@@ -4161,6 +4171,7 @@ void rrd_graph_init(
 
     for (i = 0; i < DIM(text_prop); i++) {
         im->text_prop[i].size = -1;
+        im->text_prop[i].font_desc = NULL;
         rrd_set_font_desc(im,i, deffont ? deffont : text_prop[i].font,text_prop[i].size);
     }
 
@@ -4175,6 +4186,7 @@ void rrd_graph_init(
     pango_cairo_update_context(im->cr,context);
 
     im->layout = pango_layout_new(context);
+    g_object_unref (context);
 
 //  im->layout = pango_cairo_create_layout(im->cr);
 
