@@ -401,6 +401,7 @@ rrd_fetch_fn_libdbi(
   char where[10240];
   table_help.conn=NULL;
   table_help.where=where;
+  table_help.filtename=filename;
 
   /* some loop variables */
   int i=0;
@@ -564,7 +565,7 @@ rrd_fetch_fn_libdbi(
   }
 
   /* allocate memory for resultset (with the following columns: min,avg,max,count,sigma) */
-  i=rows * sizeof(rrd_value_t)*(*ds_cnt);
+  i=(rows+1) * sizeof(rrd_value_t)*(*ds_cnt);
   if (((*data) = malloc(i))==NULL){
     /* and return error */
     rrd_set_error("malloc failed for %i bytes",i);
