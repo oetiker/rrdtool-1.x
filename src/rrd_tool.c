@@ -520,7 +520,7 @@ int HandleInputLine(
      */
     if (RemoteMode) {
         if (argc > 1 && strcmp("quit", argv[1]) == 0) {
-            if (argc > 2) {
+            if (argc != 2) {
                 printf("ERROR: invalid parameter count for quit\n");
                 return (1);
             }
@@ -528,7 +528,7 @@ int HandleInputLine(
         }
 #if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR)
         if (argc > 1 && strcmp("cd", argv[1]) == 0) {
-            if (argc > 3) {
+            if (argc != 3) {
                 printf("ERROR: invalid parameter count for cd\n");
                 return (1);
             }
@@ -547,7 +547,7 @@ int HandleInputLine(
             return (0);
         }
         if (argc > 1 && strcmp("pwd", argv[1]) == 0) {
-            if (argc > 2) {
+            if (argc != 2) {
                 printf("ERROR: invalid parameter count for pwd\n");
                 return (1);
             }
@@ -561,7 +561,7 @@ int HandleInputLine(
             return (0);
         }
         if (argc > 1 && strcmp("mkdir", argv[1]) == 0) {
-            if (argc > 3) {
+            if (argc != 3) {
                 printf("ERROR: invalid parameter count for mkdir\n");
                 return (1);
             }
@@ -580,7 +580,7 @@ int HandleInputLine(
             return (0);
         }
         if (argc > 1 && strcmp("ls", argv[1]) == 0) {
-            if (argc > 2) {
+            if (argc != 2) {
                 printf("ERROR: invalid parameter count for ls\n");
                 return (1);
             }
