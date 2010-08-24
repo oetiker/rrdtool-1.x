@@ -401,7 +401,7 @@ rrd_fetch_fn_libdbi(
   char where[10240];
   table_help.conn=NULL;
   table_help.where=where;
-  table_help.filtename=filename;
+  table_help.filename=filename;
 
   /* some loop variables */
   int i=0;
