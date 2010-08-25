@@ -1,4 +1,4 @@
-/****************************************************************************
+/****************************************************************************s
  * RRDtool 1.3.9  Copyright by Tobi Oetiker, 1997-2009
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
@@ -2005,7 +2005,7 @@ int draw_horizontal_grid(
                             }
                         }
                         else {
-                           sprintf(graph_label_right,im->second_axis_format,sval);
+                           sprintf(graph_label_right,im->second_axis_format,sval,"");
                         }        
                         gfx_text ( im,
                                X1+7, Y0,
