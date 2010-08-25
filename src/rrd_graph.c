@@ -2285,7 +2285,7 @@ int horizontal_log_grid(
                         }
                 }
                 else {
-                      sprintf(graph_label_right,im->second_axis_format,sval);
+                      sprintf(graph_label_right,im->second_axis_format,sval,"");
                 }
 
                 gfx_text ( im,
