@@ -465,7 +465,11 @@ static const char* _getopt_initialize(int argc,
    long-named options.  */
 
 int _getopt_internal(int argc,
+#ifdef WIN32
+                     char** argv,
+#else // WIN32
                      char* const* argv,
+#endif //WIN32
                      const char *optstring,
                      const struct option *longopts,
                      int* longind,
