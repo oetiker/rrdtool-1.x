@@ -9,6 +9,11 @@
 #include <stdlib.h>
 #endif
 
+#ifdef WIN32
+   #define strcasecmp stricmp
+   #define strcasencmp strnicmp
+#endif
+
 #define MEMBLK 1024
 /*#define DEBUG_PARSER
 #define DEBUG_VARS*/
