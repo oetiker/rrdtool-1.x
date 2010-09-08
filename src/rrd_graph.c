@@ -3706,15 +3706,19 @@ rrd_info_t *rrd_graph_v(
     rrd_info_t *grinfo;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
+     old_locale = setlocale(LC_NUMERIC, NULL);
+     setlocale(LC_NUMERIC, "C");
     
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
+        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
     if (optind >= argc) {
+        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
@@ -3722,6 +3726,7 @@ rrd_info_t *rrd_graph_v(
     }
 
     if (strlen(argv[optind]) >= MAXPATH) {
+        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_set_error("filename (including path) too long");
         rrd_info_free(im.grinfo);
         im_free(&im);
@@ -3736,6 +3741,7 @@ rrd_info_t *rrd_graph_v(
     }
 
     rrd_graph_script(argc, argv, &im, 1);
+    setlocale(LC_NUMERIC, old_locale); /* reenable locale */
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
         im_free(&im);

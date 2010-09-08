@@ -90,7 +90,8 @@ int rrd_dump_opt_r(
         out_file = stdout;
     }
 #ifdef HAVE_SETLOCALE
-    old_locale = setlocale(LC_NUMERIC, "C");
+    old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "C");  
 #endif
     if (!opt_noheader) {
         fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", out_file);
