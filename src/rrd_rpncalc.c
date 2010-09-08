@@ -297,7 +297,8 @@ rpnp_t   *rpn_parse(
     char      vname[MAX_VNAME_LEN + 10];
     char     *old_locale;
 
-    old_locale = setlocale(LC_NUMERIC, "C");
+    old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "C");
 
     rpnp = NULL;
     expr = (char *) expr_const;
