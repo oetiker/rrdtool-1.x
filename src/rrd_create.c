@@ -571,7 +571,8 @@ void parseGENERIC_DS(
        &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
        minstr,maxstr);
      */
-    old_locale = setlocale(LC_NUMERIC, "C");
+    old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "C");
     if (sscanf(def, "%lu:%18[^:]:%18[^:]",
                &(rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
                minstr, maxstr) == 3) {

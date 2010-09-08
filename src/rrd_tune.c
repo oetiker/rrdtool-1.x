@@ -126,7 +126,8 @@ int rrd_tune(
         optcnt++;
         switch (opt) {
         case 'h':
-            old_locale = setlocale(LC_NUMERIC, "C");
+            old_locale = setlocale(LC_NUMERIC, NULL);
+            setlocale(LC_NUMERIC, "C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%ld", ds_nam,
                         &heartbeat)) != 2) {
@@ -146,7 +147,8 @@ int rrd_tune(
             break;
 
         case 'i':
-            old_locale = setlocale(LC_NUMERIC, "C");
+            old_locale = setlocale(LC_NUMERIC, NULL);
+            setlocale(LC_NUMERIC, "C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
                 rrd_set_error("invalid arguments for minimum ds value");
@@ -168,7 +170,8 @@ int rrd_tune(
             break;
 
         case 'a':
-            old_locale = setlocale(LC_NUMERIC, "C");
+            old_locale = setlocale(LC_NUMERIC, NULL);
+            setlocale(LC_NUMERIC, "C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
                 rrd_set_error("invalid arguments for maximum ds value");
