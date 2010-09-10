@@ -1582,7 +1582,7 @@ int print_calc(
                 }
             }           /* prepare printval */
 
-            if ((percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
+            if (!im->gdes[i].strftm && (percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
                 /* Magfact is set to -1 upon entry to print_calc.  If it
                  * is still less than 0, then we need to run auto_scale.
                  * Otherwise, put the value into the correct units.  If
@@ -1596,7 +1596,7 @@ int print_calc(
                     printval /= magfact;
                 }
                 *(++percent_s) = 's';
-            } else if (strstr(im->gdes[i].format, "%s") != NULL) {
+            } else if (!im->gdes[i].strftm && strstr(im->gdes[i].format, "%s") != NULL) {
                 auto_scale(im, &printval, &si_symb, &magfact);
             }
 
