@@ -68,6 +68,17 @@ int rrdc_disconnect (void);
 int rrdc_update (const char *filename, int values_num,
         const char * const *values);
 
+rrd_info_t * rrdc_info (const char *filename);
+time_t rrdc_last (const char *filename);
+time_t rrdc_first (const char *filename, int rraindex);
+int rrdc_create (const char *filename,
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    int argc,
+    const char **argv);
+
+
 int rrdc_flush (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
 

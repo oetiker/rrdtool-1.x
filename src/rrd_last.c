@@ -15,6 +15,8 @@ time_t rrd_last(
 {
     char *opt_daemon = NULL;
     int status;
+    time_t lastupdate;
+    int flushfirst = 1;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -24,10 +26,11 @@ time_t rrd_last(
         int       option_index = 0;
         static struct option long_options[] = {
             {"daemon", required_argument, 0, 'd'},
+            {"noflush", no_argument, 0, 'F'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:F", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -44,8 +47,12 @@ time_t rrd_last(
             }
             break;
 
+        case 'F':
+            flushfirst = 0;
+            break;
+
         default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+            rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
                     argv[0]);
             return (-1);
             break;
@@ -53,16 +60,24 @@ time_t rrd_last(
     }                   /* while (42) */
 
     if ((argc - optind) != 1) {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+        rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
                 argv[0]);
         return (-1);
     }
 
+    if(flushfirst) {
     status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
-    if (opt_daemon) free(opt_daemon);
     if (status) return (-1);
+    }
 
-    return (rrd_last_r (argv[optind]));
+    rrdc_connect (opt_daemon);
+    if (rrdc_is_connected (opt_daemon))
+        lastupdate = rrdc_last (argv[optind]);
+
+    else
+        lastupdate = rrd_last_r(argv[optind]);
+
+    return (lastupdate);
 }
 
 time_t rrd_last_r(

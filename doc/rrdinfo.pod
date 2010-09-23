@@ -30,6 +30,12 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool info --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 
+=item B<--noflush> 
+
+Omit the C<flush> command usually sent to the daemon prior to retrieving the
+data.  If all you are interested in the the RRD Structure, and not the last update
+time or current values, then this will improve efficiency.
+
 =back
 
 =head1 EXAMPLE

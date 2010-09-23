@@ -8,6 +8,7 @@ B<rrdtool> B<create> I<filename>
 S<[B<--start>|B<-b> I<start time>]>
 S<[B<--step>|B<-s> I<step>]>
 S<[B<--no-overwrite>]>
+S<[B<--daemon> I<address>]>
 S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
@@ -40,6 +41,13 @@ into the B<RRD>.
 =head2 B<--no-overwrite>
 
 Do not clobber an existing file of the same name.
+
+=item B<--daemon> I<address>
+
+Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
+the B<-l> option in the L<rrdcached> manual.
+
+ rrdtool create --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd I<other options>
 
 =head2 B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
 

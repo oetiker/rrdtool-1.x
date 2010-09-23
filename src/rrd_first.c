@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include "rrd_tool.h"
+#include "rrd_client.h"
 
 
 time_t rrd_first(
@@ -16,8 +17,10 @@ time_t rrd_first(
 {
     int       target_rraindex = 0;
     char     *endptr;
+    char *opt_daemon = NULL;
     struct option long_options[] = {
         {"rraindex", required_argument, 0, 129},
+        {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
 
@@ -28,7 +31,7 @@ time_t rrd_first(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:F", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -41,19 +44,35 @@ time_t rrd_first(
                 return (-1);
             }
             break;
+        case 'd':
+            if (opt_daemon != NULL)
+                    free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
         default:
-            rrd_set_error("usage rrdtool %s [--rraindex number] file.rrd",
+            rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon <addr>] file.rrd",
                           argv[0]);
             return (-1);
         }
     }
 
     if (optind >= argc) {
-        rrd_set_error("not enough arguments");
+        rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon <addr>] file.rrd",
+                      argv[0]);
         return -1;
     }
 
+    rrdc_connect (opt_daemon);
+    if (rrdc_is_connected (opt_daemon)) {
+      return (rrdc_first (argv[optind], target_rraindex));
+    } else {
     return (rrd_first_r(argv[optind], target_rraindex));
+	}
 }
 
 

@@ -27,6 +27,13 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool last --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 
+=item B<--noflush> 
+
+If the L<rrdcached> daemon is being used, then omit the flush normally 
+send before returning the last update.  If you add this option, you get the 
+last time the file on disk was updated; if you have relatively low cache times
+and are calling this frequently it will preserve the caching benefit
+
 =back
 
 =head1 ENVIRONMENT VARIABLES
@@ -47,6 +54,6 @@ line argument takes precedence.
 =head1 AUTHOR
 
 Russ Wright <rwwright@home.com>
-
+Daemon support added by Steve Shipway <steve@steveshipway.org>
 
 

@@ -316,6 +316,16 @@ static int buffer_add_value (const char *value, /* {{{ */
   return (buffer_add_string (temp, buffer_ret, buffer_size_ret));
 } /* }}} int buffer_add_value */
 
+static int buffer_add_ulong (const unsigned long value, /* {{{ */
+    char **buffer_ret, size_t *buffer_size_ret)
+{
+  char temp[4096];
+
+  snprintf (temp, sizeof (temp), "%lu", value);
+  temp[sizeof (temp) - 1] = 0;
+  return (buffer_add_string (temp, buffer_ret, buffer_size_ret));
+} /* }}} int buffer_add_ulong */
+
 /* Remove trailing newline (NL) and carriage return (CR) characters. Similar to
  * the Perl function `chomp'. Returns the number of characters that have been
  * removed. */
@@ -816,6 +826,320 @@ int rrdc_flush (const char *filename) /* {{{ */
 
   return (status);
 } /* }}} int rrdc_flush */
+
+rrd_info_t * rrdc_info (const char *filename) /* {{{ */
+{
+  char buffer[4096];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+  char file_path[PATH_MAX];
+  rrd_info_t *data = NULL, *cd;
+  rrd_infoval_t info;
+  unsigned int l;
+  rrd_info_type_t itype;
+  char *k, *s;
+
+  if (filename == NULL) {
+    rrd_set_error ("rrdc_info: no filename");
+    return (NULL);
+  }
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("info", &buffer_ptr, &buffer_free);
+  if (status != 0) {
+    rrd_set_error ("rrdc_info: out of memory");
+    return (NULL);
+  }
+
+  pthread_mutex_lock (&lock);
+  filename = get_path (filename, file_path);
+  if (filename == NULL)
+  {
+    pthread_mutex_unlock (&lock);
+    return (NULL);
+  }
+
+  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  if (status != 0)
+  {
+    pthread_mutex_unlock (&lock);
+    rrd_set_error ("rrdc_info: out of memory");
+    return (NULL);
+  }
+
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0) {
+    rrd_set_error ("rrdcached: %s", res->message);
+    return (NULL);
+  }
+  data = cd = NULL;
+  for( l=0 ; l < res->lines_num ; l++ ) {
+    /* first extract the keyword */
+	for(k = s = res->lines[l];s && *s;s++) {
+      if(*s == ' ') { *s = 0; s++; break; }
+	}
+    if(!s || !*s) break;
+	itype = atoi(s); /* extract type code */
+	for(;*s;s++) { if(*s == ' ') { *s = 0; s++; break; } }
+    if(!*s) break;
+    /* finally, we're pointing to the value */
+    switch(itype) {
+    case RD_I_VAL:
+        if(*s == 'N') { info.u_val = DNAN; } else { info.u_val = atof(s); }
+        break;
+    case RD_I_CNT:
+        info.u_cnt = atol(s);
+        break;
+    case RD_I_INT:
+        info.u_int = atoi(s);
+        break;
+    case RD_I_STR:
+        chomp(s);
+        info.u_str = (char*)malloc(sizeof(char) * (strlen(s) + 1));
+        strcpy(info.u_str,s);
+        break;
+    case RD_I_BLO:
+        rrd_set_error ("rrdc_info: BLOB objects are not supported");
+        return (NULL);
+    default:
+        rrd_set_error ("rrdc_info: Unsupported info type %d",itype);
+        return (NULL);
+    }
+	
+    cd = rrd_info_push(cd, sprintf_alloc("%s",k), itype, info);
+	if(!data) data = cd;
+  }
+  response_free (res);
+
+  return (data);
+} /* }}} int rrdc_info */
+
+time_t rrdc_last (const char *filename) /* {{{ */
+{
+  char buffer[4096];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+  char file_path[PATH_MAX];
+  time_t lastup;
+
+  if (filename == NULL) {
+    rrd_set_error ("rrdc_last: no filename");
+    return (-1);
+  }
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("last", &buffer_ptr, &buffer_free);
+  if (status != 0) {
+    rrd_set_error ("rrdc_last: out of memory");
+    return (-1);
+  }
+
+  pthread_mutex_lock (&lock);
+  filename = get_path (filename, file_path);
+  if (filename == NULL)
+  {
+    pthread_mutex_unlock (&lock);
+    return (-1);
+  }
+
+  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  if (status != 0)
+  {
+    pthread_mutex_unlock (&lock);
+    rrd_set_error ("rrdc_last: out of memory");
+    return (-1);
+  }
+
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0) {
+    rrd_set_error ("rrdcached: %s", res->message);
+    return (-1);
+  }
+  lastup = atol(res->message);
+  response_free (res);
+
+  return (lastup);
+} /* }}} int rrdc_last */
+
+time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
+{
+  char buffer[4096];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+  char file_path[PATH_MAX];
+  time_t firstup;
+
+  if (filename == NULL) {
+    rrd_set_error ("rrdc_first: no filename specified");
+    return (-1);
+  }
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("first", &buffer_ptr, &buffer_free);
+  if (status != 0) {
+    rrd_set_error ("rrdc_first: out of memory");
+    return (-1);
+  }
+
+  pthread_mutex_lock (&lock);
+  filename = get_path (filename, file_path);
+  if (filename == NULL)
+  {
+    pthread_mutex_unlock (&lock);
+    return (-1);
+  }
+
+  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  if (status != 0)
+  {
+    pthread_mutex_unlock (&lock);
+    rrd_set_error ("rrdc_first: out of memory");
+    return (-1);
+  }
+  status = buffer_add_ulong (rraindex, &buffer_ptr, &buffer_free);
+  if (status != 0)
+  {
+    pthread_mutex_unlock (&lock);
+    rrd_set_error ("rrdc_first: out of memory");
+    return (-1);
+  }
+
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0) {
+    rrd_set_error ("rrdcached: %s", res->message);
+    return (-1);
+  }
+  firstup = atol(res->message);
+  response_free (res);
+
+  return (firstup);
+} /* }}} int rrdc_first */
+
+int rrdc_create (const char *filename, /* {{{ */
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    int argc,
+    const char **argv)
+{
+  char buffer[4096];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+  char file_path[PATH_MAX];
+  int i;
+
+  if (filename == NULL) {
+    rrd_set_error ("rrdc_create: no filename specified");
+    return (-1);
+  }
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("create", &buffer_ptr, &buffer_free);
+  if (status != 0) {
+    rrd_set_error ("rrdc_create: out of memory");
+    return (-1);
+  }
+
+  pthread_mutex_lock (&lock);
+  filename = get_path (filename, file_path);
+  if (filename == NULL)
+  {
+    pthread_mutex_unlock (&lock);
+    return (-1);
+  }
+
+  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
+  status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
+  status = buffer_add_string ("-s", &buffer_ptr, &buffer_free);
+  status = buffer_add_ulong (pdp_step, &buffer_ptr, &buffer_free);
+  if(no_overwrite) {
+    status = buffer_add_string ("-O", &buffer_ptr, &buffer_free);
+  }
+  if (status != 0)
+  {
+    pthread_mutex_unlock (&lock);
+    rrd_set_error ("rrdc_create: out of memory");
+    return (-1);
+  }
+
+  for( i=0; i<argc; i++ ) {
+    if( argv[i] ) {
+      status = buffer_add_string (argv[i], &buffer_ptr, &buffer_free);
+      if (status != 0)
+      {
+        pthread_mutex_unlock (&lock);
+        rrd_set_error ("rrdc_create: out of memory");
+        return (-1);
+      }
+	}
+  }
+
+  /* buffer ready to send? */
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0) {
+    rrd_set_error ("rrdcached: %s", res->message);
+    return (-1);
+  }
+  response_free (res);
+  return(0);
+} /* }}} int rrdc_create */
 
 int rrdc_fetch (const char *filename, /* {{{ */
     const char *cf,

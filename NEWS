@@ -21,6 +21,7 @@ RRDcached
 * New FETCH command allowing rrd_fetch to operate through the daemon and
   thus work remotely. By Florian Forster
 
+* New rrd_client commands INFO, FIRST, LAST, CREATE by Steve Shipway
 
 API
 ---

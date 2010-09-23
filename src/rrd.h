@@ -143,6 +143,8 @@ extern    "C" {
     int       rrd_create(
     int,
     char **);
+    void      rrd_create_set_no_overwrite(
+    int);
     rrd_info_t *rrd_info(
     int,
     char **);
