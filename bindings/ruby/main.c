@@ -48,7 +48,7 @@ string_arr string_arr_new(
 
         switch (TYPE(v)) {
         case T_STRING:
-            a.strings[i + 1] = strdup(STR2CSTR(v));
+            a.strings[i + 1] = strdup(StringValuePtr(v));
             break;
         case T_FIXNUM:
             snprintf(buf, 63, "%d", FIX2INT(v));
