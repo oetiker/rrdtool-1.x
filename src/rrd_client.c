@@ -369,37 +369,36 @@ static void response_free (rrdc_response_t *res) /* {{{ */
 
 static int response_read (rrdc_response_t **ret_response) /* {{{ */
 {
-  rrdc_response_t *ret;
+  rrdc_response_t *ret = NULL;
+  int status = 0;
 
   char buffer[4096];
   char *buffer_ptr;
 
   size_t i;
 
+#define DIE(code) do { status = code; goto err_out; } while(0)
+
   if (sh == NULL)
-    return (-1);
+    DIE(-1);
 
   ret = (rrdc_response_t *) malloc (sizeof (rrdc_response_t));
   if (ret == NULL)
-    return (-2);
+    DIE(-2);
   memset (ret, 0, sizeof (*ret));
   ret->lines = NULL;
   ret->lines_num = 0;
 
   buffer_ptr = fgets (buffer, sizeof (buffer), sh);
-  if (buffer_ptr == NULL) {
-    close_connection();
-    return (-3);
-  }
+  if (buffer_ptr == NULL)
+    DIE(-3);
+
   chomp (buffer);
 
   ret->status = strtol (buffer, &ret->message, 0);
   if (buffer == ret->message)
-  {
-    response_free (ret);
-    close_connection();
-    return (-4);
-  }
+    DIE(-4);
+
   /* Skip leading whitespace of the status message */
   ret->message += strspn (ret->message, " \t");
 
@@ -407,17 +406,13 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   {
     if (ret->status < 0)
       rrd_set_error("rrdcached: %s", ret->message);
-    *ret_response = ret;
-    return (0);
+    goto out;
   }
 
   ret->lines = (char **) malloc (sizeof (char *) * ret->status);
   if (ret->lines == NULL)
-  {
-    response_free (ret);
-    close_connection();
-    return (-5);
-  }
+    DIE(-5);
+
   memset (ret->lines, 0, sizeof (char *) * ret->status);
   ret->lines_num = (size_t) ret->status;
 
@@ -425,24 +420,27 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   {
     buffer_ptr = fgets (buffer, sizeof (buffer), sh);
     if (buffer_ptr == NULL)
-    {
-      response_free (ret);
-      close_connection();
-      return (-6);
-    }
+      DIE(-6);
+
     chomp (buffer);
 
     ret->lines[i] = strdup (buffer);
     if (ret->lines[i] == NULL)
-    {
-      response_free (ret);
-      close_connection();
-      return (-7);
-    }
+      DIE(-7);
   }
 
+out:
   *ret_response = ret;
-  return (0);
+  fflush(sh);
+  return (status);
+
+err_out:
+  response_free(ret);
+  close_connection();
+  return (status);
+
+#undef DIE
+
 } /* }}} rrdc_response_t *response_read */
 
 static int request (const char *buffer, size_t buffer_size, /* {{{ */
