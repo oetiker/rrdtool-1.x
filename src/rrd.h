@@ -143,8 +143,6 @@ extern    "C" {
     int       rrd_create(
     int,
     char **);
-    void      rrd_create_set_no_overwrite(
-    int);
     rrd_info_t *rrd_info(
     int,
     char **);
@@ -228,6 +226,14 @@ extern    "C" {
     const char *filename,
     unsigned long pdp_step,
     time_t last_up,
+    /* int no_overwrite, */
+    int argc,
+    const char **argv);
+    int       rrd_create_r2(
+    const char *filename,
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
     int argc,
     const char **argv);
     rrd_info_t *rrd_info_r(

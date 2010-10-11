@@ -14,7 +14,6 @@
 #include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
-static int opt_no_overwrite = 0;
 
 #ifdef WIN32
 # include <process.h>
@@ -33,12 +32,6 @@ void      parseGENERIC_DS(
 
 static void rrd_free2(
     rrd_t *rrd);        /* our onwn copy, immmune to mmap */
-
-void rrd_create_set_no_overwrite( 
-    int opt ) 
-{
-	opt_no_overwrite = (opt?1:0);
-}
 
 int rrd_create(
     int argc,
@@ -60,6 +53,7 @@ int rrd_create(
     long      long_tmp;
     int       rc;
     char * opt_daemon = NULL;
+    int       opt_no_overwrite = 0;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -135,8 +129,8 @@ int rrd_create(
                       pdp_step, last_up, opt_no_overwrite,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	} else {
-    rc = rrd_create_r(argv[optind],
-                      pdp_step, last_up,
+        rc = rrd_create_r2(argv[optind],
+                      pdp_step, last_up, opt_no_overwrite,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	}
 
@@ -144,10 +138,22 @@ int rrd_create(
 }
 
 /* #define DEBUG */
+/* For backwards compatibility with previous API.  Use rrd_create_r2 if you
+   need to have the no_overwrite parameter.                                */
 int rrd_create_r(
     const char *filename,
     unsigned long pdp_step,
     time_t last_up,
+    int argc,
+    const char **argv)
+{
+	return rrd_create_r2(filename,pdp_step,last_up,0,argc,argv);
+}
+int rrd_create_r2(
+    const char *filename,
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
     int argc,
     const char **argv)
 {
@@ -584,7 +590,7 @@ int rrd_create_r(
         rrd_free2(&rrd);
         return (-1);
     }
-    return rrd_create_fn(filename, &rrd);
+    return rrd_create_fn(filename, &rrd, no_overwrite);
 }
 
 void parseGENERIC_DS(
@@ -708,7 +714,8 @@ int create_hw_contingent_rras(
 
 int rrd_create_fn(
     const char *file_name,
-    rrd_t *rrd)
+    rrd_t *rrd,
+    int no_overwrite )
 {
     unsigned long i, ii;
     rrd_value_t *unknown;
@@ -717,7 +724,7 @@ int rrd_create_fn(
     rrd_t     rrd_dn;
     unsigned  rrd_flags = RRD_READWRITE | RRD_CREAT;
 
-    if (opt_no_overwrite) {
+    if (no_overwrite) {
       rrd_flags |= RRD_EXCL ;
     }
 

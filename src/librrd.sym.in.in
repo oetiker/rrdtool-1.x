@@ -6,7 +6,7 @@ rrd_clear_error
 rrd_close
 rrd_create
 rrd_create_r
-rrd_create_set_no_overwrite
+rrd_create_r2
 rrd_dontneed
 rrd_dump
 rrd_dump_r

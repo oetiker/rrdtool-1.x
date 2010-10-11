@@ -71,7 +71,7 @@
 #endif
 #endif
 
-#include "rrd.h"
+#include "rrd_tool.h"
 #include "rrd_client.h"
 #include "unused.h"
 
@@ -275,7 +275,7 @@ static uint64_t stats_journal_bytes = 0;
 static uint64_t stats_journal_rotate = 0;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int opt_no_overwrite = 0;
+static int opt_no_overwrite = 0; /* default for the daemon */
 
 /* Journaled updates */
 #define JOURNAL_REPLAY(s) ((s) == NULL)
@@ -1776,13 +1776,17 @@ static int handle_request_first (HANDLER_PROTO) /* {{{ */
     return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
   }
   return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
-} /* }}} static int handle_request_last  */
+} /* }}} static int handle_request_first  */
+
 
 static int handle_request_last (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
   int status;
-  time_t t;
+  time_t t, from_file, step;
+  rrd_file_t * rrd_file;
+  cache_item_t * ci;
+  rrd_t rrd; 
 
   /* obtain filename */
   status = buffer_get_field(&buffer, &buffer_size, &file);
@@ -1793,11 +1797,26 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   if (!check_file_access(file, sock)) {
     return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
   }
-  /* get data */
-  rrd_clear_error ();
-  t = rrd_last_r(file);
-  if(t<1) {
+  rrd_clear_error();
+  rrd_init(&rrd);
+  rrd_file = rrd_open(file,&rrd,RRD_READONLY);
+  if(!rrd_file) {
     return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+  }
+  from_file = rrd.live_head->last_up;
+  step = rrd.stat_head->pdp_step;
+  rrd_close(rrd_file);
+  pthread_mutex_lock(&cache_lock);
+  ci = g_tree_lookup(cache_tree, file);
+  if (ci)
+    t = ci->last_update_stamp;
+  else
+    t = from_file;
+  pthread_mutex_unlock(&cache_lock);
+  t -= t % step;
+  rrd_free(&rrd);
+  if(t<1) {
+    return send_response(sock, RESP_ERR, "Error: rrdcached: Invalid timestamp returned\n");
   }
   return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
 } /* }}} static int handle_request_last  */
@@ -1809,10 +1828,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   int ac = 0;
   char *av[128];
   int status;
-  ulong step = 300;
+  unsigned long step = 300;
   time_t last_up = time(NULL)-10;
-  rrd_time_value_t last_up_tv;
-  char     *parsetime_error = NULL;
   int no_overwrite = opt_no_overwrite;
 
 
@@ -1827,19 +1844,11 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
-  status = buffer_get_field(&buffer, &buffer_size, &tok );
-  for(;(tok && !status);status = buffer_get_field(&buffer, &buffer_size, &tok )) {
+  while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
     if( ! strncmp(tok,"-b",2) ) {
       status = buffer_get_field(&buffer, &buffer_size, &tok );
       if (status != 0) return syntax_error(sock,cmd);
-      if ((parsetime_error = rrd_parsetime(tok, &last_up_tv))) 
-        return send_response(sock, RESP_ERR, "start time: %s\n", parsetime_error);
-      if (last_up_tv.type == RELATIVE_TO_END_TIME ||
-        last_up_tv.type == RELATIVE_TO_START_TIME) {
-        return send_response(sock, RESP_ERR, "Cannot specify time relative to start or end here.\n");
-      }
-      last_up = mktime(&last_up_tv.tm) +last_up_tv.offset;
-
+      last_up = (time_t) atol(tok);
       continue;
     }
     if( ! strncmp(tok,"-s",2) ) {
@@ -1863,9 +1872,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     return send_response(sock, RESP_ERR, "The first entry must be after 1980.\n");
   }
 
-  rrd_create_set_no_overwrite(no_overwrite);
   rrd_clear_error ();
-  status = rrd_create_r(file,step,last_up,ac,(const char **)av);
+  status = rrd_create_r2(file,step,last_up,no_overwrite,ac,(const char **)av);
 
   if(!status) {
     return send_response(sock, RESP_OK, "RRD created OK\n");
@@ -2062,6 +2070,8 @@ static command_t list_of_commands[] = { /* {{{ */
     "CREATE <filename> [-b start] [-s step] [-O] <DS definitions> <RRA definitions>\n",
     "The CREATE command will create an RRD file, overwriting any existing file\n"
     "unless the -O option is given or rrdcached was started with the -O option.\n"
+    "The start parameter needs to be in seconds since 1/1/70 (AT-style syntax is\n"
+    "not acceptable) and the step is in seconds (default is 300).\n"
     "The DS and RRA definitions are as for the 'rrdtool create' command.\n"
   },
   {

@@ -82,7 +82,8 @@ extern    "C" {
 
     int       rrd_create_fn(
     const char *file_name,
-    rrd_t *rrd);
+    rrd_t *rrd,
+    int no_overwrite);
     int rrd_fetch_fn (const char *filename,
             enum cf_en cf_idx,
             time_t *start,

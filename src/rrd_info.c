@@ -152,6 +152,7 @@ rrd_info_t *rrd_info(
     else
     info = rrd_info_r(argv[optind]);
 
+    if (opt_daemon) free(opt_daemon);
     return (info);
 } /* rrd_info_t *rrd_info */
 
