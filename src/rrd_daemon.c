@@ -1701,7 +1701,7 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
   int status;
-  rrd_info_t *data;
+  rrd_info_t *info;
 
   /* obtain filename */
   status = buffer_get_field(&buffer, &buffer_size, &file);
@@ -1714,11 +1714,11 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
   }
   /* get data */
   rrd_clear_error ();
-  data = rrd_info_r(file);
-  if(!data) {
+  info = rrd_info_r(file);
+  if(!info) {
     return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
   }
-  while (data) {
+  for (rrd_info_t *data = info; data != NULL; data = data->next) {
       switch (data->type) {
       case RD_I_VAL:
           if (isnan(data->value.u_val))
@@ -1739,8 +1739,10 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
           add_response_info(sock,"%s %d %lu\n", data->key, data->type, data->value.u_blo.size);
           break;
       }
-      data = data->next;
   }
+
+  rrd_info_free(info);
+
   return send_response(sock, RESP_OK, "Info for %s follows\n",file);
 } /* }}} static int handle_request_info  */
 
