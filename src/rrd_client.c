@@ -643,6 +643,8 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
     break;
   } /* for (ai_ptr) */
 
+  freeaddrinfo(ai_res);
+
   return (status);
 } /* }}} int rrdc_connect_network */
 
