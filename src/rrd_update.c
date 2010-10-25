@@ -429,7 +429,10 @@ int rrd_update(
 
     {   /* try to connect to rrdcached */
         int status = rrdc_connect(opt_daemon);
-        if (status != 0) return status;
+        if (status != 0) {        
+             rc = status;           
+             goto out;           
+        }        
     }
 
     if ((tmplt != NULL) && rrdc_is_connected(opt_daemon))
