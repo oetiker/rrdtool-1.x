@@ -3448,17 +3448,27 @@ int graph_paint(
             break;
         case GF_LINE:
         case GF_AREA:
-		case GF_GRAD:
-            /* fix data points at oo and -oo */
+        case GF_GRAD: {
+            rrd_value_t diffval = im->maxval - im->minval;
+            rrd_value_t maxlimit = im->maxval + 9 * diffval;
+            rrd_value_t minlimit = im->minval - 9 * diffval;        
             for (ii = 0; ii < im->xsize; ii++) {
+                /* fix data points at oo and -oo */
                 if (isinf(im->gdes[i].p_data[ii])) {
                     if (im->gdes[i].p_data[ii] > 0) {
                         im->gdes[i].p_data[ii] = im->maxval;
                     } else {
                         im->gdes[i].p_data[ii] = im->minval;
                     }
-
                 }
+                /* some versions of cairo go unstable when trying
+                   to draw way out of the canvas ... lets not even try */
+               if (im->gdes[i].p_data[ii] > maxlimit) {
+                   im->gdes[i].p_data[ii] = maxlimit;
+               }
+               if (im->gdes[i].p_data[ii] < minlimit) {
+                   im->gdes[i].p_data[ii] = minlimit;
+               }
             }           /* for */
 
             /* *******************************************************
@@ -3726,6 +3736,7 @@ int graph_paint(
             }
             lastgdes = &(im->gdes[i]);
             break;
+        } /* GF_AREA, GF_LINE, GF_GRAD */
         case GF_STACK:
             rrd_set_error
                 ("STACK should already be turned into LINE or AREA here");
