@@ -109,6 +109,10 @@
 #include <libgen.h>
 #include <grp.h>
 
+#ifdef HAVE_LIBWRAP
+#include <tcpd.h>
+#endif /* HAVE_LIBWRAP */
+
 #include <glib-2.0/glib.h>
 /* }}} */
 
@@ -2636,6 +2640,21 @@ static void *connection_thread_main (void *args) /* {{{ */
   }
 
   pthread_mutex_lock (&connection_threads_lock);
+#ifdef HAVE_LIBWRAP
+  /* LIBWRAP does not support multiple threads! By putting this code
+     inside pthread_mutex_lock we do not have to worry about request_info
+     getting overwritten by another thread.
+  */
+  struct request_info req;
+  request_init(&req, RQ_DAEMON, "rrdcache\0", RQ_FILE, fd, NULL );
+  fromhost(&req);
+  if(!hosts_access(&req)) {
+    RRDD_LOG(LOG_INFO, "refused connection from %s", eval_client(&req));
+    pthread_mutex_unlock (&connection_threads_lock);
+    close_connection(sock);
+    return NULL;
+  }
+#endif /* HAVE_LIBWRAP */
   connection_threads_num++;
   pthread_mutex_unlock (&connection_threads_lock);
 

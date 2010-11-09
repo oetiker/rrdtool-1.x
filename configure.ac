@@ -102,6 +102,28 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
+AC_ARG_ENABLE(libwrap,
+  AS_HELP_STRING([--disable-libwrap],
+  [do not build in support for libwrap (tcp wrapper)]),
+  [have_libwrap=no],[
+    XXX=$LIBS
+    LIBS="$LIBS -lwrap"
+    AC_MSG_CHECKING(for libwrap)
+    AC_LINK_IFELSE(
+      [AC_LANG_PROGRAM([[#include "tcpd.h"]], [[hosts_access(NULL)]])
+    ],[AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
+       AC_MSG_RESULT([yes])
+       have_libwrap=yes
+    ],[LIBS=$XXX
+       AC_MSG_RESULT([no])
+       have_libwrap=no
+    ]
+  )
+])
+AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
 dnl Check if we run on a system that has fonts
 AC_ARG_WITH(rrd-default-font,
 [  --with-rrd-default-font=[OPTIONS]  set the full path to your default font.],
@@ -515,7 +537,6 @@ AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support 
 ])
 AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 
 CORE_LIBS="$LIBS"
@@ -961,6 +982,7 @@ echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
 echo "           Use gettext: $USE_NLS"
 echo "           With libDBI: $have_libdbi"
+echo "          With libwrap: $have_libwrap"
 echo
 echo "             Libraries: $ALL_LIBS"
 echo

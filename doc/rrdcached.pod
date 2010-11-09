@@ -422,14 +422,15 @@ ASCII art rocks.
 
 =head2 Authentication
 
-There is no authentication.
+If your rrdtool installation was built without libwrap there is no form of 
+authentication for clients connecting to the rrdcache daemon!
 
-The client/server protocol does not yet have any authentication mechanism. It
-is likely that authentication and encryption will be added in a future version,
-but for the time being it is the administrator's responsibility to secure the
-traffic from/to the daemon!
+If your rrdtool installation was built with libwrap then you can use
+hosts_access to restrict client access to the rrdcache daemon.  For more
+information on how to use hosts_access to restrict access to the rrdcache
+daemon you should read the hosts_access(5) man pages. 
 
-It is highly recommended to install a packet filter or similar mechanism to
+It is still highly recommended to install a packet filter or similar mechanism to
 prevent unauthorized connections. Unless you have a dedicated VLAN or VPN for
 this, using network sockets is probably a bad idea!
 
