@@ -284,7 +284,8 @@ extern    "C" {
     typedef enum {
         ABSOLUTE_TIME,
         RELATIVE_TO_START_TIME,
-        RELATIVE_TO_END_TIME
+        RELATIVE_TO_END_TIME,
+        RELATIVE_TO_EPOCH
     } rrd_timetype_t;
 
 #define TIME_OK NULL

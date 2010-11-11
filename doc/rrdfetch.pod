@@ -165,11 +165,16 @@ single-number date is interpreted as MMDD[YY]YY.
 I<NOTE2>: if you specify the I<day> in this way, the I<time-of-day> is
 REQUIRED as well.
 
-Finally, you can use the words B<now>, B<start>, or B<end> as your time
+Finally, you can use the words B<now>, B<start>, B<end> or B<epoch> as your time
 reference. B<Now> refers to the current moment (and is also the default
 time reference). B<Start> (B<end>) can be used to specify a time
 relative to the start (end) time for those tools that use these
-categories (B<rrdfetch>, L<rrdgraph>).
+categories (B<rrdfetch>, L<rrdgraph>) and B<epoch> indicates the 
+*IX epoch (*IX timestamp 0 = 1970-01-01 00:00:00 UTC). B<epoch> is
+useful to disambiguate between a timestamp value and some forms
+of abbreviated date/time specifications, because it allows to use 
+time offset specifications using units, eg. B<epoch>+19711205s unambiguously
+denotes timestamp 19711205 and not 1971-12-05 00:00:00 UTC.
 
 Month and day of the week names can be used in their naturally
 abbreviated form (e.g., Dec for December, Sun for Sunday, etc.). The

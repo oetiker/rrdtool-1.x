@@ -124,7 +124,7 @@
 
 enum {                  /* symbols */
     MIDNIGHT, NOON, TEATIME,
-    PM, AM, YESTERDAY, TODAY, TOMORROW, NOW, START, END,
+    PM, AM, YESTERDAY, TODAY, TOMORROW, NOW, START, END, EPOCH,
     SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS,
     MONTHS_MINUTES,
     NUMBER, PLUS, MINUS, DOT, COLON, SLASH, ID, JUNK,
@@ -157,6 +157,7 @@ static const struct SpecialToken VariousWords[] = {
     {"s", START},
     {"end", END},
     {"e", END},
+    {"epoch", EPOCH},
 
     {"jan", JAN},
     {"feb", FEB},
@@ -859,6 +860,9 @@ char     *rrd_parsetime(
     case MINUS:
         break;          /* jump to OFFSET-SPEC part */
 
+    case EPOCH:
+        ptv->type = RELATIVE_TO_EPOCH;
+        goto KeepItRelative;
     case START:
         ptv->type = RELATIVE_TO_START_TIME;
         goto KeepItRelative;
