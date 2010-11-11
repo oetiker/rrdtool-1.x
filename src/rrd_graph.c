@@ -1470,6 +1470,13 @@ time_t find_next_time(
 
     localtime_r(&current, &tm);
 
+    int limit = 2;
+    switch (baseint) {
+    case TMT_SECOND: limit = 7200; break;
+    case TMT_MINUTE: limit = 120; break;
+    case TMT_HOUR: limit = 2; break;
+    default: limit = 2; break;
+    }
     do {
         switch (baseint) {
         case TMT_SECOND:
@@ -1500,7 +1507,7 @@ time_t find_next_time(
             tm.       tm_year += basestep;
         }
         madetime = mktime(&tm);
-    } while (madetime == -1);   /* this is necessary to skip impssible times
+    } while (madetime == -1 && limit-- >= 0);   /* this is necessary to skip impossible times
                                    like the daylight saving time skips */
     return madetime;
 
@@ -2506,19 +2513,20 @@ void vertical_grid(
                              mgridtm,
                              im->xlab_user.
                              mgridst);
-             ti < im->end;
+             ti < im->end && ti != -1;
              ti =
              find_next_time(ti, im->xlab_user.gridtm, im->xlab_user.gridst)
             ) {
             /* are we inside the graph ? */
             if (ti < im->start || ti > im->end)
                 continue;
-            while (timajor < ti) {
+            while (timajor < ti && timajor != -1) {
                 timajor = find_next_time(timajor,
                                          im->
                                          xlab_user.
                                          mgridtm, im->xlab_user.mgridst);
             }
+            if (timajor == -1) break; /* fail in case of problems with time increments */
             if (ti == timajor)
                 continue;   /* skip as falls on major grid line */
             X0 = xtr(im, ti);
@@ -2542,7 +2550,7 @@ void vertical_grid(
                               im->
                               xlab_user.
                               mgridst);
-         ti < im->end;
+         ti < im->end && ti != -1;
          ti = find_next_time(ti, im->xlab_user.mgridtm, im->xlab_user.mgridst)
         ) {
         /* are we inside the graph ? */
@@ -2568,9 +2576,9 @@ void vertical_grid(
                          labtm,
                          im->xlab_user.
                          labst);
-         ti <=
+         (ti <=
          im->end -
-         im->xlab_user.precis / 2;
+         im->xlab_user.precis / 2) && ti != -1;
          ti = find_next_time(ti, im->xlab_user.labtm, im->xlab_user.labst)
         ) {
         tilab = ti + im->xlab_user.precis / 2;  /* correct time for the label */
