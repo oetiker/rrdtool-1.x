@@ -485,8 +485,9 @@ B<CDEF:>I<vname>B<=>I<RPN expression>
 
 B<VDEF:>I<vname>B<=>I<RPN expression>
 
-You need at least one B<DEF> statement to generate anything. The
-other statements are useful but optional.
+You need at least one B<DEF> and one B<LINE>, B<AREA>, B<GPRINT>, B<PRINT>
+statement to generate anything useful.
+
 See L<rrdgraph_data> and L<rrdgraph_rpn> for the exact format.
 
 NOTE: B<Graph and print elements>
