@@ -15,7 +15,7 @@ if ($ARGV[-1] =~ /RPATH=(\S+)/){
 	        /hpux/    && do{ $R = "+b$rp"};
 	        /solaris/ && do{ $R = "-R$rp"};
 	        /bsd/     && do{ $R = "-R$rp"};
-                /aix/     && do{ $R = "-Wl,-blibpath:$rp"};
+                /aix/     && do{ $R = "-blibpath:$rp"};
 	}
 }
 
