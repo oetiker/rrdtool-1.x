@@ -4,7 +4,7 @@ rrdgraph_libdbi - fetching data for graphing in rrdtool graph via libdbi
 
 =head1 SYNOPSIS
 
-E<lt>rrdfileE<gt> = B<sql//E<lt>libdbi driverE<gt>/E<lt>driver-option-nameE<gt>=E<lt>driver-option-valueE<gt>/...[/rrdminstepsize=E<lt>stepsizeE<gt>][/rrdfillmissing=E<lt>fill missing n samplesE<gt>]//E<lt>tableE<gt>/E<lt>unixtimestamp columnE<gt>/E<lt>data value columnE<gt>[/derive]/E<lt>where clause 1E<gt>/.../E<lt>where clause nE<gt>>
+E<lt>rrdfileE<gt> = B<sql//E<lt>libdbi driverE<gt>/E<lt>driver-option-nameE<gt>=E<lt>driver-option-valueE<gt>/...[/rrdminstepsize=E<lt>stepsizeE<gt>][/rrdfillmissing=E<lt>fill missing n secondsE<gt>]//E<lt>tableE<gt>/E<lt>unixtimestamp columnE<gt>/E<lt>data value columnE<gt>[/derive]/E<lt>where clause 1E<gt>/.../E<lt>where clause nE<gt>>
 
 =head1 DESCRIPTION
 
@@ -29,9 +29,9 @@ This pseudo-rrd-filename defines a sql datasource:
 
   defines the minimum number of the step-length used for graphing (default: 300 seconds)
 
-=item B</rrdfillmissing>=B<E<lt>fill missing stepsE<gt>>
+=item B</rrdfillmissing>=B<E<lt>fill missing secondsE<gt>>
 
-  defines the number of steps to fill with the last value to avoid NaN boxes due to data-insertation jitter (default: 0 steps)
+  defines the number of seconds to fill with the last value to avoid NaN boxes due to data-insertation jitter (default: 0 seconds)
 
 =item B<E<lt>tableE<gt>>
 

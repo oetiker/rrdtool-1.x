@@ -27,6 +27,11 @@ API
 ---
 * exported rrd_update_v_r for theadsave rrd_update calls
 
+libDBI
+------
+* make rrdfillmissing actually work. The parameter is now in seconds and not
+  in steps for ease of use by Hans Jørgen Jakobsen
+
 Bindings
 --------
 * dotnet by  Chris Larsen of Euphoria Audio  

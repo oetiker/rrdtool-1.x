@@ -615,7 +615,7 @@ rrd_fetch_fn_libdbi(
 	(*data)[idx*(*ds_cnt)+1]=r_value; /* AVG */
 	(*data)[idx*(*ds_cnt)+2]=r_value; /* MAX */
 	(*data)[idx*(*ds_cnt)+3]=1;       /* COUNT */
-	(*data)[idx*(*ds_cnt)+4]=r_value; /* SIGMA */
+       (*data)[idx*(*ds_cnt)+4]=r_value*r_value; /* SIGMA */
       } else {
 	/* MIN */
 	if ((*data)[idx*(*ds_cnt)+0]>r_value) { (*data)[idx*(*ds_cnt)+0]=r_value; }
@@ -649,6 +649,30 @@ rrd_fetch_fn_libdbi(
       (*data)[idx*(*ds_cnt)+4]=r_value;
       /* now the average */
       (*data)[idx*(*ds_cnt)+1]/=count;
+    }
+  }
+
+  /* Fill in missing values */
+  fillmissing/=(*step);/* Convert from seconds to steps */
+  if (fillmissing>0) {
+    int copy_left=fillmissing;
+    for(idx=1;idx<rows;idx++) {
+      long count=(*data)[idx*(*ds_cnt)+3];
+      if (count==0) {
+        /* No data this bin */
+        if (copy_left>0) {
+          /* But we can copy from previous */
+          int idx_p=idx-1;
+          (*data)[idx*(*ds_cnt)+0]=(*data)[idx_p*(*ds_cnt)+0];
+          (*data)[idx*(*ds_cnt)+1]=(*data)[idx_p*(*ds_cnt)+1];
+          (*data)[idx*(*ds_cnt)+2]=(*data)[idx_p*(*ds_cnt)+2];
+          (*data)[idx*(*ds_cnt)+3]=(*data)[idx_p*(*ds_cnt)+3];
+          (*data)[idx*(*ds_cnt)+4]=(*data)[idx_p*(*ds_cnt)+4];
+          copy_left--;
+        }
+      }else{
+        copy_left=fillmissing;
+      }
     }
   }
 
