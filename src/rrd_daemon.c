@@ -219,9 +219,7 @@ typedef struct {
   size_t files_num;
 } journal_set;
 
-/* max length of socket command or response */
-#define CMD_MAX 4096
-#define RBUF_SIZE (CMD_MAX*2)
+#define RBUF_SIZE (RRD_CMD_MAX*2)
 
 /*
  * Variables
@@ -543,7 +541,7 @@ static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
 {
   va_list argp;
-  char buffer[CMD_MAX];
+  char buffer[RRD_CMD_MAX];
   int len;
 
   if (JOURNAL_REPLAY(sock)) return 0;
@@ -588,7 +586,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
                           char *fmt, ...) /* {{{ */
 {
   va_list argp;
-  char buffer[CMD_MAX];
+  char buffer[RRD_CMD_MAX];
   int lines;
   ssize_t wrote;
   int rclen, len;
@@ -1327,7 +1325,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   char *file, file_tmp[PATH_MAX];
   int values_num = 0;
   int status;
-  char orig_buf[CMD_MAX];
+  char orig_buf[RRD_CMD_MAX];
 
   cache_item_t *ci;
 
@@ -2204,7 +2202,7 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
 
   if (help && (help->syntax || help->help))
   {
-    char tmp[CMD_MAX];
+    char tmp[RRD_CMD_MAX];
 
     snprintf(tmp, sizeof(tmp)-1, "Help for %s\n", help->cmd);
     resp_txt = tmp;
@@ -2439,7 +2437,7 @@ static int journal_replay (const char *file) /* {{{ */
   int entry_cnt = 0;
   int fail_cnt = 0;
   uint64_t line = 0;
-  char entry[CMD_MAX];
+  char entry[RRD_CMD_MAX];
   time_t now;
 
   if (file == NULL) return 0;

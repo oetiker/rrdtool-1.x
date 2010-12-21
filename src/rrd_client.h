@@ -49,6 +49,8 @@
 	typedef unsigned long long int 	uint64_t;
 #endif
 
+/* max length of socket command or response */
+#define RRD_CMD_MAX 4096
 
 #ifndef RRDCACHED_DEFAULT_ADDRESS
 # define RRDCACHED_DEFAULT_ADDRESS "unix:/tmp/rrdcached.sock"

@@ -304,7 +304,7 @@ static int buffer_add_string (const char *str, /* {{{ */
 static int buffer_add_value (const char *value, /* {{{ */
     char **buffer_ret, size_t *buffer_size_ret)
 {
-  char temp[4096];
+  char temp[RRD_CMD_MAX];
 
   if (strncmp (value, "N:", 2) == 0)
     snprintf (temp, sizeof (temp), "%lu:%s",
@@ -319,7 +319,7 @@ static int buffer_add_value (const char *value, /* {{{ */
 static int buffer_add_ulong (const unsigned long value, /* {{{ */
     char **buffer_ret, size_t *buffer_size_ret)
 {
-  char temp[4096];
+  char temp[RRD_CMD_MAX];
 
   snprintf (temp, sizeof (temp), "%lu", value);
   temp[sizeof (temp) - 1] = 0;
@@ -372,7 +372,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   rrdc_response_t *ret = NULL;
   int status = 0;
 
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
 
   size_t i;
@@ -713,7 +713,7 @@ int rrdc_disconnect (void) /* {{{ */
 int rrdc_update (const char *filename, int values_num, /* {{{ */
 		const char * const *values)
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -775,7 +775,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
 
 int rrdc_flush (const char *filename) /* {{{ */
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -829,7 +829,7 @@ int rrdc_flush (const char *filename) /* {{{ */
 
 rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -930,7 +930,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 
 time_t rrdc_last (const char *filename) /* {{{ */
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -991,7 +991,7 @@ time_t rrdc_last (const char *filename) /* {{{ */
 
 time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -1064,7 +1064,7 @@ int rrdc_create (const char *filename, /* {{{ */
     int argc,
     const char **argv)
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
@@ -1149,7 +1149,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
     char ***ret_ds_names,
     rrd_value_t **ret_data)
 {
-  char buffer[4096];
+  char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
   size_t buffer_size;
