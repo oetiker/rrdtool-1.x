@@ -3533,23 +3533,30 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'j':
       {
         char journal_dir_actual[PATH_MAX];
-        const char *dir;
-        dir = journal_dir = strdup(realpath((const char *)optarg, journal_dir_actual));
-
-        status = rrd_mkdir_p(dir, 0777);
-        if (status != 0)
-        {
-          fprintf(stderr, "Failed to create journal directory '%s': %s\n",
-              dir, rrd_strerror(errno));
-          return 6;
-        }
-
-        if (access(dir, R_OK|W_OK|X_OK) != 0)
-        {
-          fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
-                  errno ? rrd_strerror(errno) : "");
-          return 6;
-        }
+        journal_dir = realpath((const char *)optarg, journal_dir_actual);
+	if (journal_dir)
+	{
+          // if we were able to properly resolve the path, lets have a copy
+          // for use outside this block.
+          journal_dir = strdup(journal_dir);           
+	  status = rrd_mkdir_p(journal_dir, 0777);
+	  if (status != 0)
+	  {
+	    fprintf(stderr, "Failed to create journal directory '%s': %s\n",
+		    journal_dir, rrd_strerror(errno));
+	    return 6;
+	  }
+	  if (access(journal_dir, R_OK|W_OK|X_OK) != 0)
+	  {
+	    fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
+		    errno ? rrd_strerror(errno) : "");
+	    return 6;
+	  }
+	} else {
+	  fprintf(stderr, "Unable to resolve journal path (%s,%s)\n", optarg,
+		  errno ? rrd_strerror(errno) : "");
+	  return 6;
+	}
       }
       break;
 
