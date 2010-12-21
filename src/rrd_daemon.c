@@ -2168,6 +2168,15 @@ static void socket_permission_copy (listen_socket_t *dest, /* {{{ */
   dest->permissions = src->permissions;
 } /* }}} socket_permission_copy */
 
+static void socket_permission_set_all (listen_socket_t *sock) /* {{{ */
+{
+  size_t i;
+
+  sock->permissions = 0;
+  for (i = 0; i < list_of_commands_len; i++)
+    sock->permissions |= (1 << i);
+} /* }}} void socket_permission_set_all */
+
 /* check whether commands are received in the expected context */
 static int command_check_context(listen_socket_t *sock, command_t *cmd)
 {
@@ -3131,6 +3140,10 @@ static int daemonize (void) /* {{{ */
     strncpy(default_socket.addr, RRDCACHED_DEFAULT_ADDRESS,
         sizeof(default_socket.addr) - 1);
     default_socket.addr[sizeof(default_socket.addr) - 1] = '\0';
+
+    if (default_socket.permissions == 0)
+      socket_permission_set_all (&default_socket);
+
     open_listen_socket (&default_socket);
   }
 
@@ -3275,18 +3288,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         else /* if (default_socket.permissions == 0) */
         {
           /* Add permission for ALL commands to the socket. */
-          size_t i;
-          for (i = 0; i < list_of_commands_len; i++)
-          {
-            status = socket_permission_add (new, list_of_commands[i].cmd);
-            if (status != 0)
-            {
-              fprintf (stderr, "read_options: Adding permission \"%s\" to "
-                  "socket failed. This should never happen, ever! Sorry.\n",
-                  list_of_commands[i].cmd);
-              status = 4;
-            }
-          }
+          socket_permission_set_all (new);
         }
         /* }}} Done adding permissions. */
 
@@ -3573,6 +3575,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "\n"
             "Valid options are:\n"
             "  -l <address>  Socket address to listen to.\n"
+            "                Default: "RRDCACHED_DEFAULT_ADDRESS"\n"
             "  -P <perms>    Sets the permissions to assign to all following "
                             "sockets\n"
             "  -w <seconds>  Interval in which to write data.\n"
