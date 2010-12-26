@@ -864,7 +864,7 @@ if test  "$enable_tcl" = "yes"; then
 	  TCL_INCLUDE_SPEC="$TCL_INCLUDE_SPEC -I$TCL_INC_DIR"
 	fi
   fi
-  AC_ARG_ENABLE(tcl,AS_HELP_STRING([--enable-tcl-site],[install the tcl extension in the tcl tree]),
+  AC_ARG_ENABLE(tcl-site,AS_HELP_STRING([--enable-tcl-site],[install the tcl extension in the tcl tree]),
   [],[enable_tcl_site=yes])
 
 fi
