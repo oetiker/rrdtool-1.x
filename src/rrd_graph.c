@@ -2954,9 +2954,6 @@ int graph_size_location(
     if (im->second_axis_legend[0] != '\0') {
         Xvertical2 = im->text_prop[TEXT_PROP_UNIT].size * 2;
     }
-    else{
-        Xvertical2 = Xspacing;
-    }
 
     if (im->title[0] != '\0') {
         /* The title is placed "inbetween" two text lines so it
