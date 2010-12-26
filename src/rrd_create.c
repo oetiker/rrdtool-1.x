@@ -238,9 +238,10 @@ int rrd_create_r(
         } else if (strncmp(argv[i], "RRA:", 4) == 0) {
             char     *argvcopy;
             char     *tokptr = "";
+            int       cf_id = -1;
             size_t    old_size = sizeof(rra_def_t) * (rrd.stat_head->rra_cnt);
             int       row_cnt;
-
+            int       token_min = 4;
             if ((rrd.rra_def = (rra_def_t*)rrd_realloc(rrd.rra_def,
                                            old_size + sizeof(rra_def_t))) ==
                 NULL) {
@@ -254,6 +255,7 @@ int rrd_create_r(
             argvcopy = strdup(argv[i]);
             token = strtok_r(&argvcopy[4], ":", &tokptr);
             token_idx = error_flag = 0;
+            
             while (token != NULL) {
                 switch (token_idx) {
                 case 0:
@@ -261,11 +263,12 @@ int rrd_create_r(
                                rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam) !=
                         1)
                         rrd_set_error("Failed to parse CF name");
-                    switch (cf_conv
-                            (rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam)) {
+                    cf_id = cf_conv(rrd.rra_def[rrd.stat_head->rra_cnt].cf_nam);
+                    switch (cf_id) {
                     case CF_MHWPREDICT:
                         strcpy(rrd.stat_head->version, RRD_VERSION);    /* MHWPREDICT causes Version 4 */
                     case CF_HWPREDICT:
+                        token_min = 5;
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].par[RRA_hw_alpha].
                             u_val = 0.1;
@@ -276,7 +279,11 @@ int rrd_create_r(
                             rrd.stat_head->rra_cnt;
                         break;
                     case CF_DEVSEASONAL:
+                        token_min = 3;
                     case CF_SEASONAL:
+                        if (cf_id == CF_SEASONAL){
+                           token_min = 4;
+                        }
                         /* initialize some parameters */
                         rrd.rra_def[rrd.stat_head->rra_cnt].
                             par[RRA_seasonal_gamma].u_val = 0.1;
@@ -284,10 +291,14 @@ int rrd_create_r(
                             par[RRA_seasonal_smoothing_window].u_val = 0.05;
                         /* fall through */
                     case CF_DEVPREDICT:
+                        if (cf_id == CF_DEVPREDICT){
+                           token_min = 3;
+                        }
                         rrd.rra_def[rrd.stat_head->rra_cnt].
                             par[RRA_dependent_rra_idx].u_cnt = -1;
                         break;
                     case CF_FAILURES:
+                        token_min = 5;
                         rrd.rra_def[rrd.stat_head->rra_cnt].
                             par[RRA_delta_pos].u_val = 2.0;
                         rrd.rra_def[rrd.stat_head->rra_cnt].
@@ -509,6 +520,11 @@ int rrd_create_r(
                 token_idx++;
             }           /* end while */
             free(argvcopy);
+            if (token_idx < token_min){
+                rrd_set_error("Expected at least %i arguments for RRA but got %i",token_min,token_idx);
+                rrd_free2(&rrd);
+                return(-1);
+            }
 #ifdef DEBUG
             fprintf(stderr,
                     "Creating RRA CF: %s, dep idx %lu, current idx %lu\n",
