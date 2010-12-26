@@ -1,3 +1,48 @@
+RRDtool 1.4.5 - 2010-12-26
+==========================
+Bugfixes:
+ * rrdcached: print \n at the end of log messages when running rrdcached in the
+   foreground -- Bernard Li
+ * rrdcached: Let the -s, -m and -P options affect the default socket as
+   well -- Sebastian Harl
+ * rrdgraph: font related memory leaks fixed #208 -- tobi
+ * rrdgraph-libdbi: print error message instead of dumping core on sql
+   problem -- Pavel Nikiforov
+ * rrdgraph-libdbi: properly allocated response buffer -- Pavel Nikiforov
+ * rrdtool: in remote mode, make argument count for remote commmands strict
+   -- Dave Peticolas
+ * rrdgraph: fix problems with second %s in right-axis format -- tobi
+ * compilation: works on MSVC2008 now -- jkane mail.com
+ * everywhere: fix locale handling. locales were not properly reset after
+   calling set locale -- tobi
+ * rrd_cgi: windows compilation fix --  jkane mail.com
+ * rrdgraph: fix use of %s in strftime (G)PRINT commands #277 -- tobi
+ * ruby: fix bindings to be compatible with curent ruby implementations #279
+ * rrdcached: Ensure that response_read() always calls fflush() or fclose() #278
+   -- kevin brintnall
+ * rrd_client: free addrinfo list after use ... -- Christian Magnusson
+ * rrdupdate: follow the normal code path for exiting rrd_update if there is a problem
+   with rrdc, plugging a memory leak on the way --  Christian Magnusson
+ * rrdgraph: make sure we do not try to draw points all that far outside the
+   drawing area since some versions of cairo seem to go unstable when this
+   happens. -- Peter Stamfest
+ * rrdgraph: fix an endles loop near 2^31 timestamp (32bit platform problem)
+   -- Peter Stamfest
+ * compilation: AIX does not like MAP_PRIVATE and -lW in LDFLAGS #216 -- tobi
+ * compliation: add extra space in LDFLAGS #284 -- dam at opencsw
+ * rrdcached:  Fix permissions of the default socket -- Florian Forster
+ * rrdgraph-libdbi: Fix sigma calculation --  Hans Jørgen Jakobsen
+ * rrdcreate: better checks for RRA arguments
+ * configure: make configure recognize tcl-site argument (#281)
+ * rrdgraph: if there is no right label, do not reserve any space for it --tobi
+ 
+Enhancements:
+ * rrdcached: add hosts_access support added -- Shaun Reitan
+ * rrdfetch/graph: introduce "epoch" as a new base time reference, meaning
+   timestamp 0: you can now write epoch+11111111s or epoch+19711205s
+   -- Peter Stamfest
+
+
 RRDtool 1.4.4 - 2010-07-05
 ==========================
 Bugfixes:
