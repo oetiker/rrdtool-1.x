@@ -158,7 +158,9 @@ rrd_file_t *rrd_open(
     if (rdwr & RRD_READONLY) {
         flags |= O_RDONLY;
 #ifdef HAVE_MMAP
+# if !defined(AIX)
         rrd_simple_file->mm_flags = MAP_PRIVATE;
+# endif
 # ifdef MAP_NORESERVE
         rrd_simple_file->mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
 # endif
