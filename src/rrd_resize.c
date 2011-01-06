@@ -118,7 +118,6 @@ int rrd_resize(
         rrd_free(&rrdnew);
         rrd_free(&rrdold);
         rrd_close(rrd_file);
-        rrd_close(rrd_out_file);
         return (-1);
     }
     if (rrd_lock(rrd_out_file) != 0) {
