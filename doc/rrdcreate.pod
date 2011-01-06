@@ -145,7 +145,7 @@ between two updates of this data source before the value of the
 data source is assumed to be I<*UNKNOWN*>.
 
 I<min> and I<max> define the expected range values for data supplied by a
-data source. If I<min> and/or I<max> any value outside the defined range
+data source. If I<min> and/or I<max> are specified any value outside the defined range
 will be regarded as I<*UNKNOWN*>. If you do not know or care about min and
 max, set them to U for unknown. Note that min and max always refer to the
 processed values of the DS. For a traffic-B<COUNTER> type DS this would be
