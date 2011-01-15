@@ -161,6 +161,12 @@ int rrd_resize(
     default:
         rrd_set_error("Do not know how to handle RRD version %s",
                       rrdold.stat_head->version);
+
+        rrdnew.ds_def = NULL;
+        rrdnew.live_head = NULL;
+        rrdnew.pdp_prep = NULL;
+        rrdnew.cdp_prep = NULL;
+
         rrd_free(&rrdnew);
         rrd_free(&rrdold);
         rrd_close(rrd_file);
@@ -282,6 +288,12 @@ int rrd_resize(
     rrd_close(rrd_file);    
     rrd_close(rrd_out_file);    
     rrd_free(&rrdold);
+
+    rrdnew.ds_def = NULL;
+    rrdnew.live_head = NULL;
+    rrdnew.pdp_prep = NULL;
+    rrdnew.cdp_prep = NULL;
+
     rrd_free(&rrdnew);
     return (0);
 }
