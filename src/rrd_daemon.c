@@ -188,7 +188,7 @@ struct cache_item_s
   size_t values_num;		/* number of valid pointers */
   size_t values_alloc;		/* number of allocated pointers */
   time_t last_flush_time;
-  time_t last_update_stamp;
+  double last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
 #define CI_FLAGS_IN_QUEUE (1<<1)
   int flags;
@@ -1422,7 +1422,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   while (buffer_size > 0)
   {
     char *value;
-    time_t stamp;
+    double stamp;
     char *eostamp;
 
     status = buffer_get_field (&buffer, &buffer_size, &value);
@@ -1432,8 +1432,9 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
       break;
     }
 
-    /* make sure update time is always moving forward */
-    stamp = strtol(value, &eostamp, 10);
+    /* make sure update time is always moving forward. We use double here since
+       update does support subsecond precision for timestamps ... */
+    stamp = strtod(value, &eostamp);
     if (eostamp == value || eostamp == NULL || *eostamp != ':')
     {
       pthread_mutex_unlock(&cache_lock);
@@ -1444,8 +1445,8 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     {
       pthread_mutex_unlock(&cache_lock);
       return send_response(sock, RESP_ERR,
-                           "illegal attempt to update using time %ld when last"
-                           " update time is %ld (minimum one second step)\n",
+                           "illegal attempt to update using time %lf when last"
+                           " update time is %lf (minimum one second step)\n",
                            stamp, ci->last_update_stamp);
     }
     else
