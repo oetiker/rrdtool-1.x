@@ -32,23 +32,26 @@ UPD_C_FILES =		\
 	rrd_update.c
 
 RRD_C_FILES =		\
-	hash_32.c	\
-	pngsize.c	\
 	rrd_create.c	\
-	rrd_graph.c	\
-	rrd_graph_helper.c	\
+	hash_32.c	\
 	rrd_version.c	\
 	rrd_last.c	\
 	rrd_lastupdate.c	\
 	rrd_first.c	\
 	rrd_restore.c	\
-	rrd_xport.c	\
-	rrd_gfx.c \
 	rrd_dump.c	\
 	rrd_flushcached.c \
 	rrd_fetch.c	\
 	rrd_resize.c \
 	rrd_tune.c
+
+if BUILD_RRDGRAPH
+RRD_C_FILES += rrd_graph.c	\
+	rrd_graph_helper.c	\
+	rrd_xport.c	\
+	rrd_gfx.c \
+	pngsize.c
+endif
 
 noinst_HEADERS = \
 	unused.h \
