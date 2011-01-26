@@ -1258,11 +1258,6 @@ int parse(
         val = func(argc, (const char **) args);
         free(args-1);
     } else {
-        /* unable to parse arguments, undo 0-termination by scanargs */
-        for (; argc > 0; argc--) {
-            *((args[argc - 1]) - 1) = ' ';
-        }
-
         /* next call, try parsing at current offset +1 */
         end = (*buf) + i + 1;
 
