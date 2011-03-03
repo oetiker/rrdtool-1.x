@@ -240,10 +240,8 @@ int rrd_fetch_fn(
 
 #ifdef HAVE_LIBDBI
     /* handle libdbi datasources */
-    if (strncmp("sql",filename,3)==0) {
-      if (filename[3]==filename[4]) {
+    if (strncmp("sql//",filename,5)==0) {
 	return rrd_fetch_fn_libdbi(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data);
-      }
     }
 #endif
 
