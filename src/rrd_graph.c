@@ -2938,6 +2938,9 @@ int graph_size_location(
     if (im->second_axis_legend[0] != '\0') {
         Xvertical2 = im->text_prop[TEXT_PROP_UNIT].size * 2;
     }
+    else{
+        Xvertical2 = Xspacing;
+    }
 
     if (im->title[0] != '\0') {
         /* The title is placed "inbetween" two text lines so it
@@ -2949,7 +2952,7 @@ int graph_size_location(
     }
     else{
         // we have no title; get a little clearing from the top
-        Ytitle = 1.5 * Yspacing;
+        Ytitle = Yspacing;
     }
 
     if (elements) {
@@ -3043,7 +3046,7 @@ int graph_size_location(
 
             /* reserve space for padding below the graph */
         if (im->extra_flags & NOLEGEND) {
-            Ymain -= Yspacing;
+            Ymain -= 0.5*Yspacing;
         }
 
         if (im->watermark[0] != '\0') {
@@ -3103,7 +3106,7 @@ int graph_size_location(
         }
         /* reserve space for padding below the graph */
         if (im->extra_flags & NOLEGEND) {
-            im->yimg += Yspacing;
+            im->yimg += 0.5*Yspacing;
         }
 
         if (im->watermark[0] != '\0') {
