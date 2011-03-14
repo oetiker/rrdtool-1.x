@@ -671,7 +671,7 @@ ssize_t rrd_write(
     
     if((rrd_file->pos + count) > old_size)
     {
-        rrd_set_error("attempting to write beyond end of file");
+        rrd_set_error("attempting to write beyond end of file (%ld + %ld > %ld)",rrd_file->pos, count, old_size);
         return -1;
     }
     memcpy(rrd_simple_file->file_start + rrd_file->pos, buf, count);

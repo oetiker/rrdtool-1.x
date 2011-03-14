@@ -352,14 +352,14 @@ rrd_info_t *rrd_update_v(
     }
 
     opt_daemon = getenv (ENV_RRDCACHED_ADDRESS);
-    if (opt_daemon != NULL) {
+    if (opt_daemon != NULL && ! strcmp(opt_daemon,"")) {
         rrd_set_error ("The \"%s\" environment variable is defined, "
                 "but \"%s\" cannot work with rrdcached. Either unset "
                 "the environment variable or use \"update\" instead.",
                 ENV_RRDCACHED_ADDRESS, argv[0]);
         goto end_tag;
     }
-
+    
     /* need at least 2 arguments: filename, data. */
     if (argc - optind < 2) {
         rrd_set_error("Not enough arguments");

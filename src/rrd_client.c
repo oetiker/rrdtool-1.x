@@ -485,13 +485,14 @@ int rrdc_is_connected(const char *daemon_addr) /* {{{ */
     return 0;
   else if (daemon_addr == NULL)
   {
+    char *addr = getenv(ENV_RRDCACHED_ADDRESS);
     /* here we have to handle the case i.e.
      *   UPDATE --daemon ...; UPDATEV (no --daemon) ...
      * In other words: we have a cached connection,
      * but it is not specified in the current command.
      * Daemon is only implied in this case if set in ENV
      */
-    if (getenv(ENV_RRDCACHED_ADDRESS) != NULL)
+    if (addr != NULL && ! strcmp(addr,""))
       return 1;
     else
       return 0;
@@ -655,7 +656,8 @@ int rrdc_connect (const char *addr) /* {{{ */
   if (addr == NULL)
     addr = getenv (ENV_RRDCACHED_ADDRESS);
 
-  if (addr == NULL)
+  if (addr == NULL || ! strcmp(addr,""))
+    addr = NULL;
     return 0;
 
   pthread_mutex_lock(&lock);
