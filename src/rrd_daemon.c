@@ -2654,7 +2654,7 @@ static void *connection_thread_main (void *args) /* {{{ */
      getting overwritten by another thread.
   */
   struct request_info req;
-  request_init(&req, RQ_DAEMON, "rrdcache\0", RQ_FILE, fd, NULL );
+  request_init(&req, RQ_DAEMON, "rrdcached\0", RQ_FILE, fd, NULL );
   fromhost(&req);
   if(!hosts_access(&req)) {
     RRDD_LOG(LOG_INFO, "refused connection from %s", eval_client(&req));
