@@ -248,6 +248,38 @@ rrd_file_t *rrd_open(
 */
 
 #ifdef HAVE_MMAP
+	/* force allocating the file on the underlaying filesystem to prevent any
+	 * future bus error when the filesystem is full and attempting to write
+	 * trough the file mapping. Filling the file using memset on the file
+	 * mapping can also lead some bus error, so we use the old fashioned
+	 * write().
+	 */
+    if (rdwr & RRD_CREAT) {
+		char     buf[4096];
+		unsigned i;
+
+		memset(buf, DNAN, sizeof buf);
+		lseek(rrd_simple_file->fd, offset, SEEK_SET);
+        
+		for (i = 0; i < (newfile_size - 1) / sizeof buf; ++i)
+		{
+			if (write(rrd_simple_file->fd, buf, sizeof buf) == -1)
+			{
+				rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
+				goto out_close;
+			}
+		}
+		
+		if (write(rrd_simple_file->fd, buf,
+					(newfile_size - 1) % sizeof buf) == -1)
+		{
+			rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
+			goto out_close;
+		}
+
+		lseek(rrd_simple_file->fd, 0, SEEK_SET);
+    }
+
     data = mmap(0, rrd_file->file_len, 
         rrd_simple_file->mm_prot, rrd_simple_file->mm_flags,
         rrd_simple_file->fd, offset);
@@ -260,7 +292,6 @@ rrd_file_t *rrd_open(
     }
     rrd_simple_file->file_start = data;
     if (rdwr & RRD_CREAT) {
-        memset(data, DNAN, newfile_size - 1);
         goto out_done;
     }
 #endif
