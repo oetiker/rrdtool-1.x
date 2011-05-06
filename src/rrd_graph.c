@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
@@ -234,7 +234,6 @@ enum gf_en gf_conv(
     conv_if(VRULE, GF_VRULE);
     conv_if(LINE, GF_LINE);
     conv_if(AREA, GF_AREA);
-	conv_if(GRAD, GF_GRAD);
     conv_if(STACK, GF_STACK);
     conv_if(TICK, GF_TICK);
     conv_if(TEXTALIGN, GF_TEXTALIGN);
@@ -854,48 +853,46 @@ int data_fetch(
         }
         if (!skip) {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
-            const char *rrd_daemon;
-            int status;
 
-            if (im->gdes[i].daemon[0] != 0)
-                rrd_daemon = im->gdes[i].daemon;
-            else
-                rrd_daemon = im->daemon_addr;
-
-            /* "daemon" may be NULL. ENV_RRDCACHED_ADDRESS is evaluated in that
-             * case. If "daemon" holds the same value as in the previous
-             * iteration, no actual new connection is established - the
-             * existing connection is re-used. */
-            rrdc_connect (rrd_daemon);
-
-            /* If connecting was successfull, use the daemon to query the data.
-             * If there is no connection, for example because no daemon address
-             * was specified, (try to) use the local file directly. */
-            if (rrdc_is_connected (rrd_daemon))
+            /* Flush the file if
+             * - a connection to the daemon has been established
+             * - this is the first occurrence of that RRD file
+             */
+            if (rrdc_is_connected(im->daemon_addr))
             {
-                status = rrdc_fetch (im->gdes[i].rrd,
-                        cf_to_string (im->gdes[i].cf),
-                        &im->gdes[i].start,
-                        &im->gdes[i].end,
-                        &ft_step,
-                        &im->gdes[i].ds_cnt,
-                        &im->gdes[i].ds_namv,
-                        &im->gdes[i].data);
-                if (status != 0)
-                    return (status);
-            }
-            else
-            {
-                if ((rrd_fetch_fn(im->gdes[i].rrd,
-                                im->gdes[i].cf,
-                                &im->gdes[i].start,
-                                &im->gdes[i].end,
-                                &ft_step,
-                                &im->gdes[i].ds_cnt,
-                                &im->gdes[i].ds_namv,
-                                &im->gdes[i].data)) == -1) {
-                    return -1;
+                int status;
+
+                status = 0;
+                for (ii = 0; ii < i; ii++)
+                {
+                    if (strcmp (im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
+                    {
+                        status = 1;
+                        break;
+                    }
                 }
+
+                if (status == 0)
+                {
+                    status = rrdc_flush (im->gdes[i].rrd);
+                    if (status != 0)
+                    {
+                        rrd_set_error ("rrdc_flush (%s) failed with status %i.",
+                                im->gdes[i].rrd, status);
+                        return (-1);
+                    }
+                }
+            } /* if (rrdc_is_connected()) */
+
+            if ((rrd_fetch_fn(im->gdes[i].rrd,
+                              im->gdes[i].cf,
+                              &im->gdes[i].start,
+                              &im->gdes[i].end,
+                              &ft_step,
+                              &im->gdes[i].ds_cnt,
+                              &im->gdes[i].ds_namv,
+                              &im->gdes[i].data)) == -1) {
+                return -1;
             }
             im->gdes[i].data_first = 1;
 
@@ -1227,11 +1224,8 @@ int data_proc(
 
     /* memory for the processed data */
     for (i = 0; i < im->gdes_c; i++) {
-        if ((im->gdes[i].gf == GF_LINE)
-         || (im->gdes[i].gf == GF_AREA) 
-         || (im->gdes[i].gf == GF_TICK)
-         || (im->gdes[i].gf == GF_GRAD)
-        ) {
+        if ((im->gdes[i].gf == GF_LINE) ||
+            (im->gdes[i].gf == GF_AREA) || (im->gdes[i].gf == GF_TICK)) {
             if ((im->gdes[i].p_data = (rrd_value_t*)malloc((im->xsize + 1)
                                              * sizeof(rrd_value_t))) == NULL) {
                 rrd_set_error("malloc data_proc");
@@ -1252,7 +1246,6 @@ int data_proc(
             switch (im->gdes[ii].gf) {
             case GF_LINE:
             case GF_AREA:
-			case GF_GRAD:
             case GF_TICK:
                 if (!im->gdes[ii].stack)
                     paintval = 0.0;
@@ -1612,12 +1605,8 @@ int print_calc(
 
                 if (im->gdes[i].strftm) {
                     prline.u_str = (char*)malloc((FMT_LEG_LEN + 2) * sizeof(char));
-                    if (im->gdes[vidx].vf.never == 1) {
-                       time_clean(prline.u_str, im->gdes[i].format);
-                    } else {
-                        strftime(prline.u_str,
-                                 FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
-                    }
+                    strftime(prline.u_str,
+                             FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                 } else if (bad_format(im->gdes[i].format)) {
                     rrd_set_error
                         ("bad format for PRINT in '%s'", im->gdes[i].format);
@@ -1634,12 +1623,8 @@ int print_calc(
                 /* GF_GPRINT */
 
                 if (im->gdes[i].strftm) {
-                    if (im->gdes[vidx].vf.never == 1) {
-                       time_clean(im->gdes[i].legend, im->gdes[i].format);
-                    } else {
-                        strftime(im->gdes[i].legend,
-                                 FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
-                    }
+                    strftime(im->gdes[i].legend,
+                             FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                 } else {
                     if (bad_format(im->gdes[i].format)) {
                         rrd_set_error
@@ -1661,7 +1646,6 @@ int print_calc(
             break;
         case GF_LINE:
         case GF_AREA:
-		case GF_GRAD:
         case GF_TICK:
             graphelement = 1;
             break;
@@ -3452,13 +3436,12 @@ int graph_paint(
             }
             break;
         case GF_LINE:
-        case GF_AREA:
-        case GF_GRAD: {
+        case GF_AREA: {
             rrd_value_t diffval = im->maxval - im->minval;
             rrd_value_t maxlimit = im->maxval + 9 * diffval;
             rrd_value_t minlimit = im->minval - 9 * diffval;        
             for (ii = 0; ii < im->xsize; ii++) {
-                /* fix data points at oo and -oo */
+               /* fix data points at oo and -oo */
                 if (isinf(im->gdes[i].p_data[ii])) {
                     if (im->gdes[i].p_data[ii] > 0) {
                         im->gdes[i].p_data[ii] = im->maxval;
@@ -3468,12 +3451,12 @@ int graph_paint(
                 }
                 /* some versions of cairo go unstable when trying
                    to draw way out of the canvas ... lets not even try */
-               if (im->gdes[i].p_data[ii] > maxlimit) {
-                   im->gdes[i].p_data[ii] = maxlimit;
-               }
-               if (im->gdes[i].p_data[ii] < minlimit) {
-                   im->gdes[i].p_data[ii] = minlimit;
-               }
+                if (im->gdes[i].p_data[ii] > maxlimit) {
+                    im->gdes[i].p_data[ii] = maxlimit;
+                }
+                if (im->gdes[i].p_data[ii] < minlimit) {
+                    im->gdes[i].p_data[ii] = minlimit;
+                }
             }           /* for */
 
             /* *******************************************************
@@ -3562,8 +3545,6 @@ int graph_paint(
                     cairo_stroke(im->cr);
                     cairo_restore(im->cr);
                 } else {
-					double lastx=0;
-					double lasty=0;
                     int       idxI = -1;
                     double   *foreY =
                         (double *) malloc(sizeof(double) * im->xsize * 2);
@@ -3594,17 +3575,12 @@ int graph_paint(
                                                            [cntI + 1], 4)) {
                                 cntI++;
                             }
-							if (im->gdes[i].gf != GF_GRAD) {
-                            	gfx_new_area(im,
-                            	             backX[0], backY[0],
-                            	             foreX[0], foreY[0],
-                            	             foreX[cntI],
-                            	             foreY[cntI], im->gdes[i].col);
-							} else {
-								lastx = foreX[cntI];
-								lasty = foreY[cntI];
-							}
-							while (cntI < idxI) {
+                            gfx_new_area(im,
+                                         backX[0], backY[0],
+                                         foreX[0], foreY[0],
+                                         foreX[cntI],
+                                         foreY[cntI], im->gdes[i].col);
+                            while (cntI < idxI) {
                                 lastI = cntI;
                                 cntI++;
                                 while (cntI < idxI
@@ -3620,32 +3596,9 @@ int graph_paint(
                                                                 + 1], 4)) {
                                     cntI++;
                                 }
-								if (im->gdes[i].gf != GF_GRAD) {
-	                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
-								} else {
-									gfx_add_rect_fadey(im, 
-										lastx, foreY[0],
-										foreX[cntI], foreY[cntI], lasty, 
-										im->gdes[i].col,
-										im->gdes[i].col2,
-										im->gdes[i].gradheight
-										);
-									lastx = foreX[cntI];
-									lasty = foreY[cntI];
-								}
+                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
                             }
-							if (im->gdes[i].gf != GF_GRAD) {
-                            	gfx_add_point(im, backX[idxI], backY[idxI]);
-							} else {
-								gfx_add_rect_fadey(im,
-									lastx, foreY[0],
-									backX[idxI], backY[idxI], lasty,
-									im->gdes[i].col,
-									im->gdes[i].col2,
-									im->gdes[i].gradheight);
-								lastx = backX[idxI];
-								lasty = backY[idxI];
-							}
+                            gfx_add_point(im, backX[idxI], backY[idxI]);
                             while (idxI > 1) {
                                 lastI = idxI;
                                 idxI--;
@@ -3662,23 +3615,11 @@ int graph_paint(
                                                                 - 1], 4)) {
                                     idxI--;
                                 }
-								if (im->gdes[i].gf != GF_GRAD) {
-	                                gfx_add_point(im, backX[idxI], backY[idxI]);
-								} else {
-									gfx_add_rect_fadey(im,
-										lastx, foreY[0],
-										backX[idxI], backY[idxI], lasty,
-										im->gdes[i].col,
-										im->gdes[i].col2,
-										im->gdes[i].gradheight);
-									lastx = backX[idxI];
-									lasty = backY[idxI];
-								}
+                                gfx_add_point(im, backX[idxI], backY[idxI]);
                             }
                             idxI = -1;
                             drawem = 0;
-							if (im->gdes[i].gf != GF_GRAD) 
-	                            gfx_close_path(im);
+                            gfx_close_path(im);
                         }
                         if (drawem != 0) {
                             drawem = 0;
@@ -3873,11 +3814,6 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].col.green = 0.0;
     im->gdes[im->gdes_c - 1].col.blue = 0.0;
     im->gdes[im->gdes_c - 1].col.alpha = 0.0;
-    im->gdes[im->gdes_c - 1].col2.red = 0.0;
-    im->gdes[im->gdes_c - 1].col2.green = 0.0;
-    im->gdes[im->gdes_c - 1].col2.blue = 0.0;
-    im->gdes[im->gdes_c - 1].col2.alpha = 0.0;
-    im->gdes[im->gdes_c - 1].gradheight = 50.0;
     im->gdes[im->gdes_c - 1].legend[0] = '\0';
     im->gdes[im->gdes_c - 1].format[0] = '\0';
     im->gdes[im->gdes_c - 1].strftm = 0;
@@ -3887,7 +3823,6 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;
-    im->gdes[im->gdes_c - 1].daemon[0] = 0;
     return 0;
 }
 
@@ -4011,14 +3946,12 @@ rrd_info_t *rrd_graph_v(
     setlocale(LC_NUMERIC, "C");
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
     if (optind >= argc) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
@@ -4026,7 +3959,6 @@ rrd_info_t *rrd_graph_v(
     }
 
     if (strlen(argv[optind]) >= MAXPATH) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_set_error("filename (including path) too long");
         rrd_info_free(im.grinfo);
         im_free(&im);
@@ -4733,6 +4665,11 @@ void rrd_graph_options(
         }
     } /* while (1) */
 
+    {   /* try to connect to rrdcached */
+        int status = rrdc_connect(im->daemon_addr);
+        if (status != 0) return;
+    }
+
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);
     pango_layout_context_changed(im->layout);
 
@@ -4935,7 +4872,6 @@ int vdef_parse(
             gdes->vf.param = param;
             gdes->vf.val = DNAN;    /* undefined */
             gdes->vf.when = 0;  /* undefined */
-            gdes->vf.never = 1;
         } else {
             rrd_set_error
                 ("Parameter '%f' out of range in VDEF '%s'\n",
@@ -4957,7 +4893,6 @@ int vdef_parse(
             gdes->vf.param = DNAN;
             gdes->vf.val = DNAN;
             gdes->vf.when = 0;
-            gdes->vf.never = 1;
         } else {
             rrd_set_error
                 ("Function '%s' needs no parameter in VDEF '%s'\n",
@@ -5003,7 +4938,6 @@ int vdef_calc(
         field = round((dst->vf.param * (double)(steps - 1)) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
-        dst->vf.never = 1;
         free(array);
 #if 0
         for (step = 0; step < steps; step++)
@@ -5037,7 +4971,6 @@ int vdef_calc(
         field = round( dst->vf.param * (double)(nancount - 1) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
-        dst->vf.never = 1;
         free(array);
     }
         break;
@@ -5048,18 +4981,15 @@ int vdef_calc(
         if (step == steps) {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
-            dst->vf.never = 0;
         }
         while (step != steps) {
             if (finite(data[step * src->ds_cnt])) {
                 if (data[step * src->ds_cnt] > dst->vf.val) {
                     dst->vf.val = data[step * src->ds_cnt];
                     dst->vf.when = src->start + (step + 1) * src->step;
-                    dst->vf.never = 0;
                 }
             }
             step++;
@@ -5082,11 +5012,9 @@ int vdef_calc(
             if (dst->vf.op == VDEF_TOTAL) {
                 dst->vf.val = sum * src->step;
                 dst->vf.when = 0;   /* no time component */
-                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_AVERAGE) {
                 dst->vf.val = sum / cnt;
                 dst->vf.when = 0;   /* no time component */
-                dst->vf.never = 1;
             } else {
                 average = sum / cnt;
                 sum = 0.0;
@@ -5097,12 +5025,10 @@ int vdef_calc(
                 }
                 dst->vf.val = pow(sum / cnt, 0.5);
                 dst->vf.when = 0;   /* no time component */
-                dst->vf.never = 1;
             };
         } else {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         }
     }
         break;
@@ -5113,18 +5039,15 @@ int vdef_calc(
         if (step == steps) {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
-            dst->vf.never = 0;
         }
         while (step != steps) {
             if (finite(data[step * src->ds_cnt])) {
                 if (data[step * src->ds_cnt] < dst->vf.val) {
                     dst->vf.val = data[step * src->ds_cnt];
                     dst->vf.when = src->start + (step + 1) * src->step;
-                    dst->vf.never = 0;
                 }
             }
             step++;
@@ -5141,11 +5064,9 @@ int vdef_calc(
         if (step == steps) {    /* all entries were NaN */
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + step * src->step;
-            dst->vf.never = 0;
         }
         break;
     case VDEF_LAST:
@@ -5159,11 +5080,9 @@ int vdef_calc(
         if (step < 0) { /* all entries were NaN */
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         } else {
             dst->vf.val = data[step * src->ds_cnt];
             dst->vf.when = src->start + (step + 1) * src->step;
-            dst->vf.never = 0;
         }
         break;
     case VDEF_LSLSLOPE:
@@ -5201,20 +5120,16 @@ int vdef_calc(
             if (dst->vf.op == VDEF_LSLSLOPE) {
                 dst->vf.val = slope;
                 dst->vf.when = 0;
-                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_LSLINT) {
                 dst->vf.val = y_intercept;
                 dst->vf.when = 0;
-                dst->vf.never = 1;
             } else if (dst->vf.op == VDEF_LSLCORREL) {
                 dst->vf.val = correl;
                 dst->vf.when = 0;
-                dst->vf.never = 1;
             };
         } else {
             dst->vf.val = DNAN;
             dst->vf.when = 0;
-            dst->vf.never = 1;
         }
     }
         break;
@@ -5262,157 +5177,4 @@ void grinfo_push(
     if (im->grinfo == NULL) {
         im->grinfo = im->grinfo_current;
     }
-}
-
-
-void time_clean(
-    char *result,
-    char *format)
-{
-    int       j, jj;
-    
-/*     Handling based on
-       - ANSI C99 Specifications                         http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1124.pdf
-       - Single UNIX Specification version 2             http://www.opengroup.org/onlinepubs/007908799/xsh/strftime.html 
-       - POSIX:2001/Single UNIX Specification version 3  http://www.opengroup.org/onlinepubs/009695399/functions/strftime.html
-       - POSIX:2008 Specifications                       http://www.opengroup.org/onlinepubs/9699919799/functions/strftime.html
-       Specifications tells 
-       "If a conversion specifier is not one of the above, the behavior is undefined."
-
-      C99 tells
-       "A conversion specifier consists of a % character, possibly followed by an E or O modifier character (described below), followed by a character that determines the behavior of the conversion specifier.
-
-      POSIX:2001 tells
-      "A conversion specification consists of a '%' character, possibly followed by an E or O modifier, and a terminating conversion specifier character that determines the conversion specification's behavior."
-
-      POSIX:2008 introduce more complexe behavior that are not handled here.
-
-      According to this, this code will replace:
-      - % followed by @ by a %@
-      - % followed by   by a %SPACE
-      - % followed by . by a %.
-      - % followed by % by a %
-      - % followed by t by a TAB
-      - % followed by E then anything by '-'
-      - % followed by O then anything by '-'
-      - % followed by anything else by at least one '-'. More characters may be added to better fit expected output length
-*/
-
-    jj = 0;
-    for(j = 0; (j < FMT_LEG_LEN - 1) && (jj < FMT_LEG_LEN); j++) { /* we don't need to parse the last char */
-        if (format[j] == '%') {
-            if ((format[j+1] == 'E') || (format[j+1] == 'O')) {
-                result[jj++] = '-';
-                j+=2; /* We skip next 2 following char */
-            } else if ((format[j+1] == 'C') || (format[j+1] == 'd') ||
-                       (format[j+1] == 'g') || (format[j+1] == 'H') ||
-                       (format[j+1] == 'I') || (format[j+1] == 'm') ||
-                       (format[j+1] == 'M') || (format[j+1] == 'S') ||
-                       (format[j+1] == 'U') || (format[j+1] == 'V') ||
-                       (format[j+1] == 'W') || (format[j+1] == 'y')) {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN) {
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'j') {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 1) {
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-               }
-                j++; /* We skip the following char */
-            } else if ((format[j+1] == 'G') || (format[j+1] == 'Y')) {
-                /* Assuming Year on 4 digit */
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 2) {
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'R') {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 3) {
-                    result[jj++] = '-';
-                    result[jj++] = ':';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'T') {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 6) {
-                    result[jj++] = '-';
-                    result[jj++] = ':';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = ':';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'F') {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 8) {
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'D') {
-                result[jj++] = '-';
-                if (jj < FMT_LEG_LEN - 6) {
-                    result[jj++] = '-';
-                    result[jj++] = '/';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                    result[jj++] = '/';
-                    result[jj++] = '-';
-                    result[jj++] = '-';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 'n') {
-                result[jj++] = '\r';
-                result[jj++] = '\n';
-                j++; /* We skip the following char */
-            } else if (format[j+1] == 't') {
-                result[jj++] = '\t';
-                j++; /* We skip the following char */
-            } else if (format[j+1] == '%') {
-                result[jj++] = '%';
-                j++; /* We skip the following char */
-            } else if (format[j+1] == ' ') {
-                if (jj < FMT_LEG_LEN - 1) {
-                    result[jj++] = '%';
-                    result[jj++] = ' ';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == '.') {
-                if (jj < FMT_LEG_LEN - 1) {
-                    result[jj++] = '%';
-                    result[jj++] = '.';
-                }
-                j++; /* We skip the following char */
-            } else if (format[j+1] == '@') {
-                if (jj < FMT_LEG_LEN - 1) {
-                    result[jj++] = '%';
-                    result[jj++] = '@';
-                }
-                j++; /* We skip the following char */
-            } else {
-                result[jj++] = '-';
-                j++; /* We skip the following char */
-            }
-        } else {
-                result[jj++] = format[j];
-        }
-    }
-    result[jj] = '\0'; /* We must force the end of the string */
 }

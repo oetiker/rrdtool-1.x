@@ -13,14 +13,14 @@ AC_PREREQ(2.59)
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.3])
+AC_INIT([rrdtool],[1.4.5])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.4003
+NUMVERS=1.4004
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -31,7 +31,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=5:3:1
+LIBVERS=5:4:1
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -101,28 +101,6 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
-
-AC_ARG_ENABLE(libwrap,
-  AS_HELP_STRING([--disable-libwrap],
-  [do not build in support for libwrap (tcp wrapper)]),
-  [have_libwrap=no],[
-    XXX=$LIBS
-    LIBS="$LIBS -lwrap"
-    AC_MSG_CHECKING(for libwrap)
-    AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM([[#include "tcpd.h"]], [[hosts_access(NULL)]])
-    ],[AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
-       AC_MSG_RESULT([yes])
-       have_libwrap=yes
-    ],[LIBS=$XXX
-       AC_MSG_RESULT([no])
-       have_libwrap=no
-    ]
-  )
-])
-AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
-
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 dnl Check if we run on a system that has fonts
 AC_ARG_WITH(rrd-default-font,
@@ -214,8 +192,7 @@ AC_STRUCT_TM
 CONFIGURE_PART(Test Library Functions)
 
 dnl Checks for libraries.
-AC_CHECK_FUNC(acos,  , AC_CHECK_LIB(m, acos))
-AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
+AC_CHECK_FUNC(acos, , AC_CHECK_LIB(m, acos))
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
@@ -232,7 +209,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
+AC_CHECK_FUNCS(nl_langinfo tzset round rint fsync mbstowcs opendir readdir chdir chroot getuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday)
 
 AC_FUNC_STRERROR_R
 
@@ -537,6 +514,27 @@ AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support 
 ])
 AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
+AC_ARG_ENABLE(libwrap,
+  AS_HELP_STRING([--disable-libwrap],
+  [do not build in support for libwrap (tcp wrapper)]),
+  [have_libwrap=no],[
+    XXX=$LIBS
+    LIBS="$LIBS -lwrap"
+    AC_MSG_CHECKING(for libwrap)
+    AC_LINK_IFELSE(
+      [AC_LANG_PROGRAM([[#include "tcpd.h"]], [[hosts_access(NULL)]])
+    ],[AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
+       AC_MSG_RESULT([yes])
+       have_libwrap=yes
+    ],[LIBS=$XXX
+       AC_MSG_RESULT([no])
+       have_libwrap=no
+    ]
+  )
+])
+AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 
 CORE_LIBS="$LIBS"

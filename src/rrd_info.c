@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrd_info  Get Information about the configuration of an RRD
  *****************************************************************************/
@@ -92,7 +92,6 @@ rrd_info_t *rrd_info(
     rrd_info_t *info;
     char *opt_daemon = NULL;
     int status;
-    int flushfirst = 1;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -102,11 +101,10 @@ rrd_info_t *rrd_info(
         int       option_index = 0;
         static struct option long_options[] = {
             {"daemon", required_argument, 0, 'd'},
-            {"noflush", no_argument, 0, 'F'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "d:F", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -123,12 +121,8 @@ rrd_info_t *rrd_info(
             }
             break;
 
-        case 'F':
-            flushfirst = 0;
-            break;
-
         default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
+            rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
                     argv[0]);
             return (NULL);
             break;
@@ -136,23 +130,17 @@ rrd_info_t *rrd_info(
     }                   /* while (42) */
 
     if ((argc - optind) != 1) {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
+        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
                 argv[0]);
         return (NULL);
     }
 
-    if( flushfirst ) {
     status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
+    if (opt_daemon) free (opt_daemon);
     if (status) return (NULL);
-    }
 
-    rrdc_connect (opt_daemon);
-    if (rrdc_is_connected (opt_daemon))
-        info = rrdc_info (argv[optind]);
-    else
     info = rrd_info_r(argv[optind]);
 
-    if (opt_daemon) free(opt_daemon);
     return (info);
 } /* rrd_info_t *rrd_info */
 

@@ -1,3 +1,34 @@
+RRDtool 1.4.4 - 2010-07-05
+==========================
+Bugfixes:
+
+  * compile: multiple fixes isnan and isinf defines to make rrdtool compile
+    with gcc on solaris (with --disable-nls) -- Tobi
+  * handle gettext/libintl like any other feature, do not try to supply
+    our own ... rrdtool can work fine without it -- tobi
+  * rrd_client: fix potential segfaults -- Florian Forster
+  * rrd_client: resolve synmlinks properly -- Kevin Brintnall
+  * compile: fix libtool and libtoolize names for OSX compiles -- Antoine Musso
+  * compile: fix for HAVE_BROKEN_MS_ASYNC (old linux kernels)
+  * rrd_xport: fix --daemon handling
+  * rrd_client: explicitly close connection on error -- Thorsten von Eicken  
+  * rrd_update: fix memory leak for COMPUTE datasources -- Frederik Kriewitz
+  * rrd_daemon: fix segfault when specifying a relative path (-j option)  -- Adrian-Ioan Vasile
+  * compile: make rrdtool compile with gcc 4.5 -- anicka@suse.cz
+  * portability: use %lld (long long int) for time_t *printf
+  * compile: link pangocairo and not pango since we do use pangocairo actually -- Stephen S. Disbrow
+  * compile: re-integrate intl into compile dependency so that hosts with
+    old (or no) gettext can get access to the included copy.
+  * rrd_cached: exit with status !=0 on invalid cli -- Sebastian Harl
+    
+Enhancements:
+
+  * updated build files and instructions for win32 port by Chris Larsen
+  * legal: Relicense the RRDCacheD client interface under the MIT license -- Florian Forster  
+  * legal: Updted FLOSS Exception for latest PHP license
+  * rrd_cached: better help output -- Sebastian Harl
+  
+------------------------------------------------------------------------
 RRDtool 1.4.3 - 2010-03-22
 ==========================
 New Features

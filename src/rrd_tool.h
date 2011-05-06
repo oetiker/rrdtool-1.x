@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrd_tool.h   Common Header File
  *****************************************************************************/
@@ -82,8 +82,7 @@ extern    "C" {
 
     int       rrd_create_fn(
     const char *file_name,
-    rrd_t *rrd,
-    int no_overwrite);
+    rrd_t *rrd);
     int rrd_fetch_fn (const char *filename,
             enum cf_en cf_idx,
             time_t *start,
@@ -122,8 +121,6 @@ int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
     double    rrd_diff(
     char *a,
     char *b);
-
-    const char *cf_to_string (enum cf_en cf);
 
 #endif /* _RRD_TOOL_H */
 

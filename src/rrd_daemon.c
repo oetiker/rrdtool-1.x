@@ -1,6 +1,6 @@
 /**
  * RRDTool - src/rrd_daemon.c
- * Copyright (C) 2008-2010 Florian octo Forster
+ * Copyright (C) 2008,2009 Florian octo Forster
  * Copyright (C) 2008,2009 Kevin Brintnall
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -71,7 +71,7 @@
 #endif
 #endif
 
-#include "rrd_tool.h"
+#include "rrd.h"
 #include "rrd_client.h"
 #include "unused.h"
 
@@ -185,8 +185,7 @@ struct cache_item_s
 {
   char *file;
   char **values;
-  size_t values_num;		/* number of valid pointers */
-  size_t values_alloc;		/* number of allocated pointers */
+  size_t values_num;
   time_t last_flush_time;
   time_t last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
@@ -219,7 +218,9 @@ typedef struct {
   size_t files_num;
 } journal_set;
 
-#define RBUF_SIZE (RRD_CMD_MAX*2)
+/* max length of socket command or response */
+#define CMD_MAX 4096
+#define RBUF_SIZE (CMD_MAX*2)
 
 /*
  * Variables
@@ -263,7 +264,6 @@ static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 static size_t _config_base_dir_len = 0;
 static int config_write_base_only = 0;
-static size_t config_alloc_chunk = 1;
 
 static listen_socket_t **config_listen_address_list = NULL;
 static size_t config_listen_address_list_len = 0;
@@ -276,8 +276,6 @@ static uint64_t stats_data_sets_written = 0;
 static uint64_t stats_journal_bytes = 0;
 static uint64_t stats_journal_rotate = 0;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static int opt_no_overwrite = 0; /* default for the daemon */
 
 /* Journaled updates */
 #define JOURNAL_REPLAY(s) ((s) == NULL)
@@ -541,7 +539,7 @@ static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
 {
   va_list argp;
-  char buffer[RRD_CMD_MAX];
+  char buffer[CMD_MAX];
   int len;
 
   if (JOURNAL_REPLAY(sock)) return 0;
@@ -586,7 +584,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
                           char *fmt, ...) /* {{{ */
 {
   va_list argp;
-  char buffer[RRD_CMD_MAX];
+  char buffer[CMD_MAX];
   int lines;
   ssize_t wrote;
   int rclen, len;
@@ -653,7 +651,6 @@ static void wipe_ci_values(cache_item_t *ci, time_t when)
 {
   ci->values = NULL;
   ci->values_num = 0;
-  ci->values_alloc = 0;
 
   ci->last_flush_time = when;
   if (config_write_jitter > 0)
@@ -1325,7 +1322,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   char *file, file_tmp[PATH_MAX];
   int values_num = 0;
   int status;
-  char orig_buf[RRD_CMD_MAX];
+  char orig_buf[CMD_MAX];
 
   cache_item_t *ci;
 
@@ -1451,8 +1448,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     else
       ci->last_update_stamp = stamp;
 
-    if (!rrd_add_strdup_chunk(&ci->values, &ci->values_num, value,
-                              &ci->values_alloc, config_alloc_chunk))
+    if (!rrd_add_strdup(&ci->values, &ci->values_num, value))
     {
       RRDD_LOG (LOG_ERR, "handle_request_update: rrd_add_strdup failed.");
       continue;
@@ -1481,197 +1477,6 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
 } /* }}} int handle_request_update */
 
-static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
-{
-  char *file, file_tmp[PATH_MAX];
-  char *cf;
-
-  char *start_str;
-  char *end_str;
-  time_t start_tm;
-  time_t end_tm;
-
-  unsigned long step;
-  unsigned long ds_cnt;
-  char **ds_namv;
-  rrd_value_t *data;
-
-  int status;
-  unsigned long i;
-  time_t t;
-  rrd_value_t *data_ptr;
-
-  file = NULL;
-  cf = NULL;
-  start_str = NULL;
-  end_str = NULL;
-
-  /* Read the arguments */
-  do /* while (0) */
-  {
-    status = buffer_get_field (&buffer, &buffer_size, &file);
-    if (status != 0)
-      break;
-
-    status = buffer_get_field (&buffer, &buffer_size, &cf);
-    if (status != 0)
-      break;
-
-    status = buffer_get_field (&buffer, &buffer_size, &start_str);
-    if (status != 0)
-    {
-      start_str = NULL;
-      status = 0;
-      break;
-    }
-
-    status = buffer_get_field (&buffer, &buffer_size, &end_str);
-    if (status != 0)
-    {
-      end_str = NULL;
-      status = 0;
-      break;
-    }
-  } while (0);
-
-  if (status != 0)
-    return (syntax_error(sock,cmd));
-
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) return 0;
-
-  status = flush_file (file);
-  if ((status != 0) && (status != ENOENT))
-    return (send_response (sock, RESP_ERR,
-          "flush_file (%s) failed with status %i.\n", file, status));
-
-  t = time (NULL); /* "now" */
-
-  /* Parse start time */
-  if (start_str != NULL)
-  {
-    char *endptr;
-    long value;
-
-    endptr = NULL;
-    errno = 0;
-    value = strtol (start_str, &endptr, /* base = */ 0);
-    if ((endptr == start_str) || (errno != 0))
-      return (send_response(sock, RESP_ERR,
-            "Cannot parse start time `%s': Only simple integers are allowed.\n",
-            start_str));
-
-    if (value > 0)
-      start_tm = (time_t) value;
-    else
-      start_tm = (time_t) (t + value);
-  }
-  else
-  {
-    start_tm = t - 86400;
-  }
-
-  /* Parse end time */
-  if (end_str != NULL)
-  {
-    char *endptr;
-    long value;
-
-    endptr = NULL;
-    errno = 0;
-    value = strtol (end_str, &endptr, /* base = */ 0);
-    if ((endptr == end_str) || (errno != 0))
-      return (send_response(sock, RESP_ERR,
-            "Cannot parse end time `%s': Only simple integers are allowed.\n",
-            end_str));
-
-    if (value > 0)
-      end_tm = (time_t) value;
-    else
-      end_tm = (time_t) (t + value);
-  }
-  else
-  {
-    end_tm = t;
-  }
-
-  step = -1;
-  ds_cnt = 0;
-  ds_namv = NULL;
-  data = NULL;
-
-  status = rrd_fetch_r (file, cf, &start_tm, &end_tm, &step,
-      &ds_cnt, &ds_namv, &data);
-  if (status != 0)
-    return (send_response(sock, RESP_ERR,
-          "rrd_fetch_r failed: %s\n", rrd_get_error ()));
-
-  add_response_info (sock, "FlushVersion: %lu\n", 1);
-  add_response_info (sock, "Start: %lu\n", (unsigned long) start_tm);
-  add_response_info (sock, "End: %lu\n", (unsigned long) end_tm);
-  add_response_info (sock, "Step: %lu\n", step);
-  add_response_info (sock, "DSCount: %lu\n", ds_cnt);
-
-#define SSTRCAT(buffer,str,buffer_fill) do { \
-    size_t str_len = strlen (str); \
-    if ((buffer_fill + str_len) > sizeof (buffer)) \
-      str_len = sizeof (buffer) - buffer_fill; \
-    if (str_len > 0) { \
-      strncpy (buffer + buffer_fill, str, str_len); \
-      buffer_fill += str_len; \
-      assert (buffer_fill <= sizeof (buffer)); \
-      if (buffer_fill == sizeof (buffer)) \
-        buffer[buffer_fill - 1] = 0; \
-      else \
-        buffer[buffer_fill] = 0; \
-    } \
-  } while (0)
-
-  { /* Add list of DS names */
-    char linebuf[1024];
-    size_t linebuf_fill;
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
-    for (i = 0; i < ds_cnt; i++)
-    {
-      if (i > 0)
-        SSTRCAT (linebuf, " ", linebuf_fill);
-      SSTRCAT (linebuf, ds_namv[i], linebuf_fill);
-      rrd_freemem(ds_namv[i]);
-    }
-    rrd_freemem(ds_namv);
-    add_response_info (sock, "DSName: %s\n", linebuf);
-  }
-
-  /* Add the actual data */
-  assert (step > 0);
-  data_ptr = data;
-  for (t = start_tm + step; t <= end_tm; t += step)
-  {
-    char linebuf[1024];
-    size_t linebuf_fill;
-    char tmp[128];
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
-    for (i = 0; i < ds_cnt; i++)
-    {
-      snprintf (tmp, sizeof (tmp), " %0.10e", *data_ptr);
-      tmp[sizeof (tmp) - 1] = 0;
-      SSTRCAT (linebuf, tmp, linebuf_fill);
-
-      data_ptr++;
-    }
-
-    add_response_info (sock, "%10lu:%s\n", (unsigned long) t, linebuf);
-  } /* for (t) */
-  rrd_freemem(data);
-
-  return (send_response (sock, RESP_OK, "Success\n"));
-#undef SSTRCAT
-} /* }}} int handle_request_fetch */
-
 /* we came across a "WROTE" entry during journal replay.
  * throw away any values that we have accumulated for this file
  */
@@ -1698,192 +1503,6 @@ static int handle_request_wrote (HANDLER_PROTO) /* {{{ */
   pthread_mutex_unlock(&cache_lock);
   return (0);
 } /* }}} int handle_request_wrote */
-
-static int handle_request_info (HANDLER_PROTO) /* {{{ */
-{
-  char *file, file_tmp[PATH_MAX];
-  int status;
-  rrd_info_t *info;
-
-  /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
-  /* get full pathname */
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
-  }
-  /* get data */
-  rrd_clear_error ();
-  info = rrd_info_r(file);
-  if(!info) {
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
-  }
-  for (rrd_info_t *data = info; data != NULL; data = data->next) {
-      switch (data->type) {
-      case RD_I_VAL:
-          if (isnan(data->value.u_val))
-              add_response_info(sock,"%s %d NaN\n",data->key, data->type);
-          else
-              add_response_info(sock,"%s %d %0.10e\n", data->key, data->type, data->value.u_val);
-          break;
-      case RD_I_CNT:
-          add_response_info(sock,"%s %d %lu\n", data->key, data->type, data->value.u_cnt);
-          break;
-      case RD_I_INT:
-          add_response_info(sock,"%s %d %d\n", data->key, data->type, data->value.u_int);
-          break;
-      case RD_I_STR:
-          add_response_info(sock,"%s %d %s\n", data->key, data->type, data->value.u_str);
-          break;
-      case RD_I_BLO:
-          add_response_info(sock,"%s %d %lu\n", data->key, data->type, data->value.u_blo.size);
-          break;
-      }
-  }
-
-  rrd_info_free(info);
-
-  return send_response(sock, RESP_OK, "Info for %s follows\n",file);
-} /* }}} static int handle_request_info  */
-
-static int handle_request_first (HANDLER_PROTO) /* {{{ */
-{
-  char *i, *file, file_tmp[PATH_MAX];
-  int status;
-  int idx;
-  time_t t;
-
-  /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
-  /* get full pathname */
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
-  }
-
-  status = buffer_get_field(&buffer, &buffer_size, &i);
-  if (status != 0)
-    return syntax_error(sock,cmd);
-  idx = atoi(i);
-  if(idx<0) { 
-    return send_response(sock, RESP_ERR, "Invalid index specified (%d)\n", idx);
-  }
-
-  /* get data */
-  rrd_clear_error ();
-  t = rrd_first_r(file,idx);
-  if(t<1) {
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
-  }
-  return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
-} /* }}} static int handle_request_first  */
-
-
-static int handle_request_last (HANDLER_PROTO) /* {{{ */
-{
-  char *file, file_tmp[PATH_MAX];
-  int status;
-  time_t t, from_file, step;
-  rrd_file_t * rrd_file;
-  cache_item_t * ci;
-  rrd_t rrd; 
-
-  /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
-  /* get full pathname */
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
-  }
-  rrd_clear_error();
-  rrd_init(&rrd);
-  rrd_file = rrd_open(file,&rrd,RRD_READONLY);
-  if(!rrd_file) {
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
-  }
-  from_file = rrd.live_head->last_up;
-  step = rrd.stat_head->pdp_step;
-  rrd_close(rrd_file);
-  pthread_mutex_lock(&cache_lock);
-  ci = g_tree_lookup(cache_tree, file);
-  if (ci)
-    t = ci->last_update_stamp;
-  else
-    t = from_file;
-  pthread_mutex_unlock(&cache_lock);
-  t -= t % step;
-  rrd_free(&rrd);
-  if(t<1) {
-    return send_response(sock, RESP_ERR, "Error: rrdcached: Invalid timestamp returned\n");
-  }
-  return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
-} /* }}} static int handle_request_last  */
-
-static int handle_request_create (HANDLER_PROTO) /* {{{ */
-{
-  char *file, file_tmp[PATH_MAX];
-  char *tok;
-  int ac = 0;
-  char *av[128];
-  int status;
-  unsigned long step = 300;
-  time_t last_up = time(NULL)-10;
-  int no_overwrite = opt_no_overwrite;
-
-
-  /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
-  /* get full pathname */
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
-  }
-  RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
-
-  while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
-    if( ! strncmp(tok,"-b",2) ) {
-      status = buffer_get_field(&buffer, &buffer_size, &tok );
-      if (status != 0) return syntax_error(sock,cmd);
-      last_up = (time_t) atol(tok);
-      continue;
-    }
-    if( ! strncmp(tok,"-s",2) ) {
-      status = buffer_get_field(&buffer, &buffer_size, &tok );
-      if (status != 0) return syntax_error(sock,cmd);
-      step = atol(tok);
-      continue;
-    }
-    if( ! strncmp(tok,"-O",2) ) {
-      no_overwrite = 1;
-      continue;
-    }
-    if( ! strncmp(tok,"DS:",3) ) { av[ac++]=tok; continue; }
-    if( ! strncmp(tok,"RRA:",4) ) { av[ac++]=tok; continue; }
-    return syntax_error(sock,cmd);
-  }
-  if(step<1) {
-    return send_response(sock, RESP_ERR, "The step size cannot be less than 1 second.\n");
-  }
-  if (last_up < 3600 * 24 * 365 * 10) {
-    return send_response(sock, RESP_ERR, "The first entry must be after 1980.\n");
-  }
-
-  rrd_clear_error ();
-  status = rrd_create_r2(file,step,last_up,no_overwrite,ac,(const char **)av);
-
-  if(!status) {
-    return send_response(sock, RESP_OK, "RRD created OK\n");
-  }
-  return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
-} /* }}} static int handle_request_create  */
 
 /* start "BATCH" processing */
 static int batch_start (HANDLER_PROTO) /* {{{ */
@@ -2030,55 +1649,6 @@ static command_t list_of_commands[] = { /* {{{ */
     NULL
   },
   {
-    "FETCH",
-    handle_request_fetch,
-    CMD_CONTEXT_CLIENT,
-    "FETCH <file> <CF> [<start> [<end>]]\n"
-    ,
-    "The 'FETCH' can be used by the client to retrieve values from an RRD file.\n"
-  },
-  {
-    "INFO",
-    handle_request_info,
-    CMD_CONTEXT_CLIENT,
-    "INFO <filename>\n",
-    "The INFO command retrieves information about a specified RRD file.\n"
-    "This is returned in standard rrdinfo format, a sequence of lines\n"
-    "with the format <keyname> = <value>\n"
-    "Note that this is the data as of the last update of the RRD file itself,\n"
-    "not the last time data was received via rrdcached, so there may be pending\n"
-    "updates in the queue.  If this bothers you, then first run a FLUSH.\n"
-  },
-  {
-    "FIRST",
-    handle_request_first,
-    CMD_CONTEXT_CLIENT,
-    "FIRST <filename> <rra index>\n",
-    "The FIRST command retrieves the first data time for a specified RRA in\n"
-    "an RRD file.\n"
-  },
-  {
-    "LAST",
-    handle_request_last,
-    CMD_CONTEXT_CLIENT,
-    "LAST <filename>\n",
-    "The LAST command retrieves the last update time for a specified RRD file.\n"
-    "Note that this is the time of the last update of the RRD file itself, not\n"
-    "the last time data was received via rrdcached, so there may be pending\n"
-    "updates in the queue.  If this bothers you, then first run a FLUSH.\n"
-  },
-  {
-    "CREATE",
-    handle_request_create,
-    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
-    "CREATE <filename> [-b start] [-s step] [-O] <DS definitions> <RRA definitions>\n",
-    "The CREATE command will create an RRD file, overwriting any existing file\n"
-    "unless the -O option is given or rrdcached was started with the -O option.\n"
-    "The start parameter needs to be in seconds since 1/1/70 (AT-style syntax is\n"
-    "not acceptable) and the step is in seconds (default is 300).\n"
-    "The DS and RRA definitions are as for the 'rrdtool create' command.\n"
-  },
-  {
     "QUIT",
     handle_request_quit,
     CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
@@ -2202,7 +1772,7 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
 
   if (help && (help->syntax || help->help))
   {
-    char tmp[RRD_CMD_MAX];
+    char tmp[CMD_MAX];
 
     snprintf(tmp, sizeof(tmp)-1, "Help for %s\n", help->cmd);
     resp_txt = tmp;
@@ -2437,7 +2007,7 @@ static int journal_replay (const char *file) /* {{{ */
   int entry_cnt = 0;
   int fail_cnt = 0;
   uint64_t line = 0;
-  char entry[RRD_CMD_MAX];
+  char entry[CMD_MAX];
   time_t now;
 
   if (file == NULL) return 0;
@@ -3252,14 +2822,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:Bb:p:Fj:a:h?")) != -1)
+  while ((option = getopt(argc, argv, "gl:s:m:P:f:w:z:t:Bb:p:Fj:h?")) != -1)
   {
     switch (option)
     {
-      case 'O':
-        opt_no_overwrite = 1;
-        break;
-
       case 'g':
         stay_foreground=1;
         break;
@@ -3531,42 +3097,22 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'j':
       {
         char journal_dir_actual[PATH_MAX];
-        journal_dir = realpath((const char *)optarg, journal_dir_actual);
-	if (journal_dir)
-	{
-          // if we were able to properly resolve the path, lets have a copy
-          // for use outside this block.
-          journal_dir = strdup(journal_dir);           
-	  status = rrd_mkdir_p(journal_dir, 0777);
-	  if (status != 0)
-	  {
-	    fprintf(stderr, "Failed to create journal directory '%s': %s\n",
-		    journal_dir, rrd_strerror(errno));
-	    return 6;
-	  }
-	  if (access(journal_dir, R_OK|W_OK|X_OK) != 0)
-	  {
-	    fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
-		    errno ? rrd_strerror(errno) : "");
-	    return 6;
-	  }
-	} else {
-	  fprintf(stderr, "Unable to resolve journal path (%s,%s)\n", optarg,
-		  errno ? rrd_strerror(errno) : "");
-	  return 6;
-	}
-      }
-      break;
+        const char *dir;
+        dir = journal_dir = strdup(realpath((const char *)optarg, journal_dir_actual));
 
-      case 'a':
-      {
-        int temp = atoi(optarg);
-        if (temp > 0)
-          config_alloc_chunk = temp;
-        else
+        status = rrd_mkdir_p(dir, 0777);
+        if (status != 0)
         {
-          fprintf(stderr, "Invalid allocation size: %s\n", optarg);
-          return 10;
+          fprintf(stderr, "Failed to create journal directory '%s': %s\n",
+              dir, rrd_strerror(errno));
+          return 6;
+        }
+
+        if (access(dir, R_OK|W_OK|X_OK) != 0)
+        {
+          fprintf(stderr, "Must specify a writable directory with -j! (%s)\n",
+                  errno ? rrd_strerror(errno) : "");
+          return 6;
         }
       }
       break;
@@ -3598,9 +3144,6 @@ static int read_options (int argc, char **argv) /* {{{ */
                             "for that group)\n"
             "  -m <mode>     File permissions (octal) of all following UNIX "
                             "sockets\n"
-            "  -a <size>     Memory allocation chunk size. Default is 1.\n"
-            "  -O            Do not allow CREATE commands to overwrite existing\n"
-            "                files, even if asked to.\n"
             "\n"
             "For more information and a detailed description of all options "
             "please refer\n"

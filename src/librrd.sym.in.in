@@ -1,12 +1,9 @@
 rrd_add_ptr
 rrd_add_strdup
-rrd_add_ptr_chunk
-rrd_add_strdup_chunk
 rrd_clear_error
 rrd_close
 rrd_create
 rrd_create_r
-rrd_create_r2
 rrd_dontneed
 rrd_dump
 rrd_dump_r
@@ -57,7 +54,6 @@ rrd_tune
 rrd_update
 rrd_update_r
 rrd_update_v
-rrd_update_v_r
 rrd_version
 rrd_write
 rrd_xport

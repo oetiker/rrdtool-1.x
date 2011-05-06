@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrdlib.h   Public header file for librrd
  *****************************************************************************
@@ -226,32 +226,18 @@ extern    "C" {
     const char *filename,
     unsigned long pdp_step,
     time_t last_up,
-    /* int no_overwrite, */
-    int argc,
-    const char **argv);
-    int       rrd_create_r2(
-    const char *filename,
-    unsigned long pdp_step,
-    time_t last_up,
-    int no_overwrite,
     int argc,
     const char **argv);
     rrd_info_t *rrd_info_r(
     char *);
-/* NOTE: rrd_update_r and rrd_update_v_r are only thread-safe if no at-style
-   time specifications get used!!! */
+/* NOTE: rrd_update_r are only thread-safe if no at-style time
+   specifications get used!!! */
 
     int       rrd_update_r(
     const char *filename,
     const char *_template,
     int argc,
     const char **argv);
-    int       rrd_update_v_r(
-    const char *filename,
-    const char *_template,
-    int argc,
-    const char **argv,
-    rrd_info_t * pcdp_summary);
     int rrd_fetch_r (
             const char *filename,
             const char *cf,
@@ -352,12 +338,8 @@ int       rrd_proc_start_end(
 
     long rrd_random(void);
 
-    int rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src,
-                          size_t *alloc, size_t chunk);
     int rrd_add_ptr(void ***dest, size_t *dest_size, void *src);
     int rrd_add_strdup(char ***dest, size_t *dest_size, char *src);
-    int rrd_add_strdup_chunk(char ***dest, size_t *dest_size, char *src,
-                             size_t *alloc, size_t chunk);
     void rrd_free_ptrs(void ***src, size_t *cnt);
 
     int rrd_mkdir_p(const char *pathname, mode_t mode);

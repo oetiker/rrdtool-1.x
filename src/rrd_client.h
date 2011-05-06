@@ -1,6 +1,6 @@
 /**
  * RRDTool - src/rrd_client.h
- * Copyright (C) 2008-2010  Florian octo Forster
+ * Copyright (C) 2008 Florian octo Forster
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -49,8 +49,6 @@
 	typedef unsigned long long int 	uint64_t;
 #endif
 
-/* max length of socket command or response */
-#define RRD_CMD_MAX 4096
 
 #ifndef RRDCACHED_DEFAULT_ADDRESS
 # define RRDCACHED_DEFAULT_ADDRESS "unix:/tmp/rrdcached.sock"
@@ -70,27 +68,8 @@ int rrdc_disconnect (void);
 int rrdc_update (const char *filename, int values_num,
         const char * const *values);
 
-rrd_info_t * rrdc_info (const char *filename);
-time_t rrdc_last (const char *filename);
-time_t rrdc_first (const char *filename, int rraindex);
-int rrdc_create (const char *filename,
-    unsigned long pdp_step,
-    time_t last_up,
-    int no_overwrite,
-    int argc,
-    const char **argv);
-
-
 int rrdc_flush (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
-
-int rrdc_fetch (const char *filename,
-    const char *cf,
-    time_t *ret_start, time_t *ret_end,
-    unsigned long *ret_step,
-    unsigned long *ret_ds_num,
-    char ***ret_ds_names,
-    rrd_value_t **ret_data);
 
 #else
 #	define rrdc_flush_if_daemon(a,b) 0

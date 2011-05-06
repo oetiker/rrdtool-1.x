@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrd_create.c  creates new rrds
  *****************************************************************************/
@@ -11,9 +11,9 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
-#include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
+static int opt_no_overwrite = 0;
 
 #ifdef WIN32
 # include <process.h>
@@ -40,7 +40,6 @@ int rrd_create(
     struct option long_options[] = {
         {"start", required_argument, 0, 'b'},
         {"step", required_argument, 0, 's'},
-        {"daemon", required_argument, 0, 'd'},
         {"no-overwrite", no_argument, 0, 'O'},
         {0, 0, 0, 0}
     };
@@ -52,30 +51,17 @@ int rrd_create(
     char     *parsetime_error = NULL;
     long      long_tmp;
     int       rc;
-    char * opt_daemon = NULL;
-    int       opt_no_overwrite = 0;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "Ob:s:d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "Ob:s:", long_options, &option_index);
 
         if (opt == EOF)
             break;
 
         switch (opt) {
-        case 'd':
-            if (opt_daemon != NULL)
-                    free (opt_daemon);
-            opt_daemon = strdup (optarg);
-            if (opt_daemon == NULL)
-            {
-                rrd_set_error ("strdup failed.");
-                return (-1);
-            }
-            break;
-
         case 'b':
             if ((parsetime_error = rrd_parsetime(optarg, &last_up_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
@@ -122,38 +108,18 @@ int rrd_create(
         rrd_set_error("need name of an rrd file to create");
         return -1;
     }
-
-    rrdc_connect (opt_daemon);
-    if (rrdc_is_connected (opt_daemon)) {
-        rc = rrdc_create (argv[optind],
-                      pdp_step, last_up, opt_no_overwrite,
+    rc = rrd_create_r(argv[optind],
+                      pdp_step, last_up,
                       argc - optind - 1, (const char **) (argv + optind + 1));
-	} else {
-        rc = rrd_create_r2(argv[optind],
-                      pdp_step, last_up, opt_no_overwrite,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
-	}
 
     return rc;
 }
 
 /* #define DEBUG */
-/* For backwards compatibility with previous API.  Use rrd_create_r2 if you
-   need to have the no_overwrite parameter.                                */
 int rrd_create_r(
     const char *filename,
     unsigned long pdp_step,
     time_t last_up,
-    int argc,
-    const char **argv)
-{
-	return rrd_create_r2(filename,pdp_step,last_up,0,argc,argv);
-}
-int rrd_create_r2(
-    const char *filename,
-    unsigned long pdp_step,
-    time_t last_up,
-    int no_overwrite,
     int argc,
     const char **argv)
 {
@@ -164,9 +130,6 @@ int rrd_create_r2(
     char      dummychar1[2], dummychar2[2];
     unsigned short token_idx, error_flag, period = 0;
     unsigned long hashed_name;
-
-    /* clear any previous errors */
-    rrd_clear_error();
 
     /* init rrd clean */
     rrd_init(&rrd);
@@ -226,11 +189,11 @@ int rrd_create_r2(
                            dummychar2, &offset)) {
             case 0:
             case 1:
-                rrd_set_error("Invalid DS name in [%s]",&argv[i][3]);
+                rrd_set_error("Invalid DS name");
                 break;
             case 2:
             case 3:
-                rrd_set_error("Invalid DS type in [%s]",&argv[i][3]);
+                rrd_set_error("Invalid DS type");
                 break;
             case 4:    /* (%n may or may not be counted) */
             case 5:    /* check for duplicate datasource names */
@@ -606,7 +569,7 @@ int rrd_create_r2(
         rrd_free2(&rrd);
         return (-1);
     }
-    return rrd_create_fn(filename, &rrd, no_overwrite);
+    return rrd_create_fn(filename, &rrd);
 }
 
 void parseGENERIC_DS(
@@ -730,8 +693,7 @@ int create_hw_contingent_rras(
 
 int rrd_create_fn(
     const char *file_name,
-    rrd_t *rrd,
-    int no_overwrite )
+    rrd_t *rrd)
 {
     unsigned long i, ii;
     rrd_value_t *unknown;
@@ -740,7 +702,7 @@ int rrd_create_fn(
     rrd_t     rrd_dn;
     unsigned  rrd_flags = RRD_READWRITE | RRD_CREAT;
 
-    if (no_overwrite) {
+    if (opt_no_overwrite) {
       rrd_flags |= RRD_EXCL ;
     }
 

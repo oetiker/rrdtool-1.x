@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrd_last.c
  *****************************************************************************
@@ -14,7 +14,7 @@ time_t rrd_last(
     char **argv)
 {
     char *opt_daemon = NULL;
-    time_t lastupdate;
+    int status;
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -58,15 +58,11 @@ time_t rrd_last(
         return (-1);
     }
 
-    rrdc_connect (opt_daemon);
-    if (rrdc_is_connected (opt_daemon))
-        lastupdate = rrdc_last (argv[optind]);
-
-    else
-        lastupdate = rrd_last_r(argv[optind]);
-
+    status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
     if (opt_daemon) free(opt_daemon);
-    return (lastupdate);
+    if (status) return (-1);
+
+    return (rrd_last_r (argv[optind]));
 }
 
 time_t rrd_last_r(

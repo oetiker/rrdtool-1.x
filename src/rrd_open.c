@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
  * rrd_open.c  Open an RRD File
  *****************************************************************************
@@ -14,7 +14,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #endif
-
 
 #ifdef HAVE_BROKEN_MS_ASYNC
 #include <sys/types.h>

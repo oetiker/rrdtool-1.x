@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
@@ -13,11 +13,11 @@ read somekey
 svn commit -m "prepare for the release of rrdtool-$VERSION"
 OPWD=`pwd`
 cd /tmp
-svn export svn://svn.oetiker.ch/rrdtool/trunk/program rrdtool-$$
+svn export svn://svn.oetiker.ch/rrdtool/branches/1.4/program rrdtool-$$
 cd rrdtool-$$
 #svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
 #    xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
-sh MakeMakefile
+./MakeMakefile
 #PKG_CONFIG_PATH=/usr/pack/rrdtool-1.3svn-to/i686-debian-linux3.1/lib/pkgconfig/
 #export PKG_CONFIG_PATH
 ./configure --enable-maintainer-mode

@@ -19,8 +19,6 @@ B<rrdcached>
 [-F]
 [-g]
 [B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
-[B<-a>E<nbsp>I<alloc_size>]
-[-O]
 
 =head1 DESCRIPTION
 
@@ -238,19 +236,6 @@ Only permit writes into the base directory specified in B<-b> (and any
 sub-directories).  This does B<NOT> detect symbolic links.  Paths
 containing C<../> will also be blocked.
 
-=item B<-a> I<alloc_size>
-
-Allocate value pointers in chunks of I<alloc_size>.  This may improve CPU
-utilization on machines with slow C<realloc()> implementations, in
-exchange for slightly higher memory utilization.  The default isE<nbsp>1.
-Do not set this more than the B<-w> value divided by your average RRD step
-size.
-
-=item B<-O> 
-
-Preven the CREATE command from overwriting existing files, even when it is
-instructed to do so.  This is for added security.
-
 =back
 
 =head1 AFFECTED RRDTOOL COMMANDS
@@ -286,10 +271,6 @@ info
 
 =item *
 
-first
-
-=item *
-
 last
 
 =item *
@@ -303,10 +284,6 @@ update
 =item *
 
 xport
-
-=item *
-
-create
 
 =back
 
@@ -540,13 +517,6 @@ returns immediately, even though the writes may take a long time.
 Shows any "pending" updates for a file, in order.  The updates shown have
 not yet been written to the underlying RRD file.
 
-=item B<FETCH> I<filename> I<CF> [I<start> [I<end>]]
-
-Calls C<rrd_fetch> with the specified arguments and returns the result in text
-form. If necessary, the file is flushed to disk first. The client side function
-C<rrdc_fetch> (declared in C<rrd_client.h>) parses the output and behaves just
-like C<rrd_fetch_r> for easy integration of remote queries.
-
 =item B<FORGET> I<filename>
 
 Removes I<filename> from the cache.  Any pending updates B<WILL BE LOST>.
@@ -606,34 +576,6 @@ This command is written to the journal after a file is successfully
 written out to disk.  It is used during journal replay to determine which
 updates have already been applied.  It is I<only> valid in the journal; it
 is not accepted from the other command channels.
-
-=item B<FIRST> I<filename> [I<rranum>]
-
-Return the timestamp for the first CDP in the specified RRA.  Default is to 
-use RRA zero if none is specified.
-
-=item B<LAST> I<filename> 
-
-Return the timestamp for the last update to the specified RRD. Note that the
-cache is I<not> flushed before checking, as the client is expected to request
-this separately if it is required.
-
-=item B<INFO> I<filename> 
-
-Return the configuration information for the specified RRD. Note that the
-cache is I<not> flushed before checking, as the client is expected to request
-this separately if it is required.
-
-The information is returned, one item per line, with the format:
-
- I<keyname> I<type> I<value>
-
-=item B<CREATE> I<filename> [-s I<stepsize>] [-b I<begintime>] [-O] I<DSdefinitions> ... I<RRAdefinitions> ...
-
-This will create the RRD file according to the supplied parameters, provided
-the parameters are valid, and (if the -O option is given or if the rrdcached
-was started with the -O flag) the specified I<filename> does not already
-exist.
 
 =item B<BATCH>
 
@@ -756,7 +698,6 @@ Both B<rrdcached> and this manual page have been written by Florian.
 =head1 CONTRIBUTORS
 
 kevin brintnall E<lt>kbrint@rufus.netE<gt>
-Steve Shipway E<lt>steve@steveshipway.orgE<gt> 
 
 =cut
 

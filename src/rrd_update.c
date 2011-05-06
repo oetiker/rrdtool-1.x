@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.4.5  Copyright by Tobi Oetiker, 1997-2010
  *                Copyright by Florian Forster, 2008
  *****************************************************************************
  * rrd_update.c  RRD Update Function
@@ -429,10 +429,10 @@ int rrd_update(
 
     {   /* try to connect to rrdcached */
         int status = rrdc_connect(opt_daemon);
-        if (status != 0) {        
-             rc = status;           
-             goto out;           
-        }        
+        if (status != 0) {
+             rc = status;
+             goto out;
+        }
     }
 
     if ((tmplt != NULL) && rrdc_is_connected(opt_daemon))
@@ -478,16 +478,6 @@ int rrd_update_r(
     const char **argv)
 {
     return _rrd_update(filename, tmplt, argc, argv, NULL);
-}
-
-int rrd_update_v_r(
-    const char *filename,
-    const char *tmplt,
-    int argc,
-    const char **argv,
-    rrd_info_t * pcdp_summary)
-{
-    return _rrd_update(filename, tmplt, argc, argv, pcdp_summary);
 }
 
 int _rrd_update(
