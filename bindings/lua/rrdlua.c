@@ -66,7 +66,7 @@ static char **make_argv(const char *cmd, lua_State * L)
   for (i=1; i<argc; i++) {
     /* accepts string or number */
     if (lua_isstring(L, i) || lua_isnumber(L, i)) {
-      if (!(argv[i] = strdup(lua_tostring (L, i)))) {
+      if (!(argv[i] = lua_tostring (L, i))) {
         /* raise an error and never return */
         luaL_error(L, "%s - error duplicating string area for arg #%d",
                    cmd, i);
