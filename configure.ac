@@ -904,8 +904,16 @@ fi
 AC_SUBST(COMP_PYTHON)
 
 dnl Check for nroff
-AC_PATH_PROGS(NROFF, gnroff nroff)
-AC_PATH_PROGS(TROFF, groff troff)
+AC_ARG_VAR(NROFF, [path to the local nroff version])
+AC_PATH_PROGS(NROFF, [gnroff nroff])
+if test x$NROFF = x; then
+  AC_MSG_ERROR([I need a copy of *nroff to format the documentation])
+fi
+AC_ARG_VAR(TROFF, [path to the local troff version])
+AC_PATH_PROGS(TROFF, [groff troff])
+if test x$TROFF = x; then
+  AC_MSG_ERROR([I need a copy of *troff to format the documentation])
+fi
 
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
