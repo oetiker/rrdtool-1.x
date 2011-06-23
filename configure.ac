@@ -499,27 +499,16 @@ dnl is time_t 32 of 64 bit ?
 AC_DEFINE([TIME_T_IS_32BIT], [], [time_t is 32bit])
 AC_DEFINE([TIME_T_IS_64BIT], [], [time_t is 64bit])
 AC_MSG_CHECKING([the type of time_t])
-AC_RUN_IFELSE(
-    AC_LANG_PROGRAM(
-        [[#include <time.h>]],
-        [[if (sizeof(time_t) != 4) return 1; ]]
-        ),
-    [ AC_MSG_RESULT([time_t is 32 bit])
-      AC_DEFINE([TIME_T_IS_32BIT])
-    ],
-    [ AC_RUN_IFELSE(
-        AC_LANG_PROGRAM(
-        [[#include <time.h>]],
-        [[if (sizeof(time_t) != 8) return 1; ]]
-        ),
-        [
-          AC_MSG_RESULT([time_t is 64 bit])
-          AC_DEFINE([TIME_T_IS_64BIT])
-        ],
-        [AC_MSG_ERROR([can not figure type of time_t])]
-      )
-    ]  
-)
+AC_CHECK_SIZEOF([time_t])
+if test "x$ac_cv_sizeof_time_t" = "x4"; then
+  AC_MSG_RESULT([time_t is 32 bit])
+  AC_DEFINE([TIME_T_IS_32BIT])
+elif test "x$ac_cv_sizeof_time_t" = "x8"; then
+  AC_MSG_RESULT([time_t is 64 bit])
+  AC_DEFINE([TIME_T_IS_64BIT])
+else
+  AC_MSG_ERROR([can not figure type of time_t])
+fi
 
 AC_LANG_POP(C)
 
