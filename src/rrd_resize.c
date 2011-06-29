@@ -267,9 +267,14 @@ int rrd_resize(
     /* Move the rest of the CDPs
      */
     while (1) {
-        if (rrd_read(rrd_file, &buffer, sizeof(rrd_value_t) * 1) <= 0)
+        ssize_t b_read;
+        if ((b_read=rrd_read(rrd_file, &buffer, sizeof(rrd_value_t) * 1)) <= 0)
             break;
-        rrd_write(rrd_out_file, &buffer, sizeof(rrd_value_t) * 1);
+        if(rrd_out_file->pos+b_read > rrd_out_file->file_len) {
+            fprintf(stderr,"WARNING: ignoring last %zu bytes\nWARNING: if you see this message multiple times for a single file you're in trouble\n", b_read);
+            continue;
+        }
+        rrd_write(rrd_out_file, &buffer, b_read);
     }
     rrdnew.rra_def[target_rra].row_cnt += modify;
     rrd_seek(rrd_out_file,
