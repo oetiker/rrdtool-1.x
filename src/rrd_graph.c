@@ -1850,7 +1850,7 @@ int leg_place(
                     glue = 0;
                 }
                 if (prt_fctn == 'c')
-                    leg_x = (double)(legendwidth - fill) / 2.0;
+                    leg_x = border + (double)(legendwidth - fill) / 2.0;
                 if (prt_fctn == 'r')
                     leg_x = legendwidth - fill + border;
                 for (ii = mark; ii <= i; ii++) {
@@ -3135,7 +3135,7 @@ int graph_size_location(
      */
     switch(im->legendposition){
         case NORTH:
-            im->xOriginTitle   = Xvertical + Xylabel + (im->xsize / 2);
+            im->xOriginTitle   = (im->ximg / 2);
             im->yOriginTitle   = 0;
 
             im->xOriginLegend  = 0;
@@ -3156,7 +3156,7 @@ int graph_size_location(
             break;
 
         case WEST:
-            im->xOriginTitle   = im->legendwidth + Xvertical + Xylabel + im->xsize / 2;
+            im->xOriginTitle   = im->legendwidth + im->xsize / 2;
             im->yOriginTitle   = 0;
 
             im->xOriginLegend  = 0;
@@ -3177,7 +3177,7 @@ int graph_size_location(
             break;
 
         case SOUTH:
-            im->xOriginTitle   = Xvertical + Xylabel + im->xsize / 2;
+            im->xOriginTitle   = im->ximg / 2;
             im->yOriginTitle   = 0;
 
             im->xOriginLegend  = 0;
@@ -3198,7 +3198,7 @@ int graph_size_location(
             break;
 
         case EAST:
-            im->xOriginTitle   = Xvertical + Xylabel + im->xsize / 2;
+            im->xOriginTitle   = im->xsize / 2;
             im->yOriginTitle   = 0;
 
             im->xOriginLegend  = Xvertical + Xylabel + Xmain + Xvertical2;
