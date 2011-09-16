@@ -653,12 +653,14 @@ int rrdc_connect (const char *addr) /* {{{ */
 {
   int status = 0;
 
-  if (addr == NULL)
+  if (addr == NULL) {
     addr = getenv (ENV_RRDCACHED_ADDRESS);
+  }
 
-  if (addr == NULL || ! strcmp(addr,""))
+  if (addr == NULL || ! strcmp(addr,"")) {
     addr = NULL;
     return 0;
+  }
 
   pthread_mutex_lock(&lock);
 
