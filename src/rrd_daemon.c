@@ -1331,7 +1331,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
   /* save it for the journal later */
   if (!JOURNAL_REPLAY(sock))
-    strncpy(orig_buf, buffer, buffer_size);
+    strncpy(orig_buf, buffer, min(RRD_CMD_MAX,buffer_size));
 
   status = buffer_get_field (&buffer, &buffer_size, &file);
   if (status != 0)
