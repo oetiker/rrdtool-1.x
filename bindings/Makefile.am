@@ -33,7 +33,7 @@ ruby:   Makefile
 
 # rules for building the pyton module
 python: Makefile
-	cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
+	cd python && env BUILDLIBDIR=../../src/.libs LD_RUN_PATH=$(libdir) $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
 
 # rules for building the perl module
 perl_piped: perl-piped/Makefile
