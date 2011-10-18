@@ -263,6 +263,7 @@ int rrd_xport_fn(
                 while (--j > -1)
                     free(legend_list[j]);
                 free(legend_list);
+                free(step_list);
                 rrd_set_error("malloc xport legend entry");
                 return (-1);
             }
