@@ -333,6 +333,7 @@ VALUE rb_rrd_xport(
     time_t start, end;
 
     a = string_arr_new(args);
+    reset_rrd_state();
     rrd_xport(a.len, a.strings, &xxsize, &start, &end, &step, &col_cnt, &legend_v, &data);
     string_arr_delete(a);
 
