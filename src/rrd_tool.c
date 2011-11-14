@@ -8,6 +8,8 @@
 #include "../win32/config.h"
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <io.h>
+#include <fcntl.h>
 #else
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
@@ -413,6 +415,12 @@ int main(
     /* initialize locale settings
        according to localeconv(3) */       
     setlocale(LC_ALL, "");
+
+#ifdef WIN32 && !defined(__CYGWIN__)
+    setmode(fileno(stdout), O_BINARY);
+    setmode(fileno(stdin), O_BINARY);
+#endif
+
 
 #if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
     bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
