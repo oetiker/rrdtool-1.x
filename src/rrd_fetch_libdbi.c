@@ -389,6 +389,7 @@ rrd_fetch_fn_libdbi(
   unsigned long minstepsize=300;
   /* by default assume unixtimestamp */
   int isunixtime=1;
+  long gmt_offset=0;
   /* the result-set */
   long r_timestamp,l_timestamp,d_timestamp;
   double r_value,l_value,d_value;
@@ -459,7 +460,13 @@ rrd_fetch_fn_libdbi(
     return -1; 
   }
   /* if we have leading '*', then we have a TIMEDATE Field*/
-  if (table_help.timestamp[0]=='*') { isunixtime=0; table_help.timestamp++; }
+  if (table_help.timestamp[0]=='*') {
+    struct tm tm;
+    time_t t=time(NULL);
+    localtime_r(&t,&tm);
+    gmt_offset=tm.tm_gmtoff;
+    isunixtime=0; table_help.timestamp++;
+  }
   /* hex-unescape the value */
   if(_inline_unescape(table_help.timestamp)) { return -1; }
 
@@ -585,6 +592,7 @@ rrd_fetch_fn_libdbi(
   while((r_status=_sql_fetchrow(&table_help,&r_timestamp,&r_value,derive))>0) {
     /* processing of value */
     /* calculate index for the timestamp */
+    r_timestamp-=gmt_offset;
     idx=(r_timestamp-(*start))/(*step);
     /* some out of bounds checks on idx */
     if (idx<0) { idx=0;}
