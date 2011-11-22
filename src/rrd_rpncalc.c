@@ -881,7 +881,7 @@ short rpn_calc(
                 time_t    dur = (time_t) rpnstack->s[stptr];
                 time_t    step = (time_t) rpnp[rpi - 2].step;
 
-                if (output_idx > (int) ceil((float) dur / (float) step)) {
+                if (output_idx + 1 >= (int) ceil((float) dur / (float) step)) {
                     int       ignorenan = (rpnp[rpi].op == OP_TREND);
                     double    accum = 0.0;
                     int       i = 0;
