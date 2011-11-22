@@ -84,7 +84,7 @@ librrdupd_la_LIBADD       = $(CORE_LIBS)
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
 librrd_la_DEPENDENCIES    = librrdupd.la librrd.sym
-librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS)
+librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS) $(LIBINTL)
 librrd_la_LDFLAGS         = -version-info @LIBVERS@
 librrd_la_LDFLAGS         += -export-symbols librrd.sym
 
@@ -93,7 +93,7 @@ librrd_th_la_DEPENDENCIES    = librrd.sym
 librrd_th_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
-librrd_th_la_LIBADD          = $(ALL_LIBS)
+librrd_th_la_LIBADD          = $(ALL_LIBS) $(LIBINTL)
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
