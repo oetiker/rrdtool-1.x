@@ -59,6 +59,8 @@ text_prop_t text_prop[] = {
     {5.5, RRD_DEFAULT_FONT,NULL} /* watermark */
 };
 
+char week_fmt[128] = "Week %V";
+
 xlab_t    xlab[] = {
     {0, 0, TMT_SECOND, 30, TMT_MINUTE, 5, TMT_MINUTE, 5, 0, "%H:%M"}
     ,
@@ -87,10 +89,10 @@ xlab_t    xlab[] = {
     ,
     {2400, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a"}
     ,
-    {3600, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, "Week %V"}
+    {3600, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt}
     ,
     {3 * 3600, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600,
-     "Week %V"}
+     week_fmt}
     ,
     {6 * 3600, 0, TMT_MONTH, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,
      "%b"}
@@ -4301,6 +4303,7 @@ void rrd_graph_options(
         { "border",             required_argument, 0, 1007},
         { "grid-dash",          required_argument, 0, 1008},
         { "dynamic-labels",     no_argument,       0, 1009},
+        { "week-fmt",           required_argument, 0, 1010},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4486,6 +4489,10 @@ void rrd_graph_options(
         case 1009: /* enable dynamic labels */
             im->dynamic_labels = 1;
             break;         
+        case 1010:
+            strncpy(week_fmt,optarg,sizeof week_fmt);
+            week_fmt[(sizeof week_fmt)-1]='\0';
+            break;
         case 1002: /* right y axis */
 
             if(sscanf(optarg,

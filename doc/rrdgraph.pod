@@ -193,6 +193,11 @@ This places grid lines every 8 hours, major grid lines and labels
 each day. The labels are placed exactly between two major grid lines
 as they specify the complete day and not just midnight.
 
+[B<--week-fmt> I<strftime format string>]
+
+By default rrdtool uses "Week %V" to render the week number. With this option
+you can define your own format, without completely overriding the xaxis format.
+
 =head2 Y-Axis
 
 [B<-y>|B<--y-grid> I<grid step>B<:>I<label factor>]
