@@ -51,12 +51,12 @@ string_arr string_arr_new(
             a.strings[i + 1] = strdup(StringValuePtr(v));
             break;
         case T_FIXNUM:
-            snprintf(buf, 63, "%d", FIX2INT(v));
+            snprintf(buf, 63, "%ld", FIX2INT(v));
             a.strings[i + 1] = strdup(buf);
             break;
         default:
             rb_raise(rb_eTypeError,
-                     "invalid argument - %s, expected T_STRING or T_FIXNUM on index %d",
+                     "invalid argument - %s, expected T_STRING or T_FIXNUM on index %ld",
                      rb_class2name(CLASS_OF(v)), i);
             break;
         }
