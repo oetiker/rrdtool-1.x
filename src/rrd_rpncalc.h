@@ -41,7 +41,7 @@ typedef struct rpn_cdefds_t {
 #define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
 
 /* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
-#define DS_CDEF_MAX_RPN_NODES 26
+#define DS_CDEF_MAX_RPN_NODES (int)(sizeof(unival)*10 / sizeof(rpn_cdefds_t))
 
 typedef struct rpnstack_t {
     double   *s;
