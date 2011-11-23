@@ -177,23 +177,33 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
         return -1;
 
 #ifndef _MSC_VER
-    base_dir = dirname(pathname_copy);
+    /* the data pointedd too by dirname might change too (bsd) */
+    if (NULL == (base_dir = strdup(dirname(pathname_copy)))) {
+        free(pathname_copy);
+        return -1;
+    }
 #else
-	_splitpath(pathname_copy, NULL, base_dir, NULL, NULL);
+    _splitpath(pathname_copy, NULL, base_dir, NULL, NULL);
 #endif
 
     if (0 != rrd_mkdir_p(base_dir, mode)) {
         int orig_errno = errno;
         free(pathname_copy);
+#ifndef _MSC_VER
+        free(base_dir);
+#endif
         errno = orig_errno;
         return -1;
     }
 
     free(pathname_copy);
+#ifndef _MSC_VER
+    free(base_dir);
+#endif
 
     /* keep errno as set by mkdir() */
 #ifdef _MSC_VER
-	if (0 != mkdir(pathname))
+    if (0 != mkdir(pathname))
         return -1;
 #else
     if (0 != mkdir(pathname, mode))
