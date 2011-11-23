@@ -33,8 +33,8 @@ short rpn_compact(
     while (rpnp[*count].op != OP_END)
         (*count)++;
     if (++(*count) > DS_CDEF_MAX_RPN_NODES) {
-        rrd_set_error("Maximum %d RPN nodes permitted",
-                      DS_CDEF_MAX_RPN_NODES);
+        rrd_set_error("Maximum %d RPN nodes permitted. Got %d RPN nodes at present.",
+                      DS_CDEF_MAX_RPN_NODES-1,(*count)-1);
         return -1;
     }
 
@@ -236,9 +236,11 @@ void parseCDEF_DS(
      * occur too often. */
     for (i = 0; rpnp[i].op != OP_END; i++) {
         if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME ||
-            rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT) {
+            rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
+            rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
+            rpnp[i].op == OP_PREDICT || rpnp[i].op ==  OP_PREDICTSIGMA ) {
             rrd_set_error
-                ("operators time, ltime, prev and count not supported with DS COMPUTE");
+                ("operators TIME, LTIME, PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA are not supported with DS COMPUTE");
             free(rpnp);
             return;
         }
