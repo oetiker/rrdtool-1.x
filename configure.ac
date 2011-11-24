@@ -13,14 +13,14 @@ AC_PREREQ(2.59)
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.3])
+AC_INIT([rrdtool],[1.4.999])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.4003
+NUMVERS=1.4999
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
