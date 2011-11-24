@@ -896,6 +896,10 @@ int data_fetch(
             }
             im->gdes[i].data_first = 1;
 
+            /* must reduce to at least im->step
+               otherwhise we end up with more data than we can handle in the 
+               chart and visibility of data will be random */            
+            im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
                 reduce_data(im->gdes[i].cf_reduce,
                             ft_step,
