@@ -64,6 +64,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				LinkLibraryDependencies="true"
 				AdditionalDependencies="cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
 				AdditionalLibraryDirectories="../contrib/lib"
 				ModuleDefinitionFile=""
@@ -456,6 +457,10 @@
 			</File>
 			<File
 				RelativePath="..\src\rrd.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\rrd_client.h"
 				>
 			</File>
 			<File

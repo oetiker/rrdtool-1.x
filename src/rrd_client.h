@@ -93,11 +93,16 @@ int rrdc_fetch (const char *filename,
     rrd_value_t **ret_data);
 
 #else
+#   define rrdc_create(a,b,c,d,e,f) 0
 #	define rrdc_flush_if_daemon(a,b) 0
 #	define rrdc_connect(a) 0
 #	define rrdc_is_connected(a) 0
 #	define rrdc_flush(a) 0
 #	define rrdc_update(a,b,c) 0
+#   define rrdc_last(a) 0
+#   define rrdc_first(a,b) 0
+#   define rrdc_fetch(a,b,c,d,e,f,g,h) 0
+#   define rrdc_info(a) 0
 #endif
 
 struct rrdc_stats_s
