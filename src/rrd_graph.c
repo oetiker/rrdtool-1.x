@@ -4158,6 +4158,7 @@ void rrd_graph_init(
     im->maxval = DNAN;
     im->minval = 0;
     im->minval = DNAN;
+    im->magfact = 1;
     im->prt_c = 0;
     im->rigid = 0;
     im->rendered_image_size = 0;
