@@ -12,6 +12,7 @@
  * For useage examples, please see the rrd_binding_test project.
  ****************************************************************************/
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -87,7 +88,7 @@ namespace dnrrdlib
     public class rrd
     {
         // Set this path to the location of your "rrdlib.dll" file
-        const string dll = @"rrdlib.dll";
+        const string dll = @"C:\Programming\RRDTool\SVN\win32\DebugDLL\rrdlib.dll";
 
         // IMPORTS - Main methods
         [DllImport(dll)] static extern Int32 rrd_create(Int32 argc, string[] argv);
@@ -104,19 +105,19 @@ namespace dnrrdlib
             ref Int32 xsize, ref Int32 ysize, /* TODO - FILE, */ ref double ymin, ref double ymax);
         [DllImport(dll)] static extern Int32 rrd_graph_v(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_fetch(Int32 argc, string[] argv, ref Int32 start,
-            ref Int32 end, ref UInt32 step, ref UInt32 ds_cnt, ref string[] ds_namv, ref IntPtr data);
+            ref Int32 end, ref UInt32 step, [Out] out UInt32 ds_cnt, [Out] out IntPtr ds_namv, [Out] out IntPtr data);
         [DllImport(dll)] static extern Int32 rrd_first(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_first_r(string filename, Int32 rraindex);
         [DllImport(dll)] static extern Int32 rrd_last(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_last_r(string filename, Int32 rraindex);
         [DllImport(dll)] static extern Int32 rrd_lastupdate(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_lastupdate_r(string filename, ref Int32 ret_last_update,
-            ref UInt32 ret_ds_count, ref string[] ret_ds_names, ref string[] ret_last_ds);
+            ref UInt32 ret_ds_count, [Out] out IntPtr ret_ds_names, [Out] out IntPtr ret_last_ds);
         [DllImport(dll)] static extern Int32 rrd_dump(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_dump_r(string filename, string outname);
         [DllImport(dll)] static extern Int32 rrd_xport(Int32 argc, string[] argv, Int32 unused,
             ref Int32 start, ref Int32 end, ref UInt32 step, ref UInt32 col_cnt,
-            ref string[] leggend_v, ref IntPtr data);
+            [Out] out IntPtr leggend_v, [Out] out  IntPtr data);
         [DllImport(dll)] static extern Int32 rrd_restore(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_resize(Int32 argc, string[] argv);
         [DllImport(dll)] static extern Int32 rrd_tune(Int32 argc, string[] argv);
@@ -124,7 +125,7 @@ namespace dnrrdlib
         // IMPORTS - Utility methods
         [DllImport(dll)] static extern string rrd_strversion();
         [DllImport(dll)] static extern Int32 rrd_random();
-        [DllImport(dll)] static extern string rrd_get_error();
+        [DllImport(dll)] static extern IntPtr rrd_get_error();
 
         // MAIN FUNCTIONS
 
@@ -230,8 +231,11 @@ namespace dnrrdlib
         public static Int32 Fetch(string[] argv, ref Int32 start, ref Int32 end, ref UInt32 step,
             ref UInt32 ds_cnt, ref string[] ds_namv, ref IntPtr data)
         {
-            return rrd_fetch(argv.GetUpperBound(0) + 1, argv, ref start, ref end, ref step, ref ds_cnt,
-                ref ds_namv, ref data);
+            IntPtr ptr = new IntPtr();
+            Int32 rv = rrd_fetch(argv.GetUpperBound(0) + 1, argv, ref start, ref end, ref step, out ds_cnt,
+                out ptr, out data);
+            ds_namv = GetStringArray(ptr, ds_cnt);
+            return rv;
         }
 
         /// <summary>
@@ -289,8 +293,12 @@ namespace dnrrdlib
         public static Int32 Last_Update(string filename, ref Int32 ret_last_update, ref UInt32 ret_ds_count,
             ref string[] ret_ds_names, ref string[] ret_last_ds)
         {
-            return rrd_lastupdate_r(filename, ref ret_last_update, ref ret_ds_count, ref ret_ds_names,
-                ref ret_last_ds);
+            IntPtr ds_names = new IntPtr();
+            IntPtr last_ds = new IntPtr();
+            Int32 rt = rrd_lastupdate_r(filename, ref ret_last_update, ref ret_ds_count, out ds_names,out last_ds);
+            ret_ds_names = GetStringArray(ds_names, ret_ds_count);
+            ret_last_ds = GetStringArray(last_ds, 1);
+            return rt;
         }
 
         /// <summary>
@@ -327,10 +335,13 @@ namespace dnrrdlib
         /// <param name="data">Values from the rrd as double type</param>
         /// <returns>0 if successful, -1 if an error occurred</returns>
         public static Int32 Xport(string[] argv, ref Int32 start, ref Int32 end, ref UInt32 step,
-            ref UInt32 col_cnt, ref string[] leggend_v, ref IntPtr data)
+            ref UInt32 col_cnt, ref string[] legend_v, ref IntPtr data)
         {
-            return rrd_xport(argv.GetUpperBound(0) + 1, argv, 0, ref start, ref end, ref step, ref col_cnt,
-                ref leggend_v, ref data);
+            IntPtr legend = new IntPtr();
+            Int32 rt = rrd_xport(argv.GetUpperBound(0) + 1, argv, 0, ref start, ref end, ref step, ref col_cnt,
+                out legend, out data);
+            legend_v = GetStringArray(legend, col_cnt);
+            return rt;
         }
 
         /// <summary>
@@ -390,7 +401,10 @@ namespace dnrrdlib
         /// <returns>A string with the error message, or an emtpy string if no error occurred</returns>
         public static string Get_Error()
         {
-            return rrd_get_error();
+            IntPtr ptr = rrd_get_error();
+            if (ptr == IntPtr.Zero)
+                return "";
+            return Marshal.PtrToStringAnsi(ptr);
         }
 
         /// <summary>
@@ -402,6 +416,26 @@ namespace dnrrdlib
             IntPtr newptr = Marshal.AllocHGlobal(Marshal.SizeOf(info));
             Marshal.StructureToPtr(info, newptr, true);
             rrd_info_print(newptr);
+        }
+
+        /// <summary>
+        /// Converts a Char ** array of characters from the RRDLib returned as an IntPtr and converts
+        /// it to a String array given the number of items in the ptr array.
+        /// Re: http://stackoverflow.com/questions/1498931/marshalling-array-of-strings-to-char-in-c-must-be-quite-easy-if-you-know-ho
+        /// </summary>
+        /// <param name="ptr">Pointer to a character array returned from the RRDLib</param>
+        /// <param name="size">Number of items in the character array (not the number of characters)</param>
+        /// <returns>A string array</returns>
+        private static string[] GetStringArray(IntPtr ptr, UInt32 size)
+        {
+            var list = new List<string>();
+            for (int i = 0; i < size; i++)
+            {
+                var strPtr = (IntPtr)Marshal.PtrToStructure(ptr, typeof(IntPtr));
+                list.Add(Marshal.PtrToStringAnsi(strPtr));
+                ptr = new IntPtr(ptr.ToInt64() + IntPtr.Size);
+            }
+            return list.ToArray();
         }
     }
 }

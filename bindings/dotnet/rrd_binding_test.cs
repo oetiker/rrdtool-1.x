@@ -2,6 +2,8 @@
  * RRDLIB .NET Binding Test
  *****************************************************************************
  * Created 2010/06/29 by Chris Larsen
+ * Updated 2011/04/15 - Modified the string arrays to use pointers as the old 
+ * automatic marshalling of strings didn't seem to work well with 1.4.5
  * 
  * This project tests the .NET binding library by creating an rrd, inserting 
  * data, fetching data, creating graphs, dumping and exporting the data to
