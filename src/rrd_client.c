@@ -350,7 +350,8 @@ int rrdc_is_connected(const char *daemon_addr) /* {{{ */
      * but it is not specified in the current command.
      * Daemon is only implied in this case if set in ENV
      */
-    if (getenv(ENV_RRDCACHED_ADDRESS) != NULL)
+    char *addr = getenv(ENV_RRDCACHED_ADDRESS);
+    if (addr != NULL && strcmp(addr,"") != 0)
       return 1;
     else
       return 0;
@@ -515,7 +516,7 @@ int rrdc_connect (const char *addr) /* {{{ */
     addr = getenv (ENV_RRDCACHED_ADDRESS);
   }
 
-  if (addr == NULL || ! strcmp(addr,"") ) {
+  if (addr == NULL || strcmp(addr,"") == 0 ) {
     addr = NULL;
     return 0;   
   }
