@@ -2943,6 +2943,7 @@ int graph_size_location(
         im->ximg = im->xsize;
         im->yimg = im->ysize;
         im->yorigin = im->ysize;
+        xtr(im, 0);
         ytr(im, DNAN);
         return 0;
     }
