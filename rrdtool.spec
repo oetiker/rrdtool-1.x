@@ -2,6 +2,7 @@
 %define with_php %{?_without_php: 0} %{?!_without_php: 1}
 %define with_tcl %{?_without_tcl: 0} %{?!_without_tcl: 1}
 %define with_ruby %{?_without_ruby: 0} %{?!_without_ruby: 1}
+%define with_lua %{?_without_lua: 0} %{?!_without_lua: 1}
 %define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
 %define svnrev r1190
 #define pretag 1.2.99908020600
@@ -9,8 +10,8 @@
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.4.3
-Release: 0.20%{?dist}
+Version: 1.4.999
+Release: 1%{?dist}
 License: GPLv2+ with exceptions
 Group: Applications/Databases
 URL: http://oss.oetiker.ch/rrdtool/
@@ -58,6 +59,9 @@ Group: Documentation
 RRD is the Acronym for Round Robin Database. RRD is a system to store and
 display time-series data (i.e. network bandwidth, machine-room temperature,
 server load average). This package contains documentation on using RRD.
+
+%define perl_vendorarch %(eval "`%{__perl} -V:installvendorarch`"; echo $installvendorarch)
+%define perl_vendorlib %(eval "`%{__perl} -V:installvendorlib`"; echo $installvendorlib)
 
 %package perl
 Summary: Perl RRDtool bindings
@@ -143,6 +147,20 @@ Requires: %{name} = %{version}-%{release}
 The %{name}-ruby package includes RRDtool bindings for Ruby.
 %endif
 
+%if %{with_lua}
+%{!?lua_version: %define lua_version %(lua -v 2>&1 | cut -f2 -d' ' | cut -f1,2 -d '.')}
+
+%package lua
+Summary: Lua RRDtool bindings
+Group: Development/Languages
+BuildRequires: lua-devel
+Requires: lua
+Requires: %{name} = %{version}-%{release}
+
+%description lua
+The %{name}-lua package includes RRDtool bindings for Lua.
+%endif
+
 %package cached
 Summary: Data caching daemon for RRDtool
 Group: Applications/Databases
@@ -203,20 +221,21 @@ cp -p /usr/lib/rpm/config.{guess,sub} php4/
 %endif
 %if %{with_ruby}
     --enable-ruby \
+%else
+    --disable-ruby \
 %endif
+%if %{with_lua}
+    --enable-lua \
+%else
+    --disable-lua \
+%endif
+    --enable-perl-site-install \
     --disable-static \
     --with-pic
 
 # Fix another rpath issue
 %{__perl} -pi.orig -e 's|-Wl,--rpath -Wl,\$rp||g' \
     bindings/perl-shared/Makefile.PL
-
-# Force RRDp bits where we want 'em, not sure yet why the
-# --with-perl-options and --libdir don't take
-pushd bindings/perl-piped/
-%{__perl} Makefile.PL INSTALLDIRS=vendor
-%{__perl} -pi.orig -e 's|/lib/perl|/%{_lib}/perl|g' Makefile
-popd
 
 #{__make} %{?_smp_mflags}
 make
@@ -258,9 +277,6 @@ make DESTDIR="$RPM_BUILD_ROOT" install
 extension=rrdtool.so
 __EOF__
 %endif
-
-# Pesky RRDp.pm...
-%{__mv} $RPM_BUILD_ROOT%{perl_vendorarch}/../RRDp.pm $RPM_BUILD_ROOT%{perl_vendorarch}/
 
 # Dunno why this is getting installed here...
 %{__rm} -f $RPM_BUILD_ROOT%{perl_vendorarch}/../leaktest.pl
@@ -344,6 +360,7 @@ test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
 %{_mandir}/man3/*
 %{perl_vendorarch}/*.pm
 %attr(0755,root,root) %{perl_vendorarch}/auto/RRDs/
+%{perl_vendorlib}/*.pm
 
 %if %{with_python}
 %files python
@@ -375,6 +392,12 @@ test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
 %{ruby_sitearch}/RRD.so
 %endif
 
+%if %{with_lua}
+%files lua
+%defattr(-,root,root,-)
+%{_libdir}/lua/%{lua_version}/rrd.*
+%endif
+
 %files cached
 %{_bindir}/rrdcached
 %config %{_sysconfdir}/default/*
@@ -383,6 +406,11 @@ test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
 %attr(0775 %rrdcached_user %rrdcached_user) %dir %{_localstatedir}/run/rrdcached
 
 %changelog
+* Tue Jan 25 2011 Bernard Li <bernard@vanhpc.org>
+- Reset Release to 1
+- Add -lua subpackage
+- Fix -perl subpackage so it includes the correct Perl package paths
+
 * Wed Oct 08 2008 Bernard Li <bernard@vanhpc.org>
 - Split rrdcached related files to -cached subpackage
 - Create rrdcached user and make rrdcached related files owned by it
