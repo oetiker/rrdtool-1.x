@@ -95,7 +95,7 @@ Note: no color in the first line so it is not visible
 
 Note: the second line gets stacked on top of the first one
 
-    LINE1:data#FF0000:"Data with offset":STACK
+    LINE1:mydata#FF0000:"Data with offset":STACK
 
 =back
 
@@ -107,12 +107,14 @@ Also works for HRULE and VRULE
 
 =item *
 
-default style: - - - - -
+default style: B<- - - - ->
+
     LINE1:data#FF0000:"dashed line":dashes
 
 =item *
 
-more fancy style with offset: - -  --- -  --- -
+more fancy style with offset: B<- -  --- -  --- ->
+
     LINE1:data#FF0000:"another dashed line":dashes=15,5,5,10:dash-offset=10
 
 =back
