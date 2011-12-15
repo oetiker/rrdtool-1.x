@@ -91,8 +91,7 @@ xlab_t    xlab[] = {
     ,
     {3600, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt}
     ,
-    {3 * 3600, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600,
-     week_fmt}
+    {3 * 3600, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600, week_fmt}
     ,
     {6 * 3600, 0, TMT_MONTH, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,
      "%b"}
