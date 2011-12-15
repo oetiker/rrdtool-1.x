@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="rrdtool"
-	ProjectGUID="{11CD05F8-E5E1-476E-A75F-A112655D4E94}"
+	Name="rrdupdate"
+	ProjectGUID="{3AAE1E07-78D7-420D-968B-D2087D732D3B}"
 	RootNamespace="rrdtool"
 	TargetFrameworkVersion="196613"
 	>
@@ -42,11 +42,11 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				ProgramDataBaseFileName="$(IntDir)\rrdtool.pdb"
+				ProgramDataBaseFileName="$(IntDir)\rrdupdate.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 				DisableSpecificWarnings="4996"
@@ -122,10 +122,10 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories=".;../../contrib/cairo/include/cairo;&quot;../../contrib/pango/include/pango-1.0&quot;;&quot;../../contrib/glib/include/glib-2.0&quot;;&quot;../../contrib/glib/lib/glib-2.0/include&quot;;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_USE_32BIT_TIME_T;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USE_32BIT_TIME_T"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				ProgramDataBaseFileName="$(IntDir)\rrdtool.pdb"
+				ProgramDataBaseFileName="$(IntDir)\rrdupdate.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -142,7 +142,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="rrdlib.lib cairo.lib pango-1.0.lib pangocairo-1.0.lib libpng.lib zdll.lib glib-2.0.lib gobject-2.0.lib libxml2.lib"
 				AdditionalLibraryDirectories="$(ConfigurationName); ../contrib/lib"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -262,7 +262,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\rrd_tool.c"
+				RelativePath="..\src\rrdupdate.c"
 				>
 			</File>
 		</Filter>

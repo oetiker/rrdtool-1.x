@@ -58,7 +58,9 @@ extern    "C" {
 #include <unistd.h>     /* for off_t */
 #else
 #ifdef _MSC_VER
+#ifndef PERLPATCHLEVEL
 	typedef int mode_t;
+#endif
 	#define strtoll _strtoi64 
 #endif
 	typedef size_t ssize_t;

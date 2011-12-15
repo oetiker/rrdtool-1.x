@@ -4,9 +4,21 @@ the following:
 perl Makefile.PL
 make test
 
-(win32 users try perl ntmake.pl)
+For Windows Users, make sure you have the following requirements:
 
-* if dynamic linking does not work, try
+- ActiveState Perl (32bit version Only)
+- Microsoft Visual C++
+- The following binaries in your path: mt.exe, nmake.exe, link.exe, perl.exe
+- Make the project rrdlib.vcproj in Release mode to create rrdlib.lib
 
-perl Makefile.PL LINKTYPE=static
-make test
+To build:
+
+perl Makefile.PL
+nmake 
+
+To Install:
+
+nmake install
+
+NOTE: If using anything other than Visual C++ 9, edit Makefile.PL and modify
+      your paths appropriately.

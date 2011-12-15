@@ -39,9 +39,10 @@
 #endif
 #endif
 
-
+#ifndef WIN32
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
+#endif
 #endif
 
 #include "rrd_i18n.h"

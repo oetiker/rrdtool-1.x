@@ -48,6 +48,9 @@
  *
  *****************************************************************************/
 #include "rrd_tool.h"
+#ifdef WIN32
+#include "stdlib.h"
+#endif
 
 #define converter(VV,VVV) \
    if (strcmp(#VV, string) == 0) return VVV;

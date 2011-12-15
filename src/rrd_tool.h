@@ -10,10 +10,12 @@ extern    "C" {
 #ifndef _RRD_TOOL_H
 #define _RRD_TOOL_H
 
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#include "../win32/config.h"
+#else
 #ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
-#elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-#include "../win32/config.h"
+#endif
 #endif
 
 #include "rrd.h"
