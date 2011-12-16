@@ -329,10 +329,10 @@ void gfx_line_fit(
     line_width = cairo_get_line_width(cr);
     line_height = line_width;
     cairo_user_to_device_distance(cr, &line_width, &line_height);
-    line_width = line_width / 2.0 - (long) (line_width / 2.0);
-    line_height = line_height / 2.0 - (long) (line_height / 2.0);
-    *x = (double) ((long) (*x + 0.5)) - line_width;
-    *y = (double) ((long) (*y + 0.5)) + line_height;
+    line_width = line_width / 2.0 - ceil(line_width / 2.0);
+    line_height = line_height / 2.0 - ceil(line_height / 2.0);
+    *x = ceil(*x - 0.5) - line_width;
+    *y = ceil(*y + 0.5) + line_height;
     cairo_device_to_user(cr, x, y);
 }
 
@@ -348,7 +348,7 @@ void gfx_area_fit(
     if (!im->gridfit)
         return;
     cairo_user_to_device(cr, x, y);
-    *x = (double) ((long) (*x + 0.5));
-    *y = (double) ((long) (*y + 0.5));
+    *x = floor(*x);
+    *y = ceil(*y);
     cairo_device_to_user(cr, x, y);
 }
