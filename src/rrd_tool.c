@@ -416,7 +416,7 @@ int main(
        according to localeconv(3) */       
     setlocale(LC_ALL, "");
 
-#ifdef WIN32 && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__)
     setmode(fileno(stdout), O_BINARY);
     setmode(fileno(stdin), O_BINARY);
 #endif

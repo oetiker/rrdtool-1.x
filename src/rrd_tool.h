@@ -44,7 +44,7 @@ extern    "C" {
 #else
 
 /* unix-only includes */
-#if !defined isnan && !defined HAVE_ISNAN
+#if !defined(isnan) && !defined(HAVE_ISNAN)
     int       isnan(
     double value);
 #endif
