@@ -110,7 +110,7 @@ AC_ARG_ENABLE(libwrap,
     LIBS="$LIBS -lwrap"
     AC_MSG_CHECKING(for libwrap)
     AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM([[#include "tcpd.h"]], [[hosts_access(NULL)]])
+      [AC_LANG_PROGRAM([[#include <tcpd.h>]], [[hosts_access(NULL)]])
     ],[AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
        AC_MSG_RESULT([yes])
        have_libwrap=yes
