@@ -102,24 +102,24 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
+have_libwrap=no
+
 AC_ARG_ENABLE(libwrap,
   AS_HELP_STRING([--disable-libwrap],
-  [do not build in support for libwrap (tcp wrapper)]),
-  [have_libwrap=no],[
-    XXX=$LIBS
-    LIBS="$LIBS -lwrap"
-    AC_MSG_CHECKING(for libwrap)
-    AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM([[#include <tcpd.h>]], [[hosts_access(NULL)]])
-    ],[AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
-       AC_MSG_RESULT([yes])
-       have_libwrap=yes
-    ],[LIBS=$XXX
-       AC_MSG_RESULT([no])
-       have_libwrap=no
-    ]
-  )
-])
+    [do not build in support for libwrap (tcp wrapper)]
+  ),
+  [],
+  [ 
+      AC_CHECK_FUNCS(hosts_access, [],  
+          AC_CHECK_LIB(wrap, hosts_access, [
+              LIBS="${LIBS} -lwrap"
+              AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
+              have_libwrap=yes
+          ],[])
+      )
+  ]
+)
+
 AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
 
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
@@ -211,7 +211,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
+AC_CHECK_HEADERS(tcpd.h dbi/dbi.h langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -514,23 +514,16 @@ AC_LANG_POP(C)
 
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
-AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[have_libdbi=no],[
-  XXX=$LIBS
-  LIBS="$LIBS -ldbi -ldl"
-  AC_MSG_CHECKING(for libdbi)
-  AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <dbi/dbi.h>]], 
-                     [[dbi_initialize(NULL)]]
-                    )
-    ],[AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
-       AC_MSG_RESULT([yes])
-       have_libdbi=yes
-    ],[LIBS=$XXX
-       AC_MSG_RESULT([no])
-       have_libdbi=no
-    ]
-  )
+have_libdbi=no
+
+AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[],[
+    AC_CHECK_LIB(dbi, dbi_initialize, [
+        LIBS="${LIBS} -ldbi -ldl"
+        AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
+        have_libdbi=yes
+    ],[],[-ldl])
 ])
+
 AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
 
