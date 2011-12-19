@@ -226,7 +226,7 @@ AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
-eval `./libtool --config | grep pic_flag`
+eval `./libtool --config | grep pic_flag=` 
 CFLAGS="$CFLAGS $pic_flag"
 
 
