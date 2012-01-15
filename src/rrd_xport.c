@@ -65,6 +65,7 @@ int rrd_xport(
         {"maxrows", required_argument, 0, 'm'},
         {"step", required_argument, 0, 261},
         {"enumds", no_argument, 0, 262},    /* these are handled in the frontend ... */
+        {"json", no_argument, 0, 263},    /* these are handled in the frontend ... */
         {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
