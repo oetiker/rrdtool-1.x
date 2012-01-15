@@ -207,7 +207,7 @@ void PrintUsage(
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
-           "\t\t[--enumds]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
+           "\t\t[--enumds] [--json]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
            "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n");
     const char *help_quit =
@@ -711,6 +711,7 @@ int HandleInputLine(
         rrd_value_t *data, *ptr;
         char    **legend_v;
         int       enumds = 0;
+        int       json = 0;
         int       i;
         size_t    vtag_s = strlen(COL_DATA_TAG) + 10;
         char     *vtag = malloc(vtag_s);
@@ -718,6 +719,8 @@ int HandleInputLine(
         for (i = 2; i < argc; i++) {
             if (strcmp("--enumds", argv[i]) == 0)
                 enumds = 1;
+            if (strcmp("--json", argv[i]) == 0)
+                json = 1;
         }
 
         if (rrd_xport
@@ -727,56 +730,117 @@ int HandleInputLine(
             setlocale(LC_NUMERIC, "C");
             row_cnt = (end - start) / step;
             ptr = data;
-            printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n",
-                   XML_ENCODING);
-            printf("<%s>\n", ROOT_TAG);
-            printf("  <%s>\n", META_TAG);
-            printf("    <%s>%lld</%s>\n", META_START_TAG,
-                   (long long int) start + step, META_START_TAG);
-            printf("    <%s>%lu</%s>\n", META_STEP_TAG, step, META_STEP_TAG);
-            printf("    <%s>%lld</%s>\n", META_END_TAG, (long long int) end,
-                   META_END_TAG);
-            printf("    <%s>%lu</%s>\n", META_ROWS_TAG, row_cnt,
-                   META_ROWS_TAG);
-            printf("    <%s>%lu</%s>\n", META_COLS_TAG, col_cnt,
-                   META_COLS_TAG);
-            printf("    <%s>\n", LEGEND_TAG);
+            if (json == 0){
+                printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n\n",
+                    XML_ENCODING);
+                printf("<%s>\n", ROOT_TAG);
+                printf("  <%s>\n", META_TAG);
+            }
+            else {
+                printf("{ about: 'RRDtool xport JSON output',\n  meta: {\n");
+            }
+
+
+#define pXJV(indent,fmt,tag,value) \
+            if (json) { \
+               printf(indent "%s: " fmt ",\n",tag,value); \
+            } else { \
+               printf(indent "<%s>" fmt "</%s>\n",tag,value,tag); \
+            }
+        
+            pXJV("    ","%lld",META_START_TAG,(long long int) start + step);
+            pXJV("    ","%lu", META_STEP_TAG, step);
+            pXJV("    ","%lld",META_END_TAG,(long long int) start + step);
+            if (! json){
+                    pXJV("    ","%lu", META_ROWS_TAG, row_cnt);
+                    pXJV("    ","%lu", META_COLS_TAG, col_cnt);
+            }
+             
+            if (json){
+                printf("    %s: [\n", LEGEND_TAG);
+            }
+            else {
+                printf("    <%s>\n", LEGEND_TAG);
+            }
             for (j = 0; j < col_cnt; j++) {
                 char     *entry = NULL;
-
                 entry = legend_v[j];
-                printf("      <%s>%s</%s>\n", LEGEND_ENTRY_TAG, entry,
+                if (json){
+                    printf("      '%s'", entry);
+                    if (j < col_cnt -1){
+                        printf(",");
+                    }
+                    printf("\n");
+                }
+                else {
+                    printf("      <%s>%s</%s>\n", LEGEND_ENTRY_TAG, entry,
                        LEGEND_ENTRY_TAG);
+                }
                 free(entry);
             }
             free(legend_v);
-            printf("    </%s>\n", LEGEND_TAG);
-            printf("  </%s>\n", META_TAG);
-            printf("  <%s>\n", DATA_TAG);
+            if (json){
+                printf("          ]\n     },\n");
+            }
+            else {
+                printf("    </%s>\n", LEGEND_TAG);
+                printf("  </%s>\n", META_TAG);
+            }
+            
+            if (json){
+                printf("  %s: [\n",DATA_TAG);
+            } else {
+                printf("  <%s>\n", DATA_TAG);
+            }
             for (ti = start + step; ti <= end; ti += step) {
-                printf("    <%s>", DATA_ROW_TAG);
-                printf("<%s>%lld</%s>", COL_TIME_TAG, (long long int)ti, COL_TIME_TAG);
+                if (json){
+                    printf("    [ ");
+                }
+                else {
+                    printf("    <%s>", DATA_ROW_TAG);
+                    printf("<%s>%lld</%s>", COL_TIME_TAG, (long long int)ti, COL_TIME_TAG);
+                }
                 for (j = 0; j < col_cnt; j++) {
                     rrd_value_t newval = DNAN;
-
-                    if (enumds == 1)
-
-                        snprintf(vtag, vtag_s, "%s%lu", COL_DATA_TAG, j);
-                    else
-                        snprintf(vtag, vtag_s, "%s", COL_DATA_TAG);
                     newval = *ptr;
-                    if (isnan(newval)) {
-                        printf("<%s>NaN</%s>", vtag, vtag);
-                    } else {
-                        printf("<%s>%0.10e</%s>", vtag, newval, vtag);
-                    };
+                    if (json){
+                        if (isnan(newval)){
+                            printf("null");                        
+                        } else {
+                            printf("%0.10e",newval);
+                        }
+                        if (j < col_cnt -1){
+                            printf(", ");
+                        }
+                    }
+                    else {
+                        if (enumds == 1)
+                            snprintf(vtag, vtag_s, "%s%lu", COL_DATA_TAG, j);
+                        else
+                           snprintf(vtag, vtag_s, "%s", COL_DATA_TAG);
+                        if (isnan(newval)) {
+                           printf("<%s>NaN</%s>", vtag, vtag);
+                        } else {
+                           printf("<%s>%0.10e</%s>", vtag, newval, vtag);
+                        };
+                    }
                     ptr++;
+                }                
+                if (json){
+                    printf(ti < end ? " ],\n" : "  ]\n");
                 }
-                printf("</%s>\n", DATA_ROW_TAG);
+                else {                
+                    printf("</%s>\n", DATA_ROW_TAG);
+                }
             }
             free(data);
-            printf("  </%s>\n", DATA_TAG);
-            printf("</%s>\n", ROOT_TAG);
+            if (json){
+                printf("  ]\n}\n");
+            }
+            else {
+                printf("  </%s>\n", DATA_TAG);
+                printf("</%s>\n", ROOT_TAG);
+            }
             setlocale(LC_NUMERIC, old_locale);
         }
         free(vtag);
