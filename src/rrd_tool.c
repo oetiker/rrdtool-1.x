@@ -685,7 +685,7 @@ int HandleInputLine(
 
         if (rrd_fetch
             (argc - 1, &argv[1], &start, &end, &step, &ds_cnt, &ds_namv,
-             &data) != -1) {
+             &data) == 0) {
             datai = data;
             printf("           ");
             for (i = 0; i < ds_cnt; i++)
@@ -725,7 +725,7 @@ int HandleInputLine(
 
         if (rrd_xport
             (argc - 1, &argv[1], &xxsize, &start, &end, &step, &col_cnt,
-             &legend_v, &data) != -1) {
+             &legend_v, &data) == 0) {
             char *old_locale = setlocale(LC_NUMERIC,NULL);
             setlocale(LC_NUMERIC, "C");
             row_cnt = (end - start) / step;
@@ -869,7 +869,7 @@ int HandleInputLine(
         }
         if (rrd_graph
             (argc - 1, &argv[1], &calcpr, &xsize, &ysize, NULL, &ymin,
-             &ymax) != -1) {
+             &ymax) == 0) {
             if (!tostdout && !imginfo)
                 printf("%dx%d\n", xsize, ysize);
             if (calcpr) {
