@@ -102,26 +102,6 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
-have_libwrap=no
-
-AC_ARG_ENABLE(libwrap,
-  AS_HELP_STRING([--disable-libwrap],
-    [do not build in support for libwrap (tcp wrapper)]
-  ),
-  [],
-  [ 
-      AC_CHECK_FUNCS(hosts_access, [],  
-          AC_CHECK_LIB(wrap, hosts_access, [
-              LIBS="${LIBS} -lwrap"
-              AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
-              have_libwrap=yes
-          ],[])
-      )
-  ]
-)
-
-AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
-
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 
 AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
@@ -211,7 +191,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(tcpd.h dbi/dbi.h langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
+AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -517,15 +497,37 @@ CONFIGURE_PART(Find 3rd-Party Libraries)
 have_libdbi=no
 
 AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[],[
-    AC_CHECK_LIB(dbi, dbi_initialize, [
-        LIBS="${LIBS} -ldbi -ldl"
-        AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
-        have_libdbi=yes
-    ],[],[-ldl])
+    AC_CHECK_HEADER(dbi/dbi.h, [ 
+       AC_CHECK_LIB(dbi, dbi_initialize, [
+           AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
+           LIBS="${LIBS} -ldbi -ldl"
+           have_libdbi=yes
+       ])
+    ])
 ])
 
 AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
+have_libwrap=no
+
+AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),[],[ 
+    AC_CHECK_HEADER(tcpd.h,[       
+        AC_CHECK_FUNCS(hosts_access, [
+            AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
+            have_libwrap=yes 
+        ],  
+        [
+            AC_CHECK_LIB(wrap, hosts_access, [
+               AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
+               LIBS="${LIBS} -lwrap"
+               have_libwrap=yes
+            ])
+        ])
+    ])
+])
+
+
+AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
 
 AM_CONDITIONAL(BUILD_RRDGRAPH,[test $enable_rrd_graph != no])
 
