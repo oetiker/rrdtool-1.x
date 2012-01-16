@@ -1,3 +1,70 @@
+RRDtool 1.4.6 - 2012-01-16
+==========================
+Enhancements:
+ * Added --json option to xport with inspiration from Erik Kastner and
+   Michael Markstaller -- Tobi
+
+ * updated win32 port -- Larry Adams and the cacti team
+
+ * configure option to disable building rrd_graph: --disable-rrd_graph
+   With support from Ulf Zimmermann (OpenLane)
+
+Bugfixes:
+ * fixed segfault in rrdtool (xport, fetch, graph) when handling
+   error conditions. -- James Brown
+ * improve compilation robustness in finding pic flags
+ * fix warnings in ruby bindings
+ * fix horizontal alignment of AREAS and LINES in graph output
+ * improved grid-fitting in graph output
+ * simplified configure tests for libwrap and libdbi
+ * rpn compare operators CAN return unknown ... (#293)
+ * do not require gettext 0.18 (0.17 is sufficient)
+ * improved rpm spec file -- Bernard Li
+ * fix glib dependency for --disable-rrd_graph and update library versions
+   (#323)
+ * fix uninitialized variable in rrd_graph (#322)
+ * fix issues with logarithmic charts (#296) -- Christoph Biedl
+ * improved data reduction algorithm in graph: after fetching, data must be
+   reduced to at least chart resolution, else some data will not get plotted.
+   fix for #298
+ * properly handle the case where RRDCACHED_ADDRESS is an empty string
+ * the number of COMPUTE rpn nodes is architecture dependent. calculate the
+   right number and complain otherwise. Fix for #300.
+ * make rrd_mkdir_p work on bsd* Unixes too ... their dirname call works
+   differently ... #305 
+ * allow to restore XML files with zero row rras ... this is a degenerated
+   case that does not occur in the wild, as rrdtool prevents the creation
+   of such rrd files. But rrdtool restore 1.3 did allows to create them via
+   restore.  Now this is possible again. #310.
+ * the first TREND* value can be calculated earlier ... -- fredrick (#312)
+ * actually link with LIBINTL if we got it ... should make solaris happy
+ * dbi_result_get_datetime_idx() return timestamp in UTC, but time axis on
+   graph supposed to be in local time. #321
+ * fix ruby binding for rrd_xport #318
+ * free step_list on error. fix for #317
+ * fix buffer overflow for LONG lines in journal handling code for update
+   requests. #316
+ * fix alignment of centered items ... title and footer
+ * fix for the header size problem and its effects on rrd_resize
+ * refuse to build if troff and nroff are not around #302
+ * plug memory leak in lua bindings #301
+ * improve cross compiling -- Michael Olbrich
+ * fix rrd_create behaviour when mmapping on a full filesystem by actually
+   'filling' the file with zero. -- Francois-Xavier Bourlet
+ * with libwrap use 'rrdcached' as the name of our daemon and not just
+   rrdcache
+ * bring spacing around graph back in line with 1.2 goodness ... in
+   connection with no-legend and no title
+ * do not mistake "sqlxxabc.rrd" for a libdbi specification -- Peter Stamfest
+ * if rrd_cgi fails to parse stuff, do NOT try to fix up the mess ... it is bound to fail
+ * update timestamp continuity checks in rrd_cached ... allow sub-second
+   precision
+ * fix double free in rrd_resize
+ * do not close the file handle to the resize file of there was a problem
+   getting it in the first place.
+ 
+
+
 RRDtool 1.4.5 - 2010-12-26
 ==========================
 Bugfixes:
@@ -9,7 +76,7 @@ Bugfixes:
  * rrdgraph-libdbi: print error message instead of dumping core on sql
    problem -- Pavel Nikiforov
  * rrdgraph-libdbi: properly allocated response buffer -- Pavel Nikiforov
- * rrdtool: in remote mode, make argument count for remote commmands strict
+ * rrdtool: in remote mode, make argument count for remote commands strict
    -- Dave Peticolas
  * rrdgraph: fix problems with second %s in right-axis format -- tobi
  * compilation: works on MSVC2008 now -- jkane mail.com
@@ -17,7 +84,7 @@ Bugfixes:
    calling set locale -- tobi
  * rrd_cgi: windows compilation fix --  jkane mail.com
  * rrdgraph: fix use of %s in strftime (G)PRINT commands #277 -- tobi
- * ruby: fix bindings to be compatible with curent ruby implementations #279
+ * ruby: fix bindings to be compatible with current ruby implementations #279
  * rrdcached: Ensure that response_read() always calls fflush() or fclose() #278
    -- kevin brintnall
  * rrd_client: free addrinfo list after use ... -- Christian Magnusson
