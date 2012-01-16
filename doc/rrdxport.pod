@@ -9,6 +9,7 @@ S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
+S<[B<--json>]>
 S<[B<--daemon> I<address>]>
 S<[B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>]>
 S<[B<CDEF:>I<vname>B<=>I<rpn-expression>]>
@@ -57,6 +58,10 @@ fresh data even if the daemon is configured to cache values for a long time.
 For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
   rrdtool xport --daemon unix:/var/run/rrdcached.sock ...
+
+=item B<--json>
+
+produce json formated output (instead of xml)
 
 =item B<--enumds>
 
