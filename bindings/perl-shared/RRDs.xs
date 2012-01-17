@@ -32,12 +32,6 @@ extern "C" {
 #define VERSION VERSION_SAVED
 #undef VERSION_SAVED
 
-/* perl 5.004 compatibility */
-#ifndef PL_sv_undef
-#define PL_sv_undef sv_undef
-#endif
-
-
 #define rrdcode(name) \
 		argv = (char **) malloc((items+1)*sizeof(char *));\
 		argv[0] = "dummy";\
