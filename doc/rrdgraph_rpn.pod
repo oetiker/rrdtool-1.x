@@ -344,9 +344,8 @@ Example: C<VDEF:stdev=mydata,STDEV>
 
 =item LAST, FIRST
 
-Return the last/first value including its time.  The time for
-FIRST is actually the start of the corresponding interval, whereas
-LAST returns the end of the corresponding interval.
+Return the last/first non-nan or infinite value for the selected data
+stream, including its timestamp.
 
 Example: C<VDEF:first=mydata,FIRST>
 
