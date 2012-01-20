@@ -412,8 +412,11 @@ void auto_scale(
     }
 }
 
+/* power prefixes */
 
 static char si_symbol[] = {
+    'y',                /* 10e-24 Yocto */
+    'z',                /* 10e-21 Zepto */
     'a',                /* 10e-18 Atto */
     'f',                /* 10e-15 Femto */
     'p',                /* 10e-12 Pico */
@@ -427,8 +430,10 @@ static char si_symbol[] = {
     'T',                /* 10e12  Tera */
     'P',                /* 10e15  Peta */
     'E',                /* 10e18  Exa */
+    'Z',                /* 10e21  Zeta */
+    'Y'                 /* 10e24  Yotta */
 };
-static const int si_symbcenter = 6;
+static const int si_symbcenter = 8;
 
 /* find SI magnitude symbol for the numbers on the y-axis*/
 void si_unit(
