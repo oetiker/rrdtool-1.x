@@ -1790,6 +1790,7 @@ int leg_place(
                 prt_fctn != 'j' &&
                 prt_fctn != 'c' &&
                 prt_fctn != 'u' &&
+                prt_fctn != '.' &&
                 prt_fctn != 's' && prt_fctn != '\0' && prt_fctn != 'g') {
                 free(legspace);
                 rrd_set_error
@@ -1800,6 +1801,10 @@ int leg_place(
             /* \n -> \l */
             if (prt_fctn == 'n') {
                 prt_fctn = 'l';
+            }
+            /* \. is a null operation to allow strings ending in \x */
+            if (prt_fctn == '.') {
+                prt_fctn = '\0';
             }
 
             /* remove exess space from the end of the legend for \g */

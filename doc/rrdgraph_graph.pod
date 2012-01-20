@@ -380,6 +380,11 @@ to go one line back like this:
  COMMENT:\u
  COMMENT:right\r
 
+There is also a 'nop' control for situations where you want a string to
+actually end in a backslash character sequence B<\.>
+
+ COMMENT:OS\2\.
+
 When using a proportional font in your graph, the tab
 characters or the sequence B<\t> will line-up legend elements. Note that
 the tabs inserted are relative to the start of the current legend
