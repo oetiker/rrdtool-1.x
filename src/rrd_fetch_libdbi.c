@@ -1,6 +1,6 @@
 #include "rrd_tool.h"
 #include "unused.h"
-// #include <dbi/dbi.h>
+#include <dbi/dbi.h>
 #include <time.h>
 
 /* the structures */
