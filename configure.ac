@@ -353,6 +353,8 @@ AC_FULL_IEEE
 
 CONFIGURE_PART(Resolve Portability Issues)
 
+GC_TIMEZONE()
+
 CHECK_FOR_WORKING_MS_ASYNC
 
 dnl do we have nl_langinfo(_NL_TIME_WEEK_1STDAY)

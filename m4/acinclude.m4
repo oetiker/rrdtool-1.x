@@ -545,3 +545,68 @@ fi
 
 ])
 
+dnl idea taken from the autoconf mailing list, posted by
+dnl Timur I. Bakeyev  timur@gnu.org, 
+dnl http://mail.gnu.org/pipermail/autoconf/1999-October/008311.html
+dnl partly rewritten by Peter Stamfest <peter@stamfest.at>
+
+dnl This determines, if struct tm containes tm_gmtoff field
+dnl or we should use extern long int timezone.
+
+dnl Add the following to your acconfig.h:
+
+dnl /* Define if your struct tm has tm_gmtoff.  */
+dnl #undef HAVE_TM_GMTOFF
+dnl #undef TM_GMTOFF
+dnl
+dnl /* Define if you don't have tm_gmtoff but do have the external timezone. */
+dnl #undef HAVE_TIMEZONE
+
+AC_DEFUN([GC_TIMEZONE], [
+        AC_REQUIRE([AC_STRUCT_TM])
+        AC_CACHE_CHECK([tm_gmtoff in struct tm], gq_cv_have_tm_gmtoff,
+                gq_cv_have_tm_gmtoff=no
+                AC_TRY_COMPILE([#include <time.h>
+                                #include <$ac_cv_struct_tm>
+                                ],
+                               [struct tm t;
+                                t.tm_gmtoff = 0;
+                                exit(0);
+                                ],
+                               gq_cv_have_tm_gmtoff=yes
+                        )
+        )
+
+        AC_CACHE_CHECK([__tm_gmtoff in struct tm], gq_cv_have___tm_gmtoff,
+                gq_cv_have___tm_gmtoff=no
+                AC_TRY_COMPILE([#include <time.h>
+                                #include <$ac_cv_struct_tm>
+                                ],
+                               [struct tm t;
+                                t.__tm_gmtoff = 0;
+                                exit(0);
+                                ],
+                               gq_cv_have___tm_gmtoff=yes
+                        )
+        )
+
+        if test "$gq_cv_have_tm_gmtoff" = yes ; then
+                AC_DEFINE(HAVE_TM_GMTOFF,1,[does tm have a tm_gmtoff member])
+                AC_DEFINE(TM_GMTOFF, tm_gmtoff,[the real name of tm_gmtoff])
+        elif test "$gq_cv_have___tm_gmtoff" = yes ; then
+                AC_DEFINE(HAVE_TM_GMTOFF)
+                AC_DEFINE(TM_GMTOFF, __tm_gmtoff)
+        else
+                AC_CACHE_CHECK(for timezone, ac_cv_var_timezone,
+                               [AC_TRY_LINK([
+                                             #include <time.h>
+                                             extern long int timezone;
+                                ],
+                               [long int l = timezone;], 
+                                ac_cv_var_timezone=yes, 
+                                ac_cv_var_timezone=no)])
+                if test $ac_cv_var_timezone = yes; then
+                        AC_DEFINE(HAVE_TIMEZONE,1,[is there an external timezone variable instead ?])
+                fi
+        fi
+])
