@@ -839,7 +839,7 @@ if test  "$enable_tcl" = "yes"; then
   withval=""
   AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
   enable_tcl=no
-  for dir in $withval /usr/lib /usr/local/lib /usr/lib/tcl8.4 /usr/lib/tcl8.3 ; do
+  for dir in $withval /usr/lib /usr/lib64 /usr/local/lib /usr/lib/tcl8.4 /usr/lib/tcl8.3 ; do
     AC_MSG_CHECKING(for tclConfig.sh in $dir)
     if test -f "$dir/tclConfig.sh" ; then
     	tcl_config=$dir/tclConfig.sh
