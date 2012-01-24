@@ -1,3 +1,27 @@
+RRDtool 1.4.7 - 2012-01-24
+==========================
+Bugfixes:
+
+* test for tm.tm_gmtoff presence in configure.ac fix for #330 (libdbi
+  compiles on solaris should now work too)
+
+* check in /usr/lib64 for tclConfig.sh too
+
+* fix shared library version number (regression from 1.4.6)
+
+* be clearer as to what VDEF LAST/FIRST do.
+
+* remove perl 5.004 compatibility hack and make RRDs compile with newer
+  perls.
+
+New Functionality:
+
+* added a nop control for string formating, so that strings ending in /x are
+  possible by entering \x\. fix for #331
+
+* added support for rrdgraph to use the yotta, zetta, zepto, yocto prefixes.
+  Fix for #333 (thanks Christoph)
+
 RRDtool 1.4.6 - 2012-01-16
 ==========================
 Enhancements:
