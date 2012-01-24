@@ -1,6 +1,6 @@
 #include "rrd_tool.h"
 #include "unused.h"
-#include <dbi/dbi.h>
+// #include <dbi/dbi.h>
 #include <time.h>
 
 /* the structures */
@@ -462,9 +462,18 @@ rrd_fetch_fn_libdbi(
   /* if we have leading '*', then we have a TIMEDATE Field*/
   if (table_help.timestamp[0]=='*') {
     struct tm tm;
+#ifdef HAVE_TIMEZONE
+    extern long timezone;
+#endif
     time_t t=time(NULL);
     localtime_r(&t,&tm);
-    gmt_offset=tm.tm_gmtoff;
+#ifdef HAVE_TM_GMTOFF
+    gmt_offset=tm.TM_GMTOFF;
+#else
+#ifdef HAVE_TIMEZONE
+    gmt_offset=timezone;
+#endif
+#endif
     isunixtime=0; table_help.timestamp++;
   }
   /* hex-unescape the value */
