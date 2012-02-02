@@ -281,6 +281,9 @@ AC_CHECK_DECLS(posix_fadvise, [], [], [#define _XOPEN_SOURCE 600
 #include <fcntl.h>])
 AC_CHECK_FUNCS(posix_fadvise)
 
+dnl can we use posix_fallocate
+AC_CHECK_FUNCS(posix_fallocate)
+
 CONFIGURE_PART(Libintl Processing)
 
 AM_GNU_GETTEXT_VERSION(0.17)
