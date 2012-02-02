@@ -301,9 +301,6 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
     rrd_simple_file->file_start = data;
-    if (rdwr & RRD_CREAT) {
-        goto out_done;
-    }
 #endif
     if (rdwr & RRD_CREAT)
         goto out_done;
