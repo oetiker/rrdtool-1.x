@@ -5,6 +5,7 @@
  ****************************************************************************/
 
 #include <sys/stat.h>
+#include <locale.h>
 
 #include "rrd_tool.h"
 #include "rrd_graph.h"
@@ -381,6 +382,9 @@ int rrd_graph_xport(image_desc_t *im) {
   info.u_cnt = im->step;
   grinfo_push(im, sprintf_alloc("graph_step"), RD_I_CNT, info);
 
+  /* set locale */
+  char *old_locale = setlocale(LC_NUMERIC,NULL);
+  setlocale(LC_NUMERIC, "C");
 
   /* format it for output */
   int r=0;
@@ -403,9 +407,20 @@ int rrd_graph_xport(image_desc_t *im) {
   default:
     break;
   }
+  /* restore locale */
+  setlocale(LC_NUMERIC, old_locale);
   /* handle errors */
   if (r) {
+    /* free legend */
+    for (unsigned long j = 0; j < col_cnt; j++) {
+      free(legend_v[j]);
+    }
+    free(legend_v);
+    /* free data */
+    free(data);
+    /* free the bufer */
     if (buffer.data) {free(buffer.data);}
+    /* and return with error */
     return r;
   }
 
@@ -512,7 +527,7 @@ int rrd_xport_format_sv(char sep, stringbuffer_t *buffer,image_desc_t *im,time_t
       localtime_r(&ti,&loc);
       strftime(buf,254,timefmt,&loc);
     } else {
-      snprintf(buf,254,"%ul",ti);
+      snprintf(buf,254,"%lld",(long long int)ti);
     }
     if (addToBuffer(buffer,buf,0)) { return 1; }
     /* write the columns */
