@@ -453,13 +453,17 @@ RRDtool graphs are composed of stair case curves by default. This is in line wit
 the way RRDtool calculates its data. Some people favor a more 'organic' look
 for their graphs even though it is not all that true.
 
-[B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>]
+[B<-a>|B<--imgformat> B<PNG>|B<SVG>|B<EPS>|B<PDF>|B<XML>|B<JSON>|B<CSV>|B<TSV>|B<SSV>]
 
 Image format for the generated graph. For the vector formats you can
 choose among the standard Postscript fonts Courier-Bold,
 Courier-BoldOblique, Courier-Oblique, Courier, Helvetica-Bold,
 Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol,
 Times-Bold, Times-BoldItalic, Times-Italic, Times-Roman, and ZapfDingbats.
+
+For Export type you can define XML, JSON, CSV (=comma separated values),
+TSV (=tab separated values), SSV (=semicolon separated values)
+(for comma/tab/semicolon separated values the time format by default is in the form of unix time. to change it to something else use: --x-grid MINUTE:10:HOUR:1:HOUR:4:0:"%Y-%m-%d %H:%M:%S")
 
 [B<-i>|B<--interlaced>]
 

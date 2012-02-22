@@ -256,6 +256,11 @@ enum gfx_if_en if_conv(
     conv_if(SVG, IF_SVG);
     conv_if(EPS, IF_EPS);
     conv_if(PDF, IF_PDF);
+    conv_if(XML, IF_XML);
+    conv_if(CSV, IF_CSV);
+    conv_if(TSV, IF_TSV);
+    conv_if(SSV, IF_SSV);
+    conv_if(JSON, IF_JSON);
 
     return (enum gfx_if_en)(-1);
 }
@@ -3405,6 +3410,12 @@ int graph_paint(
         cairo_svg_surface_restrict_to_version
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
+    case IF_XML:
+    case IF_CSV:
+    case IF_TSV:
+    case IF_SSV:
+    case IF_JSON:
+        break;
     };
     cairo_destroy(im->cr);
     im->cr = cairo_create(im->surface);
@@ -4017,6 +4028,10 @@ int rrd_graph(
 ** - options parsing  now in rrd_graph_options()
 ** - script parsing   now in rrd_graph_script()
 */
+
+/* have no better idea where to put it - rrd.h does not work */
+int       rrd_graph_xport(image_desc_t *);
+
 rrd_info_t *rrd_graph_v(
     int argc,
     char **argv)
@@ -4068,6 +4083,10 @@ rrd_info_t *rrd_graph_v(
         return NULL;
     }
 
+    if (im.imgformat >= IF_XML) {
+      rrd_graph_xport(&im);
+   } else {
+
     /* Everything is now read and the actual work can start */
 
     if (graph_paint(&im) == -1) {
@@ -4075,7 +4094,7 @@ rrd_info_t *rrd_graph_v(
         im_free(&im);
         return NULL;
     }
-
+   }
 
     /* The image is generated and needs to be output.
      ** Also, if needed, print a line with information about the image.
