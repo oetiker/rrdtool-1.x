@@ -743,7 +743,7 @@ int HandleInputLine(
 
 #define pXJV(indent,fmt,tag,value) \
             if (json) { \
-               printf(indent "%s: " fmt ",\n",tag,value); \
+               printf(indent "\"%s\": " fmt ",\n",tag,value); \
             } else { \
                printf(indent "<%s>" fmt "</%s>\n",tag,value,tag); \
             }
@@ -757,7 +757,7 @@ int HandleInputLine(
             }
              
             if (json){
-                printf("    %s: [\n", LEGEND_TAG);
+                printf("    \"%s\": [\n", LEGEND_TAG);
             }
             else {
                 printf("    <%s>\n", LEGEND_TAG);
@@ -788,7 +788,7 @@ int HandleInputLine(
             }
             
             if (json){
-                printf("  %s: [\n",DATA_TAG);
+                printf("  \"%s\": [\n",DATA_TAG);
             } else {
                 printf("  <%s>\n", DATA_TAG);
             }
