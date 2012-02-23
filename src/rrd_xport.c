@@ -349,11 +349,12 @@ typedef struct stringbuffer_t {
   FILE *file;
 } stringbuffer_t;
 int addToBuffer(stringbuffer_t *,char*,size_t);
+void escapeJSON(char*,size_t);
 
 int rrd_graph_xport(image_desc_t *);
-int rrd_xport_format_xml(stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
-int rrd_xport_format_json(stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
+int rrd_xport_format_xmljson(int,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
 int rrd_xport_format_sv(char,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
+int rrd_xport_format_addprints(int,stringbuffer_t *,image_desc_t *);
 
 int rrd_graph_xport(image_desc_t *im) {
   /* prepare the data for processing */
@@ -375,11 +376,11 @@ int rrd_graph_xport(image_desc_t *im) {
 
   /* fill in some data */
   rrd_infoval_t info;
-  info.u_cnt = im->start;
+  info.u_cnt = start;
   grinfo_push(im, sprintf_alloc("graph_start"), RD_I_CNT, info);
-  info.u_cnt = im->end;
+  info.u_cnt = end;
   grinfo_push(im, sprintf_alloc("graph_end"), RD_I_CNT, info);
-  info.u_cnt = im->step;
+  info.u_cnt = step;
   grinfo_push(im, sprintf_alloc("graph_step"), RD_I_CNT, info);
 
   /* set locale */
@@ -390,10 +391,16 @@ int rrd_graph_xport(image_desc_t *im) {
   int r=0;
   switch(im->imgformat) {
   case IF_XML:
-    r=rrd_xport_format_xml(&buffer,im, start, end, step, col_cnt, legend_v, data);
+    r=rrd_xport_format_xmljson(2,&buffer,im, start, end, step, col_cnt, legend_v, data);
+    break;
+  case IF_XMLENUM:
+    r=rrd_xport_format_xmljson(6,&buffer,im, start, end, step, col_cnt, legend_v, data);
     break;
   case IF_JSON:
-    r=rrd_xport_format_json(&buffer,im, start, end, step, col_cnt, legend_v, data);
+    r=rrd_xport_format_xmljson(1,&buffer,im, start, end, step, col_cnt, legend_v, data);
+    break;
+  case IF_JSONTIME:
+    r=rrd_xport_format_xmljson(3,&buffer,im, start, end, step, col_cnt, legend_v, data);
     break;
   case IF_CSV:
     r=rrd_xport_format_sv(',',&buffer,im, start, end, step, col_cnt, legend_v, data);
@@ -420,6 +427,8 @@ int rrd_graph_xport(image_desc_t *im) {
     free(data);
     /* free the bufer */
     if (buffer.data) {free(buffer.data);}
+    /* close the file */
+    if (buffer.file) {fclose(buffer.file);}
     /* and return with error */
     return r;
   }
@@ -492,9 +501,6 @@ int addToBuffer(stringbuffer_t * sb,char* data,size_t len) {
 int rrd_xport_format_sv(char sep, stringbuffer_t *buffer,image_desc_t *im,time_t start, time_t end, unsigned long step, unsigned long col_cnt, char **legend_v, rrd_value_t* data) {
   /* define the time format */
   char* timefmt=NULL;
-  /* unfortunatley we have to do it this way, 
-     as when no --x-graph argument is given,
-     then the xlab_user is not in a clean state (e.g. zero-filled) */
   if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
 
   /* row count */
@@ -507,9 +513,10 @@ int rrd_xport_format_sv(char sep, stringbuffer_t *buffer,image_desc_t *im,time_t
     *(1+row_cnt) /* number of columns + 1 (for header) */
     ;
 
+  char buf[256];
+
   /* now start writing the header*/
   if (addToBuffer(buffer,"\"time\"",6)) { return 1; }
-  char buf[256];
   for(unsigned long i=0;i<col_cnt;i++) {
     /* strip leading spaces */
     char *t=legend_v[i]; while (isspace(*t)) { t++;}
@@ -550,13 +557,516 @@ int rrd_xport_format_sv(char sep, stringbuffer_t *buffer,image_desc_t *im,time_t
   return 0;
 }
 
-int rrd_xport_format_xml(stringbuffer_t *buffer,image_desc_t *im,time_t start, time_t end, unsigned long step, unsigned long col_cnt, char **legend_v, rrd_value_t* data) {
-  addToBuffer(buffer,"xml not implemented",0);
+int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,time_t start, time_t end, unsigned long step, unsigned long col_cnt, char **legend_v, rrd_value_t* data) {
+
+  /* define some other stuff based on flags */
+  int json=0;
+  if (flags &1) { json=1; }
+  int showtime=0;
+  if (flags &2) { showtime=1;}
+  int enumds=0;
+  if (flags &4) { enumds=1;}
+
+  /* define the time format */
+  char* timefmt=NULL;
+  /* unfortunatley we have to do it this way, 
+     as when no --x-graph argument is given,
+     then the xlab_user is not in a clean state (e.g. zero-filled) */
+  if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
+
+  /* row count */
+  unsigned long row_cnt=(end-start)/step;
+
+  /* estimate buffer size (to avoid multiple allocations) */
+  /* better estimates are needed here */
+  buffer->allocated=
+    1024 /* bytes of overhead /header/footer */
+    +(12+19*col_cnt) /* 12 bytes overhead/line plus 19 bytes per column*/
+    *(1+row_cnt) /* number of columns + 1 (for header) */
+    ;
+  char buf[256];
+  char dbuf[1024];
+
+  rrd_value_t *ptr = data;
+  if (json == 0){
+    snprintf(buf,sizeof(buf),
+	     "<?xml version=\"1.0\" encoding=\"%s\"?>\n\n<%s>\n  <%s>\n",
+	     XML_ENCODING,ROOT_TAG,META_TAG);
+    addToBuffer(buffer,buf,0);
+  }
+  else {
+    addToBuffer(buffer,"{ \"about\": \"RRDtool graph JSON output\",\n  \"meta\": {\n",0);
+  }
+  
+  /* calculate start time */
+  if (timefmt) {
+    struct tm loc;
+    time_t ti=start+step;
+    localtime_r(&ti,&loc);
+    strftime(dbuf,sizeof(dbuf),timefmt,&loc);
+    if (json) {
+      snprintf(buf,sizeof(buf),"    \"%s\": \"%s\",\n",META_START_TAG,dbuf);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>%s</%s>\n",META_START_TAG,dbuf,META_START_TAG);
+    }
+  } else {
+    if (json) {
+      snprintf(buf,sizeof(buf),"    \"%s\": %lld,\n",META_START_TAG,(long long int)start+step);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>%lld</%s>\n",META_START_TAG,(long long int)start+step,META_START_TAG);
+    }
+  }
+  addToBuffer(buffer,buf,0);
+
+  /* calculate end time */
+  if (timefmt) {
+    struct tm loc;
+    time_t ti=end;
+    localtime_r(&ti,&loc);
+    strftime(dbuf,sizeof(dbuf),timefmt,&loc);
+    if (json) {
+      snprintf(buf,sizeof(buf),"    \"%s\": \"%s\",\n",META_END_TAG,dbuf);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>%s</%s>\n",META_END_TAG,dbuf,META_END_TAG);
+    }
+  } else {
+    if (json) {
+      snprintf(buf,sizeof(buf),"    \"%s\": %lld,\n",META_END_TAG,(long long int)end);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>%lld</%s>\n",META_END_TAG,(long long int)end,META_END_TAG);
+    }
+  }
+  addToBuffer(buffer,buf,0);
+  /* print other info */
+  if (json) {
+    snprintf(buf,sizeof(buf),"    \"%s\": %lld,\n",META_STEP_TAG,(long long int)step);
+    addToBuffer(buffer,buf,0);
+  } else {
+    snprintf(buf,sizeof(buf),"    <%s>%lld</%s>\n",META_STEP_TAG,(long long int)step,META_STEP_TAG); 
+    addToBuffer(buffer,buf,0);
+    snprintf(buf,sizeof(buf),"    <%s>%lu</%s>\n",META_ROWS_TAG,row_cnt,META_ROWS_TAG); 
+    addToBuffer(buffer,buf,0);
+    snprintf(buf,sizeof(buf),"    <%s>%lu</%s>\n",META_COLS_TAG,col_cnt,META_COLS_TAG); 
+    addToBuffer(buffer,buf,0);
+  }
+  
+  /* start legend */
+  if (json){
+    snprintf(buf,sizeof(buf),"    \"%s\": [\n", LEGEND_TAG);
+  }
+  else {
+    snprintf(buf,sizeof(buf),"    <%s>\n", LEGEND_TAG);
+  }
+  addToBuffer(buffer,buf,0);
+  /* add legend entries */
+  for (unsigned long j = 0; j < col_cnt; j++) {
+    char *entry = legend_v[j];
+    /* I do not know why the legend is "spaced", but let us skip it */
+    while(isspace(*entry)){entry++;}
+    /* now output it */
+    if (json){
+      snprintf(buf,sizeof(buf),"      \"%s\"", entry);
+      addToBuffer(buffer,buf,0);
+      if (j < col_cnt -1){
+	addToBuffer(buffer,",",1);
+      }
+      addToBuffer(buffer,"\n",1);
+    }
+    else {
+      snprintf(buf,sizeof(buf),"      <%s>%s</%s>\n", LEGEND_ENTRY_TAG, entry,LEGEND_ENTRY_TAG);
+      addToBuffer(buffer,buf,0);
+    }
+  }
+  /* end legend */
+  if (json){
+    snprintf(buf,sizeof(buf),"          ],\n");
+  }
+  else {
+    snprintf(buf,sizeof(buf),"    </%s>\n", LEGEND_TAG);
+  }
+  addToBuffer(buffer,buf,0);
+  
+  /* add graphs and prints */
+  if (rrd_xport_format_addprints(json,buffer,im)) {return -1;}
+
+  /* if we have got a trailing , then kill it */
+  if (buffer->data[buffer->len-2]==',') { 
+    buffer->data[buffer->len-2]=buffer->data[buffer->len-1];
+    buffer->len--;
+  }
+
+  /* end meta */
+  if (json){
+    snprintf(buf,sizeof(buf),"     },\n");
+  } else {
+    snprintf(buf,sizeof(buf),"  </%s>\n", META_TAG);
+  }
+  addToBuffer(buffer,buf,0);
+
+  
+  /* start data */
+  if (json){
+    snprintf(buf,sizeof(buf),"  \"%s\": [\n",DATA_TAG);
+  } else {
+    snprintf(buf,sizeof(buf),"  <%s>\n", DATA_TAG);
+  }
+  addToBuffer(buffer,buf,0);
+  /* iterate over data */
+  for (time_t ti = start + step; ti <= end; ti += step) {
+    if (timefmt) {
+      struct tm loc;
+      localtime_r(&ti,&loc);
+      strftime(dbuf,sizeof(dbuf),timefmt,&loc);
+    } else {
+      snprintf(dbuf,sizeof(dbuf),"%lld",(long long int)ti);
+    }
+    if (json){
+      addToBuffer(buffer,"    [ ",0);
+      if(showtime){
+	addToBuffer(buffer,"\"",1);
+	addToBuffer(buffer,dbuf,0);
+	addToBuffer(buffer,"\",",2);
+      }
+    }
+    else {
+      if (showtime) {
+	snprintf(buf,sizeof(buf),
+		 "    <%s><%s>%s</%s>", DATA_ROW_TAG,COL_TIME_TAG, dbuf, COL_TIME_TAG);
+      } else {
+	snprintf(buf,sizeof(buf),
+		 "    <%s>", DATA_ROW_TAG);
+      }
+      addToBuffer(buffer,buf,0);
+    }
+    for (unsigned long j = 0; j < col_cnt; j++) {
+      rrd_value_t newval = DNAN;
+      newval = *ptr;
+      if (json){
+	if (isnan(newval)){
+	  addToBuffer(buffer,"null",0);                        
+	} else {
+	  snprintf(buf,sizeof(buf),"%0.10e",newval);
+	  addToBuffer(buffer,buf,0);
+	}
+	if (j < col_cnt -1){
+	  addToBuffer(buffer,", ",0);
+	}
+      }
+      else {
+	if (isnan(newval)) {
+	  if (enumds) {
+	    snprintf(buf,sizeof(buf),"<%s%lu>NaN</%s%lu>", COL_DATA_TAG,j,COL_DATA_TAG,j);
+	  } else {
+	    snprintf(buf,sizeof(buf),"<%s>NaN</%s>", COL_DATA_TAG,COL_DATA_TAG);
+	  }
+	} else {
+	  if (enumds) {
+	    snprintf(buf,sizeof(buf),"<%s%lu>%0.10e</%s%lu>", COL_DATA_TAG,j,newval,COL_DATA_TAG,j);
+	  } else {
+	    snprintf(buf,sizeof(buf),"<%s>%0.10e</%s>", COL_DATA_TAG,newval,COL_DATA_TAG);
+	  }
+	}
+	addToBuffer(buffer,buf,0);
+      }
+      ptr++;
+    }                
+    if (json){
+      addToBuffer(buffer,(ti < end ? " ],\n" : " ]\n"),0);
+    }
+    else {                
+      snprintf(buf,sizeof(buf),"</%s>\n", DATA_ROW_TAG);
+      addToBuffer(buffer,buf,0);
+    }
+  }
+  /* end data */
+  if (json){
+    addToBuffer(buffer,"  ]\n",0);
+  }
+  else {
+    snprintf(buf,sizeof(buf),"  </%s>\n",DATA_TAG);
+    addToBuffer(buffer,buf,0);
+  }
+
+  /* end all */
+  if (json){
+    addToBuffer(buffer,"}\n",0);
+  } else {
+    snprintf(buf,sizeof(buf),"</%s>\n", ROOT_TAG);
+    addToBuffer(buffer,buf,0);
+  }
   return 0;
 }
 
-int rrd_xport_format_json(stringbuffer_t *buffer,image_desc_t *im,time_t start, time_t end, unsigned long step, unsigned long col_cnt, char **legend_v, rrd_value_t* data) {
-  addToBuffer(buffer,"JSON not implemented",0);
-  return 0;
+void escapeJSON(char* txt,size_t len) {
+  char *tmp=(char*)malloc(len+2);
+  size_t l=strlen(txt);
+  size_t pos=0;
+  /* now iterate over the chars */
+  for(size_t i=0;(i<l)&&(pos<len);i++,pos++) {
+    switch (txt[i]) {
+      case '"':
+      case '\\':
+	tmp[pos]='\\';pos++;
+	tmp[pos]=txt[i];
+	break;
+    default:
+      tmp[pos]=txt[i];
+      break;
+    }
+  }
+  /* 0 terminate it */
+  tmp[pos]=0;
+  /* and copy back over txt */
+  strncpy(txt,tmp,len);
+  /* and release tmp */
+  free(tmp);
 }
 
+int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im) {
+  /* initialize buffer */
+  stringbuffer_t prints={1024,0,NULL,NULL}; 
+  stringbuffer_t rules={1024,0,NULL,NULL}; 
+  stringbuffer_t gprints={4096,0,NULL,NULL}; 
+  char buf[256];
+  char dbuf[1024];
+  char* val;
+  char* timefmt=NULL;
+  if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
+
+  /* define some other stuff based on flags */
+  int json=0;
+  if (flags &1) { json=1; }
+  int showtime=0;
+  if (flags &2) { showtime=1;}
+  int enumds=0;
+  if (flags &4) { enumds=1;}
+
+  /* define some values */
+  time_t    now = time(NULL);
+  struct tm tmvdef;
+  localtime_r(&now, &tmvdef);
+  double printval=DNAN;
+
+  /* iterate over all fields and start the work writing to the correct buffers */
+  for (long i = 0; i < im->gdes_c; i++) {
+    long vidx = im->gdes[i].vidx;
+    char* entry;
+    switch (im->gdes[i].gf) {
+    case GF_PRINT:
+    case GF_GPRINT:
+      /* PRINT and GPRINT can now print VDEF generated values.
+       * There's no need to do any calculations on them as these
+       * calculations were already made.
+       * we do not support the depreciated version here
+       */
+      printval=DNAN;
+      /* decide to which buffer we print to*/
+      stringbuffer_t *usebuffer=&gprints;
+      char* usetag="gprint";
+      if (im->gdes[i].gf==GF_PRINT) { 
+	usebuffer=&prints;
+	usetag="print";
+      }
+      /* get the value */
+      if (im->gdes[vidx].gf == GF_VDEF) { /* simply use vals */
+	printval = im->gdes[vidx].vf.val;
+	localtime_r(&im->gdes[vidx].vf.when, &tmvdef);
+      } else {
+	int max_ii = ((im->gdes[vidx].end - im->gdes[vidx].start)
+		      / im->gdes[vidx].step * im->gdes[vidx].ds_cnt);
+	printval = DNAN;
+	long validsteps = 0;
+	for (long ii = im->gdes[vidx].ds;
+	     ii < max_ii; ii += im->gdes[vidx].ds_cnt) {
+	  if (!finite(im->gdes[vidx].data[ii]))
+	    continue;
+	  if (isnan(printval)) {
+	    printval = im->gdes[vidx].data[ii];
+	    validsteps++;
+	    continue;
+	  }
+	  
+	  switch (im->gdes[i].cf) {
+	  case CF_HWPREDICT:
+	  case CF_MHWPREDICT:
+	  case CF_DEVPREDICT:
+	  case CF_DEVSEASONAL:
+	  case CF_SEASONAL:
+	  case CF_AVERAGE:
+	    validsteps++;
+	    printval += im->gdes[vidx].data[ii];
+	    break;
+	  case CF_MINIMUM:
+	    printval = min(printval, im->gdes[vidx].data[ii]);
+	    break;
+	  case CF_FAILURES:
+	  case CF_MAXIMUM:
+	    printval = max(printval, im->gdes[vidx].data[ii]);
+	    break;
+	  case CF_LAST:
+	    printval = im->gdes[vidx].data[ii];
+	  }
+	}
+	if (im->gdes[i].cf == CF_AVERAGE || im->gdes[i].cf > CF_LAST) {
+	  if (validsteps > 1) {
+	    printval = (printval / validsteps);
+	  }
+	}
+      }
+      /* we handle PRINT and GPRINT the same - format now*/
+      if (im->gdes[i].strftm) {
+	if (im->gdes[vidx].vf.never == 1) {
+	  time_clean(buf, im->gdes[i].format);
+	} else {
+	  strftime(dbuf,sizeof(dbuf), im->gdes[i].format, &tmvdef);
+	}
+      } else if (bad_format(im->gdes[i].format)) {
+	rrd_set_error
+	  ("bad format for PRINT in \"%s'", im->gdes[i].format);
+	return -1;
+      } else {
+	snprintf(dbuf,sizeof(dbuf), im->gdes[i].format, printval,"");
+      }
+      /* print */
+      if (json) {
+	escapeJSON(dbuf,sizeof(dbuf));
+	snprintf(buf,sizeof(buf),",\n        { \"%s\": \"%s\" }",usetag,dbuf);
+      } else {
+	snprintf(buf,sizeof(buf),"        <%s>%s</%s>\n",usetag,dbuf,usetag);
+      }
+      addToBuffer(usebuffer,buf,0);
+      break;
+    case GF_COMMENT:
+      if (json) {
+	strncpy(dbuf,im->gdes[i].legend,sizeof(dbuf));
+	escapeJSON(dbuf,sizeof(dbuf));
+	snprintf(buf,sizeof(buf),",\n        { \"comment\": \"%s\" }",dbuf);
+      } else {
+	snprintf(buf,sizeof(buf),"        <comment>%s</comment>\n",im->gdes[i].legend);
+      }
+      addToBuffer(&gprints,buf,0);
+      break;
+    case GF_LINE:
+      entry = im->gdes[i].legend;
+      /* I do not know why the legend is "spaced", but let us skip it */
+      while(isspace(*entry)){entry++;}
+      if (json) {
+	snprintf(buf,sizeof(buf),",\n        { \"line\": \"%s\" }",entry);
+      } else {
+	snprintf(buf,sizeof(buf),"        <line>%s</line>\n",entry);
+      }
+      addToBuffer(&gprints,buf,0);
+      break;
+    case GF_AREA:
+      if (json) {
+	snprintf(buf,sizeof(buf),",\n        { \"area\": \"%s\" }",im->gdes[i].legend);
+      } else {
+	snprintf(buf,sizeof(buf),"        <area>%s</area>\n",im->gdes[i].legend);
+      }
+      addToBuffer(&gprints,buf,0);
+      break;
+    case GF_STACK:
+      if (json) {
+	snprintf(buf,sizeof(buf),",\n        { \"stack\": \"%s\" }",im->gdes[i].legend);
+      } else {
+	snprintf(buf,sizeof(buf),"        <stack>%s</stack>\n",im->gdes[i].legend);
+      }
+      addToBuffer(&gprints,buf,0);
+      break;
+    case GF_TEXTALIGN:
+      val="";
+      switch (im->gdes[i].txtalign) {
+      case TXA_LEFT: val="left"; break;
+      case TXA_RIGHT: val="right"; break;
+      case TXA_CENTER: val="center"; break;
+      case TXA_JUSTIFIED: val="justified"; break;
+      }
+      if (json) {
+	snprintf(buf,sizeof(buf),",\n        { \"align\": \"%s\" }",val);
+      } else {
+	snprintf(buf,sizeof(buf),"        <align>%s</align>\n",val);
+      }
+      addToBuffer(&gprints,buf,0);
+      break;
+    case GF_HRULE:
+      /* This does not work as expected - Tobi please help!!! */
+      snprintf(dbuf,sizeof(dbuf),"%0.10e",im->gdes[i].vf.val);
+      /* and output it */
+      if (json) {
+        snprintf(buf,sizeof(buf),",\n        { \"hrule\": \"%s\" }",dbuf);
+      } else {
+        snprintf(buf,sizeof(buf),"        <hrule>%s</hrule>\n",dbuf);
+      }
+      addToBuffer(&rules,buf,0);
+      break;
+    case GF_VRULE:
+      if (timefmt) {
+	struct tm loc;
+	localtime_r(&im->gdes[i].xrule,&loc);
+	strftime(dbuf,254,timefmt,&loc);
+      } else {
+	snprintf(dbuf,254,"%lld",(long long int)im->gdes[i].vf.when);
+      }
+      /* and output it */
+      if (json) {
+        snprintf(buf,sizeof(buf),",\n        { \"vrule\": \"%s\" }",dbuf);
+      } else {
+        snprintf(buf,sizeof(buf),"        <vrule>%s</vrule>\n",dbuf);
+      }
+      addToBuffer(&rules,buf,0);
+      break;
+    default: 
+      break;
+    }
+  }
+  /* now add prints */
+  if (prints.len) {
+    if (json){
+      snprintf(buf,sizeof(buf),"    \"%s\": [\n","prints");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)prints.data+2,prints.len-2);
+      addToBuffer(buffer,"\n        ],\n",0);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>\n", "prints");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)prints.data,prints.len);
+      snprintf(buf,sizeof(buf),"    </%s>\n", "prints");
+      addToBuffer(buffer,buf,0);
+    }
+    free(prints.data);
+  }
+  /* now add gprints */
+  if (gprints.len) {
+    if (json){
+      snprintf(buf,sizeof(buf),"    \"%s\": [\n","gprints");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)gprints.data+2,gprints.len-2);
+      addToBuffer(buffer,"\n        ],\n",0);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>\n", "gprints");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)gprints.data,gprints.len);
+      snprintf(buf,sizeof(buf),"    </%s>\n", "gprints");
+      addToBuffer(buffer,buf,0);
+    }
+    free(gprints.data);
+  }
+  /* now add rules */
+  if (rules.len) {
+    if (json){
+      snprintf(buf,sizeof(buf),"    \"%s\": [\n","rules");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)rules.data+2,rules.len-2);
+      addToBuffer(buffer,"\n        ],\n",0);
+    } else {
+      snprintf(buf,sizeof(buf),"    <%s>\n", "rules");
+      addToBuffer(buffer,buf,0);
+      addToBuffer(buffer,(char*)rules.data,rules.len);
+      snprintf(buf,sizeof(buf),"    </%s>\n", "rules");
+      addToBuffer(buffer,buf,0);
+    }
+    free(rules.data);
+  }
+  /* and return */
+  return 0;
+}

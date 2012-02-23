@@ -93,7 +93,9 @@ enum legend_pos{ NORTH = 0, WEST, SOUTH, EAST };
 enum legend_direction { TOP_DOWN = 0, BOTTOM_UP };
 
 enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF, 
-		 IF_XML=128, IF_CSV=129, IF_TSV=130, IF_SSV=131, IF_JSON=132 };
+		 IF_XML=128, IF_CSV=129, IF_TSV=130, IF_SSV=131, IF_JSON=132,
+		 IF_XMLENUM=133, IF_JSONTIME=134
+};
 enum gfx_en { GFX_LINE = 0, GFX_AREA, GFX_TEXT };
 enum gfx_h_align_en { GFX_H_NULL = 0, GFX_H_LEFT, GFX_H_RIGHT, GFX_H_CENTER };
 enum gfx_v_align_en { GFX_V_NULL = 0, GFX_V_TOP, GFX_V_BOTTOM, GFX_V_CENTER };

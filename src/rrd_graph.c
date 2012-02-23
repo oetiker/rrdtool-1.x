@@ -257,10 +257,12 @@ enum gfx_if_en if_conv(
     conv_if(EPS, IF_EPS);
     conv_if(PDF, IF_PDF);
     conv_if(XML, IF_XML);
+    conv_if(XMLENUM, IF_XMLENUM);
     conv_if(CSV, IF_CSV);
     conv_if(TSV, IF_TSV);
     conv_if(SSV, IF_SSV);
     conv_if(JSON, IF_JSON);
+    conv_if(JSONTIME, IF_JSONTIME);
 
     return (enum gfx_if_en)(-1);
 }
@@ -3411,10 +3413,12 @@ int graph_paint(
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
     case IF_XML:
+    case IF_XMLENUM:
     case IF_CSV:
     case IF_TSV:
     case IF_SSV:
     case IF_JSON:
+    case IF_JSONTIME:
         break;
     };
     cairo_destroy(im->cr);
