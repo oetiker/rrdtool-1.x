@@ -18,7 +18,6 @@
 #include <fcntl.h>
 #endif
 
-
 int       rrd_xport(
     int,
     char **,
@@ -40,7 +39,20 @@ int       rrd_xport_fn(
     rrd_value_t **,
     int);
 
+/* helper function for buffer handling */
+typedef struct stringbuffer_t {
+  size_t allocated;
+  size_t len;
+  unsigned char* data;
+  FILE *file;
+} stringbuffer_t;
+int addToBuffer(stringbuffer_t *,char*,size_t);
+void escapeJSON(char*,size_t);
 
+int rrd_graph_xport(image_desc_t *);
+int rrd_xport_format_xmljson(int,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
+int rrd_xport_format_sv(char,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
+int rrd_xport_format_addprints(int,stringbuffer_t *,image_desc_t *);
 
 int rrd_xport(
     int argc,
@@ -79,6 +91,9 @@ int rrd_xport(
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
 
+    int enumds=0;
+    int json=0;
+
     while (1) {
         int       option_index = 0;
         int       opt;
@@ -93,6 +108,10 @@ int rrd_xport(
             im.step = atoi(optarg);
             break;
         case 262:
+  	    enumds=1;
+            break;
+        case 263:
+  	    json=1;
             break;
         case 's':
             if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
@@ -177,6 +196,18 @@ int rrd_xport(
     if (rrd_xport_fn(&im, start, end, step, col_cnt, legend_v, data,0) == -1) {
         im_free(&im);
         return -1;
+    }
+
+    /* and create the export */
+    if (!xsize) {
+      int flags=0;
+      if (json) { flags|=1; }
+      if (enumds) { flags|=4; }
+      stringbuffer_t buffer={0,0,NULL,stdout};
+      rrd_xport_format_xmljson(flags,&buffer,&im, 
+			       *start, *end, *step,
+			       *col_cnt, *legend_v,
+			       *data);
     }
 
     im_free(&im);
@@ -340,21 +371,6 @@ int rrd_xport_fn(
     return 0;
 
 }
-
-/* helper function for buffer handling */
-typedef struct stringbuffer_t {
-  size_t allocated;
-  size_t len;
-  unsigned char* data;
-  FILE *file;
-} stringbuffer_t;
-int addToBuffer(stringbuffer_t *,char*,size_t);
-void escapeJSON(char*,size_t);
-
-int rrd_graph_xport(image_desc_t *);
-int rrd_xport_format_xmljson(int,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
-int rrd_xport_format_sv(char,stringbuffer_t *,image_desc_t*,time_t, time_t, unsigned long, unsigned long, char**, rrd_value_t*);
-int rrd_xport_format_addprints(int,stringbuffer_t *,image_desc_t *);
 
 int rrd_graph_xport(image_desc_t *im) {
   /* prepare the data for processing */
@@ -690,9 +706,11 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   if (rrd_xport_format_addprints(json,buffer,im)) {return -1;}
 
   /* if we have got a trailing , then kill it */
-  if (buffer->data[buffer->len-2]==',') { 
-    buffer->data[buffer->len-2]=buffer->data[buffer->len-1];
-    buffer->len--;
+  if (buffer->data) {
+    if (buffer->data[buffer->len-2]==',') { 
+      buffer->data[buffer->len-2]=buffer->data[buffer->len-1];
+      buffer->len--;
+    }
   }
 
   /* end meta */
