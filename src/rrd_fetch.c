@@ -270,7 +270,34 @@ int rrd_fetch_fn(
 
     /* find the rra which best matches the requirements */
     for (i = 0; (unsigned) i < rrd.stat_head->rra_cnt; i++) {
-        if (cf_conv(rrd.rra_def[i].cf_nam) == cf_idx) {
+      enum cf_en rratype=cf_conv(rrd.rra_def[i].cf_nam);
+      /* handle this RRA */
+      if (
+	  /* if we found a direct match */
+	  (rratype == cf_idx)
+	  || 
+	  /*if we found a DS with interval 1 
+	    and CF (requested,available) are MIN,MAX,AVERAGE,LAST
+	  */
+	  ( 
+	      /* only if we are on interval 1 */
+	      (rrd.rra_def[i].pdp_cnt==1) 
+	      && ( 
+		  /* and requested CF is MIN,MAX,AVERAGE,LAST */
+		  (cf_idx == CF_MINIMUM)
+		  ||(cf_idx == CF_MAXIMUM)
+		  ||(cf_idx == CF_AVERAGE)
+		  ||(cf_idx == CF_LAST)
+		  )
+	      && (
+		  /* and found CF is MIN,MAX,AVERAGE,LAST */
+		  (rratype == CF_MINIMUM)
+		  ||(rratype == CF_MAXIMUM)
+		  ||(rratype == CF_AVERAGE)
+		  ||(rratype == CF_LAST)
+		  )
+	      )
+	  ){
 
             cal_end = (rrd.live_head->last_up - (rrd.live_head->last_up
                                                  % (rrd.rra_def[i].pdp_cnt
