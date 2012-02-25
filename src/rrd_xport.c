@@ -382,6 +382,18 @@ int rrd_graph_xport(image_desc_t *im) {
   rrd_value_t *data=NULL;
   /* initialize buffer */
   stringbuffer_t buffer={0,0,NULL,NULL}; 
+
+  /* check if we have a supported ggraph format */
+  switch (im->graph_type) {
+    /* allow the following to pass */
+  case GTYPE_TIME:
+  case GTYPE_XY:
+    break;
+  default:
+    rrd_set_error("Not supported graph type");
+    return -1;
+  }
+
   /* if we write a file, then open it */
   if (strlen(im->graphfile)) {
     buffer.file=fopen(im->graphfile,"w");

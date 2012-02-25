@@ -100,6 +100,8 @@ enum gfx_en { GFX_LINE = 0, GFX_AREA, GFX_TEXT };
 enum gfx_h_align_en { GFX_H_NULL = 0, GFX_H_LEFT, GFX_H_RIGHT, GFX_H_CENTER };
 enum gfx_v_align_en { GFX_V_NULL = 0, GFX_V_TOP, GFX_V_BOTTOM, GFX_V_CENTER };
 
+enum gfx_type_en {GTYPE_TIME=0,GTYPE_XY=1};
+
 /* cairo color components */
 typedef struct gfx_color_t {
     double    red;
@@ -211,8 +213,8 @@ typedef struct graph_desc_t {
 typedef struct image_desc_t {
 
     /* configuration of graph */
-
     char      graphfile[MAXPATH];   /* filename for graphic */
+    enum      gfx_type_en graph_type; /* type of the graph */
     long      xsize, ysize; /* graph area size in pixels */
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
@@ -302,6 +304,8 @@ enum gf_en gf_conv(
     char *);
 enum gfx_if_en if_conv(
     char *);
+enum gfx_type_en type_conv(
+    char *);
 enum tmt_en tmt_conv(
     char *);
 enum grc_en grc_conv(
@@ -371,6 +375,17 @@ void      grid_paint(
 int       lazy_check(
     image_desc_t *);
 int       graph_paint(
+    image_desc_t *);
+int       graph_paint_timestring(
+    image_desc_t *,int);
+int       graph_paint_xy(
+    image_desc_t *,int);
+int       rrd_graph_xport(
+    image_desc_t *);
+
+int       graph_cairo_setup(
+    image_desc_t *);
+int       graph_cairo_finish(
     image_desc_t *);
 
 int       gdes_alloc(

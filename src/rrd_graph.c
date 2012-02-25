@@ -267,6 +267,14 @@ enum gfx_if_en if_conv(
     return (enum gfx_if_en)(-1);
 }
 
+enum gfx_type_en type_conv(
+    char *string)
+{
+    conv_if(TIME , GTYPE_TIME);
+    conv_if(XY, GTYPE_XY);
+    return (enum gfx_type_en)(-1);
+}
+
 enum tmt_en tmt_conv(
     char *string)
 {
@@ -3294,13 +3302,15 @@ static cairo_status_t cairo_output(
 int graph_paint(
     image_desc_t *im)
 {
-    int       i, ii;
     int       lazy = lazy_check(im);
-    double    areazero = 0.0;
-    graph_desc_t *lastgdes = NULL;
-    rrd_infoval_t info;
+    int       i;      
 
-//    PangoFontMap *font_map = pango_cairo_font_map_get_default();
+    /* imgformat XML or higher dispatch to xport 
+     * output format there is selected via graph_type 
+     */
+    if (im->imgformat >= IF_XML) {
+      return rrd_graph_xport(im);
+    }
 
     /* pull the data from the rrd files ... */
     if (data_fetch(im) == -1)
@@ -3320,6 +3330,28 @@ int graph_paint(
     /* if we want and can be lazy ... quit now */
     if (i == 0)
         return 0;
+
+    /* otherwise call graph_paint_timestring */
+    switch (im->graph_type) {
+    case GTYPE_TIME:
+      return graph_paint_timestring(im,lazy);
+      break;
+    case GTYPE_XY:
+      return graph_paint_xy(im,lazy);
+      break;
+    }
+    /* final return with error*/
+    rrd_set_error("Graph type %i is not implemented",im->graph_type);
+    return -1;
+}
+
+int graph_paint_timestring(
+			   image_desc_t *im, int lazy)
+{
+    int       i, ii;
+    double    areazero = 0.0;
+    graph_desc_t *lastgdes = NULL;
+    rrd_infoval_t info;
 
 /**************************************************************
  *** Calculating sizes and locations became a bit confusing ***
@@ -3373,75 +3405,11 @@ int graph_paint(
     ytr(im, DNAN);
 /*   if (im->gridfit)
      apply_gridfit(im); */
-    /* the actual graph is created by going through the individual
-       graph elements and then drawing them */
-    cairo_surface_destroy(im->surface);
-    switch (im->imgformat) {
-    case IF_PNG:
-        im->surface =
-            cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-                                       im->ximg * im->zoom,
-                                       im->yimg * im->zoom);
-        break;
-    case IF_PDF:
-        im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
-            ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
-                                       im->yimg * im->zoom)
-            : cairo_pdf_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
-        break;
-    case IF_EPS:
-        im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
-            ?
-            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
-                                    im->yimg * im->zoom)
-            : cairo_ps_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
-        break;
-    case IF_SVG:
-        im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
-            ?
-            cairo_svg_surface_create(im->
-                                     graphfile,
-                                     im->ximg * im->zoom, im->yimg * im->zoom)
-            : cairo_svg_surface_create_for_stream
-            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
-        cairo_svg_surface_restrict_to_version
-            (im->surface, CAIRO_SVG_VERSION_1_1);
-        break;
-    case IF_XML:
-    case IF_XMLENUM:
-    case IF_CSV:
-    case IF_TSV:
-    case IF_SSV:
-    case IF_JSON:
-    case IF_JSONTIME:
-        break;
-    };
-    cairo_destroy(im->cr);
-    im->cr = cairo_create(im->surface);
-    cairo_set_antialias(im->cr, im->graph_antialias);
-    cairo_scale(im->cr, im->zoom, im->zoom);
-//    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
-    gfx_new_area(im, 0, 0, 0, im->yimg,
-                 im->ximg, im->yimg, im->graph_col[GRC_BACK]);
-    gfx_add_point(im, im->ximg, 0);
-    gfx_close_path(im);
-    gfx_new_area(im, im->xorigin,
-                 im->yorigin,
-                 im->xorigin +
-                 im->xsize, im->yorigin,
-                 im->xorigin +
-                 im->xsize,
-                 im->yorigin - im->ysize, im->graph_col[GRC_CANVAS]);
-    gfx_add_point(im, im->xorigin, im->yorigin - im->ysize);
-    gfx_close_path(im);
-    cairo_rectangle(im->cr, im->xorigin, im->yorigin - im->ysize - 1.0,
-                    im->xsize, im->ysize + 2.0);
-    cairo_clip(im->cr);
+
+    /* set up cairo */
+    if (graph_cairo_setup(im)) { return -1; }
+
+    /* other stuff */
     if (im->minval > 0.0)
         areazero = im->minval;
     if (im->maxval < 0.0)
@@ -3835,7 +3803,86 @@ int graph_paint(
             break;
         }
     }
+    /* close the graph via cairo*/
+    return graph_cairo_finish(im);
+}
 
+int graph_cairo_setup (image_desc_t *im)
+{
+    /* the actual graph is created by going through the individual
+       graph elements and then drawing them */
+    cairo_surface_destroy(im->surface);
+    switch (im->imgformat) {
+    case IF_PNG:
+        im->surface =
+            cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                       im->ximg * im->zoom,
+                                       im->yimg * im->zoom);
+        break;
+    case IF_PDF:
+        im->gridfit = 0;
+        im->surface = strlen(im->graphfile)
+            ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
+                                       im->yimg * im->zoom)
+            : cairo_pdf_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
+        break;
+    case IF_EPS:
+        im->gridfit = 0;
+        im->surface = strlen(im->graphfile)
+            ?
+            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
+                                    im->yimg * im->zoom)
+            : cairo_ps_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
+        break;
+    case IF_SVG:
+        im->gridfit = 0;
+        im->surface = strlen(im->graphfile)
+            ?
+            cairo_svg_surface_create(im->
+                                     graphfile,
+                                     im->ximg * im->zoom, im->yimg * im->zoom)
+            : cairo_svg_surface_create_for_stream
+            (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
+        cairo_svg_surface_restrict_to_version
+            (im->surface, CAIRO_SVG_VERSION_1_1);
+        break;
+    case IF_XML:
+    case IF_XMLENUM:
+    case IF_CSV:
+    case IF_TSV:
+    case IF_SSV:
+    case IF_JSON:
+    case IF_JSONTIME:
+        break;
+    };
+    cairo_destroy(im->cr);
+    im->cr = cairo_create(im->surface);
+    cairo_set_antialias(im->cr, im->graph_antialias);
+    cairo_scale(im->cr, im->zoom, im->zoom);
+//    pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP(font_map), 100);
+    gfx_new_area(im, 0, 0, 0, im->yimg,
+                 im->ximg, im->yimg, im->graph_col[GRC_BACK]);
+    gfx_add_point(im, im->ximg, 0);
+    gfx_close_path(im);
+    gfx_new_area(im, im->xorigin,
+                 im->yorigin,
+                 im->xorigin +
+                 im->xsize, im->yorigin,
+                 im->xorigin +
+                 im->xsize,
+                 im->yorigin - im->ysize, im->graph_col[GRC_CANVAS]);
+    gfx_add_point(im, im->xorigin, im->yorigin - im->ysize);
+    gfx_close_path(im);
+    cairo_rectangle(im->cr, im->xorigin, im->yorigin - im->ysize - 1.0,
+                    im->xsize, im->ysize + 2.0);
+    cairo_clip(im->cr);
+    return 0;
+}
+
+int graph_cairo_finish (image_desc_t *im)
+{
 
     switch (im->imgformat) {
     case IF_PNG:
@@ -3853,6 +3900,14 @@ int graph_paint(
         }
         break;
     }
+    case IF_XML:
+    case IF_XMLENUM:
+    case IF_CSV:
+    case IF_TSV:
+    case IF_SSV:
+    case IF_JSON:
+    case IF_JSONTIME:
+      break;
     default:
         if (strlen(im->graphfile)) {
             cairo_show_page(im->cr);
@@ -3865,6 +3920,12 @@ int graph_paint(
     return 0;
 }
 
+int graph_paint_xy(
+		      image_desc_t *im, int lazy)
+{
+  rrd_set_error("XY diagramm not implemented");  
+  return -1;
+}
 
 /*****************************************************
  * graph stuff
@@ -4033,9 +4094,6 @@ int rrd_graph(
 ** - script parsing   now in rrd_graph_script()
 */
 
-/* have no better idea where to put it - rrd.h does not work */
-int       rrd_graph_xport(image_desc_t *);
-
 rrd_info_t *rrd_graph_v(
     int argc,
     char **argv)
@@ -4086,19 +4144,13 @@ rrd_info_t *rrd_graph_v(
         im_free(&im);
         return NULL;
     }
-
-    if (im.imgformat >= IF_XML) {
-      rrd_graph_xport(&im);
-   } else {
-
+    
     /* Everything is now read and the actual work can start */
-
     if (graph_paint(&im) == -1) {
-        rrd_info_free(im.grinfo);
-        im_free(&im);
-        return NULL;
+      rrd_info_free(im.grinfo);
+      im_free(&im);
+      return NULL;
     }
-   }
 
     /* The image is generated and needs to be output.
      ** Also, if needed, print a line with information about the image.
@@ -4159,10 +4211,13 @@ void rrd_graph_init(
     static PangoFontMap *fontmap = NULL;
     PangoContext *context;
 
+    /* zero the whole structure first */
+    memset(im,0,sizeof(image_desc_t));
+
 #ifdef HAVE_TZSET
     tzset();
 #endif
-
+    im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
     im->draw_x_grid = 1;
@@ -4342,6 +4397,7 @@ void rrd_graph_options(
         { "grid-dash",          required_argument, 0, 1008},
         { "dynamic-labels",     no_argument,       0, 1009},
         { "week-fmt",           required_argument, 0, 1010},
+        { "graph-type",         required_argument, 0, 1011},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4608,6 +4664,13 @@ void rrd_graph_options(
             if ((int)
                 (im->imgformat = if_conv(optarg)) == -1) {
                 rrd_set_error("unsupported graphics format '%s'", optarg);
+                return;
+            }
+            break;
+        case 1011:
+            if ((int)
+                (im->graph_type = type_conv(optarg)) == -1) {
+                rrd_set_error("unsupported graphics type '%s'", optarg);
                 return;
             }
             break;
