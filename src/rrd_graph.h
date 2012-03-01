@@ -377,9 +377,9 @@ int       lazy_check(
 int       graph_paint(
     image_desc_t *);
 int       graph_paint_timestring(
-    image_desc_t *,int);
+                                image_desc_t *,int,int);
 int       graph_paint_xy(
-    image_desc_t *,int);
+                        image_desc_t *,int,int);
 int       rrd_graph_xport(
     image_desc_t *);
 

@@ -3303,7 +3303,7 @@ int graph_paint(
     image_desc_t *im)
 {
     int       lazy = lazy_check(im);
-    int       i;      
+    int       cnt;      
 
     /* imgformat XML or higher dispatch to xport 
      * output format there is selected via graph_type 
@@ -3323,22 +3323,22 @@ int graph_paint(
      * if there are no graph elements (i==0) we stop here ...
      * if we are lazy, try to quit ...
      */
-    i = print_calc(im);
-    if (i < 0)
+    cnt = print_calc(im);
+    if (cnt < 0)
         return -1;
 
     /* if we want and can be lazy ... quit now */
-    if (i == 0)
+    if (cnt == 0)
         return 0;
 
     /* otherwise call graph_paint_timestring */
     switch (im->graph_type) {
     case GTYPE_TIME:
-      return graph_paint_timestring(im,lazy);
+      return graph_paint_timestring(im,lazy,cnt);
       break;
     case GTYPE_XY:
-      return graph_paint_xy(im,lazy);
-      break;
+      return graph_paint_xy(im,lazy,cnt);
+      break;      
     }
     /* final return with error*/
     rrd_set_error("Graph type %i is not implemented",im->graph_type);
@@ -3346,9 +3346,9 @@ int graph_paint(
 }
 
 int graph_paint_timestring(
-			   image_desc_t *im, int lazy)
+                          image_desc_t *im, int lazy, int cnt)
 {
-    int       i, ii;
+    int       i,ii;
     double    areazero = 0.0;
     graph_desc_t *lastgdes = NULL;
     rrd_infoval_t info;
@@ -3357,7 +3357,7 @@ int graph_paint_timestring(
  *** Calculating sizes and locations became a bit confusing ***
  *** so I moved this into a separate function.              ***
  **************************************************************/
-    if (graph_size_location(im, i) == -1)
+    if (graph_size_location(im, cnt) == -1)
         return -1;
 
     info.u_cnt = im->xorigin;
@@ -3921,8 +3921,10 @@ int graph_cairo_finish (image_desc_t *im)
 }
 
 int graph_paint_xy(
-		      image_desc_t *im, int lazy)
+                  image_desc_t *im, int lazy, int cnt)
 {
+  /* to stop compiler warnings for now */
+  lazy=cnt=(int)im->gdes_c;
   rrd_set_error("XY diagramm not implemented");  
   return -1;
 }
