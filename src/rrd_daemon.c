@@ -295,7 +295,9 @@ static int handle_request_help (HANDLER_PROTO);
 static void sig_common (const char *sig) /* {{{ */
 {
   RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
-  state = FLUSHING;
+  if (state == RUNNING) {
+      state = FLUSHING;
+  }
   pthread_cond_broadcast(&flush_cond);
   pthread_cond_broadcast(&queue_cond);
 } /* }}} void sig_common */
