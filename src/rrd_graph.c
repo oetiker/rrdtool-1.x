@@ -1718,6 +1718,9 @@ int print_calc(
                 ("STACK should already be turned into LINE or AREA here");
             return -1;
             break;
+        case GF_XAXIS:
+        case GF_YAXIS:
+	    break;
         }
     }
     return graphelement;
@@ -3427,6 +3430,8 @@ int graph_paint_timestring(
         case GF_VRULE:
         case GF_XPORT:
         case GF_SHIFT:
+        case GF_XAXIS:
+        case GF_YAXIS:
             break;
         case GF_TICK:
             for (ii = 0; ii < im->xsize; ii++) {
@@ -3945,6 +3950,8 @@ int gdes_alloc(
         return -1;
     }
 
+    /* set to zero */
+    memset(&(im->gdes[im->gdes_c - 1]),0,sizeof(graph_desc_t));
 
     im->gdes[im->gdes_c - 1].step = im->step;
     im->gdes[im->gdes_c - 1].step_orig = im->step;

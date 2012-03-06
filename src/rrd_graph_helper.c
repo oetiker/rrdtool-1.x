@@ -6,1104 +6,1284 @@
  ****************************************************************************/
 
 #include "rrd_graph.h"
+#define dprintf(...) if (gdp->debug&1) fprintf(stderr,__VA_ARGS__);
+#define dprintfparsed(...) if (gdp->debug&2) fprintf(stderr,__VA_ARGS__);
 
-#define dprintf if (gdp->debug) printf
+void initParsedArguments(parsedargs_t* pa) {
+  /* initialize */
+  pa->arg=NULL;
+  pa->arg_orig=NULL;
+  pa->kv_args=NULL;
+  pa->kv_cnt=0;
+}
 
-/* NOTE ON PARSING:
- *
- * we use the following:
- * 
- * i=0;  sscanf(&line[*eaten], "what to find%n", variables, &i)
- *
- * Usually you want to find a separator as well.  Example:
- * i=0; sscanf(&line[*eaten], "%li:%n", &someint, &i)
- *
- * When the separator is not found, i is not set and thus remains zero.
- * Another way would be to compare strlen() to i
- *
- * Why is this important?  Because 12345abc should not be matched as
- * integer 12345 ...
- */
+void freeParsedArguments(parsedargs_t* pa) {
+  if (pa->arg) {free(pa->arg);}
+  if (pa->kv_args) {free(pa->kv_args);}
+  initParsedArguments(pa);
+}
 
-/* NOTE ON VNAMES:
- *
- * "if ((gdp->vidx=find_var(im, l))!=-1)" is not good enough, at least
- * not by itself.
- *
- * A vname as a result of a VDEF is quite different from a vname
- * resulting of a DEF or CDEF.
- */
+void dumpKeyValue(char* pre,keyvalue_t* t) {
+  if (t) {
+    fprintf(stderr,"%s%i: '%s' = '%s' %i\n",
+	    pre,
+	    t->pos,
+	    t->key,
+	    t->value,
+	    t->flag
+	    );
+  } else {
+    fprintf(stderr,"%sNULL\n",pre);
+  }
+}
 
-/* NOTE ON VNAMES:
- *
- * A vname called "123" is not to be parsed as the number 123
- */
+void dumpArguments(parsedargs_t* pa) {
+  fprintf(stderr,"====================\nParsed Arguments of: %s\n",pa->arg_orig);
+  for(int i=0;i<pa->kv_cnt;i++) {
+    dumpKeyValue("  ",&(pa->kv_args[i]));
+  }
+  fprintf(stderr,"---------------\n");
+}
 
-
-/* Define prototypes for the parsing methods.
-  Inputs:
-   const char *const line    - a fixed pointer to a fixed string
-   unsigned int *const eaten - a fixed pointer to a changing index in that line
-   graph_desc_t *const gdp   - a fixed pointer to a changing graph description
-   image_desc_t *const im    - a fixed pointer to a changing image description
-*/
-
-int       rrd_parse_find_gf(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const);
-
-int       rrd_parse_legend(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const);
-
-int       rrd_parse_color(
-    const char *const,
-    graph_desc_t *const);
-
-int       rrd_parse_textalign(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const);
-
-
-int       rrd_parse_CF(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    enum cf_en *const);
-
-int       rrd_parse_print(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_shift(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_xport(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_PVHLAST(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_make_vname(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_find_vname(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_def(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_vdef(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int       rrd_parse_cdef(
-    const char *const,
-    unsigned int *const,
-    graph_desc_t *const,
-    image_desc_t *const);
-
-int rrd_parse_find_gf(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp)
-{
-    char      funcname[11], c1 = 0;
-    int       i = 0;
-
-    /* start an argument with DEBUG to be able to see how it is parsed */
-    sscanf(&line[*eaten], "DEBUG%n", &i);
-    if (i) {
-        gdp->debug = 1;
-        (*eaten) += i;
-        i = 0;
-        dprintf("Scanning line '%s'\n", &line[*eaten]);
+char* getKeyValueArgument(const char* key,int flag, parsedargs_t* pa) {
+  /* we count backwords for "overwrites" */
+  for(int i=pa->kv_cnt-1;i>=0;i--) {
+    char* akey=(pa->kv_args[i]).key;
+    if (strcmp(akey,key)==0) {
+      /* set flag */
+      if (flag) {pa->kv_args[i].flag=flag;}
+      /* return value */
+      return pa->kv_args[i].value;
     }
-    i = 0;
-    c1 = '\0';
-    sscanf(&line[*eaten], "%10[A-Z]%n%c", funcname, &i, &c1);
-    if (!i) {
-        rrd_set_error("Could not make sense out of '%s'", line);
-        return 1;
-    }
-    (*eaten) += i;
-    if ((int) (gdp->gf = gf_conv(funcname)) == -1) {
-        rrd_set_error("'%s' is not a valid function name", funcname);
-        return 1;
-    } else {
-        dprintf("- found function name '%s'\n", funcname);
-    }
+  }
+  return NULL;
+}
 
-    if (c1 == '\0') {
-        rrd_set_error("Function %s needs parameters.  Line: %s\n", funcname,
-                      line);
-        return 1;
+keyvalue_t* getFirstUnusedArgument(int flag, parsedargs_t* pa) {
+  for(int i=0;i<pa->kv_cnt;i++) {
+    if (! pa->kv_args[i].flag) {
+      pa->kv_args[i].flag=flag;
+      return &(pa->kv_args[i]);
     }
-    if (c1 == ':')
-        (*eaten)++;
+  }
+  return NULL;
+}
 
-    /* Some commands have a parameter before the colon
-     * (currently only LINE)
-     */
-    switch (gdp->gf) {
-    case GF_LINE:
-        if (c1 == ':') {
-            gdp->linewidth = 1;
-            dprintf("- using default width of 1\n");
-        } else {
-            i = 0;
-            sscanf(&line[*eaten], "%lf:%n", &gdp->linewidth, &i);
-            if (!i) {
-                rrd_set_error("Cannot parse line width '%s' in line '%s'\n",
-                              &line[*eaten], line);
-                return 1;
-            } else {
-                dprintf("- scanned width %f\n", gdp->linewidth);
-                if (isnan(gdp->linewidth)) {
-                    rrd_set_error
-                        ("LINE width '%s' is not a number in line '%s'\n",
-                         &line[*eaten], line);
-                    return 1;
-                }
-                if (isinf(gdp->linewidth)) {
-                    rrd_set_error
-                        ("LINE width '%s' is out of range in line '%s'\n",
-                         &line[*eaten], line);
-                    return 1;
-                }
-                if (gdp->linewidth < 0) {
-                    rrd_set_error
-                        ("LINE width '%s' is less than 0 in line '%s'\n",
-                         &line[*eaten], line);
-                    return 1;
-                }
-            }
-            (*eaten) += i;
-        }
-        break;
-    default:
-        if (c1 == ':')
-            break;
-        rrd_set_error("Malformed '%s' command in line '%s'\n", &line[*eaten],
-                      line);
-        return 1;
+char* checkUnusedValues(parsedargs_t* pa){
+  char *res=NULL;
+  for(int i=0;i<pa->kv_cnt;i++) {
+    if (!pa->kv_args[i].flag) {
+      int len=0;
+      if (res) {len=strlen(res); }
+      char* t=realloc(res,len+3
+		      +strlen(pa->kv_args[i].key)
+		      +strlen(pa->kv_args[i].value)
+		      );
+      if (! t) { return res; }
+      res=t;
+      strcat(res,pa->kv_args[i].key);
+      strcat(res,"=");
+      strcat(res,pa->kv_args[i].value);
+      strcat(res,":");
     }
-    if (line[*eaten] == '\0') {
-        rrd_set_error("Expected some arguments after '%s'\n", line);
-        return 1;
+  }
+  /* if we got one, then strip the final : */
+  if (res) { res[strlen(res)-1]=0; }
+  /* and return res */
+  return res;
+}
+
+int getMappedKeyValueArgument(const char* key,int flag, parsedargs_t* pa,
+			      int* val,keyint_t** transpose) {
+  /* get the value itself as string */
+  char* v=getKeyValueArgument(key,flag,pa);
+  /* now try to parse the value */
+  if (v) {
+    for(;(*transpose)->key;transpose++) {
+      if (strcmp((*transpose)->key,v)==0) {
+	*val=(*transpose)->value;
+	return 0;
+      }
     }
+  }
+  /* not found, so return error */
+  return 1;
+}
+
+int getLong(const char* v,long *val,char**extra,int base) {
+  /* try to execute the parser */
+  /* NOTE that this may be a bit different from the original parser */
+  *extra=NULL;
+  *val=strtol(v,extra,base);
+  /* and error handling */
+  if (extra==NULL) {
     return 0;
-}
-
-int rrd_parse_legend(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp)
-{
-    int       i;
-
-    if (line[*eaten] == '\0' || line[*eaten] == ':') {
-        dprintf("- no (or: empty) legend found\n");
-        return 0;
+  } else {
+    if (*extra==v) {
+      return -1; /* failed miserably */
+    }  else {
+      if ((*extra)[0]==0) { return 0; }
+      return 1; /* got extra bytes */
     }
+  }
+  /* not found, so return error */
+  return -2;
+}   
 
-    i = scan_for_col(&line[*eaten], FMT_LEG_LEN, gdp->legend);
-
-    (*eaten) += i;
-
-    if (line[*eaten] != '\0' && line[*eaten] != ':') {
-        rrd_set_error("Legend too long");
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-int rrd_parse_color(
-    const char *const string,
-    graph_desc_t *const gdp)
-{
-    unsigned int r = 0, g = 0, b = 0, a = 0, i;
-
-    /* matches the following formats:
-     ** RGB
-     ** RGBA
-     ** RRGGBB
-     ** RRGGBBAA
-     */
-
-    i = 0;
-    while (string[i] && isxdigit((unsigned int) string[i]))
-        i++;
-    if (string[i] != '\0')
-        return 1;       /* garbage follows hexdigits */
-    switch (i) {
-    case 3:
-    case 4:
-        sscanf(string, "%1x%1x%1x%1x", &r, &g, &b, &a);
-        r *= 0x11;
-        g *= 0x11;
-        b *= 0x11;
-        a *= 0x11;
-        if (i == 3)
-            a = 0xFF;
-        break;
-    case 6:
-    case 8:
-        sscanf(string, "%02x%02x%02x%02x", &r, &g, &b, &a);
-        if (i == 6)
-            a = 0xFF;
-        break;
-    default:
-        return 1;       /* wrong number of digits */
-    }
-    gdp->col = gfx_hex_to_col(r << 24 | g << 16 | b << 8 | a);
+int getDouble(const char* v, double *val,char**extra) {
+  /* try to execute the parser */
+  /* NOTE that this may be a bit different from the original parser */
+  *extra=NULL;
+  *val=strtod(v,extra);
+  /* and error handling */
+  if (extra==NULL) {
     return 0;
+  } else {
+    if (*extra==v) {
+      return -1; /* failed miserably */
+    }  else {
+      if ((*extra)[0]==0) { return 0; }
+      return 1; /* got extra bytes */
+    }
+  }
+  /* not found, so return error */
+  return -2;
 }
 
-int rrd_parse_CF(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    enum cf_en *cf)
-{
-    char      symname[CF_NAM_SIZE];
-    int       i = 0;
-
-    sscanf(&line[*eaten], CF_NAM_FMT "%n", symname, &i);
-    if ((!i) || ((line[(*eaten) + i] != '\0') && (line[(*eaten) + i] != ':'))) {
-        rrd_set_error("Cannot parse CF in '%s'", line);
-        return 1;
-    }
-    (*eaten) += i;
-    dprintf("- using CF '%s'\n", symname);
-
-    if ((int) (*cf = cf_conv(symname)) == -1) {
-        rrd_set_error("Unknown CF '%s' in '%s'", symname, line);
-        return 1;
-    }
-
-    if (line[*eaten] != '\0')
-        (*eaten)++;
-    return 0;
+int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {
+  /* resize the field */
+  keyvalue_t* t=realloc(pa->kv_args,(pa->kv_cnt+1)*sizeof(keyvalue_t));
+  if (!t) { 
+    rrd_set_error("could not realloc memory"); 
+    return -1;
+  } else {
+    /* assign pointer */
+    pa->kv_args=t;
+  }
+  /* fill in data */
+  pa->kv_args[pa->kv_cnt].key=key;
+  pa->kv_args[pa->kv_cnt].value=value;
+  pa->kv_args[pa->kv_cnt].pos=cnt;
+  pa->kv_args[pa->kv_cnt].flag=0;
+  pa->kv_cnt++;
+  /* and return ok */
+  return 0;
 }
 
-/* Try to match next token as a vname.
- *
- * Returns:
- * -1     an error occured and the error string is set
- * other  the vname index number
- *
- * *eaten is incremented only when a vname is found.
- */
-int rrd_parse_find_vname(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    char      tmpstr[MAX_VNAME_LEN + 1];
-    int       i;
-    long      vidx;
+char *poskeys[]={"pos0","pos1","pos2","pos3","pos4","pos5","pos6","pos7","pos8","pos9"};
+int parseArguments(const char* origarg, parsedargs_t* pa) {
+  initParsedArguments(pa);
+  /* now assign a copy */
+  pa->arg=strdup(origarg);
+  if (!pa->arg) { rrd_set_error("Could not allocate memory");return -1; }
+  pa->arg_orig=origarg;
 
-    i = 0;
-    sscanf(&line[*eaten], DEF_NAM_FMT "%n", tmpstr, &i);
-    if (!i) {
-        rrd_set_error("Could not parse line '%s'", line);
-        return -1;
-    }
-    if (line[*eaten + i] != ':' && line[*eaten + i] != '\0') {
-        rrd_set_error("Could not parse line '%s'", line);
-        return -1;
-    }
-    dprintf("- Considering '%s'\n", tmpstr);
-
-    if ((vidx = find_var(im, tmpstr)) < 0) {
-        dprintf("- Not a vname\n");
-        rrd_set_error("Not a valid vname: %s in line %s", tmpstr, line);
-        return -1;
-    }
-    dprintf("- Found vname '%s' vidx '%li'\n", tmpstr, gdp->vidx);
-    if (line[*eaten + i] == ':')
-        i++;
-    (*eaten) += i;
-    return vidx;
-}
-
-/* Parsing old-style xPRINT and new-style xPRINT */
-int rrd_parse_print(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    /* vname:CF:format in case of DEF-based vname
-     ** vname:CF:format in case of CDEF-based vname
-     ** vname:format[:strftime] in case of VDEF-based vname
-     */
-    if ((gdp->vidx = rrd_parse_find_vname(line, eaten, gdp, im)) < 0)
-        return 1;
-
-    switch (im->gdes[gdp->vidx].gf) {
-    case GF_DEF:
-    case GF_CDEF:
-        dprintf("- vname is of type DEF or CDEF, looking for CF\n");
-        if (rrd_parse_CF(line, eaten, gdp, &gdp->cf))
-            return 1;
-        break;
-    case GF_VDEF:
-        dprintf("- vname is of type VDEF\n");
-        break;
-    default:
-        rrd_set_error("Encountered unknown type variable '%s'",
-                      im->gdes[gdp->vidx].vname);
-        return 1;
-    }
-
-    if (rrd_parse_legend(line, eaten, gdp))
-        return 1;
-    /* for *PRINT the legend itself gets rendered later. We only
-       get the format at this juncture */
-    strcpy(gdp->format, gdp->legend);
-    gdp->legend[0] = '\0';
-    /* this is a very crud test, parsing :style flags should be in a function */
-    if (im->gdes[gdp->vidx].gf == GF_VDEF
-        && strcmp(line + (*eaten), ":strftime") == 0) {
-        gdp->strftm = 1;
-        (*eaten) += strlen(":strftime");
-    }
-    return 0;
-}
-
-/* SHIFT:_def_or_cdef:_vdef_or_number_
- */
-int rrd_parse_shift(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    int       i;
-
-    if ((gdp->vidx = rrd_parse_find_vname(line, eaten, gdp, im)) < 0)
-        return 1;
-
-    switch (im->gdes[gdp->vidx].gf) {
-    case GF_DEF:
-    case GF_CDEF:
-        dprintf("- vname is of type DEF or CDEF, OK\n");
-        break;
-    case GF_VDEF:
-        rrd_set_error("Cannot shift a VDEF: '%s' in line '%s'\n",
-                      im->gdes[gdp->vidx].vname, line);
-        return 1;
-    default:
-        rrd_set_error("Encountered unknown type variable '%s' in line '%s'",
-                      im->gdes[gdp->vidx].vname, line);
-        return 1;
-    }
-
-    if ((gdp->shidx = rrd_parse_find_vname(line, eaten, gdp, im)) >= 0) {
-        switch (im->gdes[gdp->shidx].gf) {
-        case GF_DEF:
-        case GF_CDEF:
-            rrd_set_error("Offset cannot be a (C)DEF: '%s' in line '%s'\n",
-                          im->gdes[gdp->shidx].vname, line);
-            return 1;
-        case GF_VDEF:
-            dprintf("- vname is of type VDEF, OK\n");
-            break;
-        default:
-            rrd_set_error
-                ("Encountered unknown type variable '%s' in line '%s'",
-                 im->gdes[gdp->vidx].vname, line);
-            return 1;
-        }
-    } else {
-        long      time_tmp = 0;
-
-        rrd_clear_error();
-        i = 0;
-        sscanf(&line[*eaten], "%li%n", &time_tmp, &i);
-        gdp->shval = time_tmp;
-        if (i != (int) strlen(&line[*eaten])) {
-            rrd_set_error("Not a valid offset: %s in line %s", &line[*eaten],
-                          line);
-            return 1;
-        }
-        (*eaten) += i;
-        dprintf("- offset is number %li\n", gdp->shval);
-        gdp->shidx = -1;
-    }
-    return 0;
-}
-
-/* XPORT:_def_or_cdef[:legend]
- */
-int rrd_parse_xport(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    if ((gdp->vidx = rrd_parse_find_vname(line, eaten, gdp, im)) < 0)
-        return 1;
-
-    switch (im->gdes[gdp->vidx].gf) {
-    case GF_DEF:
-    case GF_CDEF:
-        dprintf("- vname is of type DEF or CDEF, OK\n");
-        break;
-    case GF_VDEF:
-        rrd_set_error("Cannot xport a VDEF: '%s' in line '%s'\n",
-                      im->gdes[gdp->vidx].vname, line);
-        return 1;
-    default:
-        rrd_set_error("Encountered unknown type variable '%s' in line '%s'",
-                      im->gdes[gdp->vidx].vname, line);
-        return 1;
-    }
-    dprintf("- looking for legend in '%s'\n", &line[*eaten]);
-    if (rrd_parse_legend(line, eaten, gdp))
-        return 1;
-    return 0;
-}
-
-int rrd_parse_textalign(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp)
-{
-    if (strcmp(&line[*eaten], "left") == 0) {
-        gdp->txtalign = TXA_LEFT;
-    } else if (strcmp(&line[*eaten], "right") == 0) {
-        gdp->txtalign = TXA_RIGHT;
-    } else if (strcmp(&line[*eaten], "justified") == 0) {
-        gdp->txtalign = TXA_JUSTIFIED;
-    } else if (strcmp(&line[*eaten], "center") == 0) {
-        gdp->txtalign = TXA_CENTER;
-    } else {
-        rrd_set_error("Unknown alignement type '%s'", &line[*eaten]);
-        return 1;
-    }
-    *eaten += strlen(&line[*eaten]);
-    return 0;
-}
-
-
-/* Parsing of VRULE, HRULE, LINE, AREA, STACK and TICK
-** is done in one function.
-**
-** Stacking VRULE, HRULE or TICK is not allowed.
-**
-** If a number (which is valid to enter) is more than a
-** certain amount of characters, it is caught as an error.
-** While this is arguable, so is entering fixed numbers
-** with more than MAX_VNAME_LEN significant digits.
-*/
-int rrd_parse_PVHLAST(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    int       i, j, k, j2;
-    int       colorfound = 0;
-    char      tmpstr[MAX_VNAME_LEN + 10];   /* vname#RRGGBBAA\0 */
-    static int spacecnt = 0;
-
-    if (spacecnt == 0) {
-        float     one_space = gfx_get_text_width(im, 0,
-                                                 im->
-                                                 text_prop[TEXT_PROP_LEGEND].
-                                                 font_desc,
-                                                 im->tabwidth, "    ") / 4.0;
-        float     target_space = gfx_get_text_width(im, 0,
-                                                    im->
-                                                    text_prop
-                                                    [TEXT_PROP_LEGEND].font_desc,
-                                                    im->tabwidth, "oo");
-
-        spacecnt = target_space / one_space;
-        dprintf("- spacecnt: %i onespace: %f targspace: %f\n", spacecnt,
-                one_space, target_space);
-    }
-
-
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-
-    /* have simpler code in the drawing section */
-    if (gdp->gf == GF_STACK) {
-        gdp->stack = 1;
-    }
-
-    i = scan_for_col(&line[*eaten], MAX_VNAME_LEN + 9, tmpstr);
-    if (line[*eaten + i] != '\0' && line[*eaten + i] != ':') {
-        rrd_set_error("Cannot parse line '%s'", line);
-        return 1;
-    }
-    
-	j = i;
-    while (j > 0 && tmpstr[j] != '#')
-        j--;
-	//see if there is a second color
-	j2 = j-1;
-	while (j2 > 0 && tmpstr[j2] != '#')
-		j2--;
-	if (j && j2) {   //yes, swap j and j2, so that j is first color, j2 is second
-		int tmp = j;
-		j = j2;
-		j2 = tmp;
-		tmpstr[j2] = '\0';
+  /* first split arg into : */
+  char  last=1;
+  char c;
+  int cnt=0;
+  int poscnt=0;
+  char* pos=pa->arg;
+  char* field=pos;
+  do {
+    c=*pos;
+    if (! field) { field=pos;cnt++;}
+    switch (c) {
+      /* if the char is a backslash, then this escapes the next one */
+    case '\\':
+      if (pos[1]) { pos++; }
+      break;
+    case 0:
+    case ':':
+      /* null and : separate the string */
+      *pos=0;
+      /* handle the case where we have got an = */
+      /* find equal sign */
+      char* equal=field;
+      for (equal=field;(*equal)&&(*equal!='=');equal++) { ; }
+      /* if we are on position 1 then check for position 0 to be [CV]?DEV */
+      int checkforkeyvalue=1;
+      /* nw define key to use */
+      char *key,*value;
+      if ((*equal=='=') && (checkforkeyvalue)) {
+	*equal=0;
+	key=field;
+	value=equal+1;
+      } else {
+	if ((poscnt>0)&&(strcmp(field,"STACK")==0)) {
+	  key="stack";
+	  value="1";
+	} else if ((poscnt>0)&&(strcmp(field,"strftime")==0)) {
+	  key="strftime";
+	  value="1";
 	} else {
-		j2 = 0;
+	  if (poscnt>9) {
+	    rrd_set_error("too many positional arguments"); 
+	    freeParsedArguments(pa);
+	    return -1;
+	  }
+	  key=poskeys[poscnt];
+	  poscnt++;
+	  value=field;
 	}
+      }
+      /* do some synonym translations */
+      if (strcmp(key,"label")==0) { key="legend"; }
+      if (strcmp(key,"colour")==0) { key="color"; }
+      if (strcmp(key,"colour2")==0) { key="color2"; }
 
-    if (j) {
-        tmpstr[j] = '\0';
+      /* add to fields */
+      if (addToArguments(pa,key,value,cnt)) {
+	freeParsedArguments(pa);
+	return -1;
+      }
+
+      /* and reset field */
+      field=NULL;
+      break;
+    default:
+      break;
     }
-    /* We now have:
-     * tmpstr[0]    containing vname
-     * tmpstr[j]    if j!=0 then containing color
-     * tmpstr[j2]   if j2!=0 then containing second color
-     * i            size of vname 
-     * j            if j!=0 then size of vname
-     * j2			if j2!=0 then size of vname + first color
-     */
-
-    /* Number or vname ?
-     * If it is an existing vname, that's OK, provided that it is a
-     * valid type (need time for VRULE, not a float)
-     * Else see if it parses as a number.
-     */
-    dprintf("- examining string '%s'\n", tmpstr);
-    if ((gdp->vidx = find_var(im, tmpstr)) >= 0) {
-        dprintf("- found vname: '%s' vidx %li\n", tmpstr, gdp->vidx);
-        switch (gdp->gf) {
-        case GF_VRULE:
-        case GF_HRULE:
-            if (im->gdes[gdp->vidx].gf != GF_VDEF) {
-                rrd_set_error("Using vname %s of wrong type in line %s\n",
-                              im->gdes[gdp->gf].vname, line);
-                return 1;
-            }
-            break;
-        default:;
-        }
-    } else {
-        long      time_tmp = 0;
-
-        dprintf("- it is not an existing vname\n");
-        switch (gdp->gf) {
-        case GF_VRULE:
-            k = 0;
-            sscanf(tmpstr, "%li%n", &time_tmp, &k);
-            gdp->xrule = time_tmp;
-            if (((j != 0) && (k == j)) || ((j == 0) && (k == i))) {
-                dprintf("- found time: %li\n", gdp->xrule);
-            } else {
-                dprintf("- is is not a valid number: %li\n", gdp->xrule);
-                rrd_set_error
-                    ("parameter '%s' does not represent time in line %s\n",
-                     tmpstr, line);
-                return 1;
-            }
-        default:
-            k = 0;
-            sscanf(tmpstr, "%lf%n", &gdp->yrule, &k);
-            if (((j != 0) && (k == j)) || ((j == 0) && (k == i))) {
-                dprintf("- found number: %lf\n", gdp->yrule);
-            } else {
-                dprintf("- is is not a valid number: %lf\n", gdp->yrule);
-                rrd_set_error
-                    ("parameter '%s' does not represent a number in line %s\n",
-                     tmpstr, line);
-                return 1;
-            }
-        }
-    }
-
-    if (j) {
-        j++;
-        dprintf("- examining color '%s'\n", &tmpstr[j]);
-        if (rrd_parse_color(&tmpstr[j], gdp)) {
-            rrd_set_error("Could not parse color in '%s'", &tmpstr[j]);
-            return 1;
-        }
-        dprintf("- parsed color %0.0f,%0.0f,%0.0f,%0.0f\n", gdp->col.red,
-                gdp->col.green, gdp->col.blue, gdp->col.alpha);
-        colorfound = 1;
-		if (j2) { //second color?
-			j2++;
-			dprintf("- examining second color '%s'\n", &tmpstr[j2]);
-			//TODO: maybe rrd_parse_color should take a pointer to gdp->col instead of gdp
-			struct gfx_color_t firstcol = gdp->col;
-        	if (rrd_parse_color(&tmpstr[j2], gdp)) {
-            	rrd_set_error("Could not parse color in '%s'", &tmpstr[j2]);
-	            return 1;
-    	    }
-        	dprintf("- parsed color %0.0f,%0.0f,%0.0f,%0.0f\n", gdp->col.red,
-            	    gdp->col.green, gdp->col.blue, gdp->col.alpha);
-			gdp->col2 = gdp->col;
-			gdp->col = firstcol;
-			//we now have a mandatory grid height
-    		(*eaten) += i;
-			if (line[*eaten] != '\0') {
-				(*eaten)++;
-			}
-			dprintf("- examining gradient height\n");
-			i = scan_for_col(&line[*eaten], MAX_VNAME_LEN + 9, tmpstr);
-			sscanf(tmpstr, "%lf%n", &gdp->gradheight, &j);
-			if (i != j) {
-				rrd_set_error("Could not parse gradient height in '%s'", tmpstr);
-				return 1;
-			}
-			dprintf("- parsed gradientheight %0.0f\n", gdp->gradheight);
-		}
-    } else {
-        dprintf("- no color present in '%s'\n", tmpstr);
-    }
-
-    (*eaten) += i;      /* after vname#color */
-    if (line[*eaten] != '\0') {
-        (*eaten)++;     /* after colon */
-    }
-
-    if (gdp->gf == GF_TICK) {
-        dprintf("- parsing '%s'\n", &line[*eaten]);
-        dprintf("- looking for optional TICK number\n");
-        j = 0;
-        sscanf(&line[*eaten], "%lf%n", &gdp->yrule, &j);
-        if (j) {
-            if (line[*eaten + j] != '\0' && line[*eaten + j] != ':') {
-                rrd_set_error("Cannot parse TICK fraction '%s'", line);
-                return 1;
-            }
-            dprintf("- found number %f\n", gdp->yrule);
-            if (gdp->yrule > 1.0 || gdp->yrule < -1.0) {
-                rrd_set_error("Tick factor should be <= 1.0");
-                return 1;
-            }
-            (*eaten) += j;
-        } else {
-            dprintf("- not found, defaulting to 0.1\n");
-            gdp->yrule = 0.1;
-        }
-        if (line[*eaten] == '\0') {
-            dprintf("- done parsing line\n");
-            return 0;
-        } else {
-            if (line[*eaten] == ':') {
-                (*eaten)++;
-            } else {
-                rrd_set_error("Can't make sense of that TICK line");
-                return 1;
-            }
-        }
-    }
-
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-
-    /* Legend is next.  A legend without a color is an error.
-     ** Stacking an item without having a legend is OK however
-     ** then an empty legend should be specified.
-     **   LINE:val#color:STACK  means legend is string "STACK"
-     **   LINE:val#color::STACK means no legend, and do STACK
-     **   LINE:val:STACK        is an error (legend but no color)
-     **   LINE:val::STACK   means no legend, and do STACK
-     */
-    if (colorfound) {
-        int       err = 0;
-        char     *linecp = strdup(line);
-
-        dprintf("- looking for optional legend\n");
-
-        dprintf("- examining '%s'\n", &line[*eaten]);
-        if (linecp[*eaten] != '\0' && linecp[*eaten] != ':') {
-            int       spi;
-
-            /* If the legend is not empty, it has to be prefixed with spacecnt ' ' characters. This then gets
-             * replaced by the color box later on. */
-            for (spi = 0; spi < spacecnt && (*eaten) > 1; spi++) {
-                linecp[--(*eaten)] = ' ';
-            }
-        }
-
-        if (rrd_parse_legend(linecp, eaten, gdp))
-            err = 1;
-        free(linecp);
-        if (err)
-            return 1;
-
-        dprintf("- found legend '%s'\n", &gdp->legend[2]);
-    } else {
-        dprintf("- skipping empty legend\n");
-        if (line[*eaten] != '\0' && line[*eaten] != ':') {
-            rrd_set_error("Legend set but no color: %s", &line[*eaten]);
-            return 1;
-        }
-    }
-    if (line[*eaten] == '\0') {
-        dprintf("- done parsing line\n");
-        return 0;
-    }
-    (*eaten)++;         /* after colon */
-
-    /* HRULE, VRULE and TICK cannot be stacked. */
-    if ((gdp->gf != GF_HRULE)
-        && (gdp->gf != GF_VRULE)
-        && (gdp->gf != GF_TICK)) {
-
-        dprintf("- parsing '%s', looking for STACK\n", &line[*eaten]);
-        j = scan_for_col(&line[*eaten], 5, tmpstr);
-        if (!strcmp("STACK", tmpstr)) {
-            dprintf("- found STACK\n");
-            gdp->stack = 1;
-            (*eaten) += j;
-            if (line[*eaten] == ':') {
-                (*eaten) += 1;
-            } else if (line[*eaten] == '\0') {
-                dprintf("- done parsing line\n");
-                return 0;
-            } else {
-                dprintf("- found %s instead of just STACK\n", &line[*eaten]);
-                rrd_set_error("STACK expected but %s found", &line[*eaten]);
-                return 1;
-            }
-        } else
-            dprintf("- not STACKing\n");
-    }
-
-    dprintf("- still more, should be dashes[=...]\n");
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-    if (line[*eaten] != '\0') {
-        /* parse dash arguments here. Possible options:
-           - dashes
-           - dashes=n_on[,n_off[,n_on,n_off]]
-           - dashes[=n_on[,n_off[,n_on,n_off]]]:dash-offset=offset
-           allowing 64 characters for definition of dash style */
-        j = scan_for_col(&line[*eaten], 64, tmpstr);
-        /* start with dashes */
-        if (strcmp(tmpstr, "dashes") == 0) {
-            /* if line was "dashes" or "dashes:dash-offset=xdashes="
-               tmpstr will be "dashes" */
-            dprintf("- found %s\n", tmpstr);
-            /* initialise all required variables we need for dashed lines
-               using default dash length of 5 pixels */
-            gdp->dash = 1;
-            gdp->p_dashes = (double *) malloc(sizeof(double));
-            gdp->p_dashes[0] = 5;
-            gdp->ndash = 1;
-            gdp->offset = 0;
-            (*eaten) += j;
-        } else if (sscanf(tmpstr, "dashes=%s", tmpstr)) {
-            /* dashes=n_on[,n_off[,n_on,n_off]] */
-            char      csv[64];
-            char     *pch;
-            float     dsh;
-            int       count = 0;
-            char     *saveptr;
-
-            strcpy(csv, tmpstr);
-
-            pch = strtok_r(tmpstr, ",", &saveptr);
-            while (pch != NULL) {
-                pch = strtok_r(NULL, ",", &saveptr);
-                count++;
-            }
-            dprintf("- %d dash value(s) found: ", count);
-            if (count > 0) {
-                gdp->dash = 1;
-                gdp->ndash = count;
-                gdp->p_dashes = (double *) malloc(sizeof(double) * count);
-                pch = strtok_r(csv, ",", &saveptr);
-                count = 0;
-                while (pch != NULL) {
-                    if (sscanf(pch, "%f", &dsh)) {
-                        gdp->p_dashes[count] = (double) dsh;
-                        dprintf("%.1f ", gdp->p_dashes[count]);
-                        count++;
-                    }
-                    pch = strtok_r(NULL, ",", &saveptr);
-                }
-                dprintf("\n");
-            } else
-                dprintf("- syntax error. No dash lengths found!\n");
-            (*eaten) += j;
-        } else
-            dprintf("- error: expected dashes[=...], found %s\n", tmpstr);
-        if (line[*eaten] == ':') {
-            (*eaten) += 1;
-        } else if (line[*eaten] == '\0') {
-            dprintf("- done parsing line\n");
-            return 0;
-        }
-        /* dashes[=n_on[,n_off[,n_on,n_off]]]:dash-offset=offset
-           allowing 16 characters for dash-offset=....
-           => 4 characters for the offset value */
-        j = scan_for_col(&line[*eaten], 16, tmpstr);
-        if (sscanf(tmpstr, "dash-offset=%lf", &gdp->offset)) {
-            dprintf("- found dash-offset=%.1f\n", gdp->offset);
-            gdp->dash = 1;
-            (*eaten) += j;
-            if (line[*eaten] == ':')
-                (*eaten) += 1;
-        }
-        if (line[*eaten] == '\0') {
-            dprintf("- done parsing line\n");
-            return 0;
-        }
-    }
-    if (line[*eaten] == '\0') {
-        dprintf("- done parsing line\n");
-        return 0;
-    }
-    (*eaten)++;
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-
-    return 0;
+    /* assign last */
+    last=c;
+    /* and step to next one byte */
+    pos++;
+  } while (c);
+  /* and return OK */
+  return 0;
 }
 
-int rrd_parse_make_vname(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
+int parse_color( const char *const, struct gfx_color_t *);
+int parse_color( const char *const string, struct gfx_color_t *c)
 {
-    char      tmpstr[MAX_VNAME_LEN + 10];
-    int       i = 0;
-
-    sscanf(&line[*eaten], DEF_NAM_FMT "=%n", tmpstr, &i);
-    if (!i) {
-        rrd_set_error("Cannot parse vname from '%s'", line);
-        return 1;
-    }
-    if (line[*eaten+i] == '\0') {
-        rrd_set_error("String ends after the = sign on '%s'", line);
-        return 1;
-    }
-    dprintf("- found candidate '%s'\n", tmpstr);
-
-    if ((gdp->vidx = find_var(im, tmpstr)) >= 0) {
-        rrd_set_error("Attempting to reuse '%s'", im->gdes[gdp->vidx].vname);
-        return 1;
-    }
-    strcpy(gdp->vname, tmpstr);
-    dprintf("- created vname '%s' vidx %lu\n", gdp->vname, im->gdes_c - 1);
-    (*eaten) += i;
-    return 0;
+  unsigned int r = 0, g = 0, b = 0, a = 0, i;
+  
+  /* matches the following formats:
+  ** RGB
+  ** RGBA
+  ** RRGGBB
+  ** RRGGBBAA
+  */
+  
+  i = 0;
+  while (string[i] && isxdigit((unsigned int) string[i]))
+    i++;
+  if (string[i] != '\0')
+    return 1;       /* garbage follows hexdigits */
+  switch (i) {
+  case 3:
+  case 4:
+    sscanf(string, "%1x%1x%1x%1x", &r, &g, &b, &a);
+    r *= 0x11;
+    g *= 0x11;
+    b *= 0x11;
+    a *= 0x11;
+    if (i == 3)
+      a = 0xFF;
+    break;
+  case 6:
+  case 8:
+    sscanf(string, "%02x%02x%02x%02x", &r, &g, &b, &a);
+    if (i == 6)
+      a = 0xFF;
+    break;
+  default:
+    return 1;       /* wrong number of digits */
+  }
+  /* I wonder how/why this works... */
+  *c=gfx_hex_to_col(r << 24 | g << 16 | b << 8 | a);
+  return 0;
 }
 
-int rrd_parse_def(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    int       i = 0;
-    char      command[7];   /* step, start, end, reduce */
-    char      tmpstr[256];
-    rrd_time_value_t start_tv, end_tv;
+/* this would allow for 240 different values */
+#define PARSE_FIELD1       (1L<<60)
+#define PARSE_FIELD2       (1L<<61)
+#define PARSE_FIELD3       (1L<<62)
+#define PARSE_FIELD4       (1L<<63)
+#define PARSE_POSITIONAL   (1L<<59)
+#define PARSE_ONYAXIS      (1L<<58)
+#define PARSE_VNAME        (PARSE_FIELD1|(1L<< 0))
+#define PARSE_RRD          (PARSE_FIELD1|(1L<< 1))
+#define PARSE_DS           (PARSE_FIELD1|(1L<< 2))
+#define PARSE_CF           (PARSE_FIELD1|(1L<< 3))
+#define PARSE_COLOR        (PARSE_FIELD1|(1L<< 4))
+#define PARSE_COLOR2       (PARSE_FIELD1|(1L<< 5))
+#define PARSE_LEGEND       (PARSE_FIELD1|(1L<< 6))
+#define PARSE_RPN          (PARSE_FIELD1|(1L<< 7))
+#define PARSE_START        (PARSE_FIELD1|(1L<< 8))
+#define PARSE_STEP         (PARSE_FIELD1|(1L<< 9))
+#define PARSE_END          (PARSE_FIELD1|(1L<<10))
+#define PARSE_STACK        (PARSE_FIELD1|(1L<<11))
+#define PARSE_LINEWIDTH    (PARSE_FIELD1|(1L<<12))
+#define PARSE_XAXIS        (PARSE_FIELD1|(1L<<13))
+#define PARSE_YAXIS        (PARSE_FIELD1|(1L<<14))
+#define PARSE_REDUCE       (PARSE_FIELD1|(1L<<15))
+#define PARSE_DASHES       (PARSE_FIELD1|(1L<<20))
+#define PARSE_HEIGHT       (PARSE_FIELD1|(1L<<21))
+#define PARSE_FORMAT       (PARSE_FIELD1|(1L<<22))
+#define PARSE_STRFTIME     (PARSE_FIELD1|(1L<<23))
+#define PARSE_FRACTION     (PARSE_FIELD1|(1L<<24))
+/* VNAME Special cases for generic parsing */
+#define PARSE_VNAMEDEF            (PARSE_VNAME|(1L<<57))
+#define PARSE_VNAMEREF            (PARSE_VNAME|(1L<<56))
+#define PARSE_VNAMEREFNUM         (PARSE_VNAMEREF|(1L<<55))
+#define PARSE_VNAMEREFNUMNOPARSE  (PARSE_FIELD1|(1L<<54))
+/* special positional cases */
+#define PARSE_VNAMERRDDSCF     (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RRD|PARSE_DS|PARSE_CF)
+#define PARSE_VNAMECOLORLEGEND (PARSE_POSITIONAL|PARSE_VNAMEREFNUM|PARSE_COLOR|PARSE_COLOR2|PARSE_LEGEND)
+#define PARSE_VNAMECOLORFRACTIONLEGEND (PARSE_VNAMECOLORLEGEND|PARSE_FRACTION)
+#define PARSE_VNAMERPN         (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RPN)
+#define PARSE_VNAMEREFPOS      (PARSE_POSITIONAL|PARSE_VNAMEREF)
+
+graph_desc_t* newGraphDescription(image_desc_t *const,enum gf_en,parsedargs_t*,unsigned long);
+graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedargs_t* pa,unsigned long bits) {
+  /* check that none of the othe bitfield marker is set */
+  if ((bits&PARSE_FIELD1)&&((bits&(PARSE_FIELD2|PARSE_FIELD3|PARSE_FIELD4)))) {
+    rrd_set_error("newGraphDescription: bad bitfield1 value %08x",bits);return NULL; }
+  /* the normal handler that adds to img */
+  if (gdes_alloc(im)) { return NULL; }
+  /* set gdp */
+  graph_desc_t *gdp= &im->gdes[im->gdes_c - 1];
+
+  /* set some generic things */
+  gdp->gf=gf;
+  if (1) {
+    char *t,*x; 
+    long debug=0;
+    if ((t=getKeyValueArgument("debug",1,pa)) && ((getLong(t,&debug,&x,10)))) {
+      rrd_set_error("Bad debug value: %s",t); return NULL; }
+    gdp->debug=debug;
+  }
+
+  /* and the "flagged" parser implementation 
+   *
+   * first the fields with legacy positional args 
+   */
+#define bitscmp(v) ((bits&v)==v)
+  char* vname=NULL;
+  if (bitscmp(PARSE_VNAME)) { vname=getKeyValueArgument("vname",1,pa); 
+    dprintfparsed("got vname: %s\n",vname);}
+  char *rrd=NULL;
+  if (bitscmp(PARSE_RRD)) { rrd=getKeyValueArgument("rrd",1,pa);
+    dprintfparsed("got rrd: %s\n",rrd);}
+  char *ds=NULL;
+  if (bitscmp(PARSE_DS)) { ds=getKeyValueArgument("ds",1,pa);
+    dprintfparsed("got ds: %s\n",ds);}
+  char *cf=NULL;
+  if (bitscmp(PARSE_CF)) { cf=getKeyValueArgument("cf",1,pa);
+    dprintfparsed("got cf: %s\n",cf);}
+  char *color=NULL;
+  if (bitscmp(PARSE_COLOR)) { color=getKeyValueArgument("color",1,pa);
+    dprintfparsed("got color: %s\n",color);}
+  char *color2=NULL;
+  if (bitscmp(PARSE_COLOR2)) { color2=getKeyValueArgument("color2",1,pa); 
+    dprintfparsed("got color2: %s\n",color2);}
+  char *rpn=NULL;
+  if (bitscmp(PARSE_RPN)) { rpn=getKeyValueArgument("rpn",1,pa); 
+    dprintfparsed("got rpn: %s\n",rpn);}
+  char *legend=NULL;
+  if (bitscmp(PARSE_LEGEND)) { legend=getKeyValueArgument("legend",1,pa); 
+    dprintfparsed("got legend: %s\n",legend);}
+  char *fraction=NULL;
+  if (bitscmp(PARSE_FRACTION)) { fraction=getKeyValueArgument("fraction",1,pa); 
+    dprintfparsed("got fraction: %s\n",fraction);}
+  /* 
+   * here the ones without delayed assigns (which are for positional parsers) 
+  */
+  if (bitscmp(PARSE_FORMAT)) { 
+    char *format=getKeyValueArgument("format",1,pa);
+    if(format) {
+      strncpy(gdp->format,format,FMT_LEG_LEN);
+      dprintfparsed("got format: %s\n",format);
+    }
+  }
+  if (bitscmp(PARSE_STRFTIME)) { 
+    char *strft=getKeyValueArgument("strftime",1,pa);
+    gdp->strftm=(strft)?1:0;
+    dprintfparsed("got strftime: %s\n",strft);
+  }
+  if (bitscmp(PARSE_STACK)) { 
+    char *stack=getKeyValueArgument("stack",1,pa);
+    gdp->stack=(stack)?1:0;
+    dprintfparsed("got stack: %s\n",stack);
+  }
+  if (bitscmp(PARSE_REDUCE)) { 
+    char *reduce=getKeyValueArgument("reduce",1,pa);
+    if (reduce) { 
+      gdp->cf_reduce=cf_conv(reduce);
+      dprintfparsed("got reduce: %s (%i)\n",reduce,gdp->cf_reduce);
+      if (((int)gdp->cf_reduce)==-1) { rrd_set_error("bad reduce CF: %s",reduce); return NULL; }
+    }
+  }
+  if (bitscmp(PARSE_XAXIS)) {
+    long xaxis=0;
+    char *t,*x; 
+    if ((t=getKeyValueArgument("xaxis",1,pa)) && ((getLong(t,&xaxis,&x,10))||(xaxis<1)||(xaxis>MAX_AXIS))) {
+      rrd_set_error("Bad xaxis value: %s",t); return NULL; }
+    dprintfparsed("got xaxis: %s (%li)\n",t,xaxis);
+    gdp->xaxisidx=xaxis;
+  }
+  if (bitscmp(PARSE_YAXIS)) {
+    long yaxis=0;
+    char *t,*x; 
+    if ((t=getKeyValueArgument("yaxis",1,pa)) && ((getLong(t,&yaxis,&x,10))||(yaxis<1)||(yaxis>MAX_AXIS))) {
+      rrd_set_error("Bad yaxis value: %s",t); return NULL; }
+    dprintfparsed("got yaxis: %s (%li)\n",t,yaxis);
+    gdp->yaxisidx=yaxis;
+  }
+  if (bitscmp(PARSE_LINEWIDTH)) {
+    double linewidth=0;
+    char *t,*x; 
+    if ((t=getKeyValueArgument("linewidth",1,pa))&&(*t!=0)) {
+      if ((getDouble(t,&linewidth,&x))||(linewidth<=0)) {
+	rrd_set_error("Bad line width: %s",t); return NULL;
+      }
+      dprintfparsed("got linewidth: %s (%g)\n",t,linewidth);
+      gdp->linewidth=linewidth;
+    }
+  }
+  if (bitscmp(PARSE_HEIGHT)) {
+    double height=0;
+    char *t,*x; 
+    if ((t=getKeyValueArgument("height",1,pa))&&(*t!=0)) {
+      if (getDouble(t,&height,&x)) {
+	rrd_set_error("Bad height: %s",t); return NULL;
+      }
+      dprintfparsed("got height: %s (%g)\n",t,height);
+      gdp->gradheight=height;
+    }
+  }
+  if (bitscmp(PARSE_STEP)) {
+    long step=0;
+    char *t,*x; 
+    if ((t=getKeyValueArgument("step",1,pa)) && ((getLong(t,&step,&x,10))||(step<1))) {
+      rrd_set_error("Bad step value: %s",t); return NULL; }
+    dprintfparsed("got step: %s (%li)\n",t,step);
+    gdp->step=step;
+  }
+  if ((bitscmp(PARSE_START)||bitscmp(PARSE_END))) {
+    /* these should get done together to use the start/end code correctly*/
+    char* parsetime_error;
+    /* first start */
+    char* start;
+    rrd_time_value_t start_tv;
+    start_tv.type   = ABSOLUTE_TIME;
+    start_tv.offset = 0;
+    localtime_r(&gdp->start, &start_tv.tm);   
+    if (bitscmp(PARSE_START)) { 
+      start=getKeyValueArgument("start",1,pa);
+      if ((start)&&(parsetime_error = rrd_parsetime(start, &start_tv))) {
+	rrd_set_error("start time: %s", parsetime_error);return NULL; }
+      dprintfparsed("got start: %s\n",start);
+    }
+    /* now end */
+    char* end;
+    rrd_time_value_t end_tv;
+    end_tv.type   = ABSOLUTE_TIME;
+    end_tv.offset = 0;
+    localtime_r(&gdp->end, &end_tv.tm);   
+    if (bitscmp(PARSE_END)) { 
+      end=getKeyValueArgument("end",1,pa);
+      if ((end)&&(parsetime_error = rrd_parsetime(end, &end_tv))) {
+	rrd_set_error("end time: %s", parsetime_error); return NULL; }
+      dprintfparsed("got end: %s\n",end);
+    }
+    /* and now put the pieces together (relative times like start=end-2days) */
     time_t    start_tmp = 0, end_tmp = 0;
-    char     *parsetime_error = NULL;
-
-    start_tv.type = end_tv.type = ABSOLUTE_TIME;
-    start_tv.offset = end_tv.offset = 0;
-    localtime_r(&gdp->start, &start_tv.tm);
-    localtime_r(&gdp->end, &end_tv.tm);
-
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-    dprintf("- from line '%s'\n", line);
-
-    if (rrd_parse_make_vname(line, eaten, gdp, im))
-        return 1;
-    i = scan_for_col(&line[*eaten], sizeof(gdp->rrd) - 1, gdp->rrd);
-    if (line[*eaten + i] != ':') {
-        rrd_set_error("Problems reading database name");
-        return 1;
-    }
-    (*eaten) += ++i;
-    dprintf("- using file '%s'\n", gdp->rrd);
-
-    i = 0;
-    sscanf(&line[*eaten], DS_NAM_FMT ":%n", gdp->ds_nam, &i);
-    if (!i) {
-        rrd_set_error("Cannot parse DS in '%s'", line);
-        return 1;
-    }
-    (*eaten) += i;
-    dprintf("- using DS '%s'\n", gdp->ds_nam);
-
-    if (rrd_parse_CF(line, eaten, gdp, &gdp->cf))
-        return 1;
-    gdp->cf_reduce = gdp->cf;
-
-    if (line[*eaten] == '\0')
-        return 0;
-
-    while (1) {
-        dprintf("- optional parameter follows: %s\n", &line[*eaten]);
-        i = 0;
-        sscanf(&line[*eaten], "%6[a-z]=%n", command, &i);
-        if (!i) {
-            rrd_set_error("Parse error in '%s'", line);
-            return 1;
-        }
-        (*eaten) += i;
-        dprintf("- processing '%s'\n", command);
-        if (!strcmp("reduce", command)) {
-            if (rrd_parse_CF(line, eaten, gdp, &gdp->cf_reduce))
-                return 1;
-            if (line[*eaten] != '\0')
-                (*eaten)--;
-        } else if (!strcmp("step", command)) {
-            i = 0;
-            sscanf(&line[*eaten], "%lu%n", &gdp->step, &i);
-            gdp->step_orig = gdp->step;
-            (*eaten) += i;
-            dprintf("- using step %lu\n", gdp->step);
-        } else if (!strcmp("start", command)) {
-            i = scan_for_col(&line[*eaten], 255, tmpstr);
-            (*eaten) += i;
-            if ((parsetime_error = rrd_parsetime(tmpstr, &start_tv))) {
-                rrd_set_error("start time: %s", parsetime_error);
-                return 1;
-            }
-            dprintf("- done parsing:  '%s'\n", &line[*eaten]);
-        } else if (!strcmp("end", command)) {
-            i = scan_for_col(&line[*eaten], 255, tmpstr);
-            (*eaten) += i;
-            if ((parsetime_error = rrd_parsetime(tmpstr, &end_tv))) {
-                rrd_set_error("end time: %s", parsetime_error);
-                return 1;
-            }
-            dprintf("- done parsing:  '%s'\n", &line[*eaten]);
-        } else if (!strcmp("daemon", command)) {
-            i = scan_for_col(&line[*eaten],
-                    sizeof (gdp->daemon), gdp->daemon);
-            (*eaten) += i;
-            dprintf("- using daemon '%s'\n", gdp->daemon);
-        } else {
-            rrd_set_error("Parse error in '%s'", line);
-            return 1;
-        }
-        if (line[*eaten] == '\0')
-            break;
-        if (line[*eaten] != ':') {
-            dprintf("- Expected to see end of string but got '%s'\n",
-                    &line[*eaten]);
-            rrd_set_error("Parse error in '%s'", line);
-            return 1;
-        }
-        (*eaten)++;
-    }
     if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
-        /* error string is set in rrd_parsetime.c */
-        return 1;
+      return NULL;
     }
+    dprintfparsed("got start %s translated to: %lld\n",start,(long long int)start_tmp);
+    dprintfparsed("got end %s translated to: %lld\n",end,(long long int)end_tmp);
+
+    /* check some ranges */
     if (start_tmp < 3600 * 24 * 365 * 10) {
-        rrd_set_error("the first entry to fetch should be "
-                      "after 1980 (%ld)", start_tmp);
-        return 1;
-    }
-
+      rrd_set_error("the first entry to fetch should be "
+		    "after 1980 (%ld)", start_tmp);
+      return NULL; }
     if (end_tmp < start_tmp) {
-        rrd_set_error("start (%ld) should be less than end (%ld)",
-                      start_tmp, end_tmp);
-        return 1;
-    }
-
+      rrd_set_error("start (%ld) should be less than end (%ld)",
+		    start_tmp, end_tmp);
+      return NULL; }
+    
+    /* and finally set it irrespectively of if it has been set or not
+     * it may have been a relative time and if you just set it partially
+     * then that is wrong...
+     */
     gdp->start = start_tmp;
-    gdp->end = end_tmp;
     gdp->start_orig = start_tmp;
+    gdp->end = end_tmp;
     gdp->end_orig = end_tmp;
+  }
+  if (bitscmp(PARSE_DASHES)) {
+    char* dashes=getKeyValueArgument("dashes",1,pa);
+    /* if we got dashes */
+    if (dashes) {
+      gdp->offset = 0;
+      /* count the , in  dashes */
+      int cnt=0;for(char*t=dashes;(*t)&&(t=strchr(t,','));t++,cnt++) {;}
+      dprintfparsed("Got dashes argument: %s with %i comma\n",dashes,cnt);
+      /* now handle */
+      gdp->ndash = cnt+1;
+      gdp->p_dashes = (double *) malloc(sizeof(double)*(gdp->ndash+1));
+      /* now loop dashes */
+      for(int i=0;i<gdp->ndash;i++) {
+	char *x; 
+	int f=getDouble(dashes,&gdp->p_dashes[i],&x);
+	if(f<0) {
+	  rrd_set_error("Could not parse number: %s",dashes); return NULL;
+	}
+	/* we should have this most of the time */
+	dprintfparsed("Processed %s to %g at index %i\n",dashes,gdp->p_dashes[i],i);
+	if (f>0) { 
+	  if (*x!=',') {
+	    rrd_set_error("expected a ',' at : %s",x); return NULL;}
+	  dashes=x+1;
+	}
+	if ((f==0)&&(i!=gdp->ndash-1)) {
+	  rrd_set_error("unexpected end at : %s",dashes); return NULL;}
+      }
+    }
+    char* dashoffset=getKeyValueArgument("dash-offset",1,pa);
+    if (dashoffset) {
+      char* x;
+      if (getDouble(dashes,&gdp->offset,&x)) {
+	rrd_set_error("Could not parse dash-offset: %s",dashoffset); return NULL; }
+    }
+  }
 
-    dprintf("- start time %lu\n", gdp->start);
-    dprintf("- end   time %lu\n", gdp->end);
+  /* here now the positional(=legacy) parsers which are EXCLUSIVE - SO ELSE IF !!! 
+   * we also only parse the extra here and assign just further down
+   * TODO maybe we can generalize this a bit more...
+   */
+  if (bitscmp(PARSE_VNAMERRDDSCF)) {
+    if ((!vname)||(!rrd)) {
+      /* get the first unused argument */
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (!first) { rrd_set_error("No argument for definition of vdef/rrd in %s",pa->arg_orig); return NULL; }
+      dprintfparsed("got positional vname and rrd: %s - %s\n",first->key,first->value);
+      if (!vname) {vname=first->key;}
+      if (!rrd) {rrd=first->value; }
+    }
+    /* and now look for datasource */
+    if (!ds) {
+      /* get the first unused argument */
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (!first) { rrd_set_error("No argument for definition of DS in %s",pa->arg_orig); return NULL; }
+      dprintfparsed("got positional ds: %s - \n",first->value);
+      ds=first->value;
+    }
+    /* and for CF */
+    if (!cf) {
+      /* get the first unused argument */
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (!first) { rrd_set_error("No argument for definition of CF in %s",pa->arg_orig); return NULL; }
+      dprintfparsed("got positional cf: %s - \n",first->value);
+      cf=first->value;
+    }    
+  } else if (bitscmp(PARSE_VNAMECOLORLEGEND)) {
+    /* vname */
+    if (!vname) {
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (first) { vname=first->value;
+      } else { rrd_set_error("No positional VNAME"); return NULL; }
+    }
+    /* fraction added into the parsing mix for TICK */
+    if ((bitscmp(PARSE_VNAMECOLORFRACTIONLEGEND))&&(!fraction)) {
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (first) { fraction=first->value;
+      } else { rrd_set_error("No positional FRACTION"); return NULL; }
+    }    
+    /* legend */
+    if (!legend) {
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (first) { legend=first->value;
+	dprintfparsed("got positional legend: %s - \n",first->value);
+      } else { rrd_set_error("No positional legend found"); return NULL; }
+    }
+  } else if (bitscmp(PARSE_VNAMERPN)) {
+    if ((!vname)||(!rpn)) {
+      /* get the first unused argument */
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (!first) { rrd_set_error("No argument for definition of vdef/rrd in %s",pa->arg_orig); return NULL; }
+      dprintfparsed("got positional vname and rpn: %s - %s\n",first->key,first->value);
+      if (!vname) {vname=first->key;}
+      if (!rpn) {rpn=first->value; }
+    }
+  } else if (bitscmp(PARSE_VNAMEREFPOS)) {
+    if ((!vname)) {
+      /* get the first unused argument */
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (!first) { rrd_set_error("No argument for definition of vdef/rrd in %s",pa->arg_orig); return NULL; }
+      dprintfparsed("got positional vname and rrd: %s - %s\n",first->key,first->value);
+      if (!vname) {vname=first->value;}
+    }
+  }
+    
+  /* and set some of those late assignments to accomodate the legacy parser*/
+  /* first split vname into color */
+  if (vname) { 
+    /* check for color */
+    char *h1=strchr(vname,'#');
+    char* h2=NULL;
+    if (h1) {
+      *h1=0;h1++;
+      dprintfparsed("got positional color: %s - \n",h1);
+      h2=strchr(h1,'#');
+      if (h2) {
+	*h2=0;h2++;
+	dprintfparsed("got positional color2: %s - \n",h2);
+      }
+    }
+    if (bitscmp(PARSE_COLOR) && (! color) && (h1)) { color=h1;}
+    if (bitscmp(PARSE_COLOR2) && (! color2) && (h2)) { color2=h2;}
+  }
 
-    return 0;
+  /* check if we are reusing the vname */
+  if (vname) {
+    int idx=find_var(im, vname);
+    dprintfparsed("got positional index %i for %s - \n",idx,vname);
+    
+    /* some handling */
+    if (bitscmp(PARSE_VNAMEDEF)) {
+      if (idx>=0) {
+	rrd_set_error("trying to reuse vname %s",vname); return NULL; }
+    } else if (bitscmp(PARSE_VNAMEREF)) {
+      if (idx>=0) {
+	gdp->vidx=idx;    
+      } else if (bitscmp(PARSE_VNAMEREFNUM)) {
+	if (!bitscmp(PARSE_VNAMEREFNUMNOPARSE)) {
+	  double val;
+	  char *x; 
+	  int f=getDouble(vname,&val,&x);
+	  if (f) {
+	    rrd_set_error("error parsing number %s",vname); return NULL;
+	  }
+	  gdp->yrule=val;
+	} else {
+	  rrd_set_error("vname %s not found",vname); return NULL;
+	}
+      } else {
+	gdp->vidx=-1;
+      }
+    }
+  }
+  
+  /* and assign it */
+  if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1); }
+  if (rrd) { strncpy(gdp->rrd,rrd,1024); }
+  if (ds) { strncpy(gdp->ds_nam,ds,DS_NAM_SIZE); }
+  if (cf) { 
+    gdp->cf=cf_conv(cf);
+    if (((int)gdp->cf)==-1) { 
+      rrd_set_error("bad CF: %s",cf); return NULL; }
+  } else { if (bitscmp(PARSE_CF)) {gdp->cf=-1;}}
+  if ((color)&&(parse_color(color,&(gdp->col)))) { return NULL; }
+  if ((color2)&&(parse_color(color2,&(gdp->col2)))) { return NULL; }
+  if (rpn) {gdp->rpn=rpn;}
+  if ((legend)&&(*legend!=0)) {
+    /* some spacing before we really start with the legend - needed for some reason */
+    char* t=gdp->legend;
+    *t=' ';t++;
+    *t=' ';t++;
+    /* and copy it into place */
+    strncpy(t,legend,FMT_LEG_LEN);
+  }
+  if (fraction) {
+    if (strcmp(fraction,"vname")==0) {
+      /* check that vname is really a DEF|CDEF */
+      if (im->gdes[gdp->vidx].gf != GF_DEF && im->gdes[gdp->vidx].gf != GF_CDEF) {
+	rrd_set_error("variable '%s' not DEF nor CDEF when using dynamic fractions", gdp->vname);
+	return NULL;
+      }
+      /* add as flag to use (c)?def */
+      gdp->cf=CF_LAST;
+      gdp->yrule=0.5;
+    } else {
+      /* parse number */
+      double val;
+      char *x; 
+      int f=getDouble(fraction,&val,&x);
+      if (f) {
+	rrd_set_error("error parsing number %s",vname); return NULL;
+      }
+      gdp->yrule=val;
+    }
+  }
+  /* and return it */
+  return gdp;
 }
 
-int rrd_parse_vdef(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    char      tmpstr[MAX_VNAME_LEN + 1];    /* vname\0 */
-    int       i = 0;
+/* and some defines */
+#define set_match(str,pat,cmd) if (strcmp(pat, str) == 0)  { cmd ;}
 
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-    if (rrd_parse_make_vname(line, eaten, gdp, im))
-        return 1;
+/* prototypes */
+int parse_axis(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_def(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_cvdef(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_line(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_area(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_stack(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_print(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_gprint(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_comment(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_hvrule(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_grad(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_tick(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_textalign(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_shift(enum gf_en,parsedargs_t*,image_desc_t *const);
+int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
 
-    sscanf(&line[*eaten], DEF_NAM_FMT ",%n", tmpstr, &i);
-    if (!i) {
-        rrd_set_error("Cannot parse line '%s'", line);
-        return 1;
+/* implementations */
+int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+#if 0
+  /* define X or y axis */
+  axis_t *a=im->xaxis;
+  if (gf == GF_YAXIS) { a=im->yaxis; }
+  /* try to parse the number */
+  char* cmd=getKeyValueArgument("cmd",1,pa);
+  if (cmd[5]) {
+    int num=atoi(cmd+5);
+    if ((num<1)||(num>MAX_AXIS)) {
+      rrd_set_error("invalid axis ID %i in %s - should be in range [1:%i]",num,cmd,MAX_AXIS);
+      return 1;
     }
-    if ((gdp->vidx = find_var(im, tmpstr)) < 0) {
-        rrd_set_error("Not a valid vname: %s in line %s", tmpstr, line);
-        return 1;
-    }
+    /* and forward by that much */
+    a=a+(num-1);
+  }
+
+  /* and set type */
+  char* t=getKeyValueArgument("type",1,pa);
+  if (t) {
+    set_match(t,"TIME",a->type=AXIS_TYPE_TIME)
+    else 
+      set_match(t,"LINEAR",a->type=AXIS_TYPE_LINEAR)
+      else
+	set_match(t,"LOGARITHMIC",a->type=AXIS_TYPE_LOGARITHMIC)
+      else {
+	rrd_set_error("unsupported axis type %s",t); 
+	return 1;
+      }
+  }
+  /* and other stuff */
+  a->bounds.lowertxt=getKeyValueArgument("min",1,pa);
+  a->bounds.uppertxt=getKeyValueArgument("max",1,pa);
+#endif
+  /* and return */
+  return 0;
+}
+
+int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMERRDDSCF 
+					|PARSE_START
+					|PARSE_STEP
+					|PARSE_END
+					|PARSE_REDUCE
+					); 
+  if (!gdp) { return -1;}
+
+  /* debugging output */
+  dprintf("=================================\n");
+  dprintf("DEF   : %s\n",pa->arg_orig);
+  dprintf("VNAME : %s\n",gdp->vname);
+  dprintf("RRD   : %s\n",gdp->rrd);
+  dprintf("DS    : %s\n",gdp->ds_nam);
+  dprintf("CF    : %i\n",gdp->cf);
+  dprintf("START : (%lld)\n",(long long int)gdp->start);
+  dprintf("STEP  : (%lld)\n",(long long int)gdp->step);
+  dprintf("END   : (%lld)\n",(long long int)gdp->end);
+  dprintf("REDUCE: (%i)\n",gdp->cf_reduce);
+  dprintf("=================================\n");
+
+  /* and return fine */
+  return 0;
+}  
+
+int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMERPN 
+					); 
+  if (!gdp) { return -1;}
+
+  /* handle RPN parsing */
+  if (gf==GF_CDEF) {
+    /* parse rpn */
+    if ((gdp->rpnp= rpn_parse((void *) im, gdp->rpn, &find_var_wrapper)) == NULL) {
+      return -1; }
+  } else {
+    /* parse vdef, as vdef_parse is a bit "stupid" right now we have to touch things here */
+    /* so find first , */
+    char*c=strchr(gdp->rpn,',');
+    if (! c) { rrd_set_error("Comma expected in VDEF definition %s",gdp->rpn); return -1;}
+    /* found a comma, so copy the first part to ds_name (re/abusing it) */
+    *c=0;
+    strncpy(gdp->ds_nam,gdp->rpn,DS_NAM_SIZE);
+    *c=',';
+    /* trying to find the vidx for that name */
+    gdp->vidx = find_var(im, gdp->ds_nam);
+    if (gdp->vidx<0) { *c=',';
+      rrd_set_error("Not a valid vname: %s in line %s", gdp->ds_nam, gdp->rpn);
+      return -1;}
     if (im->gdes[gdp->vidx].gf != GF_DEF && im->gdes[gdp->vidx].gf != GF_CDEF) {
-        rrd_set_error("variable '%s' not DEF nor "
-                      "CDEF in VDEF '%s'", tmpstr, gdp->vname);
-        return 1;
+      rrd_set_error("variable '%s' not DEF nor "
+		    "CDEF in VDEF '%s'", gdp->ds_nam, gdp->rpn);
+      return 1;
     }
-    dprintf("- found vname: '%s' vidx %li\n", tmpstr, gdp->vidx);
-    (*eaten) += i;
+    /* and parsing the rpn */
+    int r=vdef_parse(gdp, c+1);
+    /* original code does not check here for some reason */
+    if (r) { return -1; }
+  }
 
-    dprintf("- calling vdef_parse with param '%s'\n", &line[*eaten]);
-    vdef_parse(gdp, &line[*eaten]);
-    while (line[*eaten] != '\0' && line[*eaten] != ':')
-        (*eaten)++;
+  /* debugging output */
+  dprintf("=================================\n");
+  if (gf==GF_CDEF) {
+    dprintf("CDEF  : %s\n",pa->arg_orig);
+  } else {
+    dprintf("VDEF  : %s\n",pa->arg_orig);
+  }
+  dprintf("VNAME : %s\n",gdp->vname);
+  dprintf("RPN   : %s\n",gdp->rpn);
+  dprintf("=================================\n");
 
-    return 0;
+  /* and return fine */
+  return 0;
+}  
+
+
+int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORLEGEND
+					|PARSE_STACK
+					|PARSE_LINEWIDTH
+					|PARSE_DASHES
+					|PARSE_XAXIS
+					|PARSE_YAXIS
+					); 
+  if (!gdp) { return -1;}
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("LINE  : %s\n",pa->arg_orig);
+  if (gdp->vidx<0) {
+    dprintf("VAL   : %g\n",gdp->yrule);
+  } else {
+    dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  }
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
+	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("STACK : %i\n",gdp->stack);
+  dprintf("WIDTH : %g\n",gdp->linewidth);
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  if (gdp->ndash) {
+    dprintf("DASHES: %i - %g",gdp->ndash,gdp->p_dashes[0]);
+    for(int i=1;i<gdp->ndash;i++){dprintf(", %g",gdp->p_dashes[i]);}
+    dprintf("\n");
+  }
+  dprintf("=================================\n");
+
+  /* and return fine */
+  return 0;
 }
 
-int rrd_parse_cdef(
-    const char *const line,
-    unsigned int *const eaten,
-    graph_desc_t *const gdp,
-    image_desc_t *const im)
-{
-    dprintf("- parsing '%s'\n", &line[*eaten]);
-    if (rrd_parse_make_vname(line, eaten, gdp, im))
-        return 1;
-    if ((gdp->rpnp = rpn_parse((void *) im, &line[*eaten], &find_var_wrapper)
-        ) == NULL) {
-        rrd_set_error("invalid rpn expression in: %s", &line[*eaten]);
-        return 1;
-    };
-    while (line[*eaten] != '\0' && line[*eaten] != ':')
-        (*eaten)++;
-    return 0;
+int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORLEGEND
+					|PARSE_STACK
+					|PARSE_XAXIS
+					|PARSE_YAXIS
+					|PARSE_HEIGHT
+					); 
+  if (!gdp) { return -1;}
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("AREA  : %s\n",pa->arg_orig);
+  if (gdp->vidx<0) {
+    dprintf("VAL   : %g\n",gdp->yrule);
+  } else {
+    dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  }
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
+	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("STACK : %i\n",gdp->stack);
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  dprintf("=================================\n");
+
+  /* and return fine */
+  return 0;
+}
+
+int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORLEGEND
+					|PARSE_XAXIS
+					|PARSE_YAXIS
+					); 
+  if (!gdp) { return -1;}
+  gdp->stack=1;
+  /* and try to get the one index before ourselves */
+  long i;
+  for (i=im->gdes_c;(gdp->gf==gf)&&(i>=0);i--) {
+    dprintfparsed("trying to process entry %li with type %u\n",i,im->gdes[i].gf);
+    switch (im->gdes[i].gf) {
+    case GF_LINE:
+    case GF_AREA:
+      gdp->gf=im->gdes[i].gf;
+      gdp->linewidth=im->gdes[i].linewidth;
+      dprintfparsed("found matching LINE/AREA at %li with type %u\n",i,im->gdes[i].gf);
+      break;
+    default: break;
+    }
+  }
+  /* error the unhandled */
+  if (gdp->gf==gf) { 
+    rrd_set_error("No previous LINE or AREA found for %s",pa->arg_orig); return -1;}
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("STACK : %s\n",pa->arg_orig);
+  if (gdp->vidx<0) {
+    dprintf("VAL   : %g\n",gdp->yrule);
+  } else {
+    dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  }
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
+	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("STACK : %i\n",gdp->stack);
+  dprintf("WIDTH : %g\n",gdp->linewidth);
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  dprintf("DASHES: TODI\n");
+  dprintf("=================================\n");
+
+  /* and return fine */
+  return 0;
+}
+
+int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORLEGEND
+					|PARSE_VNAMEREFNUMNOPARSE
+					|PARSE_XAXIS
+					|PARSE_YAXIS
+					|PARSE_DASHES
+					); 
+  if (!gdp) { return -1;}
+
+  /* check that vidx is of type VDEF */
+  if (im->gdes[gdp->vidx].gf != GF_VDEF) {
+    rrd_set_error("Using vname %s of wrong type in line %s\n",
+		  gdp->vname,pa->arg_orig);
+    return -1;
+  }
+
+  /* and here we place number parsing - depends on axis in the long-run*/
+  if (gdp->vidx<0) {
+    rrd_set_error("TODO: NOT SUPPORTED: Need to add number handler here for %s\n",
+		  gdp->vname); return -1; 
+    /* depending on axis type this is either number or time 
+       essentially becoming generic when we get axis support
+    */
+  }
+
+  /* debug output */
+  dprintf("=================================\n");
+  if (gf==GF_VRULE) {
+    dprintf("VRULE : %s\n",pa->arg_orig);
+  } else {
+    dprintf("HRULE : %s\n",pa->arg_orig);
+  }
+  if (gdp->vidx<0) {
+    if (gf==GF_VRULE) {
+      dprintf("VAL   : %g\n",gdp->yrule);
+    } else {
+      dprintf("VAL   : %g\n",gdp->yrule);
+    }
+  } else {
+    dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  }
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
+	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("DASHES: TODO\n");
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  dprintf("=================================\n");
+
+  /* and return fine */
+  return 0;
+}
+
+int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMEREF
+					|PARSE_CF
+					|PARSE_FORMAT
+					|PARSE_STRFTIME
+					); 
+  if (!gdp) { return -1;}
+   /* here we parse pos arguments locally */
+  /* vname */
+  if (gdp->vname[0]==0) {
+    dprintfparsed("Processing postitional vname\n");
+    keyvalue_t* first=getFirstUnusedArgument(1,pa);
+    if (first) { 
+      strncpy(gdp->vname,first->value,MAX_VNAME_LEN + 1);
+      /* get type of reference */
+      gdp->vidx=find_var(im, gdp->vname);
+      if (gdp->vidx<0) {
+	rrd_set_error("undefined vname %s",gdp->vname); return -1; }
+    } else { rrd_set_error("No positional VNAME"); return -1; }
+  }
+  /* check type of ref in general */
+  enum gf_en vnamegf=im->gdes[gdp->vidx].gf;
+  dprintfparsed("Processing referenced type %i\n",vnamegf);
+  switch (vnamegf) {
+    /* depreciated */
+  case GF_DEF:
+  case GF_CDEF:
+    dprintfparsed("Processing postitional CF\n");
+    /* look for CF if not given */
+    if (((int)gdp->cf)==-1) {
+      keyvalue_t* first=getFirstUnusedArgument(1,pa);
+      if (first) {
+	gdp->cf=cf_conv(first->value);
+	if (((int)gdp->cf)==-1) { 
+	  rrd_set_error("bad CF: %s",first->value); return -1; }
+      } else { rrd_set_error("No positional CDEF"); return -1; }      
+    }
+    break;
+  case GF_VDEF:
+    break;
+  default:
+    rrd_set_error("Encountered unknown type variable '%s'",
+		  im->gdes[gdp->vidx].vname);
+    return -1;
+  }
+  /* and get positional format */
+  if (gdp->format[0]==0) {
+    dprintfparsed("Processing postitional format\n");
+    keyvalue_t* first=getFirstUnusedArgument(1,pa);
+    if (first) {
+      strncpy(gdp->format,first->value,FMT_LEG_LEN);
+      dprintfparsed("got positional format: %s\n",gdp->format);
+    } else { rrd_set_error("No positional CF/FORMAT"); return -1; }    
+  }
+  /* debug output */
+  dprintf("=================================\n");
+  if (gf==GF_GPRINT) {
+    dprintf("GPRINT : %s\n",pa->arg_orig);
+  } else {
+    dprintf("PRINT  : %s\n",pa->arg_orig);
+  }
+  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);  
+  if ((int)gdp->cf>-1) {
+    dprintf("CF : (%u)\n",gdp->cf);  
+  }
+  dprintf("FORMAT: %s\n",gdp->legend);
+  dprintf("=================================\n");
+
+  /* and return */
+  return 0;
+}
+
+int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_LEGEND
+					); 
+  if (!gdp) { return -1;}
+
+  /* and if we have no legend, then use the first positional one */
+  if (gdp->legend[0]==0) {
+    keyvalue_t* first=getFirstUnusedArgument(1,pa);
+    if (first) {
+      strncpy(gdp->legend,first->value,FMT_LEG_LEN);      
+    } else { rrd_set_error("No positional CF/FORMAT"); return -1; }    
+  }
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("COMMENT : %s\n",pa->arg_orig);
+  dprintf("LEGEND  : %s\n",gdp->legend);
+  /* and return */
+  return 0;
+}
+
+int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORFRACTIONLEGEND
+					); 
+  if (!gdp) { return -1;}
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("TICK  : %s\n",pa->arg_orig);
+  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);  
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  if (gdp->cf==CF_LAST) {
+    dprintf("FRAC  : %s\n",gdp->vname);
+  } else {
+    dprintf("FRAC  : %g\n",gdp->yrule);
+  }
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  dprintf("=================================\n");
+  /* and return */
+  return 0;
+}
+
+int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,0); 
+  if (!gdp) { return -1;}
+
+  /* get align */
+  char* align=getKeyValueArgument("align",1,pa);
+  if (!align) align=getFirstUnusedArgument(1,pa)->value;
+  if (!align) { rrd_set_error("No alignment given"); return -1; }
+
+  /* parse align */
+  if (strcmp(align, "left") == 0) {
+    gdp->txtalign = TXA_LEFT;
+  } else if (strcmp(align, "right") == 0) {
+    gdp->txtalign = TXA_RIGHT;
+  } else if (strcmp(align, "justified") == 0) {
+    gdp->txtalign = TXA_JUSTIFIED;
+  } else if (strcmp(align, "center") == 0) {
+    gdp->txtalign = TXA_CENTER;
+  } else {
+    rrd_set_error("Unknown alignement type '%s'", align);
+    return 1;
+  }
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("TEXTALIGN : %s\n",pa->arg_orig);
+  dprintf("ALIGNMENT : %s (%u)\n",align,gdp->txtalign);  
+  dprintf("=================================\n");
+  /* and return */
+  return 0;
+}
+
+int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMEREFPOS);
+  if (!gdp) { return -1;}
+  /* and check that it is a CDEF */
+  switch (im->gdes[gdp->vidx].gf) {
+  case GF_DEF:
+  case GF_CDEF:
+    dprintf("- vname is of type DEF or CDEF, OK\n");
+    break;
+  case GF_VDEF:
+    rrd_set_error("Cannot shift a VDEF: '%s' in line '%s'\n",
+		  im->gdes[gdp->vidx].vname, pa->arg_orig);
+    return 1;
+  default:
+    rrd_set_error("Encountered unknown type variable '%s' in line '%s'",
+		  im->gdes[gdp->vidx].vname, pa->arg_orig);
+    return 1;
+  }
+
+  /* now parse the "shift" */
+  char* shift=getKeyValueArgument("shift",1,pa);
+  if (!shift) {shift=getFirstUnusedArgument(1,pa)->value;}
+  if (!shift) { rrd_set_error("No shift given"); return -1; }
+  /* identify shift */
+  gdp->shidx=find_var(im, shift);
+  if (gdp->shidx>=0) {
+    /* it is a def, so let us check its type*/
+    switch (im->gdes[gdp->shidx].gf) {
+    case GF_DEF:
+    case GF_CDEF:
+      rrd_set_error("Offset cannot be a (C)DEF: '%s' in line '%s'\n",
+		    im->gdes[gdp->shidx].vname, pa->arg_orig);
+      return 1;
+    case GF_VDEF:
+      dprintf("- vname is of type VDEF, OK\n");
+      break;
+    default:
+            rrd_set_error
+	      ("Encountered unknown type variable '%s' in line '%s'",
+	       im->gdes[gdp->vidx].vname, pa->arg_orig);
+            return 1;
+    }
+  } else {
+    /* it is no def, so parse as number */
+    long val;
+    char *x; 
+    int f=getLong(shift,&val,&x,10);
+    if (f) { rrd_set_error("error parsing number %s",shift); return -1; }
+    gdp->shval = val;
+    gdp->shidx = -1;
+  }
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("SHIFT   : %s\n",pa->arg_orig);
+  dprintf("VNAME   : %s (%li)\n",im->gdes[gdp->vidx].vname,gdp->vidx);
+  if (gdp->shidx>=0) {
+    dprintf("SHIFTBY : %s (%i)\n",im->gdes[gdp->shidx].vname,gdp->shidx);  
+  } else {
+    dprintf("SHIFTBY : %li\n",gdp->shval);  
+  }
+  dprintf("=================================\n");
+  /* and return */
+  return 0;
+}
+int parse_xport(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMECOLORLEGEND);
+  if (!gdp) { return -1;}
+  /* check for cdef */
+  /* and check that it is a CDEF */
+  switch (im->gdes[gdp->vidx].gf) {
+  case GF_DEF:
+  case GF_CDEF:
+    dprintf("- vname is of type DEF or CDEF, OK\n");
+    break;
+  case GF_VDEF:
+    rrd_set_error("Cannot shift a VDEF: '%s' in line '%s'\n",
+		  im->gdes[gdp->vidx].vname, pa->arg_orig);
+    return 1;
+  default:
+    rrd_set_error("Encountered unknown type variable '%s' in line '%s'",
+		  im->gdes[gdp->vidx].vname, pa->arg_orig);
+    return 1;
+  }
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("LINE  : %s\n",pa->arg_orig);
+  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("=================================\n");
+
+  return 0;
 }
 
 void rrd_graph_script(
@@ -1114,95 +1294,80 @@ void rrd_graph_script(
 {
     int       i;
 
-    /* save state for STACK backward compat function */
-    enum gf_en last_gf = GF_PRINT;
-    float     last_linewidth = 0.0;
+    /* and now handle the things*/
+    parsedargs_t pa;
+    initParsedArguments(&pa);
 
+    /* loop arguments */
     for (i = optind + optno; i < argc; i++) {
-        graph_desc_t *gdp;
-        unsigned int eaten = 0;
+	/* release parsed args - avoiding late cleanups*/
+	freeParsedArguments(&pa);
+	/* processed parsed args */
+	if (parseArguments(argv[i],&pa)) {
+	  return; }
 
-        if (gdes_alloc(im))
-            return;     /* the error string is already set */
-        gdp = &im->gdes[im->gdes_c - 1];
-#ifdef DEBUG
-        gdp->debug = 1;
-#endif
+	/* now let us handle the field based on the first command or cmd=...*/
+	char*cmd=NULL;
+	/* and try to get via cmd */
+	char* t=getKeyValueArgument("cmd",1,&pa);
+	if (t) {
+	  cmd=t;
+	} else if ((t=getKeyValueArgument("pos0",1,&pa))) {
+	  cmd=t;
+	} else {
+	  rrd_set_error("no command set in argument %s",pa.arg_orig);
+	  freeParsedArguments(&pa);
+	  return;
+	}
 
-        if (rrd_parse_find_gf(argv[i], &eaten, gdp))
-            return;
-
-        switch (gdp->gf) {
-        case GF_SHIFT: /* vname:value */
-            if (rrd_parse_shift(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        case GF_TEXTALIGN: /* left|right|center|justified */
-            if (rrd_parse_textalign(argv[i], &eaten, gdp))
-                return;
-            break;
-        case GF_XPORT:
-            if (rrd_parse_xport(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        case GF_PRINT: /* vname:CF:format -or- vname:format */
-            im->prt_c++;
-        case GF_GPRINT:    /* vname:CF:format -or- vname:format */
-            if (rrd_parse_print(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        case GF_COMMENT:   /* text */
-            if (rrd_parse_legend(argv[i], &eaten, gdp))
-                return;
-            break;
-        case GF_VRULE: /* value#color[:legend] */
-        case GF_HRULE: /* value#color[:legend] */
-        case GF_LINE:  /* vname-or-value[#color[:legend]][:STACK] */
-        case GF_AREA:  /* vname-or-value[#color[:legend]][:STACK] */
-		case GF_GRAD:  /* vname-or-value[#color[:legend][#color[:gradientheight]]][:STACK] */
-        case GF_TICK:  /* vname#color[:num[:legend]] */
-            if (rrd_parse_PVHLAST(argv[i], &eaten, gdp, im))
-                return;
-            last_gf = gdp->gf;
-            last_linewidth = gdp->linewidth;
-            break;
-        case GF_STACK: /* vname-or-value[#color[:legend]] */
-            if (rrd_parse_PVHLAST(argv[i], &eaten, gdp, im))
-                return;
-            if (last_gf == GF_LINE || last_gf == GF_AREA || last_gf == GF_GRAD) {
-                gdp->gf = last_gf;
-                gdp->linewidth = last_linewidth;
-            } else {
-                rrd_set_error("STACK must follow LINE or AREA! command:\n%s",
-                              &argv[i][eaten], argv[i]);
-                return;
-            }
-            break;
-            /* data acquisition */
-        case GF_DEF:   /* vname=x:DS:CF:[:step=#][:start=#][:end=#] */
-            if (rrd_parse_def(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        case GF_CDEF:  /* vname=rpn-expression */
-            if (rrd_parse_cdef(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        case GF_VDEF:  /* vname=rpn-expression */
-            if (rrd_parse_vdef(argv[i], &eaten, gdp, im))
-                return;
-            break;
-        }
-        if (gdp->debug) {
-            dprintf("used %i out of %zi chars\n", eaten, strlen(argv[i]));
-            dprintf("parsed line: '%s'\n", argv[i]);
-            dprintf("remaining: '%s'\n", &argv[i][eaten]);
-            if (eaten >= strlen(argv[i]))
-                dprintf("Command finished successfully\n");
-        }
-        if (eaten < strlen(argv[i])) {
-            rrd_set_error("I don't understand '%s' in command: '%s'.",
-                          &argv[i][eaten], argv[i]);
-            return;
-        }
+	/* convert to enum but handling LINE special*/
+	enum gf_en gf=-1;
+	gf=gf_conv(cmd);
+	if ((int)gf == -1) {
+	  if (strncmp("LINE",cmd,4)==0) {
+	    gf=GF_LINE;
+	    addToArguments(&pa,"linewidth",cmd+4,0);
+	  } else {
+	    rrd_set_error("'%s' is not a valid function name in %s", cmd,pa.arg_orig );
+	    return;
+	  }
+	}
+	/* now we can handle the commands */
+	int r=0;
+	switch (gf) {
+	case GF_XAXIS:     r=parse_axis(gf,&pa,im); break;
+	case GF_YAXIS:     r=parse_axis(gf,&pa,im); break;
+	case GF_DEF:       r=parse_def(gf,&pa,im); break;
+	case GF_CDEF:      r=parse_cvdef(gf,&pa,im); break;
+	case GF_VDEF:      r=parse_cvdef(gf,&pa,im); break;
+	case GF_LINE:      r=parse_line(gf,&pa,im); break;
+	case GF_AREA:      r=parse_area(gf,&pa,im); break;
+	case GF_PRINT:     r=parse_gprint(gf,&pa,im); break;
+	case GF_GPRINT:    r=parse_gprint(gf,&pa,im); break;
+	case GF_COMMENT:   r=parse_comment(gf,&pa,im); break;
+	case GF_HRULE:     r=parse_hvrule(gf,&pa,im); break;
+	case GF_VRULE:     r=parse_hvrule(gf,&pa,im); break;
+	case GF_STACK:     r=parse_stack(gf,&pa,im); break;
+	case GF_TICK:      r=parse_tick(gf,&pa,im); break;
+	case GF_TEXTALIGN: r=parse_textalign(gf,&pa,im); break;
+	case GF_SHIFT:     r=parse_shift(gf,&pa,im); break;
+	case GF_XPORT:     r=parse_xport(gf,&pa,im); break;
+	  /* unsupported types right now */
+	case GF_GRAD:      
+	  rrd_set_error("GRAD unsupported - use AREA instead");
+	  break;
+	}
+	/* handle the return error case */
+	if (r) { freeParsedArguments(&pa); return;}
+	/* check for unprocessed keyvalue args */
+	char *s;
+	if ((s=checkUnusedValues(&pa))) {
+	  rrd_set_error("Unused Arguments in %s: %s",pa.arg_orig,s);
+	  freeParsedArguments(&pa);
+	  free(s);
+	  return;
+	}
     }
+    /* finally free arguments */
+    freeParsedArguments(&pa);
 }

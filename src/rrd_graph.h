@@ -60,7 +60,7 @@ enum grc_en { GRC_CANVAS = 0, GRC_BACK, GRC_SHADEA, GRC_SHADEB,
 enum gf_en { GF_PRINT = 0, GF_GPRINT, GF_COMMENT, GF_HRULE, GF_VRULE, GF_LINE,
     GF_AREA,GF_GRAD, GF_STACK, GF_TICK, GF_TEXTALIGN,
     GF_DEF, GF_CDEF, GF_VDEF, GF_SHIFT,
-    GF_XPORT
+    GF_XPORT, GF_XAXIS, GF_YAXIS
 };
 
 enum txa_en { TXA_LEFT = 0, TXA_RIGHT, TXA_CENTER, TXA_JUSTIFIED };
@@ -110,6 +110,37 @@ typedef struct gfx_color_t {
     double    alpha;
 } gfx_color_t;
 
+typedef struct keyvalue_t {
+  char* key;
+  char* value;
+  int pos;
+  int flag;
+} keyvalue_t;
+
+typedef struct keyint_t {
+  char*key;
+  int value;
+} keyint_t;
+
+typedef struct parsedargs_t {
+  char *arg; /* copy of the parsed string - rewritten*/
+  const char *arg_orig; /* original argument */
+  int kv_cnt; /* number of key/value arguments */
+  keyvalue_t *kv_args; /* key value arguments */
+} parsedargs_t;
+void initParsedArguments(parsedargs_t*);
+void freeParsedArguments(parsedargs_t*);
+int addToArguments(parsedargs_t*, char*, char*, int);
+int parseArguments(const char*, parsedargs_t*);
+void dumpKeyValue(char* ,keyvalue_t*);
+void dumpArguments(parsedargs_t*);
+char* getKeyValueArgument(const char*, int, parsedargs_t*);
+int getMappedKeyValueArgument(const char*,int, parsedargs_t*,
+			      int*,keyint_t**);
+int getLong(const char*,long *,char**,int);
+int getDouble(const char*,double *,char**);
+keyvalue_t* getFirstUnusedArgument(int, parsedargs_t*);
+char* checkUnusedValues(parsedargs_t*);
 
 typedef struct text_prop_t {
     double    size;
@@ -161,6 +192,8 @@ typedef struct ylab_t {
 #define FMT_LEG_LEN 2000
 #endif
 
+# define MAX_AXIS 4
+
 typedef struct graph_desc_t {
     enum gf_en gf;      /* graphing function */
     int       stack;    /* boolean */
@@ -183,6 +216,7 @@ typedef struct graph_desc_t {
     time_t    xrule;    /* time for x rule line and for VDEF */
     vdef_t    vf;       /* instruction for VDEF function */
     rpnp_t   *rpnp;     /* instructions for CDEF function */
+    char     *rpn;      /* string representation of rpn */
 
     /* SHIFT implementation */
     int       shidx;    /* gdes reference for offset (-1 --> constant) */
@@ -208,6 +242,10 @@ typedef struct graph_desc_t {
     double    offset;   /* dash offset along the line */
 
     enum txa_en txtalign;   /* change default alignment strategy for text */
+
+    /* the axis to use for this graph in x and y*/
+    int xaxisidx;
+    int yaxisidx;
 } graph_desc_t;
 
 typedef struct image_desc_t {
