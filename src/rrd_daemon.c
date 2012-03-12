@@ -3093,7 +3093,17 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         char journal_dir_actual[PATH_MAX];
         const char *dir;
-        dir = journal_dir = strdup(realpath((const char *)optarg, journal_dir_actual));
+        if (realpath((const char *)optarg, journal_dir_actual) == NULL)
+        {
+          fprintf(stderr, "Failed to canonicalize the journal directory '%s': %s\n",
+              optarg, rrd_strerror(errno));
+          return 7;
+        }
+        dir = journal_dir = strdup(journal_dir_actual);
+        if (dir == NULL) {
+          fprintf (stderr, "read_options: strdup failed.\n");
+          return (3);
+        }
 
         status = rrd_mkdir_p(dir, 0777);
         if (status != 0)
