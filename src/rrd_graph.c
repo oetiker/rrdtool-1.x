@@ -1426,6 +1426,8 @@ time_t find_first_time(
     struct tm tm;
 
     localtime_r(&start, &tm);
+    /* let mktime figure this dst on its own */
+    tm.tm_isdst = -1;
 
     switch (baseint) {
     case TMT_SECOND:
@@ -1494,6 +1496,8 @@ time_t find_next_time(
     time_t    madetime;
 
     localtime_r(&current, &tm);
+    /* let mktime figure this dst on its own */
+    tm.tm_isdst = -1;
 
     int limit = 2;
     switch (baseint) {
