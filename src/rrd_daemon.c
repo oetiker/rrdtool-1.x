@@ -2975,6 +2975,91 @@ static int open_listen_socket (const listen_socket_t *sock) /* {{{ */
     return (open_listen_socket_network(sock));
 } /* }}} int open_listen_socket */
 
+#ifndef SD_LISTEN_FDS_START
+#  define SD_LISTEN_FDS_START 3
+#endif
+/*
+ * returns number of descriptors passed from systemd
+ */
+static int open_listen_sockets_systemd(void) /* {{{ */
+{
+  listen_socket_t *temp;
+  struct sockaddr_un sa;
+  socklen_t l;
+  int sd_fd;
+  const char *env;
+  unsigned long n;
+
+  /* check if it for us */
+  env = getenv("LISTEN_PID");
+  if (!env)
+    return 0;
+
+  n = strtoul(env, NULL, 10);
+  if (!n || n == ULONG_MAX || (pid_t)n != getpid())
+    return 0;
+
+  /* get the number of passed descriptors */
+  env = getenv("LISTEN_FDS");
+  if (!env)
+    return 0;
+
+  n = strtoul(env, NULL, 10);
+  if (!n || n == ULONG_MAX)
+    return 0;
+
+  temp = (listen_socket_t *) rrd_realloc (listen_fds,
+     sizeof (listen_fds[0]) * (listen_fds_num + n));
+  if (temp == NULL)
+  {
+    fprintf (stderr, "rrdcached: open_listen_socket_systemd: realloc failed.\n");
+    return 0;
+  }
+  listen_fds = temp;
+
+  for (unsigned int i = 0; i < n; i++)
+  {
+    sd_fd = SD_LISTEN_FDS_START + i;
+
+    l = sizeof(sa);
+    memset(&sa, 0, l);
+    if (getsockname(sd_fd, &sa, &l) < 0)
+    {
+      fprintf(stderr, "open_listen_sockets_systemd: problem getting fd %d: %s\n", sd_fd, rrd_strerror (errno));
+      return i;
+    }
+
+    listen_fds[listen_fds_num].fd = sd_fd;
+    listen_fds[listen_fds_num].family = sa.sun_family;
+    listen_fds_num++;
+  }
+  
+  return n;
+} /* }}} open_listen_sockets_systemd */
+
+static void open_listen_sockets_traditional(void) /* {{{ */
+{
+ if (config_listen_address_list_len > 0)
+  {
+    for (size_t i = 0; i < config_listen_address_list_len; i++)
+      open_listen_socket (config_listen_address_list[i]);
+
+    rrd_free_ptrs((void ***) &config_listen_address_list,
+                  &config_listen_address_list_len);
+  }
+  else
+  {
+    strncpy(default_socket.addr, RRDCACHED_DEFAULT_ADDRESS,
+        sizeof(default_socket.addr) - 1);
+    default_socket.addr[sizeof(default_socket.addr) - 1] = '\0';
+
+    if (default_socket.permissions == 0)
+      socket_permission_set_all (&default_socket);
+
+    open_listen_socket (&default_socket);
+  }
+} /* }}} open_list_sockets_traditional */
+
 static int close_listen_sockets (void) /* {{{ */
 {
   size_t i;
@@ -3120,26 +3205,11 @@ static int daemonize (void) /* {{{ */
   if (pid_fd < 0)
     return pid_fd;
 
-  /* open all the listen sockets */
-  if (config_listen_address_list_len > 0)
-  {
-    for (size_t i = 0; i < config_listen_address_list_len; i++)
-      open_listen_socket (config_listen_address_list[i]);
+  /* gather sockets passed from systemd; 
+   * if none, open all the listen sockets from config or default  */ 
 
-    rrd_free_ptrs((void ***) &config_listen_address_list,
-                  &config_listen_address_list_len);
-  }
-  else
-  {
-    strncpy(default_socket.addr, RRDCACHED_DEFAULT_ADDRESS,
-        sizeof(default_socket.addr) - 1);
-    default_socket.addr[sizeof(default_socket.addr) - 1] = '\0';
-
-    if (default_socket.permissions == 0)
-      socket_permission_set_all (&default_socket);
-
-    open_listen_socket (&default_socket);
-  }
+  if (!(open_listen_sockets_systemd() > 0))
+    open_listen_sockets_traditional();
 
   if (listen_fds_num < 1)
   {
