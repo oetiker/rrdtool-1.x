@@ -157,6 +157,16 @@ average, ignoring all UNKNOWN values in the process.
 
 Example: C<CDEF:x=a,b,c,d,4,AVG>
 
+B<MEDIAN>
+
+pop one element (I<count>) from the stack. Now pop I<count> elements and find
+the median, ignoring all UNKNOWN values in the process. If there are an even
+number of non-UNKNOWN values, the average of the middle two will be pushed on
+the stack.
+
+Example: C<CDEF:x=a,b,c,d,4,MEDIAN>
+
+
 B<TREND, TRENDNAN>
 
 Create a "sliding window" average of another data series.

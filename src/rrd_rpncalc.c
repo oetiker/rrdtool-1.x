@@ -387,6 +387,7 @@ rpnp_t   *rpn_parse(
             match_op(OP_AVG, AVG)
             match_op(OP_ABS, ABS)
             match_op(OP_ADDNAN, ADDNAN)
+            match_op(OP_MEDIAN, MEDIAN)
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
                      && ((rpnp[steps].ptr = (*lookup) (key_hash, vname)) !=
@@ -936,6 +937,51 @@ short rpn_calc(
             stackunderflow(0);
             rpnstack->s[stptr] = fabs(rpnstack->s[stptr]);
             break;
+        case OP_MEDIAN:
+            stackunderflow(0);
+            {
+                int elements = (int) rpnstack->s[stptr--];
+                int final_elements = elements;
+                double *element_ptr = rpnstack->s + stptr - elements + 1;
+                double *goodvals = element_ptr;
+                double *badvals = element_ptr + elements - 1;
+
+                stackunderflow(elements - 1);
+
+                /* move values to consolidate the non-NANs for sorting, keeping
+                 * track of how many NANs we encounter. */
+                while (goodvals < badvals) {
+                    if (isnan(*goodvals)) {
+                        *goodvals = *badvals--;
+                        --final_elements;
+                    } else {
+                        ++goodvals;
+                    }
+                }
+
+                stptr -= elements;
+                if (!final_elements) {
+                    /* no non-NAN elements; push NAN */
+                    rpnstack->s[++stptr] = DNAN;
+                } else {                   
+                    /* when goodvals and badvals meet, they might have met on a
+                     * NAN, which wouldn't decrease final_elements. so, check
+                     * that now. */
+                    if (isnan(*goodvals)) --final_elements;
+                    /* and finally, take the median of the remaining non-NAN
+                     * elements. */
+                    qsort(element_ptr, final_elements, sizeof(double),
+                          rpn_compare_double);
+                    if (final_elements % 2 == 1){
+                       rpnstack->s[++stptr] = element_ptr[ final_elements / 2 ];
+                    }
+                    else {
+                       rpnstack->s[++stptr] = 0.5 * ( element_ptr[ final_elements / 2 ] + element_ptr[ final_elements / 2 - 1 ] );
+                    }
+                }
+            }
+            break;
+       
         case OP_END:
             break;
         }
