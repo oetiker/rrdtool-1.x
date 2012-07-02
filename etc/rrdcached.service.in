@@ -1,0 +1,19 @@
+#
+# To customize, copy this file to /etc/systemd/system/
+# and edit there
+#
+
+[Unit]
+Description=Data caching daemon for rrdtool
+Documentation=man:rrdcached(1)
+
+[Service]
+# If you enable socket-activable rrdcached.socket,
+# command line socket declarations will be ignored
+ExecStart=@prefix@/bin/rrdcached -g
+#WorkingDirectory=
+#User=
+#Group=
+
+[Install]
+WantedBy=multi-user.target

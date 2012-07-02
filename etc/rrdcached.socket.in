@@ -1,0 +1,18 @@
+#
+# To customize, copy this file to /etc/systemd/system/
+# and edit there
+#
+
+[Unit]
+Description=sockets activating rrdcached
+Documentation=man:rrdcached(1)
+
+[Socket]
+ListenStream=/tmp/rrdcached.sock
+#ListenStream=[::1]:42217
+#DirectoryMode=0755
+#SocketMode=0666
+#BindToDevice=
+
+[Install]
+WantedBy=sockets.target
