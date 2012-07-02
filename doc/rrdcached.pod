@@ -448,6 +448,8 @@ accepted commands to those needed by external clients. If, for example,
 external clients want to draw graphs of the cached data, they should only be
 allowed to use the C<FLUSH> command.
 
+Authorization does not work when rrcached is socket-activated by systemd. 
+
 =head2 Encryption
 
 There is no encryption.

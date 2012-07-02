@@ -918,6 +918,17 @@ AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
 
+# systemd check
+PKG_PROG_PKG_CONFIG
+AC_ARG_WITH([systemdsystemunitdir],
+	AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
+	[], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+if test "x$with_systemdsystemunitdir" != xno; then
+	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
+	AC_OUTPUT([etc/rrdcached.socket etc/rrdcached.service])
+fi
+AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ])
+
 
 CONFIGURE_PART(Apply Configuration Information)
  
@@ -993,6 +1004,7 @@ echo "       Build librrd MT: $enable_pthread"
 echo "           Use gettext: $USE_NLS"
 echo "           With libDBI: $have_libdbi"
 echo "          With libwrap: $have_libwrap"
+echo "      With systemd dir: $with_systemdsystemunitdir"
 echo
 echo "             Libraries: $ALL_LIBS"
 echo
