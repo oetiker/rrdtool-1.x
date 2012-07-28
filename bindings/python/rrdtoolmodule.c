@@ -587,6 +587,84 @@ static PyObject *PyRRD_flushcached(
     return r;
 }
 
+static char PyRRD_xport__doc__[] =
+    "xport(args..): dictionary representation of data stored in RRDs\n"
+    "    [-s|--start seconds] [-e|--end seconds] [-m|--maxrows rows]"
+    "[--step value] [--daemon address] [DEF:vname=rrd:ds-name:CF]"
+    "[CDEF:vname=rpn-expression] [XPORT:vname[:legend]]";
+
+
+static PyObject *PyRRD_xport(
+    PyObject UNUSED(*self),
+    PyObject * args)
+{
+    PyObject *r;
+    int       argc, xsize;
+    char    **argv, **legend_v;
+    time_t    start, end;
+    unsigned long step, col_cnt;
+    rrd_value_t *data, *datai;
+
+    if (create_args("xport", args, &argc, &argv) < 0)
+        return NULL;
+
+    if (rrd_xport(argc, argv, &xsize, &start, &end,
+                  &step, &col_cnt, &legend_v, &data) == -1) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        r = NULL;
+    } else {
+        PyObject *meta_dict, *data_list, *legend_list, *t;
+        unsigned long i, j;
+        rrd_value_t dv;
+
+        unsigned long row_cnt = (end - start) / step;
+
+        r = PyDict_New();
+        meta_dict = PyDict_New();
+        legend_list = PyList_New(col_cnt);
+        data_list = PyList_New(row_cnt);
+        PyDict_SetItem(r, PyString_FromString("meta"), meta_dict);
+        PyDict_SetItem(r, PyString_FromString("data"), data_list);
+
+        datai = data;
+
+        PyDict_SetItem(meta_dict, PyString_FromString("start"), PyInt_FromLong((long) start));
+        PyDict_SetItem(meta_dict, PyString_FromString("end"), PyInt_FromLong((long) end));
+        PyDict_SetItem(meta_dict, PyString_FromString("step"), PyInt_FromLong((long) step));
+        PyDict_SetItem(meta_dict, PyString_FromString("rows"), PyInt_FromLong((long) row_cnt));
+        PyDict_SetItem(meta_dict, PyString_FromString("columns"), PyInt_FromLong((long) col_cnt));
+        PyDict_SetItem(meta_dict, PyString_FromString("legend"), legend_list);
+
+        for (i = 0; i < col_cnt; i++) {
+            PyList_SET_ITEM(legend_list, i, PyString_FromString(legend_v[i]));
+        }
+
+        for (i = 0; i < row_cnt; i++) {
+            t = PyTuple_New(col_cnt);
+            PyList_SET_ITEM(data_list, i, t);
+
+            for (j = 0; j < col_cnt; j++) {
+                dv = *(datai++);
+                if (isnan(dv)) {
+                    PyTuple_SET_ITEM(t, j, Py_None);
+                    Py_INCREF(Py_None);
+                } else {
+                    PyTuple_SET_ITEM(t, j, PyFloat_FromDouble((double) dv));
+                }
+            }
+        }
+
+        for (i = 0; i < col_cnt; i++) {
+            rrd_freemem(legend_v[i]);
+        }
+        rrd_freemem(legend_v);
+        rrd_freemem(data);
+    }
+    destroy_args(&argv);
+    return r;
+}
+
 /* List of methods defined in the module */
 #define meth(name, func, doc) {name, (PyCFunction)func, METH_VARARGS, doc}
 
@@ -603,6 +681,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
     meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
     meth("flushcached", PyRRD_flushcached, PyRRD_flushcached__doc__),
+    meth("xport", PyRRD_xport, PyRRD_xport__doc__),
     {NULL, NULL, 0, NULL}
 };
 

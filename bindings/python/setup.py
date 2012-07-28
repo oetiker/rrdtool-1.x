@@ -36,7 +36,7 @@ library_dir = os.environ.get('BUILDLIBDIR', os.path.join(RRDBASE, '.libs'))
 include_dir = os.environ.get('INCDIR', RRDBASE)
 
 setup(name = "py-rrdtool",
-      version = "0.2.1",
+      version = "0.2.2",
       description = "Python Interface to RRDTool",
       author = "Hye-Shik Chang",
       author_email = "perky@fallin.lv",
