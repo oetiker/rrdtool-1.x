@@ -81,7 +81,7 @@ extern "C" {
 		    switch (data->type) { \
 		    case RD_I_VAL: \
 			if (isnan(data->value.u_val)) \
-			    hvs(&PL_sv_undef); \
+			    hvs(newSV(0)); \
 			else \
 			    hvs(newSVnv(data->value.u_val)); \
 			break; \
@@ -276,7 +276,7 @@ rrd_fetch(...)
 		for (i = start+step; i <= end; i += step){
 			line = newAV();
 			for (ii = 0; ii < ds_cnt; ii++){
- 			  av_push(line,(isnan(*datai) ? &PL_sv_undef : newSVnv(*datai)));
+ 			  av_push(line,(isnan(*datai) ? newSV(0) : newSVnv(*datai)));
 			  datai++;
 			}
 			av_push(retar,newRV_noinc((SV*)line));
@@ -356,7 +356,7 @@ rrd_xport(...)
 		for (i = start+step; i <= end; i += step){
 			line = newAV();
 			for (ii = 0; ii < col_cnt; ii++){
- 			  av_push(line,(isnan(*ptr) ? &PL_sv_undef : newSVnv(*ptr)));
+ 			  av_push(line,(isnan(*ptr) ? newSV(0) : newSVnv(*ptr)));
 			  ptr++;
 			}
 			av_push(retar,newRV_noinc((SV*)line));
