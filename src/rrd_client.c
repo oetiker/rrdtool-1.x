@@ -1495,7 +1495,11 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
   response_free (res);
 
   if (head == NULL)
+#ifdef EPROTO
     return (EPROTO);
+#else
+    return (EINVAL);
+#endif
 
   *ret_stats = head;
   return (0);
