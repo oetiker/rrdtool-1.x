@@ -16,6 +16,8 @@ AM_CFLAGS = @CFLAGS@
 ## no including this by default @WERROR@
 
 UPD_C_FILES =		\
+	rrd_create.c	\
+	hash_32.c	\
 	rrd_parsetime.c	\
 	rrd_hw.c	\
 	rrd_hw_math.c	\
@@ -32,8 +34,6 @@ UPD_C_FILES =		\
 	rrd_update.c
 
 RRD_C_FILES =		\
-	rrd_create.c	\
-	hash_32.c	\
 	rrd_version.c	\
 	rrd_last.c	\
 	rrd_lastupdate.c	\
@@ -129,3 +129,6 @@ EXTRA_DIST= librrd.pc.in strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_g
 
 librrd.sym: librrd.sym.in
 	$(AM_V_GEN)grep -v LIBC_HAS_GETOPT_LONG librrd.sym.in >$@
+
+install-exec-hook:
+	(cd $(DESTDIR)$(bindir) && $(LN_S) rrdupdate rrdcreate && $(LN_S) rrdupdate rrdinfo)
