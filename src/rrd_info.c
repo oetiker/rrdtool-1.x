@@ -71,8 +71,7 @@ rrd_info_t
         next->value.u_int = value.u_int;
         break;
     case RD_I_STR:
-        next->value.u_str = (char*)malloc(sizeof(char) * (strlen(value.u_str) + 1));
-        strcpy(next->value.u_str, value.u_str);
+        next->value.u_str = strdup(value.u_str);
         break;
     case RD_I_BLO:
         next->value.u_blo.size = value.u_blo.size;

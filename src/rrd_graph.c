@@ -1676,14 +1676,9 @@ int print_calc(
                              im->gdes[i].format);
                         return -1;
                     }
-#ifdef HAVE_SNPRINTF
                     snprintf(im->gdes[i].legend,
                              FMT_LEG_LEN - 2,
                              im->gdes[i].format, printval, si_symb);
-#else
-                    sprintf(im->gdes[i].legend,
-                            im->gdes[i].format, printval, si_symb);
-#endif
                 }
                 graphelement = 1;
             }
@@ -1771,7 +1766,7 @@ int leg_place(
         for (i = 0; i < im->gdes_c; i++) {
             char      prt_fctn; /*special printfunctions */
             if(calc_width){
-                strcpy(saved_legend, im->gdes[i].legend);
+                strncpy(saved_legend, im->gdes[i].legend, sizeof saved_legend);
             }
 
             fill_last = fill;
@@ -1938,7 +1933,7 @@ int leg_place(
             }
 
             if(calc_width){
-                strcpy(im->gdes[i].legend, saved_legend);
+                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend);
             }
         }
 
@@ -2021,7 +2016,7 @@ int calc_horizontal_grid(
 
                 if (im->unitslength < len + 2)
                     im->unitslength = len + 2;
-                sprintf(im->ygrid_scale.labfmt,
+                snprintf(im->ygrid_scale.labfmt, sizeof im->ygrid_scale.labfmt, 
                         "%%%d.%df%s", len,
                         -fractionals, (im->symbol != ' ' ? " %c" : ""));
             } else {
@@ -2029,7 +2024,7 @@ int calc_horizontal_grid(
 
                 if (im->unitslength < len + 2)
                     im->unitslength = len + 2;
-                sprintf(im->ygrid_scale.labfmt,
+                snprintf(im->ygrid_scale.labfmt, sizeof im->ygrid_scale.labfmt,
                         "%%%d.0f%s", len, (im->symbol != ' ' ? " %c" : ""));
             }
         } else {        /* classic rrd grid */
@@ -2093,15 +2088,15 @@ int draw_horizontal_grid(
                     && (YN < im->yorigin - im->ysize || YN > im->yorigin))) {
                 if (im->symbol == ' ') {
                     if (im->extra_flags & ALTYGRID) {
-                        sprintf(graph_label,
+                        snprintf(graph_label, sizeof graph_label,
                                 im->ygrid_scale.labfmt,
                                 scaledstep * (double) i);
                     } else {
                         if (MaxY < 10) {
-                            sprintf(graph_label, "%4.1f",
+                            snprintf(graph_label, sizeof graph_label, "%4.1f",
                                     scaledstep * (double) i);
                         } else {
-                            sprintf(graph_label, "%4.0f",
+                            snprintf(graph_label, sizeof graph_label, "%4.0f",
                                     scaledstep * (double) i);
                         }
                     }
@@ -2109,15 +2104,15 @@ int draw_horizontal_grid(
                     char      sisym = (i == 0 ? ' ' : im->symbol);
 
                     if (im->extra_flags & ALTYGRID) {
-                        sprintf(graph_label,
+                        snprintf(graph_label, sizeof graph_label,
                                 im->ygrid_scale.labfmt,
                                 scaledstep * (double) i, sisym);
                     } else {
                         if (MaxY < 10) {
-                            sprintf(graph_label, "%4.1f %c",
+                            snprintf(graph_label, sizeof graph_label, "%4.1f %c",
                                     scaledstep * (double) i, sisym);
                         } else {
-                            sprintf(graph_label, "%4.0f %c",
+                            snprintf(graph_label, sizeof graph_label, "%4.0f %c",
                                     scaledstep * (double) i, sisym);
                         }
                     }
@@ -2134,13 +2129,13 @@ int draw_horizontal_grid(
                             sval /= second_axis_magfact;
 
                             if(MaxY < 10) {
-                                sprintf(graph_label_right,"%5.1f %s",sval,second_axis_symb);
+                                snprintf(graph_label_right, sizeof graph_label_right, "%5.1f %s",sval,second_axis_symb);
                             } else {
-                                sprintf(graph_label_right,"%5.0f %s",sval,second_axis_symb);
+                                snprintf(graph_label_right, sizeof graph_label_right, "%5.0f %s",sval,second_axis_symb);
                             }
                         }
                         else {
-                           sprintf(graph_label_right,im->second_axis_format,sval,"");
+                           snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
                         }
                         gfx_text ( im,
                                X1+7, Y0,
@@ -2326,9 +2321,9 @@ int horizontal_log_grid(
                 symbol = si_symbol[scale + si_symbcenter];
             else
                 symbol = '?';
-            sprintf(graph_label, "%3.0f %c", pvalue, symbol);
+            snprintf(graph_label, sizeof graph_label, "%3.0f %c", pvalue, symbol);
         } else {
-            sprintf(graph_label, "%3.0e", value);
+            snprintf(graph_label, sizeof graph_label, "%3.0e", value);
         }
         if (im->second_axis_scale != 0){
                 char graph_label_right[100];
@@ -2338,14 +2333,14 @@ int horizontal_log_grid(
                                 double mfac = 1;
                                 char   *symb = "";
                                 auto_scale(im,&sval,&symb,&mfac);
-                                sprintf(graph_label_right,"%4.0f %s", sval,symb);
+                                snprintf(graph_label_right, sizeof graph_label_right, "%4.0f %s", sval,symb);
                         }
                         else {
-                                sprintf(graph_label_right,"%3.0e", sval);
+                                snprintf(graph_label_right, sizeof graph_label_right, "%3.0e", sval);
                         }
                 }
                 else {
-                      sprintf(graph_label_right,im->second_axis_format,sval,"");
+                      snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
                 }
 
                 gfx_text ( im,
@@ -4051,9 +4046,7 @@ int rrd_graph(
                 return 0;
             }
             /* imginfo goes to position 0 in the prdata array */
-            (*prdata)[prlines - 1] = (char*)malloc((strlen(walker->value.u_str)
-                                             + 2) * sizeof(char));
-            strcpy((*prdata)[prlines - 1], walker->value.u_str);
+            (*prdata)[prlines - 1] = strdup(walker->value.u_str);
             (*prdata)[prlines] = NULL;
         }
         /* skip anything else */
@@ -4081,10 +4074,8 @@ int rrd_graph(
                 rrd_set_error("realloc prdata");
                 return 0;
             }
-            (*prdata)[prlines - 1] = (char*)malloc((strlen(walker->value.u_str)
-                                             + 2) * sizeof(char));
+            (*prdata)[prlines - 1] = strdup(walker->value.u_str);
             (*prdata)[prlines] = NULL;
-            strcpy((*prdata)[prlines - 1], walker->value.u_str);
         } else if (strcmp(walker->key, "image") == 0) {
             if ( fwrite(walker->value.u_blo.ptr, walker->value.u_blo.size, 1,
                    (stream ? stream : stdout)) == 0 && ferror(stream ? stream : stdout)){

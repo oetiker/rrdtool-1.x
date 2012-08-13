@@ -308,10 +308,9 @@ int rrd_xport_fn(
             *step_list_ptr = im->gdes[im->gdes[i].vidx].step;
             /* printf("%s:%lu\n",im->gdes[i].legend,*step_list_ptr); */
             step_list_ptr++;
+
             /* reserve room for one legend entry */
-            /* is FMT_LEG_LEN + 5 the correct size? */
-            if ((legend_list[j] =
-                (char*)malloc(sizeof(char) * (FMT_LEG_LEN + 5))) == NULL) {
+            if ((legend_list[j] = strdup(im->gdes[i].legend)) == NULL) {
                 free(ref_list);
                 *data = NULL;
                 while (--j > -1)
@@ -322,11 +321,9 @@ int rrd_xport_fn(
                 return (-1);
             }
 
-            if (im->gdes[i].legend)
-                /* omit bounds check, should have the same size */
-                strcpy(legend_list[j++], im->gdes[i].legend);
-            else
-                legend_list[j++][0] = '\0';
+            if (im->gdes[i].legend == 0)
+                legend_list[j][0] = '\0';
+            ++j;
 	}
     }
     *step_list_ptr=0;    

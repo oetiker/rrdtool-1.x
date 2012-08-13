@@ -599,7 +599,7 @@ static char *tod(
         scc = scc_sv;
         sct = sct_sv;
         sc_tokid = sc_tokid_sv;
-        sprintf(sc_token, "%d", hour);
+        snprintf(sc_token, sc_len, "%d", hour);
         return TIME_OK;
     }
     if (sc_tokid == COLON) {
@@ -631,7 +631,7 @@ static char *tod(
         scc = scc_sv;
         sct = sct_sv;
         sc_tokid = sc_tokid_sv;
-        sprintf(sc_token, "%d", hour);
+        snprintf(sc_token, sc_len, "%d", hour);
         return TIME_OK;
     }
     ptv->tm.  tm_hour = hour;

@@ -387,14 +387,10 @@ static void calfree(
 char     *stralloc(
     const char *str)
 {
-    char     *nstr;
-
     if (!str) {
         return NULL;
     }
-    nstr = malloc((strlen(str) + 1));
-    strcpy(nstr, str);
-    return (nstr);
+    return strdup(str);
 }
 
 static int readfile(
@@ -595,12 +591,13 @@ char     *rrdsetenv(
     const char **args)
 {
     if (argc >= 2) {
-        char     *xyz = malloc((strlen(args[0]) + strlen(args[1]) + 2));
+        const size_t len = strlen(args[0]) + strlen(args[1]) + 2;
+        char *xyz = malloc(len);
 
         if (xyz == NULL) {
             return stralloc("[ERROR: allocating setenv buffer]");
         };
-        sprintf(xyz, "%s=%s", args[0], args[1]);
+        snprintf(xyz, len, "%s=%s", args[0], args[1]);
         if (putenv(xyz) == -1) {
             free(xyz);
             return stralloc("[ERROR: failed to do putenv]");
@@ -788,9 +785,10 @@ char     *includefile(
 
         readfile(filename, &buffer, 0);
         if (rrd_test_error()) {
-            char     *err = malloc((strlen(rrd_get_error()) + DS_NAM_SIZE));
+            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
+            char *err = malloc(len);
 
-            sprintf(err, "[ERROR: %s]", rrd_get_error());
+            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
             return err;
         } else {
@@ -954,10 +952,9 @@ char     *drawgraph(
         return stralloc(calcpr[0]);
     } else {
         if (rrd_test_error()) {
-            char     *err =
-                malloc((strlen(rrd_get_error()) +
-                        DS_NAM_SIZE) * sizeof(char));
-            sprintf(err, "[ERROR: %s]", rrd_get_error());
+            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
+            char *err = malloc(len);
+            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
             return err;
         }
@@ -998,10 +995,9 @@ char     *printtimelast(
 
         last = rrd_last(argc, (char **) args - 1);
         if (rrd_test_error()) {
-            char     *err =
-                malloc((strlen(rrd_get_error()) +
-                        DS_NAM_SIZE) * sizeof(char));
-            sprintf(err, "[ERROR: %s]", rrd_get_error());
+            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
+            char *err = malloc(len);
+            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
             return err;
         }
@@ -1388,6 +1384,7 @@ s_var   **rrdcgiReadVariables(
     s_var   **result;
     int       i, k, len;
     char      tmp[101];
+    size_t    tmplen;
 
     cp = getenv("REQUEST_METHOD");
     ip = getenv("CONTENT_LENGTH");
@@ -1404,9 +1401,8 @@ s_var   **rrdcgiReadVariables(
     } else if (cp && !strcmp(cp, "GET")) {
         esp = getenv("QUERY_STRING");
         if (esp && strlen(esp)) {
-            if ((line = (char *) malloc(strlen(esp) + 2)) == NULL)
+            if ((line = strdup(esp)) == NULL)
                 return NULL;
-            sprintf(line, "%s", esp);
         } else
             return NULL;
     } else {
@@ -1414,22 +1410,18 @@ s_var   **rrdcgiReadVariables(
         printf("(offline mode: enter name=value pairs on standard input)\n");
         memset(tmp, 0, sizeof(tmp));
         while ((cp = fgets(tmp, 100, stdin)) != NULL) {
-            if (strlen(tmp)) {
-                if (tmp[strlen(tmp) - 1] == '\n')
-                    tmp[strlen(tmp) - 1] = '&';
-                if (length) {
-                    length += strlen(tmp);
-                    len = (length + 1) * sizeof(char);
+            if ((tmplen = strlen(tmp)) != 0) {
+                if (tmp[tmplen - 1] == '\n')
+                    tmp[tmplen - 1] = '&';
+                length += tmplen;
+                len = (length + 1) * sizeof(char);
+                if ((unsigned) length > tmplen) {
                     if ((line = (char *) realloc(line, len)) == NULL)
                         return NULL;
-                    strcat(line, tmp);
+                    strncat(line, tmp, tmplen);
                 } else {
-                    length = strlen(tmp);
-                    len = (length + 1) * sizeof(char);
-                    if ((line = (char *) malloc(len)) == NULL)
+                    if ((line = strdup(tmp)) == NULL)
                         return NULL;
-                    memset(line, 0, len);
-                    strcpy(line, tmp);
                 }
             }
             memset(tmp, 0, sizeof(tmp));
@@ -1527,14 +1519,10 @@ s_var   **rrdcgiReadVariables(
                 i++;
             } else {    /* There is already such a name, suppose a mutiple field */
                 cp = ++esp;
-                len =
-                    (strlen(result[k]->value) + (ip - esp) +
-                     2) * sizeof(char);
-                if ((sptr = (char *) malloc(len)) == NULL)
+                len = strlen(result[k]->value) + (ip - esp) + 2;
+                if ((sptr = (char *) calloc(len, sizeof(char))) == NULL)
                     return NULL;
-                memset(sptr, 0, len);
-                sprintf(sptr, "%s\n", result[k]->value);
-                strncat(sptr, cp, ip - esp);
+                snprintf(sptr, len, "%s\n%s", result[k]->value, cp);
                 free(result[k]->value);
                 result[k]->value = rrdcgiDecodeString(sptr);
             }

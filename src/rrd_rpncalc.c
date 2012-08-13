@@ -117,7 +117,7 @@ void rpn_compact2str(
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
             _itoa(rpnc[i].val, buffer, 10);
 #else
-            sprintf(buffer, "%d", rpnc[i].val);
+            snprintf(buffer, sizeof buffer, "%d", rpnc[i].val);
 #endif
             add_op(OP_NUMBER, buffer)
         }

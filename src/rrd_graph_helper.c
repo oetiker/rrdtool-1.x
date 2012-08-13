@@ -73,17 +73,16 @@ char* checkUnusedValues(parsedargs_t* pa){
   char *res=NULL;
   for(int i=0;i<pa->kv_cnt;i++) {
     if (!pa->kv_args[i].flag) {
-      int len=0;
-      if (res) {len=strlen(res); }
-      char* t=realloc(res,len+3
-		      +strlen(pa->kv_args[i].key)
-		      +strlen(pa->kv_args[i].value)
-		      );
+      const size_t klen = strlen(pa->kv_args[i].key);
+      const size_t vlen = strlen(pa->kv_args[i].value);
+      const size_t len = res ? strlen(res) : 0;
+
+      char *t = realloc(res,len + 3 + klen + vlen);
       if (! t) { return res; }
       res=t;
-      strcat(res,pa->kv_args[i].key);
+      strncat(res,pa->kv_args[i].key, klen);
       strcat(res,"=");
-      strcat(res,pa->kv_args[i].value);
+      strncat(res,pa->kv_args[i].value, vlen);
       strcat(res,":");
     }
   }

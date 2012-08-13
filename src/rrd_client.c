@@ -913,8 +913,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
         break;
     case RD_I_STR:
         chomp(s);
-        info.u_str = (char*)malloc(sizeof(char) * (strlen(s) + 1));
-        strcpy(info.u_str,s);
+        info.u_str = strdup(s);
         break;
     case RD_I_BLO:
         rrd_set_error ("rrdc_info: BLOB objects are not supported");

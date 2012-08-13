@@ -599,7 +599,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
   else
     lines = -1;
 
-  rclen = sprintf(buffer, "%d ", lines);
+  rclen = snprintf(buffer, sizeof buffer, "%d ", lines);
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
   len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen, fmt, argp);
