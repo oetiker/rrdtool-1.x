@@ -687,7 +687,6 @@ static char *day(
 {
     /* using time_t seems to help portability with 64bit oses */
     time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
-    int       tlen;
 
     switch (sc_tokid) {
     case YESTERDAY:
@@ -756,7 +755,6 @@ static char *day(
     case NUMBER:
         /* get numeric <sec since 1970>, MM/DD/[YY]YY, or DD.MM.[YY]YY
          */
-        tlen = strlen(sc_token);
         mon = atol(sc_token);
         if (mon > 10 * 365 * 24 * 60 * 60) {
             ptv->tm = *localtime(&mon);

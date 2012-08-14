@@ -21,7 +21,7 @@ int rrd_resize(
     unsigned long l, rra;
     long      modify;
     unsigned long target_rra;
-    int       grow = 0, shrink = 0;
+    int       shrink = 0;
     char     *endptr;
     rrd_file_t *rrd_file, *rrd_out_file;
 
@@ -38,7 +38,7 @@ int rrd_resize(
     target_rra = strtol(argv[2], &endptr, 0);
 
     if (!strcmp(argv[3], "GROW"))
-        grow = 1;
+        shrink = 0;
     else if (!strcmp(argv[3], "SHRINK"))
         shrink = 1;
     else {

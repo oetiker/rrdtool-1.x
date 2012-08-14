@@ -622,9 +622,11 @@ off_t rrd_seek(
     int whence)
 {
     off_t     ret = 0;
+#ifndef HAVE_MMAP
     rrd_simple_file_t *rrd_simple_file;
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
-
+#endif
+ 
 #ifdef HAVE_MMAP
     if (whence == SEEK_SET)
         rrd_file->pos = off;
