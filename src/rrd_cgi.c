@@ -458,9 +458,7 @@ int main(
     int argc,
     char *argv[])
 {
-    long      length;
     char     *buffer;
-    char     *server_url = NULL;
     long      i;
     long      filter = 0;
     struct option long_options[] = {
@@ -502,7 +500,6 @@ int main(
     if (!filter) {
         rrdcgiDebug(0, 0);
         rrdcgiArg = rrdcgiInit();
-        server_url = getenv("SERVER_URL");
     }
 
     /* make sure we have one extra argument, 
@@ -516,7 +513,7 @@ int main(
         fprintf(stderr, "ERROR: expected a filename\n");
         exit(1);
     } else {
-        length = readfile(argv[optind], &buffer, 1);
+        readfile(argv[optind], &buffer, 1);
     }
 
     if (rrd_test_error()) {

@@ -1709,7 +1709,6 @@ int leg_place(
     int       leg_c = 0;
     double    leg_x = border;
     int       leg_y = 0; //im->yimg;
-    int       leg_y_prev = 0; // im->yimg;
     int       leg_cc;
     double    glue = 0;
     int       i, ii, mark = 0;
@@ -1885,7 +1884,6 @@ int leg_place(
                         +(double)legspace[ii]
                         + glue;
                 }
-                leg_y_prev = leg_y;
                 if (leg_x > border || prt_fctn == 's')
                     leg_y += im->text_prop[TEXT_PROP_LEGEND].size * 1.8;
                 if (prt_fctn == 's')
