@@ -27,8 +27,8 @@ tclpkgdir = @TCL_PACKAGE_DIR@
 tclpkg_DATA = pkgIndex.tcl
 tclpkg_SCRIPTS = ifOctets.tcl
 else
-pkglib_DATA = pkgIndex.tcl
-pkglib_SCRIPTS = ifOctets.tcl
+pkgdata_DATA = pkgIndex.tcl
+pkgdata_SCRIPTS = ifOctets.tcl
 endif
 
 # Automake doen't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
