@@ -437,7 +437,7 @@ Apart from the verbose syntax, there are also the following short tags available
  tt    Monospace font
  u     Underline 
 
-More details on L<http://developer.gnome.org/doc/API/2.0/pango/PangoMarkupFormat.html>.
+More details on L<http://developer.gnome.org/pango/stable/PangoMarkupFormat.html>.
 
 [B<-G>|B<--graph-render-mode> {B<normal>,B<mono>}]
 
