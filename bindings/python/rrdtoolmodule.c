@@ -618,7 +618,7 @@ static PyObject *PyRRD_xport(
         unsigned long i, j;
         rrd_value_t dv;
 
-        unsigned long row_cnt = (end - start) / step;
+        unsigned long row_cnt = ((end - start) / step) + 1;
 
         r = PyDict_New();
         meta_dict = PyDict_New();
