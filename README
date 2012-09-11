@@ -1,20 +1,9 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-Round Robin Database Tools
-==========================
-=======
-=======
->>>>>>> 5733836... add git notes
 RRDtool - Round Robin Database Tool
 ===================================
 
 RRDtool is a little program for easily maintaining a database of time-series
 data. It comes with a charting program for drawing pretty graphs based on
 the data stored.
-<<<<<<< HEAD
->>>>>>> 5733836... add git notes
-=======
->>>>>>> 5733836... add git notes
 
 It is pretty easy to gather status information from all sorts of things,
 ranging from the temperature in your office to the number of octets which
