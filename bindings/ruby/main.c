@@ -27,7 +27,7 @@ typedef rrd_info_t *(
 
 #define RRD_CHECK_ERROR  \
     if (rrd_test_error()) \
-      rb_raise(rb_eRRDError, rrd_get_error()); \
+      rb_raise(rb_eRRDError, "%s", rrd_get_error()); \
     rrd_clear_error();
 
 string_arr string_arr_new(
@@ -57,7 +57,7 @@ string_arr string_arr_new(
         default:
             rb_raise(rb_eTypeError,
                      "invalid argument - %s, expected T_STRING or T_FIXNUM on index %ld",
-                     (long)rb_class2name(CLASS_OF(v)), i);
+                     rb_class2name(CLASS_OF(v)), (long)i);
             break;
         }
     }
