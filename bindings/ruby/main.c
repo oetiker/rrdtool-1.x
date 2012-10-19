@@ -57,7 +57,7 @@ string_arr string_arr_new(
         default:
             rb_raise(rb_eTypeError,
                      "invalid argument - %s, expected T_STRING or T_FIXNUM on index %ld",
-                     (long)rb_class2name(CLASS_OF(v)), i);
+                     rb_class2name(CLASS_OF(v)), (long)i);
             break;
         }
     }
