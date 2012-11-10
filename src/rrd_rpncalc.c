@@ -886,7 +886,9 @@ short rpn_calc(
                 if (output_idx + 1 >= (int) ceil((float) dur / (float) step)) {
                     int       ignorenan = (rpnp[rpi].op == OP_TREND);
                     double    accum = 0.0;
-                    int       i = 0;
+                    int       i = -1; /* pick the current entries, not the next one
+                                         as the data pointer has already been forwarded
+                                         when the OP_VARIABLE was processed */
                     int       count = 0;
 
                     do {
