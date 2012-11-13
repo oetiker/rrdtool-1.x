@@ -1380,10 +1380,18 @@ static int find_first_weekday(void){
     if (first_weekday == -1){
 #ifdef HAVE__NL_TIME_WEEK_1STDAY
         /* according to http://sourceware.org/ml/libc-locales/2009-q1/msg00011.html */
+        /* See correct way here http://pasky.or.cz/dev/glibc/first_weekday.c */
+        first_weekday = nl_langinfo (_NL_TIME_FIRST_WEEKDAY)[0];
+        int week_1stday;
         long week_1stday_l = (long) nl_langinfo (_NL_TIME_WEEK_1STDAY);
-        if (week_1stday_l == 19971130) first_weekday = 0; /* Sun */
-        else if (week_1stday_l == 19971201) first_weekday = 1; /* Mon */
-        else first_weekday = 1; /* we go for a monday default */
+        if (week_1stday_l == 19971130) week_1stday = 0; /* Sun */
+        else if (week_1stday_l == 19971201) week_1stday = 1; /* Mon */
+        else
+        {
+            first_weekday = 1;
+            return first_weekday; /* we go for a monday default */
+        }
+        first_weekday=(week_1stday + first_weekday - 1) % 7;
 #else
         first_weekday = 1;
 #endif
