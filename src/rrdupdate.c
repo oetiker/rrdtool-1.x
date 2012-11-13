@@ -53,6 +53,7 @@ int main(
        else {
             printf("Usage: rrdupdate <filename>\n"
                    "\t\t\t[--template|-t ds-name[:ds-name]...]\n"
+                   "\t\t\t[--skip-past-updates]\n"
                    "\t\t\ttime|N:value[:value...]\n\n"
                    "\t\t\tat-time@value[:value...]\n\n"
                    "\t\t\t[ time:value[:value...] ..]\n\n");

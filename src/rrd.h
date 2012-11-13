@@ -254,6 +254,23 @@ extern    "C" {
     int argc,
     const char **argv,
     rrd_info_t * pcdp_summary);
+
+/* extra flags */
+#define RRD_SKIP_PAST_UPDATES 0x01
+
+    int       rrd_updatex_r(
+    const char *filename,
+    const char *_template,
+    int extra_flags,
+    int argc,
+    const char **argv);
+    int       rrd_updatex_v_r(
+    const char *filename,
+    const char *_template,
+    int extra_flags,
+    int argc,
+    const char **argv,
+    rrd_info_t * pcdp_summary);
     int rrd_fetch_r (
             const char *filename,
             const char *cf,

@@ -60,6 +60,14 @@ function. If this is done accidentally (and this can only be done
 using the template switch), B<RRDtool> will ignore the value specified
 for the COMPUTE B<DST>.
 
+=item B<--skip-past-updates>
+
+When updateing an rrd file with data earlier than the latest update already
+applied, rrdtool will issue an error message an abort. This option instructs
+rrdtool to silently skip such data. It can be useful when re-playing old
+data into an rrd file and you are not sure how many updates have already
+been applied.
+
 =item B<--daemon> I<address>
 
 If given, B<RRDTool> will try to connect to the caching daemon L<rrdcached>

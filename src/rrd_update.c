@@ -3,8 +3,6 @@
  *                Copyright by Florian Forster, 2008
  *****************************************************************************
  * rrd_update.c  RRD Update Function
- *****************************************************************************
- * $Id$
  *****************************************************************************/
 
 #include "rrd_tool.h"
@@ -17,6 +15,9 @@
 
 #include <locale.h>
 
+#include <inttypes.h>
+#include <stdint.h>
+
 #include "rrd_hw.h"
 #include "rrd_rpncalc.h"
 
@@ -26,6 +27,7 @@
 #include "rrd_client.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+
 /*
  * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
  * replacement.
@@ -68,9 +70,10 @@ int       rrd_update_r(
     const char *tmplt,
     int argc,
     const char **argv);
-int       _rrd_update(
+int       _rrd_updatex(
     const char *filename,
     const char *tmplt,
+    int extra_flags,
     int argc,
     const char **argv,
     rrd_info_t *);
@@ -319,11 +322,13 @@ rrd_info_t *rrd_update_v(
     char **argv)
 {
     char     *tmplt = NULL;
+    int      extra_flags = 0;
     rrd_info_t *result = NULL;
     rrd_infoval_t rc;
     char *opt_daemon = NULL;
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
+        {"skip-past-updates",  no_argument, 0, 's'},
         {0, 0, 0, 0}
     };
 
@@ -335,7 +340,7 @@ rrd_info_t *rrd_update_v(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "t:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "st:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -367,7 +372,7 @@ rrd_info_t *rrd_update_v(
     }
     rc.u_int = 0;
     result = rrd_info_push(NULL, sprintf_alloc("return_value"), RD_I_INT, rc);
-    rc.u_int = _rrd_update(argv[optind], tmplt,
+    rc.u_int = _rrd_updatex(argv[optind], tmplt,extra_flags,
                            argc - optind - 1,
                            (const char **) (argv + optind + 1), result);
     result->value.u_int = rc.u_int;
@@ -382,11 +387,13 @@ int rrd_update(
     struct option long_options[] = {
         {"template", required_argument, 0, 't'},
         {"daemon",   required_argument, 0, 'd'},
+        {"skip-past-updates",  no_argument, 0, 's'},
         {0, 0, 0, 0}
     };
     int       option_index = 0;
     int       opt;
-    char     *tmplt = NULL;
+    int       extra_flags = 0;
+    char      *tmplt = NULL;
     int       rc = -1;
     char     *opt_daemon = NULL;
 
@@ -394,7 +401,7 @@ int rrd_update(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "t:d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "t:d:s", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -402,6 +409,10 @@ int rrd_update(
         switch (opt) {
         case 't':
             tmplt = strdup(optarg);
+            break;
+
+        case 's':
+            extra_flags |= RRD_SKIP_PAST_UPDATES;
             break;
 
         case 'd':
@@ -435,16 +446,16 @@ int rrd_update(
         }        
     }
 
-    if ((tmplt != NULL) && rrdc_is_connected(opt_daemon))
+    if (((tmplt != NULL) || (extra_flags != 0)) && rrdc_is_connected(opt_daemon))
     {
         rrd_set_error("The caching daemon cannot be used together with "
-                "templates yet.");
+                "templates and skip-past-updates yet.");
         goto out;
     }
 
     if (! rrdc_is_connected(opt_daemon))
     {
-      rc = rrd_update_r(argv[optind], tmplt,
+      rc = rrd_updatex_r(argv[optind], tmplt,extra_flags,
                         argc - optind - 1, (const char **) (argv + optind + 1));
     }
     else /* we are connected */
@@ -477,7 +488,7 @@ int rrd_update_r(
     int argc,
     const char **argv)
 {
-    return _rrd_update(filename, tmplt, argc, argv, NULL);
+    return _rrd_updatex(filename, tmplt, 0, argc, argv, NULL);
 }
 
 int rrd_update_v_r(
@@ -487,12 +498,34 @@ int rrd_update_v_r(
     const char **argv,
     rrd_info_t * pcdp_summary)
 {
-    return _rrd_update(filename, tmplt, argc, argv, pcdp_summary);
+    return _rrd_updatex(filename, tmplt, 0, argc, argv, pcdp_summary);
 }
 
-int _rrd_update(
+int rrd_updatex_r(
     const char *filename,
     const char *tmplt,
+    int extra_flags,
+    int argc,
+    const char **argv)
+{
+    return _rrd_updatex(filename, tmplt, extra_flags, argc, argv, NULL);
+}
+
+int rrd_updatex_v_r(
+    const char *filename,
+    const char *tmplt,
+    int extra_flags,
+    int argc,
+    const char **argv,
+    rrd_info_t * pcdp_summary)
+{
+    return _rrd_updatex(filename, tmplt, extra_flags, argc, argv, pcdp_summary);
+}
+
+int _rrd_updatex(
+    const char *filename,
+    const char *tmplt,
+    int extra_flags,
     int argc,
     const char **argv,
     rrd_info_t * pcdp_summary)
@@ -524,6 +557,7 @@ int _rrd_update(
     rrd_file_t *rrd_file;
     char     *arg_copy; /* for processing the argv */
     unsigned long *skip_update; /* RRAs to advance but not write */
+    int      process_ret;
 
     /* need at least 1 arguments: data. */
     if (argc < 1) {
@@ -563,11 +597,12 @@ int _rrd_update(
             rrd_set_error("failed duplication argv entry");
             break;
         }
-        if (process_arg(arg_copy, &rrd, rrd_file, rra_begin,
+        process_ret = process_arg(arg_copy, &rrd, rrd_file, rra_begin,
                         &current_time, &current_time_usec, pdp_temp, pdp_new,
                         rra_step_cnt, updvals, tmpl_idx, tmpl_cnt,
                         &pcdp_summary, version, skip_update,
-                        &schedule_smooth) == -1) {
+                        &schedule_smooth);
+        if ( ( process_ret == -1 ) || ( ! (extra_flags & RRD_SKIP_PAST_UPDATES) && process_ret == -2 ) ) {
             if (rrd_test_error()) { /* Should have error string always here */
                 char     *save_error;
 
@@ -579,6 +614,9 @@ int _rrd_update(
             }
             free(arg_copy);
             break;
+        }
+        if ( process_ret == -2 ){
+            rrd_clear_error();
         }
         free(arg_copy);
     }
@@ -774,7 +812,7 @@ static int parse_template(
  * Parse an update string, updates the primary data points (PDPs)
  * and consolidated data points (CDPs), and writes changes to the RRAs.
  *
- * Returns 0 on success, -1 on error.
+ * Returns 0 on success, -1 on error, -2 on time stamp error.
  */
 static int process_arg(
     char *step_start,
@@ -802,10 +840,10 @@ static int process_arg(
     double    interval, pre_int, post_int;  /* interval between this and
                                              * the last run */
     unsigned long proc_pdp_cnt;
-
-    if (parse_ds(rrd, updvals, tmpl_idx, step_start, tmpl_cnt,
-                 current_time, current_time_usec, version) == -1) {
-        return -1;
+    int ds_ret;
+    if ((ds_ret = parse_ds(rrd, updvals, tmpl_idx, step_start, tmpl_cnt,
+                 current_time, current_time_usec, version)) != 0) {
+        return ds_ret;
     }
 
     interval = (double) (*current_time - rrd->live_head->last_up)
@@ -931,12 +969,9 @@ static int parse_ds(
         return -1;
     }
 
-    if (get_time_from_reading(rrd, timesyntax, updvals,
+    return get_time_from_reading(rrd, timesyntax, updvals,
                               current_time, current_time_usec,
-                              version) == -1) {
-        return -1;
-    }
-    return 0;
+                              version);
 }
 
 /*
@@ -1008,7 +1043,7 @@ static int get_time_from_reading(
         rrd_set_error("illegal attempt to update using time %ld when "
                       "last update time is %ld (minimum one second step)",
                       *current_time, rrd->live_head->last_up);
-        return -1;
+        return -2;
     }
     return 0;
 }
