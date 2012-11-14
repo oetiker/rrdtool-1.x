@@ -16,9 +16,9 @@ B<VRULE>B<:>I<time>B<#>I<color>[B<:>I<legend>][B<:dashes>[B<=>I<on_s>[,I<off_s>[
 
 B<HRULE>B<:>I<value>B<#>I<color>[B<:>I<legend>][B<:dashes>[B<=>I<on_s>[,I<off_s>[,I<on_s>,I<off_s>]...]][B<:dash-offset=>I<offset>]]
 
-B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:SKIPSCALE>][B<:dashes>[B<=>I<on_s>[,I<off_s>[,I<on_s>,I<off_s>]...]][B<:dash-offset=>I<offset>]]
+B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:skipscale>][B<:dashes>[B<=>I<on_s>[,I<off_s>[,I<on_s>,I<off_s>]...]][B<:dash-offset=>I<offset>]]
 
-B<AREA>B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:SKIPSCALE>]]
+B<AREA>B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:skipscale>]]
 
 B<TICK>B<:>I<vname>B<#>I<rrggbb>[I<aa>][B<:>I<fraction>[B<:>I<legend>]]
 
@@ -235,7 +235,7 @@ Draw a horizontal line at I<value>.  HRULE acts much like LINE except that
 will have no effect on the scale of the graph. If a HRULE is outside the
 graphing area it will just not be visible.
 
-=head3 B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:SKIPSCALE>]][B<:dashes>[B<=>I<on_s>[,I<off_s>[,I<on_s>,I<off_s>]...]][B<:dash-offset=>I<offset>]]
+=head3 B<LINE>[I<width>]B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:skipscale>]][B<:dashes>[B<=>I<on_s>[,I<off_s>[,I<on_s>,I<off_s>]...]][B<:dash-offset=>I<offset>]]
 
 Draw a line of the specified width onto the graph. I<width> can be a
 floating point number. If the color is not specified, the drawing is done
@@ -249,7 +249,7 @@ B<AREA>.
 Normally the graphing function makes sure that the entire B<LINE> or B<AREA>
 is visible in the chart. The scaling of the chart will be modified
 accordingly if necessary. Any B<LINE> or B<AREA> can be excluded from this
-process by adding the option B<SKIPSCALE>.
+process by adding the option B<skipscale>.
 
 The B<dashes> modifier enables dashed line style. Without any further options
 a symmetric dashed line with a segment length of 5 pixels will be drawn. The
@@ -263,7 +263,7 @@ When you do not specify a color, you cannot specify a legend.  Should
 you want to use B<STACK>, use the "LINEx:<value>::STACK" form.
 
 
-=head3 B<AREA>B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:SKIPSCALE>]]
+=head3 B<AREA>B<:>I<value>[B<#>I<color>][B<:>[I<legend>][B<:STACK>][B<:skipscale>]]
 
 See B<LINE>, however the area between the x-axis and the line will
 be filled.

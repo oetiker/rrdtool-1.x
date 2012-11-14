@@ -758,11 +758,11 @@ int rrd_parse_PVHLAST(
             dprintf("- not STACKing\n");
     }
 
-    dprintf("- parsing '%s', looking for SKIPSCALE\n", &line[*eaten]);
+    dprintf("- parsing '%s', looking for skipscale\n", &line[*eaten]);
     j = scan_for_col(&line[*eaten], 9, tmpstr);
-    if (!strcmp("SKIPSCALE", tmpstr)) {
-        dprintf("- found SKIPSCALE\n");
-        gdp->ignore_for_scaling = 1;
+    if (!strcmp("skipscale", tmpstr)) {
+        dprintf("- found skipscale\n");
+        gdp->skipscale = 1;
         (*eaten) += j;
         if (line[*eaten] == ':') {
             (*eaten) += 1;
@@ -770,8 +770,8 @@ int rrd_parse_PVHLAST(
             dprintf("- done parsing line\n");
             return 0;
         } else {
-            dprintf("- found %s instead of just SKIPSCALE\n", &line[*eaten]);
-            rrd_set_error("SKIPSCALE expected but %s found", &line[*eaten]);
+            dprintf("- found %s instead of just skipscale\n", &line[*eaten]);
+            rrd_set_error("skipscale expected but %s found", &line[*eaten]);
             return 1;
         }
     }
