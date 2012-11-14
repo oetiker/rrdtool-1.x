@@ -1290,7 +1290,7 @@ int data_proc(
                     /* GF_TICK: the data values are not
                      ** relevant for min and max
                      */
-                    if (finite(paintval) && im->gdes[ii].gf != GF_TICK) {
+                    if (finite(paintval) && im->gdes[ii].gf != GF_TICK && !im->gdes[ii].ignore_for_scaling) {
                         if ((isnan(minval) || paintval < minval) &&
                             !(im->logarithmic && paintval <= 0.0))
                             minval = paintval;
@@ -3820,6 +3820,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].step = im->step;
     im->gdes[im->gdes_c - 1].step_orig = im->step;
     im->gdes[im->gdes_c - 1].stack = 0;
+    im->gdes[im->gdes_c - 1].ignore_for_scaling = 0;
     im->gdes[im->gdes_c - 1].linewidth = 0;
     im->gdes[im->gdes_c - 1].debug = 0;
     im->gdes[im->gdes_c - 1].start = im->start;

@@ -758,6 +758,24 @@ int rrd_parse_PVHLAST(
             dprintf("- not STACKing\n");
     }
 
+    dprintf("- parsing '%s', looking for SKIPSCALE\n", &line[*eaten]);
+    j = scan_for_col(&line[*eaten], 9, tmpstr);
+    if (!strcmp("SKIPSCALE", tmpstr)) {
+        dprintf("- found SKIPSCALE\n");
+        gdp->ignore_for_scaling = 1;
+        (*eaten) += j;
+        if (line[*eaten] == ':') {
+            (*eaten) += 1;
+        } else if (line[*eaten] == '\0') {
+            dprintf("- done parsing line\n");
+            return 0;
+        } else {
+            dprintf("- found %s instead of just SKIPSCALE\n", &line[*eaten]);
+            rrd_set_error("SKIPSCALE expected but %s found", &line[*eaten]);
+            return 1;
+        }
+    }
+
     dprintf("- still more, should be dashes[=...]\n");
     dprintf("- parsing '%s'\n", &line[*eaten]);
     if (line[*eaten] != '\0') {

@@ -159,6 +159,7 @@ typedef struct graph_desc_t {
     enum gf_en gf;      /* graphing function */
     int       stack;    /* boolean */
     int       debug;    /* boolean */
+    int       ignore_for_scaling; /* boolean */
     char      vname[MAX_VNAME_LEN + 1]; /* name of the variable */
     long      vidx;     /* gdes reference */
     char      rrd[1024];    /* name of the rrd_file containing data */
@@ -198,6 +199,7 @@ typedef struct graph_desc_t {
     double   *p_dashes; /* pointer do dash array which keeps the lengths of dashes */
     int       ndash;    /* number of dash segments */
     double    offset;   /* dash offset along the line */
+
 
     enum txa_en txtalign;   /* change default alignment strategy for text */
 } graph_desc_t;
