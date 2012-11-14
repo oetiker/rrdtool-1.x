@@ -5,7 +5,10 @@
  *                     this code initially written by Alex van den Bogaerdt
  ****************************************************************************/
 
+#include <locale.h>
+
 #include "rrd_graph.h"
+
 #define dprintf(...) if (gdp->debug&1) fprintf(stderr,__VA_ARGS__);
 #define dprintfparsed(...) if (gdp->debug&2) fprintf(stderr,__VA_ARGS__);
 
@@ -132,7 +135,18 @@ int getLong(const char* v,long *val,char**extra,int base) {
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
+  char *old_locale;
   *extra=NULL;
+  old_locale = setlocale(LC_NUMERIC, NULL);
+  setlocale(LC_NUMERIC, "C");
+  errno = 0;
+  *val = strtod(v,extra);
+  if (errno > 0) {
+      rrd_set_error("converting '%s' to float: %s", v, rrd_strerror(errno));
+      return -1;
+  };
+  setlocale(LC_NUMERIC, old_locale);
+
   *val=strtod(v,extra);
   /* and error handling */
   if (extra==NULL) {
@@ -214,6 +228,9 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	  value="1";
 	} else if ((poscnt>0)&&(strcmp(field,"strftime")==0)) {
 	  key="strftime";
+	  value="1";
+	} else if ((poscnt>0)&&(strcmp(field,"skipscale")==0)) {
+	  key="skipscale";
 	  value="1";
 	} else {
 	  if (poscnt>9) {
@@ -317,6 +334,8 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_XAXIS        (PARSE_FIELD1|(1L<<13))
 #define PARSE_YAXIS        (PARSE_FIELD1|(1L<<14))
 #define PARSE_REDUCE       (PARSE_FIELD1|(1L<<15))
+#define PARSE_SKIPSCALE    (PARSE_FIELD1|(1L<<16))
+
 #define PARSE_DASHES       (PARSE_FIELD1|(1L<<20))
 #define PARSE_HEIGHT       (PARSE_FIELD1|(1L<<21))
 #define PARSE_FORMAT       (PARSE_FIELD1|(1L<<22))
@@ -405,6 +424,11 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
     char *stack=getKeyValueArgument("stack",1,pa);
     gdp->stack=(stack)?1:0;
     dprintfparsed("got stack: %s\n",stack);
+  }
+  if (bitscmp(PARSE_SKIPSCALE)) { 
+    char *skipscale=getKeyValueArgument("skipscale",1,pa);
+    gdp->skipscale =(skipscale)?1:0;
+    dprintfparsed("got skipscale: %s\n",skipscale);
   }
   if (bitscmp(PARSE_REDUCE)) { 
     char *reduce=getKeyValueArgument("reduce",1,pa);
@@ -858,6 +882,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
 					|PARSE_STACK
+                                        |PARSE_SKIPSCALE
 					|PARSE_LINEWIDTH
 					|PARSE_DASHES
 					|PARSE_XAXIS
@@ -879,6 +904,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
   dprintf("LEGEND: %s\n",gdp->legend);
   dprintf("STACK : %i\n",gdp->stack);
+  dprintf("SKIPSCALE : %i\n",gdp->skipscale);
   dprintf("WIDTH : %g\n",gdp->linewidth);
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
@@ -898,6 +924,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
 					|PARSE_STACK
+                                        |PARSE_SKIPSCALE
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					|PARSE_HEIGHT
@@ -918,6 +945,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
   dprintf("LEGEND: %s\n",gdp->legend);
   dprintf("STACK : %i\n",gdp->stack);
+  dprintf("SKIPSCALE : %i\n",gdp->skipscale);
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("=================================\n");
@@ -1305,6 +1333,7 @@ void rrd_graph_script(
 	if (parseArguments(argv[i],&pa)) {
 	  return; }
 
+        /* dumpArguments(&pa); */
 	/* now let us handle the field based on the first command or cmd=...*/
 	char*cmd=NULL;
 	/* and try to get via cmd */
