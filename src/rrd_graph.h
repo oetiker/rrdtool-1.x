@@ -159,7 +159,7 @@ typedef struct graph_desc_t {
     enum gf_en gf;      /* graphing function */
     int       stack;    /* boolean */
     int       debug;    /* boolean */
-    int       ignore_for_scaling; /* boolean */
+    int       skipscale; /* boolean */
     char      vname[MAX_VNAME_LEN + 1]; /* name of the variable */
     long      vidx;     /* gdes reference */
     char      rrd[1024];    /* name of the rrd_file containing data */
