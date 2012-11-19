@@ -227,18 +227,12 @@ static int get_xml_time_t(
     time_t temp;    
     if ((text = get_xml_text(reader)) != NULL){
         errno = 0;        
-#ifdef TIME_T_IS_32BIT
+#if SIZEOF_TIME_T == 4
         temp = strtol((char *)text,NULL, 0);
-#else
-#ifdef TIME_T_IS_64BIT
+#elif SIZEOF_TIME_T == 8
         temp = strtoll((char *)text,NULL, 0);        
 #else
-        if (sizeof(time_t) == 4){
-            temp = strtol((char *)text,NULL, 0);
-        } else {
-            temp = strtoll((char *)text,NULL, 0);
-        }
-#endif
+#error "Don't know how to deal with TIME_T other than 4 or 8 bytes"
 #endif    
         if (errno>0){
             rrd_set_error("ling %d: get_xml_time_t from '%s' %s",
