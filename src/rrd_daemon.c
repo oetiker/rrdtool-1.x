@@ -105,7 +105,7 @@
 #include <tcpd.h>
 #endif /* HAVE_LIBWRAP */
 
-#include <glib-2.0/glib.h>
+#include <glib.h>
 /* }}} */
 
 #define RRDD_LOG(severity, ...) \
