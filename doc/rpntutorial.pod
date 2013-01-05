@@ -159,7 +159,7 @@ uses the LE and DIV operators.
 Answer 2:
 
     if (input <= 56000/8 ) { input*8 } else { 56000 }
-    input,56000,8,DIV,LT,input,8,*,56000,IF
+    input,56000,8,DIV,LE,input,8,*,56000,IF
 
 
 Exercise 3:
