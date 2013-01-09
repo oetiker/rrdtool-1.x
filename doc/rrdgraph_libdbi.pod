@@ -138,6 +138,18 @@ To illustrate this here a command to create a graph that contains the actual val
 
 * To debug the SQL statements set the environment variable RRDDEBUGSQL and the actual SQL statements and the timing is printed to stderr.
 
+
+
+=head1 Performance issues with MySQL backend
+
+LibDBI has a big performance issue when you retrieve data from a MySQL server. Performance impact is exponentially based on the number of 
+values you retrieve from the database. 
+For example, it would take more than 2 seconds to graph 5DS on 150 hours of data with a precision of 5 minutes 
+(against 100ms when data comes from a RRD file). This bug has been fixed on latest version of LibDBI (not release yet). 
+At that time, you would need to compile libdbi and libdbi-drivers from CVS repository to fix it.
+You can find more informations on this libdbi-users mailing list thread : http://sourceforge.net/mailarchive/message.php?msg_id=30320894
+
+
 =head1 BUGS
 
 * at least on Linux please make sure that the libdbi driver is explicitly linked against libdbi.so.0 
