@@ -180,6 +180,7 @@ static void PrintUsage(
            "\t\t[-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
            "\t\t[-Z|--use-nan-for-all-missing-data]\n"
+           "\t\t[--utc]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     const char *help_graph3 =
         N_("\t\t[CDEF:vname=rpn-expression]\n"

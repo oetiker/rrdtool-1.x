@@ -562,6 +562,11 @@ If one DS is missing, either because the RRD is not available or
 because it does not contain the requested DS name, just assume that we
 got empty values instead of raising a fatal error.
 
+[B<--utc>]
+
+Force the timezone to be UTC. Equivalent to doing TZ=UTC rrdtool graph .... 
+This is useful to calculate daily average ranging from midnight to midnight rather than say the last 24 hours.
+
 =head2 Data and variables
 
 B<DEF:>I<vname>B<=>I<rrdfile>B<:>I<ds-name>B<:>I<CF>[B<:step=>I<step>][B<:start=>I<time>][B<:end=>I<time>]
