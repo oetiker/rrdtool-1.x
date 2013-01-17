@@ -45,6 +45,7 @@
 
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
+#define FORCE_UTC_TIME  0x800   /* Work in UTC timezone instead of localtimg */
 
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
@@ -342,11 +343,13 @@ int       data_proc(
 time_t    find_first_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 time_t    find_next_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 int       print_calc(
     image_desc_t *);
 int       leg_place(
