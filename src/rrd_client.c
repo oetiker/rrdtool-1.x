@@ -1,6 +1,6 @@
 /**
  * RRDTool - src/rrd_client.c
- * Copyright (C) 2008-2010  Florian octo Forster
+ * Copyright (C) 2008-2013  Florian octo Forster
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -41,6 +41,7 @@
 #include <sys/un.h>
 #include <netdb.h>
 #include <limits.h>
+#include <locale.h>
 
 #ifndef ENODATA
 #define ENODATA ENOENT
@@ -205,6 +206,7 @@ static int parse_value_array_header (char *line, /* {{{ */
   char *str_key;
   char *str_array[array_len];
   char *endptr;
+  char *old_locale;
   int status;
   size_t i;
 
@@ -220,14 +222,23 @@ static int parse_value_array_header (char *line, /* {{{ */
   if ((endptr == str_key) || (errno != 0))
     return (-1);
 
+  /* Enforce the "C" locale so that parsing of the response is not dependent on
+   * the locale. For example, when using a German locale the strtod() function
+   * will expect a comma as the decimal separator, i.e. "42,77". */
+  old_locale = setlocale (LC_NUMERIC, "C");
+
   for (i = 0; i < array_len; i++)
   {
     endptr = NULL;
     array[i] = (rrd_value_t) strtod (str_array[i], &endptr);
     if ((endptr == str_array[i]) || (errno != 0))
+    {
+      (void) setlocale (LC_NUMERIC, old_locale);
       return (-1);
+    }
   }
 
+  (void) setlocale (LC_NUMERIC, old_locale);
   return (0);
 } /* }}} int parse_value_array_header */
 
