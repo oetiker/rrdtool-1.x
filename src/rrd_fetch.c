@@ -374,8 +374,8 @@ int rrd_fetch_fn(
     rra_start_time = (rra_end_time
                       - (*step * (rrd.rra_def[chosen_rra].row_cnt - 1)));
     /* here's an error by one if we don't be careful */
-    start_offset = (long) (*start + *step - rra_start_time) / (long) *step;
-    end_offset = (long) (rra_end_time - *end) / (long) *step;
+    start_offset = ((long) *start + *step - rra_start_time) / (long) *step;
+    end_offset = ((long) rra_end_time - *end) / (long) *step;
 #ifdef DEBUG
     fprintf(stderr,
             "rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
