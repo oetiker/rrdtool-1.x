@@ -617,12 +617,12 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
       if (first) { fraction=first->value;
       } else { rrd_set_error("No positional FRACTION"); return NULL; }
     }    
-    /* legend */
+    /* legend (it's optional if no other arguments follow)*/
     if (!legend) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
       if (first) { legend=first->value;
 	dprintfparsed("got positional legend: %s - \n",first->value);
-      } else { rrd_set_error("No positional legend found"); return NULL; }
+      }
     }
   } else if (bitscmp(PARSE_VNAMERPN)) {
     if ((!vname)||(!rpn)) {
