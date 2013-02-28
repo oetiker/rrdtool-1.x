@@ -353,6 +353,45 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_VNAMERPN         (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RPN)
 #define PARSE_VNAMEREFPOS      (PARSE_POSITIONAL|PARSE_VNAMEREF)
 
+GHashTable* gdef_map;
+
+/* find gdes containing var*/
+static long find_var(
+    image_desc_t *im,
+    char *key)
+{
+    /* this makes only sense for a sufficient number of items */
+    long match = -1;
+    if ( im->gdes_c > 12 ) {
+        gpointer value;
+        gboolean ok = g_hash_table_lookup_extended(im->gdef_map,key,NULL,&value);
+        if (ok){
+            match = GPOINTER_TO_INT(value);
+        }
+    }
+    else {
+        long      ii;
+        for (ii = 0; ii < im->gdes_c - 1; ii++) {
+            if ((im->gdes[ii].gf == GF_DEF
+                || im->gdes[ii].gf == GF_VDEF || im->gdes[ii].gf == GF_CDEF)
+                && (strcmp(im->gdes[ii].vname, key) == 0)) {
+                match = ii;
+                break;
+            }
+        }
+    }
+    return match;
+
+}
+
+static long find_var_wrapper(
+    void *arg1,
+    char *key)
+{
+    return find_var((image_desc_t *) arg1, key);
+}
+
+
 graph_desc_t* newGraphDescription(image_desc_t *const,enum gf_en,parsedargs_t*,unsigned long);
 graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedargs_t* pa,unsigned long bits) {
   /* check that none of the othe bitfield marker is set */
@@ -693,7 +732,7 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
   }
   
   /* and assign it */
-  if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1); }
+  if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1);}
   if (rrd) { strncpy(gdp->rrd,rrd,1024); }
   if (ds) { strncpy(gdp->ds_nam,ds,DS_NAM_SIZE); }
   if (cf) { 
@@ -733,6 +772,14 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
       gdp->yrule=val;
     }
   }
+  /* remember the index for faster varfind */
+  char *key = gdes_fetch_key((*gdp));
+  if (gdp->gf == GF_DEF && !g_hash_table_lookup_extended(im->rrd_map,key,NULL,NULL)){
+      g_hash_table_insert(im->gdef_map,g_strdup(key),GINT_TO_POINTER(im->gdes_c-1));
+  } 
+  free(key);
+  g_hash_table_insert(im->gdef_map,g_strdup(gdp->vname),GINT_TO_POINTER(im->gdes_c-1));
+// g_hash_table_insert(im->gdef_map,gdp->vname,GINT_TO_POINTER(im->gdes_c-1));
   /* and return it */
   return gdp;
 }

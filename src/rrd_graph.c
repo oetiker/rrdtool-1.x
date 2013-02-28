@@ -335,6 +335,13 @@ int im_free(
     if (im->daemon_addr != NULL)
       free(im->daemon_addr);
 
+    if (im->gdef_map){
+        g_hash_table_destroy(im->gdef_map);        
+    }
+    if (im->rrd_map){
+        g_hash_table_destroy(im->rrd_map);        
+    }
+
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
             /* careful here, because a single pointer can occur several times */
@@ -362,10 +369,17 @@ int im_free(
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
 
+    if (im->surface)
+        cairo_surface_destroy(im->surface);
+
     if (im->cr) {
         status = cairo_status(im->cr);
         cairo_destroy(im->cr);
     }
+
+    if (status)
+        fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
+                cairo_status_to_string(status));
 
 
     if (im->rendered_image) {
@@ -373,15 +387,9 @@ int im_free(
     }
 
     if (im->layout) {
-        g_object_unref (im->layout);
+        g_object_unref(im->layout);
     }
 
-    if (im->surface)
-        cairo_surface_destroy(im->surface);
-
-    if (status)
-        fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
-                cairo_status_to_string(status));
 
     return 0;
 }
@@ -840,40 +848,27 @@ int data_fetch(
 {
     int       i, ii;
     int       skip;
-
     /* pull the data from the rrd files ... */
     for (i = 0; i < (int) im->gdes_c; i++) {
         /* only GF_DEF elements fetch data */
         if (im->gdes[i].gf != GF_DEF)
             continue;
 
-        skip = 0;
         /* do we have it already ? */
-        for (ii = 0; ii < i; ii++) {
-            if (im->gdes[ii].gf != GF_DEF)
-                continue;
-            if ((strcmp(im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
-                && (im->gdes[i].cf == im->gdes[ii].cf)
-                && (im->gdes[i].cf_reduce == im->gdes[ii].cf_reduce)
-                && (im->gdes[i].start_orig == im->gdes[ii].start_orig)
-                && (im->gdes[i].end_orig == im->gdes[ii].end_orig)
-                && (im->gdes[i].step_orig == im->gdes[ii].step_orig)) {
-                /* OK, the data is already there.
-                 ** Just copy the header portion
-                 */
-                im->gdes[i].start = im->gdes[ii].start;
-                im->gdes[i].end = im->gdes[ii].end;
-                im->gdes[i].step = im->gdes[ii].step;
-                im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
-                im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
-                im->gdes[i].data = im->gdes[ii].data;
-                im->gdes[i].data_first = 0;
-                skip = 1;
-            }
-            if (skip)
-                break;
-        }
-        if (!skip) {
+        gpointer value;
+        char *key = gdes_fetch_key(im->gdes[i]);
+        gboolean ok = g_hash_table_lookup_extended(im->rrd_map,key,NULL,&value);
+        free(key);
+        if (ok){
+            ii = GPOINTER_TO_INT(value);
+            im->gdes[i].start = im->gdes[ii].start;
+            im->gdes[i].end = im->gdes[ii].end;
+            im->gdes[i].step = im->gdes[ii].step;
+            im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
+            im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
+            im->gdes[i].data = im->gdes[ii].data;
+            im->gdes[i].data_first = 0;
+        } else {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
             const char *rrd_daemon;
             int status;
@@ -958,29 +953,6 @@ int data_fetch(
  * CDEF stuff
  *************************************************************/
 
-long find_var_wrapper(
-    void *arg1,
-    char *key)
-{
-    return find_var((image_desc_t *) arg1, key);
-}
-
-/* find gdes containing var*/
-long find_var(
-    image_desc_t *im,
-    char *key)
-{
-    long      ii;
-
-    for (ii = 0; ii < im->gdes_c - 1; ii++) {
-        if ((im->gdes[ii].gf == GF_DEF
-             || im->gdes[ii].gf == GF_VDEF || im->gdes[ii].gf == GF_CDEF)
-            && (strcmp(im->gdes[ii].vname, key) == 0)) {
-            return ii;
-        }
-    }
-    return -1;
-}
 
 /* find the greatest common divisor for all the numbers
    in the 0 terminated num array */
@@ -4228,6 +4200,8 @@ void rrd_graph_init(
 #ifdef HAVE_TZSET
     tzset();
 #endif
+    im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
