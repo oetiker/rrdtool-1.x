@@ -204,7 +204,10 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
     switch (c) {
       /* if the char is a backslash, then this escapes the next one */
     case '\\':
-      if (pos[1]) { pos++; }
+      if (pos[1]) {
+        /* move up the rest of the string to eat the backslash */
+        memmove(pos,pos+1,strlen(pos+1)+1);
+      }
       break;
     case 0:
     case ':':
