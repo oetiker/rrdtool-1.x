@@ -349,7 +349,6 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_VNAMEDEF            (PARSE_VNAME|(1L<<57))
 #define PARSE_VNAMEREF            (PARSE_VNAME|(1L<<56))
 #define PARSE_VNAMEREFNUM         (PARSE_VNAMEREF|(1L<<55))
-#define PARSE_VNAMEREFNUMNOPARSE  (PARSE_FIELD1|(1L<<54))
 /* special positional cases */
 #define PARSE_VNAMERRDDSCF     (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RRD|PARSE_DS|PARSE_CF)
 #define PARSE_VNAMECOLORLEGEND (PARSE_POSITIONAL|PARSE_VNAMEREFNUM|PARSE_COLOR|PARSE_COLOR2|PARSE_LEGEND)
@@ -702,23 +701,26 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
       if (idx>=0) {
 	rrd_set_error("trying to reuse vname %s",vname); return NULL; }
     } else if (bitscmp(PARSE_VNAMEREF)) {
-      if (idx>=0) {
-	gdp->vidx=idx;    
-      } else if (bitscmp(PARSE_VNAMEREFNUM)) {
-	if (!bitscmp(PARSE_VNAMEREFNUMNOPARSE)) {
-	  double val;
-	  char *x; 
-	  int f=getDouble(vname,&val,&x);
-	  if (f) {
-	    rrd_set_error("error parsing number %s",vname); return NULL;
-	  }
-	  gdp->yrule=val;
-	} else {
-	  rrd_set_error("vname %s not found",vname); return NULL;
-	}
-      } else {
-	gdp->vidx=-1;
-      }
+	gdp->vidx=idx;
+        if (idx < 0){
+           if (bitscmp(PARSE_VNAMEREFNUM)) {
+              double val;
+              char *x; 
+              int f=getDouble(vname,&val,&x);
+              if (f) {
+	         rrd_set_error("%s is not a vname nor a number",vname); return NULL;
+              }
+              if (gf==GF_VRULE){
+                 gdp->xrule=val;
+              }
+              else {
+                 gdp->yrule=val;
+              }
+           }
+           else {
+                rrd_set_error("vname %s not found",vname); return NULL;
+           }
+        }        
     }
   }
   
@@ -1049,28 +1051,12 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
-					|PARSE_VNAMEREFNUMNOPARSE
+					|PARSE_VNAMEREFNUM
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					|PARSE_DASHES
 					); 
   if (!gdp) { return -1;}
-
-  /* check that vidx is of type VDEF */
-  if (im->gdes[gdp->vidx].gf != GF_VDEF) {
-    rrd_set_error("Using vname %s of wrong type in line %s\n",
-		  gdp->vname,pa->arg_orig);
-    return -1;
-  }
-
-  /* and here we place number parsing - depends on axis in the long-run*/
-  if (gdp->vidx<0) {
-    rrd_set_error("TODO: NOT SUPPORTED: Need to add number handler here for %s\n",
-		  gdp->vname); return -1; 
-    /* depending on axis type this is either number or time 
-       essentially becoming generic when we get axis support
-    */
-  }
 
   /* debug output */
   dprintf("=================================\n");
@@ -1081,7 +1067,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   }
   if (gdp->vidx<0) {
     if (gf==GF_VRULE) {
-      dprintf("VAL   : %g\n",gdp->yrule);
+      dprintf("VAL   : %lld\n",(long long)gdp->xrule);
     } else {
       dprintf("VAL   : %g\n",gdp->yrule);
     }
@@ -1097,6 +1083,14 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("=================================\n");
+
+  /* check that vidx is of type VDEF */
+  if (gdp->vidx != -1 && im->gdes[gdp->vidx].gf != GF_VDEF) {
+    rrd_set_error("Using vname %s of wrong type in line %s\n",
+		  gdp->vname,pa->arg_orig);
+    return -1;
+  }
+
 
   /* and return fine */
   return 0;
