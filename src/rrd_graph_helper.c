@@ -370,6 +370,9 @@ static long find_var(
     if (ok){
         match = GPOINTER_TO_INT(value);
     }
+
+    /* printf("%s -> %ld\n",key,match); */
+
     return match;
 
 }
@@ -801,6 +804,7 @@ int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
 
 /* implementations */
 int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+
 #if 0
   /* define X or y axis */
   axis_t *a=im->xaxis;
@@ -834,6 +838,7 @@ int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   a->bounds.lowertxt=getKeyValueArgument("min",1,pa);
   a->bounds.uppertxt=getKeyValueArgument("max",1,pa);
 #endif
+
   /* and return */
   return 0;
 }
@@ -847,7 +852,7 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_END
 					|PARSE_REDUCE
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* debugging output */
   dprintf("=================================\n");
@@ -871,18 +876,18 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMERPN 
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* handle RPN parsing */
   if (gf==GF_CDEF) {
     /* parse rpn */
     if ((gdp->rpnp= rpn_parse((void *) im, gdp->rpn, &find_var_wrapper)) == NULL) {
-      return -1; }
+      return 1; }
   } else {
     /* parse vdef, as vdef_parse is a bit "stupid" right now we have to touch things here */
     /* so find first , */
     char*c=strchr(gdp->rpn,',');
-    if (! c) { rrd_set_error("Comma expected in VDEF definition %s",gdp->rpn); return -1;}
+    if (! c) { rrd_set_error("Comma expected in VDEF definition %s",gdp->rpn); return 1;}
     /* found a comma, so copy the first part to ds_name (re/abusing it) */
     *c=0;
     strncpy(gdp->ds_nam,gdp->rpn,DS_NAM_SIZE);
@@ -891,7 +896,7 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     gdp->vidx = find_var(im, gdp->ds_nam);
     if (gdp->vidx<0) { *c=',';
       rrd_set_error("Not a valid vname: %s in line %s", gdp->ds_nam, gdp->rpn);
-      return -1;}
+      return 1;}
     if (im->gdes[gdp->vidx].gf != GF_DEF && im->gdes[gdp->vidx].gf != GF_CDEF) {
       rrd_set_error("variable '%s' not DEF nor "
 		    "CDEF in VDEF '%s'", gdp->ds_nam, gdp->rpn);
@@ -900,7 +905,7 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     /* and parsing the rpn */
     int r=vdef_parse(gdp, c+1);
     /* original code does not check here for some reason */
-    if (r) { return -1; }
+    if (r) { return 1; }
   }
 
   /* debugging output */
@@ -930,7 +935,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* debug output */
   dprintf("=================================\n");
@@ -971,7 +976,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_YAXIS
 					|PARSE_HEIGHT
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* debug output */
   dprintf("=================================\n");
@@ -1003,7 +1008,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
   gdp->stack=1;
   /* and try to get the one index before ourselves */
   long i;
@@ -1021,7 +1026,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   }
   /* error the unhandled */
   if (gdp->gf==gf) { 
-    rrd_set_error("No previous LINE or AREA found for %s",pa->arg_orig); return -1;}
+    rrd_set_error("No previous LINE or AREA found for %s",pa->arg_orig); return 1;}
 
   /* debug output */
   dprintf("=================================\n");
@@ -1056,7 +1061,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_YAXIS
 					|PARSE_DASHES
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* debug output */
   dprintf("=================================\n");
@@ -1088,7 +1093,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   if (gdp->vidx != -1 && im->gdes[gdp->vidx].gf != GF_VDEF) {
     rrd_set_error("Using vname %s of wrong type in line %s\n",
 		  gdp->vname,pa->arg_orig);
-    return -1;
+    return 1;
   }
 
 
@@ -1104,7 +1109,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
 					|PARSE_FORMAT
 					|PARSE_STRFTIME
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
    /* here we parse pos arguments locally */
   /* vname */
   if (gdp->vname[0]==0) {
@@ -1115,8 +1120,8 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
       /* get type of reference */
       gdp->vidx=find_var(im, gdp->vname);
       if (gdp->vidx<0) {
-	rrd_set_error("undefined vname %s",gdp->vname); return -1; }
-    } else { rrd_set_error("No positional VNAME"); return -1; }
+	rrd_set_error("undefined vname %s",gdp->vname); return 1; }
+    } else { rrd_set_error("No positional VNAME"); return 1; }
   }
   /* check type of ref in general */
   enum gf_en vnamegf=im->gdes[gdp->vidx].gf;
@@ -1132,8 +1137,8 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
       if (first) {
 	gdp->cf=cf_conv(first->value);
 	if (((int)gdp->cf)==-1) { 
-	  rrd_set_error("bad CF: %s",first->value); return -1; }
-      } else { rrd_set_error("No positional CDEF"); return -1; }      
+	  rrd_set_error("bad CF: %s",first->value); return 1; }
+      } else { rrd_set_error("No positional CDEF"); return 1; }      
     }
     break;
   case GF_VDEF:
@@ -1141,7 +1146,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   default:
     rrd_set_error("Encountered unknown type variable '%s'",
 		  im->gdes[gdp->vidx].vname);
-    return -1;
+    return 1;
   }
   /* and get positional format */
   if (gdp->format[0]==0) {
@@ -1150,7 +1155,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     if (first) {
       strncpy(gdp->format,first->value,FMT_LEG_LEN);
       dprintfparsed("got positional format: %s\n",gdp->format);
-    } else { rrd_set_error("No positional CF/FORMAT"); return -1; }    
+    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }    
   }
   /* debug output */
   dprintf("=================================\n");
@@ -1175,14 +1180,14 @@ int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_LEGEND
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* and if we have no legend, then use the first positional one */
   if (gdp->legend[0]==0) {
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
       strncpy(gdp->legend,first->value,FMT_LEG_LEN);      
-    } else { rrd_set_error("No positional CF/FORMAT"); return -1; }    
+    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }    
   }
   /* debug output */
   dprintf("=================================\n");
@@ -1197,7 +1202,7 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORFRACTIONLEGEND
 					); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
   /* debug output */
   dprintf("=================================\n");
   dprintf("TICK  : %s\n",pa->arg_orig);
@@ -1220,12 +1225,12 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,0); 
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
 
   /* get align */
   char* align=getKeyValueArgument("align",1,pa);
   if (!align) align=getFirstUnusedArgument(1,pa)->value;
-  if (!align) { rrd_set_error("No alignment given"); return -1; }
+  if (!align) { rrd_set_error("No alignment given"); return 1; }
 
   /* parse align */
   if (strcmp(align, "left") == 0) {
@@ -1253,7 +1258,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMEREFPOS);
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
   /* and check that it is a CDEF */
   switch (im->gdes[gdp->vidx].gf) {
   case GF_DEF:
@@ -1273,7 +1278,7 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* now parse the "shift" */
   char* shift=getKeyValueArgument("shift",1,pa);
   if (!shift) {shift=getFirstUnusedArgument(1,pa)->value;}
-  if (!shift) { rrd_set_error("No shift given"); return -1; }
+  if (!shift) { rrd_set_error("No shift given"); return 1; }
   /* identify shift */
   gdp->shidx=find_var(im, shift);
   if (gdp->shidx>=0) {
@@ -1298,7 +1303,7 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
     long val;
     char *x; 
     int f=getLong(shift,&val,&x,10);
-    if (f) { rrd_set_error("error parsing number %s",shift); return -1; }
+    if (f) { rrd_set_error("error parsing number %s",shift); return 1; }
     gdp->shval = val;
     gdp->shidx = -1;
   }
@@ -1319,7 +1324,7 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 int parse_xport(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMECOLORLEGEND);
-  if (!gdp) { return -1;}
+  if (!gdp) { return 1;}
   /* check for cdef */
   /* and check that it is a CDEF */
   switch (im->gdes[gdp->vidx].gf) {
