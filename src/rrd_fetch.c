@@ -56,7 +56,7 @@
 #include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
-/* #define DEBUG */
+/* #define DEBUG  */
 
 int rrd_fetch(
     int argc,
@@ -404,12 +404,12 @@ int rrd_fetch_fn(
     rra_start_time = (rra_end_time
                       - (*step * (rrd.rra_def[chosen_rra].row_cnt - 1)));
     /* here's an error by one if we don't be careful */
-    start_offset = ((long) *start + *step - rra_start_time) / (long) *step;
-    end_offset = ((long) rra_end_time - *end) / (long) *step;
+    start_offset = ((long long)*start + (long long)*step - (long long)rra_start_time) / (long long) *step;
+    end_offset = ((long long)rra_end_time - (long long)*end) / (long long) *step;
 #ifdef DEBUG
     fprintf(stderr,
-            "rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
-            rra_start_time, rra_end_time, start_offset, end_offset);
+            "start %10lu step %10lu rra_start %lld, rra_end %lld, start_off %lld, end_off %lld\n",
+            *start, *step,(long long)rra_start_time, (long long)rra_end_time, (long long)start_offset, (long long)end_offset);
 #endif
     /* only seek if the start time is before the end time */
     if (*start <= rra_end_time && *end >= rra_start_time - (off_t)*step ){
