@@ -487,15 +487,15 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
     gdp->yaxisidx=yaxis;
   }
   if (bitscmp(PARSE_LINEWIDTH)) {
-    double linewidth=0;
+    double linewidth = 1;
     char *t,*x; 
     if ((t=getKeyValueArgument("linewidth",1,pa))&&(*t!=0)) {
       if ((getDouble(t,&linewidth,&x))||(linewidth<=0)) {
 	rrd_set_error("Bad line width: %s",t); return NULL;
       }
-      dprintfparsed("got linewidth: %s (%g)\n",t,linewidth);
-      gdp->linewidth=linewidth;
     }
+    dprintfparsed("got linewidth: %s (%g)\n",t,linewidth);
+    gdp->linewidth=linewidth;
   }
   if (bitscmp(PARSE_HEIGHT)) {
     double height=0;
