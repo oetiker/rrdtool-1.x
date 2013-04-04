@@ -1,0 +1,37 @@
+*~
+*.o
+*.lo
+*.a
+*.la
+/build/
+
+# autotools stuff
+/m4/*.m4
+!/m4/acinclude.m4
+/aclocal.m4
+/ltmain.sh
+/install-sh
+/config.guess
+/config.sub
+/autom4te.cache/
+/compile
+/configure
+/depcomp
+/missing
+/config.rpath
+
+# automake
+Makefile.in
+/rrd_config.h.in
+/ar-lib
+
+# po
+/ABOUT-NLS
+/po/*
+!/po/ChangeLog
+!/po/LINGUAS
+!/po/Makevars
+!/po/POTFILES.in
+
+# cscope
+/cscope.*
