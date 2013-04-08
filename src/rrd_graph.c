@@ -900,8 +900,14 @@ int data_fetch(
                 if (status != 0) {
                     if (im->extra_flags & ALLOW_MISSING_DS) {
                         rrd_clear_error();
-                        im->gdes[i].ds_cnt = im->gdes[i].start = im->gdes[i].end = 0;
-                        ft_step = 1;
+                        if (rrd_fetch_empty(&im->gdes[i].start,
+                                            &im->gdes[i].end,
+                                            &ft_step,
+                                            &im->gdes[i].ds_cnt,
+                                            im->gdes[i].ds_nam,
+                                            &im->gdes[i].ds_namv,
+                                            &im->gdes[i].data) == -1)
+                            return -1;
                     } else return (status);
                 }
             }
@@ -918,8 +924,14 @@ int data_fetch(
                     if (im->extra_flags & ALLOW_MISSING_DS) {
                         /* Unable to fetch data, assume fake data */
                         rrd_clear_error();
-                        im->gdes[i].ds_cnt = im->gdes[i].start = im->gdes[i].end = 0;
-                        ft_step = 1;
+                        if (rrd_fetch_empty(&im->gdes[i].start,
+                                            &im->gdes[i].end,
+                                            &ft_step,
+                                            &im->gdes[i].ds_cnt,
+                                            im->gdes[i].ds_nam,
+                                            &im->gdes[i].ds_namv,
+                                            &im->gdes[i].data) == -1)
+                            return -1;
                     } else return -1;
                 }
             }
@@ -947,8 +959,7 @@ int data_fetch(
                 im->gdes[i].ds = ii;
             }
         }
-        if ((im->gdes[i].ds == -1) &&
-            !(im->extra_flags & ALLOW_MISSING_DS)) {
+        if (im->gdes[i].ds == -1) {
             rrd_set_error("No DS called '%s' in '%s'",
                           im->gdes[i].ds_nam, im->gdes[i].rrd);
             return -1;
