@@ -339,7 +339,7 @@ AC_DEFUN([AC_IEEE], [
 AC_MSG_CHECKING([if IEEE math works $1])
 AC_CACHE_VAL([rd_cv_ieee_$2],
 [AC_RUN_IFELSE([AC_LANG_SOURCE([[$3
-#include "src/rrd_config_bottom.h"
+#include "${srcdir}/src/rrd_config_bottom.h"
 #include <stdio.h>
 int main(void){
     double rrdnan,rrdinf,rrdc,rrdzero;
