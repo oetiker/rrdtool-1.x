@@ -12,7 +12,7 @@ endif
 INCLUDES = -DLOCALEDIR="\"$(datadir)/locale\""
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
-AM_CFLAGS = @CFLAGS@
+AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
 ## no including this by default @WERROR@
 
 UPD_C_FILES =		\

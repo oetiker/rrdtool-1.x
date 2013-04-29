@@ -25,7 +25,7 @@ else
 endif
 rrd_la_LIBADD = -lrrd -lm
 rrd_la_LDFLAGS = -module -version-info $(LIB_VERSION_INFO) $(LUA_LFLAGS) -L$(top_builddir)/src/.libs
-rrd_la_CFLAGS = -I$(top_srcdir)/src -I$(top_srcdir) $(LUA_CFLAGS) $(LUA_DEFINES) -DLIB_VERSION=\"$(LIB_VERSION)\"
+rrd_la_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src -I$(top_srcdir) $(LUA_CFLAGS) $(LUA_DEFINES) -DLIB_VERSION=\"$(LIB_VERSION)\"
 
 .PHONY: test.lua
 
