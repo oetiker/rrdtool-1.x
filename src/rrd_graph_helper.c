@@ -1094,7 +1094,7 @@ void rrd_graph_script(
         graph_desc_t *gdp;
         unsigned int eaten = 0;
 
-        if (gdes_alloc(im))
+        if (gdes_alloc(im)) /* gdes_c ++ */
             return;     /* the error string is already set */
         gdp = &im->gdes[im->gdes_c - 1];
 #ifdef DEBUG
@@ -1174,6 +1174,14 @@ void rrd_graph_script(
             rrd_set_error("I don't understand '%s' in command: '%s'.",
                           &argv[i][eaten], argv[i]);
             return;
+        }
+        char *key = gdes_fetch_key((*gdp));
+        if (gdp->gf == GF_DEF && !g_hash_table_lookup_extended(im->rrd_map,key,NULL,NULL)){
+            g_hash_table_insert(im->gdef_map,g_strdup(key),GINT_TO_POINTER(im->gdes_c-1));
+        } 
+        free(key);
+        if (gdp->gf == GF_DEF || gdp->gf == GF_VDEF || gdp->gf == GF_CDEF){
+            g_hash_table_insert(im->gdef_map,g_strdup(gdp->vname),GINT_TO_POINTER(im->gdes_c-1));
         }
     }
 }
