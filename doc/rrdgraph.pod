@@ -488,7 +488,7 @@ measurement, 1 kb/s is 1000 b/s.
 Adds the given string as a watermark, horizontally centered, at the bottom 
 of the graph.
 
-[B<-Z>|B<--missing-ds>]
+[B<-Z>|B<--use-nan-for-all-missing-data>]
 
 If one DS is missing, either because the RRD is not available or
 because it does not contain the requested DS name, just assume that we

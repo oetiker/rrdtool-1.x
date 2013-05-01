@@ -4398,7 +4398,7 @@ void rrd_graph_options(
         { "alt-y-grid",         no_argument,       0, 'Y'},
         { "y-grid",             required_argument, 0, 'y'},
         { "lazy",               no_argument,       0, 'z'},
-        { "missing-ds",         no_argument,       0, 'Z'},
+        { "use-nan-for-all-missing-data", no_argument,       0, 'Z'},
         { "units",              required_argument, 0, LONGOPT_UNITS_SI},
         { "alt-y-mrtg",         no_argument,       0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
         { "disable-rrdtool-tag",no_argument,       0, 1001},
