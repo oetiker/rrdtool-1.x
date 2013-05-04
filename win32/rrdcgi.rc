@@ -1,7 +1,8 @@
 #include <winver.h>
+#include "rrd_config.h"
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1, 4, 7, 38
- PRODUCTVERSION 1, 4, 7, 38
+ FILEVERSION PACKAGE_MAJOR, PACKAGE_MINOR, PACKAGE_REVISION, 0
+ PRODUCTVERSION PACKAGE_MAJOR, PACKAGE_MINOR, PACKAGE_REVISION, 0
  FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
  FILEFLAGS VS_FF_DEBUG
@@ -18,13 +19,13 @@ BEGIN
     BEGIN
       VALUE "Comments", "RRDtool is available under the terms of the GNU General Public License V2 or later"
       VALUE "CompanyName", "The RRDtool Project, http://oss.oetiker.ch/rrdtool/"
-      VALUE "FileDescription", "time-series data storage and display system"
-      VALUE "FileVersion", "1.4.7.38"
-      VALUE "InternalName", "rrdcgi.exe"
       VALUE "LegalCopyright", "Copyright (c) 1998-2013 Tobias Oetiker"
-      VALUE "OriginalFilename", "rrdcgi.exe"
+      VALUE "FileDescription", "time-series data storage and display system"
       VALUE "ProductName", "time-series data storage and display system"
-      VALUE "ProductVersion", "1.4.7.38"
+      VALUE "FileVersion", PACKAGE_VERSION
+      VALUE "ProductVersion", PACKAGE_VERSION
+      VALUE "InternalName", "rrdcgi.exe"
+      VALUE "OriginalFilename", "rrdcgi.exe"
     END
   END
   BLOCK "VarFileInfo"
