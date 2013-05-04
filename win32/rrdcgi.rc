@@ -1,0 +1,34 @@
+#include <winver.h>
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1, 4, 7, 38
+ PRODUCTVERSION 1, 4, 7, 38
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+ FILEFLAGS VS_FF_DEBUG
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_DLL
+ FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "Comments", "RRDtool is available under the terms of the GNU General Public License V2 or later"
+      VALUE "CompanyName", "The RRDtool Project, http://oss.oetiker.ch/rrdtool/"
+      VALUE "FileDescription", "time-series data storage and display system"
+      VALUE "FileVersion", "1.4.7.38"
+      VALUE "InternalName", "rrdcgi.exe"
+      VALUE "LegalCopyright", "Copyright (c) 1998-2013 Tobias Oetiker"
+      VALUE "OriginalFilename", "rrdcgi.exe"
+      VALUE "ProductName", "time-series data storage and display system"
+      VALUE "ProductVersion", "1.4.7.38"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 0x04b0
+  END
+END
