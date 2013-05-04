@@ -1,0 +1,35 @@
+/*
+    dot build-rrdtool.dot -T pdf -o build-rrdtool.pdf
+    dot build-rrdtool.dot -T svg -o build-rrdtool.svg
+ */
+digraph "rrdtool dependency graph" {
+    zlib -> libpng;
+    zlib -> freetype;
+    libintl -> libiconv [color=red, style=dotted];
+
+    libiconv -> libxml2;
+    zlib -> libxml2;
+
+    zlib -> glib;
+    libffi -> glib;
+    libintl -> glib;
+
+    expat -> fontconfig;
+    freetype -> fontconfig;
+
+    fontconfig -> cairo;
+    freetype -> cairo;
+    libpng -> cairo;
+    pixman -> cairo;
+    zlib -> cairo;
+
+    cairo -> pango;
+    libffi -> pango;
+    glib -> pango;
+    
+    cairo -> rrdtool;
+    pango -> rrdtool;
+    glib -> rrdtool;
+    libpng -> rrdtool;
+    libxml2 -> rrdtool;
+}
