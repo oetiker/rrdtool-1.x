@@ -81,7 +81,7 @@ char* checkUnusedValues(parsedargs_t* pa){
       const size_t vlen = strlen(pa->kv_args[i].value);
       const size_t len = res ? strlen(res) : 0;
 
-      char *t = realloc(res,len + 3 + klen + vlen);
+      char *t = (char *) realloc(res,len + 3 + klen + vlen);
       if (! t) { return res; }
       res=t;
       strncat(res,pa->kv_args[i].key, klen);
@@ -166,7 +166,7 @@ int getDouble(const char* v, double *val,char**extra) {
 
 int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {
   /* resize the field */
-  keyvalue_t* t=realloc(pa->kv_args,(pa->kv_cnt+1)*sizeof(keyvalue_t));
+  keyvalue_t * t = (keyvalue_t *) realloc(pa->kv_args, (pa->kv_cnt + 1) * sizeof(keyvalue_t));
   if (!t) { 
     rrd_set_error("could not realloc memory"); 
     return -1;
@@ -211,7 +211,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
       }
       break;
     case 0:
-    case ':':
+    case ':': {
       /* null and : separate the string */
       *pos=0;
       /* handle the case where we have got an = */
@@ -259,7 +259,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
       }
 
       /* and reset field */
-      field=NULL;
+      field=NULL; }
       break;
     default:
       break;
@@ -735,7 +735,7 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
     gdp->cf=cf_conv(cf);
     if (((int)gdp->cf)==-1) { 
       rrd_set_error("bad CF: %s",cf); return NULL; }
-  } else { if (bitscmp(PARSE_CF)) {gdp->cf=-1;}}
+  } else { if (bitscmp(PARSE_CF)) { gdp->cf = (enum cf_en) -1; }}
   if ((color)&&(parse_color(color,&(gdp->col)))) { return NULL; }
   if ((color2)&&(parse_color(color2,&(gdp->col2)))) { return NULL; }
   if (rpn) {gdp->rpn=rpn;}
@@ -1388,7 +1388,7 @@ void rrd_graph_script(
 	}
 
 	/* convert to enum but handling LINE special*/
-	enum gf_en gf=-1;
+	enum gf_en gf = (enum gf_en) -1;
 	gf=gf_conv(cmd);
 	if ((int)gf == -1) {
 	  if (strncmp("LINE",cmd,4)==0) {

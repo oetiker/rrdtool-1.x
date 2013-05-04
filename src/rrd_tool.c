@@ -4,16 +4,13 @@
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
 
+#include "rrd_config.h"
+
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../win32/config.h"
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
 #include <fcntl.h>
-#else
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
 #endif
 
 #include "rrd_tool.h"
@@ -376,7 +373,7 @@ static char *fgetslong(
 
     if (feof(stream))
         return *aLinePtr = 0;
-    if (!(linebuf = malloc(bufsize))) {
+    if (!(linebuf = (char *) malloc(bufsize))) {
         perror("fgetslong: malloc");
         exit(1);
     }
@@ -386,7 +383,7 @@ static char *fgetslong(
         if (linebuf[eolpos - 1] == '\n')
             return *aLinePtr = linebuf;
         bufsize += MAX_LENGTH;
-        if (!(linebuf = realloc(linebuf, bufsize))) {
+        if (!(linebuf = (char *) realloc(linebuf, bufsize))) {
             free(linebuf);
             perror("fgetslong: realloc");
             exit(1);

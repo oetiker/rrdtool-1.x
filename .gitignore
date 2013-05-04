@@ -3,6 +3,13 @@
 *.lo
 *.a
 *.la
+*.dll
+*.exe
+*.exp
+*.lib
+*.obj
+*.pdb
+*.res
 /build/
 
 # autotools stuff
