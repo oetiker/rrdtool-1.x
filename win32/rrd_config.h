@@ -9,9 +9,9 @@
 /* Define to the version of this package. */
 #define PACKAGE_MAJOR       1
 #define PACKAGE_MINOR       4
-#define PACKAGE_REVISION    7
-#define PACKAGE_VERSION     "1.4.7"
-#define NUMVERS             1.4070
+#define PACKAGE_REVISION    999
+#define PACKAGE_VERSION     "1.4.999"
+#define NUMVERS             1.4999
 
 #define RRD_DEFAULT_FONT "Courier"
 
@@ -30,7 +30,7 @@
     Linux x86 gcc, Windows x86 gcc
 
     sizeof(time_t): 8
-    Linux x64 gcc, Windows x64 gcc
+    Linux x64 gcc, Windows x64 gcc, Visual C++ 2005 or later
  */
 
 /* The size of `time_t', as computed by sizeof. */
