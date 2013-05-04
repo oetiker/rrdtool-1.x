@@ -735,7 +735,7 @@ graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedarg
     gdp->cf=cf_conv(cf);
     if (((int)gdp->cf)==-1) { 
       rrd_set_error("bad CF: %s",cf); return NULL; }
-  } else { if (bitscmp(PARSE_CF)) { gdp->cf = (cf_en) -1; }}
+  } else { if (bitscmp(PARSE_CF)) { gdp->cf = (enum cf_en) -1; }}
   if ((color)&&(parse_color(color,&(gdp->col)))) { return NULL; }
   if ((color2)&&(parse_color(color2,&(gdp->col2)))) { return NULL; }
   if (rpn) {gdp->rpn=rpn;}
@@ -1388,7 +1388,7 @@ void rrd_graph_script(
 	}
 
 	/* convert to enum but handling LINE special*/
-	enum gf_en gf = (gf_en) -1;
+	enum gf_en gf = (enum gf_en) -1;
 	gf=gf_conv(cmd);
 	if ((int)gf == -1) {
 	  if (strncmp("LINE",cmd,4)==0) {

@@ -85,7 +85,7 @@ AH_BOTTOM([
 #  include <malloc/malloc.h>
 #endif
 
-#include "src/rrd_config_bottom.h"
+#include "rrd_config_bottom.h"
 
 #endif
 ])
@@ -943,6 +943,10 @@ AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 
 dnl intl requires our config to be called config.h. indulge it.
 AC_CONFIG_COMMANDS_POST([ test -f config.h || ln -s rrd_config.h config.h ])
+
+dnl bindings use nasty path, just make them happy.
+AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config.h || (cd src/ && ln -s ../rrd_config.h) ])
+AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config_bottom.h || (cd src/ && ln -s ../rrd_config_bottom.h) ])
 
 AC_OUTPUT
 
