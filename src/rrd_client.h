@@ -27,17 +27,15 @@
 #ifndef __RRD_CLIENT_H
 #define __RRD_CLIENT_H 1
 
-#ifndef WIN32
 # ifdef HAVE_STDINT_H
 #  include <stdint.h>
-# else
-#   ifdef HAVE_INTTYPES_H
-#      include <inttypes.h>
-#   else
-#      error "you should have stdint.h or inttypes.h to compile this"
-#   endif
 # endif
-#else
+
+# ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+# endif
+
+# if !(defined(HAVE_STDINT_H) || defined(HAVE_INTTYPES_H))
 #	include <stdlib.h>
 	typedef signed char 	int8_t;
 	typedef unsigned char 	uint8_t;
@@ -47,7 +45,7 @@
 	typedef unsigned long int 	uint32_t;
 	typedef signed long long int 	int64_t;
 	typedef unsigned long long int 	uint64_t;
-#endif
+# endif
 
 /* max length of socket command or response */
 #define RRD_CMD_MAX 4096

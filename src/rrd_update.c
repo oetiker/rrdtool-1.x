@@ -14,8 +14,6 @@
 #endif
 
 #include <locale.h>
-
-#include <inttypes.h>
 #include <stdint.h>
 
 #include "rrd_hw.h"

@@ -12,7 +12,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 #include "rrd_client.h"
-#include "../rrd_config.h"
+#include "rrd_config.h"
 
 #include "rrd_is_thread_safe.h"
 
