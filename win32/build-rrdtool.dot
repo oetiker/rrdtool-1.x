@@ -5,7 +5,8 @@
 digraph "rrdtool dependency graph" {
     zlib -> libpng;
     zlib -> freetype;
-    libintl -> libiconv [color=red, style=dotted];
+    libiconv -> libintl [color=red];
+    libintl -> libiconv [color=blue, style=dotted];
 
     libiconv -> libxml2;
     zlib -> libxml2;
