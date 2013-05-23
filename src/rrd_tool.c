@@ -49,7 +49,7 @@ void PrintUsage(
 
     const char *help_main =
         N_("RRDtool %s"
-           "  Copyright 1997-2012 by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "  Copyright 1997-2013 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n");
 
