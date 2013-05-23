@@ -4,17 +4,19 @@ VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configur
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
 set -x
 perl -i -p -e 's/^\$VERSION.+/\$VERSION='$PERLVERS';/' bindings/perl-*/*.pm
-perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2012/' src/*.h src/*.c
+perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2013/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
 perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
-svn diff 
+git diff
 echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to continue."
 read somekey
-svn commit -m "prepare for the release of rrdtool-$VERSION"
+git tag -f $VERSION
+git commit -m "tagged $VERSION for release" -a
+git clone -q . /tmp/rrdtool-$$
 OPWD=`pwd`
-cd /tmp
-svn export svn://svn.oetiker.ch/rrdtool/branches/1.4/program rrdtool-$$
-cd rrdtool-$$
+cd /tmp/rrdtool-$$
+git checkout -f 1.4
+
 #svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
 #    xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
 ./MakeMakefile
@@ -36,5 +38,9 @@ scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub
 ssh oposs@james "cd public_html/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz"
 cd ..
 rm -rf rrdtool-$$
-svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/branches/1.4/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
+cd $OPWD
+echo READY TO PUSH ... press ENTER
+read x
+git push
+git push --tags
 

@@ -13,14 +13,14 @@ AC_PREREQ(2.59)
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.7])
+AC_INIT([rrdtool],[1.4.8])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.4007
+NUMVERS=1.4008
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -31,7 +31,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=6:0:2
+LIBVERS=6:1:2
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
