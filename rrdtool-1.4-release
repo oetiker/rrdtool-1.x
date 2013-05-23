@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+git checkout 1.4
 VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
 set -x
