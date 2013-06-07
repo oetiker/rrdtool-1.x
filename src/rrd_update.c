@@ -1476,8 +1476,9 @@ static int update_all_cdp_prep(
             proc_pdp_cnt % rrd->rra_def[rra_idx].pdp_cnt;
         skip_update[rra_idx] = 0;
         if (start_pdp_offset <= elapsed_pdp_st) {
-            rra_step_cnt[rra_idx] = (elapsed_pdp_st - start_pdp_offset) /
-                rrd->rra_def[rra_idx].pdp_cnt + 1;
+            rra_step_cnt[rra_idx] = min((elapsed_pdp_st - start_pdp_offset) /
+                rrd->rra_def[rra_idx].pdp_cnt + 1,
+                rrd->rra_def[rra_idx].row_cnt);
         } else {
             rra_step_cnt[rra_idx] = 0;
         }
