@@ -163,7 +163,7 @@ cases. This timeout defaults to 3600E<nbsp>seconds.
 =item B<-p> I<file>
 
 Sets the name and location of the PID-file. If not specified, the default,
-C<I<$localststedir>/run/rrdcached.pid> will be used.
+C<I<$localstatedir>/run/rrdcached.pid> will be used.
 
 =item B<-t> I<write_threads>
 
