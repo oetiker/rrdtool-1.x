@@ -9,7 +9,12 @@
 #include "rrd_config.h"
 
 #include "rrd.h"
+/* for basename */
+#ifdef HAVE_LIBGEN_H
+#  include <libgen.h>
+#else
 #include "plbasename.h"
+#endif
 
 int main(
     int argc,
