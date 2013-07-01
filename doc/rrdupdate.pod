@@ -6,7 +6,7 @@ rrdupdate - Store a new set of values into the RRD
 
 B<rrdtool> {B<update> | B<updatev>} I<filename>
 S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]>
-S<[B<--daemon> I<address>]> [B<-->]
+S<[B<--daemon>|B<-d> I<address>]> [B<-->]
 S<B<N>|I<timestamp>B<:>I<value>[B<:>I<value>...]>
 S<I<at-timestamp>B<@>I<value>[B<:>I<value>...]>
 S<[I<timestamp>B<:>I<value>[B<:>I<value>...] ...]>
@@ -68,7 +68,7 @@ rrdtool to silently skip such data. It can be useful when re-playing old
 data into an rrd file and you are not sure how many updates have already
 been applied.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 If given, B<RRDTool> will try to connect to the caching daemon L<rrdcached>
 at I<address> and will fail if the connection cannot be established. If the
