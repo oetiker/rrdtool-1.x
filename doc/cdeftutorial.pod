@@ -852,8 +852,7 @@ You may do some complex data filtering:
     DEF:var=database.rrd:traffic:AVERAGE
     CDEF:prev1=PREV(var)
     CDEF:prev2=PREV(prev1)
-    CDEF:prev3=PREV(prev2)
-    CDEF:median=prev1,prev2,prev3,+,+,3,/
+    CDEF:median=var,prev1,prev2,3,SORT,POP,EXC,POP
     LINE3:median#000077:filtered
     LINE1:prev2#007700:'raw data'
 
