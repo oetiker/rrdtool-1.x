@@ -810,8 +810,8 @@ LUA_EOF
       LIBS=
       lua_havelib=no
       LUA_HAVE_COMPAT51=DONT_HAVE_COMPAT51
-      AC_SEARCH_LIBS(lua_call, lua$lua_vdot lua$lua_vndot lua,
-        [AC_SEARCH_LIBS(luaL_register, lua$lua_vdot lua$lua_vndot lua,
+      RRD_SEARCH_LIBS(lua_call, [#include <${lua_headerdir:+$lua_headerdir/}lua.h>], [0, 0, 0], lua$lua_vdot lua$lua_vndot lua,
+        [AC_SEARCH_LIBS(luaL_openlibs, lua$lua_vdot lua$lua_vndot lua,
           [lua_havelib=LUA$lua_vndot],
           [AC_SEARCH_LIBS(luaL_module, lualib$lua_vndot lualib$lua_vdot lualib,
             [lua_havelib=$lua_vndot; $LUA -l compat-5.1 2>/dev/null;
