@@ -452,6 +452,8 @@ int       rrd_graph_color(
     int);
 int       bad_format(
     char *);
+int       bad_format_imginfo(
+    char *);
 int       vdef_parse(
     struct graph_desc_t *,
     const char *const);
