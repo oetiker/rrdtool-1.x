@@ -704,7 +704,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   }
   /* end legend */
   if (json){
-    snprintf(buf,sizeof(buf),"          ],\n");
+    snprintf(buf,sizeof(buf),"          ]\n");
   }
   else {
     snprintf(buf,sizeof(buf),"    </%s>\n", LEGEND_TAG);
