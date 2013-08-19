@@ -737,7 +737,7 @@ int HandleInputLine(
                 printf("  <%s>\n", META_TAG);
             }
             else {
-                printf("{ about: 'RRDtool xport JSON output',\n  meta: {\n");
+                printf("{ \"about\": \"RRDtool xport JSON output\",\n  \"meta\": {\n");
             }
 
 
