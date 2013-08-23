@@ -444,7 +444,7 @@ int rrd_create_r(
                         if (row_cnt <= 0)
                             rrd_set_error("Invalid row count: %i", row_cnt);
 #if SIZEOF_TIME_T == 4
-                        if ((long long) pdp_step * rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt * row_cnt > 4294967296){
+                        if ((long long) pdp_step * rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt * row_cnt > 4294967296LL){
                             /* database timespan > 2**32, would overflow time_t */
                             rrd_set_error("The time spanned by the database is too large: must be <= 4294967296 seconds");
                         }
