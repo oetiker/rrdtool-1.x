@@ -256,6 +256,7 @@ static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 static size_t _config_base_dir_len = 0;
 static int config_write_base_only = 0;
+static int config_allow_recursive_mkdir = 0;
 static size_t config_alloc_chunk = 1;
 
 static listen_socket_t **config_listen_address_list = NULL;
@@ -1824,6 +1825,8 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
+  char *file_copy, *dir, *dir_tmp[PATH_MAX];
+  struct stat st;
   char *tok;
   int ac = 0;
   char *av[128];
@@ -1839,10 +1842,31 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     return syntax_error(sock,cmd);
   /* get full pathname */
   get_abs_path(&file, file_tmp);
+
+  file_copy = strdup(file);
+  if (file_copy == NULL) {
+    return send_response(sock, RESP_ERR, "Cannot create: empty argument.\n");
+  }
   if (!check_file_access(file, sock)) {
     return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
+
+	/* dirname may modify its argument */
+	dir = dirname(file_copy);
+	if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
+		if (!config_allow_recursive_mkdir) {
+			return send_response(sock, RESP_ERR,
+				"No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
+				dir);
+		}
+		/* realpath puts the first problematic part in dir_tmp, so we can use
+		 * the parent of dir_tmp to stat in order to set a reasonable mode
+		 * since dir_tmp is  */
+		if (stat(dirname(dir_tmp), &st) && rrd_mkdir_p(dir, st.st_mode) != 0) {
+			return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+		}
+	}
 
   while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
     if( ! strncmp(tok,"-b",2) ) {
@@ -3318,7 +3342,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:Bb:p:Fj:a:h?")) != -1)
+  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
   {
     switch (option)
     {
@@ -3504,6 +3528,10 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
       }
       break;
+
+	case 'R':
+		config_allow_recursive_mkdir = 1;
+		break;
 
       case 'B':
         config_write_base_only = 1;
