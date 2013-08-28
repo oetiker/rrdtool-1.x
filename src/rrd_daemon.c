@@ -1852,21 +1852,21 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
-	/* dirname may modify its argument */
-	dir = dirname(file_copy);
-	if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
-		if (!config_allow_recursive_mkdir) {
-			return send_response(sock, RESP_ERR,
-				"No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
-				dir);
-		}
-		/* realpath puts the first problematic part in dir_tmp, so we can use
-		 * the parent of dir_tmp to stat in order to set a reasonable mode
-		 * since dir_tmp is  */
-		if (stat(dirname(dir_tmp), &st) && rrd_mkdir_p(dir, st.st_mode) != 0) {
-			return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
-		}
-	}
+    /* dirname may modify its argument */
+    dir = dirname(file_copy);
+    if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
+        if (!config_allow_recursive_mkdir) {
+            return send_response(sock, RESP_ERR,
+                "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
+                dir);
+        }
+        /* realpath puts the first problematic part in dir_tmp, so we can use
+         * the parent of dir_tmp to stat in order to set a reasonable mode
+         * since dir_tmp is  */
+        if (stat(dirname(dir_tmp), &st) && rrd_mkdir_p(dir, st.st_mode) != 0) {
+            return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        }
+    }
 
   while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
     if( ! strncmp(tok,"-b",2) ) {
@@ -3529,9 +3529,9 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
-	case 'R':
-		config_allow_recursive_mkdir = 1;
-		break;
+    case 'R':
+        config_allow_recursive_mkdir = 1;
+        break;
 
       case 'B':
         config_write_base_only = 1;
