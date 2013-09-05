@@ -6,6 +6,7 @@
  ****************************************************************************/
 
 #include <locale.h>
+#include <stdint.h>
 
 #include "rrd_graph.h"
 
@@ -316,39 +317,39 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 }
 
 /* this would allow for 240 different values */
-#define PARSE_FIELD1       (1L<<60)
-#define PARSE_FIELD2       (1L<<61)
-#define PARSE_FIELD3       (1L<<62)
-#define PARSE_FIELD4       (1L<<63)
-#define PARSE_POSITIONAL   (1L<<59)
-#define PARSE_ONYAXIS      (1L<<58)
-#define PARSE_VNAME        (PARSE_FIELD1|(1L<< 0))
-#define PARSE_RRD          (PARSE_FIELD1|(1L<< 1))
-#define PARSE_DS           (PARSE_FIELD1|(1L<< 2))
-#define PARSE_CF           (PARSE_FIELD1|(1L<< 3))
-#define PARSE_COLOR        (PARSE_FIELD1|(1L<< 4))
-#define PARSE_COLOR2       (PARSE_FIELD1|(1L<< 5))
-#define PARSE_LEGEND       (PARSE_FIELD1|(1L<< 6))
-#define PARSE_RPN          (PARSE_FIELD1|(1L<< 7))
-#define PARSE_START        (PARSE_FIELD1|(1L<< 8))
-#define PARSE_STEP         (PARSE_FIELD1|(1L<< 9))
-#define PARSE_END          (PARSE_FIELD1|(1L<<10))
-#define PARSE_STACK        (PARSE_FIELD1|(1L<<11))
-#define PARSE_LINEWIDTH    (PARSE_FIELD1|(1L<<12))
-#define PARSE_XAXIS        (PARSE_FIELD1|(1L<<13))
-#define PARSE_YAXIS        (PARSE_FIELD1|(1L<<14))
-#define PARSE_REDUCE       (PARSE_FIELD1|(1L<<15))
-#define PARSE_SKIPSCALE    (PARSE_FIELD1|(1L<<16))
+#define PARSE_FIELD1       (1ULL<<60)
+#define PARSE_FIELD2       (1ULL<<61)
+#define PARSE_FIELD3       (1ULL<<62)
+#define PARSE_FIELD4       (1ULL<<63)
+#define PARSE_POSITIONAL   (1ULL<<59)
+#define PARSE_ONYAXIS      (1ULL<<58)
+#define PARSE_VNAME        (PARSE_FIELD1|(1ULL<< 0))
+#define PARSE_RRD          (PARSE_FIELD1|(1ULL<< 1))
+#define PARSE_DS           (PARSE_FIELD1|(1ULL<< 2))
+#define PARSE_CF           (PARSE_FIELD1|(1ULL<< 3))
+#define PARSE_COLOR        (PARSE_FIELD1|(1ULL<< 4))
+#define PARSE_COLOR2       (PARSE_FIELD1|(1ULL<< 5))
+#define PARSE_LEGEND       (PARSE_FIELD1|(1ULL<< 6))
+#define PARSE_RPN          (PARSE_FIELD1|(1ULL<< 7))
+#define PARSE_START        (PARSE_FIELD1|(1ULL<< 8))
+#define PARSE_STEP         (PARSE_FIELD1|(1ULL<< 9))
+#define PARSE_END          (PARSE_FIELD1|(1ULL<<10))
+#define PARSE_STACK        (PARSE_FIELD1|(1ULL<<11))
+#define PARSE_LINEWIDTH    (PARSE_FIELD1|(1ULL<<12))
+#define PARSE_XAXIS        (PARSE_FIELD1|(1ULL<<13))
+#define PARSE_YAXIS        (PARSE_FIELD1|(1ULL<<14))
+#define PARSE_REDUCE       (PARSE_FIELD1|(1ULL<<15))
+#define PARSE_SKIPSCALE    (PARSE_FIELD1|(1ULL<<16))
 
-#define PARSE_DASHES       (PARSE_FIELD1|(1L<<20))
-#define PARSE_HEIGHT       (PARSE_FIELD1|(1L<<21))
-#define PARSE_FORMAT       (PARSE_FIELD1|(1L<<22))
-#define PARSE_STRFTIME     (PARSE_FIELD1|(1L<<23))
-#define PARSE_FRACTION     (PARSE_FIELD1|(1L<<24))
+#define PARSE_DASHES       (PARSE_FIELD1|(1ULL<<20))
+#define PARSE_HEIGHT       (PARSE_FIELD1|(1ULL<<21))
+#define PARSE_FORMAT       (PARSE_FIELD1|(1ULL<<22))
+#define PARSE_STRFTIME     (PARSE_FIELD1|(1ULL<<23))
+#define PARSE_FRACTION     (PARSE_FIELD1|(1ULL<<24))
 /* VNAME Special cases for generic parsing */
-#define PARSE_VNAMEDEF            (PARSE_VNAME|(1L<<57))
-#define PARSE_VNAMEREF            (PARSE_VNAME|(1L<<56))
-#define PARSE_VNAMEREFNUM         (PARSE_VNAMEREF|(1L<<55))
+#define PARSE_VNAMEDEF            (PARSE_VNAME|(1ULL<<57))
+#define PARSE_VNAMEREF            (PARSE_VNAME|(1ULL<<56))
+#define PARSE_VNAMEREFNUM         (PARSE_VNAMEREF|(1ULL<<55))
 /* special positional cases */
 #define PARSE_VNAMERRDDSCF     (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RRD|PARSE_DS|PARSE_CF)
 #define PARSE_VNAMECOLORLEGEND (PARSE_POSITIONAL|PARSE_VNAMEREFNUM|PARSE_COLOR|PARSE_COLOR2|PARSE_LEGEND)
@@ -385,11 +386,11 @@ static long find_var_wrapper(
 }
 
 
-graph_desc_t* newGraphDescription(image_desc_t *const,enum gf_en,parsedargs_t*,unsigned long);
-graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedargs_t* pa,unsigned long bits) {
+static graph_desc_t* newGraphDescription(image_desc_t *const,enum gf_en,parsedargs_t*,uint64_t);
+static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedargs_t* pa,uint64_t bits) {
   /* check that none of the othe bitfield marker is set */
   if ((bits&PARSE_FIELD1)&&((bits&(PARSE_FIELD2|PARSE_FIELD3|PARSE_FIELD4)))) {
-    rrd_set_error("newGraphDescription: bad bitfield1 value %08x",bits);return NULL; }
+    rrd_set_error("newGraphDescription: bad bitfield1 value %08llx",bits);return NULL; }
   /* the normal handler that adds to img */
   if (gdes_alloc(im)) { return NULL; }
   /* set gdp */
