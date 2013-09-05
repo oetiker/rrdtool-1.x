@@ -4,7 +4,7 @@ RRD_LIB_NAME=librrd-4
 !ifndef USE_64BIT
 LD_FLAGS=/RELEASE /MACHINE:X86
 
-CPPFLAGS = /TP /EHsc /O2 /arch:SSE2 /Zi /Fd$(TOP)/win32/vc.pdb \
+CPPFLAGS = /TP /EHsc /O2 /arch:SSE2 /D_USE_32BIT_TIME_T /Zi /Fd$(TOP)/win32/vc.pdb \
         /I $(TOP)/win32 /I $(TOP)/src \
         /I E:\var\vcs\git\osb\windows-x86-msvcrt\include \
         /I E:\var\vcs\git\osb\windows-x86-msvcrt\include\cairo \
