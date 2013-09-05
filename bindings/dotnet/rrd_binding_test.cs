@@ -16,6 +16,7 @@ using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 using dnrrdlib;
+using System.IO;
 
 namespace dnrrd_binding_test
 {
@@ -53,51 +54,25 @@ namespace dnrrd_binding_test
             al.Add("RRA:AVERAGE:0.5:1:24");
             al.Add("RRA:AVERAGE:0.5:6:10");
 
-            int ret = rrd.Create(path + "test_a.rrd", 300, 920804400, (string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test create: Successful!");
+            rrd.Create(path + "test_a.rrd", 300, 920804400, (string[])al.ToArray(typeof(string)));
+            Console.WriteLine("Test create: Successful!");
         }
         static void Test_Get_Info()
         {
             Console.WriteLine("Try getting info...");
-            rrd_info_t? info = rrd.Info(path + "test_a.rrd");
-            if (info == null)
-            {
-                Console.WriteLine("Error: " + rrd.Get_Error());
-                return;
-            }
-            while (info != null)
+            var info = rrd.Info(path + "test_a.rrd");
+            foreach (var kvp in info)
             {
                 //info = (rrd_info_t)Marshal.PtrToStructure(info.next, typeof(rrd_info_t));
-                Console.Write(((rrd_info_t)info).key + ": ");
-                switch (((rrd_info_t)info).type)
+                Console.Write(kvp.Key + ": ");
+                if (kvp.Value is string)
                 {
-                    case rrd_info_type_t.RD_I_STR:
-                        Console.WriteLine("\"" + Marshal.PtrToStringAnsi(((rrd_info_t)info).value.u_str) + "\"");
-                        break;
-                    case rrd_info_type_t.RD_I_INT:
-                        Console.WriteLine(((rrd_info_t)info).value.u_int);
-                        break;
-                    case rrd_info_type_t.RD_I_CNT:
-                        Console.WriteLine(((rrd_info_t)info).value.u_cnt);
-                        break;
-                    case rrd_info_type_t.RD_I_VAL:
-                        Console.WriteLine(((rrd_info_t)info).value.u_val);
-                        break;
-                    case rrd_info_type_t.RD_I_BLO:
-                        Console.WriteLine(" ** BLOB ** ");
-                        break;
-                    default:
-                        Console.WriteLine("**** Unknown type! ****");
-                        break;
+                    Console.WriteLine("\"" + kvp.Value + "\"");
                 }
-
-                if (((rrd_info_t)info).next != IntPtr.Zero && (int)((rrd_info_t)info).next > 0)
-                    info = (rrd_info_t)Marshal.PtrToStructure(((rrd_info_t)info).next, typeof(rrd_info_t));
                 else
-                    info = null;
+                {
+                    Console.WriteLine(kvp.Value);
+                }
             }
             Console.WriteLine("Test Info: Successful!");
             //Console.WriteLine("Printing information...");
@@ -136,11 +111,8 @@ namespace dnrrd_binding_test
                     ts += 300;
                 }
             }
-            int ret = rrd.Update(path + "test_a.rrd", null, (string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test update: Successful!");
+            rrd.Update(path + "test_a.rrd", null, (string[])al.ToArray(typeof(string)));
+            Console.WriteLine("Test update: Successful!");
         }
         static void Test_Fetch()
         {
@@ -156,16 +128,16 @@ namespace dnrrd_binding_test
             al.Add("920809200");
             IntPtr data = new IntPtr();
             string[] rrds = new string[0];
-            Int32 start = 0;
-            Int32 end = 0;
+            DateTime start = default(DateTime);
+            DateTime end = default(DateTime);
             UInt32 step = 0;
             UInt32 dscnt = 0;
-            int ret = rrd.Fetch((string[])al.ToArray(typeof(string)), ref start, ref end,
+            rrd.Fetch((string[])al.ToArray(typeof(string)), ref start, ref end,
                 ref step, ref dscnt, ref rrds, ref data);
 
             if (end > start)
             {
-                for (Int32 ti = start + (Int32)step; ti <= end; ti += (Int32)step)
+                for (Int32 ti = rrd.DateTimeToUnixTimestamp(start); ti < rrd.DateTimeToUnixTimestamp(end); ti += (Int32)step)
                 {
                     Console.Write(ti + ": ");
                     for (Int32 i = 0; i < (Int32)dscnt; i++)
@@ -177,10 +149,7 @@ namespace dnrrd_binding_test
                 }
             }
 
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test fetch: Successful!");
+            Console.WriteLine("Test fetch: Successful!");
         }
         static void Test_Graph()
         {
@@ -194,11 +163,10 @@ namespace dnrrd_binding_test
             al.Add("920808000");
             al.Add("DEF:myspeed=" + path.Replace(":", "\\:") + "test_a.rrd:speed:AVERAGE");
             al.Add("LINE2:myspeed#00004D");
-            int ret = rrd.Graph((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test graph: Successful!");
+
+            var ret = rrd.Graph((string[])al.ToArray(typeof(string)));
+            //TODO: Validate the returned data
+            Console.WriteLine("Test graph: Successful!");
         }
         static void Test_Graph_Math()
         {
@@ -215,11 +183,9 @@ namespace dnrrd_binding_test
             al.Add("DEF:myspeed=" + path.Replace(":", "\\:") + "test_a.rrd:speed:AVERAGE");
             al.Add("CDEF:realspeed=myspeed,1000,*");
             al.Add("LINE2:realspeed#00004D");
-            int ret = rrd.Graph((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test graph: Successful!");
+            var ret = rrd.Graph((string[])al.ToArray(typeof(string)));
+            //TODO: Validate the returned data
+            Console.WriteLine("Test graph: Successful!");
         }
         static void Test_Graph_Math2()
         {
@@ -240,11 +206,9 @@ namespace dnrrd_binding_test
             al.Add("HRULE:100#0000FF:\"Maximum allowed\"");
             al.Add("AREA:good#00FF00:\"Good speed\"");
             al.Add("AREA:fast#FF0000:\"Too fast\"");
-            int ret = rrd.Graph((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test graph: Successful!");
+            var ret = rrd.Graph((string[])al.ToArray(typeof(string)));
+            //TODO: Validate the returned data
+            Console.WriteLine("Test graph: Successful!");
         }
         static void Test_Graph_Math3()
         {
@@ -268,11 +232,9 @@ namespace dnrrd_binding_test
             al.Add("AREA:good#00FF00:\"Good speed\"");
             al.Add("AREA:fast#550000:\"Too fast\"");
             al.Add("STACK:over#FF0000:\"Over speed\"");
-            int ret = rrd.Graph((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test graph: Successful!");
+            var ret = rrd.Graph((string[])al.ToArray(typeof(string)));
+            //TODO: Validate the returned data
+            Console.WriteLine("Test graph: Successful!");
         }
         static void Test_First_Last()
         {
@@ -286,7 +248,7 @@ namespace dnrrd_binding_test
             if (err.Length > 1)
                 Console.WriteLine("Error: " + err);
 
-            Int32 last_update = 0;
+            DateTime last_update = default(DateTime);
             UInt32 ds_count = 0;
             string[] ds_names = new string[0];
             string[] last_ds = new string[0];
@@ -297,11 +259,8 @@ namespace dnrrd_binding_test
         static void Test_Dump()
         {
             Console.WriteLine("Dumping RRD...");
-            int ret = rrd.Dump(path + "test_a.rrd", path + "test_a.xml");
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test Dump: Successful!");
+            rrd.Dump(path + "test_a.rrd", path + "test_a.xml");
+            Console.WriteLine("Test Dump: Successful!");
         }
         static void Test_Xport()
         {
@@ -316,16 +275,16 @@ namespace dnrrd_binding_test
             al.Add("XPORT:myspeed:\"MySpeed\"");
             IntPtr data = new IntPtr();
             string[] legends = new string[0];
-            Int32 start = 0;
-            Int32 end = 0;
+            DateTime start = default(DateTime);
+            DateTime end = default(DateTime);
             UInt32 step = 0;
             UInt32 col_cnt = 0;
-            int ret = rrd.Xport((string[])al.ToArray(typeof(string)), ref start, ref end,
+            rrd.Xport((string[])al.ToArray(typeof(string)), ref start, ref end,
                 ref step, ref col_cnt, ref legends, ref data);
 
             if (end > start)
             {
-                for (Int32 ti = start + (Int32)step; ti <= end; ti += (Int32)step)
+                for (Int32 ti = rrd.DateTimeToUnixTimestamp(start); ti <= rrd.DateTimeToUnixTimestamp(end); ti += (Int32)step)
                 {
                     Console.Write(ti + ": ");
                     for (Int32 i = 0; i < (Int32)col_cnt; i++)
@@ -336,23 +295,24 @@ namespace dnrrd_binding_test
                     Console.Write(Environment.NewLine);
                 }
             }
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test xport: Successful!");
+            Console.WriteLine("Test xport: Successful!");
         }
         static void Test_Restore()
         {
+            FileInfo rrdDestination = new FileInfo(path + "restored_a.rrd");
+            if (rrdDestination.Exists)
+            {
+                rrdDestination.Delete();
+            }
+
             Console.WriteLine("Restoring RRD...");
             ArrayList al = new ArrayList();
             al.Add("restore");
             al.Add(path + "test_a.xml");
-            al.Add(path + "restored_a.rrd");
-            int ret = rrd.Restore((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test restore: Successful!");
+            al.Add(rrdDestination.FullName);
+            
+            rrd.Restore((string[])al.ToArray(typeof(string)));
+            Console.WriteLine("Test restore: Successful!");
         }
         static void Test_Tune()
         {
@@ -362,11 +322,8 @@ namespace dnrrd_binding_test
             al.Add(path + "restored_a.rrd");
             al.Add("-h");
             al.Add("speed:650");
-            int ret = rrd.Tune((string[])al.ToArray(typeof(string)));
-            if (ret < 0)
-                Console.WriteLine("Error: " + rrd.Get_Error());
-            else
-                Console.WriteLine("Test tune: Successful!");
+            rrd.Tune((string[])al.ToArray(typeof(string)));
+            Console.WriteLine("Test tune: Successful!");
         }
     }
 }
