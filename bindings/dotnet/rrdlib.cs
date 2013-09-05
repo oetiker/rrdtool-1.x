@@ -15,6 +15,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+#if X64
+#error 64-bit platform not yet supported.
+#endif
+
 /// <summary>
 /// Contains data structures and methods for working with round robin databases.
 /// </summary>
