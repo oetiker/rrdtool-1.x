@@ -697,9 +697,9 @@ int HandleInputLine(
                 printf("\n");
             }
             for (i = 0; i < ds_cnt; i++)
-                free(ds_namv[i]);
-            free(ds_namv);
-            free(data);
+                rrd_freemem(ds_namv[i]);
+            rrd_freemem(ds_namv);
+            rrd_freemem(data);
         }
     } else if (strcmp("xport", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
