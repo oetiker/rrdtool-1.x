@@ -278,9 +278,6 @@ extension=rrdtool.so
 __EOF__
 %endif
 
-# Dunno why this is getting installed here...
-%{__rm} -f $RPM_BUILD_ROOT%{perl_vendorarch}/../leaktest.pl
-
 # We only want .txt and .html files for the main documentation
 %{__mkdir_p} doc2/html doc2/txt
 %{__cp} -a doc/*.txt doc2/txt/
