@@ -2767,27 +2767,60 @@ void grid_paint(
 
     /* graph labels */
     if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
+        long first_noncomment = im->gdes_c, last_noncomment = 0;
         /* get smallest and biggest leg_y values. Assumes
          * im->gdes[i].leg_y is in order. */
         double min = 0, max = 0;
+        int gotcha = 0;
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
-            min = im->gdes[i].leg_y;
-            break;
+            if (!gotcha) {
+                min = im->gdes[i].leg_y;
+                gotcha = 1;
+            }
+            if (im->gdes[i].gf != GF_COMMENT) {
+                if (im->legenddirection == BOTTOM_UP2)
+                    min = im->gdes[i].leg_y;
+                first_noncomment = i;
+                break;
+            }
         }
+        gotcha = 0;
         for (i = im->gdes_c - 1; i >= 0; i--) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
-            max = im->gdes[i].leg_y;
-            break;
+            if (!gotcha) {
+                max = im->gdes[i].leg_y;
+                gotcha = 1;
+            }
+            if (im->gdes[i].gf != GF_COMMENT) {
+                if (im->legenddirection == BOTTOM_UP2)
+                    max = im->gdes[i].leg_y;
+                last_noncomment = i;
+                break;
+            }
         }
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
             /* im->gdes[i].leg_y is the bottom of the legend */
             X0 = im->xOriginLegend + im->gdes[i].leg_x;
-            Y0 = im->legenddirection == TOP_DOWN ? im->yOriginLegend + im->gdes[i].leg_y : im->yOriginLegend + max + min - im->gdes[i].leg_y;
+            int reverse = 0;
+            switch (im->legenddirection) {
+                case TOP_DOWN:
+                    reverse = 0;
+                    break;
+                case BOTTOM_UP:
+                    reverse = 1;
+                    break;
+                case BOTTOM_UP2:
+                    reverse = i >= first_noncomment && i <= last_noncomment;
+                    break;
+            }
+            Y0 = reverse ?
+                im->yOriginLegend + max + min - im->gdes[i].leg_y :
+                im->yOriginLegend + im->gdes[i].leg_y;
             gfx_text(im, X0, Y0,
                      im->graph_col[GRC_FONT],
                      im->
@@ -4463,6 +4496,8 @@ void rrd_graph_options(
                 im->legenddirection = TOP_DOWN;
             } else if (strcmp(optarg, "bottomup") == 0) {
                 im->legenddirection = BOTTOM_UP;
+            } else if (strcmp(optarg, "bottomup2") == 0) {
+                im->legenddirection = BOTTOM_UP2;
             } else {
                 rrd_set_error("unknown legend-position '%s'", optarg);
                 return;

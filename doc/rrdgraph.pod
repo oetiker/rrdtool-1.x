@@ -287,11 +287,13 @@ behavior of pre 1.0.42 versions).
 Place the legend at the given side of the graph. The default is south.
 In west or east position it is necessary to add line breaks manually.
 
-[B<--legend-direction>=(topdown|bottomup)]
+[B<--legend-direction>=(topdown|bottomup|bottomup2)]
 
 Place the legend items in the given vertical order. The default is topdown.
 Using bottomup the legend items appear in the same vertical order as a
-stack of lines or areas.
+stack of lines or areas. Using bottomup2 will keep leading and trailing
+COMMENT lines in order, this might be useful for generators that use them
+for table headers and the like.
 
 =head2 Miscellaneous
 
