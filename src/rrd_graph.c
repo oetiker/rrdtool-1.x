@@ -2767,12 +2767,27 @@ void grid_paint(
 
     /* graph labels */
     if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
+        /* get smallest and biggest leg_y values. Assumes
+         * im->gdes[i].leg_y is in order. */
+        double min = 0, max = 0;
+        for (i = 0; i < im->gdes_c; i++) {
+            if (im->gdes[i].legend[0] == '\0')
+                continue;
+            min = im->gdes[i].leg_y;
+            break;
+        }
+        for (i = im->gdes_c - 1; i >= 0; i--) {
+            if (im->gdes[i].legend[0] == '\0')
+                continue;
+            max = im->gdes[i].leg_y;
+            break;
+        }
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
             /* im->gdes[i].leg_y is the bottom of the legend */
             X0 = im->xOriginLegend + im->gdes[i].leg_x;
-            Y0 = im->legenddirection == TOP_DOWN ? im->yOriginLegend + im->gdes[i].leg_y : im->yOriginLegend + im->legendheight - im->gdes[i].leg_y;
+            Y0 = im->legenddirection == TOP_DOWN ? im->yOriginLegend + im->gdes[i].leg_y : im->yOriginLegend + max + min - im->gdes[i].leg_y;
             gfx_text(im, X0, Y0,
                      im->graph_col[GRC_FONT],
                      im->
