@@ -6,7 +6,7 @@
 
 #include "rrd_config.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -533,9 +533,6 @@ int HandleInputLine(
     DIR      *curdir;   /* to read current dir with ls */
     struct dirent *dent;
 #endif
-#if defined(HAVE_SYS_STAT_H)
-    struct stat st;
-#endif
 
     /* Reset errno to 0 before we start.
      */
@@ -547,7 +544,7 @@ int HandleInputLine(
             }
             exit(0);
         }
-#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR)
+#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR) && defined(HAVE_SYS_STAT_H)
         if (argc > 1 && strcmp("cd", argv[1]) == 0) {
             if (argc != 3) {
                 printf("ERROR: invalid parameter count for cd\n");
@@ -607,6 +604,7 @@ int HandleInputLine(
                 return (1);
             }
             if ((curdir = opendir(".")) != NULL) {
+                struct stat st;
                 while ((dent = readdir(curdir)) != NULL) {
                     if (!stat(dent->d_name, &st)) {
                         if (S_ISDIR(st.st_mode)) {
@@ -765,10 +763,8 @@ int HandleInputLine(
 #endif
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
-#ifndef WIN32
     else if (strcmp("flushcached", argv[1]) == 0)
         rrd_flushcached(argc - 1, &argv[1]);
-#endif
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }

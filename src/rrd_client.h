@@ -31,22 +31,6 @@
 #  include <stdint.h>
 # endif
 
-# ifdef HAVE_INTTYPES_H
-#  include <inttypes.h>
-# endif
-
-# if !(defined(HAVE_STDINT_H) || defined(HAVE_INTTYPES_H))
-#	include <stdlib.h>
-	typedef signed char 	int8_t;
-	typedef unsigned char 	uint8_t;
-	typedef signed int 	int16_t;
-	typedef unsigned int 	uint16_t;
-	typedef signed long int 	int32_t;
-	typedef unsigned long int 	uint32_t;
-	typedef signed long long int 	int64_t;
-	typedef unsigned long long int 	uint64_t;
-# endif
-
 /* max length of socket command or response */
 #define RRD_CMD_MAX 4096
 
@@ -58,15 +42,12 @@
 #define ENV_RRDCACHED_ADDRESS "RRDCACHED_ADDRESS"
 
 
-// Windows version has no daemon/client support
-
-#ifndef WIN32
 int rrdc_connect (const char *addr);
 int rrdc_is_connected(const char *daemon_addr);
 int rrdc_disconnect (void);
 
 int rrdc_update (const char *filename, int values_num,
-        const char * const *values);
+    const char * const *values);
 
 rrd_info_t * rrdc_info (const char *filename);
 time_t rrdc_last (const char *filename);
@@ -89,19 +70,6 @@ int rrdc_fetch (const char *filename,
     unsigned long *ret_ds_num,
     char ***ret_ds_names,
     rrd_value_t **ret_data);
-
-#else
-#   define rrdc_create(a,b,c,d,e,f) 0
-#	define rrdc_flush_if_daemon(a,b) 0
-#	define rrdc_connect(a) 0
-#	define rrdc_is_connected(a) 0
-#	define rrdc_flush(a) 0
-#	define rrdc_update(a,b,c) 0
-#   define rrdc_last(a) 0
-#   define rrdc_first(a,b) 0
-#   define rrdc_fetch(a,b,c,d,e,f,g,h) 0
-#   define rrdc_info(a) 0
-#endif
 
 struct rrdc_stats_s
 {

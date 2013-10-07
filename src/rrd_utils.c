@@ -183,23 +183,24 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
         return -1;
     }
 #else
+    if (NULL == (base_dir = strdup(pathname_copy))) {
+        free(pathname_copy);
+        return -1;
+    }
+
     _splitpath(pathname_copy, NULL, base_dir, NULL, NULL);
 #endif
 
     if (0 != rrd_mkdir_p(base_dir, mode)) {
         int orig_errno = errno;
         free(pathname_copy);
-#ifndef _MSC_VER
         free(base_dir);
-#endif
         errno = orig_errno;
         return -1;
     }
 
     free(pathname_copy);
-#ifndef _MSC_VER
     free(base_dir);
-#endif
 
     /* keep errno as set by mkdir() */
 #ifdef _MSC_VER

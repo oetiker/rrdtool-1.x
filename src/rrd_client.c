@@ -25,27 +25,36 @@
  *   Sebastian tokkee Harl <sh at tokkee.org>
  **/
 
+#ifdef WIN32
+#include <time.h>
+#include <ws2tcpip.h>
+#include <winsock2.h>
+#include <io.h>
+#include <fcntl.h>
+#include <tchar.h>
+#include <locale.h>
+#endif
+
 #include "rrd.h"
 #include "rrd_tool.h"
 #include "rrd_client.h"
+#include "mutex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <errno.h>
 #include <assert.h>
+#ifndef WIN32
+#include <strings.h>
 #include <pthread.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netdb.h>
-#include <limits.h>
 #include <locale.h>
-
-#ifndef ENODATA
-#define ENODATA ENOENT
 #endif
+#include <sys/types.h>
+#include <limits.h>
 
 struct rrdc_response_s
 {
@@ -56,10 +65,13 @@ struct rrdc_response_s
 };
 typedef struct rrdc_response_s rrdc_response_t;
 
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static mutex_t lock = MUTEX_INITIALIZER;
 static int sd = -1;
-static FILE *sh = NULL;
 static char *sd_path = NULL; /* cache the path for sd */
+
+static char _inbuf[RRD_CMD_MAX];
+static char *inbuf = _inbuf;
+static size_t inbuf_used = 0;
 
 /* get_path: Return a path name appropriate to be sent to the daemon.
  *
@@ -171,19 +183,27 @@ static int parse_ulong_header (char *line, /* {{{ */
 static int parse_char_array_header (char *line, /* {{{ */
     char **ret_key, char **array, size_t array_len, int alloc)
 {
-  char *tmp_array[array_len];
+  char **tmp_array;
   char *value;
   size_t num;
   int status;
 
+  if ((tmp_array = (char**)malloc(array_len * sizeof (char*))) == NULL)
+    return (-1);
+
   value = NULL;
   status = parse_header (line, ret_key, &value);
-  if (status != 0)
+  if (status != 0) {
+    free(tmp_array);
     return (-1);
+  }
 
   num = strsplit (value, tmp_array, array_len);
   if (num != array_len)
+  {
+    free(tmp_array);
     return (-1);
+  }
 
   if (alloc == 0)
   {
@@ -197,6 +217,8 @@ static int parse_char_array_header (char *line, /* {{{ */
       array[i] = strdup (tmp_array[i]);
   }
 
+  free(tmp_array);
+
   return (0);
 } /* }}} int parse_char_array_header */
 
@@ -204,23 +226,30 @@ static int parse_value_array_header (char *line, /* {{{ */
     time_t *ret_time, rrd_value_t *array, size_t array_len)
 {
   char *str_key;
-  char *str_array[array_len];
+  char **str_array;
   char *endptr;
   char *old_locale;
   int status;
   size_t i;
 
+  if ((str_array = (char**)malloc(array_len * sizeof (char*))) == NULL)
+    return (-1);
+
   str_key = NULL;
   status = parse_char_array_header (line, &str_key,
       str_array, array_len, /* alloc = */ 0);
-  if (status != 0)
+  if (status != 0) {
+    free(str_array);
     return (-1);
+  }
 
   errno = 0;
   endptr = NULL;
   *ret_time = (time_t) strtol (str_key, &endptr, /* base = */ 10);
-  if ((endptr == str_key) || (errno != 0))
+  if ((endptr == str_key) || (errno != 0)) {
+    free(str_array);
     return (-1);
+  }
 
   /* Enforce the "C" locale so that parsing of the response is not dependent on
    * the locale. For example, when using a German locale the strtod() function
@@ -234,26 +263,27 @@ static int parse_value_array_header (char *line, /* {{{ */
     if ((endptr == str_array[i]) || (errno != 0))
     {
       (void) setlocale (LC_NUMERIC, old_locale);
+      free(str_array);
       return (-1);
     }
   }
 
   (void) setlocale (LC_NUMERIC, old_locale);
+  free(str_array);
   return (0);
 } /* }}} int parse_value_array_header */
 
 /* One must hold `lock' when calling `close_connection'. */
 static void close_connection (void) /* {{{ */
 {
-  if (sh != NULL)
+  if (sd >= 0)
   {
-    fclose (sh);
-    sh = NULL;
-    sd = -1;
-  }
-  else if (sd >= 0)
-  {
+#ifdef WIN32
+    closesocket(sd);
+    WSACleanup();
+#else
     close (sd);
+#endif
     sd = -1;
   }
 
@@ -378,19 +408,77 @@ static void response_free (rrdc_response_t *res) /* {{{ */
   free (res);
 } /* }}} void response_free */
 
+static int recvline (char *buf, size_t n) /* {{{ */
+{
+  size_t len;
+  char *s, *p, *t;
+
+  /* Sanity check */
+  if (n <= 0)
+    return (-1);
+
+  s = buf;
+  n--; /* leave space for the NULL */
+  while (n != 0)
+  {
+    /*
+         * If the buffer is empty, refill it.
+         */
+    if ((len = inbuf_used) <= 0)
+    {
+      inbuf = _inbuf;
+      inbuf_used = recv (sd, inbuf, RRD_CMD_MAX, 0);
+      if (inbuf_used <= 0)
+      {
+        if (s == buf)
+        {
+          /* EOF/error: stop with partial or no line */
+          return (-1);
+        }
+      }
+      len = inbuf_used;
+    }
+    p = inbuf;
+    /*
+         * Scan through at most n bytes of the current buffer,
+         * looking for '\n'.  If found, copy up to and including
+         * newline, and stop.  Otherwise, copy entire chunk
+         * and loop.
+         */
+    if (len > n)
+      len = n;
+    t = (char*)memchr((void *)p, '\n', len);
+    if (t != NULL)
+    {
+      len = ++t - p;
+      inbuf_used -= len;
+      inbuf = t;
+      (void)memcpy((void *)s, (void *)p, len);
+      s[len] = 0;
+      return (1);
+    }
+    inbuf_used -= len;
+    inbuf += len;
+    (void)memcpy((void *)s, (void *)p, len);
+    s += len;
+    n -= len;
+  }
+  *s = 0;
+  return (1);
+} /* }}} int recvline */
+
 static int response_read (rrdc_response_t **ret_response) /* {{{ */
 {
   rrdc_response_t *ret = NULL;
   int status = 0;
 
   char buffer[RRD_CMD_MAX];
-  char *buffer_ptr;
 
   size_t i;
 
 #define DIE(code) do { status = code; goto err_out; } while(0)
 
-  if (sh == NULL)
+  if (sd == -1)
     DIE(-1);
 
   ret = (rrdc_response_t *) malloc (sizeof (rrdc_response_t));
@@ -400,8 +488,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   ret->lines = NULL;
   ret->lines_num = 0;
 
-  buffer_ptr = fgets (buffer, sizeof (buffer), sh);
-  if (buffer_ptr == NULL)
+  if (recvline (buffer, sizeof (buffer)) == -1)
     DIE(-3);
 
   chomp (buffer);
@@ -429,8 +516,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
 
   for (i = 0; i < ret->lines_num; i++)
   {
-    buffer_ptr = fgets (buffer, sizeof (buffer), sh);
-    if (buffer_ptr == NULL)
+    if (recvline (buffer, sizeof (buffer)) == -1)
       DIE(-6);
 
     chomp (buffer);
@@ -442,7 +528,6 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
 
 out:
   *ret_response = ret;
-  fflush(sh);
   return (status);
 
 err_out:
@@ -454,24 +539,39 @@ err_out:
 
 } /* }}} rrdc_response_t *response_read */
 
+static int sendall (const char *msg, size_t len) /* {{{ */
+{
+  int ret = 0;
+  char *bufp = (char*)msg;
+
+  while (ret != -1 && len > 0) {
+    ret = send(sd, msg, len, 0);
+    if (ret > 0) {
+      bufp += ret;
+      len -= ret;
+    }
+  }
+
+  return ret;
+} /* }}} int sendall */
+
 static int request (const char *buffer, size_t buffer_size, /* {{{ */
     rrdc_response_t **ret_response)
 {
   int status;
   rrdc_response_t *res;
 
-  if (sh == NULL)
+  if (sd == -1)
     return (ENOTCONN);
 
-  status = (int) fwrite (buffer, buffer_size, /* nmemb = */ 1, sh);
-  if (status != 1)
+  status = sendall (buffer, buffer_size);
+  if (status == -1)
   {
     close_connection ();
     rrd_set_error("request: socket error (%d) while talking to rrdcached",
                   status);
     return (-1);
   }
-  fflush (sh);
 
   res = NULL;
   status = response_read (&res);
@@ -517,6 +617,9 @@ int rrdc_is_connected(const char *daemon_addr) /* {{{ */
 
 static int rrdc_connect_unix (const char *path) /* {{{ */
 {
+#ifdef WIN32
+  return (WSAEPROTONOSUPPORT);
+#else
   struct sockaddr_un sa;
   int status;
 
@@ -542,15 +645,8 @@ static int rrdc_connect_unix (const char *path) /* {{{ */
     return (status);
   }
 
-  sh = fdopen (sd, "r+");
-  if (sh == NULL)
-  {
-    status = errno;
-    close_connection ();
-    return (status);
-  }
-
   return (0);
+#endif
 } /* }}} int rrdc_connect_unix */
 
 static int rrdc_connect_network (const char *addr_orig) /* {{{ */
@@ -605,7 +701,7 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
   } /* if (*addr == '[') */
   else
   {
-    port = rindex(addr, ':');
+    port = strrchr(addr, ':');
     if (port != NULL)
     {
       *port = 0;
@@ -613,15 +709,28 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
     }
   }
 
+#ifdef WIN32
+  WORD wVersionRequested;
+  WSADATA wsaData;
+
+  wVersionRequested = MAKEWORD(2, 0);
+  status = WSAStartup(wVersionRequested, &wsaData);
+  if (status != 0)
+  {
+    rrd_set_error("failed to initialise socket library %d", status);
+    return (-1);
+  }
+#endif
+
   ai_res = NULL;
   status = getaddrinfo (addr,
                         port == NULL ? RRDCACHED_DEFAULT_PORT : port,
                         &ai_hints, &ai_res);
   if (status != 0)
   {
-    rrd_set_error ("failed to resolve address `%s' (port %s): %s",
+    rrd_set_error ("failed to resolve address '%s' (port %s): %s (%d)",
         addr, port == NULL ? RRDCACHED_DEFAULT_PORT : port,
-        gai_strerror (status));
+        gai_strerror (status), status);
     return (-1);
   }
 
@@ -642,15 +751,6 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
       close_connection();
       continue;
     }
-
-    sh = fdopen (sd, "r+");
-    if (sh == NULL)
-    {
-      status = errno;
-      close_connection ();
-      continue;
-    }
-
     assert (status == 0);
     break;
   } /* for (ai_ptr) */
@@ -673,12 +773,12 @@ int rrdc_connect (const char *addr) /* {{{ */
     return 0;
   }
 
-  pthread_mutex_lock(&lock);
+  mutex_lock (&lock);
 
   if (sd >= 0 && sd_path != NULL && strcmp(addr, sd_path) == 0)
   {
     /* connection to the same daemon; use cached connection */
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (0);
   }
   else
@@ -710,17 +810,17 @@ int rrdc_connect (const char *addr) /* {{{ */
       free (err);
   }
 
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
   return (status);
 } /* }}} int rrdc_connect */
 
 int rrdc_disconnect (void) /* {{{ */
 {
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
 
   close_connection();
 
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   return (0);
 } /* }}} int rrdc_disconnect */
@@ -745,18 +845,18 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   if (status != 0)
     return (ENOBUFS);
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (-1);
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (ENOBUFS);
   }
 
@@ -765,7 +865,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
     status = buffer_add_value (values[i], &buffer_ptr, &buffer_free);
     if (status != 0)
     {
-      pthread_mutex_unlock (&lock);
+      mutex_unlock (&lock);
       return (ENOBUFS);
     }
   }
@@ -777,7 +877,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0)
     return (status);
@@ -809,18 +909,18 @@ int rrdc_flush (const char *filename) /* {{{ */
   if (status != 0)
     return (ENOBUFS);
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (-1);
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (ENOBUFS);
   }
 
@@ -831,7 +931,7 @@ int rrdc_flush (const char *filename) /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0)
     return (status);
@@ -872,18 +972,18 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
     return (NULL);
   }
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (NULL);
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     rrd_set_error ("rrdc_info: out of memory");
     return (NULL);
   }
@@ -895,7 +995,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -908,7 +1008,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
       if(*s == ' ') { *s = 0; s++; break; }
 	}
     if(!s || !*s) break;
-	itype = atoi(s); /* extract type code */
+	itype = (rrd_info_type_t)atoi(s); /* extract type code */
 	for(;*s;s++) { if(*s == ' ') { *s = 0; s++; break; } }
     if(!*s) break;
     /* finally, we're pointing to the value */
@@ -933,7 +1033,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
         rrd_set_error ("rrdc_info: Unsupported info type %d",itype);
         return (NULL);
     }
-	
+
     cd = rrd_info_push(cd, sprintf_alloc("%s",k), itype, info);
 	if(!data) data = cd;
   }
@@ -968,18 +1068,18 @@ time_t rrdc_last (const char *filename) /* {{{ */
     return (-1);
   }
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (-1);
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     rrd_set_error ("rrdc_last: out of memory");
     return (-1);
   }
@@ -991,7 +1091,7 @@ time_t rrdc_last (const char *filename) /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1029,25 +1129,25 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
     return (-1);
   }
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (-1);
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     rrd_set_error ("rrdc_first: out of memory");
     return (-1);
   }
   status = buffer_add_ulong (rraindex, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     rrd_set_error ("rrdc_first: out of memory");
     return (-1);
   }
@@ -1059,7 +1159,7 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1102,11 +1202,11 @@ int rrdc_create (const char *filename, /* {{{ */
     return (-1);
   }
 
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   filename = get_path (filename, file_path);
   if (filename == NULL)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -1120,7 +1220,7 @@ int rrdc_create (const char *filename, /* {{{ */
   }
   if (status != 0)
   {
-    pthread_mutex_unlock (&lock);
+    mutex_unlock (&lock);
     rrd_set_error ("rrdc_create: out of memory");
     return (-1);
   }
@@ -1130,7 +1230,7 @@ int rrdc_create (const char *filename, /* {{{ */
       status = buffer_add_string (argv[i], &buffer_ptr, &buffer_free);
       if (status != 0)
       {
-        pthread_mutex_unlock (&lock);
+        mutex_unlock (&lock);
         rrd_set_error ("rrdc_create: out of memory");
         return (-1);
       }
@@ -1145,7 +1245,7 @@ int rrdc_create (const char *filename, /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1310,9 +1410,9 @@ int rrdc_fetch (const char *filename, /* {{{ */
   READ_NUMERIC_FIELD ("DSCount", unsigned long, ds_num);
   if (ds_num < 1)
     BAIL_OUT (-1, "Invalid number for DSCount: %lu", ds_num);
-  
+
   /* It's time to allocate some memory */
-  ds_names = calloc ((size_t) ds_num, sizeof (*ds_names));
+  ds_names = (char **)calloc ((size_t) ds_num, sizeof (*ds_names));
   if (ds_names == NULL)
     BAIL_OUT (-1, "Out of memory");
 
@@ -1332,10 +1432,10 @@ int rrdc_fetch (const char *filename, /* {{{ */
     BAIL_OUT (-1, "Got %zu lines, expected %zu",
         res->lines_num, (6 + (data_size / ds_num)));
 
-  data = calloc (data_size, sizeof (*data));
+  data = (rrd_value_t *)calloc (data_size, sizeof (*data));
   if (data == NULL)
     BAIL_OUT (-1, "Out of memory");
-  
+
 
   data_fill = 0;
   for (t = start + step; t <= end; t += step, current_line++)
@@ -1419,9 +1519,9 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
    * }}} */
 
   res = NULL;
-  pthread_mutex_lock (&lock);
+  mutex_lock (&lock);
   status = request ("STATS\n", strlen ("STATS\n"), &res);
-  pthread_mutex_unlock (&lock);
+  mutex_unlock (&lock);
 
   if (status != 0)
     return (status);
@@ -1517,23 +1617,23 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
 
 void rrdc_stats_free (rrdc_stats_t *ret_stats) /* {{{ */
 {
-  rrdc_stats_t *this;
+  rrdc_stats_t *stats;
 
-  this = ret_stats;
-  while (this != NULL)
+  stats = ret_stats;
+  while (stats != NULL)
   {
     rrdc_stats_t *next;
 
-    next = this->next;
+    next = stats->next;
 
-    if (this->name != NULL)
+    if (stats->name != NULL)
     {
-      free ((char *)this->name);
-      this->name = NULL;
+      free ((char *)stats->name);
+      stats->name = NULL;
     }
-    free (this);
+    free (stats);
 
-    this = next;
+    stats = next;
   } /* while (this != NULL) */
 } /* }}} void rrdc_stats_free */
 

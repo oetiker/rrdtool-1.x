@@ -6,7 +6,10 @@
  ****************************************************************************/
 
 #include <locale.h>
+#include "rrd_config.h"
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 
 #include "rrd_graph.h"
 
@@ -531,6 +534,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       if ((start)&&(parsetime_error = rrd_parsetime(start, &start_tv))) {
 	rrd_set_error("start time: %s", parsetime_error);return NULL; }
       dprintfparsed("got start: %s\n",start);
+    } else {
+	start = NULL;
     }
     /* now end */
     char* end;
@@ -543,6 +548,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       if ((end)&&(parsetime_error = rrd_parsetime(end, &end_tv))) {
 	rrd_set_error("end time: %s", parsetime_error); return NULL; }
       dprintfparsed("got end: %s\n",end);
+    } else {
+	end = NULL;
     }
     /* and now put the pieces together (relative times like start=end-2days) */
     time_t    start_tmp = 0, end_tmp = 0;
@@ -838,6 +845,11 @@ int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* and other stuff */
   a->bounds.lowertxt=getKeyValueArgument("min",1,pa);
   a->bounds.uppertxt=getKeyValueArgument("max",1,pa);
+#else
+  /* prevent unused warnings */
+  (void)gf;
+  (void)pa;
+  (void)im;
 #endif
 
   /* and return */

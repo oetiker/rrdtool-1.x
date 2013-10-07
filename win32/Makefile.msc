@@ -1,43 +1,39 @@
 TOP = .
 RRD_LIB_NAME=librrd-4
+ARCH_PATH_X86=contrib
+ARCH_PATH_X64=contrib-x64
+
 
 !ifndef USE_64BIT
 LD_FLAGS=/RELEASE /MACHINE:X86
-
-CPPFLAGS = /TP /EHsc /O2 /arch:SSE2 /Zi /Fd$(TOP)/win32/vc.pdb \
-        /I $(TOP)/win32 /I $(TOP)/src \
-        /I E:\var\vcs\git\osb\windows-x86-msvcrt\include \
-        /I E:\var\vcs\git\osb\windows-x86-msvcrt\include\cairo \
-        /I E:\var\vcs\git\osb\windows-x86-msvcrt\include\pango-1.0 \
-        /I E:\var\vcs\git\osb\windows-x86-msvcrt\include\glib-2.0 \
-        /I E:\var\vcs\git\osb\windows-x86-msvcrt\include\libxml2
-
-THIRD_PARTY_LIB = /LIBPATH:E:\var\vcs\git\osb\windows-x86-msvcrt\lib \
-        libpng.lib libxml2-2.lib \
-        libglib-2.lib libgobject-2.lib \
-        libpango-1.lib libpangocairo-1.lib libcairo-2.lib
-
+ARCH_PATH=$(ARCH_PATH_X86)
+CPPFLAGS = /arch:SSE2
 !else
 LD_FLAGS=/RELEASE /MACHINE:X64
-
-CPPFLAGS = /TP /EHsc /O2 /Zi /Fd$(TOP)/win32/vc.pdb \
-        /I $(TOP)/win32 /I $(TOP)/src \
-        /I E:\var\vcs\git\osb\windows-x64-msvcrt\include \
-        /I E:\var\vcs\git\osb\windows-x64-msvcrt\include\cairo \
-        /I E:\var\vcs\git\osb\windows-x64-msvcrt\include\pango-1.0 \
-        /I E:\var\vcs\git\osb\windows-x64-msvcrt\include\glib-2.0 \
-        /I E:\var\vcs\git\osb\windows-x64-msvcrt\include\libxml2
-
-THIRD_PARTY_LIB = /LIBPATH:E:\var\vcs\git\osb\windows-x64-msvcrt\lib \
-        libpng.lib libxml2-2.lib \
-        libglib-2.lib libgobject-2.lib \
-        libpango-1.lib libpangocairo-1.lib libcairo-2.lib
+ARCH_PATH=$(ARCH_PATH_X64)
 !endif
+
+CPPFLAGS = $(CCPFLAGS) /TP /EHsc /O2 /Zi /Fd$(TOP)/win32/vc.pdb \
+        /I $(TOP)/win32 /I $(TOP)/src \
+        /I $(ARCH_PATH)\include \
+        /I $(ARCH_PATH)\include\cairo \
+        /I $(ARCH_PATH)\include\pango-1.0 \
+        /I $(ARCH_PATH)\include\glib-2.0 \
+        /I $(ARCH_PATH)\lib\glib-2.0\include \
+        /I $(ARCH_PATH)\include\libxml2
+
+THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
+        libpng.lib libxml2.lib \
+        glib-2.0.lib gobject-2.0.lib \
+        pango-1.0.lib pangocairo-1.0.lib cairo.lib \
+		Ws2_32.lib
 
 RRD_LIB_OBJ_LIST = \
         $(TOP)/src/hash_32.obj \
+        $(TOP)/src/mutex.obj \
         $(TOP)/src/plbasename.obj \
         $(TOP)/src/pngsize.obj \
+        $(TOP)/src/rrd_client.obj \
         $(TOP)/src/rrd_create.obj \
         $(TOP)/src/rrd_diff.obj \
         $(TOP)/src/rrd_dump.obj \
