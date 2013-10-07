@@ -847,7 +847,6 @@ int data_fetch(
     image_desc_t *im)
 {
     int       i, ii;
-    int       skip;
     /* pull the data from the rrd files ... */
     for (i = 0; i < (int) im->gdes_c; i++) {
         /* only GF_DEF elements fetch data */

@@ -4,15 +4,22 @@ use Config;
 # the contents of the Makefile that is written.
 
 if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
+	my ($perlver) = ($] =~ /(\d+\.\d{3})/);
+	$perlver =~ s/[.0]//g;
+
+	my $perl_core_dir = "$Config{privlib}/CORE";
+	my $vc_dir = $ENV{'VSINSTALLDIR'} || 'C:/Program Files (x86)/Microsoft Visual Studio 9.0/VC';
+	my $sdk_dir = $ENV{'WindowsSdkDir'} || 'C:/Program Files/Microsoft SDKs/Windows/v6.0A';
+
 	WriteMakefile(
 		'NAME'         => 'RRDs',
 		'VERSION_FROM' => 'RRDs.pm',
 		'DEFINE'       => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL} -D_CRT_SECURE_NO_WARNINGS -DWIN32",
-		'INC'          => '-I../../src/ "-IC:/Perl/lib/CORE" -I"C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\include" -I"C:\Program Files\Microsoft SDKs\Windows\v6.0A\Include"',
-		'LDDLFLAGS'    => '-dll -nologo -opt:ref,icf -ltcg -libpath:"C:\Perl\lib\CORE" -machine:X86',
-		'LDFLAGS'      => '-nologo -opt:ref,icf -ltcg -libpath:"C:\Perl\lib\CORE" -machine:X86',
+		'INC'          => '-I../../src -I../../win32 "-I$perl_core_dir" -I"$vc_dir/include" -I"$sdk_dir/Include"',
+		'LDDLFLAGS'    => '-dll -nologo -opt:ref,icf -ltcg -libpath:"$perl_core_dir" -machine:X86',
+		'LDFLAGS'      => '-nologo -opt:ref,icf -ltcg -libpath:"$perl_core_dir" -machine:X86',
 		'OPTIMIZE'     => '-O2 -MD',
-		'LIBS'         => '"..\..\win32\Release\rrdlib.lib" "..\..\win32\Release" "C:\Perl\lib\CORE\perl514.lib" -L../../contrib/lib -L"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" -L"C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\lib" -L"C:\Perl\lib\CORE"',
+		'LIBS'         => qq{"../../win32/librrd-4.lib" "perl$perlver.lib" -L../../contrib/lib -L../../win32 -L"$sdk_dir/lib" -L"$vc_dir/lib" -L"$perl_core_dir"},
 		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
 		($] ge '5.005') ? (
 			'AUTHOR'   => 'Tobias Oetiker (tobi@oetiker.ch)',

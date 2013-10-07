@@ -14,7 +14,9 @@
 #endif
 
 #include <locale.h>
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #include "rrd_hw.h"
 #include "rrd_rpncalc.h"
@@ -31,13 +33,6 @@
  * replacement.
  */
 #include <sys/timeb.h>
-
-#ifndef __MINGW32__
-struct timeval {
-    time_t    tv_sec;   /* seconds */
-    long      tv_usec;  /* microseconds */
-};
-#endif
 
 struct __timezone {
     int       tz_minuteswest;   /* minutes W of Greenwich */

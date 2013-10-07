@@ -409,25 +409,22 @@ AC_LANG_PUSH(C)
 dnl solaris has some odd defines it needs in order to propperly compile ctime_r
 AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
 AC_LINK_IFELSE(
-    AC_LANG_PROGRAM(
+    [AC_LANG_PROGRAM(
            [[#include <time.h>]],
-           [[ctime_r(NULL,NULL,0)]]
-                   ),
+           [[ctime_r(NULL,NULL,0)]])],
     [ CPPFLAGS="$CPPFLAGS -D_POSIX_PTHREAD_SEMANTICS"
       AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <time.h>]],
-                [[ctime_r(NULL,NULL)]]
-    	                 ),
+                [[ctime_r(NULL,NULL)]])],
           [AC_MSG_RESULT([yes, this seems to be solaris style])],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
     ],  
     [ AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <time.h>]],
-                [[ctime_r(NULL,NULL)]]
-    	                 ),
+                [[ctime_r(NULL,NULL)]])],
           [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
@@ -462,18 +459,16 @@ AC_LANG_PUSH(C)
 dnl see if we have to include malloc/malloc.h
 AC_MSG_CHECKING([do we need malloc/malloc.h])
 AC_LINK_IFELSE(
-    AC_LANG_PROGRAM(
+    [AC_LANG_PROGRAM(
            [[#include <stdlib.h>]],
-           [[malloc(1)]]
-                   ),
+           [[malloc(1)]])],
     [ AC_MSG_RESULT([nope, works out of the box]) ],
     [ AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <stdlib.h>
                   #include <malloc/malloc.h>]],
-                [[malloc(1)]]
-    	                 ),[
-           AC_DEFINE([MUST_HAVE_MALLOC_MALLOC_H])
+                [[malloc(1)]])],
+	  [AC_DEFINE([MUST_HAVE_MALLOC_MALLOC_H])
            AC_MSG_RESULT([yes we do])],
           [AC_MSG_ERROR([Can not figure how to compile malloc])]
       )

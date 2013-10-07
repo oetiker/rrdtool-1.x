@@ -3,6 +3,8 @@
 # it's not already installed.
 EXTRA_DIST = README test.lua.bottom compat-5.1r5/compat-5.1.lua
 
+AUTOMAKE_OPTIONS = subdir-objects
+
 LIB_VERSION_INFO=0:0:0
 
 LUA                 = @LUA@

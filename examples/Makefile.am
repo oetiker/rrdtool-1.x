@@ -16,3 +16,5 @@ cgi-demo.cgi: @srcdir@/cgi-demo.cgi.in $(top_builddir)/config.status
 	sed 's,@''exec_prefix@,$(exec_prefix),' @srcdir@/cgi-demo.cgi.in > $@
 	chmod a+x $@
 
+clean-local:
+	-rm -f cgi-demo.cgi
