@@ -89,7 +89,7 @@ enum text_prop_en {
 };
 
 enum legend_pos{ NORTH = 0, WEST, SOUTH, EAST };
-enum legend_direction { TOP_DOWN = 0, BOTTOM_UP };
+enum legend_direction { TOP_DOWN = 0, BOTTOM_UP, BOTTOM_UP2 };
 
 enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF, 
 		 IF_XML=128, IF_CSV=129, IF_TSV=130, IF_SSV=131, IF_JSON=132,
