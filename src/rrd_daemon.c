@@ -3684,6 +3684,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -p <file>     Location of the PID-file.\n"
             "  -b <dir>      Base directory to change to.\n"
             "  -B            Restrict file access to paths within -b <dir>\n"
+            "  -R            Allow recursive directory creation within -b <dir>\n"
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -F            Always flush all updates at shutdown\n"
@@ -3719,6 +3720,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   if (config_write_base_only && config_base_dir == NULL)
     fprintf(stderr, "WARNING: -B does not make sense without -b!\n"
             "  Consult the rrdcached documentation\n");
+
+  if (config_allow_recursive_mkdir && !config_write_base_only)
+      fprintf(stderr, "WARNING: -R does not make sense without -B!\n"
+              "  Consult the rrdcached documentation\n");
 
   if (journal_dir == NULL)
     config_flush_at_shutdown = 1;
