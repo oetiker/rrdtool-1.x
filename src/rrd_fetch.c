@@ -205,6 +205,46 @@ int rrd_fetch_r(
             (filename, cf_idx, start, end, step, ds_cnt, ds_namv, data));
 } /* int rrd_fetch_r */
 
+int rrd_fetch_empty(
+    time_t *start,
+    time_t *end,        /* which time frame do you want ? */
+    unsigned long *step,    /* which stepsize do you want? */
+    unsigned long *ds_cnt,  /* number of data sources in file */
+    char *ds_nam,           /* wanted data source */
+    char ***ds_namv,    /* names of data_sources */
+    rrd_value_t **data)
+{
+    unsigned long rows;
+
+    if (((*ds_namv) =
+         (char **) malloc(sizeof(char *))) == NULL) {
+        rrd_set_error("malloc fetch ds_namv array");
+        return (-1);
+    }
+    if ((((*ds_namv)[0]) = (char*)strdup(ds_nam)) == NULL) {
+        rrd_set_error("malloc fetch ds_namv entry");
+        free(*ds_namv);
+        return (-1);
+    }
+
+    *ds_cnt = 1;
+    if (*step == 0) *step = (*end - *start) / 100;
+    *start -= (*start % *step);
+    *end += (*step - *end % *step);
+    rows = (*end - *start) / *step + 1;
+
+    if (((*data) = (rrd_value_t*)malloc(rows * sizeof(rrd_value_t))) == NULL) {
+        rrd_set_error("malloc fetch data area");
+        free((*ds_namv)[0]);
+        free(*ds_namv);
+        return (-1);
+    }
+
+    while (--rows)
+        (*data)[rows-1] = DNAN;
+    return (0);
+}
+
 int rrd_fetch_fn(
     const char *filename,   /* name of the rrd */
     enum cf_en cf_idx,  /* which consolidation function ? */
