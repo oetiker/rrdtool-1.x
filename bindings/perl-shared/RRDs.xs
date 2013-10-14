@@ -434,7 +434,6 @@ rrd_restore(...)
        OUTPUT:
                RETVAL
 
-#ifndef WIN32
 int
 rrd_flushcached(...)
 	PROTOTYPE: @
@@ -445,5 +444,3 @@ rrd_flushcached(...)
 		rrdcode(rrd_flushcached);
 	OUTPUT:
 		RETVAL
-
-#endif

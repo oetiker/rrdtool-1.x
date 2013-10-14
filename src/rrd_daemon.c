@@ -69,11 +69,11 @@
 #include "unused.h"
 
 #include <stdlib.h>
-
-#ifndef WIN32
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
+
+#ifndef WIN32
 #include <unistd.h>
 #include <strings.h>
 #include <inttypes.h>
@@ -3023,7 +3023,7 @@ static int open_listen_sockets_systemd(void) /* {{{ */
 
     l = sizeof(sa);
     memset(&sa, 0, l);
-    if (getsockname(sd_fd, &sa, &l) < 0)
+    if (getsockname(sd_fd, (struct sockaddr *)&sa, &l) < 0)
     {
       fprintf(stderr, "open_listen_sockets_systemd: problem getting fd %d: %s\n", sd_fd, rrd_strerror (errno));
       return i;

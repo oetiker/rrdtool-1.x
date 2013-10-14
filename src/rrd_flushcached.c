@@ -78,9 +78,10 @@ int rrd_flushcached (int argc, char **argv)
 
     if (! rrdc_is_connected(opt_daemon))
     {
-        rrd_set_error ("Daemon address unknown. Please use the \"--daemon\" "
+        rrd_set_error ("Daemon address \"%s\" unknown. Please use the \"--daemon\" "
                 "option to set an address on the command line or set the "
                 "\"%s\" environment variable.",
+                 opt_daemon,
                 ENV_RRDCACHED_ADDRESS);
         status = -1;
         goto out;

@@ -33,8 +33,24 @@
     Linux x64 gcc, Windows x64 gcc, Visual C++ 2005 or later
  */
 
-/* The size of `time_t', as computed by sizeof. */
-#define SIZEOF_TIME_T 8 /* Visual C++ 2005 or later */
+/*
+ * The size of `time_t', as computed by sizeof.
+ * VS2005 and later dafault size for time_t is 64-bit, unless
+ * _USE_32BIT_TIME_T has been defined to use a 32-bit time_t.
+ */
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#  ifndef _USE_32BIT_TIME_T
+#    define SIZEOF_TIME_T 8
+#  else
+#    define SIZEOF_TIME_T 4
+#  endif
+#else
+#  ifdef _WIN64
+#    define SIZEOF_TIME_T 8
+#  else
+#    define SIZEOF_TIME_T 4
+#  endif
+#endif
 
 /* Define to 1 if you have the `chdir' function. */
 #define HAVE_CHDIR 1
@@ -72,20 +88,33 @@
 /* Define to 1 if you have the `tzset' function. */
 #define HAVE_TZSET 1
 
+/* Misc Missing Windows defines */
+#define PATH_MAX 1024
+
+/*
+ * Windows Sockets errors redefined as regular Berkeley error constants.
+ */
+#define ENOBUFS WSAENOBUFS
+#define ENOTCONN WSAENOTCONN
+
 #include <ctype.h>
 #include <direct.h>
 #include <float.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <WinSock.h>
 
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
 #define finite _finite
 #define snprintf _snprintf
 #define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
+#define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
+#define strcasecmp _stricmp
+#define strcasencmp _strnicmp
 
+#pragma warning(disable: 4244)
 __inline int round(double a){ return (int) (a + 0.5); }
 
 #endif
