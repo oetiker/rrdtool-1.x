@@ -238,6 +238,11 @@ Only permit writes into the base directory specified in B<-b> (and any
 sub-directories).  This does B<NOT> detect symbolic links.  Paths
 containing C<../> will also be blocked.
 
+=item B<-R>
+
+Permit recursive subdirectory creation in the base directory specified in B<-b>
+(and any sub-directories). Can only be used when B<-B> is also set.
+
 =item B<-a> I<alloc_size>
 
 Allocate value pointers in chunks of I<alloc_size>.  This may improve CPU
