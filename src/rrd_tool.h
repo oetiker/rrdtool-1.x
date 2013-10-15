@@ -89,6 +89,15 @@ extern    "C" {
             char ***ds_namv,
             rrd_value_t **data);
 
+    int rrd_fetch_empty(
+        time_t *start,
+        time_t *end,
+        unsigned long *step,
+        unsigned long *ds_cnt,
+        char *ds_nam,
+        char ***ds_namv,
+        rrd_value_t **data);
+
 
 #ifdef HAVE_LIBDBI
 int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,

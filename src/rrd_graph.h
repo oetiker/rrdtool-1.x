@@ -42,6 +42,7 @@
 
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
+#define ALLOW_MISSING_DS 0x800  /* missing DS is not fatal */
 
 #define gdes_fetch_key(x)  sprintf_alloc("%s:%d:%d:%d:%d",x.rrd,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig)
 
