@@ -3950,6 +3950,8 @@ int rrd_graph(
 }
 
 
+static int bad_format_imginfo( char *fmt);
+
 /* Some surgery done on this function, it became ridiculously big.
 ** Things moved:
 ** - initializing     now in rrd_graph_init()
@@ -4833,7 +4835,7 @@ int bad_format(
 }
 
 
-int bad_format_imginfo(
+static int bad_format_imginfo(
     char *fmt)
 {
     char     *ptr;
