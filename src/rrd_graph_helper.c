@@ -470,6 +470,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     char *reduce=getKeyValueArgument("reduce",1,pa);
     if (reduce) { 
       gdp->cf_reduce=cf_conv(reduce);
+      gdp->cf_reduce_set=1;
       dprintfparsed("got reduce: %s (%i)\n",reduce,gdp->cf_reduce);
       if (((int)gdp->cf_reduce)==-1) { rrd_set_error("bad reduce CF: %s",reduce); return NULL; }
     }
@@ -867,7 +868,7 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					); 
   if (gdp->step == 0){
       gdp->step = im->step; /* initialize with image wide step */
-  }
+  }  
   if (!gdp) { return 1;}
   /* debugging output */
   dprintf("=================================\n");

@@ -941,7 +941,8 @@ int data_fetch(
                chart and visibility of data will be random */            
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
-                reduce_data(im->gdes[i].cf_reduce,
+                
+                reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
                             &im->gdes[i].end,
@@ -4035,6 +4036,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].rrd[0] = '\0';
     im->gdes[im->gdes_c - 1].ds = -1;
     im->gdes[im->gdes_c - 1].cf_reduce = CF_AVERAGE;
+    im->gdes[im->gdes_c - 1].cf_reduce_set = 0;    
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;

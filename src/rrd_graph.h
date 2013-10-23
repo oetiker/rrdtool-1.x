@@ -207,6 +207,7 @@ typedef struct graph_desc_t {
     char      daemon[256];
     enum cf_en cf;      /* consolidation function */
     enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
+    int        cf_reduce_set; /* is the cf_reduce option set */
     struct gfx_color_t col, col2; /* graph color */
 	double    gradheight;
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
