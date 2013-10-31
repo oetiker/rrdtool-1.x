@@ -11,5 +11,5 @@ script:
   - ./configure --prefix=/opt/rrdtool-master
   - make
   - sudo make install
-  - /opt/rrdtool/bin/rrdtool
-  - /opt/rrdtool/share/rrdtool/examples/4charts.pl
+  - /opt/rrdtool-master/bin/rrdtool
+  - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
