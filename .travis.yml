@@ -1,0 +1,14 @@
+language: c
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install autopoint
+
+before_script:
+  - ./MakeMakefile
+
+script:
+  - ./configure
+  - make
+  - cd src
+  - ./rrdtool
