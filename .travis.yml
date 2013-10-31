@@ -1,1 +1,8 @@
 language: c
+
+before_script:
+  - ./MakeMakefile
+
+script:
+  - ./configure
+  - make
