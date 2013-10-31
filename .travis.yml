@@ -1,8 +1,11 @@
 language: c
 
 before_script:
+  - apt-get install autopoint
   - ./MakeMakefile
 
 script:
   - ./configure
   - make
+  - cd src
+  - ./rrdtool
