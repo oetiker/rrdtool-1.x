@@ -766,7 +766,7 @@ int HandleInputLine(
                 char     *entry = NULL;
                 entry = legend_v[j];
                 if (json){
-                    printf("      '%s'", entry);
+                    printf("      \"%s\"", entry);
                     if (j < col_cnt -1){
                         printf(",");
                     }
