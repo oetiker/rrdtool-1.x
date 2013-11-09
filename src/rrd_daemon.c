@@ -1863,7 +1863,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
         /* realpath puts the first problematic part in dir_tmp, so we can use
          * the parent of dir_tmp to stat in order to set a reasonable mode
          * since dir_tmp is  */
-        if (stat(dirname(dir_tmp), &st) && rrd_mkdir_p(dir, st.st_mode) != 0) {
+        if (rrd_mkdir_p(dir, st.st_mode) != 0) {
             return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
         }
     }
