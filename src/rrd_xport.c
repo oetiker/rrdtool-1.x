@@ -769,7 +769,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
       rrd_value_t newval = DNAN;
       newval = *ptr;
       if (json){
-	if (isnan(newval)){
+	if (isnan(newval) || isinf(newval)){
 	  addToBuffer(buffer,"null",0);                        
 	} else {
 	  snprintf(buf,sizeof(buf),"%0.10e",newval);
