@@ -766,7 +766,7 @@ int HandleInputLine(
                 char     *entry = NULL;
                 entry = legend_v[j];
                 if (json){
-                    printf("      '%s'", entry);
+                    printf("      \"%s\"", entry);
                     if (j < col_cnt -1){
                         printf(",");
                     }
@@ -804,7 +804,7 @@ int HandleInputLine(
                     rrd_value_t newval = DNAN;
                     newval = *ptr;
                     if (json){
-                        if (isnan(newval)){
+                        if (isnan(newval) || isinf(newval)){
                             printf("null");                        
                         } else {
                             printf("%0.10e",newval);
