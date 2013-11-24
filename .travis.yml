@@ -8,7 +8,7 @@ perl:
   - "5.8"
 
 install: 
-  - sudo apt-get install autopoint
+  - sudo apt-get install autopoint libdbi-dev
 
 before_script:
   - ./MakeMakefile
