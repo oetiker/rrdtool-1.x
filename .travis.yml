@@ -2,7 +2,7 @@ language: c
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install autopoint
+  - sudo apt-get install autopoint libdbi-dev
 
 before_script:
   - ./MakeMakefile
