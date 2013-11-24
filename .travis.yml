@@ -2,7 +2,7 @@ language: c
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install autopoint libdbi-dev
+  - sudo apt-get install autopoint libdbi-dev tcl-dev liblua5.1-0-dev
 
 before_script:
   - ./MakeMakefile
