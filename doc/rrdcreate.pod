@@ -42,7 +42,7 @@ into the B<RRD>.
 
 Do not clobber an existing file of the same name.
 
-=item B<--daemon> I<address>
+=head2 B<--daemon> I<address>
 
 Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
 the B<-l> option in the L<rrdcached> manual.
