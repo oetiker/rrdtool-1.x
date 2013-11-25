@@ -1,3 +1,6 @@
+#ifndef RRDLIB_H_4FD7D37D56A448C392AF46508C56D3CC
+#define RRDLIB_H_4FD7D37D56A448C392AF46508C56D3CC
+
 /*****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
@@ -48,9 +51,6 @@
 #ifdef  __cplusplus
 extern    "C" {
 #endif
-
-#ifndef _RRDLIB_H
-#define _RRDLIB_H
 
 #include <sys/types.h>  /* for off_t */
 
@@ -393,9 +393,9 @@ int       rrd_proc_start_end(
  * RRDTool mailing list and whine about your broken application, you will get
  * hit with something smelly!
  */
-#if defined(_RRD_TOOL_H) || defined(RRD_EXPORT_DEPRECATED)
+#if defined(RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4) || defined(RRD_EXPORT_DEPRECATED)
 
-# if defined(_RRD_TOOL_H)
+# if defined(RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4)
 #  include "rrd_format.h"
 # else
 #  include <rrd_format.h>
@@ -464,8 +464,8 @@ int       rrd_proc_start_end(
               RRD_DEPRECATED;
 #endif                  /* defined(_RRD_TOOL_H) || defined(RRD_EXPORT_DEPRECATED) */
 
-#endif                  /* _RRDLIB_H */
-
 #ifdef  __cplusplus
 }
 #endif
+
+#endif /* RRDLIB_H */

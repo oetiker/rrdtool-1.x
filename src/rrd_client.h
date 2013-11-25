@@ -24,8 +24,8 @@
  *   Florian octo Forster <octo at verplant.org>
  **/
 
-#ifndef __RRD_CLIENT_H
-#define __RRD_CLIENT_H 1
+#ifndef RRD_CLIENT_H_887A36401735431B937F44DFCAE0B7C9
+#define RRD_CLIENT_H_887A36401735431B937F44DFCAE0B7C9 1
 
 # ifdef HAVE_STDINT_H
 #  include <stdint.h>

@@ -19,8 +19,8 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-#ifndef _GETOPT_H
-#define _GETOPT_H 1
+#ifndef GETOPT_H_E19FF44271684D849D8CAC4AD37F92A7
+#define GETOPT_H_E19FF44271684D849D8CAC4AD37F92A7 1
 
 #ifdef	__cplusplus
 extern    "C" {

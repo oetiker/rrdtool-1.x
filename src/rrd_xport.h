@@ -1,3 +1,6 @@
+#ifndef RRD_XPORT_H_C5A7EBAF331140D38C241326B81F357D
+#define RRD_XPORT_H_C5A7EBAF331140D38C241326B81F357D
+
 /****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  ****************************************************************************
@@ -6,9 +9,6 @@
 #ifdef  __cplusplus
 extern    "C" {
 #endif
-
-#ifndef _RRD_XPORT_H
-#define _RRD_XPORT_H
 
 #define XML_ENCODING     "ISO-8859-1"
 #define ROOT_TAG         "xport"
@@ -25,10 +25,8 @@ extern    "C" {
 #define COL_TIME_TAG     "t"
 #define COL_DATA_TAG     "v"
 
-
-#endif
-
-
 #ifdef  __cplusplus
 }
+#endif
+
 #endif
