@@ -9,8 +9,8 @@
  * $Id$
  *************************************************************************** */
 
-#ifndef _RRD_IS_THREAD_SAFE_H
-#define _RRD_IS_THREAD_SAFE_H
+#ifndef RRD_IS_THREAD_SAFE_H_F7EEC7F1E9844C6DB63692B2673768F2
+#define RRD_IS_THREAD_SAFE_H_F7EEC7F1E9844C6DB63692B2673768F2
 
 #ifdef  __cplusplus
 extern    "C" {

@@ -2,8 +2,8 @@
  *  mutex.h - Cross platform mutex
  */
 
-#ifndef MUTEX__H
-#define MUTEX__H
+#ifndef MUTEX_H_B13C67AB432C4C39AF823A339537CA40
+#define MUTEX_H_B13C67AB432C4C39AF823A339537CA40
 
 #ifdef WIN32
 #include <windows.h>

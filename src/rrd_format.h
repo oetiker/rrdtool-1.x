@@ -4,8 +4,8 @@
  * rrd_format.h  RRD Database Format header
  *****************************************************************************/
 
-#ifndef _RRD_FORMAT_H
-#define _RRD_FORMAT_H
+#ifndef RRD_FORMAT_H_92768FBD7A3446C58B1097BEE038159D
+#define RRD_FORMAT_H_92768FBD7A3446C58B1097BEE038159D
 
 /* 
  * _RRD_TOOL_H
@@ -15,7 +15,7 @@
  *   User is requesting internal function which need this struct. They have
  *   been told that this will change and have agreed to adapt their programs.
  */
-#if !defined(_RRD_TOOL_H) && !defined(RRD_EXPORT_DEPRECATED)
+#if !defined(RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4) && !defined(RRD_EXPORT_DEPRECATED)
 # error "Do not include rrd_format.h directly. Include rrd.h instead!"
 #endif
 

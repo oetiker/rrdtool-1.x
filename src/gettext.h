@@ -16,8 +16,8 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
    USA.  */
 
-#ifndef _LIBGETTEXT_H
-#define _LIBGETTEXT_H 1
+#ifndef LIBGETTEXT_H_74E363E9F6924C7DBC4D0ED9C2FA33DF
+#define LIBGETTEXT_H_74E363E9F6924C7DBC4D0ED9C2FA33DF 1
 
 /* NLS can be disabled through the configure --disable-nls option.  */
 #if ENABLE_NLS

@@ -1,3 +1,6 @@
+#ifndef RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4
+#define RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4
+
 /*****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
@@ -6,9 +9,6 @@
 #ifdef  __cplusplus
 extern    "C" {
 #endif
-
-#ifndef _RRD_TOOL_H
-#define _RRD_TOOL_H
 
 #include "rrd_config.h"
 
@@ -130,8 +130,8 @@ int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
 
     const char *cf_to_string (enum cf_en cf);
 
-#endif /* _RRD_TOOL_H */
-
 #ifdef  __cplusplus
 }
 #endif
+
+#endif /* RRD_TOOL_H */
