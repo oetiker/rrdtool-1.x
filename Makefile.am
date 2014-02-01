@@ -13,8 +13,8 @@ EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
              libtool \
              netware/Makefile  \
              etc/rrdcached-default etc/rrdcached-init \
-             win32/Makefile  win32/config.h  win32/rrdlib.vcproj  win32/rrdtool.vcproj  win32/rrdupdate.vcproj \
-             win32/README    win32/rrd.sln   win32/rrdtool.sln    win32/rrdupdate.sln 
+             win32/Makefile  win32/rrd_config.h  win32/rrdlib.vcproj  win32/rrdtool.vcproj  win32/rrdupdate.vcproj \
+             win32/README    win32/rrd.sln   win32/rrdtool.sln    win32/rrdupdate.sln  win32/Makefile.msc
 
 CLEANFILES = config.cache
 
@@ -50,5 +50,8 @@ site-python-install: all
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
 	find ./ -name "*.[ch]" | xargs indent
+
+clean-local:
+	-rm -f config.h bindings/perl-piped/Makefile.old bindings/perl-shared/Makefile.old
 
 ##END##

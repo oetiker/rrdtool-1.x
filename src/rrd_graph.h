@@ -1,5 +1,5 @@
-#ifndef _RRD_GRAPH_H
-#define _RRD_GRAPH_H
+#ifndef RRD_GRAPH_H_DBEDBFB6C5844ED9BEA6242F879CA284
+#define RRD_GRAPH_H_DBEDBFB6C5844ED9BEA6242F879CA284
 
 #define y0 cairo_y0
 #define y1 cairo_y1
@@ -7,13 +7,7 @@
 
 /* this may configure __EXTENSIONS__ without which pango will fail to compile
    so load this early */
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-#include "../win32/config.h"
-#else
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
-#endif
+#include "rrd_config.h"
 
 #include <cairo.h>
 #include <cairo-pdf.h>
@@ -25,6 +19,9 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+
+#include <glib.h>
+
 
 #ifdef WIN32
 #  include <windows.h>
@@ -45,7 +42,10 @@
 
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
-#define FORCE_UTC_TIME  0x800   /* Work in UTC timezone instead of localtimg */
+#define ALLOW_MISSING_DS 0x800  /* missing DS is not fatal */
+#define FORCE_UTC_TIME  0x1000   /* Work in UTC timezone instead of localtimg */
+
+#define gdes_fetch_key(x)  sprintf_alloc("%s:%d:%d:%d:%d",x.rrd,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig)
 
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
@@ -91,7 +91,7 @@ enum text_prop_en {
 };
 
 enum legend_pos{ NORTH = 0, WEST, SOUTH, EAST };
-enum legend_direction { TOP_DOWN = 0, BOTTOM_UP };
+enum legend_direction { TOP_DOWN = 0, BOTTOM_UP, BOTTOM_UP2 };
 
 enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF, 
 		 IF_XML=128, IF_CSV=129, IF_TSV=130, IF_SSV=131, IF_JSON=132,
@@ -208,6 +208,7 @@ typedef struct graph_desc_t {
     char      daemon[256];
     enum cf_en cf;      /* consolidation function */
     enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
+    int        cf_reduce_set; /* is the cf_reduce option set */
     struct gfx_color_t col, col2; /* graph color */
 	double    gradheight;
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
@@ -332,6 +333,8 @@ typedef struct image_desc_t {
     PangoLayout *layout; /* the pango layout we use for writing fonts */
     rrd_info_t *grinfo; /* root pointer to extra graph info */
     rrd_info_t *grinfo_current; /* pointing to current entry */
+    GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
+    GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
 } image_desc_t;
 
 /* Prototypes */
@@ -376,12 +379,6 @@ void      reduce_data(
     rrd_value_t **);
 int       data_fetch(
     image_desc_t *);
-long      find_var(
-    image_desc_t *,
-    char *);
-long      find_var_wrapper(
-    void *arg1,
-    char *key);
 long      lcd(
     long *);
 int       data_calc(
@@ -459,6 +456,8 @@ int       rrd_graph_color(
     char *,
     int);
 int       bad_format(
+    char *);
+int       bad_format_imginfo(
     char *);
 int       vdef_parse(
     struct graph_desc_t *,

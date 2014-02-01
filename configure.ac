@@ -85,7 +85,7 @@ AH_BOTTOM([
 #  include <malloc/malloc.h>
 #endif
 
-#include "src/rrd_config_bottom.h"
+#include "rrd_config_bottom.h"
 
 #endif
 ])
@@ -409,25 +409,22 @@ AC_LANG_PUSH(C)
 dnl solaris has some odd defines it needs in order to propperly compile ctime_r
 AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
 AC_LINK_IFELSE(
-    AC_LANG_PROGRAM(
+    [AC_LANG_PROGRAM(
            [[#include <time.h>]],
-           [[ctime_r(NULL,NULL,0)]]
-                   ),
+           [[ctime_r(NULL,NULL,0)]])],
     [ CPPFLAGS="$CPPFLAGS -D_POSIX_PTHREAD_SEMANTICS"
       AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <time.h>]],
-                [[ctime_r(NULL,NULL)]]
-    	                 ),
+                [[ctime_r(NULL,NULL)]])],
           [AC_MSG_RESULT([yes, this seems to be solaris style])],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
     ],  
     [ AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <time.h>]],
-                [[ctime_r(NULL,NULL)]]
-    	                 ),
+                [[ctime_r(NULL,NULL)]])],
           [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
@@ -462,18 +459,16 @@ AC_LANG_PUSH(C)
 dnl see if we have to include malloc/malloc.h
 AC_MSG_CHECKING([do we need malloc/malloc.h])
 AC_LINK_IFELSE(
-    AC_LANG_PROGRAM(
+    [AC_LANG_PROGRAM(
            [[#include <stdlib.h>]],
-           [[malloc(1)]]
-                   ),
+           [[malloc(1)]])],
     [ AC_MSG_RESULT([nope, works out of the box]) ],
     [ AC_LINK_IFELSE(
-          AC_LANG_PROGRAM(
+          [AC_LANG_PROGRAM(
                 [[#include <stdlib.h>
                   #include <malloc/malloc.h>]],
-                [[malloc(1)]]
-    	                 ),[
-           AC_DEFINE([MUST_HAVE_MALLOC_MALLOC_H])
+                [[malloc(1)]])],
+	  [AC_DEFINE([MUST_HAVE_MALLOC_MALLOC_H])
            AC_MSG_RESULT([yes we do])],
           [AC_MSG_ERROR([Can not figure how to compile malloc])]
       )
@@ -535,7 +530,7 @@ EX_CHECK_ALL(cairo,      cairo_font_options_create,     cairo.h,                
 EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,            cairo-svg,   1.10.2,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.10.2,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
-EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
+EX_CHECK_ALL(pangocairo-1.0,  pango_font_map_create_context,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
 
 fi
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.28.7, ftp://ftp.gtk.org/pub/glib/2.28/, "")
@@ -943,6 +938,10 @@ AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 
 dnl intl requires our config to be called config.h. indulge it.
 AC_CONFIG_COMMANDS_POST([ test -f config.h || ln -s rrd_config.h config.h ])
+
+dnl bindings use nasty path, just make them happy.
+AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config.h || (cd src/ && ln -s ../rrd_config.h) ])
+AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config_bottom.h || (cd src/ && ln -s ../rrd_config_bottom.h) ])
 
 AC_OUTPUT
 

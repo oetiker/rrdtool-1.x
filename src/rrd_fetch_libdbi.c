@@ -192,11 +192,20 @@ static int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
     return -1; 
   }
   if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: setting option %s to %s\n",time(NULL),key,value ); }
-  if (dbi_conn_set_option(th->conn,key,value)) {
-    dbi_conn_error(th->conn,(const char**)&dbi_errstr);
-    rrd_set_error( "libdbi: problems setting %s to %s - %s",key,value,dbi_errstr);
-    _sql_close(th);
-    return -1;
+  if (strcmp(key, "port") == 0) {
+    if (dbi_conn_set_option_numeric(th->conn,key,atoi(value))) {
+      dbi_conn_error(th->conn,(const char**)&dbi_errstr);
+      rrd_set_error( "libdbi: problems setting %s to %d - %s",key,value,dbi_errstr);
+      _sql_close(th);
+      return -1;
+    }
+  } else {
+    if (dbi_conn_set_option(th->conn,key,value)) {
+      dbi_conn_error(th->conn,(const char**)&dbi_errstr);
+      rrd_set_error( "libdbi: problems setting %s to %s - %s",key,value,dbi_errstr);
+      _sql_close(th);
+      return -1;
+    }
   }
   return 0;
 }

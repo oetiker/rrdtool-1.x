@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # On MAC OS X, GNU libtoolize is named 'glibtoolize':
 if [ `(uname -s) 2>/dev/null` == 'Darwin' ]

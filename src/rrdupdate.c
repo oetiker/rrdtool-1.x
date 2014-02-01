@@ -6,16 +6,15 @@
  * $Id$
  *****************************************************************************/
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../win32/config.h"
-#else
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
-#endif
+#include "rrd_config.h"
 
 #include "rrd.h"
+/* for basename */
+#ifdef HAVE_LIBGEN_H
+#  include <libgen.h>
+#else
 #include "plbasename.h"
+#endif
 
 int main(
     int argc,

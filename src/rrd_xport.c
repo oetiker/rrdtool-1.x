@@ -487,7 +487,7 @@ int addToBuffer(stringbuffer_t * sb,char* data,size_t len) {
     sb->allocated+=8192;
     sb->allocated-=(sb->allocated%8192);    
     /* and allocate it */
-    sb->data=malloc(sb->allocated); 
+    sb->data = (unsigned char *) malloc(sb->allocated);
     if (! sb->data) { 
       rrd_set_error("malloc issue");
       return 1;
@@ -704,7 +704,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   }
   /* end legend */
   if (json){
-    snprintf(buf,sizeof(buf),"          ],\n");
+    snprintf(buf,sizeof(buf),"          ]\n");
   }
   else {
     snprintf(buf,sizeof(buf),"    </%s>\n", LEGEND_TAG);
@@ -739,7 +739,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   }
   addToBuffer(buffer,buf,0);
   /* iterate over data */
-  for (time_t ti = start + step; ti <= end; ti += step) {
+  for (time_t ti = start + step; ti < end; ti += step) {
     if (timefmt) {
       struct tm loc;
       localtime_r(&ti,&loc);
@@ -769,7 +769,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
       rrd_value_t newval = DNAN;
       newval = *ptr;
       if (json){
-	if (isnan(newval)){
+	if (isnan(newval) || isinf(newval)){
 	  addToBuffer(buffer,"null",0);                        
 	} else {
 	  snprintf(buf,sizeof(buf),"%0.10e",newval);
@@ -880,7 +880,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
     char* entry;
     switch (im->gdes[i].gf) {
     case GF_PRINT:
-    case GF_GPRINT:
+    case GF_GPRINT: {
       /* PRINT and GPRINT can now print VDEF generated values.
        * There's no need to do any calculations on them as these
        * calculations were already made.
@@ -961,7 +961,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
       } else {
 	snprintf(buf,sizeof(buf),"        <%s>%s</%s>\n",usetag,dbuf,usetag);
       }
-      addToBuffer(usebuffer,buf,0);
+      addToBuffer(usebuffer,buf,0); }
       break;
     case GF_COMMENT:
       if (json) {

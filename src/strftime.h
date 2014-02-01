@@ -5,8 +5,8 @@
 **	    strftime_() is used.
 */
 
-#ifndef STRFTIME__H
-#define STRFTIME__H
+#ifndef STRFTIME_H_14FA27AFAACA4FB5820D2B15278D9B96
+#define STRFTIME_H_14FA27AFAACA4FB5820D2B15278D9B96
 
 #include <stddef.h>     /* for size_t */
 #include <time.h>       /* for struct tm */

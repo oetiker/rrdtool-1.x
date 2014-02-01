@@ -665,6 +665,34 @@ static PyObject *PyRRD_xport(
     return r;
 }
 
+static char PyRRD_dump__doc__[] =
+    "dump - dump an RRD to XML\n"
+    "[--header|-h {none,xsd,dtd}] [--no-header]file.rrd [file.xml]";
+
+static PyObject *PyRRD_dump(
+    PyObject UNUSED(*self),
+    PyObject * args)
+{
+    PyObject *r;
+    int       argc;
+    char    **argv;
+
+    if (create_args("dump", args, &argc, &argv) < 0)
+        return NULL;
+
+    if (rrd_dump(argc, argv) != 0) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+        r = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        r = Py_None;
+    }
+
+    destroy_args(&argv);
+    return r;
+}
+
 /* List of methods defined in the module */
 #define meth(name, func, doc) {name, (PyCFunction)func, METH_VARARGS, doc}
 
@@ -682,6 +710,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
     meth("flushcached", PyRRD_flushcached, PyRRD_flushcached__doc__),
     meth("xport", PyRRD_xport, PyRRD_xport__doc__),
+    meth("dump", PyRRD_dump, PyRRD_dump__doc__),
     {NULL, NULL, 0, NULL}
 };
 

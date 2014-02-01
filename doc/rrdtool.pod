@@ -58,6 +58,11 @@ Operationally equivalent to B<update> except for output. Check L<rrdupdate>.
 Create a graph from data stored in one or several RRDs. Apart from
 generating graphs, data can also be extracted to stdout. Check L<rrdgraph>.
 
+=item B<graphv>
+
+Create a graph from data stored in one or several RRDs. Same as graph, but
+metadata are printed before the graph. Check L<rrdgraph>.
+
 =item B<dump>
 
 Dump the contents of an RRD in plain ASCII. In connection with restore
@@ -77,15 +82,24 @@ uses fetch to retrieve its data from an RRD. Check L<rrdfetch>.
 
 Alter setup of an RRD. Check L<rrdtune>.
 
+=item B<first>
+
+Find the first update time of an RRD. Check L<rrdfirst>.
+
 =item B<last>
 
 Find the last update time of an RRD. Check L<rrdlast>.
+
+=item B<lastupdate>
+
+Find the last update time of an RRD. It also returns the value stored
+for each datum in the most recent update. Check L<rrdlastupdate>.
 
 =item B<info>
 
 Get information about an RRD. Check L<rrdinfo>.
 
-=item B<rrdresize>
+=item B<resize>
 
 Change the size of individual RRAs. This is dangerous! Check L<rrdresize>.
 
@@ -96,11 +110,6 @@ Export data retrieved from one or several RRDs. Check L<rrdxport>.
 =item B<flushcached>
 
 Flush the values for a specific RRD file from memory. Check L<rrdflushcached>.
-
-=item B<rrdcgi>
-
-This is a standalone tool for producing RRD graphs on the fly. Check
-L<rrdcgi>.
 
 =back
 

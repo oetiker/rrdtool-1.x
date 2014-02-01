@@ -14,9 +14,9 @@
 #endif
 
 #include <locale.h>
-
-#include <inttypes.h>
-#include <stdint.h>
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #include "rrd_hw.h"
 #include "rrd_rpncalc.h"
@@ -33,13 +33,6 @@
  * replacement.
  */
 #include <sys/timeb.h>
-
-#ifndef __MINGW32__
-struct timeval {
-    time_t    tv_sec;   /* seconds */
-    long      tv_usec;  /* microseconds */
-};
-#endif
 
 struct __timezone {
     int       tz_minuteswest;   /* minutes W of Greenwich */
@@ -1478,8 +1471,9 @@ static int update_all_cdp_prep(
             proc_pdp_cnt % rrd->rra_def[rra_idx].pdp_cnt;
         skip_update[rra_idx] = 0;
         if (start_pdp_offset <= elapsed_pdp_st) {
-            rra_step_cnt[rra_idx] = (elapsed_pdp_st - start_pdp_offset) /
-                rrd->rra_def[rra_idx].pdp_cnt + 1;
+            rra_step_cnt[rra_idx] = min((elapsed_pdp_st - start_pdp_offset) /
+                rrd->rra_def[rra_idx].pdp_cnt + 1,
+                rrd->rra_def[rra_idx].row_cnt);
         } else {
             rra_step_cnt[rra_idx] = 0;
         }

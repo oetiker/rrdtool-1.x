@@ -1,3 +1,6 @@
+#ifndef RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4
+#define RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4
+
 /*****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  *****************************************************************************
@@ -7,16 +10,7 @@
 extern    "C" {
 #endif
 
-#ifndef _RRD_TOOL_H
-#define _RRD_TOOL_H
-
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-#include "../win32/config.h"
-#else
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
-#endif
+#include "rrd_config.h"
 
 #include "rrd.h"
 
@@ -95,6 +89,15 @@ extern    "C" {
             char ***ds_namv,
             rrd_value_t **data);
 
+    int rrd_fetch_empty(
+        time_t *start,
+        time_t *end,
+        unsigned long *step,
+        unsigned long *ds_cnt,
+        char *ds_nam,
+        char ***ds_namv,
+        rrd_value_t **data);
+
 
 #ifdef HAVE_LIBDBI
 int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
@@ -127,8 +130,8 @@ int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
 
     const char *cf_to_string (enum cf_en cf);
 
-#endif /* _RRD_TOOL_H */
-
 #ifdef  __cplusplus
 }
 #endif
+
+#endif /* RRD_TOOL_H */

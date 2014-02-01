@@ -56,7 +56,7 @@
 #include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
-/* #define DEBUG */
+/* #define DEBUG  */
 
 int rrd_fetch(
     int argc,
@@ -205,6 +205,46 @@ int rrd_fetch_r(
             (filename, cf_idx, start, end, step, ds_cnt, ds_namv, data));
 } /* int rrd_fetch_r */
 
+int rrd_fetch_empty(
+    time_t *start,
+    time_t *end,        /* which time frame do you want ? */
+    unsigned long *step,    /* which stepsize do you want? */
+    unsigned long *ds_cnt,  /* number of data sources in file */
+    char *ds_nam,           /* wanted data source */
+    char ***ds_namv,    /* names of data_sources */
+    rrd_value_t **data)
+{
+    unsigned long rows;
+
+    if (((*ds_namv) =
+         (char **) malloc(sizeof(char *))) == NULL) {
+        rrd_set_error("malloc fetch ds_namv array");
+        return (-1);
+    }
+    if ((((*ds_namv)[0]) = (char*)strdup(ds_nam)) == NULL) {
+        rrd_set_error("malloc fetch ds_namv entry");
+        free(*ds_namv);
+        return (-1);
+    }
+
+    *ds_cnt = 1;
+    if (*step == 0) *step = (*end - *start) / 100;
+    *start -= (*start % *step);
+    *end += (*step - *end % *step);
+    rows = (*end - *start) / *step + 1;
+
+    if (((*data) = (rrd_value_t*)malloc(rows * sizeof(rrd_value_t))) == NULL) {
+        rrd_set_error("malloc fetch data area");
+        free((*ds_namv)[0]);
+        free(*ds_namv);
+        return (-1);
+    }
+
+    while (--rows)
+        (*data)[rows-1] = DNAN;
+    return (0);
+}
+
 int rrd_fetch_fn(
     const char *filename,   /* name of the rrd */
     enum cf_en cf_idx,  /* which consolidation function ? */
@@ -240,7 +280,7 @@ int rrd_fetch_fn(
 
 #ifdef HAVE_LIBDBI
     /* handle libdbi datasources */
-    if (strncmp("sql//",filename,5)==0) {
+    if (strncmp("sql//",filename,5)==0 || strncmp("sql||",filename,5)==0) {
 	return rrd_fetch_fn_libdbi(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data);
     }
 #endif
@@ -404,12 +444,12 @@ int rrd_fetch_fn(
     rra_start_time = (rra_end_time
                       - (*step * (rrd.rra_def[chosen_rra].row_cnt - 1)));
     /* here's an error by one if we don't be careful */
-    start_offset = (long) (*start + *step - rra_start_time) / (long) *step;
-    end_offset = (long) (rra_end_time - *end) / (long) *step;
+    start_offset = ((long long)*start + (long long)*step - (long long)rra_start_time) / (long long) *step;
+    end_offset = ((long long)rra_end_time - (long long)*end) / (long long) *step;
 #ifdef DEBUG
     fprintf(stderr,
-            "rra_start %lu, rra_end %lu, start_off %li, end_off %li\n",
-            rra_start_time, rra_end_time, start_offset, end_offset);
+            "start %10lu step %10lu rra_start %lld, rra_end %lld, start_off %lld, end_off %lld\n",
+            *start, *step,(long long)rra_start_time, (long long)rra_end_time, (long long)start_offset, (long long)end_offset);
 #endif
     /* only seek if the start time is before the end time */
     if (*start <= rra_end_time && *end >= rra_start_time - (off_t)*step ){

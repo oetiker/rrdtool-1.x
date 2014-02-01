@@ -3,8 +3,8 @@
  ****************************************************************************
  * rrd_rpncalc.h  RPN calculator functions
  ****************************************************************************/
-#ifndef _RRD_RPNCALC_H
-#define _RRD_RPNCALC_H
+#ifndef RRD_RPNCALC_H_EF2FD77C45C34B71914661372C5B51EA
+#define RRD_RPNCALC_H_EF2FD77C45C34B71914661372C5B51EA
 
 /* WARNING: if new operators are added, they MUST be added at the very end of the list.
  * This is because COMPUTE (CDEF) DS store OP nodes by number (name is not

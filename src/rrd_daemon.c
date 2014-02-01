@@ -69,11 +69,11 @@
 #include "unused.h"
 
 #include <stdlib.h>
-
-#ifndef WIN32
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
+
+#ifndef WIN32
 #include <unistd.h>
 #include <strings.h>
 #include <inttypes.h>
@@ -106,7 +106,7 @@
 #include <tcpd.h>
 #endif /* HAVE_LIBWRAP */
 
-#include <glib-2.0/glib.h>
+#include <glib.h>
 /* }}} */
 
 #define RRDD_LOG(severity, ...) \
@@ -248,6 +248,7 @@ static cache_item_t   *cache_queue_head = NULL;
 static cache_item_t   *cache_queue_tail = NULL;
 static pthread_mutex_t cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static sigset_t signal_set;
 static int config_write_interval = 300;
 static int config_write_jitter   = 0;
 static int config_flush_interval = 3600;
@@ -256,6 +257,7 @@ static char *config_pid_file = NULL;
 static char *config_base_dir = NULL;
 static size_t _config_base_dir_len = 0;
 static int config_write_base_only = 0;
+static int config_allow_recursive_mkdir = 0;
 static size_t config_alloc_chunk = 1;
 
 static listen_socket_t **config_listen_address_list = NULL;
@@ -295,67 +297,143 @@ static int handle_request_help (HANDLER_PROTO);
 static void sig_common (const char *sig) /* {{{ */
 {
   RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
+
+  int status = pthread_mutex_lock(&cache_lock);
+
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Lock failed.", status);
+    abort();
+  }
+
   if (state == RUNNING) {
       state = FLUSHING;
   }
   pthread_cond_broadcast(&flush_cond);
+  status = pthread_mutex_unlock(&cache_lock);
+
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Unlock failed.", status);
+    abort();
+  }
+
   pthread_cond_broadcast(&queue_cond);
 } /* }}} void sig_common */
 
-static void sig_int_handler (int UNUSED(s)) /* {{{ */
+static void* signal_receiver (void UNUSED(*args))
 {
-  sig_common("INT");
-} /* }}} void sig_int_handler */
+  siginfo_t signal_info;
+  int status;
 
-static void sig_term_handler (int UNUSED(s)) /* {{{ */
+  while (1)
+  {
+    status = sigwaitinfo(&signal_set, &signal_info);
+
+    switch(status)
+    {
+      case -1:
+        RRDD_LOG(LOG_ERR, "%s: %s\nerrno: %d", __func__, "Signal wait failed.", errno);
+        abort();
+
+      case SIGINT:
+        sig_common("INT");
+        break;
+
+      case SIGTERM:
+        sig_common("TERM");
+        break;
+
+      case SIGUSR1:
+        status = pthread_mutex_lock(&cache_lock);
+
+        if (status)
+        {
+          RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Lock failed.", status);
+          abort();
+        }
+
+        config_flush_at_shutdown = 1;
+        status = pthread_mutex_unlock(&cache_lock);
+
+        if (status)
+        {
+          RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Unlock failed.", status);
+          abort();
+        }
+
+        sig_common("USR1");
+        break;
+
+      case SIGUSR2:
+        status = pthread_mutex_lock(&cache_lock);
+
+        if (status)
+        {
+          RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Lock failed.", status);
+          abort();
+        }
+
+        config_flush_at_shutdown = 0;
+        status = pthread_mutex_unlock(&cache_lock);
+
+        if (status)
+        {
+          RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Unlock failed.", status);
+          abort();
+        }
+
+        sig_common("USR2");
+        break;
+
+      default:
+        RRDD_LOG(LOG_NOTICE,
+                 "%s: Signal %d was received from process %u.\n",
+                 __func__,
+                 status,
+                 signal_info.si_pid);
+    }
+  }
+
+  return NULL;
+}
+
+static void install_signal_receiver(void)
 {
-  sig_common("TERM");
-} /* }}} void sig_term_handler */
+  pthread_t receiver;
+  int status = sigfillset(&signal_set);
 
-static void sig_usr1_handler (int UNUSED(s)) /* {{{ */
-{
-  config_flush_at_shutdown = 1;
-  sig_common("USR1");
-} /* }}} void sig_usr1_handler */
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nerrno: %d", "Signal set could not be initialised.", errno);
+    abort();
+  }
 
-static void sig_usr2_handler (int UNUSED(s)) /* {{{ */
-{
-  config_flush_at_shutdown = 0;
-  sig_common("USR2");
-} /* }}} void sig_usr2_handler */
+  /* Block all signals in the initial thread. */
+  status = pthread_sigmask(SIG_SETMASK, &signal_set, NULL);
 
-static void install_signal_handlers(void) /* {{{ */
-{
-  /* These structures are static, because `sigaction' behaves weird if the are
-   * overwritten.. */
-  static struct sigaction sa_int;
-  static struct sigaction sa_term;
-  static struct sigaction sa_pipe;
-  static struct sigaction sa_usr1;
-  static struct sigaction sa_usr2;
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "Signal mask could not be set.", status);
+    abort();
+  }
 
-  /* Install signal handlers */
-  memset (&sa_int, 0, sizeof (sa_int));
-  sa_int.sa_handler = sig_int_handler;
-  sigaction (SIGINT, &sa_int, NULL);
+  status = pthread_create(&receiver, NULL, signal_receiver, NULL);
 
-  memset (&sa_term, 0, sizeof (sa_term));
-  sa_term.sa_handler = sig_term_handler;
-  sigaction (SIGTERM, &sa_term, NULL);
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "A thread could not be created.", status);
+    abort();
+  }
 
-  memset (&sa_pipe, 0, sizeof (sa_pipe));
-  sa_pipe.sa_handler = SIG_IGN;
-  sigaction (SIGPIPE, &sa_pipe, NULL);
+  status = pthread_detach(receiver);
 
-  memset (&sa_pipe, 0, sizeof (sa_usr1));
-  sa_usr1.sa_handler = sig_usr1_handler;
-  sigaction (SIGUSR1, &sa_usr1, NULL);
-
-  memset (&sa_usr2, 0, sizeof (sa_usr2));
-  sa_usr2.sa_handler = sig_usr2_handler;
-  sigaction (SIGUSR2, &sa_usr2, NULL);
-
-} /* }}} void install_signal_handlers */
+  if (status)
+  {
+    RRDD_LOG(LOG_ERR, "%s\nstatus: %d", "A thread could not be detached.", status);
+    abort();
+  }
+}
 
 static int open_pidfile(char *action, int oflag) /* {{{ */
 {
@@ -1824,6 +1902,8 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
+  char *file_copy, *dir, *dir_tmp[PATH_MAX];
+  struct stat st;
   char *tok;
   int ac = 0;
   char *av[128];
@@ -1839,10 +1919,31 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     return syntax_error(sock,cmd);
   /* get full pathname */
   get_abs_path(&file, file_tmp);
+
+  file_copy = strdup(file);
+  if (file_copy == NULL) {
+    return send_response(sock, RESP_ERR, "Cannot create: empty argument.\n");
+  }
   if (!check_file_access(file, sock)) {
     return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
+
+    /* dirname may modify its argument */
+    dir = dirname(file_copy);
+    if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
+        if (!config_allow_recursive_mkdir) {
+            return send_response(sock, RESP_ERR,
+                "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
+                dir);
+        }
+        /* realpath puts the first problematic part in dir_tmp, so we can use
+         * the parent of dir_tmp to stat in order to set a reasonable mode
+         * since dir_tmp is  */
+        if (stat(dirname(dir_tmp), &st) && rrd_mkdir_p(dir, st.st_mode) != 0) {
+            return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        }
+    }
 
   while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
     if( ! strncmp(tok,"-b",2) ) {
@@ -3023,7 +3124,7 @@ static int open_listen_sockets_systemd(void) /* {{{ */
 
     l = sizeof(sa);
     memset(&sa, 0, l);
-    if (getsockname(sd_fd, &sa, &l) < 0)
+    if (getsockname(sd_fd, (struct sockaddr *)&sa, &l) < 0)
     {
       fprintf(stderr, "open_listen_sockets_systemd: problem getting fd %d: %s\n", sd_fd, rrd_strerror (errno));
       return i;
@@ -3255,10 +3356,9 @@ static int daemonize (void) /* {{{ */
     goto error;
   }
 
-  install_signal_handlers();
-
   openlog ("rrdcached", LOG_PID, LOG_DAEMON);
   RRDD_LOG(LOG_INFO, "starting up");
+  install_signal_receiver();
 
   cache_tree = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, NULL,
                                 (GDestroyNotify) free_cache_item);
@@ -3318,7 +3418,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:Bb:p:Fj:a:h?")) != -1)
+  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
   {
     switch (option)
     {
@@ -3505,6 +3605,10 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
+    case 'R':
+        config_allow_recursive_mkdir = 1;
+        break;
+
       case 'B':
         config_write_base_only = 1;
         break;
@@ -3656,6 +3760,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -p <file>     Location of the PID-file.\n"
             "  -b <dir>      Base directory to change to.\n"
             "  -B            Restrict file access to paths within -b <dir>\n"
+            "  -R            Allow recursive directory creation within -b <dir>\n"
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -F            Always flush all updates at shutdown\n"
@@ -3691,6 +3796,10 @@ static int read_options (int argc, char **argv) /* {{{ */
   if (config_write_base_only && config_base_dir == NULL)
     fprintf(stderr, "WARNING: -B does not make sense without -b!\n"
             "  Consult the rrdcached documentation\n");
+
+  if (config_allow_recursive_mkdir && !config_write_base_only)
+      fprintf(stderr, "WARNING: -R does not make sense without -B!\n"
+              "  Consult the rrdcached documentation\n");
 
   if (journal_dir == NULL)
     config_flush_at_shutdown = 1;

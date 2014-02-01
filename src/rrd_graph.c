@@ -337,6 +337,13 @@ int im_free(
     if (im->daemon_addr != NULL)
       free(im->daemon_addr);
 
+    if (im->gdef_map){
+        g_hash_table_destroy(im->gdef_map);        
+    }
+    if (im->rrd_map){
+        g_hash_table_destroy(im->rrd_map);        
+    }
+
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
             /* careful here, because a single pointer can occur several times */
@@ -364,10 +371,17 @@ int im_free(
     if (im->font_options)
         cairo_font_options_destroy(im->font_options);
 
+    if (im->surface)
+        cairo_surface_destroy(im->surface);
+
     if (im->cr) {
         status = cairo_status(im->cr);
         cairo_destroy(im->cr);
     }
+
+    if (status)
+        fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
+                cairo_status_to_string(status));
 
 
     if (im->rendered_image) {
@@ -375,15 +389,9 @@ int im_free(
     }
 
     if (im->layout) {
-        g_object_unref (im->layout);
+        g_object_unref(im->layout);
     }
 
-    if (im->surface)
-        cairo_surface_destroy(im->surface);
-
-    if (status)
-        fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
-                cairo_status_to_string(status));
 
     return 0;
 }
@@ -841,41 +849,27 @@ int data_fetch(
     image_desc_t *im)
 {
     int       i, ii;
-    int       skip;
-
     /* pull the data from the rrd files ... */
     for (i = 0; i < (int) im->gdes_c; i++) {
         /* only GF_DEF elements fetch data */
         if (im->gdes[i].gf != GF_DEF)
             continue;
 
-        skip = 0;
         /* do we have it already ? */
-        for (ii = 0; ii < i; ii++) {
-            if (im->gdes[ii].gf != GF_DEF)
-                continue;
-            if ((strcmp(im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
-                && (im->gdes[i].cf == im->gdes[ii].cf)
-                && (im->gdes[i].cf_reduce == im->gdes[ii].cf_reduce)
-                && (im->gdes[i].start_orig == im->gdes[ii].start_orig)
-                && (im->gdes[i].end_orig == im->gdes[ii].end_orig)
-                && (im->gdes[i].step_orig == im->gdes[ii].step_orig)) {
-                /* OK, the data is already there.
-                 ** Just copy the header portion
-                 */
-                im->gdes[i].start = im->gdes[ii].start;
-                im->gdes[i].end = im->gdes[ii].end;
-                im->gdes[i].step = im->gdes[ii].step;
-                im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
-                im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
-                im->gdes[i].data = im->gdes[ii].data;
-                im->gdes[i].data_first = 0;
-                skip = 1;
-            }
-            if (skip)
-                break;
-        }
-        if (!skip) {
+        gpointer value;
+        char *key = gdes_fetch_key(im->gdes[i]);
+        gboolean ok = g_hash_table_lookup_extended(im->rrd_map,key,NULL,&value);
+        free(key);
+        if (ok){
+            ii = GPOINTER_TO_INT(value);
+            im->gdes[i].start = im->gdes[ii].start;
+            im->gdes[i].end = im->gdes[ii].end;
+            im->gdes[i].step = im->gdes[ii].step;
+            im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
+            im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
+            im->gdes[i].data = im->gdes[ii].data;
+            im->gdes[i].data_first = 0;
+        } else {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
             const char *rrd_daemon;
             int status;
@@ -904,8 +898,19 @@ int data_fetch(
                         &im->gdes[i].ds_cnt,
                         &im->gdes[i].ds_namv,
                         &im->gdes[i].data);
-                if (status != 0)
-                    return (status);
+                if (status != 0) {
+                    if (im->extra_flags & ALLOW_MISSING_DS) {
+                        rrd_clear_error();
+                        if (rrd_fetch_empty(&im->gdes[i].start,
+                                            &im->gdes[i].end,
+                                            &ft_step,
+                                            &im->gdes[i].ds_cnt,
+                                            im->gdes[i].ds_nam,
+                                            &im->gdes[i].ds_namv,
+                                            &im->gdes[i].data) == -1)
+                            return -1;
+                    } else return (status);
+                }
             }
             else
             {
@@ -917,8 +922,19 @@ int data_fetch(
                                 &im->gdes[i].ds_cnt,
                                 &im->gdes[i].ds_namv,
                                 &im->gdes[i].data)) == -1) {
-                    return -1;                      
-                }               
+                    if (im->extra_flags & ALLOW_MISSING_DS) {
+                        /* Unable to fetch data, assume fake data */
+                        rrd_clear_error();
+                        if (rrd_fetch_empty(&im->gdes[i].start,
+                                            &im->gdes[i].end,
+                                            &ft_step,
+                                            &im->gdes[i].ds_cnt,
+                                            im->gdes[i].ds_nam,
+                                            &im->gdes[i].ds_namv,
+                                            &im->gdes[i].data) == -1)
+                            return -1;
+                    } else return -1;
+                }
             }
             im->gdes[i].data_first = 1;
 
@@ -927,7 +943,8 @@ int data_fetch(
                chart and visibility of data will be random */            
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
-                reduce_data(im->gdes[i].cf_reduce,
+                
+                reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
                             &im->gdes[i].end,
@@ -960,29 +977,6 @@ int data_fetch(
  * CDEF stuff
  *************************************************************/
 
-long find_var_wrapper(
-    void *arg1,
-    char *key)
-{
-    return find_var((image_desc_t *) arg1, key);
-}
-
-/* find gdes containing var*/
-long find_var(
-    image_desc_t *im,
-    char *key)
-{
-    long      ii;
-
-    for (ii = 0; ii < im->gdes_c - 1; ii++) {
-        if ((im->gdes[ii].gf == GF_DEF
-             || im->gdes[ii].gf == GF_VDEF || im->gdes[ii].gf == GF_CDEF)
-            && (strcmp(im->gdes[ii].vname, key) == 0)) {
-            return ii;
-        }
-    }
-    return -1;
-}
 
 /* find the greatest common divisor for all the numbers
    in the 0 terminated num array */
@@ -2804,12 +2798,60 @@ void grid_paint(
 
     /* graph labels */
     if (!(im->extra_flags & NOLEGEND) && !(im->extra_flags & ONLY_GRAPH)) {
+        long first_noncomment = im->gdes_c, last_noncomment = 0;
+        /* get smallest and biggest leg_y values. Assumes
+         * im->gdes[i].leg_y is in order. */
+        double min = 0, max = 0;
+        int gotcha = 0;
+        for (i = 0; i < im->gdes_c; i++) {
+            if (im->gdes[i].legend[0] == '\0')
+                continue;
+            if (!gotcha) {
+                min = im->gdes[i].leg_y;
+                gotcha = 1;
+            }
+            if (im->gdes[i].gf != GF_COMMENT) {
+                if (im->legenddirection == BOTTOM_UP2)
+                    min = im->gdes[i].leg_y;
+                first_noncomment = i;
+                break;
+            }
+        }
+        gotcha = 0;
+        for (i = im->gdes_c - 1; i >= 0; i--) {
+            if (im->gdes[i].legend[0] == '\0')
+                continue;
+            if (!gotcha) {
+                max = im->gdes[i].leg_y;
+                gotcha = 1;
+            }
+            if (im->gdes[i].gf != GF_COMMENT) {
+                if (im->legenddirection == BOTTOM_UP2)
+                    max = im->gdes[i].leg_y;
+                last_noncomment = i;
+                break;
+            }
+        }
         for (i = 0; i < im->gdes_c; i++) {
             if (im->gdes[i].legend[0] == '\0')
                 continue;
             /* im->gdes[i].leg_y is the bottom of the legend */
             X0 = im->xOriginLegend + im->gdes[i].leg_x;
-            Y0 = im->legenddirection == TOP_DOWN ? im->yOriginLegend + im->gdes[i].leg_y : im->yOriginLegend + im->legendheight - im->gdes[i].leg_y;
+            int reverse = 0;
+            switch (im->legenddirection) {
+                case TOP_DOWN:
+                    reverse = 0;
+                    break;
+                case BOTTOM_UP:
+                    reverse = 1;
+                    break;
+                case BOTTOM_UP2:
+                    reverse = i >= first_noncomment && i <= last_noncomment;
+                    break;
+            }
+            Y0 = reverse ?
+                im->yOriginLegend + max + min - im->gdes[i].leg_y :
+                im->yOriginLegend + im->gdes[i].leg_y;
             gfx_text(im, X0, Y0,
                      im->graph_col[GRC_FONT],
                      im->
@@ -4003,6 +4045,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].rrd[0] = '\0';
     im->gdes[im->gdes_c - 1].ds = -1;
     im->gdes[im->gdes_c - 1].cf_reduce = CF_AVERAGE;
+    im->gdes[im->gdes_c - 1].cf_reduce_set = 0;    
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;
@@ -4176,11 +4219,17 @@ rrd_info_t *rrd_graph_v(
      ** Also, if needed, print a line with information about the image.
      */
 
-    if (im.imginfo) {
+    if (im.imginfo && *im.imginfo) {
         rrd_infoval_t info;
         char     *path;
         char     *filename;
 
+        if (bad_format_imginfo(im.imginfo)) {
+            rrd_info_free(im.grinfo);
+            im_free(&im);
+            rrd_set_error("bad format for imginfo");
+            return NULL;
+        }
         path = strdup(im.graphfile);
         filename = basename(path);
         info.u_str =
@@ -4237,6 +4286,8 @@ void rrd_graph_init(
 #ifdef HAVE_TZSET
     tzset();
 #endif
+    im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
@@ -4317,7 +4368,7 @@ void rrd_graph_init(
         fontmap = pango_cairo_font_map_get_default();
     }
 
-    context =  pango_cairo_font_map_create_context((PangoCairoFontMap*)fontmap);
+    context =  pango_font_map_create_context(fontmap);
 
     pango_cairo_context_set_resolution(context, 100);
 
@@ -4405,6 +4456,7 @@ void rrd_graph_options(
         { "alt-y-grid",         no_argument,       0, 'Y'},
         { "y-grid",             required_argument, 0, 'y'},
         { "lazy",               no_argument,       0, 'z'},
+        { "use-nan-for-all-missing-data", no_argument,       0, 'Z'},
         { "units",              required_argument, 0, LONGOPT_UNITS_SI},
         { "alt-y-mrtg",         no_argument,       0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
         { "disable-rrdtool-tag",no_argument,       0, 1001},
@@ -4433,7 +4485,7 @@ void rrd_graph_options(
         int       col_start, col_end;
 
         opt = getopt_long(argc, argv,
-                          "Aa:B:b:c:Dd:Ee:Ff:G:gh:IiJjL:l:Mm:Nn:oPR:rS:s:T:t:u:v:W:w:X:x:Yy:z",
+                          "Aa:B:b:c:Dd:Ee:Ff:G:gh:IiJjL:l:Mm:Nn:oPR:rS:s:T:t:u:v:W:w:X:x:Yy:Zz",
                           long_options, &option_index);
         if (opt == EOF)
             break;
@@ -4459,6 +4511,9 @@ void rrd_graph_options(
         case 'g':
             im->extra_flags |= NOLEGEND;
             break;
+        case 'Z':
+            im->extra_flags |= ALLOW_MISSING_DS;
+            break;
         case 1005:
             if (strcmp(optarg, "north") == 0) {
                 im->legendposition = NORTH;
@@ -4478,6 +4533,8 @@ void rrd_graph_options(
                 im->legenddirection = TOP_DOWN;
             } else if (strcmp(optarg, "bottomup") == 0) {
                 im->legenddirection = BOTTOM_UP;
+            } else if (strcmp(optarg, "bottomup2") == 0) {
+                im->legenddirection = BOTTOM_UP2;
             } else {
                 rrd_set_error("unknown legend-position '%s'", optarg);
                 return;
@@ -4997,6 +5054,51 @@ int bad_format(
         }
 
     return (n != 1);
+}
+
+
+int bad_format_imginfo(
+    char *fmt)
+{
+    char     *ptr;
+    int       n = 0;
+
+    ptr = fmt;
+    while (*ptr != '\0')
+        if (*ptr++ == '%') {
+
+            /* line cannot end with percent char */
+            if (*ptr == '\0')
+                return 1;
+            /* '%%' is allowed */
+            if (*ptr == '%')
+                ptr++;
+            /* '%s', '%S' are allowed */
+            else if (*ptr == 's' || *ptr == 'S') {
+                n = 1;
+                ptr++;
+            }
+
+            /* or else '% 4lu' and such are allowed */
+            else {
+                /* optional padding character */
+                if (*ptr == ' ')
+                    ptr++;
+                /* This should take care of 'm' */
+                while (*ptr >= '0' && *ptr <= '9')
+                    ptr++;
+                /* 'lu' must follow here */
+                if (*ptr++ != 'l')
+                    return 1;
+                if (*ptr == 'u')
+                    ptr++;
+                else
+                    return 1;
+                n++;
+            }
+        }
+
+    return (n != 3);
 }
 
 

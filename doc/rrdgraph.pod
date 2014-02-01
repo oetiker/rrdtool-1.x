@@ -287,11 +287,13 @@ behavior of pre 1.0.42 versions).
 Place the legend at the given side of the graph. The default is south.
 In west or east position it is necessary to add line breaks manually.
 
-[B<--legend-direction>=(topdown|bottomup)]
+[B<--legend-direction>=(topdown|bottomup|bottomup2)]
 
 Place the legend items in the given vertical order. The default is topdown.
 Using bottomup the legend items appear in the same vertical order as a
-stack of lines or areas.
+stack of lines or areas. Using bottomup2 will keep leading and trailing
+COMMENT lines in order, this might be useful for generators that use them
+for table headers and the like.
 
 =head2 Miscellaneous
 
@@ -487,6 +489,12 @@ measurement, 1 kb/s is 1000 b/s.
 
 Adds the given string as a watermark, horizontally centered, at the bottom 
 of the graph.
+
+[B<-Z>|B<--use-nan-for-all-missing-data>]
+
+If one DS is missing, either because the RRD is not available or
+because it does not contain the requested DS name, just assume that we
+got empty values instead of raising a fatal error.
 
 =head2 Data and variables
 

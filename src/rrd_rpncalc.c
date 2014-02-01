@@ -331,6 +331,7 @@ rpnp_t   *rpn_parse(
              rpnp[steps].op = VV; \
              rpnp[steps].ptr = (*lookup)(key_hash,vname); \
              if (rpnp[steps].ptr < 0) { \
+                           rrd_set_error("variable '%s' not found",vname);\
 			   free(rpnp); \
 			   return NULL; \
 			 } else expr+=length; \
@@ -397,6 +398,7 @@ rpnp_t   *rpn_parse(
         }
 
         else {
+            rrd_set_error("don't undestand '%s'",expr);
             setlocale(LC_NUMERIC, old_locale);
             free(rpnp);
             return NULL;
@@ -422,7 +424,7 @@ void rpnstack_init(
 {
     rpnstack->s = NULL;
     rpnstack->dc_stacksize = 0;
-    rpnstack->dc_stackblock = 100;
+    rpnstack->dc_stackblock = 1000;
 }
 
 void rpnstack_free(
@@ -465,7 +467,7 @@ short rpn_calc(
     int output_idx)
 {
     int       rpi;
-    long      stptr = -1;
+    long      stptr = -1;    
 
     /* process each op from the rpn in turn */
     for (rpi = 0; rpnp[rpi].op != OP_END; rpi++) {

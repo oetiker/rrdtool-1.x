@@ -9,13 +9,15 @@ if STATIC_PROGRAMS
 AM_LDFLAGS = -all-static
 endif
 
-INCLUDES = -DLOCALEDIR="\"$(datadir)/locale\""
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
-AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
-AM_CFLAGS = @CFLAGS@
+AM_CPPFLAGS = -DLOCALEDIR="\"$(datadir)/locale\"" \
+	-DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" \
+	-DNUMVERS=@NUMVERS@
+AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
 ## no including this by default @WERROR@
 
 UPD_C_FILES =		\
+	mutex.c		\
 	rrd_create.c	\
 	hash_32.c	\
 	rrd_parsetime.c	\
@@ -56,6 +58,7 @@ endif
 noinst_HEADERS = \
 	unused.h \
         gettext.h \
+	mutex.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
@@ -132,3 +135,6 @@ librrd.sym: librrd.sym.in
 
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && $(LN_S) rrdupdate rrdcreate && $(LN_S) rrdupdate rrdinfo) || true
+
+distclean-local:
+	-rm -rf rrd_config.h librrd.sym

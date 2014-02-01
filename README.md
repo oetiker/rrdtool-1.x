@@ -1,6 +1,10 @@
 RRDtool - Round Robin Database Tool
 ===================================
 
+RRDTool 1.x master build status: [![Build Status](https://travis-ci.org/oetiker/rrdtool-1.x.png?branch=1.4)](https://travis-ci.org/oetiker/rrdtool-1.x)
+
+RRDtool 1.4.x build status: [![Build Status](https://travis-ci.org/oetiker/rrdtool-1.x.png?branch=master)](https://travis-ci.org/oetiker/rrdtool-1.x)
+
 RRDtool is a little program for easily maintaining a database of time-series
 data. It comes with a charting program for drawing pretty graphs based on
 the data stored.

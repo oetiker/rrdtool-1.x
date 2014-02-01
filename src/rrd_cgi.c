@@ -9,11 +9,6 @@
 #include <stdlib.h>
 #endif
 
-#ifdef WIN32
-   #define strcasecmp stricmp
-   #define strcasencmp strnicmp
-#endif
-
 #define MEMBLK 1024
 /*#define DEBUG_PARSER
 #define DEBUG_VARS*/
@@ -435,7 +430,7 @@ static int readfile(
                   (totalcnt - writecnt) * sizeof(char), input);
         if (writecnt >= totalcnt) {
             totalcnt += MEMBLK;
-            if (((*buffer) =
+            if (((*buffer) = (char *)
                  rrd_realloc((*buffer),
                              (totalcnt + 4) * sizeof(char))) == NULL) {
                 perror("Realloc Buffer:");
@@ -589,7 +584,7 @@ char     *rrdsetenv(
 {
     if (argc >= 2) {
         const size_t len = strlen(args[0]) + strlen(args[1]) + 2;
-        char *xyz = malloc(len);
+        char *xyz = (char *) malloc(len);
 
         if (xyz == NULL) {
             return stralloc("[ERROR: allocating setenv buffer]");
@@ -783,7 +778,7 @@ char     *includefile(
         readfile(filename, &buffer, 0);
         if (rrd_test_error()) {
             const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = malloc(len);
+            char *err = (char *) malloc(len);
 
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
@@ -837,7 +832,7 @@ char     *cgigetq(
         for (c = buf; *c != '\0'; c++)
             if (*c == '"')
                 qc++;
-        if ((buf2 = malloc((strlen(buf) + 4 * qc + 4))) == NULL) {
+        if ((buf2 = (char *) malloc((strlen(buf) + 4 * qc + 4))) == NULL) {
             perror("Malloc Buffer");
             exit(1);
         };
@@ -883,7 +878,7 @@ char     *cgigetqp(
         return NULL;
     }
 
-    buf2 = malloc(strlen(buf) + 1);
+    buf2 = (char *) malloc(strlen(buf) + 1);
     if (!buf2) {
         perror("cgigetqp(): Malloc Path Buffer");
         exit(1);
@@ -950,7 +945,7 @@ char     *drawgraph(
     } else {
         if (rrd_test_error()) {
             const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = malloc(len);
+            char *err = (char *) malloc(len);
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
             return err;
@@ -983,7 +978,7 @@ char     *printtimelast(
     char     *buf;
 
     if (argc == 2) {
-        buf = malloc(255);
+        buf = (char *) malloc(255);
         if (buf == NULL) {
             return stralloc("[ERROR: allocating strftime buffer]");
         };
@@ -993,7 +988,7 @@ char     *printtimelast(
         last = rrd_last(argc, (char **) args - 1);
         if (rrd_test_error()) {
             const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = malloc(len);
+            char *err = (char *) malloc(len);
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
             return err;
@@ -1014,7 +1009,7 @@ char     *printtimenow(
     char     *buf;
 
     if (argc == 1) {
-        buf = malloc(255);
+        buf = (char *) malloc(255);
         if (buf == NULL) {
             return stralloc("[ERROR: allocating strftime buffer]");
         };
@@ -1158,7 +1153,7 @@ char     *scanargs(
         if (argc == argsz) {
             /* resize argument array */
             argsz *= 2;
-            argv = rrd_realloc(argv, argsz * sizeof(char *));
+            argv = (char **) rrd_realloc(argv, argsz * sizeof(char *));
             if (*argv == NULL) {
                 return NULL;
             }
@@ -1275,7 +1270,7 @@ int parse(
         /* make sure we do not shrink the mallocd block */
         size_t    newbufsize = i + strlen(end) + valln + 1;
 
-        *buf = rrd_realloc(*buf, newbufsize);
+        *buf = (char *) rrd_realloc(*buf, newbufsize);
 
         if (*buf == NULL) {
             perror("Realoc buf:");

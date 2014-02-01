@@ -4,16 +4,13 @@
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(HAVE_CONFIG_H)
-#include "../win32/config.h"
+#include "rrd_config.h"
+
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
 #include <fcntl.h>
-#else
-#ifdef HAVE_CONFIG_H
-#include "../rrd_config.h"
-#endif
 #endif
 
 #include "rrd_tool.h"
@@ -169,6 +166,7 @@ void PrintUsage(
            "\t\t[--border width\n"
            "\t\t[-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
+           "\t\t[-Z|--use-nan-for-all-missing-data]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     const char *help_graph3 =
         N_("\t\t[CDEF:vname=rpn-expression]\n"
@@ -376,7 +374,7 @@ static char *fgetslong(
 
     if (feof(stream))
         return *aLinePtr = 0;
-    if (!(linebuf = malloc(bufsize))) {
+    if (!(linebuf = (char *) malloc(bufsize))) {
         perror("fgetslong: malloc");
         exit(1);
     }
@@ -386,7 +384,7 @@ static char *fgetslong(
         if (linebuf[eolpos - 1] == '\n')
             return *aLinePtr = linebuf;
         bufsize += MAX_LENGTH;
-        if (!(linebuf = realloc(linebuf, bufsize))) {
+        if (!(linebuf = (char *) realloc(linebuf, bufsize))) {
             free(linebuf);
             perror("fgetslong: realloc");
             exit(1);
@@ -536,9 +534,6 @@ int HandleInputLine(
     DIR      *curdir;   /* to read current dir with ls */
     struct dirent *dent;
 #endif
-#if defined(HAVE_SYS_STAT_H)
-    struct stat st;
-#endif
 
     /* Reset errno to 0 before we start.
      */
@@ -550,7 +545,7 @@ int HandleInputLine(
             }
             exit(0);
         }
-#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR)
+#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR) && defined(HAVE_SYS_STAT_H)
         if (argc > 1 && strcmp("cd", argv[1]) == 0) {
             if (argc != 3) {
                 printf("ERROR: invalid parameter count for cd\n");
@@ -610,6 +605,7 @@ int HandleInputLine(
                 return (1);
             }
             if ((curdir = opendir(".")) != NULL) {
+                struct stat st;
                 while ((dent = readdir(curdir)) != NULL) {
                     if (!stat(dent->d_name, &st)) {
                         if (S_ISDIR(st.st_mode)) {
@@ -768,10 +764,8 @@ int HandleInputLine(
 #endif
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
-#ifndef WIN32
     else if (strcmp("flushcached", argv[1]) == 0)
         rrd_flushcached(argc - 1, &argv[1]);
-#endif
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }
