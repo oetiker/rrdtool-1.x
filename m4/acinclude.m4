@@ -358,7 +358,9 @@ int main(void){
     if (! rrdinf > 0) {printf ("not inf > 0 ... "); return 1;}
     if (! -rrdinf < 0) {printf ("not -inf < 0 ... "); return 1;}
     return 0;
- }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[:])])
+ }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[$as_echo_n "(skipped ... cross-compiling) " >&6
+  # Bypass further checks
+  rd_cv_ieee_works=yes])])
 dnl these we run regardles is cached or not
 if test x${rd_cv_ieee_$2} = "xyes"; then
  AC_MSG_RESULT(yes)

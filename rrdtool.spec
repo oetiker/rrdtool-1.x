@@ -10,7 +10,7 @@
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.4.7
+Version: 1.4.8
 Release: 1%{?dist}
 License: GPLv2+ with exceptions
 Group: Applications/Databases
@@ -277,9 +277,6 @@ make DESTDIR="$RPM_BUILD_ROOT" install
 extension=rrdtool.so
 __EOF__
 %endif
-
-# Dunno why this is getting installed here...
-%{__rm} -f $RPM_BUILD_ROOT%{perl_vendorarch}/../leaktest.pl
 
 # We only want .txt and .html files for the main documentation
 %{__mkdir_p} doc2/html doc2/txt

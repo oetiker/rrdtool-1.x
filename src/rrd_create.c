@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.7  Copyright by Tobi Oetiker, 1997-2012
+ * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  *****************************************************************************
  * rrd_create.c  creates new rrds
  *****************************************************************************/
@@ -11,6 +11,8 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
+#include "rrd_client.h"
+#include "../rrd_config.h"
 
 #include "rrd_is_thread_safe.h"
 static int opt_no_overwrite = 0;
@@ -441,6 +443,12 @@ int rrd_create_r(
                         row_cnt = atoi(token);
                         if (row_cnt <= 0)
                             rrd_set_error("Invalid row count: %i", row_cnt);
+#if SIZEOF_TIME_T == 4
+                        if ((long long) pdp_step * rrd.rra_def[rrd.stat_head->rra_cnt].pdp_cnt * row_cnt > 4294967296LL){
+                            /* database timespan > 2**32, would overflow time_t */
+                            rrd_set_error("The time spanned by the database is too large: must be <= 4294967296 seconds");
+                        }
+#endif
                         rrd.rra_def[rrd.stat_head->rra_cnt].row_cnt = row_cnt;
                         break;
                     }

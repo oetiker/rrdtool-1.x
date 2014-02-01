@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.4.7  Copyright by Tobi Oetiker, 1997-2012
+ * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  ****************************************************************************
  * rrd_rpncalc.c  RPN calculator functions
  ****************************************************************************/
@@ -331,6 +331,7 @@ rpnp_t   *rpn_parse(
              rpnp[steps].op = VV; \
              rpnp[steps].ptr = (*lookup)(key_hash,vname); \
              if (rpnp[steps].ptr < 0) { \
+                           rrd_set_error("variable '%s' not found",vname);\
 			   free(rpnp); \
 			   return NULL; \
 			 } else expr+=length; \
@@ -396,6 +397,7 @@ rpnp_t   *rpn_parse(
         }
 
         else {
+            rrd_set_error("don't undestand '%s'",expr);
             setlocale(LC_NUMERIC, old_locale);
             free(rpnp);
             return NULL;

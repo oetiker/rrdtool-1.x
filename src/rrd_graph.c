@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.4.7  Copyright by Tobi Oetiker, 1997-2012
+ * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
@@ -318,6 +318,14 @@ int im_free(
 
     if (im->daemon_addr != NULL)
       free(im->daemon_addr);
+
+    if (im->gdef_map){
+        g_hash_table_destroy(im->gdef_map);        
+    }
+
+    if (im->rrd_map){
+        g_hash_table_destroy(im->rrd_map);        
+    }
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
@@ -823,7 +831,6 @@ int data_fetch(
     image_desc_t *im)
 {
     int       i, ii;
-    int       skip;
 
     /* pull the data from the rrd files ... */
     for (i = 0; i < (int) im->gdes_c; i++) {
@@ -831,33 +838,21 @@ int data_fetch(
         if (im->gdes[i].gf != GF_DEF)
             continue;
 
-        skip = 0;
         /* do we have it already ? */
-        for (ii = 0; ii < i; ii++) {
-            if (im->gdes[ii].gf != GF_DEF)
-                continue;
-            if ((strcmp(im->gdes[i].rrd, im->gdes[ii].rrd) == 0)
-                && (im->gdes[i].cf == im->gdes[ii].cf)
-                && (im->gdes[i].cf_reduce == im->gdes[ii].cf_reduce)
-                && (im->gdes[i].start_orig == im->gdes[ii].start_orig)
-                && (im->gdes[i].end_orig == im->gdes[ii].end_orig)
-                && (im->gdes[i].step_orig == im->gdes[ii].step_orig)) {
-                /* OK, the data is already there.
-                 ** Just copy the header portion
-                 */
-                im->gdes[i].start = im->gdes[ii].start;
-                im->gdes[i].end = im->gdes[ii].end;
-                im->gdes[i].step = im->gdes[ii].step;
-                im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
-                im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
-                im->gdes[i].data = im->gdes[ii].data;
-                im->gdes[i].data_first = 0;
-                skip = 1;
-            }
-            if (skip)
-                break;
-        }
-        if (!skip) {
+        gpointer value;
+        char *key = gdes_fetch_key(im->gdes[i]);
+        gboolean ok = g_hash_table_lookup_extended(im->rrd_map,key,NULL,&value);
+        free(key);
+        if (ok){
+            ii = GPOINTER_TO_INT(value);
+            im->gdes[i].start = im->gdes[ii].start;
+            im->gdes[i].end = im->gdes[ii].end;
+            im->gdes[i].step = im->gdes[ii].step;
+            im->gdes[i].ds_cnt = im->gdes[ii].ds_cnt;
+            im->gdes[i].ds_namv = im->gdes[ii].ds_namv;
+            im->gdes[i].data = im->gdes[ii].data;
+            im->gdes[i].data_first = 0;
+        } else {
             unsigned long ft_step = im->gdes[i].step;   /* ft_step will record what we got from fetch */
 
             /* Flush the file if
@@ -952,16 +947,16 @@ long find_var(
     image_desc_t *im,
     char *key)
 {
-    long      ii;
-
-    for (ii = 0; ii < im->gdes_c - 1; ii++) {
-        if ((im->gdes[ii].gf == GF_DEF
-             || im->gdes[ii].gf == GF_VDEF || im->gdes[ii].gf == GF_CDEF)
-            && (strcmp(im->gdes[ii].vname, key) == 0)) {
-            return ii;
-        }
+    long match = -1;
+    gpointer value;
+    gboolean ok = g_hash_table_lookup_extended(im->gdef_map,key,NULL,&value);
+    if (ok){
+        match = GPOINTER_TO_INT(value);
     }
-    return -1;
+
+    /* printf("%s -> %ld\n",key,match); */
+
+    return match;    
 }
 
 /* find the greatest common divisor for all the numbers
@@ -3964,6 +3959,8 @@ int rrd_graph(
 }
 
 
+static int bad_format_imginfo( char *fmt);
+
 /* Some surgery done on this function, it became ridiculously big.
 ** Things moved:
 ** - initializing     now in rrd_graph_init()
@@ -4036,6 +4033,12 @@ rrd_info_t *rrd_graph_v(
         char     *path;
         char     *filename;
 
+        if (bad_format_imginfo(im.imginfo)) {
+            rrd_info_free(im.grinfo);
+            im_free(&im);
+            rrd_set_error("bad format for imginfo");
+            return NULL;
+        }
         path = strdup(im.graphfile);
         filename = basename(path);
         info.u_str =
@@ -4089,7 +4092,8 @@ void rrd_graph_init(
 #ifdef HAVE_TZSET
     tzset();
 #endif
-
+    im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
     im->base = 1000;
     im->daemon_addr = NULL;
     im->draw_x_grid = 1;
@@ -4841,6 +4845,51 @@ int bad_format(
         }
 
     return (n != 1);
+}
+
+
+static int bad_format_imginfo(
+    char *fmt)
+{
+    char     *ptr;
+    int       n = 0;
+
+    ptr = fmt;
+    while (*ptr != '\0')
+        if (*ptr++ == '%') {
+
+            /* line cannot end with percent char */
+            if (*ptr == '\0')
+                return 1;
+            /* '%%' is allowed */
+            if (*ptr == '%')
+                ptr++;
+            /* '%s', '%S' are allowed */
+            else if (*ptr == 's' || *ptr == 'S') {
+                n = 1;
+                ptr++;
+            }
+
+            /* or else '% 4lu' and such are allowed */
+            else {
+                /* optional padding character */
+                if (*ptr == ' ')
+                    ptr++;
+                /* This should take care of 'm' */
+                while (*ptr >= '0' && *ptr <= '9')
+                    ptr++;
+                /* 'lu' must follow here */
+                if (*ptr++ != 'l')
+                    return 1;
+                if (*ptr == 'u')
+                    ptr++;
+                else
+                    return 1;
+                n++;
+            }
+        }
+
+    return (n != 3);
 }
 
 

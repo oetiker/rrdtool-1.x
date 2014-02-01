@@ -47,6 +47,8 @@
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
 #define FORCE_UTC_TIME  0x800   /* Work in UTC timezone instead of localtimg */
 
+#define gdes_fetch_key(x)  sprintf_alloc("%s:%d:%d:%d:%d",x.rrd,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig)
+
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
 };
@@ -286,6 +288,8 @@ typedef struct image_desc_t {
     PangoLayout *layout; /* the pango layout we use for writing fonts */
     rrd_info_t *grinfo; /* root pointer to extra graph info */
     rrd_info_t *grinfo_current; /* pointing to current entry */
+    GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
+    GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
 } image_desc_t;
 
 /* Prototypes */

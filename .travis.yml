@@ -1,0 +1,14 @@
+language: c
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev
+
+before_script:
+  - ./MakeMakefile
+
+script:
+  - ./configure
+  - make
+  - cd src
+  - ./rrdtool

@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.7  Copyright by Tobi Oetiker, 1997-2012
+ * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  *****************************************************************************
  * rrd_open.c  Open an RRD File
  *****************************************************************************
@@ -222,20 +222,19 @@ rrd_file_t *rrd_open(
     } else {
         rrd_file->file_len = newfile_size;
 #ifdef HAVE_POSIX_FALLOCATE
-        if (posix_fallocate(rrd_simple_file->fd, 0, newfile_size) == -1) {
-            rrd_set_error("posix_fallocate '%s': %s", file_name,
-                          rrd_strerror(errno));
-            goto out_close;
+        if (posix_fallocate(rrd_simple_file->fd, 0, newfile_size) == 0){
+            /* if all  is well we skip the seeking below */            
+            goto no_lseek_necessary;        
         }
-#else
+#endif
         lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET);
         if ( write(rrd_simple_file->fd, "\0", 1) == -1){    /* poke */
             rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
         lseek(rrd_simple_file->fd, 0, SEEK_SET);
-#endif
     }
+    no_lseek_necessary:
 #ifdef HAVE_POSIX_FADVISE
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.

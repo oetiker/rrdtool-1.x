@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.7  Copyright by Tobi Oetiker, 1997-2012
+ * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -49,7 +49,7 @@ void PrintUsage(
 
     const char *help_main =
         N_("RRDtool %s"
-           "  Copyright 1997-2012 by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "  Copyright 1997-2013 by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n");
 
@@ -737,7 +737,7 @@ int HandleInputLine(
                 printf("  <%s>\n", META_TAG);
             }
             else {
-                printf("{ about: 'RRDtool xport JSON output',\n  meta: {\n");
+                printf("{ \"about\": \"RRDtool xport JSON output\",\n  \"meta\": {\n");
             }
 
 
@@ -766,7 +766,7 @@ int HandleInputLine(
                 char     *entry = NULL;
                 entry = legend_v[j];
                 if (json){
-                    printf("      '%s'", entry);
+                    printf("      \"%s\"", entry);
                     if (j < col_cnt -1){
                         printf(",");
                     }
@@ -804,7 +804,7 @@ int HandleInputLine(
                     rrd_value_t newval = DNAN;
                     newval = *ptr;
                     if (json){
-                        if (isnan(newval)){
+                        if (isnan(newval) || isinf(newval)){
                             printf("null");                        
                         } else {
                             printf("%0.10e",newval);
