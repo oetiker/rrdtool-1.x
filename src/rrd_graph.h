@@ -228,7 +228,7 @@ typedef struct image_desc_t {
     double    second_axis_shift; /* how much is it shifted vs the first axis */
     char      second_axis_legend[210]; /* label to put on the seond axis */
     char      second_axis_format[210]; /* format for the numbers on the scond axis */    
-
+    char      primary_axis_format[210]; /* format for the numbers on the primary axis */
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
     double    tabwidth; /* tabwdith */
