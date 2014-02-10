@@ -136,6 +136,7 @@ void PrintUsage(
     const char *help_graph1 =
         N_("\t\t[-x|--x-grid x-axis grid and label]\n"
            "\t\t[-Y|--alt-y-grid] [--full-size-mode]\n"
+           "\t\t[--left-axis-format format]\n"
            "\t\t[-y|--y-grid y-axis grid and label]\n"
            "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
            "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"

@@ -213,6 +213,12 @@ If you have set --y-grid to 'none' not only the labels get suppressed, also
 the space reserved for the labels is removed. You can still add space
 manually if you use the --units-length command to explicitly reserve space.
 
+[B<--left-axis-format> I<format-string>]
+
+By default the format of the axis labels gets determined automatically. If
+you want to do this your self, use this option with the same %lf arguments
+you know from the PRINT and GPRINT commands.
+
 [B<-Y>|B<--alt-y-grid>]
 
 Place the Y grid dynamically based on the graph's Y range. The algorithm
