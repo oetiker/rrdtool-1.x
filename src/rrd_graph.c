@@ -2057,34 +2057,44 @@ int draw_horizontal_grid(
                 || (nlabels == 1
                     && (YN < im->yorigin - im->ysize || YN > im->yorigin))) {
                 if (im->symbol == ' ') {
-                    if (im->extra_flags & ALTYGRID) {
-                        sprintf(graph_label,
-                                im->ygrid_scale.labfmt,
-                                scaledstep * (double) i);
-                    } else {
-                        if (MaxY < 10) {
-                            sprintf(graph_label, "%4.1f",
+                    if (im->primary_axis_format[0] == '\0'){
+                        if (im->extra_flags & ALTYGRID) {
+                            sprintf(graph_label,
+                                    im->ygrid_scale.labfmt,
                                     scaledstep * (double) i);
                         } else {
-                            sprintf(graph_label, "%4.0f",
-                                    scaledstep * (double) i);
+                            if (MaxY < 10) {
+                                sprintf(graph_label, "%4.1f",
+                                        scaledstep * (double) i);
+                            } else {
+                                sprintf(graph_label, "%4.0f",
+                                        scaledstep * (double) i);
+                            }
                         }
+                    } else {
+                        sprintf(graph_label, im->primary_axis_format,
+                                scaledstep * (double) i);
                     }
                 } else {
                     char      sisym = (i == 0 ? ' ' : im->symbol);
-
-                    if (im->extra_flags & ALTYGRID) {
-                        sprintf(graph_label,
-                                im->ygrid_scale.labfmt,
-                                scaledstep * (double) i, sisym);
-                    } else {
-                        if (MaxY < 10) {
-                            sprintf(graph_label, "%4.1f %c",
+                    
+                    if (im->primary_axis_format[0] == '\0'){
+                        if (im->extra_flags & ALTYGRID) {
+                            sprintf(graph_label,
+                                    im->ygrid_scale.labfmt,
                                     scaledstep * (double) i, sisym);
                         } else {
-                            sprintf(graph_label, "%4.0f %c",
-                                    scaledstep * (double) i, sisym);
+                            if (MaxY < 10) {
+                                sprintf(graph_label, "%4.1f %c",
+                                        scaledstep * (double) i, sisym);
+                            } else {
+                                sprintf(graph_label, "%4.0f %c",
+                                        scaledstep * (double) i, sisym);
+                            }
                         }
+                    } else {
+                        sprintf(graph_label, im->primary_axis_format,
+                                scaledstep * (double) i, sisym);
                     }
                 }
                 nlabels++;
@@ -4263,6 +4273,7 @@ void rrd_graph_options(
         { "border",             required_argument, 0, 1007},
         { "grid-dash",          required_argument, 0, 1008},
         { "dynamic-labels",     no_argument,       0, 1009},
+        { "left-axis-format",   required_argument, 0, 1010},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4474,6 +4485,14 @@ void rrd_graph_options(
             }
             strncpy(im->second_axis_format,optarg,150);
             im->second_axis_format[150]='\0';
+            break;
+        case 1010:
+            if (bad_format(optarg)){
+                rrd_set_error("use either %le or %lf formats");
+                return;
+            }
+            strncpy(im->primary_axis_format,optarg,150);
+            im->primary_axis_format[150]='\0';
             break;
         case 'v':
             strncpy(im->ylegend, optarg, 150);
