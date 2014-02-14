@@ -185,6 +185,8 @@ void rpn_compact2str(
             add_op(OP_AVG, AVG)
             add_op(OP_ABS, ABS)
             add_op(OP_ADDNAN, ADDNAN)
+            add_op(OP_MINNAN, MINNAN)
+            add_op(OP_MAXNAN, MAXNAN)
 #undef add_op
     }
     (*str)[offset] = '\0';
@@ -388,6 +390,8 @@ rpnp_t   *rpn_parse(
             match_op(OP_AVG, AVG)
             match_op(OP_ABS, ABS)
             match_op(OP_ADDNAN, ADDNAN)
+            match_op(OP_MINNAN, MINNAN)
+            match_op(OP_MAXNAN, MAXNAN)
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
                      && ((rpnp[steps].ptr = (*lookup) (key_hash, vname)) !=
@@ -735,11 +739,29 @@ short rpn_calc(
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr];
             stptr--;
             break;
+        case OP_MINNAN:
+            stackunderflow(1);
+            if (isnan(rpnstack->s[stptr - 1]))
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            else if (isnan(rpnstack->s[stptr]));
+            else if (rpnstack->s[stptr - 1] > rpnstack->s[stptr])
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            stptr--;
+            break;
         case OP_MAX:
             stackunderflow(1);
             if (isnan(rpnstack->s[stptr - 1]));
             else if (isnan(rpnstack->s[stptr]))
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            else if (rpnstack->s[stptr - 1] < rpnstack->s[stptr])
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            stptr--;
+            break;
+        case OP_MAXNAN:
+            stackunderflow(1);
+            if (isnan(rpnstack->s[stptr - 1]))
+                rpnstack->s[stptr - 1] = rpnstack->s[stptr];
+            else if (isnan(rpnstack->s[stptr]));
             else if (rpnstack->s[stptr - 1] < rpnstack->s[stptr])
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr];
             stptr--;

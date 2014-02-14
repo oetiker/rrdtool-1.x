@@ -79,6 +79,12 @@ respectively.  Note that I<infinite> is larger than anything else.
 If one of the input numbers is I<unknown> then the result of the operation will be
 I<unknown> too.
 
+B<MINNAN, MAXNAN>
+
+NAN-safe version of MIN and MAX. If one of the input numbers is I<unknown>
+then the result of the operation will be the other one. If both are
+I<unknown>, then the result of the operation is I<unknown>.
+
 B<LIMIT>
 
 Pops two elements from the stack and uses them to define a range.
