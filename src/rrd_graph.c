@@ -4153,6 +4153,7 @@ void rrd_graph_init(
     im->second_axis_shift = 0; /* no shift by default */
     im->second_axis_legend[0] = '\0';
     im->second_axis_format[0] = '\0';
+    im->primary_axis_format[0] = '\0';
     im->yorigin = 0;
     im->yOriginLegend = 0;
     im->yOriginLegendY = 0;
