@@ -1162,8 +1162,6 @@ static rrd_t *parse_file(
 
     if (expect_element(reader,"rrd") != 0) {
         xmlFreeTextReader(reader);
-
-	if (sctx != NULL) free(sctx);
         return (NULL);
     }
 
