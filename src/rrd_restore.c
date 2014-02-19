@@ -49,7 +49,8 @@ static xmlChar* get_xml_element (
     xmlTextReaderPtr reader
     )
 {
-    while(xmlTextReaderRead(reader)){
+    int rc;
+    while((rc = xmlTextReaderRead(reader)) == 1){
         int type;
         xmlChar *name;
         type = xmlTextReaderNodeType(reader);
@@ -78,7 +79,36 @@ static xmlChar* get_xml_element (
         /* all seems well, return the happy news */
         return name;
     }
-    rrd_set_error("the xml ended while we were looking for an element");
+    if (rc == 0) {
+	rrd_set_error("the xml ended while we were looking for an element");
+    } else {
+	xmlErrorPtr err = xmlGetLastError();
+	/* argh: err->message often contains \n at the end. This is not 
+	   what we want: Bite the bullet by copying the message, replacing any 
+	   \n, constructing the rrd error message and freeing the temp. buffer.
+	*/
+	char *msgcpy = NULL, *c;
+	if (err != NULL && err->message != NULL) {
+	    msgcpy = strdup(err->message);
+	    if (msgcpy != NULL) {
+		for (c = msgcpy ; *c ; c++) {
+		    if (*c == '\n') *c = ' ';
+		}
+		/* strip whitespace from end of message */
+		for (c-- ; c != msgcpy ; c--) {
+		    if (!isprint(*c)) {
+			*c = 0;
+		    }
+		}
+	    } else {
+		/* out of memory during error handling, hmmmm */
+	    }
+	}
+
+	rrd_set_error("error reading/parsing XML: %s", 
+		      msgcpy != NULL ? msgcpy : "?");
+	if (msgcpy) free(msgcpy);
+    }
     return NULL;
 } /* get_xml_element */
 
