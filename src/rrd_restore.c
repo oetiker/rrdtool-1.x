@@ -1148,6 +1148,17 @@ static int stdioXmlInputCloseCallback(void *context)
     return 0; /* everything is OK */
 }
 
+/* an XML error reporting function that just suppresses all error messages.
+   This is used when parsing an XML file from stdin. This should help to 
+   not break the pipe interface protocol by suppressing the sending out of
+   XML error messages. */
+static void ignoringErrorFunc(
+    void *ctx, 
+    const char * msg, 
+    ...)
+{
+}
+
 static rrd_t *parse_file(
     const char *filename)
 {
@@ -1157,6 +1168,8 @@ static rrd_t *parse_file(
     rrd_t    *rrd;
     stdioXmlReaderContext *sctx = NULL;
 
+    /* special handling for XML on stdin (like it is the case when using
+       the pipe interface) */
     if (strcmp(filename, "-") == 0) {
 	sctx = malloc(sizeof(*sctx));
 	if (sctx == NULL) {
@@ -1167,6 +1180,8 @@ static rrd_t *parse_file(
 	sctx->freeOnClose = 1;
 	sctx->closed = 0;
 	sctx->eofchar = 0x1A; /* ctrl-Z */
+
+	xmlSetGenericErrorFunc(NULL, ignoringErrorFunc);
 
         reader = xmlReaderForIO(stdioXmlInputReadCallback,
                                 stdioXmlInputCloseCallback,
