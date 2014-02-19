@@ -16,7 +16,16 @@ it to the native B<RRD> format.
 
 =item I<filename.xml>
 
-The name of the B<XML> file you want to restore.
+The name of the B<XML> file you want to restore. The special filename "-" 
+(a single dash) is interpreted as standard input. 
+
+In order to support the restore command in pipe mode (especially when
+using B<RRDtool> over a network connection), when using "-" as a filename
+the end of the file can be signalled either by closing the data
+channel after the file has transferred (as would be the case when
+using input redirection within a suitable shell) or by sending a
+crtl-Z / newline combination. This allows to send more commands to the
+B<RRDtool> server after a restore.
 
 =item I<filename.rrd>
 
