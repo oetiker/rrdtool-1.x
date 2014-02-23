@@ -194,6 +194,9 @@ extern    "C" {
     int       rrd_tune(
     int,
     char **);
+    int       rrd_modify(
+    int,
+    char **);
     time_t    rrd_last(
     int,
     char **);
