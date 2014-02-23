@@ -11,6 +11,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_restore.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1120,7 +1121,7 @@ static rrd_t *parse_file(
     return (rrd);
 }                       /* rrd_t *parse_file */
 
-static int write_file(
+int write_file(
     const char *file_name,
     rrd_t *rrd)
 {
