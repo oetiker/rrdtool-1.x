@@ -53,6 +53,14 @@ static int rrd_modify_r(const char *infilename,
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
 
+    rrd_clear_error();
+
+    if (rrdc_is_any_connected()) {
+	// is it a good idea to just ignore the error ????
+	rrdc_flush(infilename);
+	rrd_clear_error();
+    }
+
     rrd_init(&in);
     rrd_init(&out);
 
@@ -478,6 +486,12 @@ static int rrd_modify_r(const char *infilename,
 		goto done;
 	    }
 
+	    // before we rename the file to the target file: forget all cached changes....
+	    if (rrdc_is_any_connected()) {
+		// is it a good idea to just ignore the error ????
+		rrdc_forget(outfilename);
+		rrd_clear_error();
+	    }
 
 	    if (rename(tmpfile, outfilename) != 0) {
 		rrd_set_error("Cannot rename temporary file to final file!");
@@ -485,6 +499,12 @@ static int rrd_modify_r(const char *infilename,
 		goto done;
 	    }
 
+	    // after the rename: forget the file again, just to be sure...
+	    if (rrdc_is_any_connected()) {
+		// is it a good idea to just ignore the error ????
+		rrdc_forget(outfilename);
+		rrd_clear_error();
+	    }
 	} else {
 	    /* in case of any problems during write: just remove the
 	       temporary file! */
@@ -563,9 +583,16 @@ int rrd_modify (
         return (-1);
     }
 
-    rc = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
-    if (opt_daemon) free(opt_daemon);
-    if (rc) return (rc);
+    // connect to daemon (will take care of environment variable automatically)
+    if (rrdc_connect(opt_daemon) != 0) {
+	rrd_set_error("Cannot connect to daemon");
+	return 1;
+    }
+
+    if (opt_daemon) {
+	free(opt_daemon);
+	opt_daemon = NULL;
+    }
 
     // parse add/remove options
     const char **remove = NULL, **add = NULL;
