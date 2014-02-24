@@ -13,6 +13,7 @@
 #include "rrd_hw.h"
 #include "rrd_client.h"
 #include "rrd_config.h"
+#include "rrd_create.h"
 
 #include "rrd_is_thread_safe.h"
 
@@ -28,8 +29,7 @@ int       create_hw_contingent_rras(
     unsigned long hashed_name);
 void      parseGENERIC_DS(
     const char *def,
-    rrd_t *rrd,
-    int ds_idx);
+    ds_def_t *ds_def);
 
 static void rrd_free2(
     rrd_t *rrd);        /* our onwn copy, immmune to mmap */
@@ -138,6 +138,59 @@ int rrd_create(
     return rc;
 }
 
+
+int parseDS(const char *def, 
+	    ds_def_t *ds_def,
+	    void *key_hash,
+            long (*lookup)(void *, char *)
+	    ) 
+{
+    char      dummychar1[2], dummychar2[2];
+    int       offset;
+
+    /* extract the name and type */
+    switch (sscanf(def,
+		   DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
+		   ds_def->ds_nam,
+		   dummychar1,
+		   ds_def->dst,
+		   dummychar2, &offset)) {
+    case 0:
+    case 1:
+	rrd_set_error("Invalid DS name in [%s]", def);
+	return -1;
+    case 2:
+    case 3:
+	rrd_set_error("Invalid DS type in [%s]", def);
+	return -1;
+    case 4:    /* (%n may or may not be counted) */
+    case 5:
+	break;
+    default:
+	rrd_set_error("invalid DS format");
+	return -1;
+    }
+
+    /* parse the remainder of the arguments */
+    switch (dst_conv(ds_def->dst)) {
+    case DST_COUNTER:
+    case DST_ABSOLUTE:
+    case DST_GAUGE:
+    case DST_DERIVE:
+	parseGENERIC_DS(def + offset, ds_def);
+	break;
+    case DST_CDEF:
+	parseCDEF_DS(def + offset, ds_def, key_hash, lookup);
+	break;
+    default:
+	rrd_set_error("invalid DS type specified");
+	return -1;
+    }
+    return 0;
+}
+
+
+
 /* #define DEBUG */
 /* For backwards compatibility with previous API.  Use rrd_create_r2 if you
    need to have the no_overwrite parameter.                                */
@@ -160,9 +213,7 @@ int rrd_create_r2(
 {
     rrd_t     rrd;
     long      i;
-    int       offset;
     char     *token;
-    char      dummychar1[2], dummychar2[2];
     unsigned short token_idx, error_flag, period = 0;
     unsigned long hashed_name;
 
@@ -205,8 +256,6 @@ int rrd_create_r2(
      * arrays. */
     hashed_name = FnvHash(filename);
     for (i = 0; i < argc; i++) {
-        unsigned int ii;
-
         if (strncmp(argv[i], "DS:", 3) == 0) {
             size_t    old_size = sizeof(ds_def_t) * (rrd.stat_head->ds_cnt);
 
@@ -218,61 +267,25 @@ int rrd_create_r2(
                 return (-1);
             }
             memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
-            /* extract the name and type */
-            switch (sscanf(&argv[i][3],
-                           DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
-                           rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-                           dummychar1,
-                           rrd.ds_def[rrd.stat_head->ds_cnt].dst,
-                           dummychar2, &offset)) {
-            case 0:
-            case 1:
-                rrd_set_error("Invalid DS name in [%s]",&argv[i][3]);
-                break;
-            case 2:
-            case 3:
-                rrd_set_error("Invalid DS type in [%s]",&argv[i][3]);
-                break;
-            case 4:    /* (%n may or may not be counted) */
-            case 5:    /* check for duplicate datasource names */
-                for (ii = 0; ii < rrd.stat_head->ds_cnt; ii++)
-                    if (strcmp(rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam,
-                               rrd.ds_def[ii].ds_nam) == 0)
-                        rrd_set_error("Duplicate DS name: %s",
-                                      rrd.ds_def[ii].ds_nam);
-                /* DS_type may be valid or not. Checked later */
-                break;
-            default:
-                rrd_set_error("invalid DS format");
-            }
-            if (rrd_test_error()) {
-                rrd_free2(&rrd);
-                return -1;
-            }
 
-            /* parse the remainder of the arguments */
-            switch (dst_conv(rrd.ds_def[rrd.stat_head->ds_cnt].dst)) {
-            case DST_COUNTER:
-            case DST_ABSOLUTE:
-            case DST_GAUGE:
-            case DST_DERIVE:
-                parseGENERIC_DS(&argv[i][offset + 3], &rrd,
-                                rrd.stat_head->ds_cnt);
-                break;
-            case DST_CDEF:
-                parseCDEF_DS(&argv[i][offset + 3], &rrd,
-                             rrd.stat_head->ds_cnt);
-                break;
-            default:
-                rrd_set_error("invalid DS type specified");
-                break;
-            }
+	    parseDS(argv[i] + 3, rrd.ds_def + rrd.stat_head->ds_cnt,
+		    &rrd, lookup_DS);
+
+	    /* check for duplicate DS name */
+
+	    if (lookup_DS(&rrd, rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam) 
+		>= 0) {
+		rrd_set_error("Duplicate DS name: %s",
+			      rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam);
+	    }
+	    
+	    rrd.stat_head->ds_cnt++;
 
             if (rrd_test_error()) {
                 rrd_free2(&rrd);
                 return -1;
             }
-            rrd.stat_head->ds_cnt++;
+	    
         } else if (strncmp(argv[i], "RRA:", 4) == 0) {
             char     *argvcopy;
             char     *tokptr = "";
@@ -618,8 +631,7 @@ int rrd_create_r2(
 
 void parseGENERIC_DS(
     const char *def,
-    rrd_t *rrd,
-    int ds_idx)
+    ds_def_t *ds_def)
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
     char     *old_locale;
@@ -633,23 +645,24 @@ void parseGENERIC_DS(
      */
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
+
     if (sscanf(def, "%lu:%18[^:]:%18[^:]",
-               &(rrd->ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
+               &(ds_def->par[DS_mrhb_cnt].u_cnt),
                minstr, maxstr) == 3) {
         if (minstr[0] == 'U' && minstr[1] == 0)
-            rrd->ds_def[ds_idx].par[DS_min_val].u_val = DNAN;
+            ds_def->par[DS_min_val].u_val = DNAN;
         else
-            rrd->ds_def[ds_idx].par[DS_min_val].u_val = atof(minstr);
+            ds_def->par[DS_min_val].u_val = atof(minstr);
 
         if (maxstr[0] == 'U' && maxstr[1] == 0)
-            rrd->ds_def[ds_idx].par[DS_max_val].u_val = DNAN;
+            ds_def->par[DS_max_val].u_val = DNAN;
         else
-            rrd->ds_def[ds_idx].par[DS_max_val].u_val = atof(maxstr);
+            ds_def->par[DS_max_val].u_val = atof(maxstr);
 
-        if (!isnan(rrd->ds_def[ds_idx].par[DS_min_val].u_val) &&
-            !isnan(rrd->ds_def[ds_idx].par[DS_max_val].u_val) &&
-            rrd->ds_def[ds_idx].par[DS_min_val].u_val
-            >= rrd->ds_def[ds_idx].par[DS_max_val].u_val) {
+        if (!isnan(ds_def->par[DS_min_val].u_val) &&
+            !isnan(ds_def->par[DS_max_val].u_val) &&
+            ds_def->par[DS_min_val].u_val
+            >= ds_def->par[DS_max_val].u_val) {
             rrd_set_error("min must be less than max in DS definition");
             setlocale(LC_NUMERIC, old_locale);
             return;

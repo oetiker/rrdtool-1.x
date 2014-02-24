@@ -859,7 +859,8 @@ static int parse_tag_ds_cdef(
     if (cdef != NULL){
         /* We're always working on the last DS that has been added to the structure
          * when we get here */
-        parseCDEF_DS((char *)cdef, rrd, rrd->stat_head->ds_cnt - 1);
+        parseCDEF_DS((char *)cdef, rrd->ds_def + rrd->stat_head->ds_cnt - 1,
+		     rrd, lookup_DS);
         xmlFree(cdef);
         if (rrd_test_error())
             return -1;
