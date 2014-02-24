@@ -9,8 +9,11 @@
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
 #include "rrd_restore.h"   /* write_file */
+#include "rrd_create.h"    /* parseDS */
 
 #include <locale.h>
+
+
 
 static void * copy_over_realloc(void *dest, int dest_index, 
 				const void *src, int index,
@@ -34,7 +37,8 @@ static int rrd_modify_r(const char *infilename,
     unsigned int i, j;
     rrd_file_t *rrd_file;
     char       *old_locale = "";
-    char *ops = NULL;
+    char       *ops = NULL;
+    unsigned int ops_cnt = 0;
 
     rrd_init(&in);
     rrd_init(&out);
@@ -71,8 +75,9 @@ static int rrd_modify_r(const char *infilename,
     out.live_head->last_up = in.live_head->last_up;
     out.live_head->last_up_usec = in.live_head->last_up_usec;
 
+    ops_cnt = in.stat_head->ds_cnt;
+    ops = malloc(ops_cnt);
 
-    ops = malloc(in.stat_head->ds_cnt);
     if (ops == NULL) {
         rrd_set_error("parse_tag_rrd: malloc failed.");
 	goto done;
@@ -109,9 +114,44 @@ static int rrd_modify_r(const char *infilename,
 	}
     }
 
+    if (addDS) {
+	const char *c;
+	for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
+	    // should test for name clash
+	    ds_def_t empty;
+	    out.ds_def = copy_over_realloc(out.ds_def, out.stat_head->ds_cnt, 
+					   &empty, 0,
+					   sizeof(ds_def_t));
+	    if (out.ds_def == NULL) goto done;
+
+
+	    // parse DS
+	    parseDS(c + 3,
+		    out.ds_def + out.stat_head->ds_cnt,
+		    &out, lookup_DS);
+
+
+	    if (lookup_DS(&out, out.ds_def[out.stat_head->ds_cnt].ds_nam) 
+		>= 0) {
+		rrd_set_error("Duplicate DS name: %s",
+			      out.ds_def[out.stat_head->ds_cnt].ds_nam);
+
+		goto done;
+	    }
+
+	    out.stat_head->ds_cnt++;
+
+	    ops = realloc(ops, ops_cnt + 1);
+	    ops[ops_cnt] = 'a';
+	    ops_cnt++;
+	}
+    }
+
+
+
+
     rra_ptr_t rra_0_ptr = { .cur_row = 0 };
     for (j = 0 ; j < in.stat_head->rra_cnt ; j++) {
-
 	/* for every RRA copy only those CDPs in the prep area where we keep 
 	   the DS! */
 
@@ -122,15 +162,21 @@ static int rrd_modify_r(const char *infilename,
 	int start_index_out = out.stat_head->ds_cnt * j;
 	
 	int ii;
-	for (i = ii = 0 ; i < in.stat_head->ds_cnt ; i++) {
+	for (i = ii = 0 ; i < ops_cnt ; i++) {
 	    if (ops[i] == 'c') {
 		memcpy(out.cdp_prep + start_index_out + ii,
 		       in.cdp_prep + start_index_in + i, sizeof(cdp_prep_t));
 		ii++;
 	    }
+	    if (ops[i] == 'a') {
+		cdp_prep_t empty;
+		memset(&empty, 0, sizeof(empty));
+
+		memcpy(out.cdp_prep + start_index_out + ii,
+		       &empty, sizeof(cdp_prep_t));
+		ii++;
+	    }
 	}
-
-
 
 	out.rra_def = copy_over_realloc(out.rra_def, j,
 					in.rra_def, j,
@@ -260,9 +306,9 @@ static int rrd_modify_r(const char *infilename,
 	    }
 	}
 
-	int ii, jj;
+	unsigned int ii, jj;
 	for (ii = 0 ; ii < in.rra_def[i].row_cnt ; ii++) {
-	    for (j = jj = 0 ; j < in.stat_head->ds_cnt ; j++) {
+	    for (j = jj = 0 ; j < ops_cnt ; j++) {
 		if (ops[j] == 'c') {
 		    out.rrd_value[total_cnt_out +ii*out.stat_head->ds_cnt +jj] =
 			in.rrd_value[total_cnt + ii * in.stat_head->ds_cnt + j];
@@ -276,6 +322,10 @@ static int rrd_modify_r(const char *infilename,
 			    total_cnt + ii * in.stat_head->ds_cnt + j,
 			    total_cnt_out + ii * out.stat_head->ds_cnt + jj);
 		    */
+		    jj++;
+		}
+		if (ops[j] == 'a') {
+		    out.rrd_value[total_cnt_out +ii*out.stat_head->ds_cnt +jj] = DNAN;
 		    jj++;
 		}
 	    }
@@ -379,7 +429,7 @@ int rrd_modify (
     if (rc) return (rc);
 
     // parse add/remove options
-    char **remove = NULL, **add = NULL;
+    const char **remove = NULL, **add = NULL;
     int rcnt = 0, acnt = 0;
 
     for (i = optind + 2 ; i < argc ; i++) {
@@ -423,14 +473,14 @@ int rrd_modify (
     }
 
     if (remove) {
-	for (char **c = remove ; *c ; c++) {
-	    free(*c);
+	for (const char **c = remove ; *c ; c++) {
+	    free((void*) *c);
 	}
 	free(remove);
     } 
     if (add) {
-	for (char **c = add ; *c ; c++) {
-	    free(*c);
+	for (const char **c = add ; *c ; c++) {
+	    free((void*) *c);
 	}
 	free(add);
     }
