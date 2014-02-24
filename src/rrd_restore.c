@@ -1127,8 +1127,6 @@ int write_file(
     rrd_t *rrd)
 {
     FILE     *fh;
-    unsigned int i;
-    unsigned int rra_offset;
 
     if (strcmp("-", file_name) == 0)
         fh = stdout;
@@ -1157,6 +1155,28 @@ int write_file(
             return (-1);
         }
     }
+
+    int rc = write_fh(fh, rrd);
+
+    /* lets see if we had an error */
+    if (ferror(fh)) {
+        rrd_set_error("a file error occurred while creating '%s'", file_name);
+        fclose(fh);
+        return (-1);
+    }
+
+    fclose(fh);
+    
+    return rc;
+}
+
+int write_fh(
+    FILE *fh,
+    rrd_t *rrd)
+{
+    unsigned int i;
+    unsigned int rra_offset;
+
     if (atoi(rrd->stat_head->version) < 3) {
         /* we output 3 or higher */
         strcpy(rrd->stat_head->version, "0003");
@@ -1188,14 +1208,6 @@ int write_file(
         }
     }
 
-    /* lets see if we had an error */
-    if (ferror(fh)) {
-        rrd_set_error("a file error occurred while creating '%s'", file_name);
-        fclose(fh);
-        return (-1);
-    }
-
-    fclose(fh);
     return (0);
 }                       /* int write_file */
 
