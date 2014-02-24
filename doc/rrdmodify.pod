@@ -1,0 +1,75 @@
+=head1 NAME
+
+rrdmodify - Change the data source structure of an RRD
+
+=head1 SYNOPSIS
+
+B<rrdtool> {B<modify>} I<in-filename> I<out-filename> 
+S<[ B<DEL:>I<ds-name> | B<DS:>I<ds-spec> ... ]>
+
+=head1 DESCRIPTION
+
+The B<modify> function copies an RRD file I<in-filename> to
+I<out-filename>, possible removing or adding data sources on the
+fly. When I<in-filename> and I<out-filename> denote the same file,
+this is (almost) identical to an in-place modification.
+
+=over 8
+
+=item I<in-filename>
+
+The name of the source B<RRD> file you want to copy/modify.
+
+=item I<out-filename>
+
+The name of the destination B<RRD> file. If it names the same file as
+I<in-filename>, the new RRD will effectively relace the old one.
+
+=item B<DEL:>I<ds-name>
+
+Every data source named with a DEL specification will be removed
+during the copy operation. The resulting RRD will miss both the
+definition and the data for that data source. Multiple DEL
+specifications are permitted.
+
+
+=item B<DS:>I<ds-spec>
+
+For every such data source definition (for the exact syntax see the
+create command), a new data source will be added to the output
+RRD. Multiple DS specifications are permitted.
+
+=item B<--daemon> I<address>
+
+If given, B<RRDTool> will try to connect to the caching daemon
+L<rrdcached> at I<address> and will fail if the connection cannot be
+established. If the connection is successfully established the data
+for the I<in-filename> will be flushed before performing the
+copy/modify operation. Afterwards the I<out-filename> will be
+forgotten by the cache daemon, so that the next access using the
+caching daemon will read the proper structure.
+
+For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior of
+C<rrdtoolE<nbsp>update>:
+
+=over
+
+=item B<RRDCACHED_ADDRESS>
+
+If this environment variable is set it will have the same effect as specifying
+the C<--daemon> option on the command line. If both are present, the command
+line argument takes precedence.
+
+=back
+
+=head1 AUTHORS
+
+Tobias Oetiker <tobi@oetiker.ch>,
+Peter Stamfest <peter@stamfest.at>
+
