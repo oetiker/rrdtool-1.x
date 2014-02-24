@@ -13,8 +13,7 @@
 
 #include <locale.h>
 
-
-
+/* a convenience realloc/memcpy combo  */
 static void * copy_over_realloc(void *dest, int dest_index, 
 				const void *src, int index,
 				ssize_t size) {
@@ -27,6 +26,16 @@ static void * copy_over_realloc(void *dest, int dest_index,
     memcpy(((char*)r) + size * dest_index, ((char*)src) + size * index, size);
     return r;
 }
+
+/* copies the RRD named by infilename to a new RRD called outfilename. 
+
+   In that process, data sources may be removed or added.
+
+   removeDS points to an array of strings, each naming a DS to be
+   removed. The list itself is NULL terminated. addDS points to a
+   similar list holding rrdcreate-style data source definitions to be
+   added.
+*/
 
 static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
@@ -84,6 +93,15 @@ static int rrd_modify_r(const char *infilename,
 
     if (out.live_head == NULL) goto done;
 
+    /* use the ops array as a scratchpad to remember what we are about
+       to do to each DS. There is one entry for every DS in the
+       original RRD and one additional entry for every added DS. 
+
+       Entries marked as 
+       - 'c' will be copied to the out RRD, 
+       - 'd' will not be copied (= will effectively be deleted)
+       - 'a' will be added.
+    */
     ops_cnt = in.stat_head->ds_cnt;
     ops = malloc(ops_cnt);
 
@@ -94,7 +112,10 @@ static int rrd_modify_r(const char *infilename,
 
     memset(ops, 'c', in.stat_head->ds_cnt);
     
-    // check all DSs for deletion
+    /* copy over existing DS definitions (and related data
+       structures), check on the way (and skip) if they should be
+       deleted
+       */
     for (i = 0 ; i < in.stat_head->ds_cnt ; i++) {
 	const char *c;
 	if (removeDS != NULL) {
@@ -131,6 +152,7 @@ static int rrd_modify_r(const char *infilename,
 	}
     }
 
+    /* now add any definitions to be added */
     if (addDS) {
 	const char *c;
 	for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
@@ -170,14 +192,17 @@ static int rrd_modify_r(const char *infilename,
 
 	    out.stat_head->ds_cnt++;
 
+	    // and extend the ops array as well
 	    ops = realloc(ops, ops_cnt + 1);
 	    ops[ops_cnt] = 'a';
 	    ops_cnt++;
 	}
     }
 
+    /* now take care to copy all RRAs, removing and adding columns for
+       every row as needed for the requested DS changes */
 
-
+    /* we also reorder all rows */
 
     rra_ptr_t rra_0_ptr = { .cur_row = 0 };
 
@@ -241,7 +266,7 @@ static int rrd_modify_r(const char *infilename,
 	total_rra_rows +=  out.rra_def[j].row_cnt;
     }
 
-    /* read all data ... */
+    /* read and process all data ... */
 
     /* there seem to be two function in the current rrdtool codebase
        dealing with writing a new rrd file to disk: write_file and
@@ -284,6 +309,7 @@ static int rrd_modify_r(const char *infilename,
     int total_cnt = 0, total_cnt_out = 0;
 
     for (i = 0; i < in.stat_head->rra_cnt; i++) {
+	/* number and sizes of all the data in an RRA */
 	int rra_values     = in.stat_head->ds_cnt  * in.rra_def[i].row_cnt;
 	int rra_values_out = out.stat_head->ds_cnt * out.rra_def[i].row_cnt;
 
@@ -349,6 +375,11 @@ static int rrd_modify_r(const char *infilename,
 	    }
 	}
 
+	/* we now have all the data for the current RRA available, now
+	   start to transfer it to the output RRD: For every row copy 
+	   the data corresponding to copied DSes, add NaN values for newly 
+	   added DSes. */
+
 	unsigned int ii, jj;
 	for (ii = 0 ; ii < in.rra_def[i].row_cnt ; ii++) {
 	    for (j = jj = 0 ; j < ops_cnt ; j++) {
@@ -357,15 +388,13 @@ static int rrd_modify_r(const char *infilename,
 		    out.rrd_value[total_cnt_out +ii * out.stat_head->ds_cnt + jj] =
 			in.rrd_value[total_cnt + ii * in.stat_head->ds_cnt + j];
 
+		    /* it might be better to use memcpy, actually (to
+		       treat them opaquely)... so keep the code for
+		       the time being */
 		    /*
 		    memcpy((void*) (out.rrd_value + total_cnt_out + ii * out.stat_head->ds_cnt + jj),
 			   (void*) (in.rrd_value + total_cnt + ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
 		    */			   
-		    /*
-		    fprintf(stderr, "%d->%d\n",
-			    total_cnt + ii * in.stat_head->ds_cnt + j,
-			    total_cnt_out + ii * out.stat_head->ds_cnt + jj);
-		    */
 		    jj++;
 		    break;
 		}
