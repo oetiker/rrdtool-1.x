@@ -36,15 +36,28 @@ static int rrd_modify_r(const char *infilename,
     int rc = -1;
     unsigned int i, j;
     rrd_file_t *rrd_file;
-    char       *old_locale = "";
+    char       *old_locale = NULL;
     char       *ops = NULL;
     unsigned int ops_cnt = 0;
+    char *tmpfile = NULL;
+
+    old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "C");
 
     rrd_init(&in);
     rrd_init(&out);
 
     rrd_file = rrd_open(infilename, &in, RRD_READONLY | RRD_READAHEAD);
     if (rrd_file == NULL) {
+	goto done;
+    }
+
+    /* currently we only allow to modify version 3 RRDs. If other
+       files should be modified, a dump/restore cycle should be
+       done.... */
+
+    if (strcmp(in.stat_head->version, "0003") != 0) {
+	rrd_set_error("direct modification is only supported for version 3 RRD files. Consider to dump/restore before retrying a modification");
 	goto done;
     }
 
@@ -66,14 +79,10 @@ static int rrd_modify_r(const char *infilename,
     out.stat_head->ds_cnt = 0;
     out.stat_head->rra_cnt = 0;
 
-    out.live_head = (live_head_t *) malloc(sizeof(live_head_t));
-    if (out.live_head == NULL) {
-        rrd_set_error("parse_tag_rrd: malloc failed.");
-	goto done;
-    }
+    out.live_head = copy_over_realloc(out.live_head, 0, in.live_head, 0,
+				      sizeof(live_head_t));
 
-    out.live_head->last_up = in.live_head->last_up;
-    out.live_head->last_up_usec = in.live_head->last_up_usec;
+    if (out.live_head == NULL) goto done;
 
     ops_cnt = in.stat_head->ds_cnt;
     ops = malloc(ops_cnt);
@@ -97,7 +106,8 @@ static int rrd_modify_r(const char *infilename,
 	    }
 	}
 
-	if (ops[i] == 'c') {
+	switch (ops[i]) {
+	case 'c': {
 	    j = out.stat_head->ds_cnt;
 	    out.stat_head->ds_cnt++;
 
@@ -110,34 +120,53 @@ static int rrd_modify_r(const char *infilename,
 					     in.pdp_prep, i,
 					     sizeof(pdp_prep_t));
 	    if (out.pdp_prep == NULL) goto done;
-
+	    break;
+	}
+	case 'd':
+	    break;
+	case 'a':
+	default:
+	    rrd_set_error("internal error: invalid ops");
+	    goto done;
 	}
     }
 
     if (addDS) {
 	const char *c;
 	for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
-	    // should test for name clash
-	    ds_def_t empty;
-	    out.ds_def = copy_over_realloc(out.ds_def, out.stat_head->ds_cnt, 
-					   &empty, 0,
-					   sizeof(ds_def_t));
-	    if (out.ds_def == NULL) goto done;
-
+	    ds_def_t added;
 
 	    // parse DS
 	    parseDS(c + 3,
-		    out.ds_def + out.stat_head->ds_cnt,
+		    &added, // out.ds_def + out.stat_head->ds_cnt,
 		    &out, lookup_DS);
 
-
-	    if (lookup_DS(&out, out.ds_def[out.stat_head->ds_cnt].ds_nam) 
-		>= 0) {
-		rrd_set_error("Duplicate DS name: %s",
-			      out.ds_def[out.stat_head->ds_cnt].ds_nam);
-
+	    // check if there is a name clash with an existing DS
+	    if (lookup_DS(&out, added.ds_nam) >= 0) {
+		rrd_set_error("Duplicate DS name: %s", added.ds_nam);
 		goto done;
 	    }
+
+	    // copy parse result to output RRD
+	    out.ds_def = copy_over_realloc(out.ds_def, out.stat_head->ds_cnt, 
+					   &added, 0,
+					   sizeof(ds_def_t));
+	    if (out.ds_def == NULL) goto done;
+
+	    // also add a pdp_prep_t
+	    pdp_prep_t added_pdp_prep;
+	    memset(&added_pdp_prep, 0, sizeof(added_pdp_prep));
+	    strcpy(added_pdp_prep.last_ds, "U");
+
+	    added_pdp_prep.scratch[PDP_val].u_val = 0.0;
+	    added_pdp_prep.scratch[PDP_unkn_sec_cnt].u_cnt =
+		out.live_head->last_up % out.stat_head->pdp_step;
+
+	    out.pdp_prep = copy_over_realloc(out.pdp_prep, 
+					     out.stat_head->ds_cnt, 
+					     &added_pdp_prep, 0,
+					     sizeof(pdp_prep_t));
+	    if (out.pdp_prep == NULL) goto done;
 
 	    out.stat_head->ds_cnt++;
 
@@ -151,30 +180,49 @@ static int rrd_modify_r(const char *infilename,
 
 
     rra_ptr_t rra_0_ptr = { .cur_row = 0 };
+
+    out.cdp_prep = realloc(out.cdp_prep, 
+			   sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
+			   * in.stat_head->rra_cnt);
+
+    if (out.cdp_prep == NULL) {
+	rrd_set_error("Cannot allocate memory");
+	goto done;
+    }
+
+    cdp_prep_t empty_cdp_prep;
+    memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
+
+    int total_rra_rows = 0;
+
     for (j = 0 ; j < in.stat_head->rra_cnt ; j++) {
 	/* for every RRA copy only those CDPs in the prep area where we keep 
 	   the DS! */
 
-	out.cdp_prep = realloc(out.cdp_prep, 
-			       sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
-			       * (j+1));
 	int start_index_in  = in.stat_head->ds_cnt * j;
 	int start_index_out = out.stat_head->ds_cnt * j;
 	
 	int ii;
 	for (i = ii = 0 ; i < ops_cnt ; i++) {
-	    if (ops[i] == 'c') {
+	    switch (ops[i]) {
+	    case 'c': {
 		memcpy(out.cdp_prep + start_index_out + ii,
-		       in.cdp_prep + start_index_in + i, sizeof(cdp_prep_t));
+		       in.cdp_prep + start_index_in + i, 
+		       sizeof(cdp_prep_t));
 		ii++;
+		break;
+	    } 
+	    case 'a': {
+		memcpy(out.cdp_prep + start_index_out + ii,
+		       &empty_cdp_prep, sizeof(cdp_prep_t));
+		ii++;
+		break;
 	    }
-	    if (ops[i] == 'a') {
-		cdp_prep_t empty;
-		memset(&empty, 0, sizeof(empty));
-
-		memcpy(out.cdp_prep + start_index_out + ii,
-		       &empty, sizeof(cdp_prep_t));
-		ii++;
+	    case 'd':
+		break;
+	    default:
+		rrd_set_error("internal error: invalid ops");
+		goto done;
 	    }
 	}
 
@@ -188,13 +236,10 @@ static int rrd_modify_r(const char *infilename,
 					sizeof(rra_ptr_t));
 	if (out.rra_ptr == NULL) goto done; 
 
-	// 	out.rra_ptr[j].cur_row = out.rra_def[j].row_cnt - 1;
-
 	out.stat_head->rra_cnt++;
-    }
 
-    old_locale = setlocale(LC_NUMERIC, NULL);
-    setlocale(LC_NUMERIC, "C");
+	total_rra_rows +=  out.rra_def[j].row_cnt;
+    }
 
     /* read all data ... */
 
@@ -210,10 +255,30 @@ static int rrd_modify_r(const char *infilename,
        - why we reset cur_row in RRAs and reorder data to be cronological
     */
 
-
-
     char *all_data = NULL;
-    ssize_t total_size = 0, total_size_out = 0;
+
+
+    /* prepare space to read data in */
+    all_data = realloc(all_data, 
+		       total_rra_rows * in.stat_head->ds_cnt
+		       * sizeof(rrd_value_t));
+    in.rrd_value = (void *) all_data;
+    
+    if (all_data == NULL) {
+	rrd_set_error("out of memory");
+	goto done;
+    }
+
+    /* prepare space for output data */
+    out.rrd_value = realloc(out.rrd_value,
+			    total_rra_rows * out.stat_head->ds_cnt
+			    * sizeof(rrd_value_t));
+    
+    if (out.rrd_value == NULL) {
+	rrd_set_error("out of memory");
+	goto done;
+    }
+
     ssize_t rra_start = 0, rra_start_out = 0;
 
     int total_cnt = 0, total_cnt_out = 0;
@@ -224,28 +289,6 @@ static int rrd_modify_r(const char *infilename,
 
 	ssize_t rra_size     = sizeof(rrd_value_t) * rra_values;
 	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
-	/*
-	fprintf(stderr, "A %08x\n", &(in.rra_ptr[i]));
-	fprintf(stderr, "A %08x\n", in.rra_ptr[i].cur_row);
-	*/
-	total_size += rra_size;
-	all_data = realloc(all_data, total_size);
-	in.rrd_value = (void *) all_data;
-
-	if (all_data == NULL) {
-	    rrd_set_error("out of memory");
-	    goto done;
-	}
-
-	total_size_out += rra_size_out;
-	out.rrd_value = realloc(out.rrd_value, total_size_out);
-
-	if (out.rrd_value == NULL) {
-	    rrd_set_error("out of memory");
-	    goto done;
-	}
-
-
 
 	/* reorder data by cleaverly reading it into the right place */
 
@@ -277,7 +320,6 @@ static int rrd_modify_r(const char *infilename,
 	int last = (in.rra_ptr[i].cur_row + 1) % in.rra_def[i].row_cnt; 
 	int n = in.rra_def[i].row_cnt - last;
 
-
 	size_t to_read = last * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
 	size_t read_bytes;
 
@@ -293,6 +335,7 @@ static int rrd_modify_r(const char *infilename,
 		goto done;
 	    }
 	}
+
 	to_read = n * sizeof(rrd_value_t) * in.stat_head->ds_cnt ;
 	if (to_read > 0) {
 	    read_bytes = 
@@ -309,8 +352,9 @@ static int rrd_modify_r(const char *infilename,
 	unsigned int ii, jj;
 	for (ii = 0 ; ii < in.rra_def[i].row_cnt ; ii++) {
 	    for (j = jj = 0 ; j < ops_cnt ; j++) {
-		if (ops[j] == 'c') {
-		    out.rrd_value[total_cnt_out +ii*out.stat_head->ds_cnt +jj] =
+		switch (ops[j]) {
+		case 'c': {
+		    out.rrd_value[total_cnt_out +ii * out.stat_head->ds_cnt + jj] =
 			in.rrd_value[total_cnt + ii * in.stat_head->ds_cnt + j];
 
 		    /*
@@ -323,10 +367,18 @@ static int rrd_modify_r(const char *infilename,
 			    total_cnt_out + ii * out.stat_head->ds_cnt + jj);
 		    */
 		    jj++;
+		    break;
 		}
-		if (ops[j] == 'a') {
-		    out.rrd_value[total_cnt_out +ii*out.stat_head->ds_cnt +jj] = DNAN;
+		case 'a': {
+		    out.rrd_value[total_cnt_out + ii * out.stat_head->ds_cnt + jj] = DNAN;
 		    jj++;
+		    break;
+		}
+		case 'd':
+		    break;
+		default:
+		    rrd_set_error("internal error: invalid ops");
+		    goto done;
 		}
 	    }
 	}
@@ -337,24 +389,88 @@ static int rrd_modify_r(const char *infilename,
 	total_cnt     += rra_values;
 	total_cnt_out += rra_values_out;
     }
-/*
-    for (int z  = 0 ; z < 160 ; z++) {
-	fprintf(stderr, "%02x ", (unsigned) ((char*)all_data)[z] & 0x0ff);
-	if (z % 16 == 15) {
-	    fprintf(stderr, "\n");
+
+    /* write out the new file */
+    FILE *fh = NULL;
+    if (strcmp(outfilename, "-") == 0) {
+	fh = stdout;
+	// to stdout
+    } else {
+	/* create RRD with a temporary name, rename atomically afterwards. */
+	tmpfile = malloc(strlen(outfilename) + 7);
+	if (tmpfile == NULL) {
+	    rrd_set_error("out of memory");
+	    goto done;
+	}
+
+	strcpy(tmpfile, outfilename);
+	strcat(tmpfile, "XXXXXX");
+	
+	int tmpfd = mkstemp(tmpfile);
+	if (tmpfd < 0) {
+	    rrd_set_error("Cannot create temporary file");
+	    goto done;
+	}
+
+	fh = fdopen(tmpfd, "wb");
+	if (fh == NULL) {
+	    // some error 
+	    rrd_set_error("Cannot open output file");
+	    goto done;
 	}
     }
 
+    rc = write_fh(fh, &out);
 
-    fprintf(stderr, "\n");
-    fprintf(stderr, "cnt %ld\n", (long) total_size);
-*/
+    if (fh != NULL && tmpfile != NULL) {
+	/* tmpfile != NULL indicates that we did NOT write to stdout,
+	   so we have to close the stream and do the rename dance */
+
+	fclose(fh);
+	if (rc == 0)  {
+	    // renaming is only done if write_fh was successful
+	    struct stat stat_buf;
+
+	    /* in case we have an existing file, copy its mode... This
+	       WILL NOT take care of any ACLs that may be set. Go
+	       figure. */
+	    if (stat(outfilename, &stat_buf) != 0) {
+		/* an error occurred (file not found, maybe?). Anyway:
+		   set the mode to 0666 using current umask */
+		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+		
+		mode_t mask = umask(0);
+		umask(mask);
+
+		stat_buf.st_mode &= ~mask;
+	    }
+	    if (chmod(tmpfile, stat_buf.st_mode) != 0) {
+		rrd_set_error("Cannot chmod temporary file!");
+		goto done;
+	    }
 
 
-    write_file(outfilename, &out);
+	    if (rename(tmpfile, outfilename) != 0) {
+		rrd_set_error("Cannot rename temporary file to final file!");
+		unlink(tmpfile);
+		goto done;
+	    }
 
-    rc = 0;
+	} else {
+	    /* in case of any problems during write: just remove the
+	       temporary file! */
+	    unlink(tmpfile);
+	}
+    }
+
 done:
+    /* clean up */
+    if (old_locale) 
+	setlocale(LC_NUMERIC, old_locale);
+
+    if (tmpfile != NULL)
+	free(tmpfile);
+    
     if (rrd_file != NULL) {
 	rrd_close(rrd_file);
     }
@@ -370,14 +486,8 @@ int rrd_modify (
     int argc,
     char **argv)
 {
-    int       rc;
+    int       rc = 9;
     int       i;
-    /** 
-     * 0 = no header
-     * 1 = dtd header
-     * 2 = xsd header
-     */
-    int       opt_header = 1;
     char     *opt_daemon = NULL;
 
     /* init rrd clean */
@@ -437,13 +547,15 @@ int rrd_modify (
 	    remove = realloc(remove, (rcnt + 2) * sizeof(char*));
 	    if (remove == NULL) {
 		rrd_set_error("out of memory");
-		return -1;
+		rc = -1;
+		goto done;
 	    }
 
 	    remove[rcnt] = strdup(argv[i] + 4);
 	    if (remove[rcnt] == NULL) {
 		rrd_set_error("out of memory");
-		return -1;
+		rc = -1;
+		goto done;
 	    }
 
 	    rcnt++;
@@ -453,13 +565,15 @@ int rrd_modify (
 	    add = realloc(add, (acnt + 2) * sizeof(char*));
 	    if (add == NULL) {
 		rrd_set_error("out of memory");
-		return -1;
+		rc = -1;
+		goto done;
 	    }
 
 	    add[acnt] = strdup(argv[i]);
 	    if (add[acnt] == NULL) {
 		rrd_set_error("out of memory");
-		return -1;
+		rc = -1;
+		goto done;
 	    }
 
 	    acnt++;
@@ -470,8 +584,12 @@ int rrd_modify (
     if ((argc - optind) >= 2) {
         rc = rrd_modify_r(argv[optind], argv[optind + 1], 
 			  remove, add);
+    } else {
+	rrd_set_error("missing arguments");
+	rc = 2;
     }
 
+done:
     if (remove) {
 	for (const char **c = remove ; *c ; c++) {
 	    free((void*) *c);
