@@ -207,7 +207,7 @@ static int parse_char_array_header (char *line, /* {{{ */
 
   if (alloc == 0)
   {
-    memcpy (array, tmp_array, sizeof (tmp_array));
+    memcpy (array, tmp_array, array_len * sizeof (char*));
   }
   else
   {
