@@ -218,16 +218,17 @@ short addop2str(
     return 0;
 }
 
-void parseCDEF_DS(
-    const char *def,
-    rrd_t *rrd,
-    int ds_idx)
+void parseCDEF_DS(const char *def,
+		  ds_def_t *ds_def,
+		  void *key_hash,
+		  long (*lookup) (void *, char *)
+		  )
 {
     rpnp_t   *rpnp = NULL;
     rpn_cdefds_t *rpnc = NULL;
     short     count, i;
 
-    rpnp = rpn_parse((void *) rrd, def, &lookup_DS);
+    rpnp = rpn_parse(key_hash, def, lookup);
     if (rpnp == NULL) {
         rrd_set_error("failed to parse computed data source");
         return;
@@ -252,7 +253,7 @@ void parseCDEF_DS(
         return;
     }
     /* copy the compact rpn representation over the ds_def par array */
-    memcpy((void *) &(rrd->ds_def[ds_idx].par[DS_cdef]),
+    memcpy((void *) &(ds_def->par[DS_cdef]),
            (void *) rpnc, count * sizeof(rpn_cdefds_t));
     free(rpnp);
     free(rpnc);

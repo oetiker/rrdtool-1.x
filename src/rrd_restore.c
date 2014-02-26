@@ -11,6 +11,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_restore.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -858,7 +859,8 @@ static int parse_tag_ds_cdef(
     if (cdef != NULL){
         /* We're always working on the last DS that has been added to the structure
          * when we get here */
-        parseCDEF_DS((char *)cdef, rrd, rrd->stat_head->ds_cnt - 1);
+        parseCDEF_DS((char *)cdef, rrd->ds_def + rrd->stat_head->ds_cnt - 1,
+		     rrd, lookup_DS);
         xmlFree(cdef);
         if (rrd_test_error())
             return -1;
@@ -1120,13 +1122,11 @@ static rrd_t *parse_file(
     return (rrd);
 }                       /* rrd_t *parse_file */
 
-static int write_file(
+int write_file(
     const char *file_name,
     rrd_t *rrd)
 {
     FILE     *fh;
-    unsigned int i;
-    unsigned int rra_offset;
 
     if (strcmp("-", file_name) == 0)
         fh = stdout;
@@ -1155,6 +1155,28 @@ static int write_file(
             return (-1);
         }
     }
+
+    int rc = write_fh(fh, rrd);
+
+    /* lets see if we had an error */
+    if (ferror(fh)) {
+        rrd_set_error("a file error occurred while creating '%s'", file_name);
+        fclose(fh);
+        return (-1);
+    }
+
+    fclose(fh);
+    
+    return rc;
+}
+
+int write_fh(
+    FILE *fh,
+    rrd_t *rrd)
+{
+    unsigned int i;
+    unsigned int rra_offset;
+
     if (atoi(rrd->stat_head->version) < 3) {
         /* we output 3 or higher */
         strcpy(rrd->stat_head->version, "0003");
@@ -1186,14 +1208,6 @@ static int write_file(
         }
     }
 
-    /* lets see if we had an error */
-    if (ferror(fh)) {
-        rrd_set_error("a file error occurred while creating '%s'", file_name);
-        fclose(fh);
-        return (-1);
-    }
-
-    fclose(fh);
     return (0);
 }                       /* int write_file */
 
