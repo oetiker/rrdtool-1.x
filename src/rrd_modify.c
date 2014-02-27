@@ -37,10 +37,18 @@ static void * copy_over_realloc(void *dest, int dest_index,
    added.
 */
 
+typedef struct {
+    unsigned int index;
+    char op;  // '+', '-', '='. 
+    unsigned int row_count;
+} rra_mod_op_t;
+
+
 static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
 			const char **removeDS,
-			const char **addDS) {
+			const char **addDS,
+			const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt) {
     rrd_t in, out;
     int rc = -1;
     unsigned int i, j;
@@ -596,7 +604,8 @@ int rrd_modify (
 
     // parse add/remove options
     const char **remove = NULL, **add = NULL;
-    int rcnt = 0, acnt = 0;
+    rra_mod_op_t *rra_ops = NULL;
+    int rcnt = 0, acnt = 0, rraopcnt = 0;
 
     for (i = optind + 2 ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
@@ -635,11 +644,47 @@ int rrd_modify (
 	    acnt++;
 	    add[acnt] = NULL;
 	}
-    }
+  	if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	    rra_mod_op_t rra_mod;
+	    char sign;
+	    unsigned int number;
+	    unsigned int index;
+	    
+	    if (sscanf(argv[i] + 4, "%u:%c%u", &index, &sign, &number) != 3) {
+		rrd_set_error("Failed to parse RRA# command");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_mod.index = index;
+	    switch (sign) {
+	    case '=':
+	    case '-':
+	    case '+':
+		rra_mod.index = index;
+		rra_mod.op = sign;
+		rra_mod.row_count = number;
+		break;
+	    default:
+		rrd_set_error("Failed to parse RRA# command: invalid operation: %c", sign);
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	}
+  }
 
     if ((argc - optind) >= 2) {
         rc = rrd_modify_r(argv[optind], argv[optind + 1], 
-			  remove, add);
+			  remove, add, rra_ops, rraopcnt);
     } else {
 	rrd_set_error("missing arguments");
 	rc = 2;
@@ -657,6 +702,9 @@ done:
 	    free((void*) *c);
 	}
 	free(add);
+    }
+    if (rra_ops) {
+	free(rra_ops);
     }
     return rc;
 }
