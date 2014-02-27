@@ -50,7 +50,8 @@ static xmlChar* get_xml_element (
     xmlTextReaderPtr reader
     )
 {
-    while(xmlTextReaderRead(reader)){
+    int rc;
+    while((rc = xmlTextReaderRead(reader)) == 1){
         int type;
         xmlChar *name;
         type = xmlTextReaderNodeType(reader);
@@ -79,7 +80,36 @@ static xmlChar* get_xml_element (
         /* all seems well, return the happy news */
         return name;
     }
-    rrd_set_error("the xml ended while we were looking for an element");
+    if (rc == 0) {
+	rrd_set_error("the xml ended while we were looking for an element");
+    } else {
+	xmlErrorPtr err = xmlGetLastError();
+	/* argh: err->message often contains \n at the end. This is not 
+	   what we want: Bite the bullet by copying the message, replacing any 
+	   \n, constructing the rrd error message and freeing the temp. buffer.
+	*/
+	char *msgcpy = NULL, *c;
+	if (err != NULL && err->message != NULL) {
+	    msgcpy = strdup(err->message);
+	    if (msgcpy != NULL) {
+		for (c = msgcpy ; *c ; c++) {
+		    if (*c == '\n') *c = ' ';
+		}
+		/* strip whitespace from end of message */
+		for (c-- ; c != msgcpy ; c--) {
+		    if (!isprint(*c)) {
+			*c = 0;
+		    }
+		}
+	    } else {
+		/* out of memory during error handling, hmmmm */
+	    }
+	}
+
+	rrd_set_error("error reading/parsing XML: %s", 
+		      msgcpy != NULL ? msgcpy : "?");
+	if (msgcpy) free(msgcpy);
+    }
     return NULL;
 } /* get_xml_element */
 
@@ -1061,6 +1091,76 @@ static int parse_tag_rrd(
     return (status);
 }                       /* int parse_tag_rrd */
 
+/* helper type for stdioXmlInputReaderForPipeInterface */
+
+typedef struct stdioXmlReaderContext_t {
+    FILE *stream;
+    int freeOnClose;
+    int closed;
+    char eofchar;
+} stdioXmlReaderContext;
+
+/* 
+ * this is a xmlInputReadCallback that is used for the pipe interface
+ * in case the passed filename is "-" (meaning standard input) to take
+ * care it will never actually close the stdio stream stdin. It will
+ * report eof once it reads the eof character (currently set to ctrl-Z
+ * (character code 26, hex 0x1A) in the calling code) anywhere on a line.
+ *
+ * Note that ctrl-Z is not an allowed character in XML 1.0 (which rrdtool
+ * uses). 
+ *
+ */
+static int stdioXmlInputReadCallback(
+    void *context, 
+    char *buffer, 
+    int len)
+{
+    stdioXmlReaderContext *sctx = (stdioXmlReaderContext*) context;
+
+    if (sctx == NULL) return -1;
+    if (sctx->stream == NULL) return -1;
+    if (sctx->closed) return 0;
+
+    char *r = fgets(buffer, len, sctx->stream);
+    if (r == NULL) {
+	sctx->closed = 1;
+	return 0;
+    }
+
+    char *where = strchr(r, sctx->eofchar);
+    if (where != NULL) {
+	sctx->closed = 1;
+	*where = 0;
+    }
+
+    return strlen(r);
+}
+
+static int stdioXmlInputCloseCallback(void *context)
+{
+    stdioXmlReaderContext *sctx = (stdioXmlReaderContext*) context;
+
+    if (sctx == NULL) return 0;
+
+    if (sctx->freeOnClose) {
+	sctx->freeOnClose = 0;
+	free(sctx);
+    }
+    return 0; /* everything is OK */
+}
+
+/* an XML error reporting function that just suppresses all error messages.
+   This is used when parsing an XML file from stdin. This should help to 
+   not break the pipe interface protocol by suppressing the sending out of
+   XML error messages. */
+static void ignoringErrorFunc(
+    void *ctx, 
+    const char * msg, 
+    ...)
+{
+}
+
 static rrd_t *parse_file(
     const char *filename)
 {
@@ -1068,12 +1168,42 @@ static rrd_t *parse_file(
     int       status;
 
     rrd_t    *rrd;
+    stdioXmlReaderContext *sctx = NULL;
 
-    reader = xmlNewTextReaderFilename(filename);
+    /* special handling for XML on stdin (like it is the case when using
+       the pipe interface) */
+    if (strcmp(filename, "-") == 0) {
+	sctx = malloc(sizeof(*sctx));
+	if (sctx == NULL) {
+	    rrd_set_error("parse_file: malloc failed.");
+	    return (NULL);
+	}
+	sctx->stream = stdin;
+	sctx->freeOnClose = 1;
+	sctx->closed = 0;
+	sctx->eofchar = 0x1A; /* ctrl-Z */
+
+	xmlSetGenericErrorFunc(NULL, ignoringErrorFunc);
+
+        reader = xmlReaderForIO(stdioXmlInputReadCallback,
+                                stdioXmlInputCloseCallback,
+                                sctx, 
+                                filename,
+                                NULL,
+                                0);
+    } else {
+        reader = xmlNewTextReaderFilename(filename);
+    } 
     if (reader == NULL) {
+	if (sctx != NULL) free(sctx);
+
         rrd_set_error("Could not create xml reader for: %s",filename);
         return (NULL);
     }
+
+    /* NOTE: from now on, sctx will get free'd implicitly through
+     * xmlFreeTextReader and its call to
+     * stdioXmlInputCloseCallback. */
 
     if (expect_element(reader,"rrd") != 0) {
         xmlFreeTextReader(reader);
