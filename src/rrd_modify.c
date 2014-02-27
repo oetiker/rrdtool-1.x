@@ -44,6 +44,7 @@ typedef struct {
     unsigned int index;
     char op;  // '+', '-', '='. 
     unsigned int row_count;
+    unsigned int final_row_count;
 } rra_mod_op_t;
 
 
@@ -256,14 +257,10 @@ static int rrd_modify_r(const char *infilename,
 		break;
 	    }
 	    if (final_row_count < 0) final_row_count = 0;
-	    /* this really is ugly: turn every operation into '=' to
-	       avoid having to duplicate this logic during the next
-	       round, when we will actually copy the data. I
-	       particularly don't like this, because it changes the
-	       data passed to us via an argument. */
+	    /* record the final row_count. I don't like this, because
+	       it changes the data passed to us via an argument: */
 
-	    rra_op->row_count = final_row_count;
-	    rra_op->op = '=';
+	    rra_op->final_row_count = final_row_count;
 	}
 
 	// do we have to keep the RRA at all??
@@ -382,7 +379,7 @@ static int rrd_modify_r(const char *infilename,
 	}
 
 	if (rra_op) {
-	    if (rra_op->row_count == 0) {
+	    if (rra_op->final_row_count == 0) {
 		// RRA deleted - skip !
 		continue;
 	    }
@@ -459,26 +456,58 @@ static int rrd_modify_r(const char *infilename,
 	   the data corresponding to copied DSes, add NaN values for newly 
 	   added DSes. */
 
-	unsigned int ii, jj;
-	for (ii = 0 ; ii < in.rra_def[i].row_cnt ; ii++) {
+	unsigned int ii = 0, jj, oi = 0;
+
+	/* we have to decide beforehand about row addition and
+	   deletion, because this takes place in the front of the
+	   rrd_value array....
+	 */
+
+	if (rra_op) {
+	    switch (rra_op->op) {
+	    case '-':
+		// remove rows: just skip the first couple of rows!
+		ii = rra_op->row_count;
+		break;
+	    case '+':
+		// add rows: insert the requested number of rows!
+		// currently, just add the all as NaN values...
+
+		for ( ; oi < rra_op->row_count ; oi++) {
+		    for (j = 0 ; j < out.stat_head->ds_cnt ; j++) {
+			out.rrd_value[total_cnt_out + 
+				      oi * out.stat_head->ds_cnt +
+				      j] = DNAN;
+		    }		
+		}
+		break;
+	    default:
+		rrd_set_error("RRA modification operation '%c' "
+			      "not (yet) supported", rra_op->op);
+		goto done;
+	    }
+	}
+
+	for ( ; ii < in.rra_def[i].row_cnt 
+		  && oi < out.rra_def[out_rra].row_cnt ; ii++, oi++) {
 	    for (j = jj = 0 ; j < ops_cnt ; j++) {
 		switch (ops[j]) {
 		case 'c': {
-		    out.rrd_value[total_cnt_out +ii * out.stat_head->ds_cnt + jj] =
+		    out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] =
 			in.rrd_value[total_cnt + ii * in.stat_head->ds_cnt + j];
 
 		    /* it might be better to use memcpy, actually (to
 		       treat them opaquely)... so keep the code for
 		       the time being */
 		    /*
-		    memcpy((void*) (out.rrd_value + total_cnt_out + ii * out.stat_head->ds_cnt + jj),
+		    memcpy((void*) (out.rrd_value + total_cnt_out + oi * out.stat_head->ds_cnt + jj),
 			   (void*) (in.rrd_value + total_cnt + ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
 		    */			   
 		    jj++;
 		    break;
 		}
 		case 'a': {
-		    out.rrd_value[total_cnt_out + ii * out.stat_head->ds_cnt + jj] = DNAN;
+		    out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] = DNAN;
 		    jj++;
 		    break;
 		}
@@ -739,6 +768,7 @@ int rrd_modify (
 		rra_mod.index = index;
 		rra_mod.op = sign;
 		rra_mod.row_count = number;
+		rra_mod.final_row_count = 0;
 		break;
 	    default:
 		rrd_set_error("Failed to parse RRA# command: invalid operation: %c", sign);
