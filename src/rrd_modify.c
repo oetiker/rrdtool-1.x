@@ -13,6 +13,9 @@
 
 #include <locale.h>
 
+// prototype
+static int write_rrd(const char *outfilename, rrd_t *out);
+
 /* a convenience realloc/memcpy combo  */
 static void * copy_over_realloc(void *dest, int dest_index, 
 				const void *src, int index,
@@ -56,7 +59,6 @@ static int rrd_modify_r(const char *infilename,
     char       *old_locale = NULL;
     char       *ops = NULL;
     unsigned int ops_cnt = 0;
-    char *tmpfile = NULL;
 
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
@@ -498,6 +500,29 @@ static int rrd_modify_r(const char *infilename,
 	out_rra++;
     }
 
+    rc = write_rrd(outfilename, &out);
+
+done:
+    /* clean up */
+    if (old_locale) 
+	setlocale(LC_NUMERIC, old_locale);
+
+    if (rrd_file != NULL) {
+	rrd_close(rrd_file);
+    }
+    rrd_free(&in);
+    rrd_free(&out);
+
+    if (ops != NULL) free(ops);
+
+    return rc;
+}
+
+
+static int write_rrd(const char *outfilename, rrd_t *out) {
+    int rc = -1;
+    char *tmpfile = NULL;
+
     /* write out the new file */
     FILE *fh = NULL;
     if (strcmp(outfilename, "-") == 0) {
@@ -528,7 +553,7 @@ static int rrd_modify_r(const char *infilename,
 	}
     }
 
-    rc = write_fh(fh, &out);
+    rc = write_fh(fh, out);
 
     if (fh != NULL && tmpfile != NULL) {
 	/* tmpfile != NULL indicates that we did NOT write to stdout,
@@ -582,22 +607,9 @@ static int rrd_modify_r(const char *infilename,
 	    unlink(tmpfile);
 	}
     }
-
 done:
-    /* clean up */
-    if (old_locale) 
-	setlocale(LC_NUMERIC, old_locale);
-
     if (tmpfile != NULL)
 	free(tmpfile);
-    
-    if (rrd_file != NULL) {
-	rrd_close(rrd_file);
-    }
-    rrd_free(&in);
-    rrd_free(&out);
-
-    if (ops != NULL) free(ops);
 
     return rc;
 }
