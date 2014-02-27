@@ -48,7 +48,7 @@ static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
 			const char **removeDS,
 			const char **addDS,
-			const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt) {
+			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt) {
     rrd_t in, out;
     int rc = -1;
     unsigned int i, j;
@@ -218,30 +218,72 @@ static int rrd_modify_r(const char *infilename,
     /* now take care to copy all RRAs, removing and adding columns for
        every row as needed for the requested DS changes */
 
-    /* we also reorder all rows */
+    /* we also reorder all rows, adding/removing rows as needed */
 
     rra_ptr_t rra_0_ptr = { .cur_row = 0 };
-
-    out.cdp_prep = realloc(out.cdp_prep, 
-			   sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
-			   * in.stat_head->rra_cnt);
-
-    if (out.cdp_prep == NULL) {
-	rrd_set_error("Cannot allocate memory");
-	goto done;
-    }
 
     cdp_prep_t empty_cdp_prep;
     memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
 
-    int total_rra_rows = 0;
+    int total_out_rra_rows = 0, total_in_rra_rows = 0;
 
+    rra_mod_op_t *rra_op = NULL;
+    int r;
     for (j = 0 ; j < in.stat_head->rra_cnt ; j++) {
+	total_in_rra_rows +=  in.rra_def[j].row_cnt;
+
+	rra_op = NULL;
+	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
+	    if (rra_mod_ops[r].index == j) {
+		rra_op = rra_mod_ops + r;
+		break;
+	    }
+	}
+
+	int final_row_count = in.rra_def[j].row_cnt;
+	if (rra_op) {
+	    switch (rra_op->op) {
+	    case '=':
+		final_row_count = rra_op->row_count;
+		break;
+	    case '-':
+		final_row_count -= rra_op->row_count;
+		break;
+	    case '+':
+		final_row_count += rra_op->row_count;
+		break;
+	    }
+	    if (final_row_count < 0) final_row_count = 0;
+	    /* this really is ugly: turn every operation into '=' to
+	       avoid having to duplicate this logic during the next
+	       round, when we will actually copy the data. I
+	       particularly don't like this, because it changes the
+	       data passed to us via an argument. */
+
+	    rra_op->row_count = final_row_count;
+	    rra_op->op = '=';
+	}
+
+	// do we have to keep the RRA at all??
+	if (final_row_count == 0) {
+	    // delete the RRA! - just skip processing this RRA....
+	    continue;
+	}
+
+	out.cdp_prep = realloc(out.cdp_prep, 
+			       sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
+			       * (out.stat_head->rra_cnt + 1));
+	
+	if (out.cdp_prep == NULL) {
+	    rrd_set_error("Cannot allocate memory");
+	    goto done;
+	}
+
 	/* for every RRA copy only those CDPs in the prep area where we keep 
 	   the DS! */
 
 	int start_index_in  = in.stat_head->ds_cnt * j;
-	int start_index_out = out.stat_head->ds_cnt * j;
+	int start_index_out = out.stat_head->ds_cnt * out.stat_head->rra_cnt;
 	
 	int ii;
 	for (i = ii = 0 ; i < ops_cnt ; i++) {
@@ -267,19 +309,22 @@ static int rrd_modify_r(const char *infilename,
 	    }
 	}
 
-	out.rra_def = copy_over_realloc(out.rra_def, j,
+	out.rra_def = copy_over_realloc(out.rra_def, out.stat_head->rra_cnt,
 					in.rra_def, j,
 					sizeof(rra_def_t));
 	if (out.rra_def == NULL) goto done;
 
-	out.rra_ptr = copy_over_realloc(out.rra_ptr, j,
+	// adapt row count:
+	out.rra_def[out.stat_head->rra_cnt].row_cnt = final_row_count;
+
+	out.rra_ptr = copy_over_realloc(out.rra_ptr, out.stat_head->rra_cnt,
 					&rra_0_ptr, 0,
 					sizeof(rra_ptr_t));
 	if (out.rra_ptr == NULL) goto done; 
 
-	out.stat_head->rra_cnt++;
+	total_out_rra_rows +=  out.rra_def[out.stat_head->rra_cnt].row_cnt;
 
-	total_rra_rows +=  out.rra_def[j].row_cnt;
+	out.stat_head->rra_cnt++;
     }
 
     /* read and process all data ... */
@@ -301,7 +346,7 @@ static int rrd_modify_r(const char *infilename,
 
     /* prepare space to read data in */
     all_data = realloc(all_data, 
-		       total_rra_rows * in.stat_head->ds_cnt
+		       total_in_rra_rows * in.stat_head->ds_cnt
 		       * sizeof(rrd_value_t));
     in.rrd_value = (void *) all_data;
     
@@ -312,7 +357,7 @@ static int rrd_modify_r(const char *infilename,
 
     /* prepare space for output data */
     out.rrd_value = realloc(out.rrd_value,
-			    total_rra_rows * out.stat_head->ds_cnt
+			    total_out_rra_rows * out.stat_head->ds_cnt
 			    * sizeof(rrd_value_t));
     
     if (out.rrd_value == NULL) {
@@ -324,10 +369,26 @@ static int rrd_modify_r(const char *infilename,
 
     int total_cnt = 0, total_cnt_out = 0;
 
+    int out_rra = 0;
     for (i = 0; i < in.stat_head->rra_cnt; i++) {
+	rra_op = NULL;
+	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
+	    if (rra_mod_ops[r].index == i) {
+		rra_op = rra_mod_ops + r;
+		break;
+	    }
+	}
+
+	if (rra_op) {
+	    if (rra_op->row_count == 0) {
+		// RRA deleted - skip !
+		continue;
+	    }
+	}
+
 	/* number and sizes of all the data in an RRA */
 	int rra_values     = in.stat_head->ds_cnt  * in.rra_def[i].row_cnt;
-	int rra_values_out = out.stat_head->ds_cnt * out.rra_def[i].row_cnt;
+	int rra_values_out = out.stat_head->ds_cnt * out.rra_def[out_rra].row_cnt;
 
 	ssize_t rra_size     = sizeof(rrd_value_t) * rra_values;
 	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
@@ -433,6 +494,8 @@ static int rrd_modify_r(const char *infilename,
 
 	total_cnt     += rra_values;
 	total_cnt_out += rra_values_out;
+
+	out_rra++;
     }
 
     /* write out the new file */
