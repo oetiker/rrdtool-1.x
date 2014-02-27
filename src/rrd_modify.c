@@ -860,8 +860,7 @@ int rrd_modify (
 
 	    rcnt++;
 	    remove[rcnt] = NULL;
-	}
-	if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
+	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
 	    add = realloc(add, (acnt + 2) * sizeof(char*));
 	    if (add == NULL) {
 		rrd_set_error("out of memory");
