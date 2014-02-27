@@ -878,8 +878,7 @@ int rrd_modify (
 
 	    acnt++;
 	    add[acnt] = NULL;
-	}
-  	if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	} else if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
 	    rra_mod_op_t rra_mod = { .def = NULL };
 	    char sign;
 	    unsigned int number;
@@ -915,8 +914,7 @@ int rrd_modify (
 		goto done;
 	    }
 	    rraopcnt++;
-	}
-	if (strncmp("RRA:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	} else if (strncmp("RRA:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
 	    rra_mod_op_t rra_mod;
 	    rra_mod.op = 'a';
 	    rra_mod.index = -1;
@@ -936,6 +934,31 @@ int rrd_modify (
 		goto done;
 	    }
 	    rraopcnt++;
+	} else if (strncmp("DELRRA:", argv[i], 7) == 0 && strlen(argv[i]) > 7) {
+	    rra_mod_op_t rra_mod = { .def = NULL,
+				     .op = '=', 
+				     .row_count = 0 // eg. deletion
+	    };
+	    
+	    rra_mod.index = atoi(argv[i] + 7);
+	    if (rra_mod.index < 0 ) {
+		rrd_set_error("DELRRA requires a non-negative, integer argument");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	} else {
+	    rrd_set_error("unparseable argument: %s", argv[i]);
+	    rc = -1;
+	    goto done;
 	}
     }
 
