@@ -41,10 +41,11 @@ static void * copy_over_realloc(void *dest, int dest_index,
 */
 
 typedef struct {
-    unsigned int index;
+    int index;
     char op;  // '+', '-', '='. 
     unsigned int row_count;
     unsigned int final_row_count;
+    
 } rra_mod_op_t;
 
 

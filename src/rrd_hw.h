@@ -14,8 +14,9 @@ int       update_aberrant_CF(
     unsigned long ds_idx,
     unsigned short CDP_scratch_idx,
     rrd_value_t *seasonal_coef);
-int       create_hw_contingent_rras(
-    rrd_t *rrd,
+rra_def_t *create_hw_contingent_rras(
+    rra_def_t *rrd,
+    long unsigned int *rra_cnt,
     unsigned short period,
     unsigned long hashed_name);
 int       lookup_seasonal(
