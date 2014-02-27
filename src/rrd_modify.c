@@ -285,30 +285,6 @@ static int rrd_modify_r(const char *infilename,
 	int start_index_in  = in.stat_head->ds_cnt * j;
 	int start_index_out = out.stat_head->ds_cnt * out.stat_head->rra_cnt;
 	
-	int ii;
-	for (i = ii = 0 ; i < ops_cnt ; i++) {
-	    switch (ops[i]) {
-	    case 'c': {
-		memcpy(out.cdp_prep + start_index_out + ii,
-		       in.cdp_prep + start_index_in + i, 
-		       sizeof(cdp_prep_t));
-		ii++;
-		break;
-	    } 
-	    case 'a': {
-		memcpy(out.cdp_prep + start_index_out + ii,
-		       &empty_cdp_prep, sizeof(cdp_prep_t));
-		ii++;
-		break;
-	    }
-	    case 'd':
-		break;
-	    default:
-		rrd_set_error("internal error: invalid ops");
-		goto done;
-	    }
-	}
-
 	out.rra_def = copy_over_realloc(out.rra_def, out.stat_head->rra_cnt,
 					in.rra_def, j,
 					sizeof(rra_def_t));
@@ -321,6 +297,35 @@ static int rrd_modify_r(const char *infilename,
 					&rra_0_ptr, 0,
 					sizeof(rra_ptr_t));
 	if (out.rra_ptr == NULL) goto done; 
+
+	int ii;
+	for (i = ii = 0 ; i < ops_cnt ; i++) {
+	    switch (ops[i]) {
+	    case 'c': {
+		memcpy(out.cdp_prep + start_index_out + ii,
+		       in.cdp_prep + start_index_in + i, 
+		       sizeof(cdp_prep_t));
+		ii++;
+		break;
+	    } 
+	    case 'a': {
+		cdp_prep_t *cdp_prep = out.cdp_prep + start_index_out + ii;
+		memcpy(cdp_prep,
+		       &empty_cdp_prep, sizeof(cdp_prep_t));
+
+		init_cdp(&out, 
+			 out.rra_def + out.stat_head->rra_cnt,
+			 cdp_prep);
+		ii++;
+		break;
+	    }
+	    case 'd':
+		break;
+	    default:
+		rrd_set_error("internal error: invalid ops");
+		goto done;
+	    }
+	}
 
 	total_out_rra_rows +=  out.rra_def[out.stat_head->rra_cnt].row_cnt;
 
@@ -342,7 +347,6 @@ static int rrd_modify_r(const char *infilename,
     */
 
     char *all_data = NULL;
-
 
     /* prepare space to read data in */
     all_data = realloc(all_data, 
