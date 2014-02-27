@@ -41,11 +41,18 @@ static void * copy_over_realloc(void *dest, int dest_index,
 */
 
 typedef struct {
+    /* the index of the RRA to be changed or -1 if there is no current
+       RRA */
     int index;
-    char op;  // '+', '-', '='. 
+    /* what operation */
+    char op;  // '+', '-', '=', 'a'
+    /* the number originally specified with the operation (eg. rows to
+       be added) */
     unsigned int row_count;
+    /* the resulting final row count for the RRA */
     unsigned int final_row_count;
-    
+    /* An RRA definition in case of an addition */
+    char *def;
 } rra_mod_op_t;
 
 
@@ -238,7 +245,7 @@ static int rrd_modify_r(const char *infilename,
 
 	rra_op = NULL;
 	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
-	    if (rra_mod_ops[r].index == j) {
+	    if (rra_mod_ops[r].index == (int) j) {
 		rra_op = rra_mod_ops + r;
 		break;
 	    }
@@ -377,7 +384,7 @@ static int rrd_modify_r(const char *infilename,
     for (i = 0; i < in.stat_head->rra_cnt; i++) {
 	rra_op = NULL;
 	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
-	    if (rra_mod_ops[r].index == i) {
+	    if (rra_mod_ops[r].index == (int)i) {
 		rra_op = rra_mod_ops + r;
 		break;
 	    }
@@ -551,6 +558,106 @@ static int rrd_modify_r(const char *infilename,
 	total_cnt_out += rra_values_out;
 
 	out_rra++;
+    }
+
+    /* now add any new RRAs: */
+    unsigned int last_rra_cnt = out.stat_head->rra_cnt;
+    for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
+	if (rra_mod_ops[r].op == 'a') {
+	    rra_def_t rra_def;
+
+	    // the hash doesn't really matter...
+	    if (parseRRA(rra_mod_ops[r].def, &rra_def, 0x123123823123) != 0) {
+		// failed!!!
+		goto done;
+	    }
+
+	    out.rra_def = copy_over_realloc(out.rra_def, out.stat_head->rra_cnt,
+					    &rra_def, 0,
+					    sizeof(rra_def_t));
+	    if (out.rra_def == NULL) goto done;
+	    out.stat_head->rra_cnt++;
+
+	    /*
+	    rrd.stat_head->rra_cnt++;
+
+	    rrd.rra_def = handle_dependent_rras(rrd.rra_def, &(rrd.stat_head->rra_cnt), 
+						hashed_name);
+	    if (rrd.rra_def == NULL) {
+		rrd_free2(&rrd);
+		return -1;
+	    }
+	    */
+	    out.rra_def = handle_dependent_rras(out.rra_def, &(out.stat_head->rra_cnt), 
+						219283213712631);
+	    if (out.rra_def == NULL) {
+		goto done;
+	    }
+	}
+    }
+
+    if (last_rra_cnt < out.stat_head->rra_cnt) {
+	// extend cdp_prep and rra_ptr arrays
+	out.cdp_prep = realloc(out.cdp_prep, 
+			       sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
+			       * (out.stat_head->rra_cnt));
+
+	if (out.cdp_prep == NULL) {
+	    rrd_set_error("out of memory");
+	    goto done;
+	}
+	
+	out.rra_ptr = realloc(out.rra_ptr,
+			      sizeof(rra_ptr_t) * out.stat_head->rra_cnt);
+	
+	if (out.rra_ptr == NULL) {
+	    rrd_set_error("out of memory");
+	    goto done;
+	}
+    }
+
+    for ( ; last_rra_cnt < out.stat_head->rra_cnt ; last_rra_cnt++ ) {
+	// RRA added!!!
+	rra_def_t *rra_def = out.rra_def + last_rra_cnt;
+
+	// prepare CDPs + values for new RRA
+	int start_index_out = out.stat_head->ds_cnt * last_rra_cnt;
+	for (i = 0 ; i < out.stat_head->ds_cnt ; i++) {
+	    cdp_prep_t *cdp_prep = out.cdp_prep + start_index_out + i;
+	    memcpy(cdp_prep,
+		   &empty_cdp_prep, sizeof(cdp_prep_t));
+
+	    init_cdp(&out, rra_def, cdp_prep);
+	}
+
+	out.rra_ptr[last_rra_cnt].cur_row = 0;
+
+	// extend and fill rrd_value array...
+
+	total_out_rra_rows += rra_def->row_cnt;
+
+	/* prepare space for output data */
+	out.rrd_value = realloc(out.rrd_value,
+				(total_out_rra_rows) * out.stat_head->ds_cnt
+				* sizeof(rrd_value_t));
+    
+	if (out.rrd_value == NULL) {
+	    rrd_set_error("out of memory");
+	    goto done;
+	}
+
+	unsigned int oi, jj;
+	for (oi = 0 ; oi < rra_def->row_cnt ; oi++) {
+	    for (jj = 0 ; jj < out.stat_head->ds_cnt ; jj++) {
+		out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] = DNAN;
+	    }
+	}
+
+	int rra_values_out = out.stat_head->ds_cnt * rra_def->row_cnt;
+	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
+
+	rra_start_out += rra_size_out;
+	total_cnt_out += rra_values_out;
     }
 
     rc = write_rrd(outfilename, &out);
@@ -773,7 +880,7 @@ int rrd_modify (
 	    add[acnt] = NULL;
 	}
   	if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-	    rra_mod_op_t rra_mod;
+	    rra_mod_op_t rra_mod = { .def = NULL };
 	    char sign;
 	    unsigned int number;
 	    unsigned int index;
@@ -809,7 +916,28 @@ int rrd_modify (
 	    }
 	    rraopcnt++;
 	}
-  }
+	if (strncmp("RRA:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	    rra_mod_op_t rra_mod;
+	    rra_mod.op = 'a';
+	    rra_mod.index = -1;
+	    rra_mod.def = strdup(argv[i]);
+
+	    if (rra_mod.def == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	}
+    }
 
     if ((argc - optind) >= 2) {
         rc = rrd_modify_r(argv[optind], argv[optind + 1], 
@@ -833,6 +961,9 @@ done:
 	free(add);
     }
     if (rra_ops) {
+	for (i = 0 ; i < rraopcnt ; i++) {
+	    if (rra_ops[i].def) free(rra_ops[i].def);
+	}
 	free(rra_ops);
     }
     return rc;
