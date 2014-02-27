@@ -464,16 +464,35 @@ static int rrd_modify_r(const char *infilename,
 	 */
 
 	if (rra_op) {
-	    switch (rra_op->op) {
+	    char op = rra_op->op;
+	    unsigned int row_count = rra_op->row_count;
+	    
+	    // rewrite '=' ops into '-' or '+' for better code-reuse...
+	    if (op == '=') {
+		if (row_count < in.rra_def[i].row_cnt) {
+		    row_count = in.rra_def[i].row_cnt - row_count;
+		    op = '-';
+		} else if (row_count > in.rra_def[i].row_cnt) {
+		    row_count = row_count - in.rra_def[i].row_cnt;
+		    op = '+';
+		} else {
+		    // equal - special case: nothing to do...
+		}
+	    }
+
+	    switch (op) {
+	    case '=':
+		// no op
+		break;
 	    case '-':
 		// remove rows: just skip the first couple of rows!
-		ii = rra_op->row_count;
+		ii = row_count;
 		break;
 	    case '+':
 		// add rows: insert the requested number of rows!
 		// currently, just add the all as NaN values...
 
-		for ( ; oi < rra_op->row_count ; oi++) {
+		for ( ; oi < row_count ; oi++) {
 		    for (j = 0 ; j < out.stat_head->ds_cnt ; j++) {
 			out.rrd_value[total_cnt_out + 
 				      oi * out.stat_head->ds_cnt +
