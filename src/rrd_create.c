@@ -754,6 +754,41 @@ rra_def_t * create_hw_contingent_rras(rra_def_t *rra_defs,
      return rra_defs;
 }
 
+void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, cdp_prep_t *cdp_prep)
+{
+
+    switch (cf_conv(rra_def->cf_nam)) {
+        case CF_HWPREDICT:
+        case CF_MHWPREDICT:
+            init_hwpredict_cdp(cdp_prep);
+            break;
+        case CF_SEASONAL:
+        case CF_DEVSEASONAL:
+            init_seasonal_cdp(cdp_prep);
+            break;
+        case CF_FAILURES:
+            /* initialize violation history to 0 */
+            for (int ii = 0; ii < MAX_CDP_PAR_EN; ii++) {
+                /* We can zero everything out, by setting u_val to the
+                 * NULL address. Each array entry in scratch is 8 bytes
+                 * (a double), but u_cnt only accessed 4 bytes (long) */
+                cdp_prep->scratch[ii].u_val = 0.0;
+            }
+            break;
+        default:
+            /* can not be zero because we don't know anything ... */
+            cdp_prep->scratch[CDP_val].u_val = DNAN;
+            /* startup missing pdp count */
+            cdp_prep->scratch[CDP_unkn_pdp_cnt].u_cnt =
+                ((rrd->live_head->last_up -
+                  rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
+                 % (rrd->stat_head->pdp_step
+                    * rra_def->pdp_cnt)) / rrd->stat_head->pdp_step;
+            break;
+    
+    }
+}
+
 /* create and empty rrd file according to the specs given */
 
 int rrd_create_fn(
@@ -816,35 +851,7 @@ int rrd_create_fn(
 
 
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        switch (cf_conv(rrd->rra_def[i].cf_nam)) {
-        case CF_HWPREDICT:
-        case CF_MHWPREDICT:
-            init_hwpredict_cdp(rrd->cdp_prep);
-            break;
-        case CF_SEASONAL:
-        case CF_DEVSEASONAL:
-            init_seasonal_cdp(rrd->cdp_prep);
-            break;
-        case CF_FAILURES:
-            /* initialize violation history to 0 */
-            for (ii = 0; ii < MAX_CDP_PAR_EN; ii++) {
-                /* We can zero everything out, by setting u_val to the
-                 * NULL address. Each array entry in scratch is 8 bytes
-                 * (a double), but u_cnt only accessed 4 bytes (long) */
-                rrd->cdp_prep->scratch[ii].u_val = 0.0;
-            }
-            break;
-        default:
-            /* can not be zero because we don't know anything ... */
-            rrd->cdp_prep->scratch[CDP_val].u_val = DNAN;
-            /* startup missing pdp count */
-            rrd->cdp_prep->scratch[CDP_unkn_pdp_cnt].u_cnt =
-                ((rrd->live_head->last_up -
-                  rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
-                 % (rrd->stat_head->pdp_step
-                    * rrd->rra_def[i].pdp_cnt)) / rrd->stat_head->pdp_step;
-            break;
-        }
+	init_cdp(rrd, &(rrd->rra_def[i]), rrd->cdp_prep);
 
         for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
             rrd_write(rrd_file_dn, rrd->cdp_prep, sizeof(cdp_prep_t));

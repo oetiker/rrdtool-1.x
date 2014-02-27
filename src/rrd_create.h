@@ -25,6 +25,10 @@ rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array,
 				 long unsigned int *rra_cnt, 
 				 unsigned long hash);
 
+void init_cdp(const rrd_t *rrd, 
+	      const rra_def_t *rra_def, 
+	      cdp_prep_t *cdp_prep);
+
 #endif
 
 
