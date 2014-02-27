@@ -15,7 +15,15 @@ extern    "C" {
 int parseDS(const char *def, 
 	    ds_def_t *ds_def,
 	    void *key_hash,
-	    long (*lookup)(void *, char *)); 
+	    long (*lookup)(void *, char *));
+
+int parseRRA(const char *def,
+	     rra_def_t *rra_def, 
+	     unsigned long hash);
+
+rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array, 
+				 long unsigned int *rra_cnt, 
+				 unsigned long hash);
 
 #endif
 

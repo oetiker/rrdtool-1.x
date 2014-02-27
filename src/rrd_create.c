@@ -187,9 +187,9 @@ int parseDS(const char *def,
 }
 
 
-static int parseRRA(const char *def,
-		    rra_def_t *rra_def, 
-		    unsigned long hash) {
+int parseRRA(const char *def,
+	     rra_def_t *rra_def, 
+	     unsigned long hash) {
     char     *argvcopy;
     char     *tokptr = "";
     unsigned short token_idx, error_flag, period = 0;
@@ -458,9 +458,9 @@ static int parseRRA(const char *def,
   the one with index rra_cnt-1 to check if more RRAs have to be
   created
  */
-static rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array, 
-					long unsigned int *rra_cnt, 
-					unsigned long hash) {
+rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array, 
+				 long unsigned int *rra_cnt, 
+				 unsigned long hash) {
     rra_def_t *rra_def = rra_def_array + (*rra_cnt-1);
 
     /* should we create CF_SEASONAL, CF_DEVSEASONAL, and CF_DEVPREDICT? */
