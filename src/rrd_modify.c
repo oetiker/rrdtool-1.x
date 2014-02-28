@@ -404,63 +404,17 @@ static int rrd_modify_r(const char *infilename,
 	ssize_t rra_size     = sizeof(rrd_value_t) * rra_values;
 	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
 
-	/* reorder data by cleaverly reading it into the right place */
-
-	/*
-	  Data in the RRD file:
-	                             
-	  <-------------RRA-------------->
-	  BBBBBBBBBBBBBBBBBBBBBAAAAAAAAAAA
-          ^                    ^          ^
-          0                 cur_row    row_cnt
-
-	  Data in memory should become
-	                             
-	  <-------------RRA-------------->
-          AAAAAAAAAAABBBBBBBBBBBBBBBBBBBBB
-	  ^          ^                    ^
-       cur_row=0     n                 row_cnt
-
-	  using:   n = row_cnt - cur_row
-
-	  we first read cur_row values to position n and then n values to 
-	  position 0.
-
-	 */
-
-	/* instead of the actual cur_row, we have to add 1, because
-	   cur_row does not point to the next "free", but the
-	   currently in use position */
-	int last = (in.rra_ptr[i].cur_row + 1) % in.rra_def[i].row_cnt; 
-	int n = in.rra_def[i].row_cnt - last;
-
-	size_t to_read = last * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
+	size_t to_read = in.rra_def[i].row_cnt * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
 	size_t read_bytes;
 
-	if (to_read > 0) {
-	    read_bytes = 
-		rrd_read(rrd_file, 
-			 all_data + rra_start + 
-			 n * sizeof(rrd_value_t) * in.stat_head->ds_cnt, 
-			 to_read);	
-	    
-	    if (read_bytes != to_read) {
-		rrd_set_error("short read 1");
-		goto done;
-	    }
-	}
-
-	to_read = n * sizeof(rrd_value_t) * in.stat_head->ds_cnt ;
-	if (to_read > 0) {
-	    read_bytes = 
-		rrd_read(rrd_file, 
-			 all_data + rra_start,
-			 to_read);
-	    
-	    if (read_bytes != to_read) {
-		rrd_set_error("short read 2");
-		goto done;
-	    }
+	read_bytes = 
+	    rrd_read(rrd_file, 
+		     all_data + rra_start,
+		     to_read);
+	
+	if (read_bytes != to_read) {
+	    rrd_set_error("short read 2");
+	    goto done;
 	}
 
 	/* we now have all the data for the current RRA available, now
@@ -519,20 +473,23 @@ static int rrd_modify_r(const char *infilename,
 	    }
 	}
 
+	/* now do the actual copying of data */
+
 	for ( ; ii < in.rra_def[i].row_cnt 
 		  && oi < out.rra_def[out_rra].row_cnt ; ii++, oi++) {
+	    int real_ii = (ii + in.rra_ptr[i].cur_row + 1) % in.rra_def[i].row_cnt;
 	    for (j = jj = 0 ; j < ops_cnt ; j++) {
 		switch (ops[j]) {
 		case 'c': {
 		    out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] =
-			in.rrd_value[total_cnt + ii * in.stat_head->ds_cnt + j];
+			in.rrd_value[total_cnt + real_ii * in.stat_head->ds_cnt + j];
 
 		    /* it might be better to use memcpy, actually (to
 		       treat them opaquely)... so keep the code for
 		       the time being */
 		    /*
 		    memcpy((void*) (out.rrd_value + total_cnt_out + oi * out.stat_head->ds_cnt + jj),
-			   (void*) (in.rrd_value + total_cnt + ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
+			   (void*) (in.rrd_value + total_cnt + real_ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
 		    */			   
 		    jj++;
 		    break;
