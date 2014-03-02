@@ -189,6 +189,7 @@ int parseDS(const char *def,
 
 int parseRRA(const char *def,
 	     rra_def_t *rra_def, 
+	     rrd_t *rrd,
 	     unsigned long hash) {
     char     *argvcopy;
     char     *tokptr = "";
@@ -196,6 +197,7 @@ int parseRRA(const char *def,
     int       cf_id = -1;
     int       token_min = 4;
     int       row_cnt;
+    char     *require_version = NULL;
 
     memset(rra_def, 0, sizeof(rra_def_t));
 
@@ -211,7 +213,7 @@ int parseRRA(const char *def,
 	    cf_id = cf_conv(rra_def->cf_nam);
 	    switch (cf_id) {
 	    case CF_MHWPREDICT:
-		// FIXME		strcpy(rrd.stat_head->version, RRD_VERSION);    /* MHWPREDICT causes Version 4 */
+		require_version = RRD_VERSION;    /* MHWPREDICT causes Version 4 */
 	    case CF_HWPREDICT:
 		token_min = 5;
 		/* initialize some parameters */
@@ -385,7 +387,7 @@ int parseRRA(const char *def,
 		if (sscanf(token, "smoothing-window=%lf",
 			   &(rra_def->par[RRA_seasonal_smoothing_window].
 			     u_val))) {
-		    // FIXME		     strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing-window causes Version 4 */
+		    require_version = RRD_VERSION;    /* smoothing-window causes Version 4 */
 		    if (rra_def->par[RRA_seasonal_smoothing_window].u_val < 0.0
 			|| rra_def->par[RRA_seasonal_smoothing_window].u_val >
 			1.0) {
@@ -444,6 +446,15 @@ int parseRRA(const char *def,
 	rrd_set_error("Expected at least %i arguments for RRA but got %i",token_min,token_idx);
 	return(-1);
     }
+
+    // parsing went well. ONLY THEN are we allowed to produce
+    // additional side effects.
+    if (require_version != NULL) {
+        if (rrd) {
+            strcpy(rrd->stat_head->version, RRD_VERSION);
+        }
+    }
+
 #ifdef DEBUG
     fprintf(stderr,
 	    "Creating RRA CF: %s, dep idx %lu\n",
@@ -589,7 +600,7 @@ int rrd_create_r2(
                 return (-1);
             }
 
-	    parseRRA(argv[i], rrd.rra_def + rrd.stat_head->rra_cnt,
+	    parseRRA(argv[i], rrd.rra_def + rrd.stat_head->rra_cnt, &rrd,
 		     hashed_name);
 
 	    if (rrd_test_error()) {

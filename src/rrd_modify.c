@@ -858,10 +858,12 @@ static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
 	    rra_def_t rra_def;
 
 	    // the hash doesn't really matter...
-	    if (parseRRA(rra_mod_ops[r].def, &rra_def, 0x123123823123) != 0) {
+	    parseRRA(rra_mod_ops[r].def, &rra_def, out, 0x123123823123);
+
+	    if (rrd_test_error()) {
 		// failed!!!
 		goto done;
-	    }
+            }
 
 	    out->rra_def = copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
 					    &rra_def, 0,
