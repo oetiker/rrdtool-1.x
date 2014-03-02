@@ -219,6 +219,9 @@ static int populate_row(const rrd_t *in_rrd,
 		goto done;
 	    }
 	    candidates_cnt++;
+#ifdef MODIFY_DEBUG
+	    fprintf(stderr, "candidate: index=%d pdp=%d\n", i, in_rrd->rra_def[i].pdp_cnt);
+#endif
 	}
 	total_rows += other_rra->row_cnt;
     }
@@ -263,7 +266,6 @@ static int populate_row(const rrd_t *in_rrd,
 		continue;
 	    }
 
-
 	    /* note: cand_row_end is usually after cand_row_start,
 	       unless we have a wrap over.... so we turn the
 	       interation over the rows into one based on the number
@@ -276,10 +278,21 @@ static int populate_row(const rrd_t *in_rrd,
 	    int cand_rows = (cand_row_end - cand_row_start + 1);
 	    if (cand_rows < 0) cand_rows += r->row_cnt;
 
+#ifdef MODIFY_DEBUG
+	    fprintf(stderr, "cand: start=%d end=%d rows=%d\n",
+		    cand_row_start, cand_row_end, cand_rows); 
+#endif
+
 	    int cand_timeslot = r->pdp_cnt * c->rrd->stat_head->pdp_step;
 
 	    int out_ds_cnt = out_rrd->stat_head->ds_cnt;
 	    for (int k = 0 ; k < out_ds_cnt ; k++) {
+		/* check if we already have a value (maybe from a
+		   prior candidate....)  if we have: skip this DS */
+		if (! isnan(values[row * out_ds_cnt + k])) {
+		    continue;
+		}
+
 		int cand_row, ci ;
 		rrd_value_t tmp = DNAN, final = DNAN;
 		int covered = 0;
@@ -878,7 +891,6 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
     int total_cnt_out = 0;
 
     memset(&empty_cdp_prep, 0, sizeof(cdp_prep_t));
-
 
     // first, calculate total number of rows already in rrd_value...
 
