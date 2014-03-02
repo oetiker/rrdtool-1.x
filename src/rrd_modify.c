@@ -10,6 +10,7 @@
 #include "rrd_client.h"
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
+#include "fnv.h"
 
 #include <locale.h>
 
@@ -37,7 +38,7 @@ static int positive_mod(int a, int b) {
 
 // prototypes
 static int write_rrd(const char *outfilename, rrd_t *out);
-static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt);
+static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
 
 /* a convenience realloc/memcpy combo  */
 static void * copy_over_realloc(void *dest, int dest_index, 
@@ -810,7 +811,9 @@ static int rrd_modify_r(const char *infilename,
 	out_rra++;
     }
 
-    rc = add_rras(&out, rra_mod_ops, rra_mod_ops_cnt);
+    unsigned long hashed_name = FnvHash(outfilename);
+
+    rc = add_rras(&out, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
 
     if (rc != 0) goto done;
 
@@ -832,7 +835,7 @@ done:
     return rc;
 }
 
-static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt) 
+static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash) 
 {
     int rc = -1;
 
@@ -858,7 +861,7 @@ static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
 	    rra_def_t rra_def;
 
 	    // the hash doesn't really matter...
-	    parseRRA(rra_mod_ops[r].def, &rra_def, out, 0x123123823123);
+	    parseRRA(rra_mod_ops[r].def, &rra_def, out, hash);
 
 	    if (rrd_test_error()) {
 		// failed!!!
