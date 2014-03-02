@@ -969,7 +969,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	    init_cdp(out, rra_def, cdp_prep);
 	}
 
-	out->rra_ptr[last_rra_cnt].cur_row = 0;
+	out->rra_ptr[last_rra_cnt].cur_row = rra_def->row_cnt - 1;
 
 	// extend and fill rrd_value array...
 
