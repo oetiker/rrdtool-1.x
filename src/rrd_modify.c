@@ -377,8 +377,8 @@ static int rrd_modify_r(const char *infilename,
        files should be modified, a dump/restore cycle should be
        done.... */
 
-    if (strcmp(in.stat_head->version, "0003") != 0) {
-	rrd_set_error("direct modification is only supported for version 3 RRD files. Consider to dump/restore before retrying a modification");
+    if (! (strcmp(in.stat_head->version, RRD_VERSION3) == 0 || strcmp(in.stat_head->version, RRD_VERSION) == 0) ) {
+	rrd_set_error("direct modification is only supported for version 3 or version 4 RRD files. Consider to dump/restore before retrying a modification");
 	goto done;
     }
 
@@ -393,7 +393,7 @@ static int rrd_modify_r(const char *infilename,
     memset(out.stat_head, 0, (sizeof(stat_head_t)));
 
     strncpy(out.stat_head->cookie, "RRD", sizeof(out.stat_head->cookie));
-    strcpy(out.stat_head->version, "0003");
+    strcpy(out.stat_head->version, in.stat_head->version);
     out.stat_head->float_cookie = FLOAT_COOKIE;
     out.stat_head->pdp_step = in.stat_head->pdp_step;
 
