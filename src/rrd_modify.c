@@ -28,6 +28,13 @@ typedef struct {
     char *def;
 } rra_mod_op_t;
 
+// calculate a % b, guaranteeing a positive result...
+static int positive_mod(int a, int b) {
+    int x = a % b;
+    if (x < 0) x += b;
+    return x;
+}
+
 // prototypes
 static int write_rrd(const char *outfilename, rrd_t *out);
 static int add_rras(rrd_t *out, rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt);
@@ -45,6 +52,269 @@ static void * copy_over_realloc(void *dest, int dest_index,
     memcpy(((char*)r) + size * dest_index, ((char*)src) + size * index, size);
     return r;
 }
+
+
+/* 
+   Try to populate rows (presumably for added rows) in new_rra from
+   available data in rrd. This only works for some CF types and
+   generally is wildly inacurate - eg. it does not take the xff factor
+   into account. Do not think of it as producing correct data but
+   rather as a way to produce nice pictures for subsequent rrdgraph
+   invocations...
+
+   NOTE: rrd and new_rra may point to entirely different RRAs.
+*/
+
+
+typedef struct {
+    rrd_t *rrd;
+    int rra_index;
+    rrd_value_t *values;
+} candidate_t;
+
+static int sort_candidates(const void *va, const void *vb) {
+    const candidate_t *a = (candidate_t *) va;
+    const candidate_t *b = (candidate_t *) vb;
+
+    if (a == b) return 0;
+    
+    if (a->rrd == b->rrd && a->rra_index == b->rra_index) return 0;
+    
+    rra_def_t *a_def = a->rrd->rra_def + a->rra_index;
+    rra_def_t *b_def = b->rrd->rra_def + b->rra_index;
+
+    if (a_def->pdp_cnt == b_def->pdp_cnt) {
+	return b_def->row_cnt - a_def->row_cnt;  // prefer the RRA with more rows
+    }
+
+    // ultimately, prefer the RRA with fewer PDPs per CDP
+    return a_def->pdp_cnt - b_def->pdp_cnt;
+}
+
+static time_t end_time_for_row(const rrd_t *rrd, 
+			       const rra_def_t *rra, 
+			       int cur_row, int row) {
+    // one entry in the candidate covers timeslot seconds
+    int timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
+	    
+    /* Just to re-iterate how data is stored in RRAs, in order to
+       understand the following code: the current slot was filled at
+       last_up time, but slots always correspond with time periods of
+       length timeslot, ending at exact multiples of timeslot
+       wrt. the unix epoch. So the current timeslot ends at:
+       
+       int(last_up / timeslot) * timeslot 
+       
+       or (equivalently):
+       
+       last_up - last_up % timeslot
+    */
+
+    int past_cnt = positive_mod((cur_row - row), rra->row_cnt);
+    
+    time_t last_up = rrd->live_head->last_up;
+    time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
+
+    return now;
+}
+
+static int row_for_time(const rrd_t *rrd, 
+			const rra_def_t *rra, 
+			int cur_row, time_t time) 
+{
+    time_t last_up = rrd->live_head->last_up;
+    int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
+
+    // align to slot boundary end times
+    time_t delta = time % timeslot;
+    if (delta > 0) time += timeslot - delta;
+    
+    delta = time % timeslot;
+    if (delta > 0) last_up += timeslot - delta;
+
+    if (time > last_up) return -1;  // out of range
+    if (time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
+     
+    int past_cnt = (last_up - time) / timeslot;
+    if (past_cnt >= (int) rra->row_cnt) return -1;
+
+    // NOTE: rra->row_cnt is unsigned!!
+    int row = positive_mod(cur_row - past_cnt, rra->row_cnt);
+
+    return row < 0 ? (row + (int) rra->row_cnt) : row ;
+}
+
+/*
+  rrd .. the RRD to use for the search of other RRAs to populate the new RRA
+  new_rra .. the RRA to populate. It is assumed, that this RRA will
+             become part of rrd. This means that all meta settings (step size, 
+	     last update time, etc.) not part of the RRA definition can be taken
+	     from rrd.
+  populate_start .. the first row to populate in new_rra
+  populate_cnt .. the number of rows to populate in new_rra, starting at
+                  populate_start
+ */
+static int populate_row(rrd_t *rrd, 
+			rra_def_t *new_rra, 
+			int cur_row,
+			rrd_value_t *values,
+			int populate_start,
+			int populate_cnt) {
+    int rc = -1;
+
+    if (rrd->stat_head->rra_cnt <= 1) return 0;
+
+    enum cf_en cf = cf_conv(new_rra->cf_nam);
+    switch (cf) {
+    case CF_AVERAGE:
+    case CF_MINIMUM:
+    case CF_MAXIMUM:
+    case CF_LAST:
+	break;
+    default: // unsupported CF for extension
+	return 0;
+    }
+
+    int ds_cnt = rrd->stat_head->ds_cnt;
+
+    candidate_t *candidates = NULL;
+    int candidates_cnt = 0;
+
+    int i, ri;
+    int total_rows = 0;
+
+    /* find other rows with the same CF or an RRA with CF_AVERAGE and
+       a stepping of 1 as possible candidates for filling */
+    for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
+	rra_def_t *other_rra = rrd->rra_def + i;
+
+	// can't use our own data
+	if (other_rra == new_rra) {
+	    continue;
+	}
+
+	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
+	if (other_cf == cf ||
+	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
+	    candidate_t c = { 
+		.rrd = rrd, 
+		.rra_index = i, 
+		.values = rrd->rrd_value + ds_cnt * total_rows
+	    };
+	    candidates = copy_over_realloc(candidates, candidates_cnt,
+					   &c, 0, sizeof(c));
+	    if (candidates == NULL) {
+		rrd_set_error("out of memory");
+		goto done;
+	    }
+	    candidates_cnt++;
+	}
+	total_rows += other_rra->row_cnt;
+    }
+
+    if (candidates_cnt == 0) {
+	rc = 0;
+	goto done;
+    }
+
+    // now sort candidates by granularity
+    qsort(candidates, candidates_cnt, sizeof(candidate_t), sort_candidates);
+
+    /* some of the code below is based on
+       https://github.com/ssinyagin/perl-rrd-tweak/blob/master/lib/RRD/Tweak.pm#L1455
+    */
+
+    for (ri = 0 ; ri < populate_cnt ; ri++) {
+	int row = populate_start + ri;
+
+	time_t new_timeslot = new_rra->pdp_cnt * rrd->stat_head->pdp_step;
+
+	time_t row_end_time = end_time_for_row(rrd, new_rra, cur_row, row);
+	time_t row_start_time   = row_end_time - new_timeslot + 1;
+
+	/* now walk all candidates */
+
+	for (i = 0 ; i < candidates_cnt ; i++) {
+	    candidate_t *c = candidates + i;
+	    rra_def_t *r = c->rrd->rra_def + c->rra_index;
+	    int cand_cur_row = c->rrd->rra_ptr[c->rra_index].cur_row;
+
+	    /* find a matching range of rows */
+	    int cand_row_start = row_for_time(rrd, r, cand_cur_row, row_start_time);
+	    int cand_row_end   = row_for_time(rrd, r, cand_cur_row, row_end_time);
+
+	    if (cand_row_start == -1 && cand_row_end != -1) {
+		cand_row_start = cand_cur_row;
+	    } else if (cand_row_start != -1 && cand_row_end == -1) {
+		cand_row_end = (cand_cur_row - 1) % r->row_cnt;
+	    } else if (cand_row_start == -1 && cand_row_end == -1) {
+		// neither start nor end in range. Can't use this candidate RRA...
+		continue;
+	    }
+
+
+	    /* note: cand_row_end is usually after cand_row_start,
+	       unless we have a wrap over.... so we turn the
+	       interation over the rows into one based on the number
+	       of rows starting at cand_row_end. All this dance should
+	       be in preparation for unusual cases where we have
+	       candidates and new RRAs that have pdp counts that are
+	       not directly divisible by each other (like populating a
+	       2-pdp RRA from a 3-pdp RRA) */
+	    
+	    int cand_rows = (cand_row_end - cand_row_start + 1);
+	    if (cand_rows < 0) cand_rows += r->row_cnt;
+
+	    int cand_timeslot = r->pdp_cnt * c->rrd->stat_head->pdp_step;
+
+	    for (int k = 0 ; k < ds_cnt ; k++) {
+		int cand_row, ci ;
+		rrd_value_t tmp = DNAN, final = DNAN;
+		int covered = 0;
+
+		for (cand_row = cand_row_start, ci = 0 ; 
+		     ci < cand_rows ; 
+		     ci++, cand_row = (cand_row + 1) % r->row_cnt)
+		    {
+		    rrd_value_t v = c->values[cand_row * ds_cnt + k];
+		
+		    if (isnan(v)) continue;
+
+		    switch (cf) {
+		    case CF_AVERAGE:
+			tmp = isnan(tmp) ? v * cand_timeslot : (tmp + v * cand_timeslot);
+			covered += cand_timeslot;
+			final = tmp / covered;
+			break;
+		    case CF_MINIMUM:
+			final = tmp = isnan(tmp) ? v : (tmp < v ? tmp : v);
+			break;
+		    case CF_MAXIMUM:
+			final = tmp = isnan(tmp) ? v : (tmp > v ? tmp : v);
+			break;
+		    case CF_LAST:
+			final = tmp = v;
+			break;
+		    default: // unsupported CF for extension
+			return 0;
+		    }
+		}
+
+		values[row * ds_cnt + k] = final;
+	    }
+	}
+    }
+
+    rc = 0;
+
+ done:
+    if (candidates) {
+	free(candidates);
+    }
+
+    return rc;
+}
+
 
 /* copies the RRD named by infilename to a new RRD called outfilename. 
 
