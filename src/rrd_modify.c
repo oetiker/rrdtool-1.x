@@ -381,6 +381,27 @@ static int rrd_modify_r(const char *infilename,
     int total_cnt = 0, total_cnt_out = 0;
 
     int out_rra = 0;
+
+
+    /*  
+	Before we do any other operation on RRAs, we read in all
+	data. This is important, because in the second pass we may
+	have to populate newly added rows from existing data - and we
+	might need any data we have from the input RRD.
+     */
+
+    size_t to_read = total_in_rra_rows * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
+    size_t read_bytes;
+    
+    read_bytes = rrd_read(rrd_file, all_data, to_read);
+    
+    if (read_bytes != to_read) {
+	rrd_set_error("short read 2");
+	goto done;
+    }
+
+    total_cnt = 0;
+
     for (i = 0; i < in.stat_head->rra_cnt; i++) {
 	rra_op = NULL;
 	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
@@ -404,18 +425,6 @@ static int rrd_modify_r(const char *infilename,
 	ssize_t rra_size     = sizeof(rrd_value_t) * rra_values;
 	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
 
-	size_t to_read = in.rra_def[i].row_cnt * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
-	size_t read_bytes;
-
-	read_bytes = 
-	    rrd_read(rrd_file, 
-		     all_data + rra_start,
-		     to_read);
-	
-	if (read_bytes != to_read) {
-	    rrd_set_error("short read 2");
-	    goto done;
-	}
 
 	/* we now have all the data for the current RRA available, now
 	   start to transfer it to the output RRD: For every row copy 
