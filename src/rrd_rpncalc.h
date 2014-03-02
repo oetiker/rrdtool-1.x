@@ -58,8 +58,10 @@ void      rpnstack_free(
 
 void      parseCDEF_DS(
     const char *def,
-    rrd_t *rrd,
-    int ds_idx);
+    ds_def_t *ds_def,
+    void *key_hash,
+    long (*lookup) (void *, char *));
+
 long      lookup_DS(
     void *rrd_vptr,
     char *ds_name);

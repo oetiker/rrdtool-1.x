@@ -45,7 +45,8 @@ RRD_C_FILES =		\
 	rrd_flushcached.c \
 	rrd_fetch.c	\
 	rrd_resize.c \
-	rrd_tune.c
+	rrd_tune.c	\
+	rrd_modify.c
 
 if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
@@ -63,6 +64,7 @@ noinst_HEADERS = \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
+	rrd_restore.h rrd_create.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
 
