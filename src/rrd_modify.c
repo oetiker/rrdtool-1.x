@@ -575,6 +575,8 @@ static int rrd_modify_r(const char *infilename,
 					sizeof(rra_ptr_t));
 	if (out.rra_ptr == NULL) goto done; 
 
+	out.rra_ptr[out.stat_head->rra_cnt].cur_row = final_row_count - 1;
+
 	int ii;
 	for (i = ii = 0 ; i < ops_cnt ; i++) {
 	    switch (ops[i]) {
@@ -744,6 +746,18 @@ static int rrd_modify_r(const char *infilename,
 				      j] = DNAN;
 		    }		
 		}
+
+		// now try to populate the newly added rows 
+		populate_row(&in, 
+			     out.rra_def + out_rra, 
+			     out.rra_ptr[i].cur_row,
+			     out.rrd_value + total_cnt_out,
+			     0, row_count);
+		/*
+		  static int populate_row(rrd_t *rrd, rra_def_t *new_rra, int new_step,
+		  int populate_start, int populate_cnt) {
+		*/
+
 		break;
 	    default:
 		rrd_set_error("RRA modification operation '%c' "
