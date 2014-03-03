@@ -299,6 +299,9 @@ static int populate_row(const rrd_t *in_rrd,
 
 		int in_k = ds_map ? ds_map[k] : k;
 
+		// if the DS was just added we have no pre-existing data anyway, so skip
+		if (in_k < 0) continue;
+
 		for (cand_row = cand_row_start, ci = 0 ; 
 		     ci < cand_rows ; 
 		     ci++, cand_row = (cand_row + 1) % r->row_cnt)
