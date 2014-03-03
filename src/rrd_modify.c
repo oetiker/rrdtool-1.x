@@ -225,7 +225,7 @@ static int populate_row(const rrd_t *in_rrd,
 			int populate_cnt) {
     int rc = -1;
 
-    if (in_rrd->stat_head->rra_cnt <= 1) return 0;
+    if (in_rrd->stat_head->rra_cnt < 1) return 0;
 
     enum cf_en cf = cf_conv(new_rra->cf_nam);
     switch (cf) {
