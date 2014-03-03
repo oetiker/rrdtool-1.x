@@ -1,0 +1,10 @@
+
+
+function fail {
+	 echo >&2 "FAILED:" "$@"
+	 exit 1
+}
+
+function ok {
+	 echo >&2 "OK:" "$@"
+}
