@@ -42,3 +42,6 @@ Makefile.in
 
 # cscope
 /cscope.*
+
+# tests MUST create their own RRDs
+/tests/*.rrd
