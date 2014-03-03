@@ -1,4 +1,6 @@
 
+BASEDIR=$(dirname $0)
+RRDTOOL=$BASEDIR/../src/rrdtool
 
 function fail {
 	 echo >&2 "FAILED:" "$@"
@@ -7,4 +9,13 @@ function fail {
 
 function ok {
 	 echo >&2 "OK:" "$@"
+}
+
+function report {
+	RC=$?
+	if [ "$RC" = 0 ] ; then
+		ok "$@"
+	else
+		fail "$@"
+	fi
 }
