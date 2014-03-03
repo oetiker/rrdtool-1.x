@@ -146,6 +146,58 @@ static int row_for_time(const rrd_t *rrd,
     return row < 0 ? (row + (int) rra->row_cnt) : row ;
 }
 
+
+static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
+    int total_rows = 0;
+    candidate_t *candidates = NULL;
+    *cnt = 0;
+
+    int i;
+    enum cf_en cf = cf_conv(rra->cf_nam);
+ 
+    /* find other rows with the same CF or an RRA with CF_AVERAGE and
+       a stepping of 1 as possible candidates for filling */
+    for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
+	rra_def_t *other_rra = rrd->rra_def + i;
+
+	// can't use our own data
+	if (other_rra == rra) {
+	    continue;
+	}
+
+	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
+ 	if (other_cf == cf ||
+	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
+	    candidate_t c = { 
+		.rrd = rrd, 
+		.rra_index = i,
+		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows
+	    };
+	    candidates = copy_over_realloc(candidates, *cnt,
+					   &c, 0, sizeof(c));
+	    if (candidates == NULL) {
+		rrd_set_error("out of memory");
+		*cnt = 0;
+		return NULL;
+	    }
+	    (*cnt)++;
+#ifdef MODIFY_DEBUG
+	    fprintf(stderr, "candidate: index=%d pdp=%d\n", i, in_rrd->rra_def[i].pdp_cnt);
+#endif
+	}
+	total_rows += other_rra->row_cnt;
+    }
+
+    if (*cnt == 0) {
+	return NULL;
+    }
+
+    // now sort candidates by granularity
+    qsort(candidates, *cnt, sizeof(candidate_t), sort_candidates);
+
+    return candidates;
+}
+
 /*
   in_rrd .. the RRD to use for the search of other RRAs to populate the new RRA
   out_rrd .. the RRD new_rra is part of
@@ -192,47 +244,11 @@ static int populate_row(const rrd_t *in_rrd,
     int candidates_cnt = 0;
 
     int i, ri;
-    int total_rows = 0;
 
-    /* find other rows with the same CF or an RRA with CF_AVERAGE and
-       a stepping of 1 as possible candidates for filling */
-    for (i = 0 ; i < (int) in_rrd->stat_head->rra_cnt ; i++) {
-	rra_def_t *other_rra = in_rrd->rra_def + i;
-
-	// can't use our own data
-	if (other_rra == new_rra) {
-	    continue;
-	}
-
-	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
-	if (other_cf == cf ||
-	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
-	    candidate_t c = { 
-		.rrd = in_rrd, 
-		.rra_index = i, 
-		.values = in_rrd->rrd_value + ds_cnt * total_rows
-	    };
-	    candidates = copy_over_realloc(candidates, candidates_cnt,
-					   &c, 0, sizeof(c));
-	    if (candidates == NULL) {
-		rrd_set_error("out of memory");
-		goto done;
-	    }
-	    candidates_cnt++;
-#ifdef MODIFY_DEBUG
-	    fprintf(stderr, "candidate: index=%d pdp=%d\n", i, in_rrd->rra_def[i].pdp_cnt);
-#endif
-	}
-	total_rows += other_rra->row_cnt;
-    }
-
-    if (candidates_cnt == 0) {
-	rc = 0;
+    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt);
+    if (candidates == NULL) {
 	goto done;
     }
-
-    // now sort candidates by granularity
-    qsort(candidates, candidates_cnt, sizeof(candidate_t), sort_candidates);
 
     /* some of the code below is based on
        https://github.com/ssinyagin/perl-rrd-tweak/blob/master/lib/RRD/Tweak.pm#L1455
