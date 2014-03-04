@@ -32,12 +32,26 @@ during the copy operation. The resulting RRD will miss both the
 definition and the data for that data source. Multiple DEL
 specifications are permitted.
 
-
 =item B<DS:>I<ds-spec>
 
 For every such data source definition (for the exact syntax see the
 create command), a new data source will be added to the output
 RRD. Multiple DS specifications are permitted.
+
+=item B<DELRRA:>I<index>
+
+Removes the RRA with index I<index>.
+
+=item B<RRA:>I<rra-spec>
+
+For every such archive definition (for the exact syntax see the
+create command), a new RRA will be added to the output
+RRD. Multiple RRA specifications are permitted.
+
+=item B<RRA#>I<index>:[+-=]<number>
+
+Adds/removes or sets the given number of rows for the RRA with index
+<index>.
 
 =item B<--daemon> I<address>
 

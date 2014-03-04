@@ -1,0 +1,32 @@
+
+
+BASEDIR=$(dirname $0)
+RRDTOOL=$BASEDIR/../src/rrdtool
+
+DIFF="diff -u"
+INTERACTIVE=
+
+function fail {
+	echo >&2 "FAILED:" "$@"
+	if [ -n "$INTERACTIVE" ] ; then
+		read -p "Continue? (y/n)" YN
+		if [ "$YN" != 'y' ] ; then 
+			exit 1
+		fi
+	else
+		exit 1
+	fi
+}
+
+function ok {
+	echo >&2 "OK:" "$@"
+}
+
+function report {
+	RC=$?
+	if [ "$RC" = 0 ] ; then
+		ok "$@"
+	else
+		fail "$@"
+	fi
+}

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rrd SYSTEM "http://oss.oetiker.ch/rrdtool/rrdtool.dtd">
+<!-- Round Robin Database Dump -->
+<rrd>
+	<version>0003</version>
+	<step>60</step> <!-- Seconds -->
+	<lastupdate>1300003020</lastupdate> <!-- 2011-03-13 08:57:00 CET -->
+
+	<ds>
+		<name> a </name>
+		<type> GAUGE </type>
+		<minimal_heartbeat>120</minimal_heartbeat>
+		<min>0.0000000000e+00</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>510</last_ds>
+		<value>0.0000000000e+00</value>
+		<unknown_sec> 0 </unknown_sec>
+	</ds>
+
+	<!-- Round Robin Archives -->
+	<rra>
+		<cf>AVERAGE</cf>
+		<pdp_per_row>1</pdp_per_row> <!-- 60 seconds -->
+
+		<params>
+		<xff>5.0000000000e-01</xff>
+		</params>
+		<cdp_prep>
+			<ds>
+			<primary_value>5.1000000000e+02</primary_value>
+			<secondary_value>0.0000000000e+00</secondary_value>
+			<value>NaN</value>
+			<unknown_datapoints>0</unknown_datapoints>
+			</ds>
+		</cdp_prep>
+		<database>
+			<!-- 2011-03-13 08:48:00 CET / 1300002480 --> <row><v>4.2000000000e+02</v></row>
+			<!-- 2011-03-13 08:49:00 CET / 1300002540 --> <row><v>4.3000000000e+02</v></row>
+			<!-- 2011-03-13 08:50:00 CET / 1300002600 --> <row><v>4.4000000000e+02</v></row>
+			<!-- 2011-03-13 08:51:00 CET / 1300002660 --> <row><v>4.5000000000e+02</v></row>
+			<!-- 2011-03-13 08:52:00 CET / 1300002720 --> <row><v>4.6000000000e+02</v></row>
+			<!-- 2011-03-13 08:53:00 CET / 1300002780 --> <row><v>4.7000000000e+02</v></row>
+			<!-- 2011-03-13 08:54:00 CET / 1300002840 --> <row><v>4.8000000000e+02</v></row>
+			<!-- 2011-03-13 08:55:00 CET / 1300002900 --> <row><v>4.9000000000e+02</v></row>
+			<!-- 2011-03-13 08:56:00 CET / 1300002960 --> <row><v>5.0000000000e+02</v></row>
+			<!-- 2011-03-13 08:57:00 CET / 1300003020 --> <row><v>5.1000000000e+02</v></row>
+		</database>
+	</rra>
+	<rra>
+		<cf>AVERAGE</cf>
+		<pdp_per_row>5</pdp_per_row> <!-- 300 seconds -->
+
+		<params>
+		<xff>5.0000000000e-01</xff>
+		</params>
+		<cdp_prep>
+			<ds>
+			<primary_value>4.7000000000e+02</primary_value>
+			<secondary_value>4.9000000000e+02</secondary_value>
+			<value>1.0100000000e+03</value>
+			<unknown_datapoints>0</unknown_datapoints>
+			</ds>
+		</cdp_prep>
+		<database>
+			<!-- 2011-03-13 08:10:00 CET / 1300000200 --> <row><v>3.0000000000e+01</v></row>
+			<!-- 2011-03-13 08:15:00 CET / 1300000500 --> <row><v>7.0000000000e+01</v></row>
+			<!-- 2011-03-13 08:20:00 CET / 1300000800 --> <row><v>1.2000000000e+02</v></row>
+			<!-- 2011-03-13 08:25:00 CET / 1300001100 --> <row><v>1.7000000000e+02</v></row>
+			<!-- 2011-03-13 08:30:00 CET / 1300001400 --> <row><v>2.2000000000e+02</v></row>
+			<!-- 2011-03-13 08:35:00 CET / 1300001700 --> <row><v>2.7000000000e+02</v></row>
+			<!-- 2011-03-13 08:40:00 CET / 1300002000 --> <row><v>3.2000000000e+02</v></row>
+			<!-- 2011-03-13 08:45:00 CET / 1300002300 --> <row><v>3.7000000000e+02</v></row>
+			<!-- 2011-03-13 08:50:00 CET / 1300002600 --> <row><v>4.2000000000e+02</v></row>
+			<!-- 2011-03-13 08:55:00 CET / 1300002900 --> <row><v>4.7000000000e+02</v></row>
+		</database>
+	</rra>
+</rrd>

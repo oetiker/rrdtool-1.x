@@ -225,6 +225,9 @@ enum rra_par_en { RRA_cdp_xff_val = 0,  /* what part of the consolidated
      * For CF_FAILURES: index of the CF_DEVSEASONAL array.
      * */
 
+    /* CF_HWPREDICT: */
+    RRA_period = 4,
+
     /* CF_SEASONAL and CF_DEVSEASONAL: */
     RRA_seasonal_gamma = 1,
     /* exponential smoothing parameter for seasonal effects. */
