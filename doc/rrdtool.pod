@@ -140,7 +140,7 @@ a graph covering the whole year. B<RRDtool> offers a solution to this
 problem through its data consolidation feature. When setting up an
 Round Robin Database (B<RRD>), you can define at which interval this
 consolidation should occur, and what consolidation function (B<CF>)
-(average, minimum, maximum, total, last) should be used to build the
+(average, minimum, maximum, last) should be used to build the
 consolidated values (see rrdcreate). You can define any number of
 different consolidation setups within one B<RRD>. They will all be
 maintained on the fly when new data is loaded into the B<RRD>.
@@ -171,8 +171,7 @@ axis.
 
 Using different consolidation functions (B<CF>) allows you to store
 exactly the type of information that actually interests you: the maximum
-one minute traffic on the LAN, the minimum temperature of your wine cellar,
-the total minutes of down time, etc.
+one minute traffic on the LAN, the minimum temperature of your wine cellar, ... etc.
 
 =item Unknown Data
 
