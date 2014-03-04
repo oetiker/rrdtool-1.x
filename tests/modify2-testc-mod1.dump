@@ -227,10 +227,10 @@
 		</params>
 		<cdp_prep>
 			<ds>
-			<primary_value>0.0000000000e+00</primary_value>
-			<secondary_value>0.0000000000e+00</secondary_value>
-			<value>NaN</value>
-			<unknown_datapoints>1</unknown_datapoints>
+			<primary_value>4.9500000000e+02</primary_value>
+			<secondary_value>5.0000000000e+02</secondary_value>
+			<value>5.1000000000e+02</value>
+			<unknown_datapoints>0</unknown_datapoints>
 			</ds>
 		</cdp_prep>
 		<database>

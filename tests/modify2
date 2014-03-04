@@ -15,15 +15,15 @@ for T in $(seq 1300000020 60 1300003020) ; do
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BASE}a.rrd | diff - ${BASE}a-create.dump
+$RRDTOOL dump ${BASE}a.rrd | $DIFF ${BASE}a-create.dump -
 report create
 
 $RRDTOOL modify ${BASE}a.rrd ${BASE}b.rrd RRA#1:+10 RRA#2:+10 RRA#3:+10 RRA#4:+10
 
-$RRDTOOL dump ${BASE}b.rrd | diff - ${BASE}b-mod1.dump
+$RRDTOOL dump ${BASE}b.rrd | $DIFF ${BASE}b-mod1.dump -
 report "simultaneously extend aggregate RRAs"
 
 $RRDTOOL modify ${BASE}a.rrd ${BASE}c.rrd RRA:AVERAGE:0.5:2:10
-$RRDTOOL dump ${BASE}c.rrd | diff - ${BASE}c-mod1.dump
+$RRDTOOL dump ${BASE}c.rrd | $DIFF ${BASE}c-mod1.dump -
 report "add RRA with intermediate pdp_cnt"
 
