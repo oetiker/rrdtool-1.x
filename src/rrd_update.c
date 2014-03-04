@@ -25,6 +25,7 @@
 #include "unused.h"
 
 #include "rrd_client.h"
+#include "rrd_update.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
@@ -191,18 +192,6 @@ static int update_cdp_prep(
     rrd_value_t *last_seasonal_coef,
     rrd_value_t *seasonal_coef,
     int current_cf);
-
-static void update_cdp(
-    unival *scratch,
-    int current_cf,
-    rrd_value_t pdp_temp_val,
-    unsigned long rra_step_cnt,
-    unsigned long elapsed_pdp_st,
-    unsigned long start_pdp_offset,
-    unsigned long pdp_cnt,
-    rrd_value_t xff,
-    int i,
-    int ii);
 
 static void initialize_cdp_val(
     unival *scratch,
@@ -1607,7 +1596,7 @@ static int update_cdp_prep(
  * Given the new reading (pdp_temp_val), update or initialize the CDP value,
  * primary value, secondary value, and # of unknowns.
  */
-static void update_cdp(
+void update_cdp(
     unival *scratch,
     int current_cf,
     rrd_value_t pdp_temp_val,
