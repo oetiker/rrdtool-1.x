@@ -2,6 +2,7 @@
  * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  *****************************************************************************
  * rrd_modify  Structurally modify an RRD file
+ *      (c) 2014 by Peter Stamfest and Tobi Oetiker
  *****************************************************************************
  * Initially based on rrd_dump.c
  *****************************************************************************/
@@ -10,6 +11,8 @@
 #include "rrd_client.h"
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
+#include "rrd_update.h"    /* update_cdp */
+
 #include "fnv.h"
 
 #include <locale.h>
@@ -72,6 +75,9 @@ typedef struct {
     const rrd_t *rrd;
     int rra_index;
     rrd_value_t *values;
+    rra_def_t *rra;
+    rra_ptr_t *ptr;
+    cdp_prep_t *cdp;
 } candidate_t;
 
 static int sort_candidates(const void *va, const void *vb) {
@@ -171,7 +177,11 @@ static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, 
 	    candidate_t c = { 
 		.rrd = rrd, 
 		.rra_index = i,
-		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows
+		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
+		.rra = rrd->rra_def + i,
+		.ptr = rrd->rra_ptr + i,
+		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i 
+		
 	    };
 	    candidates = copy_over_realloc(candidates, *cnt,
 					   &c, 0, sizeof(c));
@@ -897,6 +907,167 @@ done:
     return rc;
 }
 
+// prepare CDPs + values for new RRA
+
+static void prepare_CDPs(const rrd_t *in, rrd_t *out, 
+			 int curr_rra,
+			 int start_values_index_out,
+			 const int *ds_map)
+{
+    cdp_prep_t empty_cdp_prep;
+    memset(&empty_cdp_prep, 0, sizeof(cdp_prep_t));
+
+    rra_def_t *rra_def = out->rra_def + curr_rra;
+
+    enum cf_en cf = cf_conv(rra_def->cf_nam);
+    int candidates_cnt = 0;
+    candidate_t *candidates = NULL;
+    candidate_t *chosen_candidate = NULL;
+
+    if (candidates) {
+	free(candidates);
+	candidates = NULL;
+    }
+
+    candidates = find_candidate_rras(in, rra_def, &candidates_cnt);
+
+    if (candidates != NULL) {
+	int ci;
+	for (ci = 0 ; ci < candidates_cnt ; ci++) {
+	    candidate_t *c = candidates + ci;
+	    rra_def_t *cand_rra = c->rrd->rra_def + c->rra_index;
+		
+	    // we only accept AVERAGE RRAs or RRAs with pdp_cnt == 1
+	    if (cand_rra->pdp_cnt == 1 || cf_conv(cand_rra->cf_nam) == CF_AVERAGE) {
+		chosen_candidate = c;
+		break;
+	    }
+	}
+    }
+
+    int start_cdp_index_out = out->stat_head->ds_cnt * curr_rra;
+
+    for (int i = 0 ; i < (int) out->stat_head->ds_cnt ; i++) {
+	int mapped_i = ds_map[i];
+
+	cdp_prep_t *cdp_prep = out->cdp_prep + start_cdp_index_out + i;
+	memcpy(cdp_prep, &empty_cdp_prep, sizeof(cdp_prep_t));
+
+	init_cdp(out, rra_def, cdp_prep);
+
+	if (chosen_candidate && mapped_i != -1) {
+	    int ds_cnt = chosen_candidate->rrd->stat_head->ds_cnt;
+
+	    /* we have a chosen candidate. Find out what the */
+
+	    time_t last_up = in->live_head->last_up;
+
+	    int timeslot = rra_def->pdp_cnt * in->stat_head->pdp_step;
+
+	    int delta = last_up % timeslot;
+	    time_t end_time = last_up, start_time;
+	    if (delta != 0) {
+		end_time = last_up - delta + timeslot;
+	    }
+	    start_time = end_time - timeslot + 1;
+
+	    int start_row = row_for_time(chosen_candidate->rrd, 
+					 chosen_candidate->rra, 
+					 chosen_candidate->ptr->cur_row,
+					 start_time); 
+	    int end_row = row_for_time(chosen_candidate->rrd, 
+				       chosen_candidate->rra, 
+				       chosen_candidate->ptr->cur_row,
+				       end_time); 
+
+#ifdef MODIFY_DEBUG
+	    fprintf(stderr, "need PDP data for %ld to %ld\n", start_time, end_time);
+	    fprintf(stderr, "last_up %ld\n", chosen_candidate->rrd->live_head->last_up);
+	    fprintf(stderr, "RAW fill CDP using rows %d to %d\n", start_row, end_row);
+#endif
+	    if (end_time == last_up) {
+		end_row = chosen_candidate->ptr->cur_row;
+	    }
+	    if (end_time > last_up) {
+		end_row = chosen_candidate->ptr->cur_row;
+	    }
+
+	    int cnt = end_row - start_row + 1;
+	    if (end_row < start_row) {
+		cnt += chosen_candidate->rra->row_cnt;
+	    }
+		
+	    int row_cnt = chosen_candidate->rra->row_cnt;
+		
+	    // the chosen candidate CDP for the DS...
+	    cdp_prep_t *ccdp = chosen_candidate->cdp + mapped_i;
+
+#ifdef MODIFY_DEBUG
+	    fprintf(stderr, "fill CDP using rows %d to %d (=%d)\n", start_row, end_row, cnt);
+#endif
+	    /*
+	      if (start_row == -1) we are just at the start of a
+	      new CDP interval and we can just reconstruct the CDP
+	      from various information:
+
+	      if (start_row != -1, we assume that we are a couple
+	      of steps behind (namely at a time that would CAUSE
+	      start_row to be -1, fill out the CDP and then we
+	      update the CDP with data points from the chosen
+	      candidate RRA.
+	    */
+
+	    // null out the CDP....
+		
+	    for (int z = 0 ; z < MAX_CDP_PAR_EN ; z++) {
+		cdp_prep->scratch[z].u_val = 0;
+	    }
+
+	    rrd_value_t curr = out->rrd_value[start_values_index_out + 
+					      out->stat_head->ds_cnt  * (out->rra_ptr[curr_rra].cur_row) +
+					      i];
+
+	    cdp_prep->scratch[CDP_primary_val].u_val = curr;
+	    cdp_prep->scratch[CDP_val].u_val = 0;
+
+	    if (start_row == -1) {
+		// the primary value of the chosen_candidate cdp becomes the secondary value for the new CDP
+		    
+		cdp_prep->scratch[CDP_secondary_val].u_val = 
+		    ccdp->scratch[CDP_primary_val].u_val;
+	    } else {
+		int pre_start = start_row - 1;
+		if (pre_start == 0) pre_start = chosen_candidate->rra->row_cnt;
+
+		cdp_prep->scratch[CDP_secondary_val].u_val = 
+		    chosen_candidate->values[ds_cnt * pre_start + mapped_i];
+
+		int start_pdp_offset = rra_def->pdp_cnt;
+
+		for (int j =  0 ; j < cnt ; j++) {
+		    int row = (start_row + j) % row_cnt;
+		    rrd_value_t v = chosen_candidate->values[ds_cnt * row + mapped_i];
+			
+		    update_cdp(
+			       cdp_prep->scratch,    //    unival *scratch,
+			       cf,   //    int current_cf,
+			       v,    //    rrd_value_t pdp_temp_val,
+			       0,    //    unsigned long rra_step_cnt,
+			       1,    //    unsigned long elapsed_pdp_st,
+			       start_pdp_offset--,    //    unsigned long start_pdp_offset,
+			       rra_def->pdp_cnt,    //    unsigned long pdp_cnt,
+			       chosen_candidate->rra->par[RRA_cdp_xff_val].u_val,    //    rrd_value_t xff,
+			       0,    //    int i,
+			       0     //    int ii)
+			       );
+		}
+	    }
+	}
+    }
+
+    if (candidates) free(candidates);
+}
+
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash) 
 {
@@ -935,19 +1106,9 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 					    sizeof(rra_def_t));
 	    if (out->rra_def == NULL) goto done;
 	    out->stat_head->rra_cnt++;
-
-	    /*
-	    rrd.stat_head->rra_cnt++;
-
-	    rrd.rra_def = handle_dependent_rras(rrd.rra_def, &(rrd.stat_head->rra_cnt), 
-						hashed_name);
-	    if (rrd.rra_def == NULL) {
-		rrd_free2(&rrd);
-		return -1;
-	    }
-	    */
+	    
 	    out->rra_def = handle_dependent_rras(out->rra_def, &(out->stat_head->rra_cnt), 
-						219283213712631);
+						hash);
 	    if (out->rra_def == NULL) {
 		goto done;
 	    }
@@ -974,23 +1135,23 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	}
     }
 
-    for ( ; last_rra_cnt < out->stat_head->rra_cnt ; last_rra_cnt++ ) {
+    int curr_rra;
+    for (curr_rra = last_rra_cnt ; curr_rra < (int) out->stat_head->rra_cnt ; curr_rra++ ) {
 	// RRA added!!!
-	rra_def_t *rra_def = out->rra_def + last_rra_cnt;
+	rra_def_t *rra_def = out->rra_def + curr_rra;
 
-	// prepare CDPs + values for new RRA
-	int start_index_out = out->stat_head->ds_cnt * last_rra_cnt;
+	// null out CDPs
+	int start_cdp_index_out = out->stat_head->ds_cnt * curr_rra;
 	for (i = 0 ; i < (int) out->stat_head->ds_cnt ; i++) {
-	    cdp_prep_t *cdp_prep = out->cdp_prep + start_index_out + i;
+	    cdp_prep_t *cdp_prep = out->cdp_prep + start_cdp_index_out + i;
 	    memcpy(cdp_prep,
 		   &empty_cdp_prep, sizeof(cdp_prep_t));
-
-	    init_cdp(out, rra_def, cdp_prep);
 	}
 
-	out->rra_ptr[last_rra_cnt].cur_row = rra_def->row_cnt - 1;
+	out->rra_ptr[curr_rra].cur_row = rra_def->row_cnt - 1;
 
 	// extend and fill rrd_value array...
+	int start_values_index_out = total_out_rra_rows;
 
 	total_out_rra_rows += rra_def->row_cnt;
 
@@ -1012,16 +1173,16 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	}
 
 	int rra_values_out = out->stat_head->ds_cnt * rra_def->row_cnt;
-	// ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
 
 	// now try to populate the newly added rows 
 	populate_row(in, out, ds_map,
 		     rra_def, 
-		     out->rra_ptr[last_rra_cnt].cur_row,
+		     out->rra_ptr[curr_rra].cur_row,
 		     out->rrd_value + total_cnt_out,
 		     0, rra_def->row_cnt);
-	
-	//	rra_start_out += rra_size_out;
+
+	prepare_CDPs(in, out, curr_rra, start_values_index_out, ds_map);
+
 	total_cnt_out += rra_values_out;
     }
     rc = 0;
