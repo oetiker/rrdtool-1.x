@@ -4,10 +4,12 @@ BASEDIR=$(dirname $0)
 RRDTOOL=$BASEDIR/../src/rrdtool
 
 DIFF="diff -u"
-INTERACTIVE=
 
 function fail {
 	echo >&2 "FAILED:" "$@"
+	if [ -n "$CONTINUE" ] ; then
+		return
+	fi
 	if [ -n "$INTERACTIVE" ] ; then
 		read -p "Continue? (y/n)" YN
 		if [ "$YN" != 'y' ] ; then 
