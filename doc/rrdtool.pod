@@ -82,6 +82,10 @@ uses fetch to retrieve its data from an RRD. Check L<rrdfetch>.
 
 Alter setup of an RRD. Check L<rrdtune>.
 
+=item B<modify>
+
+Alter structure of an RRD. Check L<rrdmodify>.
+
 =item B<first>
 
 Find the first update time of an RRD. Check L<rrdfirst>.
