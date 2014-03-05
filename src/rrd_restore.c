@@ -12,6 +12,7 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_restore.h"
+#include "unused.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1155,8 +1156,8 @@ static int stdioXmlInputCloseCallback(void *context)
    not break the pipe interface protocol by suppressing the sending out of
    XML error messages. */
 static void ignoringErrorFunc(
-    void *ctx, 
-    const char * msg, 
+    void UNUSED(*ctx), 
+    const char UNUSED(*msg), 
     ...)
 {
 }
