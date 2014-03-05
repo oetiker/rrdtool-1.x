@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# fail immediately if any subsequent command fails
+set -e
+
+BASEDIR=$(dirname $0)
+cd $BASEDIR
+
+./modify1
+./modify2
+./modify3
+./modify4
+./modify5
