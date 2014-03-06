@@ -765,6 +765,27 @@ done:
     return rc;
 }
 
+static int stretch_rras(rrd_t *out, int stretch) {
+    int rc = -1;
+    if (stretch < 2) {
+	rrd_set_error("invalid stretch count. Must be > 1");
+	goto done;
+    }
+    
+    int rra_index;
+    for (rra_index = 0 ; rra_index < out->stat_head->rra_cnt ; rra_index++) {
+	rra_def_t *rra = out->rra_def + rra_index;
+	cdp_prep_t *cdp_prep = out->cdp_prep + rra_index;
+	
+	rra->pdp_cnt *= stretch;
+    }
+    
+    out->stat_head->pdp_step /= stretch;
+    
+    rc =0;
+done:
+    return rc;
+}
 
 /* copies the RRD named by infilename to a new RRD called outfilename. 
 
@@ -780,7 +801,8 @@ static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
 			const char **removeDS,
 			const char **addDS,
-			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
+			int newstep)
 {
     rrd_t in, out;
     int rc = -1;
@@ -819,6 +841,26 @@ static int rrd_modify_r(const char *infilename,
 	goto done;
     }
 
+    /* basic check: do we have a new step size: if we do: is it a smaller than
+    the original and is the old one a whole-number multiple of the new one? */
+    
+    int stretch = 0; 
+    
+    if (newstep > 0) {
+	if (in.stat_head->pdp_step % newstep == 0
+	    && in.stat_head->pdp_step / newstep > 1) {
+	    /* we will "stretch" the RRD: existing rows will correspond to the same
+	       time period, but the CF will consolidate 'stretch' times as many PDPs.
+	    */
+	
+	    stretch = in.stat_head->pdp_step / newstep;
+	} else {
+	    rrd_set_error("invalid 'newstep' parameter. The newsize must "
+			  "divide the old step parameter without a remainder.");
+	    goto done;
+	}
+    }
+    
     /* copy over structure to out RRD */
 
     out.stat_head = (stat_head_t *) malloc(sizeof(stat_head_t));
@@ -983,6 +1025,11 @@ static int rrd_modify_r(const char *infilename,
     rc = add_rras(&in, &out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
     if (rc != 0) goto done;
 
+    if (stretch > 1) {
+	rc = stretch_rras(&out, stretch);
+	if (rc != 0) goto done;
+    }
+    
     rc = write_rrd(outfilename, &out);
 
 done:
@@ -1390,7 +1437,8 @@ int rrd_modify (
     int       rc = 9;
     int       i;
     char     *opt_daemon = NULL;
-
+    int	      opt_newstep = -1;
+    
     /* init rrd clean */
 
     optind = 0;
@@ -1401,10 +1449,11 @@ int rrd_modify (
         int       option_index = 0;
         static struct option long_options[] = {
             {"daemon", required_argument, 0, 'd'},
+	    {"newstep", required_argument, 0, 's'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:s:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -1420,7 +1469,11 @@ int rrd_modify (
                 return (-1);
             }
             break;
-
+	case 's': {
+	    char *ep = NULL;
+	    opt_newstep = strtoul(optarg, &ep, 0);
+	    break;
+	}
         default:
             rrd_set_error("usage rrdtool %s"
                           "in.rrd out.rrd", argv[0]);
@@ -1435,6 +1488,12 @@ int rrd_modify (
         return (-1);
     }
 
+    if (opt_newstep > 0 && (argc - optind) != 2) {
+	rrd_set_error("setting a new step size currently is an exclusive operation. "
+		      "Do not specify and DS or RRA modifications at the same time");
+	return -1;
+    }
+    
     // connect to daemon (will take care of environment variable automatically)
     if (rrdc_connect(opt_daemon) != 0) {
 	rrd_set_error("Cannot connect to daemon");
@@ -1572,7 +1631,7 @@ int rrd_modify (
 
     if ((argc - optind) >= 2) {
         rc = rrd_modify_r(argv[optind], argv[optind + 1], 
-			  remove, add, rra_ops, rraopcnt);
+			  remove, add, rra_ops, rraopcnt, opt_newstep);
     } else {
 	rrd_set_error("missing arguments");
 	rc = 2;
