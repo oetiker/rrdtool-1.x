@@ -19,5 +19,5 @@ script:
   - sudo make install
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
-  - cd tests && bash alltests /opt/rrdtool-master/bin/rrdtool
+  - cd tests && ./alltests /opt/rrdtool-master/bin/rrdtool
 
