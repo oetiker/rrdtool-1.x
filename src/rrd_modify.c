@@ -1039,7 +1039,9 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	    }
 	}
     }
-
+#ifdef MODIFY_DEBUG
+    fprintf(stderr, "chosen candidate index=%d row_cnt=%ld\n", chosen_candidate->rra_index, chosen_candidate->rra->row_cnt);
+#endif
     int start_cdp_index_out = out->stat_head->ds_cnt * curr_rra;
 
     for (int i = 0 ; i < (int) out->stat_head->ds_cnt ; i++) {
@@ -1132,7 +1134,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 		    ccdp->scratch[CDP_primary_val].u_val;
 	    } else {
 		int pre_start = start_row - 1;
-		if (pre_start == 0) pre_start = chosen_candidate->rra->row_cnt;
+		if (pre_start < 0) pre_start = chosen_candidate->rra->row_cnt - 1;
 
 		cdp_prep->scratch[CDP_secondary_val].u_val = 
 		    chosen_candidate->values[ds_cnt * pre_start + mapped_i];
