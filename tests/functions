@@ -1,7 +1,9 @@
 
 
 BASEDIR=$(dirname $0)
-RRDTOOL=$BASEDIR/../src/rrdtool
+if [ -z "$RRDTOOL" ] ; then 
+	RRDTOOL=$BASEDIR/../src/rrdtool
+fi
 
 DIFF="diff -u"
 

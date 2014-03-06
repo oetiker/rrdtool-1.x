@@ -3,6 +3,9 @@
 # fail immediately if any subsequent command fails
 set -e
 
+RRDTOOL="$1"
+export RRDTOOL
+
 BASEDIR=$(dirname $0)
 cd $BASEDIR
 
