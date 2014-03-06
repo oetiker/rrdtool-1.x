@@ -12,6 +12,7 @@
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
 #include "rrd_update.h"    /* update_cdp */
+#include "unused.h"
 
 #include "fnv.h"
 
@@ -42,7 +43,7 @@ static int positive_mod(int a, int b) {
 // prototypes
 static int write_rrd(const char *outfilename, rrd_t *out);
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
-		    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
+		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
 
 /* a convenience realloc/memcpy combo  */
 static void * copy_over_realloc(void *dest, int dest_index, 
@@ -62,7 +63,7 @@ static void * copy_over_realloc(void *dest, int dest_index,
 /* 
    Try to populate rows (presumably for added rows) in new_rra from
    available data in rrd. This only works for some CF types and
-   generally is wildly inacurate - eg. it does not take the xff factor
+   generally is wildly inaccurate - eg. it does not take the xff factor
    into account. Do not think of it as producing correct data but
    rather as a way to produce nice pictures for subsequent rrdgraph
    invocations...
@@ -152,7 +153,24 @@ static int row_for_time(const rrd_t *rrd,
     return row < 0 ? (row + (int) rra->row_cnt) : row ;
 }
 
+/* 
+   Try to find a set of RRAs from rrd that might be used to populate
+   added rows in RRA rra. Generally, candidates are RRAs that have a
+   pdp step of 1 (regardless of CF type) and those that have the same
+   CF (or a CF of AVERAGE) and any pdp step count.
 
+   The function returns a pointer to a newly allocated array of
+   candidate_t structs. The number of elements is returned in *cnt.
+
+   The returned memory must be free()'d by the calling code. NULL is
+   returned in case of error or if there are no candidates. In case of
+   an error, the RRD error gets set.
+
+   Arguments:
+   rrd .. the RRD to pick RRAs from
+   rra .. the RRA we want to populate
+   cnt .. a pointer to an int receiving the number of returned candidates
+*/
 static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
     int total_rows = 0;
     candidate_t *candidates = NULL;
@@ -208,9 +226,244 @@ static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, 
     return candidates;
 }
 
+
+/* copy over existing DS definitions (and related data
+   structures), check on the way (and skip) if they should be
+   deleted
+   */
+static int copy_or_delete_DSs(const rrd_t *in, rrd_t *out, char *ops) {
+    int rc = -1;
+    
+    for (unsigned int in_ds = 0 ; in_ds < in->stat_head->ds_cnt ; in_ds++) {
+	switch (ops[in_ds]) {
+	case 'c': {
+	    out->ds_def = copy_over_realloc(out->ds_def, out->stat_head->ds_cnt, 
+					   in->ds_def, in_ds,
+					   sizeof(ds_def_t));
+	    if (out->ds_def == NULL) goto done;
+	    
+	    out->pdp_prep = copy_over_realloc(out->pdp_prep, out->stat_head->ds_cnt, 
+					     in->pdp_prep, in_ds,
+					     sizeof(pdp_prep_t));
+	    if (out->pdp_prep == NULL) goto done;
+
+	    out->stat_head->ds_cnt++;
+	    break;
+	}
+	case 'd':
+	    break;
+	case 'a':
+	default:
+	    rrd_set_error("internal error: invalid ops");
+	    goto done;
+	}
+    }
+    // only if we did all iterations without any problems will we arrive here
+    rc = 0;
+done:
+    return rc;
+}
+
 /*
+  Handle all RRAs definitions (and associated CDP data structures), taking care
+  of RRA removals, and RRA row additions and removals. NOTE: data copying is
+  NOT done by this function, but it DOES calculate overall total_row
+  information needed for sizing the data area.
+  
+  returns the total number out RRA rows for both the in and out RRDs in the
+  variables pointed to by total_in_rra_rows and total_out_rra_rows respectively
+  */
+static int handle_rra_defs(const rrd_t *in, rrd_t *out, 
+			   rra_mod_op_t *rra_mod_ops, unsigned int rra_mod_ops_cnt,
+			   const char *ds_ops, unsigned int ds_ops_cnt,
+			   int *total_in_rra_rows, int *total_out_rra_rows)
+{
+    int rc = -1;
+    unsigned int j, r;
+    rra_ptr_t rra_0_ptr = { .cur_row = 0 };
+    cdp_prep_t empty_cdp_prep;
+    memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
+
+    for (j = 0 ; j < in->stat_head->rra_cnt ; j++) {
+	if (total_in_rra_rows) 
+	    *total_in_rra_rows +=  in->rra_def[j].row_cnt;
+
+	rra_mod_op_t *rra_op = NULL;
+	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
+	    if (rra_mod_ops[r].index == (int) j) {
+		rra_op = rra_mod_ops + r;
+		break;
+	    }
+	}
+
+	int final_row_count = in->rra_def[j].row_cnt;
+	if (rra_op) {
+	    switch (rra_op->op) {
+	    case '=':
+		final_row_count = rra_op->row_count;
+		break;
+	    case '-':
+		final_row_count -= rra_op->row_count;
+		break;
+	    case '+':
+		final_row_count += rra_op->row_count;
+		break;
+	    }
+	    if (final_row_count < 0) final_row_count = 0;
+	    /* record the final row_count. I don't like this, because
+	       it changes the data passed to us via an argument: */
+
+	    rra_op->final_row_count = final_row_count;
+	}
+
+	// do we have to keep the RRA at all??
+	if (final_row_count == 0) {
+	    // delete the RRA! - just skip processing this RRA....
+	    continue;
+	}
+
+	out->cdp_prep = realloc(out->cdp_prep, 
+			       sizeof(cdp_prep_t) * out->stat_head->ds_cnt 
+			       * (out->stat_head->rra_cnt + 1));
+	
+	if (out->cdp_prep == NULL) {
+	    rrd_set_error("Cannot allocate memory");
+	    goto done;
+	}
+
+	/* for every RRA copy only those CDPs in the prep area where we keep 
+	   the DS! */
+
+	int start_index_in  = in->stat_head->ds_cnt * j;
+	int start_index_out = out->stat_head->ds_cnt * out->stat_head->rra_cnt;
+	
+	out->rra_def = copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
+					 in->rra_def, j,
+					 sizeof(rra_def_t));
+	if (out->rra_def == NULL) goto done;
+
+	// adapt row count:
+	out->rra_def[out->stat_head->rra_cnt].row_cnt = final_row_count;
+
+	out->rra_ptr = copy_over_realloc(out->rra_ptr, out->stat_head->rra_cnt,
+					&rra_0_ptr, 0,
+					sizeof(rra_ptr_t));
+	if (out->rra_ptr == NULL) goto done; 
+
+	out->rra_ptr[out->stat_head->rra_cnt].cur_row = final_row_count - 1;
+
+	unsigned int i, ii;
+	for (i = ii = 0 ; i < ds_ops_cnt ; i++) {
+	    switch (ds_ops[i]) {
+	    case 'c': {
+		memcpy(out->cdp_prep + start_index_out + ii,
+		       in->cdp_prep + start_index_in + i, 
+		       sizeof(cdp_prep_t));
+		ii++;
+		break;
+	    } 
+	    case 'a': {
+		cdp_prep_t *cdp_prep = out->cdp_prep + start_index_out + ii;
+		memcpy(cdp_prep,
+		       &empty_cdp_prep, sizeof(cdp_prep_t));
+
+		init_cdp(out, 
+			 out->rra_def + out->stat_head->rra_cnt,
+			 cdp_prep);
+		ii++;
+		break;
+	    }
+	    case 'd':
+		break;
+	    default:
+		rrd_set_error("internal error: invalid ops");
+		goto done;
+	    }
+	}
+	
+	if (total_out_rra_rows)
+	    *total_out_rra_rows += out->rra_def[out->stat_head->rra_cnt].row_cnt;
+
+	out->stat_head->rra_cnt++;
+    }
+    rc = 0;
+done:
+    return rc;
+}
+
+
+/* add datasources as specified in the addDS array of DS specs as deocumented
+    in rrdcreate(1) 
+
+    Returns the number of DSs added or -1 on error
+*/ 
+
+static int add_dss(const rrd_t UNUSED(*in), rrd_t *out, 
+		   const char **addDS)   
+{
+    if (addDS == NULL) return 0;
+	  
+    int added_count = 0;
+    int rc = -1;
+    int j;
+    const char *c;
+    for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
+	ds_def_t added;
+
+	// parse DS
+	parseDS(c + 3,
+		&added, // out.ds_def + out.stat_head->ds_cnt,
+		out, lookup_DS);
+
+	// check if there is a name clash with an existing DS
+	if (lookup_DS(&out, added.ds_nam) >= 0) {
+	    rrd_set_error("Duplicate DS name: %s", added.ds_nam);
+	    goto done;
+	}
+
+	// copy parse result to output RRD
+	out->ds_def = copy_over_realloc(out->ds_def, out->stat_head->ds_cnt, 
+					&added, 0,
+					sizeof(ds_def_t));
+	if (out->ds_def == NULL) {
+	    goto done;
+	}
+
+	// also add a pdp_prep_t
+	pdp_prep_t added_pdp_prep;
+	memset(&added_pdp_prep, 0, sizeof(added_pdp_prep));
+	strcpy(added_pdp_prep.last_ds, "U");
+
+	added_pdp_prep.scratch[PDP_val].u_val = 0.0;
+	added_pdp_prep.scratch[PDP_unkn_sec_cnt].u_cnt =
+	    out->live_head->last_up % out->stat_head->pdp_step;
+
+	out->pdp_prep = copy_over_realloc(out->pdp_prep, 
+					  out->stat_head->ds_cnt, 
+					  &added_pdp_prep, 0,
+					  sizeof(pdp_prep_t));
+	if (out->pdp_prep == NULL) {
+	    goto done;
+	}
+	out->stat_head->ds_cnt++;
+
+	added_count++;
+    }
+    rc = added_count;
+done:
+    return rc;
+}
+
+
+/*
+  Populate (presumably just added) rows of an RRA from available
+  data. Currently only basic CF types are supported.
+
   in_rrd .. the RRD to use for the search of other RRAs to populate the new RRA
   out_rrd .. the RRD new_rra is part of
+  ds_map .. maps the DS indices from the ones used in new_rra to the ones used in 
+            rrd. If NULL, an identity mapping is used. This is needed to support
+            DS addition/removal from the rrd to new_rra.
   new_rra .. the RRA to populate. It is assumed, that this RRA will
              become part of rrd. This means that all meta settings (step size, 
 	     last update time, etc.) not part of the RRA definition can be taken
@@ -221,9 +474,6 @@ static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, 
   populate_start .. the first row to populate in new_rra
   populate_cnt .. the number of rows to populate in new_rra, starting at
                   populate_start
-  ds_map .. maps the DS indices from the ones used in new_rra to the ones used in 
-            rrd. If NULL, an identity mapping is used. This is needed to support
-            DS addition/removal from the rrd to new_rra.
  */
 static int populate_row(const rrd_t *in_rrd, 
 			const rrd_t *out_rrd,
@@ -232,7 +482,8 @@ static int populate_row(const rrd_t *in_rrd,
 			int cur_row,
 			rrd_value_t *values,
 			int populate_start,
-			int populate_cnt) {
+			int populate_cnt) 
+{
     int rc = -1;
 
     if (in_rrd->stat_head->rra_cnt < 1) return 0;
@@ -284,8 +535,10 @@ static int populate_row(const rrd_t *in_rrd,
 	    int cand_row_end   = row_for_time(in_rrd, r, cand_cur_row, row_end_time);
 
 	    if (cand_row_start == -1 && cand_row_end != -1) {
+		// start time is beyond last_up */
 		cand_row_start = cand_cur_row;
 	    } else if (cand_row_start != -1 && cand_row_end == -1) {
+		// maybe the candidate has fewer rows than the pdp_step ....
 		cand_row_end = (cand_cur_row - 1) % r->row_cnt;
 	    } else if (cand_row_start == -1 && cand_row_end == -1) {
 		// neither start nor end in range. Can't use this candidate RRA...
@@ -314,7 +567,7 @@ static int populate_row(const rrd_t *in_rrd,
 	    int out_ds_cnt = out_rrd->stat_head->ds_cnt;
 	    for (int k = 0 ; k < out_ds_cnt ; k++) {
 		/* check if we already have a value (maybe from a
-		   prior candidate....)  if we have: skip this DS */
+		   prior (=better!) candidate....)  if we have: skip this DS */
 		if (! isnan(values[row * out_ds_cnt + k])) {
 		    continue;
 		}
@@ -327,13 +580,18 @@ static int populate_row(const rrd_t *in_rrd,
 
 		// if the DS was just added we have no pre-existing data anyway, so skip
 		if (in_k < 0) continue;
-
+		
+		/* Go: Use the range of candidate rows to populate this DS in this row */
 		for (cand_row = cand_row_start, ci = 0 ; 
 		     ci < cand_rows ; 
 		     ci++, cand_row = (cand_row + 1) % r->row_cnt)
 		    {
 		    rrd_value_t v = c->values[cand_row * ds_cnt + in_k];
 		
+		    /* skipping NAN values. Note that if all candidate
+		       rows are filled with NAN values, a later
+		       candidate RRA might be used instead. This works
+		       in combination with the isnan check above */
 		    if (isnan(v)) continue;
 
 		    switch (cf) {
@@ -371,6 +629,142 @@ static int populate_row(const rrd_t *in_rrd,
     return rc;
 }
 
+static int mod_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
+		    const rra_mod_op_t *rra_mod_ops, unsigned int rra_mod_ops_cnt,
+		    const char *ds_ops, unsigned int ds_ops_cnt) 
+{
+    int rc = -1;
+    unsigned int rra_index, j;
+    int total_cnt = 0, total_cnt_out = 0;
+    int out_rra = 0;	    // index of currently copied RRA
+    
+    for (rra_index = 0; rra_index < in->stat_head->rra_cnt; rra_index++) {
+	const rra_mod_op_t *rra_op = NULL;
+	for (unsigned int op_index = 0 ; op_index < rra_mod_ops_cnt ; op_index++) {
+	    if (rra_mod_ops[op_index].index == (int)rra_index) {
+		rra_op = rra_mod_ops + op_index;
+		break;
+	    }
+	}
+
+	if (rra_op && rra_op->final_row_count == 0) {
+	    // RRA deleted - skip !
+	    continue;
+	}
+
+	/* number and sizes of all the data in an RRA */
+	int rra_values     = in->stat_head->ds_cnt  * in->rra_def[rra_index].row_cnt;
+	int rra_values_out = out->stat_head->ds_cnt * out->rra_def[out_rra].row_cnt;
+
+	/* we now have all the data for the current RRA available, now
+	   start to transfer it to the output RRD: For every row copy 
+	   the data corresponding to copied DSes, add NaN values for newly 
+	   added DSes. */
+
+	unsigned int ii = 0, jj, oi = 0;
+
+	/* we have to decide beforehand about row addition and
+	   deletion, because this takes place in the front of the
+	   rrd_value array....
+	 */
+
+	if (rra_op) {
+	    char op = rra_op->op;
+	    unsigned int row_count = rra_op->row_count;
+	    
+	    // rewrite '=' ops into '-' or '+' for better code-reuse...
+	    if (op == '=') {
+		if (row_count < in->rra_def[rra_index].row_cnt) {
+		    row_count = in->rra_def[rra_index].row_cnt - row_count;
+		    op = '-';
+		} else if (row_count > in->rra_def[rra_index].row_cnt) {
+		    row_count = row_count - in->rra_def[rra_index].row_cnt;
+		    op = '+';
+		} else {
+		    // equal - special case: nothing to do...
+		}
+	    }
+
+	    switch (op) {
+	    case '=':
+		// no op
+		break;
+	    case '-':
+		// remove rows: just skip the first couple of rows!
+		ii = row_count;
+		break;
+	    case '+':
+		// add rows: insert the requested number of rows!
+		// currently, just add the all as NaN values...
+
+		for ( ; oi < row_count ; oi++) {
+		    for (j = 0 ; j < out->stat_head->ds_cnt ; j++) {
+			out->rrd_value[total_cnt_out + 
+				       oi * out->stat_head->ds_cnt +
+				       j] = DNAN;
+		    }		
+		}
+
+		// now try to populate the newly added rows 
+		populate_row(in, out, ds_map,
+			     out->rra_def + out_rra, 
+			     out->rra_ptr[rra_index].cur_row,
+			     out->rrd_value + total_cnt_out,
+			     0, row_count);
+
+		break;
+	    default:
+		rrd_set_error("RRA modification operation '%c' "
+			      "not (yet) supported", rra_op->op);
+		goto done;
+	    }
+	}
+
+	/* now do the actual copying of data */
+
+	for ( ; ii < in->rra_def[rra_index].row_cnt 
+		  && oi < out->rra_def[out_rra].row_cnt ; ii++, oi++) {
+	    int real_ii = (ii + in->rra_ptr[rra_index].cur_row + 1) % in->rra_def[rra_index].row_cnt;
+	    for (j = jj = 0 ; j < ds_ops_cnt ; j++) {
+		switch (ds_ops[j]) {
+		case 'c': {
+		    out->rrd_value[total_cnt_out + oi * out->stat_head->ds_cnt + jj] =
+			in->rrd_value[total_cnt + real_ii * in->stat_head->ds_cnt + j];
+
+		    /* it might be better to use memcpy, actually (to
+		       treat them opaquely)... so keep the code for
+		       the time being */
+		    /*
+		    memcpy((void*) (out.rrd_value + total_cnt_out + oi * out.stat_head->ds_cnt + jj),
+			   (void*) (in.rrd_value + total_cnt + real_ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
+		    */			   
+		    jj++;
+		    break;
+		}
+		case 'a': {
+		    out->rrd_value[total_cnt_out + oi * out->stat_head->ds_cnt + jj] = DNAN;
+		    jj++;
+		    break;
+		}
+		case 'd':
+		    break;
+		default:
+		    rrd_set_error("internal error: invalid ops");
+		    goto done;
+		}
+	    }
+	}
+
+	total_cnt     += rra_values;
+	total_cnt_out += rra_values_out;
+
+	out_rra++;
+    }
+    rc = 0;
+done:
+    return rc;
+}
+
 
 /* copies the RRD named by infilename to a new RRD called outfilename. 
 
@@ -386,20 +780,21 @@ static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
 			const char **removeDS,
 			const char **addDS,
-			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt) {
+			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+{
     rrd_t in, out;
     int rc = -1;
     unsigned int i, j;
     rrd_file_t *rrd_file;
     char       *old_locale = NULL;
-    char       *ops = NULL;
-    unsigned int ops_cnt = 0;
+    char       *ds_ops = NULL;
+    unsigned int ds_ops_cnt = 0;
     int *ds_map = NULL;
 
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
 
-    rrd_clear_error();
+    rrd_clear_error();		// reset error
 
     if (rrdc_is_any_connected()) {
 	// is it a good idea to just ignore the error ????
@@ -456,111 +851,56 @@ static int rrd_modify_r(const char *infilename,
        - 'd' will not be copied (= will effectively be deleted)
        - 'a' will be added.
     */
-    ops_cnt = in.stat_head->ds_cnt;
-    ops = malloc(ops_cnt);
+    ds_ops_cnt = in.stat_head->ds_cnt;
+    ds_ops = malloc(ds_ops_cnt);
 
-    if (ops == NULL) {
+    if (ds_ops == NULL) {
         rrd_set_error("parse_tag_rrd: malloc failed.");
 	goto done;
     } 
 
-    memset(ops, 'c', in.stat_head->ds_cnt);
+    memset(ds_ops, 'c', in.stat_head->ds_cnt);
     
-    /* copy over existing DS definitions (and related data
-       structures), check on the way (and skip) if they should be
-       deleted
-       */
-    for (i = 0 ; i < in.stat_head->ds_cnt ; i++) {
-	const char *c;
-	if (removeDS != NULL) {
+    // record DSs to be deleted in ds_ops
+    if (removeDS != NULL) {
+	for (unsigned int in_ds = 0 ; in_ds < in.stat_head->ds_cnt ; in_ds++) {
+	    const char *c;
 	    for (j = 0, c = removeDS[j] ; c ; j++, c = removeDS[j]) {
-		if (strcmp(in.ds_def[i].ds_nam, c) == 0) {
-		    ops[i] = 'd';
+		if (strcmp(in.ds_def[in_ds].ds_nam, c) == 0) {
+		    ds_ops[in_ds] = 'd';
 		    break;
 		}
 	    }
 	}
-
-	switch (ops[i]) {
-	case 'c': {
-	    j = out.stat_head->ds_cnt;
-	    out.stat_head->ds_cnt++;
-
-	    out.ds_def = copy_over_realloc(out.ds_def, j, 
-					   in.ds_def, i,
-					   sizeof(ds_def_t));
-	    if (out.ds_def == NULL) goto done;
-
-	    out.pdp_prep = copy_over_realloc(out.pdp_prep, j, 
-					     in.pdp_prep, i,
-					     sizeof(pdp_prep_t));
-	    if (out.pdp_prep == NULL) goto done;
-	    break;
-	}
-	case 'd':
-	    break;
-	case 'a':
-	default:
-	    rrd_set_error("internal error: invalid ops");
-	    goto done;
+    }
+    
+    if (copy_or_delete_DSs(&in, &out, ds_ops) != 0) {
+	// error
+	goto done;
+    }
+    
+    /* now add any DS definitions to be added */
+    int added_cnt = add_dss(&in, &out, addDS);
+    if (added_cnt < 0) {
+	// error
+	goto done;
+    }
+    if (added_cnt > 0) {
+	// and extend the ds_ops array as well
+	ds_ops = realloc(ds_ops, ds_ops_cnt + added_cnt);
+	for(; added_cnt > 0 ; added_cnt--) {
+	    ds_ops[ds_ops_cnt++] = 'a';
 	}
     }
-
-    /* now add any definitions to be added */
-    if (addDS) {
-	const char *c;
-	for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
-	    ds_def_t added;
-
-	    // parse DS
-	    parseDS(c + 3,
-		    &added, // out.ds_def + out.stat_head->ds_cnt,
-		    &out, lookup_DS);
-
-	    // check if there is a name clash with an existing DS
-	    if (lookup_DS(&out, added.ds_nam) >= 0) {
-		rrd_set_error("Duplicate DS name: %s", added.ds_nam);
-		goto done;
-	    }
-
-	    // copy parse result to output RRD
-	    out.ds_def = copy_over_realloc(out.ds_def, out.stat_head->ds_cnt, 
-					   &added, 0,
-					   sizeof(ds_def_t));
-	    if (out.ds_def == NULL) goto done;
-
-	    // also add a pdp_prep_t
-	    pdp_prep_t added_pdp_prep;
-	    memset(&added_pdp_prep, 0, sizeof(added_pdp_prep));
-	    strcpy(added_pdp_prep.last_ds, "U");
-
-	    added_pdp_prep.scratch[PDP_val].u_val = 0.0;
-	    added_pdp_prep.scratch[PDP_unkn_sec_cnt].u_cnt =
-		out.live_head->last_up % out.stat_head->pdp_step;
-
-	    out.pdp_prep = copy_over_realloc(out.pdp_prep, 
-					     out.stat_head->ds_cnt, 
-					     &added_pdp_prep, 0,
-					     sizeof(pdp_prep_t));
-	    if (out.pdp_prep == NULL) goto done;
-
-	    out.stat_head->ds_cnt++;
-
-	    // and extend the ops array as well
-	    ops = realloc(ops, ops_cnt + 1);
-	    ops[ops_cnt] = 'a';
-	    ops_cnt++;
-	}
-    }
-
+    
     /* prepare explicit data source index to map from output index to
        input index */
 
     ds_map = malloc(sizeof(int) * out.stat_head->ds_cnt);
     
     j = 0;
-    for (i = 0 ; i < ops_cnt ; i++) {
-	switch (ops[i]) {
+    for (i = 0 ; i < ds_ops_cnt ; i++) {
+	switch (ds_ops[i]) {
 	case 'c': 
 	    ds_map[j++] = i;
 	    break;
@@ -577,116 +917,13 @@ static int rrd_modify_r(const char *infilename,
 
     /* we also reorder all rows, adding/removing rows as needed */
 
-    rra_ptr_t rra_0_ptr = { .cur_row = 0 };
-
-    cdp_prep_t empty_cdp_prep;
-    memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
-
+    /* later on, we'll need to know the total number of rows for both RRDs in
+       order to allocate memory. Luckily, handle_rra_defs will give that to us. */
     int total_out_rra_rows = 0, total_in_rra_rows = 0;
 
-    rra_mod_op_t *rra_op = NULL;
-    int r;
-    for (j = 0 ; j < in.stat_head->rra_cnt ; j++) {
-	total_in_rra_rows +=  in.rra_def[j].row_cnt;
-
-	rra_op = NULL;
-	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
-	    if (rra_mod_ops[r].index == (int) j) {
-		rra_op = rra_mod_ops + r;
-		break;
-	    }
-	}
-
-	int final_row_count = in.rra_def[j].row_cnt;
-	if (rra_op) {
-	    switch (rra_op->op) {
-	    case '=':
-		final_row_count = rra_op->row_count;
-		break;
-	    case '-':
-		final_row_count -= rra_op->row_count;
-		break;
-	    case '+':
-		final_row_count += rra_op->row_count;
-		break;
-	    }
-	    if (final_row_count < 0) final_row_count = 0;
-	    /* record the final row_count. I don't like this, because
-	       it changes the data passed to us via an argument: */
-
-	    rra_op->final_row_count = final_row_count;
-	}
-
-	// do we have to keep the RRA at all??
-	if (final_row_count == 0) {
-	    // delete the RRA! - just skip processing this RRA....
-	    continue;
-	}
-
-	out.cdp_prep = realloc(out.cdp_prep, 
-			       sizeof(cdp_prep_t) * out.stat_head->ds_cnt 
-			       * (out.stat_head->rra_cnt + 1));
-	
-	if (out.cdp_prep == NULL) {
-	    rrd_set_error("Cannot allocate memory");
-	    goto done;
-	}
-
-	/* for every RRA copy only those CDPs in the prep area where we keep 
-	   the DS! */
-
-	int start_index_in  = in.stat_head->ds_cnt * j;
-	int start_index_out = out.stat_head->ds_cnt * out.stat_head->rra_cnt;
-	
-	out.rra_def = copy_over_realloc(out.rra_def, out.stat_head->rra_cnt,
-					in.rra_def, j,
-					sizeof(rra_def_t));
-	if (out.rra_def == NULL) goto done;
-
-	// adapt row count:
-	out.rra_def[out.stat_head->rra_cnt].row_cnt = final_row_count;
-
-	out.rra_ptr = copy_over_realloc(out.rra_ptr, out.stat_head->rra_cnt,
-					&rra_0_ptr, 0,
-					sizeof(rra_ptr_t));
-	if (out.rra_ptr == NULL) goto done; 
-
-	out.rra_ptr[out.stat_head->rra_cnt].cur_row = final_row_count - 1;
-
-	int ii;
-	for (i = ii = 0 ; i < ops_cnt ; i++) {
-	    switch (ops[i]) {
-	    case 'c': {
-		memcpy(out.cdp_prep + start_index_out + ii,
-		       in.cdp_prep + start_index_in + i, 
-		       sizeof(cdp_prep_t));
-		ii++;
-		break;
-	    } 
-	    case 'a': {
-		cdp_prep_t *cdp_prep = out.cdp_prep + start_index_out + ii;
-		memcpy(cdp_prep,
-		       &empty_cdp_prep, sizeof(cdp_prep_t));
-
-		init_cdp(&out, 
-			 out.rra_def + out.stat_head->rra_cnt,
-			 cdp_prep);
-		ii++;
-		break;
-	    }
-	    case 'd':
-		break;
-	    default:
-		rrd_set_error("internal error: invalid ops");
-		goto done;
-	    }
-	}
-
-	total_out_rra_rows +=  out.rra_def[out.stat_head->rra_cnt].row_cnt;
-
-	out.stat_head->rra_cnt++;
-    }
-
+    rc = handle_rra_defs(&in, &out, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt, &total_in_rra_rows, &total_out_rra_rows);
+    if (rc != 0) goto done;
+    
     /* read and process all data ... */
 
     /* there seem to be two function in the current rrdtool codebase
@@ -701,15 +938,12 @@ static int rrd_modify_r(const char *infilename,
        - why we reset cur_row in RRAs and reorder data to be cronological
     */
 
-    char *all_data = NULL;
-
-    /* prepare space to read data in */
-    all_data = realloc(all_data, 
-		       total_in_rra_rows * in.stat_head->ds_cnt
-		       * sizeof(rrd_value_t));
-    in.rrd_value = (void *) all_data;
+    /* prepare space to read data into */
+    in.rrd_value = realloc(in.rrd_value,
+			   total_in_rra_rows * in.stat_head->ds_cnt
+			   * sizeof(rrd_value_t));
     
-    if (all_data == NULL) {
+    if (in.rrd_value == NULL) {
 	rrd_set_error("out of memory");
 	goto done;
     }
@@ -724,13 +958,6 @@ static int rrd_modify_r(const char *infilename,
 	goto done;
     }
 
-    ssize_t rra_start = 0, rra_start_out = 0;
-
-    int total_cnt = 0, total_cnt_out = 0;
-
-    int out_rra = 0;
-
-
     /*  
 	Before we do any other operation on RRAs, we read in all
 	data. This is important, because in the second pass we may
@@ -741,151 +968,19 @@ static int rrd_modify_r(const char *infilename,
     size_t to_read = total_in_rra_rows * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
     size_t read_bytes;
     
-    read_bytes = rrd_read(rrd_file, all_data, to_read);
+    read_bytes = rrd_read(rrd_file, in.rrd_value, to_read);
     
     if (read_bytes != to_read) {
 	rrd_set_error("short read 2");
 	goto done;
     }
 
-    total_cnt = 0;
-
-    for (i = 0; i < in.stat_head->rra_cnt; i++) {
-	rra_op = NULL;
-	for (r = 0 ; r < rra_mod_ops_cnt ; r++) {
-	    if (rra_mod_ops[r].index == (int)i) {
-		rra_op = rra_mod_ops + r;
-		break;
-	    }
-	}
-
-	if (rra_op) {
-	    if (rra_op->final_row_count == 0) {
-		// RRA deleted - skip !
-		continue;
-	    }
-	}
-
-	/* number and sizes of all the data in an RRA */
-	int rra_values     = in.stat_head->ds_cnt  * in.rra_def[i].row_cnt;
-	int rra_values_out = out.stat_head->ds_cnt * out.rra_def[out_rra].row_cnt;
-
-	ssize_t rra_size     = sizeof(rrd_value_t) * rra_values;
-	ssize_t rra_size_out = sizeof(rrd_value_t) * rra_values_out;
-
-
-	/* we now have all the data for the current RRA available, now
-	   start to transfer it to the output RRD: For every row copy 
-	   the data corresponding to copied DSes, add NaN values for newly 
-	   added DSes. */
-
-	unsigned int ii = 0, jj, oi = 0;
-
-	/* we have to decide beforehand about row addition and
-	   deletion, because this takes place in the front of the
-	   rrd_value array....
-	 */
-
-	if (rra_op) {
-	    char op = rra_op->op;
-	    unsigned int row_count = rra_op->row_count;
-	    
-	    // rewrite '=' ops into '-' or '+' for better code-reuse...
-	    if (op == '=') {
-		if (row_count < in.rra_def[i].row_cnt) {
-		    row_count = in.rra_def[i].row_cnt - row_count;
-		    op = '-';
-		} else if (row_count > in.rra_def[i].row_cnt) {
-		    row_count = row_count - in.rra_def[i].row_cnt;
-		    op = '+';
-		} else {
-		    // equal - special case: nothing to do...
-		}
-	    }
-
-	    switch (op) {
-	    case '=':
-		// no op
-		break;
-	    case '-':
-		// remove rows: just skip the first couple of rows!
-		ii = row_count;
-		break;
-	    case '+':
-		// add rows: insert the requested number of rows!
-		// currently, just add the all as NaN values...
-
-		for ( ; oi < row_count ; oi++) {
-		    for (j = 0 ; j < out.stat_head->ds_cnt ; j++) {
-			out.rrd_value[total_cnt_out + 
-				      oi * out.stat_head->ds_cnt +
-				      j] = DNAN;
-		    }		
-		}
-
-		// now try to populate the newly added rows 
-		populate_row(&in, &out, ds_map,
-			     out.rra_def + out_rra, 
-			     out.rra_ptr[i].cur_row,
-			     out.rrd_value + total_cnt_out,
-			     0, row_count);
-
-		break;
-	    default:
-		rrd_set_error("RRA modification operation '%c' "
-			      "not (yet) supported", rra_op->op);
-		goto done;
-	    }
-	}
-
-	/* now do the actual copying of data */
-
-	for ( ; ii < in.rra_def[i].row_cnt 
-		  && oi < out.rra_def[out_rra].row_cnt ; ii++, oi++) {
-	    int real_ii = (ii + in.rra_ptr[i].cur_row + 1) % in.rra_def[i].row_cnt;
-	    for (j = jj = 0 ; j < ops_cnt ; j++) {
-		switch (ops[j]) {
-		case 'c': {
-		    out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] =
-			in.rrd_value[total_cnt + real_ii * in.stat_head->ds_cnt + j];
-
-		    /* it might be better to use memcpy, actually (to
-		       treat them opaquely)... so keep the code for
-		       the time being */
-		    /*
-		    memcpy((void*) (out.rrd_value + total_cnt_out + oi * out.stat_head->ds_cnt + jj),
-			   (void*) (in.rrd_value + total_cnt + real_ii * in.stat_head->ds_cnt + j), sizeof(rrd_value_t));
-		    */			   
-		    jj++;
-		    break;
-		}
-		case 'a': {
-		    out.rrd_value[total_cnt_out + oi * out.stat_head->ds_cnt + jj] = DNAN;
-		    jj++;
-		    break;
-		}
-		case 'd':
-		    break;
-		default:
-		    rrd_set_error("internal error: invalid ops");
-		    goto done;
-		}
-	    }
-	}
-
-	rra_start     += rra_size;
-	rra_start_out += rra_size_out;
-
-	total_cnt     += rra_values;
-	total_cnt_out += rra_values_out;
-
-	out_rra++;
-    }
+    rc = mod_rras(&in, &out, ds_map, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt);
+    if (rc != 0) goto done;
 
     unsigned long hashed_name = FnvHash(outfilename);
 
     rc = add_rras(&in, &out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
-
     if (rc != 0) goto done;
 
     rc = write_rrd(outfilename, &out);
@@ -901,7 +996,7 @@ done:
     rrd_free(&in);
     rrd_free(&out);
 
-    if (ops != NULL) free(ops);
+    if (ds_ops != NULL) free(ds_ops);
     if (ds_map != NULL) free(ds_map);
 
     return rc;
@@ -944,7 +1039,9 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	    }
 	}
     }
-
+#ifdef MODIFY_DEBUG
+    fprintf(stderr, "chosen candidate index=%d row_cnt=%ld\n", chosen_candidate->rra_index, chosen_candidate->rra->row_cnt);
+#endif
     int start_cdp_index_out = out->stat_head->ds_cnt * curr_rra;
 
     for (int i = 0 ; i < (int) out->stat_head->ds_cnt ; i++) {
@@ -1037,7 +1134,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 		    ccdp->scratch[CDP_primary_val].u_val;
 	    } else {
 		int pre_start = start_row - 1;
-		if (pre_start == 0) pre_start = chosen_candidate->rra->row_cnt;
+		if (pre_start < 0) pre_start = chosen_candidate->rra->row_cnt - 1;
 
 		cdp_prep->scratch[CDP_secondary_val].u_val = 
 		    chosen_candidate->values[ds_cnt * pre_start + mapped_i];
@@ -1068,8 +1165,9 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     if (candidates) free(candidates);
 }
 
+
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
-		    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash) 
+		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash) 
 {
     int rc = -1;
 
@@ -1189,7 +1287,6 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 done:
     return rc;
 }
-
 
 static int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
