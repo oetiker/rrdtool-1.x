@@ -16,7 +16,7 @@ before_script:
 script:
   - ./configure --prefix=/opt/rrdtool-master
   - make
-  - cd tests && ./alltests /opt/rrdtool-master/bin/rrdtool
+  - cd tests && ./alltests
   - sudo make install
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
