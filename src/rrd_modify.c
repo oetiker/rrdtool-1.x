@@ -990,6 +990,9 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
     
     int stretch = 0; 
     rrd_t *out = NULL;
+    rrd_t *finalout = NULL;
+    rra_mod_op_t *mod = NULL, *add = NULL;
+    int mod_cnt = 0, add_cnt = 0;
     
     if (newstep > 0) {
 	if (in->stat_head->pdp_step % newstep == 0
@@ -1004,15 +1007,59 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 			  "divide the old step parameter without a remainder.");
 	    goto done;
 	}
+    
+	/* the semantics for RRA modifications in the presence of stepping
+	changes are rather simple: RRA deletions are done BEFORE changing the
+	stepping, as are RRA row additions/deletions. RRA additions are done
+	AFTER changing the stepping - this also means, that pdp step counts for
+	such specifications are interpreted as refering to the NEW stepping
+	size
+        */
+	
+	for (int i = 0 ; i < rra_mod_ops_cnt ; i++) {
+	    rra_mod_op_t *op = rra_mod_ops + i;
+	    if (op->op == 'a') {
+		add = copy_over_realloc(add, add_cnt++, rra_mod_ops, i, sizeof(rra_mod_op_t));
+		if (add == NULL) {
+		    rrd_set_error("Out of memory");
+		    goto done;
+		}
+	    } else {
+		mod = copy_over_realloc(mod, mod_cnt++, rra_mod_ops, i, sizeof(rra_mod_op_t));
+		if (mod == NULL) {
+		    rrd_set_error("Out of memory");
+		    goto done;
+		}
+	    }
+	}
+
+	out = rrd_modify_structure(in, removeDS, addDS, mod, mod_cnt);
+	if (out == NULL) {
+	    goto done;
+	}
+	    
+	if (stretch > 1) {
+	    rc = stretch_rras(out, stretch);
+	    if (rc != 0) goto done;
+	}
+	
+	if (add != NULL) {
+	    finalout = rrd_modify_structure(out, NULL, NULL, add, add_cnt);
+	    if (finalout == NULL) {
+		goto done;
+	    }
+	} else {
+	    // skip second step if there are no additions
+	    finalout = out;
+	    out = NULL;
+	}
+    } else {
+	// shortcut: do changes in one step
+	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	if (finalout == NULL) {
+	    goto done;
+	}
     }
-    
-    out = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
-    
-    if (stretch > 1) {
-	rc = stretch_rras(out, stretch);
-	if (rc != 0) goto done;
-    }
-    
     rc = 0;
 done:
     if (rc != 0) {
@@ -1021,9 +1068,17 @@ done:
 	    free(out);
 	}
 	out = NULL;
+	if (finalout) {
+	    rrd_memory_free(finalout);
+	    free(finalout);
+	}
+	finalout = NULL;
     }
     
-    return out;
+    if (add) free(add);
+    if (mod) free(mod);
+    
+    return finalout;
 }
 
 /* copies the RRD named by infilename to a new RRD called outfilename. 
@@ -1559,12 +1614,6 @@ int rrd_modify (
         return (-1);
     }
 
-    if (opt_newstep > 0 && (argc - optind) != 2) {
-	rrd_set_error("setting a new step size currently is an exclusive operation. "
-		      "Do not specify and DS or RRA modifications at the same time");
-	return -1;
-    }
-    
     // connect to daemon (will take care of environment variable automatically)
     if (rrdc_connect(opt_daemon) != 0) {
 	rrd_set_error("Cannot connect to daemon");
