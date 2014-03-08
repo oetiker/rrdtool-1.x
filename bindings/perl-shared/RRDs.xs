@@ -189,18 +189,6 @@ rrd_tune(...)
 	OUTPUT:
 		RETVAL
 
-int
-rrd_modify(...)
-	PROTOTYPE: @	
-	PREINIT:
-        int i;
-	char **argv;
-	CODE:
-		rrdcode(rrd_modify);
-       	        RETVAL = 1;
-	OUTPUT:
-		RETVAL
-
 SV *
 rrd_graph(...)
 	PROTOTYPE: @	
