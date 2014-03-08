@@ -772,10 +772,25 @@ static int stretch_rras(rrd_t *out, int stretch) {
 	goto done;
     }
     
-    unsigned int rra_index;
+    int ds_cnt = out->stat_head->ds_cnt;
+    unsigned int rra_index, ds_index;
     for (rra_index = 0 ; rra_index < out->stat_head->rra_cnt ; rra_index++) {
 	rra_def_t *rra = out->rra_def + rra_index;
-//	cdp_prep_t *cdp_prep = out->cdp_prep + rra_index;
+	enum cf_en cf = cf_conv(rra->cf_nam);
+	
+	cdp_prep_t *cdp_prep_row = out->cdp_prep + rra_index * ds_cnt;
+	for (ds_index = 0 ; ds_index < ds_cnt ; ds_index++) {
+	    switch (cf) {
+	    case CF_AVERAGE:
+	    case CF_MINIMUM:
+	    case CF_MAXIMUM:
+	    case CF_LAST:
+		(cdp_prep_row + ds_index)->scratch[CDP_unkn_pdp_cnt].u_val *= stretch;
+		break;
+	    default:
+		break;
+	    }
+	}
 	
 	rra->pdp_cnt *= stretch;
     }
@@ -991,8 +1006,6 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
     int stretch = 0; 
     rrd_t *out = NULL;
     rrd_t *finalout = NULL;
-    rra_mod_op_t *mod = NULL, *add = NULL;
-    int mod_cnt = 0, add_cnt = 0;
     
     if (newstep > 0) {
 	if (in->stat_head->pdp_step % newstep == 0
@@ -1008,32 +1021,9 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 	    goto done;
 	}
     
-	/* the semantics for RRA modifications in the presence of stepping
-	changes are rather simple: RRA deletions are done BEFORE changing the
-	stepping, as are RRA row additions/deletions. RRA additions are done
-	AFTER changing the stepping - this also means, that pdp step counts for
-	such specifications are interpreted as refering to the NEW stepping
-	size
-        */
+	// create temporary RRD structure for in-place resizing...
 	
-	for (int i = 0 ; i < rra_mod_ops_cnt ; i++) {
-	    rra_mod_op_t *op = rra_mod_ops + i;
-	    if (op->op == 'a') {
-		add = copy_over_realloc(add, add_cnt++, rra_mod_ops, i, sizeof(rra_mod_op_t));
-		if (add == NULL) {
-		    rrd_set_error("Out of memory");
-		    goto done;
-		}
-	    } else {
-		mod = copy_over_realloc(mod, mod_cnt++, rra_mod_ops, i, sizeof(rra_mod_op_t));
-		if (mod == NULL) {
-		    rrd_set_error("Out of memory");
-		    goto done;
-		}
-	    }
-	}
-
-	out = rrd_modify_structure(in, removeDS, addDS, mod, mod_cnt);
+	out = rrd_modify_structure(in, NULL, NULL, NULL, 0);
 	if (out == NULL) {
 	    goto done;
 	}
@@ -1043,15 +1033,9 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 	    if (rc != 0) goto done;
 	}
 	
-	if (add != NULL) {
-	    finalout = rrd_modify_structure(out, NULL, NULL, add, add_cnt);
-	    if (finalout == NULL) {
-		goto done;
-	    }
-	} else {
-	    // skip second step if there are no additions
-	    finalout = out;
-	    out = NULL;
+	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	if (finalout == NULL) {
+	    goto done;
 	}
     } else {
 	// shortcut: do changes in one step
@@ -1062,11 +1046,12 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
     }
     rc = 0;
 done:
+    if (out) {
+	rrd_memory_free(out);
+	free(out);
+	out = NULL;
+    }
     if (rc != 0) {
-	if (out) {
-	    rrd_memory_free(out);
-	    free(out);
-	}
 	out = NULL;
 	if (finalout) {
 	    rrd_memory_free(finalout);
@@ -1074,9 +1059,6 @@ done:
 	}
 	finalout = NULL;
     }
-    
-    if (add) free(add);
-    if (mod) free(mod);
     
     return finalout;
 }
