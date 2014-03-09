@@ -765,6 +765,303 @@ done:
     return rc;
 }
 
+static int stretch_rras(rrd_t *out, int stretch) {
+    int rc = -1;
+    if (stretch < 2) {
+	rrd_set_error("invalid stretch count. Must be > 1");
+	goto done;
+    }
+    
+    int ds_cnt = out->stat_head->ds_cnt;
+    unsigned int rra_index, ds_index;
+    for (rra_index = 0 ; rra_index < out->stat_head->rra_cnt ; rra_index++) {
+	rra_def_t *rra = out->rra_def + rra_index;
+	enum cf_en cf = cf_conv(rra->cf_nam);
+	
+	cdp_prep_t *cdp_prep_row = out->cdp_prep + rra_index * ds_cnt;
+	for (ds_index = 0 ; ds_index < ds_cnt ; ds_index++) {
+	    switch (cf) {
+	    case CF_AVERAGE:
+	    case CF_MINIMUM:
+	    case CF_MAXIMUM:
+	    case CF_LAST:
+		(cdp_prep_row + ds_index)->scratch[CDP_unkn_pdp_cnt].u_val *= stretch;
+		break;
+	    default:
+		break;
+	    }
+	}
+	
+	rra->pdp_cnt *= stretch;
+    }
+    
+    out->stat_head->pdp_step /= stretch;
+    
+    rc =0;
+done:
+    return rc;
+}
+
+static void rrd_memory_free(rrd_t *rrd)
+{
+    if (rrd == NULL) return;
+    if (rrd->live_head) free(rrd->live_head);
+    if (rrd->stat_head) free(rrd->stat_head);
+    if (rrd->ds_def) free(rrd->ds_def);
+    if (rrd->rra_def) free(rrd->rra_def);
+    if (rrd->rra_ptr) free(rrd->rra_ptr);
+    if (rrd->pdp_prep) free(rrd->pdp_prep);
+    if (rrd->cdp_prep) free(rrd->cdp_prep);
+    if (rrd->rrd_value) free(rrd->rrd_value);
+}
+
+static rrd_t *rrd_modify_structure(const rrd_t *in,
+				   const char **removeDS,
+				   const char **addDS,
+				   rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+{
+    rrd_t *out;
+    int rc = -1;
+    unsigned int i, j;
+    char       *ds_ops = NULL;
+    unsigned int ds_ops_cnt = 0;
+    int *ds_map = NULL;
+    
+    out = malloc(sizeof(rrd_t));
+    if (out == NULL) {
+	rrd_set_error("Out of memory");
+	goto done;
+    }
+    rrd_init(out);
+    
+    /* currently we only allow to modify version 3 RRDs. If other
+       files should be modified, a dump/restore cycle should be
+       done.... */
+    
+    if (! (strcmp(in->stat_head->version, RRD_VERSION3) == 0 || strcmp(in->stat_head->version, RRD_VERSION) == 0) ) {
+	rrd_set_error("direct modification is only supported for version 3 or version 4 RRD files. Consider to dump/restore before retrying a modification");
+	goto done;
+    }
+    
+    
+    /* copy over structure to out RRD */
+    
+    out->stat_head = (stat_head_t *) malloc(sizeof(stat_head_t));
+    if (out->stat_head == NULL) {
+	rrd_set_error("rrd_modify_r: malloc failed.");
+	goto done;
+    }
+    
+    memset(out->stat_head, 0, (sizeof(stat_head_t)));
+    
+    strncpy(out->stat_head->cookie, "RRD", sizeof(out->stat_head->cookie));
+    strcpy(out->stat_head->version, in->stat_head->version);
+    out->stat_head->float_cookie = FLOAT_COOKIE;
+    out->stat_head->pdp_step = in->stat_head->pdp_step;
+    
+    out->stat_head->ds_cnt = 0;
+    out->stat_head->rra_cnt = 0;
+    
+    out->live_head = copy_over_realloc(out->live_head, 0, in->live_head, 0,
+				       sizeof(live_head_t));
+    
+    if (out->live_head == NULL) goto done;
+    
+    /* use the ops array as a scratchpad to remember what we are about
+    to do to each DS. There is one entry for every DS in the
+    original RRD and one additional entry for every added DS. 
+
+    Entries marked as 
+    - 'c' will be copied to the out RRD, 
+    - 'd' will not be copied (= will effectively be deleted)
+    - 'a' will be added.
+    */
+    ds_ops_cnt = in->stat_head->ds_cnt;
+    ds_ops = malloc(ds_ops_cnt);
+    
+    if (ds_ops == NULL) {
+	rrd_set_error("parse_tag_rrd: malloc failed.");
+	goto done;
+    } 
+    
+    memset(ds_ops, 'c', in->stat_head->ds_cnt);
+    
+    // record DSs to be deleted in ds_ops
+    if (removeDS != NULL) {
+	for (unsigned int in_ds = 0 ; in_ds < in->stat_head->ds_cnt ; in_ds++) {
+	    const char *c;
+	    for (j = 0, c = removeDS[j] ; c ; j++, c = removeDS[j]) {
+		if (strcmp(in->ds_def[in_ds].ds_nam, c) == 0) {
+		    ds_ops[in_ds] = 'd';
+		    break;
+		}
+	    }
+	}
+    }
+    
+    if (copy_or_delete_DSs(in, out, ds_ops) != 0) {
+	// error
+	goto done;
+    }
+    
+    /* now add any DS definitions to be added */
+    int added_cnt = add_dss(in, out, addDS);
+    if (added_cnt < 0) {
+	// error
+	goto done;
+    }
+    if (added_cnt > 0) {
+	// and extend the ds_ops array as well
+	ds_ops = realloc(ds_ops, ds_ops_cnt + added_cnt);
+	for(; added_cnt > 0 ; added_cnt--) {
+	    ds_ops[ds_ops_cnt++] = 'a';
+	}
+    }
+    
+    /* prepare explicit data source index to map from output index to
+       input index */
+    
+    ds_map = malloc(sizeof(int) * out->stat_head->ds_cnt);
+    
+    j = 0;
+    for (i = 0 ; i < ds_ops_cnt ; i++) {
+	switch (ds_ops[i]) {
+	case 'c': 
+	    ds_map[j++] = i;
+	    break;
+	case 'd': 
+	    break;
+	case 'a':
+	    ds_map[j++] = -1;
+	    break;
+	}
+    }
+    
+    /* now take care to copy all RRAs, removing and adding columns for
+       every row as needed for the requested DS changes */
+    
+    /* we also reorder all rows, adding/removing rows as needed */
+    
+    /* later on, we'll need to know the total number of rows for both RRDs in
+       order to allocate memory. Luckily, handle_rra_defs will give that to us. */
+    int total_out_rra_rows = 0, total_in_rra_rows = 0;
+    
+    rc = handle_rra_defs(in, out, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt, &total_in_rra_rows, &total_out_rra_rows);
+    if (rc != 0) goto done;
+    
+    /* read and process all data ... */
+    
+    /* there seem to be two function in the current rrdtool codebase dealing
+       with writing a new rrd file to disk: write_file and rrd_create_fn. The
+       latter has the major problem, that it tries to free data passed to it
+       (WTF?), but write_file assumes chronologically ordered data in RRAs (that
+       is, in the data space starting at rrd.rrd_value....
+
+       This is the reason why: 
+        - we use write_file and 
+        - why we reset cur_row in RRAs and reorder data to be cronological
+    */
+    
+    /* prepare space for output data */
+    out->rrd_value = realloc(out->rrd_value,
+			     total_out_rra_rows * out->stat_head->ds_cnt
+			     * sizeof(rrd_value_t));
+    
+    if (out->rrd_value == NULL) {
+	rrd_set_error("out of memory");
+	goto done;
+    }
+    
+    rc = mod_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt);
+    if (rc != 0) goto done;
+    
+    unsigned long hashed_name = 123213213; // FIXME FnvHash(outfilename);
+    
+    rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
+    if (rc != 0) goto done;
+    
+
+done:
+    if (ds_ops != NULL) free(ds_ops);
+    if (ds_map != NULL) free(ds_map);
+
+    if (rc != 0 && out != NULL) {
+	rrd_memory_free(out);
+	free(out);
+	out = NULL;
+    }
+    return out;
+}
+
+static rrd_t *rrd_modify_r2(const rrd_t *in,
+			    const char **removeDS,
+			    const char **addDS,
+			    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
+			    int newstep) 
+{
+    int rc = -1;
+    /* basic check: do we have a new step size: if we do: is it a smaller than
+       the original and is the old one a whole-number multiple of the new one? */
+    
+    int stretch = 0; 
+    rrd_t *out = NULL;
+    rrd_t *finalout = NULL;
+    
+    if (newstep > 0) {
+	if (in->stat_head->pdp_step % newstep == 0
+		&& in->stat_head->pdp_step / newstep > 1) {
+	    /* we will "stretch" the RRD: existing rows will correspond to the same
+	       time period, but the CF will consolidate 'stretch' times as many PDPs.
+	     */
+	    
+	    stretch = in->stat_head->pdp_step / newstep;
+	} else {
+	    rrd_set_error("invalid 'newstep' parameter. The newsize must "
+			  "divide the old step parameter without a remainder.");
+	    goto done;
+	}
+    
+	// create temporary RRD structure for in-place resizing...
+	
+	out = rrd_modify_structure(in, NULL, NULL, NULL, 0);
+	if (out == NULL) {
+	    goto done;
+	}
+	    
+	if (stretch > 1) {
+	    rc = stretch_rras(out, stretch);
+	    if (rc != 0) goto done;
+	}
+	
+	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	if (finalout == NULL) {
+	    goto done;
+	}
+    } else {
+	// shortcut: do changes in one step
+	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	if (finalout == NULL) {
+	    goto done;
+	}
+    }
+    rc = 0;
+done:
+    if (out) {
+	rrd_memory_free(out);
+	free(out);
+	out = NULL;
+    }
+    if (rc != 0) {
+	out = NULL;
+	if (finalout) {
+	    rrd_memory_free(finalout);
+	    free(finalout);
+	}
+	finalout = NULL;
+    }
+    
+    return finalout;
+}
 
 /* copies the RRD named by infilename to a new RRD called outfilename. 
 
@@ -780,16 +1077,15 @@ static int rrd_modify_r(const char *infilename,
 			const char *outfilename,
 			const char **removeDS,
 			const char **addDS,
-			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
+			int newstep)
 {
-    rrd_t in, out;
+    rrd_t in;
+    rrd_t *out = NULL;
+    
     int rc = -1;
-    unsigned int i, j;
     rrd_file_t *rrd_file;
     char       *old_locale = NULL;
-    char       *ds_ops = NULL;
-    unsigned int ds_ops_cnt = 0;
-    int *ds_map = NULL;
 
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
@@ -803,204 +1099,63 @@ static int rrd_modify_r(const char *infilename,
     }
 
     rrd_init(&in);
-    rrd_init(&out);
 
     rrd_file = rrd_open(infilename, &in, RRD_READONLY | RRD_READAHEAD);
     if (rrd_file == NULL) {
+	// rrd error has been set
 	goto done;
     }
 
-    /* currently we only allow to modify version 3 RRDs. If other
-       files should be modified, a dump/restore cycle should be
-       done.... */
+    // read in data - have to count total number of rows for values array
 
-    if (! (strcmp(in.stat_head->version, RRD_VERSION3) == 0 || strcmp(in.stat_head->version, RRD_VERSION) == 0) ) {
-	rrd_set_error("direct modification is only supported for version 3 or version 4 RRD files. Consider to dump/restore before retrying a modification");
-	goto done;
+    int total_in_rra_rows = 0;
+    for (unsigned int i = 0 ; i < in.stat_head->rra_cnt ; i++) {
+	total_in_rra_rows += in.rra_def[i].row_cnt;
     }
-
-    /* copy over structure to out RRD */
-
-    out.stat_head = (stat_head_t *) malloc(sizeof(stat_head_t));
-    if (out.stat_head == NULL) {
-        rrd_set_error("rrd_modify_r: malloc failed.");
-	goto done;
-    }
-    
-    memset(out.stat_head, 0, (sizeof(stat_head_t)));
-
-    strncpy(out.stat_head->cookie, "RRD", sizeof(out.stat_head->cookie));
-    strcpy(out.stat_head->version, in.stat_head->version);
-    out.stat_head->float_cookie = FLOAT_COOKIE;
-    out.stat_head->pdp_step = in.stat_head->pdp_step;
-
-    out.stat_head->ds_cnt = 0;
-    out.stat_head->rra_cnt = 0;
-
-    out.live_head = copy_over_realloc(out.live_head, 0, in.live_head, 0,
-				      sizeof(live_head_t));
-
-    if (out.live_head == NULL) goto done;
-
-    /* use the ops array as a scratchpad to remember what we are about
-       to do to each DS. There is one entry for every DS in the
-       original RRD and one additional entry for every added DS. 
-
-       Entries marked as 
-       - 'c' will be copied to the out RRD, 
-       - 'd' will not be copied (= will effectively be deleted)
-       - 'a' will be added.
-    */
-    ds_ops_cnt = in.stat_head->ds_cnt;
-    ds_ops = malloc(ds_ops_cnt);
-
-    if (ds_ops == NULL) {
-        rrd_set_error("parse_tag_rrd: malloc failed.");
-	goto done;
-    } 
-
-    memset(ds_ops, 'c', in.stat_head->ds_cnt);
-    
-    // record DSs to be deleted in ds_ops
-    if (removeDS != NULL) {
-	for (unsigned int in_ds = 0 ; in_ds < in.stat_head->ds_cnt ; in_ds++) {
-	    const char *c;
-	    for (j = 0, c = removeDS[j] ; c ; j++, c = removeDS[j]) {
-		if (strcmp(in.ds_def[in_ds].ds_nam, c) == 0) {
-		    ds_ops[in_ds] = 'd';
-		    break;
-		}
-	    }
-	}
-    }
-    
-    if (copy_or_delete_DSs(&in, &out, ds_ops) != 0) {
-	// error
-	goto done;
-    }
-    
-    /* now add any DS definitions to be added */
-    int added_cnt = add_dss(&in, &out, addDS);
-    if (added_cnt < 0) {
-	// error
-	goto done;
-    }
-    if (added_cnt > 0) {
-	// and extend the ds_ops array as well
-	ds_ops = realloc(ds_ops, ds_ops_cnt + added_cnt);
-	for(; added_cnt > 0 ; added_cnt--) {
-	    ds_ops[ds_ops_cnt++] = 'a';
-	}
-    }
-    
-    /* prepare explicit data source index to map from output index to
-       input index */
-
-    ds_map = malloc(sizeof(int) * out.stat_head->ds_cnt);
-    
-    j = 0;
-    for (i = 0 ; i < ds_ops_cnt ; i++) {
-	switch (ds_ops[i]) {
-	case 'c': 
-	    ds_map[j++] = i;
-	    break;
-	case 'd': 
-	    break;
-	case 'a':
-	    ds_map[j++] = -1;
-	    break;
-	}
-    }
-
-    /* now take care to copy all RRAs, removing and adding columns for
-       every row as needed for the requested DS changes */
-
-    /* we also reorder all rows, adding/removing rows as needed */
-
-    /* later on, we'll need to know the total number of rows for both RRDs in
-       order to allocate memory. Luckily, handle_rra_defs will give that to us. */
-    int total_out_rra_rows = 0, total_in_rra_rows = 0;
-
-    rc = handle_rra_defs(&in, &out, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt, &total_in_rra_rows, &total_out_rra_rows);
-    if (rc != 0) goto done;
-    
-    /* read and process all data ... */
-
-    /* there seem to be two function in the current rrdtool codebase
-       dealing with writing a new rrd file to disk: write_file and
-       rrd_create_fn.  The latter has the major problem, that it tries
-       to free data passed to it (WTF?), but write_file assumes
-       chronologically ordered data in RRAs (that is, in the data
-       space starting at rrd.rrd_value....
-
-       This is the reason why: 
-       - we use write_file and 
-       - why we reset cur_row in RRAs and reorder data to be cronological
-    */
-
-    /* prepare space to read data into */
-    in.rrd_value = realloc(in.rrd_value,
-			   total_in_rra_rows * in.stat_head->ds_cnt
-			   * sizeof(rrd_value_t));
-    
-    if (in.rrd_value == NULL) {
-	rrd_set_error("out of memory");
-	goto done;
-    }
-
-    /* prepare space for output data */
-    out.rrd_value = realloc(out.rrd_value,
-			    total_out_rra_rows * out.stat_head->ds_cnt
-			    * sizeof(rrd_value_t));
-    
-    if (out.rrd_value == NULL) {
-	rrd_set_error("out of memory");
-	goto done;
-    }
-
-    /*  
-	Before we do any other operation on RRAs, we read in all
-	data. This is important, because in the second pass we may
-	have to populate newly added rows from existing data - and we
-	might need any data we have from the input RRD.
-     */
 
     size_t to_read = total_in_rra_rows * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
     size_t read_bytes;
     
+    /* prepare space to read data into */
+    in.rrd_value = realloc(in.rrd_value, to_read);
+    if (in.rrd_value == NULL) {
+	rrd_set_error("Out of memory");
+	goto done;
+    }
+    
     read_bytes = rrd_read(rrd_file, in.rrd_value, to_read);
     
     if (read_bytes != to_read) {
-	rrd_set_error("short read 2");
+	rrd_set_error("short read");
 	goto done;
     }
 
-    rc = mod_rras(&in, &out, ds_map, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt);
-    if (rc != 0) goto done;
+    // now we have read the input RRD...
 
-    unsigned long hashed_name = FnvHash(outfilename);
+    out = rrd_modify_r2(&in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, newstep);
 
-    rc = add_rras(&in, &out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
-    if (rc != 0) goto done;
+    if (out == NULL) {
+	goto done;
+    }
 
-    rc = write_rrd(outfilename, &out);
-
+    rc = write_rrd(outfilename, out);
+    
 done:
-    /* clean up */
-    if (old_locale) 
-	setlocale(LC_NUMERIC, old_locale);
-
-    if (rrd_file != NULL) {
+    setlocale(LC_NUMERIC, old_locale);
+    
+    if (out) {
+	rrd_memory_free(out);
+	free(out);
+	out = NULL;
+    }
+    if (rrd_file) {
 	rrd_close(rrd_file);
     }
     rrd_free(&in);
-    rrd_free(&out);
-
-    if (ds_ops != NULL) free(ds_ops);
-    if (ds_map != NULL) free(ds_map);
-
+    
     return rc;
 }
+
 
 // prepare CDPs + values for new RRA
 
@@ -1390,7 +1545,8 @@ int rrd_modify (
     int       rc = 9;
     int       i;
     char     *opt_daemon = NULL;
-
+    int	      opt_newstep = -1;
+    
     /* init rrd clean */
 
     optind = 0;
@@ -1401,10 +1557,11 @@ int rrd_modify (
         int       option_index = 0;
         static struct option long_options[] = {
             {"daemon", required_argument, 0, 'd'},
+	    {"newstep", required_argument, 0, 's'},
             {0, 0, 0, 0}
         };
 
-        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:s:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -1420,7 +1577,11 @@ int rrd_modify (
                 return (-1);
             }
             break;
-
+	case 's': {
+	    char *ep = NULL;
+	    opt_newstep = strtoul(optarg, &ep, 0);
+	    break;
+	}
         default:
             rrd_set_error("usage rrdtool %s"
                           "in.rrd out.rrd", argv[0]);
@@ -1572,7 +1733,7 @@ int rrd_modify (
 
     if ((argc - optind) >= 2) {
         rc = rrd_modify_r(argv[optind], argv[optind + 1], 
-			  remove, add, rra_ops, rraopcnt);
+			  remove, add, rra_ops, rraopcnt, opt_newstep);
     } else {
 	rrd_set_error("missing arguments");
 	rc = 2;

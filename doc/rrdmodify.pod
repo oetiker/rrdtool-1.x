@@ -4,17 +4,49 @@ rrdmodify - Change the data source structure of an RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> {B<modify>} I<in-filename> I<out-filename> 
+B<rrdtool> {B<modify>} S<[-d <address> ]> S<[-s <newstep> ]>
+I<in-filename> I<out-filename> 
 S<[ B<DEL:>I<ds-name> | B<DS:>I<ds-spec> ... ]>
 
 =head1 DESCRIPTION
 
 The B<modify> function copies an RRD file I<in-filename> to
-I<out-filename>, possible removing or adding data sources on the
-fly. When I<in-filename> and I<out-filename> denote the same file,
-this is (almost) identical to an in-place modification.
+I<out-filename>, possible removing or adding data sources and
+round-robin archives (RRAs) on the fly. When I<in-filename> and
+I<out-filename> denote the same file, this is (almost) identical to an
+in-place modification.
 
 =over 8
+
+=item S<-d <address> >
+
+If given, B<RRDTool> will try to connect to the caching daemon
+L<rrdcached> at I<address> to flush any data not yet written to the
+input RRD before reading it in. After writing the final file a FORGET
+command is sent to the daemon. This will make the daemon recognize the
+updated structure of the underlying RRD file.
+
+=item S<-s <newstep> >
+
+Changes the step size if the RRD to newstep. There are restrictions on
+the possible I<newstep> that can be given, namely: The current
+stepping of the I<in-filename> must be a multiple of the
+I<newstep>. This also means that currently the step size can only be
+reduced.
+
+When giving this option, modifications to RRAs will be done AFTER
+adapting the step size, so any RRA specifications referring to counts
+of PDPs will allready use the new stepping. 
+
+Note that changing the step size does NOT change the number of rows of
+any existing RRA by itself: Only the stepsize and assorted other meta
+values get changed (namely the PDP count of RRAs and possibly some CDP
+information).
+
+For a reduced step size to make sense in practice, it is usually a
+good idea to add one or more new RRAs with a step size of 1, because
+all existing RRAs will afterwards definitly have a pdp step count of
+larger than one, effectively hiding the step smaller size.
 
 =item I<in-filename>
 
