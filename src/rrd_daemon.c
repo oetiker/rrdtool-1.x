@@ -1930,13 +1930,15 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
   dir = dirname(file_copy);
-  if (!config_allow_recursive_mkdir) {
-      return send_response(sock, RESP_ERR,
-          "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
-          dir);
-  }
-  if (rrd_mkdir_p(dir, 0755) != 0) {
-      return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+  if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
+    if (!config_allow_recursive_mkdir) {
+        return send_response(sock, RESP_ERR,
+            "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
+            dir);
+    }
+    if (rrd_mkdir_p(dir, 0755) != 0) {
+        return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+    }
   }
   free(file_copy);
 
