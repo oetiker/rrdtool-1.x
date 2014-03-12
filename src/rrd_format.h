@@ -404,6 +404,8 @@ typedef struct rrd_t {
     cdp_prep_t *cdp_prep;   /* cdp prep area */
     rra_ptr_t *rra_ptr; /* list of rra pointers */
     rrd_value_t *rrd_value; /* list of rrd values */
+    void *__mmap_start;	    /* all __ variables will be used internally */
+    long __mmap_size;
 } rrd_t;
 
 /****************************************************************************
