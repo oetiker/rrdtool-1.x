@@ -17,6 +17,7 @@ script:
   - ./configure --prefix=/opt/rrdtool-master
   - make
   - make check
+  - make check TESTS_STYLE=valgrind
   - sudo make install
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
