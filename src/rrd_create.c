@@ -28,9 +28,6 @@ void      parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
-static void rrd_free2(
-    rrd_t *rrd);        /* our onwn copy, immmune to mmap */
-
 int rrd_create(
     int argc,
     char **argv)
@@ -520,7 +517,8 @@ int rrd_create_r2(
     rrd_t     rrd;
     long      i;
     unsigned long hashed_name;
-
+    int rc = -1;
+    
     /* clear any previous errors */
     rrd_clear_error();
 
@@ -529,15 +527,13 @@ int rrd_create_r2(
     /* static header */
     if ((rrd.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating rrd.stat_head");
-        rrd_free2(&rrd);
-        return (-1);
+	goto done;
     }
 
     /* live header */
     if ((rrd.live_head = (live_head_t*)calloc(1, sizeof(live_head_t))) == NULL) {
         rrd_set_error("allocating rrd.live_head");
-        rrd_free2(&rrd);
-        return (-1);
+	goto done;
     }
 
     /* set some defaults */
@@ -567,8 +563,7 @@ int rrd_create_r2(
                                           old_size + sizeof(ds_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.ds_def");
-                rrd_free2(&rrd);
-                return (-1);
+		goto done;
             }
             memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
 
@@ -586,8 +581,7 @@ int rrd_create_r2(
 	    rrd.stat_head->ds_cnt++;
 
             if (rrd_test_error()) {
-                rrd_free2(&rrd);
-                return -1;
+		goto done;
             }
 	    
         } else if (strncmp(argv[i], "RRA:", 4) == 0) {
@@ -596,16 +590,14 @@ int rrd_create_r2(
                                            old_size + sizeof(rra_def_t))) ==
                 NULL) {
                 rrd_set_error("allocating rrd.rra_def");
-                rrd_free2(&rrd);
-                return (-1);
+		goto done;
             }
 
 	    parseRRA(argv[i], rrd.rra_def + rrd.stat_head->rra_cnt, &rrd,
 		     hashed_name);
 
 	    if (rrd_test_error()) {
-                rrd_free2(&rrd);
-                return -1;
+		goto done;
             }
 
 	    rrd.stat_head->rra_cnt++;
@@ -613,29 +605,29 @@ int rrd_create_r2(
 	    rrd.rra_def = handle_dependent_rras(rrd.rra_def, &(rrd.stat_head->rra_cnt), 
 						hashed_name);
 	    if (rrd.rra_def == NULL) {
-		rrd_free2(&rrd);
-		return -1;
+		goto done;
 	    }
         } else {
             rrd_set_error("can't parse argument '%s'", argv[i]);
-            rrd_free2(&rrd);
-            return -1;
+	    goto done;
         }
     }
 
 
     if (rrd.stat_head->rra_cnt < 1) {
         rrd_set_error("you must define at least one Round Robin Archive");
-        rrd_free2(&rrd);
-        return (-1);
+	goto done;
     }
 
     if (rrd.stat_head->ds_cnt < 1) {
         rrd_set_error("you must define at least one Data Source");
-        rrd_free2(&rrd);
-        return (-1);
+	goto done;
     }
-    return rrd_create_fn(filename, &rrd, no_overwrite);
+    rc = rrd_create_fn(filename, &rrd, no_overwrite);
+    
+done:
+    rrd_free(&rrd);
+    return rc;
 }
 
 void parseGENERIC_DS(
@@ -824,7 +816,6 @@ int rrd_create_fn(
 
     if ((rrd_file_dn = rrd_open(file_name, rrd, rrd_flags)) == NULL) {
         rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
-        rrd_free2(rrd);
         return (-1);
     }
 
@@ -839,7 +830,6 @@ int rrd_create_fn(
 
     if ((rrd->pdp_prep = (pdp_prep_t*)calloc(1, sizeof(pdp_prep_t))) == NULL) {
         rrd_set_error("allocating pdp_prep");
-        rrd_free2(rrd);
         rrd_close(rrd_file_dn);
         return (-1);
     }
@@ -855,7 +845,6 @@ int rrd_create_fn(
 
     if ((rrd->cdp_prep = (cdp_prep_t*)calloc(1, sizeof(cdp_prep_t))) == NULL) {
         rrd_set_error("allocating cdp_prep");
-        rrd_free2(rrd);
         rrd_close(rrd_file_dn);
         return (-1);
     }
@@ -874,7 +863,6 @@ int rrd_create_fn(
 
     if ((rrd->rra_ptr = (rra_ptr_t*)calloc(1, sizeof(rra_ptr_t))) == NULL) {
         rrd_set_error("allocating rra_ptr");
-        rrd_free2(rrd);
         rrd_close(rrd_file_dn);
         return (-1);
     }
@@ -891,7 +879,6 @@ int rrd_create_fn(
     /* write the empty data area */
     if ((unknown = (rrd_value_t *) malloc(512 * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("allocating unknown");
-        rrd_free2(rrd);
         rrd_close(rrd_file_dn);
         return (-1);
     }
@@ -908,7 +895,6 @@ int rrd_create_fn(
         unkn_cnt -= 512;
     }
     free(unknown);
-    rrd_free2(rrd);
     if (rrd_close(rrd_file_dn) == -1) {
         rrd_set_error("creating rrd: %s", rrd_strerror(errno));
         return -1;
@@ -918,23 +904,12 @@ int rrd_create_fn(
     if((rrd_file_dn = rrd_open(file_name, &rrd_dn, RRD_READONLY)) != NULL)
     {
         rrd_dontneed(rrd_file_dn, &rrd_dn);
-        /* rrd_free(&rrd_dn); */
+        /* rrd_free(&rrd_dn); */  /* FIXME: Why is this commented out? 
+                                     This would only make sense if
+                                     we are sure about mmap */
         rrd_close(rrd_file_dn);
     }
     return (0);
 }
 
-
-static void rrd_free2(
-    rrd_t *rrd)
-{
-    free(rrd->live_head);
-    free(rrd->stat_head);
-    free(rrd->ds_def);
-    free(rrd->rra_def);
-    free(rrd->rra_ptr);
-    free(rrd->pdp_prep);
-    free(rrd->cdp_prep);
-    free(rrd->rrd_value);
-}
 
