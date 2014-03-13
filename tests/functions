@@ -1,4 +1,7 @@
 
+TZ=CET
+export TZ
+
 BASEDIR=$(dirname $0)
 if [ -z "$RRDTOOL" ] ; then 
 	case "$TESTS_STYLE" in
