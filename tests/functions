@@ -8,7 +8,7 @@ if [ -z "$RRDTOOL" ] ; then
 			--suppressions=$BASEDIR/valgrind-supressions \
 			--leak-check=full --show-reachable=yes \
 			--leak-resolution=high --num-callers=20 \
-			--error-exitcode=111 --log-file=/dev/null \
+			--error-exitcode=111 \
 			$BASEDIR/../src/rrdtool"
 		;;
 	*)
