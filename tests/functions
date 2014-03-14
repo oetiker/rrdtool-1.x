@@ -23,17 +23,18 @@ fi
 DIFF="diff -u"
 
 function fail {
-	echo >&2 "FAILED: (rc=$?)" "$@"
+	RC=$?
+	echo >&2 "FAILED: (rc=$RC)" "$@"
 	if [ -n "$CONTINUE" ] ; then
 		return
 	fi
 	if [ -n "$INTERACTIVE" ] ; then
 		read -p "Continue? (y/n)" YN
 		if [ "$YN" != 'y' ] ; then 
-			exit 1
+			exit $RC
 		fi
 	else
-		exit 1
+		exit $RC
 	fi
 }
 
