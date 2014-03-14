@@ -818,7 +818,8 @@ static void rrd_memory_free(rrd_t *rrd)
 static rrd_t *rrd_modify_structure(const rrd_t *in,
 				   const char **removeDS,
 				   const char **addDS,
-				   rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+				   rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
+				   unsigned long hash)
 {
     rrd_t *out;
     int rc = -1;
@@ -975,9 +976,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     rc = mod_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt);
     if (rc != 0) goto done;
     
-    unsigned long hashed_name = 123213213; // FIXME FnvHash(outfilename);
-    
-    rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
+    rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hash);
     if (rc != 0) goto done;
     
 
@@ -997,7 +996,8 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 			    const char **removeDS,
 			    const char **addDS,
 			    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
-			    int newstep) 
+			    int newstep,
+			    unsigned long hash) 
 {
     int rc = -1;
     /* basic check: do we have a new step size: if we do: is it a smaller than
@@ -1023,7 +1023,7 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
     
 	// create temporary RRD structure for in-place resizing...
 	
-	out = rrd_modify_structure(in, NULL, NULL, NULL, 0);
+	out = rrd_modify_structure(in, NULL, NULL, NULL, 0, hash);
 	if (out == NULL) {
 	    goto done;
 	}
@@ -1031,15 +1031,19 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 	if (stretch > 1) {
 	    rc = stretch_rras(out, stretch);
 	    if (rc != 0) goto done;
+/*	} else if (shrink > 1) {
+	    rc = shrink_rras(out, shrink);
+	    if (rc != 0) goto done;*/
 	}
 	
-	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	
+	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, hash);
 	if (finalout == NULL) {
 	    goto done;
 	}
     } else {
 	// shortcut: do changes in one step
-	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, hash);
 	if (finalout == NULL) {
 	    goto done;
 	}
@@ -1131,8 +1135,8 @@ static int rrd_modify_r(const char *infilename,
     }
 
     // now we have read the input RRD...
-
-    out = rrd_modify_r2(&in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, newstep);
+    unsigned long hashed_name = FnvHash(outfilename);
+    out = rrd_modify_r2(&in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, newstep, hashed_name);
 
     if (out == NULL) {
 	goto done;
