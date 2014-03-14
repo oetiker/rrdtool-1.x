@@ -10,15 +10,15 @@ BASE=$BASEDIR/modify4-test
 # test: add the additional RRA to the first and compare dumps 
 
 
-$RRDTOOL create ${BASE}a1.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
-$RRDTOOL create ${BASE}a2.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 RRA:AVERAGE:0.5:4:10
+$RRDTOOL create ${BASE}a1.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 || fail create1
+$RRDTOOL create ${BASE}a2.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 RRA:AVERAGE:0.5:4:10 || fail create2
 
 # add 50 values - note that we do NOT add it exactly for boundary times, and 
 # that we end at a NON CDP boundary for 5-PDP RRAs:
 N=10
 for T in $(seq 1300000050 60 1300002990) ; do
-	$RRDTOOL update ${BASE}a1.rrd --template a $T:$N
-	$RRDTOOL update ${BASE}a2.rrd --template a $T:$N
+	$RRDTOOL update ${BASE}a1.rrd --template a $T:$N || fail update1
+	$RRDTOOL update ${BASE}a2.rrd --template a $T:$N || fail update2
 	let N=$N+10
 done
 
@@ -27,12 +27,12 @@ report create 1
 $RRDTOOL dump ${BASE}a2.rrd | $DIFF ${BASE}a2-create.dump -
 report create 2
 
-$RRDTOOL modify ${BASE}a2.rrd ${BASE}b2.rrd DELRRA:5
+$RRDTOOL modify ${BASE}a2.rrd ${BASE}b2.rrd DELRRA:5 || fail modify
 
 $RRDTOOL dump ${BASE}b2.rrd | $DIFF ${BASE}a1-create.dump -
 report "remove additional RRA from second - must then be equal original first"
 
-$RRDTOOL modify ${BASE}a1.rrd ${BASE}b1.rrd RRA:AVERAGE:0.5:4:10
+$RRDTOOL modify ${BASE}a1.rrd ${BASE}b1.rrd RRA:AVERAGE:0.5:4:10 || fail modify
 
 $RRDTOOL dump ${BASE}b1.rrd | $DIFF ${BASE}a2-create.dump -
 report "add additional RRA to first - must then be equal original second"

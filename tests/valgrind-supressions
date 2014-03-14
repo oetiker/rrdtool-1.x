@@ -1,0 +1,8 @@
+{
+   setlocale
+   Memcheck:Addr1
+   ...
+   fun:setlocale
+   ...
+   fun:main
+}
