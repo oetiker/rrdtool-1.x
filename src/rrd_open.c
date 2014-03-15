@@ -782,13 +782,21 @@ void rrd_free(
     if (rrd == NULL) return;
     
     free_rrd_ptr_if_not_mmapped(rrd->live_head, rrd);
+    rrd->live_head = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->stat_head, rrd);
+    rrd->stat_head = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->ds_def, rrd);
+    rrd->ds_def = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->rra_def, rrd);
+    rrd->rra_def = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->rra_ptr, rrd);
+    rrd->rra_ptr = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->pdp_prep, rrd);
+    rrd->pdp_prep = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->cdp_prep, rrd);
+    rrd->cdp_prep = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->rrd_value, rrd);
+    rrd->rrd_value = NULL;
 }
 
 /* routine used by external libraries to free memory allocated by
