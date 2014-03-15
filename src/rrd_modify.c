@@ -1088,7 +1088,7 @@ static int rrd_modify_r(const char *infilename,
     rrd_t *out = NULL;
     
     int rc = -1;
-    rrd_file_t *rrd_file;
+    rrd_file_t *rrd_file = NULL;
     char       *old_locale = NULL;
 
     old_locale = setlocale(LC_NUMERIC, NULL);
@@ -1104,33 +1104,9 @@ static int rrd_modify_r(const char *infilename,
 
     rrd_init(&in);
 
-    rrd_file = rrd_open(infilename, &in, RRD_READONLY | RRD_READAHEAD);
+    rrd_file = rrd_open(infilename, &in, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
 	// rrd error has been set
-	goto done;
-    }
-
-    // read in data - have to count total number of rows for values array
-
-    int total_in_rra_rows = 0;
-    for (unsigned int i = 0 ; i < in.stat_head->rra_cnt ; i++) {
-	total_in_rra_rows += in.rra_def[i].row_cnt;
-    }
-
-    size_t to_read = total_in_rra_rows * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
-    size_t read_bytes;
-    
-    /* prepare space to read data into */
-    in.rrd_value = realloc(in.rrd_value, to_read);
-    if (in.rrd_value == NULL) {
-	rrd_set_error("Out of memory");
-	goto done;
-    }
-    
-    read_bytes = rrd_read(rrd_file, in.rrd_value, to_read);
-    
-    if (read_bytes != to_read) {
-	rrd_set_error("short read");
 	goto done;
     }
 
@@ -1147,6 +1123,8 @@ static int rrd_modify_r(const char *infilename,
 done:
     setlocale(LC_NUMERIC, old_locale);
     
+    rrd_free(&in);
+
     if (out) {
 	rrd_memory_free(out);
 	free(out);
