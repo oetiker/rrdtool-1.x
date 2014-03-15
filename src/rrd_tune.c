@@ -99,6 +99,10 @@ int rrd_tune(
         {"smoothing-window", required_argument, 0, 's'},
         {"smoothing-window-deviation", required_argument, 0, 'S'},
         {"aberrant-reset", required_argument, 0, 'b'},
+	// integration of rrd_modify functionality.
+        {"step", required_argument, 0, 't'},
+	/* unfortunately, '-d' is already taken */
+        {"daemon", required_argument, 0, 'D'},
         {0, 0, 0, 0}
     };
 
