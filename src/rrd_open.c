@@ -407,8 +407,20 @@ rrd_file_t *rrd_open(
                       file_name, (long long) correct_len);
         goto out_nullify_head;
       }
+      if (rdwr & RRD_READVALUES) {
+	  long d_offset = offset;
+	  
+	  __rrd_read(rrd->rrd_value, rrd_value_t,
+		     row_cnt * rrd->stat_head->ds_cnt);
+
+	  rrd_file->header_len = d_offset;
+	  rrd_file->pos = d_offset;
+      }
+      
     }
 
+    
+    
   out_done:
     return (rrd_file);
   out_nullify_head:
