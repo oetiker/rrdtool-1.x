@@ -31,7 +31,9 @@ TESTS	=	tests/modify1 \
 		tests/modify2 \
 		tests/modify3 \
 		tests/modify4 \
-		tests/modify5
+		tests/modify5 \
+		tests/tune1 \
+		tests/tune2
 
 #	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
 
