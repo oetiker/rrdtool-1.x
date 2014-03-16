@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/tune2-test
+
+DIFF='diff -u -I .*<seasonal_smooth_idx>.*'
+
+$RRDTOOL create ${BASE}org.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U RRA:HWPREDICT:288:0.9:0.8:144
+$RRDTOOL dump ${BASE}org.rrd | $DIFF - ${BASE}org.dump
+report create
+
+cp ${BASE}org.rrd ${BASE}a.rrd
+# this must fail
+$RRDTOOL tune ${BASE}a.rrd --beta 1.4  2>/dev/null
+[ $? != 0 ] 
+report "out of range beta error"
+$RRDTOOL dump ${BASE}a.rrd | $DIFF - ${BASE}org.dump
+report "RRD unchanged"
+
+$RRDTOOL tune ${BASE}a.rrd --beta 0.4 
+$RRDTOOL dump ${BASE}a.rrd | $DIFF - ${BASE}a-mod1.dump
+report "tune beta"
+
