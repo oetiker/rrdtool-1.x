@@ -106,20 +106,16 @@ int rrd_tune(
         {"daemon", required_argument, 0, 'D'},
         {0, 0, 0, 0}
     };
-    char     *old_locale = NULL;
+    char     *old_locale = setlocale(LC_NUMERIC, "C");
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
-
     rrd_init(&rrd);
     rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE);
     if (rrd_file == NULL) {
-        rrd_free(&rrd);
-        return -1;
+	goto done;
     }
-    old_locale = setlocale(LC_NUMERIC, NULL);
-    setlocale(LC_NUMERIC, "C");
 
     while (1) {
         int       option_index = 0;

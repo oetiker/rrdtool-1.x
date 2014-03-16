@@ -1091,8 +1091,7 @@ static int rrd_modify_r(const char *infilename,
     rrd_file_t *rrd_file = NULL;
     char       *old_locale = NULL;
 
-    old_locale = setlocale(LC_NUMERIC, NULL);
-    setlocale(LC_NUMERIC, "C");
+    old_locale = setlocale(LC_NUMERIC, "C");
 
     rrd_clear_error();		// reset error
 

@@ -103,9 +103,7 @@ int rrd_dump_cb_r(
         return (-1);
     }
 
-    old_locale = setlocale(LC_NUMERIC, NULL);
-    setlocale(LC_NUMERIC, "C");
-
+    old_locale = setlocale(LC_NUMERIC, "C");
 
     if (opt_header == 1) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
