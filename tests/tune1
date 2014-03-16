@@ -1,0 +1,28 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/tune1-test
+
+$RRDTOOL create ${BASE}org.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10
+report create
+
+# add some values to 
+N=10
+for T in $(seq 1300000020 60 1300003020) ; do
+	U="$U $T:$N"
+	let N=$N+10
+done
+$RRDTOOL update ${BASE}org.rrd --template a $U 
+report "update"
+
+cp ${BASE}org.rrd ${BASE}a.rrd
+$RRDTOOL tune ${BASE}a.rrd --heartbeat a:90 --minimum b:-100
+$RRDTOOL dump ${BASE}a.rrd | diff - ${BASE}a-mod1.dump
+report "tune heartbeat/minimum" 
+
+cp ${BASE}org.rrd ${BASE}a.rrd
+$RRDTOOL tune ${BASE}a.rrd --data-source-type a:COUNTER --data-source-rename b:c
+$RRDTOOL dump ${BASE}a.rrd | diff - ${BASE}a-mod2.dump
+report "tune dst/ds-name" 
+
