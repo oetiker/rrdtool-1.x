@@ -764,6 +764,7 @@ static void free_rrd_ptr_if_not_mmapped(void *m, const rrd_t *rrd)
     
     if (rrd == NULL || rrd->__mmap_start == NULL) {
 	free(m);
+	return;
     }
     
     /* is this ALWAYS correct on all supported platforms ??? */
