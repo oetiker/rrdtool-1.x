@@ -12,6 +12,8 @@ if [ -z "$RRDTOOL" ] ; then
 			--leak-check=full --show-reachable=yes \
 			--leak-resolution=high --num-callers=20 \
 			--error-exitcode=111 \
+			--track-fds=yes \
+			--free-fill=ad \
 			$BASEDIR/../src/rrdtool"
 		;;
 	*)
