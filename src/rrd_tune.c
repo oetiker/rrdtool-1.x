@@ -46,6 +46,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 #include "rrd_modify.h"
+#include "rrd_client.h"
 
 int       set_hwarg(
     rrd_t *rrd,
@@ -83,7 +84,8 @@ int rrd_tune(
     char      dst[DST_SIZE];
     int       rc = -1;
     int       opt_newstep = -1;
-    rrd_file_t *rrd_file;
+    rrd_file_t *rrd_file = NULL;
+    char      *opt_daemon = NULL;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
         {"minimum", required_argument, 0, 'i'},
@@ -113,8 +115,67 @@ int rrd_tune(
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
+    /* before we open the input RRD, we should flush it from any caching
+    daemon, because we might totally rewrite it later on */
+
+    /* for this, we FIRST have to find the daemon, this means we must parse options twice... */
+    
+    while (1) {
+	int option_index = 0;
+	int opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
+			      long_options, &option_index);
+        if (opt == EOF)
+            break;
+	switch (opt) {
+	case 'D':
+            if (opt_daemon != NULL)
+		free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
+	default:
+	    break;
+	}
+    }
+    
+    // connect to daemon (will take care of environment variable automatically)
+    if (rrdc_connect(opt_daemon) != 0) {
+	rrd_set_error("Cannot connect to daemon");
+	return 1;
+    }
+
+    if (opt_daemon) {
+	free(opt_daemon);
+	opt_daemon = NULL;
+    }
+
+    if (optind < 0 || optind >= argc) {
+	// missing file name...
+	rrd_set_error("missing file name");
+	goto done;
+    }
+    
+    /* NOTE: getopt_long reorders argv and places all NON option arguments to
+    the back, starting with optind. This means the file name has travelled to
+    argv[optind] */
+    
+    const char *in_filename = argv[optind];
+    
+    if (rrdc_is_any_connected()) {
+	// is it a good idea to just ignore the error ????
+	rrdc_flush(in_filename);
+	rrd_clear_error();
+    }
+
+    optind = 0;
+    opterr = 0;         /* re-initialize getopt */
+    
     rrd_init(&rrd);
-    rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE | RRD_READVALUES);
+    rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
 	goto done;
     }
@@ -287,6 +348,9 @@ int rrd_tune(
 	case 't':
 	    opt_newstep = atoi(optarg);
 	    break;
+	case 'D':
+	    // ignore, handled in previous argv parsing round
+	    break;
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
@@ -305,18 +369,7 @@ int rrd_tune(
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
     }
     
-    // rrd modify functionality
-    rrd_t in;
-    rrd_init(&in);
-     
-    rrd_file = rrd_open(argv[1], &in, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
-    
-    optind = handle_modify(&in, argv[1], argc, argv, optind + 1, opt_newstep);
-    if (optind < 0) {
-	goto done;
-    }
-    
-    if (optcnt == 0) {
+    if (optind >= argc) {
         int       i;
 
         for (i = 0; i < (int) rrd.stat_head->ds_cnt; i++)
@@ -339,6 +392,11 @@ int rrd_tune(
             }
     }
 
+    optind = handle_modify(&rrd, in_filename, argc, argv, optind + 1, opt_newstep);
+    if (optind < 0) {
+	goto done;
+    }
+    
     rc = 0;
 done:
     if (old_locale) {
