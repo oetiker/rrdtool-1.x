@@ -15,7 +15,8 @@ done
 $RRDTOOL dump ${BASE}a.rrd | diff - $BASEDIR/modify-test3.create.dump && ok "create" || fail "create"
 
 # extend base RRA, refill from coarse RRA
-$RRDTOOL modify ${BASE}a.rrd ${BASE}b.rrd DEL:a RRA#0:+10 || fail modify
+cp ${BASE}a.rrd ${BASE}b.rrd
+$RRDTOOL tune ${BASE}b.rrd DEL:a RRA#0:+10 || fail modify
 
 $RRDTOOL dump ${BASE}b.rrd | diff - $BASEDIR/modify-test3.mod1.dump && ok "extend base RRA" || fail "extend base RRA"
 
