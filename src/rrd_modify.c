@@ -758,7 +758,7 @@ static int stretch_rras(rrd_t *out, int stretch) {
 	goto done;
     }
     
-    int ds_cnt = out->stat_head->ds_cnt;
+    unsigned int ds_cnt = out->stat_head->ds_cnt;
     unsigned int rra_index, ds_index;
     for (rra_index = 0 ; rra_index < out->stat_head->rra_cnt ; rra_index++) {
 	rra_def_t *rra = out->rra_def + rra_index;
