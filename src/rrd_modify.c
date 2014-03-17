@@ -12,26 +12,12 @@
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
 #include "rrd_update.h"    /* update_cdp */
+#include "rrd_modify.h"
 #include "unused.h"
 
 #include "fnv.h"
 
 #include <locale.h>
-
-typedef struct {
-    /* the index of the RRA to be changed or -1 if there is no current
-       RRA */
-    int index;
-    /* what operation */
-    char op;  // '+', '-', '=', 'a'
-    /* the number originally specified with the operation (eg. rows to
-       be added) */
-    unsigned int row_count;
-    /* the resulting final row count for the RRA */
-    unsigned int final_row_count;
-    /* An RRA definition in case of an addition */
-    char *def;
-} rra_mod_op_t;
 
 // calculate a % b, guaranteeing a positive result...
 static int positive_mod(int a, int b) {
@@ -1518,6 +1504,178 @@ done:
 
     return rc;
 }
+
+
+int handle_modify(const rrd_t *in, const char *outfilename,
+		  int argc, char **argv, int optind,
+		  int newstep) {
+    // parse add/remove options
+    int rc = -1;
+    int i;
+
+    const char **remove = NULL, **add = NULL;
+    rra_mod_op_t *rra_ops = NULL;
+    int rcnt = 0, acnt = 0, rraopcnt = 0;
+    
+    for (i = optind ; i < argc ; i++) {
+	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	    remove = realloc(remove, (rcnt + 2) * sizeof(char*));
+	    if (remove == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    remove[rcnt] = strdup(argv[i] + 4);
+	    if (remove[rcnt] == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    rcnt++;
+	    remove[rcnt] = NULL;
+	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
+	    add = realloc(add, (acnt + 2) * sizeof(char*));
+	    if (add == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    add[acnt] = strdup(argv[i]);
+	    if (add[acnt] == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    acnt++;
+	    add[acnt] = NULL;
+	} else if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	    rra_mod_op_t rra_mod = { .def = NULL };
+	    char sign;
+	    unsigned int number;
+	    unsigned int index;
+	    
+	    if (sscanf(argv[i] + 4, "%u:%c%u", &index, &sign, &number) != 3) {
+		rrd_set_error("Failed to parse RRA# command");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_mod.index = index;
+	    switch (sign) {
+	    case '=':
+	    case '-':
+	    case '+':
+		rra_mod.index = index;
+		rra_mod.op = sign;
+		rra_mod.row_count = number;
+		rra_mod.final_row_count = 0;
+		break;
+	    default:
+		rrd_set_error("Failed to parse RRA# command: invalid operation: %c", sign);
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	} else if (strncmp("RRA:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
+	    rra_mod_op_t rra_mod;
+	    rra_mod.op = 'a';
+	    rra_mod.index = -1;
+	    rra_mod.def = strdup(argv[i]);
+
+	    if (rra_mod.def == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	} else if (strncmp("DELRRA:", argv[i], 7) == 0 && strlen(argv[i]) > 7) {
+	    rra_mod_op_t rra_mod = { .def = NULL,
+				     .op = '=', 
+				     .row_count = 0 // eg. deletion
+	    };
+	    
+	    rra_mod.index = atoi(argv[i] + 7);
+	    if (rra_mod.index < 0 ) {
+		rrd_set_error("DELRRA requires a non-negative, integer argument");
+		rc = -1;
+		goto done;
+	    }
+
+	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+					&rra_mod, 0, sizeof(rra_mod));
+	    if (rra_ops == NULL) {
+		rrd_set_error("out of memory");
+		rc = -1;
+		goto done;
+	    }
+	    rraopcnt++;
+	} else {
+	    rrd_set_error("unparseable argument: %s", argv[i]);
+	    rc = -1;
+	    goto done;
+	}
+    }
+    
+    if (rcnt > 0 || acnt > 0 || rraopcnt > 0) {
+	unsigned long hashed_name = FnvHash(outfilename);
+	rrd_t *out = rrd_modify_r2(in, remove, add, rra_ops, rraopcnt, newstep, hashed_name);
+    
+	if (out == NULL) {
+	    goto done;
+	}
+    
+	rc = write_rrd(outfilename, out);
+	rrd_free(out);
+	free(out);
+
+	if (rc < 0) goto done;
+    }
+    
+    rc = argc;
+
+done:
+    if (remove) {
+	for (const char **c = remove ; *c ; c++) {
+	    free((void*) *c);
+	}
+	free(remove);
+    } 
+    if (add) {
+	for (const char **c = add ; *c ; c++) {
+	    free((void*) *c);
+	}
+	free(add);
+    }
+    if (rra_ops) {
+	for (i = 0 ; i < rraopcnt ; i++) {
+	    if (rra_ops[i].def) free(rra_ops[i].def);
+	}
+	free(rra_ops);
+    }
+
+    return rc;
+}
+
 
 int rrd_modify (
     int argc,

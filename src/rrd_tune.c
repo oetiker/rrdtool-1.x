@@ -45,6 +45,7 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
+#include "rrd_modify.h"
 
 int       set_hwarg(
     rrd_t *rrd,
@@ -81,6 +82,7 @@ int rrd_tune(
     double    max;
     char      dst[DST_SIZE];
     int       rc = -1;
+    int       opt_newstep = -1;
     rrd_file_t *rrd_file;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
@@ -112,7 +114,7 @@ int rrd_tune(
     opterr = 0;         /* initialize getopt */
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE);
+    rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE | RRD_READVALUES);
     if (rrd_file == NULL) {
 	goto done;
     }
@@ -282,6 +284,9 @@ int rrd_tune(
 		goto done;
             }
             break;
+	case 't':
+	    opt_newstep = atoi(optarg);
+	    break;
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
@@ -298,7 +303,20 @@ int rrd_tune(
         /* need to write rra_defs for RRA parameter changes */
         rrd_write(rrd_file, rrd.rra_def,
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
-    } else {
+    }
+    
+    // rrd modify functionality
+    rrd_t in;
+    rrd_init(&in);
+     
+    rrd_file = rrd_open(argv[1], &in, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
+    
+    optind = handle_modify(&in, argv[1], argc, argv, optind + 1, opt_newstep);
+    if (optind < 0) {
+	goto done;
+    }
+    
+    if (optcnt == 0) {
         int       i;
 
         for (i = 0; i < (int) rrd.stat_head->ds_cnt; i++)
