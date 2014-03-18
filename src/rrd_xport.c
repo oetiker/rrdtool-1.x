@@ -409,8 +409,7 @@ int rrd_graph_xport(image_desc_t *im) {
   grinfo_push(im, sprintf_alloc("graph_step"), RD_I_CNT, info);
 
   /* set locale */
-  char *old_locale = setlocale(LC_NUMERIC,NULL);
-  setlocale(LC_NUMERIC, "C");
+  char *old_locale = setlocale(LC_NUMERIC, "C");
 
   /* format it for output */
   int r=0;

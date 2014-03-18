@@ -45,6 +45,8 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
+#include "rrd_modify.h"
+#include "rrd_client.h"
 
 int       set_hwarg(
     rrd_t *rrd,
@@ -80,7 +82,10 @@ int rrd_tune(
     double    min;
     double    max;
     char      dst[DST_SIZE];
-    rrd_file_t *rrd_file;
+    int       rc = -1;
+    int       opt_newstep = -1;
+    rrd_file_t *rrd_file = NULL;
+    char      *opt_daemon = NULL;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
         {"minimum", required_argument, 0, 'i'},
@@ -99,24 +104,85 @@ int rrd_tune(
         {"smoothing-window", required_argument, 0, 's'},
         {"smoothing-window-deviation", required_argument, 0, 'S'},
         {"aberrant-reset", required_argument, 0, 'b'},
+	// integration of rrd_modify functionality.
+        {"step", required_argument, 0, 't'},
+	/* unfortunately, '-d' is already taken */
+        {"daemon", required_argument, 0, 'D'},
         {0, 0, 0, 0}
     };
+    char     *old_locale = setlocale(LC_NUMERIC, "C");
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
+    /* before we open the input RRD, we should flush it from any caching
+    daemon, because we might totally rewrite it later on */
 
+    /* for this, we FIRST have to find the daemon, this means we must parse options twice... */
+    
+    while (1) {
+	int option_index = 0;
+	int opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
+			      long_options, &option_index);
+        if (opt == EOF)
+            break;
+	switch (opt) {
+	case 'D':
+            if (opt_daemon != NULL)
+		free (opt_daemon);
+            opt_daemon = strdup (optarg);
+            if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
+	default:
+	    break;
+	}
+    }
+    
+    // connect to daemon (will take care of environment variable automatically)
+    if (rrdc_connect(opt_daemon) != 0) {
+	rrd_set_error("Cannot connect to daemon");
+	return 1;
+    }
+
+    if (opt_daemon) {
+	free(opt_daemon);
+	opt_daemon = NULL;
+    }
+
+    if (optind < 0 || optind >= argc) {
+	// missing file name...
+	rrd_set_error("missing file name");
+	goto done;
+    }
+    
+    /* NOTE: getopt_long reorders argv and places all NON option arguments to
+    the back, starting with optind. This means the file name has travelled to
+    argv[optind] */
+    
+    const char *in_filename = argv[optind];
+    
+    if (rrdc_is_any_connected()) {
+	// is it a good idea to just ignore the error ????
+	rrdc_flush(in_filename);
+	rrd_clear_error();
+    }
+
+    optind = 0;
+    opterr = 0;         /* re-initialize getopt */
+    
     rrd_init(&rrd);
-    rrd_file = rrd_open(argv[1], &rrd, RRD_READWRITE);
+    rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
-        rrd_free(&rrd);
-        return -1;
+	goto done;
     }
 
     while (1) {
         int       option_index = 0;
         int       opt;
-        char     *old_locale = "";
 
         opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
                           long_options, &option_index);
@@ -126,42 +192,26 @@ int rrd_tune(
         optcnt++;
         switch (opt) {
         case 'h':
-            old_locale = setlocale(LC_NUMERIC, NULL);
-            setlocale(LC_NUMERIC, "C");
             if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%ld", ds_nam,
-                        &heartbeat)) != 2) {
+		 sscanf(optarg, DS_NAM_FMT ":%ld", ds_nam,
+			&heartbeat)) != 2) {
                 rrd_set_error("invalid arguments for heartbeat");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                setlocale(LC_NUMERIC, old_locale);
-                return -1;
+		goto done;
             }
-            setlocale(LC_NUMERIC, old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             rrd.ds_def[ds].par[DS_mrhb_cnt].u_cnt = heartbeat;
             break;
 
         case 'i':
-            old_locale = setlocale(LC_NUMERIC, NULL);
-            setlocale(LC_NUMERIC, "C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
                 rrd_set_error("invalid arguments for minimum ds value");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                setlocale(LC_NUMERIC, old_locale);
-                return -1;
+		goto done;
             }
-            setlocale(LC_NUMERIC, old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
 
             if (matches == 1)
@@ -170,21 +220,13 @@ int rrd_tune(
             break;
 
         case 'a':
-            old_locale = setlocale(LC_NUMERIC, NULL);
-            setlocale(LC_NUMERIC, "C");
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
                 rrd_set_error("invalid arguments for maximum ds value");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                setlocale(LC_NUMERIC, old_locale);
-                return -1;
+		goto done;
             }
-            setlocale(LC_NUMERIC, old_locale);
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             if (matches == 1)
                 max = DNAN;
@@ -195,19 +237,13 @@ int rrd_tune(
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":" DST_FMT, ds_nam, dst)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
-            }
+		goto done;
+	    }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             if ((int) dst_conv(dst) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             /* only reset when something is changed */
             if (strncmp(rrd.ds_def[ds].dst, dst, DST_SIZE - 1) != 0) {
@@ -226,47 +262,38 @@ int rrd_tune(
                  sscanf(optarg, DS_NAM_FMT ":" DS_NAM_FMT, ds_nam,
                         ds_new)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             strncpy(rrd.ds_def[ds].ds_nam, ds_new, DS_NAM_SIZE - 1);
             rrd.ds_def[ds].ds_nam[DS_NAM_SIZE - 1] = '\0';
             break;
         case 'p':
             if (set_deltaarg(&rrd, RRA_delta_pos, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'n':
             if (set_deltaarg(&rrd, RRA_delta_neg, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'f':
             if (set_windowarg(&rrd, RRA_failure_threshold, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'w':
             if (set_windowarg(&rrd, RRA_window_len, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'x':
             if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, optarg)) {
                 if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_alpha, optarg)) {
-                    rrd_free(&rrd);
-                    return -1;
+		    goto done;
                 }
                 rrd_clear_error();
             }
@@ -274,50 +301,40 @@ int rrd_tune(
         case 'y':
             if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_beta, optarg)) {
                 if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_beta, optarg)) {
-                    rrd_free(&rrd);
-                    return -1;
+		    goto done;
                 }
                 rrd_clear_error();
             }
             break;
         case 'z':
             if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_gamma, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'v':
             if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_gamma, optarg)) {
-                rrd_free(&rrd);
-                return -1;
-            }
+		goto done;
+	    }
             break;
         case 'b':
             if (sscanf(optarg, DS_NAM_FMT, ds_nam) != 1) {
                 rrd_set_error("invalid argument for aberrant-reset");
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
                 /* ds_match handles it own errors */
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             reset_aberrant_coefficients(&rrd, rrd_file, (unsigned long) ds);
             if (rrd_test_error()) {
-                rrd_free(&rrd);
-                rrd_close(rrd_file);
-                return -1;
+		goto done;
             }
             break;
         case 's':
             strcpy(rrd.stat_head->version, RRD_VERSION);    /* smoothing_window causes Version 4 */
             if (set_hwsmootharg
                 (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
         case 'S':
@@ -325,18 +342,21 @@ int rrd_tune(
             if (set_hwsmootharg
                 (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
                  optarg)) {
-                rrd_free(&rrd);
-                return -1;
+		goto done;
             }
             break;
+	case 't':
+	    opt_newstep = atoi(optarg);
+	    break;
+	case 'D':
+	    // ignore, handled in previous argv parsing round
+	    break;
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
             else
                 rrd_set_error("unknown option '%s'", argv[optind - 1]);
-            rrd_free(&rrd);
-            rrd_close(rrd_file);
-            return -1;
+	    goto done;
         }
     }
     if (optcnt > 0) {
@@ -347,7 +367,9 @@ int rrd_tune(
         /* need to write rra_defs for RRA parameter changes */
         rrd_write(rrd_file, rrd.rra_def,
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
-    } else {
+    }
+    
+    if (optind >= argc) {
         int       i;
 
         for (i = 0; i < (int) rrd.stat_head->ds_cnt; i++)
@@ -366,12 +388,25 @@ int rrd_tune(
                                 &buffer);
                 printf("DS[%s] typ: %s\tcdef: %s\n", rrd.ds_def[i].ds_nam,
                        rrd.ds_def[i].dst, buffer);
-                free(buffer);
+                if (buffer) free(buffer);
             }
     }
-    rrd_close(rrd_file);
+
+    optind = handle_modify(&rrd, in_filename, argc, argv, optind + 1, opt_newstep);
+    if (optind < 0) {
+	goto done;
+    }
+    
+    rc = 0;
+done:
+    if (old_locale) {
+	setlocale(LC_NUMERIC, old_locale);
+    }
+    if (rrd_file) {
+	rrd_close(rrd_file);
+    }
     rrd_free(&rrd);
-    return 0;
+    return rc;
 }
 
 int set_hwarg(

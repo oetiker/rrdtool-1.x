@@ -12,26 +12,12 @@
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
 #include "rrd_update.h"    /* update_cdp */
+#include "rrd_modify.h"
 #include "unused.h"
 
 #include "fnv.h"
 
 #include <locale.h>
-
-typedef struct {
-    /* the index of the RRA to be changed or -1 if there is no current
-       RRA */
-    int index;
-    /* what operation */
-    char op;  // '+', '-', '=', 'a'
-    /* the number originally specified with the operation (eg. rows to
-       be added) */
-    unsigned int row_count;
-    /* the resulting final row count for the RRA */
-    unsigned int final_row_count;
-    /* An RRA definition in case of an addition */
-    char *def;
-} rra_mod_op_t;
 
 // calculate a % b, guaranteeing a positive result...
 static int positive_mod(int a, int b) {
@@ -772,7 +758,7 @@ static int stretch_rras(rrd_t *out, int stretch) {
 	goto done;
     }
     
-    int ds_cnt = out->stat_head->ds_cnt;
+    unsigned int ds_cnt = out->stat_head->ds_cnt;
     unsigned int rra_index, ds_index;
     for (rra_index = 0 ; rra_index < out->stat_head->rra_cnt ; rra_index++) {
 	rra_def_t *rra = out->rra_def + rra_index;
@@ -818,7 +804,8 @@ static void rrd_memory_free(rrd_t *rrd)
 static rrd_t *rrd_modify_structure(const rrd_t *in,
 				   const char **removeDS,
 				   const char **addDS,
-				   rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt)
+				   rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
+				   unsigned long hash)
 {
     rrd_t *out;
     int rc = -1;
@@ -975,9 +962,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     rc = mod_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, ds_ops, ds_ops_cnt);
     if (rc != 0) goto done;
     
-    unsigned long hashed_name = 123213213; // FIXME FnvHash(outfilename);
-    
-    rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hashed_name);
+    rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hash);
     if (rc != 0) goto done;
     
 
@@ -993,11 +978,22 @@ done:
     return out;
 }
 
+/* copies the RRD in to a new RRD and return it
+
+   In that process, data sources may be removed or added.
+
+   removeDS points to an array of strings, each naming a DS to be
+   removed. The list itself is NULL terminated. addDS points to a
+   similar list holding rrdcreate-style data source definitions to be
+   added.
+*/
+
 static rrd_t *rrd_modify_r2(const rrd_t *in,
 			    const char **removeDS,
 			    const char **addDS,
 			    rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
-			    int newstep) 
+			    int newstep,
+			    unsigned long hash) 
 {
     int rc = -1;
     /* basic check: do we have a new step size: if we do: is it a smaller than
@@ -1023,7 +1019,7 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
     
 	// create temporary RRD structure for in-place resizing...
 	
-	out = rrd_modify_structure(in, NULL, NULL, NULL, 0);
+	out = rrd_modify_structure(in, NULL, NULL, NULL, 0, hash);
 	if (out == NULL) {
 	    goto done;
 	}
@@ -1031,15 +1027,19 @@ static rrd_t *rrd_modify_r2(const rrd_t *in,
 	if (stretch > 1) {
 	    rc = stretch_rras(out, stretch);
 	    if (rc != 0) goto done;
+/*	} else if (shrink > 1) {
+	    rc = shrink_rras(out, shrink);
+	    if (rc != 0) goto done;*/
 	}
 	
-	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	
+	finalout = rrd_modify_structure(out, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, hash);
 	if (finalout == NULL) {
 	    goto done;
 	}
     } else {
 	// shortcut: do changes in one step
-	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt);
+	finalout = rrd_modify_structure(in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, hash);
 	if (finalout == NULL) {
 	    goto done;
 	}
@@ -1063,98 +1063,7 @@ done:
     return finalout;
 }
 
-/* copies the RRD named by infilename to a new RRD called outfilename. 
 
-   In that process, data sources may be removed or added.
-
-   removeDS points to an array of strings, each naming a DS to be
-   removed. The list itself is NULL terminated. addDS points to a
-   similar list holding rrdcreate-style data source definitions to be
-   added.
-*/
-
-static int rrd_modify_r(const char *infilename,
-			const char *outfilename,
-			const char **removeDS,
-			const char **addDS,
-			rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt,
-			int newstep)
-{
-    rrd_t in;
-    rrd_t *out = NULL;
-    
-    int rc = -1;
-    rrd_file_t *rrd_file;
-    char       *old_locale = NULL;
-
-    old_locale = setlocale(LC_NUMERIC, NULL);
-    setlocale(LC_NUMERIC, "C");
-
-    rrd_clear_error();		// reset error
-
-    if (rrdc_is_any_connected()) {
-	// is it a good idea to just ignore the error ????
-	rrdc_flush(infilename);
-	rrd_clear_error();
-    }
-
-    rrd_init(&in);
-
-    rrd_file = rrd_open(infilename, &in, RRD_READONLY | RRD_READAHEAD);
-    if (rrd_file == NULL) {
-	// rrd error has been set
-	goto done;
-    }
-
-    // read in data - have to count total number of rows for values array
-
-    int total_in_rra_rows = 0;
-    for (unsigned int i = 0 ; i < in.stat_head->rra_cnt ; i++) {
-	total_in_rra_rows += in.rra_def[i].row_cnt;
-    }
-
-    size_t to_read = total_in_rra_rows * sizeof(rrd_value_t) * in.stat_head->ds_cnt;
-    size_t read_bytes;
-    
-    /* prepare space to read data into */
-    in.rrd_value = realloc(in.rrd_value, to_read);
-    if (in.rrd_value == NULL) {
-	rrd_set_error("Out of memory");
-	goto done;
-    }
-    
-    read_bytes = rrd_read(rrd_file, in.rrd_value, to_read);
-    
-    if (read_bytes != to_read) {
-	rrd_set_error("short read");
-	goto done;
-    }
-
-    // now we have read the input RRD...
-
-    out = rrd_modify_r2(&in, removeDS, addDS, rra_mod_ops, rra_mod_ops_cnt, newstep);
-
-    if (out == NULL) {
-	goto done;
-    }
-
-    rc = write_rrd(outfilename, out);
-    
-done:
-    setlocale(LC_NUMERIC, old_locale);
-    
-    if (out) {
-	rrd_memory_free(out);
-	free(out);
-	out = NULL;
-    }
-    if (rrd_file) {
-	rrd_close(rrd_file);
-    }
-    rrd_free(&in);
-    
-    return rc;
-}
 
 
 // prepare CDPs + values for new RRA
@@ -1538,81 +1447,19 @@ done:
     return rc;
 }
 
-int rrd_modify (
-    int argc,
-    char **argv)
-{
-    int       rc = 9;
-    int       i;
-    char     *opt_daemon = NULL;
-    int	      opt_newstep = -1;
-    
-    /* init rrd clean */
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (42) {/* ha ha */
-        int       opt;
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"daemon", required_argument, 0, 'd'},
-	    {"newstep", required_argument, 0, 's'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long(argc, argv, "d:s:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
-        switch (opt) {
-        case 'd':
-            if (opt_daemon != NULL)
-                    free (opt_daemon);
-            opt_daemon = strdup (optarg);
-            if (opt_daemon == NULL)
-            {
-                rrd_set_error ("strdup failed.");
-                return (-1);
-            }
-            break;
-	case 's': {
-	    char *ep = NULL;
-	    opt_newstep = strtoul(optarg, &ep, 0);
-	    break;
-	}
-        default:
-            rrd_set_error("usage rrdtool %s"
-                          "in.rrd out.rrd", argv[0]);
-            return (-1);
-            break;
-        }
-    }                   /* while (42) */
-
-    if ((argc - optind) < 2) {
-        rrd_set_error("usage rrdtool %s"
-                      "in.rrd out.rrd", argv[0]);
-        return (-1);
-    }
-
-    // connect to daemon (will take care of environment variable automatically)
-    if (rrdc_connect(opt_daemon) != 0) {
-	rrd_set_error("Cannot connect to daemon");
-	return 1;
-    }
-
-    if (opt_daemon) {
-	free(opt_daemon);
-	opt_daemon = NULL;
-    }
-
+int handle_modify(const rrd_t *in, const char *outfilename,
+		  int argc, char **argv, int optind,
+		  int newstep) {
     // parse add/remove options
+    int rc = -1;
+    int i;
+
     const char **remove = NULL, **add = NULL;
     rra_mod_op_t *rra_ops = NULL;
     int rcnt = 0, acnt = 0, rraopcnt = 0;
-
-    for (i = optind + 2 ; i < argc ; i++) {
+    
+    for (i = optind ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
 	    remove = realloc(remove, (rcnt + 2) * sizeof(char*));
 	    if (remove == NULL) {
@@ -1730,14 +1577,23 @@ int rrd_modify (
 	    goto done;
 	}
     }
+    
+    if (rcnt > 0 || acnt > 0 || rraopcnt > 0) {
+	unsigned long hashed_name = FnvHash(outfilename);
+	rrd_t *out = rrd_modify_r2(in, remove, add, rra_ops, rraopcnt, newstep, hashed_name);
+    
+	if (out == NULL) {
+	    goto done;
+	}
+    
+	rc = write_rrd(outfilename, out);
+	rrd_free(out);
+	free(out);
 
-    if ((argc - optind) >= 2) {
-        rc = rrd_modify_r(argv[optind], argv[optind + 1], 
-			  remove, add, rra_ops, rraopcnt, opt_newstep);
-    } else {
-	rrd_set_error("missing arguments");
-	rc = 2;
+	if (rc < 0) goto done;
     }
+    
+    rc = argc;
 
 done:
     if (remove) {
@@ -1758,5 +1614,6 @@ done:
 	}
 	free(rra_ops);
     }
+
     return rc;
 }

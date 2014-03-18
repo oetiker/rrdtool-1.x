@@ -142,12 +142,12 @@ int getDouble(const char* v, double *val,char**extra) {
   /* NOTE that this may be a bit different from the original parser */
   char *old_locale;
   *extra=NULL;
-  old_locale = setlocale(LC_NUMERIC, NULL);
-  setlocale(LC_NUMERIC, "C");
+  old_locale = setlocale(LC_NUMERIC, "C");
   errno = 0;
   *val = strtod(v,extra);
   if (errno > 0) {
       rrd_set_error("converting '%s' to float: %s", v, rrd_strerror(errno));
+      setlocale(LC_NUMERIC, old_locale);
       return -1;
   };
   setlocale(LC_NUMERIC, old_locale);

@@ -2,8 +2,10 @@
 
 # fail immediately if any subsequent command fails
 set -e
+
 TZ=CET
 export TZ
+
 RRDTOOL="$1"
 export RRDTOOL
 

@@ -299,6 +299,9 @@ rrd_file_t *rrd_open(
                       rrd_strerror(errno));
         goto out_close;
     }
+    rrd->__mmap_start = data;
+    rrd->__mmap_size  = rrd_file->file_len;
+	    
     rrd_simple_file->file_start = data;
 #endif
     if (rdwr & RRD_CREAT)
@@ -404,8 +407,20 @@ rrd_file_t *rrd_open(
                       file_name, (long long) correct_len);
         goto out_nullify_head;
       }
+      if (rdwr & RRD_READVALUES) {
+	  long d_offset = offset;
+	  
+	  __rrd_read(rrd->rrd_value, rrd_value_t,
+		     row_cnt * rrd->stat_head->ds_cnt);
+
+	  rrd_file->header_len = d_offset;
+	  rrd_file->pos = d_offset;
+      }
+      
     }
 
+    
+    
   out_done:
     return (rrd_file);
   out_nullify_head:
@@ -414,6 +429,8 @@ rrd_file_t *rrd_open(
 #ifdef HAVE_MMAP
     if (data != MAP_FAILED)
       munmap(data, rrd_file->file_len);
+    rrd->__mmap_start = NULL;
+    rrd->__mmap_size = 0;
 #endif
 
     close(rrd_simple_file->fd);
@@ -747,34 +764,53 @@ void rrd_init(
     rrd->pdp_prep = NULL;
     rrd->cdp_prep = NULL;
     rrd->rrd_value = NULL;
+    rrd->__mmap_start = NULL;
+    rrd->__mmap_size = 0;
 }
 
 
-/* free RRD header data.  */
-
-#ifdef HAVE_MMAP
-void rrd_free(
-    rrd_t *rrd)
+/* free RRD data, act correctly, regardless of mmap'ped or malloc'd memory. */
+static void free_rrd_ptr_if_not_mmapped(void *m, const rrd_t *rrd)
 {
-    if (rrd->legacy_last_up) {  /* this gets set for version < 3 only */
-        free(rrd->live_head);
+    if (m == NULL) return;
+    
+    if (rrd == NULL || rrd->__mmap_start == NULL) {
+	free(m);
+	return;
     }
+    
+    /* is this ALWAYS correct on all supported platforms ??? */
+    long ofs = (char*)m - (char*)rrd->__mmap_start;
+    if (ofs < rrd->__mmap_size) {
+	// DO NOT FREE, this memory is mmapped!!
+	return;
+    }
+    
+    free(m);
 }
-#else
+
 void rrd_free(
     rrd_t *rrd)
 {
-    free(rrd->live_head);
-    free(rrd->stat_head);
-    free(rrd->ds_def);
-    free(rrd->rra_def);
-    free(rrd->rra_ptr);
-    free(rrd->pdp_prep);
-    free(rrd->cdp_prep);
-    free(rrd->rrd_value);
+    if (rrd == NULL) return;
+    
+    free_rrd_ptr_if_not_mmapped(rrd->live_head, rrd);
+    rrd->live_head = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->stat_head, rrd);
+    rrd->stat_head = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->ds_def, rrd);
+    rrd->ds_def = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->rra_def, rrd);
+    rrd->rra_def = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->rra_ptr, rrd);
+    rrd->rra_ptr = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->pdp_prep, rrd);
+    rrd->pdp_prep = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->cdp_prep, rrd);
+    rrd->cdp_prep = NULL;
+    free_rrd_ptr_if_not_mmapped(rrd->rrd_value, rrd);
+    rrd->rrd_value = NULL;
 }
-#endif
-
 
 /* routine used by external libraries to free memory allocated by
  * rrd library */
