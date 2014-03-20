@@ -130,6 +130,18 @@ integers, a pointer to an array and a pointer to a array of pointers.
     print "\n";
   }
 
+B<RRDs::xport> exposes the L<rrdxport(1)> functionality and returns data
+with the following structure:
+
+  my ($start,$end,$step,$cols,$names,$data) = RRDs::xport ...
+  
+  # $start : timestamp
+  # $end   : timestamp
+  # $step  : seconds
+  # $cols  : number of returned columns
+  # $names : arrayref with the names of the columns
+  # $data  : arrayref of arrayrefs with the data (first index is time, second is column)
+
 B<RRDs::times> returns two integers which are the number of seconds since
 epoch (1970-01-01) for the supplied "start" and "end" arguments, respectively.
 
