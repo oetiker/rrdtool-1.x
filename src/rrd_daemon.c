@@ -271,6 +271,7 @@ static uint64_t stats_data_sets_written = 0;
 static uint64_t stats_journal_bytes = 0;
 static uint64_t stats_journal_rotate = 0;
 static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t rrdfilecreate_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int opt_no_overwrite = 0; /* default for the daemon */
 
@@ -1929,6 +1930,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
+  pthread_mutex_lock(&rrdfilecreate_lock);
   dir = dirname(file_copy);
   if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
     if (!config_allow_recursive_mkdir) {
@@ -1940,6 +1942,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
         return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
     }
   }
+  pthread_mutex_unlock(&rrdfilecreate_lock);
   free(file_copy);
 
   while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
@@ -1971,7 +1974,9 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   }
 
   rrd_clear_error ();
+  pthread_mutex_lock(&rrdfilecreate_lock);
   status = rrd_create_r2(file,step,last_up,no_overwrite,ac,(const char **)av);
+  pthread_mutex_unlock(&rrdfilecreate_lock);
 
   if(!status) {
     return send_response(sock, RESP_OK, "RRD created OK\n");
