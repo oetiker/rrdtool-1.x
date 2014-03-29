@@ -16,7 +16,7 @@ before_script:
 
 script:
   - ./configure --prefix=/opt/rrdtool-master --disable-ruby
-  - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage"
+  - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
   - make check
   - make check TESTS_STYLE=valgrind
   - sudo make install
@@ -24,6 +24,7 @@ script:
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
 after_success:
-  - ( cd src && gcov *.o )
+  - ( cd src && gcov *.c )
+  - ( cd src/.libs && cp ../*.c . && gcov *.c )
   - coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
 
