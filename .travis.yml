@@ -16,7 +16,7 @@ before_script:
 
 script:
   - ./configure --prefix=/opt/rrdtool-master
-  - make CFLAGS="-g -fprofile-arcs -ftest-coverage"
+  - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage"
   - make check
   - make check TESTS_STYLE=valgrind
   - sudo make install
