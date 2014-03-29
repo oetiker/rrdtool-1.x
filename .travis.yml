@@ -24,5 +24,6 @@ script:
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
 after_success:
-  - gcov src/*.o
-  - coveralls --exclude ci --no-gcov
+  - cd src && gcov *.o
+  - cd src && coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
+
