@@ -9,15 +9,19 @@ perl:
 
 install: 
   - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev 
+  - sudo pip install cpp-coveralls --use-mirrors
 
 before_script:
   - ./MakeMakefile
 
 script:
   - ./configure --prefix=/opt/rrdtool-master
-  - make
+  - make CFLAGS="-g -fprofile-arcs -ftest-coverage"
   - ./tests/alltests
   - sudo make install
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
+after_success:
+  - gcov src/*.o
+  - coveralls --exclude ci --no-gcov
