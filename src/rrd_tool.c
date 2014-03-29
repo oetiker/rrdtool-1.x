@@ -53,7 +53,7 @@ void PrintUsage(
     const char *help_list =
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
-         "\t\tlast, lastupdate, first, info, fetch, tune, modify,\n"
+         "\t\tlast, lastupdate, first, info, fetch, tune\n"
          "\t\tresize, xport, flushcached\n");
 
     const char *help_listremote =
@@ -200,10 +200,8 @@ void PrintUsage(
            "\t\t[--gamma adaptation-parameter]\n"
            "\t\t[--gamma-deviation adaptation-parameter]\n"
            "\t\t[--aberrant-reset ds-name]\n");
-    const char *help_modify = 
-	N_(" * modify - add/remove datasources to/from an RRD\n\n"
-	   "\trrdtool modify in-filename out-filename\n"
-	   "\t\t???");
+    const char *help_tune3 = 
+	N_("\t\t???");  // FIXME
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
@@ -236,7 +234,7 @@ void PrintUsage(
            "For more information read the RRD manpages\n");
     enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
-        C_TUNE, C_MODIFY,
+        C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
         C_UPDATEV, C_FLUSHCACHED
     };
@@ -271,8 +269,6 @@ void PrintUsage(
             help_cmd = C_GRAPHV;
         else if (!strcmp(cmd, "tune"))
             help_cmd = C_TUNE;
-        else if (!strcmp(cmd, "modify"))
-            help_cmd = C_MODIFY;
         else if (!strcmp(cmd, "resize"))
             help_cmd = C_RESIZE;
         else if (!strcmp(cmd, "xport"))
@@ -345,9 +341,7 @@ void PrintUsage(
     case C_TUNE:
         puts(_(help_tune1));
         puts(_(help_tune2));
-        break;
-    case C_MODIFY:
-        puts(_(help_modify));
+	puts(_(help_tune3));
         break;
     case C_RESIZE:
         puts(_(help_resize));
@@ -776,8 +770,6 @@ int HandleInputLine(
         rrd_tune(argc - 1, &argv[1]);
     else if (strcmp("flushcached", argv[1]) == 0)
         rrd_flushcached(argc - 1, &argv[1]);
-    else if (strcmp("modify", argv[1]) == 0)
-        rrd_modify(argc - 1, &argv[1]);
     else {
         rrd_set_error("unknown function '%s'", argv[1]);
     }

@@ -3,19 +3,18 @@
 . $(dirname $0)/functions
 
 BASE=$BASEDIR/modify-test1
-
+DIFF="diff -u"
 $RRDTOOL create ${BASE}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10
 # add 50 values to 
 N=10
 for T in $(seq 1300000020 60 1300003020) ; do
-	$RRDTOOL update ${BASE}a.rrd --template a $T:$N
+	$RRDTOOL update ${BASE}a.rrd --template a $T:$N || fail "update"
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BASE}a.rrd | diff - $BASEDIR/modify-test1.create.dump && ok "create" || fail "create"
+$RRDTOOL dump ${BASE}a.rrd | $DIFF - $BASEDIR/modify-test1.create.dump && ok "create" || fail "create"
 
 # extend base RRA, refill from coarse RRA
-$RRDTOOL modify ${BASE}a.rrd ${BASE}b.rrd RRA#0:+10
-
-$RRDTOOL dump ${BASE}b.rrd | diff - $BASEDIR/modify-test1.mod1.dump && ok "extend base RRA" || fail "extend base RRA"
-
+cp ${BASE}a.rrd ${BASE}b.rrd
+$RRDTOOL tune ${BASE}b.rrd RRA#0:+10 || fail "tune"
+$RRDTOOL dump ${BASE}b.rrd | $DIFF - $BASEDIR/modify-test1.mod1.dump && ok "extend base RRA" || fail "extend base RRA"

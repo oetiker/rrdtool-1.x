@@ -8,7 +8,7 @@ perl:
   - "5.8"
 
 install: 
-  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev 
+  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind
   - sudo pip install cpp-coveralls --use-mirrors
 
 before_script:
@@ -17,7 +17,8 @@ before_script:
 script:
   - ./configure --prefix=/opt/rrdtool-master
   - make CFLAGS="-g -fprofile-arcs -ftest-coverage"
-  - ./tests/alltests
+  - make check
+  - make check TESTS_STYLE=valgrind
   - sudo make install
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl

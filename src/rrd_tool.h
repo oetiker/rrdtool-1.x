@@ -114,6 +114,7 @@ int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
 #define RRD_READAHEAD   (1<<3)
 #define RRD_COPY        (1<<4)
 #define RRD_EXCL        (1<<5)
+#define RRD_READVALUES  (1<<6)
 
     enum cf_en cf_conv(
     const char *string);

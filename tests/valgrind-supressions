@@ -1,0 +1,7 @@
+{
+   pixman_constructor
+   Memcheck:Leak
+   ...
+   fun:pixman_constructor
+   ...
+}

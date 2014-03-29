@@ -1,24 +1,42 @@
 
+TZ=CET
+export TZ
 
 BASEDIR=$(dirname $0)
 if [ -z "$RRDTOOL" ] ; then 
-	RRDTOOL=$BASEDIR/../src/rrdtool
+	case "$TESTS_STYLE" in
+	valgrind)
+		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+		RRDTOOL="libtool --mode=execute valgrind --tool=memcheck \
+			--suppressions=$BASEDIR/valgrind-supressions \
+			--leak-check=full --show-reachable=yes \
+			--leak-resolution=high --num-callers=20 \
+			--error-exitcode=111 \
+			--track-fds=yes \
+			--free-fill=ad \
+			$BASEDIR/../src/rrdtool"
+		;;
+	*)
+		RRDTOOL=$BASEDIR/../src/rrdtool
+		;;
+	esac
 fi
 
 DIFF="diff -u"
 
 function fail {
-	echo >&2 "FAILED:" "$@"
+	RC=$?
+	echo >&2 "FAILED: (rc=$RC)" "$@"
 	if [ -n "$CONTINUE" ] ; then
 		return
 	fi
 	if [ -n "$INTERACTIVE" ] ; then
 		read -p "Continue? (y/n)" YN
 		if [ "$YN" != 'y' ] ; then 
-			exit 1
+			exit $RC
 		fi
 	else
-		exit 1
+		exit $RC
 	fi
 }
 
