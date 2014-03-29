@@ -15,7 +15,7 @@ before_script:
   - ./MakeMakefile
 
 script:
-  - ./configure --prefix=/opt/rrdtool-master
+  - ./configure --prefix=/opt/rrdtool-master --disable-ruby
   - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage"
   - make check
   - make check TESTS_STYLE=valgrind
