@@ -51,7 +51,7 @@ string_arr string_arr_new(
             a.strings[i + 1] = strdup(StringValuePtr(v));
             break;
         case T_FIXNUM:
-            snprintf(buf, 63, "%ld", FIX2INT(v));
+            snprintf(buf, 63, "%d", FIX2INT(v));
             a.strings[i + 1] = strdup(buf);
             break;
         default:
