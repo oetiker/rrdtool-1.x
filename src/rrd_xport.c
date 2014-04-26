@@ -862,10 +862,8 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   /* define some other stuff based on flags */
   int json=0;
   if (flags &1) { json=1; }
-  int showtime=0;
-  if (flags &2) { showtime=1;}
-  int enumds=0;
-  if (flags &4) { enumds=1;}
+  // int showtime=0; if (flags &2) { showtime=1;} -> unused here
+  // int enumds=0; if (flags &4) { enumds=1;} -> unused here
 
   /* define some values */
   time_t    now = time(NULL);

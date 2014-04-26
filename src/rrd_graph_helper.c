@@ -197,7 +197,6 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
   pa->arg_orig=origarg;
 
   /* first split arg into : */
-  char  last=1;
   char c;
   int cnt=0;
   int poscnt=0;
@@ -268,8 +267,6 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
     default:
       break;
     }
-    /* assign last */
-    last=c;
     /* and step to next one byte */
     pos++;
   } while (c);
