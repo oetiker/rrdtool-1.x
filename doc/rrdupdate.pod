@@ -120,6 +120,13 @@ If this environment variable is set it will have the same effect as specifying
 the C<--daemon> option on the command line. If both are present, the command
 line argument takes precedence.
 
+=item B<RRDCACHED_STRIPPATH>
+
+If this environment variable is set it will strip the leading string from the
+filename prior to sending the filename to rrdcached.
+This is mostly intended to allow rrdcached to work with xymon and cacti tools
+without having to modify those tools.
+
 =back
 
 =head1 EXAMPLES
