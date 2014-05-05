@@ -26,6 +26,7 @@
 
 #include "rrd_client.h"
 #include "rrd_update.h"
+#include <glib.h>
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
@@ -362,6 +363,315 @@ rrd_info_t *rrd_update_v(
     return result;
 }
 
+static char *rrd_get_file_template(const char *filename) /* {{{ */
+{
+	rrd_t rrd;
+	rrd_file_t *rrd_file;
+	unsigned int i;
+	size_t len=0;
+	char *template = NULL;
+
+	/* open file */
+	rrd_init(&rrd);
+	rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+	if (rrd_file == NULL)
+		goto err_free;
+
+	/* read the data from the rrd */
+	for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
+		len += strlen(rrd.ds_def[i].ds_nam)+1;
+	}
+	/* now that we got it allocate memory */
+	template = malloc(len);
+	if (!template)
+		goto err_close;
+	template[0] = 0;
+
+	/* fill in for real */
+	for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
+		if (i)
+			strcat(template,":");
+		strcat(template,rrd.ds_def[i].ds_nam);
+	}
+
+err_close:
+	rrd_close(rrd_file);
+err_free:
+	rrd_free(&rrd);
+	return (template);
+} /* }}} const char *rrd_get_file_template */
+
+
+/* the file-template-cache implementation */
+static GTree *rrd_file_template_cache = NULL;
+/* the neccesary functions for the gtree */
+static gint cache_compare_names (gconstpointer name1, 
+				gconstpointer name2,
+				gpointer data)
+{
+	(void)(data); /* to avoid unused message */
+	return (strcmp (name1, name2));
+}
+
+static void cache_destroy(gpointer data)
+{
+	free(data);
+}
+
+static const char *rrd_get_file_template_format(const char *filename) /* {{{ */
+{
+	char *format = NULL;
+	/* create rrd_file_template_cache  if needed */
+	if (!rrd_file_template_cache) {
+		rrd_file_template_cache = g_tree_new_full (
+			cache_compare_names,
+			NULL,
+			cache_destroy,
+			cache_destroy);
+		if (!rrd_file_template_cache)
+			return NULL;
+	}
+
+	/* fetch from cache */
+	format = (char *) g_tree_lookup(rrd_file_template_cache, 
+					filename);
+	if (format)
+		return format;
+
+	/* fetch information from file */
+	format = rrd_get_file_template(filename);
+	if (!format)
+	        return NULL;
+
+	/* create copy of filename */
+	filename = strdup(filename);
+	if (!filename)
+		goto free_format;
+
+	/* and add object to tree */
+	g_tree_insert (rrd_file_template_cache, 
+		       (char *)filename, 
+		format);
+
+	return format;
+
+free_format:
+	free((void *)format);
+	return NULL;
+} /* }}} const char *rrd_get_file_template_format */
+
+static size_t _count_fields(const char *field)
+{
+	int c=1;
+	/* check for empty */
+	if (!field)
+		return 0;
+	if (!field[0])
+		return 0;
+	/* now count */
+	while((field = strchr(field, ':'))) {
+		c++;
+		field++;
+	}
+	return c;
+}
+
+static int _concat_field_n(char* string, const char *value, int field) {
+	const char *colon;
+	size_t len;
+	/* find the field */
+	while (field) {
+		value = strchr(value, ':');
+		if (!value)
+			return -1;
+		value++;
+		field--;
+	}
+
+	/* get the end of string and calculate length */
+	colon = strchr(value, ':');
+	if (colon) {
+		len = colon-value;
+	} else {
+		len = strlen(value);
+	}
+	/* now concat strings */
+	strncat(string, value, len);
+
+	/* return 1 field */
+	return 1;
+}
+
+static int _concat_field(
+	char *string,
+	const char* tpl,
+	const char* value,
+	const char* field)
+{
+	int fieldidx=0;
+	size_t len = 0;
+
+	/* get length */
+	char *colon = strchr(field, ':');
+	if (colon) {
+		len=colon-field;
+	} else
+		len=strlen(field);
+
+	/* concat ":" */
+	strcat(string, ":");
+
+	/* find field in tpl */
+	while(tpl) {
+		/* check if it matches (including terminating 0 or :) */
+		if((strncmp(tpl, field, len)==0)) {
+			if ((tpl[len] == 0) || (tpl[len] == ':')) {
+				return _concat_field_n(
+					string, value, fieldidx+1);
+			}
+		}
+		/* increment tpl */
+		tpl = strchr(tpl, ':');
+		if (tpl)
+			tpl++;
+		/* and also increase the field index */
+		fieldidx++;
+	}
+
+	/* concat "U" */
+	strcat(string, "U");
+
+	/* and return "not found" */
+	return 0;
+}
+
+static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
+					const char *file_tpl,
+					const char *value)
+{
+	char *mapped           = NULL;
+	size_t fields_count    = 0;
+	size_t fields_tpl      = _count_fields(tpl);
+	size_t fields_file_tpl = _count_fields(file_tpl);
+	size_t fields_value    = _count_fields(value);
+	const char *ptr;
+	size_t len;
+	size_t i;
+	int ret;
+
+	/* check number of fields*/
+	if (fields_tpl != fields_value-1) {
+		rrd_set_error("rrd_map_template_to_values: "
+			"mismatch of number of fields in template (%zu) "
+			"with number of fields in values (%zu)",
+			fields_tpl,fields_value-1);
+		return NULL;
+	}
+	if (fields_tpl > fields_file_tpl) {
+		rrd_set_error("rrd_map_template_to_values: "
+			"number of fields in template (%zu) "
+			"bigger than number of fields in rrdfile (%zu)",
+			fields_tpl,fields_file_tpl);
+		return NULL;
+	}
+
+	/* now calculate effective length and allocate it */
+	len = strlen(value) /* length of the value */
+	        + 1 /* terminating null byte */
+  	        + (fields_file_tpl-fields_tpl) /* number of fields that we have 
+						* more in the file_template 
+						* compared to the given template 
+						*/
+	        * 2 /* = strlen(":U") */; 
+
+	mapped = malloc(len);
+	if (!mapped)
+		return NULL;
+	mapped[0] = 0;
+
+	/* first copy timestamp */
+	if (_concat_field_n(mapped,value,0)<0)
+		goto err;
+
+	/* now walk the list of fields from rrdtemplate*/
+	ptr = file_tpl;
+	for (i=0; i<fields_file_tpl; i++) {
+		ret = _concat_field(mapped, tpl, value, ptr);
+		if (ret < 0)
+			goto err;
+		fields_count += ret;
+
+		ptr = strchr(ptr, ':');
+		if (ptr)
+			ptr++;
+	}
+
+	/* check that we do not have a missmatch */
+	if (fields_count != fields_tpl) {
+		/* we could here more explicit,
+		 * by checking the missing fields 
+		 */
+		rrd_set_error("rrd_map_template_to_values: "
+			"there are fields in template (%s) "
+			"that are not in the rrdfile (%s)",
+			tpl,file_tpl);
+		goto err;
+	}
+
+	/* return the mapped */
+	return mapped;
+err:
+	free(mapped);
+	return NULL;
+} /* }}} const char *rrd_map_template_to_values */
+
+static int rrd_template_update(const char *filename,  /* {{{ */
+			const char *tpl, 
+			int values_num,
+			const char * const *values)
+{
+	int i;
+	int ret = -1;
+	char **mapped_values = NULL;
+	const char *file_format;
+
+	file_format= rrd_get_file_template_format(filename);
+	if (!file_format)
+		return -ENOMEM;
+
+
+	/* now start to map those fields */
+	mapped_values = calloc(values_num,sizeof(char*));
+	if (!mapped_values) {
+		rrd_set_error("rrd_template_update: "
+			" could not allocate memory");
+		goto error;
+	}
+
+	/* map the values */
+	for(i=0;i<values_num;i++) {
+		mapped_values[i] =
+			rrd_map_template_to_values(
+				tpl, file_format, values[i]);
+		if (!mapped_values[i])
+			goto error;
+	}
+
+	/* now call the real function */
+	ret = rrdc_update(filename, values_num, 
+			(const char * const *) mapped_values);
+
+error:	
+	/* free the temporary structures again */
+	if (mapped_values) {
+		for(i=0;i<values_num;i++)
+			free(mapped_values[i]);
+		free(mapped_values);
+	}
+
+	return ret;
+} /* }}} int rrd_template_update */
+
 int rrd_update(
     int argc,
     char **argv)
@@ -428,13 +738,6 @@ int rrd_update(
         }        
     }
 
-    if (((tmplt != NULL) || (extra_flags != 0)) && rrdc_is_connected(opt_daemon))
-    {
-        rrd_set_error("The caching daemon cannot be used together with "
-                "templates and skip-past-updates yet.");
-        goto out;
-    }
-
     if (! rrdc_is_connected(opt_daemon))
     {
       rc = rrd_updatex_r(argv[optind], tmplt,extra_flags,
@@ -442,12 +745,28 @@ int rrd_update(
     }
     else /* we are connected */
     {
-        rc = rrdc_update (argv[optind], /* file */
-                          argc - optind - 1, /* values_num */
-                          (const char *const *) (argv + optind + 1)); /* values */
-        if (rc > 0)
-            rrd_set_error("Failed sending the values to rrdcached: %s",
-                          rrd_strerror (rc));
+	rrd_clear_error();
+	if (tmplt) {
+	        if (extra_flags != 0) {
+	            rrd_set_error("The caching daemon cannot be used together with "
+				  "templates and skip-past-updates yet.");
+		    goto out;
+		} else {
+ 		    rc = rrd_template_update(
+					     argv[optind], /* file */
+					     tmplt,
+					     argc - optind - 1, /* values_num */
+					     (const char *const *) (argv + optind + 1)); /* values */
+		}
+	} else
+		rc = rrdc_update (
+			argv[optind], /* file */
+			argc - optind - 1, /* values_num */
+			(const char *const *) (argv + optind + 1)); /* values */
+	if (rc > 0)
+		if (!rrd_test_error()) 
+			rrd_set_error("Failed sending the values to rrdcached: %s",
+				rrd_strerror (rc));
     }
 
   out:
