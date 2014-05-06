@@ -855,7 +855,7 @@ short rpn_calc(
 		if (rpnp[rpi].op == OP_PREDICTPERC) {
 		    stackunderflow(1);
 		    percentile = rpnstack->s[--stptr];
-		    if ((percentile<0) || (percentile > 100)) {
+		    if (abs(percentile) > 100) {
 		        rrd_set_error("unsupported percentile: %f",percentile);
 			return -1;
 		    }
@@ -957,11 +957,19 @@ short rpn_calc(
 		        /* sort the numbers */
 		        qsort(extra,count,sizeof(double),rpn_compare_double);
 			/* get the percentile selected */
-			int idx=(int)round(percentile * ((float)count-1.0));
-			/* maybe we should also do an interpolation between the 2
-			 * neighboring fields, similar to what we do with MEDIAN 
-			 */
-			val = extra[idx];
+			double idxf = percentile * ((float)count-1.0);
+			if (percentile < 0) { /* take the next best */
+			    int idx = round(abs(idxf));
+			    val = extra[idx];
+			} else { /* interpolate */
+			    int idx = floor(idxf);
+			    double deltax = idxf - idx;
+			    val = extra[idx];
+			    if (deltax) { /* this check also handles the percentile=100 case */
+			      double deltay = extra[idx + 1] - extra[idx];
+			      val += deltay * deltax;
+			    }
+			}
 		    }
 		    break;
 		default: /* should not get here ... */
