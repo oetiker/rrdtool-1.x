@@ -997,6 +997,7 @@ long lcd(
     return num[i];
 }
 
+
 /* run the rpn calculator on all the VDEF and CDEF arguments */
 int data_calc(
     image_desc_t *im)
@@ -1008,6 +1009,7 @@ int data_calc(
     int       stepcnt;
     time_t    now;
     rpnstack_t rpnstack;
+    rpnp_t   *rpnp;
 
     rpnstack_init(&rpnstack);
 
@@ -1061,6 +1063,7 @@ int data_calc(
             steparray = NULL;
             stepcnt = 0;
             dataidx = -1;
+	    rpnp = im->gdes[gdi].rpnp;
 
             /* Find the variables in the expression.
              * - VDEF variables are substituted by their values
@@ -1173,7 +1176,6 @@ int data_calc(
              */
             for (now = im->gdes[gdi].start + im->gdes[gdi].step;
                  now <= im->gdes[gdi].end; now += im->gdes[gdi].step) {
-                rpnp_t   *rpnp = im->gdes[gdi].rpnp;
 
                 /* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
                  * in this case we are advancing by timesteps;
@@ -1183,9 +1185,12 @@ int data_calc(
                              im->gdes[gdi].data, ++dataidx) == -1) {
                     /* rpn_calc sets the error string */
                     rpnstack_free(&rpnstack);
+		    rpnp_freeextra(rpnp);
                     return -1;
                 }
             }           /* enumerate over time steps within a CDEF */
+	    rpnp_freeextra(rpnp);
+	    
             break;
         default:
             continue;

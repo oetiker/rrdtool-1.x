@@ -78,6 +78,8 @@ rpnp_t   *rpn_expand(
     }
     for (i = 0; rpnc[i].op != OP_END; ++i) {
         rpnp[i].op = (enum op_en)rpnc[i].op;
+	rpnp[i].extra = NULL;
+	rpnp[i].free_extra = NULL;
         if (rpnp[i].op == OP_NUMBER) {
             rpnp[i].val = (double) rpnc[i].val;
         } else if (rpnp[i].op == OP_VARIABLE || rpnp[i].op == OP_PREV_OTHER) {
@@ -180,6 +182,7 @@ void rpn_compact2str(
             add_op(OP_TRENDNAN, TRENDNAN)
             add_op(OP_PREDICT, PREDICT)
             add_op(OP_PREDICTSIGMA, PREDICTSIGMA)
+            add_op(OP_PREDICTPERC, PREDICTPERC)
             add_op(OP_RAD2DEG, RAD2DEG)
             add_op(OP_DEG2RAD, DEG2RAD)
             add_op(OP_AVG, AVG)
@@ -241,9 +244,10 @@ void parseCDEF_DS(const char *def,
         if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME ||
             rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
             rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
-            rpnp[i].op == OP_PREDICT || rpnp[i].op ==  OP_PREDICTSIGMA ) {
+            rpnp[i].op == OP_PREDICT || rpnp[i].op ==  OP_PREDICTSIGMA ||
+            rpnp[i].op == OP_PREDICTPERC ) {
             rrd_set_error
-                ("operators TIME, LTIME, PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA are not supported with DS COMPUTE");
+                ("operators TIME, LTIME, PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
             free(rpnp);
             return;
         }
@@ -385,6 +389,7 @@ rpnp_t   *rpn_parse(
             match_op(OP_TRENDNAN, TRENDNAN)
             match_op(OP_PREDICT, PREDICT)
             match_op(OP_PREDICTSIGMA, PREDICTSIGMA)
+            match_op(OP_PREDICTPERC, PREDICTPERC)
             match_op(OP_RAD2DEG, RAD2DEG)
             match_op(OP_DEG2RAD, DEG2RAD)
             match_op(OP_AVG, AVG)
@@ -408,6 +413,9 @@ rpnp_t   *rpn_parse(
             free(rpnp);
             return NULL;
         }
+
+	rpnp[steps].extra = NULL;
+	rpnp[steps].free_extra = NULL;
 
         if (*expr == 0)
             break;
@@ -435,9 +443,26 @@ void rpnstack_init(
 void rpnstack_free(
     rpnstack_t *rpnstack)
 {
-    if (rpnstack->s != NULL)
-        free(rpnstack->s);
+    free(rpnstack->s);
     rpnstack->dc_stacksize = 0;
+}
+
+void rpnp_freeextra(rpnp_t* rpnp)
+{
+    int rpi;
+    if (!rpnp)
+      return;
+    /* process each op from the rpn in turn */
+    for (rpi = 0; rpnp[rpi].op != OP_END; rpi++) {
+        if (rpnp[rpi].extra) {
+	    if (rpnp[rpi].free_extra) {
+	        rpnp[rpi].free_extra(rpnp[rpi].extra);
+	    } else {
+	        free(rpnp[rpi].extra);
+	    }
+	    rpnp[rpi].extra = NULL;
+	}
+    }
 }
 
 static int rpn_compare_double(
@@ -823,12 +848,27 @@ short rpn_calc(
             break;
         case OP_PREDICT:
         case OP_PREDICTSIGMA:
-            stackunderflow(2);
+        case OP_PREDICTPERC:
 	    {
-		/* the local averaging window (similar to trend, but better here, as we get better statistics thru numbers)*/
+	        /* the percentile requested */
+	        double  percentile = DNAN;
+		if (rpnp[rpi].op == OP_PREDICTPERC) {
+		    stackunderflow(1);
+		    percentile = rpnstack->s[--stptr];
+		    if ((percentile<0) || (percentile > 100)) {
+		        rrd_set_error("unsupported percentile: %f",percentile);
+			return -1;
+		    }
+		    percentile/=100;
+		}
+		/* the local averaging window (similar to trend,
+		 * but better here, as we get better statistics 
+		 * thru numbers)*/
+	        stackunderflow(2);
 		int   locstepsize = rpnstack->s[--stptr];
 		/* the number of shifts and range-checking*/
 		int     shifts = rpnstack->s[--stptr];
+
                 stackunderflow(shifts);
 		// handle negative shifts special
 		if (shifts<0) {
@@ -839,9 +879,9 @@ short rpn_calc(
 		/* the real calculation */
 		double val=DNAN;
 		/* the info on the datasource */
-		time_t  dsstep = (time_t) rpnp[rpi - 1].step;
-		int    dscount = rpnp[rpi - 1].ds_cnt;
-		int   locstep = (int)ceil((float)locstepsize/(float)dsstep);
+		time_t  dsstep  = (time_t) rpnp[rpi - 1].step;
+		int     dscount = rpnp[rpi - 1].ds_cnt;
+		int     locstep = (int)ceil((float)locstepsize/(float)dsstep);
 
 		/* the sums */
                 double    sum = 0;
@@ -850,6 +890,16 @@ short rpn_calc(
 		/* now loop for each position */
 		int doshifts=shifts;
 		if (shifts<0) { doshifts=-shifts; }
+		/* alloc memory */
+		double *extra = rpnp[rpi].extra;
+		if (rpnp[rpi].op == OP_PREDICTPERC) {
+		    if (! extra) {
+		      int size = (doshifts + 1) * (locstep + 2);
+		      rpnp[rpi].extra =
+			  extra =  malloc(sizeof(double) * size);
+		    }
+		}
+		/* loop the shifts */
 		for(int loop=0;loop<doshifts;loop++) {
 		    /* calculate shift step */
 		    int shiftstep=1;
@@ -865,7 +915,8 @@ short rpn_calc(
 		    shiftstep=(int)ceil((float)shiftstep/(float)dsstep);
 		    /* loop all local shifts */
 		    for(int i=0;i<=locstep;i++) {
-			/* now calculate offset into data-array - relative to output_idx*/
+			/* now calculate offset into data-array 
+			 * - relative to output_idx */
 			int offset=shiftstep+i;
 			/* and process if we have index 0 of above */
 			if ((offset>=0)&&(offset<output_idx)) {
@@ -875,6 +926,9 @@ short rpn_calc(
 			    if (! isnan(val)) {
 				sum+=val;
 				sum2+=val*val;
+				if (extra) {
+				    extra[count]=val;
+				}
 				count++;
 			    }
 			}
@@ -882,11 +936,13 @@ short rpn_calc(
 		}
 		/* do the final calculations */
 		val=DNAN;
-		if (rpnp[rpi].op == OP_PREDICT) {  /* the average */
+		switch (rpnp[rpi].op) {
+		case OP_PREDICT:
 		    if (count>0) {
 			val = sum/(double)count;
 		    } 
-		} else {
+		    break;
+		case OP_PREDICTSIGMA:
 		    if (count>1) { /* the sigma case */
 			val=count*sum2-sum*sum;
 			if (val<0) {
@@ -895,6 +951,21 @@ short rpn_calc(
 			    val=sqrt(val/((float)count*((float)count-1.0)));
 			}
 		    }
+		    break;
+		case OP_PREDICTPERC:
+		    if ((count>0) && extra) {
+		        /* sort the numbers */
+		        qsort(extra,count,sizeof(double),rpn_compare_double);
+			/* get the percentile selected */
+			int idx=(int)round(percentile * ((float)count-1.0));
+			/* maybe we should also do an interpolation between the 2
+			 * neighboring fields, similar to what we do with MEDIAN 
+			 */
+			val = extra[idx];
+		    }
+		    break;
+		default: /* should not get here ... */
+		    break; 
 		}
 		rpnstack->s[stptr] = val;
 	    }

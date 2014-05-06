@@ -202,18 +202,20 @@ source value is NAN the complete sliding window is affected. The TRENDNAN
 operation ignores all NAN-values in a sliding window and computes the 
 average of the remaining values.
 
-B<PREDICT, PREDICTSIGMA>
+B<PREDICT, PREDICTSIGMA, PREDICTPERC>
 
-Create a "sliding window" average/sigma of another data series, that also
-shifts the data series by given amounts of of time as well
+Create a "sliding window" average/sigma/percentil of another data series, 
+that also shifts the data series by given amounts of of time as well
 
 Usage - explicit stating shifts:
 CDEF:predict=<shift n>,...,<shift 1>,n,<window>,x,PREDICT
 CDEF:sigma=<shift n>,...,<shift 1>,n,<window>,x,PREDICTSIGMA
+CDEF:perc=<shift n>,...,<shift 1>,n,<window>,<percentil>,x,PREDICTPERC
 
 Usage - shifts defined as a base shift and a number of time this is applied
 CDEF:predict=<shift multiplier>,-n,<window>,x,PREDICT
 CDEF:sigma=<shift multiplier>,-n,<window>,x,PREDICTSIGMA
+CDEF:sigma=<shift multiplier>,-n,<window>,<percentil>,x,PREDICTPERC
 
 Example:
 CDEF:predict=172800,86400,2,1800,x,PREDICT
@@ -267,13 +269,18 @@ rrdtool graph image.png --imgformat=PNG \
  LINE1:upper#0000ff:upper\ certainty\ limit \
  LINE1:lower#0000ff:lower\ certainty\ limit \
  CDEF:exceeds=value,UN,0,value,lower,upper,LIMIT,UN,IF \
- TICK:exceeds#aa000080:1
+ TICK:exceeds#aa000080:1 \
+ CDEF:perc95=86400,-7,1800,95,value,PREDICTPERC \
+ LINE1:perc95#ffff00:95th_percentile
 
 Note: Experience has shown that a factor between 3 and 5 to scale sigma is a good 
 discriminator to detect abnormal behavior. This obviously depends also on the type 
 of data and how "noisy" the data series is.
 
-This prediction can only be used for short term extrapolations - say a few days into the future-
+Also Note the explicit use of start= in the CDEF - this is necessary to load all
+the necessary data (even if it is not displayed)
+
+This prediction can only be used for short term extrapolations - say a few days into the future.
 
 =item Special values
 
