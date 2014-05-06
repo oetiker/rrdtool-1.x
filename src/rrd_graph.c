@@ -12,6 +12,7 @@
 #endif
 
 #include "rrd_tool.h"
+#include "unused.h"
 
 /* for basename */
 #ifdef HAVE_LIBGEN_H
@@ -3982,10 +3983,8 @@ int graph_cairo_finish (image_desc_t *im)
 }
 
 int graph_paint_xy(
-                  image_desc_t *im, int lazy, int cnt)
+                  image_desc_t UNUSED(*im), int UNUSED(lazy), int UNUSED(cnt))
 {
-  /* to stop compiler warnings for now */
-  lazy=cnt=(int)im->gdes_c;
   rrd_set_error("XY diagramm not implemented");  
   return -1;
 }

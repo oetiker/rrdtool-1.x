@@ -463,7 +463,7 @@ static int Rrd_Graph(
 {
     Tcl_Channel channel;
     int       mode, fd2;
-    ClientData fd1;
+    int       fd1;
     FILE     *stream = NULL;
     char    **calcpr = NULL;
     int       rc, xsize, ysize;
@@ -494,7 +494,7 @@ static int Rrd_Graph(
                              strerror(Tcl_GetErrno()), (char *) NULL);
             return TCL_ERROR;
         }
-        if (Tcl_GetChannelHandle(channel, TCL_WRITABLE, &fd1) != TCL_OK) {
+        if (Tcl_GetChannelHandle(channel, TCL_WRITABLE, (ClientData)&fd1) != TCL_OK) {
             Tcl_AppendResult(interp,
                              "cannot get file descriptor associated with \"",
                              argv[1], "\"", (char *) NULL);
@@ -504,7 +504,7 @@ static int Rrd_Graph(
          * Must dup() file descriptor so we can fclose(stream), otherwise the fclose()
          * would close Tcl's file descriptor
          */
-        if ((fd2 = dup((int)fd1)) == -1) {
+        if ((fd2 = dup(fd1)) == -1) {
             Tcl_AppendResult(interp,
                              "dup() failed for file descriptor associated with \"",
                              argv[1], "\": ", strerror(errno), (char *) NULL);

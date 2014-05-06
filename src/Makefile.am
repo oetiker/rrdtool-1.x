@@ -121,7 +121,7 @@ rrdtool_LDADD	= librrd.la
 rrdcached_SOURCES = rrd_daemon.c
 rrdcached_DEPENDENCIES = librrd_th.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd_th.la
+rrdcached_LDADD = librrd_th.la $(ALL_LIBS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc
