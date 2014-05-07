@@ -1713,13 +1713,18 @@ static int process_pdp_st(
                 rpnp[i].op = OP_NUMBER;
                 rpnp[i].val = pdp_temp[rpnp[i].ptr];
             }
+	    /* just in case */
+	    rpnp[i].extra = NULL;
+	    rpnp[i].free_extra = NULL;
         }
         /* run the rpn calculator */
         if (rpn_calc(rpnp, &rpnstack, 0, pdp_temp, ds_idx) == -1) {
+	    rpnp_freeextra(rpnp);
             free(rpnp);
             rpnstack_free(&rpnstack);
             return -1;
         }
+	rpnp_freeextra(rpnp);
         free(rpnp);
     }
 
