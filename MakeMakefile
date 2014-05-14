@@ -59,6 +59,6 @@ then
   exit 1
 fi
 
-./autogen.sh
+./bootstrap
 
 # vim: set syntax=sh :
