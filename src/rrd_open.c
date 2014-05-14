@@ -500,7 +500,9 @@ int rrd_lock(
     int       rcstat;
     rrd_simple_file_t *rrd_simple_file;
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
-
+#ifdef DISABLE_FLOCK
+    return 0;
+#else
     {
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
         struct _stat st;
@@ -523,6 +525,7 @@ int rrd_lock(
     }
 
     return (rcstat);
+#endif
 }
 
 
