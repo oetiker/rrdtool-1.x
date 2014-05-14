@@ -13,7 +13,7 @@ AC_PREREQ(2.59)
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.999])
+AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]))
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
@@ -130,6 +130,14 @@ AS_HELP_STRING([--disable-mmap],[disable mmap in rrd_update, use seek+write inst
 
 AC_ARG_ENABLE(pthread,AS_HELP_STRING([--disable-pthread],[disable multithread support]),
 [],[enable_pthread=yes])
+
+AC_ARG_ENABLE([flock],
+AS_HELP_STRING([--disable-flock],[disable file locking]),
+[],
+[enable_flock=yes])
+if test x$enable_file != xyes; then
+    AC_DEFINE([DISABLE_FLOCK], [], [disable flock calls in rrdtool])
+fi
 
 AC_ARG_ENABLE(static-programs,
      AS_HELP_STRING([--enable-static-programs],[Build static programs]),
@@ -964,6 +972,7 @@ echo "----------------------------------------------------------------"
 echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
+echo "          With Locking: $enable_flock"
 echo "      Build rrd_getopt: $build_getopt"
 echo "       Build rrd_graph: $enable_rrd_graph"
 echo "       Static programs: $staticprogs"
