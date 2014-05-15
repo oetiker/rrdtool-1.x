@@ -24,7 +24,6 @@ script:
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
 after_success:
-  - ( cd src && gcov *.c )
-  - ( cd src/.libs && cp ../*.c . && gcov *.c )
+  - ( cd src ; find -name '*.c' | xargs -n 1 gcov -a .libs ; find -name '*.c' | xargs -n 1 )
   - coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
 
