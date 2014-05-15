@@ -28,6 +28,43 @@ void      parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
+static int convert_to_count (const char * token,
+			     unsigned long * valuep,
+			     unsigned long divisor)
+{
+  char * ep = NULL;
+  unsigned long int value = strtoul(token, &ep, 10);
+  switch (*ep) {
+    case 0: /* count, no conversion */
+      break;
+    case 's': /* seconds */
+      value /= divisor;
+      break;
+    case 'm': /* minutes */
+      value = (60 * value) / divisor;
+      break;
+    case 'h': /* hours */
+      value = (60 * 60 * value) / divisor;
+      break;
+    case 'd': /* days */
+      value = (24 * 60 * 60 * value) / divisor;
+      break;
+    case 'w': /* weeks */
+      value = (7 * 24 * 60 * 60 * value) / divisor;
+      break;
+    case 'M': /* months */
+      value = (31 * 24 * 60 * 60 * value) / divisor;
+      break;
+    case 'y': /* years */
+      value = (366 * 24 * 60 * 60 * value) / divisor;
+      break;
+    default:
+      return 0;
+  }
+  *valuep = value;
+  return (0 != value);
+}
+
 int rrd_create(
     int argc,
     char **argv)
@@ -45,7 +82,6 @@ int rrd_create(
     unsigned long pdp_step = 300;
     rrd_time_value_t last_up_tv;
     char     *parsetime_error = NULL;
-    long      long_tmp;
     int       rc;
     char * opt_daemon = NULL;
     int       opt_no_overwrite = 0;
@@ -93,12 +129,10 @@ int rrd_create(
             break;
 
         case 's':
-            long_tmp = atol(optarg);
-            if (long_tmp < 1) {
+            if (! convert_to_count(optarg, &pdp_step, 1)) {
                 rrd_set_error("step size should be no less than one second");
                 return (-1);
             }
-            pdp_step = long_tmp;
             break;
 
         case 'O':
@@ -193,7 +227,6 @@ int parseRRA(const char *def,
     unsigned short token_idx, error_flag, period = 0;
     int       cf_id = -1;
     int       token_min = 4;
-    int       row_cnt;
     char     *require_version = NULL;
 
     memset(rra_def, 0, sizeof(rra_def_t));
@@ -264,10 +297,8 @@ int parseRRA(const char *def,
 	    case CF_SEASONAL:
 	    case CF_DEVPREDICT:
 	    case CF_FAILURES:
-		row_cnt = atoi(token);
-		if (row_cnt <= 0)
-		    rrd_set_error("Invalid row count: %i", row_cnt);
-		rra_def->row_cnt = row_cnt;
+		if (! convert_to_count(token, &rra_def->row_cnt, 1))
+		    rrd_set_error("Invalid row count: %s", token);
 		break;
 	    default:
 		rra_def->par[RRA_cdp_xff_val].u_val = atof(token);
@@ -314,8 +345,7 @@ int parseRRA(const char *def,
 		    atoi(token) - 1;
 		break;
 	    default:
-		rra_def->pdp_cnt = atoi(token);
-		if (atoi(token) < 1)
+		if (! convert_to_count(token, &rra_def->pdp_cnt, rrd->stat_head->pdp_step))
 		    rrd_set_error("Invalid step: must be >= 1");
 		break;
 	    }
@@ -357,16 +387,14 @@ int parseRRA(const char *def,
 		    ("Unexpected extra argument for consolidation function DEVPREDICT");
 		break;
 	    default:
-		row_cnt = atoi(token);
-		if (row_cnt <= 0)
-		    rrd_set_error("Invalid row count: %i", row_cnt);
+                if (! convert_to_count(token, &rra_def->row_cnt, rra_def->pdp_cnt))
+		    rrd_set_error("Invalid row count: %s", token);
 #if SIZEOF_TIME_T == 4
 		if ((long long) pdp_step * rra_def->pdp_cnt * row_cnt > 4294967296LL){
 		    /* database timespan > 2**32, would overflow time_t */
 		    rrd_set_error("The time spanned by the database is too large: must be <= 4294967296 seconds");
 		}
 #endif
-		rra_def->row_cnt = row_cnt;
 		break;
 	    }
 	    break;
@@ -636,6 +664,7 @@ void parseGENERIC_DS(
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
     char     *old_locale;
+    int       emit_failure = 1;
 
     /*
        int temp;
@@ -645,31 +674,48 @@ void parseGENERIC_DS(
        minstr,maxstr);
      */
     old_locale = setlocale(LC_NUMERIC, "C");
+    do {
+        char      numbuf[32];
+        size_t    heartbeat_len;
+        char     *colonp;
 
-    if (sscanf(def, "%lu:%18[^:]:%18[^:]",
-               &(ds_def->par[DS_mrhb_cnt].u_cnt),
-               minstr, maxstr) == 3) {
-        if (minstr[0] == 'U' && minstr[1] == 0)
-            ds_def->par[DS_min_val].u_val = DNAN;
-        else
-            ds_def->par[DS_min_val].u_val = atof(minstr);
+        /* convert heartbeat as count or duration */
+        colonp = strchr(def, ':');
+        if (! colonp)
+            break;
+        heartbeat_len = colonp - def;
+        if (heartbeat_len >= sizeof(numbuf))
+            break;
+        strncpy (numbuf, def, heartbeat_len);
+        numbuf[heartbeat_len] = 0;
 
-        if (maxstr[0] == 'U' && maxstr[1] == 0)
-            ds_def->par[DS_max_val].u_val = DNAN;
-        else
-            ds_def->par[DS_max_val].u_val = atof(maxstr);
+        if (! convert_to_count(numbuf, &(ds_def->par[DS_mrhb_cnt].u_cnt), 1))
+            break;
 
-        if (!isnan(ds_def->par[DS_min_val].u_val) &&
-            !isnan(ds_def->par[DS_max_val].u_val) &&
-            ds_def->par[DS_min_val].u_val
-            >= ds_def->par[DS_max_val].u_val) {
-            rrd_set_error("min must be less than max in DS definition");
-            setlocale(LC_NUMERIC, old_locale);
-            return;
+        if (sscanf(1+colonp, "%18[^:]:%18[^:]",
+                   minstr, maxstr) == 2) {
+            emit_failure = 0;
+            if (minstr[0] == 'U' && minstr[1] == 0)
+                ds_def->par[DS_min_val].u_val = DNAN;
+            else
+                ds_def->par[DS_min_val].u_val = atof(minstr);
+
+            if (maxstr[0] == 'U' && maxstr[1] == 0)
+                ds_def->par[DS_max_val].u_val = DNAN;
+            else
+                ds_def->par[DS_max_val].u_val = atof(maxstr);
+
+            if (!isnan(ds_def->par[DS_min_val].u_val) &&
+                !isnan(ds_def->par[DS_max_val].u_val) &&
+                ds_def->par[DS_min_val].u_val
+                >= ds_def->par[DS_max_val].u_val) {
+                rrd_set_error("min must be less than max in DS definition");
+                break;
+            }
         }
-    } else {
+    } while (0);
+    if (emit_failure)
         rrd_set_error("failed to parse data source %s", def);
-    }
     setlocale(LC_NUMERIC, old_locale);
 }
 
