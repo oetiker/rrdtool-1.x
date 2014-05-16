@@ -32,6 +32,21 @@ Makefile.in
 /rrd_config.h.in
 /ar-lib
 
+# autoconf generated files
+Makefile
+.deps/
+/config.h
+/config.log
+/config.status
+/etc/rrdcached.service
+/etc/rrdcached.socket
+/libtool
+/rrd_config.h
+/src/librrd.pc
+/src/librrd.sym.in
+/src/rrd_config.h
+/stamp-h1
+
 # po
 /ABOUT-NLS
 /po/*
@@ -48,3 +63,10 @@ Makefile.in
 
 #vim swp file
 *.swp
+
+# generated documentation files
+/doc/*.txt
+/doc/*.html
+/doc/*.1
+/doc/*.3
+/doc/pod2*.tmp
