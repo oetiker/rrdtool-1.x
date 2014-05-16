@@ -1,1 +1,0 @@
-../bindings/perl-shared/RRDs.pm

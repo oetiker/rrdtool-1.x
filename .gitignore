@@ -70,3 +70,4 @@ Makefile
 /doc/*.1
 /doc/*.3
 /doc/pod2*.tmp
+/doc/RRD?.pod
