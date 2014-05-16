@@ -33,7 +33,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 
 /* a convenience realloc/memcpy combo  */
 static void * copy_over_realloc(void *dest, int dest_index, 
-				const void *src, int index,
+				const void *src, int src_index,
 				ssize_t size) {
     void *r = realloc(dest, size * (dest_index + 1));
     if (r == NULL) {
@@ -41,7 +41,7 @@ static void * copy_over_realloc(void *dest, int dest_index,
 	return r;
     }
 
-    memcpy(((char*)r) + size * dest_index, ((char*)src) + size * index, size);
+    memcpy(((char*)r) + size * dest_index, ((char*)src) + size * src_index, size);
     return r;
 }
 
@@ -115,22 +115,22 @@ static time_t end_time_for_row(const rrd_t *rrd,
 
 static int row_for_time(const rrd_t *rrd, 
 			const rra_def_t *rra, 
-			int cur_row, time_t time) 
+			int cur_row, time_t req_time) 
 {
     time_t last_up = rrd->live_head->last_up;
     int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
 
     // align to slot boundary end times
-    time_t delta = time % timeslot;
-    if (delta > 0) time += timeslot - delta;
+    time_t delta = req_time % timeslot;
+    if (delta > 0) req_time += timeslot - delta;
     
-    delta = time % timeslot;
+    delta = req_time % timeslot;
     if (delta > 0) last_up += timeslot - delta;
 
-    if (time > last_up) return -1;  // out of range
-    if (time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
+    if (req_time > last_up) return -1;  // out of range
+    if (req_time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
      
-    int past_cnt = (last_up - time) / timeslot;
+    int past_cnt = (last_up - req_time) / timeslot;
     if (past_cnt >= (int) rra->row_cnt) return -1;
 
     // NOTE: rra->row_cnt is unsigned!!
@@ -1354,7 +1354,7 @@ done:
 
 static int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
-    char *tmpfile = NULL;
+    char *tmpfilename = NULL;
 
     /* write out the new file */
     FILE *fh = NULL;
@@ -1363,16 +1363,16 @@ static int write_rrd(const char *outfilename, rrd_t *out) {
 	// to stdout
     } else {
 	/* create RRD with a temporary name, rename atomically afterwards. */
-	tmpfile = malloc(strlen(outfilename) + 7);
-	if (tmpfile == NULL) {
+	tmpfilename = malloc(strlen(outfilename) + 7);
+	if (tmpfilename == NULL) {
 	    rrd_set_error("out of memory");
 	    goto done;
 	}
 
-	strcpy(tmpfile, outfilename);
-	strcat(tmpfile, "XXXXXX");
+	strcpy(tmpfilename, outfilename);
+	strcat(tmpfilename, "XXXXXX");
 	
-	int tmpfd = mkstemp(tmpfile);
+	int tmpfd = mkstemp(tmpfilename);
 	if (tmpfd < 0) {
 	    rrd_set_error("Cannot create temporary file");
 	    goto done;
@@ -1388,8 +1388,8 @@ static int write_rrd(const char *outfilename, rrd_t *out) {
 
     rc = write_fh(fh, out);
 
-    if (fh != NULL && tmpfile != NULL) {
-	/* tmpfile != NULL indicates that we did NOT write to stdout,
+    if (fh != NULL && tmpfilename != NULL) {
+	/* tmpfilename != NULL indicates that we did NOT write to stdout,
 	   so we have to close the stream and do the rename dance */
 
 	fclose(fh);
@@ -1410,7 +1410,7 @@ static int write_rrd(const char *outfilename, rrd_t *out) {
 
 		stat_buf.st_mode &= ~mask;
 	    }
-	    if (chmod(tmpfile, stat_buf.st_mode) != 0) {
+	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {
 		rrd_set_error("Cannot chmod temporary file!");
 		goto done;
 	    }
@@ -1422,9 +1422,9 @@ static int write_rrd(const char *outfilename, rrd_t *out) {
 		rrd_clear_error();
 	    }
 
-	    if (rename(tmpfile, outfilename) != 0) {
+	    if (rename(tmpfilename, outfilename) != 0) {
 		rrd_set_error("Cannot rename temporary file to final file!");
-		unlink(tmpfile);
+		unlink(tmpfilename);
 		goto done;
 	    }
 
@@ -1437,46 +1437,46 @@ static int write_rrd(const char *outfilename, rrd_t *out) {
 	} else {
 	    /* in case of any problems during write: just remove the
 	       temporary file! */
-	    unlink(tmpfile);
+	    unlink(tmpfilename);
 	}
     }
 done:
-    if (tmpfile != NULL)
-	free(tmpfile);
+    if (tmpfilename != NULL)
+	free(tmpfilename);
 
     return rc;
 }
 
 
 int handle_modify(const rrd_t *in, const char *outfilename,
-		  int argc, char **argv, int optind,
+		  int argc, char **argv, int optidx,
 		  int newstep) {
     // parse add/remove options
     int rc = -1;
     int i;
 
-    const char **remove = NULL, **add = NULL;
+    const char **del = NULL, **add = NULL;
     rra_mod_op_t *rra_ops = NULL;
     int rcnt = 0, acnt = 0, rraopcnt = 0;
     
-    for (i = optind ; i < argc ; i++) {
+    for (i = optidx ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-	    remove = realloc(remove, (rcnt + 2) * sizeof(char*));
-	    if (remove == NULL) {
+	    del = realloc(del, (rcnt + 2) * sizeof(char*));
+	    if (del == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
 		goto done;
 	    }
 
-	    remove[rcnt] = strdup(argv[i] + 4);
-	    if (remove[rcnt] == NULL) {
+	    del[rcnt] = strdup(argv[i] + 4);
+	    if (del[rcnt] == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
 		goto done;
 	    }
 
 	    rcnt++;
-	    remove[rcnt] = NULL;
+	    del[rcnt] = NULL;
 	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
 	    add = realloc(add, (acnt + 2) * sizeof(char*));
 	    if (add == NULL) {
@@ -1498,20 +1498,20 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    rra_mod_op_t rra_mod = { .def = NULL };
 	    char sign;
 	    unsigned int number;
-	    unsigned int index;
+	    unsigned int idx;
 	    
-	    if (sscanf(argv[i] + 4, "%u:%c%u", &index, &sign, &number) != 3) {
+	    if (sscanf(argv[i] + 4, "%u:%c%u", &idx, &sign, &number) != 3) {
 		rrd_set_error("Failed to parse RRA# command");
 		rc = -1;
 		goto done;
 	    }
 
-	    rra_mod.index = index;
+	    rra_mod.index = idx;
 	    switch (sign) {
 	    case '=':
 	    case '-':
 	    case '+':
-		rra_mod.index = index;
+		rra_mod.index = idx;
 		rra_mod.op = sign;
 		rra_mod.row_count = number;
 		rra_mod.final_row_count = 0;
@@ -1580,7 +1580,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
     
     if (rcnt > 0 || acnt > 0 || rraopcnt > 0) {
 	unsigned long hashed_name = FnvHash(outfilename);
-	rrd_t *out = rrd_modify_r2(in, remove, add, rra_ops, rraopcnt, newstep, hashed_name);
+	rrd_t *out = rrd_modify_r2(in, del, add, rra_ops, rraopcnt, newstep, hashed_name);
     
 	if (out == NULL) {
 	    goto done;
@@ -1596,11 +1596,11 @@ int handle_modify(const rrd_t *in, const char *outfilename,
     rc = argc;
 
 done:
-    if (remove) {
-	for (const char **c = remove ; *c ; c++) {
+    if (del) {
+	for (const char **c = del ; *c ; c++) {
 	    free((void*) *c);
 	}
-	free(remove);
+	free(del);
     } 
     if (add) {
 	for (const char **c = add ; *c ; c++) {
