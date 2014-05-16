@@ -36,6 +36,13 @@ runfailtest "diagnose non-text step" \
     DS:v:GAUGE:5:U:U \
     RRA:AVERAGE:0.5:1:100
 
+runfailtest "diagnose invalid step suffix" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 2H \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:1:100
+
 runfailtest "diagnose misaligned RRA step" \
   $RRDTOOL create foo.rrd \
     --start now \
