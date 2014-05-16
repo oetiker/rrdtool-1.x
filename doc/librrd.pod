@@ -147,8 +147,6 @@ Insufficient memory was available.
 In contrast to L<mkdir(2)>, the function does B<not> fail if C<pathname>
 already exists and is a directory.
 
-=back
-
 =item B<rrd_scaled_duration (const char * token, unsigned long divisor, unsigned long * valuep)>
 
 Parse a token in a context where it contains a count (of seconds or
@@ -222,7 +220,7 @@ The function returns a null pointer if the conversion was successful
 and C<valuep> has been updated to the scaled value.  On failure, it
 returns a text diagnostic suitable for use in user error messages.
 
-= back
+=back
 
 =head1 AUTHOR
 
