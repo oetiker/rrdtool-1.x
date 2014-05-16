@@ -37,6 +37,8 @@ I<rrdfetch> documentation for other ways to specify time.
 
 Specifies the base interval in seconds with which data will be fed
 into the B<RRD>.
+A scaling factor may be present as a suffix to the integer; see
+L<"STEP, HEARTBEAT, and Rows As Durations">.
 
 =head2 B<--no-overwrite>
 
@@ -220,9 +222,11 @@ to the number of PDPs in the interval. Thus, it ranges from 0 to 1 (exclusive).
 
 I<steps> defines how many of these I<primary data points> are used to build
 a I<consolidated data point> which then goes into the archive.
+See also L<"STEP, HEARTBEAT, and Rows As Durations">.
 
 I<rows> defines how many generations of data values are kept in an B<RRA>.
 Obviously, this has to be greater than zero.
+See also L<"STEP, HEARTBEAT, and Rows As Durations">.
 
 =head1 Aberrant Behavior Detection with Holt-Winters Forecasting
 
@@ -398,6 +402,79 @@ The time interval this window represents depends on the interval between
 primary data points. If the FAILURES B<RRA> is implicitly created, the
 default value is 9.
 
+=head1 STEP, HEARTBEAT, and Rows As Durations
+
+Traditionally RRDtool specified PDP intervals in seconds, and most
+other values as either seconds or PDP counts.  This made the
+specification for databases rather opaque; for example
+
+ rrdtool create power.rrd \
+   --start now-2h --step 1 \
+   DS:watts:GAUGE:300:0:24000 \
+   RRA:AVERAGE:0.5:1:864000 \
+   RRA:AVERAGE:0.5:60:129600 \
+   RRA:AVERAGE:0.5:3600:13392 \
+   RRA:AVERAGE:0.5:86400:3660
+
+creates a database of power values collected once per second, with a
+five minute (300 second) heartbeat, and four B<RRA>s: ten days of one
+second, 90 days of one minute, 18 months of one hour, and ten years of
+one day averages.
+
+Step, heartbeat, and PDP counts and rows may also be specified as
+durations, which are positive integers with a single-character suffix
+that specifies a scaling factor:
+
+=over
+
+=item C<s>
+
+indicates seconds
+
+=item C<m>
+
+indicates minutes.  The value is multipled by 60.
+
+=item C<h>
+
+indicates hours.  The value is multipled by 3600 (or C<60m>).
+
+=item C<d>
+
+indicates days.  The value is multipled by 86400 (or C<24h>).
+
+=item C<w>
+
+indicates weeks.  The value is multipled by 604800 (or C<7d>).
+
+=item C<M>
+
+indicates months.  The value is multipled by 2678400 (or C<31d>).
+(Note this factor accommodates the maximum number of days in a month.)
+
+=item C<y>
+
+indicates years.  The value is multipled by 31622400 (or C<366d>).
+(Note this factor accommodates leap years.)
+
+=back
+
+Scaled step and heartbeat values (which are natively durations in
+seconds) are used directly, while consolidation function row arguments
+are divided by their step to produce the number of rows.  Note that
+the multiplication factors for months and years correspond to the
+maximum number of days in a month or year.
+
+With this feature the same specification as above can be written as:
+
+ rrdtool create power.rrd \
+   --start now-2h --step 1s \
+   DS:watts:GAUGE:5m:0:24000 \
+   RRA:AVERAGE:0.5:1s:10d \
+   RRA:AVERAGE:0.5:1m:90d \
+   RRA:AVERAGE:0.5:1h:18M \
+   RRA:AVERAGE:0.5:1d:10y
+
 =head1 The HEARTBEAT and the STEP
 
 Here is an explanation by Don Baarda on the inner workings of RRDtool.
@@ -564,16 +641,17 @@ around. The file will store 1 day (a seasonal cycle) of 0-1 indicators in
 the FAILURES B<RRA>.
 
 The same RRD file and B<RRAs> are created with the following command,
-which explicitly creates all specialized function B<RRAs>.
-
- rrdtool create monitor.rrd --step 300 \
-   DS:ifOutOctets:COUNTER:1800:0:4294967295 \
+which explicitly creates all specialized function B<RRAs>
+using L<"STEP, HEARTBEAT, and Rows As Durations">.
+    
+ rrdtool create monitor.rrd --step 5m \
+   DS:ifOutOctets:COUNTER:30m:0:4294967295 \
    RRA:AVERAGE:0.5:1:2016 \
-   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \
-   RRA:SEASONAL:288:0.1:2 \
-   RRA:DEVPREDICT:1440:5 \
-   RRA:DEVSEASONAL:288:0.1:2 \
-   RRA:FAILURES:288:7:9:5
+   RRA:HWPREDICT:5d:0.1:0.0035:1d:3 \
+   RRA:SEASONAL:1d:0.1:2 \
+   RRA:DEVSEASONAL:1d:0.1:2 \
+   RRA:DEVPREDICT:5d:5 \
+   RRA:FAILURES:1d:7:9:5
 
 Of course, explicit creation need not replicate implicit create, a
 number of arguments could be changed.
