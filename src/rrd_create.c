@@ -28,56 +28,6 @@ void      parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
-static const char * convert_to_count (const char * token,
-                                      unsigned long * valuep,
-                                      unsigned long divisor)
-{
-  char * ep = NULL;
-  unsigned long int value = strtoul(token, &ep, 10);
-  /* account for -1 => UMAXLONG which is not what we want */
-  if (! isdigit(token[0]))
-      return "value must be (suffixed) positive number";
-  /* Catch an internal error before we inhibit scaling */
-  if (0 == divisor)
-      return "INTERNAL ERROR: Zero divisor";
-  switch (*ep) {
-  case 0: /* count only, inhibit scaling */
-      divisor = 0;
-      break;
-  case 's': /* seconds */
-      break;
-  case 'm': /* minutes */
-      value *= 60;
-      break;
-  case 'h': /* hours */
-      value *= 60 * 60;
-      break;
-  case 'd': /* days */
-      value *= 24 * 60 * 60;
-      break;
-  case 'w': /* weeks */
-      value *= 7 * 24 * 60 * 60;
-      break;
-  case 'M': /* months */
-      value *= 31 * 24 * 60 * 60;
-      break;
-  case 'y': /* years */
-      value *= 366 * 24 * 60 * 60;
-      break;
-  default: /* trailing garbage */
-      return "value has trailing garbage";
-  }
-  if (0 == value)
-      return "value must be positive";
-  if ((0 != divisor) && (0 != value)) {
-      if (0 != (value % divisor))
-          return "value would truncate when scaled";
-      value /= divisor;
-  }
-  *valuep = value;
-  return NULL;
-}
-
 int rrd_create(
     int argc,
     char **argv)
@@ -142,7 +92,7 @@ int rrd_create(
             break;
 
         case 's':
-            if ((parsetime_error = convert_to_count(optarg, &pdp_step, 1))) {
+            if ((parsetime_error = rrd_scaled_duration(optarg, 1, &pdp_step))) {
                 rrd_set_error("step size: %s", parsetime_error);
                 return (-1);
             }
@@ -311,7 +261,7 @@ int parseRRA(const char *def,
 	    case CF_SEASONAL:
 	    case CF_DEVPREDICT:
 	    case CF_FAILURES:
-		if ((parsetime_error = convert_to_count(token, &rra_def->row_cnt, rrd->stat_head->pdp_step)))
+		if ((parsetime_error = rrd_scaled_duration(token, rrd->stat_head->pdp_step, &rra_def->row_cnt)))
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 		break;
 	    default:
@@ -359,7 +309,7 @@ int parseRRA(const char *def,
 		    atoi(token) - 1;
 		break;
 	    default:
-		if ((parsetime_error = convert_to_count(token, &rra_def->pdp_cnt, rrd->stat_head->pdp_step)))
+		if ((parsetime_error = rrd_scaled_duration(token, rrd->stat_head->pdp_step, &rra_def->pdp_cnt)))
 		    rrd_set_error("Invalid step %s: %s", token, parsetime_error);
 		break;
 	    }
@@ -401,8 +351,9 @@ int parseRRA(const char *def,
 		    ("Unexpected extra argument for consolidation function DEVPREDICT");
 		break;
 	    default:
-                if ((parsetime_error = convert_to_count(token, &rra_def->row_cnt,
-                                                        rrd->stat_head->pdp_step * rra_def->pdp_cnt)))
+                if ((parsetime_error = rrd_scaled_duration(token,
+                                                           rrd->stat_head->pdp_step * rra_def->pdp_cnt,
+                                                           &rra_def->row_cnt)))
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 #if SIZEOF_TIME_T == 4
 		if ((long long) pdp_step * rra_def->pdp_cnt * row_cnt > 4294967296LL){
@@ -708,7 +659,7 @@ void parseGENERIC_DS(
         strncpy (numbuf, def, heartbeat_len);
         numbuf[heartbeat_len] = 0;
 
-        if ((parsetime_error = convert_to_count(numbuf, &(ds_def->par[DS_mrhb_cnt].u_cnt), 1)))
+        if ((parsetime_error = rrd_scaled_duration(numbuf, 1, &(ds_def->par[DS_mrhb_cnt].u_cnt))))
             break;
 
         if (sscanf(1+colonp, "%18[^:]:%18[^:]",
