@@ -165,3 +165,26 @@ getinfo \
    RRA:FAILURES:1d:7:9:5 \
 > dur.out
 checkequiv "HWPREDICT equivalents" ct.out dur.out
+
+# FETCH test
+getinfo \
+  --start 0 --step 10s \
+  DS:ds0:GAUGE:300:0:U \
+  RRA:AVERAGE:0.5:30:3600 \
+  RRA:AVERAGE:0.5:90:1200 \
+  RRA:AVERAGE:0.5:360:1200 \
+  RRA:MAX:0.5:360:1200 \
+  RRA:AVERAGE:0.5:8640:600 \
+  RRA:MAX:0.5:8640:600 \
+> ct.out
+getinfo \
+  --start 0 --step 10s \
+  DS:ds0:GAUGE:5m:0:U \
+  RRA:AVERAGE:0.5:5m:300h \
+  RRA:AVERAGE:0.5:15m:300h \
+  RRA:AVERAGE:0.5:1h:50d \
+  RRA:MAX:0.5:1h:50d \
+  RRA:AVERAGE:0.5:1d:600d \
+  RRA:MAX:0.5:1d:600d \
+> dur.out
+checkequiv "FETCH equivalents" ct.out dur.out
