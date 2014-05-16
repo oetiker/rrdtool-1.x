@@ -1,3 +1,6 @@
 # autoconf generated files
 /ifCOC
 /ifOctets.tcl
+## enh-gitignore
+/pkgIndex.tcl
+/tclrrd1.4.999.so

@@ -40,7 +40,6 @@ Makefile
 /config.status
 /etc/rrdcached.service
 /etc/rrdcached.socket
-/examples/*.pl
 /libtool
 /rrd_config.h
 /src/librrd.pc
@@ -64,3 +63,10 @@ Makefile
 
 #vim swp file
 *.swp
+
+# generated documentation files
+/doc/*.txt
+/doc/*.html
+/doc/*.1
+/doc/*.3
+/doc/pod2*.tmp

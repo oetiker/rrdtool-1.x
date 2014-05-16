@@ -1,0 +1,7 @@
+# build-generated files
+/.libs/
+/librrd.sym
+/rrdcached
+/rrdcgi
+/rrdtool
+/rrdupdate
