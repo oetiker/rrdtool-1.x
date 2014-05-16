@@ -28,41 +28,54 @@ void      parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
-static int convert_to_count (const char * token,
-			     unsigned long * valuep,
-			     unsigned long divisor)
+static const char * convert_to_count (const char * token,
+                                      unsigned long * valuep,
+                                      unsigned long divisor)
 {
   char * ep = NULL;
   unsigned long int value = strtoul(token, &ep, 10);
+  /* account for -1 => UMAXLONG which is not what we want */
+  if (! isdigit(token[0]))
+      return "value must be (suffixed) positive number";
+  /* Catch an internal error before we inhibit scaling */
+  if (0 == divisor)
+      return "INTERNAL ERROR: Zero divisor";
   switch (*ep) {
-    case 0: /* count, no conversion */
+  case 0: /* count only, inhibit scaling */
+      divisor = 0;
       break;
-    case 's': /* seconds */
+  case 's': /* seconds */
+      break;
+  case 'm': /* minutes */
+      value *= 60;
+      break;
+  case 'h': /* hours */
+      value *= 60 * 60;
+      break;
+  case 'd': /* days */
+      value *= 24 * 60 * 60;
+      break;
+  case 'w': /* weeks */
+      value *= 7 * 24 * 60 * 60;
+      break;
+  case 'M': /* months */
+      value *= 31 * 24 * 60 * 60;
+      break;
+  case 'y': /* years */
+      value *= 366 * 24 * 60 * 60;
+      break;
+  default: /* trailing garbage */
+      return "value has trailing garbage";
+  }
+  if (0 == value)
+      return "value must be positive";
+  if ((0 != divisor) && (0 != value)) {
+      if (0 != (value % divisor))
+          return "value would truncate when scaled";
       value /= divisor;
-      break;
-    case 'm': /* minutes */
-      value = (60 * value) / divisor;
-      break;
-    case 'h': /* hours */
-      value = (60 * 60 * value) / divisor;
-      break;
-    case 'd': /* days */
-      value = (24 * 60 * 60 * value) / divisor;
-      break;
-    case 'w': /* weeks */
-      value = (7 * 24 * 60 * 60 * value) / divisor;
-      break;
-    case 'M': /* months */
-      value = (31 * 24 * 60 * 60 * value) / divisor;
-      break;
-    case 'y': /* years */
-      value = (366 * 24 * 60 * 60 * value) / divisor;
-      break;
-    default:
-      return 0;
   }
   *valuep = value;
-  return (0 != value);
+  return NULL;
 }
 
 int rrd_create(
@@ -81,7 +94,7 @@ int rrd_create(
     time_t    last_up = time(NULL) - 10;
     unsigned long pdp_step = 300;
     rrd_time_value_t last_up_tv;
-    char     *parsetime_error = NULL;
+    const char *parsetime_error = NULL;
     int       rc;
     char * opt_daemon = NULL;
     int       opt_no_overwrite = 0;
@@ -129,8 +142,8 @@ int rrd_create(
             break;
 
         case 's':
-            if (! convert_to_count(optarg, &pdp_step, 1)) {
-                rrd_set_error("step size should be no less than one second");
+            if ((parsetime_error = convert_to_count(optarg, &pdp_step, 1))) {
+                rrd_set_error("step size: %s", parsetime_error);
                 return (-1);
             }
             break;
@@ -227,6 +240,7 @@ int parseRRA(const char *def,
     unsigned short token_idx, error_flag, period = 0;
     int       cf_id = -1;
     int       token_min = 4;
+    const char *parsetime_error = NULL;
     char     *require_version = NULL;
 
     memset(rra_def, 0, sizeof(rra_def_t));
@@ -297,8 +311,8 @@ int parseRRA(const char *def,
 	    case CF_SEASONAL:
 	    case CF_DEVPREDICT:
 	    case CF_FAILURES:
-		if (! convert_to_count(token, &rra_def->row_cnt, 1))
-		    rrd_set_error("Invalid row count: %s", token);
+		if ((parsetime_error = convert_to_count(token, &rra_def->row_cnt, rrd->stat_head->pdp_step)))
+		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 		break;
 	    default:
 		rra_def->par[RRA_cdp_xff_val].u_val = atof(token);
@@ -345,8 +359,8 @@ int parseRRA(const char *def,
 		    atoi(token) - 1;
 		break;
 	    default:
-		if (! convert_to_count(token, &rra_def->pdp_cnt, rrd->stat_head->pdp_step))
-		    rrd_set_error("Invalid step: must be >= 1");
+		if ((parsetime_error = convert_to_count(token, &rra_def->pdp_cnt, rrd->stat_head->pdp_step)))
+		    rrd_set_error("Invalid step %s: %s", token, parsetime_error);
 		break;
 	    }
 	    break;
@@ -387,8 +401,9 @@ int parseRRA(const char *def,
 		    ("Unexpected extra argument for consolidation function DEVPREDICT");
 		break;
 	    default:
-                if (! convert_to_count(token, &rra_def->row_cnt, rra_def->pdp_cnt))
-		    rrd_set_error("Invalid row count: %s", token);
+                if ((parsetime_error = convert_to_count(token, &rra_def->row_cnt,
+                                                        rrd->stat_head->pdp_step * rra_def->pdp_cnt)))
+		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 #if SIZEOF_TIME_T == 4
 		if ((long long) pdp_step * rra_def->pdp_cnt * row_cnt > 4294967296LL){
 		    /* database timespan > 2**32, would overflow time_t */
@@ -664,7 +679,7 @@ void parseGENERIC_DS(
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
     char     *old_locale;
-    int       emit_failure = 1;
+    const char *parsetime_error = NULL;
 
     /*
        int temp;
@@ -681,20 +696,23 @@ void parseGENERIC_DS(
 
         /* convert heartbeat as count or duration */
         colonp = strchr(def, ':');
-        if (! colonp)
+        if (! colonp) {
+            parsetime_error = "missing separator";
             break;
+        }
         heartbeat_len = colonp - def;
-        if (heartbeat_len >= sizeof(numbuf))
+        if (heartbeat_len >= sizeof(numbuf)) {
+            parsetime_error = "heartbeat too long";
             break;
+        }
         strncpy (numbuf, def, heartbeat_len);
         numbuf[heartbeat_len] = 0;
 
-        if (! convert_to_count(numbuf, &(ds_def->par[DS_mrhb_cnt].u_cnt), 1))
+        if ((parsetime_error = convert_to_count(numbuf, &(ds_def->par[DS_mrhb_cnt].u_cnt), 1)))
             break;
 
         if (sscanf(1+colonp, "%18[^:]:%18[^:]",
                    minstr, maxstr) == 2) {
-            emit_failure = 0;
             if (minstr[0] == 'U' && minstr[1] == 0)
                 ds_def->par[DS_min_val].u_val = DNAN;
             else
@@ -709,13 +727,15 @@ void parseGENERIC_DS(
                 !isnan(ds_def->par[DS_max_val].u_val) &&
                 ds_def->par[DS_min_val].u_val
                 >= ds_def->par[DS_max_val].u_val) {
-                rrd_set_error("min must be less than max in DS definition");
+                parsetime_error = "min must be less than max in DS definition";
                 break;
             }
+        } else {
+            parsetime_error = "failed to extract min:max";
         }
     } while (0);
-    if (emit_failure)
-        rrd_set_error("failed to parse data source %s", def);
+    if (parsetime_error)
+        rrd_set_error("failed to parse data source %s: %s", def, parsetime_error);
     setlocale(LC_NUMERIC, old_locale);
 }
 

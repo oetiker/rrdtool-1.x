@@ -641,16 +641,17 @@ around. The file will store 1 day (a seasonal cycle) of 0-1 indicators in
 the FAILURES B<RRA>.
 
 The same RRD file and B<RRAs> are created with the following command,
-which explicitly creates all specialized function B<RRAs>.
-
- rrdtool create monitor.rrd --step 300 \
-   DS:ifOutOctets:COUNTER:1800:0:4294967295 \
+which explicitly creates all specialized function B<RRAs>
+using L<"STEP, HEARTBEAT, and Rows As Durations">.
+    
+ rrdtool create monitor.rrd --step 5m \
+   DS:ifOutOctets:COUNTER:30m:0:4294967295 \
    RRA:AVERAGE:0.5:1:2016 \
-   RRA:HWPREDICT:1440:0.1:0.0035:288:3 \
-   RRA:SEASONAL:288:0.1:2 \
-   RRA:DEVPREDICT:1440:5 \
-   RRA:DEVSEASONAL:288:0.1:2 \
-   RRA:FAILURES:288:7:9:5
+   RRA:HWPREDICT:5d:0.1:0.0035:1d:3 \
+   RRA:SEASONAL:1d:0.1:2 \
+   RRA:DEVSEASONAL:1d:0.1:2 \
+   RRA:DEVPREDICT:5d:5 \
+   RRA:FAILURES:1d:7:9:5
 
 Of course, explicit creation need not replicate implicit create, a
 number of arguments could be changed.
