@@ -303,8 +303,8 @@ find examples/ -type f -exec chmod 0644 {} \;
 # Set up rrdcached
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{_sysconfdir}/default
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d
-%__install -m 0644 etc/rrdcached-default $RPM_BUILD_ROOT/%{_sysconfdir}/default/rrdcached
-%__install -m 0755 etc/rrdcached-init $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d/rrdcached
+%__install -m 0644 etc/rrdcached-default-redhat $RPM_BUILD_ROOT/%{_sysconfdir}/default/rrdcached
+%__install -m 0755 etc/rrdcached-init-redhat $RPM_BUILD_ROOT/%{_sysconfdir}/rc.d/init.d/rrdcached
 %__install -d -m 0755 -o nobody -g nobody $RPM_BUILD_ROOT/%{_localstatedir}/run/rrdcached
 
 %clean
