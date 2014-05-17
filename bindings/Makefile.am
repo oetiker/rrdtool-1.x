@@ -1,4 +1,4 @@
-.PHONY: python ruby
+.PHONY: lua perl-piped perl-shared python ruby
 
 if BUILD_TCL
 SUB_tcl = tcl
@@ -20,40 +20,96 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 all-local:  @COMP_PERL@ @COMP_RUBY@ @COMP_PYTHON@
 
 install-data-local:
-	$(AM_V_GEN)test -f perl-piped/Makefile && cd perl-piped && $(MAKE) install || true
-	$(AM_V_GEN)test -f perl-shared/Makefile && cd perl-shared && $(MAKE) install || true
-	$(AM_V_GEN)test -f ruby/Makefile && cd ruby && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install || true
-	$(AM_V_GEN)test -d python/build && cd python && env BUILDLIBDIR=../../src/.libs $(PYTHON) setup.py install --skip-build --prefix=$(DESTDIR)$(prefix) --exec-prefix=$(DESTDIR)$(exec_prefix) || true
+	$(AM_V_GEN)test -f ${builddir}/perl-piped/Makefile \
+           && ( cd ${builddir}/perl-piped \
+	        && $(MAKE) install ) \
+	   || true
+	$(AM_V_GEN)test -f ${builddir}/perl-shared/Makefile \
+           && ( cd ${builddir}/perl-shared \
+                && $(MAKE) install ) \
+           || true
+	$(AM_V_GEN)test -f ${builddir}/ruby/Makefile \
+           && ( cd ${builddir}/ruby \
+                && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install ) \
+           || true
+	$(AM_V_GEN)test -d ${builddir}/python/build \
+           && ( cd ${builddir}/python \
+                && env BUILDLIBDIR=${abs_top_builddir}/src/.libs \
+                  $(PYTHON) ${abs_srcdir}/python/setup.py install \
+                     --skip-build --prefix=$(DESTDIR)$(prefix) \
+                     --exec-prefix=$(DESTDIR)$(exec_prefix) ) \
+           || true
 
 # rules for building the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
 # it is is the right thing todo, but it makes rrdtool build on freebsd as well
-ruby:   Makefile
-	cd ruby && $(RUBY) extconf.rb && $(MAKE) EPREFIX=$(exec_prefix) $(RUBY_MAKE_OPTIONS) RUBYARCHDIR=
+ruby:
+	-mkdir -p ${builddir}/ruby
+	( cd ${builddir}/ruby \
+          && $(RUBY) ${abs_srcdir}/ruby/extconf.rb \
+          && $(MAKE) \
+             EPREFIX=$(exec_prefix) \
+             ABS_TOP_SRCDIR=${abs_top_srcdir} \
+             ABS_TOP_BUILDDIR=${abs_top_builddir} \
+             $(RUBY_MAKE_OPTIONS) RUBYARCHDIR= )
 
 # rules for building the pyton module
-python: Makefile
-	cd python && env BUILDLIBDIR=../../src/.libs LD_RUN_PATH=$(libdir) $(PYTHON) setup.py build_ext --rpath=$(libdir) && env LIBDIR=../../src/.libs $(PYTHON) setup.py build
+python:
+	-mkdir -p ${builddir}/$@
+	cd ${builddir}/$@ \
+	  && ( test -e rrdtoolmodule.c || ln -s ${abs_srcdir}/$@/rrdtoolmodule.c ) \
+          && env \
+               ABS_TOP_SRCDIR=${abs_top_srcdir} \
+               ABS_TOP_BUILDDIR=${abs_top_builddir} \
+               LD_RUN_PATH=$(libdir) \
+               $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext --rpath=$(libdir) \
+          && env \
+               ABS_TOP_SRCDIR=${abs_top_srcdir} \
+               ABS_TOP_BUILDDIR=${abs_top_builddir} \
+               $(PYTHON) ${abs_srcdir}/$@/setup.py build
 
 # rules for building the perl module
-perl_piped: perl-piped/Makefile
-	cd perl-piped && $(MAKE)
+perl-piped:
+	-mkdir -p ${builddir}/$@
+	( cd ${builddir}/$@ \
+	  && ( test -e Makefile.PL || ln -s ${abs_srcdir}/$@/Makefile.PL ) \
+	  && ( test -e RRDp.pm || ln -s ${abs_srcdir}/$@/RRDp.pm ) \
+	  && ( test -e t || ln -s ${abs_srcdir}/$@/t ) \
+          && env \
+             ABS_TOP_SRCDIR=${abs_top_srcdir} \
+             ABS_TOP_BUILDDIR=${abs_top_builddir} \
+             ABS_SRCDIR=${abs_srcdir}/$@ \
+             $(PERL) Makefile.PL $(PERL_MAKE_OPTIONS) \
+          && $(MAKE) )
 
-perl-piped/Makefile: perl-piped/Makefile.PL
-	cd perl-piped && $(PERL) Makefile.PL $(PERL_MAKE_OPTIONS)
-
-perl_shared: perl-shared/Makefile
-	cd perl-shared && $(MAKE)
-
-perl-shared/Makefile: perl-shared/Makefile.PL Makefile
-	cd perl-shared && $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir)
-# LIBS="$(LDFLAGS) $(LIBS)" $(PERLFLAGS) $(PERL_MAKE_OPTIONS)
+perl-shared:
+	-mkdir -p ${builddir}/$@
+	( cd ${builddir}/$@ \
+	  && ( test -e Makefile.PL || ln -s ${abs_srcdir}/$@/Makefile.PL ) \
+	  && ( test -e RRDs.pm || ln -s ${abs_srcdir}/$@/RRDs.pm ) \
+	  && ( test -e RRDs.ppd || ln -s ${abs_srcdir}/$@/RRDs.ppd ) \
+	  && ( test -e RRDs.xs || ln -s ${abs_srcdir}/$@/RRDs.xs ) \
+	  && ( test -e t || ln -s ${abs_srcdir}/$@/t ) \
+          && env \
+             ABS_TOP_SRCDIR=${abs_top_srcdir} \
+             ABS_TOP_BUILDDIR=${abs_top_builddir} \
+             ABS_SRCDIR=${abs_srcdir}/$@ \
+             $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir) \
+          && $(MAKE) )
+	-mkdir -p ${builddir}/perl-shared
 
 clean-local:
-	test -f perl-piped/Makefile && cd perl-piped && $(MAKE) clean || true
-	test -f perl-piped/Makefile && rm perl-piped/Makefile || true
-	test -f perl-shared/Makefile && cd perl-shared && $(MAKE) clean || true
-	test -f perl-shared/Makefile && rm -f perl-shared/Makefile || true 
-	test -f ruby/Makefile && cd ruby && $(MAKE) clean && rm Makefile || true 
-	test -d python/build && cd python &&  rm -rf build || true
+	-( test -f ${builddir}/perl-piped/Makefile \
+          && cd ${builddir}/perl-piped \
+          && ( $(MAKE) clean || true ) \
+          && rm -f Makefile )
+	-( test -f ${builddir}/perl-shared/Makefile \
+          && cd ${builddir}/perl-shared \
+          && ( $(MAKE) clean || true ) \
+          && rm -f Makefile )
+	-( test -f ${builddir}/ruby/Makefile \
+          && cd ${builddir}/ruby \
+          && ( $(MAKE) clean || true ) \
+          && rm -f Makefile )
+	-rm -rf ${builddir}/python/build
 ##END##

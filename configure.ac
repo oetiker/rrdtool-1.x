@@ -576,7 +576,7 @@ AC_ARG_VAR(PERLLDFLAGS, [LD flags for Perl modules])
 if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
 else
-	COMP_PERL="perl_piped perl_shared"
+	COMP_PERL="perl-piped perl-shared"
         AC_MSG_CHECKING(for the perl version you are running)
 	PERL_VERSION=`$PERL -MConfig -e 'print $Config{version}'`
 	AC_MSG_RESULT($PERL_VERSION)
@@ -595,7 +595,7 @@ appropriately, or use a different perl setup that was compiled locally.
 
 I will disable the compilation of the RRDs perl module for now.
 ])
-  		    COMP_PERL="perl_piped"
+  		    COMP_PERL="perl-piped"
 	        fi
             fi    
         fi

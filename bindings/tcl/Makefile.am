@@ -18,7 +18,7 @@ TCL_INCLUDE_SPEC = @TCL_INCLUDE_SPEC@
 CLEANFILES = tclrrd.o tclrrd.so
 
 SRC_DIR            = $(top_srcdir)/src
-AM_CPPFLAGS        = $(TCL_INCLUDE_SPEC) -I$(SRC_DIR) -DUSE_TCL_STUBS
+AM_CPPFLAGS        = $(TCL_INCLUDE_SPEC) -I$(top_builddir)/src -I$(SRC_DIR) -DUSE_TCL_STUBS
 LIBDIRS            = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdir)
 LIB_RUNTIME_DIR    = $(libdir)
 

@@ -13,6 +13,6 @@ elsif /aix/ =~ RUBY_PLATFORM
    $LDFLAGS += ' -blibpath:$(EPREFIX)/lib'
 end
 
-dir_config("rrd","../../src","../../src/.libs")
+dir_config("rrd",['$(ABS_TOP_BUILDDIR)/src', '$(ABS_TOP_SRCDIR)/src'],'$(ABS_TOP_BUILDDIR)/src/.libs')
 have_library("rrd", "rrd_create")
 create_makefile("RRD")
