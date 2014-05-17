@@ -8,13 +8,12 @@ RSYNC = rsync --rsh=ssh
 SUBDIRS = po src examples doc bindings
 
  # the following files are not mentioned in any other Makefile
-EXTRA_DIST = COPYRIGHT CHANGES WIN32-BUILD-TIPS.txt TODO CONTRIBUTORS THREADS \
-	     rrdtool.spec favicon.ico autogen.sh \
+EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
+             rrdtool.spec favicon.ico bootstrap \
              libtool \
              netware/Makefile  \
              etc/rrdcached-default etc/rrdcached-init \
-             win32/Makefile  win32/rrd_config.h  win32/rrdlib.vcproj  win32/rrdtool.vcproj  win32/rrdupdate.vcproj \
-             win32/README    win32/rrd.sln   win32/rrdtool.sln    win32/rrdupdate.sln  win32/Makefile.msc
+             win32/README win32/Makefile.msc
 
 CLEANFILES = config.cache
 
