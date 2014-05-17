@@ -42,7 +42,7 @@ AM_MAINTAINER_MODE
 # Automake-1.11. Disable by either passing --disable-silent-rules to
 # configure or passing V=1 to make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-AC_CONFIG_HEADERS([rrd_config.h])
+AC_CONFIG_HEADERS([src/rrd_config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl all our local stuff like install scripts and include files
@@ -943,13 +943,6 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([bindings/lua/Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
-
-dnl intl requires our config to be called config.h. indulge it.
-AC_CONFIG_COMMANDS_POST([ test -f config.h || ln -s rrd_config.h config.h ])
-
-dnl bindings use nasty path, just make them happy.
-AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config.h || (cd src/ && ln -s ../rrd_config.h) ])
-AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config_bottom.h || (cd src/ && ln -s ../rrd_config_bottom.h) ])
 
 AC_OUTPUT
 
