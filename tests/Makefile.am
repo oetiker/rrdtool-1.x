@@ -12,4 +12,11 @@ EXTRA_DIST = Makefile.am \
 	tune1 tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2 tune2-testa-mod1.dump tune2-testorg.dump \
 	valgrind-supressions
-CLEANFILES = ct.out dur.out modify5-testa1-mod.dump modify5-testa2-mod.dump 
+# NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
+TESTS_ENVIRONMENT = \
+	BASEDIR=${abs_srcdir} ; export BASEDIR ; \
+	BUILDDIR=${abs_builddir} ; export BUILDDIR ; \
+	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;
+CLEANFILES = *.rrd \
+	ct.out dur.out \
+	modify5-testa1-mod.dump modify5-testa2-mod.dump 

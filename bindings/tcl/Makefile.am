@@ -15,8 +15,6 @@ TCL_LD_SEARCH_FLAGS = @TCL_LD_SEARCH_FLAGS@
 TCL_STUB_LIB_SPEC = @TCL_STUB_LIB_SPEC@
 TCL_INCLUDE_SPEC = @TCL_INCLUDE_SPEC@
 
-CLEANFILES = tclrrd.o tclrrd.so
-
 SRC_DIR            = $(top_srcdir)/src
 AM_CPPFLAGS        = $(TCL_INCLUDE_SPEC) -I$(top_builddir)/src -I$(SRC_DIR) -DUSE_TCL_STUBS
 LIBDIRS            = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdir)
@@ -56,4 +54,6 @@ pkgIndex.tcl:
 install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)
 	$(INSTALL_PROGRAM) $(TCL_RRD_LIB) $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
+
+CLEANFILES = tclrrd.o tclrrd.so $(TCL_RRD_LIB) pkgIndex.tcl
 

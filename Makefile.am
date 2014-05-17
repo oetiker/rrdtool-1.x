@@ -46,6 +46,11 @@ site-tcl-install: all
 site-python-install: all
 	cd bindings/python && $(PYTHON) setup.py install $(if $(DESTDIR),--root=$(DESTDIR))
 
+# Skip this part of "make distcheck": the perl, ruby, and tcl files
+# are not uninstalled by "make uninstall".
+distuninstallcheck:
+	@:
+
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
 	find ./ -name "*.[ch]" | xargs indent

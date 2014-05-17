@@ -188,3 +188,5 @@ getinfo \
   RRA:MAX:0.5:1d:600d \
 > dur.out
 checkequiv "FETCH equivalents" ct.out dur.out
+
+rm -f ct.out dur.out
