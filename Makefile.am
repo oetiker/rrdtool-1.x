@@ -5,7 +5,7 @@ RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
 
-SUBDIRS = po src examples doc bindings
+SUBDIRS = po src examples doc bindings tests
 
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
@@ -25,14 +25,6 @@ ACLOCAL_AMFLAGS=-I m4
 ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
 #AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
-
-TESTS	=	tests/modify1 \
-		tests/modify2 \
-		tests/modify3 \
-		tests/modify4 \
-		tests/modify5 \
-		tests/tune1 \
-		tests/tune2
 
 #	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
 

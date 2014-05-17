@@ -57,9 +57,6 @@ Makefile
 # cscope
 /cscope.*
 
-# tests MUST create their own RRDs
-/tests/*.rrd
-
 #vim swp file
 *.swp
 
