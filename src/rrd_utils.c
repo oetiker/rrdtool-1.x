@@ -213,3 +213,53 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
     return 0;
 } /* rrd_mkdir_p */
 
+const char * rrd_scaled_duration (const char * token,
+                                  unsigned long divisor,
+                                  unsigned long * valuep)
+{
+    char * ep = NULL;
+    unsigned long int value = strtoul(token, &ep, 10);
+    /* account for -1 => UMAXLONG which is not what we want */
+    if (! isdigit(token[0]))
+        return "value must be (suffixed) positive number";
+    /* Catch an internal error before we inhibit scaling */
+    if (0 == divisor)
+        return "INTERNAL ERROR: Zero divisor";
+    switch (*ep) {
+    case 0: /* count only, inhibit scaling */
+        divisor = 0;
+        break;
+    case 's': /* seconds */
+        break;
+    case 'm': /* minutes */
+        value *= 60;
+        break;
+    case 'h': /* hours */
+        value *= 60 * 60;
+        break;
+    case 'd': /* days */
+        value *= 24 * 60 * 60;
+        break;
+    case 'w': /* weeks */
+        value *= 7 * 24 * 60 * 60;
+        break;
+    case 'M': /* months */
+        value *= 31 * 24 * 60 * 60;
+        break;
+    case 'y': /* years */
+        value *= 366 * 24 * 60 * 60;
+        break;
+    default: /* trailing garbage */
+        return "value has trailing garbage";
+    }
+    if (0 == value)
+        return "value must be positive";
+    if ((0 != divisor) && (0 != value)) {
+        if (0 != (value % divisor))
+            return "value would truncate when scaled";
+        value /= divisor;
+    }
+    *valuep = value;
+    return NULL;
+}
+

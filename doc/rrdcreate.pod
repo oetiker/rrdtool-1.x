@@ -423,47 +423,14 @@ one day averages.
 
 Step, heartbeat, and PDP counts and rows may also be specified as
 durations, which are positive integers with a single-character suffix
-that specifies a scaling factor:
-
-=over
-
-=item C<s>
-
-indicates seconds
-
-=item C<m>
-
-indicates minutes.  The value is multipled by 60.
-
-=item C<h>
-
-indicates hours.  The value is multipled by 3600 (or C<60m>).
-
-=item C<d>
-
-indicates days.  The value is multipled by 86400 (or C<24h>).
-
-=item C<w>
-
-indicates weeks.  The value is multipled by 604800 (or C<7d>).
-
-=item C<M>
-
-indicates months.  The value is multipled by 2678400 (or C<31d>).
-(Note this factor accommodates the maximum number of days in a month.)
-
-=item C<y>
-
-indicates years.  The value is multipled by 31622400 (or C<366d>).
-(Note this factor accommodates leap years.)
-
-=back
+that specifies a scaling factor.  See L<librrd/rrd_scaled_duration>
+for scale factors of the supported suffixes: C<s> (seconds), C<m>
+(minutes), C<h> (hours), C<d> (days), C<w> (weeks), C<M> (months), and
+C<y> (years).
 
 Scaled step and heartbeat values (which are natively durations in
 seconds) are used directly, while consolidation function row arguments
-are divided by their step to produce the number of rows.  Note that
-the multiplication factors for months and years correspond to the
-maximum number of days in a month or year.
+are divided by their step to produce the number of rows.
 
 With this feature the same specification as above can be written as:
 

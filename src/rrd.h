@@ -384,6 +384,10 @@ int       rrd_proc_start_end(
 
     int rrd_mkdir_p(const char *pathname, mode_t mode);
 
+    const char * rrd_scaled_duration (const char * token,
+                                      unsigned long divisor,
+                                      unsigned long * valuep);
+
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and

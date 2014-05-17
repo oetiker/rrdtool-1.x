@@ -33,8 +33,11 @@ want to fetch (AVERAGE,MIN,MAX,LAST)
 =item B<--resolution>|B<-r> I<resolution> (default is the highest resolution)
 
 the interval you want the values to have (seconds per
-value). B<rrdfetch> will try to match your request, but it will return
-data even if no absolute match is possible. B<NB.> See note below.
+value).
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<5m> instead of C<300> seconds).
+B<rrdfetch> will try to match your request, but it will return
+data even if no absolute match is possible. See L<RESOLUTION INTERVAL>.
 
 =item B<--start>|B<-s> I<start> (default end-1day)
 
@@ -48,6 +51,14 @@ section for a detailed explanation on  ways to specify the start time.
 the end of the time series in seconds since epoch. See also AT-STYLE
 TIME SPECIFICATION section for a detailed explanation of how to
 specify the end time.
+
+=item B<--align-start>|B<-a>
+
+Automatically adjust the start time down to be aligned with the
+resolution.  The end-time is adjusted by the same amount.  This avoids
+the need for external calculations described in L<RESOLUTION
+INTERVAL>, though if a specific RRA is desired this will not ensure
+the start and end fall within its bounds.
 
 =item B<--daemon> I<address>
 
@@ -73,13 +84,14 @@ In order to get RRDtool to fetch anything other than the finest resolution RRA
 B<both> the start and end time must be specified on boundaries that are
 multiples of the desired resolution. Consider the following example:
 
- rrdtool create subdata.rrd -s 10 DS:ds0:GAUGE:300:0:U \
-  RRA:AVERAGE:0.5:30:3600 \
-  RRA:AVERAGE:0.5:90:1200 \
-  RRA:AVERAGE:0.5:360:1200 \
-  RRA:MAX:0.5:360:1200 \
-  RRA:AVERAGE:0.5:8640:600 \
-  RRA:MAX:0.5:8640:600
+ rrdtool create subdata.rrd -s 10 \
+  DS:ds0:GAUGE:5m:0:U \
+  RRA:AVERAGE:0.5:5m:300h \
+  RRA:AVERAGE:0.5:15m:300h \
+  RRA:AVERAGE:0.5:1h:50d \
+  RRA:MAX:0.5:1h:50d \
+  RRA:AVERAGE:0.5:1d:600d \
+  RRA:MAX:0.5:1d:600d
 
 This RRD collects data every 10 seconds and stores its averages over 5
 minutes, 15 minutes, 1 hour, and 1 day, as well as the maxima for 1 hour
@@ -88,7 +100,7 @@ and 1 day.
 Consider now that you want to fetch the 15 minute average data for the
 last hour.  You might try
 
- rrdtool fetch subdata.rrd AVERAGE -r 900 -s -1h
+ rrdtool fetch subdata.rrd AVERAGE -r 15m -s -1h
 
 However, this will almost always result in a time series that is
 B<NOT> in the 15 minute RRA. Therefore, the highest resolution RRA,
@@ -101,7 +113,7 @@ Hence, make sure that
 
 =item 1.
 
-both start and end time are a multiple of 900
+both start and end time are a multiple of 900 (C<15m>)
 
 =item 2.
 
@@ -127,6 +139,10 @@ Or in Perl:
  perl -e '$ctime = time; $rrdres = 900; \
           system "rrdtool fetch subdata.rrd AVERAGE \
                   -r $rrdres -e @{[int($ctime/$rrdres)*$rrdres]} -s e-1h"'
+
+Or using the B<--align-start> flag:
+    
+ rrdtool fetch subdata.rrd AVERAGE -a -r 15m -s -1h
 
 
 =head2 AT-STYLE TIME SPECIFICATION

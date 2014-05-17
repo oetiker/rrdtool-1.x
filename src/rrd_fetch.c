@@ -70,18 +70,20 @@ int rrd_fetch(
     char ***ds_namv,    /* names of data sources */
     rrd_value_t **data)
 {                       /* two dimensional array containing the data */
-    long      step_tmp = 1;
+    unsigned long step_tmp = 1;
     time_t    start_tmp = 0, end_tmp = 0;
     const char *cf;
     char *opt_daemon = NULL;
+    int align_start = 0;
     int status;
 
     rrd_time_value_t start_tv, end_tv;
-    char     *parsetime_error = NULL;
+    const char *parsetime_error = NULL;
     struct option long_options[] = {
         {"resolution", required_argument, 0, 'r'},
         {"start", required_argument, 0, 's'},
         {"end", required_argument, 0, 'e'},
+        {"align-start", optional_argument, 0, 'a'},
         {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
@@ -97,7 +99,7 @@ int rrd_fetch(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "r:s:e:d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "ar:s:e:d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -115,8 +117,14 @@ int rrd_fetch(
                 return -1;
             }
             break;
+        case 'a':
+            align_start = 1;
+            break;
         case 'r':
-            step_tmp = atol(optarg);
+            if ((parsetime_error = rrd_scaled_duration(optarg, 1, &step_tmp))) {
+                rrd_set_error("resolution: %s", parsetime_error);
+                return -1;
+            }
             break;
 
         case 'd':
@@ -141,10 +149,15 @@ int rrd_fetch(
         return -1;
     }
 
-
     if (start_tmp < 3600 * 24 * 365 * 10) {
         rrd_set_error("the first entry to fetch should be after 1980");
         return (-1);
+    }
+
+    if (align_start) {
+        time_t delta = (start_tmp % step_tmp);
+        start_tmp -= delta;
+        end_tmp -= delta;
     }
 
     if (end_tmp < start_tmp) {
@@ -155,11 +168,6 @@ int rrd_fetch(
 
     *start = start_tmp;
     *end = end_tmp;
-
-    if (step_tmp < 1) {
-        rrd_set_error("step must be >= 1 second");
-        return -1;
-    }
     *step = step_tmp;
 
     if (optind + 1 >= argc) {

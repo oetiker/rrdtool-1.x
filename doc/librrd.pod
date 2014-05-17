@@ -147,6 +147,79 @@ Insufficient memory was available.
 In contrast to L<mkdir(2)>, the function does B<not> fail if C<pathname>
 already exists and is a directory.
 
+=item B<rrd_scaled_duration (const char * token, unsigned long divisor, unsigned long * valuep)>
+
+Parse a token in a context where it contains a count (of seconds or
+PDP instances), or a duration that can be converted to a count by
+representing the duration in seconds and dividing by some scaling
+factor.  For example, if a user would natively express a 3 day archive
+of samples collected every 2 minutes, the sample interval can be
+represented by C<2m> instead of C<120>, and the archive duration by
+C<3d> (to be divided by 120) instead of C<2160> (3*24*60*60 / 120).
+See more examples in L<rrdcreate/"STEP, HEARTBEAT, and Rows As Durations">.
+
+C<token> must be a number with an optional single-character suffix
+encoding the scaling factor:
+
+=over 4
+
+=item C<s>
+
+indicates seconds
+
+=item C<m>
+
+indicates minutes.  The value is multipled by 60.
+
+=item C<h>
+
+indicates hours.  The value is multipled by 3600 (or C<60m>).
+
+=item C<d>
+
+indicates days.  The value is multipled by 86400 (or C<24h>).
+
+=item C<w>
+
+indicates weeks.  The value is multipled by 604800 (or C<7d>).
+
+=item C<M>
+
+indicates months.  The value is multipled by 2678400 (or C<31d>).
+(Note this factor accommodates the maximum number of days in a month.)
+
+=item C<y>
+
+indicates years.  The value is multipled by 31622400 (or C<366d>).
+(Note this factor accommodates leap years.)
+
+=back
+
+C<divisor> is a positive value representing the duration in seconds of
+an interval that the desired result counts.
+
+C<valuep> is a pointer to where the decoded value will be stored if
+the conversion is successful.
+
+The initial characters of C<token> must be the base-10 representation
+of a positive integer, or the conversion fails.
+
+If the remainder C<token> is empty (no suffix), it is a count and no
+scaling is performed.
+
+If C<token> has one of the suffixes above, the count is multipled to
+convert it to a duration in seconds.  The resulting number of seconds
+is divided by C<divisor> to produce a count of intervals each of
+duration C<divisor> seconds.  If division would produce a remainder
+(e.g., C<5m> (300 seconds) divided by C<90s>), the conversion is
+invalid.
+
+If C<token> has unrecognized trailing characters the conversion fails.
+
+The function returns a null pointer if the conversion was successful
+and C<valuep> has been updated to the scaled value.  On failure, it
+returns a text diagnostic suitable for use in user error messages.
+
 =back
 
 =head1 AUTHOR
