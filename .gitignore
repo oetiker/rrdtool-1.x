@@ -63,6 +63,7 @@ Makefile
 # generated documentation files
 /doc/*.txt
 /doc/*.html
+/doc/*.pdf
 /doc/*.1
 /doc/*.3
 /doc/pod2*.tmp
