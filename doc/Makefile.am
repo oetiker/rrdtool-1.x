@@ -6,8 +6,6 @@ AUTOMAKE_OPTIONS        =  foreign
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
-CLEANFILES = *.1 *.3 *.html *.txt *-dircache RRD?.pod *.pdf *~ core *itemcache *.rej *.orig *.tmp
-
 POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdrestore.pod         rrdupdate.pod  \
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
@@ -34,8 +32,11 @@ TXT = $(MAN:.1=.txt) $(MAN3:.3=.txt)
 HTML = $(POD:.pod=.html) $(POD3:.pod=.html) $(PMP:.pod=.html)
 PDF = $(MAN:.1=.pdf) $(MAN3:.3=.pdf)
 
+GENERATED_EXTRADIST = $(HTML) $(MAN) $(MAN3) $(TXT) $(PMP) $(PDF)
+CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
+
 # what should go into the distribution
-EXTRA_DIST= $(POD) $(POD3) $(HTML) $(MAN) $(MAN3) $(TXT) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
