@@ -1,0 +1,190 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+runfailtest () {
+  desc="${1}"
+  shift
+  eval "${@}" > /tmp/test.out 2>/tmp/test.err
+  if [ 0 = $? ] ; then
+    echo -n "FAIL: ${desc} : "
+    cat /tmp/test.err
+  else
+    echo -n "OK: ${desc} : "
+    cat /tmp/test.err | sed -e 's@ERROR@OK@'
+  fi
+}
+
+runfailtest "diagnose zero step" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 0 \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:1:100
+
+runfailtest "diagnose negative step" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step -1 \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:1:100
+
+runfailtest "diagnose non-text step" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step one \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:1:100
+
+runfailtest "diagnose invalid step suffix" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 2H \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:1:100
+
+runfailtest "diagnose misaligned RRA step" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 10s \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:15s:1h
+
+runfailtest "diagnose misaligned RRA rows" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 10s \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:10s:75s
+
+runfailtest "diagnose zero RRA rows" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 5s \
+    DS:v:GAUGE:5:U:U \
+    RRA:AVERAGE:0.5:15s:10s
+
+runfailtest "diagnose missing heartbeat separator" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 5s \
+    DS:v:GAUGE:5 \
+    RRA:AVERAGE:0.5:15s:10s
+
+runfailtest "diagnose missing heartbeat" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 5s \
+    DS:v:GAUGE:xx:U:U \
+    RRA:AVERAGE:0.5:15s:1m
+
+runfailtest "diagnose max/min error" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 5s \
+    DS:v:GAUGE:30s:5:3 \
+    RRA:AVERAGE:0.5:15s:1m
+
+runfailtest "diagnose missing max" \
+  $RRDTOOL create foo.rrd \
+    --start now \
+    --step 5s \
+    DS:v:GAUGE:30s:53 \
+    RRA:AVERAGE:0.5:15s:1m
+
+getinfo () {
+  $RRDTOOL create junk.rrd "${@}"
+  rrdinfo junk.rrd | sed -e '/^rra\[.*\]\.cur_row =/d'
+}
+
+checkequiv () {
+  desc="${1}" ; shift
+  f1="${1}" ; shift
+  f2="${1}" ; shift
+  if diff -q ${f1} ${f2} ; then
+    echo "OK: ${desc}"
+  else
+    echo "FAIL ${desc}:"
+    diff -u ${f1} ${f2}
+  fi
+}
+
+# Basic step-by-one test
+getinfo \
+   --start 0 --step 1 \
+   DS:watts:GAUGE:300:0:24000 \
+   RRA:AVERAGE:0.5:1:864000 \
+   RRA:AVERAGE:0.5:60:129600 \
+   RRA:AVERAGE:0.5:3600:13392 \
+   RRA:AVERAGE:0.5:86400:3660 \
+> ct.out
+getinfo \
+   --start 0 --step 1s \
+   DS:watts:GAUGE:5m:0:24000 \
+   RRA:AVERAGE:0.5:1s:10d \
+   RRA:AVERAGE:0.5:1m:90d \
+   RRA:AVERAGE:0.5:1h:18M \
+   RRA:AVERAGE:0.5:1d:10y \
+> dur.out
+checkequiv "1-sec PDP equivalents" ct.out dur.out
+
+# Step-by-5 test
+getinfo \
+   --start 0 --step 5 \
+   DS:watts:GAUGE:300:0:24000 \
+   RRA:AVERAGE:0.5:1:172800 \
+   RRA:AVERAGE:0.5:12:129600 \
+   RRA:AVERAGE:0.5:720:13392 \
+   RRA:AVERAGE:0.5:17280:3660 \
+> ct.out
+getinfo \
+   --start 0 --step 5s \
+   DS:watts:GAUGE:5m:0:24000 \
+   RRA:AVERAGE:0.5:5s:10d \
+   RRA:AVERAGE:0.5:1m:90d \
+   RRA:AVERAGE:0.5:1h:18M \
+   RRA:AVERAGE:0.5:1d:10y \
+> dur.out
+checkequiv "5-sec PDP equivalents" ct.out dur.out
+
+# HWPREDICT test
+getinfo \
+   --start 0 --step 300 \
+   DS:ifOutOctets:COUNTER:1800:0:4294967295   \
+   RRA:AVERAGE:0.5:1:2016                     \
+   RRA:HWPREDICT:1440:0.1:0.0035:288 \
+> ct.out
+getinfo \
+   --start 0 --step 5m \
+   DS:ifOutOctets:COUNTER:30m:0:4294967295 \
+   RRA:AVERAGE:0.5:1:2016 \
+   RRA:HWPREDICT:5d:0.1:0.0035:1d:3 \
+   RRA:SEASONAL:1d:0.1:2 \
+   RRA:DEVSEASONAL:1d:0.1:2 \
+   RRA:DEVPREDICT:5d:5 \
+   RRA:FAILURES:1d:7:9:5 \
+> dur.out
+checkequiv "HWPREDICT equivalents" ct.out dur.out
+
+# FETCH test
+getinfo \
+  --start 0 --step 10s \
+  DS:ds0:GAUGE:300:0:U \
+  RRA:AVERAGE:0.5:30:3600 \
+  RRA:AVERAGE:0.5:90:1200 \
+  RRA:AVERAGE:0.5:360:1200 \
+  RRA:MAX:0.5:360:1200 \
+  RRA:AVERAGE:0.5:8640:600 \
+  RRA:MAX:0.5:8640:600 \
+> ct.out
+getinfo \
+  --start 0 --step 10s \
+  DS:ds0:GAUGE:5m:0:U \
+  RRA:AVERAGE:0.5:5m:300h \
+  RRA:AVERAGE:0.5:15m:300h \
+  RRA:AVERAGE:0.5:1h:50d \
+  RRA:MAX:0.5:1h:50d \
+  RRA:AVERAGE:0.5:1d:600d \
+  RRA:MAX:0.5:1d:600d \
+> dur.out
+checkequiv "FETCH equivalents" ct.out dur.out
