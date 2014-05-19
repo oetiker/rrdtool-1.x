@@ -66,7 +66,7 @@ I<DST> defines the Data Source Type. The remaining arguments of a
 data source entry depend on the data source type. For GAUGE, COUNTER,
 DERIVE, and ABSOLUTE the format for a data source entry is:
 
-B<DS:>I<ds-name>B<:>I<GAUGE | COUNTER | DERIVE | ABSOLUTE>B<:>I<heartbeat>B<:>I<min>B<:>I<max>
+B<DS:>I<ds-name>B<:>{I<GAUGE | COUNTER | DERIVE | ABSOLUTE>}B<:>I<heartbeat>B<:>I<min>B<:>I<max>
 
 For COMPUTE data sources, the format is:
 
@@ -212,7 +212,7 @@ process.
 The format of B<RRA> line for these
 consolidation functions is:
 
-B<RRA:>I<AVERAGE | MIN | MAX | LAST>B<:>I<xff>B<:>I<steps>B<:>I<rows>
+B<RRA:>{I<AVERAGE | MIN | MAX | LAST>}B<:>I<xff>B<:>I<steps>B<:>I<rows>
 
 I<xff> The xfiles factor defines what part of a consolidation interval may
 be made up from I<*UNKNOWN*> data while the consolidated value is still
