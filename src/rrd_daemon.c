@@ -92,6 +92,7 @@
 #include <signal.h>
 #include <sys/un.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <poll.h>
 #include <syslog.h>
 #include <pthread.h>
@@ -2951,6 +2952,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
   char addr_copy[NI_MAXHOST];
   char *addr;
   char *port;
+  int addr_is_wildcard = 0;
   int status;
 
   strncpy (addr_copy, sock->addr, sizeof(addr_copy)-1);
@@ -2999,8 +3001,14 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       port++;
     }
   }
+  /* Empty string for address should be treated as wildcard (open on
+   * all interfaces) */
+  addr_is_wildcard = (0 == *addr);
+  if (addr_is_wildcard)
+    ai_hints.ai_flags |= AI_PASSIVE;
+
   ai_res = NULL;
-  status = getaddrinfo (addr,
+  status = getaddrinfo (addr_is_wildcard ? NULL : addr,
                         port == NULL ? RRDCACHED_DEFAULT_PORT : port,
                         &ai_hints, &ai_res);
   if (status != 0)
@@ -3036,6 +3044,12 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     }
 
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+#ifdef IPV6_V6ONLY
+    /* Prevent EADDRINUSE bind errors on dual-stack configurations
+     * with IPv4-mapped-on-IPv6 enabled */
+    if (AF_INET6 == ai_ptr->ai_family)
+      setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
+#endif /* IPV6_V6ONLY */
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
