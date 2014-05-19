@@ -77,7 +77,7 @@ See I<rrdgraph> documentation.
 
 See I<rrdgraph> documentation.
 
-=item B<XPORT:>I<vname>B<:>B<:>I<legend>
+=item B<XPORT:>I<vname>[B<:>I<legend>]
 
 At least one I<XPORT> statement should be present. The values
 referenced by I<vname> are printed. Optionally add a legend.
