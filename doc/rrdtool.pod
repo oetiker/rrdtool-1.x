@@ -34,7 +34,7 @@ While the man pages talk of command line switches you have to set in
 order to make B<RRDtool> work it is important to note that
 B<RRDtool> can be remotely controlled through a set of pipes. This
 saves a considerable amount of startup time when you plan to make
-B<RRDtool> do a lot of things quickly. Check the section on L<"Remote Control">
+B<RRDtool> do a lot of things quickly. Check the section on L<rrdtool/"REMOTE CONTROL">
 further down. There is also a number of language bindings
 for RRDtool which allow you to use it directly from Perl, python, Tcl,
 PHP, etc.
@@ -273,10 +273,10 @@ for input via standard input (STDIN). With this feature you can
 improve performance by attaching B<RRDtool> to another process (MRTG
 is one example) through a set of pipes. Over these pipes B<RRDtool>
 accepts the same arguments as on the command line and some special
-commands like B<quit, cd, mkdir> and B<ls>. For detailed help on the
+commands like B<cd, mkdir, pwd, ls> and B<quit>. For detailed help on the
 server commands type:
 
-   rrdtool help cd|mkdir|pwd|ls|quit
+   rrdtool help cd
 
 When a command is completed, RRDtool will print the string  'C<OK>',
 followed by timing information of the form B<u:>I<usertime>
