@@ -49,7 +49,8 @@ would do C<a = b, 3, +, 5, *> without the need for parentheses.
 
 B<LT, LE, GT, GE, EQ, NE>
 
-Pop two elements from the stack, compare them for the selected condition
+Less than, Less or equal, Greater than, Greater or equal, Equal, Not equal
+all pop two elements from the stack, compare them for the selected condition
 and return 1 for true or 0 for false. Comparing an I<unknown> or an
 I<infinite> value will result in I<unknown> returned ... which will also be
 treated as false by the B<IF> call.
