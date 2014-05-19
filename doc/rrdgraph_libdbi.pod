@@ -86,7 +86,7 @@ Here an example of a table in a MySQL database:
     dbhost=127.0.0.1
     user=rrd
     password=secret
-    database=rrd
+    dbname=rrd
 
   here the table:
     CREATE TABLE RRDValue (
@@ -158,7 +158,7 @@ You can find more informations on this libdbi-users mailing list thread : http:/
   (this only happens when the libdbi driver is actually used the first time!)
   This is KNOWN to be the case with RHEL4 and FC4 and FC5! (But actually this is a bug with libdbi make files!)
 
-* at least version 0.8.1 of libdbiexhibits a bug with BINARY fields
+* at least version 0.8.1 of libdbi exhibits a bug with BINARY fields
   (shorttext,text,mediumtext,longtext and possibly also BINARY and BLOB fields), 
   that can result in coredumps of rrdtool. 
   The tool will tell you on stderr if this occures, so that you know what may be the reason.
