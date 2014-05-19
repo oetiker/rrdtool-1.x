@@ -6,6 +6,7 @@ rrdrestore - Restore the contents of an RRD from its XML dump format
 
 B<rrdtool> B<restore> I<filename.xml> I<filename.rrd>
 S<[B<--range-check>|B<-r>]>
+S<[B<--force-overwrite>|B<-f>]>
 
 =head1 DESCRIPTION
 
