@@ -205,17 +205,17 @@ average of the remaining values.
 B<PREDICT, PREDICTSIGMA, PREDICTPERC>
 
 Create a "sliding window" average/sigma/percentil of another data series, 
-that also shifts the data series by given amounts of of time as well
+that also shifts the data series by given amounts of time as well
 
 Usage - explicit stating shifts:
-CDEF:predict=<shift n>,...,<shift 1>,n,<window>,x,PREDICT
-CDEF:sigma=<shift n>,...,<shift 1>,n,<window>,x,PREDICTSIGMA
-CDEF:perc=<shift n>,...,<shift 1>,n,<window>,<percentil>,x,PREDICTPERC
+C<CDEF:predict=E<lt>shift nE<gt>,...,E<lt>shift 1E<gt>,n,E<lt>windowE<gt>,x,PREDICT>
+C<CDEF:sigma=E<lt>shift nE<gt>,...,E<lt>shift 1E<gt>,n,E<lt>windowE<gt>,x,PREDICTSIGMA>
+C<CDEF:perc=E<lt>shift nE<gt>,...,E<lt>shift 1E<gt>,n,E<lt>windowE<gt>,E<lt>percentilE<gt>,x,PREDICTPERC>
 
 Usage - shifts defined as a base shift and a number of time this is applied
-CDEF:predict=<shift multiplier>,-n,<window>,x,PREDICT
-CDEF:sigma=<shift multiplier>,-n,<window>,x,PREDICTSIGMA
-CDEF:sigma=<shift multiplier>,-n,<window>,<percentil>,x,PREDICTPERC
+C<CDEF:predict=E<lt>shift multiplierE<gt>,-n,E<lt>windowE<gt>,x,PREDICT>
+C<CDEF:sigma=E<lt>shift multiplierE<gt>,-n,E<lt>windowE<gt>,x,PREDICTSIGMA>
+C<CDEF:sigma=E<lt>shift multiplierE<gt>,-n,E<lt>windowE<gt>,E<lt>percentilE<gt>,x,PREDICTPERC>
 
 Example:
 CDEF:predict=172800,86400,2,1800,x,PREDICT
@@ -273,21 +273,21 @@ Here an example, that will create a 10 day graph that also shows the
 prediction 3 days into the future with its uncertainty value (as defined by avg+-4*sigma)
 This also shows if the prediction is exceeded at a certain point.
 
-rrdtool graph image.png --imgformat=PNG \
- --start=-7days --end=+3days --width=1000 --height=200 --alt-autoscale-max \
- DEF:value=value.rrd:value:AVERAGE:start=-14days \
- LINE1:value#ff0000:value \
- CDEF:predict=86400,-7,1800,value,PREDICT \
- CDEF:sigma=86400,-7,1800,value,PREDICTSIGMA \
- CDEF:upper=predict,sigma,3,*,+ \
- CDEF:lower=predict,sigma,3,*,- \
- LINE1:predict#00ff00:prediction \
- LINE1:upper#0000ff:upper\ certainty\ limit \
- LINE1:lower#0000ff:lower\ certainty\ limit \
- CDEF:exceeds=value,UN,0,value,lower,upper,LIMIT,UN,IF \
- TICK:exceeds#aa000080:1 \
- CDEF:perc95=86400,-7,1800,95,value,PREDICTPERC \
- LINE1:perc95#ffff00:95th_percentile
+    rrdtool graph image.png --imgformat=PNG \
+    --start=-7days --end=+3days --width=1000 --height=200 --alt-autoscale-max \
+    DEF:value=value.rrd:value:AVERAGE:start=-14days \
+    LINE1:value#ff0000:value \
+    CDEF:predict=86400,-7,1800,value,PREDICT \
+    CDEF:sigma=86400,-7,1800,value,PREDICTSIGMA \
+    CDEF:upper=predict,sigma,3,*,+ \
+    CDEF:lower=predict,sigma,3,*,- \
+    LINE1:predict#00ff00:prediction \
+    LINE1:upper#0000ff:upper\ certainty\ limit \
+    LINE1:lower#0000ff:lower\ certainty\ limit \
+    CDEF:exceeds=value,UN,0,value,lower,upper,LIMIT,UN,IF \
+    TICK:exceeds#aa000080:1 \
+    CDEF:perc95=86400,-7,1800,95,value,PREDICTPERC \
+    LINE1:perc95#ffff00:95th_percentile
 
 Note: Experience has shown that a factor between 3 and 5 to scale sigma is a good 
 discriminator to detect abnormal behavior. This obviously depends also on the type 
