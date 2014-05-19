@@ -2,7 +2,9 @@
 TZ=CET
 export TZ
 
-BASEDIR=$(dirname $0)
+BASEDIR=${BASEDIR:-$(dirname $0)}
+BUILDDIR=${BUILDDIR:-${BASEDIR}}
+TOP_BUILDDIR=${TOP_BUILDDIR:-${BASEDIR}/..}
 if [ -z "$RRDTOOL" ] ; then 
 	case "$TESTS_STYLE" in
 	valgrind)
@@ -14,10 +16,10 @@ if [ -z "$RRDTOOL" ] ; then
 			--error-exitcode=111 \
 			--track-fds=yes \
 			--free-fill=ad \
-			$BASEDIR/../src/rrdtool"
+			$TOP_BUILDDIR/src/rrdtool"
 		;;
 	*)
-		RRDTOOL=$BASEDIR/../src/rrdtool
+		RRDTOOL=$TOP_BUILDDIR/src/rrdtool
 		;;
 	esac
 fi

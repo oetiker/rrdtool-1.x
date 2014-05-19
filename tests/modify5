@@ -3,15 +3,15 @@
 . $(dirname $0)/functions
 
 BASE=$BASEDIR/modify5-test
-
+BUILD=$BUILDDIR/modify5-test
 
 # create 2 RRDs only differing in the way that the second contains an additional RRA
 # test: remove the additional RRA from the second and compare dumps
 # test: add the additional RRA to the first and compare dumps 
 
 
-$RRDTOOL create ${BASE}a1.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 || fail create1
-$RRDTOOL create ${BASE}a2.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 RRA:AVERAGE:0.5:4:10 || fail create2
+$RRDTOOL create ${BUILD}a1.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 || fail create1
+$RRDTOOL create ${BUILD}a2.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 RRA:AVERAGE:0.5:4:10 || fail create2
 
 # add 50 values - note that we do NOT add it exactly for boundary times, and 
 # that we end at a NON CDP boundary for 5-PDP RRAs:
@@ -21,36 +21,36 @@ for T in $(seq 1300000050 60 1300002990) ; do
 	UPDATE_STRING="$UPDATE_STRING $T:$N"
 	let N=$N+10
 done
-$RRDTOOL update ${BASE}a1.rrd --template a $UPDATE_STRING || fail update1
-$RRDTOOL update ${BASE}a2.rrd --template a $UPDATE_STRING || fail update2
+$RRDTOOL update ${BUILD}a1.rrd --template a $UPDATE_STRING || fail update1
+$RRDTOOL update ${BUILD}a2.rrd --template a $UPDATE_STRING || fail update2
 
-$RRDTOOL dump ${BASE}a1.rrd | $DIFF ${BASE}a1-create.dump -
+$RRDTOOL dump ${BUILD}a1.rrd | $DIFF ${BASE}a1-create.dump -
 report create 1
-$RRDTOOL dump ${BASE}a2.rrd | $DIFF ${BASE}a2-create.dump -
+$RRDTOOL dump ${BUILD}a2.rrd | $DIFF ${BASE}a2-create.dump -
 report create 2
 
 for U in 1300003010:200 1300003070:102 1300003130:777 1300003190:645 1300003250:122 1300003310:981 1300003323:223 1300003381:721 1300003445:821 1300003500:221 1300003562:231 1300003637:542 1300003699:734 1300003769:9231 1300003823:17
 do
 	echo ---------------------iterate--------------------------
 	# update both - both contain same data 
-	$RRDTOOL update ${BASE}a1.rrd --template a $U
-	$RRDTOOL update ${BASE}a2.rrd --template a $U
+	$RRDTOOL update ${BUILD}a1.rrd --template a $U
+	$RRDTOOL update ${BUILD}a2.rrd --template a $U
 
 	# dump current state for later comparison
-	$RRDTOOL dump ${BASE}a1.rrd > ${BASE}a1-mod.dump
-	$RRDTOOL dump ${BASE}a2.rrd > ${BASE}a2-mod.dump
+	$RRDTOOL dump ${BUILD}a1.rrd > ${BUILD}a1-mod.dump
+	$RRDTOOL dump ${BUILD}a2.rrd > ${BUILD}a2-mod.dump
 	
 	# remove RRA 5 from second RRD, should now match first RRD
-	cp ${BASE}a2.rrd ${BASE}b2.rrd 
-	$RRDTOOL tune ${BASE}b2.rrd DELRRA:5
+	cp ${BUILD}a2.rrd ${BUILD}b2.rrd 
+	$RRDTOOL tune ${BUILD}b2.rrd DELRRA:5
 
-	$RRDTOOL dump ${BASE}b2.rrd | $DIFF ${BASE}a1-mod.dump -
+	$RRDTOOL dump ${BUILD}b2.rrd | $DIFF ${BUILD}a1-mod.dump -
 	report "remove additional RRA from second - must then be equal original first"
 
         # add RRA to first RRD, should now match second RRD
-	cp ${BASE}a1.rrd ${BASE}b1.rrd
-	$RRDTOOL tune ${BASE}b1.rrd RRA:AVERAGE:0.5:4:10
+	cp ${BUILD}a1.rrd ${BUILD}b1.rrd
+	$RRDTOOL tune ${BUILD}b1.rrd RRA:AVERAGE:0.5:4:10
 
-	$RRDTOOL dump ${BASE}b1.rrd | $DIFF ${BASE}a2-mod.dump -
+	$RRDTOOL dump ${BUILD}b1.rrd | $DIFF ${BUILD}a2-mod.dump -
 	report "add additional RRA to first - must then be equal original second"
 done

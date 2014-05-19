@@ -27,6 +27,9 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 		) : ()
 	);
 }else{
+	my $TOP_SRCDIR = $ENV{'ABS_TOP_SRCDIR'} || '../../..';
+	my $TOP_BUILDDIR = $ENV{'ABS_TOP_BUILDDIR'} || '../../..';
+	my $SRCDIR = $ENV{'ABS_SRCDIR'} || '.';
 	# if the last argument when calling Makefile.PL is RPATH=/... and ... is the
 	# path to librrd.so then the Makefile will be written such that RRDs.so knows
 	# where to find librrd.so later on ... 
@@ -51,20 +54,20 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 	if ($^O eq 'darwin'){
         $librrd = '-lrrd';
 	} else {
-		$librrd = "-L../../src/.libs/ $R -lrrd";
+		$librrd = "-L${TOP_BUILDDIR}/src/.libs/ $R -lrrd";
 	}
 
 	WriteMakefile(
 		'NAME'         => 'RRDs',
 		'VERSION_FROM' => 'RRDs.pm', # finds $VERSION
 		'DEFINE'	   => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
-		'INC'          => '-I../../src',
+		'INC'          => "-I${TOP_BUILDDIR}/src -I${TOP_SRCDIR}/src",
 		# Perl will figure out which one is valid
 		#'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
-		'depend'       => {'RRDs.c' => "../../src/librrd.la"},
+		'depend'       => {'RRDs.c' => "${TOP_BUILDDIR}/src/librrd.la"},
 		'LDFROM'       => '$(OBJECT) '.$librrd, 
 		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
-		($^O eq 'darwin') ? ( 'LDDLFLAGS'    => "-L../../src/.libs/ $Config{lddlflags}" ) : ()
+		($^O eq 'darwin') ? ( 'LDDLFLAGS'    => "-L${TOP_BUILDDIR}/src/.libs/ $Config{lddlflags}" ) : ()
 	);
 }
 

@@ -66,7 +66,8 @@ noinst_HEADERS = \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	rrd_restore.h rrd_create.h \
 	fnv.h rrd_graph.h \
-	rrd_is_thread_safe.h
+	rrd_is_thread_safe.h \
+	rrd_modify.h rrd_update.h rrd_config.h
 
 if BUILD_LIBDBI
 RRD_C_FILES += rrd_fetch_libdbi.c

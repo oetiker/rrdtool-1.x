@@ -3,28 +3,27 @@
 . $(dirname $0)/functions
 
 BASE=$BASEDIR/modify2-test
+BUILD=$BUILDDIR/modify2-test
 
-
-
-$RRDTOOL create ${BASE}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 || fail create
+$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 || fail create
 
 # add 50 values to 
 N=10
 for T in $(seq 1300000020 60 1300003020) ; do
-	$RRDTOOL update ${BASE}a.rrd --template a $T:$N || fail update
+	$RRDTOOL update ${BUILD}a.rrd --template a $T:$N || fail update
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BASE}a.rrd | $DIFF ${BASE}a-create.dump -
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF ${BASE}a-create.dump -
 report create
 
-cp ${BASE}a.rrd ${BASE}b.rrd
-$RRDTOOL tune ${BASE}b.rrd RRA#1:+10 RRA#2:+10 RRA#3:+10 RRA#4:+10 || fail modify
-$RRDTOOL dump ${BASE}b.rrd | $DIFF ${BASE}b-mod1.dump -
+cp ${BUILD}a.rrd ${BUILD}b.rrd
+$RRDTOOL tune ${BUILD}b.rrd RRA#1:+10 RRA#2:+10 RRA#3:+10 RRA#4:+10 || fail modify
+$RRDTOOL dump ${BUILD}b.rrd | $DIFF ${BASE}b-mod1.dump -
 report "simultaneously extend aggregate RRAs"
 
-cp ${BASE}a.rrd ${BASE}c.rrd
-$RRDTOOL tune ${BASE}c.rrd RRA:AVERAGE:0.5:2:10 || fail modify
-$RRDTOOL dump ${BASE}c.rrd | $DIFF ${BASE}c-mod1.dump -
+cp ${BUILD}a.rrd ${BUILD}c.rrd
+$RRDTOOL tune ${BUILD}c.rrd RRA:AVERAGE:0.5:2:10 || fail modify
+$RRDTOOL dump ${BUILD}c.rrd | $DIFF ${BASE}c-mod1.dump -
 report "add RRA with intermediate pdp_cnt"
 

@@ -42,7 +42,7 @@ AM_MAINTAINER_MODE
 # Automake-1.11. Disable by either passing --disable-silent-rules to
 # configure or passing V=1 to make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-AC_CONFIG_HEADERS([rrd_config.h])
+AC_CONFIG_HEADERS([src/rrd_config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl all our local stuff like install scripts and include files
@@ -576,7 +576,7 @@ AC_ARG_VAR(PERLLDFLAGS, [LD flags for Perl modules])
 if test "x$PERL" = "xno" -o  x$enable_perl = xno; then
 	COMP_PERL=
 else
-	COMP_PERL="perl_piped perl_shared"
+	COMP_PERL="perl-piped perl-shared"
         AC_MSG_CHECKING(for the perl version you are running)
 	PERL_VERSION=`$PERL -MConfig -e 'print $Config{version}'`
 	AC_MSG_RESULT($PERL_VERSION)
@@ -595,7 +595,7 @@ appropriately, or use a different perl setup that was compiled locally.
 
 I will disable the compilation of the RRDs perl module for now.
 ])
-  		    COMP_PERL="perl_piped"
+  		    COMP_PERL="perl-piped"
 	        fi
             fi    
         fi
@@ -931,6 +931,7 @@ AC_CONFIG_FILES([examples/4charts.pl])
 AC_CONFIG_FILES([examples/perftest.pl])
 AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([examples/rrdcached/Makefile])
+AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in]) 
 AC_CONFIG_FILES([src/Makefile])
@@ -939,17 +940,10 @@ AC_CONFIG_FILES([src/librrd.pc])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
-AC_CONFIG_FILES([Makefile])          
 AC_CONFIG_FILES([bindings/lua/Makefile])
+AC_CONFIG_FILES([Makefile])          
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
-
-dnl intl requires our config to be called config.h. indulge it.
-AC_CONFIG_COMMANDS_POST([ test -f config.h || ln -s rrd_config.h config.h ])
-
-dnl bindings use nasty path, just make them happy.
-AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config.h || (cd src/ && ln -s ../rrd_config.h) ])
-AC_CONFIG_COMMANDS_POST([ test -f src/rrd_config_bottom.h || (cd src/ && ln -s ../rrd_config_bottom.h) ])
 
 AC_OUTPUT
 

@@ -35,17 +35,16 @@ Makefile.in
 # autoconf generated files
 Makefile
 .deps/
-/config.h
 /config.log
 /config.status
 /etc/rrdcached.service
 /etc/rrdcached.socket
 /libtool
-/rrd_config.h
 /src/librrd.pc
 /src/librrd.sym.in
 /src/rrd_config.h
-/stamp-h1
+/src/rrd_config.h.in
+/src/stamp-h1
 
 # po
 /ABOUT-NLS
@@ -58,15 +57,13 @@ Makefile
 # cscope
 /cscope.*
 
-# tests MUST create their own RRDs
-/tests/*.rrd
-
 #vim swp file
 *.swp
 
 # generated documentation files
 /doc/*.txt
 /doc/*.html
+/doc/*.pdf
 /doc/*.1
 /doc/*.3
 /doc/pod2*.tmp

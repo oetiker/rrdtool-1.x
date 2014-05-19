@@ -25,9 +25,9 @@ extern "C" {
 #define VERSION_SAVED VERSION
 #undef VERSION
 #ifndef WIN32
-#include "../../rrd_config.h"
+#include "rrd_config.h"
 #endif
-#include "../../src/rrd_tool.h"
+#include "rrd_tool.h"
 #undef VERSION
 #define VERSION VERSION_SAVED
 #undef VERSION_SAVED

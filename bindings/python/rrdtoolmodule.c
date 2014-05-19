@@ -38,11 +38,11 @@
 #endif
 
 
-#include "../../rrd_config.h"
+#include "rrd_config.h"
 static const char *__version__ = PACKAGE_VERSION;
 
 #include "Python.h"
-#include "../../src/rrd_tool.h"
+#include "rrd_tool.h"
 //#include "rrd.h"
 //#include "rrd_extra.h"
 
