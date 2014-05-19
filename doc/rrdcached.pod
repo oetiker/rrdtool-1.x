@@ -143,7 +143,10 @@ Please also read L</"SECURITY CONSIDERATIONS"> below.
 
 =item B<-w> I<timeout>
 
-Data is written to disk every I<timeout> seconds. If this option is not
+Data is written to disk every I<timeout> seconds.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<5m> instead of C<300> seconds).
+If this option is not
 specified the default interval of 300E<nbsp>seconds will be used.
 
 =item B<-z> I<delay>
@@ -151,14 +154,20 @@ specified the default interval of 300E<nbsp>seconds will be used.
 If specified, rrdcached will delay writing of each RRD for a random number
 of seconds in the rangeE<nbsp>[0,I<delay>).  This will avoid too many
 writes being queued simultaneously.  This value should be no greater than
-the value specified in B<-w>.  By default, there is no delay.
+the value specified in B<-w>.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<3m> instead of C<180> seconds).
+By default, there is no delay.
 
 =item B<-f> I<timeout>
 
 Every I<timeout> seconds the entire cache is searched for old values which are
 written to disk. This only concerns files to which updates have stopped, so
 setting this to a high value, such as 3600E<nbsp>seconds, is acceptable in most
-cases. This timeout defaults to 3600E<nbsp>seconds.
+cases.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<1h> instead of C<3600> seconds).
+This timeout defaults to 3600E<nbsp>seconds.
 
 =item B<-p> I<file>
 

@@ -3413,6 +3413,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 {
   int option;
   int status = 0;
+  const char *parsetime_error = NULL;
 
   socket_permission_clear (&default_socket);
 
@@ -3548,47 +3549,40 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'f':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi (optarg);
-        if (temp > 0)
-          config_flush_interval = temp;
-        else
-        {
-          fprintf (stderr, "Invalid flush interval: %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid flush interval %s: %s\n", optarg, parsetime_error);
           status = 3;
+        } else {
+          config_flush_interval = temp;
         }
       }
       break;
 
       case 'w':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi (optarg);
-        if (temp > 0)
-          config_write_interval = temp;
-        else
-        {
-          fprintf (stderr, "Invalid write interval: %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write interval %s: %s\n", optarg, parsetime_error);
           status = 2;
+        } else {
+          config_write_interval = temp;
         }
       }
       break;
 
       case 'z':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi(optarg);
-        if (temp > 0)
-          config_write_jitter = temp;
-        else
-        {
-          fprintf (stderr, "Invalid write jitter: -z %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write jitter %s: %s\n", optarg, parsetime_error);
           status = 2;
+        } else {
+          config_write_jitter = temp;
         }
-
         break;
       }
 
