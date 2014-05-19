@@ -1,0 +1,44 @@
+# /etc/default file for RRD cache daemon
+
+# Full path to daemon
+DAEMON=@prefix@/bin/rrdcached
+
+# Optional override flush interval, in seconds.
+#WRITE_TIMEOUT=300
+
+# Optional override maximum write delay, in seconds.
+#WRITE_JITTER=0
+
+# Optional override number of write_threads
+#WRITE_THREADS=4
+
+# Where database files are placed.  If left unset, the default /tmp will
+# be used.  NB: The daemon will reject a directory that has symlinks as
+# components.  NB: You may want to have -B in BASE_OPTS.
+BASE_PATH=/var/lib/rrdcached/db/
+
+# Where journal files are placed.  If left unset, journaling will
+# be disabled.
+JOURNAL_PATH=/var/lib/rrdcached/journal/
+
+# FHS standard placement for process ID file.
+PIDFILE=/var/run/rrdcached.pid
+
+# FHS standard placement for local control socket.
+SOCKFILE=/var/run/rrdcached.sock
+
+# Optional override group that should own/access the local control
+# socket
+#SOCKGROUP=root
+
+# Optional override access mode of local control socket.
+#SOCKMODE=0660
+
+# Network socket address requests.  Use in conjunction with SOCKFILE to
+# also listen on INET domain sockets.  (The option is a lower-case ell
+# ASCII 108 = 0x6c, and should be repeated for each address.).
+NETWORK_OPTIONS="-l :42217"
+
+# Any other options not specifically supported by the script (-P, -f,
+# -F, -B).
+BASE_OPTIONS=-B

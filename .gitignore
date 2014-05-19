@@ -39,6 +39,7 @@ Makefile
 /config.status
 /etc/rrdcached.service
 /etc/rrdcached.socket
+/etc/rrdcached-default-lsb
 /libtool
 /src/librrd.pc
 /src/librrd.sym.in
