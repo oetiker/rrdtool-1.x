@@ -8,7 +8,7 @@ B<rrdtool> B<dump> I<filename.rrd> [I<filename.xml>]
 S<[B<--header>|B<-h> {none,xsd,dtd}]>
 S<[B<--no-header>]>
 S<[B<--daemon> I<address>]>
-S<E<gt> I<filename.xml>>
+S<[E<gt> I<filename.xml>]>
 
 =head1 DESCRIPTION
 
