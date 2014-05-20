@@ -66,11 +66,18 @@ domain socket B<must> start with a slash in the second case!
    <hostname-or-ipv4>:<port>
 
 Given a port without a host (e.g. C<-l :42217>) the daemon will listen
-on that port on all network interfaces.
+on that port on all network interfaces.  Use C<-L> to avoid the need
+to explicitly provide the port if the default port is desired.
 
 If no B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
 Multiple B<-l> options may be provided.
+
+=item B<-L>
+
+Tells the daemon to bind to the default TCP port on all available
+interfaces.  It is equivalent to C<-l ''> without the confusion of the
+empty string parameter.
 
 =item B<-s> I<group_name>|I<gid>
 

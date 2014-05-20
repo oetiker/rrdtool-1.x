@@ -3434,7 +3434,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
+  while ((option = getopt(argc, argv, "OgLl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
   {
     switch (option)
     {
@@ -3446,6 +3446,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         stay_foreground=1;
         break;
 
+      case 'L':
       case 'l':
       {
         listen_socket_t *new;
@@ -3458,7 +3459,10 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         memset(new, 0, sizeof(listen_socket_t));
 
-        strncpy(new->addr, optarg, sizeof(new->addr)-1);
+        if ('L' == option)
+          new->addr[0] = 0;
+        else
+          strncpy(new->addr, optarg, sizeof(new->addr)-1);
 
         /* Add permissions to the socket {{{ */
         if (default_socket.permissions != 0)
