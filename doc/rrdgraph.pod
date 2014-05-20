@@ -371,7 +371,7 @@ Pick the shape of the color marker next to the label according to the element dr
 
 Zoom the graphics by the given amount. The factor must be E<gt> 0
 
-[B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>I<font>]
+[B<-n>|B<--font> I<FONTTAG>B<:>I<size>[B<:>I<font>]]
 
 This lets you customize which font to use for the various text elements on
 the RRD graphs. C<DEFAULT> sets the default value for all elements, C<TITLE>
