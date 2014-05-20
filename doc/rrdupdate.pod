@@ -7,7 +7,9 @@ rrdupdate - Store a new set of values into the RRD
 B<rrdtool> {B<update> | B<updatev>} I<filename>
 S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]>
 S<[B<--daemon>|B<-d> I<address>]> [B<-->]
-S<{{B<N> | I<timestamp>}B<:> | I<at-timestamp>B<@>}I<value>[B<:>I<value>]... ...> 
+S<B<N>B<:>I<value>[B<:>I<value>]...>
+S<I<timestamp>B<:>I<value>[B<:>I<value>]...>
+S<I<at-timestamp>B<@>I<value>[B<:>I<value>]...>
 
 =head1 DESCRIPTION
 
