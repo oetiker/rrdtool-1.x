@@ -55,10 +55,10 @@ be changed using C<:reduce=I<E<lt>B<CF>E<gt>>>.  This optional parameter
 specifies the B<CF> to use during the data reduction phase.
 
 It is possible to request single data sources from a specific I<RRDCacheD>, see
-L<rrdcached(1)>, using the C<:daemon=I<E<lt>addressE<gt>>> parameter. The
+L<rrdcached>, using the C<:daemon=I<E<lt>addressE<gt>>> parameter. The
 value given to this parameter follows the same syntax as other means to specify
-the address of the caching daemon. It is described in detail in the
-L<rrdcached(1)> manual page. Beware, however, that colons (in IPv6 addresses
+the address of the caching daemon. It is described in detail in
+L<rrdcached>. Beware, however, that colons (in IPv6 addresses
 and as a port separator, for example) need to be escaped using a backslash.
 
 Example:
