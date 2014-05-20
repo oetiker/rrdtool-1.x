@@ -78,6 +78,7 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #else
 
@@ -2951,6 +2952,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
   char addr_copy[NI_MAXHOST];
   char *addr;
   char *port;
+  int addr_is_wildcard = 0;
   int status;
 
   strncpy (addr_copy, sock->addr, sizeof(addr_copy)-1);
@@ -2999,8 +3001,14 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       port++;
     }
   }
+  /* Empty string for address should be treated as wildcard (open on
+   * all interfaces) */
+  addr_is_wildcard = (0 == *addr);
+  if (addr_is_wildcard)
+    ai_hints.ai_flags |= AI_PASSIVE;
+
   ai_res = NULL;
-  status = getaddrinfo (addr,
+  status = getaddrinfo (addr_is_wildcard ? NULL : addr,
                         port == NULL ? RRDCACHED_DEFAULT_PORT : port,
                         &ai_hints, &ai_res);
   if (status != 0)
@@ -3036,6 +3044,12 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     }
 
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+#ifdef IPV6_V6ONLY
+    /* Prevent EADDRINUSE bind errors on dual-stack configurations
+     * with IPv4-mapped-on-IPv6 enabled */
+    if (AF_INET6 == ai_ptr->ai_family)
+      setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
+#endif /* IPV6_V6ONLY */
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
@@ -3413,13 +3427,14 @@ static int read_options (int argc, char **argv) /* {{{ */
 {
   int option;
   int status = 0;
+  const char *parsetime_error = NULL;
 
   socket_permission_clear (&default_socket);
 
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "Ogl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
+  while ((option = getopt(argc, argv, "OgLl:s:m:P:f:w:z:t:BRb:p:Fj:a:h?")) != -1)
   {
     switch (option)
     {
@@ -3431,6 +3446,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         stay_foreground=1;
         break;
 
+      case 'L':
       case 'l':
       {
         listen_socket_t *new;
@@ -3443,7 +3459,10 @@ static int read_options (int argc, char **argv) /* {{{ */
         }
         memset(new, 0, sizeof(listen_socket_t));
 
-        strncpy(new->addr, optarg, sizeof(new->addr)-1);
+        if ('L' == option)
+          new->addr[0] = 0;
+        else
+          strncpy(new->addr, optarg, sizeof(new->addr)-1);
 
         /* Add permissions to the socket {{{ */
         if (default_socket.permissions != 0)
@@ -3548,47 +3567,40 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'f':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi (optarg);
-        if (temp > 0)
-          config_flush_interval = temp;
-        else
-        {
-          fprintf (stderr, "Invalid flush interval: %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid flush interval %s: %s\n", optarg, parsetime_error);
           status = 3;
+        } else {
+          config_flush_interval = temp;
         }
       }
       break;
 
       case 'w':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi (optarg);
-        if (temp > 0)
-          config_write_interval = temp;
-        else
-        {
-          fprintf (stderr, "Invalid write interval: %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write interval %s: %s\n", optarg, parsetime_error);
           status = 2;
+        } else {
+          config_write_interval = temp;
         }
       }
       break;
 
       case 'z':
       {
-        int temp;
+        unsigned long temp;
 
-        temp = atoi(optarg);
-        if (temp > 0)
-          config_write_jitter = temp;
-        else
-        {
-          fprintf (stderr, "Invalid write jitter: -z %s\n", optarg);
+        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write jitter %s: %s\n", optarg, parsetime_error);
           status = 2;
+        } else {
+          config_write_jitter = temp;
         }
-
         break;
       }
 

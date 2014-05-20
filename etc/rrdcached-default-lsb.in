@@ -35,10 +35,15 @@ SOCKFILE=/var/run/rrdcached.sock
 #SOCKMODE=0660
 
 # Network socket address requests.  Use in conjunction with SOCKFILE to
-# also listen on INET domain sockets.  (The option is a lower-case ell
-# ASCII 108 = 0x6c, and should be repeated for each address.).
-NETWORK_OPTIONS="-l :42217"
+# also listen on INET domain sockets.  The option is a lower-case ell
+# ASCII 108 = 0x6c, and should be repeated for each address.  The
+# parameter is an optional IP address, followed by an optional port with
+# a colon separating it from the address.  The empty string is
+# interpreted as "open sockets on the default port on all available
+# interfaces", but generally does not pass through init script functions
+# so use -L with no parameters for that configuration.
+#NETWORK_OPTIONS="-L"
 
 # Any other options not specifically supported by the script (-P, -f,
 # -F, -B).
-BASE_OPTIONS=-B
+BASE_OPTIONS="-B"

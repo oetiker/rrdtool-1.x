@@ -43,7 +43,7 @@ section below.
 
 =item B<-l> I<address>
 
-Tells the daemon to bind to I<address> and accept incoming connections on that
+Tells the daemon to bind to I<address> and accept incoming TCP connections on that
 socket. If I<address> begins with C<unix:>, everything following that prefix is
 interpreted as the path to a UNIX domain socket. Otherwise the address or node
 name are resolved using C<getaddrinfo()>.
@@ -52,7 +52,7 @@ For network sockets, a port may be specified by using the form
 C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
 qualified domain name (i.E<nbsp>e. the address contains at least one dot
 (C<.>)), the square brackets can be omitted, resulting in the (simpler)
-C<I<address>B<:>I<port>> pattern. The default port is B<42217/tcp>. If you
+C<I<address>B<:>I<port>> pattern. The default port is B<42217>. If you
 specify a network socket, it is mandatory to read the
 L</"SECURITY CONSIDERATIONS"> section.
 
@@ -65,8 +65,19 @@ domain socket B<must> start with a slash in the second case!
    [<hostname-or-ip>]:<port>
    <hostname-or-ipv4>:<port>
 
-If the B<-l> option is not specified the default address,
+Given a port without a host (e.g. C<-l :42217>) the daemon will listen
+on that port on all network interfaces.  Use C<-L> to avoid the need
+to explicitly provide the port if the default port is desired.
+
+If no B<-l> option is not specified the default address,
 C<unix:/tmp/rrdcached.sock>, will be used.
+Multiple B<-l> options may be provided.
+
+=item B<-L>
+
+Tells the daemon to bind to the default TCP port on all available
+interfaces.  It is equivalent to C<-l ''> without the confusion of the
+empty string parameter.
 
 =item B<-s> I<group_name>|I<gid>
 
@@ -143,7 +154,10 @@ Please also read L</"SECURITY CONSIDERATIONS"> below.
 
 =item B<-w> I<timeout>
 
-Data is written to disk every I<timeout> seconds. If this option is not
+Data is written to disk every I<timeout> seconds.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<5m> instead of C<300> seconds).
+If this option is not
 specified the default interval of 300E<nbsp>seconds will be used.
 
 =item B<-z> I<delay>
@@ -151,14 +165,20 @@ specified the default interval of 300E<nbsp>seconds will be used.
 If specified, rrdcached will delay writing of each RRD for a random number
 of seconds in the rangeE<nbsp>[0,I<delay>).  This will avoid too many
 writes being queued simultaneously.  This value should be no greater than
-the value specified in B<-w>.  By default, there is no delay.
+the value specified in B<-w>.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<3m> instead of C<180> seconds).
+By default, there is no delay.
 
 =item B<-f> I<timeout>
 
 Every I<timeout> seconds the entire cache is searched for old values which are
 written to disk. This only concerns files to which updates have stopped, so
 setting this to a high value, such as 3600E<nbsp>seconds, is acceptable in most
-cases. This timeout defaults to 3600E<nbsp>seconds.
+cases.
+An L<optional suffix|librrd/rrd_scaled_duration> may be used
+(e.g. C<1h> instead of C<3600> seconds).
+This timeout defaults to 3600E<nbsp>seconds.
 
 =item B<-p> I<file>
 

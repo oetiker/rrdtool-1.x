@@ -46,6 +46,7 @@ rrd_random
 rrd_read
 rrd_resize
 rrd_restore
+rrd_scaled_duration
 rrd_seek
 rrd_set_error
 rrd_set_to_DINF
