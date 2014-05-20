@@ -78,6 +78,7 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #else
 
@@ -92,7 +93,6 @@
 #include <signal.h>
 #include <sys/un.h>
 #include <netdb.h>
-#include <arpa/inet.h>
 #include <poll.h>
 #include <syslog.h>
 #include <pthread.h>
