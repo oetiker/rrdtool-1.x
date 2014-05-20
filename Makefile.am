@@ -12,7 +12,7 @@ EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
              netware/Makefile  \
-             etc/rrdcached-default etc/rrdcached-init \
+             etc/rrdcached-default-redhat etc/rrdcached-init-redhat \
              win32/README win32/Makefile.msc
 
 CLEANFILES = config.cache

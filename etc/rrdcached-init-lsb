@@ -1,0 +1,189 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: rrdcached
+# Required-Start: $local_fs $remote_fs $named $time $network
+# Required-Stop: $local_fs $remote_fs $network
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start or stop rrdcached
+# Description: Daemon that accumulates updates to RRD files and flushes
+#              them periodically or on command.
+### END INIT INFO
+#
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+NAME=rrdcached
+DESC="RRD cache daemon"
+DAEMON=/usr/bin/rrdcached
+
+DEFAULT=/etc/default/rrdcached
+test -f ${DEFAULT} && . ${DEFAULT}
+
+PIDFILE=${PIDFILE:-/var/run/${NAME}.pid}
+
+RRDCACHED_OPTIONS="\
+  ${BASE_OPTIONS} \
+  ${NETWORK_OPTIONS} \
+  ${WRITE_TIMEOUT:+-w ${WRITE_TIMEOUT}} \
+  ${WRITE_JITTER:+-z ${WRITE_JITTER}} \
+  ${WRITE_THREADS:+-t ${WRITE_THREADS}} \
+  ${BASE_PATH:+-b ${BASE_PATH}} \
+  ${JOURNAL_PATH:+-j ${JOURNAL_PATH}} \
+  -p ${PIDFILE} \
+  ${SOCKFILE:+-l unix:${SOCKFILE} ${SOCKGROUP:+-s ${SOCKGROUP}} ${SOCKMODE:+-m ${SOCKMODE}}} \
+    "
+
+. /lib/lsb/init-functions
+
+RETVAL=1
+
+# Do any pre-start checks.  If this returns nonzero, the failure
+# diagnostic has already been generated.
+validate_prestart () {
+    if [ -n "${JOURNAL_PATH}" -a ! -d "${JOURNAL_PATH}" ] ; then
+        mkdir -p "${JOURNAL_PATH}"
+        if [ 0 != $? ] ; then
+            log_failure_msg "${NAME}: Unable to find/create journal directory ${JOURNAL_PATH}"
+            return 1
+        fi
+    fi
+    if [ -n "${BASE_PATH}" -a ! -d "${BASE_PATH}" ] ; then
+        mkdir -p "${BASE_PATH}"
+        if [ 0 != $? ] ; then
+            log_failure_msg "${NAME}: Unable to find/create base directory ${BASE_PATH}"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# Whatever's necessary to start a daemon.  Any currently-running
+# daemon is left unmolested and no new daemon is started.  Return as
+# with start_daemon.
+do_start () {
+    start_daemon -p ${PIDFILE} ${DAEMON} ${RRDCACHED_OPTIONS}
+    return $?
+}
+
+# Perform a restart from a state with no daemon running.  This
+# function emits the success/failure diagnostics.  Return as with
+# restart.
+do_restart_diag () {
+    validate_prestart
+    if [ 0 != $? ] ; then
+        rv=$?
+    else
+        do_start
+        rv=$?
+        if [ 0 = $? ] ; then
+            log_success_msg "${NAME} restarted"
+        else
+            log_failure_msg "${NAME} restart failed"
+        fi
+    fi
+    return ${rv}
+}
+
+# Whatever's necessary to check daemon status.  Sets PID if the daemon
+# is running.  Return as pidofproc.
+do_status () {
+    PID=$( pidofproc -p ${PIDFILE} ${DAEMON} )
+    return $?
+}
+
+# Whatever's necessary to stop the daemon.  Returns as stop action.
+do_stop () {
+    killproc -p ${PIDFILE} ${DAEMON}
+    rv=$?
+    # rrdcached traps the TERM signal and does some flushing.
+    # Give it a chance to shut down before returning, lest
+    # we restart it too soon.
+    max_iters=${STOP_WAIT_DELAY:-5}
+    while [ 0 -lt ${max_iters} ] ; do 
+        if pidofproc -p ${PIDFILE} ${DAEMON} >/dev/null ; then
+            log_warning_msg "${NAME} is still running"
+            sleep 1
+            max_iters=$(( ${max_iters} - 1 ))
+            rv=1
+        else
+            rv=0
+            break
+        fi
+    done
+    return $?
+}
+
+case "$1" in
+    start)
+        # Succeed if service already started or start attempt succeeds
+        if do_status > /dev/null ; then
+            log_success_msg "${NAME} is already started as ${PID}"
+            RETVAL=0
+        else
+            validate_prestart
+            RETVAL=$?
+            if [ 0 = ${RETVAL} ] ; then
+                do_start
+                RETVAL=$?
+                if [ 0 = ${RETVAL} ] ; then
+                    log_success_msg "${NAME} started"
+                else
+                    log_failure_msg "${NAME} FAILED"
+                fi
+            fi
+        fi
+        ;;
+    stop)
+        if pidofproc -p ${PIDFILE} ${DAEMON} > /dev/null ; then
+            do_stop
+            RETVAL=$?
+            if [ 0 = ${RETVAL} ] ; then
+                log_success_msg "${NAME} has been stopped"
+            else
+                log_failure_msg "${NAME} was not stopped"
+            fi
+        else
+            log_success_msg "${NAME} was already stopped"
+            RETVAL=0
+        fi
+        ;;
+    restart)
+        do_stop
+        do_restart_diag
+        RETVAL=$?
+        ;;
+    try-restart)
+        if pidofproc -p ${PIDFILE} ${DAEMON} > /dev/null ; then
+            do_stop
+            do_restart_diag
+            RETVAL=$?
+        else
+            # Yes, try-restart when the system is not running is
+            # success.
+            log_success_msg "${NAME} not running"
+            RETVAL=0
+        fi
+        ;;
+    reload|force-reload)
+        RETVAL=3
+        log_failure_msg "${NAME} does not support $1"
+        ;;
+    status)
+        do_status
+        RETVAL=$?
+        if [ 0 = "${RETVAL}" ] ; then
+            log_success_msg "${NAME} status ${RETVAL} is running as ${PID}"
+        else
+            log_failure_msg "${NAME} is not running"
+        fi
+        ;;
+    '')
+        log_warning_msg "No command (try: status)"
+        ;;
+    *)
+        log_warning_msg "Unrecognized command: $1"
+        ;;
+esac
+
+exit $RETVAL
