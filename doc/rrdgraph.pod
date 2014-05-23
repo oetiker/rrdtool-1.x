@@ -357,7 +357,7 @@ by default the grid is drawn in a 1 on, 1 off pattern. With this option you can 
  
  --grid-dash 1:0    for uninterrupted grid lines
 
-[B<--border> I<width>]]
+[B<--border> I<width>]
 
 Width in pixels for the 3d border drawn around the image. Default 2, 0
 disables the border. See C<SHADEA> and C<SHADEB> above for setting the border
@@ -371,7 +371,7 @@ Pick the shape of the color marker next to the label according to the element dr
 
 Zoom the graphics by the given amount. The factor must be E<gt> 0
 
-[B<-n>|B<--font> I<FONTTAG>B<:>I<size>B<:>[I<font>]]
+[B<-n>|B<--font> I<FONTTAG>B<:>I<size>[B<:>I<font>]]
 
 This lets you customize which font to use for the various text elements on
 the RRD graphs. C<DEFAULT> sets the default value for all elements, C<TITLE>
@@ -563,6 +563,11 @@ C<rrdtoolE<nbsp>graph>:
 If this environment variable is set it will have the same effect as specifying
 the C<--daemon> option on the command line. If both are present, the command
 line argument takes precedence.
+
+=item B<RRD_DEFAULT_FONT>
+
+RRDtool comes with a preset default font. You can set the environment variable
+RRD_DEFAULT_FONT if you want to change this.
 
 =back
 
