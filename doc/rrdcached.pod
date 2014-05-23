@@ -51,8 +51,8 @@ name are resolved using C<getaddrinfo()>.
 For network sockets, a port may be specified by using the form
 C<B<[>I<address>B<]:>I<port>>. If the address is an IPv4 address or a fully
 qualified domain name (i.E<nbsp>e. the address contains at least one dot
-(C<.>)), the square brackets can be omitted, resulting in the (simpler)
-C<I<address>B<:>I<port>> pattern. The default port is B<42217>. If you
+(C<.>)), the text between square brackets can be omitted, resulting in the (simpler)
+C<B<:>I<port>> pattern. The default port is B<42217>. If you
 specify a network socket, it is mandatory to read the
 L</"SECURITY CONSIDERATIONS"> section.
 
@@ -83,7 +83,7 @@ empty string parameter.
 
 Set the group permissions of a UNIX domain socket. The option accepts either
 a numeric group id or group name. That group will then have both read and write
-permissions (the socket will have file permissions 0750) for the socket and,
+permissions (the socket will have file permissions 0760) for the socket and,
 therefore, is able to send commands to the daemon. This
 may be useful in cases where you cannot easily run all RRD processes with the same
 user privileges (e.g. graph generating CGI scripts that typically run in the
@@ -118,7 +118,7 @@ use the system default.
 
 =item B<-P> I<command>[,I<command>[,...]]
 
-Specifies the commands accepted via a network socket. This allows
+Specifies the commands accepted via both a network and a UNIX socket. This allows
 administrators of I<RRDCacheD> to control the actions accepted from various
 sources.
 
