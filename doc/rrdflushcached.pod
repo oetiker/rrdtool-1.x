@@ -29,7 +29,7 @@ RRDCACHED_ADDRESS environment variable must be set (see below).  For a
 list of accepted formats, see the B<-l> option in the L<rrdcached>
 manual.
 
- rrdtool flush --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
+ rrdtool flushcached --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
 
 =back
 
