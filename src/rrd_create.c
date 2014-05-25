@@ -356,7 +356,7 @@ int parseRRA(const char *def,
                                                            &rra_def->row_cnt)))
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 #if SIZEOF_TIME_T == 4
-		if ((long long) pdp_step * rra_def->pdp_cnt * row_cnt > 4294967296LL){
+		if (((long long) rrd->stat_head->pdp_step * rra_def->pdp_cnt) * rra_def->row_cnt > 4294967296LL){
 		    /* database timespan > 2**32, would overflow time_t */
 		    rrd_set_error("The time spanned by the database is too large: must be <= 4294967296 seconds");
 		}
