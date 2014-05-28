@@ -13,6 +13,7 @@ rrd_dump_r
 rrd_dump_cb_r
 rrd_fetch
 rrd_fetch_r
+rrd_fetch_cb_register
 rrd_flushcached
 rrd_first
 rrd_first_r

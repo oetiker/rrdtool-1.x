@@ -34,6 +34,7 @@ RRDs - Access RRDtool as a shared module
   RRDs::dump ...
   RRDs::restore ...
   RRDs::flushcached ...
+  RRDs::register_fetch_cb ...
   $RRDs::VERSION
 
 =head1 DESCRIPTION
@@ -146,6 +147,45 @@ B<RRDs::times> returns two integers which are the number of seconds since
 epoch (1970-01-01) for the supplied "start" and "end" arguments, respectively.
 
 See the examples directory for more ways to use this extension.
+
+=head2 Fetch Callback Function
+
+Normally when using graph, xport or fetch the data you see will come from an
+actual rrd file.  Some people who like the look of rrd charts, therefore
+export their data from a database and then load it into an rrd file just to
+be able to call rrdgraph on it. Using a custom callback, you can supply your own
+code for handling the data requests from graph, xport and fetch.
+
+Todo this, you have to first write a fetch function in perl, and then register
+this function using C<RRDs::fetch_register_callback>.
+
+Finally you can use the pseudo path name B<cb//>[I<filename>] to tell
+rrdtool to use your callback routine instead of the normal rrdtool fetch function
+to organize the data required.
+
+The callback function must look like this:
+
+  sub fetch_callback {
+      my $args_hash = shift;
+      # {
+      #  filename => 'cb//somefilename',
+      #  cd => 'AVERAGE',
+      #  start => 1401295291,   
+      #  end => 1401295591,
+      #  step => 300 }
+
+      # do some clever thing to get that data ready    
+
+      return {
+          start => $unix_timestamp,
+          step => $step_width,
+          data => {
+              dsName1 => [ value1, value2, ... ],
+              dsName2 => [ value1, value2, ... ],
+              dsName3 => [ value1, value2, ... ],
+          }
+     };
+  }
 
 =head1 NOTE
 
