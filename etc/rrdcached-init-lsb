@@ -31,7 +31,7 @@ RRDCACHED_OPTIONS="\
   ${BASE_PATH:+-b ${BASE_PATH}} \
   ${JOURNAL_PATH:+-j ${JOURNAL_PATH}} \
   -p ${PIDFILE} \
-  ${SOCKFILE:+-l unix:${SOCKFILE} ${SOCKGROUP:+-s ${SOCKGROUP}} ${SOCKMODE:+-m ${SOCKMODE}}} \
+  ${SOCKFILE:+${SOCKGROUP:+-s ${SOCKGROUP}} ${SOCKMODE:+-m ${SOCKMODE}} -l unix:${SOCKFILE}} \
     "
 
 . /lib/lsb/init-functions
