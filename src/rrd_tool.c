@@ -447,8 +447,8 @@ int main(
         if ((argc == 3) && strcmp("", argv[2])) {
 
             if (
-#ifdef HAVE_GETUID
-                   getuid()
+#ifdef HAVE_GETEUID
+                   geteuid()
 #else
                    1
 #endif
