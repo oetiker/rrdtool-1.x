@@ -102,6 +102,7 @@
 #include <time.h>
 #include <libgen.h>
 #include <grp.h>
+#include <pwd.h>
 
 #ifdef HAVE_LIBWRAP
 #include <tcpd.h>
@@ -220,6 +221,7 @@ typedef struct {
  */
 static int stay_foreground = 0;
 static uid_t daemon_uid;
+static gid_t daemon_gid;
 
 static listen_socket_t *listen_fds = NULL;
 static size_t listen_fds_num = 0;
@@ -3313,8 +3315,6 @@ static int daemonize (void) /* {{{ */
   int pid_fd;
   char *base_dir;
 
-  daemon_uid = geteuid();
-
   pid_fd = open_pidfile("create", O_CREAT|O_EXCL|O_WRONLY);
   if (pid_fd < 0)
     pid_fd = check_pidfile();
@@ -3373,7 +3373,6 @@ static int daemonize (void) /* {{{ */
 
   openlog ("rrdcached", LOG_PID, LOG_DAEMON);
   RRDD_LOG(LOG_INFO, "starting up");
-  install_signal_receiver();
 
   cache_tree = g_tree_new_full ((GCompareDataFunc) strcmp, NULL, NULL,
                                 (GDestroyNotify) free_cache_item);
@@ -3383,8 +3382,35 @@ static int daemonize (void) /* {{{ */
     goto error;
   }
 
-  return write_pidfile (pid_fd);
+  if (0 == write_pidfile (pid_fd))
+  {
+    /* Writing the pid file was the last act that might require privileges.
+     * Attempt to change to the desired runtime privilege level. */
+    if (getegid() != daemon_gid)
+    {
+      if (0 != setgid(daemon_gid))
+      {
+        RRDD_LOG (LOG_ERR, "daemonize: failed to setgid(%u)", daemon_gid);
+        goto error;
+      }
+      RRDD_LOG(LOG_INFO, "setgid(%u) succeeded", daemon_gid);
+    }
+    if (geteuid() != daemon_uid)
+    {
+      if (0 != setuid(daemon_uid))
+      {
+        RRDD_LOG (LOG_ERR, "daemonize: failed to setuid(%u)", daemon_uid);
+        goto error;
+      }
+      RRDD_LOG(LOG_INFO, "setuid(%u) succeeded", daemon_uid);
+    }
 
+    /* Delay creation of threads until the final privilege level has
+     * been reached. */
+    install_signal_receiver();
+    return 0;
+  }
+  /*FALLTHRU*/
 error:
   remove_pidfile();
   return -1;
@@ -3431,10 +3457,12 @@ static int read_options (int argc, char **argv) /* {{{ */
 
   socket_permission_clear (&default_socket);
 
+  daemon_uid = geteuid();
+  daemon_gid = getegid();
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "?a:Bb:Ff:ghj:Ll:m:OP:p:Rs:t:w:z:")) != -1)
+  while ((option = getopt(argc, argv, "?a:Bb:Ff:gG:hj:Ll:m:OP:p:Rs:t:U:w:z:")) != -1)
   {
     switch (option)
     {
@@ -3445,6 +3473,66 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'g':
         stay_foreground=1;
         break;
+
+      case 'G':
+#if defined(HAVE_GETGRNAM) && defined(HAVE_GRP_H) && defined(HAVE_SETGID)
+      {
+	gid_t group_gid;
+        char * ep;
+	struct group *grp;
+
+	group_gid = strtoul(optarg, &ep, 10);
+	if (0 == *ep)
+	{
+	  /* we were passed a number */
+	  grp = getgrgid(group_gid);
+	}
+	else
+	{
+	  grp = getgrnam(optarg);
+	}
+        if (NULL == grp)
+        {
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", optarg);
+	  return (5);
+        }
+        daemon_gid = grp->gr_gid;
+        break;
+      }
+#else
+        fprintf(stderr, "read_options: -G not supported.\n");
+        return 5;
+#endif
+
+      case 'U':
+#if defined(HAVE_GETPWNAM) && defined(HAVE_PWD_H) && defined(HAVE_SETUID)
+      {
+	uid_t uid;
+        char * ep;
+	struct passwd *pw;
+
+	uid = strtoul(optarg, &ep, 10);
+	if (0 == *ep)
+	{
+	  /* we were passed a number */
+	  pw = getpwuid(uid);
+	}
+	else
+	{
+	  pw = getpwnam(optarg);
+	}
+        if (NULL == pw)
+        {
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a user, Sorry\n", optarg);
+	  return (5);
+        }
+        daemon_uid = pw->pw_uid;
+        break;
+      }
+#else
+        fprintf(stderr, "read_options: -U not supported.\n");
+        return 5;
+#endif
 
       case 'L':
       case 'l':
@@ -3618,7 +3706,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
-    case 'R':
+      case 'R':
         config_allow_recursive_mkdir = 1;
         break;
 
@@ -3767,6 +3855,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "  -b <dir>      Base directory to change to.\n"
             "  -F            Always flush all updates at shutdown\n"
             "  -f <seconds>  Interval in which to flush dead data.\n"
+            "  -G <group>    Unprivileged group used when running.\n"
             "  -g            Do not fork and run in the foreground.\n"
             "  -j <dir>      Directory in which to create the journal files.\n"
             "  -L            Open sockets on all INET interfaces using default port.\n"
@@ -3784,6 +3873,7 @@ static int read_options (int argc, char **argv) /* {{{ */
             "                (the socket will also have read/write permissions "
                             "for that group)\n"
             "  -t <threads>  Number of write threads.\n"
+            "  -U <user>     Unprivileged user account used when running.\n"
             "  -w <seconds>  Interval in which to write data.\n"
             "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
             "\n"
