@@ -34,6 +34,14 @@ SOCKFILE=/var/run/rrdcached.sock
 # Optional override access mode of local control socket.
 #SOCKMODE=0660
 
+# Optional unprivileged group to run under when daemon.  If unset
+# retains invocation group privileges.
+#DAEMON_GROUP=_rrdcached
+
+# Optional unprivileged user to run under when daemon.  If unset
+# retains invocation user privileges.
+#DAEMON_USER=_rrdcached
+
 # Network socket address requests.  Use in conjunction with SOCKFILE to
 # also listen on INET domain sockets.  The option is a lower-case ell
 # ASCII 108 = 0x6c, and should be repeated for each address.  The

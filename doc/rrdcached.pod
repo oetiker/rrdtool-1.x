@@ -7,20 +7,25 @@ rrdcached - Data caching daemon for rrdtool
 =head1 SYNOPSIS
 
 B<rrdcached>
-[B<-P>E<nbsp>I<permissions>]
+[B<-a>E<nbsp>I<alloc_size>]
+[B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
+[B<-F>]
+[B<-f>E<nbsp>I<timeout>]
+[B<-G>E<nbsp>I<group>]]
+[B<-g>]
+[B<-j>E<nbsp>I<journal_dir>]
+[B<-L>]
 [B<-l>E<nbsp>I<address>]
+[B<-m>E<nbsp>I<mode>]
+[B<-O>]
+[B<-P>E<nbsp>I<permissions>]
+[B<-p>E<nbsp>I<pid_file>]
+[B<-R>]
 [B<-s>E<nbsp>I<group>]
+[B<-t>E<nbsp>I<write_threads>]
+[B<-U>E<nbsp>I<user>]]
 [B<-w>E<nbsp>I<timeout>]
 [B<-z>E<nbsp>I<delay>]
-[B<-f>E<nbsp>I<timeout>]
-[B<-p>E<nbsp>I<pid_file>]
-[B<-t>E<nbsp>I<write_threads>]
-[B<-j>E<nbsp>I<journal_dir>]
-[-F]
-[-g]
-[B<-b>E<nbsp>I<base_dir>E<nbsp>[B<-B>]]
-[B<-a>E<nbsp>I<alloc_size>]
-[-O]
 
 =head1 DESCRIPTION
 
@@ -273,8 +278,22 @@ size.
 
 =item B<-O> 
 
-Preven the CREATE command from overwriting existing files, even when it is
+Prevent the CREATE command from overwriting existing files, even when it is
 instructed to do so.  This is for added security.
+
+=item B<-G> -I<group>
+    
+When running as daemon and invoked from a privileged account, reset
+group privileges to those of I<group>.  The group may be specified as
+a name or as a group ID.  The daemon will exit with a diagnostic if
+it cannot successfully transition to the specified group.
+
+=item B<-U> -I<user>
+    
+When running as daemon and invoked from a privileged account, reset
+user privileges to those of I<user>.  The user may be specified as
+a name or as a user ID.  The daemon will exit with a diagnostic if
+it cannot successfully transition to the specified user.
 
 =back
 
