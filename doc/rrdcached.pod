@@ -88,7 +88,7 @@ empty string parameter.
 
 Set the group permissions of a UNIX domain socket. The option accepts either
 a numeric group id or group name. That group will then have both read and write
-permissions (the socket will have file permissions 0750) for the socket and,
+permissions (the socket will have file permissions 0760) for the socket and,
 therefore, is able to send commands to the daemon. This
 may be useful in cases where you cannot easily run all RRD processes with the same
 user privileges (e.g. graph generating CGI scripts that typically run in the
@@ -123,7 +123,7 @@ use the system default.
 
 =item B<-P> I<command>[,I<command>[,...]]
 
-Specifies the commands accepted via a network socket. This allows
+Specifies the commands accepted via both a network and a UNIX socket. This allows
 administrators of I<RRDCacheD> to control the actions accepted from various
 sources.
 
