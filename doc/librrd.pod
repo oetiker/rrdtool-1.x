@@ -57,6 +57,20 @@ when it is called for the first time, nor for the last time. If you require
 this for initialization and cleanup you should do those tasks before and
 after calling B<rrd_dump_cr_r> respectively.
 
+=item B<rrd_fetch_cb_register(rrd_fetch_cb_t c)>
+
+If your data does not reside in rrd files, but you would like to draw charts using the
+rrd_graph functionality, you can supply your own rrd_fetch function and register it using
+the B<rrd_fetch_cb_register> function.
+
+The argument signature and api must be the same of the callback function must be aequivalent to the on of B<rrd_fetch_fn> in 
+F<rrd_fetch.c>.
+
+To activate the callback function you can use the pseudo filename F<cb//>I<free_form_text>.
+
+Note that rrdtool graph will not ask the same rrd for data twice. It determines this by building a key out of the
+values supplied to the fetch function. If the values are the same, the previous answer will be used.
+
 =back
 
 =head1 UTILITY FUNCTIONS

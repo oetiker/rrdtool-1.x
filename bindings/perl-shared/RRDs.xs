@@ -113,6 +113,183 @@ extern "C" {
 */
 
 
+static SV * rrd_fetch_cb_svptr = (SV*)NULL;
+
+static int rrd_fetch_cb_wrapper(
+    const char     *filename,  /* name of the rrd */
+    enum cf_en     cf_idx, /* consolidation function */
+    time_t         *start,
+    time_t         *end,       /* which time frame do you want ?
+                                * will be changed to represent reality */
+    unsigned long  *step,      /* which stepsize do you want? 
+                                * will be changed to represent reality */
+    unsigned long  *ds_cnt,    /* number of data sources in file */
+    char           ***ds_namv, /* names of data_sources */
+    rrd_value_t    **data)     /* two dimensional array containing the data */
+  {
+    dSP;
+    HV *callHV;
+    SV *retSV;
+    HV *retHV;
+    HE *retHE;
+    AV *retAV;
+    char *cfStr;
+    unsigned long i,ii; 
+    unsigned long rowCount = 0;
+    if (!rrd_fetch_cb_svptr){
+        rrd_set_error("Use RRDs::register_fetch_cb to register a fetch callback.");
+        return -1;
+    }
+
+    ENTER;
+    SAVETMPS;
+    /* prepare the arguments */
+    callHV = newHV();
+    hv_store_ent(callHV, sv_2mortal(newSVpv("filename",0)),newSVpv(filename,0),0);
+    switch(cf_idx){
+        case CF_AVERAGE:
+            cfStr = "AVERAGE";
+            break;
+        case CF_MINIMUM:
+            cfStr = "MIN";
+            break;
+        case CF_MAXIMUM:
+            cfStr = "MAX";
+            break;
+        case CF_LAST:
+            cfStr = "LAST";
+    }
+    hv_store_ent(callHV, sv_2mortal(newSVpv("cd",0)),newSVpv(cfStr,0),0);
+    hv_store_ent(callHV, sv_2mortal(newSVpv("start",0)),newSVuv(*start),0);
+    hv_store_ent(callHV, sv_2mortal(newSVpv("end",0)),newSVuv(*end),0);
+    hv_store_ent(callHV, sv_2mortal(newSVpv("step",0)),newSVuv(*step),0);
+    PUSHMARK(SP);
+    XPUSHs(newRV_noinc((SV *)callHV));
+    PUTBACK;
+    /* Call the Perl sub to process the callback */
+    call_sv(rrd_fetch_cb_svptr , G_EVAL|G_SCALAR);
+    SPAGAIN;
+    /* Check the eval first */
+    if (SvTRUE(ERRSV)) {
+        rrd_set_error("perl callback failed: %s",SvPV_nolen(ERRSV));
+        POPs; /* there is undef on top of the stack when there is an error
+                 and call_sv was initiated with G_EVAL|G_SCALER */
+        goto error_out;
+    }
+    retSV = POPs;
+    if (!SvROK(retSV)){
+        rrd_set_error("Expected the perl callback function to return a reference");
+        goto error_out;
+    }
+    retHV = SvRV(retSV);
+    if (SvTYPE(retHV) != SVt_PVHV) {
+        rrd_set_error("Expected the perl callback function to return a hash reference");
+        goto error_out;
+    }
+
+#define loadRet(hashKey) \
+    if (( retHE = hv_fetch_ent(retHV,sv_2mortal(newSVpv(hashKey,0)),0,0)) == NULL){ \
+        rrd_set_error("Expected the perl callback function to return a '" hashKey "' value"); \
+        goto error_out; }
+
+    loadRet("step");
+    *step = SvIV(HeVAL(retHE));
+    if (*step <= 0){
+        rrd_set_error("Expected the perl callback function to return a valid step value");
+        goto error_out;        
+    }
+
+    loadRet("start");    
+    *start = SvIV(HeVAL(retHE));
+    if (*start == 0){
+        rrd_set_error("Expected the perl callback function to return a valid start value");
+        goto error_out;        
+    }
+
+    /* figure out how long things are so that we can allocate the memory */
+    loadRet("data");
+    retSV = HeVAL(retHE);
+    if (!SvROK(retSV)){
+        rrd_set_error("Expected the perl callback function to return a valid data element");
+        goto error_out;        
+    }
+    retHV = SvRV(retSV);
+    if (SvTYPE(retHV) != SVt_PVHV){
+        rrd_set_error("Expected the perl callback function to return data element pointing to a hash");
+        goto error_out;
+    }
+
+    *ds_cnt = hv_iterinit(retHV);
+    
+    if (((*ds_namv) = (char **) calloc( *ds_cnt , sizeof(char *))) == NULL) {
+        rrd_set_error("Failed to allocate memory for ds_namev when returning from perl callback");
+        goto error_out;    
+    }
+
+    for (i=0;i<*ds_cnt;i++){
+        char *retKey;
+        I32 retKeyLen;
+        HE* hash_entry;
+        hash_entry = hv_iternext(retHV);
+        retKey = hv_iterkey(hash_entry,&retKeyLen);
+        if ((((*ds_namv)[i]) = (char*)malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
+            rrd_set_error("malloc fetch ds_namv entry");
+            goto error_out_free_ds_namv;
+        }
+        strncpy((*ds_namv)[i], retKey, DS_NAM_SIZE - 1);
+        (*ds_namv)[i][DS_NAM_SIZE - 1] = '\0';
+        retSV = hv_iterval(retHV,hash_entry);
+        if (!SvROK(retSV)){
+            rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
+            goto error_out_free_ds_namv;        
+        }
+        retAV = SvRV(retSV);
+        if (SvTYPE(retAV) != SVt_PVAV){
+            rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
+            goto error_out_free_ds_namv;        
+        }
+        if (av_len(retAV) > rowCount)
+            rowCount = av_len(retAV);
+    }
+    rowCount++; /* av_len returns the last index */
+    if (((*data) = (rrd_value_t*)malloc(*ds_cnt * rowCount * sizeof(rrd_value_t))) == NULL) {
+        rrd_set_error("malloc fetch data area");
+        goto error_out_free_ds_namv;
+    }
+
+    for (i=0;i<*ds_cnt;i++){
+        retAV = SvRV(HeVAL(hv_fetch_ent(retHV,sv_2mortal(newSVpv((*ds_namv)[i],0)),0,0)));
+        for (ii=0;ii<rowCount;ii++){
+            SV** valP = av_fetch(retAV,ii,0);
+            SV* val = valP ? *valP : &PL_sv_undef;
+            (*data)[i + ii * (*ds_cnt)] = SvNIOK(val) ? SvNVx(val) : DNAN;
+        }
+    }
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+    return 1;
+
+    error_out_free_ds_namv:
+
+    for (i = 0; i < *ds_cnt; ++i){
+        if ((*ds_namv)[i]){
+            free((*ds_namv)[i]);
+        }
+    }
+
+    free(*ds_namv);
+
+    error_out:
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+    return -1;
+
+    /* prepare return data */
+}
+
+
 MODULE = RRDs	PACKAGE = RRDs	PREFIX = rrd_
 
 BOOT:
@@ -287,6 +464,16 @@ rrd_fetch(...)
 		PUSHs(sv_2mortal(newSViv(step)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
+
+SV *
+rrd_fetch_cb_register(cb)
+    SV * cb
+    CODE:
+        if (rrd_fetch_cb_svptr == (SV*)NULL )
+            rrd_fetch_cb_svptr = newSVsv(cb);
+        else
+            SvSetSV(rrd_fetch_cb_svptr,cb);
+        rrd_fetch_cb_register(rrd_fetch_cb_wrapper);
 
 SV *
 rrd_times(start, end)
