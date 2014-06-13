@@ -30,8 +30,10 @@ RRDCACHED_OPTIONS="\
   ${WRITE_THREADS:+-t ${WRITE_THREADS}} \
   ${BASE_PATH:+-b ${BASE_PATH}} \
   ${JOURNAL_PATH:+-j ${JOURNAL_PATH}} \
+  ${DAEMON_GROUP:+-G ${DAEMON_GROUP}} \
+  ${DAEMON_USER:+-U ${DAEMON_USER}} \
   -p ${PIDFILE} \
-  ${SOCKFILE:+-l unix:${SOCKFILE} ${SOCKGROUP:+-s ${SOCKGROUP}} ${SOCKMODE:+-m ${SOCKMODE}}} \
+  ${SOCKFILE:+${SOCKGROUP:+-s ${SOCKGROUP}} ${SOCKMODE:+-m ${SOCKMODE}} -l unix:${SOCKFILE}} \
     "
 
 . /lib/lsb/init-functions
