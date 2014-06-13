@@ -292,6 +292,9 @@ int rrd_fetch_fn(
 	return rrd_fetch_fn_libdbi(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data);
     }
 #endif
+    if (strncmp("cb//",filename,4)==0) {
+	return rrd_fetch_fn_cb(filename,cf_idx,start,end,step,ds_cnt,ds_namv,data);
+    }
 
     rrd_init(&rrd);
     rrd_file = rrd_open(filename, &rrd, RRD_READONLY);

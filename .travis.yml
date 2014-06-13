@@ -20,10 +20,11 @@ script:
   - make check
   - make check TESTS_STYLE=valgrind
   - sudo make install
+  - cd bindings/perl-shared && make test
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
-after_success:
-  - ( cd src ; find -name '*.c' | xargs -n 1 gcov -a .libs ; find -name '*.c' | xargs -n 1 )
-  - coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
+# after_success:
+#  - ( cd src ; find -name '*.c' | xargs -n 1 gcov -a .libs ; find -name '*.c' | xargs -n 1 )
+#  - coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
 

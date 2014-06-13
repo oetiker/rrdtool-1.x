@@ -44,6 +44,7 @@ RRD_C_FILES =		\
 	rrd_dump.c	\
 	rrd_flushcached.c \
 	rrd_fetch.c	\
+	rrd_fetch_cb.c  \
 	rrd_resize.c \
 	rrd_tune.c	\
 	rrd_modify.c

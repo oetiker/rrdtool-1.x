@@ -965,7 +965,8 @@ int data_fetch(
                           im->gdes[i].ds_nam, im->gdes[i].rrd);
             return -1;
         }
-
+        // remember that we already got this one
+        g_hash_table_insert(im->rrd_map,gdes_fetch_key(im->gdes[i]),GINT_TO_POINTER(i));
     }
     return 0;
 }

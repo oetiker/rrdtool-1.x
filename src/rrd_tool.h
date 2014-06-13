@@ -100,13 +100,37 @@ extern    "C" {
 
 
 #ifdef HAVE_LIBDBI
-int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
+    int rrd_fetch_fn_libdbi(const char *filename, enum cf_en cf_idx,
  			time_t *start,time_t *end,
  			unsigned long *step,
  			unsigned long *ds_cnt,
  			char        ***ds_namv,
  			rrd_value_t **data);
 #endif
+
+typedef int (*rrd_fetch_cb_t)(
+    const char     *filename,  /* name of the rrd */
+    enum cf_en     cf_idx, /* consolidation function */
+    time_t         *start,
+    time_t         *end,       /* which time frame do you want ?
+                                * will be changed to represent reality */
+    unsigned long  *step,      /* which stepsize do you want? 
+                                * will be changed to represent reality */
+    unsigned long  *ds_cnt,    /* number of data sources in file */
+    char           ***ds_namv, /* names of data_sources */
+    rrd_value_t    **data      /* two dimensional array containing the data */
+);
+                                                                                                
+
+    int rrd_fetch_fn_cb(const char *filename, enum cf_en cf_idx,
+        time_t *start,time_t *end,
+        unsigned long *step,
+        unsigned long *ds_cnt,
+        char        ***ds_namv,
+        rrd_value_t **data);
+
+    int rrd_fetch_cb_register(rrd_fetch_cb_t cb);
+
 
 #define RRD_READONLY    (1<<0)
 #define RRD_READWRITE   (1<<1)
