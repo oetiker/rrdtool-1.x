@@ -3,7 +3,7 @@ use Data::Dumper;
 
 use FindBin;
 
-BEGIN { $| = 1; print "1..1\n"; }
+BEGIN { $| = 1; print "1..2\n"; }
 END {
   print "not ok 1\n" unless $loaded;
   unlink "demo.rrd";
@@ -54,9 +54,12 @@ my $result = RRDs::graphv "callback.png",
   "DEF:c=cb//:c:AVERAGE",
   "LINE:a#00b6e4:a",
   "LINE:b#10b634:b",
-  "LINE:c#503d14:c";
-
+  "LINE:c#503d14:c",
+  "VDEF:av=a,AVERAGE",
+  "PRINT:av:%lf";
+  
 if (my $ERROR = RRDs::error) {
    die "RRD ERROR: $ERROR\n";
 }
 
+ok("callback",$result->{'print[0]'} eq '0.719267');
