@@ -29,7 +29,6 @@ ok("loading",1);
 
 RRDs::fetch_cb_register(sub{
     my $request = shift;
-    print STDERR Dumper $request;
     my $items = ($request->{end}-$request->{start})/$request->{step};
     return {
       step=>200,
@@ -61,4 +60,3 @@ if (my $ERROR = RRDs::error) {
    die "RRD ERROR: $ERROR\n";
 }
 
-print Dumper $result;
