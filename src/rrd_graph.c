@@ -4905,8 +4905,8 @@ void rrd_graph_options(
             /* not supported curently */
             break;
         case 'W':
-            strncpy(im->watermark, optarg, 100);
-            im->watermark[99] = '\0';
+            strncpy(im->watermark, optarg, sizeof(im->watermark) - 10);
+            im->watermark[sizeof(im->watermark) - 11] = '\0';
             break;
         case 'd':
         {
