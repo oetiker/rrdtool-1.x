@@ -28,7 +28,12 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-from distutils.core import setup, Extension
+try:
+    # Attempt to build using Distribute, which also supports bdist_wheel
+    from setuptools import setup
+    from setuptools.extension import Extension
+except ImportError:
+    from distutils.core import setup, Extension
 import sys, os
 
 TOP_SRCDIR = os.environ.get('ABS_TOP_SRCDIR', '../../src')
