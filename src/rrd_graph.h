@@ -259,21 +259,21 @@ typedef struct image_desc_t {
     long      xsize, ysize; /* graph area size in pixels */
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
-    char      ylegend[210]; /* legend along the yaxis */
-    char      title[210];   /* title for graph */
-    char      watermark[110];   /* watermark for graph */
+    char      *ylegend; /* legend along the yaxis */
+    char      *title;   /* title for graph */
+    char      *watermark;   /* watermark for graph */
     int       draw_x_grid;  /* no x-grid at all */
     int       draw_y_grid;  /* no y-grid at all */
     unsigned int draw_3d_border; /* size of border in pixels, 0 for off */
     unsigned int dynamic_labels; /* pick the label shape according to the line drawn */
     double    grid_dash_on, grid_dash_off;
     xlab_t    xlab_user;    /* user defined labeling for xaxis */
-    char      xlab_form[210];   /* format for the label on the xaxis */
+    char      *xlab_form;   /* format for the label on the xaxis */
     double    second_axis_scale; /* relative to the first axis (0 to disable) */
     double    second_axis_shift; /* how much is it shifted vs the first axis */
-    char      second_axis_legend[210]; /* label to put on the seond axis */
-    char      second_axis_format[210]; /* format for the numbers on the scond axis */    
-    char      primary_axis_format[210]; /* format for the numbers on the primary axis */
+    char      *second_axis_legend; /* label to put on the seond axis */
+    char      *second_axis_format; /* format for the numbers on the scond axis */    
+    char      *primary_axis_format; /* format for the numbers on the primary axis */
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
     double    tabwidth; /* tabwdith */
