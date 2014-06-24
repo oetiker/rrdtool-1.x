@@ -138,7 +138,9 @@ enum dst_en { DST_COUNTER = 0,  /* data source types available */
     DST_ABSOLUTE,
     DST_GAUGE,
     DST_DERIVE,
-    DST_CDEF
+    DST_CDEF,
+    DST_DCOUNTER,
+    DST_DDERIVE
 };
 
 enum ds_param_en { DS_mrhb_cnt = 0, /* minimum required heartbeat. A

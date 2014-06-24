@@ -1348,6 +1348,25 @@ static int get_time_from_reading(
     return 0;
 }
 
+static int
+rrd_get_double(const char *cp, double *rval)
+{
+    char     *endptr;
+
+    errno = 0;
+    *rval = strtod(cp, &endptr);
+    if (errno) {
+        rrd_set_error("converting '%s' to float: %s", cp, rrd_strerror(errno));
+        return -1;
+    }
+    if (endptr[0] != '\0') {
+        rrd_set_error("conversion of '%s' to float not complete: tail '%s'",
+          cp, endptr);
+        return -1;
+    }
+    return 0;
+}
+
 /*
  * Update pdp_new by interpreting the updvals according to the DS type
  * (COUNTER, GAUGE, etc.).
@@ -1362,8 +1381,7 @@ static int update_pdp_prep(
 {
     unsigned long ds_idx;
     int       ii;
-    char     *endptr;   /* used in the conversion */
-    double    rate;
+    double    rate, newval, oldval;
     char     *old_locale;
     enum dst_en dst_idx;
 
@@ -1429,41 +1447,57 @@ static int update_pdp_prep(
                 break;
             case DST_ABSOLUTE:
 		old_locale = setlocale(LC_NUMERIC, "C");
-                errno = 0;
-                pdp_new[ds_idx] = strtod(updvals[ds_idx + 1], &endptr);
-                if (errno > 0) {
-                    rrd_set_error("converting '%s' to float: %s",
-                                  updvals[ds_idx + 1], rrd_strerror(errno));
-                    return -1;
-                };
-                setlocale(LC_NUMERIC, old_locale);
-                if (endptr[0] != '\0') {
-                    rrd_set_error
-                        ("conversion of '%s' to float not complete: tail '%s'",
-                         updvals[ds_idx + 1], endptr);
+                if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
+                    setlocale(LC_NUMERIC, old_locale);
                     return -1;
                 }
+                setlocale(LC_NUMERIC, old_locale);
+                pdp_new[ds_idx] = newval;
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
 		old_locale = setlocale(LC_NUMERIC, "C");
-                errno = 0;
-                pdp_new[ds_idx] =
-                    strtod(updvals[ds_idx + 1], &endptr) * interval;
-                if (errno) {
-                    rrd_set_error("converting '%s' to float: %s",
-                                  updvals[ds_idx + 1], rrd_strerror(errno));
-                    return -1;
-                };
-                setlocale(LC_NUMERIC, old_locale);
-                if (endptr[0] != '\0') {
-                    rrd_set_error
-                        ("conversion of '%s' to float not complete: tail '%s'",
-                         updvals[ds_idx + 1], endptr);
+                if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
+                    setlocale(LC_NUMERIC, old_locale);
                     return -1;
                 }
-                rate = pdp_new[ds_idx] / interval;
+                setlocale(LC_NUMERIC, old_locale);
+                pdp_new[ds_idx] = newval * interval;
+                rate = newval;
                 break;
+            case DST_DCOUNTER:
+            case DST_DDERIVE:
+                if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
+                    old_locale = setlocale(LC_NUMERIC, NULL);
+                    setlocale(LC_NUMERIC, "C");
+                    if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
+                        setlocale(LC_NUMERIC, old_locale);
+                        return -1;
+                    }
+                    if (rrd_get_double(rrd->pdp_prep[ds_idx].last_ds, &oldval) != 0) {
+                        setlocale(LC_NUMERIC, old_locale);
+                        return -1;
+                    }
+                    setlocale(LC_NUMERIC, old_locale);
+                    if (dst_idx == DST_DCOUNTER) {
+                        /*
+                         * DST_DCOUNTER is always signed, so it can count either up,
+                         * or down, but not both at the same time. Changing direction
+                         * considered a "reset".
+                         */
+                        if ((newval > 0 && oldval > newval) ||
+                          (newval < 0 && newval > oldval)) {
+                            /* Counter reset detected */
+                            pdp_new[ds_idx] = DNAN;
+                            break;
+                        }
+                    }
+                    pdp_new[ds_idx] = newval - oldval;
+                    rate = pdp_new[ds_idx] / interval;
+                } else {
+                    pdp_new[ds_idx] = DNAN;
+                 }
+                 break;
             default:
                 rrd_set_error("rrd contains unknown DS type : '%s'",
                               rrd->ds_def[ds_idx].dst);

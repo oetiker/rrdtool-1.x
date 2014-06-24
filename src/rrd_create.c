@@ -168,6 +168,8 @@ int parseDS(const char *def,
     case DST_ABSOLUTE:
     case DST_GAUGE:
     case DST_DERIVE:
+    case DST_DCOUNTER:
+    case DST_DDERIVE:
 	parseGENERIC_DS(def + offset, ds_def);
 	break;
     case DST_CDEF:
