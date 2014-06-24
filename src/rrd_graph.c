@@ -391,6 +391,20 @@ int im_free(
         g_object_unref(im->layout);
     }
 
+	if (ylegend)
+		free(ylegend);
+	if (title)
+		free(title);
+	if (watermark)
+		free(watermark);
+	if (xlab_form)
+		free(xlab_form);
+	if (second_axis_legend)
+		free(second_axis_legend);
+	if (second_axis_format)
+		free(second_axis_format);
+	if (primary_axis_format)
+		free(primary_axis_format);
 
     return 0;
 }
@@ -2094,7 +2108,7 @@ int draw_horizontal_grid(
                 || (nlabels == 1
                     && (YN < im->yorigin - im->ysize || YN > im->yorigin))) {
                 if (im->symbol == ' ') {
-                    if (im->primary_axis_format[0] == '\0'){
+                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
                         if (im->extra_flags & ALTYGRID) {
                             snprintf(graph_label, sizeof graph_label,
                                     im->ygrid_scale.labfmt,
@@ -2114,7 +2128,7 @@ int draw_horizontal_grid(
                     }
                 } else {
                     char      sisym = (i == 0 ? ' ' : im->symbol);                   
-                    if (im->primary_axis_format[0] == '\0'){
+                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
                         if (im->extra_flags & ALTYGRID) {
                             snprintf(graph_label,sizeof graph_label,
                                     im->ygrid_scale.labfmt,
@@ -2137,7 +2151,7 @@ int draw_horizontal_grid(
                 if (im->second_axis_scale != 0){
                         char graph_label_right[100];
                         double sval = im->ygrid_scale.gridstep*(double)i*im->second_axis_scale+im->second_axis_shift;
-                        if (im->second_axis_format[0] == '\0'){
+                        if (im->second_axis_format[0] == NULL || im->second_axis_format[0] == '\0') {
                             if (!second_axis_magfact){
                                 double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
                                 auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
@@ -2344,7 +2358,7 @@ int horizontal_log_grid(
         if (im->second_axis_scale != 0){
                 char graph_label_right[100];
                 double sval = value*im->second_axis_scale+im->second_axis_shift;
-                if (im->second_axis_format[0] == '\0'){
+                if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0') {
                         if (im->extra_flags & FORCE_UNITS_SI) {
                                 double mfac = 1;
                                 char   *symb = "";
@@ -2746,7 +2760,7 @@ void grid_paint(
     }
 
     /* yaxis unit description */
-    if (im->ylegend[0] != '\0'){
+    if (im->ylegend && im->ylegend[0] != '\0') {
         gfx_text(im,
                  im->xOriginLegendY+10,
                  im->yOriginLegendY,
@@ -2758,7 +2772,7 @@ void grid_paint(
                  RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER, im->ylegend);
 
     }
-    if (im->second_axis_legend[0] != '\0'){
+    if (im->second_axis_legend && im->second_axis_legend[0] != '\0') {
             gfx_text( im,
                   im->xOriginLegendY2+10,
                   im->yOriginLegendY2,
@@ -2777,7 +2791,7 @@ void grid_paint(
              im->
              text_prop[TEXT_PROP_TITLE].
              font_desc,
-             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title);
+             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title?im->title:"");
     /* rrdtool 'logo' */
     if (!(im->extra_flags & NO_RRDTOOL_TAG)){
         water_color = im->graph_col[GRC_FONT];
@@ -2791,7 +2805,7 @@ void grid_paint(
                  -90, GFX_H_LEFT, GFX_V_TOP, "RRDTOOL / TOBI OETIKER");
     }
     /* graph watermark */
-    if (im->watermark[0] != '\0') {
+    if (im->watermark && im->watermark[0] != '\0') {
         water_color = im->graph_col[GRC_FONT];
         water_color.alpha = 0.3;
         gfx_text(im,
@@ -3038,24 +3052,24 @@ int graph_size_location(
         return 0;
     }
 
-    if(im->watermark[0] != '\0') {
+    if (im->watermark && im->watermark[0] != '\0') {
         Ywatermark = im->text_prop[TEXT_PROP_WATERMARK].size * 2;
     }
 
     // calculate the width of the left vertical legend
-    if (im->ylegend[0] != '\0') {
+    if (im->ylegend && im->ylegend[0] != '\0') {
         Xvertical = im->text_prop[TEXT_PROP_UNIT].size * 2;
     }
 
     // calculate the width of the right vertical legend
-    if (im->second_axis_legend[0] != '\0') {
+    if (im->second_axis_legend && im->second_axis_legend[0] != '\0') {
         Xvertical2 = im->text_prop[TEXT_PROP_UNIT].size * 2;
     }
     else{
         Xvertical2 = Xspacing;
     }
 
-    if (im->title[0] != '\0') {
+    if (im->title && im->title[0] != '\0') {
         /* The title is placed "inbetween" two text lines so it
          ** automatically has some vertical spacing.  The horizontal
          ** spacing is added here, on each side.
@@ -3162,7 +3176,7 @@ int graph_size_location(
             Ymain -= 0.5*Yspacing;
         }
 
-        if (im->watermark[0] != '\0') {
+        if (im->watermark && im->watermark[0] != '\0') {
             Ymain -= Ywatermark;
         }
         /* limit the remaining height to 0 */
@@ -3222,7 +3236,7 @@ int graph_size_location(
             im->yimg += 0.5*Yspacing;
         }
 
-        if (im->watermark[0] != '\0') {
+        if (im->watermark && im->watermark[0] != '\0') {
             im->yimg += Ywatermark;
         }
     }
@@ -4330,11 +4344,12 @@ void rrd_graph_init(
     im->step = 0;
     im->symbol = ' ';
     im->tabwidth = 40.0;
-    im->title[0] = '\0';
+    im->title = NULL;
     im->unitsexponent = 9999;
     im->unitslength = 6;
     im->viewfactor = 1.0;
-    im->watermark[0] = '\0';
+    im->watermark = NULL;
+    im->xlab_form = NULL;
     im->with_markup = 0;
     im->ximg = 0;
     im->xlab_user.minsec = -1;
@@ -4346,12 +4361,12 @@ void rrd_graph_init(
     im->xsize = 400;
     im->ygridstep = DNAN;
     im->yimg = 0;
-    im->ylegend[0] = '\0';
+    im->ylegend = NULL;
     im->second_axis_scale = 0; /* 0 disables it */
     im->second_axis_shift = 0; /* no shift by default */
-    im->second_axis_legend[0] = '\0';
-    im->second_axis_format[0] = '\0';
-    im->primary_axis_format[0] = '\0';
+    im->second_axis_legend = NULL;
+    im->second_axis_format = NULL;
+    im->primary_axis_format = NULL;
     im->yorigin = 0;
     im->yOriginLegend = 0;
     im->yOriginLegendY = 0;
@@ -4608,9 +4623,11 @@ void rrd_graph_options(
                        scan_ltm,
                        &im->xlab_user.labst,
                        &im->xlab_user.precis, &stroff) == 7 && stroff != 0) {
-                strncpy(im->xlab_form, optarg + stroff,
-                        sizeof(im->xlab_form) - 1);
-                im->xlab_form[sizeof(im->xlab_form) - 1] = '\0';
+				im->xlab_form=strdup(optarg + stroff);
+				if (!im->xlab_form) {
+                    rrd_set_error("cannot allocate memory for xlab_form");
+                    return;
+				}
                 if ((int)
                     (im->xlab_user.gridtm = tmt_conv(scan_gtm)) == -1) {
                     rrd_set_error("unknown keyword %s", scan_gtm);
@@ -4626,7 +4643,7 @@ void rrd_graph_options(
                     return;
                 }
                 im->xlab_user.minsec = 1;
-                im->xlab_user.stst = im->xlab_form;
+                im->xlab_user.stst = im->xlab_form ? im->xlab_form : "";
             } else {
                 rrd_set_error("invalid x-grid format");
                 return;
@@ -4686,28 +4703,40 @@ void rrd_graph_options(
             }
             break;
         case 1003:
-            strncpy(im->second_axis_legend,optarg,150);
-            im->second_axis_legend[150]='\0';
+			im->second_axis_legend=strdup(optarg);
+			if (!im->second_axis_legend) {
+                rrd_set_error("cannot allocate memory for second_axis_legend");
+                return;
+			}
             break;
         case 1004:
             if (bad_format(optarg)){
                 rrd_set_error("use either %le or %lf formats");
                 return;
             }
-            strncpy(im->second_axis_format,optarg,150);
-            im->second_axis_format[150]='\0';
+            im->second_axis_format=strdup(optarg);
+			if (!im->second_axis_format) {
+				rrd_set_error("cannot allocate memory for second_axis_format");
+				return;
+			}
             break;
         case 1012:
             if (bad_format(optarg)){
                 rrd_set_error("use either %le or %lf formats");
                 return;
             }
-            strncpy(im->primary_axis_format,optarg,150);
-            im->primary_axis_format[150]='\0';
+            im->primary_axis_format=strdup(optarg);
+			if (!im->primary_axis_format) {
+				rrd_set_error("cannot allocate memory for primary_axis_format");
+				return;
+			}
             break;
         case 'v':
-            strncpy(im->ylegend, optarg, 150);
-            im->ylegend[150] = '\0';
+			im->ylegend=strdup(optarg);
+			if (!im->ylegend) {
+                rrd_set_error("cannot allocate memory for ylegend");
+                return;
+			}
             break;
         case 'u':
             im->maxval = atof(optarg);
@@ -4867,8 +4896,11 @@ void rrd_graph_options(
             }
             break;
         case 't':
-            strncpy(im->title, optarg, 150);
-            im->title[150] = '\0';
+			im->title=strdup(optarg);
+			if (!im->title) {
+                rrd_set_error("cannot allocate memory for title");
+                return;
+			}
             break;
         case 'R':
             if (strcmp(optarg, "normal") == 0) {
@@ -4905,8 +4937,11 @@ void rrd_graph_options(
             /* not supported curently */
             break;
         case 'W':
-            strncpy(im->watermark, optarg, 100);
-            im->watermark[99] = '\0';
+			im->watermark=strdup(optarg);
+			if (!im->watermark) {
+                rrd_set_error("cannot allocate memory for watermark");
+                return;
+			}
             break;
         case 'd':
         {
