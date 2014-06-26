@@ -267,6 +267,8 @@ lua_rrd_last (lua_State * L)
   return 1;
 }
 
+#ifdef HAVE_RRD_GRAPH
+
 static int
 lua_rrd_graph (lua_State * L)
 {
@@ -292,6 +294,8 @@ lua_rrd_graph (lua_State * L)
   return 3;
 }
 
+#endif
+
 static int
 lua_rrd_flushcached(lua_State *L)
 {
@@ -305,11 +309,15 @@ lua_rrd_info (lua_State * L)
   return lua_rrd_infocall(L, "info", rrd_info);
 }
 
+#ifdef HAVE_RRD_GRAPH
+
 static int
 lua_rrd_graphv (lua_State * L)
 {
   return lua_rrd_infocall(L, "graphv", rrd_graph_v);
 }
+
+#endif
 
 static int
 lua_rrd_updatev (lua_State * L)
@@ -347,7 +355,9 @@ static const struct luaL_reg rrd[] = {
   {"dump", lua_rrd_dump},
   {"fetch", lua_rrd_fetch},
   {"first", lua_rrd_first},
+#ifdef HAVE_RRD_GRAPH
   {"graph", lua_rrd_graph},
+#endif
   {"last", lua_rrd_last},
   {"resize", lua_rrd_resize},
   {"restore", lua_rrd_restore},

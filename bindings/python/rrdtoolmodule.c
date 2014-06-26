@@ -261,6 +261,8 @@ static PyObject *PyRRD_fetch(
     return r;
 }
 
+#ifdef HAVE_RRD_GRAPH
+
 static char PyRRD_graph__doc__[] =
     "graph(args..): Create a graph based on data from one or several RRD\n"
     "    graph filename [-s|--start seconds] "
@@ -327,6 +329,8 @@ static PyObject *PyRRD_graph(
     destroy_args(&argv);
     return r;
 }
+
+#endif /* HAVE_RRD_GRAPH */
 
 static char PyRRD_tune__doc__[] =
     "tune(args...): Modify some basic properties of a Round Robin Database\n"
@@ -503,6 +507,8 @@ static PyObject *PyRRD_info(
     return r;
 }
 
+#ifdef HAVE_RRD_GRAPH
+
 static char PyRRD_graphv__doc__[] =
     "graphv is called in the same manner as graph";
 
@@ -530,6 +536,8 @@ static PyObject *PyRRD_graphv(
     destroy_args(&argv);
     return r;
 }
+
+#endif /* HAVE_RRD_GRAPH */
 
 static char PyRRD_updatev__doc__[] =
     "updatev is called in the same manner as update";
