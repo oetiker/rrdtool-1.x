@@ -207,6 +207,12 @@ AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
 
+dnl figure out 'stuff' about 
+HW_FUNC_VSNPRINTF
+HW_FUNC_SNPRINTF
+HW_FUNC_VASPRINTF
+HW_FUNC_ASPRINTF
+
 CONFIGURE_PART(Test Library Functions)
 
 dnl Checks for libraries.

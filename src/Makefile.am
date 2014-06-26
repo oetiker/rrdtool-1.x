@@ -33,6 +33,7 @@ UPD_C_FILES =		\
 	rrd_nan_inf.c	\
 	rrd_rpncalc.c	\
 	rrd_utils.c	\
+	rrd_snprintf.c  \
 	rrd_update.c
 
 RRD_C_FILES =		\
@@ -61,6 +62,7 @@ noinst_HEADERS = \
 	unused.h \
         gettext.h \
 	mutex.h \
+	rrd_snprintf.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \

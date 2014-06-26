@@ -44,8 +44,8 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
+#include "rrd_snprintf.h"
 
-#include <locale.h>
 
 #if !(defined(NETWARE) || defined(WIN32))
 extern char *tzname[2];
@@ -77,7 +77,6 @@ int rrd_dump_cb_r(
     rrd_t     rrd;
     rrd_value_t value;
     struct tm tm;
-    char *old_locale = "";
 
 //These two macros are local defines to clean up visible code from its redndancy
 //and make it easier to read.
@@ -85,7 +84,7 @@ int rrd_dump_cb_r(
     cb((str), strlen((str)), user)
 #define CB_FMTS(...) do {                                       \
     char buffer[256];                                           \
-    snprintf (buffer, sizeof(buffer), __VA_ARGS__);             \
+    rrd_snprintf (buffer, sizeof(buffer), __VA_ARGS__);         \
     CB_PUTS (buffer);                                           \
     } while (0)
 //These macros are to be undefined at the end of this function
@@ -102,8 +101,6 @@ int rrd_dump_cb_r(
         rrd_free(&rrd);
         return (-1);
     }
-
-    old_locale = setlocale(LC_NUMERIC, "C");
 
     if (opt_header == 1) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -446,8 +443,6 @@ int rrd_dump_cb_r(
     CB_PUTS("</rrd>\n");
 
     rrd_free(&rrd);
-
-    setlocale(LC_NUMERIC, old_locale);
 
     return rrd_close(rrd_file);
 
