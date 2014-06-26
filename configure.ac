@@ -102,10 +102,11 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
-
 AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
 [enable_rrdcgi=no],[enable_rrd_graph=yes])
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
 
 if test $enable_rrd_graph != no; then
  AC_DEFINE([HAVE_RRD_GRAPH], [], [is rrd_graph supported by this install])
