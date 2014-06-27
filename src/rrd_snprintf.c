@@ -147,21 +147,21 @@
  * 3) The required replacement functions should be declared in some header file
  *    included throughout the project files:
  *
- *    	#if HAVE_CONFIG_H
+ *    	#ifdef HAVE_CONFIG_H
  *    	#include <config.h>
  *    	#endif
- *    	#if HAVE_STDARG_H
+ *    	#ifdef HAVE_STDARG_H
  *    	#include <stdarg.h>
- *    	#if !HAVE_VSNPRINTF
+ *    	#ifndef HAVE_VSNPRINTF
  *    	int rpl_vsnprintf(char *, size_t, const char *, va_list);
  *    	#endif
- *    	#if !HAVE_SNPRINTF
+ *    	#ifndef HAVE_SNPRINTF
  *    	int rpl_snprintf(char *, size_t, const char *, ...);
  *    	#endif
- *    	#if !HAVE_VASPRINTF
+ *    	#ifndef HAVE_VASPRINTF
  *    	int rpl_vasprintf(char **, const char *, va_list);
  *    	#endif
- *    	#if !HAVE_ASPRINTF
+ *    	#ifndef HAVE_ASPRINTF
  *    	int rpl_asprintf(char **, const char *, ...);
  *    	#endif
  *    	#endif
@@ -171,6 +171,7 @@
  */
 
 #include "rrd_config.h"
+#include "rrd_snprintf.h"
 
 /***********************************************************************/
 /* we really want these puppies to be created so let's undef a bunch of 
@@ -213,7 +214,7 @@
 
 /******************************************************************/
 
-#if TEST_SNPRINTF
+#ifdef TEST_SNPRINTF
 #include <math.h>	/* For pow(3), NAN, and INFINITY. */
 #include <string.h>	/* For strcmp(3). */
 #if defined(__NetBSD__) || \
@@ -233,7 +234,7 @@
 #elif defined(__linux__)
 #define OS_LINUX 1
 #endif	/* defined(__NetBSD__) || defined(__FreeBSD__) || [...] */
-#if HAVE_CONFIG_H	/* Undefine definitions possibly done in config.h. */
+#ifdef HAVE_CONFIG_H	/* Undefine definitions possibly done in config.h. */
 #ifdef HAVE_SNPRINTF
 #undef HAVE_SNPRINTF
 #endif	/* defined(HAVE_SNPRINTF) */
@@ -323,7 +324,7 @@
 #define vasprintf rpl_vasprintf
 #endif	/* TEST_SNPRINTF */
 
-#if !HAVE_SNPRINTF || !HAVE_VSNPRINTF || !HAVE_ASPRINTF || !HAVE_VASPRINTF
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF) || !defined(HAVE_ASPRINTF) || !defined(HAVE_VASPRINTF)
 #include <stdio.h>	/* For NULL, size_t, vsnprintf(3), and vasprintf(3). */
 #ifdef VA_START
 #undef VA_START
@@ -341,8 +342,8 @@
 #define VA_SHIFT(ap, value, type) value = va_arg(ap, type)
 #endif	/* HAVE_STDARG_H */
 
-#if !HAVE_VASPRINTF
-#if HAVE_STDLIB_H
+#ifndef HAVE_VASPRINTF
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>	/* For malloc(3). */
 #endif	/* HAVE_STDLIB_H */
 #ifdef VA_COPY
@@ -351,10 +352,10 @@
 #ifdef VA_END_COPY
 #undef VA_END_COPY
 #endif	/* defined(VA_END_COPY) */
-#if HAVE_VA_COPY
+#ifdef HAVE_VA_COPY
 #define VA_COPY(dest, src) va_copy(dest, src)
 #define VA_END_COPY(ap) va_end(ap)
-#elif HAVE___VA_COPY
+#elifdef HAVE___VA_COPY
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #define VA_END_COPY(ap) va_end(ap)
 #else
@@ -365,22 +366,22 @@ static void *mymemcpy(void *, void *, size_t);
 #endif	/* HAVE_VA_COPY */
 #endif	/* !HAVE_VASPRINTF */
 
-#if !HAVE_VSNPRINTF
+#ifndef HAVE_VSNPRINTF
 #include <errno.h>	/* For ERANGE and errno. */
 #include <limits.h>	/* For *_MAX. */
-#if HAVE_FLOAT_H
+#ifdef HAVE_FLOAT_H
 #include <float.h>	/* For *DBL_{MIN,MAX}_10_EXP. */
 #endif	/* HAVE_FLOAT_H */
-#if HAVE_INTTYPES_H
+#ifdef HAVE_INTTYPES_H
 #include <inttypes.h>	/* For intmax_t (if not defined in <stdint.h>). */
 #endif	/* HAVE_INTTYPES_H */
-#if HAVE_LOCALE_H
+#ifdef HAVE_LOCALE_H
 #include <locale.h>	/* For localeconv(3). */
 #endif	/* HAVE_LOCALE_H */
-#if HAVE_STDDEF_H
+#ifdef HAVE_STDDEF_H
 #include <stddef.h>	/* For ptrdiff_t. */
 #endif	/* HAVE_STDDEF_H */
-#if HAVE_STDINT_H
+#ifdef HAVE_STDINT_H
 #include <stdint.h>	/* For intmax_t. */
 #endif	/* HAVE_STDINT_H */
 
@@ -395,7 +396,7 @@ static void *mymemcpy(void *, void *, size_t);
 #ifdef ULLONG
 #undef ULLONG
 #endif	/* defined(ULLONG) */
-#if HAVE_UNSIGNED_LONG_LONG_INT
+#ifdef HAVE_UNSIGNED_LONG_LONG_INT
 #define ULLONG unsigned long long int
 #ifndef ULLONG_MAX
 #define ULLONG_MAX ULONG_MAX
@@ -412,7 +413,7 @@ static void *mymemcpy(void *, void *, size_t);
 #ifdef UINTMAX_T
 #undef UINTMAX_T
 #endif	/* defined(UINTMAX_T) */
-#if HAVE_UINTMAX_T || defined(uintmax_t)
+#if defined(HAVE_UINTMAX_T) || defined(uintmax_t)
 #define UINTMAX_T uintmax_t
 #ifndef UINTMAX_MAX
 #define UINTMAX_MAX ULLONG_MAX
@@ -427,7 +428,7 @@ static void *mymemcpy(void *, void *, size_t);
 
 /* Support for long double. */
 #ifndef LDOUBLE
-#if HAVE_LONG_DOUBLE
+#ifdef HAVE_LONG_DOUBLE
 #define LDOUBLE long double
 #define LDOUBLE_MIN_10_EXP LDBL_MIN_10_EXP
 #define LDOUBLE_MAX_10_EXP LDBL_MAX_10_EXP
@@ -440,7 +441,7 @@ static void *mymemcpy(void *, void *, size_t);
 
 /* Support for long long int. */
 #ifndef LLONG
-#if HAVE_LONG_LONG_INT
+#ifdef HAVE_LONG_LONG_INT
 #define LLONG long long int
 #else
 #define LLONG long int
@@ -449,7 +450,7 @@ static void *mymemcpy(void *, void *, size_t);
 
 /* Support for intmax_t. */
 #ifndef INTMAX_T
-#if HAVE_INTMAX_T || defined(intmax_t)
+#if defined(HAVE_INTMAX_T) || defined(intmax_t)
 #define INTMAX_T intmax_t
 #else
 #define INTMAX_T LLONG
@@ -458,7 +459,7 @@ static void *mymemcpy(void *, void *, size_t);
 
 /* Support for uintptr_t. */
 #ifndef UINTPTR_T
-#if HAVE_UINTPTR_T || defined(uintptr_t)
+#if defined(HAVE_UINTPTR_T) || defined(uintptr_t)
 #define UINTPTR_T uintptr_t
 #else
 #define UINTPTR_T unsigned long int
@@ -467,7 +468,7 @@ static void *mymemcpy(void *, void *, size_t);
 
 /* Support for ptrdiff_t. */
 #ifndef PTRDIFF_T
-#if HAVE_PTRDIFF_T || defined(ptrdiff_t)
+#if defined(HAVE_PTRDIFF_T) || defined(ptrdiff_t)
 #define PTRDIFF_T ptrdiff_t
 #else
 #define PTRDIFF_T long int
@@ -1125,7 +1126,7 @@ fmtflt(char *str, size_t *len, size_t size, LDOUBLE fvalue, int width,
 	int ipos = 0;
 	int separators = (flags & PRINT_F_QUOTE);
 	int estyle = (flags & PRINT_F_TYPE_E);
-#if HAVE_LOCALECONV && HAVE_LCONV_DECIMAL_POINT
+#if defined(HAVE_LOCALECONV) && defined(HAVE_LCONV_DECIMAL_POINT)
 	struct lconv *lc = localeconv();
 #endif	/* HAVE_LOCALECONV && HAVE_LCONV_DECIMAL_POINT */
 
@@ -1370,7 +1371,7 @@ again:
 			printsep(str, len, size);
 	}
 	if (emitpoint) {	/* Decimal point. */
-#if HAVE_LOCALECONV && HAVE_LCONV_DECIMAL_POINT
+#if defined(HAVE_LOCALECONV) && defined(HAVE_LCONV_DECIMAL_POINT)
 		if (lc->decimal_point != NULL && *lc->decimal_point != '\0')
 			OUTCHAR(str, *len, size, *lc->decimal_point);
 		else	/* We'll always print some decimal point character. */
@@ -1398,7 +1399,7 @@ again:
 static void
 printsep(char *str, size_t *len, size_t size)
 {
-#if HAVE_LOCALECONV && HAVE_LCONV_THOUSANDS_SEP
+#if defined(HAVE_LOCALECONV) && defined(HAVE_LCONV_THOUSANDS_SEP)
 	struct lconv *lc = localeconv();
 	int i;
 
@@ -1414,7 +1415,7 @@ static int
 getnumsep(int digits)
 {
 	int separators = (digits - ((digits % 3 == 0) ? 1 : 0)) / 3;
-#if HAVE_LOCALECONV && HAVE_LCONV_THOUSANDS_SEP
+#if defined(HAVE_LOCALECONV) && defined(HAVE_LCONV_THOUSANDS_SEP)
 	int strln;
 	struct lconv *lc = localeconv();
 
@@ -1513,8 +1514,8 @@ mypow10(int exponent)
 }
 #endif	/* !HAVE_VSNPRINTF */
 
-#if !HAVE_VASPRINTF
-#if NEED_MYMEMCPY
+#ifndef HAVE_VASPRINTF
+#ifdef NEED_MYMEMCPY
 void *
 mymemcpy(void *dst, void *src, size_t len)
 {
@@ -1544,8 +1545,8 @@ rpl_vasprintf(char **ret, const char *format, va_list ap)
 }
 #endif	/* !HAVE_VASPRINTF */
 
-#if !HAVE_SNPRINTF
-#if HAVE_STDARG_H
+#ifndef HAVE_SNPRINTF
+#ifdef HAVE_STDARG_H
 int
 rpl_snprintf(char *str, size_t size, const char *format, ...)
 #else
@@ -1553,7 +1554,7 @@ int
 rpl_snprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
-#if !HAVE_STDARG_H
+#ifndef HAVE_STDARG_H
 	char *str;
 	size_t size;
 	char *format;
@@ -1571,8 +1572,8 @@ rpl_snprintf(va_alist) va_dcl
 }
 #endif	/* !HAVE_SNPRINTF */
 
-#if !HAVE_ASPRINTF
-#if HAVE_STDARG_H
+#ifndef HAVE_ASPRINTF
+#ifdef HAVE_STDARG_H
 int
 rpl_asprintf(char **ret, const char *format, ...)
 #else
@@ -1580,7 +1581,7 @@ int
 rpl_asprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
-#if !HAVE_STDARG_H
+#ifndef HAVE_STDARG_H
 	char **ret;
 	char *format;
 #endif	/* HAVE_STDARG_H */
@@ -1599,13 +1600,13 @@ rpl_asprintf(va_alist) va_dcl
 int main(int argc, char **argv);
 #endif	/* !HAVE_SNPRINTF || !HAVE_VSNPRINTF || !HAVE_ASPRINTF || [...] */
 
-#if TEST_SNPRINTF
+#ifdef TEST_SNPRINTF
 int
 main(void)
 {
 	const char *float_fmt[] = {
 		/* "%E" and "%e" formats. */
-#if HAVE_LONG_LONG_INT && !OS_BSD && !OS_IRIX
+#if defined(HAVE_LONG_LONG_INT) && !defined(OS_BSD) && !defined(OS_IRIX)
 		"%.16e",
 		"%22.16e",
 		"%022.16e",
@@ -1624,7 +1625,7 @@ main(void)
 		"% 5.8e",
 		"%5.8e",
 		"%+4.9e",
-#if !OS_LINUX	/* glibc sometimes gets these wrong. */
+#ifndef OS_LINUX	/* glibc sometimes gets these wrong. */
 		"%+#010.0e",
 		"%#10.1e",
 		"%10.5e",
@@ -1653,12 +1654,12 @@ main(void)
 		"%E",
 #endif	/* !OS_LINUX */
 		/* "%F" and "%f" formats. */
-#if !OS_BSD && !OS_IRIX
+#if !defined(OS_BSD) && !defined(OS_IRIX)
 		"% '022f",
 		"%+'022f",
 		"%-'22f",
 		"%'22f",
-#if HAVE_LONG_LONG_INT
+#ifdef HAVE_LONG_LONG_INT
 		"%.16f",
 		"%22.16f",
 		"%022.16f",
@@ -1705,12 +1706,12 @@ main(void)
 		"%f",
 		"%F",
 		/* "%G" and "%g" formats. */
-#if !OS_BSD && !OS_IRIX && !OS_LINUX
+#if  !defined(OS_BSD) && !defined(OS_IRIX) && !defined(OS_LINUX)
 		"% '022g",
 		"%+'022g",
 		"%-'22g",
 		"%'22g",
-#if HAVE_LONG_LONG_INT
+#ifdef HAVE_LONG_LONG_INT
 		"%.16g",
 		"%22.16g",
 		"%022.16g",
@@ -1730,7 +1731,7 @@ main(void)
 		"% 5.8g",
 		"%5.8g",
 		"%+4.9g",
-#if !OS_LINUX	/* glibc sometimes gets these wrong. */
+#ifndef OS_LINUX	/* glibc sometimes gets these wrong. */
 		"%+#010.0g",
 		"%#10.1g",
 		"%10.5g",
@@ -1816,7 +1817,7 @@ main(void)
 		-1.5,
 		-1.0,
 		-0.1,
-#if !OS_BSD	/* BSD sometimes gets these wrong. */
+#ifndef OS_BSD	/* BSD sometimes gets these wrong. */
 #ifdef INFINITY
 		INFINITY,
 		-INFINITY,
@@ -1829,7 +1830,7 @@ main(void)
 	};
 	const char *long_fmt[] = {
 		"foo|%0123ld|bar",
-#if !OS_IRIX
+#ifndef OS_IRIX
 		"% '0123ld",
 		"%+'0123ld",
 		"%-'123ld",
@@ -1894,7 +1895,7 @@ main(void)
 	const char *ulong_fmt[] = {
 		/* "%u" formats. */
 		"foo|%0123lu|bar",
-#if !OS_IRIX
+#ifndef OS_IRIX
 		"% '0123lu",
 		"%+'0123lu",
 		"%-'123lu",
@@ -2058,7 +2059,7 @@ main(void)
 		"",
 		NULL
 	};
-#if !OS_SYSV	/* SysV uses a different format than we do. */
+#ifndef OS_SYSV	/* SysV uses a different format than we do. */
 	const char *pointer_fmt[] = {
 		"foo|%p|bar",
 		"%42p",
@@ -2109,7 +2110,7 @@ do {                                                                           \
 		}                                                              \
 } while (/* CONSTCOND */ 0)
 
-#if HAVE_LOCALE_H
+#ifdef HAVE_LOCALE_H
 	(void)setlocale(LC_ALL, "");
 #endif	/* HAVE_LOCALE_H */
 
@@ -2119,7 +2120,7 @@ do {                                                                           \
 	TEST(ulong_fmt, ulong_val);
 	TEST(llong_fmt, llong_val);
 	TEST(string_fmt, string_val);
-#if !OS_SYSV	/* SysV uses a different format than we do. */
+#ifndef OS_SYSV	/* SysV uses a different format than we do. */
 	TEST(pointer_fmt, pointer_val);
 #endif	/* !OS_SYSV */
 	(void)printf("Result: %d out of %d tests failed.\n", failed, num);
