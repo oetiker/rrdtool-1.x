@@ -453,7 +453,7 @@ static int Rrd_Fetch(
     return TCL_OK;
 }
 
-
+#ifdef HAVE_RRD_GRAPH
 
 static int Rrd_Graph(
     ClientData __attribute__((unused)) clientData,
@@ -563,7 +563,7 @@ static int Rrd_Graph(
     return TCL_OK;
 }
 
-
+#endif
 
 static int Rrd_Tune(
     ClientData __attribute__((unused)) clientData,
@@ -655,11 +655,13 @@ static CmdInfo rrdCmds[] = {
     {"Rrd::lastupdate", Rrd_Lastupdate, 0}, /* Thread-safe version */
     {"Rrd::update", Rrd_Update, 1}, /* Thread-safe version */
     {"Rrd::fetch", Rrd_Fetch, 0},
+#ifdef HAVE_RRD_GRAPH
     {"Rrd::graph", Rrd_Graph, 1},   /* Due to RRD's API, a safe
                                        interpreter cannot create
                                        a graph since it writes to
                                        a filename supplied by the
                                        caller */
+#endif
     {"Rrd::tune", Rrd_Tune, 1},
     {"Rrd::resize", Rrd_Resize, 1},
     {"Rrd::restore", Rrd_Restore, 1},
