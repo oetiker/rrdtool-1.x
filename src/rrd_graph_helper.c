@@ -12,6 +12,7 @@
 #endif
 
 #include "rrd_graph.h"
+#include "rrd_strtod.h"
 
 #define dprintf(...) if (gdp->debug&1) fprintf(stderr,__VA_ARGS__);
 #define dprintfparsed(...) if (gdp->debug&2) fprintf(stderr,__VA_ARGS__);
@@ -140,19 +141,15 @@ int getLong(const char* v,long *val,char**extra,int base) {
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
-  char *old_locale;
   *extra=NULL;
-  old_locale = setlocale(LC_NUMERIC, "C");
   errno = 0;
-  *val = strtod(v,extra);
+  *val = rrd_strtod(v,extra);
   if (errno > 0) {
       rrd_set_error("converting '%s' to float: %s", v, rrd_strerror(errno));
-      setlocale(LC_NUMERIC, old_locale);
       return -1;
   };
-  setlocale(LC_NUMERIC, old_locale);
 
-  *val=strtod(v,extra);
+  *val=rrd_strtod(v,extra);
   /* and error handling */
   if (extra==NULL) {
     return 0;

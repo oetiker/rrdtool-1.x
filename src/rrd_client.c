@@ -35,6 +35,7 @@
 #include <locale.h>
 #endif
 
+#include "rrd_strtod.h"
 #include "rrd.h"
 #include "rrd_tool.h"
 #include "rrd_client.h"
@@ -240,7 +241,6 @@ static int parse_value_array_header (char *line, /* {{{ */
   char *str_key;
   char **str_array;
   char *endptr;
-  char *old_locale;
   int status;
   size_t i;
 
@@ -266,21 +266,17 @@ static int parse_value_array_header (char *line, /* {{{ */
   /* Enforce the "C" locale so that parsing of the response is not dependent on
    * the locale. For example, when using a German locale the strtod() function
    * will expect a comma as the decimal separator, i.e. "42,77". */
-  old_locale = setlocale (LC_NUMERIC, "C");
-
   for (i = 0; i < array_len; i++)
   {
     endptr = NULL;
-    array[i] = (rrd_value_t) strtod (str_array[i], &endptr);
+    array[i] = (rrd_value_t) rrd_strtod (str_array[i], &endptr);
     if ((endptr == str_array[i]) || (errno != 0))
     {
-      (void) setlocale (LC_NUMERIC, old_locale);
       free(str_array);
       return (-1);
     }
   }
 
-  (void) setlocale (LC_NUMERIC, old_locale);
   free(str_array);
   return (0);
 } /* }}} int parse_value_array_header */
@@ -1590,7 +1586,7 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
         || (strcmp ("TreeNodesNumber", key) == 0))
     {
       s->type = RRDC_STATS_TYPE_GAUGE;
-      s->value.gauge = strtod (value, &endptr);
+      s->value.gauge = rrd_strtod (value, &endptr);
     }
     else if ((strcmp ("DataSetsWritten", key) == 0)
         || (strcmp ("FlushesReceived", key) == 0)
