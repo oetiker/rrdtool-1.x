@@ -108,6 +108,7 @@
 #include <tcpd.h>
 #endif /* HAVE_LIBWRAP */
 
+#include "rrd_strtod.h"
 #include <glib.h>
 /* }}} */
 
@@ -1511,7 +1512,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
     /* make sure update time is always moving forward. We use double here since
        update does support subsecond precision for timestamps ... */
-    stamp = strtod(value, &eostamp);
+    stamp = rrd_strtod(value, &eostamp);
     if (eostamp == value || eostamp == NULL || *eostamp != ':')
     {
       pthread_mutex_unlock(&cache_lock);
