@@ -4703,11 +4703,11 @@ void rrd_graph_options(
             }
             break;
         case 1003:
-			im->second_axis_legend=strdup(optarg);
-			if (!im->second_axis_legend) {
+            im->second_axis_legend=strdup(optarg);
+            if (!im->second_axis_legend) {
                 rrd_set_error("cannot allocate memory for second_axis_legend");
                 return;
-			}
+            }
             break;
         case 1004:
             if (bad_format(optarg)){
@@ -4715,10 +4715,10 @@ void rrd_graph_options(
                 return;
             }
             im->second_axis_format=strdup(optarg);
-			if (!im->second_axis_format) {
-				rrd_set_error("cannot allocate memory for second_axis_format");
-				return;
-			}
+            if (!im->second_axis_format) {
+                rrd_set_error("cannot allocate memory for second_axis_format");
+                return;
+            }
             break;
         case 1012:
             if (bad_format(optarg)){
@@ -4726,17 +4726,17 @@ void rrd_graph_options(
                 return;
             }
             im->primary_axis_format=strdup(optarg);
-			if (!im->primary_axis_format) {
-				rrd_set_error("cannot allocate memory for primary_axis_format");
-				return;
-			}
+            if (!im->primary_axis_format) {
+                rrd_set_error("cannot allocate memory for primary_axis_format");
+                return;
+            }
             break;
         case 'v':
-			im->ylegend=strdup(optarg);
-			if (!im->ylegend) {
+            im->ylegend=strdup(optarg);
+            if (!im->ylegend) {
                 rrd_set_error("cannot allocate memory for ylegend");
                 return;
-			}
+            }
             break;
         case 'u':
             im->maxval = rrd_strtod(optarg, 0);
