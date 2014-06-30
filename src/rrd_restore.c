@@ -13,6 +13,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_restore.h"
 #include "unused.h"
+#include "rrd_strtod.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -329,7 +330,7 @@ static int get_xml_double(
             return 0;            
         }        
         errno = 0;
-        temp = strtod((char *)text,NULL);
+        temp = rrd_strtod((char *)text,NULL);
         if (errno>0){
             rrd_set_error("ling %d: get_xml_double from '%s' %s",
                           xmlTextReaderGetParserLineNumber(reader),
@@ -1347,7 +1348,6 @@ int rrd_restore(
     char **argv)
 {
     rrd_t    *rrd;
-    char     *old_locale;
     /* init rrd clean */
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -1389,11 +1389,7 @@ int rrd_restore(
         return (-1);
     }
 
-    old_locale = setlocale(LC_NUMERIC, "C");
-
     rrd = parse_file(argv[optind]);
-
-    setlocale(LC_NUMERIC, old_locale);
 
     if (rrd == NULL)
         return (-1);

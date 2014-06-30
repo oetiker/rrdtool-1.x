@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
@@ -79,13 +80,14 @@ int rrd_tune(
     char      ds_nam[DS_NAM_SIZE];
     char      ds_new[DS_NAM_SIZE];
     long      heartbeat;
-    double    min;
-    double    max;
+    double    min = 0;
+    double    max = 0;
     char      dst[DST_SIZE];
     int       rc = -1;
     int       opt_newstep = -1;
     rrd_file_t *rrd_file = NULL;
     char      *opt_daemon = NULL;
+    char      double_str[ 12 ];
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
         {"minimum", required_argument, 0, 'i'},
@@ -110,7 +112,6 @@ int rrd_tune(
         {"daemon", required_argument, 0, 'D'},
         {0, 0, 0, 0}
     };
-    char     *old_locale = setlocale(LC_NUMERIC, "C");
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -206,7 +207,8 @@ int rrd_tune(
 
         case 'i':
             if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
+                 sscanf(optarg, DS_NAM_FMT ":%[-0-9.e]", ds_nam, double_str)) < 1) {
+                min = rrd_strtod( double_str, 0 );
                 rrd_set_error("invalid arguments for minimum ds value");
 		goto done;
             }
@@ -221,7 +223,8 @@ int rrd_tune(
 
         case 'a':
             if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
+                 sscanf(optarg, DS_NAM_FMT ":%[-0-9.e]", ds_nam, double_str)) < 1) {
+                max = rrd_strtod( double_str, 0 );
                 rrd_set_error("invalid arguments for maximum ds value");
 		goto done;
             }
@@ -399,9 +402,6 @@ int rrd_tune(
     
     rc = 0;
 done:
-    if (old_locale) {
-	setlocale(LC_NUMERIC, old_locale);
-    }
     if (rrd_file) {
 	rrd_close(rrd_file);
     }
@@ -420,7 +420,7 @@ int set_hwarg(
     signed short rra_idx = -1;
 
     /* read the value */
-    param = atof(arg);
+    param = rrd_strtod(arg, 0);
     if (param <= 0.0 || param >= 1.0) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
         return -1;
@@ -453,7 +453,7 @@ int set_hwsmootharg(
     signed short rra_idx = -1;
 
     /* read the value */
-    param = atof(arg);
+    param = rrd_strtod(arg, 0);
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
     if (param < 0.0 || param > 1.0) {
@@ -486,7 +486,7 @@ int set_deltaarg(
     unsigned long i;
     signed short rra_idx = -1;
 
-    param = atof(arg);
+    param = rrd_strtod(arg, 0);
     if (param < 0.1) {
         rrd_set_error("Parameter specified is too small");
         return -1;

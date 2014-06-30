@@ -181,7 +181,7 @@ static int rrd_fetch_cb_wrapper(
         rrd_set_error("Expected the perl callback function to return a reference");
         goto error_out;
     }
-    retHV = SvRV(retSV);
+    retHV = (HV*)SvRV(retSV);
     if (SvTYPE(retHV) != SVt_PVHV) {
         rrd_set_error("Expected the perl callback function to return a hash reference");
         goto error_out;
@@ -213,7 +213,7 @@ static int rrd_fetch_cb_wrapper(
         rrd_set_error("Expected the perl callback function to return a valid data element");
         goto error_out;        
     }
-    retHV = SvRV(retSV);
+    retHV = (HV*)SvRV(retSV);
     if (SvTYPE(retHV) != SVt_PVHV){
         rrd_set_error("Expected the perl callback function to return data element pointing to a hash");
         goto error_out;
@@ -243,7 +243,7 @@ static int rrd_fetch_cb_wrapper(
             rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
             goto error_out_free_ds_namv;        
         }
-        retAV = SvRV(retSV);
+        retAV = (AV*)SvRV(retSV);
         if (SvTYPE(retAV) != SVt_PVAV){
             rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
             goto error_out_free_ds_namv;        
@@ -258,7 +258,7 @@ static int rrd_fetch_cb_wrapper(
     }
 
     for (i=0;i<*ds_cnt;i++){
-        retAV = SvRV(HeVAL(hv_fetch_ent(retHV,sv_2mortal(newSVpv((*ds_namv)[i],0)),0,0)));
+        retAV = (AV*)SvRV(HeVAL(hv_fetch_ent(retHV,sv_2mortal(newSVpv((*ds_namv)[i],0)),0,0)));
         for (ii=0;ii<rowCount;ii++){
             SV** valP = av_fetch(retAV,ii,0);
             SV* val = valP ? *valP : &PL_sv_undef;
@@ -366,6 +366,8 @@ rrd_tune(...)
 	OUTPUT:
 		RETVAL
 
+#ifdef HAVE_RRD_GRAPH
+
 SV *
 rrd_graph(...)
 	PROTOTYPE: @	
@@ -411,6 +413,8 @@ rrd_graph(...)
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 		PUSHs(sv_2mortal(newSViv(xsize)));
 		PUSHs(sv_2mortal(newSViv(ysize)));
+
+#endif /* HAVE_RRD_GRAPH */
 
 SV *
 rrd_fetch(...)
@@ -584,6 +588,8 @@ rrd_updatev(...)
     OUTPUT:
 	   RETVAL
 
+#ifdef HAVE_RRD_GRAPH
+
 SV*
 rrd_graphv(...)
 	PROTOTYPE: @	
@@ -596,6 +602,8 @@ rrd_graphv(...)
 		rrdinfocode(rrd_graph_v);	
     OUTPUT:
 	   RETVAL
+
+#endif /* HAVE_RRD_GRAPH */
 
 int
 rrd_dump(...)

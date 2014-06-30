@@ -9,6 +9,7 @@
 #include <locale.h>
 #include <math.h>
 
+#include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
@@ -629,7 +630,6 @@ void parseGENERIC_DS(
     ds_def_t *ds_def)
 {
     char      minstr[DS_NAM_SIZE], maxstr[DS_NAM_SIZE];
-    char     *old_locale;
     const char *parsetime_error = NULL;
 
     /*
@@ -639,7 +639,6 @@ void parseGENERIC_DS(
        &(rrd -> ds_def[ds_idx].par[DS_mrhb_cnt].u_cnt),
        minstr,maxstr);
      */
-    old_locale = setlocale(LC_NUMERIC, "C");
     do {
         char      numbuf[32];
         size_t    heartbeat_len;
@@ -667,12 +666,12 @@ void parseGENERIC_DS(
             if (minstr[0] == 'U' && minstr[1] == 0)
                 ds_def->par[DS_min_val].u_val = DNAN;
             else
-                ds_def->par[DS_min_val].u_val = atof(minstr);
+                ds_def->par[DS_min_val].u_val = rrd_strtod(minstr, 0);
 
             if (maxstr[0] == 'U' && maxstr[1] == 0)
                 ds_def->par[DS_max_val].u_val = DNAN;
             else
-                ds_def->par[DS_max_val].u_val = atof(maxstr);
+                ds_def->par[DS_max_val].u_val = rrd_strtod(maxstr, 0);
 
             if (!isnan(ds_def->par[DS_min_val].u_val) &&
                 !isnan(ds_def->par[DS_max_val].u_val) &&
@@ -687,7 +686,6 @@ void parseGENERIC_DS(
     } while (0);
     if (parsetime_error)
         rrd_set_error("failed to parse data source %s: %s", def, parsetime_error);
-    setlocale(LC_NUMERIC, old_locale);
 }
 
 /* Create the CF_DEVPREDICT, CF_DEVSEASONAL, CF_SEASONAL, and CF_FAILURES RRAs
