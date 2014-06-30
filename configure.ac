@@ -269,7 +269,7 @@ if test "x$enable_mmap" = "xyes"; then
   *)
     AC_CHECK_HEADERS(sys/mman.h)
     AC_FUNC_MMAP
-    AC_CHECK_FUNCS(mmap munmap msync)
+    AC_CHECK_FUNCS(mmap munmap)
     AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
 				     # include <sys/mman.h>
 				     #endif])
