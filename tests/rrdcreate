@@ -94,7 +94,7 @@ runfailtest "diagnose missing max" \
 
 getinfo () {
   $RRDTOOL create junk.rrd "${@}"
-  rrdinfo junk.rrd | sed -e '/^rra\[.*\]\.cur_row =/d'
+  $RRDTOOL info junk.rrd | sed -e '/^rra\[.*\]\.cur_row =/d'
 }
 
 checkequiv () {
