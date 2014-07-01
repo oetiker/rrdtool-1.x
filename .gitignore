@@ -15,6 +15,7 @@
 # autotools stuff
 /m4/*.m4
 !/m4/acinclude.m4
+!/m4/snprintf.m4
 /aclocal.m4
 /ltmain.sh
 /install-sh

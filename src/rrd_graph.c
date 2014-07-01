@@ -11,6 +11,8 @@
 #include "strftime.h"
 #endif
 
+#include "rrd_strtod.h"
+
 #include "rrd_tool.h"
 #include "unused.h"
 
@@ -4182,20 +4184,16 @@ rrd_info_t *rrd_graph_v(
 {
     image_desc_t im;
     rrd_info_t *grinfo;
-    char *old_locale;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
-    old_locale = setlocale(LC_NUMERIC, "C");
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
     if (optind >= argc) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
@@ -4203,7 +4201,6 @@ rrd_info_t *rrd_graph_v(
     }
 
     if (strlen(argv[optind]) >= MAXPATH) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_set_error("filename (including path) too long");
         rrd_info_free(im.grinfo);
         im_free(&im);
@@ -4218,7 +4215,6 @@ rrd_info_t *rrd_graph_v(
     }
 
     rrd_graph_script(argc, argv, &im, 1);
-    setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
 
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
@@ -4424,6 +4420,7 @@ void rrd_graph_options(
     int       stroff;
     char     *parsetime_error = NULL;
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
+    char      double_str[20], double_str2[20];
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
     rrd_time_value_t start_tv, end_tv;
@@ -4586,7 +4583,7 @@ void rrd_graph_options(
             im->forceleftspace = 1;
             break;
         case 'T':
-            im->tabwidth = atof(optarg);
+            im->tabwidth = rrd_strtod(optarg, 0);
             break;
         case 'S':
             im->step = atoi(optarg);
@@ -4650,12 +4647,12 @@ void rrd_graph_options(
             }
             break;
         case 'y':
-
             if (strcmp(optarg, "none") == 0) {
                 im->draw_y_grid = 0;
                 break;
             };
-            if (sscanf(optarg, "%lf:%d", &im->ygridstep, &im->ylabfact) == 2) {
+            if (sscanf(optarg, "%[-0-9.e+]:%d", double_str , &im->ylabfact) == 2) {
+                im->ygridstep = rrd_strtod( double_str, 0 );
                 if (im->ygridstep <= 0) {
                     rrd_set_error("grid step must be > 0");
                     return;
@@ -4673,9 +4670,11 @@ void rrd_graph_options(
             break;
         case 1008: /* grid-dash */
             if(sscanf(optarg,
-                      "%lf:%lf",
-                      &im->grid_dash_on,
-                      &im->grid_dash_off) != 2) {
+                      "%[-0-9.e+]:%[-0-9.e+]",
+                      double_str,
+                      double_str2 ) != 2) {
+                im->grid_dash_on = rrd_strtod( double_str, 0 );
+                im->grid_dash_off = rrd_strtod( double_str2, 0 );
                 rrd_set_error("expected grid-dash format float:float");
                 return;
             }
@@ -4688,11 +4687,12 @@ void rrd_graph_options(
             week_fmt[(sizeof week_fmt)-1]='\0';
             break;
         case 1002: /* right y axis */
-
             if(sscanf(optarg,
-                      "%lf:%lf",
-                      &im->second_axis_scale,
-                      &im->second_axis_shift) == 2) {
+                      "%[-0-9.e+]:%[-0-9.e+]",
+                      double_str,
+                      double_str2 ) == 2) {
+                im->second_axis_scale = rrd_strtod( double_str, 0 );
+                im->second_axis_shift = rrd_strtod( double_str2, 0 );
                 if(im->second_axis_scale==0){
                     rrd_set_error("the second_axis_scale  must not be 0");
                     return;
@@ -4703,11 +4703,11 @@ void rrd_graph_options(
             }
             break;
         case 1003:
-			im->second_axis_legend=strdup(optarg);
-			if (!im->second_axis_legend) {
+            im->second_axis_legend=strdup(optarg);
+            if (!im->second_axis_legend) {
                 rrd_set_error("cannot allocate memory for second_axis_legend");
                 return;
-			}
+            }
             break;
         case 1004:
             if (bad_format(optarg)){
@@ -4715,10 +4715,10 @@ void rrd_graph_options(
                 return;
             }
             im->second_axis_format=strdup(optarg);
-			if (!im->second_axis_format) {
-				rrd_set_error("cannot allocate memory for second_axis_format");
-				return;
-			}
+            if (!im->second_axis_format) {
+                rrd_set_error("cannot allocate memory for second_axis_format");
+                return;
+            }
             break;
         case 1012:
             if (bad_format(optarg)){
@@ -4726,23 +4726,23 @@ void rrd_graph_options(
                 return;
             }
             im->primary_axis_format=strdup(optarg);
-			if (!im->primary_axis_format) {
-				rrd_set_error("cannot allocate memory for primary_axis_format");
-				return;
-			}
+            if (!im->primary_axis_format) {
+                rrd_set_error("cannot allocate memory for primary_axis_format");
+                return;
+            }
             break;
         case 'v':
-			im->ylegend=strdup(optarg);
-			if (!im->ylegend) {
+            im->ylegend=strdup(optarg);
+            if (!im->ylegend) {
                 rrd_set_error("cannot allocate memory for ylegend");
                 return;
-			}
+            }
             break;
         case 'u':
-            im->maxval = atof(optarg);
+            im->maxval = rrd_strtod(optarg, 0);
             break;
         case 'l':
-            im->minval = atof(optarg);
+            im->minval = rrd_strtod(optarg, 0);
             break;
         case 'b':
             im->base = atol(optarg);
@@ -4854,7 +4854,8 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            if (sscanf(optarg, "%10[A-Z]:%lf%n", prop, &size, &end) >= 2) {
+            if (sscanf(optarg, "%10[A-Z]:%[-0-9.e+]%n", prop, double_str, &end) >= 2) {
+                size = rrd_strtod( double_str, 0 );
                 int       sindex, propidx;
 
                 if ((sindex = text_prop_conv(prop)) != -1) {
@@ -4889,7 +4890,7 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            im->zoom = atof(optarg);
+            im->zoom = rrd_strtod(optarg, 0);
             if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
@@ -5156,11 +5157,12 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30];
+    char      func[30], double_str[12];
     int       n;
 
     n = 0;
-    sscanf(str, "%le,%29[A-Z]%n", &param, func, &n);
+    sscanf(str, "%[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
+    param = rrd_strtod( double_str, 0 );
     if (n == (int) strlen(str)) {   /* matched */
         ;
     } else {
