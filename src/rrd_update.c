@@ -1317,11 +1317,7 @@ static int get_time_from_reading(
         *current_time = tmp_time.tv_sec;
         *current_time_usec = tmp_time.tv_usec;
     } else {
-        errno = 0;
-        tmp = rrd_strtod(updvals[0], 0);
-        if (errno > 0) {
-            rrd_set_error("converting '%s' to float: %s",
-                updvals[0], rrd_strerror(errno));
+        if ( rrd_strtoding( updvals[0], 0, &tmp) != 2) {
             return -1;
         };
         if (tmp < 0.0){
@@ -1361,8 +1357,8 @@ static int update_pdp_prep(
 {
     unsigned long ds_idx;
     int       ii;
-    char     *endptr;   /* used in the conversion */
     double    rate;
+    double    tmp;
     enum dst_en dst_idx;
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
@@ -1426,34 +1422,15 @@ static int update_pdp_prep(
                 }
                 break;
             case DST_ABSOLUTE:
-                errno = 0;
-                pdp_new[ds_idx] = rrd_strtod(updvals[ds_idx + 1], &endptr);
-                if (errno > 0) {
-                    rrd_set_error("converting '%s' to float: %s",
-                                  updvals[ds_idx + 1], rrd_strerror(errno));
-                    return -1;
-                };
-                if (endptr[0] != '\0') {
-                    rrd_set_error
-                        ("conversion of '%s' to float not complete: tail '%s'",
-                         updvals[ds_idx + 1], endptr);
+                if( rrd_strtoding(updvals[ds_idx + 1], 0, &pdp_new[ds_idx] ) != 2 ) {
                     return -1;
                 }
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
-                errno = 0;
-                pdp_new[ds_idx] =
-                    rrd_strtod(updvals[ds_idx + 1], &endptr) * interval;
-                if (errno) {
-                    rrd_set_error("converting '%s' to float: %s",
-                                  updvals[ds_idx + 1], rrd_strerror(errno));
-                    return -1;
-                };
-                if (endptr[0] != '\0') {
-                    rrd_set_error
-                        ("conversion of '%s' to float not complete: tail '%s'",
-                         updvals[ds_idx + 1], endptr);
+                if( rrd_strtoding( updvals[ds_idx + 1], 0, &tmp ) == 2 ) {
+                    pdp_new[ds_idx] = tmp * interval;
+                } else {
                     return -1;
                 }
                 rate = pdp_new[ds_idx] / interval;

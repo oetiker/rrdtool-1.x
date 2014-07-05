@@ -666,12 +666,12 @@ void parseGENERIC_DS(
             if (minstr[0] == 'U' && minstr[1] == 0)
                 ds_def->par[DS_min_val].u_val = DNAN;
             else
-                ds_def->par[DS_min_val].u_val = rrd_strtod(minstr, 0);
+                rrd_strtoding(minstr, 0, &(ds_def->par[DS_min_val].u_val) );
 
             if (maxstr[0] == 'U' && maxstr[1] == 0)
                 ds_def->par[DS_max_val].u_val = DNAN;
             else
-                ds_def->par[DS_max_val].u_val = rrd_strtod(maxstr, 0);
+                rrd_strtoding(maxstr, 0, &(ds_def->par[DS_max_val].u_val) );
 
             if (!isnan(ds_def->par[DS_min_val].u_val) &&
                 !isnan(ds_def->par[DS_max_val].u_val) &&

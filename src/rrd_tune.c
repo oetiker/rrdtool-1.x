@@ -211,7 +211,7 @@ int rrd_tune(
                 rrd_set_error("invalid arguments for minimum ds value");
 		goto done;
             }
-            min = rrd_strtod( double_str, 0 );
+            rrd_strtoding( double_str, 0, &min );
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
@@ -227,7 +227,7 @@ int rrd_tune(
                 rrd_set_error("invalid arguments for maximum ds value");
 		goto done;
             }
-            max = rrd_strtod( double_str, 0 );
+            rrd_strtoding( double_str, 0, &max );
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
@@ -420,7 +420,7 @@ int set_hwarg(
     signed short rra_idx = -1;
 
     /* read the value */
-    param = rrd_strtod(arg, 0);
+    rrd_strtoding(arg, 0, &param);
     if (param <= 0.0 || param >= 1.0) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
         return -1;
@@ -453,7 +453,7 @@ int set_hwsmootharg(
     signed short rra_idx = -1;
 
     /* read the value */
-    param = rrd_strtod(arg, 0);
+    rrd_strtoding(arg, 0, &param);
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
     if (param < 0.0 || param > 1.0) {
@@ -486,7 +486,7 @@ int set_deltaarg(
     unsigned long i;
     signed short rra_idx = -1;
 
-    param = rrd_strtod(arg, 0);
+    rrd_strtoding(arg, 0, &param);
     if (param < 0.1) {
         rrd_set_error("Parameter specified is too small");
         return -1;

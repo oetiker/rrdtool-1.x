@@ -32,15 +32,42 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 //
- 
+
 #include <errno.h>
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
- 
+
+#include "rrd.h"
 #include "rrd_strtod.h"
- 
+
+/* returns 2 on success */
+/* i.e. if the whole string has been converted to a double successfully */
+unsigned int rrd_strtoding(const char * str, char ** endptr, double * dbl) {
+    *dbl = rrd_strtod( str, endptr );
+
+    if( endptr != NULL && *endptr == str ) {
+        /* no conversion has been done */
+        /* for inputs like "abcdj", i.e. no number at all */
+        rrd_set_error("Cannot convert %s to float", str);
+        return 0;
+    } else if( endptr != NULL && endptr[0] != '\0' ) {
+        /* conversion has been done, but whole string is not a number */
+        /* for inputs like "33.343djdjk" */
+        rrd_set_error("Cannot convert %s to float", str);
+        return 1;
+    } else if( endptr != NULL && endptr[0] == '\0' ) {
+        /* conversion successfully done */
+        /* for inputs that are totally numbers "23.343" */
+        return 2;
+    } else {
+        /* just to be safe */
+        rrd_set_error("..");
+        return 3;
+    }
+}
+
 double rrd_strtod(const char *str, char **endptr) {
     double number;
     int exponent;
@@ -50,51 +77,51 @@ double rrd_strtod(const char *str, char **endptr) {
     int n;
     int num_digits;
     int num_decimals;
- 
+
     // Skip leading whitespace
     while (isspace(*p)) p++;
- 
+
     // Handle optional sign
     negative = 0;
     switch (*p) {
        case '-': negative = 1; // Fall through to increment position
        case '+': p++;
     }
- 
+
     number = 0.;
     exponent = 0;
     num_digits = 0;
     num_decimals = 0;
- 
+
     // Process string of digits
     while (isdigit(*p)) {
         number = number * 10. + (*p - '0');
         p++;
         num_digits++;
     }
- 
+
     // Process decimal part
     if (*p == '.') {
         p++;
- 
+
         while (isdigit(*p)) {
             number = number * 10. + (*p - '0');
             p++;
             num_digits++;
             num_decimals++;
         }
- 
+
         exponent -= num_decimals;
     }
- 
+
     if (num_digits == 0) {
         errno = ERANGE;
         return 0.0;
     }
- 
+
     // Correct for sign
     if (negative) number = -number;
- 
+
     // Process an exponent string
     if (*p == 'e' || *p == 'E') {
         // Handle optional sign
@@ -103,26 +130,26 @@ double rrd_strtod(const char *str, char **endptr) {
             case '-': negative = 1; // Fall through to increment pos
             case '+': p++;
         }
- 
+
         // Process string of digits
         n = 0;
         while (isdigit(*p)) {
             n = n * 10 + (*p - '0');
             p++;
         }
- 
+
         if (negative) {
             exponent -= n;
         } else {
             exponent += n;
         }
     }
- 
+
     if (exponent < DBL_MIN_EXP || exponent > DBL_MAX_EXP) {
         errno = ERANGE;
         return HUGE_VAL;
     }
- 
+
     // Scale the result
     p10 = 10.;
     n = exponent;
@@ -138,9 +165,9 @@ double rrd_strtod(const char *str, char **endptr) {
         n >>= 1;
         p10 *= p10;
     }
- 
+
     if (number == HUGE_VAL) errno = ERANGE;
     if (endptr) *endptr = p;
- 
+
     return number;
 }

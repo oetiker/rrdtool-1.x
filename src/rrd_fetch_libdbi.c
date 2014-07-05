@@ -101,7 +101,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
   switch (type) {
     case DBI_TYPE_STRING:
       ptmp=(char*)dbi_result_get_string_idx(result,idx);
-      value=rrd_strtod(ptmp,NULL);
+      rrd_strtoding(ptmp,NULL, &value);
       break;
     case DBI_TYPE_INTEGER:
       if        (attr & DBI_INTEGER_SIZE1) { value=dbi_result_get_char_idx(result,idx);
@@ -131,7 +131,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
 	}
       }
       /* convert to number */
-      value=rrd_strtod(ptmp,NULL);
+      rrd_strtoding(ptmp,NULL, &value);
       /* free pointer */
       free(ptmp);
       break;

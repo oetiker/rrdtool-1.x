@@ -4583,7 +4583,7 @@ void rrd_graph_options(
             im->forceleftspace = 1;
             break;
         case 'T':
-            im->tabwidth = rrd_strtod(optarg, 0);
+            rrd_strtoding(optarg, 0, &(im->tabwidth) );
             break;
         case 'S':
             im->step = atoi(optarg);
@@ -4652,7 +4652,7 @@ void rrd_graph_options(
                 break;
             };
             if (sscanf(optarg, "%[-0-9.e+]:%d", double_str , &im->ylabfact) == 2) {
-                im->ygridstep = rrd_strtod( double_str, 0 );
+                rrd_strtoding( double_str, 0, &(im->ygridstep) );
                 if (im->ygridstep <= 0) {
                     rrd_set_error("grid step must be > 0");
                     return;
@@ -4673,8 +4673,8 @@ void rrd_graph_options(
                       "%[-0-9.e+]:%[-0-9.e+]",
                       double_str,
                       double_str2 ) != 2) {
-                im->grid_dash_on = rrd_strtod( double_str, 0 );
-                im->grid_dash_off = rrd_strtod( double_str2, 0 );
+                rrd_strtoding( double_str, 0, &(im->grid_dash_on) );
+                rrd_strtoding( double_str2, 0, &(im->grid_dash_off)  );
                 rrd_set_error("expected grid-dash format float:float");
                 return;
             }
@@ -4691,8 +4691,8 @@ void rrd_graph_options(
                       "%[-0-9.e+]:%[-0-9.e+]",
                       double_str,
                       double_str2 ) == 2) {
-                im->second_axis_scale = rrd_strtod( double_str, 0 );
-                im->second_axis_shift = rrd_strtod( double_str2, 0 );
+                rrd_strtoding( double_str, 0, &(im->second_axis_scale) );
+                rrd_strtoding( double_str2, 0, &(im->second_axis_shift) );
                 if(im->second_axis_scale==0){
                     rrd_set_error("the second_axis_scale  must not be 0");
                     return;
@@ -4739,10 +4739,10 @@ void rrd_graph_options(
             }
             break;
         case 'u':
-            im->maxval = rrd_strtod(optarg, 0);
+            rrd_strtoding(optarg, 0, &(im->maxval));
             break;
         case 'l':
-            im->minval = rrd_strtod(optarg, 0);
+            rrd_strtoding(optarg, 0, &(im->minval));
             break;
         case 'b':
             im->base = atol(optarg);
@@ -4855,7 +4855,7 @@ void rrd_graph_options(
             int       end;
 
             if (sscanf(optarg, "%10[A-Z]:%[-0-9.e+]%n", prop, double_str, &end) >= 2) {
-                size = rrd_strtod( double_str, 0 );
+                rrd_strtoding( double_str, 0, &size );
                 int       sindex, propidx;
 
                 if ((sindex = text_prop_conv(prop)) != -1) {
@@ -4890,18 +4890,18 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            im->zoom = rrd_strtod(optarg, 0);
+            rrd_strtoding(optarg, 0, &(im->zoom));
             if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
             }
             break;
         case 't':
-			im->title=strdup(optarg);
-			if (!im->title) {
+            im->title=strdup(optarg);
+            if (!im->title) {
                 rrd_set_error("cannot allocate memory for title");
                 return;
-			}
+            }
             break;
         case 'R':
             if (strcmp(optarg, "normal") == 0) {
@@ -5162,7 +5162,7 @@ int vdef_parse(
 
     n = 0;
     sscanf(str, "%[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
-    param = rrd_strtod( double_str, 0 );
+    rrd_strtoding( double_str, 0, &param );
     if (n == (int) strlen(str)) {   /* matched */
         ;
     } else {
