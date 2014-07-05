@@ -1,5 +1,5 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 \
+	tune1 tune2 rpn1 \
 	rrdcreate
 EXTRA_DIST = Makefile.am \
 	alltests functions \
