@@ -84,11 +84,11 @@ the random number generator is seeded exactly once per process.
 
 =item B<rrd_strtod>
 
-works like normal strtod, but it is locale independent (and thread save)
+works like normal strtod, but it is locale independent (and thread safe)
 
 =item B<rrd_snprintf>
 
-works  like normal snprintf but it is locale independent (and thread save)
+works  like normal snprintf but it is locale independent (and thread safe)
 
 =item B<rrd_add_ptr(void ***dest, size_t *dest_size, void *src)>
 
