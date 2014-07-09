@@ -4938,11 +4938,11 @@ void rrd_graph_options(
             /* not supported curently */
             break;
         case 'W':
-			im->watermark=strdup(optarg);
-			if (!im->watermark) {
+            im->watermark=strdup(optarg);
+            if (!im->watermark) {
                 rrd_set_error("cannot allocate memory for watermark");
                 return;
-			}
+            }
             break;
         case 'd':
         {
