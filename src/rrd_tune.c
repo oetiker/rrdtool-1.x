@@ -184,6 +184,7 @@ int rrd_tune(
     while (1) {
         int       option_index = 0;
         int       opt;
+        unsigned int strtod_ret_val;
 
         opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
                           long_options, &option_index);
@@ -206,12 +207,16 @@ int rrd_tune(
             break;
 
         case 'i':
-            if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str)) < 1) {
+            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            if( matches >= 1 ) {
+                strtod_ret_val = rrd_strtoding( double_str, 0, &min, "Function rrd_tune, option i" );
+            }
+
+            if ((matches < 1) || (strtod_ret_val != 2)) {
                 rrd_set_error("invalid arguments for minimum ds value");
 		goto done;
             }
-            rrd_strtoding( double_str, 0, &min );
+
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
@@ -222,15 +227,20 @@ int rrd_tune(
             break;
 
         case 'a':
-            if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str)) < 1) {
+            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            if( matches >= 1 ) {
+                strtod_ret_val = rrd_strtoding( double_str, 0, &max, "Function rrd_tune, option i" );
+            }
+
+            if ((matches < 1 ) || (strtod_ret_val != 2)) {
                 rrd_set_error("invalid arguments for maximum ds value");
 		goto done;
             }
-            rrd_strtoding( double_str, 0, &max );
+
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
+
             if (matches == 1)
                 max = DNAN;
             rrd.ds_def[ds].par[DS_max_val].u_val = max;
@@ -418,11 +428,16 @@ int set_hwarg(
     double    param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
+    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Error while parsing Holt-Winters parameter");
     /* read the value */
-    rrd_strtoding(arg, 0, &param);
-    if (param <= 0.0 || param >= 1.0) {
+    if ((strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
+         (param <= 0.0 || param >= 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        return -1;
+    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse Holt-Winters parameter");
         return -1;
     }
     /* does the appropriate RRA exist?  */
@@ -451,13 +466,18 @@ int set_hwsmootharg(
     double    param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
     /* read the value */
-    rrd_strtoding(arg, 0, &param);
+    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Error while parsing Holt-Winters parameter, function set_hesmootharg");
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
-    if (param < 0.0 || param > 1.0) {
+    if ( (strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
+         (param < 0.0 || param > 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        return -1;
+    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse Holt-Winters parameter");
         return -1;
     }
     /* does the appropriate RRA exist?  */
@@ -485,12 +505,18 @@ int set_deltaarg(
     rrd_value_t param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
-    rrd_strtoding(arg, 0, &param);
-    if (param < 0.1) {
+    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Function set_deltaarg" );
+    if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
+         param < 0.1) {
         rrd_set_error("Parameter specified is too small");
         return -1;
+    } else if( strtod_ret_val == 1 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse parameter in set_deltaarg");
+        return -1;
     }
+
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
         if (cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {

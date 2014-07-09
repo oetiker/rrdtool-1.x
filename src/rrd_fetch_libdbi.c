@@ -95,14 +95,20 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
   /* get the attributes for this filed */
   unsigned int attr=dbi_result_get_field_attribs_idx(result,idx);
   unsigned int type=dbi_result_get_field_type_idx(result,idx);
+  unsigned int strtod_ret_val;
   /* return NAN if NULL */
   if(dbi_result_field_is_null_idx(result,idx)) { return DNAN; }
   /* do some conversions */
   switch (type) {
     case DBI_TYPE_STRING:
       ptmp=(char*)dbi_result_get_string_idx(result,idx);
-      rrd_strtoding(ptmp,NULL, &value);
-      break;
+      strtod_ret_val = rrd_strtoding(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_STRING");
+      if( strtod_ret_val == 1 || strtod_ret_val == 2 ) {
+        break;
+      } else {
+        value = DNAN;
+        break;
+      }
     case DBI_TYPE_INTEGER:
       if        (attr & DBI_INTEGER_SIZE1) { value=dbi_result_get_char_idx(result,idx);
       } else if (attr & DBI_INTEGER_SIZE2) { value=dbi_result_get_short_idx(result,idx);
@@ -131,7 +137,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
 	}
       }
       /* convert to number */
-      rrd_strtoding(ptmp,NULL, &value);
+      strtod_ret_val = rrd_strtoding(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_BINARY");
       /* free pointer */
       free(ptmp);
       break;

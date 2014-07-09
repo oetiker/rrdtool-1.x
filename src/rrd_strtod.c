@@ -44,26 +44,44 @@
 
 /* returns 2 on success */
 /* i.e. if the whole string has been converted to a double successfully */
-unsigned int rrd_strtoding(const char * str, char ** endptr, double * dbl) {
-    *dbl = rrd_strtod( str, endptr );
+unsigned int rrd_strtoding
+(const char * str, char ** endptr, double * dbl, char * error) {
+    char * local_endptr;
+    *dbl = rrd_strtod( str, &local_endptr );
 
-    if( endptr != NULL && *endptr == str ) {
+    if( endptr != NULL ) endptr = &local_endptr;
+
+    if( local_endptr == str ) {
         /* no conversion has been done */
         /* for inputs like "abcdj", i.e. no number at all */
-        rrd_set_error("Cannot convert %s to float", str);
+        if( error == NULL ) {
+            rrd_set_error("Cannot convert %s to float", str);
+        } else {
+            rrd_set_error("%s - Cannot convert %s to float", error, str);
+        }
         return 0;
-    } else if( endptr != NULL && endptr[0] != '\0' ) {
+    } else if( local_endptr[0] != '\0' ) {
         /* conversion has been done, but whole string is not a number */
         /* for inputs like "33.343djdjk" */
-        rrd_set_error("Cannot convert %s to float", str);
+        if( error == NULL ) {
+            rrd_set_error("Converted %s to %lf, but cannot convert %s",
+                           str, *dbl, local_endptr);
+        } else {
+            rrd_set_error("%s - Converted %s (%s) to %lf, but cannot convert %s",
+                           error, str, *dbl, local_endptr);
+        }
         return 1;
-    } else if( endptr != NULL && endptr[0] == '\0' ) {
+    } else if( local_endptr[0] == '\0' ) {
         /* conversion successfully done */
         /* for inputs that are totally numbers "23.343" */
         return 2;
     } else {
-        /* just to be safe */
-        rrd_set_error("..");
+      /* just to be safe */
+        if( error == NULL )
+            rrd_set_error("Internal error. Something is seriously wrong '%s'", str);
+        else
+            rrd_set_error("%s - Internal error. Something is seriously wrong '%s'",error, str);
+
         return 3;
     }
 }
