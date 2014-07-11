@@ -318,7 +318,7 @@ rpnp_t   *rpn_parse(
 
         else if ((sscanf(expr, "%19[-0-9.e+]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
-                 && ( rrd_strtoding( double_str, 0, &(rpnp[steps].val), "Error while parsing double in rpn_parse" ) == 2 )) {
+                 && ( rrd_strtoding( double_str, NULL, &(rpnp[steps].val), "parsing double in RPN expression" ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
             expr += pos;
         }
