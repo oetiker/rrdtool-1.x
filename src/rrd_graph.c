@@ -5157,15 +5157,13 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30], double_str[12];
+    char      func[30], double_str[21];
     int       n;
 
     n = 0;
-    sscanf(str, "%[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
-    rrd_strtoding( double_str, 0, &param, "Function vdef_parse" );
-    if (n == (int) strlen(str)) {   /* matched */
-        ;
-    } else {
+    sscanf(str, "%20[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
+    if ( rrd_strtoding( str, NULL, &param, "Function vdef_parse" ) != 2){
+        rrd_clear_error();
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);
         if (n == (int) strlen(str)) {   /* matched */

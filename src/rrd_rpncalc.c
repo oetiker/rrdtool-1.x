@@ -316,7 +316,7 @@ rpnp_t   *rpn_parse(
             return NULL;
         }
 
-        else if ((sscanf(expr, "%[-0-9.e+]%n", double_str, &pos) == 1)
+        else if ((sscanf(expr, "%19[-0-9.e+]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
                  && ( rrd_strtoding( double_str, 0, &(rpnp[steps].val), "Error while parsing double in rpn_parse" ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
