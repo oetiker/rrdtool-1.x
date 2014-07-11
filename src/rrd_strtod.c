@@ -45,13 +45,13 @@
 /* returns 2 on success */
 /* i.e. if the whole string has been converted to a double successfully */
 unsigned int rrd_strtoding
-(const char * str, char ** endptr, double * dbl, char * error) {
-    char * local_endptr;
+(const char *str, char **endptr, double *dbl, char *error) {
+    char *local_endptr = (char *)str;
     *dbl = rrd_strtod( str, &local_endptr );
 
-    if( endptr != NULL ) endptr = &local_endptr;
+    if (endptr) *endptr = local_endptr;
 
-    if( local_endptr == str ) {
+    if ( local_endptr == (char *)str ) {
         /* no conversion has been done */
         /* for inputs like "abcdj", i.e. no number at all */
         if( error == NULL ) {
