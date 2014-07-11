@@ -706,16 +706,12 @@ short rpn_calc(
             break;
         case OP_GT:
             stackunderflow(1);
-            printf("in OP_GT\n");
             if (isnan(rpnstack->s[stptr - 1]));
             else if (isnan(rpnstack->s[stptr]))
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr];
             else
                 rpnstack->s[stptr - 1] = rpnstack->s[stptr - 1] >
                     rpnstack->s[stptr] ? 1.0 : 0.0;
-            printf("rpnstack->s[stptr - 1] = %f\n", rpnstack->s[stptr - 1]);
-            printf("rpnstack->s[stptr]) = %f\n", rpnstack->s[stptr] );
-            printf("rpnstack->s[stptr - 1] = %f\n", rpnstack->s[stptr - 1]);
             stptr--;
             break;
         case OP_GE:
@@ -752,12 +748,7 @@ short rpn_calc(
             stackunderflow(2);
             rpnstack->s[stptr - 2] = (isnan(rpnstack->s[stptr - 2])
                                       || rpnstack->s[stptr - 2] ==
-                                      0.0) ? rpnstack->s[stptr] : rpnstack->
-                s[stptr - 1];
-            printf("In OP_IF\n");
-            printf("rpnstack->s[stptr - 2] = %f\n", rpnstack->s[stptr - 2]);
-            printf("rpnstack->s[stptr] = %f\n", rpnstack->s[stptr] );
-            printf("rpnstack->s[stptr - 1] = %f\n", rpnstack->s[stptr - 1]);
+                                      0.0) ? rpnstack->s[stptr] : rpnstack->s[stptr - 1];
             stptr--;
             stptr--;
             break;
