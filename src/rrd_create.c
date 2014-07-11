@@ -666,17 +666,14 @@ void parseGENERIC_DS(
             if (minstr[0] == 'U' && minstr[1] == 0)
                 ds_def->par[DS_min_val].u_val = DNAN;
             else
-                ds_def->par[DS_min_val].u_val = rrd_strtod(minstr, 0);
+                if( rrd_strtoding(minstr, 0, &(ds_def->par[DS_min_val].u_val), "parsing min val") != 2 ) return;
 
             if (maxstr[0] == 'U' && maxstr[1] == 0)
                 ds_def->par[DS_max_val].u_val = DNAN;
             else
-                ds_def->par[DS_max_val].u_val = rrd_strtod(maxstr, 0);
+                if( rrd_strtoding(maxstr, 0, &(ds_def->par[DS_max_val].u_val), "parsing max val") != 2 ) return;
 
-            if (!isnan(ds_def->par[DS_min_val].u_val) &&
-                !isnan(ds_def->par[DS_max_val].u_val) &&
-                ds_def->par[DS_min_val].u_val
-                >= ds_def->par[DS_max_val].u_val) {
+            if ( ds_def->par[DS_min_val].u_val >= ds_def->par[DS_max_val].u_val ) {
                 parsetime_error = "min must be less than max in DS definition";
                 break;
             }

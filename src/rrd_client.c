@@ -243,6 +243,7 @@ static int parse_value_array_header (char *line, /* {{{ */
   char *endptr;
   int status;
   size_t i;
+  double tmp;
 
   if ((str_array = (char**)malloc(array_len * sizeof (char*))) == NULL)
     return (-1);
@@ -268,12 +269,11 @@ static int parse_value_array_header (char *line, /* {{{ */
    * will expect a comma as the decimal separator, i.e. "42,77". */
   for (i = 0; i < array_len; i++)
   {
-    endptr = NULL;
-    array[i] = (rrd_value_t) rrd_strtod (str_array[i], &endptr);
-    if ((endptr == str_array[i]) || (errno != 0))
-    {
-      free(str_array);
-      return (-1);
+    if( rrd_strtoding(str_array[i], 0, &tmp, "parse_value_array_header") == 2) {
+        array[i] = (rrd_value_t)tmp;
+    } else {
+        free(str_array);
+        return (-1);
     }
   }
 
@@ -1586,7 +1586,8 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
         || (strcmp ("TreeNodesNumber", key) == 0))
     {
       s->type = RRDC_STATS_TYPE_GAUGE;
-      s->value.gauge = rrd_strtod (value, &endptr);
+      rrd_strtoding(value, &endptr, &(s->value.gauge),
+                                    "QueueLength or TreeDepth or TreeNodesNumber");
     }
     else if ((strcmp ("DataSetsWritten", key) == 0)
         || (strcmp ("FlushesReceived", key) == 0)
@@ -1605,7 +1606,7 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
     }
 
     /* Conversion failed */
-    if (endptr == value)
+    if ( (endptr == value) || (endptr[0] != '\0') )
     {
       free (s);
       continue;

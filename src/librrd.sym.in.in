@@ -53,6 +53,7 @@ rrd_set_error
 rrd_set_to_DINF
 rrd_set_to_DNAN
 rrd_strtod
+rrd_strtoding
 rrd_snprintf
 rrd_strerror
 rrd_strversion

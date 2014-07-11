@@ -141,28 +141,24 @@ int getLong(const char* v,long *val,char**extra,int base) {
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
+  unsigned int strtod_ret;
   *extra=NULL;
-  errno = 0;
-  *val = rrd_strtod(v,extra);
-  if (errno > 0) {
-      rrd_set_error("converting '%s' to float: %s", v, rrd_strerror(errno));
-      return -1;
-  };
 
-  *val=rrd_strtod(v,extra);
-  /* and error handling */
-  if (extra==NULL) {
-    return 0;
-  } else {
-    if (*extra==v) {
-      return -1; /* failed miserably */
-    }  else {
-      if ((*extra)[0]==0) { return 0; }
-      return 1; /* got extra bytes */
-    }
+  if( rrd_strtoding( v, extra, val, "Function getDouble" ) != 2 ) {
+    return -1;
   }
-  /* not found, so return error */
-  return -2;
+
+  strtod_ret = rrd_strtoding( v, extra, val, "Function getDouble" );
+
+  /* see rrd_strtoding's return values for more infromation */
+  if( strtod_ret == 0 )
+    return -1;
+  else if( strtod_ret == 1 )
+    return 1;
+  else if( strtod_ret == 2 )
+    return 0;
+  else
+    return -2;
 }
 
 int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {
