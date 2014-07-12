@@ -46,7 +46,7 @@ short rpn_compact(
             /* rpnp.val is a double, rpnc.val is a short */
             double    temp = floor(rpnp[i].val);
 
-            if (temp < SHRT_MIN || temp > SHRT_MAX) {
+			if (temp < SHRT_MIN || temp > SHRT_MAX || temp != rpnp[i].val) {
                 rrd_set_error
                     ("constants must be integers in the interval (%d, %d)",
                      SHRT_MIN, SHRT_MAX);
