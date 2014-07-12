@@ -12,7 +12,9 @@
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 #include "rrd_client.h"
+#ifdef HAVE_CONFIG_H
 #include "../rrd_config.h"
+#endif
 
 #include "rrd_is_thread_safe.h"
 static int opt_no_overwrite = 0;
