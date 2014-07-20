@@ -14,7 +14,7 @@ rrd_info_t *rrd_info(
     int,
     char **);
 rrd_info_t *rrd_info_r(
-    char *filename);
+    const char *filename);
 
 /* allocate memory for string */
 char     *sprintf_alloc(
@@ -156,7 +156,7 @@ rrd_info_t *rrd_info(
 } /* rrd_info_t *rrd_info */
 
 rrd_info_t *rrd_info_r(
-    char *filename)
+    const char *filename)
 {
     unsigned int i, ii = 0;
     rrd_t     rrd;
