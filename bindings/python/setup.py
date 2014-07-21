@@ -36,8 +36,8 @@ except ImportError:
     from distutils.core import setup, Extension
 import sys, os
 
-TOP_SRCDIR = os.environ.get('ABS_TOP_SRCDIR', '../../src')
-TOP_BUILDDIR = os.environ.get('ABS_TOP_BUILDDIR', '../../src')
+TOP_SRCDIR = os.environ.get('ABS_TOP_SRCDIR', '../..')
+TOP_BUILDDIR = os.environ.get('ABS_TOP_BUILDDIR', '../..')
 
 setup(name = "py-rrdtool",
       version = "0.2.2",
