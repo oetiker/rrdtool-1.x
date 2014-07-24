@@ -886,12 +886,12 @@ short rpn_calc(
 		int doshifts=shifts;
 		if (shifts<0) { doshifts=-shifts; }
 		/* alloc memory */
-		double *extra = rpnp[rpi].extra;
+		double *extra = (double *) rpnp[rpi].extra;
 		if (rpnp[rpi].op == OP_PREDICTPERC) {
 		    if (! extra) {
 		      int size = (doshifts + 1) * (locstep + 2);
 		      rpnp[rpi].extra =
-			  extra =  malloc(sizeof(double) * size);
+			  extra =  (double *) malloc(sizeof(double) * size);
 		    }
 		}
 		/* loop the shifts */

@@ -1173,7 +1173,7 @@ static rrd_t *parse_file(
     /* special handling for XML on stdin (like it is the case when using
        the pipe interface) */
     if (strcmp(filename, "-") == 0) {
-	sctx = malloc(sizeof(*sctx));
+		sctx = (stdioXmlReaderContext *) malloc(sizeof(*sctx));
 	if (sctx == NULL) {
 	    rrd_set_error("parse_file: malloc failed.");
 	    return (NULL);

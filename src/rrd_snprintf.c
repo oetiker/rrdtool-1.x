@@ -878,7 +878,9 @@ rpl_vsnprintf(char *str, size_t size, const char *format, va_list args)
 				 * characters, in an implementation-defined
 				 * manner." (C99: 7.19.6.1, 8)
 				 */
-				if ((strvalue = va_arg(args, void *)) == NULL)
+				// if ((strvalue = va_arg(args, void *)) == NULL)
+				//error C2440: '=' : cannot convert from 'void *' to 'const char *'
+				if ((strvalue = va_arg(args, char *)) == NULL)
 					/*
 					 * We use the glibc format.  BSD prints
 					 * "0x0", SysV "0".
@@ -1519,8 +1521,8 @@ mypow10(int exponent)
 void *
 mymemcpy(void *dst, void *src, size_t len)
 {
-	const char *from = src;
-	char *to = dst;
+	const char *from = (const char *) src;
+	char *to = (char *) dst;
 
 	/* No need for optimization, we use this only to replace va_copy(3). */
 	while (len-- > 0)
@@ -1539,7 +1541,7 @@ rpl_vasprintf(char **ret, const char *format, va_list ap)
 	VA_COPY(aq, ap);
 	len = vsnprintf(NULL, 0, format, aq);
 	VA_END_COPY(aq);
-	if (len < 0 || (*ret = malloc(size = len + 1)) == NULL)
+	if (len < 0 || (*ret = (char *) malloc(size = len + 1)) == NULL)
 		return -1;
 	return vsnprintf(*ret, size, format, ap);
 }

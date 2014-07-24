@@ -371,7 +371,7 @@ static char *rrd_get_file_template(const char *filename) /* {{{ */
 	rrd_file_t *rrd_file;
 	unsigned int i;
 	size_t len=0;
-	char *template = NULL;
+	char *filetemplate = NULL; //template is a key word in C++ , see http://msdn.microsoft.com/de-de/library/2e6a4at9.aspx
 
 	/* open file */
 	rrd_init(&rrd);
@@ -384,23 +384,23 @@ static char *rrd_get_file_template(const char *filename) /* {{{ */
 		len += strlen(rrd.ds_def[i].ds_nam)+1;
 	}
 	/* now that we got it allocate memory */
-	template = malloc(len);
-	if (!template)
+	filetemplate = (char *) malloc(len);
+	if (!filetemplate)
 		goto err_close;
-	template[0] = 0;
+	filetemplate[0] = 0;
 
 	/* fill in for real */
 	for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
 		if (i)
-			strcat(template,":");
-		strcat(template,rrd.ds_def[i].ds_nam);
+			strcat(filetemplate,":");
+		strcat(filetemplate,rrd.ds_def[i].ds_nam);
 	}
 
 err_close:
 	rrd_close(rrd_file);
 err_free:
 	rrd_free(&rrd);
-	return (template);
+	return (filetemplate);
 } /* }}} const char *rrd_get_file_template */
 
 
@@ -412,7 +412,7 @@ static gint cache_compare_names (gconstpointer name1,
 				gpointer data)
 {
 	(void)(data); /* to avoid unused message */
-	return (strcmp (name1, name2));
+	return (strcmp((const char *)name1, (const char *)name2));
 }
 
 static void cache_destroy(gpointer data)
@@ -514,7 +514,7 @@ static int _concat_field(
 	size_t len = 0;
 
 	/* get length */
-	char *colon = strchr(field, ':');
+	char *colon = strchr((char *)field, ':');
 	if (colon) {
 		len=colon-field;
 	} else
@@ -586,7 +586,7 @@ static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
 						*/
 	        * 2 /* = strlen(":U") */; 
 
-	mapped = malloc(len);
+	mapped = (char *) malloc(len);
 	if (!mapped)
 		return NULL;
 	mapped[0] = 0;
@@ -643,7 +643,7 @@ static int rrd_template_update(const char *filename,  /* {{{ */
 
 
 	/* now start to map those fields */
-	mapped_values = calloc(values_num,sizeof(char*));
+	mapped_values = (char **)calloc(values_num,sizeof(char*));
 	if (!mapped_values) {
 		rrd_set_error("rrd_template_update: "
 			" could not allocate memory");
