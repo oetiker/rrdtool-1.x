@@ -708,16 +708,18 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("create", PyRRD_create, PyRRD_create__doc__),
     meth("update", PyRRD_update, PyRRD_update__doc__),
     meth("fetch", PyRRD_fetch, PyRRD_fetch__doc__),
-    meth("graph", PyRRD_graph, PyRRD_graph__doc__),
     meth("tune", PyRRD_tune, PyRRD_tune__doc__),
     meth("first", PyRRD_first, PyRRD_first__doc__),
     meth("last", PyRRD_last, PyRRD_last__doc__),
     meth("resize", PyRRD_resize, PyRRD_resize__doc__),
     meth("info", PyRRD_info, PyRRD_info__doc__),
+#ifdef HAVE_RRD_GRAPH    
+    meth("graph", PyRRD_graph, PyRRD_graph__doc__),
     meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
+    meth("xport", PyRRD_xport, PyRRD_xport__doc__),
+#endif
     meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
     meth("flushcached", PyRRD_flushcached, PyRRD_flushcached__doc__),
-    meth("xport", PyRRD_xport, PyRRD_xport__doc__),
     meth("dump", PyRRD_dump, PyRRD_dump__doc__),
     {NULL, NULL, 0, NULL}
 };
