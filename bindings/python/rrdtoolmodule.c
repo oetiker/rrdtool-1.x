@@ -595,6 +595,8 @@ static PyObject *PyRRD_flushcached(
     return r;
 }
 
+#ifdef HAVE_RRD_GRAPH
+
 static char PyRRD_xport__doc__[] =
     "xport(args..): dictionary representation of data stored in RRDs\n"
     "    [-s|--start seconds] [-e|--end seconds] [-m|--maxrows rows]"
@@ -672,6 +674,8 @@ static PyObject *PyRRD_xport(
     destroy_args(&argv);
     return r;
 }
+
+#endif
 
 static char PyRRD_dump__doc__[] =
     "dump - dump an RRD to XML\n"
