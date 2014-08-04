@@ -242,7 +242,7 @@ extern    "C" {
     int argc,
     const char **argv);
     rrd_info_t *rrd_info_r(
-    char *);
+    const char *);
 /* NOTE: rrd_update_r and rrd_update_v_r are only thread-safe if no at-style
    time specifications get used!!! */
 
