@@ -1,7 +1,7 @@
 /****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  ****************************************************************************
- * rrd_snprintf  
+ * rrd_snprintf
  ****************************************************************************/
 /* see https://github.com/weiss/c99-snprintf for the original */
 
@@ -53,7 +53,7 @@
  * 	values and during the floating point conversion; use the OUTCHAR() macro
  * 	instead of a function for better performance; provide asprintf(3) and
  * 	vasprintf(3) functions; add new test cases.  The replacement functions
- * 	have been renamed to use an "rpl_" prefix, the function calls in the
+ * 	have been renamed to use an "rrd_" prefix, the function calls in the
  * 	main project (and in this file) must be redefined accordingly for each
  * 	replacement function which is needed (by using Autoconf or other means).
  * 	Various other minor improvements have been applied and the coding style
@@ -139,10 +139,10 @@
  * 2) The calls to the functions which should be replaced must be redefined
  *    throughout the project files (by using Autoconf or other means):
  *
- *    	#define vsnprintf rpl_vsnprintf
- *    	#define snprintf rpl_snprintf
- *    	#define vasprintf rpl_vasprintf
- *    	#define asprintf rpl_asprintf
+ *    	#define vsnprintf rrd_vsnprintf
+ *    	#define snprintf rrd_snprintf
+ *    	#define vasprintf rrd_vasprintf
+ *    	#define asprintf rrd_asprintf
  *
  * 3) The required replacement functions should be declared in some header file
  *    included throughout the project files:
@@ -153,16 +153,16 @@
  *    	#ifdef HAVE_STDARG_H
  *    	#include <stdarg.h>
  *    	#ifndef HAVE_VSNPRINTF
- *    	int rpl_vsnprintf(char *, size_t, const char *, va_list);
+ *    	int rrd_vsnprintf(char *, size_t, const char *, va_list);
  *    	#endif
  *    	#ifndef HAVE_SNPRINTF
- *    	int rpl_snprintf(char *, size_t, const char *, ...);
+ *    	int rrd_snprintf(char *, size_t, const char *, ...);
  *    	#endif
  *    	#ifndef HAVE_VASPRINTF
- *    	int rpl_vasprintf(char **, const char *, va_list);
+ *    	int rrd_vasprintf(char **, const char *, va_list);
  *    	#endif
  *    	#ifndef HAVE_ASPRINTF
- *    	int rpl_asprintf(char **, const char *, ...);
+ *    	int rrd_asprintf(char **, const char *, ...);
  *    	#endif
  *    	#endif
  *
@@ -174,7 +174,7 @@
 #include "rrd_snprintf.h"
 
 /***********************************************************************/
-/* we really want these puppies to be created so let's undef a bunch of 
+/* we really want these puppies to be created so let's undef a bunch of
    stuff to make sure this compiles the way we want */
 
 #ifdef HAVE_VSNPRINTF
@@ -207,10 +207,6 @@
 #define snprintf rrd_snprintf
 #define vasprintf rrd_vasprintf
 #define asprintf rrd_asprintf
-#define rpl_vsnprintf rrd_vsnprintf
-#define rpl_snprintf rrd_snprintf
-#define rpl_vasprintf rrd_vasprintf
-#define rpl_asprintf rrd_asprintf
 
 /******************************************************************/
 
@@ -318,10 +314,10 @@
 #define HAVE___VA_COPY 1
 #endif	/* !defined(HAVE___VA_COPY) */
 #endif	/* HAVE_CONFIG_H */
-#define snprintf rpl_snprintf
-#define vsnprintf rpl_vsnprintf
-#define asprintf rpl_asprintf
-#define vasprintf rpl_vasprintf
+#define snprintf rrd_snprintf
+#define vsnprintf rrd_vsnprintf
+#define asprintf rrd_asprintf
+#define vasprintf rrd_vasprintf
 #endif	/* TEST_SNPRINTF */
 
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF) || !defined(HAVE_ASPRINTF) || !defined(HAVE_VASPRINTF)
@@ -581,7 +577,7 @@ static LDOUBLE mypow10(int);
 extern int errno;
 
 int
-rpl_vsnprintf(char *str, size_t size, const char *format, va_list args)
+rrd_vsnprintf(char *str, size_t size, const char *format, va_list args)
 {
 	LDOUBLE fvalue;
 	INTMAX_T value;
@@ -1530,7 +1526,7 @@ mymemcpy(void *dst, void *src, size_t len)
 #endif	/* NEED_MYMEMCPY */
 
 int
-rpl_vasprintf(char **ret, const char *format, va_list ap)
+rrd_vasprintf(char **ret, const char *format, va_list ap)
 {
 	size_t size;
 	int len;
@@ -1548,10 +1544,10 @@ rpl_vasprintf(char **ret, const char *format, va_list ap)
 #ifndef HAVE_SNPRINTF
 #ifdef HAVE_STDARG_H
 int
-rpl_snprintf(char *str, size_t size, const char *format, ...)
+rrd_snprintf(char *str, size_t size, const char *format, ...)
 #else
 int
-rpl_snprintf(va_alist) va_dcl
+rrd_snprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
 #ifndef HAVE_STDARG_H
@@ -1575,10 +1571,10 @@ rpl_snprintf(va_alist) va_dcl
 #ifndef HAVE_ASPRINTF
 #ifdef HAVE_STDARG_H
 int
-rpl_asprintf(char **ret, const char *format, ...)
+rrd_asprintf(char **ret, const char *format, ...)
 #else
 int
-rpl_asprintf(va_alist) va_dcl
+rrd_asprintf(va_alist) va_dcl
 #endif	/* HAVE_STDARG_H */
 {
 #ifndef HAVE_STDARG_H
