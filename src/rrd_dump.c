@@ -44,7 +44,6 @@
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
-#include "rrd_snprintf.h"
 
 
 #if !(defined(NETWARE) || defined(WIN32))

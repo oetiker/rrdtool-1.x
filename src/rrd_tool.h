@@ -155,6 +155,14 @@ typedef int (*rrd_fetch_cb_t)(
 
     const char *cf_to_string (enum cf_en cf);
 
+#if (HAVE_STDARG_H - 0)
+#include <stdarg.h>
+  int rrd_vsnprintf(char *, size_t, const char *, va_list);
+  int rrd_snprintf(char *, size_t, const char *, ...);
+  int rrd_vasprintf(char **, const char *, va_list);
+  int rrd_asprintf(char **, const char *, ...);
+#endif	/* HAVE_STDARG_H */
+
 #ifdef  __cplusplus
 }
 #endif

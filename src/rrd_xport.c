@@ -18,8 +18,6 @@
 #include <fcntl.h>
 #endif
 
-#include "rrd_snprintf.h"
-
 int       rrd_xport(
     int,
     char **,

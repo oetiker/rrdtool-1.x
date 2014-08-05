@@ -64,7 +64,6 @@ noinst_HEADERS = \
         gettext.h \
 	mutex.h \
         rrd_strtod.h \
-	rrd_snprintf.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \

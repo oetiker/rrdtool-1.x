@@ -170,8 +170,7 @@
  * <http://www.jhweiss.de/software/snprintf.html>.
  */
 
-#include "rrd_config.h"
-#include "rrd_snprintf.h"
+#include "rrd_tool.h"
 
 /***********************************************************************/
 /* we really want these puppies to be created so let's undef a bunch of
