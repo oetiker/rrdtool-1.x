@@ -549,7 +549,7 @@ EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             
 EX_CHECK_ALL(pangocairo-1.0,  pango_font_map_create_context,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
 
 fi
-EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.7.8,  http://xmlsoft.org/downloads.html, /usr/include/libxml2)
+EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.7.8,  http://xmlsoft.org/downloads.html, "")
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
