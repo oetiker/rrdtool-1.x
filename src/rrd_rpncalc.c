@@ -191,6 +191,10 @@ void rpn_compact2str(
             add_op(OP_ADDNAN, ADDNAN)
             add_op(OP_MINNAN, MINNAN)
             add_op(OP_MAXNAN, MAXNAN)
+            add_op(OP_DEPTH, DEPTH)
+            add_op(OP_COPY, COPY)
+            add_op(OP_ROLL, ROLL)
+            add_op(OP_INDEX, INDEX)
 #undef add_op
     }
     (*str)[offset] = '\0';
@@ -397,6 +401,10 @@ rpnp_t   *rpn_parse(
             match_op(OP_MINNAN, MINNAN)
             match_op(OP_MAXNAN, MAXNAN)
             match_op(OP_MEDIAN, MEDIAN)
+            match_op(OP_DEPTH, DEPTH)
+            match_op(OP_COPY, COPY)
+            match_op(OP_ROLL, ROLL)
+            match_op(OP_INDEX, INDEX)
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
@@ -1081,6 +1089,65 @@ short rpn_calc(
                     }
                 }
             }
+            break;
+        case OP_ROLL:
+            stackunderflow(1);
+            {
+                int step = (int) rpnstack->s[stptr--];
+                int base = (int) rpnstack->s[stptr--];
+                int i = base;
+                int j = i + step;
+                double *tmp_stack;
+                stackunderflow(base-1);
+                tmp_stack = (double *)malloc(sizeof(double)*base);
+                if(!tmp_stack) {
+                    rrd_set_error("RPN out of memory (allocating %i objects)",base);
+                    return -1;
+                }
+                memcpy(tmp_stack,rpnstack->s + stptr,(sizeof(double)*base));
+                while(i--) {
+                    j--;
+                    while(j<0) { j += base; }
+                    while(j>=base) { j -= base; }
+                    rpnstack->s[stptr-i] = tmp_stack[j];
+                }
+                free(tmp_stack);
+            }
+            break;
+        case OP_INDEX:
+            stackunderflow(0);
+            {
+                int i = (int) rpnstack->s[stptr];
+                stackunderflow(i);
+                rpnstack->s[stptr] = rpnstack->s[stptr - i];
+            }
+            break;
+        case OP_COPY:
+            {
+                int base = (int) rpnstack->s[stptr--];
+                int i = base;
+                stackunderflow(base - 1);
+                /* allocate or grow the stack */
+                while (stptr + base > rpnstack->dc_stacksize) {
+                    /* could move this to a separate function */
+                    rpnstack->dc_stacksize += rpnstack->dc_stackblock;
+                    rpnstack->s = (double*)rrd_realloc(rpnstack->s,
+                                      (rpnstack->dc_stacksize) *
+                                      sizeof(*(rpnstack->s)));
+                    if (rpnstack->s == NULL) {
+                        rrd_set_error("RPN stack overflow");
+                        return -1;
+                    }
+                }
+                while(i--) {
+                  stptr++;
+                  rpnstack->s[stptr] = rpnstack->s[stptr - base];
+                }
+            }
+            break;
+        case OP_DEPTH:
+            stptr++;
+            rpnstack->s[stptr] = stptr;
             break;
        
         case OP_END:
