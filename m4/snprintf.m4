@@ -84,7 +84,7 @@ AC_DEFUN([HW_FUNC___VA_COPY],
 # -----------------
 # Set $hw_cv_func_vsnprintf and $hw_cv_func_vsnprintf_c99 to "yes" or "no",
 # respectively.  Define HAVE_VSNPRINTF to 1 only if $hw_cv_func_vsnprintf_c99
-# is set to "yes".  Otherwise, define vsnprintf to rpl_vsnprintf and make sure
+# is set to "yes".  Otherwise, define vsnprintf to rrd_vsnprintf and make sure
 # the replacement function will be built.
 AC_DEFUN([HW_FUNC_VSNPRINTF],
 [
@@ -123,8 +123,8 @@ AC_DEFUN([HW_FUNC_VSNPRINTF],
   AS_IF([test "$hw_cv_func_vsnprintf_c99" = yes],
     [AC_DEFINE([HAVE_VSNPRINTF], [1],
       [Define to 1 if you have a C99 compliant `vsnprintf' function.])],
-    [AC_DEFINE([vsnprintf], [rpl_vsnprintf],
-      [Define to rpl_vsnprintf if the replacement function should be used.])
+    [AC_DEFINE([vsnprintf], [rrd_vsnprintf],
+      [Define to rrd_vsnprintf if the replacement function should be used.])
     AC_CHECK_HEADERS([float.h inttypes.h locale.h stddef.h stdint.h])
     AC_CHECK_MEMBERS([struct lconv.decimal_point, struct lconv.thousands_sep],
       [], [], [#include <locale.h>])
@@ -144,7 +144,7 @@ AC_DEFUN([HW_FUNC_VSNPRINTF],
 # ----------------
 # Set $hw_cv_func_snprintf and $hw_cv_func_snprintf_c99 to "yes" or "no",
 # respectively.  Define HAVE_SNPRINTF to 1 only if $hw_cv_func_snprintf_c99
-# is set to "yes".  Otherwise, define snprintf to rpl_snprintf and make sure
+# is set to "yes".  Otherwise, define snprintf to rrd_snprintf and make sure
 # the replacement function will be built.
 AC_DEFUN([HW_FUNC_SNPRINTF],
 [
@@ -169,8 +169,8 @@ AC_DEFUN([HW_FUNC_SNPRINTF],
   AS_IF([test "$hw_cv_func_snprintf_c99" = yes],
     [AC_DEFINE([HAVE_SNPRINTF], [1],
       [Define to 1 if you have a C99 compliant `snprintf' function.])],
-    [AC_DEFINE([snprintf], [rpl_snprintf],
-      [Define to rpl_snprintf if the replacement function should be used.])
+    [AC_DEFINE([snprintf], [rrd_snprintf],
+      [Define to rrd_snprintf if the replacement function should be used.])
     _HW_FUNC_XPRINTF_REPLACE])
 ])# HW_FUNC_SNPRINTF
 
@@ -178,7 +178,7 @@ AC_DEFUN([HW_FUNC_SNPRINTF],
 # -----------------
 # Set $hw_cv_func_vasprintf to "yes" or "no".  Define HAVE_VASPRINTF to 1 if
 # $hw_cv_func_vasprintf is set to "yes".  Otherwise, define vasprintf to
-# rpl_vasprintf and make sure the replacement function will be built.
+# rrd_vasprintf and make sure the replacement function will be built.
 AC_DEFUN([HW_FUNC_VASPRINTF],
 [
   AC_REQUIRE([HW_FUNC_VSNPRINTF])dnl Our vasprintf(3) calls vsnprintf(3).
@@ -186,8 +186,8 @@ AC_DEFUN([HW_FUNC_VASPRINTF],
     [hw_cv_func_vasprintf=yes],
     [hw_cv_func_vasprintf=no])
   AS_IF([test "$hw_cv_func_vasprintf" = no],
-    [AC_DEFINE([vasprintf], [rpl_vasprintf],
-      [Define to rpl_vasprintf if the replacement function should be used.])
+    [AC_DEFINE([vasprintf], [rrd_vasprintf],
+      [Define to rrd_vasprintf if the replacement function should be used.])
     AC_CHECK_HEADERS([stdlib.h])
     HW_FUNC_VA_COPY
     AS_IF([test "$hw_cv_func_va_copy" = no],
@@ -199,7 +199,7 @@ AC_DEFUN([HW_FUNC_VASPRINTF],
 # ----------------
 # Set $hw_cv_func_asprintf to "yes" or "no".  Define HAVE_ASPRINTF to 1 if
 # $hw_cv_func_asprintf is set to "yes".  Otherwise, define asprintf to
-# rpl_asprintf and make sure the replacement function will be built.
+# rrd_asprintf and make sure the replacement function will be built.
 AC_DEFUN([HW_FUNC_ASPRINTF],
 [
   AC_REQUIRE([HW_FUNC_VASPRINTF])dnl Our asprintf(3) calls vasprintf(3).
@@ -207,8 +207,8 @@ AC_DEFUN([HW_FUNC_ASPRINTF],
     [hw_cv_func_asprintf=yes],
     [hw_cv_func_asprintf=no])
   AS_IF([test "$hw_cv_func_asprintf" = no],
-    [AC_DEFINE([asprintf], [rpl_asprintf],
-      [Define to rpl_asprintf if the replacement function should be used.])
+    [AC_DEFINE([asprintf], [rrd_asprintf],
+      [Define to rrd_asprintf if the replacement function should be used.])
     _HW_FUNC_XPRINTF_REPLACE])
 ])# HW_FUNC_ASPRINTF
 

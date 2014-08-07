@@ -66,6 +66,7 @@ rrd_updatex_r
 rrd_update_v
 rrd_update_v_r
 rrd_version
+rrd_vsnprintf
 rrd_write
 rrd_xport
 rrdc_connect
