@@ -8,6 +8,10 @@
 #include <time.h>
 #include <locale.h>
 #include <math.h>
+#include <glib.h>   // will use glist
+#include <sys/types.h>      // stat()
+#include <sys/stat.h>       // stat()
+#include <unistd.h>         // stat()
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
@@ -39,6 +43,7 @@ int rrd_create(
         {"start", required_argument, 0, 'b'},
         {"step", required_argument, 0, 's'},
         {"daemon", required_argument, 0, 'd'},
+        {"source", required_argument, 0, 'r'},
         {"no-overwrite", no_argument, 0, 'O'},
         {0, 0, 0, 0}
     };
@@ -48,10 +53,11 @@ int rrd_create(
     unsigned long pdp_step = 300;
     rrd_time_value_t last_up_tv;
     const char *parsetime_error = NULL;
-    int       rc;
+    int       rc = -1;
     char * opt_daemon = NULL;
     int       opt_no_overwrite = 0;
-
+    GList * sources = NULL;
+    
     optind = 0;
     opterr = 0;         /* initialize getopt */
 
@@ -69,20 +75,23 @@ int rrd_create(
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
-                return (-1);
+                rc = -1;
+                goto done;
             }
             break;
 
         case 'b':
             if ((parsetime_error = rrd_parsetime(optarg, &last_up_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
-                return (-1);
+                rc = -1;
+                goto done;
             }
             if (last_up_tv.type == RELATIVE_TO_END_TIME ||
                 last_up_tv.type == RELATIVE_TO_START_TIME) {
                 rrd_set_error("specifying time relative to the 'start' "
                               "or 'end' makes no sense here");
-                return (-1);
+                rc = -1;
+                goto done;
             }
 
             last_up = mktime(&last_up_tv.tm) +last_up_tv.offset;
@@ -90,14 +99,16 @@ int rrd_create(
             if (last_up < 3600 * 24 * 365 * 10) {
                 rrd_set_error
                     ("the first entry to the RRD should be after 1980");
-                return (-1);
+                rc = -1;
+                goto done;
             }
             break;
 
         case 's':
             if ((parsetime_error = rrd_scaled_duration(optarg, 1, &pdp_step))) {
                 rrd_set_error("step size: %s", parsetime_error);
-                return (-1);
+                rc = -1;
+                goto done;
             }
             break;
 
@@ -105,17 +116,52 @@ int rrd_create(
             opt_no_overwrite = 1;
 	    break;
 
+        case 'r': {
+            struct stat st;
+            if (stat(optarg, &st) != 0) {
+                char errmsg[100];
+#ifdef GNU_SOURCE
+#error using wrong version of strerror_r, because GNU_SOURCE is set
+#endif
+                strerror_r(errno, errmsg, sizeof(errmsg));
+                rrd_set_error("error checking for source RRD %s: %s", optarg, errmsg);
+                rc = -1;
+                goto done;
+            } 
+            
+            if (!S_ISREG(st.st_mode)) {
+                rrd_set_error("Not a regular file: %s", optarg);
+                rc = -1;
+                goto done;
+            }
+            char * optcpy = strdup(optarg);
+            if (optcpy == NULL) {
+                rrd_set_error("Cannot allocate string");
+                rc = -1;
+                goto done;
+            }
+            sources = g_list_append(sources, optcpy);
+            if (sources == NULL) {
+                rrd_set_error("Cannot allocate required data structure");
+                rc = -1;
+                goto done;
+            }
+
+            break;
+        }
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
             else
                 rrd_set_error("unknown option '%s'", argv[optind - 1]);
-            return (-1);
+                rc = -1;
+                goto done;
         }
     }
     if (optind == argc) {
         rrd_set_error("need name of an rrd file to create");
-        return -1;
+        rc = -1;
+        goto done;
     }
 
     rrdc_connect (opt_daemon);
@@ -129,7 +175,12 @@ int rrd_create(
                       NULL,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	}
-
+done:
+    if (sources != NULL) {
+        // this will free the list elements as well
+        g_list_free_full(sources, free);
+        sources = NULL;
+    }
     return rc;
 }
 
