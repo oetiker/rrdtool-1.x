@@ -14,6 +14,7 @@
 #include "rrd_restore.h"
 #include "unused.h"
 #include "rrd_strtod.h"
+#include "rrd_create.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1299,47 +1300,6 @@ int write_file(
     
     return rc;
 }
-
-int write_fh(
-    FILE *fh,
-    rrd_t *rrd)
-{
-    unsigned int i;
-    unsigned int rra_offset;
-
-    if (atoi(rrd->stat_head->version) < 3) {
-        /* we output 3 or higher */
-        strcpy(rrd->stat_head->version, "0003");
-    }
-    fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
-    fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
-    fwrite(rrd->live_head, sizeof(live_head_t), 1, fh);
-    fwrite(rrd->pdp_prep, sizeof(pdp_prep_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->cdp_prep, sizeof(cdp_prep_t),
-           rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
-
-    /* calculate the number of rrd_values to dump */
-    rra_offset = 0;
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        unsigned long num_rows = rrd->rra_def[i].row_cnt;
-        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
-        unsigned long ds_cnt = rrd->stat_head->ds_cnt;
-        if (num_rows > 0){
-            fwrite(rrd->rrd_value +
-                (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
-                sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, fh);
-
-            fwrite(rrd->rrd_value + rra_offset * ds_cnt,
-                sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt, fh);
-
-            rra_offset += num_rows;
-        }
-    }
-
-    return (0);
-}                       /* int write_file */
 
 int rrd_restore(
     int argc,

@@ -924,3 +924,147 @@ int rrd_create_fn(
 }
 
 
+int write_rrd(const char *outfilename, rrd_t *out) {
+    int rc = -1;
+    char *tmpfilename = NULL;
+
+    /* write out the new file */
+    FILE *fh = NULL;
+    if (strcmp(outfilename, "-") == 0) {
+	fh = stdout;
+	// to stdout
+    } else {
+	/* create RRD with a temporary name, rename atomically afterwards. */
+	tmpfilename = (char *) malloc(strlen(outfilename) + 7);
+	if (tmpfilename == NULL) {
+	    rrd_set_error("out of memory");
+	    goto done;
+	}
+
+	strcpy(tmpfilename, outfilename);
+	strcat(tmpfilename, "XXXXXX");
+	
+	int tmpfd = mkstemp(tmpfilename);
+	if (tmpfd < 0) {
+	    rrd_set_error("Cannot create temporary file");
+	    goto done;
+	}
+
+	fh = fdopen(tmpfd, "wb");
+	if (fh == NULL) {
+	    // some error 
+	    rrd_set_error("Cannot open output file");
+	    goto done;
+	}
+    }
+
+    rc = write_fh(fh, out);
+
+    if (fh != NULL && tmpfilename != NULL) {
+	/* tmpfilename != NULL indicates that we did NOT write to stdout,
+	   so we have to close the stream and do the rename dance */
+
+	fclose(fh);
+	if (rc == 0)  {
+	    // renaming is only done if write_fh was successful
+	    struct stat stat_buf;
+
+	    /* in case we have an existing file, copy its mode... This
+	       WILL NOT take care of any ACLs that may be set. Go
+	       figure. */
+	    if (stat(outfilename, &stat_buf) != 0) {
+#ifdef WIN32
+                stat_buf.st_mode = _S_IREAD | _S_IWRITE;  // have to test it is 
+#else
+		/* an error occurred (file not found, maybe?). Anyway:
+		   set the mode to 0666 using current umask */
+		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+		
+		mode_t mask = umask(0);
+		umask(mask);
+
+		stat_buf.st_mode &= ~mask;
+#endif                
+	    }
+	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {
+		rrd_set_error("Cannot chmod temporary file!");
+		goto done;
+	    }
+
+	    // before we rename the file to the target file: forget all cached changes....
+	    if (rrdc_is_any_connected()) {
+		// is it a good idea to just ignore the error ????
+		rrdc_forget(outfilename);
+		rrd_clear_error();
+	    }
+
+	    if (rename(tmpfilename, outfilename) != 0) {
+		rrd_set_error("Cannot rename temporary file to final file!");
+		goto done;
+	    }
+
+	    // after the rename: forget the file again, just to be sure...
+	    if (rrdc_is_any_connected()) {
+		// is it a good idea to just ignore the error ????
+		rrdc_forget(outfilename);
+		rrd_clear_error();
+	    }
+	} else {
+	    /* in case of any problems during write: just remove the
+	       temporary file! */
+	    unlink(tmpfilename);
+	}
+    }
+done:
+    if (tmpfilename != NULL) {
+        /* remove temp. file by name - and ignore errors, because it might have 
+         * been successfully renamed. And if somebody else used the same temp.
+         * file name - well that is bad luck, I guess.. */
+        unlink(tmpfilename);
+	free(tmpfilename);
+    }
+
+    return rc;
+}
+
+int write_fh(
+    FILE *fh,
+    rrd_t *rrd)
+{
+    unsigned int i;
+    unsigned int rra_offset;
+
+    if (atoi(rrd->stat_head->version) < 3) {
+        /* we output 3 or higher */
+        strcpy(rrd->stat_head->version, "0003");
+    }
+    fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
+    fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
+    fwrite(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
+    fwrite(rrd->live_head, sizeof(live_head_t), 1, fh);
+    fwrite(rrd->pdp_prep, sizeof(pdp_prep_t), rrd->stat_head->ds_cnt, fh);
+    fwrite(rrd->cdp_prep, sizeof(cdp_prep_t),
+           rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt, fh);
+    fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
+
+    /* calculate the number of rrd_values to dump */
+    rra_offset = 0;
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        unsigned long num_rows = rrd->rra_def[i].row_cnt;
+        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
+        unsigned long ds_cnt = rrd->stat_head->ds_cnt;
+        if (num_rows > 0){
+            fwrite(rrd->rrd_value +
+                (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
+                sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, fh);
+
+            fwrite(rrd->rrd_value + rra_offset * ds_cnt,
+                sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt, fh);
+
+            rra_offset += num_rows;
+        }
+    }
+
+    return (0);
+}                       /* int write_file */
+

@@ -40,6 +40,9 @@ void init_cdp(const rrd_t *rrd,
 	      const rra_def_t *rra_def, 
 	      cdp_prep_t *cdp_prep);
 
+int write_rrd(const char *outfilename, rrd_t *out);
+int write_fh(FILE *fh, rrd_t *rrd);
+
 #endif
 
 

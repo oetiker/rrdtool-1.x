@@ -35,7 +35,6 @@ static int positive_mod(int a, int b) {
 }
 
 // prototypes
-static int write_rrd(const char *outfilename, rrd_t *out);
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
 
@@ -1368,109 +1367,6 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 done:
     return rc;
 }
-
-static int write_rrd(const char *outfilename, rrd_t *out) {
-    int rc = -1;
-    char *tmpfilename = NULL;
-
-    /* write out the new file */
-    FILE *fh = NULL;
-    if (strcmp(outfilename, "-") == 0) {
-	fh = stdout;
-	// to stdout
-    } else {
-	/* create RRD with a temporary name, rename atomically afterwards. */
-		tmpfilename = (char *) malloc(strlen(outfilename) + 7);
-	if (tmpfilename == NULL) {
-	    rrd_set_error("out of memory");
-	    goto done;
-	}
-
-	strcpy(tmpfilename, outfilename);
-	strcat(tmpfilename, "XXXXXX");
-
-
-
-	int tmpfd = mkstemp(tmpfilename);
-
-	if (tmpfd < 0) {
-	    rrd_set_error("Cannot create temporary file");
-	    goto done;
-	}
-
-	fh = fdopen(tmpfd, "wb");
-	if (fh == NULL) {
-	    // some error 
-	    rrd_set_error("Cannot open output file");
-	    goto done;
-	}
-    }
-
-    rc = write_fh(fh, out);
-
-    if (fh != NULL && tmpfilename != NULL) {
-	/* tmpfilename != NULL indicates that we did NOT write to stdout,
-	   so we have to close the stream and do the rename dance */
-
-	fclose(fh);
-	if (rc == 0)  {
-	    // renaming is only done if write_fh was successful
-	    struct stat stat_buf;
-
-	    /* in case we have an existing file, copy its mode... This
-	       WILL NOT take care of any ACLs that may be set. Go
-	       figure. */
-	    if (stat(outfilename, &stat_buf) != 0) {
-#ifdef WIN32
-			stat_buf.st_mode = _S_IREAD | _S_IWRITE;  // have to test it is 
-#else
-		/* an error occurred (file not found, maybe?). Anyway:
-		   set the mode to 0666 using current umask */
-		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-		
-		mode_t mask = umask(0);
-		umask(mask);
-
-		stat_buf.st_mode &= ~mask;
-#endif
-	    }
-	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {
-		rrd_set_error("Cannot chmod temporary file!");
-		goto done;
-	    }
-
-	    // before we rename the file to the target file: forget all cached changes....
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-
-	    if (rename(tmpfilename, outfilename) != 0) {
-		rrd_set_error("Cannot rename temporary file to final file!");
-		unlink(tmpfilename);
-		goto done;
-	    }
-
-	    // after the rename: forget the file again, just to be sure...
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-	} else {
-	    /* in case of any problems during write: just remove the
-	       temporary file! */
-	    unlink(tmpfilename);
-	}
-    }
-done:
-    if (tmpfilename != NULL)
-	free(tmpfilename);
-
-    return rc;
-}
-
 
 int handle_modify(const rrd_t *in, const char *outfilename,
 		  int argc, char **argv, int optidx,
