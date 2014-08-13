@@ -587,12 +587,19 @@ int rrd_create_r2(
     long      i;
     unsigned long hashed_name;
     int rc = -1;
+    struct stat stat_buf;
     
     /* clear any previous errors */
     rrd_clear_error();
 
     /* init rrd clean */
     rrd_init(&rrd);
+    
+    if (no_overwrite && (stat(filename, &stat_buf) == 0)) {
+        rrd_set_error("creating '%s': File exists", filename);
+        goto done;
+    }
+    
     /* static header */
     if ((rrd.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {
         rrd_set_error("allocating rrd.stat_head");
@@ -692,7 +699,11 @@ int rrd_create_r2(
         rrd_set_error("you must define at least one Data Source");
 	goto done;
     }
-    rc = rrd_create_fn(filename, &rrd, no_overwrite);
+    
+    rc = rrd_init_data(&rrd);
+    if (rc != 0) goto done;
+
+    rc = write_rrd(filename, &rrd);
     
 done:
     rrd_free(&rrd);
@@ -878,124 +889,6 @@ void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, const pdp_prep_t *pdp_
 }
 
 /* create and empty rrd file according to the specs given */
-
-int rrd_create_fn(
-    const char *file_name,
-    rrd_t *rrd,
-    int no_overwrite )
-{
-    unsigned long i, ii;
-    rrd_value_t *unknown;
-    int       unkn_cnt;
-    rrd_file_t *rrd_file_dn;
-    rrd_t     rrd_dn;
-    unsigned  rrd_flags = RRD_READWRITE | RRD_CREAT;
-
-    if (no_overwrite) {
-      rrd_flags |= RRD_EXCL ;
-    }
-
-    unkn_cnt = 0;
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++)
-        unkn_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[i].row_cnt;
-
-    if ((rrd_file_dn = rrd_open(file_name, rrd, rrd_flags)) == NULL) {
-        rrd_set_error("creating '%s': %s", file_name, rrd_strerror(errno));
-        return (-1);
-    }
-
-    rrd_write(rrd_file_dn, rrd->stat_head, sizeof(stat_head_t));
-
-    rrd_write(rrd_file_dn, rrd->ds_def, sizeof(ds_def_t) * rrd->stat_head->ds_cnt);
-
-    rrd_write(rrd_file_dn, rrd->rra_def,
-          sizeof(rra_def_t) * rrd->stat_head->rra_cnt);
-
-    rrd_write(rrd_file_dn, rrd->live_head, sizeof(live_head_t));
-
-    if ((rrd->pdp_prep = (pdp_prep_t*)calloc(1, sizeof(pdp_prep_t))) == NULL) {
-        rrd_set_error("allocating pdp_prep");
-        rrd_close(rrd_file_dn);
-        return (-1);
-    }
-
-    strcpy(rrd->pdp_prep->last_ds, "U");
-
-    rrd->pdp_prep->scratch[PDP_val].u_val = 0.0;
-    rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt =
-        rrd->live_head->last_up % rrd->stat_head->pdp_step;
-
-    for (i = 0; i < rrd->stat_head->ds_cnt; i++)
-        rrd_write(rrd_file_dn, rrd->pdp_prep, sizeof(pdp_prep_t));
-
-    if ((rrd->cdp_prep = (cdp_prep_t*)calloc(1, sizeof(cdp_prep_t))) == NULL) {
-        rrd_set_error("allocating cdp_prep");
-        rrd_close(rrd_file_dn);
-        return (-1);
-    }
-
-
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-	init_cdp(rrd, &(rrd->rra_def[i]), rrd->pdp_prep, rrd->cdp_prep);
-
-        for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
-            rrd_write(rrd_file_dn, rrd->cdp_prep, sizeof(cdp_prep_t));
-        }
-    }
-
-    /* now, we must make sure that the rest of the rrd
-       struct is properly initialized */
-
-    if ((rrd->rra_ptr = (rra_ptr_t*)calloc(1, sizeof(rra_ptr_t))) == NULL) {
-        rrd_set_error("allocating rra_ptr");
-        rrd_close(rrd_file_dn);
-        return (-1);
-    }
-
-    /* changed this initialization to be consistent with
-     * rrd_restore. With the old value (0), the first update
-     * would occur for cur_row = 1 because rrd_update increments
-     * the pointer a priori. */
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        rrd->rra_ptr->cur_row = rrd_select_initial_row(rrd_file_dn, i, &rrd->rra_def[i]);
-        rrd_write(rrd_file_dn, rrd->rra_ptr, sizeof(rra_ptr_t));
-    }
-
-    /* write the empty data area */
-    if ((unknown = (rrd_value_t *) malloc(512 * sizeof(rrd_value_t))) == NULL) {
-        rrd_set_error("allocating unknown");
-        rrd_close(rrd_file_dn);
-        return (-1);
-    }
-    for (i = 0; i < 512; ++i)
-        unknown[i] = DNAN;
-
-    while (unkn_cnt > 0) {
-        if(rrd_write(rrd_file_dn, unknown, sizeof(rrd_value_t) * min(unkn_cnt, 512)) < 0)
-        {
-            rrd_set_error("creating rrd: %s", rrd_strerror(errno));
-            return -1;
-        }
-
-        unkn_cnt -= 512;
-    }
-    free(unknown);
-    if (rrd_close(rrd_file_dn) == -1) {
-        rrd_set_error("creating rrd: %s", rrd_strerror(errno));
-        return -1;
-    }
-    /* flush all we don't need out of the cache */
-    rrd_init(&rrd_dn);
-    if((rrd_file_dn = rrd_open(file_name, &rrd_dn, RRD_READONLY)) != NULL)
-    {
-        rrd_dontneed(rrd_file_dn, &rrd_dn);
-        /* rrd_free(&rrd_dn); */  /* FIXME: Why is this commented out? 
-                                     This would only make sense if
-                                     we are sure about mmap */
-        rrd_close(rrd_file_dn);
-    }
-    return (0);
-}
 
 static int rrd_init_data(rrd_t *rrd)
 {
