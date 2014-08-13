@@ -180,8 +180,9 @@ int rrd_create(
     }
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
-        rc = rrdc_create (argv[optind],
-                      pdp_step, last_up, opt_no_overwrite,
+        rc = rrdc_create_r2(argv[optind],
+                      pdp_step, last_up, opt_no_overwrite, 
+                      sources_array,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	} else {
         rc = rrd_create_r2(argv[optind],

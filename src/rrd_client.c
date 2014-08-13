@@ -1203,6 +1203,17 @@ int rrdc_create (const char *filename, /* {{{ */
     int argc,
     const char **argv)
 {
+    return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite, NULL, argc, argv);
+}
+
+int rrdc_create_r2(const char *filename, /* {{{ */
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    const char **sources,
+    int argc,
+    const char **argv)
+{
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
@@ -1243,6 +1254,14 @@ int rrdc_create (const char *filename, /* {{{ */
   if(no_overwrite) {
     status = buffer_add_string ("-O", &buffer_ptr, &buffer_free);
   }
+  
+  if (sources != NULL) {
+    for (const char **p = sources ; *p ; p++) {
+      buffer_add_string ("-r", &buffer_ptr, &buffer_free);
+      buffer_add_string (*p, &buffer_ptr, &buffer_free);
+    }
+  }
+  
   if (status != 0)
   {
     mutex_unlock (&lock);
