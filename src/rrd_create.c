@@ -23,6 +23,8 @@
 # include <process.h>
 #endif
 
+static int rrd_init_data(rrd_t *rrd);
+
 unsigned long FnvHash(
     const char *str);
 void      parseGENERIC_DS(
@@ -923,6 +925,100 @@ int rrd_create_fn(
     return (0);
 }
 
+static int rrd_init_data(rrd_t *rrd)
+{
+    int rc = -1;
+    unsigned long i, ii;
+    
+    if (rrd->stat_head == NULL) {
+        rrd_set_error("stat_head missing");
+        goto done;
+    }
+    
+    if (rrd->live_head == NULL) {
+        rrd_set_error("live_head missing\n");
+        goto done;
+    }
+
+    if (rrd->ds_def == NULL) {
+        rrd_set_error("ds_def missing");
+        goto done;
+    }
+    
+    if (rrd->rra_def == NULL) {
+        rrd_set_error("rra_def missing");
+        goto done;
+
+    }
+
+    if (rrd->pdp_prep == NULL) {
+        rrd->pdp_prep = calloc(rrd->stat_head->ds_cnt, sizeof(pdp_prep_t));
+        if (rrd->pdp_prep == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+        for (i = 0 ; i < rrd->stat_head->ds_cnt ; i++) {
+            strcpy(rrd->pdp_prep[i].last_ds, "U");
+            rrd->pdp_prep[i].scratch[PDP_val].u_val = 0.0;
+            rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt =
+                rrd->live_head->last_up % rrd->stat_head->pdp_step;
+        }
+    }
+
+    if (rrd->cdp_prep == NULL) {
+        rrd->cdp_prep = calloc(rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt, sizeof(cdp_prep_t));
+        if (rrd->cdp_prep == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+        
+        for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+            for (ii = 0 ; ii < rrd->stat_head->ds_cnt ; ii++) {
+                init_cdp(rrd, &(rrd->rra_def[i]), 
+                        rrd->pdp_prep + ii,
+                        rrd->cdp_prep + rrd->stat_head->ds_cnt * i + ii);
+            }
+        }
+    }
+    
+    if (rrd->rra_ptr == NULL) {
+        rrd->rra_ptr = calloc(rrd->stat_head->rra_cnt, sizeof(rra_ptr_t));
+        if (rrd->rra_ptr == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+        
+        for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+            rrd->rra_ptr->cur_row = rrd_select_initial_row(NULL, i, &rrd->rra_def[i]);
+        }
+    }
+    
+    if (rrd->rrd_value == NULL) {
+        unsigned long total_rows = 0, total_values;
+        for (i = 0 ; i < rrd->stat_head->rra_cnt ; i++) {
+            total_rows += rrd->rra_def[i].row_cnt;
+        }
+        total_values = total_rows * rrd->stat_head->ds_cnt;
+        
+        rrd->rrd_value = calloc(total_values, sizeof(rrd_value_t));
+        if (rrd->rrd_value == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+   
+        for (i = 0 ; i < total_values ; i++) {
+            rrd->rrd_value[i] = DNAN;
+        }
+    }
+    
+    rc = 0;
+    /*
+    if (rrd->stat_head->version < 3) {
+        *rrd->legacy_last_up = rrd->live_head->last_up;
+    }*/
+done:
+    return rc;
+}
 
 int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
