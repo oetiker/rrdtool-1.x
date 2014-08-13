@@ -239,6 +239,7 @@ extern    "C" {
     unsigned long pdp_step,
     time_t last_up,
     int no_overwrite,
+    const char **sources,
     int argc,
     const char **argv);
     rrd_info_t *rrd_info_r(

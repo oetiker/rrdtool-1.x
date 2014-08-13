@@ -126,6 +126,7 @@ int rrd_create(
 	} else {
         rc = rrd_create_r2(argv[optind],
                       pdp_step, last_up, opt_no_overwrite,
+                      NULL,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	}
 
@@ -501,13 +502,14 @@ int rrd_create_r(
     int argc,
     const char **argv)
 {
-	return rrd_create_r2(filename,pdp_step,last_up,0,argc,argv);
+	return rrd_create_r2(filename,pdp_step,last_up,0, NULL, argc,argv);
 }
 int rrd_create_r2(
     const char *filename,
     unsigned long pdp_step,
     time_t last_up,
     int no_overwrite,
+    const char **sources,
     int argc,
     const char **argv)
 {

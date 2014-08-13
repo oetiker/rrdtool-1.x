@@ -1977,7 +1977,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
 
   rrd_clear_error ();
   pthread_mutex_lock(&rrdfilecreate_lock);
-  status = rrd_create_r2(file,step,last_up,no_overwrite,ac,(const char **)av);
+  status = rrd_create_r2(file,step,last_up,no_overwrite,NULL, ac,(const char **)av);
   pthread_mutex_unlock(&rrdfilecreate_lock);
 
   if(!status) {
