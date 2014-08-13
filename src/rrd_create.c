@@ -57,6 +57,7 @@ int rrd_create(
     char * opt_daemon = NULL;
     int       opt_no_overwrite = 0;
     GList * sources = NULL;
+    const char **sources_array = NULL;
     
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -164,6 +165,19 @@ int rrd_create(
         goto done;
     }
 
+    if (sources != NULL) {
+        sources_array = malloc((g_list_length(sources) + 1) * sizeof(char*));
+        if (sources_array == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+        int n = 0;
+        GList *p;
+        for (p = sources ; p ; p = g_list_next(p), n++) {
+            sources_array[n] = p->data;
+        }
+        sources_array[n] = NULL;
+    }
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
         rc = rrdc_create (argv[optind],
@@ -172,10 +186,14 @@ int rrd_create(
 	} else {
         rc = rrd_create_r2(argv[optind],
                       pdp_step, last_up, opt_no_overwrite,
-                      NULL,
+                      sources_array,
                       argc - optind - 1, (const char **) (argv + optind + 1));
 	}
 done:
+    if (sources_array != NULL) {
+        free(sources_array);
+        sources_array = NULL;
+    }
     if (sources != NULL) {
         // this will free the list elements as well
         g_list_free_full(sources, free);
