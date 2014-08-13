@@ -371,6 +371,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 
 		init_cdp(out, 
 			 out->rra_def + out->stat_head->rra_cnt,
+                         out->pdp_prep + ii,
 			 cdp_prep);
 		ii++;
 		break;
@@ -1130,7 +1131,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	cdp_prep_t *cdp_prep = out->cdp_prep + start_cdp_index_out + i;
 	memcpy(cdp_prep, &empty_cdp_prep, sizeof(cdp_prep_t));
 
-	init_cdp(out, rra_def, cdp_prep);
+	init_cdp(out, rra_def, out->pdp_prep + i, cdp_prep);
 
 	if (chosen_candidate && mapped_i != -1) {
 	    int ds_cnt = chosen_candidate->rrd->stat_head->ds_cnt;

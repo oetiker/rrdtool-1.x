@@ -768,7 +768,7 @@ rra_def_t * create_hw_contingent_rras(rra_def_t *rra_defs,
      return rra_defs;
 }
 
-void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, cdp_prep_t *cdp_prep)
+void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, const pdp_prep_t *pdp_prep, cdp_prep_t *cdp_prep)
 {
 
     switch (cf_conv(rra_def->cf_nam)) {
@@ -795,7 +795,7 @@ void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, cdp_prep_t *cdp_prep)
             /* startup missing pdp count */
             cdp_prep->scratch[CDP_unkn_pdp_cnt].u_cnt =
                 ((rrd->live_head->last_up -
-                  rrd->pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
+                  pdp_prep->scratch[PDP_unkn_sec_cnt].u_cnt)
                  % (rrd->stat_head->pdp_step
                     * rra_def->pdp_cnt)) / rrd->stat_head->pdp_step;
             break;
@@ -862,7 +862,7 @@ int rrd_create_fn(
 
 
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-	init_cdp(rrd, &(rrd->rra_def[i]), rrd->cdp_prep);
+	init_cdp(rrd, &(rrd->rra_def[i]), rrd->pdp_prep, rrd->cdp_prep);
 
         for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
             rrd_write(rrd_file_dn, rrd->cdp_prep, sizeof(cdp_prep_t));

@@ -36,8 +36,11 @@ rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array,
 				 long unsigned int *rra_cnt, 
 				 unsigned long hash);
 
+/** Initialize a cdp_prep structure. The rra_def, pdp_prep and cdp_prep should
+ correspond to each other. Global values are taken from rrd. */
 void init_cdp(const rrd_t *rrd, 
-	      const rra_def_t *rra_def, 
+	      const rra_def_t *rra_def,
+	      const pdp_prep_t *pdp_prep,
 	      cdp_prep_t *cdp_prep);
 
 int write_rrd(const char *outfilename, rrd_t *out);
