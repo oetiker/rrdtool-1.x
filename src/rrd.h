@@ -75,6 +75,10 @@ extern    "C" {
 #ifndef DNAN
 # define DNAN rrd_set_to_DNAN()
 #endif
+	
+/* declare opaque data structure, so we can use its pointers for type safety */	
+	
+struct rrd_t;
 
 #ifndef DINF
 # define DINF rrd_set_to_DINF()
@@ -96,6 +100,7 @@ extern    "C" {
         size_t     file_len; /* total size of the rrd file */
         size_t     pos;  /* current pos in file */
         void      *pvt;
+	struct rrd_t *rrd;		/* the corresponding RRD structure, if any */
     } rrd_file_t;
 
 /* information used for the conventional file access methods */

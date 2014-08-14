@@ -131,7 +131,8 @@ rrd_file_t *rrd_open(
         return NULL;
     }
     memset(rrd_file, 0, sizeof(rrd_file_t));
-
+    rrd_file->rrd = rrd;
+    
     rrd_file->pvt = malloc(sizeof(rrd_simple_file_t));
     if(rrd_file->pvt == NULL) {
         rrd_set_error("allocating rrd_simple_file for '%s'", file_name);

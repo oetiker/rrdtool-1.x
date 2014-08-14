@@ -28,6 +28,7 @@
 #endif
 
 static int rrd_init_data(rrd_t *rrd);
+static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files);
 
 unsigned long FnvHash(
     const char *str);
@@ -574,6 +575,20 @@ int rrd_create_r(
 {
 	return rrd_create_r2(filename,pdp_step,last_up,0, NULL, argc,argv);
 }
+
+
+static void cleanup_source_file(rrd_file_t *file) {
+    if (file == NULL) return;
+    
+    if (file->rrd != NULL) {
+        rrd_free(file->rrd);
+        free(file->rrd);
+        file->rrd = NULL;
+    }
+
+    rrd_close(file);
+}
+
 int rrd_create_r2(
     const char *filename,
     unsigned long pdp_step,
@@ -588,6 +603,7 @@ int rrd_create_r2(
     unsigned long hashed_name;
     int rc = -1;
     struct stat stat_buf;
+    GList *sources_rrd_files = NULL;
     
     /* clear any previous errors */
     rrd_clear_error();
@@ -703,9 +719,35 @@ int rrd_create_r2(
     rc = rrd_init_data(&rrd);
     if (rc != 0) goto done;
 
+    if (sources != NULL) {
+        for (const char **s = sources ; *s ; s++) {
+            rrd_t *srrd = malloc(sizeof(rrd_t));
+            if (srrd == NULL) {
+                rrd_set_error("cannot allocate memory");
+                goto done;
+            }
+        
+            rrd_init(srrd);
+            rrd_file_t *sf = rrd_open(*s, srrd, RRD_READAHEAD | RRD_READVALUES);
+            
+            if (sf == NULL) {
+                goto done;
+            }
+            sources_rrd_files = g_list_append(sources_rrd_files, sf);
+            if (sources_rrd_files == NULL) {
+                rrd_set_error("Cannot keep information about just opened source RRD - likely leaking resources!");
+                goto done;
+            }
+        }
+        
+        rrd_prefill_data(&rrd, sources_rrd_files);
+    }
+    
     rc = write_rrd(filename, &rrd);
     
 done:
+    g_list_free_full(sources_rrd_files, (GDestroyNotify) cleanup_source_file);
+            
     rrd_free(&rrd);
     return rc;
 }
@@ -1128,4 +1170,18 @@ int write_fh(
 
     return (0);
 }                       /* int write_file */
+
+static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
+    /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
+     * the sources list that match by name... */
+    
+    
+    /* within each source file, order the RRAs by resolution - if we have an 
+     * exact resolution match, use that one as the first in the (sub)list. */
+    
+    /* for each bin in each RRA select the best bin from among the candidate 
+     * RRA data sets */
+    
+    return 0;
+}
 
