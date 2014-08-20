@@ -55,14 +55,14 @@ unsigned int rrd_strtodbl
         /* no conversion has been done */
         /* for inputs like "abcdj", i.e. no number at all */
         if( error ) {
-            rrd_set_error("%s - Cannot convert %s to float", error, str);
+            rrd_set_error("%s - Cannot convert '%s' to float", error, str);
         }
         return 0;
     } else if( local_endptr[0] != '\0' ) {
         /* conversion has been done, but whole string is not a number */
         /* for inputs like "33.343djdjk" */
         if( error ) {
-            rrd_set_error("%s - Converted %s to %lf, but cannot convert %s",
+            rrd_set_error("%s - Converted '%s' to %lf, but cannot convert '%s'",
                            error, str, *dbl, local_endptr);
         }
         return 1;
