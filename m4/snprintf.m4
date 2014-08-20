@@ -1,3 +1,6 @@
+#
+# mutilated for the use in rrdtool by tobi oetiker 2014
+#
 # Copyright (c) 2008 Holger Weiss <holger@jhweiss.de>.
 #
 # This code may freely be used, modified and/or redistributed for any purpose.
@@ -123,7 +126,7 @@ AC_DEFUN([HW_FUNC_VSNPRINTF],
   AS_IF([test "$hw_cv_func_vsnprintf_c99" = yes],
     [AC_DEFINE([HAVE_VSNPRINTF], [1],
       [Define to 1 if you have a C99 compliant `vsnprintf' function.])],
-    [AC_DEFINE([vsnprintf], [rpl_vsnprintf],
+    [AC_DEFINE([XXXvsnprintf], [XXXrpl_vsnprintf],
       [Define to rpl_vsnprintf if the replacement function should be used.])
     AC_CHECK_HEADERS([float.h inttypes.h locale.h stddef.h stdint.h])
     AC_CHECK_MEMBERS([struct lconv.decimal_point, struct lconv.thousands_sep],
@@ -169,7 +172,7 @@ AC_DEFUN([HW_FUNC_SNPRINTF],
   AS_IF([test "$hw_cv_func_snprintf_c99" = yes],
     [AC_DEFINE([HAVE_SNPRINTF], [1],
       [Define to 1 if you have a C99 compliant `snprintf' function.])],
-    [AC_DEFINE([snprintf], [rpl_snprintf],
+    [AC_DEFINE([XXXsnprintf], [XXXrpl_snprintf],
       [Define to rpl_snprintf if the replacement function should be used.])
     _HW_FUNC_XPRINTF_REPLACE])
 ])# HW_FUNC_SNPRINTF
@@ -186,7 +189,7 @@ AC_DEFUN([HW_FUNC_VASPRINTF],
     [hw_cv_func_vasprintf=yes],
     [hw_cv_func_vasprintf=no])
   AS_IF([test "$hw_cv_func_vasprintf" = no],
-    [AC_DEFINE([vasprintf], [rpl_vasprintf],
+    [AC_DEFINE([XXXvasprintf], [XXXrpl_vasprintf],
       [Define to rpl_vasprintf if the replacement function should be used.])
     AC_CHECK_HEADERS([stdlib.h])
     HW_FUNC_VA_COPY
@@ -207,22 +210,9 @@ AC_DEFUN([HW_FUNC_ASPRINTF],
     [hw_cv_func_asprintf=yes],
     [hw_cv_func_asprintf=no])
   AS_IF([test "$hw_cv_func_asprintf" = no],
-    [AC_DEFINE([asprintf], [rpl_asprintf],
+    [AC_DEFINE([XXXasprintf], [XXXrpl_asprintf],
       [Define to rpl_asprintf if the replacement function should be used.])
     _HW_FUNC_XPRINTF_REPLACE])
 ])# HW_FUNC_ASPRINTF
-
-# _HW_FUNC_XPRINTF_REPLACE
-# ------------------------
-# Arrange for building snprintf.c.  Must be called if one or more of the
-# functions provided by snprintf.c are needed.
-AC_DEFUN([_HW_FUNC_XPRINTF_REPLACE],
-[
-  AS_IF([test "x$_hw_cv_func_xprintf_replace_done" != xyes],
-    [AC_C_CONST
-    HW_HEADER_STDARG_H
-    AC_LIBOBJ([snprintf])
-    _hw_cv_func_xprintf_replace_done=yes])
-])# _HW_FUNC_XPRINTF_REPLACE
 
 dnl vim: set joinspaces textwidth=80:
