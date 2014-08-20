@@ -144,13 +144,13 @@ int getDouble(const char* v, double *val,char**extra) {
   unsigned int strtod_ret;
   *extra=NULL;
 
-  if( rrd_strtoding( v, extra, val, "Function getDouble" ) != 2 ) {
+  if( rrd_strtodbl( v, extra, val, "Function getDouble" ) != 2 ) {
     return -1;
   }
 
-  strtod_ret = rrd_strtoding( v, extra, val, "Function getDouble" );
+  strtod_ret = rrd_strtodbl( v, extra, val, "Function getDouble" );
 
-  /* see rrd_strtoding's return values for more infromation */
+  /* see rrd_strtodbl's return values for more infromation */
   if( strtod_ret == 0 )
     return -1;
   else if( strtod_ret == 1 )

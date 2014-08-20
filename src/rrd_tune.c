@@ -209,7 +209,7 @@ int rrd_tune(
         case 'i':
             matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
             if( matches >= 1 ) {
-                strtod_ret_val = rrd_strtoding( double_str, 0, &min, "Function rrd_tune, option i" );
+                strtod_ret_val = rrd_strtodbl( double_str, 0, &min, "Function rrd_tune, option i" );
             }
 
             if ((matches < 1) || (strtod_ret_val != 2)) {
@@ -229,7 +229,7 @@ int rrd_tune(
         case 'a':
             matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
             if( matches >= 1 ) {
-                strtod_ret_val = rrd_strtoding( double_str, 0, &max, "Function rrd_tune, option i" );
+                strtod_ret_val = rrd_strtodbl( double_str, 0, &max, "Function rrd_tune, option i" );
             }
 
             if ((matches < 1 ) || (strtod_ret_val != 2)) {
@@ -430,7 +430,7 @@ int set_hwarg(
     signed short rra_idx = -1;
     unsigned int strtod_ret_val;
 
-    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Error while parsing Holt-Winters parameter");
+    strtod_ret_val = rrd_strtodbl(arg, 0, &param, "Error while parsing Holt-Winters parameter");
     /* read the value */
     if ((strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
          (param <= 0.0 || param >= 1.0) ) {
@@ -469,7 +469,7 @@ int set_hwsmootharg(
     unsigned int strtod_ret_val;
 
     /* read the value */
-    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Error while parsing Holt-Winters parameter, function set_hesmootharg");
+    strtod_ret_val = rrd_strtodbl(arg, 0, &param, "Error while parsing Holt-Winters parameter, function set_hesmootharg");
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
     if ( (strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
@@ -507,7 +507,7 @@ int set_deltaarg(
     signed short rra_idx = -1;
     unsigned int strtod_ret_val;
 
-    strtod_ret_val = rrd_strtoding(arg, 0, &param, "Function set_deltaarg" );
+    strtod_ret_val = rrd_strtodbl(arg, 0, &param, "Function set_deltaarg" );
     if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
          param < 0.1) {
         rrd_set_error("Parameter specified is too small");

@@ -269,7 +269,7 @@ static int parse_value_array_header (char *line, /* {{{ */
    * will expect a comma as the decimal separator, i.e. "42,77". */
   for (i = 0; i < array_len; i++)
   {
-    if( rrd_strtoding(str_array[i], 0, &tmp, "parse_value_array_header") == 2) {
+    if( rrd_strtodbl(str_array[i], 0, &tmp, "parse_value_array_header") == 2) {
         array[i] = (rrd_value_t)tmp;
     } else {
         free(str_array);
@@ -1586,7 +1586,7 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
         || (strcmp ("TreeNodesNumber", key) == 0))
     {
       s->type = RRDC_STATS_TYPE_GAUGE;
-      rrd_strtoding(value, &endptr, &(s->value.gauge),
+      rrd_strtodbl(value, &endptr, &(s->value.gauge),
                                     "QueueLength or TreeDepth or TreeNodesNumber");
     }
     else if ((strcmp ("DataSetsWritten", key) == 0)

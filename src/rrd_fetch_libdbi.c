@@ -102,7 +102,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
   switch (type) {
     case DBI_TYPE_STRING:
       ptmp=(char*)dbi_result_get_string_idx(result,idx);
-      strtod_ret_val = rrd_strtoding(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_STRING");
+      strtod_ret_val = rrd_strtodbl(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_STRING");
       if( strtod_ret_val == 1 || strtod_ret_val == 2 ) {
         break;
       } else {
@@ -137,7 +137,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
 	}
       }
       /* convert to number */
-      strtod_ret_val = rrd_strtoding(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_BINARY");
+      strtod_ret_val = rrd_strtodbl(ptmp,NULL, &value, "rrd_fetch_dbi_double, DBI_TYPE_BINARY");
       /* free pointer */
       free(ptmp);
       break;
