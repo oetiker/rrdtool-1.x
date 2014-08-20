@@ -24,6 +24,17 @@ if [ -z "$RRDTOOL" ] ; then
 	esac
 fi
 
+function verbose_rrdtool {
+	echo "$RRDTOOL_V" "$@"
+	"$RRDTOOL_V" "$@"
+}
+
+if [ -n "$VERBOSE" ] ; then
+	RRDTOOL_V="$RRDTOOL"
+	RRDTOOL=verbose_rrdtool
+fi
+
+
 DIFF="diff -u"
 
 function fail {
