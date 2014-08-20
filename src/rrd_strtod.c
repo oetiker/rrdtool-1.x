@@ -67,7 +67,7 @@ unsigned int rrd_strtoding
             rrd_set_error("Converted %s to %lf, but cannot convert %s",
                            str, *dbl, local_endptr);
         } else {
-            rrd_set_error("%s - Converted %s (%s) to %lf, but cannot convert %s",
+            rrd_set_error("%s - Converted %s to %lf, but cannot convert %s",
                            error, str, *dbl, local_endptr);
         }
         return 1;
