@@ -144,21 +144,23 @@ int getDouble(const char* v, double *val,char**extra) {
   unsigned int strtod_ret;
   *extra=NULL;
 
-  if( rrd_strtodbl( v, extra, val, "Function getDouble" ) != 2 ) {
-    return -1;
-  }
-
-  strtod_ret = rrd_strtodbl( v, extra, val, "Function getDouble" );
+  strtod_ret = rrd_strtodbl( v, extra, val, NULL);
 
   /* see rrd_strtodbl's return values for more infromation */
-  if( strtod_ret == 0 )
-    return -1;
-  else if( strtod_ret == 1 )
-    return 1;
-  else if( strtod_ret == 2 )
-    return 0;
-  else
-    return -2;
+  switch (rrd_strtodbl( v, extra, val, NULL)){
+    case 0:
+        return -1;
+        break;
+    case 1:
+        return 1;
+        break;
+    case 2:
+        return 0;
+        break;
+    default:
+        return -2;
+        break;
+  }
 }
 
 int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {

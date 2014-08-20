@@ -329,7 +329,7 @@ static int get_xml_double(
             xmlFree(text);
             return 0;            
         }        
-        if ( rrd_strtodbl((char *)text,NULL, &temp, "Function xml_get_double") != 2 ){
+        if ( rrd_strtodbl((char *)text,NULL, &temp, NULL) != 2 ){
             rrd_set_error("ling %d: get_xml_double from '%s' %s",
                           xmlTextReaderGetParserLineNumber(reader),
                           text,rrd_strerror(errno));

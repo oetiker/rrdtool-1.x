@@ -82,6 +82,11 @@ values supplied to the fetch function. If the values are the same, the previous 
 Generates random numbers just like random().  This further ensures that
 the random number generator is seeded exactly once per process.
 
+=item B<rrd_strtodbl>
+
+an rrd aware string to double convertor which sets rrd_error in if there is a problem
+and uses the return code exclusively for conversion status reporting.
+
 =item B<rrd_strtod>
 
 works like normal strtod, but it is locale independent (and thread safe)

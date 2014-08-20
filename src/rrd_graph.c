@@ -4583,7 +4583,8 @@ void rrd_graph_options(
             im->forceleftspace = 1;
             break;
         case 'T':
-            rrd_strtodbl(optarg, 0, &(im->tabwidth), "Function rrd_graph_options, option 'T'");
+            if (rrd_strtodbl(optarg, 0, &(im->tabwidth), "option -T") != 2)
+                return;
             break;
         case 'S':
             im->step = atoi(optarg);
@@ -4652,7 +4653,9 @@ void rrd_graph_options(
                 break;
             };
             if (sscanf(optarg, "%[-0-9.e+]:%d", double_str , &im->ylabfact) == 2) {
-                rrd_strtodbl( double_str, 0, &(im->ygridstep), "Function rrd_graph_options, option 'y'");
+                if (rrd_strtodbl( double_str, 0, &(im->ygridstep), "option -y") != 2){
+                    return;
+                }
                 if (im->ygridstep <= 0) {
                     rrd_set_error("grid step must be > 0");
                     return;
@@ -4673,10 +4676,11 @@ void rrd_graph_options(
                       "%[-0-9.e+]:%[-0-9.e+]",
                       double_str,
                       double_str2 ) != 2) {
-                rrd_strtodbl( double_str, 0, &(im->grid_dash_on), "Function rrd_graph_options, option 1008");
-                rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), "Function rrd_graph_options, option 1008");
-                rrd_set_error("expected grid-dash format float:float");
-                return;
+                if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2 
+                     || rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), NULL) != 2 ){
+                    rrd_set_error("expected grid-dash format float:float");
+                    return;
+                }
             }
             break;   
         case 1009: /* enable dynamic labels */
@@ -4690,9 +4694,9 @@ void rrd_graph_options(
             if(sscanf(optarg,
                       "%[-0-9.e+]:%[-0-9.e+]",
                       double_str,
-                      double_str2 ) == 2) {
-                rrd_strtodbl( double_str, 0, &(im->second_axis_scale), "Function rrd_graph_options, option 1002");
-                rrd_strtodbl( double_str2, 0, &(im->second_axis_shift), "Function rrd_graph_options, option 1002");
+                      double_str2 ) == 2
+                && rrd_strtodbl( double_str, 0, &(im->second_axis_scale),NULL) == 2
+                && rrd_strtodbl( double_str2, 0, &(im->second_axis_shift),NULL) == 2){
                 if(im->second_axis_scale==0){
                     rrd_set_error("the second_axis_scale  must not be 0");
                     return;
@@ -4739,10 +4743,14 @@ void rrd_graph_options(
             }
             break;
         case 'u':
-            rrd_strtodbl(optarg, 0, &(im->maxval), "Function rrd_graph_options, option 'u'");
+            if (rrd_strtodbl(optarg, 0, &(im->maxval), "option -u") != 2){
+                return;
+            }
             break;
         case 'l':
-            rrd_strtodbl(optarg, 0, &(im->minval), "Function rrd_graph_options, option 'l'");
+            if (rrd_strtodbl(optarg, 0, &(im->minval), "option -l") != 2){
+                return;
+            }
             break;
         case 'b':
             im->base = atol(optarg);
@@ -4854,8 +4862,8 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            if (sscanf(optarg, "%10[A-Z]:%[-0-9.e+]%n", prop, double_str, &end) >= 2) {
-                rrd_strtodbl( double_str, 0, &size, "Function rrd_graph_options, option 'n'" );
+            if (sscanf(optarg, "%10[A-Z]:%[-0-9.e+]%n", prop, double_str, &end) >= 2
+                && rrd_strtodbl( double_str, 0, &size, NULL) == 2) {
                 int       sindex, propidx;
 
                 if ((sindex = text_prop_conv(prop)) != -1) {
@@ -4890,7 +4898,9 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            rrd_strtodbl(optarg, 0, &(im->zoom), "Function rrd_graph_options, option 'm'");
+            if (rrd_strtodbl(optarg, 0, &(im->zoom), "option -m") != 2){
+                return;
+            }
             if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
@@ -5162,8 +5172,7 @@ int vdef_parse(
 
     n = 0;
     sscanf(str, "%20[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
-    if ( rrd_strtodbl( str, NULL, &param, "Function vdef_parse" ) != 2){
-        rrd_clear_error();
+    if ( rrd_strtodbl( str, NULL, &param, NULL) != 2 ){
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);
         if (n == (int) strlen(str)) {   /* matched */

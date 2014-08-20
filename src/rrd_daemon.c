@@ -1512,7 +1512,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
     /* make sure update time is always moving forward. We use double here since
        update does support subsecond precision for timestamps ... */
-    if ( ( rrd_strtodbl( value, &eostamp, &stamp, "error while parsing time stamp" ) != 1 ) || *eostamp != ':')
+    if ( ( rrd_strtodbl( value, &eostamp, &stamp, NULL) != 1 ) || *eostamp != ':')
     {
       pthread_mutex_unlock(&cache_lock);
       return send_response(sock, RESP_ERR,

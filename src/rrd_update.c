@@ -1317,7 +1317,7 @@ static int get_time_from_reading(
         *current_time = tmp_time.tv_sec;
         *current_time_usec = tmp_time.tv_usec;
     } else {
-        if ( rrd_strtodbl( updvals[0], 0, &tmp, "error while parsing time in get_time_from_reading") != 2) {
+        if ( rrd_strtodbl( updvals[0], NULL, &tmp, "error while parsing time in get_time_from_reading") != 2) {
             return -1;
         };
         if (tmp < 0.0){
@@ -1422,13 +1422,13 @@ static int update_pdp_prep(
                 }
                 break;
             case DST_ABSOLUTE:
-                if( rrd_strtodbl(updvals[ds_idx + 1], 0, &pdp_new[ds_idx], "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
+                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &pdp_new[ds_idx], "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
                     return -1;
                 }
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
-                if( rrd_strtodbl( updvals[ds_idx + 1], 0, &tmp, "Function update_pdp_prep, case DST_GAUGE") == 2 ) {
+                if( rrd_strtodbl( updvals[ds_idx + 1], NULL, &tmp, "Function update_pdp_prep, case DST_GAUGE") == 2 ) {
                     pdp_new[ds_idx] = tmp * interval;
                 } else {
                     return -1;
