@@ -141,10 +141,7 @@ int getLong(const char* v,long *val,char**extra,int base) {
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
-  unsigned int strtod_ret;
   *extra=NULL;
-
-  strtod_ret = rrd_strtodbl( v, extra, val, NULL);
 
   /* see rrd_strtodbl's return values for more infromation */
   switch (rrd_strtodbl( v, extra, val, NULL)){
