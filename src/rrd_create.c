@@ -1157,13 +1157,10 @@ int write_fh(
         unsigned long cur_row = rrd->rra_ptr[i].cur_row;
         unsigned long ds_cnt = rrd->stat_head->ds_cnt;
         if (num_rows > 0){
-            fwrite(rrd->rrd_value +
-                (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
-                sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, fh);
-
             fwrite(rrd->rrd_value + rra_offset * ds_cnt,
-                sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt, fh);
-
+                    sizeof(rrd_value_t), 
+                    num_rows * ds_cnt, fh);
+                    
             rra_offset += num_rows;
         }
     }
