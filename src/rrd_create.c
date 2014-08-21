@@ -1170,16 +1170,192 @@ int write_fh(
     return (0);
 }                       /* int write_file */
 
+long overlap(long start1, long end1, long start2, long end2) {
+    if (start1 >= end1) return 0;
+    if (start2 >= end2) return 0;
+
+    if (start1 > end2) return 0;
+    if (start2 > end1) return 0;
+
+    return min(end1, end2) - max(start1, start2);
+}
+
+static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
+    long total_cnt = 0;
+    for (int zz = 0 ; zz < rra_index ; zz++) {
+        total_cnt += rrd->rra_def[rra_index].row_cnt;
+    }
+    fprintf(stderr, "Dump rra_index=%d ds_index=%d\n", rra_index, ds_index);
+    
+    for (int zz = 0 ; zz < rrd->rra_def[rra_index].row_cnt ; zz++) {
+        time_t zt = end_time_for_row_simple(rrd, rra_index, zz);
+
+        rrd_value_t v = rrd->rrd_value[rrd->stat_head->ds_cnt * (total_cnt + zz) + ds_index];
+
+        int zz_calc = row_for_time(rrd, rrd->rra_def + rra_index, 
+                                   rrd->rra_ptr[rra_index].cur_row, zt);
+        fprintf(stderr, "%d %ld %g %d\n", zz, zt, v, zz_calc);
+    }
+}
+
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
-    /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
-     * the sources list that match by name... */
+    int rc = -1;
     
+    if (sources == NULL) {
+        // we are done if there is nothing to copy data from
+        rc = 0;
+        goto done;
+    }
+
+    unsigned long i, j, si, sj;
+    unsigned long total_rows = 0;
     
+    debug_dump_rra(((rrd_file_t *) sources->data)->rrd, 0, 0);
+
+    // process one RRA after the other
+    for (i = 0 ; i < rrd->stat_head->rra_cnt ; i++) {
+        fprintf(stderr, "PREFILL RRA %d\n", i);
+
+        rra_def_t *rra_def = rrd->rra_def + i;
+        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
+
+        for (j = 0 ; j < rrd->stat_head->ds_cnt ; j++) {
+            /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
+             * the sources list that match by name... */
+    
+            ds_def_t  *ds_def  = rrd->ds_def + j;
+            
+            const GList *src;
+            candidate_t *candidates = NULL;
+            int candidate_cnt = 0;
+            
+            for (src = sources ; src ;  src = g_list_next(src)) {
+                // first: find matching DS
+                
+                const rrd_file_t *rrd_file = src->data;
+                if (rrd_file == NULL) continue;
+                
+                const rrd_t *src_rrd = rrd_file->rrd;
+                if (src_rrd == NULL) continue; 
+
+                fprintf(stderr, "cur_rows: %d %d\n", 
+                        rrd->rra_ptr[0].cur_row, src_rrd->rra_ptr[0].cur_row);
+                
+                fprintf(stderr, "src rrd last_up %ld\n", src_rrd->live_head->last_up);
+                fprintf(stderr, "dst rrd last_up %ld\n", rrd->live_head->last_up);
+                
+                int found_ds_index = -1;
+                for (sj = 0 ; sj < src_rrd->stat_head->ds_cnt ; sj++) {
+                    if (strcmp(ds_def->ds_nam, src_rrd->ds_def[sj].ds_nam) == 0) {
+                        // name match!!!
+                        found_ds_index = sj;
+                        
+                        // candidates = g_list_append(candidates, (gpointer) src);
+                        candidates = find_candidate_rras(src_rrd, rra_def, &candidate_cnt);
+                        
+for (int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
+    fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
+}                        
+for (int tt = 0 ; tt < candidate_cnt ; tt++) {
+    fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index,  candidates[tt].rra->row_cnt);
+}                 
+                    }
+                }
+            }
+
+            /* walk all RRA bins and fill the current DS with data from 
+             * the list of candidates */
+
+            unsigned long cnt = 0, k;
+            
+            for (cnt = 0 ; cnt < rra_def->row_cnt ; cnt++) {
+                long bin_size = rra_def->pdp_cnt * rrd->stat_head->pdp_step;
+                time_t bin_end_time = end_time_for_row_simple(rrd, i, cnt);
+                time_t bin_start_time = bin_end_time - bin_size + 1;
+                
+                fprintf(stderr, "Bin %ld from %ld to %ld\n", cnt, bin_start_time, bin_end_time);
+                /* find corresponding range of bins in all candidates... */
+                
+                rrd_value_t best_value = 0, best_covered = 0, best_covering_bins = 0;
+                for (k = 0 ; k < (unsigned long) candidate_cnt ; k++) {
+                    candidate_t *candidate = candidates + k;
+                    
+                    rra_def_t * candidate_rra_def = candidate->rra;
+                    
+                    //candidates[k].
+                    int end_bin = row_for_time(candidate->rrd, candidate->rra, 
+                            candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
+                            bin_end_time);
+                    int start_bin = row_for_time(candidate->rrd, candidate->rra, 
+                            candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
+                            bin_start_time);
+                    fprintf(stderr, " candidate #%d (index=%d) from %ld to %ld (row_cnt=%d)\n", k, 
+                            candidate->rra_index, 
+                            start_bin, end_bin, 
+                                                    candidate_rra_def->row_cnt);
+                    
+                    if (start_bin < candidate_rra_def->row_cnt && end_bin < candidate_rra_def->row_cnt) {
+                        int bin_count = positive_mod(end_bin - start_bin + 1, candidate_rra_def->row_cnt);
+                        fprintf(stderr, "  bin_count %d\n", bin_count);
+                        
+                        long total_covered = 0, covering_bins = 0;
+                        rrd_value_t value = 0;
+                        
+                        for (int ci = start_bin ; bin_count > 0 ; ci++, bin_count-- ) {
+                            // find overlap range....
+                            long cand_bin_size = candidate_rra_def->pdp_cnt * candidate->rrd->stat_head->pdp_step;
+                            time_t cand_bin_end_time = end_time_for_row_simple(candidate->rrd, candidate->rra_index, ci);
+                            time_t cand_bin_start_time = cand_bin_end_time - cand_bin_size + 1;
+                            
+                            long covered = overlap(bin_start_time, bin_end_time,
+                                                   cand_bin_start_time, cand_bin_end_time) +1;
+                            rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + j];
+                            if (covered > 0 && v != NAN) {
+                                total_covered += covered;
+                                covering_bins++;
+                                
+                                value += v / cand_bin_size * covered;
+                            }
+                            fprintf(stderr, "  covers from %ld to %ld overlap is %g value=%g\n",
+                                        cand_bin_start_time, cand_bin_end_time,
+                                        (float) covered / bin_size, v);
+                        }
+                        fprintf(stderr, "total coverage=%ld/%ld from %ld bins\n", total_covered, bin_size, covering_bins);
+                        
+                        if (total_covered > best_covered || (total_covered == best_covered && covering_bins < best_covering_bins)) {
+                            fprintf(stderr, "Choosing as current best value %g\n", value);
+                            best_value = value;
+                            best_covered = total_covered;
+                            best_covering_bins = covering_bins;
+                        }
+                    }
+                    
+                }
+                //row_for_time();
+
+                if (best_covered > 0) {
+                    
+                    *(rrd->rrd_value + rrd->stat_head->ds_cnt * (total_rows + cnt) + j) = best_value;
+                }
+            }
+
+            if (candidates) {
+                free(candidates);
+                candidates = NULL;
+            }
+        }
+        total_rows += rra_def->row_cnt;
+    }
+    
+    rc = 0;
     /* within each source file, order the RRAs by resolution - if we have an 
      * exact resolution match, use that one as the first in the (sub)list. */
     
     /* for each bin in each RRA select the best bin from among the candidate 
      * RRA data sets */
+debug_dump_rra(rrd, 0, 0);
+done:
+    return rc;
 }
 
 // calculate a % b, guaranteeing a positive result...
