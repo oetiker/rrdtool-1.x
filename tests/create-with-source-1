@@ -1,0 +1,30 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+BUILD=$BUILDDIR/$(basename $0)-test
+
+# create 2 RRDs only differing in the way that the second contains an additional RRA
+# test: remove the additional RRA from the second and compare dumps
+# test: add the additional RRA to the first and compare dumps 
+
+ST=1300000000
+$RRDTOOL create ${BUILD}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create1
+
+UPDATE=
+V=10
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	UPDATE="$UPDATE $A:$V"
+	V=$(($V + 20))
+	ST=$A
+done
+$RRDTOOL update ${BUILD}a1.rrd  $UPDATE
+
+
+$RRDTOOL create ${BUILD}a2.rrd --start $ST --step 60 --source ${BUILD}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-with-source-1
+
+$RRDTOOL create ${BUILD}a3.rrd --start $ST --step 60 --source ${BUILD}a2.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-with-source-2
