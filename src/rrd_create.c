@@ -730,8 +730,8 @@ int rrd_create_r2(
             }
         
             rrd_init(srrd);
-            rrd_file_t *sf = rrd_open(*s, srrd, RRD_READAHEAD | RRD_READVALUES);
-            
+            rrd_file_t *sf = rrd_open(*s, srrd, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
+
             if (sf == NULL) {
                 goto done;
             }
@@ -998,7 +998,7 @@ static int rrd_init_data(rrd_t *rrd)
         }
         
         for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-            rrd->rra_ptr->cur_row = rrd_select_initial_row(NULL, i, &rrd->rra_def[i]);
+            rrd->rra_ptr[i].cur_row = rrd_select_initial_row(NULL, i, &rrd->rra_def[i]);
         }
     }
     
