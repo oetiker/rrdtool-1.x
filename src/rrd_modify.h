@@ -31,6 +31,12 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 		  int argc, char **argv, int optind,
 		  int newstep);
 
+typedef union {
+	long l;
+	unsigned long ul;
+	void *vp;
+} candidate_extra_t;
+
 typedef struct {
     const rrd_t *rrd;
     int rra_index;
@@ -38,6 +44,7 @@ typedef struct {
     rra_def_t *rra;
     rra_ptr_t *ptr;
     cdp_prep_t *cdp;
+    candidate_extra_t extra;
 } candidate_t;
 
 /* 
@@ -58,7 +65,8 @@ typedef struct {
    rra .. the RRA we want to populate
    cnt .. a pointer to an int receiving the number of returned candidates
 */
-candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt);
+candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt,
+				 candidate_extra_t extra);
 
 #endif
 

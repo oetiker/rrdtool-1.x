@@ -5,6 +5,22 @@
 BASE=$BASEDIR/$(basename $0)-test
 BUILD=$BUILDDIR/$(basename $0)-test
 
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function xmlfilter {
+
+#-               <last_ds>1010</last_ds>
+#-               <value>4.0400000000e+04</value>
+#-               <unknown_sec> 0 </unknown_sec>
+#+               <last_ds>U</last_ds>
+#+               <value>0.0000000000e+00</value>
+#+               <unknown_sec> 40 </unknown_sec>
+
+
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+}
+
 # create 2 RRDs only differing in the way that the second contains an additional RRA
 # test: remove the additional RRA from the second and compare dumps
 # test: add the additional RRA to the first and compare dumps 
@@ -26,5 +42,38 @@ $RRDTOOL update ${BUILD}a1.rrd  $UPDATE
 $RRDTOOL create ${BUILD}a2.rrd --start $ST --step 60 --source ${BUILD}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-with-source-1
 
+$RRDTOOL dump ${BUILD}a1.rrd | xmlfilter > ${BUILD}a1.xml
+$RRDTOOL dump ${BUILD}a2.rrd | xmlfilter > ${BUILD}a2.xml
+$DIFF ${BUILD}a1.xml ${BUILD}a2.xml
+report data-match
+
 $RRDTOOL create ${BUILD}a3.rrd --start $ST --step 60 --source ${BUILD}a2.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
-report create-with-source-2
+$RRDTOOL dump ${BUILD}a3.rrd | xmlfilter > ${BUILD}a3.xml
+$DIFF ${BUILD}a1.xml ${BUILD}a3.xml
+report data-match-again
+
+$RRDTOOL create ${BUILD}a4.rrd --start $ST --step 60 --source ${BUILD}a2.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-with-source-effectively-adding-DS
+
+UPDATE=
+ST=$(($ST + 60))
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	UPDATE="$UPDATE $A:$V:$((2 * $V))"
+	V=$(($V + 20))
+	ST=$A
+done
+
+$RRDTOOL update ${BUILD}a4.rrd --template a:b $UPDATE
+report update-with-two-data-sources
+
+# now swap the two data sources
+$RRDTOOL create ${BUILD}a5.rrd --start $ST --step 60 --source ${BUILD}a4.rrd DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+
+# and swap the two data sources back, so we can then compare the outputs....
+$RRDTOOL create ${BUILD}a6.rrd --start $ST --step 60 --source ${BUILD}a5.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+# now a4 and a6 must match....
+
+$RRDTOOL dump ${BUILD}a4.rrd | xmlfilter > ${BUILD}a4.xml
+$RRDTOOL dump ${BUILD}a6.rrd | xmlfilter > ${BUILD}a6.xml
+$DIFF ${BUILD}a4.xml ${BUILD}a6.xml
+report data-match-after-swap

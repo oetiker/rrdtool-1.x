@@ -1243,14 +1243,13 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 fprintf(stderr, "src rrd last_up %ld\n", src_rrd->live_head->last_up);
                 fprintf(stderr, "dst rrd last_up %ld\n", rrd->live_head->last_up);
                 
-                int found_ds_index = -1;
                 for (sj = 0 ; sj < src_rrd->stat_head->ds_cnt ; sj++) {
                     if (strcmp(ds_def->ds_nam, src_rrd->ds_def[sj].ds_nam) == 0) {
                         // name match!!!
-                        found_ds_index = sj;
                         
+                        candidate_extra_t extra = { .l = sj };
                         // candidates = g_list_append(candidates, (gpointer) src);
-                        candidates = find_candidate_rras(src_rrd, rra_def, &candidate_cnt);
+                        candidates = find_candidate_rras(src_rrd, rra_def, &candidate_cnt, extra);
                         
 for (unsigned int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
     fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
@@ -1308,16 +1307,16 @@ for (int tt = 0 ; tt < candidate_cnt ; tt++) {
                             
                             long covered = overlap(bin_start_time, bin_end_time,
                                                    cand_bin_start_time, cand_bin_end_time) +1;
-                            rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + j];
+                            rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + candidate->extra.l];
                             if (covered > 0 && v != NAN) {
                                 total_covered += covered;
                                 covering_bins++;
                                 
                                 value += v / cand_bin_size * covered;
                             }
-                            fprintf(stderr, "  covers from %ld to %ld overlap is %g value=%g\n",
+                            fprintf(stderr, "  covers from %ld to %ld overlap is %g value=%g (ds #%d)\n",
                                         cand_bin_start_time, cand_bin_end_time,
-                                        (float) covered / bin_size, v);
+                                        (float) covered / bin_size, v, candidate->extra.l);
                         }
                         fprintf(stderr, "total coverage=%ld/%ld from %ld bins\n", total_covered, bin_size, covering_bins);
                         
@@ -1396,12 +1395,6 @@ time_t end_time_for_row(const rrd_t *rrd,
     
     time_t last_up = rrd->live_head->last_up;
     time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
-
-    
-        fprintf(stderr, "ETFR %012lx, %012lx, cr=%d, r=%d, ts=%d, pc=%d, lu=%ld = %ld\n", 
-                rrd, rra, cur_row, row,
-                timeslot, past_cnt, last_up, now);
-    
 
     return now;
 }

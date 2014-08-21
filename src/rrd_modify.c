@@ -77,7 +77,8 @@ static int sort_candidates(const void *va, const void *vb) {
     return a_def->pdp_cnt - b_def->pdp_cnt;
 }
 
-candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
+candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt, 
+                                 candidate_extra_t extra) {
     int total_rows = 0;
     candidate_t *candidates = NULL;
     *cnt = 0;
@@ -106,6 +107,7 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
 		c.rra = rrd->rra_def + i;
 		c.ptr = rrd->rra_ptr + i;
 		c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
+                memcpy(&c.extra, &extra, sizeof(extra));
 #else
 	    candidate_t c = { 
 		.rrd = rrd, 
@@ -113,10 +115,11 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
 		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
 		.rra = rrd->rra_def + i,
 		.ptr = rrd->rra_ptr + i,
-		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i 	
+		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i,
+		.extra = extra
 	    };
 #endif
-		candidates = (candidate_t *) copy_over_realloc(candidates, *cnt,
+            candidates = (candidate_t *) copy_over_realloc(candidates, *cnt,
 					   &c, 0, sizeof(c));
 	    if (candidates == NULL) {
 		rrd_set_error("out of memory");
@@ -421,8 +424,9 @@ static int populate_row(const rrd_t *in_rrd,
     int candidates_cnt = 0;
 
     int i, ri;
-
-    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt);
+    candidate_extra_t junk;
+    
+    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk);
     if (candidates == NULL) {
 	goto done;
     }
@@ -1012,13 +1016,14 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     int candidates_cnt = 0;
     candidate_t *candidates = NULL;
     candidate_t *chosen_candidate = NULL;
-
+    candidate_extra_t junk;
+    
     if (candidates) {
 	free(candidates);
 	candidates = NULL;
     }
 
-    candidates = find_candidate_rras(in, rra_def, &candidates_cnt);
+    candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk);
 
     if (candidates != NULL) {
 	int ci;
