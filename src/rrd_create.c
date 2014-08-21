@@ -1156,7 +1156,6 @@ int write_fh(
     rra_offset = 0;
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         unsigned long num_rows = rrd->rra_def[i].row_cnt;
-        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
         unsigned long ds_cnt = rrd->stat_head->ds_cnt;
         if (num_rows > 0){
             fwrite(rrd->rrd_value + rra_offset * ds_cnt,
@@ -1170,7 +1169,7 @@ int write_fh(
     return (0);
 }                       /* int write_file */
 
-long overlap(long start1, long end1, long start2, long end2) {
+static long overlap(long start1, long end1, long start2, long end2) {
     if (start1 >= end1) return 0;
     if (start2 >= end2) return 0;
 
@@ -1187,7 +1186,7 @@ static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
     }
     fprintf(stderr, "Dump rra_index=%d ds_index=%d\n", rra_index, ds_index);
     
-    for (int zz = 0 ; zz < rrd->rra_def[rra_index].row_cnt ; zz++) {
+    for (unsigned int zz = 0 ; zz < rrd->rra_def[rra_index].row_cnt ; zz++) {
         time_t zt = end_time_for_row_simple(rrd, rra_index, zz);
 
         rrd_value_t v = rrd->rrd_value[rrd->stat_head->ds_cnt * (total_cnt + zz) + ds_index];
@@ -1214,7 +1213,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
 
     // process one RRA after the other
     for (i = 0 ; i < rrd->stat_head->rra_cnt ; i++) {
-        fprintf(stderr, "PREFILL RRA %d\n", i);
+        fprintf(stderr, "PREFILL RRA %ld\n", i);
 
         rra_def_t *rra_def = rrd->rra_def + i;
         unsigned long cur_row = rrd->rra_ptr[i].cur_row;
@@ -1238,7 +1237,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 const rrd_t *src_rrd = rrd_file->rrd;
                 if (src_rrd == NULL) continue; 
 
-                fprintf(stderr, "cur_rows: %d %d\n", 
+                fprintf(stderr, "cur_rows: %ld %ld\n", 
                         rrd->rra_ptr[0].cur_row, src_rrd->rra_ptr[0].cur_row);
                 
                 fprintf(stderr, "src rrd last_up %ld\n", src_rrd->live_head->last_up);
@@ -1253,11 +1252,11 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                         // candidates = g_list_append(candidates, (gpointer) src);
                         candidates = find_candidate_rras(src_rrd, rra_def, &candidate_cnt);
                         
-for (int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
+for (unsigned int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
     fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
 }                        
 for (int tt = 0 ; tt < candidate_cnt ; tt++) {
-    fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index,  candidates[tt].rra->row_cnt);
+    fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index, candidates[tt].rra->row_cnt);
 }                 
                     }
                 }
@@ -1283,16 +1282,16 @@ for (int tt = 0 ; tt < candidate_cnt ; tt++) {
                     rra_def_t * candidate_rra_def = candidate->rra;
                     
                     //candidates[k].
-                    int end_bin = row_for_time(candidate->rrd, candidate->rra, 
+                    unsigned long end_bin = row_for_time(candidate->rrd, candidate->rra, 
                             candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
                             bin_end_time);
-                    int start_bin = row_for_time(candidate->rrd, candidate->rra, 
+                    unsigned long start_bin = row_for_time(candidate->rrd, candidate->rra, 
                             candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
                             bin_start_time);
-                    fprintf(stderr, " candidate #%d (index=%d) from %ld to %ld (row_cnt=%d)\n", k, 
+                    fprintf(stderr, " candidate #%ld (index=%d) from %ld to %ld (row_cnt=%ld)\n", k, 
                             candidate->rra_index, 
                             start_bin, end_bin, 
-                                                    candidate_rra_def->row_cnt);
+                            candidate_rra_def->row_cnt);
                     
                     if (start_bin < candidate_rra_def->row_cnt && end_bin < candidate_rra_def->row_cnt) {
                         int bin_count = positive_mod(end_bin - start_bin + 1, candidate_rra_def->row_cnt);
