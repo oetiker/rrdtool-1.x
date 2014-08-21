@@ -46,6 +46,23 @@ void init_cdp(const rrd_t *rrd,
 int write_rrd(const char *outfilename, rrd_t *out);
 int write_fh(FILE *fh, rrd_t *rrd);
 
+/* would these make more sense elsewhere? */
+
+/* find last second a row corresponds with */
+time_t end_time_for_row_simple(const rrd_t *rrd, 
+				int rra_index,
+				int row);
+time_t end_time_for_row(const rrd_t *rrd, 
+			const rra_def_t *rra,
+			int cur_row,
+			int row);
+
+/* find the row covering a given time */
+int row_for_time(const rrd_t *rrd, 
+		 const rra_def_t *rra, 
+		 int cur_row, time_t req_time);
+
+
 #endif
 
 

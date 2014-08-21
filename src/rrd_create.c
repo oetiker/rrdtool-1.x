@@ -22,6 +22,7 @@
 #include "rrd_create.h"
 
 #include "rrd_is_thread_safe.h"
+#include "rrd_modify.h"
 
 #ifdef WIN32
 # include <process.h>
@@ -29,6 +30,7 @@
 
 static int rrd_init_data(rrd_t *rrd);
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files);
+static int positive_mod(int a, int b);
 
 unsigned long FnvHash(
     const char *str);
@@ -1178,7 +1180,80 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     
     /* for each bin in each RRA select the best bin from among the candidate 
      * RRA data sets */
+}
+
+// calculate a % b, guaranteeing a positive result...
+static int positive_mod(int a, int b) {
+    int x = a % b;
+    if (x < 0) x += b;
+    return x;
+}
+
+time_t end_time_for_row_simple(const rrd_t *rrd, 
+			int rra_index, int row) {
+    rra_def_t *rra = rrd->rra_def + rra_index;
+    unsigned int cur_row = rrd->rra_ptr[rra_index].cur_row;
     
-    return 0;
+    return end_time_for_row(rrd, rra, cur_row, row);
+}
+
+time_t end_time_for_row(const rrd_t *rrd, 
+                           const rra_def_t *rra,
+			   int cur_row, int row) {
+
+    // one entry in the candidate covers timeslot seconds
+    int timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
+	    
+    /* Just to re-iterate how data is stored in RRAs, in order to
+       understand the following code: the current slot was filled at
+       last_up time, but slots always correspond with time periods of
+       length timeslot, ending at exact multiples of timeslot
+       wrt. the unix epoch. So the current timeslot ends at:
+       
+       int(last_up / timeslot) * timeslot 
+       
+       or (equivalently):
+     t
+       last_up - last_up % timeslot
+    */
+
+    int past_cnt = positive_mod((cur_row - row), rra->row_cnt);
+    
+    time_t last_up = rrd->live_head->last_up;
+    time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
+
+    
+        fprintf(stderr, "ETFR %012lx, %012lx, cr=%d, r=%d, ts=%d, pc=%d, lu=%ld = %ld\n", 
+                rrd, rra, cur_row, row,
+                timeslot, past_cnt, last_up, now);
+    
+
+    return now;
+}
+
+int row_for_time(const rrd_t *rrd, 
+		 const rra_def_t *rra, 
+		 int cur_row, time_t req_time) 
+{
+    time_t last_up = rrd->live_head->last_up;
+    int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
+
+    // align to slot boundary end times
+    time_t delta = req_time % timeslot;
+    if (delta > 0) req_time += timeslot - delta;
+    
+    delta = req_time % timeslot;
+    if (delta > 0) last_up += timeslot - delta;
+
+    if (req_time > last_up) return -1;  // out of range
+    if (req_time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
+     
+    int past_cnt = (last_up - req_time) / timeslot;
+    if (past_cnt >= (int) rra->row_cnt) return -1;
+
+    // NOTE: rra->row_cnt is unsigned!!
+    int row = positive_mod(cur_row - past_cnt, rra->row_cnt);
+
+    return row < 0 ? (row + (int) rra->row_cnt) : row ;
 }
 

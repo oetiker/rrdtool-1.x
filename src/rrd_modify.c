@@ -27,13 +27,6 @@
 
 
 
-// calculate a % b, guaranteeing a positive result...
-static int positive_mod(int a, int b) {
-    int x = a % b;
-    if (x < 0) x += b;
-    return x;
-}
-
 // prototypes
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
@@ -65,15 +58,6 @@ static void * copy_over_realloc(void *dest, int dest_index,
 */
 
 
-typedef struct {
-    const rrd_t *rrd;
-    int rra_index;
-    rrd_value_t *values;
-    rra_def_t *rra;
-    rra_ptr_t *ptr;
-    cdp_prep_t *cdp;
-} candidate_t;
-
 static int sort_candidates(const void *va, const void *vb) {
     const candidate_t *a = (candidate_t *) va;
     const candidate_t *b = (candidate_t *) vb;
@@ -93,78 +77,7 @@ static int sort_candidates(const void *va, const void *vb) {
     return a_def->pdp_cnt - b_def->pdp_cnt;
 }
 
-static time_t end_time_for_row(const rrd_t *rrd, 
-			       const rra_def_t *rra, 
-			       int cur_row, int row) {
-    // one entry in the candidate covers timeslot seconds
-    int timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-	    
-    /* Just to re-iterate how data is stored in RRAs, in order to
-       understand the following code: the current slot was filled at
-       last_up time, but slots always correspond with time periods of
-       length timeslot, ending at exact multiples of timeslot
-       wrt. the unix epoch. So the current timeslot ends at:
-       
-       int(last_up / timeslot) * timeslot 
-       
-       or (equivalently):
-       
-       last_up - last_up % timeslot
-    */
-
-    int past_cnt = positive_mod((cur_row - row), rra->row_cnt);
-    
-    time_t last_up = rrd->live_head->last_up;
-    time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
-
-    return now;
-}
-
-static int row_for_time(const rrd_t *rrd, 
-			const rra_def_t *rra, 
-			int cur_row, time_t req_time) 
-{
-    time_t last_up = rrd->live_head->last_up;
-    int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-
-    // align to slot boundary end times
-    time_t delta = req_time % timeslot;
-    if (delta > 0) req_time += timeslot - delta;
-    
-    delta = req_time % timeslot;
-    if (delta > 0) last_up += timeslot - delta;
-
-    if (req_time > last_up) return -1;  // out of range
-    if (req_time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
-     
-    int past_cnt = (last_up - req_time) / timeslot;
-    if (past_cnt >= (int) rra->row_cnt) return -1;
-
-    // NOTE: rra->row_cnt is unsigned!!
-    int row = positive_mod(cur_row - past_cnt, rra->row_cnt);
-
-    return row < 0 ? (row + (int) rra->row_cnt) : row ;
-}
-
-/* 
-   Try to find a set of RRAs from rrd that might be used to populate
-   added rows in RRA rra. Generally, candidates are RRAs that have a
-   pdp step of 1 (regardless of CF type) and those that have the same
-   CF (or a CF of AVERAGE) and any pdp step count.
-
-   The function returns a pointer to a newly allocated array of
-   candidate_t structs. The number of elements is returned in *cnt.
-
-   The returned memory must be free()'d by the calling code. NULL is
-   returned in case of error or if there are no candidates. In case of
-   an error, the RRD error gets set.
-
-   Arguments:
-   rrd .. the RRD to pick RRAs from
-   rra .. the RRA we want to populate
-   cnt .. a pointer to an int receiving the number of returned candidates
-*/
-static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
+candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
     int total_rows = 0;
     candidate_t *candidates = NULL;
     *cnt = 0;

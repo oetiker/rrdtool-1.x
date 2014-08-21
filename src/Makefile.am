@@ -35,7 +35,8 @@ UPD_C_FILES =		\
 	rrd_rpncalc.c	\
 	rrd_utils.c	\
 	rrd_snprintf.c  \
-	rrd_update.c
+	rrd_update.c	\
+	rrd_modify.c
 
 RRD_C_FILES =		\
 	rrd_version.c	\
@@ -48,8 +49,7 @@ RRD_C_FILES =		\
 	rrd_fetch.c	\
 	rrd_fetch_cb.c  \
 	rrd_resize.c \
-	rrd_tune.c	\
-	rrd_modify.c
+	rrd_tune.c
 
 if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
