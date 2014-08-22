@@ -33,6 +33,7 @@ RRDs - Access RRDtool as a shared module
   RRDs::times(start, end)
   RRDs::dump ...
   RRDs::restore ...
+  RRDs::xport ...
   RRDs::flushcached ...
 
 =head1 DESCRIPTION
@@ -129,7 +130,7 @@ integers, a pointer to an array and a pointer to a array of pointers.
     print "\n";
   }
 
-B<RRDs::xport> exposes the L<rrdxport(1)> functionality and returns data
+B<RRDs::xport> exposes the L<rrdxport|rrdxport> functionality and returns data
 with the following structure:
 
   my ($start,$end,$step,$cols,$names,$data) = RRDs::xport ...
