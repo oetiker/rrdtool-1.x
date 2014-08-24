@@ -3,7 +3,7 @@
 . $(dirname $0)/functions
 
 BASE=$BASEDIR/$(basename $0)-test
-BUILD=$BUILDDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
 
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
@@ -25,8 +25,10 @@ function xmlfilter {
 # test: remove the additional RRA from the second and compare dumps
 # test: add the additional RRA to the first and compare dumps 
 
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+
 ST=1300000000
-$RRDTOOL create ${BUILD}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create1
 
 UPDATE=
@@ -36,23 +38,23 @@ for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
 	V=$(($V + 20))
 	ST=$A
 done
-$RRDTOOL update ${BUILD}a1.rrd  $UPDATE
+$RRDTOOL update ${PREFIX}a1.rrd  $UPDATE
 
 
-$RRDTOOL create ${BUILD}a2.rrd --start $ST --step 60 --source ${BUILD}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL create ${PREFIX}a2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-with-source-1
 
-$RRDTOOL dump ${BUILD}a1.rrd | xmlfilter > ${BUILD}a1.xml
-$RRDTOOL dump ${BUILD}a2.rrd | xmlfilter > ${BUILD}a2.xml
-$DIFF ${BUILD}a1.xml ${BUILD}a2.xml
+$RRDTOOL dump ${PREFIX}a1.rrd | xmlfilter > ${PREFIX}a1.xml
+$RRDTOOL dump ${PREFIX}a2.rrd | xmlfilter > ${PREFIX}a2.xml
+$DIFF ${PREFIX}a1.xml ${PREFIX}a2.xml
 report data-match
 
-$RRDTOOL create ${BUILD}a3.rrd --start $ST --step 60 --source ${BUILD}a2.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
-$RRDTOOL dump ${BUILD}a3.rrd | xmlfilter > ${BUILD}a3.xml
-$DIFF ${BUILD}a1.xml ${BUILD}a3.xml
+$RRDTOOL create ${PREFIX}a3.rrd --start $ST --step 60 --source ${PREFIX}a2.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL dump ${PREFIX}a3.rrd | xmlfilter > ${PREFIX}a3.xml
+$DIFF ${PREFIX}a1.xml ${PREFIX}a3.xml
 report data-match-again
 
-$RRDTOOL create ${BUILD}a4.rrd --start $ST --step 60 --source ${BUILD}a2.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL create ${PREFIX}a4.rrd --start $ST --step 60 --source ${PREFIX}a2.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-with-source-effectively-adding-DS
 
 UPDATE=
@@ -63,17 +65,21 @@ for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
 	ST=$A
 done
 
-$RRDTOOL update ${BUILD}a4.rrd --template a:b $UPDATE
+$RRDTOOL update ${PREFIX}a4.rrd --template a:b $UPDATE
 report update-with-two-data-sources
 
 # now swap the two data sources
-$RRDTOOL create ${BUILD}a5.rrd --start $ST --step 60 --source ${BUILD}a4.rrd DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL create ${PREFIX}a5.rrd --start $ST --step 60 --source ${PREFIX}a4.rrd DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 
 # and swap the two data sources back, so we can then compare the outputs....
-$RRDTOOL create ${BUILD}a6.rrd --start $ST --step 60 --source ${BUILD}a5.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+$RRDTOOL create ${PREFIX}a6.rrd --start $ST --step 60 --source ${PREFIX}a5.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 # now a4 and a6 must match....
 
-$RRDTOOL dump ${BUILD}a4.rrd | xmlfilter > ${BUILD}a4.xml
-$RRDTOOL dump ${BUILD}a6.rrd | xmlfilter > ${BUILD}a6.xml
-$DIFF ${BUILD}a4.xml ${BUILD}a6.xml
+$RRDTOOL dump ${PREFIX}a4.rrd | xmlfilter > ${PREFIX}a4.xml
+$RRDTOOL dump ${PREFIX}a6.rrd | xmlfilter > ${PREFIX}a6.xml
+$DIFF ${PREFIX}a4.xml ${PREFIX}a6.xml
 report data-match-after-swap
+
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+
