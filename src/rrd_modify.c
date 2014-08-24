@@ -86,7 +86,7 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
     int i;
     enum cf_en cf = cf_conv(rra->cf_nam);
  
-    /* find other rows with the same CF or an RRA with CF_AVERAGE and
+    /* find other RRAs with the same CF or an RRA with CF_AVERAGE and
        a stepping of 1 as possible candidates for filling */
     for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
 	rra_def_t *other_rra = rrd->rra_def + i;

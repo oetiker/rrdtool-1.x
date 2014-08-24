@@ -24,6 +24,8 @@
 #include "rrd_is_thread_safe.h"
 #include "rrd_modify.h"
 
+#include "unused.h"
+
 #ifdef WIN32
 # include <process.h>
 #endif
@@ -1191,7 +1193,8 @@ static int is_time_within_interval(time_t time, time_t start, time_t end) {
     return (time >= start && time <= end);
 }
 
-static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
+inline static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
+#ifdef DEBUG_PREFILL
     long total_cnt = 0;
     for (int zz = 0 ; zz < rra_index ; zz++) {
         total_cnt += rrd->rra_def[rra_index].row_cnt;
@@ -1207,6 +1210,7 @@ static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
                                    rrd->rra_ptr[rra_index].cur_row, zt);
         fprintf(stderr, "%d %ld %g %d\n", zz, zt, v, zz_calc);
     }
+#endif
 }
 
 typedef struct {
@@ -1222,19 +1226,24 @@ static inline void set_interval(coverage_t *c, int covered, time_t start, time_t
     c->end = end;
 }
 
+#ifdef DEBUG_PREFILL
 static void dump_coverage_array(const coverage_t *current_coverage, const int *coverage_array_size) {
     for (int i =  0 ; i < *coverage_array_size ; i++) {
         fprintf(stderr, "%d covered=%d start=%ld end=%ld\n", i, current_coverage[i].covered,
                 current_coverage[i].start, current_coverage[i].end);
     }
 }
+#endif
+
+// #define add_coverage_debug(...) fprintf(stderr, __VA_ARGS__)
+#define add_coverage_debug(...) do {} while(0)
 
 static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_array_size,
         time_t start, time_t end,
         int *newly_covered_interval) 
 {
     int i;
-    fprintf(stderr, "ADDING %ld %ld\n", start, end);
+    add_coverage_debug("ADDING %ld %ld\n", start, end);
     
     if (coverage_array_size == NULL) return NULL;
     if (current_coverage    == NULL) return NULL;
@@ -1252,6 +1261,12 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
     }
     
     *newly_covered_interval = 0;
+
+    /* out of boundaries check */
+    if (end < current_coverage->start || 
+        start > (current_coverage + (*coverage_array_size - 1))->end) {
+        return current_coverage;
+    }
     
     for (i = 0 ; i < *coverage_array_size ; i++) {
         coverage_t *cc = current_coverage + i;
@@ -1259,14 +1274,14 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
         
         time_t org_start = cc->start;
         time_t org_end = cc->end;
-        fprintf(stderr, "check %ld %ld against %d/%d (%ld %ld)\n", start, end, i, *coverage_array_size, org_start, org_end);
+        add_coverage_debug("check %ld %ld against %d/%d (%ld %ld)\n", start, end, i, *coverage_array_size, org_start, org_end);
 
         if (is_interval_within_interval(start, end, org_start, org_end)) {
             /*
              * Case (A): newly added interval is fully contained within the current one.
              */
-            fprintf(stderr, "(A)\n");
-            fprintf(stderr, "OVERLAP %ld %ld %ld %ld\n", start, end, org_start, org_end);
+            add_coverage_debug("(A)\n");
+            add_coverage_debug("OVERLAP %ld %ld %ld %ld\n", start, end, org_start, org_end);
             if (cc->covered) {
                 // no new data .. already fully covered, just return
                 break;
@@ -1347,7 +1362,7 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
          * Note that if this case happens, case (A) above will NEVER happen...
          */ 
         if (is_interval_within_interval(org_start, org_end, start, end)) {
-            fprintf(stderr, "(B)\n");
+            add_coverage_debug("(B)\n");
             if (! cc->covered) {
                 /* just turn the current interval into a covered one. Report 
                  * the range as newly covered */
@@ -1368,12 +1383,12 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
          */
         
         if (is_time_within_interval(start, org_start, org_end)) {
-            fprintf(stderr, "(C)\n");
+            add_coverage_debug("(C)\n");
            /* If the current interval is a covered one, we do nothing but 
             * to adjust the start interval for the next iteration.
             */
             if (cc->covered) {
-                fprintf(stderr, "(C1)\n");
+                add_coverage_debug("(C1)\n");
                 start = org_end + 1;
                 continue;
             }
@@ -1381,13 +1396,13 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
             /* if the current interval is not covered... */
             
             if (cc->start == start) {
-                fprintf(stderr, "(C2)\n");
+                add_coverage_debug("(C2)\n");
                 /* ... and the new interval starts with the current one, we just turn it into a 
                  * covered one and adjust the start... */
                 cc->covered = 1;
                 start = org_end + 1;
             } else {
-                fprintf(stderr, "(C3) %d\n", *coverage_array_size + 1);
+                add_coverage_debug("(C3) %d\n", *coverage_array_size + 1);
                 /* ... and the new interval does NOT start with the current one, we have to split the interval .. */
                 
                 current_coverage = realloc(current_coverage, sizeof(coverage_t) * (*coverage_array_size + 1));
@@ -1412,12 +1427,12 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
         coverage_t *next = cc + 1;
         
         if (cc->covered == next->covered) {
-            fprintf(stderr, "Collapse %ld %ld %ld %ld\n", cc->start, cc->end, next->start, next->end);
+            add_coverage_debug("Collapse %ld %ld %ld %ld\n", cc->start, cc->end, next->start, next->end);
             cc->end = next->end;
             
             memmove(next, next + 1, sizeof(coverage_t) * (*coverage_array_size - i - 1));
             (*coverage_array_size)--;
-            fprintf(stderr, "%d intervals left\n", *coverage_array_size);
+            add_coverage_debug("%d intervals left\n", *coverage_array_size);
 
             // re-iterate with i unchanged !!
             continue;
@@ -1437,6 +1452,53 @@ static long total_coverage(const coverage_t *coverage, const int *array_size) {
     return total;
 }
 
+#ifdef DEBUG_PREFILL
+#  define prefill_debug(...) fprintf(stderr, __VA_ARGS__)
+#else
+#  define prefill_debug(...) do {} while(0)
+#endif
+
+static rrd_value_t prefill_consolidate(rra_def_t UNUSED(*rra_def), enum cf_en current_cf, 
+        rrd_value_t current_estimate, 
+        rrd_value_t added_value, 
+        int target_bin_size, int newly_covered_size) {
+    switch (current_cf) {
+    case CF_MINIMUM:
+        if (isnan(current_estimate)) return added_value;
+        return current_estimate < added_value ? current_estimate : added_value;
+    case CF_MAXIMUM:
+        if (isnan(current_estimate)) return added_value;
+        return current_estimate > added_value ? current_estimate : added_value;
+    case CF_LAST:
+        if (isnan(current_estimate)) return added_value;
+       /* FIXME: There are better ways to do this, but it requires more information 
+         * from the caller.
+         */
+        return added_value;
+    case CF_AVERAGE:
+    default:
+        if (isnan(current_estimate)) current_estimate = 0.0;
+
+        return current_estimate + added_value / target_bin_size * newly_covered_size;
+    }
+}
+
+static rrd_value_t prefill_finish(rra_def_t UNUSED(*rra_def), enum cf_en current_cf,
+                                  rrd_value_t current_estimate, 
+                                  int target_bin_size, int total_covered_size) {
+    if (total_covered_size == 0) return DNAN;
+    
+    switch (current_cf) {
+    case CF_AVERAGE:
+        return current_estimate / total_covered_size * target_bin_size;
+    case CF_MINIMUM:
+    case CF_MAXIMUM:
+    case CF_LAST:
+    default:
+        return current_estimate;
+    }
+}
+
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     int rc = -1;
     
@@ -1453,10 +1515,10 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
 
     // process one RRA after the other
     for (i = 0 ; i < rrd->stat_head->rra_cnt ; i++) {
-        fprintf(stderr, "PREFILL RRA %ld\n", i);
+        prefill_debug("PREFILL RRA %ld\n", i);
 
         rra_def_t *rra_def = rrd->rra_def + i;
-        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
+        enum cf_en current_cf = cf_conv(rra_def->cf_nam);
 
         for (j = 0 ; j < rrd->stat_head->ds_cnt ; j++) {
             /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
@@ -1477,11 +1539,11 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 const rrd_t *src_rrd = rrd_file->rrd;
                 if (src_rrd == NULL) continue; 
 
-                fprintf(stderr, "cur_rows: %ld %ld\n", 
+                prefill_debug("cur_rows: %ld %ld\n", 
                         rrd->rra_ptr[0].cur_row, src_rrd->rra_ptr[0].cur_row);
                 
-                fprintf(stderr, "src rrd last_up %ld\n", src_rrd->live_head->last_up);
-                fprintf(stderr, "dst rrd last_up %ld\n", rrd->live_head->last_up);
+                prefill_debug("src rrd last_up %ld\n", src_rrd->live_head->last_up);
+                prefill_debug("dst rrd last_up %ld\n", rrd->live_head->last_up);
                 
                 for (sj = 0 ; sj < src_rrd->stat_head->ds_cnt ; sj++) {
                     if (strcmp(ds_def->ds_nam, src_rrd->ds_def[sj].ds_nam) == 0) {
@@ -1489,14 +1551,33 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                         
                         candidate_extra_t extra = { .l = sj };
                         // candidates = g_list_append(candidates, (gpointer) src);
-                        candidates = find_candidate_rras(src_rrd, rra_def, &candidate_cnt, extra);
+                        int candidate_cnt_for_source = 0;
+                        candidate_t *candidates_for_source = find_candidate_rras(src_rrd, rra_def, &candidate_cnt_for_source, extra);
                         
-for (unsigned int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
-    fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
-}                        
-for (int tt = 0 ; tt < candidate_cnt ; tt++) {
-    fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index, candidates[tt].rra->row_cnt);
-}                 
+                        if (candidates_for_source && candidate_cnt_for_source > 0) {
+                            candidates = realloc(candidates, 
+                                                 sizeof(candidate_t) * (candidate_cnt + candidate_cnt_for_source));
+                            if (candidates == NULL) {
+                                rrd_set_error("Cannot realloc memory");
+                                goto done;
+                            }
+                            memcpy(candidates + candidate_cnt, 
+                                   candidates_for_source,
+                                   sizeof(candidate_t) * candidate_cnt_for_source);
+                            
+                            candidate_cnt += candidate_cnt_for_source;
+                        }
+                        if (candidates_for_source) {
+                            free(candidates_for_source);
+                        }
+#ifdef DEBUG_PREFILL                        
+                        for (unsigned int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
+                            fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
+                        }                        
+                        for (int tt = 0 ; tt < candidate_cnt ; tt++) {
+                            fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index, candidates[tt].rra->row_cnt);
+                        }            
+#endif
                     }
                 }
             }
@@ -1511,11 +1592,21 @@ for (int tt = 0 ; tt < candidate_cnt ; tt++) {
                 time_t bin_end_time = end_time_for_row_simple(rrd, i, cnt);
                 time_t bin_start_time = bin_end_time - bin_size + 1;
                 
-                fprintf(stderr, "Bin %ld from %ld to %ld\n", cnt, bin_start_time, bin_end_time);
+                prefill_debug("Bin %ld from %ld to %ld\n", cnt, bin_start_time, bin_end_time);
                 /* find corresponding range of bins in all candidates... */
+
+                coverage_t *coverage = malloc(sizeof(coverage_t));
+                int coverage_size = 1;
+                if (coverage == NULL) {
+                    rrd_set_error("Cannot allocate memory");
+                    goto done;
+                }
+                set_interval(coverage, 0, bin_start_time, bin_end_time);
+
+                long total_covered = 0, covering_bins = 0;
+                rrd_value_t value = DNAN; // init_prefill_consolidate(rra_def, current_cf);
                 
-                rrd_value_t best_value = 0, best_covered = 0, best_covering_bins = 0;
-                for (k = 0 ; k < (unsigned long) candidate_cnt ; k++) {
+                for (k = 0 ; k < (unsigned long) candidate_cnt && total_covered < bin_size ; k++) {
                     candidate_t *candidate = candidates + k;
                     
                     rra_def_t * candidate_rra_def = candidate->rra;
@@ -1527,19 +1618,19 @@ for (int tt = 0 ; tt < candidate_cnt ; tt++) {
                     unsigned long start_bin = row_for_time(candidate->rrd, candidate->rra, 
                             candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
                             bin_start_time);
-                    fprintf(stderr, " candidate #%ld (index=%d) from %ld to %ld (row_cnt=%ld)\n", k, 
+                    prefill_debug(" candidate #%ld (index=%d) from %ld to %ld (row_cnt=%ld)\n", k, 
                             candidate->rra_index, 
                             start_bin, end_bin, 
                             candidate_rra_def->row_cnt);
                     
-                    if (start_bin < candidate_rra_def->row_cnt && end_bin < candidate_rra_def->row_cnt) {
+                    if (start_bin < candidate_rra_def->row_cnt 
+                            && end_bin < candidate_rra_def->row_cnt) {
                         int bin_count = positive_mod(end_bin - start_bin + 1, candidate_rra_def->row_cnt);
-                        fprintf(stderr, "  bin_count %d\n", bin_count);
+                        prefill_debug("  bin_count %d\n", bin_count);
                         
-                        long total_covered = 0, covering_bins = 0;
-                        rrd_value_t value = 0;
-                        
-                        for (int ci = start_bin ; bin_count > 0 ; ci++, bin_count-- ) {
+                        for (unsigned int ci = start_bin ; bin_count > 0 && total_covered < bin_size ; ci++, bin_count-- ) {
+                            if (ci == candidate->rra->row_cnt) ci = 0;
+                            
                             // find overlap range....
                             long cand_bin_size = candidate_rra_def->pdp_cnt * candidate->rrd->stat_head->pdp_step;
                             time_t cand_bin_end_time = end_time_for_row_simple(candidate->rrd, candidate->rra_index, ci);
@@ -1548,33 +1639,42 @@ for (int tt = 0 ; tt < candidate_cnt ; tt++) {
                             long covered = overlap(bin_start_time, bin_end_time,
                                                    cand_bin_start_time, cand_bin_end_time) +1;
                             rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + candidate->extra.l];
-                            if (covered > 0 && v != NAN) {
-                                total_covered += covered;
-                                covering_bins++;
+                            if (covered > 0 && ! isnan(v)) {
+                                int newly_covered = 0;
+                                coverage = add_coverage(coverage, &coverage_size, cand_bin_start_time, cand_bin_end_time, &newly_covered);
+                                if (coverage == NULL) {
+                                    rrd_set_error("Memory allocation failed");
+                                    goto done;
+                                }
                                 
-                                value += v / cand_bin_size * covered;
+                                if (newly_covered > 0) {
+                                    total_covered += newly_covered;
+                                    covering_bins++;
+                                    
+                                    value = prefill_consolidate(rra_def, current_cf,
+                                                                value, v, 
+                                                                bin_size, newly_covered);
+                                            
+                                    prefill_debug("  newly covered %d/%ld added value=%g (ds #%ld) consolidated=%g\n",
+                                        newly_covered, bin_size, v, candidate->extra.l, value);
+
+                                }
                             }
-                            fprintf(stderr, "  covers from %ld to %ld overlap is %g value=%g (ds #%d)\n",
-                                        cand_bin_start_time, cand_bin_end_time,
-                                        (float) covered / bin_size, v, candidate->extra.l);
                         }
-                        fprintf(stderr, "total coverage=%ld/%ld from %ld bins\n", total_covered, bin_size, covering_bins);
-                        
-                        if (total_covered > best_covered || (total_covered == best_covered && covering_bins < best_covering_bins)) {
-                            fprintf(stderr, "Choosing as current best value %g\n", value);
-                            best_value = value;
-                            best_covered = total_covered;
-                            best_covering_bins = covering_bins;
-                        }
+                        prefill_debug("total coverage=%ld/%ld from %ld bins value=%g\n",
+                                total_covered, bin_size, covering_bins, value);
                     }
                     
                 }
                 //row_for_time();
 
-                if (best_covered > 0) {
-                    
-                    *(rrd->rrd_value + rrd->stat_head->ds_cnt * (total_rows + cnt) + j) = best_value;
+                if (total_covered > 0) {
+                    value = prefill_finish(rra_def, current_cf, value, bin_size, total_covered);
+                    *(rrd->rrd_value + rrd->stat_head->ds_cnt * (total_rows + cnt) + j) = value;
                 }
+                
+                free(coverage);
+                
             }
 
             if (candidates) {
