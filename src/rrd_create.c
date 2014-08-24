@@ -1169,7 +1169,7 @@ int write_fh(
     return (0);
 }                       /* int write_file */
 
-static long overlap(long start1, long end1, long start2, long end2) {
+static long overlap(time_t start1, time_t end1, time_t start2, time_t end2) {
     if (start1 >= end1) return 0;
     if (start2 >= end2) return 0;
 
@@ -1177,6 +1177,18 @@ static long overlap(long start1, long end1, long start2, long end2) {
     if (start2 > end1) return 0;
 
     return min(end1, end2) - max(start1, start2);
+}
+
+static long is_interval_within_interval(time_t start1, time_t end1,
+        time_t start2, time_t end2) {
+    if (end1 - start1 > end2 - start2) return 0;
+    
+    long o = overlap(start1, end1, start2, end2);
+    return o == end1-start1;
+}
+
+static int is_time_within_interval(time_t time, time_t start, time_t end) {
+    return (time >= start && time <= end);
 }
 
 static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
@@ -1195,6 +1207,234 @@ static void debug_dump_rra(const rrd_t *rrd, int rra_index, int ds_index) {
                                    rrd->rra_ptr[rra_index].cur_row, zt);
         fprintf(stderr, "%d %ld %g %d\n", zz, zt, v, zz_calc);
     }
+}
+
+typedef struct {
+    int covered;        /* != 0 -> covered, == 0 -> not covered */
+    /* start and end are inclusive times */
+    time_t start;
+    time_t end;
+} coverage_t;
+
+static inline void set_interval(coverage_t *c, int covered, time_t start, time_t end) {
+    c->covered = covered;
+    c->start = start;
+    c->end = end;
+}
+
+static void dump_coverage_array(const coverage_t *current_coverage, const int *coverage_array_size) {
+    for (int i =  0 ; i < *coverage_array_size ; i++) {
+        fprintf(stderr, "%d covered=%d start=%ld end=%ld\n", i, current_coverage[i].covered,
+                current_coverage[i].start, current_coverage[i].end);
+    }
+}
+
+static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_array_size,
+        time_t start, time_t end,
+        int *newly_covered_interval) 
+{
+    int i;
+    fprintf(stderr, "ADDING %ld %ld\n", start, end);
+    
+    if (coverage_array_size == NULL) return NULL;
+    if (current_coverage    == NULL) return NULL;
+
+    /*
+     * Never extend beyond the ends of current coverage information. We do 
+     * this by forcibly trimming the newly added interval to the start of 
+     * the first and the end of the last interval.
+     */
+    if (start < current_coverage->start) {
+        start = current_coverage->start;
+    }
+    if (end > (current_coverage + (*coverage_array_size - 1))->end) {
+        end = (current_coverage + (*coverage_array_size - 1))->end;
+    }
+    
+    *newly_covered_interval = 0;
+    
+    for (i = 0 ; i < *coverage_array_size ; i++) {
+        coverage_t *cc = current_coverage + i;
+        coverage_t *next;
+        
+        time_t org_start = cc->start;
+        time_t org_end = cc->end;
+        fprintf(stderr, "check %ld %ld against %d/%d (%ld %ld)\n", start, end, i, *coverage_array_size, org_start, org_end);
+
+        if (is_interval_within_interval(start, end, org_start, org_end)) {
+            /*
+             * Case (A): newly added interval is fully contained within the current one.
+             */
+            fprintf(stderr, "(A)\n");
+            fprintf(stderr, "OVERLAP %ld %ld %ld %ld\n", start, end, org_start, org_end);
+            if (cc->covered) {
+                // no new data .. already fully covered, just return
+                break;
+            } 
+            /* NOT covered by the interval, but new interval is fully contained within the current one */
+            
+            
+            /* special case: is the newly covered interval EXACTLY the same as the current? 
+             * If yes: just turn the current interval into a covered one.
+             * Also make sure to only report a newly covered interval if it wasn't covered before 
+             * (NOTE: this is actually redundant, as we reach this point only for "uncovered" intervals).
+             * Any required collapsing of intervals will be done during the cleanup pass.
+             */
+            
+            if (start == org_start && end == org_end) {
+                *newly_covered_interval += cc->covered ? 0 : end - start + 1;
+                cc->covered = 1;
+                break;
+            }
+
+            // split interval...
+            if (org_start == start) {
+                // insert before current interval
+
+                current_coverage = realloc(current_coverage, sizeof(coverage_t) * (*coverage_array_size + 1));
+                cc = current_coverage + i;
+
+                memmove(cc + 1, 
+                        cc, (*coverage_array_size - i) * sizeof(coverage_t));
+        
+                set_interval(cc    , 1, org_start, end    );
+                set_interval(cc + 1, 0, end + 1  , org_end);
+
+                (*coverage_array_size)++;
+                *newly_covered_interval += end - start + 1;
+                break;
+            }
+            if (org_end == end) {
+                // insert after current interval
+
+                current_coverage = realloc(current_coverage, sizeof(coverage_t) * (*coverage_array_size + 1));
+                cc = current_coverage + i;
+
+                memmove(cc + 1, 
+                        cc, (*coverage_array_size - i) * sizeof(coverage_t));
+                
+                set_interval(cc    , 0, org_start, start - 1);
+                set_interval(cc + 1, 1, start    , org_end  );
+                
+                (*coverage_array_size)++;
+                *newly_covered_interval += end - start + 1;
+                break;
+            }
+
+            // split into three intervals: uncovered/covered/uncovered .. add TWO new array elements
+            
+            current_coverage = realloc(current_coverage, sizeof(coverage_t) * (*coverage_array_size + 2));
+            cc = current_coverage + i;
+
+            memmove(cc + 2, 
+                    cc, (*coverage_array_size - i) * sizeof(coverage_t));
+
+            set_interval(cc    , 0, org_start, start - 1);
+            set_interval(cc + 1, 1, start    , end      );
+            set_interval(cc + 2, 0, end + 1  , org_end  );
+
+            (*coverage_array_size) += 2;
+            *newly_covered_interval += end - start + 1;
+            break;
+        }
+
+        /* 
+         * Case (B);
+         * 
+         * does the new interval fully cover the current interval?
+         * This might happen more than once!
+         * 
+         * Note that if this case happens, case (A) above will NEVER happen...
+         */ 
+        if (is_interval_within_interval(org_start, org_end, start, end)) {
+            fprintf(stderr, "(B)\n");
+            if (! cc->covered) {
+                /* just turn the current interval into a covered one. Report 
+                 * the range as newly covered */
+                cc->covered = 1;
+                *newly_covered_interval += cc->end - cc->start + 1;
+            }
+        }
+        
+        /*
+         * Case (C): The newly added interval starts within the current one, but 
+         * it does not end within.
+         * 
+         * We handle this by handling the implications for the current interval and then
+         * adjusting the new interval start period for the next iteration. That way, we will 
+         * finally hit cases (A) or (B) and we will never see a situation where the 
+         * new interval ends within the current on but does not start within 
+         * (which would have become case (D)).
+         */
+        
+        if (is_time_within_interval(start, org_start, org_end)) {
+            fprintf(stderr, "(C)\n");
+           /* If the current interval is a covered one, we do nothing but 
+            * to adjust the start interval for the next iteration.
+            */
+            if (cc->covered) {
+                fprintf(stderr, "(C1)\n");
+                start = org_end + 1;
+                continue;
+            }
+            
+            /* if the current interval is not covered... */
+            
+            if (cc->start == start) {
+                fprintf(stderr, "(C2)\n");
+                /* ... and the new interval starts with the current one, we just turn it into a 
+                 * covered one and adjust the start... */
+                cc->covered = 1;
+                start = org_end + 1;
+            } else {
+                fprintf(stderr, "(C3) %d\n", *coverage_array_size + 1);
+                /* ... and the new interval does NOT start with the current one, we have to split the interval .. */
+                
+                current_coverage = realloc(current_coverage, sizeof(coverage_t) * (*coverage_array_size + 1));
+                cc = current_coverage + i;
+                memmove(cc + 1, cc, sizeof(coverage_t) * ((*coverage_array_size) - i));
+                (*coverage_array_size)++;
+                
+                next = cc + 1;
+                set_interval(cc    , 0, org_start, start - 1);
+                set_interval(cc + 1, 1, start    , org_end  );
+                
+                *newly_covered_interval += next->end - next->start + 1;
+                start = org_end + 1;
+            }
+        }
+    }
+    
+    /* cleanup pass: collapse same type-intervals bordering each other.... */
+    i = 0;
+    while (i < *coverage_array_size - 1) {
+        coverage_t *cc = current_coverage + i;
+        coverage_t *next = cc + 1;
+        
+        if (cc->covered == next->covered) {
+            fprintf(stderr, "Collapse %ld %ld %ld %ld\n", cc->start, cc->end, next->start, next->end);
+            cc->end = next->end;
+            
+            memmove(next, next + 1, sizeof(coverage_t) * (*coverage_array_size - i - 1));
+            (*coverage_array_size)--;
+            fprintf(stderr, "%d intervals left\n", *coverage_array_size);
+
+            // re-iterate with i unchanged !!
+            continue;
+        }
+        
+        i++;
+    }
+    
+    return current_coverage;
+}
+
+static long total_coverage(const coverage_t *coverage, const int *array_size) {
+    long total = 0;
+    for (int i = 0 ; i < *array_size ; i++) {
+        if (coverage[i].covered) total += coverage[i].end - coverage[i].start + 1;
+    }
+    return total;
 }
 
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
