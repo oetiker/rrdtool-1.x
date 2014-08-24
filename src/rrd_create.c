@@ -54,7 +54,7 @@ int rrd_create(
     };
     int       option_index = 0;
     int       opt;
-    time_t    last_up = time(NULL) - 10;
+    time_t    last_up = -1;
     unsigned long pdp_step = 300;
     rrd_time_value_t last_up_tv;
     const char *parsetime_error = NULL;
@@ -644,7 +644,7 @@ int rrd_create_r2(
     rrd.ds_def = NULL;
     rrd.rra_def = NULL;
 
-    rrd.live_head->last_up = last_up;
+    rrd.live_head->last_up = last_up > 0 ? last_up : time(NULL) - 10;
 
     /* optind points to the first non-option command line arg,
      * in this case, the file name. */
@@ -724,6 +724,8 @@ int rrd_create_r2(
     if (rc != 0) goto done;
 
     if (sources != NULL) {
+        time_t    sources_latest_last_up = 0;
+
         for (const char **s = sources ; *s ; s++) {
             rrd_t *srrd = malloc(sizeof(rrd_t));
             if (srrd == NULL) {
@@ -735,6 +737,7 @@ int rrd_create_r2(
             rrd_file_t *sf = rrd_open(*s, srrd, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
 
             if (sf == NULL) {
+                rrd_set_error("Cannot open source RRD %s", *s);
                 goto done;
             }
             sources_rrd_files = g_list_append(sources_rrd_files, sf);
@@ -742,8 +745,13 @@ int rrd_create_r2(
                 rrd_set_error("Cannot keep information about just opened source RRD - likely leaking resources!");
                 goto done;
             }
+            
+            sources_latest_last_up = max(sources_latest_last_up, sf->rrd->live_head->last_up);
         }
-        
+    
+        if (last_up == -1) {
+            rrd.live_head->last_up = sources_latest_last_up;
+        }
         rrd_prefill_data(&rrd, sources_rrd_files);
     }
     

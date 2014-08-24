@@ -83,3 +83,11 @@ $RRDTOOL dump ${PREFIX}bca2.rrd | xmlfilter > ${PREFIX}bca2.xml
 $DIFF ${PREFIX}bca1.xml ${PREFIX}bca2.xml
 report data-match-bca
 
+$RRDTOOL create ${PREFIX}bca3.rrd --step 60 --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-bac-with-two-sources-no-start
+
+$RRDTOOL dump ${PREFIX}bca3.rrd | xmlfilter > ${PREFIX}bca3.xml
+$DIFF ${PREFIX}bca1.xml ${PREFIX}bca3.xml
+report data-match-bca-no-start
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
