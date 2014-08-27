@@ -42,6 +42,7 @@ typedef struct {
     int rra_index;
     rrd_value_t *values;
     rra_def_t *rra;
+    enum cf_en rra_cf;
     rra_ptr_t *ptr;
     cdp_prep_t *cdp;
     candidate_extra_t extra;

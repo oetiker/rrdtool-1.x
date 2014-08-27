@@ -1553,6 +1553,100 @@ static int select_create_candidates(const rra_def_t *tofill, const rra_def_t *ma
     return 0;
 }
 
+static void prefill_bin(candidate_t *target, int cnt,
+                        const candidate_t *candidates, int candidate_cnt) {
+    unsigned long k;
+    
+    long bin_size = target->rra->pdp_cnt * target->rrd->stat_head->pdp_step;
+    long min_required_coverage = target->rra->par[RRA_cdp_xff_val].u_val * bin_size;
+
+    time_t bin_end_time = end_time_for_row_simple(target->rrd, target->rra_index, cnt);
+    time_t bin_start_time = bin_end_time - bin_size + 1;
+
+    prefill_debug("Bin %ld from %ld to %ld\n", cnt, bin_start_time, bin_end_time);
+    /* find corresponding range of bins in all candidates... */
+
+    coverage_t *coverage = malloc(sizeof(coverage_t));
+    int coverage_size = 1;
+    if (coverage == NULL) {
+        rrd_set_error("Cannot allocate memory");
+        goto done;
+    }
+    set_interval(coverage, 0, bin_start_time, bin_end_time);
+
+    long total_covered = 0, covering_bins = 0;
+    rrd_value_t value = DNAN; // init_prefill_consolidate(rra_def, current_cf);
+
+    for (k = 0 ; k < (unsigned long) candidate_cnt && total_covered < bin_size ; k++) {
+        const candidate_t *candidate = candidates + k;
+
+        rra_def_t * candidate_rra_def = candidate->rra;
+
+        //candidates[k].
+        unsigned long end_bin = row_for_time(candidate->rrd, candidate->rra, 
+                candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
+                bin_end_time);
+        unsigned long start_bin = row_for_time(candidate->rrd, candidate->rra, 
+                candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
+                bin_start_time);
+        prefill_debug(" candidate #%ld (index=%d) from %ld to %ld (row_cnt=%ld)\n", k, 
+                candidate->rra_index, 
+                start_bin, end_bin, 
+                candidate_rra_def->row_cnt);
+
+        if (start_bin < candidate_rra_def->row_cnt 
+                && end_bin < candidate_rra_def->row_cnt) {
+            int bin_count = positive_mod(end_bin - start_bin + 1, candidate_rra_def->row_cnt);
+            prefill_debug("  bin_count %d\n", bin_count);
+
+            for (unsigned int ci = start_bin ; bin_count > 0 && total_covered < bin_size ; ci++, bin_count-- ) {
+                if (ci == candidate->rra->row_cnt) ci = 0;
+
+                // find overlap range....
+                long cand_bin_size = candidate_rra_def->pdp_cnt * candidate->rrd->stat_head->pdp_step;
+                time_t cand_bin_end_time = end_time_for_row_simple(candidate->rrd, candidate->rra_index, ci);
+                time_t cand_bin_start_time = cand_bin_end_time - cand_bin_size + 1;
+
+                long covered = overlap(bin_start_time, bin_end_time,
+                                       cand_bin_start_time, cand_bin_end_time) +1;
+                rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + candidate->extra.l];
+                if (covered > 0 && ! isnan(v)) {
+                    int newly_covered = 0;
+                    coverage = add_coverage(coverage, &coverage_size, cand_bin_start_time, cand_bin_end_time, &newly_covered);
+                    if (coverage == NULL) {
+                        rrd_set_error("Memory allocation failed");
+                        goto done;
+                    }
+
+                    if (newly_covered > 0) {
+                        total_covered += newly_covered;
+                        covering_bins++;
+
+                        value = prefill_consolidate(target->rra, target->rra_cf,
+                                                    value, v, 
+                                                    bin_size, newly_covered);
+
+                        prefill_debug("  newly covered %d/%ld added value=%g (ds #%ld) consolidated=%g\n",
+                            newly_covered, bin_size, v, candidate->extra.l, value);
+
+                    }
+                }
+            }
+            prefill_debug("total coverage=%ld/%ld from %ld bins value=%g\n",
+                    total_covered, bin_size, covering_bins, value);
+        }
+
+    }
+    //row_for_time();
+
+    if (total_covered > min_required_coverage) {
+        value = prefill_finish(target->rra, target->rra_cf, value, bin_size, total_covered);
+        *(target->values + target->rrd->stat_head->ds_cnt * cnt + target->extra.l) = value;
+    }
+done:
+    if (coverage) free(coverage);
+}
+
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     int rc = -1;
     
@@ -1562,7 +1656,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
         goto done;
     }
 
-    unsigned long i, j, si, sj;
+    unsigned long i, j, sj;
     unsigned long total_rows = 0;
     
     debug_dump_rra(((rrd_file_t *) sources->data)->rrd, 0, 0);
@@ -1582,12 +1676,14 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
         candidate_t target = {
             .rrd = rrd,
             .rra = rra_def,
+            .rra_cf = cf_conv(rra_def->cf_nam),
             .rra_index = i,
+            .values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
         };
         
-        enum cf_en current_cf = cf_conv(rra_def->cf_nam);
 
         for (j = 0 ; j < rrd->stat_head->ds_cnt ; j++) {
+            target.extra.l = j;
             /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
              * the sources list that match by name... */
     
@@ -1675,98 +1771,10 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
             /* walk all RRA bins and fill the current DS with data from 
              * the list of candidates */
 
-            unsigned long cnt = 0, k;
+            unsigned long cnt = 0;
             
             for (cnt = 0 ; cnt < rra_def->row_cnt ; cnt++) {
-                long bin_size = rra_def->pdp_cnt * rrd->stat_head->pdp_step;
-                long min_required_coverage = rra_def->par[RRA_cdp_xff_val].u_val * bin_size;
-                
-                time_t bin_end_time = end_time_for_row_simple(rrd, i, cnt);
-                time_t bin_start_time = bin_end_time - bin_size + 1;
-                
-                prefill_debug("Bin %ld from %ld to %ld\n", cnt, bin_start_time, bin_end_time);
-                /* find corresponding range of bins in all candidates... */
-
-                coverage_t *coverage = malloc(sizeof(coverage_t));
-                int coverage_size = 1;
-                if (coverage == NULL) {
-                    rrd_set_error("Cannot allocate memory");
-                    goto done;
-                }
-                set_interval(coverage, 0, bin_start_time, bin_end_time);
-
-                long total_covered = 0, covering_bins = 0;
-                rrd_value_t value = DNAN; // init_prefill_consolidate(rra_def, current_cf);
-                
-                for (k = 0 ; k < (unsigned long) candidate_cnt && total_covered < bin_size ; k++) {
-                    candidate_t *candidate = candidates + k;
-                    
-                    rra_def_t * candidate_rra_def = candidate->rra;
-                    
-                    //candidates[k].
-                    unsigned long end_bin = row_for_time(candidate->rrd, candidate->rra, 
-                            candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
-                            bin_end_time);
-                    unsigned long start_bin = row_for_time(candidate->rrd, candidate->rra, 
-                            candidate->rrd->rra_ptr[candidate->rra_index].cur_row,
-                            bin_start_time);
-                    prefill_debug(" candidate #%ld (index=%d) from %ld to %ld (row_cnt=%ld)\n", k, 
-                            candidate->rra_index, 
-                            start_bin, end_bin, 
-                            candidate_rra_def->row_cnt);
-                    
-                    if (start_bin < candidate_rra_def->row_cnt 
-                            && end_bin < candidate_rra_def->row_cnt) {
-                        int bin_count = positive_mod(end_bin - start_bin + 1, candidate_rra_def->row_cnt);
-                        prefill_debug("  bin_count %d\n", bin_count);
-                        
-                        for (unsigned int ci = start_bin ; bin_count > 0 && total_covered < bin_size ; ci++, bin_count-- ) {
-                            if (ci == candidate->rra->row_cnt) ci = 0;
-                            
-                            // find overlap range....
-                            long cand_bin_size = candidate_rra_def->pdp_cnt * candidate->rrd->stat_head->pdp_step;
-                            time_t cand_bin_end_time = end_time_for_row_simple(candidate->rrd, candidate->rra_index, ci);
-                            time_t cand_bin_start_time = cand_bin_end_time - cand_bin_size + 1;
-                            
-                            long covered = overlap(bin_start_time, bin_end_time,
-                                                   cand_bin_start_time, cand_bin_end_time) +1;
-                            rrd_value_t v = candidate->values[ci * candidate->rrd->stat_head->ds_cnt + candidate->extra.l];
-                            if (covered > 0 && ! isnan(v)) {
-                                int newly_covered = 0;
-                                coverage = add_coverage(coverage, &coverage_size, cand_bin_start_time, cand_bin_end_time, &newly_covered);
-                                if (coverage == NULL) {
-                                    rrd_set_error("Memory allocation failed");
-                                    goto done;
-                                }
-                                
-                                if (newly_covered > 0) {
-                                    total_covered += newly_covered;
-                                    covering_bins++;
-                                    
-                                    value = prefill_consolidate(rra_def, current_cf,
-                                                                value, v, 
-                                                                bin_size, newly_covered);
-                                            
-                                    prefill_debug("  newly covered %d/%ld added value=%g (ds #%ld) consolidated=%g\n",
-                                        newly_covered, bin_size, v, candidate->extra.l, value);
-
-                                }
-                            }
-                        }
-                        prefill_debug("total coverage=%ld/%ld from %ld bins value=%g\n",
-                                total_covered, bin_size, covering_bins, value);
-                    }
-                    
-                }
-                //row_for_time();
-
-                if (total_covered > min_required_coverage) {
-                    value = prefill_finish(rra_def, current_cf, value, bin_size, total_covered);
-                    *(rrd->rrd_value + rrd->stat_head->ds_cnt * (total_rows + cnt) + j) = value;
-                }
-                
-                free(coverage);
-                
+                prefill_bin(&target, cnt, candidates, candidate_cnt);
             }
 
             if (candidates) {

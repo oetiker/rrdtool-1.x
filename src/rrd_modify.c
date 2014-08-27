@@ -120,6 +120,7 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
 		.rra_index = i,
 		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
 		.rra = rrd->rra_def + i,
+		.rra_cf = cf_conv(rrd->rra_def[i].cf_nam),
 		.ptr = rrd->rra_ptr + i,
 		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i,
 		.extra = extra
