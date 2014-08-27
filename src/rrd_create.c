@@ -1679,6 +1679,8 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
             
             for (cnt = 0 ; cnt < rra_def->row_cnt ; cnt++) {
                 long bin_size = rra_def->pdp_cnt * rrd->stat_head->pdp_step;
+                long min_required_coverage = rra_def->par[RRA_cdp_xff_val].u_val * bin_size;
+                
                 time_t bin_end_time = end_time_for_row_simple(rrd, i, cnt);
                 time_t bin_start_time = bin_end_time - bin_size + 1;
                 
@@ -1758,7 +1760,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 }
                 //row_for_time();
 
-                if (total_covered > 0) {
+                if (total_covered > min_required_coverage) {
                     value = prefill_finish(rra_def, current_cf, value, bin_size, total_covered);
                     *(rrd->rrd_value + rrd->stat_head->ds_cnt * (total_rows + cnt) + j) = value;
                 }
