@@ -9,16 +9,7 @@ PREFIX=$BUILDDIR/$(basename $0)-test
 # comparison of RRD dumps, we just filter out those parts we do not
 # expect to match anyway...
 function xmlfilter {
-
-#-               <last_ds>1010</last_ds>
-#-               <value>4.0400000000e+04</value>
-#-               <unknown_sec> 0 </unknown_sec>
-#+               <last_ds>U</last_ds>
-#+               <value>0.0000000000e+00</value>
-#+               <unknown_sec> 40 </unknown_sec>
-
-
-	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
 }
 
 

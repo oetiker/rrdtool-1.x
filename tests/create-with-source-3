@@ -9,16 +9,11 @@ PREFIX=$BUILDDIR/$(basename $0)-test
 # comparison of RRD dumps, we just filter out those parts we do not
 # expect to match anyway...
 function xmlfilter {
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
 
-#-               <last_ds>1010</last_ds>
-#-               <value>4.0400000000e+04</value>
-#-               <unknown_sec> 0 </unknown_sec>
-#+               <last_ds>U</last_ds>
-#+               <value>0.0000000000e+00</value>
-#+               <unknown_sec> 40 </unknown_sec>
-
-
-	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+function pdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
 }
 
 
@@ -99,21 +94,21 @@ report create-ab-with-four-sources
 
 
 # now re-extract single value RRDs from the combined one....
-
+# NOTE: We cannot re-create the pdp_prep information here, so filter it out....
 
 $RRDTOOL create ${PREFIX}a2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
 report recreate-original-a1_x-from-combined-source
 
-$RRDTOOL dump ${PREFIX}a1_x.rrd | xmlfilter > ${PREFIX}a1_x.xml
-$RRDTOOL dump ${PREFIX}a2_x.rrd | xmlfilter > ${PREFIX}a2_x.xml
+$RRDTOOL dump ${PREFIX}a1_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}a1_x.xml
+$RRDTOOL dump ${PREFIX}a2_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}a2_x.xml
 $DIFF ${PREFIX}a1_x.xml ${PREFIX}a2_x.xml
 report data-match-a1_x
 
 $RRDTOOL create ${PREFIX}b2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
 report recreate-original-b1_x-from-combined-source
 
-$RRDTOOL dump ${PREFIX}b1_x.rrd | xmlfilter > ${PREFIX}b1_x.xml
-$RRDTOOL dump ${PREFIX}b2_x.rrd | xmlfilter > ${PREFIX}b2_x.xml
+$RRDTOOL dump ${PREFIX}b1_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}b1_x.xml
+$RRDTOOL dump ${PREFIX}b2_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}b2_x.xml
 $DIFF ${PREFIX}b1_x.xml ${PREFIX}b2_x.xml
 report data-match-b1_x
 

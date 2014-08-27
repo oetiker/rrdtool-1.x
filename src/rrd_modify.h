@@ -38,7 +38,7 @@ typedef union {
 } candidate_extra_t;
 
 typedef struct {
-    const rrd_t *rrd;
+    rrd_t *rrd;
     int rra_index;
     rrd_value_t *values;
     rra_def_t *rra;

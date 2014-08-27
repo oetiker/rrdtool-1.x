@@ -31,6 +31,7 @@
 # include <process.h>
 #endif
 
+static void reset_pdp_prep(rrd_t *rrd);
 static int rrd_init_data(rrd_t *rrd);
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files);
 static int positive_mod(int a, int b);
@@ -752,6 +753,7 @@ int rrd_create_r2(
     
         if (last_up == -1) {
             rrd.live_head->last_up = sources_latest_last_up;
+            reset_pdp_prep(&rrd);
         }
         rrd_prefill_data(&rrd, sources_rrd_files);
     }
@@ -943,6 +945,21 @@ void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, const pdp_prep_t *pdp_
     }
 }
 
+
+static void reset_pdp_prep(rrd_t *rrd) {
+    unsigned long ds_index;
+    
+    for (ds_index = 0 ; ds_index < rrd->stat_head->ds_cnt ; ds_index++) {
+        strcpy(rrd->pdp_prep[ds_index].last_ds, "U");
+        /* interestingly, "U" is associated with a value of 0.0, traditionally.
+         * I do not know why. Ask Tobi.
+         */
+        rrd->pdp_prep[ds_index].scratch[PDP_val].u_val = 0;
+        rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt =
+            rrd->live_head->last_up % rrd->stat_head->pdp_step;
+    }
+}
+
 /* create and empty rrd file according to the specs given */
 
 static int rrd_init_data(rrd_t *rrd)
@@ -977,12 +994,7 @@ static int rrd_init_data(rrd_t *rrd)
             rrd_set_error("cannot allocate memory");
             goto done;
         }
-        for (i = 0 ; i < rrd->stat_head->ds_cnt ; i++) {
-            strcpy(rrd->pdp_prep[i].last_ds, "U");
-            rrd->pdp_prep[i].scratch[PDP_val].u_val = 0.0;
-            rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt =
-                rrd->live_head->last_up % rrd->stat_head->pdp_step;
-        }
+        reset_pdp_prep(rrd);
     }
 
     if (rrd->cdp_prep == NULL) {
@@ -1647,6 +1659,155 @@ done:
     if (coverage) free(coverage);
 }
 
+
+/* 
+ * prefill last value for the target RRA if we haven't done so yet (That is, 
+ * if the last value is still unknown). We can only *really* do this, if the 
+ * last update of the target RRD is compatible with one of the source RRDs,
+ * because there is generally no way to deduce the input data from an RRA bin.
+ */
+static void prefill_pdp_prep(candidate_t *target, const candidate_t *candidates, int candidate_cnt) {
+    rrd_t *rrd = target->rrd;
+    int ds_index = target->extra.l;
+    
+    if (strncmp(rrd->pdp_prep[ds_index].last_ds, "U", LAST_DS_LEN) != 0) {
+        /* PDP prep for this DS already set. */
+        return;
+    }
+    
+    time_t current_pdp_begin_time = 
+            (rrd->live_head->last_up / rrd->stat_head->pdp_step) *
+             rrd->stat_head->pdp_step + 1;
+    time_t current_pdp_end_time = current_pdp_begin_time + rrd->stat_head->pdp_step - 1;
+
+    /* walk all source RRAs to find a matching last update value. 
+     * We use the candidate RRA list for this, to make sure that we
+     * won't erroneously use an RRD we have no candidate for... */
+
+    const rrd_t *srrd = NULL;
+    for (int c = 0 ; c < candidate_cnt ; c++) {
+        const candidate_t *candidate = candidates + c;
+        /* only look at each source RRD once. We use the fact that all 
+         * candidates are block-sorted by the source RRDs */
+        if (srrd == candidate->rrd) continue;
+        srrd = candidate->rrd;
+
+        if (strncmp(srrd->pdp_prep[candidate->extra.l].last_ds, "U", LAST_DS_LEN) == 0) {
+            /* this source RRD does not have a usable last DS value - skip */
+            continue;
+        }
+
+        time_t source_pdp_begin_time = 
+            (srrd->live_head->last_up / srrd->stat_head->pdp_step) *
+            srrd->stat_head->pdp_step + 1;
+        time_t source_pdp_end_time = source_pdp_begin_time + srrd->stat_head->pdp_step - 1;
+
+        if (source_pdp_end_time <= current_pdp_end_time && source_pdp_end_time >= current_pdp_begin_time) {
+            /* only really copy the data if the DS Type matches... */
+            if (strcmp(rrd->ds_def[ds_index].dst, srrd->ds_def[candidate->extra.l].dst) == 0) {
+                memcpy(rrd->pdp_prep + ds_index, srrd->pdp_prep + candidate->extra.l,
+                        sizeof(pdp_prep_t));
+
+                /* in case the step sizes of target and source do not match, 
+                 * we take an additional look at the unknown seconds, because that
+                 * value should not be larger than the step size.
+                 * 
+                 * We also assume, that it is unusual to explicitly add unknown data to an
+                 * RRD, so we use the current value in any case, and assume the unknown data to
+                 * be at the beginning of the current pdp_prep time range.
+                 * 
+                 * I really hope that I got the semantics right here - PSt.
+                 */
+
+                if (rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_val > rrd->stat_head->pdp_step) {
+                    long source_known = srrd->stat_head->pdp_step - rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_val;
+                    long max_target_known = rrd->live_head->last_up - current_pdp_begin_time;
+
+                    rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt = max(0, max_target_known - source_known);
+                }
+
+                /* we now have set a known last DS value in the pdp_prep, break 
+                 * out of the loop, because we are done */
+                break;
+            }
+        }
+    }
+}
+
+
+static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd) {
+    unsigned long source_ds_index;
+    
+    for (source_ds_index = 0 ; source_ds_index < src_rrd->stat_head->ds_cnt ; source_ds_index++) {
+        if (strcmp(ds_def->ds_nam, src_rrd->ds_def[source_ds_index].ds_nam) == 0) {
+            return source_ds_index;
+        }
+    }
+    return src_rrd->stat_head->ds_cnt;
+}
+
+
+/* Find a set of RRAs that can be used to prefill RRA bins for the target RRA from
+ * among the source RRDs. */
+static candidate_t *find_prefill_candidates(const candidate_t *target, 
+        const GList *sources, int *candidate_cnt) {
+    ds_def_t *ds_def = target->rrd->ds_def + target->extra.l;
+
+    const GList *src;
+    candidate_t *candidates = NULL;
+    
+    int cnt = 0;
+    
+    for (src = sources ; src ;  src = g_list_next(src)) {
+        // first: find matching DS
+
+        const rrd_file_t *rrd_file = src->data;
+        if (rrd_file == NULL) continue;
+
+        const rrd_t *src_rrd = rrd_file->rrd;
+        if (src_rrd == NULL) continue; 
+
+        unsigned long source_ds_index = find_ds_match(ds_def, src_rrd);
+        if (source_ds_index < src_rrd->stat_head->ds_cnt) {
+            // match found
+
+            candidate_extra_t extra = { .l = source_ds_index };
+            // candidates = g_list_append(candidates, (gpointer) src);
+            int candidate_cnt_for_source = 0;
+            candidate_t *candidates_for_source = 
+                    find_candidate_rras(src_rrd, target->rra, &candidate_cnt_for_source, 
+                                        extra,
+                                        select_create_candidates);
+
+            if (candidates_for_source && candidate_cnt_for_source > 0) {
+                quick_sort(candidates_for_source, sizeof(candidate_t),
+                        candidate_cnt_for_source, (compar_ex_t*)order_candidates, (void*) target);
+
+                candidates = realloc(candidates, 
+                                     sizeof(candidate_t) * (cnt + candidate_cnt_for_source));
+                if (candidates == NULL) {
+                    rrd_set_error("Cannot realloc memory");
+                    free(candidates_for_source);
+                    goto done;
+                }
+                memcpy(candidates + cnt, 
+                       candidates_for_source,
+                       sizeof(candidate_t) * candidate_cnt_for_source);
+
+                cnt += candidate_cnt_for_source;
+            }
+            if (candidates_for_source) {
+                free(candidates_for_source);
+            }
+        }
+    }
+done:
+    *candidate_cnt = cnt;
+    return candidates;
+}
+
+
+
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     int rc = -1;
     
@@ -1656,16 +1817,16 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
         goto done;
     }
 
-    unsigned long i, j, sj;
+    unsigned long rra_index, ds_index;
     unsigned long total_rows = 0;
     
     debug_dump_rra(((rrd_file_t *) sources->data)->rrd, 0, 0);
 
     // process one RRA after the other
-    for (i = 0 ; i < rrd->stat_head->rra_cnt ; i++) {
-        prefill_debug("PREFILL RRA %ld\n", i);
+    for (rra_index = 0 ; rra_index < rrd->stat_head->rra_cnt ; rra_index++) {
+        prefill_debug("PREFILL RRA %ld\n", rra_index);
 
-        rra_def_t *rra_def = rrd->rra_def + i;
+        rra_def_t *rra_def = rrd->rra_def + rra_index;
         
         /*
          * Re-use candidate_t as a container for all information, because the data structure contains
@@ -1677,84 +1838,25 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
             .rrd = rrd,
             .rra = rra_def,
             .rra_cf = cf_conv(rra_def->cf_nam),
-            .rra_index = i,
+            .rra_index = rra_index,
             .values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
         };
         
 
-        for (j = 0 ; j < rrd->stat_head->ds_cnt ; j++) {
-            target.extra.l = j;
+        for (ds_index = 0 ; ds_index < rrd->stat_head->ds_cnt ; ds_index++) {
+            target.extra.l = ds_index;
             /* for each DS in each RRA within rrd find a list of candidate DS/RRAs from 
              * the sources list that match by name... */
     
-            ds_def_t  *ds_def  = rrd->ds_def + j;
             
-            const GList *src;
-            candidate_t *candidates = NULL;
             int candidate_cnt = 0;
+            candidate_t *candidates = find_prefill_candidates(&target, sources, &candidate_cnt);
             
-            for (src = sources ; src ;  src = g_list_next(src)) {
-                // first: find matching DS
-                
-                const rrd_file_t *rrd_file = src->data;
-                if (rrd_file == NULL) continue;
-                
-                const rrd_t *src_rrd = rrd_file->rrd;
-                if (src_rrd == NULL) continue; 
-
-                prefill_debug("cur_rows: %ld %ld\n", 
-                        rrd->rra_ptr[0].cur_row, src_rrd->rra_ptr[0].cur_row);
-                
-                prefill_debug("src rrd last_up %ld\n", src_rrd->live_head->last_up);
-                prefill_debug("dst rrd last_up %ld\n", rrd->live_head->last_up);
-                
-                for (sj = 0 ; sj < src_rrd->stat_head->ds_cnt ; sj++) {
-                    if (strcmp(ds_def->ds_nam, src_rrd->ds_def[sj].ds_nam) == 0) {
-                        // name match!!!
-                        
-                        candidate_extra_t extra = { .l = sj };
-                        // candidates = g_list_append(candidates, (gpointer) src);
-                        int candidate_cnt_for_source = 0;
-                        candidate_t *candidates_for_source = 
-                                find_candidate_rras(src_rrd, rra_def, &candidate_cnt_for_source, 
-                                                    extra,
-                                                    select_create_candidates);
-                        
-                        if (candidates_for_source && candidate_cnt_for_source > 0) {
-                            quick_sort(candidates_for_source, sizeof(candidate_t),
-                                    candidate_cnt_for_source, (compar_ex_t*)order_candidates, &target);
-                            
-                            candidates = realloc(candidates, 
-                                                 sizeof(candidate_t) * (candidate_cnt + candidate_cnt_for_source));
-                            if (candidates == NULL) {
-                                rrd_set_error("Cannot realloc memory");
-                                goto done;
-                            }
-                            memcpy(candidates + candidate_cnt, 
-                                   candidates_for_source,
-                                   sizeof(candidate_t) * candidate_cnt_for_source);
-                            
-                            candidate_cnt += candidate_cnt_for_source;
-                        }
-                        if (candidates_for_source) {
-                            free(candidates_for_source);
-                        }
-#ifdef DEBUG_PREFILL                        
-                        for (unsigned int tt = 0 ; tt < src_rrd->stat_head->rra_cnt ; tt++) {
-                            fprintf(stderr, "SRC RRA %d row_cnt=%ld\n", tt, src_rrd->rra_def[tt].row_cnt);
-                        }                        
-                        for (int tt = 0 ; tt < candidate_cnt ; tt++) {
-                            fprintf(stderr, "CAND SRC RRA %d row_cnt=%ld\n", candidates[tt].rra_index, candidates[tt].rra->row_cnt);
-                        }            
-#endif
-                    }
-                }
-            }
-
+            
 #ifdef DEBUG_PREFILL
             // report candidates
             fprintf(stderr, "ds=%s candidates for %s %d rows=%d\n", 
-                    ds_def->ds_nam,
+                    rrd->ds_def[ds_index].ds_nam,
                     rra_def->cf_nam, rra_def->pdp_cnt, 
                             rra_def->row_cnt);
             for (int rr = 0 ; rr < candidate_cnt ; rr++) {
@@ -1765,6 +1867,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
 #endif            
             /* if we have no candidates for an RRA we just skip to the next... */
             if (candidates == NULL) {
+                if (rrd_test_error()) goto done;
                 continue;
             }
             
@@ -1777,10 +1880,9 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 prefill_bin(&target, cnt, candidates, candidate_cnt);
             }
 
-            if (candidates) {
-                free(candidates);
-                candidates = NULL;
-            }
+            prefill_pdp_prep(&target, candidates, candidate_cnt);
+            
+            free(candidates);
         }
         total_rows += rra_def->row_cnt;
     }
