@@ -77,15 +77,23 @@ static int sort_candidates(const void *va, const void *vb) {
     return a_def->pdp_cnt - b_def->pdp_cnt;
 }
 
+static int select_for_modify(const rra_def_t *tofill, const rra_def_t *maybe) {
+    enum cf_en cf = cf_conv(tofill->cf_nam);
+    enum cf_en other_cf = cf_conv(maybe->cf_nam);
+    return (other_cf == cf ||
+	    (other_cf == CF_AVERAGE /*&& other_rra->pdp_cnt == 1*/));
+}
+
 candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt, 
-                                 candidate_extra_t extra) {
+                                 candidate_extra_t extra, 
+                                 int (*selectfunc)(const rra_def_t *tofill, const rra_def_t *maybe))
+{
     int total_rows = 0;
     candidate_t *candidates = NULL;
     *cnt = 0;
 
     int i;
-    enum cf_en cf = cf_conv(rra->cf_nam);
- 
+
     /* find other RRAs with the same CF or an RRA with CF_AVERAGE and
        a stepping of 1 as possible candidates for filling */
     for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
@@ -96,9 +104,7 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
 	    continue;
 	}
 
-	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
- 	if (other_cf == cf ||
-	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
+	if (selectfunc(rra, other_rra)) {
 #ifdef _WINDOWS
 		candidate_t c;
 		c.rrd = rrd;
@@ -426,7 +432,7 @@ static int populate_row(const rrd_t *in_rrd,
     int i, ri;
     candidate_extra_t junk;
     
-    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk);
+    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk, select_for_modify);
     if (candidates == NULL) {
 	goto done;
     }
@@ -1023,7 +1029,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	candidates = NULL;
     }
 
-    candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk);
+    candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
 	int ci;

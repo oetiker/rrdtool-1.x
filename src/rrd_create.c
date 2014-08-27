@@ -23,6 +23,7 @@
 
 #include "rrd_is_thread_safe.h"
 #include "rrd_modify.h"
+#include "quicksort.h"
 
 #include "unused.h"
 
@@ -1507,6 +1508,51 @@ static rrd_value_t prefill_finish(rra_def_t UNUSED(*rra_def), enum cf_en current
     }
 }
 
+static int order_candidates(candidate_t *a, candidate_t *b, const candidate_t UNUSED(*target)) {
+    enum cf_en acf = cf_conv(a->rra->cf_nam);
+    enum cf_en bcf = cf_conv(b->rra->cf_nam);
+
+    enum cf_en tcf = cf_conv(target->rra->cf_nam);
+    
+    int astep = a->rrd->stat_head->pdp_step;
+    int bstep = b->rrd->stat_head->pdp_step;
+    int tstep = target->rrd->stat_head->pdp_step;
+    
+    /* an exact match ALWAYS goes first*/
+    if (acf == tcf && a->rra->pdp_cnt * astep == target->rra->pdp_cnt * tstep) {
+        return -1;
+    }
+    
+    if (bcf == tcf && b->rra->pdp_cnt * bstep == target->rra->pdp_cnt * tstep) {
+        return 1;
+    }
+    
+    
+    if (acf != bcf) {
+        /* different RRA CF functions: AVERAGE CF takes precedence, this is 
+         * more correct mathematically.
+         */
+        if (acf == /*targetcf*/CF_AVERAGE) return -1;
+        if (bcf == /*targetcf*/CF_AVERAGE) return 1;
+        // problem: this should not really be possible 
+        return 0;
+    }
+    
+    int d = a->rra->pdp_cnt * astep - b->rra->pdp_cnt * bstep;
+    if (d != 0) return d;
+    
+    d = a->rra->row_cnt - b->rra->row_cnt;
+    return -d;          // higher row counts sort earlier
+}
+
+/* select AVERAGE and same CF RRAs. */
+static int select_create_candidates(const rra_def_t *tofill, const rra_def_t *maybe) {
+    enum cf_en cf = cf_conv(maybe->cf_nam);
+    if (cf == CF_AVERAGE) return 1;
+    if (cf == cf_conv(tofill->cf_nam)) return 1;
+    return 0;
+}
+
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     int rc = -1;
     
@@ -1526,6 +1572,19 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
         prefill_debug("PREFILL RRA %ld\n", i);
 
         rra_def_t *rra_def = rrd->rra_def + i;
+        
+        /*
+         * Re-use candidate_t as a container for all information, because the data structure contains
+         * everything we need further on.
+         * 
+         */
+        
+        candidate_t target = {
+            .rrd = rrd,
+            .rra = rra_def,
+            .rra_index = i,
+        };
+        
         enum cf_en current_cf = cf_conv(rra_def->cf_nam);
 
         for (j = 0 ; j < rrd->stat_head->ds_cnt ; j++) {
@@ -1560,9 +1619,15 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                         candidate_extra_t extra = { .l = sj };
                         // candidates = g_list_append(candidates, (gpointer) src);
                         int candidate_cnt_for_source = 0;
-                        candidate_t *candidates_for_source = find_candidate_rras(src_rrd, rra_def, &candidate_cnt_for_source, extra);
+                        candidate_t *candidates_for_source = 
+                                find_candidate_rras(src_rrd, rra_def, &candidate_cnt_for_source, 
+                                                    extra,
+                                                    select_create_candidates);
                         
                         if (candidates_for_source && candidate_cnt_for_source > 0) {
+                            quick_sort(candidates_for_source, sizeof(candidate_t),
+                                    candidate_cnt_for_source, (compar_ex_t*)order_candidates, &target);
+                            
                             candidates = realloc(candidates, 
                                                  sizeof(candidate_t) * (candidate_cnt + candidate_cnt_for_source));
                             if (candidates == NULL) {
@@ -1590,6 +1655,23 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 }
             }
 
+#ifdef DEBUG_PREFILL
+            // report candidates
+            fprintf(stderr, "ds=%s candidates for %s %d rows=%d\n", 
+                    ds_def->ds_nam,
+                    rra_def->cf_nam, rra_def->pdp_cnt, 
+                            rra_def->row_cnt);
+            for (int rr = 0 ; rr < candidate_cnt ; rr++) {
+                candidate_t *cd = candidates + rr;
+                fprintf(stderr, " candidate %s %d rows=%d\n", cd->rra->cf_nam, cd->rra->pdp_cnt, cd->rra->row_cnt);
+                
+            }
+#endif            
+            /* if we have no candidates for an RRA we just skip to the next... */
+            if (candidates == NULL) {
+                continue;
+            }
+            
             /* walk all RRA bins and fill the current DS with data from 
              * the list of candidates */
 

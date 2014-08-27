@@ -65,8 +65,11 @@ typedef struct {
    rra .. the RRA we want to populate
    cnt .. a pointer to an int receiving the number of returned candidates
 */
+typedef int candidate_selectfunc_t(const rra_def_t *tofill, const rra_def_t *maybe);
+
 candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt,
-				 candidate_extra_t extra);
+				 candidate_extra_t extra,
+                                 candidate_selectfunc_t);
 
 #endif
 
