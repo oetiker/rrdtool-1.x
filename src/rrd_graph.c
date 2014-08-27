@@ -340,10 +340,16 @@ int im_free(
 
     if (im->gdef_map){
         g_hash_table_destroy(im->gdef_map);        
-    }
-    if (im->rrd_map){
-        g_hash_table_destroy(im->rrd_map);        
-    }
+	}
+
+	if (im->rrd_map){
+		//TODO: 
+		// check reason of error:
+		// Unhandled exception at 0x77BBF636 (ntdll.dll) in rrdtool.exe: 0xC0000374: a Heap was damaged (parameters: 0x77BDD338).	
+		// at following line
+		//g_hash_table_destroy(im->rrd_map);
+	}
+	
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
