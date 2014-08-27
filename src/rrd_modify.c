@@ -339,7 +339,7 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 	// parse DS
 	parseDS(c + 3,
 		&added, // out.ds_def + out.stat_head->ds_cnt,
-		out, lookup_DS);
+		out, lookup_DS, NULL);
 
 	// check if there is a name clash with an existing DS
 	if (lookup_DS(&out, added.ds_nam) >= 0) {

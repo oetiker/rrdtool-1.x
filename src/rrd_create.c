@@ -8,7 +8,7 @@
 #include <time.h>
 #include <locale.h>
 #include <math.h>
-#include <glib.h>   // will use glist
+#include <glib.h>   // will use glist and regex
 #include <sys/types.h>      // stat()
 #include <sys/stat.h>       // stat()
 #include <unistd.h>         // stat()
@@ -33,8 +33,12 @@
 
 static void reset_pdp_prep(rrd_t *rrd);
 static int rrd_init_data(rrd_t *rrd);
-static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files);
+static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files,
+                            mapping_t *mappings, int mappings_cnt);
 static int positive_mod(int a, int b);
+
+static void init_mapping(mapping_t *mapping);
+static void free_mapping(mapping_t *mapping);
 
 unsigned long FnvHash(
     const char *str);
@@ -210,57 +214,119 @@ done:
     return rc;
 }
 
+//                           1                  2                    3               4                5
+static const char *DS_RE = "^(" DS_NAM_RE ")(?:=(" DS_NAM_RE ")(?:\\[([0-9]+)\\])?)?:(" DST_FMT_RE "):(.+)$";
+/*
+ * relevant RE subgroups:
+ * 0 .. the entire input 
+ * 1 .. the DS name
+ * 2 .. the mapped DS name
+ * 3 .. the optional integer mapped DS index
+ * 4 .. the DS format (AVERAGE....)
+ * 5 .. the DS format specific part
+ */
+#define DS_NAME_SUBGROUP            1
+#define MAPPED_DS_NAME_SUBGROUP     2
+#define OPT_MAPPED_INDEX_SUBGROUP   3
+#define DST_SUBGROUP                4
+#define DST_ARGS_SUBGROUP           5
 
 int parseDS(const char *def, 
 	    ds_def_t *ds_def,
 	    void *key_hash,
-            long (*lookup)(void *, char *)
+            long (*lookup)(void *, char *),
+            mapping_t *mapping
 	    ) 
 {
-    char      dummychar1[2], dummychar2[2];
-    int       offset;
+    int rc = -1;
+    char *dst_tmp = NULL;
+    char *dst_args = NULL;
+    
+    GError *gerr = NULL;
+    GRegex *re = g_regex_new(DS_RE, G_REGEX_EXTENDED, 0, &gerr);
+    GMatchInfo *mi;
 
-    /* extract the name and type */
-    switch (sscanf(def,
-		   DS_NAM_FMT "%1[:]" DST_FMT "%1[:]%n",
-		   ds_def->ds_nam,
-		   dummychar1,
-		   ds_def->dst,
-		   dummychar2, &offset)) {
-    case 0:
-    case 1:
-	rrd_set_error("Invalid DS name in [%s]", def);
-	return -1;
-    case 2:
-    case 3:
-	rrd_set_error("Invalid DS type in [%s]", def);
-	return -1;
-    case 4:    /* (%n may or may not be counted) */
-    case 5:
-	break;
-    default:
-	rrd_set_error("invalid DS format");
-	return -1;
+    if (gerr != NULL) {
+        rrd_set_error("cannot compile RE: %s", gerr->message);
+        goto done;
     }
+    int m = g_regex_match(re, def, 0, &mi);
+    
+    if (!m) {
+        rrd_set_error("invalid DS format");
+        goto done;
+    }
+    
+    /*
+    int scnt = g_regex_get_capture_count(re);
+    int i;
+    for (i = 0 ; i < scnt+1 ; i++) {
+            gint s, e;
+            if (! g_match_info_fetch_pos (mi, i, &s, &e)) continue;
+            if (e != s) fprintf(stderr, "%d %.*s %d\n", i, e - s, def + s, e - s);
+    }
+    */
+    int s, e, s2, e2;
 
-    /* parse the remainder of the arguments */
-    switch (dst_conv(ds_def->dst)) {
+    // NAME
+    g_match_info_fetch_pos(mi, DS_NAME_SUBGROUP, &s, &e);
+    memset(ds_def->ds_nam, 0, sizeof(ds_def->ds_nam));
+    strncpy(ds_def->ds_nam, def + s, e - s);
+    
+    // DST + DST args
+    g_match_info_fetch_pos(mi, DST_SUBGROUP, &s, &e);
+    g_match_info_fetch_pos(mi, DST_ARGS_SUBGROUP, &s2, &e2);
+        
+    dst_tmp  = strndup(def + s, e - s);
+    dst_args = strndup(def + s2, e2 - s2);
+        
+    switch (dst_conv(dst_tmp)) {
     case DST_COUNTER:
     case DST_ABSOLUTE:
     case DST_GAUGE:
     case DST_DERIVE:
-	parseGENERIC_DS(def + offset, ds_def);
+        strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+	parseGENERIC_DS(dst_args, ds_def);
 	break;
     case DST_CDEF:
-	parseCDEF_DS(def + offset, ds_def, key_hash, lookup);
+	strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+        parseCDEF_DS(dst_args, ds_def, key_hash, lookup);
 	break;
     default:
-	rrd_set_error("invalid DS type specified");
-	return -1;
+	rrd_set_error("invalid DS type specified (%s)", dst_tmp);
+	goto done;
     }
-    return 0;
-}
+   
+    // mapping, but only if we are interested in it...
+    if (mapping) {
+        char *endptr;
+        g_match_info_fetch_pos(mi, MAPPED_DS_NAME_SUBGROUP, &s, &e);
 
+        mapping->ds_nam = strdup(ds_def->ds_nam);
+        mapping->mapped_name = strndup(def + s, e - s);
+        
+        if (mapping->ds_nam == NULL || mapping->mapped_name == NULL) {
+            rrd_set_error("Cannot allocate memory");
+            goto done;
+        }
+        g_match_info_fetch_pos(mi, OPT_MAPPED_INDEX_SUBGROUP, &s, &e);
+ 
+        /* we do not have to check for errors: invalid indices will be checked later, 
+         * and syntactically, the RE has done the job for us already*/
+        mapping->index = s != e ? strtol(def + s, &endptr, 10) : -1;
+    }
+    rc = 0;
+ 
+done:
+    if (re) {
+        g_match_info_free(mi);
+        g_regex_unref(re);
+    }
+        
+    if (dst_tmp) free(dst_tmp);
+    if (dst_args) free(dst_args);
+    return rc;
+}
 
 int parseRRA(const char *def,
 	     rra_def_t *rra_def, 
@@ -610,6 +676,8 @@ int rrd_create_r2(
     int rc = -1;
     struct stat stat_buf;
     GList *sources_rrd_files = NULL;
+    mapping_t *mappings = NULL;
+    int mappings_cnt = 0;
     
     /* clear any previous errors */
     rrd_clear_error();
@@ -656,6 +724,7 @@ int rrd_create_r2(
     for (i = 0; i < argc; i++) {
         if (strncmp(argv[i], "DS:", 3) == 0) {
             size_t    old_size = sizeof(ds_def_t) * (rrd.stat_head->ds_cnt);
+            mapping_t m = { .ds_nam = NULL, .def = NULL };
 
             if ((rrd.ds_def = (ds_def_t*)rrd_realloc(rrd.ds_def,
                                           old_size + sizeof(ds_def_t))) ==
@@ -666,8 +735,16 @@ int rrd_create_r2(
             memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
 
 	    parseDS(argv[i] + 3, rrd.ds_def + rrd.stat_head->ds_cnt,
-		    &rrd, lookup_DS);
+		    &rrd, lookup_DS, &m);
 
+            mappings = realloc(mappings, sizeof(mapping_t) * (mappings_cnt + 1));
+            if (! mappings) {
+                rrd_set_error("allocating mappings");
+		goto done;
+            }
+            memcpy(mappings + mappings_cnt, &m, sizeof(mapping_t));
+            mappings_cnt++;
+            
 	    /* check for duplicate DS name */
 
 	    if (lookup_DS(&rrd, rrd.ds_def[rrd.stat_head->ds_cnt].ds_nam) 
@@ -755,7 +832,7 @@ int rrd_create_r2(
             rrd.live_head->last_up = sources_latest_last_up;
             reset_pdp_prep(&rrd);
         }
-        rrd_prefill_data(&rrd, sources_rrd_files);
+        rrd_prefill_data(&rrd, sources_rrd_files, mappings, mappings_cnt);
     }
     
     rc = write_rrd(filename, &rrd);
@@ -763,6 +840,13 @@ int rrd_create_r2(
 done:
     g_list_free_full(sources_rrd_files, (GDestroyNotify) cleanup_source_file);
             
+    if (mappings) {
+        int ii;
+        for (ii = 0 ; ii < mappings_cnt ; ii++) {
+            free_mapping(mappings + ii);
+        }
+        free(mappings);
+    }
     rrd_free(&rrd);
     return rc;
 }
@@ -1848,7 +1932,8 @@ static void prefill_cdp_prep(candidate_t *target,
     }
 }
 
-static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd) {
+static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd,
+                                    mapping_t *mappings, int mappings_cnt) {
     unsigned long source_ds_index;
     
     for (source_ds_index = 0 ; source_ds_index < src_rrd->stat_head->ds_cnt ; source_ds_index++) {
@@ -1865,6 +1950,7 @@ static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd)
 
 static candidate_t *find_matching_candidates(const candidate_t *target, 
         const GList *sources, int *candidate_cnt,
+        mapping_t *mappings, int mappings_cnt,
         candidate_selectfunc_t *select_func, 
         compar_ex_t *order_func) {
     if (select_func == NULL) return NULL;
@@ -1885,7 +1971,7 @@ static candidate_t *find_matching_candidates(const candidate_t *target,
         const rrd_t *src_rrd = rrd_file->rrd;
         if (src_rrd == NULL) continue; 
 
-        unsigned long source_ds_index = find_ds_match(ds_def, src_rrd);
+        unsigned long source_ds_index = find_ds_match(ds_def, src_rrd, mappings, mappings_cnt);
         if (source_ds_index < src_rrd->stat_head->ds_cnt) {
             // match found
 
@@ -2041,7 +2127,7 @@ static int cdp_match(const rra_def_t *tofill, const rra_def_t *maybe) {
     return 0;
 }
 
-static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
+static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mappings, int mappings_cnt) {
     int rc = -1;
     long cdp_rra_index = -1;
     
@@ -2089,6 +2175,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
             
             int candidate_cnt = 0;
             candidate_t *candidates = find_matching_candidates(&target, sources, &candidate_cnt, 
+                    mappings, mappings_cnt,
                     (candidate_selectfunc_t*) select_create_candidates, 
                     (compar_ex_t*) order_candidates);
 
@@ -2148,7 +2235,9 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
 
             int candidate_cnt = 0;
             candidate_t *candidates = find_matching_candidates(&target, sources, 
-                    &candidate_cnt, cdp_match, NULL);
+                    &candidate_cnt, 
+                    mappings, mappings_cnt,
+                    cdp_match, NULL);
 
             prefill_cdp_prep(&target, candidates, candidate_cnt, cdp_rra_index);
         }
@@ -2239,3 +2328,17 @@ int row_for_time(const rrd_t *rrd,
     return row < 0 ? (row + (int) rra->row_cnt) : row ;
 }
 
+static void init_mapping(mapping_t *mapping) {
+    if (! mapping) return;
+    mapping->ds_nam = NULL;
+    mapping->def = NULL;
+    mapping->mapped_name = NULL;
+    mapping->index = -1;
+}
+
+static void free_mapping(mapping_t *mapping) {
+    if (! mapping) return;
+    if (mapping->ds_nam) free(mapping->ds_nam);
+    if (mapping->def) free(mapping->def);
+    if (mapping->mapped_name) free(mapping->mapped_name);
+}

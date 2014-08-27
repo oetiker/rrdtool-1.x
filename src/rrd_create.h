@@ -12,10 +12,18 @@ extern    "C" {
 
 #include "rrd.h"
 
+typedef struct {
+    char *ds_nam;
+    char *def;
+    char *mapped_name;
+    int index;
+} mapping_t;
+
 int parseDS(const char *def, 
 	    ds_def_t *ds_def,
 	    void *key_hash,
-	    long (*lookup)(void *, char *));
+	    long (*lookup)(void *, char *),
+	    mapping_t *mapping);
 
 /* Parse a textual RRA definition into rra_def. The rra_def might be
    disconnected from any RRD. However, because some definitions cause
