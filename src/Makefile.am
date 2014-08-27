@@ -36,7 +36,8 @@ UPD_C_FILES =		\
 	rrd_utils.c	\
 	rrd_snprintf.c  \
 	rrd_update.c	\
-	rrd_modify.c
+	rrd_modify.c	\
+	quicksort.c
 
 RRD_C_FILES =		\
 	rrd_version.c	\
@@ -72,7 +73,8 @@ noinst_HEADERS = \
 	rrd_restore.h rrd_create.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h \
-	rrd_modify.h rrd_update.h rrd_config.h
+	rrd_modify.h rrd_update.h rrd_config.h \
+	quicksort.h
 
 if BUILD_LIBDBI
 RRD_C_FILES += rrd_fetch_libdbi.c
