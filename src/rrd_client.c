@@ -26,13 +26,16 @@
  **/
 
 #ifdef WIN32
+
+#include <ws2tcpip.h> // contain #include <winsock2.h>
+// Need to link with Ws2_32.lib
+#pragma comment(lib, "ws2_32.lib") 
 #include <time.h>
-#include <ws2tcpip.h>
-#include <winsock2.h>
 #include <io.h>
 #include <fcntl.h>
 #include <tchar.h>
 #include <locale.h>
+
 #endif
 
 #include "rrd_strtod.h"

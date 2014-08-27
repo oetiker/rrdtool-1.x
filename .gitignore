@@ -70,3 +70,11 @@ Makefile
 /doc/*.3
 /doc/pod2*.tmp
 /doc/RRD?.pod
+/contrib
+/win32/Debug
+/win32/Release
+/win32/ReleaseDLL
+/win32/*.suo
+/win32/*.sdf
+/bindings/dotnet/*.suo
+/win32/*.opensdf

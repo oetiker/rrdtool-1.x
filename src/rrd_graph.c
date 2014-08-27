@@ -340,10 +340,12 @@ int im_free(
 
     if (im->gdef_map){
         g_hash_table_destroy(im->gdef_map);        
-    }
-    if (im->rrd_map){
-        g_hash_table_destroy(im->rrd_map);        
-    }
+	}
+
+	if (im->rrd_map){
+		g_hash_table_destroy(im->rrd_map);
+	}
+	
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
@@ -4301,7 +4303,8 @@ void rrd_graph_init(
     tzset();
 #endif
     im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
-    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
+	//use of g_free() cause heap damage on windows. Key is allocated by malloc() in sprintf_alloc(), so free() must use
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,free,NULL); 
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;

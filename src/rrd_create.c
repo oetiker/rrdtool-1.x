@@ -645,7 +645,7 @@ void parseGENERIC_DS(
         char     *colonp;
 
         /* convert heartbeat as count or duration */
-        colonp = strchr(def, ':');
+        colonp = (char *) strchr(def, ':');
         if (! colonp) {
             parsetime_error = "missing separator";
             break;
