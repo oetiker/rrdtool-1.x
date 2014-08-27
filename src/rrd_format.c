@@ -57,7 +57,7 @@
 
 /* conversion functions to allow symbolic entry of enumerations */
 enum dst_en dst_conv(
-    char *string)
+    const char *string)
 {
     converter(COUNTER, DST_COUNTER)
         converter(ABSOLUTE, DST_ABSOLUTE)
