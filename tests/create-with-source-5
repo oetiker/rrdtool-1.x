@@ -18,7 +18,8 @@ function xmlfilter {
 #+               <unknown_sec> 40 </unknown_sec>
 
 
-	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+cat
+#	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
 }
 
 function numberfilter {

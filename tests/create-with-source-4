@@ -17,8 +17,8 @@ function xmlfilter {
 #+               <value>0.0000000000e+00</value>
 #+               <unknown_sec> 40 </unknown_sec>
 
-
-	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+	cat
+#	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
 }
 
 function numberfilter {
