@@ -1805,10 +1805,17 @@ static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd)
 }
 
 
-/* Find a set of RRAs that can be used to prefill RRA bins for the target RRA from
- * among the source RRDs. */
-static candidate_t *find_prefill_candidates(const candidate_t *target, 
-        const GList *sources, int *candidate_cnt) {
+
+/* Find a set of RRAs among all RRA in the sources list, as matched by the select_func and 
+ * ordered (by source) according to order_func.
+ */
+
+static candidate_t *find_matching_candidates(const candidate_t *target, 
+        const GList *sources, int *candidate_cnt,
+        candidate_selectfunc_t *select_func, 
+        compar_ex_t *order_func) {
+    if (select_func == NULL) return NULL;
+    
     ds_def_t *ds_def = target->rrd->ds_def + target->extra.l;
 
     const GList *src;
@@ -1835,11 +1842,13 @@ static candidate_t *find_prefill_candidates(const candidate_t *target,
             candidate_t *candidates_for_source = 
                     find_candidate_rras(src_rrd, target->rra, &candidate_cnt_for_source, 
                                         extra,
-                                        select_create_candidates);
+                                        select_func);
 
             if (candidates_for_source && candidate_cnt_for_source > 0) {
-                quick_sort(candidates_for_source, sizeof(candidate_t),
-                        candidate_cnt_for_source, (compar_ex_t*)order_candidates, (void*) target);
+                if (order_func != NULL) {
+                    quick_sort(candidates_for_source, sizeof(candidate_t),
+                            candidate_cnt_for_source, order_func, (void*) target);
+                }
 
                 candidates = realloc(candidates, 
                                      sizeof(candidate_t) * (cnt + candidate_cnt_for_source));
@@ -2010,8 +2019,10 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     
             
             int candidate_cnt = 0;
-            candidate_t *candidates = find_prefill_candidates(&target, sources, &candidate_cnt);
-            
+            candidate_t *candidates = find_matching_candidates(&target, sources, &candidate_cnt, 
+                    (candidate_selectfunc_t*) select_create_candidates, 
+                    (compar_ex_t*) order_candidates);
+
             
 #ifdef DEBUG_PREFILL
             // report candidates
