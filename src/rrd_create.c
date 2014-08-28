@@ -1864,34 +1864,23 @@ done:
     return candidates;
 }
 
+/* For CDP pre-filling we want to have an AVERAGE RRA with a resolution of 1 
+ * PDP with a minimum length of the largest pdp count of all other RRAs...
+ * 
+ * If we do not already have something compatible, we add a temporary RRA that 
+ * can/should be removed again after CDP prefilling
+ */
 
-
-static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
-    int rc = -1;
-    int temp_average_1_pdp_rra_added = 0;
-    
-    if (sources == NULL) {
-        // we are done if there is nothing to copy data from
-        rc = 0;
-        goto done;
-    }
-
-    unsigned long rra_index, ds_index;
-    unsigned long seen_rows = 0;
-    
-    debug_dump_rra(((rrd_file_t *) sources->data)->rrd, 0, 0);
-
-    /* For CDP pre-filling we want to have an AVERAGE RRA with a resolution of 1 
-     * PDP with a minimum length of the largest pdp count of all other RRAs...
-     */
-    
+static long add_temporary_rra_for_cdp_prefilling(rrd_t *rrd) 
+{
     // find largest pdp count
     unsigned long largest_pdp = 0;
     
     rra_def_t *average_1_pdp_rra = NULL;
-    unsigned long temp_added_rra_index = -1;
+    long temp_added_rra_index = -1;
     
     unsigned long original_total_rows = 0;
+    unsigned long rra_index;
     
     for (rra_index = 0 ; rra_index < rrd->stat_head->rra_cnt ; rra_index++) {
         rra_def_t *rra = rrd->rra_def + rra_index;
@@ -1908,14 +1897,11 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     }
     
     if (average_1_pdp_rra == NULL || average_1_pdp_rra->row_cnt < largest_pdp) {
-        printf("ADD TEMP RRA\n");
         // add our own temporary average RRA with a PDP count == 1
-        temp_average_1_pdp_rra_added = 1;
         
         /* temporarily extend */
         rrd->stat_head->rra_cnt++;
 
-        /* NOTE: rra_index is the index of the to-be-added (temporary) RRA */
         temp_added_rra_index = rrd->stat_head->rra_cnt - 1;
         
         rrd->rra_def = realloc(rrd->rra_def, sizeof(rra_def_t) * rrd->stat_head->rra_cnt);
@@ -1928,7 +1914,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
                 || rrd->cdp_prep == NULL 
                 || rrd->rrd_value == NULL) {
             rrd_set_error("Memory allocation failed");
-            goto done;
+            return -1;
         }
         
         strcpy(rrd->rra_def[temp_added_rra_index].cf_nam, "AVERAGE");
@@ -1951,12 +1937,54 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
             }
         }
     }
-    printf("SSSSS\n");
+    return temp_added_rra_index;
+}
+
+static void remove_temporary_rra_for_cdp_prefilling(rrd_t *rrd, long added_index) {
+    if (added_index < 0 || rrd == NULL) return;
+
+    /* if we have added a temporary RRA for CDP preparation, we now have to 
+     * shorten the various data elements again... */
+    
+    unsigned long rra_index = 0;
+    long total_rows = 0;
+    for (rra_index = 0 ; rra_index < rrd->stat_head->rra_cnt ; rra_index++) {
+        if ((long)rra_index != added_index) {
+            total_rows += rrd->rra_def[rra_index].row_cnt;
+        }
+    }
+
+    rrd->stat_head->rra_cnt--;
+
+    rrd->rra_def = realloc(rrd->rra_def, sizeof(rra_def_t) * rrd->stat_head->rra_cnt);
+    rrd->rra_ptr = realloc(rrd->rra_ptr, sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt);
+    rrd->cdp_prep = realloc(rrd->cdp_prep, sizeof(cdp_prep_t) * rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
+    rrd->rrd_value = realloc(rrd->rrd_value, 
+                             sizeof(rrd_value_t) * (total_rows * rrd->stat_head->ds_cnt));
+}
+
+
+static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
+    int rc = -1;
+    long temp_added_rra_index = -1;
+    
+    if (sources == NULL) {
+        // we are done if there is nothing to copy data from
+        rc = 0;
+        goto done;
+    }
+
+    unsigned long rra_index, ds_index;
+    unsigned long seen_rows = 0;
+    
+    debug_dump_rra(((rrd_file_t *) sources->data)->rrd, 0, 0);
+
+    temp_added_rra_index = add_temporary_rra_for_cdp_prefilling(rrd);
+    if (rrd_test_error()) goto done;
+
     unsigned long total_rows = 0;
     // process one RRA after the other
     for (rra_index = 0 ; rra_index < rrd->stat_head->rra_cnt ; rra_index++) {
-        prefill_debug("PREFILL RRA %ld\n", rra_index);
-
         rra_def_t *rra_def = rrd->rra_def + rra_index;
         
         /*
@@ -2026,7 +2054,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
     
     seen_rows = 0;
     for (rra_index = 0 ; rra_index < rrd->stat_head->rra_cnt ; rra_index++) {
-        if (rra_index != temp_added_rra_index) {
+        if ((long)rra_index != temp_added_rra_index) {
             candidate_t target = {
                 .rrd = rrd,
                 .rra = rrd->rra_def + rra_index,
@@ -2065,19 +2093,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources) {
      * RRA data sets */
 debug_dump_rra(rrd, 0, 0);
 done:
-      printf("DONE2\n");
-    if (temp_average_1_pdp_rra_added) {
-        /* if we have added a temporary RRA for CDP preparation, we now have to 
-         * shorten the various data elements again... */
-        rrd->stat_head->rra_cnt--;
-      
-        rrd->rra_def = realloc(rrd->rra_def, sizeof(rra_def_t) * rrd->stat_head->rra_cnt);
-        rrd->rra_ptr = realloc(rrd->rra_ptr, sizeof(rra_ptr_t) * rrd->stat_head->rra_cnt);
-        rrd->cdp_prep = realloc(rrd->cdp_prep, sizeof(cdp_prep_t) * rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
-        rrd->rrd_value = realloc(rrd->rrd_value, 
-                                 sizeof(rrd_value_t) * (original_total_rows * rrd->stat_head->ds_cnt));
-    }
-      printf("DONE3 %d\n", rc);
+    remove_temporary_rra_for_cdp_prefilling(rrd, temp_added_rra_index);
 
     return rc;
 }
