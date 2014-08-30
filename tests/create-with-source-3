@@ -8,7 +8,7 @@ PREFIX=$BUILDDIR/$(basename $0)-test
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
 # expect to match anyway...
-function xmlfilter {
+function cdp_prep_filter {
 	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
 }
 
@@ -16,8 +16,17 @@ function pdp_prep_filter {
 	perl -n -e '$a=join("",<>); $a=~s,<(last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
 }
 
+function data_filter_by_time {
+        START="$1"
+        END="$2"
+#                       <!-- 2011-03-13 08:46:00 CET / 1300002360 --> <row><v>7.9666666667e+02</v>
 
-ST=1300000000
+	perl -n -e 'print unless (m,/ (\d+) -->.*<row>, && $1 >= '$START' && $1 <= '$END')'
+}
+
+FIRST=1300000000
+ST=$FIRST
+
 
 
 rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
@@ -99,17 +108,35 @@ report create-ab-with-four-sources
 $RRDTOOL create ${PREFIX}a2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
 report recreate-original-a1_x-from-combined-source
 
-$RRDTOOL dump ${PREFIX}a1_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}a1_x.xml
-$RRDTOOL dump ${PREFIX}a2_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}a2_x.xml
+$RRDTOOL dump ${PREFIX}a1_x.rrd | pdp_prep_filter > ${PREFIX}a1_x.xml
+$RRDTOOL dump ${PREFIX}a2_x.rrd | pdp_prep_filter > ${PREFIX}a2_x.xml
 $DIFF ${PREFIX}a1_x.xml ${PREFIX}a2_x.xml
 report data-match-a1_x
 
 $RRDTOOL create ${PREFIX}b2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
 report recreate-original-b1_x-from-combined-source
 
-$RRDTOOL dump ${PREFIX}b1_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}b1_x.xml
-$RRDTOOL dump ${PREFIX}b2_x.rrd | xmlfilter | pdp_prep_filter > ${PREFIX}b2_x.xml
+$RRDTOOL dump ${PREFIX}b1_x.rrd | pdp_prep_filter > ${PREFIX}b1_x.xml
+$RRDTOOL dump ${PREFIX}b2_x.rrd | pdp_prep_filter > ${PREFIX}b2_x.xml
 $DIFF ${PREFIX}b1_x.xml ${PREFIX}b2_x.xml
 report data-match-b1_x
+
+$RRDTOOL create ${PREFIX}a2_y.rrd --start $ST_Y --step 60 --source ${PREFIX}ab2_xy.rrd DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-a1_y-from-combined-source
+
+$RRDTOOL dump ${PREFIX}a1_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}a1_y.xml
+$RRDTOOL dump ${PREFIX}a2_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}a2_y.xml
+
+$DIFF ${PREFIX}a1_y.xml ${PREFIX}a2_y.xml
+report data-match-a2_y
+
+$RRDTOOL create ${PREFIX}b2_y.rrd --start $ST_Y --step 60 --source ${PREFIX}ab2_xy.rrd DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-b1_y-from-combined-source
+
+$RRDTOOL dump ${PREFIX}b1_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}b1_y.xml
+$RRDTOOL dump ${PREFIX}b2_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}b2_y.xml
+
+$DIFF ${PREFIX}b1_y.xml ${PREFIX}b2_y.xml
+report data-match-b2_y
 
 rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

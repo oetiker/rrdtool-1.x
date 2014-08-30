@@ -8,7 +8,7 @@ PREFIX=$BUILDDIR/$(basename $0)-test
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
 # expect to match anyway...
-function xmlfilter {
+function cpd_prep_filter {
 
 #-               <last_ds>1010</last_ds>
 #-               <value>4.0400000000e+04</value>
@@ -16,8 +16,6 @@ function xmlfilter {
 #+               <last_ds>U</last_ds>
 #+               <value>0.0000000000e+00</value>
 #+               <unknown_sec> 40 </unknown_sec>
-
-
 	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
 }
 
@@ -44,13 +42,13 @@ $RRDTOOL update ${PREFIX}a1.rrd  $UPDATE
 $RRDTOOL create ${PREFIX}a2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-with-source-1
 
-$RRDTOOL dump ${PREFIX}a1.rrd | xmlfilter > ${PREFIX}a1.xml
-$RRDTOOL dump ${PREFIX}a2.rrd | xmlfilter > ${PREFIX}a2.xml
+$RRDTOOL dump ${PREFIX}a1.rrd > ${PREFIX}a1.xml
+$RRDTOOL dump ${PREFIX}a2.rrd > ${PREFIX}a2.xml
 $DIFF ${PREFIX}a1.xml ${PREFIX}a2.xml
 report data-match
 
 $RRDTOOL create ${PREFIX}a3.rrd --start $ST --step 60 --source ${PREFIX}a2.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
-$RRDTOOL dump ${PREFIX}a3.rrd | xmlfilter > ${PREFIX}a3.xml
+$RRDTOOL dump ${PREFIX}a3.rrd > ${PREFIX}a3.xml
 $DIFF ${PREFIX}a1.xml ${PREFIX}a3.xml
 report data-match-again
 
@@ -75,8 +73,8 @@ $RRDTOOL create ${PREFIX}a5.rrd --start $ST --step 60 --source ${PREFIX}a4.rrd D
 $RRDTOOL create ${PREFIX}a6.rrd --start $ST --step 60 --source ${PREFIX}a5.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 # now a4 and a6 must match....
 
-$RRDTOOL dump ${PREFIX}a4.rrd | xmlfilter > ${PREFIX}a4.xml
-$RRDTOOL dump ${PREFIX}a6.rrd | xmlfilter > ${PREFIX}a6.xml
+$RRDTOOL dump ${PREFIX}a4.rrd > ${PREFIX}a4.xml
+$RRDTOOL dump ${PREFIX}a6.rrd > ${PREFIX}a6.xml
 $DIFF ${PREFIX}a4.xml ${PREFIX}a6.xml
 report data-match-after-swap
 
