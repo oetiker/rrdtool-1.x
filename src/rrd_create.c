@@ -1933,15 +1933,27 @@ static void prefill_cdp_prep(candidate_t *target,
 }
 
 static unsigned long find_ds_match(const ds_def_t *ds_def, const rrd_t *src_rrd,
-                                    mapping_t *mappings, int mappings_cnt) {
+                                    mapping_t *mapping) {
     unsigned long source_ds_index;
+    const char *looked_for_ds_name = ds_def->ds_nam;
+    if (mapping && mapping->mapped_name && strlen(mapping->mapped_name) > 0) {
+        looked_for_ds_name = mapping->mapped_name;
+    }
     
     for (source_ds_index = 0 ; source_ds_index < src_rrd->stat_head->ds_cnt ; source_ds_index++) {
-        if (strcmp(ds_def->ds_nam, src_rrd->ds_def[source_ds_index].ds_nam) == 0) {
+        if (strcmp(looked_for_ds_name, src_rrd->ds_def[source_ds_index].ds_nam) == 0) {
             return source_ds_index;
         }
     }
     return src_rrd->stat_head->ds_cnt;
+}
+
+static int find_mapping(const char *ds_nam, const mapping_t *mappings, int mappings_cnt) {
+    int i;
+    for (i = 0 ; i < mappings_cnt ; i++) {
+        if (strcmp(ds_nam, mappings[i].ds_nam) == 0) return i;
+    }
+    return -1;
 }
 
 /* Find a set of RRAs among all RRA in the sources list, as matched by the select_func and 
@@ -1959,11 +1971,18 @@ static candidate_t *find_matching_candidates(const candidate_t *target,
 
     const GList *src;
     candidate_t *candidates = NULL;
-    
-    int cnt = 0;
-    
-    for (src = sources ; src ;  src = g_list_next(src)) {
-        // first: find matching DS
+
+    int mindex = find_mapping(ds_def->ds_nam, mappings, mappings_cnt);
+    mapping_t *mapping = mindex < 0 ? NULL : mappings + mindex;
+
+    int cnt = 0, srcindex;
+    for (src = sources, srcindex = 1 ; src ;  src = g_list_next(src), srcindex++) {
+        // first: check source index if we have a mapping containing an index...
+        // NOTE: the index is 1-based....
+        if (mapping && mapping->index >= 0 && srcindex != mapping->index) {
+            continue;
+        }
+        // then: find matching DS
 
         const rrd_file_t *rrd_file = src->data;
         if (rrd_file == NULL) continue;
@@ -1971,7 +1990,7 @@ static candidate_t *find_matching_candidates(const candidate_t *target,
         const rrd_t *src_rrd = rrd_file->rrd;
         if (src_rrd == NULL) continue; 
 
-        unsigned long source_ds_index = find_ds_match(ds_def, src_rrd, mappings, mappings_cnt);
+        unsigned long source_ds_index = find_ds_match(ds_def, src_rrd, mapping);
         if (source_ds_index < src_rrd->stat_head->ds_cnt) {
             // match found
 
