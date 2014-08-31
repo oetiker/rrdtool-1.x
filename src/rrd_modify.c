@@ -106,17 +106,18 @@ candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cn
 
 	if (selectfunc(rra, other_rra)) {
 #ifdef _WINDOWS
-		candidate_t c;
-		c.rrd = rrd;
-		c.rra_index = i;
-		c.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows;
-		c.rra = rrd->rra_def + i;
-		c.ptr = rrd->rra_ptr + i;
-		c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
-                memcpy(&c.extra, &extra, sizeof(extra));
+            candidate_t c;
+            c.rrd = rrd;
+            c.rra_index = i;
+            c.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows;
+            c.rra = rrd->rra_def + i;
+            c.ptr = rrd->rra_ptr + i;
+            c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
+            memcpy(&c.extra, &extra, sizeof(extra));
 #else
-	    candidate_t c = { 
-		.rrd = rrd, 
+            const candidate_t c = { 
+		.rrd = (rrd_t*) rrd,    /* cast effectively removes const-ness, but we won't
+                                         * mess around with it. promised */
 		.rra_index = i,
 		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
 		.rra = rrd->rra_def + i,
