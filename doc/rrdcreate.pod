@@ -7,16 +7,19 @@ rrdcreate - Set up a new Round Robin Database
 B<rrdtool> B<create> I<filename>
 S<[B<--start>|B<-b> I<start time>]>
 S<[B<--step>|B<-s> I<step>]>
+S<[B<--source>|B<-r> I<source-file>]>
 S<[B<--no-overwrite>]>
 S<[B<--daemon> I<address>]>
-S<[B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>]>
+S<[B<DS:>I<ds-name>[B<=>I<mapped-ds-name>[B<[>I<source-index>B<]>]]B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
 =head1 DESCRIPTION
 
 The create function of RRDtool lets you set up new Round Robin
 Database (B<RRD>) files.  The file is created at its final, full size
-and filled with I<*UNKNOWN*> data.
+and filled with I<*UNKNOWN*> data, unless one or more source B<RRD> files
+have been specified and they hold suitable data to "pre-fill" the new B<RRD>
+file.
 
 =head2 I<filename>
 
@@ -32,6 +35,11 @@ any data timed before or at the time specified.
 
 See also AT-STYLE TIME SPECIFICATION section in the
 I<rrdfetch> documentation for other ways to specify time.
+
+If one or more source files is used to pre-fill the new B<RRD>, 
+the B<--start> option may be omitted. In that case, the latest update
+time among all source files will be used as the last update time of
+the new B<RRD> file, effectively setting the start time.
 
 =head2 B<--step>|B<-s> I<step> (default: 300 seconds)
 
@@ -51,7 +59,55 @@ the B<-l> option in the L<rrdcached> manual.
 
  rrdtool create --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd I<other options>
 
-=head2 B<DS:>I<ds-name>B<:>I<DST>B<:>I<dst arguments>
+=head2 B<--source>|B<-r> I<source-file>
+
+One or more source B<RRD> files may be named on the command line. Data from these 
+source files will be used to prefill the created B<RRD> file. The output file and one source
+file may refer to the same file name. This will effectively replace the source file with the
+new B<RRD> file. While there is the danger to loose the source file because it 
+gets replaced, there is no danger that the source and the new file may be 
+"garbled" together at any point in time, because the new file will always be
+created as a temporary file first and will only be moved to its final 
+destination once it has been written in its entirety.
+
+Prefilling is done by matching up DS names, RRAs and consolidation
+functions and choosing the best available data resolution when doing
+so. Prefilling may not be mathematically correct in all cases (eg. if
+resolutions have to change due to changed stepping of the target RRD
+and old and new resolutions do not match up with old/new bin
+boundaries in RRAs).
+
+In other words: A best effort is made to preserve data during
+prefilling.  Also, pre-filling of RRAs may only be possible for
+certain kinds of DS types. Prefilling may also have strange effects on 
+Holt-Winters forecasting RRAs. In other words: there is no guarantee 
+for data-correctness.
+
+When "pre-filling" a B<RRD> file, the structure of the new file must be 
+specified as usual using DS and RRA specifications as outlined below. Data will 
+be taken from source files based on DS names and types and in the order the source files
+are specified in. Data sources with the same name from different source files
+will be combined to form a new data source. Generally, for any point in time the 
+new B<RRD> file will cover after its creation, data from only one source file 
+will have been used for pre-filling. However, data from multiple sources may be 
+combined if it refers to different times or an earlier named source file holds 
+unknown data for a time where a later one holds known data.
+
+If this automatic data selection is not desired, the DS syntax allows to specify
+a mapping of target and source data sources for prefilling. This syntax allows to 
+rename data sources and to restrict prefilling for a DS to only use data from a 
+single source file.
+
+Prefilling currently only works reliably for RRAs using one of the classic 
+consolidation functions, that is one of: AVERAGE, MIN, MAX, LAST. It might also
+currently have problems with COMPUTE data sources.
+
+Note that the act of prefilling during B<create> is similar to a lot of the operations available
+via the B<tune> command, but using B<create> syntax.
+
+
+
+=head2 B<DS:>I<ds-name>[B<=>I<mapped-ds-name>[B<[>I<source-index>B<]>]]B<:>I<DST>B<:>I<dst arguments>
 
 A single B<RRD> can accept input from several data sources (B<DS>),
 for example incoming and outgoing traffic on a specific communication
@@ -167,6 +223,18 @@ the RPN expression, the COMPUTE data source may only refer to the
 names of data source listed previously in the create command. This is
 similar to the restriction that B<CDEF>s must refer only to B<DEF>s
 and B<CDEF>s previously defined in the same graph command.
+
+When pre-filling the new B<RRD> file using one or more source B<RRD>s, the DS specification
+may hold an optional mapping after the DS name. This takes the form of an 
+equal sign followed by a mapped-to DS name and an optional source index enclosed 
+in square brackets.
+
+For example, the DS
+
+ DS:a=b[2]:GAUGE:120:0:U
+
+specifies that the DS named I<a> should be pre-filled from the DS named I<b> in 
+the second listed source file (source indices are 1-based).
 
 =head2 B<RRA:>I<CF>B<:>I<cf arguments>
 
