@@ -1506,7 +1506,7 @@ static coverage_t *add_coverage(coverage_t *current_coverage, int *coverage_arra
         if (cc->covered == next->covered) {
             cc->end = next->end;
             
-            memmove(next, next + 1, sizeof(coverage_t) * (*coverage_array_size - i - 1));
+            memmove(next, next + 1, sizeof(coverage_t) * (*coverage_array_size - i - 2));
             (*coverage_array_size)--;
 
             // re-iterate with i unchanged !!
