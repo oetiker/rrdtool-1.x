@@ -2210,7 +2210,11 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
                     mappings, mappings_cnt,
                     cdp_match, NULL);
 
+            if (candidates == NULL && rrd_test_error()) {
+                goto done;
+            }
             prefill_cdp_prep(&target, candidates, candidate_cnt, cdp_rra_index);
+            free(candidates);
         }
         total_rows += rrd->rra_def[rra_index].row_cnt;
     }
