@@ -16,11 +16,14 @@ $RRDTOOL create ${BUILD}a2.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  
 # add 50 values - note that we do NOT add it exactly for boundary times, and 
 # that we end at a NON CDP boundary for 5-PDP RRAs:
 N=10
+UPDATE=
 for T in $(seq 1300000050 60 1300002990) ; do
-	$RRDTOOL update ${BUILD}a1.rrd --template a $T:$N || fail update1
-	$RRDTOOL update ${BUILD}a2.rrd --template a $T:$N || fail update2
+        UPDATE="$UPDATE $T:$N"
 	let N=$N+10
 done
+
+$RRDTOOL update ${BUILD}a1.rrd --template a $UPDATE || fail update1
+$RRDTOOL update ${BUILD}a2.rrd --template a $UPDATE || fail update2
 
 $RRDTOOL dump ${BUILD}a1.rrd | $DIFF ${BASE}a1-create.dump -
 report create 1
