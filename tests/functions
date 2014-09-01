@@ -5,18 +5,38 @@ export TZ
 BASEDIR=${BASEDIR:-$(dirname $0)}
 BUILDDIR=${BUILDDIR:-${BASEDIR}}
 TOP_BUILDDIR=${TOP_BUILDDIR:-${BASEDIR}/..}
-if [ -z "$RRDTOOL" ] ; then 
-	case "$TESTS_STYLE" in
-	valgrind)
-		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
-		RRDTOOL="libtool --mode=execute valgrind --tool=memcheck \
+
+#
+# because valgrind has trouble with glib memory handling
+# (see e.g. https://developer.gnome.org/glib/2.30/glib-running.html or 
+# https://stackoverflow.com/questions/4254610/valgrind-reports-memory-possibly-lost-when-using-glib-data-types)
+# we set some env. vars to work around them:
+
+function rrdtool_valgrind {
+  (
+    G_DEBUG=gc-friendly
+    G_SLICE=all
+
+    export G_DEBUG 
+    export G_SLICE
+
+    libtool --mode=execute valgrind --tool=memcheck \
 			--suppressions=$BASEDIR/valgrind-supressions \
 			--leak-check=full --show-reachable=yes \
 			--leak-resolution=high --num-callers=20 \
 			--error-exitcode=111 \
 			--track-fds=yes \
+                        --track-origins=yes \
 			--free-fill=ad \
-			$TOP_BUILDDIR/src/rrdtool"
+			$TOP_BUILDDIR/src/rrdtool "$@"
+  )
+}
+
+if [ -z "$RRDTOOL" ] ; then 
+	case "$TESTS_STYLE" in
+	valgrind)
+		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+		RRDTOOL=rrdtool_valgrind
 		;;
 	*)
 		RRDTOOL=$TOP_BUILDDIR/src/rrdtool
