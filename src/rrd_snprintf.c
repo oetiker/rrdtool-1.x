@@ -1112,8 +1112,10 @@ fmtflt(char *str, size_t *len, size_t size, LDOUBLE fvalue, int width,
 	UINTMAX_T fracpart;
 	UINTMAX_T mask;
 	const char *infnan = NULL;
-	char iconvert[MAX_CONVERT_LENGTH];
-	char fconvert[MAX_CONVERT_LENGTH];
+        /* NOTE: We init the following variables, because valgrind complains 
+         * about them being used uninitialized in some cases. */
+	char iconvert[MAX_CONVERT_LENGTH] = "";
+	char fconvert[MAX_CONVERT_LENGTH] = "";
 	char econvert[5];	/* "e-300" (without nul-termination). */
 	char esign = 0;
 	char sign = 0;
