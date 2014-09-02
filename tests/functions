@@ -2,9 +2,9 @@
 TZ=CET
 export TZ
 
-BASEDIR=${BASEDIR:-$(dirname $0)}
-BUILDDIR=${BUILDDIR:-${BASEDIR}}
-TOP_BUILDDIR=${TOP_BUILDDIR:-${BASEDIR}/..}
+BASEDIR="${BASEDIR:-$(dirname $0)}"
+BUILDDIR="${BUILDDIR:-${BASEDIR}}"
+TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
 
 #
 # because valgrind has trouble with glib memory handling
@@ -13,6 +13,8 @@ TOP_BUILDDIR=${TOP_BUILDDIR:-${BASEDIR}/..}
 # we set some env. vars to work around them:
 
 function rrdtool_valgrind {
+  # use a sub shell, so setting environment variables only affects the current
+  # rrdtool run and not subsequent ones
   (
     G_DEBUG=gc-friendly
     G_SLICE=all
@@ -20,16 +22,38 @@ function rrdtool_valgrind {
     export G_DEBUG 
     export G_SLICE
 
+    VALGRIND_OPTS=
+    if [ -n "$VALGRIND_LOGFILE" ] ; then
+        TMP_LOG="${VALGRIND_LOGFILE}.$$.tmp"
+        VALGRIND_OPTS=--log-file="${TMP_LOG}"
+    fi
+
     libtool --mode=execute valgrind --tool=memcheck \
-			--suppressions=$BASEDIR/valgrind-supressions \
+			--suppressions="$BASEDIR/valgrind-supressions" \
 			--leak-check=full --show-reachable=yes \
 			--leak-resolution=high --num-callers=20 \
 			--error-exitcode=111 \
 			--track-fds=yes \
                         --track-origins=yes \
 			--free-fill=ad \
-			$TOP_BUILDDIR/src/rrdtool "$@"
+                        $VALGRIND_OPTS \
+			"$TOP_BUILDDIR/src/rrdtool" "$@"
+    RC=$?
+
+    if [ -n "$VALGRIND_LOGFILE" ] ; then
+        cat -- "${TMP_LOG}" >> "$VALGRIND_LOGFILE"
+        if [ $RC == 111 ] ; then
+            sed -n '/LEAK SUMMARY:/,$p' -- "${TMP_LOG}" >&2
+        fi
+        rm -f -- "${TMP_LOG}"
+    fi
+
+    # make sure to properly report the rrdtool exit code to the caller by:
+    #  - first: exiting with the original exit code from the subshell and
+    exit $RC
   )
+  #    - second: by returning the subshell exit code to the function caller
+  return $?
 }
 
 if [ -z "$RRDTOOL" ] ; then 
@@ -37,7 +61,13 @@ if [ -z "$RRDTOOL" ] ; then
 	valgrind)
 		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
 		RRDTOOL=rrdtool_valgrind
-		;;
+                ;;
+	valgrind-logfile)
+		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+		RRDTOOL=rrdtool_valgrind
+                VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
+                rm -f "$VALGRIND_LOGFILE"
+	;;
 	*)
 		RRDTOOL=$TOP_BUILDDIR/src/rrdtool
 		;;
