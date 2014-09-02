@@ -1915,6 +1915,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   char *av[128];
   char **sources = NULL;
   int sources_length = 0;
+  char *template = NULL;
   int status;
   unsigned long step = 300;
   time_t last_up = time(NULL)-10;
@@ -1991,6 +1992,15 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
       sources[sources_length + 1] = NULL;
       continue;
     }
+    if( ! strncmp(tok,"-t",2) ) {
+      status = buffer_get_field(&buffer, &buffer_size, &tok );
+      if (status != 0) {
+          rc = syntax_error(sock,cmd);
+          goto done;
+      }
+      template = tok;
+      continue;
+    }
     if( ! strncmp(tok,"-O",2) ) {
       no_overwrite = 1;
       continue;
@@ -2011,7 +2021,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
 
   rrd_clear_error ();
   pthread_mutex_lock(&rrdfilecreate_lock);
-  status = rrd_create_r2(file,step,last_up,no_overwrite, (const char**) sources, ac,(const char **)av);
+  status = rrd_create_r2(file,step,last_up,no_overwrite, (const char**) sources, template, ac,(const char **)av);
   pthread_mutex_unlock(&rrdfilecreate_lock);
 
   if(!status) {

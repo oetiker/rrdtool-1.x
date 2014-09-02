@@ -1203,7 +1203,7 @@ int rrdc_create (const char *filename, /* {{{ */
     int argc,
     const char **argv)
 {
-    return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite, NULL, argc, argv);
+    return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite, NULL, NULL, argc, argv);
 }
 
 int rrdc_create_r2(const char *filename, /* {{{ */
@@ -1211,6 +1211,7 @@ int rrdc_create_r2(const char *filename, /* {{{ */
     time_t last_up,
     int no_overwrite,
     const char **sources,
+    const char *template,
     int argc,
     const char **argv)
 {
@@ -1260,6 +1261,11 @@ int rrdc_create_r2(const char *filename, /* {{{ */
       buffer_add_string ("-r", &buffer_ptr, &buffer_free);
       buffer_add_string (*p, &buffer_ptr, &buffer_free);
     }
+  }
+  
+  if (template != NULL) {
+    buffer_add_string ("-t", &buffer_ptr, &buffer_free);
+    buffer_add_string (template, &buffer_ptr, &buffer_free);
   }
   
   if (status != 0)

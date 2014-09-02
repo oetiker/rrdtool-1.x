@@ -56,13 +56,14 @@ int rrd_create(
         {"step", required_argument, 0, 's'},
         {"daemon", required_argument, 0, 'd'},
         {"source", required_argument, 0, 'r'},
+        {"template", required_argument, 0, 't'},
         {"no-overwrite", no_argument, 0, 'O'},
         {0, 0, 0, 0}
     };
     int       option_index = 0;
     int       opt;
     time_t    last_up = -1;
-    unsigned long pdp_step = 300;
+    unsigned long pdp_step = 0;
     rrd_time_value_t last_up_tv;
     const char *parsetime_error = NULL;
     int       rc = -1;
@@ -70,6 +71,7 @@ int rrd_create(
     int       opt_no_overwrite = 0;
     GList * sources = NULL;
     const char **sources_array = NULL;
+    const char *template = NULL;
     
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -162,6 +164,22 @@ int rrd_create(
 
             break;
         }
+        case 't': {
+            if (template != NULL) {
+                rrd_set_error("template already set");
+                rc = -1;
+                goto done;
+            }
+            char * optcpy = strdup(optarg);
+            if (optcpy == NULL) {
+                rrd_set_error("Cannot allocate string");
+                rc = -1;
+                goto done;
+            }
+
+            template = optcpy;
+            break;
+        }
         case '?':
             if (optopt != 0)
                 rrd_set_error("unknown option '%c'", optopt);
@@ -194,14 +212,14 @@ int rrd_create(
     if (rrdc_is_connected (opt_daemon)) {
         rc = rrdc_create_r2(argv[optind],
                       pdp_step, last_up, opt_no_overwrite, 
-                      sources_array,
+                      sources_array, template,
                       argc - optind - 1, (const char **) (argv + optind + 1));
-	} else {
+    } else {
         rc = rrd_create_r2(argv[optind],
                       pdp_step, last_up, opt_no_overwrite,
-                      sources_array,
+                      sources_array, template,
                       argc - optind - 1, (const char **) (argv + optind + 1));
-	}
+    }
 done:
     if (sources_array != NULL) {
         free(sources_array);
@@ -211,6 +229,10 @@ done:
         // this will free the list elements as well
         g_list_free_full(sources, free);
         sources = NULL;
+    }
+    if (template != NULL) {
+        free(template);
+        template = NULL;
     }
     return rc;
 }
@@ -646,7 +668,7 @@ int rrd_create_r(
     int argc,
     const char **argv)
 {
-	return rrd_create_r2(filename,pdp_step,last_up,0, NULL, argc,argv);
+	return rrd_create_r2(filename,pdp_step,last_up,0, NULL, NULL, argc,argv);
 }
 
 
@@ -668,6 +690,7 @@ int rrd_create_r2(
     time_t last_up,
     int no_overwrite,
     const char **sources,
+    const char *template,
     int argc,
     const char **argv)
 {
@@ -716,6 +739,49 @@ int rrd_create_r2(
     rrd.rra_def = NULL;
 
     rrd.live_head->last_up = last_up > 0 ? last_up : time(NULL) - 10;
+    int last_up_set = last_up > 0;
+    
+    time_t    template_latest_last_up = 0;
+
+    if (template) {
+        rrd_t trrd;
+
+        rrd_init(&trrd);
+        rrd_file_t *tf = rrd_open(template, &trrd, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
+        if (tf == NULL) {
+            rrd_set_error("Cannot open template RRD %s", template);
+            goto done;
+        }
+        
+        /* copy step time if not yet set */
+        
+        if (rrd.stat_head->pdp_step == 0) {
+            rrd.stat_head->pdp_step = trrd.stat_head->pdp_step;
+        }
+
+        /* copy DS and RRA definitions from template... */
+
+        rrd.stat_head->ds_cnt = trrd.stat_head->ds_cnt;
+        rrd.ds_def = malloc(sizeof(ds_def_t) * trrd.stat_head->ds_cnt);
+        rrd.stat_head->rra_cnt = trrd.stat_head->rra_cnt;
+        rrd.rra_def = malloc(sizeof(rra_def_t) * trrd.stat_head->rra_cnt);
+        
+        if (rrd.ds_def == NULL || rrd.rra_def == NULL) {
+            rrd_set_error("cannot allocate memory");
+            goto done;
+        }
+
+        template_latest_last_up = trrd.live_head->last_up;
+
+        memcpy(rrd.ds_def,  trrd.ds_def,  sizeof(ds_def_t)  * trrd.stat_head->ds_cnt);
+        memcpy(rrd.rra_def, trrd.rra_def, sizeof(rra_def_t) * trrd.stat_head->rra_cnt);
+
+        rrd_close(tf);
+    }
+    
+    if (rrd.stat_head->pdp_step == 0) {
+        rrd.stat_head->pdp_step = 300;
+    }
 
     /* optind points to the first non-option command line arg,
      * in this case, the file name. */
@@ -800,7 +866,13 @@ int rrd_create_r2(
         rrd_set_error("you must define at least one Data Source");
 	goto done;
     }
-    
+
+    /* set last update time from template if not set explicitly and there 
+     * are no sources given */
+    if (!last_up_set && template_latest_last_up > 0 && sources == NULL) {
+        rrd.live_head->last_up = template_latest_last_up;
+    }
+
     rc = rrd_init_data(&rrd);
     if (rc != 0) goto done;
 
@@ -832,11 +904,12 @@ int rrd_create_r2(
     
         if (last_up == -1) {
             rrd.live_head->last_up = sources_latest_last_up;
+            last_up_set = 1;
             reset_pdp_prep(&rrd);
         }
         rrd_prefill_data(&rrd, sources_rrd_files, mappings, mappings_cnt);
     }
-    
+
     rc = write_rrd(filename, &rrd);
     
 done:

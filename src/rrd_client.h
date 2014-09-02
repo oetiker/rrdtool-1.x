@@ -65,6 +65,7 @@ int rrdc_create_r2 (const char *filename,
     time_t last_up,
     int no_overwrite,
     const char **sources,
+    const char *template,
     int argc,
     const char **argv);
 
