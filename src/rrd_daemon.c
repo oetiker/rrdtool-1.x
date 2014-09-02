@@ -1903,32 +1903,41 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
 } /* }}} static int handle_request_last  */
 
+#ifdef __GNUC__
+#define return _Pragma("message \"Do not use 'return': 'goto done' instead\"")
+#endif
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file, file_tmp[PATH_MAX];
-  char *file_copy, *dir, dir_tmp[PATH_MAX];
+  char *file_copy = NULL, *dir, dir_tmp[PATH_MAX];
   char *tok;
   int ac = 0;
   char *av[128];
+  char **sources = NULL;
+  int sources_length = 0;
   int status;
   unsigned long step = 300;
   time_t last_up = time(NULL)-10;
   int no_overwrite = opt_no_overwrite;
-
+  int rc = -1;
 
   /* obtain filename */
   status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
   /* get full pathname */
   get_abs_path(&file, file_tmp);
 
   file_copy = strdup(file);
   if (file_copy == NULL) {
-    return send_response(sock, RESP_ERR, "Cannot create: empty argument.\n");
+    rc = send_response(sock, RESP_ERR, "Cannot create: empty argument.\n");
+    goto done;
   }
   if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    rc = send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    goto done;
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
@@ -1936,28 +1945,50 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   dir = dirname(file_copy);
   if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
     if (!config_allow_recursive_mkdir) {
-        return send_response(sock, RESP_ERR,
+        rc = send_response(sock, RESP_ERR,
             "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
             dir);
+        goto done;
     }
     if (rrd_mkdir_p(dir, 0755) != 0) {
-        return send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        rc = send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        goto done;
     }
   }
   pthread_mutex_unlock(&rrdfilecreate_lock);
-  free(file_copy);
 
   while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0 && tok) {
     if( ! strncmp(tok,"-b",2) ) {
       status = buffer_get_field(&buffer, &buffer_size, &tok );
-      if (status != 0) return syntax_error(sock,cmd);
+      if (status != 0) {
+          rc = syntax_error(sock,cmd);
+          goto done;
+      }
       last_up = (time_t) atol(tok);
       continue;
     }
     if( ! strncmp(tok,"-s",2) ) {
       status = buffer_get_field(&buffer, &buffer_size, &tok );
-      if (status != 0) return syntax_error(sock,cmd);
+      if (status != 0) { 
+          rc = syntax_error(sock,cmd);
+          goto done;
+      }
       step = atol(tok);
+      continue;
+    }
+    if( ! strncmp(tok,"-r",2) ) {
+      status = buffer_get_field(&buffer, &buffer_size, &tok );
+      if (status != 0) {
+          rc = syntax_error(sock,cmd);
+          goto done;
+      }
+      sources = realloc(sources, sizeof(char*) * (sources_length + 2));
+      if (sources == NULL) {
+          rc = send_response(sock, RESP_ERR, "Cannot allocate memory\n");
+          goto done;
+      }
+      sources[sources_length++] = tok;
+      sources[sources_length + 1] = NULL;
       continue;
     }
     if( ! strncmp(tok,"-O",2) ) {
@@ -1966,24 +1997,39 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     }
     if( ! strncmp(tok,"DS:",3) ) { av[ac++]=tok; continue; }
     if( ! strncmp(tok,"RRA:",4) ) { av[ac++]=tok; continue; }
-    return syntax_error(sock,cmd);
+    rc = syntax_error(sock,cmd);
+    goto done;
   }
   if(step<1) {
-    return send_response(sock, RESP_ERR, "The step size cannot be less than 1 second.\n");
+    rc = send_response(sock, RESP_ERR, "The step size cannot be less than 1 second.\n");
+    goto done;
   }
   if (last_up < 3600 * 24 * 365 * 10) {
-    return send_response(sock, RESP_ERR, "The first entry must be after 1980.\n");
+    rc = send_response(sock, RESP_ERR, "The first entry must be after 1980.\n");
+    goto done;
   }
 
   rrd_clear_error ();
   pthread_mutex_lock(&rrdfilecreate_lock);
-  status = rrd_create_r2(file,step,last_up,no_overwrite,NULL, ac,(const char **)av);
+  status = rrd_create_r2(file,step,last_up,no_overwrite, (const char**) sources, ac,(const char **)av);
   pthread_mutex_unlock(&rrdfilecreate_lock);
 
   if(!status) {
-    return send_response(sock, RESP_OK, "RRD created OK\n");
+    rc = send_response(sock, RESP_OK, "RRD created OK\n");
+    goto done;
   }
-  return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+  rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+done:
+  if (sources) {
+      free(sources);
+  }
+  if (file_copy) {
+      free(file_copy);
+  }
+#ifdef __GNUC__
+#undef return
+#endif
+  return rc;
 } /* }}} static int handle_request_create  */
 
 /* start "BATCH" processing */
