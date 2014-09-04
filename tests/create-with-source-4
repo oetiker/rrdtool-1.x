@@ -80,7 +80,7 @@ AVG2=$2
 
 [ $AVG1 = 1 ] ; report average ab1 == 1
 [ $(dc <<< "$AVG2 1 - 10000 * 1 / p") -lt 10 ] ; report "average ab2 ($AVG2 - 1) < 1/1000"
-[ $STDEV1 = 0 ] ; report std dev ab1 == 0
+[ $STDEV1 = 0 ] ; report "std dev ab1 == 0 ($STDEV1)"
 [ $(dc <<< "$STDEV2 10000 * 1 / p") -lt 20 ] ; report "std dev ab2 ($STDEV2) < 1/500"
 
 

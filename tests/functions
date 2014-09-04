@@ -3,8 +3,12 @@ TZ=CET
 export TZ
 
 BASEDIR="${BASEDIR:-$(dirname $0)}"
+BASEDIR="$(realpath $BASEDIR)"
+
 BUILDDIR="${BUILDDIR:-${BASEDIR}}"
 TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
+
+DIFF="diff -u"
 
 #
 # because valgrind has trouble with glib memory handling
@@ -58,39 +62,10 @@ function valgrind {
   return $?
 }
 
-if [ -z "$RRDTOOL" ] ; then 
-	case "$TESTS_STYLE" in
-	valgrind)
-		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
-		RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
-		RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
-                ;;
-	valgrind-logfile)
-		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
-		RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
-		RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
-                VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
-                rm -f "$VALGRIND_LOGFILE"
-	;;
-	*)
-		RRDTOOL=$TOP_BUILDDIR/src/rrdtool
-		RRDCACHED=$TOP_BUILDDIR/src/rrdcached
-		;;
-	esac
-fi
-
 function verbose_rrdtool {
 	echo "$RRDTOOL_V" "$@"
 	"$RRDTOOL_V" "$@"
 }
-
-if [ -n "$VERBOSE" ] ; then
-	RRDTOOL_V="$RRDTOOL"
-	RRDTOOL=verbose_rrdtool
-fi
-
-
-DIFF="diff -u"
 
 function fail {
 	RC=$?
@@ -120,3 +95,77 @@ function report {
 		fail "$@"
 	fi
 }
+
+function run_cached {
+        local D="$1"
+        local CACHED="${D:-$RRDCACHED}"
+
+        stop_cached
+
+        local ADDR
+        ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
+        CACHED_PID_FILE="$BASEDIR/$(basename $0)-rrdcached.pid"
+
+        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(realpath $BASEDIR)" -F
+
+        RRDCACHED_ADDRESS=$ADDR
+        export RRDCACHED_ADDRESS
+
+        sleep 1
+        trap 'stop_cached' EXIT
+}
+
+function stop_cached {
+        if [ -n "$CACHED_PID_FILE" ] ; then
+                kill $(cat "$CACHED_PID_FILE")
+                rm -f -- "$CACHED_PID_FILE"
+                CACHED_PID_FILE=""
+                RRDCACHED_ADDRESS=""
+        fi
+}
+
+function exit_if_cached_running {
+        local E="$1"
+        local MSG="$2"
+        if [ -n "$RRDCACHED_ADDRESS" ] ; then
+                echo >&2 "$MSG"
+                exit ${E:-1}
+        fi
+}
+
+if [ -n "$VERBOSE" ] ; then
+	RRDTOOL_V="$RRDTOOL"
+	RRDTOOL=verbose_rrdtool
+fi
+
+if [ -z "$RRDTOOL" ] ; then 
+        RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+        RRDCACHED=$TOP_BUILDDIR/src/rrdcached
+
+        NEED_CACHED=
+        for ST in $TESTS_STYLE ; do
+                case "$ST" in
+                rrdcached)
+                        NEED_CACHED=1
+                        STANDARD_RRDCACHED="$RRDCACHED"
+                        ;;
+                valgrind)
+                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+                        RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
+                        RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
+                        ;;
+                valgrind-logfile)
+                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+                        RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
+                        RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
+                        VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
+                        rm -f "$VALGRIND_LOGFILE"
+                        ;;
+                *)
+                        ;;
+                esac
+        done
+        if [ -n "$NEED_CACHED" ] ; then
+                run_cached "$STANDARD_RRDCACHED"
+        fi
+fi
