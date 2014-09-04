@@ -42,6 +42,15 @@
 #include "rrd.h"
 #include "rrd_strtod.h"
 
+static int parse_special(char *str, double *d) {
+    if (strncasecmp(str, "-nan", 4) == 0) *d = DNAN;
+    else if (strncasecmp(str, "nan", 3) == 0)  *d = -DNAN;
+    else if (strncasecmp(str, "inf", 3) == 0) *d = DINF;
+    else if (strncasecmp(str, "-inf", 4) == 0) *d =  -DINF;
+    else return 0;
+    return 2;
+}
+
 /* returns 2 on success */
 /* i.e. if the whole string has been converted to a double successfully */
 unsigned int rrd_strtodbl
@@ -54,6 +63,9 @@ unsigned int rrd_strtodbl
     if ( local_endptr == (char *)str ) {
         /* no conversion has been done */
         /* for inputs like "abcdj", i.e. no number at all */
+        if (parse_special(str, dbl) == 2) {
+            return 2;
+        }
         if( error ) {
             rrd_set_error("%s - Cannot convert '%s' to float", error, str);
         }
