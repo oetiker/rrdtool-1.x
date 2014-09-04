@@ -19,7 +19,8 @@ script:
   - ./configure --prefix=/opt/rrdtool-master --disable-ruby
   - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
   - make check
-  - make check TESTS_STYLE=valgrind-logfile
+  - make check TESTS_STYLE="rrdcached"
+  - make check TESTS_STYLE="valgrind-logfile"
   - sudo make install
   - cd bindings/perl-shared && make test
   - /opt/rrdtool-master/bin/rrdtool
