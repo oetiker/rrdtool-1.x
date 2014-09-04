@@ -101,9 +101,38 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
 
   if (is_unix)
   {
+    if (path == NULL || strlen(path) == 0) return NULL;
     ret = realpath(path, resolved_path);
-    if (ret == NULL)
-      rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
+    if (ret == NULL) {
+        /* this may happen, because the file DOES NOT YET EXIST (as would be
+         * the case for rrdcreate) - retry by stripping the last path element, 
+         * resolving the directory and re-concatenate them.... */
+        char buffer[PATH_MAX];
+        char *lastslash = strrchr(path, '/');
+        
+        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".") 
+                : strndup(path, lastslash - path);
+        
+        if (dir != NULL) {
+            ret = realpath(dir, buffer);
+            free(dir);
+            if (ret == NULL) {
+              rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
+            } else {
+                strcat(buffer, lastslash);
+                if (resolved_path == NULL) {
+                    ret = strdup(buffer);
+                } else {
+                    strcpy(resolved_path, buffer);
+                    ret = resolved_path;
+                }
+            }
+        } else {
+            // out of memory
+            rrd_set_error("cannot allocate memory");
+            ret = NULL; // redundant, but make intention clear
+        }
+    }
     return ret;
   }
   else
