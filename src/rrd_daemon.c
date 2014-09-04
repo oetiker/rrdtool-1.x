@@ -1735,7 +1735,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
     linebuf_fill = 0;
     for (i = 0; i < ds_cnt; i++)
     {
-      snprintf (tmp, sizeof (tmp), " %0.10e", *data_ptr);
+      snprintf (tmp, sizeof (tmp), " %0.17e", *data_ptr);
       tmp[sizeof (tmp) - 1] = 0;
       SSTRCAT (linebuf, tmp, linebuf_fill);
 
