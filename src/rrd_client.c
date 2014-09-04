@@ -119,7 +119,12 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
             if (ret == NULL) {
               rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
             } else {
-                strcat(buffer, lastslash);
+                if (lastslash != NULL) {
+                    strcat(buffer, lastslash);
+                } else {
+                    strcat(buffer, "/");
+                    strcat(buffer, path);
+                }
                 if (resolved_path == NULL) {
                     ret = strdup(buffer);
                 } else {
