@@ -779,7 +779,7 @@ int rrd_create_r2(
         rrd_close(tf);
     }
     
-    if (rrd.stat_head->pdp_step == 0) {
+    if (rrd.stat_head->pdp_step <= 0) {
         rrd.stat_head->pdp_step = 300;
     }
 
@@ -876,6 +876,8 @@ int rrd_create_r2(
     rc = rrd_init_data(&rrd);
     if (rc != 0) goto done;
 
+    rc = -1;    // reset rc to default error state
+    
     if (sources != NULL) {
         time_t    sources_latest_last_up = 0;
 

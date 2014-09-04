@@ -1248,24 +1248,26 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
-  status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
-  status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
+  if (last_up >= 0) {
+    status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
+    status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
+  }
   status = buffer_add_string ("-s", &buffer_ptr, &buffer_free);
   status = buffer_add_ulong (pdp_step, &buffer_ptr, &buffer_free);
   if(no_overwrite) {
     status = buffer_add_string ("-O", &buffer_ptr, &buffer_free);
   }
-  
+
   if (sources != NULL) {
     for (const char **p = sources ; *p ; p++) {
-      buffer_add_string ("-r", &buffer_ptr, &buffer_free);
-      buffer_add_string (*p, &buffer_ptr, &buffer_free);
+      status = buffer_add_string ("-r", &buffer_ptr, &buffer_free);
+      status = buffer_add_string (*p, &buffer_ptr, &buffer_free);
     }
   }
   
   if (template != NULL) {
-    buffer_add_string ("-t", &buffer_ptr, &buffer_free);
-    buffer_add_string (template, &buffer_ptr, &buffer_free);
+    status = buffer_add_string ("-t", &buffer_ptr, &buffer_free);
+    status = buffer_add_string (template, &buffer_ptr, &buffer_free);
   }
   
   if (status != 0)

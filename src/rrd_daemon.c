@@ -1917,8 +1917,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   int sources_length = 0;
   char *template = NULL;
   int status;
-  unsigned long step = 300;
-  time_t last_up = time(NULL)-10;
+  unsigned long step = 0;
+  time_t last_up = -1;
   int no_overwrite = opt_no_overwrite;
   int rc = -1;
 
@@ -1988,8 +1988,12 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
           rc = send_response(sock, RESP_ERR, "Cannot allocate memory\n");
           goto done;
       }
+      
+      flush_file(tok);
+
       sources[sources_length++] = tok;
-      sources[sources_length + 1] = NULL;
+      sources[sources_length] = NULL;
+
       continue;
     }
     if( ! strncmp(tok,"-t",2) ) {
@@ -1998,6 +2002,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
           rc = syntax_error(sock,cmd);
           goto done;
       }
+      flush_file(tok);
+
       template = tok;
       continue;
     }
@@ -2010,11 +2016,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     rc = syntax_error(sock,cmd);
     goto done;
   }
-  if(step<1) {
-    rc = send_response(sock, RESP_ERR, "The step size cannot be less than 1 second.\n");
-    goto done;
-  }
-  if (last_up < 3600 * 24 * 365 * 10) {
+  if (last_up != -1 && last_up < 3600 * 24 * 365 * 10) {
     rc = send_response(sock, RESP_ERR, "The first entry must be after 1980.\n");
     goto done;
   }
