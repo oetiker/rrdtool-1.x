@@ -2,8 +2,8 @@
 TZ=CET
 export TZ
 
-BASEDIR="${BASEDIR:-$(dirname $0)}"
-BASEDIR="$(realpath $BASEDIR)"
+BASEDIR="${BASEDIR:-$(dirname -- $0)}"
+BASEDIR="$(readlink -f -- $BASEDIR)"
 
 BUILDDIR="${BUILDDIR:-${BASEDIR}}"
 TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
@@ -106,7 +106,7 @@ function run_cached {
         ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
         CACHED_PID_FILE="$BASEDIR/$(basename $0)-rrdcached.pid"
 
-        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(realpath $BASEDIR)" -F
+        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(readlink -f -- $BASEDIR)" -F
 
         RRDCACHED_ADDRESS=$ADDR
         export RRDCACHED_ADDRESS
