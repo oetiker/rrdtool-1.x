@@ -71,7 +71,7 @@ int rrd_create(
     int       opt_no_overwrite = 0;
     GList * sources = NULL;
     const char **sources_array = NULL;
-    const char *template = NULL;
+    char *template = NULL;
     
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -1373,8 +1373,8 @@ static long is_interval_within_interval(time_t start1, time_t end1,
     return o == end1-start1;
 }
 
-static int is_time_within_interval(time_t time, time_t start, time_t end) {
-    return (time >= start && time <= end);
+static int is_time_within_interval(time_t t, time_t start, time_t end) {
+    return (t >= start && t <= end);
 }
 
 typedef struct {

@@ -42,7 +42,7 @@
 #include "rrd.h"
 #include "rrd_strtod.h"
 
-static int parse_special(char *str, double *d) {
+static int parse_special(const char *str, double *d) {
     if (strncasecmp(str, "-nan", 4) == 0) *d = DNAN;
     else if (strncasecmp(str, "nan", 3) == 0)  *d = -DNAN;
     else if (strncasecmp(str, "inf", 3) == 0) *d = DINF;
