@@ -11,10 +11,10 @@ $RRDTOOL create ${BUILD}org.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U 
 $RRDTOOL dump ${BUILD}org.rrd | $DIFF - ${BASE}org.dump
 report create
 
+is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
 cp ${BUILD}org.rrd ${BUILD}a.rrd
 # this must fail
-$RRDTOOL tune ${BUILD}a.rrd --beta 1.4  2>/dev/null
-[ $? != 0 ] 
+! $RRDTOOL tune ${BUILD}a.rrd --beta 1.4 2>/dev/null
 report "out of range beta error"
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}org.dump
 report "RRD unchanged"

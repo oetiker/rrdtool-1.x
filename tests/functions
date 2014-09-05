@@ -124,10 +124,14 @@ function stop_cached {
         fi
 }
 
+function is_cached {
+        [ -n "$RRDCACHED_ADDRESS" ]
+}
+
 function exit_if_cached_running {
         local E="$1"
         local MSG="$2"
-        if [ -n "$RRDCACHED_ADDRESS" ] ; then
+        if is_cached ; then
                 echo >&2 "$MSG"
                 exit ${E:-1}
         fi
