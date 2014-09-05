@@ -88,6 +88,7 @@ int rrd_tune(
     rrd_file_t *rrd_file = NULL;
     char      *opt_daemon = NULL;
     char      double_str[ 12 ];
+    const char *in_filename = NULL;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
         {"minimum", required_argument, 0, 'i'},
@@ -145,7 +146,7 @@ int rrd_tune(
     
     // connect to daemon (will take care of environment variable automatically)
     if (rrdc_connect(opt_daemon) != 0) {
-	rrd_set_error("Cannot connect to daemon");
+    	rrd_set_error("Cannot connect to daemon");
 	return 1;
     }
 
@@ -164,7 +165,7 @@ int rrd_tune(
     the back, starting with optind. This means the file name has travelled to
     argv[optind] */
     
-    const char *in_filename = argv[optind];
+    in_filename = argv[optind];
     
     if (rrdc_is_any_connected()) {
 	// is it a good idea to just ignore the error ????
@@ -412,6 +413,19 @@ int rrd_tune(
     
     rc = 0;
 done:
+    if (in_filename && rrdc_is_any_connected()) {
+        // save any errors....
+        char *e = strdup(rrd_get_error());
+	// is it a good idea to just ignore the error ????
+	rrdc_forget(in_filename);
+	rrd_clear_error();
+        
+        if (e && *e) {
+            rrd_set_error(e);
+        }
+        if (e) free(e);
+        
+    }
     if (rrd_file) {
 	rrd_close(rrd_file);
     }

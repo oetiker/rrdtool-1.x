@@ -15,7 +15,7 @@
 
 		<!-- PDP Status -->
 		<last_ds>U</last_ds>
-		<value>0.0000000000e+00</value>
+		<value>NaN</value>
 		<unknown_sec> 40 </unknown_sec>
 	</ds>
 
@@ -28,7 +28,7 @@
 
 		<!-- PDP Status -->
 		<last_ds>U</last_ds>
-		<value>0.0000000000e+00</value>
+		<value>NaN</value>
 		<unknown_sec> 40 </unknown_sec>
 	</ds>
 

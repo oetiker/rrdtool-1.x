@@ -1,0 +1,208 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function xmlfilter {
+
+#-               <last_ds>1010</last_ds>
+#-               <value>4.0400000000e+04</value>
+#-               <unknown_sec> 0 </unknown_sec>
+#+               <last_ds>U</last_ds>
+#+               <value>0.0000000000e+00</value>
+#+               <unknown_sec> 40 </unknown_sec>
+
+
+cat
+#	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep|last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+}
+
+function numberfilter {
+    perl -n -e '$a=join("",<>); $a=~s,>(\d\.\d\d)\d+,>$1,msg ; print $a'
+}
+
+
+# a is an upward linear slope with a SLOPEA per minute
+# b is a downward linear slope with a SLOPEB per minute
+
+SLOPEA=6000
+SLOPEB=-12000
+
+# do not start at an exact minute boundary
+STARTTIME=1300000005
+ST=$STARTTIME
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+
+# three different stepped RRDs....
+STEPA=67
+STEPB=73
+STEPAB=71
+MINUPDATE=$(($STEPAB * 2))
+
+TOTAL=$((100 * $STEPAB))
+
+$RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step $STEPA \
+    DS:a:GAUGE:$MINUPDATE:U:U \
+    RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPA)) \
+    RRA:MIN:0.5:1:$(($TOTAL / $STEPA)) \
+    RRA:MAX:0.5:1:$(($TOTAL / $STEPA)) \
+    RRA:LAST:0.5:1:$(($TOTAL / $STEPA)) \
+    RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createa1
+
+$RRDTOOL create ${PREFIX}b1.rrd --start $(($ST-1)) --step $STEPB \
+    DS:b:GAUGE:$MINUPDATE:U:U  \
+    RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPB)) \
+    RRA:MIN:0.5:1:$(($TOTAL / $STEPB)) \
+    RRA:MAX:0.5:1:$(($TOTAL / $STEPB)) \
+    RRA:LAST:0.5:1:$(($TOTAL / $STEPB)) \
+    RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createb1
+
+$RRDTOOL create ${PREFIX}ab1.rrd --start $(($ST-1)) --step $STEPAB \
+    DS:a:GAUGE:$MINUPDATE:U:U  \
+    DS:b:GAUGE:$MINUPDATE:U:U  \
+    RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:MIN:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:MAX:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:LAST:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createab1
+
+
+UPDATEA=
+UPDATEB=
+VA=0
+VB=0
+
+TSTEP=10
+DELTAA=$(($SLOPEA / 60 * $TSTEP))
+DELTAB=$(($SLOPEB / 60 * $TSTEP))
+
+for T in $(seq $ST $TSTEP $(($ST + $STEPAB * 120)) ) ; do
+	UPDATEA="$UPDATEA $T:$VA"
+	UPDATEB="$UPDATEB $T:$VB"
+        UPDATEAB="$UPDATEAB $T:$VA:$VB"
+	VA=$(($VA + $DELTAA))
+	VB=$(($VB + $DELTAB))
+	ST=$T
+done
+$RRDTOOL update ${PREFIX}a1.rrd  $UPDATEA
+report update a
+$RRDTOOL update ${PREFIX}b1.rrd  $UPDATEB
+report update b
+
+$RRDTOOL update ${PREFIX}ab1.rrd  $UPDATEAB
+report update ab
+
+
+# calculate the difference between expected and actual data in the bins...
+A1=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}a1.rrd:a:AVERAGE \
+    DEF:xmin=${PREFIX}a1.rrd:a:MIN \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPA,-,$SLOPEA,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEA,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    CDEF:cmin=xmin,vl,- \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE \
+    VDEF:smin=cmin,STDEV VDEF:cminavg=cmin,AVERAGE \
+    PRINT:s:%lg PRINT:cavg:%lg \
+    PRINT:smin:%lg PRINT:cminavg:%lg \
+)
+
+B1=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}b1.rrd:b:AVERAGE \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPB,-,$SLOPEB,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEB,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg \
+)
+
+
+XA1=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}ab1.rrd:a:AVERAGE \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPAB,-,$SLOPEA,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEA,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    CDEF:cn=c,-1,* \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg \
+
+)
+
+XB1=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}ab1.rrd:b:AVERAGE \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPAB,-,$SLOPEB,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEB,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    CDEF:cn=c,-1,* \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg \
+)
+
+# We expect an average error between the "real" and the "sampled" data to be 
+# Tsample / 2 * slope for the AVERAGE RRD
+
+set -- $A1
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average a1 within 1% of expectation"
+
+set -- $B1
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average b1 within 1% of expectation"
+
+set -- $XA1
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average a from ab1 within 1% of expectation"
+
+set -- $XB1
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average b from ab1 within 1% of expectation"
+
+
+
+$RRDTOOL create ${PREFIX}ab2.rrd --start $ST --step $STEPAB 
+    --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd \
+    DS:a:GAUGE:$MINUPDATE:U:U  \
+    DS:b:GAUGE:$MINUPDATE:U:U  \
+    RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:MIN:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:MAX:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:LAST:0.5:1:$(($TOTAL / $STEPAB)) \
+    RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-ab-with-two-sources = resampled
+
+XA2=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}ab2.rrd:a:AVERAGE \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPAB,-,$SLOPEA,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEA,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    CDEF:cn=c,-1,* \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg \
+
+)
+XB2=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
+    DEF:x=${PREFIX}ab2.rrd:b:AVERAGE \
+    CDEF:vl=x,POP,TIME,$STARTTIME,-,$STEPAB,-,$SLOPEB,60,/,* \
+    CDEF:vu=x,POP,TIME,$STARTTIME,-,$SLOPEB,60,/,* \
+    CDEF:t=vu,vl,+,2,/ \
+    CDEF:c=x,t,- \
+    CDEF:cn=c,-1,* \
+    VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg \
+)
+
+set -- $XA2
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 4) ? 0 : 1)" ; report "average a from ab2 within 4% of expectation"
+
+set -- $XB2
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 4) ? 0 : 1)" ; report "average b from ab2 within 4% of expectation"
+
+
+
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

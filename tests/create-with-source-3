@@ -1,0 +1,142 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function cdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
+
+function pdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+}
+
+function data_filter_by_time {
+        START="$1"
+        END="$2"
+#                       <!-- 2011-03-13 08:46:00 CET / 1300002360 --> <row><v>7.9666666667e+02</v>
+
+	perl -n -e 'print unless (m,/ (\d+) -->.*<row>, && $1 >= '$START' && $1 <= '$END')'
+}
+
+FIRST=1300000000
+ST=$FIRST
+
+
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+$RRDTOOL create ${PREFIX}a1_x.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createa1
+
+$RRDTOOL create ${PREFIX}b1_x.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createb1
+
+$RRDTOOL create ${PREFIX}ab1_x.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createab1
+
+$RRDTOOL create ${PREFIX}ba1_x.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createba1
+
+$RRDTOOL create ${PREFIX}bca1_x.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createbca1
+
+for A in ${PREFIX}*_x.rrd ; do
+	cp $A $(basename $A _x.rrd)_y.rrd
+done
+
+
+UPDATEA_x=
+UPDATEB_x=
+UPDATEAB_x=
+V=10
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	UPDATEA_x="$UPDATEA_x $A:$V"
+	UPDATEB_x="$UPDATEB_x $A:$(($V * 2))"
+	UPDATEAB_x="$UPDATEAB_x $A:$V:$(($V * 2))"
+	V=$(($V + 20))
+	ST=$A
+done
+
+ST_X=$ST
+
+# add a gap
+ST=$((ST+1200))
+
+UPDATEA_y=
+UPDATEB_y=
+UPDATEAB_y=
+V=40
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	UPDATEA_y="$UPDATEA_y $A:$V"
+	UPDATEB_y="$UPDATEB_y $A:$(($V * 2))"
+	UPDATEAB_y="$UPDATEAB_y $A:$V:$(($V * 2))"
+	V=$(($V + 50))
+	ST=$A
+done
+
+ST_Y=$ST
+
+
+
+$RRDTOOL update ${PREFIX}a1_x.rrd  $UPDATEA_x
+$RRDTOOL update ${PREFIX}b1_x.rrd  $UPDATEB_x
+$RRDTOOL update ${PREFIX}ab1_x.rrd $UPDATEAB_x
+$RRDTOOL update ${PREFIX}ba1_x.rrd --template a:b $UPDATEAB_x
+$RRDTOOL update ${PREFIX}bca1_x.rrd --template a:b $UPDATEAB_x
+
+$RRDTOOL update ${PREFIX}a1_y.rrd  $UPDATEA_y
+$RRDTOOL update ${PREFIX}b1_y.rrd  $UPDATEB_y
+$RRDTOOL update ${PREFIX}ab1_y.rrd $UPDATEAB_y
+$RRDTOOL update ${PREFIX}ba1_y.rrd --template a:b $UPDATEAB_y
+$RRDTOOL update ${PREFIX}bca1_y.rrd --template a:b $UPDATEAB_y
+
+
+
+
+$RRDTOOL create ${PREFIX}ab2_xy.rrd --start $ST --step 60 --source ${PREFIX}a1_x.rrd --source ${PREFIX}b1_x.rrd --source ${PREFIX}a1_y.rrd --source ${PREFIX}b1_y.rrd DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:400 RRA:AVERAGE:0.5:5:8 RRA:MIN:0.5:5:8 RRA:MAX:0.5:5:8 RRA:LAST:0.5:5:8 
+report create-ab-with-four-sources
+
+
+# now re-extract single value RRDs from the combined one....
+# NOTE: We cannot re-create the pdp_prep information here, so filter it out....
+
+$RRDTOOL create ${PREFIX}a2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-a1_x-from-combined-source
+
+$RRDTOOL dump ${PREFIX}a1_x.rrd | pdp_prep_filter > ${PREFIX}a1_x.xml
+$RRDTOOL dump ${PREFIX}a2_x.rrd | pdp_prep_filter > ${PREFIX}a2_x.xml
+$DIFF ${PREFIX}a1_x.xml ${PREFIX}a2_x.xml
+report data-match-a1_x
+
+$RRDTOOL create ${PREFIX}b2_x.rrd --start $ST_X --step 60 --source ${PREFIX}ab2_xy.rrd DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-b1_x-from-combined-source
+
+$RRDTOOL dump ${PREFIX}b1_x.rrd | pdp_prep_filter > ${PREFIX}b1_x.xml
+$RRDTOOL dump ${PREFIX}b2_x.rrd | pdp_prep_filter > ${PREFIX}b2_x.xml
+$DIFF ${PREFIX}b1_x.xml ${PREFIX}b2_x.xml
+report data-match-b1_x
+
+$RRDTOOL create ${PREFIX}a2_y.rrd --start $ST_Y --step 60 --source ${PREFIX}ab2_xy.rrd DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-a1_y-from-combined-source
+
+$RRDTOOL dump ${PREFIX}a1_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}a1_y.xml
+$RRDTOOL dump ${PREFIX}a2_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}a2_y.xml
+
+$DIFF ${PREFIX}a1_y.xml ${PREFIX}a2_y.xml
+report data-match-a2_y
+
+$RRDTOOL create ${PREFIX}b2_y.rrd --start $ST_Y --step 60 --source ${PREFIX}ab2_xy.rrd DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
+report recreate-original-b1_y-from-combined-source
+
+$RRDTOOL dump ${PREFIX}b1_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}b1_y.xml
+$RRDTOOL dump ${PREFIX}b2_y.rrd | data_filter_by_time $FIRST $ST_X > ${PREFIX}b2_y.xml
+
+$DIFF ${PREFIX}b1_y.xml ${PREFIX}b2_y.xml
+report data-match-b2_y
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

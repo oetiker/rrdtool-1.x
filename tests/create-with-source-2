@@ -1,0 +1,84 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function cdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
+
+
+ST=1300000000
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+$RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createa1
+
+$RRDTOOL create ${PREFIX}b1.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createb1
+
+$RRDTOOL create ${PREFIX}ab1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createab1
+
+$RRDTOOL create ${PREFIX}ba1.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createba1
+
+$RRDTOOL create ${PREFIX}bca1.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createbca1
+
+UPDATEA=
+UPDATEB=
+UPDATEAB=
+V=10
+for A in $(seq $ST 60 $(($ST + 9000)) ) ; do
+	UPDATEA="$UPDATEA $A:$V"
+	UPDATEB="$UPDATEB $A:$(($V * 2))"
+	UPDATEAB="$UPDATEAB $A:$V:$(($V * 2))"
+	V=$(($V + 20))
+	ST=$A
+done
+$RRDTOOL update ${PREFIX}a1.rrd  $UPDATEA
+$RRDTOOL update ${PREFIX}b1.rrd  $UPDATEB
+$RRDTOOL update ${PREFIX}ab1.rrd $UPDATEAB
+$RRDTOOL update ${PREFIX}ba1.rrd --template a:b $UPDATEAB
+$RRDTOOL update ${PREFIX}bca1.rrd --template a:b $UPDATEAB
+
+
+$RRDTOOL create ${PREFIX}ab2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-ab-with-two-sources
+
+$RRDTOOL dump ${PREFIX}ab1.rrd > ${PREFIX}ab1.xml
+$RRDTOOL dump ${PREFIX}ab2.rrd > ${PREFIX}ab2.xml
+$DIFF ${PREFIX}ab1.xml ${PREFIX}ab2.xml
+report data-match-ab
+
+$RRDTOOL create ${PREFIX}ba2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:b:GAUGE:120:0:U DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-ba-with-two-sources
+
+$RRDTOOL dump ${PREFIX}ba1.rrd > ${PREFIX}ba1.xml
+$RRDTOOL dump ${PREFIX}ba2.rrd > ${PREFIX}ba2.xml
+$DIFF ${PREFIX}ba1.xml ${PREFIX}ba2.xml
+report data-match-ba
+
+
+$RRDTOOL create ${PREFIX}bca2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-bac-with-two-sources
+
+$RRDTOOL dump ${PREFIX}bca1.rrd > ${PREFIX}bca1.xml
+$RRDTOOL dump ${PREFIX}bca2.rrd > ${PREFIX}bca2.xml
+$DIFF ${PREFIX}bca1.xml ${PREFIX}bca2.xml
+report data-match-bca
+
+$RRDTOOL create ${PREFIX}bca3.rrd --step 60 --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-bac-with-two-sources-no-start
+
+$RRDTOOL dump ${PREFIX}bca3.rrd > ${PREFIX}bca3.xml
+$DIFF ${PREFIX}bca1.xml ${PREFIX}bca3.xml
+report data-match-bca-no-start
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

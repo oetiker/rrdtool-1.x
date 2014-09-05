@@ -1,6 +1,10 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 rpn1 \
-	rrdcreate
+	rrdcreate \
+	dump-restore \
+	create-with-source-1 create-with-source-2 create-with-source-3 \
+	create-with-source-4 create-with-source-and-mapping-1 \
+	create-from-template-1
 EXTRA_DIST = Makefile.am \
 	alltests functions \
 	modify1 modify-test1.create.dump modify-test1.mod1.dump \

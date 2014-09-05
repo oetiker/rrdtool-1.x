@@ -1,0 +1,87 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function xmlfilter {
+
+#-               <last_ds>1010</last_ds>
+#-               <value>4.0400000000e+04</value>
+#-               <unknown_sec> 0 </unknown_sec>
+#+               <last_ds>U</last_ds>
+#+               <value>0.0000000000e+00</value>
+#+               <unknown_sec> 40 </unknown_sec>
+
+	cat
+#	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
+
+function numberfilter {
+    perl -n -e '$a=join("",<>); $a=~s,>(\d\.\d\d)\d+,>$1,msg ; print $a'
+}
+
+ST=1300000000
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+
+# three different stepped RRDs....
+STEPA=67
+STEPB=73
+STEPAB=71
+MINUPDATE=$(($STEPAB * 2))
+
+TOTAL=$((100 * $STEPAB))
+
+$RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step $STEPA DS:a:GAUGE:$MINUPDATE:0:U  RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPA)) RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createa1
+
+$RRDTOOL create ${PREFIX}b1.rrd --start $(($ST-1)) --step $STEPB DS:b:GAUGE:$MINUPDATE:0:U  RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPB)) RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createb1
+
+$RRDTOOL create ${PREFIX}ab1.rrd --start $(($ST-1)) --step $STEPAB DS:a:GAUGE:$MINUPDATE:0:U  DS:b:GAUGE:$MINUPDATE:0:U  RRA:AVERAGE:0.5:1:$(($TOTAL / $STEPAB)) RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report createab1
+
+
+UPDATEA=
+UPDATEB=
+V=10
+for A in $(seq $ST $STEPAB $(($ST + $STEPAB * 120)) ) ; do
+	UPDATEA="$UPDATEA $A:$V"
+	UPDATEB="$UPDATEB $A:$(($V * 2))"
+        UPDATEAB="$UPDATEAB $A:$V:$(($V * 2))"
+	V=$(($V + 20))
+	ST=$A
+done
+$RRDTOOL update ${PREFIX}a1.rrd  $UPDATEA
+$RRDTOOL update ${PREFIX}b1.rrd  $UPDATEB
+$RRDTOOL update ${PREFIX}ab1.rrd  $UPDATEAB
+
+
+
+$RRDTOOL create ${PREFIX}ab2.rrd --start $ST --step $STEPAB --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd DS:a:GAUGE:$MINUPDATE:0:U DS:b:GAUGE:$MINUPDATE:0:U RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
+report create-ab-with-two-sources
+
+# now calculate average and standard deviation
+
+AB1=$($RRDTOOL graph ${PREFIX}ab1.png --imginfo '' --end "$ST" --start end-1h DEF:a=${PREFIX}ab1.rrd:a:AVERAGE  DEF:b=${PREFIX}ab1.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
+AB2=$($RRDTOOL graph ${PREFIX}ab2.png --imginfo '' --end "$ST" --start end-1h DEF:a=${PREFIX}ab2.rrd:a:AVERAGE  DEF:b=${PREFIX}ab2.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
+
+set -- $AB1
+STDEV1=$1
+AVG1=$2
+set -- $AB2
+STDEV2=$1
+AVG2=$2
+
+[ $AVG1 = 1 ] ; report average ab1 == 1
+[ $(dc <<< "$AVG2 1 - 10000 * 1 / p") -lt 10 ] ; report "average ab2 ($AVG2 - 1) < 1/1000"
+[ $STDEV1 = 0 ] ; report "std dev ab1 == 0 ($STDEV1)"
+[ $(dc <<< "$STDEV2 10000 * 1 / p") -lt 20 ] ; report "std dev ab2 ($STDEV2) < 1/500"
+
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

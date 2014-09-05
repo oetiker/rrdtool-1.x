@@ -1,0 +1,100 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function cdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
+
+function pdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+}
+
+function data_filter_by_time {
+        START="$1"
+        END="$2"
+#                       <!-- 2011-03-13 08:46:00 CET / 1300002360 --> <row><v>7.9666666667e+02</v>
+
+	perl -n -e 'print unless (m,/ (\d+) -->.*<row>, && $1 >= '$START' && $1 <= '$END')'
+}
+
+FIRST=1300000000
+ST=$FIRST
+
+RRA="RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2"
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+$RRDTOOL create ${PREFIX}ax1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  $RRA
+report createax1
+
+$RRDTOOL create ${PREFIX}bx1.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U  $RRA
+report createbx1
+
+$RRDTOOL create ${PREFIX}ay1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  $RRA
+report createay1
+
+$RRDTOOL create ${PREFIX}by1.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U  $RRA
+report createby1
+
+$RRDTOOL create ${PREFIX}ac1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:c:GAUGE:120:0:U $RRA
+report createac1
+
+$RRDTOOL create ${PREFIX}ac1_a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:c:GAUGE:120:0:U $RRA
+report createac1_a1
+
+
+UPDATEAx1=
+UPDATEBx1=
+UPDATEAy1=
+UPDATEBy1=
+UPDATEAC1=
+V=10
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	V2=$(($V * 2))
+	V3=$(($V * 3))
+	V4=$(($V * 4))
+	UPDATEAx1="$UPDATEAx1 $A:$V"
+	UPDATEBx1="$UPDATEBx1 $A:$V2"
+	UPDATEAy1="$UPDATEAy1 $A:$V3"
+	UPDATEBy1="$UPDATEBy1 $A:$V4"
+	UPDATEAC1="$UPDATEAC1 $A:$V3:$V"
+	V=$(($V + 20))
+	ST=$A
+done
+
+
+$RRDTOOL update ${PREFIX}ax1.rrd  $UPDATEAx1
+$RRDTOOL update ${PREFIX}bx1.rrd  $UPDATEBx1
+$RRDTOOL update ${PREFIX}ay1.rrd  $UPDATEAy1
+$RRDTOOL update ${PREFIX}by1.rrd  $UPDATEBy1
+$RRDTOOL update ${PREFIX}ac1.rrd  $UPDATEAC1
+$RRDTOOL update ${PREFIX}ac1_a1.rrd  --template a $UPDATEAx1
+
+SOURCES="--source ${PREFIX}ax1.rrd --source ${PREFIX}bx1.rrd --source ${PREFIX}ay1.rrd --source ${PREFIX}by1.rrd"
+
+$RRDTOOL create ${PREFIX}ac2_a1.rrd --start $ST --step 60 $SOURCES DS:a:GAUGE:120:0:U DS:c:GAUGE:120:0:U $RRA
+report create-ac2_a1-from-sources-unmapped
+
+$RRDTOOL dump ${PREFIX}ac1_a1.rrd > ${PREFIX}ac1_a1.xml
+$RRDTOOL dump ${PREFIX}ac2_a1.rrd > ${PREFIX}ac2_a1.xml
+$DIFF ${PREFIX}ac1_a1.xml ${PREFIX}ac2_a1.xml
+report match-ac1_a1
+
+
+$RRDTOOL create ${PREFIX}ac2.rrd --start $ST --step 60 $SOURCES DS:a=a[3]:GAUGE:120:0:U DS:c=a[1]:GAUGE:120:0:U $RRA
+report create-ac2-from-same-ds-names-sources
+
+$RRDTOOL dump ${PREFIX}ac1.rrd > ${PREFIX}ac1.xml
+$RRDTOOL dump ${PREFIX}ac2.rrd > ${PREFIX}ac2.xml
+$DIFF ${PREFIX}ac1.xml ${PREFIX}ac2.xml
+report match-ac1
+
+
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

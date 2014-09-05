@@ -1,0 +1,75 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/$(basename $0)-test
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+# currently, we do not properly copy cdp and pdp information, so for
+# comparison of RRD dumps, we just filter out those parts we do not
+# expect to match anyway...
+function cdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(cdp_prep).*?</\1>,,msg ; print $a'
+}
+
+function pdp_prep_filter {
+	perl -n -e '$a=join("",<>); $a=~s,<(last_ds|value|unknown_sec).*?</\1>,,msg ; print $a'
+}
+
+function data_filter_by_time {
+        START="$1"
+        END="$2"
+#                       <!-- 2011-03-13 08:46:00 CET / 1300002360 --> <row><v>7.9666666667e+02</v>
+
+	perl -n -e 'print unless (m,/ (\d+) -->.*<row>, && $1 >= '$START' && $1 <= '$END')'
+}
+
+FIRST=1300000000
+ST=$FIRST
+
+RRA="RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2"
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+$RRDTOOL create ${PREFIX}ax1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U $RRA
+report createax1
+
+cp ${PREFIX}ax1.rrd ${PREFIX}ax1-copy.rrd
+
+UPDATEAx1=
+V=10
+for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+	UPDATEAx1="$UPDATEAx1 $A:$V"
+	V=$(($V + 20))
+	ST=$A
+done
+
+$RRDTOOL create ${PREFIX}ay1.rrd --start $ST --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U $RRA
+report createay1
+
+$RRDTOOL update ${PREFIX}ax1.rrd --template a $UPDATEAx1
+report update ax1
+
+$RRDTOOL create ${PREFIX}ax2.rrd --template ${PREFIX}ax1.rrd || fail "create ax2"
+
+$RRDTOOL dump ${PREFIX}ay1.rrd > ${PREFIX}ay1.xml
+$RRDTOOL dump ${PREFIX}ax2.rrd > ${PREFIX}ax2.xml
+$DIFF ${PREFIX}ay1.xml ${PREFIX}ax2.xml
+
+report "created from template matches empty RRD with same start time"
+
+$RRDTOOL create ${PREFIX}b1.rrd --step 60 DS:b:GAUGE:120:0:U  $RRA
+report createb1
+
+! $RRDTOOL create ${PREFIX}b2.rrd --template ${PREFIX}b1.rrd  DS:b:COUNTER:120:0:U 2>/dev/null
+report "create with template and name-clashing DS fails"
+
+$RRDTOOL create ${PREFIX}ax3.rrd --template ${PREFIX}ax1-copy.rrd \
+    --source ${PREFIX}ax1.rrd || fail "create ax3"
+
+$RRDTOOL dump ${PREFIX}ax1.rrd > ${PREFIX}ax1.xml
+$RRDTOOL dump ${PREFIX}ax3.rrd > ${PREFIX}ax3.xml
+$DIFF ${PREFIX}ax1.xml ${PREFIX}ax3.xml
+
+report "create from old source as template using source for prefilling equals source"
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

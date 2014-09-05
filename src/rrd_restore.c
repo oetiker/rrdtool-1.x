@@ -14,6 +14,7 @@
 #include "rrd_restore.h"
 #include "unused.h"
 #include "rrd_strtod.h"
+#include "rrd_create.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -399,17 +400,24 @@ static int parse_tag_rra_database(
     rrd_t *rrd )
 {
     rra_def_t *cur_rra_def;
+    rra_ptr_t *cur_rra_ptr;
     unsigned int total_row_cnt;
     int       status;
     int       i;
     xmlChar *element;
-
+    unsigned int start_row_cnt;
+    int       ds_cnt;
+    
+    ds_cnt = rrd->stat_head->ds_cnt;
+    
     total_row_cnt = 0;
     for (i = 0; i < (((int) rrd->stat_head->rra_cnt) - 1); i++)
         total_row_cnt += rrd->rra_def[i].row_cnt;
 
     cur_rra_def = rrd->rra_def + i;
-
+    cur_rra_ptr = rrd->rra_ptr + i;
+    start_row_cnt = total_row_cnt;
+    
     status = 0;
     while ((element = get_xml_element(reader)) != NULL){        
         if (xmlStrcasecmp(element,(const xmlChar *)"row") == 0){
@@ -455,6 +463,63 @@ static int parse_tag_rra_database(
         if (status != 0)
             break;        
     }
+    
+    /* Set the RRA pointer to a random location */
+    cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
+    
+    /*
+     * rotate rows to match cur_row...
+     * 
+     * this will require some extra temp. memory. We can do this rather 
+     * brainlessly, because we have done all kinds of realloc before, 
+     * so we messed around with memory a lot already.
+     */
+    
+    /*
+        
+     What we want:
+     
+     +-start_row_cnt
+     |           +-cur_rra_def->row_cnt
+     |           |
+     |a---------n012-------------------------|
+    
+   (cur_rra_def->row_cnt slots of ds_cnt width)
+   
+     What we have 
+      
+     |   
+     |012-------------------------a---------n|
+     
+     Do this by:
+     copy away 0..(a-1) to a temp buffer
+     move a..n to start of buffer
+     copy temp buffer to position after where we moved n to
+     */
+    
+    int a = cur_rra_def->row_cnt - cur_rra_ptr->cur_row - 1;
+    
+    rrd_value_t *temp = malloc(ds_cnt * sizeof(rrd_value_t) * a);
+    if (temp == NULL) {
+        rrd_set_error("parse_tag_rra: malloc failed.");
+        return -1;
+    }
+
+    rrd_value_t *start = rrd->rrd_value + start_row_cnt * ds_cnt;
+    /* */            
+    memcpy(temp, start,
+            a * ds_cnt * sizeof(rrd_value_t));
+    
+    memmove(start,
+            start + a * ds_cnt,
+            (cur_rra_ptr->cur_row + 1) * ds_cnt * sizeof(rrd_value_t));
+            
+    memcpy(start + (cur_rra_ptr->cur_row + 1) * ds_cnt,
+           temp,
+           a * ds_cnt * sizeof(rrd_value_t));
+            
+    free(temp);
+
     return (status);
 }                       /* int parse_tag_rra_database */
 
@@ -870,9 +935,6 @@ static int parse_tag_rra(
             return status;
         }        
     }    
-    /* Set the RRA pointer to a random location */
-    cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
-
     return (status);
 }                       /* int parse_tag_rra */
 
@@ -1299,47 +1361,6 @@ int write_file(
     
     return rc;
 }
-
-int write_fh(
-    FILE *fh,
-    rrd_t *rrd)
-{
-    unsigned int i;
-    unsigned int rra_offset;
-
-    if (atoi(rrd->stat_head->version) < 3) {
-        /* we output 3 or higher */
-        strcpy(rrd->stat_head->version, "0003");
-    }
-    fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
-    fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
-    fwrite(rrd->live_head, sizeof(live_head_t), 1, fh);
-    fwrite(rrd->pdp_prep, sizeof(pdp_prep_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->cdp_prep, sizeof(cdp_prep_t),
-           rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
-
-    /* calculate the number of rrd_values to dump */
-    rra_offset = 0;
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        unsigned long num_rows = rrd->rra_def[i].row_cnt;
-        unsigned long cur_row = rrd->rra_ptr[i].cur_row;
-        unsigned long ds_cnt = rrd->stat_head->ds_cnt;
-        if (num_rows > 0){
-            fwrite(rrd->rrd_value +
-                (rra_offset + num_rows - 1 - cur_row) * ds_cnt,
-                sizeof(rrd_value_t), (cur_row + 1) * ds_cnt, fh);
-
-            fwrite(rrd->rrd_value + rra_offset * ds_cnt,
-                sizeof(rrd_value_t), (num_rows - 1 - cur_row) * ds_cnt, fh);
-
-            rra_offset += num_rows;
-        }
-    }
-
-    return (0);
-}                       /* int write_file */
 
 int rrd_restore(
     int argc,

@@ -60,6 +60,14 @@ int rrdc_create (const char *filename,
     int argc,
     const char **argv);
 
+int rrdc_create_r2 (const char *filename,
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    const char **sources,
+    const char *template,
+    int argc,
+    const char **argv);
 
 int rrdc_flush (const char *filename);
 int rrdc_forget (const char *filename);

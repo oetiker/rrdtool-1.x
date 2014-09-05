@@ -27,15 +27,7 @@
 
 
 
-// calculate a % b, guaranteeing a positive result...
-static int positive_mod(int a, int b) {
-    int x = a % b;
-    if (x < 0) x += b;
-    return x;
-}
-
 // prototypes
-static int write_rrd(const char *outfilename, rrd_t *out);
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
 
@@ -66,15 +58,6 @@ static void * copy_over_realloc(void *dest, int dest_index,
 */
 
 
-typedef struct {
-    const rrd_t *rrd;
-    int rra_index;
-    rrd_value_t *values;
-    rra_def_t *rra;
-    rra_ptr_t *ptr;
-    cdp_prep_t *cdp;
-} candidate_t;
-
 static int sort_candidates(const void *va, const void *vb) {
     const candidate_t *a = (candidate_t *) va;
     const candidate_t *b = (candidate_t *) vb;
@@ -94,86 +77,24 @@ static int sort_candidates(const void *va, const void *vb) {
     return a_def->pdp_cnt - b_def->pdp_cnt;
 }
 
-static time_t end_time_for_row(const rrd_t *rrd, 
-			       const rra_def_t *rra, 
-			       int cur_row, int row) {
-    // one entry in the candidate covers timeslot seconds
-    int timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-	    
-    /* Just to re-iterate how data is stored in RRAs, in order to
-       understand the following code: the current slot was filled at
-       last_up time, but slots always correspond with time periods of
-       length timeslot, ending at exact multiples of timeslot
-       wrt. the unix epoch. So the current timeslot ends at:
-       
-       int(last_up / timeslot) * timeslot 
-       
-       or (equivalently):
-       
-       last_up - last_up % timeslot
-    */
-
-    int past_cnt = positive_mod((cur_row - row), rra->row_cnt);
-    
-    time_t last_up = rrd->live_head->last_up;
-    time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
-
-    return now;
+static int select_for_modify(const rra_def_t *tofill, const rra_def_t *maybe) {
+    enum cf_en cf = cf_conv(tofill->cf_nam);
+    enum cf_en other_cf = cf_conv(maybe->cf_nam);
+    return (other_cf == cf ||
+	    (other_cf == CF_AVERAGE /*&& other_rra->pdp_cnt == 1*/));
 }
 
-static int row_for_time(const rrd_t *rrd, 
-			const rra_def_t *rra, 
-			int cur_row, time_t req_time) 
+candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt, 
+                                 candidate_extra_t extra, 
+                                 int (*selectfunc)(const rra_def_t *tofill, const rra_def_t *maybe))
 {
-    time_t last_up = rrd->live_head->last_up;
-    int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-
-    // align to slot boundary end times
-    time_t delta = req_time % timeslot;
-    if (delta > 0) req_time += timeslot - delta;
-    
-    delta = req_time % timeslot;
-    if (delta > 0) last_up += timeslot - delta;
-
-    if (req_time > last_up) return -1;  // out of range
-    if (req_time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
-     
-    int past_cnt = (last_up - req_time) / timeslot;
-    if (past_cnt >= (int) rra->row_cnt) return -1;
-
-    // NOTE: rra->row_cnt is unsigned!!
-    int row = positive_mod(cur_row - past_cnt, rra->row_cnt);
-
-    return row < 0 ? (row + (int) rra->row_cnt) : row ;
-}
-
-/* 
-   Try to find a set of RRAs from rrd that might be used to populate
-   added rows in RRA rra. Generally, candidates are RRAs that have a
-   pdp step of 1 (regardless of CF type) and those that have the same
-   CF (or a CF of AVERAGE) and any pdp step count.
-
-   The function returns a pointer to a newly allocated array of
-   candidate_t structs. The number of elements is returned in *cnt.
-
-   The returned memory must be free()'d by the calling code. NULL is
-   returned in case of error or if there are no candidates. In case of
-   an error, the RRD error gets set.
-
-   Arguments:
-   rrd .. the RRD to pick RRAs from
-   rra .. the RRA we want to populate
-   cnt .. a pointer to an int receiving the number of returned candidates
-*/
-static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
     int total_rows = 0;
     candidate_t *candidates = NULL;
     *cnt = 0;
 
     int i;
-    enum cf_en cf = cf_conv(rra->cf_nam);
- 
-    /* find other rows with the same CF or an RRA with CF_AVERAGE and
+
+    /* find other RRAs with the same CF or an RRA with CF_AVERAGE and
        a stepping of 1 as possible candidates for filling */
     for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
 	rra_def_t *other_rra = rrd->rra_def + i;
@@ -183,28 +104,30 @@ static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, 
 	    continue;
 	}
 
-	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
- 	if (other_cf == cf ||
-	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
+	if (selectfunc(rra, other_rra)) {
 #ifdef _WINDOWS
-		candidate_t c;
-		c.rrd = rrd;
-		c.rra_index = i;
-		c.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows;
-		c.rra = rrd->rra_def + i;
-		c.ptr = rrd->rra_ptr + i;
-		c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
+            candidate_t c;
+            c.rrd = rrd;
+            c.rra_index = i;
+            c.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows;
+            c.rra = rrd->rra_def + i;
+            c.ptr = rrd->rra_ptr + i;
+            c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
+            memcpy(&c.extra, &extra, sizeof(extra));
 #else
-	    candidate_t c = { 
-		.rrd = rrd, 
+            const candidate_t c = { 
+		.rrd = (rrd_t*) rrd,    /* cast effectively removes const-ness, but we won't
+                                         * mess around with it. promised */
 		.rra_index = i,
 		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
 		.rra = rrd->rra_def + i,
+		.rra_cf = cf_conv(rrd->rra_def[i].cf_nam),
 		.ptr = rrd->rra_ptr + i,
-		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i 	
+		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i,
+		.extra = extra
 	    };
 #endif
-		candidates = (candidate_t *) copy_over_realloc(candidates, *cnt,
+            candidates = (candidate_t *) copy_over_realloc(candidates, *cnt,
 					   &c, 0, sizeof(c));
 	    if (candidates == NULL) {
 		rrd_set_error("out of memory");
@@ -372,6 +295,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 
 		init_cdp(out, 
 			 out->rra_def + out->stat_head->rra_cnt,
+                         out->pdp_prep + ii,
 			 cdp_prep);
 		ii++;
 		break;
@@ -416,7 +340,7 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 	// parse DS
 	parseDS(c + 3,
 		&added, // out.ds_def + out.stat_head->ds_cnt,
-		out, lookup_DS);
+		out, lookup_DS, NULL);
 
 	// check if there is a name clash with an existing DS
 	if (lookup_DS(&out, added.ds_nam) >= 0) {
@@ -508,8 +432,9 @@ static int populate_row(const rrd_t *in_rrd,
     int candidates_cnt = 0;
 
     int i, ri;
-
-    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt);
+    candidate_extra_t junk;
+    
+    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk, select_for_modify);
     if (candidates == NULL) {
 	goto done;
     }
@@ -1099,13 +1024,14 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     int candidates_cnt = 0;
     candidate_t *candidates = NULL;
     candidate_t *chosen_candidate = NULL;
-
+    candidate_extra_t junk;
+    
     if (candidates) {
 	free(candidates);
 	candidates = NULL;
     }
 
-    candidates = find_candidate_rras(in, rra_def, &candidates_cnt);
+    candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
 	int ci;
@@ -1131,7 +1057,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	cdp_prep_t *cdp_prep = out->cdp_prep + start_cdp_index_out + i;
 	memcpy(cdp_prep, &empty_cdp_prep, sizeof(cdp_prep_t));
 
-	init_cdp(out, rra_def, cdp_prep);
+	init_cdp(out, rra_def, out->pdp_prep + i, cdp_prep);
 
 	if (chosen_candidate && mapped_i != -1) {
 	    int ds_cnt = chosen_candidate->rrd->stat_head->ds_cnt;
@@ -1368,109 +1294,6 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 done:
     return rc;
 }
-
-static int write_rrd(const char *outfilename, rrd_t *out) {
-    int rc = -1;
-    char *tmpfilename = NULL;
-
-    /* write out the new file */
-    FILE *fh = NULL;
-    if (strcmp(outfilename, "-") == 0) {
-	fh = stdout;
-	// to stdout
-    } else {
-	/* create RRD with a temporary name, rename atomically afterwards. */
-		tmpfilename = (char *) malloc(strlen(outfilename) + 7);
-	if (tmpfilename == NULL) {
-	    rrd_set_error("out of memory");
-	    goto done;
-	}
-
-	strcpy(tmpfilename, outfilename);
-	strcat(tmpfilename, "XXXXXX");
-
-
-
-	int tmpfd = mkstemp(tmpfilename);
-
-	if (tmpfd < 0) {
-	    rrd_set_error("Cannot create temporary file");
-	    goto done;
-	}
-
-	fh = fdopen(tmpfd, "wb");
-	if (fh == NULL) {
-	    // some error 
-	    rrd_set_error("Cannot open output file");
-	    goto done;
-	}
-    }
-
-    rc = write_fh(fh, out);
-
-    if (fh != NULL && tmpfilename != NULL) {
-	/* tmpfilename != NULL indicates that we did NOT write to stdout,
-	   so we have to close the stream and do the rename dance */
-
-	fclose(fh);
-	if (rc == 0)  {
-	    // renaming is only done if write_fh was successful
-	    struct stat stat_buf;
-
-	    /* in case we have an existing file, copy its mode... This
-	       WILL NOT take care of any ACLs that may be set. Go
-	       figure. */
-	    if (stat(outfilename, &stat_buf) != 0) {
-#ifdef WIN32
-			stat_buf.st_mode = _S_IREAD | _S_IWRITE;  // have to test it is 
-#else
-		/* an error occurred (file not found, maybe?). Anyway:
-		   set the mode to 0666 using current umask */
-		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-		
-		mode_t mask = umask(0);
-		umask(mask);
-
-		stat_buf.st_mode &= ~mask;
-#endif
-	    }
-	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {
-		rrd_set_error("Cannot chmod temporary file!");
-		goto done;
-	    }
-
-	    // before we rename the file to the target file: forget all cached changes....
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-
-	    if (rename(tmpfilename, outfilename) != 0) {
-		rrd_set_error("Cannot rename temporary file to final file!");
-		unlink(tmpfilename);
-		goto done;
-	    }
-
-	    // after the rename: forget the file again, just to be sure...
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-	} else {
-	    /* in case of any problems during write: just remove the
-	       temporary file! */
-	    unlink(tmpfilename);
-	}
-    }
-done:
-    if (tmpfilename != NULL)
-	free(tmpfilename);
-
-    return rc;
-}
-
 
 int handle_modify(const rrd_t *in, const char *outfilename,
 		  int argc, char **argv, int optidx,
