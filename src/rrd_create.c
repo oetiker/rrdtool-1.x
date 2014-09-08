@@ -227,7 +227,8 @@ done:
     }
     if (sources != NULL) {
         // this will free the list elements as well
-        g_list_free_full(sources, free);
+        g_list_foreach( sources, (GFunc)free, NULL );
+        g_list_free( sources );
         sources = NULL;
     }
     if (template != NULL) {
@@ -915,7 +916,8 @@ int rrd_create_r2(
     rc = write_rrd(filename, &rrd);
     
 done:
-    g_list_free_full(sources_rrd_files, (GDestroyNotify) cleanup_source_file);
+        g_list_foreach( sources_rrd_files, (GFunc) cleanup_source_file, NULL );
+        g_list_free( sources_rrd_files );
             
     if (mappings) {
         int ii;
