@@ -5134,7 +5134,7 @@ int bad_format_imginfo(
                 ptr++;
             /* '%s', '%S' are allowed */
             else if (*ptr == 's' || *ptr == 'S') {
-                n = 1;
+                n++;
                 ptr++;
             }
 
