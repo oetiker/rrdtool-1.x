@@ -459,8 +459,6 @@ int       bad_format_print(
     char *);
 int       bad_format_imginfo(
     char *);
-int       bad_format_imginfo(
-    char *);
 int       vdef_parse(
     struct graph_desc_t *,
     const char *const);
