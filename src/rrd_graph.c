@@ -5082,7 +5082,7 @@ static int bad_format_check(const char *pattern, char *fmt) {
 int bad_format_imginfo(char *fmt){
     return bad_format_check("^" SAFE_STRING "%s" SAFE_STRING "%lu" SAFE_STRING "%lu" SAFE_STRING "$",fmt);
 }
-#define FLOAT_STRING "%[-+ 0#]?[0-9]*(?:[.][0-9]+)?l[eEfF]"
+#define FLOAT_STRING "%[-+ 0#]?[0-9]*(?:[.][0-9]+)?l[eEfFgG]"
 
 int bad_format_axis(char *fmt){
     return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",fmt);
