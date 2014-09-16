@@ -359,6 +359,22 @@ B<DUP, POP, EXC>
 Duplicate the top element, remove the top element, exchange the two
 top elements.
 
+B<DEPTH>
+
+pushes the current depth of the stack onto the stack
+
+B<COPY>
+
+pop an integer (X) from the stack and copy the previous X items
+
+B<INDEX>
+
+pop an integer (X) and push the item at position X onto the stack
+
+B<ROLL>
+
+pop an integer (X) and rotate the content of the stack by X (positive is forward and negative is backward).
+
 Z<>
 
 =back
