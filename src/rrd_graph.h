@@ -396,7 +396,11 @@ int       rrd_graph_color(
     char *,
     char *,
     int);
-int       bad_format(
+int       bad_format_axis(
+    char *);
+int       bad_format_print(
+    char *);
+int       bad_format_imginfo(
     char *);
 int       vdef_parse(
     struct graph_desc_t *,
