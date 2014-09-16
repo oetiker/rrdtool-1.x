@@ -943,7 +943,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
 	} else {
 	  strftime(dbuf,sizeof(dbuf), im->gdes[i].format, &tmvdef);
 	}
-      } else if (bad_format(im->gdes[i].format)) {
+      } else if (bad_format_print(im->gdes[i].format)) {
 	rrd_set_error
 	  ("bad format for PRINT in \"%s'", im->gdes[i].format);
 	return -1;
