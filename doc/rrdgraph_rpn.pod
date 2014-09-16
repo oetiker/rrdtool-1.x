@@ -363,17 +363,27 @@ B<DEPTH>
 
 pushes the current depth of the stack onto the stack
 
-B<COPY>
+ a,b,DEPTH -> a,b,2
 
-pop an integer (X) from the stack and copy the previous X items
+n,B<COPY>
 
-B<INDEX>
+push a copy of the top n elements onto the stack
 
-pop an integer (X) and push the item at position X onto the stack
+ a,b,c,d,2,COPY => a,b,c,d,c,d
 
-B<ROLL>
 
-pop an integer (X) and rotate the content of the stack by X (positive is forward and negative is backward).
+n,B<INDEX>
+
+push the nth element onto the stack.
+
+ a,b,c,d,3,INDEX -> a,b,c,d,b
+
+n,m,B<ROLL>
+
+rotate the top n elements of the stack by m
+
+ a,b,c,d,3,1,ROLL => a,d,b,c
+ a,b,c,d,3,-1,ROLL => a,c,d,b
 
 Z<>
 
