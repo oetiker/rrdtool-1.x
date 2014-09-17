@@ -13,11 +13,11 @@ for T in $(seq 1300000020 60 1300003020) ; do
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BUILD}a.rrd | diff - ${BASE}.create.dump && ok "create" || fail "create"
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}.create.dump && ok "create" || fail "create"
 
 # extend base RRA, refill from coarse RRA
 cp ${BUILD}a.rrd ${BUILD}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd DEL:a RRA#0:+10 || fail modify
 
-$RRDTOOL dump ${BUILD}b.rrd | diff - ${BASE}.mod1.dump && ok "extend base RRA" || fail "extend base RRA"
+$RRDTOOL dump ${BUILD}b.rrd | $DIFF - ${BASE}.mod1.dump && ok "extend base RRA" || fail "extend base RRA"
 

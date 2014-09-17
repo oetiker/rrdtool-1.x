@@ -12,6 +12,7 @@
 #endif
 
 #include "rrd_graph.h"
+#include "rrd_strtod.h"
 
 #define dprintf(...) if (gdp->debug&1) fprintf(stderr,__VA_ARGS__);
 #define dprintfparsed(...) if (gdp->debug&2) fprintf(stderr,__VA_ARGS__);
@@ -27,7 +28,12 @@ void initParsedArguments(parsedargs_t* pa) {
 
 void freeParsedArguments(parsedargs_t* pa) {
   if (pa->arg) {free(pa->arg);}
-  if (pa->kv_args) {free(pa->kv_args);}
+  if (pa->kv_args) {
+    for(int i=0;i<pa->kv_cnt;i++) {
+      free(pa->kv_args[i].keyvalue);
+    }
+    free(pa->kv_args);
+  }
   initParsedArguments(pa);
 }
 
@@ -79,23 +85,29 @@ keyvalue_t* getFirstUnusedArgument(int flag, parsedargs_t* pa) {
 
 char* checkUnusedValues(parsedargs_t* pa){
   char *res=NULL;
+  size_t len=0;
   for(int i=0;i<pa->kv_cnt;i++) {
     if (!pa->kv_args[i].flag) {
-      const size_t klen = strlen(pa->kv_args[i].key);
-      const size_t vlen = strlen(pa->kv_args[i].value);
-      const size_t len = res ? strlen(res) : 0;
-
-      char *t = (char *) realloc(res,len + 3 + klen + vlen);
-      if (! t) { return res; }
-      res=t;
-      strncat(res,pa->kv_args[i].key, klen);
-      strcat(res,"=");
-      strncat(res,pa->kv_args[i].value, vlen);
+      const size_t kvlen = strlen(pa->kv_args[i].keyvalue);
+      len+=kvlen +1;
+      
+      /* alloc/realloc if necessary and set to 0 */
+      if (res) {
+	char *t = (char *) realloc(res,len);
+	if (! t) { return res; }
+	res=t;
+      } else {
+	res=malloc(len);
+	if (!res) { return NULL; }
+	*res=0;
+      }
+      /* add key = value as originally given */
+      strncat(res,pa->kv_args[i].keyvalue, kvlen);
       strcat(res,":");
     }
   }
   /* if we got one, then strip the final : */
-  if (res) { res[strlen(res)-1]=0; }
+  if (res) { res[len-1]=0; }
   /* and return res */
   return res;
 }
@@ -140,35 +152,26 @@ int getLong(const char* v,long *val,char**extra,int base) {
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
-  char *old_locale;
   *extra=NULL;
-  old_locale = setlocale(LC_NUMERIC, "C");
-  errno = 0;
-  *val = strtod(v,extra);
-  if (errno > 0) {
-      rrd_set_error("converting '%s' to float: %s", v, rrd_strerror(errno));
-      setlocale(LC_NUMERIC, old_locale);
-      return -1;
-  };
-  setlocale(LC_NUMERIC, old_locale);
 
-  *val=strtod(v,extra);
-  /* and error handling */
-  if (extra==NULL) {
-    return 0;
-  } else {
-    if (*extra==v) {
-      return -1; /* failed miserably */
-    }  else {
-      if ((*extra)[0]==0) { return 0; }
-      return 1; /* got extra bytes */
-    }
+  /* see rrd_strtodbl's return values for more infromation */
+  switch (rrd_strtodbl( v, extra, val, NULL)){
+    case 0:
+        return -1;
+        break;
+    case 1:
+        return 1;
+        break;
+    case 2:
+        return 0;
+        break;
+    default:
+        return -2;
+        break;
   }
-  /* not found, so return error */
-  return -2;
 }
 
-int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {
+int addToArguments(parsedargs_t *pa, char *keyvalue, char *key, char *value, int pos) {
   /* resize the field */
   keyvalue_t * t = (keyvalue_t *) realloc(pa->kv_args, (pa->kv_cnt + 1) * sizeof(keyvalue_t));
   if (!t) { 
@@ -179,9 +182,10 @@ int addToArguments(parsedargs_t* pa, char*key, char*value, int cnt) {
     pa->kv_args=t;
   }
   /* fill in data */
+  pa->kv_args[pa->kv_cnt].keyvalue=keyvalue;
   pa->kv_args[pa->kv_cnt].key=key;
   pa->kv_args[pa->kv_cnt].value=value;
-  pa->kv_args[pa->kv_cnt].pos=cnt;
+  pa->kv_args[pa->kv_cnt].pos=pos;
   pa->kv_args[pa->kv_cnt].flag=0;
   pa->kv_cnt++;
   /* and return ok */
@@ -217,6 +221,8 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
     case ':': {
       /* null and : separate the string */
       *pos=0;
+      /* flag to say we are positional */
+      int ispos=0;
       /* handle the case where we have got an = */
       /* find equal sign */
       char* equal=field;
@@ -224,6 +230,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
       /* if we are on position 1 then check for position 0 to be [CV]?DEV */
       int checkforkeyvalue=1;
       /* nw define key to use */
+      char* keyvalue=strdup(field);
       char *key,*value;
       if ((*equal=='=') && (checkforkeyvalue)) {
 	*equal=0;
@@ -247,6 +254,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	  }
 	  key=poskeys[poscnt];
 	  poscnt++;
+	  ispos=poscnt;
 	  value=field;
 	}
       }
@@ -256,7 +264,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
       if (strcmp(key,"colour2")==0) { key="color2"; }
 
       /* add to fields */
-      if (addToArguments(pa,key,value,cnt)) {
+      if (addToArguments(pa,keyvalue,key,value,cnt)) {
 	freeParsedArguments(pa);
 	return -1;
       }
@@ -388,7 +396,7 @@ static long find_var_wrapper(
 
 static graph_desc_t* newGraphDescription(image_desc_t *const,enum gf_en,parsedargs_t*,uint64_t);
 static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,parsedargs_t* pa,uint64_t bits) {
-  /* check that none of the othe bitfield marker is set */
+  /* check that none of the other bitfield marker is set */
   if ((bits&PARSE_FIELD1)&&((bits&(PARSE_FIELD2|PARSE_FIELD3|PARSE_FIELD4)))) {
     rrd_set_error("newGraphDescription: bad bitfield1 value %08llx",bits);return NULL; }
   /* the normal handler that adds to img */
@@ -434,7 +442,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     dprintfparsed("got rpn: %s\n",rpn);}
   char *legend=NULL;
   if (bitscmp(PARSE_LEGEND)) { legend=getKeyValueArgument("legend",1,pa); 
-    dprintfparsed("got legend: %s\n",legend);}
+    dprintfparsed("got legend: \"%s\"\n",legend);}
   char *fraction=NULL;
   if (bitscmp(PARSE_FRACTION)) { fraction=getKeyValueArgument("fraction",1,pa); 
     dprintfparsed("got fraction: %s\n",fraction);}
@@ -658,8 +666,9 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     /* legend (it's optional if no other arguments follow)*/
     if (!legend) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
-      if (first) { legend=first->value;
-	dprintfparsed("got positional legend: %s - \n",first->value);
+      if (first) {
+	legend=first->keyvalue;
+	dprintfparsed("got positional legend: %s - \n",legend);
       }
     }
   } else if (bitscmp(PARSE_VNAMERPN)) {
@@ -746,12 +755,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if ((color2)&&(parse_color(color2,&(gdp->col2)))) { return NULL; }
   if (rpn) {gdp->rpn=rpn;}
   if ((legend)&&(*legend!=0)) {
-    /* some spacing before we really start with the legend - needed for some reason */
-    char* t=gdp->legend;
-    *t=' ';t++;
-    *t=' ';t++;
     /* and copy it into place */
-    strncpy(t,legend,FMT_LEG_LEN);
+    strncpy(gdp->legend,legend,FMT_LEG_LEN);
   }
   if (fraction) {
     if (strcmp(fraction,"vname")==0) {
@@ -807,6 +812,16 @@ int parse_tick(enum gf_en,parsedargs_t*,image_desc_t *const);
 int parse_textalign(enum gf_en,parsedargs_t*,image_desc_t *const);
 int parse_shift(enum gf_en,parsedargs_t*,image_desc_t *const);
 int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
+
+/* this is needed for LINE,AREA,STACk so that the labels get done correctly... */
+void legend_shift(char *legend);
+void legend_shift(char *legend)
+{
+  if (!legend) { return; }
+  memmove(legend+2,legend,strlen(legend));
+  legend[0]=' ';
+  legend[1]=' ';
+}
 
 /* implementations */
 int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
@@ -962,7 +977,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
   dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("STACK : %i\n",gdp->stack);
   dprintf("SKIPSCALE : %i\n",gdp->skipscale);
   dprintf("WIDTH : %g\n",gdp->linewidth);
@@ -974,6 +989,9 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     dprintf("\n");
   }
   dprintf("=================================\n");
+
+  /* shift the legend by 2 spaces for the "coloured-box"*/
+  legend_shift(gdp->legend);
 
   /* and return fine */
   return 0;
@@ -1003,12 +1021,15 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
   dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("STACK : %i\n",gdp->stack);
   dprintf("SKIPSCALE : %i\n",gdp->skipscale);
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("=================================\n");
+
+  /* shift the legend by 2 spaces for the "coloured-box"*/
+  legend_shift(gdp->legend);
 
   /* and return fine */
   return 0;
@@ -1022,6 +1043,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_YAXIS
 					); 
   if (!gdp) { return 1;}
+
   gdp->stack=1;
   /* and try to get the one index before ourselves */
   long i;
@@ -1053,13 +1075,16 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
   dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("STACK : %i\n",gdp->stack);
   dprintf("WIDTH : %g\n",gdp->linewidth);
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("DASHES: TODI\n");
   dprintf("=================================\n");
+
+  /* shift the legend by 2 spaces for the "coloured-box"*/
+  legend_shift(gdp->legend);
 
   /* and return fine */
   return 0;
@@ -1096,7 +1121,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
   dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
 	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("DASHES: TODO\n");
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
@@ -1129,7 +1154,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     dprintfparsed("Processing postitional vname\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) { 
-      strncpy(gdp->vname,first->value,MAX_VNAME_LEN + 1);
+      strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN + 1);
       /* get type of reference */
       gdp->vidx=find_var(im, gdp->vname);
       if (gdp->vidx<0) {
@@ -1166,7 +1191,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     dprintfparsed("Processing postitional format\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
-      strncpy(gdp->format,first->value,FMT_LEG_LEN);
+      strncpy(gdp->format,first->keyvalue,FMT_LEG_LEN);
       dprintfparsed("got positional format: %s\n",gdp->format);
     } else { rrd_set_error("No positional CF/FORMAT"); return 1; }    
   }
@@ -1181,7 +1206,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   if ((int)gdp->cf>-1) {
     dprintf("CF : (%u)\n",gdp->cf);  
   }
-  dprintf("FORMAT: %s\n",gdp->legend);
+  dprintf("FORMAT: \"%s\"\n",gdp->legend);
   dprintf("=================================\n");
 
   /* and return */
@@ -1199,13 +1224,14 @@ int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   if (gdp->legend[0]==0) {
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
-      strncpy(gdp->legend,first->value,FMT_LEG_LEN);      
-    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }    
+      strncpy(gdp->legend,first->keyvalue,FMT_LEG_LEN);
+    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }
   }
   /* debug output */
   dprintf("=================================\n");
   dprintf("COMMENT : %s\n",pa->arg_orig);
-  dprintf("LEGEND  : %s\n",gdp->legend);
+  dprintf("LEGEND  : \"%s\"\n",gdp->legend);
+
   /* and return */
   return 0;
 }
@@ -1227,7 +1253,7 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   } else {
     dprintf("FRAC  : %g\n",gdp->yrule);
   }
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("=================================\n");
@@ -1359,7 +1385,7 @@ int parse_xport(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   dprintf("=================================\n");
   dprintf("LINE  : %s\n",pa->arg_orig);
   dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
-  dprintf("LEGEND: %s\n",gdp->legend);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
   dprintf("=================================\n");
 
   return 0;
@@ -1406,7 +1432,7 @@ void rrd_graph_script(
 	if ((int)gf == -1) {
 	  if (strncmp("LINE",cmd,4)==0) {
 	    gf=GF_LINE;
-	    addToArguments(&pa,"linewidth",cmd+4,0);
+	    addToArguments(&pa,NULL,"linewidth",cmd+4,0);
 	  } else {
 	    rrd_set_error("'%s' is not a valid function name in %s", cmd,pa.arg_orig );
 	    return;
@@ -1442,9 +1468,11 @@ void rrd_graph_script(
 	/* check for unprocessed keyvalue args */
 	char *s;
 	if ((s=checkUnusedValues(&pa))) {
-	  rrd_set_error("Unused Arguments in %s: %s",pa.arg_orig,s);
-	  freeParsedArguments(&pa);
+	  /* set error message */
+	  rrd_set_error("Unused Arguments \"%s\" in command : %s",s,pa.arg_orig);
 	  free(s);
+	  /* exit early */
+	  freeParsedArguments(&pa);
 	  return;
 	}
     }

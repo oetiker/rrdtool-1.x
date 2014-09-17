@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
@@ -79,13 +80,15 @@ int rrd_tune(
     char      ds_nam[DS_NAM_SIZE];
     char      ds_new[DS_NAM_SIZE];
     long      heartbeat;
-    double    min;
-    double    max;
+    double    min = 0;
+    double    max = 0;
     char      dst[DST_SIZE];
     int       rc = -1;
     int       opt_newstep = -1;
     rrd_file_t *rrd_file = NULL;
     char      *opt_daemon = NULL;
+    char      double_str[ 12 ];
+    const char *in_filename = NULL;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
         {"minimum", required_argument, 0, 'i'},
@@ -110,7 +113,6 @@ int rrd_tune(
         {"daemon", required_argument, 0, 'D'},
         {0, 0, 0, 0}
     };
-    char     *old_locale = setlocale(LC_NUMERIC, "C");
 
     optind = 0;
     opterr = 0;         /* initialize getopt */
@@ -144,7 +146,7 @@ int rrd_tune(
     
     // connect to daemon (will take care of environment variable automatically)
     if (rrdc_connect(opt_daemon) != 0) {
-	rrd_set_error("Cannot connect to daemon");
+    	rrd_set_error("Cannot connect to daemon");
 	return 1;
     }
 
@@ -163,7 +165,7 @@ int rrd_tune(
     the back, starting with optind. This means the file name has travelled to
     argv[optind] */
     
-    const char *in_filename = argv[optind];
+    in_filename = argv[optind];
     
     if (rrdc_is_any_connected()) {
 	// is it a good idea to just ignore the error ????
@@ -183,6 +185,7 @@ int rrd_tune(
     while (1) {
         int       option_index = 0;
         int       opt;
+        unsigned int strtod_ret_val;
 
         opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
                           long_options, &option_index);
@@ -205,11 +208,16 @@ int rrd_tune(
             break;
 
         case 'i':
-            if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &min)) < 1) {
+            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            if( matches >= 1 ) {
+                strtod_ret_val = rrd_strtodbl( double_str, NULL, &min, NULL );
+            }
+
+            if ((matches < 1) || (strtod_ret_val != 2)) {
                 rrd_set_error("invalid arguments for minimum ds value");
 		goto done;
             }
+
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
@@ -220,14 +228,20 @@ int rrd_tune(
             break;
 
         case 'a':
-            if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":%lf", ds_nam, &max)) < 1) {
+            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            if( matches >= 1 ) {
+                strtod_ret_val = rrd_strtodbl( double_str, NULL, &max, NULL );
+            }
+
+            if ((matches < 1 ) || (strtod_ret_val != 2)) {
                 rrd_set_error("invalid arguments for maximum ds value");
 		goto done;
             }
+
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
+
             if (matches == 1)
                 max = DNAN;
             rrd.ds_def[ds].par[DS_max_val].u_val = max;
@@ -399,8 +413,18 @@ int rrd_tune(
     
     rc = 0;
 done:
-    if (old_locale) {
-	setlocale(LC_NUMERIC, old_locale);
+    if (in_filename && rrdc_is_any_connected()) {
+        // save any errors....
+        char *e = strdup(rrd_get_error());
+	// is it a good idea to just ignore the error ????
+	rrdc_forget(in_filename);
+	rrd_clear_error();
+        
+        if (e && *e) {
+            rrd_set_error(e);
+        }
+        if (e) free(e);
+        
     }
     if (rrd_file) {
 	rrd_close(rrd_file);
@@ -418,11 +442,16 @@ int set_hwarg(
     double    param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
+    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
     /* read the value */
-    param = atof(arg);
-    if (param <= 0.0 || param >= 1.0) {
+    if ((strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
+         (param <= 0.0 || param >= 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        return -1;
+    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse Holt-Winters parameter");
         return -1;
     }
     /* does the appropriate RRA exist?  */
@@ -451,13 +480,18 @@ int set_hwsmootharg(
     double    param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
     /* read the value */
-    param = atof(arg);
+    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
-    if (param < 0.0 || param > 1.0) {
+    if ( (strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
+         (param < 0.0 || param > 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        return -1;
+    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse Holt-Winters parameter");
         return -1;
     }
     /* does the appropriate RRA exist?  */
@@ -485,12 +519,18 @@ int set_deltaarg(
     rrd_value_t param;
     unsigned long i;
     signed short rra_idx = -1;
+    unsigned int strtod_ret_val;
 
-    param = atof(arg);
-    if (param < 0.1) {
+    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
+    if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
+         param < 0.1) {
         rrd_set_error("Parameter specified is too small");
         return -1;
+    } else if( strtod_ret_val == 1 || strtod_ret_val > 2 ) {
+        rrd_set_error("Unable to parse parameter in set_deltaarg");
+        return -1;
     }
+
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
         if (cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {

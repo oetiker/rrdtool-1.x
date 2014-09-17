@@ -8,6 +8,7 @@
 #include <locale.h>
 #include <stdlib.h>
 
+#include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 // #include "rrd_graph.h"
@@ -46,7 +47,7 @@ short rpn_compact(
             /* rpnp.val is a double, rpnc.val is a short */
             double    temp = floor(rpnp[i].val);
 
-            if (temp < SHRT_MIN || temp > SHRT_MAX) {
+			if (temp < SHRT_MIN || temp > SHRT_MAX || temp != rpnp[i].val) {
                 rrd_set_error
                     ("constants must be integers in the interval (%d, %d)",
                      SHRT_MIN, SHRT_MAX);
@@ -190,6 +191,10 @@ void rpn_compact2str(
             add_op(OP_ADDNAN, ADDNAN)
             add_op(OP_MINNAN, MINNAN)
             add_op(OP_MAXNAN, MAXNAN)
+            add_op(OP_DEPTH, DEPTH)
+            add_op(OP_COPY, COPY)
+            add_op(OP_ROLL, ROLL)
+            add_op(OP_INDEX, INDEX)
 #undef add_op
     }
     (*str)[offset] = '\0';
@@ -304,9 +309,7 @@ rpnp_t   *rpn_parse(
     long      steps = -1;
     rpnp_t   *rpnp;
     char      vname[MAX_VNAME_LEN + 10];
-    char     *old_locale;
-
-    old_locale = setlocale(LC_NUMERIC, "C");
+    char      double_str[20];
 
     rpnp = NULL;
     expr = (char *) expr_const;
@@ -314,12 +317,12 @@ rpnp_t   *rpn_parse(
     while (*expr) {
         if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2) *
                                            sizeof(rpnp_t))) == NULL) {
-            setlocale(LC_NUMERIC, old_locale);
             return NULL;
         }
 
-        else if ((sscanf(expr, "%lf%n", &rpnp[steps].val, &pos) == 1)
-                 && (expr[pos] == ',')) {
+        else if ((sscanf(expr, "%19[-0-9.e+]%n", double_str, &pos) == 1)
+                 && (expr[pos] == ',')
+                 && ( rrd_strtodbl( double_str, NULL, &(rpnp[steps].val), NULL ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
             expr += pos;
         }
@@ -398,6 +401,10 @@ rpnp_t   *rpn_parse(
             match_op(OP_MINNAN, MINNAN)
             match_op(OP_MAXNAN, MAXNAN)
             match_op(OP_MEDIAN, MEDIAN)
+            match_op(OP_DEPTH, DEPTH)
+            match_op(OP_COPY, COPY)
+            match_op(OP_ROLL, ROLL)
+            match_op(OP_INDEX, INDEX)
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
@@ -409,7 +416,6 @@ rpnp_t   *rpn_parse(
 
         else {
             rrd_set_error("don't undestand '%s'",expr);
-            setlocale(LC_NUMERIC, old_locale);
             free(rpnp);
             return NULL;
         }
@@ -422,13 +428,11 @@ rpnp_t   *rpn_parse(
         if (*expr == ',')
             expr++;
         else {
-            setlocale(LC_NUMERIC, old_locale);
             free(rpnp);
             return NULL;
         }
     }
     rpnp[steps + 1].op = OP_END;
-    setlocale(LC_NUMERIC, old_locale);
     return rpnp;
 }
 
@@ -752,8 +756,7 @@ short rpn_calc(
             stackunderflow(2);
             rpnstack->s[stptr - 2] = (isnan(rpnstack->s[stptr - 2])
                                       || rpnstack->s[stptr - 2] ==
-                                      0.0) ? rpnstack->s[stptr] : rpnstack->
-                s[stptr - 1];
+                                      0.0) ? rpnstack->s[stptr] : rpnstack->s[stptr - 1];
             stptr--;
             stptr--;
             break;
@@ -891,12 +894,12 @@ short rpn_calc(
 		int doshifts=shifts;
 		if (shifts<0) { doshifts=-shifts; }
 		/* alloc memory */
-		double *extra = rpnp[rpi].extra;
+		double *extra = (double *) rpnp[rpi].extra;
 		if (rpnp[rpi].op == OP_PREDICTPERC) {
 		    if (! extra) {
 		      int size = (doshifts + 1) * (locstep + 2);
 		      rpnp[rpi].extra =
-			  extra =  malloc(sizeof(double) * size);
+			  extra =  (double *) malloc(sizeof(double) * size);
 		    }
 		}
 		/* loop the shifts */
@@ -1086,6 +1089,65 @@ short rpn_calc(
                     }
                 }
             }
+            break;
+        case OP_ROLL:
+            stackunderflow(1);
+            {
+                int step = (int) rpnstack->s[stptr--];
+                int base = (int) rpnstack->s[stptr--];
+                int i = base;
+                int j = i + step;
+                double *tmp_stack;
+                stackunderflow(base-1);
+                tmp_stack = (double *)malloc(sizeof(double)*base);
+                if(!tmp_stack) {
+                    rrd_set_error("RPN out of memory (allocating %i objects)",base);
+                    return -1;
+                }
+                memcpy(tmp_stack,rpnstack->s + stptr,(sizeof(double)*base));
+                while(i--) {
+                    j--;
+                    while(j<0) { j += base; }
+                    while(j>=base) { j -= base; }
+                    rpnstack->s[stptr-i] = tmp_stack[j];
+                }
+                free(tmp_stack);
+            }
+            break;
+        case OP_INDEX:
+            stackunderflow(0);
+            {
+                int i = (int) rpnstack->s[stptr];
+                stackunderflow(i);
+                rpnstack->s[stptr] = rpnstack->s[stptr - i];
+            }
+            break;
+        case OP_COPY:
+            {
+                int base = (int) rpnstack->s[stptr--];
+                int i = base;
+                stackunderflow(base - 1);
+                /* allocate or grow the stack */
+                while (stptr + base > rpnstack->dc_stacksize) {
+                    /* could move this to a separate function */
+                    rpnstack->dc_stacksize += rpnstack->dc_stackblock;
+                    rpnstack->s = (double*)rrd_realloc(rpnstack->s,
+                                      (rpnstack->dc_stacksize) *
+                                      sizeof(*(rpnstack->s)));
+                    if (rpnstack->s == NULL) {
+                        rrd_set_error("RPN stack overflow");
+                        return -1;
+                    }
+                }
+                while(i--) {
+                  stptr++;
+                  rpnstack->s[stptr] = rpnstack->s[stptr - base];
+                }
+            }
+            break;
+        case OP_DEPTH:
+            stptr++;
+            rpnstack->s[stptr] = stptr;
             break;
        
         case OP_END:

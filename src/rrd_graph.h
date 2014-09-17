@@ -113,6 +113,7 @@ typedef struct gfx_color_t {
 typedef struct keyvalue_t {
   char* key;
   char* value;
+  char* keyvalue;
   int pos;
   int flag;
 } keyvalue_t;
@@ -130,7 +131,7 @@ typedef struct parsedargs_t {
 } parsedargs_t;
 void initParsedArguments(parsedargs_t*);
 void freeParsedArguments(parsedargs_t*);
-int addToArguments(parsedargs_t*, char*, char*, int);
+int addToArguments(parsedargs_t*, char*, char*, char*, int);
 int parseArguments(const char*, parsedargs_t*);
 void dumpKeyValue(char* ,keyvalue_t*);
 void dumpArguments(parsedargs_t*);
@@ -452,7 +453,9 @@ int       rrd_graph_color(
     char *,
     char *,
     int);
-int       bad_format(
+int       bad_format_axis(
+    char *);
+int       bad_format_print(
     char *);
 int       bad_format_imginfo(
     char *);

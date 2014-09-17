@@ -17,10 +17,6 @@ int write_file(
     const char *file_name,
     rrd_t *rrd);
 
-int write_fh(
-    FILE *fh,
-    rrd_t *rrd);
-
 #endif
 
 

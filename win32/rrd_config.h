@@ -82,6 +82,9 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
 
+/* Define to 1 if you have the <stdarg.h> header file. */
+#define HAVE_STDARG_H 1
+
 /* is there an external timezone variable instead ? */
 #define HAVE_TIMEZONE 1
 
@@ -97,13 +100,21 @@
 #define ENOBUFS WSAENOBUFS
 #define ENOTCONN WSAENOTCONN
 
+
 #include <ctype.h>
 #include <direct.h>
 #include <float.h>
 #include <math.h>
+#include <io.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <WinSock.h>
+
+
+#include <errno.h>
+#include "mkstemp.h"
+
 
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
@@ -114,7 +125,19 @@
 #define strcasecmp _stricmp
 #define strcasencmp _strnicmp
 
-#pragma warning(disable: 4244)
-__inline int round(double a){ return (int) (a + 0.5); }
+// in MSVC++ 12.0 / Visual Studio 2013 is a definition of round in math.h
+// some values of _MSC_VER
+//MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
+//MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
+//MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)
+//MSVC++ 9.0  _MSC_VER == 1500 (Visual Studio 2008)
+//MSVC++ 8.0  _MSC_VER == 1400 (Visual Studio 2005)
+//MSVC++ 7.1  _MSC_VER == 1310 (Visual Studio 2003)
+//MSVC++ 7.0  _MSC_VER == 1300
+//MSVC++ 6.0  _MSC_VER == 1200
+//MSVC++ 5.0  _MSC_VER == 1100
+#if _MSC_VER < 1800
+__inline int round(double a){ int x = (a + 0.5); return x; }
+#endif
 
 #endif

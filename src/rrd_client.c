@@ -26,15 +26,19 @@
  **/
 
 #ifdef WIN32
+
+#include <ws2tcpip.h> // contain #include <winsock2.h>
+// Need to link with Ws2_32.lib
+#pragma comment(lib, "ws2_32.lib") 
 #include <time.h>
-#include <ws2tcpip.h>
-#include <winsock2.h>
 #include <io.h>
 #include <fcntl.h>
 #include <tchar.h>
 #include <locale.h>
+
 #endif
 
+#include "rrd_strtod.h"
 #include "rrd.h"
 #include "rrd_tool.h"
 #include "rrd_client.h"
@@ -97,9 +101,43 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
 
   if (is_unix)
   {
+    if (path == NULL || strlen(path) == 0) return NULL;
     ret = realpath(path, resolved_path);
-    if (ret == NULL)
-      rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
+    if (ret == NULL) {
+        /* this may happen, because the file DOES NOT YET EXIST (as would be
+         * the case for rrdcreate) - retry by stripping the last path element, 
+         * resolving the directory and re-concatenate them.... */
+        char buffer[PATH_MAX];
+        char *lastslash = strrchr(path, '/');
+        
+        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".") 
+                : strndup(path, lastslash - path);
+        
+        if (dir != NULL) {
+            ret = realpath(dir, buffer);
+            free(dir);
+            if (ret == NULL) {
+              rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
+            } else {
+                if (lastslash != NULL) {
+                    strcat(buffer, lastslash);
+                } else {
+                    strcat(buffer, "/");
+                    strcat(buffer, path);
+                }
+                if (resolved_path == NULL) {
+                    ret = strdup(buffer);
+                } else {
+                    strcpy(resolved_path, buffer);
+                    ret = resolved_path;
+                }
+            }
+        } else {
+            // out of memory
+            rrd_set_error("cannot allocate memory");
+            ret = NULL; // redundant, but make intention clear
+        }
+    }
     return ret;
   }
   else
@@ -240,9 +278,9 @@ static int parse_value_array_header (char *line, /* {{{ */
   char *str_key;
   char **str_array;
   char *endptr;
-  char *old_locale;
   int status;
   size_t i;
+  double tmp;
 
   if ((str_array = (char**)malloc(array_len * sizeof (char*))) == NULL)
     return (-1);
@@ -266,21 +304,16 @@ static int parse_value_array_header (char *line, /* {{{ */
   /* Enforce the "C" locale so that parsing of the response is not dependent on
    * the locale. For example, when using a German locale the strtod() function
    * will expect a comma as the decimal separator, i.e. "42,77". */
-  old_locale = setlocale (LC_NUMERIC, "C");
-
   for (i = 0; i < array_len; i++)
   {
-    endptr = NULL;
-    array[i] = (rrd_value_t) strtod (str_array[i], &endptr);
-    if ((endptr == str_array[i]) || (errno != 0))
-    {
-      (void) setlocale (LC_NUMERIC, old_locale);
-      free(str_array);
-      return (-1);
+    if( rrd_strtodbl(str_array[i], 0, &tmp, "parse_value_array_header") == 2) {
+        array[i] = (rrd_value_t)tmp;
+    } else {
+        free(str_array);
+        return (-1);
     }
   }
 
-  (void) setlocale (LC_NUMERIC, old_locale);
   free(str_array);
   return (0);
 } /* }}} int parse_value_array_header */
@@ -1204,6 +1237,18 @@ int rrdc_create (const char *filename, /* {{{ */
     int argc,
     const char **argv)
 {
+    return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite, NULL, NULL, argc, argv);
+}
+
+int rrdc_create_r2(const char *filename, /* {{{ */
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    const char **sources,
+    const char *template,
+    int argc,
+    const char **argv)
+{
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
   size_t buffer_free;
@@ -1237,13 +1282,28 @@ int rrdc_create (const char *filename, /* {{{ */
   }
 
   status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
-  status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
-  status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
+  if (last_up >= 0) {
+    status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
+    status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
+  }
   status = buffer_add_string ("-s", &buffer_ptr, &buffer_free);
   status = buffer_add_ulong (pdp_step, &buffer_ptr, &buffer_free);
   if(no_overwrite) {
     status = buffer_add_string ("-O", &buffer_ptr, &buffer_free);
   }
+
+  if (sources != NULL) {
+    for (const char **p = sources ; *p ; p++) {
+      status = buffer_add_string ("-r", &buffer_ptr, &buffer_free);
+      status = buffer_add_string (*p, &buffer_ptr, &buffer_free);
+    }
+  }
+  
+  if (template != NULL) {
+    status = buffer_add_string ("-t", &buffer_ptr, &buffer_free);
+    status = buffer_add_string (template, &buffer_ptr, &buffer_free);
+  }
+  
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1590,7 +1650,8 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
         || (strcmp ("TreeNodesNumber", key) == 0))
     {
       s->type = RRDC_STATS_TYPE_GAUGE;
-      s->value.gauge = strtod (value, &endptr);
+      rrd_strtodbl(value, &endptr, &(s->value.gauge),
+                                    "QueueLength or TreeDepth or TreeNodesNumber");
     }
     else if ((strcmp ("DataSetsWritten", key) == 0)
         || (strcmp ("FlushesReceived", key) == 0)
@@ -1609,7 +1670,7 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
     }
 
     /* Conversion failed */
-    if (endptr == value)
+    if ( (endptr == value) || (endptr[0] != '\0') )
     {
       free (s);
       continue;

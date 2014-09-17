@@ -15,6 +15,7 @@
 # autotools stuff
 /m4/*.m4
 !/m4/acinclude.m4
+!/m4/snprintf.m4
 /aclocal.m4
 /ltmain.sh
 /install-sh
@@ -69,3 +70,11 @@ Makefile
 /doc/*.3
 /doc/pod2*.tmp
 /doc/RRD?.pod
+/contrib
+/win32/Debug
+/win32/Release
+/win32/ReleaseDLL
+/win32/*.suo
+/win32/*.sdf
+/bindings/dotnet/*.suo
+/win32/*.opensdf

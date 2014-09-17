@@ -18,6 +18,7 @@ AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
 
 UPD_C_FILES =		\
 	mutex.c		\
+        rrd_strtod.c    \
 	rrd_create.c	\
 	hash_32.c	\
 	rrd_parsetime.c	\
@@ -33,7 +34,10 @@ UPD_C_FILES =		\
 	rrd_nan_inf.c	\
 	rrd_rpncalc.c	\
 	rrd_utils.c	\
-	rrd_update.c
+	rrd_snprintf.c  \
+	rrd_update.c	\
+	rrd_modify.c	\
+	quicksort.c
 
 RRD_C_FILES =		\
 	rrd_version.c	\
@@ -46,8 +50,7 @@ RRD_C_FILES =		\
 	rrd_fetch.c	\
 	rrd_fetch_cb.c  \
 	rrd_resize.c \
-	rrd_tune.c	\
-	rrd_modify.c
+	rrd_tune.c
 
 if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
@@ -61,6 +64,8 @@ noinst_HEADERS = \
 	unused.h \
         gettext.h \
 	mutex.h \
+        rrd_strtod.h \
+	rrd_snprintf.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
 	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
@@ -68,7 +73,8 @@ noinst_HEADERS = \
 	rrd_restore.h rrd_create.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h \
-	rrd_modify.h rrd_update.h rrd_config.h
+	rrd_modify.h rrd_update.h rrd_config.h \
+	quicksort.h
 
 if BUILD_LIBDBI
 RRD_C_FILES += rrd_fetch_libdbi.c

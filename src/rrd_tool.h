@@ -143,7 +143,7 @@ typedef int (*rrd_fetch_cb_t)(
     enum cf_en cf_conv(
     const char *string);
     enum dst_en dst_conv(
-    char *string);
+    const char *string);
     long      ds_match(
     rrd_t *rrd,
     char *ds_nam);

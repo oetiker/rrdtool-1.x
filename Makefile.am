@@ -11,7 +11,7 @@ SUBDIRS = po src examples doc bindings tests
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
-             netware/Makefile  \
+             netware/Makefile m4/snprintf.m4 \
              etc/rrdcached-default-redhat etc/rrdcached-init-redhat \
              win32/README win32/Makefile.msc
 

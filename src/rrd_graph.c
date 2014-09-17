@@ -6,10 +6,13 @@
 
 
 #include <sys/stat.h>
+#include <glib.h>   // will use regex
 
 #ifdef WIN32
 #include "strftime.h"
 #endif
+
+#include "rrd_strtod.h"
 
 #include "rrd_tool.h"
 #include "unused.h"
@@ -338,10 +341,12 @@ int im_free(
 
     if (im->gdef_map){
         g_hash_table_destroy(im->gdef_map);        
-    }
-    if (im->rrd_map){
-        g_hash_table_destroy(im->rrd_map);        
-    }
+	}
+
+	if (im->rrd_map){
+		g_hash_table_destroy(im->rrd_map);
+	}
+	
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
@@ -1670,9 +1675,7 @@ int print_calc(
                         strftime(prline.u_str,
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
-                } else if (bad_format(im->gdes[i].format)) {
-                    rrd_set_error
-                        ("bad format for PRINT in '%s'", im->gdes[i].format);
+                } else if (bad_format_print(im->gdes[i].format)) {
                     return -1;
                 } else {
                     prline.u_str =
@@ -1693,11 +1696,8 @@ int print_calc(
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
                 } else {
-                    if (bad_format(im->gdes[i].format)) {
-                        rrd_set_error
-                            ("bad format for GPRINT in '%s'",
-                             im->gdes[i].format);
-                        return -1;
+                    if (bad_format_print(im->gdes[i].format)) {
+                       return -1;
                     }
                     snprintf(im->gdes[i].legend,
                              FMT_LEG_LEN - 2,
@@ -4168,7 +4168,6 @@ int rrd_graph(
     return 0;
 }
 
-
 /* Some surgery done on this function, it became ridiculously big.
 ** Things moved:
 ** - initializing     now in rrd_graph_init()
@@ -4182,20 +4181,16 @@ rrd_info_t *rrd_graph_v(
 {
     image_desc_t im;
     rrd_info_t *grinfo;
-    char *old_locale;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
-    old_locale = setlocale(LC_NUMERIC, "C");
     rrd_graph_options(argc, argv, &im);
     if (rrd_test_error()) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
     if (optind >= argc) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
@@ -4203,7 +4198,6 @@ rrd_info_t *rrd_graph_v(
     }
 
     if (strlen(argv[optind]) >= MAXPATH) {
-        setlocale(LC_NUMERIC, old_locale); /* reenable locale */
         rrd_set_error("filename (including path) too long");
         rrd_info_free(im.grinfo);
         im_free(&im);
@@ -4218,7 +4212,6 @@ rrd_info_t *rrd_graph_v(
     }
 
     rrd_graph_script(argc, argv, &im, 1);
-    setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
 
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
@@ -4245,7 +4238,6 @@ rrd_info_t *rrd_graph_v(
         if (bad_format_imginfo(im.imginfo)) {
             rrd_info_free(im.grinfo);
             im_free(&im);
-            rrd_set_error("bad format for imginfo");
             return NULL;
         }
         path = strdup(im.graphfile);
@@ -4305,7 +4297,8 @@ void rrd_graph_init(
     tzset();
 #endif
     im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
-    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
+	//use of g_free() cause heap damage on windows. Key is allocated by malloc() in sprintf_alloc(), so free() must use
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,free,NULL); 
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
@@ -4424,6 +4417,7 @@ void rrd_graph_options(
     int       stroff;
     char     *parsetime_error = NULL;
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
+    char      double_str[20], double_str2[20];
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
     rrd_time_value_t start_tv, end_tv;
@@ -4586,7 +4580,8 @@ void rrd_graph_options(
             im->forceleftspace = 1;
             break;
         case 'T':
-            im->tabwidth = atof(optarg);
+            if (rrd_strtodbl(optarg, 0, &(im->tabwidth), "option -T") != 2)
+                return;
             break;
         case 'S':
             im->step = atoi(optarg);
@@ -4650,12 +4645,14 @@ void rrd_graph_options(
             }
             break;
         case 'y':
-
             if (strcmp(optarg, "none") == 0) {
                 im->draw_y_grid = 0;
                 break;
             };
-            if (sscanf(optarg, "%lf:%d", &im->ygridstep, &im->ylabfact) == 2) {
+            if (sscanf(optarg, "%[-0-9.e+]:%d", double_str , &im->ylabfact) == 2) {
+                if (rrd_strtodbl( double_str, 0, &(im->ygridstep), "option -y") != 2){
+                    return;
+                }
                 if (im->ygridstep <= 0) {
                     rrd_set_error("grid step must be > 0");
                     return;
@@ -4673,11 +4670,14 @@ void rrd_graph_options(
             break;
         case 1008: /* grid-dash */
             if(sscanf(optarg,
-                      "%lf:%lf",
-                      &im->grid_dash_on,
-                      &im->grid_dash_off) != 2) {
-                rrd_set_error("expected grid-dash format float:float");
-                return;
+                      "%[-0-9.e+]:%[-0-9.e+]",
+                      double_str,
+                      double_str2 ) != 2) {
+                if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2 
+                     || rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), NULL) != 2 ){
+                    rrd_set_error("expected grid-dash format float:float");
+                    return;
+                }
             }
             break;   
         case 1009: /* enable dynamic labels */
@@ -4688,11 +4688,12 @@ void rrd_graph_options(
             week_fmt[(sizeof week_fmt)-1]='\0';
             break;
         case 1002: /* right y axis */
-
             if(sscanf(optarg,
-                      "%lf:%lf",
-                      &im->second_axis_scale,
-                      &im->second_axis_shift) == 2) {
+                      "%[-0-9.e+]:%[-0-9.e+]",
+                      double_str,
+                      double_str2 ) == 2
+                && rrd_strtodbl( double_str, 0, &(im->second_axis_scale),NULL) == 2
+                && rrd_strtodbl( double_str2, 0, &(im->second_axis_shift),NULL) == 2){
                 if(im->second_axis_scale==0){
                     rrd_set_error("the second_axis_scale  must not be 0");
                     return;
@@ -4703,46 +4704,48 @@ void rrd_graph_options(
             }
             break;
         case 1003:
-			im->second_axis_legend=strdup(optarg);
-			if (!im->second_axis_legend) {
+            im->second_axis_legend=strdup(optarg);
+            if (!im->second_axis_legend) {
                 rrd_set_error("cannot allocate memory for second_axis_legend");
                 return;
-			}
+            }
             break;
         case 1004:
-            if (bad_format(optarg)){
-                rrd_set_error("use either %le or %lf formats");
+            if (bad_format_axis(optarg)){
                 return;
             }
             im->second_axis_format=strdup(optarg);
-			if (!im->second_axis_format) {
-				rrd_set_error("cannot allocate memory for second_axis_format");
-				return;
-			}
+            if (!im->second_axis_format) {
+                rrd_set_error("cannot allocate memory for second_axis_format");
+                return;
+            }
             break;
         case 1012:
-            if (bad_format(optarg)){
-                rrd_set_error("use either %le or %lf formats");
+            if (bad_format_axis(optarg)){
                 return;
             }
             im->primary_axis_format=strdup(optarg);
-			if (!im->primary_axis_format) {
-				rrd_set_error("cannot allocate memory for primary_axis_format");
-				return;
-			}
+            if (!im->primary_axis_format) {
+                rrd_set_error("cannot allocate memory for primary_axis_format");
+                return;
+            }
             break;
         case 'v':
-			im->ylegend=strdup(optarg);
-			if (!im->ylegend) {
+            im->ylegend=strdup(optarg);
+            if (!im->ylegend) {
                 rrd_set_error("cannot allocate memory for ylegend");
                 return;
-			}
+            }
             break;
         case 'u':
-            im->maxval = atof(optarg);
+            if (rrd_strtodbl(optarg, 0, &(im->maxval), "option -u") != 2){
+                return;
+            }
             break;
         case 'l':
-            im->minval = atof(optarg);
+            if (rrd_strtodbl(optarg, 0, &(im->minval), "option -l") != 2){
+                return;
+            }
             break;
         case 'b':
             im->base = atol(optarg);
@@ -4854,7 +4857,8 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            if (sscanf(optarg, "%10[A-Z]:%lf%n", prop, &size, &end) >= 2) {
+            if (sscanf(optarg, "%10[A-Z]:%[-0-9.e+]%n", prop, double_str, &end) >= 2
+                && rrd_strtodbl( double_str, 0, &size, NULL) == 2) {
                 int       sindex, propidx;
 
                 if ((sindex = text_prop_conv(prop)) != -1) {
@@ -4889,18 +4893,20 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            im->zoom = atof(optarg);
+            if (rrd_strtodbl(optarg, 0, &(im->zoom), "option -m") != 2){
+                return;
+            }
             if (im->zoom <= 0.0) {
                 rrd_set_error("zoom factor must be > 0");
                 return;
             }
             break;
         case 't':
-			im->title=strdup(optarg);
-			if (!im->title) {
+            im->title=strdup(optarg);
+            if (!im->title) {
                 rrd_set_error("cannot allocate memory for title");
                 return;
-			}
+            }
             break;
         case 'R':
             if (strcmp(optarg, "normal") == 0) {
@@ -4937,11 +4943,11 @@ void rrd_graph_options(
             /* not supported curently */
             break;
         case 'W':
-			im->watermark=strdup(optarg);
-			if (!im->watermark) {
+            im->watermark=strdup(optarg);
+            if (!im->watermark) {
                 rrd_set_error("cannot allocate memory for watermark");
                 return;
-			}
+            }
             break;
         case 'd':
         {
@@ -5053,99 +5059,38 @@ int rrd_graph_color(
 }
 
 
-int bad_format(
-    char *fmt)
-{
-    char     *ptr;
-    int       n = 0;
-
-    ptr = fmt;
-    while (*ptr != '\0')
-        if (*ptr++ == '%') {
-
-            /* line cannot end with percent char */
-            if (*ptr == '\0')
-                return 1;
-            /* '%s', '%S' and '%%' are allowed */
-            if (*ptr == 's' || *ptr == 'S' || *ptr == '%')
-                ptr++;
-            /* %c is allowed (but use only with vdef!) */
-            else if (*ptr == 'c') {
-                ptr++;
-                n = 1;
-            }
-
-            /* or else '% 6.2lf' and such are allowed */
-            else {
-                /* optional padding character */
-                if (*ptr == ' ' || *ptr == '+' || *ptr == '-')
-                    ptr++;
-                /* This should take care of 'm.n' with all three optional */
-                while (*ptr >= '0' && *ptr <= '9')
-                    ptr++;
-                if (*ptr == '.')
-                    ptr++;
-                while (*ptr >= '0' && *ptr <= '9')
-                    ptr++;
-                /* Either 'le', 'lf' or 'lg' must follow here */
-                if (*ptr++ != 'l')
-                    return 1;
-                if (*ptr == 'e' || *ptr == 'f' || *ptr == 'g')
-                    ptr++;
-                else
-                    return 1;
-                n++;
-            }
-        }
-
-    return (n != 1);
+static int bad_format_check(const char *pattern, char *fmt) {
+    GError *gerr = NULL;
+    GRegex *re = g_regex_new(pattern, G_REGEX_EXTENDED, 0, &gerr);
+    GMatchInfo *mi;
+    if (gerr != NULL) {
+        rrd_set_error("cannot compile regular expression: %s (%s)", gerr->message,pattern);
+        return 1;
+    }
+    int m = g_regex_match(re, fmt, 0, &mi);
+    g_match_info_free (mi);
+    g_regex_unref(re);
+    if (!m) {
+        rrd_set_error("invalid format string '%s' (should match '%s')",fmt,pattern);
+        return 1;
+    }
+    return 0;
 }
 
+#define SAFE_STRING "(?:[^%]+|%%)*"
 
-int bad_format_imginfo(
-    char *fmt)
-{
-    char     *ptr;
-    int       n = 0;
+int bad_format_imginfo(char *fmt){
+    return bad_format_check("^" SAFE_STRING "%s" SAFE_STRING "%lu" SAFE_STRING "%lu" SAFE_STRING "$",fmt);
+}
+#define FLOAT_STRING "%[-+ 0#]?[0-9]*(?:[.][0-9]+)?l[eEfFgG]"
 
-    ptr = fmt;
-    while (*ptr != '\0')
-        if (*ptr++ == '%') {
-
-            /* line cannot end with percent char */
-            if (*ptr == '\0')
-                return 1;
-            /* '%%' is allowed */
-            if (*ptr == '%')
-                ptr++;
-            /* '%s', '%S' are allowed */
-            else if (*ptr == 's' || *ptr == 'S') {
-                n = 1;
-                ptr++;
-            }
-
-            /* or else '% 4lu' and such are allowed */
-            else {
-                /* optional padding character */
-                if (*ptr == ' ')
-                    ptr++;
-                /* This should take care of 'm' */
-                while (*ptr >= '0' && *ptr <= '9')
-                    ptr++;
-                /* 'lu' must follow here */
-                if (*ptr++ != 'l')
-                    return 1;
-                if (*ptr == 'u')
-                    ptr++;
-                else
-                    return 1;
-                n++;
-            }
-        }
-
-    return (n != 3);
+int bad_format_axis(char *fmt){
+    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",fmt);
 }
 
+int bad_format_print(char *fmt){
+    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "(?:%s)?" SAFE_STRING "$",fmt);
+}
 
 int vdef_parse(
     struct graph_desc_t
@@ -5156,14 +5101,12 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30];
+    char      func[30], double_str[21];
     int       n;
 
     n = 0;
-    sscanf(str, "%le,%29[A-Z]%n", &param, func, &n);
-    if (n == (int) strlen(str)) {   /* matched */
-        ;
-    } else {
+    sscanf(str, "%20[-0-9.e+],%29[A-Z]%n", double_str, func, &n);
+    if ( rrd_strtodbl( double_str, NULL, &param, NULL) != 2 ){
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);
         if (n == (int) strlen(str)) {   /* matched */

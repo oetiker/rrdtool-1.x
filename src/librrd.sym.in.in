@@ -52,6 +52,9 @@ rrd_seek
 rrd_set_error
 rrd_set_to_DINF
 rrd_set_to_DNAN
+rrd_strtod
+rrd_strtodbl
+rrd_snprintf
 rrd_strerror
 rrd_strversion
 rrd_tell

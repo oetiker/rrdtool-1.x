@@ -5,3 +5,17 @@
    fun:pixman_constructor
    ...
 }
+{
+   g_regex_new
+   Memcheck:Leak
+   ...
+   fun:g_once_init_enter
+   ...
+}
+{
+   g_regex_new
+   Memcheck:Leak
+   ...
+   fun:g_once_init_leave
+   ...
+}

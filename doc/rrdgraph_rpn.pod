@@ -359,6 +359,32 @@ B<DUP, POP, EXC>
 Duplicate the top element, remove the top element, exchange the two
 top elements.
 
+B<DEPTH>
+
+pushes the current depth of the stack onto the stack
+
+ a,b,DEPTH -> a,b,2
+
+n,B<COPY>
+
+push a copy of the top n elements onto the stack
+
+ a,b,c,d,2,COPY => a,b,c,d,c,d
+
+
+n,B<INDEX>
+
+push the nth element onto the stack.
+
+ a,b,c,d,3,INDEX -> a,b,c,d,b
+
+n,m,B<ROLL>
+
+rotate the top n elements of the stack by m
+
+ a,b,c,d,3,1,ROLL => a,d,b,c
+ a,b,c,d,3,-1,ROLL => a,c,d,b
+
 Z<>
 
 =back

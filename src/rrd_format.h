@@ -159,9 +159,11 @@ enum ds_param_en { DS_mrhb_cnt = 0, /* minimum required heartbeat. A
 
 /* The magic number here is one less than DS_NAM_SIZE */
 #define DS_NAM_FMT    "%19[a-zA-Z0-9_-]"
+#define DS_NAM_RE     "[-a-zA-Z0-9_]{1,19}"
 #define DS_NAM_SIZE   20
 
 #define DST_FMT    "%19[A-Z]"
+#define DST_FMT_RE "[A-Z]{1,19}"
 #define DST_SIZE   20
 
 typedef struct ds_def_t {

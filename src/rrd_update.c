@@ -28,6 +28,8 @@
 #include "rrd_update.h"
 #include <glib.h>
 
+#include "rrd_strtod.h"
+
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 
 /*
@@ -369,7 +371,7 @@ static char *rrd_get_file_template(const char *filename) /* {{{ */
 	rrd_file_t *rrd_file;
 	unsigned int i;
 	size_t len=0;
-	char *template = NULL;
+	char *filetemplate = NULL; //template is a key word in C++ , see http://msdn.microsoft.com/de-de/library/2e6a4at9.aspx
 
 	/* open file */
 	rrd_init(&rrd);
@@ -382,23 +384,23 @@ static char *rrd_get_file_template(const char *filename) /* {{{ */
 		len += strlen(rrd.ds_def[i].ds_nam)+1;
 	}
 	/* now that we got it allocate memory */
-	template = malloc(len);
-	if (!template)
+	filetemplate = (char *) malloc(len);
+	if (!filetemplate)
 		goto err_close;
-	template[0] = 0;
+	filetemplate[0] = 0;
 
 	/* fill in for real */
 	for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
 		if (i)
-			strcat(template,":");
-		strcat(template,rrd.ds_def[i].ds_nam);
+			strcat(filetemplate,":");
+		strcat(filetemplate,rrd.ds_def[i].ds_nam);
 	}
 
 err_close:
 	rrd_close(rrd_file);
 err_free:
 	rrd_free(&rrd);
-	return (template);
+	return (filetemplate);
 } /* }}} const char *rrd_get_file_template */
 
 
@@ -410,7 +412,7 @@ static gint cache_compare_names (gconstpointer name1,
 				gpointer data)
 {
 	(void)(data); /* to avoid unused message */
-	return (strcmp (name1, name2));
+	return (strcmp((const char *)name1, (const char *)name2));
 }
 
 static void cache_destroy(gpointer data)
@@ -512,7 +514,7 @@ static int _concat_field(
 	size_t len = 0;
 
 	/* get length */
-	char *colon = strchr(field, ':');
+	char *colon = strchr((char *)field, ':');
 	if (colon) {
 		len=colon-field;
 	} else
@@ -584,7 +586,7 @@ static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
 						*/
 	        * 2 /* = strlen(":U") */; 
 
-	mapped = malloc(len);
+	mapped = (char *) malloc(len);
 	if (!mapped)
 		return NULL;
 	mapped[0] = 0;
@@ -641,7 +643,7 @@ static int rrd_template_update(const char *filename,  /* {{{ */
 
 
 	/* now start to map those fields */
-	mapped_values = calloc(values_num,sizeof(char*));
+	mapped_values = (char **)calloc(values_num,sizeof(char*));
 	if (!mapped_values) {
 		rrd_set_error("rrd_template_update: "
 			" could not allocate memory");
@@ -1292,7 +1294,6 @@ static int get_time_from_reading(
 {
     double    tmp;
     char     *parsetime_error = NULL;
-    char     *old_locale;
     rrd_time_value_t ds_tv;
     struct timeval tmp_time;    /* used for time conversion */
 
@@ -1316,15 +1317,9 @@ static int get_time_from_reading(
         *current_time = tmp_time.tv_sec;
         *current_time_usec = tmp_time.tv_usec;
     } else {
-	old_locale = setlocale(LC_NUMERIC, "C");
-        errno = 0;
-        tmp = strtod(updvals[0], 0);
-        if (errno > 0) {
-            rrd_set_error("converting '%s' to float: %s",
-                updvals[0], rrd_strerror(errno));
+        if ( rrd_strtodbl( updvals[0], NULL, &tmp, "error while parsing time in get_time_from_reading") != 2) {
             return -1;
         };
-        setlocale(LC_NUMERIC, old_locale);
         if (tmp < 0.0){
             gettimeofday(&tmp_time, 0);
             tmp = (double)tmp_time.tv_sec + (double)tmp_time.tv_usec * 1e-6f + tmp;
@@ -1381,8 +1376,7 @@ static int update_pdp_prep(
 {
     unsigned long ds_idx;
     int       ii;
-    double    rate, newval, oldval;
-    char     *old_locale;
+    double    rate, newval, oldval, tmp;
     enum dst_en dst_idx;
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
@@ -1446,39 +1440,35 @@ static int update_pdp_prep(
                 }
                 break;
             case DST_ABSOLUTE:
-		old_locale = setlocale(LC_NUMERIC, "C");
-                if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
-                    setlocale(LC_NUMERIC, old_locale);
+                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &pdp_new[ds_idx], "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
                     return -1;
                 }
-                setlocale(LC_NUMERIC, old_locale);
                 pdp_new[ds_idx] = newval;
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
-		old_locale = setlocale(LC_NUMERIC, "C");
-                if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
-                    setlocale(LC_NUMERIC, old_locale);
+                if( rrd_strtodbl( updvals[ds_idx + 1], NULL, &newval, "Function update_pdp_prep, case DST_GAUGE") != 2 ) {
                     return -1;
                 }
-                setlocale(LC_NUMERIC, old_locale);
                 pdp_new[ds_idx] = newval * interval;
                 rate = newval;
                 break;
             case DST_DCOUNTER:
             case DST_DDERIVE:
                 if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
-                    old_locale = setlocale(LC_NUMERIC, NULL);
-                    setlocale(LC_NUMERIC, "C");
-                    if (rrd_get_double(updvals[ds_idx + 1], &newval) != 0) {
-                        setlocale(LC_NUMERIC, old_locale);
+                    const char *e_msg;
+
+                    if (dst_idx == DST_DCOUNTER) {
+                        e_msg = "Function update_pdp_prep, case DST_DCOUNTER";
+                    } else {
+                        e_msg = "Function update_pdp_prep, case DST_DDERIVE";
+                    }
+                    if (rrd_strtodbl(updvals[ds_idx + 1], NULL, &newval, e_msg) != 2) {
                         return -1;
                     }
-                    if (rrd_get_double(rrd->pdp_prep[ds_idx].last_ds, &oldval) != 0) {
-                        setlocale(LC_NUMERIC, old_locale);
+                    if (rrd_strtodbl(rrd->pdp_prep[ds_idx].last_ds, NULL, &oldval, e_msg) != 2) {
                         return -1;
                     }
-                    setlocale(LC_NUMERIC, old_locale);
                     if (dst_idx == DST_DCOUNTER) {
                         /*
                          * DST_DCOUNTER is always signed, so it can count either up,

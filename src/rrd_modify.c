@@ -18,16 +18,16 @@
 #include "fnv.h"
 
 #include <locale.h>
+#include "rrd_config.h"
+#ifdef WIN32
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 
-// calculate a % b, guaranteeing a positive result...
-static int positive_mod(int a, int b) {
-    int x = a % b;
-    if (x < 0) x += b;
-    return x;
-}
+
 
 // prototypes
-static int write_rrd(const char *outfilename, rrd_t *out);
 static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		    const rra_mod_op_t *rra_mod_ops, int rra_mod_ops_cnt, unsigned long hash);
 
@@ -58,15 +58,6 @@ static void * copy_over_realloc(void *dest, int dest_index,
 */
 
 
-typedef struct {
-    const rrd_t *rrd;
-    int rra_index;
-    rrd_value_t *values;
-    rra_def_t *rra;
-    rra_ptr_t *ptr;
-    cdp_prep_t *cdp;
-} candidate_t;
-
 static int sort_candidates(const void *va, const void *vb) {
     const candidate_t *a = (candidate_t *) va;
     const candidate_t *b = (candidate_t *) vb;
@@ -86,86 +77,24 @@ static int sort_candidates(const void *va, const void *vb) {
     return a_def->pdp_cnt - b_def->pdp_cnt;
 }
 
-static time_t end_time_for_row(const rrd_t *rrd, 
-			       const rra_def_t *rra, 
-			       int cur_row, int row) {
-    // one entry in the candidate covers timeslot seconds
-    int timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-	    
-    /* Just to re-iterate how data is stored in RRAs, in order to
-       understand the following code: the current slot was filled at
-       last_up time, but slots always correspond with time periods of
-       length timeslot, ending at exact multiples of timeslot
-       wrt. the unix epoch. So the current timeslot ends at:
-       
-       int(last_up / timeslot) * timeslot 
-       
-       or (equivalently):
-       
-       last_up - last_up % timeslot
-    */
-
-    int past_cnt = positive_mod((cur_row - row), rra->row_cnt);
-    
-    time_t last_up = rrd->live_head->last_up;
-    time_t now = (last_up - last_up % timeslot) - past_cnt * timeslot;
-
-    return now;
+static int select_for_modify(const rra_def_t *tofill, const rra_def_t *maybe) {
+    enum cf_en cf = cf_conv(tofill->cf_nam);
+    enum cf_en other_cf = cf_conv(maybe->cf_nam);
+    return (other_cf == cf ||
+	    (other_cf == CF_AVERAGE /*&& other_rra->pdp_cnt == 1*/));
 }
 
-static int row_for_time(const rrd_t *rrd, 
-			const rra_def_t *rra, 
-			int cur_row, time_t req_time) 
+candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt, 
+                                 candidate_extra_t extra, 
+                                 int (*selectfunc)(const rra_def_t *tofill, const rra_def_t *maybe))
 {
-    time_t last_up = rrd->live_head->last_up;
-    int    timeslot = rra->pdp_cnt * rrd->stat_head->pdp_step;
-
-    // align to slot boundary end times
-    time_t delta = req_time % timeslot;
-    if (delta > 0) req_time += timeslot - delta;
-    
-    delta = req_time % timeslot;
-    if (delta > 0) last_up += timeslot - delta;
-
-    if (req_time > last_up) return -1;  // out of range
-    if (req_time <= (int) last_up - (int) rra->row_cnt * timeslot) return -1; // out of range
-     
-    int past_cnt = (last_up - req_time) / timeslot;
-    if (past_cnt >= (int) rra->row_cnt) return -1;
-
-    // NOTE: rra->row_cnt is unsigned!!
-    int row = positive_mod(cur_row - past_cnt, rra->row_cnt);
-
-    return row < 0 ? (row + (int) rra->row_cnt) : row ;
-}
-
-/* 
-   Try to find a set of RRAs from rrd that might be used to populate
-   added rows in RRA rra. Generally, candidates are RRAs that have a
-   pdp step of 1 (regardless of CF type) and those that have the same
-   CF (or a CF of AVERAGE) and any pdp step count.
-
-   The function returns a pointer to a newly allocated array of
-   candidate_t structs. The number of elements is returned in *cnt.
-
-   The returned memory must be free()'d by the calling code. NULL is
-   returned in case of error or if there are no candidates. In case of
-   an error, the RRD error gets set.
-
-   Arguments:
-   rrd .. the RRD to pick RRAs from
-   rra .. the RRA we want to populate
-   cnt .. a pointer to an int receiving the number of returned candidates
-*/
-static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt) {
     int total_rows = 0;
     candidate_t *candidates = NULL;
     *cnt = 0;
 
     int i;
-    enum cf_en cf = cf_conv(rra->cf_nam);
- 
-    /* find other rows with the same CF or an RRA with CF_AVERAGE and
+
+    /* find other RRAs with the same CF or an RRA with CF_AVERAGE and
        a stepping of 1 as possible candidates for filling */
     for (i = 0 ; i < (int) rrd->stat_head->rra_cnt ; i++) {
 	rra_def_t *other_rra = rrd->rra_def + i;
@@ -175,19 +104,30 @@ static candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, 
 	    continue;
 	}
 
-	enum cf_en other_cf = cf_conv(other_rra->cf_nam);
- 	if (other_cf == cf ||
-	    (other_cf == CF_AVERAGE && other_rra->pdp_cnt == 1)) {
-	    candidate_t c = { 
-		.rrd = rrd, 
+	if (selectfunc(rra, other_rra)) {
+#ifdef _WINDOWS
+            candidate_t c;
+            c.rrd = rrd;
+            c.rra_index = i;
+            c.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows;
+            c.rra = rrd->rra_def + i;
+            c.ptr = rrd->rra_ptr + i;
+            c.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i;
+            memcpy(&c.extra, &extra, sizeof(extra));
+#else
+            const candidate_t c = { 
+		.rrd = (rrd_t*) rrd,    /* cast effectively removes const-ness, but we won't
+                                         * mess around with it. promised */
 		.rra_index = i,
 		.values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
 		.rra = rrd->rra_def + i,
+		.rra_cf = cf_conv(rrd->rra_def[i].cf_nam),
 		.ptr = rrd->rra_ptr + i,
-		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i 
-		
+		.cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * i,
+		.extra = extra
 	    };
-	    candidates = copy_over_realloc(candidates, *cnt,
+#endif
+            candidates = (candidate_t *) copy_over_realloc(candidates, *cnt,
 					   &c, 0, sizeof(c));
 	    if (candidates == NULL) {
 		rrd_set_error("out of memory");
@@ -223,12 +163,12 @@ static int copy_or_delete_DSs(const rrd_t *in, rrd_t *out, char *ops) {
     for (unsigned int in_ds = 0 ; in_ds < in->stat_head->ds_cnt ; in_ds++) {
 	switch (ops[in_ds]) {
 	case 'c': {
-	    out->ds_def = copy_over_realloc(out->ds_def, out->stat_head->ds_cnt, 
+	    out->ds_def = (ds_def_t *) copy_over_realloc(out->ds_def, out->stat_head->ds_cnt, 
 					   in->ds_def, in_ds,
 					   sizeof(ds_def_t));
 	    if (out->ds_def == NULL) goto done;
 	    
-	    out->pdp_prep = copy_over_realloc(out->pdp_prep, out->stat_head->ds_cnt, 
+		out->pdp_prep = (pdp_prep_t *) copy_over_realloc(out->pdp_prep, out->stat_head->ds_cnt,
 					     in->pdp_prep, in_ds,
 					     sizeof(pdp_prep_t));
 	    if (out->pdp_prep == NULL) goto done;
@@ -266,7 +206,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 {
     int rc = -1;
     unsigned int j, r;
-    rra_ptr_t rra_0_ptr = { .cur_row = 0 };
+	rra_ptr_t rra_0_ptr; rra_0_ptr.cur_row = 0;
     cdp_prep_t empty_cdp_prep;
     memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
 
@@ -308,7 +248,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 	    continue;
 	}
 
-	out->cdp_prep = realloc(out->cdp_prep, 
+	out->cdp_prep = (cdp_prep_t *) realloc(out->cdp_prep,
 			       sizeof(cdp_prep_t) * out->stat_head->ds_cnt 
 			       * (out->stat_head->rra_cnt + 1));
 	
@@ -323,7 +263,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 	int start_index_in  = in->stat_head->ds_cnt * j;
 	int start_index_out = out->stat_head->ds_cnt * out->stat_head->rra_cnt;
 	
-	out->rra_def = copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
+	out->rra_def = (rra_def_t *) copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
 					 in->rra_def, j,
 					 sizeof(rra_def_t));
 	if (out->rra_def == NULL) goto done;
@@ -331,7 +271,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 	// adapt row count:
 	out->rra_def[out->stat_head->rra_cnt].row_cnt = final_row_count;
 
-	out->rra_ptr = copy_over_realloc(out->rra_ptr, out->stat_head->rra_cnt,
+	out->rra_ptr = (rra_ptr_t *) copy_over_realloc(out->rra_ptr, out->stat_head->rra_cnt,
 					&rra_0_ptr, 0,
 					sizeof(rra_ptr_t));
 	if (out->rra_ptr == NULL) goto done; 
@@ -355,6 +295,7 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 
 		init_cdp(out, 
 			 out->rra_def + out->stat_head->rra_cnt,
+                         out->pdp_prep + ii,
 			 cdp_prep);
 		ii++;
 		break;
@@ -399,7 +340,7 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 	// parse DS
 	parseDS(c + 3,
 		&added, // out.ds_def + out.stat_head->ds_cnt,
-		out, lookup_DS);
+		out, lookup_DS, NULL);
 
 	// check if there is a name clash with an existing DS
 	if (lookup_DS(&out, added.ds_nam) >= 0) {
@@ -408,10 +349,10 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 	}
 
 	// copy parse result to output RRD
-	out->ds_def = copy_over_realloc(out->ds_def, out->stat_head->ds_cnt, 
+	out->ds_def = (ds_def_t *) copy_over_realloc(out->ds_def, out->stat_head->ds_cnt,
 					&added, 0,
 					sizeof(ds_def_t));
-	if (out->ds_def == NULL) {
+	if (out->ds_def ==  NULL) {
 	    goto done;
 	}
 
@@ -424,7 +365,7 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 	added_pdp_prep.scratch[PDP_unkn_sec_cnt].u_cnt =
 	    out->live_head->last_up % out->stat_head->pdp_step;
 
-	out->pdp_prep = copy_over_realloc(out->pdp_prep, 
+	out->pdp_prep = (pdp_prep_t *) copy_over_realloc(out->pdp_prep,
 					  out->stat_head->ds_cnt, 
 					  &added_pdp_prep, 0,
 					  sizeof(pdp_prep_t));
@@ -491,8 +432,9 @@ static int populate_row(const rrd_t *in_rrd,
     int candidates_cnt = 0;
 
     int i, ri;
-
-    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt);
+    candidate_extra_t junk;
+    
+    candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk, select_for_modify);
     if (candidates == NULL) {
 	goto done;
     }
@@ -814,7 +756,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     unsigned int ds_ops_cnt = 0;
     int *ds_map = NULL;
     
-    out = malloc(sizeof(rrd_t));
+	out = (rrd_t *) malloc(sizeof(rrd_t));
     if (out == NULL) {
 	rrd_set_error("Out of memory");
 	goto done;
@@ -849,7 +791,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     out->stat_head->ds_cnt = 0;
     out->stat_head->rra_cnt = 0;
     
-    out->live_head = copy_over_realloc(out->live_head, 0, in->live_head, 0,
+	out->live_head = (live_head_t *) copy_over_realloc(out->live_head, 0, in->live_head, 0,
 				       sizeof(live_head_t));
     
     if (out->live_head == NULL) goto done;
@@ -864,7 +806,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     - 'a' will be added.
     */
     ds_ops_cnt = in->stat_head->ds_cnt;
-    ds_ops = malloc(ds_ops_cnt);
+    ds_ops = (char *) malloc(ds_ops_cnt);
     
     if (ds_ops == NULL) {
 	rrd_set_error("parse_tag_rrd: malloc failed.");
@@ -899,7 +841,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     }
     if (added_cnt > 0) {
 	// and extend the ds_ops array as well
-	ds_ops = realloc(ds_ops, ds_ops_cnt + added_cnt);
+		ds_ops = (char *) realloc(ds_ops, ds_ops_cnt + added_cnt);
 	for(; added_cnt > 0 ; added_cnt--) {
 	    ds_ops[ds_ops_cnt++] = 'a';
 	}
@@ -908,7 +850,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     /* prepare explicit data source index to map from output index to
        input index */
     
-    ds_map = malloc(sizeof(int) * out->stat_head->ds_cnt);
+    ds_map = (int *) malloc(sizeof(int) * out->stat_head->ds_cnt);
     
     j = 0;
     for (i = 0 ; i < ds_ops_cnt ; i++) {
@@ -950,7 +892,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     */
     
     /* prepare space for output data */
-    out->rrd_value = realloc(out->rrd_value,
+	out->rrd_value = (rrd_value_t *) realloc(out->rrd_value,
 			     total_out_rra_rows * out->stat_head->ds_cnt
 			     * sizeof(rrd_value_t));
     
@@ -1082,13 +1024,14 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     int candidates_cnt = 0;
     candidate_t *candidates = NULL;
     candidate_t *chosen_candidate = NULL;
-
+    candidate_extra_t junk;
+    
     if (candidates) {
 	free(candidates);
 	candidates = NULL;
     }
 
-    candidates = find_candidate_rras(in, rra_def, &candidates_cnt);
+    candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
 	int ci;
@@ -1114,7 +1057,7 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
 	cdp_prep_t *cdp_prep = out->cdp_prep + start_cdp_index_out + i;
 	memcpy(cdp_prep, &empty_cdp_prep, sizeof(cdp_prep_t));
 
-	init_cdp(out, rra_def, cdp_prep);
+	init_cdp(out, rra_def, out->pdp_prep + i, cdp_prep);
 
 	if (chosen_candidate && mapped_i != -1) {
 	    int ds_cnt = chosen_candidate->rrd->stat_head->ds_cnt;
@@ -1263,7 +1206,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		goto done;
             }
 
-	    out->rra_def = copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
+		out->rra_def = (rra_def_t *) copy_over_realloc(out->rra_def, out->stat_head->rra_cnt,
 					    &rra_def, 0,
 					    sizeof(rra_def_t));
 	    if (out->rra_def == NULL) goto done;
@@ -1279,7 +1222,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 
     if (last_rra_cnt < out->stat_head->rra_cnt) {
 	// extend cdp_prep and rra_ptr arrays
-	out->cdp_prep = realloc(out->cdp_prep, 
+		out->cdp_prep = (cdp_prep_t *) realloc(out->cdp_prep,
 				sizeof(cdp_prep_t) * out->stat_head->ds_cnt 
 				* (out->stat_head->rra_cnt));
 
@@ -1288,7 +1231,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	    goto done;
 	}
 	
-	out->rra_ptr = realloc(out->rra_ptr,
+	out->rra_ptr = (rra_ptr_t *) realloc(out->rra_ptr,
 			       sizeof(rra_ptr_t) * out->stat_head->rra_cnt);
 	
 	if (out->rra_ptr == NULL) {
@@ -1318,7 +1261,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	total_out_rra_rows += rra_def->row_cnt;
 
 	/* prepare space for output data */
-	out->rrd_value = realloc(out->rrd_value,
+	out->rrd_value = (rrd_value_t *) realloc(out->rrd_value,
 				(total_out_rra_rows) * out->stat_head->ds_cnt
 				* sizeof(rrd_value_t));
     
@@ -1352,102 +1295,6 @@ done:
     return rc;
 }
 
-static int write_rrd(const char *outfilename, rrd_t *out) {
-    int rc = -1;
-    char *tmpfilename = NULL;
-
-    /* write out the new file */
-    FILE *fh = NULL;
-    if (strcmp(outfilename, "-") == 0) {
-	fh = stdout;
-	// to stdout
-    } else {
-	/* create RRD with a temporary name, rename atomically afterwards. */
-	tmpfilename = malloc(strlen(outfilename) + 7);
-	if (tmpfilename == NULL) {
-	    rrd_set_error("out of memory");
-	    goto done;
-	}
-
-	strcpy(tmpfilename, outfilename);
-	strcat(tmpfilename, "XXXXXX");
-	
-	int tmpfd = mkstemp(tmpfilename);
-	if (tmpfd < 0) {
-	    rrd_set_error("Cannot create temporary file");
-	    goto done;
-	}
-
-	fh = fdopen(tmpfd, "wb");
-	if (fh == NULL) {
-	    // some error 
-	    rrd_set_error("Cannot open output file");
-	    goto done;
-	}
-    }
-
-    rc = write_fh(fh, out);
-
-    if (fh != NULL && tmpfilename != NULL) {
-	/* tmpfilename != NULL indicates that we did NOT write to stdout,
-	   so we have to close the stream and do the rename dance */
-
-	fclose(fh);
-	if (rc == 0)  {
-	    // renaming is only done if write_fh was successful
-	    struct stat stat_buf;
-
-	    /* in case we have an existing file, copy its mode... This
-	       WILL NOT take care of any ACLs that may be set. Go
-	       figure. */
-	    if (stat(outfilename, &stat_buf) != 0) {
-		/* an error occurred (file not found, maybe?). Anyway:
-		   set the mode to 0666 using current umask */
-		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-		
-		mode_t mask = umask(0);
-		umask(mask);
-
-		stat_buf.st_mode &= ~mask;
-	    }
-	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {
-		rrd_set_error("Cannot chmod temporary file!");
-		goto done;
-	    }
-
-	    // before we rename the file to the target file: forget all cached changes....
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-
-	    if (rename(tmpfilename, outfilename) != 0) {
-		rrd_set_error("Cannot rename temporary file to final file!");
-		unlink(tmpfilename);
-		goto done;
-	    }
-
-	    // after the rename: forget the file again, just to be sure...
-	    if (rrdc_is_any_connected()) {
-		// is it a good idea to just ignore the error ????
-		rrdc_forget(outfilename);
-		rrd_clear_error();
-	    }
-	} else {
-	    /* in case of any problems during write: just remove the
-	       temporary file! */
-	    unlink(tmpfilename);
-	}
-    }
-done:
-    if (tmpfilename != NULL)
-	free(tmpfilename);
-
-    return rc;
-}
-
-
 int handle_modify(const rrd_t *in, const char *outfilename,
 		  int argc, char **argv, int optidx,
 		  int newstep) {
@@ -1461,7 +1308,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
     
     for (i = optidx ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-	    del = realloc(del, (rcnt + 2) * sizeof(char*));
+		del = (const char **) realloc(del, (rcnt + 2) * sizeof(char*));
 	    if (del == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1478,7 +1325,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    rcnt++;
 	    del[rcnt] = NULL;
 	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
-	    add = realloc(add, (acnt + 2) * sizeof(char*));
+		add = (const char **) realloc(add, (acnt + 2) * sizeof(char*));
 	    if (add == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1495,7 +1342,8 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    acnt++;
 	    add[acnt] = NULL;
 	} else if (strncmp("RRA#", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-	    rra_mod_op_t rra_mod = { .def = NULL };
+		rra_mod_op_t rra_mod; // = { .def = NULL };  // not in VS2013
+		rra_mod.def = NULL;
 	    char sign;
 	    unsigned int number;
 	    unsigned int idx;
@@ -1522,7 +1370,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 		goto done;
 	    }
 
-	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+	    rra_ops = (rra_mod_op_t *) copy_over_realloc(rra_ops, rraopcnt,
 					&rra_mod, 0, sizeof(rra_mod));
 	    if (rra_ops == NULL) {
 		rrd_set_error("out of memory");
@@ -1542,7 +1390,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 		goto done;
 	    }
 
-	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+		rra_ops = (rra_mod_op_t *) copy_over_realloc(rra_ops, rraopcnt,
 					&rra_mod, 0, sizeof(rra_mod));
 	    if (rra_ops == NULL) {
 		rrd_set_error("out of memory");
@@ -1551,11 +1399,16 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    }
 	    rraopcnt++;
 	} else if (strncmp("DELRRA:", argv[i], 7) == 0 && strlen(argv[i]) > 7) {
-	    rra_mod_op_t rra_mod = { .def = NULL,
+		rra_mod_op_t rra_mod;
+		/* NOT in VS2013 C++ allowed
+		= { .def = NULL,
 				     .op = '=', 
 				     .row_count = 0 // eg. deletion
-	    };
-	    
+	    };*/
+		rra_mod.def = NULL;
+		rra_mod.op = '='; 
+		rra_mod.row_count = 0; // eg. deletion
+
 	    rra_mod.index = atoi(argv[i] + 7);
 	    if (rra_mod.index < 0 ) {
 		rrd_set_error("DELRRA requires a non-negative, integer argument");
@@ -1563,7 +1416,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 		goto done;
 	    }
 
-	    rra_ops = copy_over_realloc(rra_ops, rraopcnt,
+		rra_ops = (rra_mod_op_t *) copy_over_realloc(rra_ops, rraopcnt,
 					&rra_mod, 0, sizeof(rra_mod));
 	    if (rra_ops == NULL) {
 		rrd_set_error("out of memory");

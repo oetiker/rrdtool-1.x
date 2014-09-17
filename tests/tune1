@@ -17,13 +17,20 @@ done
 $RRDTOOL update ${BUILD}org.rrd --template a $U 
 report "update"
 
+# NOTE: for rrdcached based tests, we must flush before we can copy...
+is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached)
+
+
 cp ${BUILD}org.rrd ${BUILD}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:-100
-$RRDTOOL dump ${BUILD}a.rrd | diff - ${BASE}a-mod1.dump
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}a-mod1.dump
 report "tune heartbeat/minimum" 
+
+# NOTE: for rrdcached based tests, we must flush before we can copy...
+is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
 
 cp ${BUILD}org.rrd ${BUILD}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --data-source-type a:COUNTER --data-source-rename b:c
-$RRDTOOL dump ${BUILD}a.rrd | diff - ${BASE}a-mod2.dump
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}a-mod2.dump
 report "tune dst/ds-name" 
 

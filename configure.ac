@@ -102,10 +102,11 @@ AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
 AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdcgi]),
 [],[enable_rrdcgi=yes])
 
-AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
-
 AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
 [enable_rrdcgi=no],[enable_rrd_graph=yes])
+
+AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
+
 
 if test $enable_rrd_graph != no; then
  AC_DEFINE([HAVE_RRD_GRAPH], [], [is rrd_graph supported by this install])
@@ -206,6 +207,12 @@ AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
 
+dnl figure out 'stuff' about 
+HW_FUNC_VSNPRINTF
+HW_FUNC_SNPRINTF
+HW_FUNC_VASPRINTF
+HW_FUNC_ASPRINTF
+
 CONFIGURE_PART(Test Library Functions)
 
 dnl Checks for libraries.
@@ -262,7 +269,7 @@ if test "x$enable_mmap" = "xyes"; then
   *)
     AC_CHECK_HEADERS(sys/mman.h)
     AC_FUNC_MMAP
-    AC_CHECK_FUNCS(mmap munmap msync)
+    AC_CHECK_FUNCS(mmap munmap)
     AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
 				     # include <sys/mman.h>
 				     #endif])
@@ -542,7 +549,7 @@ EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             
 EX_CHECK_ALL(pangocairo-1.0,  pango_font_map_create_context,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
 
 fi
-EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.7.8,  http://xmlsoft.org/downloads.html, /usr/include/libxml2)
+EX_CHECK_ALL(xml2,       xmlParseFile,                  libxml/parser.h,        libxml-2.0,        2.7.8,  http://xmlsoft.org/downloads.html, "")
 
 if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])

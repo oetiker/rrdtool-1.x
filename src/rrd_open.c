@@ -102,7 +102,6 @@ rrd_file_t *rrd_open(
     int       version;
 
 #ifdef HAVE_MMAP
-    ssize_t   _page_size = sysconf(_SC_PAGESIZE);
     char     *data = MAP_FAILED;
 #endif
     off_t     offset = 0;
@@ -132,7 +131,8 @@ rrd_file_t *rrd_open(
         return NULL;
     }
     memset(rrd_file, 0, sizeof(rrd_file_t));
-
+    rrd_file->rrd = rrd;
+    
     rrd_file->pvt = malloc(sizeof(rrd_simple_file_t));
     if(rrd_file->pvt == NULL) {
         rrd_set_error("allocating rrd_simple_file for '%s'", file_name);
@@ -200,8 +200,8 @@ rrd_file_t *rrd_open(
 #ifdef HAVE_MMAP
 #ifdef HAVE_BROKEN_MS_ASYNC
     if (rdwr & RRD_READWRITE) {    
-        /* some unices, the files mtime does not get update    
-           on msync MS_ASYNC, in order to help them,     
+        /* some unices, the files mtime does not get updated
+           on memory mapped files, in order to help them,     
            we update the the timestamp at this point.      
            The thing happens pretty 'close' to the open    
            call so the chances of a race should be minimal.    
@@ -309,14 +309,10 @@ rrd_file_t *rrd_open(
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        madvise(data, rrd_file->file_len, MADV_WILLNEED );
         madvise(data, rrd_file->file_len, MADV_SEQUENTIAL );
     } else {
         /* We do not need to read anything in for the moment */
         madvise(data, rrd_file->file_len, MADV_RANDOM);
-        /* the stat_head will be needed soonish, so hint accordingly */
-        madvise(data, sizeof(stat_head_t), MADV_WILLNEED);
-        madvise(data, sizeof(stat_head_t), MADV_RANDOM);
     }
 #endif
 
@@ -341,19 +337,9 @@ rrd_file_t *rrd_open(
                       rrd->stat_head->version);
         goto out_nullify_head;
     }
-#if defined USE_MADVISE
-    /* the ds_def will be needed soonish, so hint accordingly */
-    madvise(data + PAGE_START(offset),
-            sizeof(ds_def_t) * rrd->stat_head->ds_cnt, MADV_WILLNEED);
-#endif
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
 
-#if defined USE_MADVISE
-    /* the rra_def will be needed soonish, so hint accordingly */
-    madvise(data + PAGE_START(offset),
-            sizeof(rra_def_t) * rrd->stat_head->rra_cnt, MADV_WILLNEED);
-#endif
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
 
@@ -364,21 +350,12 @@ rrd_file_t *rrd_open(
             rrd_set_error("live_head_t malloc");
             goto out_close;
         }
-#if defined USE_MADVISE
-        /* the live_head will be needed soonish, so hint accordingly */
-        madvise(data + PAGE_START(offset), sizeof(time_t), MADV_WILLNEED);
-#endif
         __rrd_read(rrd->legacy_last_up, time_t,
                    1);
 
         rrd->live_head->last_up = *rrd->legacy_last_up;
         rrd->live_head->last_up_usec = 0;
     } else {
-#if defined USE_MADVISE
-        /* the live_head will be needed soonish, so hint accordingly */
-        madvise(data + PAGE_START(offset),
-                sizeof(live_head_t), MADV_WILLNEED);
-#endif
         __rrd_read(rrd->live_head, live_head_t,
                    1);
     }
@@ -617,9 +594,6 @@ int rrd_close(
     int       ret;
 
 #ifdef HAVE_MMAP
-    ret = msync(rrd_simple_file->file_start, rrd_file->file_len, MS_ASYNC);
-    if (ret != 0)
-        rrd_set_error("msync rrd_file: %s", rrd_strerror(errno));
     ret = munmap(rrd_simple_file->file_start, rrd_file->file_len);
     if (ret != 0)
         rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));

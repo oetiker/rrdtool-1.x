@@ -2,29 +2,70 @@
 TZ=CET
 export TZ
 
-BASEDIR=${BASEDIR:-$(dirname $0)}
-BUILDDIR=${BUILDDIR:-${BASEDIR}}
-TOP_BUILDDIR=${TOP_BUILDDIR:-${BASEDIR}/..}
-if [ -z "$RRDTOOL" ] ; then 
-	case "$TESTS_STYLE" in
-	valgrind)
-		echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
-		RRDTOOL="libtool --mode=execute valgrind --tool=memcheck \
-			--suppressions=$BASEDIR/valgrind-supressions \
+BASEDIR="${BASEDIR:-$(dirname -- $0)}"
+BASEDIR="$(readlink -f -- $BASEDIR)"
+
+BUILDDIR="${BUILDDIR:-${BASEDIR}}"
+TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
+
+DIFF="diff -u"
+
+#
+# because valgrind has trouble with glib memory handling
+# (see e.g. https://developer.gnome.org/glib/2.30/glib-running.html or 
+# https://stackoverflow.com/questions/4254610/valgrind-reports-memory-possibly-lost-when-using-glib-data-types)
+# we set some env. vars to work around them:
+
+function valgrind {
+  # use a sub shell, so setting environment variables only affects the current
+  # rrdtool run and not subsequent ones
+  local CMD="$1"
+  shift
+  (
+    G_DEBUG=gc-friendly
+    G_SLICE=all
+
+    export G_DEBUG 
+    export G_SLICE
+
+    VALGRIND_OPTS=
+    if [ -n "$VALGRIND_LOGFILE" ] ; then
+        TMP_LOG="${VALGRIND_LOGFILE}.$$.tmp"
+        VALGRIND_OPTS=--log-file="${TMP_LOG}"
+    fi
+
+    libtool --mode=execute valgrind --tool=memcheck \
+			--suppressions="$BASEDIR/valgrind-supressions" \
 			--leak-check=full --show-reachable=yes \
 			--leak-resolution=high --num-callers=20 \
 			--error-exitcode=111 \
 			--track-fds=yes \
+                        --track-origins=yes \
 			--free-fill=ad \
-			$TOP_BUILDDIR/src/rrdtool"
-		;;
-	*)
-		RRDTOOL=$TOP_BUILDDIR/src/rrdtool
-		;;
-	esac
-fi
+                        $VALGRIND_OPTS \
+			"$CMD" "$@"
+    RC=$?
 
-DIFF="diff -u"
+    if [ -n "$VALGRIND_LOGFILE" ] ; then
+        cat -- "${TMP_LOG}" >> "$VALGRIND_LOGFILE"
+        if [ $RC == 111 ] ; then
+            sed -n '/LEAK SUMMARY:/,$p' -- "${TMP_LOG}" >&2
+        fi
+        rm -f -- "${TMP_LOG}"
+    fi
+
+    # make sure to properly report the rrdtool exit code to the caller by:
+    #  - first: exiting with the original exit code from the subshell and
+    exit $RC
+  )
+  #    - second: by returning the subshell exit code to the function caller
+  return $?
+}
+
+function verbose_rrdtool {
+	echo "$RRDTOOL_V" "$@"
+	"$RRDTOOL_V" "$@"
+}
 
 function fail {
 	RC=$?
@@ -54,3 +95,81 @@ function report {
 		fail "$@"
 	fi
 }
+
+function run_cached {
+        local D="$1"
+        local CACHED="${D:-$RRDCACHED}"
+
+        stop_cached
+
+        local ADDR
+        ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
+        CACHED_PID_FILE="$BASEDIR/$(basename $0)-rrdcached.pid"
+
+        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(readlink -f -- $BASEDIR)" -F
+
+        RRDCACHED_ADDRESS=$ADDR
+        export RRDCACHED_ADDRESS
+
+        sleep 1
+        trap 'stop_cached' EXIT
+}
+
+function stop_cached {
+        if [ -n "$CACHED_PID_FILE" ] ; then
+                kill $(cat "$CACHED_PID_FILE")
+                rm -f -- "$CACHED_PID_FILE"
+                CACHED_PID_FILE=""
+                RRDCACHED_ADDRESS=""
+        fi
+}
+
+function is_cached {
+        [ -n "$RRDCACHED_ADDRESS" ]
+}
+
+function exit_if_cached_running {
+        local E="$1"
+        local MSG="$2"
+        if is_cached ; then
+                echo >&2 "$MSG"
+                exit ${E:-1}
+        fi
+}
+
+if [ -n "$VERBOSE" ] ; then
+	RRDTOOL_V="$RRDTOOL"
+	RRDTOOL=verbose_rrdtool
+fi
+
+if [ -z "$RRDTOOL" ] ; then 
+        RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+        RRDCACHED=$TOP_BUILDDIR/src/rrdcached
+
+        NEED_CACHED=
+        for ST in $TESTS_STYLE ; do
+                case "$ST" in
+                rrdcached)
+                        NEED_CACHED=1
+                        STANDARD_RRDCACHED="$RRDCACHED"
+                        ;;
+                valgrind)
+                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+                        RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
+                        RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
+                        ;;
+                valgrind-logfile)
+                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
+                        RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
+                        RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
+                        VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
+                        rm -f "$VALGRIND_LOGFILE"
+                        ;;
+                *)
+                        ;;
+                esac
+        done
+        if [ -n "$NEED_CACHED" ] ; then
+                run_cached "$STANDARD_RRDCACHED"
+        fi
+fi
