@@ -1343,25 +1343,6 @@ static int get_time_from_reading(
     return 0;
 }
 
-static int
-rrd_get_double(const char *cp, double *rval)
-{
-    char     *endptr;
-
-    errno = 0;
-    *rval = strtod(cp, &endptr);
-    if (errno) {
-        rrd_set_error("converting '%s' to float: %s", cp, rrd_strerror(errno));
-        return -1;
-    }
-    if (endptr[0] != '\0') {
-        rrd_set_error("conversion of '%s' to float not complete: tail '%s'",
-          cp, endptr);
-        return -1;
-    }
-    return 0;
-}
-
 /*
  * Update pdp_new by interpreting the updvals according to the DS type
  * (COUNTER, GAUGE, etc.).
