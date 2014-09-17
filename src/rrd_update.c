@@ -1421,7 +1421,7 @@ static int update_pdp_prep(
                 }
                 break;
             case DST_ABSOLUTE:
-                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &pdp_new[ds_idx], "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
+                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &newval, "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
                     return -1;
                 }
                 pdp_new[ds_idx] = newval;
