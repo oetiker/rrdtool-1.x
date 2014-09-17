@@ -54,7 +54,7 @@ static int parse_special(const char *str, double *d) {
 /* returns 2 on success */
 /* i.e. if the whole string has been converted to a double successfully */
 unsigned int rrd_strtodbl
-(const char *str, char **endptr, double *dbl, char *error) {
+(const char *str, char **endptr, double *dbl, const char *error) {
     char *local_endptr = (char *)str;
     *dbl = rrd_strtod( str, &local_endptr );
 
