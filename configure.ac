@@ -99,6 +99,9 @@ AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE,
 AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
  [Vertical label angle: -90.0 (default) or 90.0])
 
+AC_ARG_ENABLE(examples,AS_HELP_STRING([--disable-examples],[disable building of examples]),
+[],[enable_examples=yes])
+
 AC_ARG_ENABLE(rrdcached,AS_HELP_STRING([--disable-rrdcached],[disable building of rrdcached]),
 [],[enable_rrdcached=yes])
 
@@ -111,6 +114,7 @@ AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_gr
 AC_ARG_ENABLE(rrd_restore,AS_HELP_STRING([--disable-rrd_restore],[disable rrd_restore XML import functions]),
 [],[enable_rrd_restore=yes])
 
+AM_CONDITIONAL(BUILD_EXAMPLES,[test $enable_examples != no])
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 AM_CONDITIONAL(BUILD_RRDCACHED,[test $enable_rrdcached != no])
 
@@ -1013,6 +1017,7 @@ fi
 fi
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
+echo "        Build examples: $enable_examples"
 echo "       Build rrdcached: $enable_rrdcached"
 echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"

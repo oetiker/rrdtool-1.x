@@ -5,7 +5,11 @@ RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
 
-SUBDIRS = po src examples doc bindings tests
+SUBDIRS = po src doc bindings tests
+
+if BUILD_EXAMPLES
+SUBDIRS += examples
+endif
 
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
