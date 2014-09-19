@@ -257,9 +257,15 @@ enum gfx_if_en if_conv(
 {
 
     conv_if(PNG, IF_PNG);
+#ifdef CAIRO_HAS_SVG_SURFACE
     conv_if(SVG, IF_SVG);
+#endif
+#ifdef CAIRO_HAS_PS_SURFACE
     conv_if(EPS, IF_EPS);
+#endif
+#ifdef CAIRO_HAS_PDF_SURFACE
     conv_if(PDF, IF_PDF);
+#endif
     conv_if(XML, IF_XML);
     conv_if(XMLENUM, IF_XMLENUM);
     conv_if(CSV, IF_CSV);
@@ -3901,6 +3907,7 @@ int graph_cairo_setup (image_desc_t *im)
                                        im->ximg * im->zoom,
                                        im->yimg * im->zoom);
         break;
+#ifdef CAIRO_HAS_PDF_SURFACE
     case IF_PDF:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3909,6 +3916,8 @@ int graph_cairo_setup (image_desc_t *im)
             : cairo_pdf_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
+#endif
+#ifdef CAIRO_HAS_PS_SURFACE
     case IF_EPS:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3918,6 +3927,8 @@ int graph_cairo_setup (image_desc_t *im)
             : cairo_ps_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
+#endif
+#ifdef CAIRO_HAS_SVG_SURFACE
     case IF_SVG:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3930,6 +3941,7 @@ int graph_cairo_setup (image_desc_t *im)
         cairo_svg_surface_restrict_to_version
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
+#endif
     case IF_XML:
     case IF_XMLENUM:
     case IF_CSV:
