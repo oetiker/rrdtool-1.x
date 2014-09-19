@@ -113,10 +113,14 @@ librrd_th_la_LIBADD          = $(ALL_LIBS) $(LIBINTL)
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
-bin_PROGRAMS	= rrdtool rrdupdate rrdcached
+bin_PROGRAMS	= rrdtool rrdupdate
 
 if BUILD_RRDCGI
 bin_PROGRAMS += rrdcgi
+endif
+
+if BUILD_RRDCACHED
+bin_PROGRAMS += rrdcached
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
