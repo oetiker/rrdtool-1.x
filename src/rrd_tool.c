@@ -668,7 +668,11 @@ int HandleInputLine(
                "  Copyright by Tobi Oetiker, 1997-2008 (%f)\n",
                rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
+#ifdef HAVE_RRD_RESTORE
         rrd_restore(argc - 1, &argv[1]);
+#else
+	rrd_set_error("the instance of rrdtool has been compiled without XML import functions");
+#endif
     else if (strcmp("resize", argv[1]) == 0)
         rrd_resize(argc - 1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)

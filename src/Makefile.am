@@ -44,7 +44,6 @@ RRD_C_FILES =		\
 	rrd_last.c	\
 	rrd_lastupdate.c	\
 	rrd_first.c	\
-	rrd_restore.c	\
 	rrd_dump.c	\
 	rrd_flushcached.c \
 	rrd_fetch.c	\
@@ -58,6 +57,10 @@ RRD_C_FILES += rrd_graph.c	\
 	rrd_xport.c	\
 	rrd_gfx.c \
 	pngsize.c
+endif
+
+if BUILD_RRDRESTORE
+RRD_C_FILES += rrd_restore.c
 endif
 
 noinst_HEADERS = \
