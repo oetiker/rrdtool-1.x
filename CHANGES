@@ -1,3 +1,27 @@
+RRDtool 1.4.9 - 2014-09-29
+==========================
+
+New Features
+------------
+* allows rrdrestore to read input from stdin
+* add documentation for RRDs::xport
+* RPN operators MINNAN and MAXNAN
+* --left-axis-format option to rrd_graph
+
+Bugfixes
+--------
+* properly verify validity of user suplied format strings
+* remove graph functions from python module when compiled without graphing
+  support
+* verify that only short integers are used in COMPUTE rpn expressions 
+* eliminate duplicate setlocale calls
+* fixed endless loop and double frees in rrd_restore
+* fixed missing variable initializations in rrd_graph
+* fixed JSON output format to actually be valid JSON
+* detect failing fallocate and fall back to seeking
+* fixed format string in ruby bindings
+
+
 RRDtool 1.4.8 - 2012-05-23
 ==========================
 

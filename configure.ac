@@ -13,7 +13,7 @@ AC_PREREQ(2.59)
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],[1.4.8])
+AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]),[support@oetiker.ch])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
@@ -31,7 +31,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=6:1:2
+LIBVERS=6:2:2
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET

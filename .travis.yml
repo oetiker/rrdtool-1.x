@@ -5,7 +5,7 @@ before_install:
   - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev dc
 
 before_script:
-  - ./MakeMakefile
+  - ./bootstrap.sh
 
 script:
   - ./configure
