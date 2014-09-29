@@ -12,7 +12,7 @@ git diff
 echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to continue."
 read somekey
 git tag -f v$VERSION
-git commit -m "tagged $VERSION for release" -a
+git commit -m "tagged $VERSION for release" -a || true
 git clone -q . /tmp/rrdtool-$$
 OPWD=`pwd`
 cd /tmp/rrdtool-$$
