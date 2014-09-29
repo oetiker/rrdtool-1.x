@@ -9,9 +9,8 @@ if STATIC_PROGRAMS
 AM_LDFLAGS = -all-static
 endif
 
-INCLUDES = -DLOCALEDIR="\"$(datadir)/locale\""
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
-AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@
+AM_CPPFLAGS = -DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" -DNUMVERS=@NUMVERS@ -DLOCALEDIR="\"$(datadir)/locale\"" 
 AM_CFLAGS = @CFLAGS@
 ## no including this by default @WERROR@
 
@@ -116,6 +115,7 @@ rrdtool_LDADD	= librrd.la
 rrdcached_SOURCES = rrd_daemon.c
 rrdcached_DEPENDENCIES = librrd_th.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
+rrdcached_LIBADD = $(GLIB_LIBS)
 rrdcached_LDADD = librrd_th.la
 
 pkgconfigdir = $(libdir)/pkgconfig
