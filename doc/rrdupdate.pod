@@ -86,10 +86,6 @@ When using negative time values, options and data have to be separated
 by two dashes (B<-->), else the time value would be parsed as an option.
 See below for an example.
 
-When using negative time values, options and data have to be separated
-by two dashes (B<-->), else the time value would be parsed as an option.
-See below for an example.
-
 The remaining elements of the argument are DS updates. The order of
 this list is the same as the order the data sources were defined in
 the RRA. If there is no data for a certain data-source, the letter
