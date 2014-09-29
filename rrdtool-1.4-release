@@ -1,17 +1,17 @@
 #!/bin/bash
 set -e
 git checkout 1.4
-VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
+VERSION=`cat VERSION`
 PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
 set -x
 perl -i -p -e 's/^\$VERSION.+/\$VERSION='$PERLVERS';/' bindings/perl-*/*.pm
-perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2013/' src/*.h src/*.c
+perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2014/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
 perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
 git diff
 echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to continue."
 read somekey
-git tag -f $VERSION
+git tag -f v$VERSION
 git commit -m "tagged $VERSION for release" -a
 git clone -q . /tmp/rrdtool-$$
 OPWD=`pwd`
