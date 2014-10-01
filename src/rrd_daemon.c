@@ -296,7 +296,7 @@ static void journal_rotate(void);
 /* prototypes for forward refernces */
 static int handle_request_help (HANDLER_PROTO);
 
-/* 
+/*
  * Functions
  */
 static void sig_common (const char *sig) /* {{{ */
@@ -1111,7 +1111,7 @@ static int buffer_get_field (char **buffer_ret, /* {{{ */
       field_size++;
       buffer_pos++;
     }
-    /* Normal operation */ 
+    /* Normal operation */
     else
     {
       field[field_size] = buffer[buffer_pos];
@@ -1559,39 +1559,55 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
 } /* }}} int handle_request_update */
 
-static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
-{
-  char *file, file_tmp[PATH_MAX];
+struct fetch_parsed{
+  char *file;
   char *cf;
 
-  char *start_str;
-  char *end_str;
   time_t start_tm;
   time_t end_tm;
-
   unsigned long step;
+
   unsigned long ds_cnt;
   char **ds_namv;
   rrd_value_t *data;
 
-  int status;
-  unsigned long i;
-  time_t t;
-  rrd_value_t *data_ptr;
+  unsigned long field_cnt;
+  unsigned int *field_idx;
+};
 
-  file = NULL;
-  cf = NULL;
+static void free_fetch_parsed (struct fetch_parsed *parsed) /* {{{ */
+{
+    unsigned int i;
+    for (i = 0; i < parsed->ds_cnt; i++)
+      rrd_freemem(parsed->ds_namv[i]);
+  rrd_freemem(parsed->ds_namv);
+  rrd_freemem(parsed->data);
+}
+
+static int handle_request_fetch_parse (HANDLER_PROTO,
+				struct fetch_parsed *parsed) /* {{{ */
+{
+  char file_tmp[PATH_MAX];
+
+  char *start_str;
+  char *end_str;
+
+  time_t t;
+  int status;
+
+  parsed->file = NULL;
+  parsed->cf = NULL;
   start_str = NULL;
   end_str = NULL;
 
   /* Read the arguments */
   do /* while (0) */
   {
-    status = buffer_get_field (&buffer, &buffer_size, &file);
+    status = buffer_get_field (&buffer, &buffer_size, &parsed->file);
     if (status != 0)
       break;
 
-    status = buffer_get_field (&buffer, &buffer_size, &cf);
+    status = buffer_get_field (&buffer, &buffer_size, &parsed->cf);
     if (status != 0)
       break;
 
@@ -1615,13 +1631,13 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
   if (status != 0)
     return (syntax_error(sock,cmd));
 
-  get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) return 0;
+  get_abs_path(&parsed->file, file_tmp);
+  if (!check_file_access(parsed->file, sock)) return 0;
 
-  status = flush_file (file);
+  status = flush_file (parsed->file);
   if ((status != 0) && (status != ENOENT))
     return (send_response (sock, RESP_ERR,
-          "flush_file (%s) failed with status %i.\n", file, status));
+          "flush_file (%s) failed with status %i.\n", parsed->file, status));
 
   t = time (NULL); /* "now" */
 
@@ -1640,13 +1656,13 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
             start_str));
 
     if (value > 0)
-      start_tm = (time_t) value;
+      parsed->start_tm = (time_t) value;
     else
-      start_tm = (time_t) (t + value);
+      parsed->start_tm = (time_t) (t + value);
   }
   else
   {
-    start_tm = t - 86400;
+    parsed->start_tm = t - 86400;
   }
 
   /* Parse end time */
@@ -1664,31 +1680,78 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
             end_str));
 
     if (value > 0)
-      end_tm = (time_t) value;
+      parsed->end_tm = (time_t) value;
     else
-      end_tm = (time_t) (t + value);
+      parsed->end_tm = (time_t) (t + value);
   }
   else
   {
-    end_tm = t;
+    parsed->end_tm = t;
   }
 
-  step = -1;
-  ds_cnt = 0;
-  ds_namv = NULL;
-  data = NULL;
+  parsed->step = -1;
+  parsed->ds_cnt = 0;
+  parsed->ds_namv = NULL;
+  parsed->data = NULL;
 
-  status = rrd_fetch_r (file, cf, &start_tm, &end_tm, &step,
-      &ds_cnt, &ds_namv, &data);
+  status = rrd_fetch_r (parsed->file, parsed->cf,
+      &parsed->start_tm, &parsed->end_tm, &parsed->step,
+      &parsed->ds_cnt, &parsed->ds_namv, &parsed->data);
   if (status != 0)
     return (send_response(sock, RESP_ERR,
           "rrd_fetch_r failed: %s\n", rrd_get_error ()));
 
-  add_response_info (sock, "FlushVersion: %lu\n", 1);
-  add_response_info (sock, "Start: %lu\n", (unsigned long) start_tm);
-  add_response_info (sock, "End: %lu\n", (unsigned long) end_tm);
-  add_response_info (sock, "Step: %lu\n", step);
-  add_response_info (sock, "DSCount: %lu\n", ds_cnt);
+  /* prepare field index */
+  {
+    unsigned int i;
+    char *field;
+
+    parsed->field_cnt = 0;
+    parsed->field_idx = malloc(sizeof(*parsed->field_idx)*parsed->ds_cnt);
+
+    /* now parse the extra names */
+    while ( buffer_get_field (&buffer, &buffer_size, &field) == 0 ) {
+      /* check boundries */
+      if (parsed->field_cnt >= parsed->ds_cnt) {
+	      free_fetch_parsed(parsed);
+	      return (send_response(sock, RESP_ERR,
+		      "too many fields given - duplicates!\n"
+			      ));
+      }
+      /* try to find the string */
+      unsigned int found=parsed->ds_cnt;
+      for(i=0; i < parsed->ds_cnt; i++) {
+	if (strcmp(field,parsed->ds_namv[i])==0) {
+	  found=i;
+	  break;
+	}
+      }
+      if (found >= parsed->ds_cnt) {
+	      free_fetch_parsed(parsed);
+	      return (send_response(sock, RESP_ERR,
+				      "field %s not found in %s\n",
+				      field,parsed->file));
+      }
+      for(i=0; i < parsed->field_cnt; i++) {
+        if (parsed->field_idx[i] == found) {
+		free_fetch_parsed(parsed);
+		return (send_response(sock, RESP_ERR,
+					"field %s already used\n",
+					field
+				));
+        }
+      }
+      parsed->field_idx[parsed->field_cnt++]=found;
+    }
+    if (parsed->field_cnt == 0) {
+      parsed->field_cnt = parsed->ds_cnt;
+      for(i=0; i < parsed->field_cnt; i++) {
+        parsed->field_idx[i] = i;
+      }
+    }
+  }
+  return 0;
+}
 
 #define SSTRCAT(buffer,str,buffer_fill) do { \
     size_t str_len = strlen (str); \
@@ -1705,27 +1768,47 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
     } \
   } while (0)
 
+static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
+{
+  unsigned long i,j;
+
+  time_t t;
+  int status;
+
+  struct fetch_parsed parsed;
+
+  status = handle_request_fetch_parse (cmd, sock, now,
+				  buffer, buffer_size,
+				  &parsed);
+  if (status != 0)
+	  return status;
+
+  add_response_info (sock, "FlushVersion: %lu\n", 1);
+  add_response_info (sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
+  add_response_info (sock, "End: %lu\n", (unsigned long) parsed.end_tm);
+  add_response_info (sock, "Step: %lu\n", parsed.step);
+
   { /* Add list of DS names */
     char linebuf[1024];
     size_t linebuf_fill;
 
     memset (linebuf, 0, sizeof (linebuf));
     linebuf_fill = 0;
-    for (i = 0; i < ds_cnt; i++)
+    for (i = 0; i < parsed.field_cnt; i++)
     {
       if (i > 0)
         SSTRCAT (linebuf, " ", linebuf_fill);
-      SSTRCAT (linebuf, ds_namv[i], linebuf_fill);
-      rrd_freemem(ds_namv[i]);
+      SSTRCAT (linebuf, parsed.ds_namv[parsed.field_idx[i]], linebuf_fill);
     }
-    rrd_freemem(ds_namv);
+    add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
     add_response_info (sock, "DSName: %s\n", linebuf);
   }
 
   /* Add the actual data */
-  assert (step > 0);
-  data_ptr = data;
-  for (t = start_tm + step; t <= end_tm; t += step)
+  assert (parsed.step > 0);
+  for (t = parsed.start_tm + parsed.step, j=0;
+       t <= parsed.end_tm;
+       t += parsed.step,j++)
   {
     char linebuf[1024];
     size_t linebuf_fill;
@@ -1733,22 +1816,27 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 
     memset (linebuf, 0, sizeof (linebuf));
     linebuf_fill = 0;
-    for (i = 0; i < ds_cnt; i++)
+    for (i = 0; i < parsed.field_cnt; i++)
     {
-      snprintf (tmp, sizeof (tmp), " %0.17e", *data_ptr);
+      unsigned int idx = j*parsed.ds_cnt+parsed.field_idx[i];
+      snprintf (tmp, sizeof (tmp), " %0.17e", parsed.data[idx]);
       tmp[sizeof (tmp) - 1] = 0;
       SSTRCAT (linebuf, tmp, linebuf_fill);
-
-      data_ptr++;
     }
 
     add_response_info (sock, "%10lu:%s\n", (unsigned long) t, linebuf);
   } /* for (t) */
-  rrd_freemem(data);
+  free_fetch_parsed(&parsed);
 
   return (send_response (sock, RESP_OK, "Success\n"));
-#undef SSTRCAT
 } /* }}} int handle_request_fetch */
+
+static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
+{
+	return handle_request_fetch(cmd,sock,now,buffer,buffer_size);
+} /* }}} int handle_request_fetchbin */
+
+#undef SSTRCAT
 
 /* we came across a "WROTE" entry during journal replay.
  * throw away any values that we have accumulated for this file
@@ -1847,7 +1935,7 @@ static int handle_request_first (HANDLER_PROTO) /* {{{ */
   if (status != 0)
     return syntax_error(sock,cmd);
   idx = atoi(i);
-  if(idx<0) { 
+  if(idx<0) {
     return send_response(sock, RESP_ERR, "Invalid index specified (%d)\n", idx);
   }
 
@@ -1868,7 +1956,7 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   time_t t, from_file, step;
   rrd_file_t * rrd_file;
   cache_item_t * ci;
-  rrd_t rrd; 
+  rrd_t rrd;
 
   /* obtain filename */
   status = buffer_get_field(&buffer, &buffer_size, &file);
@@ -1970,7 +2058,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     }
     if( ! strncmp(tok,"-s",2) ) {
       status = buffer_get_field(&buffer, &buffer_size, &tok );
-      if (status != 0) { 
+      if (status != 0) {
           rc = syntax_error(sock,cmd);
           goto done;
       }
@@ -1988,7 +2076,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
           rc = send_response(sock, RESP_ERR, "Cannot allocate memory\n");
           goto done;
       }
-      
+
       flush_file(tok);
 
       sources[sources_length++] = tok;
@@ -2192,9 +2280,17 @@ static command_t list_of_commands[] = { /* {{{ */
     "FETCH",
     handle_request_fetch,
     CMD_CONTEXT_CLIENT,
-    "FETCH <file> <CF> [<start> [<end>]]\n"
+    "FETCH <file> <CF> [<start> [<end>] [<column>...]]\n"
     ,
     "The 'FETCH' can be used by the client to retrieve values from an RRD file.\n"
+  },
+  {
+    "FETCHBIN",
+    handle_request_fetchbin,
+    CMD_CONTEXT_CLIENT,
+    "FETCHBIN <file> <CF> [<start> [<end>] [<column>...]]\n"
+    ,
+    "The 'FETCHBIN' can be used by the client to retrieve values from an RRD file.\n"
   },
   {
     "INFO",
@@ -3209,7 +3305,7 @@ static int open_listen_sockets_systemd(void) /* {{{ */
     listen_fds[listen_fds_num].family = sa.sun_family;
     listen_fds_num++;
   }
-  
+
   return n;
 } /* }}} open_listen_sockets_systemd */
 
@@ -3379,8 +3475,8 @@ static int daemonize (void) /* {{{ */
   if (pid_fd < 0)
     return pid_fd;
 
-  /* gather sockets passed from systemd; 
-   * if none, open all the listen sockets from config or default  */ 
+  /* gather sockets passed from systemd;
+   * if none, open all the listen sockets from config or default  */
 
   if (!(open_listen_sockets_systemd() > 0))
     open_listen_sockets_traditional();
@@ -3865,7 +3961,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 	{
           // if we were able to properly resolve the path, lets have a copy
           // for use outside this block.
-          journal_dir = strdup(journal_dir);           
+          journal_dir = strdup(journal_dir);
 	  status = rrd_mkdir_p(journal_dir, 0777);
 	  if (status != 0)
 	  {
