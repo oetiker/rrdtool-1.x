@@ -44,7 +44,6 @@ RRD_C_FILES =		\
 	rrd_last.c	\
 	rrd_lastupdate.c	\
 	rrd_first.c	\
-	rrd_restore.c	\
 	rrd_dump.c	\
 	rrd_flushcached.c \
 	rrd_fetch.c	\
@@ -58,6 +57,10 @@ RRD_C_FILES += rrd_graph.c	\
 	rrd_xport.c	\
 	rrd_gfx.c \
 	pngsize.c
+endif
+
+if BUILD_RRDRESTORE
+RRD_C_FILES += rrd_restore.c
 endif
 
 noinst_HEADERS = \
@@ -110,10 +113,14 @@ librrd_th_la_LIBADD          = $(ALL_LIBS) $(LIBINTL)
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
-bin_PROGRAMS	= rrdtool rrdupdate rrdcached
+bin_PROGRAMS	= rrdtool rrdupdate
 
 if BUILD_RRDCGI
 bin_PROGRAMS += rrdcgi
+endif
+
+if BUILD_RRDCACHED
+bin_PROGRAMS += rrdcached
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
