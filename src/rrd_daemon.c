@@ -1631,16 +1631,23 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
     }
   } while (0);
 
-  if (status != 0)
-    return (syntax_error(sock,cmd));
+  if (status != 0) {
+	  syntax_error(sock,cmd);
+	  return -1;
+  }
 
   get_abs_path(&parsed->file, file_tmp);
-  if (!check_file_access(parsed->file, sock)) return 0;
+  if (!check_file_access(parsed->file, sock)) {
+	  return -1;
+  }
 
   status = flush_file (parsed->file);
-  if ((status != 0) && (status != ENOENT))
-    return (send_response (sock, RESP_ERR,
-          "flush_file (%s) failed with status %i.\n", parsed->file, status));
+  if ((status != 0) && (status != ENOENT)) {
+	  send_response (sock, RESP_ERR,
+		  "flush_file (%s) failed with status %i.\n",
+		  parsed->file, status);
+	  return status;
+  }
 
   t = time (NULL); /* "now" */
 
@@ -1653,10 +1660,12 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
     endptr = NULL;
     errno = 0;
     value = strtol (start_str, &endptr, /* base = */ 0);
-    if ((endptr == start_str) || (errno != 0))
-      return (send_response(sock, RESP_ERR,
-            "Cannot parse start time `%s': Only simple integers are allowed.\n",
-            start_str));
+    if ((endptr == start_str) || (errno != 0)) {
+      send_response(sock, RESP_ERR,
+	      "Cannot parse start time `%s': Only simple integers are allowed.\n",
+            start_str);
+      return -1;
+    }
 
     if (value > 0)
       parsed->start_tm = (time_t) value;
@@ -1677,10 +1686,12 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
     endptr = NULL;
     errno = 0;
     value = strtol (end_str, &endptr, /* base = */ 0);
-    if ((endptr == end_str) || (errno != 0))
-      return (send_response(sock, RESP_ERR,
-            "Cannot parse end time `%s': Only simple integers are allowed.\n",
-            end_str));
+    if ((endptr == end_str) || (errno != 0)) {
+	    send_response(sock, RESP_ERR,
+		    "Cannot parse end time `%s': Only simple integers are allowed.\n",
+		    end_str);
+	    return -1;
+    }
 
     if (value > 0)
       parsed->end_tm = (time_t) value;
@@ -1700,9 +1711,11 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
   status = rrd_fetch_r (parsed->file, parsed->cf,
       &parsed->start_tm, &parsed->end_tm, &parsed->step,
       &parsed->ds_cnt, &parsed->ds_namv, &parsed->data);
-  if (status != 0)
-    return (send_response(sock, RESP_ERR,
-          "rrd_fetch_r failed: %s\n", rrd_get_error ()));
+  if (status != 0) {
+	  send_response(sock, RESP_ERR,
+		  "rrd_fetch_r failed: %s\n", rrd_get_error ());
+	  return -1;
+  }
 
   parsed->steps = (parsed->end_tm - parsed->start_tm) / parsed->step;
 
@@ -1719,9 +1732,10 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
       /* check boundries */
       if (parsed->field_cnt >= parsed->ds_cnt) {
 	      free_fetch_parsed(parsed);
-	      return (send_response(sock, RESP_ERR,
+	      send_response(sock, RESP_ERR,
 		      "too many fields given - duplicates!\n"
-			      ));
+			      );
+	      return -1;
       }
       /* if the field is empty, then next */
       if (field[0]==0)
@@ -1736,17 +1750,19 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
       }
       if (found >= parsed->ds_cnt) {
 	      free_fetch_parsed(parsed);
-	      return (send_response(sock, RESP_ERR,
-				      "field %s not found in %s\n",
-				      field,parsed->file));
+	      send_response(sock, RESP_ERR,
+		      "field %s not found in %s\n",
+		      field,parsed->file);
+	      return -1;
       }
       for(i=0; i < parsed->field_cnt; i++) {
         if (parsed->field_idx[i] == found) {
 		free_fetch_parsed(parsed);
-		return (send_response(sock, RESP_ERR,
-					"field %s already used\n",
-					field
-				));
+		send_response(sock, RESP_ERR,
+			"field %s already used\n",
+			field
+			);
+		return -1;
         }
       }
       parsed->field_idx[parsed->field_cnt++]=found;
@@ -1789,7 +1805,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 				  buffer, buffer_size,
 				  &parsed);
   if (status != 0)
-	  return status;
+	  return 0;
 
   add_response_info (sock, "FlushVersion: %lu\n", 1);
   add_response_info (sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
@@ -1864,7 +1880,7 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
 				  buffer, buffer_size,
 				  &parsed);
   if (status != 0)
-	  return status;
+	  return 0;
 
   /* create a buffer for the full binary line */
   dbuffer_size = sizeof(double) * parsed.steps;
