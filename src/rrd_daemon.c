@@ -607,10 +607,12 @@ static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
     return -1;
   }
 
-  strncpy(new_buf + sock->wbuf_len, str, len + 1);
+  memcpy(new_buf + sock->wbuf_len, str, len);
 
   sock->wbuf = new_buf;
   sock->wbuf_len += len;
+
+  *(sock->wbuf + sock->wbuf_len)=0;
 
   return 0;
 } /* }}} static int add_to_wbuf */
@@ -1879,17 +1881,20 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
   add_response_info (sock, "End: %lu\n", (unsigned long) parsed.end_tm);
   add_response_info (sock, "Step: %lu\n", parsed.step);
   add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
+  add_response_info (sock,
+		  "BinaryByteOrder: "
+#ifdef WORDS_BIGENDIAN
+		  "BIG"
+#else
+		  "LITTLE"
+#endif
+		  "\n");
 
   /* now iterate the parsed fields */
   for (i = 0; i < parsed.field_cnt; i++)
   {
     add_response_info (sock,
-		    "DSBINDATA%s: %s %i\n",
-#ifdef WORDS_BIGENDIAN
-		    "BIG"
-#else
-		    "LITTLE",
-#endif
+		    "DSBinaryData: %s %i\n",
 		    parsed.ds_namv[parsed.field_idx[i]],
 		    dbuffer_size
 	    );
