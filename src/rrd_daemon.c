@@ -123,7 +123,7 @@
 /*
  * Types
  */
-typedef enum { RESP_ERR = -1, RESP_OK = 0 } response_code;
+typedef enum { RESP_ERR = -1, RESP_OK = 0, RESP_OK_BIN = 1 } response_code;
 
 struct listen_socket_s
 {
@@ -681,10 +681,15 @@ static int send_response (listen_socket_t *sock, response_code rc,
   }
   else if (rc == RESP_OK)
     lines = count_lines(sock->wbuf);
+  else if (rc == RESP_OK_BIN)
+    lines = 0;
   else
     lines = -1;
 
-  rclen = snprintf(buffer, sizeof buffer, "%d ", lines);
+  if (rc == RESP_OK_BIN)
+	  rclen = 0;
+  else
+	  rclen = snprintf(buffer, sizeof buffer, "%d ", lines);
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
   len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen, fmt, argp);
@@ -1926,10 +1931,12 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
     /* and add a newline */
     add_to_wbuf(sock, "\n", 1);
   }
+  add_to_wbuf(sock, "END\n", 1);
 
   free_fetch_parsed(&parsed);
 
-  return (send_response (sock, RESP_OK, "Success\n"));
+  return (send_response (sock, RESP_OK_BIN, "%i Success\n",
+		  parsed.field_cnt+7));
 } /* }}} int handle_request_fetchbin */
 
 /* we came across a "WROTE" entry during journal replay.
