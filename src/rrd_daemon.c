@@ -643,6 +643,32 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
   return add_to_wbuf(sock, buffer, len);
 } /* }}} static int add_response_info */
 
+/* add the binary data to the "extra" info that's sent after the status line */
+static int add_binary_response_info(listen_socket_t *sock,
+				char *prefix, char *name,
+				void* data, int records, int rsize
+	) /* {{{ */
+{
+	int res;
+	res = add_response_info (sock,
+				"%s%s: BinaryData %i %i %s\n",
+				prefix, name, records, rsize,
+#ifdef WORDS_BIGENDIAN
+				"BIG"
+#else
+				"LITTLE"
+#endif
+	    );
+	if (res)
+		return res;
+	/* and add it to the buffer */
+	res = add_to_wbuf(sock, (char*) data, records * rsize);
+	if (res)
+		return res;
+	/* and add a newline */
+	return add_to_wbuf(sock, "\n", 1);
+} /* }}} static int add_binary_response_info */
+
 static int count_lines(char *str) /* {{{ */
 {
   int lines = 0;
@@ -682,14 +708,17 @@ static int send_response (listen_socket_t *sock, response_code rc,
   else if (rc == RESP_OK)
     lines = count_lines(sock->wbuf);
   else if (rc == RESP_OK_BIN)
-    lines = 0;
+    lines = 1;
   else
     lines = -1;
 
-  if (rc == RESP_OK_BIN)
+  if (rc == RESP_OK_BIN) {
 	  rclen = 0;
-  else
+	  rc = RESP_OK;
+  } else {
 	  rclen = snprintf(buffer, sizeof buffer, "%d ", lines);
+  }
+
   va_start(argp, fmt);
 #ifdef HAVE_VSNPRINTF
   len = vsnprintf(buffer+rclen, sizeof(buffer)-rclen, fmt, argp);
@@ -1902,23 +1931,10 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
   add_response_info (sock, "End: %lu\n", (unsigned long) parsed.end_tm);
   add_response_info (sock, "Step: %lu\n", parsed.step);
   add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
-  add_response_info (sock,
-		  "BinaryByteOrder: "
-#ifdef WORDS_BIGENDIAN
-		  "BIG"
-#else
-		  "LITTLE"
-#endif
-		  "\n");
 
   /* now iterate the parsed fields */
   for (i = 0; i < parsed.field_cnt; i++)
   {
-    add_response_info (sock,
-		    "DSBinaryData: %s %i\n",
-		    parsed.ds_namv[parsed.field_idx[i]],
-		    dbuffer_size
-	    );
     for (t = parsed.start_tm + parsed.step, j=0;
 	 t <= parsed.end_tm;
 	 t += parsed.step,j++)
@@ -1926,17 +1942,20 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
       unsigned int idx = j*parsed.ds_cnt+parsed.field_idx[i];
       dbuffer[j] = parsed.data[idx];
     }
-    /* and add it to the buffer */
-    add_to_wbuf(sock, (char*) dbuffer, dbuffer_size);
-    /* and add a newline */
-    add_to_wbuf(sock, "\n", 1);
+
+    add_binary_response_info (sock,
+			    "DSName-",
+			    parsed.ds_namv[parsed.field_idx[i]],
+			    dbuffer,
+			    parsed.steps,
+			    sizeof(double)
+	    );
   }
-  add_to_wbuf(sock, "END\n", 1);
 
   free_fetch_parsed(&parsed);
 
   return (send_response (sock, RESP_OK_BIN, "%i Success\n",
-		  parsed.field_cnt+7));
+		  parsed.field_cnt+5));
 } /* }}} int handle_request_fetchbin */
 
 /* we came across a "WROTE" entry during journal replay.
