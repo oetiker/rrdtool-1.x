@@ -276,20 +276,20 @@ exchange for slightly higher memory utilization.  The default isE<nbsp>1.
 Do not set this more than the B<-w> value divided by your average RRD step
 size.
 
-=item B<-O> 
+=item B<-O>
 
 Prevent the CREATE command from overwriting existing files, even when it is
 instructed to do so.  This is for added security.
 
 =item B<-G> -I<group>
-    
+
 When running as daemon and invoked from a privileged account, reset
 group privileges to those of I<group>.  The group may be specified as
 a name or as a group ID.  The daemon will exit with a diagnostic if
 it cannot successfully transition to the specified group.
 
 =item B<-U> -I<user>
-    
+
 When running as daemon and invoked from a privileged account, reset
 user privileges to those of I<user>.  The user may be specified as
 a name or as a user ID.  The daemon will exit with a diagnostic if
@@ -446,7 +446,7 @@ Tree nodes and entries in the update queue are the same data structure.
 
 =item *
 
-The local time ("First") and the time specified in updates ("Time") may differ.  
+The local time ("First") and the time specified in updates ("Time") may differ.
 
 =item *
 
@@ -466,13 +466,13 @@ ASCII art rocks.
 
 =head2 Authentication
 
-If your rrdtool installation was built without libwrap there is no form of 
+If your rrdtool installation was built without libwrap there is no form of
 authentication for clients connecting to the rrdcache daemon!
 
 If your rrdtool installation was built with libwrap then you can use
 hosts_access to restrict client access to the rrdcache daemon (rrdcached).  For more
 information on how to use hosts_access to restrict access to the rrdcache
-daemon you should read the hosts_access(5) man pages. 
+daemon you should read the hosts_access(5) man pages.
 
 It is still highly recommended to install a packet filter or similar mechanism to
 prevent unauthorized connections. Unless you have a dedicated VLAN or VPN for
@@ -492,7 +492,7 @@ accepted commands to those needed by external clients. If, for example,
 external clients want to draw graphs of the cached data, they should only be
 allowed to use the C<FLUSH> command.
 
-Authorization does not work when rrcached is socket-activated by systemd. 
+Authorization does not work when rrcached is socket-activated by systemd.
 
 =head2 Encryption
 
@@ -586,12 +586,22 @@ returns immediately, even though the writes may take a long time.
 Shows any "pending" updates for a file, in order.  The updates shown have
 not yet been written to the underlying RRD file.
 
-=item B<FETCH> I<filename> I<CF> [I<start> [I<end>]]
+=item B<FETCH> I<filename> I<CF> [I<start> [I<end>] [I<ds> ...]]
 
 Calls C<rrd_fetch> with the specified arguments and returns the result in text
 form. If necessary, the file is flushed to disk first. The client side function
 C<rrdc_fetch> (declared in C<rrd_client.h>) parses the output and behaves just
 like C<rrd_fetch_r> for easy integration of remote queries.
+ds defines the columns to dump - if none are given then all are returned
+
+=item B<FETCHBIN> I<filename> I<CF> [I<start> [I<end>] [I<ds> ...]]
+
+Calls C<rrd_fetch> with the specified arguments and returns the result in
+text/binary form to avoid unnecessary un/marshalling overhead.
+If necessary, the file is flushed to disk first. The client side function
+C<rrdc_fetch> (declared in C<rrd_client.h>) parses the output and behaves just
+like C<rrd_fetch_r> for easy integration of remote queries.
+ds defines the columns to dump - if none are given then all are returned
 
 =item B<FORGET> I<filename>
 
@@ -655,16 +665,16 @@ is not accepted from the other command channels.
 
 =item B<FIRST> I<filename> [I<rranum>]
 
-Return the timestamp for the first CDP in the specified RRA.  Default is to 
+Return the timestamp for the first CDP in the specified RRA.  Default is to
 use RRA zero if none is specified.
 
-=item B<LAST> I<filename> 
+=item B<LAST> I<filename>
 
 Return the timestamp for the last update to the specified RRD. Note that the
 cache is I<not> flushed before checking, as the client is expected to request
 this separately if it is required.
 
-=item B<INFO> I<filename> 
+=item B<INFO> I<filename>
 
 Return the configuration information for the specified RRD. Note that the
 cache is I<not> flushed before checking, as the client is expected to request
@@ -802,7 +812,8 @@ Both B<rrdcached> and this manual page have been written by Florian.
 =head1 CONTRIBUTORS
 
 kevin brintnall E<lt>kbrint@rufus.netE<gt>
-Steve Shipway E<lt>steve@steveshipway.orgE<gt> 
+Steve Shipway E<lt>steve@steveshipway.orgE<gt>
+Martin Sperl E<lt>rrdtool@martin.sperl.orgE<gt>
 
 =cut
 
