@@ -563,7 +563,7 @@ EX_CHECK_ALL(cairo,      cairo_font_options_create,     cairo.h,                
 dnl EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,            cairo-svg,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
-EX_CHECK_ALL(pangocairo-1.0,  pango_font_map_create_context,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
+EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_font_map_create_context,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
 
 fi
 

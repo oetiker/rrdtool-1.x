@@ -4393,7 +4393,7 @@ void rrd_graph_init(
         fontmap = pango_cairo_font_map_get_default();
     }
 
-    context =  pango_font_map_create_context(fontmap);
+    context =  pango_cairo_font_map_create_context((PangoCairoFontMap*)fontmap);
 
     pango_cairo_context_set_resolution(context, 100);
 
