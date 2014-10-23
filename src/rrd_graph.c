@@ -6,7 +6,8 @@
 
 
 #include <sys/stat.h>
-#include <glib.h>   // will use regex
+
+
 
 #ifdef WIN32
 #include "strftime.h"
@@ -16,6 +17,18 @@
 
 #include "rrd_tool.h"
 #include "unused.h"
+
+
+#ifdef HAVE_G_REGEX_NEW
+#include <glib.h>
+#else
+#ifdef HAVE_PCRE_H
+#include <pcre.h>
+#else
+#error "you must have either glib with regexp support or libpcre"
+#endif
+#endif
+
 
 /* for basename */
 #ifdef HAVE_LIBGEN_H
@@ -5070,8 +5083,10 @@ int rrd_graph_color(
     }
 }
 
+#define OVECCOUNT 30    /* should be a multiple of 3 */
 
-static int bad_format_check(const char *pattern, char *fmt) {
+static int bad_format_check(const char *pattern, char *fmt) {    
+#ifdef HAVE_G_REGEX_NEW
     GError *gerr = NULL;
     GRegex *re = g_regex_new(pattern, G_REGEX_EXTENDED, 0, &gerr);
     GMatchInfo *mi;
@@ -5082,6 +5097,19 @@ static int bad_format_check(const char *pattern, char *fmt) {
     int m = g_regex_match(re, fmt, 0, &mi);
     g_match_info_free (mi);
     g_regex_unref(re);
+#else
+    const char *error;
+    int erroffset;
+    int ovector[OVECCOUNT];
+    pcre *re;
+    re = pcre_compile(pattern,PCRE_EXTENDED,&error,&erroffset,NULL);
+    if (re == NULL){
+        rrd_set_error("cannot compile regular expression: %s (%s)", error,pattern);
+        return 1;
+    }
+    int m = pcre_exec(re,NULL,fmt,(int)strlen(fmt),0,0,ovector,OVECCOUNT);
+    pcre_free(re);
+#endif
     if (!m) {
         rrd_set_error("invalid format string '%s' (should match '%s')",fmt,pattern);
         return 1;
