@@ -295,6 +295,7 @@ static void journal_rotate(void);
 
 /* prototypes for forward refernces */
 static int handle_request_help (HANDLER_PROTO);
+static int handle_request_ping (HANDLER_PROTO);
 
 /*
  * Functions
@@ -2367,6 +2368,14 @@ static command_t list_of_commands[] = { /* {{{ */
     NULL, /* special! */
   },
   {
+    "PING",
+    handle_request_ping,
+    CMD_CONTEXT_CLIENT,
+    "PING\n"
+    ,
+    "PING given, PONG returned\n"
+  },
+  {
     "BATCH",
     batch_start,
     CMD_CONTEXT_CLIENT,
@@ -2604,6 +2613,11 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
 
   return send_response(sock, RESP_OK, resp_txt);
 } /* }}} int handle_request_help */
+
+static int handle_request_ping (HANDLER_PROTO) /* {{{ */
+{
+  return send_response(sock, RESP_OK, "%s\n", "PONG");
+} /* }}} int handle_request_ping */
 
 static int handle_request (DISPATCH_PROTO) /* {{{ */
 {
