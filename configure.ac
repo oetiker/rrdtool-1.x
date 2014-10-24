@@ -215,7 +215,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h)
+AC_CHECK_HEADERS(pcre.h langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -552,6 +552,14 @@ AM_CONDITIONAL(BUILD_RRDRESTORE,[test $enable_rrd_restore != no])
 
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.28.7, ftp://ftp.gtk.org/pub/glib/2.28/, "")
 
+AC_CHECK_FUNC(g_regex_new,[],[
+   AC_MSG_CHECKING(if pcre is available to supply the missing regex support in glib)
+   AC_MSG_RESULT(checking now ...)
+   EX_CHECK_ALL(pcre,   pcre_compile,            pcre.h,                 pcre,    x.x.x, [get a newer glib and you will not need pcre at all],"")
+])
+
+
+
 CORE_LIBS="$LIBS"
 
 if test $enable_rrd_graph != no; then
@@ -559,7 +567,7 @@ dnl EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 
 dnl EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.4.8,  ftp://ftp.simplesystems.org/pub/libpng/png/src/, "")
 dnl EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		freetype2,   2.4.6,  http://download.savannah.gnu.org/releases/freetype/, /usr/include/freetype2)
 dnl EX_CHECK_ALL(fontconfig, FcInit,                    fontconfig.h,		fontconfig,  2.8.0,  http://www.freedesktop.org/software/fontconfig/release/, /usr/include)
-EX_CHECK_ALL(cairo,      cairo_font_options_create,     cairo.h,                cairo-png,   1.10.2,  http://cairographics.org/releases/, "")
+dnl EX_CHECK_ALL(cairo,      cairo_font_options_create,     cairo.h,                cairo-png,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,            cairo-svg,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
