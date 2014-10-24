@@ -646,6 +646,13 @@ Example:
  JournalBytes: 190
  JournalRotate: 0
 
+=item B<PING>
+
+PING-PONG, this is very usefull when using connection pool between user client and RRDCACHED.
+
+Example:
+ 0 PONG
+
 =item B<UPDATE> I<filename> I<values> [I<values> ...]
 
 Adds more data to a filename. This is B<the> operation the daemon was designed
