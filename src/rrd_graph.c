@@ -22,7 +22,7 @@
 #ifdef HAVE_G_REGEX_NEW
 #include <glib.h>
 #else
-#ifdef HAVE_PCRE_H
+#ifdef HAVE_PCRE_COMPILE
 #include <pcre.h>
 #else
 #error "you must have either glib with regexp support or libpcre"

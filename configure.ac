@@ -215,7 +215,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(pcre.h langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h)
+AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -552,10 +552,17 @@ AM_CONDITIONAL(BUILD_RRDRESTORE,[test $enable_rrd_restore != no])
 
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.28.7, ftp://ftp.gtk.org/pub/glib/2.28/, "")
 
-AC_CHECK_FUNC(g_regex_new,[],[
+AC_CHECK_FUNC(g_regex_new,[
+   AC_DEFINE(HAVE_G_REGEX_NEW,[1],[our glib has g_regex_new])
+],[
    AC_MSG_CHECKING(if pcre is available to supply the missing regex support in glib)
    AC_MSG_RESULT(checking now ...)
    EX_CHECK_ALL(pcre,   pcre_compile,            pcre.h,                 pcre,    x.x.x, [get a newer glib and you will not need pcre at all],"")
+   AC_CHECK_FUNC(g_regex_new,[
+        AC_DEFINE(HAVE_PCRE_COMPILE,[1],[we have pcre to replace missing regexp support form glib])
+   ],[
+        AC_MSG_ERROR([you need either glib with g_regex support or libpcre to compile rrdtool.])
+   ])
 ])
 
 
