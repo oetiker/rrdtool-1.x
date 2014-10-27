@@ -9,12 +9,24 @@
 #include <locale.h>
 #include <math.h>
 #include <glib.h>   // will use glist and regex
+
+
+
 #include <sys/types.h>      // stat()
 #include <sys/stat.h>       // stat()
 #include <unistd.h>         // stat()
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
+
+#ifndef HAVE_G_REGEX_NEW
+#ifdef HAVE_PCRE_COMPILE
+#include <pcre.h>
+#else
+#error "you must have either glib with regexp support or libpcre"
+#endif
+#endif
+
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 #include "rrd_client.h"
@@ -265,7 +277,7 @@ int parseDS(const char *def,
     int rc = -1;
     char *dst_tmp = NULL;
     char *dst_args = NULL;
-    
+#ifdef HAVE_G_REGEX_NEW    
     GError *gerr = NULL;
     GRegex *re = g_regex_new(DS_RE, G_REGEX_EXTENDED, 0, &gerr);
     GMatchInfo *mi;
@@ -275,7 +287,19 @@ int parseDS(const char *def,
         goto done;
     }
     int m = g_regex_match(re, def, 0, &mi);
-    
+#else
+#define OVECCOUNT 30    /* should be a multiple of 3 */
+    pcre *re;
+    const char *error;
+    int erroffset;
+    int ovector[OVECCOUNT];
+    re = pcre_compile(DS_RE,PCRE_EXTENDED,&error,&erroffset,NULL);
+    if (re == NULL){
+        rrd_set_error("cannot compile regular expression: %s (%s)", error,DS_RE);
+        goto done;
+    }
+    int m = pcre_exec(re,NULL,def,(int)strlen(def),0,0,ovector,OVECCOUNT);
+#endif
     if (!m) {
         rrd_set_error("invalid DS format");
         goto done;
@@ -293,14 +317,25 @@ int parseDS(const char *def,
     int s, e, s2, e2;
 
     // NAME
-    g_match_info_fetch_pos(mi, DS_NAME_SUBGROUP, &s, &e);
     memset(ds_def->ds_nam, 0, sizeof(ds_def->ds_nam));
+#ifdef HAVE_G_REGEX_NEW     
+    g_match_info_fetch_pos(mi, DS_NAME_SUBGROUP, &s, &e);
+#else
+    s=ovector[DS_NAME_SUBGROUP*2];
+    e=ovector[DS_NAME_SUBGROUP*2+1];
+#endif
     strncpy(ds_def->ds_nam, def + s, e - s);
-    
+
     // DST + DST args
+#ifdef HAVE_G_REGEX_NEW     
     g_match_info_fetch_pos(mi, DST_SUBGROUP, &s, &e);
     g_match_info_fetch_pos(mi, DST_ARGS_SUBGROUP, &s2, &e2);
-        
+#else
+    s=ovector[DST_SUBGROUP*2];
+    e=ovector[DST_SUBGROUP*2+1];
+    s2=ovector[DST_ARGS_SUBGROUP*2];
+    e2=ovector[DST_ARGS_SUBGROUP*2+1];
+#endif        
     dst_tmp  = strndup(def + s, e - s);
     dst_args = strndup(def + s2, e2 - s2);
         
@@ -326,31 +361,44 @@ int parseDS(const char *def,
     // mapping, but only if we are interested in it...
     if (mapping) {
         char *endptr;
-        g_match_info_fetch_pos(mi, MAPPED_DS_NAME_SUBGROUP, &s, &e);
-
         mapping->ds_nam = strdup(ds_def->ds_nam);
+#ifdef HAVE_G_REGEX_NEW     
+        g_match_info_fetch_pos(mi, MAPPED_DS_NAME_SUBGROUP, &s, &e);
+#else
+        s=ovector[MAPPED_DS_NAME_SUBGROUP*2];
+        e=ovector[MAPPED_DS_NAME_SUBGROUP*2+1];
+#endif
         mapping->mapped_name = strndup(def + s, e - s);
-        
         if (mapping->ds_nam == NULL || mapping->mapped_name == NULL) {
             rrd_set_error("Cannot allocate memory");
             goto done;
         }
+#ifdef HAVE_G_REGEX_NEW        
         g_match_info_fetch_pos(mi, OPT_MAPPED_INDEX_SUBGROUP, &s, &e);
- 
+#else
+        s=ovector[OPT_MAPPED_INDEX_SUBGROUP*2];
+        e=ovector[OPT_MAPPED_INDEX_SUBGROUP*2+1];
+#endif
         /* we do not have to check for errors: invalid indices will be checked later, 
          * and syntactically, the RE has done the job for us already*/
         mapping->index = s != e ? strtol(def + s, &endptr, 10) : -1;
+
     }
     rc = 0;
  
 done:
     if (re) {
+#ifdef HAVE_G_REGEX_NEW 
         g_match_info_free(mi);
         g_regex_unref(re);
+#else
+        pcre_free(re);
+#endif
     }
-        
+
     if (dst_tmp) free(dst_tmp);
     if (dst_args) free(dst_args);
+
     return rc;
 }
 
@@ -2393,5 +2441,9 @@ static void free_mapping(mapping_t *mapping) {
     if (! mapping) return;
     if (mapping->ds_nam) free(mapping->ds_nam);
     if (mapping->def) free(mapping->def);
+#ifdef HAVE_G_REGEX_NEW 
     if (mapping->mapped_name) free(mapping->mapped_name);
+#else
+    if (mapping->mapped_name) pcre_free_substring(mapping->mapped_name);
+#endif
 }

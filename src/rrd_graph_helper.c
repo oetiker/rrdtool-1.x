@@ -817,7 +817,7 @@ int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
 void legend_shift(char *legend);
 void legend_shift(char *legend)
 {
-  if (!legend) { return; }
+  if (!legend || !legend[0]) { return; }
   memmove(legend+2,legend,strlen(legend));
   legend[0]=' ';
   legend[1]=' ';
@@ -1126,6 +1126,9 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   dprintf("XAXIS : %i\n",gdp->xaxisidx);
   dprintf("YAXIS : %i\n",gdp->yaxisidx);
   dprintf("=================================\n");
+
+  /* shift the legend by 2 spaces for the "coloured-box"*/
+  legend_shift(gdp->legend);
 
   /* check that vidx is of type VDEF */
   if (gdp->vidx != -1 && im->gdes[gdp->vidx].gf != GF_VDEF) {

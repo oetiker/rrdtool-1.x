@@ -540,15 +540,16 @@ void rrd_dontneed(
                        + rrd->rra_ptr[i].cur_row
                        * rrd->stat_head->ds_cnt * sizeof(rrd_value_t));
         if (active_block > dontneed_start) {
-#ifdef USE_MADVISE
+#ifdef USE_MADVISE 
             madvise(rrd_simple_file->file_start + dontneed_start,
                     active_block - dontneed_start - 1, MADV_DONTNEED);
-#endif
-/* in linux at least only fadvise DONTNEED seems to purge pages from cache */
+#else
 #ifdef HAVE_POSIX_FADVISE
+/* in linux at least only fadvise DONTNEED seems to purge pages from cache */
             posix_fadvise(rrd_simple_file->fd, dontneed_start,
                           active_block - dontneed_start - 1,
                           POSIX_FADV_DONTNEED);
+#endif
 #endif
         }
         dontneed_start = active_block;
@@ -568,11 +569,12 @@ void rrd_dontneed(
 #ifdef USE_MADVISE
 	    madvise(rrd_simple_file->file_start + dontneed_start,
 		    rrd_file->file_len - dontneed_start, MADV_DONTNEED);
-#endif
+#else
 #ifdef HAVE_POSIX_FADVISE
 	    posix_fadvise(rrd_simple_file->fd, dontneed_start,
 			  rrd_file->file_len - dontneed_start,
 			  POSIX_FADV_DONTNEED);
+#endif
 #endif
     }
 

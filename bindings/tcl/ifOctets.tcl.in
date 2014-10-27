@@ -1,6 +1,4 @@
-#!/bin/sh
-# the next line restarts using tclsh -*- tcl -*- \
-exec tclsh@TCL_VERSION@ "$0" "$@"
+#!/usr/bin/env tclsh@TCL_VERSION@
 
 #package require Tnm 3.0
 package require Rrd @VERSION@

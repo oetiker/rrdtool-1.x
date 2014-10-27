@@ -79,8 +79,8 @@ AC_DEFUN([EX_CHECK_ALL],
        LIBS="${ex_check_save_LIBS}"
        CPPFLAGS="${ex_check_save_CPPFLAGS}"
        LDFLAGS="${ex_check_save_LDFLAGS}"
-    fi
-    AC_LANG_POP(C)
+   fi
+   AC_LANG_POP(C)
 ]
 )
 

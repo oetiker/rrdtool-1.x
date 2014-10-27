@@ -6,7 +6,8 @@
 
 
 #include <sys/stat.h>
-#include <glib.h>   // will use regex
+
+
 
 #ifdef WIN32
 #include "strftime.h"
@@ -16,6 +17,18 @@
 
 #include "rrd_tool.h"
 #include "unused.h"
+
+
+#ifdef HAVE_G_REGEX_NEW
+#include <glib.h>
+#else
+#ifdef HAVE_PCRE_COMPILE
+#include <pcre.h>
+#else
+#error "you must have either glib with regexp support or libpcre"
+#endif
+#endif
+
 
 /* for basename */
 #ifdef HAVE_LIBGEN_H
@@ -257,9 +270,15 @@ enum gfx_if_en if_conv(
 {
 
     conv_if(PNG, IF_PNG);
+#ifdef CAIRO_HAS_SVG_SURFACE
     conv_if(SVG, IF_SVG);
+#endif
+#ifdef CAIRO_HAS_PS_SURFACE
     conv_if(EPS, IF_EPS);
+#endif
+#ifdef CAIRO_HAS_PDF_SURFACE
     conv_if(PDF, IF_PDF);
+#endif
     conv_if(XML, IF_XML);
     conv_if(XMLENUM, IF_XMLENUM);
     conv_if(CSV, IF_CSV);
@@ -3901,6 +3920,7 @@ int graph_cairo_setup (image_desc_t *im)
                                        im->ximg * im->zoom,
                                        im->yimg * im->zoom);
         break;
+#ifdef CAIRO_HAS_PDF_SURFACE
     case IF_PDF:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3909,6 +3929,8 @@ int graph_cairo_setup (image_desc_t *im)
             : cairo_pdf_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
+#endif
+#ifdef CAIRO_HAS_PS_SURFACE
     case IF_EPS:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3918,6 +3940,8 @@ int graph_cairo_setup (image_desc_t *im)
             : cairo_ps_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
+#endif
+#ifdef CAIRO_HAS_SVG_SURFACE
     case IF_SVG:
         im->gridfit = 0;
         im->surface = strlen(im->graphfile)
@@ -3930,6 +3954,7 @@ int graph_cairo_setup (image_desc_t *im)
         cairo_svg_surface_restrict_to_version
             (im->surface, CAIRO_SVG_VERSION_1_1);
         break;
+#endif
     case IF_XML:
     case IF_XMLENUM:
     case IF_CSV:
@@ -4381,7 +4406,7 @@ void rrd_graph_init(
         fontmap = pango_cairo_font_map_get_default();
     }
 
-    context =  pango_font_map_create_context(fontmap);
+    context =  pango_cairo_font_map_create_context((PangoCairoFontMap*)fontmap);
 
     pango_cairo_context_set_resolution(context, 100);
 
@@ -5058,8 +5083,10 @@ int rrd_graph_color(
     }
 }
 
+#define OVECCOUNT 30    /* should be a multiple of 3 */
 
-static int bad_format_check(const char *pattern, char *fmt) {
+static int bad_format_check(const char *pattern, char *fmt) {    
+#ifdef HAVE_G_REGEX_NEW
     GError *gerr = NULL;
     GRegex *re = g_regex_new(pattern, G_REGEX_EXTENDED, 0, &gerr);
     GMatchInfo *mi;
@@ -5070,6 +5097,19 @@ static int bad_format_check(const char *pattern, char *fmt) {
     int m = g_regex_match(re, fmt, 0, &mi);
     g_match_info_free (mi);
     g_regex_unref(re);
+#else
+    const char *error;
+    int erroffset;
+    int ovector[OVECCOUNT];
+    pcre *re;
+    re = pcre_compile(pattern,PCRE_EXTENDED,&error,&erroffset,NULL);
+    if (re == NULL){
+        rrd_set_error("cannot compile regular expression: %s (%s)", error,pattern);
+        return 1;
+    }
+    int m = pcre_exec(re,NULL,fmt,(int)strlen(fmt),0,0,ovector,OVECCOUNT);
+    pcre_free(re);
+#endif
     if (!m) {
         rrd_set_error("invalid format string '%s' (should match '%s')",fmt,pattern);
         return 1;
