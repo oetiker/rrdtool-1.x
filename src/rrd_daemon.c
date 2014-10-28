@@ -105,6 +105,7 @@
 #include <libgen.h>
 #include <grp.h>
 #include <pwd.h>
+#include <glob.h>
 
 #ifdef HAVE_LIBWRAP
 #include <tcpd.h>
@@ -1229,7 +1230,7 @@ static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
   if (*file != '/') return 1;
 
   /* file must be of the format base + "/" + <1+ char filename> */
-  if (strlen(file) < _config_base_dir_len + 2) return 0;
+  if (strlen(file) < _config_base_dir_len + 1) return 0;
   if (strncmp(file, config_base_dir, _config_base_dir_len) != 0) return 0;
   if (*(file + _config_base_dir_len) != '/') return 0;
 
@@ -2385,6 +2386,103 @@ done:
   return rc;
 } /* }}} static int handle_request_create  */
 
+static int handle_request_list (HANDLER_PROTO) /* {{{ */
+{
+  char *filename;
+  char fullpath[PATH_MAX];
+  int status;
+  DIR *dir;
+  struct dirent *entry;
+
+  if (config_base_dir == NULL) {
+    return send_response(sock, RESP_ERR, "No base directory defined\n");
+  }
+
+  /* Get pathname */
+  status = buffer_get_field(&buffer, &buffer_size, &filename);
+
+  if (status != 0)
+    return syntax_error(sock,cmd);
+
+  /* get full pathname */
+  snprintf(fullpath, PATH_MAX, "%s%s%s",
+	   config_base_dir, (filename[0] == '/') ? "" : "/", filename);
+
+  /* Prevent moving up the directory tree */
+  if (strstr(fullpath, ".."))
+      send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
+
+  /* if filename contains wildcards, then use glob() */
+  if (strchr(fullpath, '*') || strchr(fullpath, '?')) {
+    glob_t buf;
+    unsigned int i;
+
+    if (glob(fullpath, 0, NULL, &buf)) {
+      globfree(&buf);
+      goto out_send_response;
+    }
+
+    for (i = 0; i < buf.gl_pathc; i++) {
+      char *ptr;
+
+      if (!check_file_access(buf.gl_pathv[i], sock))
+	return send_response(sock, RESP_ERR,
+			     "Cannot read: %s\n", buf.gl_pathv[i]);
+
+      ptr = strrchr(buf.gl_pathv[i], '/');
+
+      if (ptr != NULL)
+	add_response_info(sock, "%s\n", ptr + 1);
+    }
+
+    globfree(&buf);
+    goto out_send_response;
+  }
+
+  if (!check_file_access(fullpath, sock))
+    return send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
+
+  /* If filename matches an RRD file, then return it */
+  if (strstr(fullpath, ".rrd")) {
+	  struct stat st;
+	  char *ptr;
+
+	  if (!stat(fullpath, &st) && S_ISREG(st.st_mode)) {
+		  ptr = strrchr(fullpath, '/');
+
+		  if (ptr)
+			  add_response_info(sock, "%s\n", ptr + 1);
+	  }
+
+	  goto out_send_response;
+  }
+
+  dir = opendir(fullpath);
+
+  if (dir == NULL) {
+    return send_response(sock, RESP_ERR,
+			 "Failed to open directory %s : %s\n",
+			 fullpath, strerror(errno));
+  }
+
+  while ((entry = readdir(dir)) != NULL) {
+
+    if ((strcmp(entry->d_name, ".") == 0) ||
+	(strcmp(entry->d_name, "..") == 0)) {
+      continue;
+    }
+
+    add_response_info(sock, "%s\n", entry->d_name);
+  }
+  closedir(dir);
+
+out_send_response:
+  send_response(sock, RESP_OK, "RRDs\n");
+
+  return (0);
+} /* }}} int handle_request_list */
+
+
 /* start "BATCH" processing */
 static int batch_start (HANDLER_PROTO) /* {{{ */
 {
@@ -2593,6 +2691,16 @@ static command_t list_of_commands[] = { /* {{{ */
     "The start parameter needs to be in seconds since 1/1/70 (AT-style syntax is\n"
     "not acceptable) and the step is in seconds (default is 300).\n"
     "The DS and RRA definitions are as for the 'rrdtool create' command.\n"
+  },
+  {
+    "LIST",
+    handle_request_list,
+    CMD_CONTEXT_CLIENT,
+    "LIST\n",
+    "This command lists the RRD files in the storage base directory.\n"
+    "Note that this is the list of RRD files on storage as of the last update.\n"
+    "There may be pending updates in the queue, so a FLUSH may have to be run\n"
+    "beforehand.\n"
   },
   {
     "QUIT",

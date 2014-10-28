@@ -53,7 +53,7 @@ void PrintUsage(
     const char *help_list =
         N_
         ("Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
-         "\t\tlast, lastupdate, first, info, fetch, tune\n"
+         "\t\tlast, lastupdate, first, info, list, fetch, tune,\n"
          "\t\tresize, xport, flushcached\n");
 
     const char *help_listremote =
@@ -81,6 +81,10 @@ void PrintUsage(
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
            "\trrdtool info [--daemon|-d <addr> [--noflush|-F]] filename.rrd\n");
+
+    const char *help_listrrds =
+        N_("* list - returns the list of RRDs\n\n"
+           "\trrdtool list [--daemon <address>] [--noflush] <dirname>\n");
 
     const char *help_restore =
         N_("* restore - restore an RRD file from its XML form\n\n"
@@ -252,7 +256,7 @@ void PrintUsage(
         N_("RRDtool is distributed under the Terms of the GNU General\n"
            "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n\n"
            "For more information read the RRD manpages\n");
-    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_RESTORE, C_LAST,
+    enum { C_NONE, C_CREATE, C_DUMP, C_INFO, C_LIST, C_RESTORE, C_LAST,
         C_LASTUPDATE, C_FIRST, C_UPDATE, C_FETCH, C_GRAPH, C_GRAPHV,
         C_TUNE,
         C_RESIZE, C_XPORT, C_QUIT, C_LS, C_CD, C_MKDIR, C_PWD,
@@ -267,6 +271,8 @@ void PrintUsage(
             help_cmd = C_DUMP;
         else if (!strcmp(cmd, "info"))
             help_cmd = C_INFO;
+        else if (!strcmp(cmd, "list"))
+            help_cmd = C_LIST;
         else if (!strcmp(cmd, "restore"))
             help_cmd = C_RESTORE;
         else if (!strcmp(cmd, "last"))
@@ -321,6 +327,9 @@ void PrintUsage(
         break;
     case C_INFO:
         puts(_(help_info));
+        break;
+    case C_LIST:
+        puts(_(help_listrrds));
         break;
     case C_RESTORE:
         puts(_(help_restore));
@@ -682,7 +691,15 @@ int HandleInputLine(
         rrd_info_print(data);
         rrd_info_free(data);
     }
+    else if (strcmp("list", argv[1]) == 0) {
+        char *list;
+        list = rrd_list(argc - 1, &argv[1]);
 
+	if (list) {
+	  printf("%s", list);
+	  free(list);
+	}
+    }
     else if (strcmp("--version", argv[1]) == 0 ||
              strcmp("version", argv[1]) == 0 ||
              strcmp("v", argv[1]) == 0 ||

@@ -1015,6 +1015,44 @@ int rrdc_forget (const char *filename) {
   return rrdc_filebased_command("forget", filename);
 }
 
+int rrdc_flushall (void) /* {{{ */
+{
+  char buffer[RRD_CMD_MAX];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("flushall", &buffer_ptr, &buffer_free);
+
+  if (status != 0)
+    return (ENOBUFS);
+
+  pthread_mutex_lock (&lock);
+
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0)
+    return (status);
+
+  status = res->status;
+  response_free (res);
+
+  return (status);
+} /* }}} int rrdc_flushall */
+
 rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
@@ -1125,6 +1163,106 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 
   return (data);
 } /* }}} int rrdc_info */
+
+char *rrdc_list(const char *dirname)
+{
+  char buffer[RRD_CMD_MAX];
+  char *buffer_ptr;
+  size_t buffer_free;
+  size_t buffer_size;
+  rrdc_response_t *res;
+  int status;
+  unsigned int i;
+  char *list = NULL;
+  int list_len = 0;
+
+  if (dirname == NULL) {
+    rrd_set_error ("rrdc_info: no directory name");
+    return (NULL);
+  }
+
+  memset (buffer, 0, sizeof (buffer));
+  buffer_ptr = &buffer[0];
+  buffer_free = sizeof (buffer);
+
+  status = buffer_add_string ("list", &buffer_ptr, &buffer_free);
+
+  if (status != 0) {
+    rrd_set_error ("rrdc_list: out of memory");
+    return NULL;
+  }
+
+  status = buffer_add_string (dirname, &buffer_ptr, &buffer_free);
+  if (status != 0)
+  {
+    rrd_set_error ("rrdc_list: out of memory");
+    return (NULL);
+  }
+
+
+  assert (buffer_free < sizeof (buffer));
+  buffer_size = sizeof (buffer) - buffer_free;
+  assert (buffer[buffer_size - 1] == ' ');
+  buffer[buffer_size - 1] = '\n';
+
+  res = NULL;
+
+  pthread_mutex_lock (&lock);
+  status = request (buffer, buffer_size, &res);
+  pthread_mutex_unlock (&lock);
+
+  if (status != 0) {
+    rrd_set_error ("rrdcached: %s", res->message);
+    goto out_free_res;
+  }
+
+  /* Handle the case where the list is empty, allocate
+   * a single byte zeroed string.
+   */
+  if (res->lines_num == 0) {
+    list = calloc(1, 1);
+
+    if (!list) {
+      rrd_set_error ("rrdc_list: out of memory");
+      goto out_free_res;
+    }
+
+    goto out_free_res;
+  }
+
+  for (i = 0; i < res->lines_num ; i++ ) {
+    int len;
+    char *buf;
+
+    len = strlen(res->lines[i]);
+    buf = realloc(list, list_len + len + 2);
+
+    if (!buf) {
+      rrd_set_error ("rrdc_list: out of memory");
+
+      if (list) {
+	free(list);
+	list = NULL;
+      }
+
+      goto out_free_res;
+    }
+
+    if (!list)
+      buf[0] = '\0';
+
+    strcat(buf, res->lines[i]);
+    strcat(buf, "\n");
+
+    list = buf;
+    list_len += (len + 1);
+  }
+
+out_free_res:
+  response_free (res);
+
+  return list;
+}
 
 time_t rrdc_last (const char *filename) /* {{{ */
 {
@@ -1626,6 +1764,36 @@ int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ *
       {
         rrd_set_error("rrdc_flush (%s) failed with status %i.",
                       filename, status);
+      }
+    }
+  } /* if (rrdc_is_connected(..)) */
+
+  return status;
+} /* }}} int rrdc_flush_if_daemon */
+
+/* convenience function; if there is a daemon specified, or if we can
+ * detect one from the environment, then flush the file.  Otherwise, no-op
+ */
+int rrdc_flushall_if_daemon (const char *opt_daemon) /* {{{ */
+{
+  int status = 0;
+
+  rrdc_connect(opt_daemon);
+
+  if (rrdc_is_connected(opt_daemon))
+  {
+    rrd_clear_error();
+    status = rrdc_flushall ();
+
+    if (status != 0 && !rrd_test_error())
+    {
+      if (status > 0)
+      {
+        rrd_set_error("rrdc_flushall failed: %s", rrd_strerror(status));
+      }
+      else if (status < 0)
+      {
+        rrd_set_error("rrdc_flushall failed with status %i.", status);
       }
     }
   } /* if (rrdc_is_connected(..)) */

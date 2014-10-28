@@ -165,6 +165,7 @@ struct rrd_t;
     rrd_info_t * data);
     void      rrd_info_free(
     rrd_info_t *);
+    char      *rrd_list(int, char **);
     int       rrd_update(
     int,
     char **);
