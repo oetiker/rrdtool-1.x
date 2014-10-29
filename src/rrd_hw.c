@@ -139,6 +139,7 @@ int apply_smoother(
     unsigned long offset;
     FIFOqueue **buffers;
     rrd_value_t *working_average;
+    rrd_value_t *rrd_values_cpy;
     rrd_value_t *baseline;
 
     if (atoi(rrd->stat_head->version) >= 4) {
@@ -209,13 +210,19 @@ int apply_smoother(
         }
     }
 
-    /* compute moving averages */
+    /* as we are working through the value, we have to make sure to not double
+       apply the smoothing after wrapping around. so best is to copy the rrd_values first */
+       
+    rrd_values_cpy = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
+    memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length);
+
+    /* compute moving averages */    
     for (i = offset; i < row_count + offset; ++i) {
         for (j = 0; j < row_length; ++j) {
             k = MyMod(i, row_count);
             /* add a term to the sum */
-            working_average[j] += rrd_values[k * row_length + j];
-            queue_push(buffers[j], rrd_values[k * row_length + j]);
+            working_average[j] += rrd_values_cpy[k * row_length + j];
+            queue_push(buffers[j], rrd_values_cpy[k * row_length + j]);
 
             /* reset k to be the center of the window */
             k = MyMod(i - offset, row_count);
@@ -234,6 +241,7 @@ int apply_smoother(
         queue_dealloc(buffers[i]);
         baseline[i] /= row_count;
     }
+    free(rrd_values_cpy);
     free(buffers);
     free(working_average);
 
