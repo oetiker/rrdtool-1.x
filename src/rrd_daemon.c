@@ -120,6 +120,12 @@
     syslog ((severity), __VA_ARGS__); \
   } while (0)
 
+#if defined(__FreeBSD__) || defined(__APPLE__)
+#define RRD_LISTEN_BACKLOG -1
+#else
+#define RRD_LISTEN_BACKLOG 511
+#endif
+
 /*
  * Types
  */
@@ -3215,7 +3221,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
           (unsigned int)sock->socket_permissions, strerror(errno));
   }
 
-  status = listen (fd, /* backlog = */ 10);
+  status = listen(fd, RRD_LISTEN_BACKLOG);
   if (status != 0)
   {
     fprintf (stderr, "rrdcached: listen(%s) failed: %s.\n",
@@ -3350,7 +3356,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       continue;
     }
 
-    status = listen (fd, /* backlog = */ 10);
+    status = listen(fd, RRD_LISTEN_BACKLOG);
     if (status != 0)
     {
       fprintf (stderr, "rrdcached: listen(%s) failed: %s\n.",
