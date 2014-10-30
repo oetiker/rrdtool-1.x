@@ -536,8 +536,61 @@ static PyObject *PyRRD_info(
     return r;
 }
 
-#ifdef HAVE_RRD_GRAPH
+static char PyRRD_list__doc__[] =
+	"list(dirname): list RRDs in storage"
+	"    list [--daemon <remote>] dirname";
 
+static PyObject *PyRRD_list(PyObject UNUSED(*self), PyObject * args)
+{
+    PyObject *r = NULL;
+    int       argc;
+    char    **argv;
+    char     *data;
+    char     *ptr;
+    char     *end;
+    PyObject *str;
+
+    if (create_args("list", args, &argc, &argv) < 0)
+        return NULL;
+
+    if ((data = rrd_list(argc, argv)) == NULL) {
+        PyErr_SetString(ErrorObject, rrd_get_error());
+        rrd_clear_error();
+
+	goto out_free_args;
+    }
+
+	r = PyList_New(0);
+
+	ptr = data;
+	end = strchr(ptr, '\n');
+
+	while (end) {
+	  *end = '\0';
+	  str = PyString_FromString(ptr);
+
+	  if (PyList_Append(r, str)) {
+	    PyErr_SetString(ErrorObject, "Failed to append to list");
+	    r = NULL;
+	    break;
+	  }
+
+	  ptr = end + 1;
+
+	if (strlen(ptr) == 0)
+		break;
+
+	  end = strchr(ptr, '\n');
+	}
+
+    rrd_freemem(data);
+
+out_free_args:
+    destroy_args(&argv);
+    return r;
+}
+
+#ifdef HAVE_RRD_GRAPH
 static char PyRRD_graphv__doc__[] =
     "graphv is called in the same manner as graph";
 
@@ -765,6 +818,7 @@ static PyMethodDef _rrdtool_methods[] = {
     meth("last", PyRRD_last, PyRRD_last__doc__),
     meth("resize", PyRRD_resize, PyRRD_resize__doc__),
     meth("info", PyRRD_info, PyRRD_info__doc__),
+    meth("list", PyRRD_list, PyRRD_list__doc__),
 #ifdef HAVE_RRD_GRAPH    
     meth("graph", PyRRD_graph, PyRRD_graph__doc__),
     meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
