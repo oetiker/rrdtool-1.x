@@ -4021,7 +4021,7 @@ rrd_info_t *rrd_graph_v(
      ** Also, if needed, print a line with information about the image.
      */
 
-    if (im.imginfo) {
+    if (im.imginfo && *im.imginfo) {
         rrd_infoval_t info;
         char     *path;
         char     *filename;
