@@ -222,7 +222,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
       /* null and : separate the string */
       *pos=0;
       /* flag to say we are positional */
-      int ispos=0;
+      //int ispos=0;
       /* handle the case where we have got an = */
       /* find equal sign */
       char* equal=field;
@@ -254,7 +254,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	  }
 	  key=poskeys[poscnt];
 	  poscnt++;
-	  ispos=poscnt;
+	  //ispos=poscnt;
 	  value=field;
 	}
       }
