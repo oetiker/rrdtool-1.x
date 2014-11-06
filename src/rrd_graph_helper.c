@@ -878,10 +878,12 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_END
 					|PARSE_REDUCE
 					);
+  if (!gdp) { return 1;}
+
   if (gdp->step == 0){
       gdp->step = im->step; /* initialize with image wide step */
   }
-  if (!gdp) { return 1;}
+
   /* debugging output */
   dprintf("=================================\n");
   dprintf("DEF   : %s\n",pa->arg_orig);
