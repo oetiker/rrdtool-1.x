@@ -1,7 +1,7 @@
 /****************************************************************************
  * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
  ****************************************************************************
- * rrd_graph_helper.c  commandline parser functions 
+ * rrd_graph_helper.c  commandline parser functions
  *                     this code initially written by Alex van den Bogaerdt
  ****************************************************************************/
 
@@ -90,7 +90,7 @@ char* checkUnusedValues(parsedargs_t* pa){
     if (!pa->kv_args[i].flag) {
       const size_t kvlen = strlen(pa->kv_args[i].keyvalue);
       len+=kvlen +1;
-      
+
       /* alloc/realloc if necessary and set to 0 */
       if (res) {
 	char *t = (char *) realloc(res,len);
@@ -147,7 +147,7 @@ int getLong(const char* v,long *val,char**extra,int base) {
   }
   /* not found, so return error */
   return -2;
-}   
+}
 
 int getDouble(const char* v, double *val,char**extra) {
   /* try to execute the parser */
@@ -174,8 +174,8 @@ int getDouble(const char* v, double *val,char**extra) {
 int addToArguments(parsedargs_t *pa, char *keyvalue, char *key, char *value, int pos) {
   /* resize the field */
   keyvalue_t * t = (keyvalue_t *) realloc(pa->kv_args, (pa->kv_cnt + 1) * sizeof(keyvalue_t));
-  if (!t) { 
-    rrd_set_error("could not realloc memory"); 
+  if (!t) {
+    rrd_set_error("could not realloc memory");
     return -1;
   } else {
     /* assign pointer */
@@ -248,7 +248,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	  value="1";
 	} else {
 	  if (poscnt>9) {
-	    rrd_set_error("too many positional arguments"); 
+	    rrd_set_error("too many positional arguments");
 	    freeParsedArguments(pa);
 	    return -1;
 	  }
@@ -286,14 +286,14 @@ int parse_color( const char *const, struct gfx_color_t *);
 int parse_color( const char *const string, struct gfx_color_t *c)
 {
   unsigned int r = 0, g = 0, b = 0, a = 0, i;
-  
+
   /* matches the following formats:
   ** RGB
   ** RGBA
   ** RRGGBB
   ** RRGGBBAA
   */
-  
+
   i = 0;
   while (string[i] && isxdigit((unsigned int) string[i]))
     i++;
@@ -407,20 +407,20 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   /* set some generic things */
   gdp->gf=gf;
   if (1) {
-    char *t,*x; 
+    char *t,*x;
     long debug=0;
     if ((t=getKeyValueArgument("debug",1,pa)) && ((getLong(t,&debug,&x,10)))) {
       rrd_set_error("Bad debug value: %s",t); return NULL; }
     gdp->debug=debug;
   }
 
-  /* and the "flagged" parser implementation 
+  /* and the "flagged" parser implementation
    *
-   * first the fields with legacy positional args 
+   * first the fields with legacy positional args
    */
 #define bitscmp(v) ((bits&v)==v)
   char* vname=NULL;
-  if (bitscmp(PARSE_VNAME)) { vname=getKeyValueArgument("vname",1,pa); 
+  if (bitscmp(PARSE_VNAME)) { vname=getKeyValueArgument("vname",1,pa);
     dprintfparsed("got vname: %s\n",vname);}
   char *rrd=NULL;
   if (bitscmp(PARSE_RRD)) { rrd=getKeyValueArgument("rrd",1,pa);
@@ -435,45 +435,45 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if (bitscmp(PARSE_COLOR)) { color=getKeyValueArgument("color",1,pa);
     dprintfparsed("got color: %s\n",color);}
   char *color2=NULL;
-  if (bitscmp(PARSE_COLOR2)) { color2=getKeyValueArgument("color2",1,pa); 
+  if (bitscmp(PARSE_COLOR2)) { color2=getKeyValueArgument("color2",1,pa);
     dprintfparsed("got color2: %s\n",color2);}
   char *rpn=NULL;
-  if (bitscmp(PARSE_RPN)) { rpn=getKeyValueArgument("rpn",1,pa); 
+  if (bitscmp(PARSE_RPN)) { rpn=getKeyValueArgument("rpn",1,pa);
     dprintfparsed("got rpn: %s\n",rpn);}
   char *legend=NULL;
-  if (bitscmp(PARSE_LEGEND)) { legend=getKeyValueArgument("legend",1,pa); 
+  if (bitscmp(PARSE_LEGEND)) { legend=getKeyValueArgument("legend",1,pa);
     dprintfparsed("got legend: \"%s\"\n",legend);}
   char *fraction=NULL;
-  if (bitscmp(PARSE_FRACTION)) { fraction=getKeyValueArgument("fraction",1,pa); 
+  if (bitscmp(PARSE_FRACTION)) { fraction=getKeyValueArgument("fraction",1,pa);
     dprintfparsed("got fraction: %s\n",fraction);}
-  /* 
-   * here the ones without delayed assigns (which are for positional parsers) 
+  /*
+   * here the ones without delayed assigns (which are for positional parsers)
   */
-  if (bitscmp(PARSE_FORMAT)) { 
+  if (bitscmp(PARSE_FORMAT)) {
     char *format=getKeyValueArgument("format",1,pa);
     if(format) {
       strncpy(gdp->format,format,FMT_LEG_LEN);
       dprintfparsed("got format: %s\n",format);
     }
   }
-  if (bitscmp(PARSE_STRFTIME)) { 
+  if (bitscmp(PARSE_STRFTIME)) {
     char *strft=getKeyValueArgument("strftime",1,pa);
     gdp->strftm=(strft)?1:0;
     dprintfparsed("got strftime: %s\n",strft);
   }
-  if (bitscmp(PARSE_STACK)) { 
+  if (bitscmp(PARSE_STACK)) {
     char *stack=getKeyValueArgument("stack",1,pa);
     gdp->stack=(stack)?1:0;
     dprintfparsed("got stack: %s\n",stack);
   }
-  if (bitscmp(PARSE_SKIPSCALE)) { 
+  if (bitscmp(PARSE_SKIPSCALE)) {
     char *skipscale=getKeyValueArgument("skipscale",1,pa);
     gdp->skipscale =(skipscale)?1:0;
     dprintfparsed("got skipscale: %s\n",skipscale);
   }
-  if (bitscmp(PARSE_REDUCE)) { 
+  if (bitscmp(PARSE_REDUCE)) {
     char *reduce=getKeyValueArgument("reduce",1,pa);
-    if (reduce) { 
+    if (reduce) {
       gdp->cf_reduce=cf_conv(reduce);
       gdp->cf_reduce_set=1;
       dprintfparsed("got reduce: %s (%i)\n",reduce,gdp->cf_reduce);
@@ -482,7 +482,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
   if (bitscmp(PARSE_XAXIS)) {
     long xaxis=0;
-    char *t,*x; 
+    char *t,*x;
     if ((t=getKeyValueArgument("xaxis",1,pa)) && ((getLong(t,&xaxis,&x,10))||(xaxis<1)||(xaxis>MAX_AXIS))) {
       rrd_set_error("Bad xaxis value: %s",t); return NULL; }
     dprintfparsed("got xaxis: %s (%li)\n",t,xaxis);
@@ -490,7 +490,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
   if (bitscmp(PARSE_YAXIS)) {
     long yaxis=0;
-    char *t,*x; 
+    char *t,*x;
     if ((t=getKeyValueArgument("yaxis",1,pa)) && ((getLong(t,&yaxis,&x,10))||(yaxis<1)||(yaxis>MAX_AXIS))) {
       rrd_set_error("Bad yaxis value: %s",t); return NULL; }
     dprintfparsed("got yaxis: %s (%li)\n",t,yaxis);
@@ -498,7 +498,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
   if (bitscmp(PARSE_LINEWIDTH)) {
     double linewidth = 1;
-    char *t,*x; 
+    char *t,*x;
     if ((t=getKeyValueArgument("linewidth",1,pa))&&(*t!=0)) {
       if ((getDouble(t,&linewidth,&x))||(linewidth<=0)) {
 	rrd_set_error("Bad line width: %s",t); return NULL;
@@ -509,7 +509,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
   if (bitscmp(PARSE_HEIGHT)) {
     double height=0;
-    char *t,*x; 
+    char *t,*x;
     if ((t=getKeyValueArgument("height",1,pa))&&(*t!=0)) {
       if (getDouble(t,&height,&x)) {
 	rrd_set_error("Bad height: %s",t); return NULL;
@@ -520,7 +520,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
   if (bitscmp(PARSE_STEP)) {
     long step=0;
-    char *t,*x; 
+    char *t,*x;
     if ((t=getKeyValueArgument("step",1,pa)) && ((getLong(t,&step,&x,10))||(step<1))) {
       rrd_set_error("Bad step value: %s",t); return NULL; }
     dprintfparsed("got step: %s (%li)\n",t,step);
@@ -534,8 +534,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     rrd_time_value_t start_tv;
     start_tv.type   = ABSOLUTE_TIME;
     start_tv.offset = 0;
-    localtime_r(&gdp->start, &start_tv.tm);   
-    if (bitscmp(PARSE_START)) { 
+    localtime_r(&gdp->start, &start_tv.tm);
+    if (bitscmp(PARSE_START)) {
       start=getKeyValueArgument("start",1,pa);
       if ((start)&&(parsetime_error = rrd_parsetime(start, &start_tv))) {
 	rrd_set_error("start time: %s", parsetime_error);return NULL; }
@@ -548,8 +548,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     rrd_time_value_t end_tv;
     end_tv.type   = ABSOLUTE_TIME;
     end_tv.offset = 0;
-    localtime_r(&gdp->end, &end_tv.tm);   
-    if (bitscmp(PARSE_END)) { 
+    localtime_r(&gdp->end, &end_tv.tm);
+    if (bitscmp(PARSE_END)) {
       end=getKeyValueArgument("end",1,pa);
       if ((end)&&(parsetime_error = rrd_parsetime(end, &end_tv))) {
 	rrd_set_error("end time: %s", parsetime_error); return NULL; }
@@ -574,7 +574,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       rrd_set_error("start (%ld) should be less than end (%ld)",
 		    start_tmp, end_tmp);
       return NULL; }
-    
+
     /* and finally set it irrespectively of if it has been set or not
      * it may have been a relative time and if you just set it partially
      * then that is wrong...
@@ -597,14 +597,14 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       gdp->p_dashes = (double *) malloc(sizeof(double)*(gdp->ndash+1));
       /* now loop dashes */
       for(int i=0;i<gdp->ndash;i++) {
-	char *x; 
+	char *x;
 	int f=getDouble(dashes,&gdp->p_dashes[i],&x);
 	if(f<0) {
 	  rrd_set_error("Could not parse number: %s",dashes); return NULL;
 	}
 	/* we should have this most of the time */
 	dprintfparsed("Processed %s to %g at index %i\n",dashes,gdp->p_dashes[i],i);
-	if (f>0) { 
+	if (f>0) {
 	  if (*x!=',') {
 	    rrd_set_error("expected a ',' at : %s",x); return NULL;}
 	  dashes=x+1;
@@ -621,7 +621,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     }
   }
 
-  /* here now the positional(=legacy) parsers which are EXCLUSIVE - SO ELSE IF !!! 
+  /* here now the positional(=legacy) parsers which are EXCLUSIVE - SO ELSE IF !!!
    * we also only parse the extra here and assign just further down
    * TODO maybe we can generalize this a bit more...
    */
@@ -649,7 +649,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       if (!first) { rrd_set_error("No argument for definition of CF in %s",pa->arg_orig); return NULL; }
       dprintfparsed("got positional cf: %s - \n",first->value);
       cf=first->value;
-    }    
+    }
   } else if (bitscmp(PARSE_VNAMECOLORLEGEND)) {
     /* vname */
     if (!vname) {
@@ -662,7 +662,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
       if (first) { fraction=first->value;
       } else { rrd_set_error("No positional FRACTION"); return NULL; }
-    }    
+    }
     /* legend (it's optional if no other arguments follow)*/
     if (!legend) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
@@ -689,10 +689,10 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       if (!vname) {vname=first->value;}
     }
   }
-    
+
   /* and set some of those late assignments to accomodate the legacy parser*/
   /* first split vname into color */
-  if (vname) { 
+  if (vname) {
     /* check for color */
     char *h1=strchr(vname,'#');
     char* h2=NULL;
@@ -713,7 +713,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if (vname) {
     int idx=find_var(im, vname);
     dprintfparsed("got positional index %i for %s - \n",idx,vname);
-    
+
     /* some handling */
     if (bitscmp(PARSE_VNAMEDEF)) {
       if (idx>=0) {
@@ -723,7 +723,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
         if (idx < 0){
            if (bitscmp(PARSE_VNAMEREFNUM)) {
               double val;
-              char *x; 
+              char *x;
               int f=getDouble(vname,&val,&x);
               if (f) {
 	         rrd_set_error("%s is not a vname nor a number",vname); return NULL;
@@ -738,17 +738,17 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
            else {
                 rrd_set_error("vname %s not found",vname); return NULL;
            }
-        }        
+        }
     }
   }
-  
+
   /* and assign it */
   if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1);}
   if (rrd) { strncpy(gdp->rrd,rrd,1024); }
   if (ds) { strncpy(gdp->ds_nam,ds,DS_NAM_SIZE); }
-  if (cf) { 
+  if (cf) {
     gdp->cf=cf_conv(cf);
-    if (((int)gdp->cf)==-1) { 
+    if (((int)gdp->cf)==-1) {
       rrd_set_error("bad CF: %s",cf); return NULL; }
   } else { if (bitscmp(PARSE_CF)) { gdp->cf = (enum cf_en) -1; }}
   if ((color)&&(parse_color(color,&(gdp->col)))) { return NULL; }
@@ -771,7 +771,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     } else {
       /* parse number */
       double val;
-      char *x; 
+      char *x;
       int f=getDouble(fraction,&val,&x);
       if (f) {
 	rrd_set_error("error parsing number %s",vname); return NULL;
@@ -784,7 +784,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if (gdp->gf == GF_DEF && !g_hash_table_lookup_extended(im->rrd_map,key,NULL,NULL)){
       dprintfhash("ins key %s - %ld\n",key,im->gdes_c-1);
       g_hash_table_insert(im->gdef_map,g_strdup(key),GINT_TO_POINTER(im->gdes_c-1));
-  } 
+  }
   free(key);
   if (gdp->gf == GF_DEF || gdp->gf == GF_VDEF || gdp->gf == GF_CDEF){
       dprintfhash("ins vname %s - %ld\n",gdp->vname,im->gdes_c-1);
@@ -846,12 +846,12 @@ int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   char* t=getKeyValueArgument("type",1,pa);
   if (t) {
     set_match(t,"TIME",a->type=AXIS_TYPE_TIME)
-    else 
+    else
       set_match(t,"LINEAR",a->type=AXIS_TYPE_LINEAR)
       else
 	set_match(t,"LOGARITHMIC",a->type=AXIS_TYPE_LOGARITHMIC)
       else {
-	rrd_set_error("unsupported axis type %s",t); 
+	rrd_set_error("unsupported axis type %s",t);
 	return 1;
       }
   }
@@ -872,15 +872,15 @@ int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
-					PARSE_VNAMERRDDSCF 
+					PARSE_VNAMERRDDSCF
 					|PARSE_START
 					|PARSE_STEP
 					|PARSE_END
 					|PARSE_REDUCE
-					); 
+					);
   if (gdp->step == 0){
       gdp->step = im->step; /* initialize with image wide step */
-  }  
+  }
   if (!gdp) { return 1;}
   /* debugging output */
   dprintf("=================================\n");
@@ -897,13 +897,13 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 
   /* and return fine */
   return 0;
-}  
+}
 
 int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
-					PARSE_VNAMERPN 
-					); 
+					PARSE_VNAMERPN
+					);
   if (!gdp) { return 1;}
 
   /* handle RPN parsing */
@@ -949,7 +949,7 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 
   /* and return fine */
   return 0;
-}  
+}
 
 
 int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
@@ -962,7 +962,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_DASHES
 					|PARSE_XAXIS
 					|PARSE_YAXIS
-					); 
+					);
   if (!gdp) { return 1;}
 
   /* debug output */
@@ -1006,7 +1006,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					|PARSE_HEIGHT
-					); 
+					);
   if (!gdp) { return 1;}
 
   /* debug output */
@@ -1041,7 +1041,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					PARSE_VNAMECOLORLEGEND
 					|PARSE_XAXIS
 					|PARSE_YAXIS
-					); 
+					);
   if (!gdp) { return 1;}
 
   gdp->stack=1;
@@ -1060,7 +1060,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     }
   }
   /* error the unhandled */
-  if (gdp->gf==gf) { 
+  if (gdp->gf==gf) {
     rrd_set_error("No previous LINE or AREA found for %s",pa->arg_orig); return 1;}
 
   /* debug output */
@@ -1098,7 +1098,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_XAXIS
 					|PARSE_YAXIS
 					|PARSE_DASHES
-					); 
+					);
   if (!gdp) { return 1;}
 
   /* debug output */
@@ -1149,14 +1149,14 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
 					|PARSE_CF
 					|PARSE_FORMAT
 					|PARSE_STRFTIME
-					); 
+					);
   if (!gdp) { return 1;}
    /* here we parse pos arguments locally */
   /* vname */
   if (gdp->vname[0]==0) {
     dprintfparsed("Processing postitional vname\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
-    if (first) { 
+    if (first) {
       strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN + 1);
       /* get type of reference */
       gdp->vidx=find_var(im, gdp->vname);
@@ -1177,9 +1177,9 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
       if (first) {
 	gdp->cf=cf_conv(first->value);
-	if (((int)gdp->cf)==-1) { 
+	if (((int)gdp->cf)==-1) {
 	  rrd_set_error("bad CF: %s",first->value); return 1; }
-      } else { rrd_set_error("No positional CDEF"); return 1; }      
+      } else { rrd_set_error("No positional CDEF"); return 1; }
     }
     break;
   case GF_VDEF:
@@ -1196,7 +1196,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     if (first) {
       strncpy(gdp->format,first->keyvalue,FMT_LEG_LEN);
       dprintfparsed("got positional format: %s\n",gdp->format);
-    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }    
+    } else { rrd_set_error("No positional CF/FORMAT"); return 1; }
   }
   /* debug output */
   dprintf("=================================\n");
@@ -1205,9 +1205,9 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   } else {
     dprintf("PRINT  : %s\n",pa->arg_orig);
   }
-  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);  
+  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
   if ((int)gdp->cf>-1) {
-    dprintf("CF : (%u)\n",gdp->cf);  
+    dprintf("CF : (%u)\n",gdp->cf);
   }
   dprintf("FORMAT: \"%s\"\n",gdp->legend);
   dprintf("=================================\n");
@@ -1220,7 +1220,7 @@ int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_LEGEND
-					); 
+					);
   if (!gdp) { return 1;}
 
   /* and if we have no legend, then use the first positional one */
@@ -1243,12 +1243,12 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORFRACTIONLEGEND
-					); 
+					);
   if (!gdp) { return 1;}
   /* debug output */
   dprintf("=================================\n");
   dprintf("TICK  : %s\n",pa->arg_orig);
-  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);  
+  dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
   dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
 	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
   if (gdp->cf==CF_LAST) {
@@ -1266,7 +1266,7 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 
 int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
-  graph_desc_t *gdp=newGraphDescription(im,gf,pa,0); 
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,0);
   if (!gdp) { return 1;}
 
   /* get align */
@@ -1291,7 +1291,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* debug output */
   dprintf("=================================\n");
   dprintf("TEXTALIGN : %s\n",pa->arg_orig);
-  dprintf("ALIGNMENT : %s (%u)\n",align,gdp->txtalign);  
+  dprintf("ALIGNMENT : %s (%u)\n",align,gdp->txtalign);
   dprintf("=================================\n");
   /* and return */
   return 0;
@@ -1343,7 +1343,7 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   } else {
     /* it is no def, so parse as number */
     long val;
-    char *x; 
+    char *x;
     int f=getLong(shift,&val,&x,10);
     if (f) { rrd_set_error("error parsing number %s",shift); return 1; }
     gdp->shval = val;
@@ -1355,9 +1355,9 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   dprintf("SHIFT   : %s\n",pa->arg_orig);
   dprintf("VNAME   : %s (%li)\n",im->gdes[gdp->vidx].vname,gdp->vidx);
   if (gdp->shidx>=0) {
-    dprintf("SHIFTBY : %s (%i)\n",im->gdes[gdp->shidx].vname,gdp->shidx);  
+    dprintf("SHIFTBY : %s (%i)\n",im->gdes[gdp->shidx].vname,gdp->shidx);
   } else {
-    dprintf("SHIFTBY : %li\n",gdp->shval);  
+    dprintf("SHIFTBY : %li\n",gdp->shval);
   }
   dprintf("=================================\n");
   /* and return */
@@ -1462,7 +1462,7 @@ void rrd_graph_script(
 	case GF_SHIFT:     r=parse_shift(gf,&pa,im); break;
 	case GF_XPORT:     r=parse_xport(gf,&pa,im); break;
 	  /* unsupported types right now */
-	case GF_GRAD:      
+	case GF_GRAD:
 	  rrd_set_error("GRAD unsupported - use AREA instead");
 	  break;
 	}
