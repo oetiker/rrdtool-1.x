@@ -750,7 +750,7 @@ int HandleInputLine(
         
             pXJV("    ","%lld",META_START_TAG,(long long int) start + step);
             pXJV("    ","%lu", META_STEP_TAG, step);
-            pXJV("    ","%lld",META_END_TAG,(long long int) start + step);
+            pXJV("    ","%lld",META_END_TAG,(long long int)end);
             if (! json){
                     pXJV("    ","%lu", META_ROWS_TAG, row_cnt);
                     pXJV("    ","%lu", META_COLS_TAG, col_cnt);
