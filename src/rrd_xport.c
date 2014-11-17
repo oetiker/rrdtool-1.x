@@ -286,6 +286,9 @@ int rrd_xport_fn(
     free(step_list);
     
     *start =  im->start - im->start % (*step);
+    if ( im->start > *start ) {
+        *start = *start + *step;
+    }
     *end = im->end - im->end % (*step) + (*step);
     
 
