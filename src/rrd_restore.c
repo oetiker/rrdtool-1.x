@@ -239,11 +239,15 @@ static xmlChar* get_xml_text (
 static int get_xml_string(
     xmlTextReaderPtr reader,
     char *value,
-    int max_len)
+    unsigned int max_len)
 {
     xmlChar *str;
     str = get_xml_text(reader);
     if (str != NULL){
+        if (strlen((char *)str) >= max_len){
+            rrd_set_error("'%s' is longer than %i",str,max_len);
+            return -1;
+        }            
         strncpy(value,(char *)str,max_len);
         xmlFree(str);
         return 0;        
