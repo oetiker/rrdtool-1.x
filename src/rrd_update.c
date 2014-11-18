@@ -1412,7 +1412,7 @@ static int update_pdp_prep(
                          * ... are there any others in SNMP land?
                          */
                         if (pdp_new[ds_idx] < (double) 0.0)
-                            pdp_new[ds_idx] += (double) 4294967296.0;   /* 2^32 */
+                            pdp_new[ds_idx] += (double) 4294967295.0;   /* 2^32-1 */
                         if (pdp_new[ds_idx] < (double) 0.0)
                             pdp_new[ds_idx] += (double) 18446744069414584320.0; /* 2^64-2^32 */
                     }
