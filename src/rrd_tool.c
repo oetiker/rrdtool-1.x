@@ -748,7 +748,7 @@ int HandleInputLine(
                printf(indent "<%s>" fmt "</%s>\n",tag,value,tag); \
             }
         
-            pXJV("    ","%lld",META_START_TAG,(long long int) start + step);
+            pXJV("    ","%lld",META_START_TAG,(long long int) start);
             pXJV("    ","%lu", META_STEP_TAG, step);
             pXJV("    ","%lld",META_END_TAG,(long long int)end);
             if (! json){
@@ -792,7 +792,7 @@ int HandleInputLine(
             } else {
                 printf("  <%s>\n", DATA_TAG);
             }
-            for (ti = start + step; ti <= end; ti += step) {
+            for (ti = start; ti <= end; ti += step) {
                 if (json){
                     printf("    [ ");
                 }
