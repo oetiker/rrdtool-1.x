@@ -289,7 +289,10 @@ int rrd_xport_fn(
     if ( im->start > *start ) {
         *start = *start + *step;
     }
-    *end = im->end - im->end % (*step) + (*step);
+    *end = im->end - im->end % (*step);
+    if ( im->end > *end ) {
+        *end = *end + *step;
+    }
     
 
     /* room for rearranged data */
