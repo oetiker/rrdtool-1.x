@@ -236,7 +236,7 @@ rrd_file_t *rrd_open(
         lseek(rrd_simple_file->fd, 0, SEEK_SET);
     }
     no_lseek_necessary:
-#ifdef HAVE_POSIX_FADVISE
+#if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and diskaccess (and buffer cache).
