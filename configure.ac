@@ -555,7 +555,7 @@ AC_CHECK_FUNC(g_regex_new,[
    AC_MSG_CHECKING(if pcre is available to supply the missing regex support in glib)
    AC_MSG_RESULT(checking now ...)
    EX_CHECK_ALL(pcre,   pcre_compile,            pcre.h,                 pcre,    x.x.x, [get a newer glib and you will not need pcre at all],"")
-   AC_CHECK_FUNC(g_regex_new,[
+   AC_CHECK_FUNC(pcre_compile,[
         AC_DEFINE(HAVE_PCRE_COMPILE,[1],[we have pcre to replace missing regexp support form glib])
    ],[
         AC_MSG_ERROR([you need either glib with g_regex support or libpcre to compile rrdtool.])

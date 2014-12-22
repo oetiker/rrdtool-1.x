@@ -236,7 +236,7 @@ the end of line 4 means that line 4 and line 5 are on one line.
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
  gunzip -c libpng-1.2.18.tar.gz | tar xf -
- cd libpng-1.2.10
+ cd libpng-1.2.18
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
  $MAKE
  $MAKE install
