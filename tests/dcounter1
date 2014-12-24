@@ -3614,6 +3614,8 @@ report create
 do_update
 report "update"
 
+is_cached && exit 0
+
 $RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 600 -s 1300000000 -e 1300003600 | grep ^1300 | \
   grep -v nan | $DIFF - $BASEDIR/dcounter1.output
 report "fetch"
