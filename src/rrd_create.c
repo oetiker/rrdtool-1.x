@@ -606,7 +606,7 @@ int parseRRA(const char *def,
 		if (sscanf(token, "smoothing-window=%lf",
 			   &(rra_def->par[RRA_seasonal_smoothing_window].
 			     u_val))) {
-                    if (*require_version == NULL || atoi(require_version) < atoi(RRD_VERSION4)) {
+                    if (*require_version == NULL || atoi(*require_version) < atoi(RRD_VERSION4)) {
 		        *require_version = RRD_VERSION4;    /* smoothing-window causes Version 4 */
                     }
 		    if (rra_def->par[RRA_seasonal_smoothing_window].u_val < 0.0
