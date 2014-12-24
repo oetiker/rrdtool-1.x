@@ -1357,7 +1357,7 @@ static int update_pdp_prep(
 {
     unsigned long ds_idx;
     int       ii;
-    double    rate, newval, oldval, tmp;
+    double    rate, newval, oldval;
     enum dst_en dst_idx;
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
