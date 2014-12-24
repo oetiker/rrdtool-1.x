@@ -332,7 +332,7 @@ rrd_file_t *rrd_open(
 
     version = atoi(rrd->stat_head->version);
 
-    if (version > atoi(RRD_VERSION)) {
+    if (version > atoi(RRD_VERSION5)) {
         rrd_set_error("can't handle RRD file version %s",
                       rrd->stat_head->version);
         goto out_nullify_head;
