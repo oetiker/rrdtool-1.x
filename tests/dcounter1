@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 
 . $(dirname $0)/functions
 
@@ -3615,5 +3615,5 @@ do_update
 report "update"
 
 $RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 600 -s 1300000000 -e 1300003600 | grep ^1300 | \
-  $DIFF - $BASEDIR/dcounter1.output
+  grep -v nan | $DIFF - $BASEDIR/dcounter1.output
 report "fetch"
