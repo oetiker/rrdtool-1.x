@@ -9,11 +9,11 @@ dnl Inspiration from http://autoconf-archive.cryp.to
 dnl tell automake the this script is for rrdtool
 
 dnl Minimum Autoconf version required.
-AC_PREREQ(2.59)
+AC_PREREQ([2.69])
 
 dnl the official version number is
 dnl a.b.c
-AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]))
+AC_INIT([rrdtool],[m4_esyscmd(tr -d '\n' < VERSION)])
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
@@ -172,7 +172,7 @@ dnl Check for the compiler and static/shared library creation.
 AC_PROG_CPP
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_LIBTOOL
+LT_INIT
 
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
@@ -215,7 +215,7 @@ CONFIGURE_PART(Checking for Header Files)
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h)
+AC_CHECK_HEADERS(langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h stdarg.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -337,7 +337,7 @@ volatile int x;volatile float f;  ]], [[x = isinf(f)]])],[AC_MSG_RESULT(yes)
 
 dnl finite is BSD, isfinite is C99, so prefer the latter
 AC_CACHE_CHECK([whether isfinite is broken],[ac_cv_have_broken_isfinite],[
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #ifdef HAVE_MATH_H
 #include <math.h>
 #endif
@@ -355,7 +355,7 @@ int main ()
 #endif
 #endif
 return 0;
-}],[ac_cv_have_broken_isfinite=no],[ac_cv_have_broken_isfinite=yes],[
+}]])],[ac_cv_have_broken_isfinite=no],[ac_cv_have_broken_isfinite=yes],[
 case "${target}" in
   hppa*-*-hpux*) ac_cv_have_broken_isfinite=yes ;;
   *-solaris2.8) ac_cv_have_broken_isfinite=yes ;;
@@ -403,10 +403,7 @@ dnl we may want to make sure we use the external
 dnl defined by libc to not run into linker resolve trouble
 
 AC_CACHE_CHECK([for opterr], rd_cv_var_int_opterr,
-[AC_TRY_LINK([#include <unistd.h>],
-  [extern int opterr; opterr = 1;],
-  [rd_cv_var_int_opterr=yes],
-  [rd_cv_var_int_opterr=no])])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <unistd.h>]], [[extern int opterr; opterr = 1;]])],[rd_cv_var_int_opterr=yes],[rd_cv_var_int_opterr=no])])
 if test x"$rd_cv_var_int_opterr" = x"yes"; then
   AC_DEFINE(HAVE_INT_OPTERR, 1, [Define to 1 if you have the global variable 'int opterr'.])
 fi
@@ -957,7 +954,8 @@ AC_ARG_WITH([systemdsystemunitdir],
 	[], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
 if test "x$with_systemdsystemunitdir" != xno; then
 	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
-	AC_OUTPUT([etc/rrdcached.socket etc/rrdcached.service])
+	AC_CONFIG_FILES([etc/rrdcached.socket etc/rrdcached.service])
+AC_OUTPUT
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ])
 
