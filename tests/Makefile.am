@@ -4,7 +4,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
-	create-from-template-1
+	create-from-template-1 dcounter1
 EXTRA_DIST = Makefile.am \
 	alltests functions \
 	modify1 modify-test1.create.dump modify-test1.mod1.dump \
@@ -15,7 +15,7 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1 tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2 tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions
+	valgrind-supressions dcounter1 dcounter1.output
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 TESTS_ENVIRONMENT = \
 	BASEDIR=${abs_srcdir} ; export BASEDIR ; \

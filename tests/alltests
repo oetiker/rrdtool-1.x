@@ -18,3 +18,4 @@ cd $BASEDIR
 ./modify4
 ./modify5
 ./rrdcreate
+./dcounter1

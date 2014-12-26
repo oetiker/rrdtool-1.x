@@ -1357,8 +1357,7 @@ static int update_pdp_prep(
 {
     unsigned long ds_idx;
     int       ii;
-    double    rate;
-    double    tmp;
+    double    rate, newval, oldval;
     enum dst_en dst_idx;
 
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
@@ -1422,19 +1421,54 @@ static int update_pdp_prep(
                 }
                 break;
             case DST_ABSOLUTE:
-                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &pdp_new[ds_idx], "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
+                if( rrd_strtodbl(updvals[ds_idx + 1], NULL, &newval, "Function update_pdp_prep, case DST_ABSOLUTE" ) != 2 ) {
                     return -1;
                 }
+                pdp_new[ds_idx] = newval;
                 rate = pdp_new[ds_idx] / interval;
                 break;
             case DST_GAUGE:
-                if( rrd_strtodbl( updvals[ds_idx + 1], NULL, &tmp, "Function update_pdp_prep, case DST_GAUGE") == 2 ) {
-                    pdp_new[ds_idx] = tmp * interval;
-                } else {
+                if( rrd_strtodbl( updvals[ds_idx + 1], NULL, &newval, "Function update_pdp_prep, case DST_GAUGE") != 2 ) {
                     return -1;
                 }
-                rate = pdp_new[ds_idx] / interval;
+                pdp_new[ds_idx] = newval * interval;
+                rate = newval;
                 break;
+            case DST_DCOUNTER:
+            case DST_DDERIVE:
+                if (rrd->pdp_prep[ds_idx].last_ds[0] != 'U') {
+                    const char *e_msg;
+
+                    if (dst_idx == DST_DCOUNTER) {
+                        e_msg = "Function update_pdp_prep, case DST_DCOUNTER";
+                    } else {
+                        e_msg = "Function update_pdp_prep, case DST_DDERIVE";
+                    }
+                    if (rrd_strtodbl(updvals[ds_idx + 1], NULL, &newval, e_msg) != 2) {
+                        return -1;
+                    }
+                    if (rrd_strtodbl(rrd->pdp_prep[ds_idx].last_ds, NULL, &oldval, e_msg) != 2) {
+                        return -1;
+                    }
+                    if (dst_idx == DST_DCOUNTER) {
+                        /*
+                         * DST_DCOUNTER is always signed, so it can count either up,
+                         * or down, but not both at the same time. Changing direction
+                         * considered a "reset".
+                         */
+                        if ((newval > 0 && oldval > newval) ||
+                          (newval < 0 && newval > oldval)) {
+                            /* Counter reset detected */
+                            pdp_new[ds_idx] = DNAN;
+                            break;
+                        }
+                    }
+                    pdp_new[ds_idx] = newval - oldval;
+                    rate = pdp_new[ds_idx] / interval;
+                } else {
+                    pdp_new[ds_idx] = DNAN;
+                 }
+                 break;
             default:
                 rrd_set_error("rrd contains unknown DS type : '%s'",
                               rrd->ds_def[ds_idx].dst);

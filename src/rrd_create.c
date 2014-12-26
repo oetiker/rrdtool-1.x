@@ -271,8 +271,8 @@ int parseDS(const char *def,
 	    ds_def_t *ds_def,
 	    void *key_hash,
             long (*lookup)(void *, char *),
-            mapping_t *mapping
-	    ) 
+            mapping_t *mapping,
+	    const char **require_version)
 {
     int rc = -1;
     char *dst_tmp = NULL;
@@ -339,11 +339,18 @@ int parseDS(const char *def,
     dst_tmp  = strndup(def + s, e - s);
     dst_args = strndup(def + s2, e2 - s2);
         
+    if ((dst_conv(dst_tmp) == DST_DCOUNTER || dst_conv(dst_tmp) == DST_DDERIVE) &&
+      (*require_version == NULL || atoi(*require_version) < atoi(RRD_VERSION5))) {
+        *require_version = RRD_VERSION5;
+    }
+
     switch (dst_conv(dst_tmp)) {
     case DST_COUNTER:
     case DST_ABSOLUTE:
     case DST_GAUGE:
     case DST_DERIVE:
+    case DST_DCOUNTER:
+    case DST_DDERIVE:
         strncpy(ds_def->dst, dst_tmp, DST_SIZE);
 	parseGENERIC_DS(dst_args, ds_def);
 	break;
@@ -403,14 +410,14 @@ done:
 int parseRRA(const char *def,
 	     rra_def_t *rra_def, 
 	     rrd_t *rrd,
-	     unsigned long hash) {
+	     unsigned long hash,
+             const char **require_version) {
     char     *argvcopy;
     char     *tokptr = "";
     unsigned short token_idx, error_flag, period = 0;
     int       cf_id = -1;
     int       token_min = 4;
     const char *parsetime_error = NULL;
-    char     *require_version = NULL;
 
     memset(rra_def, 0, sizeof(rra_def_t));
 
@@ -426,7 +433,9 @@ int parseRRA(const char *def,
 	    cf_id = cf_conv(rra_def->cf_nam);
 	    switch (cf_id) {
 	    case CF_MHWPREDICT:
-		require_version = RRD_VERSION;    /* MHWPREDICT causes Version 4 */
+                if (*require_version == NULL || atoi(*require_version) < atoi(RRD_VERSION4)) {
+		    *require_version = RRD_VERSION4;    /* MHWPREDICT causes Version 4 */
+                }
 	    case CF_HWPREDICT:
 		token_min = 5;
 		/* initialize some parameters */
@@ -597,7 +606,9 @@ int parseRRA(const char *def,
 		if (sscanf(token, "smoothing-window=%lf",
 			   &(rra_def->par[RRA_seasonal_smoothing_window].
 			     u_val))) {
-		    require_version = RRD_VERSION;    /* smoothing-window causes Version 4 */
+                    if (*require_version == NULL || atoi(*require_version) < atoi(RRD_VERSION4)) {
+		        *require_version = RRD_VERSION4;    /* smoothing-window causes Version 4 */
+                    }
 		    if (rra_def->par[RRA_seasonal_smoothing_window].u_val < 0.0
 			|| rra_def->par[RRA_seasonal_smoothing_window].u_val >
 			1.0) {
@@ -655,14 +666,6 @@ int parseRRA(const char *def,
     if (token_idx < token_min){
 	rrd_set_error("Expected at least %i arguments for RRA but got %i",token_min,token_idx);
 	return(-1);
-    }
-
-    // parsing went well. ONLY THEN are we allowed to produce
-    // additional side effects.
-    if (require_version != NULL) {
-        if (rrd) {
-            strcpy(rrd->stat_head->version, RRD_VERSION);
-        }
     }
 
 #ifdef DEBUG
@@ -751,6 +754,7 @@ int rrd_create_r2(
     GList *sources_rrd_files = NULL;
     mapping_t *mappings = NULL;
     int mappings_cnt = 0;
+    const char *require_version = NULL;
     
     /* clear any previous errors */
     rrd_clear_error();
@@ -852,7 +856,7 @@ int rrd_create_r2(
             memset(&rrd.ds_def[rrd.stat_head->ds_cnt], 0, sizeof(ds_def_t));
 
 	    parseDS(argv[i] + 3, rrd.ds_def + rrd.stat_head->ds_cnt,
-		    &rrd, lookup_DS, &m);
+		    &rrd, lookup_DS, &m, &require_version);
 
             mappings = realloc(mappings, sizeof(mapping_t) * (mappings_cnt + 1));
             if (! mappings) {
@@ -886,7 +890,7 @@ int rrd_create_r2(
             }
 
 	    parseRRA(argv[i], rrd.rra_def + rrd.stat_head->rra_cnt, &rrd,
-		     hashed_name);
+		     hashed_name, &require_version);
 
 	    if (rrd_test_error()) {
 		goto done;
@@ -904,7 +908,11 @@ int rrd_create_r2(
 	    goto done;
         }
     }
-
+    // parsing went well. ONLY THEN are we allowed to produce
+    // additional side effects.
+    if (require_version != NULL) {
+        strcpy(rrd.stat_head->version, require_version);
+    }
 
     if (rrd.stat_head->rra_cnt < 1) {
         rrd_set_error("you must define at least one Round Robin Archive");

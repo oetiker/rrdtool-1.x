@@ -41,7 +41,7 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 			/linux/   && do{ $R = "-Wl,--rpath -Wl,$rp"};
 			/hpux/    && do{ $R = "+b$rp"};
 			/solaris/ && do{ $R = "-R$rp"};
-			/bsd/     && do{ $R = "-R$rp"};
+			/bsd/     && do{ $R = "-Wl,--rpath -Wl,$rp"};
 			/aix/     && do{ $R = "-blibpath:$rp"};
 		}
 	}

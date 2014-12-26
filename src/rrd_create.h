@@ -23,7 +23,8 @@ int parseDS(const char *def,
 	    ds_def_t *ds_def,
 	    void *key_hash,
 	    long (*lookup)(void *, char *),
-	    mapping_t *mapping);
+	    mapping_t *mapping,
+            const char **require_version);
 
 /* Parse a textual RRA definition into rra_def. The rra_def might be
    disconnected from any RRD. However, because some definitions cause
@@ -38,7 +39,8 @@ int parseDS(const char *def,
 int parseRRA(const char *def,
 	     rra_def_t *rra_def, 
 	     rrd_t *rrd,
-	     unsigned long hash);
+	     unsigned long hash,
+             const char **require_version);
 
 rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array, 
 				 long unsigned int *rra_cnt, 

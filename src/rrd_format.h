@@ -33,8 +33,9 @@
 #define RRD_COOKIE    "RRD"
 /* #define RRD_VERSION   "0002" */
 /* changed because microsecond precision requires another field */
-#define RRD_VERSION   "0004"
 #define RRD_VERSION3  "0003"
+#define RRD_VERSION4  "0004"
+#define RRD_VERSION5  "0005"
 #define FLOAT_COOKIE  ((double)8.642135E130)
 
 typedef union unival {
@@ -138,7 +139,9 @@ enum dst_en { DST_COUNTER = 0,  /* data source types available */
     DST_ABSOLUTE,
     DST_GAUGE,
     DST_DERIVE,
-    DST_CDEF
+    DST_CDEF,
+    DST_DCOUNTER,
+    DST_DDERIVE
 };
 
 enum ds_param_en { DS_mrhb_cnt = 0, /* minimum required heartbeat. A

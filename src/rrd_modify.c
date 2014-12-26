@@ -334,13 +334,15 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
     int rc = -1;
     int j;
     const char *c;
+    const char *require_version = NULL;
+
     for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
 	ds_def_t added;
 
 	// parse DS
 	parseDS(c + 3,
 		&added, // out.ds_def + out.stat_head->ds_cnt,
-		out, lookup_DS, NULL);
+		out, lookup_DS, NULL, &require_version);
 
 	// check if there is a name clash with an existing DS
 	if (lookup_DS(&out, added.ds_nam) >= 0) {
@@ -767,8 +769,8 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
        files should be modified, a dump/restore cycle should be
        done.... */
     
-    if (! (strcmp(in->stat_head->version, RRD_VERSION3) == 0 || strcmp(in->stat_head->version, RRD_VERSION) == 0) ) {
-	rrd_set_error("direct modification is only supported for version 3 or version 4 RRD files. Consider to dump/restore before retrying a modification");
+    if (atoi(in->stat_head->version) < atoi(RRD_VERSION3) || atoi(in->stat_head->version) > atoi(RRD_VERSION5)) {
+	rrd_set_error("direct modification is only supported for version 3, 4 or 5 of RRD files. Consider to dump/restore before retrying a modification");
 	goto done;
     }
     
@@ -1184,6 +1186,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
     unsigned int last_rra_cnt = out->stat_head->rra_cnt;
     int total_out_rra_rows = 0;
     int total_cnt_out = 0;
+    const char *require_version = NULL;
 
     memset(&empty_cdp_prep, 0, sizeof(cdp_prep_t));
 
@@ -1199,7 +1202,7 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 	    rra_def_t rra_def;
 
 	    // the hash doesn't really matter...
-	    parseRRA(rra_mod_ops[r].def, &rra_def, out, hash);
+	    parseRRA(rra_mod_ops[r].def, &rra_def, out, hash, &require_version);
 
 	    if (rrd_test_error()) {
 		// failed!!!
@@ -1218,6 +1221,10 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
 		goto done;
 	    }
 	}
+    }
+
+    if (require_version != NULL && atoi(require_version) < atoi(out->stat_head->version)) {
+        strcpy(out->stat_head->version, require_version);
     }
 
     if (last_rra_cnt < out->stat_head->rra_cnt) {

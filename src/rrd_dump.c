@@ -122,7 +122,7 @@ int rrd_dump_cb_r(
     if (atoi(rrd.stat_head->version) <= 3) {
         CB_FMTS("\t<version>%s</version>\n", RRD_VERSION3);
     } else {
-        CB_FMTS("\t<version>%s</version>\n", RRD_VERSION);
+        CB_FMTS("\t<version>%s</version>\n", rrd.stat_head->version);
     }
     
     CB_FMTS("\t<step>%lu</step> <!-- Seconds -->\n",

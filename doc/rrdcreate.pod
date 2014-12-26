@@ -131,9 +131,9 @@ the characters [a-zA-Z0-9_].
 
 I<DST> defines the Data Source Type. The remaining arguments of a
 data source entry depend on the data source type. For GAUGE, COUNTER,
-DERIVE, and ABSOLUTE the format for a data source entry is:
+DERIVE, DCOUNTER, DDERIVE and ABSOLUTE the format for a data source entry is:
 
-B<DS:>I<ds-name>B<:>{I<GAUGE | COUNTER | DERIVE | ABSOLUTE>}B<:>I<heartbeat>B<:>I<min>B<:>I<max>
+B<DS:>I<ds-name>B<:>{I<GAUGE | COUNTER | DERIVE | DCOUNTER | DDERIVE | ABSOLUTE>}B<:>I<heartbeat>B<:>I<min>B<:>I<max>
 
 For COMPUTE data sources, the format is:
 
@@ -160,6 +160,19 @@ rate. When the counter overflows, RRDtool checks if the overflow
 happened at the 32bit or 64bit border and acts accordingly by adding
 an appropriate value to the result.
 
+=item B<DCOUNTER>
+
+the same as B<COUNTER>, but for quantities expressed as double-precision
+floating point number.  Could be used to track quantities that increment
+by non-integer numbers, i.e. number of seconds that some routine has taken
+to run, total weight processed by some technology equipment etc.  The
+only substantial difference is that B<DCOUNTER> can either be upward counting
+or downward counting, but not both at the same time.  The current direction
+is detected automatically on the second non-undefined counter update and
+any further change in the direction is considered a reset.  The new direction is
+determined and locked in by the second update after reset and its difference
+to the value at reset.
+
 =item B<DERIVE>
 
 will store the derivative of the line going from the last to the
@@ -168,6 +181,11 @@ example, to measure the rate of people entering or leaving a
 room. Internally, derive works exactly like COUNTER but without
 overflow checks. So if your counter does not reset at 32 or 64 bit you
 might want to use DERIVE and combine it with a MIN value of 0.
+
+=item B<DDERIVE>
+
+the same as B<DERIVE>, but for quantities expressed as double-precision
+floating point number.
 
 B<NOTE on COUNTER vs DERIVE>
 
@@ -625,8 +643,8 @@ precision should be acceptable.
 
 =item It's always a Rate
 
-RRDtool stores rates in amount/second for COUNTER, DERIVE and ABSOLUTE
-data.  When you plot the data, you will get on the y axis
+RRDtool stores rates in amount/second for COUNTER, DERIVE, DCOUNTER,
+DDERIVE and ABSOLUTE data.  When you plot the data, you will get on the y axis
 amount/second which you might be tempted to convert to an absolute
 amount by multiplying by the delta-time between the points. RRDtool
 plots continuous data, and as such is not appropriate for plotting

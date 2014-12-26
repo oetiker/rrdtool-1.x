@@ -64,6 +64,8 @@ enum dst_en dst_conv(
         converter(GAUGE, DST_GAUGE)
         converter(DERIVE, DST_DERIVE)
         converter(COMPUTE, DST_CDEF)
+        converter(DCOUNTER, DST_DCOUNTER)
+        converter(DDERIVE, DST_DDERIVE)
         rrd_set_error("unknown data acquisition function '%s'", string);
     return (enum dst_en)(-1);
 }
