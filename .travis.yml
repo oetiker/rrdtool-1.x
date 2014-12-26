@@ -17,7 +17,8 @@ before_script:
 
 script:
   - ./configure --prefix=/opt/rrdtool-master --disable-ruby
-  - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
+# - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
+  - make
   - make check
   - make check TESTS_STYLE="rrdcached"
   - make check TESTS_STYLE="valgrind-logfile"
