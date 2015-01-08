@@ -1,3 +1,579 @@
+RRDtool 1.5.0-rc1 - 2015-01-08
+=============================
+
+New Features
+------------
+* compile without graphics libraries: ./configure --disable-rrd_graph
+* updated windows port (see WIN32-BUILD-TIPS.txt)
+* single step RRAs for MIN,MAX,LAST are generated virtually from
+  an AVERAGE RRA
+* ignore updates in the past with rrdtool update --skip-past-updates
+* ignore a LINE when scaling a chart using the skipscale option
+* detect 32bit timeoverflows
+* massive performance boost for charts with more than 100 DEF line by
+  switching form a linear search to a HASH when searching for data
+* improved cross compilation support
+* .Net bindings
+* allow rrdtool graph to silently skip non-existing source files using the
+  --use-nan-for-all-missing-data option
+* restore from a pipe (rrdtool restore - y.rrd)
+* in rrdtool create, row count and step can be defined in absolute time
+* all new "create on steroids" can pull both data and configuration from
+  existing rrd files
+* use rrdtool graph to chart arbitrary data via a callback function for data fetching
+  support is integrated in the perl bindings.
+* re-written parser for rrdtool graph commands. It now follows a simple key
+  value pattern, compatible with the previous syntax.
+* MEDIAN op for CDEF expressions
+* DEPTH,INDEX,COPY,ROL ops for CDEF (as seen in PostScript)
+
+
+RRDtool 1.4.9 - 2014-09-29
+==========================
+
+New Features
+------------
+* allows rrdrestore to read input from stdin
+* add documentation for RRDs::xport
+* RPN operators MINNAN and MAXNAN
+* --left-axis-format option to rrd_graph
+
+Bugfixes
+--------
+* properly verify validity of user suplied format strings
+* remove graph functions from python module when compiled without graphing
+  support
+* verify that only short integers are used in COMPUTE rpn expressions 
+* eliminate duplicate setlocale calls
+* fixed endless loop and double frees in rrd_restore
+* fixed missing variable initializations in rrd_graph
+* fixed JSON output format to actually be valid JSON
+* detect failing fallocate and fall back to seeking
+* fixed format string in ruby bindings
+
+
+RRDtool 1.4.8 - 2012-05-23
+==========================
+
+Highlights
+----------
+
+* rrd_graph now uses a map to lookup variable names causing graphs with many
+  items to be drawn magnitudes faster as the linear search of the variable
+  tables is gone now.
+
+* the optional argument :skipscale allows for a LINE or AREA instruction to be
+  excluded from having an effect on the scaling of the graph
+
+* TRENDNAN is now working properly and als not crashing anymore
+
+* Added a no-op string positioning combo "\." this allows to write
+  COMMENT:OS\2\. which would otherwise not be possible.
+
+* JSON output of xport is now actually json compilant by its keys
+  being properly quoted now.
+
+* The label positioner in rrd_graph is now properly ignoring the current
+  state of DST.
+
+* fixes and enhancements for Python, Ruby, TCL and Perl bindings
+
+* improved error reporting in rrd_graph
+
+* portability and cross compilation
+
+* code and bugtracker moved to https://github.com/oetiker/rrdtool-1.x
+
+Detail
+------
+
+* commit 3bbe02f924ec0e0342c5c728ee93a52e2ae1104f
+| Author: Trevor Bowen <trevor.bowen@adtran.com>
+| Date:   Mon May 13 16:47:29 2013 -0500
+| 
+|     Fixed failed IEEE check for cross-compile support.
+|  
+* commit 2948dde97fa8cef4f6c72e345601de566fc28e23
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Apr 30 11:28:20 2013 +0200
+| 
+|     backport of the (C)DEF hash patch to accelerate processing of large (+100 statements) graph instructions.
+|  
+* commit fd4cfab7f2a05950b15292bacd8a00251fdaa1e4
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Mar 19 07:17:23 2013 +0100
+| 
+|     fixed overflow probem with partial matching
+|  
+* commit a1768b2580bdd4451be66928e8bfc32a82c9ada9
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Sat Mar 16 18:09:38 2013 +0100
+| 
+|     raise an error if part of an CDEF is unparsable
+|  
+* commit f860a1c88ad1eb2d46b69c9b5fe9f357d2f9d28e
+| Author: Nick <nick@example.com>
+| Date:   Sat Feb 9 18:46:40 2013 +0000
+| 
+|     Added check for graph timespan overflowing if time_t is 32 bits.
+|       
+* commit 14eca7ff5e5f63e50274a2dc712b43f36d06d18e
+| Author: Nick <nick@example.com>
+| Date:   Sat Feb 9 16:38:17 2013 +0000
+| 
+|     Fixed overflow bug.
+|  
+* commit a234579cdf7eb99b3c93a4463dcf82b50f709785
+| Author: Max Khon <fjoe@samodelkin.net>
+| Date:   Wed Dec 12 13:48:23 2012 +0700
+| 
+|     Fix build when glib is in non-standard location (e.g. /opt).
+|  
+* commit 8b3d3f161169733cd46dc1d29293265d0a045a02
+| Author: Olivier Doucet <webmaster@ajeux.com>
+| Date:   Wed Jan 9 15:52:44 2013 +0100
+| 
+|     Updated rrdgraph_libdbi doc about MySQL performance issues
+|  
+* commit db4fe1aaf420d0f636c8bed37f7f7bc166a51016
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Nov 19 09:17:55 2012 +0100
+| 
+|     fixed regression from renaming skipscale
+|  
+* commit 774e1aec924a48a6299033adc173387e104827bc
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Nov 19 09:09:15 2012 +0100
+| 
+|     properly fix handling of time_t size in rrd_restore
+|  
+* commit 1591fffceb3878b785c358e4d8d884f6ebe707ba
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Wed Nov 14 17:48:32 2012 +0100
+| 
+|     use skipscale everywhere and not SKIPSCALE
+|  
+* commit cab7c3817687772ecd816a220703d04ce4d92a22
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Wed Nov 14 14:19:44 2012 +0100
+| 
+|     Normally the graphing function makes sure that the entire LINE or AREA
+|     is visible in the chart. The scaling of the chart will be modified
+|     accordingly if necessary. Any LINE or AREA can be excluded from this
+|     process by adding the option SKIPSCALE.
+|     
+|      LINE:x#f00::SKIPSCALE
+|  
+* commit 4c583ec30a4d7b37e49f930d5fe4d6afc9b81ccd
+| Author: Antony Dovgal <antony.dovgal@gmail.com>
+| Date:   Tue Nov 13 15:57:49 2012 +0100
+| 
+|     fix for first day of the week detection logic
+|    
+*   commit 6259d3ec4db96daa4839edcae0537ddedac58b12
+|\  Merge: f6d786d 743e34f
+| | Author: Tobias Oetiker <tobi@oetiker.ch>
+| | Date:   Sat Nov 10 17:49:20 2012 +0100
+| | 
+| |     Merge branch '1.4' of github.com:oetiker/rrdtool-1.x into 1.4
+| |     
+| *   commit 743e34f5d66ea41698ff2f499283de532137408b
+| |\  Merge: 57a8491 ec0f5d3
+| | | Author: Tobias Oetiker <tobi@oetiker.ch>
+| | | Date:   Fri Oct 19 13:47:25 2012 -0700
+| | | 
+| | |     Merge pull request #352 from tokkee/sh/build-issues
+| | |     
+| | |     ruby bindings: Fixed a few build issues.
+| | |    
+| | * commit ec0f5d31bb77f72dca926ca5f44ceec115a84226
+| | | Author: Sebastian Harl <sh@teamix.net>
+| | | Date:   Fri Oct 19 19:12:31 2012 +0200
+| | | 
+| | |     ruby/main: Fixed "format not a string literal and no format arguments" errors.
+| | |     
+| | |     These kind of errors are reported by current versions of GCC.
+| | |    
+| | * commit 3fef26354ee9c257a433f7296f73c760f96ccc15
+| |/  Author: Sebastian Harl <sh@teamix.net>
+| |   Date:   Fri Oct 19 19:11:30 2012 +0200
+| |   
+| |       ruby bindings: Fixed a miss-placed cast.
+| |   
+* | commit f6d786d9146d45234c32999adae6ae7286ea8701
+| | Author: Tobias Oetiker <tobi@oetiker.ch>
+| | Date:   Sat Nov 10 17:47:28 2012 +0100
+| | 
+| |     do not die when failing to add link
+| |   
+* | commit 8381c9b92283b576929a7317f982a23d0b3254f3
+|/  Author: Tobias Oetiker <tobi@oetiker.ch>
+|   Date:   Sat Nov 10 17:46:44 2012 +0100
+|   
+|       fix trendnan variable access
+|  
+* commit 57a84914e0bc7725ba1741e1a399153c8e44d407
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Sep 11 14:33:08 2012 +0200
+| 
+|     add git notes
+|  
+* commit 35c423dff643bc4d9dcd2e259d4cbfe5c564b871
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Sep 3 13:39:29 2012 +0000
+| 
+|     fix off by 1 error
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2305 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 859873eaed82f0e1ab79e15cbd8db45659340ad0
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Wed Aug 22 09:57:33 2012 +0000
+| 
+|     fixed pango markup link
+|     
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2304 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 4f18e03460e91cf6ec433a43d355d77cec364eb2
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Aug 14 09:23:11 2012 +0000
+| 
+|     remove a bunch of variables which were set but never used as pointed out by gcc
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2303 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit d8b366750ef91e7f49ec1e826e91276c4a91110a
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Aug 14 09:22:19 2012 +0000
+| 
+|     fix locations for installing the sample programs to make automake happy
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2302 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 55231968de6715004cd821630d5737696566a148
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Aug 13 14:04:15 2012 +0000
+| 
+|     integrate rrdinfo and rrdcreate into the rrdupdate binary - Sven-GÃ¶ran Bergh
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2300 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 9684a2680d57cd22434f8b226e3b6afab4f72bff
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Sun Aug 12 20:49:17 2012 +0000
+| 
+|     openbsd does not know EPROTO it seems
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2298 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 6698fd7b3324f9887d8f5f920a8d18aad870b113
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Sun Aug 12 14:37:31 2012 +0000
+| 
+|     complete segfault fix for second axis %s format begun in r2123 (thanks Martin Pelikan for the hint)
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2297 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 2f88a17bbe097d3ebf7ff17b57a9111a1bd4e0bb
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Jul 31 12:43:45 2012 +0000
+| 
+|     RRDs.xs uses &PL_sv_undef to insert undefined values into arrays and hashes. This leads to all sorts of problems. For details, please see "AVs, HVs and undefined values" section in perlguts(1). -- patch by tobez+lars
+|     
+|     
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2296 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit afdc69a5a631fb7d2a18b2a82c8f0c3c4a439ba7
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Sat Jul 28 13:54:59 2012 +0000
+| 
+|     support for the xport command -- Jimmy Ngo
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2294 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 17be83c4cb0ff16ec7020e97556dd662b8fba52c
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon May 7 07:31:28 2012 +0000
+| 
+|     fix warning: "__STRICT_ANSI__" is not defined warning patch by Gilles Esp
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2288 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 37fd3455ee4517e80c4213b3407cb4871a4d2967
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Apr 10 10:12:28 2012 +0000
+| 
+|     make sure the grid and label positioner does NOT take the dst state of the current time into account.
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2286 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 649d79623f5170f3eab4a397a674600791dc57d4
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Mar 12 10:47:21 2012 +0000
+| 
+|     fix rrdcached crash as reported in debian bug #663505 -- Witold Baryluk
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2285 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit f124f8b045a70c3859f67bd6b0745078c641514c
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Thu Mar 8 07:46:04 2012 +0000
+| 
+|     if the perl bindings are to be installed together with rrdtool, make sure INSTALL_BASE does not confuse things. Inspired by Mike Schilli.
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2284 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit ba19ea752c9d4bc364356ca768a2896cd1c3857d
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Mon Mar 5 16:49:01 2012 +0000
+| 
+|     fix flush race in rrdcached -- Christian Hitz
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2282 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 9675fcbe69b95e527a9327e9fbe4ff86217af5f8
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Wed Feb 22 22:11:18 2012 +0000
+| 
+|     json requires keys to be proper strings and thus quoted ...
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2276 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 2e8bfaf37b374e7c3814d42febe51f04da916710
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Thu Feb 2 15:39:54 2012 +0000
+| 
+|     remove duplicate code in rrd_open -- Richard Laager
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2271 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 6618a475c42b0ec966d71f76b786bc4a871060ba
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Thu Feb 2 15:38:44 2012 +0000
+| 
+|     use  posix_fallocate when initialiying rrd files ... instead of filling them with yero explicitly -- Richard Laager
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2270 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit 2cbb285c19ec369db5eb1dcf584b09a1bd691ab6
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Thu Feb 2 15:35:24 2012 +0000
+| 
+|     fix for tcl bindings ... -- George Ross
+|     
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2269 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit c8ba4b3fd7e8815f615adcdc0dd52aabd9fed1cd
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Jan 24 10:08:48 2012 +0000
+| 
+|     prepare for the release of rrdtool-1.4.7
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2267 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit aa25939a8aed3c86d5c4953b84140d916991b6d4
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Jan 24 08:20:45 2012 +0000
+| 
+|     regression fix for r2265
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2266 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit c30daf7e738d6d17087a77eb99c19686107f8a8e
+| Author: Tobias Oetiker <tobi@oetiker.ch>
+| Date:   Tue Jan 24 08:18:37 2012 +0000
+| 
+|     test for tm.tm_gmtoff presence in configure.ac fix for #330
+|     
+|     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2265 a5681a0c-68f1-0310-ab6d-d61299d08faa
+|  
+* commit eb7b462e9a6373653bd9b844a76245b8b100ebfa
+  Author: Tobias Oetiker <tobi@oetiker.ch>
+  Date:   Tue Jan 24 07:38:31 2012 +0000
+  
+      check in /usr/lib64 for tclConfig.sh too
+      
+      git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2264 a5681a0c-68f1-0310-ab6d-d61299d08faa
+
+RRDtool 1.4.7 - 2012-01-24
+==========================
+Bugfixes:
+
+* test for tm.tm_gmtoff presence in configure.ac fix for #330 (libdbi
+  compiles on solaris should now work too)
+
+* check in /usr/lib64 for tclConfig.sh too
+
+* fix shared library version number (regression from 1.4.6)
+
+* be clearer as to what VDEF LAST/FIRST do.
+
+* remove perl 5.004 compatibility hack and make RRDs compile with newer
+  perls.
+
+New Functionality:
+
+* added a nop control for string formating, so that strings ending in /x are
+  possible by entering \x\. fix for #331
+
+* added support for rrdgraph to use the yotta, zetta, zepto, yocto prefixes.
+  Fix for #333 (thanks Christoph)
+
+RRDtool 1.4.6 - 2012-01-16
+==========================
+Enhancements:
+ * Added --json option to xport with inspiration from Erik Kastner and
+   Michael Markstaller -- Tobi
+
+ * updated win32 port -- Larry Adams and the cacti team
+
+ * configure option to disable building rrd_graph: --disable-rrd_graph
+   With support from Ulf Zimmermann (OpenLane)
+
+Bugfixes:
+ * fixed segfault in rrdtool (xport, fetch, graph) when handling
+   error conditions. -- James Brown
+ * improve compilation robustness in finding pic flags
+ * fix warnings in ruby bindings
+ * fix horizontal alignment of AREAS and LINES in graph output
+ * improved grid-fitting in graph output
+ * simplified configure tests for libwrap and libdbi
+ * rpn compare operators CAN return unknown ... (#293)
+ * do not require gettext 0.18 (0.17 is sufficient)
+ * improved rpm spec file -- Bernard Li
+ * fix glib dependency for --disable-rrd_graph and update library versions
+   (#323)
+ * fix uninitialized variable in rrd_graph (#322)
+ * fix issues with logarithmic charts (#296) -- Christoph Biedl
+ * improved data reduction algorithm in graph: after fetching, data must be
+   reduced to at least chart resolution, else some data will not get plotted.
+   fix for #298
+ * properly handle the case where RRDCACHED_ADDRESS is an empty string
+ * the number of COMPUTE rpn nodes is architecture dependent. calculate the
+   right number and complain otherwise. Fix for #300.
+ * make rrd_mkdir_p work on bsd* Unixes too ... their dirname call works
+   differently ... #305 
+ * allow to restore XML files with zero row rras ... this is a degenerated
+   case that does not occur in the wild, as rrdtool prevents the creation
+   of such rrd files. But rrdtool restore 1.3 did allows to create them via
+   restore.  Now this is possible again. #310.
+ * the first TREND* value can be calculated earlier ... -- fredrick (#312)
+ * actually link with LIBINTL if we got it ... should make solaris happy
+ * dbi_result_get_datetime_idx() return timestamp in UTC, but time axis on
+   graph supposed to be in local time. #321
+ * fix ruby binding for rrd_xport #318
+ * free step_list on error. fix for #317
+ * fix buffer overflow for LONG lines in journal handling code for update
+   requests. #316
+ * fix alignment of centered items ... title and footer
+ * fix for the header size problem and its effects on rrd_resize
+ * refuse to build if troff and nroff are not around #302
+ * plug memory leak in lua bindings #301
+ * improve cross compiling -- Michael Olbrich
+ * fix rrd_create behaviour when mmapping on a full filesystem by actually
+   'filling' the file with zero. -- Francois-Xavier Bourlet
+ * with libwrap use 'rrdcached' as the name of our daemon and not just
+   rrdcache
+ * bring spacing around graph back in line with 1.2 goodness ... in
+   connection with no-legend and no title
+ * do not mistake "sqlxxabc.rrd" for a libdbi specification -- Peter Stamfest
+ * if rrd_cgi fails to parse stuff, do NOT try to fix up the mess ... it is bound to fail
+ * update timestamp continuity checks in rrd_cached ... allow sub-second
+   precision
+ * fix double free in rrd_resize
+ * do not close the file handle to the resize file of there was a problem
+   getting it in the first place.
+ 
+
+
+RRDtool 1.4.5 - 2010-12-26
+==========================
+Bugfixes:
+ * rrdcached: print \n at the end of log messages when running rrdcached in the
+   foreground -- Bernard Li
+ * rrdcached: Let the -s, -m and -P options affect the default socket as
+   well -- Sebastian Harl
+ * rrdgraph: font related memory leaks fixed #208 -- tobi
+ * rrdgraph-libdbi: print error message instead of dumping core on sql
+   problem -- Pavel Nikiforov
+ * rrdgraph-libdbi: properly allocated response buffer -- Pavel Nikiforov
+ * rrdtool: in remote mode, make argument count for remote commands strict
+   -- Dave Peticolas
+ * rrdgraph: fix problems with second %s in right-axis format -- tobi
+ * compilation: works on MSVC2008 now -- jkane mail.com
+ * everywhere: fix locale handling. locales were not properly reset after
+   calling set locale -- tobi
+ * rrd_cgi: windows compilation fix --  jkane mail.com
+ * rrdgraph: fix use of %s in strftime (G)PRINT commands #277 -- tobi
+ * ruby: fix bindings to be compatible with current ruby implementations #279
+ * rrdcached: Ensure that response_read() always calls fflush() or fclose() #278
+   -- kevin brintnall
+ * rrd_client: free addrinfo list after use ... -- Christian Magnusson
+ * rrdupdate: follow the normal code path for exiting rrd_update if there is a problem
+   with rrdc, plugging a memory leak on the way --  Christian Magnusson
+ * rrdgraph: make sure we do not try to draw points all that far outside the
+   drawing area since some versions of cairo seem to go unstable when this
+   happens. -- Peter Stamfest
+ * rrdgraph: fix an endles loop near 2^31 timestamp (32bit platform problem)
+   -- Peter Stamfest
+ * compilation: AIX does not like MAP_PRIVATE and -lW in LDFLAGS #216 -- tobi
+ * compliation: add extra space in LDFLAGS #284 -- dam at opencsw
+ * rrdcached:  Fix permissions of the default socket -- Florian Forster
+ * rrdgraph-libdbi: Fix sigma calculation --  Hans Jørgen Jakobsen
+ * rrdcreate: better checks for RRA arguments
+ * configure: make configure recognize tcl-site argument (#281)
+ * rrdgraph: if there is no right label, do not reserve any space for it --tobi
+ 
+Enhancements:
+ * rrdcached: add hosts_access support added -- Shaun Reitan
+ * rrdfetch/graph: introduce "epoch" as a new base time reference, meaning
+   timestamp 0: you can now write epoch+11111111s or epoch+19711205s
+   -- Peter Stamfest
+
+
+RRDtool 1.4.4 - 2010-07-05
+==========================
+Bugfixes:
+
+  * compile: multiple fixes isnan and isinf defines to make rrdtool compile
+    with gcc on solaris (with --disable-nls) -- Tobi
+  * handle gettext/libintl like any other feature, do not try to supply
+    our own ... rrdtool can work fine without it -- tobi
+  * rrd_client: fix potential segfaults -- Florian Forster
+  * rrd_client: resolve synmlinks properly -- Kevin Brintnall
+  * compile: fix libtool and libtoolize names for OSX compiles -- Antoine Musso
+  * compile: fix for HAVE_BROKEN_MS_ASYNC (old linux kernels)
+  * rrd_xport: fix --daemon handling
+  * rrd_client: explicitly close connection on error -- Thorsten von Eicken  
+  * rrd_update: fix memory leak for COMPUTE datasources -- Frederik Kriewitz
+  * rrd_daemon: fix segfault when specifying a relative path (-j option)  -- Adrian-Ioan Vasile
+  * compile: make rrdtool compile with gcc 4.5 -- anicka@suse.cz
+  * portability: use %lld (long long int) for time_t *printf
+  * compile: link pangocairo and not pango since we do use pangocairo actually -- Stephen S. Disbrow
+  * compile: re-integrate intl into compile dependency so that hosts with
+    old (or no) gettext can get access to the included copy.
+  * rrd_cached: exit with status !=0 on invalid cli -- Sebastian Harl
+    
+Enhancements:
+
+  * updated build files and instructions for win32 port by Chris Larsen
+  * legal: Relicense the RRDCacheD client interface under the MIT license -- Florian Forster  
+  * legal: Updted FLOSS Exception for latest PHP license
+  * rrd_cached: better help output -- Sebastian Harl
+  
+------------------------------------------------------------------------
 RRDtool 1.4.3 - 2010-03-22
 ==========================
 New Features
@@ -7451,4 +8027,3 @@ Bug Fixes
 2001-02-25 15:29  
 
 	* branches, tags, trunk: New repository initialized by cvs2svn.
-

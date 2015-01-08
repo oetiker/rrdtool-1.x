@@ -62,4 +62,10 @@ indent:
 clean-local:
 	-rm -f config.h bindings/perl-piped/Makefile.old bindings/perl-shared/Makefile.old
 
+dist-hook: VERSION
+	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$VERSION.+/\$VERSION='$(NUM_VERS)';/' bindings/perl-*/*.pm
+	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1\S+/RRDtool '$(PACKAGE_VERSION)'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2015/' src/*.h src/*.c
+	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
+	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/rrdtool-[\.\d]+\d(-[a-z0-9]+)?/rrdtool-'$(PACKAGE_VERSION)'/g' doc/rrdbuild.pod
+                
 ##END##
