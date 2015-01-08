@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.GIT, Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -46,7 +46,7 @@ void PrintUsage(
 
     const char *help_main =
         N_("RRDtool %s"
-           "  Copyright 1997-2009 by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n");
 
@@ -665,7 +665,7 @@ int HandleInputLine(
              strcmp("v", argv[1]) == 0 ||
              strcmp("-v", argv[1]) == 0 || strcmp("-version", argv[1]) == 0)
         printf("RRDtool " PACKAGE_VERSION
-               "  Copyright by Tobi Oetiker, 1997-2008 (%f)\n",
+               "  Copyright by Tobi Oetiker (%f)\n",
                rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
 #ifdef HAVE_RRD_RESTORE

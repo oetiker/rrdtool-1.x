@@ -15,7 +15,7 @@ endif
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
-             netware/Makefile m4/snprintf.m4 \
+             m4/snprintf.m4 \
              etc/rrdcached-default-redhat etc/rrdcached-init-redhat \
              win32/README win32/Makefile.msc
 
@@ -64,7 +64,7 @@ clean-local:
 
 dist-hook: VERSION
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$VERSION.+/\$VERSION='$(NUM_VERS)';/' bindings/perl-*/*.pm
-	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1\S+/RRDtool '$(PACKAGE_VERSION)'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2015/' src/*.h src/*.c
+	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1.GIT, Copyright by Tobi Oetiker/RRDtool '$(PACKAGE_VERSION)', Copyright 1997-'`date +%Y`' by Tobi Oetiker/' src/*.h src/*.c
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/rrdtool-[\.\d]+\d(-[a-z0-9]+)?/rrdtool-'$(PACKAGE_VERSION)'/g' doc/rrdbuild.pod
                 
