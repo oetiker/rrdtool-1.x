@@ -3,6 +3,8 @@ RRDtool 1.5.0-rc1 - 2015-01-08
 
 New Features
 ------------
+* new datasource types: DCOUNTER and DDERIVE (they work the same as the
+  original DS, except that they can deal with floatingpoint numbers).
 * compile without graphics libraries: ./configure --disable-rrd_graph
 * updated windows port (see WIN32-BUILD-TIPS.txt)
 * single step RRAs for MIN,MAX,LAST are generated virtually from
