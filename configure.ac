@@ -236,6 +236,7 @@ AC_CHECK_FUNC(acos,  , AC_CHECK_LIB(m, acos))
 AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
+
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag=` 
 CFLAGS="$CFLAGS $pic_flag"
@@ -388,6 +389,9 @@ AC_FULL_IEEE
 CONFIGURE_PART(Resolve Portability Issues)
 
 GC_TIMEZONE()
+
+dnl Solaris has sigwaitinfo in librt
+AC_CHECK_FUNC(sigwaitinfo, , AC_CHECK_LIB(rt, sigwaitinfo))
 
 CHECK_FOR_WORKING_MS_ASYNC
 
