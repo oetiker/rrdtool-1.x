@@ -115,6 +115,9 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
                 : strndup(path, lastslash - path);
 #else
                 : strdup(path);
+                if (lastslash && lastslash != path){
+                  dir[lastslash-path]='\0';
+                }
 #endif
         if (dir != NULL) {
             ret = realpath(dir, buffer);
