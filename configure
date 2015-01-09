@@ -14725,7 +14725,7 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
-for ac_func in nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam
+for ac_func in nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

@@ -111,8 +111,11 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
         char *lastslash = strrchr(path, '/');
         
         char *dir = (lastslash == NULL || lastslash == path) ? strdup(".") 
+#ifdef HAVE_STRNDUP
                 : strndup(path, lastslash - path);
-        
+#else
+                : strdup(path);
+#endif
         if (dir != NULL) {
             ret = realpath(dir, buffer);
             free(dir);
