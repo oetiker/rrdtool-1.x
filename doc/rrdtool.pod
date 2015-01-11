@@ -80,11 +80,7 @@ uses fetch to retrieve its data from an RRD. Check L<rrdfetch>.
 
 =item B<tune>
 
-Alter setup of an RRD. Check L<rrdtune>.
-
-=item B<modify>
-
-Alter structure of an RRD. Check L<rrdmodify>.
+Alter setup and structure of an RRD. Check L<rrdtune>.
 
 =item B<first>
 
