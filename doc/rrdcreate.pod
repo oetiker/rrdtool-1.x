@@ -743,6 +743,6 @@ divides each PDP of the AccumDuration by the corresponding PDP of
 TotalRequests and stores the average request duration. The remainder of the
 RPN expression handles the divide by zero case.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>, Peter Stamfest E<lt>peter@stamfest.atE<gt>
