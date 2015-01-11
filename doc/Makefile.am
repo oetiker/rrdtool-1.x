@@ -11,8 +11,7 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflushcached.pod   \
       rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
-      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod                       \
-      rrdmodify.pod
+      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod                       
 
 if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
