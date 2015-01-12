@@ -21,6 +21,12 @@ S<[B<--gamma-deviation> I<adaption-parameter>]>
 S<[B<--smoothing-window> I<fraction-of-season>]>
 S<[B<--smoothing-window-deviation> I<fraction-of-season>]>
 S<[B<--aberrant-reset> I<ds-name>]>
+S<[B<--daemon>|B<-D> I<address>]>
+S<[B<DEL:>I<ds-name>]>
+S<[B<DS:>I<ds-spec>]>
+S<[B<DELRRA:>I<index>]>
+S<[B<RRA:>I<rra-spec>]>
+S<[B<RRA#>I<index>:[+-=]<number>]>
 
 =head1 DESCRIPTION
 
@@ -37,6 +43,15 @@ the data source header in the B<RRD>.
 
 A second application of the B<tune> function is to set or alter parameters
 used by the specialized function B<RRAs> for aberrant behavior detection.
+
+Still another application is to add or remove data sources (DS) or 
+add / remove or alter some aspects of round-robin archives (RRA). These operations 
+are not really done in-place, but rather generate a new RRD file internally and 
+move it over the original file. Data is kept intact during theses operations.
+For even more in-depth modifications you may review the 
+S<B<--source>> and S<B<--template>> options of the B<create> function which  
+allow you to combine multiple RRD files into a new one and which is even more clever 
+in what data it is able to keep or "regenerate".
 
 =over 8
 
@@ -157,6 +172,58 @@ data source.
 Use of this tuning option is advised when the behavior of the data source
 time series changes in a drastic and permanent manner.
 
+=item B<--daemon>|B<-D> I<address>
+
+B<NOTE>: Because the B<-d> (small letter 'd') option was already taken, this 
+function (unlike most other) uses the capital letter 'D' for the one-letter 
+option to name the cache daemon.
+
+If given, B<RRDTool> will try to connect to the caching daemon
+L<rrdcached> at I<address> and will fail if the connection cannot be
+established. If the connection is successfully established the data
+for the I<filename> will be flushed before performing the
+copy/modify operation. Afterwards the I<filename> will be
+forgotten by the cache daemon, so that the next access using the
+caching daemon will read the proper structure.
+
+This sequence of operations is designed to achieve a consistent overall 
+result with respect to
+RRD internal file consistency when using one of the B<DS> or B<RRA> changing 
+operations (that is: the resulting file should always be a valid RRD file,
+regardless of concurrent updates through the caching daemon).
+Regarding data consistency such guarantees are not made: Without external 
+synchronisation concurrent updates may be lost.
+
+For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
+
+=item B<DEL:>I<ds-name>
+
+Every data source named with a DEL specification will be removed.
+The resulting RRD will miss both the definition and the data for that 
+data source. Multiple DEL specifications are permitted.
+
+=item B<DS:>I<ds-spec>
+
+For every such data source definition (for the exact syntax see the
+B<create> command), a new data source will be added to the RRD. Multiple DS 
+specifications are permitted.
+
+=item B<DELRRA:>I<index>
+
+Removes the RRA with index I<index>. The index is zero-based, 
+that is the very first RRA has index 0.
+
+=item B<RRA:>I<rra-spec>
+
+For every such archive definition (for the exact syntax see the
+B<create> command), a new RRA will be added to the output
+RRD. Multiple RRA specifications are permitted.
+
+=item B<RRA#>I<index>:[+-=]<number>
+
+Adds/removes or sets the given number of rows for the RRA with index
+<index>. The index is zero-based, that is the very first RRA has index 0.
+
 =back
 
 =head1 EXAMPLE 1
@@ -177,7 +244,15 @@ window-length is 9 and the default failure-threshold is 7. This
 command now defines a failure as 3 or more violations in a temporal
 window of 5 time points.
 
-=head1 AUTHOR
+=head1 EXAMPLE 3
 
-Tobias Oetiker <tobi@oetiker.ch>
+C<rrdtool tune some.rrd DEL:a RRA#0:+10>
+
+Delete the data source named B<a> and extend the very first archive by 10 rows.
+This will in fact replace the input RRD with a new RRD keeping all existing data.
+For most practical use cases this is identical to a real in-place modification.
+
+=head1 AUTHORS
+
+Tobias Oetiker E<lt>tobi@oetiker.chE<gt>, Peter Stamfest E<lt>peter@stamfest.atE<gt>
 
