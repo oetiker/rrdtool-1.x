@@ -340,7 +340,7 @@ static void* signal_receiver (void UNUSED(*args))
 
   while (1)
   {
-#if HAVE_SIGWAITINFO    
+#ifdef HAVE_SIGWAITINFO    
     status = sigwaitinfo(&signal_set, &signal_info);
 #else
     status = -1;
