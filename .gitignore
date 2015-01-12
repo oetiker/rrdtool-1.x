@@ -11,6 +11,7 @@
 *.pdb
 *.res
 /build/
+*.tar.gz
 
 # autotools stuff
 /m4/*.m4
@@ -20,8 +21,8 @@
 /autom4te.cache/
 
 # automake
-Makefile.in
-/rrd_config.h.in
+#Makefile.in
+#/rrd_config.h.in
 /ar-lib
 
 # autoconf generated files
