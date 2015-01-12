@@ -44,6 +44,7 @@ Makefile
 !/po/ChangeLog
 !/po/LINGUAS
 !/po/Makevars
+!/po/Makefile.in.in
 !/po/POTFILES.in
 
 # cscope
