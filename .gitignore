@@ -35,9 +35,7 @@ Makefile
 /etc/rrdcached-default-lsb
 /libtool
 /src/librrd.pc
-/src/librrd.sym.in
 /src/rrd_config.h
-/src/rrd_config.h.in
 /src/stamp-h1
 
 # po
