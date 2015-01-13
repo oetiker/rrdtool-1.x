@@ -3587,6 +3587,8 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
 
       status = pthread_create (&tid, &attr, connection_thread_main,
                                client_sock);
+      pthread_attr_destroy (&attr);
+      
       if (status != 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: pthread_create failed.");
