@@ -340,14 +340,17 @@ static void* signal_receiver (void UNUSED(*args))
 
   while (1)
   {
-#ifdef HAVE_SIGWAITINFO    
+#if defined(HAVE_SIGWAITINFO)
     status = sigwaitinfo(&signal_set, &signal_info);
-#else
+#elif defined(HAVE_SIGWAIT)
     status = -1;
     if (sigwait(signal_set, &status) < 0 ){
        status = -1;
     }
+#else
+#error "we need sigwaitinfo or sigwait to compile rrd_daemon"
 #endif
+
     switch(status)
     {
       case -1:

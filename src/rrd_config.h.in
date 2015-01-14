@@ -189,9 +189,6 @@
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
 
-/* Define to 1 if you have the `rt' library (-lrt). */
-#undef HAVE_LIBRT
-
 /* have got libwrap installed */
 #undef HAVE_LIBWRAP
 
@@ -288,10 +285,10 @@
 /* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
 
-/* Define to 1 if you have the `sigwait' function. */
+/* have two argument posix sigwait */
 #undef HAVE_SIGWAIT
 
-/* Define to 1 if you have the `sigwaitinfo' function. */
+/* have sigwaitinfo in librt */
 #undef HAVE_SIGWAITINFO
 
 /* Define to 1 if you have the `snprintf' function. */

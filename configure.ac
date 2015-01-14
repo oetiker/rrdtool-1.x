@@ -251,7 +251,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(sigwait sigwaitinfo nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam)
+AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam)
 
 AC_FUNC_STRERROR_R
 
@@ -391,7 +391,26 @@ CONFIGURE_PART(Resolve Portability Issues)
 GC_TIMEZONE()
 
 dnl Solaris has sigwaitinfo in librt
-AC_CHECK_FUNC(sigwaitinfo, , AC_CHECK_LIB(rt, sigwaitinfo))
+AC_CHECK_FUNC(sigwaitinfo, AC_DEFINE(HAVE_SIGWAITINFO),[
+    AC_CHECK_LIB(rt, sigwaitinfo, [
+        AC_DEFINE(HAVE_SIGWAITINFO,[1],[have sigwaitinfo in librt])
+    ])
+])
+
+AC_CACHE_CHECK(whether sigwait has 2 arguments,
+    ac_cv_libc_sigwait,
+    AC_TRY_COMPILE([
+        #define _POSIX_PTHREAD_SEMANTICS
+        #include <stdio.h>
+        #include <signal.h>],
+        [sigset_t sigs; int signo; sigwait(&sigs, &signo);],
+        AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])
+        AC_MSG_RESULT(yes)
+        ,
+        AC_MSG_RESULT(no)        
+    )
+)
+
 
 CHECK_FOR_WORKING_MS_ASYNC
 

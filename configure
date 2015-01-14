@@ -14726,7 +14726,7 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
-for ac_func in sigwait sigwaitinfo nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam
+for ac_func in nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -18227,9 +18227,11 @@ $as_echo "#define HAVE_TIMEZONE 1" >>confdefs.h
 
 ac_fn_c_check_func "$LINENO" "sigwaitinfo" "ac_cv_func_sigwaitinfo"
 if test "x$ac_cv_func_sigwaitinfo" = xyes; then :
+  $as_echo "#define HAVE_SIGWAITINFO 1" >>confdefs.h
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sigwaitinfo in -lrt" >&5
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sigwaitinfo in -lrt" >&5
 $as_echo_n "checking for sigwaitinfo in -lrt... " >&6; }
 if ${ac_cv_lib_rt_sigwaitinfo+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -18266,15 +18268,53 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rt_sigwaitinfo" >&5
 $as_echo "$ac_cv_lib_rt_sigwaitinfo" >&6; }
 if test "x$ac_cv_lib_rt_sigwaitinfo" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBRT 1
+
+
+$as_echo "#define HAVE_SIGWAITINFO 1" >>confdefs.h
+
+
+fi
+
+
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether sigwait has 2 arguments" >&5
+$as_echo_n "checking whether sigwait has 2 arguments... " >&6; }
+if ${ac_cv_libc_sigwait+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+        #define _POSIX_PTHREAD_SEMANTICS
+        #include <stdio.h>
+        #include <signal.h>
+int
+main ()
+{
+sigset_t sigs; int signo; sigwait(&sigs, &signo);
+  ;
+  return 0;
+}
 _ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
 
-  LIBS="-lrt $LIBS"
+$as_echo "#define HAVE_SIGWAIT 1" >>confdefs.h
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_libc_sigwait" >&5
+$as_echo "$ac_cv_libc_sigwait" >&6; }
 
 
 
