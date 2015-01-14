@@ -270,8 +270,7 @@ dnl check for socket and nsl solaris again ... we need this for the new rrd_daem
 
 AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
 AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
-
-
+AC_CHECK_FUNCS(sigwaitinfo, [],  AC_CHECK_LIB(rt, sigwaitinfo, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_SIGWAITINFO)],[]))
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
 if test "x$enable_mmap" = "xyes"; then
@@ -390,12 +389,6 @@ CONFIGURE_PART(Resolve Portability Issues)
 
 GC_TIMEZONE()
 
-dnl Solaris has sigwaitinfo in librt
-AC_CHECK_FUNC(sigwaitinfo, AC_DEFINE(HAVE_SIGWAITINFO),[
-    AC_CHECK_LIB(rt, sigwaitinfo, [
-        AC_DEFINE(HAVE_SIGWAITINFO,[1],[have sigwaitinfo in librt])
-    ])
-])
 
 AC_CACHE_CHECK(whether sigwait has 2 arguments,
     ac_cv_libc_sigwait,
