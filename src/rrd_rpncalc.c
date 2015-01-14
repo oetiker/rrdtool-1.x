@@ -320,7 +320,7 @@ rpnp_t   *rpn_parse(
             return NULL;
         }
 
-        else if ((sscanf(expr, "%19[-0-9.e+]%n", double_str, &pos) == 1)
+        else if ((sscanf(expr, "%19[0-9.e+-]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
                  && ( rrd_strtodbl( double_str, NULL, &(rpnp[steps].val), NULL ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
