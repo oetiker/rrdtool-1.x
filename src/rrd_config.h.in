@@ -288,7 +288,7 @@
 /* have two argument posix sigwait */
 #undef HAVE_SIGWAIT
 
-/* have sigwaitinfo in librt */
+/* Define to 1 if you have the `sigwaitinfo' function. */
 #undef HAVE_SIGWAITINFO
 
 /* Define to 1 if you have the `snprintf' function. */
