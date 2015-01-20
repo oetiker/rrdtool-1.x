@@ -5141,7 +5141,7 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30], double_str[21];
+    char      func[30] = {0}, double_str[21] = {0};
     int       n;
 
     n = 0;
