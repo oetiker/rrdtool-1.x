@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.GIT, Copyright by Tobi Oetiker
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
@@ -5141,7 +5141,7 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30], double_str[21];
+    char      func[30] = {0}, double_str[21] = {0};
     int       n;
 
     n = 0;

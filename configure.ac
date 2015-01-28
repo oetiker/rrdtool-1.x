@@ -14,13 +14,14 @@ AC_PREREQ([2.69])
 dnl the official version number is
 dnl a.b.c
 AC_INIT([rrdtool],[m4_esyscmd(tr -d '\n' < VERSION)])
+AC_CONFIG_AUX_DIR(conftools)
 
 dnl for testing a numberical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.4999
+NUMVERS=1.499915010811
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -31,7 +32,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=6:255:2
+LIBVERS=7:0:3
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -235,6 +236,7 @@ AC_CHECK_FUNC(acos,  , AC_CHECK_LIB(m, acos))
 AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
+
 dnl add pic flag in any case this makes sure all our code is relocatable
 eval `./libtool --config | grep pic_flag=` 
 CFLAGS="$CFLAGS $pic_flag"
@@ -249,7 +251,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam)
+AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam)
 
 AC_FUNC_STRERROR_R
 
@@ -268,8 +270,7 @@ dnl check for socket and nsl solaris again ... we need this for the new rrd_daem
 
 AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
 AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
-
-
+AC_CHECK_FUNCS(sigwaitinfo, [],  AC_CHECK_LIB(rt, sigwaitinfo, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_SIGWAITINFO)],[]))
 
 dnl XXX: dunno about windows.. add AC_CHECK_FUNCS(munmap) there too?
 if test "x$enable_mmap" = "xyes"; then
@@ -387,6 +388,22 @@ AC_FULL_IEEE
 CONFIGURE_PART(Resolve Portability Issues)
 
 GC_TIMEZONE()
+
+
+AC_CACHE_CHECK(whether sigwait has 2 arguments,
+    ac_cv_libc_sigwait,
+    AC_TRY_COMPILE([
+        #define _POSIX_PTHREAD_SEMANTICS
+        #include <stdio.h>
+        #include <signal.h>],
+        [sigset_t sigs; int signo; sigwait(&sigs, &signo);],
+        AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])
+        AC_MSG_RESULT(yes)
+        ,
+        AC_MSG_RESULT(no)        
+    )
+)
+
 
 CHECK_FOR_WORKING_MS_ASYNC
 

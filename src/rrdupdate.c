@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.GIT, Copyright by Tobi Oetiker
  *****************************************************************************
  * rrdupdate.c  Main program for the (standalone) rrdupdate utility
  *****************************************************************************
@@ -37,7 +37,7 @@ int main(
 
     if (rrd_test_error()) {
          printf("RRDtool " PACKAGE_VERSION
-               "  Copyright by Tobi Oetiker, 1997-2010\n\n");
+               "  Copyright by Tobi Oetiker\n\n");
         if (!strcmp(name, "rrdcreate")) {
             printf("Usage: rrdcreate <filename>\n"
                    "\t\t\t[--start|-b start time]\n"

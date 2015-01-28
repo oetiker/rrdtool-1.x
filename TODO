@@ -1,6 +1,5 @@
 Random Feature Ideas for RRDtool
 --------------------------------
-$Id$
 
 make it possible to define order of legend items independant of their order
 on the commandline ...

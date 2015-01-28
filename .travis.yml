@@ -1,7 +1,7 @@
 language: c
 
 perl:
-  - "5.19"
+  - "5.20"
   - "5.18"
   - "5.16"
   - "5.14"
@@ -13,7 +13,7 @@ install:
   - sudo pip install cpp-coveralls --use-mirrors
 
 before_script:
-  - ./MakeMakefile
+  - ./bootstrap
 
 script:
   - ./configure --prefix=/opt/rrdtool-master --disable-ruby

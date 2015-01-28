@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.4.3  Copyright by Tobi Oetiker, 1997-2010
+ * RRDtool 1.GIT, Copyright by Tobi Oetiker
  ****************************************************************************
  * rrd_snprintf  
  ****************************************************************************/
@@ -355,7 +355,8 @@
 #ifdef HAVE_VA_COPY
 #define VA_COPY(dest, src) va_copy(dest, src)
 #define VA_END_COPY(ap) va_end(ap)
-#elifdef HAVE___VA_COPY
+#else
+#ifdef HAVE___VA_COPY
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #define VA_END_COPY(ap) va_end(ap)
 #else
@@ -363,6 +364,7 @@
 #define VA_END_COPY(ap) /* No-op. */
 #define NEED_MYMEMCPY 1
 static void *mymemcpy(void *, void *, size_t);
+#endif  /* HAVE___VA_COPY */
 #endif	/* HAVE_VA_COPY */
 #endif	/* !HAVE_VASPRINTF */
 

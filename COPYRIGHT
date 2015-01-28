@@ -1,9 +1,8 @@
-$Id$
 RRDTOOL - Round Robin Database Tool
 A tool for fast logging of numerical data graphical display
 of this data.
 
-Copyright (c) 1998-2009 Tobias Oetiker
+Copyright (c) 1997-2015 Tobias Oetiker
 All rights reserved.
 
 GNU GPL License

@@ -340,7 +340,16 @@ static void* signal_receiver (void UNUSED(*args))
 
   while (1)
   {
+#if defined(HAVE_SIGWAITINFO)
     status = sigwaitinfo(&signal_set, &signal_info);
+#elif defined(HAVE_SIGWAIT)
+    status = -1;
+    if (sigwait(signal_set, &status) < 0 ){
+       status = -1;
+    }
+#else
+#error "we need sigwaitinfo or sigwait to compile rrd_daemon"
+#endif
 
     switch(status)
     {
@@ -3581,6 +3590,8 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
 
       status = pthread_create (&tid, &attr, connection_thread_main,
                                client_sock);
+      pthread_attr_destroy (&attr);
+      
       if (status != 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: pthread_create failed.");

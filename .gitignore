@@ -11,26 +11,18 @@
 *.pdb
 *.res
 /build/
+*.tar.gz
 
 # autotools stuff
 /m4/*.m4
 !/m4/acinclude.m4
 !/m4/snprintf.m4
 /aclocal.m4
-/ltmain.sh
-/install-sh
-/config.guess
-/config.sub
 /autom4te.cache/
-/compile
-/configure
-/depcomp
-/missing
-/config.rpath
 
 # automake
-Makefile.in
-/rrd_config.h.in
+#Makefile.in
+#/rrd_config.h.in
 /ar-lib
 
 # autoconf generated files
@@ -43,9 +35,7 @@ Makefile
 /etc/rrdcached-default-lsb
 /libtool
 /src/librrd.pc
-/src/librrd.sym.in
 /src/rrd_config.h
-/src/rrd_config.h.in
 /src/stamp-h1
 
 # po
@@ -54,6 +44,7 @@ Makefile
 !/po/ChangeLog
 !/po/LINGUAS
 !/po/Makevars
+!/po/Makefile.in.in
 !/po/POTFILES.in
 
 # cscope

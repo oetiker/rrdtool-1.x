@@ -8,4 +8,4 @@ else
 	libtoolize
 fi
 
-autoreconf --force --install --verbose -I m4
+autoreconf --force --install --verbose -I m4 --make
