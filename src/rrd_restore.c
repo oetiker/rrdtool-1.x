@@ -37,6 +37,10 @@
 # define close _close
 #endif
 
+#ifdef HAVE_LIBRADOS
+#include "rrd_rados.h"
+#endif
+
 
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof ((a)[0]))
 
@@ -1323,6 +1327,12 @@ int write_file(
     rrd_t *rrd)
 {
     FILE     *fh;
+
+#ifdef HAVE_LIBRADOS
+    if (strncmp("ceph//", file_name, 6) == 0) {
+      return rrd_rados_create(file_name + 6, rrd);
+    }
+#endif
 
     if (strcmp("-", file_name) == 0)
         fh = stdout;

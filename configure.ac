@@ -542,6 +542,18 @@ AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support 
 
 AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
+have_librados=no
+
+AC_ARG_ENABLE(librados,AS_HELP_STRING([--disable-librados],[do not build in support for librados]),[],[
+    AC_CHECK_HEADER(rados/librados.h, [
+        AC_DEFINE(HAVE_LIBRADOS,[1],[have got librados installed])
+        LIBS="${LIBS} -lrados"
+        have_librados=yes
+    ])
+])
+
+AM_CONDITIONAL(BUILD_LIBRADOS,[test $have_librados != no])
+
 have_libwrap=no
 
 AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),[],[ 
@@ -1055,6 +1067,7 @@ echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
 echo "           Use gettext: $USE_NLS"
 echo "           With libDBI: $have_libdbi"
+echo "         With librados: $have_librados"
 echo "          With libwrap: $have_libwrap"
 echo "      With systemd dir: $with_systemdsystemunitdir"
 echo

@@ -44,6 +44,10 @@
 # include <process.h>
 #endif
 
+#ifdef HAVE_LIBRADOS
+#include "rrd_rados.h"
+#endif
+
 static void reset_pdp_prep(rrd_t *rrd);
 static int rrd_init_data(rrd_t *rrd);
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources_rrd_files,
@@ -1317,6 +1321,13 @@ int write_rrd(const char *outfilename, rrd_t *out) {
     char *tmpfilename = NULL;
 
     /* write out the new file */
+#ifdef HAVE_LIBRADOS
+    if (strncmp("ceph//", outfilename, 6) == 0) {
+      rc = rrd_rados_create(outfilename + 6, out);
+      goto done;
+    }
+#endif
+
     FILE *fh = NULL;
     if (strcmp(outfilename, "-") == 0) {
 	fh = stdout;
