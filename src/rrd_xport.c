@@ -530,7 +530,7 @@ int addToBuffer(stringbuffer_t * sb,char* data,size_t len) {
 int rrd_xport_format_sv(char sep, stringbuffer_t *buffer,image_desc_t *im,time_t start, time_t end, unsigned long step, unsigned long col_cnt, char **legend_v, rrd_value_t* data) {
   /* define the time format */
   char* timefmt=NULL;
-  if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
+  if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
 
   /* row count */
   unsigned long row_cnt=(end-start)/step;
@@ -601,7 +601,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   /* unfortunatley we have to do it this way, 
      as when no --x-graph argument is given,
      then the xlab_user is not in a clean state (e.g. zero-filled) */
-  if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
+  if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
 
   /* row count */
   unsigned long row_cnt=(end-start)/step;
@@ -862,7 +862,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   char dbuf[1024];
   char* val;
   char* timefmt=NULL;
-  if (im->xlab_user.minsec!=-1) { timefmt=im->xlab_user.stst; }
+  if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
 
   /* define some other stuff based on flags */
   int json=0;
