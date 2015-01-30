@@ -110,7 +110,7 @@ AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdc
 [],[enable_rrdcgi=yes])
 
 AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
-[enable_rrdcgi=no],[enable_rrd_graph=yes])
+[enable_rrdcgi=$enableval],[enable_rrd_graph=yes])
 
 AC_ARG_ENABLE(rrd_restore,AS_HELP_STRING([--disable-rrd_restore],[disable rrd_restore XML import functions]),
 [],[enable_rrd_restore=yes])
