@@ -46,6 +46,7 @@ Makefile
 !/po/Makevars
 !/po/Makefile.in.in
 !/po/POTFILES.in
+!/po/remove-potcdate.sin
 
 # cscope
 /cscope.*
