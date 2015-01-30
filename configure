@@ -5126,7 +5126,7 @@ fi
 
 # Check whether --enable-rrd_graph was given.
 if test "${enable_rrd_graph+set}" = set; then :
-  enableval=$enable_rrd_graph; enable_rrdcgi=no
+  enableval=$enable_rrd_graph; enable_rrdcgi=$enableval
 else
   enable_rrd_graph=yes
 fi
@@ -5216,7 +5216,7 @@ else
   enable_flock=yes
 fi
 
-if test x$enable_file != xyes; then
+if test x$enable_flock != xyes; then
 
 $as_echo "#define DISABLE_FLOCK /**/" >>confdefs.h
 
