@@ -79,49 +79,53 @@ text_prop_t text_prop[] = {
 char week_fmt[128] = "Week %V";
 
 xlab_t    xlab[] = {
-    {0, 0, TMT_SECOND, 30, TMT_MINUTE, 5, TMT_MINUTE, 5, 0, "%H:%M"}
+    {0.0, 0, TMT_SECOND, 10, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
     ,
-    {2, 0, TMT_MINUTE, 1, TMT_MINUTE, 5, TMT_MINUTE, 5, 0, "%H:%M"}
+    {0.6, 0, TMT_SECOND, 20, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
     ,
-    {5, 0, TMT_MINUTE, 2, TMT_MINUTE, 10, TMT_MINUTE, 10, 0, "%H:%M"}
+    {1.0, 0, TMT_SECOND, 30, TMT_MINUTE, 2, TMT_MINUTE, 2, 0, "%H:%M"}
     ,
-    {10, 0, TMT_MINUTE, 5, TMT_MINUTE, 20, TMT_MINUTE, 20, 0, "%H:%M"}
+    {2.0, 0, TMT_MINUTE, 1, TMT_MINUTE, 5, TMT_MINUTE, 5, 0, "%H:%M"}
     ,
-    {30, 0, TMT_MINUTE, 10, TMT_HOUR, 1, TMT_HOUR, 1, 0, "%H:%M"}
+    {5.0, 0, TMT_MINUTE, 2, TMT_MINUTE, 10, TMT_MINUTE, 10, 0, "%H:%M"}
     ,
-    {60, 0, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 2, 0, "%H:%M"}
+    {10.0, 0, TMT_MINUTE, 5, TMT_MINUTE, 20, TMT_MINUTE, 20, 0, "%H:%M"}
     ,
-    {60, 24 * 3600, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 6, 0, "%a %H:%M"}
+    {30.0, 0, TMT_MINUTE, 10, TMT_HOUR, 1, TMT_HOUR, 1, 0, "%H:%M"}
     ,
-    {180, 0, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 6, 0, "%H:%M"}
+    {60.0, 0, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 2, 0, "%H:%M"}
     ,
-    {180, 24 * 3600, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 12, 0, "%a %H:%M"}
+    {60.0, 24 * 3600, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 6, 0, "%a %H:%M"}
+    ,
+    {180.0, 0, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 6, 0, "%H:%M"}
+    ,
+    {180.0, 24 * 3600, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 12, 0, "%a %H:%M"}
     ,
     /*{300,             0,   TMT_HOUR,3,    TMT_HOUR,12,   TMT_HOUR,12,    12*3600,"%a %p"},  this looks silly */
-    {600, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%a"}
+    {600.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%a"}
     ,
-    {1200, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%d"}
+    {1200.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%d"}
     ,
-    {1800, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a %d"}
+    {1800.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a %d"}
     ,
-    {2400, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a"}
+    {2400.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a"}
     ,
-    {3600, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt}
+    {3600.0, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt}
     ,
-    {3 * 3600, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600, week_fmt}
+    {3.0 * 3600.0, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600, week_fmt}
     ,
-    {6 * 3600, 0, TMT_MONTH, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,
+    {6.0 * 3600.0, 0, TMT_MONTH, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,
      "%b"}
     ,
-    {48 * 3600, 0, TMT_MONTH, 1, TMT_MONTH, 3, TMT_MONTH, 3, 30 * 24 * 3600,
+    {48.0 * 3600.0, 0, TMT_MONTH, 1, TMT_MONTH, 3, TMT_MONTH, 3, 30 * 24 * 3600,
      "%b"}
     ,
-    {315360, 0, TMT_MONTH, 3, TMT_YEAR, 1, TMT_YEAR, 1, 365 * 24 * 3600, "%Y"}
+    {315360.0, 0, TMT_MONTH, 3, TMT_YEAR, 1, TMT_YEAR, 1, 365 * 24 * 3600, "%Y"}
     ,
-    {10 * 24 * 3600, 0, TMT_YEAR, 1, TMT_YEAR, 1, TMT_YEAR, 1,
+    {(double)(10 * 24 * 3600), 0, TMT_YEAR, 1, TMT_YEAR, 1, TMT_YEAR, 1,
      365 * 24 * 3600, "%y"}
     ,
-    {-1, 0, TMT_MONTH, 0, TMT_MONTH, 0, TMT_MONTH, 0, 0, ""}
+    {-1.0, 0, TMT_MONTH, 0, TMT_MONTH, 0, TMT_MONTH, 0, 0, ""}
 };
 
 /* sensible y label intervals ...*/
@@ -2547,21 +2551,21 @@ void vertical_grid(
 {
     int       xlab_sel; /* which sort of label and grid ? */
     time_t    ti, tilab, timajor;
-    long      factor;
+    double    factor;
     char      graph_label[100];
     double    X0, Y0, Y1;   /* points for filled graph and more */
     struct tm tm;
 
     /* the type of time grid is determined by finding
        the number of seconds per pixel in the graph */
-    if (im->xlab_user.minsec == -1) {
-        factor = (im->end - im->start) / im->xsize;
+    if (im->xlab_user.minsec == -1.0) {
+        factor = (double)(im->end - im->start) / (double)im->xsize;
         xlab_sel = 0;
         while (xlab[xlab_sel + 1].minsec !=
-               -1 && xlab[xlab_sel + 1].minsec <= factor) {
+               -1.0 && xlab[xlab_sel + 1].minsec <= factor) {
             xlab_sel++;
         }               /* pick the last one */
-        while (xlab[xlab_sel - 1].minsec ==
+        while (xlab_sel > 0 && xlab[xlab_sel - 1].minsec ==
                xlab[xlab_sel].minsec
                && xlab[xlab_sel].length > (im->end - im->start)) {
             xlab_sel--;
@@ -4370,7 +4374,7 @@ void rrd_graph_init(
     im->xlab_form = NULL;
     im->with_markup = 0;
     im->ximg = 0;
-    im->xlab_user.minsec = -1;
+    im->xlab_user.minsec = -1.0;
     im->xorigin = 0;
     im->xOriginLegend = 0;
     im->xOriginLegendY = 0;
@@ -4662,7 +4666,7 @@ void rrd_graph_options(
                     rrd_set_error("unknown keyword %s", scan_ltm);
                     return;
                 }
-                im->xlab_user.minsec = 1;
+                im->xlab_user.minsec = 1.0;
                 im->xlab_user.stst = im->xlab_form ? im->xlab_form : "";
             } else {
                 rrd_set_error("invalid x-grid format");
@@ -5141,7 +5145,7 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30], double_str[21];
+    char      func[30] = {0}, double_str[21] = {0};
     int       n;
 
     n = 0;

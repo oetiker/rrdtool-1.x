@@ -152,7 +152,7 @@ AC_ARG_ENABLE([flock],
 AS_HELP_STRING([--disable-flock],[disable file locking]),
 [],
 [enable_flock=yes])
-if test x$enable_file != xyes; then
+if test x$enable_flock != xyes; then
     AC_DEFINE([DISABLE_FLOCK], [], [disable flock calls in rrdtool])
 fi
 
