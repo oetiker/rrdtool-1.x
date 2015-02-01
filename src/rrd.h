@@ -242,7 +242,7 @@ struct rrd_t;
     time_t last_up,
     int no_overwrite,
     const char **sources,
-    const char *template,
+    const char *_template,
     int argc,
     const char **argv);
     rrd_info_t *rrd_info_r(
