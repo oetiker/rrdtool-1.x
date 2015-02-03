@@ -259,7 +259,7 @@ static int smooth_all_rras(
     rrd_file_t *rrd_file,
     unsigned long rra_begin);
 
-#ifndef HAVE_MMAP
+#if !defined(HAVE_MMAP) || defined(HAVE_LIBRADOS)
 static int write_changes_to_disk(
     rrd_t *rrd,
     rrd_file_t *rrd_file,
@@ -931,6 +931,10 @@ int _rrd_updatex(
     if (rrd_test_error()) {
         goto err_free_structures;
     }
+#ifdef HAVE_LIBRADOS
+    if (rrd_file->rados)
+      write_changes_to_disk(&rrd, rrd_file, version);
+#endif
 #ifndef HAVE_MMAP
     if (write_changes_to_disk(&rrd, rrd_file, version) == -1) {
         goto err_free_structures;
@@ -2405,7 +2409,7 @@ static int smooth_all_rras(
     return 0;
 }
 
-#ifndef HAVE_MMAP
+#if !defined(HAVE_MMAP) || defined(HAVE_LIBRADOS)
 /*
  * Flush changes to disk (unless we're using mmap)
  *

@@ -17,6 +17,10 @@ if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
 endif
 
+if BUILD_LIBRADOS
+  POD += rrdrados.pod
+endif
+
 if BUILD_LUA
   POD += rrdlua.pod
 endif

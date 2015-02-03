@@ -101,6 +101,9 @@ struct rrd_t;
         size_t     pos;  /* current pos in file */
         void      *pvt;
 	struct rrd_t *rrd;		/* the corresponding RRD structure, if any */
+#ifdef HAVE_LIBRADOS
+        struct rrd_rados_t *rados;
+#endif
     } rrd_file_t;
 
 /* information used for the conventional file access methods */
