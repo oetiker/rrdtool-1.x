@@ -208,7 +208,7 @@ int rrd_tune(
             break;
 
         case 'i':
-            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            matches = sscanf(optarg, DS_NAM_FMT ":%[0-9.e+-]", ds_nam, double_str);
             if( matches >= 1 ) {
                 strtod_ret_val = rrd_strtodbl( double_str, NULL, &min, NULL );
             }
@@ -228,7 +228,7 @@ int rrd_tune(
             break;
 
         case 'a':
-            matches = sscanf(optarg, DS_NAM_FMT ":%[-0-9.e+]", ds_nam, double_str);
+            matches = sscanf(optarg, DS_NAM_FMT ":%[0-9.e+-]", ds_nam, double_str);
             if( matches >= 1 ) {
                 strtod_ret_val = rrd_strtodbl( double_str, NULL, &max, NULL );
             }
