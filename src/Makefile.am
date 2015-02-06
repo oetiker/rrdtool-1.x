@@ -83,6 +83,10 @@ if BUILD_LIBDBI
 RRD_C_FILES += rrd_fetch_libdbi.c
 endif
 
+if BUILD_LIBRADOS
+UPD_C_FILES += rrd_rados.c
+endif
+
 if BUILD_GETOPT
 noinst_HEADERS += rrd_getopt.h
 UPD_C_FILES += rrd_getopt.c rrd_getopt1.c
