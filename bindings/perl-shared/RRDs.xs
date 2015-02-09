@@ -52,7 +52,7 @@ extern "C" {
 		\
 		if (rrd_test_error()) XSRETURN_UNDEF;
 
-#define hvs(VAL) hv_store_ent(hash, sv_2mortal(newSVpv(data->key,0)),VAL,0)		    
+#define hvs(VAL) hv_store_ent(hash, sv_2mortal(newSVpv(data->key,0)),VAL,0)
 
 #define rrdinfocode(name) \
 		/* prepare argument list */ \
@@ -121,7 +121,7 @@ static int rrd_fetch_cb_wrapper(
     time_t         *start,
     time_t         *end,       /* which time frame do you want ?
                                 * will be changed to represent reality */
-    unsigned long  *step,      /* which stepsize do you want? 
+    unsigned long  *step,      /* which stepsize do you want?
                                 * will be changed to represent reality */
     unsigned long  *ds_cnt,    /* number of data sources in file */
     char           ***ds_namv, /* names of data_sources */
@@ -133,8 +133,9 @@ static int rrd_fetch_cb_wrapper(
     HV *retHV;
     HE *retHE;
     AV *retAV;
+    time_t new_start,new_end;
     char *cfStr;
-    unsigned long i,ii; 
+    unsigned long i,ii;
     unsigned long rowCount = 0;
     if (!rrd_fetch_cb_svptr){
         rrd_set_error("Use RRDs::register_fetch_cb to register a fetch callback.");
@@ -196,22 +197,25 @@ static int rrd_fetch_cb_wrapper(
     *step = SvIV(HeVAL(retHE));
     if (*step <= 0){
         rrd_set_error("Expected the perl callback function to return a valid step value");
-        goto error_out;        
+        goto error_out;
     }
 
-    loadRet("start");    
-    *start = SvIV(HeVAL(retHE));
-    if (*start == 0){
-        rrd_set_error("Expected the perl callback function to return a valid start value");
-        goto error_out;        
+    loadRet("start");
+    new_start = SvIV(HeVAL(retHE));
+    if (new_start == 0 || new_start > *start){
+        rrd_set_error("Expected the perl callback function to return a start value equal or earlier than %lld but got %lld",(long long int)(*start),(long long int)(new_start));
+        goto error_out;
     }
+
+    *start = new_start;
+/*    rowCount = ((*end - *start) / *step); */
 
     /* figure out how long things are so that we can allocate the memory */
     loadRet("data");
     retSV = HeVAL(retHE);
     if (!SvROK(retSV)){
         rrd_set_error("Expected the perl callback function to return a valid data element");
-        goto error_out;        
+        goto error_out;
     }
     retHV = (HV*)SvRV(retSV);
     if (SvTYPE(retHV) != SVt_PVHV){
@@ -220,12 +224,11 @@ static int rrd_fetch_cb_wrapper(
     }
 
     *ds_cnt = hv_iterinit(retHV);
-    
+
     if (((*ds_namv) = (char **) calloc( *ds_cnt , sizeof(char *))) == NULL) {
         rrd_set_error("Failed to allocate memory for ds_namev when returning from perl callback");
-        goto error_out;    
+        goto error_out;
     }
-
     for (i=0;i<*ds_cnt;i++){
         char *retKey;
         I32 retKeyLen;
@@ -241,17 +244,19 @@ static int rrd_fetch_cb_wrapper(
         retSV = hv_iterval(retHV,hash_entry);
         if (!SvROK(retSV)){
             rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
-            goto error_out_free_ds_namv;        
+            goto error_out_free_ds_namv;
         }
         retAV = (AV*)SvRV(retSV);
         if (SvTYPE(retAV) != SVt_PVAV){
             rrd_set_error("Expected the perl callback function to return an array pointer for {data}->{%s}",(*ds_namv)[i]);
-            goto error_out_free_ds_namv;        
+            goto error_out_free_ds_namv;
         }
-        if (av_len(retAV) > rowCount)
-            rowCount = av_len(retAV);
+        if (av_len(retAV)+1 > rowCount)
+            rowCount = av_len(retAV)+1;
     }
-    rowCount++; /* av_len returns the last index */
+
+    *end = *start + *step * rowCount;
+
     if (((*data) = (rrd_value_t*)malloc(*ds_cnt * rowCount * sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("malloc fetch data area");
         goto error_out_free_ds_namv;
@@ -265,6 +270,8 @@ static int rrd_fetch_cb_wrapper(
             (*data)[i + ii * (*ds_cnt)] = SvNIOK(val) ? SvNVx(val) : DNAN;
         }
     }
+
+
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -298,7 +305,7 @@ BOOT:
 #endif
 #ifdef MUST_DISABLE_FPMASK
 	fpsetmask(0);
-#endif 
+#endif
 
 SV*
 rrd_error()
@@ -332,7 +339,7 @@ rrd_first(...)
 
 int
 rrd_create(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
         int i;
 	char **argv;
@@ -344,7 +351,7 @@ rrd_create(...)
 
 int
 rrd_update(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
         int i;
 	char **argv;
@@ -356,7 +363,7 @@ rrd_update(...)
 
 int
 rrd_tune(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
         int i;
 	char **argv;
@@ -370,7 +377,7 @@ rrd_tune(...)
 
 SV *
 rrd_graph(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
 	char **calcpr=NULL;
 	int i,xsize,ysize;
@@ -380,16 +387,16 @@ rrd_graph(...)
 	PPCODE:
 		argv = (char **) malloc((items+1)*sizeof(char *));
 		argv[0] = "dummy";
-		for (i = 0; i < items; i++) { 
+		for (i = 0; i < items; i++) {
 		    STRLEN len;
 		    char *handle = SvPV(ST(i),len);
 		    /* actually copy the data to make sure possible modifications
-		       on the argv data does not backfire into perl */ 
+		       on the argv data does not backfire into perl */
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax); 
+		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -418,9 +425,9 @@ rrd_graph(...)
 
 SV *
 rrd_fetch(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
-		time_t        start,end;		
+		time_t        start,end;
 		unsigned long step, ds_cnt,i,ii;
 		rrd_value_t   *data,*datai;
 		char **argv;
@@ -429,16 +436,16 @@ rrd_fetch(...)
 	PPCODE:
 		argv = (char **) malloc((items+1)*sizeof(char *));
 		argv[0] = "dummy";
-		for (i = 0; i < items; i++) { 
+		for (i = 0; i < items; i++) {
 		    STRLEN len;
 		    char *handle= SvPV(ST(i),len);
 		    /* actually copy the data to make sure possible modifications
-		       on the argv data does not backfire into perl */ 
+		       on the argv data does not backfire into perl */
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data); 
+		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -450,7 +457,7 @@ rrd_fetch(...)
 		    av_push(names,newSVpv(ds_namv[ii],0));
 		    rrd_freemem(ds_namv[ii]);
 		}
-		rrd_freemem(ds_namv);			
+		rrd_freemem(ds_namv);
 		/* convert the data array into perl format */
 		datai=data;
 		retar=newAV();
@@ -506,9 +513,9 @@ rrd_times(start, end)
 
 int
 rrd_xport(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
-                time_t start,end;		
+                time_t start,end;
                 int xsize;
 		unsigned long step, col_cnt,row_cnt,i,ii;
 		rrd_value_t *data,*ptr;
@@ -517,16 +524,16 @@ rrd_xport(...)
 	PPCODE:
 		argv = (char **) malloc((items+1)*sizeof(char *));
 		argv[0] = "dummy";
-		for (i = 0; i < items; i++) { 
+		for (i = 0; i < items; i++) {
 		    STRLEN len;
 		    char *handle = SvPV(ST(i),len);
 		    /* actually copy the data to make sure possible modifications
-		       on the argv data does not backfire into perl */ 
+		       on the argv data does not backfire into perl */
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data); 
+		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -539,7 +546,7 @@ rrd_xport(...)
 		    av_push(names,newSVpv(legend_v[ii],0));
 		    rrd_freemem(legend_v[ii]);
 		}
-		rrd_freemem(legend_v);			
+		rrd_freemem(legend_v);
 
 		/* convert the data array into perl format */
 		ptr=data;
@@ -564,27 +571,27 @@ rrd_xport(...)
 
 SV*
 rrd_info(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
 		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
 	CODE:
-		rrdinfocode(rrd_info);	
+		rrdinfocode(rrd_info);
     OUTPUT:
 	   RETVAL
 
 SV*
 rrd_updatev(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
 		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
 	CODE:
-		rrdinfocode(rrd_update_v);	
+		rrdinfocode(rrd_update_v);
     OUTPUT:
 	   RETVAL
 
@@ -592,14 +599,14 @@ rrd_updatev(...)
 
 SV*
 rrd_graphv(...)
-	PROTOTYPE: @	
+	PROTOTYPE: @
 	PREINIT:
 		rrd_info_t *data,*save;
                 int i;
                 char **argv;
 		HV *hash;
 	CODE:
-		rrdinfocode(rrd_graph_v);	
+		rrdinfocode(rrd_graph_v);
     OUTPUT:
 	   RETVAL
 

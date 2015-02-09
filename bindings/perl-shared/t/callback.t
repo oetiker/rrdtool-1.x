@@ -31,7 +31,7 @@ RRDs::fetch_cb_register(sub{
     my $request = shift;
     my $items = ($request->{end}-$request->{start})/$request->{step};
     return {
-      step=>200,
+      step=>100,
       start=>$request->{start},
       data => {
         a=>[ map{ sin($_/200) } (0..$items) ],
@@ -62,4 +62,4 @@ if (my $ERROR = RRDs::error) {
    die "RRD ERROR: $ERROR\n";
 }
 
-ok("callback",$result->{'print[0]'} eq '0.719267');
+ok("callback",$result->{'print[0]'} eq '0.724496');
