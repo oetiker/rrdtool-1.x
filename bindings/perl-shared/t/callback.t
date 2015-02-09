@@ -62,6 +62,4 @@ if (my $ERROR = RRDs::error) {
    die "RRD ERROR: $ERROR\n";
 }
 
-use Data::Dumper;
-warn Dumper $result;
-ok("callback",$result->{'print[0]'} eq '0.724496');
+ok("callback",$result->{'print[0]'} eq '0.725982');
