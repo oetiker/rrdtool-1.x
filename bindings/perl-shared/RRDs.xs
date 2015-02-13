@@ -648,3 +648,57 @@ rrd_flushcached(...)
 		rrdcode(rrd_flushcached);
 	OUTPUT:
 		RETVAL
+
+SV*
+rrd_list(...)
+	PROTOTYPE: @
+	PREINIT:
+                char *data;
+                char *ptr, *end;
+                int i;
+                char **argv;
+		AV *list;
+	PPCODE:
+		argv = (char **) malloc((items+1)*sizeof(char *));
+		argv[0] = "dummy";
+
+		for (i = 0; i < items; i++) {
+		    STRLEN len;
+		    char *handle= SvPV(ST(i),len);
+		    /* actually copy the data to make sure possible modifications
+		       on the argv data does not backfire into perl */
+		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
+		    strcpy(argv[i+1],handle);
+		}
+
+                rrd_clear_error();
+
+		data = rrd_list(items+1, argv);
+
+                for (i=0; i < items; i++) {
+		    free(argv[i+1]);
+		}
+		free(argv);
+
+                if (rrd_test_error())
+		    XSRETURN_UNDEF;
+
+		list = newAV();
+
+		ptr = data;
+		end = strchr(ptr, '\n');
+
+		while (end) {
+		    *end = '\0';
+		    av_push(list, newSVpv(ptr, 0));
+		    ptr = end + 1;
+
+		    if (strlen(ptr) == 0)
+			    break;
+
+		    end = strchr(ptr, '\n');
+		}
+
+		rrd_freemem(data);
+
+		XPUSHs(sv_2mortal(newRV_noinc((SV*)list)));
