@@ -13,7 +13,10 @@ sub ok
 {
     my($what, $result) = @_ ;
     $ok_count++;
-    print "not " unless $result;
+    if (not $result){
+      warn "failed $what\n";
+      print "not ";
+    }
     print "ok $ok_count $what\n";
 }
 
@@ -56,10 +59,12 @@ my $result = RRDs::graphv "callback.png",
   "LINE:b#10b634:b",
   "LINE:c#503d14:c",
   "VDEF:av=a,AVERAGE",
-  "PRINT:av:%lf";
+  "PRINT:av:%8.6lf";
   
 if (my $ERROR = RRDs::error) {
    die "RRD ERROR: $ERROR\n";
 }
 
-ok("callback",$result->{'print[0]'} eq '0.725982');
+my $a = $result->{'print[0]'};
+my $b = '0.725982';
+ok("$a eq $b",$a eq $b);
