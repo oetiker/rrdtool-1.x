@@ -21,7 +21,7 @@ dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.499915010811
+NUMVERS=1.499915022217
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
