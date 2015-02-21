@@ -46,8 +46,8 @@ RRDs::fetch_cb_register(sub{
 
 my $result = RRDs::graphv "callback.png",
   "--title", "Callback Demo", 
-  "--start", "now",
-  "--end", "start+1d",
+  "--start", "1424540800",
+  "--end", "start+24h",
   "--lower-limit=0",
   "--interlace", 
   "--imgformat","PNG",
@@ -66,5 +66,5 @@ if (my $ERROR = RRDs::error) {
 }
 
 my $a = $result->{'print[0]'};
-my $b = '0.725982';
+my $b = '0.722767';
 ok("$a eq $b",$a eq $b);
