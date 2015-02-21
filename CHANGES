@@ -1,8 +1,10 @@
-RRDtool 1.5.0-rc1 - 2015-01-08
-=============================
+RRDtool 1.5.0-rc2 - 2015-02-21
+==============================
 
 New Features
 ------------
+* automatic x-axis labels that work from 1s to 30y on a single chart
+* librados integration
 * new datasource types: DCOUNTER and DDERIVE (they work the same as the
   original DS, except that they can deal with floatingpoint numbers).
 * compile without graphics libraries: ./configure --disable-rrd_graph
