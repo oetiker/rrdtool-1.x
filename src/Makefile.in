@@ -95,13 +95,14 @@ target_triplet = @target@
 
 @BUILD_RRDRESTORE_TRUE@am__append_2 = rrd_restore.c
 @BUILD_LIBDBI_TRUE@am__append_3 = rrd_fetch_libdbi.c
-@BUILD_GETOPT_TRUE@am__append_4 = rrd_getopt.h
-@BUILD_GETOPT_TRUE@am__append_5 = rrd_getopt.c rrd_getopt1.c
-@BUILD_MULTITHREAD_TRUE@am__append_6 = librrd_th.la
+@BUILD_LIBRADOS_TRUE@am__append_4 = rrd_rados.c
+@BUILD_GETOPT_TRUE@am__append_5 = rrd_getopt.h
+@BUILD_GETOPT_TRUE@am__append_6 = rrd_getopt.c rrd_getopt1.c
+@BUILD_MULTITHREAD_TRUE@am__append_7 = librrd_th.la
 bin_PROGRAMS = rrdtool$(EXEEXT) rrdupdate$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2)
-@BUILD_RRDCGI_TRUE@am__append_7 = rrdcgi
-@BUILD_RRDCACHED_TRUE@am__append_8 = rrdcached
+@BUILD_RRDCGI_TRUE@am__append_8 = rrdcgi
+@BUILD_RRDCACHED_TRUE@am__append_9 = rrdcached
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/rrd_config.h.in $(srcdir)/librrd.sym.in.in \
@@ -182,15 +183,16 @@ am__librrd_th_la_SOURCES_DIST = mutex.c rrd_strtod.c rrd_create.c \
 	rrd_hw_update.c rrd_diff.c rrd_format.c rrd_info.c rrd_error.c \
 	rrd_open.c rrd_client.c rrd_nan_inf.c rrd_rpncalc.c \
 	rrd_utils.c rrd_snprintf.c rrd_update.c rrd_modify.c \
-	quicksort.c rrd_getopt.c rrd_getopt1.c rrd_version.c \
-	rrd_last.c rrd_lastupdate.c rrd_first.c rrd_dump.c \
-	rrd_flushcached.c rrd_fetch.c rrd_fetch_cb.c rrd_resize.c \
-	rrd_tune.c rrd_graph.c rrd_graph_helper.c rrd_xport.c \
-	rrd_gfx.c pngsize.c rrd_restore.c rrd_fetch_libdbi.c \
-	rrd_thread_safe.c
-@BUILD_GETOPT_TRUE@am__objects_5 = librrd_th_la-rrd_getopt.lo \
+	quicksort.c rrd_rados.c rrd_getopt.c rrd_getopt1.c \
+	rrd_version.c rrd_last.c rrd_lastupdate.c rrd_first.c \
+	rrd_dump.c rrd_flushcached.c rrd_fetch.c rrd_fetch_cb.c \
+	rrd_resize.c rrd_tune.c rrd_graph.c rrd_graph_helper.c \
+	rrd_xport.c rrd_gfx.c pngsize.c rrd_restore.c \
+	rrd_fetch_libdbi.c rrd_thread_safe.c
+@BUILD_LIBRADOS_TRUE@am__objects_5 = librrd_th_la-rrd_rados.lo
+@BUILD_GETOPT_TRUE@am__objects_6 = librrd_th_la-rrd_getopt.lo \
 @BUILD_GETOPT_TRUE@	librrd_th_la-rrd_getopt1.lo
-am__objects_6 = librrd_th_la-mutex.lo librrd_th_la-rrd_strtod.lo \
+am__objects_7 = librrd_th_la-mutex.lo librrd_th_la-rrd_strtod.lo \
 	librrd_th_la-rrd_create.lo librrd_th_la-hash_32.lo \
 	librrd_th_la-rrd_parsetime.lo librrd_th_la-rrd_hw.lo \
 	librrd_th_la-rrd_hw_math.lo librrd_th_la-rrd_hw_update.lo \
@@ -200,21 +202,21 @@ am__objects_6 = librrd_th_la-mutex.lo librrd_th_la-rrd_strtod.lo \
 	librrd_th_la-rrd_nan_inf.lo librrd_th_la-rrd_rpncalc.lo \
 	librrd_th_la-rrd_utils.lo librrd_th_la-rrd_snprintf.lo \
 	librrd_th_la-rrd_update.lo librrd_th_la-rrd_modify.lo \
-	librrd_th_la-quicksort.lo $(am__objects_5)
-@BUILD_RRDGRAPH_TRUE@am__objects_7 = librrd_th_la-rrd_graph.lo \
+	librrd_th_la-quicksort.lo $(am__objects_5) $(am__objects_6)
+@BUILD_RRDGRAPH_TRUE@am__objects_8 = librrd_th_la-rrd_graph.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_graph_helper.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_xport.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_gfx.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_th_la-pngsize.lo
-@BUILD_RRDRESTORE_TRUE@am__objects_8 = librrd_th_la-rrd_restore.lo
-@BUILD_LIBDBI_TRUE@am__objects_9 = librrd_th_la-rrd_fetch_libdbi.lo
-am__objects_10 = librrd_th_la-rrd_version.lo librrd_th_la-rrd_last.lo \
+@BUILD_RRDRESTORE_TRUE@am__objects_9 = librrd_th_la-rrd_restore.lo
+@BUILD_LIBDBI_TRUE@am__objects_10 = librrd_th_la-rrd_fetch_libdbi.lo
+am__objects_11 = librrd_th_la-rrd_version.lo librrd_th_la-rrd_last.lo \
 	librrd_th_la-rrd_lastupdate.lo librrd_th_la-rrd_first.lo \
 	librrd_th_la-rrd_dump.lo librrd_th_la-rrd_flushcached.lo \
 	librrd_th_la-rrd_fetch.lo librrd_th_la-rrd_fetch_cb.lo \
 	librrd_th_la-rrd_resize.lo librrd_th_la-rrd_tune.lo \
-	$(am__objects_7) $(am__objects_8) $(am__objects_9)
-am_librrd_th_la_OBJECTS = $(am__objects_6) $(am__objects_10) \
+	$(am__objects_8) $(am__objects_9) $(am__objects_10)
+am_librrd_th_la_OBJECTS = $(am__objects_7) $(am__objects_11) \
 	librrd_th_la-rrd_thread_safe.lo
 librrd_th_la_OBJECTS = $(am_librrd_th_la_OBJECTS)
 librrd_th_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -227,15 +229,17 @@ am__librrdupd_la_SOURCES_DIST = mutex.c rrd_strtod.c rrd_create.c \
 	rrd_hw_update.c rrd_diff.c rrd_format.c rrd_info.c rrd_error.c \
 	rrd_open.c rrd_client.c rrd_nan_inf.c rrd_rpncalc.c \
 	rrd_utils.c rrd_snprintf.c rrd_update.c rrd_modify.c \
-	quicksort.c rrd_getopt.c rrd_getopt1.c rrd_not_thread_safe.c
-@BUILD_GETOPT_TRUE@am__objects_11 = rrd_getopt.lo rrd_getopt1.lo
-am__objects_12 = mutex.lo rrd_strtod.lo rrd_create.lo hash_32.lo \
+	quicksort.c rrd_rados.c rrd_getopt.c rrd_getopt1.c \
+	rrd_not_thread_safe.c
+@BUILD_LIBRADOS_TRUE@am__objects_12 = rrd_rados.lo
+@BUILD_GETOPT_TRUE@am__objects_13 = rrd_getopt.lo rrd_getopt1.lo
+am__objects_14 = mutex.lo rrd_strtod.lo rrd_create.lo hash_32.lo \
 	rrd_parsetime.lo rrd_hw.lo rrd_hw_math.lo rrd_hw_update.lo \
 	rrd_diff.lo rrd_format.lo rrd_info.lo rrd_error.lo rrd_open.lo \
 	rrd_client.lo rrd_nan_inf.lo rrd_rpncalc.lo rrd_utils.lo \
 	rrd_snprintf.lo rrd_update.lo rrd_modify.lo quicksort.lo \
-	$(am__objects_11)
-am_librrdupd_la_OBJECTS = $(am__objects_12) rrd_not_thread_safe.lo
+	$(am__objects_12) $(am__objects_13)
+am_librrdupd_la_OBJECTS = $(am__objects_14) rrd_not_thread_safe.lo
 librrdupd_la_OBJECTS = $(am_librrdupd_la_OBJECTS)
 @BUILD_RRDCGI_TRUE@am__EXEEXT_1 = rrdcgi$(EXEEXT)
 @BUILD_RRDCACHED_TRUE@am__EXEEXT_2 = rrdcached$(EXEEXT)
@@ -538,7 +542,7 @@ UPD_C_FILES = mutex.c rrd_strtod.c rrd_create.c hash_32.c \
 	rrd_diff.c rrd_format.c rrd_info.c rrd_error.c rrd_open.c \
 	rrd_client.c rrd_nan_inf.c rrd_rpncalc.c rrd_utils.c \
 	rrd_snprintf.c rrd_update.c rrd_modify.c quicksort.c \
-	$(am__append_5)
+	$(am__append_4) $(am__append_6)
 RRD_C_FILES = rrd_version.c rrd_last.c rrd_lastupdate.c rrd_first.c \
 	rrd_dump.c rrd_flushcached.c rrd_fetch.c rrd_fetch_cb.c \
 	rrd_resize.c rrd_tune.c $(am__append_1) $(am__append_2) \
@@ -549,9 +553,9 @@ noinst_HEADERS = unused.h gettext.h mutex.h rrd_strtod.h \
 	rrd_xport.h rrd.h rrd_rpncalc.h rrd_hw.h rrd_hw_math.h \
 	rrd_hw_update.h rrd_restore.h rrd_create.h fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h rrd_modify.h rrd_update.h rrd_config.h \
-	quicksort.h $(am__append_4)
+	quicksort.h $(am__append_5)
 noinst_LTLIBRARIES = librrdupd.la
-lib_LTLIBRARIES = librrd.la $(am__append_6)
+lib_LTLIBRARIES = librrd.la $(am__append_7)
 librrdupd_la_SOURCES = $(UPD_C_FILES) rrd_not_thread_safe.c
 librrdupd_la_LIBADD = $(CORE_LIBS)
 librrd_la_SOURCES = $(RRD_C_FILES)
@@ -796,6 +800,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_nan_inf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_open.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_parsetime.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_rados.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_resize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_rpncalc.Plo@am__quote@
@@ -838,6 +843,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_not_thread_safe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_open.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_parsetime.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_rados.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_resize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_rpncalc.Plo@am__quote@
@@ -1019,6 +1025,13 @@ librrd_th_la-quicksort.lo: quicksort.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='quicksort.c' object='librrd_th_la-quicksort.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-quicksort.lo `test -f 'quicksort.c' || echo '$(srcdir)/'`quicksort.c
+
+librrd_th_la-rrd_rados.lo: rrd_rados.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_rados.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_rados.Tpo -c -o librrd_th_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_rados.Tpo $(DEPDIR)/librrd_th_la-rrd_rados.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_rados.c' object='librrd_th_la-rrd_rados.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
 
 librrd_th_la-rrd_getopt.lo: rrd_getopt.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_getopt.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_getopt.Tpo -c -o librrd_th_la-rrd_getopt.lo `test -f 'rrd_getopt.c' || echo '$(srcdir)/'`rrd_getopt.c

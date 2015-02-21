@@ -609,6 +609,7 @@ dnl EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,        
 dnl EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
 
+AC_CHECK_FUNCS(pango_font_map_create_context)
 fi
 
 if test $enable_rrd_restore != no; then

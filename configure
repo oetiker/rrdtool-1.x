@@ -709,6 +709,8 @@ BUILD_RRDGRAPH_FALSE
 BUILD_RRDGRAPH_TRUE
 BUILD_LIBWRAP_FALSE
 BUILD_LIBWRAP_TRUE
+BUILD_LIBRADOS_FALSE
+BUILD_LIBRADOS_TRUE
 BUILD_LIBDBI_FALSE
 BUILD_LIBDBI_TRUE
 BUILD_MULTITHREAD_FALSE
@@ -900,6 +902,7 @@ enable_rpath
 with_libiconv_prefix
 with_libintl_prefix
 enable_libdbi
+enable_librados
 enable_libwrap
 enable_perl
 enable_perl_site_install
@@ -1582,6 +1585,7 @@ Optional Features:
   --disable-nls           do not use Native Language Support
   --disable-rpath         do not hardcode runtime library paths
   --disable-libdbi        do not build in support for libdbi
+  --disable-librados      do not build in support for librados
   --disable-libwrap       do not build in support for libwrap (tcp wrapper)
   --disable-perl          do not build the perl modules
   --enable-perl-site-install
@@ -19186,6 +19190,38 @@ else
 fi
 
 
+have_librados=no
+
+# Check whether --enable-librados was given.
+if test "${enable_librados+set}" = set; then :
+  enableval=$enable_librados;
+else
+
+    ac_fn_c_check_header_mongrel "$LINENO" "rados/librados.h" "ac_cv_header_rados_librados_h" "$ac_includes_default"
+if test "x$ac_cv_header_rados_librados_h" = xyes; then :
+
+
+$as_echo "#define HAVE_LIBRADOS 1" >>confdefs.h
+
+        LIBS="${LIBS} -lrados"
+        have_librados=yes
+
+fi
+
+
+
+fi
+
+
+ if test $have_librados != no; then
+  BUILD_LIBRADOS_TRUE=
+  BUILD_LIBRADOS_FALSE='#'
+else
+  BUILD_LIBRADOS_TRUE='#'
+  BUILD_LIBRADOS_FALSE=
+fi
+
+
 have_libwrap=no
 
 # Check whether --enable-libwrap was given.
@@ -20035,6 +20071,17 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
+for ac_func in pango_font_map_create_context
+do :
+  ac_fn_c_check_func "$LINENO" "pango_font_map_create_context" "ac_cv_func_pango_font_map_create_context"
+if test "x$ac_cv_func_pango_font_map_create_context" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_PANGO_FONT_MAP_CREATE_CONTEXT 1
+_ACEOF
+
+fi
+done
 
 fi
 
@@ -21975,6 +22022,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_LIBDBI_TRUE}" && test -z "${BUILD_LIBDBI_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LIBDBI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LIBRADOS_TRUE}" && test -z "${BUILD_LIBRADOS_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LIBRADOS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_LIBWRAP_TRUE}" && test -z "${BUILD_LIBWRAP_FALSE}"; then
@@ -24613,6 +24664,10 @@ if test -z "${BUILD_LIBDBI_TRUE}" && test -z "${BUILD_LIBDBI_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LIBDBI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_LIBRADOS_TRUE}" && test -z "${BUILD_LIBRADOS_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LIBRADOS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${BUILD_LIBWRAP_TRUE}" && test -z "${BUILD_LIBWRAP_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LIBWRAP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -27089,6 +27144,7 @@ echo "          Build rrdcgi: $enable_rrdcgi"
 echo "       Build librrd MT: $enable_pthread"
 echo "           Use gettext: $USE_NLS"
 echo "           With libDBI: $have_libdbi"
+echo "         With librados: $have_librados"
 echo "          With libwrap: $have_libwrap"
 echo "      With systemd dir: $with_systemdsystemunitdir"
 echo

@@ -78,12 +78,30 @@ text_prop_t text_prop[] = {
 
 char week_fmt[128] = "Week %V";
 
+/*
+    0 double    minsec;   --  minimum sec per pix
+    1 long      length;   -- number of secs on the image
+    2 enum tmt_en gridtm; -- grid interval in what ?
+    3 long      gridst;   -- how many whats per grid
+    4 enum tmt_en mgridtm; -- label interval in what ?
+    5 long      mgridst;  -- how many whats per label
+    6 enum tmt_en labtm;  -- label interval in what ?
+    7 long      labst;    -- how many whats per label
+    8 long      precis;   -- label precision -> label placement
+    9 char     *stst;     -- strftime string
+*/
+
 xlab_t    xlab[] = {
-    {0.0, 0, TMT_SECOND, 10, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
+    /* 0  1    2          3    4         5   6          7  8   9  */
+    {0.0, 0, TMT_SECOND, 1, TMT_SECOND, 5, TMT_SECOND, 10, 0, "%H:%M:%S"}
     ,
-    {0.6, 0, TMT_SECOND, 20, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
+    {0.15, 0, TMT_SECOND, 5, TMT_SECOND, 15, TMT_SECOND, 30, 0, "%H:%M:%S"}
     ,
-    {1.0, 0, TMT_SECOND, 30, TMT_MINUTE, 2, TMT_MINUTE, 2, 0, "%H:%M"}
+    {0.4, 0, TMT_SECOND, 10, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
+    ,
+    {0.7, 0, TMT_SECOND, 20, TMT_MINUTE, 1, TMT_MINUTE, 1, 0, "%H:%M"}
+    ,
+    {1.0, 0, TMT_SECOND, 30, TMT_MINUTE, 1, TMT_MINUTE, 2, 0, "%H:%M"}
     ,
     {2.0, 0, TMT_MINUTE, 1, TMT_MINUTE, 5, TMT_MINUTE, 5, 0, "%H:%M"}
     ,
@@ -91,39 +109,57 @@ xlab_t    xlab[] = {
     ,
     {10.0, 0, TMT_MINUTE, 5, TMT_MINUTE, 20, TMT_MINUTE, 20, 0, "%H:%M"}
     ,
-    {30.0, 0, TMT_MINUTE, 10, TMT_HOUR, 1, TMT_HOUR, 1, 0, "%H:%M"}
+    {30.0, 0, TMT_MINUTE, 10, TMT_MINUTE, 30, TMT_HOUR, 1, 0, "%H:%M"}
     ,
-    {60.0, 0, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 2, 0, "%H:%M"}
+    {60.0, 0, TMT_MINUTE, 30, TMT_HOUR, 1, TMT_HOUR, 2, 0, "%H:%M"}
     ,
-    {60.0, 24 * 3600, TMT_MINUTE, 30, TMT_HOUR, 2, TMT_HOUR, 6, 0, "%a %H:%M"}
+    {60.0, 24 * 3600, TMT_MINUTE, 30, TMT_HOUR, 1, TMT_HOUR, 3, 0, "%a %H:%M"}
     ,
-    {180.0, 0, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 6, 0, "%H:%M"}
+    {140.0, 0, TMT_HOUR, 1, TMT_HOUR, 2, TMT_HOUR, 4, 0, "%a %H:%M"}
     ,
-    {180.0, 24 * 3600, TMT_HOUR, 1, TMT_HOUR, 6, TMT_HOUR, 12, 0, "%a %H:%M"}
+    {180.0, 0, TMT_HOUR, 1, TMT_HOUR, 3, TMT_HOUR, 6, 0, "%a %H:%M"}
     ,
-    /*{300,             0,   TMT_HOUR,3,    TMT_HOUR,12,   TMT_HOUR,12,    12*3600,"%a %p"},  this looks silly */
-    {600.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%a"}
+    {300.0, 0, TMT_HOUR, 2,  TMT_HOUR,6,   TMT_HOUR,12, 0, "%a %H:%M"}
     ,
-    {1200.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%d"}
+    {600.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%a %d %b"}
     ,
-    {1800.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a %d"}
+    {1200.0, 0, TMT_HOUR, 6, TMT_DAY, 1, TMT_DAY, 1, 24 * 3600, "%d %b"}
     ,
-    {2400.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a"}
+    {1800.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%a %d %b"}
     ,
-    {3600.0, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt}
+    {2400.0, 0, TMT_HOUR, 12, TMT_DAY, 1, TMT_DAY, 2, 24 * 3600, "%d %b"}
     ,
-    {3.0 * 3600.0, 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_WEEK, 2, 7 * 24 * 3600, week_fmt}
+    {3600.0, 0, TMT_DAY, 1, TMT_WEEK, 1, TMT_WEEK, 1, 7 * 24 * 3600, week_fmt }
     ,
-    {6.0 * 3600.0, 0, TMT_MONTH, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,
-     "%b"}
+    {12000.0 , 0, TMT_DAY, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,    "%B %Y"}
     ,
-    {48.0 * 3600.0, 0, TMT_MONTH, 1, TMT_MONTH, 3, TMT_MONTH, 3, 30 * 24 * 3600,
-     "%b"}
+    {18000.0 , 0, TMT_DAY, 2, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,    "%B %Y"}
     ,
-    {315360.0, 0, TMT_MONTH, 3, TMT_YEAR, 1, TMT_YEAR, 1, 365 * 24 * 3600, "%Y"}
+    {23000.0 , 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,    "%b %Y"}
     ,
-    {(double)(10 * 24 * 3600), 0, TMT_YEAR, 1, TMT_YEAR, 1, TMT_YEAR, 1,
-     365 * 24 * 3600, "%y"}
+    {32000.0 , 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_MONTH, 1, 30 * 24 * 3600,    "%b '%g"}
+    ,
+    {42000.0 , 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_MONTH, 2, 30 * 24 * 3600,    "%B %Y"}
+    ,
+    {52000.0 , 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_MONTH, 2, 30 * 24 * 3600,    "%b %Y"}
+    ,
+    {78000.0 , 0, TMT_WEEK, 1, TMT_MONTH, 1, TMT_MONTH, 2, 30 * 24 * 3600,    "%b '%g"}
+    ,
+    {84000.0 , 0, TMT_WEEK, 2, TMT_MONTH, 1, TMT_MONTH, 3, 30 * 24 * 3600,    "%B %Y"}
+    ,
+    {94000.0 , 0, TMT_WEEK, 2, TMT_MONTH, 1, TMT_MONTH, 3, 30 * 24 * 3600,    "%b %Y"}
+    ,
+    {120000.0 , 0, TMT_WEEK, 2, TMT_MONTH, 1, TMT_MONTH, 3, 30 * 24 * 3600,    "%b '%g"}
+    ,
+    {130000.0 , 0, TMT_MONTH, 1, TMT_MONTH, 2, TMT_MONTH, 4, 0,    "%Y-%m-%d"}
+    ,
+    {142000.0 , 0, TMT_MONTH, 1, TMT_MONTH, 3, TMT_MONTH, 6, 0,    "%Y-%m-%d"}
+    ,
+    {220000.0 , 0, TMT_MONTH, 1, TMT_MONTH, 6, TMT_MONTH, 12, 0,    "%Y-%m-%d"}
+    ,
+    {400000.0 , 0, TMT_MONTH, 2, TMT_MONTH, 12, TMT_MONTH, 12, 365*24*3600,    "%Y"}
+    ,
+    {800000.0 , 0, TMT_MONTH, 4, TMT_MONTH, 12, TMT_MONTH, 24, 365*24*3600,    "%Y"}
     ,
     {-1.0, 0, TMT_MONTH, 0, TMT_MONTH, 0, TMT_MONTH, 0, 0, ""}
 };
@@ -363,13 +399,13 @@ int im_free(
       free(im->daemon_addr);
 
     if (im->gdef_map){
-        g_hash_table_destroy(im->gdef_map);        
+        g_hash_table_destroy(im->gdef_map);
 	}
 
 	if (im->rrd_map){
 		g_hash_table_destroy(im->rrd_map);
 	}
-	
+
 
     for (i = 0; i < (unsigned) im->gdes_c; i++) {
         if (im->gdes[i].data_first) {
@@ -980,11 +1016,11 @@ int data_fetch(
             im->gdes[i].data_first = 1;
 
             /* must reduce to at least im->step
-               otherwhise we end up with more data than we can handle in the 
-               chart and visibility of data will be random */            
+               otherwhise we end up with more data than we can handle in the
+               chart and visibility of data will be random */
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
-                
+
                 reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
@@ -1233,7 +1269,7 @@ int data_calc(
                 }
             }           /* enumerate over time steps within a CDEF */
 	    rpnp_freeextra(rpnp);
-	    
+
             break;
         default:
             continue;
@@ -1296,7 +1332,7 @@ int data_proc(
     /* memory for the processed data */
     for (i = 0; i < im->gdes_c; i++) {
         if ((im->gdes[i].gf == GF_LINE)
-         || (im->gdes[i].gf == GF_AREA) 
+         || (im->gdes[i].gf == GF_AREA)
          || (im->gdes[i].gf == GF_TICK)
          || (im->gdes[i].gf == GF_GRAD)
         ) {
@@ -2060,7 +2096,7 @@ int calc_horizontal_grid(
 
                 if (im->unitslength < len + 2)
                     im->unitslength = len + 2;
-                snprintf(im->ygrid_scale.labfmt, sizeof im->ygrid_scale.labfmt, 
+                snprintf(im->ygrid_scale.labfmt, sizeof im->ygrid_scale.labfmt,
                         "%%%d.%df%s", len,
                         -fractionals, (im->symbol != ' ' ? " %c" : ""));
             } else {
@@ -2150,7 +2186,7 @@ int draw_horizontal_grid(
                                 scaledstep * (double) i);
                     }
                 } else {
-                    char      sisym = (i == 0 ? ' ' : im->symbol);                   
+                    char      sisym = (i == 0 ? ' ' : im->symbol);
                     if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
                         if (im->extra_flags & ALTYGRID) {
                             snprintf(graph_label,sizeof graph_label,
@@ -2920,7 +2956,7 @@ void grid_paint(
                 /* shift the box up a bit */
                 Y0 -= boxV * 0.4;
 
-        if (im->dynamic_labels && im->gdes[i].gf == GF_HRULE) { /* [-] */ 
+        if (im->dynamic_labels && im->gdes[i].gf == GF_HRULE) { /* [-] */
 			cairo_save(im->cr);
 			cairo_new_path(im->cr);
 			cairo_set_line_width(im->cr, 1.0);
@@ -3406,10 +3442,10 @@ int graph_paint(
     image_desc_t *im)
 {
     int       lazy = lazy_check(im);
-    int       cnt;      
+    int       cnt;
 
-    /* imgformat XML or higher dispatch to xport 
-     * output format there is selected via graph_type 
+    /* imgformat XML or higher dispatch to xport
+     * output format there is selected via graph_type
      */
     if (im->imgformat >= IF_XML) {
       return rrd_graph_xport(im);
@@ -3441,7 +3477,7 @@ int graph_paint(
       break;
     case GTYPE_XY:
       return graph_paint_xy(im,lazy,cnt);
-      break;      
+      break;
     }
     /* final return with error*/
     rrd_set_error("Graph type %i is not implemented",im->graph_type);
@@ -3563,7 +3599,7 @@ int graph_paint_timestring(
         case GF_GRAD: {
             rrd_value_t diffval = im->maxval - im->minval;
             rrd_value_t maxlimit = im->maxval + 9 * diffval;
-            rrd_value_t minlimit = im->minval - 9 * diffval;        
+            rrd_value_t minlimit = im->minval - 9 * diffval;
             for (ii = 0; ii < im->xsize; ii++) {
                 /* fix data points at oo and -oo */
                 if (isinf(im->gdes[i].p_data[ii])) {
@@ -3730,9 +3766,9 @@ int graph_paint_timestring(
 								if (im->gdes[i].gf != GF_GRAD) {
 	                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
 								} else {
-									gfx_add_rect_fadey(im, 
+									gfx_add_rect_fadey(im,
 										lastx, foreY[0],
-										foreX[cntI], foreY[cntI], lasty, 
+										foreX[cntI], foreY[cntI], lasty,
 										im->gdes[i].col,
 										im->gdes[i].col2,
 										im->gdes[i].gradheight
@@ -3784,7 +3820,7 @@ int graph_paint_timestring(
                             }
                             idxI = -1;
                             drawem = 0;
-							if (im->gdes[i].gf != GF_GRAD) 
+							if (im->gdes[i].gf != GF_GRAD)
 	                            gfx_close_path(im);
                         }
                         if (drawem != 0) {
@@ -4034,7 +4070,7 @@ int graph_cairo_finish (image_desc_t *im)
 int graph_paint_xy(
                   image_desc_t UNUSED(*im), int UNUSED(lazy), int UNUSED(cnt))
 {
-  rrd_set_error("XY diagramm not implemented");  
+  rrd_set_error("XY diagramm not implemented");
   return -1;
 }
 
@@ -4093,7 +4129,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].rrd[0] = '\0';
     im->gdes[im->gdes_c - 1].ds = -1;
     im->gdes[im->gdes_c - 1].cf_reduce = CF_AVERAGE;
-    im->gdes[im->gdes_c - 1].cf_reduce_set = 0;    
+    im->gdes[im->gdes_c - 1].cf_reduce_set = 0;
     im->gdes[im->gdes_c - 1].cf = CF_AVERAGE;
     im->gdes[im->gdes_c - 1].yrule = DNAN;
     im->gdes[im->gdes_c - 1].xrule = 0;
@@ -4247,7 +4283,7 @@ rrd_info_t *rrd_graph_v(
         im_free(&im);
         return NULL;
     }
-    
+
     /* Everything is now read and the actual work can start */
     if (graph_paint(&im) == -1) {
       rrd_info_free(im.grinfo);
@@ -4327,7 +4363,7 @@ void rrd_graph_init(
 #endif
     im->gdef_map = g_hash_table_new_full(g_str_hash, g_str_equal,g_free,NULL);
 	//use of g_free() cause heap damage on windows. Key is allocated by malloc() in sprintf_alloc(), so free() must use
-    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,free,NULL); 
+    im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,free,NULL);
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
@@ -4410,8 +4446,11 @@ void rrd_graph_init(
         fontmap = pango_cairo_font_map_get_default();
     }
 
+#ifdef HAVE_PANGO_FONT_MAP_CREATE_CONTEXT
+    context =  pango_font_map_create_context((PangoFontMap*)fontmap);
+#else
     context =  pango_cairo_font_map_create_context((PangoCairoFontMap*)fontmap);
-
+#endif
     pango_cairo_context_set_resolution(context, 100);
 
     pango_cairo_update_context(im->cr,context);
@@ -4702,16 +4741,16 @@ void rrd_graph_options(
                       "%[0-9.e+-]:%[0-9.e+-]",
                       double_str,
                       double_str2 ) != 2) {
-                if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2 
+                if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2
                      || rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), NULL) != 2 ){
                     rrd_set_error("expected grid-dash format float:float");
                     return;
                 }
             }
-            break;   
+            break;
         case 1009: /* enable dynamic labels */
             im->dynamic_labels = 1;
-            break;         
+            break;
         case 1010:
             strncpy(week_fmt,optarg,sizeof week_fmt);
             week_fmt[(sizeof week_fmt)-1]='\0';
@@ -5089,7 +5128,7 @@ int rrd_graph_color(
 
 #define OVECCOUNT 30    /* should be a multiple of 3 */
 
-static int bad_format_check(const char *pattern, char *fmt) {    
+static int bad_format_check(const char *pattern, char *fmt) {
 #ifdef HAVE_G_REGEX_NEW
     GError *gerr = NULL;
     GRegex *re = g_regex_new(pattern, G_REGEX_EXTENDED, 0, &gerr);
@@ -5539,13 +5578,13 @@ void time_clean(
     char *format)
 {
     int       j, jj;
-    
+
 /*     Handling based on
        - ANSI C99 Specifications                         http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1124.pdf
-       - Single UNIX Specification version 2             http://www.opengroup.org/onlinepubs/007908799/xsh/strftime.html 
+       - Single UNIX Specification version 2             http://www.opengroup.org/onlinepubs/007908799/xsh/strftime.html
        - POSIX:2001/Single UNIX Specification version 3  http://www.opengroup.org/onlinepubs/009695399/functions/strftime.html
        - POSIX:2008 Specifications                       http://www.opengroup.org/onlinepubs/9699919799/functions/strftime.html
-       Specifications tells 
+       Specifications tells
        "If a conversion specifier is not one of the above, the behavior is undefined."
 
       C99 tells

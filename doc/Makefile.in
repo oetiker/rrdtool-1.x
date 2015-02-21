@@ -80,7 +80,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_LIBDBI_TRUE@am__append_1 = rrdgraph_libdbi.pod
-@BUILD_LUA_TRUE@am__append_2 = rrdlua.pod
+@BUILD_LIBRADOS_TRUE@am__append_2 = rrdrados.pod
+@BUILD_LUA_TRUE@am__append_3 = rrdlua.pod
 subdir = doc
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -363,7 +364,7 @@ POD = bin_dec_hex.pod rrddump.pod rrdgraph_examples.pod rrdrestore.pod \
 	rrdinfo.pod rrdtune.pod rrdbuild.pod rrdflushcached.pod \
 	rrdcgi.pod rrdgraph.pod rrdlast.pod rrdlastupdate.pod \
 	rrdcreate.pod rrdgraph_data.pod rrdresize.pod rrdtutorial.pod \
-	$(am__append_1) $(am__append_2)
+	$(am__append_1) $(am__append_2) $(am__append_3)
 POD3 = librrd.pod
 PMP = RRDs.pod RRDp.pod
 MAN = $(POD:.pod=.1)

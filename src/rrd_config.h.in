@@ -189,6 +189,9 @@
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
 
+/* have got librados installed */
+#undef HAVE_LIBRADOS
+
 /* have got libwrap installed */
 #undef HAVE_LIBWRAP
 
@@ -245,6 +248,9 @@
 
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
+
+/* Define to 1 if you have the `pango_font_map_create_context' function. */
+#undef HAVE_PANGO_FONT_MAP_CREATE_CONTEXT
 
 /* we have pcre to replace missing regexp support form glib */
 #undef HAVE_PCRE_COMPILE
