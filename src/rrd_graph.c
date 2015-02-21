@@ -161,6 +161,8 @@ xlab_t    xlab[] = {
     ,
     {800000.0 , 0, TMT_MONTH, 4, TMT_MONTH, 12, TMT_MONTH, 24, 365*24*3600,    "%Y"}
     ,
+    {2000000.0 , 0, TMT_MONTH, 6, TMT_MONTH, 12, TMT_MONTH, 24, 365*24*3600,    "'%g"}
+    ,
     {-1.0, 0, TMT_MONTH, 0, TMT_MONTH, 0, TMT_MONTH, 0, 0, ""}
 };
 
