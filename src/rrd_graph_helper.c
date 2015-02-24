@@ -901,12 +901,25 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					);
   /* retry in case of errors modifying the name*/
   if (!gdp) {
-	  rrd_clear_error();
 	  /* restart from scratch */
 	  resetParsedArguments(pa);
-	  /* but modify the first parameter */
+	  /* get the first parameter */
 	  keyvalue_t *first= getFirstUnusedArgument(0,pa);
+	  /* if it is any of the "original" positional args, then we terminate immediately */
+	  for(int i=0;i<10;i++){
+		  if (poskeys[i] == first->key) {
+			  return -1;
+		  }
+	  }
+	  /* otherwise we patch the key */
 	  *(first->key)+=128;
+
+	  /* and keep a copy of the error */
+	  char original_error[4096];
+	  strncpy(original_error,rrd_get_error(),sizeof(original_error));
+	  /* and clear the error */
+	  rrd_clear_error();
+
 	  /* now run it */
 	  gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMERRDDSCF
@@ -916,7 +929,11 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_REDUCE
 				        |PARSE_RETRY
 					);
-	  if (!gdp) { return 1;}
+	  /* on error, we restore the original error and return */
+	  if (!gdp) {
+		  rrd_set_error(original_error);
+		  return 1;
+	  }
   }
 
   if (gdp->step == 0){
