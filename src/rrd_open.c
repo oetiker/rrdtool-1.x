@@ -472,8 +472,6 @@ read_check:
 #ifdef HAVE_MMAP
     if (data != MAP_FAILED)
       munmap(data, rrd_file->file_len);
-    rrd->__mmap_start = NULL;
-    rrd->__mmap_size = 0;
 #endif
 
     close(rrd_simple_file->fd);
