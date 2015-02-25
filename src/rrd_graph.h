@@ -85,7 +85,7 @@ enum vdef_op_en {
         , VDEF_LSLCORREL    /* least squares line correlation coefficient */
         , VDEF_PERCENTNAN  /* Nth percentile ignoring NAN*/
 };
-enum text_prop_en { 
+enum text_prop_en {
     TEXT_PROP_DEFAULT = 0,  /* default settings */
     TEXT_PROP_TITLE,    /* properties for the title */
     TEXT_PROP_AXIS,     /* for the numbers next to the axis */
@@ -98,7 +98,7 @@ enum text_prop_en {
 enum legend_pos{ NORTH = 0, WEST, SOUTH, EAST };
 enum legend_direction { TOP_DOWN = 0, BOTTOM_UP, BOTTOM_UP2 };
 
-enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF, 
+enum gfx_if_en { IF_PNG = 0, IF_SVG, IF_EPS, IF_PDF,
 		 IF_XML=128, IF_CSV=129, IF_TSV=130, IF_SSV=131, IF_JSON=132,
 		 IF_XMLENUM=133, IF_JSONTIME=134
 };
@@ -136,6 +136,7 @@ typedef struct parsedargs_t {
   keyvalue_t *kv_args; /* key value arguments */
 } parsedargs_t;
 void initParsedArguments(parsedargs_t*);
+void resetParsedArguments(parsedargs_t*);
 void freeParsedArguments(parsedargs_t*);
 int addToArguments(parsedargs_t*, char*, char*, char*, int);
 int parseArguments(const char*, parsedargs_t*);
@@ -279,7 +280,7 @@ typedef struct image_desc_t {
     double    second_axis_scale; /* relative to the first axis (0 to disable) */
     double    second_axis_shift; /* how much is it shifted vs the first axis */
     char      *second_axis_legend; /* label to put on the seond axis */
-    char      *second_axis_format; /* format for the numbers on the scond axis */    
+    char      *second_axis_format; /* format for the numbers on the scond axis */
     char      *primary_axis_format; /* format for the numbers on the primary axis */
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
@@ -287,12 +288,12 @@ typedef struct image_desc_t {
     time_t    start, end;   /* what time does the graph cover */
     unsigned long step; /* any preference for the default step ? */
     rrd_value_t minval, maxval; /* extreme values in the data */
-    int       rigid;    /* do not expand range even with 
+    int       rigid;    /* do not expand range even with
                            values outside */
     ygrid_scale_t ygrid_scale;  /* calculated y axis grid info */
     int       gridfit;  /* adjust y-axis range etc so all
                            grindlines falls in integer pixel values */
-    char     *imginfo;  /* construct an <IMG ... tag and return 
+    char     *imginfo;  /* construct an <IMG ... tag and return
                            as first retval */
     enum gfx_if_en imgformat;   /* image format */
     char     *daemon_addr;  /* rrdcached connection string */
@@ -517,7 +518,7 @@ void      gfx_add_point(
     double x,
     double y);
 
-/* create a rect that has a gradient from color1 to color2 in height pixels 
+/* create a rect that has a gradient from color1 to color2 in height pixels
  * height > 0:
  * 		gradient starts at top and goes down a fixed number of pixels (fire style)
  * height < 0:
@@ -533,7 +534,7 @@ void gfx_add_rect_fadey(
     gfx_color_t color1,
 	gfx_color_t color2,
 	double height);
-				
+
 
 
 /* close current path so it ends at the same point as it started */

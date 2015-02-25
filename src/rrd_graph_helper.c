@@ -37,6 +37,16 @@ void freeParsedArguments(parsedargs_t* pa) {
   initParsedArguments(pa);
 }
 
+void resetParsedArguments(parsedargs_t* pa) {
+  if (pa->kv_args) {
+    for(int i=0;i<pa->kv_cnt;i++) {
+      if (pa->kv_args[i].flag!=255) {
+        pa->kv_args[i].flag=0;
+      }
+    }
+  }
+}
+
 void dumpKeyValue(char* pre,keyvalue_t* t) {
   if (t) {
     fprintf(stderr,"%s%i: '%s' = '%s' %i\n",
@@ -364,6 +374,8 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_VNAMECOLORFRACTIONLEGEND (PARSE_VNAMECOLORLEGEND|PARSE_FRACTION)
 #define PARSE_VNAMERPN         (PARSE_POSITIONAL|PARSE_VNAMEDEF|PARSE_RPN)
 #define PARSE_VNAMEREFPOS      (PARSE_POSITIONAL|PARSE_VNAMEREF)
+/* a retry parsing */
+#define PARSE_RETRY        (1ULL<<54)
 
 GHashTable* gdef_map;
 
@@ -400,17 +412,19 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if ((bits&PARSE_FIELD1)&&((bits&(PARSE_FIELD2|PARSE_FIELD3|PARSE_FIELD4)))) {
     rrd_set_error("newGraphDescription: bad bitfield1 value %08llx",bits);return NULL; }
   /* the normal handler that adds to img */
-  if (gdes_alloc(im)) { return NULL; }
+  if ((!(bits & PARSE_RETRY)) && (gdes_alloc(im))) { return NULL; }
   /* set gdp */
   graph_desc_t *gdp= &im->gdes[im->gdes_c - 1];
 
   /* set some generic things */
   gdp->gf=gf;
-  if (1) {
+  {
     char *t,*x;
     long debug=0;
     if ((t=getKeyValueArgument("debug",1,pa)) && ((getLong(t,&debug,&x,10)))) {
-      rrd_set_error("Bad debug value: %s",t); return NULL; }
+      rrd_set_error("Bad debug value: %s",t);
+      return NULL;
+    }
     gdp->debug=debug;
   }
 
@@ -709,6 +723,13 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     if (bitscmp(PARSE_COLOR2) && (! color2) && (h2)) { color2=h2;}
   }
 
+  /* clean up vname escaping on second tries */
+  if (bits & PARSE_RETRY) {
+    if (vname && (*vname>128)) {
+      *vname-=128;
+    }
+  }
+
   /* check if we are reusing the vname */
   if (vname) {
     int idx=find_var(im, vname);
@@ -878,7 +899,42 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_END
 					|PARSE_REDUCE
 					);
-  if (!gdp) { return 1;}
+  /* retry in case of errors modifying the name*/
+  if (!gdp) {
+	  /* restart from scratch */
+	  resetParsedArguments(pa);
+	  /* get the first parameter */
+	  keyvalue_t *first= getFirstUnusedArgument(0,pa);
+	  /* if it is any of the "original" positional args, then we terminate immediately */
+	  for(int i=0;i<10;i++){
+		  if (poskeys[i] == first->key) {
+			  return -1;
+		  }
+	  }
+	  /* otherwise we patch the key */
+	  *(first->key)+=128;
+
+	  /* and keep a copy of the error */
+	  char original_error[4096];
+	  strncpy(original_error,rrd_get_error(),sizeof(original_error));
+	  /* and clear the error */
+	  rrd_clear_error();
+
+	  /* now run it */
+	  gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMERRDDSCF
+					|PARSE_START
+					|PARSE_STEP
+					|PARSE_END
+					|PARSE_REDUCE
+				        |PARSE_RETRY
+					);
+	  /* on error, we restore the original error and return */
+	  if (!gdp) {
+		  rrd_set_error(original_error);
+		  return 1;
+	  }
+  }
 
   if (gdp->step == 0){
       gdp->step = im->step; /* initialize with image wide step */
@@ -1180,7 +1236,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
       if (first) {
 	gdp->cf=cf_conv(first->value);
 	if (((int)gdp->cf)==-1) {
-	  rrd_set_error("bad CF: %s",first->value); return 1; }
+	  rrd_set_error("bad CF for DEF/CDEF: %s",first->value); return 1; }
       } else { rrd_set_error("No positional CDEF"); return 1; }
     }
     break;
@@ -1420,10 +1476,10 @@ void rrd_graph_script(
 	/* now let us handle the field based on the first command or cmd=...*/
 	char*cmd=NULL;
 	/* and try to get via cmd */
-	char* t=getKeyValueArgument("cmd",1,&pa);
+	char* t=getKeyValueArgument("cmd",255,&pa);
 	if (t) {
 	  cmd=t;
-	} else if ((t=getKeyValueArgument("pos0",1,&pa))) {
+	} else if ((t=getKeyValueArgument("pos0",255,&pa))) {
 	  cmd=t;
 	} else {
 	  rrd_set_error("no command set in argument %s",pa.arg_orig);
