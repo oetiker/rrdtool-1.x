@@ -212,11 +212,11 @@ int apply_smoother(
 
     /* as we are working through the value, we have to make sure to not double
        apply the smoothing after wrapping around. so best is to copy the rrd_values first */
-       
-    rrd_values_cpy = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
-    memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length);
 
-    /* compute moving averages */    
+    rrd_values_cpy = (rrd_value_t *) calloc(row_length*row_count, sizeof(rrd_value_t));
+    memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length*row_count);
+
+    /* compute moving averages */
     for (i = offset; i < row_count + offset; ++i) {
         for (j = 0; j < row_length; ++j) {
             k = MyMod(i, row_count);
@@ -358,7 +358,7 @@ void reset_aberrant_coefficients(
             /* move to first entry of data source for this rra */
             rrd_seek(rrd_file, rra_start + ds_idx * sizeof(rrd_value_t),
                      SEEK_SET);
-            /* entries for the same data source are not contiguous, 
+            /* entries for the same data source are not contiguous,
              * temporal entries are contiguous */
             for (i = 0; i < rrd->rra_def[rra_idx].row_cnt; ++i) {
                 if (rrd_write(rrd_file, &nan_buffer, sizeof(rrd_value_t) * 1)
