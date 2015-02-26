@@ -81,7 +81,12 @@ int rrd_dump_cb_r(
 //These two macros are local defines to clean up visible code from its redndancy
 //and make it easier to read.
 #define CB_PUTS(str)                                            \
-    cb((str), strlen((str)), user)
+    do {							\
+        size_t len = strlen(str);				\
+								\
+        if (cb((str), len, user) != len)                        \
+            goto err_out;                                       \
+    } while (0);
 #define CB_FMTS(...) do {                                       \
     char buffer[256];                                           \
     rrd_snprintf (buffer, sizeof(buffer), __VA_ARGS__);         \
@@ -446,6 +451,12 @@ int rrd_dump_cb_r(
 
     return rrd_close(rrd_file);
 
+err_out:
+    rrd_set_error("error writing output file: %s", rrd_strerror(errno));
+    rrd_free(&rrd);
+    rrd_close(rrd_file);
+    return (-1);
+
 //Undefining the previously defined shortcuts
 //See start of this function
 #undef CB_PUTS
@@ -481,8 +492,14 @@ int rrd_dump_opt_r(
 
     res = rrd_dump_cb_r(filename, opt_noheader, rrd_dump_opt_cb_fileout, (void *)out_file);
 
+    if (fflush(out_file) != 0) {
+        rrd_set_error("error flushing output: %s", rrd_strerror(errno));
+        res = -1;
+    }
     if (out_file != stdout) {
         fclose(out_file);
+        if (res != 0)
+            unlink(outname);
     }
 
     return res;
