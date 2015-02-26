@@ -1366,8 +1366,11 @@ int write_file(
 
     /* lets see if we had an error */
     if (ferror(fh)) {
-        rrd_set_error("a file error occurred while creating '%s'", file_name);
+        rrd_set_error("a file error occurred while creating '%s': %s", file_name,
+            rrd_strerror(errno));
         fclose(fh);
+        if (strcmp("-", file_name) != 0)
+            unlink(file_name);
         return (-1);
     }
 

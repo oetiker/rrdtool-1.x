@@ -2107,6 +2107,7 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   rrd_init(&rrd);
   rrd_file = rrd_open(file,&rrd,RRD_READONLY);
   if(!rrd_file) {
+    rrd_free(&rrd);
     return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
   }
   from_file = rrd.live_head->last_up;
