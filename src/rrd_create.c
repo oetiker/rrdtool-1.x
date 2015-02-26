@@ -1438,7 +1438,7 @@ int write_fh(
         strcpy(rrd->stat_head->version, "0003");
     }
 
-#define FWRITE_CHECK(ptr, size, nitems, fp)	               \
+#define FWRITE_CHECK(ptr, size, nitems, fp)                    \
     do {                                                       \
         if (fwrite((ptr), (size), (nitems), (fp)) != (nitems)) \
             return (-1);                                       \
