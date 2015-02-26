@@ -213,8 +213,8 @@ int apply_smoother(
     /* as we are working through the value, we have to make sure to not double
        apply the smoothing after wrapping around. so best is to copy the rrd_values first */
 
-    rrd_values_cpy = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
-    memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length);
+    rrd_values_cpy = (rrd_value_t *) calloc(row_length*row_count, sizeof(rrd_value_t));
+    memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length*row_count);
 
     /* compute moving averages */
     for (i = offset; i < row_count + offset; ++i) {
