@@ -1437,14 +1437,21 @@ int write_fh(
         /* we output 3 or higher */
         strcpy(rrd->stat_head->version, "0003");
     }
-    fwrite(rrd->stat_head, sizeof(stat_head_t), 1, fh);
-    fwrite(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
-    fwrite(rrd->live_head, sizeof(live_head_t), 1, fh);
-    fwrite(rrd->pdp_prep, sizeof(pdp_prep_t), rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->cdp_prep, sizeof(cdp_prep_t),
+
+#define FWRITE_CHECK(ptr, size, nitems, fp)	               \
+    do {                                                       \
+        if (fwrite((ptr), (size), (nitems), (fp)) != (nitems)) \
+            return (-1);                                       \
+    } while (0)
+
+    FWRITE_CHECK(rrd->stat_head, sizeof(stat_head_t), 1, fh);
+    FWRITE_CHECK(rrd->ds_def, sizeof(ds_def_t), rrd->stat_head->ds_cnt, fh);
+    FWRITE_CHECK(rrd->rra_def, sizeof(rra_def_t), rrd->stat_head->rra_cnt, fh);
+    FWRITE_CHECK(rrd->live_head, sizeof(live_head_t), 1, fh);
+    FWRITE_CHECK(rrd->pdp_prep, sizeof(pdp_prep_t), rrd->stat_head->ds_cnt, fh);
+    FWRITE_CHECK(rrd->cdp_prep, sizeof(cdp_prep_t),
            rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt, fh);
-    fwrite(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
+    FWRITE_CHECK(rrd->rra_ptr, sizeof(rra_ptr_t), rrd->stat_head->rra_cnt, fh);
 
     /* calculate the number of rrd_values to dump */
     rra_offset = 0;
@@ -1452,7 +1459,7 @@ int write_fh(
         unsigned long num_rows = rrd->rra_def[i].row_cnt;
         unsigned long ds_cnt = rrd->stat_head->ds_cnt;
         if (num_rows > 0){
-            fwrite(rrd->rrd_value + rra_offset * ds_cnt,
+            FWRITE_CHECK(rrd->rrd_value + rra_offset * ds_cnt,
                     sizeof(rrd_value_t), 
                     num_rows * ds_cnt, fh);
                     
@@ -1460,7 +1467,12 @@ int write_fh(
         }
     }
 
+    if (fflush(fh) != 0)
+        return (-1);
+
     return (0);
+
+#undef FWRITE_CHECK
 }                       /* int write_file */
 
 static long overlap(time_t start1, time_t end1, time_t start2, time_t end2) {
