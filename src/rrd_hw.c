@@ -277,6 +277,8 @@ int apply_smoother(
             (rrd->cdp_prep[offset]).scratch[CDP_hw_intercept].u_val +=
                 baseline[j];
         }
+/* if we are not running on mmap, lets write stuff to disk now */
+#ifndef MMAP
         /* flush cdp to disk */
         if (rrd_seek(rrd_file, sizeof(stat_head_t) +
                      rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
@@ -296,6 +298,8 @@ int apply_smoother(
             free(rrd_values);
             return -1;
         }
+#endif
+
     }
 
     /* endif CF_SEASONAL */
