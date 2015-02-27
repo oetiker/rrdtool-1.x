@@ -278,7 +278,7 @@ int apply_smoother(
                 baseline[j];
         }
 /* if we are not running on mmap, lets write stuff to disk now */
-#ifndef MMAP
+#ifndef HAVE_MMAP
         /* flush cdp to disk */
         if (rrd_seek(rrd_file, sizeof(stat_head_t) +
                      rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
