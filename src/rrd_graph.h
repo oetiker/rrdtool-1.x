@@ -194,6 +194,7 @@ typedef struct ylab_t {
 enum gfx_datatype_en {
     GDATATYPE_NUMERIC=0,    /* most common mode */
     GDATATYPE_TIMESTAMP,    /* interpret data as unix timestamps */
+    GDATATYPE_DURATION,     /* interpret data as duration in milliseconds */
 };
 
 /* this structure describes the elements which can make up a graph.
