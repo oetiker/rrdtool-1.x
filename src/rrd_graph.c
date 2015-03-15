@@ -224,6 +224,8 @@ gfx_color_t graph_col[] =   /* default colors */
     {0.00, 0.00, 0.00, 1.00}    /* frame      */
 };
 
+const char default_timestamp_fmt[] = "%Y-%m-%d %H:%M:%S";
+
 
 /* #define DEBUG */
 
@@ -1631,6 +1633,23 @@ time_t find_next_time(
 
 }
 
+static int timestamp_to_tm(struct tm *tm, double timestamp)
+{
+    time_t ts;
+
+    if (timestamp < LLONG_MIN || timestamp > LLONG_MAX)
+        return 1;
+
+    ts = (long long int) timestamp;
+
+    if (ts != (long long int) timestamp)
+        return 1;
+
+    gmtime_r(&ts, tm);
+
+    return 0;
+}
+
 
 /* calculate values required for PRINT and GPRINT functions */
 
@@ -1707,7 +1726,8 @@ int print_calc(
                 }
             }           /* prepare printval */
 
-            if (!im->gdes[i].strftm && (percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
+            if (!im->gdes[i].strftm && (percent_s = strstr(im->gdes[i].format, "%S")) != NULL
+                   && im->datatype == GDATATYPE_NUMERIC) {
                 /* Magfact is set to -1 upon entry to print_calc.  If it
                  * is still less than 0, then we need to run auto_scale.
                  * Otherwise, put the value into the correct units.  If
@@ -1721,7 +1741,8 @@ int print_calc(
                     printval /= magfact;
                 }
                 *(++percent_s) = 's';
-            } else if (!im->gdes[i].strftm && strstr(im->gdes[i].format, "%s") != NULL) {
+            } else if (!im->gdes[i].strftm && strstr(im->gdes[i].format, "%s") != NULL
+                       && im->datatype == GDATATYPE_NUMERIC) {
                 auto_scale(im, &printval, &si_symb, &magfact);
             }
 
@@ -1736,16 +1757,42 @@ int print_calc(
                         strftime(prline.u_str,
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
-                } else if (bad_format_print(im->gdes[i].format)) {
-                    return -1;
                 } else {
-                    prline.u_str =
-                        sprintf_alloc(im->gdes[i].format, printval, si_symb);
+                    struct tm tmval;
+                    switch(im->datatype) {
+                    case GDATATYPE_TIMESTAMP:
+                        if (!isfinite(printval) || timestamp_to_tm(&tmval, printval)) {
+                            prline.u_str = sprintf_alloc("%.0f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_timestamp_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            prline.u_str = (char*) malloc(FMT_LEG_LEN*sizeof(char));
+                            if (!prline.u_str)
+                                return -1;
+                            if (0 == strftime(prline.u_str, FMT_LEG_LEN, fmt, &tmval)) {
+                                free(prline.u_str);
+                                return -1;
+                            }
+                        }
+                        break;
+                    case GDATATYPE_NUMERIC:
+                    default:
+                        if (bad_format_print(im->gdes[i].format)) {
+                            return -1;
+                        } else {
+                            prline.u_str =
+                                sprintf_alloc(im->gdes[i].format, printval, si_symb);
+                        }
+                        break;
+                    }
+                    grinfo_push(im,
+                                sprintf_alloc
+                                ("print[%ld]", prline_cnt++), RD_I_STR, prline);
+                    free(prline.u_str);
                 }
-                grinfo_push(im,
-                            sprintf_alloc
-                            ("print[%ld]", prline_cnt++), RD_I_STR, prline);
-                free(prline.u_str);
             } else {
                 /* GF_GPRINT */
 
@@ -1757,12 +1804,31 @@ int print_calc(
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
                 } else {
-                    if (bad_format_print(im->gdes[i].format)) {
-                       return -1;
+                    struct tm tmval;
+                    switch(im->datatype) {
+                    case GDATATYPE_TIMESTAMP:
+                        if (!isfinite(printval) || timestamp_to_tm(&tmval, printval)) {
+                            snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%.0f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_timestamp_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            if (0 == strftime(im->gdes[i].legend, FMT_LEG_LEN, fmt, &tmval))
+                                return -1;
+                        }
+                        break;
+                    case GDATATYPE_NUMERIC:
+                    default:
+                        if (bad_format_print(im->gdes[i].format)) {
+                           return -1;
+                        }
+                        snprintf(im->gdes[i].legend,
+                                 FMT_LEG_LEN - 2,
+                                 im->gdes[i].format, printval, si_symb);
+                        break;
                     }
-                    snprintf(im->gdes[i].legend,
-                             FMT_LEG_LEN - 2,
-                             im->gdes[i].format, printval, si_symb);
                 }
                 graphelement = 1;
             }
@@ -2168,65 +2234,106 @@ int draw_horizontal_grid(
             if (i % im->ygrid_scale.labfact == 0
                 || (nlabels == 1
                     && (YN < im->yorigin - im->ysize || YN > im->yorigin))) {
-                if (im->symbol == ' ') {
-                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
-                        if (im->extra_flags & ALTYGRID) {
-                            snprintf(graph_label, sizeof graph_label,
-                                    im->ygrid_scale.labfmt,
-                                    scaledstep * (double) i);
-                        } else {
-                            if (MaxY < 10) {
-                                snprintf(graph_label, sizeof graph_label, "%4.1f",
-                                        scaledstep * (double) i);
-                            } else {
-                                snprintf(graph_label, sizeof graph_label,"%4.0f",
-                                        scaledstep * (double) i);
-                            }
-                        }
-                    } else {
-                        snprintf(graph_label, sizeof graph_label, im->primary_axis_format,
-                                scaledstep * (double) i);
-                    }
-                } else {
-                    char      sisym = (i == 0 ? ' ' : im->symbol);
-                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
-                        if (im->extra_flags & ALTYGRID) {
-                            snprintf(graph_label,sizeof graph_label,
-                                    im->ygrid_scale.labfmt,
-                                    scaledstep * (double) i, sisym);
-                        } else {
-                            if (MaxY < 10) {
-                                snprintf(graph_label, sizeof graph_label,"%4.1f %c",
-                                        scaledstep * (double) i, sisym);
-                            } else {
-                                snprintf(graph_label, sizeof graph_label, "%4.0f %c",
-                                        scaledstep * (double) i, sisym);
-                            }
-                        }
-                    } else {
-                        sprintf(graph_label, im->primary_axis_format,
-                                scaledstep * (double) i, sisym);
-                    }
+                switch(im->datatype) {
+                case GDATATYPE_TIMESTAMP:
+                    {
+                        struct tm tm;
+                        const char *yfmt;
+                        if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0')
+                            yfmt = default_timestamp_fmt;
+                        else
+                            yfmt = im->primary_axis_format;
+                        if (timestamp_to_tm(&tm, im->ygrid_scale.gridstep*i))
+                            snprintf(graph_label, sizeof graph_label, "%f",
+                                     im->ygrid_scale.gridstep * i);
+                        else
+                            if (0 == strftime(graph_label, sizeof graph_label, yfmt, &tm))
+                                graph_label[0] = '\0';
+                     }
+                     break;
+                case GDATATYPE_NUMERIC:
+                default:
+                     if (im->symbol == ' ') {
+                         if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
+                             if (im->extra_flags & ALTYGRID) {
+                                 snprintf(graph_label, sizeof graph_label,
+                                         im->ygrid_scale.labfmt,
+                                         scaledstep * (double) i);
+                             } else {
+                                 if (MaxY < 10) {
+                                     snprintf(graph_label, sizeof graph_label, "%4.1f",
+                                             scaledstep * (double) i);
+                                 } else {
+                                     snprintf(graph_label, sizeof graph_label,"%4.0f",
+                                             scaledstep * (double) i);
+                                 }
+                             }
+                         } else {
+                             snprintf(graph_label, sizeof graph_label, im->primary_axis_format,
+                                     scaledstep * (double) i);
+                         }
+                     } else {
+                         char      sisym = (i == 0 ? ' ' : im->symbol);
+                         if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
+                             if (im->extra_flags & ALTYGRID) {
+                                 snprintf(graph_label,sizeof graph_label,
+                                         im->ygrid_scale.labfmt,
+                                         scaledstep * (double) i, sisym);
+                             } else {
+                                 if (MaxY < 10) {
+                                     snprintf(graph_label, sizeof graph_label,"%4.1f %c",
+                                             scaledstep * (double) i, sisym);
+                                 } else {
+                                     snprintf(graph_label, sizeof graph_label, "%4.0f %c",
+                                             scaledstep * (double) i, sisym);
+                                 }
+                             }
+                         } else {
+                             sprintf(graph_label, im->primary_axis_format,
+                                     scaledstep * (double) i, sisym);
+                         }
+                     }
+                     break;
                 }
                 nlabels++;
                 if (im->second_axis_scale != 0){
                         char graph_label_right[100];
                         double sval = im->ygrid_scale.gridstep*(double)i*im->second_axis_scale+im->second_axis_shift;
-                        if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0') {
-                            if (!second_axis_magfact){
-                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
-                                auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
+                        switch(im->datatype) {
+                        case GDATATYPE_TIMESTAMP:
+                            {
+                                struct tm tm;
+                                const char *yfmt;
+                                if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0')
+                                    yfmt = default_timestamp_fmt;
+                                else
+                                    yfmt = im->second_axis_format;
+                                if (timestamp_to_tm(&tm, sval))
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%f", sval);
+                                else
+                                    if (0 == strftime(graph_label_right, sizeof graph_label, yfmt, &tm))
+                                        graph_label_right[0] = '\0';
                             }
-                            sval /= second_axis_magfact;
+                            break;
+                        case GDATATYPE_NUMERIC:
+                        default:
+                            if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0') {
+                                if (!second_axis_magfact){
+                                    double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
+                                    auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
+                                }
+                                sval /= second_axis_magfact;
 
-                            if(MaxY < 10) {
-                                snprintf(graph_label_right, sizeof graph_label_right, "%5.1f %s",sval,second_axis_symb);
-                            } else {
-                                snprintf(graph_label_right, sizeof graph_label_right, "%5.0f %s",sval,second_axis_symb);
+                                if(MaxY < 10) {
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%5.1f %s",sval,second_axis_symb);
+                                } else {
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%5.0f %s",sval,second_axis_symb);
+                                }
                             }
-                        }
-                        else {
-                           snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
+                            else {
+                               snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
+                            }
+                            break;
                         }
                         gfx_text ( im,
                                X1+7, Y0,
@@ -4369,6 +4476,7 @@ void rrd_graph_init(
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
     im->daemon_addr = NULL;
+    im->datatype = GDATATYPE_NUMERIC;
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
     im->draw_3d_border = 2;
@@ -4555,6 +4663,7 @@ void rrd_graph_options(
         { "week-fmt",           required_argument, 0, 1010},
         { "graph-type",         required_argument, 0, 1011},
         { "left-axis-format",   required_argument, 0, 1012},
+        { "datatype",           required_argument, 0, 1013},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4781,9 +4890,6 @@ void rrd_graph_options(
             }
             break;
         case 1004:
-            if (bad_format_axis(optarg)){
-                return;
-            }
             im->second_axis_format=strdup(optarg);
             if (!im->second_axis_format) {
                 rrd_set_error("cannot allocate memory for second_axis_format");
@@ -4791,12 +4897,19 @@ void rrd_graph_options(
             }
             break;
         case 1012:
-            if (bad_format_axis(optarg)){
-                return;
-            }
             im->primary_axis_format=strdup(optarg);
             if (!im->primary_axis_format) {
                 rrd_set_error("cannot allocate memory for primary_axis_format");
+                return;
+            }
+            break;
+        case 1013:
+            if (!strcmp(optarg, "numeric")) {
+                im->datatype = GDATATYPE_NUMERIC;
+            } else if (!strcmp(optarg, "timestamp")) {
+                im->datatype = GDATATYPE_TIMESTAMP;
+            } else {
+                rrd_set_error("unknown datatype");
                 return;
             }
             break;
@@ -5073,6 +5186,28 @@ void rrd_graph_options(
         rrd_set_error
             ("start (%ld) should be less than end (%ld)", start_tmp, end_tmp);
         return;
+    }
+
+    if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
+        switch(im->datatype) {
+        case GDATATYPE_NUMERIC:
+            if (bad_format_axis(im->primary_axis_format))
+                return;
+            break;
+        case GDATATYPE_TIMESTAMP:
+            break;
+        }
+    }
+
+    if (im->second_axis_format != NULL && im->second_axis_format[0] != '\0') {
+        switch(im->datatype) {
+        case GDATATYPE_NUMERIC:
+            if (bad_format_axis(im->second_axis_format))
+                return;
+            break;
+        case GDATATYPE_TIMESTAMP:
+            break;
+        }
     }
 
     im->start = start_tmp;

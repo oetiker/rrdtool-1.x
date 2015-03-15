@@ -217,7 +217,8 @@ manually if you use the --units-length command to explicitly reserve space.
 
 By default the format of the axis labels gets determined automatically. If
 you want to do this your self, use this option with the same %lf arguments
-you know from the PRINT and GPRINT commands.
+(or strftime if graphing timestamp data) you know from the PRINT and GPRINT
+commands.
 
 [B<-Y>|B<--alt-y-grid>]
 
@@ -274,7 +275,8 @@ for the right axis.
 
 By default the format of the axis labels gets determined automatically. If
 you want to do this your self, use this option with the same %lf arguments
-you know from the PRINT and GPRINT commands.
+(or strftime if graphing timestamp data) you know from the PRINT and GPRINT
+commands.
 
 =head2 Legend
 
@@ -490,6 +492,25 @@ By default the tab-width is 40 pixels, use this option to change it.
 If you are graphing memory (and NOT network traffic) this switch
 should be set to 1024 so that one Kb is 1024 byte. For traffic
 measurement, 1 kb/s is 1000 b/s.
+
+[B<--datatype> B<numeric>|B<timestamp>]
+
+Set how data should be interpreted.
+
+=over
+
+=item B<numeric>
+
+Numeric value. The default
+
+=item B<timestamp>
+
+Data should be interpreted as unix timestamps (number of seconds
+since 1970-01-01 00:00:00 UTC). The y-axis and print/gprint values are then
+formatted using strftime (with default format '%Y-%m-%d %H:%M:%S'). See
+also B<--units-lengths>.
+
+=back
 
 [B<-W>|B<--watermark> I<string>]
 

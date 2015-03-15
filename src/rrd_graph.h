@@ -191,6 +191,11 @@ typedef struct ylab_t {
     int       lfac[4];  /* associated label spacing */
 } ylab_t;
 
+enum gfx_datatype_en {
+    GDATATYPE_NUMERIC=0,    /* most common mode */
+    GDATATYPE_TIMESTAMP,    /* interpret data as unix timestamps */
+};
+
 /* this structure describes the elements which can make up a graph.
    because they are quite diverse, not all elements will use all the
    possible parts of the structure. */
@@ -306,6 +311,7 @@ typedef struct image_desc_t {
     int       logarithmic;  /* scale the yaxis logarithmic */
     double    force_scale_min;  /* Force a scale--min */
     double    force_scale_max;  /* Force a scale--max */
+    enum gfx_datatype_en datatype; /* type of data to graph */
 
     /* status information */
     int       with_markup;
