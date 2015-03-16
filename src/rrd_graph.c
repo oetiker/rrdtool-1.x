@@ -224,6 +224,8 @@ gfx_color_t graph_col[] =   /* default colors */
     {0.00, 0.00, 0.00, 1.00}    /* frame      */
 };
 
+const char default_timestamp_fmt[] = "%Y-%m-%d %H:%M:%S";
+
 
 /* #define DEBUG */
 
@@ -1631,6 +1633,23 @@ time_t find_next_time(
 
 }
 
+static int timestamp_to_tm(struct tm *tm, double timestamp)
+{
+    time_t ts;
+
+    if (timestamp < LLONG_MIN || timestamp > LLONG_MAX)
+        return 1;
+
+    ts = (long long int) timestamp;
+
+    if (ts != (long long int) timestamp)
+        return 1;
+
+    gmtime_r(&ts, tm);
+
+    return 0;
+}
+
 
 /* calculate values required for PRINT and GPRINT functions */
 
@@ -1707,22 +1726,24 @@ int print_calc(
                 }
             }           /* prepare printval */
 
-            if (!im->gdes[i].strftm && (percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
-                /* Magfact is set to -1 upon entry to print_calc.  If it
-                 * is still less than 0, then we need to run auto_scale.
-                 * Otherwise, put the value into the correct units.  If
-                 * the value is 0, then do not set the symbol or magnification
-                 * so next the calculation will be performed again. */
-                if (magfact < 0.0) {
+            if (!im->gdes[i].strftm && im->gdes[i].vformatter == VALUE_FORMATTER_NUMERIC) {
+                if ((percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
+                    /* Magfact is set to -1 upon entry to print_calc.  If it
+                     * is still less than 0, then we need to run auto_scale.
+                     * Otherwise, put the value into the correct units.  If
+                     * the value is 0, then do not set the symbol or magnification
+                     * so next the calculation will be performed again. */
+                    if (magfact < 0.0) {
+                        auto_scale(im, &printval, &si_symb, &magfact);
+                        if (printval == 0.0)
+                            magfact = -1.0;
+                    } else {
+                        printval /= magfact;
+                    }
+                    *(++percent_s) = 's';
+                } else if (strstr(im->gdes[i].format, "%s") != NULL) {
                     auto_scale(im, &printval, &si_symb, &magfact);
-                    if (printval == 0.0)
-                        magfact = -1.0;
-                } else {
-                    printval /= magfact;
                 }
-                *(++percent_s) = 's';
-            } else if (!im->gdes[i].strftm && strstr(im->gdes[i].format, "%s") != NULL) {
-                auto_scale(im, &printval, &si_symb, &magfact);
             }
 
             if (im->gdes[i].gf == GF_PRINT) {
@@ -1736,12 +1757,41 @@ int print_calc(
                         strftime(prline.u_str,
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
-                } else if (bad_format_print(im->gdes[i].format)) {
-                    return -1;
                 } else {
-                    prline.u_str =
-                        sprintf_alloc(im->gdes[i].format, printval, si_symb);
+                    struct tm tmval;
+                    switch(im->gdes[i].vformatter) {
+                    case VALUE_FORMATTER_NUMERIC:
+                        if (bad_format_print(im->gdes[i].format)) {
+                            return -1;
+                        } else {
+                            prline.u_str =
+                                sprintf_alloc(im->gdes[i].format, printval, si_symb);
+                        }
+                        break;
+                    case VALUE_FORMATTER_TIMESTAMP:
+                        if (!isfinite(printval) || timestamp_to_tm(&tmval, printval)) {
+                            prline.u_str = sprintf_alloc("%.0f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_timestamp_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            prline.u_str = (char*) malloc(FMT_LEG_LEN*sizeof(char));
+                            if (!prline.u_str)
+                                return -1;
+                            if (0 == strftime(prline.u_str, FMT_LEG_LEN, fmt, &tmval)) {
+                                free(prline.u_str);
+                                return -1;
+                            }
+                        }
+                        break;
+                    default:
+                        rrd_set_error("Unsupported print value formatter");
+                        return -1;
+                    }
                 }
+
                 grinfo_push(im,
                             sprintf_alloc
                             ("print[%ld]", prline_cnt++), RD_I_STR, prline);
@@ -1757,12 +1807,33 @@ int print_calc(
                                  FMT_LEG_LEN, im->gdes[i].format, &tmvdef);
                     }
                 } else {
-                    if (bad_format_print(im->gdes[i].format)) {
-                       return -1;
+                    struct tm tmval;
+                    switch(im->gdes[i].vformatter) {
+                    case VALUE_FORMATTER_NUMERIC:
+                        if (bad_format_print(im->gdes[i].format)) {
+                           return -1;
+                        }
+                        snprintf(im->gdes[i].legend,
+                                 FMT_LEG_LEN - 2,
+                                 im->gdes[i].format, printval, si_symb);
+                        break;
+                    case VALUE_FORMATTER_TIMESTAMP:
+                        if (!isfinite(printval) || timestamp_to_tm(&tmval, printval)) {
+                            snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%.0f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_timestamp_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            if (0 == strftime(im->gdes[i].legend, FMT_LEG_LEN, fmt, &tmval))
+                                return -1;
+                        }
+                        break;
+                    default:
+                        rrd_set_error("Unsupported gprint value formatter");
+                        return -1;
                     }
-                    snprintf(im->gdes[i].legend,
-                             FMT_LEG_LEN - 2,
-                             im->gdes[i].format, printval, si_symb);
                 }
                 graphelement = 1;
             }
@@ -2168,65 +2239,110 @@ int draw_horizontal_grid(
             if (i % im->ygrid_scale.labfact == 0
                 || (nlabels == 1
                     && (YN < im->yorigin - im->ysize || YN > im->yorigin))) {
-                if (im->symbol == ' ') {
-                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
-                        if (im->extra_flags & ALTYGRID) {
-                            snprintf(graph_label, sizeof graph_label,
-                                    im->ygrid_scale.labfmt,
+                switch(im->primary_axis_formatter) {
+                case VALUE_FORMATTER_NUMERIC:
+                    if (im->symbol == ' ') {
+                        if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
+                            if (im->extra_flags & ALTYGRID) {
+                                snprintf(graph_label, sizeof graph_label,
+                                        im->ygrid_scale.labfmt,
+                                        scaledstep * (double) i);
+                            } else {
+                                if (MaxY < 10) {
+                                    snprintf(graph_label, sizeof graph_label, "%4.1f",
+                                            scaledstep * (double) i);
+                                } else {
+                                    snprintf(graph_label, sizeof graph_label,"%4.0f",
+                                            scaledstep * (double) i);
+                                }
+                            }
+                        } else {
+                            snprintf(graph_label, sizeof graph_label, im->primary_axis_format,
                                     scaledstep * (double) i);
-                        } else {
-                            if (MaxY < 10) {
-                                snprintf(graph_label, sizeof graph_label, "%4.1f",
-                                        scaledstep * (double) i);
-                            } else {
-                                snprintf(graph_label, sizeof graph_label,"%4.0f",
-                                        scaledstep * (double) i);
-                            }
                         }
                     } else {
-                        snprintf(graph_label, sizeof graph_label, im->primary_axis_format,
-                                scaledstep * (double) i);
-                    }
-                } else {
-                    char      sisym = (i == 0 ? ' ' : im->symbol);
-                    if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
-                        if (im->extra_flags & ALTYGRID) {
-                            snprintf(graph_label,sizeof graph_label,
-                                    im->ygrid_scale.labfmt,
+                        char      sisym = (i == 0 ? ' ' : im->symbol);
+                        if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0') {
+                            if (im->extra_flags & ALTYGRID) {
+                                snprintf(graph_label,sizeof graph_label,
+                                        im->ygrid_scale.labfmt,
+                                        scaledstep * (double) i, sisym);
+                            } else {
+                                if (MaxY < 10) {
+                                    snprintf(graph_label, sizeof graph_label,"%4.1f %c",
+                                            scaledstep * (double) i, sisym);
+                                } else {
+                                    snprintf(graph_label, sizeof graph_label, "%4.0f %c",
+                                            scaledstep * (double) i, sisym);
+                                }
+                            }
+                        } else {
+                            sprintf(graph_label, im->primary_axis_format,
                                     scaledstep * (double) i, sisym);
-                        } else {
-                            if (MaxY < 10) {
-                                snprintf(graph_label, sizeof graph_label,"%4.1f %c",
-                                        scaledstep * (double) i, sisym);
-                            } else {
-                                snprintf(graph_label, sizeof graph_label, "%4.0f %c",
-                                        scaledstep * (double) i, sisym);
-                            }
                         }
-                    } else {
-                        sprintf(graph_label, im->primary_axis_format,
-                                scaledstep * (double) i, sisym);
                     }
+                    break;
+                case VALUE_FORMATTER_TIMESTAMP:
+                    {
+                        struct tm tm;
+                        const char *yfmt;
+                        if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0')
+                            yfmt = default_timestamp_fmt;
+                        else
+                            yfmt = im->primary_axis_format;
+                        if (timestamp_to_tm(&tm, im->ygrid_scale.gridstep*i))
+                            snprintf(graph_label, sizeof graph_label, "%f",
+                                     im->ygrid_scale.gridstep * i);
+                        else
+                            if (0 == strftime(graph_label, sizeof graph_label, yfmt, &tm))
+                                graph_label[0] = '\0';
+                    }
+                    break;
+                default:
+                    rrd_set_error("Unsupported left axis value formatter");
+                    return -1;
                 }
                 nlabels++;
                 if (im->second_axis_scale != 0){
                         char graph_label_right[100];
                         double sval = im->ygrid_scale.gridstep*(double)i*im->second_axis_scale+im->second_axis_shift;
-                        if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0') {
-                            if (!second_axis_magfact){
-                                double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
-                                auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
-                            }
-                            sval /= second_axis_magfact;
+                        switch(im->second_axis_formatter) {
+                        case VALUE_FORMATTER_NUMERIC:
+                            if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0') {
+                                if (!second_axis_magfact){
+                                    double dummy = im->ygrid_scale.gridstep*(double)(sgrid+egrid)/2.0*im->second_axis_scale+im->second_axis_shift;
+                                    auto_scale(im,&dummy,&second_axis_symb,&second_axis_magfact);
+                                }
+                                sval /= second_axis_magfact;
 
-                            if(MaxY < 10) {
-                                snprintf(graph_label_right, sizeof graph_label_right, "%5.1f %s",sval,second_axis_symb);
-                            } else {
-                                snprintf(graph_label_right, sizeof graph_label_right, "%5.0f %s",sval,second_axis_symb);
+                                if(MaxY < 10) {
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%5.1f %s",sval,second_axis_symb);
+                                } else {
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%5.0f %s",sval,second_axis_symb);
+                                }
                             }
-                        }
-                        else {
-                           snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
+                            else {
+                               snprintf(graph_label_right, sizeof graph_label_right, im->second_axis_format,sval,"");
+                            }
+                            break;
+                        case VALUE_FORMATTER_TIMESTAMP:
+                            {
+                                struct tm tm;
+                                const char *yfmt;
+                                if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0')
+                                    yfmt = default_timestamp_fmt;
+                                else
+                                    yfmt = im->second_axis_format;
+                                if (timestamp_to_tm(&tm, sval))
+                                    snprintf(graph_label_right, sizeof graph_label_right, "%f", sval);
+                                else
+                                    if (0 == strftime(graph_label_right, sizeof graph_label, yfmt, &tm))
+                                        graph_label_right[0] = '\0';
+                             }
+                             break;
+                        default:
+                            rrd_set_error("Unsupported right axis value formatter");
+                            return -1;
                         }
                         gfx_text ( im,
                                X1+7, Y0,
@@ -2770,7 +2886,7 @@ void axis_paint(
 
 }
 
-void grid_paint(
+int grid_paint(
     image_desc_t *im)
 {
     long      i;
@@ -2802,6 +2918,8 @@ void grid_paint(
             res = horizontal_log_grid(im);
         } else {
             res = draw_horizontal_grid(im);
+            if (res < 0)
+                return -1;
         }
 
         /* dont draw horizontal grid if there is no min and max val */
@@ -3026,6 +3144,7 @@ void grid_paint(
             }
         }
     }
+    return 0;
 }
 
 
@@ -3898,7 +4017,8 @@ int graph_paint_timestring(
 
     /* grid_paint also does the text */
     if (!(im->extra_flags & ONLY_GRAPH))
-        grid_paint(im);
+        if (grid_paint(im))
+            return -1;
     if (!(im->extra_flags & ONLY_GRAPH))
         axis_paint(im);
     /* the RULES are the last thing to paint ... */
@@ -4128,6 +4248,7 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].legend[0] = '\0';
     im->gdes[im->gdes_c - 1].format[0] = '\0';
     im->gdes[im->gdes_c - 1].strftm = 0;
+    im->gdes[im->gdes_c - 1].vformatter = VALUE_FORMATTER_NUMERIC;
     im->gdes[im->gdes_c - 1].rrd[0] = '\0';
     im->gdes[im->gdes_c - 1].ds = -1;
     im->gdes[im->gdes_c - 1].cf_reduce = CF_AVERAGE;
@@ -4426,7 +4547,9 @@ void rrd_graph_init(
     im->second_axis_shift = 0; /* no shift by default */
     im->second_axis_legend = NULL;
     im->second_axis_format = NULL;
+    im->second_axis_formatter = VALUE_FORMATTER_NUMERIC;
     im->primary_axis_format = NULL;
+    im->primary_axis_formatter = VALUE_FORMATTER_NUMERIC;
     im->yorigin = 0;
     im->yOriginLegend = 0;
     im->yOriginLegendY = 0;
@@ -4555,6 +4678,8 @@ void rrd_graph_options(
         { "week-fmt",           required_argument, 0, 1010},
         { "graph-type",         required_argument, 0, 1011},
         { "left-axis-format",   required_argument, 0, 1012},
+        { "left-axis-formatter",required_argument, 0, 1013},
+        { "right-axis-formatter",required_argument,0, 1014},
         {  0, 0, 0, 0}
 };
 /* *INDENT-ON* */
@@ -4781,9 +4906,6 @@ void rrd_graph_options(
             }
             break;
         case 1004:
-            if (bad_format_axis(optarg)){
-                return;
-            }
             im->second_axis_format=strdup(optarg);
             if (!im->second_axis_format) {
                 rrd_set_error("cannot allocate memory for second_axis_format");
@@ -4791,12 +4913,29 @@ void rrd_graph_options(
             }
             break;
         case 1012:
-            if (bad_format_axis(optarg)){
-                return;
-            }
             im->primary_axis_format=strdup(optarg);
             if (!im->primary_axis_format) {
                 rrd_set_error("cannot allocate memory for primary_axis_format");
+                return;
+            }
+            break;
+        case 1013:
+            if (!strcmp(optarg, "numeric")) {
+                im->primary_axis_formatter = VALUE_FORMATTER_NUMERIC;
+            } else if (!strcmp(optarg, "timestamp")) {
+                im->primary_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
+            } else {
+                rrd_set_error("Unknown left axis formatter");
+                return;
+            }
+            break;
+        case 1014:
+            if (!strcmp(optarg, "numeric")) {
+                im->second_axis_formatter = VALUE_FORMATTER_NUMERIC;
+            } else if (!strcmp(optarg, "timestamp")) {
+                im->second_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
+            } else {
+                rrd_set_error("Unknown right axis formatter");
                 return;
             }
             break;
@@ -5050,6 +5189,33 @@ void rrd_graph_options(
     pango_layout_context_changed(im->layout);
 
 
+    if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
+        switch(im->primary_axis_formatter) {
+        case VALUE_FORMATTER_NUMERIC:
+            if (bad_format_axis(im->primary_axis_format))
+                return;
+            break;
+        case VALUE_FORMATTER_TIMESTAMP:
+            break;
+        default:
+            rrd_set_error("Unchecked left axis formatter");
+            return;
+        }
+    }
+
+    if (im->second_axis_format != NULL && im->second_axis_format[0] != '\0') {
+        switch(im->second_axis_formatter) {
+        case VALUE_FORMATTER_NUMERIC:
+            if (bad_format_axis(im->second_axis_format))
+                return;
+            break;
+        case VALUE_FORMATTER_TIMESTAMP:
+            break;
+        default:
+            rrd_set_error("Unchecked right axis formatter");
+            return;
+        }
+    }
 
     if (im->logarithmic && im->minval <= 0) {
         rrd_set_error

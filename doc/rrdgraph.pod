@@ -213,11 +213,30 @@ If you have set --y-grid to 'none' not only the labels get suppressed, also
 the space reserved for the labels is removed. You can still add space
 manually if you use the --units-length command to explicitly reserve space.
 
+[B<--left-axis-formatter> I<formatter-name>]
+
+Specify what formater to use to render axis values.
+
+=over
+
+=item B<numeric>
+
+The default, values are expressed as numeric quantities.
+
+=item B<timestamp>
+
+Values are interpreted as unix timestamps (number of seconds since 1970-01-01
+00:00:00 UTC) and expressed using strftime format (default
+is '%Y-%m-%d %H:%M:%S'). See also B<--units-length> and B<--left-axis-format>.
+
+=back
+
 [B<--left-axis-format> I<format-string>]
 
 By default the format of the axis labels gets determined automatically. If
 you want to do this your self, use this option with the same %lf arguments
-you know from the PRINT and GPRINT commands.
+you know from the PRINT and GPRINT commands, or others if using different
+formatter.
 
 [B<-Y>|B<--alt-y-grid>]
 
@@ -270,11 +289,31 @@ A second axis will be drawn to the right of the graph. It is tied to the
 left axis via the scale and shift parameters. You can also define a label
 for the right axis.
 
+[B<--right-axis-formatter> I<formatter-name>]
+
+Specify what formater to use to render axis values.
+
+=over
+
+=item B<numeric>
+
+The default, values are expressed as numeric quantities.
+
+=item B<timestamp>
+
+Values are interpreted as unix timestamps (number of seconds since 1970-01-01
+00:00:00 UTC) and expressed using strftime format (default
+is '%Y-%m-%d %H:%M:%S'). See also B<--units-length> and B<--right-axis-format>.
+
+=back
+
+
 [B<--right-axis-format> I<format-string>]
 
 By default the format of the axis labels gets determined automatically. If
 you want to do this your self, use this option with the same %lf arguments
-you know from the PRINT and GPRINT commands.
+you know from the PRINT and GPRINT commands, or others if using different
+formatter.
 
 =head2 Legend
 
