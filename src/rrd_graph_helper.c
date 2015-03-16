@@ -256,6 +256,9 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
         } else if ((poscnt>0)&&(strcmp(field,"valstrftime")==0)) {
           key="vformatter";
           value="timestamp";
+        } else if ((poscnt>0)&&(strcmp(field,"valstrfduration")==0)) {
+          key="vformatter";
+          value="duration";
 	} else if ((poscnt>0)&&(strcmp(field,"skipscale")==0)) {
 	  key="skipscale";
 	  value="1";
@@ -480,6 +483,8 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     if (frmtr != NULL) {
       if (strcmp(frmtr,"timestamp") == 0) {
         gdp->vformatter = VALUE_FORMATTER_TIMESTAMP;
+      } else if (strcmp(frmtr,"duration") == 0) {
+        gdp->vformatter = VALUE_FORMATTER_DURATION;
       } else {
         rrd_set_error("Unsupported vformatter: %s", frmtr);
         return NULL;

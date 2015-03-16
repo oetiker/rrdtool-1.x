@@ -194,6 +194,7 @@ typedef struct ylab_t {
 enum value_formatter_en {
     VALUE_FORMATTER_NUMERIC,    /* printf */
     VALUE_FORMATTER_TIMESTAMP,  /* strftime */
+    VALUE_FORMATTER_DURATION,   /* strfduration */
 };
 
 /* this structure describes the elements which can make up a graph.

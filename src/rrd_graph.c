@@ -226,6 +226,8 @@ gfx_color_t graph_col[] =   /* default colors */
 
 const char default_timestamp_fmt[] = "%Y-%m-%d %H:%M:%S";
 
+const char default_duration_fmt[] = "%H:%02m:%02s";
+
 
 /* #define DEBUG */
 
@@ -1633,6 +1635,129 @@ time_t find_next_time(
 
 }
 
+static int strfduration(char * const dest, const size_t destlen, const char * const fmt, const double duration)
+{
+    char *d = dest, * const dbound = dest + destlen;
+    const char *f;
+    int wlen = 0;
+    double seconds = fabs(duration) / 1000.0,
+           minutes = seconds / 60.0,
+           hours = minutes / 60.0,
+           days = hours / 24.0,
+           weeks = days / 7.0;
+
+#define STORC(chr) do { \
+    if (wlen == INT_MAX) return -1; \
+    wlen++; \
+    if (d < dbound) \
+        *d++ = (chr); \
+} while(0);
+
+#define STORPF(valArg) do { \
+    double pval = trunc((valArg) * pow(10.0, precision)) / pow(10.0, precision); \
+    char *tmpfmt; \
+    ptrdiff_t avail = dbound - d; \
+    int r; \
+\
+    if (avail < 0 || (uintmax_t) avail > SIZE_MAX) return -1; \
+\
+    tmpfmt = sprintf_alloc("%%%s%d.%df", \
+                              zpad ? "0" : "", \
+                                width, \
+                                   precision); \
+    if (!tmpfmt) return -1; \
+\
+    r = snprintf(d, avail, tmpfmt, pval); \
+    free(tmpfmt); \
+    if (r < 0) return -1; \
+    d += min(avail, r); \
+    if (INT_MAX-r < wlen) return -1; \
+    wlen += r; \
+} while(0);
+
+    if (duration < 0)
+        STORC('-')
+
+    for (f=fmt ; *f ; f++) {
+        if (*f != '%') {
+            STORC(*f)
+        } else {
+            int zpad, width = 0, precision = 0;
+
+            f++;
+
+            if ((zpad = *f == '0'))
+                f++;
+
+            if (isdigit(*f)) {
+                int nread;
+                sscanf(f, "%d%n", &width, &nread);
+                f += nread;
+            }
+
+            if (*f == '.') {
+                int nread;
+                f++;
+                if (1 == sscanf(f, "%d%n", &precision, &nread)) {
+                    if (precision < 0) {
+                        rrd_set_error("Wrong duration format");
+                        return -1;
+                    }
+                    f += nread;
+                }
+            }
+
+            switch(*f) {
+                case '%':
+                    STORC('%')
+                    break;
+                case 'W':
+                    STORPF(weeks)
+                    break;
+                case 'd':
+                    STORPF(days - trunc(weeks)*7.0)
+                    break;
+                case 'D':
+                    STORPF(days)
+                    break;
+                case 'h':
+                    STORPF(hours - trunc(days)*24.0)
+                    break;
+                case 'H':
+                    STORPF(hours)
+                    break;
+                case 'm':
+                    STORPF(minutes - trunc(hours)*60.0)
+                    break;
+                case 'M':
+                    STORPF(minutes)
+                    break;
+                case 's':
+                    STORPF(seconds - trunc(minutes)*60.0)
+                    break;
+                case 'S':
+                    STORPF(seconds)
+                    break;
+                case 'f':
+                    STORPF(fabs(duration) - trunc(seconds)*1000.0)
+                    break;
+                default:
+                    rrd_set_error("Wrong duration format");
+                    return -1;
+            }
+        }
+    }
+
+    STORC('\0')
+    if (destlen > 0)
+        *(dbound-1) = '\0';
+
+    return wlen-1;
+
+#undef STORC
+#undef STORPF
+}
+
 static int timestamp_to_tm(struct tm *tm, double timestamp)
 {
     time_t ts;
@@ -1786,6 +1911,24 @@ int print_calc(
                             }
                         }
                         break;
+                    case VALUE_FORMATTER_DURATION:
+                        if (!isfinite(printval)) {
+                            prline.u_str = sprintf_alloc("%f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_duration_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            prline.u_str = (char*) malloc(FMT_LEG_LEN*sizeof(char));
+                            if (!prline.u_str)
+                                return -1;
+                            if (0 > strfduration(prline.u_str, FMT_LEG_LEN, fmt, printval)) {
+                                free(prline.u_str);
+                                return -1;
+                            }
+                         }
+                         break;
                     default:
                         rrd_set_error("Unsupported print value formatter");
                         return -1;
@@ -1827,6 +1970,19 @@ int print_calc(
                             else
                                 fmt = im->gdes[i].format;
                             if (0 == strftime(im->gdes[i].legend, FMT_LEG_LEN, fmt, &tmval))
+                                return -1;
+                        }
+                        break;
+                    case VALUE_FORMATTER_DURATION:
+                        if (!isfinite(printval)) {
+                            snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%f", printval);
+                        } else {
+                            const char *fmt;
+                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                                fmt = default_duration_fmt;
+                            else
+                                fmt = im->gdes[i].format;
+                            if (0 > strfduration(im->gdes[i].legend, FMT_LEG_LEN, fmt, printval))
                                 return -1;
                         }
                         break;
@@ -2298,6 +2454,17 @@ int draw_horizontal_grid(
                                 graph_label[0] = '\0';
                     }
                     break;
+                case VALUE_FORMATTER_DURATION:
+                    {
+                        const char *yfmt;
+                        if (im->primary_axis_format == NULL || im->primary_axis_format[0] == '\0')
+                            yfmt = default_duration_fmt;
+                        else
+                            yfmt = im->primary_axis_format;
+                        if (0 > strfduration(graph_label, sizeof graph_label, yfmt, im->ygrid_scale.gridstep*i))
+                            graph_label[0] = '\0';
+                    }
+                    break;
                 default:
                     rrd_set_error("Unsupported left axis value formatter");
                     return -1;
@@ -2340,6 +2507,17 @@ int draw_horizontal_grid(
                                         graph_label_right[0] = '\0';
                              }
                              break;
+                        case VALUE_FORMATTER_DURATION:
+                            {
+                                const char *yfmt;
+                                if (im->second_axis_format == NULL || im->second_axis_format[0] == '\0')
+                                    yfmt = default_duration_fmt;
+                                else
+                                    yfmt = im->second_axis_format;
+                                if (0 > strfduration(graph_label_right, sizeof graph_label_right, yfmt, sval))
+                                    graph_label_right[0] = '\0';
+                            }
+                            break;
                         default:
                             rrd_set_error("Unsupported right axis value formatter");
                             return -1;
@@ -4924,6 +5102,8 @@ void rrd_graph_options(
                 im->primary_axis_formatter = VALUE_FORMATTER_NUMERIC;
             } else if (!strcmp(optarg, "timestamp")) {
                 im->primary_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
+            } else if (!strcmp(optarg, "duration")) {
+                im->primary_axis_formatter = VALUE_FORMATTER_DURATION;
             } else {
                 rrd_set_error("Unknown left axis formatter");
                 return;
@@ -4934,6 +5114,8 @@ void rrd_graph_options(
                 im->second_axis_formatter = VALUE_FORMATTER_NUMERIC;
             } else if (!strcmp(optarg, "timestamp")) {
                 im->second_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
+            } else if (!strcmp(optarg, "duration")) {
+                im->second_axis_formatter = VALUE_FORMATTER_DURATION;
             } else {
                 rrd_set_error("Unknown right axis formatter");
                 return;
@@ -5196,6 +5378,7 @@ void rrd_graph_options(
                 return;
             break;
         case VALUE_FORMATTER_TIMESTAMP:
+        case VALUE_FORMATTER_DURATION:
             break;
         default:
             rrd_set_error("Unchecked left axis formatter");
@@ -5210,6 +5393,7 @@ void rrd_graph_options(
                 return;
             break;
         case VALUE_FORMATTER_TIMESTAMP:
+        case VALUE_FORMATTER_DURATION:
             break;
         default:
             rrd_set_error("Unchecked right axis formatter");

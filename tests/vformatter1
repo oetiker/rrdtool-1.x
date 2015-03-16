@@ -24,6 +24,8 @@ rtest "No data, sampling timestamp" '0x0\n---------- --:--:--' "${graphargs[@]}"
 
 rtest "No data, value timestamp" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
 
+rtest "No data, value duration" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v::valstrfduration'
+
 
 $RRDTOOL update vfmt1.rrd --template v -- 1420070460:0 || exit 1
 
@@ -33,6 +35,8 @@ rtest "Zero, sampling timestamp" '0x0\n2015-01-01 00:01:00' "${graphargs[@]}" 'P
 
 rtest "Zero, value timestamp" '0x0\n1970-01-01 00:00:00' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
 
+rtest "Zero, value duration" '0x0\n0_00_00_000' "${graphargs[@]}" 'PRINT:v:%H_%02m_%02s_%03f:valstrfduration'
+
 $RRDTOOL update vfmt1.rrd --template v -- 1420070520:3000 || exit 1
 
 rtest "3000, numeric" '0x0\n3000.0' "${graphargs[@]}" 'PRINT:v:%0.1lf'
@@ -40,4 +44,6 @@ rtest "3000, numeric" '0x0\n3000.0' "${graphargs[@]}" 'PRINT:v:%0.1lf'
 rtest "3000, sampling timestamp" '0x0\n2015-01-01 00:02:00' "${graphargs[@]}" 'PRINT:v:%F %T:strftime'
 
 rtest "3000, value timestamp" '0x0\n1970-01-01 00:50:00' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
+
+rtest "3000, value duration" '0x0\n0_00_03_000' "${graphargs[@]}" 'PRINT:v:%H_%02m_%02s_%03f:valstrfduration'
 
