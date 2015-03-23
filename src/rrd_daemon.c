@@ -1644,6 +1644,8 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
 
   char *start_str;
   char *end_str;
+  char *step_str;
+  char *option;
 
   time_t t;
   int status;
@@ -1652,6 +1654,7 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
   parsed->cf = NULL;
   start_str = NULL;
   end_str = NULL;
+  step_str = NULL;
 
   /* Read the arguments */
   do /* while (0) */
@@ -1680,6 +1683,31 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
       break;
     }
   } while (0);
+
+  if( status == 0 )
+  {
+    while(buffer[0] == '-') /* parse options */
+    {
+      status = buffer_get_field(&buffer, &buffer_size, &option);
+
+      if (status != 0)
+        break;
+
+      if (!strcmp(option, "-r"))
+      {
+        status = buffer_get_field(&buffer, &buffer_size, &step_str);
+
+        if (status != 0)
+          break;
+      }
+      else /* syntax error */
+      {
+        status = -1;
+        break;
+      }
+    }
+  }
+
 
   if (status != 0) {
 	  syntax_error(sock,cmd);
@@ -1753,7 +1781,29 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
     parsed->end_tm = t;
   }
 
-  parsed->step = -1;
+  if(step_str != NULL)
+  {
+    char *endptr;
+    long value;
+
+    endptr = NULL;
+    errno = 0;
+    value = strtol (step_str, &endptr, /* base = */ 0);
+    if ((endptr == step_str) || (errno != 0)) {
+	    send_response(sock, RESP_ERR,
+		    "Cannot parse step `%s': Only simple integers are allowed.\n",
+		    step_str);
+	    return -1;
+    }
+
+    parsed->step = value;
+  }
+  else
+  {
+    parsed->step = -1;
+  }
+
+
   parsed->ds_cnt = 0;
   parsed->ds_namv = NULL;
   parsed->data = NULL;
@@ -2425,7 +2475,7 @@ static command_t list_of_commands[] = { /* {{{ */
     "FETCH",
     handle_request_fetch,
     CMD_CONTEXT_CLIENT,
-    "FETCH <file> <CF> [<start> [<end>] [<column>...]]\n"
+    "FETCH <file> <CF> [<start> [<end> [-r <resolution>] [<column>...]]]\n"
     ,
     "The 'FETCH' can be used by the client to retrieve values from an RRD file.\n"
   },
@@ -2433,7 +2483,7 @@ static command_t list_of_commands[] = { /* {{{ */
     "FETCHBIN",
     handle_request_fetchbin,
     CMD_CONTEXT_CLIENT,
-    "FETCHBIN <file> <CF> [<start> [<end>] [<column>...]]\n"
+    "FETCHBIN <file> <CF> [<start> [<end> [-r <resolution>] [<column>...]]]\n"
     ,
     "The 'FETCHBIN' can be used by the client to retrieve values from an RRD file.\n"
   },
