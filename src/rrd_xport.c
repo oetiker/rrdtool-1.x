@@ -743,7 +743,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   }
   addToBuffer(buffer,buf,0);
   /* iterate over data */
-  for (time_t ti = start; ti <= end; ti += step) {
+  for (time_t ti = start; ti < end; ti += step) {
     if (timefmt) {
       struct tm loc;
       localtime_r(&ti,&loc);
