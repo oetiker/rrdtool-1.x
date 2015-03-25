@@ -253,6 +253,12 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	} else if ((poscnt>0)&&(strcmp(field,"strftime")==0)) {
 	  key="strftime";
 	  value="1";
+        } else if ((poscnt>0)&&(strcmp(field,"valstrftime")==0)) {
+          key="vformatter";
+          value="timestamp";
+        } else if ((poscnt>0)&&(strcmp(field,"valstrfduration")==0)) {
+          key="vformatter";
+          value="duration";
 	} else if ((poscnt>0)&&(strcmp(field,"skipscale")==0)) {
 	  key="skipscale";
 	  value="1";
@@ -362,7 +368,7 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_DASHES       (PARSE_FIELD1|(1ULL<<20))
 #define PARSE_HEIGHT       (PARSE_FIELD1|(1ULL<<21))
 #define PARSE_FORMAT       (PARSE_FIELD1|(1ULL<<22))
-#define PARSE_STRFTIME     (PARSE_FIELD1|(1ULL<<23))
+#define PARSE_STRFTIMEVFMT (PARSE_FIELD1|(1ULL<<23))
 #define PARSE_FRACTION     (PARSE_FIELD1|(1ULL<<24))
 /* VNAME Special cases for generic parsing */
 #define PARSE_VNAMEDEF            (PARSE_VNAME|(1ULL<<57))
@@ -470,9 +476,20 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       dprintfparsed("got format: %s\n",format);
     }
   }
-  if (bitscmp(PARSE_STRFTIME)) {
+  if (bitscmp(PARSE_STRFTIMEVFMT)) {
     char *strft=getKeyValueArgument("strftime",1,pa);
+    char *frmtr=getKeyValueArgument("vformatter",1,pa);
     gdp->strftm=(strft)?1:0;
+    if (frmtr != NULL) {
+      if (strcmp(frmtr,"timestamp") == 0) {
+        gdp->vformatter = VALUE_FORMATTER_TIMESTAMP;
+      } else if (strcmp(frmtr,"duration") == 0) {
+        gdp->vformatter = VALUE_FORMATTER_DURATION;
+      } else {
+        rrd_set_error("Unsupported vformatter: %s", frmtr);
+        return NULL;
+      }
+    }
     dprintfparsed("got strftime: %s\n",strft);
   }
   if (bitscmp(PARSE_STACK)) {
@@ -1206,7 +1223,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
 					PARSE_VNAMEREF
 					|PARSE_CF
 					|PARSE_FORMAT
-					|PARSE_STRFTIME
+					|PARSE_STRFTIMEVFMT
 					);
   if (!gdp) { return 1;}
    /* here we parse pos arguments locally */

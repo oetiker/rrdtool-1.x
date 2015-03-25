@@ -191,6 +191,12 @@ typedef struct ylab_t {
     int       lfac[4];  /* associated label spacing */
 } ylab_t;
 
+enum value_formatter_en {
+    VALUE_FORMATTER_NUMERIC,    /* printf */
+    VALUE_FORMATTER_TIMESTAMP,  /* strftime */
+    VALUE_FORMATTER_DURATION,   /* strfduration */
+};
+
 /* this structure describes the elements which can make up a graph.
    because they are quite diverse, not all elements will use all the
    possible parts of the structure. */
@@ -220,7 +226,8 @@ typedef struct graph_desc_t {
 	double    gradheight;
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
     char      legend[FMT_LEG_LEN + 5];  /* legend */
-    int       strftm;   /* should the VDEF legend be formated with strftime */
+    int       strftm;   /* should the VDEF legend be the time component formated with strftime */
+    enum value_formatter_en vformatter; /* what value formatter to use (if !strftm) */
     double    leg_x, leg_y; /* location of legend */
     double    yrule;    /* value for y rule line and for VDEF */
     time_t    xrule;    /* time for x rule line and for VDEF */
@@ -281,7 +288,9 @@ typedef struct image_desc_t {
     double    second_axis_shift; /* how much is it shifted vs the first axis */
     char      *second_axis_legend; /* label to put on the seond axis */
     char      *second_axis_format; /* format for the numbers on the scond axis */
+    enum value_formatter_en second_axis_formatter;  /* How to format axis values */
     char      *primary_axis_format; /* format for the numbers on the primary axis */
+    enum value_formatter_en primary_axis_formatter; /* How to format axis values */
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
     double    tabwidth; /* tabwdith */
@@ -415,7 +424,7 @@ void      vertical_grid(
     image_desc_t *);
 void      axis_paint(
     image_desc_t *);
-void      grid_paint(
+int      grid_paint(
     image_desc_t *);
 int       lazy_check(
     image_desc_t *);

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+export TZ=UTC
+
+function rtest() {
+    testname="$1"
+    xpected="$2"
+    shift 2 || exit 1
+    diff -u <(echo -e "$xpected") <($RRDTOOL "$@")
+    report "$testname"
+    #&& echo "OK: $testname" || echo "FAIL: $testname"
+}
+
+$RRDTOOL create vfmt1.rrd --start 1420070400 --step 60s DS:v:GAUGE:60:U:U RRA:LAST:0:1:10 || exit 1
+
+declare -a graphargs
+graphargs=(graph /dev/null --start 1420070400 --end 1420071000 'DEF:dv=vfmt1.rrd:v:LAST' 'VDEF:v=dv,LAST')
+
+rtest "No data, numeric" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v:%0.1lf'
+
+rtest "No data, sampling timestamp" '0x0\n---------- --:--:--' "${graphargs[@]}" 'PRINT:v:%F %T:strftime'
+
+rtest "No data, value timestamp" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
+
+rtest "No data, value duration" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v::valstrfduration'
+
+
+$RRDTOOL update vfmt1.rrd --template v -- 1420070460:0 || exit 1
+
+rtest "Zero, numeric" '0x0\n0.0' "${graphargs[@]}" 'PRINT:v:%0.1lf'
+
+rtest "Zero, sampling timestamp" '0x0\n2015-01-01 00:01:00' "${graphargs[@]}" 'PRINT:v:%F %T:strftime'
+
+rtest "Zero, value timestamp" '0x0\n1970-01-01 00:00:00' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
+
+rtest "Zero, value duration" '0x0\n0_00_00_000' "${graphargs[@]}" 'PRINT:v:%H_%02m_%02s_%03f:valstrfduration'
+
+$RRDTOOL update vfmt1.rrd --template v -- 1420070520:3000 || exit 1
+
+rtest "3000, numeric" '0x0\n3000.0' "${graphargs[@]}" 'PRINT:v:%0.1lf'
+
+rtest "3000, sampling timestamp" '0x0\n2015-01-01 00:02:00' "${graphargs[@]}" 'PRINT:v:%F %T:strftime'
+
+rtest "3000, value timestamp" '0x0\n1970-01-01 00:50:00' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
+
+rtest "3000, value duration" '0x0\n0_00_03_000' "${graphargs[@]}" 'PRINT:v:%H_%02m_%02s_%03f:valstrfduration'
+
