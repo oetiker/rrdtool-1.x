@@ -8,7 +8,7 @@ perl:
   - "5.8"
 
 install: 
-  - sudo apt-get update
+  - sudo apt-get update || true
   - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc
   - sudo pip install cpp-coveralls --use-mirrors
 
