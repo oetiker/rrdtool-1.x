@@ -88,10 +88,11 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/etc/rrdcached.socket.in \
 	$(top_srcdir)/etc/rrdcached.service.in \
 	$(top_srcdir)/etc/rrdcached-default-lsb.in ABOUT-NLS NEWS TODO \
-	conftools/compile conftools/config.guess \
-	conftools/config.rpath conftools/config.sub conftools/depcomp \
-	conftools/install-sh conftools/missing conftools/ltmain.sh \
-	$(top_srcdir)/conftools/compile \
+	compile conftools/compile config.guess conftools/config.guess \
+	config.rpath conftools/config.rpath config.sub \
+	conftools/config.sub depcomp conftools/depcomp install-sh \
+	conftools/install-sh missing conftools/missing ltmain.sh \
+	conftools/ltmain.sh $(top_srcdir)/conftools/compile \
 	$(top_srcdir)/conftools/config.guess \
 	$(top_srcdir)/conftools/config.rpath \
 	$(top_srcdir)/conftools/config.sub \

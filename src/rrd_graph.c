@@ -93,7 +93,11 @@ char week_fmt[128] = "Week %V";
 
 xlab_t    xlab[] = {
     /* 0  1    2          3    4         5   6          7  8   9  */
-    {0.0, 0, TMT_SECOND, 1, TMT_SECOND, 5, TMT_SECOND, 10, 0, "%H:%M:%S"}
+    {0.0, 0, TMT_SECOND, 1, TMT_SECOND, 5, TMT_SECOND, 1, 0, "%H:%M:%S"}
+    ,
+    {0.015, 0, TMT_SECOND, 1, TMT_SECOND, 5, TMT_SECOND, 5, 0, "%H:%M:%S"}
+    ,
+    {0.08, 0, TMT_SECOND, 1, TMT_SECOND, 5, TMT_SECOND, 10, 0, "%H:%M:%S"}
     ,
     {0.15, 0, TMT_SECOND, 5, TMT_SECOND, 15, TMT_SECOND, 30, 0, "%H:%M:%S"}
     ,
@@ -1519,8 +1523,6 @@ time_t find_first_time(
     struct tm tm;
 
     localtime_r(&start, &tm);
-    /* let mktime figure this dst on its own */
-    tm.tm_isdst = -1;
 
     switch (baseint) {
     case TMT_SECOND:
@@ -1590,7 +1592,7 @@ time_t find_next_time(
 
     localtime_r(&current, &tm);
     /* let mktime figure this dst on its own */
-    tm.tm_isdst = -1;
+    //tm.tm_isdst = -1;
 
     int limit = 2;
     switch (baseint) {
