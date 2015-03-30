@@ -1110,6 +1110,44 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
+int parse_grad(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+  /* get new graph that we fill */
+  graph_desc_t *gdp=newGraphDescription(im,gf,pa,
+					PARSE_VNAMECOLORLEGEND
+					|PARSE_STACK
+                                        |PARSE_SKIPSCALE
+					|PARSE_XAXIS
+					|PARSE_YAXIS
+					|PARSE_HEIGHT
+					);
+  if (!gdp) { return 1;}
+
+  /* debug output */
+  dprintf("=================================\n");
+  dprintf("GRAD  : %s\n",pa->arg_orig);
+  if (gdp->vidx<0) {
+    dprintf("VAL   : %g\n",gdp->yrule);
+  } else {
+    dprintf("VNAME : %s (%li)\n",gdp->vname,gdp->vidx);
+  }
+  dprintf("COLOR : r=%g g=%g b=%g a=%g\n",
+	  gdp->col.red,gdp->col.green,gdp->col.blue,gdp->col.alpha);
+  dprintf("COLOR2: r=%g g=%g b=%g a=%g\n",
+	  gdp->col2.red,gdp->col2.green,gdp->col2.blue,gdp->col2.alpha);
+  dprintf("LEGEND: \"%s\"\n",gdp->legend);
+  dprintf("STACK : %i\n",gdp->stack);
+  dprintf("SKIPSCALE : %i\n",gdp->skipscale);
+  dprintf("XAXIS : %i\n",gdp->xaxisidx);
+  dprintf("YAXIS : %i\n",gdp->yaxisidx);
+  dprintf("=================================\n");
+
+  /* shift the legend by 2 spaces for the "coloured-box"*/
+  legend_shift(gdp->legend);
+
+  /* and return fine */
+  return 0;
+}
+
 int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
@@ -1537,9 +1575,9 @@ void rrd_graph_script(
 	case GF_SHIFT:     r=parse_shift(gf,&pa,im); break;
 	case GF_XPORT:     r=parse_xport(gf,&pa,im); break;
 	  /* unsupported types right now */
-	case GF_GRAD:
-	  rrd_set_error("GRAD unsupported - use AREA instead");
-	  break;
+       case GF_GRAD:      r=parse_grad(gf,&pa,im); break;
+         /*  rrd_set_error("GRAD unsupported - use AREA instead");
+         break;*/
 	}
 	/* handle the return error case */
 	if (r) { freeParsedArguments(&pa); return;}
