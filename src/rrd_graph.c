@@ -461,9 +461,11 @@ int im_free(
         free(im->rendered_image);
     }
 
+    mutex_lock(im->fontmap_mutex);
     if (im->layout) {
         g_object_unref(im->layout);
     }
+    mutex_unlock(im->fontmap_mutex);
 
 	if (im->ylegend)
 		free(im->ylegend);
@@ -4656,6 +4658,7 @@ void rrd_graph_init(
     unsigned int i;
     char     *deffont = getenv("RRD_DEFAULT_FONT");
     static PangoFontMap *fontmap = NULL;
+    static mutex_t fontmap_mutex = MUTEX_INITIALIZER;
     PangoContext *context;
 
     /* zero the whole structure first */
@@ -4740,6 +4743,7 @@ void rrd_graph_init(
 
     im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
     im->cr = cairo_create(im->surface);
+    im->fontmap_mutex = &fontmap_mutex;
 
     for (i = 0; i < DIM(text_prop); i++) {
         im->text_prop[i].size = -1;
@@ -4747,8 +4751,10 @@ void rrd_graph_init(
         rrd_set_font_desc(im,i, deffont ? deffont : text_prop[i].font,text_prop[i].size);
     }
 
+    mutex_lock(im->fontmap_mutex);
+
     if (fontmap == NULL){
-        fontmap = pango_cairo_font_map_get_default();
+        fontmap = pango_cairo_font_map_new();
     }
 
 #ifdef HAVE_PANGO_FONT_MAP_CREATE_CONTEXT
@@ -4772,7 +4778,7 @@ void rrd_graph_init(
         (im->font_options, CAIRO_HINT_METRICS_ON);
     cairo_font_options_set_antialias(im->font_options, CAIRO_ANTIALIAS_GRAY);
 
-
+    mutex_unlock(im->fontmap_mutex);
 
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
@@ -5369,8 +5375,10 @@ void rrd_graph_options(
         }
     } /* while (1) */
 
+    mutex_lock(im->fontmap_mutex);
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);
     pango_layout_context_changed(im->layout);
+    mutex_unlock(im->fontmap_mutex);
 
 
     if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
