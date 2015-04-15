@@ -366,7 +366,7 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_SKIPSCALE    (PARSE_FIELD1|(1ULL<<16))
 
 #define PARSE_DASHES       (PARSE_FIELD1|(1ULL<<20))
-#define PARSE_HEIGHT       (PARSE_FIELD1|(1ULL<<21))
+#define PARSE_GRADHEIGHT   (PARSE_FIELD1|(1ULL<<21))
 #define PARSE_FORMAT       (PARSE_FIELD1|(1ULL<<22))
 #define PARSE_STRFTIMEVFMT (PARSE_FIELD1|(1ULL<<23))
 #define PARSE_FRACTION     (PARSE_FIELD1|(1ULL<<24))
@@ -538,15 +538,15 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     dprintfparsed("got linewidth: %s (%g)\n",t,linewidth);
     gdp->linewidth=linewidth;
   }
-  if (bitscmp(PARSE_HEIGHT)) {
-    double height=0;
+  if (bitscmp(PARSE_GRADHEIGHT)) {
+    double gradheight=0;
     char *t,*x;
-    if ((t=getKeyValueArgument("height",1,pa))&&(*t!=0)) {
-      if (getDouble(t,&height,&x)) {
-	rrd_set_error("Bad height: %s",t); return NULL;
+    if ((t=getKeyValueArgument("gradheight",1,pa))&&(*t!=0)) {
+      if (getDouble(t,&gradheight,&x)) {
+	rrd_set_error("Bad gradheight: %s",t); return NULL;
       }
-      dprintfparsed("got height: %s (%g)\n",t,height);
-      gdp->gradheight=height;
+      dprintfparsed("got gradheight: %s (%g)\n",t,gradheight);
+      gdp->gradheight=gradheight;
     }
   }
   if (bitscmp(PARSE_STEP)) {
@@ -721,7 +721,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     }
   }
 
-  /* and set some of those late assignments to accomodate the legacy parser*/
+  /* and set some of those late assignments to accommodate the legacy parser*/
   /* first split vname into color */
   if (vname) {
     /* check for color */
@@ -1080,7 +1080,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
                                         |PARSE_SKIPSCALE
 					|PARSE_XAXIS
 					|PARSE_YAXIS
-					|PARSE_HEIGHT
+					|PARSE_GRADHEIGHT
 					);
   if (!gdp) { return 1;}
 
@@ -1537,10 +1537,7 @@ void rrd_graph_script(
 	case GF_SHIFT:     r=parse_shift(gf,&pa,im); break;
 	case GF_XPORT:     r=parse_xport(gf,&pa,im); break;
 	  /* unsupported types right now */
-	case GF_GRAD:
-	  rrd_set_error("GRAD unsupported - use AREA instead");
-	  break;
-	}
+  }
 	/* handle the return error case */
 	if (r) { freeParsedArguments(&pa); return;}
 	/* check for unprocessed keyvalue args */

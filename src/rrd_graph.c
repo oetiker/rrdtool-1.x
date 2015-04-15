@@ -302,7 +302,6 @@ enum gf_en gf_conv(
     conv_if(VRULE, GF_VRULE);
     conv_if(LINE, GF_LINE);
     conv_if(AREA, GF_AREA);
-	conv_if(GRAD, GF_GRAD);
     conv_if(STACK, GF_STACK);
     conv_if(TICK, GF_TICK);
     conv_if(TEXTALIGN, GF_TEXTALIGN);
@@ -1346,7 +1345,6 @@ int data_proc(
         if ((im->gdes[i].gf == GF_LINE)
          || (im->gdes[i].gf == GF_AREA)
          || (im->gdes[i].gf == GF_TICK)
-         || (im->gdes[i].gf == GF_GRAD)
         ) {
             if ((im->gdes[i].p_data = (rrd_value_t*)malloc((im->xsize + 1)
                                              * sizeof(rrd_value_t))) == NULL) {
@@ -1368,7 +1366,6 @@ int data_proc(
             switch (im->gdes[ii].gf) {
             case GF_LINE:
             case GF_AREA:
-			case GF_GRAD:
             case GF_TICK:
                 if (!im->gdes[ii].stack)
                     paintval = 0.0;
@@ -2000,7 +1997,6 @@ int print_calc(
             break;
         case GF_LINE:
         case GF_AREA:
-		case GF_GRAD:
         case GF_TICK:
             graphelement = 1;
             break;
@@ -3898,8 +3894,7 @@ int graph_paint_timestring(
             }
             break;
         case GF_LINE:
-        case GF_AREA:
-        case GF_GRAD: {
+        case GF_AREA: {
             rrd_value_t diffval = im->maxval - im->minval;
             rrd_value_t maxlimit = im->maxval + 9 * diffval;
             rrd_value_t minlimit = im->minval - 9 * diffval;
@@ -4010,6 +4005,7 @@ int graph_paint_timestring(
                 } else {
 					double lastx=0;
 					double lasty=0;
+                    int    isArea = isnan(im->gdes[i].col2.red);
                     int       idxI = -1;
                     double   *foreY =
                         (double *) malloc(sizeof(double) * im->xsize * 2);
@@ -4040,7 +4036,7 @@ int graph_paint_timestring(
                                                            [cntI + 1], 4)) {
                                 cntI++;
                             }
-							if (im->gdes[i].gf != GF_GRAD) {
+							if (isArea) {
                             	gfx_new_area(im,
                             	             backX[0], backY[0],
                             	             foreX[0], foreY[0],
@@ -4066,7 +4062,7 @@ int graph_paint_timestring(
                                                                 + 1], 4)) {
                                     cntI++;
                                 }
-								if (im->gdes[i].gf != GF_GRAD) {
+								if (isArea) {
 	                                gfx_add_point(im, foreX[cntI], foreY[cntI]);
 								} else {
 									gfx_add_rect_fadey(im,
@@ -4080,7 +4076,7 @@ int graph_paint_timestring(
 									lasty = foreY[cntI];
 								}
                             }
-							if (im->gdes[i].gf != GF_GRAD) {
+							if (isArea) {
                             	gfx_add_point(im, backX[idxI], backY[idxI]);
 							} else {
 								gfx_add_rect_fadey(im,
@@ -4108,7 +4104,7 @@ int graph_paint_timestring(
                                                                 - 1], 4)) {
                                     idxI--;
                                 }
-								if (im->gdes[i].gf != GF_GRAD) {
+								if (isArea) {
 	                                gfx_add_point(im, backX[idxI], backY[idxI]);
 								} else {
 									gfx_add_rect_fadey(im,
@@ -4123,7 +4119,7 @@ int graph_paint_timestring(
                             }
                             idxI = -1;
                             drawem = 0;
-							if (im->gdes[i].gf != GF_GRAD)
+							if (isArea)
 	                            gfx_close_path(im);
                         }
                         if (drawem != 0) {
@@ -4187,7 +4183,7 @@ int graph_paint_timestring(
             }
             lastgdes = &(im->gdes[i]);
             break;
-        } /* GF_AREA, GF_LINE, GF_GRAD */
+        } /* GF_AREA, GF_LINE*/
         case GF_STACK:
             rrd_set_error
                 ("STACK should already be turned into LINE or AREA here");
@@ -4422,9 +4418,9 @@ int gdes_alloc(
     im->gdes[im->gdes_c - 1].col.green = 0.0;
     im->gdes[im->gdes_c - 1].col.blue = 0.0;
     im->gdes[im->gdes_c - 1].col.alpha = 0.0;
-    im->gdes[im->gdes_c - 1].col2.red = 0.0;
-    im->gdes[im->gdes_c - 1].col2.green = 0.0;
-    im->gdes[im->gdes_c - 1].col2.blue = 0.0;
+    im->gdes[im->gdes_c - 1].col2.red = DNAN;
+    im->gdes[im->gdes_c - 1].col2.green = DNAN;
+    im->gdes[im->gdes_c - 1].col2.blue = DNAN;
     im->gdes[im->gdes_c - 1].col2.alpha = 0.0;
     im->gdes[im->gdes_c - 1].gradheight = 50.0;
     im->gdes[im->gdes_c - 1].legend[0] = '\0';
