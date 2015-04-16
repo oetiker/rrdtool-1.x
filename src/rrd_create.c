@@ -150,12 +150,7 @@ int rrd_create(
         case 'r': {
             struct stat st;
             if (stat(optarg, &st) != 0) {
-                char errmsg[100];
-#ifdef GNU_SOURCE
-#error using wrong version of strerror_r, because GNU_SOURCE is set
-#endif
-                strerror_r(errno, errmsg, sizeof(errmsg));
-                rrd_set_error("error checking for source RRD %s: %s", optarg, errmsg);
+                rrd_set_error("error checking for source RRD %s: %s", optarg, rrd_strerror(errno));
                 rc = -1;
                 goto done;
             } 
