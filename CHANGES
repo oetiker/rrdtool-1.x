@@ -1,5 +1,5 @@
-RRDtool 1.5.0-rc2 - 2015-02-21
-==============================
+RRDtool 1.5.0 - 2015-04-16
+==========================
 
 New Features
 ------------
@@ -30,7 +30,12 @@ New Features
   value pattern, compatible with the previous syntax.
 * MEDIAN op for CDEF expressions
 * DEPTH,INDEX,COPY,ROL ops for CDEF (as seen in PostScript)
+* gradient AREA backgrounds
+* no more locale magic while reading numeric data.
 
+Bugfixes
+--------
+all the bugs fixed in 1.4.x during 1.5 development
 
 RRDtool 1.4.9 - 2014-09-29
 ==========================
