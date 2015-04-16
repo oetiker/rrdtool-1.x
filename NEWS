@@ -1,13 +1,13 @@
 #####################################
-Major Changes between 1.4.x and ...
+Major Changes between 1.4.x and 1.5.x
 -------------------------------------
-$Id$
 
 RRD Graph
 ---------
-* GRAD element for graph, it acts more or less like an AREA,
-  except you can specify a second color and a height which is used to
-  create a gradient from one color to the next
+* Ability to use data from a callback function to supply data
+  for graphs. With perl bindings for writing the callbacks in perl.
+
+* Second color option for AREAs causing a gradient effect
   by Rian Shelley
 
 * RRDcached awareness. Instead of just flushing the file, data can now
@@ -15,6 +15,12 @@ RRD Graph
 
 * VDEF results do now explicitly KNOW when they have no time associated
   and can behave appropriately. -- Jean-Edouard Babin
+
+RRDcreate
+---------
+Ability to use exiting rrd files to pre-populate new ones. Allowing to
+preserve data even when fundamentally changeing the structure of your rrd
+files.
 
 RRDcached
 ----------
