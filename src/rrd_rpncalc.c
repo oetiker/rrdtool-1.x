@@ -320,7 +320,7 @@ rpnp_t   *rpn_parse(
             return NULL;
         }
 
-        else if ((sscanf(expr, "%19[0-9.e+-]%n", double_str, &pos) == 1)
+        else if ((sscanf(expr, "%[0-9.e+-]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
                  && ( rrd_strtodbl( double_str, NULL, &(rpnp[steps].val), NULL ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
@@ -479,7 +479,7 @@ static int rpn_compare_double(
 }
 
 /* rpn_calc: run the RPN calculator; also performs variable substitution;
- * moved and modified from data_calc() originally included in rrd_graph.c 
+ * moved and modified from data_calc() originally included in rrd_graph.c
  * arguments:
  * rpnp : an array of RPN operators (including variable references)
  * rpnstack : the initialized stack
@@ -501,7 +501,7 @@ short rpn_calc(
     int output_idx)
 {
     int       rpi;
-    long      stptr = -1;    
+    long      stptr = -1;
 
     /* process each op from the rpn in turn */
     for (rpi = 0; rpnp[rpi].op != OP_END; rpi++) {
@@ -865,7 +865,7 @@ short rpn_calc(
 		    percentile/=100;
 		}
 		/* the local averaging window (similar to trend,
-		 * but better here, as we get better statistics 
+		 * but better here, as we get better statistics
 		 * thru numbers)*/
 	        stackunderflow(2);
 		int   locstepsize = rpnstack->s[--stptr];
@@ -908,8 +908,8 @@ short rpn_calc(
 		    int shiftstep=1;
 		    if (shifts<0) {
 			shiftstep = loop*rpnstack->s[stptr];
-		    } else { 
-			shiftstep = rpnstack->s[stptr+loop]; 
+		    } else {
+			shiftstep = rpnstack->s[stptr+loop];
 		    }
 		    if(shiftstep <0) {
 			rrd_set_error("negative shift step not allowed: %i",shiftstep);
@@ -918,7 +918,7 @@ short rpn_calc(
 		    shiftstep=(int)ceil((float)shiftstep/(float)dsstep);
 		    /* loop all local shifts */
 		    for(int i=0;i<=locstep;i++) {
-			/* now calculate offset into data-array 
+			/* now calculate offset into data-array
 			 * - relative to output_idx */
 			int offset=shiftstep+i;
 			/* and process if we have index 0 of above */
@@ -943,7 +943,7 @@ short rpn_calc(
 		case OP_PREDICT:
 		    if (count>0) {
 			val = sum/(double)count;
-		    } 
+		    }
 		    break;
 		case OP_PREDICTSIGMA:
 		    if (count>1) { /* the sigma case */
@@ -976,7 +976,7 @@ short rpn_calc(
 		    }
 		    break;
 		default: /* should not get here ... */
-		    break; 
+		    break;
 		}
 		rpnstack->s[stptr] = val;
 	    }
@@ -1072,7 +1072,7 @@ short rpn_calc(
                 if (!final_elements) {
                     /* no non-NAN elements; push NAN */
                     rpnstack->s[++stptr] = DNAN;
-                } else {                   
+                } else {
                     /* when goodvals and badvals meet, they might have met on a
                      * NAN, which wouldn't decrease final_elements. so, check
                      * that now. */
@@ -1149,7 +1149,7 @@ short rpn_calc(
             stptr++;
             rpnstack->s[stptr] = stptr;
             break;
-       
+
         case OP_END:
             break;
         }

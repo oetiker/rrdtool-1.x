@@ -5546,7 +5546,7 @@ int vdef_parse(
     int       n;
 
     n = 0;
-    sscanf(str, "%20[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
+    sscanf(str, "%[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
     if ( rrd_strtodbl( double_str, NULL, &param, NULL) != 2 ){
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);
