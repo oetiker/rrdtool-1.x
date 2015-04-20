@@ -94,10 +94,10 @@ best explained with an example.
 This example creates a database named F<target.rrd>. Start time
 (1'023'654'125) is specified in total number of seconds since epoch
 (time in seconds since 01-01-1970). While updating the database, the
-update time is also specified.  This update time MUST be large (later)
-then start time and MUST be in seconds since epoch.
+update time is also specified.  This update time MUST be larger (later)
+than start time and MUST be in seconds since epoch.
 
-The step of 300 seconds indicates that database expects new values every
+The step of 300 seconds indicates that the database expects new values every
 300 seconds. The wrapper script should be scheduled to run every B<step>
 seconds so that it updates the database every B<step> seconds.
 

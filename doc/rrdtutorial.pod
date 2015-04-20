@@ -134,8 +134,8 @@ you did understand, you may have missed something.
 By following the examples you get some hands-on experience and, even
 more important, some background information of how it works.
 
-You will need to know something about hexadecimal numbers. If you don't
-then start with reading L<bin_dec_hex> before you continue here.
+You will need to know something about hexadecimal numbers. If you don't,
+start with reading L<bin_dec_hex> before you continue here.
 
 =head2 Your first Round Robin Database
 
