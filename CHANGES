@@ -1,3 +1,10 @@
+RRDtool 1.5.1 - 2015-04-20
+==========================
+Bug Fixes
+--------
+* parse arbitrarily long numbers in CDEF expressions
+* include missing VERSION and LICENSE file
+
 RRDtool 1.5.0 - 2015-04-16
 ==========================
 
