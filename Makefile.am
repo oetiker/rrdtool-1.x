@@ -12,7 +12,7 @@ SUBDIRS += examples
 endif
 
  # the following files are not mentioned in any other Makefile
-EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
+EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
              m4/snprintf.m4 \
