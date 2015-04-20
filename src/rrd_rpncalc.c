@@ -309,7 +309,7 @@ rpnp_t   *rpn_parse(
     long      steps = -1;
     rpnp_t   *rpnp;
     char      vname[MAX_VNAME_LEN + 10];
-    char      double_str[20];
+    char      double_str[41] = {0};
 
     rpnp = NULL;
     expr = (char *) expr_const;
@@ -320,7 +320,7 @@ rpnp_t   *rpn_parse(
             return NULL;
         }
 
-        else if ((sscanf(expr, "%[0-9.e+-]%n", double_str, &pos) == 1)
+        else if ((sscanf(expr, "%40[0-9.e+-]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
                  && ( rrd_strtodbl( double_str, NULL, &(rpnp[steps].val), NULL ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;

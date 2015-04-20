@@ -87,7 +87,7 @@ int rrd_tune(
     int       opt_newstep = -1;
     rrd_file_t *rrd_file = NULL;
     char      *opt_daemon = NULL;
-    char      double_str[ 12 ];
+    char      double_str[ 41 ] = {0};
     const char *in_filename = NULL;
     struct option long_options[] = {
         {"heartbeat", required_argument, 0, 'h'},
@@ -208,7 +208,7 @@ int rrd_tune(
             break;
 
         case 'i':
-            matches = sscanf(optarg, DS_NAM_FMT ":%[0-9.e+-]", ds_nam, double_str);
+            matches = sscanf(optarg, DS_NAM_FMT ":%40[0-9.e+-]", ds_nam, double_str);
             if( matches >= 1 ) {
                 strtod_ret_val = rrd_strtodbl( double_str, NULL, &min, NULL );
             }
@@ -228,7 +228,7 @@ int rrd_tune(
             break;
 
         case 'a':
-            matches = sscanf(optarg, DS_NAM_FMT ":%[0-9.e+-]", ds_nam, double_str);
+            matches = sscanf(optarg, DS_NAM_FMT ":%40[0-9.e+-]", ds_nam, double_str);
             if( matches >= 1 ) {
                 strtod_ret_val = rrd_strtodbl( double_str, NULL, &max, NULL );
             }

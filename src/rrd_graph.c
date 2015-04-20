@@ -4792,7 +4792,7 @@ void rrd_graph_options(
     int       stroff;
     char     *parsetime_error = NULL;
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
-    char      double_str[20], double_str2[20];
+    char      double_str[41] = {0}, double_str2[41] = {0};
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
     rrd_time_value_t start_tv, end_tv;
@@ -5026,7 +5026,7 @@ void rrd_graph_options(
                 im->draw_y_grid = 0;
                 break;
             };
-            if (sscanf(optarg, "%[0-9.e+-]:%d", double_str , &im->ylabfact) == 2) {
+            if (sscanf(optarg, "%40[0-9.e+-]:%d", double_str , &im->ylabfact) == 2) {
                 if (rrd_strtodbl( double_str, 0, &(im->ygridstep), "option -y") != 2){
                     return;
                 }
@@ -5047,7 +5047,7 @@ void rrd_graph_options(
             break;
         case 1008: /* grid-dash */
             if(sscanf(optarg,
-                      "%[0-9.e+-]:%[0-9.e+-]",
+                      "%40[0-9.e+-]:%40[0-9.e+-]",
                       double_str,
                       double_str2 ) != 2) {
                 if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2
@@ -5066,7 +5066,7 @@ void rrd_graph_options(
             break;
         case 1002: /* right y axis */
             if(sscanf(optarg,
-                      "%[0-9.e+-]:%[0-9.e+-]",
+                      "%40[0-9.e+-]:%40[0-9.e+-]",
                       double_str,
                       double_str2 ) == 2
                 && rrd_strtodbl( double_str, 0, &(im->second_axis_scale),NULL) == 2
@@ -5252,7 +5252,7 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            if (sscanf(optarg, "%10[A-Z]:%[0-9.e+-]%n", prop, double_str, &end) >= 2
+            if (sscanf(optarg, "%10[A-Z]:%40[0-9.e+-]%n", prop, double_str, &end) >= 2
                 && rrd_strtodbl( double_str, 0, &size, NULL) == 2) {
                 int       sindex, propidx;
 
@@ -5542,11 +5542,11 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30] = {0}, double_str[21] = {0};
+    char      func[30] = {0}, double_str[41] = {0};
     int       n;
 
     n = 0;
-    sscanf(str, "%[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
+    sscanf(str, "%40[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
     if ( rrd_strtodbl( double_str, NULL, &param, NULL) != 2 ){
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);
