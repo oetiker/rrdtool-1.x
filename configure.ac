@@ -848,7 +848,7 @@ LUA_EOF
           done
         fi
 
-        LUA_RRD_LIBDIR="$langpref/lib/lua/$lua_vdot"
+        LUA_RRD_LIBDIR="$libdir/lua/$lua_vdot"
         # if lua 5.0 can't find compat-5.1, force installation of
         # compat-5.1.lua together with RRDtool.
         if test "$lua_vdot" = "5.0" -a "$LUA_HAVE_COMPAT51" != "HAVE_COMPAT51"; then
