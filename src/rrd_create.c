@@ -1391,7 +1391,11 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 		rrdc_forget(outfilename);
 		rrd_clear_error();
 	    }
-
+	    
+#ifdef WIN32
+/* in windows, renaming to an existing file is verboten */
+            unlink(outfilename);
+#endif 
 	    if (rename(tmpfilename, outfilename) != 0) {
 		rrd_set_error("Cannot rename temporary file to final file!");
 		goto done;
