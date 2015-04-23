@@ -986,23 +986,24 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     /* parse rpn */
     if ((gdp->rpnp= rpn_parse((void *) im, gdp->rpn, &find_var_wrapper)) == NULL) {
       return 1; }
-  } else {
+  } else { /* VDEF */
     /* parse vdef, as vdef_parse is a bit "stupid" right now we have to touch things here */
     /* so find first , */
     char*c=strchr(gdp->rpn,',');
+    char vname[MAX_VNAME_LEN+1];
     if (! c) { rrd_set_error("Comma expected in VDEF definition %s",gdp->rpn); return 1;}
-    /* found a comma, so copy the first part to ds_name (re/abusing it) */
-    *c=0;
-    strncpy(gdp->ds_nam,gdp->rpn,DS_NAM_SIZE);
-    *c=',';
+    /* found a comma, so copy the first part to ds_nam (re/abusing it) */
+    *c=0; /* yes now it seems as if the string ended here */
+    strncpy(vname,gdp->rpn,MAX_VNAME_LEN);
+    *c=','; /* and now all is back to normal ... shudder */
     /* trying to find the vidx for that name */
-    gdp->vidx = find_var(im, gdp->ds_nam);
+    gdp->vidx = find_var(im, vname);
     if (gdp->vidx<0) { *c=',';
-      rrd_set_error("Not a valid vname: %s in line %s", gdp->ds_nam, gdp->rpn);
+      rrd_set_error("Not a valid vname: %s in line %s", vname, gdp->rpn);
       return 1;}
     if (im->gdes[gdp->vidx].gf != GF_DEF && im->gdes[gdp->vidx].gf != GF_CDEF) {
       rrd_set_error("variable '%s' not DEF nor "
-		    "CDEF in VDEF '%s'", gdp->ds_nam, gdp->rpn);
+		    "CDEF in VDEF '%s'",vname, gdp->rpn);
       return 1;
     }
     /* and parsing the rpn */
