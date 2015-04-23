@@ -1,9 +1,18 @@
-RRDtool 1.5.1 - 2015-04-20
+RRDtool 1.5.2 - 2015-04-23
 ==========================
 Bug Fixes
---------
-* parse numbers up to 40 characters long ...
+---------
+* paramters in VDEF are vnames and not data source names, hence
+  they can be 255 chars long and not only 20
+
+RRDtool 1.5.1 - 2015-04-22
+==========================
+Bug Fixes
+---------
+* parse numbers up to 40 characters long ..
+* fix install rules for Python and Lua
 * include missing VERSION and LICENSE file
+* unlink before rename in rrd_create when running on WIN32
 
 RRDtool 1.5.0 - 2015-04-16
 ==========================

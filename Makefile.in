@@ -450,7 +450,7 @@ RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
 SUBDIRS = po src doc bindings tests $(am__append_1)
-EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
+EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
              m4/snprintf.m4 \
