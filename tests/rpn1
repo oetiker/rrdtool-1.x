@@ -17,10 +17,10 @@ $RRDTOOL graphv -                          \
       DEF:myspeed=$RRD:speed:AVERAGE              \
       CDEF:nonans=myspeed,UN,0,myspeed,IF             \
       CDEF:kmh=nonans,3600,*                          \
-      CDEF:fast=kmh,100,GT,100,0,IF                   \
+      CDEF:fast123456789012345678901234567890=kmh,100,GT,100,0,IF                   \
       CDEF:over=kmh,100.000000000000000000000000000000000000,GT,kmh,100,-,0,IF             \
       CDEF:good=kmh,100,GT,0,kmh,IF                   \
-      VDEF:f=fast,AVERAGE \
+      VDEF:f=fast123456789012345678901234567890,AVERAGE \
       VDEF:g=good,MAXIMUM \
       VDEF:o=over,MINIMUM \
       PRINT:f:'%lf' \
