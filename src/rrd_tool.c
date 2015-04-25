@@ -123,7 +123,8 @@ void PrintUsage(
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
            "\t\t[-s|--start start] [-e|--end end]\n"
-	   "\t\t[--daemon <address>]\n");
+           "\t\t[-a|--align-start]\n"
+           "\t\t[-d|--daemon <address>]\n");
 
     const char *help_flushcached =
         N_("* flushcached - flush cached data out to an RRD file\n\n"
