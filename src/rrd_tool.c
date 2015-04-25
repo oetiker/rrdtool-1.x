@@ -80,7 +80,7 @@ void PrintUsage(
 
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
-           "\trrdtool info filename.rrd\n");
+           "\trrdtool info [--daemon|-d <addr> [--noflush|-F]] filename.rrd\n");
 
     const char *help_restore =
         N_("* restore - restore an RRD file from its XML form\n\n"
