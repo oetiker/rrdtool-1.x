@@ -129,7 +129,7 @@ void PrintUsage(
     const char *help_flushcached =
         N_("* flushcached - flush cached data out to an RRD file\n\n"
            "\trrdtool flushcached filename.rrd\n"
-	   "\t\t[--daemon <address>]\n");
+	   "\t\t[-d|--daemon <address>]\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
