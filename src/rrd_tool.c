@@ -88,7 +88,8 @@ void PrintUsage(
 
     const char *help_last =
         N_("* last - show last update time for RRD\n\n"
-           "\trrdtool last filename.rrd\n");
+           "\trrdtool last filename.rrd\n"
+           "\t\t[--daemon|-d address]\n");
 
     const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
