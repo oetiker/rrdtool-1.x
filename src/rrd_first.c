@@ -31,7 +31,7 @@ time_t rrd_first(
         int       option_index = 0;
         int       opt;
 
-        opt = getopt_long(argc, argv, "d:F", long_options, &option_index);
+        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
 
         if (opt == EOF)
             break;
@@ -55,14 +55,14 @@ time_t rrd_first(
             }
             break;
         default:
-            rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon <addr>] file.rrd",
+            rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon|-d <addr>] file.rrd",
                           argv[0]);
             return (-1);
         }
     }
 
     if (optind >= argc) {
-        rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon <addr>] file.rrd",
+        rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon|-d <addr>] file.rrd",
                       argv[0]);
         return -1;
     }

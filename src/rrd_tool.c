@@ -96,7 +96,7 @@ void PrintUsage(
 
     const char *help_first =
         N_("* first - show first update time for RRA within an RRD\n\n"
-           "\trrdtool first filename.rrd [--rraindex number]\n");
+           "\trrdtool first filename.rrd [--rraindex number] [--daemon|-d address]\n");
 
     const char *help_update =
         N_("* update - update an RRD\n\n"
