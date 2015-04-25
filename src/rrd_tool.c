@@ -93,7 +93,9 @@ void PrintUsage(
 
     const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
-           "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n");
+           "  each DS in an RRD\n\n"
+           "\trrdtool lastupdate filename.rrd\n"
+           "\t\t[--daemon|-d address]\n");
 
     const char *help_first =
         N_("* first - show first update time for RRA within an RRD\n\n"
