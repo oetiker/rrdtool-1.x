@@ -201,17 +201,25 @@ void PrintUsage(
            "\t\t[--data-source-type|-d ds-name:DST]\n"
            "\t\t[--data-source-rename|-r old-name:new-name]\n"
            "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n"
-           "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
-           "\t\t[--failure-threshold integer]\n"
-           "\t\t[--window-length integer]\n"
-           "\t\t[--alpha adaptation-parameter]\n");
+           "\t\t[--deltapos|-p scale-value] [--deltaneg|-n scale-value]\n"
+           "\t\t[--failure-threshold|-f integer]\n"
+           "\t\t[--window-length|-w integer]\n"
+           "\t\t[--alpha|-x adaptation-parameter]\n");
     const char *help_tune2 =
-        N_("\t\t[--beta adaptation-parameter]\n"
-           "\t\t[--gamma adaptation-parameter]\n"
-           "\t\t[--gamma-deviation adaptation-parameter]\n"
-           "\t\t[--aberrant-reset ds-name]\n");
+        N_("\t\t[--beta|-y adaptation-parameter]\n"
+           "\t\t[--gamma|-z adaptation-parameter]\n"
+           "\t\t[--gamma-deviation|-v adaptation-parameter]\n"
+           "\t\t[--smoothing-window|-s fraction-of-season]\n"
+           "\t\t[--smoothing-window-deviation|-S fraction-of-season]\n"
+           "\t\t[--aberrant-reset|-b ds-name]\n");
     const char *help_tune3 = 
-	N_("\t\t???");  // FIXME
+        N_("\t\t[--step|-t newstep]\n"
+           "\t\t[--daemon|-D address]\n"
+           "\t\t[DEL:ds-name]\n"
+           "\t\t[DS:ds-spec]\n"
+           "\t\t[DELRRA:index]\n"
+           "\t\t[RRA:rra-spec]\n"
+           "\t\t[RRA#index:[+-=]number]\n");
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
