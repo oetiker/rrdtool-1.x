@@ -228,7 +228,9 @@ void PrintUsage(
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
-           "\t\t[--enumds] [--json]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
+           "\t\t[--enumds] [--json]\n"
+           "\t\t[-d|--daemon address]\n"
+           "\t\t[DEF:vname=rrd:ds-name:CF]\n"
            "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n");
     const char *help_quit =
