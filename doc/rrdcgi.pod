@@ -4,7 +4,7 @@ rrdcgi - Create web pages containing RRD graphs based on templates
 
 =head1 SYNOPSIS
 
-C<#!/path/to/>B<rrdcgi> S<[B<--filter>]>
+C<#!/path/to/>B<rrdcgi> S<[B<--filter>|B<-f>]>
 
 =head1 DESCRIPTION
 
@@ -20,7 +20,7 @@ The argument parser uses the same semantics as you are used from your C-shell.
 
 =over 8
 
-=item B<--filter>
+=item B<--filter>|B<-f>
 
 Assume that rrdcgi is run as a filter and not as a cgi.
 
