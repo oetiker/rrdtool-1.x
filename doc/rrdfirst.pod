@@ -4,7 +4,7 @@ rrdfirst - Return the date of the first data sample in an RRA within an RRD
 
 =head1 SYNOPSIS
 
-B<rrdtool> B<first> I<filename> [I<--rraindex number>] [B<--daemon> I<address>]
+B<rrdtool> B<first> I<filename> [B<--rraindex> I<number>] [B<--daemon>|B<-d> I<address>]
 
 =head1 DESCRIPTION
 
@@ -17,13 +17,13 @@ sample entered into the specified RRA of the RRD file.
 
 The name of the B<RRD> that contains the data.
 
-=item I<--rraindex number>
+=item B<--rraindex> I<number>
 
 The index number of the B<RRA> that is to be examined. If not specified, the
 index defaults to zero. B<RRA> index numbers can be determined through
 B<rrdtool info>.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
 the B<-l> option in the L<rrdcached> manual.
