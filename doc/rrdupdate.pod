@@ -6,6 +6,7 @@ rrdupdate - Store a new set of values into the RRD
 
 B<rrdtool> {B<update> | B<updatev>} I<filename>
 S<[B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...]>
+S<[B<--skip-past-updates>|B<-s>]>
 S<[B<--daemon>|B<-d> I<address>]> [B<-->]
 S<B<N>B<:>I<value>[B<:>I<value>]...>
 S<I<timestamp>B<:>I<value>[B<:>I<value>]...>
@@ -62,7 +63,7 @@ for the COMPUTE B<DST>.
 
 The caching daemon L<rrdcached> cannot be used together with templates yet.
 
-=item B<--skip-past-updates>
+=item B<--skip-past-updates>|B<-s>
 
 When updateing an rrd file with data earlier than the latest update already
 applied, rrdtool will issue an error message an abort. This option instructs
