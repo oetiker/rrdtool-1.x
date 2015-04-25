@@ -105,8 +105,8 @@ void PrintUsage(
         N_("* update - update an RRD\n\n"
            "\trrdtool update filename\n"
            "\t\t[--template|-t ds-name:ds-name:...]\n"
-           "\t\t[--skip-past-updates]\n"
-	   "\t\t[--daemon <address>]\n"
+           "\t\t[--skip-past-updates|-s]\n"
+	   "\t\t[--daemon|-d <address>]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n");
@@ -116,7 +116,7 @@ void PrintUsage(
            "\treturns information about values, RRAs, and datasources updated\n\n"
            "\trrdtool updatev filename\n"
            "\t\t[--template|-t ds-name:ds-name:...]\n"
-           "\t\t[--skip-past-updates]\n"
+           "\t\t[--skip-past-updates|-s]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n");
