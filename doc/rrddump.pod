@@ -6,8 +6,8 @@ rrddump - dump the contents of an RRD to XML format
 
 B<rrdtool> B<dump> I<filename.rrd> [I<filename.xml>]
 S<[B<--header>|B<-h> {none,xsd,dtd}]>
-S<[B<--no-header>]>
-S<[B<--daemon> I<address>]>
+S<[B<--no-header>|B<-n>]>
+S<[B<--daemon>|B<-d> I<address>]>
 S<[E<gt> I<filename.xml>]>
 
 =head1 DESCRIPTION
@@ -36,14 +36,14 @@ By default RRDtool will add a dtd header to the xml file. Here
 you can customize this to and xsd header or no header at all.
 
 
-=item B<--no-header>
+=item B<--no-header>|B<-n>
 
 A shortcut for S<--header=none>.
 
 If you want to restore the dump with RRDtool 1.2 you should use the
 S<--no-header> option since 1.2 can not deal with xml headers.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return

@@ -73,7 +73,10 @@ void PrintUsage(
 
     const char *help_dump =
         N_("* dump - dump an RRD to XML\n\n"
-           "\trrdtool dump filename.rrd >filename.xml\n");
+           "\trrdtool dump [--header|-h {none,xsd,dtd}]\n"
+           "\t\t[--no-header|-n]\n"
+           "\t\t[--daemon|-d address]\n"
+           "\t\tfile.rrd [file.xml]");
 
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
