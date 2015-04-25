@@ -5,7 +5,7 @@ rrdlastupdate - Return the most recent update to an RRD
 =head1 SYNOPSIS
 
 B<rrdtool> B<lastupdate> I<filename>
-S<[B<--daemon> I<address>]>
+S<[B<--daemon>|B<-d> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -18,7 +18,7 @@ value stored for each datum in the most recent update of an RRD.
 
 The name of the B<RRD> that contains the data.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return
