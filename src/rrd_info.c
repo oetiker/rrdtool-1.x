@@ -127,7 +127,7 @@ rrd_info_t *rrd_info(
             break;
 
         default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
+            rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr> [--noflush|-F]] <file>",
                     argv[0]);
             return (NULL);
             break;
@@ -135,7 +135,7 @@ rrd_info_t *rrd_info(
     }                   /* while (42) */
 
     if ((argc - optind) != 1) {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <file>",
+        rrd_set_error ("Usage: rrdtool %s [--daemon |-d <addr> [--noflush|-F]] <file>",
                 argv[0]);
         return (NULL);
     }

@@ -124,7 +124,7 @@ int rrd_tune(
     
     while (1) {
 	int option_index = 0;
-	int opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
+	int opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:s:S:b:t:D:",
 			      long_options, &option_index);
         if (opt == EOF)
             break;
@@ -187,7 +187,7 @@ int rrd_tune(
         int       opt;
         unsigned int strtod_ret_val;
 
-        opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:b:",
+        opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:s:S:b:t:D:",
                           long_options, &option_index);
         if (opt == EOF)
             break;

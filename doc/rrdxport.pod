@@ -10,7 +10,8 @@ S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
 S<[B<--json>]>
-S<[B<--daemon> I<address>]>
+S<[B<--enumds>]>
+S<[B<--daemon>|B<-d> I<address>]>
 S<[B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>]>
 S<[B<CDEF:>I<vname>B<=>I<rpn-expression>]>
 S<[B<XPORT>B<:>I<vname>[B<:>I<legend>]]>
@@ -50,7 +51,7 @@ for details.
 
 See L<rrdgraph> documentation.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return

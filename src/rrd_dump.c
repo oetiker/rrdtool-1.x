@@ -573,7 +573,9 @@ int rrd_dump(
 	   break;
 
         default:
-            rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}] [--no-header]"
+            rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
+                          "[--no-header|-n]\n"
+                          "[--daemon|-d address]\n"
                           "file.rrd [file.xml]", argv[0]);
             return (-1);
             break;
@@ -581,8 +583,10 @@ int rrd_dump(
     }                   /* while (42) */
 
     if ((argc - optind) < 1 || (argc - optind) > 2) {
-        rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}] [--no-header]"
-                      "file.rrd [file.xml]", argv[0]);
+        rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
+                      "[--no-header|-n]\n"
+                      "[--daemon|-d address]\n"
+                       "file.rrd [file.xml]", argv[0]);
         return (-1);
     }
 

@@ -93,7 +93,7 @@ int rrd_create(
     opterr = 0;         /* initialize getopt */
 
     while (1) {
-        opt = getopt_long(argc, argv, "Ob:s:d:", long_options, &option_index);
+        opt = getopt_long(argc, argv, "b:s:d:r:t:O", long_options, &option_index);
 
         if (opt == EOF)
             break;

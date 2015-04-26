@@ -9,8 +9,8 @@ S<[B<--start>|B<-b> I<start time>]>
 S<[B<--step>|B<-s> I<step>]>
 S<[B<--template>|B<-t> I<template-file>]>
 S<[B<--source>|B<-r> I<source-file>]>
-S<[B<--no-overwrite>]>
-S<[B<--daemon> I<address>]>
+S<[B<--no-overwrite>|B<-O>]>
+S<[B<--daemon>|B<-d> I<address>]>
 S<[B<DS:>I<ds-name>[B<=>I<mapped-ds-name>[B<[>I<source-index>B<]>]]B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
@@ -49,11 +49,11 @@ into the B<RRD>.
 A scaling factor may be present as a suffix to the integer; see
 L<"STEP, HEARTBEAT, and Rows As Durations">.
 
-=head2 B<--no-overwrite>
+=head2 B<--no-overwrite>|B<-O>
 
 Do not clobber an existing file of the same name.
 
-=head2 B<--daemon> I<address>
+=head2 B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
 the B<-l> option in the L<rrdcached> manual.

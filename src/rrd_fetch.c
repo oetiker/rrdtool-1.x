@@ -83,7 +83,7 @@ int rrd_fetch(
         {"resolution", required_argument, 0, 'r'},
         {"start", required_argument, 0, 's'},
         {"end", required_argument, 0, 'e'},
-        {"align-start", optional_argument, 0, 'a'},
+        {"align-start", no_argument, 0, 'a'},
         {"daemon", required_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
