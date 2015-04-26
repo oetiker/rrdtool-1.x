@@ -10,6 +10,7 @@
 #  undef _BSD_SOURCE
 # endif
 # define _XOPEN_SOURCE 600
+# define _DEFAULT_SOURCE 1
 # define _BSD_SOURCE 1
 # include <features.h>
 #endif
