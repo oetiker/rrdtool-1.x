@@ -60,7 +60,7 @@ int rrd_flushcached (int argc, char **argv)
                 break;
 
             default:
-                rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+                rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                         argv[0]);
                 return (-1);
         }
@@ -68,7 +68,7 @@ int rrd_flushcached (int argc, char **argv)
 
     if ((argc - optind) < 1)
     {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file> [<file> ...]", argv[0]);
+        rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file> [<file> ...]", argv[0]);
         return (-1);
     }
 

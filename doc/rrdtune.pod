@@ -10,17 +10,18 @@ S<[B<--minimum>|B<-i> I<ds-name>:I<min>]>
 S<[B<--maximum>|B<-a> I<ds-name>:I<max>]>
 S<[B<--data-source-type>|B<-d> I<ds-name>:I<DST>]>
 S<[B<--data-source-rename>|B<-r> I<old-name>:I<new-name>]>
-S<[B<--deltapos> I<scale-value>]>
-S<[B<--deltaneg> I<scale-value>]>
-S<[B<--failure-threshold> I<failure-threshold>]>
-S<[B<--window-length> I<window-length>]>
-S<[B<--alpha> I<adaption-parameter>]>
-S<[B<--beta> I<adaption-parameter>]>
-S<[B<--gamma> I<adaption-parameter>]>
-S<[B<--gamma-deviation> I<adaption-parameter>]>
-S<[B<--smoothing-window> I<fraction-of-season>]>
-S<[B<--smoothing-window-deviation> I<fraction-of-season>]>
-S<[B<--aberrant-reset> I<ds-name>]>
+S<[B<--deltapos>|B<-p> I<scale-value>]>
+S<[B<--deltaneg>|B<-n> I<scale-value>]>
+S<[B<--failure-threshold>|B<-f> I<failure-threshold>]>
+S<[B<--window-length>|B<-w> I<window-length>]>
+S<[B<--alpha>|B<-x> I<adaption-parameter>]>
+S<[B<--beta>|B<-y> I<adaption-parameter>]>
+S<[B<--gamma>|B<-z> I<adaption-parameter>]>
+S<[B<--gamma-deviation>|B<-v> I<adaption-parameter>]>
+S<[B<--smoothing-window>|B<-s> I<fraction-of-season>]>
+S<[B<--smoothing-window-deviation>|B<-S> I<fraction-of-season>]>
+S<[B<--aberrant-reset>|B<-b> I<ds-name>]>
+S<[B<--step>|B<-t> I<newstep>]>
 S<[B<--daemon>|B<-D> I<address>]>
 S<[B<DEL:>I<ds-name>]>
 S<[B<DS:>I<ds-spec>]>
@@ -82,7 +83,7 @@ alter the type B<DST> of a data source.
 
 rename a data source.
 
-=item S<B<--deltapos> I<scale-value>>
+=item S<B<--deltapos>|B<-p> I<scale-value>>
 
 Alter the deviation scaling factor for the upper bound of the
 confidence band used internally to calculate violations for the
@@ -92,14 +93,14 @@ CDEF argument to generate a graph with confidence bounds. The graph
 scale factor need not to agree with the value used internally by the
 FAILURES B<RRA>.
 
-=item S<B<--deltaneg> I<scale-value>>
+=item S<B<--deltaneg>|B<-n> I<scale-value>>
 
 Alter the deviation scaling factor for the lower bound of the confidence band
 used internally to calculate violations for the FAILURES B<RRA>. The default
 value is 2. As with B<--deltapos>, this argument is unrelated to the scale
 factor chosen when graphing confidence bounds.
 
-=item S<B<--failure-threshold> I<failure-threshold>>
+=item S<B<--failure-threshold>|B<-f> I<failure-threshold>>
 
 Alter the number of confidence bound violations that constitute a failure for
 purposes of the FAILURES B<RRA>. This must be an integer less than or equal to
@@ -107,44 +108,44 @@ the window length of the FAILURES B<RRA>. This restriction is not verified by
 the tune option, so one can reset failure-threshold and window-length
 simultaneously. Setting this option will reset the count of violations to 0.
 
-=item S<B<--window-length> I<window-length>>
+=item S<B<--window-length>|B<-w> I<window-length>>
 
 Alter the number of time points in the temporal window for determining
 failures. This must be an integer greater than or equal to the window
 length of the FAILURES B<RRA> and less than or equal to 28. Setting
 this option will reset the count of violations to 0.
 
-=item S<B<--alpha> I<adaption-parameter>>
+=item S<B<--alpha>|B<-x> I<adaption-parameter>>
 
 Alter the intercept adaptation parameter for the Holt-Winters
 forecasting algorithm. This parameter must be between 0 and 1.
 
-=item S<B<--beta> I<adaption-parameter>>
+=item S<B<--beta>|B<-y> I<adaption-parameter>>
 
 Alter the slope adaptation parameter for the Holt-Winters forecasting
 algorithm. This parameter must be between 0 and 1.
 
-=item S<B<--gamma> I<adaption-parameter>>
+=item S<B<--gamma>|B<-z> I<adaption-parameter>>
 
 Alter the seasonal coefficient adaptation parameter for the SEASONAL
 B<RRA>. This parameter must be between 0 and 1.
 
-=item S<B<--gamma-deviation> I<adaption-parameter>>
+=item S<B<--gamma-deviation>|B<-v> I<adaption-parameter>>
 
 Alter the seasonal deviation adaptation parameter for the DEVSEASONAL
 B<RRA>. This parameter must be between 0 and 1.
 
-=item S<B<--smoothing-window> I<fraction-of-season>>
+=item S<B<--smoothing-window>|B<-s> I<fraction-of-season>>
 
 Alter the size of the smoothing window for the SEASONAL B<RRA>. This must
 be between 0 and 1.
 
-=item S<B<--smoothing-window-deviation> I<fraction-of-season>>
+=item S<B<--smoothing-window-deviation>|B<-S> I<fraction-of-season>>
 
 Alter the size of the smoothing window for the DEVSEASONAL B<RRA>. This must
 be between 0 and 1.
 
-=item S<B<--aberrant-reset> I<ds-name>>
+=item S<B<--aberrant-reset>|B<-b> I<ds-name>>
 
 This option causes the aberrant behavior detection algorithm to reset
 for the specified data source; that is, forget all it is has learnt so far.
@@ -171,6 +172,12 @@ data source.
 
 Use of this tuning option is advised when the behavior of the data source
 time series changes in a drastic and permanent manner.
+
+=item B<--step>|B<-t> I<newstep>
+
+Changes the step size of the RRD to newstep.
+
+TODO: add proper documentation
 
 =item B<--daemon>|B<-D> I<address>
 

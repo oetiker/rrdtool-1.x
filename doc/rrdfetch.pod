@@ -8,7 +8,8 @@ B<rrdtool> B<fetch> I<filename> I<CF>
 S<[B<--resolution>|B<-r> I<resolution>]>
 S<[B<--start>|B<-s> I<start>]>
 S<[B<--end>|B<-e> I<end>]>
-S<[B<--daemon> I<address>]>
+S<[B<--align-start>|B<-a>]>
+S<[B<--daemon>|B<-d> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -60,7 +61,7 @@ the need for external calculations described in L<RESOLUTION
 INTERVAL>, though if a specific RRA is desired this will not ensure
 the start and end fall within its bounds.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return

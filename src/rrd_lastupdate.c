@@ -49,7 +49,7 @@ int rrd_lastupdate (int argc, char **argv)
             break;
 
         default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+            rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                     argv[0]);
             return (-1);
             break;
@@ -57,7 +57,7 @@ int rrd_lastupdate (int argc, char **argv)
     }                   /* while (42) */
 
     if ((argc - optind) != 1) {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+        rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                 argv[0]);
         return (-1);
     }
