@@ -1,3 +1,7 @@
+Bug Fixes
+---------
+* Brought commmand-line options and documentation back into sync.
+
 RRDtool 1.5.2 - 2015-04-23
 ==========================
 Bug Fixes
