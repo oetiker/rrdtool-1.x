@@ -148,7 +148,7 @@ These vars represent the compiled-in values.
 
 =head1 EXAMPLE 1
 
-The example below creates a web pages with a single RRD graph.
+The example below creates a web page with a single RRD graph.
 
  #!/usr/local/bin/rrdcgi
  <HTML>
