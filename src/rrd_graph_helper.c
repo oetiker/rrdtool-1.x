@@ -253,6 +253,9 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	} else if ((poscnt>0)&&(strcmp(field,"strftime")==0)) {
 	  key="strftime";
 	  value="1";
+	} else if ((poscnt>0)&&(strcmp(field,"dashes")==0)) {
+	  key="dashes";
+	  value="5,5";
         } else if ((poscnt>0)&&(strcmp(field,"valstrftime")==0)) {
           key="vformatter";
           value="timestamp";
@@ -619,6 +622,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     char* dashes=getKeyValueArgument("dashes",1,pa);
     /* if we got dashes */
     if (dashes) {
+      gdp->dash = 1;
       gdp->offset = 0;
       /* count the , in  dashes */
       int cnt=0;for(char*t=dashes;(*t)&&(t=strchr(t,','));t++,cnt++) {;}
@@ -647,7 +651,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     char* dashoffset=getKeyValueArgument("dash-offset",1,pa);
     if (dashoffset) {
       char* x;
-      if (getDouble(dashes,&gdp->offset,&x)) {
+      if (getDouble(dashoffset,&gdp->offset,&x)) {
 	rrd_set_error("Could not parse dash-offset: %s",dashoffset); return NULL; }
     }
   }
