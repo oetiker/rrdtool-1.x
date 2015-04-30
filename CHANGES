@@ -1,6 +1,9 @@
+RRDtool 1.5.3 - 2015-05-30
+==========================
 Bug Fixes
 ---------
 * Brought commmand-line options and documentation back into sync.
+* Make LINE dashes option work again
 
 RRDtool 1.5.2 - 2015-04-23
 ==========================
