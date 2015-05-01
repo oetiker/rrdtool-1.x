@@ -5,7 +5,7 @@ rrdflushcached - Flush the values for a spcific RRD file from memory.
 =head1 SYNOPSIS
 
 B<rrdtool> B<flushcached>
-S<[B<--daemon> I<address>]>
+S<[B<--daemon>|B<-d> I<address>]>
 I<filename> [I<filename> ...]
 
 =head1 DESCRIPTION
@@ -22,7 +22,7 @@ written to disk.
 
 The name(s) of the B<RRD> file(s) that are to be written to disk.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If not specified, the
 RRDCACHED_ADDRESS environment variable must be set (see below).  For a

@@ -1412,7 +1412,7 @@ int rrd_restore(
 
         default:
             rrd_set_error("usage rrdtool %s [--range-check|-r] "
-                          "[--force-overwrite/-f]  file.xml file.rrd",
+                          "[--force-overwrite|-f]  file.xml file.rrd",
                           argv[0]);
             return (-1);
             break;
@@ -1420,8 +1420,8 @@ int rrd_restore(
     }                   /* while (42) */
 
     if ((argc - optind) != 2) {
-        rrd_set_error("usage rrdtool %s [--range-check/-r] "
-                      "[--force-overwrite/-f] file.xml file.rrd", argv[0]);
+        rrd_set_error("usage rrdtool %s [--range-check|-r] "
+                      "[--force-overwrite|-f] file.xml file.rrd", argv[0]);
         return (-1);
     }
 

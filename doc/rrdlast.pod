@@ -5,7 +5,7 @@ rrdlast - Return the date of the last data sample in an RRD
 =head1 SYNOPSIS
 
 B<rrdtool> B<last> I<filename>
-S<[B<--daemon> I<address>]>
+S<[B<--daemon>|B<-d> I<address>]>
 
 =head1 DESCRIPTION
 
@@ -18,7 +18,7 @@ update of the RRD.
 
 The name of the B<RRD> that contains the data.
 
-=item B<--daemon> I<address>
+=item B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return
@@ -26,13 +26,6 @@ fresh data even if the daemon is configured to cache values for a long time.
 For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool last --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
-
-=item B<--noflush> 
-
-If the L<rrdcached> daemon is being used, then omit the flush normally 
-send before returning the last update.  If you add this option, you get the 
-last time the file on disk was updated; if you have relatively low cache times
-and are calling this frequently it will preserve the caching benefit
 
 =back
 

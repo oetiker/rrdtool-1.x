@@ -45,7 +45,7 @@ time_t rrd_last(
             break;
 
         default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+            rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                     argv[0]);
             return (-1);
             break;
@@ -53,7 +53,7 @@ time_t rrd_last(
     }                   /* while (42) */
 
     if ((argc - optind) != 1) {
-        rrd_set_error ("Usage: rrdtool %s [--daemon <addr>] <file>",
+        rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                 argv[0]);
         return (-1);
     }

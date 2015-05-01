@@ -64,17 +64,23 @@ void PrintUsage(
         N_("* create - create a new RRD\n\n"
            "\trrdtool create filename [--start|-b start time]\n"
            "\t\t[--step|-s step]\n"
+           "\t\t[--template|-t template-file]\n"
+           "\t\t[--source|-r source-file]\n"
            "\t\t[--no-overwrite|-O]\n"
+           "\t\t[--daemon|-d address]\n"
            "\t\t[DS:ds-name:DST:dst arguments]\n"
            "\t\t[RRA:CF:cf arguments]\n");
 
     const char *help_dump =
         N_("* dump - dump an RRD to XML\n\n"
-           "\trrdtool dump filename.rrd >filename.xml\n");
+           "\trrdtool dump [--header|-h {none,xsd,dtd}]\n"
+           "\t\t[--no-header|-n]\n"
+           "\t\t[--daemon|-d address]\n"
+           "\t\tfile.rrd [file.xml]");
 
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
-           "\trrdtool info filename.rrd\n");
+           "\trrdtool info [--daemon|-d <addr> [--noflush|-F]] filename.rrd\n");
 
     const char *help_restore =
         N_("* restore - restore an RRD file from its XML form\n\n"
@@ -82,22 +88,25 @@ void PrintUsage(
 
     const char *help_last =
         N_("* last - show last update time for RRD\n\n"
-           "\trrdtool last filename.rrd\n");
+           "\trrdtool last filename.rrd\n"
+           "\t\t[--daemon|-d address]\n");
 
     const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
-           "  each DS in an RRD\n\n" "\trrdtool lastupdate filename.rrd\n");
+           "  each DS in an RRD\n\n"
+           "\trrdtool lastupdate filename.rrd\n"
+           "\t\t[--daemon|-d address]\n");
 
     const char *help_first =
         N_("* first - show first update time for RRA within an RRD\n\n"
-           "\trrdtool first filename.rrd [--rraindex number]\n");
+           "\trrdtool first filename.rrd [--rraindex number] [--daemon|-d address]\n");
 
     const char *help_update =
         N_("* update - update an RRD\n\n"
            "\trrdtool update filename\n"
            "\t\t[--template|-t ds-name:ds-name:...]\n"
-           "\t\t[--skip-past-updates]\n"
-	   "\t\t[--daemon <address>]\n"
+           "\t\t[--skip-past-updates|-s]\n"
+	   "\t\t[--daemon|-d <address>]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n");
@@ -107,7 +116,7 @@ void PrintUsage(
            "\treturns information about values, RRAs, and datasources updated\n\n"
            "\trrdtool updatev filename\n"
            "\t\t[--template|-t ds-name:ds-name:...]\n"
-           "\t\t[--skip-past-updates]\n"
+           "\t\t[--skip-past-updates|-s]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n");
@@ -117,12 +126,13 @@ void PrintUsage(
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
            "\t\t[-s|--start start] [-e|--end end]\n"
-	   "\t\t[--daemon <address>]\n");
+           "\t\t[-a|--align-start]\n"
+           "\t\t[-d|--daemon <address>]\n");
 
     const char *help_flushcached =
         N_("* flushcached - flush cached data out to an RRD file\n\n"
            "\trrdtool flushcached filename.rrd\n"
-	   "\t\t[--daemon <address>]\n");
+	   "\t\t[-d|--daemon <address>]\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -144,7 +154,7 @@ void PrintUsage(
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
-           "\t\t[-g|--no-legend] [--daemon <address>]\n"
+           "\t\t[-g|--no-legend] [-d|--daemon <address>]\n"
            "\t\t[-F|--force-rules-legend]\n" "\t\t[-j|--only-graph]\n");
     const char *help_graph2 =
         N_("\t\t[-n|--font FONTTAG:size:font]\n"
@@ -191,17 +201,25 @@ void PrintUsage(
            "\t\t[--data-source-type|-d ds-name:DST]\n"
            "\t\t[--data-source-rename|-r old-name:new-name]\n"
            "\t\t[--minimum|-i ds-name:min] [--maximum|-a ds-name:max]\n"
-           "\t\t[--deltapos scale-value] [--deltaneg scale-value]\n"
-           "\t\t[--failure-threshold integer]\n"
-           "\t\t[--window-length integer]\n"
-           "\t\t[--alpha adaptation-parameter]\n");
+           "\t\t[--deltapos|-p scale-value] [--deltaneg|-n scale-value]\n"
+           "\t\t[--failure-threshold|-f integer]\n"
+           "\t\t[--window-length|-w integer]\n"
+           "\t\t[--alpha|-x adaptation-parameter]\n");
     const char *help_tune2 =
-        N_("\t\t[--beta adaptation-parameter]\n"
-           "\t\t[--gamma adaptation-parameter]\n"
-           "\t\t[--gamma-deviation adaptation-parameter]\n"
-           "\t\t[--aberrant-reset ds-name]\n");
+        N_("\t\t[--beta|-y adaptation-parameter]\n"
+           "\t\t[--gamma|-z adaptation-parameter]\n"
+           "\t\t[--gamma-deviation|-v adaptation-parameter]\n"
+           "\t\t[--smoothing-window|-s fraction-of-season]\n"
+           "\t\t[--smoothing-window-deviation|-S fraction-of-season]\n"
+           "\t\t[--aberrant-reset|-b ds-name]\n");
     const char *help_tune3 = 
-	N_("\t\t???");  // FIXME
+        N_("\t\t[--step|-t newstep]\n"
+           "\t\t[--daemon|-D address]\n"
+           "\t\t[DEL:ds-name]\n"
+           "\t\t[DS:ds-spec]\n"
+           "\t\t[DELRRA:index]\n"
+           "\t\t[RRA:rra-spec]\n"
+           "\t\t[RRA#index:[+-=]number]\n");
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
@@ -210,7 +228,9 @@ void PrintUsage(
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
-           "\t\t[--enumds] [--json]\n" "\t\t[DEF:vname=rrd:ds-name:CF]\n"
+           "\t\t[--enumds] [--json]\n"
+           "\t\t[-d|--daemon address]\n"
+           "\t\t[DEF:vname=rrd:ds-name:CF]\n"
            "\t\t[CDEF:vname=rpn-expression]\n"
            "\t\t[XPORT:vname:legend]\n");
     const char *help_quit =
