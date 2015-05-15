@@ -456,7 +456,8 @@ int parseRRA(const char *def,
     int       cf_id = -1;
     int       token_min = 4;
     const char *parsetime_error = NULL;
-
+    double    tmpdbl;
+    
     memset(rra_def, 0, sizeof(rra_def_t));
 
     argvcopy = strdup(def);
@@ -531,11 +532,12 @@ int parseRRA(const char *def,
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 		break;
 	    default:
-		rra_def->par[RRA_cdp_xff_val].u_val = atof(token);
-		if (rra_def->par[RRA_cdp_xff_val].u_val < 0.0
-		    || rra_def->par[RRA_cdp_xff_val].u_val >= 1.0)
-		    rrd_set_error
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl < 0.0 || tmpdbl >= 1.0 ){
+	            rrd_set_error
 			("Invalid xff: must be between 0 and 1");
+                }
+		rra_def->par[RRA_cdp_xff_val].u_val = tmpdbl;
 		break;
 	    }
 	    break;
@@ -544,18 +546,21 @@ int parseRRA(const char *def,
 		    (rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_alpha].
-		    u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl <= 0.0 || tmpdbl >= 1.0){
 		    rrd_set_error
 			("Invalid alpha: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_alpha].u_val = tmpdbl;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
-		rra_def->par[RRA_seasonal_gamma].u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl <= 0.0 || tmpdbl >= 1.0){
 		    rrd_set_error
 			("Invalid gamma: must be between 0 and 1");
+                }	        
+      		rra_def->par[RRA_seasonal_gamma].u_val = tmpdbl;
 		rra_def->par[RRA_seasonal_smooth_idx].u_cnt =
 		    hash % rra_def->row_cnt;
 		break;
@@ -584,10 +589,12 @@ int parseRRA(const char *def,
 	    switch (cf_conv(rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_beta].u_val = atof(token);
-		if (atof(token) < 0.0 || atof(token) > 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl < 0.0 || tmpdbl > 1.0){
 		    rrd_set_error
 			("Invalid beta: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_beta].u_val = tmpdbl;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
@@ -2297,7 +2304,8 @@ static int cdp_match(const rra_def_t *tofill, const rra_def_t *maybe) {
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mappings, int mappings_cnt) {
     int rc = -1;
     long cdp_rra_index = -1;
-    
+    int rra_added_temporarily = 0;
+     
     if (sources == NULL) {
         // we are done if there is nothing to copy data from
         rc = 0;
@@ -2307,7 +2315,6 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
     unsigned long rra_index, ds_index;
     unsigned long total_rows = 0;
     
-    int rra_added_temporarily = 0;
     cdp_rra_index = rra_for_cdp_prefilling(rrd, &rra_added_temporarily);
 
     if (rrd_test_error()) goto done;
