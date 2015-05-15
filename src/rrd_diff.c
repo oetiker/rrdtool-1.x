@@ -8,6 +8,7 @@
 
 #include <ctype.h>
 #include "rrd_tool.h"
+#include "rrd_strtodbl.h"
 
 double rrd_diff(
     char *a,
@@ -83,10 +84,17 @@ double rrd_diff(
                 c = 0;
             }
         }
-        result = -atof(res);
-    } else
-        result = atof(res);
-
+        if (rrd_strtodbl(res, NULL, &result, 'expected a number') != 2){
+            result = DNAN;
+        }
+        else {
+            result = -result;
+        }
+    } else {
+        if (rrd_strtodbl(res, NULL, &result, 'expected a number') != 2){
+            result = DNAN;
+        }
+    }
     if (a_neg + b_neg == 2) /* both are negatives, reverse sign */
         result = -result;
 

@@ -531,11 +531,13 @@ int parseRRA(const char *def,
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 		break;
 	    default:
-		rra_def->par[RRA_cdp_xff_val].u_val = atof(token);
-		if (rra_def->par[RRA_cdp_xff_val].u_val < 0.0
-		    || rra_def->par[RRA_cdp_xff_val].u_val >= 1.0)
-		    rrd_set_error
+	        double xff;
+	        if (rrd_strtodbl(token, NULL, &xff, NULL) != 2
+	            || xff < 0.0 || xff >= 1.0 ){
+	            rrd_set_error
 			("Invalid xff: must be between 0 and 1");
+                }
+		rra_def->par[RRA_cdp_xff_val].u_val = xff;
 		break;
 	    }
 	    break;
@@ -544,18 +546,23 @@ int parseRRA(const char *def,
 		    (rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_alpha].
-		    u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        double hw_alpha;
+	        if (rrd_strtodbl(token, NULL, &hw_alpha, NULL) != 2
+	            || hw_alpha <= 0.0 || hw_alpha >= 1.0){
 		    rrd_set_error
 			("Invalid alpha: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_alpha].u_val = hw_alpha;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
-		rra_def->par[RRA_seasonal_gamma].u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        double gamma;
+	        if (rrd_strtodbl(token, NULL, &gamma, NULL) != 2
+	            || gamma <= 0.0 || gamma >= 1.0){
 		    rrd_set_error
 			("Invalid gamma: must be between 0 and 1");
+                }	        
+      		rra_def->par[RRA_seasonal_gamma].u_val = gamma;
 		rra_def->par[RRA_seasonal_smooth_idx].u_cnt =
 		    hash % rra_def->row_cnt;
 		break;
@@ -584,10 +591,13 @@ int parseRRA(const char *def,
 	    switch (cf_conv(rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_beta].u_val = atof(token);
-		if (atof(token) < 0.0 || atof(token) > 1.0)
+	        double beta;
+	        if (rrd_strtodbl(token, NULL, &beta, NULL) != 2
+	            || beta < 0.0 || beta > 1.0){
 		    rrd_set_error
 			("Invalid beta: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_beta].u_val = beta;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
