@@ -8,7 +8,7 @@
 
 #include <ctype.h>
 #include "rrd_tool.h"
-#include "rrd_strtodbl.h"
+#include "rrd_strtod.h"
 
 double rrd_diff(
     char *a,

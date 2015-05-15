@@ -2304,7 +2304,8 @@ static int cdp_match(const rra_def_t *tofill, const rra_def_t *maybe) {
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mappings, int mappings_cnt) {
     int rc = -1;
     long cdp_rra_index = -1;
-    
+    int rra_added_temporarily = 0;
+     
     if (sources == NULL) {
         // we are done if there is nothing to copy data from
         rc = 0;
@@ -2314,7 +2315,6 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
     unsigned long rra_index, ds_index;
     unsigned long total_rows = 0;
     
-    int rra_added_temporarily = 0;
     cdp_rra_index = rra_for_cdp_prefilling(rrd, &rra_added_temporarily);
 
     if (rrd_test_error()) goto done;
