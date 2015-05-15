@@ -85,6 +85,7 @@ endif
 
 if BUILD_LIBRADOS
 UPD_C_FILES += rrd_rados.c
+noinst_HEADERS += rrd_rados.h
 endif
 
 if BUILD_GETOPT
