@@ -207,7 +207,7 @@ if test "x$GCC" = "xyes"; then
   done
 fi
 
-
+AC_TYPE_LONG_LONG_INT
 
 AC_SUBST(RRD_DEFAULT_FONT)
 
