@@ -345,7 +345,7 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
 		out, lookup_DS, NULL, &require_version);
 
 	// check if there is a name clash with an existing DS
-	if (lookup_DS(&out, added.ds_nam) >= 0) {
+	if (lookup_DS(out, added.ds_nam) >= 0) {
 	    rrd_set_error("Duplicate DS name: %s", added.ds_nam);
 	    goto done;
 	}
