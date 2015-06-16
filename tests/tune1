@@ -22,6 +22,7 @@ is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached)
 
 
 cp ${BUILD}org.rrd ${BUILD}a.rrd
+$RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:U
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:-100
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}a-mod1.dump
 report "tune heartbeat/minimum" 

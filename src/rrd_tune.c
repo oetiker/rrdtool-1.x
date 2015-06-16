@@ -208,45 +208,53 @@ int rrd_tune(
             break;
 
         case 'i':
-            matches = sscanf(optarg, DS_NAM_FMT ":%40[0-9.e+-]", ds_nam, double_str);
-            if( matches >= 1 ) {
-                strtod_ret_val = rrd_strtodbl( double_str, NULL, &min, NULL );
+            matches = sscanf(optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
+            if ( matches == 2 ) {
+                if (strcmp(double_str,"U") == 0){
+                    min = DNAN;
+                }
+                else {
+                    strtod_ret_val = rrd_strtodbl( double_str, NULL, &min, NULL );
+                    if ((strtod_ret_val != 2)) {
+                        rrd_set_error("invalid arguments for minimum ds value");
+                        goto done;
+                    }
+                }
             }
-
-            if ((matches < 1) || (strtod_ret_val != 2)) {
+            else {
                 rrd_set_error("invalid arguments for minimum ds value");
-		goto done;
-            }
-
+                goto done;
+            } 
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
-
-            if (matches == 1)
-                min = DNAN;
             rrd.ds_def[ds].par[DS_min_val].u_val = min;
             break;
 
         case 'a':
-            matches = sscanf(optarg, DS_NAM_FMT ":%40[0-9.e+-]", ds_nam, double_str);
-            if( matches >= 1 ) {
-                strtod_ret_val = rrd_strtodbl( double_str, NULL, &max, NULL );
+            matches = sscanf(optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
+            if ( matches == 2 ) {
+                if (strcmp(double_str,"U") == 0){
+                    max = DNAN;
+                }
+                else {
+                    strtod_ret_val = rrd_strtodbl( double_str, NULL, &max, NULL );
+                    if ((strtod_ret_val != 2)) {
+                        rrd_set_error("invalid arguments for maximum ds value");
+                        goto done;
+                    }
+                }
             }
-
-            if ((matches < 1 ) || (strtod_ret_val != 2)) {
+            else {
                 rrd_set_error("invalid arguments for maximum ds value");
-		goto done;
-            }
-
+                goto done;
+            } 
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
-
-            if (matches == 1)
-                max = DNAN;
             rrd.ds_def[ds].par[DS_max_val].u_val = max;
             break;
-
+            
         case 'd':
             if ((matches =
                  sscanf(optarg, DS_NAM_FMT ":" DST_FMT, ds_nam, dst)) != 2) {
