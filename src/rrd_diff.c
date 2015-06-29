@@ -84,14 +84,14 @@ double rrd_diff(
                 c = 0;
             }
         }
-        if (rrd_strtodbl(res, NULL, &result, 'expected a number') != 2){
+        if (rrd_strtodbl(res, NULL, &result, "expected a number") != 2){
             result = DNAN;
         }
         else {
             result = -result;
         }
     } else {
-        if (rrd_strtodbl(res, NULL, &result, 'expected a number') != 2){
+        if (rrd_strtodbl(res, NULL, &result, "expected a number") != 2){
             result = DNAN;
         }
     }
