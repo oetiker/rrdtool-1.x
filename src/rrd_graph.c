@@ -5049,12 +5049,15 @@ void rrd_graph_options(
             if(sscanf(optarg,
                       "%40[0-9.e+-]:%40[0-9.e+-]",
                       double_str,
-                      double_str2 ) != 2) {
+                      double_str2 ) == 2) {
                 if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2
                      || rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), NULL) != 2 ){
                     rrd_set_error("expected grid-dash format float:float");
                     return;
                 }
+            } else {
+                    rrd_set_error("invalid grid-dash format");
+                    return;
             }
             break;
         case 1009: /* enable dynamic labels */
