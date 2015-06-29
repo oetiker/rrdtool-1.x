@@ -55,6 +55,7 @@ if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
 	rrd_graph_helper.c	\
 	rrd_xport.c	\
+	optparse.c \
 	rrd_gfx.c \
 	pngsize.c
 endif
@@ -71,7 +72,7 @@ noinst_HEADERS = \
 	rrd_snprintf.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
-	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
+	rrd_format.h rrd_tool.h rrd_xport.h optparse.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	rrd_restore.h rrd_create.h \
 	fnv.h rrd_graph.h \

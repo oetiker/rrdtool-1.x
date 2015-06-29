@@ -4577,7 +4577,7 @@ rrd_info_t *rrd_graph_v(
         im.graphfile[0] = '\0';
     }
 
-    rrd_graph_script(argc, argv, &im, 1);
+    rrd_graph_script(argc, argv, &im, optind+1);
 
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
