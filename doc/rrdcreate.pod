@@ -723,7 +723,7 @@ number of arguments could be changed.
 =head1 EXAMPLE 3
 
  rrdtool create proxy.rrd --step 300 \
-   DS:Total:DERIVE:1800:0:U  \
+   DS:Requests:DERIVE:1800:0:U  \
    DS:Duration:DERIVE:1800:0:U  \
    DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \
    RRA:AVERAGE:0.5:1:2016
