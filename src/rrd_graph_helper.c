@@ -1487,7 +1487,7 @@ void rrd_graph_script(
     initParsedArguments(&pa);
 
     /* loop arguments */
-    for (i = optind + optno; i < argc; i++) {
+    for (i = optno; i < argc; i++) {
 	/* release parsed args - avoiding late cleanups*/
 	freeParsedArguments(&pa);
 	/* processed parsed args */
