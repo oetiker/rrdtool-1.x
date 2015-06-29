@@ -1,11 +1,11 @@
-/*  
+/*
  *  rrd_parsetime.c - parse time for at(1)
  *  Copyright (C) 1993, 1994  Thomas Koenig
  *
  *  modifications for English-language times
  *  Copyright (C) 1993  David Parsons
  *
- *  A lot of modifications and extensions 
+ *  A lot of modifications and extensions
  *  (including the new syntax being useful for RRDB)
  *  Copyright (C) 1999  Oleg Cherevko (aka Olwi Deer)
  *
@@ -37,7 +37,7 @@
 
 /*
  * The BNF-like specification of the time syntax parsed is below:
- *                                                               
+ *
  * As usual, [ X ] means that X is optional, { X } means that X may
  * be either omitted or specified as many times as needed,
  * alternatives are separated by |, brackets are used for grouping.
@@ -45,7 +45,7 @@
  *
  * TIME-SPECIFICATION ::= TIME-REFERENCE [ OFFSET-SPEC ] |
  *			                   OFFSET-SPEC   |
- *			   ( START | END ) OFFSET-SPEC 
+ *			   ( START | END ) OFFSET-SPEC
  *
  * TIME-REFERENCE ::= NOW | TIME-OF-DAY-SPEC [ DAY-SPEC-1 ] |
  *                        [ TIME-OF-DAY-SPEC ] DAY-SPEC-2
@@ -113,7 +113,7 @@
 /* System Headers */
 
 /* Local headers */
-
+#include "mutex.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -295,7 +295,7 @@ static void EnsureMemFree(
 
 /*
  * ve() and e() are used to set the return error,
- * the most appropriate use for these is inside panic(...) 
+ * the most appropriate use for these is inside panic(...)
  */
 #define MAX_ERR_MSG_LEN	1024
 static char errmsg[MAX_ERR_MSG_LEN];
@@ -461,7 +461,7 @@ static int token(
 }                       /* token */
 
 
-/* 
+/*
  * expect2() gets a token and complains if it's not the token we want
  */
 static char *expect2(
@@ -679,7 +679,7 @@ static char *assign_date(
 }                       /* assign_date */
 
 
-/* 
+/*
  * day() picks apart DAY-SPEC-[12]
  */
 static char *day(
@@ -837,8 +837,13 @@ char     *rrd_parsetime(
     const char *tspec,
     rrd_time_value_t * ptv)
 {
+    static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
     time_t    now = time(NULL);
     int       hr = 0;
+
+    /* yes this code is non re-entrant ... so lets make sure we do not run
+       in twice */
+    mutex_lock(&parsetime_mutex);
 
     /* this MUST be initialized to zero for midnight/noon/teatime */
 
@@ -990,6 +995,9 @@ char     *rrd_parsetime(
             panic(e("the specified time is incorrect (out of range?)"));
         }
     EnsureMemFree();
+    /* ok done ... drop the mutex lock */
+    mutex_unlock(&parsetime_mutex);
+
     return TIME_OK;
 }                       /* rrd_parsetime */
 
