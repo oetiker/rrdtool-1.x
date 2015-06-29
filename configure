@@ -13207,6 +13207,99 @@ $as_echo "$ac_res" >&6; }
 fi
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for long long int" >&5
+$as_echo_n "checking for long long int... " >&6; }
+if ${ac_cv_type_long_long_int+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+  /* Test preprocessor.  */
+      #if ! (-9223372036854775807LL < 0 && 0 < 9223372036854775807ll)
+        error in preprocessor;
+      #endif
+      #if ! (18446744073709551615ULL <= -1ull)
+        error in preprocessor;
+      #endif
+      /* Test literals.  */
+      long long int ll = 9223372036854775807ll;
+      long long int nll = -9223372036854775807LL;
+      unsigned long long int ull = 18446744073709551615ULL;
+      /* Test constant expressions.   */
+      typedef int a[((-9223372036854775807LL < 0 && 0 < 9223372036854775807ll)
+		     ? 1 : -1)];
+      typedef int b[(18446744073709551615ULL <= (unsigned long long int) -1
+		     ? 1 : -1)];
+      int i = 63;
+int
+main ()
+{
+/* Test availability of runtime routines for shift and division.  */
+      long long int llmax = 9223372036854775807ll;
+      unsigned long long int ullmax = 18446744073709551615ull;
+      return ((ll << 63) | (ll >> 63) | (ll < i) | (ll > i)
+	      | (llmax / ll) | (llmax % ll)
+	      | (ull << 63) | (ull >> 63) | (ull << i) | (ull >> i)
+	      | (ullmax / ull) | (ullmax % ull));
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  			if test "$cross_compiling" = yes; then :
+  ac_cv_type_long_long_int=yes
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <limits.h>
+	       #ifndef LLONG_MAX
+	       # define HALF \
+			(1LL << (sizeof (long long int) * CHAR_BIT - 2))
+	       # define LLONG_MAX (HALF - 1 + HALF)
+	       #endif
+int
+main ()
+{
+long long int n = 1;
+	       int i;
+	       for (i = 0; ; i++)
+		 {
+		   long long int m = n << i;
+		   if (m >> i != n)
+		     return 1;
+		   if (LLONG_MAX / 2 < m)
+		     break;
+		 }
+	       return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  ac_cv_type_long_long_int=yes
+else
+  ac_cv_type_long_long_int=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+else
+  ac_cv_type_long_long_int=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_type_long_long_int" >&5
+$as_echo "$ac_cv_type_long_long_int" >&6; }
+  if test $ac_cv_type_long_long_int = yes; then
+
+$as_echo "#define HAVE_LONG_LONG_INT 1" >>confdefs.h
+
+  fi
+
 
 
 

@@ -5,6 +5,8 @@ Bug Fixes
 * parse floating point numbers according to C locale in rrdtool create
   arguments, regardles of the systems locale setting.
 * include missing rrd_rados.h into distribution archive
+* rrd_parsetime now uses a mutex lock to become  threadsafe
+* rrd_xport is now threadsafe
 
 RRDtool 1.5.3 - 2015-04-30
 ==========================
