@@ -11,6 +11,7 @@
 #include "rrd_xport.h"
 #include "unused.h"
 #include "rrd_client.h"
+#include "optparse.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
@@ -58,55 +59,49 @@ int rrd_xport(
     time_t    start_tmp = 0, end_tmp = 0;
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
+    struct optparse options;
+    optparse_init(&options, argv);
 
-    struct option long_options[] = {
-        {"start", required_argument, 0, 's'},
-        {"end", required_argument, 0, 'e'},
-        {"maxrows", required_argument, 0, 'm'},
-        {"step", required_argument, 0, 261},
-        {"enumds", no_argument, 0, 262},    /* these are handled in the frontend ... */
-        {"json", no_argument, 0, 263},    /* these are handled in the frontend ... */
-        {"daemon", required_argument, 0, 'd'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"start",  's', OPTPARSE_REQUIRED},
+        {"end",    'e', OPTPARSE_REQUIRED},
+        {"maxrows",'m', OPTPARSE_REQUIRED},
+        {"step",   261, OPTPARSE_REQUIRED},
+        {"enumds", 262, OPTPARSE_NONE},     /* these are handled in the frontend ... */
+        {"json",   263, OPTPARSE_NONE},    /* these are handled in the frontend ... */
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0}
     };
-
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
 
     rrd_graph_init(&im);
 
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
 
-    while (1) {
-        int       option_index = 0;
-        int       opt;
 
-        opt = getopt_long(argc, argv, "s:e:m:d:", long_options, &option_index);
 
-        if (opt == EOF)
-            break;
+
+    int opt;
+    while ((opt = optparse_long(&options,longopts,NULL)) != -1){
 
         switch (opt) {
         case 261:
-            im.step = atoi(optarg);
-            break;
-        case 262:
+            im.step = atoi(options.optarg);
             break;
         case 's':
-            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'e':
-            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'm':
-            im.xsize = atol(optarg);
+            im.xsize = atol(options.optarg);
             if (im.xsize < 10) {
                 rrd_set_error("maxrows below 10 rows");
                 return -1;
@@ -121,7 +116,7 @@ int rrd_xport(
                 return (-1);
             }
 
-            im.daemon_addr = strdup(optarg);
+            im.daemon_addr = strdup(options.optarg);
             if (im.daemon_addr == NULL)
             {
                 rrd_set_error("strdup error");
@@ -131,7 +126,7 @@ int rrd_xport(
         }
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s: %s", argv[0], options.errmsg);
             return -1;
         }
     }
@@ -156,7 +151,7 @@ int rrd_xport(
     im.end = end_tmp;
     im.step = max((long) im.step, (im.end - im.start) / im.xsize);
 
-    rrd_graph_script(argc, argv, &im, 0);
+    rrd_graph_script(argc, argv, &im, options.optind);
     if (rrd_test_error()) {
         im_free(&im);
         return -1;

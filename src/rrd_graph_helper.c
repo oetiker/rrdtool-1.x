@@ -1090,7 +1090,7 @@ void rrd_graph_script(
     enum gf_en last_gf = GF_PRINT;
     float     last_linewidth = 0.0;
 
-    for (i = optind + optno; i < argc; i++) {
+    for (i = optno; i < argc; i++) {
         graph_desc_t *gdp;
         unsigned int eaten = 0;
 

@@ -31,6 +31,7 @@ UPD_C_FILES =		\
 	rrd_nan_inf.c	\
 	rrd_rpncalc.c	\
 	rrd_utils.c	\
+	mutex.c         \
 	rrd_update.c
 
 RRD_C_FILES =		\
@@ -48,7 +49,7 @@ RRD_C_FILES =		\
 if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
 	rrd_graph_helper.c	\
-	rrd_xport.c	\
+	rrd_xport.c  optparse.c	\
 	rrd_gfx.c \
 	pngsize.c
 endif
@@ -56,9 +57,10 @@ endif
 noinst_HEADERS = \
 	unused.h \
         gettext.h \
+        mutex.h \
 	rrd_getopt.h rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
-	rrd_format.h rrd_tool.h rrd_xport.h rrd.h rrd_rpncalc.h \
+	rrd_format.h rrd_tool.h rrd_xport.h  optparse.h rrd.h rrd_rpncalc.h \
 	rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h
@@ -104,7 +106,7 @@ bin_PROGRAMS += rrdcgi
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
-rrdcgi_LDADD	= librrd.la
+rrdcgi_LDADD	= librrd.la 
 
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD	  = librrdupd.la
@@ -116,7 +118,7 @@ rrdtool_LDADD	= librrd.la
 rrdcached_SOURCES = rrd_daemon.c
 rrdcached_DEPENDENCIES = librrd_th.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd_th.la
+rrdcached_LDADD = librrd_th.la $(GLIB_LIBS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc
