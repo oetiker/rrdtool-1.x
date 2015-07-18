@@ -35,7 +35,7 @@ The tune option allows you to alter some of the basic configuration
 values stored in the header area of a Round Robin Database (B<RRD>).
 
 One application of the B<tune> function is to relax the
-validation rules on an B<RRD>. This allows to fill a new B<RRD> with
+validation rules on an B<RRD>. This allows you to fill a new B<RRD> with
 data available in larger intervals than what you would normally want
 to permit. Be very careful with tune operations for COMPUTE data sources.
 Setting the I<min>, I<max>, and  I<heartbeat> for a COMPUTE data source
