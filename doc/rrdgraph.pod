@@ -477,7 +477,7 @@ no text is rendered bitmapped.
 [B<-P>|B<--pango-markup>]
 
 All text in RRDtool is rendered using Pango. With the B<--pango-markup> option, all
-text will be processed by pango markup. This allows to embed some simple html
+text will be processed by pango markup. This allows one to embed some simple html
 like markup tags using 
 
  <span key="value">text</span>
