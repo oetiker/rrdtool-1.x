@@ -25,7 +25,7 @@ using B<RRDtool> over a network connection), when using "-" as a filename
 the end of the file can be signalled either by closing the data
 channel after the file has transferred (as would be the case when
 using input redirection within a suitable shell) or by sending a
-crtl-Z / newline combination. This allows to send more commands to the
+crtl-Z / newline combination. This allows one to send more commands to the
 B<RRDtool> server after a restore.
 
 =item I<filename.rrd>

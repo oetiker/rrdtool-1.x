@@ -27,7 +27,7 @@ databases as listed below:
 =item *
 
 RRDtool stores data; that makes it a back-end tool. The RRDtool command set
-allows the creation of graphs; that makes it a front-end tool as well. Other
+allows one to create graphs; that makes it a front-end tool as well. Other
 databases just store data and can not create graphs.
 
 =item *
