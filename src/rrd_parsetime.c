@@ -833,11 +833,13 @@ static char *day(
  * mktime() The return value is either TIME_OK (aka NULL) or
  * the pointer to the error message in the case of problems
  */
+
+static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
+
 char     *rrd_parsetime(
     const char *tspec,
     rrd_time_value_t * ptv)
 {
-    static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
     time_t    now = time(NULL);
     int       hr = 0;
 
