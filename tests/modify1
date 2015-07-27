@@ -4,7 +4,7 @@
 
 BASE=$BASEDIR/modify-test1
 BUILD=$BUILDDIR/modify-test1
-DIFF="diff -u"
+
 $RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10 || fail create
 
 # add 50 values to 
@@ -14,11 +14,11 @@ for T in $(seq 1300000020 60 1300003020) ; do
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BUILD}a.rrd | $DIFF - ${BASE}.create.dump 
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump 
 report "created content"
 
 # extend base RRA, refill from coarse RRA
 cp ${BUILD}a.rrd ${BUILD}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd RRA#0:+10 || fail "tune"
-$RRDTOOL dump ${BUILD}b.rrd | $DIFF - ${BASE}.mod1.dump 
+$RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump 
 report "extend base RRA"

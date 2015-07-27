@@ -25,5 +25,5 @@ $RRDTOOL graphv -                          \
       VDEF:o=over,MINIMUM \
       PRINT:f:'%lf' \
       PRINT:g:'%lf' \
-      PRINT:o:'%lf' | $DIFF - $BASEDIR/rpn1.output
+      PRINT:o:'%lf' | $DIFF9 - $BASEDIR/rpn1.output
 report "graphv"

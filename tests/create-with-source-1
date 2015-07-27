@@ -24,7 +24,6 @@ function cpd_prep_filter {
 # test: add the additional RRA to the first and compare dumps 
 
 rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
-
 ST=1300000000
 $RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create1

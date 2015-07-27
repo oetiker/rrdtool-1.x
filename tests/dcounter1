@@ -96,5 +96,5 @@ report "update all"
 is_cached && exit 0
 
 $RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 600 -s 1300000000 -e 1300015200 | grep ^1300 | \
-  grep -v nan | $DIFF - $BASEDIR/dcounter1.output
+  grep -v nan | $DIFF9 - $BASEDIR/dcounter1.output
 report "fetch"

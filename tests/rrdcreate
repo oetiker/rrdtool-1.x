@@ -105,7 +105,7 @@ checkequiv () {
     echo "OK: ${desc}"
   else
     echo "FAIL ${desc}:"
-    diff -u ${f1} ${f2}
+    $DIFF ${f1} ${f2}
   fi
 }
 
