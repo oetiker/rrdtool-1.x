@@ -299,7 +299,7 @@ rpnp_t   *rpn_parse(
     char      vname[MAX_VNAME_LEN + 10];
     char     *old_locale;
 
-    old_locale = setlocale(LC_NUMERIC, NULL);
+    old_locale = strdup(setlocale(LC_NUMERIC, NULL));
     setlocale(LC_NUMERIC, "C");
 
     rpnp = NULL;
@@ -309,6 +309,7 @@ rpnp_t   *rpn_parse(
         if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2) *
                                            sizeof(rpnp_t))) == NULL) {
             setlocale(LC_NUMERIC, old_locale);
+            free(old_locale);
             return NULL;
         }
 
@@ -399,6 +400,7 @@ rpnp_t   *rpn_parse(
         else {
             rrd_set_error("don't undestand '%s'",expr);
             setlocale(LC_NUMERIC, old_locale);
+            free(old_locale);
             free(rpnp);
             return NULL;
         }
@@ -409,12 +411,14 @@ rpnp_t   *rpn_parse(
             expr++;
         else {
             setlocale(LC_NUMERIC, old_locale);
+            free(old_locale);
             free(rpnp);
             return NULL;
         }
     }
     rpnp[steps + 1].op = OP_END;
     setlocale(LC_NUMERIC, old_locale);
+    free(old_locale);
     return rpnp;
 }
 
