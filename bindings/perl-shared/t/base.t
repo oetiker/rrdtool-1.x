@@ -1,4 +1,7 @@
 #! /usr/bin/perl 
+use strict;
+use warnings;
+use vars qw($loaded $ok_count);
 
 BEGIN { $| = 1; print "1..8\n"; }
 END {
@@ -173,6 +176,8 @@ foreach my $line (@$array){
   print "\n";
 }
 
+do {
+
 my ($start,$end,$step,$col_cnt,$legend,$data) = 
   RRDs::xport ("-m", 400,
                "--start", "now-1day",
@@ -184,7 +189,7 @@ my ($start,$end,$step,$col_cnt,$legend,$data) =
                "XPORT:calc:calculated values",
                );
 
-my $ERROR = RRDs::error;
+$ERROR = RRDs::error;
 
 ok("xport",!$ERROR);							#  3
 
@@ -210,10 +215,13 @@ foreach my $row (@$data) {
     print "    <row id=\"$row_counter\"><t is=\"", scalar localtime($start), "\">$start</t>";
     $start += $step;
     foreach my $val (@$row) {
-        printf ("<v>%1.10e</v>",$val) if $val ne '';
-        print "<v>NaN</v>" if  $val eq '';
+        printf ("<v>%1.10e</v>",$val) if defined $val and $val ne '';
+        print "<v>NaN</v>" if not defined $val or  $val eq '';
     }
     print "</row>\n";
 }
 print "  </data>\n";
 print "</xport>\n";
+
+};
+ 
