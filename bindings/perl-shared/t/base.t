@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use vars qw($loaded $ok_count);
 
-BEGIN { $| = 1; print "1..8\n"; }
+BEGIN { $| = 1; print "1..9\n"; }
 END {
   print "not ok 1\n" unless $loaded;
   unlink "demo.rrd";
