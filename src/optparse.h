@@ -45,6 +45,7 @@
 
 struct optparse {
     char **argv;
+    int argc;
     int permute;
     int optind;
     int optopt;
@@ -64,7 +65,7 @@ struct optparse_long {
 /**
  * Initializes the parser state.
  */
-void optparse_init(struct optparse *options, char **argv);
+void optparse_init(struct optparse *options, int argc, char **argv);
 
 /**
  * Read the next option in the argv array.

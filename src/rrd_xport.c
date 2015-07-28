@@ -75,7 +75,7 @@ int rrd_xport(
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
     struct optparse options;
-    optparse_init(&options, argv);
+    optparse_init(&options, argc, argv);
 
     struct optparse_long longopts[] = {
         {"start",  's', OPTPARSE_REQUIRED},
