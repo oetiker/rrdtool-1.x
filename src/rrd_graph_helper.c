@@ -1127,7 +1127,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   gdp->stack=1;
   /* and try to get the one index before ourselves */
   long i;
-  for (i=im->gdes_c;(gdp->gf==gf)&&(i>=0);i--) {
+  for (i=im->gdes_c-1;(gdp->gf==gf)&&(i>=0);i--) {
     dprintfparsed("trying to process entry %li with type %u\n",i,im->gdes[i].gf);
     switch (im->gdes[i].gf) {
     case GF_LINE:
