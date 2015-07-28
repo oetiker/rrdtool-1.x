@@ -5,7 +5,7 @@
     snprintf(options->errmsg, sizeof(options->errmsg), format, args);
 
 #define options_argv(i) \
-    (i) < options->argc ? options->argv[i] : 0;
+    ((i) < options->argc ? options->argv[i] : NULL)
 
 void optparse_init(struct optparse *options, int argc, char **argv)
 {
@@ -156,7 +156,7 @@ optstring_from_long(const struct optparse_long *longopts, char *optstring)
     for (int i = 0; !longopts_end(longopts, i); i++) {
         if (longopts[i].shortname) {
             *p++ = longopts[i].shortname;
-            for (int a = 0; a < longopts[i].argtype; a++)
+            for (unsigned int a = 0; a < longopts[i].argtype; a++)
                 *p++ = ':';
         }
     }
@@ -210,6 +210,7 @@ optparse_long(struct optparse *options,
               const struct optparse_long *longopts,
               int *longindex)
 {
+//    printf("%i < %i\n",options->optind,options->argc);
     char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
