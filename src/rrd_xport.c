@@ -1,7 +1,7 @@
 /****************************************************************************
  * RRDtool 1.4.8  Copyright by Tobi Oetiker, 1997-2013
  ****************************************************************************
- * rrd_xport.c  export RRD data 
+ * rrd_xport.c  export RRD data
  ****************************************************************************/
 
 #include <sys/stat.h>
@@ -49,7 +49,7 @@ int rrd_xport(
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */
-    unsigned long *step,    /* which stepsize do you want? 
+    unsigned long *step,    /* which stepsize do you want?
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
@@ -60,7 +60,7 @@ int rrd_xport(
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
     struct optparse options;
-    optparse_init(&options, argv);
+    optparse_init(&options, argc, argv);
 
     struct optparse_long longopts[] = {
         {"start",  's', OPTPARSE_REQUIRED},
@@ -184,7 +184,7 @@ int rrd_xport_fn(
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */
-    unsigned long *step,    /* which stepsize do you want? 
+    unsigned long *step,    /* which stepsize do you want?
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
@@ -198,7 +198,7 @@ int rrd_xport_fn(
     unsigned long xport_counter = 0;
     int      *ref_list;
     long     *step_list;
-    long     *step_list_ptr;    
+    long     *step_list_ptr;
     char    **legend_list;
 
 
@@ -211,7 +211,7 @@ int rrd_xport_fn(
         return -1;
 
     /* how many xports? */
-    *col_cnt = 0;    
+    *col_cnt = 0;
     for (i = 0; i < im->gdes_c; i++) {
         switch (im->gdes[i].gf) {
         case GF_XPORT:
@@ -271,18 +271,18 @@ int rrd_xport_fn(
                 legend_list[j++][0] = '\0';
             break;
         default:
-            break;            
+            break;
         }
     }
-    *step_list_ptr=0;    
+    *step_list_ptr=0;
     /* find a common step */
     *step = lcd(step_list);
     /* printf("step: %lu\n",*step); */
     free(step_list);
-    
+
     *start =  im->start - im->start % (*step);
     *end = im->end - im->end % (*step) + (*step);
-    
+
 
     /* room for rearranged data */
     /* this is a return value! */

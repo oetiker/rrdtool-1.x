@@ -4,9 +4,13 @@
 #define opterror(options, format, args...) \
     snprintf(options->errmsg, sizeof(options->errmsg), format, args);
 
-void optparse_init(struct optparse *options, char **argv)
+#define options_argv(i) \
+    (i) < options->argc ? options->argv[i] : 0;
+
+void optparse_init(struct optparse *options, int argc, char **argv)
 {
     options->argv = argv;
+    options->argc = argc;
     options->permute = 1;
     options->optind = 1;
     options->subopt = 0;
@@ -60,7 +64,7 @@ int optparse(struct optparse *options, const char *optstring)
     options->errmsg[0] = '\0';
     options->optopt = 0;
     options->optarg = NULL;
-    char *option = options->argv[options->optind];
+    char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
     } else if (is_dashdash(option)) {
@@ -81,7 +85,7 @@ int optparse(struct optparse *options, const char *optstring)
     option += options->subopt + 1;
     options->optopt = option[0];
     int type = argtype(optstring, option[0]);
-    char *next = options->argv[options->optind + 1];
+    char *next = options_argv(options->optind + 1);
     switch (type) {
     case -1:
         opterror(options, "invalid option -- '%c'", option[0]);
@@ -206,7 +210,7 @@ optparse_long(struct optparse *options,
               const struct optparse_long *longopts,
               int *longindex)
 {
-    char *option = options->argv[options->optind];
+    char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
     } else if (is_shortopt(option)) {
@@ -243,7 +247,8 @@ optparse_long(struct optparse *options,
             } if (arg != NULL) {
                 options->optarg = arg;
             } else if (longopts[i].argtype == OPTPARSE_REQUIRED) {
-                options->optarg = options->argv[options->optind++];
+                options->optarg = options_argv(options->optind);
+                options->optind++;
                 if (options->optarg == NULL) {
                     opterror(options, "option requires argument -- '%s'", name);
                     return '?';
