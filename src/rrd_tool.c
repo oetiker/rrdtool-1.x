@@ -595,7 +595,13 @@ int HandleInputLine(
                 printf("ERROR: invalid parameter count for pwd\n");
                 return (1);
             }
+#ifdef MAXPATH
             cwd = getcwd(NULL, MAXPATH);
+#elif defined(HAVE_GET_CURRENT_DIR_NAME)
+            cwd = get_current_dir_name();
+#else
+#error "You must have either MAXPATH or get_current_dir_name()"
+#endif
             if (cwd == NULL) {
                 printf("ERROR: getcwd %s\n", rrd_strerror(errno));
                 return (1);

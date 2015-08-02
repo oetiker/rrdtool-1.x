@@ -404,6 +404,8 @@ int im_free(
     if (im == NULL)
         return 0;
 
+    free(im->graphfile);
+
     if (im->daemon_addr != NULL)
       free(im->daemon_addr);
 
@@ -3339,7 +3341,7 @@ int lazy_check(
 
     if (im->lazy == 0)
         return 0;       /* no lazy option */
-    if (strlen(im->graphfile) == 0)
+    if (im->graphfile == NULL)
         return 0;       /* inmemory option */
     if (stat(im->graphfile, &imgstat) != 0)
         return 0;       /* can't stat */
@@ -4263,7 +4265,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_PDF_SURFACE
     case IF_PDF:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
                                        im->yimg * im->zoom)
             : cairo_pdf_surface_create_for_stream
@@ -4273,7 +4275,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_PS_SURFACE
     case IF_EPS:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ?
             cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
                                     im->yimg * im->zoom)
@@ -4284,7 +4286,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_SVG_SURFACE
     case IF_SVG:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ?
             cairo_svg_surface_create(im->
                                      graphfile,
@@ -4336,13 +4338,14 @@ int graph_cairo_finish (image_desc_t *im)
     {
         cairo_status_t status;
 
-        status = strlen(im->graphfile) ?
+        status = im->graphfile ?
             cairo_surface_write_to_png(im->surface, im->graphfile)
             : cairo_surface_write_to_png_stream(im->surface, &cairo_output,
                                                 im);
 
         if (status != CAIRO_STATUS_SUCCESS) {
-            rrd_set_error("Could not save png to '%s'", im->graphfile);
+            rrd_set_error("Could not save png to '%s'",
+                im->graphfile ? im->graphfile : "memory");
             return 1;
         }
         break;
@@ -4356,7 +4359,7 @@ int graph_cairo_finish (image_desc_t *im)
     case IF_JSONTIME:
       break;
     default:
-        if (strlen(im->graphfile)) {
+        if (im->graphfile) {
             cairo_show_page(im->cr);
         } else {
             cairo_surface_finish(im->surface);
@@ -4563,19 +4566,15 @@ rrd_info_t *rrd_graph_v(
         return NULL;
     }
 
-    if (strlen(argv[optind]) >= MAXPATH) {
-        rrd_set_error("filename (including path) too long");
-        rrd_info_free(im.grinfo);
-        im_free(&im);
-        return NULL;
-    }
-
-    strncpy(im.graphfile, argv[optind], MAXPATH - 1);
-    im.graphfile[MAXPATH - 1] = '\0';
-
-    if (strcmp(im.graphfile, "-") == 0) {
-        im.graphfile[0] = '\0';
-    }
+    if (strcmp(argv[optind], "-") != 0) {
+        im.graphfile = strdup(argv[optind]);
+        if (im.graphfile == NULL) {
+            rrd_set_error("cannot allocate sufficient memory for filename length");
+            rrd_info_free(im.grinfo);
+            im_free(&im);
+            return NULL;
+        }
+    } /* else we work in memory: im.graphfile==NULL */
 
     rrd_graph_script(argc, argv, &im, optind+1);
 
@@ -4598,7 +4597,7 @@ rrd_info_t *rrd_graph_v(
 
     if (im.imginfo && *im.imginfo) {
         rrd_infoval_t info;
-        char     *path;
+        char     *path = NULL;
         char     *filename;
 
         if (bad_format_imginfo(im.imginfo)) {
@@ -4606,8 +4605,12 @@ rrd_info_t *rrd_graph_v(
             im_free(&im);
             return NULL;
         }
-        path = strdup(im.graphfile);
-        filename = basename(path);
+        if (im.graphfile) {
+            path = strdup(im.graphfile);
+            filename = basename(path);
+        } else {
+            filename = "memory";
+        }
         info.u_str =
             sprintf_alloc(im.imginfo,
                           filename,
