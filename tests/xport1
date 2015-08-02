@@ -95,8 +95,8 @@ report "update all"
 
 is_cached && exit 0
 
-$RRDTOOL xport --json -s 1300000000 -e 1300015200 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:wh:wh | $DIFF - $BASEDIR/xport1.json.output
+$RRDTOOL xport --json -s 1300000000 -e 1300015200 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:wh:wh | $DIFF9 - $BASEDIR/xport1.json.output
 report "xport json"
 
-$RRDTOOL xport --enumds  -s 1300000000 -e 1300015200 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:wh:wh | $DIFF - $BASEDIR/xport1.xml.output
+$RRDTOOL xport --enumds  -s 1300000000 -e 1300015200 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:wh:wh | $DIFF9 - $BASEDIR/xport1.xml.output
 report "xport xml"
