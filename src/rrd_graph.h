@@ -30,11 +30,6 @@
 #include <glib.h>
 
 
-#ifdef WIN32
-#  include <windows.h>
-#  define MAXPATH MAX_PATH
-#endif
-
 #define ALTYGRID  	 0x01   /* use alternative y grid algorithm */
 #define ALTAUTOSCALE	 0x02   /* use alternative algorithm to find lower and upper bounds */
 #define ALTAUTOSCALE_MIN 0x04   /* use alternative algorithm to find lower bounds */
@@ -270,7 +265,7 @@ typedef struct graph_desc_t {
 typedef struct image_desc_t {
 
     /* configuration of graph */
-    char      graphfile[MAXPATH];   /* filename for graphic */
+    char      *graphfile;   /* filename for graphic */
     enum      gfx_type_en graph_type; /* type of the graph */
     long      xsize, ysize; /* graph area size in pixels */
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */

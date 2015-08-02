@@ -394,7 +394,7 @@ int rrd_graph_xport(image_desc_t *im) {
   }
 
   /* if we write a file, then open it */
-  if (strlen(im->graphfile)) {
+  if (im->graphfile) {
     buffer.file=fopen(im->graphfile,"w");
   }
 
