@@ -582,6 +582,53 @@ void si_unit(
         im->symbol = '?';
 }
 
+static char iec_symbol[] = {
+    ' ',                /* Base */
+    'K',                /* 1024^1 Kilo */
+    'M',                /* 1024^2 Mega */
+    'G',                /* 1024^3 Giga */
+    'T',                /* 1024^4 Tera */
+    'P',                /* 1024^5 Peta */
+    'E',                /* 1024^6 Exa */
+    'Z',                /* 1024^7 Zeta */
+    'Y'                 /* 1024^8 Yotta */
+};
+static const int iec_symbcenter = 0;
+
+/* find IEC magnitude symbol for the numbers on the y-axis*/
+void iec_unit(
+    image_desc_t *im    /* image description */
+    )
+{
+
+    double    digits, viewdigits = 0;
+
+    digits =
+        floor(log(max(fabs(im->minval), fabs(im->maxval))) /
+              log((double) im->base));
+
+    if (im->unitsexponent != 9999) {
+        /* unitsexponent = 9, 6, 3, 0, -3, -6, -9, etc */
+        viewdigits = floor((double)(im->unitsexponent / 3));
+    } else {
+        viewdigits = digits;
+    }
+
+    im->magfact = pow((double) im->base, digits);
+
+#ifdef DEBUG
+    printf("digits %6.3f  im->magfact %6.3f\n", digits, im->magfact);
+#endif
+
+    im->viewfactor = im->magfact / pow((double) im->base, viewdigits);
+
+    if (((viewdigits + iec_symbcenter) < sizeof(iec_symbol)) &&
+        ((viewdigits + iec_symbcenter) >= 0))
+        im->symbol = iec_symbol[(int) viewdigits + iec_symbcenter];
+    else
+        im->symbol = '?';
+}
+
 /*  move min and max values around to become sensible */
 
 void expand_range(
@@ -2707,6 +2754,23 @@ int horizontal_log_grid(
             else
                 symbol = '?';
             snprintf(graph_label, sizeof graph_label, "%3.0f %c", pvalue, symbol);
+        } else if (im->extra_flags & FORCE_UNITS_IEC) {
+            int       scale;
+            double    pvalue;
+            char      symbol;
+
+            scale = floor(val_exp / 3.0);
+            if (value >= 1.0)
+                pvalue = pow(1024.0, val_exp % 3);
+            else
+                pvalue = pow(1024.0, ((val_exp + 1) % 3) + 2);
+            pvalue *= yloglab[mid][flab];
+            if (((scale + iec_symbcenter) < (int) sizeof(iec_symbol))
+                && ((scale + iec_symbcenter) >= 0))
+                symbol = iec_symbol[scale + iec_symbcenter];
+            else
+                symbol = '?';
+            snprintf(graph_label, sizeof graph_label, "%3.0f %c", pvalue, symbol);
         } else {
             snprintf(graph_label, sizeof graph_label, "%3.0e", value);
         }
@@ -3822,7 +3886,9 @@ int graph_paint_timestring(
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
         return -1;
-    if (!im->logarithmic) {
+    if (im->binary) {
+        iec_unit(im);
+    } else if (!im->logarithmic) {
         si_unit(im);
     }
 
@@ -4668,6 +4734,7 @@ void rrd_graph_init(
     im->rrd_map = g_hash_table_new_full(g_str_hash, g_str_equal,free,NULL);
     im->graph_type = GTYPE_TIME;
     im->base = 1000;
+    im->binary = 0;
     im->daemon_addr = NULL;
     im->draw_x_grid = 1;
     im->draw_y_grid = 1;
@@ -4819,6 +4886,7 @@ void rrd_graph_options(
         { "no-legend",          no_argument,       0, 'g'},
         { "height",             required_argument, 0, 'h'},
         { "no-minor",           no_argument,       0, 'I'},
+        { "binary",             no_argument,       0, 'K'},
         { "interlaced",         no_argument,       0, 'i'},
         { "alt-autoscale-min",  no_argument,       0, 'J'},
         { "only-graph",         no_argument,       0, 'j'},
@@ -4876,7 +4944,7 @@ void rrd_graph_options(
         int       col_start, col_end;
 
         opt = getopt_long(argc, argv,
-                          "Aa:B:b:c:Dd:Ee:Ff:G:gh:IiJjL:l:Mm:Nn:oPR:rS:s:T:t:u:v:W:w:X:x:Yy:Zz",
+                          "Aa:B:b:c:Dd:Ee:Ff:G:gh:IiJjKL:l:Mm:Nn:oPR:rS:s:T:t:u:v:W:w:X:x:Yy:Zz",
                           long_options, &option_index);
         if (opt == EOF)
             break;
@@ -4944,6 +5012,8 @@ void rrd_graph_options(
             }
             if (strcmp(optarg, "si") == 0)
                 im->extra_flags |= FORCE_UNITS_SI;
+            else if (strcmp(optarg, "iec") == 0)
+                im->extra_flags |= FORCE_UNITS_IEC;
             else {
                 rrd_set_error("invalid argument for --units: %s", optarg);
                 return;
@@ -5200,6 +5270,10 @@ void rrd_graph_options(
             break;
         case 'o':
             im->logarithmic = 1;
+            break;
+        case 'K':
+            im->binary = 1;
+            im->extra_flags |= FORCE_UNITS_IEC;
             break;
         case 'c':
             if (sscanf(optarg,

@@ -44,8 +44,9 @@
 #define ONLY_GRAPH       0x40   /* use only graph */
 #define FORCE_RULES_LEGEND 0x80 /* force printing of HRULE and VRULE legend */
 
-#define FORCE_UNITS 0x100   /* mask for all FORCE_UNITS_* flags */
-#define FORCE_UNITS_SI 0x100    /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
+#define FORCE_UNITS 0x103   /* mask for all FORCE_UNITS_* flags */
+#define FORCE_UNITS_SI 0x101    /* force use of SI units in Y axis (no effect in linear graph, SI instead of E in log graph) */
+#define FORCE_UNITS_IEC 0x102    /* force use of IEC units in Y axis (IEC instead of SI in linear graph, IEC instead of E in log graph) */
 
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
@@ -314,6 +315,7 @@ typedef struct image_desc_t {
     enum legend_pos legendposition; /* the position of the legend: north, west, south or east */
     enum legend_direction legenddirection; /* The direction of the legend topdown or bottomup */
     int       logarithmic;  /* scale the yaxis logarithmic */
+    int       binary;  /* scale the yaxis binary */
     double    force_scale_min;  /* Force a scale--min */
     double    force_scale_max;  /* Force a scale--max */
 
@@ -382,6 +384,8 @@ void      auto_scale(
     char **,
     double *);
 void      si_unit(
+    image_desc_t *);
+void      iec_unit(
     image_desc_t *);
 void      expand_range(
     image_desc_t *);

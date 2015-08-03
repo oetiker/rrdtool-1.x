@@ -142,6 +142,7 @@ void PrintUsage(
            "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"
            "\t\t[--right-axis-format format]\n"
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
+           "\t\t[-K|binary]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"
            "\t\t[-g|--no-legend] [--daemon <address>]\n"
