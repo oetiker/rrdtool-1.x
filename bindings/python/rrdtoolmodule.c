@@ -274,6 +274,7 @@ static char PyRRD_graph__doc__[] =
     "[-f|--imginfo formatstring] [-a|--imgformat GIF|PNG|GD] "
     "[-B|--background value] [-O|--overlay value] "
     "[-U|--unit value] [-z|--lazy] [-o|--logarithmic] "
+    "[-K|--binary] "
     "[-u|--upper-limit value] [-l|--lower-limit value] "
     "[-g|--no-legend] [-r|--rigid] [--step value] "
     "[-b|--base value] [-c|--color COLORTAG#rrggbb] "

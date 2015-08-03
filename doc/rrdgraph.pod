@@ -256,6 +256,10 @@ enough decimals displayed even if your graph goes from 69.998 to 70.001.
 
 Logarithmic y-axis scaling.
 
+[B<-K>|B<--binary>]
+
+Binary prefix y-axis scaling. Implies --units=iec
+
 [B<-X>|B<--units-exponent> I<value>]
 
 This sets the 10**exponent scaling of the y-axis values. Normally,
@@ -279,11 +283,14 @@ How many digits should RRDtool assume the y-axis labels to be? You
 may have to use this option to make enough space once you start
 fiddling with the y-axis labeling.
 
-[B<--units=si>]
+[B<--units=>I<value>]
 
-With this option y-axis values on logarithmic graphs will be scaled to 
+With this option set to si, y-axis values on logarithmic graphs will be scaled to
 the appropriate units (k, M, etc.) instead of using exponential notation.
 Note that for linear graphs, SI notation is used by default.
+
+With this option set to iec, y-axis values on all graphs will be scaled to
+the appropriate units (K, M, etc.) instead of using SI or exponential notation.
 
 =head2 Right Y Axis
 
