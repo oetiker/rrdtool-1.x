@@ -12,7 +12,7 @@ DIFF="diff -u"
 DIFF9=seddif
 
 function seddif {
-   sed -e "s/\([0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]\)[0-9]\(e[+-][0-9]\)/\1\2/g" | $DIFF $@
+   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.10e",$1)/ge' | $DIFF $@
 }
 
 #

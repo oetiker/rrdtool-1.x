@@ -1,5 +1,5 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 rpn1 \
+	tune1 tune2 rpn1 rpn2 \
 	rrdcreate \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
@@ -15,7 +15,7 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output vformatter1
+	valgrind-supressions dcounter1 dcounter1.output vformatter1 rpn2.output
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 TESTS_ENVIRONMENT = \
 	BASEDIR=${abs_srcdir} ; export BASEDIR ; \

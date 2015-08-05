@@ -173,6 +173,7 @@ void rpn_compact2str(
             add_op(OP_ISINF, ISINF)
             add_op(OP_NOW, NOW)
             add_op(OP_LTIME, LTIME)
+            add_op(OP_STEPWIDTH, STEPWIDTH)
             add_op(OP_TIME, TIME)
             add_op(OP_ATAN2, ATAN2)
             add_op(OP_ATAN, ATAN)
@@ -246,13 +247,13 @@ void parseCDEF_DS(const char *def,
      * COMPUTE DS specific. This is less efficient, but creation doesn't
      * occur too often. */
     for (i = 0; rpnp[i].op != OP_END; i++) {
-        if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME ||
+        if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME || rpnp[i].op == OP_STEPWIDTH ||
             rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
             rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
             rpnp[i].op == OP_PREDICT || rpnp[i].op ==  OP_PREDICTSIGMA ||
             rpnp[i].op == OP_PREDICTPERC ) {
             rrd_set_error
-                ("operators TIME, LTIME, PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
+                ("operators TIME LTIME STEPWIDTH PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
             free(rpnp);
             return;
         }
@@ -362,6 +363,7 @@ rpnp_t   *rpn_parse(
             match_op(OP_EXC, EXC)
             match_op(OP_POP, POP)
             match_op(OP_LTIME, LTIME)
+            match_op(OP_STEPWIDTH, STEPWIDTH)
             match_op(OP_LT, LT)
             match_op(OP_LE, LE)
             match_op(OP_GT, GT)
@@ -555,6 +557,10 @@ short rpn_calc(
                     rpnp[rpi].data += rpnp[rpi].ds_cnt;
                 }
             }
+            break;
+        case OP_STEPWIDTH:
+            rrd_set_error("STEPWIDTH should never show up here... aborting");
+            return -1;
             break;
         case OP_COUNT:
             rpnstack->s[++stptr] = (output_idx + 1);    /* Note: Counter starts at 1 */
