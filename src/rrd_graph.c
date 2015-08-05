@@ -1254,6 +1254,14 @@ int data_calc(
              */
             im->gdes[gdi].step = lcd(steparray);
             free(steparray);
+            /* supply the actual stepwith for this run */
+            for (rpi = 0; im->gdes[gdi].rpnp[rpi].op != OP_END; rpi++) {
+                if (im->gdes[gdi].rpnp[rpi].op == OP_STEPWIDTH) {
+                    im->gdes[gdi].rpnp[rpi].val = im->gdes[gdi].step;
+                    im->gdes[gdi].rpnp[rpi].op = OP_NUMBER;
+                }
+            }
+
             if ((im->gdes[gdi].data = (rrd_value_t*)malloc(((im->gdes[gdi].end -
                                                im->gdes[gdi].start)
                                               / im->gdes[gdi].step)

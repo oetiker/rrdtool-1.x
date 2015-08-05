@@ -1,0 +1,22 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+RRD=rpn2.rrd
+
+$RRDTOOL create $RRD --start 920804400 DS:speed:DCOUNTER:600:U:U RRA:AVERAGE:0.5:1:24 RRA:AVERAGE:0.5:6:10
+report "create"
+$RRDTOOL update $RRD 920804700:10 920805000:20 920805300:30
+$RRDTOOL update $RRD 920805600:40 920805900:50 920806200:60
+$RRDTOOL update $RRD 920806500:70 920806800:80 920807100:90
+$RRDTOOL update $RRD 920807400:100 920807700:110 920808000:120
+$RRDTOOL update $RRD 920808300:130 920808600:140 920808900:150
+report "update"
+$RRDTOOL xport                          \
+      --json \
+      --start 920804400 --end 920808000               \
+      DEF:myspeed=$RRD:speed:AVERAGE              \
+      CDEF:total=myspeed,STEPWIDTH,*,PREV,ADDNAN             \
+      XPORT:myspeed:myspeed XPORT:total:total |\
+ $DIFF9 - $BASEDIR/rpn2.output
+report "xport"
