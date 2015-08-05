@@ -525,7 +525,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 rpn1 \
+	tune1 tune2 rpn1 rpn2 \
 	rrdcreate \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
@@ -542,7 +542,7 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output vformatter1
+	valgrind-supressions dcounter1 dcounter1.output vformatter1 rpn2.output
 
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 TESTS_ENVIRONMENT = \
@@ -552,7 +552,8 @@ TESTS_ENVIRONMENT = \
 
 CLEANFILES = *.rrd \
 	ct.out dur.out \
-	modify5-testa1-mod.dump modify5-testa2-mod.dump 
+	modify5-testa1-mod.dump modify5-testa2-mod.dump \
+	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp
 
 all: all-am
 
@@ -794,6 +795,13 @@ tune2.log: tune2
 rpn1.log: rpn1
 	@p='rpn1'; \
 	b='rpn1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+rpn2.log: rpn2
+	@p='rpn2'; \
+	b='rpn2'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
