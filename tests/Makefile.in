@@ -530,7 +530,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
-	create-from-template-1 dcounter1 vformatter1
+	create-from-template-1 dcounter1 vformatter1 xport1
 
 EXTRA_DIST = Makefile.am \
 	alltests functions $(TESTS) \
@@ -542,7 +542,9 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output vformatter1 rpn2.output
+	valgrind-supressions dcounter1 dcounter1.output vformatter1 rpn2.output \
+	xport1.json.output xport1.output xport1.xml.output
+
 
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 TESTS_ENVIRONMENT = \
@@ -872,6 +874,13 @@ dcounter1.log: dcounter1
 vformatter1.log: vformatter1
 	@p='vformatter1'; \
 	b='vformatter1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+xport1.log: xport1
+	@p='xport1'; \
+	b='xport1'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
