@@ -1215,23 +1215,23 @@ err:
 } /* }}} static int check_file_access */
 
 /* when using a base dir, convert relative paths to absolute paths.
- * if necessary, modifies the "filename" pointer to point
- * to the new path created in "tmp".  "tmp" is provided
- * by the caller and sizeof(tmp) must be >= PATH_MAX.
- *
- * this allows us to optimize for the expected case (absolute path)
- * with a no-op.
+ * The result must be free()'ed by the caller.
  */
-static void get_abs_path(char **filename, char *tmp)
+static char* get_abs_path(const char *filename)
 {
-  assert(tmp != NULL);
-  assert(filename != NULL && *filename != NULL);
+  char *ret;
+  assert(filename != NULL);
 
-  if (config_base_dir == NULL || **filename == '/')
-    return;
+  if (config_base_dir == NULL || *filename == '/')
+    return strdup(filename);
 
-  snprintf(tmp, PATH_MAX, "%s/%s", config_base_dir, *filename);
-  *filename = tmp;
+  ret = malloc(strlen(config_base_dir) + 1 + strlen(filename) + 1);
+  if (ret == NULL)
+    RRDD_LOG (LOG_ERR, "get_abs_path: malloc failed.");
+  else
+    sprintf(ret, "%s/%s", config_base_dir, filename);
+
+  return ret;
 } /* }}} static int get_abs_path */
 
 static int flush_file (const char *filename) /* {{{ */
@@ -1322,10 +1322,10 @@ static int handle_request_stats (HANDLER_PROTO) /* {{{ */
 
 static int handle_request_flush (HANDLER_PROTO) /* {{{ */
 {
-  char *file, file_tmp[PATH_MAX];
-  int status;
+  char *file=NULL, *pbuffile;
+  int status, rc;
 
-  status = buffer_get_field (&buffer, &buffer_size, &file);
+  status = buffer_get_field (&buffer, &buffer_size, &pbuffile);
   if (status != 0)
   {
     return syntax_error(sock,cmd);
@@ -1336,14 +1336,19 @@ static int handle_request_flush (HANDLER_PROTO) /* {{{ */
     stats_flush_received++;
     pthread_mutex_unlock(&stats_lock);
 
-    get_abs_path(&file, file_tmp);
+    file = get_abs_path(pbuffile);
+    if (file == NULL) {
+      rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+      goto done;
+    }
     if (!check_file_access(file, sock)) {
-      return 0; /* assume error response sent successfully */
+      rc = 0; /* assume error response sent successfully */
+      goto done;
     }
 
     status = flush_file (file);
     if (status == 0)
-      return send_response(sock, RESP_OK, "Successfully flushed %s.\n", file);
+      rc = send_response(sock, RESP_OK, "Successfully flushed %s.\n", file);
     else if (status == ENOENT)
     {
       /* no file in our tree; see whether it exists at all */
@@ -1351,18 +1356,19 @@ static int handle_request_flush (HANDLER_PROTO) /* {{{ */
 
       memset(&statbuf, 0, sizeof(statbuf));
       if (stat(file, &statbuf) == 0 && S_ISREG(statbuf.st_mode))
-        return send_response(sock, RESP_OK, "Nothing to flush: %s.\n", file);
+        rc = send_response(sock, RESP_OK, "Nothing to flush: %s.\n", file);
       else
-        return send_response(sock, RESP_ERR, "No such file: %s.\n", file);
+        rc = send_response(sock, RESP_ERR, "No such file: %s.\n", file);
     }
     else if (status < 0)
-      return send_response(sock, RESP_ERR, "Internal error.\n");
+      rc = send_response(sock, RESP_ERR, "Internal error.\n");
     else
-      return send_response(sock, RESP_ERR, "Failed with status %i.\n", status);
+      rc = send_response(sock, RESP_ERR, "Failed with status %i.\n", status);
   }
 
-  /* NOTREACHED */
-  assert(1==0);
+done:
+  free(file);
+  return rc;
 } /* }}} int handle_request_flush */
 
 static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
@@ -1378,44 +1384,59 @@ static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
 
 static int handle_request_pending(HANDLER_PROTO) /* {{{ */
 {
-  int status;
-  char *file, file_tmp[PATH_MAX];
+  int status, rc;
+  char *file=NULL, *pbuffile;
   cache_item_t *ci;
 
-  status = buffer_get_field(&buffer, &buffer_size, &file);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
   if (status != 0)
     return syntax_error(sock,cmd);
 
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
 
   pthread_mutex_lock(&cache_lock);
   ci = g_tree_lookup(cache_tree, file);
   if (ci == NULL)
   {
     pthread_mutex_unlock(&cache_lock);
-    return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
+    goto done;
   }
 
   for (size_t i=0; i < ci->values_num; i++)
     add_response_info(sock, "%s\n", ci->values[i]);
 
   pthread_mutex_unlock(&cache_lock);
-  return send_response(sock, RESP_OK, "updates pending\n");
+  rc = send_response(sock, RESP_OK, "updates pending\n");
+done:
+  free(file);
+  return rc;
 } /* }}} static int handle_request_pending */
 
 static int handle_request_forget(HANDLER_PROTO) /* {{{ */
 {
-  int status;
+  int status, rc;
   gboolean found;
-  char *file, file_tmp[PATH_MAX];
+  char *file=NULL, *pbuffile;
 
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
 
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
   if (!check_file_access(file, sock)) {
-    return 0; /* assume error response sent successfully */
+    rc = 0; /* assume error response sent successfully */
+    goto done;
   }
 
   pthread_mutex_lock(&cache_lock);
@@ -1427,13 +1448,14 @@ static int handle_request_forget(HANDLER_PROTO) /* {{{ */
     if (!JOURNAL_REPLAY(sock))
       journal_write("forget", file);
 
-    return send_response(sock, RESP_OK, "Gone!\n");
+    rc = send_response(sock, RESP_OK, "Gone!\n");
   }
   else
-    return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
 
-  /* NOTREACHED */
-  assert(1==0);
+done:
+  free(file);
+  return rc;
 } /* }}} static int handle_request_forget */
 
 static int handle_request_queue (HANDLER_PROTO) /* {{{ */
@@ -1456,9 +1478,9 @@ static int handle_request_queue (HANDLER_PROTO) /* {{{ */
 
 static int handle_request_update (HANDLER_PROTO) /* {{{ */
 {
-  char *file, file_tmp[PATH_MAX];
+  char *file=NULL, *pbuffile;
   int values_num = 0;
-  int status;
+  int status, rc;
   char orig_buf[RRD_CMD_MAX];
 
   cache_item_t *ci;
@@ -1467,17 +1489,24 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   if (!JOURNAL_REPLAY(sock))
     strncpy(orig_buf, buffer, min(RRD_CMD_MAX,buffer_size));
 
-  status = buffer_get_field (&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  status = buffer_get_field (&buffer, &buffer_size, &pbuffile);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
 
   pthread_mutex_lock(&stats_lock);
   stats_updates_received++;
   pthread_mutex_unlock(&stats_lock);
 
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
   if (!check_file_access(file, sock)) {
-    return 0; /* assume error response sent successfully */
+    rc = 0; /* assume error response sent successfully */
+    goto done;
   }
 
   pthread_mutex_lock (&cache_lock);
@@ -1499,24 +1528,30 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
       status = errno;
       if (status == ENOENT)
-        return send_response(sock, RESP_ERR, "No such file: %s\n", file);
+        rc = send_response(sock, RESP_ERR, "No such file: %s\n", file);
       else
-        return send_response(sock, RESP_ERR,
+        rc = send_response(sock, RESP_ERR,
                              "stat failed with error %i.\n", status);
+      goto done;
     }
-    if (!S_ISREG (statbuf.st_mode))
-      return send_response(sock, RESP_ERR, "Not a regular file: %s\n", file);
+    if (!S_ISREG (statbuf.st_mode)) {
+      rc = send_response(sock, RESP_ERR, "Not a regular file: %s\n", file);
+      goto done;
+    }
 
-    if (access(file, R_OK|W_OK) != 0)
-      return send_response(sock, RESP_ERR, "Cannot read/write %s: %s\n",
+    if (access(file, R_OK|W_OK) != 0) {
+      rc = send_response(sock, RESP_ERR, "Cannot read/write %s: %s\n",
                            file, rrd_strerror(errno));
+      goto done;
+    }
 
     ci = (cache_item_t *) malloc (sizeof (cache_item_t));
     if (ci == NULL)
     {
       RRDD_LOG (LOG_ERR, "handle_request_update: malloc failed.");
 
-      return send_response(sock, RESP_ERR, "malloc failed.\n");
+      rc = send_response(sock, RESP_ERR, "malloc failed.\n");
+      goto done;
     }
     memset (ci, 0, sizeof (cache_item_t));
 
@@ -1526,7 +1561,8 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
       free (ci);
       RRDD_LOG (LOG_ERR, "handle_request_update: strdup failed.");
 
-      return send_response(sock, RESP_ERR, "strdup failed.\n");
+      rc = send_response(sock, RESP_ERR, "strdup failed.\n");
+      goto done;
     }
 
     wipe_ci_values(ci, now);
@@ -1546,8 +1582,10 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     }
 
     /* state may have changed while we were unlocked */
-    if (state == SHUTDOWN)
-      return -1;
+    if (state == SHUTDOWN) {
+      rc = -1;
+      goto done;
+    }
   } /* }}} */
   assert (ci != NULL);
 
@@ -1573,16 +1611,18 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     if ( ( rrd_strtodbl( value, &eostamp, &stamp, NULL) != 1 ) || *eostamp != ':')
     {
       pthread_mutex_unlock(&cache_lock);
-      return send_response(sock, RESP_ERR,
-                           "Cannot find timestamp in '%s'!\n", value);
+      rc = send_response(sock, RESP_ERR,
+                         "Cannot find timestamp in '%s'!\n", value);
+      goto done;
     }
     else if (stamp <= ci->last_update_stamp)
     {
       pthread_mutex_unlock(&cache_lock);
-      return send_response(sock, RESP_ERR,
-                           "illegal attempt to update using time %lf when last"
-                           " update time is %lf (minimum one second step)\n",
-                           stamp, ci->last_update_stamp);
+      rc = send_response(sock, RESP_ERR,
+                         "illegal attempt to update using time %lf when last"
+                         " update time is %lf (minimum one second step)\n",
+                         stamp, ci->last_update_stamp);
+      goto done;
     }
     else
       ci->last_update_stamp = stamp;
@@ -1607,14 +1647,14 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   pthread_mutex_unlock (&cache_lock);
 
   if (values_num < 1)
-    return send_response(sock, RESP_ERR, "No values updated.\n");
+    rc = send_response(sock, RESP_ERR, "No values updated.\n");
   else
-    return send_response(sock, RESP_OK,
+    rc = send_response(sock, RESP_OK,
                          "errors, enqueued %i value(s).\n", values_num);
 
-  /* NOTREACHED */
-  assert(1==0);
-
+done:
+  free(file);
+  return rc;
 } /* }}} int handle_request_update */
 
 struct fetch_parsed{
@@ -1636,9 +1676,10 @@ struct fetch_parsed{
 
 static void free_fetch_parsed (struct fetch_parsed *parsed) /* {{{ */
 {
-    unsigned int i;
-    for (i = 0; i < parsed->ds_cnt; i++)
-      rrd_freemem(parsed->ds_namv[i]);
+  unsigned int i;
+  rrd_freemem(parsed->file);
+  for (i = 0; i < parsed->ds_cnt; i++)
+    rrd_freemem(parsed->ds_namv[i]);
   rrd_freemem(parsed->ds_namv);
   rrd_freemem(parsed->data);
 }
@@ -1646,8 +1687,7 @@ static void free_fetch_parsed (struct fetch_parsed *parsed) /* {{{ */
 static int handle_request_fetch_parse (HANDLER_PROTO,
 				struct fetch_parsed *parsed) /* {{{ */
 {
-  char file_tmp[PATH_MAX];
-
+  char *pbuffile;
   char *start_str;
   char *end_str;
 
@@ -1662,7 +1702,7 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
   /* Read the arguments */
   do /* while (0) */
   {
-    status = buffer_get_field (&buffer, &buffer_size, &parsed->file);
+    status = buffer_get_field (&buffer, &buffer_size, &pbuffile);
     if (status != 0)
       break;
 
@@ -1692,7 +1732,11 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
 	  return -1;
   }
 
-  get_abs_path(&parsed->file, file_tmp);
+  parsed->file = get_abs_path(pbuffile);
+  if (parsed->file == NULL) {
+    send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    return -1;
+  }
   if (!check_file_access(parsed->file, sock)) {
     return -1; /* failure */
   }
@@ -2009,24 +2053,30 @@ static int handle_request_wrote (HANDLER_PROTO) /* {{{ */
 
 static int handle_request_info (HANDLER_PROTO) /* {{{ */
 {
-  char *file, file_tmp[PATH_MAX];
-  int status;
-  rrd_info_t *info;
+  char *file=NULL, *pbuffile;
+  int status, rc;
+  rrd_info_t *info=NULL;
 
   /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
   if (status != 0)
     return syntax_error(sock,cmd);
   /* get full pathname */
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
   if (!check_file_access(file, sock)) {
-    return 0; /* assume error response sent successfully */
+    rc = 0; /* assume error response sent successfully */
+    goto done;
   }
   /* get data */
   rrd_clear_error ();
   info = rrd_info_r(file);
   if(!info) {
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+    rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+    goto done;
   }
   for (rrd_info_t *data = info; data != NULL; data = data->next) {
       switch (data->type) {
@@ -2051,70 +2101,95 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
       }
   }
 
-  rrd_info_free(info);
+  rc = send_response(sock, RESP_OK, "Info for %s follows\n",file);
 
-  return send_response(sock, RESP_OK, "Info for %s follows\n",file);
+done:
+  rrd_info_free(info);
+  free(file);
+  return rc;
 } /* }}} static int handle_request_info  */
 
 static int handle_request_first (HANDLER_PROTO) /* {{{ */
 {
-  char *i, *file, file_tmp[PATH_MAX];
-  int status;
+  char *i, *file=NULL, *pbuffile;
+  int status, rc;
   int idx;
   time_t t;
 
   /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
   /* get full pathname */
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
   if (!check_file_access(file, sock)) {
-    return 0; /* assume error response sent successfully */
+    rc = 0; /* assume error response sent successfully */
+    goto done;
   }
 
   status = buffer_get_field(&buffer, &buffer_size, &i);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
   idx = atoi(i);
   if(idx<0) {
-    return send_response(sock, RESP_ERR, "Invalid index specified (%d)\n", idx);
+    rc = send_response(sock, RESP_ERR, "Invalid index specified (%d)\n", idx);
+    goto done;
   }
 
   /* get data */
   rrd_clear_error ();
   t = rrd_first_r(file,idx);
-  if(t<1) {
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+  if (t<1) {
+    rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+    goto done;
   }
-  return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
+  rc = send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
+done:
+  free(file);
+  return rc;
 } /* }}} static int handle_request_first  */
 
 
 static int handle_request_last (HANDLER_PROTO) /* {{{ */
 {
-  char *file, file_tmp[PATH_MAX];
-  int status;
+  char *file=NULL, *pbuffile;
+  int status, rc;
   time_t t, from_file, step;
   rrd_file_t * rrd_file;
   cache_item_t * ci;
   rrd_t rrd;
 
   /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
-  if (status != 0)
-    return syntax_error(sock,cmd);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+  if (status != 0) {
+    rc = syntax_error(sock,cmd);
+    goto done;
+  }
   /* get full pathname */
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
   if (!check_file_access(file, sock)) {
-    return 0; /* assume error response sent successfully */
+    rc = 0; /* assume error response sent successfully */
+    goto done;
   }
   rrd_clear_error();
   rrd_init(&rrd);
   rrd_file = rrd_open(file,&rrd,RRD_READONLY);
   if(!rrd_file) {
     rrd_free(&rrd);
-    return send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+    rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+    goto done;
   }
   from_file = rrd.live_head->last_up;
   step = rrd.stat_head->pdp_step;
@@ -2129,17 +2204,18 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   t -= t % step;
   rrd_free(&rrd);
   if(t<1) {
-    return send_response(sock, RESP_ERR, "Error: rrdcached: Invalid timestamp returned\n");
+    rc = send_response(sock, RESP_ERR, "Error: rrdcached: Invalid timestamp returned\n");
+    goto done;
   }
-  return send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
+  rc = send_response(sock, RESP_OK, "%lu\n",(unsigned)t);
+done:
+  free(file);
+  return rc;
 } /* }}} static int handle_request_last  */
 
-#ifdef __GNUC__
-#define return _Pragma("message \"Do not use 'return': 'goto done' instead\"")
-#endif
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
-  char *file, file_tmp[PATH_MAX];
+  char *file = NULL, *pbuffile;
   char *file_copy = NULL, *dir, dir_tmp[PATH_MAX];
   char *tok;
   int ac = 0;
@@ -2154,17 +2230,21 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   int rc = -1;
 
   /* obtain filename */
-  status = buffer_get_field(&buffer, &buffer_size, &file);
+  status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
   if (status != 0) {
     rc = syntax_error(sock,cmd);
     goto done;
   }
   /* get full pathname */
-  get_abs_path(&file, file_tmp);
+  file = get_abs_path(pbuffile);
+  if (file == NULL) {
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    goto done;
+  }
 
   file_copy = strdup(file);
   if (file_copy == NULL) {
-    rc = send_response(sock, RESP_ERR, "Cannot create: empty argument.\n");
+    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
     goto done;
   }
   if (!check_file_access(file, sock)) {
@@ -2263,15 +2343,9 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   }
   rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
 done:
-  if (sources) {
-      free(sources);
-  }
-  if (file_copy) {
-      free(file_copy);
-  }
-#ifdef __GNUC__
-#undef return
-#endif
+  free(file);
+  free(sources);
+  free(file_copy);
   return rc;
 } /* }}} static int handle_request_create  */
 
