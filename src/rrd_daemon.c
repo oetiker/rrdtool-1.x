@@ -1209,7 +1209,7 @@ static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
 
 err:
   if (sock != NULL && sock->fd >= 0)
-    send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
+    send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
 
   return 0;
 } /* }}} static int check_file_access */
@@ -1337,7 +1337,9 @@ static int handle_request_flush (HANDLER_PROTO) /* {{{ */
     pthread_mutex_unlock(&stats_lock);
 
     get_abs_path(&file, file_tmp);
-    if (!check_file_access(file, sock)) return 0;
+    if (!check_file_access(file, sock)) {
+      return 0; /* assume error response sent successfully */
+    }
 
     status = flush_file (file);
     if (status == 0)
@@ -1412,7 +1414,9 @@ static int handle_request_forget(HANDLER_PROTO) /* {{{ */
     return syntax_error(sock,cmd);
 
   get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) return 0;
+  if (!check_file_access(file, sock)) {
+    return 0; /* assume error response sent successfully */
+  }
 
   pthread_mutex_lock(&cache_lock);
   found = g_tree_remove(cache_tree, file);
@@ -1472,7 +1476,9 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   pthread_mutex_unlock(&stats_lock);
 
   get_abs_path(&file, file_tmp);
-  if (!check_file_access(file, sock)) return 0;
+  if (!check_file_access(file, sock)) {
+    return 0; /* assume error response sent successfully */
+  }
 
   pthread_mutex_lock (&cache_lock);
   ci = g_tree_lookup (cache_tree, file);
@@ -1688,7 +1694,7 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
 
   get_abs_path(&parsed->file, file_tmp);
   if (!check_file_access(parsed->file, sock)) {
-	  return -1;
+    return -1; /* failure */
   }
 
   status = flush_file (parsed->file);
@@ -2014,7 +2020,7 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
   /* get full pathname */
   get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    return 0; /* assume error response sent successfully */
   }
   /* get data */
   rrd_clear_error ();
@@ -2064,7 +2070,7 @@ static int handle_request_first (HANDLER_PROTO) /* {{{ */
   /* get full pathname */
   get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    return 0; /* assume error response sent successfully */
   }
 
   status = buffer_get_field(&buffer, &buffer_size, &i);
@@ -2101,7 +2107,7 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   /* get full pathname */
   get_abs_path(&file, file_tmp);
   if (!check_file_access(file, sock)) {
-    return send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    return 0; /* assume error response sent successfully */
   }
   rrd_clear_error();
   rrd_init(&rrd);
@@ -2162,7 +2168,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = send_response(sock, RESP_ERR, "Cannot read: %s\n", file);
+    rc = 0; /* assume error response sent successfully */
     goto done;
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
@@ -2836,6 +2842,7 @@ static int journal_write(char *cmd, char *args) /* {{{ */
   return chars;
 } /* }}} static int journal_write */
 
+/* Returns the number of entries that were replayed */
 static int journal_replay (const char *file) /* {{{ */
 {
   FILE *fh;
