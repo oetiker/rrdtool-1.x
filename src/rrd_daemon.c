@@ -2212,7 +2212,7 @@ done:
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file = NULL, *pbuffile;
-  char *file_copy = NULL, *dir, dir_tmp[PATH_MAX];
+  char *file_copy = NULL, *dir, *dir2 = NULL;
   char *tok;
   int ac = 0;
   char *av[128];
@@ -2251,7 +2251,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
 
   pthread_mutex_lock(&rrdfilecreate_lock);
   dir = dirname(file_copy);
-  if (realpath(dir, dir_tmp) == NULL && errno == ENOENT) {
+  dir2 = realpath(dir, NULL);
+  if (dir2 == NULL && errno == ENOENT) {
     if (!config_allow_recursive_mkdir) {
         rc = send_response(sock, RESP_ERR,
             "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
@@ -2342,6 +2343,7 @@ done:
   free(file);
   free(sources);
   free(file_copy);
+  free(dir2);
   return rc;
 } /* }}} static int handle_request_create  */
 
@@ -2783,8 +2785,8 @@ static void journal_close(void) /* {{{ */
 static void journal_new_file(void) /* {{{ */
 {
   struct timeval now;
-  int  new_fd;
-  char new_file[PATH_MAX + 1];
+  int  new_fd = -1;
+  char *new_file = NULL;
 
   assert(journal_dir != NULL);
   assert(journal_cur != NULL);
@@ -2793,7 +2795,12 @@ static void journal_new_file(void) /* {{{ */
 
   gettimeofday(&now, NULL);
   /* this format assures that the files sort in strcmp() order */
-  snprintf(new_file, PATH_MAX, "%s/%s.%010d.%06d",
+  new_file = malloc(strlen(journal_dir) + 1 + strlen(JOURNAL_BASE) + 1 + 10 + 1 + 6 + 1);
+  if (new_file == NULL) {
+    RRDD_LOG(LOG_CRIT, "Out of memory.");
+    goto error;
+  }
+  sprintf(new_file, "%s/%s.%010d.%06d",
            journal_dir, JOURNAL_BASE, (int)now.tv_sec, (int)now.tv_usec);
 
   new_fd = open(new_file, O_WRONLY|O_CREAT|O_APPEND,
@@ -2810,6 +2817,7 @@ static void journal_new_file(void) /* {{{ */
 
   /* record the file in the journal set */
   rrd_add_strdup(&journal_cur->files, &journal_cur->files_num, new_file);
+  free(new_file);
 
   return;
 
@@ -2820,8 +2828,10 @@ error:
   RRDD_LOG(LOG_CRIT,
            "JOURNALING DISABLED: All values will be flushed at shutdown");
 
-  close(new_fd);
+  if (new_fd >= 0)
+    close(new_fd);
   config_flush_at_shutdown = 1;
+  free(new_file);
 
 } /* }}} journal_new_file */
 
@@ -4106,7 +4116,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 'b':
       {
         size_t len;
-        char base_realpath[PATH_MAX];
+        char *base_realpath;
 
         if (config_base_dir != NULL)
           free (config_base_dir);
@@ -4129,7 +4139,8 @@ static int read_options (int argc, char **argv) /* {{{ */
          * assumptions possible (we don't have to resolve paths
          * that start with a "/")
          */
-        if (realpath(config_base_dir, base_realpath) == NULL)
+        base_realpath = realpath(config_base_dir, NULL);
+        if (base_realpath == NULL)
         {
           fprintf (stderr, "Failed to canonicalize the base directory '%s': "
               "%s\n", config_base_dir, rrd_strerror(errno));
@@ -4146,6 +4157,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         if (len < 1)
         {
           fprintf (stderr, "Invalid base directory: %s\n", optarg);
+          free(base_realpath);
           return (4);
         }
 
@@ -4158,16 +4170,17 @@ static int read_options (int argc, char **argv) /* {{{ */
           len--;
         }
 
-        if (strncmp(config_base_dir,
-                         base_realpath, sizeof(base_realpath)) != 0)
+        if (strcmp(config_base_dir, base_realpath) != 0)
         {
           fprintf(stderr,
                   "Base directory (-b) resolved via file system links!\n"
                   "Please consult rrdcached '-b' documentation!\n"
                   "Consider specifying the real directory (%s)\n",
                   base_realpath);
+          free(base_realpath);
           return 5;
         }
+        free(base_realpath);
       }
       break;
 
@@ -4190,13 +4203,13 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'j':
       {
-        char journal_dir_actual[PATH_MAX];
-        journal_dir = realpath((const char *)optarg, journal_dir_actual);
+        if (journal_dir)
+          free(journal_dir);
+        journal_dir = realpath((const char *)optarg, NULL);
 	if (journal_dir)
 	{
           // if we were able to properly resolve the path, lets have a copy
           // for use outside this block.
-          journal_dir = strdup(journal_dir);
 	  status = rrd_mkdir_p(journal_dir, 0777);
 	  if (status != 0)
 	  {
