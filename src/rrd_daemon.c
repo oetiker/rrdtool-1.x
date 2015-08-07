@@ -1195,23 +1195,18 @@ static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
       || config_base_dir == NULL)
     return 1;
 
-  if (strstr(file, "../") != NULL) goto err;
+  if (strstr(file, "../") != NULL)
+    return 0;
 
   /* relative paths without "../" are ok */
   if (*file != '/') return 1;
 
   /* file must be of the format base + "/" + <1+ char filename> */
-  if (strlen(file) < _config_base_dir_len + 2) goto err;
-  if (strncmp(file, config_base_dir, _config_base_dir_len) != 0) goto err;
-  if (*(file + _config_base_dir_len) != '/') goto err;
+  if (strlen(file) < _config_base_dir_len + 2) return 0;
+  if (strncmp(file, config_base_dir, _config_base_dir_len) != 0) return 0;
+  if (*(file + _config_base_dir_len) != '/') return 0;
 
   return 1;
-
-err:
-  if (sock != NULL && sock->fd >= 0)
-    send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
-
-  return 0;
 } /* }}} static int check_file_access */
 
 /* when using a base dir, convert relative paths to absolute paths.
@@ -1342,7 +1337,7 @@ static int handle_request_flush (HANDLER_PROTO) /* {{{ */
       goto done;
     }
     if (!check_file_access(file, sock)) {
-      rc = 0; /* assume error response sent successfully */
+      rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
       goto done;
     }
 
@@ -1435,7 +1430,7 @@ static int handle_request_forget(HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
 
@@ -1505,7 +1500,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
 
@@ -1738,6 +1733,7 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
     return -1;
   }
   if (!check_file_access(parsed->file, sock)) {
+    send_response(sock, RESP_ERR, "%s: %s\n", parsed->file, rrd_strerror(EACCES));
     return -1; /* failure */
   }
 
@@ -2068,7 +2064,7 @@ static int handle_request_info (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
   /* get data */
@@ -2129,7 +2125,7 @@ static int handle_request_first (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
 
@@ -2180,7 +2176,7 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
   rrd_clear_error();
@@ -2248,7 +2244,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
     goto done;
   }
   if (!check_file_access(file, sock)) {
-    rc = 0; /* assume error response sent successfully */
+    rc = send_response(sock, RESP_ERR, "%s: %s\n", file, rrd_strerror(EACCES));
     goto done;
   }
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
