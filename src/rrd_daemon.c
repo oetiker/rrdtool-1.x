@@ -134,7 +134,7 @@ typedef enum { RESP_ERR = -1, RESP_OK = 0, RESP_OK_BIN = 1 } response_code;
 struct listen_socket_s
 {
   int fd;
-  char addr[PATH_MAX + 1];
+  char *addr;
   int family;
 
   /* state for BATCH processing */
@@ -3119,6 +3119,7 @@ static void free_listen_socket(listen_socket_t *sock) /* {{{ */
 
   free(sock->rbuf);  sock->rbuf = NULL;
   free(sock->wbuf);  sock->wbuf = NULL;
+  free(sock->addr);  sock->addr = NULL;
   free(sock);
 } /* }}} void free_listen_socket */
 
@@ -3344,8 +3345,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
 
   listen_fds[listen_fds_num].fd = fd;
   listen_fds[listen_fds_num].family = PF_UNIX;
-  strncpy(listen_fds[listen_fds_num].addr, path,
-          sizeof (listen_fds[listen_fds_num].addr) - 1);
+  listen_fds[listen_fds_num].addr = strdup(path);
   listen_fds_num++;
 
   return (0);
@@ -3578,9 +3578,7 @@ static void open_listen_sockets_traditional(void) /* {{{ */
   }
   else
   {
-    strncpy(default_socket.addr, RRDCACHED_DEFAULT_ADDRESS,
-        sizeof(default_socket.addr) - 1);
-    default_socket.addr[sizeof(default_socket.addr) - 1] = '\0';
+    default_socket.addr = strdup(RRDCACHED_DEFAULT_ADDRESS);
 
     if (default_socket.permissions == 0)
       socket_permission_set_all (&default_socket);
@@ -3599,6 +3597,7 @@ static int close_listen_sockets (void) /* {{{ */
 
     if (listen_fds[i].family == PF_UNIX)
       unlink(listen_fds[i].addr);
+    free(listen_fds[i].addr);
   }
 
   free (listen_fds);
@@ -3682,6 +3681,12 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
         continue;
       }
       memcpy(client_sock, &listen_fds[i], sizeof(listen_fds[0]));
+      client_sock->addr = strdup(listen_fds[i].addr);
+      if (client_sock->addr == NULL)
+      {
+        RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
+        continue;
+      }
 
       client_sa_size = sizeof (client_sa);
       client_sock->fd = accept (pollfds[i].fd,
@@ -3689,6 +3694,7 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
       if (client_sock->fd < 0)
       {
         RRDD_LOG (LOG_ERR, "listen_thread_main: accept(2) failed.");
+        free(client_sock->addr);
         free(client_sock);
         continue;
       }
@@ -3961,9 +3967,9 @@ static int read_options (int argc, char **argv) /* {{{ */
         memset(new, 0, sizeof(listen_socket_t));
 
         if ('L' == option)
-          new->addr[0] = 0;
+          new->addr = strdup("");
         else
-          strncpy(new->addr, optarg, sizeof(new->addr)-1);
+          new->addr = strdup(optarg);
 
         /* Add permissions to the socket {{{ */
         if (default_socket.permissions != 0)
