@@ -32,9 +32,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* NOTE: nothing in here is thread-safe!!!! Not even the localtime
-   calls ... */
-
 /*
  * The BNF-like specification of the time syntax parsed is below:
  *                                                               
@@ -687,7 +684,6 @@ static char *day(
 {
     /* using time_t seems to help portability with 64bit oses */
     time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
-
     switch (sc_tokid) {
     case YESTERDAY:
         ptv->tm.  tm_mday--;
@@ -757,7 +753,7 @@ static char *day(
          */
         mon = atol(sc_token);
         if (mon > 10 * 365 * 24 * 60 * 60) {
-            ptv->tm = *localtime(&mon);
+            localtime_r(&mon,&(ptv->tm));
 
             token();
             break;
@@ -856,7 +852,7 @@ char     *rrd_parsetime(
     /* establish the default time reference */
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
-    ptv->tm = *localtime(&now);
+    localtime_r(&now,&(ptv->tm));
     ptv->tm.  tm_isdst = -1;    /* mk time can figure dst by default ... */
 
     token();
@@ -1032,7 +1028,7 @@ int rrd_proc_start_end(
         struct tm tmtmp;
 
         *end = mktime(&(end_tv->tm)) + end_tv->offset;
-        tmtmp = *localtime(end);    /* reinit end including offset */
+        localtime_r(end,&tmtmp);    /* reinit end including offset */
         tmtmp.tm_mday += start_tv->tm.tm_mday;
         tmtmp.tm_mon += start_tv->tm.tm_mon;
         tmtmp.tm_year += start_tv->tm.tm_year;
@@ -1045,7 +1041,7 @@ int rrd_proc_start_end(
         struct tm tmtmp;
 
         *start = mktime(&(start_tv->tm)) + start_tv->offset;
-        tmtmp = *localtime(start);
+        localtime_r(start,&tmtmp);
         tmtmp.tm_mday += end_tv->tm.tm_mday;
         tmtmp.tm_mon += end_tv->tm.tm_mon;
         tmtmp.tm_year += end_tv->tm.tm_year;
