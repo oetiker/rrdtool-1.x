@@ -3030,10 +3030,20 @@ static void journal_init(void) /* {{{ */
   int had_journal = 0;
   DIR *dir;
   struct dirent *dent;
-  char path[PATH_MAX+1];
+  char *path = NULL, *old_path = NULL;
   int locked_done = 0;
+  size_t path_len;
 
   if (journal_dir == NULL) return;
+
+  path_len = strlen(journal_dir) + 1 + strlen(JOURNAL_BASE) 
+    + 1 + 17 /* see journal_new_file */ + 1 /* sentry */;
+  path = malloc(path_len);
+  old_path = malloc(path_len);
+  if (path == NULL || old_path == NULL) {
+    RRDD_LOG(LOG_CRIT, "journal_init: malloc(%lu) failed\n", (long unsigned)path_len);
+    goto done;
+  }
 
   pthread_mutex_lock(&journal_lock);
   locked_done = 1;
@@ -3041,7 +3051,7 @@ static void journal_init(void) /* {{{ */
   journal_cur = calloc(1, sizeof(journal_set));
   if (journal_cur == NULL)
   {
-    RRDD_LOG(LOG_CRIT, "journal_rotate: malloc(journal_set) failed\n");
+    RRDD_LOG(LOG_CRIT, "journal_init: malloc(journal_set) failed\n");
     goto done;
   }
 
@@ -3051,13 +3061,12 @@ static void journal_init(void) /* {{{ */
    * correct sort order.  TODO: remove after first release
    */
   {
-    char old_path[PATH_MAX+1];
-    snprintf(old_path, PATH_MAX, "%s/%s", journal_dir, JOURNAL_BASE ".old" );
-    snprintf(path,     PATH_MAX, "%s/%s", journal_dir, JOURNAL_BASE ".0000");
+    sprintf(old_path, "%s/%s", journal_dir, JOURNAL_BASE ".old" );
+    sprintf(path,     "%s/%s", journal_dir, JOURNAL_BASE ".0000");
     rename(old_path, path);
 
-    snprintf(old_path, PATH_MAX, "%s/%s", journal_dir, JOURNAL_BASE        );
-    snprintf(path,     PATH_MAX, "%s/%s", journal_dir, JOURNAL_BASE ".0001");
+    sprintf(old_path, "%s/%s", journal_dir, JOURNAL_BASE        );
+    sprintf(path,     "%s/%s", journal_dir, JOURNAL_BASE ".0001");
     rename(old_path, path);
   }
 
@@ -3072,7 +3081,7 @@ static void journal_init(void) /* {{{ */
     if (strncmp(dent->d_name, JOURNAL_BASE, strlen(JOURNAL_BASE)))
       continue;
 
-    snprintf(path, PATH_MAX, "%s/%s", journal_dir, dent->d_name);
+    sprintf(path, "%s/%s", journal_dir, dent->d_name);
 
     if (!rrd_add_strdup(&journal_cur->files, &journal_cur->files_num, path))
     {
@@ -3100,6 +3109,8 @@ static void journal_init(void) /* {{{ */
 done:
   if (locked_done)
     pthread_mutex_unlock(&journal_lock);
+  free(path);
+  free(old_path);
 } /* }}} static void journal_init */
 
 static void free_listen_socket(listen_socket_t *sock) /* {{{ */
