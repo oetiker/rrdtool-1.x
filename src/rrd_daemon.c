@@ -3031,16 +3031,18 @@ static void journal_init(void) /* {{{ */
   DIR *dir;
   struct dirent *dent;
   char path[PATH_MAX+1];
+  int locked_done = 0;
 
   if (journal_dir == NULL) return;
 
   pthread_mutex_lock(&journal_lock);
+  locked_done = 1;
 
   journal_cur = calloc(1, sizeof(journal_set));
   if (journal_cur == NULL)
   {
     RRDD_LOG(LOG_CRIT, "journal_rotate: malloc(journal_set) failed\n");
-    return;
+    goto done;
   }
 
   RRDD_LOG(LOG_INFO, "checking for journal files");
@@ -3062,7 +3064,7 @@ static void journal_init(void) /* {{{ */
   dir = opendir(journal_dir);
   if (!dir) {
     RRDD_LOG(LOG_CRIT, "journal_init: opendir(%s) failed\n", journal_dir);
-    return;
+    goto done;
   }
   while ((dent = readdir(dir)) != NULL)
   {
@@ -3093,10 +3095,11 @@ static void journal_init(void) /* {{{ */
   if (had_journal && config_flush_at_shutdown)
     flush_old_values(-1);
 
-  pthread_mutex_unlock(&journal_lock);
-
   RRDD_LOG(LOG_INFO, "journal processing complete");
 
+done:
+  if (locked_done)
+    pthread_mutex_unlock(&journal_lock);
 } /* }}} static void journal_init */
 
 static void free_listen_socket(listen_socket_t *sock) /* {{{ */
