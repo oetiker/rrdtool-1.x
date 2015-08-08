@@ -4,19 +4,31 @@
 
 RRD=rpn2.rrd
 
-$RRDTOOL create $RRD --start 920804400 DS:speed:DCOUNTER:600:U:U RRA:AVERAGE:0.5:1:24 RRA:AVERAGE:0.5:6:10
+$RRDTOOL create $RRD --step 7200 --start 1167487000 DS:speed:DCOUNTER:14000:U:U RRA:AVERAGE:0.5:1:30
 report "create"
-$RRDTOOL update $RRD 920804700:10 920805000:20 920805300:30
-$RRDTOOL update $RRD 920805600:40 920805900:50 920806200:60
-$RRDTOOL update $RRD 920806500:70 920806800:80 920807100:90
-$RRDTOOL update $RRD 920807400:100 920807700:110 920808000:120
-$RRDTOOL update $RRD 920808300:130 920808600:140 920808900:150
+
+# Sunday 2006-12-31T23:50:00 = 1167605400
+# is a reat test for the wrap detector as they ALL should wrap now
+
+$RRDTOOL update $RRD 1167487200:0 1167494400:720 1167501600:1440 1167508800:2160 1167516000:2880 1167523200:3600 1167530400:4320 1167537600:5040 1167544800:5760 1167552000:6480 1167559200:7200 1167566400:7920 1167573600:8640 1167580800:9360 1167588000:10080 1167595200:10800 1167602400:11520 1167609600:12240 1167616800:12960
+
 report "update"
 $RRDTOOL xport                          \
       --json \
-      --start 920804400 --end 920808000               \
+      --start  1167487200 --end 1167616800       \
       DEF:myspeed=$RRD:speed:AVERAGE              \
-      CDEF:total=myspeed,STEPWIDTH,*,PREV,ADDNAN             \
-      XPORT:myspeed:myspeed XPORT:total:total |\
+      CDEF:rday=myspeed,POP,NEWDAY \
+      CDEF:rweek=myspeed,POP,NEWWEEK \
+      CDEF:rmonth=myspeed,POP,NEWMONTH \
+      CDEF:ryear=myspeed,POP,NEWYEAR \
+      CDEF:day=myspeed,STEPWIDTH,*,NEWDAY,0,PREV,IF,ADDNAN             \
+      CDEF:week=myspeed,STEPWIDTH,*,NEWWEEK,0,PREV,IF,ADDNAN             \
+      CDEF:month=myspeed,STEPWIDTH,*,NEWMONTH,0,PREV,IF,ADDNAN             \
+      CDEF:year=myspeed,STEPWIDTH,*,NEWYEAR,0,PREV,IF,ADDNAN             \
+      XPORT:myspeed:myspeed \
+      XPORT:day:day       XPORT:rday:rday \
+      XPORT:week:week  XPORT:rweek:rweek \
+      XPORT:month:month       XPORT:rmonth:rmonth \
+      XPORT:year:year      XPORT:ryear:ryear |\
  $DIFF9 - $BASEDIR/rpn2.output
 report "xport"

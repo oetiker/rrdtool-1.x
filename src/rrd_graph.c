@@ -1254,13 +1254,6 @@ int data_calc(
              */
             im->gdes[gdi].step = lcd(steparray);
             free(steparray);
-            /* supply the actual stepwith for this run */
-            for (rpi = 0; im->gdes[gdi].rpnp[rpi].op != OP_END; rpi++) {
-                if (im->gdes[gdi].rpnp[rpi].op == OP_STEPWIDTH) {
-                    im->gdes[gdi].rpnp[rpi].val = im->gdes[gdi].step;
-                    im->gdes[gdi].rpnp[rpi].op = OP_NUMBER;
-                }
-            }
 
             if ((im->gdes[gdi].data = (rrd_value_t*)malloc(((im->gdes[gdi].end -
                                                im->gdes[gdi].start)
@@ -1282,7 +1275,7 @@ int data_calc(
                  * we use the fact that time_t is a synonym for long
                  */
                 if (rpn_calc(rpnp, &rpnstack, (long) now,
-                             im->gdes[gdi].data, ++dataidx) == -1) {
+                             im->gdes[gdi].data, ++dataidx,im->gdes[gdi].step) == -1) {
                     /* rpn_calc sets the error string */
                     rpnstack_free(&rpnstack);
 		    rpnp_freeextra(rpnp);

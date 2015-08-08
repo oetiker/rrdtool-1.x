@@ -22,7 +22,8 @@ enum op_en { OP_NUMBER = 0, OP_VARIABLE, OP_INF, OP_PREV, OP_NEGINF,
     OP_AVG, OP_ABS, OP_ADDNAN,
     OP_MINNAN, OP_MAXNAN,
     OP_MEDIAN, OP_PREDICTPERC,
-    OP_DEPTH, OP_COPY, OP_ROLL, OP_INDEX, OP_STEPWIDTH
+    OP_DEPTH, OP_COPY, OP_ROLL, OP_INDEX, OP_STEPWIDTH,
+    OP_NEWDAY, OP_NEWWEEK, OP_NEWMONTH, OP_NEWYEAR
  };
 
 typedef struct rpnp_t {
@@ -93,6 +94,8 @@ short     rpn_calc(
     rpnstack_t *rpnstack,
     long data_idx,
     rrd_value_t *output,
-    int output_idx);
+    int output_idx,
+    int step_width
+);
 
 #endif
