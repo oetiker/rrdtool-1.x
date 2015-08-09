@@ -628,6 +628,9 @@ AC_SUBST(ALL_LIBS)
 
 CONFIGURE_PART(Prep for Building Language Bindings)
   
+dnl Allow "if enable_rpath" in Makefile.am
+AM_CONDITIONAL(ENABLE_RPATH,[test "x$enable_rpath" = "xyes"])
+
 dnl Check for Perl and friends
 PATH=$PATH:/usr/perl5/bin
 export PATH
