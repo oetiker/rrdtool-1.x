@@ -1,12 +1,29 @@
-RRDtool 1.5.4 - 2015-05-14
+RRDtool 1.5.4 - 2015-08-09
 ==========================
 Bug Fixes
 ---------
 * parse floating point numbers according to C locale in rrdtool create
   arguments, regardles of the systems locale setting.
 * include missing rrd_rados.h into distribution archive
-* rrd_parsetime now uses a mutex lock to become  threadsafe
+* make rrdtool work on ARM again
+* make rrdtool test suit pass on 32bit OSs
+* fix --grid-dash option regression in graph
+* fix systemd support
+* fix link dependency for libpng since we are using functions directly
+* fix python modulename
+* fix rrdtool tune to accept U in minimum and maximum options
+* fi
+* rrd_parsetime now uses a mutex lock to become threadsafe
 * rrd_xport is now threadsafe
+* stop using MAX_PATH and make everything dynamic and make rrdtool work on
+  Gnu HURD ... thanks nirgal!
+
+Features
+--------
+* new RPN operators: STEPWIDTH, NEWDAY, NEWWEEK, NEWMONTH and NEWWEEK
+  together they allow to draw graphs where a rate is converted back to
+  absolute numbers and accumulated over a periode.
+
 
 RRDtool 1.5.3 - 2015-04-30
 ==========================
