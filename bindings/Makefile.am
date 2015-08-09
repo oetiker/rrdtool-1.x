@@ -9,6 +9,11 @@ endif
 
 SUBDIRS = $(SUB_tcl) $(SUB_lua)
 
+if ENABLE_RPATH
+PYTHON_RPATH=--rpath=$(libdir)
+PERL_RPATH=RPATH=$(libdir)
+endif
+
 # the following files are not mentioned in any other Makefile
 EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-piped/RRDp.pm perl-piped/t/base.t \
 	     perl-shared/ntmake-build perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm perl-shared/RRDs.ppd perl-shared/RRDs.xs perl-shared/t/base.t perl-shared/t/callback.t \
@@ -63,7 +68,7 @@ python:
                ABS_TOP_SRCDIR=${abs_top_srcdir} \
                ABS_TOP_BUILDDIR=${abs_top_builddir} \
                LD_RUN_PATH=$(libdir) \
-               $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext --rpath=$(libdir) \
+               $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext $(PYTHON_RPATH) \
           && env \
                ABS_TOP_SRCDIR=${abs_top_srcdir} \
                ABS_TOP_BUILDDIR=${abs_top_builddir} \
@@ -95,7 +100,7 @@ perl-shared:
              ABS_TOP_SRCDIR=${abs_top_srcdir} \
              ABS_TOP_BUILDDIR=${abs_top_builddir} \
              ABS_SRCDIR=${abs_srcdir}/$@ \
-             $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir) \
+             $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) $(PERL_RPATH) \
           && $(MAKE) )
 	-mkdir -p ${builddir}/perl-shared
 
