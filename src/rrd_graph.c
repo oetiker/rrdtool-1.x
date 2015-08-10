@@ -759,7 +759,7 @@ void apply_gridfit(
 
 /* reduce data reimplementation by Alex */
 
-void reduce_data(
+int reduce_data(
     enum cf_en cf,      /* which consolidation function ? */
     unsigned long cur_step, /* step the data currently is in */
     time_t *start,      /* start, end and step as requested ... */
@@ -841,10 +841,8 @@ void reduce_data(
 /* if this gets triggered, something is REALLY WRONG ... we die immediately */
 
     if (row_cnt % reduce_factor) {
-        printf("SANITY CHECK: %lu rows cannot be reduced by %i \n",
-               row_cnt, reduce_factor);
-        printf("BUG in reduce_data()\n");
-        exit(1);
+        rrd_set_error("SANITY CHECK: %lu rows cannot be reduced by %i \n",  row_cnt, reduce_factor);
+        return 0;
     }
 
     /* Now combine reduce_factor intervals at a time
@@ -929,6 +927,7 @@ void reduce_data(
         printf("\n");
     }
 #endif
+    return 1;
 }
 
 
@@ -1034,12 +1033,14 @@ int data_fetch(
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
 
-                reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
+                if (!reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
                             &im->gdes[i].end,
                             &im->gdes[i].step,
-                            &im->gdes[i].ds_cnt, &im->gdes[i].data);
+                            &im->gdes[i].ds_cnt, &im->gdes[i].data)){
+                     return -1;
+                }
             } else {
                 im->gdes[i].step = ft_step;
             }
