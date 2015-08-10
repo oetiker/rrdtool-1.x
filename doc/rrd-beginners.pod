@@ -198,7 +198,7 @@ values retrieved from the database before plotting them. For example,
 in SNMP replies, memory consumption values are usually specified in
 KBytes and traffic flow on interfaces is specified in Bytes. Graphs
 for these values will be more meaningful if values are represented in
-MBytes and mbps. The RRDtool graph command allows to define such
+MBytes and mbps. The RRDtool graph command allows one to define such
 conversions. Apart from mathematical calculations, it is also possible
 to perform logical operations such as greater than, less than, and
 if/then/else. If a database contains more than one RRA archive, then a
