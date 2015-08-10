@@ -21,7 +21,7 @@ dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.5001
+NUMVERS=1.5005
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -32,7 +32,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=7:0:3
+LIBVERS=7:5:3
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
