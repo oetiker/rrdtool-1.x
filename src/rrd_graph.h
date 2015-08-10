@@ -382,7 +382,7 @@ void      expand_range(
     image_desc_t *);
 void      apply_gridfit(
     image_desc_t *);
-void      reduce_data(
+int     reduce_data(
     enum cf_en,
     unsigned long,
     time_t *,
