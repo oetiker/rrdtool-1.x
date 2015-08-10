@@ -2825,10 +2825,10 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-NUMVERS=1.5001
+NUMVERS=1.5005
 
 
-LIBVERS=7:0:3
+LIBVERS=7:5:3
 
 
 # Make sure we can run config.sub.
