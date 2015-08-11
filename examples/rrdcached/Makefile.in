@@ -18,6 +18,7 @@
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
+
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -129,7 +130,8 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(examplesdir)"
+am__installdirs = "$(DESTDIR)$(examplesdir)" \
+	"$(DESTDIR)$(examplesdir)"
 SCRIPTS = $(examples_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -150,6 +152,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+DATA = $(examples_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
@@ -354,8 +357,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 examplesdir = $(pkgdatadir)/examples/rrdcached
-examples_SCRIPTS = RRDCached.pm rrdcached-size.pl
-EXTRA_DIST = RRDCached.pm rrdcached-size.pl
+examples_SCRIPTS = rrdcached-size.pl
+examples_DATA = RRDCached.pm
+EXTRA_DIST = $(examples_DATA) $(examples_SCRIPTS)
 all: all-am
 
 .SUFFIXES:
@@ -430,6 +434,27 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-examplesDATA: $(examples_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(examples_DATA)'; test -n "$(examplesdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(examplesdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(examplesdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(examplesdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(examplesdir)" || exit $$?; \
+	done
+
+uninstall-examplesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(examples_DATA)'; test -n "$(examplesdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(examplesdir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -469,9 +494,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(SCRIPTS)
+all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(examplesdir)"; do \
+	for dir in "$(DESTDIR)$(examplesdir)" "$(DESTDIR)$(examplesdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -524,7 +549,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-examplesSCRIPTS
+install-data-am: install-examplesDATA install-examplesSCRIPTS
 
 install-dvi: install-dvi-am
 
@@ -568,7 +593,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-examplesSCRIPTS
+uninstall-am: uninstall-examplesDATA uninstall-examplesSCRIPTS
 
 .MAKE: install-am install-strip
 
@@ -576,14 +601,14 @@ uninstall-am: uninstall-examplesSCRIPTS
 	cscopelist-am ctags-am distclean distclean-generic \
 	distclean-libtool distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-examplesSCRIPTS install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-dvi-am install-examplesDATA install-examplesSCRIPTS \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
-	uninstall-am uninstall-examplesSCRIPTS
+	uninstall-am uninstall-examplesDATA uninstall-examplesSCRIPTS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
