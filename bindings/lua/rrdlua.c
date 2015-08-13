@@ -350,7 +350,13 @@ set_info (lua_State * L)
 
 /**********************************************************/
 
+#if defined LUA50
 static const struct luaL_reg rrd[] = {
+#elif LUA_VERSION_NUM == 501
+static const struct luaL_Reg rrd[] = {
+#else
+static const struct luaL_Reg rrd[] = {
+#endif
   {"create", lua_rrd_create},
   {"dump", lua_rrd_dump},
   {"fetch", lua_rrd_fetch},
@@ -382,8 +388,11 @@ luaopen_rrd (lua_State * L)
 #if defined LUA50
   /* luaL_module is defined in compat-5.1.c */
   luaL_module (L, "rrd", rrd, 0);
-#else
+#elif LUA_VERSION_NUM == 501
+  /* version 5.1 */
   luaL_register (L, "rrd", rrd);
+#else
+  luaL_newlib(L, rrd);
 #endif
   set_info (L);
   return 1;

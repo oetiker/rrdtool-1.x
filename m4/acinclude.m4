@@ -612,3 +612,31 @@ AC_DEFUN([GC_TIMEZONE], [
                 fi
         fi
 ])
+
+dnl Like AC_SEARCH_LIBS, but allowing specifying a prologue and arguments so
+dnl that macros expand correctly.
+AC_DEFUN([RRD_SEARCH_LIBS],
+[AS_VAR_PUSHDEF([rrd_Search], [rrd_cv_search_$1])dnl
+AC_CACHE_CHECK([for library containing $1], [rrd_Search],
+[rrd_func_search_save_LIBS=$LIBS
+AC_LANG_CONFTEST([AC_LANG_PROGRAM([$2], [$1 ($3);])])
+for rrd_lib in '' $4; do
+  if test -z "$rrd_lib"; then
+    rrd_res="none required"
+  else
+    rrd_res=-l$rrd_lib
+    LIBS="-l$rrd_lib $7 $rrd_func_search_save_LIBS"
+  fi
+  AC_LINK_IFELSE([], [AS_VAR_SET([rrd_Search], [$rrd_res])])
+  AS_VAR_SET_IF([rrd_Search], [break])
+done
+AS_VAR_SET_IF([rrd_Search], , [AS_VAR_SET([rrd_Search], [no])])
+rm conftest.$ac_ext
+LIBS=$rrd_func_search_save_LIBS])
+AS_VAR_COPY([rrd_res], [rrd_Search])
+AS_IF([test "$rrd_res" != no],
+  [test "$rrd_res" = "none required" || LIBS="$rrd_res $LIBS"
+  $5],
+      [$6])
+AS_VAR_POPDEF([rrd_Search])dnl
+])
