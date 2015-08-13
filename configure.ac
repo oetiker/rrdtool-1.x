@@ -526,6 +526,8 @@ AC_LANG_POP(C)
 dnl is time_t 32 of 64 bit ?
 AC_CHECK_SIZEOF([time_t])
 
+AC_CHECK_SIZEOF([long int])
+
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
 have_libdbi=no
