@@ -512,8 +512,18 @@ static int find_first_weekday(void){
         first_weekday = nl_langinfo (_NL_TIME_FIRST_WEEKDAY)[0];
         int week_1stday;
         long week_1stday_l = (long) nl_langinfo (_NL_TIME_WEEK_1STDAY);
-        if (week_1stday_l == 19971130) week_1stday = 0; /* Sun */
-        else if (week_1stday_l == 19971201) week_1stday = 1; /* Mon */
+        if (week_1stday_l == 19971130
+#if SIZEOF_LONG_INT > 4
+            || week_1stday_l >> 32 == 19971130
+#endif
+           )
+            week_1stday = 0; /* Sun */
+        else if (week_1stday_l == 19971201
+#if SIZEOF_LONG_INT > 4
+           || week_1stday_l >> 32 == 19971201
+#endif
+           )
+            week_1stday = 1; /* Mon */
         else
         {
             first_weekday = 1;
