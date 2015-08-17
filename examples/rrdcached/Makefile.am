@@ -5,6 +5,7 @@
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
 examplesdir = $(pkgdatadir)/examples/rrdcached
-examples_SCRIPTS = RRDCached.pm rrdcached-size.pl
+examples_SCRIPTS = rrdcached-size.pl
+examples_DATA = RRDCached.pm
 
-EXTRA_DIST = RRDCached.pm rrdcached-size.pl
+EXTRA_DIST = $(examples_DATA) $(examples_SCRIPTS)
