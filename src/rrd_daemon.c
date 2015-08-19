@@ -3595,7 +3595,7 @@ static int close_listen_sockets (void) /* {{{ */
   {
     close (listen_fds[i].fd);
 
-    if (listen_fds[i].family == PF_UNIX)
+    if (listen_fds[i].family == PF_UNIX && listen_fds[i].addr != NULL)
       unlink(listen_fds[i].addr);
     free(listen_fds[i].addr);
   }
@@ -3681,12 +3681,15 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
         continue;
       }
       memcpy(client_sock, &listen_fds[i], sizeof(listen_fds[0]));
-      client_sock->addr = strdup(listen_fds[i].addr);
-      if (client_sock->addr == NULL)
+      if (listen_fds[i].addr)
       {
-        RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
-        continue;
-      }
+        client_sock->addr = strdup(listen_fds[i].addr);
+        if (client_sock->addr == NULL)
+        {
+          RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
+          continue;
+        }
+      } // else, the socket is comming from systemd
 
       client_sa_size = sizeof (client_sa);
       client_sock->fd = accept (pollfds[i].fd,
