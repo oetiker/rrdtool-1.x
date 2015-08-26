@@ -335,16 +335,16 @@ static void sig_common (const char *sig) /* {{{ */
 
 static void* signal_receiver (void UNUSED(*args))
 {
-  siginfo_t signal_info;
   int status;
 
   while (1)
   {
 #if defined(HAVE_SIGWAITINFO)
+    siginfo_t signal_info;
     status = sigwaitinfo(&signal_set, &signal_info);
 #elif defined(HAVE_SIGWAIT)
     status = -1;
-    if (sigwait(signal_set, &status) < 0 ){
+    if (sigwait(&signal_set, &status) < 0 ){
        status = -1;
     }
 #else
@@ -408,11 +408,18 @@ static void* signal_receiver (void UNUSED(*args))
         break;
 
       default:
+#if defined(HAVE_SIGWAITINFO)
         RRDD_LOG(LOG_NOTICE,
                  "%s: Signal %d was received from process %u.\n",
                  __func__,
                  status,
                  signal_info.si_pid);
+#else
+        RRDD_LOG(LOG_NOTICE,
+                 "%s: Signal %d was received.\n",
+                 __func__,
+                 status);
+#endif
     }
   }
 
