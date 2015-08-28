@@ -36,7 +36,7 @@ io.write('fetching data from ', name, ' - interval: ', start, ' to ',
          start+300*300, '\n') 
 local fstart, fstep, fnames, fdata =
   rrd.fetch(name, '--start', start, '--end', start+300*300+10, 'AVERAGE')
-io.write('got ', #fdata[1], ' data sources with ', #fdata,
+io.write('got ', table.getn(fdata[1]), ' data sources with ', table.getn(fdata),
          ' data points each.\n')
 
 io.write('\n-- Printing fetched data\n') 
