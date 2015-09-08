@@ -5,7 +5,7 @@ Bugfixes
 --------
 * shorten test precision to 7 digits ... 
 * never exit from a library function
-
+* buffer overflow in rrd_restore.c fixed #669
 
 RRDtool 1.5.4 - 2015-08-09
 ==========================

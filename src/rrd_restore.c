@@ -545,7 +545,7 @@ static int parse_tag_rra_cdp_prep_ds_history(
     int       i;
     if ((history = get_xml_text(reader)) != NULL){
         history_ptr = (char *) (&cdp_prep->scratch[0]);
-        for (i = 0; history[i] != '\0'; i++)
+        for (i = 0; history[i] != '\0' && i < MAX_CDP_PAR_EN; i++)
             history_ptr[i] = (history[i] == '1') ? 1 : 0;
         xmlFree(history);        
         return 0;        
