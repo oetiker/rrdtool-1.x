@@ -386,8 +386,6 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 /* a retry parsing */
 #define PARSE_RETRY        (1ULL<<54)
 
-GHashTable* gdef_map;
-
 /* find gdes containing var*/
 static long find_var(
     image_desc_t *im,

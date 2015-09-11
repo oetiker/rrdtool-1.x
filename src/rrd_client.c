@@ -8,10 +8,10 @@
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -29,7 +29,7 @@
 
 #include <ws2tcpip.h> // contain #include <winsock2.h>
 // Need to link with Ws2_32.lib
-#pragma comment(lib, "ws2_32.lib") 
+#pragma comment(lib, "ws2_32.lib")
 #include <time.h>
 #include <io.h>
 #include <fcntl.h>
@@ -107,11 +107,11 @@ static char *get_path (const char *path) /* {{{ */
     ret = realpath(path, NULL);
     if (ret == NULL) {
         /* this may happen, because the file DOES NOT YET EXIST (as would be
-         * the case for rrdcreate) - retry by stripping the last path element, 
+         * the case for rrdcreate) - retry by stripping the last path element,
          * resolving the directory and re-concatenate them.... */
         char *dir_path;
         char *lastslash = strrchr(path, '/');
-        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".") 
+        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".")
 #ifdef HAVE_STRNDUP
                 : strndup(path, lastslash - path);
 #else
@@ -951,7 +951,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   return (status);
 } /* }}} int rrdc_update */
 
-static int rrdc_filebased_command (const char *command, 
+static int rrdc_filebased_command (const char *command,
                                    const char *filename) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
@@ -1320,12 +1320,12 @@ int rrdc_create_r2(const char *filename, /* {{{ */
       status = buffer_add_string (*p, &buffer_ptr, &buffer_free);
     }
   }
-  
+
   if (template != NULL) {
     status = buffer_add_string ("-t", &buffer_ptr, &buffer_free);
     status = buffer_add_string (template, &buffer_ptr, &buffer_free);
   }
-  
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1398,19 +1398,25 @@ int rrdc_fetch (const char *filename, /* {{{ */
   if ((filename == NULL) || (cf == NULL))
     return (-1);
 
+  mutex_lock(&lock);
+
   /* Send request {{{ */
+
   memset (buffer, 0, sizeof (buffer));
   buffer_ptr = &buffer[0];
   buffer_free = sizeof (buffer);
-
   status = buffer_add_string ("FETCH", &buffer_ptr, &buffer_free);
-  if (status != 0)
-    return (ENOBUFS);
+  if (status != 0){
+      mutex_unlock(&lock);
+      return (ENOBUFS);
+  }
 
   /* change to path for rrdcached */
   file_path = get_path (filename);
-  if (file_path == NULL)
+  if (file_path == NULL){
+    mutex_unlock(&lock);
     return (EINVAL);
+  }
 
   status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
   free (file_path);
@@ -1436,8 +1442,10 @@ int rrdc_fetch (const char *filename, /* {{{ */
       snprintf (tmp, sizeof (tmp), "%lu", (unsigned long) *ret_end);
       tmp[sizeof (tmp) - 1] = 0;
       status = buffer_add_string (tmp, &buffer_ptr, &buffer_free);
-      if (status != 0)
+      if (status != 0){
+        mutex_unlock(&lock);
         return (ENOBUFS);
+      }
     }
   }
 
@@ -1448,14 +1456,16 @@ int rrdc_fetch (const char *filename, /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  if (status != 0)
+  if (status != 0){
+    mutex_unlock(&lock);
     return (status);
-
+  }
   status = res->status;
   if (status < 0)
   {
     rrd_set_error ("rrdcached: %s", res->message);
     response_free (res);
+    mutex_unlock(&lock);
     return (status);
   }
   /* }}} Send request */
@@ -1474,6 +1484,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
     if (ds_names != 0) { size_t k; for (k = 0; k < ds_num; k++) free (ds_names[k]); } \
     free (ds_names); \
     response_free (res); \
+    mutex_unlock(&lock); \
     return (status); \
   } while (0)
 
@@ -1569,6 +1580,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
   *ret_data = data;
 
   response_free (res);
+  mutex_unlock(&lock);
   return (0);
 #undef READ_NUMERIC_FIELD
 #undef BAIL_OUT
