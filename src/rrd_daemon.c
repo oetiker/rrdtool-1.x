@@ -482,7 +482,7 @@ static int open_pidfile(char *action, int oflag) /* {{{ */
     return -1;
   }
 
-  dir = dirname(file_copy);
+  dir = strdup(dirname(file_copy));
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create pidfile directory '%s': %s\n",
@@ -2257,7 +2257,7 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
   RRDD_LOG(LOG_INFO, "rrdcreate request for %s",file);
 
   pthread_mutex_lock(&rrdfilecreate_lock);
-  dir = dirname(file_copy);
+  dir = strdup(dirname(file_copy));
   dir2 = realpath(dir, NULL);
   if (dir2 == NULL && errno == ENOENT) {
     if (!config_allow_recursive_mkdir) {
@@ -3276,7 +3276,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
     return (-1);
   }
 
-  dir = dirname(path_copy);
+  dir = strdup(dirname(path_copy));
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create socket directory '%s': %s\n",

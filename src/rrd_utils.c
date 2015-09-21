@@ -148,19 +148,25 @@ void rrd_free_ptrs(void ***src, size_t *cnt)
 
 /* recursively create the directory named by 'pathname'
  * (similar to "mkdir -p" on the command line) */
-int rrd_mkdir_p(const char *pathname, mode_t mode)
+int rrd_mkdir_p(const char *pathname_unsafe, mode_t mode)
 {
     struct stat sb;
 
+    char *pathname;
     char *pathname_copy;
     char *base_dir;
 
-    if ((NULL == pathname) || ('\0' == *pathname)) {
+    if ((NULL == pathname_unsafe) || ('\0' == *pathname_unsafe)) {
         errno = EINVAL;
         return -1;
     }
 
+    /* dirname returns repeatedly same pointer - make pathname safe (bsd)*/
+    if (NULL == (pathname = strdup(pathname_unsafe)))
+        return -1;
+
     if (0 == stat(pathname, &sb)) {
+        free(pathname);
         if (! S_ISDIR(sb.st_mode)) {
             errno = ENOTDIR;
             return -1;
@@ -169,21 +175,27 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
     }
 
     /* keep errno as set by stat() */
-    if (ENOENT != errno)
+    if (ENOENT != errno) {
+        free(pathname);
         return -1;
+    }
 
     /* dirname might modify its first argument */
-    if (NULL == (pathname_copy = strdup(pathname)))
+    if (NULL == (pathname_copy = strdup(pathname))) {
+        free(pathname);
         return -1;
+    }
 
 #ifndef _MSC_VER
     /* the data pointedd too by dirname might change too (bsd) */
     if (NULL == (base_dir = strdup(dirname(pathname_copy)))) {
+        free(pathname);
         free(pathname_copy);
         return -1;
     }
 #else
     if (NULL == (base_dir = strdup(pathname_copy))) {
+        free(pathname);
         free(pathname_copy);
         return -1;
     }
@@ -193,6 +205,7 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
 
     if (0 != rrd_mkdir_p(base_dir, mode)) {
         int orig_errno = errno;
+        free(pathname);
         free(pathname_copy);
         free(base_dir);
         errno = orig_errno;
@@ -204,12 +217,17 @@ int rrd_mkdir_p(const char *pathname, mode_t mode)
 
     /* keep errno as set by mkdir() */
 #ifdef _MSC_VER
-    if (0 != mkdir(pathname))
+    if (0 != mkdir(pathname)) {
+        free(pathname);
         return -1;
+    }
 #else
-    if (0 != mkdir(pathname, mode))
+    if (0 != mkdir(pathname, mode)) {
+        free(pathname);
         return -1;
+    }
 #endif
+    free(pathname);
     return 0;
 } /* rrd_mkdir_p */
 
