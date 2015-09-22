@@ -83,7 +83,8 @@ int rrd_xport(
         {"maxrows",'m', OPTPARSE_REQUIRED},
         {"step",   261, OPTPARSE_REQUIRED},
         {"enumds", 262, OPTPARSE_NONE},
-        {"json",   263, OPTPARSE_NONE},    /* these are handled in the frontend ... */
+        {"json",   263, OPTPARSE_NONE},
+        {"showtime", 't', OPTPARSE_NONE},
         {"daemon", 'd', OPTPARSE_REQUIRED},
         {0}
     };
@@ -95,7 +96,8 @@ int rrd_xport(
 
     int enumds=0;
     int json=0;
-
+    int showtime=0;
+    
     int opt;
     while ((opt = optparse_long(&options,longopts,NULL)) != -1){
 
@@ -108,6 +110,9 @@ int rrd_xport(
             break;
         case 263:
   	    json=1;
+            break;
+        case 't':
+  	    showtime=1;
             break;
         case 's':
             if ((parsetime_error = rrd_parsetime(options.optarg, &start_tv))) {
@@ -198,6 +203,7 @@ int rrd_xport(
     if (!xsize) {
       int flags=0;
       if (json) { flags|=1; }
+      if (showtime) { flags|=2; }
       if (enumds) { flags|=4; }
       stringbuffer_t buffer={0,0,NULL,stdout};
       rrd_xport_format_xmljson(flags,&buffer,&im,
