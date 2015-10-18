@@ -433,6 +433,7 @@ rpnp_t   *rpn_parse(
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
+                     && (expr[pos] == '\0' || expr[pos] == ',')
                      && ((rpnp[steps].ptr = (*lookup) (key_hash, vname)) !=
                          -1)) {
             rpnp[steps].op = OP_VARIABLE;
@@ -440,7 +441,7 @@ rpnp_t   *rpn_parse(
         }
 
         else {
-            rrd_set_error("don't undestand '%s'",expr);
+            rrd_set_error("don't understand '%s'",expr);
             free(rpnp);
             return NULL;
         }
@@ -453,6 +454,7 @@ rpnp_t   *rpn_parse(
         if (*expr == ',')
             expr++;
         else {
+            rrd_set_error("garbage in RPN: '%s'", expr);
             free(rpnp);
             return NULL;
         }
