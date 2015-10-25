@@ -843,8 +843,12 @@ char     *rrd_parsetime(
     /* yes this code is non re-entrant ... so lets make sure we do not run
        in twice */
     mutex_lock(&parsetime_mutex);
+
     char *result = rrd_parsetime_nomt(tspec, ptv);
+
+    /* ok done ... drop the mutex lock */
     mutex_unlock(&parsetime_mutex);
+
     return result;
 }
 
@@ -1005,11 +1009,9 @@ static char     *rrd_parsetime_nomt(
             panic(e("the specified time is incorrect (out of range?)"));
         }
     EnsureMemFree();
-    /* ok done ... drop the mutex lock */
-    mutex_unlock(&parsetime_mutex);
 
     return TIME_OK;
-}                       /* rrd_parsetime */
+}                       /* rrd_parsetime_nomt */
 
 
 int rrd_proc_start_end(
