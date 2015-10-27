@@ -832,16 +832,32 @@ static char *day(
 
 static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
 
+static char     *rrd_parsetime_nomt(
+    const char *tspec,
+    rrd_time_value_t * ptv);
+    
 char     *rrd_parsetime(
+    const char *tspec,
+    rrd_time_value_t * ptv)
+{
+    /* yes this code is non re-entrant ... so lets make sure we do not run
+       in twice */
+    mutex_lock(&parsetime_mutex);
+
+    char *result = rrd_parsetime_nomt(tspec, ptv);
+
+    /* ok done ... drop the mutex lock */
+    mutex_unlock(&parsetime_mutex);
+
+    return result;
+}
+
+static char     *rrd_parsetime_nomt(
     const char *tspec,
     rrd_time_value_t * ptv)
 {
     time_t    now = time(NULL);
     int       hr = 0;
-
-    /* yes this code is non re-entrant ... so lets make sure we do not run
-       in twice */
-    mutex_lock(&parsetime_mutex);
 
     /* this MUST be initialized to zero for midnight/noon/teatime */
 
@@ -993,11 +1009,9 @@ char     *rrd_parsetime(
             panic(e("the specified time is incorrect (out of range?)"));
         }
     EnsureMemFree();
-    /* ok done ... drop the mutex lock */
-    mutex_unlock(&parsetime_mutex);
 
     return TIME_OK;
-}                       /* rrd_parsetime */
+}                       /* rrd_parsetime_nomt */
 
 
 int rrd_proc_start_end(
