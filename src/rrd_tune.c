@@ -53,21 +53,21 @@ int       set_hwarg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
-    char *arg);
+    const char *arg);
 int       set_deltaarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
-    char *arg);
+    const char *arg);
 int       set_windowarg(
     rrd_t *rrd,
     enum rra_par_en,
-    char *arg);
+    const char *arg);
 
 int set_hwsmootharg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
-    char *arg);
+    const char *arg);
 
 int rrd_tune(
     int argc,
@@ -89,50 +89,45 @@ int rrd_tune(
     char      *opt_daemon = NULL;
     char      double_str[ 41 ] = {0};
     const char *in_filename = NULL;
-    struct option long_options[] = {
-        {"heartbeat", required_argument, 0, 'h'},
-        {"minimum", required_argument, 0, 'i'},
-        {"maximum", required_argument, 0, 'a'},
-        {"data-source-type", required_argument, 0, 'd'},
-        {"data-source-rename", required_argument, 0, 'r'},
+    struct optparse_long longopts[] = {
+        {"heartbeat", 'h', OPTPARSE_REQUIRED},
+        {"minimum", 'i', OPTPARSE_REQUIRED},
+        {"maximum", 'a', OPTPARSE_REQUIRED},
+        {"data-source-type", 'd', OPTPARSE_REQUIRED},
+        {"data-source-rename", 'r', OPTPARSE_REQUIRED},
         /* added parameter tuning options for aberrant behavior detection */
-        {"deltapos", required_argument, 0, 'p'},
-        {"deltaneg", required_argument, 0, 'n'},
-        {"window-length", required_argument, 0, 'w'},
-        {"failure-threshold", required_argument, 0, 'f'},
-        {"alpha", required_argument, 0, 'x'},
-        {"beta", required_argument, 0, 'y'},
-        {"gamma", required_argument, 0, 'z'},
-        {"gamma-deviation", required_argument, 0, 'v'},
-        {"smoothing-window", required_argument, 0, 's'},
-        {"smoothing-window-deviation", required_argument, 0, 'S'},
-        {"aberrant-reset", required_argument, 0, 'b'},
+        {"deltapos", 'p', OPTPARSE_REQUIRED},
+        {"deltaneg", 'n', OPTPARSE_REQUIRED},
+        {"window-length", 'w', OPTPARSE_REQUIRED},
+        {"failure-threshold", 'f', OPTPARSE_REQUIRED},
+        {"alpha", 'x', OPTPARSE_REQUIRED},
+        {"beta", 'y', OPTPARSE_REQUIRED},
+        {"gamma", 'z', OPTPARSE_REQUIRED},
+        {"gamma-deviation", 'v', OPTPARSE_REQUIRED},
+        {"smoothing-window", 's', OPTPARSE_REQUIRED},
+        {"smoothing-window-deviation", 'S', OPTPARSE_REQUIRED},
+        {"aberrant-reset", 'b', OPTPARSE_REQUIRED},
 	// integration of rrd_modify functionality.
-        {"step", required_argument, 0, 't'},
+        {"step", 't', OPTPARSE_REQUIRED},
 	/* unfortunately, '-d' is already taken */
-        {"daemon", required_argument, 0, 'D'},
-        {0, 0, 0, 0}
+        {"daemon", 'D', OPTPARSE_REQUIRED},
+        {0}
     };
-
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
+    struct optparse options;
+    int opt;
 
     /* before we open the input RRD, we should flush it from any caching
     daemon, because we might totally rewrite it later on */
 
     /* for this, we FIRST have to find the daemon, this means we must parse options twice... */
     
-    while (1) {
-	int option_index = 0;
-	int opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:s:S:b:t:D:",
-			      long_options, &option_index);
-        if (opt == EOF)
-            break;
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
 	switch (opt) {
 	case 'D':
             if (opt_daemon != NULL)
 		free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup (options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -155,17 +150,17 @@ int rrd_tune(
 	opt_daemon = NULL;
     }
 
-    if (optind < 0 || optind >= argc) {
+    if (options.optind < 0 || options.optind >= options.argc) {
 	// missing file name...
 	rrd_set_error("missing file name");
 	goto done;
     }
     
-    /* NOTE: getopt_long reorders argv and places all NON option arguments to
+    /* NOTE: optparse_long reorders argv and places all NON option arguments to
     the back, starting with optind. This means the file name has travelled to
-    argv[optind] */
+    options.argv[options.optind] */
     
-    in_filename = argv[optind];
+    in_filename = options.argv[options.optind];
     
     if (rrdc_is_any_connected()) {
 	// is it a good idea to just ignore the error ????
@@ -173,30 +168,21 @@ int rrd_tune(
 	rrd_clear_error();
     }
 
-    optind = 0;
-    opterr = 0;         /* re-initialize getopt */
-    
     rrd_init(&rrd);
     rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
 	goto done;
     }
 
-    while (1) {
-        int       option_index = 0;
-        int       opt;
+    optparse_init(&options, argc, argv); /* re-initialize optparse */
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         unsigned int strtod_ret_val;
-
-        opt = getopt_long(argc, argv, "h:i:a:d:r:p:n:w:f:x:y:z:v:s:S:b:t:D:",
-                          long_options, &option_index);
-        if (opt == EOF)
-            break;
 
         optcnt++;
         switch (opt) {
         case 'h':
             if ((matches =
-		 sscanf(optarg, DS_NAM_FMT ":%ld", ds_nam,
+		 sscanf(options.optarg, DS_NAM_FMT ":%ld", ds_nam,
 			&heartbeat)) != 2) {
                 rrd_set_error("invalid arguments for heartbeat");
 		goto done;
@@ -208,7 +194,7 @@ int rrd_tune(
             break;
 
         case 'i':
-            matches = sscanf(optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
+            matches = sscanf(options.optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
             if ( matches == 2 ) {
                 if (strcmp(double_str,"U") == 0){
                     min = DNAN;
@@ -232,7 +218,7 @@ int rrd_tune(
             break;
 
         case 'a':
-            matches = sscanf(optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
+            matches = sscanf(options.optarg, DS_NAM_FMT ":%40[U0-9.e+-]", ds_nam, double_str);
             if ( matches == 2 ) {
                 if (strcmp(double_str,"U") == 0){
                     max = DNAN;
@@ -257,7 +243,7 @@ int rrd_tune(
             
         case 'd':
             if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":" DST_FMT, ds_nam, dst)) != 2) {
+                 sscanf(options.optarg, DS_NAM_FMT ":" DST_FMT, ds_nam, dst)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
 		goto done;
 	    }
@@ -281,7 +267,7 @@ int rrd_tune(
             break;
         case 'r':
             if ((matches =
-                 sscanf(optarg, DS_NAM_FMT ":" DS_NAM_FMT, ds_nam,
+                 sscanf(options.optarg, DS_NAM_FMT ":" DS_NAM_FMT, ds_nam,
                         ds_new)) != 2) {
                 rrd_set_error("invalid arguments for data source type");
 		goto done;
@@ -293,53 +279,53 @@ int rrd_tune(
             rrd.ds_def[ds].ds_nam[DS_NAM_SIZE - 1] = '\0';
             break;
         case 'p':
-            if (set_deltaarg(&rrd, RRA_delta_pos, optarg)) {
+            if (set_deltaarg(&rrd, RRA_delta_pos, options.optarg)) {
 		goto done;
             }
             break;
         case 'n':
-            if (set_deltaarg(&rrd, RRA_delta_neg, optarg)) {
+            if (set_deltaarg(&rrd, RRA_delta_neg, options.optarg)) {
 		goto done;
             }
             break;
         case 'f':
-            if (set_windowarg(&rrd, RRA_failure_threshold, optarg)) {
+            if (set_windowarg(&rrd, RRA_failure_threshold, options.optarg)) {
 		goto done;
             }
             break;
         case 'w':
-            if (set_windowarg(&rrd, RRA_window_len, optarg)) {
+            if (set_windowarg(&rrd, RRA_window_len, options.optarg)) {
 		goto done;
             }
             break;
         case 'x':
-            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, optarg)) {
-                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_alpha, optarg)) {
+            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, options.optarg)) {
+                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_alpha, options.optarg)) {
 		    goto done;
                 }
                 rrd_clear_error();
             }
             break;
         case 'y':
-            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_beta, optarg)) {
-                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_beta, optarg)) {
+            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_beta, options.optarg)) {
+                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_beta, options.optarg)) {
 		    goto done;
                 }
                 rrd_clear_error();
             }
             break;
         case 'z':
-            if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_gamma, optarg)) {
+            if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_gamma, options.optarg)) {
 		goto done;
             }
             break;
         case 'v':
-            if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_gamma, optarg)) {
+            if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_gamma, options.optarg)) {
 		goto done;
 	    }
             break;
         case 'b':
-            if (sscanf(optarg, DS_NAM_FMT, ds_nam) != 1) {
+            if (sscanf(options.optarg, DS_NAM_FMT, ds_nam) != 1) {
                 rrd_set_error("invalid argument for aberrant-reset");
 		goto done;
             }
@@ -357,7 +343,7 @@ int rrd_tune(
                 strcpy(rrd.stat_head->version, RRD_VERSION4);    /* smoothing_window causes Version 4 */
             }
             if (set_hwsmootharg
-                (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, optarg)) {
+                (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, options.optarg)) {
 		goto done;
             }
             break;
@@ -367,21 +353,18 @@ int rrd_tune(
             }
             if (set_hwsmootharg
                 (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
-                 optarg)) {
+                 options.optarg)) {
 		goto done;
             }
             break;
 	case 't':
-	    opt_newstep = atoi(optarg);
+	    opt_newstep = atoi(options.optarg);
 	    break;
 	case 'D':
 	    // ignore, handled in previous argv parsing round
 	    break;
         case '?':
-            if (optopt != 0)
-                rrd_set_error("unknown option '%c'", optopt);
-            else
-                rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
 	    goto done;
         }
     }
@@ -395,7 +378,7 @@ int rrd_tune(
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
     }
     
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         int       i;
 
         for (i = 0; i < (int) rrd.stat_head->ds_cnt; i++)
@@ -418,8 +401,8 @@ int rrd_tune(
             }
     }
 
-    optind = handle_modify(&rrd, in_filename, argc, argv, optind + 1, opt_newstep);
-    if (optind < 0) {
+    optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
+    if (options.optind < 0) {
 	goto done;
     }
     
@@ -449,7 +432,7 @@ int set_hwarg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
-    char *arg)
+    const char *arg)
 {
     double    param;
     unsigned long i;
@@ -487,7 +470,7 @@ int set_hwsmootharg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
-    char *arg)
+    const char *arg)
 {
     double    param;
     unsigned long i;
@@ -526,7 +509,7 @@ int set_hwsmootharg(
 int set_deltaarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
-    char *arg)
+    const char *arg)
 {
     rrd_value_t param;
     unsigned long i;
@@ -563,7 +546,7 @@ int set_deltaarg(
 int set_windowarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
-    char *arg)
+    const char *arg)
 {
     unsigned long param;
     unsigned long i, cdp_idx;

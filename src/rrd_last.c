@@ -15,28 +15,20 @@ time_t rrd_last(
 {
     char *opt_daemon = NULL;
     time_t lastupdate;
+    struct optparse_long longopts[] = {
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0},
+    };
+    struct optparse options;
+    int opt;
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (42) {
-        int       opt;
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"daemon", required_argument, 0, 'd'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
             if (opt_daemon != NULL)
                     free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -44,26 +36,24 @@ time_t rrd_last(
             }
             break;
 
-        default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
-                    argv[0]);
-            return (-1);
-            break;
+        case '?':
+            rrd_set_error("%s", options.errmsg);
+            return -1;
         }
-    }                   /* while (42) */
+    }                   /* while (opt) */
 
-    if ((argc - optind) != 1) {
+    if ((options.argc - options.optind) != 1) {
         rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
-                argv[0]);
-        return (-1);
+                options.argv[0]);
+        return -1;
     }
 
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon))
-        lastupdate = rrdc_last (argv[optind]);
+        lastupdate = rrdc_last(options.argv[options.optind]);
 
     else
-        lastupdate = rrd_last_r(argv[optind]);
+        lastupdate = rrd_last_r(options.argv[options.optind]);
 
     if (opt_daemon) free(opt_daemon);
     return (lastupdate);

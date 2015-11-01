@@ -15,30 +15,22 @@ time_t rrd_first(
     int argc,
     char **argv)
 {
+    struct optparse_long longopts[] = {
+        {"rraindex", 129, OPTPARSE_REQUIRED},
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0},
+    };
+    struct    optparse options;
+    int       opt;
     int       target_rraindex = 0;
     char     *endptr;
     char *opt_daemon = NULL;
-    struct option long_options[] = {
-        {"rraindex", required_argument, 0, 129},
-        {"daemon", required_argument, 0, 'd'},
-        {0, 0, 0, 0}
-    };
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 129:
-            target_rraindex = strtol(optarg, &endptr, 0);
+            target_rraindex = strtol(options.optarg, &endptr, 0);
             if (target_rraindex < 0) {
                 rrd_set_error("invalid rraindex number");
                 return (-1);
@@ -47,31 +39,30 @@ time_t rrd_first(
         case 'd':
             if (opt_daemon != NULL)
                     free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
-                return (-1);
+                return -1;
             }
             break;
-        default:
-            rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon|-d <addr>] file.rrd",
-                          argv[0]);
-            return (-1);
+        case '?':
+            rrd_set_error("%s", options.errmsg);
+            return -1;
         }
     }
 
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon|-d <addr>] file.rrd",
-                      argv[0]);
+                      options.argv[0]);
         return -1;
     }
 
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
-      return (rrdc_first (argv[optind], target_rraindex));
+      return rrdc_first(options.argv[options.optind], target_rraindex);
     } else {
-    return (rrd_first_r(argv[optind], target_rraindex));
+      return rrd_first_r(options.argv[options.optind], target_rraindex);
 	}
 }
 

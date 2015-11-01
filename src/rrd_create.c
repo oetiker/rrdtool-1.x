@@ -67,17 +67,17 @@ int rrd_create(
     int argc,
     char **argv)
 {
-    struct option long_options[] = {
-        {"start", required_argument, 0, 'b'},
-        {"step", required_argument, 0, 's'},
-        {"daemon", required_argument, 0, 'd'},
-        {"source", required_argument, 0, 'r'},
-        {"template", required_argument, 0, 't'},
-        {"no-overwrite", no_argument, 0, 'O'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"start", 'b', OPTPARSE_REQUIRED},
+        {"step", 's', OPTPARSE_REQUIRED},
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {"source", 'r', OPTPARSE_REQUIRED},
+        {"template", 't', OPTPARSE_REQUIRED},
+        {"no-overwrite", 'O', OPTPARSE_NONE},
+        {0},
     };
-    int       option_index = 0;
-    int       opt;
+    struct optparse options;
+    int opt;
     time_t    last_up = -1;
     unsigned long pdp_step = 0;
     rrd_time_value_t last_up_tv;
@@ -89,20 +89,13 @@ int rrd_create(
     const char **sources_array = NULL;
     char *template = NULL;
     
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (1) {
-        opt = getopt_long(argc, argv, "b:s:d:r:t:O", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
             if (opt_daemon != NULL)
-                    free (opt_daemon);
-            opt_daemon = strdup (optarg);
+                free (opt_daemon);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -112,7 +105,7 @@ int rrd_create(
             break;
 
         case 'b':
-            if ((parsetime_error = rrd_parsetime(optarg, &last_up_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &last_up_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 rc = -1;
                 goto done;
@@ -136,7 +129,7 @@ int rrd_create(
             break;
 
         case 's':
-            if ((parsetime_error = rrd_scaled_duration(optarg, 1, &pdp_step))) {
+            if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &pdp_step))) {
                 rrd_set_error("step size: %s", parsetime_error);
                 rc = -1;
                 goto done;
@@ -149,18 +142,18 @@ int rrd_create(
 
         case 'r': {
             struct stat st;
-            if (stat(optarg, &st) != 0) {
-                rrd_set_error("error checking for source RRD %s: %s", optarg, rrd_strerror(errno));
+            if (stat(options.optarg, &st) != 0) {
+                rrd_set_error("error checking for source RRD %s: %s", options.optarg, rrd_strerror(errno));
                 rc = -1;
                 goto done;
             } 
             
             if (!S_ISREG(st.st_mode)) {
-                rrd_set_error("Not a regular file: %s", optarg);
+                rrd_set_error("Not a regular file: %s", options.optarg);
                 rc = -1;
                 goto done;
             }
-            char * optcpy = strdup(optarg);
+            char * optcpy = strdup(options.optarg);
             if (optcpy == NULL) {
                 rrd_set_error("Cannot allocate string");
                 rc = -1;
@@ -181,7 +174,7 @@ int rrd_create(
                 rc = -1;
                 goto done;
             }
-            char * optcpy = strdup(optarg);
+            char * optcpy = strdup(options.optarg);
             if (optcpy == NULL) {
                 rrd_set_error("Cannot allocate string");
                 rc = -1;
@@ -192,15 +185,12 @@ int rrd_create(
             break;
         }
         case '?':
-            if (optopt != 0)
-                rrd_set_error("unknown option '%c'", optopt);
-            else
-                rrd_set_error("unknown option '%s'", argv[optind - 1]);
-                rc = -1;
-                goto done;
+            rrd_set_error("%s", options.errmsg);
+            rc = -1;
+            goto done;
         }
     }
-    if (optind == argc) {
+    if (options.optind == options.argc) {
         rrd_set_error("need name of an rrd file to create");
         rc = -1;
         goto done;
@@ -221,15 +211,17 @@ int rrd_create(
     }
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
-        rc = rrdc_create_r2(argv[optind],
+        rc = rrdc_create_r2(options.argv[options.optind],
                       pdp_step, last_up, opt_no_overwrite, 
                       sources_array, template,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
+                      options.argc - options.optind - 1,
+                      (const char **) (options.argv + options.optind + 1));
     } else {
-        rc = rrd_create_r2(argv[optind],
+        rc = rrd_create_r2(options.argv[options.optind],
                       pdp_step, last_up, opt_no_overwrite,
                       sources_array, template,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
+                      options.argc - options.optind - 1,
+                      (const char **) (options.argv + options.optind + 1));
     }
 done:
     if (sources_array != NULL) {
@@ -881,7 +873,7 @@ int rrd_create_r2(
         rrd.stat_head->pdp_step = 300;
     }
 
-    /* optind points to the first non-option command line arg,
+    /* options.optind points to the first non-option command line arg,
      * in this case, the file name. */
     /* Compute the FNV hash value (used by SEASONAL and DEVSEASONAL
      * arrays. */

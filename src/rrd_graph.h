@@ -358,17 +358,17 @@ double    ytr(
     image_desc_t *,
     double);
 enum gf_en gf_conv(
-    char *);
+    const char *);
 enum gfx_if_en if_conv(
-    char *);
+    const char *);
 enum gfx_type_en type_conv(
-    char *);
+    const char *);
 enum tmt_en tmt_conv(
-    char *);
+    const char *);
 enum grc_en grc_conv(
-    char *);
+    const char *);
 enum text_prop_en text_prop_conv(
-    char *);
+    const char *);
 int       im_free(
     image_desc_t *);
 void      auto_scale(
@@ -455,6 +455,7 @@ void      time_clean(
 void      rrd_graph_options(
     int,
     char **,
+    struct optparse *,
     image_desc_t *);
 void      rrd_graph_script(
     int,

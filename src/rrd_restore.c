@@ -1383,24 +1383,17 @@ int rrd_restore(
     int argc,
     char **argv)
 {
+    struct optparse_long longopts[] = {
+        {"range-check", 'r', OPTPARSE_NONE},
+        {"force-overwrite", 'f', OPTPARSE_NONE},
+        {0},
+    };
+    struct    optparse options;
+    int       opt;
     rrd_t    *rrd;
-    /* init rrd clean */
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-    while (42) {
-        int       opt;
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"range-check", no_argument, 0, 'r'},
-            {"force-overwrite", no_argument, 0, 'f'},
-            {0, 0, 0, 0}
-        };
 
-        opt = getopt_long(argc, argv, "rf", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'r':
             opt_range_check = 1;
@@ -1410,27 +1403,25 @@ int rrd_restore(
             opt_force_overwrite = 1;
             break;
 
-        default:
-            rrd_set_error("usage rrdtool %s [--range-check|-r] "
-                          "[--force-overwrite|-f]  file.xml file.rrd",
-                          argv[0]);
-            return (-1);
-            break;
+        case '?':
+            rrd_set_error("%s", options.errmsg);
+            return -1;
         }
-    }                   /* while (42) */
+    } /* while (opt != -1) */
 
-    if ((argc - optind) != 2) {
+    if (options.argc - options.optind != 2) {
         rrd_set_error("usage rrdtool %s [--range-check|-r] "
-                      "[--force-overwrite|-f] file.xml file.rrd", argv[0]);
-        return (-1);
+                      "[--force-overwrite|-f] file.xml file.rrd",
+                      options.argv[0]);
+        return -1;
     }
 
-    rrd = parse_file(argv[optind]);
+    rrd = parse_file(options.argv[options.optind]);
 
     if (rrd == NULL)
         return (-1);
     
-    if (write_file(argv[optind + 1], rrd) != 0) {
+    if (write_file(options.argv[options.optind + 1], rrd) != 0) {
         local_rrd_free(rrd);
         return (-1);
     }

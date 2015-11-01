@@ -306,37 +306,30 @@ rrd_info_t *rrd_update_v(
     int argc,
     char **argv)
 {
-    char     *tmplt = NULL;
+    struct optparse_long longopts[] = {
+        {"template",          't', OPTPARSE_REQUIRED},
+        {"skip-past-updates", 's', OPTPARSE_NONE},
+        {0},
+    };
+    struct optparse options;
+    int opt;
+    const char *tmplt = NULL;
     int      extra_flags = 0;
     rrd_info_t *result = NULL;
     rrd_infoval_t rc;
     char *opt_daemon = NULL;
-    struct option long_options[] = {
-        {"template", required_argument, 0, 't'},
-        {"skip-past-updates",  no_argument, 0, 's'},
-        {0, 0, 0, 0}
-    };
 
     rc.u_int = -1;
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
 
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "st:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 't':
-            tmplt = optarg;
+            tmplt = options.optarg;
             break;
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
             goto end_tag;
         }
     }
@@ -346,20 +339,20 @@ rrd_info_t *rrd_update_v(
         rrd_set_error ("The \"%s\" environment variable is defined, "
                 "but \"%s\" cannot work with rrdcached. Either unset "
                 "the environment variable or use \"update\" instead.",
-                ENV_RRDCACHED_ADDRESS, argv[0]);
+                ENV_RRDCACHED_ADDRESS, options.argv[0]);
         goto end_tag;
     }
 
     /* need at least 2 arguments: filename, data. */
-    if (argc - optind < 2) {
+    if (options.argc - options.optind < 2) {
         rrd_set_error("Not enough arguments");
         goto end_tag;
     }
     rc.u_int = 0;
     result = rrd_info_push(NULL, sprintf_alloc("return_value"), RD_I_INT, rc);
-    rc.u_int = _rrd_updatex(argv[optind], tmplt,extra_flags,
-                           argc - optind - 1,
-                           (const char **) (argv + optind + 1), result);
+    rc.u_int = _rrd_updatex(options.argv[options.optind], tmplt,extra_flags,
+                           options.argc - options.optind - 1,
+                           (const char **) (options.argv + options.optind + 1), result);
     result->value.u_int = rc.u_int;
   end_tag:
     return result;
@@ -678,31 +671,24 @@ int rrd_update(
     int argc,
     char **argv)
 {
-    struct option long_options[] = {
-        {"template", required_argument, 0, 't'},
-        {"daemon",   required_argument, 0, 'd'},
-        {"skip-past-updates",  no_argument, 0, 's'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"template",          't', OPTPARSE_REQUIRED},
+        {"daemon",            'd', OPTPARSE_REQUIRED},
+        {"skip-past-updates", 's', OPTPARSE_NONE},
+        {0},
     };
-    int       option_index = 0;
+    struct optparse options;
     int       opt;
+    char     *tmplt = NULL;
     int       extra_flags = 0;
-    char      *tmplt = NULL;
     int       rc = -1;
     char     *opt_daemon = NULL;
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (1) {
-        opt = getopt_long(argc, argv, "t:d:s", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
         switch (opt) {
         case 't':
-            tmplt = strdup(optarg);
+            tmplt = strdup(options.optarg);
             break;
 
         case 's':
@@ -712,7 +698,7 @@ int rrd_update(
         case 'd':
             if (opt_daemon != NULL)
                 free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup (options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error("strdup failed.");
@@ -721,13 +707,13 @@ int rrd_update(
             break;
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
             goto out;
         }
     }
 
     /* need at least 2 arguments: filename, data. */
-    if (argc - optind < 2) {
+    if (options.argc - options.optind < 2) {
         rrd_set_error("Not enough arguments");
         goto out;
     }
@@ -742,8 +728,8 @@ int rrd_update(
 
     if (! rrdc_is_connected(opt_daemon))
     {
-      rc = rrd_updatex_r(argv[optind], tmplt,extra_flags,
-                        argc - optind - 1, (const char **) (argv + optind + 1));
+      rc = rrd_updatex_r(options.argv[options.optind], tmplt,extra_flags,
+                        options.argc - options.optind - 1, (const char **) (options.argv + options.optind + 1));
     }
     else /* we are connected */
     {
@@ -755,16 +741,16 @@ int rrd_update(
 		    goto out;
 		} else {
  		    rc = rrd_template_update(
-					     argv[optind], /* file */
+					     options.argv[options.optind], /* file */
 					     tmplt,
-					     argc - optind - 1, /* values_num */
-					     (const char *const *) (argv + optind + 1)); /* values */
+					     options.argc - options.optind - 1, /* values_num */
+					     (const char *const *) (options.argv + options.optind + 1)); /* values */
 		}
 	} else
 		rc = rrdc_update (
-			argv[optind], /* file */
-			argc - optind - 1, /* values_num */
-			(const char *const *) (argv + optind + 1)); /* values */
+			options.argv[options.optind], /* file */
+			options.argc - options.optind - 1, /* values_num */
+			(const char *const *) (options.argv + options.optind + 1)); /* values */
 	if (rc > 0)
 		if (!rrd_test_error())
 			rrd_set_error("Failed sending the values to rrdcached: %s",
@@ -2469,3 +2455,7 @@ static int write_changes_to_disk(
     return 0;
 }
 #endif
+
+/*
+ * vim: set sw=4 sts=4 ts=8 et fdm=marker :
+ */
