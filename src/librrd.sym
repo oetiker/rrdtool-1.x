@@ -74,4 +74,3 @@ rrdc_flush
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update
-LIBC_HAS_GETOPT_LONG

@@ -413,30 +413,6 @@ AC_CHECK_FUNCS(_NL_TIME_WEEK_1STDAY, ,
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <langinfo.h>]], [[nl_langinfo(_NL_TIME_WEEK_1STDAY)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE__NL_TIME_WEEK_1STDAY)],[AC_MSG_RESULT(no)])])
 
-dnl Do we need getopt_long
-
-dnl even when including our own getopt implementation
-dnl we may want to make sure we use the external
-dnl defined by libc to not run into linker resolve trouble
-
-AC_CACHE_CHECK([for opterr], rd_cv_var_int_opterr,
-[AC_TRY_LINK([#include <unistd.h>],
-  [extern int opterr; opterr = 1;],
-  [rd_cv_var_int_opterr=yes],
-  [rd_cv_var_int_opterr=no])])
-if test x"$rd_cv_var_int_opterr" = x"yes"; then
-  AC_DEFINE(HAVE_INT_OPTERR, 1, [Define to 1 if you have the global variable 'int opterr'.])
-fi
-
-build_getopt=no
-RRD_GETOPT_LONG="LIBC_HAS_GETOPT_LONG"
-AC_CHECK_FUNC(getopt_long,[],[
-RRD_GETOPT_LONG="getopt_long"
-build_getopt=yes
-])
-AC_SUBST(RRD_GETOPT_LONG)
-AM_CONDITIONAL(BUILD_GETOPT,[test $build_getopt = yes])
-
 dnl what does realloc do if it gets called with a NULL pointer
 
 AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
@@ -1013,7 +989,6 @@ AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in]) 
 AC_CONFIG_FILES([src/Makefile])
-AC_CONFIG_FILES([src/librrd.sym.in])
 AC_CONFIG_FILES([src/librrd.pc])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
@@ -1045,7 +1020,6 @@ echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
 echo "          With Locking: $enable_flock"
-echo "      Build rrd_getopt: $build_getopt"
 echo "       Build rrd_graph: $enable_rrd_graph"
 echo "     Build rrd_restore: $enable_rrd_restore"
 echo "       Static programs: $staticprogs"
