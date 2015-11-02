@@ -3880,6 +3880,30 @@ static int cleanup (void) /* {{{ */
 
 static int read_options (int argc, char **argv) /* {{{ */
 {
+  struct optparse_long longopts[] = {
+    {NULL, 'a', OPTPARSE_REQUIRED},
+    {NULL, 'B', OPTPARSE_NONE},
+    {NULL, 'b', OPTPARSE_REQUIRED},
+    {NULL, 'F', OPTPARSE_NONE},
+    {NULL, 'f', OPTPARSE_REQUIRED},
+    {NULL, 'g', OPTPARSE_NONE},
+    {NULL, 'G', OPTPARSE_REQUIRED},
+    {"help", 'h', OPTPARSE_NONE},
+    {NULL, 'j', OPTPARSE_REQUIRED},
+    {NULL, 'L', OPTPARSE_NONE},
+    {NULL, 'l', OPTPARSE_REQUIRED},
+    {NULL, 'm', OPTPARSE_REQUIRED},
+    {NULL, 'O', OPTPARSE_NONE},
+    {NULL, 'P', OPTPARSE_REQUIRED},
+    {NULL, 'p', OPTPARSE_REQUIRED},
+    {NULL, 'R', OPTPARSE_NONE},
+    {NULL, 's', OPTPARSE_REQUIRED},
+    {NULL, 't', OPTPARSE_REQUIRED},
+    {NULL, 'U', OPTPARSE_REQUIRED},
+    {NULL, 'w', OPTPARSE_REQUIRED},
+    {NULL, 'z', OPTPARSE_REQUIRED},
+    {0}
+  };
   struct optparse options;
   int option;
   int status = 0;
@@ -3893,8 +3917,7 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_permissions = (mode_t)-1;
 
   optparse_init(&options, argc, argv);
-  while ((option = optparse(&options, "?a:Bb:Ff:gG:hj:Ll:m:OP:p:Rs:t:U:w:z:")) != -1)
-  {
+  while ((option = optparse_long(&options, longopts, NULL)) != -1) {
     switch (option)
     {
       case 'O':
@@ -4276,8 +4299,11 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
-      case 'h':
       case '?':
+        fprintf(stderr, "%s\n", options.errmsg);
+        /* no break */
+
+      case 'h':
         printf ("RRDCacheD %s\n"
             "Copyright (C) 2008,2009 Florian octo Forster and Kevin Brintnall\n"
             "\n"
@@ -4316,9 +4342,9 @@ static int read_options (int argc, char **argv) /* {{{ */
             "to the rrdcached(1) manual page.\n",
             VERSION);
         if (option == 'h')
-          status = -1;
-        else
           status = 1;
+        else
+          status = -1;
         break;
     } /* switch (option) */
   } /* while (opt != -1) */
