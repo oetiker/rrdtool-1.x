@@ -10,7 +10,7 @@ S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
 S<[B<--step> I<value>]>
 S<[B<--json>]>
-S<[B<--showtime>]>
+S<[B<-t>|B<--showtime>]>
 S<[B<--enumds>]>
 S<[B<--daemon>|B<-d> I<address>]>
 S<[B<DEF:>I<vname>B<=>I<rrd>B<:>I<ds-name>B<:>I<CF>]>
@@ -61,7 +61,7 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
   rrdtool xport --daemon unix:/var/run/rrdcached.sock ...
 
-=item B<--showtime>
+=item B<-t>|B<--showtime>
 
 include the time into each data row.
 
