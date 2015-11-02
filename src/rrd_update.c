@@ -328,6 +328,10 @@ rrd_info_t *rrd_update_v(
             tmplt = options.optarg;
             break;
 
+        case 's':
+            extra_flags |= RRD_SKIP_PAST_UPDATES;
+            break;
+
         case '?':
             rrd_set_error("%s", options.errmsg);
             goto end_tag;
