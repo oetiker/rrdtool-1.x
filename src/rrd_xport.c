@@ -1061,10 +1061,10 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   /* now add gprints */
   if (gprints.len) {
     if (json){
-      snprintf(buf,sizeof(buf),"    \"%s\": [\n","gprints");
+      snprintf(buf,sizeof(buf),"    ,\"%s\": [\n","gprints");
       addToBuffer(buffer,buf,0);
       addToBuffer(buffer,(char*)gprints.data+2,gprints.len-2);
-      addToBuffer(buffer,"\n        ],\n",0);
+      addToBuffer(buffer,"\n        ]\n",0);
     } else {
       snprintf(buf,sizeof(buf),"    <%s>\n", "gprints");
       addToBuffer(buffer,buf,0);
@@ -1077,10 +1077,10 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   /* now add rules */
   if (rules.len) {
     if (json){
-      snprintf(buf,sizeof(buf),"    \"%s\": [\n","rules");
+      snprintf(buf,sizeof(buf),"    ,\"%s\": [\n","rules");
       addToBuffer(buffer,buf,0);
       addToBuffer(buffer,(char*)rules.data+2,rules.len-2);
-      addToBuffer(buffer,"\n        ],\n",0);
+      addToBuffer(buffer,"\n        ]\n",0);
     } else {
       snprintf(buf,sizeof(buf),"    <%s>\n", "rules");
       addToBuffer(buffer,buf,0);
