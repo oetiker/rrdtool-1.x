@@ -415,7 +415,7 @@ rpnp_t   *rpn_parse(
         }
 
         else {
-            rrd_set_error("don't undestand '%s'",expr);
+            rrd_set_error("don't understand '%s'",expr);
             free(rpnp);
             return NULL;
         }
