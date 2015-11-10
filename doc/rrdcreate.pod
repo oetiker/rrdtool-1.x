@@ -9,8 +9,8 @@ S<[B<--start>|B<-b> I<start time>]>
 S<[B<--step>|B<-s> I<step>]>
 S<[B<--template>|B<-t> I<template-file>]>
 S<[B<--source>|B<-r> I<source-file>]>
-S<[B<--no-overwrite>]>
-S<[B<--daemon> I<address>]>
+S<[B<--no-overwrite>|B<-O>]>
+S<[B<--daemon>|B<-d> I<address>]>
 S<[B<DS:>I<ds-name>[B<=>I<mapped-ds-name>[B<[>I<source-index>B<]>]]B<:>I<DST>B<:>I<dst arguments>]>
 S<[B<RRA:>I<CF>B<:>I<cf arguments>]>
 
@@ -49,11 +49,11 @@ into the B<RRD>.
 A scaling factor may be present as a suffix to the integer; see
 L<"STEP, HEARTBEAT, and Rows As Durations">.
 
-=head2 B<--no-overwrite>
+=head2 B<--no-overwrite>|B<-O>
 
 Do not clobber an existing file of the same name.
 
-=head2 B<--daemon> I<address>
+=head2 B<--daemon>|B<-d> I<address>
 
 Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
 the B<-l> option in the L<rrdcached> manual.
@@ -62,8 +62,8 @@ the B<-l> option in the L<rrdcached> manual.
 
 =head2 S<[B<--template>|B<-t> I<template-file>]>
 
-Specifies a template B<RRD> file to take step, DS and RRA definitions from. This allows to 
-base the structure of a new file on some existing file. The data of the template
+Specifies a template B<RRD> file to take step, DS and RRA definitions from. This allows one
+to base the structure of a new file on some existing file. The data of the template
 file is NOT used for pre-filling, but it is possible to specify the same file as a 
 source file (see below).
 
@@ -104,8 +104,8 @@ will have been used for pre-filling. However, data from multiple sources may be
 combined if it refers to different times or an earlier named source file holds 
 unknown data for a time where a later one holds known data.
 
-If this automatic data selection is not desired, the DS syntax allows to specify
-a mapping of target and source data sources for prefilling. This syntax allows to 
+If this automatic data selection is not desired, the DS syntax allows one to specify
+a mapping of target and source data sources for prefilling. This syntax allows one to 
 rename data sources and to restrict prefilling for a DS to only use data from a 
 single source file.
 
@@ -723,7 +723,7 @@ number of arguments could be changed.
 =head1 EXAMPLE 3
 
  rrdtool create proxy.rrd --step 300 \
-   DS:Total:DERIVE:1800:0:U  \
+   DS:Requests:DERIVE:1800:0:U  \
    DS:Duration:DERIVE:1800:0:U  \
    DS:AvgReqDur:COMPUTE:Duration,Requests,0,EQ,1,Requests,IF,/ \
    RRA:AVERAGE:0.5:1:2016

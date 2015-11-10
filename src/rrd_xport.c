@@ -1,7 +1,7 @@
 /****************************************************************************
  * RRDtool 1.GIT, Copyright by Tobi Oetiker
  ****************************************************************************
- * rrd_xport.c  export RRD data 
+ * rrd_xport.c  export RRD data
  ****************************************************************************/
 
 #include <sys/stat.h>
@@ -63,7 +63,7 @@ int rrd_xport(
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */
-    unsigned long *step,    /* which stepsize do you want? 
+    unsigned long *step,    /* which stepsize do you want?
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
@@ -73,20 +73,20 @@ int rrd_xport(
     time_t    start_tmp = 0, end_tmp = 0;
     rrd_time_value_t start_tv, end_tv;
     char     *parsetime_error = NULL;
+    struct optparse options;
+    optparse_init(&options, argc, argv);
 
-    struct option long_options[] = {
-        {"start", required_argument, 0, 's'},
-        {"end", required_argument, 0, 'e'},
-        {"maxrows", required_argument, 0, 'm'},
-        {"step", required_argument, 0, 261},
-        {"enumds", no_argument, 0, 262},    /* these are handled in the frontend ... */
-        {"json", no_argument, 0, 263},    /* these are handled in the frontend ... */
-        {"daemon", required_argument, 0, 'd'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"start",  's', OPTPARSE_REQUIRED},
+        {"end",    'e', OPTPARSE_REQUIRED},
+        {"maxrows",'m', OPTPARSE_REQUIRED},
+        {"step",   261, OPTPARSE_REQUIRED},
+        {"enumds", 262, OPTPARSE_NONE},
+        {"json",   263, OPTPARSE_NONE},
+        {"showtime", 't', OPTPARSE_NONE},
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0}
     };
-
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
 
     rrd_graph_init(&im);
 
@@ -95,19 +95,14 @@ int rrd_xport(
 
     int enumds=0;
     int json=0;
-
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "s:e:m:d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
+    int showtime=0;
+    
+    int opt;
+    while ((opt = optparse_long(&options,longopts,NULL)) != -1){
 
         switch (opt) {
         case 261:
-            im.step = atoi(optarg);
+            im.step = atoi(options.optarg);
             break;
         case 262:
   	    enumds=1;
@@ -115,20 +110,23 @@ int rrd_xport(
         case 263:
   	    json=1;
             break;
+        case 't':
+  	    showtime=1;
+            break;
         case 's':
-            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'e':
-            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'm':
-            im.xsize = atol(optarg);
+            im.xsize = atol(options.optarg);
             if (im.xsize < 10) {
                 rrd_set_error("maxrows below 10 rows");
                 return -1;
@@ -143,7 +141,7 @@ int rrd_xport(
                 return (-1);
             }
 
-            im.daemon_addr = strdup(optarg);
+            im.daemon_addr = strdup(options.optarg);
             if (im.daemon_addr == NULL)
             {
                 rrd_set_error("strdup error");
@@ -153,7 +151,7 @@ int rrd_xport(
         }
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
             return -1;
         }
     }
@@ -178,7 +176,7 @@ int rrd_xport(
     im.end = end_tmp;
     im.step = max((long) im.step, (im.end - im.start) / im.xsize);
 
-    rrd_graph_script(argc, argv, &im, 0);
+    rrd_graph_script(options.argc, options.argv, &im, options.optind);
     if (rrd_test_error()) {
         im_free(&im);
         return -1;
@@ -204,9 +202,10 @@ int rrd_xport(
     if (!xsize) {
       int flags=0;
       if (json) { flags|=1; }
+      if (showtime) { flags|=2; }
       if (enumds) { flags|=4; }
       stringbuffer_t buffer={0,0,NULL,stdout};
-      rrd_xport_format_xmljson(flags,&buffer,&im, 
+      rrd_xport_format_xmljson(flags,&buffer,&im,
 			       *start, *end, *step,
 			       *col_cnt, *legend_v,
 			       *data);
@@ -223,7 +222,7 @@ int rrd_xport_fn(
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */
-    unsigned long *step,    /* which stepsize do you want? 
+    unsigned long *step,    /* which stepsize do you want?
                              * will be changed to represent reality */
     unsigned long *col_cnt, /* number of data columns in the result */
     char ***legend_v,   /* legend entries */
@@ -238,7 +237,7 @@ int rrd_xport_fn(
     unsigned long xport_counter = 0;
     int      *ref_list;
     long     *step_list;
-    long     *step_list_ptr;    
+    long     *step_list_ptr;
     char    **legend_list;
 
 
@@ -328,12 +327,12 @@ int rrd_xport_fn(
             ++j;
 	}
     }
-    *step_list_ptr=0;    
+    *step_list_ptr=0;
     /* find a common step */
     *step = lcd(step_list);
     /* printf("step: %lu\n",*step); */
     free(step_list);
-    
+
     *start =  im->start - im->start % (*step);
     if ( im->start > *start ) {
          *start = *start + *step;
@@ -386,7 +385,7 @@ int rrd_graph_xport(image_desc_t *im) {
   char **legend_v=NULL;
   rrd_value_t *data=NULL;
   /* initialize buffer */
-  stringbuffer_t buffer={0,0,NULL,NULL}; 
+  stringbuffer_t buffer={0,0,NULL,NULL};
 
   /* check if we have a supported ggraph format */
   switch (im->graph_type) {
@@ -400,7 +399,7 @@ int rrd_graph_xport(image_desc_t *im) {
   }
 
   /* if we write a file, then open it */
-  if (strlen(im->graphfile)) {
+  if (im->graphfile) {
     buffer.file=fopen(im->graphfile,"w");
   }
 
@@ -464,12 +463,12 @@ int rrd_graph_xport(image_desc_t *im) {
 
   /* now do the cleanup */
   if (buffer.file) {
-    fclose(buffer.file); buffer.file=NULL; 
+    fclose(buffer.file); buffer.file=NULL;
     im->rendered_image_size=0;
     im->rendered_image=NULL;
   } else {
     im->rendered_image_size=buffer.len;
-    im->rendered_image=buffer.data;    
+    im->rendered_image=buffer.data;
   }
 
   /* and print stuff */
@@ -480,19 +479,19 @@ int addToBuffer(stringbuffer_t * sb,char* data,size_t len) {
   /* if len <= 0  we assume a string and calculate the length ourself */
   if (len<=0) { len=strlen(data); }
   /* if we have got a file, then take the shortcut */
-  if (sb->file) { 
+  if (sb->file) {
     sb->len+=len;
-    fwrite(data,len,1,sb->file); 
-    return 0; 
+    fwrite(data,len,1,sb->file);
+    return 0;
   }
   /* if buffer is 0, then initialize */
-  if (! sb->data) { 
+  if (! sb->data) {
     /* make buffer a multiple of 8192 */
     sb->allocated+=8192;
-    sb->allocated-=(sb->allocated%8192);    
+    sb->allocated-=(sb->allocated%8192);
     /* and allocate it */
     sb->data = (unsigned char *) malloc(sb->allocated);
-    if (! sb->data) { 
+    if (! sb->data) {
       rrd_set_error("malloc issue");
       return 1;
     }
@@ -598,7 +597,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
 
   /* define the time format */
   char* timefmt=NULL;
-  /* unfortunatley we have to do it this way, 
+  /* unfortunatley we have to do it this way,
      as when no --x-graph argument is given,
      then the xlab_user is not in a clean state (e.g. zero-filled) */
   if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
@@ -626,7 +625,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   else {
     addToBuffer(buffer,"{ \"about\": \"RRDtool graph JSON output\",\n  \"meta\": {\n",0);
   }
-  
+
   /* calculate start time */
   if (timefmt) {
     struct tm loc;
@@ -678,7 +677,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
     snprintf(buf,sizeof(buf),"    <%s>%lu</%s>\n",META_COLS_TAG,col_cnt,META_COLS_TAG);
     addToBuffer(buffer,buf,0);
   }
-  
+
   /* start legend */
   if (json){
     snprintf(buf,sizeof(buf),"    \"%s\": [\n", LEGEND_TAG);
@@ -714,13 +713,13 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
     snprintf(buf,sizeof(buf),"    </%s>\n", LEGEND_TAG);
   }
   addToBuffer(buffer,buf,0);
-  
+
   /* add graphs and prints */
   if (rrd_xport_format_addprints(json,buffer,im)) {return -1;}
 
   /* if we have got a trailing , then kill it */
   if (buffer->data) {
-    if (buffer->data[buffer->len-2]==',') { 
+    if (buffer->data[buffer->len-2]==',') {
       buffer->data[buffer->len-2]=buffer->data[buffer->len-1];
       buffer->len--;
     }
@@ -734,7 +733,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
   }
   addToBuffer(buffer,buf,0);
 
-  
+
   /* start data */
   if (json){
     snprintf(buf,sizeof(buf),"  \"%s\": [\n",DATA_TAG);
@@ -774,7 +773,7 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
       newval = *ptr;
       if (json){
 	if (isnan(newval) || isinf(newval)){
-	  addToBuffer(buffer,"null",0);                        
+	  addToBuffer(buffer,"null",0);
 	} else {
           rrd_snprintf(buf,sizeof(buf),"%0.10e",newval);
 	  addToBuffer(buffer,buf,0);
@@ -800,11 +799,11 @@ int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_t *im,t
 	addToBuffer(buffer,buf,0);
       }
       ptr++;
-    }                
+    }
     if (json){
       addToBuffer(buffer,(ti < end-(time_t)step ? " ],\n" : " ]\n"),0);
     }
-    else {                
+    else {
       snprintf(buf,sizeof(buf),"</%s>\n", DATA_ROW_TAG);
       addToBuffer(buffer,buf,0);
     }
@@ -855,9 +854,9 @@ void escapeJSON(char* txt,size_t len) {
 
 int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im) {
   /* initialize buffer */
-  stringbuffer_t prints={1024,0,NULL,NULL}; 
-  stringbuffer_t rules={1024,0,NULL,NULL}; 
-  stringbuffer_t gprints={4096,0,NULL,NULL}; 
+  stringbuffer_t prints={1024,0,NULL,NULL};
+  stringbuffer_t rules={1024,0,NULL,NULL};
+  stringbuffer_t gprints={4096,0,NULL,NULL};
   char buf[256];
   char dbuf[1024];
   char* val;
@@ -892,7 +891,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
       /* decide to which buffer we print to*/
       stringbuffer_t *usebuffer=&gprints;
       char* usetag="gprint";
-      if (im->gdes[i].gf==GF_PRINT) { 
+      if (im->gdes[i].gf==GF_PRINT) {
 	usebuffer=&prints;
 	usetag="print";
       }
@@ -914,7 +913,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
 	    validsteps++;
 	    continue;
 	  }
-	  
+
 	  switch (im->gdes[i].cf) {
 	  case CF_HWPREDICT:
 	  case CF_MHWPREDICT:
@@ -1044,7 +1043,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
       }
       addToBuffer(&rules,buf,0);
       break;
-    default: 
+    default:
       break;
     }
   }

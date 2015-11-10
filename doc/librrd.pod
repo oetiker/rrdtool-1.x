@@ -84,7 +84,7 @@ the random number generator is seeded exactly once per process.
 
 =item B<rrd_strtodbl>
 
-an rrd aware string to double convertor which sets rrd_error in if there is a problem
+an rrd aware string to double converter which sets rrd_error in if there is a problem
 and uses the return code exclusively for conversion status reporting.
 
 =item B<rrd_strtod>

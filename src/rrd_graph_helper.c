@@ -253,6 +253,9 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
 	} else if ((poscnt>0)&&(strcmp(field,"strftime")==0)) {
 	  key="strftime";
 	  value="1";
+	} else if ((poscnt>0)&&(strcmp(field,"dashes")==0)) {
+	  key="dashes";
+	  value="5,5";
         } else if ((poscnt>0)&&(strcmp(field,"valstrftime")==0)) {
           key="vformatter";
           value="timestamp";
@@ -382,8 +385,6 @@ int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_VNAMEREFPOS      (PARSE_POSITIONAL|PARSE_VNAMEREF)
 /* a retry parsing */
 #define PARSE_RETRY        (1ULL<<54)
-
-GHashTable* gdef_map;
 
 /* find gdes containing var*/
 static long find_var(
@@ -619,6 +620,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     char* dashes=getKeyValueArgument("dashes",1,pa);
     /* if we got dashes */
     if (dashes) {
+      gdp->dash = 1;
       gdp->offset = 0;
       /* count the , in  dashes */
       int cnt=0;for(char*t=dashes;(*t)&&(t=strchr(t,','));t++,cnt++) {;}
@@ -647,7 +649,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     char* dashoffset=getKeyValueArgument("dash-offset",1,pa);
     if (dashoffset) {
       char* x;
-      if (getDouble(dashes,&gdp->offset,&x)) {
+      if (getDouble(dashoffset,&gdp->offset,&x)) {
 	rrd_set_error("Could not parse dash-offset: %s",dashoffset); return NULL; }
     }
   }
@@ -986,23 +988,24 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
     /* parse rpn */
     if ((gdp->rpnp= rpn_parse((void *) im, gdp->rpn, &find_var_wrapper)) == NULL) {
       return 1; }
-  } else {
+  } else { /* VDEF */
     /* parse vdef, as vdef_parse is a bit "stupid" right now we have to touch things here */
     /* so find first , */
     char*c=strchr(gdp->rpn,',');
+    char vname[MAX_VNAME_LEN+1];
     if (! c) { rrd_set_error("Comma expected in VDEF definition %s",gdp->rpn); return 1;}
-    /* found a comma, so copy the first part to ds_name (re/abusing it) */
-    *c=0;
-    strncpy(gdp->ds_nam,gdp->rpn,DS_NAM_SIZE);
-    *c=',';
+    /* found a comma, so copy the first part to ds_nam (re/abusing it) */
+    *c=0; /* yes now it seems as if the string ended here */
+    strncpy(vname,gdp->rpn,MAX_VNAME_LEN);
+    *c=','; /* and now all is back to normal ... shudder */
     /* trying to find the vidx for that name */
-    gdp->vidx = find_var(im, gdp->ds_nam);
+    gdp->vidx = find_var(im, vname);
     if (gdp->vidx<0) { *c=',';
-      rrd_set_error("Not a valid vname: %s in line %s", gdp->ds_nam, gdp->rpn);
+      rrd_set_error("Not a valid vname: %s in line %s", vname, gdp->rpn);
       return 1;}
     if (im->gdes[gdp->vidx].gf != GF_DEF && im->gdes[gdp->vidx].gf != GF_CDEF) {
       rrd_set_error("variable '%s' not DEF nor "
-		    "CDEF in VDEF '%s'", gdp->ds_nam, gdp->rpn);
+		    "CDEF in VDEF '%s'",vname, gdp->rpn);
       return 1;
     }
     /* and parsing the rpn */
@@ -1122,7 +1125,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   gdp->stack=1;
   /* and try to get the one index before ourselves */
   long i;
-  for (i=im->gdes_c;(gdp->gf==gf)&&(i>=0);i--) {
+  for (i=im->gdes_c-1;(gdp->gf==gf)&&(i>=0);i--) {
     dprintfparsed("trying to process entry %li with type %u\n",i,im->gdes[i].gf);
     switch (im->gdes[i].gf) {
     case GF_LINE:
@@ -1482,7 +1485,7 @@ void rrd_graph_script(
     initParsedArguments(&pa);
 
     /* loop arguments */
-    for (i = optind + optno; i < argc; i++) {
+    for (i = optno; i < argc; i++) {
 	/* release parsed args - avoiding late cleanups*/
 	freeParsedArguments(&pa);
 	/* processed parsed args */

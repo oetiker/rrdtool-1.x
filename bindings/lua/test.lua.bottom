@@ -36,7 +36,7 @@ io.write('fetching data from ', name, ' - interval: ', start, ' to ',
          start+300*300, '\n') 
 local fstart, fstep, fnames, fdata =
   rrd.fetch(name, '--start', start, '--end', start+300*300+10, 'AVERAGE')
-io.write('got ', table.getn(fdata[1]), ' data sources with ', table.getn(fdata),
+io.write('got ', #fdata[1], ' data sources with ', #fdata,
          ' data points each.\n')
 
 io.write('\n-- Printing fetched data\n') 
@@ -61,7 +61,7 @@ local t = rrd.graphv(
    '--title', 'Enjoy Lua RRDtool module!',
    '--start', start+3600,
    '--end', 'start + 1000 min',
-   '--interlace',
+   '--interlaced',
    '--imgformat', 'PNG',
    '--width=450',
    'DEF:a=' .. name .. ':a:AVERAGE',

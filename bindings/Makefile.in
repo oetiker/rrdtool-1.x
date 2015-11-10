@@ -382,6 +382,8 @@ top_srcdir = @top_srcdir@
 @BUILD_TCL_TRUE@SUB_tcl = tcl
 @BUILD_LUA_TRUE@SUB_lua = lua
 SUBDIRS = $(SUB_tcl) $(SUB_lua)
+@ENABLE_RPATH_TRUE@PYTHON_RPATH = --rpath=$(libdir)
+@ENABLE_RPATH_TRUE@PERL_RPATH = RPATH=$(libdir)
 
 # the following files are not mentioned in any other Makefile
 EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-piped/RRDp.pm perl-piped/t/base.t \
@@ -723,8 +725,8 @@ install-data-local:
            && ( cd ${builddir}/python \
                 && env BUILDLIBDIR=${abs_top_builddir}/src/.libs \
                   $(PYTHON) ${abs_srcdir}/python/setup.py install \
-                     --skip-build --prefix=$(DESTDIR)$(prefix) \
-                     --exec-prefix=$(DESTDIR)$(exec_prefix) ) \
+                     --skip-build --root=$(DESTDIR) --prefix=$(prefix) \
+                     --exec-prefix=$(exec_prefix)) \
            || true
 
 # rules for building the ruby module
@@ -749,7 +751,7 @@ python:
                ABS_TOP_SRCDIR=${abs_top_srcdir} \
                ABS_TOP_BUILDDIR=${abs_top_builddir} \
                LD_RUN_PATH=$(libdir) \
-               $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext --rpath=$(libdir) \
+               $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext $(PYTHON_RPATH) \
           && env \
                ABS_TOP_SRCDIR=${abs_top_srcdir} \
                ABS_TOP_BUILDDIR=${abs_top_builddir} \
@@ -781,7 +783,7 @@ perl-shared:
              ABS_TOP_SRCDIR=${abs_top_srcdir} \
              ABS_TOP_BUILDDIR=${abs_top_builddir} \
              ABS_SRCDIR=${abs_srcdir}/$@ \
-             $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) RPATH=$(libdir) \
+             $(PERL) Makefile.PL $(PERLFLAGS) $(PERL_MAKE_OPTIONS) $(PERL_RPATH) \
           && $(MAKE) )
 	-mkdir -p ${builddir}/perl-shared
 

@@ -8,7 +8,7 @@ function rtest() {
     testname="$1"
     xpected="$2"
     shift 2 || exit 1
-    diff -u <(echo -e "$xpected") <($RRDTOOL "$@")
+    $DIFF <(echo -e "$xpected") <($RRDTOOL "$@"|sed s/-nan/nan/g)
     report "$testname"
     #&& echo "OK: $testname" || echo "FAIL: $testname"
 }
@@ -18,13 +18,13 @@ $RRDTOOL create vfmt1.rrd --start 1420070400 --step 60s DS:v:GAUGE:60:U:U RRA:LA
 declare -a graphargs
 graphargs=(graph /dev/null --start 1420070400 --end 1420071000 'DEF:dv=vfmt1.rrd:v:LAST' 'VDEF:v=dv,LAST')
 
-rtest "No data, numeric" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v:%0.1lf'
+rtest "No data, numeric" '0x0\nnan' "${graphargs[@]}" 'PRINT:v:%0.1lf'
 
 rtest "No data, sampling timestamp" '0x0\n---------- --:--:--' "${graphargs[@]}" 'PRINT:v:%F %T:strftime'
 
-rtest "No data, value timestamp" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
+rtest "No data, value timestamp" '0x0\nnan' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
 
-rtest "No data, value duration" '0x0\n-nan' "${graphargs[@]}" 'PRINT:v::valstrfduration'
+rtest "No data, value duration" '0x0\nnan' "${graphargs[@]}" 'PRINT:v::valstrfduration'
 
 
 $RRDTOOL update vfmt1.rrd --template v -- 1420070460:0 || exit 1

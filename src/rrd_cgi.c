@@ -452,10 +452,12 @@ int main(
     char     *buffer;
     long      i;
     long      filter = 0;
-    struct option long_options[] = {
-        {"filter", no_argument, 0, 'f'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"filter", 'f', OPTPARSE_NONE},
+        {0},
     };
+    struct optparse options;
+    int opt;
 
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE, SIG_IGN);
@@ -463,27 +465,18 @@ int main(
 #ifdef MUST_DISABLE_FPMASK
     fpsetmask(0);
 #endif
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
 
     /* what do we get for cmdline arguments?
        for (i=0;i<argc;i++)
        printf("%d-'%s'\n",i,argv[i]); */
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "f", long_options, &option_index);
-        if (opt == EOF) {
-            break;
-        }
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
         switch (opt) {
         case 'f':
             filter = 1;
             break;
         case '?':
-            printf("unknown commandline option '%s'\n", argv[optind - 1]);
+            printf("%s\n", options.errmsg);
             return -1;
         }
     }
@@ -496,15 +489,15 @@ int main(
     /* make sure we have one extra argument, 
        if there are others, we do not care Apache gives several */
 
-    /* if ( (optind != argc-2 
+    /* if ( (options.optind != options.argc-2 
        && strstr( getenv("SERVER_SOFTWARE"),"Apache/2") != NULL) 
-       && optind != argc-1) { */
+       && options.optind != options.argc-1) { */
 
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         fprintf(stderr, "ERROR: expected a filename\n");
         exit(1);
     } else {
-        readfile(argv[optind], &buffer, 1);
+        readfile(options.argv[options.optind], &buffer, 1);
     }
 
     if (rrd_test_error()) {

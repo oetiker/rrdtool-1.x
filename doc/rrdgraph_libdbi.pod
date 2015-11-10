@@ -147,7 +147,7 @@ values you retrieve from the database.
 For example, it would take more than 2 seconds to graph 5DS on 150 hours of data with a precision of 5 minutes 
 (against 100ms when data comes from a RRD file). This bug has been fixed on latest version of LibDBI (not release yet). 
 At that time, you would need to compile libdbi and libdbi-drivers from CVS repository to fix it.
-You can find more informations on this libdbi-users mailing list thread : http://sourceforge.net/mailarchive/message.php?msg_id=30320894
+You can find more information on this libdbi-users mailing list thread : http://sourceforge.net/mailarchive/message.php?msg_id=30320894
 
 
 =head1 BUGS

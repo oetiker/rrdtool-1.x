@@ -306,37 +306,34 @@ rrd_info_t *rrd_update_v(
     int argc,
     char **argv)
 {
-    char     *tmplt = NULL;
+    struct optparse_long longopts[] = {
+        {"template",          't', OPTPARSE_REQUIRED},
+        {"skip-past-updates", 's', OPTPARSE_NONE},
+        {0},
+    };
+    struct optparse options;
+    int opt;
+    const char *tmplt = NULL;
     int      extra_flags = 0;
     rrd_info_t *result = NULL;
     rrd_infoval_t rc;
     char *opt_daemon = NULL;
-    struct option long_options[] = {
-        {"template", required_argument, 0, 't'},
-        {"skip-past-updates",  no_argument, 0, 's'},
-        {0, 0, 0, 0}
-    };
 
     rc.u_int = -1;
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
 
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "st:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 't':
-            tmplt = optarg;
+            tmplt = options.optarg;
+            break;
+
+        case 's':
+            extra_flags |= RRD_SKIP_PAST_UPDATES;
             break;
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
             goto end_tag;
         }
     }
@@ -346,20 +343,20 @@ rrd_info_t *rrd_update_v(
         rrd_set_error ("The \"%s\" environment variable is defined, "
                 "but \"%s\" cannot work with rrdcached. Either unset "
                 "the environment variable or use \"update\" instead.",
-                ENV_RRDCACHED_ADDRESS, argv[0]);
+                ENV_RRDCACHED_ADDRESS, options.argv[0]);
         goto end_tag;
     }
-    
+
     /* need at least 2 arguments: filename, data. */
-    if (argc - optind < 2) {
+    if (options.argc - options.optind < 2) {
         rrd_set_error("Not enough arguments");
         goto end_tag;
     }
     rc.u_int = 0;
     result = rrd_info_push(NULL, sprintf_alloc("return_value"), RD_I_INT, rc);
-    rc.u_int = _rrd_updatex(argv[optind], tmplt,extra_flags,
-                           argc - optind - 1,
-                           (const char **) (argv + optind + 1), result);
+    rc.u_int = _rrd_updatex(options.argv[options.optind], tmplt,extra_flags,
+                           options.argc - options.optind - 1,
+                           (const char **) (options.argv + options.optind + 1), result);
     result->value.u_int = rc.u_int;
   end_tag:
     return result;
@@ -407,7 +404,7 @@ err_free:
 /* the file-template-cache implementation */
 static GTree *rrd_file_template_cache = NULL;
 /* the neccesary functions for the gtree */
-static gint cache_compare_names (gconstpointer name1, 
+static gint cache_compare_names (gconstpointer name1,
 				gconstpointer name2,
 				gpointer data)
 {
@@ -435,7 +432,7 @@ static const char *rrd_get_file_template_format(const char *filename) /* {{{ */
 	}
 
 	/* fetch from cache */
-	format = (char *) g_tree_lookup(rrd_file_template_cache, 
+	format = (char *) g_tree_lookup(rrd_file_template_cache,
 					filename);
 	if (format)
 		return format;
@@ -451,8 +448,8 @@ static const char *rrd_get_file_template_format(const char *filename) /* {{{ */
 		goto free_format;
 
 	/* and add object to tree */
-	g_tree_insert (rrd_file_template_cache, 
-		       (char *)filename, 
+	g_tree_insert (rrd_file_template_cache,
+		       (char *)filename,
 		format);
 
 	return format;
@@ -580,11 +577,11 @@ static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
 	/* now calculate effective length and allocate it */
 	len = strlen(value) /* length of the value */
 	        + 1 /* terminating null byte */
-  	        + (fields_file_tpl-fields_tpl) /* number of fields that we have 
-						* more in the file_template 
-						* compared to the given template 
+  	        + (fields_file_tpl-fields_tpl) /* number of fields that we have
+						* more in the file_template
+						* compared to the given template
 						*/
-	        * 2 /* = strlen(":U") */; 
+	        * 2 /* = strlen(":U") */;
 
 	mapped = (char *) malloc(len);
 	if (!mapped)
@@ -611,7 +608,7 @@ static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
 	/* check that we do not have a missmatch */
 	if (fields_count != fields_tpl) {
 		/* we could here more explicit,
-		 * by checking the missing fields 
+		 * by checking the missing fields
 		 */
 		rrd_set_error("rrd_map_template_to_values: "
 			"there are fields in template (%s) "
@@ -628,7 +625,7 @@ err:
 } /* }}} const char *rrd_map_template_to_values */
 
 static int rrd_template_update(const char *filename,  /* {{{ */
-			const char *tpl, 
+			const char *tpl,
 			int values_num,
 			const char * const *values)
 {
@@ -660,10 +657,10 @@ static int rrd_template_update(const char *filename,  /* {{{ */
 	}
 
 	/* now call the real function */
-	ret = rrdc_update(filename, values_num, 
+	ret = rrdc_update(filename, values_num,
 			(const char * const *) mapped_values);
 
-error:	
+error:
 	/* free the temporary structures again */
 	if (mapped_values) {
 		for(i=0;i<values_num;i++)
@@ -678,31 +675,24 @@ int rrd_update(
     int argc,
     char **argv)
 {
-    struct option long_options[] = {
-        {"template", required_argument, 0, 't'},
-        {"daemon",   required_argument, 0, 'd'},
-        {"skip-past-updates",  no_argument, 0, 's'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"template",          't', OPTPARSE_REQUIRED},
+        {"daemon",            'd', OPTPARSE_REQUIRED},
+        {"skip-past-updates", 's', OPTPARSE_NONE},
+        {0},
     };
-    int       option_index = 0;
+    struct optparse options;
     int       opt;
+    char     *tmplt = NULL;
     int       extra_flags = 0;
-    char      *tmplt = NULL;
     int       rc = -1;
     char     *opt_daemon = NULL;
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (1) {
-        opt = getopt_long(argc, argv, "t:d:s", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
         switch (opt) {
         case 't':
-            tmplt = strdup(optarg);
+            tmplt = strdup(options.optarg);
             break;
 
         case 's':
@@ -712,7 +702,7 @@ int rrd_update(
         case 'd':
             if (opt_daemon != NULL)
                 free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup (options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error("strdup failed.");
@@ -721,29 +711,29 @@ int rrd_update(
             break;
 
         case '?':
-            rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", options.errmsg);
             goto out;
         }
     }
 
     /* need at least 2 arguments: filename, data. */
-    if (argc - optind < 2) {
+    if (options.argc - options.optind < 2) {
         rrd_set_error("Not enough arguments");
         goto out;
     }
 
     {   /* try to connect to rrdcached */
         int status = rrdc_connect(opt_daemon);
-        if (status != 0) {        
-             rc = status;           
-             goto out;           
-        }        
+        if (status != 0) {
+             rc = status;
+             goto out;
+        }
     }
 
     if (! rrdc_is_connected(opt_daemon))
     {
-      rc = rrd_updatex_r(argv[optind], tmplt,extra_flags,
-                        argc - optind - 1, (const char **) (argv + optind + 1));
+      rc = rrd_updatex_r(options.argv[options.optind], tmplt,extra_flags,
+                        options.argc - options.optind - 1, (const char **) (options.argv + options.optind + 1));
     }
     else /* we are connected */
     {
@@ -755,18 +745,18 @@ int rrd_update(
 		    goto out;
 		} else {
  		    rc = rrd_template_update(
-					     argv[optind], /* file */
+					     options.argv[options.optind], /* file */
 					     tmplt,
-					     argc - optind - 1, /* values_num */
-					     (const char *const *) (argv + optind + 1)); /* values */
+					     options.argc - options.optind - 1, /* values_num */
+					     (const char *const *) (options.argv + options.optind + 1)); /* values */
 		}
 	} else
 		rc = rrdc_update (
-			argv[optind], /* file */
-			argc - optind - 1, /* values_num */
-			(const char *const *) (argv + optind + 1)); /* values */
+			options.argv[options.optind], /* file */
+			options.argc - options.optind - 1, /* values_num */
+			(const char *const *) (options.argv + options.optind + 1)); /* values */
 	if (rc > 0)
-		if (!rrd_test_error()) 
+		if (!rrd_test_error())
 			rrd_set_error("Failed sending the values to rrdcached: %s",
 				rrd_strerror (rc));
     }
@@ -839,9 +829,9 @@ int _rrd_updatex(
     unsigned long rra_begin;    /* byte pointer to the rra
                                  * area in the rrd file.  this
                                  * pointer never changes value */
-    rrd_value_t *pdp_new;   /* prepare the incoming data to be added 
+    rrd_value_t *pdp_new;   /* prepare the incoming data to be added
                              * to the existing entry */
-    rrd_value_t *pdp_temp;  /* prepare the pdp values to be added 
+    rrd_value_t *pdp_temp;  /* prepare the pdp values to be added
                              * to the cdp values */
 
     long     *tmpl_idx; /* index representing the settings
@@ -1157,7 +1147,7 @@ static int process_arg(
         + (double) ((long) *current_time_usec -
                     (long) rrd->live_head->last_up_usec) / 1e6f;
 
-    /* process the data sources and update the pdp_prep 
+    /* process the data sources and update the pdp_prep
      * area accordingly */
     if (update_pdp_prep(rrd, updvals, pdp_new, interval) == -1) {
         return -1;
@@ -1266,7 +1256,7 @@ static int parse_ds(
             else {
                 rrd_set_error("found extra data on update argument: %s",p+1);
                 return -1;
-            }                
+            }
         }
     }
 
@@ -1282,7 +1272,7 @@ static int parse_ds(
 }
 
 /*
- * Parse the time in a DS string, store it in current_time and 
+ * Parse the time in a DS string, store it in current_time and
  * current_time_usec and verify that it's later than the last
  * update for this DS.
  *
@@ -1531,7 +1521,7 @@ static int calculate_elapsed_steps(
     unsigned long proc_pdp_st;  /* which pdp_st was the last to be processed */
     unsigned long occu_pdp_st;  /* when was the pdp_st before the last update
                                  * time */
-    unsigned long proc_pdp_age; /* how old was the data in the pdp prep area 
+    unsigned long proc_pdp_age; /* how old was the data in the pdp prep area
                                  * when it was last updated */
     unsigned long occu_pdp_age; /* how long ago was the last pdp_step time */
 
@@ -1727,7 +1717,7 @@ static int process_pdp_st(
 	    rpnp[i].free_extra = NULL;
         }
         /* run the rpn calculator */
-        if (rpn_calc(rpnp, &rpnstack, 0, pdp_temp, ds_idx) == -1) {
+        if (rpn_calc(rpnp, &rpnstack, 0, pdp_temp, ds_idx,rrd->stat_head->pdp_step) == -1) {
 	    rpnp_freeextra(rpnp);
             free(rpnp);
             rpnstack_free(&rpnstack);
@@ -1837,7 +1827,7 @@ static int update_all_cdp_prep(
     return 0;
 }
 
-/* 
+/*
  * Are we due for a smooth? Also increments our position in the burn-in cycle.
  */
 static int do_schedule_smooth(
@@ -2019,7 +2009,7 @@ static void initialize_cdp_val(
             (cum_val + cur_val * start_pdp_offset) /
             (pdp_cnt - scratch[CDP_unkn_pdp_cnt].u_cnt);
         break;
-    case CF_MAXIMUM: 
+    case CF_MAXIMUM:
         cum_val = IFDNAN(scratch[CDP_val].u_val, -DINF);
         cur_val = IFDNAN(pdp_temp_val, -DINF);
 
@@ -2138,16 +2128,16 @@ static rrd_value_t initialize_carry_over(
             return 0;
         default:
             return DNAN;
-        }        
-    } 
+        }
+    }
     else {
         switch (current_cf) {
         case CF_AVERAGE:
             return pdp_temp_val *  pdp_into_cdp_cnt ;
         default:
             return pdp_temp_val;
-        }        
-    }        
+        }
+    }
 }
 
 /*
@@ -2246,7 +2236,7 @@ static int update_aberrant_cdps(
     return 0;
 }
 
-/* 
+/*
  * Move sequentially through the file, writing one RRA at a time.  Note this
  * architecture divorces the computation of CDP with flushing updated RRA
  * entries to disk.
@@ -2267,7 +2257,7 @@ static int write_to_rras(
     time_t    rra_time = 0; /* time of update for a RRA */
 
     unsigned long ds_cnt = rrd->stat_head->ds_cnt;
-    
+
     /* Ready to write to disk */
     rra_start = rra_begin;
 
@@ -2362,7 +2352,7 @@ static int write_RRA_row(
             /* append info to the return hash */
             *pcdp_summary = rrd_info_push(*pcdp_summary,
                                           sprintf_alloc
-                                          ("[%lli]RRA[%s][%lu]DS[%s]", 
+                                          ("[%lli]RRA[%s][%lu]DS[%s]",
                                            (long long)rra_time,
                                            rrd->rra_def[rra_idx].cf_nam,
                                            rrd->rra_def[rra_idx].pdp_cnt,
@@ -2469,3 +2459,7 @@ static int write_changes_to_disk(
     return 0;
 }
 #endif
+
+/*
+ * vim: set sw=4 sts=4 ts=8 et fdm=marker :
+ */

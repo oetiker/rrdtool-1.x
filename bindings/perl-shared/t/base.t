@@ -1,6 +1,9 @@
 #! /usr/bin/perl 
+use strict;
+use warnings;
+use vars qw($loaded $ok_count);
 
-BEGIN { $| = 1; print "1..7\n"; }
+BEGIN { $| = 1; print "1..9\n"; }
 END {
   print "not ok 1\n" unless $loaded;
   unlink "demo.rrd";
@@ -125,9 +128,9 @@ for (my $i=0;$i<$GRUNS;$i++) {
           "AREA:alpha#0022e9:Short",
           "STACK:beta#00b871:Demo Text",
           "LINE1:gamma#ff0000:Line 1",
-          "LINE2:delta#888800:Line 2",
-          "LINE3:calc#00ff44:Line 3",
-          "LINE3:epsilon#000000:Line 4",
+          "LINE2:delta#888800:Line 2:dashes=5,5",
+          "LINE3:calc#00ff44:Line 3:dashes=10",
+          "LINE3:epsilon#000000:Line 4:dashes",
           "HRULE:1500#ff8800:Horizontal Line at 1500",
           "PRINT:alpha:AVERAGE:Average Alpha %1.2lf",
           "PRINT:alpha:MIN:Min Alpha %1.2lf %s",
@@ -150,6 +153,9 @@ for (my $i=0;$i<$GRUNS;$i++) {
 }
 
 
+ok("graph",!$ERROR);							#  3
+
+
 
 my ($start,$step,$names,$array) = RRDs::fetch $RRD1, "AVERAGE";
 $ERROR = RRDs::error;
@@ -169,3 +175,53 @@ foreach my $line (@$array){
   }
   print "\n";
 }
+
+do {
+
+my ($start,$end,$step,$col_cnt,$legend,$data) = 
+  RRDs::xport ("-m", 400,
+               "--start", "now-1day",
+               "--end", "now",
+               "DEF:alpha=$RRD1:a:AVERAGE",
+               "DEF:beta=$RRD1:d:AVERAGE",
+               "CDEF:calc=alpha,beta,+,2,/,100,*,102,/",
+               "XPORT:alpha:original ds",
+               "XPORT:calc:calculated values",
+               );
+
+$ERROR = RRDs::error;
+
+ok("xport",!$ERROR);							#  3
+
+print "\nrrdxport test:\n\n";
+print "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n\n";
+print "<xport>\n";
+print "  <meta>\n";
+print "    <start>$start</start>\n";
+print "    <step>$step</step>\n";
+print "    <end>$end</end>\n";
+print "    <rows>", $#$data + 1, "</rows>\n";
+print "    <columns>$col_cnt</columns>\n";
+print "    <legend>\n";
+foreach my $entry (@$legend) {
+    print "      <entry>$entry</entry>\n";
+}
+print "    </legend>\n";
+print "  </meta>\n";
+print "  <data>\n";
+my $row_counter = 0;
+foreach my $row (@$data) {
+    $row_counter++;
+    print "    <row id=\"$row_counter\"><t is=\"", scalar localtime($start), "\">$start</t>";
+    $start += $step;
+    foreach my $val (@$row) {
+        printf ("<v>%1.10e</v>",$val) if defined $val and $val ne '';
+        print "<v>NaN</v>" if not defined $val or  $val eq '';
+    }
+    print "</row>\n";
+}
+print "  </data>\n";
+print "</xport>\n";
+
+};
+ 

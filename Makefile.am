@@ -12,7 +12,7 @@ SUBDIRS += examples
 endif
 
  # the following files are not mentioned in any other Makefile
-EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS \
+EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
              m4/snprintf.m4 \
@@ -62,10 +62,13 @@ indent:
 clean-local:
 	-rm -f config.h bindings/perl-piped/Makefile.old bindings/perl-shared/Makefile.old
 
+
+
 dist-hook: VERSION
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$VERSION.+/\$VERSION='$(NUM_VERS)';/' bindings/perl-*/*.pm
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1.GIT, Copyright by Tobi Oetiker/RRDtool '$(PACKAGE_VERSION)', Copyright 1997-'`date +%Y`' by Tobi Oetiker/' src/*.h src/*.c
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
-	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/rrdtool-[\.\d]+\d(-[a-z0-9]+)?/rrdtool-'$(PACKAGE_VERSION)'/g' doc/rrdbuild.pod
+	$(AM_V_GEN)$(PERL) -i -p -e 's/rrdtool-[\.\d]+\d(-[a-z0-9]+)?/rrdtool-'$(PACKAGE_VERSION)'/g' doc/rrdbuild.pod
+	$(AM_V_GEN)(cd doc && $(MAKE)) && cp -p doc/rrdbuild.* $(distdir)/doc
                 
 ##END##

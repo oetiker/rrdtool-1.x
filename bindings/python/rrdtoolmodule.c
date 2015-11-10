@@ -47,8 +47,6 @@ static const char *__version__ = PACKAGE_VERSION;
 //#include "rrd_extra.h"
 
 static PyObject *ErrorObject;
-extern int optind;
-extern int opterr;
 
 /* forward declaration to keep compiler happy */
 void      initrrdtool(
@@ -114,9 +112,6 @@ static int create_args(
     (*argv)[0] = command;
     *argc = element_count + 1;
 
-    /* reset getopt state */
-    opterr = optind = 0;
-
     return 0;
 }
 
@@ -139,12 +134,16 @@ static PyObject *PyRRD_create(
 {
     PyObject *r;
     char    **argv;
-    int       argc;
+    int       argc, status;
 
     if (create_args("create", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_create(argc, argv) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_create(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -168,12 +167,16 @@ static PyObject *PyRRD_update(
 {
     PyObject *r;
     char    **argv;
-    int       argc;
+    int       argc, status;
 
     if (create_args("update", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_update(argc, argv) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_update(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -199,14 +202,17 @@ static PyObject *PyRRD_fetch(
     rrd_value_t *data, *datai;
     unsigned long step, ds_cnt;
     time_t    start, end;
-    int       argc;
+    int       argc, status;
     char    **argv, **ds_namv;
 
     if (create_args("fetch", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_fetch(argc, argv, &start, &end, &step,
-                  &ds_cnt, &ds_namv, &data) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_fetch(argc, argv, &start, &end, &step, &ds_cnt, &ds_namv, &data);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -290,14 +296,17 @@ static PyObject *PyRRD_graph(
 {
     PyObject *r;
     char    **argv, **calcpr;
-    int       argc, xsize, ysize, i;
+    int       argc, status, xsize, ysize, i;
     double    ymin, ymax;
 
     if (create_args("graph", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_graph(argc, argv, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax) ==
-        -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_graph(argc, argv, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -344,12 +353,16 @@ static PyObject *PyRRD_tune(
 {
     PyObject *r;
     char    **argv;
-    int       argc;
+    int       argc, status;
 
     if (create_args("tune", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_tune(argc, argv) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_tune(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -376,7 +389,11 @@ static PyObject *PyRRD_first(
     if (create_args("first", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((ts = rrd_first(argc, argv)) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    ts = rrd_first(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (ts == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -401,7 +418,11 @@ static PyObject *PyRRD_last(
     if (create_args("last", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((ts = rrd_last(argc, argv)) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    ts = rrd_last(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (ts == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -427,7 +448,11 @@ static PyObject *PyRRD_resize(
     if (create_args("resize", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((ts = rrd_resize(argc, argv)) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    ts = rrd_resize(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (ts == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -494,7 +519,11 @@ static PyObject *PyRRD_info(
     if (create_args("info", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((data = rrd_info(argc, argv)) == NULL) {
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_info(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -524,7 +553,11 @@ static PyObject *PyRRD_graphv(
     if (create_args("graphv", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((data = rrd_graph_v(argc, argv)) == NULL) {
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_graph_v(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -554,7 +587,11 @@ static PyObject *PyRRD_updatev(
     if (create_args("updatev", args, &argc, &argv) < 0)
         return NULL;
 
-    if ((data = rrd_update_v(argc, argv)) == NULL) {
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_update_v(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -576,13 +613,17 @@ static PyObject *PyRRD_flushcached(
     PyObject * args)
 {
     PyObject *r;
-    int       argc;
+    int       argc, status;
     char    **argv;
 
     if (create_args("flushcached", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_flushcached(argc, argv) != 0) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_flushcached(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (status != 0) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -609,7 +650,7 @@ static PyObject *PyRRD_xport(
     PyObject * args)
 {
     PyObject *r;
-    int       argc, xsize;
+    int       argc, status, xsize;
     char    **argv, **legend_v;
     time_t    start, end;
     unsigned long step, col_cnt;
@@ -618,8 +659,11 @@ static PyObject *PyRRD_xport(
     if (create_args("xport", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_xport(argc, argv, &xsize, &start, &end,
-                  &step, &col_cnt, &legend_v, &data) == -1) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_xport(argc, argv, &xsize, &start, &end, &step, &col_cnt, &legend_v, &data);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;
@@ -686,13 +730,17 @@ static PyObject *PyRRD_dump(
     PyObject * args)
 {
     PyObject *r;
-    int       argc;
+    int       argc, status;
     char    **argv;
 
     if (create_args("dump", args, &argc, &argv) < 0)
         return NULL;
 
-    if (rrd_dump(argc, argv) != 0) {
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_dump(argc, argv);
+    Py_END_ALLOW_THREADS
+
+    if (status != 0) {
         PyErr_SetString(ErrorObject, rrd_get_error());
         rrd_clear_error();
         r = NULL;

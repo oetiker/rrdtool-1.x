@@ -9,6 +9,11 @@ BUILDDIR="${BUILDDIR:-${BASEDIR}}"
 TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
 
 DIFF="diff -u"
+DIFF9=seddif
+
+function seddif {
+   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge' | $DIFF $@
+}
 
 #
 # because valgrind has trouble with glib memory handling

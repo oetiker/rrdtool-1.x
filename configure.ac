@@ -21,7 +21,7 @@ dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
 dnl a.b999yymmddhh 
-NUMVERS=1.499915022217
+NUMVERS=1.5005
 AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
@@ -32,7 +32,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl 
-LIBVERS=7:0:3
+LIBVERS=7:5:3
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -207,7 +207,7 @@ if test "x$GCC" = "xyes"; then
   done
 fi
 
-
+AC_TYPE_LONG_LONG_INT
 
 AC_SUBST(RRD_DEFAULT_FONT)
 
@@ -251,7 +251,7 @@ AC_C_BIGENDIAN
 dnl for each function found we get a definition in config.h 
 dnl of the form HAVE_FUNCTION
 
-AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam)
+AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam get_current_dir_name)
 
 AC_FUNC_STRERROR_R
 
@@ -413,30 +413,6 @@ AC_CHECK_FUNCS(_NL_TIME_WEEK_1STDAY, ,
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <langinfo.h>]], [[nl_langinfo(_NL_TIME_WEEK_1STDAY)]])],[AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE__NL_TIME_WEEK_1STDAY)],[AC_MSG_RESULT(no)])])
 
-dnl Do we need getopt_long
-
-dnl even when including our own getopt implementation
-dnl we may want to make sure we use the external
-dnl defined by libc to not run into linker resolve trouble
-
-AC_CACHE_CHECK([for opterr], rd_cv_var_int_opterr,
-[AC_TRY_LINK([#include <unistd.h>],
-  [extern int opterr; opterr = 1;],
-  [rd_cv_var_int_opterr=yes],
-  [rd_cv_var_int_opterr=no])])
-if test x"$rd_cv_var_int_opterr" = x"yes"; then
-  AC_DEFINE(HAVE_INT_OPTERR, 1, [Define to 1 if you have the global variable 'int opterr'.])
-fi
-
-build_getopt=no
-RRD_GETOPT_LONG="LIBC_HAS_GETOPT_LONG"
-AC_CHECK_FUNC(getopt_long,[],[
-RRD_GETOPT_LONG="getopt_long"
-build_getopt=yes
-])
-AC_SUBST(RRD_GETOPT_LONG)
-AM_CONDITIONAL(BUILD_GETOPT,[test $build_getopt = yes])
-
 dnl what does realloc do if it gets called with a NULL pointer
 
 AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
@@ -526,6 +502,8 @@ AC_LANG_POP(C)
 dnl is time_t 32 of 64 bit ?
 AC_CHECK_SIZEOF([time_t])
 
+AC_CHECK_SIZEOF([long int])
+
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
 have_libdbi=no
@@ -600,7 +578,7 @@ CORE_LIBS="$LIBS"
 
 if test $enable_rrd_graph != no; then
 dnl EX_CHECK_ALL(z,          zlibVersion,               zlib.h,                 zlib,        1.2.5,  http://zlib.net/, "")
-dnl EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.4.8,  ftp://ftp.simplesystems.org/pub/libpng/png/src/, "")
+EX_CHECK_ALL(png,        png_access_version_number, png.h,                  libpng,      1.4.8,  ftp://ftp.simplesystems.org/pub/libpng/png/src/, "")
 dnl EX_CHECK_ALL(freetype,   FT_Init_FreeType,          ft2build.h,		freetype2,   2.4.6,  http://download.savannah.gnu.org/releases/freetype/, /usr/include/freetype2)
 dnl EX_CHECK_ALL(fontconfig, FcInit,                    fontconfig.h,		fontconfig,  2.8.0,  http://www.freedesktop.org/software/fontconfig/release/, /usr/include)
 dnl EX_CHECK_ALL(cairo,      cairo_font_options_create,     cairo.h,                cairo-png,   1.10.2,  http://cairographics.org/releases/, "")
@@ -628,6 +606,9 @@ AC_SUBST(ALL_LIBS)
 
 CONFIGURE_PART(Prep for Building Language Bindings)
   
+dnl Allow "if enable_rpath" in Makefile.am
+AM_CONDITIONAL(ENABLE_RPATH,[test "x$enable_rpath" = "xyes"])
+
 dnl Check for Perl and friends
 PATH=$PATH:/usr/perl5/bin
 export PATH
@@ -810,8 +791,8 @@ LUA_EOF
       LIBS=
       lua_havelib=no
       LUA_HAVE_COMPAT51=DONT_HAVE_COMPAT51
-      AC_SEARCH_LIBS(lua_call, lua$lua_vdot lua$lua_vndot lua,
-        [AC_SEARCH_LIBS(luaL_register, lua$lua_vdot lua$lua_vndot lua,
+      RRD_SEARCH_LIBS(lua_call, [#include <${lua_headerdir:+$lua_headerdir/}lua.h>], [0, 0, 0], lua$lua_vdot lua$lua_vndot lua,
+        [AC_SEARCH_LIBS(luaL_openlibs, lua$lua_vdot lua$lua_vndot lua,
           [lua_havelib=LUA$lua_vndot],
           [AC_SEARCH_LIBS(luaL_module, lualib$lua_vndot lualib$lua_vdot lualib,
             [lua_havelib=$lua_vndot; $LUA -l compat-5.1 2>/dev/null;
@@ -848,7 +829,7 @@ LUA_EOF
           done
         fi
 
-        LUA_RRD_LIBDIR="$langpref/lib/lua/$lua_vdot"
+        LUA_RRD_LIBDIR="$libdir/lua/$lua_vdot"
         # if lua 5.0 can't find compat-5.1, force installation of
         # compat-5.1.lua together with RRDtool.
         if test "$lua_vdot" = "5.0" -a "$LUA_HAVE_COMPAT51" != "HAVE_COMPAT51"; then
@@ -1008,7 +989,6 @@ AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in]) 
 AC_CONFIG_FILES([src/Makefile])
-AC_CONFIG_FILES([src/librrd.sym.in])
 AC_CONFIG_FILES([src/librrd.pc])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
@@ -1040,7 +1020,6 @@ echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
 echo "          With Locking: $enable_flock"
-echo "      Build rrd_getopt: $build_getopt"
 echo "       Build rrd_graph: $enable_rrd_graph"
 echo "     Build rrd_restore: $enable_rrd_restore"
 echo "       Static programs: $staticprogs"

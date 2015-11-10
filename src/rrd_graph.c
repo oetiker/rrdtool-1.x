@@ -292,7 +292,7 @@ double ytr(
    if (strcmp(#VV, string) == 0) return VVV ;
 
 enum gf_en gf_conv(
-    char *string)
+    const char *string)
 {
 
     conv_if(PRINT, GF_PRINT);
@@ -315,7 +315,7 @@ enum gf_en gf_conv(
 }
 
 enum gfx_if_en if_conv(
-    char *string)
+    const char *string)
 {
 
     conv_if(PNG, IF_PNG);
@@ -340,7 +340,7 @@ enum gfx_if_en if_conv(
 }
 
 enum gfx_type_en type_conv(
-    char *string)
+    const char *string)
 {
     conv_if(TIME , GTYPE_TIME);
     conv_if(XY, GTYPE_XY);
@@ -348,7 +348,7 @@ enum gfx_type_en type_conv(
 }
 
 enum tmt_en tmt_conv(
-    char *string)
+    const char *string)
 {
 
     conv_if(SECOND, TMT_SECOND);
@@ -362,7 +362,7 @@ enum tmt_en tmt_conv(
 }
 
 enum grc_en grc_conv(
-    char *string)
+    const char *string)
 {
 
     conv_if(BACK, GRC_BACK);
@@ -380,7 +380,7 @@ enum grc_en grc_conv(
 }
 
 enum text_prop_en text_prop_conv(
-    char *string)
+    const char *string)
 {
 
     conv_if(DEFAULT, TEXT_PROP_DEFAULT);
@@ -403,6 +403,8 @@ int im_free(
 
     if (im == NULL)
         return 0;
+
+    free(im->graphfile);
 
     if (im->daemon_addr != NULL)
       free(im->daemon_addr);
@@ -757,7 +759,7 @@ void apply_gridfit(
 
 /* reduce data reimplementation by Alex */
 
-void reduce_data(
+int reduce_data(
     enum cf_en cf,      /* which consolidation function ? */
     unsigned long cur_step, /* step the data currently is in */
     time_t *start,      /* start, end and step as requested ... */
@@ -839,10 +841,8 @@ void reduce_data(
 /* if this gets triggered, something is REALLY WRONG ... we die immediately */
 
     if (row_cnt % reduce_factor) {
-        printf("SANITY CHECK: %lu rows cannot be reduced by %i \n",
-               row_cnt, reduce_factor);
-        printf("BUG in reduce_data()\n");
-        exit(1);
+        rrd_set_error("SANITY CHECK: %lu rows cannot be reduced by %i \n",  row_cnt, reduce_factor);
+        return 0;
     }
 
     /* Now combine reduce_factor intervals at a time
@@ -927,6 +927,7 @@ void reduce_data(
         printf("\n");
     }
 #endif
+    return 1;
 }
 
 
@@ -1032,12 +1033,14 @@ int data_fetch(
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
 
-                reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
+                if (!reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
                             &im->gdes[i].end,
                             &im->gdes[i].step,
-                            &im->gdes[i].ds_cnt, &im->gdes[i].data);
+                            &im->gdes[i].ds_cnt, &im->gdes[i].data)){
+                     return -1;
+                }
             } else {
                 im->gdes[i].step = ft_step;
             }
@@ -1252,6 +1255,7 @@ int data_calc(
              */
             im->gdes[gdi].step = lcd(steparray);
             free(steparray);
+
             if ((im->gdes[gdi].data = (rrd_value_t*)malloc(((im->gdes[gdi].end -
                                                im->gdes[gdi].start)
                                               / im->gdes[gdi].step)
@@ -1272,7 +1276,7 @@ int data_calc(
                  * we use the fact that time_t is a synonym for long
                  */
                 if (rpn_calc(rpnp, &rpnstack, (long) now,
-                             im->gdes[gdi].data, ++dataidx) == -1) {
+                             im->gdes[gdi].data, ++dataidx,im->gdes[gdi].step) == -1) {
                     /* rpn_calc sets the error string */
                     rpnstack_free(&rpnstack);
 		    rpnp_freeextra(rpnp);
@@ -1496,8 +1500,18 @@ static int find_first_weekday(void){
         first_weekday = nl_langinfo (_NL_TIME_FIRST_WEEKDAY)[0];
         int week_1stday;
         long week_1stday_l = (long) nl_langinfo (_NL_TIME_WEEK_1STDAY);
-        if (week_1stday_l == 19971130) week_1stday = 0; /* Sun */
-        else if (week_1stday_l == 19971201) week_1stday = 1; /* Mon */
+        if (week_1stday_l == 19971130
+#if SIZEOF_LONG_INT > 4
+            || week_1stday_l >> 32 == 19971130
+#endif
+           )
+            week_1stday = 0; /* Sun */
+        else if (week_1stday_l == 19971201
+#if SIZEOF_LONG_INT > 4
+           || week_1stday_l >> 32 == 19971201
+#endif
+           )
+            week_1stday = 1; /* Mon */
         else
         {
             first_weekday = 1;
@@ -3339,7 +3353,7 @@ int lazy_check(
 
     if (im->lazy == 0)
         return 0;       /* no lazy option */
-    if (strlen(im->graphfile) == 0)
+    if (im->graphfile == NULL)
         return 0;       /* inmemory option */
     if (stat(im->graphfile, &imgstat) != 0)
         return 0;       /* can't stat */
@@ -4263,7 +4277,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_PDF_SURFACE
     case IF_PDF:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
                                        im->yimg * im->zoom)
             : cairo_pdf_surface_create_for_stream
@@ -4273,7 +4287,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_PS_SURFACE
     case IF_EPS:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ?
             cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
                                     im->yimg * im->zoom)
@@ -4284,7 +4298,7 @@ int graph_cairo_setup (image_desc_t *im)
 #ifdef CAIRO_HAS_SVG_SURFACE
     case IF_SVG:
         im->gridfit = 0;
-        im->surface = strlen(im->graphfile)
+        im->surface = im->graphfile
             ?
             cairo_svg_surface_create(im->
                                      graphfile,
@@ -4336,13 +4350,14 @@ int graph_cairo_finish (image_desc_t *im)
     {
         cairo_status_t status;
 
-        status = strlen(im->graphfile) ?
+        status = im->graphfile ?
             cairo_surface_write_to_png(im->surface, im->graphfile)
             : cairo_surface_write_to_png_stream(im->surface, &cairo_output,
                                                 im);
 
         if (status != CAIRO_STATUS_SUCCESS) {
-            rrd_set_error("Could not save png to '%s'", im->graphfile);
+            rrd_set_error("Could not save png to '%s'",
+                im->graphfile ? im->graphfile : "memory");
             return 1;
         }
         break;
@@ -4356,7 +4371,7 @@ int graph_cairo_finish (image_desc_t *im)
     case IF_JSONTIME:
       break;
     default:
-        if (strlen(im->graphfile)) {
+        if (im->graphfile) {
             cairo_show_page(im->cr);
         } else {
             cairo_surface_finish(im->surface);
@@ -4547,37 +4562,34 @@ rrd_info_t *rrd_graph_v(
 {
     image_desc_t im;
     rrd_info_t *grinfo;
+    struct optparse options;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
-    rrd_graph_options(argc, argv, &im);
+    rrd_graph_options(argc, argv, &options, &im);
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
         return NULL;
     }
 
-    if (strlen(argv[optind]) >= MAXPATH) {
-        rrd_set_error("filename (including path) too long");
-        rrd_info_free(im.grinfo);
-        im_free(&im);
-        return NULL;
-    }
+    if (strcmp(options.argv[options.optind], "-") != 0) {
+        im.graphfile = strdup(options.argv[options.optind]);
+        if (im.graphfile == NULL) {
+            rrd_set_error("cannot allocate sufficient memory for filename length");
+            rrd_info_free(im.grinfo);
+            im_free(&im);
+            return NULL;
+        }
+    } /* else we work in memory: im.graphfile==NULL */
 
-    strncpy(im.graphfile, argv[optind], MAXPATH - 1);
-    im.graphfile[MAXPATH - 1] = '\0';
-
-    if (strcmp(im.graphfile, "-") == 0) {
-        im.graphfile[0] = '\0';
-    }
-
-    rrd_graph_script(argc, argv, &im, 1);
+    rrd_graph_script(options.argc, options.argv, &im, options.optind+1);
 
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
@@ -4598,7 +4610,7 @@ rrd_info_t *rrd_graph_v(
 
     if (im.imginfo && *im.imginfo) {
         rrd_infoval_t info;
-        char     *path;
+        char     *path = NULL;
         char     *filename;
 
         if (bad_format_imginfo(im.imginfo)) {
@@ -4606,8 +4618,12 @@ rrd_info_t *rrd_graph_v(
             im_free(&im);
             return NULL;
         }
-        path = strdup(im.graphfile);
-        filename = basename(path);
+        if (im.graphfile) {
+            path = strdup(im.graphfile);
+            filename = basename(path);
+        } else {
+            filename = "memory";
+        }
         info.u_str =
             sprintf_alloc(im.imginfo,
                           filename,
@@ -4631,7 +4647,7 @@ rrd_info_t *rrd_graph_v(
 
 static void
 rrd_set_font_desc (
-    image_desc_t *im,int prop,char *font, double size ){
+    image_desc_t *im, int prop, const char *font, double size ){
     if (font){
         strncpy(im->text_prop[prop].font, font, sizeof(text_prop[prop].font) - 1);
         im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';
@@ -4744,7 +4760,7 @@ void rrd_graph_init(
     for (i = 0; i < DIM(text_prop); i++) {
         im->text_prop[i].size = -1;
         im->text_prop[i].font_desc = NULL;
-        rrd_set_font_desc(im,i, deffont ? deffont : text_prop[i].font,text_prop[i].size);
+        rrd_set_font_desc(im, i, deffont ? deffont : text_prop[i].font, text_prop[i].size);
     }
 
     mutex_lock(im->fontmap_mutex);
@@ -4786,13 +4802,13 @@ void rrd_graph_init(
 void rrd_graph_options(
     int argc,
     char *argv[],
-    image_desc_t
-    *im)
+    struct optparse *poptions,
+    image_desc_t *im)
 {
     int       stroff;
     char     *parsetime_error = NULL;
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
-    char      double_str[20], double_str2[20];
+    char      double_str[41] = {0}, double_str2[41] = {0};
     time_t    start_tmp = 0, end_tmp = 0;
     long      long_tmp;
     rrd_time_value_t start_tv, end_tv;
@@ -4803,83 +4819,77 @@ void rrd_graph_options(
 #define LONGOPT_UNITS_SI 255
 
 /* *INDENT-OFF* */
-    struct option long_options[] = {
-        { "alt-autoscale",      no_argument,       0, 'A'},
-        { "imgformat",          required_argument, 0, 'a'},
-        { "font-smoothing-threshold", required_argument, 0, 'B'},
-        { "base",               required_argument, 0, 'b'},
-        { "color",              required_argument, 0, 'c'},
-        { "full-size-mode",     no_argument,       0, 'D'},
-        { "daemon",             required_argument, 0, 'd'},
-        { "slope-mode",         no_argument,       0, 'E'},
-        { "end",                required_argument, 0, 'e'},
-        { "force-rules-legend", no_argument,       0, 'F'},
-        { "imginfo",            required_argument, 0, 'f'},
-        { "graph-render-mode",  required_argument, 0, 'G'},
-        { "no-legend",          no_argument,       0, 'g'},
-        { "height",             required_argument, 0, 'h'},
-        { "no-minor",           no_argument,       0, 'I'},
-        { "interlaced",         no_argument,       0, 'i'},
-        { "alt-autoscale-min",  no_argument,       0, 'J'},
-        { "only-graph",         no_argument,       0, 'j'},
-        { "units-length",       required_argument, 0, 'L'},
-        { "lower-limit",        required_argument, 0, 'l'},
-        { "alt-autoscale-max",  no_argument,       0, 'M'},
-        { "zoom",               required_argument, 0, 'm'},
-        { "no-gridfit",         no_argument,       0, 'N'},
-        { "font",               required_argument, 0, 'n'},
-        { "logarithmic",        no_argument,       0, 'o'},
-        { "pango-markup",       no_argument,       0, 'P'},
-        { "font-render-mode",   required_argument, 0, 'R'},
-        { "rigid",              no_argument,       0, 'r'},
-        { "step",               required_argument, 0, 'S'},
-        { "start",              required_argument, 0, 's'},
-        { "tabwidth",           required_argument, 0, 'T'},
-        { "title",              required_argument, 0, 't'},
-        { "upper-limit",        required_argument, 0, 'u'},
-        { "vertical-label",     required_argument, 0, 'v'},
-        { "watermark",          required_argument, 0, 'W'},
-        { "width",              required_argument, 0, 'w'},
-        { "units-exponent",     required_argument, 0, 'X'},
-        { "x-grid",             required_argument, 0, 'x'},
-        { "alt-y-grid",         no_argument,       0, 'Y'},
-        { "y-grid",             required_argument, 0, 'y'},
-        { "lazy",               no_argument,       0, 'z'},
-        { "use-nan-for-all-missing-data", no_argument,       0, 'Z'},
-        { "units",              required_argument, 0, LONGOPT_UNITS_SI},
-        { "alt-y-mrtg",         no_argument,       0, 1000},    /* this has no effect it is just here to save old apps from crashing when they use it */
-        { "disable-rrdtool-tag",no_argument,       0, 1001},
-        { "right-axis",         required_argument, 0, 1002},
-        { "right-axis-label",   required_argument, 0, 1003},
-        { "right-axis-format",  required_argument, 0, 1004},
-        { "legend-position",    required_argument, 0, 1005},
-        { "legend-direction",   required_argument, 0, 1006},
-        { "border",             required_argument, 0, 1007},
-        { "grid-dash",          required_argument, 0, 1008},
-        { "dynamic-labels",     no_argument,       0, 1009},
-        { "week-fmt",           required_argument, 0, 1010},
-        { "graph-type",         required_argument, 0, 1011},
-        { "left-axis-format",   required_argument, 0, 1012},
-        { "left-axis-formatter",required_argument, 0, 1013},
-        { "right-axis-formatter",required_argument,0, 1014},
-        {  0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"alt-autoscale",      'A', OPTPARSE_NONE},
+        {"imgformat",          'a', OPTPARSE_REQUIRED},
+        {"font-smoothing-threshold", 'B', OPTPARSE_REQUIRED},
+        {"base",               'b', OPTPARSE_REQUIRED},
+        {"color",              'c', OPTPARSE_REQUIRED},
+        {"full-size-mode",     'D', OPTPARSE_NONE},
+        {"daemon",             'd', OPTPARSE_REQUIRED},
+        {"slope-mode",         'E', OPTPARSE_NONE},
+        {"end",                'e', OPTPARSE_REQUIRED},
+        {"force-rules-legend", 'F', OPTPARSE_NONE},
+        {"imginfo",            'f', OPTPARSE_REQUIRED},
+        {"graph-render-mode",  'G', OPTPARSE_REQUIRED},
+        {"no-legend",          'g', OPTPARSE_NONE},
+        {"height",             'h', OPTPARSE_REQUIRED},
+        {"no-minor",           'I', OPTPARSE_NONE},
+        {"interlaced",         'i', OPTPARSE_NONE},
+        {"alt-autoscale-min",  'J', OPTPARSE_NONE},
+        {"only-graph",         'j', OPTPARSE_NONE},
+        {"units-length",       'L', OPTPARSE_REQUIRED},
+        {"lower-limit",        'l', OPTPARSE_REQUIRED},
+        {"alt-autoscale-max",  'M', OPTPARSE_NONE},
+        {"zoom",               'm', OPTPARSE_REQUIRED},
+        {"no-gridfit",         'N', OPTPARSE_NONE},
+        {"font",               'n', OPTPARSE_REQUIRED},
+        {"logarithmic",        'o', OPTPARSE_NONE},
+        {"pango-markup",       'P', OPTPARSE_NONE},
+        {"font-render-mode",   'R', OPTPARSE_REQUIRED},
+        {"rigid",              'r', OPTPARSE_NONE},
+        {"step",               'S', OPTPARSE_REQUIRED},
+        {"start",              's', OPTPARSE_REQUIRED},
+        {"tabwidth",           'T', OPTPARSE_REQUIRED},
+        {"title",              't', OPTPARSE_REQUIRED},
+        {"upper-limit",        'u', OPTPARSE_REQUIRED},
+        {"vertical-label",     'v', OPTPARSE_REQUIRED},
+        {"watermark",          'W', OPTPARSE_REQUIRED},
+        {"width",              'w', OPTPARSE_REQUIRED},
+        {"units-exponent",     'X', OPTPARSE_REQUIRED},
+        {"x-grid",             'x', OPTPARSE_REQUIRED},
+        {"alt-y-grid",         'Y', OPTPARSE_NONE},
+        {"y-grid",             'y', OPTPARSE_REQUIRED},
+        {"lazy",               'z', OPTPARSE_NONE},
+        {"use-nan-for-all-missing-data", 'Z', OPTPARSE_NONE},
+        {"units",              LONGOPT_UNITS_SI, OPTPARSE_REQUIRED},
+        {"alt-y-mrtg",         1000, OPTPARSE_NONE},    /* this has no effect it is just here to save old apps from crashing when they use it */
+        {"disable-rrdtool-tag",1001, OPTPARSE_NONE},
+        {"right-axis",         1002, OPTPARSE_REQUIRED},
+        {"right-axis-label",   1003, OPTPARSE_REQUIRED},
+        {"right-axis-format",  1004, OPTPARSE_REQUIRED},
+        {"legend-position",    1005, OPTPARSE_REQUIRED},
+        {"legend-direction",   1006, OPTPARSE_REQUIRED},
+        {"border",             1007, OPTPARSE_REQUIRED},
+        {"grid-dash",          1008, OPTPARSE_REQUIRED},
+        {"dynamic-labels",     1009, OPTPARSE_NONE},
+        {"week-fmt",           1010, OPTPARSE_REQUIRED},
+        {"graph-type",         1011, OPTPARSE_REQUIRED},
+        {"left-axis-format",   1012, OPTPARSE_REQUIRED},
+        {"left-axis-formatter",1013, OPTPARSE_REQUIRED},
+        {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
+        {0}
 };
 /* *INDENT-ON* */
+    int       opt;
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
-    while (1) {
-        int       option_index = 0;
-        int       opt;
+    
+    optparse_init(poptions, argc, argv);
+    while ((opt = optparse_long(poptions, longopts, NULL)) != -1) {
         int       col_start, col_end;
 
-        opt = getopt_long(argc, argv,
-                          "Aa:B:b:c:Dd:Ee:Ff:G:gh:IiJjL:l:Mm:Nn:oPR:rS:s:T:t:u:v:W:w:X:x:Yy:Zz",
-                          long_options, &option_index);
-        if (opt == EOF)
-            break;
         switch (opt) {
         case 'I':
             im->extra_flags |= NOMINOR;
@@ -4906,28 +4916,28 @@ void rrd_graph_options(
             im->extra_flags |= ALLOW_MISSING_DS;
             break;
         case 1005:
-            if (strcmp(optarg, "north") == 0) {
+            if (strcmp(poptions->optarg, "north") == 0) {
                 im->legendposition = NORTH;
-            } else if (strcmp(optarg, "west") == 0) {
+            } else if (strcmp(poptions->optarg, "west") == 0) {
                 im->legendposition = WEST;
-            } else if (strcmp(optarg, "south") == 0) {
+            } else if (strcmp(poptions->optarg, "south") == 0) {
                 im->legendposition = SOUTH;
-            } else if (strcmp(optarg, "east") == 0) {
+            } else if (strcmp(poptions->optarg, "east") == 0) {
                 im->legendposition = EAST;
             } else {
-                rrd_set_error("unknown legend-position '%s'", optarg);
+                rrd_set_error("unknown legend-position '%s'", poptions->optarg);
                 return;
             }
             break;
         case 1006:
-            if (strcmp(optarg, "topdown") == 0) {
+            if (strcmp(poptions->optarg, "topdown") == 0) {
                 im->legenddirection = TOP_DOWN;
-            } else if (strcmp(optarg, "bottomup") == 0) {
+            } else if (strcmp(poptions->optarg, "bottomup") == 0) {
                 im->legenddirection = BOTTOM_UP;
-            } else if (strcmp(optarg, "bottomup2") == 0) {
+            } else if (strcmp(poptions->optarg, "bottomup2") == 0) {
                 im->legenddirection = BOTTOM_UP2;
             } else {
-                rrd_set_error("unknown legend-position '%s'", optarg);
+                rrd_set_error("unknown legend-position '%s'", poptions->optarg);
                 return;
             }
             break;
@@ -4942,26 +4952,26 @@ void rrd_graph_options(
                 rrd_set_error("--units can only be used once!");
                 return;
             }
-            if (strcmp(optarg, "si") == 0)
+            if (strcmp(poptions->optarg, "si") == 0)
                 im->extra_flags |= FORCE_UNITS_SI;
             else {
-                rrd_set_error("invalid argument for --units: %s", optarg);
+                rrd_set_error("invalid argument for --units: %s", poptions->optarg);
                 return;
             }
             break;
         case 'X':
-            im->unitsexponent = atoi(optarg);
+            im->unitsexponent = atoi(poptions->optarg);
             break;
         case 'L':
-            im->unitslength = atoi(optarg);
+            im->unitslength = atoi(poptions->optarg);
             im->forceleftspace = 1;
             break;
         case 'T':
-            if (rrd_strtodbl(optarg, 0, &(im->tabwidth), "option -T") != 2)
+            if (rrd_strtodbl(poptions->optarg, 0, &(im->tabwidth), "option -T") != 2)
                 return;
             break;
         case 'S':
-            im->step = atoi(optarg);
+            im->step = atoi(poptions->optarg);
             break;
         case 'N':
             im->gridfit = 0;
@@ -4970,23 +4980,23 @@ void rrd_graph_options(
             im->with_markup = 1;
             break;
         case 's':
-            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(poptions->optarg, &start_tv)) != 0) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return;
             }
             break;
         case 'e':
-            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(poptions->optarg, &end_tv)) != 0) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return;
             }
             break;
         case 'x':
-            if (strcmp(optarg, "none") == 0) {
+            if (strcmp(poptions->optarg, "none") == 0) {
                 im->draw_x_grid = 0;
                 break;
             };
-            if (sscanf(optarg,
+            if (sscanf(poptions->optarg,
                        "%10[A-Z]:%ld:%10[A-Z]:%ld:%10[A-Z]:%ld:%ld:%n",
                        scan_gtm,
                        &im->xlab_user.gridst,
@@ -4995,7 +5005,7 @@ void rrd_graph_options(
                        scan_ltm,
                        &im->xlab_user.labst,
                        &im->xlab_user.precis, &stroff) == 7 && stroff != 0) {
-				im->xlab_form=strdup(optarg + stroff);
+				im->xlab_form=strdup(poptions->optarg + stroff);
 				if (!im->xlab_form) {
                     rrd_set_error("cannot allocate memory for xlab_form");
                     return;
@@ -5022,11 +5032,11 @@ void rrd_graph_options(
             }
             break;
         case 'y':
-            if (strcmp(optarg, "none") == 0) {
+            if (strcmp(poptions->optarg, "none") == 0) {
                 im->draw_y_grid = 0;
                 break;
             };
-            if (sscanf(optarg, "%[0-9.e+-]:%d", double_str , &im->ylabfact) == 2) {
+            if (sscanf(poptions->optarg, "%40[0-9.e+-]:%d", double_str , &im->ylabfact) == 2) {
                 if (rrd_strtodbl( double_str, 0, &(im->ygridstep), "option -y") != 2){
                     return;
                 }
@@ -5043,30 +5053,33 @@ void rrd_graph_options(
             }
             break;
         case 1007:
-            im->draw_3d_border = atoi(optarg);
+            im->draw_3d_border = atoi(poptions->optarg);
             break;
         case 1008: /* grid-dash */
-            if(sscanf(optarg,
-                      "%[0-9.e+-]:%[0-9.e+-]",
+            if(sscanf(poptions->optarg,
+                      "%40[0-9.e+-]:%40[0-9.e+-]",
                       double_str,
-                      double_str2 ) != 2) {
+                      double_str2 ) == 2) {
                 if ( rrd_strtodbl( double_str, 0, &(im->grid_dash_on),NULL) !=2
                      || rrd_strtodbl( double_str2, 0, &(im->grid_dash_off), NULL) != 2 ){
                     rrd_set_error("expected grid-dash format float:float");
                     return;
                 }
+            } else {
+                    rrd_set_error("invalid grid-dash format");
+                    return;
             }
             break;
         case 1009: /* enable dynamic labels */
             im->dynamic_labels = 1;
             break;
         case 1010:
-            strncpy(week_fmt,optarg,sizeof week_fmt);
+            strncpy(week_fmt, poptions->optarg, sizeof week_fmt);
             week_fmt[(sizeof week_fmt)-1]='\0';
             break;
         case 1002: /* right y axis */
-            if(sscanf(optarg,
-                      "%[0-9.e+-]:%[0-9.e+-]",
+            if(sscanf(poptions->optarg,
+                      "%40[0-9.e+-]:%40[0-9.e+-]",
                       double_str,
                       double_str2 ) == 2
                 && rrd_strtodbl( double_str, 0, &(im->second_axis_scale),NULL) == 2
@@ -5081,32 +5094,32 @@ void rrd_graph_options(
             }
             break;
         case 1003:
-            im->second_axis_legend=strdup(optarg);
+            im->second_axis_legend=strdup(poptions->optarg);
             if (!im->second_axis_legend) {
                 rrd_set_error("cannot allocate memory for second_axis_legend");
                 return;
             }
             break;
         case 1004:
-            im->second_axis_format=strdup(optarg);
+            im->second_axis_format=strdup(poptions->optarg);
             if (!im->second_axis_format) {
                 rrd_set_error("cannot allocate memory for second_axis_format");
                 return;
             }
             break;
         case 1012:
-            im->primary_axis_format=strdup(optarg);
+            im->primary_axis_format=strdup(poptions->optarg);
             if (!im->primary_axis_format) {
                 rrd_set_error("cannot allocate memory for primary_axis_format");
                 return;
             }
             break;
         case 1013:
-            if (!strcmp(optarg, "numeric")) {
+            if (!strcmp(poptions->optarg, "numeric")) {
                 im->primary_axis_formatter = VALUE_FORMATTER_NUMERIC;
-            } else if (!strcmp(optarg, "timestamp")) {
+            } else if (!strcmp(poptions->optarg, "timestamp")) {
                 im->primary_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
-            } else if (!strcmp(optarg, "duration")) {
+            } else if (!strcmp(poptions->optarg, "duration")) {
                 im->primary_axis_formatter = VALUE_FORMATTER_DURATION;
             } else {
                 rrd_set_error("Unknown left axis formatter");
@@ -5114,11 +5127,11 @@ void rrd_graph_options(
             }
             break;
         case 1014:
-            if (!strcmp(optarg, "numeric")) {
+            if (!strcmp(poptions->optarg, "numeric")) {
                 im->second_axis_formatter = VALUE_FORMATTER_NUMERIC;
-            } else if (!strcmp(optarg, "timestamp")) {
+            } else if (!strcmp(poptions->optarg, "timestamp")) {
                 im->second_axis_formatter = VALUE_FORMATTER_TIMESTAMP;
-            } else if (!strcmp(optarg, "duration")) {
+            } else if (!strcmp(poptions->optarg, "duration")) {
                 im->second_axis_formatter = VALUE_FORMATTER_DURATION;
             } else {
                 rrd_set_error("Unknown right axis formatter");
@@ -5126,24 +5139,24 @@ void rrd_graph_options(
             }
             break;
         case 'v':
-            im->ylegend=strdup(optarg);
+            im->ylegend=strdup(poptions->optarg);
             if (!im->ylegend) {
                 rrd_set_error("cannot allocate memory for ylegend");
                 return;
             }
             break;
         case 'u':
-            if (rrd_strtodbl(optarg, 0, &(im->maxval), "option -u") != 2){
+            if (rrd_strtodbl(poptions->optarg, 0, &(im->maxval), "option -u") != 2){
                 return;
             }
             break;
         case 'l':
-            if (rrd_strtodbl(optarg, 0, &(im->minval), "option -l") != 2){
+            if (rrd_strtodbl(poptions->optarg, 0, &(im->minval), "option -l") != 2){
                 return;
             }
             break;
         case 'b':
-            im->base = atol(optarg);
+            im->base = atol(poptions->optarg);
             if (im->base != 1024 && im->base != 1000) {
                 rrd_set_error
                     ("the only sensible value for base apart from 1000 is 1024");
@@ -5151,7 +5164,7 @@ void rrd_graph_options(
             }
             break;
         case 'w':
-            long_tmp = atol(optarg);
+            long_tmp = atol(poptions->optarg);
             if (long_tmp < 10) {
                 rrd_set_error("width below 10 pixels");
                 return;
@@ -5159,7 +5172,7 @@ void rrd_graph_options(
             im->xsize = long_tmp;
             break;
         case 'h':
-            long_tmp = atol(optarg);
+            long_tmp = atol(poptions->optarg);
             if (long_tmp < 10) {
                 rrd_set_error("height below 10 pixels");
                 return;
@@ -5176,19 +5189,19 @@ void rrd_graph_options(
             im->rigid = 1;
             break;
         case 'f':
-            im->imginfo = optarg;
+            im->imginfo = poptions->optarg;
             break;
         case 'a':
             if ((int)
-                (im->imgformat = if_conv(optarg)) == -1) {
-                rrd_set_error("unsupported graphics format '%s'", optarg);
+                (im->imgformat = if_conv(poptions->optarg)) == -1) {
+                rrd_set_error("unsupported graphics format '%s'", poptions->optarg);
                 return;
             }
             break;
         case 1011:
             if ((int)
-                (im->graph_type = type_conv(optarg)) == -1) {
-                rrd_set_error("unsupported graphics type '%s'", optarg);
+                (im->graph_type = type_conv(poptions->optarg)) == -1) {
+                rrd_set_error("unsupported graphics type '%s'", poptions->optarg);
                 return;
             }
             break;
@@ -5202,7 +5215,7 @@ void rrd_graph_options(
             im->logarithmic = 1;
             break;
         case 'c':
-            if (sscanf(optarg,
+            if (sscanf(poptions->optarg,
                        "%10[A-Z]#%n%8lx%n",
                        col_nam, &col_start, &color, &col_end) == 2) {
                 int       ci;
@@ -5252,7 +5265,7 @@ void rrd_graph_options(
             double    size = 1;
             int       end;
 
-            if (sscanf(optarg, "%10[A-Z]:%[0-9.e+-]%n", prop, double_str, &end) >= 2
+            if (sscanf(poptions->optarg, "%10[A-Z]:%40[0-9.e+-]%n", prop, double_str, &end) >= 2
                 && rrd_strtodbl( double_str, 0, &size, NULL) == 2) {
                 int       sindex, propidx;
 
@@ -5262,13 +5275,13 @@ void rrd_graph_options(
                         if (size > 0) {
                             rrd_set_font_desc(im,propidx,NULL,size);
                         }
-                        if ((int) strlen(optarg) > end+2) {
-                            if (optarg[end] == ':') {
-                                rrd_set_font_desc(im,propidx,optarg + end + 1,0);
+                        if ((int) strlen(poptions->optarg) > end+2) {
+                            if (poptions->optarg[end] == ':') {
+                                rrd_set_font_desc(im, propidx, poptions->optarg+end+1, 0);
                             } else {
                                 rrd_set_error
                                     ("expected : after font size in '%s'",
-                                     optarg);
+                                     poptions->optarg);
                                 return;
                             }
                         }
@@ -5288,7 +5301,7 @@ void rrd_graph_options(
             break;
         }
         case 'm':
-            if (rrd_strtodbl(optarg, 0, &(im->zoom), "option -m") != 2){
+            if (rrd_strtodbl(poptions->optarg, 0, &(im->zoom), "option -m") != 2){
                 return;
             }
             if (im->zoom <= 0.0) {
@@ -5297,40 +5310,40 @@ void rrd_graph_options(
             }
             break;
         case 't':
-            im->title=strdup(optarg);
+            im->title=strdup(poptions->optarg);
             if (!im->title) {
                 rrd_set_error("cannot allocate memory for title");
                 return;
             }
             break;
         case 'R':
-            if (strcmp(optarg, "normal") == 0) {
+            if (strcmp(poptions->optarg, "normal") == 0) {
                 cairo_font_options_set_antialias
                     (im->font_options, CAIRO_ANTIALIAS_GRAY);
                 cairo_font_options_set_hint_style
                     (im->font_options, CAIRO_HINT_STYLE_FULL);
-            } else if (strcmp(optarg, "light") == 0) {
+            } else if (strcmp(poptions->optarg, "light") == 0) {
                 cairo_font_options_set_antialias
                     (im->font_options, CAIRO_ANTIALIAS_GRAY);
                 cairo_font_options_set_hint_style
                     (im->font_options, CAIRO_HINT_STYLE_SLIGHT);
-            } else if (strcmp(optarg, "mono") == 0) {
+            } else if (strcmp(poptions->optarg, "mono") == 0) {
                 cairo_font_options_set_antialias
                     (im->font_options, CAIRO_ANTIALIAS_NONE);
                 cairo_font_options_set_hint_style
                     (im->font_options, CAIRO_HINT_STYLE_FULL);
             } else {
-                rrd_set_error("unknown font-render-mode '%s'", optarg);
+                rrd_set_error("unknown font-render-mode '%s'", poptions->optarg);
                 return;
             }
             break;
         case 'G':
-            if (strcmp(optarg, "normal") == 0)
+            if (strcmp(poptions->optarg, "normal") == 0)
                 im->graph_antialias = CAIRO_ANTIALIAS_GRAY;
-            else if (strcmp(optarg, "mono") == 0)
+            else if (strcmp(poptions->optarg, "mono") == 0)
                 im->graph_antialias = CAIRO_ANTIALIAS_NONE;
             else {
-                rrd_set_error("unknown graph-render-mode '%s'", optarg);
+                rrd_set_error("unknown graph-render-mode '%s'", poptions->optarg);
                 return;
             }
             break;
@@ -5338,7 +5351,7 @@ void rrd_graph_options(
             /* not supported curently */
             break;
         case 'W':
-            im->watermark=strdup(optarg);
+            im->watermark=strdup(poptions->optarg);
             if (!im->watermark) {
                 rrd_set_error("cannot allocate memory for watermark");
                 return;
@@ -5353,7 +5366,7 @@ void rrd_graph_options(
                 return;
             }
 
-            im->daemon_addr = strdup(optarg);
+            im->daemon_addr = strdup(poptions->optarg);
             if (im->daemon_addr == NULL)
             {
               rrd_set_error("strdup failed");
@@ -5363,13 +5376,10 @@ void rrd_graph_options(
             break;
         }
         case '?':
-            if (optopt != 0)
-                rrd_set_error("unknown option '%c'", optopt);
-            else
-                rrd_set_error("unknown option '%s'", argv[optind - 1]);
+            rrd_set_error("%s", poptions->errmsg);
             return;
         }
-    } /* while (1) */
+    } /* while (opt != -1) */
 
     mutex_lock(im->fontmap_mutex);
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout), im->font_options);
@@ -5542,11 +5552,11 @@ int vdef_parse(
      * so the parsing is rather simple.  Change if needed.
      */
     double    param;
-    char      func[30] = {0}, double_str[21] = {0};
+    char      func[30] = {0}, double_str[41] = {0};
     int       n;
 
     n = 0;
-    sscanf(str, "%20[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
+    sscanf(str, "%40[0-9.e+-],%29[A-Z]%n", double_str, func, &n);
     if ( rrd_strtodbl( double_str, NULL, &param, NULL) != 2 ){
         n = 0;
         sscanf(str, "%29[A-Z]%n", func, &n);

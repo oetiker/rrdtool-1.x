@@ -25,20 +25,20 @@ done
 $RRDTOOL update ${BUILD}a1.rrd --template a $UPDATE || fail update1
 $RRDTOOL update ${BUILD}a2.rrd --template a $UPDATE || fail update2
 
-$RRDTOOL dump ${BUILD}a1.rrd | $DIFF ${BASE}a1-create.dump -
+$RRDTOOL dump ${BUILD}a1.rrd | $DIFF9 ${BASE}a1-create.dump -
 report create 1
-$RRDTOOL dump ${BUILD}a2.rrd | $DIFF ${BASE}a2-create.dump -
+$RRDTOOL dump ${BUILD}a2.rrd | $DIFF9 ${BASE}a2-create.dump -
 report create 2
 
 cp ${BUILD}a2.rrd ${BUILD}b2.rrd
 $RRDTOOL tune ${BUILD}b2.rrd DELRRA:5 || fail modify
 
-$RRDTOOL dump ${BUILD}b2.rrd | $DIFF ${BASE}a1-create.dump -
+$RRDTOOL dump ${BUILD}b2.rrd | $DIFF9 ${BASE}a1-create.dump -
 report "remove additional RRA from second - must then be equal original first"
 
 cp ${BUILD}a1.rrd ${BUILD}b1.rrd
 $RRDTOOL tune ${BUILD}b1.rrd RRA:AVERAGE:0.5:4:10 || fail modify
 
-$RRDTOOL dump ${BUILD}b1.rrd | $DIFF ${BASE}a2-create.dump -
+$RRDTOOL dump ${BUILD}b1.rrd | $DIFF9 ${BASE}a2-create.dump -
 report "add additional RRA to first - must then be equal original second"
 

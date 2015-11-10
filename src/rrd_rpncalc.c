@@ -7,7 +7,12 @@
 #include <limits.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <time.h>
+#include "rrd_tool.h"
 
+#ifdef HAVE_LANGINFO_H
+#include <langinfo.h>
+#endif
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
@@ -173,6 +178,11 @@ void rpn_compact2str(
             add_op(OP_ISINF, ISINF)
             add_op(OP_NOW, NOW)
             add_op(OP_LTIME, LTIME)
+            add_op(OP_NEWDAY, NEWDAY)
+            add_op(OP_NEWWEEK, NEWWEEK)
+            add_op(OP_NEWMONTH, NEWMONTH)
+            add_op(OP_NEWYEAR, NEWYEAR)
+            add_op(OP_STEPWIDTH, STEPWIDTH)
             add_op(OP_TIME, TIME)
             add_op(OP_ATAN2, ATAN2)
             add_op(OP_ATAN, ATAN)
@@ -250,9 +260,19 @@ void parseCDEF_DS(const char *def,
             rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
             rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
             rpnp[i].op == OP_PREDICT || rpnp[i].op ==  OP_PREDICTSIGMA ||
-            rpnp[i].op == OP_PREDICTPERC ) {
+            rpnp[i].op == OP_PREDICTPERC ||
+            /* these could actually go into COMPUTE with RRD format 06 ... since adding new
+               stuff into COMPUTE requires a fileformat update and that can only happen with the
+               1.6 release */
+            rpnp[i].op == OP_STEPWIDTH ||
+            rpnp[i].op == OP_NEWDAY ||
+            rpnp[i].op == OP_NEWWEEK ||
+            rpnp[i].op == OP_NEWMONTH ||
+            rpnp[i].op == OP_NEWYEAR
+        ) {
+
             rrd_set_error
-                ("operators TIME, LTIME, PREV COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
+                ("operators TIME LTIME STEPWIDTH PREV NEW* COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
             free(rpnp);
             return;
         }
@@ -309,7 +329,7 @@ rpnp_t   *rpn_parse(
     long      steps = -1;
     rpnp_t   *rpnp;
     char      vname[MAX_VNAME_LEN + 10];
-    char      double_str[20];
+    char      double_str[41] = {0};
 
     rpnp = NULL;
     expr = (char *) expr_const;
@@ -320,7 +340,7 @@ rpnp_t   *rpn_parse(
             return NULL;
         }
 
-        else if ((sscanf(expr, "%19[0-9.e+-]%n", double_str, &pos) == 1)
+        else if ((sscanf(expr, "%40[0-9.e+-]%n", double_str, &pos) == 1)
                  && (expr[pos] == ',')
                  && ( rrd_strtodbl( double_str, NULL, &(rpnp[steps].val), NULL ) == 2 )) {
             rpnp[steps].op = OP_NUMBER;
@@ -362,6 +382,11 @@ rpnp_t   *rpn_parse(
             match_op(OP_EXC, EXC)
             match_op(OP_POP, POP)
             match_op(OP_LTIME, LTIME)
+            match_op(OP_NEWDAY, NEWDAY)
+            match_op(OP_NEWWEEK, NEWWEEK)
+            match_op(OP_NEWMONTH, NEWMONTH)
+            match_op(OP_NEWYEAR, NEWYEAR)
+            match_op(OP_STEPWIDTH, STEPWIDTH)
             match_op(OP_LT, LT)
             match_op(OP_LE, LE)
             match_op(OP_GT, GT)
@@ -408,6 +433,7 @@ rpnp_t   *rpn_parse(
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
+                     && (expr[pos] == '\0' || expr[pos] == ',')
                      && ((rpnp[steps].ptr = (*lookup) (key_hash, vname)) !=
                          -1)) {
             rpnp[steps].op = OP_VARIABLE;
@@ -415,7 +441,7 @@ rpnp_t   *rpn_parse(
         }
 
         else {
-            rrd_set_error("don't undestand '%s'",expr);
+            rrd_set_error("don't understand '%s'",expr);
             free(rpnp);
             return NULL;
         }
@@ -428,6 +454,7 @@ rpnp_t   *rpn_parse(
         if (*expr == ',')
             expr++;
         else {
+            rrd_set_error("garbage in RPN: '%s'", expr);
             free(rpnp);
             return NULL;
         }
@@ -478,8 +505,42 @@ static int rpn_compare_double(
     return (diff < 0) ? -1 : (diff > 0) ? 1 : 0;
 }
 
+static int find_first_weekday(void){
+    static int first_weekday = -1;
+    if (first_weekday == -1){
+#ifdef HAVE__NL_TIME_WEEK_1STDAY
+        /* according to http://sourceware.org/ml/libc-locales/2009-q1/msg00011.html */
+        /* See correct way here http://pasky.or.cz/dev/glibc/first_weekday.c */
+        first_weekday = nl_langinfo (_NL_TIME_FIRST_WEEKDAY)[0];
+        int week_1stday;
+        long week_1stday_l = (long) nl_langinfo (_NL_TIME_WEEK_1STDAY);
+        if (week_1stday_l == 19971130
+#if SIZEOF_LONG_INT > 4
+            || week_1stday_l >> 32 == 19971130
+#endif
+           )
+            week_1stday = 0; /* Sun */
+        else if (week_1stday_l == 19971201
+#if SIZEOF_LONG_INT > 4
+           || week_1stday_l >> 32 == 19971201
+#endif
+           )
+            week_1stday = 1; /* Mon */
+        else
+        {
+            first_weekday = 1;
+            return first_weekday; /* we go for a monday default */
+        }
+        first_weekday=(week_1stday + first_weekday - 1) % 7;
+#else
+        first_weekday = 1;
+#endif
+    }
+    return first_weekday;
+}
+
 /* rpn_calc: run the RPN calculator; also performs variable substitution;
- * moved and modified from data_calc() originally included in rrd_graph.c 
+ * moved and modified from data_calc() originally included in rrd_graph.c
  * arguments:
  * rpnp : an array of RPN operators (including variable references)
  * rpnstack : the initialized stack
@@ -498,11 +559,13 @@ short rpn_calc(
     rpnstack_t *rpnstack,
     long data_idx,
     rrd_value_t *output,
-    int output_idx)
-{
+    int output_idx,
+    int step_width
+){
     int       rpi;
-    long      stptr = -1;    
-
+    long      stptr = -1;
+    struct tm tmtmp1,tmtmp2;
+    time_t    timetmp;
     /* process each op from the rpn in turn */
     for (rpi = 0; rpnp[rpi].op != OP_END; rpi++) {
         /* allocate or grow the stack */
@@ -556,6 +619,9 @@ short rpn_calc(
                 }
             }
             break;
+        case OP_STEPWIDTH:
+            rpnstack->s[++stptr] = step_width;
+            break;
         case OP_COUNT:
             rpnstack->s[++stptr] = (output_idx + 1);    /* Note: Counter starts at 1 */
             break;
@@ -586,6 +652,34 @@ short rpn_calc(
         case OP_LTIME:
             rpnstack->s[++stptr] =
                 (double) tzoffset(data_idx) + (double) data_idx;
+            break;
+        case OP_NEWDAY:
+            timetmp = data_idx;
+            localtime_r(&timetmp,&tmtmp1);
+            timetmp = data_idx-step_width;
+            localtime_r(&timetmp,&tmtmp2);
+            rpnstack->s[++stptr] = tmtmp1.tm_mday != tmtmp2.tm_mday ? 1.0 : 0.0;
+            break;
+        case OP_NEWWEEK:
+            timetmp = data_idx;
+            localtime_r(&timetmp,&tmtmp1);
+            timetmp = data_idx-step_width;
+            localtime_r(&timetmp,&tmtmp2);
+            rpnstack->s[++stptr] = (tmtmp1.tm_wday == find_first_weekday() && tmtmp1.tm_wday != tmtmp2.tm_wday) ? 1.0 : 0.0;
+            break;
+        case OP_NEWMONTH:
+            timetmp = data_idx;
+            localtime_r(&timetmp,&tmtmp1);
+            timetmp = data_idx-step_width;
+            localtime_r(&timetmp,&tmtmp2);
+            rpnstack->s[++stptr] = tmtmp1.tm_mon != tmtmp2.tm_mon? 1.0 : 0.0;
+            break;
+        case OP_NEWYEAR:
+            timetmp = data_idx;
+            localtime_r(&timetmp,&tmtmp1);
+            timetmp = data_idx-step_width;
+            localtime_r(&timetmp,&tmtmp2);
+            rpnstack->s[++stptr] = tmtmp1.tm_year != tmtmp2.tm_year ? 1.0: 0.0;
             break;
         case OP_ADD:
             stackunderflow(1);
@@ -865,7 +959,7 @@ short rpn_calc(
 		    percentile/=100;
 		}
 		/* the local averaging window (similar to trend,
-		 * but better here, as we get better statistics 
+		 * but better here, as we get better statistics
 		 * thru numbers)*/
 	        stackunderflow(2);
 		int   locstepsize = rpnstack->s[--stptr];
@@ -908,8 +1002,8 @@ short rpn_calc(
 		    int shiftstep=1;
 		    if (shifts<0) {
 			shiftstep = loop*rpnstack->s[stptr];
-		    } else { 
-			shiftstep = rpnstack->s[stptr+loop]; 
+		    } else {
+			shiftstep = rpnstack->s[stptr+loop];
 		    }
 		    if(shiftstep <0) {
 			rrd_set_error("negative shift step not allowed: %i",shiftstep);
@@ -918,7 +1012,7 @@ short rpn_calc(
 		    shiftstep=(int)ceil((float)shiftstep/(float)dsstep);
 		    /* loop all local shifts */
 		    for(int i=0;i<=locstep;i++) {
-			/* now calculate offset into data-array 
+			/* now calculate offset into data-array
 			 * - relative to output_idx */
 			int offset=shiftstep+i;
 			/* and process if we have index 0 of above */
@@ -943,7 +1037,7 @@ short rpn_calc(
 		case OP_PREDICT:
 		    if (count>0) {
 			val = sum/(double)count;
-		    } 
+		    }
 		    break;
 		case OP_PREDICTSIGMA:
 		    if (count>1) { /* the sigma case */
@@ -976,7 +1070,7 @@ short rpn_calc(
 		    }
 		    break;
 		default: /* should not get here ... */
-		    break; 
+		    break;
 		}
 		rpnstack->s[stptr] = val;
 	    }
@@ -1072,7 +1166,7 @@ short rpn_calc(
                 if (!final_elements) {
                     /* no non-NAN elements; push NAN */
                     rpnstack->s[++stptr] = DNAN;
-                } else {                   
+                } else {
                     /* when goodvals and badvals meet, they might have met on a
                      * NAN, which wouldn't decrease final_elements. so, check
                      * that now. */
@@ -1149,7 +1243,7 @@ short rpn_calc(
             stptr++;
             rpnstack->s[stptr] = stptr;
             break;
-       
+
         case OP_END:
             break;
         }

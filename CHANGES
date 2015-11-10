@@ -1,3 +1,62 @@
+RRDtool 1.5.x - 2015-xx-xx
+==========================
+
+Bugfixes
+--------
+* shorten test precision to 7 digits ... 
+* never exit from a library function
+* buffer overflow in rrd_restore.c fixed #669
+
+RRDtool 1.5.4 - 2015-08-09
+==========================
+Bug Fixes
+---------
+* parse floating point numbers according to C locale in rrdtool create
+  arguments, regardless of the systems locale setting.
+* include missing rrd_rados.h into distribution archive
+* make rrdtool work on ARM again
+* make rrdtool test suit pass on 32bit OSs
+* fix --grid-dash option regression in graph
+* fix systemd support
+* fix link dependency for libpng since we are using functions directly
+* fix python module name
+* fix rrdtool tune to accept U in minimum and maximum options
+* fi
+* rrd_parsetime now uses a mutex lock to become thread safe
+* rrd_xport is now thread safe
+* stop using MAX_PATH and make everything dynamic and make rrdtool work on
+  Gnu HURD ... thanks nirgal!
+
+Features
+--------
+* new RPN operators: STEPWIDTH, NEWDAY, NEWWEEK, NEWMONTH and NEWWEEK
+  together they allow to draw graphs where a rate is converted back to
+  absolute numbers and accumulated over a period..
+
+
+RRDtool 1.5.3 - 2015-04-30
+==========================
+Bug Fixes
+---------
+* Brought commmand-line options and documentation back into sync.
+* Make LINE dashes option work again
+
+RRDtool 1.5.2 - 2015-04-23
+==========================
+Bug Fixes
+---------
+* paramters in VDEF are vnames and not data source names, hence
+  they can be 255 chars long and not only 20
+
+RRDtool 1.5.1 - 2015-04-22
+==========================
+Bug Fixes
+---------
+* parse numbers up to 40 characters long ..
+* fix install rules for Python and Lua
+* include missing VERSION and LICENSE file
+* unlink before rename in rrd_create when running on WIN32
+
 RRDtool 1.5.0 - 2015-04-16
 ==========================
 

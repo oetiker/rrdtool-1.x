@@ -56,6 +56,7 @@
 #include "rrd_client.h"
 
 #include "rrd_is_thread_safe.h"
+
 /* #define DEBUG  */
 
 int rrd_fetch(
@@ -79,40 +80,32 @@ int rrd_fetch(
 
     rrd_time_value_t start_tv, end_tv;
     const char *parsetime_error = NULL;
-    struct option long_options[] = {
-        {"resolution", required_argument, 0, 'r'},
-        {"start", required_argument, 0, 's'},
-        {"end", required_argument, 0, 'e'},
-        {"align-start", optional_argument, 0, 'a'},
-        {"daemon", required_argument, 0, 'd'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"resolution", 'r', OPTPARSE_REQUIRED},
+        {"start", 's', OPTPARSE_REQUIRED},
+        {"end", 'e', OPTPARSE_REQUIRED},
+        {"align-start", 'a', OPTPARSE_NONE},
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0},
     };
-
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
+    struct optparse options;
+    int opt;
 
     /* init start and end time */
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
 
-    while (1) {
-        int       option_index = 0;
-        int       opt;
-
-        opt = getopt_long(argc, argv, "ar:s:e:d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 's':
-            if ((parsetime_error = rrd_parsetime(optarg, &start_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 return -1;
             }
             break;
         case 'e':
-            if ((parsetime_error = rrd_parsetime(optarg, &end_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
                 return -1;
             }
@@ -121,7 +114,7 @@ int rrd_fetch(
             align_start = 1;
             break;
         case 'r':
-            if ((parsetime_error = rrd_scaled_duration(optarg, 1, &step_tmp))) {
+            if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &step_tmp))) {
                 rrd_set_error("resolution: %s", parsetime_error);
                 return -1;
             }
@@ -129,18 +122,18 @@ int rrd_fetch(
 
         case 'd':
             if (opt_daemon != NULL)
-                    free (opt_daemon);
-            opt_daemon = strdup (optarg);
+                free (opt_daemon);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
-                return (-1);
+                return -1;
             }
             break;
 
         case '?':
-            rrd_set_error("unknown option '-%c'", optopt);
-            return (-1);
+            rrd_set_error("%s", options.errmsg);
+            return -1;
         }
     }
 
@@ -170,21 +163,21 @@ int rrd_fetch(
     *end = end_tmp;
     *step = step_tmp;
 
-    if (optind + 1 >= argc) {
-        rrd_set_error("Usage: rrdtool %s <file> <CF> [options]", argv[0]);
+    if (options.optind + 1 >= options.argc) {
+        rrd_set_error("Usage: rrdtool %s <file> <CF> [options]", options.argv[0]);
         return -1;
     }
 
-    cf = argv[optind + 1];
+    cf = options.argv[options.optind + 1];
 
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon))
-	    status = rrdc_fetch (argv[optind], cf, start, end, step,
-			    ds_cnt, ds_namv, data);
+	    status = rrdc_fetch (options.argv[options.optind],
+			    cf, start, end, step, ds_cnt, ds_namv, data);
 
     else
-	    status = rrd_fetch_r(argv[optind], cf, start, end, step,
-			    ds_cnt, ds_namv, data);
+	    status = rrd_fetch_r(options.argv[options.optind],
+			    cf, start, end, step, ds_cnt, ds_namv, data);
 
     if (status != 0)
         return (-1);

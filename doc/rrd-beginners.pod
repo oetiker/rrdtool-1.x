@@ -27,7 +27,7 @@ databases as listed below:
 =item *
 
 RRDtool stores data; that makes it a back-end tool. The RRDtool command set
-allows the creation of graphs; that makes it a front-end tool as well. Other
+allows one to create graphs; that makes it a front-end tool as well. Other
 databases just store data and can not create graphs.
 
 =item *
@@ -94,10 +94,10 @@ best explained with an example.
 This example creates a database named F<target.rrd>. Start time
 (1'023'654'125) is specified in total number of seconds since epoch
 (time in seconds since 01-01-1970). While updating the database, the
-update time is also specified.  This update time MUST be large (later)
-then start time and MUST be in seconds since epoch.
+update time is also specified.  This update time MUST be larger (later)
+than start time and MUST be in seconds since epoch.
 
-The step of 300 seconds indicates that database expects new values every
+The step of 300 seconds indicates that the database expects new values every
 300 seconds. The wrapper script should be scheduled to run every B<step>
 seconds so that it updates the database every B<step> seconds.
 
@@ -198,7 +198,7 @@ values retrieved from the database before plotting them. For example,
 in SNMP replies, memory consumption values are usually specified in
 KBytes and traffic flow on interfaces is specified in Bytes. Graphs
 for these values will be more meaningful if values are represented in
-MBytes and mbps. The RRDtool graph command allows to define such
+MBytes and mbps. The RRDtool graph command allows one to define such
 conversions. Apart from mathematical calculations, it is also possible
 to perform logical operations such as greater than, less than, and
 if/then/else. If a database contains more than one RRA archive, then a

@@ -1,11 +1,11 @@
-/*  
+/*
  *  rrd_parsetime.c - parse time for at(1)
  *  Copyright (C) 1993, 1994  Thomas Koenig
  *
  *  modifications for English-language times
  *  Copyright (C) 1993  David Parsons
  *
- *  A lot of modifications and extensions 
+ *  A lot of modifications and extensions
  *  (including the new syntax being useful for RRDB)
  *  Copyright (C) 1999  Oleg Cherevko (aka Olwi Deer)
  *
@@ -27,17 +27,14 @@
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
  * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * THEORY OF LIABILITY, WEHTHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* NOTE: nothing in here is thread-safe!!!! Not even the localtime
-   calls ... */
-
 /*
  * The BNF-like specification of the time syntax parsed is below:
- *                                                               
+ *
  * As usual, [ X ] means that X is optional, { X } means that X may
  * be either omitted or specified as many times as needed,
  * alternatives are separated by |, brackets are used for grouping.
@@ -45,7 +42,7 @@
  *
  * TIME-SPECIFICATION ::= TIME-REFERENCE [ OFFSET-SPEC ] |
  *			                   OFFSET-SPEC   |
- *			   ( START | END ) OFFSET-SPEC 
+ *			   ( START | END ) OFFSET-SPEC
  *
  * TIME-REFERENCE ::= NOW | TIME-OF-DAY-SPEC [ DAY-SPEC-1 ] |
  *                        [ TIME-OF-DAY-SPEC ] DAY-SPEC-2
@@ -113,7 +110,7 @@
 /* System Headers */
 
 /* Local headers */
-
+#include "mutex.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -295,7 +292,7 @@ static void EnsureMemFree(
 
 /*
  * ve() and e() are used to set the return error,
- * the most appropriate use for these is inside panic(...) 
+ * the most appropriate use for these is inside panic(...)
  */
 #define MAX_ERR_MSG_LEN	1024
 static char errmsg[MAX_ERR_MSG_LEN];
@@ -461,7 +458,7 @@ static int token(
 }                       /* token */
 
 
-/* 
+/*
  * expect2() gets a token and complains if it's not the token we want
  */
 static char *expect2(
@@ -679,7 +676,7 @@ static char *assign_date(
 }                       /* assign_date */
 
 
-/* 
+/*
  * day() picks apart DAY-SPEC-[12]
  */
 static char *day(
@@ -687,7 +684,6 @@ static char *day(
 {
     /* using time_t seems to help portability with 64bit oses */
     time_t    mday = 0, wday, mon, year = ptv->tm.tm_year;
-
     switch (sc_tokid) {
     case YESTERDAY:
         ptv->tm.  tm_mday--;
@@ -757,7 +753,7 @@ static char *day(
          */
         mon = atol(sc_token);
         if (mon > 10 * 365 * 24 * 60 * 60) {
-            ptv->tm = *localtime(&mon);
+            localtime_r(&mon,&(ptv->tm));
 
             token();
             break;
@@ -833,7 +829,30 @@ static char *day(
  * mktime() The return value is either TIME_OK (aka NULL) or
  * the pointer to the error message in the case of problems
  */
+
+static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
+
+static char     *rrd_parsetime_nomt(
+    const char *tspec,
+    rrd_time_value_t * ptv);
+    
 char     *rrd_parsetime(
+    const char *tspec,
+    rrd_time_value_t * ptv)
+{
+    /* yes this code is non re-entrant ... so lets make sure we do not run
+       in twice */
+    mutex_lock(&parsetime_mutex);
+
+    char *result = rrd_parsetime_nomt(tspec, ptv);
+
+    /* ok done ... drop the mutex lock */
+    mutex_unlock(&parsetime_mutex);
+
+    return result;
+}
+
+static char     *rrd_parsetime_nomt(
     const char *tspec,
     rrd_time_value_t * ptv)
 {
@@ -849,7 +868,7 @@ char     *rrd_parsetime(
     /* establish the default time reference */
     ptv->type = ABSOLUTE_TIME;
     ptv->offset = 0;
-    ptv->tm = *localtime(&now);
+    localtime_r(&now,&(ptv->tm));
     ptv->tm.  tm_isdst = -1;    /* mk time can figure dst by default ... */
 
     token();
@@ -990,8 +1009,9 @@ char     *rrd_parsetime(
             panic(e("the specified time is incorrect (out of range?)"));
         }
     EnsureMemFree();
+
     return TIME_OK;
-}                       /* rrd_parsetime */
+}                       /* rrd_parsetime_nomt */
 
 
 int rrd_proc_start_end(
@@ -1022,7 +1042,7 @@ int rrd_proc_start_end(
         struct tm tmtmp;
 
         *end = mktime(&(end_tv->tm)) + end_tv->offset;
-        tmtmp = *localtime(end);    /* reinit end including offset */
+        localtime_r(end,&tmtmp);    /* reinit end including offset */
         tmtmp.tm_mday += start_tv->tm.tm_mday;
         tmtmp.tm_mon += start_tv->tm.tm_mon;
         tmtmp.tm_year += start_tv->tm.tm_year;
@@ -1035,7 +1055,7 @@ int rrd_proc_start_end(
         struct tm tmtmp;
 
         *start = mktime(&(start_tv->tm)) + start_tv->offset;
-        tmtmp = *localtime(start);
+        localtime_r(start,&tmtmp);
         tmtmp.tm_mday += end_tv->tm.tm_mday;
         tmtmp.tm_mon += end_tv->tm.tm_mon;
         tmtmp.tm_year += end_tv->tm.tm_year;

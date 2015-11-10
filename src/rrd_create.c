@@ -67,17 +67,17 @@ int rrd_create(
     int argc,
     char **argv)
 {
-    struct option long_options[] = {
-        {"start", required_argument, 0, 'b'},
-        {"step", required_argument, 0, 's'},
-        {"daemon", required_argument, 0, 'd'},
-        {"source", required_argument, 0, 'r'},
-        {"template", required_argument, 0, 't'},
-        {"no-overwrite", no_argument, 0, 'O'},
-        {0, 0, 0, 0}
+    struct optparse_long longopts[] = {
+        {"start", 'b', OPTPARSE_REQUIRED},
+        {"step", 's', OPTPARSE_REQUIRED},
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {"source", 'r', OPTPARSE_REQUIRED},
+        {"template", 't', OPTPARSE_REQUIRED},
+        {"no-overwrite", 'O', OPTPARSE_NONE},
+        {0},
     };
-    int       option_index = 0;
-    int       opt;
+    struct optparse options;
+    int opt;
     time_t    last_up = -1;
     unsigned long pdp_step = 0;
     rrd_time_value_t last_up_tv;
@@ -89,20 +89,13 @@ int rrd_create(
     const char **sources_array = NULL;
     char *template = NULL;
     
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (1) {
-        opt = getopt_long(argc, argv, "Ob:s:d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
             if (opt_daemon != NULL)
-                    free (opt_daemon);
-            opt_daemon = strdup (optarg);
+                free (opt_daemon);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -112,7 +105,7 @@ int rrd_create(
             break;
 
         case 'b':
-            if ((parsetime_error = rrd_parsetime(optarg, &last_up_tv))) {
+            if ((parsetime_error = rrd_parsetime(options.optarg, &last_up_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
                 rc = -1;
                 goto done;
@@ -136,7 +129,7 @@ int rrd_create(
             break;
 
         case 's':
-            if ((parsetime_error = rrd_scaled_duration(optarg, 1, &pdp_step))) {
+            if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &pdp_step))) {
                 rrd_set_error("step size: %s", parsetime_error);
                 rc = -1;
                 goto done;
@@ -149,18 +142,18 @@ int rrd_create(
 
         case 'r': {
             struct stat st;
-            if (stat(optarg, &st) != 0) {
-                rrd_set_error("error checking for source RRD %s: %s", optarg, rrd_strerror(errno));
+            if (stat(options.optarg, &st) != 0) {
+                rrd_set_error("error checking for source RRD %s: %s", options.optarg, rrd_strerror(errno));
                 rc = -1;
                 goto done;
             } 
             
             if (!S_ISREG(st.st_mode)) {
-                rrd_set_error("Not a regular file: %s", optarg);
+                rrd_set_error("Not a regular file: %s", options.optarg);
                 rc = -1;
                 goto done;
             }
-            char * optcpy = strdup(optarg);
+            char * optcpy = strdup(options.optarg);
             if (optcpy == NULL) {
                 rrd_set_error("Cannot allocate string");
                 rc = -1;
@@ -181,7 +174,7 @@ int rrd_create(
                 rc = -1;
                 goto done;
             }
-            char * optcpy = strdup(optarg);
+            char * optcpy = strdup(options.optarg);
             if (optcpy == NULL) {
                 rrd_set_error("Cannot allocate string");
                 rc = -1;
@@ -192,15 +185,12 @@ int rrd_create(
             break;
         }
         case '?':
-            if (optopt != 0)
-                rrd_set_error("unknown option '%c'", optopt);
-            else
-                rrd_set_error("unknown option '%s'", argv[optind - 1]);
-                rc = -1;
-                goto done;
+            rrd_set_error("%s", options.errmsg);
+            rc = -1;
+            goto done;
         }
     }
-    if (optind == argc) {
+    if (options.optind == options.argc) {
         rrd_set_error("need name of an rrd file to create");
         rc = -1;
         goto done;
@@ -221,15 +211,17 @@ int rrd_create(
     }
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
-        rc = rrdc_create_r2(argv[optind],
+        rc = rrdc_create_r2(options.argv[options.optind],
                       pdp_step, last_up, opt_no_overwrite, 
                       sources_array, template,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
+                      options.argc - options.optind - 1,
+                      (const char **) (options.argv + options.optind + 1));
     } else {
-        rc = rrd_create_r2(argv[optind],
+        rc = rrd_create_r2(options.argv[options.optind],
                       pdp_step, last_up, opt_no_overwrite,
                       sources_array, template,
-                      argc - optind - 1, (const char **) (argv + optind + 1));
+                      options.argc - options.optind - 1,
+                      (const char **) (options.argv + options.optind + 1));
     }
 done:
     if (sources_array != NULL) {
@@ -456,7 +448,8 @@ int parseRRA(const char *def,
     int       cf_id = -1;
     int       token_min = 4;
     const char *parsetime_error = NULL;
-
+    double    tmpdbl;
+    
     memset(rra_def, 0, sizeof(rra_def_t));
 
     argvcopy = strdup(def);
@@ -531,11 +524,12 @@ int parseRRA(const char *def,
 		    rrd_set_error("Invalid row count %s: %s", token, parsetime_error);
 		break;
 	    default:
-		rra_def->par[RRA_cdp_xff_val].u_val = atof(token);
-		if (rra_def->par[RRA_cdp_xff_val].u_val < 0.0
-		    || rra_def->par[RRA_cdp_xff_val].u_val >= 1.0)
-		    rrd_set_error
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl < 0.0 || tmpdbl >= 1.0 ){
+	            rrd_set_error
 			("Invalid xff: must be between 0 and 1");
+                }
+		rra_def->par[RRA_cdp_xff_val].u_val = tmpdbl;
 		break;
 	    }
 	    break;
@@ -544,18 +538,21 @@ int parseRRA(const char *def,
 		    (rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_alpha].
-		    u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl <= 0.0 || tmpdbl >= 1.0){
 		    rrd_set_error
 			("Invalid alpha: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_alpha].u_val = tmpdbl;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
-		rra_def->par[RRA_seasonal_gamma].u_val = atof(token);
-		if (atof(token) <= 0.0 || atof(token) >= 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl <= 0.0 || tmpdbl >= 1.0){
 		    rrd_set_error
 			("Invalid gamma: must be between 0 and 1");
+                }	        
+      		rra_def->par[RRA_seasonal_gamma].u_val = tmpdbl;
 		rra_def->par[RRA_seasonal_smooth_idx].u_cnt =
 		    hash % rra_def->row_cnt;
 		break;
@@ -584,10 +581,12 @@ int parseRRA(const char *def,
 	    switch (cf_conv(rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
-		rra_def->par[RRA_hw_beta].u_val = atof(token);
-		if (atof(token) < 0.0 || atof(token) > 1.0)
+	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
+	            || tmpdbl < 0.0 || tmpdbl > 1.0){
 		    rrd_set_error
 			("Invalid beta: must be between 0 and 1");
+                }	        
+		rra_def->par[RRA_hw_beta].u_val = tmpdbl;
 		break;
 	    case CF_DEVSEASONAL:
 	    case CF_SEASONAL:
@@ -874,7 +873,7 @@ int rrd_create_r2(
         rrd.stat_head->pdp_step = 300;
     }
 
-    /* optind points to the first non-option command line arg,
+    /* options.optind points to the first non-option command line arg,
      * in this case, the file name. */
     /* Compute the FNV hash value (used by SEASONAL and DEVSEASONAL
      * arrays. */
@@ -1391,7 +1390,11 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 		rrdc_forget(outfilename);
 		rrd_clear_error();
 	    }
-
+	    
+#ifdef WIN32
+/* in windows, renaming to an existing file is verboten */
+            unlink(outfilename);
+#endif 
 	    if (rename(tmpfilename, outfilename) != 0) {
 		rrd_set_error("Cannot rename temporary file to final file!");
 		goto done;
@@ -2293,7 +2296,8 @@ static int cdp_match(const rra_def_t *tofill, const rra_def_t *maybe) {
 static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mappings, int mappings_cnt) {
     int rc = -1;
     long cdp_rra_index = -1;
-    
+    int rra_added_temporarily = 0;
+     
     if (sources == NULL) {
         // we are done if there is nothing to copy data from
         rc = 0;
@@ -2303,7 +2307,6 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
     unsigned long rra_index, ds_index;
     unsigned long total_rows = 0;
     
-    int rra_added_temporarily = 0;
     cdp_rra_index = rra_for_cdp_prefilling(rrd, &rra_added_temporarily);
 
     if (rrd_test_error()) goto done;

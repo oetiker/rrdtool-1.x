@@ -648,7 +648,7 @@ Example:
 
 =item B<PING>
 
-PING-PONG, this is very usefull when using connection pool between user client and RRDCACHED.
+PING-PONG, this is very useful when using connection pool between user client and RRDCACHED.
 
 Example:
 

@@ -22,7 +22,8 @@ enum op_en { OP_NUMBER = 0, OP_VARIABLE, OP_INF, OP_PREV, OP_NEGINF,
     OP_AVG, OP_ABS, OP_ADDNAN,
     OP_MINNAN, OP_MAXNAN,
     OP_MEDIAN, OP_PREDICTPERC,
-    OP_DEPTH, OP_COPY, OP_ROLL, OP_INDEX
+    OP_DEPTH, OP_COPY, OP_ROLL, OP_INDEX, OP_STEPWIDTH,
+    OP_NEWDAY, OP_NEWWEEK, OP_NEWMONTH, OP_NEWYEAR
  };
 
 typedef struct rpnp_t {
@@ -33,7 +34,7 @@ typedef struct rpnp_t {
     long      ds_cnt;   /* data source count for data pointer */
     long      step;     /* time step for OP_VAR das */
     void     *extra;    /* some extra data for longer setups */
-    void      (*free_extra)(void *); /* function pointer used to free extra 
+    void      (*free_extra)(void *); /* function pointer used to free extra
 				      * - NULL for "simple" free(extra); */
 } rpnp_t;
 
@@ -47,7 +48,7 @@ typedef struct rpn_cdefds_t {
 } rpn_cdefds_t;
 
 #define MAX_VNAME_LEN 255
-#define DEF_NAM_FMT "%255[-_A-Za-z0-9]"
+#define DEF_NAM_FMT "%255[_A-Za-z0-9]"
 
 /* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
 #define DS_CDEF_MAX_RPN_NODES (int)(sizeof(unival)*10 / sizeof(rpn_cdefds_t))
@@ -93,6 +94,8 @@ short     rpn_calc(
     rpnstack_t *rpnstack,
     long data_idx,
     rrd_value_t *output,
-    int output_idx);
+    int output_idx,
+    int step_width
+);
 
 #endif

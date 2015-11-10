@@ -525,24 +525,26 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 rpn1 \
+	tune1 tune2 rpn1 rpn2 \
 	rrdcreate \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
-	create-from-template-1 dcounter1 vformatter1
+	create-from-template-1 dcounter1 vformatter1 xport1
 
 EXTRA_DIST = Makefile.am \
-	alltests functions \
-	modify1 modify-test1.create.dump modify-test1.mod1.dump \
-	modify2 modify2-testa-create.dump modify2-testb-mod1.dump modify2-testc-mod1.dump \
-	modify3 modify-test3.create.dump modify-test3.mod1.dump \
-	modify4 modify4-testa-create.dump modify4-testa1-create.dump modify4-testa2-create.dump \
-	modify5 modify5-testa1-create.dump modify5-testa2-create.dump \
+	functions $(TESTS) \
+	modify-test1.create.dump modify-test1.mod1.dump \
+	modify2-testa-create.dump modify2-testb-mod1.dump modify2-testc-mod1.dump \
+	modify-test3.create.dump modify-test3.mod1.dump \
+	modify4-testa-create.dump modify4-testa1-create.dump modify4-testa2-create.dump \
+	modify5-testa1-create.dump modify5-testa2-create.dump \
 	rrdcreate \
-	tune1 tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
-	tune2 tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output vformatter1
+	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
+	tune2-testa-mod1.dump tune2-testorg.dump \
+	valgrind-supressions dcounter1 dcounter1.output vformatter1 rpn2.output \
+	xport1.json.output xport1.xml.output
+
 
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
 TESTS_ENVIRONMENT = \
@@ -552,7 +554,8 @@ TESTS_ENVIRONMENT = \
 
 CLEANFILES = *.rrd \
 	ct.out dur.out \
-	modify5-testa1-mod.dump modify5-testa2-mod.dump 
+	modify5-testa1-mod.dump modify5-testa2-mod.dump \
+	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp
 
 all: all-am
 
@@ -798,6 +801,13 @@ rpn1.log: rpn1
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+rpn2.log: rpn2
+	@p='rpn2'; \
+	b='rpn2'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 rrdcreate.log: rrdcreate
 	@p='rrdcreate'; \
 	b='rrdcreate'; \
@@ -864,6 +874,13 @@ dcounter1.log: dcounter1
 vformatter1.log: vformatter1
 	@p='vformatter1'; \
 	b='vformatter1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+xport1.log: xport1
+	@p='xport1'; \
+	b='xport1'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

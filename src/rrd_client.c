@@ -8,10 +8,10 @@
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -29,7 +29,7 @@
 
 #include <ws2tcpip.h> // contain #include <winsock2.h>
 // Need to link with Ws2_32.lib
-#pragma comment(lib, "ws2_32.lib") 
+#pragma comment(lib, "ws2_32.lib")
 #include <time.h>
 #include <io.h>
 #include <fcntl.h>
@@ -84,15 +84,17 @@ static size_t inbuf_used = 0;
  * into existing solutions (as requested by Tobi). Else, absolute path names
  * are not allowed, since path name translation is done by the server.
  *
+ * The caller must call free() on the returned value.
+ *
  * One must hold `lock' when calling this function. */
-static const char *get_path (const char *path, char *resolved_path) /* {{{ */
+static char *get_path (const char *path) /* {{{ */
 {
-  const char *ret = path;
+  char *ret = NULL;
   const char *strip = getenv(ENV_RRDCACHED_STRIPPATH);
   size_t len;
   int is_unix = 0;
 
-  if ((path == NULL) || (resolved_path == NULL) || (sd_path == NULL))
+  if ((path == NULL) || (sd_path == NULL))
     return (NULL);
 
   if ((*sd_path == '/')
@@ -102,15 +104,14 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
   if (is_unix)
   {
     if (path == NULL || strlen(path) == 0) return NULL;
-    ret = realpath(path, resolved_path);
+    ret = realpath(path, NULL);
     if (ret == NULL) {
         /* this may happen, because the file DOES NOT YET EXIST (as would be
-         * the case for rrdcreate) - retry by stripping the last path element, 
+         * the case for rrdcreate) - retry by stripping the last path element,
          * resolving the directory and re-concatenate them.... */
-        char buffer[PATH_MAX];
+        char *dir_path;
         char *lastslash = strrchr(path, '/');
-        
-        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".") 
+        char *dir = (lastslash == NULL || lastslash == path) ? strdup(".")
 #ifdef HAVE_STRNDUP
                 : strndup(path, lastslash - path);
 #else
@@ -120,24 +121,28 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
                 }
 #endif
         if (dir != NULL) {
-            ret = realpath(dir, buffer);
+            dir_path = realpath(dir, NULL);
             free(dir);
-            if (ret == NULL) {
+            if (dir_path == NULL) {
               rrd_set_error("realpath(%s): %s", path, rrd_strerror(errno));
-            } else {
-                if (lastslash != NULL) {
-                    strcat(buffer, lastslash);
-                } else {
-                    strcat(buffer, "/");
-                    strcat(buffer, path);
-                }
-                if (resolved_path == NULL) {
-                    ret = strdup(buffer);
-                } else {
-                    strcpy(resolved_path, buffer);
-                    ret = resolved_path;
-                }
+              return NULL;
             }
+            ret = malloc(strlen(dir_path)
+                 + (lastslash ? strlen(lastslash) : 1 + strlen(path)) + 1);
+            if (ret == NULL) {
+              rrd_set_error("cannot allocate memory");
+              free(dir_path);
+              return NULL;
+            }
+
+            strcpy(ret, dir_path);
+            if (lastslash != NULL) {
+                strcat(ret, lastslash);
+            } else {
+                strcat(ret, "/");
+                strcat(ret, path);
+            }
+            free(dir_path);
         } else {
             // out of memory
             rrd_set_error("cannot allocate memory");
@@ -148,7 +153,7 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
   }
   else
   {
-    if (*path == '/') /* not absolute path */
+    if (*path == '/') /* absolute path */
     {
       /* if we are stripping, then check and remove the head */
       if (strip) {
@@ -157,7 +162,7 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
 		      path += len;
 		      while (*path == '/')
 			      path++;
-		      return path;
+		      return strdup(path);
 	      }
       } else
         rrd_set_error ("absolute path names not allowed when talking "
@@ -166,7 +171,7 @@ static const char *get_path (const char *path, char *resolved_path) /* {{{ */
     }
   }
 
-  return path;
+  return strdup(path);
 } /* }}} char *get_path */
 
 static size_t strsplit (char *string, char **fields, size_t size) /* {{{ */
@@ -891,7 +896,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   rrdc_response_t *res;
   int status;
   int i;
-  char file_path[PATH_MAX];
+  char *file_path;
 
   memset (buffer, 0, sizeof (buffer));
   buffer_ptr = &buffer[0];
@@ -902,14 +907,16 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
     return (ENOBUFS);
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (-1);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -944,7 +951,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   return (status);
 } /* }}} int rrdc_update */
 
-static int rrdc_filebased_command (const char *command, 
+static int rrdc_filebased_command (const char *command,
                                    const char *filename) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
@@ -953,7 +960,7 @@ static int rrdc_filebased_command (const char *command,
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
-  char file_path[PATH_MAX];
+  char *file_path;
 
   if (filename == NULL)
     return (-1);
@@ -967,14 +974,16 @@ static int rrdc_filebased_command (const char *command,
     return (ENOBUFS);
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (-1);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -995,7 +1004,6 @@ static int rrdc_filebased_command (const char *command,
 
   status = res->status;
   response_free (res);
-
   return (status);
 } /* }}} int rrdc_flush */
 
@@ -1015,7 +1023,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
-  char file_path[PATH_MAX];
+  char *file_path;
   rrd_info_t *data = NULL, *cd;
   rrd_infoval_t info;
   unsigned int l;
@@ -1038,14 +1046,16 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   }
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (NULL);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1115,7 +1125,7 @@ time_t rrdc_last (const char *filename) /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
-  char file_path[PATH_MAX];
+  char *file_path;
   time_t lastup;
 
   if (filename == NULL) {
@@ -1134,14 +1144,16 @@ time_t rrdc_last (const char *filename) /* {{{ */
   }
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (-1);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1176,7 +1188,7 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
-  char file_path[PATH_MAX];
+  char *file_path;
   time_t firstup;
 
   if (filename == NULL) {
@@ -1195,14 +1207,16 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
   }
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (-1);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free(file_path);
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1261,7 +1275,7 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   size_t buffer_size;
   rrdc_response_t *res;
   int status;
-  char file_path[PATH_MAX];
+  char *file_path;
   int i;
 
   if (filename == NULL) {
@@ -1280,14 +1294,16 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   }
 
   mutex_lock (&lock);
-  filename = get_path (filename, file_path);
-  if (filename == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL)
   {
     mutex_unlock (&lock);
     return (-1);
   }
 
-  status = buffer_add_string (filename, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (last_up >= 0) {
     status = buffer_add_string ("-b", &buffer_ptr, &buffer_free);
     status = buffer_add_ulong (last_up, &buffer_ptr, &buffer_free);
@@ -1304,12 +1320,12 @@ int rrdc_create_r2(const char *filename, /* {{{ */
       status = buffer_add_string (*p, &buffer_ptr, &buffer_free);
     }
   }
-  
+
   if (template != NULL) {
     status = buffer_add_string ("-t", &buffer_ptr, &buffer_free);
     status = buffer_add_string (template, &buffer_ptr, &buffer_free);
   }
-  
+
   if (status != 0)
   {
     mutex_unlock (&lock);
@@ -1326,7 +1342,7 @@ int rrdc_create_r2(const char *filename, /* {{{ */
         rrd_set_error ("rrdc_create: out of memory");
         return (-1);
       }
-	}
+    }
   }
 
   /* buffer ready to send? */
@@ -1360,8 +1376,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
   size_t buffer_free;
   size_t buffer_size;
   rrdc_response_t *res;
-  char path_buffer[PATH_MAX];
-  const char *path_ptr;
+  char *file_path;
 
   char *str_tmp;
   unsigned long flush_version;
@@ -1383,21 +1398,29 @@ int rrdc_fetch (const char *filename, /* {{{ */
   if ((filename == NULL) || (cf == NULL))
     return (-1);
 
+  mutex_lock(&lock);
+
   /* Send request {{{ */
+
   memset (buffer, 0, sizeof (buffer));
   buffer_ptr = &buffer[0];
   buffer_free = sizeof (buffer);
-
   status = buffer_add_string ("FETCH", &buffer_ptr, &buffer_free);
-  if (status != 0)
-    return (ENOBUFS);
+  if (status != 0){
+      mutex_unlock(&lock);
+      return (ENOBUFS);
+  }
 
   /* change to path for rrdcached */
-  path_ptr = get_path (filename, path_buffer);
-  if (path_ptr == NULL)
+  file_path = get_path (filename);
+  if (file_path == NULL){
+    mutex_unlock(&lock);
     return (EINVAL);
+  }
 
-  status = buffer_add_string (path_ptr, &buffer_ptr, &buffer_free);
+  status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
+  free (file_path);
+
   if (status != 0)
     return (ENOBUFS);
 
@@ -1419,8 +1442,10 @@ int rrdc_fetch (const char *filename, /* {{{ */
       snprintf (tmp, sizeof (tmp), "%lu", (unsigned long) *ret_end);
       tmp[sizeof (tmp) - 1] = 0;
       status = buffer_add_string (tmp, &buffer_ptr, &buffer_free);
-      if (status != 0)
+      if (status != 0){
+        mutex_unlock(&lock);
         return (ENOBUFS);
+      }
     }
   }
 
@@ -1431,14 +1456,16 @@ int rrdc_fetch (const char *filename, /* {{{ */
 
   res = NULL;
   status = request (buffer, buffer_size, &res);
-  if (status != 0)
+  if (status != 0){
+    mutex_unlock(&lock);
     return (status);
-
+  }
   status = res->status;
   if (status < 0)
   {
     rrd_set_error ("rrdcached: %s", res->message);
     response_free (res);
+    mutex_unlock(&lock);
     return (status);
   }
   /* }}} Send request */
@@ -1457,6 +1484,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
     if (ds_names != 0) { size_t k; for (k = 0; k < ds_num; k++) free (ds_names[k]); } \
     free (ds_names); \
     response_free (res); \
+    mutex_unlock(&lock); \
     return (status); \
   } while (0)
 
@@ -1552,6 +1580,7 @@ int rrdc_fetch (const char *filename, /* {{{ */
   *ret_data = data;
 
   response_free (res);
+  mutex_unlock(&lock);
   return (0);
 #undef READ_NUMERIC_FIELD
 #undef BAIL_OUT

@@ -27,8 +27,8 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 		) : ()
 	);
 }else{
-	my $TOP_SRCDIR = $ENV{'ABS_TOP_SRCDIR'} || '../../..';
-	my $TOP_BUILDDIR = $ENV{'ABS_TOP_BUILDDIR'} || '../../..';
+	my $TOP_SRCDIR = $ENV{'ABS_TOP_SRCDIR'} || '../..';
+	my $TOP_BUILDDIR = $ENV{'ABS_TOP_BUILDDIR'} || '../..';
 	my $SRCDIR = $ENV{'ABS_SRCDIR'} || '.';
 	# if the last argument when calling Makefile.PL is RPATH=/... and ... is the
 	# path to librrd.so then the Makefile will be written such that RRDs.so knows
