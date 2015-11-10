@@ -1,8 +1,13 @@
-RRDtool 1.5.x - 2015-xx-xx
+RRDtool 1.5.5 - 2015-11-10
 ==========================
 
 Bugfixes
 --------
+* fix JSON output in xport with legend and gprint blocks
+* fix parse_time mutex unlocking in the error case
+* don't crash on invalid variable names in CDEF
+* add mutex locking in rrdc_fetch
+* fix buffer overflow in rrd_restore
 * shorten test precision to 7 digits ... 
 * never exit from a library function
 * buffer overflow in rrd_restore.c fixed #669
