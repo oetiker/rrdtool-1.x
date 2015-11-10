@@ -117,7 +117,7 @@ for (my $i=0;$i<$GRUNS;$i++) {
     '--base', '1024',
           "--vertical-label", 'Dummy Units', "--start", (-$RUNS*$STEP),
           "--end", $time,
-	  "--interlace", "--imgformat","PNG",
+	  "--interlaced", "--imgformat","PNG",
           "DEF:alpha=$RRD:a:AVERAGE",
           "DEF:beta=$RRD:b:AVERAGE",
           "DEF:gamma=$RRD:c:AVERAGE",

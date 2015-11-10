@@ -18,7 +18,8 @@ AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
 
 UPD_C_FILES =		\
 	mutex.c		\
-        rrd_strtod.c    \
+	optparse.c	\
+	rrd_strtod.c	\
 	rrd_create.c	\
 	hash_32.c	\
 	rrd_parsetime.c	\
@@ -55,7 +56,6 @@ if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
 	rrd_graph_helper.c	\
 	rrd_xport.c	\
-	optparse.c \
 	rrd_gfx.c \
 	pngsize.c
 endif
@@ -130,7 +130,7 @@ bin_PROGRAMS += rrdcached
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c
-rrdcgi_LDADD	= librrd.la
+rrdcgi_LDADD	= librrd.la librrdupd.la
 
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD	  = librrdupd.la
@@ -140,9 +140,9 @@ rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 
 rrdcached_SOURCES = rrd_daemon.c
-rrdcached_DEPENDENCIES = librrd_th.la
+rrdcached_DEPENDENCIES = librrd_th.la librrdupd.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd_th.la $(ALL_LIBS)
+rrdcached_LDADD = librrd_th.la librrdupd.la $(ALL_LIBS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc

@@ -24,52 +24,42 @@
 
 int rrd_flushcached (int argc, char **argv)
 {
+    struct optparse_long longopts[] = {
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0},
+    };
+    struct    optparse options;
+    int       opt;
     char *opt_daemon = NULL;
     int status;
     int i;
 
-    /* initialize getopt */
-    optind = 0;
-    opterr = 0;
-
-    while (42)
-    {
-        int opt;
-        static struct option long_options[] =
-        {
-            {"daemon", required_argument, 0, 'd'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long(argc, argv, "d:", long_options, NULL);
-
-        if (opt == -1)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt)
         {
             case 'd':
                 if (opt_daemon != NULL)
                     free (opt_daemon);
-                opt_daemon = strdup (optarg);
+                opt_daemon = strdup(options.optarg);
                 if (opt_daemon == NULL)
                 {
                     rrd_set_error ("strdup failed.");
-                    return (-1);
+                    return -1;
                 }
                 break;
 
-            default:
-                rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
-                        argv[0]);
-                return (-1);
+            case '?':
+                rrd_set_error("%s", options.errmsg);
+                return -1;
         }
-    } /* while (42) */
+    } /* while (opt!=-1) */
 
-    if ((argc - optind) < 1)
+    if ((options.argc - options.optind) < 1)
     {
-        rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file> [<file> ...]", argv[0]);
-        return (-1);
+        rrd_set_error("Usage: rrdtool %s [--daemon|-d <addr>] <file> [<file> ...]",
+                      options.argv[0]);
+        return -1;
     }
 
     /* try to connect to rrdcached */
@@ -88,19 +78,19 @@ int rrd_flushcached (int argc, char **argv)
     }
 
     status = 0;
-    for (i = optind; i < argc; i++)
+    for (i = options.optind; i < options.argc; i++)
     {
-        status = rrdc_flush(argv[i]);
+        status = rrdc_flush(options.argv[i]);
         if (status)
         {
             char *error;
             int   remaining;
 
             error     = strdup(rrd_get_error());
-            remaining = argc - optind - 1;
+            remaining = options.argc - options.optind - 1;
 
             rrd_set_error("Flushing of file \"%s\" failed: %s. Skipping "
-                    "remaining %i file%s.", argv[i],
+                    "remaining %i file%s.", options.argv[i],
                     ((! error) || (*error == '\0')) ? "unknown error" : error,
                     remaining, (remaining == 1) ? "" : "s");
             free(error);

@@ -38,7 +38,7 @@ RRD.graph(
     "--title", " RubyRRD Demo", 
     "--start", "#{start_time+3600}",
     "--end", "start + 1000 min",
-    "--interlace", 
+    "--interlaced",
     "--imgformat", "PNG",
     "--width=450",
     "DEF:a=#{rrd}:a:AVERAGE",

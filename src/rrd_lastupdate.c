@@ -12,35 +12,26 @@
 
 int rrd_lastupdate (int argc, char **argv)
 {
+    struct optparse_long longopts[] = {
+        {"daemon", 'd', OPTPARSE_REQUIRED},
+        {0},
+    };
+    struct    optparse options;
+    int       opt;
     time_t    last_update;
     char    **ds_names;
     char    **last_ds;
     unsigned long ds_count, i;
     int status;
-
     char *opt_daemon = NULL;
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (42) {
-        int       opt;
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"daemon", required_argument, 0, 'd'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long (argc, argv, "d:", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
             if (opt_daemon != NULL)
                     free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -48,25 +39,23 @@ int rrd_lastupdate (int argc, char **argv)
             }
             break;
 
-        default:
-            rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
-                    argv[0]);
-            return (-1);
-            break;
+        case '?':
+            rrd_set_error("%s", options.errmsg);
+            return -1;
         }
-    }                   /* while (42) */
+    }                   /* while (opt!=-1) */
 
-    if ((argc - optind) != 1) {
+    if ((options.argc - options.optind) != 1) {
         rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
-                argv[0]);
+                options.argv[0]);
         return (-1);
     }
 
-    status = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
+    status = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
     if (opt_daemon) free (opt_daemon);
     if (status) return (-1);
 
-    status = rrd_lastupdate_r (argv[optind],
+    status = rrd_lastupdate_r(options.argv[options.optind],
             &last_update, &ds_count, &ds_names, &last_ds);
     if (status != 0)
         return (status);

@@ -12,7 +12,6 @@
 #include "rrd_xport.h"
 #include "unused.h"
 #include "rrd_client.h"
-#include "optparse.h"
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
@@ -152,7 +151,7 @@ int rrd_xport(
         }
 
         case '?':
-            rrd_set_error("%s: %s", argv[0], options.errmsg);
+            rrd_set_error("%s", options.errmsg);
             return -1;
         }
     }
@@ -177,7 +176,7 @@ int rrd_xport(
     im.end = end_tmp;
     im.step = max((long) im.step, (im.end - im.start) / im.xsize);
 
-    rrd_graph_script(argc, argv, &im, options.optind);
+    rrd_graph_script(options.argc, options.argv, &im, options.optind);
     if (rrd_test_error()) {
         im_free(&im);
         return -1;

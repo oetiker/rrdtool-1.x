@@ -3880,6 +3880,7 @@ static int cleanup (void) /* {{{ */
 
 static int read_options (int argc, char **argv) /* {{{ */
 {
+  struct optparse options;
   int option;
   int status = 0;
   const char *parsetime_error = NULL;
@@ -3891,7 +3892,8 @@ static int read_options (int argc, char **argv) /* {{{ */
   default_socket.socket_group = (gid_t)-1;
   default_socket.socket_permissions = (mode_t)-1;
 
-  while ((option = getopt(argc, argv, "?a:Bb:Ff:gG:hj:Ll:m:OP:p:Rs:t:U:w:z:")) != -1)
+  optparse_init(&options, argc, argv);
+  while ((option = optparse(&options, "?a:Bb:Ff:gG:hj:Ll:m:OP:p:Rs:t:U:w:z:")) != -1)
   {
     switch (option)
     {
@@ -3910,7 +3912,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         char * ep;
 	struct group *grp;
 
-	group_gid = strtoul(optarg, &ep, 10);
+	group_gid = strtoul(options.optarg, &ep, 10);
 	if (0 == *ep)
 	{
 	  /* we were passed a number */
@@ -3918,11 +3920,11 @@ static int read_options (int argc, char **argv) /* {{{ */
 	}
 	else
 	{
-	  grp = getgrnam(optarg);
+	  grp = getgrnam(options.optarg);
 	}
         if (NULL == grp)
         {
-	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", optarg);
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", options.optarg);
 	  return (5);
         }
         daemon_gid = grp->gr_gid;
@@ -3940,7 +3942,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         char * ep;
 	struct passwd *pw;
 
-	uid = strtoul(optarg, &ep, 10);
+	uid = strtoul(options.optarg, &ep, 10);
 	if (0 == *ep)
 	{
 	  /* we were passed a number */
@@ -3948,11 +3950,11 @@ static int read_options (int argc, char **argv) /* {{{ */
 	}
 	else
 	{
-	  pw = getpwnam(optarg);
+	  pw = getpwnam(options.optarg);
 	}
         if (NULL == pw)
         {
-	  fprintf (stderr, "read_options: couldn't map \"%s\" to a user, Sorry\n", optarg);
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a user, Sorry\n", options.optarg);
 	  return (5);
         }
         daemon_uid = pw->pw_uid;
@@ -3979,7 +3981,7 @@ static int read_options (int argc, char **argv) /* {{{ */
         if ('L' == option)
           new->addr = strdup("");
         else
-          new->addr = strdup(optarg);
+          new->addr = strdup(options.optarg);
 
         /* Add permissions to the socket {{{ */
         if (default_socket.permissions != 0)
@@ -4011,7 +4013,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 	gid_t group_gid;
 	struct group *grp;
 
-	group_gid = strtoul(optarg, NULL, 10);
+	group_gid = strtoul(options.optarg, NULL, 10);
 	if (errno != EINVAL && group_gid>0)
 	{
 	  /* we were passed a number */
@@ -4019,7 +4021,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 	}
 	else
 	{
-	  grp = getgrnam(optarg);
+	  grp = getgrnam(options.optarg);
 	}
 
 	if (grp)
@@ -4029,7 +4031,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 	else
 	{
 	  /* no idea what the user wanted... */
-	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", optarg);
+	  fprintf (stderr, "read_options: couldn't map \"%s\" to a group, Sorry\n", options.optarg);
 	  return (5);
 	}
       }
@@ -4041,11 +4043,11 @@ static int read_options (int argc, char **argv) /* {{{ */
         long  tmp;
         char *endptr = NULL;
 
-        tmp = strtol (optarg, &endptr, 8);
-        if ((endptr == optarg) || (! endptr) || (*endptr != '\0')
+        tmp = strtol(options.optarg, &endptr, 8);
+        if ((endptr == options.optarg) || (! endptr) || (*endptr != '\0')
             || (tmp > 07777) || (tmp < 0)) {
           fprintf (stderr, "read_options: Invalid file mode \"%s\".\n",
-              optarg);
+              options.optarg);
           return (5);
         }
 
@@ -4062,7 +4064,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 
         socket_permission_clear (&default_socket);
 
-        optcopy = strdup (optarg);
+        optcopy = strdup(options.optarg);
         dummy = optcopy;
         saveptr = NULL;
         while ((ptr = strtok_r (dummy, ", ", &saveptr)) != NULL)
@@ -4086,8 +4088,8 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         unsigned long temp;
 
-        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
-          fprintf(stderr, "Invalid flush interval %s: %s\n", optarg, parsetime_error);
+        if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid flush interval %s: %s\n", options.optarg, parsetime_error);
           status = 3;
         } else {
           config_flush_interval = temp;
@@ -4099,8 +4101,8 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         unsigned long temp;
 
-        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
-          fprintf(stderr, "Invalid write interval %s: %s\n", optarg, parsetime_error);
+        if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write interval %s: %s\n", options.optarg, parsetime_error);
           status = 2;
         } else {
           config_write_interval = temp;
@@ -4112,8 +4114,8 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         unsigned long temp;
 
-        if ((parsetime_error = rrd_scaled_duration(optarg, 1, &temp))) {
-          fprintf(stderr, "Invalid write jitter %s: %s\n", optarg, parsetime_error);
+        if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &temp))) {
+          fprintf(stderr, "Invalid write jitter %s: %s\n", options.optarg, parsetime_error);
           status = 2;
         } else {
           config_write_jitter = temp;
@@ -4124,12 +4126,12 @@ static int read_options (int argc, char **argv) /* {{{ */
       case 't':
       {
         int threads;
-        threads = atoi(optarg);
+        threads = atoi(options.optarg);
         if (threads >= 1)
           config_queue_threads = threads;
         else
         {
-          fprintf (stderr, "Invalid thread count: -t %s\n", optarg);
+          fprintf (stderr, "Invalid thread count: -t %s\n", options.optarg);
           return 1;
         }
       }
@@ -4150,7 +4152,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 
         if (config_base_dir != NULL)
           free (config_base_dir);
-        config_base_dir = strdup (optarg);
+        config_base_dir = strdup(options.optarg);
         if (config_base_dir == NULL)
         {
           fprintf (stderr, "read_options: strdup failed.\n");
@@ -4186,7 +4188,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 
         if (len < 1)
         {
-          fprintf (stderr, "Invalid base directory: %s\n", optarg);
+          fprintf (stderr, "Invalid base directory: %s\n", options.optarg);
           free(base_realpath);
           return (4);
         }
@@ -4218,7 +4220,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         if (config_pid_file != NULL)
           free (config_pid_file);
-        config_pid_file = strdup (optarg);
+        config_pid_file = strdup(options.optarg);
         if (config_pid_file == NULL)
         {
           fprintf (stderr, "read_options: strdup failed.\n");
@@ -4235,7 +4237,7 @@ static int read_options (int argc, char **argv) /* {{{ */
       {
         if (journal_dir)
           free(journal_dir);
-        journal_dir = realpath((const char *)optarg, NULL);
+        journal_dir = realpath((const char *)options.optarg, NULL);
 	if (journal_dir)
 	{
           // if we were able to properly resolve the path, lets have a copy
@@ -4254,7 +4256,7 @@ static int read_options (int argc, char **argv) /* {{{ */
 	    return 6;
 	  }
 	} else {
-	  fprintf(stderr, "Unable to resolve journal path (%s,%s)\n", optarg,
+	  fprintf(stderr, "Unable to resolve journal path (%s,%s)\n", options.optarg,
 		  errno ? rrd_strerror(errno) : "");
 	  return 6;
 	}
@@ -4263,12 +4265,12 @@ static int read_options (int argc, char **argv) /* {{{ */
 
       case 'a':
       {
-        int temp = atoi(optarg);
+        int temp = atoi(options.optarg);
         if (temp > 0)
           config_alloc_chunk = temp;
         else
         {
-          fprintf(stderr, "Invalid allocation size: %s\n", optarg);
+          fprintf(stderr, "Invalid allocation size: %s\n", options.optarg);
           return 10;
         }
       }
@@ -4319,7 +4321,7 @@ static int read_options (int argc, char **argv) /* {{{ */
           status = 1;
         break;
     } /* switch (option) */
-  } /* while (getopt) */
+  } /* while (opt != -1) */
 
   /* advise the user when values are not sane */
   if (config_flush_interval < 2 * config_write_interval)

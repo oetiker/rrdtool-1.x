@@ -517,6 +517,14 @@ int rrd_dump(
     int argc,
     char **argv)
 {
+    int       opt;
+    struct optparse_long longopts[] = {
+        {"daemon",    'd', OPTPARSE_REQUIRED},
+        {"header",    'h', OPTPARSE_REQUIRED},
+        {"no-header", 'n', OPTPARSE_NONE},
+        {0},
+    };
+    struct optparse options;
     int       rc;
     /** 
      * 0 = no header
@@ -528,29 +536,13 @@ int rrd_dump(
 
     /* init rrd clean */
 
-    optind = 0;
-    opterr = 0;         /* initialize getopt */
-
-    while (42) {/* ha ha */
-        int       opt;
-        int       option_index = 0;
-        static struct option long_options[] = {
-            {"daemon", required_argument, 0, 'd'},
-            {"header", required_argument, 0, 'h'},
-            {"no-header", no_argument, 0, 'n'},
-            {0, 0, 0, 0}
-        };
-
-        opt = getopt_long(argc, argv, "d:h:n", long_options, &option_index);
-
-        if (opt == EOF)
-            break;
-
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
             if (opt_daemon != NULL)
                     free (opt_daemon);
-            opt_daemon = strdup (optarg);
+            opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
                 rrd_set_error ("strdup failed.");
@@ -563,11 +555,11 @@ int rrd_dump(
            break;
 
         case 'h':
-	   if (strcmp(optarg, "dtd") == 0) {
+	   if (strcmp(options.optarg, "dtd") == 0) {
 	   	opt_header = 1;
-	   } else if (strcmp(optarg, "xsd") == 0) {
+	   } else if (strcmp(options.optarg, "xsd") == 0) {
 	   	opt_header = 2;
-	   } else if (strcmp(optarg, "none") == 0) {
+	   } else if (strcmp(options.optarg, "none") == 0) {
 	   	opt_header = 0;
 	   }
 	   break;
@@ -576,28 +568,28 @@ int rrd_dump(
             rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
                           "[--no-header|-n]\n"
                           "[--daemon|-d address]\n"
-                          "file.rrd [file.xml]", argv[0]);
+                          "file.rrd [file.xml]", options.argv[0]);
             return (-1);
             break;
         }
-    }                   /* while (42) */
+    } /* while (opt != -1) */
 
-    if ((argc - optind) < 1 || (argc - optind) > 2) {
+    if ((options.argc - options.optind) < 1 || (options.argc - options.optind) > 2) {
         rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
                       "[--no-header|-n]\n"
                       "[--daemon|-d address]\n"
-                       "file.rrd [file.xml]", argv[0]);
+                       "file.rrd [file.xml]", options.argv[0]);
         return (-1);
     }
 
-    rc = rrdc_flush_if_daemon(opt_daemon, argv[optind]);
+    rc = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
     if (opt_daemon) free(opt_daemon);
     if (rc) return (rc);
 
-    if ((argc - optind) == 2) {
-        rc = rrd_dump_opt_r(argv[optind], argv[optind + 1], opt_header);
+    if ((options.argc - options.optind) == 2) {
+        rc = rrd_dump_opt_r(options.argv[options.optind], options.argv[options.optind + 1], opt_header);
     } else {
-        rc = rrd_dump_opt_r(argv[optind], NULL, opt_header);
+        rc = rrd_dump_opt_r(options.argv[options.optind], NULL, opt_header);
     }
 
     return rc;

@@ -214,6 +214,9 @@ optparse_long(struct optparse *options,
     char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
+    } else if (is_dashdash(option)) {
+        options->optind++; // consume "--"
+        return -1;
     } else if (is_shortopt(option)) {
         return long_fallback(options, longopts, longindex);
     } else if (!is_longopt(option)) {

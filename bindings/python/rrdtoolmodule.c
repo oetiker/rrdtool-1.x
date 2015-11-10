@@ -47,8 +47,6 @@ static const char *__version__ = PACKAGE_VERSION;
 //#include "rrd_extra.h"
 
 static PyObject *ErrorObject;
-extern int optind;
-extern int opterr;
 
 /* forward declaration to keep compiler happy */
 void      initrrdtool(
@@ -113,9 +111,6 @@ static int create_args(
 
     (*argv)[0] = command;
     *argc = element_count + 1;
-
-    /* reset getopt state */
-    opterr = optind = 0;
 
     return 0;
 }
