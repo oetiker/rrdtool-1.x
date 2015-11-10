@@ -723,9 +723,6 @@ PTHREAD_CC
 acx_pthread_config
 MULTITHREAD_LDFLAGS
 MULTITHREAD_CFLAGS
-BUILD_GETOPT_FALSE
-BUILD_GETOPT_TRUE
-RRD_GETOPT_LONG
 POSUB
 LTLIBINTL
 LIBINTL
@@ -18568,62 +18565,6 @@ done
 
 
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for opterr" >&5
-$as_echo_n "checking for opterr... " >&6; }
-if ${rd_cv_var_int_opterr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <unistd.h>
-int
-main ()
-{
-extern int opterr; opterr = 1;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  rd_cv_var_int_opterr=yes
-else
-  rd_cv_var_int_opterr=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rd_cv_var_int_opterr" >&5
-$as_echo "$rd_cv_var_int_opterr" >&6; }
-if test x"$rd_cv_var_int_opterr" = x"yes"; then
-
-$as_echo "#define HAVE_INT_OPTERR 1" >>confdefs.h
-
-fi
-
-build_getopt=no
-RRD_GETOPT_LONG="LIBC_HAS_GETOPT_LONG"
-ac_fn_c_check_func "$LINENO" "getopt_long" "ac_cv_func_getopt_long"
-if test "x$ac_cv_func_getopt_long" = xyes; then :
-
-else
-
-RRD_GETOPT_LONG="getopt_long"
-build_getopt=yes
-
-fi
-
-
- if test $build_getopt = yes; then
-  BUILD_GETOPT_TRUE=
-  BUILD_GETOPT_FALSE='#'
-else
-  BUILD_GETOPT_TRUE='#'
-  BUILD_GETOPT_FALSE=
-fi
-
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if realloc can deal with NULL" >&5
 $as_echo_n "checking if realloc can deal with NULL... " >&6; }
 if ${rd_cv_null_realloc+:} false; then :
@@ -19186,6 +19127,40 @@ $as_echo "$ac_cv_sizeof_time_t" >&6; }
 
 cat >>confdefs.h <<_ACEOF
 #define SIZEOF_TIME_T $ac_cv_sizeof_time_t
+_ACEOF
+
+
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of long int" >&5
+$as_echo_n "checking size of long int... " >&6; }
+if ${ac_cv_sizeof_long_int+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (long int))" "ac_cv_sizeof_long_int"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_long_int" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (long int)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_long_int=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_long_int" >&5
+$as_echo "$ac_cv_sizeof_long_int" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_LONG_INT $ac_cv_sizeof_long_int
 _ACEOF
 
 
@@ -21229,7 +21204,53 @@ $as_echo "$as_me: WARNING: Lua $lua_vdot found but not lua.h, lualib.h and lauxl
       LUA_HAVE_COMPAT51=DONT_HAVE_COMPAT51
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing lua_call" >&5
 $as_echo_n "checking for library containing lua_call... " >&6; }
-if ${ac_cv_search_lua_call+:} false; then :
+if ${rrd_cv_search_lua_call+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  rrd_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <${lua_headerdir:+$lua_headerdir/}lua.h>
+int
+main ()
+{
+lua_call (0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+for rrd_lib in '' lua$lua_vdot lua$lua_vndot lua; do
+  if test -z "$rrd_lib"; then
+    rrd_res="none required"
+  else
+    rrd_res=-l$rrd_lib
+    LIBS="-l$rrd_lib -lm $rrd_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  rrd_cv_search_lua_call=$rrd_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${rrd_cv_search_lua_call+:} false; then :
+  break
+fi
+done
+if ${rrd_cv_search_lua_call+:} false; then :
+
+else
+  rrd_cv_search_lua_call=no
+fi
+rm conftest.$ac_ext
+LIBS=$rrd_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $rrd_cv_search_lua_call" >&5
+$as_echo "$rrd_cv_search_lua_call" >&6; }
+rrd_res=$rrd_cv_search_lua_call
+if test "$rrd_res" != no; then :
+  test "$rrd_res" = "none required" || LIBS="$rrd_res $LIBS"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing luaL_openlibs" >&5
+$as_echo_n "checking for library containing luaL_openlibs... " >&6; }
+if ${ac_cv_search_luaL_openlibs+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -21242,11 +21263,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char lua_call ();
+char luaL_openlibs ();
 int
 main ()
 {
-return lua_call ();
+return luaL_openlibs ();
   ;
   return 0;
 }
@@ -21259,78 +21280,25 @@ for ac_lib in '' lua$lua_vdot lua$lua_vndot lua; do
     LIBS="-l$ac_lib -lm $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_lua_call=$ac_res
+  ac_cv_search_luaL_openlibs=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_lua_call+:} false; then :
+  if ${ac_cv_search_luaL_openlibs+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_lua_call+:} false; then :
+if ${ac_cv_search_luaL_openlibs+:} false; then :
 
 else
-  ac_cv_search_lua_call=no
+  ac_cv_search_luaL_openlibs=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_lua_call" >&5
-$as_echo "$ac_cv_search_lua_call" >&6; }
-ac_res=$ac_cv_search_lua_call
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing luaL_register" >&5
-$as_echo_n "checking for library containing luaL_register... " >&6; }
-if ${ac_cv_search_luaL_register+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char luaL_register ();
-int
-main ()
-{
-return luaL_register ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' lua$lua_vdot lua$lua_vndot lua; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib -lm $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_luaL_register=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_luaL_register+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_luaL_register+:} false; then :
-
-else
-  ac_cv_search_luaL_register=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_luaL_register" >&5
-$as_echo "$ac_cv_search_luaL_register" >&6; }
-ac_res=$ac_cv_search_luaL_register
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_luaL_openlibs" >&5
+$as_echo "$ac_cv_search_luaL_openlibs" >&6; }
+ac_res=$ac_cv_search_luaL_openlibs
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   lua_havelib=LUA$lua_vndot
@@ -22350,10 +22318,6 @@ if test -z "${STATIC_PROGRAMS_TRUE}" && test -z "${STATIC_PROGRAMS_FALSE}"; then
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
-if test -z "${BUILD_GETOPT_TRUE}" && test -z "${BUILD_GETOPT_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_GETOPT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${BUILD_MULTITHREAD_TRUE}" && test -z "${BUILD_MULTITHREAD_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_MULTITHREAD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -24822,8 +24786,6 @@ ac_config_files="$ac_config_files po/Makefile.in"
 
 ac_config_files="$ac_config_files src/Makefile"
 
-ac_config_files="$ac_config_files src/librrd.sym.in"
-
 ac_config_files="$ac_config_files src/librrd.pc"
 
 ac_config_files="$ac_config_files bindings/Makefile"
@@ -24994,10 +24956,6 @@ if test -z "${STATIC_PROGRAMS_TRUE}" && test -z "${STATIC_PROGRAMS_FALSE}"; then
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
-if test -z "${BUILD_GETOPT_TRUE}" && test -z "${BUILD_GETOPT_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_GETOPT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${BUILD_MULTITHREAD_TRUE}" && test -z "${BUILD_MULTITHREAD_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_MULTITHREAD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -25960,7 +25918,6 @@ do
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "po/Makefile.in") CONFIG_FILES="$CONFIG_FILES po/Makefile.in" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
-    "src/librrd.sym.in") CONFIG_FILES="$CONFIG_FILES src/librrd.sym.in" ;;
     "src/librrd.pc") CONFIG_FILES="$CONFIG_FILES src/librrd.pc" ;;
     "bindings/Makefile") CONFIG_FILES="$CONFIG_FILES bindings/Makefile" ;;
     "bindings/tcl/Makefile") CONFIG_FILES="$CONFIG_FILES bindings/tcl/Makefile" ;;
@@ -27462,7 +27419,6 @@ echo "Config is DONE!"
 echo
 echo "          With MMAP IO: $enable_mmap"
 echo "          With Locking: $enable_flock"
-echo "      Build rrd_getopt: $build_getopt"
 echo "       Build rrd_graph: $enable_rrd_graph"
 echo "     Build rrd_restore: $enable_rrd_restore"
 echo "       Static programs: $staticprogs"

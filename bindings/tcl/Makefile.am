@@ -43,7 +43,7 @@ lib_LIBRARIES =
 all-local: $(TCL_RRD_LIB)
 
 $(TCL_RRD_LIB): tclrrd.o
-	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd_th -lm $(TCL_STUB_LIB_SPEC) $(LDFLAGS) $(LIBS)
+	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd -lm $(TCL_STUB_LIB_SPEC) $(LDFLAGS) $(LIBS)
 
 tclrrd.o: tclrrd.c
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -c $(srcdir)/tclrrd.c -DVERSION=\"$(VERSION)\"

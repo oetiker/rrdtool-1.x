@@ -168,9 +168,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the global variable 'int opterr'. */
-#undef HAVE_INT_OPTERR
-
 /* Define to 1 if you have the `isfinite' function. */
 #undef HAVE_ISFINITE
 
@@ -447,6 +444,9 @@
 
 /* Vertical label angle: -90.0 (default) or 90.0 */
 #undef RRDGRAPH_YLEGEND_ANGLE
+
+/* The size of `long int', as computed by sizeof. */
+#undef SIZEOF_LONG_INT
 
 /* The size of `time_t', as computed by sizeof. */
 #undef SIZEOF_TIME_T

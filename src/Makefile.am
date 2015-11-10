@@ -38,7 +38,8 @@ UPD_C_FILES =		\
 	rrd_snprintf.c  \
 	rrd_update.c	\
 	rrd_modify.c	\
-	quicksort.c
+	quicksort.c     \
+	rrd_thread_safe.c
 
 RRD_C_FILES =		\
 	rrd_version.c	\
@@ -92,24 +93,18 @@ endif
 noinst_LTLIBRARIES        = librrdupd.la
 
 lib_LTLIBRARIES           = librrd.la 
-if BUILD_MULTITHREAD
-lib_LTLIBRARIES           += librrd_th.la
-endif
 
-librrdupd_la_SOURCES      = $(UPD_C_FILES) rrd_not_thread_safe.c
+librrdupd_la_SOURCES      = $(UPD_C_FILES)
 librrdupd_la_LIBADD       = $(CORE_LIBS)
+librrdupd_la_CFLAGS       = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
+librrdupd_la_LDFLAGS 	  = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
 librrd_la_DEPENDENCIES    = librrdupd.la
 librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS) $(LIBINTL)
-librrd_la_LDFLAGS         = -version-info @LIBVERS@
+librrd_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
+librrd_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_la_LDFLAGS         += -export-symbols librrd.sym
-
-librrd_th_la_SOURCES         = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
-librrd_th_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
-librrd_th_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
-librrd_th_la_LDFLAGS         += -export-symbols librrd.sym
-librrd_th_la_LIBADD          = $(ALL_LIBS) $(LIBINTL)
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
@@ -134,9 +129,9 @@ rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 
 rrdcached_SOURCES = rrd_daemon.c
-rrdcached_DEPENDENCIES = librrd_th.la librrdupd.la
+rrdcached_DEPENDENCIES = librrd.la librrdupd.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd_th.la librrdupd.la $(ALL_LIBS)
+rrdcached_LDADD = librrd.la librrdupd.la $(ALL_LIBS)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc

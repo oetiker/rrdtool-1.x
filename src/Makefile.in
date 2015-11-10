@@ -90,7 +90,6 @@ target_triplet = @target@
 @BUILD_RRDGRAPH_TRUE@am__append_1 = rrd_graph.c	\
 @BUILD_RRDGRAPH_TRUE@	rrd_graph_helper.c	\
 @BUILD_RRDGRAPH_TRUE@	rrd_xport.c	\
-@BUILD_RRDGRAPH_TRUE@	optparse.c \
 @BUILD_RRDGRAPH_TRUE@	rrd_gfx.c \
 @BUILD_RRDGRAPH_TRUE@	pngsize.c
 
@@ -98,18 +97,15 @@ target_triplet = @target@
 @BUILD_LIBDBI_TRUE@am__append_3 = rrd_fetch_libdbi.c
 @BUILD_LIBRADOS_TRUE@am__append_4 = rrd_rados.c
 @BUILD_LIBRADOS_TRUE@am__append_5 = rrd_rados.h
-@BUILD_GETOPT_TRUE@am__append_6 = rrd_getopt.h
-@BUILD_GETOPT_TRUE@am__append_7 = rrd_getopt.c rrd_getopt1.c
-@BUILD_MULTITHREAD_TRUE@am__append_8 = librrd_th.la
 bin_PROGRAMS = rrdtool$(EXEEXT) rrdupdate$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2)
-@BUILD_RRDCGI_TRUE@am__append_9 = rrdcgi
-@BUILD_RRDCACHED_TRUE@am__append_10 = rrdcached
+@BUILD_RRDCGI_TRUE@am__append_6 = rrdcgi
+@BUILD_RRDCACHED_TRUE@am__append_7 = rrdcached
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(srcdir)/rrd_config.h.in $(srcdir)/librrd.sym.in.in \
-	$(srcdir)/librrd.pc.in $(top_srcdir)/conftools/depcomp \
-	$(include_HEADERS) $(am__noinst_HEADERS_DIST)
+	$(srcdir)/rrd_config.h.in $(srcdir)/librrd.pc.in \
+	$(top_srcdir)/conftools/depcomp $(include_HEADERS) \
+	$(am__noinst_HEADERS_DIST)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/gettext.m4 $(top_srcdir)/m4/iconv.m4 \
@@ -125,7 +121,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = rrd_config.h
-CONFIG_CLEAN_FILES = librrd.sym.in librrd.pc
+CONFIG_CLEAN_FILES = librrd.pc
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -161,16 +157,19 @@ am__DEPENDENCIES_1 =
 am__librrd_la_SOURCES_DIST = rrd_version.c rrd_last.c rrd_lastupdate.c \
 	rrd_first.c rrd_dump.c rrd_flushcached.c rrd_fetch.c \
 	rrd_fetch_cb.c rrd_resize.c rrd_tune.c rrd_graph.c \
-	rrd_graph_helper.c rrd_xport.c optparse.c rrd_gfx.c pngsize.c \
+	rrd_graph_helper.c rrd_xport.c rrd_gfx.c pngsize.c \
 	rrd_restore.c rrd_fetch_libdbi.c
-@BUILD_RRDGRAPH_TRUE@am__objects_1 = rrd_graph.lo rrd_graph_helper.lo \
-@BUILD_RRDGRAPH_TRUE@	rrd_xport.lo optparse.lo rrd_gfx.lo \
-@BUILD_RRDGRAPH_TRUE@	pngsize.lo
-@BUILD_RRDRESTORE_TRUE@am__objects_2 = rrd_restore.lo
-@BUILD_LIBDBI_TRUE@am__objects_3 = rrd_fetch_libdbi.lo
-am__objects_4 = rrd_version.lo rrd_last.lo rrd_lastupdate.lo \
-	rrd_first.lo rrd_dump.lo rrd_flushcached.lo rrd_fetch.lo \
-	rrd_fetch_cb.lo rrd_resize.lo rrd_tune.lo $(am__objects_1) \
+@BUILD_RRDGRAPH_TRUE@am__objects_1 = librrd_la-rrd_graph.lo \
+@BUILD_RRDGRAPH_TRUE@	librrd_la-rrd_graph_helper.lo \
+@BUILD_RRDGRAPH_TRUE@	librrd_la-rrd_xport.lo \
+@BUILD_RRDGRAPH_TRUE@	librrd_la-rrd_gfx.lo librrd_la-pngsize.lo
+@BUILD_RRDRESTORE_TRUE@am__objects_2 = librrd_la-rrd_restore.lo
+@BUILD_LIBDBI_TRUE@am__objects_3 = librrd_la-rrd_fetch_libdbi.lo
+am__objects_4 = librrd_la-rrd_version.lo librrd_la-rrd_last.lo \
+	librrd_la-rrd_lastupdate.lo librrd_la-rrd_first.lo \
+	librrd_la-rrd_dump.lo librrd_la-rrd_flushcached.lo \
+	librrd_la-rrd_fetch.lo librrd_la-rrd_fetch_cb.lo \
+	librrd_la-rrd_resize.lo librrd_la-rrd_tune.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
 am_librrd_la_OBJECTS = $(am__objects_4)
 librrd_la_OBJECTS = $(am_librrd_la_OBJECTS)
@@ -179,72 +178,33 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 librrd_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(librrd_la_LDFLAGS) $(LDFLAGS) -o $@
-am__librrd_th_la_SOURCES_DIST = mutex.c rrd_strtod.c rrd_create.c \
-	hash_32.c rrd_parsetime.c rrd_hw.c rrd_hw_math.c \
-	rrd_hw_update.c rrd_diff.c rrd_format.c rrd_info.c rrd_error.c \
-	rrd_open.c rrd_client.c rrd_nan_inf.c rrd_rpncalc.c \
-	rrd_utils.c rrd_snprintf.c rrd_update.c rrd_modify.c \
-	quicksort.c rrd_rados.c rrd_getopt.c rrd_getopt1.c \
-	rrd_version.c rrd_last.c rrd_lastupdate.c rrd_first.c \
-	rrd_dump.c rrd_flushcached.c rrd_fetch.c rrd_fetch_cb.c \
-	rrd_resize.c rrd_tune.c rrd_graph.c rrd_graph_helper.c \
-	rrd_xport.c optparse.c rrd_gfx.c pngsize.c rrd_restore.c \
-	rrd_fetch_libdbi.c rrd_thread_safe.c
-@BUILD_LIBRADOS_TRUE@am__objects_5 = librrd_th_la-rrd_rados.lo
-@BUILD_GETOPT_TRUE@am__objects_6 = librrd_th_la-rrd_getopt.lo \
-@BUILD_GETOPT_TRUE@	librrd_th_la-rrd_getopt1.lo
-am__objects_7 = librrd_th_la-mutex.lo librrd_th_la-rrd_strtod.lo \
-	librrd_th_la-rrd_create.lo librrd_th_la-hash_32.lo \
-	librrd_th_la-rrd_parsetime.lo librrd_th_la-rrd_hw.lo \
-	librrd_th_la-rrd_hw_math.lo librrd_th_la-rrd_hw_update.lo \
-	librrd_th_la-rrd_diff.lo librrd_th_la-rrd_format.lo \
-	librrd_th_la-rrd_info.lo librrd_th_la-rrd_error.lo \
-	librrd_th_la-rrd_open.lo librrd_th_la-rrd_client.lo \
-	librrd_th_la-rrd_nan_inf.lo librrd_th_la-rrd_rpncalc.lo \
-	librrd_th_la-rrd_utils.lo librrd_th_la-rrd_snprintf.lo \
-	librrd_th_la-rrd_update.lo librrd_th_la-rrd_modify.lo \
-	librrd_th_la-quicksort.lo $(am__objects_5) $(am__objects_6)
-@BUILD_RRDGRAPH_TRUE@am__objects_8 = librrd_th_la-rrd_graph.lo \
-@BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_graph_helper.lo \
-@BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_xport.lo \
-@BUILD_RRDGRAPH_TRUE@	librrd_th_la-optparse.lo \
-@BUILD_RRDGRAPH_TRUE@	librrd_th_la-rrd_gfx.lo \
-@BUILD_RRDGRAPH_TRUE@	librrd_th_la-pngsize.lo
-@BUILD_RRDRESTORE_TRUE@am__objects_9 = librrd_th_la-rrd_restore.lo
-@BUILD_LIBDBI_TRUE@am__objects_10 = librrd_th_la-rrd_fetch_libdbi.lo
-am__objects_11 = librrd_th_la-rrd_version.lo librrd_th_la-rrd_last.lo \
-	librrd_th_la-rrd_lastupdate.lo librrd_th_la-rrd_first.lo \
-	librrd_th_la-rrd_dump.lo librrd_th_la-rrd_flushcached.lo \
-	librrd_th_la-rrd_fetch.lo librrd_th_la-rrd_fetch_cb.lo \
-	librrd_th_la-rrd_resize.lo librrd_th_la-rrd_tune.lo \
-	$(am__objects_8) $(am__objects_9) $(am__objects_10)
-am_librrd_th_la_OBJECTS = $(am__objects_7) $(am__objects_11) \
-	librrd_th_la-rrd_thread_safe.lo
-librrd_th_la_OBJECTS = $(am_librrd_th_la_OBJECTS)
-librrd_th_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(librrd_th_la_CFLAGS) \
-	$(CFLAGS) $(librrd_th_la_LDFLAGS) $(LDFLAGS) -o $@
-@BUILD_MULTITHREAD_TRUE@am_librrd_th_la_rpath = -rpath $(libdir)
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(librrd_la_CFLAGS) \
+	$(CFLAGS) $(librrd_la_LDFLAGS) $(LDFLAGS) -o $@
 librrdupd_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__librrdupd_la_SOURCES_DIST = mutex.c rrd_strtod.c rrd_create.c \
-	hash_32.c rrd_parsetime.c rrd_hw.c rrd_hw_math.c \
+am__librrdupd_la_SOURCES_DIST = mutex.c optparse.c rrd_strtod.c \
+	rrd_create.c hash_32.c rrd_parsetime.c rrd_hw.c rrd_hw_math.c \
 	rrd_hw_update.c rrd_diff.c rrd_format.c rrd_info.c rrd_error.c \
 	rrd_open.c rrd_client.c rrd_nan_inf.c rrd_rpncalc.c \
 	rrd_utils.c rrd_snprintf.c rrd_update.c rrd_modify.c \
-	quicksort.c rrd_rados.c rrd_getopt.c rrd_getopt1.c \
-	rrd_not_thread_safe.c
-@BUILD_LIBRADOS_TRUE@am__objects_12 = rrd_rados.lo
-@BUILD_GETOPT_TRUE@am__objects_13 = rrd_getopt.lo rrd_getopt1.lo
-am__objects_14 = mutex.lo rrd_strtod.lo rrd_create.lo hash_32.lo \
-	rrd_parsetime.lo rrd_hw.lo rrd_hw_math.lo rrd_hw_update.lo \
-	rrd_diff.lo rrd_format.lo rrd_info.lo rrd_error.lo rrd_open.lo \
-	rrd_client.lo rrd_nan_inf.lo rrd_rpncalc.lo rrd_utils.lo \
-	rrd_snprintf.lo rrd_update.lo rrd_modify.lo quicksort.lo \
-	$(am__objects_12) $(am__objects_13)
-am_librrdupd_la_OBJECTS = $(am__objects_14) rrd_not_thread_safe.lo
+	quicksort.c rrd_thread_safe.c rrd_rados.c
+@BUILD_LIBRADOS_TRUE@am__objects_5 = librrdupd_la-rrd_rados.lo
+am__objects_6 = librrdupd_la-mutex.lo librrdupd_la-optparse.lo \
+	librrdupd_la-rrd_strtod.lo librrdupd_la-rrd_create.lo \
+	librrdupd_la-hash_32.lo librrdupd_la-rrd_parsetime.lo \
+	librrdupd_la-rrd_hw.lo librrdupd_la-rrd_hw_math.lo \
+	librrdupd_la-rrd_hw_update.lo librrdupd_la-rrd_diff.lo \
+	librrdupd_la-rrd_format.lo librrdupd_la-rrd_info.lo \
+	librrdupd_la-rrd_error.lo librrdupd_la-rrd_open.lo \
+	librrdupd_la-rrd_client.lo librrdupd_la-rrd_nan_inf.lo \
+	librrdupd_la-rrd_rpncalc.lo librrdupd_la-rrd_utils.lo \
+	librrdupd_la-rrd_snprintf.lo librrdupd_la-rrd_update.lo \
+	librrdupd_la-rrd_modify.lo librrdupd_la-quicksort.lo \
+	librrdupd_la-rrd_thread_safe.lo $(am__objects_5)
+am_librrdupd_la_OBJECTS = $(am__objects_6)
 librrdupd_la_OBJECTS = $(am_librrdupd_la_OBJECTS)
+librrdupd_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(librrdupd_la_CFLAGS) \
+	$(CFLAGS) $(librrdupd_la_LDFLAGS) $(LDFLAGS) -o $@
 @BUILD_RRDCGI_TRUE@am__EXEEXT_1 = rrdcgi$(EXEEXT)
 @BUILD_RRDCACHED_TRUE@am__EXEEXT_2 = rrdcached$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
@@ -252,7 +212,7 @@ am_rrdcached_OBJECTS = rrdcached-rrd_daemon.$(OBJEXT)
 rrdcached_OBJECTS = $(am_rrdcached_OBJECTS)
 am_rrdcgi_OBJECTS = rrd_cgi.$(OBJEXT)
 rrdcgi_OBJECTS = $(am_rrdcgi_OBJECTS)
-rrdcgi_DEPENDENCIES = librrd.la
+rrdcgi_DEPENDENCIES = librrd.la librrdupd.la
 am_rrdtool_OBJECTS = rrd_tool.$(OBJEXT)
 rrdtool_OBJECTS = $(am_rrdtool_OBJECTS)
 am_rrdupdate_OBJECTS = rrdupdate.$(OBJEXT)
@@ -292,11 +252,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(librrd_la_SOURCES) $(librrd_th_la_SOURCES) \
-	$(librrdupd_la_SOURCES) $(rrdcached_SOURCES) $(rrdcgi_SOURCES) \
-	$(rrdtool_SOURCES) $(rrdupdate_SOURCES)
+SOURCES = $(librrd_la_SOURCES) $(librrdupd_la_SOURCES) \
+	$(rrdcached_SOURCES) $(rrdcgi_SOURCES) $(rrdtool_SOURCES) \
+	$(rrdupdate_SOURCES)
 DIST_SOURCES = $(am__librrd_la_SOURCES_DIST) \
-	$(am__librrd_th_la_SOURCES_DIST) \
 	$(am__librrdupd_la_SOURCES_DIST) $(rrdcached_SOURCES) \
 	$(rrdcgi_SOURCES) $(rrdtool_SOURCES) $(rrdupdate_SOURCES)
 am__can_run_installinfo = \
@@ -306,12 +265,12 @@ am__can_run_installinfo = \
   esac
 DATA = $(pkgconfig_DATA)
 am__noinst_HEADERS_DIST = unused.h gettext.h mutex.h rrd_strtod.h \
-	rrd_snprintf.h rrd_getopt.h rrd_parsetime.h \
-	rrd_config_bottom.h rrd_i18n.h rrd_format.h rrd_tool.h \
-	rrd_xport.h optparse.h rrd.h rrd_rpncalc.h rrd_hw.h \
-	rrd_hw_math.h rrd_hw_update.h rrd_restore.h rrd_create.h fnv.h \
-	rrd_graph.h rrd_is_thread_safe.h rrd_modify.h rrd_update.h \
-	rrd_config.h quicksort.h rrd_rados.h
+	rrd_snprintf.h rrd_parsetime.h rrd_config_bottom.h rrd_i18n.h \
+	rrd_format.h rrd_tool.h rrd_xport.h optparse.h rrd.h \
+	rrd_rpncalc.h rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
+	rrd_restore.h rrd_create.h fnv.h rrd_graph.h \
+	rrd_is_thread_safe.h rrd_modify.h rrd_update.h rrd_config.h \
+	quicksort.h rrd_rados.h
 HEADERS = $(include_HEADERS) $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
 	$(LISP)rrd_config.h.in
@@ -449,7 +408,6 @@ RANLIB = @RANLIB@
 RRDDOCDIR = @RRDDOCDIR@
 RRDGRAPH_YLEGEND_ANGLE = @RRDGRAPH_YLEGEND_ANGLE@
 RRD_DEFAULT_FONT = @RRD_DEFAULT_FONT@
-RRD_GETOPT_LONG = @RRD_GETOPT_LONG@
 RUBY = @RUBY@
 RUBY_MAKE_OPTIONS = @RUBY_MAKE_OPTIONS@
 SED = @SED@
@@ -541,56 +499,54 @@ AM_CPPFLAGS = -DLOCALEDIR="\"$(datadir)/locale\"" \
 	-DNUMVERS=@NUMVERS@
 
 AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
-UPD_C_FILES = mutex.c rrd_strtod.c rrd_create.c hash_32.c \
+UPD_C_FILES = mutex.c optparse.c rrd_strtod.c rrd_create.c hash_32.c \
 	rrd_parsetime.c rrd_hw.c rrd_hw_math.c rrd_hw_update.c \
 	rrd_diff.c rrd_format.c rrd_info.c rrd_error.c rrd_open.c \
 	rrd_client.c rrd_nan_inf.c rrd_rpncalc.c rrd_utils.c \
 	rrd_snprintf.c rrd_update.c rrd_modify.c quicksort.c \
-	$(am__append_4) $(am__append_7)
+	rrd_thread_safe.c $(am__append_4)
 RRD_C_FILES = rrd_version.c rrd_last.c rrd_lastupdate.c rrd_first.c \
 	rrd_dump.c rrd_flushcached.c rrd_fetch.c rrd_fetch_cb.c \
 	rrd_resize.c rrd_tune.c $(am__append_1) $(am__append_2) \
 	$(am__append_3)
 noinst_HEADERS = unused.h gettext.h mutex.h rrd_strtod.h \
-	rrd_snprintf.h rrd_getopt.h rrd_parsetime.h \
-	rrd_config_bottom.h rrd_i18n.h rrd_format.h rrd_tool.h \
-	rrd_xport.h optparse.h rrd.h rrd_rpncalc.h rrd_hw.h \
-	rrd_hw_math.h rrd_hw_update.h rrd_restore.h rrd_create.h fnv.h \
-	rrd_graph.h rrd_is_thread_safe.h rrd_modify.h rrd_update.h \
-	rrd_config.h quicksort.h $(am__append_5) $(am__append_6)
+	rrd_snprintf.h rrd_parsetime.h rrd_config_bottom.h rrd_i18n.h \
+	rrd_format.h rrd_tool.h rrd_xport.h optparse.h rrd.h \
+	rrd_rpncalc.h rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
+	rrd_restore.h rrd_create.h fnv.h rrd_graph.h \
+	rrd_is_thread_safe.h rrd_modify.h rrd_update.h rrd_config.h \
+	quicksort.h $(am__append_5)
 noinst_LTLIBRARIES = librrdupd.la
-lib_LTLIBRARIES = librrd.la $(am__append_8)
-librrdupd_la_SOURCES = $(UPD_C_FILES) rrd_not_thread_safe.c
+lib_LTLIBRARIES = librrd.la 
+librrdupd_la_SOURCES = $(UPD_C_FILES)
 librrdupd_la_LIBADD = $(CORE_LIBS)
+librrdupd_la_CFLAGS = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
+librrdupd_la_LDFLAGS = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_la_SOURCES = $(RRD_C_FILES)
-librrd_la_DEPENDENCIES = librrdupd.la librrd.sym
+librrd_la_DEPENDENCIES = librrdupd.la
 librrd_la_LIBADD = librrdupd.la $(ALL_LIBS) $(LIBINTL)
-librrd_la_LDFLAGS = -version-info @LIBVERS@ -export-symbols librrd.sym
-librrd_th_la_SOURCES = $(UPD_C_FILES) $(RRD_C_FILES) rrd_thread_safe.c
-librrd_th_la_DEPENDENCIES = librrd.sym
-librrd_th_la_CFLAGS = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
-librrd_th_la_LDFLAGS = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@ \
+librrd_la_CFLAGS = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
+librrd_la_LDFLAGS = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@ \
 	-export-symbols librrd.sym
-librrd_th_la_LIBADD = $(ALL_LIBS) $(LIBINTL)
 include_HEADERS = rrd.h rrd_format.h rrd_client.h
 rrdcgi_SOURCES = rrd_cgi.c
-rrdcgi_LDADD = librrd.la
+rrdcgi_LDADD = librrd.la librrdupd.la
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD = librrdupd.la
 rrdtool_SOURCES = rrd_tool.c
 rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD = librrd.la
 rrdcached_SOURCES = rrd_daemon.c
-rrdcached_DEPENDENCIES = librrd_th.la
+rrdcached_DEPENDENCIES = librrd.la librrdupd.la
 rrdcached_CPPFLAGS = -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
-rrdcached_LDADD = librrd_th.la $(ALL_LIBS)
+rrdcached_LDADD = librrd.la librrdupd.la $(ALL_LIBS)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc
 
 # strftime is here because we do not usually need it. unices have propper
 # iso date support
-EXTRA_DIST = librrd.pc.in strftime.c strftime.h  rrd_getopt.c rrd_getopt1.c rrd_getopt.h \
-	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym.in.in plbasename.c   plbasename.h   
+EXTRA_DIST = librrd.pc.in strftime.c strftime.h \
+	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym plbasename.c plbasename.h
 
 all: rrd_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -642,8 +598,6 @@ $(srcdir)/rrd_config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f rrd_config.h stamp-h1
-librrd.sym.in: $(top_builddir)/config.status $(srcdir)/librrd.sym.in.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 librrd.pc: $(top_builddir)/config.status $(srcdir)/librrd.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
@@ -696,11 +650,8 @@ clean-noinstLTLIBRARIES:
 librrd.la: $(librrd_la_OBJECTS) $(librrd_la_DEPENDENCIES) $(EXTRA_librrd_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(librrd_la_LINK) -rpath $(libdir) $(librrd_la_OBJECTS) $(librrd_la_LIBADD) $(LIBS)
 
-librrd_th.la: $(librrd_th_la_OBJECTS) $(librrd_th_la_DEPENDENCIES) $(EXTRA_librrd_th_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(librrd_th_la_LINK) $(am_librrd_th_la_rpath) $(librrd_th_la_OBJECTS) $(librrd_th_la_LIBADD) $(LIBS)
-
 librrdupd.la: $(librrdupd_la_OBJECTS) $(librrdupd_la_DEPENDENCIES) $(EXTRA_librrdupd_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(librrdupd_la_OBJECTS) $(librrdupd_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(librrdupd_la_LINK)  $(librrdupd_la_OBJECTS) $(librrdupd_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -773,94 +724,49 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash_32.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-hash_32.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-mutex.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-optparse.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-pngsize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-quicksort.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_client.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_create.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_diff.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_dump.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_error.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_fetch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_fetch_cb.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_fetch_libdbi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_first.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_flushcached.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_format.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_getopt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_getopt1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_gfx.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_graph.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_graph_helper.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_hw.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_hw_math.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_hw_update.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_last.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_lastupdate.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_modify.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_nan_inf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_open.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_parsetime.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_rados.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_resize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_restore.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_rpncalc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_snprintf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_strtod.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_thread_safe.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_tune.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_update.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_utils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_version.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_th_la-rrd_xport.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mutex.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparse.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pngsize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/quicksort.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-pngsize.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_dump.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_fetch.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_fetch_cb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_fetch_libdbi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_first.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_flushcached.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_gfx.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_graph.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_graph_helper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_last.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_lastupdate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_resize.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_restore.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_tune.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_version.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_xport.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-hash_32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-mutex.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-optparse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-quicksort.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_client.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_create.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_diff.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_error.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_format.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_hw.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_hw_math.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_hw_update.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_modify.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_nan_inf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_open.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_parsetime.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_rados.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_rpncalc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_snprintf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_strtod.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_thread_safe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_update.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-rrd_utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_cgi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_client.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_create.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_diff.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_dump.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_error.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_fetch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_fetch_cb.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_fetch_libdbi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_first.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_flushcached.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_format.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_getopt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_getopt1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_gfx.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_graph.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_graph_helper.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_hw.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_hw_math.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_hw_update.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_last.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_lastupdate.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_modify.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_nan_inf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_not_thread_safe.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_open.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_parsetime.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_rados.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_resize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_restore.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_rpncalc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_snprintf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_strtod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_tool.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_tune.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_update.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_utils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_version.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrd_xport.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrdcached-rrd_daemon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rrdupdate.Po@am__quote@
 
@@ -885,306 +791,292 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-librrd_th_la-mutex.lo: mutex.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-mutex.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-mutex.Tpo -c -o librrd_th_la-mutex.lo `test -f 'mutex.c' || echo '$(srcdir)/'`mutex.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-mutex.Tpo $(DEPDIR)/librrd_th_la-mutex.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mutex.c' object='librrd_th_la-mutex.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_version.lo: rrd_version.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_version.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_version.Tpo -c -o librrd_la-rrd_version.lo `test -f 'rrd_version.c' || echo '$(srcdir)/'`rrd_version.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_version.Tpo $(DEPDIR)/librrd_la-rrd_version.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_version.c' object='librrd_la-rrd_version.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-mutex.lo `test -f 'mutex.c' || echo '$(srcdir)/'`mutex.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_version.lo `test -f 'rrd_version.c' || echo '$(srcdir)/'`rrd_version.c
 
-librrd_th_la-rrd_strtod.lo: rrd_strtod.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_strtod.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_strtod.Tpo -c -o librrd_th_la-rrd_strtod.lo `test -f 'rrd_strtod.c' || echo '$(srcdir)/'`rrd_strtod.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_strtod.Tpo $(DEPDIR)/librrd_th_la-rrd_strtod.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_strtod.c' object='librrd_th_la-rrd_strtod.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_last.lo: rrd_last.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_last.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_last.Tpo -c -o librrd_la-rrd_last.lo `test -f 'rrd_last.c' || echo '$(srcdir)/'`rrd_last.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_last.Tpo $(DEPDIR)/librrd_la-rrd_last.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_last.c' object='librrd_la-rrd_last.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_strtod.lo `test -f 'rrd_strtod.c' || echo '$(srcdir)/'`rrd_strtod.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_last.lo `test -f 'rrd_last.c' || echo '$(srcdir)/'`rrd_last.c
 
-librrd_th_la-rrd_create.lo: rrd_create.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_create.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_create.Tpo -c -o librrd_th_la-rrd_create.lo `test -f 'rrd_create.c' || echo '$(srcdir)/'`rrd_create.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_create.Tpo $(DEPDIR)/librrd_th_la-rrd_create.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_create.c' object='librrd_th_la-rrd_create.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_lastupdate.lo: rrd_lastupdate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_lastupdate.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_lastupdate.Tpo -c -o librrd_la-rrd_lastupdate.lo `test -f 'rrd_lastupdate.c' || echo '$(srcdir)/'`rrd_lastupdate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_lastupdate.Tpo $(DEPDIR)/librrd_la-rrd_lastupdate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_lastupdate.c' object='librrd_la-rrd_lastupdate.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_create.lo `test -f 'rrd_create.c' || echo '$(srcdir)/'`rrd_create.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_lastupdate.lo `test -f 'rrd_lastupdate.c' || echo '$(srcdir)/'`rrd_lastupdate.c
 
-librrd_th_la-hash_32.lo: hash_32.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-hash_32.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-hash_32.Tpo -c -o librrd_th_la-hash_32.lo `test -f 'hash_32.c' || echo '$(srcdir)/'`hash_32.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-hash_32.Tpo $(DEPDIR)/librrd_th_la-hash_32.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hash_32.c' object='librrd_th_la-hash_32.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_first.lo: rrd_first.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_first.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_first.Tpo -c -o librrd_la-rrd_first.lo `test -f 'rrd_first.c' || echo '$(srcdir)/'`rrd_first.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_first.Tpo $(DEPDIR)/librrd_la-rrd_first.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_first.c' object='librrd_la-rrd_first.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-hash_32.lo `test -f 'hash_32.c' || echo '$(srcdir)/'`hash_32.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_first.lo `test -f 'rrd_first.c' || echo '$(srcdir)/'`rrd_first.c
 
-librrd_th_la-rrd_parsetime.lo: rrd_parsetime.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_parsetime.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_parsetime.Tpo -c -o librrd_th_la-rrd_parsetime.lo `test -f 'rrd_parsetime.c' || echo '$(srcdir)/'`rrd_parsetime.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_parsetime.Tpo $(DEPDIR)/librrd_th_la-rrd_parsetime.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_parsetime.c' object='librrd_th_la-rrd_parsetime.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_dump.lo: rrd_dump.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_dump.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_dump.Tpo -c -o librrd_la-rrd_dump.lo `test -f 'rrd_dump.c' || echo '$(srcdir)/'`rrd_dump.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_dump.Tpo $(DEPDIR)/librrd_la-rrd_dump.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_dump.c' object='librrd_la-rrd_dump.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_parsetime.lo `test -f 'rrd_parsetime.c' || echo '$(srcdir)/'`rrd_parsetime.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_dump.lo `test -f 'rrd_dump.c' || echo '$(srcdir)/'`rrd_dump.c
 
-librrd_th_la-rrd_hw.lo: rrd_hw.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_hw.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_hw.Tpo -c -o librrd_th_la-rrd_hw.lo `test -f 'rrd_hw.c' || echo '$(srcdir)/'`rrd_hw.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_hw.Tpo $(DEPDIR)/librrd_th_la-rrd_hw.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw.c' object='librrd_th_la-rrd_hw.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_flushcached.lo: rrd_flushcached.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_flushcached.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_flushcached.Tpo -c -o librrd_la-rrd_flushcached.lo `test -f 'rrd_flushcached.c' || echo '$(srcdir)/'`rrd_flushcached.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_flushcached.Tpo $(DEPDIR)/librrd_la-rrd_flushcached.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_flushcached.c' object='librrd_la-rrd_flushcached.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_hw.lo `test -f 'rrd_hw.c' || echo '$(srcdir)/'`rrd_hw.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_flushcached.lo `test -f 'rrd_flushcached.c' || echo '$(srcdir)/'`rrd_flushcached.c
 
-librrd_th_la-rrd_hw_math.lo: rrd_hw_math.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_hw_math.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_hw_math.Tpo -c -o librrd_th_la-rrd_hw_math.lo `test -f 'rrd_hw_math.c' || echo '$(srcdir)/'`rrd_hw_math.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_hw_math.Tpo $(DEPDIR)/librrd_th_la-rrd_hw_math.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw_math.c' object='librrd_th_la-rrd_hw_math.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_fetch.lo: rrd_fetch.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_fetch.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_fetch.Tpo -c -o librrd_la-rrd_fetch.lo `test -f 'rrd_fetch.c' || echo '$(srcdir)/'`rrd_fetch.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_fetch.Tpo $(DEPDIR)/librrd_la-rrd_fetch.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch.c' object='librrd_la-rrd_fetch.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_hw_math.lo `test -f 'rrd_hw_math.c' || echo '$(srcdir)/'`rrd_hw_math.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_fetch.lo `test -f 'rrd_fetch.c' || echo '$(srcdir)/'`rrd_fetch.c
 
-librrd_th_la-rrd_hw_update.lo: rrd_hw_update.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_hw_update.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_hw_update.Tpo -c -o librrd_th_la-rrd_hw_update.lo `test -f 'rrd_hw_update.c' || echo '$(srcdir)/'`rrd_hw_update.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_hw_update.Tpo $(DEPDIR)/librrd_th_la-rrd_hw_update.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw_update.c' object='librrd_th_la-rrd_hw_update.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_fetch_cb.lo: rrd_fetch_cb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_fetch_cb.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_fetch_cb.Tpo -c -o librrd_la-rrd_fetch_cb.lo `test -f 'rrd_fetch_cb.c' || echo '$(srcdir)/'`rrd_fetch_cb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_fetch_cb.Tpo $(DEPDIR)/librrd_la-rrd_fetch_cb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch_cb.c' object='librrd_la-rrd_fetch_cb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_hw_update.lo `test -f 'rrd_hw_update.c' || echo '$(srcdir)/'`rrd_hw_update.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_fetch_cb.lo `test -f 'rrd_fetch_cb.c' || echo '$(srcdir)/'`rrd_fetch_cb.c
 
-librrd_th_la-rrd_diff.lo: rrd_diff.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_diff.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_diff.Tpo -c -o librrd_th_la-rrd_diff.lo `test -f 'rrd_diff.c' || echo '$(srcdir)/'`rrd_diff.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_diff.Tpo $(DEPDIR)/librrd_th_la-rrd_diff.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_diff.c' object='librrd_th_la-rrd_diff.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_resize.lo: rrd_resize.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_resize.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_resize.Tpo -c -o librrd_la-rrd_resize.lo `test -f 'rrd_resize.c' || echo '$(srcdir)/'`rrd_resize.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_resize.Tpo $(DEPDIR)/librrd_la-rrd_resize.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_resize.c' object='librrd_la-rrd_resize.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_diff.lo `test -f 'rrd_diff.c' || echo '$(srcdir)/'`rrd_diff.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_resize.lo `test -f 'rrd_resize.c' || echo '$(srcdir)/'`rrd_resize.c
 
-librrd_th_la-rrd_format.lo: rrd_format.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_format.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_format.Tpo -c -o librrd_th_la-rrd_format.lo `test -f 'rrd_format.c' || echo '$(srcdir)/'`rrd_format.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_format.Tpo $(DEPDIR)/librrd_th_la-rrd_format.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_format.c' object='librrd_th_la-rrd_format.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_tune.lo: rrd_tune.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_tune.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_tune.Tpo -c -o librrd_la-rrd_tune.lo `test -f 'rrd_tune.c' || echo '$(srcdir)/'`rrd_tune.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_tune.Tpo $(DEPDIR)/librrd_la-rrd_tune.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_tune.c' object='librrd_la-rrd_tune.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_format.lo `test -f 'rrd_format.c' || echo '$(srcdir)/'`rrd_format.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_tune.lo `test -f 'rrd_tune.c' || echo '$(srcdir)/'`rrd_tune.c
 
-librrd_th_la-rrd_info.lo: rrd_info.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_info.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_info.Tpo -c -o librrd_th_la-rrd_info.lo `test -f 'rrd_info.c' || echo '$(srcdir)/'`rrd_info.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_info.Tpo $(DEPDIR)/librrd_th_la-rrd_info.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_info.c' object='librrd_th_la-rrd_info.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_graph.lo: rrd_graph.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_graph.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_graph.Tpo -c -o librrd_la-rrd_graph.lo `test -f 'rrd_graph.c' || echo '$(srcdir)/'`rrd_graph.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_graph.Tpo $(DEPDIR)/librrd_la-rrd_graph.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_graph.c' object='librrd_la-rrd_graph.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_info.lo `test -f 'rrd_info.c' || echo '$(srcdir)/'`rrd_info.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_graph.lo `test -f 'rrd_graph.c' || echo '$(srcdir)/'`rrd_graph.c
 
-librrd_th_la-rrd_error.lo: rrd_error.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_error.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_error.Tpo -c -o librrd_th_la-rrd_error.lo `test -f 'rrd_error.c' || echo '$(srcdir)/'`rrd_error.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_error.Tpo $(DEPDIR)/librrd_th_la-rrd_error.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_error.c' object='librrd_th_la-rrd_error.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_graph_helper.lo: rrd_graph_helper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_graph_helper.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_graph_helper.Tpo -c -o librrd_la-rrd_graph_helper.lo `test -f 'rrd_graph_helper.c' || echo '$(srcdir)/'`rrd_graph_helper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_graph_helper.Tpo $(DEPDIR)/librrd_la-rrd_graph_helper.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_graph_helper.c' object='librrd_la-rrd_graph_helper.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_error.lo `test -f 'rrd_error.c' || echo '$(srcdir)/'`rrd_error.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_graph_helper.lo `test -f 'rrd_graph_helper.c' || echo '$(srcdir)/'`rrd_graph_helper.c
 
-librrd_th_la-rrd_open.lo: rrd_open.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_open.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_open.Tpo -c -o librrd_th_la-rrd_open.lo `test -f 'rrd_open.c' || echo '$(srcdir)/'`rrd_open.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_open.Tpo $(DEPDIR)/librrd_th_la-rrd_open.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_open.c' object='librrd_th_la-rrd_open.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_xport.lo: rrd_xport.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_xport.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_xport.Tpo -c -o librrd_la-rrd_xport.lo `test -f 'rrd_xport.c' || echo '$(srcdir)/'`rrd_xport.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_xport.Tpo $(DEPDIR)/librrd_la-rrd_xport.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_xport.c' object='librrd_la-rrd_xport.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_open.lo `test -f 'rrd_open.c' || echo '$(srcdir)/'`rrd_open.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_xport.lo `test -f 'rrd_xport.c' || echo '$(srcdir)/'`rrd_xport.c
 
-librrd_th_la-rrd_client.lo: rrd_client.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_client.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_client.Tpo -c -o librrd_th_la-rrd_client.lo `test -f 'rrd_client.c' || echo '$(srcdir)/'`rrd_client.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_client.Tpo $(DEPDIR)/librrd_th_la-rrd_client.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_client.c' object='librrd_th_la-rrd_client.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_gfx.lo: rrd_gfx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_gfx.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_gfx.Tpo -c -o librrd_la-rrd_gfx.lo `test -f 'rrd_gfx.c' || echo '$(srcdir)/'`rrd_gfx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_gfx.Tpo $(DEPDIR)/librrd_la-rrd_gfx.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_gfx.c' object='librrd_la-rrd_gfx.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_client.lo `test -f 'rrd_client.c' || echo '$(srcdir)/'`rrd_client.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_gfx.lo `test -f 'rrd_gfx.c' || echo '$(srcdir)/'`rrd_gfx.c
 
-librrd_th_la-rrd_nan_inf.lo: rrd_nan_inf.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_nan_inf.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_nan_inf.Tpo -c -o librrd_th_la-rrd_nan_inf.lo `test -f 'rrd_nan_inf.c' || echo '$(srcdir)/'`rrd_nan_inf.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_nan_inf.Tpo $(DEPDIR)/librrd_th_la-rrd_nan_inf.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_nan_inf.c' object='librrd_th_la-rrd_nan_inf.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-pngsize.lo: pngsize.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-pngsize.lo -MD -MP -MF $(DEPDIR)/librrd_la-pngsize.Tpo -c -o librrd_la-pngsize.lo `test -f 'pngsize.c' || echo '$(srcdir)/'`pngsize.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-pngsize.Tpo $(DEPDIR)/librrd_la-pngsize.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pngsize.c' object='librrd_la-pngsize.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_nan_inf.lo `test -f 'rrd_nan_inf.c' || echo '$(srcdir)/'`rrd_nan_inf.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-pngsize.lo `test -f 'pngsize.c' || echo '$(srcdir)/'`pngsize.c
 
-librrd_th_la-rrd_rpncalc.lo: rrd_rpncalc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_rpncalc.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_rpncalc.Tpo -c -o librrd_th_la-rrd_rpncalc.lo `test -f 'rrd_rpncalc.c' || echo '$(srcdir)/'`rrd_rpncalc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_rpncalc.Tpo $(DEPDIR)/librrd_th_la-rrd_rpncalc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_rpncalc.c' object='librrd_th_la-rrd_rpncalc.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_restore.lo: rrd_restore.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_restore.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_restore.Tpo -c -o librrd_la-rrd_restore.lo `test -f 'rrd_restore.c' || echo '$(srcdir)/'`rrd_restore.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_restore.Tpo $(DEPDIR)/librrd_la-rrd_restore.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_restore.c' object='librrd_la-rrd_restore.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_rpncalc.lo `test -f 'rrd_rpncalc.c' || echo '$(srcdir)/'`rrd_rpncalc.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_restore.lo `test -f 'rrd_restore.c' || echo '$(srcdir)/'`rrd_restore.c
 
-librrd_th_la-rrd_utils.lo: rrd_utils.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_utils.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_utils.Tpo -c -o librrd_th_la-rrd_utils.lo `test -f 'rrd_utils.c' || echo '$(srcdir)/'`rrd_utils.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_utils.Tpo $(DEPDIR)/librrd_th_la-rrd_utils.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_utils.c' object='librrd_th_la-rrd_utils.lo' libtool=yes @AMDEPBACKSLASH@
+librrd_la-rrd_fetch_libdbi.lo: rrd_fetch_libdbi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-rrd_fetch_libdbi.lo -MD -MP -MF $(DEPDIR)/librrd_la-rrd_fetch_libdbi.Tpo -c -o librrd_la-rrd_fetch_libdbi.lo `test -f 'rrd_fetch_libdbi.c' || echo '$(srcdir)/'`rrd_fetch_libdbi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-rrd_fetch_libdbi.Tpo $(DEPDIR)/librrd_la-rrd_fetch_libdbi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch_libdbi.c' object='librrd_la-rrd_fetch_libdbi.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_utils.lo `test -f 'rrd_utils.c' || echo '$(srcdir)/'`rrd_utils.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-rrd_fetch_libdbi.lo `test -f 'rrd_fetch_libdbi.c' || echo '$(srcdir)/'`rrd_fetch_libdbi.c
 
-librrd_th_la-rrd_snprintf.lo: rrd_snprintf.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_snprintf.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_snprintf.Tpo -c -o librrd_th_la-rrd_snprintf.lo `test -f 'rrd_snprintf.c' || echo '$(srcdir)/'`rrd_snprintf.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_snprintf.Tpo $(DEPDIR)/librrd_th_la-rrd_snprintf.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_snprintf.c' object='librrd_th_la-rrd_snprintf.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-mutex.lo: mutex.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-mutex.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-mutex.Tpo -c -o librrdupd_la-mutex.lo `test -f 'mutex.c' || echo '$(srcdir)/'`mutex.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-mutex.Tpo $(DEPDIR)/librrdupd_la-mutex.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mutex.c' object='librrdupd_la-mutex.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_snprintf.lo `test -f 'rrd_snprintf.c' || echo '$(srcdir)/'`rrd_snprintf.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-mutex.lo `test -f 'mutex.c' || echo '$(srcdir)/'`mutex.c
 
-librrd_th_la-rrd_update.lo: rrd_update.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_update.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_update.Tpo -c -o librrd_th_la-rrd_update.lo `test -f 'rrd_update.c' || echo '$(srcdir)/'`rrd_update.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_update.Tpo $(DEPDIR)/librrd_th_la-rrd_update.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_update.c' object='librrd_th_la-rrd_update.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-optparse.lo: optparse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-optparse.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-optparse.Tpo -c -o librrdupd_la-optparse.lo `test -f 'optparse.c' || echo '$(srcdir)/'`optparse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-optparse.Tpo $(DEPDIR)/librrdupd_la-optparse.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='optparse.c' object='librrdupd_la-optparse.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_update.lo `test -f 'rrd_update.c' || echo '$(srcdir)/'`rrd_update.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-optparse.lo `test -f 'optparse.c' || echo '$(srcdir)/'`optparse.c
 
-librrd_th_la-rrd_modify.lo: rrd_modify.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_modify.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_modify.Tpo -c -o librrd_th_la-rrd_modify.lo `test -f 'rrd_modify.c' || echo '$(srcdir)/'`rrd_modify.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_modify.Tpo $(DEPDIR)/librrd_th_la-rrd_modify.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_modify.c' object='librrd_th_la-rrd_modify.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_strtod.lo: rrd_strtod.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_strtod.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_strtod.Tpo -c -o librrdupd_la-rrd_strtod.lo `test -f 'rrd_strtod.c' || echo '$(srcdir)/'`rrd_strtod.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_strtod.Tpo $(DEPDIR)/librrdupd_la-rrd_strtod.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_strtod.c' object='librrdupd_la-rrd_strtod.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_modify.lo `test -f 'rrd_modify.c' || echo '$(srcdir)/'`rrd_modify.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_strtod.lo `test -f 'rrd_strtod.c' || echo '$(srcdir)/'`rrd_strtod.c
 
-librrd_th_la-quicksort.lo: quicksort.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-quicksort.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-quicksort.Tpo -c -o librrd_th_la-quicksort.lo `test -f 'quicksort.c' || echo '$(srcdir)/'`quicksort.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-quicksort.Tpo $(DEPDIR)/librrd_th_la-quicksort.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='quicksort.c' object='librrd_th_la-quicksort.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_create.lo: rrd_create.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_create.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_create.Tpo -c -o librrdupd_la-rrd_create.lo `test -f 'rrd_create.c' || echo '$(srcdir)/'`rrd_create.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_create.Tpo $(DEPDIR)/librrdupd_la-rrd_create.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_create.c' object='librrdupd_la-rrd_create.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-quicksort.lo `test -f 'quicksort.c' || echo '$(srcdir)/'`quicksort.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_create.lo `test -f 'rrd_create.c' || echo '$(srcdir)/'`rrd_create.c
 
-librrd_th_la-rrd_rados.lo: rrd_rados.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_rados.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_rados.Tpo -c -o librrd_th_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_rados.Tpo $(DEPDIR)/librrd_th_la-rrd_rados.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_rados.c' object='librrd_th_la-rrd_rados.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-hash_32.lo: hash_32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-hash_32.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-hash_32.Tpo -c -o librrdupd_la-hash_32.lo `test -f 'hash_32.c' || echo '$(srcdir)/'`hash_32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-hash_32.Tpo $(DEPDIR)/librrdupd_la-hash_32.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hash_32.c' object='librrdupd_la-hash_32.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-hash_32.lo `test -f 'hash_32.c' || echo '$(srcdir)/'`hash_32.c
 
-librrd_th_la-rrd_getopt.lo: rrd_getopt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_getopt.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_getopt.Tpo -c -o librrd_th_la-rrd_getopt.lo `test -f 'rrd_getopt.c' || echo '$(srcdir)/'`rrd_getopt.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_getopt.Tpo $(DEPDIR)/librrd_th_la-rrd_getopt.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_getopt.c' object='librrd_th_la-rrd_getopt.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_parsetime.lo: rrd_parsetime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_parsetime.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_parsetime.Tpo -c -o librrdupd_la-rrd_parsetime.lo `test -f 'rrd_parsetime.c' || echo '$(srcdir)/'`rrd_parsetime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_parsetime.Tpo $(DEPDIR)/librrdupd_la-rrd_parsetime.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_parsetime.c' object='librrdupd_la-rrd_parsetime.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_getopt.lo `test -f 'rrd_getopt.c' || echo '$(srcdir)/'`rrd_getopt.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_parsetime.lo `test -f 'rrd_parsetime.c' || echo '$(srcdir)/'`rrd_parsetime.c
 
-librrd_th_la-rrd_getopt1.lo: rrd_getopt1.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_getopt1.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_getopt1.Tpo -c -o librrd_th_la-rrd_getopt1.lo `test -f 'rrd_getopt1.c' || echo '$(srcdir)/'`rrd_getopt1.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_getopt1.Tpo $(DEPDIR)/librrd_th_la-rrd_getopt1.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_getopt1.c' object='librrd_th_la-rrd_getopt1.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_hw.lo: rrd_hw.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_hw.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_hw.Tpo -c -o librrdupd_la-rrd_hw.lo `test -f 'rrd_hw.c' || echo '$(srcdir)/'`rrd_hw.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_hw.Tpo $(DEPDIR)/librrdupd_la-rrd_hw.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw.c' object='librrdupd_la-rrd_hw.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_getopt1.lo `test -f 'rrd_getopt1.c' || echo '$(srcdir)/'`rrd_getopt1.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_hw.lo `test -f 'rrd_hw.c' || echo '$(srcdir)/'`rrd_hw.c
 
-librrd_th_la-rrd_version.lo: rrd_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_version.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_version.Tpo -c -o librrd_th_la-rrd_version.lo `test -f 'rrd_version.c' || echo '$(srcdir)/'`rrd_version.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_version.Tpo $(DEPDIR)/librrd_th_la-rrd_version.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_version.c' object='librrd_th_la-rrd_version.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_hw_math.lo: rrd_hw_math.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_hw_math.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_hw_math.Tpo -c -o librrdupd_la-rrd_hw_math.lo `test -f 'rrd_hw_math.c' || echo '$(srcdir)/'`rrd_hw_math.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_hw_math.Tpo $(DEPDIR)/librrdupd_la-rrd_hw_math.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw_math.c' object='librrdupd_la-rrd_hw_math.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_version.lo `test -f 'rrd_version.c' || echo '$(srcdir)/'`rrd_version.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_hw_math.lo `test -f 'rrd_hw_math.c' || echo '$(srcdir)/'`rrd_hw_math.c
 
-librrd_th_la-rrd_last.lo: rrd_last.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_last.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_last.Tpo -c -o librrd_th_la-rrd_last.lo `test -f 'rrd_last.c' || echo '$(srcdir)/'`rrd_last.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_last.Tpo $(DEPDIR)/librrd_th_la-rrd_last.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_last.c' object='librrd_th_la-rrd_last.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_hw_update.lo: rrd_hw_update.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_hw_update.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_hw_update.Tpo -c -o librrdupd_la-rrd_hw_update.lo `test -f 'rrd_hw_update.c' || echo '$(srcdir)/'`rrd_hw_update.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_hw_update.Tpo $(DEPDIR)/librrdupd_la-rrd_hw_update.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_hw_update.c' object='librrdupd_la-rrd_hw_update.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_last.lo `test -f 'rrd_last.c' || echo '$(srcdir)/'`rrd_last.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_hw_update.lo `test -f 'rrd_hw_update.c' || echo '$(srcdir)/'`rrd_hw_update.c
 
-librrd_th_la-rrd_lastupdate.lo: rrd_lastupdate.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_lastupdate.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_lastupdate.Tpo -c -o librrd_th_la-rrd_lastupdate.lo `test -f 'rrd_lastupdate.c' || echo '$(srcdir)/'`rrd_lastupdate.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_lastupdate.Tpo $(DEPDIR)/librrd_th_la-rrd_lastupdate.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_lastupdate.c' object='librrd_th_la-rrd_lastupdate.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_diff.lo: rrd_diff.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_diff.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_diff.Tpo -c -o librrdupd_la-rrd_diff.lo `test -f 'rrd_diff.c' || echo '$(srcdir)/'`rrd_diff.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_diff.Tpo $(DEPDIR)/librrdupd_la-rrd_diff.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_diff.c' object='librrdupd_la-rrd_diff.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_lastupdate.lo `test -f 'rrd_lastupdate.c' || echo '$(srcdir)/'`rrd_lastupdate.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_diff.lo `test -f 'rrd_diff.c' || echo '$(srcdir)/'`rrd_diff.c
 
-librrd_th_la-rrd_first.lo: rrd_first.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_first.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_first.Tpo -c -o librrd_th_la-rrd_first.lo `test -f 'rrd_first.c' || echo '$(srcdir)/'`rrd_first.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_first.Tpo $(DEPDIR)/librrd_th_la-rrd_first.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_first.c' object='librrd_th_la-rrd_first.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_format.lo: rrd_format.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_format.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_format.Tpo -c -o librrdupd_la-rrd_format.lo `test -f 'rrd_format.c' || echo '$(srcdir)/'`rrd_format.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_format.Tpo $(DEPDIR)/librrdupd_la-rrd_format.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_format.c' object='librrdupd_la-rrd_format.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_first.lo `test -f 'rrd_first.c' || echo '$(srcdir)/'`rrd_first.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_format.lo `test -f 'rrd_format.c' || echo '$(srcdir)/'`rrd_format.c
 
-librrd_th_la-rrd_dump.lo: rrd_dump.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_dump.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_dump.Tpo -c -o librrd_th_la-rrd_dump.lo `test -f 'rrd_dump.c' || echo '$(srcdir)/'`rrd_dump.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_dump.Tpo $(DEPDIR)/librrd_th_la-rrd_dump.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_dump.c' object='librrd_th_la-rrd_dump.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_info.lo: rrd_info.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_info.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_info.Tpo -c -o librrdupd_la-rrd_info.lo `test -f 'rrd_info.c' || echo '$(srcdir)/'`rrd_info.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_info.Tpo $(DEPDIR)/librrdupd_la-rrd_info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_info.c' object='librrdupd_la-rrd_info.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_dump.lo `test -f 'rrd_dump.c' || echo '$(srcdir)/'`rrd_dump.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_info.lo `test -f 'rrd_info.c' || echo '$(srcdir)/'`rrd_info.c
 
-librrd_th_la-rrd_flushcached.lo: rrd_flushcached.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_flushcached.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_flushcached.Tpo -c -o librrd_th_la-rrd_flushcached.lo `test -f 'rrd_flushcached.c' || echo '$(srcdir)/'`rrd_flushcached.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_flushcached.Tpo $(DEPDIR)/librrd_th_la-rrd_flushcached.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_flushcached.c' object='librrd_th_la-rrd_flushcached.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_error.lo: rrd_error.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_error.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_error.Tpo -c -o librrdupd_la-rrd_error.lo `test -f 'rrd_error.c' || echo '$(srcdir)/'`rrd_error.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_error.Tpo $(DEPDIR)/librrdupd_la-rrd_error.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_error.c' object='librrdupd_la-rrd_error.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_flushcached.lo `test -f 'rrd_flushcached.c' || echo '$(srcdir)/'`rrd_flushcached.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_error.lo `test -f 'rrd_error.c' || echo '$(srcdir)/'`rrd_error.c
 
-librrd_th_la-rrd_fetch.lo: rrd_fetch.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_fetch.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_fetch.Tpo -c -o librrd_th_la-rrd_fetch.lo `test -f 'rrd_fetch.c' || echo '$(srcdir)/'`rrd_fetch.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_fetch.Tpo $(DEPDIR)/librrd_th_la-rrd_fetch.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch.c' object='librrd_th_la-rrd_fetch.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_open.lo: rrd_open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_open.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_open.Tpo -c -o librrdupd_la-rrd_open.lo `test -f 'rrd_open.c' || echo '$(srcdir)/'`rrd_open.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_open.Tpo $(DEPDIR)/librrdupd_la-rrd_open.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_open.c' object='librrdupd_la-rrd_open.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_fetch.lo `test -f 'rrd_fetch.c' || echo '$(srcdir)/'`rrd_fetch.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_open.lo `test -f 'rrd_open.c' || echo '$(srcdir)/'`rrd_open.c
 
-librrd_th_la-rrd_fetch_cb.lo: rrd_fetch_cb.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_fetch_cb.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_fetch_cb.Tpo -c -o librrd_th_la-rrd_fetch_cb.lo `test -f 'rrd_fetch_cb.c' || echo '$(srcdir)/'`rrd_fetch_cb.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_fetch_cb.Tpo $(DEPDIR)/librrd_th_la-rrd_fetch_cb.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch_cb.c' object='librrd_th_la-rrd_fetch_cb.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_client.lo: rrd_client.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_client.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_client.Tpo -c -o librrdupd_la-rrd_client.lo `test -f 'rrd_client.c' || echo '$(srcdir)/'`rrd_client.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_client.Tpo $(DEPDIR)/librrdupd_la-rrd_client.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_client.c' object='librrdupd_la-rrd_client.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_fetch_cb.lo `test -f 'rrd_fetch_cb.c' || echo '$(srcdir)/'`rrd_fetch_cb.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_client.lo `test -f 'rrd_client.c' || echo '$(srcdir)/'`rrd_client.c
 
-librrd_th_la-rrd_resize.lo: rrd_resize.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_resize.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_resize.Tpo -c -o librrd_th_la-rrd_resize.lo `test -f 'rrd_resize.c' || echo '$(srcdir)/'`rrd_resize.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_resize.Tpo $(DEPDIR)/librrd_th_la-rrd_resize.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_resize.c' object='librrd_th_la-rrd_resize.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_nan_inf.lo: rrd_nan_inf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_nan_inf.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_nan_inf.Tpo -c -o librrdupd_la-rrd_nan_inf.lo `test -f 'rrd_nan_inf.c' || echo '$(srcdir)/'`rrd_nan_inf.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_nan_inf.Tpo $(DEPDIR)/librrdupd_la-rrd_nan_inf.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_nan_inf.c' object='librrdupd_la-rrd_nan_inf.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_resize.lo `test -f 'rrd_resize.c' || echo '$(srcdir)/'`rrd_resize.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_nan_inf.lo `test -f 'rrd_nan_inf.c' || echo '$(srcdir)/'`rrd_nan_inf.c
 
-librrd_th_la-rrd_tune.lo: rrd_tune.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_tune.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_tune.Tpo -c -o librrd_th_la-rrd_tune.lo `test -f 'rrd_tune.c' || echo '$(srcdir)/'`rrd_tune.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_tune.Tpo $(DEPDIR)/librrd_th_la-rrd_tune.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_tune.c' object='librrd_th_la-rrd_tune.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_rpncalc.lo: rrd_rpncalc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_rpncalc.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_rpncalc.Tpo -c -o librrdupd_la-rrd_rpncalc.lo `test -f 'rrd_rpncalc.c' || echo '$(srcdir)/'`rrd_rpncalc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_rpncalc.Tpo $(DEPDIR)/librrdupd_la-rrd_rpncalc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_rpncalc.c' object='librrdupd_la-rrd_rpncalc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_tune.lo `test -f 'rrd_tune.c' || echo '$(srcdir)/'`rrd_tune.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_rpncalc.lo `test -f 'rrd_rpncalc.c' || echo '$(srcdir)/'`rrd_rpncalc.c
 
-librrd_th_la-rrd_graph.lo: rrd_graph.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_graph.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_graph.Tpo -c -o librrd_th_la-rrd_graph.lo `test -f 'rrd_graph.c' || echo '$(srcdir)/'`rrd_graph.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_graph.Tpo $(DEPDIR)/librrd_th_la-rrd_graph.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_graph.c' object='librrd_th_la-rrd_graph.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_utils.lo: rrd_utils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_utils.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_utils.Tpo -c -o librrdupd_la-rrd_utils.lo `test -f 'rrd_utils.c' || echo '$(srcdir)/'`rrd_utils.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_utils.Tpo $(DEPDIR)/librrdupd_la-rrd_utils.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_utils.c' object='librrdupd_la-rrd_utils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_graph.lo `test -f 'rrd_graph.c' || echo '$(srcdir)/'`rrd_graph.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_utils.lo `test -f 'rrd_utils.c' || echo '$(srcdir)/'`rrd_utils.c
 
-librrd_th_la-rrd_graph_helper.lo: rrd_graph_helper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_graph_helper.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_graph_helper.Tpo -c -o librrd_th_la-rrd_graph_helper.lo `test -f 'rrd_graph_helper.c' || echo '$(srcdir)/'`rrd_graph_helper.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_graph_helper.Tpo $(DEPDIR)/librrd_th_la-rrd_graph_helper.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_graph_helper.c' object='librrd_th_la-rrd_graph_helper.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_snprintf.lo: rrd_snprintf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_snprintf.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_snprintf.Tpo -c -o librrdupd_la-rrd_snprintf.lo `test -f 'rrd_snprintf.c' || echo '$(srcdir)/'`rrd_snprintf.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_snprintf.Tpo $(DEPDIR)/librrdupd_la-rrd_snprintf.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_snprintf.c' object='librrdupd_la-rrd_snprintf.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_graph_helper.lo `test -f 'rrd_graph_helper.c' || echo '$(srcdir)/'`rrd_graph_helper.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_snprintf.lo `test -f 'rrd_snprintf.c' || echo '$(srcdir)/'`rrd_snprintf.c
 
-librrd_th_la-rrd_xport.lo: rrd_xport.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_xport.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_xport.Tpo -c -o librrd_th_la-rrd_xport.lo `test -f 'rrd_xport.c' || echo '$(srcdir)/'`rrd_xport.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_xport.Tpo $(DEPDIR)/librrd_th_la-rrd_xport.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_xport.c' object='librrd_th_la-rrd_xport.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_update.lo: rrd_update.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_update.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_update.Tpo -c -o librrdupd_la-rrd_update.lo `test -f 'rrd_update.c' || echo '$(srcdir)/'`rrd_update.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_update.Tpo $(DEPDIR)/librrdupd_la-rrd_update.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_update.c' object='librrdupd_la-rrd_update.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_xport.lo `test -f 'rrd_xport.c' || echo '$(srcdir)/'`rrd_xport.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_update.lo `test -f 'rrd_update.c' || echo '$(srcdir)/'`rrd_update.c
 
-librrd_th_la-optparse.lo: optparse.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-optparse.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-optparse.Tpo -c -o librrd_th_la-optparse.lo `test -f 'optparse.c' || echo '$(srcdir)/'`optparse.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-optparse.Tpo $(DEPDIR)/librrd_th_la-optparse.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='optparse.c' object='librrd_th_la-optparse.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_modify.lo: rrd_modify.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_modify.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_modify.Tpo -c -o librrdupd_la-rrd_modify.lo `test -f 'rrd_modify.c' || echo '$(srcdir)/'`rrd_modify.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_modify.Tpo $(DEPDIR)/librrdupd_la-rrd_modify.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_modify.c' object='librrdupd_la-rrd_modify.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-optparse.lo `test -f 'optparse.c' || echo '$(srcdir)/'`optparse.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_modify.lo `test -f 'rrd_modify.c' || echo '$(srcdir)/'`rrd_modify.c
 
-librrd_th_la-rrd_gfx.lo: rrd_gfx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_gfx.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_gfx.Tpo -c -o librrd_th_la-rrd_gfx.lo `test -f 'rrd_gfx.c' || echo '$(srcdir)/'`rrd_gfx.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_gfx.Tpo $(DEPDIR)/librrd_th_la-rrd_gfx.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_gfx.c' object='librrd_th_la-rrd_gfx.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-quicksort.lo: quicksort.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-quicksort.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-quicksort.Tpo -c -o librrdupd_la-quicksort.lo `test -f 'quicksort.c' || echo '$(srcdir)/'`quicksort.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-quicksort.Tpo $(DEPDIR)/librrdupd_la-quicksort.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='quicksort.c' object='librrdupd_la-quicksort.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_gfx.lo `test -f 'rrd_gfx.c' || echo '$(srcdir)/'`rrd_gfx.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-quicksort.lo `test -f 'quicksort.c' || echo '$(srcdir)/'`quicksort.c
 
-librrd_th_la-pngsize.lo: pngsize.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-pngsize.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-pngsize.Tpo -c -o librrd_th_la-pngsize.lo `test -f 'pngsize.c' || echo '$(srcdir)/'`pngsize.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-pngsize.Tpo $(DEPDIR)/librrd_th_la-pngsize.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pngsize.c' object='librrd_th_la-pngsize.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_thread_safe.lo: rrd_thread_safe.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_thread_safe.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_thread_safe.Tpo -c -o librrdupd_la-rrd_thread_safe.lo `test -f 'rrd_thread_safe.c' || echo '$(srcdir)/'`rrd_thread_safe.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_thread_safe.Tpo $(DEPDIR)/librrdupd_la-rrd_thread_safe.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_thread_safe.c' object='librrdupd_la-rrd_thread_safe.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-pngsize.lo `test -f 'pngsize.c' || echo '$(srcdir)/'`pngsize.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_thread_safe.lo `test -f 'rrd_thread_safe.c' || echo '$(srcdir)/'`rrd_thread_safe.c
 
-librrd_th_la-rrd_restore.lo: rrd_restore.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_restore.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_restore.Tpo -c -o librrd_th_la-rrd_restore.lo `test -f 'rrd_restore.c' || echo '$(srcdir)/'`rrd_restore.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_restore.Tpo $(DEPDIR)/librrd_th_la-rrd_restore.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_restore.c' object='librrd_th_la-rrd_restore.lo' libtool=yes @AMDEPBACKSLASH@
+librrdupd_la-rrd_rados.lo: rrd_rados.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-rrd_rados.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-rrd_rados.Tpo -c -o librrdupd_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrdupd_la-rrd_rados.Tpo $(DEPDIR)/librrdupd_la-rrd_rados.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_rados.c' object='librrdupd_la-rrd_rados.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_restore.lo `test -f 'rrd_restore.c' || echo '$(srcdir)/'`rrd_restore.c
-
-librrd_th_la-rrd_fetch_libdbi.lo: rrd_fetch_libdbi.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_fetch_libdbi.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_fetch_libdbi.Tpo -c -o librrd_th_la-rrd_fetch_libdbi.lo `test -f 'rrd_fetch_libdbi.c' || echo '$(srcdir)/'`rrd_fetch_libdbi.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_fetch_libdbi.Tpo $(DEPDIR)/librrd_th_la-rrd_fetch_libdbi.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_fetch_libdbi.c' object='librrd_th_la-rrd_fetch_libdbi.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_fetch_libdbi.lo `test -f 'rrd_fetch_libdbi.c' || echo '$(srcdir)/'`rrd_fetch_libdbi.c
-
-librrd_th_la-rrd_thread_safe.lo: rrd_thread_safe.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -MT librrd_th_la-rrd_thread_safe.lo -MD -MP -MF $(DEPDIR)/librrd_th_la-rrd_thread_safe.Tpo -c -o librrd_th_la-rrd_thread_safe.lo `test -f 'rrd_thread_safe.c' || echo '$(srcdir)/'`rrd_thread_safe.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_th_la-rrd_thread_safe.Tpo $(DEPDIR)/librrd_th_la-rrd_thread_safe.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rrd_thread_safe.c' object='librrd_th_la-rrd_thread_safe.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_th_la_CFLAGS) $(CFLAGS) -c -o librrd_th_la-rrd_thread_safe.lo `test -f 'rrd_thread_safe.c' || echo '$(srcdir)/'`rrd_thread_safe.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -c -o librrdupd_la-rrd_rados.lo `test -f 'rrd_rados.c' || echo '$(srcdir)/'`rrd_rados.c
 
 rrdcached-rrd_daemon.o: rrd_daemon.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rrdcached_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rrdcached-rrd_daemon.o -MD -MP -MF $(DEPDIR)/rrdcached-rrd_daemon.Tpo -c -o rrdcached-rrd_daemon.o `test -f 'rrd_daemon.c' || echo '$(srcdir)/'`rrd_daemon.c
@@ -1465,14 +1357,11 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 	uninstall-pkgconfigDATA
 
 
-librrd.sym: librrd.sym.in
-	$(AM_V_GEN)grep -v LIBC_HAS_GETOPT_LONG librrd.sym.in >$@
-
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && $(LN_S) rrdupdate rrdcreate && $(LN_S) rrdupdate rrdinfo) || true
 
 distclean-local:
-	-rm -rf rrd_config.h librrd.sym
+	-rm -rf rrd_config.h
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
