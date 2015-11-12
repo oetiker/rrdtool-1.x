@@ -69,8 +69,17 @@ rrd_write
 rrd_xport
 rrdc_connect
 rrdc_is_connected
+rrdc_is_any_connected
 rrdc_disconnect
+rrdc_info
+rrdc_last
+rrdc_first
+rrdc_create
+rrdc_create_r2
 rrdc_flush
+rrdc_forget
+rrdc_flush_if_daemon
+rrdc_fetch
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update

@@ -249,6 +249,157 @@ returns a text diagnostic suitable for use in user error messages.
 
 =back
 
+=head1 CLIENT FUNCTIONS
+
+The following functions are used to connected to an rrdcached instance,
+either via a unix or inet address, and create, update, or gather statistics
+about a specified RRD database file.
+
+All of the following functions are specified in the C<rrd_client.h>
+header file.
+
+=over 4
+
+=item B<rrdc_connect(const char *daemon_addr>
+
+Connect to a running rrdcached instance, specified via C<daemon_addr>.
+
+=item B<rrdc_is_connected(const char *daemon_addr)>
+
+Return a boolean int to determine if the client is connected to the
+rrdcache daemon specified by the C<daemon_addr> parameter.
+
+=item B<rrdc_is_any_connected>
+
+Return a boolean int if any daemon connections are connected.
+
+=item B<rrdc_disconnect>
+
+Disconnect gracefully from all present daemon connections.
+
+=item B<rrdc_update(const char *filename, int values_num, const char * const *values)>
+
+Update the RRD C<filename> via the rrdcached. Where C<values_num>
+is the number of values to update and C<values> are the new values to add.
+
+=item B<rrdc_info(const char *filename)>
+
+Grab rrd info of the RRD C<filename> from the connected cache daemon.
+This function returns an rrd_info_t structure of the following format:
+
+    typedef struct rrd_blob_t {
+        unsigned long size; /* size of the blob */
+        unsigned char *ptr; /* pointer */
+    } rrd_blob_t;
+
+    typedef enum rrd_info_type { RD_I_VAL = 0,
+        RD_I_CNT,
+        RD_I_STR,
+        RD_I_INT,
+        RD_I_BLO
+    } rrd_info_type_t;
+
+    typedef union rrd_infoval {
+        unsigned long u_cnt;
+        rrd_value_t u_val;
+        char     *u_str;
+        int       u_int;
+        rrd_blob_t u_blo;
+    } rrd_infoval_t;
+
+    typedef struct rrd_info_t {
+        char     *key;
+        rrd_info_type_t type;
+        rrd_infoval_t value;
+        struct rrd_info_t *next;
+    } rrd_info_t;
+
+=item B<rrdc_last(const char *filename)>
+
+Grab the unix epoch of the last time RRD C<filename> was updated.
+
+=item B<rrdc_first(const char *filename, int rraindex)>
+
+Get the first value of the first sample of the RRD C<filename>,
+of the C<rraindex> RRA (Round Robin Archive) index number.
+The RRA index number can be determined by pulling the rrd_info_t
+off the RRD.
+
+=item B<rrdc_create(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, int argc, const char **argv)>
+
+Create RRD database of path C<filename>.
+The RRD will have a step size of C<pfp_step>, the unix epoch timestamp to
+start collecting data from. The number of data sources and RRAs C<argc> and
+the definitions of the data sources and RRAs C<argv>. Lastly weather or
+not to overwrite an existing RRD if one is found with the same
+filename; C<no_overwrite>.
+
+=item B<rrdc_create_r2(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
+
+Create and RRD database in the daemon. B<rrdc_create_r2> has the same
+parameters as B<rrdc_create> with two added parameters of; C<sources>
+and C<template>.
+
+where C<template> is the file path to a RRD file template, with, the
+form defined in B<rrdcreate>(1),
+
+The C<sources> parameter defines series of file paths with data defined,
+to prefil the RRD with. See B<rrdcreate>(1) for more dettails.
+
+=item B<rrdc_flush(const char *filename)>
+
+flush the currently RRD cached in the daemon specified via C<filename>.
+
+=item B<rrdc_forget(const char *filename)>
+
+Drop the cached data for the RRD file specified via C<filename>.
+
+=item B<rrdc_flush_if_daemon(const char *daemon_addr, const char *filename)>
+
+Flush the specified RRD given by C<filename> only if the daemon
+C<daemon_addr> is up and connected.
+
+=item B<rrdc_fetch(const char *filename, const char *cf, time_t *ret_start, time_t *ret_end, unsigned long *ret_step, unsigned long *ret_ds_num, char ***ret_ds_names, rrd_value_t **ret_data)>
+
+Perform a fetch operation on the specified RRD Database given be C<filename>,
+where C<cf> is the consolidation function, C<ret_start> is the start time
+given by unix epoch, C<ret_end> is the endtime. C<ret_step> is the step size
+in seconds, C<ret_ds_num> the number of data sources in the RRD, C<ret_ds_names>
+the names of the data sources, and a pointer to an rrd_value_t object to shlep the
+data.
+
+=item B<rrdc_stats_get(rrdc_stats_t **ret_stats)>
+
+Get stats from the connected daemon, via a linked list of the following structure:
+
+    struct rrdc_stats_s {
+        const char *name;
+        uint16_t type;
+        #define RRDC_STATS_TYPE_GAUGE   0x0001
+        #define RRDC_STATS_TYPE_COUNTER 0x0002
+        uint16_t flags;
+        union {
+            uint64_t counter;
+            double   gauge;
+        } value;
+        struct rrdc_stats_s *next;
+    };
+    typedef struct rrdc_stats_s rrdc_stats_t;
+
+=item B<rrdc_stats_free(rrdc_stats_t *ret_stats)>
+
+Free the stats struct allocated via B<rrdc_stats_get>.
+
+=back
+
+=head2 SEE ALSO
+
+=over
+
+B<rrcached>(1) B<rrdfetch>(1) B<rrdinfo>(1) B<rrdlast>(1) B<rrdcreate>(1) B<rrdupdate>(1) B<rrdlast>(1)
+
+=back
+
 =head1 AUTHOR
 
 RRD Contributors <rrd-developers@lists.oetiker.ch>
