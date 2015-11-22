@@ -353,7 +353,7 @@ B<NEWDAY>,B<NEWWEEK>,B<NEWMONTH>,B<NEWYEAR>
 These three operators will return 1.0 whenever a step is the first of the given periode. The periodes are determined
 according to the local timezone AND the C<LC_TIME> settings.
 
-  CDEF:mtotal=rate,STEPWIDTH,*,NEWMONTH,PREV,0,IF,ADDNAN
+  CDEF:mtotal=rate,STEPWIDTH,*,NEWMONTH,0,PREV,IF,ADDNAN
 
 B<TIME>
 
