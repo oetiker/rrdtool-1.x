@@ -5,7 +5,11 @@ RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
 
-SUBDIRS = po src doc bindings tests
+SUBDIRS = po src bindings tests
+
+if BUILD_DOCS
+SUBDIRS += doc
+endif
 
 if BUILD_EXAMPLES
 SUBDIRS += examples

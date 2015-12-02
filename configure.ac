@@ -100,6 +100,9 @@ AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE,
 AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
  [Vertical label angle: -90.0 (default) or 90.0])
 
+AC_ARG_ENABLE(docs,AS_HELP_STRING([--disable-docs],[disable building documentation]),
+[],[enable_docs=yes])
+
 AC_ARG_ENABLE(examples,AS_HELP_STRING([--disable-examples],[disable building of examples]),
 [],[enable_examples=yes])
 
@@ -115,6 +118,7 @@ AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_gr
 AC_ARG_ENABLE(rrd_restore,AS_HELP_STRING([--disable-rrd_restore],[disable rrd_restore XML import functions]),
 [],[enable_rrd_restore=yes])
 
+AM_CONDITIONAL(BUILD_DOCS,[test $enable_docs != no])
 AM_CONDITIONAL(BUILD_EXAMPLES,[test $enable_examples != no])
 AM_CONDITIONAL(BUILD_RRDCGI,[test $enable_rrdcgi != no])
 AM_CONDITIONAL(BUILD_RRDCACHED,[test $enable_rrdcached != no])
@@ -945,6 +949,8 @@ fi
 
 AC_SUBST(COMP_PYTHON)
 
+if test $enable_docs != no; then
+
 dnl Check for nroff
 AC_ARG_VAR(NROFF, [path to the local nroff version])
 AC_PATH_PROGS(NROFF, [gnroff nroff])
@@ -960,6 +966,8 @@ fi
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
+
+fi
 
 # systemd check
 PKG_PROG_PKG_CONFIG
