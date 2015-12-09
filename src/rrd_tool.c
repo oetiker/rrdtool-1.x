@@ -465,14 +465,11 @@ int main(
 #endif
         RemoteMode = 1;
         if ((argc == 3) && strcmp("", argv[2])) {
-
-            if (
+            int test_euid = 0;            
 #ifdef HAVE_GETEUID
-                   geteuid()
-#else
-                   1
+            test_euid = geteuid() == 0;
 #endif
-                   == 0) {
+            if (test_euid) {
 
 #ifdef HAVE_CHROOT
                 if (chroot(argv[2]) != 0){
