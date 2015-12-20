@@ -808,7 +808,8 @@ ssize_t rrd_write(
         rrd_set_error("attempting to write beyond end of file (%ld + %ld > %ld)",rrd_file->pos, count, old_size);
         return -1;
     }
-    memcpy(rrd_simple_file->file_start + rrd_file->pos, buf, count);
+    /* can't use memcpy since the areas overlap when tuning */
+    memmove(rrd_simple_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
     return count;       /* mimmic write() semantics */
 #else
