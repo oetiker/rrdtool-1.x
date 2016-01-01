@@ -132,9 +132,9 @@ To illustrate this here a command to create a graph that contains the actual val
   to avoid querying the same SQL several times when minimum, average and maximum are needed for graphing...
 
 * for DB efficiency you should think of having 2 tables, one containing historic values and the other containing the latest data.
-  This second table should be kept small to allow for the least ammount of blocking SQL statements.
-  Whith mysql you can even use myisam table-type for the first and InnoDB for the second. 
-  This is especially interresting as with tables with +100M rows myisam is much smaller then InnoDB.
+  This second table should be kept small to allow for the least amount of blocking SQL statements.
+  With mysql you can even use myisam table-type for the first and InnoDB for the second. 
+  This is especially interesting as with tables with +100M rows myisam is much smaller then InnoDB.
 
 * To debug the SQL statements set the environment variable RRDDEBUGSQL and the actual SQL statements and the timing is printed to stderr.
 
@@ -161,7 +161,7 @@ You can find more information on this libdbi-users mailing list thread : http://
 * at least version 0.8.1 of libdbi exhibits a bug with BINARY fields
   (shorttext,text,mediumtext,longtext and possibly also BINARY and BLOB fields), 
   that can result in coredumps of rrdtool. 
-  The tool will tell you on stderr if this occures, so that you know what may be the reason.
+  The tool will tell you on stderr if this occurs, so that you know what may be the reason.
   If you are not experiencing these coredumps, then set the environment variable RRD_NO_LIBDBI_BUG_WARNING, 
   and then the message will not get shown.
 

@@ -1,6 +1,6 @@
 /* define a macro to wrap variables that would
    otherwise generate UNUSED variable warnings
-   Note that GCC's attribute unused only supresses the warning, so
+   Note that GCC's attribute unused only suppresses the warning, so
    it is perfectly safe to declare something unused although it is not.
 */
 

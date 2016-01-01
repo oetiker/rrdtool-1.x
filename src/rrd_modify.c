@@ -319,7 +319,7 @@ done:
 }
 
 
-/* add datasources as specified in the addDS array of DS specs as deocumented
+/* add datasources as specified in the addDS array of DS specs as documented
     in rrdcreate(1) 
 
     Returns the number of DSs added or -1 on error
@@ -477,7 +477,7 @@ static int populate_row(const rrd_t *in_rrd,
 
 	    /* note: cand_row_end is usually after cand_row_start,
 	       unless we have a wrap over.... so we turn the
-	       interation over the rows into one based on the number
+	       iteration over the rows into one based on the number
 	       of rows starting at cand_row_end. All this dance should
 	       be in preparation for unusual cases where we have
 	       candidates and new RRAs that have pdp counts that are
@@ -890,7 +890,7 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
 
        This is the reason why: 
         - we use write_file and 
-        - why we reset cur_row in RRAs and reorder data to be cronological
+        - why we reset cur_row in RRAs and reorder data to be chronological
     */
     
     /* prepare space for output data */

@@ -1352,7 +1352,7 @@ again:
 	 * C99 says: "If the `0' and `-' flags both appear, the `0' flag is
 	 * ignored." (7.19.6.1, 6)
 	 */
-	if (flags & PRINT_F_MINUS)	/* Left justifty. */
+	if (flags & PRINT_F_MINUS)	/* Left justify. */
 		padlen = -padlen;
 	else if (flags & PRINT_F_ZERO && padlen > 0) {
 		if (sign != 0) {	/* Sign. */

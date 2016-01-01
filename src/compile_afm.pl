@@ -7,7 +7,7 @@ use strict;
 # http://partners.adobe.com/asn/developer/type/glyphlist.txt
 # This URL is from this page:
 # http://partners.adobe.com/asn/developer/type/unicodegn.html
-# which is refered from
+# which is referred from
 # http://partners.adobe.com/asn/developer/technotes/fonts.html
 
 my $onlyHelvetica = 0;

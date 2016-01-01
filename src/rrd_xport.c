@@ -453,7 +453,7 @@ int rrd_graph_xport(image_desc_t *im) {
     free(legend_v);
     /* free data */
     free(data);
-    /* free the bufer */
+    /* free the buffer */
     if (buffer.data) {free(buffer.data);}
     /* close the file */
     if (buffer.file) {fclose(buffer.file);}
@@ -476,7 +476,7 @@ int rrd_graph_xport(image_desc_t *im) {
 }
 
 int addToBuffer(stringbuffer_t * sb,char* data,size_t len) {
-  /* if len <= 0  we assume a string and calculate the length ourself */
+  /* if len <= 0  we assume a string and calculate the length ourselves */
   if (len<=0) { len=strlen(data); }
   /* if we have got a file, then take the shortcut */
   if (sb->file) {
@@ -885,7 +885,7 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
       /* PRINT and GPRINT can now print VDEF generated values.
        * There's no need to do any calculations on them as these
        * calculations were already made.
-       * we do not support the depreciated version here
+       * we do not support the deprecated version here
        */
       printval=DNAN;
       /* decide to which buffer we print to*/

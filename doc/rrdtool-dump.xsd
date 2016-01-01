@@ -22,9 +22,9 @@
 	<!-- Start of complexTypes -->
 	<xsd:complexType name="RrdType">
 		<xsd:sequence>
-			<!-- RRD file version/RRD Archiv version number-->
+			<!-- RRD file version/RRD Archive version number-->
 			<xsd:element name="version" type="xsd:nonNegativeInteger"/>
-			<!-- The primary RRD Archiv step in seconds.-->
+			<!-- The primary RRD Archive step in seconds.-->
 			<xsd:element name="step" type="xsd:nonNegativeInteger"/>
 			<!-- The unixtime from the last rrd_update.-->
 			<xsd:element name="lastupdate" type="xsd:nonNegativeInteger"/>

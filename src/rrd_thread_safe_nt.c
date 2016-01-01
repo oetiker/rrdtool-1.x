@@ -21,7 +21,7 @@ static DWORD context_key;
 static CRITICAL_SECTION CriticalSection;
 
 
-/* Once-only initialisation of the key */
+/* Once-only initialization of the key */
 static DWORD context_key_once = 0;
 
 

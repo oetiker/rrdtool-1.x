@@ -1028,7 +1028,7 @@ int data_fetch(
             im->gdes[i].data_first = 1;
 
             /* must reduce to at least im->step
-               otherwhise we end up with more data than we can handle in the
+               otherwise we end up with more data than we can handle in the
                chart and visibility of data will be random */
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
@@ -1161,7 +1161,7 @@ int data_calc(
             /* Find the variables in the expression.
              * - VDEF variables are substituted by their values
              *   and the opcode is changed into OP_NUMBER.
-             * - CDEF variables are analized for their step size,
+             * - CDEF variables are analyzed for their step size,
              *   the lowest common denominator of all the step
              *   sizes of the data sources involved is calculated
              *   and the resulting number is the step size for the
@@ -2117,7 +2117,7 @@ int leg_place(
             }
 
             leg_cc = strlen(im->gdes[i].legend);
-            /* is there a controle code at the end of the legend string ? */
+            /* is there a control code at the end of the legend string ? */
             if (leg_cc >= 2 && im->gdes[i].legend[leg_cc - 2] == '\\') {
                 prt_fctn = im->gdes[i].legend[leg_cc - 1];
                 leg_cc -= 2;
@@ -2148,7 +2148,7 @@ int leg_place(
                 prt_fctn = '\0';
             }
 
-            /* remove exess space from the end of the legend for \g */
+            /* remove excess space from the end of the legend for \g */
             while (prt_fctn == 'g' &&
                    leg_cc > 0 && im->gdes[i].legend[leg_cc - 1] == ' ') {
                 leg_cc--;
@@ -2296,7 +2296,7 @@ int calc_horizontal_grid(
         return 0;
     }
 
-    /* find grid spaceing */
+    /* find grid spacing */
     pixel = 1;
     if (isnan(im->ygridstep)) {
         if (im->extra_flags & ALTYGRID) {
@@ -2606,7 +2606,7 @@ double frexp10(
 }
 
 
-/* logaritmic horizontal grid */
+/* logarithmic horizontal grid */
 int horizontal_log_grid(
     image_desc_t
     *im)
@@ -2764,7 +2764,7 @@ int horizontal_log_grid(
         /* minor grid */
         if (mid < 4 && exfrac == 1) {
             /* find first and last minor line behind current major line
-             * i is the first line and j tha last */
+             * i is the first line and j the last */
             if (flab == 0) {
                 min_exp = val_exp - 1;
                 for (i = 1; yloglab[mid][i] < 10.0; i++);
@@ -2831,7 +2831,7 @@ int horizontal_log_grid(
     /* draw minor lines after highest major line */
     if (mid < 4 && exfrac == 1) {
         /* find first and last minor line below current major line
-         * i is the first line and j tha last */
+         * i is the first line and j the last */
         if (flab == 0) {
             min_exp = val_exp - 1;
             for (i = 1; yloglab[mid][i] < 10.0; i++);
@@ -3058,7 +3058,7 @@ void axis_paint(
              im->yorigin - im->ysize -
              4, MGRIDWIDTH, im->graph_col[GRC_AXIS]);
     /* arrow for X and Y axis direction */
-    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 3, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin,  /* horyzontal */
+    gfx_new_area(im, im->xorigin + im->xsize + 2, im->yorigin - 3, im->xorigin + im->xsize + 2, im->yorigin + 3, im->xorigin + im->xsize + 7, im->yorigin,  /* horizontal */
                  im->graph_col[GRC_ARROW]);
     gfx_close_path(im);
     gfx_new_area(im, im->xorigin - 3, im->yorigin - im->ysize - 2, im->xorigin + 3, im->yorigin - im->ysize - 2, im->xorigin, im->yorigin - im->ysize - 7,  /* vertical */
@@ -3617,7 +3617,7 @@ int graph_size_location(
     /* In case of putting the legend in west or east position the first
      ** legend calculation might lead to wrong positions if some items
      ** are not aligned on the left hand side (e.g. centered) as the
-     ** legendwidth wight have been increased after the item was placed.
+     ** legendwidth might have been increased after the item was placed.
      ** In this case the positions have to be recalculated.
      */
     if (!(im->extra_flags & NOLEGEND)) {
@@ -4385,7 +4385,7 @@ int graph_cairo_finish (image_desc_t *im)
 int graph_paint_xy(
                   image_desc_t UNUSED(*im), int UNUSED(lazy), int UNUSED(cnt))
 {
-  rrd_set_error("XY diagramm not implemented");
+  rrd_set_error("XY diagram not implemented");
   return -1;
 }
 
@@ -5348,7 +5348,7 @@ void rrd_graph_options(
             }
             break;
         case 'B':
-            /* not supported curently */
+            /* not supported currently */
             break;
         case 'W':
             im->watermark=strdup(poptions->optarg);
@@ -5961,7 +5961,7 @@ void time_clean(
       POSIX:2001 tells
       "A conversion specification consists of a '%' character, possibly followed by an E or O modifier, and a terminating conversion specifier character that determines the conversion specification's behavior."
 
-      POSIX:2008 introduce more complexe behavior that are not handled here.
+      POSIX:2008 introduce more complex behavior that are not handled here.
 
       According to this, this code will replace:
       - % followed by @ by a %@

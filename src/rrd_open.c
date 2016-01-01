@@ -46,7 +46,7 @@
 #define DEBUG 1
 /* do not calculate exact madvise hints but assume 1 page for headers and
  * set DONTNEED for the rest, which is assumed to be data */
-/* Avoid calling madvise on areas that were already hinted. May be benefical if
+/* Avoid calling madvise on areas that were already hinted. May be beneficial if
  * your syscalls are very slow */
 
 #ifdef HAVE_MMAP
@@ -128,9 +128,9 @@
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
  * before returning an error. Do not call rrd_close upon failure of rrd_open.
- * If creating a new file, the parameter rrd must be initialised with
+ * If creating a new file, the parameter rrd must be initialized with
  * details of the file content.
- * If opening an existing file, then use rrd must be initialised by
+ * If opening an existing file, then use rrd must be initialized by
  * rrd_init(rrd) prior to invoking rrd_open
  */
 
@@ -294,7 +294,7 @@ rrd_file_t *rrd_open(
 #if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
-       In this manner we actually save time and diskaccess (and buffer cache).
+       In this manner we actually save time and disk access (and buffer cache).
        Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */
     posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
 #endif
@@ -311,7 +311,7 @@ rrd_file_t *rrd_open(
 
 #ifdef HAVE_MMAP
 #ifndef HAVE_POSIX_FALLOCATE
-	/* force allocating the file on the underlaying filesystem to prevent any
+	/* force allocating the file on the underlying filesystem to prevent any
 	 * future bus error when the filesystem is full and attempting to write
 	 * trough the file mapping. Filling the file using memset on the file
 	 * mapping can also lead some bus error, so we use the old fashioned
@@ -765,14 +765,14 @@ ssize_t rrd_read(
         return 0;       /* EOF */
     buf = memcpy(buf, rrd_simple_file->file_start + rrd_file->pos, _cnt);
 
-    rrd_file->pos += _cnt;  /* mimmic read() semantics */
+    rrd_file->pos += _cnt;  /* mimic read() semantics */
     return _cnt;
 #else
     ssize_t   ret;
 
     ret = read(rrd_simple_file->fd, buf, count);
     if (ret > 0)
-        rrd_file->pos += ret;   /* mimmic read() semantics */
+        rrd_file->pos += ret;   /* mimic read() semantics */
     return ret;
 #endif
 }
@@ -811,7 +811,7 @@ ssize_t rrd_write(
     /* can't use memcpy since the areas overlap when tuning */
     memmove(rrd_simple_file->file_start + rrd_file->pos, buf, count);
     rrd_file->pos += count;
-    return count;       /* mimmic write() semantics */
+    return count;       /* mimic write() semantics */
 #else
     ssize_t   _sz = write(rrd_simple_file->fd, buf, count);
 

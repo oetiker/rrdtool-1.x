@@ -215,7 +215,7 @@ manually if you use the --units-length command to explicitly reserve space.
 
 [B<--left-axis-formatter> I<formatter-name>]
 
-Specify what formater to use to render axis values.
+Specify what formatter to use to render axis values.
 
 =over
 
@@ -296,7 +296,7 @@ for the right axis.
 
 [B<--right-axis-formatter> I<formatter-name>]
 
-Specify what formater to use to render axis values.
+Specify what formatter to use to render axis values.
 
 =over
 

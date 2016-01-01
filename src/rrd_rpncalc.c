@@ -599,7 +599,7 @@ short rpn_calc(
             } else {
                 /* make sure we pull the correct value from
                  * the *.data array. Adjust the pointer into
-                 * the array acordingly. Advance the ptr one
+                 * the array accordingly. Advance the ptr one
                  * row in the rra (skip over non-relevant
                  * data sources)
                  */

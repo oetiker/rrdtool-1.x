@@ -187,7 +187,7 @@ int rrd_mkdir_p(const char *pathname_unsafe, mode_t mode)
     }
 
 #ifndef _MSC_VER
-    /* the data pointedd too by dirname might change too (bsd) */
+    /* the data pointed to by dirname might change too (bsd) */
     if (NULL == (base_dir = strdup(dirname(pathname_copy)))) {
         free(pathname);
         free(pathname_copy);

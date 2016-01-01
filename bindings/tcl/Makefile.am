@@ -30,7 +30,7 @@ pkgindex_DATA = pkgIndex.tcl
 pkgindex_SCRIPTS = ifOctets.tcl
 endif
 
-# Automake doen't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
+# Automake doesn't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
 # library name. So we build and install this library `by hand'.
 #
 # We do, however, specify a lib_LIBRARIES target such that

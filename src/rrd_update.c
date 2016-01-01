@@ -403,7 +403,7 @@ err_free:
 
 /* the file-template-cache implementation */
 static GTree *rrd_file_template_cache = NULL;
-/* the neccesary functions for the gtree */
+/* the necessary functions for the gtree */
 static gint cache_compare_names (gconstpointer name1,
 				gconstpointer name2,
 				gpointer data)
@@ -605,7 +605,7 @@ static char *rrd_map_template_to_values(const char *tpl,  /* {{{ */
 			ptr++;
 	}
 
-	/* check that we do not have a missmatch */
+	/* check that we do not have a mismatch */
 	if (fields_count != fields_tpl) {
 		/* we could here more explicit,
 		 * by checking the missing fields
@@ -1684,7 +1684,7 @@ static int process_pdp_st(
     }
 
     /* if too much of the pdp_prep is unknown we dump it */
-    /* if the interval is larger thatn mrhb we get NAN */
+    /* if the interval is larger than mrhb we get NAN */
     if ((interval > mrhb) ||
         (rrd->stat_head->pdp_step / 2.0 <
          (signed) scratch[PDP_unkn_sec_cnt].u_cnt)) {
@@ -1729,7 +1729,7 @@ static int process_pdp_st(
 
     /* make pdp_prep ready for the next run */
     if (isnan(pdp_new[ds_idx])) {
-        /* this is not realy accurate if we use subsecond data arival time
+        /* this is not really accurate if we use subsecond data arrival time
            should have thought of it when going subsecond resolution ...
            sorry next format change we will have it! */
         scratch[PDP_unkn_sec_cnt].u_cnt = floor(post_int);
@@ -1791,7 +1791,7 @@ static int update_all_cdp_prep(
             /* If this is a bulk update, we need to skip ahead in the seasonal arrays
              * so that they will be correct for the next observed value; note that for
              * the bulk update itself, no update will occur to DEVSEASONAL or SEASONAL;
-             * futhermore, HWPREDICT and DEVPREDICT will be set to DNAN. */
+             * furthermore, HWPREDICT and DEVPREDICT will be set to DNAN. */
             if (rra_step_cnt[rra_idx] > 1) {
                 skip_update[rra_idx] = 1;
                 lookup_seasonal(rrd, rra_idx, rra_start, rrd_file,
@@ -2221,7 +2221,7 @@ static int update_aberrant_cdps(
                 }
                 if (rrd_test_error())
                     return -1;
-                /* loop over data soures within each RRA */
+                /* loop over data sources within each RRA */
                 for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
                     update_aberrant_CF(rrd, pdp_temp[ds_idx], current_cf,
                                        rra_idx * (rrd->stat_head->ds_cnt) +

@@ -88,7 +88,7 @@ int rrd_resize(
         }
 
     rrd_init(&rrdnew);
-    /* These need to be initialised before calling rrd_open() with 
+    /* These need to be initialized before calling rrd_open() with 
        the RRD_CREATE flag */
 
     if ((rrdnew.stat_head = (stat_head_t*)calloc(1, sizeof(stat_head_t))) == NULL) {

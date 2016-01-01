@@ -205,7 +205,7 @@ static xmlChar* get_xml_text (
         }
 
         /* trying to read text from <a></a> we end up here
-           lets return an empty string insead. This is a tad optimistic
+           lets return an empty string instead. This is a tad optimistic
            since we do not check if it is actually </a> and not </b>
            we got, but first we do not know if we expect </a> and second
            we the whole implementation is on the optimistic side. */
@@ -1271,7 +1271,7 @@ static rrd_t *parse_file(
         return (NULL);
     }
 
-    /* NOTE: from now on, sctx will get free'd implicitly through
+    /* NOTE: from now on, sctx will get freed implicitly through
      * xmlFreeTextReader and its call to
      * stdioXmlInputCloseCallback. */
 

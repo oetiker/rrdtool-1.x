@@ -4,7 +4,7 @@ use lib qw( @prefix@/lib/perl );
 
 use RRDp;
 
-# this simpulates a standard mrtg-2.x setup ... we can use this to
+# this simulates a standard mrtg-2.x setup ... we can use this to
 # compare performance ...
 
 $main::DEBUG=0;

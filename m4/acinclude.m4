@@ -1,12 +1,12 @@
 dnl Helper Functions for the RRDtool configure.ac script
 dnl 
-dnl this file gets included into aclocal.m4 when runnning aclocal
+dnl this file gets included into aclocal.m4 when running aclocal
 dnl
 dnl
 dnl
 dnl Check for the presence of a particular library and its header files
 dnl if this check fails set the environment variable EX_CHECK_ALL_ERR to YES
-dnl and prints out a helful message
+dnl and prints out a helpful message
 dnl
 dnl
 dnl EX_CHECK_ALL(library, function, header, pkgconf name, tested-version, homepage, cppflags)
@@ -361,7 +361,7 @@ int main(void){
  }]])],[rd_cv_ieee_$2=yes],[rd_cv_ieee_$2=no],[$as_echo_n "(skipped ... cross-compiling) " >&6
   # Bypass further checks
   rd_cv_ieee_works=yes])])
-dnl these we run regardles is cached or not
+dnl these we run regardless is cached or not
 if test x${rd_cv_ieee_$2} = "xyes"; then
  AC_MSG_RESULT(yes)
  $5
@@ -400,7 +400,7 @@ AC_IEEE([out of the box], works, , , ,
                    [AC_DEFINE(MUST_DISABLE_SIGFPE)
                    PERLFLAGS="CCFLAGS=-DMUST_DISABLE_SIGFPE"],		
                    AC_MSG_ERROR([
-Your Compiler does not do propper IEEE math ... Please find out how to
+Your Compiler does not do proper IEEE math ... Please find out how to
 make IEEE math work with your compiler and let me know (tobi@oetiker.ch).
 Check config.log to see what went wrong ...
 ]))])])])])])])])])])
@@ -552,7 +552,7 @@ dnl Timur I. Bakeyev  timur@gnu.org,
 dnl http://mail.gnu.org/pipermail/autoconf/1999-October/008311.html
 dnl partly rewritten by Peter Stamfest <peter@stamfest.at>
 
-dnl This determines, if struct tm containes tm_gmtoff field
+dnl This determines, if struct tm contains tm_gmtoff field
 dnl or we should use extern long int timezone.
 
 dnl Add the following to your acconfig.h:

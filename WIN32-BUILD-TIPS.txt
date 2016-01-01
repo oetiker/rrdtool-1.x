@@ -60,10 +60,10 @@ calls link with win32comp.c
 
 4/10/05 Tobi
 The windows implementation of strftime does not seem to support
-the ISO 8601 week number (%V) I have therfore included the file
+the ISO 8601 week number (%V) I have therefore included the file
 strftime.[ch] which provides strftime_ ... if you compile rrdtool
 with -Dstrftime=_strftime and link strftime.o then you will
-get propper support for %V.
+get proper support for %V.
 
 7/29/04 Jake Brutlag
 
@@ -259,7 +259,7 @@ Is a library missing? But it does not stop with an error...
 After these steps it generates the test files (svgs and rrds),
 and they seem to be good.
 
-The real problem in the shared perl modul is the following:
+The real problem in the shared perl module is the following:
 
 I do not know how this installation stuff works. The problem is
 that the installation stuff looks for the gd.lib and the
@@ -299,7 +299,7 @@ Compiling RRDtool 1.2.x on Win32 with MingW32 gcc:
 
      http://gnuwin32.sourceforge.net/packages/gawk.htm
 
-     Note: Also fetch the dependant libraries for it from the same page.
+     Note: Also fetch the dependent libraries for it from the same page.
 
 3. If you plan to create a 'distribution' release of the RRD Tools, the
    Makefile.Win32 will copy all the needed files to an output directory and

@@ -19,7 +19,7 @@ RRD Graph
 RRDcreate
 ---------
 Ability to use exiting rrd files to pre-populate new ones. Allowing to
-preserve data even when fundamentally changeing the structure of your rrd
+preserve data even when fundamentally changing the structure of your rrd
 files.
 
 RRDcached
@@ -266,7 +266,7 @@ Incompatibilities
   without functionality.
 
 * In pipe mode, rrdtool answers with OK only if it was successful with the
-  command. Otherwhise the answer will be ERROR...
+  command. Otherwise the answer will be ERROR...
 
 
 Behind the Scenes

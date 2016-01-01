@@ -40,7 +40,7 @@ can, or just live with it.
 
 I fixed the speed4.png example (and added a note). There may be other
 examples which suffer from the same or a similar bug.  Try to fix it
-yourself, which is a great excercise. But please do not submit your
+yourself, which is a great exercise. But please do not submit your
 result as a fix to the source of this document. Discuss it on the
 user's list, or write to me.
 
@@ -225,7 +225,7 @@ is the same as in networking terms k also means 1000.
 We will now create a database where we can keep all these interesting
 numbers. The method used to start the program may differ slightly from
 OS to OS, but I assume you can figure it out if it works different on
-your's. Make sure you do not overwrite any file on your system when
+yours. Make sure you do not overwrite any file on your system when
 executing the following command and type the whole line as one long
 line (I had to split it for readability)
 and skip all of the '\' characters.
