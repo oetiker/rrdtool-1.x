@@ -129,7 +129,7 @@ main(int argc, char *argv[])
        "./.."         "."            ".."
 
       These results can be verified by running the unix commands
-      basename(1) and dirname(1). One tweek to the test strategy
+      basename(1) and dirname(1). One tweak to the test strategy
       used here would be, on darwin and linux, to shell out to 
       get the expected results vs hardcoding. 
 */

@@ -78,7 +78,7 @@ int rrd_dump_cb_r(
     rrd_value_t value;
     struct tm tm;
 
-//These two macros are local defines to clean up visible code from its redndancy
+//These two macros are local defines to clean up visible code from its redundancy
 //and make it easier to read.
 #define CB_PUTS(str)                                            \
     do {							\

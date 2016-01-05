@@ -714,10 +714,10 @@ static int init(
              * used, then it's still possible for the owning interpreter
              * to fake out the missing commands:
              *
-             *   # Make all Rrd::* commands available in master interperter
+             *   # Make all Rrd::* commands available in master interpreter
              *   package require Rrd
              *   set safe [interp create -safe]
-             *   # Make safe Rrd::* commands available in safe interperter
+             *   # Make safe Rrd::* commands available in safe interpreter
              *   interp invokehidden $safe -global load ./tclrrd1.2.11.so
              *   # Provide the safe interpreter with the missing commands
              *   $safe alias Rrd::update do_update $safe

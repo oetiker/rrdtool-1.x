@@ -222,7 +222,7 @@ typedef struct graph_desc_t {
 	double    gradheight;
     char      format[FMT_LEG_LEN + 5];  /* format for PRINT AND GPRINT */
     char      legend[FMT_LEG_LEN + 5];  /* legend */
-    int       strftm;   /* should the VDEF legend be the time component formated with strftime */
+    int       strftm;   /* should the VDEF legend be the time component formatted with strftime */
     enum value_formatter_en vformatter; /* what value formatter to use (if !strftm) */
     double    leg_x, leg_y; /* location of legend */
     double    yrule;    /* value for y rule line and for VDEF */
@@ -237,16 +237,16 @@ typedef struct graph_desc_t {
     time_t    shift;    /* current shift applied */
 
     /* description of data fetched for the graph element */
-    time_t    start, end;   /* timestaps for first and last data element */
-    time_t    start_orig, end_orig; /* timestaps for first and last data element */
+    time_t    start, end;   /* timestamps for first and last data element */
+    time_t    start_orig, end_orig; /* timestamps for first and last data element */
     unsigned long step; /* time between samples */
     unsigned long step_orig;    /* time between samples */
     unsigned long ds_cnt;   /* how many data sources are there in the fetch */
     long      data_first;   /* first pointer to this data */
     char    **ds_namv;  /* name of datasources  in the fetch. */
     rrd_value_t *data;  /* the raw data drawn from the rrd */
-    rrd_value_t *p_data;    /* processed data, xsize elments */
-    double    linewidth;    /* linewideth */
+    rrd_value_t *p_data;    /* processed data, xsize elements */
+    double    linewidth;    /* linewidth */
 
     /* dashed line stuff */
     int       dash;     /* boolean, draw dashed line? */
@@ -282,7 +282,7 @@ typedef struct image_desc_t {
     char      *xlab_form;   /* format for the label on the xaxis */
     double    second_axis_scale; /* relative to the first axis (0 to disable) */
     double    second_axis_shift; /* how much is it shifted vs the first axis */
-    char      *second_axis_legend; /* label to put on the seond axis */
+    char      *second_axis_legend; /* label to put on the second axis */
     char      *second_axis_format; /* format for the numbers on the scond axis */
     enum value_formatter_en second_axis_formatter;  /* How to format axis values */
     char      *primary_axis_format; /* format for the numbers on the primary axis */
@@ -303,7 +303,7 @@ typedef struct image_desc_t {
     enum gfx_if_en imgformat;   /* image format */
     char     *daemon_addr;  /* rrdcached connection string */
     int       lazy;     /* only update the image if there is
-                           reasonable probablility that the
+                           reasonable probability that the
                            existing one is out of date */
     int       slopemode;    /* connect the dots of the curve directly, not using a stair */
     enum legend_pos legendposition; /* the position of the legend: north, west, south or east */

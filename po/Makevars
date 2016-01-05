@@ -28,7 +28,7 @@ COPYRIGHT_HOLDER = Tobias Oetiker
 #   understood.
 # - Strings which make invalid assumptions about notation of date, time or
 #   money.
-# - Pluralisation problems.
+# - Pluralization problems.
 # - Incorrect English spelling.
 # - Incorrect formatting.
 # It can be your email address, or a mailing list address where translators

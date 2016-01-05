@@ -67,7 +67,7 @@ include the time into each data row.
 
 =item B<--json>
 
-produce json formated output (instead of xml)
+produce json formatted output (instead of xml)
 
 =item B<--enumds>
 

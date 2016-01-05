@@ -12,7 +12,7 @@ WriteMakefile(
 
    'INC'	=> '-I../../src/ "-I/Program Files/GnuWin32/include"',
 # Since we are now using GnuWin32 libraries dynamically (instead of static
-# complile with code redistributed with rrdtool), use /MD instead of /MT.
+# compile with code redistributed with rrdtool), use /MD instead of /MT.
 # Yes, this means we need msvcrt.dll but GnuWin32 dlls already require it
 # and it is available on most versions of Windows.
    'OPTIMIZE' => '-O2 -MD',

@@ -68,7 +68,7 @@ Selena M Brewington <smbrewin with ichips.intel.com> add_ds
 Shane O'Donnell <shaneo with opennms.org>
 Simon Leinen <simon with switch.ch>
 Steen Linden <Steen.Linden with ebone.net>
-Sebastian Harl <sh at tokkee.org> debian packaging, rrdcached fixes and ehancements
+Sebastian Harl <sh at tokkee.org> debian packaging, rrdcached fixes and enhancements
 Stefan Ludewig <Stefan.Ludewig at exitgames.com> 1.3 WIN32 Port
 Stefan Mueller <s.mueller with computer.org> HPUX 11
 Steve Harris <steveh with wesley.com.au> AIX portability
@@ -85,7 +85,7 @@ Wim Heirman <wim.heirman elis.ugent.be> --units=si option
 Wolfgang Schrimm <wschrimm with uni-hd.de> xport function
 Wrolf Courtney <wrolf with wrolf.net> (HP-UX)
 hendrik visage <hvisage with is.co.za>
-Vytautas Zdanavicius <vytaszd@yahoo.com> -- python argument list exander
+Vytautas Zdanavicius <vytaszd@yahoo.com> -- python argument list expander
 Martin Sperl <rrdtool martin.sperl.org> (CDEF prediction functions, libdbi)
 Philippe Simonet <philippe.simonet with swisscom.ch> (Windows Binaries)
 Alexander Lucke (lucke with dns-net.de) of DNS:NET Internet Services (www.dns-net.de) http://rrdtool.org

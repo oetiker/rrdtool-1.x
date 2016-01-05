@@ -6,7 +6,7 @@
 
 /* #define DEBUG */
 
-/* stupid MSVC doesnt support variadic macros = no debug for now! */
+/* stupid MSVC doesn't support variadic macros = no debug for now! */
 #ifdef _MSC_VER
 # define RRDPRINTF()
 #else

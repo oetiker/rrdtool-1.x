@@ -1,10 +1,10 @@
 Random Feature Ideas for RRDtool
 --------------------------------
 
-make it possible to define order of legend items independant of their order
+make it possible to define order of legend items independent of their order
 on the commandline ...
 
-architecture independant storage format.
+architecture independent storage format.
 
 micro second precision
 

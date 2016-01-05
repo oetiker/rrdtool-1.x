@@ -14,7 +14,7 @@ sub ok
     print "ok $ok_count $what\n";
 }
 
-#makes programm work AFTER install
+#makes program work AFTER install
 use lib qw( @prefix@/lib/perl );
 
 use strict;

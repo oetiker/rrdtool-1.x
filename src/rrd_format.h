@@ -48,7 +48,7 @@ typedef union unival {
  * The RRD Database Structure
  * ---------------------------
  * 
- * In oder to properly describe the database structure lets define a few
+ * In order to properly describe the database structure lets define a few
  * new words:
  *
  * ds - Data Source (ds) providing input to the database. A Data Source (ds)
@@ -321,7 +321,7 @@ typedef struct pdp_prep_t {
 
    * DS updates may only occur at ever increasing points in time
    * When any DS update arrives after a cdp update time, the *previous*
-     update cycle gets executed. All pdps are transfered to cdps and the
+     update cycle gets executed. All pdps are transferred to cdps and the
      cdps feed the rras where necessary. Only then the new DS value
      is loaded into the PDP.                                                   */
 
@@ -346,7 +346,7 @@ enum cdp_par_en { CDP_val = 0,
      * prediction algorithm. */
     CDP_hw_last_intercept,
     /* Last iteration intercept coefficient for the Holt-Winters
-     * prediction algorihtm. */
+     * prediction algorithm. */
     CDP_hw_slope,
     /* Current slope coefficient for the Holt-Winters
      * prediction algorithm. */

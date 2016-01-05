@@ -35,7 +35,7 @@
 
 /*
  * The size of `time_t', as computed by sizeof.
- * VS2005 and later dafault size for time_t is 64-bit, unless
+ * VS2005 and later default size for time_t is 64-bit, unless
  * _USE_32BIT_TIME_T has been defined to use a 32-bit time_t.
  */
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)

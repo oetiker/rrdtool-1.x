@@ -299,7 +299,7 @@ static int journal_write(char *cmd, char *args);
 static void journal_done(void);
 static void journal_rotate(void);
 
-/* prototypes for forward refernces */
+/* prototypes for forward references */
 static int handle_request_help (HANDLER_PROTO);
 static int handle_request_ping (HANDLER_PROTO);
 
@@ -433,7 +433,7 @@ static void install_signal_receiver(void)
 
   if (status)
   {
-    RRDD_LOG(LOG_ERR, "%s\nerrno: %d", "Signal set could not be initialised.", errno);
+    RRDD_LOG(LOG_ERR, "%s\nerrno: %d", "Signal set could not be initialized.", errno);
     abort();
   }
 
@@ -1832,7 +1832,7 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
 
     /* now parse the extra names */
     while ( buffer_get_field (&buffer, &buffer_size, &field) == 0 ) {
-      /* check boundries */
+      /* check boundaries */
       if (parsed->field_cnt >= parsed->ds_cnt) {
 	      free_fetch_parsed(parsed);
 	      send_response(sock, RESP_ERR,
@@ -2586,7 +2586,7 @@ static command_t *find_command(char *cmd)
 }
 
 /* We currently use the index in the `list_of_commands' array as a bit position
- * in `listen_socket_t.permissions'. This member schould NEVER be accessed from
+ * in `listen_socket_t.permissions'. This member should NEVER be accessed from
  * outside these functions so that switching to a more elegant storage method
  * is easily possible. */
 static ssize_t find_command_index (const char *cmd) /* {{{ */
@@ -3696,7 +3696,7 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
           RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
           continue;
         }
-      } // else, the socket is comming from systemd
+      } // else, the socket is coming from systemd
 
       client_sa_size = sizeof (client_sa);
       client_sock->fd = accept (pollfds[i].fd,

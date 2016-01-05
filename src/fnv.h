@@ -82,7 +82,7 @@ typedef unsigned long Fnv32_t;
  * 32 bit FNV-0 zero initial basis
  *
  * This historic hash is not recommended.  One should use
- * the FNV-1 hash and inital basis instead.
+ * the FNV-1 hash and initial basis instead.
  */
 #define FNV0_32_INIT ((Fnv32_t)0)
 

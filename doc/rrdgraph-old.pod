@@ -502,14 +502,14 @@ be necessary to write two backslashes so that one is passed onto rrd_graph.
 
 =head2 String Formatting
 
-The text printed below the actual graph can be formated by appending special
+The text printed below the actual graph can be formatted by appending special
 escaped characters at the end of a text. When ever such a character occurs,
 all pending text is pushed onto the graph according to the character
 specified.
 
 Valid markers are: B<\j> for justified, B<\l> for left aligned, B<\r> for
 right aligned and B<\c> for centered. In the next section there is an
-example showing how to use centered formating.
+example showing how to use centered formatting.
 
 Normally there are two space characters inserted between every two items
 printed into the graph. The space following a string can be suppressed by

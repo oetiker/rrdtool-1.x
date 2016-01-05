@@ -350,7 +350,7 @@ rate based presentations to absolute numbers
 
 B<NEWDAY>,B<NEWWEEK>,B<NEWMONTH>,B<NEWYEAR>
 
-These three operators will return 1.0 whenever a step is the first of the given periode. The periodes are determined
+These three operators will return 1.0 whenever a step is the first of the given period. The periods are determined
 according to the local timezone AND the C<LC_TIME> settings.
 
   CDEF:mtotal=rate,STEPWIDTH,*,NEWMONTH,0,PREV,IF,ADDNAN

@@ -22,11 +22,11 @@
  * RRD files created and smoothed with the old code.
  * (4) Adds the aberrant-reset flag to rrd tune. This operation, which is
  * specified for a single data source, causes the holt-winters algorithm to
- * forget everthing it has learned and start over.
+ * forget everything it has learned and start over.
  * (5) Fixes a few out-of-date code comments.
  *
  * Revision 1.3  2001/03/07 21:21:54  oetiker
- * complete rewrite of rrdgraph documentation. This also includs info
+ * complete rewrite of rrdgraph documentation. This also includes info
  * on upcomming/planned changes to the rrdgraph interface and functionality
  * -- Alex van den Bogaerdt <alex@slot.hollandcasino.nl>
  *

@@ -9,7 +9,7 @@
  * directory as this dll, or change the "const string dll" to point to the
  * proper location. For documentation, please see the RRDtool website at:
  * http://oss.oetiker.ch/rrdtool/
- * For useage examples, please see the rrd_binding_test project.
+ * For usage examples, please see the rrd_binding_test project.
  ****************************************************************************/
 using System;
 using System.Linq;
@@ -56,7 +56,7 @@ namespace dnrrdlib
     /// <summary>
     /// This contains the actual data values for an rrd_info_t structure. 
     /// NOTE: Only one of these will be valid per instance. Use the containing info_t's
-    /// type field to deteremine which of these to read. 
+    /// type field to determine which of these to read. 
     /// NOTE: If the type is RD_I_STR, you have to marshal the string value yourself
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
@@ -515,7 +515,7 @@ namespace dnrrdlib
         /// <summary>
         /// Returns the latest error from rrdlib
         /// </summary>
-        /// <returns>A string with the error message, or an emtpy string if no error occurred</returns>
+        /// <returns>A string with the error message, or an empty string if no error occurred</returns>
         public static string Get_Error()
         {
             IntPtr ptr = rrd_get_error();

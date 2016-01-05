@@ -48,7 +48,7 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 
 	# darwin works without this because librrd contains its
 	# install_name which will includes the final location of the
-	# library after it is installed. This install_name gets transfered
+	# library after it is installed. This install_name gets transferred
 	# to the perl shared object.
 	my $librrd;
 	if ($^O eq 'darwin'){

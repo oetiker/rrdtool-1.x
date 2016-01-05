@@ -70,7 +70,7 @@ void dumpArguments(parsedargs_t* pa) {
 }
 
 char* getKeyValueArgument(const char* key,int flag, parsedargs_t* pa) {
-  /* we count backwords for "overwrites" */
+  /* we count backwards for "overwrites" */
   for(int i=pa->kv_cnt-1;i>=0;i--) {
     char* akey=(pa->kv_args[i]).key;
     if (strcmp(akey,key)==0) {
@@ -164,7 +164,7 @@ int getDouble(const char* v, double *val,char**extra) {
   /* NOTE that this may be a bit different from the original parser */
   *extra=NULL;
 
-  /* see rrd_strtodbl's return values for more infromation */
+  /* see rrd_strtodbl's return values for more information */
   switch (rrd_strtodbl( v, extra, val, NULL)){
     case 0:
         return -1;
@@ -1232,7 +1232,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
    /* here we parse pos arguments locally */
   /* vname */
   if (gdp->vname[0]==0) {
-    dprintfparsed("Processing postitional vname\n");
+    dprintfparsed("Processing positional vname\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
       strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN + 1);
@@ -1246,10 +1246,10 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   enum gf_en vnamegf=im->gdes[gdp->vidx].gf;
   dprintfparsed("Processing referenced type %i\n",vnamegf);
   switch (vnamegf) {
-    /* depreciated */
+    /* deprecated */
   case GF_DEF:
   case GF_CDEF:
-    dprintfparsed("Processing postitional CF\n");
+    dprintfparsed("Processing positional CF\n");
     /* look for CF if not given */
     if (((int)gdp->cf)==-1) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
@@ -1269,7 +1269,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   }
   /* and get positional format */
   if (gdp->format[0]==0) {
-    dprintfparsed("Processing postitional format\n");
+    dprintfparsed("Processing positional format\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
       strncpy(gdp->format,first->keyvalue,FMT_LEG_LEN);
@@ -1362,7 +1362,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   } else if (strcmp(align, "center") == 0) {
     gdp->txtalign = TXA_CENTER;
   } else {
-    rrd_set_error("Unknown alignement type '%s'", align);
+    rrd_set_error("Unknown alignment type '%s'", align);
     return 1;
   }
 

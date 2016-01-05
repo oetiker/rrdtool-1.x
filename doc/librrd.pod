@@ -196,28 +196,28 @@ indicates seconds
 
 =item C<m>
 
-indicates minutes.  The value is multipled by 60.
+indicates minutes.  The value is multiplied by 60.
 
 =item C<h>
 
-indicates hours.  The value is multipled by 3600 (or C<60m>).
+indicates hours.  The value is multiplied by 3600 (or C<60m>).
 
 =item C<d>
 
-indicates days.  The value is multipled by 86400 (or C<24h>).
+indicates days.  The value is multiplied by 86400 (or C<24h>).
 
 =item C<w>
 
-indicates weeks.  The value is multipled by 604800 (or C<7d>).
+indicates weeks.  The value is multiplied by 604800 (or C<7d>).
 
 =item C<M>
 
-indicates months.  The value is multipled by 2678400 (or C<31d>).
+indicates months.  The value is multiplied by 2678400 (or C<31d>).
 (Note this factor accommodates the maximum number of days in a month.)
 
 =item C<y>
 
-indicates years.  The value is multipled by 31622400 (or C<366d>).
+indicates years.  The value is multiplied by 31622400 (or C<366d>).
 (Note this factor accommodates leap years.)
 
 =back
@@ -234,7 +234,7 @@ of a positive integer, or the conversion fails.
 If the remainder C<token> is empty (no suffix), it is a count and no
 scaling is performed.
 
-If C<token> has one of the suffixes above, the count is multipled to
+If C<token> has one of the suffixes above, the count is multiplied to
 convert it to a duration in seconds.  The resulting number of seconds
 is divided by C<divisor> to produce a count of intervals each of
 duration C<divisor> seconds.  If division would produce a remainder
@@ -330,7 +330,7 @@ off the RRD.
 Create RRD database of path C<filename>.
 The RRD will have a step size of C<pfp_step>, the unix epoch timestamp to
 start collecting data from. The number of data sources and RRAs C<argc> and
-the definitions of the data sources and RRAs C<argv>. Lastly weather or
+the definitions of the data sources and RRAs C<argv>. Lastly whether or
 not to overwrite an existing RRD if one is found with the same
 filename; C<no_overwrite>.
 
@@ -344,7 +344,7 @@ where C<template> is the file path to a RRD file template, with, the
 form defined in B<rrdcreate>(1),
 
 The C<sources> parameter defines series of file paths with data defined,
-to prefil the RRD with. See B<rrdcreate>(1) for more dettails.
+to prefill the RRD with. See B<rrdcreate>(1) for more details.
 
 =item B<rrdc_flush(const char *filename)>
 

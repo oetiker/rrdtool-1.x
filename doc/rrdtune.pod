@@ -199,7 +199,7 @@ RRD internal file consistency when using one of the B<DS> or B<RRA> changing
 operations (that is: the resulting file should always be a valid RRD file,
 regardless of concurrent updates through the caching daemon).
 Regarding data consistency such guarantees are not made: Without external 
-synchronisation concurrent updates may be lost.
+synchronization concurrent updates may be lost.
 
 For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 

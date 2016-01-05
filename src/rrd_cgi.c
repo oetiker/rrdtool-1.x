@@ -332,7 +332,7 @@ static const char *putvar(
     return varheap[i].value;
 }
 
-/* expand those RRD:* directives that can be used recursivly */
+/* expand those RRD:* directives that can be used recursively */
 static char *rrd_expand_vars(
     char *buffer)
 {
@@ -514,7 +514,7 @@ int main(
 #endif
 
 
-    /* expand rrd directives in buffer recursivly */
+    /* expand rrd directives in buffer recursivley */
     for (i = 0; buffer[i]; i++) {
         if (buffer[i] != '<')
             continue;
@@ -780,7 +780,7 @@ char     *includefile(
             return buffer;
         }
     } else {
-        return stralloc("[ERROR: No Inclue file defined]");
+        return stralloc("[ERROR: No Include file defined]");
     }
 }
 
@@ -1016,7 +1016,7 @@ char     *printtimenow(
     return stralloc("[ERROR: not enough arguments for RRD::TIME::NOW]");
 }
 
-/* Scan buffer until an unescaped '>' arives.
+/* Scan buffer until an unescaped '>' arrives.
  * Update argument array with arguments found.
  * Return end cursor where parsing stopped, or NULL in case of failure.
  *
@@ -1502,7 +1502,7 @@ s_var   **rrdcgiReadVariables(
                                result[i]->name, result[i]->value);
                 }
                 i++;
-            } else {    /* There is already such a name, suppose a mutiple field */
+            } else {    /* There is already such a name, suppose a multiple field */
                 cp = ++esp;
                 len = strlen(result[k]->value) + (ip - esp) + 2;
                 if ((sptr = (char *) calloc(len, sizeof(char))) == NULL)

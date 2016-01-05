@@ -310,7 +310,7 @@ static char* _find_next_separator_twice(char*start,char separator) {
       /* and return the pointer past the current one*/
       return (found+2);
     }
-    /* find next occurance */
+    /* find next occurence */
     found=strchr(found+1,separator);
   }
   /* not found, so return NULL */
@@ -353,7 +353,7 @@ static int _inline_unescape (char* string) {
     src++;
     if (c == '%') {
       if (*src == '%') { 
-	/* increase src pointer by 1 skiping second % */
+	/* increase src pointer by 1 skipping second % */
 	src+=1;
       } else {
 	/* try to calculate hex value from the next 2 values*/
@@ -368,7 +368,7 @@ static int _inline_unescape (char* string) {
 	  return(1);
 	}
 	c=h2+(h1<<4);
-	/* increase src pointer by 2 skiping 2 chars */
+	/* increase src pointer by 2 skipping 2 chars */
 	src+=2;
       } 
     }
@@ -663,7 +663,7 @@ rrd_fetch_fn_libdbi(
       }
     }
   }
-  /* and check for negativ status, pass back immediately */
+  /* and check for negative status, pass back immediately */
   if (r_status==-1) { return -1; }
 
   /* post processing */

@@ -16,7 +16,7 @@ dnl a.b.c
 AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]))
 AC_CONFIG_AUX_DIR(conftools)
 
-dnl for testing a numberical version number comes handy
+dnl for testing a numerical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
@@ -182,7 +182,7 @@ AC_PROG_LIBTOOL
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
-dnl check for -Werror separatly
+dnl check for -Werror separately
 dnl (quite a few autotool checks do not work with -Werror; also, the
 dnl check for -Werror fails after checking and adding the other flags)
 AC_CACHE_CHECK([if gcc likes the -Werror flag], rd_cv_gcc_flag__Werror,

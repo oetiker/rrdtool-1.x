@@ -778,7 +778,7 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
   status = WSAStartup(wVersionRequested, &wsaData);
   if (status != 0)
   {
-    rrd_set_error("failed to initialise socket library %d", status);
+    rrd_set_error("failed to initialize socket library %d", status);
     return (-1);
   }
 #endif

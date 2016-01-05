@@ -741,7 +741,7 @@ ruby:
              ABS_TOP_BUILDDIR=${abs_top_builddir} \
              $(RUBY_MAKE_OPTIONS) RUBYARCHDIR= )
 
-# rules for building the pyton module
+# rules for building the python module
 python:
 	-mkdir -p ${builddir}/$@
 	cd ${builddir}/$@ \
