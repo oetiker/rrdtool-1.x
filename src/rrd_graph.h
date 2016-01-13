@@ -439,6 +439,9 @@ int       graph_cairo_setup(
 int       graph_cairo_finish(
     image_desc_t *);
 
+int rrd_fetch_graph_paint(
+	 image_desc_t *);
+
 int       gdes_alloc(
     image_desc_t *);
 int       scan_for_col(
@@ -485,6 +488,8 @@ int       vdef_percent_compar(
 int       graph_size_location(
     image_desc_t *,
     int);
+
+
 
 
 /* create a new line */
@@ -591,5 +596,3 @@ void      grinfo_push(
     image_desc_t *im,
     char *key,
     rrd_info_type_t type,    rrd_infoval_t value);
-
-
