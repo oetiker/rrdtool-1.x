@@ -183,26 +183,6 @@ struct rrd_t;
     rrd_info_t *rrd_graph_v(
     int,
     char **);
-    int       rrd_fetch_graph_data(
-    int,
-    char **,
-    unsigned long *,
-    unsigned long *,
-    char ***,
-    rrd_value_t **,
-    time_t *,
-    time_t *,
-    unsigned long **types);
-    rrd_info_t *rrd_fetch_graph_data_v(
-    int,
-    char **,
-    unsigned long *,
-    unsigned long *,
-    char ***,
-    rrd_value_t **,
-    time_t *,
-    time_t *,
-    unsigned long **types);
     int       rrd_fetch_graph_pdata(
     int,
     char **,
