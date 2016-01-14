@@ -14,6 +14,10 @@ rrd_dump_cb_r
 rrd_fetch
 rrd_fetch_r
 rrd_fetch_cb_register
+rrd_fetch_graph_pdata
+rrd_fetch_graph_data_v
+rrd_fetch_graph_pdata
+rrd_fetch_graph_pdata_v
 rrd_flushcached
 rrd_first
 rrd_first_r
