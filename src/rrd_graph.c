@@ -4721,43 +4721,42 @@ rrd_info_t *rrd_fetch_graph_data_v(
     struct optparse options;
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
+
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
-    rrd_graph_options(argc, argv, &options, &im);
-    if (rrd_test_error()) {
-        printf("options error\n");
+
+		rrd_graph_options(argc, argv, &options, &im);
+
+		if (rrd_test_error()) {
+        rrd_set_error("options error");
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
         return NULL;
     }
 
-    if (strlen(argv[optind]) >= MAXPATH) {
-        printf("maxpath error\n");
-        rrd_set_error("filename (including path) too long");
-        rrd_info_free(im.grinfo);
-        im_free(&im);
-        return NULL;
-    }
-
-    strncpy(im.graphfile, argv[optind], MAXPATH - 1);
-    im.graphfile[MAXPATH - 1] = '\0';
+		im.graphfile = strdup(options.argv[options.optind]);
+		if (im.graphfile == NULL) {
+			 rrd_set_error("cannot allocate sufficient memory for filename length");
+			 rrd_info_free(im.grinfo);
+			 im_free(&im);
+			 return NULL;
+		}
 
     if (strcmp(im.graphfile, "-") == 0) {
         im.graphfile[0] = '\0';
     }
 
-    rrd_graph_script(argc, argv, &im, 1);
+    rrd_graph_script(options.argc, options.argv, &im, options.optind+1);
     setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
 
     if (rrd_test_error()) {
-        printf("test error\n");
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
@@ -4766,7 +4765,7 @@ rrd_info_t *rrd_fetch_graph_data_v(
     /* Everything is now read and the actual work can start */
 
     if (rrd_fetch_graph_paint(&im) == -1) {
-        printf("paint errror\n");
+        rrd_set_error("paint errror\n");
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
@@ -4907,37 +4906,38 @@ rrd_info_t *rrd_fetch_graph_pdata_v(
 
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
+
     old_locale = setlocale(LC_NUMERIC, NULL);
     setlocale(LC_NUMERIC, "C");
+
     rrd_graph_options(argc, argv, &options, &im);
+
     if (rrd_test_error()) {
         rrd_info_free(im.grinfo);
         im_free(&im);
         return NULL;
     }
 
-    if (optind >= argc) {
+    if (options.optind >= options.argc) {
         rrd_info_free(im.grinfo);
         im_free(&im);
         rrd_set_error("missing filename");
         return NULL;
     }
 
-    if (strlen(argv[optind]) >= MAXPATH) {
-        rrd_set_error("filename (including path) too long");
-        rrd_info_free(im.grinfo);
-        im_free(&im);
-        return NULL;
-    }
-
-    strncpy(im.graphfile, argv[optind], MAXPATH - 1);
-    im.graphfile[MAXPATH - 1] = '\0';
+		im.graphfile = strdup(options.argv[options.optind]);
+		if (im.graphfile == NULL) {
+			 rrd_set_error("cannot allocate sufficient memory for filename length");
+			 rrd_info_free(im.grinfo);
+			 im_free(&im);
+			 return NULL;
+		}
 
     if (strcmp(im.graphfile, "-") == 0) {
         im.graphfile[0] = '\0';
     }
 
-    rrd_graph_script(argc, argv, &im, 1);
+    rrd_graph_script(argc, argv, &im, options.optind+1);
     setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
 
     if (rrd_test_error()) {
