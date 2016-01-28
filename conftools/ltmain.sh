@@ -360,7 +360,7 @@ func_relative_path ()
     func_relative_path_result=${func_relative_path_result}/${func_stripname_result}
   fi
 
-  # Normalization. If bindir is libdir, return empty string,
+  # Normalisation. If bindir is libdir, return empty string,
   # else relative path ending with a slash; either way, target
   # file name can be directly appended.
   if test ! -z "$func_relative_path_result"; then
@@ -3276,7 +3276,7 @@ extern \"C\" {
 
 /* Keep this code in sync between libtool.m4, ltmain, lt_system.h, and tests.  */
 #if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN32_WCE)
-/* DATA imports from DLLs on WIN32 can't be const, because runtime
+/* DATA imports from DLLs on WIN32 con't be const, because runtime
    relocations are performed -- see ld's documentation on pseudo-relocs.  */
 # define LT_DLSYM_CONST
 #elif defined(__osf__)

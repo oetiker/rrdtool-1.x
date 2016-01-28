@@ -81,7 +81,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_EXAMPLES_TRUE@am__append_1 = examples
+@BUILD_DOCS_TRUE@am__append_1 = doc
+@BUILD_EXAMPLES_TRUE@am__append_2 = examples
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -202,7 +203,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = po src doc bindings tests examples
+DIST_SUBDIRS = po src bindings tests doc examples
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -448,7 +449,7 @@ top_srcdir = @top_srcdir@
 RSYNC = rsync --rsh=ssh
 
 # build the following subdirectories
-SUBDIRS = po src doc bindings tests $(am__append_1)
+SUBDIRS = po src bindings tests $(am__append_1) $(am__append_2)
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
              libtool \
