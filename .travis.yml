@@ -10,7 +10,7 @@ perl:
 install: 
   - sudo apt-get update || true
   - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc
-  - sudo pip install cpp-coveralls --use-mirrors
+  - sudo pip install cpp-coveralls
 
 before_script:
   - ./bootstrap
