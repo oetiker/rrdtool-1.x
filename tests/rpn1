@@ -14,9 +14,9 @@ $RRDTOOL update $RRD 920808300:12420 920808600:12422 920808900:12423
 report "update"
 $RRDTOOL graphv -                          \
       --start 920804400 --end 920808000               \
-      DEF:myspeed=$RRD:speed:AVERAGE              \
-      CDEF:nonans=myspeed,UN,0,myspeed,IF             \
-      CDEF:kmh=nonans,3600,*                          \
+      DEF:my-speed=$RRD:speed:AVERAGE              \
+      CDEF:nonans01=my-speed,UN,0,my-speed,IF             \
+      CDEF:kmh=nonans01,3600,*                          \
       CDEF:fast123456789012345678901234567890=kmh,100,GT,100,0,IF                   \
       CDEF:over=kmh,100.000000000000000000000000000000000000,GT,kmh,100,-,0,IF             \
       CDEF:good=kmh,100,GT,0,kmh,IF                   \
