@@ -68,7 +68,7 @@ function valgrind {
 }
 
 function verbose_rrdtool {
-	echo "$RRDTOOL_V" "$@"
+	echo "$RRDTOOL_V" "$@" >&2
 	"$RRDTOOL_V" "$@"
 }
 
@@ -142,11 +142,6 @@ function exit_if_cached_running {
         fi
 }
 
-if [ -n "$VERBOSE" ] ; then
-	RRDTOOL_V="$RRDTOOL"
-	RRDTOOL=verbose_rrdtool
-fi
-
 if [ -z "$RRDTOOL" ] ; then 
         RRDTOOL=$TOP_BUILDDIR/src/rrdtool
         RRDCACHED=$TOP_BUILDDIR/src/rrdcached
@@ -177,4 +172,9 @@ if [ -z "$RRDTOOL" ] ; then
         if [ -n "$NEED_CACHED" ] ; then
                 run_cached "$STANDARD_RRDCACHED"
         fi
+fi
+
+if [ -n "$VERBOSE" ] ; then
+	RRDTOOL_V="$RRDTOOL"
+	RRDTOOL=verbose_rrdtool
 fi
