@@ -78,6 +78,8 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #else
@@ -3457,12 +3459,30 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       continue;
     }
 
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    status = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if (status != 0) {
+      fprintf(stderr, "rrdcached: setsockopt(SO_REUSEADDR) failed: %s\n",
+              rrd_strerror(errno));
+      return (-1);
+    }
+    /* Nagle will cause significant delay in processing requests so
+     * disable it. */
+    status = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    if (status != 0) {
+      fprintf(stderr, "rrdcached: setsockopt(TCP_NODELAY) failed: %s\n",
+              rrd_strerror(errno));
+      return (-1);
+    }
 #ifdef IPV6_V6ONLY
     /* Prevent EADDRINUSE bind errors on dual-stack configurations
      * with IPv4-mapped-on-IPv6 enabled */
     if (AF_INET6 == ai_ptr->ai_family)
-      setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
+      status = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
+      if (status != 0) {
+        fprintf(stderr, "rrdcached: setsockopt(IPV6_V6ONLY) failed: %s\n",
+                rrd_strerror(errno));
+        return (-1);
+      }
 #endif /* IPV6_V6ONLY */
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
