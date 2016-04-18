@@ -188,6 +188,7 @@ void rpn_compact2str(
             add_op(OP_ATAN, ATAN)
             add_op(OP_SQRT, SQRT)
             add_op(OP_SORT, SORT)
+            add_op(OP_COUNT, COUNT)
             add_op(OP_REV, REV)
             add_op(OP_TREND, TREND)
             add_op(OP_TRENDNAN, TRENDNAN)
@@ -201,10 +202,16 @@ void rpn_compact2str(
             add_op(OP_ADDNAN, ADDNAN)
             add_op(OP_MINNAN, MINNAN)
             add_op(OP_MAXNAN, MAXNAN)
+            add_op(OP_MEDIAN, MEDIAN)
+            add_op(OP_PERCENT, PERCENT)
+            add_op(OP_SMAX, SMAX)
+            add_op(OP_SMIN, SMIN)
+            add_op(OP_STDEV, STDEV)
             add_op(OP_DEPTH, DEPTH)
             add_op(OP_COPY, COPY)
             add_op(OP_ROLL, ROLL)
             add_op(OP_INDEX, INDEX)
+            add_op(OP_POW, POW)
 #undef add_op
     }
     (*str)[offset] = '\0';
@@ -430,6 +437,11 @@ rpnp_t   *rpn_parse(
             match_op(OP_COPY, COPY)
             match_op(OP_ROLL, ROLL)
             match_op(OP_INDEX, INDEX)
+            match_op(OP_SMAX, SMAX)
+            match_op(OP_SMIN, SMIN)
+            match_op(OP_STDEV, STDEV)
+            match_op(OP_PERCENT, PERCENT)
+            match_op(OP_POW, POW)
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
@@ -500,8 +512,22 @@ static int rpn_compare_double(
     const void *x,
     const void *y)
 {
-    double    diff = *((const double *) x) - *((const double *) y);
+    /* First catch NaN values. They are smallest */
+    if (isnan(*(double *) x) && isnan(*(double *) y))
+        return 0;
+    if (isnan(*(double *) x))
+        return -1;
+    if (isnan(*(double *) y))
+        return 1;
+    /* NaN doesn't reach this part so INF and -INF are extremes.
+     * The sign from isinf() is compatible with the sign we return
+     */
+    if (isinf(*(double *) x))
+        return isinf(*(double *) x);
+    if (isinf(*(double *) y))
+        return isinf(*(double *) y);
 
+    double diff = *((const double *) x) - *((const double *) y);
     return (diff < 0) ? -1 : (diff > 0) ? 1 : 0;
 }
 
@@ -722,6 +748,12 @@ short rpn_calc(
         case OP_MOD:
             stackunderflow(1);
             rpnstack->s[stptr - 1] = fmod(rpnstack->s[stptr - 1]
+                                          , rpnstack->s[stptr]);
+            stptr--;
+            break;
+        case OP_POW:
+            stackunderflow(1);
+            rpnstack->s[stptr - 1] = pow(rpnstack->s[stptr - 1]
                                           , rpnstack->s[stptr]);
             stptr--;
             break;
@@ -1182,6 +1214,76 @@ short rpn_calc(
                        rpnstack->s[++stptr] = 0.5 * ( element_ptr[ final_elements / 2 ] + element_ptr[ final_elements / 2 - 1 ] );
                     }
                 }
+            }
+            break;
+        case OP_STDEV:
+            stackunderflow(0);
+            {
+                int elements = (int) rpnstack->s[stptr--];
+                stackunderflow(elements-1);
+                int n = 0;
+                rrd_value_t mean = 0;
+                rrd_value_t mean2 = 0;
+                while (elements--){
+                    rrd_value_t datum  = rpnstack->s[stptr--];
+                    rrd_value_t delta;
+                    if (isnan(datum)){
+                        continue;
+                    }
+                    n++;
+                    delta = datum - mean;
+                    mean += delta / n;
+                    mean2 += delta * (datum - mean);
+                }
+                rpnstack->s[++stptr] = n < 2 ? DNAN : sqrt(mean2 / ( n - 1));
+            }
+            break;
+        case OP_PERCENT:
+            stackunderflow(2);
+            {
+                int       elements = (int) rpnstack->s[stptr--];
+                double    percent = rpnstack->s[stptr--];
+                if (! (percent >= 0 && percent <=100)){
+                    rrd_set_error("percentile argument must be between 0 and 100");
+                    return -1;
+                }
+
+                stackunderflow(elements - 1);
+                qsort(rpnstack->s + stptr - elements + 1, elements, sizeof(double),
+                      rpn_compare_double);
+                stptr -= elements;
+                rpnstack->s[stptr+1] = rpnstack->s[stptr+(int)round(percent*(double)(elements)/100.0)];
+                stptr++;
+            }
+            break;
+        case OP_SMAX:
+            stackunderflow(0);
+            {
+                rrd_value_t ximum = DNAN;
+                int elements = (int) rpnstack->s[stptr--];
+                stackunderflow(elements - 1);
+                while(elements--){
+                    rrd_value_t element = rpnstack->s[stptr--];
+                    if (isnan(ximum) || element > ximum) {
+                        ximum = element;
+                    }
+                }
+                rpnstack->s[++stptr] = ximum;
+            }
+            break;
+        case OP_SMIN:
+            stackunderflow(0);
+            {
+                rrd_value_t ximum = DNAN;
+                int elements = (int) rpnstack->s[stptr--];
+                stackunderflow(elements - 1);
+                while(elements--){
+                    rrd_value_t element = rpnstack->s[stptr--];
+                    if (isnan(ximum) || element < ximum) {
+                        ximum = element;
+                    }
+                }
+                rpnstack->s[++stptr] = ximum;
             }
             break;
         case OP_ROLL:

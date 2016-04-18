@@ -60,7 +60,7 @@ B<UN, ISINF>
 Pop one element from the stack, compare this to I<unknown> respectively
 to I<positive or negative infinity>. Returns 1 for true or 0 for false.
 
-B<IF>
+I<then>,I<else>,I<condition>,B<IF>
 
 Pops three elements from the stack.  If the element popped last is 0
 (false), the value popped first is pushed back onto the stack,
@@ -86,7 +86,7 @@ NAN-safe version of MIN and MAX. If one of the input numbers is I<unknown>
 then the result of the operation will be the other one. If both are
 I<unknown>, then the result of the operation is I<unknown>.
 
-B<LIMIT>
+I<lower-limit>,I<upper-limit>,B<LIMIT>
 
 Pops two elements from the stack and uses them to define a range.
 Then it pops another element and if it falls inside the range, it
@@ -112,6 +112,11 @@ B<ADDNAN>
 
 NAN-safe addition. If one parameter is NAN/UNKNOWN it'll be treated as
 zero. If both parameters are NAN/UNKNOWN, NAN/UNKNOWN will be returned.
+
+
+I<value>,I<power>,B<POW>
+
+Raise I<value> to the power of I<power>.
 
 B<SIN, COS, LOG, EXP, SQRT>
 
@@ -147,24 +152,36 @@ Take the absolute value.
 
 =item Set Operations
 
-B<SORT, REV>
+I<count>,B<SORT>
 
-Pop one element from the stack.  This is the I<count> of items to be sorted
-(or reversed).  The top I<count> of the remaining elements are then sorted
-(or reversed) in place on the stack.
+Pop one element from the stack.  This is the I<count> of items to be sorted.  The top I<count> of the remaining elements are then sorted
+from the smallest to the largest, in place on the stack.
+
+   4,3,22.1,1,4,SORT -> 1,3,4,22.1
+
+I<count>,B<REV>
+
+Reverse the number
 
 Example: C<CDEF:x=v1,v2,v3,v4,v5,v6,6,SORT,POP,5,REV,POP,+,+,+,4,/> will
 compute the average of the values v1 to v6 after removing the smallest and
 largest.
 
-B<AVG>
+I<count>,B<AVG>
 
 Pop one element (I<count>) from the stack. Now pop I<count> elements and build the
 average, ignoring all UNKNOWN values in the process.
 
 Example: C<CDEF:x=a,b,c,d,4,AVG>
 
-B<MEDIAN>
+I<count>,B<SMIN> and
+I<count>,B<SMAX>
+
+Pop one element (I<count>) from the stack. Now pop I<count> elements and push the minimum/maximum back onto the stack.
+
+Example: C<CDEF:x=a,b,c,d,4,AVG>
+
+I<count>,B<MEDIAN>
 
 pop one element (I<count>) from the stack. Now pop I<count> elements and find
 the median, ignoring all UNKNOWN values in the process. If there are an even
@@ -173,8 +190,22 @@ the stack.
 
 Example: C<CDEF:x=a,b,c,d,4,MEDIAN>
 
+I<count>,B<STDEV>
 
-B<TREND, TRENDNAN>
+pop one element (I<count>) from the stack. Now pop I<count> elements and calculate the standard deviation over these values (ignoring any NAN values). Push the result back on to the stack.
+
+Example: C<CDEF:x=a,b,c,d,4,STDEV>
+
+I<percent>,I<count>,B<PERCENT>
+
+pop two elements (I<count>,I<percent>) from the stack. Now pop I<count> element, order them by size
+(while the smalles elements are -INF, the largest are INF and NaN is larger than -INF but smaller
+than anything else. No pick the element from the ordered list where I<percent> of the elements
+are equal then the one picked. Push the result back on to the stack.
+
+Example: C<CDEF:x=a,b,c,d,95,4,PERCENT>
+
+I<count>,B<TREND, TRENDNAN>
 
 Create a "sliding window" average of another data series.
 

@@ -25,10 +25,27 @@ LC_TIME=C TZ=Europe/Zurich $RRDTOOL xport \
       CDEF:week=myspeed,STEPWIDTH,*,NEWWEEK,0,PREV,IF,ADDNAN             \
       CDEF:month=myspeed,STEPWIDTH,*,NEWMONTH,0,PREV,IF,ADDNAN             \
       CDEF:year=myspeed,STEPWIDTH,*,NEWYEAR,0,PREV,IF,ADDNAN             \
+      CDEF:avg=myspeed,POP,1,1,1,17,4,AVG \
+      CDEF:smin=myspeed,POP,3,4,5,2.2,4,SMIN \
+      CDEF:smax=myspeed,POP,3,4,5,2.2,4,SMAX \
+      CDEF:med1=myspeed,POP,3,4,5,2.2,4,MEDIAN \
+      CDEF:med2=myspeed,POP,3,4,5,2.2,11,5,MEDIAN \
+      CDEF:stdev=myspeed,POP,3,4,5,2.2,4,STDEV \
+      CDEF:p9=myspeed,POP,0.5,1,1,1,1,1,1,1,5,10,100,10,PERCENT \
+      CDEF:pow=myspeed,2,POW \
       XPORT:myspeed:myspeed \
       XPORT:day:day       XPORT:rday:rday \
       XPORT:week:week  XPORT:rweek:rweek \
       XPORT:month:month       XPORT:rmonth:rmonth \
-      XPORT:year:year      XPORT:ryear:ryear |\
+      XPORT:year:year      XPORT:ryear:ryear \
+      XPORT:avg:avg \
+      XPORT:smin:smin \
+      XPORT:smax:smax \
+      XPORT:med1:med1 \
+      XPORT:med2:med2 \
+      XPORT:p9:p9 \
+      XPORT:pow:pow \
+      XPORT:stdev:stdev |\
+
  $DIFF9 - $BASEDIR/rpn2.output
 report "xport"
