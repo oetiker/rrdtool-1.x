@@ -1,4 +1,19 @@
 #####################################
+Major Changes between 1.6.x and 1.6.x
+-------------------------------------
+API
+---
+* librrd_th is gone. librrd is now fully thread-safe
+
+RRD Graph
+---------
+* new CDEF function SMIN: a,b,c,3,SMIN -> min(a,b,c)
+* new CDEF function SMAX: a,b,c,3,SMAX -> max(a,b,c)
+* new CDEF function STDEV: a,b,c,3,STDEV -> stdev(a,b,c)
+* new CDEF function POW: a,b,POW -> a**b
+* new CDEF function PERCENT: a,b,c,95,3,PERCENT -> find 95percentile of a,b,c
+
+#####################################
 Major Changes between 1.4.x and 1.5.x
 -------------------------------------
 
