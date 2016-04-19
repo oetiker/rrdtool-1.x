@@ -340,7 +340,10 @@ rpnp_t   *rpn_parse(
 
     rpnp = NULL;
     expr = (char *) expr_const;
-
+    if (! *expr){
+        rrd_set_error("can not parse an empty rpn expression");
+        return NULL;
+    }
     while (*expr) {
         if ((rpnp = (rpnp_t *) rrd_realloc(rpnp, (++steps + 2) *
                                            sizeof(rpnp_t))) == NULL) {
