@@ -1,9 +1,41 @@
-RRDtool 1.5.x - 2015-xx-xx
+RRDtool 1.6.0 - 2016-04-19
+==========================
+Features
+--------
+* librrd is now fully thread-safe. librrd_th is gone
+* make lua bindings work with lua 5.1
+* configure option to disable doc building --enable-docs=no
+* new CDEF function SMIN: a,b,c,3,SMIN -> min(a,b,c)
+* new CDEF function SMAX: a,b,c,3,SMAX -> max(a,b,c)
+* new CDEF function STDEV: a,b,c,3,STDEV -> stdev(a,b,c)
+* new CDEF function POW: a,b,POW -> a**b
+* new CDEF function PERCENT: a,b,c,95,3,PERCENT -> find 95percentile of a,b,c
+* re-introducted --showtime option on rrdxport
+* be more careful in determining the locales idea of first day of the week
+* lots of spelling fixes all around
+
+RRDtool 1.5.6 - 2016-04-19
 ==========================
 
 Bugfixes
 --------
-* shorten test precision to 7 digits ... 
+* segfault on CDEF:x=
+* Disable nagel algorithm as it is causing massive slowdown
+* make vname nameing rules more liberal and more in line with 1.4
+* Fix recursive directory creation in rrdcached on FREEBSD
+* Fixed compilation when there's no sigwaitinfo
+
+RRDtool 1.5.5 - 2015-11-10
+==========================
+
+Bugfixes
+--------
+* fix JSON output in xport with legend and gprint blocks
+* fix parse_time mutex unlocking in the error case
+* don't crash on invalid variable names in CDEF
+* add mutex locking in rrdc_fetch
+* fix buffer overflow in rrd_restore
+* shorten test precision to 7 digits ...
 * never exit from a library function
 * buffer overflow in rrd_restore.c fixed #669
 

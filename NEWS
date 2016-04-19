@@ -1,4 +1,19 @@
 #####################################
+Major Changes between 1.6.x and 1.6.x
+-------------------------------------
+API
+---
+* librrd_th is gone. librrd is now fully thread-safe
+
+RRD Graph
+---------
+* new CDEF function SMIN: a,b,c,3,SMIN -> min(a,b,c)
+* new CDEF function SMAX: a,b,c,3,SMAX -> max(a,b,c)
+* new CDEF function STDEV: a,b,c,3,STDEV -> stdev(a,b,c)
+* new CDEF function POW: a,b,POW -> a**b
+* new CDEF function PERCENT: a,b,c,95,3,PERCENT -> find 95percentile of a,b,c
+
+#####################################
 Major Changes between 1.4.x and 1.5.x
 -------------------------------------
 
@@ -36,11 +51,11 @@ API
 libDBI
 ------
 * make rrdfillmissing actually work. The parameter is now in seconds and not
-  in steps for ease of use by Hans Jørgen Jakobsen
+  in steps for ease of use by Hans Jï¿½rgen Jakobsen
 
 Bindings
 --------
-* dotnet by  Chris Larsen of Euphoria Audio  
+* dotnet by  Chris Larsen of Euphoria Audio
 
 
 #####################################
@@ -91,7 +106,7 @@ by Martin Sperl
 Miscellaneous Changes
 ---------------------
 * graph legends can now be placed left, right or above the graph with the
-  new --legend-direction and --legend-positon placement options. 
+  new --legend-direction and --legend-positon placement options.
   by Melchior Rabe
 
 * switched to using automake 1.11 which provides a 'silent' build process,
@@ -113,11 +128,11 @@ Miscellaneous Changes
 * allow the HW smoothing window size to be set to 0 with rrdtool tune
   by sylvain luiset
 
-* new graph option --border to set the 3d border width 
+* new graph option --border to set the 3d border width
   by Bernhard Reutner-Fischer
 
 * draw different color markers (enable with --dynamic-labels) depending on the
-  type of element in the graph by Loïc Tortay
+  type of element in the graph by Loï¿½c Tortay
 
 for more detail see the CHANGES file.
 
@@ -231,7 +246,7 @@ Graphing
   - anti-aliased output
   - alpha transparency support
   - truetype fonts
- 
+
 * additional graphics formats: EPS, PDF, SVG
 
 * extended multi-part documentation
@@ -257,7 +272,7 @@ Logging
 
 * COMPUTE data type for artificial data-sources calculating their
   input using RPN math and data from the other data-sources.
- 
+
 Incompatibilities
 -----------------
 * Colons in COMMENT arguments to rrdtool graph must be escaped with a backslash
