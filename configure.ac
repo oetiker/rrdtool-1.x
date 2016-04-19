@@ -1,11 +1,11 @@
-dnl RRDtool AutoConf script ... 
+dnl RRDtool AutoConf script ...
 dnl ---------------------------
 dnl $Id$
 dnl
 dnl Created by Jeff Allen, Tobi Oetiker, Blair Zajac
 dnl
 dnl Inspiration from http://autoconf-archive.cryp.to
- 
+
 dnl tell automake the this script is for rrdtool
 
 dnl Minimum Autoconf version required.
@@ -20,7 +20,7 @@ dnl for testing a numerical version number comes handy
 dnl the released version are
 dnl a.bccc
 dnl the devel versions will be something like
-dnl a.b999yymmddhh 
+dnl a.b999yymmddhh
 NUMVERS=1.6000
 AC_SUBST(NUMVERS)
 
@@ -31,8 +31,8 @@ dnl - if only functionality was added do c++,r=0,a++
 dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
-dnl 
-LIBVERS=8:0:0 
+dnl
+LIBVERS=8:0:0
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -71,7 +71,7 @@ AH_TOP([
 /* realloc does not support NULL as argument */
 #undef NO_NULL_REALLOC
 
-/* lets enable madvise defines in NetBSD */ 
+/* lets enable madvise defines in NetBSD */
 #if defined(__NetBSD__)
 # if !defined(_NETBSD_SOURCE)
 #  define _NETBSD_SOURCE
@@ -95,7 +95,7 @@ dnl Process Special Options
 dnl -----------------------------------
 
 dnl How the vertical axis label is printed
-AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE, 
+AC_ARG_VAR(RRDGRAPH_YLEGEND_ANGLE,
  [Vertical label angle: -90.0 (default) or 90.0])
 AC_DEFINE_UNQUOTED(RRDGRAPH_YLEGEND_ANGLE,${RRDGRAPH_YLEGEND_ANGLE:-90.0},
  [Vertical label angle: -90.0 (default) or 90.0])
@@ -216,7 +216,7 @@ AC_TYPE_LONG_LONG_INT
 AC_SUBST(RRD_DEFAULT_FONT)
 
 CONFIGURE_PART(Checking for Header Files)
- 
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
@@ -227,7 +227,7 @@ AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
 
-dnl figure out 'stuff' about 
+dnl figure out 'stuff' about
 HW_FUNC_VSNPRINTF
 HW_FUNC_SNPRINTF
 HW_FUNC_VASPRINTF
@@ -242,7 +242,7 @@ AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
-eval `./libtool --config | grep pic_flag=` 
+eval `./libtool --config | grep pic_flag=`
 CFLAGS="$CFLAGS $pic_flag"
 
 
@@ -252,7 +252,7 @@ AC_FUNC_VPRINTF
 
 AC_C_BIGENDIAN
 
-dnl for each function found we get a definition in config.h 
+dnl for each function found we get a definition in config.h
 dnl of the form HAVE_FUNCTION
 
 AC_CHECK_FUNCS(nl_langinfo tzset fsync mbstowcs opendir readdir chdir chroot getgid getuid setgid setuid strndup strerror snprintf vsnprintf vasprintf fpclass class fp_class isnan memmove strchr mktime getrusage gettimeofday getpwnam getgrnam get_current_dir_name)
@@ -325,7 +325,7 @@ AM_GNU_GETTEXT_VERSION(0.17)
 AM_GNU_GETTEXT(external)
 
 CONFIGURE_PART(IEEE Math Checks)
- 
+
 
 dnl actual code to check if this works
 AC_CHECK_FUNCS(fpclassify, ,
@@ -385,7 +385,7 @@ else
           AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <math.h>
 volatile int x;volatile float f;  ]],[[x = isfinite(f)]])],[AC_MSG_RESULT(yes)
 	        AC_DEFINE(HAVE_ISFINITE)],[AC_MSG_RESULT(no)])])])
-fi  
+fi
 
 AC_FULL_IEEE
 
@@ -404,7 +404,7 @@ AC_CACHE_CHECK(whether sigwait has 2 arguments,
         AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])
         AC_MSG_RESULT(yes)
         ,
-        AC_MSG_RESULT(no)        
+        AC_MSG_RESULT(no)
     )
 )
 
@@ -447,7 +447,7 @@ AC_LINK_IFELSE(
           [AC_MSG_RESULT([yes, this seems to be solaris style])],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
-    ],  
+    ],
     [ AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
                 [[#include <time.h>]],
@@ -455,17 +455,17 @@ AC_LINK_IFELSE(
           [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
       )
-    ]  
+    ]
 )
 AC_LANG_POP(C)
 
 dnl Check for pthreads
 dnl http://autoconf-archive.cryp.to/acx_pthread.m4
- 
+
 AC_SUBST(MULTITHREAD_CFLAGS)
 AC_SUBST(MULTITHREAD_LDFLAGS)
 
-if test $enable_pthread != no; then 
+if test $enable_pthread != no; then
  ACX_PTHREAD([
     MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
     MULTITHREAD_LDFLAGS=$PTHREAD_LIBS
@@ -499,7 +499,7 @@ AC_LINK_IFELSE(
            AC_MSG_RESULT([yes we do])],
           [AC_MSG_ERROR([Can not figure how to compile malloc])]
       )
-    ]  
+    ]
 )
 AC_LANG_POP(C)
 
@@ -513,7 +513,7 @@ CONFIGURE_PART(Find 3rd-Party Libraries)
 have_libdbi=no
 
 AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[],[
-    AC_CHECK_HEADER(dbi/dbi.h, [ 
+    AC_CHECK_HEADER(dbi/dbi.h, [
        AC_CHECK_LIB(dbi, dbi_initialize, [
            AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
            LIBS="${LIBS} -ldbi -ldl"
@@ -538,12 +538,12 @@ AM_CONDITIONAL(BUILD_LIBRADOS,[test $have_librados != no])
 
 have_libwrap=no
 
-AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),[],[ 
-    AC_CHECK_HEADER(tcpd.h,[       
+AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),[],[
+    AC_CHECK_HEADER(tcpd.h,[
         AC_CHECK_FUNCS(hosts_access, [
             AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
-            have_libwrap=yes 
-        ],  
+            have_libwrap=yes
+        ],
         [
             AC_CHECK_LIB(wrap, hosts_access, [
                AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
@@ -609,7 +609,7 @@ AC_SUBST(CORE_LIBS)
 AC_SUBST(ALL_LIBS)
 
 CONFIGURE_PART(Prep for Building Language Bindings)
-  
+
 dnl Allow "if enable_rpath" in Makefile.am
 AM_CONDITIONAL(ENABLE_RPATH,[test "x$enable_rpath" = "xyes"])
 
@@ -654,7 +654,7 @@ I will disable the compilation of the RRDs perl module for now.
 ])
   		    COMP_PERL="perl-piped"
 	        fi
-            fi    
+            fi
         fi
 fi
 
@@ -679,17 +679,17 @@ if test ! -z "$PERLCC"; then
    if test ! -z "$PERLCCFLAGS"; then
        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS=$PERLCCFLAGS"
    fi
-   
+
    if test -z "$PERLLD"; then
        PERLLD=$PERLCC
    fi
    PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD=$PERLLD"
-  
+
    if test ! -z "$PERLLDFLAGS"; then
        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
    fi
 fi
-        
+
 AC_ARG_WITH(perl-options,
 [  --with-perl-options=[OPTIONS]  options to pass on command-line when
                           generating Makefile from Makefile.PL. If you set this
@@ -719,8 +719,8 @@ else
 	 	AC_MSG_RESULT(YES)
 	else
 		COMP_RUBY=
-	 	AC_MSG_RESULT(Ruby found but mkmf is missing! Install the -dev package)		
-	fi				
+	 	AC_MSG_RESULT(Ruby found but mkmf is missing! Install the -dev package)
+	fi
 fi
 
 dnl pass additional ruby options when generating Makefile from Makefile.PL
@@ -728,7 +728,7 @@ AC_ARG_ENABLE(ruby-site-install,
 AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules are installed together with rrdtool in $prefix/lib/ruby. You have to add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable for ruby to find the RRD.so file.]),
 [RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
 
-    
+
 AC_ARG_WITH(ruby-options,
 [  --with-ruby-options=[OPTIONS]  options to pass on command-line when
                           generating Makefile from extconf.rb. If you set this
@@ -822,7 +822,7 @@ LUA_EOF
           for f in $lua_pkg_prefix$lua_vdot $lua_pkg_prefix$lua_vndot $lua_pkg_prefix; do
             lua_exec_prefix=`$PKGCONFIG --variable=prefix $f 2>/dev/null`
             # same binaries?
-            if test "$lua_exec_prefix/bin/lua" = "$LUA"; then 
+            if test "$lua_exec_prefix/bin/lua" = "$LUA"; then
                 # OK, found CFLAGS. Get Lua LFLAGS and modules install dir
                 LUA_CFLAGS=`$PKGCONFIG --cflags $f 2>/dev/null`
                 LUA_LFLAGS=`$PKGCONFIG --libs $f 2>/dev/null`
@@ -837,7 +837,7 @@ LUA_EOF
         # if lua 5.0 can't find compat-5.1, force installation of
         # compat-5.1.lua together with RRDtool.
         if test "$lua_vdot" = "5.0" -a "$LUA_HAVE_COMPAT51" != "HAVE_COMPAT51"; then
-          lua_need_compat51=1 
+          lua_need_compat51=1
           LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"
         fi
 
@@ -982,7 +982,7 @@ AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_sy
 
 
 CONFIGURE_PART(Apply Configuration Information)
- 
+
 AC_CONFIG_FILES([examples/shared-demo.pl])
 AC_CONFIG_FILES([examples/piped-demo.pl])
 AC_CONFIG_FILES([examples/stripes.pl])
@@ -995,14 +995,14 @@ AC_CONFIG_FILES([examples/rrdcached/Makefile])
 AC_CONFIG_FILES([etc/rrdcached-default-lsb])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
-AC_CONFIG_FILES([po/Makefile.in]) 
+AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/librrd.pc])
 AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([bindings/lua/Makefile])
-AC_CONFIG_FILES([Makefile])          
+AC_CONFIG_FILES([Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
 
@@ -1063,10 +1063,10 @@ echo "             Libraries: $ALL_LIBS"
 echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
-echo 
+echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
 echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
 echo "place an order."
-echo 
+echo
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"
 echo "----------------------------------------------------------------"
