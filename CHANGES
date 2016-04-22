@@ -3,7 +3,7 @@ RRDtool 1.6.0 - 2016-04-19
 Features
 --------
 * librrd is now fully thread-safe. librrd_th is gone
-* make lua bindings work with lua 5.1
+* make lua bindings work with lua 5.2 and 5.3
 * configure option to disable doc building --enable-docs=no
 * new CDEF function SMIN: a,b,c,3,SMIN -> min(a,b,c)
 * new CDEF function SMAX: a,b,c,3,SMAX -> max(a,b,c)
