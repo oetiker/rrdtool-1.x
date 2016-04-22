@@ -3,7 +3,7 @@ RRDtool 1.6.0 - 2016-04-19
 Features
 --------
 * librrd is now fully thread-safe. librrd_th is gone
-* make lua bindings work with lua 5.1
+* make lua bindings work with lua 5.2 and 5.3
 * configure option to disable doc building --enable-docs=no
 * new CDEF function SMIN: a,b,c,3,SMIN -> min(a,b,c)
 * new CDEF function SMAX: a,b,c,3,SMAX -> max(a,b,c)
@@ -358,7 +358,7 @@ Detail
 | Author: Tobias Oetiker <tobi@oetiker.ch>
 | Date:   Mon Aug 13 14:04:15 2012 +0000
 | 
-|     integrate rrdinfo and rrdcreate into the rrdupdate binary - Sven-GÃ¶ran Bergh
+|     integrate rrdinfo and rrdcreate into the rrdupdate binary - Sven-GÃƒÂ¶ran Bergh
 |     
 |     git-svn-id: svn://svn.oetiker.ch/rrdtool/branches/1.4/program@2300 a5681a0c-68f1-0310-ab6d-d61299d08faa
 |  
@@ -631,7 +631,7 @@ Bugfixes:
  * compilation: AIX does not like MAP_PRIVATE and -lW in LDFLAGS #216 -- tobi
  * compliation: add extra space in LDFLAGS #284 -- dam at opencsw
  * rrdcached:  Fix permissions of the default socket -- Florian Forster
- * rrdgraph-libdbi: Fix sigma calculation --  Hans Jørgen Jakobsen
+ * rrdgraph-libdbi: Fix sigma calculation --  Hans JÃ¸rgen Jakobsen
  * rrdcreate: better checks for RRA arguments
  * configure: make configure recognize tcl-site argument (#281)
  * rrdgraph: if there is no right label, do not reserve any space for it --tobi
@@ -1164,7 +1164,7 @@ Bug Fixes
 	  via a UNIX domain socket only. There are a couple of exceptions: -
 	  The commands `HELP' and `QUIT' are always allowed. - If the
 	  command `BATCH' is allowed, the command `.' is automatically
-	  allowed, too. By default, i. e. if no `-P' option is specified,
+	  allowed, too. By default, i.Â e. if no `-P' option is specified,
 	  all commands will be allowed. As a shortcut to reset the behavior
 	  to the default behavior, you can use the slightly hackish `-P ""'
 	  syntax. Signed-off-by: Florian Forster
@@ -3143,7 +3143,7 @@ Bug Fixes
 	* branches/1.2/program/src/rrd_xport.c,
 	  branches/1.3/program/src/rrd_xport.c, src/rrd_xport.c: rrdxport
 	  was completely broken for exporting datasources that did not have
-	  a uniform step size. Thanks to Peter Valdemar Mørch for finding
+	  a uniform step size. Thanks to Peter Valdemar MÃ¸rch for finding
 	  this.
 
 2008-09-26 05:11  oetiker
@@ -3301,7 +3301,7 @@ Bug Fixes
 
 2008-09-11 20:27  oetiker
 
-	* src/rrd_graph.c: fixed processing of custom fonts René GARCIA
+	* src/rrd_graph.c: fixed processing of custom fonts RenÃ© GARCIA
 	  <rene@margar.fr>
 
 2008-09-11 07:01  oetiker
