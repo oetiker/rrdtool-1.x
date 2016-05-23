@@ -20,7 +20,7 @@ RRDtool 1.5.6 - 2016-04-19
 Bugfixes
 --------
 * segfault on CDEF:x=
-* Disable nagel algorithm as it is causing massive slowdown
+* Disable nagle algorithm as it is causing massive slowdown
 * make vname nameing rules more liberal and more in line with 1.4
 * Fix recursive directory creation in rrdcached on FREEBSD
 * Fixed compilation when there's no sigwaitinfo
