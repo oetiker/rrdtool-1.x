@@ -309,7 +309,7 @@ int parseDS(const char *def,
 #ifdef HAVE_G_REGEX_NEW    
     GError *gerr = NULL;
     GRegex *re = g_regex_new(DS_RE, G_REGEX_EXTENDED, 0, &gerr);
-    GMatchInfo *mi;
+    GMatchInfo *mi = NULL;
 
     if (gerr != NULL) {
         rrd_set_error("cannot compile RE: %s", gerr->message);
