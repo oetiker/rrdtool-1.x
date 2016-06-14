@@ -134,7 +134,7 @@ static int rrd_fetch_cb_wrapper(
     HE *retHE;
     AV *retAV;
     time_t new_start,new_end;
-    char *cfStr;
+    char *cfStr = NULL;
     unsigned long i,ii;
     unsigned long rowCount = 0;
     if (!rrd_fetch_cb_svptr){
