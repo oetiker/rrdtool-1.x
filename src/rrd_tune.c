@@ -116,6 +116,9 @@ int rrd_tune(
     struct optparse options;
     int opt;
 
+    /* Fix CWE-457 */
+    memset(&rrd, 0, sizeof(rrd_t));
+
     /* before we open the input RRD, we should flush it from any caching
     daemon, because we might totally rewrite it later on */
 
