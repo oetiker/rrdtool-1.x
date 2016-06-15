@@ -858,6 +858,7 @@ int rrd_create_r2(
         
         if (rrd.ds_def == NULL || rrd.rra_def == NULL) {
             rrd_set_error("cannot allocate memory");
+	    rrd_close(tf);
             goto done;
         }
 
