@@ -3498,7 +3498,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
 #ifdef IPV6_V6ONLY
     /* Prevent EADDRINUSE bind errors on dual-stack configurations
      * with IPv4-mapped-on-IPv6 enabled */
-    if (AF_INET6 == ai_ptr->ai_family)
+    if (AF_INET6 == ai_ptr->ai_family) {
       status = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
       if (status != 0) {
         fprintf(stderr, "rrdcached: setsockopt(IPV6_V6ONLY) failed: %s\n",
@@ -3507,6 +3507,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
         freeaddrinfo(ai_res);
         return (-1);
       }
+    }
 #endif /* IPV6_V6ONLY */
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
