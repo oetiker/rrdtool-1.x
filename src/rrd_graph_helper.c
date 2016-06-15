@@ -935,7 +935,7 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 
 	  /* and keep a copy of the error */
 	  char original_error[4096];
-	  strncpy(original_error,rrd_get_error(),sizeof(original_error));
+	  strncpy(original_error,rrd_get_error(),sizeof(original_error) - 1);
 	  /* and clear the error */
 	  rrd_clear_error();
 
