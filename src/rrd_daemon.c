@@ -1939,6 +1939,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
         SSTRCAT (linebuf, " ", linebuf_fill);
       SSTRCAT (linebuf, parsed.ds_namv[parsed.field_idx[i]], linebuf_fill);
     }
+    linebuf[sizeof(linebuf) - 1] = 0;
     add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
     add_response_info (sock, "DSName: %s\n", linebuf);
   }
