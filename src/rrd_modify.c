@@ -997,10 +997,6 @@ done:
     }
     if (rc != 0) {
 	out = NULL;
-	if (finalout) {
-	    rrd_memory_free(finalout);
-	    free(finalout);
-	}
 	finalout = NULL;
     }
     
