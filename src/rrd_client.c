@@ -1421,12 +1421,16 @@ int rrdc_fetch (const char *filename, /* {{{ */
   status = buffer_add_string (file_path, &buffer_ptr, &buffer_free);
   free (file_path);
 
-  if (status != 0)
+  if (status != 0) {
+    mutex_unlock(&lock);
     return (ENOBUFS);
+  }
 
   status = buffer_add_string (cf, &buffer_ptr, &buffer_free);
-  if (status != 0)
+  if (status != 0) {
+    mutex_unlock(&lock);
     return (ENOBUFS);
+  }
 
   if ((ret_start != NULL) && (*ret_start > 0))
   {
@@ -1434,8 +1438,10 @@ int rrdc_fetch (const char *filename, /* {{{ */
     snprintf (tmp, sizeof (tmp), "%lu", (unsigned long) *ret_start);
     tmp[sizeof (tmp) - 1] = 0;
     status = buffer_add_string (tmp, &buffer_ptr, &buffer_free);
-    if (status != 0)
+    if (status != 0) {
+      mutex_unlock(&lock);
       return (ENOBUFS);
+    }
 
     if ((ret_end != NULL) && (*ret_end > 0))
     {
