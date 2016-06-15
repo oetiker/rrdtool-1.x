@@ -485,13 +485,23 @@ static int open_pidfile(char *action, int oflag) /* {{{ */
   }
 
   dir = strdup(dirname(file_copy));
+  if (dir == NULL)
+  {
+    fprintf(stderr, "rrdcached: strdup(): %s\n",
+        rrd_strerror(errno));
+    free(file_copy);
+    return -1;
+  }
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create pidfile directory '%s': %s\n",
         dir, rrd_strerror(errno));
+    free(dir);
+    free(file_copy);
     return -1;
   }
 
+  free(dir);
   free(file_copy);
 
   fd = open(file, oflag, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
