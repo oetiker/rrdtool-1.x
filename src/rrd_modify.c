@@ -1024,11 +1024,6 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     candidate_t *chosen_candidate = NULL;
     candidate_extra_t junk;
     
-    if (candidates) {
-	free(candidates);
-	candidates = NULL;
-    }
-
     candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
