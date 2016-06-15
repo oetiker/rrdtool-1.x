@@ -3279,20 +3279,21 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   }
 
   dir = strdup(dirname(path_copy));
+  free(path_copy);
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create socket directory '%s': %s\n",
         dir, rrd_strerror(errno));
+    free(dir);
     return (-1);
   }
-
-  free(path_copy);
 
   temp = (listen_socket_t *) rrd_realloc (listen_fds,
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
   if (temp == NULL)
   {
     fprintf (stderr, "rrdcached: open_listen_socket_unix: realloc failed.\n");
+    free(dir);
     return (-1);
   }
   listen_fds = temp;
@@ -3303,6 +3304,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   {
     fprintf (stderr, "rrdcached: unix socket(2) failed: %s\n",
              rrd_strerror(errno));
+    free(dir);
     return (-1);
   }
 
@@ -3322,6 +3324,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
     fprintf (stderr, "rrdcached: bind(%s) failed: %s.\n",
              path, rrd_strerror(errno));
     close (fd);
+    free(dir);
     return (-1);
   }
 
@@ -3349,6 +3352,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
              path, rrd_strerror(errno));
     close (fd);
     unlink (path);
+    free(dir);
     return (-1);
   }
 
@@ -3357,6 +3361,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   listen_fds[listen_fds_num].addr = strdup(path);
   listen_fds_num++;
 
+  free(dir);
   return (0);
 } /* }}} int open_listen_socket_unix */
 
