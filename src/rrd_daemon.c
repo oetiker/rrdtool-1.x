@@ -3714,6 +3714,7 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
         if (client_sock->addr == NULL)
         {
           RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
+          free(client_sock);
           continue;
         }
       } // else, the socket is coming from systemd
