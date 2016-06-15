@@ -2222,7 +2222,7 @@ done:
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file = NULL, *pbuffile;
-  char *file_copy = NULL, *dir, *dir2 = NULL;
+  char *file_copy = NULL, *dir = NULL, *dir2 = NULL;
   char *tok;
   int ac = 0;
   char *av[128];
@@ -2353,6 +2353,8 @@ done:
   free(file);
   free(sources);
   free(file_copy);
+  if (dir)
+    free(dir);
   free(dir2);
   return rc;
 } /* }}} static int handle_request_create  */
