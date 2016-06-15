@@ -2024,6 +2024,7 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
   }
 
   free_fetch_parsed(&parsed);
+  free(dbuffer);
 
   return (send_response (sock, RESP_OK_BIN, "%i Success\n",
 		  parsed.field_cnt+5));
