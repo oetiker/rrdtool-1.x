@@ -3468,6 +3468,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     if (status != 0) {
       fprintf(stderr, "rrdcached: setsockopt(SO_REUSEADDR) failed: %s\n",
               rrd_strerror(errno));
+      close (fd);
+      freeaddrinfo(ai_res);
       return (-1);
     }
     /* Nagle will cause significant delay in processing requests so
@@ -3476,6 +3478,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     if (status != 0) {
       fprintf(stderr, "rrdcached: setsockopt(TCP_NODELAY) failed: %s\n",
               rrd_strerror(errno));
+      close (fd);
+      freeaddrinfo(ai_res);
       return (-1);
     }
 #ifdef IPV6_V6ONLY
@@ -3486,6 +3490,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
       if (status != 0) {
         fprintf(stderr, "rrdcached: setsockopt(IPV6_V6ONLY) failed: %s\n",
                 rrd_strerror(errno));
+        close (fd);
+        freeaddrinfo(ai_res);
         return (-1);
       }
 #endif /* IPV6_V6ONLY */
