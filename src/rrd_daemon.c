@@ -2277,10 +2277,12 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
         rc = send_response(sock, RESP_ERR,
             "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
             dir);
+        pthread_mutex_unlock(&rrdfilecreate_lock);
         goto done;
     }
     if (rrd_mkdir_p(dir, 0755) != 0) {
         rc = send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        pthread_mutex_unlock(&rrdfilecreate_lock);
         goto done;
     }
   }
