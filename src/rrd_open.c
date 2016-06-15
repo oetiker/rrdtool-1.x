@@ -283,12 +283,18 @@ rrd_file_t *rrd_open(
             goto no_lseek_necessary;        
         }
 #endif
-        lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET);
+        if (lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET) == -1) {
+            rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
         if ( write(rrd_simple_file->fd, "\0", 1) == -1){    /* poke */
             rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
-        lseek(rrd_simple_file->fd, 0, SEEK_SET);
+        if (lseek(rrd_simple_file->fd, 0, SEEK_SET) == -1){
+            rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
     }
     no_lseek_necessary:
 #if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
