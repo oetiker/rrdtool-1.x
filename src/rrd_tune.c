@@ -153,7 +153,7 @@ int rrd_tune(
 	opt_daemon = NULL;
     }
 
-    if (options.optind < 0 || options.optind >= options.argc) {
+    if (!options.optind || options.optind >= options.argc) {
 	// missing file name...
 	rrd_set_error("missing file name");
 	goto done;
@@ -405,10 +405,6 @@ int rrd_tune(
     }
 
     optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
-    if (options.optind < 0) {
-	goto done;
-    }
-    
     rc = 0;
 done:
     if (in_filename && rrdc_is_any_connected()) {
