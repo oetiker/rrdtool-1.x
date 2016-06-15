@@ -1913,7 +1913,7 @@ int print_calc(
                             prline.u_str = sprintf_alloc("%.0f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_timestamp_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1931,7 +1931,7 @@ int print_calc(
                             prline.u_str = sprintf_alloc("%f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_duration_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1980,7 +1980,7 @@ int print_calc(
                             snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%.0f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_timestamp_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1993,7 +1993,7 @@ int print_calc(
                             snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_duration_fmt;
                             else
                                 fmt = im->gdes[i].format;
