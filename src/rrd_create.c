@@ -1313,6 +1313,7 @@ done:
 int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
     char *tmpfilename = NULL;
+    mode_t saved_umask;
 
     /* write out the new file */
 #ifdef HAVE_LIBRADOS
@@ -1337,7 +1338,10 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 	strcpy(tmpfilename, outfilename);
 	strcat(tmpfilename, "XXXXXX");
 	
+	/* fix CWE-377 */
+	saved_umask = umask(S_IRUSR|S_IWUSR);
 	int tmpfd = mkstemp(tmpfilename);
+	umask(saved_umask);
 	if (tmpfd < 0) {
 	    rrd_set_error("Cannot create temporary file");
 	    goto done;
