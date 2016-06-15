@@ -381,11 +381,11 @@ int parseDS(const char *def,
     case DST_DERIVE:
     case DST_DCOUNTER:
     case DST_DDERIVE:
-        strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+        strncpy(ds_def->dst, dst_tmp, DST_SIZE - 1);
 	parseGENERIC_DS(dst_args, ds_def);
 	break;
     case DST_CDEF:
-	strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+	strncpy(ds_def->dst, dst_tmp, DST_SIZE - 1);
         parseCDEF_DS(dst_args, ds_def, key_hash, lookup);
 	break;
     default:
