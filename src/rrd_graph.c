@@ -2090,7 +2090,8 @@ int leg_place(
         for (i = 0; i < im->gdes_c; i++) {
             char      prt_fctn; /*special printfunctions */
             if(calc_width){
-                strncpy(saved_legend, im->gdes[i].legend, sizeof saved_legend);
+                strncpy(saved_legend, im->gdes[i].legend, sizeof saved_legend - 1);
+                saved_legend[sizeof saved_legend - 1] = '\0';
             }
 
             fill_last = fill;
@@ -2256,7 +2257,8 @@ int leg_place(
             }
 
             if(calc_width){
-                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend);
+                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend - 1);
+                im->gdes[i].legend[sizeof im->gdes[0].legend - 1] = '\0';
             }
         }
 
