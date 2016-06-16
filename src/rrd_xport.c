@@ -863,6 +863,9 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   char* timefmt=NULL;
   if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
 
+  /* avoid calling escapeJSON() with garbage */
+  memset(dbuf, 0, sizeof(dbuf));
+
   /* define some other stuff based on flags */
   int json=0;
   if (flags &1) { json=1; }
