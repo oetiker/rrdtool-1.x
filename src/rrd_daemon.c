@@ -1500,8 +1500,10 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   cache_item_t *ci;
 
   /* save it for the journal later */
-  if (!JOURNAL_REPLAY(sock))
+  if (!JOURNAL_REPLAY(sock)) {
     strncpy(orig_buf, buffer, min(RRD_CMD_MAX,buffer_size));
+    orig_buf[min(RRD_CMD_MAX,buffer_size) - 1] = '\0';
+  }
 
   status = buffer_get_field (&buffer, &buffer_size, &pbuffile);
   if (status != 0) {
