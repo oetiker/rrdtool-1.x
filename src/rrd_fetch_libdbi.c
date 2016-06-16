@@ -435,7 +435,8 @@ rrd_fetch_fn_libdbi(
   separator=filename[3];
 
   /* copy filename for local modifications during parsing */
-  strncpy(filenameworkcopy,filename+5,sizeof(filenameworkcopy));
+  strncpy(filenameworkcopy,filename+5,sizeof(filenameworkcopy) - 1);
+  filenameworkcopy[sizeof(filenameworkcopy) - 1] = '\0';
 
   /* get the driver */
   table_help.dbdriver=tmpptr;
