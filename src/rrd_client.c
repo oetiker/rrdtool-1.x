@@ -1103,9 +1103,13 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
         break;
     case RD_I_BLO:
         rrd_set_error ("rrdc_info: BLOB objects are not supported");
+        if (cd && cd != data) free(cd);
+        if (data) free(data);
         return (NULL);
     default:
         rrd_set_error ("rrdc_info: Unsupported info type %d",itype);
+        if (cd && cd != data) free(cd);
+        if (data) free(data);
         return (NULL);
     }
 
