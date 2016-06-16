@@ -783,9 +783,18 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
 
   /* and assign it */
-  if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1);}
-  if (rrd) { strncpy(gdp->rrd,rrd,1024); }
-  if (ds) { strncpy(gdp->ds_nam,ds,DS_NAM_SIZE); }
+  if (vname) {
+    strncpy(gdp->vname,vname,MAX_VNAME_LEN);
+    gdp->vname[MAX_VNAME_LEN] = '\0';
+  }
+  if (rrd) {
+    strncpy(gdp->rrd,rrd, 1023);
+    gdp->rrd[1023] = '\0';
+  }
+  if (ds) {
+    strncpy(gdp->ds_nam,ds,DS_NAM_SIZE - 1);
+    gdp->ds_nam[DS_NAM_SIZE - 1] = '\0';
+  }
   if (cf) {
     gdp->cf=cf_conv(cf);
     if (((int)gdp->cf)==-1) {
