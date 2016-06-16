@@ -1235,7 +1235,8 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     dprintfparsed("Processing positional vname\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
-      strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN + 1);
+      strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN);
+      gdp->vname[MAX_VNAME_LEN] = '\0';
       /* get type of reference */
       gdp->vidx=find_var(im, gdp->vname);
       if (gdp->vidx<0) {
