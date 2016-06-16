@@ -238,6 +238,7 @@ done:
         free(template);
         template = NULL;
     }
+    if (opt_daemon) free(opt_daemon);
     return rc;
 }
 
