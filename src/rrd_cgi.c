@@ -1449,8 +1449,10 @@ s_var   **rrdcgiReadVariables(
     }
 
     len = (numargs + 1) * sizeof(s_var *);
-    if ((result = (s_var **) malloc(len)) == NULL)
+    if ((result = (s_var **) malloc(len)) == NULL) {
+        free(line);
         return NULL;
+    }
     memset(result, 0, len);
 
     cp = line;
@@ -1514,6 +1516,8 @@ s_var   **rrdcgiReadVariables(
         }
         cp = ++ip;
     }
+
+    free(line);
     return result;
 }
 
