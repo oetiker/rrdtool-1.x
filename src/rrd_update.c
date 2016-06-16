@@ -692,6 +692,7 @@ int rrd_update(
     while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
         switch (opt) {
         case 't':
+            if (tmplt) free(tmplt);
             tmplt = strdup(options.optarg);
             break;
 
