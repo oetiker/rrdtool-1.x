@@ -569,6 +569,7 @@ int rrd_dump(
                           "[--no-header|-n]\n"
                           "[--daemon|-d address]\n"
                           "file.rrd [file.xml]", options.argv[0]);
+            if (opt_daemon) free(opt_daemon);
             return (-1);
             break;
         }
@@ -579,6 +580,7 @@ int rrd_dump(
                       "[--no-header|-n]\n"
                       "[--daemon|-d address]\n"
                        "file.rrd [file.xml]", options.argv[0]);
+        if (opt_daemon) free(opt_daemon);
         return (-1);
     }
 
