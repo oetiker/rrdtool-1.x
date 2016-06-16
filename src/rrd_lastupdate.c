@@ -41,6 +41,7 @@ int rrd_lastupdate (int argc, char **argv)
 
         case '?':
             rrd_set_error("%s", options.errmsg);
+            if (opt_daemon) free(opt_daemon);
             return -1;
         }
     }                   /* while (opt!=-1) */
@@ -48,6 +49,7 @@ int rrd_lastupdate (int argc, char **argv)
     if ((options.argc - options.optind) != 1) {
         rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                 options.argv[0]);
+        if (opt_daemon) free(opt_daemon);
         return (-1);
     }
 
