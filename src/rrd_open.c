@@ -586,7 +586,7 @@ void rrd_dontneed(
     rrd_file_t *rrd_file,
     rrd_t *rrd)
 {
-    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file_t *rrd_simple_file;
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
     size_t dontneed_start;
     size_t rra_start;
@@ -600,6 +600,7 @@ void rrd_dontneed(
 #endif
 	    return;
     }
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "before");
