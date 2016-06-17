@@ -984,6 +984,7 @@ char     *printtimelast(
             char *err = (char *) malloc(len);
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
+            free(buf);
             return err;
         }
         tm_last = *localtime(&last);
