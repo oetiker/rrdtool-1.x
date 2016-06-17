@@ -363,7 +363,7 @@ static int _inline_unescape (char* string) {
 	  return(1);
 	}
 	h2=_hexcharhelper(*(src+1));
-	if (h1 == (char)-1) {
+	if (h2 == (char)-1) {
 	  rrd_set_error("string escape error at: %s\n",string);
 	  return(1);
 	}
