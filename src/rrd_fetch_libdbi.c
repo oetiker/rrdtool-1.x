@@ -250,7 +250,10 @@ static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_valu
     /* calculate the table to use next */
     th->table_start=th->table_next;
     th->table_next=_find_next_separator(th->table_start,'+');
-    _inline_unescape(th->table_start);
+    if (_inline_unescape(th->table_start)) {
+      _sql_close(th);
+      return -1;
+    }
     /* and prepare FULL SQL Statement */
     if (ordered) {
       snprintf(sql,sizeof(sql)-1,"SELECT %s as rrd_time, %s as rrd_value FROM %s WHERE %s ORDER BY %s",
