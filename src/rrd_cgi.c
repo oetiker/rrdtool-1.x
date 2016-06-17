@@ -418,7 +418,12 @@ static int readfile(
         totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
         if (totalcnt < MEMBLK)
             totalcnt = MEMBLK;  /* sanitize */
-        fseek(input, offset * sizeof(char), SEEK_SET);
+        if (fseek(input, offset * sizeof(char), SEEK_SET) == -1)
+        {
+           rrd_set_error("fseek() failed on %s: %s", file_name, rrd_strerror(errno));
+           fclose(input);
+           return (-1);
+        }
     }
     if (((*buffer) = (char *) malloc((totalcnt + 4) * sizeof(char))) == NULL) {
         perror("Allocate Buffer:");
