@@ -523,12 +523,16 @@ static int check_pidfile(void)
   if (pid_fd < 0)
     return pid_fd;
 
-  if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0)
+  if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0) {
+    close(pid_fd);
     return -1;
+  }
 
   pid = atoi(pid_str);
-  if (pid <= 0)
+  if (pid <= 0) {
+    close(pid_fd);
     return -1;
+  }
 
   /* another running process that we can signal COULD be
    * a competing rrdcached */
@@ -3892,6 +3896,7 @@ static int daemonize (void) /* {{{ */
   /*FALLTHRU*/
 error:
   remove_pidfile();
+  close(pid_fd);
   return -1;
 } /* }}} int daemonize */
 
