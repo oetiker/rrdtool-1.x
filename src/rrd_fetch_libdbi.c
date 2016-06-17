@@ -527,7 +527,11 @@ rrd_fetch_fn_libdbi(
     } else if (*sqlargs==0) { /* ignore empty */
     } else { /* else add to where string */
       if (where[0]) {strcat(where," AND ");}
-      strcat(where,sqlargs);
+      if (strlen(where) + strlen(sqlargs) >= sizeof(where)) {
+        rrd_set_error("argument too long (exceeded %d characters)", sizeof(where) - 1);
+        return -1;
+      }
+      strncat(where,sqlargs, sizeof(where) - strlen(sqlargs) - 1);
     }
     /* and continue loop with next pointer */
     sqlargs=nextptr;
