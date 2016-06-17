@@ -1603,6 +1603,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
     /* state may have changed while we were unlocked */
     if (state == SHUTDOWN) {
+      pthread_mutex_unlock(&cache_lock);
       rc = -1;
       goto done;
     }
