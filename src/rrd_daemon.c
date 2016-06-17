@@ -2699,6 +2699,7 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
   int status;
   char *cmd_str;
   char *resp_txt;
+  char tmp[RRD_CMD_MAX];
   command_t *help = NULL;
 
   status = buffer_get_field (&buffer, &buffer_size, &cmd_str);
@@ -2707,8 +2708,6 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
 
   if (help && (help->syntax || help->help))
   {
-    char tmp[RRD_CMD_MAX];
-
     snprintf(tmp, sizeof(tmp)-1, "Help for %s\n", help->cmd);
     resp_txt = tmp;
 
