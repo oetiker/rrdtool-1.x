@@ -1570,13 +1570,16 @@ s_cgi    *rrdcgiInit(
     s_cgi    *res;
     s_var   **vars;
 
-    vars = rrdcgiReadVariables();
-
-    if (!vars)
-        return NULL;
-
     if ((res = (s_cgi *) malloc(sizeof(s_cgi))) == NULL)
         return NULL;
+
+    vars = rrdcgiReadVariables();
+
+    if (!vars) {
+    	free(res);
+        return NULL;
+    }
+
     res->vars = vars;
 
     return res;
