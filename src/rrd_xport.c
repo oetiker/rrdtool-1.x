@@ -322,7 +322,7 @@ int rrd_xport_fn(
                 return (-1);
             }
 
-            if (im->gdes[i].legend == 0)
+            if (im->gdes[i].legend[0] == '\0')
                 legend_list[j][0] = '\0';
             ++j;
 	}
