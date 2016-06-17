@@ -1073,7 +1073,10 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   mutex_unlock (&lock);
 
   if (status != 0) {
-    rrd_set_error ("rrdcached: %s", res->message);
+    if (res && res->message) {
+      rrd_set_error ("rrdcached: %s", res->message);
+      response_free(res);
+    }
     return (NULL);
   }
   data = cd = NULL;
@@ -1105,11 +1108,13 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
         rrd_set_error ("rrdc_info: BLOB objects are not supported");
         if (cd && cd != data) free(cd);
         if (data) free(data);
+        response_free(res);
         return (NULL);
     default:
         rrd_set_error ("rrdc_info: Unsupported info type %d",itype);
         if (cd && cd != data) free(cd);
         if (data) free(data);
+        response_free(res);
         return (NULL);
     }
 
