@@ -403,9 +403,11 @@ rrd_graph(...)
 		free(argv);
 
 		if (rrd_test_error()) {
-			if(calcpr)
+			if(calcpr) {
 			   for(i=0;calcpr[i];i++)
 				rrd_freemem(calcpr[i]);
+                           rrd_freemem(calcpr);
+                        }
 			XSRETURN_UNDEF;
 		}
 		retar=newAV();
