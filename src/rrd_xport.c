@@ -444,15 +444,17 @@ int rrd_graph_xport(image_desc_t *im) {
   default:
     break;
   }
+
+  /* free legend */
+  for (unsigned long j = 0; j < col_cnt; j++) {
+    free(legend_v[j]);
+  }
+  free(legend_v);
+  /* free data */
+  free(data);
+
   /* handle errors */
   if (r) {
-    /* free legend */
-    for (unsigned long j = 0; j < col_cnt; j++) {
-      free(legend_v[j]);
-    }
-    free(legend_v);
-    /* free data */
-    free(data);
     /* free the buffer */
     if (buffer.data) {free(buffer.data);}
     /* close the file */
