@@ -3838,7 +3838,9 @@ static int daemonize (void) /* {{{ */
     close (1);
     close (0);
 
-    open ("/dev/null", O_RDWR);
+    if (open ("/dev/null", O_RDWR) == -1) {
+      RRDD_LOG (LOG_ERR, "failed to open /dev/null.\n");
+    }
     if (dup(0) == -1 || dup(0) == -1){
         RRDD_LOG (LOG_ERR, "faild to run dup.\n");
     }
