@@ -1352,13 +1352,17 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 }
 
 int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,0);
   if (!gdp) { return 1;}
 
   /* get align */
   char* align=getKeyValueArgument("align",1,pa);
-  if (!align) align=getFirstUnusedArgument(1,pa)->value;
+  if (!align) {
+    kv=getFirstUnusedArgument(1,pa);
+    if (kv) align=kv->value;
+  }
   if (!align) { rrd_set_error("No alignment given"); return 1; }
 
   /* parse align */
@@ -1385,6 +1389,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 }
 
 int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMEREFPOS);
   if (!gdp) { return 1;}
@@ -1406,7 +1411,10 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 
   /* now parse the "shift" */
   char* shift=getKeyValueArgument("shift",1,pa);
-  if (!shift) {shift=getFirstUnusedArgument(1,pa)->value;}
+  if (!shift) {
+    kv=getFirstUnusedArgument(1,pa);
+    if (kv) shift=kv->value;
+  }
   if (!shift) { rrd_set_error("No shift given"); return 1; }
   /* identify shift */
   gdp->shidx=find_var(im, shift);
