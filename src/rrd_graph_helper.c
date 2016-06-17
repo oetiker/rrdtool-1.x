@@ -140,20 +140,19 @@ int getMappedKeyValueArgument(const char* key,int flag, parsedargs_t* pa,
 }
 
 int getLong(const char* v,long *val,char**extra,int base) {
+  if (extra == NULL)
+    return 0;
+
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
   *extra=NULL;
   *val=strtol(v,extra,base);
   /* and error handling */
-  if (extra==NULL) {
-    return 0;
-  } else {
-    if (*extra==v) {
-      return -1; /* failed miserably */
-    }  else {
-      if ((*extra)[0]==0) { return 0; }
-      return 1; /* got extra bytes */
-    }
+  if (*extra==v) {
+    return -1; /* failed miserably */
+  }  else {
+    if ((*extra)[0]==0) { return 0; }
+    return 1; /* got extra bytes */
   }
   /* not found, so return error */
   return -2;
