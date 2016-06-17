@@ -775,6 +775,7 @@ char     *includefile(
 
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
+            free(buffer);
             return err;
         } else {
             return buffer;
