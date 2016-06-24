@@ -116,10 +116,12 @@
 
 #define RRDD_LOG(severity, ...) \
   do { \
-    if (stay_foreground) { \
-      fprintf(stderr, __VA_ARGS__); \
-      fprintf(stderr, "\n"); } \
-    syslog ((severity), __VA_ARGS__); \
+    if (severity <= opt_log_level) { \
+      if (stay_foreground) { \
+        fprintf(stderr, __VA_ARGS__); \
+        fprintf(stderr, "\n"); } \
+      syslog ((severity), __VA_ARGS__); \
+    } \
   } while (0)
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -286,6 +288,8 @@ static pthread_mutex_t stats_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t rrdfilecreate_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int opt_no_overwrite = 0; /* default for the daemon */
+
+static int opt_log_level = LOG_ERR; /* don't pollute syslog */
 
 /* Journaled updates */
 #define JOURNAL_REPLAY(s) ((s) == NULL)
@@ -3959,6 +3963,7 @@ static int read_options (int argc, char **argv) /* {{{ */
     {NULL, 's', OPTPARSE_REQUIRED},
     {NULL, 't', OPTPARSE_REQUIRED},
     {NULL, 'U', OPTPARSE_REQUIRED},
+    {NULL, 'V', OPTPARSE_REQUIRED},
     {NULL, 'w', OPTPARSE_REQUIRED},
     {NULL, 'z', OPTPARSE_REQUIRED},
     {0}
@@ -4046,6 +4051,53 @@ static int read_options (int argc, char **argv) /* {{{ */
         fprintf(stderr, "read_options: -U not supported.\n");
         return 5;
 #endif
+
+      case 'V':
+      {
+      	if (!strcmp(options.optarg, "LOG_EMERG")) {
+      		opt_log_level = LOG_EMERG;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_ALERT")) {
+      		opt_log_level = LOG_ALERT;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_CRIT")) {
+      		opt_log_level = LOG_CRIT;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_ERR")) {
+      		opt_log_level = LOG_ERR;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_WARNING")) {
+      		opt_log_level = LOG_WARNING;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_NOTICE")) {
+      		opt_log_level = LOG_NOTICE;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_INFO")) {
+      		opt_log_level = LOG_INFO;
+      		break;
+      	}
+
+      	if (!strcmp(options.optarg, "LOG_DEBUG")) {
+      		opt_log_level = LOG_DEBUG;
+      		break;
+      	}
+
+      	fprintf(stderr, "Unrecognized log level '%s'; falling back to "
+      		"default LOG_ERR.\n", options.optarg);
+      	break;
+      }
 
       case 'L':
       case 'l':
@@ -4393,6 +4445,8 @@ static int read_options (int argc, char **argv) /* {{{ */
                             "for that group)\n"
             "  -t <threads>  Number of write threads.\n"
             "  -U <user>     Unprivileged user account used when running.\n"
+            "  -V <LOGLEVEL> Max syslog level to log with, with LOG_DEBUG being\n"
+            "                the maximum and LOG_EMERG minimum; see syslog.h\n"
             "  -w <seconds>  Interval in which to write data.\n"
             "  -z <delay>    Delay writes up to <delay> seconds to spread load\n"
             "\n"
