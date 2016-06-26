@@ -3085,6 +3085,7 @@ int grid_paint(
     int       res = 0;
     double    X0, Y0;   /* points for filled graph and more */
     struct gfx_color_t water_color;
+    int       legend_cnt = 0;
 
     if (im->draw_3d_border > 0) {
 	    /* draw 3d border */
@@ -3251,6 +3252,32 @@ int grid_paint(
                      [TEXT_PROP_LEGEND].font_desc,
                      im->tabwidth, 0.0,
                      GFX_H_LEFT, GFX_V_BOTTOM, im->gdes[i].legend);
+            {
+                rrd_infoval_t val;
+                double w, h;
+
+                w = gfx_get_text_width(im, 0,
+                                       im->
+                                       text_prop
+                                       [TEXT_PROP_LEGEND].font_desc,
+                                       im->tabwidth, im->gdes[i].legend);
+                h = gfx_get_text_height(im, 0,
+                                        im->
+                                        text_prop
+                                        [TEXT_PROP_LEGEND].font_desc,
+                                        im->tabwidth, im->gdes[i].legend);
+
+                val.u_str = sprintf_alloc("%s", im->gdes[i].legend);
+                grinfo_push(im,
+                            sprintf_alloc("legend[%ld]", legend_cnt),
+                            RD_I_STR, val);
+                val.u_str = sprintf_alloc("%.0f,%.0f,%.0f,%.0f",
+                                          X0, Y0 - h, X0 + w, Y0);
+                grinfo_push(im,
+                            sprintf_alloc("coords[%ld]", legend_cnt),
+                            RD_I_STR, val);
+                legend_cnt++;
+            }
             /* The legend for GRAPH items starts with "M " to have
                enough space for the box */
             if (im->gdes[i].gf != GF_PRINT &&

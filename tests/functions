@@ -15,6 +15,12 @@ function seddif {
    perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge' | $DIFF $@
 }
 
+BLANK=blank
+
+function blank {
+   perl -p -e 'm/(left|top|right|bottom|width|height|coords)/ && s/\d+/\#/g' $@
+}
+
 #
 # because valgrind has trouble with glib memory handling
 # (see e.g. https://developer.gnome.org/glib/2.30/glib-running.html or 
