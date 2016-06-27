@@ -26,8 +26,9 @@ time_t rrd_last(
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
-            if (opt_daemon != NULL)
+            if (opt_daemon != NULL) {
                     free (opt_daemon);
+            }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
@@ -38,7 +39,9 @@ time_t rrd_last(
 
         case '?':
             rrd_set_error("%s", options.errmsg);
-            if (opt_daemon) free (opt_daemon);
+            if (opt_daemon != NULL) {
+            	free (opt_daemon);
+            }
             return -1;
         }
     }                   /* while (opt) */
@@ -46,7 +49,9 @@ time_t rrd_last(
     if ((options.argc - options.optind) != 1) {
         rrd_set_error ("Usage: rrdtool %s [--daemon|-d <addr>] <file>",
                 options.argv[0]);
-        if (opt_daemon) free (opt_daemon);
+        if (opt_daemon != NULL) {
+            free (opt_daemon);
+        }
         return -1;
     }
 
@@ -57,7 +62,9 @@ time_t rrd_last(
     else
         lastupdate = rrd_last_r(options.argv[options.optind]);
 
-    if (opt_daemon) free(opt_daemon);
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     return (lastupdate);
 }
 

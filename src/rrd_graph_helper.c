@@ -140,8 +140,9 @@ int getMappedKeyValueArgument(const char* key,int flag, parsedargs_t* pa,
 }
 
 int getLong(const char* v,long *val,char**extra,int base) {
-  if (extra == NULL)
+  if (extra == NULL) {
     return 0;
+  }
 
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */

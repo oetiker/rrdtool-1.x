@@ -2373,8 +2373,9 @@ done:
   free(file);
   free(sources);
   free(file_copy);
-  if (dir)
+  if (dir) {
     free(dir);
+  }
   free(dir2);
   return rc;
 } /* }}} static int handle_request_create  */

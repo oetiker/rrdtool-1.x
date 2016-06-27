@@ -101,14 +101,18 @@ int rrd_fetch(
         case 's':
             if ((parsetime_error = rrd_parsetime(options.optarg, &start_tv))) {
                 rrd_set_error("start time: %s", parsetime_error);
-                if (opt_daemon) free(opt_daemon);
+                if (opt_daemon != NULL) {
+                    free(opt_daemon);
+                }
                 return -1;
             }
             break;
         case 'e':
             if ((parsetime_error = rrd_parsetime(options.optarg, &end_tv))) {
                 rrd_set_error("end time: %s", parsetime_error);
-                if (opt_daemon) free(opt_daemon);
+                if (opt_daemon != NULL) {
+                    free(opt_daemon);
+                }
                 return -1;
             }
             break;
@@ -118,14 +122,17 @@ int rrd_fetch(
         case 'r':
             if ((parsetime_error = rrd_scaled_duration(options.optarg, 1, &step_tmp))) {
                 rrd_set_error("resolution: %s", parsetime_error);
-                if (opt_daemon) free(opt_daemon);
+                if (opt_daemon != NULL) {
+                    free(opt_daemon);
+                }
                 return -1;
             }
             break;
 
         case 'd':
-            if (opt_daemon != NULL)
+            if (opt_daemon != NULL) {
                 free (opt_daemon);
+            }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
@@ -136,20 +143,26 @@ int rrd_fetch(
 
         case '?':
             rrd_set_error("%s", options.errmsg);
-            if (opt_daemon) free(opt_daemon);
+            if (opt_daemon != NULL) {
+            	free(opt_daemon);
+            }
             return -1;
         }
     }
 
 
     if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
-        if (opt_daemon) free(opt_daemon);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return -1;
     }
 
     if (start_tmp < 3600 * 24 * 365 * 10) {
         rrd_set_error("the first entry to fetch should be after 1980");
-        if (opt_daemon) free(opt_daemon);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return (-1);
     }
 
@@ -162,7 +175,9 @@ int rrd_fetch(
     if (end_tmp < start_tmp) {
         rrd_set_error("start (%ld) should be less than end (%ld)", start_tmp,
                       end_tmp);
-        if (opt_daemon) free(opt_daemon);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return (-1);
     }
 
@@ -172,7 +187,9 @@ int rrd_fetch(
 
     if (options.optind + 1 >= options.argc) {
         rrd_set_error("Usage: rrdtool %s <file> <CF> [options]", options.argv[0]);
-        if (opt_daemon) free(opt_daemon);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return -1;
     }
 
@@ -187,7 +204,9 @@ int rrd_fetch(
 	    status = rrd_fetch_r(options.argv[options.optind],
 			    cf, start, end, step, ds_cnt, ds_namv, data);
 
-    if (opt_daemon) free(opt_daemon);
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     if (status != 0)
         return (-1);
     return (0);

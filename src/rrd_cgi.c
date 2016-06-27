@@ -1407,7 +1407,7 @@ s_var   **rrdcgiReadVariables(
             if ((line = (char *) malloc(length + 2)) == NULL)
                 return NULL;
             if (fgets(line, length + 1, stdin) == NULL) {
-            	free(line);
+                free(line);
                 return NULL;
             }
         } else
@@ -1435,8 +1435,9 @@ s_var   **rrdcgiReadVariables(
                     strncat(line, tmp, tmplen);
                 } else {
                     /* clean-up the storage allocated in previous iteration */
-                    if (line)
+                    if (line) {
                         free(line);
+                    }
 
                     if ((line = strdup(tmp)) == NULL)
                         return NULL;
@@ -1444,8 +1445,9 @@ s_var   **rrdcgiReadVariables(
             }
             memset(tmp, 0, sizeof(tmp));
         }
-        if (!line)
+        if (!line) {
             return NULL;
+        }
         if (line[strlen(line) - 1] == '&')
             line[strlen(line) - 1] = '\0';
     }
@@ -1577,8 +1579,9 @@ s_cgi    *rrdcgiInit(
     s_cgi    *res;
     s_var   **vars;
 
-    if ((res = (s_cgi *) malloc(sizeof(s_cgi))) == NULL)
+    if ((res = (s_cgi *) malloc(sizeof(s_cgi))) == NULL) {
         return NULL;
+    }
 
     vars = rrdcgiReadVariables();
 

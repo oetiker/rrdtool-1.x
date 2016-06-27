@@ -238,7 +238,9 @@ done:
         free(template);
         template = NULL;
     }
-    if (opt_daemon) free(opt_daemon);
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     return rc;
 }
 

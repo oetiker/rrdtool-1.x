@@ -51,7 +51,9 @@ int rrd_flushcached (int argc, char **argv)
 
             case '?':
                 rrd_set_error("%s", options.errmsg);
-                if (opt_daemon) free(opt_daemon);
+                if (opt_daemon != NULL) {
+                    free(opt_daemon);
+                }
                 return -1;
         }
     } /* while (opt!=-1) */
@@ -60,7 +62,9 @@ int rrd_flushcached (int argc, char **argv)
     {
         rrd_set_error("Usage: rrdtool %s [--daemon|-d <addr>] <file> [<file> ...]",
                       options.argv[0]);
-        if (opt_daemon) free(opt_daemon);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return -1;
     }
 
