@@ -570,6 +570,14 @@ double    gfx_get_text_width(
     double tabwidth,
     char *text);
 
+/* measure height of a text string */
+double    gfx_get_text_height(
+    image_desc_t *im,
+    double start,
+    PangoFontDescription *font_desc,
+    double tabwidth,
+    char *text);
+
 
 /* convert color */
 gfx_color_t gfx_hex_to_col(

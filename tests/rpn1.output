@@ -1,3 +1,15 @@
 print[0] = "30.769231"
 print[1] = "72.000000"
 print[2] = "0.000000"
+graph_left = 51
+graph_top = 15
+graph_width = 400
+graph_height = 100
+image_width = 481
+image_height = 155
+graph_start = 920804400
+graph_end = 920808000
+value_min = 0.0000000e+00
+value_max = 1.0000000e+00
+legend[0] = "  foo"
+coords[0] = "16,135,51,148"

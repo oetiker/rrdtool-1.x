@@ -12,7 +12,9 @@ $RRDTOOL update $RRD 920806500:12383 920806800:12393 920807100:12399
 $RRDTOOL update $RRD 920807400:12405 920807700:12411 920808000:12415
 $RRDTOOL update $RRD 920808300:12420 920808600:12422 920808900:12423
 report "update"
-$RRDTOOL graphv -                          \
+# blank out any absolute coordinates, as they might differ
+$BLANK < $BASEDIR/rpn1.output > $BASEDIR/rpn1.output.out
+$RRDTOOL graphv $BASEDIR/rpn1.out \
       --start 920804400 --end 920808000               \
       DEF:my-speed=$RRD:speed:AVERAGE              \
       CDEF:nonans01=my-speed,UN,0,my-speed,IF             \
@@ -23,7 +25,8 @@ $RRDTOOL graphv -                          \
       VDEF:f=fast123456789012345678901234567890,AVERAGE \
       VDEF:g=good,MAXIMUM \
       VDEF:o=over,MINIMUM \
+      VRULE:920806500:"foo" \
       PRINT:f:'%lf' \
       PRINT:g:'%lf' \
-      PRINT:o:'%lf' | $DIFF9 - $BASEDIR/rpn1.output
+      PRINT:o:'%lf' | $BLANK | $DIFF9 - $BASEDIR/rpn1.output.out
 report "graphv"

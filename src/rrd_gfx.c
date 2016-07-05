@@ -20,6 +20,8 @@
 #include "rrd_tool.h"
 #include "rrd_graph.h"
 
+#include "unused.h"
+
 
 /* create a new line */
 void gfx_line(
@@ -238,6 +240,22 @@ double gfx_get_text_width(
     pango_layout_get_pixel_extents(layout, NULL, &log_rect);
 /*    g_object_unref(layout); */
     return log_rect.width;
+}
+
+double gfx_get_text_height(
+    image_desc_t *im,
+    double UNUSED(start),
+    PangoFontDescription *font_desc,
+    double tabwidth,
+    char *text)
+{
+    PangoLayout *layout;
+    PangoRectangle log_rect;
+    gfx_color_t color = { 0, 0, 0, 0 };
+    layout = gfx_prep_text(im, 0.0, color, font_desc, tabwidth, text);
+    pango_layout_get_pixel_extents(layout, NULL, &log_rect);
+/*    g_object_unref(layout); */
+    return log_rect.height;
 }
 
 void gfx_text(
