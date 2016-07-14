@@ -467,10 +467,13 @@ static char *expect2(
     ...)
 {
     va_list   ap;
+    char      *msg;
 
     va_start(ap, complain_fmt);
     if (token() != desired) {
-        panic(ve(complain_fmt, ap));
+    	msg = ve(complain_fmt, ap);
+        va_end(ap);
+        panic(msg);
     }
     va_end(ap);
     return TIME_OK;

@@ -262,6 +262,8 @@ int apply_smoother(
             rrd_set_error("apply smoother: SEASONAL rra doesn't have "
                           "valid dependency: %s",
                           rrd->rra_def[hw_dep_idx(rrd, rra_idx)].cf_nam);
+            free(rrd_values);
+            free(baseline);
             return -1;
         }
 
@@ -315,6 +317,7 @@ int apply_smoother(
         != (ssize_t) (sizeof(rrd_value_t) * row_length * row_count)) {
         rrd_set_error("apply_smoother: write failed to %lu", rra_start);
         free(rrd_values);
+        free(baseline);
         return -1;
     }
 

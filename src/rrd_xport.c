@@ -322,7 +322,7 @@ int rrd_xport_fn(
                 return (-1);
             }
 
-            if (im->gdes[i].legend == 0)
+            if (im->gdes[i].legend[0] == '\0')
                 legend_list[j][0] = '\0';
             ++j;
 	}
@@ -444,15 +444,17 @@ int rrd_graph_xport(image_desc_t *im) {
   default:
     break;
   }
+
+  /* free legend */
+  for (unsigned long j = 0; j < col_cnt; j++) {
+    free(legend_v[j]);
+  }
+  free(legend_v);
+  /* free data */
+  free(data);
+
   /* handle errors */
   if (r) {
-    /* free legend */
-    for (unsigned long j = 0; j < col_cnt; j++) {
-      free(legend_v[j]);
-    }
-    free(legend_v);
-    /* free data */
-    free(data);
     /* free the buffer */
     if (buffer.data) {free(buffer.data);}
     /* close the file */
@@ -862,6 +864,9 @@ int rrd_xport_format_addprints(int flags,stringbuffer_t *buffer,image_desc_t *im
   char* val;
   char* timefmt=NULL;
   if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }
+
+  /* avoid calling escapeJSON() with garbage */
+  memset(dbuf, 0, sizeof(dbuf));
 
   /* define some other stuff based on flags */
   int json=0;

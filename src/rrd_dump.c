@@ -540,8 +540,9 @@ int rrd_dump(
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
-            if (opt_daemon != NULL)
+            if (opt_daemon != NULL) {
                     free (opt_daemon);
+            }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
@@ -569,6 +570,9 @@ int rrd_dump(
                           "[--no-header|-n]\n"
                           "[--daemon|-d address]\n"
                           "file.rrd [file.xml]", options.argv[0]);
+            if (opt_daemon != NULL) {
+            	free(opt_daemon);
+            }
             return (-1);
             break;
         }
@@ -579,11 +583,16 @@ int rrd_dump(
                       "[--no-header|-n]\n"
                       "[--daemon|-d address]\n"
                        "file.rrd [file.xml]", options.argv[0]);
+        if (opt_daemon != NULL) {
+            free(opt_daemon);
+        }
         return (-1);
     }
 
     rc = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
-    if (opt_daemon) free(opt_daemon);
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     if (rc) return (rc);
 
     if ((options.argc - options.optind) == 2) {

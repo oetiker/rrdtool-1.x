@@ -134,7 +134,7 @@ static int rrd_fetch_cb_wrapper(
     HE *retHE;
     AV *retAV;
     time_t new_start,new_end;
-    char *cfStr;
+    char *cfStr = NULL;
     unsigned long i,ii;
     unsigned long rowCount = 0;
     if (!rrd_fetch_cb_svptr){
@@ -403,9 +403,11 @@ rrd_graph(...)
 		free(argv);
 
 		if (rrd_test_error()) {
-			if(calcpr)
+			if(calcpr) {
 			   for(i=0;calcpr[i];i++)
 				rrd_freemem(calcpr[i]);
+                           rrd_freemem(calcpr);
+                        }
 			XSRETURN_UNDEF;
 		}
 		retar=newAV();

@@ -250,7 +250,10 @@ static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_valu
     /* calculate the table to use next */
     th->table_start=th->table_next;
     th->table_next=_find_next_separator(th->table_start,'+');
-    _inline_unescape(th->table_start);
+    if (_inline_unescape(th->table_start)) {
+      _sql_close(th);
+      return -1;
+    }
     /* and prepare FULL SQL Statement */
     if (ordered) {
       snprintf(sql,sizeof(sql)-1,"SELECT %s as rrd_time, %s as rrd_value FROM %s WHERE %s ORDER BY %s",
@@ -363,7 +366,7 @@ static int _inline_unescape (char* string) {
 	  return(1);
 	}
 	h2=_hexcharhelper(*(src+1));
-	if (h1 == (char)-1) {
+	if (h2 == (char)-1) {
 	  rrd_set_error("string escape error at: %s\n",string);
 	  return(1);
 	}
@@ -435,7 +438,8 @@ rrd_fetch_fn_libdbi(
   separator=filename[3];
 
   /* copy filename for local modifications during parsing */
-  strncpy(filenameworkcopy,filename+5,sizeof(filenameworkcopy));
+  strncpy(filenameworkcopy,filename+5,sizeof(filenameworkcopy) - 1);
+  filenameworkcopy[sizeof(filenameworkcopy) - 1] = '\0';
 
   /* get the driver */
   table_help.dbdriver=tmpptr;
@@ -526,7 +530,11 @@ rrd_fetch_fn_libdbi(
     } else if (*sqlargs==0) { /* ignore empty */
     } else { /* else add to where string */
       if (where[0]) {strcat(where," AND ");}
-      strcat(where,sqlargs);
+      if (strlen(where) + strlen(sqlargs) >= sizeof(where)) {
+        rrd_set_error("argument too long (exceeded %d characters)", sizeof(where) - 1);
+        return -1;
+      }
+      strncat(where,sqlargs, sizeof(where) - strlen(sqlargs) - 1);
     }
     /* and continue loop with next pointer */
     sqlargs=nextptr;

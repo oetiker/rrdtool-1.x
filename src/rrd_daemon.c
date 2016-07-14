@@ -485,13 +485,23 @@ static int open_pidfile(char *action, int oflag) /* {{{ */
   }
 
   dir = strdup(dirname(file_copy));
+  if (dir == NULL)
+  {
+    fprintf(stderr, "rrdcached: strdup(): %s\n",
+        rrd_strerror(errno));
+    free(file_copy);
+    return -1;
+  }
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create pidfile directory '%s': %s\n",
         dir, rrd_strerror(errno));
+    free(dir);
+    free(file_copy);
     return -1;
   }
 
+  free(dir);
   free(file_copy);
 
   fd = open(file, oflag, S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH);
@@ -513,12 +523,16 @@ static int check_pidfile(void)
   if (pid_fd < 0)
     return pid_fd;
 
-  if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0)
+  if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0) {
+    close(pid_fd);
     return -1;
+  }
 
   pid = atoi(pid_str);
-  if (pid <= 0)
+  if (pid <= 0) {
+    close(pid_fd);
     return -1;
+  }
 
   /* another running process that we can signal COULD be
    * a competing rrdcached */
@@ -1490,8 +1504,10 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
   cache_item_t *ci;
 
   /* save it for the journal later */
-  if (!JOURNAL_REPLAY(sock))
+  if (!JOURNAL_REPLAY(sock)) {
     strncpy(orig_buf, buffer, min(RRD_CMD_MAX,buffer_size));
+    orig_buf[min(RRD_CMD_MAX,buffer_size) - 1] = '\0';
+  }
 
   status = buffer_get_field (&buffer, &buffer_size, &pbuffile);
   if (status != 0) {
@@ -1587,6 +1603,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
     /* state may have changed while we were unlocked */
     if (state == SHUTDOWN) {
+      pthread_mutex_unlock(&cache_lock);
       rc = -1;
       goto done;
     }
@@ -1929,6 +1946,7 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
         SSTRCAT (linebuf, " ", linebuf_fill);
       SSTRCAT (linebuf, parsed.ds_namv[parsed.field_idx[i]], linebuf_fill);
     }
+    linebuf[sizeof(linebuf) - 1] = 0;
     add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
     add_response_info (sock, "DSName: %s\n", linebuf);
   }
@@ -2024,6 +2042,7 @@ static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
   }
 
   free_fetch_parsed(&parsed);
+  free(dbuffer);
 
   return (send_response (sock, RESP_OK_BIN, "%i Success\n",
 		  parsed.field_cnt+5));
@@ -2221,7 +2240,7 @@ done:
 static int handle_request_create (HANDLER_PROTO) /* {{{ */
 {
   char *file = NULL, *pbuffile;
-  char *file_copy = NULL, *dir, *dir2 = NULL;
+  char *file_copy = NULL, *dir = NULL, *dir2 = NULL;
   char *tok;
   int ac = 0;
   char *av[128];
@@ -2266,10 +2285,12 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
         rc = send_response(sock, RESP_ERR,
             "No permission to recursively create: %s\nDid you pass -R to the daemon?\n",
             dir);
+        pthread_mutex_unlock(&rrdfilecreate_lock);
         goto done;
     }
     if (rrd_mkdir_p(dir, 0755) != 0) {
         rc = send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        pthread_mutex_unlock(&rrdfilecreate_lock);
         goto done;
     }
   }
@@ -2352,6 +2373,9 @@ done:
   free(file);
   free(sources);
   free(file_copy);
+  if (dir) {
+    free(dir);
+  }
   free(dir2);
   return rc;
 } /* }}} static int handle_request_create  */
@@ -2681,6 +2705,7 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
   int status;
   char *cmd_str;
   char *resp_txt;
+  char tmp[RRD_CMD_MAX];
   command_t *help = NULL;
 
   status = buffer_get_field (&buffer, &buffer_size, &cmd_str);
@@ -2689,8 +2714,6 @@ static int handle_request_help (HANDLER_PROTO) /* {{{ */
 
   if (help && (help->syntax || help->help))
   {
-    char tmp[RRD_CMD_MAX];
-
     snprintf(tmp, sizeof(tmp)-1, "Help for %s\n", help->cmd);
     resp_txt = tmp;
 
@@ -3279,20 +3302,21 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   }
 
   dir = strdup(dirname(path_copy));
+  free(path_copy);
   if (rrd_mkdir_p(dir, 0777) != 0)
   {
     fprintf(stderr, "Failed to create socket directory '%s': %s\n",
         dir, rrd_strerror(errno));
+    free(dir);
     return (-1);
   }
-
-  free(path_copy);
 
   temp = (listen_socket_t *) rrd_realloc (listen_fds,
       sizeof (listen_fds[0]) * (listen_fds_num + 1));
   if (temp == NULL)
   {
     fprintf (stderr, "rrdcached: open_listen_socket_unix: realloc failed.\n");
+    free(dir);
     return (-1);
   }
   listen_fds = temp;
@@ -3303,6 +3327,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   {
     fprintf (stderr, "rrdcached: unix socket(2) failed: %s\n",
              rrd_strerror(errno));
+    free(dir);
     return (-1);
   }
 
@@ -3322,6 +3347,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
     fprintf (stderr, "rrdcached: bind(%s) failed: %s.\n",
              path, rrd_strerror(errno));
     close (fd);
+    free(dir);
     return (-1);
   }
 
@@ -3349,6 +3375,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
              path, rrd_strerror(errno));
     close (fd);
     unlink (path);
+    free(dir);
     return (-1);
   }
 
@@ -3357,6 +3384,7 @@ static int open_listen_socket_unix (const listen_socket_t *sock) /* {{{ */
   listen_fds[listen_fds_num].addr = strdup(path);
   listen_fds_num++;
 
+  free(dir);
   return (0);
 } /* }}} int open_listen_socket_unix */
 
@@ -3463,6 +3491,8 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     if (status != 0) {
       fprintf(stderr, "rrdcached: setsockopt(SO_REUSEADDR) failed: %s\n",
               rrd_strerror(errno));
+      close (fd);
+      freeaddrinfo(ai_res);
       return (-1);
     }
     /* Nagle will cause significant delay in processing requests so
@@ -3471,18 +3501,23 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
     if (status != 0) {
       fprintf(stderr, "rrdcached: setsockopt(TCP_NODELAY) failed: %s\n",
               rrd_strerror(errno));
+      close (fd);
+      freeaddrinfo(ai_res);
       return (-1);
     }
 #ifdef IPV6_V6ONLY
     /* Prevent EADDRINUSE bind errors on dual-stack configurations
      * with IPv4-mapped-on-IPv6 enabled */
-    if (AF_INET6 == ai_ptr->ai_family)
+    if (AF_INET6 == ai_ptr->ai_family) {
       status = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
       if (status != 0) {
         fprintf(stderr, "rrdcached: setsockopt(IPV6_V6ONLY) failed: %s\n",
                 rrd_strerror(errno));
+        close (fd);
+        freeaddrinfo(ai_res);
         return (-1);
       }
+    }
 #endif /* IPV6_V6ONLY */
 
     status = bind (fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
@@ -3714,6 +3749,7 @@ static void *listen_thread_main (void UNUSED(*args)) /* {{{ */
         if (client_sock->addr == NULL)
         {
           RRDD_LOG (LOG_ERR, "listen_thread_main: strdup failed.");
+          free(client_sock);
           continue;
         }
       } // else, the socket is coming from systemd
@@ -3803,7 +3839,9 @@ static int daemonize (void) /* {{{ */
     close (1);
     close (0);
 
-    open ("/dev/null", O_RDWR);
+    if (open ("/dev/null", O_RDWR) == -1) {
+      RRDD_LOG (LOG_ERR, "failed to open /dev/null.\n");
+    }
     if (dup(0) == -1 || dup(0) == -1){
         RRDD_LOG (LOG_ERR, "faild to run dup.\n");
     }
@@ -3862,6 +3900,7 @@ static int daemonize (void) /* {{{ */
   /*FALLTHRU*/
 error:
   remove_pidfile();
+  close(pid_fd);
   return -1;
 } /* }}} int daemonize */
 

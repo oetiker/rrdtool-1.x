@@ -1913,7 +1913,7 @@ int print_calc(
                             prline.u_str = sprintf_alloc("%.0f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_timestamp_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1931,7 +1931,7 @@ int print_calc(
                             prline.u_str = sprintf_alloc("%f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_duration_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1980,7 +1980,7 @@ int print_calc(
                             snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%.0f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_timestamp_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -1993,7 +1993,7 @@ int print_calc(
                             snprintf(im->gdes[i].legend, FMT_LEG_LEN, "%f", printval);
                         } else {
                             const char *fmt;
-                            if (im->gdes[i].format == NULL || im->gdes[i].format[0] == '\0')
+                            if (im->gdes[i].format[0] == '\0')
                                 fmt = default_duration_fmt;
                             else
                                 fmt = im->gdes[i].format;
@@ -2090,7 +2090,8 @@ int leg_place(
         for (i = 0; i < im->gdes_c; i++) {
             char      prt_fctn; /*special printfunctions */
             if(calc_width){
-                strncpy(saved_legend, im->gdes[i].legend, sizeof saved_legend);
+                strncpy(saved_legend, im->gdes[i].legend, sizeof saved_legend - 1);
+                saved_legend[sizeof saved_legend - 1] = '\0';
             }
 
             fill_last = fill;
@@ -2256,7 +2257,8 @@ int leg_place(
             }
 
             if(calc_width){
-                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend);
+                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend - 1);
+                im->gdes[i].legend[sizeof im->gdes[0].legend - 1] = '\0';
             }
         }
 

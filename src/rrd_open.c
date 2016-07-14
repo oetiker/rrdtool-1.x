@@ -178,6 +178,7 @@ rrd_file_t *rrd_open(
     rrd_file->pvt = malloc(sizeof(rrd_simple_file_t));
     if(rrd_file->pvt == NULL) {
         rrd_set_error("allocating rrd_simple_file for '%s'", file_name);
+        free(rrd_file);
         return NULL;
     }
     memset(rrd_file->pvt, 0, sizeof(rrd_simple_file_t));
@@ -283,12 +284,18 @@ rrd_file_t *rrd_open(
             goto no_lseek_necessary;        
         }
 #endif
-        lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET);
+        if (lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET) == -1) {
+            rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
         if ( write(rrd_simple_file->fd, "\0", 1) == -1){    /* poke */
             rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
-        lseek(rrd_simple_file->fd, 0, SEEK_SET);
+        if (lseek(rrd_simple_file->fd, 0, SEEK_SET) == -1){
+            rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
     }
     no_lseek_necessary:
 #if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
@@ -580,7 +587,7 @@ void rrd_dontneed(
     rrd_file_t *rrd_file,
     rrd_t *rrd)
 {
-    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file_t *rrd_simple_file;
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
     size_t dontneed_start;
     size_t rra_start;
@@ -594,6 +601,7 @@ void rrd_dontneed(
 #endif
 	    return;
     }
+    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
 
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "before");

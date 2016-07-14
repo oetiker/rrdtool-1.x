@@ -104,8 +104,9 @@ rrd_info_t *rrd_info(
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'd':
-            if (opt_daemon != NULL)
+            if (opt_daemon != NULL) {
                 free (opt_daemon);
+            }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
@@ -120,6 +121,9 @@ rrd_info_t *rrd_info(
 
         case '?':
             rrd_set_error("%s", options.errmsg);
+            if (opt_daemon != NULL) {
+            	free (opt_daemon);
+            }
             return NULL;
         }
     } /* while (opt != -1) */
@@ -127,12 +131,20 @@ rrd_info_t *rrd_info(
     if (options.argc - options.optind != 1) {
         rrd_set_error ("Usage: rrdtool %s [--daemon |-d <addr> [--noflush|-F]] <file>",
                 options.argv[0]);
+        if (opt_daemon != NULL) {
+            free (opt_daemon);
+        }
         return NULL;
     }
 
     if (flushfirst) {
         status = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
-        if (status) return (NULL);
+        if (status) {
+            if (opt_daemon != NULL) {
+            	free (opt_daemon);
+            }
+            return (NULL);
+        }
     }
 
     rrdc_connect (opt_daemon);
@@ -141,7 +153,9 @@ rrd_info_t *rrd_info(
     else
         info = rrd_info_r(options.argv[options.optind]);
 
-    if (opt_daemon) free(opt_daemon);
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     return (info);
 } /* rrd_info_t *rrd_info */
 

@@ -418,7 +418,12 @@ static int readfile(
         totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
         if (totalcnt < MEMBLK)
             totalcnt = MEMBLK;  /* sanitize */
-        fseek(input, offset * sizeof(char), SEEK_SET);
+        if (fseek(input, offset * sizeof(char), SEEK_SET) == -1)
+        {
+           rrd_set_error("fseek() failed on %s: %s", file_name, rrd_strerror(errno));
+           fclose(input);
+           return (-1);
+        }
     }
     if (((*buffer) = (char *) malloc((totalcnt + 4) * sizeof(char))) == NULL) {
         perror("Allocate Buffer:");
@@ -775,6 +780,7 @@ char     *includefile(
 
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
+            free(buffer);
             return err;
         } else {
             return buffer;
@@ -984,6 +990,7 @@ char     *printtimelast(
             char *err = (char *) malloc(len);
             snprintf(err, len, "[ERROR: %s]", rrd_get_error());
             rrd_clear_error();
+            free(buf);
             return err;
         }
         tm_last = *localtime(&last);
@@ -1354,6 +1361,26 @@ char     *rrdcgiDecodeString(
     return text;
 }
 
+/* free_result(s_var**, number)
+ *
+ * Clean-up the 'result' variable from rrdcgiReadVariables() properly.
+ * We can safely call free() on result[i]->{name,value} because they are
+ * memset() to 0 after their allocation.
+ */
+static void free_result(s_var **result, int number)
+{
+    int i;
+
+    for(i = 0; i < number; i++) {
+        if (result && result[i]) {
+            free(result[i]->name);
+            free(result[i]->value);
+            free(result[i]);
+        }
+    }
+    free(result);
+}
+
 /*  rrdcgiReadVariables()
  *
  *  Read from stdin if no string is provided via CGI.  Variables that
@@ -1379,8 +1406,10 @@ s_var   **rrdcgiReadVariables(
             length = atoi(ip);
             if ((line = (char *) malloc(length + 2)) == NULL)
                 return NULL;
-            if (fgets(line, length + 1, stdin) == NULL)
+            if (fgets(line, length + 1, stdin) == NULL) {
+                free(line);
                 return NULL;
+            }
         } else
             return NULL;
     } else if (cp && !strcmp(cp, "GET")) {
@@ -1405,14 +1434,20 @@ s_var   **rrdcgiReadVariables(
                         return NULL;
                     strncat(line, tmp, tmplen);
                 } else {
+                    /* clean-up the storage allocated in previous iteration */
+                    if (line) {
+                        free(line);
+                    }
+
                     if ((line = strdup(tmp)) == NULL)
                         return NULL;
                 }
             }
             memset(tmp, 0, sizeof(tmp));
         }
-        if (!line)
+        if (!line) {
             return NULL;
+        }
         if (line[strlen(line) - 1] == '&')
             line[strlen(line) - 1] = '\0';
     }
@@ -1449,8 +1484,10 @@ s_var   **rrdcgiReadVariables(
     }
 
     len = (numargs + 1) * sizeof(s_var *);
-    if ((result = (s_var **) malloc(len)) == NULL)
+    if ((result = (s_var **) malloc(len)) == NULL) {
+        free(line);
         return NULL;
+    }
     memset(result, 0, len);
 
     cp = line;
@@ -1479,17 +1516,26 @@ s_var   **rrdcgiReadVariables(
                                        (size_t) (esp - cp))); k++);
 
             if (k == i) {   /* No such variable yet */
-                if ((result[i] = (s_var *) malloc(sizeof(s_var))) == NULL)
+                if ((result[i] = (s_var *) malloc(sizeof(s_var))) == NULL) {
+                    free_result(result, i);
+                    free(line);
                     return NULL;
+                }
                 if ((result[i]->name =
-                     (char *) malloc((esp - cp + 1) * sizeof(char))) == NULL)
+                     (char *) malloc((esp - cp + 1) * sizeof(char))) == NULL) {
+                    free_result(result, i);
+                    free(line);
                     return NULL;
+                }
                 memset(result[i]->name, 0, esp - cp + 1);
                 strncpy(result[i]->name, cp, esp - cp);
                 cp = ++esp;
                 if ((result[i]->value =
-                     (char *) malloc((ip - esp + 1) * sizeof(char))) == NULL)
+                     (char *) malloc((ip - esp + 1) * sizeof(char))) == NULL) {
+                    free_result(result, i);
+                    free(line);
                     return NULL;
+                }
                 memset(result[i]->value, 0, ip - esp + 1);
                 strncpy(result[i]->value, cp, ip - esp);
                 result[i]->value = rrdcgiDecodeString(result[i]->value);
@@ -1505,8 +1551,11 @@ s_var   **rrdcgiReadVariables(
             } else {    /* There is already such a name, suppose a multiple field */
                 cp = ++esp;
                 len = strlen(result[k]->value) + (ip - esp) + 2;
-                if ((sptr = (char *) calloc(len, sizeof(char))) == NULL)
+                if ((sptr = (char *) calloc(len, sizeof(char))) == NULL) {
+                    free_result(result, i);
+                    free(line);
                     return NULL;
+                }
                 snprintf(sptr, len, "%s\n%s", result[k]->value, cp);
                 free(result[k]->value);
                 result[k]->value = rrdcgiDecodeString(sptr);
@@ -1514,6 +1563,8 @@ s_var   **rrdcgiReadVariables(
         }
         cp = ++ip;
     }
+
+    free(line);
     return result;
 }
 
@@ -1528,13 +1579,17 @@ s_cgi    *rrdcgiInit(
     s_cgi    *res;
     s_var   **vars;
 
+    if ((res = (s_cgi *) malloc(sizeof(s_cgi))) == NULL) {
+        return NULL;
+    }
+
     vars = rrdcgiReadVariables();
 
-    if (!vars)
+    if (!vars) {
+    	free(res);
         return NULL;
+    }
 
-    if ((res = (s_cgi *) malloc(sizeof(s_cgi))) == NULL)
-        return NULL;
     res->vars = vars;
 
     return res;

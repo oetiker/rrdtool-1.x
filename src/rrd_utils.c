@@ -75,7 +75,7 @@ int rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src,
 
     if (*alloc == *dest_size)
     {
-        temp = (void **) rrd_realloc(*dest, (*alloc+chunk) * sizeof(*dest));
+        temp = (void **) rrd_realloc(*dest, (*alloc+chunk) * sizeof(**dest));
         if (!temp)
             return 0;
 

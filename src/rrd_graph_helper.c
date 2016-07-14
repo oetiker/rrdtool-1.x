@@ -140,20 +140,20 @@ int getMappedKeyValueArgument(const char* key,int flag, parsedargs_t* pa,
 }
 
 int getLong(const char* v,long *val,char**extra,int base) {
+  if (extra == NULL) {
+    return 0;
+  }
+
   /* try to execute the parser */
   /* NOTE that this may be a bit different from the original parser */
   *extra=NULL;
   *val=strtol(v,extra,base);
   /* and error handling */
-  if (extra==NULL) {
-    return 0;
-  } else {
-    if (*extra==v) {
-      return -1; /* failed miserably */
-    }  else {
-      if ((*extra)[0]==0) { return 0; }
-      return 1; /* got extra bytes */
-    }
+  if (*extra==v) {
+    return -1; /* failed miserably */
+  }  else {
+    if ((*extra)[0]==0) { return 0; }
+    return 1; /* got extra bytes */
   }
   /* not found, so return error */
   return -2;
@@ -783,9 +783,18 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   }
 
   /* and assign it */
-  if (vname) { strncpy(gdp->vname,vname,MAX_VNAME_LEN + 1);}
-  if (rrd) { strncpy(gdp->rrd,rrd,1024); }
-  if (ds) { strncpy(gdp->ds_nam,ds,DS_NAM_SIZE); }
+  if (vname) {
+    strncpy(gdp->vname,vname,MAX_VNAME_LEN);
+    gdp->vname[MAX_VNAME_LEN] = '\0';
+  }
+  if (rrd) {
+    strncpy(gdp->rrd,rrd, 1023);
+    gdp->rrd[1023] = '\0';
+  }
+  if (ds) {
+    strncpy(gdp->ds_nam,ds,DS_NAM_SIZE - 1);
+    gdp->ds_nam[DS_NAM_SIZE - 1] = '\0';
+  }
   if (cf) {
     gdp->cf=cf_conv(cf);
     if (((int)gdp->cf)==-1) {
@@ -935,7 +944,7 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 
 	  /* and keep a copy of the error */
 	  char original_error[4096];
-	  strncpy(original_error,rrd_get_error(),sizeof(original_error));
+	  strncpy(original_error,rrd_get_error(),sizeof(original_error) - 1);
 	  /* and clear the error */
 	  rrd_clear_error();
 
@@ -1235,7 +1244,8 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     dprintfparsed("Processing positional vname\n");
     keyvalue_t* first=getFirstUnusedArgument(1,pa);
     if (first) {
-      strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN + 1);
+      strncpy(gdp->vname,first->keyvalue,MAX_VNAME_LEN);
+      gdp->vname[MAX_VNAME_LEN] = '\0';
       /* get type of reference */
       gdp->vidx=find_var(im, gdp->vname);
       if (gdp->vidx<0) {
@@ -1343,13 +1353,17 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 }
 
 int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,0);
   if (!gdp) { return 1;}
 
   /* get align */
   char* align=getKeyValueArgument("align",1,pa);
-  if (!align) align=getFirstUnusedArgument(1,pa)->value;
+  if (!align) {
+    kv=getFirstUnusedArgument(1,pa);
+    if (kv) align=kv->value;
+  }
   if (!align) { rrd_set_error("No alignment given"); return 1; }
 
   /* parse align */
@@ -1376,6 +1390,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 }
 
 int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+  keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMEREFPOS);
   if (!gdp) { return 1;}
@@ -1397,7 +1412,10 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
 
   /* now parse the "shift" */
   char* shift=getKeyValueArgument("shift",1,pa);
-  if (!shift) {shift=getFirstUnusedArgument(1,pa)->value;}
+  if (!shift) {
+    kv=getFirstUnusedArgument(1,pa);
+    if (kv) shift=kv->value;
+  }
   if (!shift) { rrd_set_error("No shift given"); return 1; }
   /* identify shift */
   gdp->shidx=find_var(im, shift);

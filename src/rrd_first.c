@@ -33,12 +33,16 @@ time_t rrd_first(
             target_rraindex = strtol(options.optarg, &endptr, 0);
             if (target_rraindex < 0) {
                 rrd_set_error("invalid rraindex number");
+                if (opt_daemon != NULL) {
+                    free (opt_daemon);
+                }
                 return (-1);
             }
             break;
         case 'd':
-            if (opt_daemon != NULL)
+            if (opt_daemon != NULL) {
                     free (opt_daemon);
+            }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
             {
@@ -48,6 +52,9 @@ time_t rrd_first(
             break;
         case '?':
             rrd_set_error("%s", options.errmsg);
+            if (opt_daemon != NULL) {
+            	free (opt_daemon);
+            }
             return -1;
         }
     }
@@ -55,13 +62,20 @@ time_t rrd_first(
     if (options.optind >= options.argc) {
         rrd_set_error("usage rrdtool %s [--rraindex number] [--daemon|-d <addr>] file.rrd",
                       options.argv[0]);
+        if (opt_daemon != NULL) free (opt_daemon);
         return -1;
     }
 
     rrdc_connect (opt_daemon);
     if (rrdc_is_connected (opt_daemon)) {
+      if (opt_daemon != NULL) {
+        free (opt_daemon);
+      }
       return rrdc_first(options.argv[options.optind], target_rraindex);
     } else {
+      if (opt_daemon != NULL) {
+      	free (opt_daemon);
+      }
       return rrd_first_r(options.argv[options.optind], target_rraindex);
 	}
 }

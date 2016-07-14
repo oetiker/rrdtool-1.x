@@ -238,6 +238,9 @@ done:
         free(template);
         template = NULL;
     }
+    if (opt_daemon != NULL) {
+    	free(opt_daemon);
+    }
     return rc;
 }
 
@@ -309,7 +312,7 @@ int parseDS(const char *def,
 #ifdef HAVE_G_REGEX_NEW    
     GError *gerr = NULL;
     GRegex *re = g_regex_new(DS_RE, G_REGEX_EXTENDED, 0, &gerr);
-    GMatchInfo *mi;
+    GMatchInfo *mi = NULL;
 
     if (gerr != NULL) {
         rrd_set_error("cannot compile RE: %s", gerr->message);
@@ -381,11 +384,11 @@ int parseDS(const char *def,
     case DST_DERIVE:
     case DST_DCOUNTER:
     case DST_DDERIVE:
-        strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+        strncpy(ds_def->dst, dst_tmp, DST_SIZE - 1);
 	parseGENERIC_DS(dst_args, ds_def);
 	break;
     case DST_CDEF:
-	strncpy(ds_def->dst, dst_tmp, DST_SIZE);
+	strncpy(ds_def->dst, dst_tmp, DST_SIZE - 1);
         parseCDEF_DS(dst_args, ds_def, key_hash, lookup);
 	break;
     default:
@@ -858,6 +861,7 @@ int rrd_create_r2(
         
         if (rrd.ds_def == NULL || rrd.rra_def == NULL) {
             rrd_set_error("cannot allocate memory");
+	    rrd_close(tf);
             goto done;
         }
 
@@ -948,7 +952,7 @@ int rrd_create_r2(
     // parsing went well. ONLY THEN are we allowed to produce
     // additional side effects.
     if (require_version != NULL) {
-        strcpy(rrd.stat_head->version, require_version);
+        strncpy(rrd.stat_head->version, require_version, 5);
     }
 
     if (rrd.stat_head->rra_cnt < 1) {
@@ -1313,6 +1317,7 @@ done:
 int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
     char *tmpfilename = NULL;
+    mode_t saved_umask;
 
     /* write out the new file */
 #ifdef HAVE_LIBRADOS
@@ -1337,7 +1342,10 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 	strcpy(tmpfilename, outfilename);
 	strcat(tmpfilename, "XXXXXX");
 	
+	/* fix CWE-377 */
+	saved_umask = umask(S_IRUSR|S_IWUSR);
 	int tmpfd = mkstemp(tmpfilename);
+	umask(saved_umask);
 	if (tmpfd < 0) {
 	    rrd_set_error("Cannot create temporary file");
 	    goto done;
