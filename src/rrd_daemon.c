@@ -356,8 +356,8 @@ static void* signal_receiver (void UNUSED(*args))
     switch(status)
     {
       case -1:
-        RRDD_LOG(LOG_ERR, "%s: %s\nerrno: %d", __func__, "Signal wait failed.", errno);
-        abort();
+        RRDD_LOG(LOG_NOTICE, "%s: %s (May be OK if occuring while attaching/attached to strace, gdb, etc)\nerrno: %d", __func__, "Signal wait failed.", errno);
+        break;
 
       case SIGINT:
         sig_common("INT");
