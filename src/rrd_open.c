@@ -279,8 +279,15 @@ rrd_file_t *rrd_open(
     } else {
         rrd_file->file_len = newfile_size;
 #ifdef HAVE_POSIX_FALLOCATE
-        if (posix_fallocate(rrd_simple_file->fd, 0, newfile_size) == 0){
-            /* if all  is well we skip the seeking below */            
+	/* man: posix_fallocate() returns zero on success,
+	 * or an error number on failure.  Note that errno is not set.
+	 */
+	int fret = posix_fallocate(rrd_simple_file->fd, 0, newfile_size);
+        if (fret) {
+            rrd_set_error("posix_fallocate '%s': %s", file_name,
+                          rrd_strerror(fret));
+            goto out_close;
+        } else {
             goto no_lseek_necessary;        
         }
 #endif
