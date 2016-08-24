@@ -3794,7 +3794,7 @@ int graph_paint(
     }
 
     /* pull the data from the rrd files ... */
-    if (data_fetch(im) == -1)
+    if (data_fetch(im) != 0)
         return -1;
     /* evaluate VDEF and CDEF operations ... */
     if (data_calc(im) == -1)
