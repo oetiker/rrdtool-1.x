@@ -24,6 +24,7 @@ B<rrdcached>
 [B<-s>E<nbsp>I<group>]
 [B<-t>E<nbsp>I<write_threads>]
 [B<-U>E<nbsp>I<user>]]
+[B<-V>E<nbsp>I<log_level>]
 [B<-w>E<nbsp>I<timeout>]
 [B<-z>E<nbsp>I<delay>]
 
@@ -156,6 +157,20 @@ be accepted, too.
 =back
 
 Please also read L</"SECURITY CONSIDERATIONS"> below.
+
+=item B<-V> I<log_level>
+
+rrdcached under load can severely flood the logs. This command line option
+specifies the maximum log_level to be used, meaning that a message with
+verbosity I<higher> than log_level is muted (LOG_EMERG being the lowest and
+LOG_DEBUG highest).
+
+Accepted values for "log_level" (lowest to highest verbosity):
+LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_DEBUG
+
+Default log level when this flag is I<NOT> present: B<LOG_ERR>
+
+See also: L<syslog.h>
 
 =item B<-w> I<timeout>
 
