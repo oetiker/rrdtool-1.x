@@ -111,6 +111,10 @@ Export data retrieved from one or several RRDs. Check L<rrdxport>.
 
 Flush the values for a specific RRD file from memory. Check L<rrdflushcached>.
 
+=item B<list>
+
+List the directories and rrd databases remotely. Check L<rrdlist>.
+
 =back
 
 =head2 HOW DOES RRDTOOL WORK?
