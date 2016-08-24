@@ -2293,7 +2293,8 @@ static int handle_request_create (HANDLER_PROTO) /* {{{ */
         goto done;
     }
     if (rrd_mkdir_p(dir, 0755) != 0) {
-        rc = send_response(sock, RESP_ERR, "Cannot create: %s\n", dir);
+        rc = send_response(sock, RESP_ERR, "Cannot create %s: %s\n",
+                           dir, strerror(errno));
         pthread_mutex_unlock(&rrdfilecreate_lock);
         goto done;
     }

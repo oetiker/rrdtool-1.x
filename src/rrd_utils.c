@@ -222,7 +222,7 @@ int rrd_mkdir_p(const char *pathname_unsafe, mode_t mode)
         return -1;
     }
 #else
-    if (0 != mkdir(pathname, mode)) {
+    if ((mkdir(pathname, mode) != 0) && (errno != EEXIST)) {
         free(pathname);
         return -1;
     }
