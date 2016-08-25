@@ -2390,6 +2390,10 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
 {
   char *filename;
   char fullpath[PATH_MAX];
+  char bwc[PATH_MAX], bwd[PATH_MAX];
+  char *base = &config_base_dir[0], *current = &fullpath[0];
+  struct stat sc, sd;
+  ssize_t len;
   int status;
   DIR *dir;
   struct dirent *entry;
@@ -2442,13 +2446,49 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
   if (!check_file_access(fullpath, sock))
     return send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
 
+  /* make sure we aren't following a symlink pointing outside of base_dir */
+  if (lstat(fullpath, &sc) == -1) {
+    return send_response(sock, RESP_ERR, "stat %s: %s\n",
+    		         fullpath, rrd_strerror(errno));
+  }
+
+  if ((sc.st_mode & S_IFMT) == S_IFLNK) {
+    len = readlink(fullpath, bwc, sizeof(bwc) - 1);
+    if (len == -1) {
+      return send_response(sock, RESP_ERR, "readlink %s: %s\n",
+      		           fullpath, rrd_strerror(errno));
+    }
+    bwc[len] = '\0';
+    current = &bwc[0];
+  }
+
+  if (lstat(config_base_dir, &sd) == -1) {
+    return send_response(sock, RESP_ERR, "stat %s: %s\n",
+    		         config_base_dir, rrd_strerror(errno));
+  }
+
+  if ((sd.st_mode & S_IFMT) == S_IFLNK) {
+    len = readlink(config_base_dir, bwd, sizeof(bwd) - 1);
+    if (len == -1) {
+      return send_response(sock, RESP_ERR, "readlink %s: %s\n",
+      		           config_base_dir, rrd_strerror(errno));
+    }
+    bwd[len] = '\0';
+    base = &bwd[0];
+  }
+
+  /* current path MUST be starting with base_dir */
+  if (memcmp(current, base, strlen(base)) != 0) {
+    return send_response(sock, RESP_ERR, "Permission denied\n");
+  }
+
   /* If filename matches an RRD file, then return it */
-  if (strstr(fullpath, ".rrd")) {
+  if (strstr(current, ".rrd")) {
 	  struct stat st;
 	  char *ptr;
 
-	  if (!stat(fullpath, &st) && S_ISREG(st.st_mode)) {
-		  ptr = strrchr(fullpath, '/');
+	  if (!stat(current, &st) && S_ISREG(st.st_mode)) {
+		  ptr = strrchr(current, '/');
 
 		  if (ptr)
 			  add_response_info(sock, "%s\n", ptr + 1);
@@ -2457,12 +2497,12 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
 	  goto out_send_response;
   }
 
-  dir = opendir(fullpath);
+  dir = opendir(current);
 
   if (dir == NULL) {
     return send_response(sock, RESP_ERR,
 			 "Failed to open directory %s : %s\n",
-			 fullpath, strerror(errno));
+			 current, strerror(errno));
   }
 
   while ((entry = readdir(dir)) != NULL) {
