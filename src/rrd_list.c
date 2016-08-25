@@ -38,7 +38,7 @@ char *rrd_list(int argc, char **argv)
 			if (opt_daemon != NULL) {
 				free (opt_daemon);
 			}
-			opt_daemon = strdup (optarg);
+			opt_daemon = strdup (options.optarg);
 			if (opt_daemon == NULL)
 			{
 				rrd_set_error ("strdup failed.");
@@ -71,7 +71,7 @@ char *rrd_list(int argc, char **argv)
 
 	}
 
-	if ((argc - optind) != 1) {
+	if ((argc - options.optind) != 1) {
 		rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <directory>",
                 argv[0]);
 
@@ -97,7 +97,7 @@ char *rrd_list(int argc, char **argv)
 	rrdc_connect (opt_daemon);
 
 	if (rrdc_is_connected (opt_daemon)) {
-		list = rrdc_list(argv[optind]);
+		list = rrdc_list(argv[options.optind]);
 		rrdc_disconnect();
 
 	} else {
@@ -109,7 +109,7 @@ char *rrd_list(int argc, char **argv)
 				fprintf(stderr, ": %s", err);
 			fprintf(stderr, "\n");
 		}
-		list = rrd_list_r(argv[optind]);
+		list = rrd_list_r(argv[options.optind]);
 	}
 
 	if (opt_daemon != NULL) {
