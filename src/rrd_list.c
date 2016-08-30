@@ -1,5 +1,9 @@
 
 #include <stdio.h>
+#include <string.h>
+#include <glob.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "rrd_tool.h"
 #include "rrd_client.h"
@@ -9,8 +13,145 @@ char *rrd_list(int argc, char **argv);
 
 char *rrd_list_r(char *dirname)
 {
-	printf("rrd_list_r not implemented yet\n");
-	return NULL;
+#define SANE_ASPRINTF(_dest_str, _format, _params...)			\
+	if (asprintf(&_dest_str, _format, _params) == -1) {		\
+		if (out != NULL) {					\
+			free(out);					\
+		}							\
+		errno = ENOMEM;						\
+		return NULL;						\
+	}
+#define SANE_ASPRINTF2(_dest_str, _format, _params...)			\
+	if (asprintf(&_dest_str, _format, _params) == -1) {		\
+		if (out != NULL) {					\
+			free(out);					\
+		}							\
+		closedir(dir);						\
+		errno = ENOMEM;						\
+		return NULL;						\
+	}
+
+	char *out = NULL, *tmp;
+	char current[PATH_MAX];
+	glob_t buf;
+	char *ptr;
+	unsigned int i;
+	struct stat st;
+	DIR *dir;
+  	struct dirent *entry;
+
+	/* Prevent moving up the directory tree */
+	if (strstr(dirname, "..")) {
+		errno = EACCES;
+		return NULL;
+	}
+
+	/* if filename contains wildcards, then use glob() */
+	if (strchr(dirname, '*') || strchr(dirname, '?')) {
+
+		if (glob(dirname, 0, NULL, &buf)) {
+			globfree(&buf);
+			errno = ENOENT;
+			return NULL;
+		}
+
+		for (i = 0; i < buf.gl_pathc; i++) {
+			ptr = strrchr(buf.gl_pathv[i], '/');
+
+			if (ptr == NULL) {
+				continue;
+			}
+
+			if (out == NULL) {
+				SANE_ASPRINTF(out, "%s\n", ptr + 1);
+
+			} else {
+				tmp = out;
+				SANE_ASPRINTF(out, "%s%s\n", out, ptr + 1);
+				free(tmp);
+			}
+		}
+		globfree(&buf);
+
+		if (out == NULL) {
+			errno = ENOENT;
+		}
+		return out;
+	}
+
+	/* If 'dirname' matches an RRD file, then return it.
+	 * strlen() used to make sure it's matching the end of string.
+	 */
+	ptr = strstr(dirname, ".rrd");
+
+	if (ptr != NULL && strlen(ptr) == 4) {
+
+		if (!stat(dirname, &st) && S_ISREG(st.st_mode)) {
+			ptr = strrchr(dirname, '/');
+
+			if (ptr) {
+				SANE_ASPRINTF(out, "%s\n", ptr + 1);
+			}
+		}
+		return out;
+	}
+
+	/* Process directory */
+	dir = opendir(dirname);
+
+	if (dir == NULL) {
+		/* opendir sets errno */
+		return NULL;
+	}
+
+	while ((entry = readdir(dir)) != NULL) {
+
+		if ((strcmp(entry->d_name, ".") == 0) ||
+		    (strcmp(entry->d_name, "..") == 0)) {
+			continue;
+		}
+
+		if (strlen(dirname) + strlen(entry->d_name) + 1 >= PATH_MAX) {
+			continue;
+		}
+		snprintf(&current[0], PATH_MAX, "%s/%s", dirname, entry->d_name);
+
+		/* Only return directories and rrd files.
+		 * NOTE: stat(2) follows symlinks and gives info on target. */
+		if (stat(current, &st) != 0) {
+			continue;
+		}
+
+		if (!S_ISDIR(st.st_mode)) {
+
+			if (S_ISREG(st.st_mode)) {
+
+				ptr = strstr(entry->d_name, ".rrd");
+
+	 			/* strlen() used to make sure it's matching
+	 			 * the end of string.
+	 			 */
+				if (ptr == NULL || strlen(ptr) != 4) {
+					continue;
+				}
+
+			} else {
+				continue;
+			}
+		}
+
+		if (out == NULL) {
+			SANE_ASPRINTF2(out, "%s\n", entry->d_name);
+
+		} else {
+			tmp = out;
+			SANE_ASPRINTF2(out, "%s%s\n", out, entry->d_name);
+			free(tmp);
+		}
+	}
+	closedir(dir);
+
+	return out;
 }
 
 char *rrd_list(int argc, char **argv)
@@ -110,6 +251,10 @@ char *rrd_list(int argc, char **argv)
 			fprintf(stderr, "\n");
 		}
 		list = rrd_list_r(argv[options.optind]);
+
+		if (list == NULL) {
+			fprintf(stderr, "%s", strerror(errno));
+		}
 	}
 
 	if (opt_daemon != NULL) {

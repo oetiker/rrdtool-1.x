@@ -105,7 +105,6 @@
 #include <libgen.h>
 #include <grp.h>
 #include <pwd.h>
-#include <glob.h>
 
 #ifdef HAVE_LIBWRAP
 #include <tcpd.h>
@@ -2389,14 +2388,13 @@ done:
 static int handle_request_list (HANDLER_PROTO) /* {{{ */
 {
   char *filename;
-  char fullpath[PATH_MAX];
+  char *list, *start_ptr, *end_ptr, *ptr;
+  char fullpath[PATH_MAX], current[PATH_MAX], absolute[PATH_MAX];
   char bwc[PATH_MAX], bwd[PATH_MAX];
-  char *base = &config_base_dir[0], *current = &fullpath[0];
+  char *base = &config_base_dir[0];
   struct stat sc, sd;
   ssize_t len;
   int status;
-  DIR *dir;
-  struct dirent *entry;
 
   if (config_base_dir == NULL) {
     return send_response(sock, RESP_ERR, "No base directory defined\n");
@@ -2412,56 +2410,11 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
   snprintf(fullpath, PATH_MAX, "%s%s%s",
 	   config_base_dir, (filename[0] == '/') ? "" : "/", filename);
 
-  /* Prevent moving up the directory tree */
-  if (strstr(fullpath, ".."))
-      send_response(sock, RESP_ERR, "%s\n", rrd_strerror(EACCES));
-
-  /* if filename contains wildcards, then use glob() */
-  if (strchr(fullpath, '*') || strchr(fullpath, '?')) {
-    glob_t buf;
-    unsigned int i;
-
-    if (glob(fullpath, 0, NULL, &buf)) {
-      globfree(&buf);
-      goto out_send_response;
-    }
-
-    for (i = 0; i < buf.gl_pathc; i++) {
-      char *ptr;
-
-      if (!check_file_access(buf.gl_pathv[i], sock))
-	return send_response(sock, RESP_ERR,
-			     "Cannot read: %s\n", buf.gl_pathv[i]);
-
-      ptr = strrchr(buf.gl_pathv[i], '/');
-
-      if (ptr != NULL)
-	add_response_info(sock, "%s\n", ptr + 1);
-    }
-
-    globfree(&buf);
-    goto out_send_response;
-  }
-
-  if (!check_file_access(fullpath, sock))
+  if (!check_file_access(fullpath, sock)) {
     return send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
-
-  /* make sure we aren't following a symlink pointing outside of base_dir */
-  if (lstat(fullpath, &sc) == -1) {
-    return send_response(sock, RESP_ERR, "stat %s: %s\n",
-    		         fullpath, rrd_strerror(errno));
   }
 
-  if ((sc.st_mode & S_IFMT) == S_IFLNK) {
-    len = readlink(fullpath, bwc, sizeof(bwc) - 1);
-    if (len == -1) {
-      return send_response(sock, RESP_ERR, "readlink %s: %s\n",
-      		           fullpath, rrd_strerror(errno));
-    }
-    bwc[len] = '\0';
-    current = &bwc[0];
-  }
-
+  /* get real path of config_base_dir in case it's a symlink */
   if (lstat(config_base_dir, &sd) == -1) {
     return send_response(sock, RESP_ERR, "stat %s: %s\n",
     		         config_base_dir, rrd_strerror(errno));
@@ -2477,44 +2430,89 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
     base = &bwd[0];
   }
 
-  /* current path MUST be starting with base_dir */
-  if (memcmp(current, base, strlen(base)) != 0) {
-    return send_response(sock, RESP_ERR, "Permission denied\n");
-  }
+  list = rrd_list_r(fullpath);
 
-  /* If filename matches an RRD file, then return it */
-  if (strstr(current, ".rrd")) {
-	  struct stat st;
-	  char *ptr;
-
-	  if (!stat(current, &st) && S_ISREG(st.st_mode)) {
-		  ptr = strrchr(current, '/');
-
-		  if (ptr)
-			  add_response_info(sock, "%s\n", ptr + 1);
-	  }
-
-	  goto out_send_response;
-  }
-
-  dir = opendir(current);
-
-  if (dir == NULL) {
-    return send_response(sock, RESP_ERR,
-			 "Failed to open directory %s : %s\n",
-			 current, strerror(errno));
-  }
-
-  while ((entry = readdir(dir)) != NULL) {
-
-    if ((strcmp(entry->d_name, ".") == 0) ||
-	(strcmp(entry->d_name, "..") == 0)) {
-      continue;
+  if (list == NULL) {
+    /* Empty directory listing */
+    if (errno == 0) {
+      goto out_send_response;
     }
 
-    add_response_info(sock, "%s\n", entry->d_name);
+    return send_response(sock, RESP_ERR,
+                         "List %s: %s\n", fullpath, rrd_strerror(errno));
   }
-  closedir(dir);
+
+  /* Check list items returned by rrd_list_r;
+   * the returned string is newline-separated: '%s\n%s\n...%s\n'
+   */
+  start_ptr = list;
+  end_ptr = list;
+
+  do {
+    end_ptr = strchr(start_ptr, '\n');
+
+    if (end_ptr == NULL) {
+    	end_ptr = start_ptr + strlen(start_ptr);
+
+    	if (end_ptr == start_ptr) {
+	    	break;
+	}
+	  }
+
+    if ((end_ptr - start_ptr + strlen(fullpath) + 1) >= PATH_MAX) {
+      /* Name too long: skip entry */
+      goto loop_next;
+  }
+    strncpy(&current[0], start_ptr, (end_ptr - start_ptr));
+    current[end_ptr - start_ptr] = '\0';
+
+    /* if a single .rrd was asked for, absolute == fullpath  */
+    ptr = strstr(fullpath, ".rrd");
+
+    if (ptr != NULL && strlen(ptr) == 4) {
+      snprintf(&absolute[0], PATH_MAX, "%s", fullpath);
+
+    } else {
+    snprintf(&absolute[0], PATH_MAX, "%s/%s", fullpath, current);
+    }
+
+    if (!check_file_access(absolute, sock)) {
+      /* Cannot access: skip entry */
+      goto loop_next;
+    }
+
+    /* Make sure we aren't following a symlink pointing outside of base_dir */
+    if (lstat(absolute, &sc) == -1) {
+      free(list);
+    return send_response(sock, RESP_ERR,
+      		           "stat %s: %s\n", absolute, rrd_strerror(errno));
+  }
+
+    if ((sc.st_mode & S_IFMT) == S_IFLNK) {
+      len = readlink(absolute, bwc, sizeof(bwc) - 1);
+
+      if (len == -1) {
+      	free(list);
+        return send_response(sock, RESP_ERR, "readlink %s: %s\n",
+        		     absolute, rrd_strerror(errno));
+      }
+      bwc[len] = '\0';
+      strncpy(&absolute[0], bwc, PATH_MAX - 1);
+      absolute[PATH_MAX - 1] = '\0';
+    }
+
+    /* Absolute path MUST be starting with base_dir; if not skip the entry. */
+    if (memcmp(absolute, base, strlen(base)) != 0) {
+      goto loop_next;
+  }
+    add_response_info(sock, "%s\n", current);
+
+loop_next:
+    start_ptr = end_ptr + 1;
+
+  } while (start_ptr != '\0');
+
+  free(list);
 
 out_send_response:
   send_response(sock, RESP_OK, "RRDs\n");

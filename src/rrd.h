@@ -166,6 +166,7 @@ struct rrd_t;
     void      rrd_info_free(
     rrd_info_t *);
     char      *rrd_list(int, char **);
+    char      *rrd_list_r(char *dirname);
     int       rrd_update(
     int,
     char **);
