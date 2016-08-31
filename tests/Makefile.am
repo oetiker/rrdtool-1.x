@@ -4,7 +4,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
-	create-from-template-1 dcounter1 vformatter1 xport1
+	create-from-template-1 dcounter1 vformatter1 xport1 list1
 
 EXTRA_DIST = Makefile.am \
 	functions $(TESTS) \

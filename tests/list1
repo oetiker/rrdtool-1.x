@@ -1,0 +1,90 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/`basename $0`
+BUILD=$BUILDDIR/`basename $0`
+LIST_DIR=$BUILDDIR/`basename $0`_dir
+
+# This is used both for 'direct' tests and for tests via rrdcached 
+# (when RRDCACHED_ADDRESS is exported). In that case the 'root' directory
+# is BASEDIR (see '-b' in functions::run_cached) and the paths in tests
+# must be changed accordingly (see $LIST_TEST_DIR, $rrd)
+function do_list_tests()
+{
+        [ "$1" == "" ] && return 1
+        [ "$1" == "$LIST_DIR" ] && LIST_TEST_DIR="$1" || LIST_TEST_DIR="./$1"
+
+        list_count=`$RRDTOOL list "$LIST_TEST_DIR" 2>/dev/null | wc -l`
+        test $list_count -eq 0
+        report "empty directory $LIST_TEST_DIR returns nothing"
+
+        rrd_name=`basename ${BUILD}.rrd`
+        [ "$LIST_TEST_DIR" == "$LIST_DIR" ] && rrd=${BUILD}.rrd || rrd="/${rrd_name}"
+        list_name=`$RRDTOOL list $rrd`
+        test "$list_name" == "$rrd_name"
+        report "single file $rrd "
+
+        cp ${BUILD}.rrd "$LIST_TEST_DIR"/
+        cp ${BUILD}.rrd "$LIST_TEST_DIR"/second.rrd
+        cp ${BUILD}.rrd "$LIST_TEST_DIR"/third.rrd
+        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+        test $list_count -eq 3
+        report "directory with several RRDs"
+
+        touch "$LIST_TEST_DIR"/not_an_rrd
+        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+        test $list_count -eq 3
+        report "only lists files with .rrd suffix"
+
+        mkdir -p "$LIST_TEST_DIR"/new_dir
+        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+        test $list_count -eq 4
+        report "only lists RRDs and directories"
+}
+
+################################################################################
+rm -rf "$LIST_DIR"
+
+# if running via 'make check TESTS_STYLE="rrdcached"', use the existing instance
+if [ -n "$RRDCACHED_ADDRESS" ]; then
+        TEMP_RRDCACHED_ADDRESS=$RRDCACHED_ADDRESS
+        unset RRDCACHED_ADDRESS
+fi
+
+$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60s DS:dv:DDERIVE:300:U:U DS:wh:DCOUNTER:300:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:10:144
+report create
+
+list_count=`LC_ALL=C $RRDTOOL list | grep -c Usage`
+test $list_count -eq 1
+report "list without parameters displays Usage"
+
+mkdir -p "$LIST_DIR" || report "Failed to create '$LIST_DIR'; abort"
+do_list_tests "$LIST_DIR"
+rm -rf "$LIST_DIR"
+
+echo -e "\nStarting rrdcached..."
+if [ -n "$TEMP_RRDCACHED_ADDRESS" ]; then
+        export RRDCACHED_ADDRESS=$TEMP_RRDCACHED_ADDRESS
+else
+        run_cached
+fi
+
+if is_cached; then
+        mkdir -p "$LIST_DIR" 
+        # This relies on '-b' setting in functions::run_cached()
+        CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BASEDIR/||"`
+        do_list_tests "$CACHED_DIR"
+
+        # rrdcached-specific tests
+        ( cd "$LIST_DIR"; ln -s /tmp ./; )
+        list_count=`$RRDTOOL list "$CACHED_DIR" | grep -c '^tmp$'`
+        test $list_count -eq 0
+        report "escape from cached basedir via symlink denied"
+
+        rm -rf "$LIST_DIR"
+        stop_cached || true
+else
+        echo "rrdcached not started - skipping"
+fi
+report "tests with rrdcached"
