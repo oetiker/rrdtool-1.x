@@ -133,7 +133,7 @@ static int rrd_fetch_cb_wrapper(
     HV *retHV;
     HE *retHE;
     AV *retAV;
-    time_t new_start,new_end;
+    time_t new_start;
     char *cfStr = NULL;
     unsigned long i,ii;
     unsigned long rowCount = 0;
@@ -521,7 +521,7 @@ rrd_xport(...)
 	PREINIT:
                 time_t start,end;
                 int xsize;
-		unsigned long step, col_cnt,row_cnt,i,ii;
+		unsigned long step, col_cnt,i,ii;
 		rrd_value_t *data,*ptr;
                 char **argv,**legend_v;
 		AV *retar,*line,*names;
