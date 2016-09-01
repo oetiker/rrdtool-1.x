@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "optparse.h"
 
-#define opterror(options, format, args...) \
-    snprintf(options->errmsg, sizeof(options->errmsg), format, args);
+#define opterror(options, format, ...) \
+    snprintf(options->errmsg, sizeof(options->errmsg), format, __VA_ARGS__);
 
 #define options_argv(i) \
     ((i) < options->argc ? options->argv[i] : NULL)
