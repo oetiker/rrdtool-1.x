@@ -16,6 +16,7 @@ rrd_first
 rrd_first_r
 rrd_flush
 rrd_flushcached
+rrd_flushall
 rrd_free
 rrd_free_context
 rrd_freemem
@@ -29,6 +30,8 @@ rrd_info_free
 rrd_info_print
 rrd_info_push
 rrd_info_r
+rrd_list
+rrd_list_r
 rrd_init
 rrd_last
 rrd_last_r
@@ -63,6 +66,7 @@ rrdc_connect
 rrdc_is_connected
 rrdc_disconnect
 rrdc_flush
+rrdc_flushall
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update

@@ -51,6 +51,7 @@ int rrdc_update (const char *filename, int values_num,
     const char * const *values);
 
 rrd_info_t * rrdc_info (const char *filename);
+char *rrdc_list(const char *dirname);
 time_t rrdc_last (const char *filename);
 time_t rrdc_first (const char *filename, int rraindex);
 int rrdc_create (const char *filename,
@@ -72,6 +73,8 @@ int rrdc_create_r2 (const char *filename,
 int rrdc_flush (const char *filename);
 int rrdc_forget (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
+int rrdc_flushall (void);
+int rrdc_flushall_if_daemon (const char *opt_daemon);
 
 int rrdc_fetch (const char *filename,
     const char *cf,

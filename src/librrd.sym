@@ -36,6 +36,8 @@ rrd_last
 rrd_last_r
 rrd_lastupdate
 rrd_lastupdate_r
+rrd_list
+rrd_list_r
 rrd_lock
 rrd_mkdir_p
 rrd_new_context

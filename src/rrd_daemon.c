@@ -1229,7 +1229,7 @@ static int check_file_access (const char *file, listen_socket_t *sock) /* {{{ */
   if (*file != '/') return 1;
 
   /* file must be of the format base + "/" + <1+ char filename> */
-  if (strlen(file) < _config_base_dir_len + 2) return 0;
+  if (strlen(file) < _config_base_dir_len + 1) return 0;
   if (strncmp(file, config_base_dir, _config_base_dir_len) != 0) return 0;
   if (*(file + _config_base_dir_len) != '/') return 0;
 
@@ -2385,6 +2385,142 @@ done:
   return rc;
 } /* }}} static int handle_request_create  */
 
+static int handle_request_list (HANDLER_PROTO) /* {{{ */
+{
+  char *filename;
+  char *list, *start_ptr, *end_ptr, *ptr;
+  char fullpath[PATH_MAX], current[PATH_MAX], absolute[PATH_MAX];
+  char bwc[PATH_MAX], bwd[PATH_MAX];
+  char *base = &config_base_dir[0];
+  struct stat sc, sd;
+  ssize_t len;
+  int status;
+
+  if (config_base_dir == NULL) {
+    return send_response(sock, RESP_ERR, "No base directory defined\n");
+  }
+
+  /* Get pathname */
+  status = buffer_get_field(&buffer, &buffer_size, &filename);
+
+  if (status != 0)
+    return syntax_error(sock,cmd);
+
+  /* get full pathname */
+  snprintf(fullpath, PATH_MAX, "%s%s%s",
+	   config_base_dir, (filename[0] == '/') ? "" : "/", filename);
+
+  if (!check_file_access(fullpath, sock)) {
+    return send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
+  }
+
+  /* get real path of config_base_dir in case it's a symlink */
+  if (lstat(config_base_dir, &sd) == -1) {
+    return send_response(sock, RESP_ERR, "stat %s: %s\n",
+    		         config_base_dir, rrd_strerror(errno));
+  }
+
+  if ((sd.st_mode & S_IFMT) == S_IFLNK) {
+    len = readlink(config_base_dir, bwd, sizeof(bwd) - 1);
+    if (len == -1) {
+      return send_response(sock, RESP_ERR, "readlink %s: %s\n",
+      		           config_base_dir, rrd_strerror(errno));
+    }
+    bwd[len] = '\0';
+    base = &bwd[0];
+  }
+
+  list = rrd_list_r(fullpath);
+
+  if (list == NULL) {
+    /* Empty directory listing */
+    if (errno == 0) {
+      goto out_send_response;
+    }
+
+    return send_response(sock, RESP_ERR,
+                         "List %s: %s\n", fullpath, rrd_strerror(errno));
+  }
+
+  /* Check list items returned by rrd_list_r;
+   * the returned string is newline-separated: '%s\n%s\n...%s\n'
+   */
+  start_ptr = list;
+  end_ptr = list;
+
+  do {
+    end_ptr = strchr(start_ptr, '\n');
+
+    if (end_ptr == NULL) {
+    	end_ptr = start_ptr + strlen(start_ptr);
+
+    	if (end_ptr == start_ptr) {
+	    	break;
+	}
+	  }
+
+    if ((end_ptr - start_ptr + strlen(fullpath) + 1) >= PATH_MAX) {
+      /* Name too long: skip entry */
+      goto loop_next;
+  }
+    strncpy(&current[0], start_ptr, (end_ptr - start_ptr));
+    current[end_ptr - start_ptr] = '\0';
+
+    /* if a single .rrd was asked for, absolute == fullpath  */
+    ptr = strstr(fullpath, ".rrd");
+
+    if (ptr != NULL && strlen(ptr) == 4) {
+      snprintf(&absolute[0], PATH_MAX, "%s", fullpath);
+
+    } else {
+    snprintf(&absolute[0], PATH_MAX, "%s/%s", fullpath, current);
+    }
+
+    if (!check_file_access(absolute, sock)) {
+      /* Cannot access: skip entry */
+      goto loop_next;
+    }
+
+    /* Make sure we aren't following a symlink pointing outside of base_dir */
+    if (lstat(absolute, &sc) == -1) {
+      free(list);
+    return send_response(sock, RESP_ERR,
+      		           "stat %s: %s\n", absolute, rrd_strerror(errno));
+  }
+
+    if ((sc.st_mode & S_IFMT) == S_IFLNK) {
+      len = readlink(absolute, bwc, sizeof(bwc) - 1);
+
+      if (len == -1) {
+      	free(list);
+        return send_response(sock, RESP_ERR, "readlink %s: %s\n",
+        		     absolute, rrd_strerror(errno));
+      }
+      bwc[len] = '\0';
+      strncpy(&absolute[0], bwc, PATH_MAX - 1);
+      absolute[PATH_MAX - 1] = '\0';
+    }
+
+    /* Absolute path MUST be starting with base_dir; if not skip the entry. */
+    if (memcmp(absolute, base, strlen(base)) != 0) {
+      goto loop_next;
+  }
+    add_response_info(sock, "%s\n", current);
+
+loop_next:
+    start_ptr = end_ptr + 1;
+
+  } while (start_ptr != '\0');
+
+  free(list);
+
+out_send_response:
+  send_response(sock, RESP_OK, "RRDs\n");
+
+  return (0);
+} /* }}} int handle_request_list */
+
+
 /* start "BATCH" processing */
 static int batch_start (HANDLER_PROTO) /* {{{ */
 {
@@ -2593,6 +2729,16 @@ static command_t list_of_commands[] = { /* {{{ */
     "The start parameter needs to be in seconds since 1/1/70 (AT-style syntax is\n"
     "not acceptable) and the step is in seconds (default is 300).\n"
     "The DS and RRA definitions are as for the 'rrdtool create' command.\n"
+  },
+  {
+    "LIST",
+    handle_request_list,
+    CMD_CONTEXT_CLIENT,
+    "LIST\n",
+    "This command lists the RRD files in the storage base directory.\n"
+    "Note that this is the list of RRD files on storage as of the last update.\n"
+    "There may be pending updates in the queue, so a FLUSH may have to be run\n"
+    "beforehand.\n"
   },
   {
     "QUIT",

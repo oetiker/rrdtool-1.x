@@ -51,7 +51,9 @@ RRD_C_FILES =		\
 	rrd_fetch.c	\
 	rrd_fetch_cb.c  \
 	rrd_resize.c \
-	rrd_tune.c
+	rrd_tune.c	\
+	rrd_list.c
+
 
 if BUILD_RRDGRAPH
 RRD_C_FILES += rrd_graph.c	\
