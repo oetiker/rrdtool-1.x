@@ -175,7 +175,7 @@ rrd_info_t *rrd_info_r(
     if (rrd_file == NULL)
         goto err_free;
 
-    info.u_str = filename;
+    info.u_str = (char *)filename;
     cd = rrd_info_push(NULL, sprintf_alloc("filename"), RD_I_STR, info);
     data = cd;
 
