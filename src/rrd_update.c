@@ -61,13 +61,7 @@ static int gettimeofday(
 #endif
 
 /* FUNCTION PROTOTYPES */
-
-int       rrd_update_r(
-    const char *filename,
-    const char *tmplt,
-    int argc,
-    const char **argv);
-int       _rrd_updatex(
+static int _rrd_updatex(
     const char *filename,
     const char *tmplt,
     int extra_flags,
@@ -819,7 +813,7 @@ int rrd_updatex_v_r(
     return _rrd_updatex(filename, tmplt, extra_flags, argc, argv, pcdp_summary);
 }
 
-int _rrd_updatex(
+static int _rrd_updatex(
     const char *filename,
     const char *tmplt,
     int extra_flags,
