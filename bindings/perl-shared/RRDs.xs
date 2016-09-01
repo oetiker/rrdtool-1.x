@@ -95,7 +95,7 @@ extern "C" {
 			hvs(newSVpv(data->value.u_str,0)); \
 			break; \
 		    case RD_I_BLO: \
-			hvs(newSVpv(data->value.u_blo.ptr,data->value.u_blo.size)); \
+			hvs(newSVpv((char *)data->value.u_blo.ptr,data->value.u_blo.size)); \
 			break; \
 		    } \
 		    data = data->next; \
