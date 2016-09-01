@@ -118,13 +118,6 @@ static char *stralloc(
 /* global variable for rrdcgi */
 s_cgi    *rrdcgiArg;
 
-/* rrdcgiHeader
- * 
- *  Prints a valid CGI Header (Content-type...) etc.
- */
-static void rrdcgiHeader(
-    void);
-
 /* rrdcgiDecodeString
  * decode html escapes
  */
@@ -155,20 +148,6 @@ static s_cgi *rrdcgiInit(
 static char *rrdcgiGetValue(
     s_cgi * parms,
     const char *name);
-
-/* rrdcgiFreeList
- *
- * Frees a list as returned by rrdcgiGetVariables()
- */
-static void rrdcgiFreeList(
-    char **list);
-
-/* rrdcgiFree
- *
- * Frees the internal data structures
- */
-static void rrdcgiFree(
-    s_cgi * parms);
 
 /*  rrdcgiReadVariables()
  *
@@ -1306,18 +1285,6 @@ static char *http_time(
     return (buf);
 }
 
-static void rrdcgiHeader(
-    void)
-{
-    if (rrdcgiType)
-        printf("Content-type: %s\n", rrdcgiType);
-    else
-        printf("Content-type: text/html\n");
-    if (rrdcgiHeaderString)
-        printf("%s", rrdcgiHeaderString);
-    printf("\n");
-}
-
 static void rrdcgiDebug(
     int level,
     int where)
@@ -1624,41 +1591,3 @@ static char *rrdcgiGetValue(
     return NULL;
 }
 
-static void rrdcgiFreeList(
-    char **list)
-{
-    int       i;
-
-    for (i = 0; list[i] != NULL; i++)
-        free(list[i]);
-    free(list);
-}
-
-static void rrdcgiFree(
-    s_cgi * parms)
-{
-    int       i;
-
-    if (!parms)
-        return;
-    if (parms->vars) {
-        for (i = 0; parms->vars[i]; i++) {
-            if (parms->vars[i]->name)
-                free(parms->vars[i]->name);
-            if (parms->vars[i]->value)
-                free(parms->vars[i]->value);
-            free(parms->vars[i]);
-        }
-        free(parms->vars);
-    }
-    free(parms);
-
-    if (rrdcgiHeaderString) {
-        free(rrdcgiHeaderString);
-        rrdcgiHeaderString = NULL;
-    }
-    if (rrdcgiType) {
-        free(rrdcgiType);
-        rrdcgiType = NULL;
-    }
-}
