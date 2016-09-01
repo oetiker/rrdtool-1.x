@@ -13,16 +13,16 @@ char *rrd_list(int argc, char **argv);
 
 char *rrd_list_r(char *dirname)
 {
-#define SANE_ASPRINTF(_dest_str, _format, _params...)			\
-	if (asprintf(&_dest_str, _format, _params) == -1) {		\
+#define SANE_ASPRINTF(_dest_str, _format, ...)				\
+	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
 		if (out != NULL) {					\
 			free(out);					\
 		}							\
 		errno = ENOMEM;						\
 		return NULL;						\
 	}
-#define SANE_ASPRINTF2(_dest_str, _format, _params...)			\
-	if (asprintf(&_dest_str, _format, _params) == -1) {		\
+#define SANE_ASPRINTF2(_dest_str, _format, ...)				\
+	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
 		if (out != NULL) {					\
 			free(out);					\
 		}							\
