@@ -18,13 +18,13 @@
 #include "rrd_rpncalc.h"
 // #include "rrd_graph.h"
 
-short     addop2str(
+static short addop2str(
     enum op_en op,
     enum op_en op_type,
     char *op_str,
     char **result_str,
     unsigned short *offset);
-int       tzoffset(
+static int tzoffset(
     time_t);            /* used to implement LTIME */
 
 short rpn_compact(
@@ -218,7 +218,7 @@ void rpn_compact2str(
 
 }
 
-short addop2str(
+static short addop2str(
     enum op_en op,
     enum op_en op_type,
     char *op_str,
@@ -1365,7 +1365,7 @@ short rpn_calc(
 
 /* figure out what the local timezone offset for any point in
    time was. Return it in seconds */
-int tzoffset(
+static int tzoffset(
     time_t now)
 {
     int       gm_sec, gm_min, gm_hour, gm_yday, gm_year,
