@@ -159,6 +159,8 @@ static int rrd_fetch_cb_wrapper(
             break;
         case CF_LAST:
             cfStr = "LAST";
+        default:
+            break;
     }
     hv_store_ent(callHV, sv_2mortal(newSVpv("cd",0)),newSVpv(cfStr,0),0);
     hv_store_ent(callHV, sv_2mortal(newSVpv("start",0)),newSVuv(*start),0);
