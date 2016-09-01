@@ -742,13 +742,6 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     if (bitscmp(PARSE_COLOR2) && (! color2) && (h2)) { color2=h2;}
   }
 
-  /* clean up vname escaping on second tries */
-  if (bits & PARSE_RETRY) {
-    if (vname && (*vname>128)) {
-      *vname-=128;
-    }
-  }
-
   /* check if we are reusing the vname */
   if (vname) {
     int idx=find_var(im, vname);
