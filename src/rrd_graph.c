@@ -5218,7 +5218,7 @@ void rrd_graph_options(
             im->rigid = 1;
             break;
         case 'f':
-            im->imginfo = poptions->optarg;
+            im->imginfo = (char *)poptions->optarg;
             break;
         case 'a':
             if ((int)
