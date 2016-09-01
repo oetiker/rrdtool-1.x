@@ -2587,10 +2587,7 @@ int draw_horizontal_grid(
 }
 
 /* this is frexp for base 10 */
-double    frexp10(
-    double,
-    double *);
-double frexp10(
+static double frexp10(
     double x,
     double *e)
 {
@@ -4914,7 +4911,7 @@ void rrd_graph_options(
 
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
-    
+
     optparse_init(poptions, argc, argv);
     while ((opt = optparse_long(poptions, longopts, NULL)) != -1) {
         int       col_start, col_end;
