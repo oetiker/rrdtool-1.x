@@ -8,9 +8,6 @@
 #include "rrd_tool.h"
 #include "rrd_client.h"
 
-char *rrd_list_r(char *dirname);
-char *rrd_list(int argc, char **argv);
-
 char *rrd_list_r(char *dirname)
 {
 #define SANE_ASPRINTF(_dest_str, _format, ...)				\
