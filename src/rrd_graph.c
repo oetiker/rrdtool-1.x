@@ -2645,7 +2645,7 @@ int horizontal_log_grid(
     int       mid = -1; /* row in yloglab for major grid */
     double    mspac;    /* smallest major grid spacing (pixels) */
     int       flab;     /* first value in yloglab to use */
-    double    value, tmp, pre_value;
+    double    value, tmp = 0.0, pre_value;
     double    X0, X1, Y0;
     char      graph_label[100];
 
