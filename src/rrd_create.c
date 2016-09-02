@@ -446,7 +446,7 @@ int parseRRA(const char *def,
              const char **require_version) {
     char     *argvcopy;
     char     *tokptr = "";
-    unsigned short token_idx, error_flag, period = 0;
+    unsigned short token_idx, period = 0;
     int       cf_id = -1;
     int       token_min = 4;
     const char *parsetime_error = NULL;
@@ -456,7 +456,7 @@ int parseRRA(const char *def,
 
     argvcopy = strdup(def);
     char *token = strtok_r(&argvcopy[4], ":", &tokptr);
-    token_idx = error_flag = 0;
+    token_idx = 0;
             
     while (token != NULL) {
 	switch (token_idx) {
