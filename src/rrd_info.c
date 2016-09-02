@@ -9,13 +9,6 @@
 #include "rrd_client.h"
 #include <stdarg.h>
 
-/* proto */
-rrd_info_t *rrd_info(
-    int,
-    char **);
-rrd_info_t *rrd_info_r(
-    const char *filename);
-
 /* allocate memory for string */
 char     *sprintf_alloc(
     char *fmt,
