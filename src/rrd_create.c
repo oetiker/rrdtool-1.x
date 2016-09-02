@@ -18,6 +18,7 @@
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
+#include "fnv.h"
 
 #ifndef HAVE_G_REGEX_NEW
 #ifdef HAVE_PCRE_COMPILE
@@ -57,9 +58,7 @@ static int positive_mod(int a, int b);
 static void init_mapping(mapping_t *mapping);
 static void free_mapping(mapping_t *mapping);
 
-unsigned long FnvHash(
-    const char *str);
-void      parseGENERIC_DS(
+static void parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
@@ -1027,7 +1026,7 @@ done:
     return rc;
 }
 
-void parseGENERIC_DS(
+static void parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def)
 {
