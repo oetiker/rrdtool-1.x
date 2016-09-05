@@ -2587,10 +2587,7 @@ int draw_horizontal_grid(
 }
 
 /* this is frexp for base 10 */
-double    frexp10(
-    double,
-    double *);
-double frexp10(
+static double frexp10(
     double x,
     double *e)
 {
@@ -2645,7 +2642,7 @@ int horizontal_log_grid(
     int       mid = -1; /* row in yloglab for major grid */
     double    mspac;    /* smallest major grid spacing (pixels) */
     int       flab;     /* first value in yloglab to use */
-    double    value, tmp, pre_value;
+    double    value, tmp = 0.0, pre_value;
     double    X0, X1, Y0;
     char      graph_label[100];
 
@@ -4914,7 +4911,7 @@ void rrd_graph_options(
 
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);
-    
+
     optparse_init(poptions, argc, argv);
     while ((opt = optparse_long(poptions, longopts, NULL)) != -1) {
         int       col_start, col_end;
@@ -5218,7 +5215,7 @@ void rrd_graph_options(
             im->rigid = 1;
             break;
         case 'f':
-            im->imginfo = poptions->optarg;
+            im->imginfo = (char *)poptions->optarg;
             break;
         case 'a':
             if ((int)

@@ -95,7 +95,7 @@ extern "C" {
 			hvs(newSVpv(data->value.u_str,0)); \
 			break; \
 		    case RD_I_BLO: \
-			hvs(newSVpv(data->value.u_blo.ptr,data->value.u_blo.size)); \
+			hvs(newSVpv((char *)data->value.u_blo.ptr,data->value.u_blo.size)); \
 			break; \
 		    } \
 		    data = data->next; \
@@ -133,7 +133,7 @@ static int rrd_fetch_cb_wrapper(
     HV *retHV;
     HE *retHE;
     AV *retAV;
-    time_t new_start,new_end;
+    time_t new_start;
     char *cfStr = NULL;
     unsigned long i,ii;
     unsigned long rowCount = 0;
@@ -159,6 +159,8 @@ static int rrd_fetch_cb_wrapper(
             break;
         case CF_LAST:
             cfStr = "LAST";
+        default:
+            break;
     }
     hv_store_ent(callHV, sv_2mortal(newSVpv("cd",0)),newSVpv(cfStr,0),0);
     hv_store_ent(callHV, sv_2mortal(newSVpv("start",0)),newSVuv(*start),0);
@@ -519,7 +521,7 @@ rrd_xport(...)
 	PREINIT:
                 time_t start,end;
                 int xsize;
-		unsigned long step, col_cnt,row_cnt,i,ii;
+		unsigned long step, col_cnt,i,ii;
 		rrd_value_t *data,*ptr;
                 char **argv,**legend_v;
 		AV *retar,*line,*names;

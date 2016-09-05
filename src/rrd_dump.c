@@ -51,17 +51,6 @@
 extern char *tzname[2];
 #endif
 
-//Local prototypes
-size_t rrd_dump_opt_cb_fileout(
-    const void *data,
-    size_t len,
-    void *user);
-
-int rrd_dump_opt_r(
-    const char *filename,
-    char *outname,
-    int opt_noheader);
-
 int rrd_dump_cb_r(
     const char *filename,
     int opt_header,
@@ -465,7 +454,7 @@ err_out:
 
 }
 
-size_t rrd_dump_opt_cb_fileout(
+static size_t rrd_dump_opt_cb_fileout(
     const void *data,
     size_t len,
     void *user)

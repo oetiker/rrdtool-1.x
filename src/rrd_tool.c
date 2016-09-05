@@ -20,15 +20,15 @@
 #include <locale.h>
 
 
-void      PrintUsage(
+static void PrintUsage(
     char *cmd);
-int       CountArgs(
+static int CountArgs(
     char *aLine);
-int       CreateArgs(
+static int CreateArgs(
     char *,
     char *,
     char **);
-int       HandleInputLine(
+static int HandleInputLine(
     int,
     char **,
     FILE *);
@@ -40,7 +40,7 @@ int       ChangeRoot = 0;
 #define MAX_LENGTH	10000
 
 
-void PrintUsage(
+static void PrintUsage(
     char *cmd)
 {
 
@@ -555,7 +555,7 @@ int main(
 
 /* HandleInputLine is NOT thread safe - due to readdir issues,
    resolving them portably is not really simple. */
-int HandleInputLine(
+static int HandleInputLine(
     int argc,
     char **argv,
     FILE * out)
@@ -825,7 +825,7 @@ int HandleInputLine(
     return (0);
 }
 
-int CountArgs(
+static int CountArgs(
     char *aLine)
 {
     int       i = 0;
@@ -850,7 +850,7 @@ int CountArgs(
 /*
  * CreateArgs - take a string (aLine) and tokenize
  */
-int CreateArgs(
+static int CreateArgs(
     char *pName,
     char *aLine,
     char **argv)

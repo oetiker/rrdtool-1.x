@@ -301,8 +301,7 @@ int parseArguments(const char* origarg, parsedargs_t* pa) {
   return 0;
 }
 
-int parse_color( const char *const, struct gfx_color_t *);
-int parse_color( const char *const string, struct gfx_color_t *c)
+static int parse_color( const char *const string, struct gfx_color_t *c)
 {
   unsigned int r = 0, g = 0, b = 0, a = 0, i;
 
@@ -742,13 +741,6 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     if (bitscmp(PARSE_COLOR2) && (! color2) && (h2)) { color2=h2;}
   }
 
-  /* clean up vname escaping on second tries */
-  if (bits & PARSE_RETRY) {
-    if (vname && (*vname>128)) {
-      *vname-=128;
-    }
-  }
-
   /* check if we are reusing the vname */
   if (vname) {
     int idx=find_var(im, vname);
@@ -846,25 +838,22 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
 #define set_match(str,pat,cmd) if (strcmp(pat, str) == 0)  { cmd ;}
 
 /* prototypes */
-int parse_axis(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_def(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_cvdef(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_line(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_area(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_stack(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_print(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_gprint(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_comment(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_hvrule(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_grad(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_tick(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_textalign(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_shift(enum gf_en,parsedargs_t*,image_desc_t *const);
-int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_axis(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_def(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_cvdef(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_line(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_area(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_stack(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_gprint(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_comment(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_hvrule(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_tick(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_textalign(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_shift(enum gf_en,parsedargs_t*,image_desc_t *const);
+static int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
 
 /* this is needed for LINE,AREA,STACk so that the labels get done correctly... */
-void legend_shift(char *legend);
-void legend_shift(char *legend)
+static void legend_shift(char *legend)
 {
   if (!legend || !legend[0]) { return; }
   memmove(legend+2,legend,strlen(legend));
@@ -873,7 +862,7 @@ void legend_shift(char *legend)
 }
 
 /* implementations */
-int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 
 #if 0
   /* define X or y axis */
@@ -918,7 +907,7 @@ int parse_axis(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMERRDDSCF
@@ -985,7 +974,7 @@ int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMERPN
@@ -1039,7 +1028,7 @@ int parse_cvdef(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 }
 
 
-int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
@@ -1084,7 +1073,7 @@ int parse_line(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
@@ -1122,7 +1111,7 @@ int parse_area(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
@@ -1177,7 +1166,7 @@ int parse_stack(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORLEGEND
@@ -1229,7 +1218,7 @@ int parse_hvrule(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
+static int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMEREF
@@ -1304,7 +1293,7 @@ int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
   return 0;
 }
 
-int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
+static int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_LEGEND
@@ -1327,7 +1316,7 @@ int parse_comment(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   return 0;
 }
 
-int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+static int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,
 					PARSE_VNAMECOLORFRACTIONLEGEND
@@ -1352,7 +1341,7 @@ int parse_tick(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   return 0;
 }
 
-int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+static int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,0);
@@ -1389,7 +1378,7 @@ int parse_textalign(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   return 0;
 }
 
-int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+static int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   keyvalue_t *kv;
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMEREFPOS);
@@ -1459,7 +1448,7 @@ int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* and return */
   return 0;
 }
-int parse_xport(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
+static int parse_xport(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   /* get new graph that we fill */
   graph_desc_t *gdp=newGraphDescription(im,gf,pa,PARSE_VNAMECOLORLEGEND);
   if (!gdp) { return 1;}

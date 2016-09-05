@@ -18,6 +18,7 @@
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
+#include "fnv.h"
 
 #ifndef HAVE_G_REGEX_NEW
 #ifdef HAVE_PCRE_COMPILE
@@ -57,9 +58,7 @@ static int positive_mod(int a, int b);
 static void init_mapping(mapping_t *mapping);
 static void free_mapping(mapping_t *mapping);
 
-unsigned long FnvHash(
-    const char *str);
-void      parseGENERIC_DS(
+static void parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def);
 
@@ -447,7 +446,7 @@ int parseRRA(const char *def,
              const char **require_version) {
     char     *argvcopy;
     char     *tokptr = "";
-    unsigned short token_idx, error_flag, period = 0;
+    unsigned short token_idx, period = 0;
     int       cf_id = -1;
     int       token_min = 4;
     const char *parsetime_error = NULL;
@@ -457,7 +456,7 @@ int parseRRA(const char *def,
 
     argvcopy = strdup(def);
     char *token = strtok_r(&argvcopy[4], ":", &tokptr);
-    token_idx = error_flag = 0;
+    token_idx = 0;
             
     while (token != NULL) {
 	switch (token_idx) {
@@ -1027,7 +1026,7 @@ done:
     return rc;
 }
 
-void parseGENERIC_DS(
+static void parseGENERIC_DS(
     const char *def,
     ds_def_t *ds_def)
 {

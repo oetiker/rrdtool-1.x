@@ -49,21 +49,21 @@
 #include "rrd_modify.h"
 #include "rrd_client.h"
 
-int       set_hwarg(
+static int set_hwarg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
     const char *arg);
-int       set_deltaarg(
+static int set_deltaarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
     const char *arg);
-int       set_windowarg(
+static int set_windowarg(
     rrd_t *rrd,
     enum rra_par_en,
     const char *arg);
 
-int set_hwsmootharg(
+static int set_hwsmootharg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
@@ -427,7 +427,7 @@ done:
     return rc;
 }
 
-int set_hwarg(
+static int set_hwarg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
@@ -465,7 +465,7 @@ int set_hwarg(
     return 0;
 }
 
-int set_hwsmootharg(
+static int set_hwsmootharg(
     rrd_t *rrd,
     enum cf_en cf,
     enum rra_par_en rra_par,
@@ -505,7 +505,7 @@ int set_hwsmootharg(
     return 0;
 }
 
-int set_deltaarg(
+static int set_deltaarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
     const char *arg)
@@ -542,7 +542,7 @@ int set_deltaarg(
     return 0;
 }
 
-int set_windowarg(
+static int set_windowarg(
     rrd_t *rrd,
     enum rra_par_en rra_par,
     const char *arg)
