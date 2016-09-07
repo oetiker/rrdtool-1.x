@@ -246,6 +246,9 @@ char *rrd_list(int argc, char **argv)
 			if (err)
 				fprintf(stderr, ": %s", err);
 			fprintf(stderr, "\n");
+
+			free(opt_daemon);
+			return NULL;
 		}
 		list = rrd_list_r(argv[options.optind]);
 
