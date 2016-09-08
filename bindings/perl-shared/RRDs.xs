@@ -237,10 +237,16 @@ static int rrd_fetch_cb_wrapper(
         HE* hash_entry;
         hash_entry = hv_iternext(retHV);
         retKey = hv_iterkey(hash_entry,&retKeyLen);
+	if (strlen(retKey) >= DS_NAM_SIZE){
+            rrd_set_error("Key '%s' longer than the allowed maximum of %d byte",retKey,DS_NAM_SIZE-1);
+            goto error_out;
+	}
+
         if ((((*ds_namv)[i]) = (char*)malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
             rrd_set_error("malloc fetch ds_namv entry");
             goto error_out_free_ds_namv;
         }
+
         strncpy((*ds_namv)[i], retKey, DS_NAM_SIZE - 1);
         (*ds_namv)[i][DS_NAM_SIZE - 1] = '\0';
         retSV = hv_iterval(retHV,hash_entry);
