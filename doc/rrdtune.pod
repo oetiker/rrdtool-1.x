@@ -238,7 +238,7 @@ Adds/removes or sets the given number of rows for the RRA with index
 C<rrdtool tune data.rrd -h in:100000 -h out:100000 -h through:100000>
 
 Set the minimum required heartbeat for data sources 'in', 'out'
-and 'through' to 10'000 seconds which is a little over one day in data.rrd.
+and 'through' to 100'000 seconds which is a little over one day in data.rrd.
 This would allow to feed old data from MRTG-2.0 right into
 RRDtool without generating *UNKNOWN* entries.
 
