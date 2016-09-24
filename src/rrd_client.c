@@ -81,6 +81,8 @@ struct rrd_client {
 static rrd_client_t default_client = { -1, NULL, { 0 }, NULL, 0 };
 static mutex_t lock = MUTEX_INITIALIZER;
 
+static int reconnect(rrd_client_t *client);
+
 /* get_path: Return a path name appropriate to be sent to the daemon.
  *
  * When talking to a local daemon (thru a UNIX socket), relative path names
@@ -333,28 +335,32 @@ static int parse_value_array_header (char *line, /* {{{ */
   return (0);
 } /* }}} int parse_value_array_header */
 
-static void close_connection(rrd_client_t *client) /* {{{ */
+static void close_socket(rrd_client_t *client)
 {
-  if (client == NULL)
-    return;
-
-  if (client->sd >= 0)
-  {
+  if (client->sd >= 0) {
 #ifdef WIN32
     closesocket(client->sd);
     WSACleanup();
 #else
     close(client->sd);
 #endif
-    client->sd = -1;
   }
+
+  client->sd = -1;
+  client->inbuf = NULL;
+  client->inbuf_used = 0;
+}
+
+static void close_connection(rrd_client_t *client) /* {{{ */
+{
+  if (client == NULL)
+    return;
+
+  close_socket(client);
 
   if (client->sd_path != NULL)
     free(client->sd_path);
   client->sd_path = NULL;
-
-  client->inbuf = NULL;
-  client->inbuf_used = 0;
 } /* }}} void close_connection */
 
 static int buffer_add_string (const char *str, /* {{{ */
@@ -604,7 +610,8 @@ err_out:
 
 } /* }}} rrdc_response_t *response_read */
 
-static int sendall(rrd_client_t *client, const char *msg, size_t len) /* {{{ */
+static int sendall(rrd_client_t *client, /* {{{ */
+    const char *msg, size_t len, int allow_retry)
 {
   int ret = 0;
   char *bufp = (char*)msg;
@@ -620,6 +627,13 @@ static int sendall(rrd_client_t *client, const char *msg, size_t len) /* {{{ */
     }
   }
 
+  if ((ret < 0) && allow_retry) {
+    /* Try to reconnect and start over.
+     * Don't further allow retries to avoid endless loops. */
+    if (reconnect(client) == 0)
+      return sendall(client, msg, len, 0);
+  }
+
   return ret;
 } /* }}} int sendall */
 
@@ -632,7 +646,7 @@ static int request(rrd_client_t *client, const char *buffer, size_t buffer_size,
   if ((client == NULL) || (client->sd == -1))
     return (ENOTCONN);
 
-  status = sendall(client, buffer, buffer_size);
+  status = sendall(client, buffer, buffer_size, 1);
   if (status == -1)
   {
     close_connection(client);
@@ -842,6 +856,25 @@ static int connect_network(rrd_client_t *client, const char *addr_orig) /* {{{ *
   return (status);
 } /* }}} int connect_network */
 
+static int client_connect(rrd_client_t *client, const char *addr) /* {{{ */
+{
+  rrd_clear_error ();
+  if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
+    return connect_unix(client, addr + strlen ("unix:"));
+  else if (addr[0] == '/')
+    return connect_unix(client, addr);
+  return connect_network(client, addr);
+} /* }}} int client_connect */
+
+static int reconnect(rrd_client_t *client) /* {{{ */
+{
+  if ((client == NULL) || (client->sd_path == NULL))
+    return -1;
+
+  close_socket(client);
+  return client_connect(client, client->sd_path);
+} /* }}} int reconnect */
+
 int rrd_client_connect(rrd_client_t *client, const char *addr) /* {{{ */
 {
   int status = 0;
@@ -864,13 +897,7 @@ int rrd_client_connect(rrd_client_t *client, const char *addr) /* {{{ */
     close_connection(client);
   }
 
-  rrd_clear_error ();
-  if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
-    status = connect_unix(client, addr + strlen ("unix:"));
-  else if (addr[0] == '/')
-    status = connect_unix(client, addr);
-  else
-    status = connect_network(client, addr);
+  status = client_connect(client, addr);
 
   if ((status == 0) && (client->sd >= 0))
     client->sd_path = strdup(addr);
