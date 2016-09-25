@@ -711,6 +711,29 @@ int rrdc_is_any_connected(void)
   return rrd_client_is_any_connected(&default_client);
 }
 
+int rrd_client_ping(rrd_client_t *client) /* {{{ */
+{
+  int status;
+  rrdc_response_t *res = NULL;
+
+  status = request(client, "PING\n", strlen("PING\n"), &res);
+  if (status != 0)
+    return 0;
+
+  status = res->status;
+  response_free (res);
+
+  return status == 0;
+} /* }}} int rrd_client_ping */
+int rrdc_ping(void) /* {{{ */
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_ping(&default_client);
+  mutex_unlock(&lock);
+  return status;
+} /* }}} int rrdc_ping */
+
 static int connect_unix(rrd_client_t *client, const char *path) /* {{{ */
 {
 #ifdef WIN32

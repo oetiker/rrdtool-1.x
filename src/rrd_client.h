@@ -67,6 +67,7 @@ void rrd_client_destroy(rrd_client_t *client);
 int rrd_client_connect(rrd_client_t *client, const char *addr);
 int rrd_client_is_connected(rrd_client_t *client, const char *daemon_addr);
 int rrd_client_is_any_connected(rrd_client_t *client);
+int rrd_client_ping(rrd_client_t *client);
 int rrd_client_disconnect(rrd_client_t *client);
 
 int rrd_client_update(rrd_client_t *client, const char *filename, int values_num,
@@ -115,6 +116,7 @@ int rrd_client_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats);
 int rrdc_connect(const char *addr);
 int rrdc_is_connected(const char *daemon_addr);
 int rrdc_is_any_connected(void);
+int rrdc_ping(void);
 int rrdc_disconnect(void);
 
 int rrdc_update (const char *filename, int values_num,
