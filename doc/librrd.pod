@@ -293,6 +293,12 @@ to the value of the C<ENV_RRDCACHED_ADDRESS> environment address.
 Return a boolean int to determine if the client is connected to the
 rrdcache daemon specified by the C<daemon_addr> parameter.
 
+=item B<rrd_client_ping(rrd_client_t *client)>
+
+=item B<rrdc_ping>
+
+Check the client connection by pinging the remote side.
+
 =item B<rrd_client_is_any_connected(rrd_client_t *client)>
 
 =item B<rrdc_is_any_connected>
