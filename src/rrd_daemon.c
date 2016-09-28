@@ -525,22 +525,19 @@ static int check_pidfile(void)
 
   pid_fd = open_pidfile("open", O_RDWR);
   if (pid_fd < 0){
-     fprintf(stderr,
-                    "FATAL: Fail to create/open PID file");
+     fprintf(stderr,"FATAL: Fail to create/open PID file \n");
     return pid_fd;
      }
 
   if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0) {
-     fprintf(stderr,
-                     "FATAL: Empty PID file exist");
+     fprintf(stderr,"FATAL: Empty PID file exist\n");
     close(pid_fd);
     return -1;
   }
 
   pid = atoi(pid_str);
   if (pid <= 0) {
-     fprintf(stderr,
-                     "FATAL: PID file is corrupted");
+     fprintf(stderr,"FATAL: PID file is corrupted\n");
 
     close(pid_fd);
     return -1;
