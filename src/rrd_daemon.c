@@ -1594,6 +1594,37 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
       goto done;
     }
 
+    time_t last_update_from_file;
+    rrd_file_t * rrd_file;
+    rrd_t rrd;
+
+    rrd_clear_error();
+    rrd_init(&rrd);
+    rrd_file = rrd_open(file, &rrd, RRD_READONLY);
+    if (!rrd_file)
+    {
+      rrd_free(&rrd);
+      free (ci);
+      RRDD_LOG (LOG_ERR, "handle_request_update: Could not read RRD file.");
+
+      rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
+      goto done;
+    }
+    last_update_from_file = rrd.live_head->last_up;
+    rrd_close(rrd_file);
+    rrd_free(&rrd);
+
+    ci->last_update_stamp = last_update_from_file;
+
+    if(ci->last_update_stamp<1)
+    {
+      free (ci);
+      RRDD_LOG (LOG_ERR, "handle_request_update: Invalid timestamp from RRD file.");
+
+      rc = send_response(sock, RESP_ERR, "Error: rrdcached: Invalid timestamp returned\n");
+      goto done;
+    }
+
     wipe_ci_values(ci, now);
     ci->flags = CI_FLAGS_IN_TREE;
     pthread_cond_init(&ci->flushed, NULL);
