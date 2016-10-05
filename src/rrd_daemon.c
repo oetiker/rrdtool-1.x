@@ -3728,6 +3728,7 @@ static int open_listen_socket_network(const listen_socket_t *sock) /* {{{ */
 
     listen_fds[listen_fds_num].fd = fd;
     listen_fds[listen_fds_num].family = ai_ptr->ai_family;
+    listen_fds[listen_fds_num].addr = strdup(sock->addr);
     listen_fds_num++;
   } /* for (ai_ptr) */
 
