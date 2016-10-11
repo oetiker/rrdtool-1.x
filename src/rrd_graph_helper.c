@@ -366,6 +366,7 @@ static int parse_color( const char *const string, struct gfx_color_t *c)
 #define PARSE_YAXIS        (PARSE_FIELD1|(1ULL<<14))
 #define PARSE_REDUCE       (PARSE_FIELD1|(1ULL<<15))
 #define PARSE_SKIPSCALE    (PARSE_FIELD1|(1ULL<<16))
+#define PARSE_DAEMON       (PARSE_FIELD1|(1ULL<<17))
 
 #define PARSE_DASHES       (PARSE_FIELD1|(1ULL<<20))
 #define PARSE_GRADHEIGHT   (PARSE_FIELD1|(1ULL<<21))
@@ -509,6 +510,13 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
       gdp->cf_reduce_set=1;
       dprintfparsed("got reduce: %s (%i)\n",reduce,gdp->cf_reduce);
       if (((int)gdp->cf_reduce)==-1) { rrd_set_error("bad reduce CF: %s",reduce); return NULL; }
+    }
+  }
+  if (bitscmp(PARSE_DAEMON)) {
+    char *daemon=getKeyValueArgument("daemon",1,pa);
+    if (daemon) {
+      strncpy(gdp->daemon,daemon,strlen(daemon));
+      dprintfparsed("got daemon: %s\n", gdp->daemon);
     }
   }
   if (bitscmp(PARSE_XAXIS)) {
@@ -915,6 +923,7 @@ static int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_STEP
 					|PARSE_END
 					|PARSE_REDUCE
+					|PARSE_DAEMON
 					);
   /* retry in case of errors modifying the name*/
   if (!gdp) {
@@ -944,6 +953,7 @@ static int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
 					|PARSE_STEP
 					|PARSE_END
 					|PARSE_REDUCE
+					|PARSE_DAEMON
 				        |PARSE_RETRY
 					);
 	  /* on error, we restore the original error and return */
@@ -968,6 +978,7 @@ static int parse_def(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im){
   dprintf("STEP  : (%lld)\n",(long long int)gdp->step);
   dprintf("END   : (%lld)\n",(long long int)gdp->end);
   dprintf("REDUCE: (%i)\n",gdp->cf_reduce);
+  dprintf("DAEMON: %s\n",gdp->daemon);
   dprintf("=================================\n");
 
   /* and return fine */
