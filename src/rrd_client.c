@@ -669,12 +669,24 @@ static int request(rrd_client_t *client, const char *buffer, size_t buffer_size,
   return (0);
 } /* }}} int request */
 
+int rrd_client_is_connected(rrd_client_t *client) /* {{{ */
+{
+  return (client != NULL) && (client->sd >= 0);
+} /* }}} rrd_client_is_connected */
+
+const char *rrd_client_address(rrd_client_t *client) /* {{{ */
+{
+  if (!client)
+    return NULL;
+  return client->sd_path;
+} /* }}} rrd_client_address */
+
 /* determine whether we are connected to the specified daemon_addr if
  * NULL, return whether we are connected at all
  */
-int rrd_client_is_connected(rrd_client_t *client, const char *daemon_addr) /* {{{ */
+int rrdc_is_connected(const char *daemon_addr) /* {{{ */
 {
-  if ((client == NULL) || (client->sd < 0))
+  if (default_client.sd < 0)
     return 0;
   else if (daemon_addr == NULL)
   {
@@ -690,25 +702,16 @@ int rrd_client_is_connected(rrd_client_t *client, const char *daemon_addr) /* {{
     else
       return 0;
   }
-  else if (strcmp(daemon_addr, client->sd_path) == 0)
+  else if (strcmp(daemon_addr, default_client.sd_path) == 0)
     return 1;
   else
     return 0;
-} /* }}} rrd_client_is_connected */
-
-int rrdc_is_connected(const char *daemon_addr) /* {{{ */
-{
-  return rrd_client_is_connected(&default_client, daemon_addr);
 } /* }}} int rrdc_is_connected */
 
 /* determine whether we are connected to any daemon */
-int rrd_client_is_any_connected(rrd_client_t *client)
-{
-  return (client != NULL) && (client->sd >= 0);
-}
 int rrdc_is_any_connected(void)
 {
-  return rrd_client_is_any_connected(&default_client);
+  return default_client.sd >= 0;
 }
 
 int rrd_client_ping(rrd_client_t *client) /* {{{ */
@@ -1925,7 +1928,7 @@ int rrdc_flush_if_daemon(const char *opt_daemon, const char *filename) /* {{{ */
   mutex_lock(&lock);
   rrd_client_connect(&default_client, opt_daemon);
 
-  if (!rrd_client_is_connected(&default_client, opt_daemon)) {
+  if (!rrdc_is_connected(opt_daemon)) {
     mutex_unlock(&lock);
     return 0;
   }
@@ -1961,7 +1964,7 @@ int rrdc_flushall_if_daemon(const char *opt_daemon) /* {{{ */
   mutex_lock(&lock);
   rrd_client_connect(&default_client, opt_daemon);
 
-  if (!rrd_client_is_connected(&default_client, opt_daemon)) {
+  if (!rrdc_is_connected(opt_daemon)) {
     mutex_unlock(&lock);
     return 0;
   }

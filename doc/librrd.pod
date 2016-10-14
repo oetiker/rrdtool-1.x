@@ -286,7 +286,13 @@ Connect to a running rrdcached instance, specified via C<daemon_addr>. Any
 previous connection will be closed. If C<daemon_addr> is C<NULL>, it defaults
 to the value of the C<ENV_RRDCACHED_ADDRESS> environment address.
 
-=item B<rrd_client_is_connected(rrd_client_t *client, const char *daemon_addr)>
+=item B<rrd_client_is_connected(rrd_client_t *client)>
+
+Return a boolean int if the client is connected to the server.
+
+=item B<rrd_client_address(rrd_client_t *client)>
+
+Returns the server address belonging to the current connection.
 
 =item B<rrdc_is_connected(const char *daemon_addr)>
 
@@ -298,8 +304,6 @@ rrdcache daemon specified by the C<daemon_addr> parameter.
 =item B<rrdc_ping>
 
 Check the client connection by pinging the remote side.
-
-=item B<rrd_client_is_any_connected(rrd_client_t *client)>
 
 =item B<rrdc_is_any_connected>
 

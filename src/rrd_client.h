@@ -65,9 +65,9 @@ rrd_client_t *rrd_client_new(const char *addr);
 void rrd_client_destroy(rrd_client_t *client);
 
 int rrd_client_connect(rrd_client_t *client, const char *addr);
-int rrd_client_is_connected(rrd_client_t *client, const char *daemon_addr);
-int rrd_client_is_any_connected(rrd_client_t *client);
+int rrd_client_is_connected(rrd_client_t *client);
 int rrd_client_ping(rrd_client_t *client);
+const char *rrd_client_address(rrd_client_t *client);
 int rrd_client_disconnect(rrd_client_t *client);
 
 int rrd_client_update(rrd_client_t *client, const char *filename, int values_num,
