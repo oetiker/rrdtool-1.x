@@ -95,9 +95,7 @@ int rrd_client_create_r2(rrd_client_t *client, const char *filename,
 
 int rrd_client_flush(rrd_client_t *client, const char *filename);
 int rrd_client_forget(rrd_client_t *client, const char *filename);
-int rrd_client_flush_if_daemon(rrd_client_t *client, const char *opt_daemon, const char *filename);
 int rrd_client_flushall(rrd_client_t *client);
-int rrd_client_flushall_if_daemon(rrd_client_t *client, const char *opt_daemon);
 
 int rrd_client_fetch(rrd_client_t *client, const char *filename,
     const char *cf,

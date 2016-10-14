@@ -1918,18 +1918,21 @@ int rrdc_fetch (const char *filename, /* {{{ */
 /* convenience function; if there is a daemon specified, or if we can
  * detect one from the environment, then flush the file.  Otherwise, no-op
  */
-int rrd_client_flush_if_daemon(rrd_client_t *client, /* {{{ */
-    const char *opt_daemon, const char *filename)
+int rrdc_flush_if_daemon(const char *opt_daemon, const char *filename) /* {{{ */
 {
   int status;
 
-  rrd_client_connect(client, opt_daemon);
+  mutex_lock(&lock);
+  rrd_client_connect(&default_client, opt_daemon);
 
-  if (!rrd_client_is_connected(client, opt_daemon))
+  if (!rrd_client_is_connected(&default_client, opt_daemon)) {
+    mutex_unlock(&lock);
     return 0;
+  }
 
   rrd_clear_error();
-  status = rrd_client_flush(client, filename);
+  status = rrd_client_flush(&default_client, filename);
+  mutex_unlock(&lock);
 
   if (status != 0 && !rrd_test_error())
   {
@@ -1946,26 +1949,26 @@ int rrd_client_flush_if_daemon(rrd_client_t *client, /* {{{ */
   }
 
   return status;
-} /* }}} int rrd_client_flush_if_daemon */
-int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ */
-{
-  return rrd_client_flush_if_daemon(&default_client, opt_daemon, filename);
 } /* }}} int rrdc_flush_if_daemon */
 
 /* convenience function; if there is a daemon specified, or if we can
  * detect one from the environment, then flush the file.  Otherwise, no-op
  */
-int rrd_client_flushall_if_daemon (rrd_client_t *client, const char *opt_daemon) /* {{{ */
+int rrdc_flushall_if_daemon(const char *opt_daemon) /* {{{ */
 {
   int status;
 
-  rrd_client_connect(client, opt_daemon);
+  mutex_lock(&lock);
+  rrd_client_connect(&default_client, opt_daemon);
 
-  if (!rrd_client_is_connected(client, opt_daemon))
+  if (!rrd_client_is_connected(&default_client, opt_daemon)) {
+    mutex_unlock(&lock);
     return 0;
+  }
 
   rrd_clear_error();
-  status = rrd_client_flushall(client);
+  status = rrd_client_flushall(&default_client);
+  mutex_unlock(&lock);
 
   if (status != 0 && !rrd_test_error())
   {
@@ -1980,11 +1983,7 @@ int rrd_client_flushall_if_daemon (rrd_client_t *client, const char *opt_daemon)
   }
 
   return status;
-} /* }}} rrd_client_flushall_if_daemon */
-int rrdc_flushall_if_daemon (const char *opt_daemon) /* {{{ */
-{
-  return rrd_client_flushall_if_daemon(&default_client, opt_daemon);
-} /* }}} int rrdc_flush_if_daemon */
+} /* }}} rrdc_flushall_if_daemon */
 
 int rrd_client_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats) /* {{{ */
 {

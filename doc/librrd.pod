@@ -404,8 +404,6 @@ flush the currently RRD cached in the daemon specified via C<filename>.
 
 Drop the cached data for the RRD file specified via C<filename>.
 
-=item B<rrd_client_flush_if_daemon(rrd_client_t *client, const char *daemon_addr, const char *filename)>
-
 =item B<rrdc_flush_if_daemon(const char *daemon_addr, const char *filename)>
 
 Flush the specified RRD given by C<filename> only if the daemon
