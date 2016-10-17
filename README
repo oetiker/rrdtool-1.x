@@ -1,0 +1,35 @@
+Win32 Build Instructions:
+
+1) See build-rrdtool.dot (build-rrdtool.svg or build-rrdtool.pdf) for build
+   dependency.
+
+2) If you do not want to build the build-dependencies, you can download prebuilt
+   versions from the following address:
+
+   32bit dependencies should then be extracted into the contrib directory:
+   http://ftp.gnome.org/pub/gnome/binaries/win32/
+   http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/
+
+   64bit dependencies should then be extracted into the contrib-x64 directory:
+   http://ftp.gnome.org/pub/gnome/binaries/win64/
+   http://ftp.gnome.org/pub/gnome/binaries/win64/dependencies/
+
+
+3) If you don't already have stdint.h for your system you can download it
+   from the following address:
+   http://msinttypes.googlecode.com/svn/trunk/stdint.h
+
+4) Adjust the include path, library path, and library names which in the
+   Makefile.msc, to correspond with your local path or names.
+
+5) Run 'nmake -f win32\Makefile.msc' for 32 bit Windows target,
+   Run 'nmake -f win32\Makefile.msc USE_64BIT=1' for 64 bit Windows target.
+   Run 'nmake -f win32\Makefile.msc clean' to remove all generated files.
+
+6) librrd-4.dll, librrd-4.lib, rrdtool.exe, rrdupdate.exe, rrdcgi.exe, and
+   these corresponding pdb files will be located in the win32 directory.
+
+7) To install, copy these files which you required to their permanent location.
+
+8) To build the binding module. Follow the instructions in the README file which
+   under the subdirectory of 'binding/'.
