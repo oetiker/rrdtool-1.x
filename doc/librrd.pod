@@ -255,32 +255,74 @@ The following functions are used to connected to an rrdcached instance,
 either via a unix or inet address, and create, update, or gather statistics
 about a specified RRD database file.
 
-All of the following functions are specified in the C<rrd_client.h>
-header file.
+There are two different interfaces: The B<rrd_client_> family of functions
+operate on a user-provided client object (B<rrd_client_t>) and support
+multiple concurrent connections to rrdcache instances. The simpler B<rrdc_>
+family of functions handles connections transparently but can only be used
+for one connection at a time.
+
+All of the following functions and data types are specified in the
+C<rrd_client.h> header file.
 
 =over 4
 
-=item B<rrdc_connect(const char *daemon_addr>
+=item B<rrd_client_new(const char *daemon_addr)>
 
-Connect to a running rrdcached instance, specified via C<daemon_addr>.
+Create a new client connection object. If specified, connect to the daemon at
+C<daemon_addr>. The connection can later be changed by calling
+B<rrd_client_connect>.
+
+=item B<rrd_client_destroy(rrd_client_t *client)>
+
+Close a client connection and destroy the object by freeing all dynamically
+allocated memory. After calling this function, C<client> can no longer be
+used.
+
+=item B<rrd_client_connect(rrd_client_t *client, const char *daemon_addr)>
+
+=item B<rrdc_connect(const char *daemon_addr)>
+
+Connect to a running rrdcached instance, specified via C<daemon_addr>. Any
+previous connection will be closed. If C<daemon_addr> is C<NULL>, it defaults
+to the value of the C<ENV_RRDCACHED_ADDRESS> environment address.
+
+=item B<rrd_client_is_connected(rrd_client_t *client)>
+
+Return a boolean int if the client is connected to the server.
+
+=item B<rrd_client_address(rrd_client_t *client)>
+
+Returns the server address belonging to the current connection.
 
 =item B<rrdc_is_connected(const char *daemon_addr)>
 
 Return a boolean int to determine if the client is connected to the
 rrdcache daemon specified by the C<daemon_addr> parameter.
 
+=item B<rrd_client_ping(rrd_client_t *client)>
+
+=item B<rrdc_ping>
+
+Check the client connection by pinging the remote side.
+
 =item B<rrdc_is_any_connected>
 
 Return a boolean int if any daemon connections are connected.
 
+=item B<rrd_client_disconnect(rrd_client_t *client)>
+
 =item B<rrdc_disconnect>
 
-Disconnect gracefully from all present daemon connections.
+Disconnect gracefully from the present daemon connection.
+
+=item B<rrd_client_update(rrd_client_t *client, const char *filename, int values_num, const char * const *values)>
 
 =item B<rrdc_update(const char *filename, int values_num, const char * const *values)>
 
 Update the RRD C<filename> via the rrdcached. Where C<values_num>
 is the number of values to update and C<values> are the new values to add.
+
+=item B<rrd_client_info(rrd_client_t *client, const char *filename)>
 
 =item B<rrdc_info(const char *filename)>
 
@@ -314,9 +356,13 @@ This function returns an rrd_info_t structure of the following format:
         struct rrd_info_t *next;
     } rrd_info_t;
 
+=item B<rrd_client_last(rrd_client_t *client, const char *filename)>
+
 =item B<rrdc_last(const char *filename)>
 
 Grab the unix epoch of the last time RRD C<filename> was updated.
+
+=item B<rrd_client_first(rrd_client_t *client, const char *filename, int rraindex)>
 
 =item B<rrdc_first(const char *filename, int rraindex)>
 
@@ -324,6 +370,8 @@ Get the first value of the first sample of the RRD C<filename>,
 of the C<rraindex> RRA (Round Robin Archive) index number.
 The RRA index number can be determined by pulling the rrd_info_t
 off the RRD.
+
+=item B<rrd_client_create(rrd_client_t *client, const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, int argc, const char **argv)>
 
 =item B<rrdc_create(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, int argc, const char **argv)>
 
@@ -334,9 +382,11 @@ the definitions of the data sources and RRAs C<argv>. Lastly whether or
 not to overwrite an existing RRD if one is found with the same
 filename; C<no_overwrite>.
 
+=item B<rrdc_create_r2(rrd_client_t *client, const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
+
 =item B<rrdc_create_r2(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
 
-Create and RRD database in the daemon. B<rrdc_create_r2> has the same
+Create an RRD database in the daemon. B<rrdc_create_r2> has the same
 parameters as B<rrdc_create> with two added parameters of; C<sources>
 and C<template>.
 
@@ -346,9 +396,13 @@ form defined in B<rrdcreate>(1),
 The C<sources> parameter defines series of file paths with data defined,
 to prefill the RRD with. See B<rrdcreate>(1) for more details.
 
+=item B<rrd_client_flush(rrd_client_t *client, const char *filename)>
+
 =item B<rrdc_flush(const char *filename)>
 
 flush the currently RRD cached in the daemon specified via C<filename>.
+
+=item B<rrd_client_forget(rrd_client_t *client, const char *filename)>
 
 =item B<rrdc_forget(const char *filename)>
 
@@ -359,6 +413,8 @@ Drop the cached data for the RRD file specified via C<filename>.
 Flush the specified RRD given by C<filename> only if the daemon
 C<daemon_addr> is up and connected.
 
+=item B<rrd_client_fetch(rrd_client_t *client, const char *filename, const char *cf, time_t *ret_start, time_t *ret_end, unsigned long *ret_step, unsigned long *ret_ds_num, char ***ret_ds_names, rrd_value_t **ret_data)>
+
 =item B<rrdc_fetch(const char *filename, const char *cf, time_t *ret_start, time_t *ret_end, unsigned long *ret_step, unsigned long *ret_ds_num, char ***ret_ds_names, rrd_value_t **ret_data)>
 
 Perform a fetch operation on the specified RRD Database given be C<filename>,
@@ -367,6 +423,8 @@ given by unix epoch, C<ret_end> is the endtime. C<ret_step> is the step size
 in seconds, C<ret_ds_num> the number of data sources in the RRD, C<ret_ds_names>
 the names of the data sources, and a pointer to an rrd_value_t object to shlep the
 data.
+
+=item B<rrdc_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats)>
 
 =item B<rrdc_stats_get(rrdc_stats_t **ret_stats)>
 

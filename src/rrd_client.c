@@ -69,13 +69,19 @@ struct rrdc_response_s
 };
 typedef struct rrdc_response_s rrdc_response_t;
 
-static mutex_t lock = MUTEX_INITIALIZER;
-static int sd = -1;
-static char *sd_path = NULL; /* cache the path for sd */
+struct rrd_client {
+  int sd;
+  char *sd_path;
 
-static char _inbuf[RRD_CMD_MAX];
-static char *inbuf = _inbuf;
-static size_t inbuf_used = 0;
+  char _inbuf[RRD_CMD_MAX];
+  char *inbuf;
+  size_t inbuf_used;
+};
+
+static rrd_client_t default_client = { -1, NULL, { 0 }, NULL, 0 };
+static mutex_t lock = MUTEX_INITIALIZER;
+
+static int reconnect(rrd_client_t *client);
 
 /* get_path: Return a path name appropriate to be sent to the daemon.
  *
@@ -86,19 +92,19 @@ static size_t inbuf_used = 0;
  *
  * The caller must call free() on the returned value.
  *
- * One must hold `lock' when calling this function. */
-static char *get_path (const char *path) /* {{{ */
+ * One must hold `lock' when calling this function with `default_client'. */
+static char *get_path(rrd_client_t *client, const char *path) /* {{{ */
 {
   char *ret = NULL;
   const char *strip = getenv(ENV_RRDCACHED_STRIPPATH);
   size_t len;
   int is_unix = 0;
 
-  if ((path == NULL) || (sd_path == NULL))
+  if ((client == NULL) || (path == NULL) || (client->sd_path == NULL))
     return (NULL);
 
-  if ((*sd_path == '/')
-      || (strncmp ("unix:", sd_path, strlen ("unix:")) == 0))
+  if ((*client->sd_path == '/')
+      || (strncmp ("unix:", client->sd_path, strlen ("unix:")) == 0))
     is_unix = 1;
 
   if (is_unix)
@@ -329,23 +335,32 @@ static int parse_value_array_header (char *line, /* {{{ */
   return (0);
 } /* }}} int parse_value_array_header */
 
-/* One must hold `lock' when calling `close_connection'. */
-static void close_connection (void) /* {{{ */
+static void close_socket(rrd_client_t *client)
 {
-  if (sd >= 0)
-  {
+  if (client->sd >= 0) {
 #ifdef WIN32
-    closesocket(sd);
+    closesocket(client->sd);
     WSACleanup();
 #else
-    close (sd);
+    close(client->sd);
 #endif
-    sd = -1;
   }
 
-  if (sd_path != NULL)
-    free (sd_path);
-  sd_path = NULL;
+  client->sd = -1;
+  client->inbuf = NULL;
+  client->inbuf_used = 0;
+}
+
+static void close_connection(rrd_client_t *client) /* {{{ */
+{
+  if (client == NULL)
+    return;
+
+  close_socket(client);
+
+  if (client->sd_path != NULL)
+    free(client->sd_path);
+  client->sd_path = NULL;
 } /* }}} void close_connection */
 
 static int buffer_add_string (const char *str, /* {{{ */
@@ -464,13 +479,13 @@ static void response_free (rrdc_response_t *res) /* {{{ */
   free (res);
 } /* }}} void response_free */
 
-static int recvline (char *buf, size_t n) /* {{{ */
+static int recvline(rrd_client_t *client, char *buf, size_t n) /* {{{ */
 {
   size_t len;
   char *s, *p, *t;
 
   /* Sanity check */
-  if (n <= 0)
+  if ((client == NULL) || (n <= 0))
     return (-1);
 
   s = buf;
@@ -480,11 +495,11 @@ static int recvline (char *buf, size_t n) /* {{{ */
     /*
          * If the buffer is empty, refill it.
          */
-    if ((len = inbuf_used) <= 0)
+    if (((len = client->inbuf_used) <= 0) || (client->inbuf == NULL))
     {
-      inbuf = _inbuf;
-      inbuf_used = recv (sd, inbuf, RRD_CMD_MAX, 0);
-      if (inbuf_used <= 0)
+      client->inbuf = client->_inbuf;
+      client->inbuf_used = recv(client->sd, client->inbuf, RRD_CMD_MAX, 0);
+      if (client->inbuf_used <= 0)
       {
         if (s == buf)
         {
@@ -492,9 +507,9 @@ static int recvline (char *buf, size_t n) /* {{{ */
           return (-1);
         }
       }
-      len = inbuf_used;
+      len = client->inbuf_used;
     }
-    p = inbuf;
+    p = client->inbuf;
     /*
          * Scan through at most n bytes of the current buffer,
          * looking for '\n'.  If found, copy up to and including
@@ -507,14 +522,14 @@ static int recvline (char *buf, size_t n) /* {{{ */
     if (t != NULL)
     {
       len = ++t - p;
-      inbuf_used -= len;
-      inbuf = t;
+      client->inbuf_used -= len;
+      client->inbuf = t;
       (void)memcpy((void *)s, (void *)p, len);
       s[len] = 0;
       return (1);
     }
-    inbuf_used -= len;
-    inbuf += len;
+    client->inbuf_used -= len;
+    client->inbuf += len;
     (void)memcpy((void *)s, (void *)p, len);
     s += len;
     n -= len;
@@ -523,7 +538,7 @@ static int recvline (char *buf, size_t n) /* {{{ */
   return (1);
 } /* }}} int recvline */
 
-static int response_read (rrdc_response_t **ret_response) /* {{{ */
+static int response_read(rrd_client_t *client, rrdc_response_t **ret_response) /* {{{ */
 {
   rrdc_response_t *ret = NULL;
   int status = 0;
@@ -534,7 +549,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
 
 #define DIE(code) do { status = code; goto err_out; } while(0)
 
-  if (sd == -1)
+  if ((client == NULL) || (client->sd == -1))
     DIE(-1);
 
   ret = (rrdc_response_t *) malloc (sizeof (rrdc_response_t));
@@ -544,7 +559,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
   ret->lines = NULL;
   ret->lines_num = 0;
 
-  if (recvline (buffer, sizeof (buffer)) == -1)
+  if (recvline(client, buffer, sizeof (buffer)) == -1)
     DIE(-3);
 
   chomp (buffer);
@@ -572,7 +587,7 @@ static int response_read (rrdc_response_t **ret_response) /* {{{ */
 
   for (i = 0; i < ret->lines_num; i++)
   {
-    if (recvline (buffer, sizeof (buffer)) == -1)
+    if (recvline(client, buffer, sizeof (buffer)) == -1)
       DIE(-6);
 
     chomp (buffer);
@@ -588,49 +603,60 @@ out:
 
 err_out:
   response_free(ret);
-  close_connection();
+  close_connection(client);
   return (status);
 
 #undef DIE
 
 } /* }}} rrdc_response_t *response_read */
 
-static int sendall (const char *msg, size_t len) /* {{{ */
+static int sendall(rrd_client_t *client, /* {{{ */
+    const char *msg, size_t len, int allow_retry)
 {
   int ret = 0;
   char *bufp = (char*)msg;
 
+  if (client == NULL)
+    return -1;
+
   while (ret != -1 && len > 0) {
-    ret = send(sd, msg, len, 0);
+    ret = send(client->sd, msg, len, 0);
     if (ret > 0) {
       bufp += ret;
       len -= ret;
     }
   }
 
+  if ((ret < 0) && allow_retry) {
+    /* Try to reconnect and start over.
+     * Don't further allow retries to avoid endless loops. */
+    if (reconnect(client) == 0)
+      return sendall(client, msg, len, 0);
+  }
+
   return ret;
 } /* }}} int sendall */
 
-static int request (const char *buffer, size_t buffer_size, /* {{{ */
+static int request(rrd_client_t *client, const char *buffer, size_t buffer_size, /* {{{ */
     rrdc_response_t **ret_response)
 {
   int status;
   rrdc_response_t *res;
 
-  if (sd == -1)
+  if ((client == NULL) || (client->sd == -1))
     return (ENOTCONN);
 
-  status = sendall (buffer, buffer_size);
+  status = sendall(client, buffer, buffer_size, 1);
   if (status == -1)
   {
-    close_connection ();
+    close_connection(client);
     rrd_set_error("request: socket error (%d) while talking to rrdcached",
                   status);
     return (-1);
   }
 
   res = NULL;
-  status = response_read (&res);
+  status = response_read(client, &res);
 
   if (status != 0)
   {
@@ -643,12 +669,24 @@ static int request (const char *buffer, size_t buffer_size, /* {{{ */
   return (0);
 } /* }}} int request */
 
+int rrd_client_is_connected(rrd_client_t *client) /* {{{ */
+{
+  return (client != NULL) && (client->sd >= 0);
+} /* }}} rrd_client_is_connected */
+
+const char *rrd_client_address(rrd_client_t *client) /* {{{ */
+{
+  if (!client)
+    return NULL;
+  return client->sd_path;
+} /* }}} rrd_client_address */
+
 /* determine whether we are connected to the specified daemon_addr if
  * NULL, return whether we are connected at all
  */
 int rrdc_is_connected(const char *daemon_addr) /* {{{ */
 {
-  if (sd < 0)
+  if (default_client.sd < 0)
     return 0;
   else if (daemon_addr == NULL)
   {
@@ -664,19 +702,42 @@ int rrdc_is_connected(const char *daemon_addr) /* {{{ */
     else
       return 0;
   }
-  else if (strcmp(daemon_addr, sd_path) == 0)
+  else if (strcmp(daemon_addr, default_client.sd_path) == 0)
     return 1;
   else
     return 0;
-
 } /* }}} int rrdc_is_connected */
 
 /* determine whether we are connected to any daemon */
-int rrdc_is_any_connected(void) {
-  return sd >= 0;
+int rrdc_is_any_connected(void)
+{
+  return default_client.sd >= 0;
 }
 
-static int rrdc_connect_unix (const char *path) /* {{{ */
+int rrd_client_ping(rrd_client_t *client) /* {{{ */
+{
+  int status;
+  rrdc_response_t *res = NULL;
+
+  status = request(client, "PING\n", strlen("PING\n"), &res);
+  if (status != 0)
+    return 0;
+
+  status = res->status;
+  response_free (res);
+
+  return status == 0;
+} /* }}} int rrd_client_ping */
+int rrdc_ping(void) /* {{{ */
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_ping(&default_client);
+  mutex_unlock(&lock);
+  return status;
+} /* }}} int rrdc_ping */
+
+static int connect_unix(rrd_client_t *client, const char *path) /* {{{ */
 {
 #ifdef WIN32
   return (WSAEPROTONOSUPPORT);
@@ -685,10 +746,10 @@ static int rrdc_connect_unix (const char *path) /* {{{ */
   int status;
 
   assert (path != NULL);
-  assert (sd == -1);
+  assert (client->sd == -1);
 
-  sd = socket (PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
-  if (sd < 0)
+  client->sd = socket(PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
+  if (client->sd < 0)
   {
     status = errno;
     return (status);
@@ -698,19 +759,19 @@ static int rrdc_connect_unix (const char *path) /* {{{ */
   sa.sun_family = AF_UNIX;
   strncpy (sa.sun_path, path, sizeof (sa.sun_path) - 1);
 
-  status = connect (sd, (struct sockaddr *) &sa, sizeof (sa));
+  status = connect(client->sd, (struct sockaddr *) &sa, sizeof (sa));
   if (status != 0)
   {
     status = errno;
-    close_connection ();
+    close_connection(client);
     return (status);
   }
 
   return (0);
 #endif
-} /* }}} int rrdc_connect_unix */
+} /* }}} int connect_unix */
 
-static int rrdc_connect_network (const char *addr_orig) /* {{{ */
+static int connect_network(rrd_client_t *client, const char *addr_orig) /* {{{ */
 {
   struct addrinfo ai_hints;
   struct addrinfo *ai_res;
@@ -720,7 +781,7 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
   char *port;
 
   assert (addr_orig != NULL);
-  assert (sd == -1);
+  assert (client->sd == -1);
 
   strncpy(addr_copy, addr_orig, sizeof(addr_copy));
   addr_copy[sizeof(addr_copy) - 1] = '\0';
@@ -797,19 +858,19 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
 
   for (ai_ptr = ai_res; ai_ptr != NULL; ai_ptr = ai_ptr->ai_next)
   {
-    sd = socket (ai_ptr->ai_family, ai_ptr->ai_socktype, ai_ptr->ai_protocol);
-    if (sd < 0)
+    client->sd = socket(ai_ptr->ai_family, ai_ptr->ai_socktype, ai_ptr->ai_protocol);
+    if (client->sd < 0)
     {
       status = errno;
-      sd = -1;
+      client->sd = -1;
       continue;
     }
 
-    status = connect (sd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
+    status = connect (client->sd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
     if (status != 0)
     {
       status = errno;
-      close_connection();
+      close_connection(client);
       continue;
     }
     assert (status == 0);
@@ -819,9 +880,28 @@ static int rrdc_connect_network (const char *addr_orig) /* {{{ */
   freeaddrinfo(ai_res);
 
   return (status);
-} /* }}} int rrdc_connect_network */
+} /* }}} int connect_network */
 
-int rrdc_connect (const char *addr) /* {{{ */
+static int client_connect(rrd_client_t *client, const char *addr) /* {{{ */
+{
+  rrd_clear_error ();
+  if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
+    return connect_unix(client, addr + strlen ("unix:"));
+  else if (addr[0] == '/')
+    return connect_unix(client, addr);
+  return connect_network(client, addr);
+} /* }}} int client_connect */
+
+static int reconnect(rrd_client_t *client) /* {{{ */
+{
+  if ((client == NULL) || (client->sd_path == NULL))
+    return -1;
+
+  close_socket(client);
+  return client_connect(client, client->sd_path);
+} /* }}} int reconnect */
+
+int rrd_client_connect(rrd_client_t *client, const char *addr) /* {{{ */
 {
   int status = 0;
 
@@ -829,34 +909,24 @@ int rrdc_connect (const char *addr) /* {{{ */
     addr = getenv (ENV_RRDCACHED_ADDRESS);
   }
 
-  if (addr == NULL || strcmp(addr,"") == 0) {
-    addr = NULL;
+  if ((client == NULL) || (addr == NULL) || (strcmp(addr,"") == 0)) {
     return 0;
   }
 
-  mutex_lock (&lock);
-
-  if (sd >= 0 && sd_path != NULL && strcmp(addr, sd_path) == 0)
+  if ((client->sd >= 0) && (client->sd_path != NULL) && (strcmp(addr, client->sd_path) == 0))
   {
-    /* connection to the same daemon; use cached connection */
-    mutex_unlock (&lock);
+    /* connection to the same daemon; use existing connection */
     return (0);
   }
   else
   {
-    close_connection();
+    close_connection(client);
   }
 
-  rrd_clear_error ();
-  if (strncmp ("unix:", addr, strlen ("unix:")) == 0)
-    status = rrdc_connect_unix (addr + strlen ("unix:"));
-  else if (addr[0] == '/')
-    status = rrdc_connect_unix (addr);
-  else
-    status = rrdc_connect_network(addr);
+  status = client_connect(client, addr);
 
-  if (status == 0 && sd >= 0)
-    sd_path = strdup(addr);
+  if ((status == 0) && (client->sd >= 0))
+    client->sd_path = strdup(addr);
   else
   {
     char *err = rrd_test_error () ? rrd_get_error () : "Internal error";
@@ -871,23 +941,57 @@ int rrdc_connect (const char *addr) /* {{{ */
       free (err);
   }
 
-  mutex_unlock (&lock);
   return (status);
+} /* }}} rrd_client_connect */
+int rrdc_connect (const char *addr) /* {{{ */
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_connect(&default_client, addr);
+  mutex_unlock(&lock);
+  return status;
 } /* }}} int rrdc_connect */
 
 int rrdc_disconnect (void) /* {{{ */
 {
-  mutex_lock (&lock);
-
-  close_connection();
-
-  mutex_unlock (&lock);
-
-  return (0);
+  mutex_lock(&lock);
+  close_connection(&default_client);
+  mutex_unlock(&lock);
+  return 0;
 } /* }}} int rrdc_disconnect */
 
-int rrdc_update (const char *filename, int values_num, /* {{{ */
-		const char * const *values)
+rrd_client_t *rrd_client_new(const char *addr) /* {{{ */
+{
+  rrd_client_t *client;
+
+  client = calloc(1, sizeof(*client));
+  if (client == NULL)
+    return NULL;
+
+  client->sd = -1;
+
+  if (addr == NULL)
+    return client;
+
+  if (rrd_client_connect(client, addr) != 0) {
+    rrd_client_destroy(client);
+    return NULL;
+  }
+
+  return client;
+} /* }}} rrd_client_t rrd_client_new */
+
+void rrd_client_destroy(rrd_client_t *client) /* {{{ */
+{
+  if (client == NULL)
+    return;
+
+  close_connection(client);
+  free(client);
+} /* }}} void rrd_client_destroy */
+
+int rrd_client_update (rrd_client_t *client, const char *filename, /* {{{ */
+		int values_num, const char * const *values)
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -898,6 +1002,9 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   int i;
   char *file_path;
 
+  if (client == NULL)
+    return -1;
+
   memset (buffer, 0, sizeof (buffer));
   buffer_ptr = &buffer[0];
   buffer_free = sizeof (buffer);
@@ -906,11 +1013,9 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   if (status != 0)
     return (ENOBUFS);
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -919,7 +1024,6 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     return (ENOBUFS);
   }
 
@@ -928,7 +1032,6 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
     status = buffer_add_value (values[i], &buffer_ptr, &buffer_free);
     if (status != 0)
     {
-      mutex_unlock (&lock);
       return (ENOBUFS);
     }
   }
@@ -939,8 +1042,7 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0)
     return (status);
@@ -949,10 +1051,19 @@ int rrdc_update (const char *filename, int values_num, /* {{{ */
   response_free (res);
 
   return (status);
+} /* int rrd_client_update */
+int rrdc_update (const char *filename, int values_num, /* {{{ */
+		const char * const *values)
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_update(&default_client, filename, values_num, values);
+  mutex_unlock(&lock);
+  return status;
 } /* }}} int rrdc_update */
 
-static int rrdc_filebased_command (const char *command,
-                                   const char *filename) /* {{{ */
+static int filebased_command(rrd_client_t *client, /* {{{ */
+    const char *command, const char *filename)
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -962,7 +1073,7 @@ static int rrdc_filebased_command (const char *command,
   int status;
   char *file_path;
 
-  if (filename == NULL)
+  if ((client == NULL) || (filename == NULL))
     return (-1);
 
   memset (buffer, 0, sizeof (buffer));
@@ -973,11 +1084,9 @@ static int rrdc_filebased_command (const char *command,
   if (status != 0)
     return (ENOBUFS);
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -986,7 +1095,6 @@ static int rrdc_filebased_command (const char *command,
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     return (ENOBUFS);
   }
 
@@ -996,8 +1104,7 @@ static int rrdc_filebased_command (const char *command,
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0)
     return (status);
@@ -1007,15 +1114,30 @@ static int rrdc_filebased_command (const char *command,
   return (status);
 } /* }}} int rrdc_flush */
 
+int rrd_client_flush(rrd_client_t *client, const char *filename)
+{
+  return filebased_command(client, "flush", filename);
+}
 int rrdc_flush (const char *filename) {
-  return rrdc_filebased_command("flush", filename);
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_flush(&default_client, filename);
+  mutex_unlock(&lock);
+  return status;
 }
 
-int rrdc_forget (const char *filename) {
-  return rrdc_filebased_command("forget", filename);
+int rrd_client_forget(rrd_client_t *client, const char *filename) {
+  return filebased_command(client, "forget", filename);
+}
+int rrdc_forget(const char *filename) {
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_forget(&default_client, filename);
+  mutex_unlock(&lock);
+  return status;
 }
 
-int rrdc_flushall (void) /* {{{ */
+int rrd_client_flushall (rrd_client_t *client) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1033,16 +1155,13 @@ int rrdc_flushall (void) /* {{{ */
   if (status != 0)
     return (ENOBUFS);
 
-  pthread_mutex_lock (&lock);
-
   assert (buffer_free < sizeof (buffer));
   buffer_size = sizeof (buffer) - buffer_free;
   assert (buffer[buffer_size - 1] == ' ');
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0)
     return (status);
@@ -1051,9 +1170,17 @@ int rrdc_flushall (void) /* {{{ */
   response_free (res);
 
   return (status);
+} /* }}} int rrd_client_flushall */
+int rrdc_flushall (void) /* {{{ */
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_flushall(&default_client);
+  mutex_unlock(&lock);
+  return status;
 } /* }}} int rrdc_flushall */
 
-rrd_info_t * rrdc_info (const char *filename) /* {{{ */
+rrd_info_t *rrd_client_info(rrd_client_t *client, const char *filename) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1068,6 +1195,8 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   rrd_info_type_t itype;
   char *k, *s;
 
+  if (client == NULL)
+    return NULL;
   if (filename == NULL) {
     rrd_set_error ("rrdc_info: no filename");
     return (NULL);
@@ -1083,11 +1212,9 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
     return (NULL);
   }
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (NULL);
   }
 
@@ -1096,7 +1223,6 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     rrd_set_error ("rrdc_info: out of memory");
     return (NULL);
   }
@@ -1107,8 +1233,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
     if (res && res->message) {
@@ -1162,9 +1287,17 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   response_free (res);
 
   return (data);
+} /* }}} rrd_client_info */
+rrd_info_t * rrdc_info (const char *filename) /* {{{ */
+{
+  rrd_info_t *info;
+  mutex_lock(&lock);
+  info = rrd_client_info(&default_client, filename);
+  mutex_unlock(&lock);
+  return info;
 } /* }}} int rrdc_info */
 
-char *rrdc_list(const char *dirname)
+char *rrd_client_list(rrd_client_t *client, const char *dirname) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1176,6 +1309,8 @@ char *rrdc_list(const char *dirname)
   char *list = NULL;
   int list_len = 0;
 
+  if (client == NULL)
+    return NULL;
   if (dirname == NULL) {
     rrd_set_error ("rrdc_info: no directory name");
     return (NULL);
@@ -1207,9 +1342,7 @@ char *rrdc_list(const char *dirname)
 
   res = NULL;
 
-  pthread_mutex_lock (&lock);
-  status = request (buffer, buffer_size, &res);
-  pthread_mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1262,9 +1395,17 @@ out_free_res:
   response_free (res);
 
   return list;
-}
+} /* }}} char *rrd_client_list */
+char *rrdc_list(const char *dirname) /* {{{ */
+{
+  char *files;
+  mutex_lock(&lock);
+  files = rrd_client_list(&default_client, dirname);
+  mutex_unlock(&lock);
+  return files;
+} /* }}} char *rrdc_list */
 
-time_t rrdc_last (const char *filename) /* {{{ */
+time_t rrd_client_last(rrd_client_t *client, const char *filename) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1275,6 +1416,8 @@ time_t rrdc_last (const char *filename) /* {{{ */
   char *file_path;
   time_t lastup;
 
+  if (client == NULL)
+    return 0;
   if (filename == NULL) {
     rrd_set_error ("rrdc_last: no filename");
     return (-1);
@@ -1290,11 +1433,9 @@ time_t rrdc_last (const char *filename) /* {{{ */
     return (-1);
   }
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -1303,7 +1444,6 @@ time_t rrdc_last (const char *filename) /* {{{ */
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     rrd_set_error ("rrdc_last: out of memory");
     return (-1);
   }
@@ -1314,8 +1454,7 @@ time_t rrdc_last (const char *filename) /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1325,9 +1464,17 @@ time_t rrdc_last (const char *filename) /* {{{ */
   response_free (res);
 
   return (lastup);
+} /* }}} int rrd_client_last */
+time_t rrdc_last (const char *filename) /* {{{ */
+{
+  time_t t;
+  mutex_lock(&lock);
+  t = rrd_client_last(&default_client, filename);
+  mutex_unlock(&lock);
+  return t;
 } /* }}} int rrdc_last */
 
-time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
+time_t rrd_client_first (rrd_client_t *client, const char *filename, int rraindex) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1338,6 +1485,8 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
   char *file_path;
   time_t firstup;
 
+  if (client == NULL)
+    return 0;
   if (filename == NULL) {
     rrd_set_error ("rrdc_first: no filename specified");
     return (-1);
@@ -1353,11 +1502,9 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
     return (-1);
   }
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -1366,14 +1513,12 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     rrd_set_error ("rrdc_first: out of memory");
     return (-1);
   }
   status = buffer_add_ulong (rraindex, &buffer_ptr, &buffer_free);
   if (status != 0)
   {
-    mutex_unlock (&lock);
     rrd_set_error ("rrdc_first: out of memory");
     return (-1);
   }
@@ -1384,8 +1529,7 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1395,8 +1539,26 @@ time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
   response_free (res);
 
   return (firstup);
+} /* }}} int rrd_client_first */
+time_t rrdc_first (const char *filename, int rraindex) /* {{{ */
+{
+  time_t t;
+  mutex_lock(&lock);
+  t = rrd_client_first(&default_client, filename, rraindex);
+  mutex_unlock(&lock);
+  return t;
 } /* }}} int rrdc_first */
 
+int rrd_client_create(rrd_client_t *client, const char *filename, /* {{{ */
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    int argc,
+    const char **argv)
+{
+  return rrd_client_create_r2(client, filename, pdp_step, last_up, no_overwrite,
+      NULL, NULL, argc, argv);
+}
 int rrdc_create (const char *filename, /* {{{ */
     unsigned long pdp_step,
     time_t last_up,
@@ -1404,10 +1566,11 @@ int rrdc_create (const char *filename, /* {{{ */
     int argc,
     const char **argv)
 {
-    return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite, NULL, NULL, argc, argv);
+  return rrdc_create_r2(filename, pdp_step, last_up, no_overwrite,
+      NULL, NULL, argc, argv);
 }
 
-int rrdc_create_r2(const char *filename, /* {{{ */
+int rrd_client_create_r2(rrd_client_t *client, const char *filename, /* {{{ */
     unsigned long pdp_step,
     time_t last_up,
     int no_overwrite,
@@ -1425,6 +1588,8 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   char *file_path;
   int i;
 
+  if (client == NULL)
+    return -1;
   if (filename == NULL) {
     rrd_set_error ("rrdc_create: no filename specified");
     return (-1);
@@ -1440,11 +1605,9 @@ int rrdc_create_r2(const char *filename, /* {{{ */
     return (-1);
   }
 
-  mutex_lock (&lock);
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL)
   {
-    mutex_unlock (&lock);
     return (-1);
   }
 
@@ -1475,7 +1638,6 @@ int rrdc_create_r2(const char *filename, /* {{{ */
 
   if (status != 0)
   {
-    mutex_unlock (&lock);
     rrd_set_error ("rrdc_create: out of memory");
     return (-1);
   }
@@ -1485,7 +1647,6 @@ int rrdc_create_r2(const char *filename, /* {{{ */
       status = buffer_add_string (argv[i], &buffer_ptr, &buffer_free);
       if (status != 0)
       {
-        mutex_unlock (&lock);
         rrd_set_error ("rrdc_create: out of memory");
         return (-1);
       }
@@ -1499,8 +1660,7 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
-  mutex_unlock (&lock);
+  status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
     rrd_set_error ("rrdcached: %s", res->message);
@@ -1508,9 +1668,25 @@ int rrdc_create_r2(const char *filename, /* {{{ */
   }
   response_free (res);
   return(0);
-} /* }}} int rrdc_create */
+} /* }}} int rrd_client_create_r2 */
+int rrdc_create_r2(const char *filename, /* {{{ */
+    unsigned long pdp_step,
+    time_t last_up,
+    int no_overwrite,
+    const char **sources,
+    const char *template,
+    int argc,
+    const char **argv)
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_create_r2(&default_client, filename, pdp_step, last_up, no_overwrite,
+      sources, template, argc, argv);
+  mutex_unlock(&lock);
+  return status;
+} /* }}} int rrdc_create_r2 */
 
-int rrdc_fetch (const char *filename, /* {{{ */
+int rrd_client_fetch (rrd_client_t *client, const char *filename, /* {{{ */
     const char *cf,
     time_t *ret_start, time_t *ret_end,
     unsigned long *ret_step,
@@ -1542,10 +1718,8 @@ int rrdc_fetch (const char *filename, /* {{{ */
   size_t current_line;
   time_t t;
 
-  if ((filename == NULL) || (cf == NULL))
+  if ((client == NULL) || (filename == NULL) || (cf == NULL))
     return (-1);
-
-  mutex_lock(&lock);
 
   /* Send request {{{ */
 
@@ -1554,14 +1728,12 @@ int rrdc_fetch (const char *filename, /* {{{ */
   buffer_free = sizeof (buffer);
   status = buffer_add_string ("FETCH", &buffer_ptr, &buffer_free);
   if (status != 0){
-      mutex_unlock(&lock);
       return (ENOBUFS);
   }
 
   /* change to path for rrdcached */
-  file_path = get_path (filename);
+  file_path = get_path(client, filename);
   if (file_path == NULL){
-    mutex_unlock(&lock);
     return (EINVAL);
   }
 
@@ -1569,13 +1741,11 @@ int rrdc_fetch (const char *filename, /* {{{ */
   free (file_path);
 
   if (status != 0) {
-    mutex_unlock(&lock);
     return (ENOBUFS);
   }
 
   status = buffer_add_string (cf, &buffer_ptr, &buffer_free);
   if (status != 0) {
-    mutex_unlock(&lock);
     return (ENOBUFS);
   }
 
@@ -1586,7 +1756,6 @@ int rrdc_fetch (const char *filename, /* {{{ */
     tmp[sizeof (tmp) - 1] = 0;
     status = buffer_add_string (tmp, &buffer_ptr, &buffer_free);
     if (status != 0) {
-      mutex_unlock(&lock);
       return (ENOBUFS);
     }
 
@@ -1596,7 +1765,6 @@ int rrdc_fetch (const char *filename, /* {{{ */
       tmp[sizeof (tmp) - 1] = 0;
       status = buffer_add_string (tmp, &buffer_ptr, &buffer_free);
       if (status != 0){
-        mutex_unlock(&lock);
         return (ENOBUFS);
       }
     }
@@ -1608,9 +1776,8 @@ int rrdc_fetch (const char *filename, /* {{{ */
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-  status = request (buffer, buffer_size, &res);
+  status = request(client, buffer, buffer_size, &res);
   if (status != 0){
-    mutex_unlock(&lock);
     return (status);
   }
   status = res->status;
@@ -1618,7 +1785,6 @@ int rrdc_fetch (const char *filename, /* {{{ */
   {
     rrd_set_error ("rrdcached: %s", res->message);
     response_free (res);
-    mutex_unlock(&lock);
     return (status);
   }
   /* }}} Send request */
@@ -1637,7 +1803,6 @@ int rrdc_fetch (const char *filename, /* {{{ */
     if (ds_names != 0) { size_t k; for (k = 0; k < ds_num; k++) free (ds_names[k]); } \
     free (ds_names); \
     response_free (res); \
-    mutex_unlock(&lock); \
     return (status); \
   } while (0)
 
@@ -1733,40 +1898,58 @@ int rrdc_fetch (const char *filename, /* {{{ */
   *ret_data = data;
 
   response_free (res);
-  mutex_unlock(&lock);
   return (0);
 #undef READ_NUMERIC_FIELD
 #undef BAIL_OUT
-} /* }}} int rrdc_flush */
+} /* }}} int_rrd_client_fetch */
+int rrdc_fetch (const char *filename, /* {{{ */
+    const char *cf,
+    time_t *ret_start, time_t *ret_end,
+    unsigned long *ret_step,
+    unsigned long *ret_ds_num,
+    char ***ret_ds_names,
+    rrd_value_t **ret_data)
+{
+  int status;
+  mutex_lock(&lock);
+  status = rrd_client_fetch(&default_client, filename, cf, ret_start, ret_end,
+      ret_step, ret_ds_num, ret_ds_names, ret_data);
+  mutex_unlock(&lock);
+  return status;
+} /* }}} int rrdc_fetch */
 
 /* convenience function; if there is a daemon specified, or if we can
  * detect one from the environment, then flush the file.  Otherwise, no-op
  */
-int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ */
+int rrdc_flush_if_daemon(const char *opt_daemon, const char *filename) /* {{{ */
 {
-  int status = 0;
+  int status;
 
-  rrdc_connect(opt_daemon);
+  mutex_lock(&lock);
+  rrd_client_connect(&default_client, opt_daemon);
 
-  if (rrdc_is_connected(opt_daemon))
+  if (!rrdc_is_connected(opt_daemon)) {
+    mutex_unlock(&lock);
+    return 0;
+  }
+
+  rrd_clear_error();
+  status = rrd_client_flush(&default_client, filename);
+  mutex_unlock(&lock);
+
+  if (status != 0 && !rrd_test_error())
   {
-    rrd_clear_error();
-    status = rrdc_flush (filename);
-
-    if (status != 0 && !rrd_test_error())
+    if (status > 0)
     {
-      if (status > 0)
-      {
-        rrd_set_error("rrdc_flush (%s) failed: %s",
-                      filename, rrd_strerror(status));
-      }
-      else if (status < 0)
-      {
-        rrd_set_error("rrdc_flush (%s) failed with status %i.",
-                      filename, status);
-      }
+      rrd_set_error("rrdc_flush (%s) failed: %s",
+                    filename, rrd_strerror(status));
     }
-  } /* if (rrdc_is_connected(..)) */
+    else if (status < 0)
+    {
+      rrd_set_error("rrdc_flush (%s) failed with status %i.",
+                    filename, status);
+    }
+  }
 
   return status;
 } /* }}} int rrdc_flush_if_daemon */
@@ -1774,35 +1957,38 @@ int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename) /* {{{ *
 /* convenience function; if there is a daemon specified, or if we can
  * detect one from the environment, then flush the file.  Otherwise, no-op
  */
-int rrdc_flushall_if_daemon (const char *opt_daemon) /* {{{ */
+int rrdc_flushall_if_daemon(const char *opt_daemon) /* {{{ */
 {
-  int status = 0;
+  int status;
 
-  rrdc_connect(opt_daemon);
+  mutex_lock(&lock);
+  rrd_client_connect(&default_client, opt_daemon);
 
-  if (rrdc_is_connected(opt_daemon))
+  if (!rrdc_is_connected(opt_daemon)) {
+    mutex_unlock(&lock);
+    return 0;
+  }
+
+  rrd_clear_error();
+  status = rrd_client_flushall(&default_client);
+  mutex_unlock(&lock);
+
+  if (status != 0 && !rrd_test_error())
   {
-    rrd_clear_error();
-    status = rrdc_flushall ();
-
-    if (status != 0 && !rrd_test_error())
+    if (status > 0)
     {
-      if (status > 0)
-      {
-        rrd_set_error("rrdc_flushall failed: %s", rrd_strerror(status));
-      }
-      else if (status < 0)
-      {
-        rrd_set_error("rrdc_flushall failed with status %i.", status);
-      }
+      rrd_set_error("rrdc_flushall failed: %s", rrd_strerror(status));
     }
-  } /* if (rrdc_is_connected(..)) */
+    else if (status < 0)
+    {
+      rrd_set_error("rrdc_flushall failed with status %i.", status);
+    }
+  }
 
   return status;
-} /* }}} int rrdc_flush_if_daemon */
+} /* }}} rrdc_flushall_if_daemon */
 
-
-int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
+int rrd_client_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats) /* {{{ */
 {
   rrdc_stats_t *head;
   rrdc_stats_t *tail;
@@ -1823,9 +2009,7 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
    * }}} */
 
   res = NULL;
-  mutex_lock (&lock);
-  status = request ("STATS\n", strlen ("STATS\n"), &res);
-  mutex_unlock (&lock);
+  status = request(client, "STATS\n", strlen ("STATS\n"), &res);
 
   if (status != 0)
     return (status);
@@ -1918,6 +2102,14 @@ int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
 
   *ret_stats = head;
   return (0);
+} /* }}} int rrd_client_stats_get */
+int rrdc_stats_get (rrdc_stats_t **ret_stats) /* {{{ */
+{
+  int status;
+  mutex_lock (&lock);
+  status = rrd_client_stats_get(&default_client, ret_stats);
+  mutex_unlock (&lock);
+  return status;
 } /* }}} int rrdc_stats_get */
 
 void rrdc_stats_free (rrdc_stats_t *ret_stats) /* {{{ */
