@@ -411,7 +411,7 @@ int rrd_dump_cb_r(
             now = (rrd.live_head->last_up
                    - rrd.live_head->last_up
                    % (rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step))
-                + (timer * rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step);
+                + (timer * (long)rrd.rra_def[i].pdp_cnt * (long)rrd.stat_head->pdp_step);
 
             timer++;
 #if HAVE_STRFTIME
