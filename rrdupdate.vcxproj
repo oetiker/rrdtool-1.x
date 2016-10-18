@@ -29,6 +29,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3AAE1E07-78D7-420D-968B-D2087D732D3B}</ProjectGuid>
     <RootNamespace>rrdtool</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'" Label="Configuration">
@@ -230,7 +231,7 @@ copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>.;../../contrib/cairo/include/cairo;../../contrib/pango/include/pango-1.0;../../contrib/glib/include/glib-2.0;../../contrib/glib/lib/glib-2.0/include;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WIN64;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <ProgramDataBaseFileName>$(IntDir)rrdupdate.pdb</ProgramDataBaseFileName>
@@ -238,8 +239,8 @@ copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>librrd-4.lib;cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(Configuration); ../contrib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pcre3.lib;librrd-4.lib;cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;D:\buildSource\rrdtool-1.x-1.6\contrib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
