@@ -1,0 +1,120 @@
+TOP = .
+RRD_LIB_NAME=librrd-4
+ARCH_PATH_X86=contrib
+ARCH_PATH_X64=contrib-x64
+
+
+!ifndef USE_64BIT
+LD_FLAGS=/RELEASE /MACHINE:X86
+ARCH_PATH=$(ARCH_PATH_X86)
+CPPFLAGS = /arch:SSE2
+!else
+LD_FLAGS=/RELEASE /MACHINE:X64
+ARCH_PATH=$(ARCH_PATH_X64)
+!endif
+
+CPPFLAGS = $(CCPFLAGS) /TP /EHsc /O2 /Zi /Fd$(TOP)/win32/vc.pdb \
+        /I $(TOP)/win32 /I $(TOP)/src \
+        /I $(ARCH_PATH)\include \
+        /I $(ARCH_PATH)\include\cairo \
+        /I $(ARCH_PATH)\include\pango-1.0 \
+        /I $(ARCH_PATH)\include\glib-2.0 \
+        /I $(ARCH_PATH)\lib\glib-2.0\include \
+        /I $(ARCH_PATH)\include\libxml2
+
+THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
+        libpng.lib libxml2.lib \
+        glib-2.0.lib gobject-2.0.lib \
+        pango-1.0.lib pangocairo-1.0.lib cairo.lib \
+		Ws2_32.lib
+
+RRD_LIB_OBJ_LIST = \
+        $(TOP)/src/hash_32.obj \
+        $(TOP)/src/mutex.obj \
+        $(TOP)/src/plbasename.obj \
+        $(TOP)/src/pngsize.obj \
+        $(TOP)/src/rrd_client.obj \
+        $(TOP)/src/rrd_create.obj \
+        $(TOP)/src/rrd_diff.obj \
+        $(TOP)/src/rrd_dump.obj \
+        $(TOP)/src/rrd_error.obj \
+        $(TOP)/src/rrd_fetch.obj \
+        $(TOP)/src/rrd_first.obj \
+        $(TOP)/src/rrd_flushcached.obj \
+        $(TOP)/src/rrd_format.obj \
+        $(TOP)/src/rrd_getopt.obj \
+        $(TOP)/src/rrd_getopt1.obj \
+        $(TOP)/src/rrd_gfx.obj \
+        $(TOP)/src/rrd_graph.obj \
+        $(TOP)/src/rrd_graph_helper.obj \
+        $(TOP)/src/rrd_hw.obj \
+        $(TOP)/src/rrd_hw_math.obj \
+        $(TOP)/src/rrd_hw_update.obj \
+        $(TOP)/src/rrd_info.obj \
+        $(TOP)/src/rrd_last.obj \
+        $(TOP)/src/rrd_lastupdate.obj \
+        $(TOP)/src/rrd_nan_inf.obj \
+        $(TOP)/src/rrd_open.obj \
+        $(TOP)/src/rrd_parsetime.obj \
+        $(TOP)/src/rrd_resize.obj \
+        $(TOP)/src/rrd_restore.obj \
+        $(TOP)/src/rrd_rpncalc.obj \
+        $(TOP)/src/rrd_thread_safe_nt.obj \
+        $(TOP)/src/rrd_tune.obj \
+        $(TOP)/src/rrd_update.obj \
+        $(TOP)/src/rrd_utils.obj \
+        $(TOP)/src/rrd_version.obj \
+        $(TOP)/src/rrd_xport.obj \
+        $(TOP)/src/strftime.obj
+
+all: $(TOP)/win32/$(RRD_LIB_NAME).dll $(TOP)/win32/rrdtool.exe \
+		$(TOP)/win32/rrdupdate.exe $(TOP)/win32/rrdcgi.exe
+
+clean:
+	-@del /F /Q $(TOP)\src\*.obj 2>NUL
+	-@del /F /Q $(TOP)\win32\*.res 2>NUL
+	-@del /F /Q $(TOP)\win32\*.exe 2>NUL
+	-@del /F /Q $(TOP)\win32\*.pdb 2>NUL
+	-@del /F /Q $(TOP)\win32\$(RRD_LIB_NAME).dll 2>NUL
+	-@del /F /Q $(TOP)\win32\$(RRD_LIB_NAME).exp 2>NUL
+	-@del /F /Q $(TOP)\win32\$(RRD_LIB_NAME).lib 2>NUL
+	
+$(TOP)/win32/$(RRD_LIB_NAME).dll $(TOP)/win32/$(RRD_LIB_NAME).lib: \
+		$(TOP)/win32/$(RRD_LIB_NAME).def $(TOP)/win32/$(RRD_LIB_NAME).res \
+		$(RRD_LIB_OBJ_LIST)
+	cl /nologo /MT /LD /Zi /Fe$(TOP)/win32/$(RRD_LIB_NAME).dll \
+		/Fd$(TOP)/win32/$(RRD_LIB_NAME).pdb \
+		$(TOP)/win32/$(RRD_LIB_NAME).def $(TOP)/win32/$(RRD_LIB_NAME).res \
+		$(RRD_LIB_OBJ_LIST) /link $(THIRD_PARTY_LIB) $(LD_FLAGS)
+
+$(TOP)/win32/rrdtool.exe: $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
+		$(TOP)/win32/$(RRD_LIB_NAME).lib
+	cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
+		$(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
+#Just waiting for antivirus program to finished check tasks
+	-@ping 1.1.1.1 -n 1 -w 1000 > NUL
+	-mt -manifest $(TOP)/win32/uac.manifest -outputresource:$(TOP)/win32/rrdtool.exe;#1
+
+$(TOP)/win32/rrdupdate.exe: $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj \
+		$(TOP)/src/plbasename.obj $(TOP)/win32/$(RRD_LIB_NAME).lib
+	cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj \
+		$(TOP)/src/plbasename.obj $(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
+#Just waiting for antivirus program to finished check tasks
+	-@ping 1.1.1.1 -n 1 -w 1000 > NUL
+	-mt -manifest $(TOP)/win32/uac.manifest -outputresource:$(TOP)/win32/rrdupdate.exe;#1
+
+$(TOP)/win32/rrdcgi.exe: $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
+		$(TOP)/src/rrd_getopt.obj $(TOP)/src/rrd_getopt1.obj \
+		$(TOP)/win32/$(RRD_LIB_NAME).lib
+	cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
+		$(TOP)/src/rrd_getopt.obj $(TOP)/src/rrd_getopt1.obj \
+		$(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
+#Just waiting for antivirus program to finished check tasks
+	-@ping 1.1.1.1 -n 1 -w 1000 > NUL
+	-mt -manifest $(TOP)/win32/uac.manifest -outputresource:$(TOP)/win32/rrdcgi.exe;#1
+
+{$(TOP)/src}.c{$(TOP)/src}.obj:
+	cl /nologo /MT /DWIN32 /c $(CPPFLAGS) /Fo$@ $<
+
+{$(TOP)/win32}.rc{$(TOP)/win32}.res:
+	rc /nologo /fo$@ $<

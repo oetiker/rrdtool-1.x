@@ -1,3 +1,54 @@
+Compiling RRDtool on Win64 with Microsoft Visual C++:
+---------------------------------------------------------------
+2010-06-04 Chris Larsen clarsen@euphoriaaudio.com
+2008-03-12 Stefan Ludewig stefan.ludewig@exitgames.com
+2016-10-20 spartawhy117
+
+Here are step by step instructions for building librrd-4.dll and rrdtool.exe
+version 1.6 and newer with Microsoft Visual Studio 2015 (12.0.x).
+
+(1) Create a folder named "contrib" in the directory where this text file is located.
+
+(2) Download the following libraries that rrdtool depends on into this folder:
+
+    - cairo:    http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/cairo_1.8.10-3_win32.zip 
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/cairo-dev_1.8.10-3_win32.zip
+
+    - glib:     http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.24/glib_2.24.1-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.24/glib-dev_2.24.1-1_win32.zip
+
+    - libpng:   http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libpng_1.4.0-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libpng-dev_1.4.0-1_win32.zip
+
+    - libxml2:  http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libxml2_2.7.7-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libxml2-dev_2.7.7-1_win32.zip
+
+    - pango:    http://ftp.gnome.org/pub/gnome/binaries/win32/pango/1.28/pango_1.28.0-1_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/pango/1.28/pango-dev_1.28.0-1_win32.zip
+
+    - zlib:     http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/zlib_1.2.4-2_win32.zip
+      and       http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/zlib-dev_1.2.4-2_win32.zip
+      
+    - fontconfig:  http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/fontconfig_2.8.0-2_win32.zip
+    
+    - freetype: http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/freetype_2.3.12-1_win32.zip
+    
+    - expat:    http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/expat_2.0.1-1_win32.zip
+
+    - pcre: http://www.airesoft.co.uk/pcre
+
+(3) Extract all of the .zip files into the contrib folder. Do not extract each library into it's own
+    directory. We want all of the files merged into a structure consisting of "bin, include, lib..."
+    etc folders.
+
+(4) Open the Visual Studio 2015 Solution "rrd.sln" in the win64 folder of
+    your rrdtool-folder and build either the project librrd-4 (for the
+    rrdtool-library), rrdtool (for the rrdtool-executable depending on the
+    libraray) or the complete solution. A post-build event automatically copies
+    all the dlls, needed by rrdtool, next to the .exe, when you build the
+    executable. These DLLs must be available on all hosts where rrdtool will
+    run.
+
 Compiling RRDtool on Win32 with Microsoft Visual C++:
 ---------------------------------------------------------------
 2010-06-04 Chris Larsen clarsen@euphoriaaudio.com
@@ -33,6 +84,7 @@ version 1.4.5 and newer with Microsoft Visual Studio 2013 (12.0.x).
     - freetype: http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/freetype_2.3.12-1_win32.zip
     
     - expat:    http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/expat_2.0.1-1_win32.zip
+
 
 (3) Extract all of the .zip files into the contrib folder. Do not extract each library into it's own
     directory. We want all of the files merged into a structure consisting of "bin, include, lib..."

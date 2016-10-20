@@ -97,9 +97,6 @@
 /*
  * Windows Sockets errors redefined as regular Berkeley error constants.
  */
-#define ENOBUFS WSAENOBUFS
-#define ENOTCONN WSAENOTCONN
-
 
 #include <ctype.h>
 #include <direct.h>
