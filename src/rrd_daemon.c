@@ -2017,7 +2017,9 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 	linebuf_fill = 0;
       }
     }
-    if (linebuf_fill>0) {
+
+    /* only print out a line if parsed something */
+    if (i > 0) {
       add_response_info (sock, "%s\n", linebuf);
     }
   } /* for (t) */
