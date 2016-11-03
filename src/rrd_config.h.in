@@ -13,7 +13,7 @@
 /* realloc does not support NULL as argument */
 #undef NO_NULL_REALLOC
 
-/* lets enable madvise defines in NetBSD */ 
+/* lets enable madvise defines in NetBSD */
 #if defined(__NetBSD__)
 # if !defined(_NETBSD_SOURCE)
 #  define _NETBSD_SOURCE
@@ -413,8 +413,7 @@
 /* Define to 1 if you have the `__va_copy' function or macro. */
 #undef HAVE___VA_COPY
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Name of package */
