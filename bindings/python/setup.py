@@ -14,8 +14,8 @@ TOP_BUILDDIR = os.environ.get('ABS_TOP_BUILDDIR', '../..')
 def main():
     module = Extension('rrdtool',
                        sources=['rrdtoolmodule.c'],
-                       include_dirs=[os.path.join(TOP_BUILDDIR, 'src', '.libs')],
-                       library_dirs=[os.path.join(TOP_BUILDDIR, 'src'),
+                       library_dirs=[os.path.join(TOP_BUILDDIR, 'src', '.libs')],
+                       include_dirs=[os.path.join(TOP_BUILDDIR, 'src'),
                                      os.path.join(TOP_SRCDIR, 'src')],
                        libraries=['rrd'])
 
