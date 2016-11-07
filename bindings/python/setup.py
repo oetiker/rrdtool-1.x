@@ -1,60 +1,36 @@
-#! /usr/bin/env python
-#
-# setup.py
-#
-# py-rrdtool distutil setup
-#
-# Author  : Hye-Shik Chang <perky@fallin.lv>
-# Date    : $Date: 2003/02/14 02:38:16 $
-# Created : 24 May 2002
-#
-# $Revision: 1.7 $
-#
-#  ==========================================================================
-#  This file is part of py-rrdtool.
-#
-#  py-rrdtool is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published
-#  by the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  py-rrdtool is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with Foobar; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-
+#!/usr/bin/env python
 try:
-    # Attempt to build using Distribute, which also supports bdist_wheel
     from setuptools import setup
     from setuptools.extension import Extension
 except ImportError:
     from distutils.core import setup, Extension
-import sys, os
 
 TOP_SRCDIR = os.environ.get('ABS_TOP_SRCDIR', '../..')
 TOP_BUILDDIR = os.environ.get('ABS_TOP_BUILDDIR', '../..')
 
-setup(name = "py-rrdtool",
-      version = "0.2.2",
-      description = "Python Interface to RRDTool",
-      author = "Hye-Shik Chang",
-      author_email = "perky@fallin.lv",
-      license = "LGPL",
-      url = "http://oss.oetiker.ch/rrdtool",
-      #packages = ['rrdtool'],
-      ext_modules = [
-          Extension(
-            "rrdtool",
-            ["rrdtoolmodule.c"],
-            libraries=['rrd'],
-            library_dirs=[ os.path.join(TOP_BUILDDIR, 'src', '.libs') ],
-            include_dirs=[ os.path.join(TOP_BUILDDIR, 'src'),
-                           os.path.join(TOP_SRCDIR, 'src') ],
-          )
-      ]
-)
+
+def main():
+    module = Extension('rrdtool',
+                       sources=['rrdtoolmodule.c'],
+                       include_dirs=[os.path.join(TOP_BUILDDIR, 'src', '.libs')],
+                       library_dirs=[os.path.join(TOP_BUILDDIR, 'src'),
+                                     os.path.join(TOP_SRCDIR, 'src')],
+                       libraries=['rrd'])
+
+    kwargs = dict(
+        name='rrdtool',
+        version='0.1.6',
+        description='Python bindings for rrdtool',
+        keywords=['rrdtool'],
+        author='Christian Kroeger, Hye-Shik Chang',
+        author_email='commx@commx.ws',
+        license='LGPL',
+        url='https://github.com/commx/python-rrdtool',
+        ext_modules=[module]
+    )
+
+    setup(**kwargs)
+
+
+if __name__ == '__main__':
+    main()

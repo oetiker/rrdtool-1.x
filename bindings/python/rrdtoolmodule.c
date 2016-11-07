@@ -1,246 +1,403 @@
 /*
- * rrdtoolmodule.c
+ * python-rrdtool, Python bindings for rrdtool.
+ * Based on the rrdtool Python bindings for Python 2 from
+ * Hye-Shik Chang <perky@fallin.lv>.
  *
- * RRDTool Python binding
+ * Copyright 2012 Christian Jurk <commx@commx.ws>
  *
- * Author  : Hye-Shik Chang <perky@fallin.lv>
- * Date    : $Date: 2003/02/22 07:41:19 $
- * Created : 23 May 2002
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of the
+ * License, or (at your option) any later version.
  *
- * $Revision: 1.14 $
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  ==========================================================================
- *  This file is part of py-rrdtool.
- *
- *  py-rrdtool is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published
- *  by the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  py-rrdtool is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with Foobar; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
  *
  */
 
-#ifdef UNUSED
-#elif defined(__GNUC__)
-# define UNUSED(x) x __attribute__((unused))
-#elif defined(__LCLINT__)
-# define UNUSED(x) /*@unused@*/ x
+#include <Python.h>
+#include <datetime.h>
+#include "rrd_config.h"
+#include "rrd_tool.h"
+
+/* Some macros to maintain compatibility between Python 2.x and 3.x */
+#if PY_MAJOR_VERSION >= 3
+#define HAVE_PY3K
+#define PyRRD_String_Check(x)                 PyUnicode_Check(x)
+#define PyRRD_String_FromString(x)            PyUnicode_FromString(x)
+#define PyRRD_String_AS_STRING(x)             PyUnicode_AsUTF8(x)
+#define PyRRD_String_FromStringAndSize(x, y)  PyBytes_FromStringAndSize(x, y)
+#define PyRRD_Int_FromLong(x)                 PyLong_FromLong(x)
+#define PyRRD_Int_FromString(x, y, z)         PyLong_FromString(x,y,z)
 #else
-# define UNUSED(x) x
+#define PyRRD_String_Check(x)                 PyString_Check(x)
+#define PyRRD_String_FromString(x)            PyString_FromString(x)
+#define PyRRD_String_AS_STRING(x)             PyString_AS_STRING(x)
+#define PyRRD_String_FromStringAndSize(x, y)  PyString_FromStringAndSize(x, y)
+#define PyRRD_Int_FromLong(x)                 PyInt_FromLong(x)
+#define PyRRD_Int_FromString(x, y, z)         PyInt_FromString(x,y,z)
 #endif
 
+#ifndef Py_UNUSED
+#ifdef __GNUC__
+ #define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
+#else
+ #define Py_UNUSED(name) _unused_ ## -name
+#endif
+#endif
 
-#include "rrd_config.h"
-static const char *__version__ = PACKAGE_VERSION;
+/** Binding version. */
+static const char *_version = "0.1.6";
 
-#include "Python.h"
-#include "rrd_tool.h"
-//#include "rrd.h"
-//#include "rrd_extra.h"
+/** Exception types. */
+static PyObject *rrdtool_OperationalError;
+static PyObject *rrdtool_ProgrammingError;
 
-static PyObject *ErrorObject;
+static char **rrdtool_argv = NULL;
+static int    rrdtool_argc = 0;
 
-/* forward declaration to keep compiler happy */
-void      initrrdtool(
-    void);
-
-static int create_args(
-    char *command,
-    PyObject * args,
-    int *argc,
-    char ***argv)
+/**
+ * Helper function to convert Python objects into a representation that the
+ * rrdtool functions can work with.
+ *
+ * @param command RRDtool command name
+ * @param args Command arguments
+ * @return Zero if the function succeeds, otherwise -1
+ */
+static int
+convert_args(char *command, PyObject *args)
 {
     PyObject *o, *lo;
-    int       args_count,
-              argv_count,
-              element_count,
-              i, j;
+    int i, j, args_count, argv_count, element_count;
 
+    argv_count = element_count = 0;
     args_count = PyTuple_Size(args);
-    element_count = 0;
+
     for (i = 0; i < args_count; i++) {
         o = PyTuple_GET_ITEM(args, i);
-        if (PyString_Check(o))
+
+        if (PyRRD_String_Check(o))
             element_count++;
         else if (PyList_CheckExact(o))
-                element_count += PyList_Size(o);
-             else {
-                 PyErr_Format(PyExc_TypeError, "argument %d must be string or list of strings", i);
-                 return -1;
-             }
+            element_count += PyList_Size(o);
+        else {
+            PyErr_Format(PyExc_TypeError,
+                         "Argument %d must be str or a list of str", i);
+            return -1;
+        }
     }
-   
-    *argv = PyMem_New(char *,
-                      element_count + 1);
 
-    if (*argv == NULL)
+    rrdtool_argv = PyMem_New(char *, element_count + 1);
+
+    if (rrdtool_argv == NULL)
         return -1;
 
-    argv_count = 0;
     for (i = 0; i < args_count; i++) {
         o = PyTuple_GET_ITEM(args, i);
-        if (PyString_Check(o)) {
-            argv_count++;
-            (*argv)[argv_count] = PyString_AS_STRING(o);
-        } else if (PyList_CheckExact(o))
-                   for (j = 0; j < PyList_Size(o); j++) {
-                       lo = PyList_GetItem(o, j);
-                       if (PyString_Check(lo)) {
-                           argv_count++;
-                           (*argv)[argv_count] = PyString_AS_STRING(lo);
-                       } else {
-                             PyMem_Del(*argv);
-                             PyErr_Format(PyExc_TypeError, "element %d in argument %d must be string", j, i);
-                             return -1;
-                       }
-                   }
-               else {
-                   PyMem_Del(*argv);
-                   PyErr_Format(PyExc_TypeError, "argument %d must be string or list of strings", i);
-                   return -1;
-               }
+
+        if (PyRRD_String_Check(o))
+            rrdtool_argv[++argv_count] = PyRRD_String_AS_STRING(o);
+        else if (PyList_CheckExact(o)) {
+            for (j = 0; j < PyList_Size(o); j++) {
+                lo = PyList_GetItem(o, j);
+
+                if (PyRRD_String_Check(lo))
+                    rrdtool_argv[++argv_count] = PyRRD_String_AS_STRING(lo);
+                else {
+                    PyMem_Del(rrdtool_argv);
+                    PyErr_Format(PyExc_TypeError,
+                      "Element %d in argument %d must be str", j, i);
+                    return -1;
+                }
+            }
+        } else {
+            PyMem_Del(rrdtool_argv);
+            PyErr_Format(rrdtool_ProgrammingError,
+              "Argument %d must be str or list of str", i);
+            return -1;
+        }
     }
 
-    (*argv)[0] = command;
-    *argc = element_count + 1;
+    rrdtool_argv[0] = command;
+    rrdtool_argc = element_count + 1;
 
     return 0;
 }
 
-static void destroy_args(
-    char ***argv)
+/**
+ * Destroy argument vector.
+ */
+static void
+destroy_args(void)
 {
-    PyMem_Del(*argv);
-    *argv = NULL;
+    PyMem_Del(rrdtool_argv);
+    rrdtool_argv = NULL;
 }
 
-static char PyRRD_create__doc__[] =
-    "create(args..): Set up a new Round Robin Database\n\
-    create filename [--start|-b start time] \
-[--step|-s step] [DS:ds-name:DST:heartbeat:min:max] \
-[RRA:CF:xff:steps:rows]";
-
-static PyObject *PyRRD_create(
-    PyObject UNUSED(*self),
-    PyObject * args)
+/**
+ * Convert RRDtool info to dict.
+ *
+ * @param data RRDtool info object
+ * @return Python dict object
+ */
+static PyObject *
+_rrdtool_util_info2dict(const rrd_info_t *data)
 {
-    PyObject *r;
-    char    **argv;
-    int       argc, status;
+    PyObject *dict, *val;
 
-    if (create_args("create", args, &argc, &argv) < 0)
-        return NULL;
+    dict = PyDict_New();
 
-    Py_BEGIN_ALLOW_THREADS
-    status = rrd_create(argc, argv);
-    Py_END_ALLOW_THREADS
+    while (data) {
+        val = NULL;
 
-    if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        Py_INCREF(Py_None);
-        r = Py_None;
+        switch (data->type) {
+            case RD_I_VAL:
+                if (isnan(data->value.u_val)) {
+                    Py_INCREF(Py_None);
+                    val = Py_None;
+                } else
+                    PyFloat_FromDouble(data->value.u_val);
+                break;
+
+            case RD_I_CNT:
+                val = PyLong_FromUnsignedLong(data->value.u_cnt);
+                break;
+
+            case RD_I_INT:
+                val = PyLong_FromLong(data->value.u_int);
+                break;
+
+            case RD_I_STR:
+                val = PyRRD_String_FromString(data->value.u_str);
+                break;
+
+            case RD_I_BLO:
+                val = PyRRD_String_FromStringAndSize(
+                    (char *)data->value.u_blo.ptr,
+                    data->value.u_blo.size);
+                break;
+            default:
+                break;
+        }
+
+        if (val != NULL) {
+            PyDict_SetItemString(dict, data->key, val);
+            Py_DECREF(val);
+        }
+
+        data = data->next;
     }
 
-    destroy_args(&argv);
-    return r;
+    return dict;
 }
 
-static char PyRRD_update__doc__[] =
-    "update(args..): Store a new set of values into the rrd\n"
-    "    update filename [--template|-t ds-name[:ds-name]...] "
-    "N|timestamp:value[:value...] [timestamp:value[:value...] ...]";
+static char _rrdtool_create__doc__[] = "Create a new Round Robin Database.\n\n\
+  Usage: create(args...)\n\
+  Arguments:\n\n\
+    filename\n\
+    [-b|--start start time]\n\
+    [-s|--step step]\n\
+    [-t|--template template-file]\n\
+    [-r|--source source-file]\n\
+    [-O|--no-overwrite]\n\
+    [-d|--daemon address]\n\
+    [DS:ds-name[=mapped-ds-name[source-index]]:DST:heartbeat:min:max]\n\
+    [RRA:CF:xff:steps:rows]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html";
 
-static PyObject *PyRRD_update(
-    PyObject UNUSED(*self),
-    PyObject * args)
+static PyObject *
+_rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r;
-    char    **argv;
-    int       argc, status;
+    PyObject *ret;
+    int status;
 
-    if (create_args("update", args, &argc, &argv) < 0)
+    if (convert_args("create", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_update(argc, argv);
+    status = rrd_create(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
     if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
         Py_INCREF(Py_None);
-        r = Py_None;
+        ret = Py_None;
     }
 
-    destroy_args(&argv);
-    return r;
+    destroy_args();
+    return ret;
 }
 
-static char PyRRD_fetch__doc__[] =
-    "fetch(args..): fetch data from an rrd.\n"
-    "    fetch filename CF [--resolution|-r resolution] "
-    "[--start|-s start] [--end|-e end]";
+static char _rrdtool_dump__doc__[] = "Dump an RRD to XML.\n\n\
+  Usage: dump(args..)\n\
+  Arguments:\n\n\
+    [-h|--header {none,xsd,dtd}\n\
+    [-n|--no-header]\n\
+    [-d|--daemon address]\n\
+    file.rrd\n\
+    [file.xml]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrddump.en.html";
 
-static PyObject *PyRRD_fetch(
-    PyObject UNUSED(*self),
-    PyObject * args)
+static PyObject *
+_rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r;
-    rrd_value_t *data, *datai;
-    unsigned long step, ds_cnt;
-    time_t    start, end;
-    int       argc, status;
-    char    **argv, **ds_namv;
+    PyObject *ret;
+    int status;
 
-    if (create_args("fetch", args, &argc, &argv) < 0)
+    if (convert_args("dump", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_fetch(argc, argv, &start, &end, &step, &ds_cnt, &ds_namv, &data);
+    status = rrd_dump(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (status != 0) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        ret = Py_None;
+    }
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_update__doc__[] = "Store a new set of values into\
+ the RRD.\n\n\
+ Usage: update(args..)\n\
+ Arguments:\n\n\
+   filename\n\
+   [--template|-t ds-name[:ds-name]...]\n\
+   N|timestamp:value[:value...]\n\
+   [timestamp:value[:value...] ...]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdupdate.en.html";
+
+static PyObject *
+_rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    int status;
+
+    if (convert_args("update", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_update(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
     if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
-        /* Return :
-           ((start, end, step), (name1, name2, ...), [(data1, data2, ..), ...]) */
-        PyObject *range_tup, *dsnam_tup, *data_list, *t;
-        unsigned long i, j, row;
-        rrd_value_t dv;
+        Py_INCREF(Py_None);
+        ret = Py_None;
+    }
 
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_updatev__doc__[] = "Store a new set of values into "\
+  "the Round Robin Database and return an info dictionary.\n\n\
+  This function works in the same manner as 'update', but will return an\n\
+  info dictionary instead of None.";
+
+static PyObject *
+_rrdtool_updatev(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    rrd_info_t *data;
+
+    if (convert_args("updatev", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_update_v(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        ret = _rrdtool_util_info2dict(data);
+        rrd_info_free(data);
+    }
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_fetch__doc__[] = "Fetch data from an RRD.\n\n\
+  Usage: fetch(args..)\n\
+  Arguments:\n\n\
+    filename\n\
+    CF\n\
+    [-r|--resolution resolution]\n\
+    [-s|--start start]\n\
+    [-e|--end end]\n\
+    [-a|--align-start]\n\
+    [-d|--daemon address]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html";
+
+static PyObject *
+_rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret, *range_tup, *dsnam_tup, *data_list, *t;
+    rrd_value_t *data, *datai, dv;
+    unsigned long step, ds_cnt, i, j, row;
+    time_t start, end;
+    char **ds_namv;
+    int status;
+
+    if (convert_args("fetch", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_fetch(rrdtool_argc, rrdtool_argv, &start, &end, &step,
+                       &ds_cnt, &ds_namv, &data);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
         row = (end - start) / step;
-
-        r = PyTuple_New(3);
+        ret = PyTuple_New(3);
         range_tup = PyTuple_New(3);
         dsnam_tup = PyTuple_New(ds_cnt);
         data_list = PyList_New(row);
-        PyTuple_SET_ITEM(r, 0, range_tup);
-        PyTuple_SET_ITEM(r, 1, dsnam_tup);
-        PyTuple_SET_ITEM(r, 2, data_list);
+
+        PyTuple_SET_ITEM(ret, 0, range_tup);
+        PyTuple_SET_ITEM(ret, 1, dsnam_tup);
+        PyTuple_SET_ITEM(ret, 2, data_list);
 
         datai = data;
 
-        PyTuple_SET_ITEM(range_tup, 0, PyInt_FromLong((long) start));
-        PyTuple_SET_ITEM(range_tup, 1, PyInt_FromLong((long) end));
-        PyTuple_SET_ITEM(range_tup, 2, PyInt_FromLong((long) step));
+        PyTuple_SET_ITEM(range_tup, 0, PyRRD_Int_FromLong((long) start));
+        PyTuple_SET_ITEM(range_tup, 1, PyRRD_Int_FromLong((long) end));
+        PyTuple_SET_ITEM(range_tup, 2, PyRRD_Int_FromLong((long) step));
 
         for (i = 0; i < ds_cnt; i++)
-            PyTuple_SET_ITEM(dsnam_tup, i, PyString_FromString(ds_namv[i]));
+            PyTuple_SET_ITEM(dsnam_tup, i, PyRRD_String_FromString(ds_namv[i]));
 
         for (i = 0; i < row; i++) {
             t = PyTuple_New(ds_cnt);
@@ -251,501 +408,279 @@ static PyObject *PyRRD_fetch(
                 if (isnan(dv)) {
                     PyTuple_SET_ITEM(t, j, Py_None);
                     Py_INCREF(Py_None);
-                } else {
+                } else
                     PyTuple_SET_ITEM(t, j, PyFloat_FromDouble((double) dv));
-                }
             }
         }
 
         for (i = 0; i < ds_cnt; i++)
             rrd_freemem(ds_namv[i]);
-        rrd_freemem(ds_namv);   /* rrdtool don't use PyMem_Malloc :) */
+
+        rrd_freemem(ds_namv);
         rrd_freemem(data);
     }
 
-    destroy_args(&argv);
-    return r;
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_flushcached__doc__[] = "Flush RRD files from memory.\n\n\
+  Usage: flushcached(args..)\n\
+  Arguments:\n\n\
+    [-d|--daemon address]\n\
+    filename\n\
+    [filename ...]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdflushcached.en.html";
+
+static PyObject *
+_rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    int status;
+
+    if (convert_args("flushcached", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_flushcached(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (status != 0) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        ret = Py_None;
+    }
+
+    destroy_args();
+    return ret;
 }
 
 #ifdef HAVE_RRD_GRAPH
 
-static char PyRRD_graph__doc__[] =
-    "graph(args..): Create a graph based on data from one or several RRD\n"
-    "    graph filename [-s|--start seconds] "
-    "[-e|--end seconds] [-x|--x-grid x-axis grid and label] "
-    "[-y|--y-grid y-axis grid and label] [--alt-y-grid] [--alt-y-mrtg] "
-    "[--alt-autoscale] [--alt-autoscale-max] [--units-exponent] value "
-    "[-v|--vertical-label text] [-w|--width pixels] [-h|--height pixels] "
-    "[-i|--interlaced] "
-    "[-f|--imginfo formatstring] [-a|--imgformat GIF|PNG|GD] "
-    "[-B|--background value] [-O|--overlay value] "
-    "[-U|--unit value] [-z|--lazy] [-o|--logarithmic] "
-    "[-u|--upper-limit value] [-l|--lower-limit value] "
-    "[-g|--no-legend] [-r|--rigid] [--step value] "
-    "[-b|--base value] [-c|--color COLORTAG#rrggbb] "
-    "[-t|--title title] [DEF:vname=rrd:ds-name:CF] "
-    "[CDEF:vname=rpn-expression] [PRINT:vname:CF:format] "
-    "[GPRINT:vname:CF:format] [COMMENT:text] "
-    "[HRULE:value#rrggbb[:legend]] [VRULE:time#rrggbb[:legend]] "
-    "[LINE{1|2|3}:vname[#rrggbb[:legend]]] "
-    "[AREA:vname[#rrggbb[:legend]]] " "[STACK:vname[#rrggbb[:legend]]]";
+static char _rrdtool_graph__doc__[] = "Create a graph based on one or more " \
+  "RRDs.\n\n\
+  Usage: graph(args..)\n\
+  Arguments:\n\n\
+    filename | -\n\
+    [-s|--start start]\n\
+    [-e|--end end]\n\
+    [-S|--step step]\n\
+    [-t|--title string]\n\
+    [-v|--vertical-label string]\n\
+    [-w|--width pixels]\n\
+    [-h|--height pixels]\n\
+    [-j|--only-graph]\n\
+    [-D|--full-size-mode]\n\
+    [-u|--upper-limit value]\n\
+    [-l|--lower-limit value]\n\
+    [-r|--rigid]\n\
+    [-A|--alt-autoscale]\n\
+    [-J|--alt-autoscale-min]\n\
+    [-M|--alt-autoscale-max]\n\
+    [-N|--no-gridfit]\n\
+    [-x|--x-grid (GTM:GST:MTM:MST:LTM:LST:LPR:LFM|none)]\n\
+    [-y|--y-grid (grid step:label factor|none)]\n\
+    [--week-fmt strftime format string]\n\
+    [--left-axis-formatter formatter-name]\n\
+    [--left-axis-format format-string]\n\
+    [-Y|--alt-y-grid]\n\
+    [-o|--logarithmic]\n\
+    [-X|--units-exponent value]\n\
+    [-L|--units-length value]\n\
+    [--units=si]\n\
+    [--right-axis scale:shift]\n\
+    [--right-axis-label label]\n\
+    [--right-axis-format format-string]\n\
+    [-g|--no-legend]\n\
+    [-F|--force-rules-legend]\n\
+    [--legend-position=(north|south|west|east)]\n\
+    [--legend-direction=(topdown|bottomup)]\n\
+    [-z|--lazy]\n\
+    [-d|--daemon address]\n\
+    [-f|--imginfo printfstr]\n\
+    [-c|--color COLORTAG#rrggbb[aa]]\n\
+    [--grid-dash on:off]\n\
+    [--border width]\n\
+    [--dynamic-labels]\n\
+    [-m|--zoom factor]\n\
+    [-n|--font FONTTAG:size:[font]]\n\
+    [-R|--font-render-mode {normal,light,mono}]\n\
+    [-B|--font-smoothing-threshold size]\n\
+    [-P|--pango-markup]\n\
+    [-G|--graph-render-mode {normal,mono}]\n\
+    [-E|--slope-mode]\n\
+    [-a|--imgformat {PNG,SVG,EPS,PDF,XML,XMLENUM,JSON,JSONTIME,CSV,TSV,SSV}]\n\
+    [-i|--interlaced]\n\
+    [-T|--tabwidth value]\n\
+    [-b|--base value]\n\
+    [-W|--watermark string]\n\
+    [-Z|--use-nan-for-all-missing-data]\n\
+    DEF:vname=rrdfile:ds-name:CF[:step=step][:start=time][:end=time]\n\
+    CDEF:vname=RPN expression\n\
+    VDEF=vname:RPN expression\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
 
-static PyObject *PyRRD_graph(
-    PyObject UNUSED(*self),
-    PyObject * args)
+static PyObject *
+_rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r;
-    char    **argv, **calcpr;
-    int       argc, status, xsize, ysize, i;
-    double    ymin, ymax;
+    PyObject *ret;
+    int xsize, ysize, i, status;
+    double ymin, ymax;
+    char **calcpr;
 
-    if (create_args("graph", args, &argc, &argv) < 0)
+    if (convert_args("graph", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_graph(argc, argv, &calcpr, &xsize, &ysize, NULL, &ymin, &ymax);
+    status = rrd_graph(rrdtool_argc, rrdtool_argv, &calcpr, &xsize, &ysize,
+                       NULL, &ymin, &ymax);
     Py_END_ALLOW_THREADS
 
     if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
-        r = PyTuple_New(3);
+        ret = PyTuple_New(3);
 
-        PyTuple_SET_ITEM(r, 0, PyInt_FromLong((long) xsize));
-        PyTuple_SET_ITEM(r, 1, PyInt_FromLong((long) ysize));
+        PyTuple_SET_ITEM(ret, 0, PyRRD_Int_FromLong((long) xsize));
+        PyTuple_SET_ITEM(ret, 1, PyRRD_Int_FromLong((long) ysize));
 
         if (calcpr) {
             PyObject *e, *t;
 
             e = PyList_New(0);
-            PyTuple_SET_ITEM(r, 2, e);
+            PyTuple_SET_ITEM(ret, 2, e);
 
             for (i = 0; calcpr[i]; i++) {
-                t = PyString_FromString(calcpr[i]);
+                t = PyRRD_String_FromString(calcpr[i]);
                 PyList_Append(e, t);
                 Py_DECREF(t);
                 rrd_freemem(calcpr[i]);
             }
-            rrd_freemem(calcpr);
         } else {
             Py_INCREF(Py_None);
-            PyTuple_SET_ITEM(r, 2, Py_None);
+            PyTuple_SET_ITEM(ret, 2, Py_None);
         }
     }
 
-    destroy_args(&argv);
-    return r;
+    destroy_args();
+    return ret;
 }
 
-#endif /* HAVE_RRD_GRAPH */
+static char _rrdtool_graphv__doc__[] = "Create a graph based on one or more " \
+  "RRDs and return data in RRDtool info format.\n\n\
+  This function works the same way as 'graph', but will return a info\n\
+  dictionary instead of None.\n\n\
+  Full documentation can be found at (graphv section):\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
 
-static char PyRRD_tune__doc__[] =
-    "tune(args...): Modify some basic properties of a Round Robin Database\n"
-    "    tune filename [--heartbeat|-h ds-name:heartbeat] "
-    "[--minimum|-i ds-name:min] [--maximum|-a ds-name:max] "
-    "[--data-source-type|-d ds-name:DST] [--data-source-rename|-r old-name:new-name]";
-
-static PyObject *PyRRD_tune(
-    PyObject UNUSED(*self),
-    PyObject * args)
+static PyObject *
+_rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r;
-    char    **argv;
-    int       argc, status;
-
-    if (create_args("tune", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    status = rrd_tune(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        Py_INCREF(Py_None);
-        r = Py_None;
-    }
-
-    destroy_args(&argv);
-    return r;
-}
-
-static char PyRRD_first__doc__[] =
-    "first(filename): Return the timestamp of the first data sample in an RRD";
-
-static PyObject *PyRRD_first(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc, ts;
-    char    **argv;
-
-    if (create_args("first", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    ts = rrd_first(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (ts == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else
-        r = PyInt_FromLong((long) ts);
-
-    destroy_args(&argv);
-    return r;
-}
-
-static char PyRRD_last__doc__[] =
-    "last(filename): Return the timestamp of the last data sample in an RRD";
-
-static PyObject *PyRRD_last(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc, ts;
-    char    **argv;
-
-    if (create_args("last", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    ts = rrd_last(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (ts == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else
-        r = PyInt_FromLong((long) ts);
-
-    destroy_args(&argv);
-    return r;
-}
-
-static char PyRRD_resize__doc__[] =
-    "resize(args...): alters the size of an RRA.\n"
-    "    resize filename rra-num GROW|SHRINK rows";
-
-static PyObject *PyRRD_resize(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    char    **argv;
-    int       argc, ts;
-
-    if (create_args("resize", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    ts = rrd_resize(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (ts == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        Py_INCREF(Py_None);
-        r = Py_None;
-    }
-
-    destroy_args(&argv);
-    return r;
-}
-
-static PyObject *PyDict_FromInfo(
-    rrd_info_t * data)
-{
-    PyObject *r;
-
-    r = PyDict_New();
-    while (data) {
-        PyObject *val = NULL;
-
-        switch (data->type) {
-        case RD_I_VAL:
-            val = isnan(data->value.u_val)
-                ? (Py_INCREF(Py_None), Py_None)
-                : PyFloat_FromDouble(data->value.u_val);
-            break;
-        case RD_I_CNT:
-            val = PyLong_FromUnsignedLong(data->value.u_cnt);
-            break;
-        case RD_I_INT:
-            val = PyLong_FromLong(data->value.u_int);
-            break;
-        case RD_I_STR:
-            val = PyString_FromString(data->value.u_str);
-            break;
-        case RD_I_BLO:
-            val =
-                PyString_FromStringAndSize((char *) data->value.u_blo.ptr,
-                                           data->value.u_blo.size);
-            break;
-        }
-        if (val) {
-            PyDict_SetItemString(r, data->key, val);
-            Py_DECREF(val);
-        }
-        data = data->next;
-    }
-    return r;
-}
-
-static char PyRRD_info__doc__[] =
-    "info(filename): extract header information from an rrd";
-
-static PyObject *PyRRD_info(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc;
-    char    **argv;
+    PyObject *ret;
     rrd_info_t *data;
 
-    if (create_args("info", args, &argc, &argv) < 0)
+    if (convert_args("graphv", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    data = rrd_info(argc, argv);
+    data = rrd_graph_v(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
     if (data == NULL) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
-        r = PyDict_FromInfo(data);
+        ret = _rrdtool_util_info2dict(data);
         rrd_info_free(data);
     }
 
-    destroy_args(&argv);
-    return r;
+    destroy_args();
+    return ret;
 }
 
-static char PyRRD_list__doc__[] =
-	"list(dirname): list RRDs in storage"
-	"    list [--daemon <remote>] dirname";
+static char _rrdtool_xport__doc__[] = "Dictionary representation of data " \
+  "stored in RRDs.\n\n\
+  Usage: xport(args..)\n\
+  Arguments:\n\n\
+    [-s[--start seconds]\n\
+    [-e|--end seconds]\n\
+    [-m|--maxrows rows]\n\
+    [--step value]\n\
+    [--json]\n\
+    [--enumds]\n\
+    [--daemon address]\n\
+    [DEF:vname=rrd:ds-name:CF]\n\
+    [CDEF:vname=rpn-expression]\n\
+    [XPORT:vname[:legend]]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdxport.en.html";
 
-static PyObject *PyRRD_list(PyObject UNUSED(*self), PyObject * args)
+static PyObject *
+_rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r = NULL;
-    int       argc;
-    char    **argv;
-    char     *data;
-    char     *ptr;
-    char     *end;
-    PyObject *str;
-
-    if (create_args("list", args, &argc, &argv) < 0)
-        return NULL;
-
-    if ((data = rrd_list(argc, argv)) == NULL) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-
-	goto out_free_args;
-    }
-
-	r = PyList_New(0);
-
-	ptr = data;
-	end = strchr(ptr, '\n');
-
-	while (end) {
-	  *end = '\0';
-	  str = PyString_FromString(ptr);
-
-	  if (PyList_Append(r, str)) {
-	    PyErr_SetString(ErrorObject, "Failed to append to list");
-	    r = NULL;
-	    break;
-	  }
-
-	  ptr = end + 1;
-
-	if (strlen(ptr) == 0)
-		break;
-
-	  end = strchr(ptr, '\n');
-	}
-
-    rrd_freemem(data);
-
-out_free_args:
-    destroy_args(&argv);
-    return r;
-}
-
-#ifdef HAVE_RRD_GRAPH
-static char PyRRD_graphv__doc__[] =
-    "graphv is called in the same manner as graph";
-
-static PyObject *PyRRD_graphv(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc;
-    char    **argv;
-    rrd_info_t *data;
-
-    if (create_args("graphv", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    data = rrd_graph_v(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (data == NULL) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        r = PyDict_FromInfo(data);
-        rrd_info_free(data);
-    }
-
-    destroy_args(&argv);
-    return r;
-}
-
-#endif /* HAVE_RRD_GRAPH */
-
-static char PyRRD_updatev__doc__[] =
-    "updatev is called in the same manner as update";
-
-static PyObject *PyRRD_updatev(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc;
-    char    **argv;
-    rrd_info_t *data;
-
-    if (create_args("updatev", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    data = rrd_update_v(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (data == NULL) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        r = PyDict_FromInfo(data);
-        rrd_info_free(data);
-    }
-
-    destroy_args(&argv);
-    return r;
-}
-
-static char PyRRD_flushcached__doc__[] =
-  "flush(args..): flush RRD files from memory\n"
-  "   flush [--daemon address] file [file ...]";
-
-static PyObject *PyRRD_flushcached(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc, status;
-    char    **argv;
-
-    if (create_args("flushcached", args, &argc, &argv) < 0)
-        return NULL;
-
-    Py_BEGIN_ALLOW_THREADS
-    status = rrd_flushcached(argc, argv);
-    Py_END_ALLOW_THREADS
-
-    if (status != 0) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
-        rrd_clear_error();
-        r = NULL;
-    } else {
-        Py_INCREF(Py_None);
-        r = Py_None;
-    }
-
-    destroy_args(&argv);
-    return r;
-}
-
-#ifdef HAVE_RRD_GRAPH
-
-static char PyRRD_xport__doc__[] =
-    "xport(args..): dictionary representation of data stored in RRDs\n"
-    "    [-s|--start seconds] [-e|--end seconds] [-m|--maxrows rows]"
-    "[--step value] [--daemon address] [DEF:vname=rrd:ds-name:CF]"
-    "[CDEF:vname=rpn-expression] [XPORT:vname[:legend]]";
-
-
-static PyObject *PyRRD_xport(
-    PyObject UNUSED(*self),
-    PyObject * args)
-{
-    PyObject *r;
-    int       argc, status, xsize;
-    char    **argv, **legend_v;
-    time_t    start, end;
+    PyObject *ret;
+    int xsize, status;
+    char **legend_v;
+    time_t start, end;
     unsigned long step, col_cnt;
     rrd_value_t *data, *datai;
 
-    if (create_args("xport", args, &argc, &argv) < 0)
+    if (convert_args("xport", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_xport(argc, argv, &xsize, &start, &end, &step, &col_cnt, &legend_v, &data);
+    status = rrd_xport(rrdtool_argc, rrdtool_argv, &xsize, &start, &end, &step,
+                       &col_cnt, &legend_v, &data);
     Py_END_ALLOW_THREADS
 
     if (status == -1) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
         PyObject *meta_dict, *data_list, *legend_list, *t;
-        unsigned long i, j;
         rrd_value_t dv;
+        unsigned long i, j, row_cnt = (end - start) / step;
 
-        unsigned long row_cnt = ((end - start) / step);
-
-        r = PyDict_New();
+        ret = PyDict_New();
         meta_dict = PyDict_New();
         legend_list = PyList_New(col_cnt);
         data_list = PyList_New(row_cnt);
-        PyDict_SetItem(r, PyString_FromString("meta"), meta_dict);
-        PyDict_SetItem(r, PyString_FromString("data"), data_list);
+
+        PyDict_SetItem(ret, PyRRD_String_FromString("meta"), meta_dict);
+        PyDict_SetItem(ret, PyRRD_String_FromString("data"), data_list);
 
         datai = data;
 
-        PyDict_SetItem(meta_dict, PyString_FromString("start"), PyInt_FromLong((long) start));
-        PyDict_SetItem(meta_dict, PyString_FromString("end"), PyInt_FromLong((long) end));
-        PyDict_SetItem(meta_dict, PyString_FromString("step"), PyInt_FromLong((long) step));
-        PyDict_SetItem(meta_dict, PyString_FromString("rows"), PyInt_FromLong((long) row_cnt));
-        PyDict_SetItem(meta_dict, PyString_FromString("columns"), PyInt_FromLong((long) col_cnt));
-        PyDict_SetItem(meta_dict, PyString_FromString("legend"), legend_list);
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("start"),
+            PyRRD_Int_FromLong((long) start));
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("end"),
+            PyRRD_Int_FromLong((long) end));
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("step"),
+            PyRRD_Int_FromLong((long) step));
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("rows"),
+            PyRRD_Int_FromLong((long) row_cnt));
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("columns"),
+            PyRRD_Int_FromLong((long) col_cnt));
+        PyDict_SetItem(meta_dict,
+            PyRRD_String_FromString("legend"),
+            legend_list);
 
-        for (i = 0; i < col_cnt; i++) {
-            PyList_SET_ITEM(legend_list, i, PyString_FromString(legend_v[i]));
-        }
+        for (i = 0; i < col_cnt; i++)
+            PyList_SET_ITEM(legend_list, i, PyRRD_String_FromString(legend_v[i]));
 
         for (i = 0; i < row_cnt; i++) {
             t = PyTuple_New(col_cnt);
@@ -753,6 +688,7 @@ static PyObject *PyRRD_xport(
 
             for (j = 0; j < col_cnt; j++) {
                 dv = *(datai++);
+
                 if (isnan(dv)) {
                     PyTuple_SET_ITEM(t, j, Py_None);
                     Py_INCREF(Py_None);
@@ -762,105 +698,386 @@ static PyObject *PyRRD_xport(
             }
         }
 
-        for (i = 0; i < col_cnt; i++) {
+        for (i = 0; i < col_cnt; i++)
             rrd_freemem(legend_v[i]);
-        }
+
         rrd_freemem(legend_v);
         rrd_freemem(data);
     }
-    destroy_args(&argv);
-    return r;
+
+    destroy_args();
+
+    return ret;
 }
 
-#endif
+#endif /* HAVE_RRD_GRAPH */
 
-static char PyRRD_dump__doc__[] =
-    "dump - dump an RRD to XML\n"
-    "[--header|-h {none,xsd,dtd}] [--no-header]file.rrd [file.xml]";
+static char _rrdtool_tune__doc__[] = "Modify some basic properties of a " \
+  "Round Robin Database.\n\n\
+  Usage: tune(args..)\n\
+  Arguments:\n\n\
+    filename\n\
+    [-h|--heartbeat ds-name:heartbeat]\n\
+    [-i|--minimum ds-name:min]\n\
+    [-a|--maximum ds-name:max]\n\
+    [-d|--data-source-type ds-name:DST]\n\
+    [-r|--data-source-rename old-name:new-name]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdtune.en.html";
 
-static PyObject *PyRRD_dump(
-    PyObject UNUSED(*self),
-    PyObject * args)
+static PyObject *
+_rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *r;
-    int       argc, status;
-    char    **argv;
+    PyObject *ret;
+    int status;
 
-    if (create_args("dump", args, &argc, &argv) < 0)
+    if (convert_args("tune", args) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_dump(argc, argv);
+    status = rrd_tune(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        ret = Py_None;
+    }
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_first__doc__[] = "Get the first UNIX timestamp of the "\
+  "first data sample in an Round Robin Database.\n\n\
+  Usage: first(args..)\n\
+  Arguments:\n\n\
+    filename\n\
+    [--rraindex number]\n\
+    [-d|--daemon address]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdfirst.en.html";
+
+static PyObject *
+_rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    int ts;
+
+    if (convert_args("first", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    ts = rrd_first(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (ts == -1) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else
+        ret = PyRRD_Int_FromLong((long) ts);
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_last__doc__[] = "Get the UNIX timestamp of the most "\
+  "recent data sample in an Round Robin Database.\n\n\
+  Usage: last(args..)\n\
+  Arguments:\n\n\
+    filename\n\
+    [-d|--daemon address]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
+
+static PyObject *
+_rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    int ts;
+
+    if (convert_args("last", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    ts = rrd_last(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (ts == -1) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else
+        ret = PyRRD_Int_FromLong((long) ts);
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_resize__doc__[] = "Modify the number of rows in a "\
+ "Round Robin Database.\n\n\
+  Usage: resize(args..)\n\
+  Arguments:\n\n\
+    filename\n\
+    rra-num\n\
+    GROW|SHRINK\n\
+    rows\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
+
+static PyObject *
+_rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    int status;
+
+    if (convert_args("resize", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_resize(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (status == -1) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        Py_INCREF(Py_None);
+        ret = Py_None;
+    }
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_info__doc__[] = "Extract header information from an "\
+ "Round Robin Database.\n\n\
+  Usage: info(filename, ...)\n\
+  Arguments:\n\n\
+    filename\n\
+    [-d|--daemon address]\n\
+    [-F|--noflush]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdinfo.en.html";
+
+static PyObject *
+_rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    rrd_info_t *data;
+
+    if (convert_args("info", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_info(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        ret = _rrdtool_util_info2dict(data);
+        rrd_info_free(data);
+    }
+
+    destroy_args();
+    return ret;
+}
+
+static char _rrdtool_lastupdate__doc__[] = "Returns datetime and value stored "\
+ "for each datum in the most recent update of an RRD.\n\n\
+  Usage: lastupdate(filename, ...)\n\
+  Arguments:\n\n\
+    filename\n\
+    [-d|--daemon address]\n\n\
+  Full documentation can be found at:\n\
+  http://oss.oetiker.ch/rrdtool/doc/rrdlastupdate.en.html";
+
+static PyObject *
+_rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret, *ds_dict;
+    int status;
+    time_t last_update;
+    char **ds_names, **last_ds;
+    unsigned long ds_cnt, i;
+
+    if (convert_args("lastupdate", args) == -1)
+        return NULL;
+    else if (rrdtool_argc < 2) {
+        PyErr_SetString(rrdtool_ProgrammingError, "Missing filename argument");
+        return NULL;
+    }
+
+    Py_BEGIN_ALLOW_THREADS
+    status = rrd_lastupdate_r(rrdtool_argv[1],
+                              &last_update,
+                              &ds_cnt,
+                              &ds_names,
+                              &last_ds);
     Py_END_ALLOW_THREADS
 
     if (status != 0) {
-        PyErr_SetString(ErrorObject, rrd_get_error());
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        r = NULL;
+        ret = NULL;
     } else {
-        Py_INCREF(Py_None);
-        r = Py_None;
+        /* convert last_update to Python datetime object */
+        struct tm *ts = localtime(&last_update);
+        ret = PyDict_New();
+        ds_dict = PyDict_New();
+
+        PyDict_SetItemString(ret,
+            "date",
+            PyDateTime_FromDateAndTime(
+                ts->tm_year + 1900,
+                ts->tm_mon + 1,
+                ts->tm_mday,
+                ts->tm_hour,
+                ts->tm_min,
+                ts->tm_sec,
+                0));
+        PyDict_SetItemString(ret, "ds", ds_dict);
+
+        for (i = 0; i < ds_cnt; i++) {
+            PyObject* val = Py_None;
+
+            double num;
+            if (sscanf(last_ds[i], "%lf", &num) == 1) {
+                val = PyFloat_FromDouble(num);
+            }
+
+            if (!val)
+                return NULL;
+
+            PyDict_SetItemString(ds_dict, ds_names[i], val);
+            Py_DECREF(val);
+
+            free(last_ds[i]);
+            free(ds_names[i]);
+        }
+
+        free(last_ds);
+        free(ds_names);
+
     }
 
-    destroy_args(&argv);
-    return r;
+    destroy_args();
+
+    return ret;
 }
 
-/* List of methods defined in the module */
-#define meth(name, func, doc) {name, (PyCFunction)func, METH_VARARGS, doc}
+static char _rrdtool_lib_version__doc__[] = "Get the version this binding "\
+  "was compiled against.";
 
-static PyMethodDef _rrdtool_methods[] = {
-    meth("create", PyRRD_create, PyRRD_create__doc__),
-    meth("update", PyRRD_update, PyRRD_update__doc__),
-    meth("fetch", PyRRD_fetch, PyRRD_fetch__doc__),
-    meth("tune", PyRRD_tune, PyRRD_tune__doc__),
-    meth("first", PyRRD_first, PyRRD_first__doc__),
-    meth("last", PyRRD_last, PyRRD_last__doc__),
-    meth("resize", PyRRD_resize, PyRRD_resize__doc__),
-    meth("info", PyRRD_info, PyRRD_info__doc__),
-    meth("list", PyRRD_list, PyRRD_list__doc__),
-#ifdef HAVE_RRD_GRAPH    
-    meth("graph", PyRRD_graph, PyRRD_graph__doc__),
-    meth("graphv", PyRRD_graphv, PyRRD_graphv__doc__),
-    meth("xport", PyRRD_xport, PyRRD_xport__doc__),
+/**
+ * Returns a str object that contains the librrd version.
+ *
+ * @return librrd version (Python str object)
+ */
+static PyObject *
+_rrdtool_lib_version(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+{
+    return PyRRD_String_FromString(rrd_strversion());
+}
+
+/** Method table. */
+static PyMethodDef rrdtool_methods[] = {
+    {"create", (PyCFunction)_rrdtool_create,
+     METH_VARARGS, _rrdtool_create__doc__},
+    {"dump", (PyCFunction)_rrdtool_dump,
+     METH_VARARGS, _rrdtool_dump__doc__},
+    {"update", (PyCFunction)_rrdtool_update,
+     METH_VARARGS, _rrdtool_update__doc__},
+    {"updatev", (PyCFunction)_rrdtool_updatev,
+     METH_VARARGS, _rrdtool_updatev__doc__},
+    {"fetch", (PyCFunction)_rrdtool_fetch,
+     METH_VARARGS, _rrdtool_fetch__doc__},
+    {"flushcached", (PyCFunction)_rrdtool_flushcached,
+     METH_VARARGS, _rrdtool_flushcached__doc__},
+#ifdef HAVE_RRD_GRAPH
+    {"graph", (PyCFunction)_rrdtool_graph,
+     METH_VARARGS, _rrdtool_graph__doc__},
+    {"graphv", (PyCFunction)_rrdtool_graphv,
+     METH_VARARGS, _rrdtool_graphv__doc__},
+    {"xport", (PyCFunction)_rrdtool_xport,
+     METH_VARARGS, _rrdtool_xport__doc__},
 #endif
-    meth("updatev", PyRRD_updatev, PyRRD_updatev__doc__),
-    meth("flushcached", PyRRD_flushcached, PyRRD_flushcached__doc__),
-    meth("dump", PyRRD_dump, PyRRD_dump__doc__),
+    {"tune", (PyCFunction)_rrdtool_tune,
+     METH_VARARGS, _rrdtool_tune__doc__},
+    {"first", (PyCFunction)_rrdtool_first,
+     METH_VARARGS, _rrdtool_first__doc__},
+    {"last", (PyCFunction)_rrdtool_last,
+     METH_VARARGS, _rrdtool_last__doc__},
+    {"resize", (PyCFunction)_rrdtool_resize,
+     METH_VARARGS, _rrdtool_resize__doc__},
+    {"info", (PyCFunction)_rrdtool_info,
+     METH_VARARGS, _rrdtool_info__doc__},
+    {"lastupdate", (PyCFunction)_rrdtool_lastupdate,
+     METH_VARARGS, _rrdtool_lastupdate__doc__},
+    {"lib_version", (PyCFunction)_rrdtool_lib_version,
+     METH_NOARGS, _rrdtool_lib_version__doc__},
     {NULL, NULL, 0, NULL}
 };
 
-#define SET_INTCONSTANT(dict, value) \
-            t = PyInt_FromLong((long)value); \
-            PyDict_SetItemString(dict, #value, t); \
-            Py_DECREF(t);
-#define SET_STRCONSTANT(dict, value) \
-            t = PyString_FromString(value); \
-            PyDict_SetItemString(dict, #value, t); \
-            Py_DECREF(t);
+/** Library init function. */
+#ifdef HAVE_PY3K
+static struct PyModuleDef rrdtoolmodule = {
+    .m_base = PyModuleDef_HEAD_INIT,
+    .m_name = "rrdtool",
+    .m_doc = "Python bindings for rrdtool",
+    .m_size = -1,
+    .m_methods = rrdtool_methods
+};
 
-/* Initialization function for the module */
-void initrrdtool(
-    void)
+#endif
+
+#ifdef HAVE_PY3K
+PyMODINIT_FUNC
+PyInit_rrdtool(void)
+#else
+void
+initrrdtool(void)
+#endif
 {
-    PyObject *m, *d, *t;
+    PyObject *m;
 
-    /* Create the module and add the functions */
-    m = Py_InitModule("rrdtool", _rrdtool_methods);
+    PyDateTime_IMPORT;  /* initialize PyDateTime_ functions */
 
-    /* Add some symbolic constants to the module */
-    d = PyModule_GetDict(m);
+#ifdef HAVE_PY3K
+    m = PyModule_Create(&rrdtoolmodule);
+#else
+    m = Py_InitModule3("rrdtool",
+                       rrdtool_methods,
+                       "rrdtool bindings for Python");
+#endif
 
-    SET_STRCONSTANT(d, __version__);
-    ErrorObject = PyErr_NewException("rrdtool.error", NULL, NULL);
-    PyDict_SetItemString(d, "error", ErrorObject);
+    if (m == NULL)
+#ifdef HAVE_PY3K
+        return NULL;
+#else
+        return;
+#endif
 
-    /* Check for errors */
-    if (PyErr_Occurred())
-        Py_FatalError("can't initialize the rrdtool module");
+    rrdtool_ProgrammingError = PyErr_NewException("rrdtool.ProgrammingError",
+                                                  NULL, NULL);
+    Py_INCREF(rrdtool_ProgrammingError);
+    PyModule_AddObject(m, "ProgrammingError", rrdtool_ProgrammingError);
+
+    rrdtool_OperationalError = PyErr_NewException("rrdtool.OperationalError",
+                                                  NULL, NULL);
+    Py_INCREF(rrdtool_OperationalError);
+    PyModule_AddObject(m, "OperationalError", rrdtool_OperationalError);
+    PyModule_AddStringConstant(m, "__version__", _version);
+
+#ifdef HAVE_PY3K
+    return m;
+#endif
 }
-
-/*
- * $Id: _rrdtoolmodule.c,v 1.14 2003/02/22 07:41:19 perky Exp $
- * ex: ts=8 sts=4 et
- */
