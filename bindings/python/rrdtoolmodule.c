@@ -721,8 +721,8 @@ static char _rrdtool_list__doc__[] = "List RRDs in storage.\n\n" \
 static PyObject *
 _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *ret;
-    char *data;
+    PyObject *ret, *str;
+    char *data, *ptr, *end;
 
     if (convert_args("list", args) == -1)
         return NULL;
