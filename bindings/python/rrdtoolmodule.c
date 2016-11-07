@@ -54,7 +54,7 @@
 #endif
 
 /** Binding version. */
-static const char *_version = "0.1.6";
+static const char *_version = "0.1.7";
 
 /** Exception types. */
 static PyObject *rrdtool_OperationalError;
@@ -712,6 +712,59 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
 
 #endif /* HAVE_RRD_GRAPH */
 
+static char _rrdtool_list__doc__[] = "List RRDs in storage.\n\n" \
+  "Usage: list(args..)\n\
+  Arguments:\n\n\
+    dirname\n\
+    [--daemon HOST]";
+
+static PyObject *
+_rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *ret;
+    char *data;
+
+    if (convert_args("list", args) == -1)
+        return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    data = rrd_list(rrdtool_argc, rrdtool_argv);
+    Py_END_ALLOW_THREADS
+
+    if (data == NULL) {
+        PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
+        rrd_clear_error();
+        ret = NULL;
+    } else {
+        ret = PyList_New(0);
+        ptr = data;
+        end = strchr(ptr, '\n');
+
+        while (end) {
+            *end = '\0';
+            str = PyRRD_String_FromString(ptr);
+
+            if (PyList_Append(ret, str)) {
+                PyErr_SetString(rrdtool_OperationalError, "Failed to append to list");
+                ret = NULL;
+                break;
+            }
+
+            ptr = end + 1;
+
+            if (strlen(ptr) == 0)
+                break;
+
+            end = strchr(ptr, '\n');
+        }
+
+        rrd_freemem(data);
+    }
+
+    destroy_args();
+    return ret;
+}
+
 static char _rrdtool_tune__doc__[] = "Modify some basic properties of a " \
   "Round Robin Database.\n\n\
   Usage: tune(args..)\n\
@@ -1010,6 +1063,8 @@ static PyMethodDef rrdtool_methods[] = {
     {"xport", (PyCFunction)_rrdtool_xport,
      METH_VARARGS, _rrdtool_xport__doc__},
 #endif
+    {"list", (PyCFunction)_rrdtool_list,
+     METH_VARARGS, _rrdtool_list__doc__},
     {"tune", (PyCFunction)_rrdtool_tune,
      METH_VARARGS, _rrdtool_tune__doc__},
     {"first", (PyCFunction)_rrdtool_first,
