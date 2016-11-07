@@ -5,6 +5,8 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+import os
+
 TOP_SRCDIR = os.environ.get('ABS_TOP_SRCDIR', '../..')
 TOP_BUILDDIR = os.environ.get('ABS_TOP_BUILDDIR', '../..')
 
