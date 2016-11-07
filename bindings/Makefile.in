@@ -402,7 +402,7 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 	     perl-shared/ntmake-build perl-shared/MANIFEST perl-shared/README perl-shared/Makefile.PL perl-shared/RRDs.pm perl-shared/RRDs.ppd perl-shared/RRDs.xs perl-shared/t/base.t perl-shared/t/callback-long.t perl-shared/t/callback.t \
 	     ruby/CHANGES     ruby/README      ruby/extconf.rb  ruby/main.c      ruby/test.rb \
 	     dotnet/rrdlib.cs dotnet/rrd_binding_test.cs dotnet/rrdlib.sln dotnet/favicon.ico dotnet/dnrrdlib.csproj dotnet/Properties/AssemblyInfo.cs  dotnet/dnrrd_binding_test.csproj   dotnet/RrdException.cs \
-             python/ACKNOWLEDGEMENT python/AUTHORS python/COPYING python/README python/rrdtoolmodule.c python/setup.py
+             python/COPYING python/README.md python/rrdtoolmodule.c python/setup.py
 
 all: all-recursive
 
