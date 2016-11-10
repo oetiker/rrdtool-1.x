@@ -1037,7 +1037,6 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
         ret = NULL;
     } else {
         /* convert last_update to Python datetime object */
-        struct tm *ts = localtime(&last_update);
         ret = PyDict_New();
         ds_dict = PyDict_New();
         lastupd = PyRRD_DateTime_FromTS(last_update);
@@ -1099,6 +1098,7 @@ _rrdtool_fetch_cb_wrapper(
     PyGILState_STATE gstate;
     Py_ssize_t rowcount = 0;
     int rc = -1;
+    unsigned int i, ii;
 
     gstate = PyGILState_Ensure();
 
@@ -1242,8 +1242,8 @@ _rrdtool_fetch_cb_wrapper(
             goto gil_release_free_dsnamv_err;
         }
 
-        for (unsigned int i = 0; i < *ds_cnt; i++) {
-            for (unsigned int ii = 0; ii < (unsigned int)rowcount; ii++) {
+        for (i = 0; i < *ds_cnt; i++) {
+            for (ii = 0; ii < (unsigned int)rowcount; ii++) {
                 char *ds_namv_i = (*ds_namv)[i];
                 double va;
                 PyObject *lstv = PyList_GetItem(PyDict_GetItemString(tmp, ds_namv_i), ii);
@@ -1287,7 +1287,7 @@ _rrdtool_fetch_cb_wrapper(
     goto gil_release;
 
 gil_release_free_dsnamv_err:
-    for (unsigned int i = 0; i < *ds_cnt; i++) {
+    for (i = 0; i < *ds_cnt; i++) {
         if ((*ds_namv)[i]) {
             free((*ds_namv)[i]);
         }
