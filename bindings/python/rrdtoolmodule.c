@@ -34,15 +34,19 @@
 #define PyRRD_String_FromString(x)            PyUnicode_FromString(x)
 #define PyRRD_String_AS_STRING(x)             PyUnicode_AsUTF8(x)
 #define PyRRD_String_FromStringAndSize(x, y)  PyBytes_FromStringAndSize(x, y)
+#define PyRRD_String_Size(x)                  PyUnicode_Size(x)
 #define PyRRD_Int_FromLong(x)                 PyLong_FromLong(x)
 #define PyRRD_Int_FromString(x, y, z)         PyLong_FromString(x,y,z)
+#define PyRRD_Long_Check(x)                   PyLong_Check(x)
 #else
 #define PyRRD_String_Check(x)                 PyString_Check(x)
 #define PyRRD_String_FromString(x)            PyString_FromString(x)
 #define PyRRD_String_AS_STRING(x)             PyString_AS_STRING(x)
 #define PyRRD_String_FromStringAndSize(x, y)  PyString_FromStringAndSize(x, y)
+#define PyRRD_String_Size(x)                  PyString_Size(x)
 #define PyRRD_Int_FromLong(x)                 PyInt_FromLong(x)
 #define PyRRD_Int_FromString(x, y, z)         PyInt_FromString(x,y,z)
+#define PyRRD_Long_Check(x)                   (PyInt_Check(x) || PyLong_Check(x))
 #endif
 
 #ifndef Py_UNUSED
@@ -62,6 +66,56 @@ static PyObject *rrdtool_ProgrammingError;
 
 static char **rrdtool_argv = NULL;
 static int    rrdtool_argc = 0;
+
+/**
+ * PyRRD_DateTime_FromTS: convert UNIX timestamp (time_t)
+ * to Python datetime object.
+ *
+ * @param ts UNIX timestamp (time_t)
+ * @return Pointer to new PyObject (New Reference)
+ */
+static PyObject *
+PyRRD_DateTime_FromTS(time_t ts)
+{
+    PyObject *ret;
+    struct tm lt;
+
+    localtime_r(&ts, &lt);
+
+    ret = PyDateTime_FromDateAndTime(
+        lt.tm_year + 1900,
+        lt.tm_mon + 1,
+        lt.tm_mday,
+        lt.tm_hour,
+        lt.tm_min,
+        lt.tm_sec,
+        0);
+
+    return ret;
+}
+
+/**
+ * PyRRD_String_FromCF: get string representation of CF enum index
+ *
+ * @param cf enum cf_en
+ * @return Null-terminated string
+ */
+const char *
+PyRRD_String_FromCF(enum cf_en cf)
+{
+    switch (cf) {
+        case CF_AVERAGE:
+            return "AVERAGE";
+        case CF_MINIMUM:
+            return "MIN";
+        case CF_MAXIMUM:
+            return "MAX";
+        case CF_LAST:
+            return "LAST";
+        default:
+            return "INVALID";
+    }
+}
 
 /**
  * Helper function to convert Python objects into a representation that the
@@ -956,7 +1010,7 @@ static char _rrdtool_lastupdate__doc__[] = "Returns datetime and value stored "\
 static PyObject *
 _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    PyObject *ret, *ds_dict;
+    PyObject *ret, *ds_dict, *lastupd;
     int status;
     time_t last_update;
     char **ds_names, **last_ds;
@@ -986,18 +1040,13 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
         struct tm *ts = localtime(&last_update);
         ret = PyDict_New();
         ds_dict = PyDict_New();
+        lastupd = PyRRD_DateTime_FromTS(last_update);
 
-        PyDict_SetItemString(ret,
-            "date",
-            PyDateTime_FromDateAndTime(
-                ts->tm_year + 1900,
-                ts->tm_mon + 1,
-                ts->tm_mday,
-                ts->tm_hour,
-                ts->tm_min,
-                ts->tm_sec,
-                0));
+        PyDict_SetItemString(ret, "date", lastupd);
         PyDict_SetItemString(ret, "ds", ds_dict);
+
+        Py_DECREF(lastupd);
+        Py_DECREF(ds_dict);
 
         for (i = 0; i < ds_cnt; i++) {
             PyObject* val = Py_None;
@@ -1025,6 +1074,271 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
     destroy_args();
 
     return ret;
+}
+
+
+/** An Python object which will hold an callable for fetch callbacks */
+static PyObject *_rrdtool_fetch_callable = NULL;
+
+static int
+_rrdtool_fetch_cb_wrapper(
+    const char *filename,
+    enum cf_en cf_idx,
+    time_t *start,
+    time_t *end,
+    unsigned long *step,
+    unsigned long *ds_cnt,
+    char ***ds_namv,
+    rrd_value_t **data)
+{
+    PyObject *args;
+    PyObject *kwargs;
+    PyObject *ret = NULL;
+    PyObject *tmp;
+    PyObject *tmp_min_ts;
+    PyGILState_STATE gstate;
+    Py_ssize_t rowcount = 0;
+    int rc = -1;
+
+    gstate = PyGILState_Ensure();
+
+    if (_rrdtool_fetch_callable == NULL) {
+        rrd_set_error("use rrdtool.register_fetch_cb to register a fetch callback");
+        goto gil_release_err;
+    }
+
+    args = PyTuple_New(0);
+    kwargs = PyDict_New();
+
+    /* minimum possible UNIX datetime */
+    tmp_min_ts = PyLong_FromLong(0);
+
+    PyObject *po_filename = PyRRD_String_FromString(filename);
+    PyDict_SetItemString(kwargs, "filename", po_filename);
+    Py_DECREF(po_filename);
+
+    PyObject *po_cfstr = PyRRD_String_FromString(PyRRD_String_FromCF(cf_idx));
+    PyDict_SetItemString(kwargs, "cf", po_cfstr);
+    Py_DECREF(po_cfstr);
+
+    PyObject *po_start = PyLong_FromLong(*start);
+    PyDict_SetItemString(kwargs, "start", po_start);
+    Py_DECREF(po_start);
+
+    PyObject *po_end = PyLong_FromLong(*end);
+    PyDict_SetItemString(kwargs, "end", po_end);
+    Py_DECREF(po_end);
+
+    PyObject *po_step = PyLong_FromUnsignedLong(*step);
+    PyDict_SetItemString(kwargs, "step", po_step);
+    Py_DECREF(po_step);
+
+    /* execute Python callback method */
+    ret = PyObject_Call(_rrdtool_fetch_callable, args, kwargs);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+
+    if (ret == NULL) {
+        rrd_set_error("calling python callback failed");
+        goto gil_release_err;
+    }
+
+    /* handle return value of callback */
+    if (!PyDict_Check(ret)) {
+        rrd_set_error("expected callback method to be a dict");
+        goto gil_release_err;
+    }
+
+    tmp = PyDict_GetItemString(ret, "step");
+    if (tmp == NULL) {
+        rrd_set_error("expected 'step' key in callback return value");
+        goto gil_release_err;
+    } else if (!PyRRD_Long_Check(tmp)) {
+        rrd_set_error("the 'step' key in callback return value must be int");
+        goto gil_release_err;
+    } else
+        *step = PyLong_AsLong(tmp);
+
+    tmp = PyDict_GetItemString(ret, "start");
+    if (tmp == NULL) {
+        rrd_set_error("expected 'start' key in callback return value");
+        goto gil_release_err;
+    } else if (!PyRRD_Long_Check(tmp)) {
+        rrd_set_error("expected 'start' key in callback return value to be "
+            "of type int");
+        goto gil_release_err;
+    } else if (PyObject_RichCompareBool(tmp, tmp_min_ts, Py_EQ) || 
+               PyObject_RichCompareBool(tmp, po_start, Py_LT)) {
+        rrd_set_error("expected 'start' value in callback return dict to be "
+            "equal or earlier than passed start timestamp");
+        goto gil_release_err;
+    } else {
+        *start = PyLong_AsLong(po_start);
+
+        if (*start == -1) {
+            rrd_set_error("expected 'start' value in callback return value to"
+                " not exceed LONG_MAX");
+            goto gil_release_err;
+        }
+    }
+
+    tmp = PyDict_GetItemString(ret, "data");
+    if (tmp == NULL) {
+        rrd_set_error("expected 'data' key in callback return value");
+        goto gil_release_err;
+    } else if (!PyDict_Check(tmp)) {
+        rrd_set_error("expected 'data' key in callback return value of type "
+            "dict");
+        goto gil_release_err;
+    } else {
+        *ds_cnt = (unsigned long)PyDict_Size(tmp);
+        *ds_namv = (char **)calloc(*ds_cnt, sizeof(char *));
+
+        if (*ds_namv == NULL) {
+            rrd_set_error("an error occured while allocating memory for "
+                "ds_namv when allocating memory for python callback");
+            goto gil_release_err;
+        }
+
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;  /* don't use pos for indexing */
+        unsigned int x = 0;
+
+        while (PyDict_Next(tmp, &pos, &key, &value)) {
+            char *key_str = PyRRD_String_AS_STRING(key);
+
+            if (key_str == NULL) {
+                rrd_set_error("key of 'data' element from callback return "
+                    "value is not a string");
+                goto gil_release_free_dsnamv_err;
+            } else if (strlen(key_str) > DS_NAM_SIZE) {
+                rrd_set_error("key '%s' longer than the allowed maximum of %d "
+                    "byte", key_str, DS_NAM_SIZE - 1);
+                goto gil_release_free_dsnamv_err;
+            }
+
+            if ((((*ds_namv)[x]) = (char *)malloc(sizeof(char) * DS_NAM_SIZE)) == NULL) {
+                rrd_set_error("malloc fetch ds_namv entry");
+                goto gil_release_free_dsnamv_err;
+            }
+
+            strncpy((*ds_namv)[x], key_str, DS_NAM_SIZE - 1);
+            (*ds_namv)[x][DS_NAM_SIZE - 1] = '\0';
+
+            if (!PyList_Check(value)) {
+                rrd_set_error("expected 'data' dict values in callback return "
+                    "value of type list");
+                goto gil_release_free_dsnamv_err;
+            } else if (PyList_Size(value) > rowcount)
+                rowcount = PyList_Size(value);
+
+            ++x;
+        }
+
+        *end = *start + *step * rowcount;
+
+        if (((*data) = (rrd_value_t *)malloc(*ds_cnt * rowcount * sizeof(rrd_value_t))) == NULL) {
+            rrd_set_error("malloc fetch data area");
+            goto gil_release_free_dsnamv_err;
+        }
+
+        for (unsigned int i = 0; i < *ds_cnt; i++) {
+            for (unsigned int ii = 0; ii < (unsigned int)rowcount; ii++) {
+                char *ds_namv_i = (*ds_namv)[i];
+                double va;
+                PyObject *lstv = PyList_GetItem(PyDict_GetItemString(tmp, ds_namv_i), ii);
+
+                /* lstv may be NULL here in case an IndexError has been raised;
+                   in such case the rowcount is higher than the number of elements for
+                   the list of that ds. use DNAN as value for these then */
+                if (lstv == NULL || lstv == Py_None) {
+                    if (lstv == NULL)
+                        PyErr_Clear();
+                    va = DNAN;
+                }
+                else {
+                    va = PyFloat_AsDouble(lstv);
+                    if (va == -1.0 && PyErr_Occurred()) {
+                        PyObject *exc_type, *exc_value, *exc_value_str = NULL, *exc_tb;
+                        PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+
+                        if (exc_value != NULL) {
+                            exc_value_str = PyObject_Str(exc_value);
+                            char *exc_str = PyRRD_String_AS_STRING(exc_value_str);
+                            rrd_set_error(exc_str);
+                            Py_DECREF(exc_value);
+                        }
+
+                        Py_DECREF(exc_type);
+                        Py_DECREF(exc_value_str);
+                        if (exc_tb != NULL)
+                            Py_DECREF(exc_tb);
+                        goto gil_release_free_dsnamv_err;
+                    }
+                }
+
+                (*data)[i + ii * (*ds_cnt)] = va;
+            }
+        }
+    }
+
+    /* success */
+    rc = 1;
+    goto gil_release;
+
+gil_release_free_dsnamv_err:
+    for (unsigned int i = 0; i < *ds_cnt; i++) {
+        if ((*ds_namv)[i]) {
+            free((*ds_namv)[i]);
+        }
+    }
+
+    free(*ds_namv);
+
+gil_release_err:
+    rc = -1;
+
+gil_release:
+    if (ret != NULL)
+        Py_DECREF(ret);
+    PyGILState_Release(gstate);
+    return rc;
+}
+
+static char _rrdtool_register_fetch_cb__doc__[] = "Register callback for "
+    "fetching data";
+
+static PyObject *
+_rrdtool_register_fetch_cb(PyObject *Py_UNUSED(self), PyObject *args)
+{
+    PyObject *callable;
+
+    if (!PyArg_ParseTuple(args, "O", &callable))
+        return NULL;
+    else if (!PyCallable_Check(callable)) {
+        PyErr_SetString(rrdtool_ProgrammingError, "first argument must be callable");
+        return NULL;
+    } else {
+        _rrdtool_fetch_callable = callable;
+        rrd_fetch_cb_register(_rrdtool_fetch_cb_wrapper);
+        Py_RETURN_NONE;
+    }
+}
+
+static char _rrdtool_clear_fetch_cb__doc__[] = "Clear callback for "
+    "fetching data";
+
+static PyObject *
+_rrdtool_clear_fetch_cb(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args))
+{
+    if (_rrdtool_fetch_callable == NULL) {
+        PyErr_SetString(rrdtool_ProgrammingError, "no callback set");
+        return NULL;
+    }
+
+    _rrdtool_fetch_callable = NULL;
+    rrd_fetch_cb_register(NULL);
+    Py_RETURN_NONE;
 }
 
 static char _rrdtool_lib_version__doc__[] = "Get the version this binding "\
@@ -1077,6 +1391,10 @@ static PyMethodDef rrdtool_methods[] = {
      METH_VARARGS, _rrdtool_info__doc__},
     {"lastupdate", (PyCFunction)_rrdtool_lastupdate,
      METH_VARARGS, _rrdtool_lastupdate__doc__},
+    {"register_fetch_cb", (PyCFunction)_rrdtool_register_fetch_cb,
+     METH_VARARGS, _rrdtool_register_fetch_cb__doc__},
+    {"clear_fetch_cb", (PyCFunction)_rrdtool_clear_fetch_cb,
+     METH_NOARGS, _rrdtool_clear_fetch_cb__doc__},
     {"lib_version", (PyCFunction)_rrdtool_lib_version,
      METH_NOARGS, _rrdtool_lib_version__doc__},
     {NULL, NULL, 0, NULL}
@@ -1111,7 +1429,7 @@ initrrdtool(void)
 #else
     m = Py_InitModule3("rrdtool",
                        rrdtool_methods,
-                       "rrdtool bindings for Python");
+                       "Python bindings for rrdtool");
 #endif
 
     if (m == NULL)

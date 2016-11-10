@@ -28,7 +28,8 @@ def main():
         author_email='commx@commx.ws',
         license='LGPL',
         url='https://github.com/commx/python-rrdtool',
-        ext_modules=[module]
+        ext_modules=[module],
+        test_suite='tests'
     )
 
     setup(**kwargs)
