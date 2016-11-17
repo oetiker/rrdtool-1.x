@@ -9,7 +9,7 @@ perl:
 
 install: 
   - sudo apt-get update || true
-  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc
+  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python-pip python-setuptools
   - sudo pip install cpp-coveralls
 
 before_script:
@@ -24,6 +24,7 @@ script:
   - make check TESTS_STYLE="valgrind-logfile"
   - sudo make install
   - cd bindings/perl-shared && make test
+  - cd bindings/python && python setup.py test
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
 
