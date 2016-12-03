@@ -242,6 +242,16 @@ const char default_duration_fmt[] = "%H:%02m:%02s";
 #endif
 
 
+/* #define SLOG10(x)
+   "signed" logarithm
+   SLOG(x) = log10(abs(x)) * signum(x) */
+#define SLOG10(x)	((x) < 0 ? -log10(-(x)) : log10((x)))
+
+/* #define SPOW(x)
+   "signed" power
+   SPOW(x, y) = pow(x, abs(y)) * signum(y) */
+#define SPOW(x,y)	((y) < 0 ? -pow((x),-(y)) : pow((x),(y)))
+
 /* initialize with xtr(im,0); */
 int xtr(
     image_desc_t *im,
@@ -269,7 +279,7 @@ double ytr(
             pixie = (double) im->ysize / (im->maxval - im->minval);
         else
             pixie =
-                (double) im->ysize / (log10(im->maxval) - log10(im->minval));
+                (double) im->ysize / (SLOG10(im->maxval) - SLOG10(im->minval));
         yval = im->yorigin;
     } else if (!im->logarithmic) {
         yval = im->yorigin - pixie * (value - im->minval);
@@ -277,7 +287,7 @@ double ytr(
         if (value < im->minval) {
             yval = im->yorigin;
         } else {
-            yval = im->yorigin - pixie * (log10(value) - log10(im->minval));
+            yval = im->yorigin - pixie * (SLOG10(value) - SLOG10(im->minval));
         }
     }
     return yval;
@@ -619,8 +629,8 @@ void expand_range(
 
             delt = im->maxval - im->minval;
             adj = delt * 0.1;
-            fact = 2.0 * pow(10.0,
-                             floor(log10
+            fact = 2.0 * SPOW(10.0,
+                             floor(SLOG10
                                    (max(fabs(im->minval), fabs(im->maxval)) /
                                     im->magfact)) - 2);
             if (delt < fact) {
@@ -690,9 +700,9 @@ void apply_gridfit(
     ytr(im, DNAN);
     if (im->logarithmic) {
         double    ya, yb, ypix, ypixfrac;
-        double    log10_range = log10(im->maxval) - log10(im->minval);
+        double    log10_range = SLOG10(im->maxval) - SLOG10(im->minval);
 
-        ya = pow((double) 10, floor(log10(im->minval)));
+        ya = SPOW((double) 10, floor(SLOG10(im->minval)));
         while (ya < im->minval)
             ya *= 10;
         if (ya > im->maxval)
@@ -705,11 +715,11 @@ void apply_gridfit(
             double    y_pixel_delta = ytr(im, ya) - ytr(im, yb);
             double    factor = y_pixel_delta / floor(y_pixel_delta);
             double    new_log10_range = factor * log10_range;
-            double    new_ymax_log10 = log10(im->minval) + new_log10_range;
+            double    new_ymax_log10 = SLOG10(im->minval) + new_log10_range;
 
-            im->maxval = pow(10, new_ymax_log10);
+            im->maxval = SPOW(10, new_ymax_log10);
             ytr(im, DNAN);  /* reset precalc */
-            log10_range = log10(im->maxval) - log10(im->minval);
+            log10_range = SLOG10(im->maxval) - SLOG10(im->minval);
         }
         /* make sure first y=10^x gridline is located on
            integer pixel position by moving scale slightly
@@ -719,8 +729,8 @@ void apply_gridfit(
         if (ypixfrac > 0 && ypixfrac < 1) {
             double    yfrac = ypixfrac / im->ysize;
 
-            im->minval = pow(10, log10(im->minval) - yfrac * log10_range);
-            im->maxval = pow(10, log10(im->maxval) - yfrac * log10_range);
+            im->minval = SPOW(10, SLOG10(im->minval) - yfrac * log10_range);
+            im->maxval = SPOW(10, SLOG10(im->maxval) - yfrac * log10_range);
             ytr(im, DNAN);  /* reset precalc */
         }
     } else {
@@ -1434,13 +1444,8 @@ int data_proc(
 
     if (im->logarithmic) {
         if (isnan(minval) || isnan(maxval) || maxval <= 0) {
-            minval = 0.0;   /* catching this right away below */
+            minval = -5.1;
             maxval = 5.1;
-        }
-        /* in logarithm mode, where minval is smaller or equal
-           to 0 make the beast just way smaller than maxval */
-        if (minval <= 0) {
-            minval = maxval / 10e8;
         }
     } else {
         if (isnan(minval) || isnan(maxval)) {
@@ -1455,7 +1460,10 @@ int data_proc(
         || ((!im->rigid) && im->minval > minval)
         ) {
         if (im->logarithmic)
-            im->minval = minval / 2.0;
+	    if (minval > 0)
+		im->minval = minval / 2.0;
+	    else
+		im->minval = minval * 2.0;
         else
             im->minval = minval;
     }
@@ -1463,7 +1471,10 @@ int data_proc(
         || (!im->rigid && im->maxval < maxval)
         ) {
         if (im->logarithmic)
-            im->maxval = maxval * 2.0;
+	    if (maxval > 0)
+		im->maxval = maxval * 2.0;
+	    else
+		im->maxval = maxval / 2.0;
         else
             im->maxval = maxval;
     }
@@ -2304,14 +2315,14 @@ int calc_horizontal_grid(
         if (im->extra_flags & ALTYGRID) {
             /* find the value with max number of digits. Get number of digits */
             decimals =
-                ceil(log10
+                ceil(SLOG10
                      (max(fabs(im->maxval), fabs(im->minval)) *
                       im->viewfactor / im->magfact));
             if (decimals <= 0)  /* everything is small. make place for zero */
                 decimals = 1;
             im->ygrid_scale.gridstep =
-                pow((double) 10,
-                    floor(log10(range * im->viewfactor / im->magfact))) /
+                SPOW((double) 10,
+                    floor(SLOG10(range * im->viewfactor / im->magfact))) /
                 im->viewfactor * im->magfact;
             if (im->ygrid_scale.gridstep == 0)  /* range is one -> 0.1 is reasonable scale */
                 im->ygrid_scale.gridstep = 0.1;
@@ -2332,7 +2343,7 @@ int calc_horizontal_grid(
                 im->ygrid_scale.labfact = 5;
             }
             fractionals =
-                floor(log10
+                floor(SLOG10
                       (im->ygrid_scale.gridstep *
                        (double) im->ygrid_scale.labfact * im->viewfactor /
                        im->magfact));
@@ -2587,6 +2598,7 @@ int draw_horizontal_grid(
 }
 
 /* this is frexp for base 10 */
+/* TODO: is this relevant for SPOW/SLOG10? */
 static double frexp10(
     double x,
     double *e)
@@ -2646,7 +2658,7 @@ int horizontal_log_grid(
     double    X0, X1, Y0;
     char      graph_label[100];
 
-    nex = log10(im->maxval / im->minval);
+    nex = SLOG10(im->maxval / im->minval);
     logscale = im->ysize / nex;
     /* major spacing for data with high dynamic range */
     while (logscale * exfrac < 3 * im->text_prop[TEXT_PROP_LEGEND].size) {
@@ -2661,7 +2673,7 @@ int horizontal_log_grid(
         /* search best row in yloglab */
         mid++;
         for (i = 0; yloglab[mid][i + 1] < 10.0; i++);
-        mspac = logscale * log10(10.0 / yloglab[mid][i]);
+        mspac = logscale * SLOG10(10.0 / yloglab[mid][i]);
     }
     while (mspac >
            2 * im->text_prop[TEXT_PROP_LEGEND].size && yloglab[mid][0] > 0);
@@ -5441,12 +5453,6 @@ void rrd_graph_options(
             rrd_set_error("Unchecked right axis formatter");
             return;
         }
-    }
-
-    if (im->logarithmic && im->minval <= 0) {
-        rrd_set_error
-            ("for a logarithmic yaxis you must specify a lower-limit > 0");
-        return;
     }
 
     if (rrd_proc_start_end(&start_tv, &end_tv, &start_tmp, &end_tmp) == -1) {
