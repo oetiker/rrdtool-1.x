@@ -43,7 +43,7 @@
 #endif
 
 /* DEBUG 2 prints information obtained via mincore(2) */
-#define DEBUG 0 
+// #define DEBUG 1
 /* do not calculate exact madvise hints but assume 1 page for headers and
  * set DONTNEED for the rest, which is assumed to be data */
 /* Avoid calling madvise on areas that were already hinted. May be beneficial if
