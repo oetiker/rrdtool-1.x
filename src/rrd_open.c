@@ -43,7 +43,7 @@
 #endif
 
 /* DEBUG 2 prints information obtained via mincore(2) */
-#define DEBUG 1
+#define DEBUG 0 
 /* do not calculate exact madvise hints but assume 1 page for headers and
  * set DONTNEED for the rest, which is assumed to be data */
 /* Avoid calling madvise on areas that were already hinted. May be beneficial if
@@ -189,7 +189,8 @@ rrd_file_t *rrd_open(
         (RRD_READONLY | RRD_READWRITE)) {
         /* Both READONLY and READWRITE were given, which is invalid.  */
         rrd_set_error("in read/write request mask");
-        exit(-1);
+        free(rrd_file);
+        return NULL;
     }
 #endif
 
