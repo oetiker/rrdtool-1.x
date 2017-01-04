@@ -2279,7 +2279,7 @@ int leg_place(
 /* the xaxis labels are determined from the number of seconds per pixel
    in the requested graph */
 
-int calc_horizontal_grid (
+int calc_horizontal_grid(
     image_desc_t
     *im)
 {
@@ -2336,7 +2336,7 @@ int calc_horizontal_grid (
                       (im->ygrid_scale.gridstep *
                        (double) im->ygrid_scale.labfact * im->viewfactor /
                        im->magfact));
-            if (fractionals = 0) {  /* small amplitude. */
+            if (fractionals < 0) {  /* small amplitude. */
                 int       len = decimals - fractionals + 1;
 
                 if (im->unitslength < len + 2)
