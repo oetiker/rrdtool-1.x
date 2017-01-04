@@ -2017,7 +2017,7 @@ static void initialize_cdp_val(
             fprintf(stderr,
                     "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!",
                     i, ii);
-            exit(-1);
+            break;
         }
 #endif
 #endif
@@ -2035,7 +2035,7 @@ static void initialize_cdp_val(
             fprintf(stderr,
                     "RRA %lu, DS %lu, both CDP_val and pdp_temp are DNAN!", i,
                     ii);
-            exit(-1);
+            break;
         }
 #endif
 #endif
