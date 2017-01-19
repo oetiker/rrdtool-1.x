@@ -46,7 +46,7 @@
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
 #define ALLOW_MISSING_DS 0x800  /* missing DS is not fatal */
 
-#define gdes_fetch_key(x)  sprintf_alloc("%s:%s:%d:%d:%d:%d",x.rrd,x.daemon,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig)
+#define gdes_fetch_key(x)  sprintf_alloc("%s:%s:%d:%d:%d:%d:%d",x.rrd,x.daemon,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig,x.step)
 
 enum tmt_en { TMT_SECOND = 0, TMT_MINUTE, TMT_HOUR, TMT_DAY,
     TMT_WEEK, TMT_MONTH, TMT_YEAR
