@@ -325,6 +325,10 @@ else # Upgrading
     /sbin/service rrdcached restart || :
 fi
 
+%posttrans
+/sbin/chkconfig --add rrdcached || :
+/sbin/service rrdcached restart || :
+
 %preun cached
 if [ $1 -lt 1 ] # Uninstalling
 then
