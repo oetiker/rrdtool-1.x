@@ -516,7 +516,7 @@ AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support 
     AC_CHECK_HEADER(dbi/dbi.h, [
        AC_CHECK_LIB(dbi, dbi_initialize, [
            AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
-           LIBS="${LIBS} -ldbi -ldl"
+           LIBS="${LIBS} -ldbi"
            have_libdbi=yes
        ])
     ])
