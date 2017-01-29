@@ -19767,7 +19767,7 @@ if test "x$ac_cv_lib_dbi_dbi_initialize" = xyes; then :
 
 $as_echo "#define HAVE_LIBDBI 1" >>confdefs.h
 
-           LIBS="${LIBS} -ldbi -ldl"
+           LIBS="${LIBS} -ldbi"
            have_libdbi=yes
 
 fi
