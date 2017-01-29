@@ -317,18 +317,32 @@ find examples/ -type f -exec chmod 0644 {} \;
 %post -p /sbin/ldconfig
 
 %post cached
-/sbin/chkconfig --add rrdcached
-/sbin/service rrdcached start
+/sbin/chkconfig --add rrdcached || :
+if [ $1 -lt 2 ] # Installing
+then
+    /sbin/service rrdcached start || :
+else # Upgrading
+    /sbin/service rrdcached restart || :
+fi
+
+%posttrans
+/sbin/chkconfig --add rrdcached || :
+/sbin/service rrdcached restart || :
 
 %preun cached
-/sbin/service rrdcached stop
+if [ $1 -lt 1 ] # Uninstalling
+then
+    /sbin/service rrdcached stop || :
+    /sbin/chkconfig --del rrdcached || :
+fi
 
 %postun -p /sbin/ldconfig
 
 %postun cached
-/sbin/chkconfig --del rrdcached
-test "$1" != 0 || /usr/sbin/userdel %rrdcached_user &>/dev/null || :
-#test "$1" != 0 || /usr/sbin/groupdel %rrdcached_user &>/dev/null || :
+if [ $1 -lt 1 ] # Uninstalling
+then
+    /usr/sbin/userdel %rrdcached_user &>/dev/null || :
+fi
 
 %files
 %defattr(-,root,root,-)
