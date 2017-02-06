@@ -770,7 +770,8 @@ static char _rrdtool_list__doc__[] = "List RRDs in storage.\n\n" \
   "Usage: list(args..)\n\
   Arguments:\n\n\
     dirname\n\
-    [--daemon HOST]";
+    [-r|--recursive]\n\
+    [-d|--daemon address]";
 
 static PyObject *
 _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)

@@ -74,7 +74,7 @@ int rrd_client_update(rrd_client_t *client, const char *filename, int values_num
     const char * const *values);
 
 rrd_info_t * rrd_client_info(rrd_client_t *client, const char *filename);
-char *rrd_client_list(rrd_client_t *client, const char *dirname);
+char *rrd_client_list(rrd_client_t *client, int recursive, const char *dirname);
 time_t rrd_client_last(rrd_client_t *client, const char *filename);
 time_t rrd_client_first(rrd_client_t *client, const char *filename, int rraindex);
 int rrd_client_create(rrd_client_t *client, const char *filename,
@@ -121,7 +121,7 @@ int rrdc_update (const char *filename, int values_num,
     const char * const *values);
 
 rrd_info_t * rrdc_info (const char *filename);
-char *rrdc_list(const char *dirname);
+char *rrdc_list(int recursive, const char *dirname);
 time_t rrdc_last (const char *filename);
 time_t rrdc_first (const char *filename, int rraindex);
 int rrdc_create (const char *filename,
