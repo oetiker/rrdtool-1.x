@@ -6,7 +6,7 @@ BASE=$BASEDIR/`basename $0`
 BUILD=$BUILDDIR/`basename $0`
 LIST_DIR=$BUILDDIR/`basename $0`_dir
 
-# This is used both for 'direct' tests and for tests via rrdcached 
+# This is used both for 'direct' tests and for tests via rrdcached
 # (when RRDCACHED_ADDRESS is exported). In that case the 'root' directory
 # is BASEDIR (see '-b' in functions::run_cached) and the paths in tests
 # must be changed accordingly (see $LIST_TEST_DIR, $rrd)
@@ -28,19 +28,29 @@ function do_list_tests()
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/second.rrd
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/third.rrd
-        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+
+        list_count=`$RRDTOOL list "/$1" | wc -l`
         test $list_count -eq 3
         report "directory with several RRDs"
 
         touch "$LIST_TEST_DIR"/not_an_rrd
-        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+        list_count=`$RRDTOOL list "/$1" | wc -l`
         test $list_count -eq 3
         report "only lists files with .rrd suffix"
 
         mkdir -p "$LIST_TEST_DIR"/new_dir
-        list_count=`$RRDTOOL list "$LIST_TEST_DIR" | wc -l`
+        list_count=`$RRDTOOL list "/$1" | wc -l`
         test $list_count -eq 4
         report "only lists RRDs and directories"
+
+        mkdir -p "$LIST_TEST_DIR"/new_dir2
+        mkdir -p "$LIST_TEST_DIR"/new_dir3
+        mkdir -p "$LIST_TEST_DIR"/new_dir4
+        cp ${BUILD}.rrd "$LIST_TEST_DIR"/new_dir2/fourth.rrd
+        cp ${BUILD}.rrd "$LIST_TEST_DIR"/new_dir2/fifth.rrd
+        list_count=`$RRDTOOL list --recursive "/$1" | wc -l`
+        test $list_count -eq 5
+        report "recursive list only lists rrd files"
 }
 
 ################################################################################
@@ -71,7 +81,7 @@ else
 fi
 
 if is_cached; then
-        mkdir -p "$LIST_DIR" 
+        mkdir -p "$LIST_DIR"
         # This relies on '-b' setting in functions::run_cached()
         CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BASEDIR/||"`
         do_list_tests "$CACHED_DIR"
