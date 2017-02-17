@@ -744,10 +744,10 @@ message itself.  The first user command after B<BATCH> is command number one.
     server:  1 message for command 1
     server:  12 message for command 12
 
-=item B<LIST> I<path>
+=item B<LIST> [RECURSIVE] I/<path>
 
 This command allows to list directories and rrd databases as seen by the daemon.
-The root "directory" is the base_dir (see '-b dir').
+The root "directory" is the base_dir (see '-b dir'). When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to 'ls -R' but limited to rrd files (listing all the rrd bases in the subtree of <path>, skipping empty directories).
 
 =item B<QUIT>
 

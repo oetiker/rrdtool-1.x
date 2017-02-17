@@ -1297,7 +1297,7 @@ rrd_info_t * rrdc_info (const char *filename) /* {{{ */
   return info;
 } /* }}} int rrdc_info */
 
-char *rrd_client_list(rrd_client_t *client, const char *dirname) /* {{{ */
+char *rrd_client_list(rrd_client_t *client, int recursive, const char *dirname) /* {{{ */
 {
   char buffer[RRD_CMD_MAX];
   char *buffer_ptr;
@@ -1325,6 +1325,15 @@ char *rrd_client_list(rrd_client_t *client, const char *dirname) /* {{{ */
   if (status != 0) {
     rrd_set_error ("rrdc_list: out of memory");
     return NULL;
+  }
+
+  if (recursive) {
+    status = buffer_add_string ("RECURSIVE", &buffer_ptr, &buffer_free);
+    if (status != 0)
+    {
+      rrd_set_error ("rrdc_list: out of memory");
+      return (NULL);
+    }
   }
 
   status = buffer_add_string (dirname, &buffer_ptr, &buffer_free);
@@ -1396,11 +1405,11 @@ out_free_res:
 
   return list;
 } /* }}} char *rrd_client_list */
-char *rrdc_list(const char *dirname) /* {{{ */
+char *rrdc_list(int recursive, const char *dirname) /* {{{ */
 {
   char *files;
   mutex_lock(&lock);
-  files = rrd_client_list(&default_client, dirname);
+  files = rrd_client_list(&default_client, recursive, dirname);
   mutex_unlock(&lock);
   return files;
 } /* }}} char *rrdc_list */

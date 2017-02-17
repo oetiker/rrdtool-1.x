@@ -8,16 +8,26 @@
 #include "rrd_tool.h"
 #include "rrd_client.h"
 
-char *rrd_list_r(char *dirname)
+static char *move_past_prefix(const char *prefix, const char *string)
 {
-#define SANE_ASPRINTF(_dest_str, _format, ...)				\
-	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
-		if (out != NULL) {					\
-			free(out);					\
-		}							\
-		errno = ENOMEM;						\
-		return NULL;						\
+	int index = 0;
+
+	if (strlen(prefix) > strlen(string)) {
+		return (char *)string;
 	}
+
+	while (prefix[index] != '\0') {
+		if (prefix[index] != string[index]) {
+			break;
+		}
+		index++;
+	}
+
+	return (char *)&(string[index]);
+}
+
+static char *rrd_list_rec(int recursive, char *root, char *dirname)
+{
 #define SANE_ASPRINTF2(_dest_str, _format, ...)				\
 	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
 		if (out != NULL) {					\
@@ -28,14 +38,110 @@ char *rrd_list_r(char *dirname)
 		return NULL;						\
 	}
 
+	struct stat st;
+	struct dirent *entry;
+	DIR *dir;
+	char *out = NULL, *out_rec, *out_short, *tmp, *ptr;
+	char current[PATH_MAX], fullpath[PATH_MAX];
+
+	dir = opendir(dirname);
+
+	if (dir == NULL) {
+		/* opendir sets errno */
+		return NULL;
+	}
+
+	while ((entry = readdir(dir)) != NULL) {
+
+		if ((strcmp(entry->d_name, ".") == 0) ||
+		    (strcmp(entry->d_name, "..") == 0)) {
+			continue;
+		}
+
+		if (strlen(dirname) + strlen(entry->d_name) + 1 >= PATH_MAX) {
+			continue;
+		}
+
+		snprintf(&current[0], PATH_MAX, "%s/%s", dirname, entry->d_name);
+
+		/* NOTE: stat(2) follows symlinks and gives info on target. */
+		if (stat(current, &st) != 0) {
+			continue;
+		}
+
+		if (S_ISDIR(st.st_mode) && recursive) {
+			snprintf(&fullpath[0], PATH_MAX, "%s/%s",
+				 dirname, entry->d_name);
+			out_rec = rrd_list_rec(recursive, root, fullpath);
+
+			if (out_rec == NULL) {
+				continue;
+			}
+
+			if (out == NULL) {
+				SANE_ASPRINTF2(out, "%s", out_rec);
+
+			} else {
+				tmp = out;
+				SANE_ASPRINTF2(out, "%s%s", out, out_rec);
+				free(tmp);
+			}
+			free(out_rec);
+
+		} else {
+
+			if (S_ISREG(st.st_mode)) {
+
+				ptr = strstr(entry->d_name, ".rrd");
+
+	 			/* strlen() used to make sure it's matching
+	 			 * the end of string. Non-rrd-suffixed regular
+	 			 * files are skipped.
+	 			 */
+				if (ptr == NULL || strlen(ptr) != 4) {
+					continue;
+				}
+			}
+			snprintf(&fullpath[0], PATH_MAX, "%s/%s",
+				 dirname, entry->d_name);
+			out_short = move_past_prefix(root, fullpath);
+
+			/* don't start output with a '/' */
+			if (out_short[0] == '/') {
+				out_short++;
+			}
+
+			if (out == NULL) {
+				SANE_ASPRINTF2(out, "%s\n", out_short);
+
+                        } else {
+				tmp = out;
+				SANE_ASPRINTF2(out, "%s%s\n", out, out_short);
+                                free(tmp);
+                        }
+		}
+	}
+	closedir(dir);
+
+	return out;
+}
+
+char *rrd_list_r(int recursive, char *dirname)
+{
+#define SANE_ASPRINTF(_dest_str, _format, ...)				\
+	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
+		if (out != NULL) {					\
+			free(out);					\
+		}							\
+		errno = ENOMEM;						\
+		return NULL;						\
+	}
+
 	char *out = NULL, *tmp;
-	char current[PATH_MAX];
 	glob_t buf;
 	char *ptr;
 	unsigned int i;
 	struct stat st;
-	DIR *dir;
-  	struct dirent *entry;
 
 	/* Prevent moving up the directory tree */
 	if (strstr(dirname, "..")) {
@@ -45,6 +151,12 @@ char *rrd_list_r(char *dirname)
 
 	/* if filename contains wildcards, then use glob() */
 	if (strchr(dirname, '*') || strchr(dirname, '?')) {
+
+		/* recursive list + globbing forbidden */
+		if (recursive) {
+			errno = EINVAL;
+			return NULL;
+		}
 
 		if (glob(dirname, 0, NULL, &buf)) {
 			globfree(&buf);
@@ -94,61 +206,14 @@ char *rrd_list_r(char *dirname)
 	}
 
 	/* Process directory */
-	dir = opendir(dirname);
-
-	if (dir == NULL) {
-		/* opendir sets errno */
+	if (stat(dirname, &st) != 0) {
 		return NULL;
 	}
 
-	while ((entry = readdir(dir)) != NULL) {
-
-		if ((strcmp(entry->d_name, ".") == 0) ||
-		    (strcmp(entry->d_name, "..") == 0)) {
-			continue;
-		}
-
-		if (strlen(dirname) + strlen(entry->d_name) + 1 >= PATH_MAX) {
-			continue;
-		}
-		snprintf(&current[0], PATH_MAX, "%s/%s", dirname, entry->d_name);
-
-		/* Only return directories and rrd files.
-		 * NOTE: stat(2) follows symlinks and gives info on target. */
-		if (stat(current, &st) != 0) {
-			continue;
-		}
-
-		if (!S_ISDIR(st.st_mode)) {
-
-			if (S_ISREG(st.st_mode)) {
-
-				ptr = strstr(entry->d_name, ".rrd");
-
-	 			/* strlen() used to make sure it's matching
-	 			 * the end of string.
-	 			 */
-				if (ptr == NULL || strlen(ptr) != 4) {
-					continue;
-				}
-
-			} else {
-				continue;
-			}
-		}
-
-		if (out == NULL) {
-			SANE_ASPRINTF2(out, "%s\n", entry->d_name);
-
-		} else {
-			tmp = out;
-			SANE_ASPRINTF2(out, "%s%s\n", out, entry->d_name);
-			free(tmp);
-		}
+	if (!S_ISDIR(st.st_mode)) {
+		return NULL;
 	}
-	closedir(dir);
-
-	return out;
+	return rrd_list_rec(recursive, dirname, dirname);
 }
 
 char *rrd_list(int argc, char **argv)
@@ -156,11 +221,13 @@ char *rrd_list(int argc, char **argv)
 	char *opt_daemon = NULL;
 	int status;
 	int flushfirst = 1;
+	int recursive = 0;
 	char *list;
 
 	static struct optparse_long long_options[] = {
 		{"daemon", 'd', OPTPARSE_REQUIRED},
 		{"noflush", 'F', OPTPARSE_NONE},
+		{"recursive", 'r', OPTPARSE_NONE},
 		{0},
 	};
 	struct optparse options;
@@ -188,6 +255,9 @@ char *rrd_list(int argc, char **argv)
 			flushfirst = 0;
 			break;
 
+		case 'r':
+			recursive=1;
+			break;
 
                 case '?':
                         if (opt_daemon)
@@ -210,7 +280,7 @@ char *rrd_list(int argc, char **argv)
 	}
 
 	if ((argc - options.optind) != 1) {
-		rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] <directory>",
+		rrd_set_error ("Usage: rrdtool %s [--daemon <addr> [--noflush]] [--recursive] <directory>",
                 argv[0]);
 
 		if (opt_daemon != NULL) {
@@ -235,7 +305,7 @@ char *rrd_list(int argc, char **argv)
 	rrdc_connect (opt_daemon);
 
 	if (rrdc_is_connected (opt_daemon)) {
-		list = rrdc_list(argv[options.optind]);
+		list = rrdc_list(recursive, argv[options.optind]);
 		rrdc_disconnect();
 
 	} else {
@@ -250,7 +320,7 @@ char *rrd_list(int argc, char **argv)
 			free(opt_daemon);
 			return NULL;
 		}
-		list = rrd_list_r(argv[options.optind]);
+		list = rrd_list_r(recursive, argv[options.optind]);
 
 		if (list == NULL) {
 			fprintf(stderr, "%s", strerror(errno));

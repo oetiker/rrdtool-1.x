@@ -2425,7 +2425,9 @@ done:
 
 static int handle_request_list (HANDLER_PROTO) /* {{{ */
 {
-  char *filename;
+  char *filename = NULL;
+  char *rec = NULL;
+  int recursive = 0;
   char *list, *start_ptr, *end_ptr, *ptr;
   char fullpath[PATH_MAX], current[PATH_MAX], absolute[PATH_MAX];
   char bwc[PATH_MAX], bwd[PATH_MAX];
@@ -2438,11 +2440,29 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
     return send_response(sock, RESP_ERR, "No base directory defined\n");
   }
 
-  /* Get pathname */
+  /* get 'RECURSIVE' option */
+  status = buffer_get_field(&buffer, &buffer_size, &rec);
+  if (status == 0) {
+    /* as 'RECURSIVE' is optional, the first argument may be the filename */
+    if (rec[0] != '/' && strcmp(rec, "RECURSIVE") != 0) {
+      return syntax_error(sock, cmd);
+    }
+
+    if (rec[0] == '/') {
+      filename = rec;
+
+    } else if (strcmp(rec, "RECURSIVE") == 0) {
+      recursive = 1;
+    }
+  }
+
+  /* Get pathname if not done already */
+  if (!filename) {
   status = buffer_get_field(&buffer, &buffer_size, &filename);
 
   if (status != 0)
     return syntax_error(sock,cmd);
+  }
 
   /* get full pathname */
   snprintf(fullpath, PATH_MAX, "%s%s%s",
@@ -2468,7 +2488,7 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
     base = &bwd[0];
   }
 
-  list = rrd_list_r(fullpath);
+  list = rrd_list_r(recursive, fullpath);
 
   if (list == NULL) {
     /* Empty directory listing */
@@ -2772,11 +2792,14 @@ static command_t list_of_commands[] = { /* {{{ */
     "LIST",
     handle_request_list,
     CMD_CONTEXT_CLIENT,
-    "LIST\n",
-    "This command lists the RRD files in the storage base directory.\n"
+    "LIST [RECURSIVE] /[<path>]\n",
+    "This command lists the RRD files in the storage base directory (/).\n"
     "Note that this is the list of RRD files on storage as of the last update.\n"
     "There may be pending updates in the queue, so a FLUSH may have to be run\n"
     "beforehand.\n"
+    "When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to\n"
+    "'ls -R' but limited to rrd files (listing all the rrd bases in the subtree\n"
+    " of <path>, skipping empty directories).\n"
   },
   {
     "QUIT",
