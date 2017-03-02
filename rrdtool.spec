@@ -3,6 +3,7 @@
 %define with_tcl %{?_without_tcl: 0} %{?!_without_tcl: 1}
 %define with_ruby %{?_without_ruby: 0} %{?!_without_ruby: 1}
 %define with_lua %{?_without_lua: 0} %{?!_without_lua: 1}
+%define with_systemd %{?_without_systemd: 0} %{?!_without_systemd: 1}
 %define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
 %define svnrev r1190
 #define pretag 1.2.99908020600
@@ -165,6 +166,9 @@ The %{name}-lua package includes RRDtool bindings for Lua.
 Summary: Data caching daemon for RRDtool
 Group: Applications/Databases
 Requires: %{name} = %{version}-%{release}
+%if %{with_systemd}
+BuildRequires: with_systemd
+%endif
 
 %description cached
 rrdcached is a daemon that receives updates to existing RRD files,
@@ -317,32 +321,49 @@ find examples/ -type f -exec chmod 0644 {} \;
 %post -p /sbin/ldconfig
 
 %post cached
-/sbin/chkconfig --add rrdcached || :
-if [ $1 -lt 2 ] # Installing
-then
-    /sbin/service rrdcached start || :
-else # Upgrading
-    /sbin/service rrdcached restart || :
-fi
+%if %{with_systemd}
+    %systemd_post rrdcached.service
+    %systemd_post rrdcached.socket
+%else
+    /sbin/chkconfig --add rrdcached || :
+    if [ $1 -lt 2 ] # Installing
+    then
+        /sbin/service rrdcached start || :
+    else # Upgrading
+        /sbin/service rrdcached restart || :
+    fi
+%endif
 
-%posttrans
-/sbin/chkconfig --add rrdcached || :
-/sbin/service rrdcached restart || :
+%posttrans cached
+%if %{with_systemd}
+%else
+    /sbin/chkconfig --add rrdcached || :
+    /sbin/service rrdcached restart || :
+%endif
 
 %preun cached
-if [ $1 -lt 1 ] # Uninstalling
-then
-    /sbin/service rrdcached stop || :
-    /sbin/chkconfig --del rrdcached || :
-fi
+%if %{with_systemd}
+    %systemd_preun rrdcached.service
+    %systemd_preun rrdcached.socket
+%else
+    if [ $1 -lt 1 ] # Uninstalling
+    then
+        /sbin/service rrdcached stop || :
+    fi
+%endif
 
 %postun -p /sbin/ldconfig
 
 %postun cached
-if [ $1 -lt 1 ] # Uninstalling
-then
-    /usr/sbin/userdel %rrdcached_user &>/dev/null || :
-fi
+%if %{with_systemd}
+    %systemd_postun_with_restart rrdcached.service
+    %systemd_postun_with_restart rrdcached.socket
+%else
+    if [ $1 -lt 1 ] # Uninstalling
+    then
+        /usr/sbin/userdel %rrdcached_user &>/dev/null || :
+    fi
+%endif
 
 %files
 %defattr(-,root,root,-)
@@ -415,8 +436,15 @@ fi
 %config %{_sysconfdir}/rc.d/init.d/*
 %{_mandir}/man1/rrdcached*
 %attr(0775 %rrdcached_user %rrdcached_user) %dir %{_localstatedir}/run/rrdcached
+%if %{with_systemd}
+%{_unitdir}/rrdcached.service
+%{_unitdir}/rrdcached.socket
+%endif
 
 %changelog
+* Wed Mar 01 2017 Tomas Vestelind <tomas.vestelind@gmail.com>
+- systemd preset logic for rrdcached
+
 * Tue Jan 25 2011 Bernard Li <bernard@vanhpc.org>
 - Reset Release to 1
 - Add -lua subpackage
