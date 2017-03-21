@@ -1129,7 +1129,7 @@ static char *scanargs(
         }
 
         /* check if our argument array is still large enough */
-        if (argc == argsz) {
+        if (argc == argsz - 2) {
             /* resize argument array */
             argsz *= 2;
             argv = (char **) rrd_realloc(argv, argsz * sizeof(char *));
