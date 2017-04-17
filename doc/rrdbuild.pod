@@ -7,7 +7,7 @@ rrdbuild - Instructions for building RRDtool
 If you downloaded the source of RRDtool you have to compile it. This
 document will give some information on how this is done.
 
-RRDtool relies on services of third part libraries. Some of these libraries
+RRDtool relies on services of third party libraries. Some of these libraries
 may already be installed on your system. You have to compile copies of the other
 ones before you can build RRDtool.
 
