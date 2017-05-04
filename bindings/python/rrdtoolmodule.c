@@ -469,11 +469,10 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 
         for (i = 0; i < ds_cnt; i++)
             rrd_freemem(ds_namv[i]);
-
-        rrd_freemem(ds_namv);
-        rrd_freemem(data);
     }
 
+    rrd_freemem(ds_namv);
+    rrd_freemem(data);
     destroy_args();
     return ret;
 }
