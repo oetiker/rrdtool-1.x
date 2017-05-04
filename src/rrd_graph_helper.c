@@ -515,7 +515,9 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if (bitscmp(PARSE_DAEMON)) {
     char *daemon=getKeyValueArgument("daemon",1,pa);
     if (daemon) {
-      strncpy(gdp->daemon,daemon,strlen(daemon));
+      /* graph_desc_t: char daemon[256] */
+      strncpy(gdp->daemon,daemon,255);
+      gdp->daemon[255] = '\0';
       dprintfparsed("got daemon: %s\n", gdp->daemon);
     }
   }
