@@ -1271,7 +1271,8 @@ _rrdtool_fetch_cb_wrapper(
                         }
 
                         Py_DECREF(exc_type);
-                        Py_DECREF(exc_value_str);
+                        if (exc_value_str != NULL)
+                            Py_DECREF(exc_value_str);
                         if (exc_tb != NULL)
                             Py_DECREF(exc_tb);
                         goto gil_release_free_dsnamv_err;
