@@ -622,6 +622,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
         }
     }
 
+    rrd_freemem(calcpr);
     destroy_args();
     return ret;
 }
