@@ -1056,8 +1056,12 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
                 val = PyFloat_FromDouble(num);
             }
 
-            if (!val)
+            if (!val) {
+            	free(last_ds[i]);
+            	free(last_ds);
+            	free(ds_names);
                 return NULL;
+            }
 
             PyDict_SetItemString(ds_dict, ds_names[i], val);
             Py_DECREF(val);
