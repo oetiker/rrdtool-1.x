@@ -7,7 +7,7 @@ rrd_rados_t* rrd_rados_open(const char *oid) {
     rrd_rados = (rrd_rados_t*)malloc(sizeof(rrd_rados_t));
     if (rrd_rados == NULL) {
       rrd_set_error("allocating rrd_rados descriptor");
-      goto err;
+      return NULL;
     }
 
     memset(rrd_rados, 0, sizeof(rrd_rados_t));

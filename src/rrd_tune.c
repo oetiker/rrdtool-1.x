@@ -145,6 +145,7 @@ int rrd_tune(
     // connect to daemon (will take care of environment variable automatically)
     if (rrdc_connect(opt_daemon) != 0) {
     	rrd_set_error("Cannot connect to daemon");
+    	free(opt_daemon);
 	return 1;
     }
 

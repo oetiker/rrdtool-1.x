@@ -469,11 +469,10 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 
         for (i = 0; i < ds_cnt; i++)
             rrd_freemem(ds_namv[i]);
-
-        rrd_freemem(ds_namv);
-        rrd_freemem(data);
     }
 
+    rrd_freemem(ds_namv);
+    rrd_freemem(data);
     destroy_args();
     return ret;
 }
@@ -623,6 +622,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
         }
     }
 
+    rrd_freemem(calcpr);
     destroy_args();
     return ret;
 }
@@ -1056,8 +1056,12 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
                 val = PyFloat_FromDouble(num);
             }
 
-            if (!val)
+            if (!val) {
+            	free(last_ds[i]);
+            	free(last_ds);
+            	free(ds_names);
                 return NULL;
+            }
 
             PyDict_SetItemString(ds_dict, ds_names[i], val);
             Py_DECREF(val);
@@ -1271,7 +1275,8 @@ _rrdtool_fetch_cb_wrapper(
                         }
 
                         Py_DECREF(exc_type);
-                        Py_DECREF(exc_value_str);
+                        if (exc_value_str != NULL)
+                            Py_DECREF(exc_value_str);
                         if (exc_tb != NULL)
                             Py_DECREF(exc_tb);
                         goto gil_release_free_dsnamv_err;
