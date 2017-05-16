@@ -317,7 +317,7 @@ static int rrd_xport_fn(
     }
     *step_list_ptr=0;
     /* find a common step */
-    *step = lcd(step_list);
+    *step = rrd_lcd(step_list);
     /* printf("step: %lu\n",*step); */
     free(step_list);
 

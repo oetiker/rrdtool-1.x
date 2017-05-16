@@ -1772,7 +1772,7 @@ static int update_all_cdp_prep(
 
     rra_start = rra_begin;
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
-        current_cf = cf_conv(rrd->rra_def[rra_idx].cf_nam);
+        current_cf = rrd_cf_conv(rrd->rra_def[rra_idx].cf_nam);
         start_pdp_offset =
             rrd->rra_def[rra_idx].pdp_cnt -
             proc_pdp_cnt % rrd->rra_def[rra_idx].pdp_cnt;
@@ -2207,7 +2207,7 @@ static int update_aberrant_cdps(
         rra_start = rra_begin;
         for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
             if (rrd->rra_def[rra_idx].pdp_cnt == 1) {
-                current_cf = cf_conv(rrd->rra_def[rra_idx].cf_nam);
+                current_cf = rrd_cf_conv(rrd->rra_def[rra_idx].cf_nam);
                 if (current_cf == CF_SEASONAL || current_cf == CF_DEVSEASONAL) {
                     if (scratch_idx == CDP_primary_val) {
                         lookup_seasonal(rrd, rra_idx, rra_start, rrd_file,
@@ -2382,8 +2382,8 @@ static int smooth_all_rras(
     unsigned long rra_idx;
 
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; ++rra_idx) {
-        if (cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_DEVSEASONAL ||
-            cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
+        if (rrd_cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_DEVSEASONAL ||
+            rrd_cf_conv(rrd->rra_def[rra_idx].cf_nam) == CF_SEASONAL) {
 #ifdef DEBUG
             fprintf(stderr, "Running smoother for rra %lu\n", rra_idx);
 #endif

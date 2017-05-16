@@ -813,7 +813,7 @@ static int parse_tag_rra_cf(
     if (status != 0)
         return status;
 
-    status = cf_conv(rra_def->cf_nam);
+    status = rrd_cf_conv(rra_def->cf_nam);
     if (status == -1) {
         rrd_set_error("parse_tag_rra_cf: Unknown consolidation function: %s",
                       rra_def->cf_nam);

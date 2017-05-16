@@ -451,7 +451,7 @@ static int set_hwarg(
     }
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (cf_conv(rrd->rra_def[i].cf_nam) == cf) {
+        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == cf) {
             rra_idx = i;
             break;
         }
@@ -491,7 +491,7 @@ static int set_hwsmootharg(
     }
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (cf_conv(rrd->rra_def[i].cf_nam) == cf) {
+        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == cf) {
             rra_idx = i;
             break;
         }
@@ -528,7 +528,7 @@ static int set_deltaarg(
 
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
+        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
             rra_idx = i;
             break;
         }
@@ -561,7 +561,7 @@ static int set_windowarg(
     }
     /* does the appropriate RRA exist?  */
     for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
+        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
             rra_idx = i;
             break;
         }

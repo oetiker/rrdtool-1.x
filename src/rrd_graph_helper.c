@@ -506,7 +506,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
   if (bitscmp(PARSE_REDUCE)) {
     char *reduce=getKeyValueArgument("reduce",1,pa);
     if (reduce) {
-      gdp->cf_reduce=cf_conv(reduce);
+      gdp->cf_reduce=rrd_cf_conv(reduce);
       gdp->cf_reduce_set=1;
       dprintfparsed("got reduce: %s (%i)\n",reduce,gdp->cf_reduce);
       if (((int)gdp->cf_reduce)==-1) { rrd_set_error("bad reduce CF: %s",reduce); return NULL; }
@@ -798,7 +798,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     gdp->ds_nam[DS_NAM_SIZE - 1] = '\0';
   }
   if (cf) {
-    gdp->cf=cf_conv(cf);
+    gdp->cf=rrd_cf_conv(cf);
     if (((int)gdp->cf)==-1) {
       rrd_set_error("bad CF: %s",cf); return NULL; }
   } else { if (bitscmp(PARSE_CF)) { gdp->cf = (enum cf_en) -1; }}
@@ -1266,7 +1266,7 @@ static int parse_gprint(enum gf_en gf,parsedargs_t*pa,image_desc_t *const im) {
     if (((int)gdp->cf)==-1) {
       keyvalue_t* first=getFirstUnusedArgument(1,pa);
       if (first) {
-	gdp->cf=cf_conv(first->value);
+	gdp->cf=rrd_cf_conv(first->value);
 	if (((int)gdp->cf)==-1) {
 	  rrd_set_error("bad CF for DEF/CDEF: %s",first->value); return 1; }
       } else { rrd_set_error("No positional CDEF"); return 1; }

@@ -27,7 +27,7 @@ enum dst_en dst_conv(
 }
 
 
-enum cf_en cf_conv(
+enum cf_en rrd_cf_conv(
     const char *string)
 {
 

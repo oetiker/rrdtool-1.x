@@ -216,7 +216,7 @@ typedef struct graph_desc_t {
     long      ds;       /* data source number */
     char      daemon[256];
     enum cf_en cf;      /* consolidation function */
-    enum cf_en cf_reduce;   /* consolidation function for reduce_data() */
+    enum cf_en cf_reduce;   /* consolidation function for rrd_reduce_data() */
     int        cf_reduce_set; /* is the cf_reduce option set */
     struct gfx_color_t col, col2; /* graph color */
 	double    gradheight;
@@ -382,7 +382,7 @@ void      expand_range(
     image_desc_t *);
 void      apply_gridfit(
     image_desc_t *);
-int     reduce_data(
+int     rrd_reduce_data(
     enum cf_en,
     unsigned long,
     time_t *,
@@ -392,7 +392,7 @@ int     reduce_data(
     rrd_value_t **);
 int       data_fetch(
     image_desc_t *);
-long      lcd(
+long      rrd_lcd(
     long *);
 int       data_calc(
     image_desc_t *);

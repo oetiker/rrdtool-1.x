@@ -210,7 +210,7 @@ int rrd_dump_cb_r(
         /* support for RRA parameters */
         CB_PUTS("\t\t<params>\n");
 
-        switch (cf_conv(rrd.rra_def[i].cf_nam)) {
+        switch (rrd_cf_conv(rrd.rra_def[i].cf_nam)) {
         case CF_HWPREDICT:
         case CF_MHWPREDICT:
             CB_FMTS("\t\t<hw_alpha>%0.10e</hw_alpha>\n",
@@ -294,7 +294,7 @@ int rrd_dump_cb_r(
                 CB_FMTS("\t\t\t<secondary_value>%0.10e</secondary_value>\n", value);
             }
 
-            switch (cf_conv(rrd.rra_def[i].cf_nam)) {
+            switch (rrd_cf_conv(rrd.rra_def[i].cf_nam)) {
             case CF_HWPREDICT:
             case CF_MHWPREDICT:
                 value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].

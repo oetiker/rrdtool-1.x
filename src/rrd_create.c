@@ -463,7 +463,7 @@ int parseRRA(const char *def,
 	case 0:
 	    if (sscanf(token, CF_NAM_FMT, rra_def->cf_nam) != 1)
 		rrd_set_error("Failed to parse CF name");
-	    cf_id = cf_conv(rra_def->cf_nam);
+	    cf_id = rrd_cf_conv(rra_def->cf_nam);
 	    switch (cf_id) {
 	    case CF_MHWPREDICT:
                 if (*require_version == NULL || atoi(*require_version) < atoi(RRD_VERSION4)) {
@@ -514,7 +514,7 @@ int parseRRA(const char *def,
 	    rra_def->pdp_cnt = 1;
 	    break;
 	case 1:
-	    switch (cf_conv
+	    switch (rrd_cf_conv
 		    (rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
@@ -536,7 +536,7 @@ int parseRRA(const char *def,
 	    }
 	    break;
 	case 2:
-	    switch (cf_conv
+	    switch (rrd_cf_conv
 		    (rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
@@ -580,7 +580,7 @@ int parseRRA(const char *def,
 	    }
 	    break;
 	case 3:
-	    switch (cf_conv(rra_def->cf_nam)) {
+	    switch (rrd_cf_conv(rra_def->cf_nam)) {
 	    case CF_HWPREDICT:
 	    case CF_MHWPREDICT:
 	        if (rrd_strtodbl(token, NULL, &tmpdbl, NULL) != 2
@@ -632,7 +632,7 @@ int parseRRA(const char *def,
 	    }
 	    break;
 	case 4:
-	    switch (cf_conv(rra_def->cf_nam)) {
+	    switch (rrd_cf_conv(rra_def->cf_nam)) {
 	    case CF_FAILURES:
 		/* specifies the index (1-based) of CF_DEVSEASONAL array
 		 * associated with this CF_DEVFAILURES array. */
@@ -727,8 +727,8 @@ rra_def_t *handle_dependent_rras(rra_def_t *rra_def_array,
     rra_def_t *rra_def = rra_def_array + (*rra_cnt-1);
 
     /* should we create CF_SEASONAL, CF_DEVSEASONAL, and CF_DEVPREDICT? */
-    if ((cf_conv(rra_def->cf_nam) == CF_HWPREDICT
-	 || cf_conv(rra_def->cf_nam) == CF_MHWPREDICT)
+    if ((rrd_cf_conv(rra_def->cf_nam) == CF_HWPREDICT
+	 || rrd_cf_conv(rra_def->cf_nam) == CF_MHWPREDICT)
 	&& rra_def->par[RRA_dependent_rra_idx].u_cnt == INT_MAX) {
 	rra_def->par[RRA_dependent_rra_idx].u_cnt = *rra_cnt-1;
 #ifdef DEBUG
@@ -1172,7 +1172,7 @@ rra_def_t * create_hw_contingent_rras(rra_def_t *rra_defs,
 void init_cdp(const rrd_t *rrd, const rra_def_t *rra_def, const pdp_prep_t *pdp_prep, cdp_prep_t *cdp_prep)
 {
 
-    switch (cf_conv(rra_def->cf_nam)) {
+    switch (rrd_cf_conv(rra_def->cf_nam)) {
         case CF_HWPREDICT:
         case CF_MHWPREDICT:
             init_hwpredict_cdp(cdp_prep);
@@ -1771,10 +1771,10 @@ static rrd_value_t prefill_finish(rra_def_t UNUSED(*rra_def), enum cf_en current
 }
 
 static int order_candidates(candidate_t *a, candidate_t *b, const candidate_t UNUSED(*target)) {
-    enum cf_en acf = cf_conv(a->rra->cf_nam);
-    enum cf_en bcf = cf_conv(b->rra->cf_nam);
+    enum cf_en acf = rrd_cf_conv(a->rra->cf_nam);
+    enum cf_en bcf = rrd_cf_conv(b->rra->cf_nam);
 
-    enum cf_en tcf = cf_conv(target->rra->cf_nam);
+    enum cf_en tcf = rrd_cf_conv(target->rra->cf_nam);
     
     int astep = a->rrd->stat_head->pdp_step;
     int bstep = b->rrd->stat_head->pdp_step;
@@ -1809,9 +1809,9 @@ static int order_candidates(candidate_t *a, candidate_t *b, const candidate_t UN
 
 /* select AVERAGE and same CF RRAs. */
 static int select_create_candidates(const rra_def_t *tofill, const rra_def_t *maybe) {
-    enum cf_en cf = cf_conv(maybe->cf_nam);
+    enum cf_en cf = rrd_cf_conv(maybe->cf_nam);
     if (cf == CF_AVERAGE) return 1;
-    if (cf == cf_conv(tofill->cf_nam)) return 1;
+    if (cf == rrd_cf_conv(tofill->cf_nam)) return 1;
     return 0;
 }
 
@@ -2034,7 +2034,7 @@ static void prefill_cdp_prep(candidate_t *target,
     
     (target->cdp + target->extra.l)->scratch[CDP_unkn_pdp_cnt].u_cnt = 0;
 
-    enum cf_en tcf = cf_conv(target->rra->cf_nam);
+    enum cf_en tcf = rrd_cf_conv(target->rra->cf_nam);
     time_t t;
 
     rra_def_t *cdp_rra = rrd->rra_def + cdp_rra_index;
@@ -2211,7 +2211,7 @@ static long rra_for_cdp_prefilling(rrd_t *rrd, int *added)
         original_total_rows += rra->row_cnt;
         
         largest_pdp = max(largest_pdp, rra->pdp_cnt);
-        if (rra->pdp_cnt == 1 && cf_conv(rra->cf_nam) == CF_AVERAGE) {
+        if (rra->pdp_cnt == 1 && rrd_cf_conv(rra->cf_nam) == CF_AVERAGE) {
             if (average_1_pdp_rra == NULL) {
                 average_1_pdp_rra = rra;
                 found_rra_index = rra_index;
@@ -2292,8 +2292,8 @@ static void remove_temporary_rra_for_cdp_prefilling(rrd_t *rrd, long added_index
 }
 
 static int cdp_match(const rra_def_t *tofill, const rra_def_t *maybe) {
-    enum cf_en mcf = cf_conv(maybe->cf_nam);
-    if (cf_conv(tofill->cf_nam) == mcf &&
+    enum cf_en mcf = rrd_cf_conv(maybe->cf_nam);
+    if (rrd_cf_conv(tofill->cf_nam) == mcf &&
         tofill->pdp_cnt == maybe->pdp_cnt) {
         return 1;
     }
@@ -2331,7 +2331,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
         candidate_t target = {
             .rrd = rrd,
             .rra = rra_def,
-            .rra_cf = cf_conv(rra_def->cf_nam),
+            .rra_cf = rrd_cf_conv(rra_def->cf_nam),
             .rra_index = rra_index,
             .values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
             .cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * rra_index,
@@ -2395,7 +2395,7 @@ static int rrd_prefill_data(rrd_t *rrd, const GList *sources, mapping_t *mapping
         candidate_t target = {
             .rrd = rrd,
             .rra = rrd->rra_def + rra_index,
-            .rra_cf = cf_conv(rrd->rra_def[rra_index].cf_nam),
+            .rra_cf = rrd_cf_conv(rrd->rra_def[rra_index].cf_nam),
             .rra_index = rra_index,
             .values = rrd->rrd_value + rrd->stat_head->ds_cnt * total_rows,
             .cdp = rrd->cdp_prep + rrd->stat_head->ds_cnt * rra_index,

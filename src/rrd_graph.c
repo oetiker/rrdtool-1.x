@@ -759,7 +759,7 @@ void apply_gridfit(
 
 /* reduce data reimplementation by Alex */
 
-int reduce_data(
+int rrd_reduce_data(
     enum cf_en cf,      /* which consolidation function ? */
     unsigned long cur_step, /* step the data currently is in */
     time_t *start,      /* start, end and step as requested ... */
@@ -1033,7 +1033,7 @@ int data_fetch(
             im->gdes[i].step = max(im->gdes[i].step,im->step);
             if (ft_step < im->gdes[i].step) {
 
-                if (!reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
+                if (!rrd_reduce_data(im->gdes[i].cf_reduce_set ? im->gdes[i].cf_reduce : im->gdes[i].cf,
                             ft_step,
                             &im->gdes[i].start,
                             &im->gdes[i].end,
@@ -1072,7 +1072,7 @@ int data_fetch(
 
 /* find the greatest common divisor for all the numbers
    in the 0 terminated num array */
-long lcd(
+long rrd_lcd(
     long *num)
 {
     long      rest;
@@ -1253,7 +1253,7 @@ int data_calc(
             /* Now find the resulting step.  All steps in all
              * used RRAs have to be visited
              */
-            im->gdes[gdi].step = lcd(steparray);
+            im->gdes[gdi].step = rrd_lcd(steparray);
             free(steparray);
 
             if ((im->gdes[gdi].data = (rrd_value_t*)malloc(((im->gdes[gdi].end -

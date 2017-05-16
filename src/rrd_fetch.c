@@ -226,7 +226,7 @@ int rrd_fetch_r(
 {                       /* two dimensional array containing the data */
     enum cf_en cf_idx;
 
-    if ((int) (cf_idx = cf_conv(cf)) == -1) {
+    if ((int) (cf_idx = rrd_cf_conv(cf)) == -1) {
         return -1;
     }
 
@@ -342,7 +342,7 @@ int rrd_fetch_fn(
 
     /* find the rra which best matches the requirements */
     for (i = 0; (unsigned) i < rrd.stat_head->rra_cnt; i++) {
-      enum cf_en rratype=cf_conv(rrd.rra_def[i].cf_nam);
+      enum cf_en rratype=rrd_cf_conv(rrd.rra_def[i].cf_nam);
       /* handle this RRA */
       if (
 	  /* if we found a direct match */

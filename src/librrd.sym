@@ -69,6 +69,9 @@ rrd_update_v_r
 rrd_version
 rrd_write
 rrd_xport
+rrd_reduce_data
+rrd_lcd
+rrd_cf_conv
 rrdc_connect
 rrdc_is_connected
 rrdc_is_any_connected

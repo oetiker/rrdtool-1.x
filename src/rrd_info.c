@@ -256,7 +256,7 @@ rrd_info_t *rrd_info_r(
         info.u_str = rrd.rra_def[i].cf_nam;
         cd = rrd_info_push(cd, sprintf_alloc("rra[%d].cf", i), RD_I_STR,
                            info);
-        current_cf = cf_conv(rrd.rra_def[i].cf_nam);
+        current_cf = rrd_cf_conv(rrd.rra_def[i].cf_nam);
 
         info.u_cnt = rrd.rra_def[i].row_cnt;
         cd = rrd_info_push(cd, sprintf_alloc("rra[%d].rows", i), RD_I_CNT,
