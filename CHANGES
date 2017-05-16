@@ -1,3 +1,27 @@
+RRDtool 1.7.0 - 2016-05-16
+==========================
+Bugfixes
+--------
+* made rrd_fetch_cb_wrapper in RRDs more careful with its arguments
+* many bugfixes to resolve issues identified Coverty scan
+* fix build issues with libdbl
+* take the ds step into account while caching data in rrd graph DEF statements
+* never 'exit' from librrd (even when DEBUG is on)
+
+Features
+--------
+* new command rrd list to show rrd files in a directory
+* configurable log-level for rrdcached
+* hungarian translation (hu.po)
+
+API
+---
+* New Exported funtions: rrd_lcd, rrd_reduce_data, rrd_cf_conf and rrd_list
+* rrd_list support for perl and python binding
+* all new and much more complete python bindings working on both python 2.6+ and 3.3+
+* extended documentation in rrdlib.pod
+
+
 RRDtool 1.6.0 - 2016-04-19
 ==========================
 Features
