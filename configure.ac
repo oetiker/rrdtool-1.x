@@ -32,7 +32,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl
-LIBVERS=8:0:0
+LIBVERS=9:0:1
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
