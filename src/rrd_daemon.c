@@ -4697,6 +4697,7 @@ int main (int argc, char **argv)
 {
   int status;
 
+  rrd_thread_init();
   status = read_options (argc, argv);
   if (status != 0)
   {

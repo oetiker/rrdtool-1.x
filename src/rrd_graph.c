@@ -4589,6 +4589,7 @@ rrd_info_t *rrd_graph_v(
     image_desc_t im;
     rrd_info_t *grinfo;
     struct optparse options;
+    rrd_thread_init();
     rrd_graph_init(&im);
     /* a dummy surface so that we can measure text sizes for placements */
     rrd_graph_options(argc, argv, &options, &im);

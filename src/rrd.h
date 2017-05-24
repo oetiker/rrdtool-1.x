@@ -396,6 +396,7 @@ int       rrd_proc_start_end(
     const char * rrd_scaled_duration (const char * token,
                                       unsigned long divisor,
                                       unsigned long * valuep);
+    void rrd_thread_init(void);
 
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
