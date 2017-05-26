@@ -116,6 +116,7 @@ int rrd_tune(
     struct optparse options;
     int opt;
 
+    rrd_thread_init();
     /* Fix CWE-457 */
     memset(&rrd, 0, sizeof(rrd_t));
 

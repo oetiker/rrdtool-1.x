@@ -76,6 +76,7 @@ int rrd_xport(
         {0}
     };
 
+    rrd_thread_init();
     rrd_graph_init(&im);
 
     rrd_parsetime("end-24h", &start_tv);

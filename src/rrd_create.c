@@ -88,6 +88,7 @@ int rrd_create(
     const char **sources_array = NULL;
     char *template = NULL;
     
+    rrd_thread_init();
     optparse_init(&options, argc, argv);
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
@@ -795,6 +796,7 @@ int rrd_create_r2(
     int mappings_cnt = 0;
     const char *require_version = NULL;
     
+    rrd_thread_init();
     /* clear any previous errors */
     rrd_clear_error();
 
