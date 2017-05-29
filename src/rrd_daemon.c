@@ -116,12 +116,8 @@
 
 #define RRDD_LOG(severity, ...) \
   do { \
-    if (severity <= opt_log_level) { \
-      if (stay_foreground) { \
-        fprintf(stderr, __VA_ARGS__); \
-        fprintf(stderr, "\n"); } \
-      syslog ((severity), __VA_ARGS__); \
-    } \
+    if ((severity) <= opt_log_level) \
+      do_log ((severity), __VA_ARGS__); \
   } while (0)
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -256,6 +252,9 @@ static pthread_mutex_t connection_threads_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  connection_threads_done = PTHREAD_COND_INITIALIZER;
 static int connection_threads_num = 0;
 
+static FILE *log_fh = NULL;
+static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+
 /* Cache stuff */
 static GTree          *cache_tree = NULL;
 static cache_item_t   *cache_queue_head = NULL;
@@ -312,6 +311,39 @@ static int handle_request_ping (HANDLER_PROTO);
 /*
  * Functions
  */
+static void do_log (int priority, const char *format, ...)
+{
+  va_list args;
+
+
+  if (stay_foreground)
+  {
+    pthread_mutex_lock(&log_lock);
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+    pthread_mutex_unlock(&log_lock);
+  }
+
+  va_start(args, format);
+  if (log_fh)
+  {
+    char buffer[32];
+    pthread_mutex_lock(&log_lock);
+    time_t now = time(NULL);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&now));
+    fprintf(log_fh, "%s [%d] ", buffer, priority);
+    vfprintf(log_fh, format, args);
+    fprintf(log_fh, "\n");
+    fflush(log_fh);
+    pthread_mutex_unlock(&log_lock);
+  }
+  else
+    vsyslog(priority, format, args);
+  va_end(args);
+}
+
 static void sig_common (const char *sig) /* {{{ */
 {
   RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
@@ -4143,6 +4175,8 @@ static int cleanup (void) /* {{{ */
 
   RRDD_LOG(LOG_INFO, "goodbye");
   closelog ();
+  if (log_fh)
+    fclose(log_fh);
 
   remove_pidfile ();
   free(config_pid_file);
@@ -4166,6 +4200,7 @@ static int read_options (int argc, char **argv) /* {{{ */
     {NULL, 'l', OPTPARSE_REQUIRED},
     {NULL, 'm', OPTPARSE_REQUIRED},
     {NULL, 'O', OPTPARSE_NONE},
+    {NULL, 'o', OPTPARSE_REQUIRED},
     {NULL, 'P', OPTPARSE_REQUIRED},
     {NULL, 'p', OPTPARSE_REQUIRED},
     {NULL, 'R', OPTPARSE_NONE},
@@ -4559,6 +4594,20 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
+      case 'o':
+      {
+        if (log_fh)
+          fclose(log_fh);
+        log_fh = fopen(options.optarg, "a");
+        if (!log_fh)
+        {
+	  fprintf(stderr, "Failed to open log file '%s': %s\n",
+                  options.optarg, rrd_strerror(errno));
+	    return 6;
+        }
+      }
+      break;
+
       case 'p':
       {
         if (config_pid_file != NULL)
@@ -4645,6 +4694,7 @@ static int read_options (int argc, char **argv) /* {{{ */
                             "sockets\n"
             "  -O            Do not allow CREATE commands to overwrite existing\n"
             "                files, even if asked to.\n"
+            "  -o <file>     Log to given file instead of syslog.\n"
             "  -P <perms>    Sets the permissions to assign to all following "
                             "sockets\n"
             "  -p <file>     Location of the PID-file.\n"
