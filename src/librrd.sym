@@ -11,6 +11,7 @@ rrd_dontneed
 rrd_dump
 rrd_dump_r
 rrd_dump_cb_r
+rrd_dump_opt_r
 rrd_fetch
 rrd_fetch_r
 rrd_fetch_cb_register
