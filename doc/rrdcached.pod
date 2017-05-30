@@ -749,6 +749,26 @@ message itself.  The first user command after B<BATCH> is command number one.
 This command allows to list directories and rrd databases as seen by the daemon.
 The root "directory" is the base_dir (see '-b dir'). When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to 'ls -R' but limited to rrd files (listing all the rrd bases in the subtree of <path>, skipping empty directories).
 
+=item B<SUSPEND> I<filename>
+
+Suspend writing to an RRD file. While a file is suspended, all metrics for it
+are cached in memory until B<RESUME> is called for that file or B<RESUMEALL> is
+called.
+
+=item B<RESUME> I<filename>
+
+Resume writing to an RRD file previously suspended by B<SUSPEND> or B<SUSPENDALL>.
+
+=item B<SUSPENDALL>
+
+Suspend writing to all RRD files. While a file is suspended, all metrics for it
+are cached in memory until B<RESUME> is called for that file or B<RESUMEALL> is
+called.
+
+=item B<RESUMEALL>
+
+Resume writing to all RRD files previously suspended by B<SUSPEND> or B<SUSPENDALL>.
+
 =item B<QUIT>
 
 Disconnect from rrdcached.
