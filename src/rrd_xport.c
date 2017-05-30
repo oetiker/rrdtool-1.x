@@ -77,7 +77,7 @@ int rrd_xport(
     };
 
     rrd_thread_init();
-    rrd_graph_init(&im);
+    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
 
     rrd_parsetime("end-24h", &start_tv);
     rrd_parsetime("now", &end_tv);

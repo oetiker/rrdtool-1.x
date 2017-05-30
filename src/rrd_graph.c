@@ -437,6 +437,7 @@ int im_free(
     }
     free(im->gdes);
 
+    if (im->init_mode == IMAGE_INIT_CAIRO) {
     for (i = 0; i < DIM(text_prop);i++){
         pango_font_description_free(im->text_prop[i].font_desc);
         im->text_prop[i].font_desc = NULL;
@@ -467,6 +468,7 @@ int im_free(
         g_object_unref(im->layout);
     }
     mutex_unlock(im->fontmap_mutex);
+    }
 
 	if (im->ylegend)
 		free(im->ylegend);
@@ -4590,7 +4592,7 @@ rrd_info_t *rrd_graph_v(
     rrd_info_t *grinfo;
     struct optparse options;
     rrd_thread_init();
-    rrd_graph_init(&im);
+    rrd_graph_init(&im, IMAGE_INIT_CAIRO);
     /* a dummy surface so that we can measure text sizes for placements */
     rrd_graph_options(argc, argv, &options, &im);
     if (rrd_test_error()) {
@@ -4691,8 +4693,8 @@ rrd_set_font_desc (
 }
 
 void rrd_graph_init(
-    image_desc_t
-    *im)
+    image_desc_t *im,
+    enum image_init_en init_mode)
 {
     unsigned int i;
     char     *deffont = getenv("RRD_DEFAULT_FONT");
@@ -4717,7 +4719,6 @@ void rrd_graph_init(
     im->draw_3d_border = 2;
     im->dynamic_labels = 0;
     im->extra_flags = 0;
-    im->font_options = cairo_font_options_create();
     im->forceleftspace = 0;
     im->gdes_c = 0;
     im->gdes = NULL;
@@ -4779,7 +4780,10 @@ void rrd_graph_init(
     im->yOriginTitle = 0;
     im->ysize = 100;
     im->zoom = 1;
+    im->init_mode = init_mode;
 
+    if (init_mode == IMAGE_INIT_CAIRO) {
+        im->font_options = cairo_font_options_create();
     im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
     im->cr = cairo_create(im->surface);
     im->fontmap_mutex = &fontmap_mutex;
@@ -4818,6 +4822,7 @@ void rrd_graph_init(
     cairo_font_options_set_antialias(im->font_options, CAIRO_ANTIALIAS_GRAY);
 
     mutex_unlock(im->fontmap_mutex);
+    }
 
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
