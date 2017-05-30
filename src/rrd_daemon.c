@@ -1969,21 +1969,6 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
   return 0;
 }
 
-#define SSTRCAT(buffer,str,buffer_fill) do { \
-    size_t str_len = strlen (str); \
-    if ((buffer_fill + str_len) > sizeof (buffer)) \
-      str_len = sizeof (buffer) - buffer_fill; \
-    if (str_len > 0) { \
-      strncpy (buffer + buffer_fill, str, str_len); \
-      buffer_fill += str_len; \
-      assert (buffer_fill <= sizeof (buffer)); \
-      if (buffer_fill == sizeof (buffer)) \
-        buffer[buffer_fill - 1] = 0; \
-      else \
-        buffer[buffer_fill] = 0; \
-    } \
-  } while (0)
-
 static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 {
   unsigned long i,j;
@@ -2004,22 +1989,15 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
   add_response_info (sock, "End: %lu\n", (unsigned long) parsed.end_tm);
   add_response_info (sock, "Step: %lu\n", parsed.step);
 
-  { /* Add list of DS names */
-    char linebuf[1024];
-    size_t linebuf_fill;
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
-    for (i = 0; i < parsed.field_cnt; i++)
-    {
-      if (i > 0)
-        SSTRCAT (linebuf, " ", linebuf_fill);
-      SSTRCAT (linebuf, parsed.ds_namv[parsed.field_idx[i]], linebuf_fill);
-    }
-    linebuf[sizeof(linebuf) - 1] = 0;
-    add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
-    add_response_info (sock, "DSName: %s\n", linebuf);
+  /* Add list of DS names */
+  add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
+  add_response_info (sock, "DSName: ");
+  for (i = 0; i < parsed.field_cnt; i++)
+  {
+    add_response_info (sock, (i == 0 ? "%s" :" %s"),
+                       parsed.ds_namv[parsed.field_idx[i]]);
   }
+  add_response_info (sock, "\n");
 
   /* Add the actual data */
   assert (parsed.step > 0);
@@ -2027,37 +2005,18 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
        t <= parsed.end_tm;
        t += parsed.step,j++)
   {
-    char linebuf[1024];
-    size_t linebuf_fill;
-    char tmp[128];
-
     add_response_info (sock, "%10lu:", (unsigned long) t);
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
     for (i = 0; i < parsed.field_cnt; i++)
     {
       unsigned int idx = j*parsed.ds_cnt+parsed.field_idx[i];
-      snprintf (tmp, sizeof (tmp), " %0.17e", parsed.data[idx]);
-      tmp[sizeof (tmp) - 1] = 0;
-      SSTRCAT (linebuf, tmp, linebuf_fill);
-      if (linebuf_fill>sizeof(linebuf)*9/10) {
-        add_response_info (sock, linebuf);
-	memset (linebuf, 0, sizeof (linebuf));
-	linebuf_fill = 0;
-      }
+      add_response_info (sock, " %0.17e", parsed.data[idx]);
     }
-
-    /* only print out a line if parsed something */
-    if (i > 0) {
-      add_response_info (sock, "%s\n", linebuf);
-    }
+    add_response_info (sock, "\n");
   } /* for (t) */
   free_fetch_parsed(&parsed);
 
   return (send_response (sock, RESP_OK, "Success\n"));
 } /* }}} int handle_request_fetch */
-#undef SSTRCAT
 
 static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
 {
