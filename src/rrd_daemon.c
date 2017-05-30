@@ -152,6 +152,7 @@ struct listen_socket_s
 
   char *wbuf_data;
   size_t wbuf_size;
+  size_t wbuf_capacity;
 
   uint32_t permissions;
 
@@ -659,28 +660,38 @@ static void wbuf_free(listen_socket_t *sock) /* {{{ */
   free(sock->wbuf_data);
   sock->wbuf_data = NULL;
   sock->wbuf_size = 0;
+  sock->wbuf_capacity = 0;
 } /* }}} static void wbuf_free */
 
 /* add the characters directly to the write buffer */
 static int wbuf_append(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 {
-  char *new_buf;
+  char *new_data;
+  size_t new_capacity;
 
   assert(sock != NULL);
 
-  new_buf = rrd_realloc(wbuf_data(sock), wbuf_size(sock) + len + 1);
-  if (new_buf == NULL)
+  new_capacity = sock->wbuf_capacity == 0 ? 4096 : sock->wbuf_capacity;
+  while (new_capacity <= sock->wbuf_size + len)
   {
-    RRDD_LOG(LOG_ERR, "wbuf_append: realloc failed");
-    return -1;
+    new_capacity *= 2;
   }
 
-  memcpy(new_buf + wbuf_size(sock), str, len);
+  if (new_capacity != sock->wbuf_capacity)
+  {
+    new_data = rrd_realloc(sock->wbuf_data, new_capacity);
+    if (new_data == NULL)
+    {
+      RRDD_LOG(LOG_ERR, "wbuf_append: realloc failed");
+      return -1;
+    }
+    sock->wbuf_data = new_data;
+    sock->wbuf_capacity = new_capacity;
+  }
 
-  sock->wbuf_data = new_buf;
+  memcpy(&sock->wbuf_data[sock->wbuf_size], str, len);
+  sock->wbuf_data[sock->wbuf_size + len] = '\0';
   sock->wbuf_size += len;
-
-  *(wbuf_data(sock) + wbuf_size(sock))=0;
 
   return 0;
 } /* }}} static int wbuf_append */
