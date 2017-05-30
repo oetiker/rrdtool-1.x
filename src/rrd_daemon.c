@@ -150,8 +150,8 @@ struct listen_socket_s
   off_t next_cmd;
   off_t next_read;
 
-  char *wbuf;
-  ssize_t wbuf_len;
+  char *wbuf_data;
+  size_t wbuf_size;
 
   uint32_t permissions;
 
@@ -641,29 +641,49 @@ static char *next_cmd (listen_socket_t *sock, ssize_t *len) /* {{{ */
   assert(1==0);
 } /* }}} char *next_cmd */
 
+static char *wbuf_data(listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  return sock->wbuf_data;
+} /* }}} static char *wbuf_data */
+
+static size_t wbuf_size(listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  return sock->wbuf_size;
+} /* }}} static size_t wbuf_data */
+
+static void wbuf_free(listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  free(sock->wbuf_data);
+  sock->wbuf_data = NULL;
+  sock->wbuf_size = 0;
+} /* }}} static void wbuf_free */
+
 /* add the characters directly to the write buffer */
-static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
+static int wbuf_append(listen_socket_t *sock, char *str, size_t len) /* {{{ */
 {
   char *new_buf;
 
   assert(sock != NULL);
 
-  new_buf = rrd_realloc(sock->wbuf, sock->wbuf_len + len + 1);
+  new_buf = rrd_realloc(wbuf_data(sock), wbuf_size(sock) + len + 1);
   if (new_buf == NULL)
   {
-    RRDD_LOG(LOG_ERR, "add_to_wbuf: realloc failed");
+    RRDD_LOG(LOG_ERR, "wbuf_append: realloc failed");
     return -1;
   }
 
-  memcpy(new_buf + sock->wbuf_len, str, len);
+  memcpy(new_buf + wbuf_size(sock), str, len);
 
-  sock->wbuf = new_buf;
-  sock->wbuf_len += len;
+  sock->wbuf_data = new_buf;
+  sock->wbuf_size += len;
 
-  *(sock->wbuf + sock->wbuf_len)=0;
+  *(wbuf_data(sock) + wbuf_size(sock))=0;
 
   return 0;
-} /* }}} static int add_to_wbuf */
+} /* }}} static int wbuf_append */
 
 /* add the text to the "extra" info that's sent after the status line */
 static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
@@ -688,7 +708,7 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
     return -1;
   }
 
-  return add_to_wbuf(sock, buffer, len);
+  return wbuf_append(sock, buffer, len);
 } /* }}} static int add_response_info */
 
 /* add the binary data to the "extra" info that's sent after the status line */
@@ -710,11 +730,11 @@ static int add_binary_response_info(listen_socket_t *sock,
 	if (res)
 		return res;
 	/* and add it to the buffer */
-	res = add_to_wbuf(sock, (char*) data, records * rsize);
+	res = wbuf_append(sock, (char*) data, records * rsize);
 	if (res)
 		return res;
 	/* and add a newline */
-	return add_to_wbuf(sock, "\n", 1);
+	return wbuf_append(sock, "\n", 1);
 } /* }}} static int add_binary_response_info */
 
 static int count_lines(char *str) /* {{{ */
@@ -742,7 +762,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
   va_list argp;
   char buffer[RRD_CMD_MAX];
   int lines;
-  ssize_t wrote;
+  size_t wrote;
   int rclen, len;
 
   if (JOURNAL_REPLAY(sock)) return rc;
@@ -754,7 +774,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
     lines = sock->batch_cmd;
   }
   else if (rc == RESP_OK)
-    lines = count_lines(sock->wbuf);
+    lines = count_lines(wbuf_data(sock));
   else if (rc == RESP_OK_BIN)
     lines = 1;
   else
@@ -781,7 +801,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
 
   /* append the result to the wbuf, don't write to the user */
   if (sock->batch_start)
-    return add_to_wbuf(sock, buffer, len);
+    return wbuf_append(sock, buffer, len);
 
   /* first write must be complete */
   if (len != write(sock->fd, buffer, len))
@@ -790,12 +810,12 @@ static int send_response (listen_socket_t *sock, response_code rc,
     return -1;
   }
 
-  if (sock->wbuf != NULL && rc == RESP_OK)
+  if (wbuf_data(sock) != NULL && rc == RESP_OK)
   {
     wrote = 0;
-    while (wrote < sock->wbuf_len)
+    while (wrote < wbuf_size(sock))
     {
-      ssize_t wb = write(sock->fd, sock->wbuf + wrote, sock->wbuf_len - wrote);
+      ssize_t wb = write(sock->fd, wbuf_data(sock) + wrote, wbuf_size(sock) - wrote);
       if (wb <= 0)
       {
         RRDD_LOG(LOG_INFO, "send_response: could not write results");
@@ -805,8 +825,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
     }
   }
 
-  free(sock->wbuf); sock->wbuf = NULL;
-  sock->wbuf_len = 0;
+  wbuf_free(sock);
 
   return 0;
 } /* }}} */
@@ -3362,7 +3381,7 @@ static void free_listen_socket(listen_socket_t *sock) /* {{{ */
   assert(sock != NULL);
 
   free(sock->rbuf);  sock->rbuf = NULL;
-  free(sock->wbuf);  sock->wbuf = NULL;
+  wbuf_free(sock);
   free(sock->addr);  sock->addr = NULL;
   free(sock);
 } /* }}} void free_listen_socket */
