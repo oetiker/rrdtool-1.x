@@ -292,6 +292,9 @@ struct rrd_t;
             unsigned long *ds_cnt,
             char ***ds_namv,
             rrd_value_t **data);
+    int rrd_dump_opt_r(const char *filename,
+                       char *outname,
+                       int opt_noheader);
     int       rrd_dump_r(
     const char *filename,
     char *outname);
