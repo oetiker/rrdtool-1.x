@@ -193,6 +193,7 @@ struct cache_item_s
   double last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
 #define CI_FLAGS_IN_QUEUE (1<<1)
+#define CI_FLAGS_SUSPENDED (1<<2)
   int flags;
   pthread_cond_t  flushed;
   cache_item_t *prev;
@@ -984,7 +985,8 @@ static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
     return FALSE;
 
   if (ci->values_num > 0
-      && (ci->last_flush_time <= cfd->abs_timeout || state != RUNNING))
+      && (ci->last_flush_time <= cfd->abs_timeout || state != RUNNING)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0))
   {
     enqueue_cache_item (ci, TAIL);
   }
@@ -1306,7 +1308,8 @@ static int flush_file (const char *filename) /* {{{ */
     return (ENOENT);
   }
 
-  if (ci->values_num > 0)
+  if ((ci->values_num > 0)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0))
   {
     /* Enqueue at head */
     enqueue_cache_item (ci, HEAD);
@@ -1732,6 +1735,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
   if (((now - ci->last_flush_time) >= config_write_interval)
       && ((ci->flags & CI_FLAGS_IN_QUEUE) == 0)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0)
       && (ci->values_num > 0))
   {
     enqueue_cache_item (ci, TAIL);
@@ -2610,6 +2614,111 @@ out_send_response:
   return (0);
 } /* }}} int handle_request_list */
 
+static cache_item_t *buffer_get_cache_item(listen_socket_t *sock,
+                                           command_t *cmd, char **buffer,
+                                           size_t *buffer_size, int *rc,
+                                           char **file_name)
+{
+  char *pbuffile;
+  cache_item_t *ci;
+  int status;
+
+  /* obtain filename */
+  status = buffer_get_field(buffer, buffer_size, &pbuffile);
+  if (status != 0) {
+    *rc = syntax_error(sock, cmd);
+    return NULL;
+  }
+  /* get full pathname */
+  *file_name = get_abs_path(pbuffile);
+  if (file_name == NULL) {
+    *rc = send_response(sock, RESP_ERR, "%s + %s\n", *file_name, rrd_strerror(ENOMEM));
+    return NULL;
+  }
+
+  ci = g_tree_lookup(cache_tree, *file_name);
+  if (ci == NULL) {
+    *rc = send_response(sock, RESP_ERR, "%s - %s\n", *file_name, rrd_strerror(ENOENT));
+    return NULL;
+  }
+
+  *rc = 0;
+  return ci;
+}
+
+static int handle_request_suspend(HANDLER_PROTO) /* {{{ */
+{
+  char *file_name = NULL;
+  int rc;
+  cache_item_t *ci = buffer_get_cache_item(sock, cmd, &buffer, &buffer_size, &rc, &file_name);
+  if (ci == NULL)
+    rc = -1;
+  else if ((ci->flags & CI_FLAGS_SUSPENDED) == CI_FLAGS_SUSPENDED)
+    rc = send_response(sock, RESP_OK, "%s already suspended\n", file_name);
+  else
+  {
+    ci->flags |= CI_FLAGS_SUSPENDED;
+    rc = send_response(sock, RESP_OK, "%s suspended\n", file_name);
+  }
+  free(file_name);
+  return rc;
+} /* }}} static int handle_request_suspend */
+
+static int handle_request_resume (HANDLER_PROTO) /* {{{ */
+{
+  char *file_name = NULL;
+  int rc;
+  cache_item_t *ci = buffer_get_cache_item(sock, cmd, &buffer, &buffer_size, &rc, &file_name);
+  if (ci == NULL)
+    rc = -1;
+  else if ((ci->flags & CI_FLAGS_SUSPENDED) == 0)
+    rc = send_response(sock, RESP_OK, "%s not suspended\n", file_name);
+  else
+  {
+    ci->flags &= ~CI_FLAGS_SUSPENDED;
+    rc = send_response(sock, RESP_OK, "%s resumed\n", file_name);
+  }
+  free(file_name);
+  return rc;
+} /* }}} static int handle_request_resume */
+
+static gboolean tree_callback_suspend (gpointer UNUSED(key), /* {{{ */
+    gpointer value, gpointer pointer)
+{
+  cache_item_t *ci = (cache_item_t *) value;
+  int *count = (int*) pointer;
+  if ((ci->flags & CI_FLAGS_SUSPENDED) == 0) {
+    ci->flags |= CI_FLAGS_SUSPENDED;
+    *count += 1;
+  }
+  return (FALSE);
+} /* }}} gboolean tree_callback_suspend */
+
+static int handle_request_suspendall(HANDLER_PROTO) /* {{{ */
+{
+  int count = 0;
+  g_tree_foreach (cache_tree, tree_callback_suspend, (gpointer) &count);
+  return send_response(sock, RESP_OK, "%d rrds suspend\n", count);
+} /* }}} static int handle_request_suspendall */
+
+static gboolean tree_callback_resume (gpointer UNUSED(key), /* {{{ */
+    gpointer value, gpointer pointer)
+{
+  cache_item_t *ci = (cache_item_t *) value;
+  int *count = (int*) pointer;
+  if ((ci->flags & CI_FLAGS_SUSPENDED) != 0) {
+    ci->flags &= ~CI_FLAGS_SUSPENDED;
+    *count += 1;
+  }
+  return (FALSE);
+} /* }}} gboolean tree_callback_resume */
+
+static int handle_request_resumeall(HANDLER_PROTO) /* {{{ */
+{
+  int count = 0;
+  g_tree_foreach (cache_tree, tree_callback_resume, (gpointer) &count);
+  return send_response(sock, RESP_OK, "%d rrds resumed\n", count);
+} /* }}} static int handle_request_resumeall */
 
 /* start "BATCH" processing */
 static int batch_start (HANDLER_PROTO) /* {{{ */
@@ -2832,6 +2941,39 @@ static command_t list_of_commands[] = { /* {{{ */
     "When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to\n"
     "'ls -R' but limited to rrd files (listing all the rrd bases in the subtree\n"
     " of <path>, skipping empty directories).\n"
+  },
+  {
+    "SUSPEND",
+    handle_request_suspend,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "SUSPEND <filename>\n",
+    "The SUSPEND command will suspend writing to an RRD file. While a file is\n"
+    "suspended, all metrics for it are cached in memory until RESUME is called\n"
+    "for that file or RESUMEALL is called.\n"
+  },
+  {
+    "RESUME",
+    handle_request_resume,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "RESUME <filename>\n",
+    "The RESUME command will resume writing to an RRD file previously suspended\n"
+    "by SUSPEND or SUSPENDALL.\n"
+  },
+  {
+    "SUSPENDALL",
+    handle_request_suspendall,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "SUSPENDALL\n",
+    "The SUSPENDALL command will suspend writing to all RRD files. While a file\n"
+    "is suspended, all metrics for it are cached in memory until RESUME is called\n"
+    "for that file or RESUMEALL is called.\n"
+  },
+  {
+    "RESUMEALL",
+    handle_request_resumeall,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "RESUMEALL\n",
+    "The RESUMEALL command will resume writing to all RRD files previously suspended.\n"
   },
   {
     "QUIT",
