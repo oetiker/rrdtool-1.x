@@ -433,6 +433,112 @@ rrd_graph(...)
 
 #endif /* HAVE_RRD_GRAPH */
 
+
+SV *
+rrd_fetch_graph_pdata(...)
+	PROTOTYPE: @
+	PREINIT:
+	time_t        start,end;
+	unsigned long step, ds_cnt,i,ii;
+
+	rrd_value_t   *p_data,*p_datai;
+	unsigned long legend_cnt;
+	long width;
+	unsigned long *ds_types;
+	unsigned long *ds_name_map;
+	char **argv;
+	char **legend;
+	char **colours;
+	char **chart_options;
+	unsigned long chart_options_cnt = 0;
+	rrd_info_t *grinfo;
+	AV *line,*legend_p,*colours_p, *line_types, *ds_namv, *p_retar;
+	HV *chart_options_p;
+	PPCODE:
+		argv = (char **) malloc((items+1)*sizeof(char *));
+		argv[0] = "dummy";
+		for (i = 0; i < items; i++) {
+		    STRLEN len;
+		    char *handle = SvPV(ST(i),len);
+		    /* actually copy the data to make sure possible modifications
+		       on the argv data does not backfire into perl */
+		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
+		    strcpy(argv[i+1],handle);
+ 	        }
+		rrd_clear_error();
+
+		long retval = rrd_fetch_graph_pdata(items+1,argv,&step,&ds_cnt, &legend_cnt, &width, &legend, &colours, &p_data, &start, &end, &ds_types, &ds_name_map, &chart_options, &chart_options_cnt);
+
+		for (i=0; i < items; i++) {
+	    free(argv[i+1]);
+		}
+		free(argv);
+
+		if (rrd_test_error()) XSRETURN_UNDEF;
+
+		// map names from legend to dataset names
+		ds_namv = newAV();
+		for (ii = 0; ii < ds_cnt; ii++){
+		    av_push(ds_namv,newSVpv(legend[ds_name_map[ii]],0));
+		}
+		rrd_freemem(ds_name_map);
+
+    /* convert the legend into perl format */
+		legend_p=newAV();
+		for (ii = 0; ii < legend_cnt; ii++){
+		    av_push(legend_p,newSVpv(legend[ii],0));
+		    rrd_freemem(legend[ii]);
+		}
+		rrd_freemem(legend);
+
+		/* convert the colours into perl format */
+		colours_p=newAV();
+		for (ii = 0; ii < ds_cnt; ii++){
+		    av_push(colours_p,newSVpv(colours[ii],0));
+		    rrd_freemem(colours[ii]);
+		}
+		rrd_freemem(colours);
+
+		/* convert chart options into perl format */
+		chart_options_p=newHV();
+		for (ii = 0; ii < chart_options_cnt; ii = ii + 2){
+				const unsigned int string_length = strlen(chart_options[ii]);
+				hv_store(chart_options_p, chart_options[ii], string_length, newSVpv(chart_options[ii+1],0), 0);
+		    rrd_freemem(chart_options[ii]);
+		    rrd_freemem(chart_options[ii+1]);
+		}
+		rrd_freemem(chart_options);
+
+		/* convert the ds_types into perl format */
+		line_types=newAV();
+		for (ii = 0; ii < ds_cnt; ii++){
+	    av_push(line_types, newSViv(ds_types[ii]));
+		}
+		rrd_freemem(ds_types);
+		p_datai=p_data;
+		p_retar=newAV();
+		for (ii = 0; ii < ds_cnt; ii++){
+			line = newAV();
+			for (i = 0; i < width; i++){
+ 			  av_push(line,(isnan(*p_datai) ? &PL_sv_undef : newSVnv(*p_datai)));
+			  p_datai++;
+			}
+			av_push(p_retar,newRV_noinc((SV*)line));
+		}
+		rrd_freemem(p_data);
+
+
+		EXTEND(sp,10);
+		PUSHs(sv_2mortal(newSViv(start)));
+		PUSHs(sv_2mortal(newSViv(end)));
+		PUSHs(sv_2mortal(newSViv(width)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)line_types)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)ds_namv)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)legend_p)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)colours_p)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)p_retar)));
+		PUSHs(sv_2mortal(newRV_noinc((SV*)chart_options_p)));
+
 SV *
 rrd_fetch(...)
 	PROTOTYPE: @
@@ -453,7 +559,7 @@ rrd_fetch(...)
 		       on the argv data does not backfire into perl */
 		    argv[i+1] = (char *) malloc((strlen(handle)+1)*sizeof(char));
 		    strcpy(argv[i+1],handle);
- 	        }
+		}
 		rrd_clear_error();
 		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
 		for (i=0; i < items; i++) {

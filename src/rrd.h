@@ -61,11 +61,11 @@ extern    "C" {
 #ifndef PERLPATCHLEVEL
 	typedef int mode_t;
 #endif
-	#define strtoll _strtoi64 
+	#define strtoll _strtoi64
 #endif
 	typedef size_t ssize_t;
 	typedef long off_t;
-#endif 
+#endif
 
 #include <time.h>
 #include <stdio.h>      /* for FILE */
@@ -75,9 +75,9 @@ extern    "C" {
 #ifndef DNAN
 # define DNAN rrd_set_to_DNAN()
 #endif
-	
-/* declare opaque data structure, so we can use its pointers for type safety */	
-	
+
+/* declare opaque data structure, so we can use its pointers for type safety */
+
 struct rrd_t;
 
 #ifndef DINF
@@ -185,7 +185,38 @@ struct rrd_t;
     rrd_info_t *rrd_graph_v(
     int,
     char **);
-
+    int       rrd_fetch_graph_pdata(
+    int,
+    char **,
+    unsigned long *,
+    unsigned long *,
+    unsigned long *,
+    long *,
+    char ***,
+    char ***,
+    rrd_value_t **,
+    time_t *,
+    time_t *,
+    unsigned long **,
+    unsigned long **,
+    char ***,
+    unsigned long *);
+    rrd_info_t *rrd_fetch_graph_pdata_v(
+    int,
+    char **,
+    unsigned long *,
+    unsigned long *,
+    unsigned long *,
+    long *,
+    char ***,
+    char ***,
+    rrd_value_t **,
+    time_t *,
+    time_t *,
+    unsigned long **,
+    unsigned long **,
+    char ***,
+    unsigned long *);
     int       rrd_fetch(
     int,
     char **,

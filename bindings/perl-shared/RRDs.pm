@@ -29,6 +29,7 @@ RRDs - Access RRDtool as a shared module
   RRDs::updatev ...
   RRDs::graph ...
   RRDs::fetch ...
+  RRDs::fetch_graph_pdata ...
   RRDs::tune ...
   RRDs::times(start, end)
   RRDs::dump ...
@@ -62,6 +63,9 @@ These should be specified in the B<AT-STYLE TIME SPECIFICATION> format
 used by RRDtool.  See the B<rrdfetch> documentation for a detailed
 explanation on how to specify time.
 
+The RRDs::fetch_graph_pdata function takes the same arguments as RRDs::graph,
+but the first argument (the output file name) is ignored.
+
 =head2 Error Handling
 
 The RRD functions will not abort your program even when they can not make
@@ -92,9 +96,28 @@ created image and a pointer to an array with the results of the PRINT arguments.
  print "Imagesize: ${xsize}x${ysize}\n";
  print "Averages: ", (join ", ", @$averages);
 
+B<RRDs::fetch_graph_pdata> behaves similar to RRDs::graph, but instead
+of rendering the graph as an image it returns the underlying graph pixel
+data (for rendering outside of RRDtool). The difference between
+RRDs::fetch, RRDs::xport and RRDs::fetch_graph_pdata is that fetch and
+xport don't full deal with axes, autoscaling, GPRINT or legends,
+colors etc, whereas fetch_graph_pdata() does.
+
+RRDs::fetch_graph_pdata returns an ARRAY containing the following 9
+values: The start and end timestamps, the graph width or x-size in
+pixels, an ARRAY ref of the DS types in the graph, an ARRAY ref of the
+DS names in the graph, an ARRAY ref of all the legend entries, an
+ARRAY ref of the color for each DS, a two-level deep ARRAY ref of all
+the pixel data for each DS, and finally an ARRAY ref of any
+chartoptions.
+
+The pixel data consists of one outer array per DS and within each of
+those, an array of all y values for this DS' graph (i.e. the same number
+of entries as the graph width return value).
+
 B<RRDs::info> returns a pointer to a hash. The keys of the hash
 represent the property names of the RRD and the values of the hash are
-the values of the properties.  
+the values of the properties.
 
  $hash = RRDs::info "example.rrd";
  foreach my $key (keys %$hash){
@@ -116,7 +139,7 @@ B<RRDs::fetch> is the most complex of
 the pack regarding return values. There are 4 values. Two normal
 integers, a pointer to an array and a pointer to a array of pointers.
 
-  my ($start,$step,$names,$data) = RRDs::fetch ... 
+  my ($start,$step,$names,$data) = RRDs::fetch ...
   print "Start:       ", scalar localtime($start), " ($start)\n";
   print "Step size:   $step seconds\n";
   print "DS names:    ", join (", ", @$names)."\n";
@@ -135,7 +158,7 @@ B<RRDs::xport> exposes the L<rrdxport|rrdxport> functionality and returns data
 with the following structure:
 
   my ($start,$end,$step,$cols,$names,$data) = RRDs::xport ...
-  
+
   # $start : timestamp
   # $end   : timestamp
   # $step  : seconds
@@ -170,11 +193,11 @@ The callback function must look like this:
       # {
       #  filename => 'cb//somefilename',
       #  cd => 'AVERAGE',
-      #  start => 1401295291,   
+      #  start => 1401295291,
       #  end => 1401295591,
       #  step => 300 }
 
-      # do some clever thing to get that data ready    
+      # do some clever thing to get that data ready
 
       return {
           start => $unix_timestamp,
@@ -194,8 +217,8 @@ function L<tzset(3)> to initialize all internal state of the library for properl
 operating in the timezone of your choice.
 
  use POSIX qw(tzset);
- $ENV{TZ} = 'CET';   
- POSIX::tzset();     
+ $ENV{TZ} = 'CET';
+ POSIX::tzset();
 
 
 =head1 AUTHOR

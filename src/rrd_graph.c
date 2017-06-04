@@ -3778,6 +3778,37 @@ static cairo_status_t cairo_output(
     return CAIRO_STATUS_SUCCESS;
 }
 
+int rrd_fetch_graph_paint(
+    image_desc_t *im)
+{
+	  int       i;
+
+    /* pull the data from the rrd files ... */
+    if (data_fetch(im) == -1)
+        return -1;
+    /* evaluate VDEF and CDEF operations ... */
+    if (data_calc(im) == -1)
+        return -1;
+    /* calculate and PRINT and GPRINT definitions. We have to do it at
+     * this point because it will affect the length of the legends
+     * if there are no graph elements (i==0) we stop here ...
+     * if we are lazy, try to quit ...
+     */
+    i = print_calc(im);
+    if (i < 0)
+        return -1;
+
+    /* if we want and can be lazy ... quit now */
+    if (i == 0)
+        return 0;
+
+    /* get actual drawing data and find min and max values */
+    if (data_proc(im) == -1)
+        return -1;
+
+    return 0;
+}
+
 /* draw that picture thing ... */
 int graph_paint(
     image_desc_t *im)
@@ -4669,6 +4700,253 @@ rrd_info_t *rrd_graph_v(
         img.u_blo.ptr = im.rendered_image;
         grinfo_push(&im, sprintf_alloc("image"), RD_I_BLO, img);
     }
+    grinfo = im.grinfo;
+    im_free(&im);
+    return grinfo;
+}
+
+/* Now just a wrapper around rrd_graph_v */
+int rrd_fetch_graph_pdata(
+    int argc,
+    char **argv,
+    unsigned long *step,    /* which stepsize do you want?
+                             * will be changed to represent reality */
+    unsigned long *ds_cnt,  /* number of data sources in file */
+    unsigned long *legend_cnt,
+    long *width,
+    char ***legend,    /* names of data sources */
+    char ***colours,
+    rrd_value_t **p_data,
+    time_t *start,
+    time_t *end,
+    unsigned long **ds_types,
+    unsigned long **ds_name_map,
+    char ***chart_options,
+    unsigned long *chart_options_cnt)
+{
+    rrd_info_t *grinfo = NULL;
+    grinfo = rrd_fetch_graph_pdata_v(argc, argv, step, ds_cnt, legend_cnt, width, legend, colours, p_data, start, end, ds_types, ds_name_map, chart_options, chart_options_cnt);
+
+    rrd_info_free(grinfo);
+    return 0;
+}
+
+rrd_info_t *rrd_fetch_graph_pdata_v(
+    int argc,
+    char **argv,
+    unsigned long *step,    /* which stepsize do you want?
+                             * will be changed to represent reality */
+    unsigned long *ds_cnt,  /* number of data sources in file */
+    unsigned long *legend_cnt,
+    long *width,
+    char ***legend,    /* names of data sources */
+    char ***colours,
+    rrd_value_t **p_data,
+    time_t *start,
+    time_t *end,
+    unsigned long **ds_types,
+    unsigned long **ds_name_map,
+    char ***chart_options,
+    unsigned long *chart_options_cnt)
+{
+    image_desc_t im;
+    rrd_info_t *grinfo;
+    char *old_locale;
+		struct optparse options;
+
+    rrd_graph_init(&im);
+    /* a dummy surface so that we can measure text sizes for placements */
+
+    old_locale = setlocale(LC_NUMERIC, NULL);
+    setlocale(LC_NUMERIC, "C");
+
+    rrd_graph_options(argc, argv, &options, &im);
+
+    if (rrd_test_error()) {
+        rrd_info_free(im.grinfo);
+        im_free(&im);
+        return NULL;
+    }
+
+    if (options.optind >= options.argc) {
+        rrd_info_free(im.grinfo);
+        im_free(&im);
+        rrd_set_error("missing filename");
+        return NULL;
+    }
+
+		im.graphfile = strdup(options.argv[options.optind]);
+		if (im.graphfile == NULL) {
+			 rrd_set_error("cannot allocate sufficient memory for filename length");
+			 rrd_info_free(im.grinfo);
+			 im_free(&im);
+			 return NULL;
+		}
+
+    if (strcmp(im.graphfile, "-") == 0) {
+        im.graphfile[0] = '\0';
+    }
+
+    rrd_graph_script(argc, argv, &im, options.optind+1);
+    setlocale(LC_NUMERIC, old_locale); /* reenable locale for rendering the graph */
+
+    if (rrd_test_error()) {
+        rrd_info_free(im.grinfo);
+        im_free(&im);
+        return NULL;
+    }
+
+    /* Everything is now read and the actual work can start */
+
+    if (rrd_fetch_graph_paint(&im) == -1) {
+        rrd_info_free(im.grinfo);
+        im_free(&im);
+        return NULL;
+    }
+
+    *ds_cnt = 0;
+    *legend_cnt = 0;
+    *start = im.start;
+    *end = im.end;
+    *step = im.step;
+    *width = im.xsize;
+    long      i, ii;
+    const unsigned long COLOUR_SIZE = 8;
+    rrd_value_t *p_data_ptr;
+
+    if( im.rigid == 1 ) {
+        if( im.maxval != DNAN)
+            (*chart_options_cnt)++;
+        if( im.minval != 0)
+            (*chart_options_cnt)++;
+    }
+
+
+    (*chart_options_cnt)++; // title
+    (*chart_options_cnt)++; // ylegent
+    const int NUM_CHART_OPTIONS_CHARS = 210;
+    // allocate space for the chart options, every other is description, then value
+    *chart_options_cnt *= 2;
+    if (((*chart_options) =
+         (char **) malloc(*chart_options_cnt * sizeof(char *))) == NULL) {
+        rrd_set_error("malloc fetch colours array");
+    }
+
+    for (ii = 0; (unsigned long) ii < *chart_options_cnt; ii++) {
+        if ((((*chart_options)[ii]) = (char*)malloc(sizeof(char) * (NUM_CHART_OPTIONS_CHARS))) == NULL) {
+            rrd_set_error("malloc fetch colours entry");
+        }
+    }
+    int chart_options_index = 0;
+    snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "title" );
+    snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "%s", im.title );
+    snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "ylegend" );
+    snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "%s", im.ylegend );
+
+    if( im.rigid == 1 ) {
+        if( im.maxval != DNAN ) {
+            snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "maxval" );
+            snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "%f", im.maxval );
+        }
+        if( im.minval != 0 ) {
+            snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "minval" );
+            snprintf( (*chart_options)[chart_options_index++], NUM_CHART_OPTIONS_CHARS, "%f", im.minval );
+        }
+    }
+
+    // total all datasource counts
+    for (i = 0; i < im.gdes_c; i++) {
+        // a data source for each of the lines/areas
+        switch (im.gdes[i].gf) {
+            case GF_PRINT:
+            case GF_GPRINT:
+                *legend_cnt += 1;
+                break;
+            case GF_LINE:
+            case GF_AREA:
+            case GF_TICK:
+                *ds_cnt += 1;
+                *legend_cnt += 1;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if ((*p_data = (rrd_value_t*)malloc( *ds_cnt * (im.xsize + 1) * sizeof(rrd_value_t) )) == NULL) {
+        rrd_set_error("malloc p_data");
+        return NULL;
+    }
+    p_data_ptr = (*p_data);
+
+    // allocate space for the legend
+    if (((*legend) =
+         (char **) malloc(*legend_cnt * sizeof(char *))) == NULL) {
+        rrd_set_error("malloc fetch legend array");
+    }
+
+    for (ii = 0; (unsigned long) ii < *legend_cnt; ii++) {
+        if ((((*legend)[ii]) = (char*)malloc(sizeof(char) * (FMT_LEG_LEN + 5))) == NULL) {
+            rrd_set_error("malloc fetch legend entry");
+        }
+    }
+
+    // allocate space for the colour info
+    if (((*colours) =
+         (char **) malloc(*ds_cnt * sizeof(char *))) == NULL) {
+        rrd_set_error("malloc fetch colours array");
+    }
+
+    for (ii = 0; (unsigned long) ii < *ds_cnt; ii++) {
+        if ((((*colours)[ii]) = (char*)malloc(sizeof(char) * (COLOUR_SIZE))) == NULL) {
+            rrd_set_error("malloc fetch colours entry");
+        }
+    }
+
+    // allocate space for the dataset types
+    if (((*ds_types) =
+         (unsigned long*) malloc(*ds_cnt * sizeof(unsigned long))) == NULL) {
+        rrd_set_error("malloc fetch ds_types array");
+    }
+    if (((*ds_name_map) =
+         (unsigned long*) malloc(*ds_cnt * sizeof(unsigned long))) == NULL) {
+        rrd_set_error("malloc fetch ds_types array");
+    }
+
+    unsigned long count_of_datasets = 0;
+    unsigned long count_of_legends = 0;
+    for (ii = 0; ii < im.gdes_c; ii++) {
+        switch (im.gdes[ii].gf) {
+            case GF_PRINT:
+            case GF_GPRINT:
+                snprintf( (*legend)[count_of_legends], FMT_LEG_LEN + 5, "%s", im.gdes[ii].legend );
+                count_of_legends++;
+                break;
+            case GF_LINE:
+            case GF_AREA:
+            case GF_TICK:
+                for( i = 0; i < im.xsize; i++ ) {
+                    *p_data_ptr = im.gdes[ii].p_data[i];
+                    p_data_ptr++;
+                }
+                (*ds_name_map)[count_of_datasets] = count_of_legends;
+                snprintf( (*legend)[count_of_legends], FMT_LEG_LEN + 5, "%s", im.gdes[ii].legend );
+                snprintf( (*colours)[count_of_datasets], COLOUR_SIZE,  "#%02X%02X%02X",
+                        (unsigned int)(im.gdes[ii].col.red * 255.0),
+                        (unsigned int)(im.gdes[ii].col.green * 255.0),
+                        (unsigned int)(im.gdes[ii].col.blue * 255.0) );
+
+                // set the type of data
+                (*ds_types)[count_of_datasets] = im.gdes[ii].gf;
+
+                count_of_datasets++;
+                count_of_legends++;
+                break;
+            default:
+                break;
+        }
+    }
+
     grinfo = im.grinfo;
     im_free(&im);
     return grinfo;
