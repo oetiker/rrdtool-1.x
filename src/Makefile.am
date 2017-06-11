@@ -99,7 +99,7 @@ lib_LTLIBRARIES           = librrd.la
 librrdupd_la_SOURCES      = $(UPD_C_FILES)
 librrdupd_la_LIBADD       = $(CORE_LIBS)
 librrdupd_la_CFLAGS       = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
-librrdupd_la_LDFLAGS 	  = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
+librrdupd_la_LDFLAGS 	  = $(MULTITHREAD_LDFLAGS)
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
 librrd_la_DEPENDENCIES    = librrdupd.la

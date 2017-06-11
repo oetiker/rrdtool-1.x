@@ -682,6 +682,7 @@ int rrd_update(
     int       rc = -1;
     char     *opt_daemon = NULL;
 
+    rrd_thread_init();
     optparse_init(&options, argc, argv);
     while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
         switch (opt) {

@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <glib.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -281,3 +282,10 @@ const char * rrd_scaled_duration (const char * token,
     return NULL;
 }
 
+void rrd_thread_init(void)
+{
+#if !GLIB_CHECK_VERSION(2, 32, 0)
+    if (!g_thread_supported())
+        g_thread_init(NULL);
+#endif
+}

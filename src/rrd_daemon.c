@@ -116,12 +116,8 @@
 
 #define RRDD_LOG(severity, ...) \
   do { \
-    if (severity <= opt_log_level) { \
-      if (stay_foreground) { \
-        fprintf(stderr, __VA_ARGS__); \
-        fprintf(stderr, "\n"); } \
-      syslog ((severity), __VA_ARGS__); \
-    } \
+    if ((severity) <= opt_log_level) \
+      do_log ((severity), __VA_ARGS__); \
   } while (0)
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -150,8 +146,9 @@ struct listen_socket_s
   off_t next_cmd;
   off_t next_read;
 
-  char *wbuf;
-  ssize_t wbuf_len;
+  char *wbuf_data;
+  size_t wbuf_size;
+  size_t wbuf_capacity;
 
   uint32_t permissions;
 
@@ -197,6 +194,7 @@ struct cache_item_s
   double last_update_stamp;
 #define CI_FLAGS_IN_TREE  (1<<0)
 #define CI_FLAGS_IN_QUEUE (1<<1)
+#define CI_FLAGS_SUSPENDED (1<<2)
   int flags;
   pthread_cond_t  flushed;
   cache_item_t *prev;
@@ -256,6 +254,9 @@ static pthread_mutex_t connection_threads_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  connection_threads_done = PTHREAD_COND_INITIALIZER;
 static int connection_threads_num = 0;
 
+static FILE *log_fh = NULL;
+static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+
 /* Cache stuff */
 static GTree          *cache_tree = NULL;
 static cache_item_t   *cache_queue_head = NULL;
@@ -312,6 +313,39 @@ static int handle_request_ping (HANDLER_PROTO);
 /*
  * Functions
  */
+static void do_log (int priority, const char *format, ...)
+{
+  va_list args;
+
+
+  if (stay_foreground)
+  {
+    pthread_mutex_lock(&log_lock);
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+    pthread_mutex_unlock(&log_lock);
+  }
+
+  va_start(args, format);
+  if (log_fh)
+  {
+    char buffer[32];
+    pthread_mutex_lock(&log_lock);
+    time_t now = time(NULL);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&now));
+    fprintf(log_fh, "%s [%d] ", buffer, priority);
+    vfprintf(log_fh, format, args);
+    fprintf(log_fh, "\n");
+    fflush(log_fh);
+    pthread_mutex_unlock(&log_lock);
+  }
+  else
+    vsyslog(priority, format, args);
+  va_end(args);
+}
+
 static void sig_common (const char *sig) /* {{{ */
 {
   RRDD_LOG(LOG_NOTICE, "caught SIG%s", sig);
@@ -641,29 +675,59 @@ static char *next_cmd (listen_socket_t *sock, ssize_t *len) /* {{{ */
   assert(1==0);
 } /* }}} char *next_cmd */
 
-/* add the characters directly to the write buffer */
-static int add_to_wbuf(listen_socket_t *sock, char *str, size_t len) /* {{{ */
+static char *wbuf_data(listen_socket_t *sock) /* {{{ */
 {
-  char *new_buf;
+  assert(sock != NULL);
+  return sock->wbuf_data;
+} /* }}} static char *wbuf_data */
+
+static size_t wbuf_size(listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  return sock->wbuf_size;
+} /* }}} static size_t wbuf_data */
+
+static void wbuf_free(listen_socket_t *sock) /* {{{ */
+{
+  assert(sock != NULL);
+  free(sock->wbuf_data);
+  sock->wbuf_data = NULL;
+  sock->wbuf_size = 0;
+  sock->wbuf_capacity = 0;
+} /* }}} static void wbuf_free */
+
+/* add the characters directly to the write buffer */
+static int wbuf_append(listen_socket_t *sock, char *str, size_t len) /* {{{ */
+{
+  char *new_data;
+  size_t new_capacity;
 
   assert(sock != NULL);
 
-  new_buf = rrd_realloc(sock->wbuf, sock->wbuf_len + len + 1);
-  if (new_buf == NULL)
+  new_capacity = sock->wbuf_capacity == 0 ? 4096 : sock->wbuf_capacity;
+  while (new_capacity <= sock->wbuf_size + len)
   {
-    RRDD_LOG(LOG_ERR, "add_to_wbuf: realloc failed");
-    return -1;
+    new_capacity *= 2;
   }
 
-  memcpy(new_buf + sock->wbuf_len, str, len);
+  if (new_capacity != sock->wbuf_capacity)
+  {
+    new_data = rrd_realloc(sock->wbuf_data, new_capacity);
+    if (new_data == NULL)
+    {
+      RRDD_LOG(LOG_ERR, "wbuf_append: realloc failed");
+      return -1;
+    }
+    sock->wbuf_data = new_data;
+    sock->wbuf_capacity = new_capacity;
+  }
 
-  sock->wbuf = new_buf;
-  sock->wbuf_len += len;
-
-  *(sock->wbuf + sock->wbuf_len)=0;
+  memcpy(&sock->wbuf_data[sock->wbuf_size], str, len);
+  sock->wbuf_data[sock->wbuf_size + len] = '\0';
+  sock->wbuf_size += len;
 
   return 0;
-} /* }}} static int add_to_wbuf */
+} /* }}} static int wbuf_append */
 
 /* add the text to the "extra" info that's sent after the status line */
 static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
@@ -688,7 +752,7 @@ static int add_response_info(listen_socket_t *sock, char *fmt, ...) /* {{{ */
     return -1;
   }
 
-  return add_to_wbuf(sock, buffer, len);
+  return wbuf_append(sock, buffer, len);
 } /* }}} static int add_response_info */
 
 /* add the binary data to the "extra" info that's sent after the status line */
@@ -710,11 +774,11 @@ static int add_binary_response_info(listen_socket_t *sock,
 	if (res)
 		return res;
 	/* and add it to the buffer */
-	res = add_to_wbuf(sock, (char*) data, records * rsize);
+	res = wbuf_append(sock, (char*) data, records * rsize);
 	if (res)
 		return res;
 	/* and add a newline */
-	return add_to_wbuf(sock, "\n", 1);
+	return wbuf_append(sock, "\n", 1);
 } /* }}} static int add_binary_response_info */
 
 static int count_lines(char *str) /* {{{ */
@@ -742,7 +806,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
   va_list argp;
   char buffer[RRD_CMD_MAX];
   int lines;
-  ssize_t wrote;
+  size_t wrote;
   int rclen, len;
 
   if (JOURNAL_REPLAY(sock)) return rc;
@@ -754,7 +818,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
     lines = sock->batch_cmd;
   }
   else if (rc == RESP_OK)
-    lines = count_lines(sock->wbuf);
+    lines = count_lines(wbuf_data(sock));
   else if (rc == RESP_OK_BIN)
     lines = 1;
   else
@@ -781,7 +845,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
 
   /* append the result to the wbuf, don't write to the user */
   if (sock->batch_start)
-    return add_to_wbuf(sock, buffer, len);
+    return wbuf_append(sock, buffer, len);
 
   /* first write must be complete */
   if (len != write(sock->fd, buffer, len))
@@ -790,12 +854,12 @@ static int send_response (listen_socket_t *sock, response_code rc,
     return -1;
   }
 
-  if (sock->wbuf != NULL && rc == RESP_OK)
+  if (wbuf_data(sock) != NULL && rc == RESP_OK)
   {
     wrote = 0;
-    while (wrote < sock->wbuf_len)
+    while (wrote < wbuf_size(sock))
     {
-      ssize_t wb = write(sock->fd, sock->wbuf + wrote, sock->wbuf_len - wrote);
+      ssize_t wb = write(sock->fd, wbuf_data(sock) + wrote, wbuf_size(sock) - wrote);
       if (wb <= 0)
       {
         RRDD_LOG(LOG_INFO, "send_response: could not write results");
@@ -805,8 +869,7 @@ static int send_response (listen_socket_t *sock, response_code rc,
     }
   }
 
-  free(sock->wbuf); sock->wbuf = NULL;
-  sock->wbuf_len = 0;
+  wbuf_free(sock);
 
   return 0;
 } /* }}} */
@@ -952,7 +1015,8 @@ static gboolean tree_callback_flush (gpointer key, gpointer value, /* {{{ */
     return FALSE;
 
   if (ci->values_num > 0
-      && (ci->last_flush_time <= cfd->abs_timeout || state != RUNNING))
+      && (ci->last_flush_time <= cfd->abs_timeout || state != RUNNING)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0))
   {
     enqueue_cache_item (ci, TAIL);
   }
@@ -1274,7 +1338,8 @@ static int flush_file (const char *filename) /* {{{ */
     return (ENOENT);
   }
 
-  if (ci->values_num > 0)
+  if ((ci->values_num > 0)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0))
   {
     /* Enqueue at head */
     enqueue_cache_item (ci, HEAD);
@@ -1700,6 +1765,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
   if (((now - ci->last_flush_time) >= config_write_interval)
       && ((ci->flags & CI_FLAGS_IN_QUEUE) == 0)
+      && ((ci->flags & CI_FLAGS_SUSPENDED) == 0)
       && (ci->values_num > 0))
   {
     enqueue_cache_item (ci, TAIL);
@@ -1939,21 +2005,6 @@ static int handle_request_fetch_parse (HANDLER_PROTO,
   return 0;
 }
 
-#define SSTRCAT(buffer,str,buffer_fill) do { \
-    size_t str_len = strlen (str); \
-    if ((buffer_fill + str_len) > sizeof (buffer)) \
-      str_len = sizeof (buffer) - buffer_fill; \
-    if (str_len > 0) { \
-      strncpy (buffer + buffer_fill, str, str_len); \
-      buffer_fill += str_len; \
-      assert (buffer_fill <= sizeof (buffer)); \
-      if (buffer_fill == sizeof (buffer)) \
-        buffer[buffer_fill - 1] = 0; \
-      else \
-        buffer[buffer_fill] = 0; \
-    } \
-  } while (0)
-
 static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
 {
   unsigned long i,j;
@@ -1974,22 +2025,15 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
   add_response_info (sock, "End: %lu\n", (unsigned long) parsed.end_tm);
   add_response_info (sock, "Step: %lu\n", parsed.step);
 
-  { /* Add list of DS names */
-    char linebuf[1024];
-    size_t linebuf_fill;
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
-    for (i = 0; i < parsed.field_cnt; i++)
-    {
-      if (i > 0)
-        SSTRCAT (linebuf, " ", linebuf_fill);
-      SSTRCAT (linebuf, parsed.ds_namv[parsed.field_idx[i]], linebuf_fill);
-    }
-    linebuf[sizeof(linebuf) - 1] = 0;
-    add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
-    add_response_info (sock, "DSName: %s\n", linebuf);
+  /* Add list of DS names */
+  add_response_info (sock, "DSCount: %lu\n", parsed.field_cnt);
+  add_response_info (sock, "DSName: ");
+  for (i = 0; i < parsed.field_cnt; i++)
+  {
+    add_response_info (sock, (i == 0 ? "%s" :" %s"),
+                       parsed.ds_namv[parsed.field_idx[i]]);
   }
+  add_response_info (sock, "\n");
 
   /* Add the actual data */
   assert (parsed.step > 0);
@@ -1997,37 +2041,18 @@ static int handle_request_fetch (HANDLER_PROTO) /* {{{ */
        t <= parsed.end_tm;
        t += parsed.step,j++)
   {
-    char linebuf[1024];
-    size_t linebuf_fill;
-    char tmp[128];
-
     add_response_info (sock, "%10lu:", (unsigned long) t);
-
-    memset (linebuf, 0, sizeof (linebuf));
-    linebuf_fill = 0;
     for (i = 0; i < parsed.field_cnt; i++)
     {
       unsigned int idx = j*parsed.ds_cnt+parsed.field_idx[i];
-      snprintf (tmp, sizeof (tmp), " %0.17e", parsed.data[idx]);
-      tmp[sizeof (tmp) - 1] = 0;
-      SSTRCAT (linebuf, tmp, linebuf_fill);
-      if (linebuf_fill>sizeof(linebuf)*9/10) {
-        add_response_info (sock, linebuf);
-	memset (linebuf, 0, sizeof (linebuf));
-	linebuf_fill = 0;
-      }
+      add_response_info (sock, " %0.17e", parsed.data[idx]);
     }
-
-    /* only print out a line if parsed something */
-    if (i > 0) {
-      add_response_info (sock, "%s\n", linebuf);
-    }
+    add_response_info (sock, "\n");
   } /* for (t) */
   free_fetch_parsed(&parsed);
 
   return (send_response (sock, RESP_OK, "Success\n"));
 } /* }}} int handle_request_fetch */
-#undef SSTRCAT
 
 static int handle_request_fetchbin (HANDLER_PROTO) /* {{{ */
 {
@@ -2578,6 +2603,111 @@ out_send_response:
   return (0);
 } /* }}} int handle_request_list */
 
+static cache_item_t *buffer_get_cache_item(listen_socket_t *sock,
+                                           command_t *cmd, char **buffer,
+                                           size_t *buffer_size, int *rc,
+                                           char **file_name)
+{
+  char *pbuffile;
+  cache_item_t *ci;
+  int status;
+
+  /* obtain filename */
+  status = buffer_get_field(buffer, buffer_size, &pbuffile);
+  if (status != 0) {
+    *rc = syntax_error(sock, cmd);
+    return NULL;
+  }
+  /* get full pathname */
+  *file_name = get_abs_path(pbuffile);
+  if (file_name == NULL) {
+    *rc = send_response(sock, RESP_ERR, "%s + %s\n", *file_name, rrd_strerror(ENOMEM));
+    return NULL;
+  }
+
+  ci = g_tree_lookup(cache_tree, *file_name);
+  if (ci == NULL) {
+    *rc = send_response(sock, RESP_ERR, "%s - %s\n", *file_name, rrd_strerror(ENOENT));
+    return NULL;
+  }
+
+  *rc = 0;
+  return ci;
+}
+
+static int handle_request_suspend(HANDLER_PROTO) /* {{{ */
+{
+  char *file_name = NULL;
+  int rc;
+  cache_item_t *ci = buffer_get_cache_item(sock, cmd, &buffer, &buffer_size, &rc, &file_name);
+  if (ci == NULL)
+    rc = -1;
+  else if ((ci->flags & CI_FLAGS_SUSPENDED) == CI_FLAGS_SUSPENDED)
+    rc = send_response(sock, RESP_OK, "%s already suspended\n", file_name);
+  else
+  {
+    ci->flags |= CI_FLAGS_SUSPENDED;
+    rc = send_response(sock, RESP_OK, "%s suspended\n", file_name);
+  }
+  free(file_name);
+  return rc;
+} /* }}} static int handle_request_suspend */
+
+static int handle_request_resume (HANDLER_PROTO) /* {{{ */
+{
+  char *file_name = NULL;
+  int rc;
+  cache_item_t *ci = buffer_get_cache_item(sock, cmd, &buffer, &buffer_size, &rc, &file_name);
+  if (ci == NULL)
+    rc = -1;
+  else if ((ci->flags & CI_FLAGS_SUSPENDED) == 0)
+    rc = send_response(sock, RESP_OK, "%s not suspended\n", file_name);
+  else
+  {
+    ci->flags &= ~CI_FLAGS_SUSPENDED;
+    rc = send_response(sock, RESP_OK, "%s resumed\n", file_name);
+  }
+  free(file_name);
+  return rc;
+} /* }}} static int handle_request_resume */
+
+static gboolean tree_callback_suspend (gpointer UNUSED(key), /* {{{ */
+    gpointer value, gpointer pointer)
+{
+  cache_item_t *ci = (cache_item_t *) value;
+  int *count = (int*) pointer;
+  if ((ci->flags & CI_FLAGS_SUSPENDED) == 0) {
+    ci->flags |= CI_FLAGS_SUSPENDED;
+    *count += 1;
+  }
+  return (FALSE);
+} /* }}} gboolean tree_callback_suspend */
+
+static int handle_request_suspendall(HANDLER_PROTO) /* {{{ */
+{
+  int count = 0;
+  g_tree_foreach (cache_tree, tree_callback_suspend, (gpointer) &count);
+  return send_response(sock, RESP_OK, "%d rrds suspend\n", count);
+} /* }}} static int handle_request_suspendall */
+
+static gboolean tree_callback_resume (gpointer UNUSED(key), /* {{{ */
+    gpointer value, gpointer pointer)
+{
+  cache_item_t *ci = (cache_item_t *) value;
+  int *count = (int*) pointer;
+  if ((ci->flags & CI_FLAGS_SUSPENDED) != 0) {
+    ci->flags &= ~CI_FLAGS_SUSPENDED;
+    *count += 1;
+  }
+  return (FALSE);
+} /* }}} gboolean tree_callback_resume */
+
+static int handle_request_resumeall(HANDLER_PROTO) /* {{{ */
+{
+  int count = 0;
+  g_tree_foreach (cache_tree, tree_callback_resume, (gpointer) &count);
+  return send_response(sock, RESP_OK, "%d rrds resumed\n", count);
+} /* }}} static int handle_request_resumeall */
 
 /* start "BATCH" processing */
 static int batch_start (HANDLER_PROTO) /* {{{ */
@@ -2800,6 +2930,39 @@ static command_t list_of_commands[] = { /* {{{ */
     "When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to\n"
     "'ls -R' but limited to rrd files (listing all the rrd bases in the subtree\n"
     " of <path>, skipping empty directories).\n"
+  },
+  {
+    "SUSPEND",
+    handle_request_suspend,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "SUSPEND <filename>\n",
+    "The SUSPEND command will suspend writing to an RRD file. While a file is\n"
+    "suspended, all metrics for it are cached in memory until RESUME is called\n"
+    "for that file or RESUMEALL is called.\n"
+  },
+  {
+    "RESUME",
+    handle_request_resume,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "RESUME <filename>\n",
+    "The RESUME command will resume writing to an RRD file previously suspended\n"
+    "by SUSPEND or SUSPENDALL.\n"
+  },
+  {
+    "SUSPENDALL",
+    handle_request_suspendall,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "SUSPENDALL\n",
+    "The SUSPENDALL command will suspend writing to all RRD files. While a file\n"
+    "is suspended, all metrics for it are cached in memory until RESUME is called\n"
+    "for that file or RESUMEALL is called.\n"
+  },
+  {
+    "RESUMEALL",
+    handle_request_resumeall,
+    CMD_CONTEXT_CLIENT | CMD_CONTEXT_BATCH,
+    "RESUMEALL\n",
+    "The RESUMEALL command will resume writing to all RRD files previously suspended.\n"
   },
   {
     "QUIT",
@@ -3362,7 +3525,7 @@ static void free_listen_socket(listen_socket_t *sock) /* {{{ */
   assert(sock != NULL);
 
   free(sock->rbuf);  sock->rbuf = NULL;
-  free(sock->wbuf);  sock->wbuf = NULL;
+  wbuf_free(sock);
   free(sock->addr);  sock->addr = NULL;
   free(sock);
 } /* }}} void free_listen_socket */
@@ -4143,6 +4306,8 @@ static int cleanup (void) /* {{{ */
 
   RRDD_LOG(LOG_INFO, "goodbye");
   closelog ();
+  if (log_fh)
+    fclose(log_fh);
 
   remove_pidfile ();
   free(config_pid_file);
@@ -4166,6 +4331,7 @@ static int read_options (int argc, char **argv) /* {{{ */
     {NULL, 'l', OPTPARSE_REQUIRED},
     {NULL, 'm', OPTPARSE_REQUIRED},
     {NULL, 'O', OPTPARSE_NONE},
+    {NULL, 'o', OPTPARSE_REQUIRED},
     {NULL, 'P', OPTPARSE_REQUIRED},
     {NULL, 'p', OPTPARSE_REQUIRED},
     {NULL, 'R', OPTPARSE_NONE},
@@ -4559,6 +4725,20 @@ static int read_options (int argc, char **argv) /* {{{ */
       }
       break;
 
+      case 'o':
+      {
+        if (log_fh)
+          fclose(log_fh);
+        log_fh = fopen(options.optarg, "a");
+        if (!log_fh)
+        {
+	  fprintf(stderr, "Failed to open log file '%s': %s\n",
+                  options.optarg, rrd_strerror(errno));
+	    return 6;
+        }
+      }
+      break;
+
       case 'p':
       {
         if (config_pid_file != NULL)
@@ -4645,6 +4825,7 @@ static int read_options (int argc, char **argv) /* {{{ */
                             "sockets\n"
             "  -O            Do not allow CREATE commands to overwrite existing\n"
             "                files, even if asked to.\n"
+            "  -o <file>     Log to given file instead of syslog.\n"
             "  -P <perms>    Sets the permissions to assign to all following "
                             "sockets\n"
             "  -p <file>     Location of the PID-file.\n"
@@ -4697,6 +4878,7 @@ int main (int argc, char **argv)
 {
   int status;
 
+  rrd_thread_init();
   status = read_options (argc, argv);
   if (status != 0)
   {

@@ -27,9 +27,7 @@
 #ifndef RRD_CLIENT_H_887A36401735431B937F44DFCAE0B7C9
 #define RRD_CLIENT_H_887A36401735431B937F44DFCAE0B7C9 1
 
-# ifdef HAVE_STDINT_H
-#  include <stdint.h>
-# endif
+#include <stdint.h>
 
 /* max length of socket command or response */
 #define RRD_CMD_MAX 4096

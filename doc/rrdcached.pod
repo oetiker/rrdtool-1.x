@@ -18,6 +18,7 @@ B<rrdcached>
 [B<-l>E<nbsp>I<address>]
 [B<-m>E<nbsp>I<mode>]
 [B<-O>]
+[B<-o>E<nbsp>I<log_file>]
 [B<-P>E<nbsp>I<permissions>]
 [B<-p>E<nbsp>I<pid_file>]
 [B<-R>]
@@ -171,6 +172,10 @@ LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_
 Default log level when this flag is I<NOT> present: B<LOG_ERR>
 
 See also: L<syslog.h>
+
+=item B<-o> I<log_file>
+
+Log to the given file instead of syslog.
 
 =item B<-w> I<timeout>
 
@@ -748,6 +753,26 @@ message itself.  The first user command after B<BATCH> is command number one.
 
 This command allows to list directories and rrd databases as seen by the daemon.
 The root "directory" is the base_dir (see '-b dir'). When invoked with 'LIST RECURSIVE /<path>' it will behave similarly to 'ls -R' but limited to rrd files (listing all the rrd bases in the subtree of <path>, skipping empty directories).
+
+=item B<SUSPEND> I<filename>
+
+Suspend writing to an RRD file. While a file is suspended, all metrics for it
+are cached in memory until B<RESUME> is called for that file or B<RESUMEALL> is
+called.
+
+=item B<RESUME> I<filename>
+
+Resume writing to an RRD file previously suspended by B<SUSPEND> or B<SUSPENDALL>.
+
+=item B<SUSPENDALL>
+
+Suspend writing to all RRD files. While a file is suspended, all metrics for it
+are cached in memory until B<RESUME> is called for that file or B<RESUMEALL> is
+called.
+
+=item B<RESUMEALL>
+
+Resume writing to all RRD files previously suspended by B<SUSPEND> or B<SUSPENDALL>.
 
 =item B<QUIT>
 

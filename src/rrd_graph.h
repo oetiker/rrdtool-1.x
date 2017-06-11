@@ -262,6 +262,8 @@ typedef struct graph_desc_t {
     int yaxisidx;
 } graph_desc_t;
 
+enum image_init_en { IMAGE_INIT_NO_CAIRO, IMAGE_INIT_CAIRO };
+
 typedef struct image_desc_t {
 
     /* configuration of graph */
@@ -348,6 +350,7 @@ typedef struct image_desc_t {
     GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
     GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
     mutex_t *fontmap_mutex; /* Mutex for locking the global fontmap */
+    enum image_init_en init_mode; /* do we need Cairo/Pango? */
 } image_desc_t;
 
 /* Prototypes */
@@ -446,7 +449,8 @@ int       scan_for_col(
     int,
     char *const);
 void      rrd_graph_init(
-    image_desc_t *);
+    image_desc_t *,
+    enum image_init_en);
 
 void      time_clean(
     char *result,
