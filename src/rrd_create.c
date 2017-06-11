@@ -1344,7 +1344,7 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 	strcat(tmpfilename, "XXXXXX");
 	
 	/* fix CWE-377 */
-	saved_umask = umask(S_IRUSR|S_IWUSR);
+	saved_umask = umask(S_IWGRP|S_IWOTH);
 	int tmpfd = mkstemp(tmpfilename);
 	umask(saved_umask);
 	if (tmpfd < 0) {
