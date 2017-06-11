@@ -4,6 +4,7 @@
  * rrd_create.c  creates new rrds
  *****************************************************************************/
 
+#include "mutex.h"
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
@@ -1315,10 +1316,10 @@ done:
     return rc;
 }
 
+
 int write_rrd(const char *outfilename, rrd_t *out) {
     int rc = -1;
     char *tmpfilename = NULL;
-    mode_t saved_umask;
 
     /* write out the new file */
 #ifdef HAVE_LIBRADOS
@@ -1343,10 +1344,10 @@ int write_rrd(const char *outfilename, rrd_t *out) {
 	strcpy(tmpfilename, outfilename);
 	strcat(tmpfilename, "XXXXXX");
 	
-	/* fix CWE-377 */
-	saved_umask = umask(S_IWGRP|S_IWOTH);
+        /* this is 0600 according to the manual page */        
 	int tmpfd = mkstemp(tmpfilename);
-	umask(saved_umask);
+
+	
 	if (tmpfd < 0) {
 	    rrd_set_error("Cannot create temporary file");
 	    goto done;
@@ -1379,13 +1380,8 @@ int write_rrd(const char *outfilename, rrd_t *out) {
                 stat_buf.st_mode = _S_IREAD | _S_IWRITE;  // have to test it is 
 #else
 		/* an error occurred (file not found, maybe?). Anyway:
-		   set the mode to 0666 using current umask */
-		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-		
-		mode_t mask = umask(0);
-		umask(mask);
-
-		stat_buf.st_mode &= ~mask;
+		   set the mode to 0644 using current umask */
+		stat_buf.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 #endif                
 	    }
 	    if (chmod(tmpfilename, stat_buf.st_mode) != 0) {

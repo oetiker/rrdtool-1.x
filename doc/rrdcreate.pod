@@ -743,6 +743,12 @@ divides each PDP of the AccumDuration by the corresponding PDP of
 TotalRequests and stores the average request duration. The remainder of the
 RPN expression handles the divide by zero case.
 
+=head1 SECURITY
+
+Note that new rrd files will have the permission 0622 regarless of your
+umask setting. If a file with the same name previously exists, its
+permission settings will be copied to the new file.
+
 =head1 AUTHORS
 
 Tobias Oetiker E<lt>tobi@oetiker.chE<gt>, Peter Stamfest E<lt>peter@stamfest.atE<gt>
