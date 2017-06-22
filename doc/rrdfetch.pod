@@ -253,9 +253,9 @@ in the context of hours, minutes, and seconds it means minutes.
 
 Out of context (i.e. right after the B<+> or B<-> sign) the
 meaning of B<m> is guessed from the number it directly follows.
-Currently, if the number's absolute value is below 25 it is assumed
+Currently, if the number's absolute value is below 6 it is assumed
 that B<m> means B<months>, otherwise it is treated as B<minutes>.
-(e.g., -25m == -25 minutes, while +24m == +24 months)
+(e.g., -6m == -6m minutes, while +5m == +5 months)
 
 =back
 
