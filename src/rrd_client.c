@@ -574,7 +574,7 @@ static int response_read(rrd_client_t *client, rrdc_response_t **ret_response) /
   if (ret->status <= 0)
   {
     if (ret->status < 0)
-      rrd_set_error("rrdcached: %s", ret->message);
+      rrd_set_error("rrdcached@%S: %s", client->sd_path, ret->message);
     goto out;
   }
 
@@ -1237,7 +1237,7 @@ rrd_info_t *rrd_client_info(rrd_client_t *client, const char *filename) /* {{{ *
 
   if (status != 0) {
     if (res && res->message) {
-      rrd_set_error ("rrdcached: %s", res->message);
+      rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
       response_free(res);
     }
     return (NULL);
@@ -1354,7 +1354,7 @@ char *rrd_client_list(rrd_client_t *client, int recursive, const char *dirname) 
   status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
-    rrd_set_error ("rrdcached: %s", res->message);
+    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
     goto out_free_res;
   }
 
@@ -1466,7 +1466,7 @@ time_t rrd_client_last(rrd_client_t *client, const char *filename) /* {{{ */
   status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
-    rrd_set_error ("rrdcached: %s", res->message);
+    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
     return (-1);
   }
   lastup = atol(res->message);
@@ -1541,7 +1541,7 @@ time_t rrd_client_first (rrd_client_t *client, const char *filename, int rrainde
   status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
-    rrd_set_error ("rrdcached: %s", res->message);
+    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
     return (-1);
   }
   firstup = atol(res->message);
@@ -1672,7 +1672,7 @@ int rrd_client_create_r2(rrd_client_t *client, const char *filename, /* {{{ */
   status = request(client, buffer, buffer_size, &res);
 
   if (status != 0) {
-    rrd_set_error ("rrdcached: %s", res->message);
+    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
     return (-1);
   }
   response_free (res);
@@ -1792,7 +1792,7 @@ int rrd_client_fetch (rrd_client_t *client, const char *filename, /* {{{ */
   status = res->status;
   if (status < 0)
   {
-    rrd_set_error ("rrdcached: %s", res->message);
+    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
     response_free (res);
     return (status);
   }
