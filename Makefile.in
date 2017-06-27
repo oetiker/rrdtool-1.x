@@ -15,7 +15,6 @@
 @SET_MAKE@
 
 # $Id$
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -112,8 +111,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/rrd_config.h
-CONFIG_CLEAN_FILES = etc/rrdcached.socket etc/rrdcached.service \
-	etc/rrdcached-default-lsb
+CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -142,35 +140,6 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  test -z "$$files" \
-    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-         $(am__cd) "$$dir" && rm -f $$files; }; \
-  }
-am__installdirs = "$(DESTDIR)$(systemdsystemunitdir)"
-DATA = $(systemdsystemunit_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 am__recursive_targets = \
@@ -207,11 +176,8 @@ am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/conftools/config.sub \
 	$(top_srcdir)/conftools/install-sh \
 	$(top_srcdir)/conftools/ltmain.sh \
-	$(top_srcdir)/conftools/missing \
-	$(top_srcdir)/etc/rrdcached-default-lsb.in \
-	$(top_srcdir)/etc/rrdcached.service.in \
-	$(top_srcdir)/etc/rrdcached.socket.in ABOUT-NLS NEWS TODO \
-	compile config.guess config.rpath config.sub conftools/compile \
+	$(top_srcdir)/conftools/missing ABOUT-NLS NEWS TODO compile \
+	config.guess config.rpath config.sub conftools/compile \
 	conftools/config.guess conftools/config.rpath \
 	conftools/config.sub conftools/install-sh conftools/ltmain.sh \
 	conftools/missing depcomp install-sh ltmain.sh missing
@@ -478,14 +444,6 @@ AUTOMAKE_OPTIONS = foreign
 # where we keep local rules for automake
 ACLOCAL_AMFLAGS = -I m4
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-#AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
-#AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
-
-#	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
-@HAVE_SYSTEMD_TRUE@systemdsystemunit_DATA = \
-@HAVE_SYSTEMD_TRUE@	etc/rrdcached.socket \
-@HAVE_SYSTEMD_TRUE@	etc/rrdcached.service
-
 all: all-recursive
 
 .SUFFIXES:
@@ -522,12 +480,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
-etc/rrdcached.socket: $(top_builddir)/config.status $(top_srcdir)/etc/rrdcached.socket.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/rrdcached.service: $(top_builddir)/config.status $(top_srcdir)/etc/rrdcached.service.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-etc/rrdcached-default-lsb: $(top_builddir)/config.status $(top_srcdir)/etc/rrdcached-default-lsb.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -537,27 +489,6 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
-install-systemdsystemunitDATA: $(systemdsystemunit_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(systemdsystemunit_DATA)'; test -n "$(systemdsystemunitdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(systemdsystemunitdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(systemdsystemunitdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(systemdsystemunitdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(systemdsystemunitdir)" || exit $$?; \
-	done
-
-uninstall-systemdsystemunitDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(systemdsystemunit_DATA)'; test -n "$(systemdsystemunitdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(systemdsystemunitdir)'; $(am__uninstall_files_from_dir)
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -841,12 +772,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(DATA)
+all-am: Makefile
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(systemdsystemunitdir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -900,7 +828,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-systemdsystemunitDATA
+install-data-am:
 
 install-dvi: install-dvi-recursive
 
@@ -946,7 +874,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-systemdsystemunitDATA
+uninstall-am:
 
 .MAKE: $(am__recursive_targets) install-am install-strip
 
@@ -961,17 +889,23 @@ uninstall-am: uninstall-systemdsystemunitDATA
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip \
-	install-systemdsystemunitDATA installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-systemdsystemunitDATA
+	uninstall-am
 
 .PRECIOUS: Makefile
 
 
  # the following files are not mentioned in any other Makefile
+#AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
+#AUTOCONF = @AUTOCONF@ --localdir=$(top_srcdir)/config
+
+#	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
+
+etc-install:
+	cd etc && $(MAKE) install
 
 site-perl-inst: site-perl-install
 

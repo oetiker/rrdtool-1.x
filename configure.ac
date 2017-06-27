@@ -995,6 +995,7 @@ AC_CONFIG_FILES([examples/rrdcached/Makefile])
 AC_CONFIG_FILES([etc/rrdcached-default-lsb])
 AC_CONFIG_FILES([tests/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
+AC_CONFIG_FILES([etc/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/librrd.pc])
@@ -1047,6 +1048,7 @@ if test "$lua_need_compat51" = "1"; then
 echo "   Lua Lua-modules dir: $LUA_INSTALL_LMOD"
 fi
 fi
+echo "      Systemd unit dir: $with_systemdsystemunitdir"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "        Build examples: $enable_examples"
@@ -1063,6 +1065,10 @@ echo "             Libraries: $ALL_LIBS"
 echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
+if test "x$with_systemdsystemunitdir" != xno; then
+echo
+echo "Type 'make etc-install' to install systemd support for rrdcached"
+fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
 echo "make me happy. Go to http://tobi.oetiker.ch/wish and"

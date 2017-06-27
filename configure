@@ -25238,6 +25238,8 @@ ac_config_files="$ac_config_files tests/Makefile"
 
 ac_config_files="$ac_config_files doc/Makefile"
 
+ac_config_files="$ac_config_files etc/Makefile"
+
 ac_config_files="$ac_config_files po/Makefile.in"
 
 ac_config_files="$ac_config_files src/Makefile"
@@ -26382,6 +26384,7 @@ do
     "etc/rrdcached-default-lsb") CONFIG_FILES="$CONFIG_FILES etc/rrdcached-default-lsb" ;;
     "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+    "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "po/Makefile.in") CONFIG_FILES="$CONFIG_FILES po/Makefile.in" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/librrd.pc") CONFIG_FILES="$CONFIG_FILES src/librrd.pc" ;;
@@ -27817,6 +27820,7 @@ if test "$lua_need_compat51" = "1"; then
 echo "   Lua Lua-modules dir: $LUA_INSTALL_LMOD"
 fi
 fi
+echo "      Systemd unit dir: $with_systemdsystemunitdir"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
 echo "        Build examples: $enable_examples"
@@ -27833,6 +27837,10 @@ echo "             Libraries: $ALL_LIBS"
 echo
 echo "Type 'make' to compile the software and use 'make install' to "
 echo "install everything to: $prefix."
+if test "x$with_systemdsystemunitdir" != xno; then
+echo
+echo "Type 'make etc-install' to install systemd support for rrdcached"
+fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
 echo "make me happy. Go to http://tobi.oetiker.ch/wish and"

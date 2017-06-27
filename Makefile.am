@@ -36,11 +36,8 @@ ACLOCAL_M4= $(top_srcdir)/aclocal.m4
 
 #	$(RSYNC) CHANGES archive/$(PACKAGE)-$(VERSION).tar.gz tobi@ipn.caida.org:/ipn/web/Tools/RRDtool/pub/
 
-if HAVE_SYSTEMD
-systemdsystemunit_DATA = \
-	etc/rrdcached.socket \
-	etc/rrdcached.service
-endif
+etc-install:
+	cd etc && $(MAKE) install
 
 site-perl-inst: site-perl-install
 
