@@ -57,7 +57,7 @@
 	size_t wanted = sizeof(dst_t)*(cnt); \
 	if (offset + wanted > rrd_file->file_len) { \
 		rrd_set_error("reached EOF while loading header " #dst); \
-		goto out_nullify_head; \
+		goto out_close; \
 	} \
 	(dst) = (dst_t*)(void*) (data + offset); \
 	offset += wanted; \
@@ -68,12 +68,12 @@
         size_t got; \
 	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
 		rrd_set_error(#dst " malloc"); \
-		goto out_nullify_head; \
+		goto out_close; \
 	} \
         got = read (rrd_simple_file->fd, dst, wanted); \
 	if (got != wanted) { \
 		rrd_set_error("short read while reading header " #dst); \
-                goto out_nullify_head; \
+                goto out_close; \
 	} \
 	offset += got; \
     }
@@ -85,12 +85,12 @@
         size_t got; \
 	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
 		rrd_set_error(#dst " malloc"); \
-		goto out_nullify_head; \
+		goto out_close; \
 	} \
         got = rrd_rados_read(rrd_file->rados, dst, wanted, offset); \
 	if (got != wanted) { \
 		rrd_set_error("short read while reading header " #dst); \
-                goto out_nullify_head; \
+                goto out_close; \
 	} \
 	offset += got; \
     }
@@ -183,6 +183,7 @@ rrd_file_t *rrd_open(
     }
     memset(rrd_file->pvt, 0, sizeof(rrd_simple_file_t));
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file->fd = -1;
 
 #ifdef DEBUG
     if ((rdwr & (RRD_READONLY | RRD_READWRITE)) ==
@@ -396,12 +397,12 @@ read_check:
     /* lets do some test if we are on track ... */
     if (memcmp(rrd->stat_head->cookie, RRD_COOKIE, sizeof(RRD_COOKIE)) != 0) {
         rrd_set_error("'%s' is not an RRD file", file_name);
-        goto out_nullify_head;
+        goto out_close;
     }
 
     if (rrd->stat_head->float_cookie != FLOAT_COOKIE) {
         rrd_set_error("This RRD was created on another architecture");
-        goto out_nullify_head;
+        goto out_close;
     }
 
     version = atoi(rrd->stat_head->version);
@@ -409,7 +410,7 @@ read_check:
     if (version > atoi(RRD_VERSION5)) {
         rrd_set_error("can't handle RRD file version %s",
                       rrd->stat_head->version);
-        goto out_nullify_head;
+        goto out_close;
     }
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
@@ -463,7 +464,7 @@ read_check:
       {
         rrd_set_error("'%s' is too small (should be %ld bytes)",
                       file_name, (long long) correct_len);
-        goto out_nullify_head;
+        goto out_close;
       }
       if (rdwr & RRD_READVALUES) {
 	  long d_offset = offset;
@@ -481,15 +482,17 @@ read_check:
     
   out_done:
     return (rrd_file);
-  out_nullify_head:
-    rrd->stat_head = NULL;
   out_close:
 #ifdef HAVE_MMAP
     if (data != MAP_FAILED)
       munmap(data, rrd_file->file_len);
 #endif
-
-    close(rrd_simple_file->fd);
+#ifdef HAVE_LIBRADOS
+    if (rrd_file->rados)
+      rrd_rados_close(rrd_file->rados);
+#endif
+    if (rrd_simple_file->fd >= 0)
+      close(rrd_simple_file->fd);
   out_free:
     free(rrd_file->pvt);
     free(rrd_file);
@@ -687,9 +690,9 @@ int rrd_close(
 #ifdef HAVE_LIBRADOS
     if (rrd_file->rados)
         ret = rrd_rados_close(rrd_file->rados);
-    else
 #endif
-    ret = close(rrd_simple_file->fd);
+    if (rrd_simple_file->fd >= 0)
+        ret = close(rrd_simple_file->fd);
 
     if (ret != 0)
         rrd_set_error("closing file: %s", rrd_strerror(errno));
