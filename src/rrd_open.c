@@ -160,11 +160,12 @@ rrd_file_t *rrd_open(
     rrd_file_t *rrd_file = NULL;
     rrd_simple_file_t *rrd_simple_file = NULL;
     size_t     newfile_size = 0;
-    size_t header_len, value_cnt, data_len;
 
     /* Are we creating a new file? */
     if(rdwr & RRD_CREAT)
     {
+        size_t header_len, value_cnt, data_len;
+
         header_len = rrd_get_header_size(rrd);
 
         value_cnt = 0;
