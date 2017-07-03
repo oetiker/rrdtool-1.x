@@ -507,15 +507,12 @@ read_check:
         goto out_close;
       }
       if (rdwr & RRD_READVALUES) {
-	  long d_offset = offset;
-	  
-	  __rrd_read(rrd->rrd_value, rrd_value_t,
-		     row_cnt * rrd->stat_head->ds_cnt);
+        __rrd_read(rrd->rrd_value, rrd_value_t,
+                   row_cnt * rrd->stat_head->ds_cnt);
 
-	  rrd_file->header_len = d_offset;
-	  rrd_file->pos = d_offset;
+        if (rrd_seek(rrd_file, rrd_file->header_len, SEEK_SET) != 0)
+          goto out_close;
       }
-      
     }
 
   out_done:
