@@ -163,7 +163,7 @@ rrd_file_t *rrd_open(
     size_t header_len, value_cnt, data_len;
 
     /* Are we creating a new file? */
-    if((rdwr & RRD_CREAT) && (rrd->stat_head != NULL))
+    if(rdwr & RRD_CREAT)
     {
         header_len = rrd_get_header_size(rrd);
 
