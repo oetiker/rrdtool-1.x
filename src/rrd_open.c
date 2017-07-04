@@ -680,25 +680,30 @@ int rrd_close(
 {
     rrd_simple_file_t *rrd_simple_file;
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
-    int       ret;
+    int       ret = 0;
 
 #ifdef HAVE_MMAP
-    ret = munmap(rrd_simple_file->file_start, rrd_file->file_len);
-    if (ret != 0)
-        rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));
+    if (rrd_simple_file->file_start != NULL) {
+        if (munmap(rrd_simple_file->file_start, rrd_file->file_len) != 0) {
+            ret = -1;
+            rrd_set_error("munmap rrd_file: %s", rrd_strerror(errno));
+        }
+    }
 #endif
 #ifdef HAVE_LIBRADOS
-    if (rrd_file->rados)
-        ret = rrd_rados_close(rrd_file->rados);
+    if (rrd_file->rados) {
+        if (rrd_rados_close(rrd_file->rados) != 0)
+            ret = -1;
+    }
 #endif
-    if (rrd_simple_file->fd >= 0)
-        ret = close(rrd_simple_file->fd);
-
-    if (ret != 0)
-        rrd_set_error("closing file: %s", rrd_strerror(errno));
+    if (rrd_simple_file->fd >= 0) {
+        if (close(rrd_simple_file->fd) != 0) {
+            ret = -1;
+            rrd_set_error("closing file: %s", rrd_strerror(errno));
+        }
+    }
     free(rrd_file->pvt);
     free(rrd_file);
-    rrd_file = NULL;
     return ret;
 }
 
