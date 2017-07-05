@@ -232,7 +232,6 @@ char *rrd_list(int argc, char **argv)
 	};
 	struct optparse options;
 	int    opt;
-	char    *err = NULL;
 
         optparse_init(&options, argc, argv);
 
@@ -311,10 +310,8 @@ char *rrd_list(int argc, char **argv)
 	} else {
 		if (opt_daemon) {
 			fprintf(stderr, "Error connecting to rrdcached");
-			err = rrd_get_error();
-
-			if (err)
-				fprintf(stderr, ": %s", err);
+			if (rrd_test_error())
+				fprintf(stderr, ": %s", rrd_get_error());
 			fprintf(stderr, "\n");
 
 			free(opt_daemon);
