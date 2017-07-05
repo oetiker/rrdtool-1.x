@@ -417,11 +417,11 @@ done:
 	rrdc_forget(in_filename);
 	rrd_clear_error();
         
-        if (e && *e) {
+        if (e) {
             rrd_set_error(e);
-        }
-        if (e) free(e);
-        
+            free(e);
+        } else
+            rrd_set_error("error message was lost (out of memory)");
     }
     if (rrd_file) {
 	rrd_close(rrd_file);
