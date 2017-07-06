@@ -133,6 +133,7 @@ typedef int (*rrd_fetch_cb_t)(
 #define RRD_COPY        (1<<4)
 #define RRD_EXCL        (1<<5)
 #define RRD_READVALUES  (1<<6)
+#define RRD_LOCK        (1<<7)
 
     enum cf_en rrd_cf_conv(
     const char *string);

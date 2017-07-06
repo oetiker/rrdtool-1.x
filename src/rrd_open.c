@@ -6,15 +6,21 @@
  * $Id$
  *****************************************************************************/
 
-#include "rrd_tool.h"
-#include "unused.h"
-
 #ifdef WIN32
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#include <windows.h>
+#if _WIN32_MAXVER >= 0x0602 /* _WIN32_WINNT_WIN8 */
+#include <synchapi.h>
 #endif
 
+#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <limits.h>
+#endif /* WIN32 */
+
+#include "rrd_tool.h"
+#include "unused.h"
 
 #ifdef HAVE_BROKEN_MS_ASYNC
 #include <sys/types.h>
@@ -31,8 +37,8 @@
 #define	_LK_UNLCK	0	/* Unlock */
 #define	_LK_LOCK	1	/* Lock */
 #define	_LK_NBLCK	2	/* Non-blocking lock */
-#define	_LK_RLCK	3	/* Lock for read only */
-#define	_LK_NBRLCK	4	/* Non-blocking lock for read only */
+#define	_LK_RLCK	3	/* "Same as _LK_NBLCK" */
+#define	_LK_NBRLCK	4	/* "Same as _LK_LOCK" */
 
 
 #define	LK_UNLCK	_LK_UNLCK
@@ -124,6 +130,9 @@
 #endif
 #endif
 
+static int rrd_rwlock(rrd_file_t *rrd_file, int writelock);
+static int close_and_unlock(int fd);
+
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
@@ -201,6 +210,14 @@ rrd_file_t *rrd_open(
       if (rrd_file->rados == NULL)
           goto out_free;
 
+      if (rdwr & RRD_LOCK) {
+          /* Note: rados read lock is not implemented.  See rrd_lock(). */
+          if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
+              rrd_set_error("could not lock RRD");
+              goto out_close;
+          }
+      }
+
       if (rdwr & RRD_CREAT)
           goto out_done;
 
@@ -269,6 +286,13 @@ rrd_file_t *rrd_open(
     }
 #endif    
 #endif
+
+    if (rdwr & RRD_LOCK) {
+        if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
+            rrd_set_error("could not lock RRD");
+            goto out_close;
+        }
+    }
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
      * many concurrent seeks are even worse.  */
@@ -478,10 +502,9 @@ read_check:
       
     }
 
-    
-    
   out_done:
     return (rrd_file);
+
   out_close:
 #ifdef HAVE_MMAP
     if (data != MAP_FAILED)
@@ -491,8 +514,18 @@ read_check:
     if (rrd_file->rados)
       rrd_rados_close(rrd_file->rados);
 #endif
-    if (rrd_simple_file->fd >= 0)
-      close(rrd_simple_file->fd);
+    if (rrd_simple_file->fd >= 0) {
+      /* keep the original error */
+      char *e = strdup(rrd_get_error());
+
+      close_and_unlock(rrd_simple_file->fd);
+
+      if (e) {
+        rrd_set_error(e);
+        free(e);
+      } else
+        rrd_set_error("error message was lost (out of memory)");
+    }
   out_free:
     free(rrd_file->pvt);
     free(rrd_file);
@@ -556,37 +589,146 @@ void mincore_print(
 int rrd_lock(
     rrd_file_t *rrd_file)
 {
+    return rrd_rwlock(rrd_file, 1);
+}
+
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#define USE_WINDOWS_LOCK 1
+#endif
+
+#ifdef USE_WINDOWS_LOCK
+static
+int rrd_windows_lock(
+    int fd)
+{
+    int ret;
+    long pos;
+
+    /*
+     * _locking() is relative to fd position.
+     * We need to consistently lock bytes starting from 0,
+     * so we can successfully unlock on close.
+     *
+     * Note rrd_lock() API doesn't set a specific error message.
+     * Knowing that rrd_lock() (or even rrd_open()) failed should
+     * be specific enough, if someone manages to invoke rrdtool
+     * on something silly like a named pipe or COM1.
+     */
+    pos = tell(fd);
+    if (pos < 0)
+        return -1;
+
+    if (lseek(fd, 0, SEEK_SET) < 0)
+        return -1;
+
+    while (1) {
+        ret = _locking(fd, _LK_NBLCK, LONG_MAX);
+        if (ret == 0)
+            break; /* success */
+        if (errno != EACCES)
+            break; /* failure */
+        /* EACCES: someone else has the lock. */
+
+        /*
+         * Wait 0.01 seconds before trying again.  _locking()
+         * with _LK_LOCK would work similarly but waits 1 second
+         * between tries, which seems less desirable.
+         */
+        Sleep(10);
+    }
+
+    /* restore saved fd position */
+    if (lseek(fd, pos, SEEK_SET) < 0)
+        return -1;
+
+    return ret;
+}
+#endif
+
+static
+int close_and_unlock(
+    int fd)
+{
+    int ret = 0;
+
+#ifdef USE_WINDOWS_LOCK
+    /*
+     * "If a process closes a file that has outstanding locks, the locks are
+     *  unlocked by the operating system. However, the time it takes for the
+     *  operating system to unlock these locks depends upon available system
+     *  resources. Therefore, it is recommended that your process explicitly
+     *  unlock all files it has locked when it terminates."  (?!)
+     */
+
+    if (lseek(fd, 0, SEEK_SET) < 0) {
+        rrd_set_error("lseek: %s", rrd_strerror(errno));
+        ret = -1;
+        goto out_close;
+    }
+
+    ret = _locking(fd, LK_UNLCK, LONG_MAX);
+    if (ret != 0 && errno == EACCES)
+        /* fd was not locked - this is entirely possible, ignore the error */
+        ret = 0;
+
+    if (ret != 0)
+        rrd_set_error("unlock file: %s", rrd_strerror(errno));
+out_close:
+#endif
+
+    if (close(fd) != 0) {
+        ret = -1;
+        rrd_set_error("closing file: %s", rrd_strerror(errno));
+    }
+
+    return ret;
+}
+
+static
+int rrd_rwlock(
+    rrd_file_t *rrd_file,
+    int writelock)
+{
 #ifdef DISABLE_FLOCK
     (void)rrd_file;
     return 0;
 #else
 #ifdef HAVE_LIBRADOS
-    if (rrd_file->rados)
-      return rrd_rados_lock(rrd_file->rados);
+    if (rrd_file->rados) {
+        /*
+         * No read lock on rados.  It would be complicated by the
+         * use of a short finite lock duration in rrd_rados_lock().
+         * Also rados does not provide blocking locks.
+         *
+         * Rados users may use snapshots if they need to
+         * e.g. obtain a consistent backup.
+         */
+        if (writelock)
+            return rrd_rados_lock(rrd_file->rados);
+        else
+            return 0;
+    }
 #endif
     int       rcstat;
     rrd_simple_file_t *rrd_simple_file;
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
-    {
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
-        struct _stat st;
-
-        if (_fstat(rrd_simple_file->fd, &st) == 0) {
-            rcstat = _locking(rrd_simple_file->fd, _LK_NBLCK, st.st_size);
-        } else {
-            rcstat = -1;
-        }
+#ifdef USE_WINDOWS_LOCK
+    /* _locking() does not support read locks; we always take a write lock */
+    rcstat = rrd_windows_lock(rrd_simple_file->fd);
 #else
+    {
         struct flock lock;
 
-        lock.l_type = F_WRLCK;  /* exclusive write lock */
+        lock.l_type = writelock ?
+                          F_WRLCK: /* exclusive write lock or */
+                          F_RDLCK; /* shared read lock */
         lock.l_len = 0; /* whole file */
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
 
         rcstat = fcntl(rrd_simple_file->fd, F_SETLK, &lock);
-#endif
     }
+#endif
 
     return (rcstat);
 #endif
@@ -682,6 +824,12 @@ int rrd_close(
     rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
     int       ret = 0;
 
+#ifdef HAVE_LIBRADOS
+    if (rrd_file->rados) {
+        if (rrd_rados_close(rrd_file->rados) != 0)
+            ret = -1;
+    }
+#endif
 #ifdef HAVE_MMAP
     if (rrd_simple_file->file_start != NULL) {
         if (munmap(rrd_simple_file->file_start, rrd_file->file_len) != 0) {
@@ -690,17 +838,9 @@ int rrd_close(
         }
     }
 #endif
-#ifdef HAVE_LIBRADOS
-    if (rrd_file->rados) {
-        if (rrd_rados_close(rrd_file->rados) != 0)
-            ret = -1;
-    }
-#endif
     if (rrd_simple_file->fd >= 0) {
-        if (close(rrd_simple_file->fd) != 0) {
+        if (close_and_unlock(rrd_simple_file->fd) != 0)
             ret = -1;
-            rrd_set_error("closing file: %s", rrd_strerror(errno));
-        }
     }
     free(rrd_file->pvt);
     free(rrd_file);

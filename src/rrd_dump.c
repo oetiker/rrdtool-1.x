@@ -90,7 +90,8 @@ int rrd_dump_cb_r(
 
     rrd_init(&rrd);
 
-    rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_READAHEAD);
+    rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_LOCK |
+                                        RRD_READAHEAD);
     if (rrd_file == NULL) {
         rrd_free(&rrd);
         return (-1);

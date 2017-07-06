@@ -174,7 +174,8 @@ int rrd_tune(
     }
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_READAHEAD | RRD_READVALUES);
+    rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_LOCK |
+                                           RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
 	goto done;
     }

@@ -58,19 +58,11 @@ int rrd_resize(
 
 
     rrd_init(&rrdold);
-    rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE | RRD_COPY);
+    rrd_file = rrd_open(infilename, &rrdold, RRD_READWRITE | RRD_LOCK | RRD_COPY);
     if (rrd_file == NULL) {
         rrd_free(&rrdold);
         return (-1);
     }
-
-    if (rrd_lock(rrd_file) != 0) {
-        rrd_set_error("could not lock original RRD");
-        rrd_free(&rrdold);
-        rrd_close(rrd_file);
-        return (-1);
-    }
-
 
     if (target_rra >= rrdold.stat_head->rra_cnt) {
         rrd_set_error("no such RRA in this RRD");
@@ -111,21 +103,13 @@ int rrd_resize(
     /* Set this so that the file will be created with the correct size */
     rrdnew.rra_def[target_rra].row_cnt += modify;
 
-    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT);
+    rrd_out_file = rrd_open(outfilename, &rrdnew, RRD_READWRITE | RRD_CREAT | RRD_LOCK);
     if (rrd_out_file == NULL) {
         rrd_set_error("Can't create '%s': %s", outfilename,
                       rrd_strerror(errno));
         rrd_free(&rrdnew);
         rrd_free(&rrdold);
         rrd_close(rrd_file);
-        return (-1);
-    }
-    if (rrd_lock(rrd_out_file) != 0) {
-        rrd_set_error("could not lock new RRD");
-        rrd_free(&rrdnew);
-        rrd_free(&rrdold);
-        rrd_close(rrd_file);
-        rrd_close(rrd_out_file);
         return (-1);
     }
 /*XXX: do one write for those parts of header that are unchanged */

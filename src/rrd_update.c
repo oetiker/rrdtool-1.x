@@ -366,7 +366,7 @@ static char *rrd_get_file_template(const char *filename) /* {{{ */
 
 	/* open file */
 	rrd_init(&rrd);
-	rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+	rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_LOCK);
 	if (rrd_file == NULL)
 		goto err_free;
 
@@ -858,7 +858,8 @@ static int _rrd_updatex(
     }
 
     rrd_init(&rrd);
-    if ((rrd_file = rrd_open(filename, &rrd, RRD_READWRITE)) == NULL) {
+    rrd_file = rrd_open(filename, &rrd, RRD_READWRITE | RRD_LOCK);
+    if (rrd_file == NULL) {
         goto err_free;
     }
     /* We are now at the beginning of the rra's */
@@ -867,14 +868,6 @@ static int _rrd_updatex(
     version = atoi(rrd.stat_head->version);
 
     initialize_time(&current_time, &current_time_usec, version);
-
-    /* get exclusive lock to whole file.
-     * lock gets removed when we close the file.
-     */
-    if (rrd_lock(rrd_file) != 0) {
-        rrd_set_error("could not lock RRD");
-        goto err_close;
-    }
 
     if (allocate_data_structures(&rrd, &updvals,
                                  &pdp_temp, tmplt, &tmpl_idx, &tmpl_cnt,

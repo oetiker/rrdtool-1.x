@@ -1665,7 +1665,7 @@ static int handle_request_update (HANDLER_PROTO) /* {{{ */
 
     rrd_clear_error();
     rrd_init(&rrd);
-    rrd_file = rrd_open(file, &rrd, RRD_READONLY);
+    rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
     if (!rrd_file)
     {
       rrd_free(&rrd);
@@ -2276,7 +2276,7 @@ static int handle_request_last (HANDLER_PROTO) /* {{{ */
   }
   rrd_clear_error();
   rrd_init(&rrd);
-  rrd_file = rrd_open(file,&rrd,RRD_READONLY);
+  rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
   if(!rrd_file) {
     rrd_free(&rrd);
     rc = send_response(sock, RESP_ERR, "RRD Error: %s\n", rrd_get_error());
