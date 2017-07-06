@@ -574,7 +574,7 @@ static int response_read(rrd_client_t *client, rrdc_response_t **ret_response) /
   if (ret->status <= 0)
   {
     if (ret->status < 0)
-      rrd_set_error("rrdcached@%S: %s", client->sd_path, ret->message);
+      rrd_set_error("rrdcached@%s: %s", client->sd_path, ret->message);
     goto out;
   }
 

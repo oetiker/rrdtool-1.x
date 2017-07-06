@@ -88,7 +88,7 @@ if is_cached; then
 
         # rrdcached-specific tests
         ( cd "$LIST_DIR"; ln -s /tmp ./; )
-        list_count=`$RRDTOOL list "$CACHED_DIR" | grep -c '^tmp$'`
+        list_count=`$RRDTOOL list "/$CACHED_DIR" | grep -c '^tmp$'`
         test $list_count -eq 0
         report "escape from cached basedir via symlink denied"
 
