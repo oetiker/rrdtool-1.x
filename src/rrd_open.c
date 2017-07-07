@@ -374,7 +374,11 @@ rrd_file_t *rrd_open(
     }
 #endif
 #if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
-    posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
+    if (rdwr & RRD_COPY) {
+        posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    } else {
+        posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
+    }
 #endif
 
 #ifdef HAVE_LIBRADOS
