@@ -842,7 +842,8 @@ int rrd_create_r2(
         rrd_t trrd;
 
         rrd_init(&trrd);
-        rrd_file_t *tf = rrd_open(template, &trrd, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
+        rrd_file_t *tf = rrd_open(template, &trrd, RRD_READONLY | RRD_LOCK |
+                                                   RRD_READAHEAD | RRD_READVALUES);
         if (tf == NULL) {
             rrd_set_error("Cannot open template RRD %s", template);
             goto done;
@@ -989,8 +990,8 @@ int rrd_create_r2(
             }
         
             rrd_init(srrd);
-            rrd_file_t *sf = rrd_open(*s, srrd, RRD_READONLY | RRD_READAHEAD | RRD_READVALUES);
-
+            rrd_file_t *sf = rrd_open(*s, srrd, RRD_READONLY | RRD_LOCK |
+                                                RRD_READAHEAD | RRD_READVALUES);
             if (sf == NULL) {
                 rrd_set_error("Cannot open source RRD %s", *s);
                 goto done;

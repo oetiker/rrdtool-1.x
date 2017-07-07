@@ -164,7 +164,7 @@ rrd_info_t *rrd_info_r(
     enum dst_en current_ds;
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+    rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_LOCK);
     if (rrd_file == NULL)
         goto err_free;
 

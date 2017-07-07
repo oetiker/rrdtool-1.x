@@ -91,7 +91,7 @@ time_t rrd_first_r(
     rrd_file_t *rrd_file;
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(filename, &rrd, RRD_READONLY);
+    rrd_file = rrd_open(filename, &rrd, RRD_READONLY | RRD_LOCK);
     if (rrd_file == NULL) {
         goto err_free;
     }
