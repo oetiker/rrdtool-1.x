@@ -754,13 +754,12 @@ static char *includefile(
 
         readfile(filename, &buffer, 0);
         if (rrd_test_error()) {
-            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = (char *) malloc(len);
-
-            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
+            char err[4096];
+            snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
+
             free(buffer);
-            return err;
+            return stralloc(err);
         } else {
             return buffer;
         }
@@ -922,11 +921,11 @@ static char *drawgraph(
         return stralloc(calcpr[0]);
     } else {
         if (rrd_test_error()) {
-            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = (char *) malloc(len);
-            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
+            char err[4096];
+            snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
-            return err;
+
+            return stralloc(err);
         }
     }
     return NULL;
@@ -965,12 +964,12 @@ static char *printtimelast(
 
         last = rrd_last(argc, (char **) args - 1);
         if (rrd_test_error()) {
-            const size_t len = strlen(rrd_get_error()) + DS_NAM_SIZE;
-            char *err = (char *) malloc(len);
-            snprintf(err, len, "[ERROR: %s]", rrd_get_error());
+            char err[4096];
+            snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
+
             free(buf);
-            return err;
+            return stralloc(err);
         }
         tm_last = *localtime(&last);
         strftime(buf, 254, args[1], &tm_last);
