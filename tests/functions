@@ -28,7 +28,9 @@ function blank {
 # we set some env. vars to work around them:
 
 VALGRIND_ERR_FILE="${BASEDIR}/$(basename $0)-valgrind-err.tmp"
-rm "$VALGRIND_ERR_FILE"
+if [ -e "$VALGRIND_ERR_FILE" ]; then
+  rm "$VALGRIND_ERR_FILE"
+fi
 
 function valgrind {
   # use a sub shell, so setting environment variables only affects the current
