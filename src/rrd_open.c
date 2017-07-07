@@ -360,6 +360,11 @@ rrd_file_t *rrd_open(
     if (rdwr & RRD_CREAT)
         goto out_done;
 
+    if (rdwr & RRD_READAHEAD) {
+        /* If perfect READAHEAD is not achieved for whatever reason, caller
+           will not thank us for advising the kernel of RANDOM access below.*/
+        rdwr |= RRD_COPY;
+    }
     /* In general we need no read-ahead when dealing with rrd_files.
        When we stop reading, it is highly unlikely that we start up again.
        In this manner we actually save time and disk access (and buffer cache).
@@ -367,7 +372,7 @@ rrd_file_t *rrd_open(
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        madvise(data, rrd_file->file_len, MADV_SEQUENTIAL );
+        madvise(data, rrd_file->file_len, MADV_SEQUENTIAL);
     } else {
         /* We do not need to read anything in for the moment */
         madvise(data, rrd_file->file_len, MADV_RANDOM);
