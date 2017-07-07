@@ -306,23 +306,6 @@ rrd_file_t *rrd_open(
         }
     }
     no_lseek_necessary:
-#if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
-    /* In general we need no read-ahead when dealing with rrd_files.
-       When we stop reading, it is highly unlikely that we start up again.
-       In this manner we actually save time and disk access (and buffer cache).
-       Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */
-    posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
-#endif
-
-/*
-        if (rdwr & RRD_READWRITE)
-        {
-           if (setvbuf((rrd_simple_file->fd),NULL,_IONBF,2)) {
-                  rrd_set_error("failed to disable the stream buffer\n");
-                  return (-1);
-           }
-        }
-*/
 
 #ifdef HAVE_MMAP
 #ifndef HAVE_POSIX_FALLOCATE
@@ -376,13 +359,30 @@ rrd_file_t *rrd_open(
 #endif
     if (rdwr & RRD_CREAT)
         goto out_done;
+
+    if (rdwr & RRD_READAHEAD) {
+        /* If perfect READAHEAD is not achieved for whatever reason, caller
+           will not thank us for advising the kernel of RANDOM access below.*/
+        rdwr |= RRD_COPY;
+    }
+    /* In general we need no read-ahead when dealing with rrd_files.
+       When we stop reading, it is highly unlikely that we start up again.
+       In this manner we actually save time and disk access (and buffer cache).
+       Thanks to Dave Plonka for the Idea of using POSIX_FADV_RANDOM here. */
 #ifdef USE_MADVISE
     if (rdwr & RRD_COPY) {
         /* We will read everything in a moment (copying) */
-        madvise(data, rrd_file->file_len, MADV_SEQUENTIAL );
+        madvise(data, rrd_file->file_len, MADV_SEQUENTIAL);
     } else {
         /* We do not need to read anything in for the moment */
         madvise(data, rrd_file->file_len, MADV_RANDOM);
+    }
+#endif
+#if !defined(HAVE_MMAP) && defined(HAVE_POSIX_FADVISE)
+    if (rdwr & RRD_COPY) {
+        posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    } else {
+        posix_fadvise(rrd_simple_file->fd, 0, 0, POSIX_FADV_RANDOM);
     }
 #endif
 
@@ -442,6 +442,21 @@ read_check:
 
     rrd_file->header_len = offset;
     rrd_file->pos = offset;
+
+#if defined(HAVE_MMAP) && defined(USE_MADVISE)
+    if (data != MAP_FAILED) {
+        /* MADV_SEQUENTIAL mentions drop-behind.  Override it for the header
+         * now we've read it, in case anyone implemented drop-behind.
+         *
+         * Do *not* fall back to fadvise() for !HAVE_MMAP.  In that case,
+         * we've copied the header and will not read it again.  Doing e.g.
+         * FADV_NORMAL on Linux (4.12) on *any* region would negate the
+         * effect of previous FADV_SEQUENTIAL.
+         */
+        madvise(data, sysconf(_SC_PAGESIZE), MADV_NORMAL);
+        madvise(data, sysconf(_SC_PAGESIZE), MADV_WILLNEED);
+    }
+#endif
 
     {
       unsigned long row_cnt = 0;
