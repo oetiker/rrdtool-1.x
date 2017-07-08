@@ -160,11 +160,12 @@ rrd_file_t *rrd_open(
     rrd_file_t *rrd_file = NULL;
     rrd_simple_file_t *rrd_simple_file = NULL;
     size_t     newfile_size = 0;
-    size_t header_len, value_cnt, data_len;
 
     /* Are we creating a new file? */
-    if((rdwr & RRD_CREAT) && (rrd->stat_head != NULL))
+    if(rdwr & RRD_CREAT)
     {
+        size_t header_len, value_cnt, data_len;
+
         header_len = rrd_get_header_size(rrd);
 
         value_cnt = 0;
@@ -506,15 +507,12 @@ read_check:
         goto out_close;
       }
       if (rdwr & RRD_READVALUES) {
-	  long d_offset = offset;
-	  
-	  __rrd_read(rrd->rrd_value, rrd_value_t,
-		     row_cnt * rrd->stat_head->ds_cnt);
+        __rrd_read(rrd->rrd_value, rrd_value_t,
+                   row_cnt * rrd->stat_head->ds_cnt);
 
-	  rrd_file->header_len = d_offset;
-	  rrd_file->pos = d_offset;
+        if (rrd_seek(rrd_file, rrd_file->header_len, SEEK_SET) != 0)
+          goto out_close;
       }
-      
     }
 
   out_done:

@@ -1235,13 +1235,9 @@ rrd_info_t *rrd_client_info(rrd_client_t *client, const char *filename) /* {{{ *
   res = NULL;
   status = request(client, buffer, buffer_size, &res);
 
-  if (status != 0) {
-    if (res && res->message) {
-      rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
-      response_free(res);
-    }
-    return (NULL);
-  }
+  if (status != 0 || res->status < 0)
+    goto out_free_res;
+
   data = cd = NULL;
   for( l=0 ; l < res->lines_num ; l++ ) {
     /* first extract the keyword */
@@ -1284,6 +1280,8 @@ rrd_info_t *rrd_client_info(rrd_client_t *client, const char *filename) /* {{{ *
     cd = rrd_info_push(cd, sprintf_alloc("%s",k), itype, info);
 	if(!data) data = cd;
   }
+
+out_free_res:
   response_free (res);
 
   return (data);
@@ -1350,13 +1348,10 @@ char *rrd_client_list(rrd_client_t *client, int recursive, const char *dirname) 
   buffer[buffer_size - 1] = '\n';
 
   res = NULL;
-
   status = request(client, buffer, buffer_size, &res);
 
-  if (status != 0) {
-    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
+  if (status != 0 || res->status < 0)
     goto out_free_res;
-  }
 
   /* Handle the case where the list is empty, allocate
    * a single byte zeroed string.
@@ -1465,10 +1460,13 @@ time_t rrd_client_last(rrd_client_t *client, const char *filename) /* {{{ */
   res = NULL;
   status = request(client, buffer, buffer_size, &res);
 
-  if (status != 0) {
-    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
+  if (status != 0)
+    return (-1);
+  if (res->status < 0) {
+    response_free (res);
     return (-1);
   }
+
   lastup = atol(res->message);
   response_free (res);
 
@@ -1540,10 +1538,13 @@ time_t rrd_client_first (rrd_client_t *client, const char *filename, int rrainde
   res = NULL;
   status = request(client, buffer, buffer_size, &res);
 
-  if (status != 0) {
-    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
+  if (status != 0)
+    return (-1);
+  if (res->status < 0) {
+    response_free (res);
     return (-1);
   }
+
   firstup = atol(res->message);
   response_free (res);
 
@@ -1671,12 +1672,12 @@ int rrd_client_create_r2(rrd_client_t *client, const char *filename, /* {{{ */
   res = NULL;
   status = request(client, buffer, buffer_size, &res);
 
-  if (status != 0) {
-    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
+  if (status != 0)
     return (-1);
-  }
+
+  status = res->status;
   response_free (res);
-  return(0);
+  return(status);
 } /* }}} int rrd_client_create_r2 */
 int rrdc_create_r2(const char *filename, /* {{{ */
     unsigned long pdp_step,
@@ -1790,12 +1791,11 @@ int rrd_client_fetch (rrd_client_t *client, const char *filename, /* {{{ */
     return (status);
   }
   status = res->status;
-  if (status < 0)
-  {
-    rrd_set_error ("rrdcached@%s: %s", client->sd_path, res->message);
-    response_free (res);
+  if (status < 0) {
+    response_free(res);
     return (status);
   }
+
   /* }}} Send request */
 
   ds_names = NULL;
