@@ -716,7 +716,7 @@ The information is returned, one item per line, with the format:
 
  I<keyname> I<type> I<value>
 
-=item B<CREATE> I<filename> [-s I<stepsize>] [-b I<begintime>] [-O] I<DSdefinitions> ... I<RRAdefinitions> ...
+=item B<CREATE> I<filename> [-s I<stepsize>] [-b I<begintime>] [-r I<sourcefile> ...] [-t I<templatefile>] [-O] I<DSdefinitions> ... I<RRAdefinitions> ...
 
 This will create the RRD file according to the supplied parameters, provided
 the parameters are valid, and (if the -O option is given or if the rrdcached
