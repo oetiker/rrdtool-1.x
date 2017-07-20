@@ -1279,6 +1279,10 @@ rrd_info_t *rrd_client_info(rrd_client_t *client, const char *filename) /* {{{ *
 
     cd = rrd_info_push(cd, sprintf_alloc("%s",k), itype, info);
 	if(!data) data = cd;
+    if (itype == RD_I_STR) {
+      free(info.u_str);
+      info.u_str = NULL;
+    }
   }
 
 out_free_res:
