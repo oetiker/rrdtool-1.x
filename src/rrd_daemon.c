@@ -1485,28 +1485,19 @@ static int handle_request_pending(HANDLER_PROTO) /* {{{ */
     return syntax_error(sock,cmd);
 
   file = get_abs_path(pbuffile);
-  if (file == NULL) {
-    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
-    goto done;
-  }
+  if (file == NULL)
+    return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
 
   pthread_mutex_lock(&cache_lock);
   ci = g_tree_lookup(cache_tree, file);
-  if (ci == NULL)
-  {
-    pthread_mutex_unlock(&cache_lock);
-    rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOENT));
-    goto done;
+  if (ci != NULL) {
+    for (size_t i=0; i < ci->values_num; i++)
+      add_response_info(sock, "%s\n", ci->values[i]);
   }
 
-  for (size_t i=0; i < ci->values_num; i++)
-    add_response_info(sock, "%s\n", ci->values[i]);
-
-  pthread_mutex_unlock(&cache_lock);
-  rc = send_response(sock, RESP_OK, "updates pending\n");
-done:
   free(file);
-  return rc;
+  pthread_mutex_unlock(&cache_lock);
+  return send_response(sock, RESP_OK, "updates pending\n");
 } /* }}} static int handle_request_pending */
 
 static int handle_request_forget(HANDLER_PROTO) /* {{{ */
