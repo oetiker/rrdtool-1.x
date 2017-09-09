@@ -1,0 +1,13 @@
+=head1 NAME
+
+PDP innter calculation logics with an example by Tianpeng Xia
+
+=head1 DESCRIPTION
+
+This article explains how each PDP is calculated in a detailed yet easy-to-understand way, with real-wolrd data.
+
+=head1 Refreshing some basics about PDP
+=head1 Calculation logics
+=head1 Some real-world examples
+=head1 SUMMARY
+=head1 AUTHOR
