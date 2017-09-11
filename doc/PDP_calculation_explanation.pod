@@ -4,17 +4,39 @@ PDP innter calculation logics with an example by Tianpeng Xia
 
 =head1 DESCRIPTION
 
-This article explains how every "each" PDP is calculated in a detailed yet easy-to-understand way, with real-wolrd data.
+This article explains how each PDP is calculated in a detailed yet easy-to-understand way, with real-wolrd data.
 
 =head1 Refreshing some basics about PDP
 
-=head2 different data source types
+=head2 Fundamental knowledge
 
-=head2 rate, rate, rate
+If you have not read the tutorials or man pages either on the offcial site or those by others, then I strongly encourage you to do so.
+As said in the description, this article will only explain how PDP is calculated, but not the definition of it.
+So please read the following materials to get a basic understanding of PDP:  
+
+L<http://rrdtool.vandenbogaerdt.nl/process.php> - By Alex van den Bogaerdt. This article explained PDP in a very detailed and clear way, however, it does not explain the "normalization process" in its "Normalize interval" section in the right way( as opposed to the official version I confirmed with @oetiker himself). The flaw can be easily seen it the bar charts, discussed in the "Calculation logics" section.
+
+L<https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html> - This one is on the official site. Actually it's the manual page for "rrdcreate", and it reveals what's under the hood with regard to PDP calculation in its "The HEARTBEAT and the STEP" section.
+
+The text graph by Don Baarda privodes a vivid explanation on how B<UNKOWN> data are produced and how heartbeat value can influence in the sampling. Unforturnately, it fails to give a clear method by which PDPs are calculated.
+
+L<https://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html> - Another detailed offcial tutorial by Alex van den Bogaerdt. Similarly, it only provides examples with data evenly and exactly distributed according to the step set.
+
+If you don't like doing experiments or care about the inner machenics that much, you can just stop here and give more attention to more practical topics like graph exports or command manual. But if you are the sort of people like me who just care as much about the calculation logics, please read on.
 
 =head1 Calculation logics
 
-=head2 detailed explanations of each version
+Here begins the core part of this artile. In the folling content of this section, I would like to give two versions of calculation methods, one by Alex van den Bogaerdt and the other by @eotiker.
+
+=head2 Bogaerdt version
+
+As can be seen on this page: L<http://rrdtool.vandenbogaerdt.nl/process.php>, after all the primary data are transformed to rates( except for GAUGE, of course), they have to go through a B<normalization process> if they are not distributed exactly according to the step or well defined boundaries in time, in the words of the auther.
+
+What does that mean? Basicly, if all the B<known> (as opposed to an B<UNKOWN> value) data make up at least 50% of all slots during a period a PDP is calculated from them. 
+
+todo 
+
+=head2 
 
 =head2 maybe some statistic proofs
 
