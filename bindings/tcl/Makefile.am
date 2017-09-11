@@ -24,10 +24,12 @@ if BUILD_TCL_SITE
 tclpkgdir = @TCL_PACKAGE_DIR@
 tclpkg_DATA = pkgIndex.tcl
 tclpkg_SCRIPTS = ifOctets.tcl
+tclpkg_rellibdir = $(libdir)
 else
-pkgindexdir = $(pkglibdir)
-pkgindex_DATA = pkgIndex.tcl
-pkgindex_SCRIPTS = ifOctets.tcl
+tclpkgdir = $(pkglibdir)
+tclpkg_DATA = pkgIndex.tcl
+tclpkg_SCRIPTS = ifOctets.tcl
+tclpkg_rellibdir = ..
 endif
 
 # Automake doesn't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
@@ -49,7 +51,7 @@ tclrrd.o: tclrrd.c
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -c $(srcdir)/tclrrd.c -DVERSION=\"$(VERSION)\"
 
 pkgIndex.tcl:
-	echo "package ifneeded Rrd $(VERSION) \"load $(libdir)/tclrrd$(VERSION)[info sharedlibextension]\"" > $@
+	echo "package ifneeded Rrd $(VERSION) [list load [file join \$$dir $(tclpkg_rellibdir)/tclrrd$(VERSION)[info sharedlibextension]]]" > $@
 
 install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)
