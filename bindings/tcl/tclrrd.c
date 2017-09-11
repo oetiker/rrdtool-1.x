@@ -309,6 +309,39 @@ static int Rrd_Flushcached(
 
 
 /* Thread-safe version */
+static int Rrd_First(
+    ClientData __attribute__((unused)) clientData,
+    Tcl_Interp *interp,
+    int argc,
+    CONST84 char *argv[])
+{
+    time_t    t;
+    int rraindex = 0;
+
+    if (argc < 2 || argc > 3) {
+        Tcl_AppendResult(interp, "RRD Error: wrong # args filename ?rraindex?",
+                         (char *) NULL);
+        return TCL_ERROR;
+    }
+    if (Tcl_GetInt(interp, argv[2], &rraindex) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    t = rrd_first_r(argv[1], rraindex);
+
+    if (rrd_test_error()) {
+        Tcl_AppendResult(interp, "RRD Error: ",
+                         rrd_get_error(), (char *) NULL);
+        rrd_clear_error();
+        return TCL_ERROR;
+    }
+
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(t));
+
+    return TCL_OK;
+}
+
+/* Thread-safe version */
 static int Rrd_Last(
     ClientData __attribute__((unused)) clientData,
     Tcl_Interp *interp,
@@ -737,6 +770,7 @@ typedef struct {
 static CmdInfo rrdCmds[] = {
     {"Rrd::create", Rrd_Create, 1}, /* Thread-safe version */
     {"Rrd::dump", Rrd_Dump, 0}, /* Thread-safe version */
+    {"Rrd::first", Rrd_First, 0}, /* Thread-safe version */
     {"Rrd::flushcached", Rrd_Flushcached, 0},
     {"Rrd::info", Rrd_Info, 0}, /* Thread-safe version */
     {"Rrd::last", Rrd_Last, 0}, /* Thread-safe version */
