@@ -527,6 +527,7 @@ static int Rrd_Lastupdate(
             free(ds_namv);
         }
     }
+    getopt_cleanup(argc, argv2);
     return TCL_OK;
 }
 
