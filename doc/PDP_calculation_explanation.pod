@@ -30,7 +30,7 @@ Here begins the core part of this artile. In the folling content of this section
 
 =head2 Bogaerdt version
 
-As can be seen on this page: L<http://rrdtool.vandenbogaerdt.nl/process.php>, after all the primary data are transformed to rates( except for GAUGE, of course), they have to go through a B<normalization process> if they are not distributed exactly according to the step or well defined boundaries in time, in the words of the auther.
+As can be seen on this page: L<http://rrdtool.vandenbogaerdt.nl/process.php>, after all the primary data are transformed to rates( except for GAUGE, of course), they have to go through a B<normalization process> if they are not distributed exactly according to the step or on well defined boundaries in time, in the words of the auther.
 
 What does that mean? Basicly, if all the B<known> (as opposed to an B<UNKOWN> value) data make up at least 50% of all slots during a period a PDP is calculated from them. 
 
