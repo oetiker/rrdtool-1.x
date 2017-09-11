@@ -4,10 +4,32 @@ PDP innter calculation logics with an example by Tianpeng Xia
 
 =head1 DESCRIPTION
 
-This article explains how each PDP is calculated in a detailed yet easy-to-understand way, with real-wolrd data.
+This article explains how every "each" PDP is calculated in a detailed yet easy-to-understand way, with real-wolrd data.
 
 =head1 Refreshing some basics about PDP
+
+=head2 different data source types
+
+=head2 rate, rate, rate
+
 =head1 Calculation logics
+
+=head2 detailed explanations of each version
+
+=head2 maybe some statistic proofs
+
 =head1 Some real-world examples
+
+=head2 focus on a step && clarify some terms: within, at, beyond
+
+=head3 senario 1 - the first sample within the step, no sample at or beyond the last second
+
+=head3 senario 1 - the first sample within the step, no sample at or beyond the last second
+
+=head3 todo...
+
 =head1 SUMMARY
+
+reiterate the official version of calculation
+
 =head1 AUTHOR
