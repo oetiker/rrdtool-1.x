@@ -106,7 +106,7 @@ librrd_la_DEPENDENCIES    = librrdupd.la
 librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS) $(LIBINTL)
 librrd_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrd_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
-librrd_la_LDFLAGS         += -export-symbols librrd.sym
+librrd_la_LDFLAGS         += -export-symbols $(srcdir)/librrd.sym
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 

@@ -2,6 +2,7 @@
  * tclrrd.c -- A TCL interpreter extension to access the RRD library.
  *
  * Copyright (c) 1999,2000 Frank Strauss, Technical University of Braunschweig.
+ * Copyright (c) 2017 Patzschke + Rasp Software GmbH, Wiesbaden
  *
  * Thread-safe code copyright (c) 2005 Oleg Derevenetz, CenterTelecom Voronezh ISP.
  *
@@ -201,6 +202,57 @@ static int Rrd_Create(
     return TCL_OK;
 }
 
+/**
+ * Convert RRDtool info to a Tcl dictionary.
+ *
+ * @param data RRDtool info object
+ * @return Tcl dictionary
+ */
+static Tcl_Obj *
+convert_info(const rrd_info_t *data)
+{
+    Tcl_Obj *dictObj, *valueObj, *keyObj;
+
+    dictObj = Tcl_NewDictObj();
+
+    while (data) {
+        valueObj = NULL;
+
+        switch (data->type) {
+            case RD_I_VAL:
+                if (isnan(data->value.u_val)) {
+		    valueObj = Tcl_NewObj();
+                } else
+		    valueObj = Tcl_NewDoubleObj(data->value.u_val);
+                break;
+
+            case RD_I_CNT:
+            case RD_I_INT:
+		valueObj = Tcl_NewLongObj(data->value.u_cnt);
+                break;
+
+            case RD_I_STR:
+	        valueObj = Tcl_NewStringObj(data->value.u_str, -1);
+                break;
+
+            case RD_I_BLO:
+	        valueObj = Tcl_NewByteArrayObj(data->value.u_blo.ptr, data->value.u_blo.size);
+                break;
+
+            default:
+                break;
+        }
+
+        if (valueObj != NULL) {
+	    keyObj = Tcl_NewStringObj(data->key, -1);
+	    Tcl_DictObjPut(NULL, dictObj, keyObj, valueObj);
+	}
+
+        data = data->next;
+    }
+
+    return dictObj;
+}
 
 
 /* Thread-safe version */
@@ -255,6 +307,39 @@ static int Rrd_Flushcached(
     return TCL_OK;
 }
 
+
+/* Thread-safe version */
+static int Rrd_First(
+    ClientData __attribute__((unused)) clientData,
+    Tcl_Interp *interp,
+    int argc,
+    CONST84 char *argv[])
+{
+    time_t    t;
+    int rraindex = 0;
+
+    if (argc < 2 || argc > 3) {
+        Tcl_AppendResult(interp, "RRD Error: wrong # args filename ?rraindex?",
+                         (char *) NULL);
+        return TCL_ERROR;
+    }
+    if (Tcl_GetInt(interp, argv[2], &rraindex) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    t = rrd_first_r(argv[1], rraindex);
+
+    if (rrd_test_error()) {
+        Tcl_AppendResult(interp, "RRD Error: ",
+                         rrd_get_error(), (char *) NULL);
+        rrd_clear_error();
+        return TCL_ERROR;
+    }
+
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(t));
+
+    return TCL_OK;
+}
 
 /* Thread-safe version */
 static int Rrd_Last(
@@ -361,6 +446,41 @@ static int Rrd_Update(
     return TCL_OK;
 }
 
+static int Rrd_Info(
+    ClientData __attribute__((unused)) clientData,
+    Tcl_Interp *interp,
+    int argc,
+    CONST84 char *argv[])
+{
+    int status = TCL_OK;
+    rrd_info_t *data;
+    char **argv2;
+
+    /* TODO: support for rrdcached */
+    if (argc != 2) {
+        Tcl_AppendResult(interp, "RRD Error: needs a single rrd filename",
+                         (char *) NULL);
+        return TCL_ERROR;
+    }
+
+    argv2 = getopt_init(argc, argv);
+
+    data = rrd_info_r(argv2[1]);
+
+    if (data) {
+	Tcl_SetObjResult(interp, convert_info(data));
+	rrd_info_free(data);
+    } else {
+        Tcl_AppendResult(interp, "RRD Error: ",
+                         rrd_get_error(), (char *) NULL);
+	rrd_clear_error();
+	status = TCL_ERROR;
+    }
+
+    getopt_cleanup(argc, argv2);
+    return status;
+}
+
 static int Rrd_Lastupdate(
     ClientData __attribute__((unused)) clientData,
     Tcl_Interp *interp,
@@ -407,6 +527,7 @@ static int Rrd_Lastupdate(
             free(ds_namv);
         }
     }
+    getopt_cleanup(argc, argv2);
     return TCL_OK;
 }
 
@@ -650,7 +771,9 @@ typedef struct {
 static CmdInfo rrdCmds[] = {
     {"Rrd::create", Rrd_Create, 1}, /* Thread-safe version */
     {"Rrd::dump", Rrd_Dump, 0}, /* Thread-safe version */
+    {"Rrd::first", Rrd_First, 0}, /* Thread-safe version */
     {"Rrd::flushcached", Rrd_Flushcached, 0},
+    {"Rrd::info", Rrd_Info, 0}, /* Thread-safe version */
     {"Rrd::last", Rrd_Last, 0}, /* Thread-safe version */
     {"Rrd::lastupdate", Rrd_Lastupdate, 0}, /* Thread-safe version */
     {"Rrd::update", Rrd_Update, 1}, /* Thread-safe version */
