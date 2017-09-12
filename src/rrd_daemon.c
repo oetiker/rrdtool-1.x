@@ -1476,7 +1476,7 @@ static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
 
 static int handle_request_pending(HANDLER_PROTO) /* {{{ */
 {
-  int status, rc;
+  int status;
   char *file=NULL, *pbuffile;
   cache_item_t *ci;
 
@@ -2522,16 +2522,12 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
   start_ptr = list;
   end_ptr = list;
 
-  do {
+  while (*start_ptr != '\0') {
     end_ptr = strchr(start_ptr, '\n');
 
     if (end_ptr == NULL) {
     	end_ptr = start_ptr + strlen(start_ptr);
-
-    	if (end_ptr == start_ptr) {
-	    	break;
-	}
-	  }
+  }
 
     if ((end_ptr - start_ptr + strlen(fullpath) + 1) >= PATH_MAX) {
       /* Name too long: skip entry */
@@ -2585,7 +2581,7 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
 loop_next:
     start_ptr = end_ptr + 1;
 
-  } while (start_ptr != '\0');
+  }
 
   free(list);
 
