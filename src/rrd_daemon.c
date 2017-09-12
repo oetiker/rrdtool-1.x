@@ -2576,7 +2576,8 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
     }
 
     /* Absolute path MUST be starting with base_dir; if not skip the entry. */
-    if (memcmp(absolute, base, strlen(base)) != 0) {
+    if (strlen(absolute) < strlen(base) ||
+        memcmp(absolute, base, strlen(base)) != 0) {
       goto loop_next;
   }
     add_response_info(sock, "%s\n", current);
