@@ -123,6 +123,7 @@ static char *rrd_list_rec(int recursive, char *root, char *dirname)
 	}
 	closedir(dir);
 
+	errno = 0;
 	return out;
 }
 
@@ -195,12 +196,23 @@ char *rrd_list_r(int recursive, char *dirname)
 
 	if (ptr != NULL && strlen(ptr) == 4) {
 
-		if (!stat(dirname, &st) && S_ISREG(st.st_mode)) {
-			ptr = strrchr(dirname, '/');
+		if (stat(dirname, &st)) {
+			return NULL;
+                }
 
-			if (ptr) {
-				SANE_ASPRINTF(out, "%s\n", ptr + 1);
-			}
+		if (!S_ISREG(st.st_mode)) {
+			/* Same errno as if you try to open() a named socket.
+			 * This is less misleading than e.g. EISDIR */
+			errno = ENXIO;
+			return NULL;
+		}
+
+		ptr = strrchr(dirname, '/');
+
+		if (ptr) {
+			SANE_ASPRINTF(out, "%s\n", ptr + 1);
+		} else {
+			errno = EINVAL;
 		}
 		return out;
 	}
@@ -211,6 +223,7 @@ char *rrd_list_r(int recursive, char *dirname)
 	}
 
 	if (!S_ISDIR(st.st_mode)) {
+		errno = ENOTDIR;
 		return NULL;
 	}
 	return rrd_list_rec(recursive, dirname, dirname);
