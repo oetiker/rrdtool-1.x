@@ -1476,7 +1476,7 @@ static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
 
 static int handle_request_pending(HANDLER_PROTO) /* {{{ */
 {
-  int status, rc;
+  int status;
   char *file=NULL, *pbuffile;
   cache_item_t *ci;
 
