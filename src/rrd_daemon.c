@@ -3999,11 +3999,13 @@ static void open_listen_sockets_traditional(void) /* {{{ */
 {
  if (config_listen_address_list_len > 0)
   {
-    for (size_t i = 0; i < config_listen_address_list_len; i++)
+    for (size_t i = 0; i < config_listen_address_list_len; i++) {
       open_listen_socket (config_listen_address_list[i]);
+      free_listen_socket (config_listen_address_list[i]);
+    }
 
-    rrd_free_ptrs((void ***) &config_listen_address_list,
-                  &config_listen_address_list_len);
+    free(config_listen_address_list);
+    config_listen_address_list = NULL;
   }
   else
   {

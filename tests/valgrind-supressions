@@ -19,3 +19,21 @@
    fun:g_once_init_leave
    ...
 }
+{
+   g_type_register
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_register_*
+}
+{
+    gobject_early_calloc
+    Memcheck:Leak
+    fun:calloc
+    fun:g_malloc0
+    ...
+    obj:*/libgobject-*
+    ...
+    fun:_dl_init
+    ...
+}
