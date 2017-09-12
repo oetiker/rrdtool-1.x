@@ -9,7 +9,7 @@ perl:
 
 install: 
   - sudo apt-get update || true
-  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python-pip python-setuptools
+  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python-pip python-setuptools libpango1.0-dev
   - sudo pip install cpp-coveralls
 
 before_script:
