@@ -1,4 +1,7 @@
 #include <stdio.h>
+#ifdef _MSC_VER
+#include <stdlib.h>     /* for malloc(), free() */
+#endif
 #include "optparse.h"
 
 #define opterror(options, format, ...) \
@@ -192,7 +195,12 @@ long_fallback(struct optparse *options,
               const struct optparse_long *longopts,
               int *longindex)
 {
+#ifdef _MSC_VER
+    /* Variable length arrays are not currently supported in Visual Studio */
+    char *optstring = malloc(optstring_length(longopts));
+#else
     char optstring[optstring_length(longopts)];
+#endif
     optstring_from_long(longopts, optstring);
     int result = optparse(options, optstring);
     if (longindex != NULL) {
@@ -202,6 +210,9 @@ long_fallback(struct optparse *options,
                 if (longopts[i].shortname == options->optopt)
                     *longindex = i;
     }
+#ifdef _MSC_VER
+    free(optstring);
+#endif
     return result;
 }
 
