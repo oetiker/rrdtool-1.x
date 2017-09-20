@@ -15,7 +15,9 @@
 
 #include <sys/types.h>      // stat()
 #include <sys/stat.h>       // stat()
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>         // stat()
+#endif
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
