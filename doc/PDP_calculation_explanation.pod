@@ -172,7 +172,7 @@ All that said, I hope you get a clear understanding of the inner calculation "ma
 =over
 
 =item *
-A great powershell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c
+A great PowerShell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c
 =head1 AUTHOR>
 
 =item *
