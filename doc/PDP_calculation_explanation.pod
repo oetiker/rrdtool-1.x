@@ -1,16 +1,16 @@
 =head1 NAME
 
-PDP innter calculation logics with an example by Tianpeng Xia
+PDP inner calculation logics with an example by Tianpeng Xia
 
 =head1 DESCRIPTION
 
-This article explains how PDP are calculated in a detailed yet easy-to-understand way, with a real-wolrd example.
+This article explains how PDP are calculated in a detailed yet easy-to-understand way, with an example.
 
 =head1 Refreshing some basics about PDP
 
 =head2 Fundamental knowledge
 
-If you have not read the tutorials or man pages either on the offcial site or those by others, then I strongly encourage you to do so.
+If you have not read the tutorials or man pages either on the official site or those by others, then I strongly encourage you to do so.
 As said in the description, this article will only explain how a PDP is calculated, but not the definition of it.
 So please read the following materials to get a basic understanding of PDP:  
 
@@ -18,15 +18,15 @@ L<http://rrdtool.vandenbogaerdt.nl/process.php> - By Alex van den Bogaerdt. This
 
 L<https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html> - This one is on the official site. Actually it's the manual page for "rrdcreate", and it reveals what's under the hood with regard to PDP calculation in its "The HEARTBEAT and the STEP" section.
 
-The text graph by Don Baarda privodes a vivid explanation on how B<UNKOWN> data are produced and how heartbeat value can influence in the sampling. Unforturnately, it fails to give a clear method by which PDPs are calculated.
+The text graph by Don Baarda provides a vivid explanation on how B<UNKOWN> data are produced and how heartbeat value can influence in the sampling. Unfortunately, it fails to give a clear method by which PDPs are calculated.
 
-L<https://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html> - Another detailed offcial tutorial by Alex van den Bogaerdt. Similarly, it only provides examples with data evenly and exactly distributed according to the step set.
+L<https://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html> - Another detailed official tutorial by Alex van den Bogaerdt. Similarly, it only provides examples with data evenly and exactly distributed according to the step set.
 
-If you don't like doing experiments or care about the inner machenics that much, you can just stop here and give more attention to more practical topics like graph exports or command manual. But if you are the sort of people like me who just care as much about the calculation logics, please read on.
+If you don't like doing experiments or care about the inner mechanics that much, you can just stop here and give more attention to more practical topics like graph exports or command manual. But if you are the sort of people like me who just care as much about the calculation logics, please read on.
 
 =head1 Calculation logics
 
-Here begins the core part of this artile. In the folling content of this section, I would like to give two versions of calculation methods, one by Alex van den Bogaerdt and the other by @eotiker.
+Here begins the core part of this article. In the following content of this section, I would like to give two versions of calculation methods, one by Alex van den Bogaerdt and the other by @eotiker.
 
 To provide an ASCII-friendly explanation, I will explain both versions with the char below instead of a real image.
 
@@ -50,7 +50,7 @@ Let's make everything a little more clear:
 
 - The step is 5
 
-- each PDP get calculate gets updated only if a value arrives at of after the last slot of the PDP, for instance, the last slot of the PDP from 16 to 20 is 20
+- each PDP get calculate gets updated only if a value arrives at or after the last slot of the PDP, for instance, the last slot of the PDP from 16 to 20 is 20
 
 - The heartbeat is 20, so the samples during the entire 7-17 period is not discarded
 
@@ -60,11 +60,11 @@ Let's make everything a little more clear:
 
 =head2 Bogaerdt version
 
-As can be seen on this page: L<http://rrdtool.vandenbogaerdt.nl/process.php>, after all the primary data are transformed to rates( except for GAUGE, of course), they have to go through a B<normalization process> if they are not distributed exactly according to the step or on well defined boundaries in time, in the words of the auther.
+As can be seen on this page: L<http://rrdtool.vandenbogaerdt.nl/process.php>, after all the primary data are transformed to rates( except for GAUGE, of course), they have to go through a B<normalization process> if they are not distributed exactly according to the step or on well-defined boundaries in time, in the words of the author.
 
-What does that mean? Basicly, if all the B<known> (as opposed to an B<unkown> value) data make up at least 50% of all slots during a period, then a PDP is calculated from them. 
+What does that mean? Basically, if all the B<known> (as opposed to an B<unknown> value) data make up at least 50% of all slots during a period, then a PDP is calculated from them. 
 
-This version seems to go well untill we reach the bar chart part.
+This version seems to go well until we reach the bar chart part.
 
 According to the ASCII bar chart, we have the following results: 
 
@@ -95,9 +95,9 @@ So we have seen the above two versions and their PDPs from 6 to 10 and 11 to 15 
 
 Why is that?
 
-Because the diffrence between the official version and Bogaerdt version stems from the way they do the calculation for PDP(6-10) and PDP(11-15).
+Because the difference between the official version and Bogaerdt version stems from the way they do the calculation for PDP(6-10) and PDP(11-15).
 
-Let's discuss this in more detail using the alove bar chart. 
+Let's discuss this in more detail using the above bar chart. 
 
 =head3 Bogaerdt's version, 
 
@@ -105,7 +105,7 @@ PDPs are B<always computed individually> no matter how values arrive.
 
 For example, the value at slot 17 comes after the last slot of PDP(11-15). Also, the immediate previous value before slot 17 is at 7. All the slots from 7 to 17 are assigned v3. Since each PDP is computed individually, PDP(6-10) is (v2*2+v3*3)/5 while the PDP(11-15) is (v3*5)/5.
 
-=head3 offical version
+=head3 The official version
 
 PDPs are B<always computed in terms of the steps which the next update spans>, be it 1 step, 2 steps or n steps; in other words, there PDPs are computed B<together>. 
 
@@ -113,9 +113,9 @@ For example, the update at slot 17 spans PDP(6-10) and PDP(11-15) because the B<
 
 That's the reason why PDP(6-10) and PDP(11-15) have the same value, (v2*2+v3*8).
 
-=head1 A real-world example
+=head1 An example
 
-If you are still confused, don't worry, a real-world example is going to help you.
+If you are still confused, don't worry, an example is here to help you.
 
 Let's get our hands dirty with some commands
 
@@ -126,7 +126,7 @@ Let's get our hands dirty with some commands
  1000000038:3 1000000039:3 1000000042:5   
  rrdtool fetch target.rrd AVERAGE --start 1000000000 --end 1000000045
 
-Basically, the above codes contain 3 comands: create, update and fetch. First we need create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
+Basically, the above codes contain 3 commands: create, update and fetch. First we need create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
 
 =head2 Focus on one single steps
 
@@ -145,7 +145,7 @@ Below is the output of the commands above:
  1000000045: nan
  1000000050: nan
 
-NOTE: 1000000005 means the PDP from 1000000001 to 1000000005, and so on. For concision and readibility, we use only the last two digits, so 05 denotes 1000000005. We choose the type of the data source as gauge because original values will be treated as rates, no additional transformation is needed, see this <article|http://rrdtool.vandenbogaerdt.nl/process.php> for detail.
+NOTE: 1000000005 means the PDP from 1000000001 to 1000000005, and so on. For concision and readability, we use only the last two digits, so 05 denotes 1000000005. We choose the type of the data source as gauge because original values will be treated as rates, no additional transformation is needed, see this L<article|http://rrdtool.vandenbogaerdt.nl/process.php> for detail.
 
 05: 5.2 = (8*3+1*2)/5
 
@@ -172,7 +172,7 @@ All that said, I hope you get a clear understanding of the inner calculation "ma
 =over
 
 =item *
-Greate powershell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c
+A great powershell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c
 =head1 AUTHOR>
 
 =item *
