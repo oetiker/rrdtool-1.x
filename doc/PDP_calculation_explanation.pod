@@ -4,7 +4,7 @@ PDP innter calculation logics with an example by Tianpeng Xia
 
 =head1 DESCRIPTION
 
-This article explains how each PDP is calculated in a detailed yet easy-to-understand way, with a real-wolrd example.
+This article explains how PDP are calculated in a detailed yet easy-to-understand way, with a real-wolrd example.
 
 =head1 Refreshing some basics about PDP
 
