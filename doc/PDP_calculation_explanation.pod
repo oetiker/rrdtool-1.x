@@ -119,14 +119,12 @@ If you are still confused, don't worry, a real-world example is going to help yo
 
 Let's get our hands dirty with some commands
 
-C<
-rrdtool create target.rrd --start 1000000000  --step 5 DS:mem:GAUGE:20:0:100 RRA:AVERAGE:0.5:1:10
-rrdtool update target.rrd 1000000003:8 1000000006:1 1000000017:6 \
-1000000020:7 1000000021:7 1000000022:4 \
-1000000023:3 1000000036:1 1000000037:2 \
-1000000038:3 1000000039:3 1000000042:5
-rrdtool fetch target.rrd AVERAGE --start 1000000000 --end 1000000045
->
+ rrdtool create target.rrd --start 1000000000  --step 5 DS:mem:GAUGE:20:0:100 RRA:AVERAGE:0.5:1:10 E<10> E<8>
+ rrdtool update target.rrd 1000000003:8 1000000006:1 1000000017:6 \  
+ 1000000020:7 1000000021:7 1000000022:4 \  
+ 1000000023:3 1000000036:1 1000000037:2 \   
+ 1000000038:3 1000000039:3 1000000042:5   
+ rrdtool fetch target.rrd AVERAGE --start 1000000000 --end 1000000045
 
 Basically, the above codes contain 3 comands: create, update and fetch. First we need create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
 
@@ -136,18 +134,16 @@ In order to provide a detailed explanation, each the calculation process of each
 
 Below is the output of the commands above:
 
-C<
-1000000005: 5.2000000000e+00
-1000000010: 5.5000000000e+00
-1000000015: 5.5000000000e+00
-1000000020: 6.6000000000e+00
-1000000025: 1.7333333333e+00
-1000000030: 1.7333333333e+00
-1000000035: 1.7333333333e+00
-1000000040: 2.8000000000e+00
-1000000045: nan
-1000000050: nan
->
+ 1000000005: 5.2000000000e+00
+ 1000000010: 5.5000000000e+00
+ 1000000015: 5.5000000000e+00
+ 1000000020: 6.6000000000e+00
+ 1000000025: 1.7333333333e+00
+ 1000000030: 1.7333333333e+00
+ 1000000035: 1.7333333333e+00
+ 1000000040: 2.8000000000e+00
+ 1000000045: nan
+ 1000000050: nan
 
 NOTE: 1000000005 means the PDP from 1000000001 to 1000000005, and so on. For concision and readibility, we use only the last two digits, so 05 denotes 1000000005. We choose the type of the data source as gauge because original values will be treated as rates, no additional transformation is needed, see this <article|http://rrdtool.vandenbogaerdt.nl/process.php> for detail.
 
@@ -171,7 +167,7 @@ NOTE: 1000000005 means the PDP from 1000000001 to 1000000005, and so on. For con
 
 All that said, I hope you get a clear understanding of the inner calculation "magic" for PDPs.
 
-==head2 Other References
+=head2 Other References
 
 =over
 
