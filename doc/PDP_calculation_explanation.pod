@@ -46,7 +46,7 @@ To provide an ASCII-friendly explanation, I will explain both versions with the 
  
 The X axis means time slots( each second denotes one slot) and the Y axis means the value.
 
-Let's make everything a little more clear:
+Let's make everything a little clearer:
 
 - The step is 5
 
@@ -107,7 +107,7 @@ For example, the value at slot 17 comes after the last slot of PDP(11-15). Also,
 
 =head3 The official version
 
-PDPs are B<always computed in terms of the steps which the next update spans>, be it 1 step, 2 steps or n steps; in other words, there PDPs are computed B<together>. 
+PDPs are B<always computed in terms of the steps which the next update spans>, be it 1 step, 2 steps or n steps; in other words, PDPs may be computed B<together>. 
 
 For example, the update at slot 17 spans PDP(6-10) and PDP(11-15) because the B<immediate> previous value is at 7 and 7 is within 6 and 10 , and 17 is after 15. PDP(1-5) and PDP(16-20) are not included since the update at slot 7 has already triggered the calculation for PDP(1-5) and the update at slot 17 comes before the last slot of PDP(16-20) which is 20. 
 
@@ -119,14 +119,14 @@ If you are still confused, don't worry, an example is here to help you.
 
 Let's get our hands dirty with some commands
 
- rrdtool create target.rrd --start 1000000000  --step 5 DS:mem:GAUGE:20:0:100 RRA:AVERAGE:0.5:1:10 E<10> E<8>
+ rrdtool create target.rrd --start 1000000000  --step 5 DS:mem:GAUGE:20:0:100 RRA:AVERAGE:0.5:1:10
  rrdtool update target.rrd 1000000003:8 1000000006:1 1000000017:6 \  
  1000000020:7 1000000021:7 1000000022:4 \  
  1000000023:3 1000000036:1 1000000037:2 \   
  1000000038:3 1000000039:3 1000000042:5   
  rrdtool fetch target.rrd AVERAGE --start 1000000000 --end 1000000045
 
-Basically, the above codes contain 3 commands: create, update and fetch. First we need create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
+Basically, the above codes contain 3 commands: create, update and fetch. First create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
 
 =head2 Focus on single steps
 
