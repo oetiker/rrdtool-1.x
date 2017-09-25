@@ -50,7 +50,7 @@ Let's make everything a little more clear:
 
 - The step is 5
 
-- each PDP get calculate gets updated only if a value arrives at or after the last slot of the PDP, for instance, the last slot of the PDP from 16 to 20 is 20
+- each PDP gets updated only if a value arrives at or after the last slot of the PDP, for instance, the last slot of the PDP from 16 to 20 is 20
 
 - The heartbeat is 20, so the samples during the entire 7-17 period is not discarded
 
@@ -128,7 +128,7 @@ Let's get our hands dirty with some commands
 
 Basically, the above codes contain 3 commands: create, update and fetch. First we need create a new rrd file, and then we feed in some data and last we fetch all the PDPs from the rrd.
 
-=head2 Focus on one single steps
+=head2 Focus on single steps
 
 In order to provide a detailed explanation, each the calculation process of each PDP is provided.
 
