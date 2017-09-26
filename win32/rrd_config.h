@@ -64,6 +64,9 @@
 /* Define to 1 if you have the `isnan' function. */
 #define HAVE_ISNAN 1
 
+/* Define to 1 if you have the <pcre.h> header file. */
+#define HAVE_PCRE_COMPILE 1
+
 /* is rrd_graph supported by this install */
 #define HAVE_RRD_GRAPH /**/
 
@@ -123,7 +126,8 @@
 #define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
 #define strcasecmp _stricmp
-#define strcasencmp _strnicmp
+#define strncasecmp _strnicmp
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 
 // in MSVC++ 12.0 / Visual Studio 2013 is a definition of round in math.h
 // some values of _MSC_VER

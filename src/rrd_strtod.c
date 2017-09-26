@@ -40,6 +40,9 @@
 #include <stdlib.h>
 
 #include "rrd.h"
+#ifdef _MSC_VER
+#include "rrd_config.h" /* for strncasecmp _strnicmp */
+#endif
 #include "rrd_strtod.h"
 
 static int parse_special(const char *str, double *d) {
