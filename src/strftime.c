@@ -20,6 +20,9 @@
 /* Define your own defaults in config.h if necessary */
 #if defined(TZNAME_STD) && defined(TZNAME_DST)
 char     *tzname_[2] = { TZNAME_STD, TZNAME_DST };
+#elif defined(_MSC_VER)
+/* VS defines these variables with a leading underscore */
+#define tzname_ _tzname
 #else
 #define tzname_ tzname
 #endif
