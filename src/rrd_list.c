@@ -1,8 +1,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include "win32-glob.h"    /* from https://sourceforge.net/projects/sox/ */
+#include "dirent.h"        /* from https://github.com/tronkko/dirent */
+#include "asprintf.h"      /* from http://asprintf.insanecoding.org */
+#else
 #include <glob.h>
 #include <dirent.h>
+#endif
 #include <sys/types.h>
 
 #include "rrd_tool.h"
