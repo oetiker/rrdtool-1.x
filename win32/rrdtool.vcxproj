@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -21,18 +21,18 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -81,7 +81,6 @@
       <AdditionalDependencies>librrd-4.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <AdditionalLibraryDirectories>$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <IgnoreSpecificDefaultLibraries>LIBCMTD.lib;LIBCMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>NotSet</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -89,7 +88,9 @@
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
       <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\intl.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\
@@ -101,8 +102,8 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -129,7 +130,9 @@ copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
       <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\intl.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\
@@ -141,8 +144,8 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -170,7 +173,9 @@ copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
       <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\intl.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\
@@ -182,9 +187,8 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
-
-
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

@@ -1476,7 +1476,7 @@ static int handle_request_flushall(HANDLER_PROTO) /* {{{ */
 
 static int handle_request_pending(HANDLER_PROTO) /* {{{ */
 {
-  int status, rc;
+  int status;
   char *file=NULL, *pbuffile;
   cache_item_t *ci;
 
@@ -2522,16 +2522,12 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
   start_ptr = list;
   end_ptr = list;
 
-  do {
+  while (*start_ptr != '\0') {
     end_ptr = strchr(start_ptr, '\n');
 
     if (end_ptr == NULL) {
     	end_ptr = start_ptr + strlen(start_ptr);
-
-    	if (end_ptr == start_ptr) {
-	    	break;
-	}
-	  }
+  }
 
     if ((end_ptr - start_ptr + strlen(fullpath) + 1) >= PATH_MAX) {
       /* Name too long: skip entry */
@@ -2576,7 +2572,8 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
     }
 
     /* Absolute path MUST be starting with base_dir; if not skip the entry. */
-    if (memcmp(absolute, base, strlen(base)) != 0) {
+    if (strlen(absolute) < strlen(base) ||
+        memcmp(absolute, base, strlen(base)) != 0) {
       goto loop_next;
   }
     add_response_info(sock, "%s\n", current);
@@ -2584,7 +2581,7 @@ static int handle_request_list (HANDLER_PROTO) /* {{{ */
 loop_next:
     start_ptr = end_ptr + 1;
 
-  } while (start_ptr != '\0');
+  }
 
   free(list);
 
@@ -3999,11 +3996,13 @@ static void open_listen_sockets_traditional(void) /* {{{ */
 {
  if (config_listen_address_list_len > 0)
   {
-    for (size_t i = 0; i < config_listen_address_list_len; i++)
+    for (size_t i = 0; i < config_listen_address_list_len; i++) {
       open_listen_socket (config_listen_address_list[i]);
+      free_listen_socket (config_listen_address_list[i]);
+    }
 
-    rrd_free_ptrs((void ***) &config_listen_address_list,
-                  &config_listen_address_list_len);
+    free(config_listen_address_list);
+    config_listen_address_list = NULL;
   }
   else
   {

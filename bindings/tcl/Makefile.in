@@ -137,11 +137,10 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgindexdir)" \
-	"$(DESTDIR)$(tclpkgdir)" "$(DESTDIR)$(pkgindexdir)" \
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(tclpkgdir)" \
 	"$(DESTDIR)$(tclpkgdir)"
 LIBRARIES = $(lib_LIBRARIES)
-SCRIPTS = $(pkgindex_SCRIPTS) $(tclpkg_SCRIPTS)
+SCRIPTS = $(tclpkg_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -161,7 +160,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(pkgindex_DATA) $(tclpkg_DATA)
+DATA = $(tclpkg_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/ifOctets.tcl.in \
 	README
@@ -375,12 +374,14 @@ SRC_DIR = $(top_srcdir)/src
 AM_CPPFLAGS = $(TCL_INCLUDE_SPEC) -I$(top_builddir)/src -I$(SRC_DIR) -DUSE_TCL_STUBS
 LIBDIRS = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdir)
 LIB_RUNTIME_DIR = $(libdir)
+@BUILD_TCL_SITE_FALSE@tclpkgdir = $(pkglibdir)
 @BUILD_TCL_SITE_TRUE@tclpkgdir = @TCL_PACKAGE_DIR@
+@BUILD_TCL_SITE_FALSE@tclpkg_DATA = pkgIndex.tcl
 @BUILD_TCL_SITE_TRUE@tclpkg_DATA = pkgIndex.tcl
+@BUILD_TCL_SITE_FALSE@tclpkg_SCRIPTS = ifOctets.tcl
 @BUILD_TCL_SITE_TRUE@tclpkg_SCRIPTS = ifOctets.tcl
-@BUILD_TCL_SITE_FALSE@pkgindexdir = $(pkglibdir)
-@BUILD_TCL_SITE_FALSE@pkgindex_DATA = pkgIndex.tcl
-@BUILD_TCL_SITE_FALSE@pkgindex_SCRIPTS = ifOctets.tcl
+@BUILD_TCL_SITE_FALSE@tclpkg_rellibdir = ..
+@BUILD_TCL_SITE_TRUE@tclpkg_rellibdir = $(libdir)
 
 # Automake doesn't like `tclrrd$(VERSION)$(TCL_SHLIB_SUFFIX)' as
 # library name. So we build and install this library `by hand'.
@@ -456,41 +457,6 @@ uninstall-libLIBRARIES:
 
 clean-libLIBRARIES:
 	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
-install-pkgindexSCRIPTS: $(pkgindex_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	@list='$(pkgindex_SCRIPTS)'; test -n "$(pkgindexdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pkgindexdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pkgindexdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(pkgindexdir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(pkgindexdir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-pkgindexSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkgindex_SCRIPTS)'; test -n "$(pkgindexdir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	dir='$(DESTDIR)$(pkgindexdir)'; $(am__uninstall_files_from_dir)
 install-tclpkgSCRIPTS: $(tclpkg_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(tclpkg_SCRIPTS)'; test -n "$(tclpkgdir)" || list=; \
@@ -532,27 +498,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-pkgindexDATA: $(pkgindex_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(pkgindex_DATA)'; test -n "$(pkgindexdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pkgindexdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pkgindexdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgindexdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgindexdir)" || exit $$?; \
-	done
-
-uninstall-pkgindexDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkgindex_DATA)'; test -n "$(pkgindexdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(pkgindexdir)'; $(am__uninstall_files_from_dir)
 install-tclpkgDATA: $(tclpkg_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(tclpkg_DATA)'; test -n "$(tclpkgdir)" || list=; \
@@ -615,7 +560,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LIBRARIES) $(SCRIPTS) $(DATA) all-local
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgindexdir)" "$(DESTDIR)$(tclpkgdir)" "$(DESTDIR)$(pkgindexdir)" "$(DESTDIR)$(tclpkgdir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(tclpkgdir)" "$(DESTDIR)$(tclpkgdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -670,8 +615,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-pkgindexDATA install-pkgindexSCRIPTS \
-	install-tclpkgDATA install-tclpkgSCRIPTS
+install-data-am: install-tclpkgDATA install-tclpkgSCRIPTS
 
 install-dvi: install-dvi-am
 
@@ -715,8 +659,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-libLIBRARIES uninstall-pkgindexDATA \
-	uninstall-pkgindexSCRIPTS uninstall-tclpkgDATA \
+uninstall-am: uninstall-libLIBRARIES uninstall-tclpkgDATA \
 	uninstall-tclpkgSCRIPTS
 
 .MAKE: install-am install-strip
@@ -729,13 +672,11 @@ uninstall-am: uninstall-libLIBRARIES uninstall-pkgindexDATA \
 	install-exec install-exec-am install-exec-local install-html \
 	install-html-am install-info install-info-am \
 	install-libLIBRARIES install-man install-pdf install-pdf-am \
-	install-pkgindexDATA install-pkgindexSCRIPTS install-ps \
-	install-ps-am install-strip install-tclpkgDATA \
+	install-ps install-ps-am install-strip install-tclpkgDATA \
 	install-tclpkgSCRIPTS installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags-am uninstall uninstall-am uninstall-libLIBRARIES \
-	uninstall-pkgindexDATA uninstall-pkgindexSCRIPTS \
 	uninstall-tclpkgDATA uninstall-tclpkgSCRIPTS
 
 .PRECIOUS: Makefile
@@ -750,7 +691,7 @@ tclrrd.o: tclrrd.c
 	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -c $(srcdir)/tclrrd.c -DVERSION=\"$(VERSION)\"
 
 pkgIndex.tcl:
-	echo "package ifneeded Rrd $(VERSION) \"load $(libdir)/tclrrd$(VERSION)[info sharedlibextension]\"" > $@
+	echo "package ifneeded Rrd $(VERSION) [list load [file join \$$dir $(tclpkg_rellibdir)/tclrrd$(VERSION)[info sharedlibextension]]]" > $@
 
 install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)

@@ -407,7 +407,7 @@ int rrd_tune(
             }
     }
 
-    optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
+    options.optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
     rc = 0;
 done:
     if (in_filename && rrdc_is_any_connected()) {

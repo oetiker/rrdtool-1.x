@@ -27,6 +27,11 @@ function blank {
 # https://stackoverflow.com/questions/4254610/valgrind-reports-memory-possibly-lost-when-using-glib-data-types)
 # we set some env. vars to work around them:
 
+VALGRIND_ERR_FILE="${BASEDIR}/$(basename $0)-valgrind-err.tmp"
+if [ -e "$VALGRIND_ERR_FILE" ]; then
+  rm "$VALGRIND_ERR_FILE"
+fi
+
 function valgrind {
   # use a sub shell, so setting environment variables only affects the current
   # rrdtool run and not subsequent ones
@@ -70,7 +75,12 @@ function valgrind {
     exit $RC
   )
   #    - second: by returning the subshell exit code to the function caller
-  return $?
+  #   Also create a file, in case the caller has difficulty testing the rc.
+  local RC=$?
+  if [ "$RC" == 111 ]; then
+    touch "$VALGRIND_ERR_FILE"
+  fi
+  return $RC
 }
 
 function verbose_rrdtool {
@@ -79,7 +89,9 @@ function verbose_rrdtool {
 }
 
 function fail {
-	RC=$?
+	RC="$1"
+	shift
+
 	echo >&2 "FAILED: (rc=$RC)" "$@"
 	if [ -n "$CONTINUE" ] ; then
 		return
@@ -87,10 +99,10 @@ function fail {
 	if [ -n "$INTERACTIVE" ] ; then
 		read -p "Continue? (y/n)" YN
 		if [ "$YN" != 'y' ] ; then 
-			exit $RC
+			exit 1
 		fi
 	else
-		exit $RC
+		exit 1
 	fi
 }
 
@@ -100,11 +112,18 @@ function ok {
 
 function report {
 	RC=$?
+	if [ -e "$VALGRIND_ERR_FILE" ]; then
+		RC="valgrind error"
+		rm "$VALGRIND_ERR_FILE"
+	fi
+
 	if [ "$RC" = 0 ] ; then
 		ok "$@"
 	else
-		fail "$@"
+		fail "$RC" "$@"
 	fi
+
+
 }
 
 function run_cached {
@@ -160,12 +179,10 @@ if [ -z "$RRDTOOL" ] ; then
                         STANDARD_RRDCACHED="$RRDCACHED"
                         ;;
                 valgrind)
-                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
                         RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
                         RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
                         ;;
                 valgrind-logfile)
-                        echo >&2 "# Note: exit code 111 indicates a valgrind detected memory problem" 
                         RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
                         RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
                         VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
