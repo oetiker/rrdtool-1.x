@@ -1,4 +1,4 @@
-/* rrd_config.h for Visual Studio 2010, 2012 */
+/* rrd_config.h for Visual Studio 2010, 2012 and newer */
 
 #ifndef RRD_CONFIG_H
 #define RRD_CONFIG_H
@@ -8,10 +8,10 @@
 
 /* Define to the version of this package. */
 #define PACKAGE_MAJOR       1
-#define PACKAGE_MINOR       4
-#define PACKAGE_REVISION    999
-#define PACKAGE_VERSION     "1.4.999"
-#define NUMVERS             1.4999
+#define PACKAGE_MINOR       7
+#define PACKAGE_REVISION    0
+#define PACKAGE_VERSION     "1.7.0"
+#define NUMVERS             1.70
 
 #define RRD_DEFAULT_FONT "Courier"
 
