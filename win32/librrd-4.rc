@@ -19,9 +19,9 @@ BEGIN
     BEGIN
       VALUE "Comments", "RRDtool is available under the terms of the GNU General Public License V2 or later"
       VALUE "CompanyName", "The RRDtool Project, http://oss.oetiker.ch/rrdtool/"
-      VALUE "LegalCopyright", "Copyright (c) 1998-2013 Tobias Oetiker"
+      VALUE "LegalCopyright", "Copyright (c) 1998-2017 Tobias Oetiker"
       VALUE "FileDescription", "time-series data storage and display system"
-      VALUE "ProductName", "time-series data storage and display system"
+      VALUE "ProductName", "RRDtool"
       VALUE "FileVersion", PACKAGE_VERSION
       VALUE "ProductVersion", PACKAGE_VERSION
       VALUE "OriginalFilename", "librrd-4.dll"
