@@ -95,13 +95,8 @@
 #define HAVE_TZSET 1
 
 /* Misc Missing Windows defines */
+#undef PATH_MAX /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
 #define PATH_MAX 1024
-
-/*
- * Windows Sockets errors redefined as regular Berkeley error constants.
- */
-#define ENOBUFS WSAENOBUFS
-#define ENOTCONN WSAENOTCONN
 
 
 #include <ctype.h>
@@ -114,15 +109,24 @@
 #include <stdlib.h>
 #include <WinSock.h>
 
+#include <errno.h>  /* errno.h has to be included before the redefinitions of ENOBUFS and ENOTCONN below */
+/*
+ * Windows Sockets errors redefined as regular Berkeley error constants.
+ */
+#undef ENOBUFS  /* undefine first, because this is defined in errno.h and redefined here */
+#define ENOBUFS WSAENOBUFS
+#undef ENOTCONN /* undefine first, because this is defined in errno.h and redefined here */
+#define ENOTCONN WSAENOTCONN
 
-#include <errno.h>
 #include "mkstemp.h"
 
-
+#if _MSC_VER < 1900
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
-#define finite _finite
 #define snprintf _snprintf
+#endif
+
+#define finite _finite
 #define rrd_realloc(a,b) ( (a) == NULL ? malloc( (b) ) : realloc( (a) , (b) ))
 #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
 #define strcasecmp _stricmp
@@ -131,6 +135,7 @@
 
 // in MSVC++ 12.0 / Visual Studio 2013 is a definition of round in math.h
 // some values of _MSC_VER
+//MSVC++ 14.0 _MSC_VER == 1900 (Visual Studio 2015)
 //MSVC++ 12.0 _MSC_VER == 1800 (Visual Studio 2013)
 //MSVC++ 11.0 _MSC_VER == 1700 (Visual Studio 2012)
 //MSVC++ 10.0 _MSC_VER == 1600 (Visual Studio 2010)

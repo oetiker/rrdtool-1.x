@@ -66,6 +66,7 @@ Makefile
 # Windows build files
 /bindings/dotnet/*.suo
 /contrib
+/contrib-x64
 /win32/*.VC.db
 /win32/*.VC.opendb
 /win32/*.opensdf

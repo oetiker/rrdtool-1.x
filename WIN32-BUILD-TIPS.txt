@@ -35,6 +35,8 @@ version 1.4.5 and newer with Microsoft Visual Studio 2013 (12.0.x) and newer.
     
     - expat:    http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/expat_2.1.0-1_win32.zip
 
+    - gettext:  http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/gettext-runtime_0.18.1.1-2_win32.zip
+
     - pcre:     https://downloads.sourceforge.net/project/gnuwin32/pcre/7.0/pcre-7.0-bin.zip
                 https://downloads.sourceforge.net/project/gnuwin32/pcre/7.0/pcre-7.0-lib.zip
 
