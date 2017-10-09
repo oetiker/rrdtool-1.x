@@ -70,7 +70,7 @@ typedef int candidate_selectfunc_t(const rra_def_t *tofill, const rra_def_t *may
 
 candidate_t *find_candidate_rras(const rrd_t *rrd, const rra_def_t *rra, int *cnt,
 				 candidate_extra_t extra,
-                                 candidate_selectfunc_t);
+                                 candidate_selectfunc_t *select_func);
 
 #endif
 

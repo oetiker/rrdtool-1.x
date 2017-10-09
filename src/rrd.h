@@ -306,7 +306,7 @@ struct rrd_t;
             char ***ret_last_ds);
     time_t    rrd_first_r(
     const char *filename,
-    int rraindex);
+    const int rraindex);
 
     int rrd_dump_cb_r(
     const char *filename,

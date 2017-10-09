@@ -464,7 +464,7 @@ void      rrd_graph_options(
 void      rrd_graph_script(
     int,
     char **,
-    image_desc_t *,
+    image_desc_t *const,
     int);
 int       rrd_graph_color(
     image_desc_t *,
