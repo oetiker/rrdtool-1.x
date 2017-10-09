@@ -102,14 +102,14 @@ clean:
 $(TOP)/win32/$(RRD_LIB_NAME).dll $(TOP)/win32/$(RRD_LIB_NAME).lib: \
         $(TOP)/win32/$(RRD_LIB_NAME).def $(TOP)/win32/$(RRD_LIB_NAME).res \
         $(RRD_LIB_OBJ_LIST)
-    cl /nologo /MT /LD /Zi /Fe$(TOP)/win32/$(RRD_LIB_NAME).dll \
+    cl /nologo /MD /LD /Zi /Fe$(TOP)/win32/$(RRD_LIB_NAME).dll \
         /Fd$(TOP)/win32/$(RRD_LIB_NAME).pdb \
         $(TOP)/win32/$(RRD_LIB_NAME).def $(TOP)/win32/$(RRD_LIB_NAME).res \
         $(RRD_LIB_OBJ_LIST) /link $(THIRD_PARTY_LIB) $(LD_FLAGS)
 
 $(TOP)/win32/rrdtool.exe: $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib
-    cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
+    cl /nologo /MD /Zi /Fe$@ $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
 #Just waiting for antivirus program to finished check tasks
     -@ping 1.1.1.1 -n 1 -w 1000 > NUL
@@ -117,7 +117,7 @@ $(TOP)/win32/rrdtool.exe: $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
 
 $(TOP)/win32/rrdupdate.exe: $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj \
         $(TOP)/src/plbasename.obj $(TOP)/win32/$(RRD_LIB_NAME).lib
-    cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj \
+    cl /nologo /MD /Zi /Fe$@ $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj \
         $(TOP)/src/plbasename.obj $(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
 #Just waiting for antivirus program to finished check tasks
     -@ping 1.1.1.1 -n 1 -w 1000 > NUL
@@ -126,7 +126,7 @@ $(TOP)/win32/rrdupdate.exe: $(TOP)/win32/rrdupdate.res $(TOP)/src/rrdupdate.obj 
 $(TOP)/win32/rrdcgi.exe: $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
         $(TOP)/src/optparse.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib
-    cl /nologo /MT /Zi /Fe$@ $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
+    cl /nologo /MD /Zi /Fe$@ $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
         $(TOP)/src/optparse.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
 #Just waiting for antivirus program to finished check tasks
@@ -134,10 +134,10 @@ $(TOP)/win32/rrdcgi.exe: $(TOP)/win32/rrdcgi.res $(TOP)/src/rrd_cgi.obj \
     -mt -manifest $(TOP)/win32/uac.manifest -outputresource:$(TOP)/win32/rrdcgi.exe;#1
 
 {$(TOP)/src}.c{$(TOP)/src}.obj:
-    cl /nologo /MT /DWIN32 /c $(CPPFLAGS) /Fo$@ $<
+    cl /nologo /MD /DWIN32 /c $(CPPFLAGS) /Fo$@ $<
 
 {$(TOP)/win32}.rc{$(TOP)/win32}.res:
     rc /nologo /I./src /fo$@ $<
 
 {$(TOP)/win32}.c{$(TOP)/win32}.obj:
-    cl /nologo /MT /DWIN32 /c $(CPPFLAGS) /Fo$@ $<
+    cl /nologo /MD /DWIN32 /c $(CPPFLAGS) /Fo$@ $<
