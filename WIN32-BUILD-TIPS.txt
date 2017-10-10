@@ -37,8 +37,7 @@ version 1.4.5 and newer with Microsoft Visual Studio 2013 (12.0.x) and newer.
 
     - gettext:  http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/gettext-runtime_0.18.1.1-2_win32.zip
 
-    - pcre:     https://downloads.sourceforge.net/project/gnuwin32/pcre/7.0/pcre-7.0-bin.zip
-                https://downloads.sourceforge.net/project/gnuwin32/pcre/7.0/pcre-7.0-lib.zip
+    - pcre:     http://win-builds.org/next/packages/windows_32/pcre-8.38-1-i686-w64-mingw32.txz
 
 (3) Extract all of the .zip files into the contrib folder. Do not extract each library into it's own
     directory. We want all of the files merged into a structure consisting of "bin, include, lib..."

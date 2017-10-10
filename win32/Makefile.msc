@@ -35,7 +35,7 @@ THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
         libpng.lib libxml2.lib \
         glib-2.0.lib gobject-2.0.lib \
         pango-1.0.lib pangocairo-1.0.lib cairo.lib \
-        Ws2_32.lib zdll.lib gthread-2.0.lib pcre.lib
+        Ws2_32.lib zdll.lib gthread-2.0.lib libpcre-1.lib
 
 RRD_LIB_OBJ_LIST = \
         $(TOP)/src/hash_32.obj \
