@@ -103,7 +103,7 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libpcre-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
@@ -145,7 +145,7 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libpcre-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
@@ -188,7 +188,7 @@ copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\pcre3.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib\bin\libpcre-1.dll $(TargetDir)\
 copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
