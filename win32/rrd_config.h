@@ -94,6 +94,9 @@
 /* Define to 1 if you have the `tzset' function. */
 #define HAVE_TZSET 1
 
+/* Define to 1 if you have the `uniptr_t' standard type. */
+#define HAVE_UINTPTR_T 1
+
 /* Misc Missing Windows defines */
 #undef PATH_MAX /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
 #define PATH_MAX 1024
