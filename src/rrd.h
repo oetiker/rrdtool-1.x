@@ -34,7 +34,7 @@
  * library is identical to librrd, but it contains support code for per-thread
  * global variables currently used for error information only. This is similar
  * to how errno per-thread variables are implemented.  librrd_th must be linked
- * alongside of libpthred
+ * alongside of libpthread
  *
  * There is also a new file "THREADS", holding some documentation.
  *
@@ -404,13 +404,13 @@ int       rrd_proc_start_end(
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and
- * will be replaced with a more general interface in RRDTool 1.4. Don't use
+ * will be replaced with a more general interface in RRDtool 1.4. Don't use
  * these functions unless you have good reasons to do so. If you do use these
- * functions you will have to adapt your code for RRDTool 1.4!
+ * functions you will have to adapt your code for RRDtool 1.4!
  *
  * To enable the deprecated functions define `RRD_EXPORT_DEPRECATED' before
  * including <rrd_test.h>. You have been warned! If you come back to the
- * RRDTool mailing list and whine about your broken application, you will get
+ * RRDtool mailing list and whine about your broken application, you will get
  * hit with something smelly!
  */
 #if defined(RRD_TOOL_H_3853987DDF7E4709A5B5849E5A6204F4) || defined(RRD_EXPORT_DEPRECATED)

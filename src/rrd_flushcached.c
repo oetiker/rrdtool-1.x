@@ -1,5 +1,5 @@
 /**
- * RRDTool - src/rrd_flushcached.c
+ * RRDtool - src/rrd_flushcached.c
  * Copyright (C) 2008 Florian octo Forster
  *
  * This program is free software; you can redistribute it and/or modify it

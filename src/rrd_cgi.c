@@ -498,7 +498,7 @@ int main(
 #endif
 
 
-    /* expand rrd directives in buffer recursivley */
+    /* expand rrd directives in buffer recursively */
     for (i = 0; buffer[i]; i++) {
         if (buffer[i] != '<')
             continue;
@@ -865,7 +865,7 @@ static char *cgigetqp(
     d = buf2;
 
     while (*p) {
-        /* prevent mallicious paths from entering the system */
+        /* prevent malicious paths from entering the system */
         if (p[0] == '.' && p[1] == '.') {
             p += 2;
             *d++ = '_';

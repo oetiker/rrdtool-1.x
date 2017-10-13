@@ -16,7 +16,7 @@
  * library is identical to librrd, but it contains support code for per-thread
  * global variables currently used for error information only. This is similar
  * to how errno per-thread variables are implemented.  librrd_th must be linked
- * alongside of libpthred
+ * alongside of libpthread
  *
  * There is also a new file "THREADS", holding some documentation.
  *

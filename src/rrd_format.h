@@ -9,7 +9,7 @@
 
 /* 
  * _RRD_TOOL_H
- *   We're building RRDTool itself.
+ *   We're building RRDtool itself.
  *
  * RRD_EXPORT_DEPRECATED
  *   User is requesting internal function which need this struct. They have
@@ -351,7 +351,7 @@ enum cdp_par_en { CDP_val = 0,
     /* Current slope coefficient for the Holt-Winters
      * prediction algorithm. */
     CDP_hw_last_slope,
-    /* Last iteration slope coeffient. */
+    /* Last iteration slope coefficient. */
     CDP_null_count,
     /* Number of sequential Unknown (DNAN) values + 1 preceding
      * the current prediction.
@@ -369,7 +369,7 @@ enum cdp_par_en { CDP_val = 0,
      * prediction algorithm. This is stored in CDP prep to avoid
      * redundant seek operations. */
     CDP_hw_last_seasonal = CDP_hw_last_intercept,
-    /* Last iteration seasonal coeffient. */
+    /* Last iteration seasonal coefficient. */
     CDP_seasonal_deviation = CDP_hw_intercept,
     CDP_last_seasonal_deviation = CDP_hw_last_intercept,
     CDP_init_seasonal = CDP_null_count

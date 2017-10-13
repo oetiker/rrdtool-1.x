@@ -313,7 +313,7 @@ static char* _find_next_separator_twice(char*start,char separator) {
       /* and return the pointer past the current one*/
       return (found+2);
     }
-    /* find next occurence */
+    /* find next occurrence */
     found=strchr(found+1,separator);
   }
   /* not found, so return NULL */
@@ -642,7 +642,7 @@ rrd_fetch_fn_libdbi(
       r_value=DNAN;
       /* check for timestamp delta to be within an acceptable range */
       if ((d_timestamp>0)&&(d_timestamp<2*derive)) {
-	/* only handle positive delta - avoid wrap-arrounds/counter resets showing up as spikes */
+	/* only handle positive delta - avoid wrap-arounds/counter resets showing up as spikes */
 	if (d_value>0) {
 	  /* and normalize to per second */
 	  r_value=d_value/d_timestamp;

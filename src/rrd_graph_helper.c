@@ -862,7 +862,7 @@ static int parse_textalign(enum gf_en,parsedargs_t*,image_desc_t *const);
 static int parse_shift(enum gf_en,parsedargs_t*,image_desc_t *const);
 static int parse_xport(enum gf_en,parsedargs_t*,image_desc_t *const);
 
-/* this is needed for LINE,AREA,STACk so that the labels get done correctly... */
+/* this is needed for LINE,AREA,STACK so that the labels get done correctly... */
 static void legend_shift(char *legend)
 {
   if (!legend || !legend[0]) { return; }

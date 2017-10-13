@@ -976,7 +976,7 @@ int data_fetch(
              * existing connection is re-used. */
             rrdc_connect (rrd_daemon);
 
-            /* If connecting was successfull, use the daemon to query the data.
+            /* If connecting was successful, use the daemon to query the data.
              * If there is no connection, for example because no daemon address
              * was specified, (try to) use the local file directly. */
             if (rrdc_is_connected (rrd_daemon))
@@ -1430,7 +1430,7 @@ int data_proc(
         }
     }
 
-    /* if min or max have not been asigned a value this is because
+    /* if min or max have not been assigned a value this is because
        there was no data in the graph ... this is not good ...
        lets set these to dummy values then ... */
 
@@ -4481,7 +4481,7 @@ int gdes_alloc(
     return 0;
 }
 
-/* copies input untill the first unescaped colon is found
+/* copies input until the first unescaped colon is found
    or until input ends. backslashes have to be escaped as well */
 int scan_for_col(
     const char *const input,

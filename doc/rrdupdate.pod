@@ -73,7 +73,7 @@ been applied.
 
 =item B<--daemon>|B<-d> I<address>
 
-If given, B<RRDTool> will try to connect to the caching daemon L<rrdcached>
+If given, B<RRDtool> will try to connect to the caching daemon L<rrdcached>
 at I<address>. If the connection is successfully established the values will
 be sent to the daemon instead of accessing the files directly. If the
 connection cannot be established it will fall back to direct file-access.

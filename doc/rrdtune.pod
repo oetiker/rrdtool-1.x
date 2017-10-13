@@ -185,7 +185,7 @@ B<NOTE>: Because the B<-d> (small letter 'd') option was already taken, this
 function (unlike most other) uses the capital letter 'D' for the one-letter 
 option to name the cache daemon.
 
-If given, B<RRDTool> will try to connect to the caching daemon
+If given, B<RRDtool> will try to connect to the caching daemon
 L<rrdcached> at I<address> and will fail if the connection cannot be
 established. If the connection is successfully established the data
 for the I<filename> will be flushed before performing the

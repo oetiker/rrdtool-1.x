@@ -94,7 +94,7 @@
 /* Define to 1 if you have the `tzset' function. */
 #define HAVE_TZSET 1
 
-/* Define to 1 if you have the `uniptr_t' standard type. */
+/* Define to 1 if you have the `uintptr_t' standard type. */
 #define HAVE_UINTPTR_T 1
 
 /* Misc Missing Windows defines */

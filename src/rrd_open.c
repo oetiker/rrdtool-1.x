@@ -278,7 +278,7 @@ rrd_file_t *rrd_open(
     if (rdwr & RRD_READWRITE) {    
         /* some unices, the files mtime does not get updated
            on memory mapped files, in order to help them,     
-           we update the the timestamp at this point.      
+           we update the timestamp at this point.      
            The thing happens pretty 'close' to the open    
            call so the chances of a race should be minimal.    
                 

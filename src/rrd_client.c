@@ -1,5 +1,5 @@
 /**
- * RRDTool - src/rrd_client.c
+ * RRDtool - src/rrd_client.c
  * Copyright (C) 2008-2013  Florian octo Forster
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
