@@ -3,7 +3,7 @@ RRDtool - Round Robin Database Tool
 
 [![Join the chat at https://gitter.im/oetiker/rrdtool-1.x](https://badges.gitter.im/oetiker/rrdtool-1.x.svg)](https://gitter.im/oetiker/rrdtool-1.x?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-RRDTool 1.x master build status: [![Build Status](https://travis-ci.org/oetiker/rrdtool-1.x.png?branch=master)](https://travis-ci.org/oetiker/rrdtool-1.x)
+RRDtool 1.x master build status: [![Build Status](https://travis-ci.org/oetiker/rrdtool-1.x.png?branch=master)](https://travis-ci.org/oetiker/rrdtool-1.x)
 test coverage [![Coverage Status](https://coveralls.io/repos/oetiker/rrdtool-1.x/badge.png?branch=master)](https://coveralls.io/r/oetiker/rrdtool-1.x?branch=master)
 
 RRDtool 1.7.x build status: [![Build Status](https://travis-ci.org/oetiker/rrdtool-1.x.png?branch=1.7)](https://travis-ci.org/oetiker/rrdtool-1.x)

@@ -18,13 +18,13 @@ typedef int compar_ex_t(const void *a, const void *b, const void *extra);
 
 /**
  * An extended quick sort algorithm compared to stdlib qsort. Takes an extra 
- * parameter passed through to the comparation function (of type compar_ex_t).
+ * parameter passed through to the comparison function (of type compar_ex_t).
  * 
  * @param array		The array to sort
  * @param size		The size of array elements
  * @param nitems	The number of array elements to sort
- * @param cmp		The comparation function.
- * @param extra		Extra data passed to the comparation function
+ * @param cmp		The comparison function.
+ * @param extra		Extra data passed to the comparison function
  */
 void quick_sort(void *array, size_t size, size_t nitems, compar_ex_t *cmp, void *extra);
 

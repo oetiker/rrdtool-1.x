@@ -374,7 +374,7 @@ Compiling RRDtool 1.2.x on Win32 with MingW32 gcc:
    In order to build the static freetype lib enter the freetype base directory
    and type 'make'. If everything is fine a message appears that gcc is detected,
    and that you should again type 'make'. Follow that in order to build freetype.
-   All other libs are build from the sources with the RRDTool Makefile.Win32.
+   All other libs are build from the sources with the RRDtool Makefile.Win32.
 
    Switch to the RRDTOOL .\src directory. Then:
 

@@ -1,5 +1,5 @@
 /*
- * Lua bindings for RRDTool
+ * Lua bindings for RRDtool
  *
  * This software is licensed to the public under the Free Software
  * Foundation's GNU GPL, version 2 or later. You may obtain a copy
@@ -338,7 +338,7 @@ set_info (lua_State * L)
   lua_pushliteral (L, "Copyright (C) 2008 Fidelis Assis");
   lua_settable (L, -3);
   lua_pushliteral (L, "_DESCRIPTION");
-  lua_pushliteral (L, "RRD-lua is a Lua binding for RRDTool.");
+  lua_pushliteral (L, "RRD-lua is a Lua binding for RRDtool.");
   lua_settable (L, -3);
   lua_pushliteral (L, "_NAME");
   lua_pushliteral (L, "RRD-Lua");

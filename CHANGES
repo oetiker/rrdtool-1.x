@@ -16,7 +16,7 @@ Features
 
 API
 ---
-* New Exported funtions: rrd_lcd, rrd_reduce_data, rrd_cf_conf and rrd_list
+* New Exported functions: rrd_lcd, rrd_reduce_data, rrd_cf_conf and rrd_list
 * rrd_list support for perl and python binding
 * all new and much more complete python bindings working on both python 2.6+ and 3.3+
 * extended documentation in rrdlib.pod
@@ -45,7 +45,7 @@ Bugfixes
 --------
 * segfault on CDEF:x=
 * Disable nagle algorithm as it is causing massive slowdown
-* make vname nameing rules more liberal and more in line with 1.4
+* make vname naming rules more liberal and more in line with 1.4
 * Fix recursive directory creation in rrdcached on FREEBSD
 * Fixed compilation when there's no sigwaitinfo
 
@@ -189,7 +189,7 @@ Highlights
 * the optional argument :skipscale allows for a LINE or AREA instruction to be
   excluded from having an effect on the scaling of the graph
 
-* TRENDNAN is now working properly and als not crashing anymore
+* TRENDNAN is now working properly and also not crashing anymore
 
 * Added a no-op string positioning combo "\." this allows to write
   COMMENT:OS\2\. which would otherwise not be possible.

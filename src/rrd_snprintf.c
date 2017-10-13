@@ -201,7 +201,7 @@
 #undef HAVE_LOCALECONV
 #endif
 
-/* the new functions shall be calld rrd_* */
+/* the new functions shall be called rrd_* */
 
 #define vsnprintf rrd_vsnprintf
 #define snprintf rrd_snprintf

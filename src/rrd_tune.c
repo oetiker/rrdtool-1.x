@@ -27,7 +27,7 @@
  *
  * Revision 1.3  2001/03/07 21:21:54  oetiker
  * complete rewrite of rrdgraph documentation. This also includes info
- * on upcomming/planned changes to the rrdgraph interface and functionality
+ * on upcoming/planned changes to the rrdgraph interface and functionality
  * -- Alex van den Bogaerdt <alex@slot.hollandcasino.nl>
  *
  * Revision 1.2  2001/03/04 13:01:55  oetiker

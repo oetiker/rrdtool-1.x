@@ -1,5 +1,5 @@
 /**
- * RRDTool - src/rrd_daemon.c
+ * RRDtool - src/rrd_daemon.c
  * Copyright (C) 2008-2010 Florian octo Forster
  * Copyright (C) 2008,2009 Kevin Brintnall
  *

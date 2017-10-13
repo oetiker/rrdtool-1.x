@@ -291,7 +291,7 @@ typedef struct image_desc_t {
     enum value_formatter_en primary_axis_formatter; /* How to format axis values */
     double    ygridstep;    /* user defined step for y grid */
     int       ylabfact; /* every how many y grid shall a label be written ? */
-    double    tabwidth; /* tabwdith */
+    double    tabwidth; /* tabwidth */
     time_t    start, end;   /* what time does the graph cover */
     unsigned long step; /* any preference for the default step ? */
     rrd_value_t minval, maxval; /* extreme values in the data */
@@ -329,7 +329,7 @@ typedef struct image_desc_t {
     long      base;     /* 1000 or 1024 depending on what we graph */
     char      symbol;   /* magnitude symbol for y-axis */
     float     viewfactor;   /* how should the numbers on the y-axis be scaled for viewing ? */
-    int       unitsexponent;    /* 10*exponent for units on y-asis */
+    int       unitsexponent;    /* 10*exponent for units on y-axis */
     int       unitslength;  /* width of the yaxis labels */
     int       forceleftspace;   /* do not kill the space to the left of the y-axis if there is no grid */
 
@@ -341,7 +341,7 @@ typedef struct image_desc_t {
     long      gdes_c;   /* number of graphics elements */
     graph_desc_t *gdes; /* points to an array of graph elements */
     cairo_surface_t *surface;   /* graphics library */
-    cairo_t  *cr;       /* drawin context */
+    cairo_t  *cr;       /* drawing context */
     cairo_font_options_t *font_options; /* cairo font options */
     cairo_antialias_t graph_antialias;  /* antialiasing for the graph */
     PangoLayout *layout; /* the pango layout we use for writing fonts */

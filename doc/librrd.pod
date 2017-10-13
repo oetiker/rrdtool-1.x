@@ -6,7 +6,7 @@ librrd - RRD library functions
 
 =head1 DESCRIPTION
 
-B<librrd> contains most of the functionality in B<RRDTool>.  The command
+B<librrd> contains most of the functionality in B<RRDtool>.  The command
 line utilities and language bindings are often just wrappers around the
 code contained in B<librrd>.
 

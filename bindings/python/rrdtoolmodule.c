@@ -1200,7 +1200,7 @@ _rrdtool_fetch_cb_wrapper(
         *ds_namv = (char **)calloc(*ds_cnt, sizeof(char *));
 
         if (*ds_namv == NULL) {
-            rrd_set_error("an error occured while allocating memory for "
+            rrd_set_error("an error occurred while allocating memory for "
                 "ds_namv when allocating memory for python callback");
             goto gil_release_err;
         }

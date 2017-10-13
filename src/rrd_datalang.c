@@ -15,7 +15,7 @@
  * from a typed language
  *
  * Data returns from functions is not standardized at all, which is
- * efficient in the sense that the data return interface can be tailord to
+ * efficient in the sense that the data return interface can be tailored to
  * the specific needs of the function at hand, but it also leads to
  * increased probability for implementation errors as things have to be
  * reinvented for each function. Also adding new functions into all the

@@ -588,7 +588,7 @@ static int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_
 
   /* define the time format */
   char* timefmt=NULL;
-  /* unfortunatley we have to do it this way,
+  /* unfortunately we have to do it this way,
      as when no --x-graph argument is given,
      then the xlab_user is not in a clean state (e.g. zero-filled) */
   if (im->xlab_user.minsec!=-1.0) { timefmt=im->xlab_user.stst; }

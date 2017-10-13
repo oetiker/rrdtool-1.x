@@ -1,6 +1,6 @@
 =head1 NAME
 
-RRDLua -  Lua binding for RRDTool
+RRDLua -  Lua binding for RRDtool
 
 =head1 SYNOPSIS
 
@@ -80,7 +80,7 @@ programs where to find it by changing the Lua var LUA_PATH:
 
 =head2 Error Handling
 
-The Lua RRDTool module functions will abort your program with a stack
+The Lua RRDtool module functions will abort your program with a stack
 traceback when they can not make sense out of the arguments you fed them.
 However, you can capture and handle the errors yourself, instead of just
 letting the program abort, by calling the module functions through Lua
@@ -106,7 +106,7 @@ protected calls - 'pcall' or 'xpcall'.
      -- original_LUA_PATH = nil
      --- end of code to require compat-5.1 ---------------------------
      
-     -- If the Lua RRDTool module was installed together with RRDTool,
+     -- If the Lua RRDtool module was installed together with RRDtool,
      -- in /usr/local/rrdtool-1.3.2/lib/lua/5.0, package.cpath must be
      -- set accordingly so that 'require' can find the module:
     
