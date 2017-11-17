@@ -4,7 +4,7 @@ rrdgraph_examples - Examples for rrdtool graph
 
 =head1 SYNOPSIS
 
-B<rrdtool graph /home/httpd/html/test.png --img-format PNG>
+B<rrdtool graph /home/httpd/html/test.png --imgformat PNG>
 
 followed by any of the examples below
 
@@ -164,7 +164,7 @@ failures.
 
 This example generates a graph of the data series in blue (LINE2 with the scaledobs
 virtual data source), confidence bounds in red (scaledupper and scaledlower virtual
-data sources), and potential failures (i.e. potential aberrant aberrant behavior)
+data sources), and potential failures (i.e. potential aberrant behavior)
 marked by vertical yellow lines (the fail data source).
 
 The raw data comes from an AVERAGE B<RRA>, the finest resolution of the observed
