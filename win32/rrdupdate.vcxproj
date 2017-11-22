@@ -71,7 +71,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <ProgramDataBaseFileName>$(IntDir)rrdupdate.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -171,22 +171,22 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
     </Link>
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
-      <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\intl.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libgobject-2.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libgthread-2.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libpango-1.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libpangocairo-1.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll $(TargetDir)\
-copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
+      <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\intl.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libexpat-1.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libfontconfig-1.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libglib-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libgmodule-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libgobject-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libgthread-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libpango-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libpangocairo-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libpangoft2-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libpangowin32-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libpng14-14.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\libxml2-2.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib\bin\zlib1.dll "$(TargetDir)"\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
