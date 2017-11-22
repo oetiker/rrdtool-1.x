@@ -1064,7 +1064,9 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
             }
 
             PyDict_SetItemString(ds_dict, ds_names[i], val);
-            Py_DECREF(val);
+            
+            if (val != Py_None)
+                Py_DECREF(val);
 
             free(last_ds[i]);
             free(ds_names[i]);
