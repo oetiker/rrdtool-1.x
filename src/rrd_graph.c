@@ -1462,7 +1462,24 @@ int data_proc(
             im->minval = minval;
     }
     if (isnan(im->maxval)
-        || (!im->rigid && im->maxval < maxval)
+        || ((!im->rigid) && im->maxval < maxval)
+        ) {
+        if (im->logarithmic)
+            im->maxval = maxval * 2.0;
+        else
+            im->maxval = maxval;
+    }
+
+    if (!isnan(im->minval)
+        && (im->rigid && im->allow_shrink && im->minval < minval)
+        ) {
+        if (im->logarithmic)
+            im->minval = minval / 2.0;
+        else
+            im->minval = minval;
+    }
+    if (!isnan(im->maxval)
+        && (im->rigid && im->allow_shrink && im->maxval > maxval)
         ) {
         if (im->logarithmic)
             im->maxval = maxval * 2.0;
@@ -1490,6 +1507,7 @@ int data_proc(
             im->maxval = 1.0;
         }
     }
+
     return 0;
 }
 
@@ -3864,14 +3882,16 @@ int graph_paint_timestring(
     /* get actual drawing data and find min and max values */
     if (data_proc(im) == -1)
         return -1;
+
+    /* identify si magnitude Kilo, Mega Giga ? */
     if (!im->logarithmic) {
         si_unit(im);
     }
 
-    /* identify si magnitude Kilo, Mega Giga ? */
-    if (!im->rigid && !im->logarithmic)
-        expand_range(im);   /* make sure the upper and lower limit are
-                               sensible values */
+    /* make sure the upper and lower limit are sensible values
+       if rigid is without alow_shrink skip expanding limits */
+    if ((!im->rigid || im->allow_shrink) && !im->logarithmic)
+        expand_range(im);
 
     info.u_val = im->minval;
     grinfo_push(im, sprintf_alloc("value_min"), RD_I_VAL, info);
@@ -4742,6 +4762,7 @@ void rrd_graph_init(
     im->magfact = 1;
     im->prt_c = 0;
     im->rigid = 0;
+    im->allow_shrink = 0;
     im->rendered_image_size = 0;
     im->rendered_image = NULL;
     im->slopemode = 0;
@@ -4910,6 +4931,7 @@ void rrd_graph_options(
         {"left-axis-format",   1012, OPTPARSE_REQUIRED},
         {"left-axis-formatter",1013, OPTPARSE_REQUIRED},
         {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
+        {"allow-shrink",        1015, OPTPARSE_NONE},
         {0}
 };
 /* *INDENT-ON* */
@@ -5219,6 +5241,9 @@ void rrd_graph_options(
             break;
         case 'r':
             im->rigid = 1;
+            break;
+        case 1015:
+            im->allow_shrink = 1;
             break;
         case 'f':
             im->imginfo = (char *)poptions->optarg;
