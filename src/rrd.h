@@ -63,9 +63,11 @@ extern    "C" {
 #endif
 	#define strtoll _strtoi64 
 #endif
+#ifndef __MINGW32__     /* MinGW-w64 has ssize_t and off_t */
 	typedef size_t ssize_t;
 	typedef long off_t;
-#endif 
+#endif
+#endif
 
 #include <time.h>
 #include <stdio.h>      /* for FILE */
