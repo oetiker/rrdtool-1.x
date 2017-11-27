@@ -217,7 +217,7 @@ int rrd_mkdir_p(const char *pathname_unsafe, mode_t mode)
     free(base_dir);
 
     /* keep errno as set by mkdir() */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     if (0 != mkdir(pathname)) {
         free(pathname);
         return -1;
