@@ -230,13 +230,5 @@ char *strchr (), *strrchr ();
 #error "Can't compile without isinf function"
 #endif
 
-#if (! defined(HAVE_FDATASYNC) && defined(HAVE_FSYNC))
-#define fdatasync fsync
-#endif
-
-#if (!defined(HAVE_FDATASYNC) && !defined(HAVE_FSYNC))
-#error "Can't compile with without fsync and fdatasync"
-#endif
-
 #endif /* RRD_CONFIG_BOTTOM_H */
 
