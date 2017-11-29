@@ -3035,7 +3035,7 @@ void vertical_grid(
         /* are we inside the graph ? */
         if (tilab < im->start || tilab > im->end)
             continue;
-#if HAVE_STRFTIME
+#ifdef HAVE_STRFTIME
         localtime_r(&tilab, &tm);
         strftime(graph_label, 99, im->xlab_user.stst, &tm);
 #else
