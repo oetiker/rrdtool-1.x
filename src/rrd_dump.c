@@ -415,7 +415,7 @@ int rrd_dump_cb_r(
                 + (timer * (long)rrd.rra_def[i].pdp_cnt * (long)rrd.stat_head->pdp_step);
 
             timer++;
-#if HAVE_STRFTIME
+#ifdef HAVE_STRFTIME
             localtime_r(&now, &tm);
             strftime(somestring, 255, "%Y-%m-%d %H:%M:%S %Z", &tm);
 #else

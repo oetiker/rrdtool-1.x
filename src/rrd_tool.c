@@ -465,7 +465,7 @@ int main(
     }
 
     if (((argc == 2) || (argc == 3)) && !strcmp("-", argv[1])) {
-#if HAVE_GETRUSAGE
+#ifdef HAVE_GETRUSAGE
         struct rusage myusage;
         struct timeval starttime;
         struct timeval currenttime;
@@ -520,7 +520,7 @@ int main(
                 printf("ERROR: creating arguments\n");
             } else {
                 if ( HandleInputLine(argc, myargv, stdout) == 0 ){
-#if HAVE_GETRUSAGE
+#ifdef HAVE_GETRUSAGE
                     getrusage(RUSAGE_SELF, &myusage);
                     gettimeofday(&currenttime, NULL);
                     printf("OK u:%1.2f s:%1.2f r:%1.2f\n",

@@ -332,7 +332,7 @@
 #ifdef VA_SHIFT
 #undef VA_SHIFT
 #endif	/* defined(VA_SHIFT) */
-#if HAVE_STDARG_H
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #define VA_START(ap, last) va_start(ap, last)
 #define VA_SHIFT(ap, value, type) /* No-op for ANSI C. */
