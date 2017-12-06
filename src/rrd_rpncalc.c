@@ -7,6 +7,15 @@
 #include <limits.h>
 #include <locale.h>
 #include <stdlib.h>
+#ifdef __MINGW32__
+#include <pthread.h>
+/* time.h of MinGW-w64 requires _POSIX_THREAD_SAFE_FUNCTIONS to be defined in order to provide
+ * localtime_r. _POSIX_THREAD_SAFE_FUNCTIONS is defined in pthread_unistd.h (included from pthread.h).
+ * Alternatives here would be to either include "rrd_tool.h" before <time.h> or remove include of <time.h>
+ * from rrd_rpncalc.c, because time.h is included via rrd_tool.h ...
+ * However, let's do it this way, by including pthread.h here, only if __MINGW32__ is defined,
+ * in order to avoid any changes concerning other systems. */
+#endif
 #include <time.h>
 #include "rrd_tool.h"
 

@@ -9,7 +9,7 @@
 
 
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__MINGW32__)
 #include "strftime.h"
 #endif
 

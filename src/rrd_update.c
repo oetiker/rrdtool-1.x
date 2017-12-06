@@ -30,7 +30,8 @@
 
 #include "rrd_strtod.h"
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(__MINGW32__)
+/* Remark: HAVE_GETTIMEOFDAY could be used here alternatively */
 
 /*
  * WIN32 does not have gettimeofday	and struct timeval. This is a quick and dirty
