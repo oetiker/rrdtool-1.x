@@ -14,7 +14,7 @@ extern    "C" {
 
 #include "rrd.h"
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__) && !defined(__MINGW32__)
 
 /* Win32 only includes */
 
