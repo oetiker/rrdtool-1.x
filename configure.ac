@@ -450,7 +450,10 @@ AC_LINK_IFELSE(
     ],
     [ AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
-                [[#include <time.h>]],
+                [[#ifdef __MINGW32__
+#include <pthread.h>
+#endif
+#include <time.h>]],
                 [[ctime_r(NULL,NULL)]])],
           [AC_MSG_RESULT(no)],
           [AC_MSG_ERROR([Can't figure how to compile ctime_r])]
