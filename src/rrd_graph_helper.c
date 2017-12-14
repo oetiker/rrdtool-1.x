@@ -5,6 +5,10 @@
  *                     this code initially written by Alex van den Bogaerdt
  ****************************************************************************/
 
+#ifdef __MINGW64__
+#define __USE_MINGW_ANSI_STDIO 1    /* for %lli */
+#endif
+
 #include <locale.h>
 #include "rrd_config.h"
 #ifdef HAVE_STDINT_H
@@ -1455,7 +1459,11 @@ static int parse_shift(enum gf_en gf,parsedargs_t* pa,image_desc_t *const im) {
   if (gdp->shidx>=0) {
     dprintf("SHIFTBY : %s (%i)\n",im->gdes[gdp->shidx].vname,gdp->shidx);
   } else {
+#ifdef __MINGW64__
+    dprintf("SHIFTBY : %lli\n",gdp->shval); /* argument 3 has type 'time_t {aka long long int}' */
+#else
     dprintf("SHIFTBY : %li\n",gdp->shval);
+#endif
   }
   dprintf("=================================\n");
   /* and return */
