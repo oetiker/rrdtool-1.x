@@ -5,6 +5,10 @@
  * rrd_lastupdate  Get the last datum entered for each DS
  *****************************************************************************/
 
+#ifdef __MINGW64__
+#define __USE_MINGW_ANSI_STDIO 1    /* for %10llu */
+#endif
+
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
@@ -73,7 +77,11 @@ int rrd_lastupdate (int argc, char **argv)
         printf(" %s", ds_names[i]);
     printf ("\n\n");
 
+#ifdef __MINGW64__
+    printf ("%10llu:", last_update);    /* argument 2 has type 'time_t {aka long long int} */
+#else
     printf ("%10lu:", last_update);
+#endif
     for (i = 0; i < ds_count; i++) {
         printf(" %s", last_ds[i]);
         free(last_ds[i]);
