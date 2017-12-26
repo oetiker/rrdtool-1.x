@@ -26,8 +26,7 @@ EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              win32/Makefile.msc win32/RCa02816 win32/README win32/README-MinGW-w64 win32/rrdcgi.rc win32/rrd_config.h \
              win32/rrd.sln win32/rrdtool.rc win32/rrdtool.sln win32/rrdtool.vcxproj win32/rrdupdate.rc \
              win32/rrdupdate.sln win32/rrdupdate.vcxproj win32/uac.manifest \
-             win32/asprintf.c win32/asprintf.h win32/dirent.h win32/vasprintf-msvc.c \
-             win32/win32-glob.c win32/win32-glob.h
+             win32/asprintf.c win32/asprintf.h win32/dirent.h win32/vasprintf-msvc.c
 
 CLEANFILES = config.cache
 
