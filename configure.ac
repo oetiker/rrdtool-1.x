@@ -433,7 +433,7 @@ AC_DEFINE(NO_NULL_REALLOC)
 fi
 
 AC_LANG_PUSH(C)
-dnl solaris has some odd defines it needs in order to propperly compile ctime_r
+dnl solaris has some odd defines it needs in order to properly compile ctime_r
 AC_MSG_CHECKING([if ctime_r need special care to act posixly correct])
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM(
@@ -981,6 +981,21 @@ if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
 
 fi
+
+# Check for MinGW-w64 build and pass to automake
+build_mingw_w64=no
+AC_MSG_CHECKING([for MinGW-w64 build])
+case "$host" in
+    *w64-mingw32*)
+        AC_MSG_RESULT([yes])
+        build_mingw_w64=yes
+    ;;
+    *)
+        AC_MSG_RESULT([no])
+    ;;
+esac
+# Pass the conditional to automake
+AM_CONDITIONAL([MINGW_W64], [test "$build_mingw_w64" = "yes"])
 
 # systemd check
 PKG_PROG_PKG_CONFIG

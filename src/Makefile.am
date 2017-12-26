@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-#AUTOMAKE_OPTIONS   = foreign
+AUTOMAKE_OPTIONS   = subdir-objects
 #
 #ACLOCAL_M4	   = $(top_srcdir)/config/aclocal.m4
 #AUTOHEADER = @AUTOHEADER@ --localdir=$(top_srcdir)/config
@@ -69,9 +69,9 @@ endif
 
 noinst_HEADERS = \
 	unused.h \
-        gettext.h \
+	gettext.h \
 	mutex.h \
-        rrd_strtod.h \
+	rrd_strtod.h \
 	rrd_snprintf.h \
 	rrd_parsetime.h \
 	rrd_config_bottom.h rrd_i18n.h \
@@ -92,9 +92,14 @@ UPD_C_FILES += rrd_rados.c
 noinst_HEADERS += rrd_rados.h
 endif
 
+if MINGW_W64
+RRD_C_FILES += ../win32/win32-glob.c
+noinst_HEADERS += ../win32/win32-glob.h
+endif
+
 noinst_LTLIBRARIES        = librrdupd.la
 
-lib_LTLIBRARIES           = librrd.la 
+lib_LTLIBRARIES           = librrd.la
 
 librrdupd_la_SOURCES      = $(UPD_C_FILES)
 librrdupd_la_LIBADD       = $(CORE_LIBS)
@@ -138,7 +143,7 @@ rrdcached_LDADD = librrd.la librrdupd.la $(ALL_LIBS)
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librrd.pc
 
-# strftime is here because we do not usually need it. unices have propper
+# strftime is here because we do not usually need it. unices have proper
 # iso date support
 EXTRA_DIST= librrd.pc.in strftime.c strftime.h \
 	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym plbasename.c plbasename.h
