@@ -146,7 +146,8 @@ pkgconfig_DATA = librrd.pc
 # strftime is here because we do not usually need it. unices have proper
 # iso date support
 EXTRA_DIST= librrd.pc.in strftime.c strftime.h \
-	win32comp.c  rrd_thread_safe_nt.c get_ver.awk librrd.sym plbasename.c plbasename.h
+	win32comp.c rrd_thread_safe_nt.c get_ver.awk librrd.sym plbasename.c plbasename.h \
+	mkstemp.c mkstemp.h
 
 
 install-exec-hook:
