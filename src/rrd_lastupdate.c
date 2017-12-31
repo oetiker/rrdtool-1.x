@@ -77,8 +77,8 @@ int rrd_lastupdate (int argc, char **argv)
         printf(" %s", ds_names[i]);
     printf ("\n\n");
 
-#ifdef __MINGW64__
-    printf ("%10llu:", last_update);    /* argument 2 has type 'time_t {aka long long int} */
+#if defined _WIN32 && SIZEOF_TIME_T == 8    /* in case of __MINGW64__, _WIN64 and _MSC_VER >= 1400 (ifndef _USE_32BIT_TIME_T) */
+    printf ("%10llu:", last_update);        /* argument 2 has type 'time_t {aka long long int} */
 #else
     printf ("%10lu:", last_update);
 #endif
