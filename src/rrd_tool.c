@@ -717,11 +717,19 @@ static int HandleInputLine(
     else if (strcmp("resize", argv[1]) == 0)
         rrd_resize(argc - 1, &argv[1]);
     else if (strcmp("last", argv[1]) == 0)
+#if defined _WIN32 && SIZEOF_TIME_T == 8    /* in case of __MINGW64__, _WIN64 and _MSC_VER >= 1400 (ifndef _USE_32BIT_TIME_T) */
+        printf("%lld\n", rrd_last(argc - 1, &argv[1]));
+#else
         printf("%ld\n", rrd_last(argc - 1, &argv[1]));
+#endif
     else if (strcmp("lastupdate", argv[1]) == 0) {
         rrd_lastupdate(argc - 1, &argv[1]);
     } else if (strcmp("first", argv[1]) == 0)
+#if defined _WIN32 && SIZEOF_TIME_T == 8    /* in case of __MINGW64__, _WIN64 and _MSC_VER >= 1400 (ifndef _USE_32BIT_TIME_T) */
+        printf("%lld\n", rrd_first(argc - 1, &argv[1]));
+#else
         printf("%ld\n", rrd_first(argc - 1, &argv[1]));
+#endif
     else if (strcmp("update", argv[1]) == 0)
         rrd_update(argc - 1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {
@@ -739,7 +747,11 @@ static int HandleInputLine(
                 printf("%20s", ds_namv[i]);
             printf("\n\n");
             for (ti = start + step; ti <= end; ti += step) {
+#if defined _WIN32 && SIZEOF_TIME_T == 8    /* in case of __MINGW64__, _WIN64 and _MSC_VER >= 1400 (ifndef _USE_32BIT_TIME_T) */
+                printf("%10llu:", ti);
+#else
                 printf("%10lu:", ti);
+#endif
                 for (ii = 0; ii < ds_cnt; ii++)
                     printf(" %0.10e", *(datai++));
                 printf("\n");
