@@ -24,7 +24,7 @@ the B<librrd> functions, always consult the source code.
 
 In some situations it is necessary to get the output of C<rrd_dump> without
 writing it to a file or the standard output. In such cases an application
-can ask B<rrd_dump_cb_r> to call an user-defined function each time there
+can ask B<rrd_dump_cb_r> to call a user-defined function each time there
 is output to be stored somewhere. This can be used, to e.g. directly feed
 an XML parser with the dumped output or transfer the resulting string
 in memory.
@@ -55,7 +55,7 @@ where the last parameter specifies the file handle B<rrd_dump_opt_cb_fileout>
 should write to. There's no specific condition for the callback to detect
 when it is called for the first time, nor for the last time. If you require
 this for initialization and cleanup you should do those tasks before and
-after calling B<rrd_dump_cr_r> respectively.
+after calling B<rrd_dump_cb_r> respectively.
 
 =item B<rrd_fetch_cb_register(rrd_fetch_cb_t c)>
 
@@ -63,7 +63,7 @@ If your data does not reside in rrd files, but you would like to draw charts usi
 rrd_graph functionality, you can supply your own rrd_fetch function and register it using
 the B<rrd_fetch_cb_register> function.
 
-The argument signature and api must be the same of the callback function must be aequivalent to the on of B<rrd_fetch_fn> in 
+The argument signature and api must be the same of the callback function and must be equivalent to the one of B<rrd_fetch_fn> in 
 F<rrd_fetch.c>.
 
 To activate the callback function you can use the pseudo filename F<cb//>I<free_form_text>.

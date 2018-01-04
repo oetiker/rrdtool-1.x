@@ -75,7 +75,7 @@ and B<-e> cannot use the complex forms described in
 L<"AT-STYLE TIME SPECIFICATION">. The only accepted arguments are "simple
 integers". Positive values are interpreted as seconds since epoch, negative
 values (and zero) are interpreted as relative to I<now>. So "1272535035" refers
-to "09:57:15 (UCT), April 29th 2010" and "-3600" means "one hour ago".
+to "09:57:15 (UTC), April 29th 2010" and "-3600" means "one hour ago".
 
 =back
 
@@ -290,11 +290,11 @@ I<end-3weeks> or I<e-3w> -- 3 weeks before end time
 I<start+6hours> or I<s+6h> -- 6 hours after start time
 (may be used as end time specification).
 
-I<931225537> -- 18:45  July 5th, 1999
+I<931200300> -- 18:45 (UTC), July 5th, 1999
 (yes, seconds since 1970 are valid as well).
 
 I<19970703 12:45> -- 12:45  July 3th, 1997
-(my favorite, and its even got an ISO number (8601)).
+(my favorite, and it has even got an ISO number (8601)).
 
 =head1 ENVIRONMENT VARIABLES
 

@@ -141,7 +141,7 @@ could do this by simply storing the data in 1 minute intervals for the
 whole year. While this would take considerable disk space it would
 also take a lot of time to analyze the data when you wanted to create
 a graph covering the whole year. B<RRDtool> offers a solution to this
-problem through its data consolidation feature. When setting up an
+problem through its data consolidation feature. When setting up a
 Round Robin Database (B<RRD>), you can define at which interval this
 consolidation should occur, and what consolidation function (B<CF>)
 (average, minimum, maximum, last) should be used to build the

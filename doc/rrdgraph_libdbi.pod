@@ -18,7 +18,7 @@ This pseudo-rrd-filename defines a sql datasource:
 
 =item B<E<lt>libdbi driverE<gt>>
 
-  which libdbi driver to use (e.g: mysql)
+  which libdbi driver to use (e.g.: mysql)
 
 =item B<E<lt>driver-option-nameE<gt>>=B<E<lt>driver-option-valueE<gt>>
 
@@ -43,14 +43,14 @@ This pseudo-rrd-filename defines a sql datasource:
 
 =item B<E<lt>[*]unixtimestamp columnE<gt>>
 
-  defines the column of E<lt>tableE<gt> which contains the unix-timestamp 
+  defines the column of <table> which contains the unix-timestamp 
   - if this is a DATETIME field in the database, then prefix with leading '*'
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
 
 =item B<E<lt>data value columnE<gt>>
 
-  defines the column of E<lt>tableE<gt> which contains the value column, which should be graphed
+  defines the column of <table> which contains the value column, which should be graphed
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
 
@@ -60,7 +60,7 @@ This pseudo-rrd-filename defines a sql datasource:
 
 =item B</E<lt>where clause(s)E<gt>>
 
-  defines one (ore more) where clauses that are joined with AND to filter the entries in the <lt>table<gt>
+  defines one (ore more) where clauses that are joined with AND to filter the entries in the <table>
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
 
@@ -119,7 +119,7 @@ To illustrate this here a command to create a graph that contains the actual val
 
 =head1 NOTES
 
-* Naturally you can also use any other kind of driver that libdbi supports - e.g postgres, ...
+* Naturally you can also use any other kind of driver that libdbi supports - e.g. postgres, ...
 
 * From the way the data source is joined, it should also be possible to do joins over different tables 
   (separate tables with "," in table and add in the WHERE Clauses the table equal joins. 
@@ -142,19 +142,18 @@ To illustrate this here a command to create a graph that contains the actual val
 
 =head1 Performance issues with MySQL backend
 
-LibDBI has a big performance issue when you retrieve data from a MySQL server. Performance impact is exponentially based on the number of 
-values you retrieve from the database. 
+Previous versions of LibDBI have a big performance issue when retrieving data from a MySQL server. Performance impact is exponentially based 
+on the number of values you retrieve from the database. 
 For example, it would take more than 2 seconds to graph 5DS on 150 hours of data with a precision of 5 minutes 
-(against 100ms when data comes from a RRD file). This bug has been fixed on latest version of LibDBI (not release yet). 
-At that time, you would need to compile libdbi and libdbi-drivers from CVS repository to fix it.
-You can find more information on this libdbi-users mailing list thread : http://sourceforge.net/mailarchive/message.php?msg_id=30320894
+(against 100ms when data comes from a RRD file). This bug has been fixed in version 0.9.0 of LibDBI. 
+You can find more information on this libdbi-users mailing list thread: http://sourceforge.net/mailarchive/message.php?msg_id=30320894
 
 
 =head1 BUGS
 
 * at least on Linux please make sure that the libdbi driver is explicitly linked against libdbi.so.0 
   check via ldd /usr/lib/dbd/libmysql.so, that there is a line with libdbi.so.0. 
-  otherwise at least the perl module RRDs will fail because the dynamic linker can not find some symbols from libdbi.so.
+  otherwise at least the perl module RRDs will fail because the dynamic linker cannot find some symbols from libdbi.so.
   (this only happens when the libdbi driver is actually used the first time!)
   This is KNOWN to be the case with RHEL4 and FC4 and FC5! (But actually this is a bug with libdbi make files!)
 

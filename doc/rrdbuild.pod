@@ -231,7 +231,7 @@ Chances are very high that you already have that on your system ...
 Libpng itself requires zlib to build, so we need to help a bit. If you
 already have a copy of zlib on your system (which is very likely) you can
 drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
-the end of line 4 means that line 4 and line 5 are on one line.
+the end of lines means that the command is split over multiple lines.
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz

@@ -66,7 +66,7 @@ The caching daemon L<rrdcached> cannot be used together with templates yet.
 =item B<--skip-past-updates>|B<-s>
 
 When updating an rrd file with data earlier than the latest update already
-applied, rrdtool will issue an error message an abort. This option instructs
+applied, rrdtool will issue an error message and abort. This option instructs
 rrdtool to silently skip such data. It can be useful when re-playing old
 data into an rrd file and you are not sure how many updates have already
 been applied.

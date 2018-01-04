@@ -140,7 +140,7 @@ The minute as a decimal number (range 00 to 59).
 
 Either `AM' or `PM' according to the given time value, or the corresponding
 strings for the current locale.  Noon is treated as `pm' and midnight as
-`am'.  Note that in many locales and `pm' notation is unsupported and in
+`am'.  Note that in many locales a `pm' notation is unsupported and in
 such cases %p will return an empty string.
 
 =item B<%s>
@@ -416,7 +416,7 @@ backslashes in order to one being passed onto rrd_graph.
 =head2 String Formatting
 
 The text printed below the actual graph can be formatted by appending special
-escape characters at the end of a text. When ever such a character occurs,
+escape characters at the end of a text. Whenever such a character occurs,
 all pending text is pushed onto the graph according to the character
 specified.
 
@@ -456,7 +456,7 @@ the tabs inserted are relative to the start of the current legend
 element!
 
 Since RRDtool 1.3 is using Pango for rending text, you can use Pango markup.
-Pango uses the xml B<span> tags for inline formatting instructions.:
+Pango uses the xml B<span> tags for inline formatting instructions.
 
 A simple example of a marked-up string might be: 
 
@@ -480,7 +480,7 @@ Synonym for font_family
 
 =item B<size>
 
-Font size in 1024ths of a point, or one of the absolute sizes 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large', or one of the relative sizes 'smaller' or 'larger'. If you want to specify a absolute size, it's usually easier to take advantage of the ability to specify a partial font description using 'font_desc'; you can use font_desc='12.5' rather than size='12800'.
+Font size in 1024ths of a point, or one of the absolute sizes 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large', or one of the relative sizes 'smaller' or 'larger'. If you want to specify an absolute size, it's usually easier to take advantage of the ability to specify a partial font description using 'font_desc'; you can use font_desc='12.5' rather than size='12800'.
 
 =item B<style>
 

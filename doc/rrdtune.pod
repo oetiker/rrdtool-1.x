@@ -48,7 +48,7 @@ used by the specialized function B<RRAs> for aberrant behavior detection.
 Still another application is to add or remove data sources (DS) or 
 add / remove or alter some aspects of round-robin archives (RRA). These operations 
 are not really done in-place, but rather generate a new RRD file internally and 
-move it over the original file. Data is kept intact during theses operations.
+move it over the original file. Data is kept intact during these operations.
 For even more in-depth modifications you may review the 
 S<B<--source>> and S<B<--template>> options of the B<create> function which  
 allow you to combine multiple RRD files into a new one and which is even more clever 

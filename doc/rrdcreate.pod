@@ -83,7 +83,7 @@ destination once it has been written in its entirety.
 
 Prefilling is done by matching up DS names, RRAs and consolidation
 functions and choosing the best available data resolution when doing
-so. Prefilling may not be mathematically correct in all cases (eg. if
+so. Prefilling may not be mathematically correct in all cases (e.g. if
 resolutions have to change due to changed stepping of the target RRD
 and old and new resolutions do not match up with old/new bin
 boundaries in RRAs).
@@ -594,7 +594,7 @@ same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
        u|15|/     "swt" expired
        u|16|
         |17|----* sample4, restart "hb", create "pdp" for step1 = 
-        |18|   /  = unknown due to 10 "u" labled secs > 0.5 * step
+        |18|   /  = unknown due to 10 "u" labeled secs > 0.5 * step
         |19|  /
         |20| /
         |21|----* sample5, restart "hb"
