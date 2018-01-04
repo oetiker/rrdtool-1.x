@@ -241,7 +241,7 @@ of valstrfduration qualified PRINT/GPRINT. See L<rrdgraph_graph>.
 [B<--left-axis-format> I<format-string>]
 
 By default the format of the axis labels gets determined automatically. If
-you want to do this your self, use this option with the same %lf arguments
+you want to do this yourself, use this option with the same %lf arguments
 you know from the PRINT and GPRINT commands, or others if using different
 formatter.
 
@@ -323,7 +323,7 @@ of valstrfduration qualified PRINT/GPRINT. See L<rrdgraph_graph>.
 [B<--right-axis-format> I<format-string>]
 
 By default the format of the axis labels gets determined automatically. If
-you want to do this your self, use this option with the same %lf arguments
+you want to do this yourself, use this option with the same %lf arguments
 you know from the PRINT and GPRINT commands, or others if using different
 formatter.
 
@@ -521,7 +521,7 @@ Helvetica-BoldOblique, Helvetica-Oblique, Helvetica, Symbol,
 Times-Bold, Times-BoldItalic, Times-Italic, Times-Roman, and ZapfDingbats.
 
 For Export type you can define 
-XML, XMLENUM (enummerates the value tags <v0>,<v1>,<v2>,...),
+XML, XMLENUM (enumerates the value tags <v0>,<v1>,<v2>,...),
 JSON, JSONTIME (adds a timestamp to each data row),
 CSV (=comma separated values), TSV (=tab separated values), SSV (=semicolon separated values),
 (for comma/tab/semicolon separated values the time format by default is in the form of unix time. to change it to something else use: --x-grid MINUTE:10:HOUR:1:HOUR:4:0:"%Y-%m-%d %H:%M:%S")

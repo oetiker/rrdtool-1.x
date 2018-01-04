@@ -33,7 +33,7 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 =item B<--noflush>|B<-F>
 
 Omit the C<flush> command usually sent to the daemon prior to retrieving the
-data.  If all you are interested in the the RRD Structure, and not the last update
+data.  If all you are interested in is the RRD structure, and not the last update
 time or current values, then this will improve efficiency.
 
 =back

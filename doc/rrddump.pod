@@ -41,7 +41,7 @@ you can customize this to and xsd header or no header at all.
 A shortcut for S<--header=none>.
 
 If you want to restore the dump with RRDtool 1.2 you should use the
-S<--no-header> option since 1.2 can not deal with xml headers.
+S<--no-header> option since 1.2 cannot deal with xml headers.
 
 =item B<--daemon>|B<-d> I<address>
 

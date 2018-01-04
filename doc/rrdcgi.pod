@@ -134,9 +134,9 @@ directories given in the PNG file argument will get dropped.
 
 =item RRD::PRINT I<number>
 
-If the preceding  B<RRD::GRAPH> tag contained and B<PRINT> arguments,
+If the preceding  B<RRD::GRAPH> tag contained any B<PRINT> arguments,
 then you can access their output with this tag. The I<number> argument refers to the
-number of the B<PRINT> argument. This first B<PRINT> has I<number> 0.
+number of the B<PRINT> argument. The first B<PRINT> has I<number> 0.
 
 =item RRD::INTERNAL <var>
 
