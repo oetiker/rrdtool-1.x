@@ -515,7 +515,11 @@ CONFIGURE_PART(Find 3rd-Party Libraries)
 
 have_libdbi=no
 
-AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),[],[
+AC_ARG_ENABLE(libdbi,AS_HELP_STRING([--disable-libdbi],[do not build in support for libdbi]),
+[],
+[enable_libdbi=yes])
+
+AS_IF([test "x$enable_libdbi" != xno], [
     AC_CHECK_HEADER(dbi/dbi.h, [
        AC_CHECK_LIB(dbi, dbi_initialize, [
            AC_DEFINE(HAVE_LIBDBI,[1],[have got libdbi installed])
@@ -529,7 +533,11 @@ AM_CONDITIONAL(BUILD_LIBDBI,[test $have_libdbi != no])
 
 have_librados=no
 
-AC_ARG_ENABLE(librados,AS_HELP_STRING([--disable-librados],[do not build in support for librados]),[],[
+AC_ARG_ENABLE(librados,AS_HELP_STRING([--disable-librados],[do not build in support for librados]),
+[],
+[enable_librados=yes])
+
+AS_IF([test "x$enable_librados" != xno], [
     AC_CHECK_HEADER(rados/librados.h, [
         AC_DEFINE(HAVE_LIBRADOS,[1],[have got librados installed])
         LIBS="${LIBS} -lrados"
@@ -541,7 +549,11 @@ AM_CONDITIONAL(BUILD_LIBRADOS,[test $have_librados != no])
 
 have_libwrap=no
 
-AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),[],[
+AC_ARG_ENABLE(libwrap, AS_HELP_STRING([--disable-libwrap], [do not build in support for libwrap (tcp wrapper)]),
+[],
+[enable_libwrap=yes])
+
+AS_IF([test "x$enable_libwrap" != xno], [
     AC_CHECK_HEADER(tcpd.h,[
         AC_CHECK_FUNCS(hosts_access, [
             AC_DEFINE(HAVE_LIBWRAP,[1],[have got libwrap installed])
