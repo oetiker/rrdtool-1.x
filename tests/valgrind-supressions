@@ -37,3 +37,23 @@
     fun:_dl_init
     ...
 }
+{
+    gobject_early_calloc
+    Memcheck:Leak
+    fun:calloc
+    fun:g_malloc0
+    ...
+    obj:*/libgobject-*
+    ...
+    fun:_dl_init
+    ...
+}
+{
+    fontmap_cache
+    Memcheck:Leak
+    fun:calloc
+    ...
+    fun:pango_font_map_create_context
+    fun:rrd_graph_init
+    ...
+}
