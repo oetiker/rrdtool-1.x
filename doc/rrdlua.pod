@@ -81,7 +81,7 @@ programs where to find it by changing the Lua var LUA_PATH:
 =head2 Error Handling
 
 The Lua RRDtool module functions will abort your program with a stack
-traceback when they can not make sense out of the arguments you fed them.
+traceback when they cannot make sense out of the arguments you fed them.
 However, you can capture and handle the errors yourself, instead of just
 letting the program abort, by calling the module functions through Lua
 protected calls - 'pcall' or 'xpcall'.
@@ -159,7 +159,7 @@ names and property values of the RRD.
 B<rrd.graphv> takes the same parameters as rrd.graph but it returns a table
 only. The table returned contains meta information about the graph, like
 its size as well as the position of the graph area on the image. When
-called with and empty filename, the contents of the graph will be returned
+called with an empty filename, the contents of the graph will be returned
 in the table as well (key 'image').
 
 B<rrd.updatev> also returns a table. The keys of the table are strings

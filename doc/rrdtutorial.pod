@@ -26,7 +26,7 @@ document explains the basics and may be boring.  But if you don't
 understand the basics, the examples will not be as meaningful to you.
 
 Sometimes things change.  This example used to provide numbers like
-"0.04" in stead of "4.00000e-02".  Those are really the same numbers,
+"0.04" instead of "4.00000e-02".  Those are really the same numbers,
 just written down differently.  Don't be alarmed if a future version
 of rrdtool displays a slightly different form of output. The examples
 in this document are correct for version 1.2.0 of RRDtool.
@@ -155,7 +155,7 @@ a maximum value. If this value is reached and an extra byte is counted,
 the counter starts over at zero. This is the same as many counters
 in the world such as the mileage counter in a car.
 
-Most discussions about networking talk about bits per second so lets
+Most discussions about networking talk about bits per second so let's
 get used to that right away. Assume a byte is eight bits and start to
 think in bits not bytes. The counter, however, still counts bytes!
 In the SNMP world most of the counters are 32 bits. That means they are
@@ -246,7 +246,7 @@ translates to 920804400 seconds as explained below). Our database holds
 one data source (DS) named "speed" that represents a counter. This counter
 is read every five minutes (this is the default therefore you don't have to
 put C<--step=300>).  In the same database two round robin archives (RRAs)
-are kept, one averages the data every time it is read (e.g., there's nothing
+are kept, one averages the data every time it is read (i.e., there's nothing
 to average) and keeps 24 samples (24 times 5 minutes is 2 hours). The other
 averages 6 values (half hour) and contains 10 such averages (e.g. 5 hours).
 
@@ -423,7 +423,7 @@ adjust examples accordingly if you happen to use an operating
 system or shell which behaves differently.
 
 After viewing this PNG, you notice the "m" (milli) has
-disappeared. This it what the correct result would be. Also, a label
+disappeared. This is what the correct result would be. Also, a label
 has been added to the image.  Apart from the things mentioned above,
 the PNG should look the same.
 
@@ -543,7 +543,7 @@ an example in pseudo code:
 This is all. Run the above script every five minutes. When you need to know
 what the graphs look like, run the examples above. You could put them
 in a script as well. After running that script, view the page
-index.html we created above.
+speed.html we created above.
 
 =head2 Some words on SNMP
 
@@ -847,7 +847,7 @@ All right, you feel like continuing. Welcome back and get ready
 for an increased speed in the examples and explanations.
 
 You know that in order to view a counter over time, you have to
-take two numbers and divide the difference of them between the
+take two numbers and divide the difference of them by the
 time lapsed.  This makes sense for the examples I gave you but there
 are other possibilities.  For instance, I'm able to retrieve the
 temperature from my router in three places namely the inlet, the
@@ -973,7 +973,7 @@ Line B: There is nothing to calculate. The numbers are as they are.
 
 =item *
 
-Line C: Again, the start-out value is unknown. The same story is holds
+Line C: Again, the start-out value is unknown. This is the same story
 as for line A. In this case the deltas are not constant, therefore the line
 is not either. If we would put the same numbers in the database as we did for
 line A, we would have gotten the same line. Unlike type counter,

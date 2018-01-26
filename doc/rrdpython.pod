@@ -13,7 +13,7 @@ The B<rrdtool> functions are directly callable via the Python programming
 language. This wrapper implementation has been written from the scratch
 (without  SWIG)
 
-The API's expects strings and/or list of strings as parameters to the functions.
+The API expects strings and/or a list of strings as parameters to the functions.
 Please refer to the other B<rrdtool> documentation for functions and valid arguments.
 
 =head1 EXAMPLES
