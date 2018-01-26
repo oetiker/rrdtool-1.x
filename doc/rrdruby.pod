@@ -18,7 +18,7 @@ The B<rrdtool> functions are directly callable via the Ruby programming
 language. This wrapper implementation has been written from the scratch
 (without  SWIG)
 
-The API's simply expects string parameters to the functions.  Please refer
+The API simply expects string parameters to the functions.  Please refer
 to the other B<rrdtool> documentation for functions and valid arguments.
 
 =head1 EXAMPLE

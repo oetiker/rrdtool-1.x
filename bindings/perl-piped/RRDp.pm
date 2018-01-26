@@ -65,7 +65,7 @@ terminates RRDtool and returns RRDtool's status ...
 
 these variables will contain totals of the user time, system time and
 real time as seen by RRDtool.  User time is the time RRDtool is
-running, System time is the time spend in system calls and real time
+running, System time is the time spent in system calls and real time
 is the total time RRDtool has been running.
 
 The difference between user + system and real is the time spent

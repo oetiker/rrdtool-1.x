@@ -44,7 +44,7 @@ Once you have decided. Save the two locations into environment variables.
  INSTALL_DIR=/opt/rrdtool-1.7.0
 
 
-If your F</tmp> is mounted with the option noexec (RHEL seems todo that) you have to choose
+If your F</tmp> is mounted with the option noexec (RHEL seems to do that) you have to choose
 a different directory!
 
 Now make sure the BUILD_DIR exists and go there:
@@ -305,7 +305,7 @@ config file.
  $MAKE
  $MAKE install
 
-When building on Solaris you may want todo
+When building on Solaris you may want to do
 
  ./configure --prefix=$INSTALL_DIR \
     --enable-xlib=no \
