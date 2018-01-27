@@ -64,9 +64,6 @@ static const char *_version = "0.1.10";
 static PyObject *rrdtool_OperationalError;
 static PyObject *rrdtool_ProgrammingError;
 
-static char **rrdtool_argv = NULL;
-static int    rrdtool_argc = 0;
-
 /**
  * PyRRD_DateTime_FromTS: convert UNIX timestamp (time_t)
  * to Python datetime object.
@@ -270,6 +267,8 @@ static char _rrdtool_create__doc__[] = "Create a new Round Robin Database.\n\n\
 static PyObject *
 _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -307,6 +306,8 @@ static char _rrdtool_dump__doc__[] = "Dump an RRD to XML.\n\n\
 static PyObject *
 _rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -344,6 +345,8 @@ static char _rrdtool_update__doc__[] = "Store a new set of values into\
 static PyObject *
 _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -375,6 +378,8 @@ static char _rrdtool_updatev__doc__[] = "Store a new set of values into "\
 static PyObject *
 _rrdtool_updatev(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
 
@@ -414,6 +419,8 @@ static char _rrdtool_fetch__doc__[] = "Fetch data from an RRD.\n\n\
 static PyObject *
 _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret, *range_tup, *dsnam_tup, *data_list, *t;
     rrd_value_t *data, *datai, dv;
     unsigned long step, ds_cnt, i, j, row;
@@ -489,6 +496,8 @@ static char _rrdtool_flushcached__doc__[] = "Flush RRD files from memory.\n\n\
 static PyObject *
 _rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -581,6 +590,8 @@ static char _rrdtool_graph__doc__[] = "Create a graph based on one or more " \
 static PyObject *
 _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int xsize, ysize, i, status;
     double ymin, ymax;
@@ -637,6 +648,8 @@ static char _rrdtool_graphv__doc__[] = "Create a graph based on one or more " \
 static PyObject *
 _rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
 
@@ -680,6 +693,8 @@ static char _rrdtool_xport__doc__[] = "Dictionary representation of data " \
 static PyObject *
 _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int xsize, status;
     char **legend_v;
@@ -776,6 +791,8 @@ static char _rrdtool_list__doc__[] = "List RRDs in storage.\n\n" \
 static PyObject *
 _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret, *str;
     char *data, *ptr, *end;
 
@@ -836,6 +853,8 @@ static char _rrdtool_tune__doc__[] = "Modify some basic properties of a " \
 static PyObject *
 _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -872,6 +891,8 @@ static char _rrdtool_first__doc__[] = "Get the first UNIX timestamp of the "\
 static PyObject *
 _rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int ts;
 
@@ -905,6 +926,8 @@ static char _rrdtool_last__doc__[] = "Get the UNIX timestamp of the most "\
 static PyObject *
 _rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int ts;
 
@@ -940,6 +963,8 @@ static char _rrdtool_resize__doc__[] = "Modify the number of rows in a "\
 static PyObject *
 _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
 
@@ -976,6 +1001,8 @@ static char _rrdtool_info__doc__[] = "Extract header information from an "\
 static PyObject *
 _rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
 
@@ -1011,6 +1038,8 @@ static char _rrdtool_lastupdate__doc__[] = "Returns datetime and value stored "\
 static PyObject *
 _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
 {
+    char **rrdtool_argv = NULL;
+    int    rrdtool_argc = 0;
     PyObject *ret, *ds_dict, *lastupd;
     int status;
     time_t last_update;
