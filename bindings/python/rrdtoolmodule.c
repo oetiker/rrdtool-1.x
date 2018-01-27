@@ -126,7 +126,7 @@ PyRRD_String_FromCF(enum cf_en cf)
  * @return Zero if the function succeeds, otherwise -1
  */
 static int
-convert_args(char *command, PyObject *args)
+convert_args(char *command, PyObject *args, char ***rrdtool_argv, int *rrdtool_argc)
 {
     PyObject *o, *lo;
     int i, j, args_count, argv_count, element_count;
@@ -148,39 +148,39 @@ convert_args(char *command, PyObject *args)
         }
     }
 
-    rrdtool_argv = PyMem_New(char *, element_count + 1);
+    *rrdtool_argv = PyMem_New(char *, element_count + 1);
 
-    if (rrdtool_argv == NULL)
+    if (*rrdtool_argv == NULL)
         return -1;
 
     for (i = 0; i < args_count; i++) {
         o = PyTuple_GET_ITEM(args, i);
 
         if (PyRRD_String_Check(o))
-            rrdtool_argv[++argv_count] = PyRRD_String_AS_STRING(o);
+            (*rrdtool_argv)[++argv_count] = PyRRD_String_AS_STRING(o);
         else if (PyList_CheckExact(o)) {
             for (j = 0; j < PyList_Size(o); j++) {
                 lo = PyList_GetItem(o, j);
 
                 if (PyRRD_String_Check(lo))
-                    rrdtool_argv[++argv_count] = PyRRD_String_AS_STRING(lo);
+                    (*rrdtool_argv)[++argv_count] = PyRRD_String_AS_STRING(lo);
                 else {
-                    PyMem_Del(rrdtool_argv);
+                    PyMem_Del(*rrdtool_argv);
                     PyErr_Format(PyExc_TypeError,
                       "Element %d in argument %d must be str", j, i);
                     return -1;
                 }
             }
         } else {
-            PyMem_Del(rrdtool_argv);
+            PyMem_Del(*rrdtool_argv);
             PyErr_Format(rrdtool_ProgrammingError,
               "Argument %d must be str or list of str", i);
             return -1;
         }
     }
 
-    rrdtool_argv[0] = command;
-    rrdtool_argc = element_count + 1;
+    (*rrdtool_argv)[0] = command;
+    *rrdtool_argc = element_count + 1;
 
     return 0;
 }
@@ -189,10 +189,10 @@ convert_args(char *command, PyObject *args)
  * Destroy argument vector.
  */
 static void
-destroy_args(void)
+destroy_args(char ***rrdtool_argv)
 {
-    PyMem_Del(rrdtool_argv);
-    rrdtool_argv = NULL;
+    PyMem_Del(*rrdtool_argv);
+    *rrdtool_argv = NULL;
 }
 
 /**
@@ -273,7 +273,7 @@ _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("create", args) == -1)
+    if (convert_args("create", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -289,7 +289,7 @@ _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -310,7 +310,7 @@ _rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("dump", args) == -1)
+    if (convert_args("dump", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -326,7 +326,7 @@ _rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -347,7 +347,7 @@ _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("update", args) == -1)
+    if (convert_args("update", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -363,7 +363,7 @@ _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -378,7 +378,7 @@ _rrdtool_updatev(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     rrd_info_t *data;
 
-    if (convert_args("updatev", args) == -1)
+    if (convert_args("updatev", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -394,7 +394,7 @@ _rrdtool_updatev(PyObject *Py_UNUSED(self), PyObject *args)
         rrd_info_free(data);
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -421,7 +421,7 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
     char **ds_namv;
     int status;
 
-    if (convert_args("fetch", args) == -1)
+    if (convert_args("fetch", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -473,7 +473,7 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 
     rrd_freemem(ds_namv);
     rrd_freemem(data);
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -492,7 +492,7 @@ _rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("flushcached", args) == -1)
+    if (convert_args("flushcached", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -508,7 +508,7 @@ _rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -586,7 +586,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
     double ymin, ymax;
     char **calcpr;
 
-    if (convert_args("graph", args) == -1)
+    if (convert_args("graph", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -623,7 +623,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
     }
 
     rrd_freemem(calcpr);
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -640,7 +640,7 @@ _rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     rrd_info_t *data;
 
-    if (convert_args("graphv", args) == -1)
+    if (convert_args("graphv", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -656,7 +656,7 @@ _rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
         rrd_info_free(data);
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -687,7 +687,7 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
     unsigned long step, col_cnt;
     rrd_value_t *data, *datai;
 
-    if (convert_args("xport", args) == -1)
+    if (convert_args("xport", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -759,7 +759,7 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
         rrd_freemem(data);
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
 
     return ret;
 }
@@ -779,7 +779,7 @@ _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret, *str;
     char *data, *ptr, *end;
 
-    if (convert_args("list", args) == -1)
+    if (convert_args("list", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -816,7 +816,7 @@ _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
         rrd_freemem(data);
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -839,7 +839,7 @@ _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("tune", args) == -1)
+    if (convert_args("tune", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -855,7 +855,7 @@ _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -875,7 +875,7 @@ _rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int ts;
 
-    if (convert_args("first", args) == -1)
+    if (convert_args("first", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -889,7 +889,7 @@ _rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
     } else
         ret = PyRRD_Int_FromLong((long) ts);
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -908,7 +908,7 @@ _rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int ts;
 
-    if (convert_args("last", args) == -1)
+    if (convert_args("last", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -922,7 +922,7 @@ _rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
     } else
         ret = PyRRD_Int_FromLong((long) ts);
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -943,7 +943,7 @@ _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int status;
 
-    if (convert_args("resize", args) == -1)
+    if (convert_args("resize", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -959,7 +959,7 @@ _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
         ret = Py_None;
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -979,7 +979,7 @@ _rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     rrd_info_t *data;
 
-    if (convert_args("info", args) == -1)
+    if (convert_args("info", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -995,7 +995,7 @@ _rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
         rrd_info_free(data);
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
     return ret;
 }
 
@@ -1017,7 +1017,7 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
     char **ds_names, **last_ds;
     unsigned long ds_cnt, i;
 
-    if (convert_args("lastupdate", args) == -1)
+    if (convert_args("lastupdate", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
     else if (rrdtool_argc < 2) {
         PyErr_SetString(rrdtool_ProgrammingError, "Missing filename argument");
@@ -1077,7 +1077,7 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
 
     }
 
-    destroy_args();
+    destroy_args(&rrdtool_argv);
 
     return ret;
 }
