@@ -394,7 +394,7 @@ static void* signal_receiver (void UNUSED(*args))
     switch(status)
     {
       case -1:
-        RRDD_LOG(LOG_NOTICE, "%s: %s (May be OK if occuring while attaching/attached to strace, gdb, etc)\nerrno: %d", __func__, "Signal wait failed.", errno);
+        RRDD_LOG(LOG_NOTICE, "%s: %s (May be OK if occurring while attaching/attached to strace, gdb, etc)\nerrno: %d", __func__, "Signal wait failed.", errno);
         break;
 
       case SIGINT:
@@ -4209,7 +4209,7 @@ static int daemonize (void) /* {{{ */
       RRDD_LOG (LOG_ERR, "failed to open /dev/null.\n");
     }
     if (dup(0) == -1 || dup(0) == -1){
-        RRDD_LOG (LOG_ERR, "faild to run dup.\n");
+        RRDD_LOG (LOG_ERR, "failed to run dup.\n");
     }
   } /* if (!stay_foreground) */
 

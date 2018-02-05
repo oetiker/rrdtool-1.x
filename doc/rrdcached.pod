@@ -130,7 +130,7 @@ administrators of I<RRDCacheD> to control the actions accepted from various
 sources.
 
 The arguments given to the B<-P> option is a comma separated list of commands.
-For example, to allow the C<FLUSH> and C<PENDING> commands one could specify:
+For example, to allow one the C<FLUSH> and C<PENDING> commands one could specify:
 
   rrdcached -P FLUSH,PENDING $MORE_ARGUMENTS
 
