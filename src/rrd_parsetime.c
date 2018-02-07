@@ -691,7 +691,7 @@ static char *day(
     case YESTERDAY:
         ptv->tm.  tm_mday--;
 
-        /* FALLTRHU */
+        /* FALLTHRU */
     case TODAY:        /* force ourselves to stay in today - no further processing */
         token();
         break;
