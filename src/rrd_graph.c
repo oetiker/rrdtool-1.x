@@ -247,13 +247,11 @@ int xtr(
     image_desc_t *im,
     time_t mytime)
 {
-    static double pixie;
-
     if (mytime == 0) {
-        pixie = (double) im->xsize / (double) (im->end - im->start);
+        im->x_pixie = (double) im->xsize / (double) (im->end - im->start);
         return im->xorigin;
     }
-    return (int) ((double) im->xorigin + pixie * (mytime - im->start));
+    return (int) ((double) im->xorigin + im->x_pixie * (mytime - im->start));
 }
 
 /* translate data values into y coordinates */
@@ -261,23 +259,22 @@ double ytr(
     image_desc_t *im,
     double value)
 {
-    static double pixie;
     double    yval;
 
     if (isnan(value)) {
         if (!im->logarithmic)
-            pixie = (double) im->ysize / (im->maxval - im->minval);
+            im->y_pixie = (double) im->ysize / (im->maxval - im->minval);
         else
-            pixie =
+            im->y_pixie =
                 (double) im->ysize / (log10(im->maxval) - log10(im->minval));
         yval = im->yorigin;
     } else if (!im->logarithmic) {
-        yval = im->yorigin - pixie * (value - im->minval);
+        yval = im->yorigin - im->y_pixie * (value - im->minval);
     } else {
         if (value < im->minval) {
             yval = im->yorigin;
         } else {
-            yval = im->yorigin - pixie * (log10(value) - log10(im->minval));
+            yval = im->yorigin - im->y_pixie * (log10(value) - log10(im->minval));
         }
     }
     return yval;

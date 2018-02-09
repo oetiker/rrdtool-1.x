@@ -352,6 +352,8 @@ typedef struct image_desc_t {
     GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
     mutex_t *fontmap_mutex; /* Mutex for locking the global fontmap */
     enum image_init_en init_mode; /* do we need Cairo/Pango? */
+    double x_pixie; /* scale for X (see xtr() for reference) */
+    double y_pixie; /* scale for Y (see ytr() for reference) */
 } image_desc_t;
 
 /* Prototypes */
