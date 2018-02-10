@@ -455,9 +455,9 @@ int main(
 #endif
 
 
-#if defined(HAVE_LIBINTL_H) && defined(BUILD_LIBINTL)
-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
-    textdomain(GETTEXT_PACKAGE);
+#if ENABLE_NLS
+    bindtextdomain(PACKAGE, LOCALEDIR);
+    textdomain(PACKAGE);
 #endif
     if (argc == 1) {
         PrintUsage("");
