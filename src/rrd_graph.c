@@ -4799,6 +4799,7 @@ void rrd_graph_init(
     im->ysize = 100;
     im->zoom = 1;
     im->init_mode = init_mode;
+    im->last_tabwidth = -1;
 
     if (init_mode == IMAGE_INIT_CAIRO) {
         im->font_options = cairo_font_options_create();

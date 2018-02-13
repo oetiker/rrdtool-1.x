@@ -354,6 +354,7 @@ typedef struct image_desc_t {
     enum image_init_en init_mode; /* do we need Cairo/Pango? */
     double x_pixie; /* scale for X (see xtr() for reference) */
     double y_pixie; /* scale for Y (see ytr() for reference) */
+    double last_tabwidth; /* (see gfx_prep_text() for reference) */
 } image_desc_t;
 
 /* Prototypes */
