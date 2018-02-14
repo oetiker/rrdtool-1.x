@@ -41,6 +41,7 @@ Makefile
 # po
 /ABOUT-NLS
 /po/*
+!/po/*.po
 !/po/ChangeLog
 !/po/LINGUAS
 !/po/Makevars
