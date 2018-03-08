@@ -595,7 +595,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
     PyObject *ret;
     int xsize, ysize, i, status;
     double ymin, ymax;
-    char **calcpr;
+    char **calcpr = NULL;
 
     if (convert_args("graph", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
