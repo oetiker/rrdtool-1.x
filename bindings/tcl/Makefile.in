@@ -372,7 +372,7 @@ EXTRA_DIST = README tclrrd.c
 AM_CFLAGS = @CFLAGS@
 SRC_DIR = $(top_srcdir)/src
 AM_CPPFLAGS = $(TCL_INCLUDE_SPEC) -I$(top_builddir)/src -I$(SRC_DIR) -DUSE_TCL_STUBS
-LIBDIRS = -L$(top_builddir)/src/.libs -L$(top_builddir)/src -L$(libdir)
+LIBDIRS = -L$(top_builddir)/src/.libs -L$(top_builddir)/src
 LIB_RUNTIME_DIR = $(libdir)
 @BUILD_TCL_SITE_FALSE@tclpkgdir = $(pkglibdir)
 @BUILD_TCL_SITE_TRUE@tclpkgdir = @TCL_PACKAGE_DIR@
@@ -685,10 +685,10 @@ uninstall-am: uninstall-libLIBRARIES uninstall-tclpkgDATA \
 all-local: $(TCL_RRD_LIB)
 
 $(TCL_RRD_LIB): tclrrd.o
-	$(TCL_SHLIB_LD) $(TCL_LD_SEARCH_FLAGS) $(LIBDIRS) $< -o $@ -lrrd -lm $(TCL_STUB_LIB_SPEC) $(LDFLAGS) $(LIBS)
+	$(CC) -G $(LIBDIRS) $< -o $@ -lrrd -lm $(TCL_STUB_LIB_SPEC)
 
 tclrrd.o: tclrrd.c
-	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -c $(srcdir)/tclrrd.c -DVERSION=\"$(VERSION)\"
+	$(CC) $(AM_CFLAGS) $(CFLAGS) $(TCL_SHLIB_CFLAGS) $(AM_CPPFLAGS) $(CPPFLAGS) -c tclrrd.c -DVERSION=\"$(VERSION)\"
 
 pkgIndex.tcl:
 	echo "package ifneeded Rrd $(VERSION) [list load [file join \$$dir $(tclpkg_rellibdir)/tclrrd$(VERSION)[info sharedlibextension]]]" > $@

@@ -639,8 +639,6 @@ dnl Allow "if enable_rpath" in Makefile.am
 AM_CONDITIONAL(ENABLE_RPATH,[test "x$enable_rpath" = "xyes"])
 
 dnl Check for Perl and friends
-PATH=$PATH:/usr/perl5/bin
-export PATH
 AC_PATH_PROG(PERL, perl, no)
 AC_PATH_PROG(POD2MAN, pod2man, no)
 AC_PATH_PROG(POD2HTML, pod2html, no)
@@ -691,7 +689,7 @@ langpref=$prefix
 test "$langpref" = '$(DESTDIR)NONE' && langpref='$(DESTDIR)'$ac_default_prefix
 test "$langpref" = "NONE" && langpref=$ac_default_prefix
 
-PERL_MAKE_OPTIONS="PREFIX=$langpref INSTALL_BASE= LIB=$langpref/lib/perl/$PERL_VERSION"
+PERL_MAKE_OPTIONS="PREFIX=$langpref"
 
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
@@ -712,6 +710,22 @@ if test ! -z "$PERLCC"; then
 
    if test ! -z "$PERLLDFLAGS"; then
        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
+   fi
+
+   if test ! -z "$PERLLIB"; then
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LIB=$PERLLIB"
+   fi
+
+   if test ! -z "$PERLINSTALLMAN3DIR"; then
+        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS INSTALLMAN3DIR=$PERLINSTALLMAN3DIR"
+   fi
+
+   if test ! -z "$PERLINSTALLSITEMAN3DIR"; then
+        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS INSTALLSITEMAN3DIR=$PERLINSTALLSITEMAN3DIR"
+   fi
+
+   if test ! -z "$PERLINSTALLVENDORMAN3DIR"; then
+        PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS INSTALLVENDORMAN3DIR=$PERLINSTALLVENDORMAN3DIR"
    fi
 fi
 
@@ -858,7 +872,12 @@ LUA_EOF
           done
         fi
 
-        LUA_RRD_LIBDIR="$libdir/lua/$lua_vdot"
+        if test ! -z "$LUARRDLIBDIR"; then
+          LUA_RRD_LIBDIR="$langpref/lib/lua/$lua_vdot/$LUARRDLIBDIR"
+        else
+          LUA_RRD_LIBDIR="$langpref/lib/lua/$lua_vdot"
+        fi
+
         # if lua 5.0 can't find compat-5.1, force installation of
         # compat-5.1.lua together with RRDtool.
         if test "$lua_vdot" = "5.0" -a "$LUA_HAVE_COMPAT51" != "HAVE_COMPAT51"; then

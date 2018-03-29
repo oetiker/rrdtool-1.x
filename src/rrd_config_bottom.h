@@ -27,6 +27,11 @@
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
+#ifndef PATH_MAX
+# include<limits.h>
+#endif
+
 #ifndef MAXPATH
 # ifdef PATH_MAX
 #  define MAXPATH PATH_MAX

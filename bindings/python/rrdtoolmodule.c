@@ -53,7 +53,7 @@
 #ifdef __GNUC__
  #define Py_UNUSED(name) _unused_ ## name __attribute__((unused))
 #else
- #define Py_UNUSED(name) _unused_ ## -name
+ #define Py_UNUSED(name) _unused_ ## name
 #endif
 #endif
 
