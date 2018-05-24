@@ -75,6 +75,7 @@ static void PrintUsage(
         N_("* dump - dump an RRD to XML\n\n"
            "\trrdtool dump [--header|-h {none,xsd,dtd}]\n"
            "\t\t[--no-header|-n]\n"
+           "\t\t[--csv|-c]\n"
            "\t\t[--daemon|-d address]\n"
            "\t\tfile.rrd [file.xml]");
 
