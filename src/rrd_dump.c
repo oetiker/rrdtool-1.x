@@ -56,7 +56,8 @@ int rrd_dump_cb_r(
     int opt_header,
     rrd_output_callback_t cb,
     void *user,
-    int opt_mode)
+    int opt_mode,
+    char *opt_cf)
 {
     unsigned int i, ii, ix, iii = 0;
     time_t    now;
@@ -444,7 +445,21 @@ int rrd_dump_cb_r(
     else {
         // XXX
 
-        CB_FMTS("unix timestamp;");
+        int data_source = CF_AVERAGE;
+
+        if (opt_cf != NULL) {
+            if(strcmp(opt_cf, "max") == 0) {
+                data_source = CF_MAXIMUM;
+            }
+            else if (strcmp(opt_cf, "min") == 0) {
+                data_source = CF_MINIMUM;
+            }
+            else if (strcmp(opt_cf, "last") == 0) {
+                data_source = CF_LAST;
+            }
+        }
+
+        CB_FMTS("utimestamp;");
         for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
             CB_FMTS("%s ", rrd.ds_def[i].ds_nam);
             CB_FMTS("(%s);", rrd.ds_def[i].dst);
@@ -464,70 +479,36 @@ int rrd_dump_cb_r(
                          * rrd.rra_def[i].row_cnt * sizeof(rrd_value_t));
 
 
-            for (ii = 0; ii < rrd.stat_head->ds_cnt; ii++) {
-                value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                    scratch[CDP_primary_val].u_val;
-                value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                    scratch[CDP_secondary_val].u_val;
-                switch (rrd_cf_conv(rrd.rra_def[i].cf_nam)) {
-                case CF_HWPREDICT:
-                case CF_MHWPREDICT:
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_intercept].u_val;
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_last_intercept].u_val;
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_slope].u_val;
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_last_slope].u_val;
-                    break;
-                case CF_SEASONAL:
-                case CF_DEVSEASONAL:
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_seasonal].u_val;
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].
-                        scratch[CDP_hw_last_seasonal].u_val;
-                    break;
-                case CF_DEVPREDICT:
-                    break;
-                case CF_FAILURES:
-                    break;
-                case CF_AVERAGE:
-                case CF_MAXIMUM:
-                case CF_MINIMUM:
-                case CF_LAST:
-                default:
-                    value = rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].scratch[CDP_val].u_val;
-                    break;
-                }
-            }
-            rrd_seek(rrd_file, (rra_start + (rrd.rra_ptr[i].cur_row + 1)
-                                * rrd.stat_head->ds_cnt
-                                * sizeof(rrd_value_t)), SEEK_SET);
-            timer = -(long)(rrd.rra_def[i].row_cnt - 1);
-            ii = rrd.rra_ptr[i].cur_row;
-            for (ix = 0; ix < rrd.rra_def[i].row_cnt; ix++) {
-                ii++;
-                if (ii >= rrd.rra_def[i].row_cnt) {
-                    rrd_seek(rrd_file, rra_start, SEEK_SET);
-                    ii = 0; /* wrap if max row cnt is reached */
-                }
-                now = (rrd.live_head->last_up
-                       - rrd.live_head->last_up
-                       % (rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step))
-                    + (timer * (long)rrd.rra_def[i].pdp_cnt * (long)rrd.stat_head->pdp_step);
-
-                timer++;
-                CB_FMTS("%lld;",  (long long int) now);
-                for (iii = 0; iii < rrd.stat_head->ds_cnt; iii++) {
-                    rrd_read(rrd_file, &my_cdp, sizeof(rrd_value_t) * 1);
-                    if (isnan(my_cdp)) {
-                        CB_PUTS("NaN;");
-                    } else {
-                        CB_FMTS("%0.6f;", my_cdp);
+            if (rrd_cf_conv(rrd.rra_def[i].cf_nam) == data_source) {
+                rrd_seek(rrd_file, (rra_start + (rrd.rra_ptr[i].cur_row + 1)
+                                    * rrd.stat_head->ds_cnt
+                                    * sizeof(rrd_value_t)), SEEK_SET);
+                timer = -(long)(rrd.rra_def[i].row_cnt - 1);
+                ii = rrd.rra_ptr[i].cur_row;
+                for (ix = 0; ix < rrd.rra_def[i].row_cnt; ix++) {
+                    ii++;
+                    if (ii >= rrd.rra_def[i].row_cnt) {
+                        rrd_seek(rrd_file, rra_start, SEEK_SET);
+                        ii = 0; /* wrap if max row cnt is reached */
                     }
+                    now = (rrd.live_head->last_up
+                           - rrd.live_head->last_up
+                           % (rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step))
+                        + (timer * (long)rrd.rra_def[i].pdp_cnt * (long)rrd.stat_head->pdp_step);
+
+                    timer++;
+                    CB_FMTS("%lld;",  (long long int) now);
+                    for (iii = 0; iii < rrd.stat_head->ds_cnt; iii++) {
+                        rrd_read(rrd_file, &my_cdp, sizeof(rrd_value_t) * 1);
+                        if (isnan(my_cdp)) {
+                            // ignore empty data
+                            CB_PUTS(";");
+                        } else {
+                            CB_FMTS("%0.6f;", my_cdp);
+                        }
+                    }
+                    CB_PUTS("\n");
                 }
-                CB_PUTS("\n");
             }
         }
 
@@ -569,7 +550,8 @@ int rrd_dump_opt_r(
     const char *filename,
     char *outname,
     int opt_noheader,
-    int opt_mode)
+    int opt_mode,
+    char *opt_cf)
 {
     FILE     *out_file;
     int       res;
@@ -583,7 +565,7 @@ int rrd_dump_opt_r(
         out_file = stdout;
     }
 
-    res = rrd_dump_cb_r(filename, opt_noheader, rrd_dump_opt_cb_fileout, (void *)out_file, opt_mode);
+    res = rrd_dump_cb_r(filename, opt_noheader, rrd_dump_opt_cb_fileout, (void *)out_file, opt_mode, opt_cf);
 
     if (fflush(out_file) != 0) {
         rrd_set_error("error flushing output: %s", rrd_strerror(errno));
@@ -603,7 +585,7 @@ int rrd_dump_r(
     const char *filename,
     char *outname)
 {
-    return rrd_dump_opt_r(filename, outname, 0, 0);
+    return rrd_dump_opt_r(filename, outname, 0, 0, NULL);
 }
 
 int rrd_dump(
@@ -616,6 +598,7 @@ int rrd_dump(
         {"header",    'h', OPTPARSE_REQUIRED},
         {"no-header", 'n', OPTPARSE_NONE},
         {"csv",       'c', OPTPARSE_NONE},
+        {"cf",       'f', OPTPARSE_REQUIRED},
         {0},
     };
     struct optparse options;
@@ -628,6 +611,7 @@ int rrd_dump(
     int       opt_header = 1;
     int       opt_mode = 0;
     char     *opt_daemon = NULL;
+    char     *opt_cf = NULL;
 
     /* init rrd clean */
 
@@ -640,6 +624,17 @@ int rrd_dump(
             }
             opt_daemon = strdup(options.optarg);
             if (opt_daemon == NULL)
+            {
+                rrd_set_error ("strdup failed.");
+                return (-1);
+            }
+            break;
+        case 'f':
+            if (opt_cf != NULL) {
+                    free (opt_cf);
+            }
+            opt_cf = strdup(options.optarg);
+            if (opt_cf == NULL)
             {
                 rrd_set_error ("strdup failed.");
                 return (-1);
@@ -667,10 +662,14 @@ int rrd_dump(
             rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
                           "[--no-header|-n]\n"
                           "[--csv|-c]\n"
+                          "[--cf|-f avg|max|min|last]\n"
                           "[--daemon|-d address]\n"
                           "file.rrd [file.xml]", options.argv[0]);
             if (opt_daemon != NULL) {
             	free(opt_daemon);
+            }
+            if (opt_cf != NULL) {
+                free(opt_cf);
             }
             return (-1);
             break;
@@ -681,6 +680,7 @@ int rrd_dump(
         rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
                       "[--no-header|-n]\n"
                       "[--csv|-c]\n"
+                      "[--cf|-f avg|max|min|last]\n"
                       "[--daemon|-d address]\n"
                        "file.rrd [file.xml]", options.argv[0]);
         if (opt_daemon != NULL) {
@@ -696,9 +696,9 @@ int rrd_dump(
     if (rc) return (rc);
 
     if ((options.argc - options.optind) == 2) {
-        rc = rrd_dump_opt_r(options.argv[options.optind], options.argv[options.optind + 1], opt_header, opt_mode);
+        rc = rrd_dump_opt_r(options.argv[options.optind], options.argv[options.optind + 1], opt_header, opt_mode, opt_cf);
     } else {
-        rc = rrd_dump_opt_r(options.argv[options.optind], NULL, opt_header, opt_mode);
+        rc = rrd_dump_opt_r(options.argv[options.optind], NULL, opt_header, opt_mode, opt_cf);
     }
 
     return rc;

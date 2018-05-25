@@ -76,6 +76,7 @@ static void PrintUsage(
            "\trrdtool dump [--header|-h {none,xsd,dtd}]\n"
            "\t\t[--no-header|-n]\n"
            "\t\t[--csv|-c]\n"
+           "\t\t[--cf|-f avg|max|min|last]\n"
            "\t\t[--daemon|-d address]\n"
            "\t\tfile.rrd [file.xml]");
 

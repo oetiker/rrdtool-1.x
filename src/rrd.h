@@ -297,7 +297,8 @@ struct rrd_t;
     int rrd_dump_opt_r(const char *filename,
                        char *outname,
                        int opt_noheader,
-                       int opt_mode);
+                       int opt_mode,
+                       char *out_cf);
     int       rrd_dump_r(
     const char *filename,
     char *outname);
@@ -316,7 +317,8 @@ struct rrd_t;
     int opt_header,
     rrd_output_callback_t cb,
     void *user,
-    int opt_mode);
+    int opt_mode,
+    char *opt_cf);
 
 /* Transplanted from rrd_parsetime.h */
     typedef enum {
