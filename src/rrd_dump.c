@@ -443,7 +443,7 @@ int rrd_dump_cb_r(
         CB_PUTS("</rrd>\n");
     }
     else {
-        // XXX
+        // Added CSV format output
 
         int data_source = CF_AVERAGE;
 
@@ -511,12 +511,8 @@ int rrd_dump_cb_r(
                 }
             }
         }
-
-        // XXX
-
-
-
-
+        
+        // Added CSV format output * END
 
     }
 
