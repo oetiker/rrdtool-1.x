@@ -94,10 +94,13 @@ mkstemp (char *tmpl)
 
 #define _O_EXCL         0x0400
 #define O_EXCL          _O_EXCL
+#ifndef O_BINARY
+#define O_BINARY        0
+#endif
 #define _S_IREAD        0000400         /* read permission, owner */
 #define _S_IWRITE       0000200         /* write permission, owner */
 
-      fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
+      fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
       if (fd >= 0)
     {
       errno = save_errno;
