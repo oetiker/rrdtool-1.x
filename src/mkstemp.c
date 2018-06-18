@@ -11,6 +11,7 @@
 #include "rrd_tool.h"
 #include <fcntl.h>
 
+
 static const char letters[] =
 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
