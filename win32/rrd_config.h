@@ -70,6 +70,9 @@
 /* is rrd_graph supported by this install */
 #define HAVE_RRD_GRAPH /**/
 
+/* is rrd_restore supported by this install */
+#define HAVE_RRD_RESTORE /**/
+
 /* Define to 1 if you have the `snprintf' function. */
 #define HAVE_SNPRINTF 1
 
