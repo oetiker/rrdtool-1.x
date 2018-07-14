@@ -129,8 +129,15 @@ int rrd_dump_cb_r(
 #else
 # error "Need strftime"
 #endif
+#if defined (_MSC_VER) && (_M_IX86)
+/* Otherwise (null) will be written to %s when compiling for 32-bit using MSVC */
+/* works for both, with or without _USE_32BIT_TIME_T */
+    CB_FMTS("\t<lastupdate>%ld</lastupdate> <!-- %s -->\n\n",
+        (long int) rrd.live_head->last_up, somestring);
+#else
     CB_FMTS("\t<lastupdate>%lld</lastupdate> <!-- %s -->\n\n",
         (long long int) rrd.live_head->last_up, somestring);
+#endif
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
         CB_PUTS("\t<ds>\n");
 
