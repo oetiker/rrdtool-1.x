@@ -3099,11 +3099,9 @@ int grid_paint(
 {
     long      i;
     int       res = 0;
-    int       j = 0;
-    int       legend_cnt = 0;
     double    X0, Y0;   /* points for filled graph and more */
-    struct image_title_t image_title;
-    struct gfx_color_t   water_color;
+    struct gfx_color_t water_color;
+    int       legend_cnt = 0;
 
     if (im->draw_3d_border > 0) {
 	    /* draw 3d border */
@@ -3175,18 +3173,13 @@ int grid_paint(
     }
 
     /* graph title */
-    image_title = graph_title_split(im->title?im->title:"");
-    while(image_title.lines[j] != NULL) {
-        gfx_text(im,
-             im->ximg / 2, (im->text_prop[TEXT_PROP_TITLE].size * 1.3) + (im->text_prop[TEXT_PROP_TITLE].size * 1.6 * j),
+    gfx_text(im,
+             im->xOriginTitle, im->yOriginTitle+6,
              im->graph_col[GRC_FONT],
              im->
              text_prop[TEXT_PROP_TITLE].
              font_desc,
-             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, image_title.lines[j]?image_title.lines[j]:"");
-        j++;
-    }
-
+             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title?im->title:"");
     /* rrdtool 'logo' */
     if (!(im->extra_flags & NO_RRDTOOL_TAG)){
         water_color = im->graph_col[GRC_FONT];
@@ -3497,8 +3490,7 @@ int graph_size_location(
          ** spacing is added here, on each side.
          */
         /* if necessary, reduce the font size of the title until it fits the image width */
-        image_title_t image_title = graph_title_split(im->title);
-        Ytitle = im->text_prop[TEXT_PROP_TITLE].size * (image_title.count + 1) * 1.6;
+        Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
     }
     else{
         // we have no title; get a little clearing from the top
@@ -6155,27 +6147,3 @@ void time_clean(
     }
     result[jj] = '\0'; /* We must force the end of the string */
 }
-
-image_title_t graph_title_split(
-    const char *title)
-{
-    image_title_t retval;
-    char *str;
-    int count = 0;
-    const char delim[2] = "?";
-
-    str = strdup(title);
-
-    retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
-
-    retval.lines[count] = strtok (str, delim);
-    while ( retval.lines[count] != NULL && count++ < MAX_IMAGE_TITLE_LINES)
-    {
-        retval.lines[count] = strtok( NULL, delim);
-    }
-    retval.lines[count] = NULL;
-    retval.count = count;
-
-    return retval;
-}
-

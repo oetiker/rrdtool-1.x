@@ -203,7 +203,6 @@ enum value_formatter_en {
 #endif
 
 # define MAX_AXIS 4
-# define MAX_IMAGE_TITLE_LINES 3
 
 typedef struct graph_desc_t {
     enum gf_en gf;       /* graphing function */
@@ -358,12 +357,6 @@ typedef struct image_desc_t {
     double last_tabwidth; /* (see gfx_prep_text() for reference) */
 } image_desc_t;
 
-typedef struct image_title_t
-{
-    char **lines;
-    int count;
-} image_title_t;
-
 /* Prototypes */
 int       xtr(
     image_desc_t *,
@@ -445,8 +438,6 @@ int       graph_paint_timestring(
                                 image_desc_t *,int,int);
 int       graph_paint_xy(
                         image_desc_t *,int,int);
-image_title_t graph_title_split(
-    const char *);
 int       rrd_graph_xport(
     image_desc_t *);
 
@@ -616,4 +607,5 @@ void      grinfo_push(
     image_desc_t *im,
     char *key,
     rrd_info_type_t type,    rrd_infoval_t value);
+
 
