@@ -6162,7 +6162,7 @@ image_title_t graph_title_split(
     image_title_t retval;
     char *str;
     int count = 0;
-    const char delim[2] = "?";
+    const char delim[2] = "\n";
 
     str = strdup(title);
 
