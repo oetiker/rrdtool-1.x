@@ -6156,26 +6156,74 @@ void time_clean(
     result[jj] = '\0'; /* We must force the end of the string */
 }
 
+char *substring(const char *string, int position, int length)
+{
+   char *pointer;
+
+   pointer = malloc(length+1);
+
+   if (pointer == NULL)
+   {
+      printf("Unable to allocate memory.\n");
+      exit(1);
+   }
+
+   strncpy(pointer, (string+position), length);
+   *(pointer+length+1) = '\0';
+
+   return pointer;
+}
+
 image_title_t graph_title_split(
     const char *title)
 {
     image_title_t retval;
-    char *str;
+    int start = 0;
+    int length = 0;
+    int pos = 0;
     int count = 0;
-    const char delim[2] = "\n";
-
-    str = strdup(title);
+    int delim = 1;
 
     retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
+    length = strlen(title);
 
-    retval.lines[count] = strtok (str, delim);
-    while ( retval.lines[count] != NULL && count++ < MAX_IMAGE_TITLE_LINES)
+    char *delims[6] = { "\n", "\r", "\\n", "\\r", "<br>", "<br/>" };
+    printf("title: %s\n", title);
+    do
     {
-        retval.lines[count] = strtok( NULL, delim);
+        pos = 0;
+        delim = 0;
+
+        while (delim == 0 && start + pos < length) {
+            for(int i=0; i<6;i++) {
+                int delim_size = strlen(delims[i]);
+                int delim_match = strncasecmp(title+start+pos, delims[i], delim_size);
+
+                //printf("Comparing '%s' with '%s' (%d=%d from %d) = %d\n",
+                //    title+start+pos, delims[i], i, delim_size, start+pos, delim_match);
+                if (delim_match == 0) {
+                    delim = delim_size;
+                    break;
+                }
+            }
+
+            pos++;
+        }
+
+        if (pos != 0)
+        {
+            char *str = substring(title, start, pos - 1);
+            //printf("str: %s (%d - %d)\n", str, start, pos);
+            retval.lines[count] = str;
+        }
+
+        start = start + pos + delim - 1;
+        count++;
     }
+    while (pos != 0 && retval.lines[count] != NULL && count < MAX_IMAGE_TITLE_LINES);
+
     retval.lines[count] = NULL;
     retval.count = count;
 
     return retval;
 }
-
