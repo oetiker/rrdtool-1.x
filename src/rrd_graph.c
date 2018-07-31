@@ -6187,7 +6187,7 @@ image_title_t graph_title_split(
     retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
     length = strlen(title);
 
-    char *delims[6] = { "\n", "\r", "\\n", "\\r", "<br>", "<br/>" };
+    char *delims[6] = { "\n", "\\n", "<br>", "<br/>" };
     printf("title: %s\n", title);
     do
     {
