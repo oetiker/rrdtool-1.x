@@ -3099,9 +3099,11 @@ int grid_paint(
 {
     long      i;
     int       res = 0;
-    double    X0, Y0;   /* points for filled graph and more */
-    struct gfx_color_t water_color;
+    int       j = 0;
     int       legend_cnt = 0;
+    double    X0, Y0;   /* points for filled graph and more */
+    struct image_title_t image_title;
+    struct gfx_color_t   water_color;
 
     if (im->draw_3d_border > 0) {
 	    /* draw 3d border */
@@ -3173,13 +3175,18 @@ int grid_paint(
     }
 
     /* graph title */
-    gfx_text(im,
-             im->xOriginTitle, im->yOriginTitle+6,
+    image_title = graph_title_split(im->title?im->title:"");
+    while(image_title.lines[j] != NULL) {
+        gfx_text(im,
+             im->ximg / 2, (im->text_prop[TEXT_PROP_TITLE].size * 1.3) + (im->text_prop[TEXT_PROP_TITLE].size * 1.6 * j),
              im->graph_col[GRC_FONT],
              im->
              text_prop[TEXT_PROP_TITLE].
              font_desc,
-             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, im->title?im->title:"");
+             im->tabwidth, 0.0, GFX_H_CENTER, GFX_V_TOP, image_title.lines[j]?image_title.lines[j]:"");
+        j++;
+    }
+
     /* rrdtool 'logo' */
     if (!(im->extra_flags & NO_RRDTOOL_TAG)){
         water_color = im->graph_col[GRC_FONT];
@@ -3490,7 +3497,8 @@ int graph_size_location(
          ** spacing is added here, on each side.
          */
         /* if necessary, reduce the font size of the title until it fits the image width */
-        Ytitle = im->text_prop[TEXT_PROP_TITLE].size * 2.6 + 10;
+        image_title_t image_title = graph_title_split(im->title);
+        Ytitle = im->text_prop[TEXT_PROP_TITLE].size * (image_title.count + 1) * 1.6;
     }
     else{
         // we have no title; get a little clearing from the top
@@ -6146,4 +6154,76 @@ void time_clean(
         }
     }
     result[jj] = '\0'; /* We must force the end of the string */
+}
+
+char *substring(const char *string, int position, int length)
+{
+   char *pointer;
+
+   pointer = malloc(length+1);
+
+   if (pointer == NULL)
+   {
+      printf("Unable to allocate memory.\n");
+      exit(1);
+   }
+
+   strncpy(pointer, (string+position), length);
+   *(pointer+length+1) = '\0';
+
+   return pointer;
+}
+
+image_title_t graph_title_split(
+    const char *title)
+{
+    image_title_t retval;
+    int start = 0;
+    int length = 0;
+    int pos = 0;
+    int count = 0;
+    int delim = 1;
+
+    retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
+    length = strlen(title);
+
+    char *delims[6] = { "\n", "\\n", "<br>", "<br/>" };
+    printf("title: %s\n", title);
+    do
+    {
+        pos = 0;
+        delim = 0;
+
+        while (delim == 0 && start + pos < length) {
+            for(int i=0; i<6;i++) {
+                int delim_size = strlen(delims[i]);
+                int delim_match = strncasecmp(title+start+pos, delims[i], delim_size);
+
+                //printf("Comparing '%s' with '%s' (%d=%d from %d) = %d\n",
+                //    title+start+pos, delims[i], i, delim_size, start+pos, delim_match);
+                if (delim_match == 0) {
+                    delim = delim_size;
+                    break;
+                }
+            }
+
+            pos++;
+        }
+
+        if (pos != 0)
+        {
+            char *str = substring(title, start, pos - 1);
+            //printf("str: %s (%d - %d)\n", str, start, pos);
+            retval.lines[count] = str;
+        }
+
+        start = start + pos + delim - 1;
+        count++;
+    }
+    while (pos != 0 && retval.lines[count] != NULL && count < MAX_IMAGE_TITLE_LINES);
+
+    retval.lines[count] = NULL;
+    retval.count = count;
+
+    return retval;
 }

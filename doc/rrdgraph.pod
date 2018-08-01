@@ -85,10 +85,13 @@ one pixel will silently be ignored.
 =head2 Labels
 
 [B<-t>|B<--title> I<string>]
+
+A horizontal string placed at the top of the graph which may be 
+separated into multiple lines using <br/> or \n
+
 [B<-v>|B<--vertical-label> I<string>]
 
-A horizontal string at the top of the graph and/or a vertically
-placed string at the left hand side of the graph.
+A vertical string placed at the left hand of the graph.
 
 
 =head2 Size
