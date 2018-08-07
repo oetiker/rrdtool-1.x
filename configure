@@ -641,6 +641,8 @@ systemdsystemunitdir
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
+MINGW_W64_FALSE
+MINGW_W64_TRUE
 RRDDOCDIR
 TROFF
 NROFF
@@ -14123,7 +14125,7 @@ fi
 
 fi
 
-for ac_header in langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h
+for ac_header in langinfo.h stdint.h inttypes.h libgen.h features.h sys/stat.h sys/types.h fcntl.h fp_class.h malloc.h unistd.h ieeefp.h math.h sys/times.h sys/param.h sys/resource.h signal.h float.h stdio.h stdlib.h errno.h string.h ctype.h grp.h pwd.h glob.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -14918,6 +14920,8 @@ $as_echo "#define XXXasprintf XXXrpl_asprintf" >>confdefs.h
     _HW_FUNC_XPRINTF_REPLACE
 fi
 
+
+/bin/sh $ltmain
 
 
 case $TERM in
@@ -16046,13 +16050,6 @@ $as_echo "" >&6; }
 $as_echo "${T_MD}Libintl Processing${T_ME}" >&6; }
 
 
-
-
-mkdir_p="$MKDIR_P"
-case $mkdir_p in
-  [\\/$]* | ?:[\\/]*) ;;
-  */*) mkdir_p="\$(top_builddir)/$mkdir_p" ;;
-esac
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether NLS is requested" >&5
@@ -19175,6 +19172,9 @@ rm -f core conftest.err conftest.$ac_objext \
 else
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+#ifdef __MINGW32__
+#include <pthread.h>
+#endif
 #include <time.h>
 int
 main ()
@@ -19722,6 +19722,11 @@ have_libdbi=no
 if test "${enable_libdbi+set}" = set; then :
   enableval=$enable_libdbi;
 else
+  enable_libdbi=yes
+fi
+
+
+if test "x$enable_libdbi" != xno; then :
 
     ac_fn_c_check_header_mongrel "$LINENO" "dbi/dbi.h" "ac_cv_header_dbi_dbi_h" "$ac_includes_default"
 if test "x$ac_cv_header_dbi_dbi_h" = xyes; then :
@@ -19779,7 +19784,6 @@ fi
 
 fi
 
-
  if test $have_libdbi != no; then
   BUILD_LIBDBI_TRUE=
   BUILD_LIBDBI_FALSE='#'
@@ -19795,6 +19799,11 @@ have_librados=no
 if test "${enable_librados+set}" = set; then :
   enableval=$enable_librados;
 else
+  enable_librados=yes
+fi
+
+
+if test "x$enable_librados" != xno; then :
 
     ac_fn_c_check_header_mongrel "$LINENO" "rados/librados.h" "ac_cv_header_rados_librados_h" "$ac_includes_default"
 if test "x$ac_cv_header_rados_librados_h" = xyes; then :
@@ -19811,7 +19820,6 @@ fi
 
 fi
 
-
  if test $have_librados != no; then
   BUILD_LIBRADOS_TRUE=
   BUILD_LIBRADOS_FALSE='#'
@@ -19827,6 +19835,11 @@ have_libwrap=no
 if test "${enable_libwrap+set}" = set; then :
   enableval=$enable_libwrap;
 else
+  enable_libwrap=yes
+fi
+
+
+if test "x$enable_libwrap" != xno; then :
 
     ac_fn_c_check_header_mongrel "$LINENO" "tcpd.h" "ac_cv_header_tcpd_h" "$ac_includes_default"
 if test "x$ac_cv_header_tcpd_h" = xyes; then :
@@ -19902,7 +19915,6 @@ fi
 
 
 fi
-
 
 
  if test $have_libwrap != no; then
@@ -22827,6 +22839,31 @@ if test -z "$RRDDOCDIR"; then
 
 fi
 
+# Check for MinGW-w64 build and pass to automake
+build_mingw_w64=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for MinGW-w64 build" >&5
+$as_echo_n "checking for MinGW-w64 build... " >&6; }
+case "$host" in
+    *w64-mingw32*)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+        build_mingw_w64=yes
+    ;;
+    *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    ;;
+esac
+# Pass the conditional to automake
+ if test "$build_mingw_w64" = "yes"; then
+  MINGW_W64_TRUE=
+  MINGW_W64_FALSE='#'
+else
+  MINGW_W64_TRUE='#'
+  MINGW_W64_FALSE=
+fi
+
+
 # systemd check
 
 
@@ -23173,6 +23210,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_TCL_SITE_TRUE}" && test -z "${BUILD_TCL_SITE_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_TCL_SITE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${MINGW_W64_TRUE}" && test -z "${MINGW_W64_FALSE}"; then
+  as_fn_error $? "conditional \"MINGW_W64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -25736,6 +25777,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_TCL_SITE_TRUE}" && test -z "${BUILD_TCL_SITE_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_TCL_SITE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${MINGW_W64_TRUE}" && test -z "${MINGW_W64_FALSE}"; then
+  as_fn_error $? "conditional \"MINGW_W64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
