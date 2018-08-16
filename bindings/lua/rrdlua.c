@@ -373,7 +373,9 @@ static const struct luaL_Reg rrd[] = {
 #if defined(DINF)
   {"info", lua_rrd_info},
   {"updatev", lua_rrd_updatev},
+#ifdef HAVE_RRD_GRAPH
   {"graphv", lua_rrd_graphv},
+#endif
 #endif
   {NULL, NULL}
 };
