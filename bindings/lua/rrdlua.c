@@ -170,12 +170,14 @@ lua_rrd_resize (lua_State * L)
   return 0;
 }
 
+#ifdef HAVE_RRD_RESTORE
 static int
 lua_rrd_restore (lua_State * L)
 {
   rrd_common_call(L, "restore", rrd_restore);
   return 0;
 }
+#endif
 
 static int
 lua_rrd_tune (lua_State * L)
@@ -366,7 +368,9 @@ static const struct luaL_Reg rrd[] = {
 #endif
   {"last", lua_rrd_last},
   {"resize", lua_rrd_resize},
+#ifdef HAVE_RRD_RESTORE
   {"restore", lua_rrd_restore},
+#endif
   {"tune", lua_rrd_tune},
   {"update", lua_rrd_update},
   {"flushcached", lua_rrd_flushcached},
