@@ -7,6 +7,10 @@ make test
 For Windows Users, make sure you have the following requirements:
 
 - ActiveState Perl (32bit version Only)
+  Remark: Using MSVC, the last supported ActivePerl version is 5.16,
+  e.g. ActivePerl-5.16.3.1604-MSWin32-x86-298023.msi
+  Since 5.18, ActivePerl is compiled with GCC compilers, and Microsoft
+  toolchains are *not* compatible
 - Microsoft Visual C++
 - The following binaries in your path: mt.exe, nmake.exe, link.exe, perl.exe
 - Make the project rrdlib.vcproj in Release mode to create rrdlib.lib
@@ -14,7 +18,7 @@ For Windows Users, make sure you have the following requirements:
 To build:
 
 perl Makefile.PL
-nmake 
+nmake
 
 To Install:
 
