@@ -54,7 +54,9 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 	if ($^O eq 'darwin'){
         $librrd = '-lrrd';
 	} else {
-		$librrd = "-L${TOP_BUILDDIR}/src/.libs/ $R -lrrd";
+# fixme: ideally these should be passed through from $ALL_LIBS in the toplevel makefile, 
+# but too much hassle to get through automake etc etc
+		$librrd = "-L${TOP_BUILDDIR}/src/.libs/ $R -lrrd -lpng -lgthread-2.0 -lm  -lglib-2.0   -lpangocairo-1.0 -lpango-1.0 -lcairo -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0   -lxml2";
 	}
 
 	WriteMakefile(
