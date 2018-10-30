@@ -6195,7 +6195,7 @@ image_title_t graph_title_split(
         delim = 0;
 
         while (delim == 0 && start + pos < length) {
-            for(int i=0; i<6;i++) {
+            for(int i=0; i<4;i++) {
                 int delim_size = strlen(delims[i]);
                 int delim_match = strncasecmp(title+start+pos, delims[i], delim_size);
 
