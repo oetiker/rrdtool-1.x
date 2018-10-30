@@ -6178,50 +6178,61 @@ image_title_t graph_title_split(
     const char *title)
 {
     image_title_t retval;
-    int start = 0;
-    int length = 0;
-    int pos = 0;
-    int count = 0;
-    int delim = 1;
+    int count = 0;              /* line count */
+    int found_delim;
 
     retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
-    length = strlen(title);
 
-    char *delims[6] = { "\n", "\\n", "<br>", "<br/>" };
-    printf("title: %s\n", title);
+    char *delims[4] = { "\n", "\\n", "<br>", "<br/>" };
+    // printf("unsplit title: %s\n", title);
+
+    char *consumed = strdup(title); /* allocates copy */
     do
     {
-        pos = 0;
-        delim = 0;
+       /*
+         search for next delimiter occurrence in the title,
+         if found, save the string before the delimiter for the next line & search the remainder
 
-        while (delim == 0 && start + pos < length) {
-            for(int i=0; i<6;i++) {
-                int delim_size = strlen(delims[i]);
-                int delim_match = strncasecmp(title+start+pos, delims[i], delim_size);
+         note: this logic cannot work if the title contains different delimiters,
+         as there's no guarantee that we'll find the earliest delimiter first!
+       */
+       found_delim = 0;
+       for(unsigned int i=0; i < 4; i++)
+       {
+          // printf("looking for delim '%s', in '%s'\n", delims[i], consumed);
+          int delim_size = strlen(delims[i]);
 
-                //printf("Comparing '%s' with '%s' (%d=%d from %d) = %d\n",
-                //    title+start+pos, delims[i], i, delim_size, start+pos, delim_match);
-                if (delim_match == 0) {
-                    delim = delim_size;
-                    break;
-                }
-            }
+          char *delimloc = strstr(consumed, delims[i]);
+          if (delimloc)
+          {
+             /* ignore an empty line caused by a leading delimiter (or two in a row) */
+             if (delimloc != consumed)
+             {
+                *delimloc = '\0'; /* split the string where the delimiter starts*/
+                retval.lines[count] = consumed; /* strdup allocated space for us, reuse that */
 
-            pos++;
-        }
-
-        if (pos != 0)
-        {
-            char *str = substring(title, start, pos - 1);
-            //printf("str: %s (%d - %d)\n", str, start, pos);
-            retval.lines[count] = str;
-        }
-
-        start = start + pos + delim - 1;
-        count++;
+                // printf("found delim '%s', line %d split after '%s', rest is '%s'\n",
+                //       delims[i], count, consumed, delimloc+delim_size);
+                ++count;
+             }
+             consumed = delimloc + delim_size;
+             found_delim = 1;
+             break;             /* try all delims on the remainder */
+          }
+       }
     }
-    while (pos != 0 && retval.lines[count] != NULL && count < MAX_IMAGE_TITLE_LINES);
+    /* must not create more than MAX lines, so must stop splitting one short... */
+    while (found_delim && count < MAX_IMAGE_TITLE_LINES-1);
 
+    /* ...so that (unsplittable) remainder goes into the final line */
+    if (strlen(consumed))
+    {
+       retval.lines[count] = consumed;
+       // printf("found nothing more, line %d is now '%s'\n", count, consumed);
+       ++count;
+    }
+
+//    printf("final line count is %d\n", count);
     retval.lines[count] = NULL;
     retval.count = count;
 
