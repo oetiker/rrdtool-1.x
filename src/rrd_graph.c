@@ -6183,7 +6183,7 @@ image_title_t graph_title_split(
 
     retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
 
-    char *delims[4] = { "\n", "\\n", "<br>", "<br/>" };
+    char *delims[] = { "\n", "\\n", "<br>", "<br/>" };
     // printf("unsplit title: %s\n", title);
 
     char *consumed = strdup(title); /* allocates copy */
@@ -6197,7 +6197,7 @@ image_title_t graph_title_split(
          as there's no guarantee that we'll find the earliest delimiter first!
        */
        found_delim = 0;
-       for(unsigned int i=0; i < 4; i++)
+       for(unsigned int i=0; i < sizeof(delims); i++)
        {
           // printf("looking for delim '%s', in '%s'\n", delims[i], consumed);
           int delim_size = strlen(delims[i]);
