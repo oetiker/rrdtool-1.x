@@ -6179,60 +6179,64 @@ image_title_t graph_title_split(
 {
     image_title_t retval;
     int count = 0;              /* line count */
-    int found_delim;
+    char *found_pos;
+    int found_size;
 
     retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1 ) * sizeof(char *));
 
     char *delims[] = { "\n", "\\n", "<br>", "<br/>" };
+
     // printf("unsplit title: %s\n", title);
 
     char *consumed = strdup(title); /* allocates copy */
     do
     {
-       /*
-         search for next delimiter occurrence in the title,
-         if found, save the string before the delimiter for the next line & search the remainder
+        /*
+          search for next delimiter occurrence in the title,
+          if found, save the string before the delimiter for the next line & search the remainder
+        */
+        found_pos = 0;
+        found_size  = 0;
+        for(unsigned int i=0; i < sizeof(delims); i++)
+        {
+            // get size of this delimiter
+            int delim_size = strlen(delims[i]);
 
-         note: this logic cannot work if the title contains different delimiters,
-         as there's no guarantee that we'll find the earliest delimiter first!
-       */
-       found_delim = 0;
-       for(unsigned int i=0; i < sizeof(delims); i++)
-       {
-          // printf("looking for delim '%s', in '%s'\n", delims[i], consumed);
-          int delim_size = strlen(delims[i]);
+            // find position of delimiter (0 = not found, otherwise ptr)
+            char *delim_pos = strstr(consumed, delims[i]);
 
-          char *delimloc = strstr(consumed, delims[i]);
-          if (delimloc)
-          {
-             /* ignore an empty line caused by a leading delimiter (or two in a row) */
-             if (delimloc != consumed)
-             {
-                *delimloc = '\0'; /* split the string where the delimiter starts*/
-                retval.lines[count] = consumed; /* strdup allocated space for us, reuse that */
+            // do we have a delimiter pointer?
+            if (delim_pos)
+                // have we not found anything yet? or is this position lower than any
+                // any previous ptr?
+                if ((!found_pos) || (delim_pos < found_pos))
+                {
+                    found_pos = delim_pos;
+                    found_size  = delim_size;
+                }
+        }
 
-                // printf("found delim '%s', line %d split after '%s', rest is '%s'\n",
-                //       delims[i], count, consumed, delimloc+delim_size);
-                ++count;
-             }
-             consumed = delimloc + delim_size;
-             found_delim = 1;
-             break;             /* try all delims on the remainder */
-          }
-       }
+        // We previous found a delimitor so lets null terminate it
+        if (found_pos)
+            *found_pos = '\0';
+
+        // ignore an empty line caused by a leading delimiter (or two in a row)
+        if (found_pos != consumed)
+        {
+            // strdup allocated space for us, reuse that
+            retval.lines[count] = consumed;
+            ++count;
+
+            consumed = found_pos;
+        }
+
+        // move the consumed pointer past any delimitor, so we can loop around again
+        consumed = consumed + found_size;
     }
-    /* must not create more than MAX lines, so must stop splitting one short... */
-    while (found_delim && count < MAX_IMAGE_TITLE_LINES-1);
+    // must not create more than MAX lines, so must stop splitting
+    // either when we hit the max, or have no other delimiter
+    while (found_pos && count < MAX_IMAGE_TITLE_LINES);
 
-    /* ...so that (unsplittable) remainder goes into the final line */
-    if (strlen(consumed))
-    {
-       retval.lines[count] = consumed;
-       // printf("found nothing more, line %d is now '%s'\n", count, consumed);
-       ++count;
-    }
-
-//    printf("final line count is %d\n", count);
     retval.lines[count] = NULL;
     retval.count = count;
 
