@@ -6197,7 +6197,7 @@ image_title_t graph_title_split(
         */
         found_pos = 0;
         found_size  = 0;
-        for(unsigned int i=0; i < sizeof(delims); i++)
+        for(unsigned int i=0; i < sizeof(delims) / sizeof(delims[0]); i++)
         {
             // get size of this delimiter
             int delim_size = strlen(delims[i]);
