@@ -957,7 +957,8 @@ int rrd_create_r2(
     // parsing went well. ONLY THEN are we allowed to produce
     // additional side effects.
     if (require_version != NULL) {
-        strncpy(rrd.stat_head->version, require_version, 5);
+        strncpy(rrd.stat_head->version, require_version, 4);
+        rrd.stat_head->version[4] = '\0';
     }
 
     if (rrd.stat_head->rra_cnt < 1) {
