@@ -272,6 +272,10 @@ AC_CHECK_FUNCS(fsync)
 
 dnl check for socket and nsl solaris again ... we need this for the new rrd_daemon stuff
 
+dnl link with ws2_32 (Winsock2 library) in case of MinGW or MinGW-w64 builds
+case "${target}" in
+  *mingw*) LIBS="${LIBS} -lws2_32";;
+esac
 AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
 AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
 AC_CHECK_FUNCS(sigwaitinfo, [],  AC_CHECK_LIB(rt, sigwaitinfo, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_SIGWAITINFO)],[]))
