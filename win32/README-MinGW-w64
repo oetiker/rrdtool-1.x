@@ -11,21 +11,21 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
  - i686 (32-bit)
    Install the required dependencies:
 
-   sudo dnf install mingw32-cairo mingw32-expat mingw32-fontconfig mingw32-freetype mingw32-gettext mingw32-glib2 mingw32-libpng mingw32-libxml2 mingw32-pango mingw32-pkg-config mingw32-zlib perl-Pod-Html
+   sudo dnf install mingw32-cairo mingw32-expat mingw32-fontconfig mingw32-freetype mingw32-gettext mingw32-glib2 mingw32-libpng mingw32-libxml2 mingw32-pango mingw32-pkg-config mingw32-windows-default-manifest mingw32-zlib perl-Pod-Html
 
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
-   ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=i686-w64-mingw32-pkg-config LIBS='-lws2_32'
+   ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=i686-w64-mingw32-pkg-config
    make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 - x86_64 (64-bit)
    Install the required dependencies:
 
-   sudo dnf install mingw64-cairo mingw64-expat mingw64-fontconfig mingw64-freetype mingw64-gettext mingw64-glib2 mingw64-libpng mingw64-libxml2 mingw64-pango mingw64-pkg-config mingw64-zlib perl-Pod-Html
+   sudo dnf install mingw64-cairo mingw64-expat mingw64-fontconfig mingw64-freetype mingw64-gettext mingw64-glib2 mingw64-libpng mingw64-libxml2 mingw64-pango mingw64-pkg-config mingw64-windows-default-manifest mingw64-zlib perl-Pod-Html
 
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
-   ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=x86_64-w64-mingw32-pkg-config LIBS='-lws2_32'
+   ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=x86_64-w64-mingw32-pkg-config
    make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 
@@ -37,7 +37,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
 
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
-   ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix LIBS='-lws2_32'
+   ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix
    make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 - x86_64 (64-bit)
@@ -47,7 +47,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
 
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
-   ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix LIBS='-lws2_32'
+   ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix
    make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 3) MXE (http://mxe.cc/ https://github.com/mxe/mxe)

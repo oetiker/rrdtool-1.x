@@ -1215,7 +1215,8 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
     }
 
     if (require_version != NULL && atoi(require_version) < atoi(out->stat_head->version)) {
-        strncpy(out->stat_head->version, require_version, 5);
+        strncpy(out->stat_head->version, require_version, 4);
+        out->stat_head->version[4] = '\0';
     }
 
     if (last_rra_cnt < out->stat_head->rra_cnt) {
