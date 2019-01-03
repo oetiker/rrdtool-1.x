@@ -74,7 +74,7 @@ The start and end of the time series you would like to display, and which
 B<RRA> the data should come from.  Defaults are: 1 day ago until
 now, with the best possible resolution. B<Start> and B<end> can
 be specified in several formats, see
-L<AT-STYLE TIME SPECIFICATION|rrdfetch> and L<rrdgraph_examples>.
+L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> and L<rrdgraph_examples>.
 By default, B<rrdtool graph> calculates the width of one pixel in
 the time domain and tries to get data from an B<RRA> with that
 resolution.  With the B<step> option you can alter this behavior.
