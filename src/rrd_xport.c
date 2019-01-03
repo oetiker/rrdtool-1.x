@@ -792,7 +792,7 @@ static int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_
       ptr++;
     }
     if (json){
-      addToBuffer(buffer,(ti < end-(time_t)step ? " ],\n" : " ]\n"),0);
+      addToBuffer(buffer,(ti <= end-(time_t)step ? " ],\n" : " ]\n"),0);
     }
     else {
       snprintf(buf,sizeof(buf),"</%s>\n", DATA_ROW_TAG);
