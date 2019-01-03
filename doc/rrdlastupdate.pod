@@ -9,7 +9,7 @@ S<[B<--daemon>|B<-d> I<address>]>
 
 =head1 DESCRIPTION
 
-The B<lastupdate> function returns the UNIX timestamp and the 
+The B<lastupdate> function returns the UNIX timestamp and the
 value stored for each datum in the most recent update of an RRD.
 
 =over 8
