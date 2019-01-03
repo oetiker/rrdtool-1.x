@@ -452,11 +452,7 @@ Free the stats struct allocated via B<rrdc_stats_get>.
 
 =head2 SEE ALSO
 
-=over
-
 B<rrcached>(1) B<rrdfetch>(1) B<rrdinfo>(1) B<rrdlast>(1) B<rrdcreate>(1) B<rrdupdate>(1) B<rrdlast>(1)
-
-=back
 
 =head1 AUTHOR
 

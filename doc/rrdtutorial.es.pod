@@ -1,4 +1,5 @@
 =encoding ISO8859-1
+
 =head1 NAME
 
 rrdtutorial - Tutorial sobre RRDtool por Alex van den Bogaerdt
