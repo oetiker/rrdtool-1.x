@@ -42,8 +42,8 @@ To provide an ASCII-friendly explanation, I will explain both versions with the 
   | |     |________|            ||     ||   |
  --------------------------------------------->
   0 1     3        7            17     20   21
-  
- 
+
+
 The X axis means time slots( each second denotes one slot) and the Y axis means the value.
 
 Let's make everything a little clearer:
@@ -172,10 +172,11 @@ All that said, I hope you get a clear understanding of the inner calculation "ma
 =over
 
 =item *
-A great PowerShell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c
-=head1 AUTHOR>
+
+A great PowerShell shell script for generating ASCII bar charts: L<https://gallery.technet.microsoft.com/scriptcenter/Sample-Script-to-Generate-59c80d4c>
 
 =item *
+
 L<https://stackoverflow.com/questions/18924450/rrd-wrong-values>
 
 =back
