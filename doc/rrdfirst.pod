@@ -25,7 +25,7 @@ B<rrdtool info>.
 
 =item B<--daemon>|B<-d> I<address>
 
-Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
+Address of the L<rrdcached> daemon.  For a list of accepted formats, see
 the B<-l> option in the L<rrdcached> manual.
 
  rrdtool first --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd

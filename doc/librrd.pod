@@ -63,7 +63,7 @@ If your data does not reside in rrd files, but you would like to draw charts usi
 rrd_graph functionality, you can supply your own rrd_fetch function and register it using
 the B<rrd_fetch_cb_register> function.
 
-The argument signature and api must be the same of the callback function and must be equivalent to the one of B<rrd_fetch_fn> in 
+The argument signature and api must be the same of the callback function and must be equivalent to the one of B<rrd_fetch_fn> in
 F<rrd_fetch.c>.
 
 To activate the callback function you can use the pseudo filename F<cb//>I<free_form_text>.

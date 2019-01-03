@@ -53,7 +53,7 @@ Now make sure the BUILD_DIR exists and go there:
  cd $BUILD_DIR
 
 Lets first assume you already have all the necessary libraries
-pre-installed. 
+pre-installed.
 
  wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.7.0.tar.gz
  gunzip -c rrdtool-1.7.0.tar.gz | tar xf -
@@ -86,7 +86,7 @@ xrender is required for compilation with cairo. This is not true and also
 bad since OpenSolaris does not include an F<xrender.pc> file. Use Perl to
 fix this:
 
- perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
+ perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc
 
 Make sure the RRDtool build system finds your new compiler
 
@@ -165,7 +165,7 @@ the syntax again differs from system to system:
 
 =item Solaris
 
- export LDFLAGS=-R${INSTALL_DIR}/lib 
+ export LDFLAGS=-R${INSTALL_DIR}/lib
 
 if you are using the Sun Studio/Forte compiler, you may also want to set
 
@@ -174,7 +174,7 @@ if you are using the Sun Studio/Forte compiler, you may also want to set
 
 =item Linux
 
- export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
+ export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib"
 
 =item HPUX
 
@@ -184,7 +184,7 @@ if you are using the Sun Studio/Forte compiler, you may also want to set
 
  export LDFLAGS="-Wl,-blibpath:${INSTALL_DIR}/lib"
 
-=back 
+=back
 
 If you have GNU make installed and it is not called 'make',
 then do
@@ -216,7 +216,7 @@ environment variable will be helpful.
 
 =head3 Building zlib
 
-Chances are very high that you already have that on your system ... 
+Chances are very high that you already have that on your system ...
 
  cd $BUILD_DIR
  wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
