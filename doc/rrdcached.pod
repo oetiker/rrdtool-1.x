@@ -171,7 +171,7 @@ LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, LOG_
 
 Default log level when this flag is I<NOT> present: B<LOG_ERR>
 
-See also: L<syslog.h>
+See also: I<syslog.h>
 
 =item B<-o> I<log_file>
 
