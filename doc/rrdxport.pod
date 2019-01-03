@@ -32,14 +32,14 @@ If no I<XPORT> statements are found, there will be no output.
 The time when the exported range should begin. Time in seconds since
 epoch (1970-01-01) is required. Negative numbers are relative to the
 current time. By default one day worth of data will be printed.
-See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
-documentation for a detailed explanation on how to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
+on how to specify time.
 
 =item B<-e>|B<--end> I<seconds> (default now)
 
 The time when the exported range should end. Time in seconds since epoch.
-See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
-documentation for a detailed explanation of ways to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
+on how to specify time.
 
 =item B<-m>|B<--maxrows> I<rows> (default 400 rows)
 

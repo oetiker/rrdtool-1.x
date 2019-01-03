@@ -44,14 +44,13 @@ data even if no absolute match is possible. See L<RESOLUTION INTERVAL>.
 
 start of the time series. A time in seconds since epoch (1970-01-01)
 is required. Negative numbers are relative to the current time. By default,
-one day worth of data will be fetched. See also AT-STYLE TIME SPECIFICATION
-section for a detailed explanation on  ways to specify the start time.
+one day worth of data will be fetched. See also L<"AT-STYLE TIME SPECIFICATION">
+for a detailed explanation on  ways to specify the start time.
 
 =item B<--end>|B<-e> I<end> (default now)
 
-the end of the time series in seconds since epoch. See also AT-STYLE
-TIME SPECIFICATION section for a detailed explanation of how to
-specify the end time.
+the end of the time series in seconds since epoch. See also L<"AT-STYLE TIME
+SPECIFICATION"> for a detailed explanation of how to specify the end time.
 
 =item B<--align-start>|B<-a>
 

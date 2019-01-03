@@ -34,8 +34,8 @@ Specifies the time in seconds since 1970-01-01 UTC when the first
 value should be added to the B<RRD>. B<RRDtool> will not accept
 any data timed before or at the time specified.
 
-See also AT-STYLE TIME SPECIFICATION section in the
-I<rrdfetch> documentation for other ways to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for other ways to specify
+time.
 
 If one or more source files is used to pre-fill the new B<RRD>,
 the B<--start> option may be omitted. In that case, the latest update
