@@ -82,6 +82,9 @@ If you want B<rrdtool graph> to get data at a one-hour resolution
 from the B<RRD>, set B<step> to 3'600. Note: a step smaller than
 one pixel will silently be ignored.
 
+For non-image B<--imgformat>s see L<rrdxport/"OUTPUT FORMAT"> for details on how
+this affects the output.
+
 =head2 Labels
 
 [B<-t>|B<--title> I<string>]
@@ -528,6 +531,9 @@ XML, XMLENUM (enumerates the value tags <v0>,<v1>,<v2>,...),
 JSON, JSONTIME (adds a timestamp to each data row),
 CSV (=comma separated values), TSV (=tab separated values), SSV (=semicolon separated values),
 (for comma/tab/semicolon separated values the time format by default is in the form of unix time. to change it to something else use: --x-grid MINUTE:10:HOUR:1:HOUR:4:0:"%Y-%m-%d %H:%M:%S")
+
+For non-image B<--imgformat>s see L<rrdxport/"OUTPUT FORMAT"> for details on
+the output.
 
 [B<-i>|B<--interlaced>]
 

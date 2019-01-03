@@ -35,11 +35,15 @@ current time. By default one day worth of data will be printed.
 See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
 on how to specify time.
 
+See L<"OUTPUT FORMAT"> below for details on how this affects the output.
+
 =item B<-e>|B<--end> I<seconds> (default now)
 
 The time when the exported range should end. Time in seconds since epoch.
 See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
 on how to specify time.
+
+See L<"OUTPUT FORMAT"> below for details on how this affects the output.
 
 =item B<-m>|B<--maxrows> I<rows> (default 400 rows)
 
@@ -90,7 +94,7 @@ referenced by I<vname> are printed. Optionally add a legend.
 
 =back
 
-=head1 Output format
+=head1 OUTPUT FORMAT
 
 The output is enclosed in an B<xport> element and contains two
 blocks. The first block is enclosed by a B<meta> element and
@@ -141,6 +145,33 @@ The resulting data section is:
     <row><t>1020615600</t><v>NaN</v><v>NaN</v></row>
   </data>
 
+All the statistics in the output will use the same step. The first sample will
+be the first sample starting at or immediately after B<--start>. The last
+sample will be the one ending at or immediately after B<--end>.
+
+Each sample has a timestamp and one or more values. The timestamps associated
+with a value in rrdtool ALWAYS represent the time the sample was taken. Since
+any value you sample will represent some sort of past state your sampling
+apparatus has gathered, the timestamp will always be at the end of the sampling
+period.
+
+Rrdtool does not store the actual samples, but does internal resampling of the
+values presented to it. Nevertheless when a data value is presented with a
+single timestamp the timestamp is at the end of the period the value
+represents. Note that the timestamp itself is outside the period the sample is
+valid for. For more details about this, see L<PDP calculation
+explanation|PDP_calculation_explanation>.
+
+So the time range for a sample with a timestamp is actually
+C<< [ timestamp - step ; timestamp [ >>.
+
+The first line of the sample output:
+
+    <row><t>1020611700</t><v>3.4000000000e+00</v><v>5.4400000000e+01</v></row>
+
+therefore means that the values for the interval 1020611700 to 1020611999 were
+3.4 and 54.4 for "out bytes" and "in and out bits" respectively, as if the
+value was taken at 1020612000.
 
 =head1 EXAMPLE 1
 
