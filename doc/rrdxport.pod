@@ -163,7 +163,7 @@ valid for. For more details about this, see L<PDP calculation
 explanation|PDP_calculation_explanation>.
 
 So the time range for a sample with a timestamp is actually
-C<< [ timestamp - step ; timestamp [ >>.
+from C<timestamp - step> inclusive to C<timestamp> exclusive.
 
 The first line of the sample output:
 
