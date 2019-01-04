@@ -150,12 +150,12 @@ be the first sample starting at or immediately after B<--start>. The last
 sample will be the one ending at or immediately after B<--end>.
 
 Each sample has a timestamp and one or more values. The timestamps associated
-with a value in rrdtool ALWAYS represent the time the sample was taken. Since
+with a value in RRDtool ALWAYS represent the time the sample was taken. Since
 any value you sample will represent some sort of past state your sampling
 apparatus has gathered, the timestamp will always be at the end of the sampling
 period.
 
-Rrdtool does not store the actual samples, but does internal resampling of the
+RRDtool does not store the actual samples, but does internal resampling of the
 values presented to it. Nevertheless when a data value is presented with a
 single timestamp the timestamp is at the end of the period the value
 represents. Note that the timestamp itself is outside the period the sample is
