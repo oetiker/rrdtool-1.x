@@ -43,7 +43,7 @@ This pseudo-rrd-filename defines a sql datasource:
 
 =item B<E<lt>[*]unixtimestamp columnE<gt>>
 
-  defines the column of <table> which contains the unix-timestamp 
+  defines the column of <table> which contains the unix-timestamp
   - if this is a DATETIME field in the database, then prefix with leading '*'
 
   hex-type-encoding via %xx are translated to the actual value, use %% to use %
@@ -121,19 +121,19 @@ To illustrate this here a command to create a graph that contains the actual val
 
 * Naturally you can also use any other kind of driver that libdbi supports - e.g. postgres, ...
 
-* From the way the data source is joined, it should also be possible to do joins over different tables 
-  (separate tables with "," in table and add in the WHERE Clauses the table equal joins. 
+* From the way the data source is joined, it should also be possible to do joins over different tables
+  (separate tables with "," in table and add in the WHERE Clauses the table equal joins.
   This has not been tested!!!)
 
 * It should also be relatively simple to add to the database using the same data source string.
   This has not been implemented...
 
-* The aggregation functions are ignored and several data columns are used instead 
+* The aggregation functions are ignored and several data columns are used instead
   to avoid querying the same SQL several times when minimum, average and maximum are needed for graphing...
 
 * for DB efficiency you should think of having 2 tables, one containing historic values and the other containing the latest data.
   This second table should be kept small to allow for the least amount of blocking SQL statements.
-  With mysql you can even use myisam table-type for the first and InnoDB for the second. 
+  With mysql you can even use myisam table-type for the first and InnoDB for the second.
   This is especially interesting as with tables with +100M rows myisam is much smaller then InnoDB.
 
 * To debug the SQL statements set the environment variable RRDDEBUGSQL and the actual SQL statements and the timing is printed to stderr.
@@ -142,26 +142,26 @@ To illustrate this here a command to create a graph that contains the actual val
 
 =head1 Performance issues with MySQL backend
 
-Previous versions of LibDBI have a big performance issue when retrieving data from a MySQL server. Performance impact is exponentially based 
-on the number of values you retrieve from the database. 
-For example, it would take more than 2 seconds to graph 5DS on 150 hours of data with a precision of 5 minutes 
-(against 100ms when data comes from a RRD file). This bug has been fixed in version 0.9.0 of LibDBI. 
+Previous versions of LibDBI have a big performance issue when retrieving data from a MySQL server. Performance impact is exponentially based
+on the number of values you retrieve from the database.
+For example, it would take more than 2 seconds to graph 5DS on 150 hours of data with a precision of 5 minutes
+(against 100ms when data comes from a RRD file). This bug has been fixed in version 0.9.0 of LibDBI.
 You can find more information on this libdbi-users mailing list thread: http://sourceforge.net/mailarchive/message.php?msg_id=30320894
 
 
 =head1 BUGS
 
-* at least on Linux please make sure that the libdbi driver is explicitly linked against libdbi.so.0 
-  check via ldd /usr/lib/dbd/libmysql.so, that there is a line with libdbi.so.0. 
+* at least on Linux please make sure that the libdbi driver is explicitly linked against libdbi.so.0
+  check via ldd /usr/lib/dbd/libmysql.so, that there is a line with libdbi.so.0.
   otherwise at least the perl module RRDs will fail because the dynamic linker cannot find some symbols from libdbi.so.
   (this only happens when the libdbi driver is actually used the first time!)
   This is KNOWN to be the case with RHEL4 and FC4 and FC5! (But actually this is a bug with libdbi make files!)
 
 * at least version 0.8.1 of libdbi exhibits a bug with BINARY fields
-  (shorttext,text,mediumtext,longtext and possibly also BINARY and BLOB fields), 
-  that can result in coredumps of rrdtool. 
+  (shorttext,text,mediumtext,longtext and possibly also BINARY and BLOB fields),
+  that can result in coredumps of rrdtool.
   The tool will tell you on stderr if this occurs, so that you know what may be the reason.
-  If you are not experiencing these coredumps, then set the environment variable RRD_NO_LIBDBI_BUG_WARNING, 
+  If you are not experiencing these coredumps, then set the environment variable RRD_NO_LIBDBI_BUG_WARNING,
   and then the message will not get shown.
 
 =head1 AUTHOR

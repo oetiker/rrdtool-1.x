@@ -17,8 +17,8 @@ it to the native B<RRD> format.
 
 =item I<filename.xml>
 
-The name of the B<XML> file you want to restore. The special filename "-" 
-(a single dash) is interpreted as standard input. 
+The name of the B<XML> file you want to restore. The special filename "-"
+(a single dash) is interpreted as standard input.
 
 In order to support the restore command in pipe mode (especially when
 using B<RRDtool> over a network connection), when using "-" as a filename
