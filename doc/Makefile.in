@@ -376,8 +376,8 @@ POD = bin_dec_hex.pod rrddump.pod rrdgraph_examples.pod rrdrestore.pod \
 	rrdinfo.pod rrdtune.pod rrdbuild.pod rrdflushcached.pod \
 	rrdcgi.pod rrdgraph.pod rrdlast.pod rrdlastupdate.pod \
 	rrdcreate.pod rrdgraph_data.pod rrdresize.pod rrdtutorial.pod \
-	PDP_calculation_explanation.pod \
-	rrdlist.pod $(am__append_1) $(am__append_2) $(am__append_3)
+	rrd_pdpcalc.pod rrdlist.pod \
+	$(am__append_1) $(am__append_2) $(am__append_3)
 POD3 = librrd.pod
 PMP = RRDs.pod RRDp.pod
 MAN = $(POD:.pod=.1)
