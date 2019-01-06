@@ -160,7 +160,7 @@ values presented to it. Nevertheless when a data value is presented with a
 single timestamp the timestamp is at the end of the period the value
 represents. Note that the timestamp itself is outside the period the sample is
 valid for. For more details about this, see L<PDP calculation
-explanation|PDP_calculation_explanation>.
+explanation|rrd_pdpcalc>.
 
 So the time range for a sample with a timestamp is actually
 from C<timestamp - step> inclusive to C<timestamp> exclusive.
