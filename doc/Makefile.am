@@ -10,8 +10,8 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflushcached.pod   \
-      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
-      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrdlist.pod
+      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod      rrdcreate.pod  \
+      rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrd_pdpcalc.pod        rrdlist.pod
 
 if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
