@@ -6156,24 +6156,6 @@ void time_clean(
     result[jj] = '\0'; /* We must force the end of the string */
 }
 
-char *substring(const char *string, int position, int length)
-{
-   char *pointer;
-
-   pointer = malloc(length+1);
-
-   if (pointer == NULL)
-   {
-      printf("Unable to allocate memory.\n");
-      exit(1);
-   }
-
-   strncpy(pointer, (string+position), length);
-   *(pointer+length+1) = '\0';
-
-   return pointer;
-}
-
 image_title_t graph_title_split(
     const char *title)
 {
