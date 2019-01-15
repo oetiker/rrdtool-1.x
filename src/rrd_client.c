@@ -38,6 +38,10 @@
 
 #endif
 
+#ifdef __MINGW32__
+#define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
+#endif
+
 #include "rrd_strtod.h"
 #include "rrd.h"
 #include "rrd_tool.h"
@@ -103,11 +107,9 @@ static char *get_path(rrd_client_t *client, const char *path) /* {{{ */
   if ((client == NULL) || (path == NULL) || (client->sd_path == NULL))
     return (NULL);
 
-#ifndef __MINGW32__
   if ((*client->sd_path == '/')
       || (strncmp ("unix:", client->sd_path, strlen ("unix:")) == 0))
     is_unix = 1;
-#endif
 
   if (is_unix)
   {
