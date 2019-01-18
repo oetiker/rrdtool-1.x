@@ -1482,13 +1482,30 @@ int write_rrd(
             }
 
 #ifdef WIN32
-/* in windows, renaming to an existing file is verboten */
-            unlink(outfilename);
-#endif
+/* In Windows, renaming to an existing file is not allowed. Even, if the file
+ * is deleted before, using _unlink() here. Furthermore the FILE_SHARE_DELETE
+ * flag is required, which is used in CreateFileA in rrd_open.c
+ * Check first, if the file exists. Use ReplaceFileA if the file exists.
+ * Otherwise rename as usual */
+            if (_access_s(outfilename, 0) == 0) {
+                if (ReplaceFileA(outfilename, tmpfilename, NULL, 0, 0, 0) ==
+                    0) {
+                    rrd_set_error("Cannot replace %s!", outfilename);
+                    goto done;
+                }
+            } else {
+                if (rename(tmpfilename, outfilename) != 0) {
+                    rrd_set_error
+                        ("Cannot rename temporary file to final file!");
+                    goto done;
+                }
+            }
+#else
             if (rename(tmpfilename, outfilename) != 0) {
                 rrd_set_error("Cannot rename temporary file to final file!");
                 goto done;
             }
+#endif
 
             // after the rename: forget the file again, just to be sure...
             if (rrdc_is_any_connected()) {
