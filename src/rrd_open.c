@@ -17,7 +17,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <limits.h>
-#endif /* WIN32 */
+#endif                          /* WIN32 */
 
 #include "rrd_tool.h"
 #include "unused.h"
@@ -34,11 +34,11 @@
 #define MEMBLK 8192
 
 #ifdef WIN32
-#define	_LK_UNLCK	0	/* Unlock */
-#define	_LK_LOCK	1	/* Lock */
-#define	_LK_NBLCK	2	/* Non-blocking lock */
-#define	_LK_RLCK	3	/* "Same as _LK_NBLCK" */
-#define	_LK_NBRLCK	4	/* "Same as _LK_LOCK" */
+#define	_LK_UNLCK	0   /* Unlock */
+#define	_LK_LOCK	1   /* Lock */
+#define	_LK_NBLCK	2   /* Non-blocking lock */
+#define	_LK_RLCK	3   /* "Same as _LK_NBLCK" */
+#define	_LK_NBRLCK	4   /* "Same as _LK_LOCK" */
 
 
 #define	LK_UNLCK	_LK_UNLCK
@@ -110,10 +110,10 @@
       __rrd_read_mmap(dst, dst_t, cnt) \
     }
 #elif defined(HAVE_LIBRADOS) && !defined(HAVE_MMAP)
-    if (rrd_file->rados) \
-      __rrd_read_rados(dst, dst_t, cnt) \
-    else \
-      __rrd_read_seq(dst, dst_t, cnt) \
+if (rrd_file->rados)
+    __rrd_read_rados(dst, dst_t, cnt)
+        else
+    __rrd_read_seq(dst, dst_t, cnt)
     }
 #elif defined(HAVE_MMAP)
 #define __rrd_read(dst, dst_t, cnt) \
@@ -130,8 +130,11 @@
 #endif
 #endif
 
-static int rrd_rwlock(rrd_file_t *rrd_file, int writelock);
-static int close_and_unlock(int fd);
+static int rrd_rwlock(
+    rrd_file_t *rrd_file,
+    int writelock);
+static int close_and_unlock(
+    int fd);
 
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
@@ -159,12 +162,11 @@ rrd_file_t *rrd_open(
     struct stat statb;
     rrd_file_t *rrd_file = NULL;
     rrd_simple_file_t *rrd_simple_file = NULL;
-    size_t     newfile_size = 0;
+    size_t    newfile_size = 0;
 
     /* Are we creating a new file? */
-    if(rdwr & RRD_CREAT)
-    {
-        size_t header_len, value_cnt, data_len;
+    if (rdwr & RRD_CREAT) {
+        size_t    header_len, value_cnt, data_len;
 
         header_len = rrd_get_header_size(rrd);
 
@@ -176,23 +178,23 @@ rrd_file_t *rrd_open(
 
         newfile_size = header_len + data_len;
     }
-    
-    rrd_file = (rrd_file_t*)malloc(sizeof(rrd_file_t));
+
+    rrd_file = (rrd_file_t *) malloc(sizeof(rrd_file_t));
     if (rrd_file == NULL) {
         rrd_set_error("allocating rrd_file descriptor for '%s'", file_name);
         return NULL;
     }
     memset(rrd_file, 0, sizeof(rrd_file_t));
     rrd_file->rrd = rrd;
-    
+
     rrd_file->pvt = malloc(sizeof(rrd_simple_file_t));
-    if(rrd_file->pvt == NULL) {
+    if (rrd_file->pvt == NULL) {
         rrd_set_error("allocating rrd_simple_file for '%s'", file_name);
         free(rrd_file);
         return NULL;
     }
     memset(rrd_file->pvt, 0, sizeof(rrd_simple_file_t));
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
     rrd_simple_file->fd = -1;
 
 #ifdef DEBUG
@@ -207,22 +209,22 @@ rrd_file_t *rrd_open(
 
 #ifdef HAVE_LIBRADOS
     if (strncmp("ceph//", file_name, 6) == 0) {
-      rrd_file->rados = rrd_rados_open(file_name + 6);
-      if (rrd_file->rados == NULL)
-          goto out_free;
+        rrd_file->rados = rrd_rados_open(file_name + 6);
+        if (rrd_file->rados == NULL)
+            goto out_free;
 
-      if (rdwr & RRD_LOCK) {
-          /* Note: rados read lock is not implemented.  See rrd_lock(). */
-          if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
-              rrd_set_error("could not lock RRD");
-              goto out_close;
-          }
-      }
+        if (rdwr & RRD_LOCK) {
+            /* Note: rados read lock is not implemented.  See rrd_lock(). */
+            if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
+                rrd_set_error("could not lock RRD");
+                goto out_close;
+            }
+        }
 
-      if (rdwr & RRD_CREAT)
-          goto out_done;
+        if (rdwr & RRD_CREAT)
+            goto out_done;
 
-      goto read_check;
+        goto read_check;
     }
 #endif
 
@@ -238,16 +240,16 @@ rrd_file_t *rrd_open(
         rrd_simple_file->mm_flags = MAP_PRIVATE;
 # endif
 # ifdef MAP_NORESERVE
-        rrd_simple_file->mm_flags |= MAP_NORESERVE;  /* readonly, so no swap backing needed */
+        rrd_simple_file->mm_flags |= MAP_NORESERVE; /* readonly, so no swap backing needed */
 # endif
 #endif
     } else {
         if (rdwr & RRD_READWRITE) {
             flags |= O_RDWR;
-#ifdef HAVE_MMAP 
-            rrd_simple_file->mm_flags = MAP_SHARED; 
-            rrd_simple_file->mm_prot |= PROT_WRITE; 
-#endif 
+#ifdef HAVE_MMAP
+            rrd_simple_file->mm_flags = MAP_SHARED;
+            rrd_simple_file->mm_prot |= PROT_WRITE;
+#endif
         }
         if (rdwr & RRD_CREAT) {
             flags |= (O_CREAT | O_TRUNC);
@@ -258,10 +260,10 @@ rrd_file_t *rrd_open(
     }
     if (rdwr & RRD_READAHEAD) {
 #ifdef MAP_POPULATE
-        rrd_simple_file->mm_flags |= MAP_POPULATE;   /* populate ptes and data */
+        rrd_simple_file->mm_flags |= MAP_POPULATE;  /* populate ptes and data */
 #endif
 #if defined MAP_NONBLOCK
-        rrd_simple_file->mm_flags |= MAP_NONBLOCK;   /* just populate ptes */
+        rrd_simple_file->mm_flags |= MAP_NONBLOCK;  /* just populate ptes */
 #endif
     }
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
@@ -275,17 +277,17 @@ rrd_file_t *rrd_open(
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_BROKEN_MS_ASYNC
-    if (rdwr & RRD_READWRITE) {    
+    if (rdwr & RRD_READWRITE) {
         /* some unices, the files mtime does not get updated
            on memory mapped files, in order to help them,     
            we update the timestamp at this point.      
            The thing happens pretty 'close' to the open    
            call so the chances of a race should be minimal.    
-                
-           Maybe ask your vendor to fix your OS ... */    
-           utime(file_name,NULL);  
+
+           Maybe ask your vendor to fix your OS ... */
+        utime(file_name, NULL);
     }
-#endif    
+#endif
 #endif
 
     if (rdwr & RRD_LOCK) {
@@ -306,71 +308,70 @@ rrd_file_t *rrd_open(
     } else {
         rrd_file->file_len = newfile_size;
 #ifdef HAVE_POSIX_FALLOCATE
-	/* man: posix_fallocate() returns zero on success,
-	 * or an error number on failure.  Note that errno is not set.
-	 */
-	int fret = posix_fallocate(rrd_simple_file->fd, 0, newfile_size);
+        /* man: posix_fallocate() returns zero on success,
+         * or an error number on failure.  Note that errno is not set.
+         */
+        int       fret =
+            posix_fallocate(rrd_simple_file->fd, 0, newfile_size);
         if (fret) {
             rrd_set_error("posix_fallocate '%s': %s", file_name,
                           rrd_strerror(fret));
             goto out_close;
         } else {
-            goto no_lseek_necessary;        
+            goto no_lseek_necessary;
         }
 #endif
         if (lseek(rrd_simple_file->fd, newfile_size - 1, SEEK_SET) == -1) {
             rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
-        if ( write(rrd_simple_file->fd, "\0", 1) == -1){    /* poke */
+        if (write(rrd_simple_file->fd, "\0", 1) == -1) {    /* poke */
             rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
-        if (lseek(rrd_simple_file->fd, 0, SEEK_SET) == -1){
+        if (lseek(rrd_simple_file->fd, 0, SEEK_SET) == -1) {
             rrd_set_error("lseek '%s': %s", file_name, rrd_strerror(errno));
             goto out_close;
         }
     }
-    no_lseek_necessary:
+  no_lseek_necessary:
 
 #ifdef HAVE_MMAP
 #ifndef HAVE_POSIX_FALLOCATE
-	/* force allocating the file on the underlying filesystem to prevent any
-	 * future bus error when the filesystem is full and attempting to write
-	 * trough the file mapping. Filling the file using memset on the file
-	 * mapping can also lead some bus error, so we use the old fashioned
-	 * write().
-	 */
+    /* force allocating the file on the underlying filesystem to prevent any
+     * future bus error when the filesystem is full and attempting to write
+     * trough the file mapping. Filling the file using memset on the file
+     * mapping can also lead some bus error, so we use the old fashioned
+     * write().
+     */
     if (rdwr & RRD_CREAT) {
-		char     buf[4096];
-		unsigned i;
+        char      buf[4096];
+        unsigned  i;
 
-		memset(buf, DNAN, sizeof buf);
-		lseek(rrd_simple_file->fd, offset, SEEK_SET);
-        
-		for (i = 0; i < (newfile_size - 1) / sizeof buf; ++i)
-		{
-			if (write(rrd_simple_file->fd, buf, sizeof buf) == -1)
-			{
-				rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
-				goto out_close;
-			}
-		}
-		
-		if (write(rrd_simple_file->fd, buf,
-					(newfile_size - 1) % sizeof buf) == -1)
-		{
-			rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
-			goto out_close;
-		}
+        memset(buf, DNAN, sizeof buf);
+        lseek(rrd_simple_file->fd, offset, SEEK_SET);
 
-		lseek(rrd_simple_file->fd, 0, SEEK_SET);
+        for (i = 0; i < (newfile_size - 1) / sizeof buf; ++i) {
+            if (write(rrd_simple_file->fd, buf, sizeof buf) == -1) {
+                rrd_set_error("write '%s': %s", file_name,
+                              rrd_strerror(errno));
+                goto out_close;
+            }
+        }
+
+        if (write(rrd_simple_file->fd, buf,
+                  (newfile_size - 1) % sizeof buf) == -1) {
+            rrd_set_error("write '%s': %s", file_name, rrd_strerror(errno));
+            goto out_close;
+        }
+
+        lseek(rrd_simple_file->fd, 0, SEEK_SET);
     }
 #endif
 
-    data = mmap(0, rrd_file->file_len, 
-        rrd_simple_file->mm_prot, rrd_simple_file->mm_flags,
-        rrd_simple_file->fd, offset);
+    data = mmap(0, rrd_file->file_len,
+                rrd_simple_file->mm_prot, rrd_simple_file->mm_flags,
+                rrd_simple_file->fd, offset);
 
     /* lets see if the first read worked */
     if (data == MAP_FAILED) {
@@ -379,8 +380,8 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
     rrd->__mmap_start = data;
-    rrd->__mmap_size  = rrd_file->file_len;
-	    
+    rrd->__mmap_size = rrd_file->file_len;
+
     rrd_simple_file->file_start = data;
 #endif
     if (rdwr & RRD_CREAT)
@@ -388,7 +389,7 @@ rrd_file_t *rrd_open(
 
     if (rdwr & RRD_READAHEAD) {
         /* If perfect READAHEAD is not achieved for whatever reason, caller
-           will not thank us for advising the kernel of RANDOM access below.*/
+           will not thank us for advising the kernel of RANDOM access below. */
         rdwr |= RRD_COPY;
     }
     /* In general we need no read-ahead when dealing with rrd_files.
@@ -413,7 +414,7 @@ rrd_file_t *rrd_open(
 #endif
 
 #ifdef HAVE_LIBRADOS
-read_check:
+  read_check:
 #endif
 
     __rrd_read(rrd->stat_head, stat_head_t,
@@ -485,34 +486,33 @@ read_check:
 #endif
 
     {
-      unsigned long row_cnt = 0;
+        unsigned long row_cnt = 0;
 
-      for (ui=0; ui<rrd->stat_head->rra_cnt; ui++)
-        row_cnt += rrd->rra_def[ui].row_cnt;
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
+            row_cnt += rrd->rra_def[ui].row_cnt;
 
-      size_t  correct_len = rrd_file->header_len +
-        sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
+        size_t    correct_len = rrd_file->header_len +
+            sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
 
 #ifdef HAVE_LIBRADOS
-      /* skip length checking for rados file */
-      if (rrd_file->rados) {
-        rrd_file->file_len = correct_len;
-      }
+        /* skip length checking for rados file */
+        if (rrd_file->rados) {
+            rrd_file->file_len = correct_len;
+        }
 #endif
 
-      if (correct_len > rrd_file->file_len)
-      {
-        rrd_set_error("'%s' is too small (should be %ld bytes)",
-                      file_name, (long long) correct_len);
-        goto out_close;
-      }
-      if (rdwr & RRD_READVALUES) {
-        __rrd_read(rrd->rrd_value, rrd_value_t,
-                   row_cnt * rrd->stat_head->ds_cnt);
+        if (correct_len > rrd_file->file_len) {
+            rrd_set_error("'%s' is too small (should be %ld bytes)",
+                          file_name, (long long) correct_len);
+            goto out_close;
+        }
+        if (rdwr & RRD_READVALUES) {
+            __rrd_read(rrd->rrd_value, rrd_value_t,
+                       row_cnt * rrd->stat_head->ds_cnt);
 
-        if (rrd_seek(rrd_file, rrd_file->header_len, SEEK_SET) != 0)
-          goto out_close;
-      }
+            if (rrd_seek(rrd_file, rrd_file->header_len, SEEK_SET) != 0)
+                goto out_close;
+        }
     }
 
   out_done:
@@ -521,23 +521,23 @@ read_check:
   out_close:
 #ifdef HAVE_MMAP
     if (data != MAP_FAILED)
-      munmap(data, rrd_file->file_len);
+        munmap(data, rrd_file->file_len);
 #endif
 #ifdef HAVE_LIBRADOS
     if (rrd_file->rados)
-      rrd_rados_close(rrd_file->rados);
+        rrd_rados_close(rrd_file->rados);
 #endif
     if (rrd_simple_file->fd >= 0) {
-      /* keep the original error */
-      char *e = strdup(rrd_get_error());
+        /* keep the original error */
+        char     *e = strdup(rrd_get_error());
 
-      close_and_unlock(rrd_simple_file->fd);
+        close_and_unlock(rrd_simple_file->fd);
 
-      if (e) {
-        rrd_set_error(e);
-        free(e);
-      } else
-        rrd_set_error("error message was lost (out of memory)");
+        if (e) {
+            rrd_set_error(e);
+            free(e);
+        } else
+            rrd_set_error("error message was lost (out of memory)");
     }
   out_free:
     free(rrd_file->pvt);
@@ -554,10 +554,11 @@ void mincore_print(
     char *mark)
 {
     rrd_simple_file_t *rrd_simple_file;
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
 #ifdef HAVE_MMAP
     /* pretty print blocks in core */
-    size_t     off;
+    size_t    off;
     unsigned char *vec;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
@@ -566,7 +567,8 @@ void mincore_print(
     vec = malloc(off);
     if (vec != NULL) {
         memset(vec, 0, off);
-        if (mincore(rrd_simple_file->file_start, rrd_file->file_len, vec) == 0) {
+        if (mincore(rrd_simple_file->file_start, rrd_file->file_len, vec) ==
+            0) {
             int       prev;
             unsigned  is_in = 0, was_in = 0;
 
@@ -614,8 +616,8 @@ static
 int rrd_windows_lock(
     int fd)
 {
-    int ret;
-    long pos;
+    int       ret;
+    long      pos;
 
     /*
      * _locking() is relative to fd position.
@@ -637,9 +639,9 @@ int rrd_windows_lock(
     while (1) {
         ret = _locking(fd, _LK_NBLCK, LONG_MAX);
         if (ret == 0)
-            break; /* success */
+            break;      /* success */
         if (errno != EACCES)
-            break; /* failure */
+            break;      /* failure */
         /* EACCES: someone else has the lock. */
 
         /*
@@ -662,7 +664,7 @@ static
 int close_and_unlock(
     int fd)
 {
-    int ret = 0;
+    int       ret = 0;
 
 #ifdef USE_WINDOWS_LOCK
     /*
@@ -686,7 +688,7 @@ int close_and_unlock(
 
     if (ret != 0)
         rrd_set_error("unlock file: %s", rrd_strerror(errno));
-out_close:
+  out_close:
 #endif
 
     if (close(fd) != 0) {
@@ -703,7 +705,7 @@ int rrd_rwlock(
     int writelock)
 {
 #ifdef DISABLE_FLOCK
-    (void)rrd_file;
+    (void) rrd_file;
     return 0;
 #else
 #ifdef HAVE_LIBRADOS
@@ -724,7 +726,8 @@ int rrd_rwlock(
 #endif
     int       rcstat;
     rrd_simple_file_t *rrd_simple_file;
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
 #ifdef USE_WINDOWS_LOCK
     /* _locking() does not support read locks; we always take a write lock */
     rcstat = rrd_windows_lock(rrd_simple_file->fd);
@@ -732,9 +735,8 @@ int rrd_rwlock(
     {
         struct flock lock;
 
-        lock.l_type = writelock ?
-                          F_WRLCK: /* exclusive write lock or */
-                          F_RDLCK; /* shared read lock */
+        lock.l_type = writelock ? F_WRLCK : /* exclusive write lock or */
+            F_RDLCK;    /* shared read lock */
         lock.l_len = 0; /* whole file */
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
@@ -754,20 +756,21 @@ void rrd_dontneed(
     rrd_t *rrd)
 {
     rrd_simple_file_t *rrd_simple_file;
+
 #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE
-    size_t dontneed_start;
-    size_t rra_start;
-    size_t active_block;
-    size_t i;
+    size_t    dontneed_start;
+    size_t    rra_start;
+    size_t    active_block;
+    size_t    i;
     ssize_t   _page_size = sysconf(_SC_PAGESIZE);
 
     if (rrd_file == NULL) {
 #if defined DEBUG && DEBUG
-	    fprintf (stderr, "rrd_dontneed: Argument 'rrd_file' is NULL.\n");
+        fprintf(stderr, "rrd_dontneed: Argument 'rrd_file' is NULL.\n");
 #endif
-	    return;
+        return;
     }
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
 
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "before");
@@ -782,7 +785,7 @@ void rrd_dontneed(
                        + rrd->rra_ptr[i].cur_row
                        * rrd->stat_head->ds_cnt * sizeof(rrd_value_t));
         if (active_block > dontneed_start) {
-#ifdef USE_MADVISE 
+#ifdef USE_MADVISE
             madvise(rrd_simple_file->file_start + dontneed_start,
                     active_block - dontneed_start - 1, MADV_DONTNEED);
 #else
@@ -809,13 +812,13 @@ void rrd_dontneed(
 
     if (dontneed_start < rrd_file->file_len) {
 #ifdef USE_MADVISE
-	    madvise(rrd_simple_file->file_start + dontneed_start,
-		    rrd_file->file_len - dontneed_start, MADV_DONTNEED);
+        madvise(rrd_simple_file->file_start + dontneed_start,
+                rrd_file->file_len - dontneed_start, MADV_DONTNEED);
 #else
 #ifdef HAVE_POSIX_FADVISE
-	    posix_fadvise(rrd_simple_file->fd, dontneed_start,
-			  rrd_file->file_len - dontneed_start,
-			  POSIX_FADV_DONTNEED);
+        posix_fadvise(rrd_simple_file->fd, dontneed_start,
+                      rrd_file->file_len - dontneed_start,
+                      POSIX_FADV_DONTNEED);
 #endif
 #endif
     }
@@ -834,7 +837,8 @@ int rrd_close(
     rrd_file_t *rrd_file)
 {
     rrd_simple_file_t *rrd_simple_file;
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
     int       ret = 0;
 
 #ifdef HAVE_LIBRADOS
@@ -869,19 +873,21 @@ off_t rrd_seek(
     int whence)
 {
 #ifdef HAVE_LIBRADOS
-  /* no seek for rados */
-  if (rrd_file->rados) {
-    rrd_file->pos = off;
-    return 0;
-  }
+    /* no seek for rados */
+    if (rrd_file->rados) {
+        rrd_file->pos = off;
+        return 0;
+    }
 #endif
 
     off_t     ret = 0;
+
 #ifndef HAVE_MMAP
     rrd_simple_file_t *rrd_simple_file;
-    rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+
+    rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
 #endif
- 
+
 #ifdef HAVE_MMAP
     if (whence == SEEK_SET)
         rrd_file->pos = off;
@@ -919,13 +925,15 @@ ssize_t rrd_read(
 {
 #ifdef HAVE_LIBRADOS
     if (rrd_file->rados) {
-        ssize_t ret = rrd_rados_read(rrd_file->rados, buf, count, rrd_file->pos);
+        ssize_t   ret =
+            rrd_rados_read(rrd_file->rados, buf, count, rrd_file->pos);
         if (ret > 0)
             rrd_file->pos += ret;
         return ret;
     }
 #endif
-    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
+
 #ifdef HAVE_MMAP
     size_t    _cnt = count;
     ssize_t   _surplus;
@@ -966,23 +974,27 @@ ssize_t rrd_write(
 {
 #ifdef HAVE_LIBRADOS
     if (rrd_file->rados) {
-      size_t ret = rrd_rados_write(rrd_file->rados, buf, count, rrd_file->pos);
-      if (ret > 0)
-        rrd_file->pos += count;
-      return ret;
+        size_t    ret =
+            rrd_rados_write(rrd_file->rados, buf, count, rrd_file->pos);
+        if (ret > 0)
+            rrd_file->pos += count;
+        return ret;
     }
 #endif
-    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *)rrd_file->pvt;
+    rrd_simple_file_t *rrd_simple_file = (rrd_simple_file_t *) rrd_file->pvt;
+
 #ifdef HAVE_MMAP
-    size_t old_size = rrd_file->file_len;
+    size_t    old_size = rrd_file->file_len;
+
     if (count == 0)
         return 0;
     if (buf == NULL)
         return -1;      /* EINVAL */
-    
-    if((rrd_file->pos + count) > old_size)
-    {
-        rrd_set_error("attempting to write beyond end of file (%ld + %ld > %ld)",rrd_file->pos, count, old_size);
+
+    if ((rrd_file->pos + count) > old_size) {
+        rrd_set_error
+            ("attempting to write beyond end of file (%ld + %ld > %ld)",
+             rrd_file->pos, count, old_size);
         return -1;
     }
     /* can't use memcpy since the areas overlap when tuning */
@@ -1026,30 +1038,35 @@ void rrd_init(
 
 
 /* free RRD data, act correctly, regardless of mmap'ped or malloc'd memory. */
-static void free_rrd_ptr_if_not_mmapped(void *m, const rrd_t *rrd)
+static void free_rrd_ptr_if_not_mmapped(
+    void *m,
+    const rrd_t *rrd)
 {
-    if (m == NULL) return;
-    
+    if (m == NULL)
+        return;
+
     if (rrd == NULL || rrd->__mmap_start == NULL) {
-	free(m);
-	return;
+        free(m);
+        return;
     }
-    
+
     /* is this ALWAYS correct on all supported platforms ??? */
-    long ofs = (char*)m - (char*)rrd->__mmap_start;
+    long      ofs = (char *) m - (char *) rrd->__mmap_start;
+
     if (ofs < rrd->__mmap_size) {
-	// DO NOT FREE, this memory is mmapped!!
-	return;
+        // DO NOT FREE, this memory is mmapped!!
+        return;
     }
-    
+
     free(m);
 }
 
 void rrd_free(
     rrd_t *rrd)
 {
-    if (rrd == NULL) return;
-    
+    if (rrd == NULL)
+        return;
+
     free_rrd_ptr_if_not_mmapped(rrd->live_head, rrd);
     rrd->live_head = NULL;
     free_rrd_ptr_if_not_mmapped(rrd->stat_head, rrd);
@@ -1100,8 +1117,7 @@ void rrd_notify_row(
 unsigned long rrd_select_initial_row(
     rrd_file_t UNUSED(*rrd_file),
     int UNUSED(rra_idx),
-    rra_def_t *rra
-    )
+    rra_def_t *rra)
 {
     return rrd_random() % rra->row_cnt;
 }
