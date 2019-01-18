@@ -270,10 +270,26 @@ rrd_file_t *rrd_open(
     flags |= O_BINARY;
 #endif
 
+#if defined(_WIN32)
+    /* In Windows we need FILE_SHARE_DELETE, so that the file can be
+     * renamed/replaced later on in rrd_create.c
+     * This is only possible using CreateFileA() first and not using open() alone */
+    HANDLE    handle;
+
+    handle =
+        CreateFileA(file_name, GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if ((rrd_simple_file->fd = _open_osfhandle((intptr_t) handle, flags)) < 0) {
+        rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
+        goto out_free;
+    }
+#else
     if ((rrd_simple_file->fd = open(file_name, flags, 0666)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
     }
+#endif
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_BROKEN_MS_ASYNC
