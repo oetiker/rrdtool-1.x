@@ -4,7 +4,7 @@
  * rrd_format.c  RRD Database Format helper functions
  *****************************************************************************/
 #include "rrd_tool.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include "stdlib.h"
 #endif
 

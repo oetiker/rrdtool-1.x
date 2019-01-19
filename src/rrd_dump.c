@@ -47,7 +47,7 @@
 #include "rrd_snprintf.h"
 
 
-#if !(defined(NETWARE) || defined(WIN32))
+#if !(defined(NETWARE) || defined(_WIN32))
 extern char *tzname[2];
 #endif
 

@@ -54,7 +54,7 @@ extern    "C" {
 
 #include <sys/types.h>  /* for off_t */
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>     /* for off_t */
 #else
 #ifdef _MSC_VER
@@ -345,7 +345,7 @@ struct rrd_t;
 /* returns the current per-thread rrd_context */
     rrd_context_t *rrd_get_context(void);
 
-#ifdef WIN32
+#ifdef _WIN32
 /* this was added by the win32 porters Christof.Wegmann@exitgames.com */
     rrd_context_t *rrd_force_new_context(void);
 #endif

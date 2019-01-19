@@ -25,7 +25,7 @@
  *   Sebastian tokkee Harl <sh at tokkee.org>
  **/
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include <ws2tcpip.h> // contain #include <winsock2.h>
 // Need to link with Ws2_32.lib
@@ -53,7 +53,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <strings.h>
 #include <pthread.h>
 #include <sys/socket.h>
@@ -342,7 +342,7 @@ static int parse_value_array_header (char *line, /* {{{ */
 static void close_socket(rrd_client_t *client)
 {
   if (client->sd >= 0) {
-#ifdef WIN32
+#ifdef _WIN32
     closesocket(client->sd);
     WSACleanup();
 #else
@@ -743,7 +743,7 @@ int rrdc_ping(void) /* {{{ */
 
 static int connect_unix(rrd_client_t *client, const char *path) /* {{{ */
 {
-#ifdef WIN32
+#ifdef _WIN32
   return (WSAEPROTONOSUPPORT);
 #else
   struct sockaddr_un sa;
@@ -835,7 +835,7 @@ static int connect_network(rrd_client_t *client, const char *addr_orig) /* {{{ *
     }
   }
 
-#ifdef WIN32
+#ifdef _WIN32
   WORD wVersionRequested;
   WSADATA wsaData;
 

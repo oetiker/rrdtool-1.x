@@ -44,7 +44,7 @@
 
 #include "unused.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <process.h>
 #endif
 
@@ -1461,7 +1461,7 @@ int write_rrd(
                WILL NOT take care of any ACLs that may be set. Go
                figure. */
             if (stat(outfilename, &stat_buf) != 0) {
-#ifdef WIN32
+#ifdef _WIN32
                 stat_buf.st_mode = _S_IREAD | _S_IWRITE;    // have to test it is 
 #else
                 /* an error occurred (file not found, maybe?). Anyway:
@@ -1481,7 +1481,7 @@ int write_rrd(
                 rrd_clear_error();
             }
 
-#ifdef WIN32
+#ifdef _WIN32
 /* In Windows, renaming to an existing file is not allowed. Even, if the file
  * is deleted before, using _unlink() here. Furthermore the FILE_SHARE_DELETE
  * flag is required, which is used in CreateFileA in rrd_open.c
