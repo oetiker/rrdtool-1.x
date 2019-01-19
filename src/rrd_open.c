@@ -6,7 +6,7 @@
  * $Id$
  *****************************************************************************/
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #if _WIN32_MAXVER >= 0x0602 /* _WIN32_WINNT_WIN8 */
 #include <synchapi.h>
@@ -33,7 +33,7 @@
 
 #define MEMBLK 8192
 
-#ifdef WIN32
+#ifdef _WIN32
 #define	_LK_UNLCK	0   /* Unlock */
 #define	_LK_LOCK	1   /* Lock */
 #define	_LK_NBLCK	2   /* Non-blocking lock */
