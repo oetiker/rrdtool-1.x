@@ -24,13 +24,13 @@ to the other B<rrdtool> documentation for functions and valid arguments.
 =head1 EXAMPLE
 
  $: << '/path/to/rrdtool/lib/ruby/1.8/i386-linux'
- require "RRD" 
+ require "RRD"
 
  name = "test"
  rrd = "#{name}.rrd"
  start = Time.now.to_i
 
- RRD.create(    
+ RRD.create(
     rrd,
     "--start", "#{start - 1}",
     "--step", "300",
@@ -46,7 +46,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  puts
 
  puts "fetching data from #{rrd}"
- (fstart, fend, data, step) = RRD.fetch(rrd, "--start", start.to_s, "--end", 
+ (fstart, fend, data, step) = RRD.fetch(rrd, "--start", start.to_s, "--end",
       (start + 300 * 300).to_s, "AVERAGE")
  puts "got #{data.length} data points from #{fstart} to #{fend}"
  puts
@@ -54,10 +54,10 @@ to the other B<rrdtool> documentation for functions and valid arguments.
  puts "generating graph #{name}.png"
  RRD.graph(
    "#{name}.png",
-    "--title", " RubyRRD Demo", 
+    "--title", " RubyRRD Demo",
     "--start", "#{start+3600}",
     "--end", "start + 1000 min",
-    "--interlace", 
+    "--interlace",
     "--imgformat", "PNG",
     "--width=450",
     "DEF:a=#{rrd}:a:AVERAGE",
@@ -65,7 +65,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
     "CDEF:line=TIME,2400,%,300,LT,a,UNKN,IF",
     "AREA:b#00b6e4:beta",
     "AREA:line#0022e9:alpha",
-    "LINE3:line#ff0000") 
+    "LINE3:line#ff0000")
  puts
 
 If you use the B<--ruby-site-install> configure option you can drop the $:

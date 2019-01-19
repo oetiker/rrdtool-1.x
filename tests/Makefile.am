@@ -1,5 +1,5 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 rpn1 rpn2 \
+	tune1 tune2 graph1 rpn1 rpn2 \
 	rrdcreate \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
@@ -20,7 +20,7 @@ EXTRA_DIST = Makefile.am \
 	xport1.json.output xport1.xml.output
 	
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
-TESTS_ENVIRONMENT = \
+AM_TESTS_ENVIRONMENT = \
 	BASEDIR=${abs_srcdir} ; export BASEDIR ; \
 	BUILDDIR=${abs_builddir} ; export BUILDDIR ; \
 	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;

@@ -376,7 +376,8 @@ POD = bin_dec_hex.pod rrddump.pod rrdgraph_examples.pod rrdrestore.pod \
 	rrdinfo.pod rrdtune.pod rrdbuild.pod rrdflushcached.pod \
 	rrdcgi.pod rrdgraph.pod rrdlast.pod rrdlastupdate.pod \
 	rrdcreate.pod rrdgraph_data.pod rrdresize.pod rrdtutorial.pod \
-	rrdlist.pod $(am__append_1) $(am__append_2) $(am__append_3)
+	rrd_pdpcalc.pod rrdlist.pod \
+	$(am__append_1) $(am__append_2) $(am__append_3)
 POD3 = librrd.pod
 PMP = RRDs.pod RRDp.pod
 MAN = $(POD:.pod=.1)
@@ -697,7 +698,7 @@ all-local: link man txt html-local
 	$(AM_V_GEN)@POD2MAN@ --release=$(VERSION) --center=rrdtool --section=3 $< > $@
 
 .1.txt .3.txt:
-	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
+	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp -Wbreak $< > $@
 
 .1.pdf .3.pdf:
 	$(AM_V_GEN)@TROFF@ -man $< | ps2pdf - $@

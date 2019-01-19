@@ -10,8 +10,8 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflushcached.pod   \
-      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
-      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrdlist.pod
+      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod      rrdcreate.pod  \
+      rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrd_pdpcalc.pod        rrdlist.pod
 
 if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
@@ -62,7 +62,7 @@ all-local: link man txt html-local
 	$(AM_V_GEN)@POD2MAN@ --release=$(VERSION) --center=rrdtool --section=3 $< > $@
 
 .1.txt .3.txt:
-	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
+	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp -Wbreak $< > $@
 
 .1.pdf .3.pdf:
 	$(AM_V_GEN)@TROFF@ -man $< | ps2pdf - $@

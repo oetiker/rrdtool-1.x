@@ -630,9 +630,9 @@ static int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_
     }
   } else {
     if (json) {
-      snprintf(buf,sizeof(buf),"    \"%s\": %lld,\n",META_START_TAG,(long long int)start);
+      snprintf(buf,sizeof(buf),"    \"%s\": %lld,\n",META_START_TAG,(long long int)start+step);
     } else {
-      snprintf(buf,sizeof(buf),"    <%s>%lld</%s>\n",META_START_TAG,(long long int)start,META_START_TAG);
+      snprintf(buf,sizeof(buf),"    <%s>%lld</%s>\n",META_START_TAG,(long long int)start+step,META_START_TAG);
     }
   }
   addToBuffer(buffer,buf,0);
@@ -733,7 +733,7 @@ static int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_
   }
   addToBuffer(buffer,buf,0);
   /* iterate over data */
-  for (time_t ti = start; ti < end; ti += step) {
+  for (time_t ti = start+step; ti <= end; ti += step) {
     if (timefmt) {
       struct tm loc;
       localtime_r(&ti,&loc);
@@ -792,7 +792,7 @@ static int rrd_xport_format_xmljson(int flags,stringbuffer_t *buffer,image_desc_
       ptr++;
     }
     if (json){
-      addToBuffer(buffer,(ti < end-(time_t)step ? " ],\n" : " ]\n"),0);
+      addToBuffer(buffer,(ti <= end-(time_t)step ? " ],\n" : " ]\n"),0);
     }
     else {
       snprintf(buf,sizeof(buf),"</%s>\n", DATA_ROW_TAG);

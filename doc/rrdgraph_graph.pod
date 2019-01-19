@@ -458,7 +458,7 @@ element!
 Since RRDtool 1.3 is using Pango for rending text, you can use Pango markup.
 Pango uses the xml B<span> tags for inline formatting instructions.
 
-A simple example of a marked-up string might be: 
+A simple example of a marked-up string might be:
 
  <span foreground="blue" size="x-large">Blue text</span> is <i>cool</i>!
 
@@ -586,7 +586,7 @@ Monospace font
 
 =item B<u>
 
-Underline 
+Underline
 
 =back
 

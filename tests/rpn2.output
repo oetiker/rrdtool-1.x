@@ -1,6 +1,6 @@
 { "about": "RRDtool graph JSON output",
   "meta": {
-    "start": 1167487200,
+    "start": 1167494400,
     "end": 1167616800,
     "step": 7200,
     "legend": [

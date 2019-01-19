@@ -1,0 +1,22 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+RRD=graph1.rrd
+
+$RRDTOOL create $RRD --start 920804400 DS:speed:COUNTER:600:U:U RRA:AVERAGE:0.5:1:24 RRA:AVERAGE:0.5:6:10
+report "create"
+$RRDTOOL update $RRD 920804700:12345 920805000:12357 920805300:12363
+$RRDTOOL update $RRD 920805600:12363 920805900:12363 920806200:12373
+$RRDTOOL update $RRD 920806500:12383 920806800:12393 920807100:12399
+$RRDTOOL update $RRD 920807400:12405 920807700:12411 920808000:12415
+$RRDTOOL update $RRD 920808300:12420 920808600:12422 920808900:12423
+report "update"
+# blank out any absolute coordinates, as they might differ
+$BLANK < $BASEDIR/graph1.output > $BASEDIR/graph1.output.out
+$RRDTOOL graphv $BASEDIR/graph1.out \
+      --start 920804400 --end 920808000               \
+      DEF:my-speed=$RRD:speed:AVERAGE              \
+      VDEF:o=my-speed,MAXIMUM \
+      PRINT:o:'%lf' | $BLANK | $DIFF9 - $BASEDIR/graph1.output.out
+report "graphv"

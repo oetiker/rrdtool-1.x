@@ -34,10 +34,10 @@ Specifies the time in seconds since 1970-01-01 UTC when the first
 value should be added to the B<RRD>. B<RRDtool> will not accept
 any data timed before or at the time specified.
 
-See also AT-STYLE TIME SPECIFICATION section in the
-I<rrdfetch> documentation for other ways to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for other ways to specify
+time.
 
-If one or more source files is used to pre-fill the new B<RRD>, 
+If one or more source files is used to pre-fill the new B<RRD>,
 the B<--start> option may be omitted. In that case, the latest update
 time among all source files will be used as the last update time of
 the new B<RRD> file, effectively setting the start time.
@@ -55,7 +55,7 @@ Do not clobber an existing file of the same name.
 
 =head2 B<--daemon>|B<-d> I<address>
 
-Address of the L<rrdcached> daemon.  For a list of accepted formats, see 
+Address of the L<rrdcached> daemon.  For a list of accepted formats, see
 the B<-l> option in the L<rrdcached> manual.
 
  rrdtool create --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd I<other options>
@@ -64,7 +64,7 @@ the B<-l> option in the L<rrdcached> manual.
 
 Specifies a template B<RRD> file to take step, DS and RRA definitions from. This allows one
 to base the structure of a new file on some existing file. The data of the template
-file is NOT used for pre-filling, but it is possible to specify the same file as a 
+file is NOT used for pre-filling, but it is possible to specify the same file as a
 source file (see below).
 
 Additional DS and RRA definitions are permitted, and will be added to those taken
@@ -72,13 +72,13 @@ from the template.
 
 =head2 B<--source>|B<-r> I<source-file>
 
-One or more source B<RRD> files may be named on the command line. Data from these 
+One or more source B<RRD> files may be named on the command line. Data from these
 source files will be used to prefill the created B<RRD> file. The output file and one source
 file may refer to the same file name. This will effectively replace the source file with the
-new B<RRD> file. While there is the danger to loose the source file because it 
-gets replaced, there is no danger that the source and the new file may be 
+new B<RRD> file. While there is the danger to loose the source file because it
+gets replaced, there is no danger that the source and the new file may be
 "garbled" together at any point in time, because the new file will always be
-created as a temporary file first and will only be moved to its final 
+created as a temporary file first and will only be moved to its final
 destination once it has been written in its entirety.
 
 Prefilling is done by matching up DS names, RRAs and consolidation
@@ -90,26 +90,26 @@ boundaries in RRAs).
 
 In other words: A best effort is made to preserve data during
 prefilling.  Also, pre-filling of RRAs may only be possible for
-certain kinds of DS types. Prefilling may also have strange effects on 
-Holt-Winters forecasting RRAs. In other words: there is no guarantee 
+certain kinds of DS types. Prefilling may also have strange effects on
+Holt-Winters forecasting RRAs. In other words: there is no guarantee
 for data-correctness.
 
-When "pre-filling" a B<RRD> file, the structure of the new file must be 
-specified as usual using DS and RRA specifications as outlined below. Data will 
+When "pre-filling" a B<RRD> file, the structure of the new file must be
+specified as usual using DS and RRA specifications as outlined below. Data will
 be taken from source files based on DS names and types and in the order the source files
 are specified in. Data sources with the same name from different source files
-will be combined to form a new data source. Generally, for any point in time the 
-new B<RRD> file will cover after its creation, data from only one source file 
-will have been used for pre-filling. However, data from multiple sources may be 
-combined if it refers to different times or an earlier named source file holds 
+will be combined to form a new data source. Generally, for any point in time the
+new B<RRD> file will cover after its creation, data from only one source file
+will have been used for pre-filling. However, data from multiple sources may be
+combined if it refers to different times or an earlier named source file holds
 unknown data for a time where a later one holds known data.
 
 If this automatic data selection is not desired, the DS syntax allows one to specify
-a mapping of target and source data sources for prefilling. This syntax allows one to 
-rename data sources and to restrict prefilling for a DS to only use data from a 
+a mapping of target and source data sources for prefilling. This syntax allows one to
+rename data sources and to restrict prefilling for a DS to only use data from a
 single source file.
 
-Prefilling currently only works reliably for RRAs using one of the classic 
+Prefilling currently only works reliably for RRAs using one of the classic
 consolidation functions, that is one of: AVERAGE, MIN, MAX, LAST. It might also
 currently have problems with COMPUTE data sources.
 
@@ -254,15 +254,15 @@ similar to the restriction that B<CDEF>s must refer only to B<DEF>s
 and B<CDEF>s previously defined in the same graph command.
 
 When pre-filling the new B<RRD> file using one or more source B<RRD>s, the DS specification
-may hold an optional mapping after the DS name. This takes the form of an 
-equal sign followed by a mapped-to DS name and an optional source index enclosed 
+may hold an optional mapping after the DS name. This takes the form of an
+equal sign followed by a mapped-to DS name and an optional source index enclosed
 in square brackets.
 
 For example, the DS
 
  DS:a=b[2]:GAUGE:120:0:U
 
-specifies that the DS named I<a> should be pre-filled from the DS named I<b> in 
+specifies that the DS named I<a> should be pre-filled from the DS named I<b> in
 the second listed source file (source indices are 1-based).
 
 =head2 B<RRA:>I<CF>B<:>I<cf arguments>
@@ -278,7 +278,7 @@ data point>.
 The data is also processed with the consolidation function (I<CF>) of
 the archive. There are several consolidation functions that
 consolidate primary data points via an aggregate function: B<AVERAGE>,
-B<MIN>, B<MAX>, B<LAST>. 
+B<MIN>, B<MAX>, B<LAST>.
 
 =over
 
@@ -365,7 +365,7 @@ First, each of the B<RRA>s is updated once for every primary data point.
 Second, these B<RRAs> are interdependent. To generate real-time confidence
 bounds, a matched set of SEASONAL, DEVSEASONAL, DEVPREDICT, and either
 HWPREDICT or MHWPREDICT must exist. Generating smoothed values of the primary
-data points requires a SEASONAL B<RRA> and either an HWPREDICT or MHWPREDICT 
+data points requires a SEASONAL B<RRA> and either an HWPREDICT or MHWPREDICT
 B<RRA>. Aberrant behavior detection requires FAILURES, DEVSEASONAL, SEASONAL,
 and either HWPREDICT or MHWPREDICT.
 
@@ -384,10 +384,10 @@ discussion will refer to HWPREDICT, but MHWPREDICT may be substituted in its
 place.
 
 The predicted deviations are stored in DEVPREDICT (think a standard deviation
-which can be scaled to yield a confidence band). The FAILURES B<RRA> stores 
-binary indicators. A 1 marks the indexed observation as failure; that is, the 
-number of confidence bounds violations in the preceding window of observations 
-met or exceeded a specified threshold. An example of using these B<RRAs> to graph 
+which can be scaled to yield a confidence band). The FAILURES B<RRA> stores
+binary indicators. A 1 marks the indexed observation as failure; that is, the
+number of confidence bounds violations in the preceding window of observations
+met or exceeded a specified threshold. An example of using these B<RRAs> to graph
 confidence bounds and failures appears in L<rrdgraph>.
 
 The SEASONAL and DEVSEASONAL B<RRAs> store the seasonal coefficients for the
@@ -584,8 +584,8 @@ same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
        u|05| /
        u|06|/     "hbt" expired
        u|07|
-        |08|----* sample2, restart "hb" 
-        |09|   / 
+        |08|----* sample2, restart "hb"
+        |09|   /
         |10|  /
        u|11|----* sample3, restart "hb"
        u|12|   /
@@ -593,7 +593,7 @@ same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
  step1_u|14| /
        u|15|/     "swt" expired
        u|16|
-        |17|----* sample4, restart "hb", create "pdp" for step1 = 
+        |17|----* sample4, restart "hb", create "pdp" for step1 =
         |18|   /  = unknown due to 10 "u" labeled secs > 0.5 * step
         |19|  /
         |20| /
@@ -606,7 +606,7 @@ same average rate. I<-- Don Baarda E<lt>don.baarda@baesystems.comE<gt>>
         |27|----* sample7, restart "hb"
  step2__|28|   /
         |22|  /
-        |23|----* sample8, restart "hb", create "pdp" for step1, create "cdp" 
+        |23|----* sample8, restart "hb", create "pdp" for step1, create "cdp"
         |24|   /
         |25|  /
 
@@ -707,7 +707,7 @@ the FAILURES B<RRA>.
 The same RRD file and B<RRAs> are created with the following command,
 which explicitly creates all specialized function B<RRAs>
 using L<"STEP, HEARTBEAT, and Rows As Durations">.
-    
+
  rrdtool create monitor.rrd --step 5m \
    DS:ifOutOctets:COUNTER:30m:0:4294967295 \
    RRA:AVERAGE:0.5:1:2016 \
