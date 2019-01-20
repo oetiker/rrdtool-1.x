@@ -8,6 +8,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <winsdkver.h>  /* Defines _WIN32_MAXVER */
 #if _WIN32_MAXVER >= 0x0602 /* _WIN32_WINNT_WIN8 */
 #include <synchapi.h>
 #endif
