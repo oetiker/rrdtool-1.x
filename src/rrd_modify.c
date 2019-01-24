@@ -435,7 +435,8 @@ static int populate_row(const rrd_t *in_rrd,
 
     int i, ri;
     candidate_extra_t junk;
-    
+    junk.l = 0; /* Initialize junk.l to avoid warning C4700 in MSVC */
+
     candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk, select_for_modify);
     if (candidates == NULL) {
 	goto done;
@@ -1023,7 +1024,8 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     candidate_t *candidates = NULL;
     candidate_t *chosen_candidate = NULL;
     candidate_extra_t junk;
-    
+    junk.l = 0;
+
     candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
