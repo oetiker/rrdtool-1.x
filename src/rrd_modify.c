@@ -1309,7 +1309,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
     
     for (i = optidx ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-		del = (const char **) realloc(del, (rcnt + 2) * sizeof(char*));
+		del = (const char **) realloc((char **) del, (rcnt + 2) * sizeof(char*));   /* Cast 'del' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
 	    if (del == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1326,7 +1326,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    rcnt++;
 	    del[rcnt] = NULL;
 	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
-		add = (const char **) realloc(add, (acnt + 2) * sizeof(char*));
+		add = (const char **) realloc((char **) add, (acnt + 2) * sizeof(char*));   /* Cast 'add' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
 	    if (add == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1454,13 +1454,13 @@ done:
 	for (const char **c = del ; *c ; c++) {
 	    free((void*) *c);
 	}
-	free(del);
+	free((char **) del);    /* Cast 'del' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
     } 
     if (add) {
 	for (const char **c = add ; *c ; c++) {
 	    free((void*) *c);
 	}
-	free(add);
+	free((char **) add);    /* Cast 'add' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
     }
     if (rra_ops) {
 	for (i = 0 ; i < rraopcnt ; i++) {

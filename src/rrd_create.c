@@ -245,7 +245,7 @@ int rrd_create(
     }
   done:
     if (sources_array != NULL) {
-        free(sources_array);
+        free((char **) sources_array);  /* Cast 'sources_array' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
         sources_array = NULL;
     }
     if (sources != NULL) {
