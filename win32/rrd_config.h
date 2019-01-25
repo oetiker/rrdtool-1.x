@@ -126,10 +126,16 @@
 
 #include "mkstemp.h"
 
+/* _MSC_VER is not defined, when using the resource compiler (rc).
+ * See: https://docs.microsoft.com/en-us/windows/desktop/menurc/predefined-macros
+ * for how to conditionally compile the code with the RC compiler using RC_INVOKED
+*/
+#ifndef RC_INVOKED
 #if _MSC_VER < 1900
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
 #define snprintf _snprintf
+#endif
 #endif
 
 #define finite _finite
