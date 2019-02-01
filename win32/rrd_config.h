@@ -106,9 +106,10 @@
 /* Define to 1 if you have the `vasprintf' function. */
 #define HAVE_VASPRINTF 1
 
-/* Misc Missing Windows defines */
-#undef PATH_MAX /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
-#define PATH_MAX 1024
+/* Misc missing Windows defines */
+#ifndef PATH_MAX    /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
+#define PATH_MAX _MAX_PATH  /* max. length of full pathname is 260 under Windows, _MAX_PATH is defined in stdlib.h */
+#endif
 
 
 #include <ctype.h>
