@@ -24,7 +24,7 @@ extern "C" {
  */
 #define VERSION_SAVED VERSION
 #undef VERSION
-#ifndef WIN32
+#ifndef _WIN32
 #include "rrd_config.h"
 #endif
 #include "rrd_tool.h"
@@ -105,7 +105,7 @@ extern "C" {
 
 /*
  * should not be needed if libc is linked (see ntmake.pl)
-#ifdef WIN32
+#ifdef _WIN32
  #define free free
  #define malloc malloc
  #define realloc realloc

@@ -6,7 +6,7 @@
 
 #include "rrd_config.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -449,7 +449,7 @@ int main(
        according to localeconv(3) */       
     setlocale(LC_ALL, "");
 
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32) && !defined(__CYGWIN__)
     setmode(fileno(stdout), O_BINARY);
     setmode(fileno(stdin), O_BINARY);
 #endif

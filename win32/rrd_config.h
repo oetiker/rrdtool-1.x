@@ -52,6 +52,9 @@
 #  endif
 #endif
 
+/* Define to 1 if you have the `asprintf' function. */
+#define HAVE_ASPRINTF 1
+
 /* Define to 1 if you have the `chdir' function. */
 #define HAVE_CHDIR 1
 
@@ -100,9 +103,13 @@
 /* Define to 1 if you have the `uintptr_t' standard type. */
 #define HAVE_UINTPTR_T 1
 
-/* Misc Missing Windows defines */
-#undef PATH_MAX /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
-#define PATH_MAX 1024
+/* Define to 1 if you have the `vasprintf' function. */
+#define HAVE_VASPRINTF 1
+
+/* Misc missing Windows defines */
+#ifndef PATH_MAX    /* PATH_MAX is defined in win32/dirent.h too. Relevant, if included before rrd_config.h */
+#define PATH_MAX _MAX_PATH  /* max. length of full pathname is 260 under Windows, _MAX_PATH is defined in stdlib.h */
+#endif
 
 
 #include <ctype.h>
@@ -126,10 +133,16 @@
 
 #include "mkstemp.h"
 
+/* _MSC_VER is not defined, when using the resource compiler (rc).
+ * See: https://docs.microsoft.com/en-us/windows/desktop/menurc/predefined-macros
+ * for how to conditionally compile the code with the RC compiler using RC_INVOKED
+*/
+#ifndef RC_INVOKED
 #if _MSC_VER < 1900
 #define isinf(a) (_fpclass(a) == _FPCLASS_NINF || _fpclass(a) == _FPCLASS_PINF)
 #define isnan _isnan
 #define snprintf _snprintf
+#endif
 #endif
 
 #define finite _finite
