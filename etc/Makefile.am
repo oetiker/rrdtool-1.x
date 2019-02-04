@@ -1,3 +1,6 @@
+EXTRA_DIST = rrdcached-default-redhat rrdcached-init-redhat rrdcached-default-lsb.in \ 
+	rrdcached.socket.in rrdcached.service.in
+
 if HAVE_SYSTEMD
 systemdsystemunit_DATA = \
 	etc/rrdcached.socket \
