@@ -1,3 +1,32 @@
+RRDtool 1.7.1 - 2019-02-04
+==========================
+Bugfixes
+--------
+* about 38949 assorted fixes for the windows build of rrdtool <Wolfgang Stöggl>
+* fix many compile time warnings <Wolfgang Stöggl>
+* Re-enable 0-width lines <nirgal>
+* Include rrd_pdpcalc.pod in Makefile.am also <Peter Valdemar Mørch>
+* Lots of spelling fixes for rrdtool source and documenation <Peter Valdemar Mørch>, <Jean-Michel Vourgère>, <Tianpeng Xia>,   
+* fix off by one issue in rrdtool xport output <Tobias Oetiker>
+* fix lua extension build <Karl Palsson>
+* fix python bindings <Thomas Gambier>, <Matwey V. Kornilov>, <Nathan Rennie-Waldock>, <Christian Kröger>
+* fix multiple static variableissues in conflict with MT <Matwey V. Kornilov>
+* make translations actually work <nirgal>
+* Fixed configure --enable / --disable options <Jaroslav Škarvada>
+* rrd_daemon stability fixes <Alan Jenkins>
+* fix tcl bindings <medranocalvo>
+* do not call umask ever (not MT safe) <Tobias Oetiker>
+
+Features
+--------
+* Multiline Titles <Mark Brugnoli-Vinten>, <Alexander Zangerl>, <netniV>
+* French translation <Jean-Michel Vourgère>
+* Added support for --allow-shrink with --rigid flag (#843) <Matej Dujava>
+* Added SUSPEND/RESUME/SUSPENDALL/RESUMEALL commands for rrd_cached <<Sven Panne>
+* include the daemon name in the error message <Thilo Bangert>
+
+full details in https://github.com/oetiker/rrdtool-1.x/compare/v1.7.0...v1.7.1
+
 RRDtool 1.7.0 - 2017-05-16
 ==========================
 Bugfixes
