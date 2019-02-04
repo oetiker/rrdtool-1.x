@@ -6,11 +6,11 @@ Bugfixes
 * fix many compile time warnings <Wolfgang Stöggl>
 * Re-enable 0-width lines <nirgal>
 * Include rrd_pdpcalc.pod in Makefile.am also <Peter Valdemar Mørch>
-* Lots of spelling fixes for rrdtool source and documenation <Peter Valdemar Mørch>, <Jean-Michel Vourgère>, <Tianpeng Xia>,   
+* Lots of spelling fixes for rrdtool source and documentation <Peter Valdemar Mørch>, <Jean-Michel Vourgère>, <Tianpeng Xia>,   
 * fix off by one issue in rrdtool xport output <Tobias Oetiker>
 * fix lua extension build <Karl Palsson>
 * fix python bindings <Thomas Gambier>, <Matwey V. Kornilov>, <Nathan Rennie-Waldock>, <Christian Kröger>
-* fix multiple static variableissues in conflict with MT <Matwey V. Kornilov>
+* fix multiple static variable issues in conflict with MT <Matwey V. Kornilov>
 * make translations actually work <nirgal>
 * Fixed configure --enable / --disable options <Jaroslav Škarvada>
 * rrd_daemon stability fixes <Alan Jenkins>
