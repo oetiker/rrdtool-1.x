@@ -147,6 +147,9 @@
 /* Define to 1 if you have the `get_current_dir_name' function. */
 #undef HAVE_GET_CURRENT_DIR_NAME
 
+/* Define to 1 if you have the <glob.h> header file. */
+#undef HAVE_GLOB_H
+
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
 
