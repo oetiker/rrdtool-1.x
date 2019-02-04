@@ -9,9 +9,9 @@
 /* Define to the version of this package. */
 #define PACKAGE_MAJOR       1
 #define PACKAGE_MINOR       7
-#define PACKAGE_REVISION    0
-#define PACKAGE_VERSION     "1.7.0"
-#define NUMVERS             1.70
+#define PACKAGE_REVISION    1
+#define PACKAGE_VERSION     "1.7.1"
+#define NUMVERS             1.71
 
 #define RRD_DEFAULT_FONT "Courier"
 
