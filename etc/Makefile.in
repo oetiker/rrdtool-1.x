@@ -368,8 +368,8 @@ EXTRA_DIST = rrdcached-default-redhat rrdcached-init-redhat rrdcached-default-ls
 	rrdcached.socket.in rrdcached.service.in
 
 @HAVE_SYSTEMD_TRUE@systemdsystemunit_DATA = \
-@HAVE_SYSTEMD_TRUE@	etc/rrdcached.socket \
-@HAVE_SYSTEMD_TRUE@	etc/rrdcached.service
+@HAVE_SYSTEMD_TRUE@	rrdcached.socket \
+@HAVE_SYSTEMD_TRUE@	rrdcached.service
 
 all: all-am
 

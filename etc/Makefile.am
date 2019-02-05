@@ -3,6 +3,6 @@ EXTRA_DIST = rrdcached-default-redhat rrdcached-init-redhat rrdcached-default-ls
 
 if HAVE_SYSTEMD
 systemdsystemunit_DATA = \
-	etc/rrdcached.socket \
-	etc/rrdcached.service
+	rrdcached.socket \
+	rrdcached.service
 endif
