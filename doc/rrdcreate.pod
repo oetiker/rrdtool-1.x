@@ -745,7 +745,7 @@ RPN expression handles the divide by zero case.
 
 =head1 SECURITY
 
-Note that new rrd files will have the permission 0644 regarless of your
+Note that new rrd files will have the permission 0644 regardless of your
 umask setting. If a file with the same name previously exists, its
 permission settings will be copied to the new file.
 
