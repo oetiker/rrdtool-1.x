@@ -699,6 +699,7 @@ PERLLDFLAGS
 PERLLD
 PERLCCFLAGS
 PERLCC
+NUMVERS
 POD2HTML
 POD2MAN
 PERL
@@ -838,7 +839,6 @@ build_vendor
 build_cpu
 build
 LIBVERS
-NUMVERS
 target_alias
 host_alias
 build_alias
@@ -2847,8 +2847,6 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
-
-NUMVERS=1.7001
 
 
 LIBVERS=10:0:2
@@ -21832,6 +21830,8 @@ $as_echo "no" >&6; }
 fi
 
 
+
+NUMVERS=1.7002
 
 
 # Check whether --enable-perl was given.
