@@ -16,13 +16,6 @@ dnl a.b.c
 AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]))
 AC_CONFIG_AUX_DIR(conftools)
 
-dnl for testing a numerical version number comes handy
-dnl the released version are
-dnl a.bccc
-dnl the devel versions will be something like
-dnl a.b999yymmddhh
-NUMVERS=1.7001
-AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
 dnl each other we must keep a separate library version cout of the format c:r:a.
@@ -650,6 +643,13 @@ AC_PATH_PROG(PERL, perl, no)
 AC_PATH_PROG(POD2MAN, pod2man, no)
 AC_PATH_PROG(POD2HTML, pod2html, no)
 
+dnl for testing a numerical version number comes handy
+dnl the released version are
+dnl a.bccc
+dnl the devel versions will be something like
+dnl a.b999yymmddhh
+NUMVERS=m4_esyscmd([perl -ne 'my @x=split /\./;printf "%d.%d%03d", @x' VERSION])
+AC_SUBST(NUMVERS)
 
 AC_ARG_ENABLE(perl,AS_HELP_STRING([--disable-perl],[do not build the perl modules]),
 [],[enable_perl=yes])
