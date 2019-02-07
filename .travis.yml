@@ -30,6 +30,13 @@ script:
   - cd ../python && python setup.py test
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
+  - make dist
+  - tar xf rrdtool-`cat VERSION`.tar.gz
+  - cd rrdtool-`cat VERSION`
+  - ./configure
+  - sudo make install
+  - cd /opt/rrdtool-`cat VERSION`
+  - ./bin/rrdtool  
 
 # after_success:
 #  - ( cd src ; find -name '*.c' | xargs -n 1 gcov -a .libs ; find -name '*.c' | xargs -n 1 )
