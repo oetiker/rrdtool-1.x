@@ -30,6 +30,7 @@ script:
   - cd ../python && python setup.py test
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
+  - cd ../..
   - make dist
   - tar xf rrdtool-`cat VERSION`.tar.gz
   - cd rrdtool-`cat VERSION`
