@@ -1,3 +1,10 @@
+RRDtool 1.7.2 - 2019-02-08
+==========================
+Bugfixes
+--------
+Updated the Makefiles to properly include all needed files into the distribution tar.
+no code changes.
+
 RRDtool 1.7.1 - 2019-02-04
 ==========================
 Bugfixes
