@@ -582,7 +582,7 @@ static int HandleInputLine(
                 printf("ERROR: invalid parameter count for cd\n");
                 return (1);
             }
-#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
+#if ! defined(HAVE_CHROOT) && defined(HAVE_GETUID)
             if (getuid() == 0 && !ChangeRoot) {
                 printf
                     ("ERROR: chdir security problem - rrdtool is running as "
@@ -622,7 +622,7 @@ static int HandleInputLine(
                 printf("ERROR: invalid parameter count for mkdir\n");
                 return (1);
             }
-#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
+#if ! defined(HAVE_CHROOT) && defined(HAVE_GETUID)
             if (getuid() == 0 && !ChangeRoot) {
                 printf
                     ("ERROR: mkdir security problem - rrdtool is running as "
