@@ -272,6 +272,10 @@ AC_CHECK_FUNCS(fsync)
 
 dnl check for socket and nsl solaris again ... we need this for the new rrd_daemon stuff
 
+dnl link with ws2_32 (Winsock2 library) in case of MinGW or MinGW-w64 builds
+case "${target}" in
+  *mingw*) LIBS="${LIBS} -lws2_32";;
+esac
 AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
 AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
 AC_CHECK_FUNCS(sigwaitinfo, [],  AC_CHECK_LIB(rt, sigwaitinfo, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_SIGWAITINFO)],[]))
@@ -615,6 +619,7 @@ dnl EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,        
 dnl EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
+EX_CHECK_ALL(gobject-2.0,     g_object_unref,                        glib-object.h,  gobject-2.0, 2.58.1,    https://download.gnome.org/sources/glib/2.58/, "")
 
 AC_CHECK_FUNCS(pango_font_map_create_context)
 fi
