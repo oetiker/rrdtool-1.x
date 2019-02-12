@@ -1158,6 +1158,78 @@ static int process_arg(
         /* no we have not passed a pdp_st moment. therefore update is simple */
         simple_update(rrd, interval, pdp_new);
     } else {
+
+        /* JKammler - bugfix start */
+        /* additional processing may be needed if elapsed time closes more than one PDP */
+        if(elapsed_pdp_st > 1) {
+            unsigned long sec_open_pdp; /* Seconds belonging to the most left open PDP */
+
+            /* process the most left PDP separately if it was open */
+            if((sec_open_pdp = ((unsigned long) pre_int) % rrd->stat_head->pdp_step) > 0) {
+
+                /* allocate temp storage for assigning values to most left open pdp */
+                rrd_value_t *open_pdp_new;
+                if ((open_pdp_new = (rrd_value_t *) malloc(sizeof(rrd_value_t) * rrd->stat_head->ds_cnt)) == NULL) {
+                    rrd_set_error("allocating open_pdp_new.");
+                    return -1;
+                }
+
+                /* assign ds-values proportionally to most left open PDP and all others */
+                for (unsigned int ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
+                    open_pdp_new[ds_idx] = pdp_new[ds_idx] * (double) sec_open_pdp / interval;
+                    pdp_new[ds_idx] -= open_pdp_new[ds_idx];
+
+                    #ifdef DEBUG
+                    fprintf(stderr, "Split values ds[%lu]\t"
+                                "left_open_pdp %5.2f\t"
+                                "right_other_pdp %5.2f\n",
+                                ds_idx, open_pdp_new[ds_idx], pdp_new[ds_idx]);
+                    #endif
+                }
+
+                if (process_all_pdp_st(rrd,
+                                       (double) sec_open_pdp,  /* interval */
+                                       (double) sec_open_pdp,  /* pre_int */
+                                       0.0,                    /* post_int */
+                                       1L,                     /* elapsed_pdp_st */
+                                       open_pdp_new, pdp_temp) == -1) {
+                    return -1;
+                }
+
+                if (update_all_cdp_prep(rrd, rra_step_cnt,
+                                        rra_begin, rrd_file,
+                                        1L,  /* elapsed_pdp_st */
+                                        proc_pdp_cnt,
+                                        &last_seasonal_coef,
+                                        &seasonal_coef,
+                                        pdp_temp,
+                                        skip_update, schedule_smooth) == -1) {
+                    goto err_free_coefficients;
+                }
+
+                if (update_aberrant_cdps(rrd, rrd_file, rra_begin,
+                                         1L, /* elapsed_pdp_st */
+                                         pdp_temp,
+                                         &seasonal_coef) == -1) {
+                    goto err_free_coefficients;
+                }
+
+                if (write_to_rras(rrd, rrd_file, rra_step_cnt, rra_begin,
+                                  (rrd->live_head->last_up + sec_open_pdp), /* left PDP close time */
+                                  skip_update,
+                                  pcdp_summary) == -1) {
+                    goto err_free_coefficients;
+                }
+
+                /* modify times for processing remaining PDP's */
+                interval -= sec_open_pdp;
+                pre_int -= sec_open_pdp;
+                elapsed_pdp_st -= 1;
+
+                free(open_pdp_new);
+            }
+        } /* JKammler - bugfix end */
+
         /* an pdp_st has occurred. */
         if (process_all_pdp_st(rrd, interval,
                                pre_int, post_int,
