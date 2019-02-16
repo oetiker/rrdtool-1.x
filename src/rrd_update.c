@@ -1176,8 +1176,12 @@ static int process_arg(
 
                 /* assign ds-values proportionally to most left open PDP and all others */
                 for (unsigned int ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
-                    open_pdp_new[ds_idx] = pdp_new[ds_idx] * (double) sec_open_pdp / interval;
-                    pdp_new[ds_idx] -= open_pdp_new[ds_idx];
+                    if(!isnan(pdp_new[ds_idx]) && interval > 0) {
+                        open_pdp_new[ds_idx] = pdp_new[ds_idx] * (double) sec_open_pdp / interval;
+                        pdp_new[ds_idx] -= open_pdp_new[ds_idx];
+                    } else {
+                        open_pdp_new[ds_idx] = DNAN;
+                    }
 
                     #ifdef DEBUG
                     fprintf(stderr, "Split values ds[%lu]\t"
@@ -1224,7 +1228,8 @@ static int process_arg(
                 /* modify times for processing remaining PDP's */
                 interval -= sec_open_pdp;
                 pre_int -= sec_open_pdp;
-                elapsed_pdp_st -= 1;
+                elapsed_pdp_st--;
+                proc_pdp_cnt++;
 
                 free(open_pdp_new);
             }
