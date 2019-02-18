@@ -215,4 +215,17 @@ AC_DEFUN([HW_FUNC_ASPRINTF],
     _HW_FUNC_XPRINTF_REPLACE])
 ])# HW_FUNC_ASPRINTF
 
+# _HW_FUNC_XPRINTF_REPLACE
+# ------------------------
+# Arrange for building rrd_snprintf.c.  Must be called if one or more of the
+# functions provided by rrd_snprintf.c are needed.
+AC_DEFUN([_HW_FUNC_XPRINTF_REPLACE],
+[
+  AS_IF([test "x$_hw_cv_func_xprintf_replace_done" != xyes],
+    [AC_C_CONST
+    HW_HEADER_STDARG_H
+    AC_LIBOBJ([rrd_snprintf])
+    _hw_cv_func_xprintf_replace_done=yes])
+])# _HW_FUNC_XPRINTF_REPLACE
+
 dnl vim: set joinspaces textwidth=80:
