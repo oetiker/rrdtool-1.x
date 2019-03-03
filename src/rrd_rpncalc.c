@@ -212,6 +212,7 @@ void rpn_compact2str(
             add_op(OP_ROLL, ROLL)
             add_op(OP_INDEX, INDEX)
             add_op(OP_POW, POW)
+            add_op(OP_ROUND, ROUND)
 #undef add_op
     }
     (*str)[offset] = '\0';
@@ -445,6 +446,7 @@ rpnp_t   *rpn_parse(
             match_op(OP_STDEV, STDEV)
             match_op(OP_PERCENT, PERCENT)
             match_op(OP_POW, POW)
+            match_op(OP_ROUND, ROUND)
 
 #undef match_op
             else if ((sscanf(expr, DEF_NAM_FMT "%n", vname, &pos) == 1)
@@ -789,6 +791,10 @@ short rpn_calc(
         case OP_CEIL:
             stackunderflow(0);
             rpnstack->s[stptr] = ceil(rpnstack->s[stptr]);
+            break;
+        case OP_ROUND:
+            stackunderflow(0);
+            rpnstack->s[stptr] = round(rpnstack->s[stptr]);
             break;
         case OP_FLOOR:
             stackunderflow(0);
