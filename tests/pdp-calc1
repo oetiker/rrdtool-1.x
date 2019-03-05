@@ -1,0 +1,69 @@
+#!/bin/bash
+. $(dirname $0)/functions
+
+BASE=$BASEDIR/pdp_calc1
+BUILD=$BUILDDIR/pdp_calc1
+
+function do_update {
+  UPDATE_LIST=$1     ## List of update value items
+  MAX_ITEMS=${2:-1}  ## Max items per update call
+
+  UPDATE_STRING=""
+  TOTAL_COUNT=0
+  ITEM_COUNT=0
+
+  for ITEM in ${UPDATE_LIST[@]}; do
+    if [ $ITEM_COUNT -lt $MAX_ITEMS ]; then
+      UPDATE_STRING="$UPDATE_STRING $ITEM";
+      ((ITEM_COUNT++))
+    else
+      ((TOTAL_COUNT+=$ITEM_COUNT))
+      $RRDTOOL update ${BUILD}.rrd $UPDATE_STRING || return 1
+      ok "update $TOTAL_COUNT"
+      ITEM_COUNT=1
+      UPDATE_STRING="$ITEM"
+    fi
+  done
+
+ ## Last update with remaining items:
+  if [ ! -z "$UPDATE_STRING" ]; then
+      ((TOTAL_COUNT+=$ITEM_COUNT))
+      $RRDTOOL update ${BUILD}.rrd $UPDATE_STRING || return 1
+      ok "update $TOTAL_COUNT"
+  fi
+
+  return 0
+}
+
+$RRDTOOL create ${BUILD}.rrd --start 1548500640 --step 60 \
+         DS:Gauge:GAUGE:3600:0:10 DS:Counter:COUNTER:3600:0:U DS:Absolute:ABSOLUTE:3600:0:U \
+         RRA:AVERAGE:0.5:1:30 RRA:AVERAGE:0.5:5:6 RRA:MAX:0.5:5:6
+
+report "create" 
+
+declare -a UPDATE_LIST=("1548500700:0:0:0"       # Initalize PDP with 0
+                        "1548500760:1:60:60"     # 1.0 steps value 1
+                        "1548500790:0:60:0"      # 0.5 steps value 0
+                        "1548501000:1:270:210"   # 3.5 steps value 1
+                        "1548501070:2:390:120"   # 70 sec value 2
+                        "1548501101:U:U:U"       # 31 sec undefined (xff > 0.5)
+                        "1548501300:1:1000:199"  # 199 sec value 1 but counter will be re-initialized with 1000
+                        "1548501800:1:1500:500"  # 500 sec value 1
+                        "1548501839:10:1890:390" # 39 sec value 10
+                        "1548502200:0:1890:0"    # Fill up with 0
+                        "1548502210:2:1910:20"   # 10 sec value 2
+                        "1548502410:4:2710:800"  # 200 sec value 4
+                        "1548502510:5:3210:500"  # 100 sec value 5
+                       )
+
+do_update "$UPDATE_LIST" 3
+report "update all"
+
+is_cached && exit 0
+
+$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 60 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-60.output
+report "fetch avg 60"
+$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 300 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-300.output
+report "fetch avg 300"
+$RRDTOOL fetch ${BUILD}.rrd MAX -r 300 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-max-300.output
+report "fetch max 300"
