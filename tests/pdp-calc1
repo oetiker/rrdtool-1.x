@@ -61,9 +61,9 @@ report "update all"
 
 is_cached && exit 0
 
-$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 60 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-60.output
+$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 60 -s 1548500640 -e 1548502500 | sed 's/-nan/nan/g' | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-60.output
 report "fetch avg 60"
-$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 300 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-300.output
+$RRDTOOL fetch ${BUILD}.rrd AVERAGE -r 300 -s 1548500640 -e 1548502500 | sed 's/-nan/nan/g' | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-avg-300.output
 report "fetch avg 300"
-$RRDTOOL fetch ${BUILD}.rrd MAX -r 300 -s 1548500640 -e 1548502500 | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-max-300.output
+$RRDTOOL fetch ${BUILD}.rrd MAX -r 300 -s 1548500640 -e 1548502500 | sed 's/-nan/nan/g' | $DIFF --ignore-space-change - $BASEDIR/pdp-calc1-1-max-300.output
 report "fetch max 300"
