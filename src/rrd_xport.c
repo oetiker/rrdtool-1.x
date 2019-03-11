@@ -524,7 +524,7 @@ int rrd_graph_xport(
 }
 
 static int addToBuffer(
-    stringbuffer_t * sb,
+    stringbuffer_t *sb,
     char *data,
     size_t len)
 {
@@ -583,7 +583,7 @@ static int addToBuffer(
 
 static int rrd_xport_format_sv(
     char sep,
-    stringbuffer_t * buffer,
+    stringbuffer_t *buffer,
     image_desc_t *im,
     time_t start,
     time_t end,
@@ -674,7 +674,7 @@ static int rrd_xport_format_sv(
 
 static int rrd_xport_format_xmljson(
     int flags,
-    stringbuffer_t * buffer,
+    stringbuffer_t *buffer,
     image_desc_t *im,
     time_t start,
     time_t end,
@@ -990,7 +990,7 @@ static void escapeJSON(
 
 static int rrd_xport_format_addprints(
     int flags,
-    stringbuffer_t * buffer,
+    stringbuffer_t *buffer,
     image_desc_t *im)
 {
     /* initialize buffer */
