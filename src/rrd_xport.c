@@ -358,9 +358,6 @@ static int rrd_xport_fn(
     free(step_list);
 
     *start = im->start - im->start % (*step);
-    if (im->start > *start) {
-        *start = *start + *step;
-    }
 
     *end = im->end - im->end % (*step);
     if (im->end > *end) {
@@ -633,7 +630,7 @@ static int rrd_xport_format_sv(
     /* and now write the data */
     rrd_value_t *ptr = data;
 
-    for (time_t ti = start + step; ti < end; ti += step) {
+    for (time_t ti = start + step; ti <= end; ti += step) {
         /* write time */
         if (timefmt) {
             struct tm loc;
