@@ -5603,7 +5603,7 @@ int bad_format_axis(char *fmt){
 }
 
 int bad_format_print(char *fmt){
-    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "(?:%s)?" SAFE_STRING "$",fmt);
+    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "(?:%[sS])?" SAFE_STRING "$",fmt);
 }
 
 int vdef_parse(

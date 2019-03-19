@@ -996,7 +996,8 @@ static int rrd_xport_format_addprints(
     stringbuffer_t gprints = { 4096, 0, NULL, NULL };
     char      buf[256];
     char      dbuf[1024];
-    char     *val;
+    double    magfact = -1; /* for unit autoscaling, see %s and %S */
+    char     *val, *si_symb = "";
     char     *timefmt = NULL;
 
     if (im->xlab_user.minsec != -1.0) {
@@ -1105,8 +1106,28 @@ static int rrd_xport_format_addprints(
                     ("bad format for PRINT in \"%s'", im->gdes[i].format);
                 return -1;
             } else {
+                char     *percent_s;
+
+                /* unit autoscaling for %S and %s, logic copied from rrd_graph.c */
+                if ((percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
+                    /* Magfact is set to -1 upon function entry. If it
+                     * is still less than 0, then we need to run auto_scale.
+                     * Otherwise, put the value into the correct units. If
+                     * the value is 0, then do not set the symbol or magnification
+                     * so next the calculation will be performed again. */
+                    if (magfact < 0.0) {
+                        auto_scale(im, &printval, &si_symb, &magfact);
+                        if (printval == 0.0)
+                            magfact = -1.0;
+                    } else {
+                        printval /= magfact;
+                    }
+                    *(++percent_s) = 's';
+                } else if (strstr(im->gdes[i].format, "%s") != NULL) {
+                    auto_scale(im, &printval, &si_symb, &magfact);
+                }
                 rrd_snprintf(dbuf, sizeof(dbuf), im->gdes[i].format, printval,
-                             "");
+                             si_symb);
             }
             /* print */
             if (json) {
