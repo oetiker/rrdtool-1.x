@@ -317,22 +317,22 @@ Compiling RRDtool 1.2.x on Win32 with MingW32 gcc:
 
    = zlib
 
-     http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
+     https://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
      http://www.zlib.net/
 
    = libpng
 
-     http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.12.tar.gz
+     https://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.12.tar.gz
      http://libpng.sourceforge.net/
 
    = freetype
 
-     http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.2.1.tar.gz
+     https://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.2.1.tar.gz
      http://freetype.sourceforge.net/index2.html
  
    = libart_lgpl
 
-     http://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
+     https://oss.oetiker.ch/rrdtool/pub/libs/libart_lgpl-2.3.17.tar.gz
      http://www.levien.com/libart/
 
      Note: libart_lgpl needs a special tweak because the archive contains
