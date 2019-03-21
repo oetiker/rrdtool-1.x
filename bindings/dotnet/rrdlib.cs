@@ -8,7 +8,7 @@
  * To use, please make sure that you place the rrdlib.dll in the same 
  * directory as this dll, or change the "const string dll" to point to the
  * proper location. For documentation, please see the RRDtool website at:
- * http://oss.oetiker.ch/rrdtool/
+ * https://oss.oetiker.ch/rrdtool/
  * For usage examples, please see the rrd_binding_test project.
  ****************************************************************************/
 using System;

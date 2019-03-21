@@ -80,7 +80,7 @@ pod files.
 
 The latest released Version:
 -------------------
-Is always available from http://oss.oetiker.ch/rrdtool/
+Is always available from https://oss.oetiker.ch/rrdtool/
 
 
 Tobias Oetiker <tobi@oetiker.ch>

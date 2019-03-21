@@ -1,7 +1,7 @@
 python-rrdtool
 ==============
 
-Python bindings for [RRDtool](http://oss.oetiker.ch/rrdtool) with a native C extension.
+Python bindings for [RRDtool](https://oss.oetiker.ch/rrdtool) with a native C extension.
 
 Supported Python versions: 2.6+, 3.3+.
 

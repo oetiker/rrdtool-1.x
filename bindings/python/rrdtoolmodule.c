@@ -262,7 +262,7 @@ static char _rrdtool_create__doc__[] = "Create a new Round Robin Database.\n\n\
     [DS:ds-name[=mapped-ds-name[source-index]]:DST:heartbeat:min:max]\n\
     [RRA:CF:xff:steps:rows]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html";
 
 static PyObject *
 _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
@@ -301,7 +301,7 @@ static char _rrdtool_dump__doc__[] = "Dump an RRD to XML.\n\n\
     file.rrd\n\
     [file.xml]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrddump.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrddump.en.html";
 
 static PyObject *
 _rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
@@ -340,7 +340,7 @@ static char _rrdtool_update__doc__[] = "Store a new set of values into\
    N|timestamp:value[:value...]\n\
    [timestamp:value[:value...] ...]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdupdate.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdupdate.en.html";
 
 static PyObject *
 _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
@@ -414,7 +414,7 @@ static char _rrdtool_fetch__doc__[] = "Fetch data from an RRD.\n\n\
     [-a|--align-start]\n\
     [-d|--daemon address]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdfetch.en.html";
 
 static PyObject *
 _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
@@ -491,7 +491,7 @@ static char _rrdtool_flushcached__doc__[] = "Flush RRD files from memory.\n\n\
     filename\n\
     [filename ...]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdflushcached.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdflushcached.en.html";
 
 static PyObject *
 _rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
@@ -585,7 +585,7 @@ static char _rrdtool_graph__doc__[] = "Create a graph based on one or more " \
     CDEF:vname=RPN expression\n\
     VDEF=vname:RPN expression\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
 
 static PyObject *
 _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
@@ -643,7 +643,7 @@ static char _rrdtool_graphv__doc__[] = "Create a graph based on one or more " \
   This function works the same way as 'graph', but will return a info\n\
   dictionary instead of None.\n\n\
   Full documentation can be found at (graphv section):\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdgraph.en.html";
 
 static PyObject *
 _rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
@@ -688,7 +688,7 @@ static char _rrdtool_xport__doc__[] = "Dictionary representation of data " \
     [CDEF:vname=rpn-expression]\n\
     [XPORT:vname[:legend]]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdxport.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdxport.en.html";
 
 static PyObject *
 _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
@@ -848,7 +848,7 @@ static char _rrdtool_tune__doc__[] = "Modify some basic properties of a " \
     [-d|--data-source-type ds-name:DST]\n\
     [-r|--data-source-rename old-name:new-name]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdtune.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdtune.en.html";
 
 static PyObject *
 _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
@@ -886,7 +886,7 @@ static char _rrdtool_first__doc__[] = "Get the first UNIX timestamp of the "\
     [--rraindex number]\n\
     [-d|--daemon address]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdfirst.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdfirst.en.html";
 
 static PyObject *
 _rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
@@ -921,7 +921,7 @@ static char _rrdtool_last__doc__[] = "Get the UNIX timestamp of the most "\
     filename\n\
     [-d|--daemon address]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
 
 static PyObject *
 _rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
@@ -958,7 +958,7 @@ static char _rrdtool_resize__doc__[] = "Modify the number of rows in a "\
     GROW|SHRINK\n\
     rows\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdlast.en.html";
 
 static PyObject *
 _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
@@ -996,7 +996,7 @@ static char _rrdtool_info__doc__[] = "Extract header information from an "\
     [-d|--daemon address]\n\
     [-F|--noflush]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdinfo.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdinfo.en.html";
 
 static PyObject *
 _rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
@@ -1033,7 +1033,7 @@ static char _rrdtool_lastupdate__doc__[] = "Returns datetime and value stored "\
     filename\n\
     [-d|--daemon address]\n\n\
   Full documentation can be found at:\n\
-  http://oss.oetiker.ch/rrdtool/doc/rrdlastupdate.en.html";
+  https://oss.oetiker.ch/rrdtool/doc/rrdlastupdate.en.html";
 
 static PyObject *
 _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)

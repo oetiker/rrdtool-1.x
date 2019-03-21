@@ -9,7 +9,7 @@
  * data, fetching data, creating graphs, dumping and exporting the data to
  * XML, then restoring from an XML file. The examples follow the tutorial 
  * written by Alex van den Bogaerdt found at 
- * http://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html
+ * https://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html
  ****************************************************************************/
 
 using System;
