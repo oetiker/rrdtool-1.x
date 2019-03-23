@@ -3,7 +3,12 @@
 . $(dirname $0)/functions
 
 BASE=$BASEDIR/$(basename $0)-test
-PREFIX=$BUILDDIR/$(basename $0)-test
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    PREFIX=$(basename $0)-test
+else
+    PREFIX=$BUILDDIR/$(basename $0)-test
+fi
 
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
