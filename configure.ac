@@ -1057,7 +1057,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from https://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -1116,7 +1116,7 @@ echo "Type 'make etc-install' to install systemd support for rrdcached"
 fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
+echo "make me happy. Go to https://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"
