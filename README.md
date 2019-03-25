@@ -49,7 +49,7 @@ How to make Tobi happy:
 -----------------------
 
 If you want to show your appreciation for RRDtool you could make me happy
-by going to http://tobi.oetiker.ch/wish and ordering a CD from
+by going to https://tobi.oetiker.ch/wish and ordering a CD from
 my CD wish list ... 
 
 How to keep in touch:
