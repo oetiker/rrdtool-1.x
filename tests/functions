@@ -1,5 +1,5 @@
 
-TZ=CET
+TZ=Europe/Zurich
 export TZ
 
 BASEDIR="${BASEDIR:-$(dirname -- $0)}"
