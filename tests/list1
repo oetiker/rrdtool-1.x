@@ -13,7 +13,7 @@ LIST_DIR=$BUILDDIR/`basename $0`_dir
 function do_list_tests()
 {
         [ "$1" == "" ] && return 1
-        [ "$1" == "$LIST_DIR" ] && LIST_TEST_DIR="$1" || LIST_TEST_DIR="./$1"
+        [ "$1" == "$LIST_DIR" ] && LIST_TEST_DIR="$1" || LIST_TEST_DIR=".$1"
 
         list_count=`$RRDTOOL list "$LIST_TEST_DIR" 2>/dev/null | wc -l`
         test $list_count -eq 0
@@ -29,17 +29,17 @@ function do_list_tests()
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/second.rrd
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/third.rrd
 
-        list_count=`$RRDTOOL list "/$1" | wc -l`
+        list_count=`$RRDTOOL list "$1" | wc -l`
         test $list_count -eq 3
         report "directory with several RRDs"
 
         touch "$LIST_TEST_DIR"/not_an_rrd
-        list_count=`$RRDTOOL list "/$1" | wc -l`
+        list_count=`$RRDTOOL list "$1" | wc -l`
         test $list_count -eq 3
         report "only lists files with .rrd suffix"
 
         mkdir -p "$LIST_TEST_DIR"/new_dir
-        list_count=`$RRDTOOL list "/$1" | wc -l`
+        list_count=`$RRDTOOL list "$1" | wc -l`
         test $list_count -eq 4
         report "only lists RRDs and directories"
 
@@ -48,7 +48,7 @@ function do_list_tests()
         mkdir -p "$LIST_TEST_DIR"/new_dir4
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/new_dir2/fourth.rrd
         cp ${BUILD}.rrd "$LIST_TEST_DIR"/new_dir2/fifth.rrd
-        list_count=`$RRDTOOL list --recursive "/$1" | wc -l`
+        list_count=`$RRDTOOL list --recursive "$1" | wc -l`
         test $list_count -eq 5
         report "recursive list only lists rrd files"
 }
@@ -73,6 +73,11 @@ mkdir -p "$LIST_DIR" || report "Failed to create '$LIST_DIR'; abort"
 do_list_tests "$LIST_DIR"
 rm -rf "$LIST_DIR"
 
+if [ -n "$MSYSTEM" ]; then
+        # That's it under Windows (MSYS2) for now. No further tests using rrdcached.
+        exit
+fi
+
 echo -e "\nStarting rrdcached..."
 if [ -n "$TEMP_RRDCACHED_ADDRESS" ]; then
         export RRDCACHED_ADDRESS=$TEMP_RRDCACHED_ADDRESS
@@ -83,7 +88,7 @@ fi
 if is_cached; then
         mkdir -p "$LIST_DIR"
         # This relies on '-b' setting in functions::run_cached()
-        CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BASEDIR/||"`
+        CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BASEDIR||"`
         do_list_tests "$CACHED_DIR"
 
         # rrdcached-specific tests
