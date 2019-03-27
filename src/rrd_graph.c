@@ -7,12 +7,6 @@
 
 #include <sys/stat.h>
 
-
-
-#if defined(_WIN32) && !defined(__MINGW32__)
-#include "strftime.h"
-#endif
-
 #include "rrd_strtod.h"
 
 #include "rrd_tool.h"

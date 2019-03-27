@@ -251,7 +251,6 @@
     <ClCompile Include="..\src\rrd_utils.c" />
     <ClCompile Include="..\src\rrd_version.c" />
     <ClCompile Include="..\src\rrd_xport.c" />
-    <ClCompile Include="..\src\strftime.c" />
     <ClCompile Include="asprintf.c" />
     <ClCompile Include="vasprintf-msvc.c" />
     <ClCompile Include="win32-glob.c" />
@@ -283,7 +282,6 @@
     <ClInclude Include="..\src\rrd_tool.h" />
     <ClInclude Include="..\src\rrd_update.h" />
     <ClInclude Include="..\src\rrd_xport.h" />
-    <ClInclude Include="..\src\strftime.h" />
     <ClInclude Include="..\src\unused.h" />
     <ClInclude Include="rrd_config.h" />
     <ClInclude Include="win32-glob.h" />
