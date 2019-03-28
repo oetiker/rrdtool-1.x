@@ -10,6 +10,17 @@
 #include "rrd_strtod.h"
 
 #include "rrd_tool.h"
+
+/* MinGW and MinGW-w64 use the format codes from msvcrt.dll,
+ * which does not support e.g. %F, %T or %V. Here we need %V for "Week %V".
+ * Remark: include of "strftime.h" and use of strftime.c is not required for
+ * MSVC builds (VS2015 and newer), where strftime format codes are from
+ * ucrtbase.dll, which supports C99, and therefore %F, %T, %V etc. */
+#if defined(__MINGW32__)
+#include "strftime.h"   /* This has to be included after rrd_tool.h */
+#define strftime strftime_
+#endif
+
 #include "unused.h"
 
 
