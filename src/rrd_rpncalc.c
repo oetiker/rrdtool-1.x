@@ -996,7 +996,7 @@ short rpn_calc(
 		if (rpnp[rpi].op == OP_PREDICTPERC) {
 		    stackunderflow(1);
 		    percentile = rpnstack->s[--stptr];
-		    if (abs(percentile) > 100) {
+		    if (fabs(percentile) > 100) {
 		        rrd_set_error("unsupported percentile: %f",percentile);
 			return -1;
 		    }
@@ -1100,7 +1100,7 @@ short rpn_calc(
 			/* get the percentile selected */
 			double idxf = percentile * ((float)count-1.0);
 			if (percentile < 0) { /* take the next best */
-			    int idx = round(abs(idxf));
+			    int idx = round(fabs(idxf));
 			    val = extra[idx];
 			} else { /* interpolate */
 			    int idx = floor(idxf);
