@@ -516,7 +516,7 @@ static unsigned long MyMod(
     unsigned long new_val;
 
     if (val < 0)
-        new_val = ((unsigned long) abs(val)) % mod;
+        new_val = ((unsigned long) labs(val)) % mod;
     else
         new_val = (val % mod);
 
