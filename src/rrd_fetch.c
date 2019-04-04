@@ -388,8 +388,12 @@ int rrd_fetch_fn(
                     rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt);
 #endif
             /* we need step difference in either full or partial case */
-            tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
-                                          * rrd.rra_def[i].pdp_cnt));
+            /* labs() is not used here because of unsigned long values */
+            tmp_step_diff =
+                max(*step,
+                    (rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt)) -
+                min(*step,
+                    (rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt));
             /* best full match */
             if (cal_start <= *start) {
                 if (first_full || (tmp_step_diff < best_full_step_diff)) {
