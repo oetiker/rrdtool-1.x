@@ -15,6 +15,7 @@ for T in $(seq 1300000020 60 1300003020) ; do
 	let N=$N+10
 done
 $RRDTOOL update ${BUILD}org.rrd --template a $U 
+$RRDTOOL dump ${BUILD}org.rrd | $DIFF9 - ${BASE}org.dump
 report "update"
 
 # NOTE: for rrdcached based tests, we must flush before we can copy...
