@@ -73,6 +73,7 @@ Makefile
 /win32/*.opensdf
 /win32/*.sdf
 /win32/*.suo
+/win32/.dirstamp
 /win32/.vs
 /win32/Debug
 /win32/DebugDLL
