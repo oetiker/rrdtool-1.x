@@ -28,8 +28,10 @@
 #ifdef _WIN32
 
 #include <ws2tcpip.h> // contain #include <winsock2.h>
+#ifdef _MSC_VER
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "ws2_32.lib")
+#endif
 #include <time.h>
 #include <io.h>
 #include <fcntl.h>
