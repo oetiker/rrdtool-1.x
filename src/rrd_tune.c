@@ -281,7 +281,7 @@ int rrd_tune(
             if ((ds = ds_match(&rrd, ds_nam)) == -1) {
 		goto done;
             }
-            strncpy(rrd.ds_def[ds].ds_nam, ds_new, DS_NAM_SIZE - 1);
+            strncpy(rrd.ds_def[ds].ds_nam, ds_new, DS_NAM_SIZE);
             rrd.ds_def[ds].ds_nam[DS_NAM_SIZE - 1] = '\0';
             break;
         case 'p':

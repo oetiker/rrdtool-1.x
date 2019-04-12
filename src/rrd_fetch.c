@@ -335,7 +335,7 @@ int rrd_fetch_fn(
             rrd_set_error("malloc fetch ds_namv entry");
             goto err_free_ds_namv;
         }
-        strncpy((*ds_namv)[i], rrd.ds_def[i].ds_nam, DS_NAM_SIZE - 1);
+        strncpy((*ds_namv)[i], rrd.ds_def[i].ds_nam, DS_NAM_SIZE);
         (*ds_namv)[i][DS_NAM_SIZE - 1] = '\0';
 
     }
