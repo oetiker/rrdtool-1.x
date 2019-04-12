@@ -2279,7 +2279,7 @@ int leg_place(
             }
 
             if(calc_width){
-                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend - 1);
+                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend);
                 im->gdes[i].legend[sizeof im->gdes[0].legend - 1] = '\0';
             }
         }
