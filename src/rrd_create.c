@@ -264,6 +264,8 @@ int rrd_create(
 }
 
 #ifndef HAVE_STRNDUP
+/* Avoid MinGW-w64 warning: declaration of 'strndup' shadows a built-in function [-Wshadow] */
+#define strndup strndup_
 /* Implement the strndup function.
    Copyright (C) 2005 Free Software Foundation, Inc.
    Written by Kaveh R. Ghazi <ghazi@caip.rutgers.edu>. 
