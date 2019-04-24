@@ -35,18 +35,18 @@
 #define MEMBLK 8192
 
 #ifdef _WIN32
-#define	_LK_UNLCK	0   /* Unlock */
-#define	_LK_LOCK	1   /* Lock */
-#define	_LK_NBLCK	2   /* Non-blocking lock */
-#define	_LK_RLCK	3   /* "Same as _LK_NBLCK" */
-#define	_LK_NBRLCK	4   /* "Same as _LK_LOCK" */
+#define    _LK_UNLCK    0   /* Unlock */
+#define    _LK_LOCK     1   /* Lock */
+#define    _LK_NBLCK    2   /* Non-blocking lock */
+#define    _LK_RLCK     3   /* "Same as _LK_NBLCK" */
+#define    _LK_NBRLCK   4   /* "Same as _LK_LOCK" */
 
 
-#define	LK_UNLCK	_LK_UNLCK
-#define	LK_LOCK		_LK_LOCK
-#define	LK_NBLCK	_LK_NBLCK
-#define	LK_RLCK		_LK_RLCK
-#define	LK_NBRLCK	_LK_NBRLCK
+#define    LK_UNLCK    _LK_UNLCK
+#define    LK_LOCK     _LK_LOCK
+#define    LK_NBLCK    _LK_NBLCK
+#define    LK_RLCK     _LK_RLCK
+#define    LK_NBRLCK   _LK_NBRLCK
 #endif
 
 /* DEBUG 2 prints information obtained via mincore(2) */
@@ -61,60 +61,61 @@
    versions of gcc: 'cast increases required alignment of target type'
 */
 #define __rrd_read_mmap(dst, dst_t, cnt) { \
-	size_t wanted = sizeof(dst_t)*(cnt); \
-	if (offset + wanted > rrd_file->file_len) { \
-		rrd_set_error("reached EOF while loading header " #dst); \
-		goto out_close; \
-	} \
-	(dst) = (dst_t*)(void*) (data + offset); \
-	offset += wanted; \
+    size_t wanted = sizeof(dst_t)*(cnt); \
+    if (offset + wanted > rrd_file->file_len) { \
+        rrd_set_error("reached EOF while loading header " #dst); \
+        goto out_close; \
+    } \
+    (dst) = (dst_t*)(void*) (data + offset); \
+    offset += wanted; \
     }
 #else
 #define __rrd_read_seq(dst, dst_t, cnt) { \
-	size_t wanted = sizeof(dst_t)*(cnt); \
+    size_t wanted = sizeof(dst_t)*(cnt); \
         size_t got; \
-	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
-		rrd_set_error(#dst " malloc"); \
-		goto out_close; \
-	} \
+    if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
+        rrd_set_error(#dst " malloc"); \
+        goto out_close; \
+    } \
         got = read (rrd_simple_file->fd, dst, wanted); \
-	if (got != wanted) { \
-		rrd_set_error("short read while reading header " #dst); \
-                goto out_close; \
-	} \
-	offset += got; \
+    if (got != wanted) { \
+        rrd_set_error("short read while reading header " #dst); \
+        goto out_close; \
+    } \
+    offset += got; \
     }
 #endif
 
 #ifdef HAVE_LIBRADOS
 #define __rrd_read_rados(dst, dst_t, cnt) { \
-	size_t wanted = sizeof(dst_t)*(cnt); \
+    size_t wanted = sizeof(dst_t)*(cnt); \
         size_t got; \
-	if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
-		rrd_set_error(#dst " malloc"); \
-		goto out_close; \
-	} \
+    if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
+        rrd_set_error(#dst " malloc"); \
+        goto out_close; \
+    } \
         got = rrd_rados_read(rrd_file->rados, dst, wanted, offset); \
-	if (got != wanted) { \
-		rrd_set_error("short read while reading header " #dst); \
-                goto out_close; \
-	} \
-	offset += got; \
+    if (got != wanted) { \
+        rrd_set_error("short read while reading header " #dst); \
+        goto out_close; \
+    } \
+    offset += got; \
     }
 #endif
 
 #if defined(HAVE_LIBRADOS) && defined(HAVE_MMAP)
 #define __rrd_read(dst, dst_t, cnt) { \
     if (rrd_file->rados) \
-      __rrd_read_rados(dst, dst_t, cnt) \
+        __rrd_read_rados(dst, dst_t, cnt) \
     else \
-      __rrd_read_mmap(dst, dst_t, cnt) \
+        __rrd_read_mmap(dst, dst_t, cnt) \
     }
 #elif defined(HAVE_LIBRADOS) && !defined(HAVE_MMAP)
-if (rrd_file->rados)
-    __rrd_read_rados(dst, dst_t, cnt)
-        else
-    __rrd_read_seq(dst, dst_t, cnt)
+#define __rrd_read(dst, dst_t, cnt) { \
+    if (rrd_file->rados) \
+        __rrd_read_rados(dst, dst_t, cnt) \
+    else \
+        __rrd_read_seq(dst, dst_t, cnt) \
     }
 #elif defined(HAVE_MMAP)
 #define __rrd_read(dst, dst_t, cnt) \
