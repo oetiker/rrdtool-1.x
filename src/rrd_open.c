@@ -47,6 +47,11 @@
 #define    LK_NBLCK    _LK_NBLCK
 #define    LK_RLCK     _LK_RLCK
 #define    LK_NBRLCK   _LK_NBRLCK
+
+/* Variables for CreateFileA(). Names of variables are according to
+ * https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilea */
+DWORD     dwDesiredAccess = 0;
+DWORD     dwCreationDisposition = 0;
 #endif
 
 /* DEBUG 2 prints information obtained via mincore(2) */
@@ -237,6 +242,10 @@ rrd_file_t *rrd_open(
 
     if (rdwr & RRD_READONLY) {
         flags |= O_RDONLY;
+#ifdef _WIN32
+        dwDesiredAccess = GENERIC_READ;
+        dwCreationDisposition = OPEN_EXISTING;
+#endif
 #ifdef HAVE_MMAP
 # if !defined(AIX)
         rrd_simple_file->mm_flags = MAP_PRIVATE;
@@ -248,6 +257,10 @@ rrd_file_t *rrd_open(
     } else {
         if (rdwr & RRD_READWRITE) {
             flags |= O_RDWR;
+#ifdef _WIN32
+            dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+            dwCreationDisposition = OPEN_EXISTING;
+#endif
 #ifdef HAVE_MMAP
             rrd_simple_file->mm_flags = MAP_SHARED;
             rrd_simple_file->mm_prot |= PROT_WRITE;
@@ -255,9 +268,17 @@ rrd_file_t *rrd_open(
         }
         if (rdwr & RRD_CREAT) {
             flags |= (O_CREAT | O_TRUNC);
+#ifdef _WIN32
+            dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+            dwCreationDisposition = CREATE_ALWAYS;
+#endif
         }
         if (rdwr & RRD_EXCL) {
             flags |= O_EXCL;
+#ifdef _WIN32
+            dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+            dwCreationDisposition = CREATE_NEW;
+#endif
         }
     }
     if (rdwr & RRD_READAHEAD) {
@@ -279,9 +300,20 @@ rrd_file_t *rrd_open(
     HANDLE    handle;
 
     handle =
-        CreateFileA(file_name, GENERIC_READ | GENERIC_WRITE,
+        CreateFileA(file_name, dwDesiredAccess,
                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                    NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                    NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (handle == INVALID_HANDLE_VALUE) {
+        LPVOID    lpMsgBuf = NULL;
+
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                      FORMAT_MESSAGE_FROM_SYSTEM |
+                      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), 0,
+                      (LPTSTR) & lpMsgBuf, 0, NULL);
+        rrd_set_error("opening '%s': %s", file_name, (LPTSTR) lpMsgBuf);
+        LocalFree(lpMsgBuf);
+        goto out_free;
+    }
     if ((rrd_simple_file->fd = _open_osfhandle((intptr_t) handle, flags)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
