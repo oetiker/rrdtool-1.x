@@ -384,7 +384,9 @@ rrd_file_t *rrd_open(
             goto out_close;
         }
     }
+#ifdef HAVE_POSIX_FALLOCATE
   no_lseek_necessary:
+#endif
 
 #ifdef HAVE_MMAP
 #ifndef HAVE_POSIX_FALLOCATE
