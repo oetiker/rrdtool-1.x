@@ -773,6 +773,9 @@ static int connect_unix(
     const char *path)
 {                       /* {{{ */
 #ifdef _WIN32
+    /* Silence unused parameter compiler warnings */
+    (void) client;
+    (void) path;
     return (WSAEPROTONOSUPPORT);
 #else
     struct sockaddr_un sa;
