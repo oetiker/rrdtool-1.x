@@ -783,6 +783,8 @@ int rrd_rwlock(
 #ifdef USE_WINDOWS_LOCK
     /* _locking() does not support read locks; we always take a write lock */
     rcstat = rrd_windows_lock(rrd_simple_file->fd);
+    /* Silence unused parameter compiler warning */
+    (void) writelock;
 #else
     {
         struct flock lock;
@@ -878,6 +880,11 @@ void rrd_dontneed(
 #if defined DEBUG && DEBUG > 1
     mincore_print(rrd_file, "after");
 #endif
+#else                           /* #if defined USE_MADVISE || defined HAVE_POSIX_FADVISE */
+    /* Silence compiler warnings about unused variables and parameters */
+    (void) rrd_simple_file;
+    (void) rrd_file;
+    (void) rrd;
 #endif                          /* without madvise and posix_fadvise it does not make much sense todo anything */
 }
 
