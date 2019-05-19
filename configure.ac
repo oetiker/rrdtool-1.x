@@ -448,7 +448,7 @@ AC_LINK_IFELSE(
     [ AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
                 [[#ifdef __MINGW32__
-#include <pthread.h>
+#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
 #endif
 #include <time.h>]],
                 [[ctime_r(NULL,NULL)]])],
