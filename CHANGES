@@ -1,9 +1,14 @@
-RRDtool 1.7.2 - 2019-02-08
+RRDtool 1.7.2 - 2019-05-27
 ==========================
 Bugfixes
 --------
-Updated the Makefiles to properly include all needed files into the distribution tar.
-no code changes.
+* Updated the Makefiles to properly include all needed files into the distribution tar 
+* Cleand up Compiler Warnings <Wolfgang Stöggl>
+* Improved compilation in MinGW environment <Wolfgang Stöggl>
+* fix segfault on non-existent RRD file when using rrdcached <themylogin>
+* fix bounds handling, documentation and checking on rrdtool xport <Óscar Nájera>
+* Fix %s/%S unit autoscaling in gprint for json/xml <az143>
+* Optimized PDP Calculation <JKammler>
 
 RRDtool 1.7.1 - 2019-02-04
 ==========================

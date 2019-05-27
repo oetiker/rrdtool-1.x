@@ -365,7 +365,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = rrdcached-default-redhat rrdcached-init-redhat rrdcached-default-lsb.in \
-	rrdcached.socket.in rrdcached.service.in
+	rrdcached-init-lsb rrdcached.socket.in rrdcached.service.in
 
 @HAVE_SYSTEMD_TRUE@systemdsystemunit_DATA = \
 @HAVE_SYSTEMD_TRUE@	rrdcached.socket \
