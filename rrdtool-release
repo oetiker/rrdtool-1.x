@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 VERSION=`cat VERSION`
-PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
+NUMVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure`
 set -x
-perl -i -p -e 's/^\$VERSION.+/\$VERSION='$VERSION';/' bindings/perl-*/*.pm
+perl -i -p -e 's/^\$VERSION.+/\$VERSION='$NUMVERS';/' bindings/perl-*/*.pm
 perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2019/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
 perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
