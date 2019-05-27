@@ -543,7 +543,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
 	create-from-template-1 dcounter1 vformatter1 xport1 list1 \
-    pdp-calc1
+	pdp-calc1
 
 EXTRA_DIST = Makefile.am \
 	functions $(TESTS) \
@@ -557,7 +557,7 @@ EXTRA_DIST = Makefile.am \
 	tune2-testa-mod1.dump tune2-testorg.dump \
 	valgrind-supressions dcounter1 dcounter1.output graph1.output vformatter1 rpn1.output rpn2.output \
 	xport1.json.output xport1.xml.output \
-    pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
+	pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
 
 
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
@@ -891,13 +891,6 @@ dcounter1.log: dcounter1
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-pdp-calc1.log: pdp-calc1
-	@p='pdp-calc1'; \
-	b='pdp-calc1'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 vformatter1.log: vformatter1
 	@p='vformatter1'; \
 	b='vformatter1'; \
@@ -915,6 +908,13 @@ xport1.log: xport1
 list1.log: list1
 	@p='list1'; \
 	b='list1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pdp-calc1.log: pdp-calc1
+	@p='pdp-calc1'; \
+	b='pdp-calc1'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

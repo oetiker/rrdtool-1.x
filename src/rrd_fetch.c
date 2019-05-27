@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_fetch.c  read date from an rrd to use for further processing
  *****************************************************************************

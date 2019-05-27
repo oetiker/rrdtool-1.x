@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *                Copyright by Florian Forster, 2008
  *****************************************************************************
  * rrd_update.c  RRD Update Function

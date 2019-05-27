@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_modify  Structurally modify an RRD file
  *      (c) 2014 by Peter Stamfest and Tobi Oetiker
