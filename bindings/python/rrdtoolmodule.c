@@ -214,7 +214,7 @@ _rrdtool_util_info2dict(const rrd_info_t *data)
                     Py_INCREF(Py_None);
                     val = Py_None;
                 } else
-                    PyFloat_FromDouble(data->value.u_val);
+                    val = PyFloat_FromDouble(data->value.u_val);
                 break;
 
             case RD_I_CNT:
