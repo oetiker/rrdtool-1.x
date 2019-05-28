@@ -636,7 +636,6 @@ HAVE_SYSTEMD_TRUE
 am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
-LIBOBJS
 systemdsystemunitdir
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
@@ -743,6 +742,7 @@ GMSGFMT
 MSGFMT
 GETTEXT_MACRO_VERSION
 USE_NLS
+LIBOBJS
 RRD_DEFAULT_FONT
 WERROR
 LT_SYS_LIBRARY_PATH
@@ -2849,7 +2849,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-LIBVERS=10:0:2
+LIBVERS=10:1:2
 
 
 # Make sure we can run config.sub.
@@ -14712,7 +14712,101 @@ _ACEOF
 fi
 done
 
-    _HW_FUNC_XPRINTF_REPLACE
+
+  if test "x$_hw_cv_func_xprintf_replace_done" != xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
+$as_echo_n "checking for an ANSI C-conforming const... " >&6; }
+if ${ac_cv_c_const+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+#ifndef __cplusplus
+  /* Ultrix mips cc rejects this sort of thing.  */
+  typedef int charset[2];
+  const charset cs = { 0, 0 };
+  /* SunOS 4.1.1 cc rejects this.  */
+  char const *const *pcpcc;
+  char **ppc;
+  /* NEC SVR4.0.2 mips cc rejects this.  */
+  struct point {int x, y;};
+  static struct point const zero = {0,0};
+  /* AIX XL C 1.02.0.0 rejects this.
+     It does not let you subtract one const X* pointer from another in
+     an arm of an if-expression whose if-part is not a constant
+     expression */
+  const char *g = "string";
+  pcpcc = &g + (g ? g-g : 0);
+  /* HPUX 7.0 cc rejects these. */
+  ++pcpcc;
+  ppc = (char**) pcpcc;
+  pcpcc = (char const *const *) ppc;
+  { /* SCO 3.2v4 cc rejects this sort of thing.  */
+    char tx;
+    char *t = &tx;
+    char const *s = 0 ? (char *) 0 : (char const *) 0;
+
+    *t++ = 0;
+    if (s) return 0;
+  }
+  { /* Someone thinks the Sun supposedly-ANSI compiler will reject this.  */
+    int x[] = {25, 17};
+    const int *foo = &x[0];
+    ++foo;
+  }
+  { /* Sun SC1.0 ANSI compiler rejects this -- but not the above. */
+    typedef const int *iptr;
+    iptr p = 0;
+    ++p;
+  }
+  { /* AIX XL C 1.02.0.0 rejects this sort of thing, saying
+       "k.c", line 2.27: 1506-025 (S) Operand must be a modifiable lvalue. */
+    struct s { int j; const int *ap[3]; } bx;
+    struct s *b = &bx; b->j = 5;
+  }
+  { /* ULTRIX-32 V3.1 (Rev 9) vcc rejects this */
+    const int foo = 10;
+    if (!foo) return 0;
+  }
+  return !cs[0] && !zero.x;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_const=yes
+else
+  ac_cv_c_const=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_const" >&5
+$as_echo "$ac_cv_c_const" >&6; }
+if test $ac_cv_c_const = no; then
+
+$as_echo "#define const /**/" >>confdefs.h
+
+fi
+
+
+
+
+    case " $LIBOBJS " in
+  *" rrd_snprintf.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS rrd_snprintf.$ac_objext"
+ ;;
+esac
+
+    _hw_cv_func_xprintf_replace_done=yes
+fi
+
 fi
 
 
@@ -14770,7 +14864,101 @@ else
 
 $as_echo "#define XXXsnprintf XXXrpl_snprintf" >>confdefs.h
 
-    _HW_FUNC_XPRINTF_REPLACE
+
+  if test "x$_hw_cv_func_xprintf_replace_done" != xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
+$as_echo_n "checking for an ANSI C-conforming const... " >&6; }
+if ${ac_cv_c_const+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+#ifndef __cplusplus
+  /* Ultrix mips cc rejects this sort of thing.  */
+  typedef int charset[2];
+  const charset cs = { 0, 0 };
+  /* SunOS 4.1.1 cc rejects this.  */
+  char const *const *pcpcc;
+  char **ppc;
+  /* NEC SVR4.0.2 mips cc rejects this.  */
+  struct point {int x, y;};
+  static struct point const zero = {0,0};
+  /* AIX XL C 1.02.0.0 rejects this.
+     It does not let you subtract one const X* pointer from another in
+     an arm of an if-expression whose if-part is not a constant
+     expression */
+  const char *g = "string";
+  pcpcc = &g + (g ? g-g : 0);
+  /* HPUX 7.0 cc rejects these. */
+  ++pcpcc;
+  ppc = (char**) pcpcc;
+  pcpcc = (char const *const *) ppc;
+  { /* SCO 3.2v4 cc rejects this sort of thing.  */
+    char tx;
+    char *t = &tx;
+    char const *s = 0 ? (char *) 0 : (char const *) 0;
+
+    *t++ = 0;
+    if (s) return 0;
+  }
+  { /* Someone thinks the Sun supposedly-ANSI compiler will reject this.  */
+    int x[] = {25, 17};
+    const int *foo = &x[0];
+    ++foo;
+  }
+  { /* Sun SC1.0 ANSI compiler rejects this -- but not the above. */
+    typedef const int *iptr;
+    iptr p = 0;
+    ++p;
+  }
+  { /* AIX XL C 1.02.0.0 rejects this sort of thing, saying
+       "k.c", line 2.27: 1506-025 (S) Operand must be a modifiable lvalue. */
+    struct s { int j; const int *ap[3]; } bx;
+    struct s *b = &bx; b->j = 5;
+  }
+  { /* ULTRIX-32 V3.1 (Rev 9) vcc rejects this */
+    const int foo = 10;
+    if (!foo) return 0;
+  }
+  return !cs[0] && !zero.x;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_const=yes
+else
+  ac_cv_c_const=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_const" >&5
+$as_echo "$ac_cv_c_const" >&6; }
+if test $ac_cv_c_const = no; then
+
+$as_echo "#define const /**/" >>confdefs.h
+
+fi
+
+
+
+
+    case " $LIBOBJS " in
+  *" rrd_snprintf.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS rrd_snprintf.$ac_objext"
+ ;;
+esac
+
+    _hw_cv_func_xprintf_replace_done=yes
+fi
+
 fi
 
 
@@ -14894,7 +15082,101 @@ $as_echo "#define HAVE___VA_COPY 1" >>confdefs.h
 fi
 
 fi
-    _HW_FUNC_XPRINTF_REPLACE
+
+  if test "x$_hw_cv_func_xprintf_replace_done" != xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
+$as_echo_n "checking for an ANSI C-conforming const... " >&6; }
+if ${ac_cv_c_const+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+#ifndef __cplusplus
+  /* Ultrix mips cc rejects this sort of thing.  */
+  typedef int charset[2];
+  const charset cs = { 0, 0 };
+  /* SunOS 4.1.1 cc rejects this.  */
+  char const *const *pcpcc;
+  char **ppc;
+  /* NEC SVR4.0.2 mips cc rejects this.  */
+  struct point {int x, y;};
+  static struct point const zero = {0,0};
+  /* AIX XL C 1.02.0.0 rejects this.
+     It does not let you subtract one const X* pointer from another in
+     an arm of an if-expression whose if-part is not a constant
+     expression */
+  const char *g = "string";
+  pcpcc = &g + (g ? g-g : 0);
+  /* HPUX 7.0 cc rejects these. */
+  ++pcpcc;
+  ppc = (char**) pcpcc;
+  pcpcc = (char const *const *) ppc;
+  { /* SCO 3.2v4 cc rejects this sort of thing.  */
+    char tx;
+    char *t = &tx;
+    char const *s = 0 ? (char *) 0 : (char const *) 0;
+
+    *t++ = 0;
+    if (s) return 0;
+  }
+  { /* Someone thinks the Sun supposedly-ANSI compiler will reject this.  */
+    int x[] = {25, 17};
+    const int *foo = &x[0];
+    ++foo;
+  }
+  { /* Sun SC1.0 ANSI compiler rejects this -- but not the above. */
+    typedef const int *iptr;
+    iptr p = 0;
+    ++p;
+  }
+  { /* AIX XL C 1.02.0.0 rejects this sort of thing, saying
+       "k.c", line 2.27: 1506-025 (S) Operand must be a modifiable lvalue. */
+    struct s { int j; const int *ap[3]; } bx;
+    struct s *b = &bx; b->j = 5;
+  }
+  { /* ULTRIX-32 V3.1 (Rev 9) vcc rejects this */
+    const int foo = 10;
+    if (!foo) return 0;
+  }
+  return !cs[0] && !zero.x;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_const=yes
+else
+  ac_cv_c_const=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_const" >&5
+$as_echo "$ac_cv_c_const" >&6; }
+if test $ac_cv_c_const = no; then
+
+$as_echo "#define const /**/" >>confdefs.h
+
+fi
+
+
+
+
+    case " $LIBOBJS " in
+  *" rrd_snprintf.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS rrd_snprintf.$ac_objext"
+ ;;
+esac
+
+    _hw_cv_func_xprintf_replace_done=yes
+fi
+
 fi
 
 
@@ -14915,7 +15197,101 @@ done
 
 $as_echo "#define XXXasprintf XXXrpl_asprintf" >>confdefs.h
 
-    _HW_FUNC_XPRINTF_REPLACE
+
+  if test "x$_hw_cv_func_xprintf_replace_done" != xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
+$as_echo_n "checking for an ANSI C-conforming const... " >&6; }
+if ${ac_cv_c_const+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+#ifndef __cplusplus
+  /* Ultrix mips cc rejects this sort of thing.  */
+  typedef int charset[2];
+  const charset cs = { 0, 0 };
+  /* SunOS 4.1.1 cc rejects this.  */
+  char const *const *pcpcc;
+  char **ppc;
+  /* NEC SVR4.0.2 mips cc rejects this.  */
+  struct point {int x, y;};
+  static struct point const zero = {0,0};
+  /* AIX XL C 1.02.0.0 rejects this.
+     It does not let you subtract one const X* pointer from another in
+     an arm of an if-expression whose if-part is not a constant
+     expression */
+  const char *g = "string";
+  pcpcc = &g + (g ? g-g : 0);
+  /* HPUX 7.0 cc rejects these. */
+  ++pcpcc;
+  ppc = (char**) pcpcc;
+  pcpcc = (char const *const *) ppc;
+  { /* SCO 3.2v4 cc rejects this sort of thing.  */
+    char tx;
+    char *t = &tx;
+    char const *s = 0 ? (char *) 0 : (char const *) 0;
+
+    *t++ = 0;
+    if (s) return 0;
+  }
+  { /* Someone thinks the Sun supposedly-ANSI compiler will reject this.  */
+    int x[] = {25, 17};
+    const int *foo = &x[0];
+    ++foo;
+  }
+  { /* Sun SC1.0 ANSI compiler rejects this -- but not the above. */
+    typedef const int *iptr;
+    iptr p = 0;
+    ++p;
+  }
+  { /* AIX XL C 1.02.0.0 rejects this sort of thing, saying
+       "k.c", line 2.27: 1506-025 (S) Operand must be a modifiable lvalue. */
+    struct s { int j; const int *ap[3]; } bx;
+    struct s *b = &bx; b->j = 5;
+  }
+  { /* ULTRIX-32 V3.1 (Rev 9) vcc rejects this */
+    const int foo = 10;
+    if (!foo) return 0;
+  }
+  return !cs[0] && !zero.x;
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_c_const=yes
+else
+  ac_cv_c_const=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_const" >&5
+$as_echo "$ac_cv_c_const" >&6; }
+if test $ac_cv_c_const = no; then
+
+$as_echo "#define const /**/" >>confdefs.h
+
+fi
+
+
+
+
+    case " $LIBOBJS " in
+  *" rrd_snprintf.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS rrd_snprintf.$ac_objext"
+ ;;
+esac
+
+    _hw_cv_func_xprintf_replace_done=yes
+fi
+
 fi
 
 
@@ -19172,7 +19548,7 @@ else
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #ifdef __MINGW32__
-#include <pthread.h>
+#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
 #endif
 #include <time.h>
 int
@@ -20133,7 +20509,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of glib-2.0 is 2.28.7.
 
@@ -20154,7 +20530,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of glib-2.0 is 2.28.7.
 
@@ -20390,7 +20766,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of gthread-2.0 is x.x.x.
 
@@ -20411,7 +20787,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of gthread-2.0 is x.x.x.
 
@@ -20645,7 +21021,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of pcre is x.x.x.
 
@@ -20666,7 +21042,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of pcre is x.x.x.
 
@@ -20901,7 +21277,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of libpng is 1.4.8.
 
@@ -20922,7 +21298,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of libpng is 1.4.8.
 
@@ -21135,7 +21511,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of pangocairo is 1.28.4.
 
@@ -21156,7 +21532,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of pangocairo is 1.28.4.
 
@@ -21369,7 +21745,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of gobject-2.0 is 2.58.1.
 
@@ -21390,7 +21766,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of gobject-2.0 is 2.58.1.
 
@@ -21618,7 +21994,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of libxml-2.0 is 2.7.8.
 
@@ -21639,7 +22015,7 @@ $as_echo "$as_me: WARNING:
 
   You can find also find an archive copy on
 
-     http://oss.oetiker.ch/rrdtool/pub/libs
+     https://oss.oetiker.ch/rrdtool/pub/libs
 
   The last tested version of libxml-2.0 is 2.7.8.
 
@@ -28325,7 +28701,7 @@ $as_echo_n "checking in... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: and out again" >&5
 $as_echo "and out again" >&6; }
 
-echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from https://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -28385,7 +28761,7 @@ echo "Type 'make etc-install' to install systemd support for rrdcached"
 fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
+echo "make me happy. Go to https://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"

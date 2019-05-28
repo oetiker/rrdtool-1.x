@@ -10,6 +10,8 @@
  * modified 21-Oct-89 by Rob Duff
  *
  * modified 08-Dec-04 by Tobi Oetiker (added %V)
+ * updated 2019-03-28 by Wolfgang Stöggl (added %F and %T)
+ *
 **/
 
 #include <stddef.h>     /* for size_t */
@@ -84,6 +86,7 @@ static void strfmt(
  *              %b      abbreviated month name (Jan)
  *              %c      standard date and time representation
  *              %d      day-of-month (01-31)
+ *              %F      equivalent to "%Y-%m-%d" (ISO 8601 date format, C99)
  *              %H      hour (24 hour clock) (00-23)
  *              %I      hour (12 hour clock) (01-12)
  *              %j      day-of-year (001-366)
@@ -91,6 +94,7 @@ static void strfmt(
  *              %m      month (01-12)
  *              %p      local equivalent of AM or PM
  *              %S      second (00-59)
+ *              %T      equivalent to "%H:%M:%S" (ISO 8601 time format, C99)
  *              %U      week-of-year, first day sunday (00-53)
  *              %W      week-of-year, first day monday (00-53)
  *              %V      ISO 8601 Week number 
@@ -166,6 +170,10 @@ size_t strftime_(
                 strfmt(r, "%2", t->tm_mday);
                 break;
 
+            case 'F':
+                strfmt(r, "%4-%2-%2", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
+                break;
+
             case 'H':
                 strfmt(r, "%2", t->tm_hour);
                 break;
@@ -192,6 +200,10 @@ size_t strftime_(
 
             case 'S':
                 strfmt(r, "%2", t->tm_sec);
+                break;
+
+            case 'T':
+                strfmt(r, "%2:%2:%2", t->tm_hour, t->tm_min, t->tm_sec);
                 break;
 
             case 'U':

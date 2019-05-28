@@ -25,7 +25,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl
-LIBVERS=10:0:2
+LIBVERS=10:1:2
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -448,7 +448,7 @@ AC_LINK_IFELSE(
     [ AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
                 [[#ifdef __MINGW32__
-#include <pthread.h>
+#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
 #endif
 #include <time.h>]],
                 [[ctime_r(NULL,NULL)]])],
@@ -1057,7 +1057,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from https://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -1116,7 +1116,7 @@ echo "Type 'make etc-install' to install systemd support for rrdcached"
 fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
+echo "make me happy. Go to https://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"

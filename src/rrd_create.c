@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_create.c  creates new rrds
  *****************************************************************************/
@@ -58,17 +58,17 @@ static int rrd_init_data(
     rrd_t *rrd);
 static int rrd_prefill_data(
     rrd_t *rrd,
-    const GList * sources_rrd_files,
-    mapping_t * mappings,
+    const GList *sources_rrd_files,
+    mapping_t *mappings,
     int mappings_cnt);
 static int positive_mod(
     int a,
     int b);
 
 static void init_mapping(
-    mapping_t * mapping);
+    mapping_t *mapping);
 static void free_mapping(
-    mapping_t * mapping);
+    mapping_t *mapping);
 
 static void parseGENERIC_DS(
     const char *def,
@@ -264,6 +264,8 @@ int rrd_create(
 }
 
 #ifndef HAVE_STRNDUP
+/* Avoid MinGW-w64 warning: declaration of 'strndup' shadows a built-in function [-Wshadow] */
+#define strndup strndup_
 /* Implement the strndup function.
    Copyright (C) 2005 Free Software Foundation, Inc.
    Written by Kaveh R. Ghazi <ghazi@caip.rutgers.edu>. 
@@ -329,7 +331,7 @@ int parseDS(
     void *key_hash,
     long      (*lookup)(void *,
                         char *),
-    mapping_t * mapping,
+    mapping_t *mapping,
     const char **require_version)
 {
     int       rc = -1;
@@ -1632,7 +1634,7 @@ typedef struct {
 } coverage_t;
 
 static inline void set_interval(
-    coverage_t * c,
+    coverage_t *c,
     int covered,
     time_t start,
     time_t end)
@@ -1644,7 +1646,7 @@ static inline void set_interval(
 
 #ifdef DEBUG_PREFILL
 static void dump_coverage_array(
-    const coverage_t * current_coverage,
+    const coverage_t *current_coverage,
     const int *coverage_array_size)
 {
     for (int i = 0; i < *coverage_array_size; i++) {
@@ -1656,7 +1658,7 @@ static void dump_coverage_array(
 #endif
 
 static coverage_t *add_coverage(
-    coverage_t * current_coverage,
+    coverage_t *current_coverage,
     int *coverage_array_size,
     time_t start,
     time_t end,
@@ -1867,7 +1869,7 @@ static coverage_t *add_coverage(
 
 #if 0
 static long total_coverage(
-    const coverage_t * coverage,
+    const coverage_t *coverage,
     const int *array_size)
 {
     long      total = 0;
@@ -1938,8 +1940,8 @@ static rrd_value_t prefill_finish(
 }
 
 static int order_candidates(
-    candidate_t * a,
-    candidate_t * b,
+    candidate_t *a,
+    candidate_t *b,
     const candidate_t UNUSED(*target))
 {
     enum cf_en acf = rrd_cf_conv(a->rra->cf_nam);
@@ -1997,9 +1999,9 @@ static int select_create_candidates(
 }
 
 static void prefill_bin(
-    candidate_t * target,
+    candidate_t *target,
     int cnt,
-    const candidate_t * candidates,
+    const candidate_t *candidates,
     int candidate_cnt)
 {
     unsigned long k;
@@ -2122,8 +2124,8 @@ static void prefill_bin(
  * because there is generally no way to deduce the input data from an RRA bin.
  */
 static void prefill_pdp_prep(
-    candidate_t * target,
-    const candidate_t * candidates,
+    candidate_t *target,
+    const candidate_t *candidates,
     int candidate_cnt)
 {
     rrd_t    *rrd = target->rrd;
@@ -2223,8 +2225,8 @@ static void get_cdp_start_end(
 }
 
 static void prefill_cdp_prep(
-    candidate_t * target,
-    candidate_t * candidates,
+    candidate_t *target,
+    candidate_t *candidates,
     int candidate_cnt,
     long cdp_rra_index)
 {
@@ -2347,7 +2349,7 @@ static void prefill_cdp_prep(
 static unsigned long find_ds_match(
     const ds_def_t *ds_def,
     const rrd_t *src_rrd,
-    mapping_t * mapping)
+    mapping_t *mapping)
 {
     unsigned long source_ds_index;
     const char *looked_for_ds_name = ds_def->ds_nam;
@@ -2369,7 +2371,7 @@ static unsigned long find_ds_match(
 
 static int find_mapping(
     const char *ds_nam,
-    const mapping_t * mappings,
+    const mapping_t *mappings,
     int mappings_cnt)
 {
     int       i;
@@ -2386,13 +2388,13 @@ static int find_mapping(
  */
 
 static candidate_t *find_matching_candidates(
-    const candidate_t * target,
-    const GList * sources,
+    const candidate_t *target,
+    const GList *sources,
     int *candidate_cnt,
-    mapping_t * mappings,
+    mapping_t *mappings,
     int mappings_cnt,
-    candidate_selectfunc_t * select_func,
-    compar_ex_t * order_func)
+    candidate_selectfunc_t *select_func,
+    compar_ex_t *order_func)
 {
     if (select_func == NULL)
         return NULL;
@@ -2618,8 +2620,8 @@ static int cdp_match(
 
 static int rrd_prefill_data(
     rrd_t *rrd,
-    const GList * sources,
-    mapping_t * mappings,
+    const GList *sources,
+    mapping_t *mappings,
     int mappings_cnt)
 {
     int       rc = -1;
@@ -2851,7 +2853,7 @@ int row_for_time(
 }
 
 static void init_mapping(
-    mapping_t * mapping)
+    mapping_t *mapping)
 {
     if (!mapping)
         return;
@@ -2862,7 +2864,7 @@ static void init_mapping(
 }
 
 static void free_mapping(
-    mapping_t * mapping)
+    mapping_t *mapping)
 {
     if (!mapping)
         return;

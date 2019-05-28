@@ -49,7 +49,7 @@ How to make Tobi happy:
 -----------------------
 
 If you want to show your appreciation for RRDtool you could make me happy
-by going to http://tobi.oetiker.ch/wish and ordering a CD from
+by going to https://tobi.oetiker.ch/wish and ordering a CD from
 my CD wish list ... 
 
 How to keep in touch:
@@ -80,7 +80,7 @@ pod files.
 
 The latest released Version:
 -------------------
-Is always available from http://oss.oetiker.ch/rrdtool/
+Is always available from https://oss.oetiker.ch/rrdtool/
 
 
 Tobias Oetiker <tobi@oetiker.ch>

@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: rrdtool 1.6.0\n"
-"Report-Msgid-Bugs-To: http://oss.oetiker.ch/rrdtool-trac/newticket\n"
-"POT-Creation-Date: 2019-02-04 14:32+0100\n"
+"Report-Msgid-Bugs-To: https://github.com/oetiker/rrdtool-1.x/issues\n"
+"POT-Creation-Date: 2019-05-27 18:26+0200\n"
 "PO-Revision-Date: 2017-04-12 23:09+0100\n"
 "Last-Translator: Balázs Úr <urbalazs@gmail.com>\n"
 "Language-Team: Hungarian <openscope@googlegroups.com>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Lokalize 2.0\n"
 
-#: src/rrd_tool.c:48
+#: src/rrd_tool.c:49
 #, c-format
 msgid ""
 "RRDtool %s  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
@@ -31,7 +31,7 @@ msgstr ""
 "\n"
 "Használat: rrdtool [kapcsolók] parancs parancs_kapcsolók\n"
 
-#: src/rrd_tool.c:55
+#: src/rrd_tool.c:56
 #, fuzzy
 msgid ""
 "Valid commands: create, update, updatev, graph, graphv,  dump, restore,\n"
@@ -42,11 +42,11 @@ msgstr ""
 "\t\tlast, lastupdate, first, info, fetch, tune\n"
 "\t\tresize, xport, flushcached\n"
 
-#: src/rrd_tool.c:60
+#: src/rrd_tool.c:61
 msgid "Valid remote commands: quit, ls, cd, mkdir, pwd\n"
 msgstr "Érvényes távoli parancsok: quit, ls, cd, mkdir, pwd\n"
 
-#: src/rrd_tool.c:64
+#: src/rrd_tool.c:65
 msgid ""
 "* create - create a new RRD\n"
 "\n"
@@ -70,7 +70,7 @@ msgstr ""
 "\t\t[DS:ds-név:DST:dst argumentumok]\n"
 "\t\t[RRA:CF:cf argumentumok]\n"
 
-#: src/rrd_tool.c:75
+#: src/rrd_tool.c:76
 msgid ""
 "* dump - dump an RRD to XML\n"
 "\n"
@@ -86,7 +86,7 @@ msgstr ""
 "\t\t[--daemon|-d cím]\n"
 "\t\tfile.rrd [fájl.xml]"
 
-#: src/rrd_tool.c:82
+#: src/rrd_tool.c:83
 msgid ""
 "* info - returns the configuration and status of the RRD\n"
 "\n"
@@ -96,7 +96,7 @@ msgstr ""
 "\n"
 "\trrdtool info [--daemon|-d <cím> [--noflush|-F]] fájlnév.rrd\n"
 
-#: src/rrd_tool.c:86
+#: src/rrd_tool.c:87
 #, fuzzy
 msgid ""
 "* list - returns the list of RRDs\n"
@@ -107,7 +107,7 @@ msgstr ""
 "\n"
 "\trrdtool info [--daemon|-d <cím> [--noflush|-F]] fájlnév.rrd\n"
 
-#: src/rrd_tool.c:90
+#: src/rrd_tool.c:91
 msgid ""
 "* restore - restore an RRD file from its XML form\n"
 "\n"
@@ -119,7 +119,7 @@ msgstr ""
 "\trrdtool restore [--range-check|-r] [--force-overwrite|-f] fájlnév.xml "
 "fájlnév.rrd\n"
 
-#: src/rrd_tool.c:94
+#: src/rrd_tool.c:95
 msgid ""
 "* last - show last update time for RRD\n"
 "\n"
@@ -131,7 +131,7 @@ msgstr ""
 "\trrdtool last fájlnév.rrd\n"
 "\t\t[--daemon|-d cím]\n"
 
-#: src/rrd_tool.c:99
+#: src/rrd_tool.c:100
 msgid ""
 "* lastupdate - returns the most recent datum stored for\n"
 "  each DS in an RRD\n"
@@ -145,7 +145,7 @@ msgstr ""
 "\trrdtool lastupdate fájlnév.rrd\n"
 "\t\t[--daemon|-d cím]\n"
 
-#: src/rrd_tool.c:105
+#: src/rrd_tool.c:106
 msgid ""
 "* first - show first update time for RRA within an RRD\n"
 "\n"
@@ -155,7 +155,7 @@ msgstr ""
 "\n"
 "\trrdtool first fájlnév.rrd [--rraindex szám] [--daemon|-d cím]\n"
 
-#: src/rrd_tool.c:109
+#: src/rrd_tool.c:110
 msgid ""
 "* update - update an RRD\n"
 "\n"
@@ -181,7 +181,7 @@ msgstr ""
 "\n"
 "\t\t[ idő:érték[:érték...] ...]\n"
 
-#: src/rrd_tool.c:119
+#: src/rrd_tool.c:120
 msgid ""
 "* updatev - a verbose version of update\n"
 "\treturns information about values, RRAs, and datasources updated\n"
@@ -207,7 +207,7 @@ msgstr ""
 "\n"
 "\t\t[ idő:érték[:érték...] ...]\n"
 
-#: src/rrd_tool.c:129
+#: src/rrd_tool.c:130
 msgid ""
 "* fetch - fetch data out of an RRD\n"
 "\n"
@@ -225,7 +225,7 @@ msgstr ""
 "\t\t[-a|--align-start]\n"
 "\t\t[-d|--daemon <cím>]\n"
 
-#: src/rrd_tool.c:137
+#: src/rrd_tool.c:138
 msgid ""
 "* flushcached - flush cached data out to an RRD file\n"
 "\n"
@@ -237,7 +237,7 @@ msgstr ""
 "\trrdtool flushcached fájlnév.rrd\n"
 "\t\t[-d|--daemon <cím>]\n"
 
-#: src/rrd_tool.c:144
+#: src/rrd_tool.c:145
 msgid ""
 "* graph - generate a graph from one or several RRD\n"
 "\n"
@@ -247,7 +247,7 @@ msgstr ""
 "\n"
 "\trrdtool graph fájlnév [-s|--start másodperc] [-e|--end másodperc]\n"
 
-#: src/rrd_tool.c:147
+#: src/rrd_tool.c:148
 msgid ""
 "* graphv - generate a graph from one or several RRD\n"
 "           with meta data printed before the graph\n"
@@ -259,7 +259,7 @@ msgstr ""
 "\n"
 "\trrdtool graphv fájlnév [-s|--start másodperc] [-e|--end másodperc]\n"
 
-#: src/rrd_tool.c:151
+#: src/rrd_tool.c:152
 msgid ""
 "\t\t[-x|--x-grid x-axis grid and label]\n"
 "\t\t[-Y|--alt-y-grid] [--full-size-mode]\n"
@@ -289,7 +289,7 @@ msgstr ""
 "\t\t[-F|--force-rules-legend]\n"
 "\t\t[-j|--only-graph]\n"
 
-#: src/rrd_tool.c:164
+#: src/rrd_tool.c:165
 msgid ""
 "\t\t[-n|--font FONTTAG:size:font]\n"
 "\t\t[-m|--zoom factor]\n"
@@ -337,7 +337,7 @@ msgstr ""
 "\t\t[-Z|--use-nan-for-all-missing-data]\n"
 "\t\t[DEF:vname=rrd:ds-név:CF]\n"
 
-#: src/rrd_tool.c:187
+#: src/rrd_tool.c:188
 msgid ""
 "\t\t[CDEF:vname=rpn-expression]\n"
 "\t\t[VDEF:vdefname=rpn-expression]\n"
@@ -371,7 +371,7 @@ msgstr ""
 "\t\t[GPRINT:vnév:CF:formátum] (elavult)\n"
 "\t\t[STACK:vnév[#rrggbb[aa][:jelmagyarázat]]] (elavult)\n"
 
-#: src/rrd_tool.c:202
+#: src/rrd_tool.c:203
 msgid ""
 " * tune -  Modify some basic properties of an RRD\n"
 "\n"
@@ -397,7 +397,7 @@ msgstr ""
 "\t\t[--window-length|-w egész-szám]\n"
 "\t\t[--alpha|-x adaptáció-paraméter]\n"
 
-#: src/rrd_tool.c:213
+#: src/rrd_tool.c:214
 msgid ""
 "\t\t[--beta|-y adaptation-parameter]\n"
 "\t\t[--gamma|-z adaptation-parameter]\n"
@@ -413,7 +413,7 @@ msgstr ""
 "\t\t[--smoothing-window-deviation|-S évad-töredéke]\n"
 "\t\t[--aberrant-reset|-b ds-név]\n"
 
-#: src/rrd_tool.c:220
+#: src/rrd_tool.c:221
 msgid ""
 "\t\t[--step|-t newstep]\n"
 "\t\t[--daemon|-D address]\n"
@@ -431,7 +431,7 @@ msgstr ""
 "\t\t[RRA:rra-spec]\n"
 "\t\t[RRA#index:[+-=]szám]\n"
 
-#: src/rrd_tool.c:229
+#: src/rrd_tool.c:230
 msgid ""
 " * resize - alter the length of one of the RRAs in an RRD\n"
 "\n"
@@ -441,7 +441,7 @@ msgstr ""
 "\n"
 "\trrdtool resize fájlnév rra-szám GROW|SHRINK sorok\n"
 
-#: src/rrd_tool.c:232
+#: src/rrd_tool.c:233
 msgid ""
 "* xport - generate XML dump from one or several RRD\n"
 "\n"
@@ -465,7 +465,7 @@ msgstr ""
 "\t\t[CDEF:vnév=rpn-kifejezés]\n"
 "\t\t[XPORT:vnév:jelmagyarázat]\n"
 
-#: src/rrd_tool.c:241
+#: src/rrd_tool.c:242
 msgid ""
 " * quit - closing a session in remote mode\n"
 "\n"
@@ -475,7 +475,7 @@ msgstr ""
 "\n"
 "\trrdtool quit\n"
 
-#: src/rrd_tool.c:244
+#: src/rrd_tool.c:245
 msgid ""
 " * ls - lists all *.rrd files in current directory\n"
 "\n"
@@ -485,7 +485,7 @@ msgstr ""
 "\n"
 "\trrdtool ls\n"
 
-#: src/rrd_tool.c:247
+#: src/rrd_tool.c:248
 msgid ""
 " * cd - changes the current directory\n"
 "\n"
@@ -495,7 +495,7 @@ msgstr ""
 "\n"
 "\trrdtool cd új-könyvtár\n"
 
-#: src/rrd_tool.c:250
+#: src/rrd_tool.c:251
 msgid ""
 " * mkdir - creates a new directory\n"
 "\n"
@@ -505,7 +505,7 @@ msgstr ""
 "\n"
 "\trrdtool mkdir új-könyvtárnév\n"
 
-#: src/rrd_tool.c:253
+#: src/rrd_tool.c:254
 msgid ""
 " * pwd - returns the current working directory\n"
 "\n"
@@ -515,7 +515,7 @@ msgstr ""
 "\n"
 "\trrdtool pwd\n"
 
-#: src/rrd_tool.c:256
+#: src/rrd_tool.c:257
 msgid ""
 "RRDtool is distributed under the Terms of the GNU General\n"
 "Public License Version 2. (www.gnu.org/copyleft/gpl.html)\n"

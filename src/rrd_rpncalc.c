@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  ****************************************************************************
  * rrd_rpncalc.c  RPN calculator functions
  ****************************************************************************/
@@ -7,17 +7,8 @@
 #include <limits.h>
 #include <locale.h>
 #include <stdlib.h>
-#ifdef __MINGW32__
-#include <pthread.h>
-/* time.h of MinGW-w64 requires _POSIX_THREAD_SAFE_FUNCTIONS to be defined in order to provide
- * localtime_r. _POSIX_THREAD_SAFE_FUNCTIONS is defined in pthread_unistd.h (included from pthread.h).
- * Alternatives here would be to either include "rrd_tool.h" before <time.h> or remove include of <time.h>
- * from rrd_rpncalc.c, because time.h is included via rrd_tool.h ...
- * However, let's do it this way, by including pthread.h here, only if __MINGW32__ is defined,
- * in order to avoid any changes concerning other systems. */
-#endif
-#include <time.h>
 #include "rrd_tool.h"
+#include <time.h>
 
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
@@ -1002,7 +993,7 @@ short rpn_calc(
 		if (rpnp[rpi].op == OP_PREDICTPERC) {
 		    stackunderflow(1);
 		    percentile = rpnstack->s[--stptr];
-		    if (abs(percentile) > 100) {
+		    if (fabs(percentile) > 100) {
 		        rrd_set_error("unsupported percentile: %f",percentile);
 			return -1;
 		    }
@@ -1106,7 +1097,7 @@ short rpn_calc(
 			/* get the percentile selected */
 			double idxf = percentile * ((float)count-1.0);
 			if (percentile < 0) { /* take the next best */
-			    int idx = round(abs(idxf));
+			    int idx = round(fabs(idxf));
 			    val = extra[idx];
 			} else { /* interpolate */
 			    int idx = floor(idxf);

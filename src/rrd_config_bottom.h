@@ -68,6 +68,13 @@
 # include <unistd.h>
 #endif
 
+/* for MinGW-w64 */
+#if (defined(__MINGW32__) && !defined(_POSIX_THREAD_SAFE_FUNCTIONS))
+/* time.h of MinGW-w64 requires _POSIX_THREAD_SAFE_FUNCTIONS to be defined
+ * in order to provide ctime_r, gmtime_r or localtime_r. */
+#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
+#endif
+
 #ifdef TIME_WITH_SYS_TIME
 # include <sys/time.h>
 # include <time.h>

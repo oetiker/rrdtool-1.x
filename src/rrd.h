@@ -2,7 +2,7 @@
 #define RRDLIB_H_4FD7D37D56A448C392AF46508C56D3CC
 
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrdlib.h   Public header file for librrd
  *****************************************************************************
@@ -406,9 +406,9 @@ int       rrd_proc_start_end(
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
  * files. Since they are _internal_ they may change with the file format and
- * will be replaced with a more general interface in RRDtool 1.4. Don't use
+ * will be replaced with a more general interface in RRDtool 1.7.2 Don't use
  * these functions unless you have good reasons to do so. If you do use these
- * functions you will have to adapt your code for RRDtool 1.4!
+ * functions you will have to adapt your code for RRDtool 1.7.2
  *
  * To enable the deprecated functions define `RRD_EXPORT_DEPRECATED' before
  * including <rrd_test.h>. You have been warned! If you come back to the

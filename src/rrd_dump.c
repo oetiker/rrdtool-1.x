@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_dump  Display a RRD
  *****************************************************************************
@@ -99,16 +99,16 @@ int rrd_dump_cb_r(
 
     if (opt_header == 1) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-        CB_PUTS("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n");
+        CB_PUTS("<!DOCTYPE rrd SYSTEM \"https://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n");
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
         CB_PUTS("<rrd>\n");
     } else if (opt_header == 2) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
-        CB_PUTS("<rrd xmlns=\"http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml\" "
+        CB_PUTS("<rrd xmlns=\"https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml\" "
                 "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
-        CB_PUTS("\txsi:schemaLocation=\"http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml "
-                "http://oss.oetiker.ch/rrdtool/rrdtool-dump.xsd\">\n");
+        CB_PUTS("\txsi:schemaLocation=\"https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml "
+                "https://oss.oetiker.ch/rrdtool/rrdtool-dump.xsd\">\n");
     } else {
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
         CB_PUTS("<rrd>\n");

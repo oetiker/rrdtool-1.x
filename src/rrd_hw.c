@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_hw.c : Support for Holt-Winters Smoothing/ Aberrant Behavior Detection
  *****************************************************************************
@@ -516,7 +516,7 @@ static unsigned long MyMod(
     unsigned long new_val;
 
     if (val < 0)
-        new_val = ((unsigned long) abs(val)) % mod;
+        new_val = ((unsigned long) labs(val)) % mod;
     else
         new_val = (val % mod);
 

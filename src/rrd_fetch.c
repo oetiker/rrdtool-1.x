@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  *****************************************************************************
  * rrd_fetch.c  read date from an rrd to use for further processing
  *****************************************************************************
@@ -335,7 +335,7 @@ int rrd_fetch_fn(
             rrd_set_error("malloc fetch ds_namv entry");
             goto err_free_ds_namv;
         }
-        strncpy((*ds_namv)[i], rrd.ds_def[i].ds_nam, DS_NAM_SIZE - 1);
+        strncpy((*ds_namv)[i], rrd.ds_def[i].ds_nam, DS_NAM_SIZE);
         (*ds_namv)[i][DS_NAM_SIZE - 1] = '\0';
 
     }
@@ -388,8 +388,10 @@ int rrd_fetch_fn(
                     rrd.stat_head->pdp_step * rrd.rra_def[i].pdp_cnt);
 #endif
             /* we need step difference in either full or partial case */
-            tmp_step_diff = labs(*step - (rrd.stat_head->pdp_step
-                                          * rrd.rra_def[i].pdp_cnt));
+            tmp_step_diff =
+                labs((long) *step -
+                     ((long) rrd.stat_head->pdp_step *
+                      (long) rrd.rra_def[i].pdp_cnt));
             /* best full match */
             if (cal_start <= *start) {
                 if (first_full || (tmp_step_diff < best_full_step_diff)) {

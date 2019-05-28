@@ -146,7 +146,7 @@ The resulting data section is:
   </data>
 
 All the statistics in the output will use the same step. The first sample will
-be the first sample starting at or immediately after B<--start>. The last
+be the first sample starting immediately after B<--start>. The last
 sample will be the one ending at or immediately after B<--end>.
 
 Each sample has a timestamp and one or more values. The timestamps associated
@@ -169,9 +169,9 @@ The first line of the sample output:
 
     <row><t>1020611700</t><v>3.4000000000e+00</v><v>5.4400000000e+01</v></row>
 
-therefore means that the values for the interval 1020611700 to 1020611999 were
-3.4 and 54.4 for "out bytes" and "in and out bits" respectively, as if the
-value was taken at 1020612000.
+therefore means that the values for the interval 1020611400 to 1020611699 were
+3.4 and 54.4 for "out bytes" and "in and out bits" respectively, because the
+value was taken at 1020611700.
 
 =head1 EXAMPLE 1
 
@@ -207,4 +207,3 @@ line argument takes precedence.
 =head1 AUTHOR
 
 Tobias Oetiker E<lt>tobi@oetiker.chE<gt>
-

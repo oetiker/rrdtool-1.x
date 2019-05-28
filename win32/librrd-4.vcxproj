@@ -37,23 +37,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -251,7 +251,6 @@
     <ClCompile Include="..\src\rrd_utils.c" />
     <ClCompile Include="..\src\rrd_version.c" />
     <ClCompile Include="..\src\rrd_xport.c" />
-    <ClCompile Include="..\src\strftime.c" />
     <ClCompile Include="asprintf.c" />
     <ClCompile Include="vasprintf-msvc.c" />
     <ClCompile Include="win32-glob.c" />
@@ -283,7 +282,6 @@
     <ClInclude Include="..\src\rrd_tool.h" />
     <ClInclude Include="..\src\rrd_update.h" />
     <ClInclude Include="..\src\rrd_xport.h" />
-    <ClInclude Include="..\src\strftime.h" />
     <ClInclude Include="..\src\unused.h" />
     <ClInclude Include="rrd_config.h" />
     <ClInclude Include="win32-glob.h" />

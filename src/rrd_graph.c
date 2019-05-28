@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
@@ -7,15 +7,20 @@
 
 #include <sys/stat.h>
 
-
-
-#if defined(_WIN32) && !defined(__MINGW32__)
-#include "strftime.h"
-#endif
-
 #include "rrd_strtod.h"
 
 #include "rrd_tool.h"
+
+/* MinGW and MinGW-w64 use the format codes from msvcrt.dll,
+ * which does not support e.g. %F, %T or %V. Here we need %V for "Week %V".
+ * Remark: include of "strftime.h" and use of strftime.c is not required for
+ * MSVC builds (VS2015 and newer), where strftime format codes are from
+ * ucrtbase.dll, which supports C99, and therefore %F, %T, %V etc. */
+#if defined(__MINGW32__)
+#include "strftime.h"   /* This has to be included after rrd_tool.h */
+#define strftime strftime_
+#endif
+
 #include "unused.h"
 
 
@@ -2274,7 +2279,7 @@ int leg_place(
             }
 
             if(calc_width){
-                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend - 1);
+                strncpy(im->gdes[i].legend, saved_legend, sizeof im->gdes[0].legend);
                 im->gdes[i].legend[sizeof im->gdes[0].legend - 1] = '\0';
             }
         }
@@ -5603,7 +5608,7 @@ int bad_format_axis(char *fmt){
 }
 
 int bad_format_print(char *fmt){
-    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "(?:%s)?" SAFE_STRING "$",fmt);
+    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "(?:%[sS])?" SAFE_STRING "$",fmt);
 }
 
 int vdef_parse(

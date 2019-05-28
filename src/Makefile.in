@@ -102,8 +102,8 @@ target_triplet = @target@
 @BUILD_LIBDBI_TRUE@am__append_3 = rrd_fetch_libdbi.c
 @BUILD_LIBRADOS_TRUE@am__append_4 = rrd_rados.c
 @BUILD_LIBRADOS_TRUE@am__append_5 = rrd_rados.h
-@MINGW_W64_TRUE@am__append_6 = ../win32/win32-glob.c
-@MINGW_W64_TRUE@am__append_7 = ../win32/win32-glob.h
+@MINGW_W64_TRUE@am__append_6 = ../win32/win32-glob.c strftime.c
+@MINGW_W64_TRUE@am__append_7 = ../win32/win32-glob.h strftime.h
 bin_PROGRAMS = rrdtool$(EXEEXT) rrdupdate$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2)
 @BUILD_RRDCGI_TRUE@am__append_8 = rrdcgi
@@ -163,7 +163,8 @@ am__librrd_la_SOURCES_DIST = rrd_version.c rrd_last.c rrd_lastupdate.c \
 	rrd_first.c rrd_dump.c rrd_flushcached.c rrd_fetch.c \
 	rrd_fetch_cb.c rrd_resize.c rrd_tune.c rrd_list.c rrd_graph.c \
 	rrd_graph_helper.c rrd_xport.c rrd_gfx.c pngsize.c \
-	rrd_restore.c rrd_fetch_libdbi.c ../win32/win32-glob.c
+	rrd_restore.c rrd_fetch_libdbi.c ../win32/win32-glob.c \
+	strftime.c
 @BUILD_RRDGRAPH_TRUE@am__objects_1 = librrd_la-rrd_graph.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_la-rrd_graph_helper.lo \
 @BUILD_RRDGRAPH_TRUE@	librrd_la-rrd_xport.lo \
@@ -171,7 +172,8 @@ am__librrd_la_SOURCES_DIST = rrd_version.c rrd_last.c rrd_lastupdate.c \
 @BUILD_RRDRESTORE_TRUE@am__objects_2 = librrd_la-rrd_restore.lo
 @BUILD_LIBDBI_TRUE@am__objects_3 = librrd_la-rrd_fetch_libdbi.lo
 am__dirstamp = $(am__leading_dot)dirstamp
-@MINGW_W64_TRUE@am__objects_4 = ../win32/librrd_la-win32-glob.lo
+@MINGW_W64_TRUE@am__objects_4 = ../win32/librrd_la-win32-glob.lo \
+@MINGW_W64_TRUE@	librrd_la-strftime.lo
 am__objects_5 = librrd_la-rrd_version.lo librrd_la-rrd_last.lo \
 	librrd_la-rrd_lastupdate.lo librrd_la-rrd_first.lo \
 	librrd_la-rrd_dump.lo librrd_la-rrd_flushcached.lo \
@@ -278,7 +280,7 @@ am__noinst_HEADERS_DIST = unused.h gettext.h mutex.h rrd_strtod.h \
 	rrd_rpncalc.h rrd_hw.h rrd_hw_math.h rrd_hw_update.h \
 	rrd_restore.h rrd_create.h fnv.h rrd_graph.h \
 	rrd_is_thread_safe.h rrd_modify.h rrd_update.h rrd_config.h \
-	quicksort.h rrd_rados.h ../win32/win32-glob.h
+	quicksort.h rrd_rados.h ../win32/win32-glob.h strftime.h
 HEADERS = $(include_HEADERS) $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
 	$(LISP)rrd_config.h.in
@@ -769,6 +771,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_tune.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_version.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-rrd_xport.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrd_la-strftime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-hash_32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/librrdupd_la-optparse.Plo@am__quote@
@@ -954,6 +957,13 @@ librrd_la-rrd_fetch_libdbi.lo: rrd_fetch_libdbi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../win32/win32-glob.c' object='../win32/librrd_la-win32-glob.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o ../win32/librrd_la-win32-glob.lo `test -f '../win32/win32-glob.c' || echo '$(srcdir)/'`../win32/win32-glob.c
+
+librrd_la-strftime.lo: strftime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -MT librrd_la-strftime.lo -MD -MP -MF $(DEPDIR)/librrd_la-strftime.Tpo -c -o librrd_la-strftime.lo `test -f 'strftime.c' || echo '$(srcdir)/'`strftime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/librrd_la-strftime.Tpo $(DEPDIR)/librrd_la-strftime.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='strftime.c' object='librrd_la-strftime.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrd_la_CFLAGS) $(CFLAGS) -c -o librrd_la-strftime.lo `test -f 'strftime.c' || echo '$(srcdir)/'`strftime.c
 
 librrdupd_la-mutex.lo: mutex.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(librrdupd_la_CFLAGS) $(CFLAGS) -MT librrdupd_la-mutex.lo -MD -MP -MF $(DEPDIR)/librrdupd_la-mutex.Tpo -c -o librrdupd_la-mutex.lo `test -f 'mutex.c' || echo '$(srcdir)/'`mutex.c

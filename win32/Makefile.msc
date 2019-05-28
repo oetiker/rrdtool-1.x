@@ -80,7 +80,6 @@ RRD_LIB_OBJ_LIST = \
         $(TOP)/src/rrd_utils.obj \
         $(TOP)/src/rrd_version.obj \
         $(TOP)/src/rrd_xport.obj \
-        $(TOP)/src/strftime.obj \
         $(TOP)/win32/asprintf.obj \
         $(TOP)/win32/vasprintf-msvc.obj \
         $(TOP)/win32/win32-glob.obj

@@ -1,5 +1,6 @@
 # tests MUST create their own RRDs
 /*.rrd
 /*.out
-/modify5-testa*-mod.dump
+/modify5-testa*-mod.dump*
 /*.log
+/*.trs

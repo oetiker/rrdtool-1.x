@@ -2,10 +2,10 @@
 
 <xport>
   <meta>
-    <start>1300000800</start>
+    <start>1300000200</start>
     <end>1300015200</end>
     <step>600</step>
-    <rows>25</rows>
+    <rows>26</rows>
     <columns>2</columns>
     <legend>
       <entry>dv</entry>
@@ -13,6 +13,7 @@
     </legend>
   </meta>
   <data>
+    <row><t>1300000200</t><v0>NaN</v0><v1>NaN</v1></row>
     <row><t>1300000800</t><v0>-5.4883500e-03</v0><v1>3.6845819e-02</v1></row>
     <row><t>1300001400</t><v0>0.0000000e+00</v0><v1>3.6293297e-02</v1></row>
     <row><t>1300002000</t><v0>2.4356417e-03</v0><v1>3.5968226e-02</v1></row>
