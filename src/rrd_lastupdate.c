@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.7.2 Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *                Copyright by Florian Forster, 2008
  *****************************************************************************
  * rrd_lastupdate  Get the last datum entered for each DS
