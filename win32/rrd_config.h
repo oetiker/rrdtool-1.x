@@ -6,7 +6,7 @@
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "rrdtool"
 
-/* Define to the version of this package. */
+/* Version numbers are updated by the rrdtool-release script. */
 #define PACKAGE_MAJOR       1
 #define PACKAGE_MINOR       7
 #define PACKAGE_REVISION    2
