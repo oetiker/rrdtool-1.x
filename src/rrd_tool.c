@@ -229,6 +229,7 @@ static void PrintUsage(
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
+           "\t\t[-t|--showtime]\n"
            "\t\t[--enumds] [--json]\n"
            "\t\t[-d|--daemon address]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n"
