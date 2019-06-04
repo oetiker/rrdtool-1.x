@@ -1072,7 +1072,7 @@ int data_fetch(
                 im->gdes[i].ds = ii;
             }
         }
-        if (im->gdes[i].ds == -1) {
+        if ((im->gdes[i].ds == -1) && !(im->extra_flags & ALLOW_MISSING_DS)) {
             rrd_set_error("No DS called '%s' in '%s'",
                           im->gdes[i].ds_nam, im->gdes[i].rrd);
             return -1;
