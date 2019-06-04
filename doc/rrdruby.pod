@@ -1,3 +1,5 @@
+=encoding utf8
+
 =head1 NAME
 
 rrdruby - About the RRD Ruby bindings
@@ -57,7 +59,7 @@ to the other B<rrdtool> documentation for functions and valid arguments.
     "--title", " RubyRRD Demo",
     "--start", "#{start+3600}",
     "--end", "start + 1000 min",
-    "--interlace",
+    "--interlaced",
     "--imgformat", "PNG",
     "--width=450",
     "DEF:a=#{rrd}:a:AVERAGE",
@@ -81,6 +83,6 @@ rrdxport, rrdinfo
 
 =head1 AUTHOR
 
-Loïs Lherbier E<lt>lois.lherbier@covadis.chE<gt>
+LoÃ¯s Lherbier E<lt>lois.lherbier@covadis.chE<gt>
 
 Miles Egan E<lt>miles@caddr.comE<gt>
