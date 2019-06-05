@@ -25,6 +25,14 @@ if BUILD_LUA
   POD += rrdlua.pod
 endif
 
+if BUILD_PYTHON
+  POD += rrdpython.pod
+endif
+
+if BUILD_RUBY
+  POD += rrdruby.pod
+endif
+
 POD3 = librrd.pod
 
 PMP = RRDs.pod RRDp.pod
@@ -39,7 +47,8 @@ GENERATED_EXTRADIST = $(HTML) $(MAN) $(MAN3) $(TXT) $(PMP) $(PDF)
 CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
-EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
+            rrdpython.pod rrdruby.pod
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
