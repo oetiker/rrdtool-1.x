@@ -769,6 +769,7 @@ AC_ARG_WITH(ruby-options,
 AC_SUBST(RUBY_MAKE_OPTIONS)
 AC_SUBST(RUBY)
 AC_SUBST(COMP_RUBY)
+AM_CONDITIONAL(BUILD_RUBY,[test $enable_ruby = "yes"])
 
 dnl Check for Lua.
 AC_PATH_PROG(LUA, lua, no)
@@ -978,6 +979,7 @@ else
 fi
 
 AC_SUBST(COMP_PYTHON)
+AM_CONDITIONAL(BUILD_PYTHON,[test $enable_python = "yes"])
 
 if test $enable_docs != no; then
 
