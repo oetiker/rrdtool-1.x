@@ -142,7 +142,7 @@ number of the B<PRINT> argument. The first B<PRINT> has I<number> 0.
 
 This tag gets replaced by an internal var. Currently these vars are known:
 VERSION, COMPILETIME.
-These vars represent the compiled-in values. 
+These vars represent the compiled-in values.
 
 =back
 

@@ -10,8 +10,8 @@ POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdre
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflushcached.pod   \
-      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod                     \
-      rrdcreate.pod          rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrdlist.pod
+      rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod      rrdcreate.pod  \
+      rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrd_pdpcalc.pod        rrdlist.pod
 
 if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
@@ -23,6 +23,14 @@ endif
 
 if BUILD_LUA
   POD += rrdlua.pod
+endif
+
+if BUILD_PYTHON
+  POD += rrdpython.pod
+endif
+
+if BUILD_RUBY
+  POD += rrdruby.pod
 endif
 
 POD3 = librrd.pod
@@ -39,7 +47,8 @@ GENERATED_EXTRADIST = $(HTML) $(MAN) $(MAN3) $(TXT) $(PMP) $(PDF)
 CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
-EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
+            rrdpython.pod rrdruby.pod
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
@@ -62,7 +71,7 @@ all-local: link man txt html-local
 	$(AM_V_GEN)@POD2MAN@ --release=$(VERSION) --center=rrdtool --section=3 $< > $@
 
 .1.txt .3.txt:
-	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp $< > $@
+	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp -Wbreak $< > $@
 
 .1.pdf .3.pdf:
 	$(AM_V_GEN)@TROFF@ -man $< | ps2pdf - $@

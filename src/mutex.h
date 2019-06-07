@@ -5,14 +5,14 @@
 #ifndef MUTEX_H_B13C67AB432C4C39AF823A339537CA40
 #define MUTEX_H_B13C67AB432C4C39AF823A339537CA40
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <process.h>
 #else
 #include <pthread.h>
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 #define mutex_t            pthread_mutex_t
 #define MUTEX_INITIALIZER  PTHREAD_MUTEX_INITIALIZER
 #else

@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  ****************************************************************************
  * rrd_snprintf  
  ****************************************************************************/
@@ -580,7 +580,9 @@ static UINTMAX_T cast(LDOUBLE);
 static UINTMAX_T myround(LDOUBLE);
 static LDOUBLE mypow10(int);
 
+#ifndef _WIN32  /* Avoid warning under Windows */
 extern int errno;
+#endif
 
 int
 rpl_vsnprintf(char *str, size_t size, const char *format, va_list args)

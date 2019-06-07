@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  ****************************************************************************
  * rrd_rpncalc.h  RPN calculator functions
  ****************************************************************************/
@@ -24,7 +24,7 @@ enum op_en { OP_NUMBER = 0, OP_VARIABLE, OP_INF, OP_PREV, OP_NEGINF,
     OP_MEDIAN, OP_PREDICTPERC,
     OP_DEPTH, OP_COPY, OP_ROLL, OP_INDEX, OP_STEPWIDTH,
     OP_NEWDAY, OP_NEWWEEK, OP_NEWMONTH, OP_NEWYEAR,
-    OP_SMIN, OP_SMAX, OP_STDEV, OP_PERCENT, OP_POW
+    OP_SMIN, OP_SMAX, OP_STDEV, OP_PERCENT, OP_POW, OP_ROUND
  };
 
 typedef struct rpnp_t {

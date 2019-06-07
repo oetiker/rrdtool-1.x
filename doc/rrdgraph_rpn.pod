@@ -142,6 +142,10 @@ B<FLOOR, CEIL>
 
 Round down or up to the nearest integer.
 
+B<ROUND>
+
+Round to the nearest integer.
+
 B<DEG2RAD, RAD2DEG>
 
 Convert angle in degrees to radians, or radians to degrees.

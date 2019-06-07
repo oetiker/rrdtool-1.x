@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *****************************************************************************
  * rrd_restore.c  Contains logic to parse XML input and create an RRD file
  * This file:
@@ -23,7 +23,7 @@
 #include <libxml/xmlreader.h>
 #include <locale.h>
 
-#ifndef WIN32
+#ifndef _WIN32
 #	include <unistd.h>     /* for off_t */
 #else
 #ifndef __MINGW32__     /* MinGW-w64 has ssize_t and off_t */

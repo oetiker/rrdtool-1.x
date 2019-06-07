@@ -41,7 +41,7 @@ Where you want to install the software.
 Once you have decided. Save the two locations into environment variables.
 
  BUILD_DIR=/tmp/rrdbuild
- INSTALL_DIR=/opt/rrdtool-1.7.0
+ INSTALL_DIR=/opt/rrdtool-1.7.2
 
 
 If your F</tmp> is mounted with the option noexec (RHEL seems to do that) you have to choose
@@ -53,11 +53,11 @@ Now make sure the BUILD_DIR exists and go there:
  cd $BUILD_DIR
 
 Lets first assume you already have all the necessary libraries
-pre-installed. 
+pre-installed.
 
- wget http://oss.oetiker.ch/rrdtool/pub/rrdtool-1.7.0.tar.gz
- gunzip -c rrdtool-1.7.0.tar.gz | tar xf -
- cd rrdtool-1.7.0
+ wget https://oss.oetiker.ch/rrdtool/pub/rrdtool-1.7.2.tar.gz
+ gunzip -c rrdtool-1.7.2.tar.gz | tar xf -
+ cd rrdtool-1.7.2
  ./configure --prefix=$INSTALL_DIR && make && make install
 
 Ok, this was very optimistic. This try will probably have ended with
@@ -86,7 +86,7 @@ xrender is required for compilation with cairo. This is not true and also
 bad since OpenSolaris does not include an F<xrender.pc> file. Use Perl to
 fix this:
 
- perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc 
+ perl -i~ -p -e 's/(Requires.*?)\s*xrender.*/$1/' /usr/lib/pkgconfig/cairo.pc
 
 Make sure the RRDtool build system finds your new compiler
 
@@ -165,7 +165,7 @@ the syntax again differs from system to system:
 
 =item Solaris
 
- export LDFLAGS=-R${INSTALL_DIR}/lib 
+ export LDFLAGS=-R${INSTALL_DIR}/lib
 
 if you are using the Sun Studio/Forte compiler, you may also want to set
 
@@ -174,7 +174,7 @@ if you are using the Sun Studio/Forte compiler, you may also want to set
 
 =item Linux
 
- export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib" 
+ export LDFLAGS="-Wl,--rpath -Wl,${INSTALL_DIR}/lib"
 
 =item HPUX
 
@@ -184,7 +184,7 @@ if you are using the Sun Studio/Forte compiler, you may also want to set
 
  export LDFLAGS="-Wl,-blibpath:${INSTALL_DIR}/lib"
 
-=back 
+=back
 
 If you have GNU make installed and it is not called 'make',
 then do
@@ -216,10 +216,10 @@ environment variable will be helpful.
 
 =head3 Building zlib
 
-Chances are very high that you already have that on your system ... 
+Chances are very high that you already have that on your system ...
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/zlib-1.2.3.tar.gz
  gunzip -c zlib-1.2.3.tar.gz | tar xf -
  cd zlib-1.2.3
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --shared
@@ -234,7 +234,7 @@ drop the settings of LDFLAGS and CPPFLAGS. Note that the backslash (\) at
 the end of lines means that the command is split over multiple lines.
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/libpng-1.2.18.tar.gz
  gunzip -c libpng-1.2.18.tar.gz | tar xf -
  cd libpng-1.2.18
  env CFLAGS="-O3 -fPIC" ./configure --prefix=$INSTALL_DIR
@@ -244,7 +244,7 @@ the end of lines means that the command is split over multiple lines.
 =head3 Building freetype
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/freetype-2.3.5.tar.gz
  gunzip -c freetype-2.3.5.tar.gz | tar xf -
  cd freetype-2.3.5
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
@@ -259,7 +259,7 @@ add the following at the start the configure line:
 =head3 Building LibXML2
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/libxml2-2.6.32.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/libxml2-2.6.32.tar.gz
  gunzip -c libxml2-2.6.32.tar.gz | tar xf -
  cd libxml2-2.6.32
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
@@ -274,7 +274,7 @@ Run the fc-cache program to build the fontconfig cache after changing the
 config file.
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/fontconfig-2.4.2.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/fontconfig-2.4.2.tar.gz
  gunzip -c fontconfig-2.4.2.tar.gz   | tar xf -
  cd fontconfig-2.4.2
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --with-freetype-config=$INSTALL_DIR/bin/freetype-config
@@ -284,7 +284,7 @@ config file.
 =head3 Building Pixman
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/pixman-0.10.0.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/pixman-0.10.0.tar.gz
  gunzip -c pixman-0.10.0.tar.gz  | tar xf -
  cd pixman-0.10.0
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
@@ -294,7 +294,7 @@ config file.
 =head3 Building Cairo
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/cairo-1.6.4.tar.gz
  gunzip -c cairo-1.6.4.tar.gz   | tar xf -
  cd cairo-1.6.4
  ./configure --prefix=$INSTALL_DIR \
@@ -316,7 +316,7 @@ When building on Solaris you may want to do
 =head3 Building Glib
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/glib-2.15.4.tar.gz
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/glib-2.15.4.tar.gz
  gunzip -c glib-2.15.4.tar.gz  | tar xf -
  cd glib-2.15.4
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC"
@@ -326,7 +326,7 @@ When building on Solaris you may want to do
 =head3 Building Pango
 
  cd $BUILD_DIR
- wget http://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.bz2
+ wget https://oss.oetiker.ch/rrdtool/pub/libs/pango-1.21.1.tar.bz2
  bunzip2 -c pango-1.21.1.tar.bz2 | tar xf -
  cd pango-1.21.1
  ./configure --prefix=$INSTALL_DIR CFLAGS="-O3 -fPIC" --without-x
@@ -345,7 +345,7 @@ because it seems that a fair number of people have ill configured python and
 tcl setups that would prevent RRDtool from building if they are included in
 their current state.
 
- cd $BUILD_DIR/rrdtool-1.7.0
+ cd $BUILD_DIR/rrdtool-1.7.2
  ./configure --prefix=$INSTALL_DIR --disable-tcl --disable-python
  $MAKE clean
  $MAKE

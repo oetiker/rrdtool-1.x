@@ -2,7 +2,7 @@ RRDTOOL - Round Robin Database Tool
 A tool for fast logging of numerical data graphical display
 of this data.
 
-Copyright (c) 1997-2015 Tobias Oetiker
+Copyright (c) 1997-2019 Tobias Oetiker
 All rights reserved.
 
 GNU GPL License
@@ -20,7 +20,7 @@ more details.
 
 You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
-59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 FLOSS License Exception 
 =======================

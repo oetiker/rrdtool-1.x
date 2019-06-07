@@ -66,7 +66,7 @@ static char **make_argv(const char *cmd, lua_State * L)
   for (i=1; i<argc; i++) {
     /* accepts string or number */
     if (lua_isstring(L, i) || lua_isnumber(L, i)) {
-      if (!(argv[i] = lua_tostring (L, i))) {
+      if (!(argv[i] = (char *) lua_tostring (L, i))) {
         /* raise an error and never return */
         luaL_error(L, "%s - error duplicating string area for arg #%d",
                    cmd, i);
@@ -170,12 +170,14 @@ lua_rrd_resize (lua_State * L)
   return 0;
 }
 
+#ifdef HAVE_RRD_RESTORE
 static int
 lua_rrd_restore (lua_State * L)
 {
   rrd_common_call(L, "restore", rrd_restore);
   return 0;
 }
+#endif
 
 static int
 lua_rrd_tune (lua_State * L)
@@ -366,14 +368,18 @@ static const struct luaL_Reg rrd[] = {
 #endif
   {"last", lua_rrd_last},
   {"resize", lua_rrd_resize},
+#ifdef HAVE_RRD_RESTORE
   {"restore", lua_rrd_restore},
+#endif
   {"tune", lua_rrd_tune},
   {"update", lua_rrd_update},
   {"flushcached", lua_rrd_flushcached},
 #if defined(DINF)
   {"info", lua_rrd_info},
   {"updatev", lua_rrd_updatev},
+#ifdef HAVE_RRD_GRAPH
   {"graphv", lua_rrd_graphv},
+#endif
 #endif
   {NULL, NULL}
 };

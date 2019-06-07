@@ -112,7 +112,7 @@ B<VDEF> also works on such an array but in a different way.  For
 example, I<VDEF:max=ds0,MAXIMUM> would scan each of the array members
 and store the maximum value.
 
-=head2 When do you use B<VDEF> versus B<CDEF>?  
+=head2 When do you use B<VDEF> versus B<CDEF>?
 
 Use B<CDEF> to transform your data prior to graphing.  In the above
 example, we'd use a B<CDEF> to transform bytes to bits before

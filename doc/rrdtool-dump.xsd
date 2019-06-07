@@ -6,8 +6,8 @@
 		Tobias Lindenmann <tobias.lindenmann at 1und1.de>
 -->
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	xmlns:ns="http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
-	targetNamespace="http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
+	xmlns:ns="https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
+	targetNamespace="https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml" 
 	elementFormDefault="qualified">
 	
 	<!-- Root element -->
@@ -234,7 +234,7 @@
 	
 	<!-- Start of simpleTypes -->
 	<!-- Allowed data source types. -->
-	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<!-- @see https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
 	<xsd:simpleType name="DataSourceType">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="GAUGE"/>
@@ -246,7 +246,7 @@
 	</xsd:simpleType>
 	
 	<!-- A ds-name must be 1 to 19 characters long in the characters [a-zA-Z0-9_]. -->
-	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<!-- @see https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
 	<xsd:simpleType name="DataSourceNameType">
 		<xsd:restriction base="xsd:string">
 			<xsd:pattern value="[a-zA-Z0-9_]{1,19}"/>
@@ -254,7 +254,7 @@
 	</xsd:simpleType>
 
 	<!-- Allowed consolidation function (cf). -->
-	<!-- @see http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
+	<!-- @see https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html-->
 	<xsd:simpleType name="ConsolidationFunctionType">
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="AVERAGE"/>

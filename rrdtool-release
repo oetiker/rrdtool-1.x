@@ -1,40 +1,32 @@
 #!/bin/sh
+# shellcheck disable=SC2086,SC2046,SC2029
 set -e
-VERSION=`perl -n -e 'm/\QAC_INIT([rrdtool],[\E(.+?)\Q])\E/ && print $1' configure.ac`
-PERLVERS=`perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure.ac`
+VERSION=$(cat VERSION)
+NUMVERS=$(perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure)
+CURRENT_YEAR=$(date +"%Y")
 set -x
-perl -i -p -e 's/^\$VERSION.+/\$VERSION='$PERLVERS';/' bindings/perl-*/*.pm
-perl -i -p -e 's/RRDtool 1\S+/RRDtool '$VERSION'/ && s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-2010/' src/*.h src/*.c
+perl -i -p -e 's/^\$VERSION.+/\$VERSION='$NUMVERS';/' bindings/perl-*/*.pm
+perl -i -p -e 's/RRDtool \d\S+/RRDtool '$VERSION'/; s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-'$CURRENT_YEAR'/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
 perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
-svn diff 
-echo "Tagging and releasing rrdtool $VERSION ($PERLVERS). Press any Key to continue."
-read somekey
-svn commit -m "prepare for the release of rrdtool-$VERSION"
-OPWD=`pwd`
-cd /tmp
-svn export svn://svn.oetiker.ch/rrdtool/trunk/program rrdtool-$$
-cd rrdtool-$$
-#svn log --stop-on-copy --xml --verbose svn://svn.oetiker.ch/rrdtool/trunk | \
-#    xsltproc --stringparam strip-prefix trunk/program $OPWD/svn2cl.xsl -  >CHANGES
-sh MakeMakefile
-#PKG_CONFIG_PATH=/usr/pack/rrdtool-1.3svn-to/i686-debian-linux3.1/lib/pkgconfig/
-#export PKG_CONFIG_PATH
+# Update version and Copyright years for MSVC builds
+perl -i -p -e 's/Copyright \(c\).+?Oetiker/Copyright (c) 1997-'$CURRENT_YEAR' Tobias Oetiker/' win32/*.rc
+perl -i -p -e 's/PACKAGE_MAJOR.+\d{1}/PACKAGE_MAJOR       '$(echo $VERSION | cut -d. -f1)'/;
+               s/PACKAGE_MINOR.+\d{1}/PACKAGE_MINOR       '$(echo $VERSION | cut -d. -f2)'/;
+               s/PACKAGE_REVISION.+\d{1}/PACKAGE_REVISION    '$(echo $VERSION | cut -d. -f3)'/;
+               s/PACKAGE_VERSION.+\d{1}\"/PACKAGE_VERSION     \"'$VERSION'\"/;
+               s/NUMVERS.+\d{1}/NUMVERS             '$NUMVERS'/' win32/rrd_config.h
+./bootstrap
 ./configure --enable-maintainer-mode
 make dist
-# do a test build
-tar zxvf rrdtool*.tar.gz
+tar zxvf rrdtool-${VERSION}.tar.gz
 cd rrdtool-$VERSION
 ./configure
 make
 src/rrdtool
 cd ..
 echo READY TO DIST ... press ENTER
-read x
-
-scp CHANGES rrdtool*.tar.gz  oposs@james:public_html/rrdtool/pub
+read -r
+scp CHANGES rrdtool-$VERSION.tar.gz  oposs@james:public_html/rrdtool/pub
 ssh oposs@james "cd public_html/rrdtool/pub/;rm rrdtool.tar.gz;ln -s rrdtool-$VERSION.tar.gz rrdtool.tar.gz"
 cd ..
-rm -rf rrdtool-$$
-svn copy -m "tagging version $VERSION" svn://svn.oetiker.ch/rrdtool/trunk/program svn://svn.oetiker.ch/rrdtool/tags/$VERSION
-

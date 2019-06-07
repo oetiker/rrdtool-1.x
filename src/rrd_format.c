@@ -1,10 +1,10 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *****************************************************************************
  * rrd_format.c  RRD Database Format helper functions
  *****************************************************************************/
 #include "rrd_tool.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include "stdlib.h"
 #endif
 

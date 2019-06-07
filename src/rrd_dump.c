@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *****************************************************************************
  * rrd_dump  Display a RRD
  *****************************************************************************
@@ -47,7 +47,7 @@
 #include "rrd_snprintf.h"
 
 
-#if !(defined(NETWARE) || defined(WIN32))
+#if !(defined(NETWARE) || defined(_WIN32))
 extern char *tzname[2];
 #endif
 
@@ -99,16 +99,16 @@ int rrd_dump_cb_r(
 
     if (opt_header == 1) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-        CB_PUTS("<!DOCTYPE rrd SYSTEM \"http://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n");
+        CB_PUTS("<!DOCTYPE rrd SYSTEM \"https://oss.oetiker.ch/rrdtool/rrdtool.dtd\">\n");
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
         CB_PUTS("<rrd>\n");
     } else if (opt_header == 2) {
         CB_PUTS("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
-        CB_PUTS("<rrd xmlns=\"http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml\" "
+        CB_PUTS("<rrd xmlns=\"https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml\" "
                 "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n");
-        CB_PUTS("\txsi:schemaLocation=\"http://oss.oetiker.ch/rrdtool/rrdtool-dump.xml "
-                "http://oss.oetiker.ch/rrdtool/rrdtool-dump.xsd\">\n");
+        CB_PUTS("\txsi:schemaLocation=\"https://oss.oetiker.ch/rrdtool/rrdtool-dump.xml "
+                "https://oss.oetiker.ch/rrdtool/rrdtool-dump.xsd\">\n");
     } else {
         CB_PUTS("<!-- Round Robin Database Dump -->\n");
         CB_PUTS("<rrd>\n");
@@ -129,8 +129,15 @@ int rrd_dump_cb_r(
 #else
 # error "Need strftime"
 #endif
+#if defined (_MSC_VER) && (_M_IX86)
+/* Otherwise (null) will be written to %s when compiling for 32-bit using MSVC */
+/* works for both, with or without _USE_32BIT_TIME_T */
+    CB_FMTS("\t<lastupdate>%ld</lastupdate> <!-- %s -->\n\n",
+        (long int) rrd.live_head->last_up, somestring);
+#else
     CB_FMTS("\t<lastupdate>%lld</lastupdate> <!-- %s -->\n\n",
         (long long int) rrd.live_head->last_up, somestring);
+#endif
     for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
         CB_PUTS("\t<ds>\n");
 

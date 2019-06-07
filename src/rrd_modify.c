@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *****************************************************************************
  * rrd_modify  Structurally modify an RRD file
  *      (c) 2014 by Peter Stamfest and Tobi Oetiker
@@ -19,7 +19,7 @@
 
 #include <locale.h>
 #include "rrd_config.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -435,7 +435,8 @@ static int populate_row(const rrd_t *in_rrd,
 
     int i, ri;
     candidate_extra_t junk;
-    
+    junk.l = 0; /* Initialize junk.l to avoid warning C4700 in MSVC */
+
     candidates = find_candidate_rras(in_rrd, new_rra, &candidates_cnt, junk, select_for_modify);
     if (candidates == NULL) {
 	goto done;
@@ -1023,7 +1024,8 @@ static void prepare_CDPs(const rrd_t *in, rrd_t *out,
     candidate_t *candidates = NULL;
     candidate_t *chosen_candidate = NULL;
     candidate_extra_t junk;
-    
+    junk.l = 0;
+
     candidates = find_candidate_rras(in, rra_def, &candidates_cnt, junk, select_for_modify);
 
     if (candidates != NULL) {
@@ -1215,7 +1217,8 @@ static int add_rras(const rrd_t *in, rrd_t *out, const int *ds_map,
     }
 
     if (require_version != NULL && atoi(require_version) < atoi(out->stat_head->version)) {
-        strncpy(out->stat_head->version, require_version, 5);
+        strncpy(out->stat_head->version, require_version, 4);
+        out->stat_head->version[4] = '\0';
     }
 
     if (last_rra_cnt < out->stat_head->rra_cnt) {
@@ -1306,7 +1309,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
     
     for (i = optidx ; i < argc ; i++) {
 	if (strncmp("DEL:", argv[i], 4) == 0 && strlen(argv[i]) > 4) {
-		del = (const char **) realloc(del, (rcnt + 2) * sizeof(char*));
+		del = (const char **) realloc((char **) del, (rcnt + 2) * sizeof(char*));   /* Cast 'del' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
 	    if (del == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1323,7 +1326,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    rcnt++;
 	    del[rcnt] = NULL;
 	} else if (strncmp("DS:", argv[i], 3) == 0 && strlen(argv[i]) > 3) {
-		add = (const char **) realloc(add, (acnt + 2) * sizeof(char*));
+		add = (const char **) realloc((char **) add, (acnt + 2) * sizeof(char*));   /* Cast 'add' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
 	    if (add == NULL) {
 		rrd_set_error("out of memory");
 		rc = -1;
@@ -1451,13 +1454,13 @@ done:
 	for (const char **c = del ; *c ; c++) {
 	    free((void*) *c);
 	}
-	free(del);
+	free((char **) del);    /* Cast 'del' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
     } 
     if (add) {
 	for (const char **c = add ; *c ; c++) {
 	    free((void*) *c);
 	}
-	free(add);
+	free((char **) add);    /* Cast 'add' from 'const char **' to 'char **' to avoid MSVC warning C4090 */
     }
     if (rra_ops) {
 	for (i = 0 ; i < rraopcnt ; i++) {

@@ -11,13 +11,13 @@
 
 Summary: Round Robin Database Tool to store and display time-series data
 Name: rrdtool
-Version: 1.GIT
+Version: 1.7.2
 Release: 1%{?dist}
 License: GPLv2+ with exceptions
 Group: Applications/Databases
-URL: http://oss.oetiker.ch/rrdtool/
-#Source0: http://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
-Source0: http://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}.tar.gz
+URL: https://oss.oetiker.ch/rrdtool/
+#Source0: https://oss.oetiker.ch/%{name}/pub/%{name}-%{version}.tar.gz
+Source0: https://oss.oetiker.ch/rrdtool/pub/beta/%{name}-%{version}.tar.gz
 %if %{with_php}
 Source1: php4-%{svnrev}.tar.gz
 Patch1: rrdtool-1.3.0-beta4-fix-rrd_update-in-php-bindings.patch

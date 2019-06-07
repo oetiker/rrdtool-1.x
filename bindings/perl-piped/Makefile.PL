@@ -5,6 +5,5 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'         => 'RRDp',
     'VERSION'      => '0.99.0', # finds $VERSION
-    'linkext'   => {LINKTYPE => ''},
     'dist'    =>    {COMPRESS=>'gzip', SUFFIX=>'gz'},
 );

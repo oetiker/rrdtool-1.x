@@ -16,13 +16,6 @@ dnl a.b.c
 AC_INIT([rrdtool],m4_esyscmd([tr -d '\n' < VERSION]))
 AC_CONFIG_AUX_DIR(conftools)
 
-dnl for testing a numerical version number comes handy
-dnl the released version are
-dnl a.bccc
-dnl the devel versions will be something like
-dnl a.b999yymmddhh
-NUMVERS=1.6999
-AC_SUBST(NUMVERS)
 
 dnl for the linker to understand which versions the library are compatible with
 dnl each other we must keep a separate library version cout of the format c:r:a.
@@ -32,7 +25,7 @@ dnl - if any functionality was removed do c++,r=0,a=0.
 dnl
 dnl see http://sourceware.org/autobook/autobook/autobook_91.html
 dnl
-LIBVERS=9:0:1
+LIBVERS=10:1:2
 AC_SUBST(LIBVERS)
 
 AC_CANONICAL_TARGET
@@ -242,8 +235,8 @@ AC_CHECK_FUNC(round, , AC_CHECK_LIB(m, round))
 
 
 dnl add pic flag in any case this makes sure all our code is relocatable
-eval `./libtool --config | grep pic_flag=`
-CFLAGS="$CFLAGS $pic_flag"
+dnl eval `./libtool --config | grep pic_flag=`
+dnl CFLAGS="$CFLAGS $pic_flag"
 
 
 dnl Checks for library functions.
@@ -272,6 +265,10 @@ AC_CHECK_FUNCS(fsync)
 
 dnl check for socket and nsl solaris again ... we need this for the new rrd_daemon stuff
 
+dnl link with ws2_32 (Winsock2 library) in case of MinGW or MinGW-w64 builds
+case "${target}" in
+  *mingw*) LIBS="${LIBS} -lws2_32";;
+esac
 AC_CHECK_FUNCS(socket, [],  AC_CHECK_LIB(socket, socket, [LIBS="${LIBS} -lsocket"; AC_DEFINE(HAVE_SOCKET)],[]))
 AC_CHECK_FUNCS(getaddrinfo, [],  AC_CHECK_LIB(nsl, getaddrinfo, [LIBS="${LIBS} -lnsl"; AC_DEFINE(HAVE_GETADDRINFO)],[]))
 AC_CHECK_FUNCS(sigwaitinfo, [],  AC_CHECK_LIB(rt, sigwaitinfo, [LIBS="${LIBS} -lrt"; AC_DEFINE(HAVE_SIGWAITINFO)],[]))
@@ -451,7 +448,7 @@ AC_LINK_IFELSE(
     [ AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
                 [[#ifdef __MINGW32__
-#include <pthread.h>
+#define _POSIX_THREAD_SAFE_FUNCTIONS 200112L
 #endif
 #include <time.h>]],
                 [[ctime_r(NULL,NULL)]])],
@@ -615,6 +612,7 @@ dnl EX_CHECK_ALL(cairo,      cairo_svg_surface_create,      cairo-svg.h,        
 dnl EX_CHECK_ALL(cairo,      cairo_pdf_surface_create,      cairo-pdf.h,            cairo-pdf,   1.10.2,  http://cairographics.org/releases/, "")
 dnl EX_CHECK_ALL(cairo,      cairo_ps_surface_create,       cairo-ps.h,             cairo-ps,    1.10.2,  http://cairographics.org/releases/, "")
 EX_CHECK_ALL(pangocairo-1.0,  pango_cairo_context_set_font_options,  pango/pango.h,  pangocairo,  1.28.4,    http://ftp.gnome.org/pub/GNOME/sources/pango/1.28, "")
+EX_CHECK_ALL(gobject-2.0,     g_object_unref,                        glib-object.h,  gobject-2.0, 2.58.1,    https://download.gnome.org/sources/glib/2.58/, "")
 
 AC_CHECK_FUNCS(pango_font_map_create_context)
 fi
@@ -643,6 +641,13 @@ AC_PATH_PROG(PERL, perl, no)
 AC_PATH_PROG(POD2MAN, pod2man, no)
 AC_PATH_PROG(POD2HTML, pod2html, no)
 
+dnl for testing a numerical version number comes handy
+dnl the released version are
+dnl a.bccc
+dnl the devel versions will be something like
+dnl a.b999yymmddhh
+NUMVERS=m4_esyscmd([perl -ne 'my @x=split /\./;printf "%d.%d%03d", @x' VERSION])
+AC_SUBST(NUMVERS)
 
 AC_ARG_ENABLE(perl,AS_HELP_STRING([--disable-perl],[do not build the perl modules]),
 [],[enable_perl=yes])
@@ -778,6 +783,7 @@ AC_ARG_WITH(ruby-options,
 AC_SUBST(RUBY_MAKE_OPTIONS)
 AC_SUBST(RUBY)
 AC_SUBST(COMP_RUBY)
+AM_CONDITIONAL(BUILD_RUBY,[test $enable_ruby = "yes"])
 
 dnl Check for Lua.
 AC_PATH_PROG(LUA, lua, no)
@@ -992,6 +998,7 @@ else
 fi
 
 AC_SUBST(COMP_PYTHON)
+AM_CONDITIONAL(BUILD_PYTHON,[test $enable_python = "yes"])
 
 if test $enable_docs != no; then
 
@@ -1071,7 +1078,7 @@ AC_OUTPUT
 AC_MSG_CHECKING(in)
 AC_MSG_RESULT(and out again)
 
-echo $ECHO_N "ordering CD from http://tobi.oetiker.ch/wish $ECHO_C" 1>&6
+echo $ECHO_N "ordering CD from https://tobi.oetiker.ch/wish $ECHO_C" 1>&6
 sleep 1
 echo $ECHO_N ".$ECHO_C" 1>&6
 sleep 1
@@ -1130,7 +1137,7 @@ echo "Type 'make etc-install' to install systemd support for rrdcached"
 fi
 echo
 echo "       ... that wishlist is NO JOKE. If you find RRDtool useful"
-echo "make me happy. Go to http://tobi.oetiker.ch/wish and"
+echo "make me happy. Go to https://tobi.oetiker.ch/wish and"
 echo "place an order."
 echo
 echo "                               -- Tobi Oetiker <tobi@oetiker.ch>"

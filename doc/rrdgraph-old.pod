@@ -66,14 +66,14 @@ If no graph functions are called, the graph will not be created.
 The time when the graph should begin. Time in seconds since
 epoch (1970-01-01) is required. Negative numbers are relative to the
 current time. By default one day worth of data will be graphed.
-See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
-documentation for a detailed explanation on how to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
+on how to specify time.
 
 =item B<-e>|B<--end> I<seconds> (default now)
 
 The time when the graph should end. Time in seconds since epoch.
-See also AT-STYLE TIME SPECIFICATION section in the I<rrdfetch>
-documentation for a detailed explanation of ways to specify time.
+See also L<rrdfetch/"AT-STYLE TIME SPECIFICATION"> for a detailed explanation
+of ways to specify time.
 
 =item B<-x>|B<--x-grid> I<x-axis grid and label> (default autoconfigure)
 

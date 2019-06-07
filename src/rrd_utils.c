@@ -34,7 +34,7 @@
 #include <libgen.h>
 #include <unistd.h>
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 #	define random() rand()
 #	define srandom(x) srand(x)
 #	define getpid() 0

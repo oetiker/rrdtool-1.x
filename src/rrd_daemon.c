@@ -73,7 +73,7 @@
 #  include <stdint.h>
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #include <strings.h>
 #include <inttypes.h>
@@ -591,7 +591,7 @@ static int check_pidfile(void)
   if (ftruncate(pid_fd, 0) == -1)
   {
     fprintf(stderr,
-            "FATAL: Faild to truncate stale PID file. (pid %d)\n", pid);
+            "FATAL: Failed to truncate stale PID file. (pid %d)\n", pid);
     close(pid_fd);
     return -1;
   }

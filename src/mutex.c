@@ -10,7 +10,7 @@
 
 int mutex_init(mutex_t *mutex)
 {
-#ifdef WIN32
+#ifdef _WIN32
   *mutex = CreateMutex(NULL, FALSE, NULL);
   return (*mutex == NULL);
 #else
@@ -20,7 +20,7 @@ int mutex_init(mutex_t *mutex)
 
 int mutex_lock(mutex_t *mutex)
 {
-#ifdef WIN32
+#ifdef _WIN32
   if (*mutex == NULL) { /* static initializer? */
     HANDLE p = CreateMutex(NULL, FALSE, NULL);
     if (InterlockedCompareExchangePointer((PVOID*)mutex, (PVOID)p, NULL) != NULL)
@@ -34,7 +34,7 @@ int mutex_lock(mutex_t *mutex)
 
 int mutex_unlock(mutex_t *mutex)
 {
-#ifdef WIN32
+#ifdef _WIN32
   return (ReleaseMutex(*mutex) == 0);
 #else
   return pthread_mutex_unlock(mutex);
@@ -43,7 +43,7 @@ int mutex_unlock(mutex_t *mutex)
 
 int mutex_cleanup(mutex_t *mutex)
 {
-#ifdef WIN32
+#ifdef _WIN32
   return (CloseHandle(mutex) == 0);
 #else
   return pthread_mutex_destroy(mutex);

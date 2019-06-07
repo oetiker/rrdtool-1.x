@@ -93,8 +93,8 @@ noinst_HEADERS += rrd_rados.h
 endif
 
 if MINGW_W64
-RRD_C_FILES += ../win32/win32-glob.c
-noinst_HEADERS += ../win32/win32-glob.h
+RRD_C_FILES += ../win32/win32-glob.c strftime.c
+noinst_HEADERS += ../win32/win32-glob.h strftime.h
 endif
 
 noinst_LTLIBRARIES        = librrdupd.la

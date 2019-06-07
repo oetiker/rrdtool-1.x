@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  ****************************************************************************
  * rrd_graph_helper.c  commandline parser functions
  *                     this code initially written by Alex van den Bogaerdt
@@ -545,7 +545,7 @@ static graph_desc_t* newGraphDescription(image_desc_t *const im,enum gf_en gf,pa
     double linewidth = 1;
     char *t,*x;
     if ((t=getKeyValueArgument("linewidth",1,pa))&&(*t!=0)) {
-      if ((getDouble(t,&linewidth,&x))||(linewidth<=0)) {
+      if ((getDouble(t,&linewidth,&x))||(linewidth<0)) {
 	rrd_set_error("Bad line width: %s",t); return NULL;
       }
     }

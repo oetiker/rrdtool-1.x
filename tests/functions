@@ -1,5 +1,5 @@
 
-TZ=CET
+TZ=Europe/Zurich
 export TZ
 
 BASEDIR="${BASEDIR:-$(dirname -- $0)}"
@@ -11,8 +11,9 @@ TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
 DIFF="diff -u"
 DIFF9=seddif
 
+# On Windows, names of times zones are different. Substitute 'W. Europe Standard Time' with 'CET'
 function seddif {
-   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge' | $DIFF $@
+   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge; s/W. Europe Standard Time/CET/g' | $DIFF $@
 }
 
 BLANK=blank

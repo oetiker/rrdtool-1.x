@@ -5,7 +5,7 @@ rrdinfo - extract header information from an RRD
 =head1 SYNOPSIS
 
 B<rrdtool> B<info> I<filename>
-S<[B<--daemon>|B<-d> I<address> S<[B<--noflush>|B<-F>]>]>
+S<[B<--daemon>|B<-d> I<address> [B<--noflush>|B<-F>]]>
 
 =head1 DESCRIPTION
 

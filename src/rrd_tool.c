@@ -1,16 +1,17 @@
 /*****************************************************************************
- * RRDtool 1.GIT, Copyright by Tobi Oetiker
+ * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
 
 #include "rrd_config.h"
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
 #include <fcntl.h>
+#define mkdir(A, B) mkdir(A)    /* mkdir() has only got one argument under Windows */
 #endif
 
 #include "rrd_tool.h"
@@ -75,8 +76,7 @@ static void PrintUsage(
         N_("* dump - dump an RRD to XML\n\n"
            "\trrdtool dump [--header|-h {none,xsd,dtd}]\n"
            "\t\t[--no-header|-n]\n"
-           "\t\t[--daemon|-d address]\n"
-           "\t\tfile.rrd [file.xml]");
+           "\t\t[--daemon|-d address]\n" "\t\tfile.rrd [file.xml]");
 
     const char *help_info =
         N_("* info - returns the configuration and status of the RRD\n\n"
@@ -92,8 +92,7 @@ static void PrintUsage(
 
     const char *help_last =
         N_("* last - show last update time for RRD\n\n"
-           "\trrdtool last filename.rrd\n"
-           "\t\t[--daemon|-d address]\n");
+           "\trrdtool last filename.rrd\n" "\t\t[--daemon|-d address]\n");
 
     const char *help_lastupdate =
         N_("* lastupdate - returns the most recent datum stored for\n"
@@ -110,7 +109,7 @@ static void PrintUsage(
            "\trrdtool update filename\n"
            "\t\t[--template|-t ds-name:ds-name:...]\n"
            "\t\t[--skip-past-updates|-s]\n"
-	   "\t\t[--daemon|-d <address>]\n"
+           "\t\t[--daemon|-d <address>]\n"
            "\t\ttime|N:value[:value...]\n\n"
            "\t\tat-time@value[:value...]\n\n"
            "\t\t[ time:value[:value...] ..]\n");
@@ -130,13 +129,12 @@ static void PrintUsage(
            "\trrdtool fetch filename.rrd CF\n"
            "\t\t[-r|--resolution resolution]\n"
            "\t\t[-s|--start start] [-e|--end end]\n"
-           "\t\t[-a|--align-start]\n"
-           "\t\t[-d|--daemon <address>]\n");
+           "\t\t[-a|--align-start]\n" "\t\t[-d|--daemon <address>]\n");
 
     const char *help_flushcached =
         N_("* flushcached - flush cached data out to an RRD file\n\n"
            "\trrdtool flushcached filename.rrd\n"
-	   "\t\t[-d|--daemon <address>]\n");
+           "\t\t[-d|--daemon <address>]\n");
 
 /* break up very large strings (help_graph, help_tune) for ISO C89 compliance*/
 
@@ -216,14 +214,13 @@ static void PrintUsage(
            "\t\t[--smoothing-window|-s fraction-of-season]\n"
            "\t\t[--smoothing-window-deviation|-S fraction-of-season]\n"
            "\t\t[--aberrant-reset|-b ds-name]\n");
-    const char *help_tune3 = 
+    const char *help_tune3 =
         N_("\t\t[--step|-t newstep]\n"
            "\t\t[--daemon|-D address]\n"
            "\t\t[DEL:ds-name]\n"
            "\t\t[DS:ds-spec]\n"
            "\t\t[DELRRA:index]\n"
-           "\t\t[RRA:rra-spec]\n"
-           "\t\t[RRA#index:[+-=]number]\n");
+           "\t\t[RRA:rra-spec]\n" "\t\t[RRA#index:[+-=]number]\n");
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
@@ -232,11 +229,11 @@ static void PrintUsage(
         N_("* xport - generate XML dump from one or several RRD\n\n"
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
+           "\t\t[-t|--showtime]\n"
            "\t\t[--enumds] [--json]\n"
            "\t\t[-d|--daemon address]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n"
-           "\t\t[CDEF:vname=rpn-expression]\n"
-           "\t\t[XPORT:vname:legend]\n");
+           "\t\t[CDEF:vname=rpn-expression]\n" "\t\t[XPORT:vname:legend]\n");
     const char *help_quit =
         N_(" * quit - closing a session in remote mode\n\n"
            "\trrdtool quit\n");
@@ -370,7 +367,7 @@ static void PrintUsage(
     case C_TUNE:
         puts(_(help_tune1));
         puts(_(help_tune2));
-	puts(_(help_tune3));
+        puts(_(help_tune3));
         break;
     case C_RESIZE:
         puts(_(help_resize));
@@ -423,8 +420,8 @@ static char *fgetslong(
             exit(1);
         }
     }
-    if (linebuf[0]){
-        return  *aLinePtr = linebuf;
+    if (linebuf[0]) {
+        return *aLinePtr = linebuf;
     }
     free(linebuf);
     return *aLinePtr = 0;
@@ -446,10 +443,10 @@ int main(
 #endif
 
     /* initialize locale settings
-       according to localeconv(3) */       
+       according to localeconv(3) */
     setlocale(LC_ALL, "");
 
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32) && !defined(__CYGWIN__)
     setmode(fileno(stdout), O_BINARY);
     setmode(fileno(stdin), O_BINARY);
 #endif
@@ -474,15 +471,17 @@ int main(
 #endif
         RemoteMode = 1;
         if ((argc == 3) && strcmp("", argv[2])) {
-            int test_euid = 0;            
+            int       test_euid = 0;
+
 #ifdef HAVE_GETEUID
             test_euid = geteuid() == 0;
 #endif
             if (test_euid) {
 
 #ifdef HAVE_CHROOT
-                if (chroot(argv[2]) != 0){
-                    fprintf(stderr, "ERROR: chroot %s: %s\n", argv[2],rrd_strerror(errno));
+                if (chroot(argv[2]) != 0) {
+                    fprintf(stderr, "ERROR: chroot %s: %s\n", argv[2],
+                            rrd_strerror(errno));
                     exit(errno);
                 }
                 ChangeRoot = 1;
@@ -498,18 +497,20 @@ int main(
             }
         }
         if (strcmp(firstdir, "")) {
-            if (chdir(firstdir) != 0){
-                fprintf(stderr, "ERROR: chdir %s %s\n", firstdir,rrd_strerror(errno));
+            if (chdir(firstdir) != 0) {
+                fprintf(stderr, "ERROR: chdir %s %s\n", firstdir,
+                        rrd_strerror(errno));
                 exit(errno);
             }
         }
 
         while (fgetslong(&aLine, stdin)) {
-            char *aLineOrig = aLine;
+            char     *aLineOrig = aLine;
+
             if ((argc = CountArgs(aLine)) == 0) {
                 free(aLine);
                 printf("ERROR: not enough arguments\n");
-                continue;                
+                continue;
             }
             if ((myargv = (char **) malloc((argc + 1) *
                                            sizeof(char *))) == NULL) {
@@ -519,7 +520,7 @@ int main(
             if ((argc = CreateArgs(argv[0], aLine, myargv)) < 0) {
                 printf("ERROR: creating arguments\n");
             } else {
-                if ( HandleInputLine(argc, myargv, stdout) == 0 ){
+                if (HandleInputLine(argc, myargv, stdout) == 0) {
 #ifdef HAVE_GETRUSAGE
                     getrusage(RUSAGE_SELF, &myusage);
                     gettimeofday(&currenttime, NULL);
@@ -575,14 +576,13 @@ static int HandleInputLine(
             }
             exit(0);
         }
-/* MinGW-w64 has not got getuid() and only 1 argument for mkdir() */
-#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR) && defined(HAVE_SYS_STAT_H) && !defined(__MINGW32__)
+#if defined(HAVE_OPENDIR) && defined(HAVE_READDIR) && defined(HAVE_CHDIR) && defined(HAVE_SYS_STAT_H)
         if (argc > 1 && strcmp("cd", argv[1]) == 0) {
             if (argc != 3) {
                 printf("ERROR: invalid parameter count for cd\n");
                 return (1);
             }
-#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
+#if ! defined(HAVE_CHROOT) && defined(HAVE_GETUID)
             if (getuid() == 0 && !ChangeRoot) {
                 printf
                     ("ERROR: chdir security problem - rrdtool is running as "
@@ -590,14 +590,15 @@ static int HandleInputLine(
                 return (1);
             }
 #endif
-            if (chdir(argv[2]) != 0){
+            if (chdir(argv[2]) != 0) {
                 printf("ERROR: chdir %s %s\n", argv[2], rrd_strerror(errno));
                 return (1);
             }
             return (0);
         }
         if (argc > 1 && strcmp("pwd", argv[1]) == 0) {
-            char     *cwd;      /* To hold current working dir on call to pwd */
+            char     *cwd;  /* To hold current working dir on call to pwd */
+
             if (argc != 2) {
                 printf("ERROR: invalid parameter count for pwd\n");
                 return (1);
@@ -622,7 +623,7 @@ static int HandleInputLine(
                 printf("ERROR: invalid parameter count for mkdir\n");
                 return (1);
             }
-#if ! defined(HAVE_CHROOT) || ! defined(HAVE_GETUID)
+#if ! defined(HAVE_CHROOT) && defined(HAVE_GETUID)
             if (getuid() == 0 && !ChangeRoot) {
                 printf
                     ("ERROR: mkdir security problem - rrdtool is running as "
@@ -630,8 +631,8 @@ static int HandleInputLine(
                 return (1);
             }
 #endif
-            if(mkdir(argv[2], 0777)!=0){
-                printf("ERROR: mkdir %s: %s\n", argv[2],rrd_strerror(errno));
+            if (mkdir(argv[2], 0777) != 0) {
+                printf("ERROR: mkdir %s: %s\n", argv[2], rrd_strerror(errno));
                 return (1);
             }
             return (0);
@@ -643,6 +644,7 @@ static int HandleInputLine(
             }
             if ((curdir = opendir(".")) != NULL) {
                 struct stat st;
+
                 while ((dent = readdir(curdir)) != NULL) {
                     if (!stat(dent->d_name, &st)) {
                         if (S_ISDIR(st.st_mode)) {
@@ -685,34 +687,32 @@ static int HandleInputLine(
         rrd_info_t *data;
 
         if (strcmp("info", argv[1]) == 0)
-
             data = rrd_info(argc - 1, &argv[1]);
         else
             data = rrd_update_v(argc - 1, &argv[1]);
         rrd_info_print(data);
         rrd_info_free(data);
-    }
-    else if (strcmp("list", argv[1]) == 0) {
-        char *list;
+    } else if (strcmp("list", argv[1]) == 0) {
+        char     *list;
+
         list = rrd_list(argc - 1, &argv[1]);
 
-	if (list) {
-	  printf("%s", list);
-	  free(list);
-	}
-    }
-    else if (strcmp("--version", argv[1]) == 0 ||
-             strcmp("version", argv[1]) == 0 ||
-             strcmp("v", argv[1]) == 0 ||
-             strcmp("-v", argv[1]) == 0 || strcmp("-version", argv[1]) == 0)
+        if (list) {
+            printf("%s", list);
+            free(list);
+        }
+    } else if (strcmp("--version", argv[1]) == 0 ||
+               strcmp("version", argv[1]) == 0 ||
+               strcmp("v", argv[1]) == 0 ||
+               strcmp("-v", argv[1]) == 0 || strcmp("-version", argv[1]) == 0)
         printf("RRDtool " PACKAGE_VERSION
-               "  Copyright by Tobi Oetiker (%f)\n",
-               rrd_version());
+               "  Copyright by Tobi Oetiker (%f)\n", rrd_version());
     else if (strcmp("restore", argv[1]) == 0)
 #ifdef HAVE_RRD_RESTORE
         rrd_restore(argc - 1, &argv[1]);
 #else
-	rrd_set_error("the instance of rrdtool has been compiled without XML import functions");
+        rrd_set_error
+            ("the instance of rrdtool has been compiled without XML import functions");
 #endif
     else if (strcmp("resize", argv[1]) == 0)
         rrd_resize(argc - 1, &argv[1]);
@@ -763,15 +763,17 @@ static int HandleInputLine(
         }
     } else if (strcmp("xport", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
-      time_t    start, end;
-      unsigned long step, col_cnt;
-      rrd_value_t *data;
-      char    **legend_v;
-      rrd_xport
-	(argc - 1, &argv[1], NULL, &start, &end, &step, &col_cnt,
-	 &legend_v, &data);
+        time_t    start, end;
+        unsigned long step, col_cnt;
+        rrd_value_t *data;
+        char    **legend_v;
+
+        rrd_xport
+            (argc - 1, &argv[1], NULL, &start, &end, &step, &col_cnt,
+             &legend_v, &data);
 #else
-        rrd_set_error("the instance of rrdtool has been compiled without graphics");
+        rrd_set_error
+            ("the instance of rrdtool has been compiled without graphics");
 #endif
     } else if (strcmp("graph", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
@@ -809,7 +811,8 @@ static int HandleInputLine(
         }
 
 #else
-       rrd_set_error("the instance of rrdtool has been compiled without graphics");
+        rrd_set_error
+            ("the instance of rrdtool has been compiled without graphics");
 #endif
     } else if (strcmp("graphv", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
@@ -821,7 +824,8 @@ static int HandleInputLine(
             rrd_info_free(grinfo);
         }
 #else
-       rrd_set_error("the instance of rrdtool has been compiled without graphics");
+        rrd_set_error
+            ("the instance of rrdtool has been compiled without graphics");
 #endif
     } else if (strcmp("tune", argv[1]) == 0)
         rrd_tune(argc - 1, &argv[1]);
