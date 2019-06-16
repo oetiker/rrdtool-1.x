@@ -564,7 +564,7 @@ static int find_first_weekday(void){
         }
         first_weekday=(week_1stday + first_weekday - 1) % 7;
 #else
-        first_weekday = 1;
+        first_weekday = 0;
 #endif
     }
     return first_weekday;
