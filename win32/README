@@ -1,10 +1,15 @@
-Win32 Build Instructions:
+Win32 Build Instructions (using nmake Makefile):
 
 1) See build-rrdtool.dot (build-rrdtool.svg or build-rrdtool.pdf) for build
    dependency.
 
-2) If you do not want to build the build-dependencies, you can download prebuilt
-   versions from the following address:
+2) An efficient way, to obtain up-to-date build-dependencies, is using vcpkg.
+   Install the headers and libraries the following way into the vcpkg directory:
+   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x86-windows
+   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x64-windows
+
+   If you do not want to build the build-dependencies, you can download prebuilt
+   (but in the meantime outdated) versions from the following address:
 
    32bit dependencies should then be extracted into the contrib directory:
    http://ftp.gnome.org/pub/gnome/binaries/win32/
@@ -19,12 +24,15 @@ Win32 Build Instructions:
    from the following address:
    http://msinttypes.googlecode.com/svn/trunk/stdint.h
 
-4) Adjust the include path, library path, and library names which in the
-   Makefile.msc, to correspond with your local path or names.
+4) Adjust the include path, library path, and library names found in
+   Makefile_vcpkg.msc or Makefile.msc, to correspond to your local path or names.
 
-5) Run 'nmake -f win32\Makefile.msc' for 32 bit Windows target,
-   Run 'nmake -f win32\Makefile.msc USE_64BIT=1' for 64 bit Windows target.
-   Run 'nmake -f win32\Makefile.msc clean' to remove all generated files.
+5) Run 'nmake -f win32\Makefile_vcpkg.msc' for 32 bit Windows target,
+   Run 'nmake -f win32\Makefile_vcpkg.msc USE_64BIT=1' for 64 bit Windows target.
+   Run 'nmake -f win32\Makefile_vcpkg.msc clean' to remove all generated files.
+
+   If you use headers and libraries in the contrib or the contrib-x64 folder,
+   use Makefile.msc instead of Makefile_vcpkg.msc in the three commands above.
 
 6) librrd-4.dll, librrd-4.lib, rrdtool.exe, rrdupdate.exe, rrdcgi.exe, and
    these corresponding pdb files will be located in the win32 directory.

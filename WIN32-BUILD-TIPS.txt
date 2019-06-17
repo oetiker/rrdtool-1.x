@@ -6,6 +6,28 @@ Compiling RRDtool on Win32 with Microsoft Visual C++:
 
 Here are step by step instructions for building librrd-4.dll and rrdtool.exe
 version 1.4.5 and newer with Microsoft Visual Studio 2013 (12.0.x) and newer.
+I you would like to build RRDtool using MinGW-w64, please have a look at
+win32/README-MinGW-w64
+
+# Installation of up-to-date, required third party headers and libraries
+
+An efficient way, to obtain headers and libraries required by RRDtool is using vcpkg from:
+https://github.com/microsoft/vcpkg
+
+(1) Follow the vcpkg installation instructions found in README.md and clone vcpkg e.g. to a folder named "vcpkg"
+    in the top directory of rrdtool.
+    cd vcpkg
+
+(2) Install the headers and libraries the following way for 32-bit or 64-bit:
+    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x86-windows
+    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x64-windows
+
+Information, how to compile using nmake, can be found here: win32/README
+
+# Legacy instructions
+
+Libraries mentioned in the section below are outdated and not updated any more.
+However, the described procedure still works.
 
 (1) Create a folder named "contrib" in the directory where this text file is located.
 

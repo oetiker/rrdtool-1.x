@@ -68,6 +68,7 @@ Makefile
 /bindings/dotnet/*.suo
 /contrib
 /contrib-x64
+/vcpkg
 /win32/*.VC.db
 /win32/*.VC.opendb
 /win32/*.opensdf
