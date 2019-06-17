@@ -13,10 +13,15 @@
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>    /* for GetLocaleInfoEx */
+#endif
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
 // #include "rrd_graph.h"
+
+/* #define DEBUG */
 
 static short addop2str(
     enum op_en op,
@@ -567,13 +572,25 @@ static int find_first_weekday(
             week_1stday = 1;    /* Mon */
         else {
             first_weekday = 1;
-            return first_weekday;   /* we go for a monday default */
+            return first_weekday;   /* we go for a Monday default */
         }
         first_weekday = (week_1stday + first_weekday - 1) % 7;
+#elif defined(_WIN32) && defined(LOCALE_NAME_USER_DEFAULT)
+        const char wsDay[4];    /* sscanf requires const char */
+
+        GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK,
+                        (LPWSTR) & wsDay, 4);
+        sscanf(wsDay, "%d", &first_weekday);
+        /* 0:Monday, ..., 6:Sunday. */
+        /* We need 1 for Monday, 0 for Sunday. */
+        first_weekday = (first_weekday + 1) % 7;
 #else
         first_weekday = 0;
 #endif
     }
+#ifdef DEBUG
+    printf("first_weekday = %d\n", first_weekday);
+#endif
     return first_weekday;
 }
 

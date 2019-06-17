@@ -45,6 +45,7 @@
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
+#include <windows.h>    /* for GetLocaleInfoEx */
 #endif
 
 #include <time.h>
@@ -1564,13 +1565,25 @@ static int find_first_weekday(
             week_1stday = 1;    /* Mon */
         else {
             first_weekday = 1;
-            return first_weekday;   /* we go for a monday default */
+            return first_weekday;   /* we go for a Monday default */
         }
         first_weekday = (week_1stday + first_weekday - 1) % 7;
+#elif defined(_WIN32) && defined(LOCALE_NAME_USER_DEFAULT)
+        const char wsDay[4];    /* sscanf requires const char */
+
+        GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK,
+                        (LPWSTR) & wsDay, 4);
+        sscanf(wsDay, "%d", &first_weekday);
+        /* 0:Monday, ..., 6:Sunday. */
+        /* We need 1 for Monday, 0 for Sunday. */
+        first_weekday = (first_weekday + 1) % 7;
 #else
         first_weekday = 0;
 #endif
     }
+#ifdef DEBUG
+    printf("first_weekday = %d\n", first_weekday);
+#endif
     return first_weekday;
 }
 
