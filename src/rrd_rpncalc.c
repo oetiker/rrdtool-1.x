@@ -576,14 +576,15 @@ static int find_first_weekday(
         }
         first_weekday = (week_1stday + first_weekday - 1) % 7;
 #elif defined(_WIN32) && defined(LOCALE_NAME_USER_DEFAULT)
-        const char wsDay[4];    /* sscanf requires const char */
+        DWORD     week_1stday;
 
-        GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IFIRSTDAYOFWEEK,
-                        (LPWSTR) & wsDay, 4);
-        sscanf(wsDay, "%d", &first_weekday);
+        GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
+                        LOCALE_IFIRSTDAYOFWEEK | LOCALE_RETURN_NUMBER,
+                        (LPWSTR) & week_1stday,
+                        sizeof(week_1stday) / sizeof(WCHAR));
         /* 0:Monday, ..., 6:Sunday. */
         /* We need 1 for Monday, 0 for Sunday. */
-        first_weekday = (first_weekday + 1) % 7;
+        first_weekday = (week_1stday + 1) % 7;
 #else
         first_weekday = 0;
 #endif
