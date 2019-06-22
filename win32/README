@@ -34,7 +34,7 @@ Win32 Build Instructions (using nmake Makefile):
    If you use headers and libraries in the contrib or the contrib-x64 folder,
    use Makefile.msc instead of Makefile_vcpkg.msc in the three commands above.
 
-6) librrd-4.dll, librrd-4.lib, rrdtool.exe, rrdupdate.exe, rrdcgi.exe, and
+6) librrd-8.dll, librrd-8.lib, rrdtool.exe, rrdupdate.exe, rrdcgi.exe, and
    these corresponding pdb files will be located in the win32 directory.
 
 7) To install, copy these files which you required to their permanent location.

@@ -24,7 +24,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CC158E1D-1364-43CA-9B2D-4AF54225C7CA}</ProjectGuid>
-    <RootNamespace>librrd-4</RootNamespace>
+    <RootNamespace>librrd-8</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -107,7 +107,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(IntDir)librrd-4.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)librrd-8.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
@@ -129,7 +129,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(IntDir)librrd-4.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)librrd-8.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>None</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
@@ -150,7 +150,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(IntDir)librrd-4.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)librrd-8.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
@@ -159,7 +159,7 @@
     <Link>
       <AdditionalDependencies>cairo.lib;glib-2.0.lib;gobject-2.0.lib;libpng.lib;libxml2.lib;pango-1.0.lib;pangocairo-1.0.lib;gthread-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../contrib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>librrd-4.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>librrd-8.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -177,7 +177,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <ProgramDataBaseFileName>$(IntDir)librrd-4.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)librrd-8.pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;gthread-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -195,7 +195,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
-      <ProgramDataBaseFileName>$(IntDir)librrd-4.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)librrd-8.pdb</ProgramDataBaseFileName>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
@@ -205,7 +205,7 @@
     <Link>
       <AdditionalDependencies>cairo.lib;glib-2.0.lib;gobject-2.0.lib;libpng.lib;libxml2.lib;pango-1.0.lib;ws2_32.lib;pangocairo-1.0.lib;gthread-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../contrib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <ModuleDefinitionFile>librrd-4.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>librrd-8.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -287,7 +287,7 @@
     <ClInclude Include="win32-glob.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="librrd-4.def" />
+    <None Include="librrd-8.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

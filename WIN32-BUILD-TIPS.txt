@@ -4,7 +4,7 @@ Compiling RRDtool on Win32 with Microsoft Visual C++:
 2010-06-04 Chris Larsen clarsen@euphoriaaudio.com
 2008-03-12 Stefan Ludewig stefan.ludewig@exitgames.com
 
-Here are step by step instructions for building librrd-4.dll and rrdtool.exe
+Here are step by step instructions for building librrd-8.dll and rrdtool.exe
 version 1.4.5 and newer with Microsoft Visual Studio 2013 (12.0.x) and newer.
 I you would like to build RRDtool using MinGW-w64, please have a look at
 win32/README-MinGW-w64
@@ -64,7 +64,7 @@ However, the described procedure still works.
     etc folders.
 
 (4) Open the Visual Studio 2013 Solution "rrd.sln" in the win32 folder of
-    your rrdtool-folder and build either the project librrd-4 (for the
+    your rrdtool-folder and build either the project librrd-8 (for the
     rrdtool-library), rrdtool (for the rrdtool-executable depending on the
     library) or the complete solution. A post-build event automatically copies
     all the dlls, needed by rrdtool, next to the .exe, when you build the

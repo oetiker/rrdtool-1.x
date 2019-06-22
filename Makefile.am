@@ -21,7 +21,7 @@ EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              libtool .indent.pro \
              m4/snprintf.m4 \
              win32/build-rrdtool.dot win32/build-rrdtool.pdf win32/build-rrdtool.svg \
-             win32/librrd-4.def win32/librrd-4.rc win32/librrd-4.vcxproj \
+             win32/librrd-8.def win32/librrd-8.rc win32/librrd-8.vcxproj \
              win32/Makefile.msc win32/README win32/README-MinGW-w64 win32/rrdcgi.rc win32/rrd_config.h \
              win32/rrd.sln win32/rrdtool.rc win32/rrdtool.sln win32/rrdtool.vcxproj win32/rrdupdate.rc \
              win32/rrdupdate.sln win32/rrdupdate.vcxproj win32/uac.manifest \
