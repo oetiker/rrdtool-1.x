@@ -8,7 +8,7 @@
 # The toplevel directory of the source tree
 #
 TOP = .
-RRD_LIB_NAME=librrd-4
+RRD_LIB_NAME=librrd-8
 ARCH_PATH_X86=vcpkg\installed\x86-windows
 ARCH_PATH_X64=vcpkg\installed\x64-windows
 

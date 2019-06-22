@@ -24,8 +24,8 @@ BEGIN
       VALUE "ProductName", "RRDtool"
       VALUE "FileVersion", PACKAGE_VERSION
       VALUE "ProductVersion", PACKAGE_VERSION
-      VALUE "OriginalFilename", "librrd-4.dll"
-      VALUE "InternalName", "librrd-4.dll"
+      VALUE "OriginalFilename", "librrd-8.dll"
+      VALUE "InternalName", "librrd-8.dll"
     END
   END
   BLOCK "VarFileInfo"

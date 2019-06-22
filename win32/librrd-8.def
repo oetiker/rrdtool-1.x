@@ -1,4 +1,4 @@
-LIBRARY "librrd-4.dll"
+LIBRARY "librrd-8.dll"
 EXPORTS
 rrd_add_ptr
 rrd_add_ptr_chunk

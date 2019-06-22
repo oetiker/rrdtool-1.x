@@ -93,7 +93,7 @@ namespace dnrrdlib
     public class rrd
     {
         // Set this path to the location of your "rrdlib.dll" file
-        const string dll = @"librrd-4.dll";
+        const string dll = @"librrd-8.dll";
 
         // IMPORTS - Main methods
         [DllImport(dll)] static extern Int32 rrd_create(Int32 argc, string[] argv);
