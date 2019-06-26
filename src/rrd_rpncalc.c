@@ -1253,16 +1253,17 @@ short rpn_calc(
                     }
                 }
 
+                /* when goodvals and badvals meet, they might have met on a
+                 * NAN, which wouldn't decrease final_elements. so, check
+                 * that now. */
+                if (isnan(*goodvals))
+                    --final_elements;
+
                 stptr -= elements;
                 if (!final_elements) {
                     /* no non-NAN elements; push NAN */
                     rpnstack->s[++stptr] = DNAN;
                 } else {
-                    /* when goodvals and badvals meet, they might have met on a
-                     * NAN, which wouldn't decrease final_elements. so, check
-                     * that now. */
-                    if (isnan(*goodvals))
-                        --final_elements;
                     /* and finally, take the median of the remaining non-NAN
                      * elements. */
                     qsort(element_ptr, final_elements, sizeof(double),
