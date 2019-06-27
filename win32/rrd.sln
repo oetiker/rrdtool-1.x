@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrdtool", "rrdtool.vcxproj"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrdupdate", "rrdupdate.vcxproj", "{3AAE1E07-78D7-420D-968B-D2087D732D3B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rrdcgi", "rrdcgi.vcxproj", "{87299711-CA4F-418B-A166-61D1EA021CAE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -75,6 +77,22 @@ Global
 		{3AAE1E07-78D7-420D-968B-D2087D732D3B}.Static Debug|Win32.Build.0 = Static Debug|Win32
 		{3AAE1E07-78D7-420D-968B-D2087D732D3B}.Static Debug|x64.ActiveCfg = Static Debug|x64
 		{3AAE1E07-78D7-420D-968B-D2087D732D3B}.Static Debug|x64.Build.0 = Static Debug|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Debug|Win32.Build.0 = Debug|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Debug|x64.ActiveCfg = Debug|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Debug|x64.Build.0 = Debug|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.DebugDLL|Win32.ActiveCfg = Debug|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.DebugDLL|x64.ActiveCfg = Debug|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Release|Win32.ActiveCfg = Release|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Release|Win32.Build.0 = Release|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Release|x64.ActiveCfg = Release|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Release|x64.Build.0 = Release|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.ReleaseDLL|Win32.ActiveCfg = Release|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.ReleaseDLL|x64.ActiveCfg = Release|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Static Debug|Win32.ActiveCfg = Static Debug|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Static Debug|Win32.Build.0 = Static Debug|Win32
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Static Debug|x64.ActiveCfg = Static Debug|x64
+		{87299711-CA4F-418B-A166-61D1EA021CAE}.Static Debug|x64.Build.0 = Static Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
