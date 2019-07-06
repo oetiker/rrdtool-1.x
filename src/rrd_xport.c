@@ -432,6 +432,10 @@ int rrd_graph_xport(
 
     /* do the data processing */
     if (rrd_xport_fn(im, &start, &end, &step, &col_cnt, &legend_v, &data, 1)) {
+        /* close the file */
+        if (buffer.file) {
+            fclose(buffer.file);
+        }
         return -1;
     }
 
