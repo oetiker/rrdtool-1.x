@@ -969,9 +969,7 @@ static graph_desc_t *newGraphDescription(
             }
             dprintfparsed("got positional vname and rrd: %s - %s\n",
                           first->key, first->value);
-            if (!vname) {
-                vname = first->value;
-            }
+            vname = first->value;
         }
     }
 
