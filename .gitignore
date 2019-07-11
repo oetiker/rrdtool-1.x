@@ -38,6 +38,9 @@ Makefile
 /src/rrd_config.h
 /src/stamp-h1
 
+# Build EAR (BEAR) compilation database file
+compile_commands.json
+
 # po
 /ABOUT-NLS
 /po/*
