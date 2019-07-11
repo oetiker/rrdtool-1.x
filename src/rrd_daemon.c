@@ -2399,13 +2399,15 @@ static int handle_request_create(
                 rc = syntax_error(sock, cmd);
                 goto done;
             }
-            sources = realloc(sources, sizeof(char *) * (sources_length + 2));
-            if (sources == NULL) {
+            char    **sources_tmp =
+                realloc(sources, sizeof(char *) * (sources_length + 2));
+            if (sources_tmp == NULL) {
                 rc = send_response(sock, RESP_ERR,
                                    "Cannot allocate memory\n");
                 goto done;
             }
 
+            sources = sources_tmp;
             flush_file(tok);
 
             sources[sources_length++] = tok;

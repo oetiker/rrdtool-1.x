@@ -955,12 +955,13 @@ int rrd_create_r2(
             parseDS(argv[i] + 3, rrd.ds_def + rrd.stat_head->ds_cnt,
                     &rrd, lookup_DS, &m, &require_version);
 
-            mappings =
+            mapping_t *mappings_tmp =
                 realloc(mappings, sizeof(mapping_t) * (mappings_cnt + 1));
-            if (!mappings) {
+            if (!mappings_tmp) {
                 rrd_set_error("allocating mappings");
                 goto done;
             }
+            mappings = mappings_tmp;
             memcpy(mappings + mappings_cnt, &m, sizeof(mapping_t));
             mappings_cnt++;
 
@@ -2448,14 +2449,16 @@ static candidate_t *find_matching_candidates(
                                (void *) target);
                 }
 
-                candidates = realloc(candidates,
-                                     sizeof(candidate_t) * (cnt +
-                                                            candidate_cnt_for_source));
-                if (candidates == NULL) {
+                candidate_t *candidates_tmp = realloc(candidates,
+                                                      sizeof(candidate_t) *
+                                                      (cnt +
+                                                       candidate_cnt_for_source));
+                if (candidates_tmp == NULL) {
                     rrd_set_error("Cannot realloc memory");
                     free(candidates_for_source);
                     goto done;
                 }
+                candidates = candidates_tmp;
                 memcpy(candidates + cnt,
                        candidates_for_source,
                        sizeof(candidate_t) * candidate_cnt_for_source);
