@@ -389,7 +389,7 @@ int rrd_tune(
 
         for (i = 0; i < (int) rrd.stat_head->ds_cnt; i++)
             if (dst_conv(rrd.ds_def[i].dst) != DST_CDEF) {
-                printf("DS[%s] typ: %s\thbt: %ld\tmin: %1.4f\tmax: %1.4f\n",
+                printf("DS[%s] typ: %s\thbt: %lu\tmin: %1.4f\tmax: %1.4f\n",
                        rrd.ds_def[i].ds_nam,
                        rrd.ds_def[i].dst,
                        rrd.ds_def[i].par[DS_mrhb_cnt].u_cnt,

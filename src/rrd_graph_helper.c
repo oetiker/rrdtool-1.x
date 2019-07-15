@@ -1502,14 +1502,14 @@ static int parse_stack(
 
     for (i = im->gdes_c - 1; (gdp->gf == gf) && (i >= 0); i--) {
         dprintfparsed("trying to process entry %li with type %u\n", i,
-                      im->gdes[i].gf);
+                      (unsigned int) im->gdes[i].gf);
         switch (im->gdes[i].gf) {
         case GF_LINE:
         case GF_AREA:
             gdp->gf = im->gdes[i].gf;
             gdp->linewidth = im->gdes[i].linewidth;
             dprintfparsed("found matching LINE/AREA at %li with type %u\n", i,
-                          im->gdes[i].gf);
+                          (unsigned int) im->gdes[i].gf);
             break;
         default:
             break;
@@ -1692,7 +1692,7 @@ static int parse_gprint(
     }
     dprintf("VNAME : %s (%li)\n", gdp->vname, gdp->vidx);
     if ((int) gdp->cf > -1) {
-        dprintf("CF : (%u)\n", gdp->cf);
+        dprintf("CF : (%u)\n", (unsigned int) gdp->cf);
     }
     dprintf("FORMAT: \"%s\"\n", gdp->legend);
     dprintf("=================================\n");
@@ -1809,7 +1809,7 @@ static int parse_textalign(
     /* debug output */
     dprintf("=================================\n");
     dprintf("TEXTALIGN : %s\n", pa->arg_orig);
-    dprintf("ALIGNMENT : %s (%u)\n", align, gdp->txtalign);
+    dprintf("ALIGNMENT : %s (%u)\n", align, (unsigned int) gdp->txtalign);
     dprintf("=================================\n");
     /* and return */
     return 0;

@@ -53,14 +53,14 @@ static long rrd_fetch_dbi_long(dbi_result *result,int idx) {
       } else if (attr & DBI_INTEGER_SIZE4) { value=dbi_result_get_int_idx(result,idx);
       } else if (attr & DBI_INTEGER_SIZE8) { value=dbi_result_get_longlong_idx(result,idx);
       } else {                               value=DNAN;
-        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %i for type INTEGER\n",time(NULL),idx,attr ); }
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
       }
       break;
     case DBI_TYPE_DECIMAL:
       if        (attr & DBI_DECIMAL_SIZE4) { value=floor(dbi_result_get_float_idx(result,idx));
       } else if (attr & DBI_DECIMAL_SIZE8) { value=floor(dbi_result_get_double_idx(result,idx));
       } else {                               value=DNAN;
-        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %i for type DECIMAL\n",time(NULL),idx,attr ); }
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
       }
       break;
     case DBI_TYPE_BINARY:
@@ -82,7 +82,7 @@ static long rrd_fetch_dbi_long(dbi_result *result,int idx) {
        value=dbi_result_get_datetime_idx(result,idx);
        break;
     default:
-      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %i with attribute %i\n",time(NULL),idx,type,attr ); }
+      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
       value=DNAN;
       break;
   }
@@ -116,14 +116,14 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
       } else if (attr & DBI_INTEGER_SIZE4) { value=dbi_result_get_int_idx(result,idx);
       } else if (attr & DBI_INTEGER_SIZE8) { value=dbi_result_get_longlong_idx(result,idx);
       } else {                               value=DNAN;
-        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %i for type INTEGER\n",time(NULL),idx,attr ); }
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
       }
       break;
     case DBI_TYPE_DECIMAL:
       if        (attr & DBI_DECIMAL_SIZE4) { value=dbi_result_get_float_idx(result,idx);
       } else if (attr & DBI_DECIMAL_SIZE8) { value=dbi_result_get_double_idx(result,idx);
       } else {                               value=DNAN;
-        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %i for type DECIMAL\n",time(NULL),idx,attr ); }
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
       }
       break;
     case DBI_TYPE_BINARY:
@@ -145,7 +145,7 @@ static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
        value=dbi_result_get_datetime_idx(result,idx);
        break;
     default:
-      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %i with attribute %i\n",time(NULL),idx,type,attr ); }
+      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
       value=DNAN;
       break;
   }
