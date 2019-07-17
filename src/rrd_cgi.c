@@ -346,9 +346,7 @@ static void calfree(
         long      i;
 
         for (i = 0; calcpr[i]; i++) {
-            if (calcpr[i]) {
-                free(calcpr[i]);
-            }
+            free(calcpr[i]);
         }
         if (calcpr) {
             free(calcpr);
@@ -525,7 +523,7 @@ int main(
 
     if (!filter) {
         printf("Content-Type: text/html\n"
-               "Content-Length: %zd\n", strlen(buffer));
+               "Content-Length: %zu\n", strlen(buffer));
 
         if (labs(goodfor) > 0) {
             time_t    now;
