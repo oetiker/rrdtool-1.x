@@ -59,13 +59,13 @@ extern    "C" {
 #else
 #ifdef _MSC_VER
 #ifndef PERLPATCHLEVEL
-	typedef int mode_t;
+    typedef int mode_t;
 #endif
-	#define strtoll _strtoi64 
+#define strtoll _strtoi64
 #endif
 #ifndef __MINGW32__     /* MinGW-w64 has ssize_t and off_t */
-	typedef size_t ssize_t;
-	typedef long off_t;
+    typedef size_t ssize_t;
+    typedef long off_t;
 #endif
 #endif
 
@@ -77,10 +77,10 @@ extern    "C" {
 #ifndef DNAN
 # define DNAN rrd_set_to_DNAN()
 #endif
-	
-/* declare opaque data structure, so we can use its pointers for type safety */	
-	
-struct rrd_t;
+
+/* declare opaque data structure, so we can use its pointers for type safety */
+
+    struct rrd_t;
 
 #ifndef DINF
 # define DINF rrd_set_to_DINF()
@@ -98,11 +98,11 @@ struct rrd_t;
 
 /* information about an rrd file */
     typedef struct rrd_file_t {
-        size_t     header_len;   /* length of the header of this rrd file */
-        size_t     file_len; /* total size of the rrd file */
-        size_t     pos;  /* current pos in file */
-        void      *pvt;
-	struct rrd_t *rrd;		/* the corresponding RRD structure, if any */
+        size_t    header_len;   /* length of the header of this rrd file */
+        size_t    file_len; /* total size of the rrd file */
+        size_t    pos;  /* current pos in file */
+        void     *pvt;
+        struct rrd_t *rrd;  /* the corresponding RRD structure, if any */
 #ifdef HAVE_LIBRADOS
         struct rrd_rados_t *rados;
 #endif
@@ -110,7 +110,7 @@ struct rrd_t;
 
 /* information used for the conventional file access methods */
     typedef struct rrd_simple_file_t {
-        int       fd;  /* file descriptor of this rrd file */
+        int       fd;   /* file descriptor of this rrd file */
 #ifdef HAVE_MMAP
         char     *file_start;   /* start address of an open rrd file */
         int       mm_prot;
@@ -146,7 +146,8 @@ struct rrd_t;
         struct rrd_info_t *next;
     } rrd_info_t;
 
-    typedef size_t (* rrd_output_callback_t)(
+    typedef size_t (
+    *rrd_output_callback_t) (
     const void *,
     size_t,
     void *);
@@ -164,11 +165,15 @@ struct rrd_t;
     rrd_info_type_t,
     rrd_infoval_t);
     void      rrd_info_print(
-    rrd_info_t * data);
+    rrd_info_t *data);
     void      rrd_info_free(
     rrd_info_t *);
-    char      *rrd_list(int, char **);
-    char      *rrd_list_r(int, char *dirname);
+    char     *rrd_list(
+    int,
+    char **);
+    char     *rrd_list_r(
+    int,
+    char *dirname);
     int       rrd_update(
     int,
     char **);
@@ -209,7 +214,9 @@ struct rrd_t;
     time_t    rrd_last(
     int,
     char **);
-    int rrd_lastupdate(int argc, char **argv);
+    int       rrd_lastupdate(
+    int argc,
+    char **argv);
     time_t    rrd_first(
     int,
     char **);
@@ -230,7 +237,9 @@ struct rrd_t;
     unsigned long *,
     char ***,
     rrd_value_t **);
-    int       rrd_flushcached (int argc, char **argv);
+    int       rrd_flushcached(
+    int argc,
+    char **argv);
 
     void      rrd_freemem(
     void *mem);
@@ -267,7 +276,7 @@ struct rrd_t;
     const char *_template,
     int argc,
     const char **argv,
-    rrd_info_t * pcdp_summary);
+    rrd_info_t *pcdp_summary);
 
 /* extra flags */
 #define RRD_SKIP_PAST_UPDATES 0x01
@@ -284,33 +293,36 @@ struct rrd_t;
     int extra_flags,
     int argc,
     const char **argv,
-    rrd_info_t * pcdp_summary);
-    int rrd_fetch_r (
-            const char *filename,
-            const char *cf,
-            time_t *start,
-            time_t *end,
-            unsigned long *step,
-            unsigned long *ds_cnt,
-            char ***ds_namv,
-            rrd_value_t **data);
-    int rrd_dump_opt_r(const char *filename,
-                       char *outname,
-                       int opt_noheader);
+    rrd_info_t *pcdp_summary);
+    int       rrd_fetch_r(
+    const char *filename,
+    const char *cf,
+    time_t *start,
+    time_t *end,
+    unsigned long *step,
+    unsigned long *ds_cnt,
+    char ***ds_namv,
+    rrd_value_t **data);
+    int       rrd_dump_opt_r(
+    const char *filename,
+    char *outname,
+    int opt_noheader);
     int       rrd_dump_r(
     const char *filename,
     char *outname);
-    time_t    rrd_last_r (const char *filename);
-    int rrd_lastupdate_r (const char *filename,
-            time_t *ret_last_update,
-            unsigned long *ret_ds_count,
-            char ***ret_ds_names,
-            char ***ret_last_ds);
+    time_t    rrd_last_r(
+    const char *filename);
+    int       rrd_lastupdate_r(
+    const char *filename,
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds);
     time_t    rrd_first_r(
     const char *filename,
     const int rraindex);
 
-    int rrd_dump_cb_r(
+    int       rrd_dump_cb_r(
     const char *filename,
     int opt_header,
     rrd_output_callback_t cb,
@@ -334,7 +346,7 @@ struct rrd_t;
 
     char     *rrd_parsetime(
     const char *spec,
-    rrd_time_value_t * ptv);
+    rrd_time_value_t *ptv);
 /* END rrd_parsetime.h */
 
     typedef struct rrd_context {
@@ -343,14 +355,16 @@ struct rrd_t;
     } rrd_context_t;
 
 /* returns the current per-thread rrd_context */
-    rrd_context_t *rrd_get_context(void);
+    rrd_context_t *rrd_get_context(
+    void);
 
 #ifdef _WIN32
 /* this was added by the win32 porters Christof.Wegmann@exitgames.com */
-    rrd_context_t *rrd_force_new_context(void);
+    rrd_context_t *rrd_force_new_context(
+    void);
 #endif
 
-int       rrd_proc_start_end(
+    int       rrd_proc_start_end(
     rrd_time_value_t *,
     rrd_time_value_t *,
     time_t *,
@@ -377,7 +391,7 @@ int       rrd_proc_start_end(
     rrd_context_t *rrd_new_context(
     void);
     void      rrd_free_context(
-    rrd_context_t * buf);
+    rrd_context_t *buf);
 
 /* void   rrd_set_error_r  (rrd_context_t *, char *, ...); */
 /* void   rrd_clear_error_r(rrd_context_t *); */
@@ -386,22 +400,43 @@ int       rrd_proc_start_end(
 
 /** UTILITY FUNCTIONS */
 
-    long rrd_random(void);
+    long      rrd_random(
+    void);
 
-    int rrd_add_ptr_chunk(void ***dest, size_t *dest_size, void *src,
-                          size_t *alloc, size_t chunk);
-    int rrd_add_ptr(void ***dest, size_t *dest_size, void *src);
-    int rrd_add_strdup(char ***dest, size_t *dest_size, char *src);
-    int rrd_add_strdup_chunk(char ***dest, size_t *dest_size, char *src,
-                             size_t *alloc, size_t chunk);
-    void rrd_free_ptrs(void ***src, size_t *cnt);
+    int       rrd_add_ptr_chunk(
+    void ***dest,
+    size_t *dest_size,
+    void *src,
+    size_t *alloc,
+    size_t chunk);
+    int       rrd_add_ptr(
+    void ***dest,
+    size_t *dest_size,
+    void *src);
+    int       rrd_add_strdup(
+    char ***dest,
+    size_t *dest_size,
+    char *src);
+    int       rrd_add_strdup_chunk(
+    char ***dest,
+    size_t *dest_size,
+    char *src,
+    size_t *alloc,
+    size_t chunk);
+    void      rrd_free_ptrs(
+    void ***src,
+    size_t *cnt);
 
-    int rrd_mkdir_p(const char *pathname, mode_t mode);
+    int       rrd_mkdir_p(
+    const char *pathname,
+    mode_t mode);
 
-    const char * rrd_scaled_duration (const char * token,
-                                      unsigned long divisor,
-                                      unsigned long * valuep);
-    void rrd_thread_init(void);
+    const char *rrd_scaled_duration(
+    const char *token,
+    unsigned long divisor,
+    unsigned long *valuep);
+    void      rrd_thread_init(
+    void);
 
 /*
  * The following functions are _internal_ functions needed to read the raw RRD
@@ -428,7 +463,7 @@ int       rrd_proc_start_end(
 #else
 # define RRD_DEPRECATED          /**/
 #endif
-     void     rrd_free(
+    void      rrd_free(
     rrd_t *rrd)
               RRD_DEPRECATED;
     void      rrd_init(
@@ -481,13 +516,11 @@ int       rrd_proc_start_end(
     unsigned long rrd_select_initial_row(
     rrd_file_t *rrd_file,
     int rra_idx,
-    rra_def_t *rra
-    )
+    rra_def_t *rra)
               RRD_DEPRECATED;
 #endif                  /* defined(_RRD_TOOL_H) || defined(RRD_EXPORT_DEPRECATED) */
 
 #ifdef  __cplusplus
 }
 #endif
-
-#endif /* RRDLIB_H */
+#endif                  /* RRDLIB_H */
