@@ -255,7 +255,7 @@ int rrd_resize(
         if ((b_read=rrd_read(rrd_file, &buffer, sizeof(rrd_value_t) * 1)) <= 0)
             break;
         if(rrd_out_file->pos+b_read > rrd_out_file->file_len) {
-            fprintf(stderr,"WARNING: ignoring last %zu bytes\nWARNING: if you see this message multiple times for a single file you're in trouble\n", b_read);
+            fprintf(stderr,"WARNING: ignoring last %zd bytes\nWARNING: if you see this message multiple times for a single file you're in trouble\n", b_read);
             continue;
         }
         rrd_write(rrd_out_file, &buffer, b_read);

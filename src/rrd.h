@@ -56,16 +56,16 @@ extern    "C" {
 
 #ifndef _WIN32
 #include <unistd.h>     /* for off_t */
-#else
+#endif
+
 #ifdef _MSC_VER
+#include <BaseTsd.h>
+    typedef SSIZE_T ssize_t;
 #ifndef PERLPATCHLEVEL
     typedef int mode_t;
 #endif
+#if _MSC_VER < 1800
 #define strtoll _strtoi64
-#endif
-#ifndef __MINGW32__     /* MinGW-w64 has ssize_t and off_t */
-    typedef size_t ssize_t;
-    typedef long off_t;
 #endif
 #endif
 
