@@ -72,7 +72,7 @@ glob(
     size_t len;
     unsigned entries = 0;
     WIN32_FIND_DATAA finddata;
-    HANDLE hfindfile = FindFirstFileA(pattern, &finddata);
+    HANDLE hfindfile;
 
     if (!pattern || flags != (flags & GLOB_FLAGS) || unused || !pglob)
     {
@@ -93,6 +93,7 @@ glob(
         len--;
     path[len] = 0;
 
+    hfindfile = FindFirstFileA(pattern, &finddata);
     if (hfindfile == INVALID_HANDLE_VALUE)
     {
         if (flags & GLOB_NOCHECK)
