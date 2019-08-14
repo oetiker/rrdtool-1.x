@@ -144,7 +144,7 @@ sub main (){
     mkdir "db-$$" or die $!;
     chdir "db-$$";
 
-    my $step = $Chunk; # number of rrds to creat for every round
+    my $step = $Chunk; # number of rrds to create for every round
     
     my @path;
     my $time=int(time);

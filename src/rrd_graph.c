@@ -1320,7 +1320,7 @@ int data_calc(
 }
 
 /* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
-/* yes we are loosing precision by doing tos with floats instead of doubles
+/* yes we are losing precision by doing tos with floats instead of doubles
    but it seems more stable this way. */
 
 static int AlmostEqual2sComplement(
@@ -3234,7 +3234,7 @@ int grid_paint(
                 return -1;
         }
 
-        /* dont draw horizontal grid if there is no min and max val */
+        /* don't draw horizontal grid if there is no min and max val */
         if (!res) {
             char     *nodata = "No Data found";
 
@@ -3581,7 +3581,7 @@ int graph_size_location(
     }
 
     if (im->title && im->title[0] != '\0') {
-        /* The title is placed "inbetween" two text lines so it
+        /* The title is placed "in between" two text lines so it
          ** automatically has some vertical spacing.  The horizontal
          ** spacing is added here, on each side.
          */
@@ -6369,7 +6369,7 @@ image_title_t graph_title_split(
                 }
         }
 
-        // We previous found a delimitor so lets null terminate it
+        // We previous found a delimiter so lets null terminate it
         if (found_pos)
             *found_pos = '\0';
 
@@ -6382,7 +6382,7 @@ image_title_t graph_title_split(
             consumed = found_pos;
         }
 
-        // move the consumed pointer past any delimitor, so we can loop around again
+        // move the consumed pointer past any delimiter, so we can loop around again
         consumed = consumed + found_size;
     }
     // must not create more than MAX lines, so must stop splitting
