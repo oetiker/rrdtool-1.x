@@ -41,7 +41,7 @@ $RRDTOOL create ${BUILD}.rrd --start 1548500640 --step 60 \
 
 report "create" 
 
-declare -a UPDATE_LIST=("1548500700:0:0:0"       # Initalize PDP with 0
+declare -a UPDATE_LIST=("1548500700:0:0:0"       # Initialize PDP with 0
                         "1548500760:1:60:60"     # 1.0 steps value 1
                         "1548500790:0:60:0"      # 0.5 steps value 0
                         "1548501000:1:270:210"   # 3.5 steps value 1

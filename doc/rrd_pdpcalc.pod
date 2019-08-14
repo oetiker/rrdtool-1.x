@@ -18,7 +18,7 @@ L<http://rrdtool.vandenbogaerdt.nl/process.php> - By Alex van den Bogaerdt. This
 
 L<https://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html> - This one is on the official site. Actually it's the manual page for "rrdcreate", and it reveals what's under the hood with regard to PDP calculation in its "The HEARTBEAT and the STEP" section.
 
-The text graph by Don Baarda provides a vivid explanation on how B<UNKOWN> data are produced and how heartbeat value can influence in the sampling. Unfortunately, it fails to give a clear method by which PDPs are calculated.
+The text graph by Don Baarda provides a vivid explanation on how B<UNKNOWN> data are produced and how heartbeat value can influence in the sampling. Unfortunately, it fails to give a clear method by which PDPs are calculated.
 
 L<https://oss.oetiker.ch/rrdtool/tut/rrdtutorial.en.html> - Another detailed official tutorial by Alex van den Bogaerdt. Similarly, it only provides examples with data evenly and exactly distributed according to the step set.
 

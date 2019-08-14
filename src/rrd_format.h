@@ -54,7 +54,7 @@ typedef union unival {
  * ds - Data Source (ds) providing input to the database. A Data Source (ds)
  *       can be a traffic counter, a temperature, the number of users logged
  *       into a system. The rrd database format can handle the input of
- *       several Data Sources (ds) in a singe database.
+ *       several Data Sources (ds) in a single database.
  *  
  * dst - Data Source Type (dst). The Data Source Type (dst) defines the rules
  *       applied to Build Primary Data Points from the input provided by the

@@ -1393,7 +1393,7 @@ static int get_time_from_reading(
         *current_time = floor(tmp);
         *current_time_usec = (long) ((tmp - (double) *current_time) * 1e6f);
     }
-    /* dont do any correction for old version RRDs */
+    /* don't do any correction for old version RRDs */
     if (version < 3)
         *current_time_usec = 0;
 
@@ -1436,7 +1436,7 @@ static int update_pdp_prep(
 
         /* NOTE: DST_CDEF should never enter this if block, because
          * updvals[ds_idx+1][0] is initialized to 'U'; unless the caller
-         * accidently specified a value for the DST_CDEF. To handle this case,
+         * accidentally specified a value for the DST_CDEF. To handle this case,
          * an extra check is required. */
 
         if ((updvals[ds_idx + 1][0] != 'U') &&
@@ -1955,7 +1955,7 @@ static int update_cdp_prep(
     unsigned long ds_idx, cdp_idx;
 
     /* update CDP_PREP areas */
-    /* loop over data soures within each RRA */
+    /* loop over data sources within each RRA */
     for (ds_idx = 0; ds_idx < rrd->stat_head->ds_cnt; ds_idx++) {
 
         cdp_idx = rra_idx * rrd->stat_head->ds_cnt + ds_idx;

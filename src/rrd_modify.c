@@ -1426,7 +1426,7 @@ int handle_modify(const rrd_t *in, const char *outfilename,
 	    }
 	    rraopcnt++;
 	} else {
-	    rrd_set_error("unparseable argument: %s", argv[i]);
+	    rrd_set_error("unparsable argument: %s", argv[i]);
 	    rc = -1;
 	    goto done;
 	}
