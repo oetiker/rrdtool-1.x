@@ -4181,6 +4181,19 @@ static void *listen_thread_main(
     return (NULL);
 }                       /* }}} void *listen_thread_main */
 
+/* `tree_compare_func()` is used instead of `(GCompareDataFunc) strcmp` to avoid gcc compiler warning:
+ * cast between incompatible function types from ‘int (*)(const char *, const char *)’ to ‘gint (*)(const void *, const void *, void *)’
+ * {aka ‘int (*)(const void *, const void *, void *)’} [-Wcast-function-type]
+ */
+static gint tree_compare_func(
+    gconstpointer a,
+    gconstpointer b,
+    gpointer user_data)
+{
+    (void) user_data;   /* Silence -Wunused-parameter warning */
+    return g_strcmp0(a, b);
+}
+
 static int daemonize(
     void)
 {                       /* {{{ */
@@ -4242,8 +4255,9 @@ static int daemonize(
     openlog("rrdcached", LOG_PID, LOG_DAEMON);
     RRDD_LOG(LOG_INFO, "starting up");
 
-    cache_tree = g_tree_new_full((GCompareDataFunc) strcmp, NULL, NULL,
-                                 (GDestroyNotify) free_cache_item);
+    cache_tree = g_tree_new_full(tree_compare_func, NULL, NULL,
+                                 (GDestroyNotify) (void (*)(void))
+                                 free_cache_item);
     if (cache_tree == NULL) {
         RRDD_LOG(LOG_ERR, "daemonize: g_tree_new failed.");
         goto error;
