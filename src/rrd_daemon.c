@@ -4125,7 +4125,7 @@ static void *listen_thread_main(
                 continue;
             }
 
-            client_sock = (listen_socket_t *) malloc(sizeof(listen_socket_t));
+            client_sock = (listen_socket_t *) calloc(1, sizeof(listen_socket_t));
             if (client_sock == NULL) {
                 RRDD_LOG(LOG_ERR, "listen_thread_main: malloc failed.");
                 continue;
