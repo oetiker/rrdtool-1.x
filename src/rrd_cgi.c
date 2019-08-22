@@ -1404,7 +1404,7 @@ static s_var **rrdcgiReadVariables(
                 if ((unsigned) length > tmplen) {
                     if ((line = (char *) realloc(line, len)) == NULL)
                         return NULL;
-                    strncat(line, tmp, tmplen);
+                    strncat(line, tmp, len - strlen(line) - 1);
                 } else {
                     /* clean-up the storage allocated in previous iteration */
                     if (line) {
