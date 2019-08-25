@@ -3775,6 +3775,9 @@ static int open_listen_socket_unix(
         return (-1);
     }
 
+    listen_fds[listen_fds_num].wbuf_data = NULL;
+    listen_fds[listen_fds_num].wbuf_size = 0;
+    listen_fds[listen_fds_num].wbuf_capacity = 0;
     listen_fds[listen_fds_num].fd = fd;
     listen_fds[listen_fds_num].family = PF_UNIX;
     listen_fds[listen_fds_num].addr = strdup(path);
@@ -3930,6 +3933,9 @@ static int open_listen_socket_network(
             return (-1);
         }
 
+        listen_fds[listen_fds_num].wbuf_data = NULL;
+        listen_fds[listen_fds_num].wbuf_size = 0;
+        listen_fds[listen_fds_num].wbuf_capacity = 0;
         listen_fds[listen_fds_num].fd = fd;
         listen_fds[listen_fds_num].family = ai_ptr->ai_family;
         listen_fds[listen_fds_num].addr = strdup(sock->addr);
@@ -4009,6 +4015,9 @@ static int open_listen_sockets_systemd(
             return i;
         }
 
+        listen_fds[listen_fds_num].wbuf_data = NULL;
+        listen_fds[listen_fds_num].wbuf_size = 0;
+        listen_fds[listen_fds_num].wbuf_capacity = 0;
         listen_fds[listen_fds_num].fd = sd_fd;
         listen_fds[listen_fds_num].family = sa.sun_family;
         /* Add permissions to the socket */
