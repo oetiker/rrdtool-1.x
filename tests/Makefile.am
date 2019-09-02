@@ -31,4 +31,4 @@ CLEANFILES = *.rrd \
 	ct.out dur.out graph1.output.out \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
-	rpn1.output.out
+	rpn1.out rpn1.output.out
