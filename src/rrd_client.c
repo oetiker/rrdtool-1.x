@@ -496,6 +496,9 @@ static void response_free(
         free(res->lines);
     }
 
+    if (res->message != NULL)
+        free(res->message);
+
     free(res);
 }                       /* }}} void response_free */
 
@@ -565,6 +568,7 @@ static int response_read(
     int       status = 0;
 
     char      buffer[RRD_CMD_MAX];
+    char     *message_ptr;
 
     size_t    i;
 
@@ -577,6 +581,7 @@ static int response_read(
     if (ret == NULL)
         DIE(-2);
     memset(ret, 0, sizeof(*ret));
+    ret->message = NULL;
     ret->lines = NULL;
     ret->lines_num = 0;
 
@@ -585,12 +590,16 @@ static int response_read(
 
     chomp(buffer);
 
-    ret->status = strtol(buffer, &ret->message, 0);
-    if (buffer == ret->message)
+    ret->status = strtol(buffer, &message_ptr, 0);
+    if (buffer == message_ptr)
         DIE(-4);
 
     /* Skip leading whitespace of the status message */
-    ret->message += strspn(ret->message, " \t");
+    message_ptr += strspn(message_ptr, " \t");
+
+    ret->message = strdup(message_ptr);
+    if (ret->message == NULL)
+        DIE(-5);
 
     if (ret->status <= 0) {
         if (ret->status < 0)
@@ -600,20 +609,20 @@ static int response_read(
 
     ret->lines = (char **) malloc(sizeof(char *) * ret->status);
     if (ret->lines == NULL)
-        DIE(-5);
+        DIE(-6);
 
     memset(ret->lines, 0, sizeof(char *) * ret->status);
     ret->lines_num = (size_t) ret->status;
 
     for (i = 0; i < ret->lines_num; i++) {
         if (recvline(client, buffer, sizeof(buffer)) == -1)
-            DIE(-6);
+            DIE(-7);
 
         chomp(buffer);
 
         ret->lines[i] = strdup(buffer);
         if (ret->lines[i] == NULL)
-            DIE(-7);
+            DIE(-8);
     }
 
   out:
