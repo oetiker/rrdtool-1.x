@@ -45,7 +45,6 @@
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
-#include <windows.h>    /* for GetLocaleInfoEx */
 #endif
 
 #include <time.h>
@@ -1538,56 +1537,6 @@ int data_proc(
     }
 
     return 0;
-}
-
-static int find_first_weekday(
-    void)
-{
-    static int first_weekday = -1;
-
-    if (first_weekday == -1) {
-#ifdef HAVE__NL_TIME_WEEK_1STDAY
-        /* according to http://sourceware.org/ml/libc-locales/2009-q1/msg00011.html */
-        /* See correct way here http://pasky.or.cz/dev/glibc/first_weekday.c */
-        first_weekday = nl_langinfo(_NL_TIME_FIRST_WEEKDAY)[0];
-        int       week_1stday;
-        long      week_1stday_l = (long) nl_langinfo(_NL_TIME_WEEK_1STDAY);
-
-        if (week_1stday_l == 19971130
-#if SIZEOF_LONG_INT > 4
-            || week_1stday_l >> 32 == 19971130
-#endif
-            )
-            week_1stday = 0;    /* Sun */
-        else if (week_1stday_l == 19971201
-#if SIZEOF_LONG_INT > 4
-                 || week_1stday_l >> 32 == 19971201
-#endif
-            )
-            week_1stday = 1;    /* Mon */
-        else {
-            first_weekday = 1;
-            return first_weekday;   /* we go for a Monday default */
-        }
-        first_weekday = (week_1stday + first_weekday - 1) % 7;
-#elif defined(_WIN32) && defined(LOCALE_NAME_USER_DEFAULT)
-        DWORD     week_1stday;
-
-        GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
-                        LOCALE_IFIRSTDAYOFWEEK | LOCALE_RETURN_NUMBER,
-                        (LPWSTR) & week_1stday,
-                        sizeof(week_1stday) / sizeof(WCHAR));
-        /* 0:Monday, ..., 6:Sunday. */
-        /* We need 1 for Monday, 0 for Sunday. */
-        first_weekday = (week_1stday + 1) % 7;
-#else
-        first_weekday = 0;
-#endif
-    }
-#ifdef DEBUG
-    printf("first_weekday = %d\n", first_weekday);
-#endif
-    return first_weekday;
 }
 
 /* identify the point where the first gridline, label ... gets placed */
