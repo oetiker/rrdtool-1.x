@@ -101,4 +101,7 @@ short     rpn_calc(
     int output_idx,
     int step_width);
 
+int       find_first_weekday(
+    void);
+
 #endif

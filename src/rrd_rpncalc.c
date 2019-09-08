@@ -545,7 +545,7 @@ static int rpn_compare_double(
     return (diff < 0) ? -1 : (diff > 0) ? 1 : 0;
 }
 
-static int find_first_weekday(
+int find_first_weekday(
     void)
 {
     static int first_weekday = -1;
