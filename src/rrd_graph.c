@@ -1120,6 +1120,7 @@ int data_calc(
     int       gdi;
     int       dataidx;
     long     *steparray, rpi;
+    long     *steparray_tmp;    /* temp variable for realloc() */
     int       stepcnt;
     time_t    now;
     rpnstack_t rpnstack;
@@ -1207,7 +1208,7 @@ int data_calc(
 
                         /* add one entry to the array that keeps track of the step sizes of the
                          * data sources going into the CDEF. */
-                        if ((steparray =
+                        if ((steparray_tmp =
                              (long *) rrd_realloc(steparray,
                                                   (++stepcnt +
                                                    1) *
@@ -1217,6 +1218,7 @@ int data_calc(
                             rpnstack_free(&rpnstack);
                             return -1;
                         };
+                        steparray = steparray_tmp;
 
                         steparray[stepcnt - 1] = im->gdes[ptr].step;
 

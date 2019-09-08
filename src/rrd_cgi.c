@@ -198,6 +198,7 @@ typedef struct {
    start with a heapsize of 10 variables */
 #define INIT_VARSTORE_SIZE	10
 static vardata *varheap = NULL;
+static vardata *varheap_tmp = NULL; /* temp variable for realloc() */
 static size_t varheap_size = 0;
 
 /* allocate and initialize variable heap */
@@ -292,11 +293,13 @@ static const char *putvar(
         /* ran out of heap: resize heap to double size */
         size_t    new_size = varheap_size * 2;
 
-        varheap = (vardata *) (realloc(varheap, sizeof(vardata) * new_size));
-        if (!varheap) {
+        varheap_tmp =
+            (vardata *) (realloc(varheap, sizeof(vardata) * new_size));
+        if (!varheap_tmp) {
             fprintf(stderr, "ERROR: Unable to realloc variable heap\n");
             return NULL;
         }
+        varheap = varheap_tmp;
         /* initialize newly allocated memory */ ;
         memset(&varheap[varheap_size], 0, sizeof(vardata) * varheap_size);
         varheap_size = new_size;
@@ -1030,6 +1033,7 @@ static char *scanargs(
     /* local array of arguments while parsing */
     int       argc = 1;
     char    **argv;
+    char    **argv_tmp; /* temp variable for realloc() */
 
 #ifdef DEBUG_PARSER
     printf("<-- scanargs(%s) -->\n", line);
@@ -1135,10 +1139,11 @@ static char *scanargs(
         if (argc == argsz - 2) {
             /* resize argument array */
             argsz *= 2;
-            argv = (char **) rrd_realloc(argv, argsz * sizeof(char *));
-            if (*argv == NULL) {
+            argv_tmp = (char **) rrd_realloc(argv, argsz * sizeof(char *));
+            if (*argv_tmp == NULL) {
                 return NULL;
             }
+            argv = argv_tmp;
         }
     }
 
