@@ -83,11 +83,15 @@ rrdc_fetch
 rrdc_first
 rrdc_flush
 rrdc_flush_if_daemon
+rrdc_flushall
+rrdc_flushall_if_daemon
 rrdc_forget
 rrdc_info
 rrdc_is_any_connected
 rrdc_is_connected
 rrdc_last
+rrdc_list
+rrdc_ping
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update
