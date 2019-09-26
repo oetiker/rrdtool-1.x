@@ -626,7 +626,8 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
-ALL_LIBS="$LIBS"
+dnl Sort and remove duplicate entries in LIBS before assigning to ALL_LIBS
+ALL_LIBS=$(echo "$LIBS"|tr -s " " "\n"|sort -u|tr "\n" " ")
 LIBS=
 
 AC_SUBST(CORE_LIBS)
