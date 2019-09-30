@@ -918,6 +918,9 @@ static int _rrd_updatex(
 #ifdef HAVE_LIBRADOS
     if (rrd_file->rados)
       write_changes_to_disk(&rrd, rrd_file, version);
+#ifndef HAVE_MMAP
+    else
+#endif
 #endif
 #ifndef HAVE_MMAP
     if (write_changes_to_disk(&rrd, rrd_file, version) == -1) {
