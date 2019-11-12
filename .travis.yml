@@ -29,6 +29,7 @@ script:
   # Disable the following, failing tests: rpn1 rpn2 xport1
   # These tests are failing on Travis CI (currently Ubuntu xenial, 16.04LTS), when using valgrind-logfile
   - make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 list1 pdp-calc1"
+  - podchecker doc/*.pod
   - sudo make install
   - cd bindings/perl-shared && make test
   - cd ../python && python setup.py test
