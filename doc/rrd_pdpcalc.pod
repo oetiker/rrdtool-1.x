@@ -1,6 +1,6 @@
 =head1 NAME
 
-PDP calculation explanation - PDP inner calculation logics with an example by Tianpeng Xia
+rrd_pdpcalc - PDP inner calculation logics with an example by Tianpeng Xia
 
 =head1 DESCRIPTION
 
