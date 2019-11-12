@@ -6,13 +6,18 @@ rrdlist - List directories and rrd databases.
 
 B<rrdtool> B<list>
 S<[B<--daemon>|B<-d> I<address>]>
+S<[B<--noflush>|B<-F>]>
+S<[B<--recursive>|B<-r>]>
 I<path>
 
 =head1 DESCRIPTION
 
-The B<list> function connects to L<rrdcached>, the RRD caching daemon,
-and issues a "list" command for the given path. This provides an 'ls-like'
-interface for traversing and listing the rrd database tree.
+The B<list> function provides an 'ls-like' interface for traversing and listing
+the rrd database tree.
+
+When using the B<--daemon> option, the B<list> function connects to
+L<rrdcached>, the RRD caching daemon, and issues a "list" command for the given
+path.
 
 =over 8
 
@@ -28,6 +33,15 @@ list of accepted formats, see the B<-l> option in the L<rrdcached>
 manual.
 
  rrdtool list --daemon 127.0.0.1:42218 /cluster/nodes/node1
+
+=item B<--noflush>|B<-F>
+
+When using a daemon, C<rrdtoolE<nbsp>list> will usually flush its cache to the
+disk before performing operations. This option disables cache flushing.
+
+=item B<--recursive>|B<-r>
+
+Make the list of rrd databases recursive.
 
 =back
 
