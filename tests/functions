@@ -2,6 +2,10 @@
 TZ=Europe/Zurich
 export TZ
 
+# Use dot as decimal separator, which is required for some tests to pass
+LC_NUMERIC=C
+export LC_NUMERIC
+
 BASEDIR="${BASEDIR:-$(dirname -- $0)}"
 BASEDIR="$(readlink -f -- $BASEDIR)"
 
