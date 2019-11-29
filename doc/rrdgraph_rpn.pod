@@ -183,7 +183,7 @@ I<count>,B<SMAX>
 
 Pop one element (I<count>) from the stack. Now pop I<count> elements and push the minimum/maximum back onto the stack.
 
-Example: C<CDEF:x=a,b,c,d,4,AVG>
+Example: C<CDEF:x=a,b,c,d,4,SMIN>
 
 I<count>,B<MEDIAN>
 
