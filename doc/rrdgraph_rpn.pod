@@ -204,8 +204,8 @@ I<percent>,I<count>,B<PERCENT>
 
 pop two elements (I<count>,I<percent>) from the stack. Now pop I<count> element, order them by size
 (while the smallest elements are -INF, the largest are INF and NaN is larger than -INF but smaller
-than anything else. No pick the element from the ordered list where I<percent> of the elements
-are equal then the one picked. Push the result back on to the stack.
+than anything else. Pick the element from the ordered list where I<percent> of the elements
+are equal to the one picked. Push the result back on to the stack.
 
 Example: C<CDEF:x=a,b,c,d,95,4,PERCENT>
 
