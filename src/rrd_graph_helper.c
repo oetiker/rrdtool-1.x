@@ -1026,6 +1026,10 @@ static graph_desc_t *newGraphDescription(
                     }
                     if (gf == GF_VRULE) {
                         gdp->xrule = val;
+                        if (gdp->xrule == 0) {
+                            /* distinguish from uninitialized */
+                            gdp->xrule++;
+                        }
                     } else {
                         gdp->yrule = val;
                     }
