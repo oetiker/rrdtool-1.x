@@ -5108,7 +5108,7 @@ void rrd_graph_options(
             break;
         case LONGOPT_ADD_JSONTIME:
             if (im->extra_flags & FORCE_JSONTIME) {
-                rrd_set_error("--units can only be used once!");
+                rrd_set_error("--add-jsontime can only be used once!");
                 return;
             }
             im->extra_flags |= FORCE_JSONTIME;
