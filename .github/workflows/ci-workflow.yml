@@ -1,0 +1,28 @@
+---
+name: Windows MSYS2 x86_64
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Disable git autocrlf
+        run: git config --global core.autocrlf false
+        shell: cmd
+      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: base-devel bc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cairo mingw-w64-x86_64-expat mingw-w64-x86_64-freetype mingw-w64-x86_64-gettext mingw-w64-x86_64-glib2 mingw-w64-x86_64-libpng mingw-w64-x86_64-libxml2 mingw-w64-x86_64-pango mingw-w64-x86_64-zlib mingw-w64-x86_64-pkg-config
+      - name: CI-Build
+        run: |
+          echo 'Running in MSYS2!'
+          ./ci-build_MSYS2.sh
+      # - uses: actions/upload-artifact@v2
+      #   with:
+      #     name: test-suite.log
+      #     path: tests/test-suite.log

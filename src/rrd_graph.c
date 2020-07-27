@@ -42,12 +42,17 @@
 #include "plbasename.h"
 #endif
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32)
+#define timegm _mkgmtime
+#if !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
+#endif
 
 #include <time.h>
+#define LOCALTIME_R(a,b,c) (c ? gmtime_r(a,b) : localtime_r(a,b))
+#define MKTIME(a,b) (b ? timegm(a) : mktime(a))
 
 #include <locale.h>
 
@@ -1544,12 +1549,13 @@ int data_proc(
 time_t find_first_time(
     time_t start,       /* what is the initial time */
     enum tmt_en baseint,    /* what is the basic interval */
-    long basestep       /* how many if these do we jump a time */
+    long basestep,      /* how many if these do we jump a time */
+    int utc             /* set to 1 if we force the UTC timezone */
     )
 {
     struct tm tm;
 
-    localtime_r(&start, &tm);
+    LOCALTIME_R(&start, &tm, utc);
 
     switch (baseint) {
     case TMT_SECOND:
@@ -1605,20 +1611,21 @@ time_t find_first_time(
     tm.tm_year + 1900) %basestep;
 
     }
-    return mktime(&tm);
+    return MKTIME(&tm, utc);
 }
 
 /* identify the point where the next gridline, label ... gets placed */
 time_t find_next_time(
     time_t current,     /* what is the initial time */
     enum tmt_en baseint,    /* what is the basic interval */
-    long basestep       /* how many if these do we jump a time */
+    long basestep,      /* how many if these do we jump a time */
+    int utc             /* set to 1 if we force the UTC timezone */
     )
 {
     struct tm tm;
     time_t    madetime;
 
-    localtime_r(&current, &tm);
+    LOCALTIME_R(&current, &tm, utc);
 
     /* let mktime figure this dst on its own */
     //tm.tm_isdst = -1;
@@ -1668,7 +1675,7 @@ time_t find_next_time(
         case TMT_YEAR:
             tm.       tm_year += basestep;
         }
-        madetime = mktime(&tm);
+        madetime = MKTIME(&tm, utc);
     } while (madetime == -1 && limit-- >= 0);   /* this is necessary to skip impossible times
                                                    like the daylight saving time skips */
     return madetime;
@@ -1840,7 +1847,7 @@ int print_calc(
     /* wow initializing tmvdef is quite a task :-) */
     time_t    now = time(NULL);
 
-    localtime_r(&now, &tmvdef);
+    LOCALTIME_R(&now, &tmvdef, im->extra_flags & FORCE_UTC_TIME);
     for (i = 0; i < im->gdes_c; i++) {
         vidx = im->gdes[i].vidx;
         switch (im->gdes[i].gf) {
@@ -1852,7 +1859,7 @@ int print_calc(
              */
             if (im->gdes[vidx].gf == GF_VDEF) { /* simply use vals */
                 printval = im->gdes[vidx].vf.val;
-                localtime_r(&im->gdes[vidx].vf.when, &tmvdef);
+                LOCALTIME_R(&im->gdes[vidx].vf.when, &tmvdef, im->extra_flags & FORCE_UTC_TIME);
             } else {    /* need to calculate max,min,avg etcetera */
                 max_ii = ((im->gdes[vidx].end - im->gdes[vidx].start)
                           / im->gdes[vidx].step * im->gdes[vidx].ds_cnt);
@@ -3021,14 +3028,19 @@ void vertical_grid(
     if (!(im->extra_flags & NOMINOR)) {
         for (ti = find_first_time(im->start,
                                   im->xlab_user.gridtm,
-                                  im->xlab_user.gridst),
+                                  im->xlab_user.gridst,
+                                  im->extra_flags & FORCE_UTC_TIME),
              timajor =
              find_first_time(im->start,
                              im->xlab_user.mgridtm,
-                             im->xlab_user.mgridst);
+                             im->xlab_user.mgridst,
+                             im->extra_flags & FORCE_UTC_TIME);
              ti < im->end && ti != -1;
              ti =
-             find_next_time(ti, im->xlab_user.gridtm, im->xlab_user.gridst)
+             find_next_time(ti,
+                            im->xlab_user.gridtm,
+                            im->xlab_user.gridst,
+                            im->extra_flags & FORCE_UTC_TIME)
             ) {
             /* are we inside the graph ? */
             if (ti < im->start || ti > im->end)
@@ -3036,7 +3048,8 @@ void vertical_grid(
             while (timajor < ti && timajor != -1) {
                 timajor = find_next_time(timajor,
                                          im->xlab_user.mgridtm,
-                                         im->xlab_user.mgridst);
+                                         im->xlab_user.mgridst,
+                                         im->extra_flags & FORCE_UTC_TIME);
             }
             if (timajor == -1)
                 break;  /* fail in case of problems with time increments */
@@ -3057,9 +3070,13 @@ void vertical_grid(
     /* paint the major grid */
     for (ti = find_first_time(im->start,
                               im->xlab_user.mgridtm,
-                              im->xlab_user.mgridst);
+                              im->xlab_user.mgridst,
+                              im->extra_flags & FORCE_UTC_TIME);
          ti < im->end && ti != -1;
-         ti = find_next_time(ti, im->xlab_user.mgridtm, im->xlab_user.mgridst)
+         ti = find_next_time(ti,
+                             im->xlab_user.mgridtm,
+                             im->xlab_user.mgridst,
+                             im->extra_flags & FORCE_UTC_TIME)
         ) {
         /* are we inside the graph ? */
         if (ti < im->start || ti > im->end)
@@ -3079,18 +3096,22 @@ void vertical_grid(
          find_first_time(im->start -
                          im->xlab_user.precis / 2,
                          im->xlab_user.labtm,
-                         im->xlab_user.labst);
+                         im->xlab_user.labst,
+                         im->extra_flags & FORCE_UTC_TIME);
          (ti <=
           im->end -
           im->xlab_user.precis / 2) && ti != -1;
-         ti = find_next_time(ti, im->xlab_user.labtm, im->xlab_user.labst)
+         ti = find_next_time(ti,
+                             im->xlab_user.labtm,
+                             im->xlab_user.labst,
+                             im->extra_flags & FORCE_UTC_TIME)
         ) {
         tilab = ti + im->xlab_user.precis / 2;  /* correct time for the label */
         /* are we inside the graph ? */
         if (tilab < im->start || tilab > im->end)
             continue;
 #ifdef HAVE_STRFTIME
-        localtime_r(&tilab, &tm);
+        LOCALTIME_R(&tilab, &tm, im->extra_flags & FORCE_UTC_TIME);
         strftime(graph_label, 99, im->xlab_user.stst, &tm);
 #else
 # error "your libc has no strftime I guess we'll abort the exercise here."
@@ -5021,7 +5042,8 @@ void rrd_graph_options(
         {"left-axis-format",   1012, OPTPARSE_REQUIRED},
         {"left-axis-formatter",1013, OPTPARSE_REQUIRED},
         {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
-        {"allow-shrink",        1015, OPTPARSE_NONE},
+        {"allow-shrink",       1015, OPTPARSE_NONE},
+        {"utc",                1016, OPTPARSE_NONE},
         {0}
 };
 /* *INDENT-ON* */
@@ -5378,6 +5400,9 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+            break;
+        case 1016:
+            im->extra_flags |= FORCE_UTC_TIME;
             break;
         case 'z':
             im->lazy = 1;

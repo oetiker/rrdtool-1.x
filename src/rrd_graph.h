@@ -45,7 +45,8 @@
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
 #define ALLOW_MISSING_DS 0x800  /* missing DS is not fatal */
-#define FORCE_JSONTIME 0x1000  /* add jsontime to graphv output */
+#define FORCE_JSONTIME 0x2000  /* add jsontime to graphv output */
+#define FORCE_UTC_TIME 0x1000   /* Work in UTC timezone instead of localtimg */
 
 #define gdes_fetch_key(x)  sprintf_alloc("%s:%s:%d:%d:%d:%d:%d:%d",x.rrd,x.daemon,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig,x.step)
 
@@ -416,11 +417,13 @@ int       data_proc(
 time_t    find_first_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 time_t    find_next_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 int       print_calc(
     image_desc_t *);
 int       leg_place(

@@ -567,6 +567,11 @@ got empty values instead of raising a fatal error.
 Adds B<xport> data in B<JSONTIME> format, giving both graph image data
 and data point values in one call to graphv command.
 
+[B<--utc>]
+
+Force the timezone to be UTC. Equivalent to doing TZ=UTC rrdtool graph .... 
+This is useful to calculate daily average ranging from midnight to midnight rather than say the last 24 hours.
+
 =head2 Data and variables
 
 B<DEF:>I<vname>B<=>I<rrdfile>B<:>I<ds-name>B<:>I<CF>[B<:step=>I<step>][B<:start=>I<time>][B<:end=>I<time>]
