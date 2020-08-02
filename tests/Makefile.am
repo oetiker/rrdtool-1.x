@@ -17,7 +17,7 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output graph1.output graoup2.output vformatter1 rpn1.output rpn2.output \
+	valgrind-supressions dcounter1 dcounter1.output graph1.output group2.output vformatter1 rpn1.output rpn2.output \
 	xport1.json.output xport1.xml.output \
 	pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
 
