@@ -16,7 +16,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=i686-w64-mingw32-pkg-config
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 - x86_64 (64-bit)
    Install the required dependencies:
@@ -26,7 +26,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=x86_64-w64-mingw32-pkg-config
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 
 2) MSYS2 (https://sourceforge.net/projects/msys2/)
@@ -38,7 +38,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=i686-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 - x86_64 (64-bit)
    Install the required dependencies:
@@ -48,7 +48,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=x86_64-w64-mingw32 --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached --without-libintl-prefix --without-libiconv-prefix
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 3) MXE (http://mxe.cc/ https://github.com/mxe/mxe)
  - i686 (32-bit)
@@ -59,7 +59,7 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=i686-w64-mingw32.shared --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=i686-w64-mingw32.shared-pkg-config
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
 
 - x86_64 (64-bit)
    Build the required dependencies:
@@ -69,4 +69,4 @@ Compiled binaries: rrdtool.exe rrdupdate.exe rrdcgi.exe librrd-8.dll
    Run the following commands from the rrdtool-1.x directory:
    ./bootstrap
    ./configure --host=x86_64-w64-mingw32.shared --disable-static --disable-mmap --disable-tcl --disable-perl --disable-ruby --disable-python --disable-lua --disable-rrdcached PKGCONFIG=x86_64-w64-mingw32.shared-pkg-config
-   make LDFLAGS='-no-undefined' CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'
+   make CFLAGS='-D__USE_MINGW_ANSI_STDIO=1'

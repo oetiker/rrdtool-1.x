@@ -112,6 +112,9 @@ librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS) $(LIBINTL)
 librrd_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrd_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
 librrd_la_LDFLAGS         += -export-symbols $(srcdir)/librrd.sym
+if MINGW_W64
+librrd_la_LDFLAGS         += -no-undefined
+endif
 
 include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
