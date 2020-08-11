@@ -1100,6 +1100,8 @@ fi
 echo "      Systemd unit dir: $with_systemdsystemunitdir"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
+echo "         Python Binary: $PYTHON"
+echo "        Python Version: $PYTHON_VERSION"
 echo "        Build examples: $enable_examples"
 echo "       Build rrdcached: $enable_rrdcached"
 echo "          Build rrdcgi: $enable_rrdcgi"
