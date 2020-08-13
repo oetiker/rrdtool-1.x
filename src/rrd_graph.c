@@ -4776,6 +4776,16 @@ rrd_info_t *rrd_graph_v(
         img.u_blo.ptr = im.rendered_image;
         grinfo_push(&im, sprintf_alloc("image"), RD_I_BLO, img);
     }
+    if (im.extra_flags & FORCE_JSONTIME) {
+        im.imgformat = IF_JSONTIME;
+        if (rrd_graph_xport(&im)) {
+	        rrd_infoval_t img;
+
+	        img.u_blo.size = im.rendered_image_size;
+	        img.u_blo.ptr = im.rendered_image;
+	        grinfo_push(&im, sprintf_alloc("datapoints"), RD_I_BLO, img);
+        }
+    }
     grinfo = im.grinfo;
     im_free(&im);
     return grinfo;
@@ -4969,6 +4979,7 @@ void rrd_graph_options(
     /* defines for long options without a short equivalent. should be bytes,
        and may not collide with (the ASCII value of) short options */
 #define LONGOPT_UNITS_SI 255
+#define LONGOPT_ADD_JSONTIME 254
 
 /* *INDENT-OFF* */
     struct optparse_long longopts[] = {
@@ -5015,6 +5026,7 @@ void rrd_graph_options(
         {"lazy",               'z', OPTPARSE_NONE},
         {"use-nan-for-all-missing-data", 'Z', OPTPARSE_NONE},
         {"units",              LONGOPT_UNITS_SI, OPTPARSE_REQUIRED},
+        {"add-jsontime",       LONGOPT_ADD_JSONTIME, OPTPARSE_NONE},
         {"alt-y-mrtg",         1000, OPTPARSE_NONE},    /* this has no effect it is just here to save old apps from crashing when they use it */
         {"disable-rrdtool-tag",1001, OPTPARSE_NONE},
         {"right-axis",         1002, OPTPARSE_REQUIRED},
@@ -5115,6 +5127,13 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+            break;
+        case LONGOPT_ADD_JSONTIME:
+            if (im->extra_flags & FORCE_JSONTIME) {
+                rrd_set_error("--add-jsontime can only be used once!");
+                return;
+            }
+            im->extra_flags |= FORCE_JSONTIME;
             break;
         case 'X':
             im->unitsexponent = atoi(poptions->optarg);

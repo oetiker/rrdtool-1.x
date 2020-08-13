@@ -1,5 +1,5 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 graph1 rpn1 rpn2 \
+	tune1 tune2 graph1 graph2 rpn1 rpn2 \
 	rrdcreate \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
@@ -17,7 +17,7 @@ EXTRA_DIST = Makefile.am \
 	rrdcreate \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
-	valgrind-supressions dcounter1 dcounter1.output graph1.output vformatter1 rpn1.output rpn2.output \
+	valgrind-supressions dcounter1 dcounter1.output graph1.output graph2.output vformatter1 rpn1.output rpn2.output \
 	xport1.json.output xport1.xml.output \
 	pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
 
@@ -28,7 +28,7 @@ AM_TESTS_ENVIRONMENT = \
 	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;
 
 CLEANFILES = *.rrd \
-	ct.out dur.out graph1.output.out \
+	ct.out dur.out graph1.output.out graph2.output.out \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
 	rpn1.out rpn1.output.out
