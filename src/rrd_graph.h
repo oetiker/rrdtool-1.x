@@ -25,7 +25,6 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
-#include "mutex.h"
 
 #include <glib.h>
 
@@ -353,7 +352,6 @@ typedef struct image_desc_t {
     rrd_info_t *grinfo_current; /* pointing to current entry */
     GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
     GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
-    mutex_t *fontmap_mutex; /* Mutex for locking the global fontmap */
     enum image_init_en init_mode; /* do we need Cairo/Pango? */
     double x_pixie; /* scale for X (see xtr() for reference) */
     double y_pixie; /* scale for Y (see ytr() for reference) */
