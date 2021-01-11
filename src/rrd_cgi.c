@@ -680,7 +680,11 @@ static char *rrdgetinternal(
         if (strcasecmp(args[0], "VERSION") == 0) {
             return stralloc(PACKAGE_VERSION);
         } else if (strcasecmp(args[0], "COMPILETIME") == 0) {
+#ifdef BUILD_DATE
+            return stralloc(BUILD_DATE);
+#else
             return stralloc(__DATE__ " " __TIME__);
+#endif
         } else {
             return stralloc("[ERROR: internal unknown argument]");
         }

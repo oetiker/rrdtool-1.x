@@ -309,7 +309,11 @@ static void PrintUsage(
         else if (!strcmp(cmd, "pwd"))
             help_cmd = C_PWD;
     }
+#ifdef BUILD_DATE
+    fprintf(stdout, _(help_main), PACKAGE_VERSION, BUILD_DATE);
+#else
     fprintf(stdout, _(help_main), PACKAGE_VERSION, __DATE__, __TIME__);
+#endif
     fflush(stdout);
     switch (help_cmd) {
     case C_NONE:
