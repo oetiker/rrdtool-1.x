@@ -1678,6 +1678,7 @@ static int handle_request_update(
         rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
         if (!rrd_file) {
             rrd_free(&rrd);
+            free(ci->file);
             free(ci);
             RRDD_LOG(LOG_ERR,
                      "handle_request_update: Could not read RRD file.");
@@ -1693,6 +1694,7 @@ static int handle_request_update(
         ci->last_update_stamp = last_update_from_file;
 
         if (ci->last_update_stamp < 1) {
+            free(ci->file);
             free(ci);
             RRDD_LOG(LOG_ERR,
                      "handle_request_update: Invalid timestamp from RRD file.");
