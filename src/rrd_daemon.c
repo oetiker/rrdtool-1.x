@@ -1818,6 +1818,7 @@ static void free_fetch_parsed(
         rrd_freemem(parsed->ds_namv[i]);
     rrd_freemem(parsed->ds_namv);
     rrd_freemem(parsed->data);
+    rrd_freemem(parsed->field_idx);
 }
 
 static int handle_request_fetch_parse(
