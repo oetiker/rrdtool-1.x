@@ -92,13 +92,14 @@ int rrd_flushcached (int argc, char **argv)
             char *error;
             int   remaining;
 
-            error     = rrd_get_error();
+            error     = strdup(rrd_get_error());
             remaining = options.argc - options.optind - 1;
 
             rrd_set_error("Flushing of file \"%s\" failed: %s. Skipping "
                     "remaining %i file%s.", options.argv[i],
-                    (*error == '\0') ? "unknown error" : error,
+                    (error == NULL || *error == '\0') ? "unknown error" : error,
                     remaining, (remaining == 1) ? "" : "s");
+            free(error);
             break;
         }
     }
