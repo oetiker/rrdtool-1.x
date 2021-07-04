@@ -80,6 +80,7 @@ jobs:
           vcpkgArguments: '${{ matrix.vcpkgPackages }}'
           # Ensure the vcpkg artifacts are cached, they are generated in the 'CMAKE_BINARY_DIR/vcpkg_installed' directory.
           additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+
       - name: Build ${{ matrix.configuration }}
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
