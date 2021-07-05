@@ -27,6 +27,7 @@ CPPFLAGS = $(CPPFLAGS) /TC /EHsc /O2 /Zi /Fd$(TOP)/win32/vc.pdb \
         /I $(ARCH_PATH)\include \
         /I $(ARCH_PATH)\include\cairo \
         /I $(ARCH_PATH)\include\pango-1.0 \
+        /I $(ARCH_PATH)\include\harfbuzz \
         /I $(ARCH_PATH)\include\glib-2.0 \
         /I $(ARCH_PATH)\lib\glib-2.0\include \
         /I $(ARCH_PATH)\include\libxml2

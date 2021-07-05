@@ -1,40 +1,19 @@
 ---
-name: Windows CI
+name: Release Windows
 
 # yamllint disable rule:line-length
 # yamllint disable-line rule:truthy
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: cmd
 
 jobs:
-  msys2:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
-        os: [windows-2019]
-        carch: [x86_64]
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Disable git autocrlf
-        run: git config --global core.autocrlf false
-        shell: cmd
-      - uses: actions/checkout@v2
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: base-devel bc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cairo mingw-w64-x86_64-expat mingw-w64-x86_64-freetype mingw-w64-x86_64-gettext mingw-w64-x86_64-glib2 mingw-w64-x86_64-libpng mingw-w64-x86_64-libxml2 mingw-w64-x86_64-pango mingw-w64-x86_64-zlib mingw-w64-x86_64-pkgconf
-      - name: CI-Build
-        run: |
-          echo 'Running in MSYS2!'
-          ./ci-build_MSYS2.sh
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: test-suite.log
-      #     path: tests/test-suite.log
   MSVC:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -57,9 +36,6 @@ jobs:
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x86'
             nmake_configuration: ''
-    defaults:
-      run:
-        shell: cmd
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
@@ -80,8 +56,14 @@ jobs:
           vcpkgArguments: '${{ matrix.vcpkgPackages }}'
           # Ensure the vcpkg artifacts are cached, they are generated in the 'CMAKE_BINARY_DIR/vcpkg_installed' directory.
           additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
-
       - name: Build ${{ matrix.configuration }}
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
           nmake -f win32\Makefile_vcpkg.msc ${{ matrix.nmake_configuration }}
+      - name: Collect files
+        run: |
+          win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: deploy-rrdtool-MSVC-${{ matrix.configuration }}
+          path: win32/nmake_release_${{ matrix.configuration }}_vcpkg/rrdtool-*-${{ matrix.configuration }}_vcpkg/
