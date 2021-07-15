@@ -67,7 +67,6 @@ python:
           && env \
                ABS_TOP_SRCDIR=${abs_top_srcdir} \
                ABS_TOP_BUILDDIR=${abs_top_builddir} \
-               LD_RUN_PATH=$(libdir) \
                $(PYTHON) ${abs_srcdir}/$@/setup.py build_ext $(PYTHON_RPATH) \
           && env \
                ABS_TOP_SRCDIR=${abs_top_srcdir} \

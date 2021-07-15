@@ -363,7 +363,13 @@ rrd_file_t *rrd_open(
          */
         int       fret =
             posix_fallocate(rrd_simple_file->fd, 0, newfile_size);
-        if (fret) {
+        /* ZFS (on FreeBSD) does not support posix_fallocate(), always returning
+         * EINVAL.  Ignore this error and continue anyway.
+         * Without this, resize isn't possible on ZFS filesystems.
+         */
+        if (fret == EINVAL) {
+            /* DO NOTHING */
+        } else if (fret) {
             rrd_set_error("posix_fallocate '%s': %s", file_name,
                           rrd_strerror(fret));
             goto out_close;

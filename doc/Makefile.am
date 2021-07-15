@@ -48,7 +48,7 @@ CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
 EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
-            rrdpython.pod rrdruby.pod
+            rrdpython.pod rrdrados.pod rrdruby.pod
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)

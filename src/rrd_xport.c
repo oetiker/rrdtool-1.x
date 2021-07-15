@@ -432,6 +432,10 @@ int rrd_graph_xport(
 
     /* do the data processing */
     if (rrd_xport_fn(im, &start, &end, &step, &col_cnt, &legend_v, &data, 1)) {
+        /* close the file */
+        if (buffer.file) {
+            fclose(buffer.file);
+        }
         return -1;
     }
 
@@ -720,6 +724,9 @@ static int rrd_xport_format_xmljson(
     char      buf[256];
     char      dbuf[1024];
 
+    /* avoid calling escapeJSON() with garbage */
+    memset(dbuf, 0, sizeof(dbuf));
+
     rrd_value_t *ptr = data;
 
     if (json == 0) {
@@ -816,7 +823,10 @@ static int rrd_xport_format_xmljson(
         }
         /* now output it */
         if (json) {
-            snprintf(buf, sizeof(buf), "      \"%s\"", entry);
+            strncpy(dbuf, entry, sizeof(dbuf));
+            dbuf[sizeof(dbuf) - 1] = 0;
+            escapeJSON(dbuf, sizeof(dbuf));
+            snprintf(buf, sizeof(buf), "      \"%s\"", dbuf);
             addToBuffer(buffer, buf, 0);
             if (j < col_cnt - 1) {
                 addToBuffer(buffer, ",", 1);
@@ -1160,8 +1170,11 @@ static int rrd_xport_format_addprints(
                 entry++;
             }
             if (json) {
+                strncpy(dbuf, entry, sizeof(dbuf));
+                dbuf[sizeof(dbuf) - 1] = 0;
+                escapeJSON(dbuf, sizeof(dbuf));
                 snprintf(buf, sizeof(buf), ",\n        { \"line\": \"%s\" }",
-                         entry);
+                         dbuf);
             } else {
                 snprintf(buf, sizeof(buf), "        <line>%s</line>\n",
                          entry);

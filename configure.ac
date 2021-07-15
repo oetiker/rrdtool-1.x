@@ -221,6 +221,7 @@ AC_HEADER_TIME
 AC_STRUCT_TM
 
 dnl figure out 'stuff' about
+HW_FUNC_VA_COPY
 HW_FUNC_VSNPRINTF
 HW_FUNC_SNPRINTF
 HW_FUNC_VASPRINTF
@@ -625,7 +626,8 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
-ALL_LIBS="$LIBS"
+dnl Sort and remove duplicate entries in LIBS before assigning to ALL_LIBS
+ALL_LIBS=$(echo "$LIBS"|tr -s " " "\n"|sort -u|tr "\n" " ")
 LIBS=
 
 AC_SUBST(CORE_LIBS)
@@ -688,6 +690,13 @@ fi
 
 AC_MSG_CHECKING(Perl Modules to build)
 AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
+
+# Use reproducible build date and time
+if test "$SOURCE_DATE_EPOCH"; then
+	DATE_FMT="%d %b %Y %H:%M:%S"
+	BUILD_DATE=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT")
+	AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"], [Use reproducible build date])
+fi
 
 # Options to pass when configuring perl module
 langpref=$prefix
@@ -1117,6 +1126,8 @@ fi
 echo "      Systemd unit dir: $with_systemdsystemunitdir"
 echo "    Build Tcl Bindings: $enable_tcl"
 echo " Build Python Bindings: $enable_python"
+echo "         Python Binary: $PYTHON"
+echo "        Python Version: $PYTHON_VERSION"
 echo "        Build examples: $enable_examples"
 echo "       Build rrdcached: $enable_rrdcached"
 echo "          Build rrdcgi: $enable_rrdcgi"

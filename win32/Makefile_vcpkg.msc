@@ -1,16 +1,16 @@
 # Makefile for rrdtool using Microsoft (Visual) C
 #
 # Usage:
-#   nmake -f win32/Makefile.msc                 (for 32 bit Windows target)
-#   nmake -f win32/Makefile.msc USE_64BIT=1     (for 64 bit Windows target)
-#   nmake -f win32/Makefile.msc clean           (to remove all generated files)
+#   nmake -f win32/Makefile_vcpkg.msc                 (for 32 bit Windows target)
+#   nmake -f win32/Makefile_vcpkg.msc USE_64BIT=1     (for 64 bit Windows target)
+#   nmake -f win32/Makefile_vcpkg.msc clean           (to remove all generated files)
 
 # The toplevel directory of the source tree
 #
 TOP = .
 RRD_LIB_NAME=librrd-8
-ARCH_PATH_X86=contrib
-ARCH_PATH_X64=contrib-x64
+ARCH_PATH_X86=vcpkg\installed\x86-windows
+ARCH_PATH_X64=vcpkg\installed\x64-windows
 
 
 !ifndef USE_64BIT
@@ -27,15 +27,16 @@ CPPFLAGS = $(CPPFLAGS) /TC /EHsc /O2 /Zi /Fd$(TOP)/win32/vc.pdb \
         /I $(ARCH_PATH)\include \
         /I $(ARCH_PATH)\include\cairo \
         /I $(ARCH_PATH)\include\pango-1.0 \
+        /I $(ARCH_PATH)\include\harfbuzz \
         /I $(ARCH_PATH)\include\glib-2.0 \
         /I $(ARCH_PATH)\lib\glib-2.0\include \
         /I $(ARCH_PATH)\include\libxml2
 
 THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
-        libpng.lib libxml2.lib \
+        libpng16.lib libxml2.lib \
         glib-2.0.lib gobject-2.0.lib \
         pango-1.0.lib pangocairo-1.0.lib cairo.lib \
-        Ws2_32.lib zdll.lib gthread-2.0.lib
+        Ws2_32.lib zlib.lib
 
 RRD_LIB_OBJ_LIST = \
         $(TOP)/src/hash_32.obj \

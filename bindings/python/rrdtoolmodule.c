@@ -476,10 +476,11 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 
         for (i = 0; i < ds_cnt; i++)
             rrd_freemem(ds_namv[i]);
+
+        rrd_freemem(ds_namv);
+        rrd_freemem(data);
     }
 
-    rrd_freemem(ds_namv);
-    rrd_freemem(data);
     destroy_args(&rrdtool_argv);
     return ret;
 }
@@ -581,6 +582,7 @@ static char _rrdtool_graph__doc__[] = "Create a graph based on one or more " \
     [-b|--base value]\n\
     [-W|--watermark string]\n\
     [-Z|--use-nan-for-all-missing-data]\n\
+    [--utc]\n\
     DEF:vname=rrdfile:ds-name:CF[:step=step][:start=time][:end=time]\n\
     CDEF:vname=RPN expression\n\
     VDEF=vname:RPN expression\n\n\
@@ -1093,7 +1095,7 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
             }
 
             PyDict_SetItemString(ds_dict, ds_names[i], val);
-            
+
             if (val != Py_None)
                 Py_DECREF(val);
 
@@ -1203,7 +1205,7 @@ _rrdtool_fetch_cb_wrapper(
         rrd_set_error("expected 'start' key in callback return value to be "
             "of type int");
         goto gil_release_err;
-    } else if (PyObject_RichCompareBool(tmp, tmp_min_ts, Py_EQ) || 
+    } else if (PyObject_RichCompareBool(tmp, tmp_min_ts, Py_EQ) ||
                PyObject_RichCompareBool(tmp, po_start, Py_LT)) {
         rrd_set_error("expected 'start' value in callback return dict to be "
             "equal or earlier than passed start timestamp");

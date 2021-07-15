@@ -1,0 +1,87 @@
+---
+name: Windows CI
+
+# yamllint disable rule:line-length
+# yamllint disable-line rule:truthy
+on: [push, pull_request]
+
+jobs:
+  msys2:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
+        os: [windows-2019]
+        carch: [x86_64]
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Disable git autocrlf
+        run: git config --global core.autocrlf false
+        shell: cmd
+      - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: base-devel bc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cairo mingw-w64-x86_64-expat mingw-w64-x86_64-freetype mingw-w64-x86_64-gettext mingw-w64-x86_64-glib2 mingw-w64-x86_64-libpng mingw-w64-x86_64-libxml2 mingw-w64-x86_64-pango mingw-w64-x86_64-zlib mingw-w64-x86_64-pkgconf
+      - name: CI-Build
+        run: |
+          echo 'Running in MSYS2!'
+          ./ci-build_MSYS2.sh
+      # - uses: actions/upload-artifact@v2
+      #   with:
+      #     name: test-suite.log
+      #     path: tests/test-suite.log
+  MSVC:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
+        os: [windows-2019]
+        triplet: [x64-windows, x86-windows]
+        include:
+          - os: windows-2019
+            triplet: x64-windows
+            # https://github.com/microsoft/vcpkg/commit/b361c2eefa3966cb7cec45275aff32e90430aaa6
+            vcpkgCommitId: 'b361c2eefa3966cb7cec45275aff32e90430aaa6'
+            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
+            configuration: 'x64'
+            nmake_configuration: 'USE_64BIT=1'
+          - os: windows-2019
+            triplet: x86-windows
+            vcpkgCommitId: 'b361c2eefa3966cb7cec45275aff32e90430aaa6'
+            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
+            configuration: 'x86'
+            nmake_configuration: ''
+    defaults:
+      run:
+        shell: cmd
+    env:
+      buildDir: '${{ github.workspace }}/build/'
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+
+      # Restore from cache the previously built ports. If cache-miss, download and build vcpkg (aka "bootstrap vcpkg").
+      - name: Restore from cache and install vcpkg
+        # Download and build vcpkg.
+        uses: lukka/run-vcpkg@v7
+        with:
+          setupOnly: false
+          # Location of vcpkg in the Git repository.
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId}}'
+          vcpkgTriplet: ${{ matrix.triplet }}
+          vcpkgArguments: '${{ matrix.vcpkgPackages }}'
+          # Ensure the vcpkg artifacts are cached, they are generated in the 'CMAKE_BINARY_DIR/vcpkg_installed' directory.
+          additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+
+      - name: Build ${{ matrix.configuration }}
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
+          nmake -f win32\Makefile_vcpkg.msc ${{ matrix.nmake_configuration }}

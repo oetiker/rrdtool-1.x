@@ -42,12 +42,17 @@
 #include "plbasename.h"
 #endif
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
+#if defined(_WIN32)
+#define timegm _mkgmtime
+#if !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
+#endif
 
 #include <time.h>
+#define LOCALTIME_R(a,b,c) (c ? gmtime_r(a,b) : localtime_r(a,b))
+#define MKTIME(a,b) (b ? timegm(a) : mktime(a))
 
 #include <locale.h>
 
@@ -480,11 +485,9 @@ int im_free(
             free(im->rendered_image);
         }
 
-        mutex_lock(im->fontmap_mutex);
         if (im->layout) {
             g_object_unref(im->layout);
         }
-        mutex_unlock(im->fontmap_mutex);
     }
 
     if (im->ylegend)
@@ -1120,6 +1123,7 @@ int data_calc(
     int       gdi;
     int       dataidx;
     long     *steparray, rpi;
+    long     *steparray_tmp;    /* temp variable for realloc() */
     int       stepcnt;
     time_t    now;
     rpnstack_t rpnstack;
@@ -1207,7 +1211,7 @@ int data_calc(
 
                         /* add one entry to the array that keeps track of the step sizes of the
                          * data sources going into the CDEF. */
-                        if ((steparray =
+                        if ((steparray_tmp =
                              (long *) rrd_realloc(steparray,
                                                   (++stepcnt +
                                                    1) *
@@ -1217,6 +1221,7 @@ int data_calc(
                             rpnstack_free(&rpnstack);
                             return -1;
                         };
+                        steparray = steparray_tmp;
 
                         steparray[stepcnt - 1] = im->gdes[ptr].step;
 
@@ -1319,7 +1324,7 @@ int data_calc(
 }
 
 /* from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm */
-/* yes we are loosing precision by doing tos with floats instead of doubles
+/* yes we are losing precision by doing tos with floats instead of doubles
    but it seems more stable this way. */
 
 static int AlmostEqual2sComplement(
@@ -1537,54 +1542,18 @@ int data_proc(
     return 0;
 }
 
-static int find_first_weekday(
-    void)
-{
-    static int first_weekday = -1;
-
-    if (first_weekday == -1) {
-#ifdef HAVE__NL_TIME_WEEK_1STDAY
-        /* according to http://sourceware.org/ml/libc-locales/2009-q1/msg00011.html */
-        /* See correct way here http://pasky.or.cz/dev/glibc/first_weekday.c */
-        first_weekday = nl_langinfo(_NL_TIME_FIRST_WEEKDAY)[0];
-        int       week_1stday;
-        long      week_1stday_l = (long) nl_langinfo(_NL_TIME_WEEK_1STDAY);
-
-        if (week_1stday_l == 19971130
-#if SIZEOF_LONG_INT > 4
-            || week_1stday_l >> 32 == 19971130
-#endif
-            )
-            week_1stday = 0;    /* Sun */
-        else if (week_1stday_l == 19971201
-#if SIZEOF_LONG_INT > 4
-                 || week_1stday_l >> 32 == 19971201
-#endif
-            )
-            week_1stday = 1;    /* Mon */
-        else {
-            first_weekday = 1;
-            return first_weekday;   /* we go for a monday default */
-        }
-        first_weekday = (week_1stday + first_weekday - 1) % 7;
-#else
-        first_weekday = 1;
-#endif
-    }
-    return first_weekday;
-}
-
 /* identify the point where the first gridline, label ... gets placed */
 
 time_t find_first_time(
     time_t start,       /* what is the initial time */
     enum tmt_en baseint,    /* what is the basic interval */
-    long basestep       /* how many if these do we jump a time */
+    long basestep,      /* how many if these do we jump a time */
+    int utc             /* set to 1 if we force the UTC timezone */
     )
 {
     struct tm tm;
 
-    localtime_r(&start, &tm);
+    LOCALTIME_R(&start, &tm, utc);
 
     switch (baseint) {
     case TMT_SECOND:
@@ -1640,20 +1609,21 @@ time_t find_first_time(
     tm.tm_year + 1900) %basestep;
 
     }
-    return mktime(&tm);
+    return MKTIME(&tm, utc);
 }
 
 /* identify the point where the next gridline, label ... gets placed */
 time_t find_next_time(
     time_t current,     /* what is the initial time */
     enum tmt_en baseint,    /* what is the basic interval */
-    long basestep       /* how many if these do we jump a time */
+    long basestep,      /* how many if these do we jump a time */
+    int utc             /* set to 1 if we force the UTC timezone */
     )
 {
     struct tm tm;
     time_t    madetime;
 
-    localtime_r(&current, &tm);
+    LOCALTIME_R(&current, &tm, utc);
 
     /* let mktime figure this dst on its own */
     //tm.tm_isdst = -1;
@@ -1703,7 +1673,7 @@ time_t find_next_time(
         case TMT_YEAR:
             tm.       tm_year += basestep;
         }
-        madetime = mktime(&tm);
+        madetime = MKTIME(&tm, utc);
     } while (madetime == -1 && limit-- >= 0);   /* this is necessary to skip impossible times
                                                    like the daylight saving time skips */
     return madetime;
@@ -1875,7 +1845,7 @@ int print_calc(
     /* wow initializing tmvdef is quite a task :-) */
     time_t    now = time(NULL);
 
-    localtime_r(&now, &tmvdef);
+    LOCALTIME_R(&now, &tmvdef, im->extra_flags & FORCE_UTC_TIME);
     for (i = 0; i < im->gdes_c; i++) {
         vidx = im->gdes[i].vidx;
         switch (im->gdes[i].gf) {
@@ -1887,7 +1857,7 @@ int print_calc(
              */
             if (im->gdes[vidx].gf == GF_VDEF) { /* simply use vals */
                 printval = im->gdes[vidx].vf.val;
-                localtime_r(&im->gdes[vidx].vf.when, &tmvdef);
+                LOCALTIME_R(&im->gdes[vidx].vf.when, &tmvdef, im->extra_flags & FORCE_UTC_TIME);
             } else {    /* need to calculate max,min,avg etcetera */
                 max_ii = ((im->gdes[vidx].end - im->gdes[vidx].start)
                           / im->gdes[vidx].step * im->gdes[vidx].ds_cnt);
@@ -3056,14 +3026,19 @@ void vertical_grid(
     if (!(im->extra_flags & NOMINOR)) {
         for (ti = find_first_time(im->start,
                                   im->xlab_user.gridtm,
-                                  im->xlab_user.gridst),
+                                  im->xlab_user.gridst,
+                                  im->extra_flags & FORCE_UTC_TIME),
              timajor =
              find_first_time(im->start,
                              im->xlab_user.mgridtm,
-                             im->xlab_user.mgridst);
+                             im->xlab_user.mgridst,
+                             im->extra_flags & FORCE_UTC_TIME);
              ti < im->end && ti != -1;
              ti =
-             find_next_time(ti, im->xlab_user.gridtm, im->xlab_user.gridst)
+             find_next_time(ti,
+                            im->xlab_user.gridtm,
+                            im->xlab_user.gridst,
+                            im->extra_flags & FORCE_UTC_TIME)
             ) {
             /* are we inside the graph ? */
             if (ti < im->start || ti > im->end)
@@ -3071,7 +3046,8 @@ void vertical_grid(
             while (timajor < ti && timajor != -1) {
                 timajor = find_next_time(timajor,
                                          im->xlab_user.mgridtm,
-                                         im->xlab_user.mgridst);
+                                         im->xlab_user.mgridst,
+                                         im->extra_flags & FORCE_UTC_TIME);
             }
             if (timajor == -1)
                 break;  /* fail in case of problems with time increments */
@@ -3092,9 +3068,13 @@ void vertical_grid(
     /* paint the major grid */
     for (ti = find_first_time(im->start,
                               im->xlab_user.mgridtm,
-                              im->xlab_user.mgridst);
+                              im->xlab_user.mgridst,
+                              im->extra_flags & FORCE_UTC_TIME);
          ti < im->end && ti != -1;
-         ti = find_next_time(ti, im->xlab_user.mgridtm, im->xlab_user.mgridst)
+         ti = find_next_time(ti,
+                             im->xlab_user.mgridtm,
+                             im->xlab_user.mgridst,
+                             im->extra_flags & FORCE_UTC_TIME)
         ) {
         /* are we inside the graph ? */
         if (ti < im->start || ti > im->end)
@@ -3114,18 +3094,22 @@ void vertical_grid(
          find_first_time(im->start -
                          im->xlab_user.precis / 2,
                          im->xlab_user.labtm,
-                         im->xlab_user.labst);
+                         im->xlab_user.labst,
+                         im->extra_flags & FORCE_UTC_TIME);
          (ti <=
           im->end -
           im->xlab_user.precis / 2) && ti != -1;
-         ti = find_next_time(ti, im->xlab_user.labtm, im->xlab_user.labst)
+         ti = find_next_time(ti,
+                             im->xlab_user.labtm,
+                             im->xlab_user.labst,
+                             im->extra_flags & FORCE_UTC_TIME)
         ) {
         tilab = ti + im->xlab_user.precis / 2;  /* correct time for the label */
         /* are we inside the graph ? */
         if (tilab < im->start || tilab > im->end)
             continue;
 #ifdef HAVE_STRFTIME
-        localtime_r(&tilab, &tm);
+        LOCALTIME_R(&tilab, &tm, im->extra_flags & FORCE_UTC_TIME);
         strftime(graph_label, 99, im->xlab_user.stst, &tm);
 #else
 # error "your libc has no strftime I guess we'll abort the exercise here."
@@ -3220,7 +3204,7 @@ int grid_paint(
                 return -1;
         }
 
-        /* dont draw horizontal grid if there is no min and max val */
+        /* don't draw horizontal grid if there is no min and max val */
         if (!res) {
             char     *nodata = "No Data found";
 
@@ -3567,7 +3551,7 @@ int graph_size_location(
     }
 
     if (im->title && im->title[0] != '\0') {
-        /* The title is placed "inbetween" two text lines so it
+        /* The title is placed "in between" two text lines so it
          ** automatically has some vertical spacing.  The horizontal
          ** spacing is added here, on each side.
          */
@@ -4790,6 +4774,16 @@ rrd_info_t *rrd_graph_v(
         img.u_blo.ptr = im.rendered_image;
         grinfo_push(&im, sprintf_alloc("image"), RD_I_BLO, img);
     }
+    if (im.extra_flags & FORCE_JSONTIME) {
+        im.imgformat = IF_JSONTIME;
+        if (rrd_graph_xport(&im)) {
+	        rrd_infoval_t img;
+
+	        img.u_blo.size = im.rendered_image_size;
+	        img.u_blo.ptr = im.rendered_image;
+	        grinfo_push(&im, sprintf_alloc("datapoints"), RD_I_BLO, img);
+        }
+    }
     grinfo = im.grinfo;
     im_free(&im);
     return grinfo;
@@ -4826,8 +4820,6 @@ void rrd_graph_init(
 {
     unsigned int i;
     char     *deffont = getenv("RRD_DEFAULT_FONT");
-    static PangoFontMap *fontmap = NULL;
-    static mutex_t fontmap_mutex = MUTEX_INITIALIZER;
     PangoContext *context;
 
     /* zero the whole structure first */
@@ -4917,7 +4909,6 @@ void rrd_graph_init(
         im->font_options = cairo_font_options_create();
         im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
         im->cr = cairo_create(im->surface);
-        im->fontmap_mutex = &fontmap_mutex;
 
         for (i = 0; i < DIM(text_prop); i++) {
             im->text_prop[i].size = -1;
@@ -4926,11 +4917,7 @@ void rrd_graph_init(
                               text_prop[i].size);
         }
 
-        mutex_lock(im->fontmap_mutex);
-
-        if (fontmap == NULL) {
-            fontmap = pango_cairo_font_map_new();
-        }
+        PangoFontMap *fontmap = pango_cairo_font_map_get_default();
 
 #ifdef HAVE_PANGO_FONT_MAP_CREATE_CONTEXT
         context = pango_font_map_create_context((PangoFontMap *) fontmap);
@@ -4954,8 +4941,6 @@ void rrd_graph_init(
             (im->font_options, CAIRO_HINT_METRICS_ON);
         cairo_font_options_set_antialias(im->font_options,
                                          CAIRO_ANTIALIAS_GRAY);
-
-        mutex_unlock(im->fontmap_mutex);
     }
 
     for (i = 0; i < DIM(graph_col); i++)
@@ -4983,6 +4968,7 @@ void rrd_graph_options(
     /* defines for long options without a short equivalent. should be bytes,
        and may not collide with (the ASCII value of) short options */
 #define LONGOPT_UNITS_SI 255
+#define LONGOPT_ADD_JSONTIME 254
 
 /* *INDENT-OFF* */
     struct optparse_long longopts[] = {
@@ -5029,6 +5015,7 @@ void rrd_graph_options(
         {"lazy",               'z', OPTPARSE_NONE},
         {"use-nan-for-all-missing-data", 'Z', OPTPARSE_NONE},
         {"units",              LONGOPT_UNITS_SI, OPTPARSE_REQUIRED},
+        {"add-jsontime",       LONGOPT_ADD_JSONTIME, OPTPARSE_NONE},
         {"alt-y-mrtg",         1000, OPTPARSE_NONE},    /* this has no effect it is just here to save old apps from crashing when they use it */
         {"disable-rrdtool-tag",1001, OPTPARSE_NONE},
         {"right-axis",         1002, OPTPARSE_REQUIRED},
@@ -5044,7 +5031,8 @@ void rrd_graph_options(
         {"left-axis-format",   1012, OPTPARSE_REQUIRED},
         {"left-axis-formatter",1013, OPTPARSE_REQUIRED},
         {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
-        {"allow-shrink",        1015, OPTPARSE_NONE},
+        {"allow-shrink",       1015, OPTPARSE_NONE},
+        {"utc",                1016, OPTPARSE_NONE},
         {0}
 };
 /* *INDENT-ON* */
@@ -5128,6 +5116,13 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+            break;
+        case LONGOPT_ADD_JSONTIME:
+            if (im->extra_flags & FORCE_JSONTIME) {
+                rrd_set_error("--add-jsontime can only be used once!");
+                return;
+            }
+            im->extra_flags |= FORCE_JSONTIME;
             break;
         case 'X':
             im->unitsexponent = atoi(poptions->optarg);
@@ -5395,6 +5390,9 @@ void rrd_graph_options(
                 return;
             }
             break;
+        case 1016:
+            im->extra_flags |= FORCE_UTC_TIME;
+            break;
         case 'z':
             im->lazy = 1;
             break;
@@ -5576,11 +5574,9 @@ void rrd_graph_options(
         }
     }                   /* while (opt != -1) */
 
-    mutex_lock(im->fontmap_mutex);
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout),
                                          im->font_options);
     pango_layout_context_changed(im->layout);
-    mutex_unlock(im->fontmap_mutex);
 
 
     if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
@@ -6355,7 +6351,7 @@ image_title_t graph_title_split(
                 }
         }
 
-        // We previous found a delimitor so lets null terminate it
+        // We previous found a delimiter so lets null terminate it
         if (found_pos)
             *found_pos = '\0';
 
@@ -6368,7 +6364,7 @@ image_title_t graph_title_split(
             consumed = found_pos;
         }
 
-        // move the consumed pointer past any delimitor, so we can loop around again
+        // move the consumed pointer past any delimiter, so we can loop around again
         consumed = consumed + found_size;
     }
     // must not create more than MAX lines, so must stop splitting

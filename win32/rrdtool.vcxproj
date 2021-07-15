@@ -1,38 +1,67 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Static Debug|Win32">
       <Configuration>Static Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Static Debug|x64">
+      <Configuration>Static Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{11CD05F8-E5E1-476E-A75F-A112655D4E94}</ProjectGuid>
     <RootNamespace>rrdtool</RootNamespace>
+    <IntDirSharingDetected>None</IntDirSharingDetected>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -41,10 +70,19 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -67,6 +105,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USE_32BIT_TIME_T;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -75,15 +114,15 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>.;../../contrib/cairo/include/cairo;../../contrib/pango/include/pango-1.0;../../contrib/glib/include/glib-2.0;../../contrib/glib/lib/glib-2.0/include;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>librrd-4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librrd-8.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <AdditionalLibraryDirectories>$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>NotSet</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
@@ -106,11 +145,52 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <ProgramDataBaseFileName>$(IntDir)rrdtool.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>librrd-8.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+      <AdditionalLibraryDirectories>$(Platform)/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>NotSet</SubSystem>
+    </Link>
+    <PostBuildEvent>
+      <Message>get all the dlls, needed for running</Message>
+      <Command>copy $(ProjectDir)\..\contrib-x64\bin\libcairo-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libexpat-1.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libffi-6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libfontconfig-1.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libfreetype-6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libglib-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libgmodule-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libgobject-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libintl-8.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpango-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangocairo-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangoft2-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangowin32-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpng14-14.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libxml2-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\zlib1.dll $(TargetDir)\
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>.;../../contrib/cairo/include/cairo;../../contrib/pango/include/pango-1.0;../../contrib/glib/include/glib-2.0;../../contrib/glib/lib/glib-2.0/include;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USE_32BIT_TIME_T;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -119,7 +199,7 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>librrd-4.lib;cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librrd-8.lib;cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(Configuration); ../contrib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -147,10 +227,51 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <ProgramDataBaseFileName>$(IntDir)rrdtool.pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>librrd-8.lib;cairo.lib;pango-1.0.lib;pangocairo-1.0.lib;libpng.lib;zdll.lib;glib-2.0.lib;gobject-2.0.lib;libxml2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Platform)/$(Configuration); ../contrib-x64/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <PostBuildEvent>
+      <Message>get all the dlls, needed for running</Message>
+      <Command>copy $(ProjectDir)\..\contrib-x64\bin\libcairo-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libexpat-1.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libffi-6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libfontconfig-1.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libfreetype-6.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libglib-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libgmodule-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libgobject-2.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libintl-8.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpango-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangocairo-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangoft2-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangowin32-1.0-0.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libpng14-14.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\libxml2-2.dll $(TargetDir)\
+copy $(ProjectDir)\..\contrib-x64\bin\zlib1.dll $(TargetDir)\
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -158,18 +279,19 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll $(TargetDir)\
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>.;../../contrib/cairo/include/cairo;../../contrib/pango/include/pango-1.0;../../contrib/glib/include/glib-2.0;../../contrib/glib/lib/glib-2.0/include;../../contrib/libpng/include;../../contrib/zlib/include;../../contrib/libxml2/include/libxml2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>librrd-4.lib;cairo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librrd-8.lib;cairo.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <AdditionalLibraryDirectories>$(Configuration);../contrib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>NotSet</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Message>get all the dlls, needed for running</Message>
+      <!-- "Static Debug" contains a space, add quotes around $(TargetDir) -->
       <Command>copy $(ProjectDir)\..\contrib\bin\freetype6.dll "$(TargetDir)"\
 copy $(ProjectDir)\..\contrib\bin\intl.dll "$(TargetDir)"\
 copy $(ProjectDir)\..\contrib\bin\libcairo-2.dll "$(TargetDir)"\
@@ -189,6 +311,47 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll "$(TargetDir)"\
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Static Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>librrd-8.lib;cairo.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+      <AdditionalLibraryDirectories>$(Platform)/$(Configuration);../contrib-x64/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>NotSet</SubSystem>
+    </Link>
+    <PostBuildEvent>
+      <Message>get all the dlls, needed for running</Message>
+      <!-- "Static Debug" contains a space, add quotes around $(TargetDir) -->
+      <Command>copy $(ProjectDir)\..\contrib-x64\bin\libcairo-2.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libexpat-1.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libffi-6.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libfontconfig-1.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libfreetype-6.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libglib-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libgmodule-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libgobject-2.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libintl-8.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libpango-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangocairo-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangoft2-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libpangowin32-1.0-0.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libpng14-14.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\libxml2-2.dll "$(TargetDir)"\
+copy $(ProjectDir)\..\contrib-x64\bin\zlib1.dll "$(TargetDir)"\
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\rrd_tool.c" />
   </ItemGroup>
@@ -197,7 +360,7 @@ copy $(ProjectDir)\..\contrib\bin\zlib1.dll "$(TargetDir)"\
     <ClInclude Include="..\src\rrd_tool.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="librrd-4.vcxproj">
+    <ProjectReference Include="librrd-8.vcxproj">
       <Project>{cc158e1d-1364-43ca-9b2d-4af54225c7ca}</Project>
     </ProjectReference>
   </ItemGroup>

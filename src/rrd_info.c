@@ -8,6 +8,9 @@
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
 #include <stdarg.h>
+#ifdef _MSC_VER
+#include "asprintf.h"   /* for vasprintf() here */
+#endif
 
 /* allocate memory for string */
 char     *sprintf_alloc(

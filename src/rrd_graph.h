@@ -25,7 +25,6 @@
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
-#include "mutex.h"
 
 #include <glib.h>
 
@@ -45,6 +44,8 @@
 #define FULL_SIZE_MODE     0x200    /* -width and -height indicate the total size of the image */
 #define NO_RRDTOOL_TAG 0x400  /* disable the rrdtool tag */
 #define ALLOW_MISSING_DS 0x800  /* missing DS is not fatal */
+#define FORCE_JSONTIME 0x2000  /* add jsontime to graphv output */
+#define FORCE_UTC_TIME 0x1000   /* Work in UTC timezone instead of localtimg */
 
 #define gdes_fetch_key(x)  sprintf_alloc("%s:%s:%d:%d:%d:%d:%d:%d",x.rrd,x.daemon,x.cf,x.cf_reduce,x.start_orig,x.end_orig,x.step_orig,x.step)
 
@@ -351,7 +352,6 @@ typedef struct image_desc_t {
     rrd_info_t *grinfo_current; /* pointing to current entry */
     GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
     GHashTable* rrd_map;  /* a map of all rrd files in use for gdef entries */
-    mutex_t *fontmap_mutex; /* Mutex for locking the global fontmap */
     enum image_init_en init_mode; /* do we need Cairo/Pango? */
     double x_pixie; /* scale for X (see xtr() for reference) */
     double y_pixie; /* scale for Y (see ytr() for reference) */
@@ -415,11 +415,13 @@ int       data_proc(
 time_t    find_first_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 time_t    find_next_time(
     time_t,
     enum tmt_en,
-    long);
+    long,
+    int);
 int       print_calc(
     image_desc_t *);
 int       leg_place(

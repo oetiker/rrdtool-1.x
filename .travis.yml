@@ -1,6 +1,10 @@
+# dist: trusty
+dist: xenial
+
 language: c
 
 perl:
+  - "5.22"
   - "5.20"
   - "5.18"
   - "5.16"
@@ -9,7 +13,7 @@ perl:
 
 install:
   - sudo apt-get update || true
-  - sudo apt-get install autopoint libdbi-dev tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python-pip python-setuptools libpango1.0-dev ghostscript
+  - sudo apt-get install autopoint libdbi-dev libtool-bin tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python-pip python-setuptools libpango1.0-dev ghostscript
   - sudo pip install cpp-coveralls
 
 before_script:
@@ -17,14 +21,15 @@ before_script:
 
 script:
   - ./configure --prefix=/opt/rrdtool-master --disable-ruby
-# - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
+  # - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
   - make
   - make check
   - make check TESTS_STYLE="rrdcached"
-# - make check TESTS_STYLE="valgrind-logfile"
-# Disable the following, failing tests: rpn1 rpn2 create-with-source-4 vformatter1 xport1
-# These tests are failing on Travis CI (currently gcc 4.8.4, Ubuntu 14.04.3), when using valgrind-logfile
-  - make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 list1"
+  # - make check TESTS_STYLE="valgrind-logfile"
+  # Disable the following, failing tests: rpn1 rpn2 xport1
+  # These tests are failing on Travis CI (currently Ubuntu xenial, 16.04LTS), when using valgrind-logfile
+  - make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 list1 pdp-calc1"
+  - podchecker doc/*.pod
   - sudo make install
   - cd bindings/perl-shared && make test
   - cd ../python && python setup.py test
@@ -37,9 +42,8 @@ script:
   - ./configure
   - sudo make install
   - cd /opt/rrdtool-`cat VERSION`
-  - ./bin/rrdtool  
+  - ./bin/rrdtool
 
 # after_success:
 #  - ( cd src ; find -name '*.c' | xargs -n 1 gcov -a .libs ; find -name '*.c' | xargs -n 1 )
 #  - coveralls --no-gcov --encoding latin1 --exclude tests --exclude bindings
-

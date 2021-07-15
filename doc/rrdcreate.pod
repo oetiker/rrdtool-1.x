@@ -140,7 +140,7 @@ For COMPUTE data sources, the format is:
 B<DS:>I<ds-name>B<:>I<COMPUTE>B<:>I<rpn-expression>
 
 In order to decide which data source type to use, review the
-definitions that follow. Also consult the section on "HOW TO MEASURE"
+definitions that follow. Also consult the section on L<"HOW TO MEASURE">
 for further insight.
 
 =over

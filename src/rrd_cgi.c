@@ -146,7 +146,7 @@ static s_cgi *rrdcgiInit(
  *  or doesn't exist.
  */
 static char *rrdcgiGetValue(
-    s_cgi * parms,
+    s_cgi *parms,
     const char *name);
 
 /*  rrdcgiReadVariables()
@@ -198,6 +198,7 @@ typedef struct {
    start with a heapsize of 10 variables */
 #define INIT_VARSTORE_SIZE	10
 static vardata *varheap = NULL;
+static vardata *varheap_tmp = NULL; /* temp variable for realloc() */
 static size_t varheap_size = 0;
 
 /* allocate and initialize variable heap */
@@ -292,11 +293,13 @@ static const char *putvar(
         /* ran out of heap: resize heap to double size */
         size_t    new_size = varheap_size * 2;
 
-        varheap = (vardata *) (realloc(varheap, sizeof(vardata) * new_size));
-        if (!varheap) {
+        varheap_tmp =
+            (vardata *) (realloc(varheap, sizeof(vardata) * new_size));
+        if (!varheap_tmp) {
             fprintf(stderr, "ERROR: Unable to realloc variable heap\n");
             return NULL;
         }
+        varheap = varheap_tmp;
         /* initialize newly allocated memory */ ;
         memset(&varheap[varheap_size], 0, sizeof(vardata) * varheap_size);
         varheap_size = new_size;
@@ -346,9 +349,7 @@ static void calfree(
         long      i;
 
         for (i = 0; calcpr[i]; i++) {
-            if (calcpr[i]) {
-                free(calcpr[i]);
-            }
+            free(calcpr[i]);
         }
         if (calcpr) {
             free(calcpr);
@@ -397,11 +398,11 @@ static int readfile(
         totalcnt = (ftell(input) + 1) / sizeof(char) - offset;
         if (totalcnt < MEMBLK)
             totalcnt = MEMBLK;  /* sanitize */
-        if (fseek(input, offset * sizeof(char), SEEK_SET) == -1)
-        {
-           rrd_set_error("fseek() failed on %s: %s", file_name, rrd_strerror(errno));
-           fclose(input);
-           return (-1);
+        if (fseek(input, offset * sizeof(char), SEEK_SET) == -1) {
+            rrd_set_error("fseek() failed on %s: %s", file_name,
+                          rrd_strerror(errno));
+            fclose(input);
+            return (-1);
         }
     }
     if (((*buffer) = (char *) malloc((totalcnt + 4) * sizeof(char))) == NULL) {
@@ -436,12 +437,13 @@ int main(
     char     *buffer;
     long      i;
     long      filter = 0;
+
     struct optparse_long longopts[] = {
         {"filter", 'f', OPTPARSE_NONE},
         {0},
     };
     struct optparse options;
-    int opt;
+    int       opt;
 
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE, SIG_IGN);
@@ -454,7 +456,7 @@ int main(
        for (i=0;i<argc;i++)
        printf("%d-'%s'\n",i,argv[i]); */
     optparse_init(&options, argc, argv);
-    while ((opt = optparse_long(&options,longopts,NULL)) != -1) {
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
         switch (opt) {
         case 'f':
             filter = 1;
@@ -524,7 +526,7 @@ int main(
 
     if (!filter) {
         printf("Content-Type: text/html\n"
-               "Content-Length: %zd\n", strlen(buffer));
+               "Content-Length: %zu\n", strlen(buffer));
 
         if (labs(goodfor) > 0) {
             time_t    now;
@@ -561,7 +563,7 @@ static char *rrdsetenv(
 {
     if (argc >= 2) {
         const size_t len = strlen(args[0]) + strlen(args[1]) + 2;
-        char *xyz = (char *) malloc(len);
+        char     *xyz = (char *) malloc(len);
 
         if (xyz == NULL) {
             return stralloc("[ERROR: allocating setenv buffer]");
@@ -678,7 +680,11 @@ static char *rrdgetinternal(
         if (strcasecmp(args[0], "VERSION") == 0) {
             return stralloc(PACKAGE_VERSION);
         } else if (strcasecmp(args[0], "COMPILETIME") == 0) {
+#ifdef BUILD_DATE
+            return stralloc(BUILD_DATE);
+#else
             return stralloc(__DATE__ " " __TIME__);
+#endif
         } else {
             return stralloc("[ERROR: internal unknown argument]");
         }
@@ -754,7 +760,8 @@ static char *includefile(
 
         readfile(filename, &buffer, 0);
         if (rrd_test_error()) {
-            char err[4096];
+            char      err[4096];
+
             snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
 
@@ -921,7 +928,8 @@ static char *drawgraph(
         return stralloc(calcpr[0]);
     } else {
         if (rrd_test_error()) {
-            char err[4096];
+            char      err[4096];
+
             snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
 
@@ -964,7 +972,8 @@ static char *printtimelast(
 
         last = rrd_last(argc, (char **) args - 1);
         if (rrd_test_error()) {
-            char err[4096];
+            char      err[4096];
+
             snprintf(err, sizeof(err), "[ERROR %s]", rrd_get_error());
             rrd_clear_error();
 
@@ -975,7 +984,9 @@ static char *printtimelast(
         strftime(buf, 254, args[1], &tm_last);
         return buf;
     }
-    return stralloc("[ERROR: expected <RRD::TIME::LAST file.rrd strftime-format>]");
+    return
+        stralloc
+        ("[ERROR: expected <RRD::TIME::LAST file.rrd strftime-format>]");
 }
 
 static char *printtimenow(
@@ -1026,6 +1037,7 @@ static char *scanargs(
     /* local array of arguments while parsing */
     int       argc = 1;
     char    **argv;
+    char    **argv_tmp; /* temp variable for realloc() */
 
 #ifdef DEBUG_PARSER
     printf("<-- scanargs(%s) -->\n", line);
@@ -1131,10 +1143,11 @@ static char *scanargs(
         if (argc == argsz - 2) {
             /* resize argument array */
             argsz *= 2;
-            argv = (char **) rrd_realloc(argv, argsz * sizeof(char *));
-            if (*argv == NULL) {
+            argv_tmp = (char **) rrd_realloc(argv, argsz * sizeof(char *));
+            if (*argv_tmp == NULL) {
                 return NULL;
             }
+            argv = argv_tmp;
         }
     }
 
@@ -1167,8 +1180,8 @@ static char *scanargs(
        over seemingly the old array ... but doing argv-1 will actually end
        up in a 'good' place now. */
 
-    *arguments = argv+1;
-    *argument_count = argc-1;
+    *arguments = argv + 1;
+    *argument_count = argc - 1;
 
     if (Quote) {
         return NULL;
@@ -1190,8 +1203,8 @@ static int parse(
     char **buf,         /* buffer */
     long i,             /* offset in buffer */
     char *tag,          /* tag to handle  */
-    char *    (*func) (long,
-                       const char **)   /* function to call for 'tag' */
+    char *    (*func)(long,
+                      const char **)    /* function to call for 'tag' */
     )
 {
     /* the name of the vairable ... */
@@ -1222,7 +1235,7 @@ static int parse(
     if (end) {
         /* got arguments, call function for 'tag' with arguments */
         val = func(argc, (const char **) args);
-        free(args-1);
+        free(args - 1);
     } else {
         /* next call, try parsing at current offset +1 */
         end = (*buf) + i + 1;
@@ -1333,11 +1346,13 @@ static char *rrdcgiDecodeString(
  * We can safely call free() on result[i]->{name,value} because they are
  * memset() to 0 after their allocation.
  */
-static void free_result(s_var **result, int number)
+static void free_result(
+    s_var **result,
+    int number)
 {
-    int i;
+    int       i;
 
-    for(i = 0; i < number; i++) {
+    for (i = 0; i < number; i++) {
         if (result && result[i]) {
             free(result[i]->name);
             free(result[i]->value);
@@ -1398,7 +1413,7 @@ static s_var **rrdcgiReadVariables(
                 if ((unsigned) length > tmplen) {
                     if ((line = (char *) realloc(line, len)) == NULL)
                         return NULL;
-                    strncat(line, tmp, tmplen);
+                    strncat(line, tmp, len - strlen(line) - 1);
                 } else {
                     /* clean-up the storage allocated in previous iteration */
                     if (line) {
@@ -1488,7 +1503,8 @@ static s_var **rrdcgiReadVariables(
                     return NULL;
                 }
                 if ((result[i]->name =
-                     (char *) malloc((esp - cp + 1) * sizeof(char))) == NULL) {
+                     (char *) malloc((esp - cp + 1) * sizeof(char))) ==
+                    NULL) {
                     free_result(result, i);
                     free(line);
                     return NULL;
@@ -1497,7 +1513,8 @@ static s_var **rrdcgiReadVariables(
                 strncpy(result[i]->name, cp, esp - cp);
                 cp = ++esp;
                 if ((result[i]->value =
-                     (char *) malloc((ip - esp + 1) * sizeof(char))) == NULL) {
+                     (char *) malloc((ip - esp + 1) * sizeof(char))) ==
+                    NULL) {
                     free_result(result, i);
                     free(line);
                     return NULL;
@@ -1552,7 +1569,7 @@ static s_cgi *rrdcgiInit(
     vars = rrdcgiReadVariables();
 
     if (!vars) {
-    	free(res);
+        free(res);
         return NULL;
     }
 
@@ -1562,7 +1579,7 @@ static s_cgi *rrdcgiInit(
 }
 
 static char *rrdcgiGetValue(
-    s_cgi * parms,
+    s_cgi *parms,
     const char *name)
 {
     int       i;
@@ -1589,4 +1606,3 @@ static char *rrdcgiGetValue(
     }
     return NULL;
 }
-

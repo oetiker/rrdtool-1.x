@@ -180,6 +180,8 @@ static void PrintUsage(
            "\t\t[-t|--title string]\n"
            "\t\t[-W|--watermark string]\n"
            "\t\t[-Z|--use-nan-for-all-missing-data]\n"
+           "\t\t[--add-jsontime]\n"
+           "\t\t[--utc]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n");
     const char *help_graph3 =
         N_("\t\t[CDEF:vname=rpn-expression]\n"
@@ -307,7 +309,11 @@ static void PrintUsage(
         else if (!strcmp(cmd, "pwd"))
             help_cmd = C_PWD;
     }
+#ifdef BUILD_DATE
+    fprintf(stdout, _(help_main), PACKAGE_VERSION, BUILD_DATE);
+#else
     fprintf(stdout, _(help_main), PACKAGE_VERSION, __DATE__, __TIME__);
+#endif
     fflush(stdout);
     switch (help_cmd) {
     case C_NONE:

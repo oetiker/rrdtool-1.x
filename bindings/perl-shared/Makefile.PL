@@ -19,7 +19,7 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 		'LDDLFLAGS'    => '-dll -nologo -opt:ref,icf -ltcg -libpath:"$perl_core_dir" -machine:X86',
 		'LDFLAGS'      => '-nologo -opt:ref,icf -ltcg -libpath:"$perl_core_dir" -machine:X86',
 		'OPTIMIZE'     => '-O2 -MD',
-		'LIBS'         => qq{"../../win32/librrd-4.lib" "perl$perlver.lib" -L../../contrib/lib -L../../win32 -L"$sdk_dir/lib" -L"$vc_dir/lib" -L"$perl_core_dir"},
+		'LIBS'         => qq{"../../win32/librrd-8.lib" "perl$perlver.lib" -L../../contrib/lib -L../../win32 -L"$sdk_dir/lib" -L"$vc_dir/lib" -L"$perl_core_dir"},
 		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
 		($] ge '5.005') ? (
 			'AUTHOR'   => 'Tobias Oetiker (tobi@oetiker.ch)',

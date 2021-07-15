@@ -171,7 +171,7 @@ number of PDPs. This RRA will hold I<rows> CDPs.
 
 Lets have a look at the example above. For the first RRA, 12 (steps)
 PDPs (DS variables) are AVERAGEed (CF) to form one CDP. 24 (rows) of
-theses CDPs are archived. Each PDP occurs at 300 seconds. 12 PDPs
+these CDPs are archived. Each PDP occurs at 300 seconds. 12 PDPs
 represent 12 times 300 seconds which is 1 hour. It means 1 CDP (which
 is equal to 12 PDPs) represents data worth 1 hour. 24 such CDPs
 represent 1 day (1 hour times 24 CDPs). This means, this RRA is an

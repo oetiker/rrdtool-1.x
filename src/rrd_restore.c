@@ -25,11 +25,6 @@
 
 #ifndef _WIN32
 #	include <unistd.h>     /* for off_t */
-#else
-#ifndef __MINGW32__     /* MinGW-w64 has ssize_t and off_t */
-	typedef size_t ssize_t;
-	typedef long off_t;
-#endif
 #endif
 
 #include <fcntl.h>

@@ -10,6 +10,10 @@ Bugfixes
 * Fix %s/%S unit autoscaling in gprint for json/xml <az143>
 * Optimized PDP Calculation <JKammler>
 
+Features
+--------
+* Added support for --add-jsontime which will include jsontime xport data to graphv data
+
 RRDtool 1.7.1 - 2019-02-04
 ==========================
 Bugfixes
