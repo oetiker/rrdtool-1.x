@@ -774,9 +774,14 @@ static int HandleInputLine(
         rrd_value_t *data;
         char    **legend_v;
 
-        rrd_xport
-            (argc - 1, &argv[1], NULL, &start, &end, &step, &col_cnt,
-             &legend_v, &data);
+        if(rrd_xport
+              (argc - 1, &argv[1], NULL, &start, &end, &step, &col_cnt,
+               &legend_v, &data) == 0) {
+          while (col_cnt--)
+            free(legend_v[col_cnt]);
+          free(legend_v);
+          free(data);
+        }
 #else
         rrd_set_error
             ("the instance of rrdtool has been compiled without graphics");
