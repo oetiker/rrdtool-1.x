@@ -371,6 +371,8 @@ static int rrd_xport_fn(
          (rrd_value_t *) malloc((*col_cnt) * row_cnt *
                                 sizeof(rrd_value_t))) == NULL) {
         free(ref_list);
+        while ((*col_cnt)--)
+            free(legend_list[*col_cnt]);
         free(legend_list);
         rrd_set_error("malloc xport data area");
         return (-1);
