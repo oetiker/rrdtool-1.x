@@ -792,7 +792,8 @@ static char *rrdstrip(
 
     p = buf;
     while (*p) {
-        if (*p == '<' || *p == '>') {
+        if (*p == '<' || *p == '>' ||
+            *p == '&' || *p < ' ' || *p == '\'' || *p == '"') {
             *p = '_';
         }
         p++;
@@ -919,7 +920,7 @@ static char *drawgraph(
             break;
     if (i == argc) {
         args[argc++] = "--imginfo";
-        args[argc++] = "<IMG SRC=\"./%s\" WIDTH=\"%lu\" HEIGHT=\"%lu\">";
+        args[argc++] = "<img src=\"./%s\" width=\"%lu\" height=\"%lu\" />";
     }
     calfree();
     if (rrd_graph
