@@ -42,7 +42,7 @@ install-data-local:
            && ( cd ${builddir}/python \
                 && env BUILDLIBDIR=${abs_top_builddir}/src/.libs \
                   $(PYTHON) ${abs_srcdir}/python/setup.py install \
-                     --skip-build --root=$(DESTDIR) --prefix=$(prefix) \
+                     --skip-build --root=$(DESTDIR)/// --prefix=$(prefix) \
                      --exec-prefix=$(exec_prefix)) \
            || true
 
