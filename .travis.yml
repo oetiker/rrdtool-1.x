@@ -32,7 +32,7 @@ script:
   - podchecker doc/*.pod
   - sudo make install
   - cd bindings/perl-shared && make test
-  - cd ../python && python setup.py test
+  - cd ../python && sudo chown -R travis rrdtool.egg-info && python setup.py test
   - /opt/rrdtool-master/bin/rrdtool
   - /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
   - cd ../..
