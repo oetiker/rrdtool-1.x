@@ -2057,6 +2057,98 @@ int rrdc_fetch(
     return status;
 }                       /* }}} int rrdc_fetch */
 
+int rrd_client_tune(
+    rrd_client_t *client,
+    const char *filename,   /* {{{ */
+    int argc,
+    const char **argv)
+{
+    char      buffer[RRD_CMD_MAX];
+    char     *buffer_ptr;
+    size_t    buffer_free;
+    size_t    buffer_size;
+    rrdc_response_t *res;
+    int       status;
+    char     *file_path;
+    int       i;
+
+    if (client == NULL)
+        return -1;
+    if (filename == NULL) {
+        rrd_set_error("rrdc_tune: no filename specified");
+        return (-1);
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    buffer_ptr = &buffer[0];
+    buffer_free = sizeof(buffer);
+
+    status = buffer_add_string("tune", &buffer_ptr, &buffer_free);
+    if (status != 0) {
+        rrd_set_error("rrdc_tune: out of memory");
+        return (-1);
+    }
+
+    file_path = get_path(client, filename);
+    if (file_path == NULL) {
+        return (-1);
+    }
+
+    status = buffer_add_string(file_path, &buffer_ptr, &buffer_free);
+    free(file_path);
+
+    if (status != 0) {
+        rrd_set_error("rrdc_tune: out of memory");
+        return (-1);
+    }
+
+    status = buffer_add_ulong(argc, &buffer_ptr, &buffer_free);
+    if (status != 0) {
+        rrd_set_error("rrdc_tune: out of memory");
+        return (-1);
+    }
+
+    for (i = 0; i < argc; i++) {
+        if (argv[i]) {
+            status = buffer_add_string(argv[i], &buffer_ptr, &buffer_free);
+            if (status != 0) {
+                rrd_set_error("rrdc_tune: out of memory");
+                return (-1);
+            }
+        }
+    }
+
+    /* buffer ready to send? */
+    assert(buffer_free < sizeof(buffer));
+    buffer_size = sizeof(buffer) - buffer_free;
+    assert(buffer[buffer_size - 1] == ' ');
+    buffer[buffer_size - 1] = '\n';
+
+    res = NULL;
+    status = request(client, buffer, buffer_size, &res);
+
+    if (status != 0)
+        return (-1);
+
+    status = res->status;
+    response_free(res);
+    return (status);
+}                       /* }}} int rrd_client_tune */
+
+int rrdc_tune(
+    const char *filename,   /* {{{ */
+    int argc,
+    const char **argv)
+{
+    int       status;
+
+    mutex_lock(&lock);
+    status =
+        rrd_client_tune(&default_client, filename, argc, argv);
+    mutex_unlock(&lock);
+    return status;
+}                       /* }}} int rrdc_tune */
+
 /* convenience function; if there is a daemon specified, or if we can
  * detect one from the environment, then flush the file.  Otherwise, no-op
  */

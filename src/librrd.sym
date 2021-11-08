@@ -16,6 +16,8 @@ rrd_dump_r
 rrd_fetch
 rrd_fetch_cb_register
 rrd_fetch_r
+rrd_tune
+rrd_tune_r
 rrd_first
 rrd_first_r
 rrd_flush

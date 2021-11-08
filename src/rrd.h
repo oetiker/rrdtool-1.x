@@ -303,6 +303,10 @@ extern    "C" {
     unsigned long *ds_cnt,
     char ***ds_namv,
     rrd_value_t **data);
+    int       rrd_tune_r(
+    const char *filename,
+    int argc,
+    const char **argv);
     int       rrd_dump_opt_r(
     const char *filename,
     char *outname,

@@ -1791,6 +1791,73 @@ static int handle_request_update(
     return rc;
 }                       /* }}} int handle_request_update */
 
+
+static int handle_request_tune(
+    HANDLER_PROTO)
+{                       /* {{{ */
+    int       status;
+    char**    argv = NULL;
+    int       argc, argc_tmp;
+    char*     i;
+    int       rc;
+    char     *file = NULL, *pbuffile;
+    char     *tok;
+
+    /* obtain filename */
+    status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+    if (status != 0) {
+        rc = syntax_error(sock, cmd);
+        goto done;
+    }
+    /* get full pathname */
+    file = get_abs_path(pbuffile);
+    if (file == NULL) {
+        rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+        goto done;
+    }
+
+    if (!check_file_access(file, sock)) {
+        rc = send_response(sock, RESP_ERR, "%s: %s\n", file,
+                           rrd_strerror(EACCES));
+        goto done;
+    }
+    RRDD_LOG(LOG_INFO, "rrdtune request for %s", file);
+
+    status = buffer_get_field(&buffer, &buffer_size, &i);
+    if (status != 0) {
+        rc = syntax_error(sock, cmd);
+        goto done;
+    }
+    argc = atoi(i);
+    if (argc < 0) {
+        rc = send_response(sock, RESP_ERR, "Invalid argument count specified (%d)\n",
+                           argc);
+        goto done;
+    }
+
+    if ((argv = (char **) malloc(argc * sizeof(char*))) == NULL) {
+        rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+        goto done;
+    }
+    argc_tmp = 0;
+    while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0
+           && tok) {
+        argv[argc_tmp] = tok;
+        argc_tmp += 1;
+    }
+
+    status = rrd_tune_r(file, argc, (const char **)argv);
+    if (status != 0) {
+        rc = send_response(sock, RESP_ERR, "Got error %s\n", rrd_get_error());
+        goto done;   
+    }
+    rc = send_response(sock, RESP_OK, "Success\n");
+    done:
+    free(file);
+    free(argv);
+    return rc;
+}  
+
 struct fetch_parsed {
     char     *file;
     char     *cf;
@@ -2810,6 +2877,12 @@ static command_t list_of_commands[] = { /* {{{ */
      CMD_CONTEXT_JOURNAL,
      NULL,
      NULL},
+    {
+     "TUNE",
+     handle_request_tune,
+     CMD_CONTEXT_CLIENT,
+     "TUNE <filename> [options]",
+     "Tunes the given file, takes the parameters as defined in rrdtool"},
     {
      "FLUSH",
      handle_request_flush,
