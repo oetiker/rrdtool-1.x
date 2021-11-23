@@ -86,9 +86,11 @@ else
 fi
 
 if is_cached; then
-        mkdir -p "$LIST_DIR"
+        PWD_TEMP="$PWD"
         # This relies on '-b' setting in functions::run_cached()
-        CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BASEDIR||"`
+        CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BUILDDIR||"`
+        cd "$BASEDIR" && mkdir -p ".$CACHED_DIR"
+        $RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60s DS:dv:DDERIVE:300:U:U DS:wh:DCOUNTER:300:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:10:144
         do_list_tests "$CACHED_DIR"
 
         # rrdcached-specific tests
@@ -97,7 +99,8 @@ if is_cached; then
         test $list_count -eq 0
         report "escape from cached basedir via symlink denied"
 
-        rm -rf "$LIST_DIR"
+        rm -rf ".$CACHED_DIR"
+        cd "$PWD_TEMP"
         stop_cached || true
 else
         echo "rrdcached not started - skipping"

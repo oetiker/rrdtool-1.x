@@ -16,7 +16,7 @@ done
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump && ok "create" || fail "create"
 
 # extend base RRA, refill from coarse RRA
-cp ${BUILD}a.rrd ${BUILD}b.rrd
+cp ${BASE}a.rrd ${BASE}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd DEL:a RRA#0:+10 || fail modify
 
 $RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump && ok "extend base RRA" || fail "extend base RRA"

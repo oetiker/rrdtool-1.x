@@ -17,12 +17,12 @@ done
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 ${BASE}a-create.dump -
 report create
 
-cp ${BUILD}a.rrd ${BUILD}b.rrd
+cp ${BASE}a.rrd ${BASE}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd RRA#1:+10 RRA#2:+10 RRA#3:+10 RRA#4:+10 || fail modify
 $RRDTOOL dump ${BUILD}b.rrd | $DIFF9 ${BASE}b-mod1.dump -
 report "simultaneously extend aggregate RRAs"
 
-cp ${BUILD}a.rrd ${BUILD}c.rrd
+cp ${BASE}a.rrd ${BASE}c.rrd
 $RRDTOOL tune ${BUILD}c.rrd RRA:AVERAGE:0.5:2:10 || fail modify
 $RRDTOOL dump ${BUILD}c.rrd | $DIFF9 ${BASE}c-mod1.dump -
 report "add RRA with intermediate pdp_cnt"

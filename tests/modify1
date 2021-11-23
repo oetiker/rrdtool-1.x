@@ -14,11 +14,12 @@ for T in $(seq 1300000020 60 1300003020) ; do
 	let N=$N+10
 done
 
+
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump 
 report "created content"
 
 # extend base RRA, refill from coarse RRA
-cp ${BUILD}a.rrd ${BUILD}b.rrd
+cp ${BASE}a.rrd ${BASE}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd RRA#0:+10 || fail "tune"
 $RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump 
 report "extend base RRA"
