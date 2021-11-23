@@ -83,6 +83,9 @@ if [ -n "$TEMP_RRDCACHED_ADDRESS" ]; then
         export RRDCACHED_ADDRESS=$TEMP_RRDCACHED_ADDRESS
 else
         run_cached
+        BUILDDIR=$BUILDDIR
+        BUILD=$BUILDDIR/`basename $0`
+        LIST_DIR=$BUILDDIR/`basename $0`_dir
 fi
 
 if is_cached; then

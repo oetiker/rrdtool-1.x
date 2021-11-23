@@ -138,6 +138,8 @@ function run_cached {
         stop_cached
 
         local ADDR
+        [ -z "$RRDCACHED_SOCK" ] && RRDCACHED_SOCK="unix"
+
         if [ $RRDCACHED_SOCK == "unix" ]; then
             export BASEDIR="${BUILDDIR}/cached"
             export BUILDDIR="${BASEDIR}"
@@ -202,7 +204,13 @@ function run_cached {
             export RRDTOOL=RRDTOOLCOMPAT
 
             randport=$(python -S -c "import random; random.seed('$(basename $0)'); print(random.randrange(49152,65535))")
-            ADDR="localhost:$randport"
+            port=$(python -S << HERE
+import socketserver
+with socketserver.TCPServer(("localhost", 0), None) as s:
+  print(s.server_address[1])
+HERE
+)
+            ADDR="localhost:$port"
         fi
 
         CACHED_PID_FILE="$BASEDIR/$(basename $0)-rrdcached.pid"
