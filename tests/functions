@@ -204,10 +204,11 @@ function run_cached {
             export RRDTOOL=RRDTOOLCOMPAT
 
             randport=$(python -S -c "import random; random.seed('$(basename $0)'); print(random.randrange(49152,65535))")
-            port=$(python -S << HERE
-import socketserver
-with socketserver.TCPServer(("localhost", 0), None) as s:
-  print(s.server_address[1])
+            port=$(python2 -S << HERE
+import SocketServer
+s = SocketServer.TCPServer(("localhost", 0), None)
+print(s.server_address[1])
+s.server_close()
 HERE
 )
             ADDR="localhost:$port"
