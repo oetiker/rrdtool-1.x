@@ -25,14 +25,14 @@ jobs:
         include:
           - os: windows-2019
             triplet: x64-windows
-            # https://github.com/microsoft/vcpkg/commit/b361c2eefa3966cb7cec45275aff32e90430aaa6
-            vcpkgCommitId: 'b361c2eefa3966cb7cec45275aff32e90430aaa6'
+            # https://github.com/microsoft/vcpkg/commit/70033dbb31527fb3e69654731f540f59c87787f9
+            vcpkgCommitId: '70033dbb31527fb3e69654731f540f59c87787f9'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2019
             triplet: x86-windows
-            vcpkgCommitId: 'b361c2eefa3966cb7cec45275aff32e90430aaa6'
+            vcpkgCommitId: '70033dbb31527fb3e69654731f540f59c87787f9'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x86'
             nmake_configuration: ''
