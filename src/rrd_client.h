@@ -103,6 +103,10 @@ int rrd_client_fetch(rrd_client_t *client, const char *filename,
     char ***ret_ds_names,
     rrd_value_t **ret_data);
 
+int rrd_client_tune(rrd_client_t *client, const char *filename,
+    int argc,
+    const char **argv);
+
 int rrd_client_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats);
 
 /*
@@ -143,6 +147,10 @@ int rrdc_forget (const char *filename);
 int rrdc_flush_if_daemon (const char *opt_daemon, const char *filename);
 int rrdc_flushall (void);
 int rrdc_flushall_if_daemon (const char *opt_daemon);
+
+int rrdc_tune (const char *filename,
+    int argc,
+    const char **argv);
 
 int rrdc_fetch (const char *filename,
     const char *cf,

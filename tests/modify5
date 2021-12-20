@@ -41,14 +41,14 @@ do
 	$RRDTOOL dump ${BUILD}a2.rrd > ${BUILD}a2-mod.dump.tmp
 	
 	# remove RRA 5 from second RRD, should now match first RRD
-	cp ${BUILD}a2.rrd ${BUILD}b2.rrd 
+	cp ${BASE}a2.rrd ${BASE}b2.rrd 
 	$RRDTOOL tune ${BUILD}b2.rrd DELRRA:5
 
 	$RRDTOOL dump ${BUILD}b2.rrd | diff -u ${BUILD}a1-mod.dump.tmp -
 	report "remove additional RRA from second - must then be equal original first"
 
         # add RRA to first RRD, should now match second RRD
-	cp ${BUILD}a1.rrd ${BUILD}b1.rrd
+	cp ${BASE}a1.rrd ${BASE}b1.rrd
 	$RRDTOOL tune ${BUILD}b1.rrd RRA:AVERAGE:0.5:4:10
 
 	$RRDTOOL dump ${BUILD}b1.rrd | diff -u ${BUILD}a2-mod.dump.tmp -

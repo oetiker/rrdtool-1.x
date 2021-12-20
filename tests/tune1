@@ -22,7 +22,7 @@ report "update"
 is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached)
 
 
-cp ${BUILD}org.rrd ${BUILD}a.rrd
+cp ${BASE}org.rrd ${BASE}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:U
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:-100
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}a-mod1.dump
@@ -31,7 +31,7 @@ report "tune heartbeat/minimum"
 # NOTE: for rrdcached based tests, we must flush before we can copy...
 is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
 
-cp ${BUILD}org.rrd ${BUILD}a.rrd
+cp ${BASE}org.rrd ${BASE}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --data-source-type a:COUNTER --data-source-rename b:c
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}a-mod2.dump
 report "tune dst/ds-name" 

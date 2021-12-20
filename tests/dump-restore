@@ -18,7 +18,7 @@ for A in $(seq $ST 60 $(($ST + 60*($CNT - 1))) ) ; do
 	ST=$A
 	$RRDTOOL update ${BUILD}a1.rrd  $A:$V
 
-	rm -f ${BUILD}a1.xml ${BUILD}r1.rrd ${BUILD}r1.xml
+	rm -f ${BASE}a1.xml ${BASE}r1.rrd ${BASE}r1.xml
 
 	$RRDTOOL dump ${BUILD}a1.rrd ${BUILD}a1.xml
 	$RRDTOOL restore ${BUILD}a1.xml ${BUILD}r1.rrd

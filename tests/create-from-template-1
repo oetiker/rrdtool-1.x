@@ -33,7 +33,7 @@ rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
 $RRDTOOL create ${PREFIX}ax1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U $RRA
 report createax1
 
-cp ${PREFIX}ax1.rrd ${PREFIX}ax1-copy.rrd
+cp ${BASE}ax1.rrd ${BASE}ax1-copy.rrd
 
 UPDATEAx1=
 V=10

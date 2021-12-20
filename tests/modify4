@@ -30,13 +30,13 @@ report create 1
 $RRDTOOL dump ${BUILD}a2.rrd | $DIFF9 ${BASE}a2-create.dump -
 report create 2
 
-cp ${BUILD}a2.rrd ${BUILD}b2.rrd
+cp ${BASE}a2.rrd ${BASE}b2.rrd
 $RRDTOOL tune ${BUILD}b2.rrd DELRRA:5 || fail modify
 
 $RRDTOOL dump ${BUILD}b2.rrd | $DIFF9 ${BASE}a1-create.dump -
 report "remove additional RRA from second - must then be equal original first"
 
-cp ${BUILD}a1.rrd ${BUILD}b1.rrd
+cp ${BASE}a1.rrd ${BASE}b1.rrd
 $RRDTOOL tune ${BUILD}b1.rrd RRA:AVERAGE:0.5:4:10 || fail modify
 
 $RRDTOOL dump ${BUILD}b1.rrd | $DIFF9 ${BASE}a2-create.dump -

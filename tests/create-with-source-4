@@ -73,15 +73,15 @@ report create-ab-with-two-sources
 
 # now calculate average and standard deviation
 
-AB1=$($RRDTOOL graph ${PREFIX}ab1.png --imginfo '' --end "$ST" --start end-1h DEF:a=${PREFIX}ab1.rrd:a:AVERAGE  DEF:b=${PREFIX}ab1.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
-AB2=$($RRDTOOL graph ${PREFIX}ab2.png --imginfo '' --end "$ST" --start end-1h DEF:a=${PREFIX}ab2.rrd:a:AVERAGE  DEF:b=${PREFIX}ab2.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
-
+AB1=$($RRDTOOL graph ${PREFIX}ab1.png --imginfo '%s%lu%lu' --end "$ST" --start end-1h DEF:a=${PREFIX}ab1.rrd:a:AVERAGE  DEF:b=${PREFIX}ab1.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
+AB2=$($RRDTOOL graph ${PREFIX}ab2.png --imginfo '%s%lu%lu' --end "$ST" --start end-1h DEF:a=${PREFIX}ab2.rrd:a:AVERAGE  DEF:b=${PREFIX}ab2.rrd:b:AVERAGE CDEF:c=b,2,/,a,/ VDEF:s=c,STDEV VDEF:cavg=c,AVERAGE PRINT:s:%lg PRINT:cavg:%lg)
+echo $AB1
 set -- $AB1
-STDEV1=$1
-AVG1=$2
+STDEV1=$2
+AVG1=$3
 set -- $AB2
-STDEV2=$1
-AVG2=$2
+STDEV2=$2
+AVG2=$3
 
 [ $AVG1 = 1 ] ; report average ab1 == 1
 [ $(dc <<< "$AVG2 1 - 10000 * 1 / p") -lt 10 ] ; report "average ab2 ($AVG2 - 1) < 1/1000"

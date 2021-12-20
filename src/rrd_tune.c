@@ -73,21 +73,7 @@ int rrd_tune(
     int argc,
     char **argv)
 {
-    rrd_t     rrd;
-    int       matches;
-    int       optcnt = 0;
-    long      ds;
-    char      ds_nam[DS_NAM_SIZE];
-    char      ds_new[DS_NAM_SIZE];
-    long      heartbeat;
-    double    min = 0;
-    double    max = 0;
-    char      dst[DST_SIZE];
-    int       rc = -1;
-    int       opt_newstep = -1;
-    rrd_file_t *rrd_file = NULL;
     char      *opt_daemon = NULL;
-    char      double_str[ 41 ] = {0};
     const char *in_filename = NULL;
     struct optparse_long longopts[] = {
         {"heartbeat", 'h', OPTPARSE_REQUIRED},
@@ -115,10 +101,9 @@ int rrd_tune(
     };
     struct optparse options;
     int opt;
+    int status = -1;
 
     rrd_thread_init();
-    /* Fix CWE-457 */
-    memset(&rrd, 0, sizeof(rrd_t));
 
     /* before we open the input RRD, we should flush it from any caching
     daemon, because we might totally rewrite it later on */
@@ -173,6 +158,77 @@ int rrd_tune(
 	rrd_clear_error();
     }
 
+    if (rrdc_is_any_connected ())
+	    status = rrdc_tune (in_filename, argc, (const char **) argv);
+
+    else
+	    status = rrd_tune_r(in_filename, argc, (const char **) argv);
+    
+done:
+    if (in_filename && rrdc_is_any_connected()) {
+        // save any errors....
+        char *e = strdup(rrd_get_error());
+	// is it a good idea to just ignore the error ????
+	rrdc_forget(in_filename);
+	rrd_clear_error();
+        
+        if (e) {
+            rrd_set_error(e);
+            free(e);
+        } else
+            rrd_set_error("error message was lost (out of memory)");
+    }
+    return status;
+}
+
+int rrd_tune_r(
+    const char* in_filename,
+    int argc,
+    const char **argv)
+{
+    rrd_t     rrd;
+    int       matches;
+    int       optcnt = 0;
+    long      ds;
+    char      ds_nam[DS_NAM_SIZE];
+    char      ds_new[DS_NAM_SIZE];
+    long      heartbeat;
+    double    min = 0;
+    double    max = 0;
+    char      dst[DST_SIZE];
+    int       rc = -1;
+    int       opt_newstep = -1;
+    rrd_file_t *rrd_file = NULL;
+    char      double_str[ 41 ] = {0};
+    struct optparse_long longopts[] = {
+        {"heartbeat", 'h', OPTPARSE_REQUIRED},
+        {"minimum", 'i', OPTPARSE_REQUIRED},
+        {"maximum", 'a', OPTPARSE_REQUIRED},
+        {"data-source-type", 'd', OPTPARSE_REQUIRED},
+        {"data-source-rename", 'r', OPTPARSE_REQUIRED},
+        /* added parameter tuning options for aberrant behavior detection */
+        {"deltapos", 'p', OPTPARSE_REQUIRED},
+        {"deltaneg", 'n', OPTPARSE_REQUIRED},
+        {"window-length", 'w', OPTPARSE_REQUIRED},
+        {"failure-threshold", 'f', OPTPARSE_REQUIRED},
+        {"alpha", 'x', OPTPARSE_REQUIRED},
+        {"beta", 'y', OPTPARSE_REQUIRED},
+        {"gamma", 'z', OPTPARSE_REQUIRED},
+        {"gamma-deviation", 'v', OPTPARSE_REQUIRED},
+        {"smoothing-window", 's', OPTPARSE_REQUIRED},
+        {"smoothing-window-deviation", 'S', OPTPARSE_REQUIRED},
+        {"aberrant-reset", 'b', OPTPARSE_REQUIRED},
+	// integration of rrd_modify functionality.
+        {"step", 't', OPTPARSE_REQUIRED},
+	/* unfortunately, '-d' is already taken */
+        {"daemon", 'D', OPTPARSE_REQUIRED},
+        {0}
+    };
+    struct optparse options;
+    int opt;
+
+    /* Fix CWE-457 */
+    memset(&rrd, 0, sizeof(rrd_t));
     rrd_init(&rrd);
     rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_LOCK |
                                            RRD_READAHEAD | RRD_READVALUES);
@@ -410,19 +466,6 @@ int rrd_tune(
     options.optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
     rc = 0;
 done:
-    if (in_filename && rrdc_is_any_connected()) {
-        // save any errors....
-        char *e = strdup(rrd_get_error());
-	// is it a good idea to just ignore the error ????
-	rrdc_forget(in_filename);
-	rrd_clear_error();
-        
-        if (e) {
-            rrd_set_error(e);
-            free(e);
-        } else
-            rrd_set_error("error message was lost (out of memory)");
-    }
     if (rrd_file) {
 	rrd_close(rrd_file);
     }

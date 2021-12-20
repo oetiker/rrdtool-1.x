@@ -24,7 +24,8 @@ script:
   # - make CFLAGS+="-g -O0 -fprofile-arcs -ftest-coverage" LDFLAGS+="-fprofile-arcs --coverage"
   - make
   - make check
-  - make check TESTS_STYLE="rrdcached"
+  - make check TESTS_STYLE="rrdcached-tcp"
+  - make check TESTS_STYLE="rrdcached-unix"
   # - make check TESTS_STYLE="valgrind-logfile"
   # Disable the following, failing tests: rpn1 rpn2 xport1
   # These tests are failing on Travis CI (currently Ubuntu xenial, 16.04LTS), when using valgrind-logfile

@@ -41,7 +41,7 @@ $RRDTOOL update ${PREFIX}a1.rrd  $UPDATE
 $RRDTOOL create ${PREFIX}a2.rrd --start $ST --step 60 --source ${PREFIX}a1.rrd DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-with-source-1
 
-[ -f ${PREFIX}a2.rrd ] || fail "file is missing!!"
+[ -f ${BASE}a2.rrd ] || fail "file is missing!!"
 
 $RRDTOOL dump ${PREFIX}a1.rrd > ${PREFIX}a1.xml
 $RRDTOOL dump ${PREFIX}a2.rrd > ${PREFIX}a2.xml

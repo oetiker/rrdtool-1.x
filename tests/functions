@@ -138,10 +138,85 @@ function run_cached {
         stop_cached
 
         local ADDR
-        ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
+        [ -z "$RRDCACHED_SOCK" ] && RRDCACHED_SOCK="unix"
+
+        if [ $RRDCACHED_SOCK == "unix" ]; then
+            export BASEDIR="${BUILDDIR}/cached"
+            export BUILDDIR="${BASEDIR}"
+            ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
+        else
+            export BASEDIR="${BUILDDIR}/cached"
+            export RRDCACHED_STRIPPATH="${BUILDDIR}"
+
+            function RRDTOOLCOMPAT() {
+                RRDCACHED_STRIPPATH=${BUILDDIR}
+                RRDTOOL_ORIG=$TOP_BUILDDIR/src/rrdtool
+                ARGS=("$@")
+
+                # rrdcached does not support update with remote template
+                if [ $1 == "update" ] && [ $3 == '--template' ]; then
+                    RRDCACHED_STRIPPATH=${BASEDIR}
+                    ARGS=( $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< "${ARGS[@]}") )
+                fi
+
+                # rrdcached does not support remote dump
+                if [ $1 == "dump" ]; then
+                    RRDCACHED_STRIPPATH=${BUILDDIR} $RRDTOOL_ORIG flushcached $2 || fail flushcached
+                    ARGS=( $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< "${ARGS[@]}") )
+                    RRDCACHED_STRIPPATH=${BASEDIR}
+                fi
+
+                # rrdcached does not support remote restore
+                if [ $1 == "restore" ]; then
+                    ARGS=( "restore" "$2" $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< $3) )
+                    RRDCACHED_STRIPPATH=${BASEDIR}
+                fi
+
+                # rrdcached does not support tune
+                # if [ $1 == "tune" ]; then
+                #     ARGS=( $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< "${ARGS[@]}") )
+                # fi
+
+                # rrdcached does not support create with remote source or template
+                if [ $1 == "create" ]; then
+                    NEWARGS=()
+                    IS_NEXT_SOURCE_TEMPLATE=0
+                    for arg in $(echo "${ARGS[@]}"); do
+                        if [ $IS_NEXT_SOURCE_TEMPLATE == "1" ]; then
+                            arg=$(sed "s#${BUILDDIR}#${BASEDIR}#" <<< $arg)
+                            IS_NEXT_SOURCE_TEMPLATE=0
+                        fi
+                        ([ $arg == "--source" ] || [ $arg == "--template" ]) && IS_NEXT_SOURCE_TEMPLATE=1
+                        NEWARGS+="$arg "
+                    done
+                    ARGS=( ${NEWARGS[@]} )
+                fi
+
+                $RRDTOOL_ORIG "${ARGS[@]}"
+                ret=$?
+
+                if [ $1 == "update" ]; then
+                    RRDCACHED_STRIPPATH=${BUILDDIR} $RRDTOOL_ORIG flushcached $2 || fail flushcached
+                fi
+
+                return $ret
+            }
+            export RRDTOOL=RRDTOOLCOMPAT
+
+            randport=$(python -S -c "import random; random.seed('$(basename $0)'); print(random.randrange(49152,65535))")
+            port=$(python2 -S << HERE
+import SocketServer
+s = SocketServer.TCPServer(("localhost", 0), None)
+print(s.server_address[1])
+s.server_close()
+HERE
+)
+            ADDR="localhost:$port"
+        fi
+
         CACHED_PID_FILE="$BASEDIR/$(basename $0)-rrdcached.pid"
 
-        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(readlink -f -- $BASEDIR)" -F
+        $CACHED -p "$CACHED_PID_FILE" -l "$ADDR" -b "$(readlink -f -- $BASEDIR)" -F -B
 
         RRDCACHED_ADDRESS=$ADDR
         export RRDCACHED_ADDRESS
@@ -179,9 +254,15 @@ if [ -z "$RRDTOOL" ] ; then
         NEED_CACHED=
         for ST in $TESTS_STYLE ; do
                 case "$ST" in
-                rrdcached)
+                rrdcached-unix)
                         NEED_CACHED=1
                         STANDARD_RRDCACHED="$RRDCACHED"
+                        RRDCACHED_SOCK=unix
+                        ;;
+                rrdcached-tcp)
+                        NEED_CACHED=1
+                        STANDARD_RRDCACHED="$RRDCACHED"
+                        RRDCACHED_SOCK=tcp
                         ;;
                 valgrind)
                         RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"

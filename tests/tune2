@@ -12,7 +12,7 @@ $RRDTOOL dump ${BUILD}org.rrd | $xDIFF9 - ${BASE}org.dump
 report create
 
 is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
-cp ${BUILD}org.rrd ${BUILD}a.rrd
+cp ${BASE}org.rrd ${BASE}a.rrd
 # this must fail
 ! $RRDTOOL tune ${BUILD}a.rrd --beta 1.4 2>/dev/null
 report "out of range beta error"
