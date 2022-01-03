@@ -128,7 +128,7 @@ y-axis to the range of the data. You can change this behavior by
 explicitly setting the limits. The displayed y-axis will then range at
 least from B<lower-limit> to B<upper-limit>. Autoscaling will still
 permit those boundaries to be stretched unless the B<rigid> option is
-set. B<allow-shrink> alters behaivor of B<rigid> by allowing auto down scale,
+set. B<allow-shrink> alters behavior of B<rigid> by allowing auto down scale,
 graph will not overrun user specified limits.
 
 [B<-A>|B<--alt-autoscale>]
