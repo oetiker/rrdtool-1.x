@@ -3412,10 +3412,12 @@ static int journal_write(
 {                       /* {{{ */
     int       chars;
 
-    if (journal_fh == NULL)
-        return 0;
-
     pthread_mutex_lock(&journal_lock);
+    if (journal_fh == NULL) {
+        pthread_mutex_unlock(&journal_lock);
+        return 0;
+    }
+
     chars = fprintf(journal_fh, "%s %s\n", cmd, args);
     journal_size += chars;
 
