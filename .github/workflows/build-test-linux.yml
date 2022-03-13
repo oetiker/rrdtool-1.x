@@ -24,6 +24,7 @@ jobs:
         ./bootstrap
         ./configure --prefix=/opt/rrdtool-master
         make
+        sudo make install
         make check
         make check TESTS_STYLE="rrdcached-tcp"
         make check TESTS_STYLE="rrdcached-unix"
