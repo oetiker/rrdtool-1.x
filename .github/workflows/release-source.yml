@@ -44,6 +44,7 @@ jobs:
       with:
         artifacts: "rrdtool-*.tar.gz"
         bodyFile: releasenotes
+        discussionCategory: "Release ${{ needs.prepare.outputs.version }}"
         name: "RRDtool Version ${{ needs.prepare.outputs.version }}"
         token: ${{ secrets.GITHUB_TOKEN }}
 

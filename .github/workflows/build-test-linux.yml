@@ -18,31 +18,41 @@ jobs:
         sudo apt-get install autopoint libdbi-dev libtool-bin tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python3-pip python3-setuptools libpango1.0-dev ghostscript
         sudo pip install cpp-coveralls
     
-    - name: Build and Test
+    - name: Build
       run: |
         V=$(cat VERSION)
         ./bootstrap
         ./configure --prefix=/opt/rrdtool-master
         make
         sudo make install
-        make check
-        make check TESTS_STYLE="rrdcached-tcp"
-        make check TESTS_STYLE="rrdcached-unix"
-        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 list1 pdp-calc1"
-        podchecker doc/*.pod
-        (cd bindings/perl-shared && make test)
-        (cd bindings/python && python setup.py test)
-        sudo make install
         /opt/rrdtool-master/bin/rrdtool
         /opt/rrdtool-master/share/rrdtool/examples/4charts.pl
+    - name: Run Checks
+      run: |
+        make check
+    - name: Run "rrdcached-tcp"
+      run: |  
+        make check TESTS_STYLE="rrdcached-tcp"
+    - name: Run "rrdcached-udp"
+      run: |
+        make check TESTS_STYLE="rrdcached-unix"
+    - name: Run valgrind
+      run: |
+        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 list1 pdp-calc1"
+        podchecker doc/*.pod
+    - name: Test bindings
+      run: |
+        (cd bindings/perl-shared && make test)
+        (cd bindings/python && python setup.py test)
 
-    - name: Dist Build Test
+    - name: Dist and Re-Build Test
       run: |  
         V=$(cat VERSION)
         make dist
         tar xf rrdtool-$V.tar.gz
         cd rrdtool-$V
         ./configure
+        make
         sudo make install
         cd /opt/rrdtool-$V
         bin/rrdtool
