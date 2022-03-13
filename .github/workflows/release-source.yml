@@ -1,0 +1,50 @@
+---
+name: Release Source
+
+# yamllint disable rule:line-length
+# yamllint disable-line rule:truthy
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - name: Get Version
+      id: get_version
+      run: echo +'::set-output name=version::$(cat VERSION)'
+
+  release:
+    name: Release Source
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install autotools build-essentials
+    - name: Build Dist
+      run: |
+        ./bootstrap
+        ./configure
+        make dist
+        perl -077 -ne '/^(.+?\n.+?\n.+?)\nRRDtool/s && print $1' CHANGES > releasenotes
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "rrdtool-*.tar.gz"
+        bodyFile: releasenotes
+        name: "RRDtool Version ${{ needs.prepare.outputs.version }}"
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+
