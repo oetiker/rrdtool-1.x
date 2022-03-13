@@ -42,7 +42,8 @@ jobs:
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "rrdtool-*.tar.gz"
+        artifacts: "rrdtool-${{ steps.get_version.outputs.version }}.tar.gz"
+        artifactContentType: "application/tar+gzip"
         bodyFile: releasenotes
         discussionCategory: "Release ${{ needs.prepare.outputs.version }}"
         name: "RRDtool Version ${{ needs.prepare.outputs.version }}"
