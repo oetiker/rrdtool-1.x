@@ -30,6 +30,10 @@ jobs:
     - name: Run Checks
       run: |
         make check
+    - name: Test bindings
+      run: |
+        (cd bindings/perl-shared && make test)
+        (cd bindings/python && sudo chown -R $USER . && python setup.py test)
     - name: Run "rrdcached-tcp"
       run: |  
         make check TESTS_STYLE="rrdcached-tcp"
@@ -40,11 +44,6 @@ jobs:
       run: |
         make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 rrdcreate dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 list1 pdp-calc1"
         podchecker doc/*.pod
-    - name: Test bindings
-      run: |
-        (cd bindings/perl-shared && make test)
-        (cd bindings/python && python setup.py test)
-
     - name: Dist and Re-Build Test
       run: |  
         V=$(cat VERSION)

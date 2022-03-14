@@ -6,14 +6,14 @@ Bugfixes
 --------
 * python bindings: properly convert double values of rrd info <Stefan Gluszek>
 * failed to expand 'Py_UNUSED', Invalid usage when expanding  'Py_UNUSED' <c72578>
-* docment --showtime in xport help output <c72578>
+* document --showtime in xport help output <c72578>
 * fix --use-nan-for-all-missing-data <c72578>
 * update rrdruby.pod <c72578>
 * add missing rrdruby.pod and rrdpython.pod to dist <c72578>
 * Set first_weekday to 0 (Sunday), when HAVE__NL_TIME_WEEK_1STDAY is not defined <nirgal>
 * fix median calculation for all NaN inputs <c72578>
-* fix potetial leak in xport during failure <c72578>
-* fix many warings raised by Cppcheck <c72578>
+* fix potential leak in xport during failure <c72578>
+* fix many warnings raised by Cppcheck <c72578>
 * fix many compiler warnings from latest gcc <c72578>
 * ensure proper initialization in rrd_daemon <clarfonthey>
 * cleanup testsuite <nirgal>
@@ -23,7 +23,7 @@ Bugfixes
 * Fix duplicate write_changes_to_disk() calls when HAVE_LIBRADOS is true and HAVE_MMAP is false <yil-cpr>
 * documentation updates <nirgal>
 * for SMIN example in docs <Thomas-Gelf>
-* fix for pyton3 compatiblity <SuperHeron>
+* fix for pyton3 compatibility <SuperHeron>
 * freemem only for valid status <Christian Kr"oger>
 * fix double meaning of time 0 as uninitialized value <neirbowj>
 * fix for zfs not supporting fallocate. this makes resize work on zfs <zelsing>
@@ -31,7 +31,7 @@ Bugfixes
 * fetch - do not call rrd_freemem on uninitialized pointers <commx>
 * use separate pango fontmap per thread <nomis>
 * switch to python 3 <nirgal>
-* do not leak filename when opeing a broken file <mistotebe>
+* do not leak filename when opening a broken file <mistotebe>
 * fix leaks in rrdcached <mistotebe>
 * avoid segfault when flushing cache <svenpanne>
 * escape json in legend entries <c72578>
