@@ -8,10 +8,10 @@
 
 /* Version numbers are updated by the rrdtool-release script. */
 #define PACKAGE_MAJOR       1
-#define PACKAGE_MINOR       7
-#define PACKAGE_REVISION    2
-#define PACKAGE_VERSION     "1.7.2"
-#define NUMVERS             1.7002
+#define PACKAGE_MINOR       8
+#define PACKAGE_REVISION    0
+#define PACKAGE_VERSION     "1.8.0"
+#define NUMVERS             1.8000
 
 #define RRD_DEFAULT_FONT "Courier"
 
