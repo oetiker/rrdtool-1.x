@@ -1,3 +1,58 @@
+
+RRDtool 1.8.0 - 2022-03-13
+==========================
+
+Bugfixes
+--------
+* python bindings: properly convert double values of rrd info <Stefan Gluszek>
+* failed to expand 'Py_UNUSED', Invalid usage when expanding  'Py_UNUSED' <c72578>
+* document --showtime in xport help output <c72578>
+* fix --use-nan-for-all-missing-data <c72578>
+* update rrdruby.pod <c72578>
+* add missing rrdruby.pod and rrdpython.pod to dist <c72578>
+* Set first_weekday to 0 (Sunday), when HAVE__NL_TIME_WEEK_1STDAY is not defined <nirgal>
+* fix median calculation for all NaN inputs <c72578>
+* fix potential leak in xport during failure <c72578>
+* fix many warnings raised by Cppcheck <c72578>
+* fix many compiler warnings from latest gcc <c72578>
+* ensure proper initialization in rrd_daemon <clarfonthey>
+* cleanup testsuite <nirgal>
+* better testing <c72578>
+* avoid invalid read in rrd_client <pallas>
+* add symbols from rrdc to librrd <pallas>
+* Fix duplicate write_changes_to_disk() calls when HAVE_LIBRADOS is true and HAVE_MMAP is false <yil-cpr>
+* documentation updates <nirgal>
+* for SMIN example in docs <Thomas-Gelf>
+* fix for pyton3 compatibility <SuperHeron>
+* freemem only for valid status <Christian Kr"oger>
+* fix double meaning of time 0 as uninitialized value <neirbowj>
+* fix for zfs not supporting fallocate. this makes resize work on zfs <zelsing>
+* add rrdrados.pod to dist <Jeron Roovers>
+* fetch - do not call rrd_freemem on uninitialized pointers <commx>
+* use separate pango fontmap per thread <nomis>
+* switch to python 3 <nirgal>
+* do not leak filename when opening a broken file <mistotebe>
+* fix leaks in rrdcached <mistotebe>
+* avoid segfault when flushing cache <svenpanne>
+* escape json in legend entries <c72578>
+* fix leak in xport <andrewchambers>
+* make rrdcgi param parsing more robust <oetiker>
+* fix race in journal_write <usaleem-lx>
+
+
+Features
+--------
+* ROUND function for rrd RPN <TheWitness>
+* vcpkg support for MSVC builds (see WIN32-BUILD-TIPS.txt) <c72578>
+* add first_weekday for Windows port <c72578>
+* add x64 platform for win32 build <c72578>
+* add --add-jsontime for graphv <netniV>
+* add --utc to graph <jyavenard>
+* add automated testing for win32 builds <c72578>
+* support TUNE command in rrdcached
+
+
+
 RRDtool 1.7.2 - 2019-05-27
 ==========================
 Bugfixes
