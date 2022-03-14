@@ -18,7 +18,7 @@ jobs:
     steps:
     - name: Get Version
       id: get_version
-      run: echo +'::set-output name=version::$(cat VERSION)'
+      run: echo +'::set-output name=version::'$(cat VERSION)
 
   release:
     name: Release Source
@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install build-essential gettext
+        sudo apt-get install autopoint build-essential gettext
     - name: Build Dist
       run: |
         ./bootstrap
