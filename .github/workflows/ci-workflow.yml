@@ -3,7 +3,11 @@ name: Windows CI
 
 # yamllint disable rule:line-length
 # yamllint disable-line rule:truthy
-on: [push, pull_request]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   msys2:
