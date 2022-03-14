@@ -10,16 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  prepare:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-    - name: Get Version
-      id: get_version
-      run: echo +'::set-output name=version::'$(cat VERSION)
-
   release:
     name: Release Source
     runs-on: ubuntu-latest
@@ -28,6 +18,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+
+    - name: Get Version
+      id: get_version
+      run: echo +'::set-output name=version::'$(cat VERSION)
 
     - name: Install dependencies
       run: |
@@ -45,8 +39,8 @@ jobs:
         artifacts: "rrdtool-${{ steps.get_version.outputs.version }}.tar.gz"
         artifactContentType: "application/tar+gzip"
         bodyFile: releasenotes
-        discussionCategory: "Release ${{ needs.prepare.outputs.version }}"
-        name: "RRDtool Version ${{ needs.prepare.outputs.version }}"
+        discussionCategory: "Release ${{ steps.get_version.outputs.version }}"
+        name: "RRDtool Version ${{ steps.get_version.outputs.version }}"
         token: ${{ secrets.GITHUB_TOKEN }}
 
 
