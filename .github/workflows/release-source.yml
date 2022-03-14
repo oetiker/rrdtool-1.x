@@ -39,7 +39,7 @@ jobs:
         artifacts: "rrdtool-${{ steps.get_version.outputs.version }}.tar.gz"
         artifactContentType: "application/tar+gzip"
         bodyFile: releasenotes
-        discussionCategory: "Release ${{ steps.get_version.outputs.version }}"
+        discussionCategory: "Release Issues"
         name: "RRDtool Version ${{ steps.get_version.outputs.version }}"
         token: ${{ secrets.GITHUB_TOKEN }}
 
