@@ -21,7 +21,7 @@ jobs:
 
     - name: Get Version
       id: get_version
-      run: echo +'::set-output name=version::'$(cat VERSION)
+      run: echo '::set-output name=version::'$(cat VERSION)
 
     - name: Install dependencies
       run: |
