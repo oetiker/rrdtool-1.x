@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install autotools build-essentials
+        sudo apt-get install autotools build-essentials gettext
     - name: Build Dist
       run: |
         ./bootstrap

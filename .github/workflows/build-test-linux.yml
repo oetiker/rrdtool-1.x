@@ -15,7 +15,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install autopoint libdbi-dev libtool-bin tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python3-pip python3-setuptools libpango1.0-dev ghostscript
+        sudo apt-get install autopoint build-essentials libdbi-dev libtool-bin tcl-dev lua5.1 liblua5.1-0-dev valgrind dc python3-pip python3-setuptools libpango1.0-dev ghostscript gettext
         sudo pip install cpp-coveralls
     
     - name: Build
