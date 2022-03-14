@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install autopoint build-essential gettext libpango1.0-dev
+        sudo apt-get install autopoint build-essential gettext libpango1.0-dev ghostscript
     - name: Build Dist
       run: |
         ./bootstrap
