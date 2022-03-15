@@ -2,7 +2,7 @@
 # shellcheck disable=SC2086,SC2046,SC2029
 set -e
 VERSION=$(cat VERSION)
-NUMVERS=$(perl -n -e 'm/NUMVERS=(\d+\.\d+)/ && print $1' configure)
+NUMVERS=$(perl -n -e 'my @x=split /\./;printf "%d.%d%03d", @x' VERSION)
 CURRENT_YEAR=$(date +"%Y")
 set -x
 perl -i -p -e 's/^\$VERSION.+/\$VERSION='$NUMVERS';/' bindings/perl-*/*.pm
