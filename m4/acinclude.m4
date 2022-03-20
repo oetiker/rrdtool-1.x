@@ -582,7 +582,8 @@ AC_DEFUN([GC_TIMEZONE], [
         AC_REQUIRE([AC_STRUCT_TM])
         AC_CACHE_CHECK([tm_gmtoff in struct tm], gq_cv_have_tm_gmtoff,
                 gq_cv_have_tm_gmtoff=no
-                AC_TRY_COMPILE([#include <time.h>
+                AC_TRY_COMPILE([#include <stdlib.h>
+                                #include <time.h>
                                 #include <$ac_cv_struct_tm>
                                 ],
                                [struct tm t;
@@ -595,7 +596,8 @@ AC_DEFUN([GC_TIMEZONE], [
 
         AC_CACHE_CHECK([__tm_gmtoff in struct tm], gq_cv_have___tm_gmtoff,
                 gq_cv_have___tm_gmtoff=no
-                AC_TRY_COMPILE([#include <time.h>
+                AC_TRY_COMPILE([#include <stdlib.h>
+                                #include <time.h>
                                 #include <$ac_cv_struct_tm>
                                 ],
                                [struct tm t;
