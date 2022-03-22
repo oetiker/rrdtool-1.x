@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.7.2 Copyright by Tobi Oetiker, 1997-2019
+ * RRDtool 1.8.0 Copyright by Tobi Oetiker, 1997-2022
  *****************************************************************************
  * rrd_restore.c  Contains logic to parse XML input and create an RRD file
  * This file:
