@@ -695,7 +695,7 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 
 # Use reproducible build date and time
 if test "$SOURCE_DATE_EPOCH"; then
-	DATE_FMT="%d %b %Y %H:%M:%S"
+	DATE_FMT="%b %d %Y %H:%M:%S"
 	BUILD_DATE=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT")
 	AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"], [Use reproducible build date])
 fi

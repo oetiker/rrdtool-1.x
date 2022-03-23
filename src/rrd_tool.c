@@ -45,11 +45,19 @@ static void PrintUsage(
     char *cmd)
 {
 
+#ifdef BUILD_DATE
+    const char *help_main =
+        N_("RRDtool %s"
+           "  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
+           "               Compiled %s\n\n"
+           "Usage: rrdtool [options] command command_options\n");
+#else
     const char *help_main =
         N_("RRDtool %s"
            "  Copyright by Tobias Oetiker <tobi@oetiker.ch>\n"
            "               Compiled %s %s\n\n"
            "Usage: rrdtool [options] command command_options\n");
+#endif
 
     const char *help_list =
         N_
