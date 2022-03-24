@@ -5,9 +5,10 @@ name: Windows CI
 # yamllint disable-line rule:truthy
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+  workflow_dispatch:
 
 jobs:
   msys2:
@@ -30,7 +31,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: base-devel bc mingw-w64-x86_64-toolchain mingw-w64-x86_64-cairo mingw-w64-x86_64-expat mingw-w64-x86_64-freetype mingw-w64-x86_64-gettext mingw-w64-x86_64-glib2 mingw-w64-x86_64-libpng mingw-w64-x86_64-libxml2 mingw-w64-x86_64-pango mingw-w64-x86_64-zlib mingw-w64-x86_64-pkgconf
+          install: base-devel bc mingw-w64-x86_64-autotools mingw-w64-x86_64-toolchain mingw-w64-x86_64-cairo mingw-w64-x86_64-expat mingw-w64-x86_64-freetype mingw-w64-x86_64-gettext mingw-w64-x86_64-glib2 mingw-w64-x86_64-libpng mingw-w64-x86_64-libxml2 mingw-w64-x86_64-pango mingw-w64-x86_64-zlib mingw-w64-x86_64-pkgconf
       - name: CI-Build
         run: |
           echo 'Running in MSYS2!'
