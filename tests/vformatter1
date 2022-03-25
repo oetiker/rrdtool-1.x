@@ -5,7 +5,12 @@
 BASE=$BASEDIR/
 BUILD=$BUILDDIR/
 
-RRD=${BUILD}vfmt1.rrd
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    RRD=vfmt1.rrd
+else
+    RRD=${BUILD}vfmt1.rrd
+fi
 
 export TZ=UTC
 

@@ -5,7 +5,12 @@
 BASE=$BASEDIR/
 BUILD=$BUILDDIR/
 
-RRD=${BUILD}rpn2.rrd
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    RRD=rpn2.rrd
+else
+    RRD=${BUILD}rpn2.rrd
+fi
 
 $RRDTOOL create $RRD --step 7200 --start 1167487000 DS:speed:DCOUNTER:14000:U:U RRA:AVERAGE:0.5:1:30
 report "create"

@@ -5,7 +5,12 @@
 BASE=$BASEDIR/
 BUILD=$BUILDDIR/
 
-RRD=${BUILD}graph1.rrd
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    RRD=graph1.rrd
+else
+    RRD=${BUILD}graph1.rrd
+fi
 
 $RRDTOOL create $RRD --start 920804400 DS:speed:COUNTER:600:U:U RRA:AVERAGE:0.5:1:24 RRA:AVERAGE:0.5:6:10
 report "create"
