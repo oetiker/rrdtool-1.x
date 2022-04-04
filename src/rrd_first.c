@@ -113,7 +113,8 @@ time_t rrd_first_r(
     then = (rrd.live_head->last_up -
             rrd.live_head->last_up %
             (rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step)) +
-        (timer * rrd.rra_def[rraindex].pdp_cnt * rrd.stat_head->pdp_step);
+        (timer * (long) rrd.rra_def[rraindex].pdp_cnt *
+         (long) rrd.stat_head->pdp_step);
   err_close:
     rrd_close(rrd_file);
   err_free:
