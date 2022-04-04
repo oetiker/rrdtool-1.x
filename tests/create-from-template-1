@@ -33,6 +33,10 @@ rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
 $RRDTOOL create ${PREFIX}ax1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U $RRA
 report createax1
 
+# Test rrd_first(), #1140
+RRD_FIRST=$($RRDTOOL first ${PREFIX}ax1.rrd)
+[ $RRD_FIRST = 1299994020 ] ; report rrdtool first == $RRD_FIRST
+
 cp ${BASE}ax1.rrd ${BASE}ax1-copy.rrd
 
 UPDATEAx1=
