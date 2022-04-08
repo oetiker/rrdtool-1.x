@@ -8,7 +8,8 @@ set -x
 perl -i -p -e 's/^\$VERSION.+/\$VERSION='$NUMVERS';/' bindings/perl-*/*.pm
 perl -i -p -e 's/RRDtool \d\S+/RRDtool '$VERSION'/; s/Copyright.+?Oetiker.+\d{4}/Copyright by Tobi Oetiker, 1997-'$CURRENT_YEAR'/' src/*.h src/*.c
 perl -i -p -e 's/^Version:.+/Version: '$VERSION'/' rrdtool.spec
-perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g' doc/rrdbuild.pod
+perl -i -p -e 's/rrdtool-[\.\d]+\d(pre\d+)?(rc\d+)?/rrdtool-'$VERSION'/g;
+               s/v\d+\.\d+\.\d+/v'$VERSION'/' doc/rrdbuild.pod
 # Update version and Copyright years for MSVC builds
 perl -i -p -e 's/Copyright \(c\).+?Oetiker/Copyright (c) 1997-'$CURRENT_YEAR' Tobias Oetiker/' win32/*.rc
 perl -i -p -e 's/PACKAGE_MAJOR.+\d{1}/PACKAGE_MAJOR       '$(echo $VERSION | cut -d. -f1)'/;
