@@ -55,7 +55,7 @@ Now make sure the BUILD_DIR exists and go there:
 Lets first assume you already have all the necessary libraries
 pre-installed.
 
- wget https://oss.oetiker.ch/rrdtool/pub/rrdtool-1.8.0.tar.gz
+ wget https://github.com/oetiker/rrdtool-1.x/releases/download/v1.8.0/rrdtool-1.8.0.tar.gz
  gunzip -c rrdtool-1.8.0.tar.gz | tar xf -
  cd rrdtool-1.8.0
  ./configure --prefix=$INSTALL_DIR && make && make install

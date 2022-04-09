@@ -1,9 +1,10 @@
 
-RRDtool git - 2022-04-06
+RRDtool git - 2022-04-08
 ==========================
 
 Bugfixes
 --------
+* Update tarball download link in doc <c72578>
 * Fix unsigned integer overflow in rrdtool first. Add test for rrd_first() <c72578>
 * Fix tests under MSYS2 (Windows) <c72578>
 * Fix BUILD_DATE in rrdtool help output <c72578>
