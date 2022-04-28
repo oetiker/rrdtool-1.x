@@ -1,9 +1,10 @@
 
-RRDtool git - 2022-04-08
+RRDtool git - 2022-04-28
 ==========================
 
 Bugfixes
 --------
+* Suppress warnings of implicit fall through <youpong>
 * Update tarball download link in doc <c72578>
 * Fix unsigned integer overflow in rrdtool first. Add test for rrd_first() <c72578>
 * Fix tests under MSYS2 (Windows) <c72578>
