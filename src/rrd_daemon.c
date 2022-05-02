@@ -4889,7 +4889,7 @@ static int read_options(
 
         case '?':
             fprintf(stderr, "%s\n", options.errmsg);
-            /* no break */
+            /* fall through */
 
         case 'h':
             printf("RRDCacheD %s\n"

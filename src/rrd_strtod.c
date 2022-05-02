@@ -110,8 +110,11 @@ double rrd_strtod(const char *str, char **endptr) {
     // Handle optional sign
     negative = 0;
     switch (*p) {
-       case '-': negative = 1; // Fall through to increment position
-       case '+': p++;
+       case '-':
+           negative = 1;
+           /* fall through */
+       case '+':
+           p++;
     }
 
     number = 0.;
@@ -153,8 +156,11 @@ double rrd_strtod(const char *str, char **endptr) {
         // Handle optional sign
         negative = 0;
         switch (*++p) {
-            case '-': negative = 1; // Fall through to increment pos
-            case '+': p++;
+            case '-':
+                negative = 1;
+                /* fall through */
+            case '+':
+                p++;
         }
 
         // Process string of digits
