@@ -60,7 +60,7 @@ B<UN, ISINF>
 Pop one element from the stack, compare this to I<unknown> respectively
 to I<positive or negative infinity>. Returns 1 for true or 0 for false.
 
-I<then>,I<else>,I<condition>,B<IF>
+I<condition>,I<then>,I<else>,B<IF>
 
 Pops three elements from the stack.  If the element popped last is 0
 (false), the value popped first is pushed back onto the stack,
