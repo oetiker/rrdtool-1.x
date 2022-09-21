@@ -197,7 +197,8 @@ A literal `%' character.
 
 =back
 
-Formatting values as duration is done using printf like conversion specifications:
+You can format values as duration using B<:valstrfduration> with the value being interpreted as milliseconds.
+Using printf like conversion specifications you can extract properties from the duration:
 
  - All non-conversion specification chars are copied unchanged
  - A conversion specification has format '%' [ ['0'] minwidth ] [ '.' precision ] conversion-specifier
