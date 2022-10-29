@@ -57,5 +57,7 @@ jobs:
         sudo make install
         cd /opt/rrdtool-$V
         bin/rrdtool
+    - name: gcov
+      run: gcov src/*.c
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3    
