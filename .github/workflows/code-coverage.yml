@@ -49,5 +49,6 @@ jobs:
     - name: gcov
       run: |
         (cd src && gcov *.gcno)
+        (cd src && gcov .libs/*.gcno)
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3    
