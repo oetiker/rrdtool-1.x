@@ -23,7 +23,7 @@ values collected over a definable time period.
 To compile:
 -----------
 
-check out the instructions in [[doc/rrdbuild.pod]]
+check out the instructions in [doc/rrdbuild.pod](doc/rrdbuild.pod)
 
 Getting Started:
 ----------------
@@ -41,7 +41,7 @@ Alex van den Bogaerdt's rrdtutorial which is also available from the doc
 directory. Also read his cdeftutorial and Steve Rader's rpntutorial.
  
 If you want to know about the format of the log files check
-[[src/rrd_format.h]] there are a lot of comments in there ...
+[src/rrd_format.h](src/rrd_format.h) there are a lot of comments in there ...
 
 How to make Tobi happy:
 -----------------------
