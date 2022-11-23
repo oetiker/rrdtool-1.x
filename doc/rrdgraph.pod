@@ -452,7 +452,7 @@ resetting the default fontsizes: C<--font DEFAULT:0:Courier>.
 RRDtool comes with a preset default font. You can set the environment
 variable C<RRD_DEFAULT_FONT> if you want to change this.
 
-RRDtool uses Pango for its font handling. This means you can to use
+RRDtool uses Pango for its font handling. This means that you can use
 the full Pango syntax when selecting your font:
 
 The font name has the form "[I<FAMILY-LIST>] [I<STYLE-OPTIONS>] [I<SIZE>]",
