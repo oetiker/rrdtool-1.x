@@ -19,6 +19,7 @@
 #endif
 
 #include "rrd_snprintf.h"
+#include "compat-cloexec.h"
 
 static int rrd_xport_fn(
     image_desc_t *,
@@ -429,7 +430,7 @@ int rrd_graph_xport(
 
     /* if we write a file, then open it */
     if (im->graphfile) {
-        buffer.file = fopen(im->graphfile, "w");
+        buffer.file = rrd_fopen(im->graphfile, "we");
     }
 
     /* do the data processing */
