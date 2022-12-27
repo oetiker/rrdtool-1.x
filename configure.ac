@@ -512,6 +512,43 @@ AC_CHECK_SIZEOF([long int])
 AC_CHECK_DECLS([O_CLOEXEC], [], [], [#include <fcntl.h>])
 AC_CHECK_DECLS([SOCK_CLOEXEC], [], [], [#include <sys/socket.h>])
 
+AC_CACHE_CHECK([whether fopen() supports the "e" flag],[rd_cv_fopen_e],[
+    AC_RUN_IFELSE([
+        AC_LANG_PROGRAM([
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <fcntl.h>
+        ], [
+	    FILE *f = fopen("/dev/null", "re");
+            int fd;
+	    long flags;
+
+            if (!f)
+		/* "e" causes fopen() to fail */
+		return 1;
+            fd = fileno(f);
+            if (fd < 0)
+                return 2;
+
+            flags = fcntl(fileno(f), F_GETFD);
+	    if (flags < 0 || (flags & FD_CLOEXEC) == 0)
+	        /* "e" is accepted but has no effect */
+		return 3;
+        ])
+    ],
+    [rd_cv_fopen_e=yes],
+    [rd_cv_fopen_e=no],[
+        dnl cross-compiling; assume yes
+        rd_cv_fopen_e=yes
+    ])
+])
+
+AS_IF([test x"$rd_cv_fopen_e" = xyes],[
+    AC_DEFINE([RRD_HAVE_WORKING_FOPEN_E], [1], [indicates whether fopen(..., "e") is working])
+])
+
+AM_CONDITIONAL([NEED_COMPAT_CLOEXEC],[test x"$rd_cv_fopen_e" != xyes])
+
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
 have_libdbi=no
