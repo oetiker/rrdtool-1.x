@@ -1,0 +1,6 @@
+#ifndef H_RRDTOOL_SRC_COMPAT_CLOEXEC_H
+#define H_RRDTOOL_SRC_COMPAT_CLOEXEC_H
+
+#include <rrd_config.h>
+
+#endif	/* H_RRDTOOL_SRC_COMPAT_CLOEXEC_H */

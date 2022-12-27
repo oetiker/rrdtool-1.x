@@ -71,6 +71,7 @@ noinst_HEADERS = \
 	unused.h \
 	gettext.h \
 	mutex.h \
+	compat-cloexec.h \
 	rrd_strtod.h \
 	rrd_snprintf.h \
 	rrd_parsetime.h \
@@ -95,6 +96,10 @@ endif
 if MINGW_W64
 RRD_C_FILES += ../win32/win32-glob.c strftime.c
 noinst_HEADERS += ../win32/win32-glob.h strftime.h
+endif
+
+if NEED_COMPAT_CLOEXEC
+UPD_C_FILES += compat-cloexec.c
 endif
 
 noinst_LTLIBRARIES        = librrdupd.la

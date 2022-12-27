@@ -39,6 +39,7 @@ THIRD_PARTY_LIB = /LIBPATH:$(ARCH_PATH)\lib \
         Ws2_32.lib zlib.lib
 
 RRD_LIB_OBJ_LIST = \
+        $(TOP)/src/compat-cloexec.obj \
         $(TOP)/src/hash_32.obj \
         $(TOP)/src/mkstemp.obj \
         $(TOP)/src/mutex.obj \
