@@ -509,6 +509,8 @@ AC_CHECK_SIZEOF([time_t])
 
 AC_CHECK_SIZEOF([long int])
 
+AC_CHECK_DECLS([O_CLOEXEC], [], [], [#include <fcntl.h>])
+
 CONFIGURE_PART(Find 3rd-Party Libraries)
 
 have_libdbi=no
