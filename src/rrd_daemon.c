@@ -3798,7 +3798,7 @@ static int open_listen_socket_unix(
     listen_fds = temp;
     memcpy(listen_fds + listen_fds_num, sock, sizeof(listen_fds[0]));
 
-    fd = socket(PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
+    fd = socket(PF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, /* protocol = */ 0);
     if (fd < 0) {
         fprintf(stderr, "rrdcached: unix socket(2) failed: %s\n",
                 rrd_strerror(errno));
