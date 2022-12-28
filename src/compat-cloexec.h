@@ -7,4 +7,8 @@
 #  define O_CLOEXEC 0
 #endif
 
+#ifndef HAVE_DECL_SOCK_CLOEXEC
+#  define SOCK_CLOEXEC 0
+#endif
+
 #endif	/* H_RRDTOOL_SRC_COMPAT_CLOEXEC_H */
