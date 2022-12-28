@@ -171,6 +171,11 @@ rrd_file_t *rrd_open(
     rrd_simple_file_t *rrd_simple_file = NULL;
     size_t    newfile_size = 0;
 
+    if ((rdwr & RRD_LOCK_MASK) == RRD_LOCK_DEFAULT) {
+        rdwr &= ~RRD_LOCK_MASK;
+        rdwr |= _rrd_lock_flags(_rrd_lock_default());
+    }
+
     /* Are we creating a new file? */
     if (rdwr & RRD_CREAT) {
         size_t    header_len, value_cnt, data_len;
