@@ -139,7 +139,8 @@ DWORD     dwCreationDisposition = 0;
 
 static int rrd_rwlock(
     rrd_file_t *rrd_file,
-    int writelock);
+    int writelock,
+    int lock_mode);
 static int close_and_unlock(
     int fd);
 
@@ -345,11 +346,9 @@ rrd_file_t *rrd_open(
 #endif
 #endif
 
-    if (rdwr & RRD_LOCK) {
-        if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
-            rrd_set_error("could not lock RRD");
-            goto out_close;
-        }
+    if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE, rdwr & RRD_LOCK_MASK) != 0) {
+        rrd_set_error("could not lock RRD");
+        goto out_close;
     }
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
@@ -667,7 +666,7 @@ void mincore_print(
 int rrd_lock(
     rrd_file_t *rrd_file)
 {
-    return rrd_rwlock(rrd_file, 1);
+    return rrd_rwlock(rrd_file, 1, RRD_LOCK_DEFAULT);
 }
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
@@ -765,8 +764,12 @@ int close_and_unlock(
 static
 int rrd_rwlock(
     rrd_file_t *rrd_file,
-    int writelock)
+    int writelock,
+    int lock_mode)
 {
+    if (lock_mode == RRD_LOCK_NONE)
+        return 0;
+
 #ifdef DISABLE_FLOCK
     (void) rrd_file;
     return 0;
@@ -799,6 +802,7 @@ int rrd_rwlock(
 #else
     {
         struct flock lock;
+        int op = lock_mode == RRD_LOCK_TRY ? F_SETLK : F_SETLKW;
 
         lock.l_type = writelock ? F_WRLCK : /* exclusive write lock or */
             F_RDLCK;    /* shared read lock */
@@ -806,7 +810,7 @@ int rrd_rwlock(
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
 
-        rcstat = fcntl(rrd_simple_file->fd, F_SETLK, &lock);
+        rcstat = fcntl(rrd_simple_file->fd, op, &lock);
     }
 #endif
 
