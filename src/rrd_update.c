@@ -859,7 +859,8 @@ static int _rrd_updatex(
     }
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(filename, &rrd, RRD_READWRITE | RRD_LOCK);
+    rrd_file = rrd_open(filename, &rrd, RRD_READWRITE |
+                        _rrd_lock_flags(extra_flags));
     if (rrd_file == NULL) {
         goto err_free;
     }
