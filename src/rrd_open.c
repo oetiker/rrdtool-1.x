@@ -1186,3 +1186,103 @@ unsigned long rrd_select_initial_row(
 {
     return rrd_random() % rra->row_cnt;
 }
+
+/*
+ * Translates a string in a RRD_FLAGS_LOCKING_xxx constant.
+ *
+ * Empty or non-existing strings are valid and will be mapped to a default
+ * value.
+ *
+ * Functions returns -1 on unsupported values but does not emit diagnostics.
+ */
+static int _rrd_lock_parse(const char *opt)
+{
+    /* non-existing and empty values */
+    if (!opt || !opt[0])
+        /* the default locking mode */
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    else if (strcmp(opt, "try") == 0)
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    else if (strcmp(opt, "block") == 0)
+        return RRD_FLAGS_LOCKING_MODE_BLOCK;
+    else if (strcmp(opt, "none") == 0)
+        return RRD_FLAGS_LOCKING_MODE_NONE;
+    else
+        return -1;
+}
+
+/*
+ * Returns the default locking method.
+ *
+ * It reads the $RRD_LOCKING environment.
+ *
+ * Function always succeeds; unsupported values will emit a
+ * diagnostic and function returns a default value in this case.
+ */
+int _rrd_lock_default(void)
+{
+    const char *opt = getenv("RRD_LOCKING");
+    int flags = _rrd_lock_parse(opt);
+
+    if (flags < 0) {
+        fprintf(stderr,
+                "unsupported locking mode '%s' in $RRD_LOCKING; assuming 'try'\n",
+                opt);
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    }
+
+    return flags;
+}
+
+/*
+ * Translates a string to a RRD_FLAGS_LOCKING_xxx constant and updates flags.
+ *
+ * Function will fail on unsupported values and return -1.  It sets rrd_set_error()
+ * in this case.
+ *
+ * Else, the RRD_FLAGS_LOCKING_xxx related bits in 'out_flags' will be cleared
+ * and updated.  Function returns 0 then.
+ */
+int _rrd_lock_from_opt(int *out_flags, const char *opt)
+{
+    int flags = _rrd_lock_parse(opt);
+
+    if (flags < 0) {
+        rrd_set_error("unsupported locking mode '%s'\n", opt);
+        return flags;
+    }
+
+    *out_flags &= ~RRD_FLAGS_LOCKING_MODE_MASK;
+    *out_flags |= flags;
+
+    return 0;
+}
+
+/*
+ * Translates RRD_FLAGS_LOCKING_MODE_xxx to RRD_LOCK_xxx
+ *
+ * Function removes unrelated bits from 'extra_flags' and maps it to the
+ * RRD_LOCK_xxx constants.
+ */
+int _rrd_lock_flags(int extra_flags)
+{
+    /* Due to legacy reasons, we have to map this manually.
+     *
+     * E.g. RRD_LOCK_DEFAULT (which might be used by deprecated direct calls
+     * to rrd_open()) must be non-zero.  But RRD_FLAGS_LOCKING_MODE_DEFAULT
+     * must be 0 because not all users of the updatex api might have been
+     * updated yet.
+     */
+    switch (extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) {
+    case RRD_FLAGS_LOCKING_MODE_NONE:
+        return RRD_LOCK_NONE;
+    case RRD_FLAGS_LOCKING_MODE_TRY:
+        return RRD_LOCK_TRY;
+    case RRD_FLAGS_LOCKING_MODE_BLOCK:
+        return RRD_LOCK_BLOCK;
+    case RRD_FLAGS_LOCKING_MODE_DEFAULT:
+        return RRD_LOCK_DEFAULT;
+    default:
+        abort();
+    }
+}

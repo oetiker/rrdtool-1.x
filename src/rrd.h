@@ -281,6 +281,20 @@ extern    "C" {
 /* extra flags */
 #define RRD_SKIP_PAST_UPDATES 0x01
 
+/* Locking mode which can be set in 'extra_flags':
+ *
+ * DEFAULT ... read $RRD_LOCKING environment or fall back to TRY
+ * NONE  ... no locking; caller is responsible to ensure that the file is not
+ *           used else
+ * BLOCK ... wait until lock is available
+ * TRY   ... try to lock but fail when file is used elsewhere (default)
+ */
+#define RRD_FLAGS_LOCKING_MODE_NONE    (1 << 7)
+#define RRD_FLAGS_LOCKING_MODE_DEFAULT (0 << 7)
+#define RRD_FLAGS_LOCKING_MODE_BLOCK   (2 << 7)
+#define RRD_FLAGS_LOCKING_MODE_TRY     (3 << 7)
+#define RRD_FLAGS_LOCKING_MODE_MASK    (3 << 7)
+
     int       rrd_updatex_r(
     const char *filename,
     const char *_template,

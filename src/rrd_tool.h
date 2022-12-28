@@ -133,7 +133,12 @@ typedef int (*rrd_fetch_cb_t)(
 #define RRD_COPY        (1<<4)
 #define RRD_EXCL        (1<<5)
 #define RRD_READVALUES  (1<<6)
-#define RRD_LOCK        (1<<7)
+#define RRD_LOCK        RRD_LOCK_DEFAULT
+#define RRD_LOCK_NONE    (0<<7)
+#define RRD_LOCK_DEFAULT (1<<7)
+#define RRD_LOCK_BLOCK   (2<<7)
+#define RRD_LOCK_TRY     (3<<7)
+#define RRD_LOCK_MASK    (3<<7)
 
     enum cf_en rrd_cf_conv(
     const char *string);
@@ -149,6 +154,10 @@ typedef int (*rrd_fetch_cb_t)(
     char *b);
 
     const char *cf_to_string (enum cf_en cf);
+
+    int _rrd_lock_default(void);
+    int _rrd_lock_from_opt(int *out_flags, const char *opt);
+    int _rrd_lock_flags(int extra_flags);
 
 #ifdef  __cplusplus
 }
