@@ -314,6 +314,40 @@ sockets, tools like netcat, or in a quick interactive test by using
 B<NOTE:> that there is no authentication with this feature! Do not setup
 such a port unless you are sure what you are doing.
 
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variables may be used to change the behavior
+of most of the utilities.
+
+=over
+
+=item B<RRD_LOCKING>
+
+If this environment variable is set, the B<RRD> file is locked in the
+given mode:
+
+=over
+
+=item -
+
+B<try> fails, when the file is locked by another process.  This is the default.
+
+=item -
+
+B<block> waits until the lock is released.
+
+=item -
+
+B<none> skips locking at all.  Caller has to ensure a proper locking
+which should be compatible with C<fcntl(fd, F_SETLK, ...)>.
+
+=back
+
+Some utilities have command line options (B<--locking>) which override
+this variable.
+
+=back
+
 =head1 RRDCACHED, THE CACHING DAEMON
 
 For very big setups, updating thousands of RRD files often becomes a serious IO
