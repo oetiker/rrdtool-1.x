@@ -1,4 +1,4 @@
-
+set -x
 TZ=Europe/Zurich
 export TZ
 
@@ -203,7 +203,6 @@ function run_cached {
             }
             export RRDTOOL=RRDTOOLCOMPAT
 
-            randport=$(python -S -c "import random; random.seed('$(basename $0)'); print(random.randrange(49152,65535))")
             port=$(python2 -S << HERE
 import SocketServer
 s = SocketServer.TCPServer(("localhost", 0), None)
