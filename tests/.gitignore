@@ -4,3 +4,4 @@
 /modify5-testa*-mod.dump*
 /*.log
 /*.trs
+/compat-cloexec

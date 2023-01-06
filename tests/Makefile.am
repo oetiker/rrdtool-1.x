@@ -1,6 +1,7 @@
 TESTS = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 graph1 graph2 rpn1 rpn2 \
 	rrdcreate \
+	compat-cloexec \
 	dump-restore \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
@@ -32,3 +33,11 @@ CLEANFILES = *.rrd \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
 	rpn1.out rpn1.output.out
+
+check_PROGRAMS = \
+	compat-cloexec
+
+compat_cloexec_SOURCES = \
+	test_compat-cloexec.c \
+	${top_srcdir}/src/compat-cloexec.c \
+	${top_srcdir}/src/compat-cloexec.h

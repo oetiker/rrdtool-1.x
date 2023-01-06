@@ -46,6 +46,8 @@
 #include "rrd_client.h"
 #include "rrd_snprintf.h"
 
+#include "compat-cloexec.h"
+
 
 #if !(defined(NETWARE) || defined(_WIN32))
 extern char *tzname[2];
@@ -480,7 +482,7 @@ int rrd_dump_opt_r(
 
     out_file = NULL;
     if (outname) {
-        if (!(out_file = fopen(outname, "w"))) {
+        if (!(out_file = rrd_fopen(outname, "we"))) {
             return (-1);
         }
     } else {

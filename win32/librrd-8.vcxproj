@@ -384,6 +384,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\compat-cloexec.c" />
     <ClCompile Include="..\src\hash_32.c" />
     <ClCompile Include="..\src\mkstemp.c" />
     <ClCompile Include="..\src\mutex.c" />

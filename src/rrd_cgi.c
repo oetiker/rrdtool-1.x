@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #endif
 
+#include "compat-cloexec.h"
+
 #define MEMBLK 1024
 /*#define DEBUG_PARSER
 #define DEBUG_VARS*/
@@ -381,7 +383,7 @@ static int readfile(
     if ((strcmp("-", file_name) == 0)) {
         input = stdin;
     } else {
-        if ((input = fopen(file_name, "rb")) == NULL) {
+        if ((input = rrd_fopen(file_name, "rbe")) == NULL) {
             rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
             return (-1);
         }

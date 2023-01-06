@@ -66,6 +66,8 @@
 #include <sys/types.h>
 #include <limits.h>
 
+#include "compat-cloexec.h"
+
 struct rrdc_response_s {
     int       status;
     char     *message;
@@ -793,7 +795,7 @@ static int connect_unix(
     assert(path != NULL);
     assert(client->sd == -1);
 
-    client->sd = socket(PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
+    client->sd = socket(PF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, /* protocol = */ 0);
     if (client->sd < 0) {
         status = errno;
         return (status);
