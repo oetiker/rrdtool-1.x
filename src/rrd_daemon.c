@@ -111,6 +111,8 @@
 #endif                          /* HAVE_LIBWRAP */
 
 #include "rrd_strtod.h"
+#include "compat-cloexec.h"
+
 #include <glib.h>
 /* }}} */
 
@@ -3478,7 +3480,7 @@ static int journal_replay(
         }
     }
 
-    fh = fopen(file, "r");
+    fh = rrd_fopen(file, "re");
     if (fh == NULL) {
         if (errno != ENOENT)
             RRDD_LOG(LOG_ERR,
@@ -3798,7 +3800,7 @@ static int open_listen_socket_unix(
     listen_fds = temp;
     memcpy(listen_fds + listen_fds_num, sock, sizeof(listen_fds[0]));
 
-    fd = socket(PF_UNIX, SOCK_STREAM, /* protocol = */ 0);
+    fd = socket(PF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, /* protocol = */ 0);
     if (fd < 0) {
         fprintf(stderr, "rrdcached: unix socket(2) failed: %s\n",
                 rrd_strerror(errno));
@@ -4819,7 +4821,7 @@ static int read_options(
         {
             if (log_fh)
                 fclose(log_fh);
-            log_fh = fopen(options.optarg, "a");
+            log_fh = rrd_fopen(options.optarg, "ae");
             if (!log_fh) {
                 fprintf(stderr, "Failed to open log file '%s': %s\n",
                         options.optarg, rrd_strerror(errno));

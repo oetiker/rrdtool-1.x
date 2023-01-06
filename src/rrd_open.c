@@ -21,6 +21,7 @@
 #endif                          /* WIN32 */
 
 #include "rrd_tool.h"
+#include "compat-cloexec.h"
 #include "unused.h"
 
 #ifdef HAVE_BROKEN_MS_ASYNC
@@ -325,7 +326,7 @@ rrd_file_t *rrd_open(
         goto out_free;
     }
 #else
-    if ((rrd_simple_file->fd = open(file_name, flags, 0666)) < 0) {
+    if ((rrd_simple_file->fd = open(file_name, flags | O_CLOEXEC, 0666)) < 0) {
         rrd_set_error("opening '%s': %s", file_name, rrd_strerror(errno));
         goto out_free;
     }

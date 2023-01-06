@@ -10,6 +10,7 @@
 #include "rrd_strtod.h"
 
 #include "rrd_tool.h"
+#include "compat-cloexec.h"
 
 /* MinGW and MinGW-w64 use the format codes from msvcrt.dll,
  * which does not support e.g. %F, %T or %V. Here we need %V for "Week %V".
@@ -3471,7 +3472,7 @@ int lazy_check(
        change here ... */
     if (time(NULL) - imgstat.st_mtime > (im->end - im->start) / im->xsize)
         return 0;
-    if ((fd = fopen(im->graphfile, "rb")) == NULL)
+    if ((fd = rrd_fopen(im->graphfile, "rbe")) == NULL)
         return 0;       /* the file does not exist */
     switch (im->imgformat) {
     case IF_PNG:

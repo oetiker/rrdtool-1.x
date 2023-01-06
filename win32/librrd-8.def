@@ -95,3 +95,4 @@ rrdc_ping
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update
+_rrd_fopen
