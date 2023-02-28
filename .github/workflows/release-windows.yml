@@ -25,21 +25,21 @@ jobs:
         include:
           - os: windows-2019
             triplet: x64-windows
-            # https://github.com/microsoft/vcpkg/commit/af2287382b1991dbdcb7e5112d236f3323b9dd7a
-            vcpkgCommitId: 'af2287382b1991dbdcb7e5112d236f3323b9dd7a'
+            # https://github.com/microsoft/vcpkg/commit/a7b6122f6b6504d16d96117336a0562693579933
+            vcpkgCommitId: 'a7b6122f6b6504d16d96117336a0562693579933'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2019
             triplet: x86-windows
-            vcpkgCommitId: 'af2287382b1991dbdcb7e5112d236f3323b9dd7a'
+            vcpkgCommitId: 'a7b6122f6b6504d16d96117336a0562693579933'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x86'
             nmake_configuration: ''
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -63,7 +63,7 @@ jobs:
       - name: Collect files
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: deploy-rrdtool-MSVC-${{ matrix.configuration }}
           path: win32/nmake_release_${{ matrix.configuration }}_vcpkg/rrdtool-*-${{ matrix.configuration }}_vcpkg/
