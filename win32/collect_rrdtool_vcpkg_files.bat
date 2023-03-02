@@ -61,7 +61,8 @@ xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pango-1.0-0.dll %release_d
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangocairo-1.0-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangoft2-1.0-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangowin32-1.0-0.dll %release_dir%
-xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pcre.dll %release_dir%
+xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pcre2-8.dll %release_dir%
+xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pixman-1-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\zlib1.dll %release_dir%
 
 popd
