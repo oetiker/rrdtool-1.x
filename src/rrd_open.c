@@ -140,7 +140,8 @@ DWORD     dwCreationDisposition = 0;
 
 static int rrd_rwlock(
     rrd_file_t *rrd_file,
-    int writelock);
+    int writelock,
+    int lock_mode);
 static int close_and_unlock(
     int fd);
 
@@ -171,6 +172,11 @@ rrd_file_t *rrd_open(
     rrd_file_t *rrd_file = NULL;
     rrd_simple_file_t *rrd_simple_file = NULL;
     size_t    newfile_size = 0;
+
+    if ((rdwr & RRD_LOCK_MASK) == RRD_LOCK_DEFAULT) {
+        rdwr &= ~RRD_LOCK_MASK;
+        rdwr |= _rrd_lock_flags(_rrd_lock_default());
+    }
 
     /* Are we creating a new file? */
     if (rdwr & RRD_CREAT) {
@@ -341,11 +347,9 @@ rrd_file_t *rrd_open(
 #endif
 #endif
 
-    if (rdwr & RRD_LOCK) {
-        if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
-            rrd_set_error("could not lock RRD");
-            goto out_close;
-        }
+    if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE, rdwr & RRD_LOCK_MASK) != 0) {
+        rrd_set_error("could not lock RRD");
+        goto out_close;
     }
 
     /* Better try to avoid seeks as much as possible. stat may be heavy but
@@ -663,7 +667,7 @@ void mincore_print(
 int rrd_lock(
     rrd_file_t *rrd_file)
 {
-    return rrd_rwlock(rrd_file, 1);
+    return rrd_rwlock(rrd_file, 1, RRD_LOCK_DEFAULT);
 }
 
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__CYGWIN32__)
@@ -761,8 +765,12 @@ int close_and_unlock(
 static
 int rrd_rwlock(
     rrd_file_t *rrd_file,
-    int writelock)
+    int writelock,
+    int lock_mode)
 {
+    if (lock_mode == RRD_LOCK_NONE)
+        return 0;
+
 #ifdef DISABLE_FLOCK
     (void) rrd_file;
     return 0;
@@ -795,6 +803,7 @@ int rrd_rwlock(
 #else
     {
         struct flock lock;
+        int op = lock_mode == RRD_LOCK_TRY ? F_SETLK : F_SETLKW;
 
         lock.l_type = writelock ? F_WRLCK : /* exclusive write lock or */
             F_RDLCK;    /* shared read lock */
@@ -802,7 +811,7 @@ int rrd_rwlock(
         lock.l_start = 0;   /* start of file */
         lock.l_whence = SEEK_SET;   /* end of file */
 
-        rcstat = fcntl(rrd_simple_file->fd, F_SETLK, &lock);
+        rcstat = fcntl(rrd_simple_file->fd, op, &lock);
     }
 #endif
 
@@ -1186,4 +1195,104 @@ unsigned long rrd_select_initial_row(
     rra_def_t *rra)
 {
     return rrd_random() % rra->row_cnt;
+}
+
+/*
+ * Translates a string in a RRD_FLAGS_LOCKING_xxx constant.
+ *
+ * Empty or non-existing strings are valid and will be mapped to a default
+ * value.
+ *
+ * Functions returns -1 on unsupported values but does not emit diagnostics.
+ */
+static int _rrd_lock_parse(const char *opt)
+{
+    /* non-existing and empty values */
+    if (!opt || !opt[0])
+        /* the default locking mode */
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    else if (strcmp(opt, "try") == 0)
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    else if (strcmp(opt, "block") == 0)
+        return RRD_FLAGS_LOCKING_MODE_BLOCK;
+    else if (strcmp(opt, "none") == 0)
+        return RRD_FLAGS_LOCKING_MODE_NONE;
+    else
+        return -1;
+}
+
+/*
+ * Returns the default locking method.
+ *
+ * It reads the $RRD_LOCKING environment.
+ *
+ * Function always succeeds; unsupported values will emit a
+ * diagnostic and function returns a default value in this case.
+ */
+int _rrd_lock_default(void)
+{
+    const char *opt = getenv("RRD_LOCKING");
+    int flags = _rrd_lock_parse(opt);
+
+    if (flags < 0) {
+        fprintf(stderr,
+                "unsupported locking mode '%s' in $RRD_LOCKING; assuming 'try'\n",
+                opt);
+        return RRD_FLAGS_LOCKING_MODE_TRY;
+    }
+
+    return flags;
+}
+
+/*
+ * Translates a string to a RRD_FLAGS_LOCKING_xxx constant and updates flags.
+ *
+ * Function will fail on unsupported values and return -1.  It sets rrd_set_error()
+ * in this case.
+ *
+ * Else, the RRD_FLAGS_LOCKING_xxx related bits in 'out_flags' will be cleared
+ * and updated.  Function returns 0 then.
+ */
+int _rrd_lock_from_opt(int *out_flags, const char *opt)
+{
+    int flags = _rrd_lock_parse(opt);
+
+    if (flags < 0) {
+        rrd_set_error("unsupported locking mode '%s'\n", opt);
+        return flags;
+    }
+
+    *out_flags &= ~RRD_FLAGS_LOCKING_MODE_MASK;
+    *out_flags |= flags;
+
+    return 0;
+}
+
+/*
+ * Translates RRD_FLAGS_LOCKING_MODE_xxx to RRD_LOCK_xxx
+ *
+ * Function removes unrelated bits from 'extra_flags' and maps it to the
+ * RRD_LOCK_xxx constants.
+ */
+int _rrd_lock_flags(int extra_flags)
+{
+    /* Due to legacy reasons, we have to map this manually.
+     *
+     * E.g. RRD_LOCK_DEFAULT (which might be used by deprecated direct calls
+     * to rrd_open()) must be non-zero.  But RRD_FLAGS_LOCKING_MODE_DEFAULT
+     * must be 0 because not all users of the updatex api might have been
+     * updated yet.
+     */
+    switch (extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) {
+    case RRD_FLAGS_LOCKING_MODE_NONE:
+        return RRD_LOCK_NONE;
+    case RRD_FLAGS_LOCKING_MODE_TRY:
+        return RRD_LOCK_TRY;
+    case RRD_FLAGS_LOCKING_MODE_BLOCK:
+        return RRD_LOCK_BLOCK;
+    case RRD_FLAGS_LOCKING_MODE_DEFAULT:
+        return RRD_LOCK_DEFAULT;
+    default:
+        abort();
+    }
 }

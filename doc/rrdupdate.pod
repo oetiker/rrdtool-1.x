@@ -38,6 +38,14 @@ used with this command.
 
 The name of the B<RRD> you want to update.
 
+=item B<--locking>|B<-L> B<try>|B<block>|B<none>
+
+Lock the B<RRD> file in the given mode: B<try> fails, when the file
+is locked by another process, B<block> waits until the lock is
+released and B<none> skips locking at all.  The default is read
+from the B<$RRD_LOCKING> environment variable and falls back to
+B<try> when such a variable does not exist.
+
 =item B<--template>|B<-t> I<ds-name>[B<:>I<ds-name>]...
 
 By default, the B<update> function expects its data input in the order
@@ -131,6 +139,15 @@ If this environment variable is set it will strip the leading string from the
 filename prior to sending the filename to rrdcached.
 This is mostly intended to allow rrdcached to work with xymon and cacti tools
 without having to modify those tools.
+
+=item B<RRD_LOCKING>
+
+If this environment variable is set, the B<RRD> file is locked in the
+given mode: B<try> fails, when the file is locked by another process,
+B<block> waits until the lock is released and B<none> skips locking at
+all.
+
+This variable can be overridden by the B<--locking> command line option.
 
 =back
 

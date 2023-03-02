@@ -304,12 +304,13 @@ rrd_info_t *rrd_update_v(
     struct optparse_long longopts[] = {
         {"template",          't', OPTPARSE_REQUIRED},
         {"skip-past-updates", 's', OPTPARSE_NONE},
+        {"locking",           'L', OPTPARSE_REQUIRED},
         {0},
     };
     struct optparse options;
     int opt;
     const char *tmplt = NULL;
-    int      extra_flags = 0;
+    int      extra_flags = _rrd_lock_default();
     rrd_info_t *result = NULL;
     rrd_infoval_t rc;
     char *opt_daemon = NULL;
@@ -325,6 +326,11 @@ rrd_info_t *rrd_update_v(
 
         case 's':
             extra_flags |= RRD_SKIP_PAST_UPDATES;
+            break;
+
+        case 'L':
+            if (_rrd_lock_from_opt(&extra_flags, options.optarg) < 0)
+                goto end_tag;
             break;
 
         case '?':
@@ -674,12 +680,13 @@ int rrd_update(
         {"template",          't', OPTPARSE_REQUIRED},
         {"daemon",            'd', OPTPARSE_REQUIRED},
         {"skip-past-updates", 's', OPTPARSE_NONE},
+        {"locking",           'L', OPTPARSE_REQUIRED},
         {0},
     };
     struct optparse options;
     int       opt;
     char     *tmplt = NULL;
-    int       extra_flags = 0;
+    int       extra_flags = _rrd_lock_default();
     int       rc = -1;
     char     *opt_daemon = NULL;
 
@@ -708,6 +715,11 @@ int rrd_update(
                 rrd_set_error("strdup failed.");
                 goto out;
             }
+            break;
+
+        case 'L':
+            if (_rrd_lock_from_opt(&extra_flags, options.optarg) < 0)
+                goto out;
             break;
 
         case '?':
@@ -739,7 +751,7 @@ int rrd_update(
     {
 	rrd_clear_error();
 	if (tmplt) {
-	        if (extra_flags != 0) {
+	        if ((extra_flags & RRD_SKIP_PAST_UPDATES) != 0) {
 	            rrd_set_error("The caching daemon cannot be used together with "
 				  "templates and skip-past-updates yet.");
 		    goto out;
@@ -859,7 +871,8 @@ static int _rrd_updatex(
     }
 
     rrd_init(&rrd);
-    rrd_file = rrd_open(filename, &rrd, RRD_READWRITE | RRD_LOCK);
+    rrd_file = rrd_open(filename, &rrd, RRD_READWRITE |
+                        _rrd_lock_flags(extra_flags));
     if (rrd_file == NULL) {
         goto err_free;
     }
