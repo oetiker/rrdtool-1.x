@@ -511,6 +511,7 @@ int parseRRA(
                     || atoi(*require_version) < atoi(RRD_VERSION4)) {
                     *require_version = RRD_VERSION4;    /* MHWPREDICT causes Version 4 */
                 }
+                /* intentional fall through */
             case CF_HWPREDICT:
                 token_min = 5;
                 /* initialize some parameters */
@@ -520,6 +521,7 @@ int parseRRA(
                 break;
             case CF_DEVSEASONAL:
                 token_min = 3;
+                /* intentional fall through */
             case CF_SEASONAL:
                 if (cf_id == CF_SEASONAL) {
                     token_min = 4;
@@ -527,7 +529,7 @@ int parseRRA(
                 /* initialize some parameters */
                 rra_def->par[RRA_seasonal_gamma].u_val = 0.1;
                 rra_def->par[RRA_seasonal_smoothing_window].u_val = 0.05;
-                /* fall through */
+                /* intentional fall through */
             case CF_DEVPREDICT:
                 if (cf_id == CF_DEVPREDICT) {
                     token_min = 3;
