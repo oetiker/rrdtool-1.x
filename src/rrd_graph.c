@@ -5677,6 +5677,7 @@ int rrd_graph_color(
             sscanf(color, "#%8lx%n", &col, &n);
             if (n == 9)
                 break;
+            /* intentional fall through */
         default:
             rrd_set_error("Color problem in %s", err);
         }
