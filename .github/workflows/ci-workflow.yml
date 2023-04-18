@@ -16,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
-        os: [windows-2019]
+        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+        os: [windows-2022]
         carch: [x86_64]
     defaults:
       run:
@@ -45,20 +45,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
-        os: [windows-2019]
+        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+        os: [windows-2022]
         triplet: [x64-windows, x86-windows]
         include:
-          - os: windows-2019
+          - os: windows-2022
             triplet: x64-windows
-            # https://github.com/microsoft/vcpkg/commit/a7b6122f6b6504d16d96117336a0562693579933
-            vcpkgCommitId: 'a7b6122f6b6504d16d96117336a0562693579933'
+            # https://github.com/microsoft/vcpkg/commit/501db0f17ef6df184fcdbfbe0f87cde2313b6ab1
+            vcpkgCommitId: '501db0f17ef6df184fcdbfbe0f87cde2313b6ab1'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
-          - os: windows-2019
+          - os: windows-2022
             triplet: x86-windows
-            vcpkgCommitId: 'a7b6122f6b6504d16d96117336a0562693579933'
+            vcpkgCommitId: '501db0f17ef6df184fcdbfbe0f87cde2313b6ab1'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x86'
             nmake_configuration: ''
@@ -88,5 +88,5 @@ jobs:
 
       - name: Build ${{ matrix.configuration }}
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
           nmake -f win32\Makefile_vcpkg.msc ${{ matrix.nmake_configuration }}
