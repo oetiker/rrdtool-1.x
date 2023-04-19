@@ -97,7 +97,7 @@ Make sure the RRDtool build system finds your new compiler
 Use apt-get to make sure you have all that is required. A number
 of packages will get added through dependencies.
 
- apt-get install autoconf autopoint build-essential
+ apt-get install autoconf autopoint build-essential dc
  apt-get install groff-base libtool libpango1.0-dev libxml2-dev
  apt-get install python3-dev python3-setuptools
 
