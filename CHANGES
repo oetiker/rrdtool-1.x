@@ -4,6 +4,7 @@ RRDtool - master ...
 
 Bugfixes
 --------
+* Fix ytop and ybase adjustments for overlaping area issue on transparent areas <turban>
 * Suppress warnings of implicit fall through <youpong>
 * Update tarball download link in doc <c72578>
 * Fix unsigned integer overflow in rrdtool first. Add test for rrd_first() <c72578>
