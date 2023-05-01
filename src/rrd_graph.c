@@ -4295,14 +4295,14 @@ int graph_paint_timestring(
                             ybase = extra;
                         }
                         if (im->slopemode == 0) {
-                            backY[++idxI] = ybase - 0.2;
+                            backY[++idxI] = ybase;
                             backX[idxI] = ii + im->xorigin - 1;
-                            foreY[idxI] = ytop + 0.2;
+                            foreY[idxI] = ytop;
                             foreX[idxI] = ii + im->xorigin - 1;
                         }
-                        backY[++idxI] = ybase - 0.2;
+                        backY[++idxI] = ybase;
                         backX[idxI] = ii + im->xorigin;
-                        foreY[idxI] = ytop + 0.2;
+                        foreY[idxI] = ytop;
                         foreX[idxI] = ii + im->xorigin;
                     }
                     /* close up any remaining area */
