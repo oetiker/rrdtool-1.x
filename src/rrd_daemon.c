@@ -2883,8 +2883,8 @@ static command_t list_of_commands[] = { /* {{{ */
      "TUNE",
      handle_request_tune,
      CMD_CONTEXT_CLIENT,
-     "TUNE <filename> [options]",
-     "Tunes the given file, takes the parameters as defined in rrdtool"},
+     "TUNE <filename> [options]\n",
+     "Tunes the given file, takes the parameters as defined in rrdtool.\n"},
     {
      "FLUSH",
      handle_request_flush,
