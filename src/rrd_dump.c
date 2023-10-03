@@ -464,6 +464,29 @@ err_out:
 
 }
 
+static char *str_opt_xmlheader(int header) {
+    switch (header) {
+        case 1:
+            return "dtd";
+        case 2:
+            return "xsd";
+        default:
+            return "none";
+    }
+}
+
+static int parse_opt_xmlheader(const char *header) {
+    if (strcmp(header, "dtd") == 0) {
+        return 1;
+    } else if (strcmp(header, "xsd") == 0) {
+        return 2;
+    } else if (strcmp(header, "none") == 0) {
+        return 0;
+    }
+    return -1;
+}
+
+
 static size_t rrd_dump_opt_cb_fileout(
     const void *data,
     size_t len,
@@ -489,7 +512,13 @@ int rrd_dump_opt_r(
         out_file = stdout;
     }
 
-    res = rrd_dump_cb_r(filename, opt_noheader, rrd_dump_opt_cb_fileout, (void *)out_file);
+    if (rrdc_is_any_connected()) {
+        res = rrdc_dump(filename, str_opt_xmlheader(opt_noheader),
+                rrd_dump_opt_cb_fileout, (void *)out_file);
+    } else {
+        res = rrd_dump_cb_r(filename, opt_noheader,
+                rrd_dump_opt_cb_fileout, (void *)out_file);
+    }
 
     if (fflush(out_file) != 0) {
         rrd_set_error("error flushing output: %s", rrd_strerror(errno));
@@ -543,8 +572,7 @@ int rrd_dump(
                     free (opt_daemon);
             }
             opt_daemon = strdup(options.optarg);
-            if (opt_daemon == NULL)
-            {
+            if (opt_daemon == NULL) {
                 rrd_set_error ("strdup failed.");
                 return (-1);
             }
@@ -555,14 +583,8 @@ int rrd_dump(
            break;
 
         case 'h':
-	   if (strcmp(options.optarg, "dtd") == 0) {
-	   	opt_header = 1;
-	   } else if (strcmp(options.optarg, "xsd") == 0) {
-	   	opt_header = 2;
-	   } else if (strcmp(options.optarg, "none") == 0) {
-	   	opt_header = 0;
-	   }
-	   break;
+           opt_header = parse_opt_xmlheader(options.optarg);
+           break;
 
         default:
             rrd_set_error("usage rrdtool %s [--header|-h {none,xsd,dtd}]\n"
@@ -602,3 +624,6 @@ int rrd_dump(
 
     return rc;
 }
+/*
+ * vim: set sw=4 sts=4 ts=4 et fdm=marker :
+ */

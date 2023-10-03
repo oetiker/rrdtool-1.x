@@ -2060,6 +2060,125 @@ int rrdc_fetch(
     return status;
 }                       /* }}} int rrdc_fetch */
 
+int rrd_client_dump(
+    rrd_client_t *client,
+    const char *filename,   /* {{{ */
+    const char *opt_header,
+    rrd_output_callback_t output_cb,
+    void *cb_userdata)
+{
+    char    buffer[RRD_CMD_MAX];
+    char   *buffer_ptr;
+    size_t  buffer_free;
+    size_t  buffer_size;
+    int     status;
+    char   *file_path;
+    char    resp_buffer[256];
+
+    if (client == NULL) return -1;
+    if (filename == NULL) {
+        rrd_set_error("rrdc_dump: no input filename specified");
+        return -1;
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    buffer_ptr = &buffer[0];
+    buffer_free = sizeof(buffer);
+
+    status = buffer_add_string("dump", &buffer_ptr, &buffer_free);
+    if (status != 0) {
+        rrd_set_error("rrdc_dump: out of memory");
+        return -1;
+    }
+
+    file_path = get_path(client, filename);
+    if (file_path == NULL) {
+        return -1;
+    }
+
+    status = buffer_add_string(file_path, &buffer_ptr, &buffer_free);
+    free(file_path);
+    if (status != 0) {
+        rrd_set_error("rrdc_dump: out of memory");
+        return -1;
+    }
+
+    if (opt_header) {
+        status = buffer_add_string(opt_header, &buffer_ptr, &buffer_free);
+        if (status != 0) {
+            rrd_set_error("rrdc_dump: out of memory");
+            return -1;
+        }
+    }
+
+    /* buffer ready to send? */
+    assert(buffer_free < sizeof(buffer));
+    buffer_size = sizeof(buffer) - buffer_free;
+    assert(buffer[buffer_size - 1] == ' ');
+    buffer[buffer_size - 1] = '\n';
+
+    /* send request to rrdcached */
+    status = sendall(client, buffer, buffer_size, 1);
+    if (status == -1) {
+        rrd_set_error("rrdc_dump: socket error (%s) while talking to rrdcached", 
+                rrd_strerror(errno));
+        close_connection(client);
+        return -1;
+    }
+
+    /* receive response from rrdcached, relay to output_cb */
+    ssize_t received, written;
+    ssize_t response_len = 0;
+    while (1) {
+        received = recv(client->sd, buffer, sizeof(buffer), 0);
+        if (received == -1L) {
+            rrd_set_error("rrdc_dump: failed to recv from rrdcached: %s",
+                    rrd_strerror(errno));
+            close_connection(client);
+            return -1;
+        }
+        if (received == 0) {
+            close_connection(client);
+            break; // EOF
+        }
+        written = output_cb(buffer, received, cb_userdata);
+        if (written != received) {
+            rrd_set_error("rrdc_dump: unexpected number of bytes (%d) "
+                    "written (output_cb)", written);
+            close_connection(client);
+            return -1;
+        }
+
+        // gather the first response bytes to detect XML response or status
+        size_t remaining_response_len =
+            ((signed) sizeof(resp_buffer) - response_len) > written ? written
+            : (signed)sizeof(resp_buffer) - response_len;
+        if (remaining_response_len > 0) { // continuously append to response buffer
+            memcpy(resp_buffer+response_len, buffer, remaining_response_len);
+            response_len += remaining_response_len;
+        }
+
+        if (response_len < 1) continue; // unlikely empty write
+
+        // handle non-xml response (error)
+        if (resp_buffer[0] != '<') {
+            char *nl = (char *) memchr((void *) resp_buffer, '\n', response_len);
+            if (nl == NULL) {
+                continue; // we did not get a line (yet)
+            }
+            *nl = '\0'; // \0 terminate at newline
+            chomp(resp_buffer); // chomp away possible \r too
+            rrd_set_error("rrdc_dump: failed to dump: %s", resp_buffer);
+            close_connection(client);
+            return -1;
+        }
+        // if the response starts with `<` an XML payload is assumed and the connection
+        // will be shutdown from the daemon to indicate EOF.
+    }
+
+    return 0;
+}                       /* }}} int rrd_client_dump */
+
 int rrd_client_tune(
     rrd_client_t *client,
     const char *filename,   /* {{{ */
@@ -2148,6 +2267,20 @@ int rrdc_tune(
     mutex_lock(&lock);
     status =
         rrd_client_tune(&default_client, filename, argc, argv);
+    mutex_unlock(&lock);
+    return status;
+}                       /* }}} int rrdc_tune */
+
+int rrdc_dump(
+    const char *filename,   /* {{{ */
+    const char *opt_header,
+    rrd_output_callback_t output_cb,
+    void *cb_userdata)
+{
+    mutex_lock(&lock);
+    int status =
+        rrd_client_dump(&default_client, filename, opt_header,
+                output_cb, cb_userdata);
     mutex_unlock(&lock);
     return status;
 }                       /* }}} int rrdc_tune */
@@ -2358,5 +2491,5 @@ void rrdc_stats_free(
 }                       /* }}} void rrdc_stats_free */
 
 /*
- * vim: set sw=2 sts=2 ts=8 et fdm=marker :
+ * vim: set sw=4 sts=4 ts=4 et fdm=marker :
  */

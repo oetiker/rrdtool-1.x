@@ -884,6 +884,35 @@ static int send_response(
     return 0;
 }                       /* }}} */
 
+/* send a chunk of bytes directly to the socket without buffering.
+ * the socket is passed as `void *user` parameter.
+ * this can be used as a callback for writes.
+ * rrd_dump_cb_r is an example use-case.
+ * returns number of bytes written on success, -1 on error
+ */
+static size_t send_unbuffered(
+    const void *data,
+    size_t len,
+    void *user)
+{                       /* {{{ */
+    size_t bytes_written=0;
+    if (!user) {
+        RRDD_LOG(LOG_INFO, "send_unbuffered: missing user pointer");
+        return -1;
+    }
+    listen_socket_t *sock = (listen_socket_t*)user;
+
+    while (bytes_written < len) {
+        ssize_t rc = write(sock->fd, (char*)data + bytes_written, len - bytes_written);
+        if (rc <= 0) {
+            RRDD_LOG(LOG_INFO, "send_unbuffered: could not write data (%d)", errno);
+            return -1;
+        }
+        bytes_written += rc;
+    }
+    return bytes_written;
+}                       /* }}} */
+
 static void wipe_ci_values(
     cache_item_t *ci,
     time_t when)
@@ -1793,6 +1822,56 @@ static int handle_request_update(
     return rc;
 }                       /* }}} int handle_request_update */
 
+static int handle_request_dump(
+    HANDLER_PROTO)
+{                       /* {{{ */
+    char *filename;
+    char *filepath;
+    int rc;
+
+    rc = buffer_get_field(&buffer, &buffer_size, &filename);
+    if (rc != 0) return syntax_error(sock, cmd);
+    filepath = get_abs_path(filename); /* absolute filename */
+    if (filepath == NULL) {
+        return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+    }
+
+    struct stat statbuf;
+    memset(&statbuf, 0, sizeof(statbuf));
+    if (stat(filepath, &statbuf) != 0 || !S_ISREG(statbuf.st_mode)) {
+        free(filepath);
+        return send_response(sock, RESP_ERR, "%s: failed to stat: %s\n",
+                filename, rrd_strerror(errno));
+    }
+
+    rc = flush_file(filepath);
+    switch (rc) {
+        case 0:
+            break; // success
+        case ENOENT:
+            break; // success - nothing to flush
+        default:
+            free(filepath);
+            return send_response(sock, RESP_ERR, "%s: failed to flush\n", filename);
+    }
+
+    rc = rrd_dump_cb_r(filepath, 1, send_unbuffered, (void*)sock);
+    if (rc != 0) {
+        RRDD_LOG(LOG_WARNING, "rrddump request for %s: failed to relay dump: %s", filepath, rrd_get_error());
+        free(filepath);
+        return send_response(sock, RESP_ERR, "%s: failed to relay dump: %s\n", filename, rrd_get_error());
+    }
+
+    RRDD_LOG(LOG_INFO, "rrddump request for %s succeeded", filepath);
+    free(filepath);
+
+    /*
+     * We return -1 here to indicate a bogus "failure".
+     * This will cause the connection to be closed and this conveys the
+     * end of the dumped XML file.
+     */
+    return -1;
+}                       /* }}} int handle_request_dump */
 
 static int handle_request_tune(
     HANDLER_PROTO)
@@ -2885,6 +2964,12 @@ static command_t list_of_commands[] = { /* {{{ */
      CMD_CONTEXT_CLIENT,
      "TUNE <filename> [options]\n",
      "Tunes the given file, takes the parameters as defined in rrdtool.\n"},
+    {
+     "DUMP",
+     handle_request_dump,
+     CMD_CONTEXT_CLIENT,
+     "DUMP <filename> [-h none|xsd|dtd]\n",
+     "Dumps the specified RRD to XML.\n"},
     {
      "FLUSH",
      handle_request_flush,
@@ -5019,5 +5104,5 @@ int main(
 }                       /* int main */
 
 /*
- * vim: set sw=2 sts=2 ts=8 et fdm=marker :
+ * vim: set sw=4 sts=2 ts=4 et fdm=marker :
  */

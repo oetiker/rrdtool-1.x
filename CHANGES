@@ -39,6 +39,7 @@ Features
 
   rrd_updatex_r(filename, tmplt, RRD_FLAGS_LOCKING_MODE_BLOCK, ...);
 
+* Add (remote) dump support to rrdcached <Tobias Hintze>
 
 RRDtool 1.8.0 - 2022-03-13
 ==========================
