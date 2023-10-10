@@ -653,10 +653,11 @@ static int sendall(
         return -1;
 
     while (ret != -1 && len > 0) {
-        ret = send(client->sd, msg, len, 0);
+        ret = send(client->sd, bufp, len, 0);
         if (ret > 0) {
             bufp += ret;
             len -= ret;
+            allow_retry = 0; // partial read forbids retry
         }
     }
 
