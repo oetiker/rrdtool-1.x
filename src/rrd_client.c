@@ -2143,7 +2143,7 @@ int rrd_client_dump(
         }
         written = output_cb(buffer, received, cb_userdata);
         if (written != received) {
-            rrd_set_error("rrdc_dump: unexpected number of bytes (%d) "
+            rrd_set_error("rrdc_dump: unexpected number of bytes (%ld) "
                     "written (output_cb)", written);
             close_connection(client);
             return -1;
