@@ -43,7 +43,7 @@ xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\brotlidec.dll %release_dir
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\bz2.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\cairo-2.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\libexpat.dll %release_dir%
-xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\libffi.dll %release_dir%
+xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\ffi-8.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\fontconfig-1.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\freetype.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\fribidi-0.dll %release_dir%
