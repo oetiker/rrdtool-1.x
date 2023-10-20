@@ -159,13 +159,6 @@ function run_cached {
                     ARGS=( $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< "${ARGS[@]}") )
                 fi
 
-                # rrdcached does not support remote dump
-                if [ $1 == "dump" ]; then
-                    RRDCACHED_STRIPPATH=${BUILDDIR} $RRDTOOL_ORIG flushcached $2 || fail flushcached
-                    ARGS=( $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< "${ARGS[@]}") )
-                    RRDCACHED_STRIPPATH=${BASEDIR}
-                fi
-
                 # rrdcached does not support remote restore
                 if [ $1 == "restore" ]; then
                     ARGS=( "restore" "$2" $(sed "s#${BUILDDIR}#${BASEDIR}#" <<< $3) )

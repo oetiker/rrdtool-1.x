@@ -48,6 +48,8 @@ S<--no-header> option since 1.2 cannot deal with xml headers.
 Address of the L<rrdcached> daemon. If specified, a C<flush> command is sent
 to the server before reading the RRD files. This allows B<rrdtool> to return
 fresh data even if the daemon is configured to cache values for a long time.
+When specified the RRD filename signifies a server side file, but the output
+(XML) filename refers to the local side.
 For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
  rrdtool dump --daemon unix:/var/run/rrdcached.sock /var/lib/rrd/foo.rrd
