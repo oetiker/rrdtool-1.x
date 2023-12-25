@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include "../../src/rrd_tool.h"
 #include "../../src/rrd_format.h"
+#include "../../src/unused.h"
 
 /* support pre-8.4 tcl */
 
@@ -50,22 +51,15 @@ static const char **getopt_init(
 
     argv2 = calloc(argc, sizeof(char *));
     for (i = 0; i < argc; i++) {
-        argv2[i] = strdup(argv[i]);
+        argv2[i] = argv[i];
     }
     return argv2;
 }
 
 static void getopt_cleanup(
-    int argc,
+    int UNUSED(argc),
     const char **argv2)
 {
-    int       i;
-
-    for (i = 0; i < argc; i++) {
-        if (argv2[i] != NULL) {
-            free((void *)argv2[i]);
-        }
-    }
     free((void *)argv2);
 }
 
@@ -74,7 +68,6 @@ static void getopt_free_element(
     int argn)
 {
     if (argv2[argn] != NULL) {
-        free((void *)argv2[argn]);
         argv2[argn] = NULL;
     }
 }
@@ -391,16 +384,10 @@ static int Rrd_Update(
                 Tcl_AppendResult(interp, "RRD Error: option '",
                                  argv2[argv_i - 1], "' needs an argument",
                                  (char *) NULL);
-                if (template != NULL) {
-                    free((void *)template);
-                }
                 getopt_cleanup(argc, argv2);
                 return TCL_ERROR;
             }
-            if (template != NULL) {
-                free((void *)template);
-            }
-            template = strdup(argv2[argv_i]);
+            template = argv2[argv_i];
             getopt_free_element(argv2, argv_i - 1);
             getopt_free_element(argv2, argv_i);
         } else if (!strcmp(argv2[argv_i], "--")) {
@@ -409,9 +396,6 @@ static int Rrd_Update(
         } else if (argv2[argv_i][0] == '-') {
             Tcl_AppendResult(interp, "RRD Error: unknown option '",
                              argv2[argv_i], "'", (char *) NULL);
-            if (template != NULL) {
-                free((void *)template);
-            }
             getopt_cleanup(argc, argv2);
             return TCL_ERROR;
         }
@@ -422,18 +406,12 @@ static int Rrd_Update(
     if (argc < 2) {
         Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
                          (char *) NULL);
-        if (template != NULL) {
-            free((void *)template);
-        }
         getopt_cleanup(argc, argv2);
         return TCL_ERROR;
     }
 
     rrd_update_r(argv2[1], template, argc - 2, (const char **)argv2 + 2);
 
-    if (template != NULL) {
-        free((void *)template);
-    }
     getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
@@ -454,7 +432,6 @@ static int Rrd_Info(
 {
     int status = TCL_OK;
     rrd_info_t *data;
-    const char **argv2;
 
     /* TODO: support for rrdcached */
     if (argc != 2) {
@@ -463,9 +440,7 @@ static int Rrd_Info(
         return TCL_ERROR;
     }
 
-    argv2 = getopt_init(argc, argv);
-
-    data = rrd_info_r(argv2[1]);
+    data = rrd_info_r(argv[1]);
 
     if (data) {
 	Tcl_SetObjResult(interp, convert_info(data));
@@ -477,7 +452,6 @@ static int Rrd_Info(
 	status = TCL_ERROR;
     }
 
-    getopt_cleanup(argc, argv2);
     return status;
 }
 
@@ -488,7 +462,6 @@ static int Rrd_Lastupdate(
     CONST84 char *argv[])
 {
     time_t    last_update;
-    const char    **argv2;
     char    **ds_namv;
     char    **last_ds;
     char      s[30];
@@ -502,8 +475,7 @@ static int Rrd_Lastupdate(
         return TCL_ERROR;
     }
 
-    argv2 = getopt_init(argc, argv);
-    if (rrd_lastupdate_r(argv2[1], &last_update,
+    if (rrd_lastupdate_r(argv[1], &last_update,
                        &ds_cnt, &ds_namv, &last_ds) == 0) {
         listPtr = Tcl_GetObjResult(interp);
         for (i = 0; i < ds_cnt; i++) {
@@ -527,7 +499,6 @@ static int Rrd_Lastupdate(
             free(ds_namv);
         }
     }
-    getopt_cleanup(argc, argv2);
     return TCL_OK;
 }
 
@@ -543,10 +514,8 @@ static int Rrd_Fetch(
     char    **ds_namv;
     Tcl_Obj  *listPtr;
     char      s[30];
-    const char    **argv2;
 
-    argv2 = getopt_init(argc, argv);
-    if (rrd_fetch(argc, argv2, &start, &end, &step,
+    if (rrd_fetch(argc, argv, &start, &end, &step,
                   &ds_cnt, &ds_namv, &data) != -1) {
         datai = data;
         listPtr = Tcl_GetObjResult(interp);
@@ -562,7 +531,6 @@ static int Rrd_Fetch(
         free(ds_namv);
         free(data);
     }
-    getopt_cleanup(argc, argv2);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
@@ -692,11 +660,7 @@ static int Rrd_Tune(
     int argc,
     CONST84 char *argv[])
 {
-    const char    **argv2;
-
-    argv2 = getopt_init(argc, argv);
-    rrd_tune(argc, argv2);
-    getopt_cleanup(argc, argv2);
+    rrd_tune(argc, argv);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
@@ -716,11 +680,7 @@ static int Rrd_Resize(
     int argc,
     CONST84 char *argv[])
 {
-    const char    **argv2;
-
-    argv2 = getopt_init(argc, argv);
-    rrd_resize(argc, argv2);
-    getopt_cleanup(argc, argv2);
+    rrd_resize(argc, argv);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
@@ -740,11 +700,7 @@ static int Rrd_Restore(
     int argc,
     CONST84 char *argv[])
 {
-    const char    **argv2;
-
-    argv2 = getopt_init(argc, argv);
-    rrd_restore(argc, argv2);
-    getopt_cleanup(argc, argv2);
+    rrd_restore(argc, argv);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
