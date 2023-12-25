@@ -175,7 +175,7 @@ static int rrd_fetch_cb_wrapper(
     /* Check the eval first */
     if (SvTRUE(ERRSV)) {
         rrd_set_error("perl callback failed: %s",SvPV_nolen(ERRSV));
-        POPs; /* there is undef on top of the stack when there is an error
+        (void)POPs; /* there is undef on top of the stack when there is an error
                  and call_sv was initiated with G_EVAL|G_SCALER */
         goto error_out;
     }
@@ -383,7 +383,7 @@ rrd_tune(...)
 
 #ifdef HAVE_RRD_GRAPH
 
-SV *
+void
 rrd_graph(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -433,7 +433,7 @@ rrd_graph(...)
 
 #endif /* HAVE_RRD_GRAPH */
 
-SV *
+void
 rrd_fetch(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -486,7 +486,7 @@ rrd_fetch(...)
 		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 
-SV *
+void
 rrd_fetch_cb_register(cb)
     SV * cb
     CODE:
@@ -496,7 +496,7 @@ rrd_fetch_cb_register(cb)
             SvSetSV(rrd_fetch_cb_svptr,cb);
         rrd_fetch_cb_register(rrd_fetch_cb_wrapper);
 
-SV *
+void
 rrd_times(start, end)
 	  char *start
 	  char *end
@@ -521,7 +521,7 @@ rrd_times(start, end)
 		PUSHs(sv_2mortal(newSVuv(start_tmp)));
 		PUSHs(sv_2mortal(newSVuv(end_tmp)));
 
-int
+void
 rrd_xport(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -657,7 +657,7 @@ rrd_flushcached(...)
 	OUTPUT:
 		RETVAL
 
-SV*
+void
 rrd_list(...)
 	PROTOTYPE: @
 	PREINIT:
