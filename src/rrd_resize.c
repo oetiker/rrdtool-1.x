@@ -12,9 +12,9 @@
 
 int rrd_resize(
     int argc,
-    char **argv)
+    const char **argv)
 {
-    char     *infilename, outfilename[11] = "resize.rrd";
+    const char     *infilename, outfilename[11] = "resize.rrd";
     rrd_t     rrdold, rrdnew;
     rrd_value_t buffer;
     int       version;

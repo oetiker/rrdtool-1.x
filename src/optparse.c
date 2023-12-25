@@ -10,7 +10,7 @@
 #define options_argv(i) \
     ((i) < options->argc ? options->argv[i] : NULL)
 
-void optparse_init(struct optparse *options, int argc, char **argv)
+void optparse_init(struct optparse *options, int argc, const char **argv)
 {
     options->argv = argv;
     options->argc = argc;
@@ -42,7 +42,7 @@ is_longopt(const char *arg)
 static void
 permute(struct optparse *options, int index)
 {
-    char *nonoption = options->argv[index];
+    const char *nonoption = options->argv[index];
     for (int i = index; i < options->optind - 1; i++)
         options->argv[i] = options->argv[i + 1];
     options->argv[options->optind - 1] = nonoption;
@@ -67,7 +67,7 @@ int optparse(struct optparse *options, const char *optstring)
     options->errmsg[0] = '\0';
     options->optopt = 0;
     options->optarg = NULL;
-    char *option = options_argv(options->optind);
+    const char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
     } else if (is_dashdash(option)) {
@@ -88,7 +88,7 @@ int optparse(struct optparse *options, const char *optstring)
     option += options->subopt + 1;
     options->optopt = option[0];
     int type = argtype(optstring, option[0]);
-    char *next = options_argv(options->optind + 1);
+    const char *next = options_argv(options->optind + 1);
     switch (type) {
     case -1:
         opterror(options, "invalid option -- '%c'", option[0]);
@@ -128,10 +128,10 @@ int optparse(struct optparse *options, const char *optstring)
     return 0;
 }
 
-char *optparse_arg(struct optparse *options)
+const char *optparse_arg(struct optparse *options)
 {
     options->subopt = 0;
-    char *option = options->argv[options->optind];
+    const char *option = options->argv[options->optind];
     if (option != NULL)
         options->optind++;
     return option;
@@ -222,7 +222,7 @@ optparse_long(struct optparse *options,
               int *longindex)
 {
 //    printf("%i < %i\n",options->optind,options->argc);
-    char *option = options_argv(options->optind);
+    const char *option = options_argv(options->optind);
     if (option == NULL) {
         return -1;
     } else if (is_dashdash(option)) {

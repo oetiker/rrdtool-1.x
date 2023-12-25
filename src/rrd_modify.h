@@ -28,7 +28,7 @@ typedef struct {
 } rra_mod_op_t;
 
 int handle_modify(const rrd_t *in, const char *outfilename,
-		  int argc, char **argv, int optind,
+		  int argc, const char **argv, int optind,
 		  int newstep);
 
 typedef union {

@@ -13,7 +13,7 @@
 
 time_t rrd_first(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"rraindex", 129, OPTPARSE_REQUIRED},

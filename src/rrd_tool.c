@@ -22,16 +22,16 @@
 
 
 static void PrintUsage(
-    char *cmd);
+    const char *cmd);
 static int CountArgs(
     char *aLine);
 static int CreateArgs(
+    const char *,
     char *,
-    char *,
-    char **);
+    const char **);
 static int HandleInputLine(
     int,
-    char **,
+    const char **,
     FILE *);
 int       RemoteMode = 0;
 int       ChangeRoot = 0;
@@ -42,7 +42,7 @@ int       ChangeRoot = 0;
 
 
 static void PrintUsage(
-    char *cmd)
+    const char *cmd)
 {
 
 #ifdef BUILD_DATE
@@ -443,11 +443,11 @@ static char *fgetslong(
 
 int main(
     int argc,
-    char *argv[])
+    const char *argv[])
 {
-    char    **myargv;
+    const char    **myargv;
     char     *aLine;
-    char     *firstdir = "";
+    const char     *firstdir = "";
 
 #ifdef MUST_DISABLE_SIGFPE
     signal(SIGFPE, SIG_IGN);
@@ -526,7 +526,7 @@ int main(
                 printf("ERROR: not enough arguments\n");
                 continue;
             }
-            if ((myargv = (char **) malloc((argc + 1) *
+            if ((myargv = malloc((argc + 1) *
                                            sizeof(char *))) == NULL) {
                 perror("malloc");
                 exit(1);
@@ -572,7 +572,7 @@ int main(
    resolving them portably is not really simple. */
 static int HandleInputLine(
     int argc,
-    char **argv,
+    const char **argv,
     FILE * out)
 {
 #if defined(HAVE_OPENDIR) && defined (HAVE_READDIR)
@@ -887,12 +887,12 @@ static int CountArgs(
  * CreateArgs - take a string (aLine) and tokenize
  */
 static int CreateArgs(
-    char *pName,
+    const char *pName,
     char *aLine,
-    char **argv)
+    const char **argv)
 {
     char     *getP, *putP;
-    char    **pargv = argv;
+    const char    **pargv = argv;
     char      Quote = 0;
     int       inArg = 0;
     int       len;

@@ -41,11 +41,11 @@ extern int Tclrrd_SafeInit(
  * Hence, we need to do some preparation before
  * calling the rrd library functions.
  */
-static char **getopt_init(
+static const char **getopt_init(
     int argc,
     CONST84 char *argv[])
 {
-    char    **argv2;
+    const char    **argv2;
     int       i;
 
     argv2 = calloc(argc, sizeof(char *));
@@ -57,31 +57,31 @@ static char **getopt_init(
 
 static void getopt_cleanup(
     int argc,
-    char **argv2)
+    const char **argv2)
 {
     int       i;
 
     for (i = 0; i < argc; i++) {
         if (argv2[i] != NULL) {
-            free(argv2[i]);
+            free((void *)argv2[i]);
         }
     }
-    free(argv2);
+    free((void *)argv2);
 }
 
 static void getopt_free_element(
-    char *argv2[],
+    const char *argv2[],
     int argn)
 {
     if (argv2[argn] != NULL) {
-        free(argv2[argn]);
+        free((void *)argv2[argn]);
         argv2[argn] = NULL;
     }
 }
 
 static void getopt_squieeze(
     int *argc,
-    char *argv2[])
+    const char *argv2[])
 {
     int       i, null_i = 0, argc_tmp = *argc;
 
@@ -104,7 +104,7 @@ static int Rrd_Create(
     CONST84 char *argv[])
 {
     int       argv_i;
-    char    **argv2;
+    const char    **argv2;
     char     *parsetime_error = NULL;
     time_t    last_up = time(NULL) - 10;
     long int  long_tmp;
@@ -295,7 +295,7 @@ static int Rrd_Flushcached(
         return TCL_ERROR;
     }
 
-    rrd_flushcached(argc, (char**)argv);
+    rrd_flushcached(argc, argv);
 
     if (rrd_test_error()) {
         Tcl_AppendResult(interp, "RRD Error: ",
@@ -380,7 +380,7 @@ static int Rrd_Update(
     CONST84 char *argv[])
 {
     int       argv_i;
-    char    **argv2, *template = NULL;
+    const char    **argv2, *template = NULL;
 
     argv2 = getopt_init(argc, argv);
 
@@ -392,13 +392,13 @@ static int Rrd_Update(
                                  argv2[argv_i - 1], "' needs an argument",
                                  (char *) NULL);
                 if (template != NULL) {
-                    free(template);
+                    free((void *)template);
                 }
                 getopt_cleanup(argc, argv2);
                 return TCL_ERROR;
             }
             if (template != NULL) {
-                free(template);
+                free((void *)template);
             }
             template = strdup(argv2[argv_i]);
             getopt_free_element(argv2, argv_i - 1);
@@ -410,7 +410,7 @@ static int Rrd_Update(
             Tcl_AppendResult(interp, "RRD Error: unknown option '",
                              argv2[argv_i], "'", (char *) NULL);
             if (template != NULL) {
-                free(template);
+                free((void *)template);
             }
             getopt_cleanup(argc, argv2);
             return TCL_ERROR;
@@ -423,7 +423,7 @@ static int Rrd_Update(
         Tcl_AppendResult(interp, "RRD Error: needs rrd filename",
                          (char *) NULL);
         if (template != NULL) {
-            free(template);
+            free((void *)template);
         }
         getopt_cleanup(argc, argv2);
         return TCL_ERROR;
@@ -432,7 +432,7 @@ static int Rrd_Update(
     rrd_update_r(argv2[1], template, argc - 2, (const char **)argv2 + 2);
 
     if (template != NULL) {
-        free(template);
+        free((void *)template);
     }
     getopt_cleanup(argc, argv2);
 
@@ -454,7 +454,7 @@ static int Rrd_Info(
 {
     int status = TCL_OK;
     rrd_info_t *data;
-    char **argv2;
+    const char **argv2;
 
     /* TODO: support for rrdcached */
     if (argc != 2) {
@@ -488,7 +488,7 @@ static int Rrd_Lastupdate(
     CONST84 char *argv[])
 {
     time_t    last_update;
-    char    **argv2;
+    const char    **argv2;
     char    **ds_namv;
     char    **last_ds;
     char      s[30];
@@ -543,7 +543,7 @@ static int Rrd_Fetch(
     char    **ds_namv;
     Tcl_Obj  *listPtr;
     char      s[30];
-    char    **argv2;
+    const char    **argv2;
 
     argv2 = getopt_init(argc, argv);
     if (rrd_fetch(argc, argv2, &start, &end, &step,
@@ -590,7 +590,7 @@ static int Rrd_Graph(
     int       rc, xsize, ysize;
     double    ymin, ymax;
     char      dimensions[50];
-    char    **argv2;
+    const char    **argv2;
     CONST84 char *save;
 
     /*
@@ -692,7 +692,7 @@ static int Rrd_Tune(
     int argc,
     CONST84 char *argv[])
 {
-    char    **argv2;
+    const char    **argv2;
 
     argv2 = getopt_init(argc, argv);
     rrd_tune(argc, argv2);
@@ -716,7 +716,7 @@ static int Rrd_Resize(
     int argc,
     CONST84 char *argv[])
 {
-    char    **argv2;
+    const char    **argv2;
 
     argv2 = getopt_init(argc, argv);
     rrd_resize(argc, argv2);
@@ -740,7 +740,7 @@ static int Rrd_Restore(
     int argc,
     CONST84 char *argv[])
 {
-    char    **argv2;
+    const char    **argv2;
 
     argv2 = getopt_init(argc, argv);
     rrd_restore(argc, argv2);

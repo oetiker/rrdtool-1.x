@@ -11,7 +11,7 @@
 
 time_t rrd_last(
     int argc,
-    char **argv)
+    const char **argv)
 {
     char *opt_daemon = NULL;
     time_t lastupdate;

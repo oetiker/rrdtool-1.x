@@ -37,7 +37,7 @@ static char *move_past_prefix(const char *prefix, const char *string)
 	return (char *)&(string[index]);
 }
 
-static char *rrd_list_rec(int recursive, char *root, char *dirname)
+static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 {
 #define SANE_ASPRINTF2(_dest_str, _format, ...)				\
 	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
@@ -138,7 +138,7 @@ static char *rrd_list_rec(int recursive, char *root, char *dirname)
 	return out;
 }
 
-char *rrd_list_r(int recursive, char *dirname)
+char *rrd_list_r(int recursive, const char *dirname)
 {
 #define SANE_ASPRINTF(_dest_str, _format, ...)				\
 	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
@@ -240,7 +240,7 @@ char *rrd_list_r(int recursive, char *dirname)
 	return rrd_list_rec(recursive, dirname, dirname);
 }
 
-char *rrd_list(int argc, char **argv)
+char *rrd_list(int argc, const char **argv)
 {
 	char *opt_daemon = NULL;
 	int status;

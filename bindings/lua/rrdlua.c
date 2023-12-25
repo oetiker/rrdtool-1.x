@@ -37,8 +37,8 @@
 extern void rrd_freemem(void *mem);
 
 extern int luaopen_rrd (lua_State * L);
-typedef int (*RRD_FUNCTION)(int, char **);
-typedef rrd_info_t *(RRD_FUNCTION_V)(int, char **);
+typedef int (*RRD_FUNCTION)(int, const char **);
+typedef rrd_info_t *(RRD_FUNCTION_V)(int, const char **);
 
 /**********************************************************/
 
@@ -49,9 +49,9 @@ static void reset_rrd_state(void)
     rrd_clear_error();
 }
 
-static char **make_argv(const char *cmd, lua_State * L)
+static const char **make_argv(const char *cmd, lua_State * L)
 {
-  char **argv;
+  const char **argv;
   int i;
   int argc = lua_gettop(L) + 1;
 
@@ -60,13 +60,12 @@ static char **make_argv(const char *cmd, lua_State * L)
     luaL_error(L, "Can't allocate memory for arguments array", cmd);
 
   /* fprintf(stderr, "Args:\n"); */
-  argv[0] = (char *) cmd; /* Dummy arg. Cast to (char *) because rrd */
-                          /* functions don't expect (const * char)   */
+  argv[0] = cmd;
   /* fprintf(stderr, "%s\n", argv[0]); */
   for (i=1; i<argc; i++) {
     /* accepts string or number */
     if (lua_isstring(L, i) || lua_isnumber(L, i)) {
-      if (!(argv[i] = (char *) lua_tostring (L, i))) {
+      if (!(argv[i] = lua_tostring (L, i))) {
         /* raise an error and never return */
         luaL_error(L, "%s - error duplicating string area for arg #%d",
                    cmd, i);
@@ -84,7 +83,7 @@ static char **make_argv(const char *cmd, lua_State * L)
 static int
 rrd_common_call (lua_State *L, const char *cmd, RRD_FUNCTION rrd_function)
 {
-  char **argv;
+  const char **argv;
   int argc = lua_gettop(L) + 1;
 
   argv = make_argv(cmd, L);
@@ -99,7 +98,7 @@ rrd_common_call (lua_State *L, const char *cmd, RRD_FUNCTION rrd_function)
 static int
 lua_rrd_infocall(lua_State *L, const char *cmd, RRD_FUNCTION_V rrd_function)
 {
-  char **argv;
+  const char **argv;
   rrd_info_t *p, *data;
   int argc = lua_gettop(L) + 1;
 
@@ -197,7 +196,7 @@ static int
 lua_rrd_fetch (lua_State * L)
 {
   int argc = lua_gettop(L) + 1;
-  char **argv = make_argv("fetch", L);
+  const char **argv = make_argv("fetch", L);
   unsigned long i, j, step, ds_cnt;
   rrd_value_t *data, *p;
   char    **names;
@@ -246,7 +245,7 @@ lua_rrd_first (lua_State * L)
 {
   time_t first;
   int argc = lua_gettop(L) + 1;
-  char **argv = make_argv("first", L);
+  const char **argv = make_argv("first", L);
   reset_rrd_state();
   first = rrd_first(argc, argv);
   free(argv);
@@ -260,7 +259,7 @@ lua_rrd_last (lua_State * L)
 {
   time_t last;
   int argc = lua_gettop(L) + 1;
-  char **argv = make_argv("last", L);
+  const char **argv = make_argv("last", L);
   reset_rrd_state();
   last = rrd_last(argc, argv);
   free(argv);
@@ -275,7 +274,7 @@ static int
 lua_rrd_graph (lua_State * L)
 {
   int argc = lua_gettop(L) + 1;
-  char **argv = make_argv("last", L);
+  const char **argv = make_argv("last", L);
   char **calcpr;
   int i, xsize, ysize;
   double ymin, ymax;

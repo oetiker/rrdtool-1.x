@@ -82,7 +82,7 @@ rrd_info_t
 
 rrd_info_t *rrd_info(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"daemon", 'd', OPTPARSE_REQUIRED},

@@ -299,7 +299,7 @@ static void initialize_time(
 
 rrd_info_t *rrd_update_v(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"template",          't', OPTPARSE_REQUIRED},
@@ -674,7 +674,7 @@ error:
 
 int rrd_update(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"template",          't', OPTPARSE_REQUIRED},

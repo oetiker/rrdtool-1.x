@@ -1877,7 +1877,7 @@ static int handle_request_tune(
     HANDLER_PROTO)
 {                       /* {{{ */
     int       status;
-    char**    argv = NULL;
+    const char**    argv = NULL;
     int       argc, argc_tmp;
     char*     i;
     int       rc;
@@ -1916,7 +1916,7 @@ static int handle_request_tune(
         goto done;
     }
 
-    if ((argv = (char **) malloc(argc * sizeof(char*))) == NULL) {
+    if ((argv = malloc(argc * sizeof(char*))) == NULL) {
         rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
         goto done;
     }
@@ -1927,7 +1927,7 @@ static int handle_request_tune(
         argc_tmp += 1;
     }
 
-    status = rrd_tune_r(file, argc, (const char **)argv);
+    status = rrd_tune_r(file, argc, argv);
     if (status != 0) {
         rc = send_response(sock, RESP_ERR, "Got error %s\n", rrd_get_error());
         goto done;   
@@ -1935,7 +1935,7 @@ static int handle_request_tune(
     rc = send_response(sock, RESP_OK, "Success\n");
     done:
     free(file);
-    free(argv);
+    free((void *)argv);
     return rc;
 }  
 
@@ -4505,7 +4505,7 @@ static int cleanup(
 
 static int read_options(
     int argc,
-    char **argv)
+    const char **argv)
 {                       /* {{{ */
     struct optparse_long longopts[] = {
         {NULL, 'a', OPTPARSE_REQUIRED},
@@ -5050,7 +5050,7 @@ static int read_options(
 
 int main(
     int argc,
-    char **argv)
+    const char **argv)
 {
     int       status;
 

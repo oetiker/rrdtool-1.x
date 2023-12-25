@@ -76,7 +76,7 @@ static void parseGENERIC_DS(
 
 int rrd_create(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"start", 'b', OPTPARSE_REQUIRED},

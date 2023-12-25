@@ -1297,7 +1297,7 @@ done:
 }
 
 int handle_modify(const rrd_t *in, const char *outfilename,
-		  int argc, char **argv, int optidx,
+		  int argc, const char **argv, int optidx,
 		  int newstep) {
     // parse add/remove options
     int rc = -1;

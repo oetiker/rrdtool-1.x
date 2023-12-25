@@ -22,7 +22,7 @@
 #include "rrd_tool.h"
 #include "rrd_client.h"
 
-int rrd_flushcached (int argc, char **argv)
+int rrd_flushcached (int argc, const char **argv)
 {
     struct optparse_long longopts[] = {
         {"daemon", 'd', OPTPARSE_REQUIRED},

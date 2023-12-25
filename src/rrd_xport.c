@@ -73,7 +73,7 @@ static int rrd_xport_format_addprints(
 
 int rrd_xport(
     int argc,
-    char **argv,
+    const char **argv,
     int UNUSED(*xsize),
     time_t *start,
     time_t *end,        /* which time frame do you want ?

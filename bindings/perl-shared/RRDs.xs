@@ -44,11 +44,11 @@ extern "C" {
 		    strcpy(argv[i+1],handle); \
  	        } \
 		rrd_clear_error();\
-		RETVAL=name(items+1,argv); \
+		RETVAL = name(items + 1, (const char **)argv); \
 		for (i=0; i < items; i++) {\
-		    free(argv[i+1]);\
+		    free((void *)argv[i+1]);\
 		} \
-		free(argv);\
+		free((void *)argv);\
 		\
 		if (rrd_test_error()) XSRETURN_UNDEF;
 
@@ -67,11 +67,11 @@ extern "C" {
 		    strcpy(argv[i+1],handle); \
  	        } \
                 rrd_clear_error(); \
-                data=name(items+1, argv); \
+                data = name(items + 1, (const char **)argv); \
                 for (i=0; i < items; i++) { \
-		    free(argv[i+1]); \
+		    free((void *)argv[i+1]); \
 		} \
-		free(argv); \
+		free((void *)argv); \
                 if (rrd_test_error()) XSRETURN_UNDEF; \
                 hash = newHV(); \
    	        save=data; \
@@ -404,7 +404,7 @@ rrd_graph(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax);
+		rrd_graph(items+1,(const char **)argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -455,7 +455,7 @@ rrd_fetch(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
+		rrd_fetch(items+1,(const char **)argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -543,7 +543,7 @@ rrd_xport(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data);
+		rrd_xport(items+1,(const char **)argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -667,7 +667,7 @@ rrd_list(...)
                 char **argv;
 		AV *list;
 	PPCODE:
-		argv = (char **) malloc((items+1)*sizeof(char *));
+		argv = malloc((items+1)*sizeof(char *));
 		argv[0] = "dummy";
 
 		for (i = 0; i < items; i++) {
@@ -681,7 +681,7 @@ rrd_list(...)
 
                 rrd_clear_error();
 
-		data = rrd_list(items+1, argv);
+		data = rrd_list(items+1, (const char **)argv);
 
                 for (i=0; i < items; i++) {
 		    free(argv[i+1]);

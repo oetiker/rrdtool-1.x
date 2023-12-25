@@ -9,7 +9,7 @@
 
 typedef struct string_arr_t {
     int       len;
-    char    **strings;
+    const char    **strings;
 } string_arr;
 
 VALUE     mRRD;
@@ -18,12 +18,12 @@ VALUE     rb_eRRDError;
 typedef int (
     *RRDFUNC) (
     int argc,
-    char **argv);
+    const char **argv);
 
 typedef rrd_info_t *(
     *RRDINFOFUNC) (
     int argc,
-    char **argv);
+    const char **argv);
 
 #define RRD_CHECK_ERROR  \
     if (rrd_test_error()) \
@@ -72,10 +72,10 @@ void string_arr_delete(
 
     /* skip dummy first entry */
     for (i = 1; i < a.len; i++) {
-        free(a.strings[i]);
+        free((void *)a.strings[i]);
     }
 
-    free(a.strings);
+    free((void *)a.strings);
 }
 
 void reset_rrd_state(
