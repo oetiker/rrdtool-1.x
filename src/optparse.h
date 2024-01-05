@@ -44,7 +44,7 @@
  */
 
 struct optparse {
-    char **argv;
+    const char **argv;
     int argc;
     int permute;
     int optind;
@@ -65,7 +65,7 @@ struct optparse_long {
 /**
  * Initializes the parser state.
  */
-void optparse_init(struct optparse *options, int argc, char **argv);
+void optparse_init(struct optparse *options, int argc, const char **argv);
 
 /**
  * Read the next option in the argv array.
@@ -98,6 +98,6 @@ optparse_long(struct optparse *options,
  * subcommand returned by optparse_arg(). This function allows you to
  * ignore the value of optind.
  */
-char *optparse_arg(struct optparse *options);
+const char *optparse_arg(struct optparse *options);
 
 #endif

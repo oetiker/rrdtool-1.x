@@ -1952,7 +1952,7 @@ static int parse_xport(
 
 void rrd_graph_script(
     int argc,
-    char *argv[],
+    const char **argv,
     image_desc_t *const im,
     int optno)
 {

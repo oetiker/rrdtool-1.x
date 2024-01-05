@@ -102,7 +102,7 @@ static char *rrdstrip(
 static char *scanargs(
     char *line,
     int *argc,
-    char ***args);
+    const char ***args);
 
 /* format at-time specified times using strftime */
 static char *printstrftime(
@@ -317,7 +317,7 @@ static const char *putvar(
 }
 
 /* expand those RRD:* directives that can be used recursively */
-static char *rrd_expand_vars(
+static const char *rrd_expand_vars(
     char *buffer)
 {
     int       i;
@@ -434,7 +434,7 @@ static int readfile(
 
 int main(
     int argc,
-    char *argv[])
+    const char *argv[])
 {
     char     *buffer;
     long      i;
@@ -926,7 +926,7 @@ static char *drawgraph(
     }
     calfree();
     if (rrd_graph
-        (argc + 1, (char **) args - 1, &calcpr, &xsize, &ysize, NULL, &ymin,
+        (argc + 1, args - 1, &calcpr, &xsize, &ysize, NULL, &ymin,
          &ymax) != -1) {
         return stralloc(calcpr[0]);
     } else {
@@ -973,7 +973,7 @@ static char *printtimelast(
         /* not raising argc in step with args - 1 since the last argument
            will be used below for strftime  */
 
-        last = rrd_last(argc, (char **) args - 1);
+        last = rrd_last(argc, args - 1);
         if (rrd_test_error()) {
             char      err[4096];
 
@@ -1027,7 +1027,7 @@ static char *printtimenow(
 static char *scanargs(
     char *line,
     int *argument_count,
-    char ***arguments)
+    const char ***arguments)
 {
     char     *getP;     /* read cursor */
     char     *putP;     /* write cursor */
@@ -1039,8 +1039,8 @@ static char *scanargs(
 
     /* local array of arguments while parsing */
     int       argc = 1;
-    char    **argv;
-    char    **argv_tmp; /* temp variable for realloc() */
+    const char    **argv;
+    const char    **argv_tmp; /* temp variable for realloc() */
 
 #ifdef DEBUG_PARSER
     printf("<-- scanargs(%s) -->\n", line);
@@ -1051,7 +1051,7 @@ static char *scanargs(
 
     /* create initial argument array of char pointers */
     argsz = 32;
-    argv = (char **) malloc(argsz * sizeof(char *));
+    argv = malloc(argsz * sizeof(char *));
     if (!argv) {
         return NULL;
     }
@@ -1146,7 +1146,7 @@ static char *scanargs(
         if (argc == argsz - 2) {
             /* resize argument array */
             argsz *= 2;
-            argv_tmp = (char **) rrd_realloc(argv, argsz * sizeof(char *));
+            argv_tmp = rrd_realloc(argv, argsz * sizeof(char *));
             if (*argv_tmp == NULL) {
                 return NULL;
             }
@@ -1213,7 +1213,7 @@ static int parse(
     /* the name of the vairable ... */
     char     *val;
     long      valln;
-    char    **args;
+    const char    **args;
     char     *end;
     long      end_offset;
     int       argc;
@@ -1264,7 +1264,7 @@ static int parse(
         /* make sure we do not shrink the mallocd block */
         size_t    newbufsize = i + strlen(end) + valln + 1;
 
-        *buf = (char *) rrd_realloc(*buf, newbufsize);
+        *buf = rrd_realloc(*buf, newbufsize);
 
         if (*buf == NULL) {
             perror("Realoc buf:");

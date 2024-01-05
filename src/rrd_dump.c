@@ -497,7 +497,7 @@ static size_t rrd_dump_opt_cb_fileout(
 
 int rrd_dump_opt_r(
     const char *filename,
-    char *outname,
+    const char *outname,
     int opt_noheader)
 {
     FILE     *out_file;
@@ -543,7 +543,7 @@ int rrd_dump_r(
 
 int rrd_dump(
     int argc,
-    char **argv)
+    const char **argv)
 {
     int       opt;
     struct optparse_long longopts[] = {

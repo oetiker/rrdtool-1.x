@@ -41,6 +41,9 @@ Features
 
 * Add (remote) dump support to rrdcached <Tobias Hintze>
 
+* Constify argv argument to library functions
+  Without this users of library function that want to pass in const strings need to duplicate them to avoid compiler warnings
+
 RRDtool 1.8.0 - 2022-03-13
 ==========================
 

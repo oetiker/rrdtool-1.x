@@ -14,7 +14,7 @@
 #include "rrd_client.h"
 #include <stdarg.h>
 
-int rrd_lastupdate (int argc, char **argv)
+int rrd_lastupdate (int argc, const char **argv)
 {
     struct optparse_long longopts[] = {
         {"daemon", 'd', OPTPARSE_REQUIRED},

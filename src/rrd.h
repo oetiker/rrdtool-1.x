@@ -155,10 +155,10 @@ extern    "C" {
 /* main function blocks */
     int       rrd_create(
     int,
-    char **);
+    const char **);
     rrd_info_t *rrd_info(
     int,
-    char **);
+    const char **);
     rrd_info_t *rrd_info_push(
     rrd_info_t *,
     char *,
@@ -170,19 +170,19 @@ extern    "C" {
     rrd_info_t *);
     char     *rrd_list(
     int,
-    char **);
+    const char **);
     char     *rrd_list_r(
     int,
-    char *dirname);
+    const char *dirname);
     int       rrd_update(
     int,
-    char **);
+    const char **);
     rrd_info_t *rrd_update_v(
     int,
-    char **);
+    const char **);
     int       rrd_graph(
     int,
-    char **,
+    const char **,
     char ***,
     int *,
     int *,
@@ -191,11 +191,11 @@ extern    "C" {
     double *);
     rrd_info_t *rrd_graph_v(
     int,
-    char **);
+    const char **);
 
     int       rrd_fetch(
     int,
-    char **,
+    const char **,
     time_t *,
     time_t *,
     unsigned long *,
@@ -204,32 +204,32 @@ extern    "C" {
     rrd_value_t **);
     int       rrd_restore(
     int,
-    char **);
+    const char **);
     int       rrd_dump(
     int,
-    char **);
+    const char **);
     int       rrd_tune(
     int,
-    char **);
+    const char **);
     time_t    rrd_last(
     int,
-    char **);
+    const char **);
     int       rrd_lastupdate(
     int argc,
-    char **argv);
+    const char **argv);
     time_t    rrd_first(
     int,
-    char **);
+    const char **);
     int       rrd_resize(
     int,
-    char **);
+    const char **);
     char     *rrd_strversion(
     void);
     double    rrd_version(
     void);
     int       rrd_xport(
     int,
-    char **,
+    const char **,
     int *,
     time_t *,
     time_t *,
@@ -239,7 +239,7 @@ extern    "C" {
     rrd_value_t **);
     int       rrd_flushcached(
     int argc,
-    char **argv);
+    const char **argv);
 
     void      rrd_freemem(
     void *mem);
@@ -323,7 +323,7 @@ extern    "C" {
     const char **argv);
     int       rrd_dump_opt_r(
     const char *filename,
-    char *outname,
+    const char *outname,
     int opt_noheader);
     int       rrd_dump_r(
     const char *filename,

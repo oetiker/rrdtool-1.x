@@ -473,12 +473,12 @@ void      time_clean(
 
 void      rrd_graph_options(
     int,
-    char **,
+    const char **,
     struct optparse *,
     image_desc_t *);
 void      rrd_graph_script(
     int,
-    char **,
+    const char **,
     image_desc_t *const,
     int);
 int       rrd_graph_color(

@@ -44,11 +44,11 @@ extern "C" {
 		    strcpy(argv[i+1],handle); \
  	        } \
 		rrd_clear_error();\
-		RETVAL=name(items+1,argv); \
+		RETVAL = name(items + 1, (const char **)argv); \
 		for (i=0; i < items; i++) {\
-		    free(argv[i+1]);\
+		    free((void *)argv[i+1]);\
 		} \
-		free(argv);\
+		free((void *)argv);\
 		\
 		if (rrd_test_error()) XSRETURN_UNDEF;
 
@@ -67,11 +67,11 @@ extern "C" {
 		    strcpy(argv[i+1],handle); \
  	        } \
                 rrd_clear_error(); \
-                data=name(items+1, argv); \
+                data = name(items + 1, (const char **)argv); \
                 for (i=0; i < items; i++) { \
-		    free(argv[i+1]); \
+		    free((void *)argv[i+1]); \
 		} \
-		free(argv); \
+		free((void *)argv); \
                 if (rrd_test_error()) XSRETURN_UNDEF; \
                 hash = newHV(); \
    	        save=data; \
@@ -175,7 +175,7 @@ static int rrd_fetch_cb_wrapper(
     /* Check the eval first */
     if (SvTRUE(ERRSV)) {
         rrd_set_error("perl callback failed: %s",SvPV_nolen(ERRSV));
-        POPs; /* there is undef on top of the stack when there is an error
+        (void)POPs; /* there is undef on top of the stack when there is an error
                  and call_sv was initiated with G_EVAL|G_SCALER */
         goto error_out;
     }
@@ -383,7 +383,7 @@ rrd_tune(...)
 
 #ifdef HAVE_RRD_GRAPH
 
-SV *
+void
 rrd_graph(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -404,7 +404,7 @@ rrd_graph(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_graph(items+1,argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax);
+		rrd_graph(items+1,(const char **)argv,&calcpr,&xsize,&ysize,NULL,&ymin,&ymax);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -433,7 +433,7 @@ rrd_graph(...)
 
 #endif /* HAVE_RRD_GRAPH */
 
-SV *
+void
 rrd_fetch(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -455,7 +455,7 @@ rrd_fetch(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_fetch(items+1,argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
+		rrd_fetch(items+1,(const char **)argv,&start,&end,&step,&ds_cnt,&ds_namv,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -486,7 +486,7 @@ rrd_fetch(...)
 		PUSHs(sv_2mortal(newRV_noinc((SV*)names)));
 		PUSHs(sv_2mortal(newRV_noinc((SV*)retar)));
 
-SV *
+void
 rrd_fetch_cb_register(cb)
     SV * cb
     CODE:
@@ -496,7 +496,7 @@ rrd_fetch_cb_register(cb)
             SvSetSV(rrd_fetch_cb_svptr,cb);
         rrd_fetch_cb_register(rrd_fetch_cb_wrapper);
 
-SV *
+void
 rrd_times(start, end)
 	  char *start
 	  char *end
@@ -521,7 +521,7 @@ rrd_times(start, end)
 		PUSHs(sv_2mortal(newSVuv(start_tmp)));
 		PUSHs(sv_2mortal(newSVuv(end_tmp)));
 
-int
+void
 rrd_xport(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -543,7 +543,7 @@ rrd_xport(...)
 		    strcpy(argv[i+1],handle);
  	        }
 		rrd_clear_error();
-		rrd_xport(items+1,argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data);
+		rrd_xport(items+1,(const char **)argv,&xsize,&start,&end,&step,&col_cnt,&legend_v,&data);
 		for (i=0; i < items; i++) {
 		    free(argv[i+1]);
 		}
@@ -657,7 +657,7 @@ rrd_flushcached(...)
 	OUTPUT:
 		RETVAL
 
-SV*
+void
 rrd_list(...)
 	PROTOTYPE: @
 	PREINIT:
@@ -667,7 +667,7 @@ rrd_list(...)
                 char **argv;
 		AV *list;
 	PPCODE:
-		argv = (char **) malloc((items+1)*sizeof(char *));
+		argv = malloc((items+1)*sizeof(char *));
 		argv[0] = "dummy";
 
 		for (i = 0; i < items; i++) {
@@ -681,7 +681,7 @@ rrd_list(...)
 
                 rrd_clear_error();
 
-		data = rrd_list(items+1, argv);
+		data = rrd_list(items+1, (const char **)argv);
 
                 for (i=0; i < items; i++) {
 		    free(argv[i+1]);

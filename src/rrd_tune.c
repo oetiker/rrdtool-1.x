@@ -71,7 +71,7 @@ static int set_hwsmootharg(
 
 int rrd_tune(
     int argc,
-    char **argv)
+    const char **argv)
 {
     char      *opt_daemon = NULL;
     const char *in_filename = NULL;

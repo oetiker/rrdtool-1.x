@@ -4607,7 +4607,7 @@ int scan_for_col(
 /* Now just a wrapper around rrd_graph_v */
 int rrd_graph(
     int argc,
-    char **argv,
+    const char **argv,
     char ***prdata,
     int *xsize,
     int *ysize,
@@ -4690,7 +4690,7 @@ int rrd_graph(
 
 rrd_info_t *rrd_graph_v(
     int argc,
-    char **argv)
+    const char **argv)
 {
     image_desc_t im;
     rrd_info_t *grinfo;
@@ -4953,7 +4953,7 @@ void rrd_graph_init(
 
 void rrd_graph_options(
     int argc,
-    char *argv[],
+    const char **argv,
     struct optparse *poptions,
     image_desc_t *im)
 {

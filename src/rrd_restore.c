@@ -1378,7 +1378,7 @@ int write_file(
 
 int rrd_restore(
     int argc,
-    char **argv)
+    const char **argv)
 {
     struct optparse_long longopts[] = {
         {"range-check", 'r', OPTPARSE_NONE},

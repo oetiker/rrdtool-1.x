@@ -61,7 +61,7 @@
 
 int rrd_fetch(
     int argc,
-    char **argv,
+    const char **argv,
     time_t *start,
     time_t *end,        /* which time frame do you want ?
                          * will be changed to represent reality */

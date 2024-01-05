@@ -123,7 +123,7 @@ PyRRD_String_FromCF(enum cf_en cf)
  * @return Zero if the function succeeds, otherwise -1
  */
 static int
-convert_args(char *command, PyObject *args, char ***rrdtool_argv, int *rrdtool_argc)
+convert_args(char *command, PyObject *args, const char ***rrdtool_argv, int *rrdtool_argc)
 {
     PyObject *o, *lo;
     int i, j, args_count, argv_count, element_count;
@@ -145,7 +145,7 @@ convert_args(char *command, PyObject *args, char ***rrdtool_argv, int *rrdtool_a
         }
     }
 
-    *rrdtool_argv = PyMem_New(char *, element_count + 1);
+    *rrdtool_argv = PyMem_New(const char *, element_count + 1);
 
     if (*rrdtool_argv == NULL)
         return -1;
@@ -186,7 +186,7 @@ convert_args(char *command, PyObject *args, char ***rrdtool_argv, int *rrdtool_a
  * Destroy argument vector.
  */
 static void
-destroy_args(char ***rrdtool_argv)
+destroy_args(const char ***rrdtool_argv)
 {
     PyMem_Del(*rrdtool_argv);
     *rrdtool_argv = NULL;
@@ -267,7 +267,7 @@ static char _rrdtool_create__doc__[] = "Create a new Round Robin Database.\n\n\
 static PyObject *
 _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -306,7 +306,7 @@ static char _rrdtool_dump__doc__[] = "Dump an RRD to XML.\n\n\
 static PyObject *
 _rrdtool_dump(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -345,7 +345,7 @@ static char _rrdtool_update__doc__[] = "Store a new set of values into\
 static PyObject *
 _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -378,7 +378,7 @@ static char _rrdtool_updatev__doc__[] = "Store a new set of values into "\
 static PyObject *
 _rrdtool_updatev(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
@@ -419,7 +419,7 @@ static char _rrdtool_fetch__doc__[] = "Fetch data from an RRD.\n\n\
 static PyObject *
 _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret, *range_tup, *dsnam_tup, *data_list, *t;
     rrd_value_t *data, *datai, dv;
@@ -497,7 +497,7 @@ static char _rrdtool_flushcached__doc__[] = "Flush RRD files from memory.\n\n\
 static PyObject *
 _rrdtool_flushcached(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -592,7 +592,7 @@ static char _rrdtool_graph__doc__[] = "Create a graph based on one or more " \
 static PyObject *
 _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int xsize, ysize, i, status;
@@ -650,7 +650,7 @@ static char _rrdtool_graphv__doc__[] = "Create a graph based on one or more " \
 static PyObject *
 _rrdtool_graphv(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
@@ -695,7 +695,7 @@ static char _rrdtool_xport__doc__[] = "Dictionary representation of data " \
 static PyObject *
 _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int xsize, status;
@@ -793,7 +793,7 @@ static char _rrdtool_list__doc__[] = "List RRDs in storage.\n\n" \
 static PyObject *
 _rrdtool_list(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret, *str;
     char *data, *ptr, *end;
@@ -855,7 +855,7 @@ static char _rrdtool_tune__doc__[] = "Modify some basic properties of a " \
 static PyObject *
 _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -893,7 +893,7 @@ static char _rrdtool_first__doc__[] = "Get the first UNIX timestamp of the "\
 static PyObject *
 _rrdtool_first(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int ts;
@@ -928,7 +928,7 @@ static char _rrdtool_last__doc__[] = "Get the UNIX timestamp of the most "\
 static PyObject *
 _rrdtool_last(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int ts;
@@ -965,7 +965,7 @@ static char _rrdtool_resize__doc__[] = "Modify the number of rows in a "\
 static PyObject *
 _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     int status;
@@ -1003,7 +1003,7 @@ static char _rrdtool_info__doc__[] = "Extract header information from an "\
 static PyObject *
 _rrdtool_info(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret;
     rrd_info_t *data;
@@ -1040,7 +1040,7 @@ static char _rrdtool_lastupdate__doc__[] = "Returns datetime and value stored "\
 static PyObject *
 _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    char **rrdtool_argv = NULL;
+    const char **rrdtool_argv = NULL;
     int    rrdtool_argc = 0;
     PyObject *ret, *ds_dict, *lastupd;
     int status;
