@@ -13,6 +13,7 @@ Bugfixes
 * acinclude.m4: Include <stdlib.h> when using exit <ryandesign>
 * rrdtool-release: Create NUMVERS from VERSION file <c72578>
 * Avoids leaking of file descriptors in multi threaded programs by @ensc
+* Avoids potential unterminated string because of fixed PATH_MAX buffer
 
 Features
 --------
