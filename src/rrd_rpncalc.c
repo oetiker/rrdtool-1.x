@@ -243,7 +243,7 @@ static short addop2str(
             rrd_set_error("failed to alloc memory in addop2str");
             return -1;
         }
-        strncpy(&((*result_str)[*offset]), op_str, op_len);
+        strncpy(*result_str + *offset, op_str, op_len + 1);
         *offset += op_len;
         return 1;
     }
