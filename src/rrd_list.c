@@ -5,7 +5,6 @@
 #ifdef _MSC_VER
 #include "win32-glob.h"    /* from https://sourceforge.net/projects/sox/ */
 #include "dirent.h"        /* from https://github.com/tronkko/dirent */
-#include "asprintf.h"      /* from http://asprintf.insanecoding.org */
 #else
 #if defined(__MINGW32__) && !defined(HAVE_GLOB_H)   /* MinGW has glob.h, MinGW-w64 not (yet?) */
 #include "win32/win32-glob.h"    /* from https://sourceforge.net/projects/sox/ */

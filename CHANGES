@@ -45,6 +45,10 @@ Features
 * Constify argv argument to library functions
   Without this users of library function that want to pass in const strings need to duplicate them to avoid compiler warnings
 
+* Avoid multiple implementations of asprintf
+  The locale-independent rrd_asprintf is equivalent to platform-provided snprintf when strings and integers are formatted.
+  There is no user of vasprintf-msvc that is locale-dependent, therefore this implementation can be replaced with rrd_vasprintf.
+
 RRDtool 1.8.0 - 2022-03-13
 ==========================
 

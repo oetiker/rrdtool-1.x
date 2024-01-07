@@ -8,9 +8,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_client.h"
 #include <stdarg.h>
-#ifdef _MSC_VER
-#include "asprintf.h"   /* for vasprintf() here */
-#endif
+#include "rrd_snprintf.h"   /* for vasprintf() here */
 
 /* allocate memory for string */
 char     *sprintf_alloc(
@@ -19,25 +17,12 @@ char     *sprintf_alloc(
 {
     char     *str = NULL;
     va_list   argp;
-#ifdef HAVE_VASPRINTF
     va_start( argp, fmt );
     if (vasprintf( &str, fmt, argp ) == -1){
         va_end(argp);
         rrd_set_error ("vasprintf failed.");
         return(NULL);
     }
-#else
-    int       maxlen = 1024 + strlen(fmt);
-    str = (char*)malloc(sizeof(char) * (maxlen + 1));
-    if (str != NULL) {
-        va_start(argp, fmt);
-#ifdef HAVE_VSNPRINTF
-        vsnprintf(str, maxlen, fmt, argp);
-#else
-        vsprintf(str, fmt, argp);
-#endif
-    }
-#endif /* HAVE_VASPRINTF */
     va_end(argp);
     return str;
 }
