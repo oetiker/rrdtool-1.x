@@ -112,6 +112,7 @@
 
 #include "rrd_strtod.h"
 #include "compat-cloexec.h"
+#include "rrd_snprintf.h"
 
 #include <glib.h>
 /* }}} */
@@ -127,6 +128,22 @@
 #else
 #define RRD_LISTEN_BACKLOG 511
 #endif
+
+static inline ssize_t areadlink(char **result, const char *path) {
+    struct stat st;
+    char * buf;
+    ssize_t size;
+    if (lstat(path, &st) == -1)
+        return -errno;
+    if ((st.st_mode & S_IFMT) != S_IFLNK)
+        return 0;
+    size = st.st_size;
+    buf = calloc(1, size + 1);
+    if (!buf)
+        return -ENOMEM;
+    *result = buf;
+    return readlink(path, buf, size);
+}
 
 /*
  * Types
@@ -2628,12 +2645,14 @@ static int handle_request_list(
     char     *filename = NULL;
     char     *rec = NULL;
     int       recursive = 0;
-    char     *list, *start_ptr, *end_ptr, *ptr;
-    char      fullpath[PATH_MAX], current[PATH_MAX], absolute[PATH_MAX];
-    char      bwc[PATH_MAX], bwd[PATH_MAX];
+    char     *list = NULL;
+    char     *start_ptr, *end_ptr, *ptr;
+    char     *fullpath = NULL;
+    char     *current = NULL;
+    char     *absolute = NULL;
+    char     *bwc = NULL;
+    char     *bwd = NULL;
     char     *base = &config_base_dir[0];
-    struct stat sc, sd;
-    ssize_t   len;
     int       status;
 
     if (config_base_dir == NULL) {
@@ -2665,39 +2684,38 @@ static int handle_request_list(
     }
 
     /* get full pathname */
-    snprintf(fullpath, PATH_MAX, "%s%s%s",
+    status = asprintf(&fullpath, "%s%s%s",
              config_base_dir, (filename[0] == '/') ? "" : "/", filename);
+    if (status < 0)
+        goto out_status_return;
 
     if (!check_file_access(fullpath, sock)) {
-        return send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
+        status = send_response(sock, RESP_ERR, "Cannot read: %s\n", fullpath);
+        goto out_status_return;
     }
 
     /* get real path of config_base_dir in case it's a symlink */
-    if (lstat(config_base_dir, &sd) == -1) {
-        return send_response(sock, RESP_ERR, "stat %s: %s\n",
+    status = areadlink(&bwd, config_base_dir);
+    if (status < 0) {
+        status = send_response(sock, RESP_ERR, "stat %s: %s\n",
                              config_base_dir, rrd_strerror(errno));
+        goto out_status_return;
     }
-
-    if ((sd.st_mode & S_IFMT) == S_IFLNK) {
-        len = readlink(config_base_dir, bwd, sizeof(bwd) - 1);
-        if (len == -1) {
-            return send_response(sock, RESP_ERR, "readlink %s: %s\n",
-                                 config_base_dir, rrd_strerror(errno));
-        }
-        bwd[len] = '\0';
-        base = &bwd[0];
-    }
+    if (status > 0)
+        base = bwd;
 
     list = rrd_list_r(recursive, fullpath);
 
     if (list == NULL) {
         /* Empty directory listing */
         if (errno == 0) {
+            status = 0;
             goto out_send_response;
         }
 
-        return send_response(sock, RESP_ERR,
+        status = send_response(sock, RESP_ERR,
                              "List %s: %s\n", fullpath, rrd_strerror(errno));
+        goto out_status_return;
     }
 
     /* Check list items returned by rrd_list_r;
@@ -2707,6 +2725,15 @@ static int handle_request_list(
     end_ptr = list;
 
     while (*start_ptr != '\0') {
+        char * fn;
+
+        free(absolute);
+        absolute = NULL;
+        free(current);
+        current = NULL;
+        free(bwc);
+        bwc = NULL;
+
         end_ptr = strchr(start_ptr, '\n');
 
         if (end_ptr == NULL) {
@@ -2717,63 +2744,60 @@ static int handle_request_list(
             /* Name too long: skip entry */
             goto loop_next;
         }
-        strncpy(&current[0], start_ptr, (end_ptr - start_ptr));
-        current[end_ptr - start_ptr] = '\0';
+        status = asprintf(&current, "%.*s", (int)(end_ptr - start_ptr), start_ptr);
+        if (status < 0)
+            goto out_status_return;
 
         /* if a single .rrd was asked for, absolute == fullpath  */
         ptr = strstr(fullpath, ".rrd");
 
         if (ptr != NULL && strlen(ptr) == 4) {
-            snprintf(&absolute[0], PATH_MAX, "%s", fullpath);
-
+            fn = fullpath;
         } else {
-            snprintf(&absolute[0], PATH_MAX, "%s/%s", fullpath, current);
+            status = asprintf(&absolute, "%s/%s", fullpath, current);
+            if (status < 0)
+                goto out_status_return;
+            fn = absolute;
         }
 
-        if (!check_file_access(absolute, sock)) {
+        if (!check_file_access(fn, sock)) {
             /* Cannot access: skip entry */
             goto loop_next;
         }
 
         /* Make sure we aren't following a symlink pointing outside of base_dir */
-        if (lstat(absolute, &sc) == -1) {
-            free(list);
-            return send_response(sock, RESP_ERR,
-                                 "stat %s: %s\n", absolute,
+        status = areadlink(&bwc, fn);
+        if (status < 0) {
+            status = send_response(sock, RESP_ERR,
+                                 "stat %s: %s\n", fn,
                                  rrd_strerror(errno));
+            goto out_status_return;
         }
-
-        if ((sc.st_mode & S_IFMT) == S_IFLNK) {
-            len = readlink(absolute, bwc, sizeof(bwc) - 1);
-
-            if (len == -1) {
-                free(list);
-                return send_response(sock, RESP_ERR, "readlink %s: %s\n",
-                                     absolute, rrd_strerror(errno));
-            }
-            bwc[len] = '\0';
-            strncpy(&absolute[0], bwc, PATH_MAX - 1);
-            absolute[PATH_MAX - 1] = '\0';
-        }
+        if (status > 0)
+            fn = bwc;
 
         /* Absolute path MUST be starting with base_dir; if not skip the entry. */
-        if (strlen(absolute) < strlen(base) ||
-            memcmp(absolute, base, strlen(base)) != 0) {
+        if (strlen(fn) < strlen(base) ||
+            memcmp(fn, base, strlen(base)) != 0) {
             goto loop_next;
         }
         add_response_info(sock, "%s\n", current);
 
       loop_next:
         start_ptr = end_ptr + 1;
-
     }
-
-    free(list);
 
   out_send_response:
     send_response(sock, RESP_OK, "RRDs\n");
-
-    return (0);
+    status = 0;
+  out_status_return:
+    free(list);
+    free(fullpath);
+    free(current);
+    free(absolute);
+    free(bwd);
+    free(bwc);
+    return status;
 }                       /* }}} int handle_request_list */
 
 static cache_item_t *buffer_get_cache_item(

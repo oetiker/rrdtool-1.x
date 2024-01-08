@@ -18,6 +18,7 @@
 
 #include "rrd_tool.h"
 #include "rrd_client.h"
+#include "rrd_snprintf.h"
 
 static char *move_past_prefix(const char *prefix, const char *string)
 {
@@ -53,7 +54,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 	struct dirent *entry;
 	DIR *dir;
 	char *out = NULL, *out_rec, *out_short, *tmp, *ptr;
-	char current[PATH_MAX], fullpath[PATH_MAX];
+	char *current = NULL, *fullpath = NULL;
 
 	dir = opendir(dirname);
 
@@ -63,6 +64,10 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 	}
 
 	while ((entry = readdir(dir)) != NULL) {
+		free(current);
+		current = NULL;
+		free(fullpath);
+		fullpath = NULL;
 
 		if ((strcmp(entry->d_name, ".") == 0) ||
 		    (strcmp(entry->d_name, "..") == 0)) {
@@ -73,7 +78,8 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 			continue;
 		}
 
-		snprintf(&current[0], PATH_MAX, "%s/%s", dirname, entry->d_name);
+		if (asprintf(&current, "%s/%s", dirname, entry->d_name) < 0)
+			continue;
 
 		/* NOTE: stat(2) follows symlinks and gives info on target. */
 		if (stat(current, &st) != 0) {
@@ -81,8 +87,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 		}
 
 		if (S_ISDIR(st.st_mode) && recursive) {
-			snprintf(&fullpath[0], PATH_MAX, "%s/%s",
-				 dirname, entry->d_name);
+			asprintf(&fullpath, "%s/%s", dirname, entry->d_name);
 			out_rec = rrd_list_rec(recursive, root, fullpath);
 
 			if (out_rec == NULL) {
@@ -113,8 +118,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 					continue;
 				}
 			}
-			snprintf(&fullpath[0], PATH_MAX, "%s/%s",
-				 dirname, entry->d_name);
+			asprintf(&fullpath,"%s/%s", dirname, entry->d_name);
 			out_short = move_past_prefix(root, fullpath);
 
 			/* don't start output with a '/' */
@@ -133,6 +137,8 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 		}
 	}
 	closedir(dir);
+	free(current);
+	free(fullpath);
 
 	errno = 0;
 	return out;
