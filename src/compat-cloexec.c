@@ -8,11 +8,21 @@
 #  include <fcntl.h>
 #  include <unistd.h>
 #else
+#ifndef O_CREAT
 #  define O_CREAT	0
+#endif
+#ifndef O_WRONLY
 #  define O_WRONLY	0
+#endif
+#ifndef O_RDONLY
 #  define O_RDONLY	0
+#endif
+#ifndef O_APPEND
 #  define O_APPEND	0
+#endif
+#ifndef O_RDWR
 #  define O_RDWR	0
+#endif
 #endif
 
 inline static bool have_decl_o_cloexec(void)
@@ -58,9 +68,14 @@ FILE *_rrd_fopen(const char *restrict pathname, const char *restrict mode_raw)
 			rw_flags = O_RDWR;
 			break;
 		case 'e':
+#ifdef _WIN32
+			c = 'N'; /* cloexec is selected by N mode on Windows */
+			break;
+#else
 			is_cloexec = true;
 			/* continue loop and do not copy mode char */
 			continue;
+#endif
 		case 'b':
 			break;
 		default:
