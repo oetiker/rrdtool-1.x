@@ -52,9 +52,6 @@
 #  endif
 #endif
 
-/* Define to 1 if you have the `asprintf' function. */
-#define HAVE_ASPRINTF 1
-
 /* Define to 1 if you have the `chdir' function. */
 #define HAVE_CHDIR 1
 
@@ -102,9 +99,6 @@
 
 /* Define to 1 if you have the `uintptr_t' standard type. */
 #define HAVE_UINTPTR_T 1
-
-/* Define to 1 if you have the `vasprintf' function. */
-#define HAVE_VASPRINTF 1
 
 /* Define to 1 if you have the `va_copy' function or macro. */
 #define HAVE_VA_COPY 1

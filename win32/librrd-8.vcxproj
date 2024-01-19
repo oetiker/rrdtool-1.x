@@ -427,8 +427,6 @@
     <ClCompile Include="..\src\rrd_utils.c" />
     <ClCompile Include="..\src\rrd_version.c" />
     <ClCompile Include="..\src\rrd_xport.c" />
-    <ClCompile Include="asprintf.c" />
-    <ClCompile Include="vasprintf-msvc.c" />
     <ClCompile Include="win32-glob.c" />
   </ItemGroup>
   <ItemGroup>
