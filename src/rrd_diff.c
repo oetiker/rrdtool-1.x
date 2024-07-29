@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.8.0 Copyright by Tobi Oetiker, 1997-2022
+ * RRDtool 1.9.0 Copyright by Tobi Oetiker, 1997-2024
  * This code is stolen from rateup (mrtg-2.x) by Dave Rand
  *****************************************************************************
  * diff calculate the difference between two very long integers available as
