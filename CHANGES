@@ -14,6 +14,7 @@ Bugfixes
 * rrdtool-release: Create NUMVERS from VERSION file <c72578>
 * Avoids leaking of file descriptors in multi threaded programs by @ensc
 * Avoids potential unterminated string because of fixed PATH_MAX buffer
+* Fix extra reference of parameters of rrd_fetch_dbi_{long,double} <jamborm> 
 
 Features
 --------

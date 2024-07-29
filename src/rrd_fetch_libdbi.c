@@ -26,13 +26,13 @@ static char* _find_next_separator(char* start,char separator);
 static char* _find_next_separator_twice(char*start,char separator);
 static char _hexcharhelper(char c);
 static int _inline_unescape (char* string);
-static double rrd_fetch_dbi_double(dbi_result *result,int idx);
-static long rrd_fetch_dbi_long(dbi_result *result,int idx);
+static double rrd_fetch_dbi_double(dbi_result result,int idx);
+static long rrd_fetch_dbi_long(dbi_result result,int idx);
 
 /* the real code */
 
 /* helpers to get correctly converted values from DB*/
-static long rrd_fetch_dbi_long(dbi_result *result,int idx) {
+static long rrd_fetch_dbi_long(dbi_result result,int idx) {
   char *ptmp="";
   long value=DNAN;
   /* get the attributes for this filed */
@@ -89,7 +89,7 @@ static long rrd_fetch_dbi_long(dbi_result *result,int idx) {
   return value;
 }
 
-static double rrd_fetch_dbi_double(dbi_result *result,int idx) {
+static double rrd_fetch_dbi_double(dbi_result result,int idx) {
   char *ptmp="";
   double value=DNAN;
   /* get the attributes for this filed */
