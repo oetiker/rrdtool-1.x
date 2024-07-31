@@ -17,7 +17,7 @@
 
 inline static bool have_decl_o_cloexec(void)
 {
-#ifdef HAVE_DECL_O_CLOEXEC
+#if defined(HAVE_DECL_O_CLOEXEC) && HAVE_DECL_O_CLOEXEC
 	return true;
 #else
 	return false;
