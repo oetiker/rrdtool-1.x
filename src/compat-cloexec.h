@@ -3,11 +3,11 @@
 
 #include <rrd_config.h>
 
-#ifndef HAVE_DECL_O_CLOEXEC
+#if !defined(HAVE_DECL_O_CLOEXEC) || !HAVE_DECL_O_CLOEXEC
 #  define O_CLOEXEC 0
 #endif
 
-#ifndef HAVE_DECL_SOCK_CLOEXEC
+#if !defined(HAVE_DECL_SOCK_CLOEXEC) || !HAVE_DECL_SOCK_CLOEXEC
 #  define SOCK_CLOEXEC 0
 #endif
 

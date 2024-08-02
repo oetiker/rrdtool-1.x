@@ -3,6 +3,7 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Fix MacOS Build error (no SOCK_CLOEXEC on mac) @ensc fixes oetiker#1261
 
 Features
 --------
