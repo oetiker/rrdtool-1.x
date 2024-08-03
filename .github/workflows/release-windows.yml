@@ -39,7 +39,7 @@ jobs:
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -63,7 +63,7 @@ jobs:
       - name: Collect files
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: deploy-rrdtool-MSVC-${{ matrix.configuration }}
           path: win32/nmake_release_${{ matrix.configuration }}_vcpkg/rrdtool-*-${{ matrix.configuration }}_vcpkg/
