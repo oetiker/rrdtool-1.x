@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
@@ -52,4 +52,4 @@ jobs:
         (cd src && gcov *.gcno)
         (cd src && gcov .libs/*.gcno)
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3    
+      uses: codecov/codecov-action@v4

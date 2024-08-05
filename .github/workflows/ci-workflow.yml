@@ -26,7 +26,7 @@ jobs:
       - name: Disable git autocrlf
         run: git config --global core.autocrlf false
         shell: cmd
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -36,7 +36,7 @@ jobs:
         run: |
           echo 'Running in MSYS2!'
           ./ci-build_MSYS2.sh
-      # - uses: actions/upload-artifact@v3
+      # - uses: actions/upload-artifact@v4
       #   with:
       #     name: test-suite.log
       #     path: tests/test-suite.log
@@ -68,7 +68,7 @@ jobs:
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
 
