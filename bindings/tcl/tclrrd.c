@@ -482,7 +482,11 @@ static int Rrd_Lastupdate(
             sprintf(s, " %28s", ds_namv[i]);
             Tcl_ListObjAppendElement(interp, listPtr,
                                      Tcl_NewStringObj(s, -1));
-            sprintf(s, "\n\n%10lu:", (unsigned long) last_update);
+#if SIZEOF_TIME_T == 8
+            sprintf(s, "\n\n%10llu:", last_update);
+#else
+            sprintf(s, "\n\n%10lu:", last_update);
+#endif
             Tcl_ListObjAppendElement(interp, listPtr,
                                      Tcl_NewStringObj(s, -1));
             for (i = 0; i < ds_cnt; i++) {

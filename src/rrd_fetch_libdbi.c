@@ -53,14 +53,22 @@ static long rrd_fetch_dbi_long(dbi_result result,int idx) {
       } else if (attr & DBI_INTEGER_SIZE4) { value=dbi_result_get_int_idx(result,idx);
       } else if (attr & DBI_INTEGER_SIZE8) { value=dbi_result_get_longlong_idx(result,idx);
       } else {                               value=DNAN;
+#if SIZEOF_TIME_T == 8
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
+#else
         if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
+#endif
       }
       break;
     case DBI_TYPE_DECIMAL:
       if        (attr & DBI_DECIMAL_SIZE4) { value=floor(dbi_result_get_float_idx(result,idx));
       } else if (attr & DBI_DECIMAL_SIZE8) { value=floor(dbi_result_get_double_idx(result,idx));
       } else {                               value=DNAN;
+#if SIZEOF_TIME_T == 8
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
+#else
         if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
+#endif
       }
       break;
     case DBI_TYPE_BINARY:
@@ -82,7 +90,11 @@ static long rrd_fetch_dbi_long(dbi_result result,int idx) {
        value=dbi_result_get_datetime_idx(result,idx);
        break;
     default:
+#if SIZEOF_TIME_T == 8
+      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
+#else
       if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
+#endif
       value=DNAN;
       break;
   }
@@ -116,14 +128,22 @@ static double rrd_fetch_dbi_double(dbi_result result,int idx) {
       } else if (attr & DBI_INTEGER_SIZE4) { value=dbi_result_get_int_idx(result,idx);
       } else if (attr & DBI_INTEGER_SIZE8) { value=dbi_result_get_longlong_idx(result,idx);
       } else {                               value=DNAN;
+#if SIZEOF_TIME_T == 8
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
+#else
         if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type INTEGER\n",time(NULL),idx,attr ); }
+#endif
       }
       break;
     case DBI_TYPE_DECIMAL:
       if        (attr & DBI_DECIMAL_SIZE4) { value=dbi_result_get_float_idx(result,idx);
       } else if (attr & DBI_DECIMAL_SIZE8) { value=dbi_result_get_double_idx(result,idx);
       } else {                               value=DNAN;
+#if SIZEOF_TIME_T == 8
+        if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
+#else
         if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported attribute flags %u for type DECIMAL\n",time(NULL),idx,attr ); }
+#endif
       }
       break;
     case DBI_TYPE_BINARY:
@@ -145,7 +165,11 @@ static double rrd_fetch_dbi_double(dbi_result result,int idx) {
        value=dbi_result_get_datetime_idx(result,idx);
        break;
     default:
+#if SIZEOF_TIME_T == 8
+      if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
+#else
       if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: column %i unsupported type: %u with attribute %u\n",time(NULL),idx,type,attr ); }
+#endif
       value=DNAN;
       break;
   }
@@ -155,10 +179,18 @@ static double rrd_fetch_dbi_double(dbi_result result,int idx) {
 static void _sql_close(struct sql_table_helper* th) {
   /* close only if connected */
   if (th->conn) {
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: close connection\n",time(NULL) ); }
+#else
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: close connection\n",time(NULL) ); }
+#endif
     /* shutdown dbi */
     dbi_conn_close(th->conn);
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: shutting down libdbi\n",time(NULL) ); }
+#else
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: shutting down libdbi\n",time(NULL) ); }
+#endif
     dbi_shutdown();
     /* and assign empty */
     th->conn=NULL;
@@ -176,7 +208,11 @@ static int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
     th->result=NULL;
     th->connected=0;
     /* initialize db */
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: initialize libDBI\n",time(NULL) ); }
+#else
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: initialize libDBI\n",time(NULL) ); }
+#endif
     dbi_initialize(NULL);
     /* load the driver */
     driver=dbi_driver_open(th->dbdriver);
@@ -198,7 +234,11 @@ static int _sql_setparam(struct sql_table_helper* th,char* key, char* value) {
     _sql_close(th);
     return -1; 
   }
+#if SIZEOF_TIME_T == 8
+  if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: setting option %s to %s\n",time(NULL),key,value ); }
+#else
   if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: setting option %s to %s\n",time(NULL),key,value ); }
+#endif
   if (strcmp(key, "port") == 0) {
     if (dbi_conn_set_option_numeric(th->conn,key,atoi(value))) {
       dbi_conn_error(th->conn,(const char**)&dbi_errstr);
@@ -228,7 +268,11 @@ static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_valu
   }
   if (! th->connected) {
     /* and now connect */
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: connect to DB\n",time(NULL) ); }
+#else
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: connect to DB\n",time(NULL) ); }
+#endif
     if (dbi_conn_connect(th->conn) <0) {
       dbi_conn_error(th->conn,(const char**)&dbi_errstr);
       rrd_set_error( "libdbi: problems connecting to db with connect string %s - error: %s",th->filename,dbi_errstr);
@@ -241,7 +285,11 @@ static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_valu
   if (! th->result) {
     /* return if table_next is NULL */
     if (th->table_next==NULL) { 
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %lli: reached last table to connect to\n",time(NULL) ); }
+#else
     if (getenv("RRDDEBUGSQL")) { fprintf(stderr,"RRDDEBUGSQL: %li: reached last table to connect to\n",time(NULL) ); }
+#endif
       /* but first close connection */
       _sql_close(th);
       /* and return with end of data */
@@ -263,13 +311,25 @@ static int _sql_fetchrow(struct sql_table_helper* th,time_t *timestamp, rrd_valu
   	       th->timestamp,th->value,th->table_start,th->where);
     }
     /* and execute sql */
+#if SIZEOF_TIME_T == 8
+    if (getenv("RRDDEBUGSQL")) { startt=time(NULL); fprintf(stderr,"RRDDEBUGSQL: %lli: executing %s\n",startt,sql); }
+#else
     if (getenv("RRDDEBUGSQL")) { startt=time(NULL); fprintf(stderr,"RRDDEBUGSQL: %li: executing %s\n",startt,sql); }
+#endif
     th->result=dbi_conn_query(th->conn,sql);
+#if SIZEOF_TIME_T == 8
+    if (startt) { endt=time(NULL);fprintf(stderr,"RRDDEBUGSQL: %lli: timing %lli\n",endt,endt-startt); }
+#else
     if (startt) { endt=time(NULL);fprintf(stderr,"RRDDEBUGSQL: %li: timing %li\n",endt,endt-startt); }
+#endif
     /* handle error case */
     if (! th->result) {
       dbi_conn_error(th->conn,(const char**)&dbi_errstr);      
+#if SIZEOF_TIME_T == 8
+      if (startt) { fprintf(stderr,"RRDDEBUGSQL: %lli: error %s\n",endt,dbi_errstr); }
+#else
       if (startt) { fprintf(stderr,"RRDDEBUGSQL: %li: error %s\n",endt,dbi_errstr); }
+#endif
       rrd_set_error("libdbi: problems with query: %s - errormessage: %s",sql,dbi_errstr);
       _sql_close(th);
       return -1;
@@ -410,7 +470,7 @@ rrd_fetch_fn_libdbi(
   int isunixtime=1;
   long gmt_offset=0;
   /* the result-set */
-  long r_timestamp,l_timestamp,d_timestamp;
+  time_t r_timestamp,l_timestamp,d_timestamp;
   double r_value,l_value,d_value;
   int r_status;
   int rows;
@@ -578,7 +638,11 @@ rrd_fetch_fn_libdbi(
   if (where[0]) {strcat(where," AND ");}
   i=strlen(where);
   if (isunixtime) {
+#if SIZEOF_TIME_T == 8
+    snprintf(where+i,sizeof(where)-1-i,"%lli < %s AND %s < %lli",*start,table_help.timestamp,table_help.timestamp,*end);
+#else
     snprintf(where+i,sizeof(where)-1-i,"%li < %s AND %s < %li",*start,table_help.timestamp,table_help.timestamp,*end);
+#endif
   } else {
     char tsstart[64];strftime(tsstart,sizeof(tsstart),"%Y-%m-%d %H:%M:%S",localtime(start));
     char tsend[64];strftime(tsend,sizeof(tsend),"%Y-%m-%d %H:%M:%S",localtime(end));
