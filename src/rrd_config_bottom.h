@@ -27,6 +27,12 @@
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+
+/* illumos defines *_MAX macros in limits.h */
+#ifdef __illumos__
+# include <limits.h>
+#endif
+
 #ifndef MAXPATH
 # ifdef PATH_MAX
 #  define MAXPATH PATH_MAX
