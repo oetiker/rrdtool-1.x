@@ -1018,7 +1018,7 @@ AC_ARG_ENABLE(python,AS_HELP_STRING([--disable-python],[do not build the python 
 
 if test  "$enable_python" = "yes"; then
 dnl Check for python
-AM_PATH_PYTHON(2.3,[],[enable_python=no])
+AM_PATH_PYTHON(3,[],[enable_python=no])
 AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
 fi
 
