@@ -416,7 +416,7 @@ static int rrd_xport_fn(
             time_t     now = *start + dst_row * *step;
 
             if (im->gdes[vidx].step > 0) {
-                chosen_idx = ceil((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds;
+                chosen_idx = floor((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds;
 
                 (*dstptr++) = im->gdes[vidx].data[chosen_idx];
             }
