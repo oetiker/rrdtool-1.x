@@ -6,6 +6,7 @@ Bugfixes
 * Fix MacOS Build error (no SOCK_CLOEXEC on mac) @ensc fixes oetiker#1261
 * Fix build on 32bits platforms (like armhf) when time_t is 64bits, fixes #1264
 * Fix compilation on illumos @hadfl
+* Fix division by zero segfault when exporting a LINEx with a constant value
 
 Features
 --------

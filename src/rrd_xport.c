@@ -386,14 +386,10 @@ static int rrd_xport_fn(
             long      vidx = im->gdes[ref_list[i]].vidx;
             time_t    now = *start + dst_row * *step;
 
-            (*dstptr++) = im->gdes[vidx].data[(unsigned long)
-                                              floor((double)
-                                                    (now -
-                                                     im->gdes[vidx].start)
-                                                    / im->gdes[vidx].step)
-                                              * im->gdes[vidx].ds_cnt +
-                                              im->gdes[vidx].ds];
-
+            if (im->gdes[vidx].step > 0) {
+                (*dstptr++) = im->gdes[vidx].data[(unsigned long)
+                    floor((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds];
+            }
         }
     }
 
