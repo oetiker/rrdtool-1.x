@@ -21,6 +21,8 @@
 #include "rrd_snprintf.h"
 #include "compat-cloexec.h"
 
+int is_numeric(char *);
+
 static int rrd_xport_fn(
     image_desc_t *,
     time_t *,
@@ -239,7 +241,21 @@ int rrd_xport(
     return 0;
 }
 
+int is_numeric(char *instring) {
+    int c = 0;
 
+    if (*instring != '-' && *instring != '.' && !isdigit(*instring)) {
+        return 0;
+    }
+
+    if (strspn(instring+1, "0123456789.") < strlen(instring+1)) {
+        return 0;
+    }
+
+    while (*instring) if (*instring++ == '.') if (++c > 1) return 0;
+
+    return 1;
+}
 
 static int rrd_xport_fn(
     image_desc_t *im,
@@ -280,15 +296,22 @@ static int rrd_xport_fn(
         case GF_LINE:
         case GF_AREA:
         case GF_STACK:
-            (*col_cnt) += dolines;
+            /* only count the gf if it's numeric otherwise it's a contant line */
+            if (!is_numeric(im->gdes[i].vname)) {
+                (*col_cnt) += dolines;
+            }
             break;
         case GF_XPORT:
-            (*col_cnt)++;
+            /* only count the gf if it's numeric otherwise it's a constant line */
+            if (!is_numeric(im->gdes[i].vname)) {
+                (*col_cnt)++;
+            }
             break;
         default:
             break;
         }
     }
+
     if ((*col_cnt) == 0) {
         rrd_set_error("no XPORT found, nothing to do");
         return -1;
@@ -319,10 +342,14 @@ static int rrd_xport_fn(
         case GF_LINE:
         case GF_AREA:
         case GF_STACK:
-            handle = dolines;
+            if (!is_numeric(im->gdes[i].vname)) {
+                handle = dolines;
+            }
             break;
         case GF_XPORT:
-            handle = 1;
+            if (!is_numeric(im->gdes[i].vname)) {
+                handle = 1;
+            }
             break;
         default:
             handle = 0;
@@ -380,15 +407,18 @@ static int rrd_xport_fn(
     }
     dstptr = (*data);
 
+	long unsigned int chosen_idx  = 0;
+
     /* fill data structure */
     for (dst_row = 0; (int) dst_row < (int) row_cnt; dst_row++) {
         for (i = 0; i < (int) (*col_cnt); i++) {
-            long      vidx = im->gdes[ref_list[i]].vidx;
-            time_t    now = *start + dst_row * *step;
+            long       vidx = im->gdes[ref_list[i]].vidx;
+            time_t     now = *start + dst_row * *step;
 
             if (im->gdes[vidx].step > 0) {
-                (*dstptr++) = im->gdes[vidx].data[(unsigned long)
-                    floor((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds];
+                chosen_idx = ceil((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds;
+
+                (*dstptr++) = im->gdes[vidx].data[chosen_idx];
             }
         }
     }
