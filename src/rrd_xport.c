@@ -296,7 +296,7 @@ static int rrd_xport_fn(
         case GF_LINE:
         case GF_AREA:
         case GF_STACK:
-            /* only count the gf if it's numeric otherwise it's a contant line */
+            /* only count the gf if it's numeric otherwise it's a constant line */
             if (!is_numeric(im->gdes[i].vname)) {
                 (*col_cnt) += dolines;
             }
