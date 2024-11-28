@@ -7,6 +7,7 @@ Bugfixes
 * Fix build on 32bits platforms (like armhf) when time_t is 64bits, fixes #1264
 * Fix compilation on illumos @hadfl
 * Python2.3 is deprecated and therefore, the Python bindings should use Python3 as default @pticon
+* Fix issue where RRDtool detects a LINE or AREA with a constant numeric value as being exportable
 
 Features
 --------
