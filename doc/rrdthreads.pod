@@ -49,7 +49,7 @@ with a SIGSEGV in a low-memory situation.
 
 =item *
 
-Always call C<rrd_error_clear()> before any call to the
+Always call C<rrd_clear_error()> before any call to the
 library. Otherwise the call might fail due to some earlier error.
 
 =back
