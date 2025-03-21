@@ -26,6 +26,9 @@
 
 /* support pre-8.4 tcl */
 
+#if TCL_MAJOR_VERSION > 8
+#   define CONST84 const
+#endif
 #ifndef CONST84
 #   define CONST84
 #endif
