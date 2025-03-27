@@ -19,4 +19,5 @@ ABS_TOP_SRCDIR = ENV['ABS_TOP_SRCDIR'] || '../..'
 
 dir_config("rrd", ["#{ABS_TOP_BUILDDIR}/src", "#{ABS_TOP_SRCDIR}/src"], "#{ABS_TOP_BUILDDIR}/src/.libs")
 have_library("rrd", "rrd_create")
+have_func("rb_ext_ractor_safe", "ruby.h")
 create_makefile("RRD")
