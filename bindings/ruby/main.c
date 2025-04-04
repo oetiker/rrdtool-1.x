@@ -371,6 +371,10 @@ VALUE rb_rrd_xport(
 void Init_RRD(
     )
 {
+    #if HAVE_RB_EXT_RACTOR_SAFE
+        rb_ext_ractor_safe(true);
+    #endif
+
     mRRD = rb_define_module("RRD");
     rb_eRRDError = rb_define_class("RRDError", rb_eStandardError);
 
