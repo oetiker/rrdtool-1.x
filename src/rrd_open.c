@@ -227,12 +227,20 @@ rrd_file_t *rrd_open(
         if (rrd_file->rados == NULL)
             goto out_free;
 
-        if (rdwr & RRD_LOCK) {
-            /* Note: rados read lock is not implemented.  See rrd_lock(). */
-            if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE) != 0) {
-                rrd_set_error("could not lock RRD");
-                goto out_close;
+        if ((rdwr & RRD_LOCK_MASK) == RRD_LOCK_BLOCK) {
+            static int warned = 0;
+            if (!warned) {
+                fprintf(stderr, "blocking locks not supported by rados; falling back to non-blocking\n");
+                warned = 1;
             }
+            rdwr &= ~RRD_LOCK_MASK;
+            rdwr |= RRD_LOCK_TRY;
+        }
+
+        /* Note: rados read lock is not implemented.  See rrd_lock(). */
+        if (rrd_rwlock(rrd_file, rdwr & RRD_READWRITE, rdwr & RRD_LOCK_MASK) != 0) {
+            rrd_set_error("could not lock RRD");
+            goto out_close;
         }
 
         if (rdwr & RRD_CREAT)
