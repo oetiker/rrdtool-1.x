@@ -1,7 +1,7 @@
 @ echo off
 REM This script collects the built .exe and .dll files required for running RRDtool.
 REM It is supposed to be run after an MSVC build using nmake and libraries from vcpkg.
-REM Wolfgang Stöggl <c72578@yahoo.de>, 2017-2022.
+REM Wolfgang Stöggl <c72578@yahoo.de>, 2017-2025.
 
 REM Run the batch file with command line parameter x64 or x86
 if "%1"=="" (
@@ -56,7 +56,6 @@ xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\iconv-2.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\intl-8.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\libpng16.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\libxml2.dll %release_dir%
-xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\liblzma.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pango-1.0-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangocairo-1.0-0.dll %release_dir%
 xcopy /Y /D %base_dir%\vcpkg\installed\%1-windows\bin\pangoft2-1.0-0.dll %release_dir%

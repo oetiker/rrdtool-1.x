@@ -19,51 +19,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+        # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
         os: [windows-2022]
-        triplet: [x64-windows, x86-windows]
+        vcpkg_triplet: [x64-windows, x86-windows]
         include:
           - os: windows-2022
-            triplet: x64-windows
-            # https://github.com/microsoft/vcpkg/commit/b02e341c927f16d991edbd915d8ea43eac52096c
-            vcpkgCommitId: 'b02e341c927f16d991edbd915d8ea43eac52096c'
+            vcpkg_triplet: x64-windows
+            # https://github.com/microsoft/vcpkg/releases/tag/2025.12.12
+            # https://github.com/microsoft/vcpkg/commit/84bab45d415d22042bd0b9081aea57f362da3f35
+            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2022
-            triplet: x86-windows
-            vcpkgCommitId: 'b02e341c927f16d991edbd915d8ea43eac52096c'
+            vcpkg_triplet: x86-windows
+            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
             configuration: 'x86'
             nmake_configuration: ''
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
-      # Restore from cache the previously built ports. If cache-miss, download and build vcpkg (aka "bootstrap vcpkg").
-      - name: Restore from cache and install vcpkg
-        # Download and build vcpkg.
-        uses: lukka/run-vcpkg@v7
+      # vcpkg-action
+      # https://github.com/johnwason/vcpkg-action
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
         with:
-          setupOnly: false
-          # Location of vcpkg in the Git repository.
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId}}'
-          vcpkgTriplet: ${{ matrix.triplet }}
-          vcpkgArguments: '${{ matrix.vcpkgPackages }}'
-          # Ensure the vcpkg artifacts are cached, they are generated in the 'CMAKE_BINARY_DIR/vcpkg_installed' directory.
-          additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+          pkgs: '${{ matrix.vcpkgPackages }}'
+          triplet: ${{ matrix.vcpkg_triplet }}
+          cache-key: ${{ matrix.configuration }}
+          revision: '${{ matrix.vcpkgCommitId}}'
+          token: ${{ github.token }}
+
       - name: Build ${{ matrix.configuration }}
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
           nmake -f win32\Makefile_vcpkg.msc ${{ matrix.nmake_configuration }}
+
       - name: Collect files
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v6
         with:
           name: deploy-rrdtool-MSVC-${{ matrix.configuration }}
           path: win32/nmake_release_${{ matrix.configuration }}_vcpkg/rrdtool-*-${{ matrix.configuration }}_vcpkg/
