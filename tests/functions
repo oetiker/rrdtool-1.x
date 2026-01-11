@@ -196,9 +196,9 @@ function run_cached {
             }
             export RRDTOOL=RRDTOOLCOMPAT
 
-            port=$(python2 -S << HERE
-import SocketServer
-s = SocketServer.TCPServer(("localhost", 0), None)
+            port=$(python3 -S << HERE
+import socketserver
+s = socketserver.TCPServer(("localhost", 0), None)
 print(s.server_address[1])
 s.server_close()
 HERE
