@@ -11,6 +11,7 @@ Bugfixes
 * Fix compilation on illumos @hadfl
 * Python2.3 is deprecated and therefore, the Python bindings should use Python3 as default @pticon
 * Fix issue where RRDtool detects a LINE or AREA with a constant numeric value as being exportable
+* Fix "Fontconfig error: failed to read configuration file."
 
 Features
 --------
