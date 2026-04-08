@@ -52,7 +52,10 @@ install-data-local:
 ruby:
 	-mkdir -p ${builddir}/ruby
 	( cd ${builddir}/ruby \
-          && $(RUBY) ${abs_srcdir}/ruby/extconf.rb \
+          && env \
+             ABS_TOP_SRCDIR=${abs_top_srcdir} \
+             ABS_TOP_BUILDDIR=${abs_top_builddir} \
+             $(RUBY) ${abs_srcdir}/ruby/extconf.rb \
           && $(MAKE) \
              EPREFIX=$(exec_prefix) \
              ABS_TOP_SRCDIR=${abs_top_srcdir} \

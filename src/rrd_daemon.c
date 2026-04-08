@@ -574,6 +574,7 @@ static int check_pidfile(
     int       pid_fd;
     pid_t     pid;
     char      pid_str[16];
+    ssize_t   pid_bytes;
 
     pid_fd = open_pidfile("open", O_RDWR);
     if (pid_fd < 0) {
@@ -581,11 +582,13 @@ static int check_pidfile(
         return pid_fd;
     }
 
-    if (read(pid_fd, pid_str, sizeof(pid_str)) <= 0) {
+    pid_bytes = read(pid_fd, pid_str, sizeof(pid_str) - 1);
+    if (pid_bytes <= 0) {
         fprintf(stderr, "FATAL: Empty PID file exist\n");
         close(pid_fd);
         return -1;
     }
+    pid_str[pid_bytes] = '\0';
 
     pid = atoi(pid_str);
     if (pid <= 0) {

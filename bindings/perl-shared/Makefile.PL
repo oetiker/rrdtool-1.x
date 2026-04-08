@@ -26,13 +26,13 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 			'ABSTRACT' => 'Round Robin Database Tool',
 		) : ()
 	);
-}else{
+} elsif ($ENV{'ABS_TOP_BUILDDIR'}) {
 	my $TOP_SRCDIR = $ENV{'ABS_TOP_SRCDIR'} || '../..';
 	my $TOP_BUILDDIR = $ENV{'ABS_TOP_BUILDDIR'} || '../..';
 	my $SRCDIR = $ENV{'ABS_SRCDIR'} || '.';
 	# if the last argument when calling Makefile.PL is RPATH=/... and ... is the
 	# path to librrd.so then the Makefile will be written such that RRDs.so knows
-	# where to find librrd.so later on ... 
+	# where to find librrd.so later on ...
 	my $R="";
 	if ($ARGV[-1] =~ /RPATH=(\S+)/){
 		pop @ARGV;
@@ -65,9 +65,31 @@ if (($Config{'osname'} eq 'MSWin32' && $ENV{'OSTYPE'} eq '')) {
 		# Perl will figure out which one is valid
 		#'dynamic_lib'  => {'OTHERLDFLAGS' => "$librrd -lm"},
 		'depend'       => {'RRDs.c' => "${TOP_BUILDDIR}/src/librrd.la"},
-		'LDFROM'       => '$(OBJECT) '.$librrd, 
+		'LDFROM'       => '$(OBJECT) '.$librrd,
 		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png' },
 		($^O eq 'darwin') ? ( 'LDDLFLAGS'    => "-L${TOP_BUILDDIR}/src/.libs/ $Config{lddlflags}" ) : ()
 	);
-}
+} else {
+	# standalone build: use pkg-config to find system-installed librrd
+	my $cflags = `pkg-config --cflags librrd 2>/dev/null`;
+	my $libs   = `pkg-config --libs librrd 2>/dev/null`;
+	chomp($cflags, $libs);
 
+	unless ($cflags || $libs) {
+		die "pkg-config could not find librrd. Is rrdtool installed?\n"
+		  . "Try: brew install rrdtool (macOS) or apt install librrd-dev (Debian/Ubuntu)\n";
+	}
+
+	WriteMakefile(
+		'NAME'         => 'RRDs',
+		'VERSION_FROM' => 'RRDs.pm',
+		'DEFINE'       => "-DPERLPATCHLEVEL=$Config{PATCHLEVEL}",
+		'INC'          => $cflags,
+		'LIBS'         => [$libs],
+		'realclean'    => {FILES => 't/demo?.rrd t/demo?.png'},
+		($] ge '5.005') ? (
+			'AUTHOR'   => 'Tobias Oetiker (tobi@oetiker.ch)',
+			'ABSTRACT' => 'Round Robin Database Tool',
+		) : ()
+	);
+}

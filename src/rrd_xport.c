@@ -98,7 +98,7 @@ int rrd_xport(
         {"start", 's', OPTPARSE_REQUIRED},
         {"end", 'e', OPTPARSE_REQUIRED},
         {"maxrows", 'm', OPTPARSE_REQUIRED},
-        {"step", 261, OPTPARSE_REQUIRED},
+        {"step", 'S', OPTPARSE_REQUIRED},
         {"enumds", 262, OPTPARSE_NONE},
         {"json", 263, OPTPARSE_NONE},
         {"showtime", 't', OPTPARSE_NONE},
@@ -121,7 +121,7 @@ int rrd_xport(
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
 
         switch (opt) {
-        case 261:
+        case 'S':
             im.step = atoi(options.optarg);
             break;
         case 262:
@@ -998,29 +998,70 @@ static void escapeJSON(
     char *txt,
     size_t len)
 {
-    char     *tmp = (char *) malloc(len + 2);
+    /* worst case: every char becomes \uXXXX (6 bytes) */
     size_t    l = strlen(txt);
+    size_t    alloc = l * 6 + 1;
+    char     *tmp = (char *) malloc(alloc);
     size_t    pos = 0;
+    size_t    last_safe = 0;   /* end of last complete escape sequence */
 
-    /* now iterate over the chars */
-    for (size_t i = 0; (i < l) && (pos < len); i++, pos++) {
+    if (tmp == NULL)
+        return;
+
+    if (len == 0) {
+        free(tmp);
+        return;
+    }
+
+    /* escape per RFC 7159 section 7; track safe cut points */
+    for (size_t i = 0; (i < l) && (pos + 6 < alloc); i++) {
         switch (txt[i]) {
         case '"':
         case '\\':
-            tmp[pos] = '\\';
-            pos++;
-            tmp[pos] = txt[i];
+            tmp[pos++] = '\\';
+            tmp[pos++] = txt[i];
+            break;
+        case '\b':
+            tmp[pos++] = '\\';
+            tmp[pos++] = 'b';
+            break;
+        case '\f':
+            tmp[pos++] = '\\';
+            tmp[pos++] = 'f';
+            break;
+        case '\n':
+            tmp[pos++] = '\\';
+            tmp[pos++] = 'n';
+            break;
+        case '\r':
+            tmp[pos++] = '\\';
+            tmp[pos++] = 'r';
+            break;
+        case '\t':
+            tmp[pos++] = '\\';
+            tmp[pos++] = 't';
             break;
         default:
-            tmp[pos] = txt[i];
+            if ((unsigned char) txt[i] < 0x20) {
+                pos += snprintf(tmp + pos, alloc - pos, "\\u%04x",
+                                (unsigned char) txt[i]);
+            } else {
+                tmp[pos++] = txt[i];
+            }
             break;
         }
+        /* pos is now past a complete character or escape sequence */
+        if (pos < len)
+            last_safe = pos;
     }
-    /* 0 terminate it */
     tmp[pos] = 0;
-    /* and copy back over txt */
-    strncpy(txt, tmp, len);
-    /* and release tmp */
+    if (pos < len) {
+        memcpy(txt, tmp, pos + 1);
+    } else {
+        /* truncate at last complete escape boundary that fits */
+        memcpy(txt, tmp, last_safe);
+        txt[last_safe] = 0;
+    }
     free(tmp);
 }
 

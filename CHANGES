@@ -12,10 +12,14 @@ Bugfixes
 * Python2.3 is deprecated and therefore, the Python bindings should use Python3 as default @pticon
 * Fix issue where RRDtool detects a LINE or AREA with a constant numeric value as being exportable
 * Fix "Fontconfig error: failed to read configuration file."
+* Escape control characters in JSON xport output per RFC 7159 @somethingwithproof fixes #1311
+* Add pkg-config fallback for Perl and Ruby bindings when building standalone @somethingwithproof
+* Export ABS_TOP_BUILDDIR to environment for Ruby extconf.rb during in-tree builds @somethingwithproof
 
 Features
 --------
 * Add Georgian translation @NorwayFun
+* Add -S short option for --step in rrdtool xport @somethingwithproof fixes #1310
 
 RRDtool 1.9.0 - 2024-07-29
 ==========================

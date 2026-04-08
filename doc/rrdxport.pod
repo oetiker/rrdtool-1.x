@@ -8,7 +8,7 @@ B<rrdtool> B<xport>
 S<[B<-s>|B<--start> I<seconds>]>
 S<[B<-e>|B<--end> I<seconds>]>
 S<[B<-m>|B<--maxrows> I<rows>]>
-S<[B<--step> I<value>]>
+S<[B<-S>|B<--step> I<value>]>
 S<[B<--json>]>
 S<[B<-t>|B<--showtime>]>
 S<[B<--enumds>]>
@@ -52,7 +52,7 @@ In fact it is exactly the same, but the parameter was renamed to
 describe its purpose in this module. See I<rrdgraph> documentation
 for details.
 
-=item B<--step> I<value> (default automatic)
+=item B<-S>|B<--step> I<value> (default automatic)
 
 See L<rrdgraph> documentation.
 

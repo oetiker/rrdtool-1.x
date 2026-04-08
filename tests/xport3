@@ -1,0 +1,110 @@
+#!/bin/bash
+# Tests for escapeJSON() control-character and truncation paths in rrd_xport.c.
+# Each XPORT legend exercises a branch that the xport2 happy-path test skips.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=xport3
+else
+    BUILD=$BUILDDIR/xport3
+fi
+
+$RRDTOOL create "${BUILD}.rrd" \
+    --start 1300000000 --step 300 \
+    DS:val:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:100
+report "create"
+
+$RRDTOOL update "${BUILD}.rrd" 1300000300:42
+report "update"
+
+is_cached && exit 0
+
+xport_json() {
+    local legend="$1"
+    $RRDTOOL xport --json \
+        -s 1300000000 -e 1300000600 --step 300 \
+        "DEF:v=${BUILD}.rrd:val:AVERAGE" \
+        "XPORT:v:${legend}"
+}
+
+# raw_legend_in_json <raw-json-output> <expected-escape-sequence>
+raw_legend_in_json() {
+    local out="$1"
+    local want="$2"
+    echo "$out" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+try:
+    json.loads(raw)
+except ValueError as e:
+    print('invalid JSON:', e)
+    raise SystemExit(1)
+if '$want' not in raw:
+    print('expected escape $want not found in:', raw[:200])
+    raise SystemExit(1)
+"
+}
+
+# --- Tab (0x09) → \t ---
+OUT=$(xport_json $'tab\there')
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport tab legend: non-zero exit"
+raw_legend_in_json "$OUT" '\\t'
+report "json legend tab escaped"
+
+# --- Backspace (0x08) → \b ---
+OUT=$(xport_json $'back\x08space')
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport backspace legend: non-zero exit"
+raw_legend_in_json "$OUT" '\\b'
+report "json legend backspace escaped"
+
+# --- Form feed (0x0c) → \f ---
+OUT=$(xport_json $'form\x0cfeed')
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport formfeed legend: non-zero exit"
+raw_legend_in_json "$OUT" '\\f'
+report "json legend formfeed escaped"
+
+# --- Carriage return (0x0d) → \r ---
+OUT=$(xport_json $'cr\x0dend')
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport CR legend: non-zero exit"
+raw_legend_in_json "$OUT" '\\r'
+report "json legend carriage-return escaped"
+
+# --- Raw control char SOH (0x01) → \u0001 ---
+OUT=$(xport_json $'soh\x01char')
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport SOH legend: non-zero exit"
+raw_legend_in_json "$OUT" '\\u0001'
+report "json legend raw-ctrl-char escaped as uXXXX"
+
+# --- Truncation boundary ---
+# A legend of 200 SOH bytes expands to 200*6=1200 chars, exceeding dbuf (1024).
+# escapeJSON must truncate at the last complete escape boundary.
+LONG_LEGEND=$(python3 -c "import sys; sys.stdout.write('\x01' * 200)")
+OUT=$(xport_json "${LONG_LEGEND}")
+RC=$?
+[ $RC -eq 0 ] || fail $RC "xport truncation legend: non-zero exit"
+python3 -c "
+import sys, json
+raw = sys.stdin.read()
+try:
+    d = json.loads(raw)
+except ValueError as e:
+    print('truncation test: invalid JSON:', e)
+    raise SystemExit(1)
+# legend must exist and be a valid (non-empty) string
+legends = d.get('meta', {}).get('legend', [])
+if not legends or not isinstance(legends[0], str):
+    print('truncation test: no legend in output')
+    raise SystemExit(1)
+# must end on a complete \u0001 sequence (no partial escapes)
+raw_legend = legends[0]
+if not raw_legend.replace('\x01', ''):
+    pass  # all control chars, fine
+" <<< "$OUT"
+report "json legend truncated at safe escape boundary"

@@ -1,0 +1,94 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=xport2
+else
+    BUILD=$BUILDDIR/xport2
+fi
+
+# Shared RRD: step=300, a single GAUGE DS, two RRAs.
+$RRDTOOL create ${BUILD}.rrd \
+    --start 1300000000 --step 300 \
+    DS:val:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:600 \
+    RRA:AVERAGE:0.5:12:144
+report "create"
+
+$RRDTOOL update ${BUILD}.rrd \
+    1300000300:10 1300000600:20 1300000900:30 \
+    1300001200:40 1300001500:50 1300001800:60 \
+    1300002100:70 1300002400:80 1300002700:90 \
+    1300003000:100
+report "update"
+
+is_cached && exit 0
+
+# --- JSON output structural check ---
+OUT=$($RRDTOOL xport --json \
+    -s 1300000000 -e 1300003000 --step 300 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    XPORT:v:val)
+RC=$?
+if [ $RC -ne 0 ] ; then
+    fail $RC "xport --json exited non-zero"
+else
+    echo "$OUT" | grep -q '"about"'
+    report "xport json well-formed"
+fi
+
+# --- JSON string values must not contain raw control chars (0x01-0x1f) ---
+# The escapeJSON function escapes control characters inside string values.
+# Extract quoted strings and check for unescaped control chars within them.
+CTRL=$(echo "$OUT" | perl -ne 'while (/"((?:[^"\\]|\\.)*)"/g) { print "$1\n" if $1 =~ /[\x00-\x08\x0b\x0c\x0e-\x1f]/ }')
+if [ -z "$CTRL" ] ; then
+    ok "xport json strings have no raw control characters"
+else
+    fail 1 "xport json strings contain raw control characters"
+fi
+
+# --- JSON with multiple DS names: legend array must be well-formed ---
+$RRDTOOL create ${BUILD}b.rrd \
+    --start 1300000000 --step 300 \
+    DS:alpha:GAUGE:600:U:U \
+    DS:beta:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:100
+report "create multi-ds"
+
+$RRDTOOL update ${BUILD}b.rrd \
+    1300000300:1:2 1300000600:3:4 1300000900:5:6
+report "update multi-ds"
+
+OUT2=$($RRDTOOL xport --json \
+    -s 1300000000 -e 1300001200 --step 300 \
+    DEF:a=${BUILD}b.rrd:alpha:AVERAGE \
+    DEF:b=${BUILD}b.rrd:beta:AVERAGE \
+    XPORT:a:alpha XPORT:b:beta)
+RC=$?
+if [ $RC -ne 0 ] ; then
+    fail $RC "xport --json multi-ds exited non-zero"
+else
+    # Check both legend names appear
+    echo "$OUT2" | grep -q '"alpha"' && echo "$OUT2" | grep -q '"beta"'
+    report "xport json multi-ds legends"
+fi
+
+# --- -S is equivalent to --step ---
+OUT_LONG=$($RRDTOOL xport --step 300 \
+    -s 1300000000 -e 1300003000 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    XPORT:v:val)
+report "xport --step long form"
+
+OUT_SHORT=$($RRDTOOL xport -S 300 \
+    -s 1300000000 -e 1300003000 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    XPORT:v:val)
+report "xport -S short form"
+
+if [ "$OUT_LONG" = "$OUT_SHORT" ] ; then
+    ok "xport -S and --step produce identical output"
+else
+    fail 1 "xport -S and --step output differs"
+fi
