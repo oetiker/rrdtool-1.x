@@ -5,6 +5,7 @@
  ****************************************************************************/
 
 #include <sys/stat.h>
+#include <limits.h>
 #include <locale.h>
 
 #include "rrd_tool.h"
@@ -385,6 +386,16 @@ static int rrd_xport_fn(
     /* printf("step: %lu\n",*step); */
     free(step_list);
 
+    if (*step == 0) {
+        rrd_set_error("xport step is zero");
+        free(ref_list);
+        for (unsigned long k = *col_cnt; k > 0; k--)
+            free(legend_list[k - 1]);
+        *col_cnt = 0;
+        free(legend_list);
+        return (-1);
+    }
+
     *start = im->start - im->start % (*step);
 
     *end = im->end - im->end % (*step);
@@ -399,8 +410,9 @@ static int rrd_xport_fn(
          (rrd_value_t *) malloc((*col_cnt) * row_cnt *
                                 sizeof(rrd_value_t))) == NULL) {
         free(ref_list);
-        while ((*col_cnt)--)
-            free(legend_list[*col_cnt]);
+        for (unsigned long k = *col_cnt; k > 0; k--)
+            free(legend_list[k - 1]);
+        *col_cnt = 0;
         free(legend_list);
         rrd_set_error("malloc xport data area");
         return (-1);
@@ -410,15 +422,28 @@ static int rrd_xport_fn(
 	long unsigned int chosen_idx  = 0;
 
     /* fill data structure */
-    for (dst_row = 0; (int) dst_row < (int) row_cnt; dst_row++) {
-        for (i = 0; i < (int) (*col_cnt); i++) {
+    for (dst_row = 0; dst_row < row_cnt; dst_row++) {
+        for (i = 0; (unsigned long) i < *col_cnt; i++) {
             long       vidx = im->gdes[ref_list[i]].vidx;
             time_t     now = *start + dst_row * *step;
 
             if (im->gdes[vidx].step > 0) {
-                chosen_idx = floor((double) (now - im->gdes[vidx].start) / im->gdes[vidx].step) * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds;
-
-                (*dstptr++) = im->gdes[vidx].data[chosen_idx];
+                long idx = (now - im->gdes[vidx].start) / (long) im->gdes[vidx].step;
+                long row_cnt = (long) ((im->gdes[vidx].end - im->gdes[vidx].start) / im->gdes[vidx].step);
+                if (idx >= 0 && idx < row_cnt) {
+                    unsigned long uidx = (unsigned long) idx;
+                    if (im->gdes[vidx].ds_cnt > 0 &&
+                        uidx > (ULONG_MAX - im->gdes[vidx].ds) / im->gdes[vidx].ds_cnt) {
+                        (*dstptr++) = DNAN;
+                    } else {
+                        chosen_idx = uidx * im->gdes[vidx].ds_cnt + im->gdes[vidx].ds;
+                        (*dstptr++) = im->gdes[vidx].data[chosen_idx];
+                    }
+                } else {
+                    (*dstptr++) = DNAN;
+                }
+            } else {
+                (*dstptr++) = DNAN;
             }
         }
     }
@@ -855,8 +880,9 @@ static int rrd_xport_format_xmljson(
             strncpy(dbuf, entry, sizeof(dbuf));
             dbuf[sizeof(dbuf) - 1] = 0;
             escapeJSON(dbuf, sizeof(dbuf));
-            snprintf(buf, sizeof(buf), "      \"%s\"", dbuf);
-            addToBuffer(buffer, buf, 0);
+            addToBuffer(buffer, "      \"", 0);
+            addToBuffer(buffer, dbuf, 0);
+            addToBuffer(buffer, "\"", 0);
             if (j < col_cnt - 1) {
                 addToBuffer(buffer, ",", 1);
             }

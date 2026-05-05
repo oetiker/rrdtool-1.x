@@ -2516,8 +2516,9 @@ int draw_horizontal_grid(
                                 }
                             }
                         } else {
-                            sprintf(graph_label, im->primary_axis_format,
-                                    scaledstep * (double) i, sisym);
+                            snprintf(graph_label, sizeof(graph_label),
+                                     im->primary_axis_format,
+                                     scaledstep * (double) i, sisym);
                         }
                     }
                     break;
@@ -3859,11 +3860,14 @@ static cairo_status_t cairo_output(
 {
     image_desc_t *im = (image_desc_t *) closure;
 
-    im->rendered_image =
-        (unsigned char *) realloc(im->rendered_image,
-                                  im->rendered_image_size + length);
-    if (im->rendered_image == NULL)
-        return CAIRO_STATUS_WRITE_ERROR;
+    {
+        unsigned char *tmp =
+            (unsigned char *) realloc(im->rendered_image,
+                                      im->rendered_image_size + length);
+        if (tmp == NULL)
+            return CAIRO_STATUS_WRITE_ERROR;
+        im->rendered_image = tmp;
+    }
     memcpy(im->rendered_image + im->rendered_image_size, data, length);
     im->rendered_image_size += length;
     return CAIRO_STATUS_SUCCESS;
@@ -4153,6 +4157,15 @@ int graph_paint_timestring(
                     double   *backX =
                         (double *) malloc(sizeof(double) * im->xsize * 2);
                     int       drawem = 0;
+
+                    if (foreY == NULL || foreX == NULL ||
+                        backY == NULL || backX == NULL) {
+                        free(foreY);
+                        free(foreX);
+                        free(backY);
+                        free(backX);
+                        return -1;
+                    }
 
                     for (ii = 0; ii <= im->xsize; ii++) {
                         double    ybase, ytop;
@@ -5886,6 +5899,12 @@ int vdef_calc(
         rrd_value_t *array;
         int       field;
 
+        if (steps == 0) {
+            dst->vf.val = DNAN;
+            dst->vf.when = 0;
+            dst->vf.never = 1;
+            break;
+        }
         if ((array = (rrd_value_t *) malloc(steps * sizeof(double))) == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
@@ -5919,6 +5938,12 @@ int vdef_calc(
             }
         }
         /* and allocate it */
+        if (nancount == 0) {
+            dst->vf.val = DNAN;
+            dst->vf.when = 0;
+            dst->vf.never = 1;
+            break;
+        }
         if ((array =
              (rrd_value_t *) malloc(nancount * sizeof(double))) == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");

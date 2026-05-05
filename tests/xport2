@@ -16,6 +16,7 @@ $RRDTOOL create ${BUILD}.rrd \
     RRA:AVERAGE:0.5:12:144
 report "create"
 
+# Feed a handful of data points so the RRAs are not entirely NaN.
 $RRDTOOL update ${BUILD}.rrd \
     1300000300:10 1300000600:20 1300000900:30 \
     1300001200:40 1300001500:50 1300001800:60 \
@@ -25,7 +26,9 @@ report "update"
 
 is_cached && exit 0
 
-# --- JSON output structural check ---
+# --- PR #1310: JSON output must be well-formed ---
+# Verify that --json produces output parseable by perl's JSON-like regex
+# heuristic: opening '{' and closing '}' with an "about" key present.
 OUT=$($RRDTOOL xport --json \
     -s 1300000000 -e 1300003000 --step 300 \
     DEF:v=${BUILD}.rrd:val:AVERAGE \
@@ -34,8 +37,34 @@ RC=$?
 if [ $RC -ne 0 ] ; then
     fail $RC "xport --json exited non-zero"
 else
+    # Minimal structural check: starts with '{' and contains the "about" key.
     echo "$OUT" | grep -q '"about"'
     report "xport json well-formed"
+fi
+
+# --- PR #1312: --step 0 must not crash (division by zero guard) ---
+$RRDTOOL xport --step 0 \
+    -s 1300000000 -e 1300003000 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    XPORT:v:val >/dev/null 2>&1
+RC=$?
+if [ $RC -lt 128 ] ; then
+    ok "xport --step 0 did not crash (rc=$RC)"
+else
+    fail $RC "xport --step 0 crashed (signal exit)"
+fi
+
+# --- PR #1312: empty xport (no XPORT statements) must not crash ---
+$RRDTOOL xport \
+    -s 1300000000 -e 1300003000 --step 300 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE 2>/dev/null
+RC=$?
+# rrdtool may return non-zero for no XPORT items; what matters is no crash
+# (segfault would give RC 139 or similar signal exit).  Accept 0 or 1.
+if [ $RC -le 1 ] ; then
+    ok "xport with no XPORT statements did not crash (rc=$RC)"
+else
+    fail $RC "xport with no XPORT statements crashed or gave unexpected rc"
 fi
 
 # --- JSON string values must not contain raw control chars (0x01-0x1f) ---

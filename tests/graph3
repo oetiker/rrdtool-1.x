@@ -1,0 +1,69 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=graph3
+else
+    BUILD=$BUILDDIR/graph3
+fi
+
+# Shared RRD: step=300, GAUGE DS.  We intentionally leave it with no data
+# updates for the empty-data VDEF_PERCENT test, then add data for the
+# realloc stress test.
+$RRDTOOL create ${BUILD}.rrd \
+    --start 920804400 --step 300 \
+    DS:val:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:600 \
+    RRA:AVERAGE:0.5:12:144
+report "create"
+
+is_cached && exit 0
+
+# --- PR #1312: VDEF PERCENT on all-NaN data must not crash (steps==0 guard) ---
+# No updates issued, so every slot is NaN.  rrdtool graph should exit cleanly
+# (rc 0 or 1) without a segfault.
+$RRDTOOL graph /dev/null \
+    --start 920804400 --end 920808000 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    VDEF:p95=v,95,PERCENTNAN \
+    PRINT:p95:'%lf' 2>/dev/null
+RC=$?
+if [ $RC -le 1 ] ; then
+    ok "VDEF PERCENT on empty data did not crash (rc=$RC)"
+else
+    fail $RC "VDEF PERCENT on empty data crashed or gave unexpected rc"
+fi
+
+# Add data for subsequent tests.
+$RRDTOOL update ${BUILD}.rrd \
+    920804700:12345 920805000:12357 920805300:12363 \
+    920805600:12363 920805900:12363 920806200:12373 \
+    920806500:12383 920806800:12393 920807100:12399 \
+    920807400:12405 920807700:12411 920808000:12415
+report "update"
+
+# --- PR #1312: graph with many DEF/CDEFs exercises the realloc path ---
+# Fifteen independent CDEFs derived from the same DEF; enough iterations to
+# trigger multiple realloc rounds in the graph element array.
+$RRDTOOL graph /dev/null \
+    --start 920804400 --end 920808000 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    CDEF:c01=v,1,* \
+    CDEF:c02=v,2,* \
+    CDEF:c03=v,3,* \
+    CDEF:c04=v,4,* \
+    CDEF:c05=v,5,* \
+    CDEF:c06=v,6,* \
+    CDEF:c07=v,7,* \
+    CDEF:c08=v,8,* \
+    CDEF:c09=v,9,* \
+    CDEF:c10=v,10,* \
+    CDEF:c11=v,11,* \
+    CDEF:c12=v,12,* \
+    CDEF:c13=v,13,* \
+    CDEF:c14=v,14,* \
+    CDEF:c15=v,15,* \
+    VDEF:vmax=v,MAXIMUM \
+    PRINT:vmax:'max=%lf' 2>/dev/null
+report "graph realloc stress"

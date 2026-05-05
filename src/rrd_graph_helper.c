@@ -1186,7 +1186,7 @@ static void legend_shift(
     if (!legend || !legend[0]) {
         return;
     }
-    memmove(legend + 2, legend, strlen(legend));
+    memmove(legend + 2, legend, strlen(legend) + 1);
     legend[0] = ' ';
     legend[1] = ' ';
 }

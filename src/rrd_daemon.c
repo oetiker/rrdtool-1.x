@@ -69,6 +69,7 @@
 #include "unused.h"
 
 #include <stdlib.h>
+#include <limits.h>
 #ifdef HAVE_STDINT_H
 #  include <stdint.h>
 #endif
@@ -362,7 +363,15 @@ static void do_log(
         pthread_mutex_lock(&log_lock);
         time_t    now = time(NULL);
 
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", gmtime(&now));
+        struct tm tm_buf;
+
+        errno = 0; /* gmtime_r may not set errno; zero it for best-effort reporting */
+        if (gmtime_r(&now, &tm_buf) == NULL) {
+            snprintf(buffer, sizeof(buffer), "(time error: %lld e%d)",
+                     (long long) now, errno);
+        } else {
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_buf);
+        }
         fprintf(log_fh, "%s [%d] ", buffer, priority);
         vfprintf(log_fh, format, args);
         fprintf(log_fh, "\n");
@@ -573,7 +582,7 @@ static int check_pidfile(
 {
     int       pid_fd;
     pid_t     pid;
-    char      pid_str[16];
+    char      pid_str[16] = {0};
     ssize_t   pid_bytes;
 
     pid_fd = open_pidfile("open", O_RDWR);
@@ -590,12 +599,22 @@ static int check_pidfile(
     }
     pid_str[pid_bytes] = '\0';
 
-    pid = atoi(pid_str);
-    if (pid <= 0) {
-        fprintf(stderr, "FATAL: PID file is corrupted\n");
-
-        close(pid_fd);
-        return -1;
+    {
+        char *endptr;
+        long lval;
+        errno = 0;
+        lval = strtol(pid_str, &endptr, 10);
+        /* skip trailing whitespace/newlines from PID file */
+        while (*endptr == ' ' || *endptr == '\n' || *endptr == '\r'
+               || *endptr == '\t')
+            endptr++;
+        if (errno != 0 || endptr == pid_str || *endptr != '\0'
+            || lval <= 0 || lval > INT_MAX) {
+            fprintf(stderr, "FATAL: PID file is corrupted\n");
+            close(pid_fd);
+            return -1;
+        }
+        pid = (int) lval;
     }
 
     /* another running process that we can signal COULD be
@@ -768,11 +787,7 @@ static int add_response_info(
         return 0;       /* no extra info returned when in BATCH */
 
     va_start(argp, fmt);
-#ifdef HAVE_VSNPRINTF
     len = vsnprintf(buffer, sizeof(buffer), fmt, argp);
-#else
-    len = vsprintf(buffer, fmt, argp);
-#endif
     va_end(argp);
     if (len < 0) {
         RRDD_LOG(LOG_ERR, "add_response_info: vnsprintf failed");
@@ -861,14 +876,14 @@ static int send_response(
         rc = RESP_OK;
     } else {
         rclen = snprintf(buffer, sizeof buffer, "%d ", lines);
+        if (rclen < 0 || rclen >= (int) sizeof(buffer)) {
+            RRDD_LOG(LOG_DEBUG, "send_response: snprintf failed (rclen=%d)", rclen);
+            return -1;
+        }
     }
 
     va_start(argp, fmt);
-#ifdef HAVE_VSNPRINTF
     len = vsnprintf(buffer + rclen, sizeof(buffer) - rclen, fmt, argp);
-#else
-    len = vsprintf(buffer + rclen, fmt, argp);
-#endif
     va_end(argp);
     if (len < 0)
         return -1;
@@ -1929,20 +1944,33 @@ static int handle_request_tune(
         rc = syntax_error(sock, cmd);
         goto done;
     }
-    argc = atoi(i);
-    if (argc < 0) {
-        rc = send_response(sock, RESP_ERR, "Invalid argument count specified (%d)\n",
-                           argc);
-        goto done;
+    {
+        char *endptr;
+        long lval;
+        errno = 0;
+        lval = strtol(i, &endptr, 10);
+        if (errno != 0 || endptr == i || *endptr != '\0'
+            || lval <= 0 || lval > 65536) {
+            rc = send_response(sock, RESP_ERR, "Invalid argument count specified: %s\n", i);
+            goto done;
+        }
+        argc = (int) lval;
     }
 
-    if ((argv = malloc(argc * sizeof(char*))) == NULL) {
+    /* argc is already bounded to 65536 above, so this allocation is safe */
+    if ((argv = malloc((size_t)argc * sizeof(char*))) == NULL) {
+        RRDD_LOG(LOG_ERR, "malloc failed for %d argv pointers", argc);
         rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
         goto done;
     }
     argc_tmp = 0;
     while ((status = buffer_get_field(&buffer, &buffer_size, &tok)) == 0
            && tok) {
+        if (argc_tmp >= argc) {
+            rc = send_response(sock, RESP_ERR,
+                               "Too many arguments (expected %d)\n", argc);
+            goto done;
+        }
         argv[argc_tmp] = tok;
         argc_tmp += 1;
     }
@@ -2401,11 +2429,17 @@ static int handle_request_first(
         rc = syntax_error(sock, cmd);
         goto done;
     }
-    idx = atoi(i);
-    if (idx < 0) {
-        rc = send_response(sock, RESP_ERR, "Invalid index specified (%d)\n",
-                           idx);
-        goto done;
+    {
+        char *endptr;
+        long lval;
+        errno = 0;
+        lval = strtol(i, &endptr, 10);
+        if (errno != 0 || endptr == i || *endptr != '\0'
+            || lval < 0 || lval > INT_MAX) {
+            rc = send_response(sock, RESP_ERR, "Invalid index specified: %s\n", i);
+            goto done;
+        }
+        idx = (int) lval;
     }
 
     /* get data */
@@ -2489,7 +2523,8 @@ static int handle_request_create(
     char     *file_copy = NULL, *dir = NULL, *dir2 = NULL;
     char     *tok;
     int       ac = 0;
-    char     *av[128];
+#define MAX_CREATE_AV 128
+    char     *av[MAX_CREATE_AV];
     char    **sources = NULL;
     int       sources_length = 0;
     char     *template = NULL;
@@ -2602,10 +2637,22 @@ static int handle_request_create(
             continue;
         }
         if (!strncmp(tok, "DS:", 3)) {
+            if (ac >= MAX_CREATE_AV) {
+                rc = send_response(sock, RESP_ERR,
+                                   "Too many DS/RRA definitions (max %d)\n",
+                                   MAX_CREATE_AV);
+                goto done;
+            }
             av[ac++] = tok;
             continue;
         }
         if (!strncmp(tok, "RRA:", 4)) {
+            if (ac >= MAX_CREATE_AV) {
+                rc = send_response(sock, RESP_ERR,
+                                   "Too many DS/RRA definitions (max %d)\n",
+                                   MAX_CREATE_AV);
+                goto done;
+            }
             av[ac++] = tok;
             continue;
         }
@@ -4844,13 +4891,23 @@ static int read_options(
         {
             int       threads;
 
-            threads = atoi(options.optarg);
-            if (threads >= 1)
-                config_queue_threads = threads;
-            else {
-                fprintf(stderr, "Invalid thread count: -t %s\n",
-                        options.optarg);
+            if (options.optarg == NULL || *options.optarg == '\0') {
+                fprintf(stderr, "Missing argument for -t\n");
                 return 1;
+            }
+            {
+                char *endptr;
+                long lval;
+                errno = 0;
+                lval = strtol(options.optarg, &endptr, 10);
+                if (errno != 0 || endptr == options.optarg || *endptr != '\0'
+                    || lval < 1 || lval > INT_MAX) {
+                    fprintf(stderr, "Invalid thread count: -t %s\n",
+                            options.optarg);
+                    return 1;
+                }
+                threads = (int) lval;
+                config_queue_threads = threads;
             }
         }
             break;
@@ -4989,15 +5046,21 @@ static int read_options(
 
         case 'a':
         {
-            int       temp = atoi(options.optarg);
-
-            if (temp > 0)
-                config_alloc_chunk = temp;
-            else {
+            char *endptr;
+            long lval;
+            if (options.optarg == NULL || *options.optarg == '\0') {
+                fprintf(stderr, "Missing argument for -a\n");
+                return 10;
+            }
+            errno = 0;
+            lval = strtol(options.optarg, &endptr, 10);
+            if (errno != 0 || endptr == options.optarg || *endptr != '\0'
+                || lval <= 0 || lval > INT_MAX) {
                 fprintf(stderr, "Invalid allocation size: %s\n",
                         options.optarg);
                 return 10;
             }
+            config_alloc_chunk = (int) lval;
         }
             break;
 
