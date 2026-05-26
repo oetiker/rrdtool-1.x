@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool fetch` now always emits `nan` (never `-nan`) for unknown
+  values. GCC >= 4.4.4 may produce NaN with the sign bit set, and
+  glibc honours that sign in printf, breaking consumers (e.g. OpenNMS)
+  that match on the string `nan`. Fix by @oetiker. Issue #297.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.

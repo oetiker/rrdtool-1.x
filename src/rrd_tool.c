@@ -766,8 +766,13 @@ static int HandleInputLine(
 #else
                 printf("%10lu:", ti);
 #endif
-                for (ii = 0; ii < ds_cnt; ii++)
-                    printf(" %0.10e", *(datai++));
+                for (ii = 0; ii < ds_cnt; ii++) {
+                    rrd_value_t val = *(datai++);
+                    if (isnan(val))
+                        printf(" %16s", "nan");
+                    else
+                        printf(" %0.10e", val);
+                }
                 printf("\n");
             }
             for (i = 0; i < ds_cnt; i++)
