@@ -2516,6 +2516,57 @@ static int handle_request_last(
     return rc;
 }                       /* }}} static int handle_request_last  */
 
+static int handle_request_lastupdate(
+    HANDLER_PROTO)
+{                       /* {{{ */
+    char     *file = NULL, *pbuffile;
+    int       status, rc;
+    unsigned long i;
+    rrd_file_t *rrd_file;
+    rrd_t     rrd;
+    time_t    last_update;
+
+    /* obtain filename */
+    status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+    if (status != 0) {
+        rc = syntax_error(sock, cmd);
+        goto done;
+    }
+    /* get full pathname */
+    file = get_abs_path(pbuffile);
+    if (file == NULL) {
+        rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+        goto done;
+    }
+    if (!check_file_access(file, sock)) {
+        rc = send_response(sock, RESP_ERR, "%s: %s\n", file,
+                           rrd_strerror(EACCES));
+        goto done;
+    }
+    rrd_clear_error();
+    rrd_init(&rrd);
+    rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
+    if (!rrd_file) {
+        rrd_free(&rrd);
+        rc = send_response(sock, RESP_ERR, "RRD Error: %s\n",
+                           rrd_get_error());
+        goto done;
+    }
+    last_update = rrd.live_head->last_up;
+    for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        add_response_info(sock, "%s %s\n",
+                          rrd.ds_def[i].ds_nam,
+                          rrd.pdp_prep[i].last_ds);
+    }
+    rrd_close(rrd_file);
+    rrd_free(&rrd);
+    rc = send_response(sock, RESP_OK, "%lu LastUpdate values follow\n",
+                       (unsigned long) last_update);
+  done:
+    free(file);
+    return rc;
+}                       /* }}} static int handle_request_lastupdate */
+
 static int handle_request_create(
     HANDLER_PROTO)
 {                       /* {{{ */
@@ -3165,6 +3216,16 @@ static command_t list_of_commands[] = { /* {{{ */
      "Note that this is the time of the last update of the RRD file itself, not\n"
      "the last time data was received via rrdcached, so there may be pending\n"
      "updates in the queue.  If this bothers you, then first run a FLUSH.\n"},
+    {
+     "LASTUPDATE",
+     handle_request_lastupdate,
+     CMD_CONTEXT_CLIENT,
+     "LASTUPDATE <filename>\n",
+     "The LASTUPDATE command retrieves the last update time and DS values for\n"
+     "a specified RRD file.  Returns one line per DS with the DS name and its\n"
+     "last value, and the status line contains the timestamp.\n"
+     "Note that this reflects the data as of the last write to the RRD file.\n"
+     "If there are pending updates in the cache, run FLUSH first.\n"},
     {
      "CREATE",
      handle_request_create,

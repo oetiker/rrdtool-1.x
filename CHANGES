@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool lastupdate --daemon host:port file.rrd` now correctly
+  dispatches to the rrdcached daemon instead of erroring with
+  "No such file or directory". Added `rrdc_lastupdate()` and
+  `rrd_client_lastupdate()` client functions and a corresponding
+  `LASTUPDATE` command in the daemon. Issue #1293
+  reported by @FlyveHest, fix by @oetiker
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
