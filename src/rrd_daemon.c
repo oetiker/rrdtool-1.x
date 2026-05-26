@@ -1379,27 +1379,66 @@ static int check_file_access(
     return 1;
 }                       /* }}} static int check_file_access */
 
+/* Lexically normalize a path in-place: collapse double slashes and
+ * dot-slash segments (e.g. "foo//./bar" -> "foo/bar").  Does NOT
+ * resolve ".." — that is intentionally left for check_file_access().
+ */
+static void normalize_path(
+    char *path)
+{                       /* {{{ */
+    char     *src;
+    char     *dst;
+
+    if (path == NULL)
+        return;
+
+    src = path;
+    dst = path;
+
+    while (*src != '\0') {
+        if (src[0] == '/' && src[1] == '/') {
+            /* collapse consecutive slashes */
+            src++;
+        } else if (src[0] == '/' && src[1] == '.' &&
+                   (src[2] == '/' || src[2] == '\0')) {
+            /* collapse "/./" -> "/" (or trailing "/.") */
+            src += 2;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}                       /* }}} static void normalize_path */
+
 /* when using a base dir, convert relative paths to absolute paths.
  * The result must be free()'ed by the caller.
  */
 static char *get_abs_path(
     const char *filename)
-{
+{                       /* {{{ */
     char     *ret;
 
     assert(filename != NULL);
 
-    if (config_base_dir == NULL || *filename == '/')
-        return strdup(filename);
+    /* Skip leading "./" in relative paths before prepending the base dir */
+    while (filename[0] == '.' && filename[1] == '/')
+        filename += 2;
 
-    ret = malloc(strlen(config_base_dir) + 1 + strlen(filename) + 1);
-    if (ret == NULL)
-        RRDD_LOG(LOG_ERR, "get_abs_path: malloc failed.");
-    else
-        sprintf(ret, "%s/%s", config_base_dir, filename);
+    if (config_base_dir == NULL || *filename == '/') {
+        ret = strdup(filename);
+    } else {
+        ret = malloc(strlen(config_base_dir) + 1 + strlen(filename) + 1);
+        if (ret == NULL)
+            RRDD_LOG(LOG_ERR, "get_abs_path: malloc failed.");
+        else
+            sprintf(ret, "%s/%s", config_base_dir, filename);
+    }
+
+    if (ret != NULL)
+        normalize_path(ret);
 
     return ret;
-}                       /* }}} static int get_abs_path */
+}                       /* }}} static char *get_abs_path */
 
 static int flush_file(
     const char *filename)
