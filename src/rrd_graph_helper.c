@@ -304,6 +304,11 @@ int parseArguments(
         case ':':{
             /* null and : separate the string */
             *pos = 0;
+            /* skip empty token (e.g. trailing colon in "Legend :")  */
+            if (*field == 0) {
+                field = NULL;
+                break;
+            }
             /* flag to say we are positional */
             //int ispos=0;
             /* handle the case where we have got an = */

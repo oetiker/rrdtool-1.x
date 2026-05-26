@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* A trailing colon in a graph element argument string (e.g.
+  `AREA:vname#color:Legend :`) caused `parseArguments()` to emit an
+  empty positional token that `checkUnusedValues()` then flagged as
+  `Unused Arguments "" in command: ...`. Fix: skip empty tokens
+  produced by a trailing (or consecutive) `:` separator.
+  Issue #655 reported by @Phhere, fix by @oetiker.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
