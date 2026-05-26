@@ -5019,7 +5019,7 @@ void rrd_graph_options(
     struct optparse *poptions,
     image_desc_t *im)
 {
-    int       stroff;
+    int       stroff = 0;
     char     *parsetime_error = NULL;
     char      scan_gtm[12], scan_mtm[12], scan_ltm[12], col_nam[12];
     char      double_str[41] = { 0 }, double_str2[41] = { 0 };

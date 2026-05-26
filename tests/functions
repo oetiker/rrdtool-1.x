@@ -15,9 +15,9 @@ TOP_BUILDDIR="${TOP_BUILDDIR:-${BASEDIR}/..}"
 DIFF="diff -u"
 DIFF9=seddif
 
-# On Windows, names of times zones are different. Substitute 'W. Europe Standard Time' with 'CET'
+# On Windows, names of times zones are different. Substitute Windows tz names with numeric offsets.
 function seddif {
-   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge; s/W. Europe Standard Time/CET/g' | $DIFF $@
+   perl -p -e 's/([-+]?\d\.\d+e[-+]\d+)/sprintf("%0.7e",$1)/ge; s/W\. Europe Standard Time/+0100/g; s/W\. Europe Daylight Time/+0200/g' | $DIFF $@
 }
 
 BLANK=blank

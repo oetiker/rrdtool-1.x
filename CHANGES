@@ -12,6 +12,37 @@ Bugfixes
   that initialises the base `struct tm` from Unix timestamp 0 before
   applying the parsed calendar deltas. Issue #939 reported by @joneikifi,
   fixed by @oetiker.
+* `rrdtool dump` now uses a numeric UTC offset (`%z`, e.g. `+0900`) instead
+  of the locale timezone name (`%Z`) in XML comments. Locale timezone names
+  can be encoded in a non-UTF-8 encoding (e.g. CJK locales), which breaks
+  the XML declaration and causes `rrdtool restore` to fail with
+  "Input is not proper UTF-8". The numeric offset is always ASCII.
+  Note: existing dump files already containing locale timezone names remain
+  valid XML as long as their encoding matches; newly created dumps will
+  always contain pure ASCII in these comments. Issue #1173
+  reported by @k79e, fix by @oetiker.
+* Fix segfault when `--x-grid` is given without a trailing date-format
+  field. The `%n` conversion in `sscanf()` is not counted in its return
+  value, so `stroff` remained uninitialized when the input ended before
+  the final `:` separator; the subsequent `stroff != 0` guard read
+  garbage and could branch into `strdup()` with a bogus offset. Fixed by
+  initialising `stroff = 0` so a partial match safely falls through to
+  the existing "invalid x-grid format" error path. Issue #1291
+  reported by @anvilvapre, fixed by @oetiker
+* libdbi /derive now returns 0 instead of NaN when the underlying
+  counter is constant (zero delta). Previously the strict `d_value > 0`
+  guard skipped zero deltas the same way it skips negative ones (counter
+  resets). Changed to `d_value >= 0`. Issue #550 reported by
+  @bitionaire, fix by @oetiker.
+* Fix a 1-byte heap buffer overflow in `checkUnusedValues()` that
+  triggered `*** buffer overflow detected ***` SIGABRT under glibc
+  fortified `strcat()` when reporting unused graph arguments. The
+  function under-allocated by one byte and silently relied on that
+  overflow to make its trailing `:` strip land on the right index.
+  Refactored to size buffers correctly and prepend the separator
+  rather than build-then-strip, so the two no longer have to agree.
+  Reported and original fix attempt in PR #1329 by @ppisar,
+  refactored fix by @oetiker
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
@@ -31,6 +62,12 @@ Bugfixes
   text documentation works on systems with BSD-derived nroff (e.g.
   macOS /usr/bin/nroff). Issue #1323 reported by @gigaimage, fixed by
   @oetiker
+* Fix SIGFPE divide-by-zero crash in `rrdtool dump` when processing
+  fuzz-crafted RRD files that contain an RRA with `pdp_cnt` or
+  `pdp_step` equal to zero. The modulo operation at the heart of the
+  timestamp calculation is now guarded: such files are rejected with
+  a descriptive error message instead of crashing.
+  Issue #783 reported by @rwhitworth, fix by @oetiker.
 
 Features
 --------

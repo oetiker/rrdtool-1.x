@@ -127,7 +127,7 @@ int rrd_dump_cb_r(
 
 #ifdef HAVE_STRFTIME
     localtime_r(&rrd.live_head->last_up, &tm);
-    strftime(somestring, 255, "%Y-%m-%d %H:%M:%S %Z", &tm);
+    strftime(somestring, 255, "%Y-%m-%d %H:%M:%S %z", &tm);
 #else
 # error "Need strftime"
 #endif
@@ -209,12 +209,19 @@ int rrd_dump_cb_r(
         rra_next += (rrd.stat_head->ds_cnt
                      * rrd.rra_def[i].row_cnt * sizeof(rrd_value_t));
 
+        if (rrd.rra_def[i].pdp_cnt == 0 || rrd.stat_head->pdp_step == 0) {
+            rrd_set_error("invalid RRA %u: pdp_cnt or pdp_step is zero", i);
+            rrd_free(&rrd);
+            rrd_close(rrd_file);
+            return (-1);
+        }
+
         CB_PUTS("\t<rra>\n");
 
         CB_FMTS("\t\t<cf>%s</cf>\n", rrd.rra_def[i].cf_nam);
 
         CB_FMTS("\t\t<pdp_per_row>%lu</pdp_per_row> <!-- %lu seconds -->\n\n",
-            rrd.rra_def[i].pdp_cnt, 
+            rrd.rra_def[i].pdp_cnt,
             rrd.rra_def[i].pdp_cnt * rrd.stat_head->pdp_step);
 
         /* support for RRA parameters */
@@ -426,7 +433,7 @@ int rrd_dump_cb_r(
             timer++;
 #ifdef HAVE_STRFTIME
             localtime_r(&now, &tm);
-            strftime(somestring, 255, "%Y-%m-%d %H:%M:%S %Z", &tm);
+            strftime(somestring, 255, "%Y-%m-%d %H:%M:%S %z", &tm);
 #else
 # error "Need strftime"
 #endif

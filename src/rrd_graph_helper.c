@@ -120,39 +120,34 @@ char     *checkUnusedValues(
     parsedargs_t *pa)
 {
     char     *res = NULL;
-    size_t    len = 0;
+    size_t    used = 0;     /* current strlen(res) */
 
     for (int i = 0; i < pa->kv_cnt; i++) {
-        if (!pa->kv_args[i].flag) {
-            const size_t kvlen = strlen(pa->kv_args[i].keyvalue);
+        if (pa->kv_args[i].flag)
+            continue;
 
-            len += kvlen + 1;
+        const size_t kvlen = strlen(pa->kv_args[i].keyvalue);
+        const size_t sep   = res ? 1 : 0;             /* ':' before all but the first */
+        const size_t need  = used + sep + kvlen + 1;  /* + trailing NUL */
+        char        *t     = res ? (char *) realloc(res, need)
+                                 : (char *) malloc(need);
 
-            /* alloc/realloc if necessary and set to 0 */
-            if (res) {
-                char     *t = (char *) realloc(res, len);
-
-                if (!t) {
-                    return res;
-                }
-                res = t;
-            } else {
-                res = malloc(len);
-                if (!res) {
-                    return NULL;
-                }
-                *res = 0;
-            }
-            /* add key = value as originally given */
-            strncat(res, pa->kv_args[i].keyvalue, kvlen);
-            strcat(res, ":");
+        if (!t) {
+            return res;     /* keep what we have on OOM */
         }
+        if (!res) {
+            *t = 0;         /* initialize on first allocation */
+        }
+        res = t;
+
+        if (sep) {
+            res[used] = ':';
+        }
+        memcpy(res + used + sep, pa->kv_args[i].keyvalue, kvlen);
+        used += sep + kvlen;
+        res[used] = 0;
     }
-    /* if we got one, then strip the final : */
-    if (res) {
-        res[len - 1] = 0;
-    }
-    /* and return res */
+
     return res;
 }
 
