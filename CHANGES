@@ -3,6 +3,15 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* rrdcached no longer returns stale all-NaN data when a FETCH uses a
+  path with a leading `./` (e.g. `./switch/foo.rrd`).  Previously
+  `get_abs_path()` would produce `<basedir>/./switch/foo.rrd` as the
+  cache key, which missed the UPDATE-time entry keyed on
+  `<basedir>/switch/foo.rrd`, so the in-memory cache was not flushed
+  and on-disk (possibly all-NaN) data was returned.  Fixed by adding
+  lexical-only normalization that collapses `./` and `//` segments
+  without calling `realpath(2)`. Issue #1071 reported by @tik-stbuehler,
+  fix by @oetiker
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
