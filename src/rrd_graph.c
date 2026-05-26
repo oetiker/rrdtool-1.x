@@ -2530,10 +2530,11 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof graph_label,
                                      im->primary_axis_format,
-                                     scaledstep * (double) i);
+                                     scaledstep * (double) i, " ");
                         }
                     } else {
                         char      sisym = (i == 0 ? ' ' : im->symbol);
+                        char      sisym_str[2] = { sisym, '\0' };
 
                         if (im->primary_axis_format == NULL
                             || im->primary_axis_format[0] == '\0') {
@@ -2557,7 +2558,7 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof(graph_label),
                                      im->primary_axis_format,
-                                     scaledstep * (double) i, sisym);
+                                     scaledstep * (double) i, sisym_str);
                         }
                     }
                     break;
@@ -5808,8 +5809,8 @@ int bad_format_imginfo(
 int bad_format_axis(
     char *fmt)
 {
-    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",
-                            fmt);
+    return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING
+                            "(?:%[sS])?" SAFE_STRING "$", fmt);
 }
 
 int bad_format_print(

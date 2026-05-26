@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `--left-axis-format` (and `--right-axis-format`) now accept SI unit
+  specifiers: `%c` for the SI magnitude character (primary axis) and
+  `%s`/`%S` for the SI unit string (second axis). Previously these were
+  rejected by the format validator even though the rendering code already
+  passed the SI symbol/string as a second argument. Issues #1271, #1217,
+  #837. Reported by @mpikzink, @dschultzca, @dword1511; fix by @oetiker.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
