@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Fix rrdcached client truncating `rrdtool info` output when a DS's
+  `last_ds` is the empty string. The protocol parser treated a missing
+  third token as a fatal error; now an empty value is accepted for
+  string-typed fields. Issue #1080 reported by @DeHackEd, fix by
+  @oetiker.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
