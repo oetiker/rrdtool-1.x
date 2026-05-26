@@ -62,14 +62,17 @@ int rrd_lastupdate (int argc, const char **argv)
         return (-1);
     }
 
-    status = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
-    if (opt_daemon != NULL) {
-    	free (opt_daemon);
+    rrdc_connect(opt_daemon);
+    if (rrdc_is_connected(opt_daemon)) {
+        status = rrdc_lastupdate(options.argv[options.optind],
+                &last_update, &ds_count, &ds_names, &last_ds);
+    } else {
+        status = rrd_lastupdate_r(options.argv[options.optind],
+                &last_update, &ds_count, &ds_names, &last_ds);
     }
-    if (status) return (-1);
-
-    status = rrd_lastupdate_r(options.argv[options.optind],
-            &last_update, &ds_count, &ds_names, &last_ds);
+    if (opt_daemon != NULL) {
+        free(opt_daemon);
+    }
     if (status != 0)
         return (status);
 

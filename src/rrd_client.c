@@ -1586,6 +1586,149 @@ time_t rrdc_last(
     return t;
 }                       /* }}} int rrdc_last */
 
+int rrd_client_lastupdate(
+    rrd_client_t *client,
+    const char *filename,   /* {{{ */
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds)
+{
+    char      buffer[RRD_CMD_MAX];
+    char     *buffer_ptr;
+    size_t    buffer_free;
+    size_t    buffer_size;
+    rrdc_response_t *res;
+    int       status;
+    char     *file_path;
+    unsigned long ds_count;
+    size_t    i;
+
+    if (client == NULL)
+        return -1;
+    if (filename == NULL) {
+        rrd_set_error("rrdc_lastupdate: no filename");
+        return (-1);
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    buffer_ptr = &buffer[0];
+    buffer_free = sizeof(buffer);
+
+    status = buffer_add_string("lastupdate", &buffer_ptr, &buffer_free);
+    if (status != 0) {
+        rrd_set_error("rrdc_lastupdate: out of memory");
+        return (-1);
+    }
+
+    file_path = get_path(client, filename);
+    if (file_path == NULL) {
+        return (-1);
+    }
+
+    status = buffer_add_string(file_path, &buffer_ptr, &buffer_free);
+    free(file_path);
+
+    if (status != 0) {
+        rrd_set_error("rrdc_lastupdate: out of memory");
+        return (-1);
+    }
+
+    assert(buffer_free < sizeof(buffer));
+    buffer_size = sizeof(buffer) - buffer_free;
+    assert(buffer[buffer_size - 1] == ' ');
+    buffer[buffer_size - 1] = '\n';
+
+    res = NULL;
+    status = request(client, buffer, buffer_size, &res);
+
+    if (status != 0)
+        return (-1);
+    if (res->status < 0) {
+        response_free(res);
+        return (-1);
+    }
+
+    /* The status line message contains the timestamp */
+    *ret_last_update = (time_t) atol(res->message);
+    ds_count = (unsigned long) res->lines_num;
+
+    *ret_ds_names = (char **) calloc(ds_count, sizeof(char *));
+    if (*ret_ds_names == NULL) {
+        rrd_set_error("rrdc_lastupdate: out of memory");
+        response_free(res);
+        return (-1);
+    }
+
+    *ret_last_ds = (char **) calloc(ds_count, sizeof(char *));
+    if (*ret_last_ds == NULL) {
+        rrd_set_error("rrdc_lastupdate: out of memory");
+        free(*ret_ds_names);
+        *ret_ds_names = NULL;
+        response_free(res);
+        return (-1);
+    }
+
+    /* Each response line has the format: "<dsname> <lastvalue>" */
+    for (i = 0; i < ds_count; i++) {
+        char     *line = res->lines[i];
+        char     *space = strchr(line, ' ');
+
+        if (space == NULL) {
+            rrd_set_error("rrdc_lastupdate: malformed response line: %s", line);
+            /* free what we've allocated so far */
+            for (size_t j = 0; j < i; j++) {
+                free((*ret_ds_names)[j]);
+                free((*ret_last_ds)[j]);
+            }
+            free(*ret_ds_names);
+            *ret_ds_names = NULL;
+            free(*ret_last_ds);
+            *ret_last_ds = NULL;
+            response_free(res);
+            return (-1);
+        }
+        *space = '\0';
+        (*ret_ds_names)[i] = strdup(line);
+        (*ret_last_ds)[i]  = strdup(space + 1);
+
+        if ((*ret_ds_names)[i] == NULL || (*ret_last_ds)[i] == NULL) {
+            rrd_set_error("rrdc_lastupdate: out of memory");
+            for (size_t j = 0; j <= i; j++) {
+                if ((*ret_ds_names)[j]) free((*ret_ds_names)[j]);
+                if ((*ret_last_ds)[j])  free((*ret_last_ds)[j]);
+            }
+            free(*ret_ds_names);
+            *ret_ds_names = NULL;
+            free(*ret_last_ds);
+            *ret_last_ds = NULL;
+            response_free(res);
+            return (-1);
+        }
+    }
+
+    *ret_ds_count = ds_count;
+    response_free(res);
+    return (0);
+}                       /* }}} int rrd_client_lastupdate */
+
+int rrdc_lastupdate(
+    const char *filename,   /* {{{ */
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds)
+{
+    int       status;
+
+    mutex_lock(&lock);
+    status = rrd_client_lastupdate(&default_client, filename,
+                                   ret_last_update, ret_ds_count,
+                                   ret_ds_names, ret_last_ds);
+    mutex_unlock(&lock);
+    return status;
+}                       /* }}} int rrdc_lastupdate */
+
 time_t rrd_client_first(
     rrd_client_t *client,
     const char *filename,
