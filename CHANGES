@@ -3,6 +3,15 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Fix epoch+offset time specs (e.g. `epoch+80y` or `epoch+315439500s`)
+  anchoring to 1899-12-31 instead of 1970-01-01 on 64-bit systems.
+  On 64-bit systems `mktime` of an all-zero `struct tm` (year 1900) succeeds
+  and returns -2209082400, whereas on 32-bit it fails with -1 and the
+  subsequent add of the offset accidentally yields the right answer.
+  Fix: in `rrd_proc_start_end`, add an explicit `RELATIVE_TO_EPOCH` branch
+  that initialises the base `struct tm` from Unix timestamp 0 before
+  applying the parsed calendar deltas. Issue #939 reported by @joneikifi,
+  fixed by @oetiker.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
