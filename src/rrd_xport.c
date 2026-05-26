@@ -116,6 +116,7 @@ int rrd_xport(
     int       enumds = 0;
     int       json = 0;
     int       showtime = 0;
+    int       step_requested = 0;
 
     int       opt;
 
@@ -124,6 +125,7 @@ int rrd_xport(
         switch (opt) {
         case 'S':
             im.step = atoi(options.optarg);
+            step_requested = 1;
             break;
         case 262:
             enumds = 1;
@@ -193,7 +195,8 @@ int rrd_xport(
 
     im.start = start_tmp;
     im.end = end_tmp;
-    im.step = max((long) im.step, (im.end - im.start) / im.xsize);
+    if (!step_requested)
+        im.step = max((long) im.step, (im.end - im.start) / im.xsize);
 
     rrd_graph_script(options.argc, options.argv, &im, options.optind);
     if (rrd_test_error()) {

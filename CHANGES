@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool xport --step` is no longer silently overridden by the
+  xsize-derived minimum step. When the user explicitly supplies
+  `--step`, the supplied value is used as-is and the max() clamping
+  against `(end-start)/xsize` is skipped. Issue #1023 reported by
+  @mprahlad95, fix by @oetiker.
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
