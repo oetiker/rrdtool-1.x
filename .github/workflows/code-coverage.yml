@@ -49,7 +49,7 @@ jobs:
         # make check TESTS_STYLE="valgrind-logfile"
         # Disable the following, failing tests: graph1, graph2, rpn1, create-with-source-4, vformatter1
         # These tests are failing in the GitHub Action (currently Ubuntu 24.04), when using valgrind-logfile
-        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
+        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 xport4 list1 pdp-calc1"
         podchecker doc/*.pod
     - name: gcov
       run: |
