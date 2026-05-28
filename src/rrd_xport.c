@@ -104,6 +104,7 @@ int rrd_xport(
         {"enumds", 262, OPTPARSE_NONE},
         {"json", 263, OPTPARSE_NONE},
         {"showtime", 't', OPTPARSE_NONE},
+        {"use-nan-for-all-missing-data", 'Z', OPTPARSE_NONE},
         {"daemon", 'd', OPTPARSE_REQUIRED},
         {0}
     };
@@ -128,6 +129,9 @@ int rrd_xport(
         case 'S':
             im.step = atoi(options.optarg);
             step_requested = 1;
+            break;
+        case 'Z':
+            im.extra_flags |= ALLOW_MISSING_DS;
             break;
         case 262:
             enumds = 1;
