@@ -1051,6 +1051,23 @@ int rrd_proc_start_end(
         tmtmp.tm_year += start_tv->tm.tm_year;
 
         *start = mktime(&tmtmp) + start_tv->offset;
+    } else if (start_tv->type == RELATIVE_TO_EPOCH) {
+        /* epoch is Unix time 0 (1970-01-01 00:00:00 local).  The parsed
+         * year/month/day deltas are in start_tv->tm (accumulated relative
+         * to 0), so add them to the 1970 base before calling mktime. */
+        struct tm tmtmp;
+        time_t    epoch = 0;
+
+        localtime_r(&epoch, &tmtmp);
+        tmtmp.tm_sec  = 0;
+        tmtmp.tm_min  = 0;
+        tmtmp.tm_hour = 0;
+        tmtmp.tm_isdst = -1;
+        tmtmp.tm_mday += start_tv->tm.tm_mday;
+        tmtmp.tm_mon  += start_tv->tm.tm_mon;
+        tmtmp.tm_year += start_tv->tm.tm_year;
+
+        *start = mktime(&tmtmp) + start_tv->offset;
     } else {
         *start = mktime(&(start_tv->tm)) + start_tv->offset;
     }
@@ -1061,6 +1078,20 @@ int rrd_proc_start_end(
         localtime_r(start,&tmtmp);
         tmtmp.tm_mday += end_tv->tm.tm_mday;
         tmtmp.tm_mon += end_tv->tm.tm_mon;
+        tmtmp.tm_year += end_tv->tm.tm_year;
+
+        *end = mktime(&tmtmp) + end_tv->offset;
+    } else if (end_tv->type == RELATIVE_TO_EPOCH) {
+        struct tm tmtmp;
+        time_t    epoch = 0;
+
+        localtime_r(&epoch, &tmtmp);
+        tmtmp.tm_sec  = 0;
+        tmtmp.tm_min  = 0;
+        tmtmp.tm_hour = 0;
+        tmtmp.tm_isdst = -1;
+        tmtmp.tm_mday += end_tv->tm.tm_mday;
+        tmtmp.tm_mon  += end_tv->tm.tm_mon;
         tmtmp.tm_year += end_tv->tm.tm_year;
 
         *end = mktime(&tmtmp) + end_tv->offset;
