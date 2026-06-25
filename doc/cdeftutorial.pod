@@ -233,7 +233,7 @@ evaluated differently:
    push operator + on the stack:          a R +
    and process it:                        S         (where S == a+R)
 
-As you can see the RPN expression C<a,b,c,d,e,+,+,+,+,+> will evaluate in
+As you can see the RPN expression C<a,b,c,d,e,+,+,+,+> will evaluate in
 C<((((d+e)+c)+b)+a)> and it has the same outcome as C<a,b,+,c,+,d,+,e,+>.
 This is called the commutative law of addition,
 but you may forget this right away, as long as you remember what it
