@@ -3,6 +3,8 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Fix malloc size calculations at lines 322, 328, and 335 multiply sizeof(type)
+  by *col_cnt without checking for integer overflow. @orbisai0security
 * `rrdtool dump` now uses a numeric UTC offset (`%z`, e.g. `+0900`) instead
   of the locale timezone name (`%Z`) in XML comments. Locale timezone names
   can be encoded in a non-UTF-8 encoding (e.g. CJK locales), which breaks
