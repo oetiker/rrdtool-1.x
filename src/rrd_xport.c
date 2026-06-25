@@ -319,20 +319,20 @@ static int rrd_xport_fn(
     }
 
     /* a list of referenced gdes */
-    ref_list = (int *) malloc(sizeof(int) * (*col_cnt));
+    ref_list = (int *) calloc(*col_cnt, sizeof(int));
     if (ref_list == NULL)
         return -1;
 
     /* a list to save pointers to the column's legend entry */
     /* this is a return value! */
-    legend_list = (char **) malloc(sizeof(char *) * (*col_cnt));
+    legend_list = (char **) calloc(*col_cnt, sizeof(char *));
     if (legend_list == NULL) {
         free(ref_list);
         return -1;
     }
 
     /* lets find the step size we have to use for xport */
-    step_list = (long *) malloc(sizeof(long) * ((*col_cnt) + 1));
+    step_list = (long *) calloc((*col_cnt) + 1, sizeof(long));
     step_list_ptr = step_list;
     j = 0;
     for (i = 0; i < im->gdes_c; i++) {
@@ -877,8 +877,7 @@ static int rrd_xport_format_xmljson(
         }
         /* now output it */
         if (json) {
-            strncpy(dbuf, entry, sizeof(dbuf));
-            dbuf[sizeof(dbuf) - 1] = 0;
+            snprintf(dbuf, sizeof(dbuf), "%s", entry);
             escapeJSON(dbuf, sizeof(dbuf));
             addToBuffer(buffer, "      \"", 0);
             addToBuffer(buffer, dbuf, 0);
@@ -1249,7 +1248,7 @@ static int rrd_xport_format_addprints(
             break;
         case GF_COMMENT:
             if (json) {
-                strncpy(dbuf, im->gdes[i].legend, sizeof(dbuf));
+                snprintf(dbuf, sizeof(dbuf), "%s", im->gdes[i].legend);
                 escapeJSON(dbuf, sizeof(dbuf));
                 snprintf(buf, sizeof(buf),
                          ",\n        { \"comment\": \"%s\" }", dbuf);
