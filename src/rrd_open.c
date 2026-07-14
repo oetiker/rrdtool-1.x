@@ -629,13 +629,19 @@ rrd_file_t *rrd_open(
 #endif
 
     {
-        unsigned long row_cnt = 0;
+        size_t    row_cnt = 0;
 
         size_t    value_cnt;
         size_t    correct_len;
 
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            row_cnt += rrd->rra_def[ui].row_cnt;
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
+            if (rrd_add_overflow(row_cnt,
+                                 (size_t) rrd->rra_def[ui].row_cnt,
+                                 &row_cnt)) {
+                rrd_set_error("'%s' header row count overflow", file_name);
+                goto out_close;
+            }
+        }
 
         /* row_cnt is the sum of attacker-controlled rra_def[].row_cnt, so the
          * data-section size can overflow size_t.  Compute it with overflow
