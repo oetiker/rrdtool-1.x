@@ -460,7 +460,14 @@ int rrd_fetch_fn(
 ** database is the one with time stamp (t+s) which means t to t+s.
 */
     *ds_cnt = rrd.stat_head->ds_cnt;
-    if (((*data) = (rrd_value_t*)malloc(*ds_cnt * rows * sizeof(rrd_value_t))) == NULL) {
+    if (*ds_cnt != 0 &&
+        (rows > (size_t) -1 / *ds_cnt ||
+         rows * *ds_cnt > (size_t) -1 / sizeof(rrd_value_t))) {
+        rrd_set_error("fetch data size overflow");
+        goto err_free_all_ds_namv;
+    }
+    if (((*data) = (rrd_value_t *) malloc(*ds_cnt * rows *
+                                          sizeof(rrd_value_t))) == NULL) {
         rrd_set_error("malloc fetch data area");
         goto err_free_all_ds_namv;
     }
