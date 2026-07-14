@@ -174,8 +174,12 @@ rrd_file_t *rrd_open(
     size_t    newfile_size = 0;
 
     if ((rdwr & RRD_LOCK_MASK) == RRD_LOCK_DEFAULT) {
+        int lock_flags = _rrd_lock_flags(_rrd_lock_default());
+
+        if (lock_flags < 0)
+            return NULL;
         rdwr &= ~RRD_LOCK_MASK;
-        rdwr |= _rrd_lock_flags(_rrd_lock_default());
+        rdwr |= lock_flags;
     }
 
     /* Are we creating a new file? */
@@ -1301,6 +1305,8 @@ int _rrd_lock_flags(int extra_flags)
     case RRD_FLAGS_LOCKING_MODE_DEFAULT:
         return RRD_LOCK_DEFAULT;
     default:
-        abort();
+        rrd_set_error("invalid internal locking mode %d",
+                      extra_flags & RRD_FLAGS_LOCKING_MODE_MASK);
+        return -1;
     }
 }
