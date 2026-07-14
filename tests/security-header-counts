@@ -2,6 +2,10 @@
 
 . $(dirname $0)/functions
 
+# This test mutates the local RRD file and is not meaningful through the
+# rrdcached transport variants of the test suite.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
 # The on-disk format stores these counters as unsigned long.  The crafted
 # values below exercise the LP64 layout used by the supported Unix builds.
 test "$(getconf LONG_BIT)" = 64 || exit 77
