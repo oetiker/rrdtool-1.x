@@ -2244,7 +2244,7 @@ static int handle_request_fetch(
          t <= parsed.end_tm; t += parsed.step, j++) {
         add_response_info(sock, "%10lu:", (unsigned long) t);
         for (i = 0; i < parsed.field_cnt; i++) {
-            unsigned int idx = j * parsed.ds_cnt + parsed.field_idx[i];
+            size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
 
             add_response_info(sock, " %0.17e", parsed.data[idx]);
         }
@@ -2274,6 +2274,10 @@ static int handle_request_fetchbin(
         return 0;
 
     /* create a buffer for the full binary line */
+    if (parsed.steps > (size_t) -1 / sizeof(double)) {
+        free_fetch_parsed(&parsed);
+        return send_response(sock, RESP_ERR, "Fetch range is too large\n");
+    }
     dbuffer_size = sizeof(double) * parsed.steps;
     dbuffer = calloc(1, dbuffer_size);
     if (!dbuffer) {
@@ -2292,7 +2296,7 @@ static int handle_request_fetchbin(
     for (i = 0; i < parsed.field_cnt; i++) {
         for (t = parsed.start_tm + parsed.step, j = 0;
              t <= parsed.end_tm; t += parsed.step, j++) {
-            unsigned int idx = j * parsed.ds_cnt + parsed.field_idx[i];
+            size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
 
             dbuffer[j] = parsed.data[idx];
         }
