@@ -24,3 +24,19 @@ fi
 grep -q "invalid ds_cnt/rra_cnt" ${BUILD}.out || \
   fail 1 "header ds_cnt overflow was not diagnosed"
 report "reject ds_cnt overflow"
+
+$RRDTOOL create ${BUILD}-rows.rrd --start 0 --step 60 \
+  DS:value:GAUGE:120:U:U \
+  RRA:AVERAGE:0.5:1:2 RRA:AVERAGE:0.5:1:2 || fail create-rows
+
+cp ${BUILD}-rows.rrd ${BUILD}-rows-overflow.rrd
+perl -0777 -pi -e '
+  substr($_, 272, 8, pack("Q<", 0x8000000000000000));
+  substr($_, 392, 8, pack("Q<", 0x8000000000000000));
+' ${BUILD}-rows-overflow.rrd
+if $RRDTOOL info ${BUILD}-rows-overflow.rrd >${BUILD}.out 2>&1; then
+  fail 1 "cumulative RRA row-count overflow was accepted"
+fi
+grep -q "header row count overflow" ${BUILD}.out || \
+  fail 1 "cumulative RRA row-count overflow was not diagnosed"
+report "reject cumulative RRA row-count overflow"
