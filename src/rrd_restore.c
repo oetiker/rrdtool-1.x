@@ -469,6 +469,11 @@ static int parse_tag_rra_database(
             break;        
     }
     
+    if (cur_rra_def->row_cnt == 0) {
+        rrd_set_error("parse_tag_rra_database: RRA has zero rows");
+        return -1;
+    }
+
     /* Set the RRA pointer to a random location */
     cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
     

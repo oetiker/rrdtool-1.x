@@ -1,0 +1,29 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/$(basename $0)
+
+$RRDTOOL create ${BUILD}.rrd --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 || fail create
+$RRDTOOL update ${BUILD}.rrd 900000060:1 900000120:2 900000180:3 || fail update
+$RRDTOOL dump ${BUILD}.rrd ${BUILD}.xml || fail dump
+
+# Strip every <row> out of the RRA's <database> block, so restore sees
+# <database></database> with zero rows for that RRA.
+sed '/<row>/d' ${BUILD}.xml > ${BUILD}-crafted.xml
+
+$RRDTOOL restore ${BUILD}-crafted.xml ${BUILD}-out.rrd >${BUILD}.out 2>&1
+RC=$?
+
+# A signal death (e.g. SIGFPE div-by-zero) shows up as rc >= 128; make sure
+# restore rejects the zero-row RRA cleanly instead of crashing.
+if [ "$RC" -ge 128 ]; then
+  fail 1 "restore crashed on zero-row RRA (rc=$RC)"
+fi
+if [ "$RC" -eq 0 ]; then
+  fail 1 "restore accepted a zero-row RRA"
+fi
+grep -q "RRA has zero rows" ${BUILD}.out || \
+  fail 1 "zero-row RRA was not diagnosed cleanly"
+report "reject zero-row RRA on restore"
