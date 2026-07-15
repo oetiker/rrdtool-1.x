@@ -1,0 +1,105 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# add_response_info() (src/rrd_daemon.c) formats each "extra" response
+# line into a fixed RRD_CMD_MAX-sized stack buffer with vsnprintf(), then
+# used vsnprintf()'s return value as the byte count for wbuf_append().
+# vsnprintf() returns the length that *would* have been written, not the
+# length actually written, so a formatted line longer than the buffer
+# made wbuf_append() read past the end of that stack buffer and send the
+# overrun bytes to the client. PENDING echoes back queued UPDATE values
+# verbatim via "%s\n", so one oversized UPDATE value reaches the bug.
+#
+# This talks to rrdcached's line protocol directly over its unix socket
+# (rather than through the rrdtool CLI) so the raw response bytes can be
+# inspected for the overrun.
+
+command -v python3 >/dev/null 2>&1 || exit 77
+[ -n "$MSYSTEM" ] && exit 77
+
+# AF_UNIX socket paths are capped at ~104 bytes on BSD/macOS; a checkout
+# under a long path (e.g. a deep CI workspace, or macOS's $TMPDIR) can
+# push run_cached's default $BUILDDIR/cached/<test>-rrdcached.sock past
+# that. Point the cache base dir at a short directory under /tmp instead.
+SHORTBASE=$(mktemp -d /tmp/rc-bounds.XXXXXX) || fail 1 "mktemp failed"
+mkdir -p "$SHORTBASE/cached"
+BUILDDIR=$SHORTBASE
+
+RRDCACHED_SOCK=unix
+run_cached
+trap 'stop_cached; rm -rf "$SHORTBASE"' EXIT
+
+BUILD=$BUILDDIR/$(basename $0)
+RELFILE=$(basename $0).rrd
+
+$RRDTOOL create ${BUILD}.rrd --start 0 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail 1 create
+
+SOCKPATH=${RRDCACHED_ADDRESS#unix:}
+
+python3 - "$SOCKPATH" "$RELFILE" <<'PYEOF'
+import socket
+import sys
+
+sockpath, relfile = sys.argv[1], sys.argv[2]
+
+# RRD_CMD_MAX (src/rrd_client.h); add_response_info()'s stack buffer.
+RRD_CMD_MAX = 4096
+
+ts_colon = "9999999999:"
+value = ts_colon + "A" * 6000  # well past RRD_CMD_MAX once formatted
+
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(5)
+s.connect(sockpath)
+
+buf = b""
+
+
+def read_line():
+    global buf
+    while b"\n" not in buf:
+        chunk = s.recv(65536)
+        if not chunk:
+            break
+        buf += chunk
+    line, _, buf = buf.partition(b"\n")
+    return line
+
+
+s.sendall(("UPDATE " + relfile + " " + value + "\n").encode())
+update_resp = read_line()
+if not update_resp.startswith(b"0 "):
+    print("unexpected UPDATE response: %r" % update_resp)
+    sys.exit(1)
+
+s.sendall(("PENDING " + relfile + "\n").encode())
+read_line()  # status line, e.g. "1 updates pending"
+
+# gather whatever else the daemon sends until it stops
+s.settimeout(0.5)
+body = buf
+try:
+    while True:
+        chunk = s.recv(65536)
+        if not chunk:
+            break
+        body += chunk
+except socket.timeout:
+    pass
+
+expected = (ts_colon + "A" * (RRD_CMD_MAX - 1 - len(ts_colon))).encode()
+
+print("PENDING body length: %d (expected %d)" % (len(body), len(expected)))
+if body != expected:
+    print("PENDING response was not clamped to RRD_CMD_MAX - overrun bytes leaked")
+    sys.exit(1)
+
+print("PENDING response correctly bounded")
+PYEOF
+STATUS=$?
+
+stop_cached
+test $STATUS -eq 0 || fail 1 "oversized PENDING response was not bounded to the formatting buffer"
+report "PENDING response to an oversized cached UPDATE value is bounded"
