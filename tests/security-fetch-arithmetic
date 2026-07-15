@@ -1,0 +1,41 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# The size arithmetic being tested is computed in size_t, so this only
+# means something on the LP64 layout used by the supported Unix builds.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD=$BUILDDIR/$(basename $0)
+
+# rrd_fetch_fn() sizes its result buffer as ds_cnt * rows * sizeof(double).
+# A single RRA with pdp_cnt 1 makes the resolved step 1 second, so a wide
+# --start/--end range turns directly into a huge row count.  With enough
+# data sources the ds_cnt * rows * 8 product wraps size_t before the fix,
+# handing malloc() a tiny buffer that the fetch loop then writes far past.
+#
+# The DS count (128) and --end value below are chosen so that
+# rows * ds_cnt * 8 is just over 2^64 (one wrap), landing on a ~100KB
+# allocation instead of the ~140PB actually needed -- small enough that
+# malloc() succeeds and the overflow is immediately reachable.
+DS_ARGS=$(perl -e 'print join(" ", map { "DS:d$_:GAUGE:2:0:100" } (0..127))')
+
+eval "\$RRDTOOL create ${BUILD}.rrd --start 900000000 --step 1 \
+  $DS_ARGS RRA:AVERAGE:0.5:1:5" || fail create
+
+UPDATE_ARGS=$(perl -e 'print "900000001:" . join(":", map { 1 } (0..127))')
+$RRDTOOL update ${BUILD}.rrd $UPDATE_ARGS || fail update
+
+if $RRDTOOL fetch ${BUILD}.rrd AVERAGE \
+    --start 900000000 --end 18014399409482082 --resolution 1 \
+    >${BUILD}.out 2>&1; then
+  fail 1 "fetch size overflow was accepted"
+fi
+grep -q "fetch data size overflow" ${BUILD}.out || \
+  fail 1 "fetch size overflow was not diagnosed"
+report "reject fetch data size overflow"
+
+# a normal fetch on the same file still works
+$RRDTOOL fetch ${BUILD}.rrd AVERAGE --start 900000000 --end 900000005 \
+  >${BUILD}.out 2>&1 || fail 1 "normal fetch broken by overflow guard"
+report "normal fetch still works"
