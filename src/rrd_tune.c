@@ -623,6 +623,9 @@ static int set_windowarg(
     for (i = 0; i < rrd->stat_head->ds_cnt; i++) {
         cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + i;
         erase_violations(rrd, cdp_idx, rra_idx);
+        if (rrd_test_error()) {
+            return -1;
+        }
     }
     return 0;
 }
