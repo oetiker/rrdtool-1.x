@@ -162,6 +162,10 @@ AC_ARG_ENABLE(static-programs,
      esac],[staticprogs=no])
 AM_CONDITIONAL(STATIC_PROGRAMS,[test "x$staticprogs" = "xyes"])
 
+AC_ARG_ENABLE(fuzzing,AS_HELP_STRING([--enable-fuzzing],[build libFuzzer harnesses (requires clang)]),
+[],[enable_fuzzing=no])
+AM_CONDITIONAL(BUILD_FUZZERS,[test "x$enable_fuzzing" != "xno"])
+
 
 CONFIGURE_PART(Audit Compilation Environment)
 
@@ -1109,6 +1113,7 @@ AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([bindings/lua/Makefile])
+AC_CONFIG_FILES([fuzz/Makefile])
 AC_CONFIG_FILES([Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])
