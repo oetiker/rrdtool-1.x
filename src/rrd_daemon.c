@@ -2224,35 +2224,57 @@ static int handle_request_fetch(
     if (status != 0)
         return 0;
 
-    add_response_info(sock, "FlushVersion: %lu\n", 1);
-    add_response_info(sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
-    add_response_info(sock, "End: %lu\n", (unsigned long) parsed.end_tm);
-    add_response_info(sock, "Step: %lu\n", parsed.step);
+    /* add_response_info() returns non-zero when the write buffer can't grow
+     * (out of memory).  Once that happens the response is already truncated,
+     * so stop building it and return the error: the connection layer closes
+     * the socket rather than send a partial result. */
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1)))
+        goto out;
+    if ((status = add_response_info(sock, "Start: %lu\n",
+                                    (unsigned long) parsed.start_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "End: %lu\n",
+                                    (unsigned long) parsed.end_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
+        goto out;
 
     /* Add list of DS names */
-    add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt);
-    add_response_info(sock, "DSName: ");
+    if ((status = add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt)))
+        goto out;
+    if ((status = add_response_info(sock, "DSName: ")))
+        goto out;
     for (i = 0; i < parsed.field_cnt; i++) {
-        add_response_info(sock, (i == 0 ? "%s" : " %s"),
-                          parsed.ds_namv[parsed.field_idx[i]]);
+        if ((status = add_response_info(sock, (i == 0 ? "%s" : " %s"),
+                                        parsed.ds_namv[parsed.field_idx[i]])))
+            goto out;
     }
-    add_response_info(sock, "\n");
+    if ((status = add_response_info(sock, "\n")))
+        goto out;
 
     /* Add the actual data */
     assert(parsed.step > 0);
     for (t = parsed.start_tm + parsed.step, j = 0;
          t <= parsed.end_tm; t += parsed.step, j++) {
-        add_response_info(sock, "%10lu:", (unsigned long) t);
+        if ((status = add_response_info(sock, "%10lu:", (unsigned long) t)))
+            goto out;
         for (i = 0; i < parsed.field_cnt; i++) {
             size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
 
-            add_response_info(sock, " %0.17e", parsed.data[idx]);
+            if ((status = add_response_info(sock, " %0.17e",
+                                            parsed.data[idx])))
+                goto out;
         }
-        add_response_info(sock, "\n");
+        if ((status = add_response_info(sock, "\n")))
+            goto out;
     }                   /* for (t) */
     free_fetch_parsed(&parsed);
 
     return (send_response(sock, RESP_OK, "Success\n"));
+
+  out:
+    free_fetch_parsed(&parsed);
+    return status;
 }                       /* }}} int handle_request_fetch */
 
 static int handle_request_fetchbin(
@@ -2281,16 +2303,26 @@ static int handle_request_fetchbin(
     dbuffer_size = sizeof(double) * parsed.steps;
     dbuffer = calloc(1, dbuffer_size);
     if (!dbuffer) {
+        free_fetch_parsed(&parsed);
         return (send_response(sock, RESP_ERR, "Failed memory allocation\n"));
     }
 
     assert(parsed.step > 0);
 
-    add_response_info(sock, "FlushVersion: %lu\n", 1);
-    add_response_info(sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
-    add_response_info(sock, "End: %lu\n", (unsigned long) parsed.end_tm);
-    add_response_info(sock, "Step: %lu\n", parsed.step);
-    add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt);
+    /* as in handle_request_fetch(): stop and return the error if the write
+     * buffer can't grow, rather than emit a truncated binary response. */
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1)))
+        goto out;
+    if ((status = add_response_info(sock, "Start: %lu\n",
+                                    (unsigned long) parsed.start_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "End: %lu\n",
+                                    (unsigned long) parsed.end_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
+        goto out;
+    if ((status = add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt)))
+        goto out;
 
     /* now iterate the parsed fields */
     for (i = 0; i < parsed.field_cnt; i++) {
@@ -2301,11 +2333,12 @@ static int handle_request_fetchbin(
             dbuffer[j] = parsed.data[idx];
         }
 
-        add_binary_response_info(sock,
+        if ((status = add_binary_response_info(sock,
                                  "DSName-",
                                  parsed.ds_namv[parsed.field_idx[i]],
                                  dbuffer, parsed.steps, sizeof(double)
-            );
+            )))
+            goto out;
     }
 
     free_fetch_parsed(&parsed);
@@ -2313,6 +2346,11 @@ static int handle_request_fetchbin(
 
     return (send_response(sock, RESP_OK_BIN, "%i Success\n",
                           parsed.field_cnt + 5));
+
+  out:
+    free_fetch_parsed(&parsed);
+    free(dbuffer);
+    return status;
 }                       /* }}} int handle_request_fetchbin */
 
 /* we came across a "WROTE" entry during journal replay.
