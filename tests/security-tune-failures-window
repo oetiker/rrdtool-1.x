@@ -2,6 +2,13 @@
 
 . $(dirname $0)/functions
 
+# rrdtool routes through RRDCACHED_ADDRESS when it's set, and the test
+# harness's own compat shim doesn't rewrite paths for tune ("rrdcached
+# does not support tune", see tests/functions) -- the crafted file lives
+# outside the daemon's base directory, so tune fails with "No such file
+# or directory" rather than exercising the check being tested here.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
 # window_len is stored as an on-disk unsigned long; the crafted value below
 # exercises the LP64 rra_def_t layout used by the supported Unix builds.
 test "$(getconf LONG_BIT)" = 64 || exit 77
