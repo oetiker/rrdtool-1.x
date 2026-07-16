@@ -408,6 +408,7 @@ static int parse_tag_rra_database(
     rra_ptr_t *cur_rra_ptr;
     unsigned int total_row_cnt;
     int       status;
+    int       saw_end = 0;
     int       i;
     xmlChar *element;
     unsigned int start_row_cnt;
@@ -455,7 +456,8 @@ static int parse_tag_rra_database(
         } /* if (xmlStrcasecmp(element,"row")) */
         else {
             if ( xmlStrcasecmp(element,(const xmlChar *)"/database") == 0){
-                xmlFree(element);                
+                xmlFree(element);
+                saw_end = 1;
                 break;
             }
             else {
@@ -469,26 +471,24 @@ static int parse_tag_rra_database(
             break;
     }
 
-    /* The loop above can also end because get_xml_element() itself hit a
+    /* A row that failed to parse still went through the realloc/row_cnt++
+     * above, so total_row_cnt/cur_rra_def->row_cnt no longer agree with how
+     * much of rrd->rrd_value is actually valid.  Rotating rows below assumes
+     * a fully-parsed, consistent database, so bail out on any error. */
+    if (status != 0)
+        return status;
+
+    /* The loop can also end because get_xml_element() itself hit a
      * read/parse error (or true EOF without ever seeing </database>) --
-     * that path returns NULL straight out of the while condition, so it
-     * never reaches the "status != 0" check below and is otherwise
-     * silently treated as if </database> had been found normally. Reject
-     * it explicitly instead of falling through.
-     *
-     * Either way, a row that failed to parse still went through the
-     * realloc/row_cnt++ above, so total_row_cnt/cur_rra_def->row_cnt no
-     * longer agree with how much of rrd->rrd_value is actually valid.
-     * Rotating rows below assumes a fully-parsed, consistent database,
-     * so bail out here instead of running that arithmetic against a
-     * stale row count. */
-    if (element == NULL) {
+     * that path returns NULL straight out of the while condition, leaving
+     * status untouched, so it would otherwise be treated as if </database>
+     * had been found normally.  saw_end is only set on the real </database>
+     * exit, so reject anything else explicitly. */
+    if (!saw_end) {
         if (rrd_test_error() == 0)
             rrd_set_error("parse_tag_rra_database: unexpected end of file");
         return -1;
     }
-    if (status != 0)
-        return status;
 
     /* Set the RRA pointer to a random location */
     cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
