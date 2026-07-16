@@ -14,9 +14,9 @@ BUILD=$BUILDDIR/$(basename $0)
 # through to the row-rotation memcpy/memmove using a row count that no
 # longer matched how much of rrd_value was actually valid, reading past
 # the end of the buffer.
-cp $(dirname $0)/security-restore-malformed-row.xml ${BUILD}.xml || fail copy-fixture
+FIXTURE=$(dirname $0)/security-restore-malformed-row.xml
 
-$RRDTOOL restore -f ${BUILD}.xml ${BUILD}-out.rrd >${BUILD}.out 2>&1
+$RRDTOOL restore -f ${FIXTURE} ${BUILD}-out.rrd >${BUILD}.out 2>&1
 RESTORE_RC=$?
 if [ "$RESTORE_RC" -eq 0 ]; then
   fail 1 "restore of malformed row XML was accepted"
