@@ -223,19 +223,26 @@ rrd_file_t *rrd_open(
 
     /* Are we creating a new file? */
     if (rdwr & RRD_CREAT) {
-        unsigned long row_cnt = 0;
+        size_t    row_cnt = 0;
         size_t    header_len, value_cnt, data_len;
 
         header_len = rrd_get_header_size(rrd);
-
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            row_cnt += rrd->rra_def[ui].row_cnt;
 
         /* ds_cnt/rra_cnt/row_cnt are supplied by the caller (e.g. rrdtool
          * create arguments) rather than parsed from a file, but the same
          * "sizeof(record) * count" arithmetic can still wrap size_t given
          * an absurd combination of DS/RRA counts, so guard it exactly like
-         * the read-path computation further down in this function. */
+         * the read-path computation further down in this function -- the
+         * row_cnt sum itself can wrap before the multiplications ever run. */
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
+            if (rrd_add_overflow(row_cnt,
+                                 (size_t) rrd->rra_def[ui].row_cnt,
+                                 &row_cnt)) {
+                rrd_set_error("'%s' describes an impossibly large database",
+                              file_name);
+                return NULL;
+            }
+
         if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
             rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &data_len) ||
             rrd_add_overflow(header_len, data_len, &newfile_size)) {
