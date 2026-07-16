@@ -464,11 +464,32 @@ static int parse_tag_rra_database(
                 status = -1;
             }
         }
-        xmlFree(element);        
+        xmlFree(element);
         if (status != 0)
-            break;        
+            break;
     }
-    
+
+    /* The loop above can also end because get_xml_element() itself hit a
+     * read/parse error (or true EOF without ever seeing </database>) --
+     * that path returns NULL straight out of the while condition, so it
+     * never reaches the "status != 0" check below and is otherwise
+     * silently treated as if </database> had been found normally. Reject
+     * it explicitly instead of falling through.
+     *
+     * Either way, a row that failed to parse still went through the
+     * realloc/row_cnt++ above, so total_row_cnt/cur_rra_def->row_cnt no
+     * longer agree with how much of rrd->rrd_value is actually valid.
+     * Rotating rows below assumes a fully-parsed, consistent database,
+     * so bail out here instead of running that arithmetic against a
+     * stale row count. */
+    if (element == NULL) {
+        if (rrd_test_error() == 0)
+            rrd_set_error("parse_tag_rra_database: unexpected end of file");
+        return -1;
+    }
+    if (status != 0)
+        return status;
+
     /* Set the RRA pointer to a random location */
     cur_rra_ptr->cur_row = rrd_random() % cur_rra_def->row_cnt;
     
