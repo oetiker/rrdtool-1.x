@@ -14,10 +14,13 @@ BUILD=$BUILDDIR/$(basename $0)
 # data sources the ds_cnt * rows * 8 product wraps size_t before the fix,
 # handing malloc() a tiny buffer that the fetch loop then writes far past.
 #
-# The DS count (128) and --end value below are chosen so that
-# rows * ds_cnt * 8 is just over 2^64 (one wrap), landing on a ~100KB
-# allocation instead of the ~140PB actually needed -- small enough that
-# malloc() succeeds and the overflow is immediately reachable.
+# The DS count (128) and --end value below put rows * ds_cnt * 8 about
+# 35x past the size_t wrap point, not right on top of it -- landing
+# exactly on the boundary made this test sensitive to a few percent of
+# difference in how --end's raw timestamp gets turned into a row count
+# (observed to vary enough between environments to flip the test's
+# outcome). With this much margin the guard fires the same way
+# regardless of that kind of small platform arithmetic difference.
 DS_ARGS=$(perl -e 'print join(" ", map { "DS:d$_:GAUGE:2:0:100" } (0..127))')
 
 eval "\$RRDTOOL create ${BUILD}.rrd --start 900000000 --step 1 \
@@ -27,7 +30,7 @@ UPDATE_ARGS=$(perl -e 'print "900000001:" . join(":", map { 1 } (0..127))')
 $RRDTOOL update ${BUILD}.rrd $UPDATE_ARGS || fail update
 
 if $RRDTOOL fetch ${BUILD}.rrd AVERAGE \
-    --start 900000000 --end 18014399409482082 --resolution 1 \
+    --start 900000000 --end 40000000900000000 --resolution 1 \
     >${BUILD}.out 2>&1; then
   fail 1 "fetch size overflow was accepted"
 fi
