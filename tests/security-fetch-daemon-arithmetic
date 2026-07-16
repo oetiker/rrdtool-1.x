@@ -2,6 +2,12 @@
 
 . $(dirname $0)/functions
 
+# This test starts and talks to its own private rrdcached instance over
+# a dedicated socket; running it nested inside the outer harness's own
+# daemon-transport styles conflicts with that setup rather than
+# exercising it (same reasoning as security-header-counts).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
 # The size arithmetic being tested is computed in size_t, so this only
 # means something on the LP64 layout used by the supported Unix builds.
 test "$(getconf LONG_BIT)" = 64 || exit 77

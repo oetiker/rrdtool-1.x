@@ -2,6 +2,12 @@
 
 . $(dirname $0)/functions
 
+# rrdtool routes through RRDCACHED_ADDRESS when it's set, and the crafted
+# file lives outside the daemon's base directory, so fetch would fail
+# with "No such file or directory" rather than exercising the overflow
+# guard under test (same reasoning as security-header-counts).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
 # The size arithmetic being tested is computed in size_t, so this only
 # means something on the LP64 layout used by the supported Unix builds.
 test "$(getconf LONG_BIT)" = 64 || exit 77
