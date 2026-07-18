@@ -240,6 +240,7 @@ static void PrintUsage(
            "\trrdtool xport [-s|--start seconds] [-e|--end seconds]\n"
            "\t\t[-m|--maxrows rows]\n" "\t\t[--step seconds]\n"
            "\t\t[-t|--showtime]\n"
+           "\t\t[-Z|--use-nan-for-all-missing-data]\n"
            "\t\t[--enumds] [--json]\n"
            "\t\t[-d|--daemon address]\n"
            "\t\t[DEF:vname=rrd:ds-name:CF]\n"

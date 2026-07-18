@@ -1,0 +1,17 @@
+{ "about": "RRDtool graph JSON output",
+  "meta": {
+    "start": 1300000200,
+    "end": 1300001400,
+    "step": 600,
+    "legend": [
+      "dv",
+      "noval",
+      "wh"
+          ]
+     },
+  "data": [
+    [ null, null, null ],
+    [ -5.4883500e-03, null, 3.6845819e-02 ],
+    [ 0.0000000e+00, null, 3.6293297e-02 ]
+  ]
+}
