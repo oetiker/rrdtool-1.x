@@ -2228,7 +2228,7 @@ static int handle_request_fetch(
      * (out of memory).  Once that happens the response is already truncated,
      * so stop building it and return the error: the connection layer closes
      * the socket rather than send a partial result. */
-    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1)))
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
         goto out;
     if ((status = add_response_info(sock, "Start: %lu\n",
                                     (unsigned long) parsed.start_tm)))
@@ -2311,7 +2311,7 @@ static int handle_request_fetchbin(
 
     /* as in handle_request_fetch(): stop and return the error if the write
      * buffer can't grow, rather than emit a truncated binary response. */
-    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1)))
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
         goto out;
     if ((status = add_response_info(sock, "Start: %lu\n",
                                     (unsigned long) parsed.start_tm)))
