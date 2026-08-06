@@ -2633,21 +2633,53 @@ int draw_horizontal_grid(
                                     (double) im->ygrid_scale.labfact;
 
                                 if (MaxY < 10 || fabs(right_step) < 1) {
-                                    snprintf(graph_label_right,
-                                             sizeof graph_label_right,
-                                             "%5.1f %s", sval,
-                                             second_axis_symb);
+                                    if (im->right_axis_percentage) {
+                                        if (sval >= 0 && sval <= 105) {
+                                            snprintf(graph_label_right,
+                                                     sizeof graph_label_right,
+                                                     "%5.1f %s", sval,
+                                                     second_axis_symb);
+                                        } else {
+                                            graph_label_right[0] = '\0';
+                                        }
+                                    } else {
+                                        snprintf(graph_label_right,
+                                                 sizeof graph_label_right,
+                                                 "%5.1f %s", sval,
+                                                 second_axis_symb);
+                                    }
                                 } else {
-                                    snprintf(graph_label_right,
-                                             sizeof graph_label_right,
-                                             "%5.0f %s", sval,
-                                             second_axis_symb);
+                                    if (im->right_axis_percentage) {
+                                        if (sval >= 0 && sval <= 105) {
+                                            snprintf(graph_label_right,
+                                                     sizeof graph_label_right,
+                                                     "%5.1f %s", sval,
+                                                     second_axis_symb);
+                                        } else {
+                                            graph_label_right[0] = '\0';
+                                        }
+                                    } else {
+                                        snprintf(graph_label_right,
+                                                 sizeof graph_label_right,
+                                                 "%5.0f %s", sval,
+                                                 second_axis_symb);
+                                    }
                                 }
                             }
                         } else {
-                            snprintf(graph_label_right,
-                                     sizeof graph_label_right,
-                                     im->second_axis_format, sval, "");
+                            if (im->right_axis_percentage) {
+                                if (sval >= 0 && sval <= 105) {
+                                    snprintf(graph_label_right,
+                                             sizeof graph_label_right,
+                                             im->second_axis_format, sval, "");
+                                } else {
+                                    graph_label_right[0] = '\0';
+                                }
+                            } else {
+                                snprintf(graph_label_right,
+                                         sizeof graph_label_right,
+                                         im->second_axis_format, sval, "");
+                            }
                         }
                         break;
                     case VALUE_FORMATTER_TIMESTAMP:
@@ -3287,7 +3319,7 @@ int grid_paint(
                  im->graph_col[GRC_FONT],
                  im->text_prop[TEXT_PROP_UNIT].font_desc,
                  im->tabwidth,
-                 RRDGRAPH_YLEGEND_ANGLE,
+                 RRDGRAPH_YLEGEND_ANGLE + 180,
                  GFX_H_CENTER, GFX_V_CENTER, im->second_axis_legend);
     }
 
@@ -4927,6 +4959,7 @@ void rrd_graph_init(
     im->prt_c = 0;
     im->rigid = 0;
     im->allow_shrink = 0;
+    im->right_axis_percentage = 0;
     im->rendered_image_size = 0;
     im->rendered_image = NULL;
     im->slopemode = 0;
@@ -5096,6 +5129,7 @@ void rrd_graph_options(
         {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
         {"allow-shrink",       1015, OPTPARSE_NONE},
         {"utc",                1016, OPTPARSE_NONE},
+        {"right-axis-percentage", 1017, OPTPARSE_NONE},
         {0}
 };
 /* *INDENT-ON* */
@@ -5455,6 +5489,9 @@ void rrd_graph_options(
             break;
         case 1016:
             im->extra_flags |= FORCE_UTC_TIME;
+            break;
+        case 1017:
+            im->right_axis_percentage = 1;
             break;
         case 'z':
             im->lazy = 1;

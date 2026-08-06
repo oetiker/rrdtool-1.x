@@ -300,6 +300,7 @@ typedef struct image_desc_t {
     int       rigid;    /* do not expand range even with
                            values outside */
     int       allow_shrink; /* less "rigid" --rigid */
+    int       right_axis_percentage; /* percentage scale */
     ygrid_scale_t ygrid_scale;  /* calculated y axis grid info */
     int       gridfit;  /* adjust y-axis range etc so all
                            grindlines falls in integer pixel values */
