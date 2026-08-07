@@ -125,6 +125,7 @@ Bugfixes
 * Fix compilation on illumos @hadfl
 * Python2.3 is deprecated and therefore, the Python bindings should use Python3 as default @pticon
 * Fix issue where RRDtool detects a LINE or AREA with a constant numeric value as being exportable
+* Fix "Fontconfig error: failed to read configuration file."
 * Fix broken argc overflow check in rrdcached tune handler that rejected all tune commands @somethingwithproof
 * Harden rrdcached pid file parsing and daemon options with strtol validation @somethingwithproof
 * Add NULL, bounds, and zero-division safety guards in xport, graph, and graph_helper @somethingwithproof

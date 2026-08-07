@@ -4776,6 +4776,9 @@ rrd_info_t *rrd_graph_v(
     int argc,
     const char **argv)
 {
+	if (!FcInit()) {
+		fprintf(stderr, "Can't init font config\n");
+	}
     image_desc_t im;
     rrd_info_t *grinfo;
     struct optparse options;
