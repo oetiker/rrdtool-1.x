@@ -28,3 +28,21 @@ if [ -e ${BUILD}-out.rrd ]; then
   fail 1 "restore left a partial output file behind after rejecting malformed input"
 fi
 report "reject malformed row tag without corrupting memory"
+
+# Cover the distinct path where XML parsing reaches EOF without an explicit
+# </database> element and without entering the loop body's status exit.
+sed '/<\/database>/,$d' $(dirname $0)/tune1-testorg.dump \
+  >${BUILD}-truncated.xml
+$RRDTOOL restore -f ${BUILD}-truncated.xml ${BUILD}-eof.rrd \
+  >${BUILD}-eof.out 2>&1
+RESTORE_RC=$?
+if [ "$RESTORE_RC" -eq 0 ]; then
+  fail 1 "restore accepted XML without a database end tag"
+fi
+if [ "$RESTORE_RC" -ge 128 ]; then
+  fail 1 "restore crashed on truncated XML"
+fi
+if [ -e ${BUILD}-eof.rrd ]; then
+  fail 1 "restore left output after rejecting truncated XML"
+fi
+report "reject database without an end tag"
