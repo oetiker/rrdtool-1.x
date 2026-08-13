@@ -1284,6 +1284,13 @@ int _rrd_lock_from_opt(int *out_flags, const char *opt)
  */
 int _rrd_lock_flags(int extra_flags)
 {
+    static const int lock_flags[] = {
+        RRD_LOCK_DEFAULT,
+        RRD_LOCK_NONE,
+        RRD_LOCK_BLOCK,
+        RRD_LOCK_TRY
+    };
+
     /* Due to legacy reasons, we have to map this manually.
      *
      * E.g. RRD_LOCK_DEFAULT (which might be used by deprecated direct calls
@@ -1291,16 +1298,5 @@ int _rrd_lock_flags(int extra_flags)
      * must be 0 because not all users of the updatex api might have been
      * updated yet.
      */
-    switch (extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) {
-    case RRD_FLAGS_LOCKING_MODE_NONE:
-        return RRD_LOCK_NONE;
-    case RRD_FLAGS_LOCKING_MODE_TRY:
-        return RRD_LOCK_TRY;
-    case RRD_FLAGS_LOCKING_MODE_BLOCK:
-        return RRD_LOCK_BLOCK;
-    case RRD_FLAGS_LOCKING_MODE_DEFAULT:
-        return RRD_LOCK_DEFAULT;
-    default:
-        abort();
-    }
+    return lock_flags[(extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) >> 7];
 }

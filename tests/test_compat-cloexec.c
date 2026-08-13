@@ -1,5 +1,6 @@
 #include <compat-cloexec.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -66,4 +67,18 @@ int main(void) {
 
 	f = _rrd_fopen("/dev/null", "a+be");
 	check_file(f, O_RDWR | O_APPEND, true, __LINE__);
+
+    errno = 0;
+    f = _rrd_fopen("/dev/null", "rrrrrrrrrrrrrrrrrrrrrrrrr");
+    if (f != NULL)
+        fail("oversized _rrd_fopen() mode did not fail", __LINE__);
+    if (errno != EINVAL)
+        fail("oversized _rrd_fopen() mode did not set EINVAL", __LINE__);
+
+    errno = 0;
+    f = _rrd_fopen("/dev/null", "z");
+    if (f != NULL)
+        fail("unknown _rrd_fopen() mode did not fail", __LINE__);
+    if (errno != EINVAL)
+        fail("unknown _rrd_fopen() mode did not set EINVAL", __LINE__);
 }
