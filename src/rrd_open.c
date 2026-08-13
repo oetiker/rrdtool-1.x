@@ -174,12 +174,8 @@ rrd_file_t *rrd_open(
     size_t    newfile_size = 0;
 
     if ((rdwr & RRD_LOCK_MASK) == RRD_LOCK_DEFAULT) {
-        int lock_flags = _rrd_lock_flags(_rrd_lock_default());
-
-        if (lock_flags < 0)
-            return NULL;
         rdwr &= ~RRD_LOCK_MASK;
-        rdwr |= lock_flags;
+        rdwr |= _rrd_lock_flags(_rrd_lock_default());
     }
 
     /* Are we creating a new file? */
@@ -1288,6 +1284,13 @@ int _rrd_lock_from_opt(int *out_flags, const char *opt)
  */
 int _rrd_lock_flags(int extra_flags)
 {
+    static const int lock_flags[] = {
+        RRD_LOCK_DEFAULT,
+        RRD_LOCK_NONE,
+        RRD_LOCK_BLOCK,
+        RRD_LOCK_TRY
+    };
+
     /* Due to legacy reasons, we have to map this manually.
      *
      * E.g. RRD_LOCK_DEFAULT (which might be used by deprecated direct calls
@@ -1295,18 +1298,5 @@ int _rrd_lock_flags(int extra_flags)
      * must be 0 because not all users of the updatex api might have been
      * updated yet.
      */
-    switch (extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) {
-    case RRD_FLAGS_LOCKING_MODE_NONE:
-        return RRD_LOCK_NONE;
-    case RRD_FLAGS_LOCKING_MODE_TRY:
-        return RRD_LOCK_TRY;
-    case RRD_FLAGS_LOCKING_MODE_BLOCK:
-        return RRD_LOCK_BLOCK;
-    case RRD_FLAGS_LOCKING_MODE_DEFAULT:
-        return RRD_LOCK_DEFAULT;
-    default:
-        rrd_set_error("invalid internal locking mode %d",
-                      extra_flags & RRD_FLAGS_LOCKING_MODE_MASK);
-        return -1;
-    }
+    return lock_flags[(extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) >> 7];
 }
