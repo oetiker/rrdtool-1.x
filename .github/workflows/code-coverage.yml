@@ -57,3 +57,39 @@ jobs:
         (cd src && gcov .libs/*.gcno)
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6
+
+  fuzz:
+    name: Fuzz harness coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y autopoint build-essential clang llvm libtool-bin \
+                                libpango1.0-dev libxml2-dev gettext
+
+    - name: Build fuzz harness
+      run: |
+        ./bootstrap
+        ./configure --enable-fuzzing CC=clang \
+                    CFLAGS='-O1 -g -fprofile-instr-generate -fcoverage-mapping' \
+                    LDFLAGS='-fprofile-instr-generate -fcoverage-mapping'
+        make
+
+    - name: Exercise seed corpus
+      run: |
+        LLVM_PROFILE_FILE='open-%p.profraw' \
+          fuzz/rrd_open_fuzzer -runs=500 fuzz/corpus
+        llvm-profdata merge -sparse ./*.profraw -o fuzz.profdata
+        llvm-cov export -format=lcov \
+          -instr-profile=fuzz.profdata fuzz/rrd_open_fuzzer \
+          >fuzz-coverage.info
+
+    - name: Upload fuzz coverage to Codecov
+      uses: codecov/codecov-action@v6
+      with:
+        files: fuzz-coverage.info
+        flags: fuzz
