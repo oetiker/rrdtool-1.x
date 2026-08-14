@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.10.3 Copyright by Tobi Oetiker, 1997-2026
+ * RRDtool 1.11.0 Copyright by Tobi Oetiker, 1997-2026
  *****************************************************************************
  * rrd_tool.c  Startup wrapper
  *****************************************************************************/
@@ -159,8 +159,11 @@ static void PrintUsage(
            "\t\t[--left-axis-format format]\n"
            "\t\t[-y|--y-grid y-axis grid and label]\n"
            "\t\t[-v|--vertical-label string] [-w|--width pixels]\n"
+           "\t\t[--vertical-label-angle degrees]\n"
            "\t\t[--right-axis scale:shift] [--right-axis-label label]\n"
            "\t\t[--right-axis-format format]\n"
+           "\t\t[--right-axis-label-angle degrees]\n"
+           "\t\t[--right-axis-range min:max]\n"
            "\t\t[-h|--height pixels] [-o|--logarithmic]\n"
            "\t\t[-u|--upper-limit value] [-z|--lazy]\n"
            "\t\t[-l|--lower-limit value] [-r|--rigid]\n"

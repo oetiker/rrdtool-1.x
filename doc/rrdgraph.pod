@@ -96,6 +96,16 @@ separated into multiple lines using <br/> or \n
 
 A vertical string placed at the left hand of the graph.
 
+[B<--vertical-label-angle> I<degrees>]
+
+Rotation of the B<--vertical-label> text, in degrees, counter clockwise.
+The default is set at compile time with the C<RRDGRAPH_YLEGEND_ANGLE>
+configure variable and is C<90>, which makes the label read from the
+bottom up. Use C<270> to make it read from the top down.
+
+Only the space needed for an upright label is reserved next to the graph,
+so angles other than C<90> and C<270> may overlap their surroundings.
+
 
 =head2 Size
 
@@ -301,6 +311,33 @@ Note that for linear graphs, SI notation is used by default.
 A second axis will be drawn to the right of the graph. It is tied to the
 left axis via the scale and shift parameters. You can also define a label
 for the right axis.
+
+[B<--right-axis-label-angle> I<degrees>]
+
+Rotation of the B<--right-axis-label> text, in degrees, counter clockwise.
+Defaults to the same value as B<--vertical-label-angle>, so both labels
+read from the bottom up. Use C<270> to make the right hand label read from
+the top down, mirroring the left one.
+
+[B<--right-axis-range> I<min>B<:>I<max>]
+
+Only label the right axis where its value lies between I<min> and I<max>.
+Either end may be left empty to leave that direction unbounded, so
+C<0:> suppresses labels below zero and C<:100> those above one hundred.
+
+This is useful when the right axis carries a bounded quantity, a
+percentage say, while the left axis does not. Since the right axis borrows
+its grid line positions from the left axis, it would otherwise be labelled
+with values such as C<130 %> or C<-20 %> whenever the two ranges do not
+line up.
+
+Note that only the I<label> is suppressed. The grid lines belong to the
+left axis and are drawn regardless, so a limited right axis will have
+unlabelled grid lines above or below its range.
+
+The range is compared against the value before any SI magnitude factor is
+applied, that is against the number as scaled and shifted by
+B<--right-axis>, not against the digits that end up printed.
 
 [B<--right-axis-formatter> I<formatter-name>]
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * RRDtool 1.10.3 Copyright by Tobi Oetiker, 1997-2026
+ * RRDtool 1.11.0 Copyright by Tobi Oetiker, 1997-2026
  ****************************************************************************
  * rrd__graph.c  produce graphs from data in rrdfiles
  ****************************************************************************/
@@ -2471,6 +2471,21 @@ int calc_horizontal_grid(
     return 1;
 }
 
+/* Is value inside the range selected with --right-axis-range ? An
+   unset (DNAN) end of the range means unbounded in that direction. */
+static int second_axis_in_range(
+    image_desc_t *im,
+    double value)
+{
+    if (!isnan(im->second_axis_range_min)
+        && value < im->second_axis_range_min)
+        return 0;
+    if (!isnan(im->second_axis_range_max)
+        && value > im->second_axis_range_max)
+        return 0;
+    return 1;
+}
+
 int draw_horizontal_grid(
     image_desc_t
     *im)
@@ -2609,6 +2624,12 @@ int draw_horizontal_grid(
                     double    sval =
                         im->ygrid_scale.gridstep * (double) i *
                         im->second_axis_scale + im->second_axis_shift;
+                    /* --right-axis-range is checked against the unscaled
+                       value, before any SI magnitude factor is applied.
+                       Only the label is suppressed: the grid line itself
+                       belongs to the left axis and stays where it is. */
+                    int       show_label = second_axis_in_range(im, sval);
+
                     switch (im->second_axis_formatter) {
                     case VALUE_FORMATTER_NUMERIC:
                         if (im->second_axis_format == NULL
@@ -2694,12 +2715,13 @@ int draw_horizontal_grid(
                             ("Unsupported right axis value formatter");
                         return -1;
                     }
-                    gfx_text(im,
-                             X1 + 7, Y0,
-                             im->graph_col[GRC_FONT],
-                             im->text_prop[TEXT_PROP_AXIS].font_desc,
-                             im->tabwidth, 0.0, GFX_H_LEFT, GFX_V_CENTER,
-                             graph_label_right);
+                    if (show_label)
+                        gfx_text(im,
+                                 X1 + 7, Y0,
+                                 im->graph_col[GRC_FONT],
+                                 im->text_prop[TEXT_PROP_AXIS].font_desc,
+                                 im->tabwidth, 0.0, GFX_H_LEFT, GFX_V_CENTER,
+                                 graph_label_right);
                 }
 
                 gfx_text(im,
@@ -3276,7 +3298,7 @@ int grid_paint(
                  im->graph_col[GRC_FONT],
                  im->text_prop[TEXT_PROP_UNIT].font_desc,
                  im->tabwidth,
-                 RRDGRAPH_YLEGEND_ANGLE, GFX_H_CENTER, GFX_V_CENTER,
+                 im->ylegend_angle, GFX_H_CENTER, GFX_V_CENTER,
                  im->ylegend);
 
     }
@@ -3287,7 +3309,7 @@ int grid_paint(
                  im->graph_col[GRC_FONT],
                  im->text_prop[TEXT_PROP_UNIT].font_desc,
                  im->tabwidth,
-                 RRDGRAPH_YLEGEND_ANGLE,
+                 im->second_axis_legend_angle,
                  GFX_H_CENTER, GFX_V_CENTER, im->second_axis_legend);
     }
 
@@ -4951,11 +4973,15 @@ void rrd_graph_init(
     im->ygridstep = DNAN;
     im->yimg = 0;
     im->ylegend = NULL;
+    im->ylegend_angle = RRDGRAPH_YLEGEND_ANGLE;
     im->second_axis_scale = 0;  /* 0 disables it */
     im->second_axis_shift = 0;  /* no shift by default */
     im->second_axis_legend = NULL;
+    im->second_axis_legend_angle = RRDGRAPH_YLEGEND_ANGLE;
     im->second_axis_format = NULL;
     im->second_axis_formatter = VALUE_FORMATTER_NUMERIC;
+    im->second_axis_range_min = DNAN;   /* no label range limit */
+    im->second_axis_range_max = DNAN;
     im->primary_axis_format = NULL;
     im->primary_axis_formatter = VALUE_FORMATTER_NUMERIC;
     im->yorigin = 0;
@@ -5096,6 +5122,9 @@ void rrd_graph_options(
         {"right-axis-formatter",1014, OPTPARSE_REQUIRED},
         {"allow-shrink",       1015, OPTPARSE_NONE},
         {"utc",                1016, OPTPARSE_NONE},
+        {"vertical-label-angle",1017, OPTPARSE_REQUIRED},
+        {"right-axis-label-angle",1018, OPTPARSE_REQUIRED},
+        {"right-axis-range",   1019, OPTPARSE_REQUIRED},
         {0}
 };
 /* *INDENT-ON* */
@@ -5377,6 +5406,59 @@ void rrd_graph_options(
             } else {
                 rrd_set_error("Unknown right axis formatter");
                 return;
+            }
+            break;
+        case 1017:     /* rotation of the left axis legend */
+            if (rrd_strtodbl(poptions->optarg, 0, &(im->ylegend_angle),
+                             "option --vertical-label-angle") != 2) {
+                return;
+            }
+            break;
+        case 1018:     /* rotation of the right axis legend */
+            if (rrd_strtodbl(poptions->optarg, 0,
+                             &(im->second_axis_legend_angle),
+                             "option --right-axis-label-angle") != 2) {
+                return;
+            }
+            break;
+        case 1019:     /* limit the range labelled on the right axis */
+            {
+                const char *colon = strchr(poptions->optarg, ':');
+                char      min_str[64];
+                size_t    min_len;
+
+                if (colon == NULL) {
+                    rrd_set_error
+                        ("invalid right-axis-range format expected min:max");
+                    return;
+                }
+                min_len = colon - poptions->optarg;
+                if (min_len >= sizeof min_str) {
+                    rrd_set_error("right-axis-range min is too long");
+                    return;
+                }
+                memcpy(min_str, poptions->optarg, min_len);
+                min_str[min_len] = '\0';
+                /* an empty min or max leaves that end unbounded */
+                if (min_str[0] != '\0'
+                    && rrd_strtodbl(min_str, 0,
+                                    &(im->second_axis_range_min),
+                                    "option --right-axis-range") != 2) {
+                    return;
+                }
+                if (colon[1] != '\0'
+                    && rrd_strtodbl(colon + 1, 0,
+                                    &(im->second_axis_range_max),
+                                    "option --right-axis-range") != 2) {
+                    return;
+                }
+                if (!isnan(im->second_axis_range_min)
+                    && !isnan(im->second_axis_range_max)
+                    && im->second_axis_range_min > im->second_axis_range_max) {
+                    rrd_set_error
+                        ("right-axis-range min must not be larger than max");
+                    return;
+                }
             }
             break;
         case 'v':

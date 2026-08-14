@@ -6,7 +6,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
 	create-from-template-1 dcounter1 vformatter1 xport1 xport2 xport3 list1 \
-	pdp-calc1 graph3 graph4
+	pdp-calc1 graph3 graph4 graph5
 
 EXTRA_DIST = Makefile.am \
 	functions $(TESTS) \
@@ -19,7 +19,7 @@ EXTRA_DIST = Makefile.am \
 	tune1-testa-mod1.dump tune1-testa-mod2.dump tune1-testorg.dump \
 	tune2-testa-mod1.dump tune2-testorg.dump \
 	valgrind-supressions dcounter1 dcounter1.output graph1.output graph2.output vformatter1 rpn1.output rpn2.output \
-	xport1.json.output xport1.xml.output xport2 xport3 graph3 graph4 \
+	xport1.json.output xport1.xml.output xport2 xport3 graph3 graph4 graph5 \
 	pdp-calc1 pdp-calc1-1-avg-60.output pdp-calc1-1-avg-300.output pdp-calc1-1-max-300.output
 
 # NB: AM_TESTS_ENVIRONMENT not available until automake 1.12
@@ -30,7 +30,7 @@ AM_TESTS_ENVIRONMENT = \
 
 CLEANFILES = *.rrd \
 	ct.out dur.out graph1.output.out graph2.output.out \
-	graph4.pdf \
+	graph4.pdf graph5-full.pdf graph5-clipped.pdf graph5-angle.pdf \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
 	rpn1.out rpn1.output.out

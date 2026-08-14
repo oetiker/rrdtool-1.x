@@ -275,6 +275,7 @@ typedef struct image_desc_t {
     struct gfx_color_t graph_col[__GRC_END__];  /* real colors for the graph */
     text_prop_t text_prop[TEXT_PROP_LAST];  /* text properties */
     char      *ylegend; /* legend along the yaxis */
+    double    ylegend_angle;    /* rotation of the yaxis legend in degrees */
     char      *title;   /* title for graph */
     char      *watermark;   /* watermark for graph */
     int       draw_x_grid;  /* no x-grid at all */
@@ -287,8 +288,11 @@ typedef struct image_desc_t {
     double    second_axis_scale; /* relative to the first axis (0 to disable) */
     double    second_axis_shift; /* how much is it shifted vs the first axis */
     char      *second_axis_legend; /* label to put on the second axis */
+    double    second_axis_legend_angle; /* rotation of that label in degrees */
     char      *second_axis_format; /* format for the numbers on the scond axis */
     enum value_formatter_en second_axis_formatter;  /* How to format axis values */
+    double    second_axis_range_min;    /* suppress second axis labels outside */
+    double    second_axis_range_max;    /* this range, DNAN for unbounded */
     char      *primary_axis_format; /* format for the numbers on the primary axis */
     enum value_formatter_en primary_axis_formatter; /* How to format axis values */
     double    ygridstep;    /* user defined step for y grid */
