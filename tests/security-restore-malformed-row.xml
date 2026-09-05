@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rrd SYSTEM "https://oss.oetiker.ch/rrdtool/rrdtool.dtd">
+<!-- Round Robin Database Dump -->
+<rrd>
+	<version>0003</version>
+	<step>300</step> <!-- Seconds -->
+	<lastupdate>900000600</lastupdate> <!-- 1998-07-09 09:10:00 -0700 -->
+
+	<ds>
+		<name> in </name>
+		<type> COUNTER </type>
+		<minimal_heartbeat>600</minimal_heartbeat>
+		<min>0.0000000000e+00</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>15</last_ds>
+		<value>0.0000000000e+00</value>
+		<unknown_sec> 0 </unknown_sec>
+	</ds>
+
+	<ds>
+		<name> out </name>
+		<type> COUNTER </type>
+		<minimal_heartbeat>600</minimal_heartbeat>
+		<min>0.0000000000e+00</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>25</last_ds>
+		<value>0.0000000000e+00</value>
+		<unknown_sec> 0 </unknown_sec>
+	</ds>
+
+	<ds>
+		<name> temp </name>
+		<type> GAUGE </type>
+		<minimal_heartbeat>600</minimal_heartbeat>
+		<min>NaN</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>6.1</last_ds>
+		<value>0.0000000000e+00</value>
+		<unknown_sec> 0 </unknown_sec>
+	</ds>
+
+	<!-- Round Robin Archives -->
+	<rra>
+		<cf>AVERAGE</cf>
+		<pdp_per_row>1</pdp_per_row> <!-- 300 seconds -->
+
+		<params>
+		<xff>5.0000000000e-01</xff>
+		</params>
+		<cdp_prep>
+			<ds>
+			<primary_value>1.6666666667e-02</primary_value>
+			<secondary_value>0.0000000000e+00</secondary_value>
+			<value>NaN</value>
+			<unknown_datapoints>0</unknown_datapoints>
+			</ds>
+			<ds>
+			<primary_value>1.6666666667e-02</primary_value>
+			<secondary_value>0.0000000000e+00</secondary_value>
+			<value>NaN</value>
+			<unknown_datapoints>0</unknown_datapoints>
+			</ds>
+			<ds>
+			<primary_value>6.1000000000e+00</primary_value>
+			<secondary_value>0.0000000000e+00</secondary_value>
+			<value>NaN</value>
+			<unknown_datapoints>0</unknown_datapoints>
+			</ds>
+		</cdp_prep>
+		<database>
+			<!-- 1998-07-09 07:15:00 -0700 / 899993700 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 05:20:00 -0700 / 899994000 --> <row><v>NaN>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:25:00 -0700 / 899997900 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:30:00 -0700 / 899998200 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:35:00 -0700 / 899998500 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:40:00 -0700 / 899998800 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:45:00 -0700 / 899999100 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:50:00 -0700 / 899999400 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>p>
+		<database>
+			<!-- 1998-07-09 07:15:00 -0700 / 899993700 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:20:00 -0700 / 899994000 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:25:00 -0700 / 899994300 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:30:00 -0700 / 899994600 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:35:00 -0700 / 899994900 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:40:00 -0700 / 899995200 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:45:00 -0700 / 899995500 --> <row><vANaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:50:00 -0700 / 899995800 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 07:55:00 -0700 / 899996100 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:00:00 -0700 / 899996400 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:05:00 -0700 / 899996700 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:10:00 -0700 / 899997000 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:15:00 -0700 / 899997300 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:20:00 -0700 / 899997600 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:25:00 -0700 / 899997900 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:30:00 -0700 / 899998200 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:35:00 -0700 / 899998500 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:40:00 -0700 / 899998800 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:45:00 -0700 / 899999100 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 08:50:00 -0700 / 899999400 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 0999-07-09 08:55:00 -0700 / 899999700 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 09:00:00 -0700 / 900000000 --> <row><v>NaN</v><v>NaN</v><v>NaN</v></row>
+			<!-- 1998-07-09 09:05:00 -0700 / 900000300 --> <row><v>NaN</v><v>NaN</v><v>5.5000000000e+00</v></row>
+			<!-- 1998-07-09 09:10:00 -0700 / 900000600 --> <row><v>1.6666666667e-02</v><v>1.6666666667e-02</v><v>6.1000000000e+00</v></row>
+		</database>
+	</rra>
+</rrd>

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/$(basename $0)
+
+# Fixture found by the rrd_restore libFuzzer harness: a malformed <row>
+# element (a dropped '>' leaves the XML reader unable to find the end of
+# a <v> start tag) causes get_xml_element() to hit a genuine parse error
+# and return NULL on a later read, rather than immediately at the point
+# of the malformed tag. parse_tag_rra_database()'s parsing loop exits via
+# its while condition going false in that case, bypassing the loop body's
+# own "status != 0" error check entirely -- so the function used to fall
+# through to the row-rotation memcpy/memmove using a row count that no
+# longer matched how much of rrd_value was actually valid, reading past
+# the end of the buffer.
+FIXTURE=$(dirname $0)/security-restore-malformed-row.xml
+
+$RRDTOOL restore -f ${FIXTURE} ${BUILD}-out.rrd >${BUILD}.out 2>&1
+RESTORE_RC=$?
+if [ "$RESTORE_RC" -eq 0 ]; then
+  fail 1 "restore of malformed row XML was accepted"
+fi
+if [ "$RESTORE_RC" -ge 128 ]; then
+  fail 1 "restore crashed (exit $RESTORE_RC, signal $((RESTORE_RC - 128))) instead of rejecting cleanly"
+fi
+if [ -e ${BUILD}-out.rrd ]; then
+  fail 1 "restore left a partial output file behind after rejecting malformed input"
+fi
+report "reject malformed row tag without corrupting memory"
+
+# Cover the distinct path where XML parsing reaches EOF without an explicit
+# </database> element and without entering the loop body's status exit.
+sed '/<\/database>/,$d' $(dirname $0)/tune1-testorg.dump \
+  >${BUILD}-truncated.xml
+$RRDTOOL restore -f ${BUILD}-truncated.xml ${BUILD}-eof.rrd \
+  >${BUILD}-eof.out 2>&1
+RESTORE_RC=$?
+if [ "$RESTORE_RC" -eq 0 ]; then
+  fail 1 "restore accepted XML without a database end tag"
+fi
+if [ "$RESTORE_RC" -ge 128 ]; then
+  fail 1 "restore crashed on truncated XML"
+fi
+if [ -e ${BUILD}-eof.rrd ]; then
+  fail 1 "restore left output after rejecting truncated XML"
+fi
+report "reject database without an end tag"
