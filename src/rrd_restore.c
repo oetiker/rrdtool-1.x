@@ -10,6 +10,30 @@
  *************************************************************************** */
 
 #include "rrd_tool.h"
+
+static int restore_mul_overflow(size_t a, size_t b, size_t *out)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_mul_overflow(a, b, out);
+#else
+    if (b != 0 && a > (size_t) -1 / b)
+        return 1;
+    *out = a * b;
+    return 0;
+#endif
+}
+
+static int restore_add_overflow(size_t a, size_t b, size_t *out)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_add_overflow(a, b, out);
+#else
+    if (a > (size_t) -1 - b)
+        return 1;
+    *out = a + b;
+    return 0;
+#endif
+}
 #include "rrd_rpncalc.h"
 #include "rrd_restore.h"
 #include "unused.h"
@@ -406,18 +430,23 @@ static int parse_tag_rra_database(
 {
     rra_def_t *cur_rra_def;
     rra_ptr_t *cur_rra_ptr;
-    unsigned int total_row_cnt;
+    size_t    total_row_cnt;
     int       status;
     int       i;
     xmlChar *element;
-    unsigned int start_row_cnt;
-    int       ds_cnt;
+    size_t    start_row_cnt;
+    size_t    ds_cnt;
     
     ds_cnt = rrd->stat_head->ds_cnt;
     
     total_row_cnt = 0;
     for (i = 0; i < (((int) rrd->stat_head->rra_cnt) - 1); i++)
-        total_row_cnt += rrd->rra_def[i].row_cnt;
+        if (restore_add_overflow(total_row_cnt,
+                                 (size_t) rrd->rra_def[i].row_cnt,
+                                 &total_row_cnt)) {
+            rrd_set_error("parse_tag_rra_database: row count overflow");
+            return -1;
+        }
 
     cur_rra_def = rrd->rra_def + i;
     cur_rra_ptr = rrd->rra_ptr + i;
@@ -428,13 +457,22 @@ static int parse_tag_rra_database(
         if (xmlStrcasecmp(element,(const xmlChar *)"row") == 0){
            rrd_value_t *temp;
            rrd_value_t *cur_rrd_value;
-           unsigned int total_values_count = rrd->stat_head->ds_cnt
-               * (total_row_cnt + 1);
+           size_t total_values_count;
+           size_t total_rows;
+           size_t total_values_bytes;
+
+            if (restore_add_overflow(total_row_cnt, 1, &total_rows) ||
+                restore_mul_overflow(ds_cnt, total_rows, &total_values_count) ||
+                restore_mul_overflow(sizeof(rrd_value_t), total_values_count,
+                                     &total_values_bytes)) {
+                rrd_set_error("parse_tag_rra_database: data size overflow");
+                status = -1;
+                break;
+            }
 
             /* Allocate space for the new values.. */
             temp = (rrd_value_t *) realloc(rrd->rrd_value,
-                                           sizeof(rrd_value_t) *
-                                           total_values_count);
+                                           total_values_bytes);
             if (temp == NULL) {
                 rrd_set_error("parse_tag_rra_database: realloc failed.");
                 status = -1;
@@ -502,9 +540,17 @@ static int parse_tag_rra_database(
      copy temp buffer to position after where we moved n to
      */
     
-    int a = cur_rra_def->row_cnt - cur_rra_ptr->cur_row - 1;
-    
-    rrd_value_t *temp = malloc(ds_cnt * sizeof(rrd_value_t) * a);
+    size_t a = (size_t) cur_rra_def->row_cnt -
+               (size_t) cur_rra_ptr->cur_row - 1;
+    size_t temp_count;
+
+    if (restore_mul_overflow(ds_cnt, a, &temp_count) ||
+        restore_mul_overflow(sizeof(rrd_value_t), temp_count, &temp_count)) {
+        rrd_set_error("parse_tag_rra: data size overflow");
+        return -1;
+    }
+
+    rrd_value_t *temp = malloc(temp_count);
     if (temp == NULL) {
         rrd_set_error("parse_tag_rra: malloc failed.");
         return -1;
