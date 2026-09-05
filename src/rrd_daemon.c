@@ -794,6 +794,12 @@ static int add_response_info(
         return -1;
     }
 
+    /* vsnprintf() returns the length that would have been written. Clamp
+     * that length before passing the buffer to wbuf_append(), otherwise a
+     * long formatted response makes wbuf_append() read past buffer. */
+    if ((size_t) len >= sizeof(buffer))
+        len = sizeof(buffer) - 1;
+
     return wbuf_append(sock, buffer, len);
 }                       /* }}} static int add_response_info */
 
