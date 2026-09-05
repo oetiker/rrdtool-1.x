@@ -1,0 +1,8 @@
+# build-generated files
+/rrd_open_fuzzer
+
+# libFuzzer artifacts from local runs
+/crash-*
+/leak-*
+/oom-*
+/timeout-*

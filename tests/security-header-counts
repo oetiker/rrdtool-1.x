@@ -1,0 +1,26 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# This test mutates the local RRD file and is not meaningful through the
+# rrdcached transport variants of the test suite.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+# The on-disk format stores these counters as unsigned long.  The crafted
+# values below exercise the LP64 layout used by the supported Unix builds.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD=$BUILDDIR/$(basename $0)
+
+$RRDTOOL create ${BUILD}-ds.rrd --start 0 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail create-ds
+
+cp ${BUILD}-ds.rrd ${BUILD}-ds-overflow.rrd
+perl -0777 -pi -e 'substr($_, 24, 8, pack("Q<", 0x2000000000000001))' \
+  ${BUILD}-ds-overflow.rrd
+if $RRDTOOL info ${BUILD}-ds-overflow.rrd >${BUILD}.out 2>&1; then
+  fail 1 "header ds_cnt overflow was accepted"
+fi
+grep -q "invalid ds_cnt/rra_cnt" ${BUILD}.out || \
+  fail 1 "header ds_cnt overflow was not diagnosed"
+report "reject ds_cnt overflow"

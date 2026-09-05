@@ -15,6 +15,10 @@ if BUILD_EXAMPLES
 SUBDIRS += examples
 endif
 
+if BUILD_FUZZERS
+SUBDIRS += fuzz
+endif
+
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
