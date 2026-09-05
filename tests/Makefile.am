@@ -6,7 +6,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
 	create-from-template-1 dcounter1 vformatter1 xport1 xport2 xport3 list1 \
-	pdp-calc1 graph3 graph4 graph5
+	pdp-calc1 graph3 graph4 graph5 graph-security
 
 EXTRA_DIST = Makefile.am \
 	functions $(TESTS) \
@@ -36,9 +36,13 @@ CLEANFILES = *.rrd \
 	rpn1.out rpn1.output.out
 
 check_PROGRAMS = \
-	compat-cloexec
+	compat-cloexec \
+	graph-security
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
 	${top_srcdir}/src/compat-cloexec.c \
 	${top_srcdir}/src/compat-cloexec.h
+
+graph_security_SOURCES = test_graph_security.c
+graph_security_LDADD = ${top_builddir}/src/librrd.la

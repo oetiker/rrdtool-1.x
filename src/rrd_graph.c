@@ -64,6 +64,27 @@
 #include "rrd_graph.h"
 #include "rrd_client.h"
 
+/* CDEF/VDEF result buffers are sized from a row count derived as
+ * (end - start) / step, where start/end come from --start/--end (or a
+ * DEF's own fetched range) and step can be as small as an RRA's native
+ * resolution.  A wide time range over a fine-grained RRA turns directly
+ * into a row count large enough for "row_cnt * sizeof(double)" to wrap
+ * size_t, so that arithmetic has to be range-checked before malloc(). */
+static int graph_mul_overflow(
+    size_t a,
+    size_t b,
+    size_t *out)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_mul_overflow(a, b, out);
+#else
+    if (b != 0 && a > (size_t) -1 / b)
+        return 1;
+    *out = a * b;
+    return 0;
+#endif
+}
+
 /* some constant definitions */
 
 
@@ -1285,13 +1306,25 @@ int data_calc(
             im->gdes[gdi].step = rrd_lcd(steparray);
             free(steparray);
 
-            if ((im->gdes[gdi].data = (rrd_value_t *)
-                 malloc(((im->gdes[gdi].end - im->gdes[gdi].start)
-                         / im->gdes[gdi].step)
-                        * sizeof(double))) == NULL) {
-                rrd_set_error("malloc im->gdes[gdi].data");
-                rpnstack_free(&rpnstack);
-                return -1;
+            {
+                size_t    cdef_rows = (im->gdes[gdi].end -
+                                       im->gdes[gdi].start)
+                    / im->gdes[gdi].step;
+                size_t    cdef_len;
+
+                if (graph_mul_overflow(cdef_rows, sizeof(double),
+                                       &cdef_len)) {
+                    rrd_set_error("CDEF '%s' covers an impossibly "
+                                  "large data range", im->gdes[gdi].vname);
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
+                if ((im->gdes[gdi].data =
+                     (rrd_value_t *) malloc(cdef_len)) == NULL) {
+                    rrd_set_error("malloc im->gdes[gdi].data");
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
             }
 
             /* Step through the new cdef results array and
@@ -6033,7 +6066,18 @@ int vdef_calc(
             dst->vf.never = 1;
             break;
         }
-        if ((array = (rrd_value_t *) malloc(steps * sizeof(double))) == NULL) {
+        {
+            size_t    arraylen;
+
+            if (graph_mul_overflow((size_t) steps, sizeof(double),
+                                   &arraylen)) {
+                rrd_set_error("VDEF '%s' covers an impossibly large "
+                              "data range", dst->vname);
+                return -1;
+            }
+            array = (rrd_value_t *) malloc(arraylen);
+        }
+        if (array == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }
