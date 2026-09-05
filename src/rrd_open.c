@@ -68,12 +68,20 @@ DWORD     dwCreationDisposition = 0;
  * otherwise wrap size_t, pass the "> file_len" bounds check, and alias or
  * iterate past the mapped file.
  */
+#if defined(__has_builtin)
+#define RRD_HAVE_OVERFLOW_BUILTINS __has_builtin(__builtin_mul_overflow)
+#elif defined(__GNUC__) && __GNUC__ >= 5
+#define RRD_HAVE_OVERFLOW_BUILTINS 1
+#else
+#define RRD_HAVE_OVERFLOW_BUILTINS 0
+#endif
+
 static inline int rrd_mul_overflow(
     size_t a,
     size_t b,
     size_t *out)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#if RRD_HAVE_OVERFLOW_BUILTINS
     return __builtin_mul_overflow(a, b, out);
 #else
     *out = a * b;
@@ -86,7 +94,7 @@ static inline int rrd_add_overflow(
     size_t b,
     size_t *out)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#if RRD_HAVE_OVERFLOW_BUILTINS
     return __builtin_add_overflow(a, b, out);
 #else
     *out = a + b;
