@@ -1,0 +1,58 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# rrdtool routes through RRDCACHED_ADDRESS when it's set, and the test
+# harness's own compat shim doesn't rewrite paths for tune ("rrdcached
+# does not support tune", see tests/functions) -- the crafted file lives
+# outside the daemon's base directory, so tune fails with "No such file
+# or directory" rather than exercising the check being tested here.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+# window_len is stored as an on-disk unsigned long; the crafted value below
+# exercises the LP64 rra_def_t layout used by the supported Unix builds.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD=$BUILDDIR/$(basename $0)
+
+$RRDTOOL create ${BUILD}.rrd --start 0 --step 300 \
+  DS:val:GAUGE:600:U:U \
+  RRA:AVERAGE:0.5:1:100 \
+  RRA:HWPREDICT:100:0.1:0.0035:20 || fail create
+
+# rra[5] is the FAILURES RRA rrd_create derives from the HWPREDICT period.
+# Its cf_nam is a unique "FAILURES" marker in the file; window_len is the
+# 5th unival (index 4) in that rra_def_t's par[] array, i.e. 72 bytes past
+# the start of cf_nam (20-byte cf_nam padded to 24, + row_cnt + pdp_cnt).
+# rrd_tune's set_windowarg()/reset_aberrant_coefficients() feed window_len
+# straight into erase_violations(), which zeroes it into a fixed
+# MAX_CDP_PAR_EN-element scratch buffer -- an oversized value here used to
+# walk that buffer out of bounds.
+craft_window_len() {
+  cp ${BUILD}.rrd $1
+  perl -0777 -pi -e '
+    my $off = index($_, "FAILURES");
+    die "FAILURES cf_nam not found\n" if $off < 0;
+    substr($_, $off + 72, 8, pack("Q<", 60000));
+  ' $1
+}
+
+craft_window_len ${BUILD}-aberrant-reset.rrd
+$RRDTOOL tune --aberrant-reset val ${BUILD}-aberrant-reset.rrd \
+  >${BUILD}-aberrant-reset.out 2>&1
+if [ $? -eq 0 ]; then
+  fail 1 "tune --aberrant-reset accepted an out-of-range window_len"
+fi
+grep -q "window_len.*out of range" ${BUILD}-aberrant-reset.out || \
+  fail 1 "tune --aberrant-reset did not diagnose the out-of-range window_len"
+
+craft_window_len ${BUILD}-failure-threshold.rrd
+$RRDTOOL tune --failure-threshold 2 ${BUILD}-failure-threshold.rrd \
+  >${BUILD}-failure-threshold.out 2>&1
+if [ $? -eq 0 ]; then
+  fail 1 "tune --failure-threshold accepted an out-of-range window_len"
+fi
+grep -q "window_len.*out of range" ${BUILD}-failure-threshold.out || \
+  fail 1 "tune --failure-threshold did not diagnose the out-of-range window_len"
+
+report "reject out-of-range FAILURES window_len in rrd_tune"

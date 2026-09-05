@@ -381,12 +381,27 @@ int rrd_dump_cb_r(
             case CF_FAILURES:
             {
                 unsigned short vidx;
+                unsigned long window_len =
+                    rrd.rra_def[i].par[RRA_window_len].u_cnt;
                 char *violations_array = (char *) ((void *)
                     rrd.cdp_prep[i * rrd.stat_head->ds_cnt + ii].scratch);
+
+                /* window_len is read straight from the file and is only
+                 * bounded to MAX_FAILURES_WINDOW_LEN when it is set via
+                 * rrd_create/rrd_tune; a hand-crafted file can carry an
+                 * arbitrary value here, which would otherwise walk
+                 * violations_array (a fixed MAX_CDP_PAR_EN-element buffer)
+                 * out of bounds. */
+                if (window_len > MAX_FAILURES_WINDOW_LEN) {
+                    rrd_set_error("invalid RRA %u: window_len %lu out of range",
+                                  i, window_len);
+                    rrd_free(&rrd);
+                    rrd_close(rrd_file);
+                    return (-1);
+                }
+
                 CB_PUTS("\t\t\t<history>");
-                for (vidx = 0;
-                    vidx < rrd.rra_def[i].par[RRA_window_len].u_cnt;
-                    ++vidx) {
+                for (vidx = 0; vidx < window_len; ++vidx) {
                     CB_FMTS("%d", violations_array[vidx]);
                 }
                 CB_PUTS("</history>\n");
