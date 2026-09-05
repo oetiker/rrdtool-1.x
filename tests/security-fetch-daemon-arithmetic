@@ -1,0 +1,97 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# This test starts and talks to its own private rrdcached instance over
+# a dedicated socket; running it nested inside the outer harness's own
+# daemon-transport styles conflicts with that setup rather than
+# exercising it (same reasoning as security-header-counts).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+# The size arithmetic being tested is computed in size_t, so this only
+# means something on the LP64 layout used by the supported Unix builds.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+perl -MIO::Socket::UNIX -e 1 >/dev/null 2>&1 || exit 77
+
+DAEMON="$TOP_BUILDDIR/src/rrdcached"
+[ -x "$DAEMON" ] || exit 77
+
+BUILD=$BUILDDIR/$(basename $0)
+
+# rrdcached's FETCH/FETCHBIN commands take <start>/<end> as plain integers
+# handed straight to strtol(), unlike the rrdtool CLI which routes them
+# through rrd_parsetime()'s calendar handling. That makes a start/end span
+# near LONG_MAX directly reachable over the wire, no crafted RRD header or
+# oversized DS count needed: with a single DS and a 1-second-step RRA, the
+# same rows * ds_cnt * sizeof(double) product that rrd_fetch_fn() guards
+# against overflows with this one request.
+SOCK=$(mktemp -u /tmp/rrdcached-fetch-arith-XXXXXX).sock
+PIDFILE=${BUILD}.pid
+LOG=${BUILD}-cached.log
+
+cleanup() {
+  # A daemon caught by the bug under test is spinning in the fetch loop
+  # rather than blocked on I/O, so a plain SIGTERM may not stop it in time.
+  if [ -f "$PIDFILE" ]; then
+    CACHED_PID="$(cat "$PIDFILE")"
+    kill "$CACHED_PID" 2>/dev/null
+    for i in $(seq 1 20); do
+      kill -0 "$CACHED_PID" 2>/dev/null || break
+      sleep 0.1
+    done
+    kill -9 "$CACHED_PID" 2>/dev/null
+  fi
+  rm -f "$SOCK" "$PIDFILE"
+}
+trap cleanup EXIT
+
+$RRDTOOL create ${BUILD}.rrd --start 900000000 --step 1 \
+  DS:value:GAUGE:2:0:100 RRA:AVERAGE:0.5:1:5 || fail create
+
+$RRDTOOL update ${BUILD}.rrd 900000001:1 || fail update
+
+"$DAEMON" -p "$PIDFILE" -l "unix:$SOCK" -b "$(readlink -f -- "$BUILDDIR")" \
+  -B -o "$LOG" || fail 1 "rrdcached would not start"
+
+for i in $(seq 1 50); do
+  [ -S "$SOCK" ] && break
+  sleep 0.1
+done
+[ -S "$SOCK" ] || fail 1 "rrdcached did not open its listen socket"
+
+RESPONSE=$(perl -e '
+  use strict;
+  use warnings;
+  use IO::Socket::UNIX;
+  use IO::Select;
+
+  my ($sockpath, $cmd) = @ARGV;
+  my $sock = IO::Socket::UNIX->new(Peer => $sockpath, Type => SOCK_STREAM)
+    or die "connect failed: $!\n";
+  $sock->autoflush(1);
+  syswrite($sock, "$cmd\n") or die "write failed: $!\n";
+
+  my $sel = IO::Select->new($sock);
+  my $all = "";
+  my $deadline = time() + 15;
+  while (time() < $deadline) {
+    last unless $sel->can_read(1);
+    my $buf;
+    my $n = sysread($sock, $buf, 65536);
+    last if !defined($n) || $n == 0;
+    $all .= $buf;
+    last if $all =~ /\n/;
+  }
+  print $all eq "" ? "TIMEOUT\n" : $all;
+' "$SOCK" "FETCHBIN $(basename ${BUILD}.rrd) AVERAGE 900000000 2305843010113694050")
+
+case "$RESPONSE" in
+  *TIMEOUT*)
+    fail 1 "rrdcached did not respond to the oversized FETCHBIN request" ;;
+  *"fetch data size overflow"*)
+    : ;;
+  *)
+    fail 1 "unexpected rrdcached response: $RESPONSE" ;;
+esac
+report "reject FETCHBIN size overflow over the daemon protocol"
