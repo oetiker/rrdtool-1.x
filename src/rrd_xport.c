@@ -906,14 +906,6 @@ static int rrd_xport_format_xmljson(
         return -1;
     }
 
-    /* if we have got a trailing , then kill it */
-    if (buffer->data) {
-        if (buffer->data[buffer->len - 2] == ',') {
-            buffer->data[buffer->len - 2] = buffer->data[buffer->len - 1];
-            buffer->len--;
-        }
-    }
-
     /* end meta */
     if (json) {
         snprintf(buf, sizeof(buf), "     },\n");
@@ -1362,10 +1354,10 @@ static int rrd_xport_format_addprints(
     /* now add prints */
     if (prints.len) {
         if (json) {
-            snprintf(buf, sizeof(buf), "    \"%s\": [\n", "prints");
+            snprintf(buf, sizeof(buf), "    ,\"%s\": [\n", "prints");
             addToBuffer(buffer, buf, 0);
             addToBuffer(buffer, (char *) prints.data + 2, prints.len - 2);
-            addToBuffer(buffer, "\n        ],\n", 0);
+            addToBuffer(buffer, "\n        ]\n", 0);
         } else {
             snprintf(buf, sizeof(buf), "    <%s>\n", "prints");
             addToBuffer(buffer, buf, 0);
