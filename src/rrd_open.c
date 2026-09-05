@@ -637,18 +637,23 @@ rrd_file_t *rrd_open(
 #endif
 
     {
-        unsigned long row_cnt = 0;
-
+        size_t    row_cnt = 0;
         size_t    value_cnt;
         size_t    correct_len;
 
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            row_cnt += rrd->rra_def[ui].row_cnt;
+        /* rra_def[].row_cnt is read straight from an untrusted header, so the
+         * running sum wraps just as easily as the products derived from it.
+         * A sum that wrapped to a small value would sail through the checks
+         * below and leave correct_len under the real file length. */
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
+            if (rrd_add_overflow(row_cnt, rrd->rra_def[ui].row_cnt,
+                                 &row_cnt)) {
+                rrd_set_error("'%s' header describes an impossibly large database",
+                              file_name);
+                goto out_close;
+            }
+        }
 
-        /* row_cnt is the sum of attacker-controlled rra_def[].row_cnt, so the
-         * data-section size can overflow size_t.  Compute it with overflow
-         * checks so a crafted header cannot make correct_len wrap below the
-         * real file length. */
         if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
             rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &correct_len) ||
             rrd_add_overflow(rrd_file->header_len, correct_len, &correct_len)) {
