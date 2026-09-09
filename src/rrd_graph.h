@@ -1,13 +1,15 @@
 #ifndef RRD_GRAPH_H_DBEDBFB6C5844ED9BEA6242F879CA284
 #define RRD_GRAPH_H_DBEDBFB6C5844ED9BEA6242F879CA284
 
-#define y0 cairo_y0
-#define y1 cairo_y1
-#define index cairo_index
-
 /* this may configure __EXTENSIONS__ without which pango will fail to compile
    so load this early */
 #include "rrd_config.h"
+
+#ifdef HAVE_RRD_GRAPH
+
+#define y0 cairo_y0
+#define y1 cairo_y1
+#define index cairo_index
 
 #include <cairo.h>
 #ifdef CAIRO_HAS_PDF_SURFACE
@@ -22,6 +24,7 @@
 
 #include <pango/pangocairo.h>
 
+#endif
 
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
@@ -150,7 +153,9 @@ char* checkUnusedValues(parsedargs_t*);
 typedef struct text_prop_t {
     double    size;
     char      font[1024];
+#ifdef HAVE_RRD_GRAPH
     PangoFontDescription *font_desc;
+#endif
 } text_prop_t;
 
 
@@ -347,11 +352,13 @@ typedef struct image_desc_t {
     long      prt_c;    /* number of print elements */
     long      gdes_c;   /* number of graphics elements */
     graph_desc_t *gdes; /* points to an array of graph elements */
+#ifdef HAVE_RRD_GRAPH
     cairo_surface_t *surface;   /* graphics library */
     cairo_t  *cr;       /* drawing context */
     cairo_font_options_t *font_options; /* cairo font options */
     cairo_antialias_t graph_antialias;  /* antialiasing for the graph */
     PangoLayout *layout; /* the pango layout we use for writing fonts */
+#endif
     rrd_info_t *grinfo; /* root pointer to extra graph info */
     rrd_info_t *grinfo_current; /* pointing to current entry */
     GHashTable* gdef_map;  /* a map of all *def gdef entries for quick access */
@@ -571,7 +578,7 @@ void gfx_add_rect_fadey(
 void      gfx_close_path(
     image_desc_t *im);
 
-
+#ifdef HAVE_RRD_GRAPH
 /* create a text node */
 void      gfx_text(
     image_desc_t *im,
@@ -600,7 +607,7 @@ double    gfx_get_text_height(
     PangoFontDescription *font_desc,
     double tabwidth,
     char *text);
-
+#endif
 
 /* convert color */
 gfx_color_t gfx_hex_to_col(

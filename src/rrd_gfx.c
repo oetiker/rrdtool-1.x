@@ -315,19 +315,6 @@ void gfx_text(
 
 }
 
-/* convert color */
-struct gfx_color_t gfx_hex_to_col(
-    long unsigned int color)
-{
-    struct gfx_color_t gfx_color;
-
-    gfx_color.red = 1.0 / 255.0 * ((color & 0xff000000) >> (3 * 8));
-    gfx_color.green = 1.0 / 255.0 * ((color & 0x00ff0000) >> (2 * 8));
-    gfx_color.blue = 1.0 / 255.0 * ((color & 0x0000ff00) >> (1 * 8));
-    gfx_color.alpha = 1.0 / 255.0 * (color & 0x000000ff);
-    return gfx_color;
-}
-
 /* gridfit_lines */
 
 void gfx_line_fit(
