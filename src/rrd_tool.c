@@ -779,7 +779,6 @@ static int HandleInputLine(
             free(data);
         }
     } else if (strcmp("xport", argv[1]) == 0) {
-#ifdef HAVE_RRD_GRAPH
         time_t    start, end;
         unsigned long step, col_cnt;
         rrd_value_t *data;
@@ -793,10 +792,6 @@ static int HandleInputLine(
           free(legend_v);
           free(data);
         }
-#else
-        rrd_set_error
-            ("the instance of rrdtool has been compiled without graphics");
-#endif
     } else if (strcmp("graph", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
         char    **calcpr;
