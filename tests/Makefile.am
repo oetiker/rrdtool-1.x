@@ -1,4 +1,4 @@
-TESTS = modify1 modify2 modify3 modify4 modify5 \
+TESTS = modify1 modify2 modify3 modify4 modify5 modify6 \
 	tune1 tune2 graph1 graph2 rpn1 rpn2 \
 	rrdcreate \
 	compat-cloexec \
@@ -29,6 +29,7 @@ AM_TESTS_ENVIRONMENT = \
 	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;
 
 CLEANFILES = *.rrd \
+	modify6-testbefore.dump modify6-testafter.dump \
 	ct.out dur.out graph1.output.out graph2.output.out \
 	graph4.pdf graph5-full.pdf graph5-clipped.pdf graph5-angle.pdf \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
