@@ -94,3 +94,14 @@ script_tests += security-restore-zero-row-cnt security-restore-malformed-row
 EXTRA_DIST += security-restore-malformed-row.xml
 
 CLEANFILES += security-header-counts.out
+
+if HAVE_STATIC_LIBRRD
+if BUILD_RRDGRAPH
+check_PROGRAMS += graph-security
+TESTS += graph-security
+endif
+endif
+graph_security_SOURCES = test_graph_security.c
+# Exercise internal graph functions that are not exported by the shared library.
+graph_security_LDFLAGS = -static
+graph_security_LDADD = ${top_builddir}/src/librrd.la

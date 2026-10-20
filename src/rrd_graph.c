@@ -62,8 +62,15 @@
 #endif
 
 #include "rrd_graph.h"
+#include <stdint.h>
 #include "rrd_client.h"
 
+/* CDEF/VDEF result buffers are sized from a row count derived as
+ * (end - start) / step, where start/end come from --start/--end (or a
+ * DEF's own fetched range) and step can be as small as an RRA's native
+ * resolution.  A wide time range over a fine-grained RRA turns directly
+ * into a row count large enough for "row_cnt * sizeof(double)" to wrap
+ * size_t, so that arithmetic has to be range-checked before malloc(). */
 /* some constant definitions */
 
 
@@ -1123,6 +1130,7 @@ int data_calc(
 
     int       gdi;
     int       dataidx;
+    uintmax_t cdef_rows;
     long     *steparray, rpi;
     long     *steparray_tmp;    /* temp variable for realloc() */
     int       stepcnt;
@@ -1167,8 +1175,9 @@ int data_calc(
              */
             im->gdes[gdi].ds_cnt = 0;
             if (vdef_calc(im, gdi)) {
-                rrd_set_error("Error processing VDEF '%s'",
-                              im->gdes[gdi].vname);
+                if (!rrd_test_error())
+                    rrd_set_error("Error processing VDEF '%s'",
+                                  im->gdes[gdi].vname);
                 rpnstack_free(&rpnstack);
                 return -1;
             }
@@ -1285,27 +1294,52 @@ int data_calc(
             im->gdes[gdi].step = rrd_lcd(steparray);
             free(steparray);
 
-            if ((im->gdes[gdi].data = (rrd_value_t *)
-                 malloc(((im->gdes[gdi].end - im->gdes[gdi].start)
-                         / im->gdes[gdi].step)
-                        * sizeof(double))) == NULL) {
-                rrd_set_error("malloc im->gdes[gdi].data");
-                rpnstack_free(&rpnstack);
-                return -1;
+            {
+                size_t    cdef_len;
+                if (im->gdes[gdi].step == 0 ||
+                    im->gdes[gdi].end < im->gdes[gdi].start) {
+                    rrd_set_error("CDEF '%s' has an invalid data range",
+                                  im->gdes[gdi].vname);
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
+                cdef_rows = ((uintmax_t) im->gdes[gdi].end -
+                             (uintmax_t) im->gdes[gdi].start) /
+                    im->gdes[gdi].step;
+                if (im->gdes[gdi].step > INT_MAX ||
+                    cdef_rows > INT_MAX ||
+                    cdef_rows > (size_t) -1 / sizeof(rrd_value_t) ||
+                    im->gdes[gdi].end > LONG_MAX) {
+                    rrd_set_error("CDEF '%s' covers an impossibly "
+                                  "large data range", im->gdes[gdi].vname);
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
+                cdef_len = (size_t) cdef_rows * sizeof(rrd_value_t);
+                if ((im->gdes[gdi].data =
+                     (rrd_value_t *) malloc(cdef_len)) == NULL) {
+                    rrd_set_error("malloc im->gdes[gdi].data");
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
             }
 
             /* Step through the new cdef results array and
              * calculate the values
              */
-            for (now = im->gdes[gdi].start + im->gdes[gdi].step;
-                 now <= im->gdes[gdi].end; now += im->gdes[gdi].step) {
+            /* rpn_calc uses an int result index and a long timestamp. The
+             * bounds above cover both. Advance only for an existing row so
+             * the final iteration never adds a step beyond time_t's range. */
+            now = im->gdes[gdi].start;
+            for (dataidx = 0; (uintmax_t) dataidx < cdef_rows; dataidx++) {
+                now = (time_t) ((uintmax_t) now + im->gdes[gdi].step);
 
                 /* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
                  * in this case we are advancing by timesteps;
                  * we use the fact that time_t is a synonym for long
                  */
                 if (rpn_calc(rpnp, &rpnstack, (long) now,
-                             im->gdes[gdi].data, ++dataidx,
+                             im->gdes[gdi].data, dataidx,
                              im->gdes[gdi].step) == -1) {
                     /* rpn_calc sets the error string */
                     rpnstack_free(&rpnstack);
@@ -6016,7 +6050,18 @@ int vdef_calc(
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
 
-    steps = (src->end - src->start) / src->step;
+    if (src->step == 0 || src->end < src->start) {
+        rrd_set_error("VDEF '%s' has an invalid data range", dst->vname);
+        return -1;
+    }
+    {
+        uintmax_t count = ((uintmax_t) src->end - (uintmax_t) src->start) / src->step;
+        if (count > LONG_MAX || count > (size_t) -1 / sizeof(rrd_value_t)) {
+            rrd_set_error("VDEF '%s' covers an impossibly large data range", dst->vname);
+            return -1;
+        }
+        steps = (long) count;
+    }
 #if 0
     printf
         ("DEBUG: start == %lu, end == %lu, %lu steps\n",
@@ -6025,7 +6070,7 @@ int vdef_calc(
     switch (dst->vf.op) {
     case VDEF_PERCENT:{
         rrd_value_t *array;
-        int       field;
+        size_t    field;
 
         if (steps == 0) {
             dst->vf.val = DNAN;
@@ -6033,14 +6078,16 @@ int vdef_calc(
             dst->vf.never = 1;
             break;
         }
-        if ((array = (rrd_value_t *) malloc(steps * sizeof(double))) == NULL) {
+        /* steps was bounded against SIZE_MAX above. */
+        array = malloc((size_t) steps * sizeof(*array));
+        if (array == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }
         for (step = 0; step < steps; step++) {
             array[step] = data[step * src->ds_cnt];
         }
-        qsort(array, step, sizeof(double), vdef_percent_compar);
+        qsort(array, step, sizeof(rrd_value_t), vdef_percent_compar);
         field = round((dst->vf.param * (double) (steps - 1)) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
@@ -6055,10 +6102,10 @@ int vdef_calc(
         break;
     case VDEF_PERCENTNAN:{
         rrd_value_t *array;
-        int       field;
+        size_t    field;
 
         /* count number of "valid" values */
-        int       nancount = 0;
+        size_t    nancount = 0;
 
         for (step = 0; step < steps; step++) {
             if (!isnan(data[step * src->ds_cnt])) {
@@ -6072,8 +6119,8 @@ int vdef_calc(
             dst->vf.never = 1;
             break;
         }
-        if ((array =
-             (rrd_value_t *) malloc(nancount * sizeof(double))) == NULL) {
+        /* nancount cannot exceed the already bounded steps. */
+        if ((array = malloc(nancount * sizeof(*array))) == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }
@@ -6085,7 +6132,7 @@ int vdef_calc(
                 field++;
             }
         }
-        qsort(array, nancount, sizeof(double), vdef_percent_compar);
+        qsort(array, nancount, sizeof(rrd_value_t), vdef_percent_compar);
         field = round(dst->vf.param * (double) (nancount - 1) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
