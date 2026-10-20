@@ -3,9 +3,12 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
-	pdp-calc1 graph3 graph4 graph5 security-header-counts
+	pdp-calc1 graph3 graph4 graph5 security-header-counts \
+	security-fetch-arithmetic security-fetch-daemon-arithmetic
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security
+
+script_tests += security-rrdcached-response-bounds
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -60,6 +63,27 @@ mock_rados_bounds_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_LIBRADOS \
     -I$(srcdir)/mock-rados -I$(top_srcdir)/src -I$(top_builddir)/src
 mock_rados_bounds_LDFLAGS = -static
 mock_rados_bounds_LDADD = ${top_builddir}/src/librrd.la
+endif
+endif
+
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += fetch-empty-security
+TESTS += fetch-empty-security
+fetch_empty_security_SOURCES = test_fetch_empty_security.c
+fetch_empty_security_LDFLAGS = -static
+fetch_empty_security_LDADD = ${top_builddir}/src/librrd.la
+endif
+
+if BUILD_RRDCACHED
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += daemon-fetch-security
+TESTS += daemon-fetch-security
+daemon_fetch_security_SOURCES = test_daemon_fetch_security.c
+daemon_fetch_security_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src \
+    -DVERSION='"$(VERSION)"' -DLOCALSTATEDIR='"$(localstatedir)"'
+daemon_fetch_security_LDFLAGS = -static
+daemon_fetch_security_LDADD = $(top_builddir)/src/librrd.la \
+    $(top_builddir)/src/librrdupd.la $(ALL_LIBS)
 endif
 endif
 

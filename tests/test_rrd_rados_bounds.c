@@ -106,9 +106,9 @@ int main(int argc, char **argv)
     if (rrd_seek(f, f->header_len, SEEK_SET) ||
         rrd_read(f, &actual, sizeof(actual)) != sizeof(actual) || actual != value)
         return fail("RADOS read did not return the updated value");
-    rrd_free(&rrd);
     if (rrd_close(f))
         return fail("could not close mocked RADOS object");
+    rrd_free(&rrd);
 
     stat_fail = 1;
     reads = 0;

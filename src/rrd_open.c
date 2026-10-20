@@ -71,7 +71,7 @@ DWORD     dwCreationDisposition = 0;
  * iterate past the mapped file.
  */
 #if defined(__has_builtin)
-#define RRD_HAVE_OVERFLOW_BUILTINS __has_builtin(__builtin_mul_overflow)
+#define RRD_HAVE_OVERFLOW_BUILTINS (__has_builtin(__builtin_mul_overflow) && __has_builtin(__builtin_add_overflow))
 #elif defined(__GNUC__) && __GNUC__ >= 5
 #define RRD_HAVE_OVERFLOW_BUILTINS 1
 #else

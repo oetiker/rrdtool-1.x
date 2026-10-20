@@ -70,8 +70,8 @@ int main(void)
     }
 
     rrd.rra_def[0].row_cnt = ULONG_MAX;
-    rrd_free(&rrd);
     status = rrd_close(rrd_file);
+    rrd_free(&rrd);
     if (status != 0) {
         remove(path);
         return fail("could not persist the test RRD mutation");
@@ -81,8 +81,8 @@ int main(void)
     rrd_init(&rrd);
     rrd_file = rrd_open(path, &rrd, RRD_READONLY | RRD_LOCK_NONE);
     if (rrd_file != NULL) {
-        rrd_free(&rrd);
         rrd_close(rrd_file);
+        rrd_free(&rrd);
         remove(path);
         return fail("RRD with an overflowing row count was accepted");
     }
