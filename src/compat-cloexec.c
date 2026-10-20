@@ -1,5 +1,6 @@
 #include "compat-cloexec.h"
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,8 +36,10 @@ FILE *_rrd_fopen(const char *restrict pathname, const char *restrict mode_raw)
 
 	/* We are the only caller and never use mode strings with more than 20
 	   chars... But just to be sure... */
-	if (strlen(mode_raw) >= sizeof mode)
-		abort();
+    if (strlen(mode_raw) >= sizeof mode) {
+        errno = EINVAL;
+        return NULL;
+    }
 
 	/* parse the mode string and strip away the 'e' flag */
 	while (*in) {
@@ -63,10 +66,11 @@ FILE *_rrd_fopen(const char *restrict pathname, const char *restrict mode_raw)
 			continue;
 		case 'b':
 			break;
-		default:
-			/* we are the only caller and should not set any
-			   unknown flag */
-			abort();
+        default:
+            /* we are the only caller and should not set any
+               unknown flag */
+            errno = EINVAL;
+            return NULL;
 		}
 
 		*out++ = c;
