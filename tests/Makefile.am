@@ -1,3 +1,5 @@
+AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
+
 script_tests = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 graph1 graph2 rpn1 \
 	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
@@ -56,13 +58,14 @@ rrd_open_security_LDADD = \
 EXTRA_DIST += mock-rados/rados/librados.h security-rados-bounds
 if !MINGW_W64
 if HAVE_STATIC_LIBRRD
+if BUILD_LIBRADOS
 script_tests += security-rados-bounds
 check_PROGRAMS += mock-rados-bounds
 mock_rados_bounds_SOURCES = test_rrd_rados_bounds.c ${top_srcdir}/src/rrd_open.c
-mock_rados_bounds_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_LIBRADOS \
-    -I$(srcdir)/mock-rados -I$(top_srcdir)/src -I$(top_builddir)/src
+mock_rados_bounds_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/mock-rados
 mock_rados_bounds_LDFLAGS = -static
 mock_rados_bounds_LDADD = ${top_builddir}/src/librrd.la
+endif
 endif
 endif
 
@@ -89,3 +92,5 @@ endif
 
 script_tests += security-restore-zero-row-cnt security-restore-malformed-row
 EXTRA_DIST += security-restore-malformed-row.xml
+
+CLEANFILES += security-header-counts.out

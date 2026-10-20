@@ -9,6 +9,10 @@
 #include <string.h>
 
 static int object_fd, stat_fail, reads;
+/* This mock queues the single write used below until flush or close. */
+static unsigned char pending[sizeof(rrd_value_t)];
+static size_t pending_len;
+static uint64_t pending_offset;
 
 int rados_stat(rados_ioctx_t io, const char *oid, uint64_t *size, time_t *mtime)
 {
@@ -40,7 +44,9 @@ rrd_rados_t *rrd_rados_open(const char *oid)
 
 int rrd_rados_close(rrd_rados_t *r)
 {
-    int status = close(object_fd);
+    int status = rrd_rados_flush(r);
+    if (close(object_fd) != 0)
+        status = -1;
     free(r);
     return status;
 }
@@ -48,6 +54,9 @@ int rrd_rados_close(rrd_rados_t *r)
 int rrd_rados_flush(rrd_rados_t *r)
 {
     (void) r;
+    if (pending_len && pwrite(object_fd, pending, pending_len, pending_offset) != (ssize_t) pending_len)
+        return -1;
+    pending_len = 0;
     return 0;
 }
 
@@ -74,7 +83,12 @@ size_t rrd_rados_read(rrd_rados_t *r, void *buf, size_t len, uint64_t off)
 size_t rrd_rados_write(rrd_rados_t *r, const void *buf, size_t len, uint64_t off)
 {
     (void) r;
-    return pwrite(object_fd, buf, len, off);
+    if (pending_len || len > sizeof(pending))
+        return (size_t) -1;
+    memcpy(pending, buf, len);
+    pending_len = len;
+    pending_offset = off;
+    return len;
 }
 
 static int fail(const char *message)
@@ -87,7 +101,7 @@ int main(int argc, char **argv)
 {
     rrd_t rrd;
     rrd_file_t *f;
-    rrd_value_t value = 42.0, actual;
+    rrd_value_t value = 42.0, actual, before;
     char path[4096];
     int length;
 
@@ -101,8 +115,17 @@ int main(int argc, char **argv)
     if (!f)
         return fail("could not open mocked RADOS object");
     if (rrd_seek(f, f->header_len, SEEK_SET) ||
+        rrd_read(f, &before, sizeof(before)) != sizeof(before))
+        return fail("could not read original RADOS value");
+    if (rrd_seek(f, f->header_len, SEEK_SET) ||
         rrd_write(f, &value, sizeof(value)) != sizeof(value))
         return fail("could not update mocked RADOS object");
+    if (rrd_seek(f, f->header_len, SEEK_SET) ||
+        rrd_read(f, &actual, sizeof(actual)) != sizeof(actual) ||
+        memcmp(&actual, &before, sizeof(actual)) != 0)
+        return fail("queued RADOS write became visible before flush");
+    if (rrd_rados_flush(f->rados) != 0)
+        return fail("could not flush RADOS write");
     if (rrd_seek(f, f->header_len, SEEK_SET) ||
         rrd_read(f, &actual, sizeof(actual)) != sizeof(actual) || actual != value)
         return fail("RADOS read did not return the updated value");
