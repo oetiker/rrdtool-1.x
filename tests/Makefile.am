@@ -105,3 +105,5 @@ graph_security_SOURCES = test_graph_security.c
 # Exercise internal graph functions that are not exported by the shared library.
 graph_security_LDFLAGS = -static
 graph_security_LDADD = ${top_builddir}/src/librrd.la
+
+script_tests += security-tune-failures-window security-dump-failures-window

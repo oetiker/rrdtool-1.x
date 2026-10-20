@@ -638,6 +638,18 @@ rrd_file_t *rrd_open(
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
 
+    /* Validate disk-supplied FAILURES history bounds before any consumer
+     * (including info and update) can use the fixed-size scratch buffer. */
+    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        if (strncmp(rrd->rra_def[i].cf_nam, "FAILURES", CF_NAM_SIZE) == 0 &&
+            (rrd->rra_def[i].par[RRA_window_len].u_cnt < 1 ||
+             rrd->rra_def[i].par[RRA_window_len].u_cnt > MAX_FAILURES_WINDOW_LEN)) {
+            rrd_set_error("invalid RRA %lu: window_len %lu out of range", i,
+                          rrd->rra_def[i].par[RRA_window_len].u_cnt);
+            goto out_close;
+        }
+    }
+
     /* handle different format for the live_head */
     if (version < 3) {
         rrd->live_head = (live_head_t *) malloc(sizeof(live_head_t));
