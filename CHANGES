@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* rrdcached: fix crash (segfault in `strdup()`) on the first client connection
+  when started via systemd socket activation. The `listen_fds` entry created
+  in `open_listen_sockets_systemd()` was not zero-initialised, so `addr` held
+  heap garbage instead of NULL. Issue #1387.
 
 Features
 --------
