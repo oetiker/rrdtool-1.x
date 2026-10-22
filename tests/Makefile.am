@@ -6,7 +6,7 @@ TESTS = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-1 create-with-source-2 create-with-source-3 \
 	create-with-source-4 create-with-source-and-mapping-1 \
 	create-from-template-1 dcounter1 vformatter1 xport1 xport2 xport3 list1 \
-	pdp-calc1 graph3 graph4 graph5 graph6
+	pdp-calc1 graph3 graph4 graph5 graph6 cached-path1
 
 EXTRA_DIST = Makefile.am \
 	functions $(TESTS) \

@@ -1380,8 +1380,9 @@ static int check_file_access(
 }                       /* }}} static int check_file_access */
 
 /* Lexically normalize a path in-place: collapse double slashes and
- * dot-slash segments (e.g. "foo//./bar" -> "foo/bar").  Does NOT
- * resolve ".." — that is intentionally left for check_file_access().
+ * dot-slash segments (e.g. "foo//./bar" -> "foo/bar", "./foo" -> "foo").
+ * A relative path stays relative.  Does NOT resolve ".." - that is
+ * intentionally left for check_file_access().
  */
 static void normalize_path(
     char *path)
@@ -1395,6 +1396,15 @@ static void normalize_path(
     src = path;
     dst = path;
 
+    if (*src != '/') {
+        /* leading "./" of a relative path: "./a" and ".//a" -> "a" */
+        while (src[0] == '.' && src[1] == '/') {
+            src += 2;
+            while (*src == '/')
+                src++;
+        }
+    }
+
     while (*src != '\0') {
         if (src[0] == '/' && src[1] == '/') {
             /* collapse consecutive slashes */
@@ -1407,6 +1417,9 @@ static void normalize_path(
             *dst++ = *src++;
         }
     }
+    /* an absolute path never becomes empty ("/." -> "/") */
+    if (dst == path && *path == '/')
+        dst++;
     *dst = '\0';
 }                       /* }}} static void normalize_path */
 
@@ -1419,10 +1432,6 @@ static char *get_abs_path(
     char     *ret;
 
     assert(filename != NULL);
-
-    /* Skip leading "./" in relative paths before prepending the base dir */
-    while (filename[0] == '.' && filename[1] == '/')
-        filename += 2;
 
     if (config_base_dir == NULL || *filename == '/') {
         ret = strdup(filename);
