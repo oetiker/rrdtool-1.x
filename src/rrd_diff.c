@@ -1,5 +1,5 @@
 /*****************************************************************************
- * RRDtool 1.10.3 Copyright by Tobi Oetiker, 1997-2026
+ * RRDtool 1.11.0 Copyright by Tobi Oetiker, 1997-2026
  * This code is stolen from rateup (mrtg-2.x) by Dave Rand
  *****************************************************************************
  * diff calculate the difference between two very long integers available as
@@ -14,7 +14,11 @@ double rrd_diff(
     char *a,
     char *b)
 {
-    char      res[LAST_DS_LEN + 1], *a1, *b1, *r1, *fix;
+    /* res is filled up to res[m+2] (the space fill writes res[m+1] and the
+     * trailing NUL lands on res[m+2]) while m is only bounded to <=
+     * LAST_DS_LEN below, so the scratch buffer needs LAST_DS_LEN + 3 bytes,
+     * not + 1. */
+    char      res[LAST_DS_LEN + 3], *a1, *b1, *r1, *fix;
     int       c, x, m;
     char      a_neg = 0, b_neg = 0;
     double    result;
