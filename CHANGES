@@ -3,13 +3,18 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
-* rrdcached: fix crash (segfault in `strdup()`) on the first client connection
-  when started via systemd socket activation. The `listen_fds` entry created
-  in `open_listen_sockets_systemd()` was not zero-initialised, so `addr` held
-  heap garbage instead of NULL. Issue #1387.
+* `rrdtool graph` now fails with "Could not save svg to '...'" when it
+  cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
+  can't even die" and still exited with status 0.
+* rrdcached started through systemd socket activation (`rrdcached.socket`)
+  no longer crashes with a segmentation fault when the first client
+  connects. (#1387) @emwgit
 
 Features
 --------
+* SVG graphs now show sharp grid lines in the browser. Before, each grid
+  line was smeared over two pixels. `--no-gridfit` restores the old
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
