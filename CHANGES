@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Times like `epoch+80y` or `epoch+315439500s` in `rrdtool fetch`,
+  `graph`, `xport`, `create --start` and `update` now count from
+  1970-01-01 00:00:00 UTC, as documented. Before, `epoch+315439500s`
+  failed with "the first entry to fetch should be after 1980" and
+  `epoch+80y` gave a time on 1979-12-31 instead of 2050-01-01. (#939) @oetiker
 * `rrdtool fetch --daemon ./switch/foo.rrd` returned `-nan` for values
   still waiting in the rrdcached cache, while `switch/foo.rrd` showed
   them. rrdcached now treats `./switch/foo.rrd`, `switch/./foo.rrd`,
