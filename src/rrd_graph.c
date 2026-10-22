@@ -2574,10 +2574,11 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof graph_label,
                                      im->primary_axis_format,
-                                     scaledstep * (double) i);
+                                     scaledstep * (double) i, " ");
                         }
                     } else {
                         char      sisym = (i == 0 ? ' ' : im->symbol);
+                        char      sisym_str[2] = { sisym, '\0' };
 
                         if (im->primary_axis_format == NULL
                             || im->primary_axis_format[0] == '\0') {
@@ -2601,7 +2602,7 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof(graph_label),
                                      im->primary_axis_format,
-                                     scaledstep * (double) i, sisym);
+                                     scaledstep * (double) i, sisym_str);
                         }
                     }
                     break;
@@ -5845,7 +5846,7 @@ void rrd_graph_options(
     if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
         switch (im->primary_axis_formatter) {
         case VALUE_FORMATTER_NUMERIC:
-            if (bad_format_axis(im->primary_axis_format))
+            if (bad_format_axis_si(im->primary_axis_format))
                 return;
             break;
         case VALUE_FORMATTER_TIMESTAMP:
@@ -6010,6 +6011,27 @@ int bad_format_axis(
 {
     return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",
                             fmt);
+}
+
+/* --left-axis-format: like bad_format_axis, but also allow the %s / %S
+   SI unit that GPRINT allows. All labels of an axis share one magnitude,
+   so %S means the same as %s here; rewrite it to %s, since printf would
+   read %S as a wide string. */
+int bad_format_axis_si(
+    char *fmt)
+{
+    char     *p;
+
+    if (bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING
+                         "(?:%[sS])?" SAFE_STRING "$", fmt))
+        return 1;
+    for (p = fmt; *p != '\0'; p++) {
+        if (p[0] == '%' && p[1] == '%')
+            p++;
+        else if (p[0] == '%' && p[1] == 'S')
+            p[1] = 's';
+    }
+    return 0;
 }
 
 int bad_format_print(

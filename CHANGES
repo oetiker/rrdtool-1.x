@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `--left-axis-format` now accepts `%s` or `%S` after the number, like
+  GPRINT, and shows the SI unit there (e.g. `%5.1lf %Srpm` gives "1.5 krpm").
+  Before, such a format failed with "invalid format string", and a format
+  without it showed scaled numbers with no unit. (#1271, #1217, #837) @oetiker
 * `rrdtool info` run through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
   stopped after a few lines, without an error, when a data source had an
   empty `last_ds` value. It now prints the complete info. (#1080) @oetiker

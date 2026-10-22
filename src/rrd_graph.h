@@ -501,6 +501,8 @@ int       rrd_graph_color(
     int);
 int       bad_format_axis(
     char *);
+int       bad_format_axis_si(
+    char *);
 int       bad_format_print(
     char *);
 int       bad_format_imginfo(
