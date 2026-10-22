@@ -17,12 +17,11 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y autopoint build-essential libdbi-dev libtool-bin tcl-dev lua5.1 liblua5.1-0-dev \
-                                valgrind dc python3-pip python3-setuptools libpango1.0-dev ghostscript gettext
+                                valgrind gcovr dc python3-pip python3-setuptools libpango1.0-dev ghostscript gettext
         sudo pip install cpp-coveralls
 
     - name: Build
       run: |
-        V=$(cat VERSION)
         ./bootstrap
         ./configure --prefix=/opt/rrdtool-master \
                     CFLAGS='-fprofile-arcs -ftest-coverage -O0' \
@@ -37,7 +36,7 @@ jobs:
     - name: Test bindings
       run: |
         (cd bindings/perl-shared && make test)
-        (cd bindings/python && sudo chown -R $USER . && python setup.py test)
+        (cd bindings/python && sudo chown -R "$USER" . && python setup.py test)
     - name: Run "rrdcached-tcp"
       run: |
         make check TESTS_STYLE="rrdcached-tcp"
@@ -51,9 +50,82 @@ jobs:
         # These tests are failing in the GitHub Action (currently Ubuntu 24.04), when using valgrind-logfile
         make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
         podchecker doc/*.pod
-    - name: gcov
+    - name: Merge coverage reports
       run: |
-        (cd src && gcov *.gcno)
-        (cd src && gcov .libs/*.gcno)
+        # Merge static, shared, and regression-test counters before upload.
+        # Search build directories explicitly to skip configure's conftest files.
+        gcovr --root . --xml-pretty --output coverage.xml \
+          --lcov coverage-full.info --print-summary src tests
+        # The existing Codecov baseline measures lines, not branch completeness.
+        # Retain all DA line counts, including zero-hit lines, for comparison.
+        sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' coverage-full.info > coverage.info
+    - name: Preserve full line and branch coverage
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage-full
+        path: |
+          coverage.xml
+          coverage-full.info
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6
+      with:
+        files: coverage.info
+        disable_search: true
+        plugins: noop
+
+  fuzz:
+    name: Fuzz harness coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y autopoint build-essential clang llvm libtool-bin \
+                                libpango1.0-dev libxml2-dev gettext
+
+    - name: Build fuzz harnesses
+      run: |
+        ./bootstrap
+        ./configure --enable-fuzzing --disable-shared --disable-libwrap --disable-docs --disable-librados --disable-libdbi --disable-perl --disable-python --disable-tcl --disable-lua CC=clang \
+                    CFLAGS='-O1 -g -fprofile-instr-generate -fcoverage-mapping' \
+                    LDFLAGS='-fprofile-instr-generate -fcoverage-mapping'
+        make
+
+    - name: Run instrumented open and restore regressions
+      run: |
+        mkdir -p /tmp/rrd-fuzz-profiles
+        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/test-%p.profraw' \
+          make check TESTS="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+
+    - name: Exercise seed corpora
+      run: |
+        mkdir -p /tmp/rrd-fuzz-corpus
+        cp fuzz/corpus/* /tmp/rrd-fuzz-corpus/
+        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/open-%p.profraw' \
+          fuzz/rrd_open_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
+        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/restore-%p.profraw' \
+          fuzz/rrd_restore_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
+        llvm-profdata merge -sparse /tmp/rrd-fuzz-profiles/*.profraw -o fuzz.profdata
+        llvm-cov export -format=lcov \
+          -instr-profile=fuzz.profdata \
+          fuzz/rrd_open_fuzzer \
+          -object fuzz/rrd_restore_fuzzer \
+          >fuzz-coverage-full.info
+        sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
+
+    - name: Preserve full fuzz line and branch coverage
+      uses: actions/upload-artifact@v7
+      with:
+        name: fuzz-coverage-full
+        path: fuzz-coverage-full.info
+
+    - name: Upload fuzz coverage to Codecov
+      uses: codecov/codecov-action@v6
+      with:
+        files: fuzz-coverage.info
+        disable_search: true
+        plugins: noop
+        flags: fuzz

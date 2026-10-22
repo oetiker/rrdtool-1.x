@@ -26,7 +26,7 @@ int       lookup_seasonal(
     rrd_file_t *rrd_file,
     unsigned long offset,
     rrd_value_t **seasonal_coef);
-void      erase_violations(
+int       erase_violations(
     rrd_t *rrd,
     unsigned long cdp_idx,
     unsigned long rra_idx);

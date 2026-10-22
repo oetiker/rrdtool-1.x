@@ -622,7 +622,9 @@ static int set_windowarg(
     /* erase existing violations */
     for (i = 0; i < rrd->stat_head->ds_cnt; i++) {
         cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + i;
-        erase_violations(rrd, cdp_idx, rra_idx);
+        if (erase_violations(rrd, cdp_idx, rra_idx) != 0) {
+            return -1;
+        }
     }
     return 0;
 }

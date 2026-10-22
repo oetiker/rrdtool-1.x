@@ -706,6 +706,14 @@ Return the timestamp for the last update to the specified RRD. Note that the
 cache is I<not> flushed before checking, as the client is expected to request
 this separately if it is required.
 
+=item B<LASTUPDATE> I<filename>
+
+Write pending updates for the specified RRD to disk, then return the time
+and the values of its most recent update. The status line carries the
+timestamp, followed by one line per data source:
+
+ I<dsname> I<value>
+
 =item B<INFO> I<filename>
 
 Return the configuration information for the specified RRD. Note that the
