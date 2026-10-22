@@ -54,13 +54,13 @@ RRD_C_FILES =		\
 	rrd_tune.c	\
 	rrd_list.c
 
+RRD_C_FILES += rrd_graph.c    \
+        rrd_graph_helper.c    \
+        rrd_xport.c
 
 if BUILD_RRDGRAPH
-RRD_C_FILES += rrd_graph.c	\
-	rrd_graph_helper.c	\
-	rrd_xport.c	\
-	rrd_gfx.c \
-	pngsize.c
+RRD_C_FILES += rrd_gfx.c      \
+        pngsize.c
 endif
 
 if BUILD_RRDRESTORE
