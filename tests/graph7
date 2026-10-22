@@ -1,0 +1,68 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=graph7
+else
+    BUILD=$BUILDDIR/graph7
+fi
+
+# --left-axis-format accepts the %s / %S SI unit of GPRINT
+# (#1271, #1217, #837).
+
+$RRDTOOL create ${BUILD}.rrd \
+    --start 1300000000 --step 300 \
+    DS:v:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:100
+report "create"
+
+is_cached && exit 0
+
+# values 1040 .. 3000, so the axis is scaled to "k"
+ARGS=()
+for i in $(seq 1 50); do
+    ARGS+=("$((1300000000 + i * 300)):$((1000 + i * 40))")
+done
+$RRDTOOL update ${BUILD}.rrd "${ARGS[@]}"
+report "update"
+
+# graph_left <pdf> <format>
+graph_left () {
+    $RRDTOOL graph "$1" --imgformat PDF \
+        --start 1300000000 --end 1300015000 \
+        --left-axis-format "$2" \
+        DEF:v=${BUILD}.rrd:v:AVERAGE LINE1:v#ff0000 > /dev/null
+}
+
+graph_left ${BUILD}-s.pdf "%5.1lf %s"
+report "left axis format with %s"
+
+graph_left ${BUILD}-S.pdf "%5.1lF%Srpm"
+report "left axis format with %S"
+
+graph_left ${BUILD}-pct.pdf "%5.1lf%%S"
+report "left axis format with literal %%S"
+
+# the right axis keeps the strict check: its custom labels are not scaled
+! $RRDTOOL graph ${BUILD}-r.pdf --imgformat PDF \
+    --start 1300000000 --end 1300015000 \
+    --right-axis 1:0 --right-axis-format "%5.1lf %s" \
+    DEF:v=${BUILD}.rrd:v:AVERAGE LINE1:v#ff0000 2> /dev/null
+report "right axis format with %s is rejected"
+
+if command -v pdftotext > /dev/null; then
+    N=$(pdftotext ${BUILD}-s.pdf - | grep -cE '^ *[0-9]\.[0-9] k$')
+    [ "$N" -ge 3 ]
+    report "%s labels show the k unit ($N labels)"
+
+    N=$(pdftotext ${BUILD}-S.pdf - | grep -cE '^ *[0-9]\.[0-9]krpm$')
+    [ "$N" -ge 3 ]
+    report "%S labels show the k unit and suffix ($N labels)"
+
+    N=$(pdftotext ${BUILD}-pct.pdf - | grep -cE '^ *[0-9]\.[0-9]%S$')
+    [ "$N" -ge 3 ]
+    report "literal %%S stays literal ($N labels)"
+else
+    ok "pdftotext not available, skipping label checks"
+fi

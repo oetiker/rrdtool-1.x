@@ -24,17 +24,7 @@
 
 #include "unused.h"
 
-
-#ifdef HAVE_G_REGEX_NEW
 #include <glib.h>
-#else
-#ifdef HAVE_PCRE_COMPILE
-#include <pcre.h>
-#else
-#error "you must have either glib with regexp support or libpcre"
-#endif
-#endif
-
 
 /* for basename */
 #ifdef HAVE_LIBGEN_H
@@ -62,8 +52,15 @@
 #endif
 
 #include "rrd_graph.h"
+#include <stdint.h>
 #include "rrd_client.h"
 
+/* CDEF/VDEF result buffers are sized from a row count derived as
+ * (end - start) / step, where start/end come from --start/--end (or a
+ * DEF's own fetched range) and step can be as small as an RRA's native
+ * resolution.  A wide time range over a fine-grained RRA turns directly
+ * into a row count large enough for "row_cnt * sizeof(double)" to wrap
+ * size_t, so that arithmetic has to be range-checked before malloc(). */
 /* some constant definitions */
 
 
@@ -74,6 +71,7 @@
 #endif
 
 text_prop_t text_prop[] = {
+#ifdef HAVE_RRD_GRAPH
     {8.0, RRD_DEFAULT_FONT, NULL}
     ,                   /* default */
     {9.0, RRD_DEFAULT_FONT, NULL}
@@ -84,7 +82,20 @@ text_prop_t text_prop[] = {
     ,                   /* unit */
     {8.0, RRD_DEFAULT_FONT, NULL}   /* legend */
     ,
-    {5.5, RRD_DEFAULT_FONT, NULL}   /* watermark */
+    {5.5, RRD_DEFAULT_FONT, NULL} /* watermark */
+#else
+    {8.0, RRD_DEFAULT_FONT}
+    ,
+    {9.0, RRD_DEFAULT_FONT}
+    ,
+    {7.0, RRD_DEFAULT_FONT}
+    ,
+    {8.0, RRD_DEFAULT_FONT}
+    ,
+    {8.0, RRD_DEFAULT_FONT}
+    ,         /* legend */
+    {5.5, RRD_DEFAULT_FONT}          /* watermark */
+#endif
 };
 
 char      week_fmt[128] = "Week %V";
@@ -422,8 +433,9 @@ int im_free(
     image_desc_t *im)
 {
     unsigned long i, ii;
+#ifdef HAVE_RRD_GRAPH
     cairo_status_t status = (cairo_status_t) 0;
-
+#endif
     if (im == NULL)
         return 0;
 
@@ -459,7 +471,7 @@ int im_free(
         free(im->gdes[i].rpnp);
     }
     free(im->gdes);
-
+#ifdef HAVE_RRD_GRAPH
     if (im->init_mode == IMAGE_INIT_CAIRO) {
         for (i = 0; i < DIM(text_prop); i++) {
             pango_font_description_free(im->text_prop[i].font_desc);
@@ -490,7 +502,7 @@ int im_free(
             g_object_unref(im->layout);
         }
     }
-
+#endif
     if (im->ylegend)
         free(im->ylegend);
     if (im->title)
@@ -705,7 +717,20 @@ void expand_range(
 #endif
 }
 
+/* convert color */
+struct gfx_color_t gfx_hex_to_col(
+    long unsigned int color)
+{
+    struct gfx_color_t gfx_color;
 
+    gfx_color.red = 1.0 / 255.0 * ((color & 0xff000000) >> (3 * 8));
+    gfx_color.green = 1.0 / 255.0 * ((color & 0x00ff0000) >> (2 * 8));
+    gfx_color.blue = 1.0 / 255.0 * ((color & 0x0000ff00) >> (1 * 8));
+    gfx_color.alpha = 1.0 / 255.0 * (color & 0x000000ff);
+    return gfx_color;
+}
+
+#ifdef HAVE_RRD_GRAPH
 void apply_gridfit(
     image_desc_t *im)
 {
@@ -780,7 +805,7 @@ void apply_gridfit(
         calc_horizontal_grid(im);   /* recalc with changed im->maxval */
     }
 }
-
+#endif
 /* reduce data reimplementation by Alex */
 
 int rrd_reduce_data(
@@ -1123,6 +1148,7 @@ int data_calc(
 
     int       gdi;
     int       dataidx;
+    uintmax_t cdef_rows;
     long     *steparray, rpi;
     long     *steparray_tmp;    /* temp variable for realloc() */
     int       stepcnt;
@@ -1167,8 +1193,9 @@ int data_calc(
              */
             im->gdes[gdi].ds_cnt = 0;
             if (vdef_calc(im, gdi)) {
-                rrd_set_error("Error processing VDEF '%s'",
-                              im->gdes[gdi].vname);
+                if (!rrd_test_error())
+                    rrd_set_error("Error processing VDEF '%s'",
+                                  im->gdes[gdi].vname);
                 rpnstack_free(&rpnstack);
                 return -1;
             }
@@ -1285,27 +1312,52 @@ int data_calc(
             im->gdes[gdi].step = rrd_lcd(steparray);
             free(steparray);
 
-            if ((im->gdes[gdi].data = (rrd_value_t *)
-                 malloc(((im->gdes[gdi].end - im->gdes[gdi].start)
-                         / im->gdes[gdi].step)
-                        * sizeof(double))) == NULL) {
-                rrd_set_error("malloc im->gdes[gdi].data");
-                rpnstack_free(&rpnstack);
-                return -1;
+            {
+                size_t    cdef_len;
+                if (im->gdes[gdi].step == 0 ||
+                    im->gdes[gdi].end < im->gdes[gdi].start) {
+                    rrd_set_error("CDEF '%s' has an invalid data range",
+                                  im->gdes[gdi].vname);
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
+                cdef_rows = ((uintmax_t) im->gdes[gdi].end -
+                             (uintmax_t) im->gdes[gdi].start) /
+                    im->gdes[gdi].step;
+                if (im->gdes[gdi].step > INT_MAX ||
+                    cdef_rows > INT_MAX ||
+                    cdef_rows > (size_t) -1 / sizeof(rrd_value_t) ||
+                    im->gdes[gdi].end > LONG_MAX) {
+                    rrd_set_error("CDEF '%s' covers an impossibly "
+                                  "large data range", im->gdes[gdi].vname);
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
+                cdef_len = (size_t) cdef_rows * sizeof(rrd_value_t);
+                if ((im->gdes[gdi].data =
+                     (rrd_value_t *) malloc(cdef_len)) == NULL) {
+                    rrd_set_error("malloc im->gdes[gdi].data");
+                    rpnstack_free(&rpnstack);
+                    return -1;
+                }
             }
 
             /* Step through the new cdef results array and
              * calculate the values
              */
-            for (now = im->gdes[gdi].start + im->gdes[gdi].step;
-                 now <= im->gdes[gdi].end; now += im->gdes[gdi].step) {
+            /* rpn_calc uses an int result index and a long timestamp. The
+             * bounds above cover both. Advance only for an existing row so
+             * the final iteration never adds a step beyond time_t's range. */
+            now = im->gdes[gdi].start;
+            for (dataidx = 0; (uintmax_t) dataidx < cdef_rows; dataidx++) {
+                now = (time_t) ((uintmax_t) now + im->gdes[gdi].step);
 
                 /* 3rd arg of rpn_calc is for OP_VARIABLE lookups;
                  * in this case we are advancing by timesteps;
                  * we use the fact that time_t is a synonym for long
                  */
                 if (rpn_calc(rpnp, &rpnstack, (long) now,
-                             im->gdes[gdi].data, ++dataidx,
+                             im->gdes[gdi].data, dataidx,
                              im->gdes[gdi].step) == -1) {
                     /* rpn_calc sets the error string */
                     rpnstack_free(&rpnstack);
@@ -2112,6 +2164,7 @@ int print_calc(
 
 
 /* place legends with color spots */
+#ifdef HAVE_RRD_GRAPH
 int leg_place(
     image_desc_t *im,
     int calc_width)
@@ -2545,10 +2598,11 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof graph_label,
                                      im->primary_axis_format,
-                                     scaledstep * (double) i);
+                                     scaledstep * (double) i, " ");
                         }
                     } else {
                         char      sisym = (i == 0 ? ' ' : im->symbol);
+                        char      sisym_str[2] = { sisym, '\0' };
 
                         if (im->primary_axis_format == NULL
                             || im->primary_axis_format[0] == '\0') {
@@ -2572,7 +2626,7 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof(graph_label),
                                      im->primary_axis_format,
-                                     scaledstep * (double) i, sisym);
+                                     scaledstep * (double) i, sisym_str);
                         }
                     }
                     break;
@@ -4676,7 +4730,7 @@ int graph_paint_xy(
     rrd_set_error("XY diagram not implemented");
     return -1;
 }
-
+#endif
 /*****************************************************
  * graph stuff
  *****************************************************/
@@ -4764,6 +4818,7 @@ int scan_for_col(
 }
 
 /* Now just a wrapper around rrd_graph_v */
+#ifdef HAVE_RRD_GRAPH
 int rrd_graph(
     int argc,
     const char **argv,
@@ -4948,6 +5003,7 @@ rrd_info_t *rrd_graph_v(
     im_free(&im);
     return grinfo;
 }
+#endif
 
 static void rrd_set_font_desc(
     image_desc_t *im,
@@ -4959,19 +5015,23 @@ static void rrd_set_font_desc(
         strncpy(im->text_prop[prop].font, font,
                 sizeof(text_prop[prop].font) - 1);
         im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';
+#ifdef HAVE_RRD_GRAPH
         /* if we already got one, drop it first */
         pango_font_description_free(im->text_prop[prop].font_desc);
         im->text_prop[prop].font_desc =
             pango_font_description_from_string(font);
+#endif
     };
     if (size > 0) {
         im->text_prop[prop].size = size;
     };
+#ifdef HAVE_RRD_GRAPH
     if (im->text_prop[prop].font_desc && im->text_prop[prop].size) {
         pango_font_description_set_size(im->text_prop[prop].font_desc,
                                         im->text_prop[prop].size *
                                         PANGO_SCALE);
     };
+#endif
 }
 
 void rrd_graph_init(
@@ -4979,9 +5039,10 @@ void rrd_graph_init(
     enum image_init_en init_mode)
 {
     unsigned int i;
+#ifdef HAVE_RRD_GRAPH
     char     *deffont = getenv("RRD_DEFAULT_FONT");
     PangoContext *context;
-
+#endif
     /* zero the whole structure first */
     memset(im, 0, sizeof(image_desc_t));
 
@@ -5003,7 +5064,9 @@ void rrd_graph_init(
     im->forceleftspace = 0;
     im->gdes_c = 0;
     im->gdes = NULL;
+#ifdef HAVE_RRD_GRAPH
     im->graph_antialias = CAIRO_ANTIALIAS_GRAY;
+#endif
     im->grid_dash_off = 1;
     im->grid_dash_on = 1;
     im->gridfit = 1;
@@ -5069,7 +5132,7 @@ void rrd_graph_init(
     im->zoom = 1;
     im->init_mode = init_mode;
     im->last_tabwidth = -1;
-
+#ifdef HAVE_RRD_GRAPH
     if (init_mode == IMAGE_INIT_CAIRO) {
         im->font_options = cairo_font_options_create();
         im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
@@ -5107,7 +5170,7 @@ void rrd_graph_init(
         cairo_font_options_set_antialias(im->font_options,
                                          CAIRO_ANTIALIAS_GRAY);
     }
-
+#endif
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
 
@@ -5731,6 +5794,7 @@ void rrd_graph_options(
             }
             break;
         case 'R':
+#ifdef HAVE_RRD_GRAPH
             if (strcmp(poptions->optarg, "normal") == 0) {
                 cairo_font_options_set_antialias
                     (im->font_options, CAIRO_ANTIALIAS_GRAY);
@@ -5751,8 +5815,10 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+#endif
             break;
         case 'G':
+#ifdef HAVE_RRD_GRAPH
             if (strcmp(poptions->optarg, "normal") == 0)
                 im->graph_antialias = CAIRO_ANTIALIAS_GRAY;
             else if (strcmp(poptions->optarg, "mono") == 0)
@@ -5762,6 +5828,7 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+#endif
             break;
         case 'B':
             /* not supported currently */
@@ -5794,16 +5861,16 @@ void rrd_graph_options(
             return;
         }
     }                   /* while (opt != -1) */
-
+#ifdef HAVE_RRD_GRAPH
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout),
                                          im->font_options);
     pango_layout_context_changed(im->layout);
-
+#endif
 
     if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
         switch (im->primary_axis_formatter) {
         case VALUE_FORMATTER_NUMERIC:
-            if (bad_format_axis(im->primary_axis_format))
+            if (bad_format_axis_si(im->primary_axis_format))
                 return;
             break;
         case VALUE_FORMATTER_TIMESTAMP:
@@ -5908,13 +5975,10 @@ int rrd_graph_color(
     }
 }
 
-#define OVECCOUNT 30    /* should be a multiple of 3 */
-
 static int bad_format_check(
     const char *pattern,
     char *fmt)
 {
-#ifdef HAVE_G_REGEX_NEW
     GError   *gerr = NULL;
     GRegex   *re = g_regex_new(pattern, G_REGEX_EXTENDED, 0, &gerr);
     GMatchInfo *mi;
@@ -5928,22 +5992,6 @@ static int bad_format_check(
 
     g_match_info_free(mi);
     g_regex_unref(re);
-#else
-    const char *error;
-    int       erroffset;
-    int       ovector[OVECCOUNT];
-    pcre     *re;
-
-    re = pcre_compile(pattern, PCRE_EXTENDED, &error, &erroffset, NULL);
-    if (re == NULL) {
-        rrd_set_error("cannot compile regular expression: %s (%s)", error,
-                      pattern);
-        return 1;
-    }
-    int       m =
-        pcre_exec(re, NULL, fmt, (int) strlen(fmt), 0, 0, ovector, OVECCOUNT);
-    pcre_free(re);
-#endif
     if (!m) {
         rrd_set_error("invalid format string '%s' (should match '%s')", fmt,
                       pattern);
@@ -5968,6 +6016,27 @@ int bad_format_axis(
 {
     return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",
                             fmt);
+}
+
+/* --left-axis-format: like bad_format_axis, but also allow the %s / %S
+   SI unit that GPRINT allows. All labels of an axis share one magnitude,
+   so %S means the same as %s here; rewrite it to %s, since printf would
+   read %S as a wide string. */
+int bad_format_axis_si(
+    char *fmt)
+{
+    char     *p;
+
+    if (bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING
+                         "(?:%[sS])?" SAFE_STRING "$", fmt))
+        return 1;
+    for (p = fmt; *p != '\0'; p++) {
+        if (p[0] == '%' && p[1] == '%')
+            p++;
+        else if (p[0] == '%' && p[1] == 'S')
+            p[1] = 's';
+    }
+    return 0;
 }
 
 int bad_format_print(
@@ -6092,7 +6161,18 @@ int vdef_calc(
     src = &im->gdes[dst->vidx];
     data = src->data + src->ds;
 
-    steps = (src->end - src->start) / src->step;
+    if (src->step == 0 || src->end < src->start) {
+        rrd_set_error("VDEF '%s' has an invalid data range", dst->vname);
+        return -1;
+    }
+    {
+        uintmax_t count = ((uintmax_t) src->end - (uintmax_t) src->start) / src->step;
+        if (count > LONG_MAX || count > (size_t) -1 / sizeof(rrd_value_t)) {
+            rrd_set_error("VDEF '%s' covers an impossibly large data range", dst->vname);
+            return -1;
+        }
+        steps = (long) count;
+    }
 #if 0
     printf
         ("DEBUG: start == %lu, end == %lu, %lu steps\n",
@@ -6101,7 +6181,7 @@ int vdef_calc(
     switch (dst->vf.op) {
     case VDEF_PERCENT:{
         rrd_value_t *array;
-        int       field;
+        size_t    field;
 
         if (steps == 0) {
             dst->vf.val = DNAN;
@@ -6109,14 +6189,16 @@ int vdef_calc(
             dst->vf.never = 1;
             break;
         }
-        if ((array = (rrd_value_t *) malloc(steps * sizeof(double))) == NULL) {
+        /* steps was bounded against SIZE_MAX above. */
+        array = malloc((size_t) steps * sizeof(*array));
+        if (array == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }
         for (step = 0; step < steps; step++) {
             array[step] = data[step * src->ds_cnt];
         }
-        qsort(array, step, sizeof(double), vdef_percent_compar);
+        qsort(array, step, sizeof(rrd_value_t), vdef_percent_compar);
         field = round((dst->vf.param * (double) (steps - 1)) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */
@@ -6131,10 +6213,10 @@ int vdef_calc(
         break;
     case VDEF_PERCENTNAN:{
         rrd_value_t *array;
-        int       field;
+        size_t    field;
 
         /* count number of "valid" values */
-        int       nancount = 0;
+        size_t    nancount = 0;
 
         for (step = 0; step < steps; step++) {
             if (!isnan(data[step * src->ds_cnt])) {
@@ -6148,8 +6230,8 @@ int vdef_calc(
             dst->vf.never = 1;
             break;
         }
-        if ((array =
-             (rrd_value_t *) malloc(nancount * sizeof(double))) == NULL) {
+        /* nancount cannot exceed the already bounded steps. */
+        if ((array = malloc(nancount * sizeof(*array))) == NULL) {
             rrd_set_error("malloc VDEV_PERCENT");
             return -1;
         }
@@ -6161,7 +6243,7 @@ int vdef_calc(
                 field++;
             }
         }
-        qsort(array, nancount, sizeof(double), vdef_percent_compar);
+        qsort(array, nancount, sizeof(rrd_value_t), vdef_percent_compar);
         field = round(dst->vf.param * (double) (nancount - 1) / 100.0);
         dst->vf.val = array[field];
         dst->vf.when = 0;   /* no time component */

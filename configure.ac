@@ -162,6 +162,12 @@ AC_ARG_ENABLE(static-programs,
      esac],[staticprogs=no])
 AM_CONDITIONAL(STATIC_PROGRAMS,[test "x$staticprogs" = "xyes"])
 
+AC_ARG_ENABLE(fuzzing,AS_HELP_STRING([--enable-fuzzing],[build fuzz harnesses and instrument all code with ASan/UBSan (requires clang)]),
+[AS_CASE([$enableval], [yes|no], [],
+    [AC_MSG_ERROR([--enable-fuzzing accepts only yes or no])])],
+[enable_fuzzing=no])
+AM_CONDITIONAL(BUILD_FUZZERS,[test "x$enable_fuzzing" = "xyes"])
+
 
 CONFIGURE_PART(Audit Compilation Environment)
 
@@ -170,7 +176,20 @@ dnl Check for the compiler and static/shared library creation.
 AC_PROG_CPP
 AC_PROG_CC
 AM_PROG_CC_C_O
+AS_IF([test "x$enable_fuzzing" = "xyes"], [
+    saved_LDFLAGS="$LDFLAGS"
+    CFLAGS="$CFLAGS -fsanitize=fuzzer-no-link,address,undefined"
+    LDFLAGS="$LDFLAGS -fsanitize=fuzzer,address,undefined"
+    AC_MSG_CHECKING([whether the compiler supports libFuzzer])
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#include <stddef.h>
+#include <stdint.h>
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) { return 0; }
+]])], [AC_MSG_RESULT([yes])], [AC_MSG_ERROR([--enable-fuzzing requires libFuzzer support])])
+    LDFLAGS="$saved_LDFLAGS -fsanitize=address,undefined"
+])
 LT_INIT
+AM_CONDITIONAL(HAVE_STATIC_LIBRRD,[test "x$enable_static" = "xyes"])
 
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
@@ -622,21 +641,6 @@ AC_CACHE_CHECK([whether we need to include gthreads for g_thread_init],
                      [AC_MSG_RESULT(no)],
                      [EX_CHECK_ALL(gthread-2.0, g_thread_init, glib.h, gthread-2.0, x.x.x, "", "")
                      AC_MSG_RESULT(yes)])])
-
-AC_CHECK_FUNC(g_regex_new,[
-   AC_DEFINE(HAVE_G_REGEX_NEW,[1],[our glib has g_regex_new])
-],[
-   AC_MSG_CHECKING(if pcre is available to supply the missing regex support in glib)
-   AC_MSG_RESULT(checking now ...)
-   EX_CHECK_ALL(pcre,   pcre_compile,            pcre.h,                 pcre,    x.x.x, [get a newer glib and you will not need pcre at all],"")
-   AC_CHECK_FUNC(pcre_compile,[
-        AC_DEFINE(HAVE_PCRE_COMPILE,[1],[we have pcre to replace missing regexp support form glib])
-   ],[
-        AC_MSG_ERROR([you need either glib with g_regex support or libpcre to compile rrdtool.])
-   ])
-])
-
-
 
 CORE_LIBS="$LIBS"
 
@@ -1109,6 +1113,7 @@ AC_CONFIG_FILES([bindings/Makefile])
 AC_CONFIG_FILES([bindings/tcl/Makefile])
 AC_CONFIG_FILES([bindings/tcl/ifOctets.tcl])
 AC_CONFIG_FILES([bindings/lua/Makefile])
+AC_CONFIG_FILES([fuzz/Makefile])
 AC_CONFIG_FILES([Makefile])
 
 AC_CONFIG_COMMANDS([default],[[ chmod +x examples/*.pl]],[[]])

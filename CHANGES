@@ -3,18 +3,64 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `--left-axis-format` now accepts `%s` or `%S` after the number, like
+  GPRINT, and shows the SI unit there (e.g. `%5.1lf %Srpm` gives "1.5 krpm").
+  Before, such a format failed with "invalid format string", and a format
+  without it showed scaled numbers with no unit. (#1271, #1217, #837) @oetiker
+* `rrdtool info` run through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  stopped after a few lines, without an error, when a data source had an
+  empty `last_ds` value. It now prints the complete info. (#1080) @oetiker
+* `rrdtool fetch` printed unknown values as `-nan` on many systems, which
+  broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
 * `rrdtool xport --json` and `rrdtool graph --imgformat JSON` with a `PRINT`
   statement wrote invalid JSON: the `"prints"` list had no comma before it
   and a stray comma after it, so JSON parsers rejected the output. @Reinerost
+* `rrdtool restore` no longer crashes with "Floating point exception" on
+  a dump whose RRA has no rows, and no longer writes an RRD from a dump that
+  is cut short, lacks a `<database>` block or repeats one. It now stops with
+  an error such as "RRA has zero rows" or "contains multiple database
+  elements", and accepts a FAILURES `<window_len>` only from 1 to 28.
+  @somethingwithproof
+* A damaged or hand-crafted RRD file no longer crashes `rrdtool info`,
+  `fetch`, `update` or `tune`, nor makes `rrdtool dump` print garbage. They
+  now fail with "has an invalid ds_cnt/rra_cnt in its header", "describes an
+  impossibly large database" or "window_len ... out of range". RRDs stored
+  in Ceph get the same checks, at the cost of one object size query per
+  open. @somethingwithproof
+* `rrdtool fetch` and `rrdtool graph` over a time range too large to hold
+  in memory now fail with "fetch data size overflow" or "covers an
+  impossibly large data range" instead of crashing or reporting "malloc
+  fetch data area". @somethingwithproof
+* rrdcached no longer sends stray memory contents after a reply line
+  longer than 4 KB, as `PENDING` produced for a very long queued update;
+  such lines are cut short and still end with a newline. A `FETCH` or
+  `FETCHBIN` that runs out of memory while building its answer now closes
+  the connection instead of sending a partial reply. @somethingwithproof
+* `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
+  a segmentation fault. It now fails with an error message. (#1353) @SAY-5
+* rrdcached started through systemd socket activation (`rrdcached.socket`)
+  no longer crashes with a segmentation fault when the first client
+  connects. (#1387) @emwgit
 
 Features
 --------
+* `rrdtool xport` now works in builds configured with `--disable-rrd_graph`,
+  which do not need cairo and pango. Before, it failed with "the instance of
+  rrdtool has been compiled without graphics", like `graph` and `graphv`
+  still do. @Reinerost
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+* configure no longer looks for the PCRE library. RRDtool uses the regular
+  expressions built into GLib, which every supported GLib version provides,
+  so packagers can drop `libpcre` from the build dependencies. @Reinerost
+* `./configure --enable-fuzzing` builds libFuzzer harnesses for RRD files
+  and XML dumps in `fuzz/`. It needs clang and instruments the whole
+  library with ASan/UBSan, so it is meant for testing, not for production
+  builds. @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================

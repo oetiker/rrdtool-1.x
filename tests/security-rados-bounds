@@ -1,0 +1,11 @@
+#!/bin/bash
+. "$(dirname "$0")/functions"
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -x "$BUILDDIR/mock-rados-bounds" ] || exit 77
+[ "$(getconf LONG_BIT)" = 64 ] || exit 77
+WORK=$(mktemp -d "$BUILDDIR/rados-bounds.XXXXXX") || fail 1 mktemp
+trap 'rm -rf "$WORK"' EXIT
+$RRDTOOL create "$WORK/object.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail 1 create
+"$BUILDDIR/mock-rados-bounds" "$WORK/object.rrd" || fail 1 "RADOS bounds regression"
+report "RADOS read/write, stat failure, and truncated object bounds"
