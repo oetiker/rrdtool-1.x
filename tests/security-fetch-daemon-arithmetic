@@ -10,6 +10,7 @@
 
 # The size arithmetic being tested is computed in size_t, so this only
 # means something on the LP64 layout used by the supported Unix builds.
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
 test "$(getconf LONG_BIT)" = 64 || exit 77
 
 perl -MIO::Socket::UNIX -e 1 >/dev/null 2>&1 || exit 77

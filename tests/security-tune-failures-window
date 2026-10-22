@@ -11,6 +11,7 @@
 
 # window_len is stored as an on-disk unsigned long; the crafted value below
 # exercises the LP64 rra_def_t layout used by the supported Unix builds.
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
 test "$(getconf LONG_BIT)" = 64 || exit 77
 
 BUILD="$BUILDDIR/$(basename "$0")"
