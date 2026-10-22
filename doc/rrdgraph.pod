@@ -264,7 +264,9 @@ of valstrfduration qualified PRINT/GPRINT. See L<rrdgraph_graph>.
 By default the format of the axis labels gets determined automatically. If
 you want to do this yourself, use this option with the same %lf arguments
 you know from the PRINT and GPRINT commands, or others if using different
-formatter.
+formatter. With the B<numeric> formatter, a B<%s> or B<%S> after the number
+shows the SI magnitude unit of the axis (e.g. C<%5.1lf %Srpm> gives
+C<1.5 krpm>). Without it, the labels are still scaled, but no unit is shown.
 
 [B<-Y>|B<--alt-y-grid>]
 
