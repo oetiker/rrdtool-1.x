@@ -33,7 +33,7 @@ Bugfixes
   broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
-  can't even die" and still exited with status 0.
+  can't even die" and still exited with status 0. @oetiker
 * `rrdtool tune` with an invalid `DS:` definition, such as a name longer
   than 19 characters, printed "ERROR: invalid DS format" but still wrote a
   broken data source into the RRD file. Afterwards every access failed with
@@ -77,7 +77,7 @@ Features
   still do. @Reinerost
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
-  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well. @oetiker
 * configure no longer looks for the PCRE library. RRDtool uses the regular
   expressions built into GLib, which every supported GLib version provides,
   so packagers can drop `libpcre` from the build dependencies. @Reinerost
