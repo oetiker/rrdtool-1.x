@@ -3,10 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
-* `rrdtool xport --step` was ignored when it was finer than the time range
-  divided by `--maxrows` (default 400), e.g. `--step 15` over a day gave
-  `<step>360</step>`. Without `--maxrows` the requested step is now used;
-  with `--maxrows` the row limit still applies. (#1023) @oetiker
+* `rrdtool xport --step` is now honoured when `--maxrows` is not given;
+  before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
+  to keep the old output. (#1023) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
