@@ -15,6 +15,9 @@ Bugfixes
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* `rrdtool xport --json` and `rrdtool graph --imgformat JSON` with a `PRINT`
+  statement wrote invalid JSON: the `"prints"` list had no comma before it
+  and a stray comma after it, so JSON parsers rejected the output. @Reinerost
 * `rrdtool restore` no longer crashes with "Floating point exception" on
   a dump whose RRA has no rows, and no longer writes an RRD from a dump that
   is cut short, lacks a `<database>` block or repeats one. It now stops with

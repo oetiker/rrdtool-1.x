@@ -121,3 +121,25 @@ if [ "$OUT_LONG" = "$OUT_SHORT" ] ; then
 else
     fail 1 "xport -S and --step output differs"
 fi
+
+# --- JSON output with PRINT must be valid JSON ---
+# The "prints" member used to lack its leading comma and kept a trailing one.
+OUT_PRINT=$($RRDTOOL xport --json \
+    -s 1300000000 -e 1300003000 --step 300 \
+    DEF:v=${BUILD}.rrd:val:AVERAGE \
+    VDEF:vavg=v,AVERAGE \
+    PRINT:vavg:'avg=%6.2lf' \
+    GPRINT:vavg:'gavg=%6.2lf' \
+    XPORT:v:val)
+RC=$?
+if [ $RC -ne 0 ] ; then
+    fail $RC "xport --json with PRINT exited non-zero"
+else
+    echo "$OUT_PRINT" | python3 -c '
+import sys, json
+doc = json.load(sys.stdin)
+assert doc["meta"]["prints"][0]["print"].startswith("avg="), doc["meta"]
+assert doc["meta"]["gprints"][0]["gprint"].startswith("gavg="), doc["meta"]
+'
+    report "xport json with PRINT and GPRINT is valid JSON"
+fi
