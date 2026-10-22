@@ -3,6 +3,8 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool fetch` printed unknown values as `-nan` on many systems, which
+  broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
