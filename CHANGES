@@ -6,6 +6,8 @@ Bugfixes
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
+  a segmentation fault. It now fails with an error message. (#1353) @SAY-5
 
 Features
 --------
