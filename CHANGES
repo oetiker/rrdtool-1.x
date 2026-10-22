@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool xport --json` and `rrdtool graph --imgformat JSON` with a `PRINT`
+  statement wrote invalid JSON: the `"prints"` list had no comma before it
+  and a stray comma after it, so JSON parsers rejected the output. @Reinerost
 
 Features
 --------
