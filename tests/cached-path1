@@ -12,7 +12,13 @@ if [ -n "$MSYSTEM" ]; then
 	exit 77
 fi
 
-unset RRDCACHED_ADDRESS
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
 RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
 
 W=$BUILDDIR/`basename $0`_dir
