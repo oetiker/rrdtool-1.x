@@ -26,6 +26,11 @@ Bugfixes
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* `rrdtool tune` with an invalid `DS:` definition, such as a name longer
+  than 19 characters, printed "ERROR: invalid DS format" but still wrote a
+  broken data source into the RRD file. Afterwards every access failed with
+  "unknown data acquisition function"; now the file is left unchanged.
+  (#878) @TheWitness
 * `rrdtool xport --json` and `rrdtool graph --imgformat JSON` with a `PRINT`
   statement wrote invalid JSON: the `"prints"` list had no comma before it
   and a stray comma after it, so JSON parsers rejected the output. @Reinerost

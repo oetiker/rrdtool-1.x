@@ -339,10 +339,13 @@ static int add_dss(const rrd_t UNUSED(*in), rrd_t *out,
     for (j = 0, c = addDS[j] ; c ; j++, c = addDS[j]) {
 	ds_def_t added;
 
-	// parse DS
-	parseDS(c + 3,
+	// parse DS - abort on failure so we never write a bogus DS to the RRD
+	if (parseDS(c + 3,
 		&added, // out.ds_def + out.stat_head->ds_cnt,
-		out, lookup_DS, NULL, &require_version);
+		out, lookup_DS, NULL, &require_version) != 0) {
+	    // rrd_set_error has already been called by parseDS
+	    goto done;
+	}
 
 	// check if there is a name clash with an existing DS
 	if (lookup_DS(out, added.ds_nam) >= 0) {
