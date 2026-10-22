@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool xport --step` is now honoured when `--maxrows` is not given;
+  before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
+  to keep the old output. (#1023) @oetiker
 * Times like `epoch+80y` or `epoch+315439500s` in `rrdtool fetch`,
   `graph`, `xport`, `create --start` and `update` now count from
   1970-01-01 00:00:00 UTC, as documented. Before, `epoch+315439500s`

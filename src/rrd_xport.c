@@ -116,6 +116,8 @@ int rrd_xport(
     int       enumds = 0;
     int       json = 0;
     int       showtime = 0;
+    int       step_requested = 0;
+    int       maxrows_requested = 0;
 
     int       opt;
 
@@ -124,6 +126,7 @@ int rrd_xport(
         switch (opt) {
         case 'S':
             im.step = atoi(options.optarg);
+            step_requested = 1;
             break;
         case 262:
             enumds = 1;
@@ -148,6 +151,7 @@ int rrd_xport(
             break;
         case 'm':
             im.xsize = atol(options.optarg);
+            maxrows_requested = 1;
             if (im.xsize < 10) {
                 rrd_set_error("maxrows below 10 rows");
                 return -1;
@@ -193,7 +197,10 @@ int rrd_xport(
 
     im.start = start_tmp;
     im.end = end_tmp;
-    im.step = max((long) im.step, (im.end - im.start) / im.xsize);
+    /* an explicit --step wins over the default row limit; with an
+       explicit --maxrows, a step finer than one row is still ignored */
+    if (!step_requested || maxrows_requested || im.step == 0)
+        im.step = max((long) im.step, (im.end - im.start) / im.xsize);
 
     rrd_graph_script(options.argc, options.argv, &im, options.optind);
     if (rrd_test_error()) {

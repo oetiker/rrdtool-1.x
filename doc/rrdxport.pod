@@ -54,7 +54,10 @@ for details.
 
 =item B<-S>|B<--step> I<value> (default automatic)
 
-See L<rrdgraph> documentation.
+See L<rrdgraph> documentation. Unlike B<rrdtool graph>, B<xport> uses a
+step finer than (end-start)/rows when B<--maxrows> is not given, so the
+output can have more than 400 rows. With B<--maxrows>, a step finer than
+one row is ignored.
 
 =item B<--daemon>|B<-d> I<address>
 
