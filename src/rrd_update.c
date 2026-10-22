@@ -198,7 +198,7 @@ static void initialize_cdp_val(
     unsigned long start_pdp_offset,
     unsigned long pdp_cnt);
 
-static void reset_cdp(
+static int reset_cdp(
     rrd_t *rrd,
     unsigned long elapsed_pdp_st,
     rrd_value_t *pdp_temp,
@@ -1987,9 +1987,10 @@ static int update_cdp_prep(
             /* Nothing to consolidate if there's one PDP per CDP. However, if
              * we've missed some PDPs, let's update null counters etc. */
             if (elapsed_pdp_st > 2) {
-                reset_cdp(rrd, elapsed_pdp_st, pdp_temp, last_seasonal_coef,
-                          seasonal_coef, rra_idx, ds_idx, cdp_idx,
-                          (enum cf_en)current_cf);
+                if (reset_cdp(rrd, elapsed_pdp_st, pdp_temp, last_seasonal_coef,
+                              seasonal_coef, rra_idx, ds_idx, cdp_idx,
+                              (enum cf_en)current_cf) != 0)
+                    return -1;
             }
         }
 
@@ -2145,7 +2146,7 @@ static void initialize_cdp_val(
  * well as other functions that don't actually consolidate multiple
  * PDPs.
  */
-static void reset_cdp(
+static int reset_cdp(
     rrd_t *rrd,
     unsigned long elapsed_pdp_st,
     rrd_value_t *pdp_temp,
@@ -2192,9 +2193,9 @@ static void reset_cdp(
         /* need to reset violations buffer.
          * could do this more carefully, but for now, just
          * assume a bulk update wipes away all violations. */
-        erase_violations(rrd, cdp_idx, rra_idx);
-        break;
+        return erase_violations(rrd, cdp_idx, rra_idx);
     }
+    return 0;
 }
 
 static rrd_value_t initialize_carry_over(

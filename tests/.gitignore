@@ -5,3 +5,10 @@
 /*.log
 /*.trs
 /compat-cloexec
+
+/rrd-open-security
+/mock-rados-bounds
+/fetch-empty-security
+/.libs/
+/graph-security
+/daemon-fetch-security

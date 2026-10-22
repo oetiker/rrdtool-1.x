@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . $(dirname $0)/functions
+require_graph
 
 if [ -n "$MSYSTEM" ]; then
     BUILD=graph5

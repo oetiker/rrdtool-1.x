@@ -794,6 +794,14 @@ static int add_response_info(
         return -1;
     }
 
+    /* vsnprintf() returns the length that would have been written. Clamp
+     * that length before passing the buffer to wbuf_append(), otherwise a
+     * long formatted response makes wbuf_append() read past buffer. */
+    if ((size_t) len >= sizeof(buffer)) {
+        len = sizeof(buffer) - 1;
+        buffer[len - 1] = '\n';
+    }
+
     return wbuf_append(sock, buffer, len);
 }                       /* }}} static int add_response_info */
 
@@ -888,7 +896,14 @@ static int send_response(
     if (len < 0)
         return -1;
 
-    len += rclen;
+    /* Clamp before adding the status prefix to avoid both an int overflow
+     * and a read past buffer. Truncated responses must still end a line. */
+    if ((size_t) len >= sizeof(buffer) - (size_t) rclen) {
+        len = sizeof(buffer) - 1;
+        buffer[len - 1] = '\n';
+    } else {
+        len += rclen;
+    }
 
     /* append the result to the wbuf, don't write to the user */
     if (sock->batch_start)
@@ -1379,27 +1394,75 @@ static int check_file_access(
     return 1;
 }                       /* }}} static int check_file_access */
 
+/* Lexically normalize a path in-place: collapse double slashes and
+ * dot-slash segments (e.g. "foo//./bar" -> "foo/bar", "./foo" -> "foo").
+ * A relative path stays relative.  Does NOT resolve ".." - that is
+ * intentionally left for check_file_access().
+ */
+static void normalize_path(
+    char *path)
+{                       /* {{{ */
+    char     *src;
+    char     *dst;
+
+    if (path == NULL)
+        return;
+
+    src = path;
+    dst = path;
+
+    if (*src != '/') {
+        /* leading "./" of a relative path: "./a" and ".//a" -> "a" */
+        while (src[0] == '.' && src[1] == '/') {
+            src += 2;
+            while (*src == '/')
+                src++;
+        }
+    }
+
+    while (*src != '\0') {
+        if (src[0] == '/' && src[1] == '/') {
+            /* collapse consecutive slashes */
+            src++;
+        } else if (src[0] == '/' && src[1] == '.' &&
+                   (src[2] == '/' || src[2] == '\0')) {
+            /* collapse "/./" -> "/" (or trailing "/.") */
+            src += 2;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    /* an absolute path never becomes empty ("/." -> "/") */
+    if (dst == path && *path == '/')
+        dst++;
+    *dst = '\0';
+}                       /* }}} static void normalize_path */
+
 /* when using a base dir, convert relative paths to absolute paths.
  * The result must be free()'ed by the caller.
  */
 static char *get_abs_path(
     const char *filename)
-{
+{                       /* {{{ */
     char     *ret;
 
     assert(filename != NULL);
 
-    if (config_base_dir == NULL || *filename == '/')
-        return strdup(filename);
+    if (config_base_dir == NULL || *filename == '/') {
+        ret = strdup(filename);
+    } else {
+        ret = malloc(strlen(config_base_dir) + 1 + strlen(filename) + 1);
+        if (ret == NULL)
+            RRDD_LOG(LOG_ERR, "get_abs_path: malloc failed.");
+        else
+            sprintf(ret, "%s/%s", config_base_dir, filename);
+    }
 
-    ret = malloc(strlen(config_base_dir) + 1 + strlen(filename) + 1);
-    if (ret == NULL)
-        RRDD_LOG(LOG_ERR, "get_abs_path: malloc failed.");
-    else
-        sprintf(ret, "%s/%s", config_base_dir, filename);
+    if (ret != NULL)
+        normalize_path(ret);
 
     return ret;
-}                       /* }}} static int get_abs_path */
+}                       /* }}} static char *get_abs_path */
 
 static int flush_file(
     const char *filename)
@@ -2154,6 +2217,11 @@ static int handle_request_fetch_parse(
         parsed->field_cnt = 0;
         parsed->field_idx =
             malloc(sizeof(*parsed->field_idx) * parsed->ds_cnt);
+        if (parsed->field_idx == NULL) {
+            free_fetch_parsed(parsed);
+            send_response(sock, RESP_ERR, "Failed memory allocation\n");
+            return -1;
+        }
 
         /* now parse the extra names */
         while (buffer_get_field(&buffer, &buffer_size, &field) == 0) {
@@ -2218,35 +2286,57 @@ static int handle_request_fetch(
     if (status != 0)
         return 0;
 
-    add_response_info(sock, "FlushVersion: %lu\n", 1);
-    add_response_info(sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
-    add_response_info(sock, "End: %lu\n", (unsigned long) parsed.end_tm);
-    add_response_info(sock, "Step: %lu\n", parsed.step);
+    /* add_response_info() returns non-zero when the write buffer can't grow
+     * (out of memory).  Once that happens the response is already truncated,
+     * so stop building it and return the error: the connection layer closes
+     * the socket rather than send a partial result. */
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
+        goto out;
+    if ((status = add_response_info(sock, "Start: %lu\n",
+                                    (unsigned long) parsed.start_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "End: %lu\n",
+                                    (unsigned long) parsed.end_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
+        goto out;
 
     /* Add list of DS names */
-    add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt);
-    add_response_info(sock, "DSName: ");
+    if ((status = add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt)))
+        goto out;
+    if ((status = add_response_info(sock, "DSName: ")))
+        goto out;
     for (i = 0; i < parsed.field_cnt; i++) {
-        add_response_info(sock, (i == 0 ? "%s" : " %s"),
-                          parsed.ds_namv[parsed.field_idx[i]]);
+        if ((status = add_response_info(sock, (i == 0 ? "%s" : " %s"),
+                                        parsed.ds_namv[parsed.field_idx[i]])))
+            goto out;
     }
-    add_response_info(sock, "\n");
+    if ((status = add_response_info(sock, "\n")))
+        goto out;
 
     /* Add the actual data */
     assert(parsed.step > 0);
     for (t = parsed.start_tm + parsed.step, j = 0;
          t <= parsed.end_tm; t += parsed.step, j++) {
-        add_response_info(sock, "%10lu:", (unsigned long) t);
+        if ((status = add_response_info(sock, "%10lu:", (unsigned long) t)))
+            goto out;
         for (i = 0; i < parsed.field_cnt; i++) {
-            unsigned int idx = j * parsed.ds_cnt + parsed.field_idx[i];
+            size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
 
-            add_response_info(sock, " %0.17e", parsed.data[idx]);
+            if ((status = add_response_info(sock, " %0.17e",
+                                            parsed.data[idx])))
+                goto out;
         }
-        add_response_info(sock, "\n");
+        if ((status = add_response_info(sock, "\n")))
+            goto out;
     }                   /* for (t) */
     free_fetch_parsed(&parsed);
 
     return (send_response(sock, RESP_OK, "Success\n"));
+
+  out:
+    free_fetch_parsed(&parsed);
+    return status;
 }                       /* }}} int handle_request_fetch */
 
 static int handle_request_fetchbin(
@@ -2268,34 +2358,50 @@ static int handle_request_fetchbin(
         return 0;
 
     /* create a buffer for the full binary line */
+    /* BinaryData record sizes/counts and their product use int. */
+    if (parsed.steps > INT_MAX / sizeof(double)) {
+        free_fetch_parsed(&parsed);
+        return send_response(sock, RESP_ERR, "Fetch range is too large\n");
+    }
     dbuffer_size = sizeof(double) * parsed.steps;
     dbuffer = calloc(1, dbuffer_size);
     if (!dbuffer) {
+        free_fetch_parsed(&parsed);
         return (send_response(sock, RESP_ERR, "Failed memory allocation\n"));
     }
 
     assert(parsed.step > 0);
 
-    add_response_info(sock, "FlushVersion: %lu\n", 1);
-    add_response_info(sock, "Start: %lu\n", (unsigned long) parsed.start_tm);
-    add_response_info(sock, "End: %lu\n", (unsigned long) parsed.end_tm);
-    add_response_info(sock, "Step: %lu\n", parsed.step);
-    add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt);
+    /* as in handle_request_fetch(): stop and return the error if the write
+     * buffer can't grow, rather than emit a truncated binary response. */
+    if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
+        goto out;
+    if ((status = add_response_info(sock, "Start: %lu\n",
+                                    (unsigned long) parsed.start_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "End: %lu\n",
+                                    (unsigned long) parsed.end_tm)))
+        goto out;
+    if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
+        goto out;
+    if ((status = add_response_info(sock, "DSCount: %lu\n", parsed.field_cnt)))
+        goto out;
 
     /* now iterate the parsed fields */
     for (i = 0; i < parsed.field_cnt; i++) {
         for (t = parsed.start_tm + parsed.step, j = 0;
              t <= parsed.end_tm; t += parsed.step, j++) {
-            unsigned int idx = j * parsed.ds_cnt + parsed.field_idx[i];
+            size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
 
             dbuffer[j] = parsed.data[idx];
         }
 
-        add_binary_response_info(sock,
+        if ((status = add_binary_response_info(sock,
                                  "DSName-",
                                  parsed.ds_namv[parsed.field_idx[i]],
-                                 dbuffer, parsed.steps, sizeof(double)
-            );
+                                 dbuffer, (int) parsed.steps, (int) sizeof(double)
+            )))
+            goto out;
     }
 
     free_fetch_parsed(&parsed);
@@ -2303,6 +2409,11 @@ static int handle_request_fetchbin(
 
     return (send_response(sock, RESP_OK_BIN, "%i Success\n",
                           parsed.field_cnt + 5));
+
+  out:
+    free_fetch_parsed(&parsed);
+    free(dbuffer);
+    return status;
 }                       /* }}} int handle_request_fetchbin */
 
 /* we came across a "WROTE" entry during journal replay.
@@ -2515,6 +2626,65 @@ static int handle_request_last(
     free(file);
     return rc;
 }                       /* }}} static int handle_request_last  */
+
+static int handle_request_lastupdate(
+    HANDLER_PROTO)
+{                       /* {{{ */
+    char     *file = NULL, *pbuffile;
+    int       status, rc;
+    unsigned long i;
+    rrd_file_t *rrd_file;
+    rrd_t     rrd;
+    time_t    last_update;
+
+    /* obtain filename */
+    status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
+    if (status != 0) {
+        rc = syntax_error(sock, cmd);
+        goto done;
+    }
+    /* get full pathname */
+    file = get_abs_path(pbuffile);
+    if (file == NULL) {
+        rc = send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
+        goto done;
+    }
+    if (!check_file_access(file, sock)) {
+        rc = send_response(sock, RESP_ERR, "%s: %s\n", file,
+                           rrd_strerror(EACCES));
+        goto done;
+    }
+    /* write pending values first, like FETCH does */
+    status = flush_file(file);
+    if ((status != 0) && (status != ENOENT)) {
+        rc = send_response(sock, RESP_ERR,
+                           "flush_file (%s) failed with status %i.\n",
+                           file, status);
+        goto done;
+    }
+    rrd_clear_error();
+    rrd_init(&rrd);
+    rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
+    if (!rrd_file) {
+        rrd_free(&rrd);
+        rc = send_response(sock, RESP_ERR, "RRD Error: %s\n",
+                           rrd_get_error());
+        goto done;
+    }
+    last_update = rrd.live_head->last_up;
+    for (i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        add_response_info(sock, "%s %s\n",
+                          rrd.ds_def[i].ds_nam,
+                          rrd.pdp_prep[i].last_ds);
+    }
+    rrd_close(rrd_file);
+    rrd_free(&rrd);
+    rc = send_response(sock, RESP_OK, "%lu LastUpdate values follow\n",
+                       (unsigned long) last_update);
+  done:
+    free(file);
+    return rc;
+}                       /* }}} static int handle_request_lastupdate */
 
 static int handle_request_create(
     HANDLER_PROTO)
@@ -3165,6 +3335,15 @@ static command_t list_of_commands[] = { /* {{{ */
      "Note that this is the time of the last update of the RRD file itself, not\n"
      "the last time data was received via rrdcached, so there may be pending\n"
      "updates in the queue.  If this bothers you, then first run a FLUSH.\n"},
+    {
+     "LASTUPDATE",
+     handle_request_lastupdate,
+     CMD_CONTEXT_CLIENT,
+     "LASTUPDATE <filename>\n",
+     "The LASTUPDATE command retrieves the last update time and DS values for\n"
+     "a specified RRD file.  Returns one line per DS with the DS name and its\n"
+     "last value, and the status line contains the timestamp.\n"
+     "Pending updates for the file are written to disk first.\n"},
     {
      "CREATE",
      handle_request_create,
@@ -4254,9 +4433,8 @@ static int open_listen_sockets_systemd(
             return i;
         }
 
-        listen_fds[listen_fds_num].wbuf_data = NULL;
-        listen_fds[listen_fds_num].wbuf_size = 0;
-        listen_fds[listen_fds_num].wbuf_capacity = 0;
+        /* realloc() memory is uninitialized; addr must be NULL, not garbage */
+        memset(&listen_fds[listen_fds_num], 0, sizeof(listen_fds[0]));
         listen_fds[listen_fds_num].fd = sd_fd;
         listen_fds[listen_fds_num].family = sa.sun_family;
         /* Add permissions to the socket */
