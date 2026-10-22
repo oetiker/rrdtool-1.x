@@ -19,8 +19,15 @@ $RRDTOOL create "${BUILD}.rrd" --start $((S - 3600)) --step 60 \
     RRA:AVERAGE:0.5:10:300
 report "create"
 
-$RRDTOOL update "${BUILD}.rrd" \
-    $(seq -f "%.0f:1" $((S - 3540)) 60 $E)
+# one value per minute; in batches of 60, since a single update with all
+# values is too long for the rrdcached client buffer
+T=$((S - 3540))
+while [ $T -le $E ]; do
+    $RRDTOOL update "${BUILD}.rrd" \
+        $(seq -f "%.0f:1" $T 60 $((T + 59 * 60 < E ? T + 59 * 60 : E))) \
+        || break
+    T=$((T + 60 * 60))
+done
 report "update"
 
 is_cached && exit 0
