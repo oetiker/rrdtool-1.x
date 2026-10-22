@@ -312,6 +312,8 @@ typedef struct image_desc_t {
     ygrid_scale_t ygrid_scale;  /* calculated y axis grid info */
     int       gridfit;  /* adjust y-axis range etc so all
                            grindlines falls in integer pixel values */
+    int       svg_crisp_grid;   /* ask the SVG renderer to draw the
+                                   grid lines crisp */
     char     *imginfo;  /* construct an <IMG ... tag and return
                            as first retval */
     enum gfx_if_en imgformat;   /* image format */
