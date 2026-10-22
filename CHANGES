@@ -3,10 +3,54 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
-* `rrdtool fetch` now always emits `nan` (never `-nan`) for unknown
-  values. GCC >= 4.4.4 may produce NaN with the sign bit set, and
-  glibc honours that sign in printf, breaking consumers (e.g. OpenNMS)
-  that match on the string `nan`. Fix by @oetiker. Issue #297.
+* `rrdtool fetch` printed unknown values as `-nan` on many systems, which
+  broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
+* `rrdtool graph` now fails with "Could not save svg to '...'" when it
+  cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
+  can't even die" and still exited with status 0.
+
+Features
+--------
+* SVG graphs now show sharp grid lines in the browser. Before, each grid
+  line was smeared over two pixels. `--no-gridfit` restores the old
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+
+RRDtool 1.11.0 - 2026-08-07
+===========================
+Bugfixes
+--------
+* hardening: size the rrd_diff scratch buffer for its largest input @somethingwithproof
+* `rrdtool dump` now uses a numeric UTC offset (`%z`, e.g. `+0900`) instead
+  of the locale timezone name (`%Z`) in XML comments. Locale timezone names
+  can be encoded in a non-UTF-8 encoding (e.g. CJK locales), which breaks
+  the XML declaration and causes `rrdtool restore` to fail with
+  "Input is not proper UTF-8". The numeric offset is always ASCII.
+  Note: existing dump files already containing locale timezone names remain
+  valid XML as long as their encoding matches; newly created dumps will
+  always contain pure ASCII in these comments. Issue #1173
+  reported by @k79e, fix by @oetiker.
+* Fix segfault when `--x-grid` is given without a trailing date-format
+  field. The `%n` conversion in `sscanf()` is not counted in its return
+  value, so `stroff` remained uninitialized when the input ended before
+  the final `:` separator; the subsequent `stroff != 0` guard read
+  garbage and could branch into `strdup()` with a bogus offset. Fixed by
+  initialising `stroff = 0` so a partial match safely falls through to
+  the existing "invalid x-grid format" error path. Issue #1291
+  reported by @anvilvapre, fixed by @oetiker
+* libdbi /derive now returns 0 instead of NaN when the underlying
+  counter is constant (zero delta). Previously the strict `d_value > 0`
+  guard skipped zero deltas the same way it skips negative ones (counter
+  resets). Changed to `d_value >= 0`. Issue #550 reported by
+  @bitionaire, fix by @oetiker.
+* Fix a 1-byte heap buffer overflow in `checkUnusedValues()` that
+  triggered `*** buffer overflow detected ***` SIGABRT under glibc
+  fortified `strcat()` when reporting unused graph arguments. The
+  function under-allocated by one byte and silently relied on that
+  overflow to make its trailing `:` strip land on the right index.
+  Refactored to size buffers correctly and prepend the separator
+  rather than build-then-strip, so the two no longer have to agree.
+  Reported and original fix attempt in PR #1329 by @ppisar,
+  refactored fix by @oetiker
 * Pad the Perl `$RRDs::VERSION` / `$RRDp::VERSION` numeric encoding so
   two-digit minor releases compare monotonically. The numeric version
   now uses three-digit zero-padded minor and patch fields, e.g.
@@ -26,9 +70,26 @@ Bugfixes
   text documentation works on systems with BSD-derived nroff (e.g.
   macOS /usr/bin/nroff). Issue #1323 reported by @gigaimage, fixed by
   @oetiker
+* Fix SIGFPE divide-by-zero crash in `rrdtool dump` when processing
+  fuzz-crafted RRD files that contain an RRA with `pdp_cnt` or
+  `pdp_step` equal to zero. The modulo operation at the heart of the
+  timestamp calculation is now guarded: such files are rejected with
+  a descriptive error message instead of crashing.
+  Issue #783 reported by @rwhitworth, fix by @oetiker.
 
 Features
 --------
+* rrdgraph: new --vertical-label-angle and --right-axis-label-angle options
+  to rotate the two y axis legends independently at run time. The compile
+  time RRDGRAPH_YLEGEND_ANGLE remains the default for both, so existing
+  graphs are unchanged. Use --right-axis-label-angle 270 to have the right
+  hand legend read from the top down. Suggested by @blappm in #1377,
+  implemented by @oetiker
+* rrdgraph: new --right-axis-range min:max option to suppress right axis
+  labels outside the given range, so a bounded right axis is no longer
+  labelled with values it cannot reach when the left axis range does not
+  line up. Either end may be left empty for unbounded. Suggested by @blappm
+  in #1377, implemented by @oetiker
 
 RRDtool 1.10.3 - 2026-05-25
 ===========================

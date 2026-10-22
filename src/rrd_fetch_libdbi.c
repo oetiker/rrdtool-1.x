@@ -706,8 +706,8 @@ rrd_fetch_fn_libdbi(
       r_value=DNAN;
       /* check for timestamp delta to be within an acceptable range */
       if ((d_timestamp>0)&&(d_timestamp<2*derive)) {
-	/* only handle positive delta - avoid wrap-arounds/counter resets showing up as spikes */
-	if (d_value>0) {
+	/* only handle non-negative delta - avoid wrap-arounds/counter resets showing up as spikes */
+	if (d_value>=0) {
 	  /* and normalize to per second */
 	  r_value=d_value/d_timestamp;
 	}

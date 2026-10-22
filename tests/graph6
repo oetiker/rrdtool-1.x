@@ -1,0 +1,95 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=graph6
+else
+    BUILD=$BUILDDIR/graph6
+fi
+
+# SVG output carries a style sheet that draws the grid lines crisp. It
+# selects them by their stroke width, so check that the selector matches
+# what cairo writes, with and without --zoom, to a file and to stdout.
+
+$RRDTOOL create ${BUILD}.rrd \
+    --start 920804400 --step 300 \
+    DS:val:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:600
+report "create"
+
+is_cached && exit 0
+
+$RRDTOOL update ${BUILD}.rrd \
+    920804700:1 920805000:3 920805300:2 920805600:5 920805900:4
+report "update"
+
+svg () {
+    $RRDTOOL graph "$1" --imgformat SVG \
+        --start 920804400 --end 920806200 \
+        "${@:2}" \
+        DEF:v=${BUILD}.rrd:val:AVERAGE \
+        LINE1:v#000000:value
+}
+
+if ! svg ${BUILD}.svg > /dev/null 2>&1; then
+    ok "no SVG support, skipping"
+    exit 0
+fi
+
+# print how many stroked paths the style sheet in the given file selects
+# and how many it leaves alone, using the selectors of the style sheet
+selected () {
+    perl -e '
+        local $/;
+        my $svg = <>;
+        my ($css) = $svg =~ m{<style[^>]*>(.*?)\{shape-rendering:crispEdges\}</style>}s;
+        $css //= "";
+        my @attr = $css =~ /path\[stroke-width="([^"]+)"\]/g;
+        my @style = $css =~ /path\[style\*="([^"]+)"\]/g;
+        my ($in, $out) = (0, 0);
+        for my $p ($svg =~ /<path\b[^>]*>/g) {
+            next unless $p =~ /stroke-width/;
+            if (grep({ $p =~ /\bstroke-width="\Q$_\E"/ } @attr)
+                || grep({ $p =~ /\bstyle="[^"]*\Q$_\E/ } @style)) {
+                $in++;
+            } else {
+                $out++;
+            }
+        }
+        print "$in $out\n";
+    ' "$1"
+}
+
+# the grid must be selected, the data line (LINE1) and its legend marker
+# must keep their anti-aliasing
+check () {
+    local file=$1 what=$2
+    local styles=$(grep -c '<style' "$file")
+    local sel unsel
+    read sel unsel < <(selected "$file")
+    if [ "$styles" != 1 ]; then
+        fail 1 "$what: expected one style sheet, found $styles"
+    elif [ "$sel" -lt 10 ]; then
+        fail 1 "$what: style sheet selects only $sel grid lines"
+    elif [ "$unsel" != 2 ]; then
+        fail 1 "$what: expected the data line and its marker unselected, got $unsel"
+    else
+        ok "$what: style sheet selects $sel grid lines, leaves $unsel lines alone"
+    fi
+}
+
+check ${BUILD}.svg "SVG file"
+
+svg - > ${BUILD}-stdout.svg
+check ${BUILD}-stdout.svg "SVG on stdout"
+
+svg ${BUILD}-zoom.svg --zoom 2 > /dev/null
+check ${BUILD}-zoom.svg "SVG with --zoom 2"
+
+svg ${BUILD}-nogridfit.svg --no-gridfit > /dev/null
+if grep -q '<style' ${BUILD}-nogridfit.svg; then
+    fail 1 "--no-gridfit should leave out the style sheet"
+else
+    ok "--no-gridfit leaves out the style sheet"
+fi
