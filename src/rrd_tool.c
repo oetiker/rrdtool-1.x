@@ -769,8 +769,18 @@ static int HandleInputLine(
 #else
                 printf("%10lu:", ti);
 #endif
-                for (ii = 0; ii < ds_cnt; ii++)
-                    printf(" %0.10e", *(datai++));
+                for (ii = 0; ii < ds_cnt; ii++) {
+                    rrd_value_t val = *(datai++);
+
+                    /* printf() shows a NaN with the sign bit set as
+                       "-nan" (glibc) or "-nan(ind)" (MSVC); always
+                       print the plain "nan" that fetch output has on
+                       systems where unknown values are positive NaN */
+                    if (isnan(val))
+                        printf(" nan");
+                    else
+                        printf(" %0.10e", val);
+                }
                 printf("\n");
             }
             for (i = 0; i < ds_cnt; i++)
@@ -779,7 +789,6 @@ static int HandleInputLine(
             free(data);
         }
     } else if (strcmp("xport", argv[1]) == 0) {
-#ifdef HAVE_RRD_GRAPH
         time_t    start, end;
         unsigned long step, col_cnt;
         rrd_value_t *data;
@@ -793,10 +802,6 @@ static int HandleInputLine(
           free(legend_v);
           free(data);
         }
-#else
-        rrd_set_error
-            ("the instance of rrdtool has been compiled without graphics");
-#endif
     } else if (strcmp("graph", argv[1]) == 0) {
 #ifdef HAVE_RRD_GRAPH
         char    **calcpr;

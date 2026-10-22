@@ -74,6 +74,11 @@ int rrd_client_update(rrd_client_t *client, const char *filename, int values_num
 rrd_info_t * rrd_client_info(rrd_client_t *client, const char *filename);
 char *rrd_client_list(rrd_client_t *client, int recursive, const char *dirname);
 time_t rrd_client_last(rrd_client_t *client, const char *filename);
+int rrd_client_lastupdate(rrd_client_t *client, const char *filename,
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds);
 time_t rrd_client_first(rrd_client_t *client, const char *filename, int rraindex);
 int rrd_client_create(rrd_client_t *client, const char *filename,
     unsigned long pdp_step,
@@ -128,6 +133,11 @@ int rrdc_update (const char *filename, int values_num,
 rrd_info_t * rrdc_info (const char *filename);
 char *rrdc_list(int recursive, const char *dirname);
 time_t rrdc_last (const char *filename);
+int rrdc_lastupdate (const char *filename,
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds);
 time_t rrdc_first (const char *filename, int rraindex);
 int rrdc_create (const char *filename,
     unsigned long pdp_step,

@@ -1,0 +1,110 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+WORK=$(mktemp -d "$BUILDDIR/restore-bounds.XXXXXX") || fail 1 mktemp
+BUILD="$WORK/test"
+trap 'rm -rf "$WORK"' EXIT
+
+$RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 RRA:MAX:0.5:1:5 || fail create
+$RRDTOOL update "${BUILD}.rrd" 900000060:1 900000120:2 900000180:3 || fail update
+$RRDTOOL dump "${BUILD}.rrd" "${BUILD}.xml" || fail dump
+
+# Empty only the first RRA's database; keep the second RRA intact.
+awk '
+  /<database>/ { database++; in_database = 1 }
+  /<\/database>/ { in_database = 0 }
+  !(database == 1 && in_database && /<row>/)
+' "${BUILD}.xml" > "${BUILD}-crafted.xml"
+
+$RRDTOOL restore "${BUILD}-crafted.xml" "${BUILD}-out.rrd" >"${BUILD}.out" 2>&1
+RC=$?
+
+# A signal death (e.g. SIGFPE div-by-zero) shows up as rc >= 128; make sure
+# restore rejects the zero-row RRA cleanly instead of crashing.
+if [ "$RC" -ge 128 ]; then
+  fail 1 "restore crashed on zero-row RRA (rc=$RC)"
+fi
+if [ "$RC" -eq 0 ]; then
+  fail 1 "restore accepted a zero-row RRA"
+fi
+grep -q "RRA has zero rows (index 0, CF AVERAGE)" "${BUILD}.out" || \
+  fail 1 "zero-row RRA was not diagnosed cleanly"
+report "reject zero-row RRA on restore"
+
+# Exercise missing and empty databases separately from XML parser failures.
+$RRDTOOL create "${BUILD}-valid.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 || fail create
+$RRDTOOL dump "${BUILD}-valid.rrd" "${BUILD}-valid.xml" || fail dump
+for variant in missing empty unknown; do
+  case "$variant" in
+    missing) sed '/<database>/,/<\/database>/d' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='has no database rows' ;;
+    empty) sed '/<row>/d' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='zero rows' ;;
+    unknown) sed 's@<row>.*</row>@<unexpected>1</unexpected>@' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='found unexpected tag: unexpected' ;;
+  esac
+  $RRDTOOL restore -f "${BUILD}-edge.xml" "${BUILD}-edge.rrd" >"${BUILD}-edge.out" 2>&1
+  rc=$?
+  [ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "restore did not reject $variant database cleanly"
+  grep -q "$diagnostic" "${BUILD}-edge.out" || fail 1 "restore lost the $variant diagnostic"
+  [ ! -e "${BUILD}-edge.rrd" ] || fail 1 "restore left a partial database"
+done
+report "reject missing, empty, and malformed databases with specific errors"
+
+# EOF outside the database parser must also prevent write_file().
+for boundary in database params /database; do
+  awk -v tag="<$boundary>" 'index($0,tag) { exit } { print }' \
+    "${BUILD}-valid.xml" >"${BUILD}-truncated.xml"
+  $RRDTOOL restore -f "${BUILD}-truncated.xml" "${BUILD}-truncated.rrd" >"${BUILD}-truncated.out" 2>&1
+  rc=$?
+  [ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "truncated $boundary was not rejected cleanly"
+  [ ! -e "${BUILD}-truncated.rrd" ] || fail 1 "truncated $boundary left an output RRD"
+done
+# Duplicate a complete database without corrupting unrelated XML fields.
+awk '
+ /<database>/ { in_database=1; block="" }
+ in_database { block=block $0 "\n" }
+ { print }
+ /<\/database>/ { printf "%s",block; in_database=0 }
+' "${BUILD}-valid.xml" >"${BUILD}-duplicate.xml"
+$RRDTOOL restore -f "${BUILD}-duplicate.xml" "${BUILD}-duplicate.rrd" >"${BUILD}-duplicate.out" 2>&1
+rc=$?
+[ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "duplicate database was not rejected cleanly"
+grep -q 'multiple database elements' "${BUILD}-duplicate.out" || fail 1 "duplicate database was not diagnosed"
+[ ! -e "${BUILD}-duplicate.rrd" ] || fail 1 "duplicate database left an output RRD"
+report "reject truncated and duplicate databases before writing an RRD"
+
+# Reject absent top-level data sources before any zero-size realloc.
+awk '
+ /<rra>/ { in_rra=1 }
+ !in_rra && /<ds>/ { skip=1 }
+ !skip { print }
+ !in_rra && /<\/ds>/ { skip=0 }
+' "${BUILD}-valid.xml" >"${BUILD}-no-ds.xml"
+$RRDTOOL restore -f "${BUILD}-no-ds.xml" "${BUILD}-no-ds.rrd" >"${BUILD}-no-ds.out" 2>&1
+rc=$?
+[ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "zero-data-source restore did not fail cleanly"
+grep -q 'at least one data source' "${BUILD}-no-ds.out" || fail 1 "missing data sources were not diagnosed"
+[ ! -e "${BUILD}-no-ds.rrd" ] || fail 1 "zero-data-source restore wrote an RRD"
+report "reject zero-data-source restore without a double free"
+
+# Unknown parameters must not lose their error at the closing tag.
+sed 's@<params>@<params><unknown_parameter>1</unknown_parameter>@' \
+  "${BUILD}-valid.xml" >"${BUILD}-unknown-param.xml"
+$RRDTOOL restore "${BUILD}-unknown-param.xml" "${BUILD}-unknown-param.rrd" \
+  >"${BUILD}-unknown-param.out" 2>&1
+rc=$?
+[ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "unknown parameter was not rejected cleanly"
+grep -q 'Unknown tag: unknown_parameter' "${BUILD}-unknown-param.out" || fail 1 "unknown parameter diagnostic lost"
+[ ! -e "${BUILD}-unknown-param.rrd" ] || fail 1 "unknown parameter left partial output"
+report "reject unknown RRA parameters"
+
+# The stricter parser must still accept the full Holt-Winters parameter set.
+$RRDTOOL create "${BUILD}-hw.rrd" --start 900000000 --step 300 \
+  DS:value:GAUGE:600:U:U RRA:HWPREDICT:1440:0.1:0.0035:288 || fail 1 "create Holt-Winters"
+$RRDTOOL dump "${BUILD}-hw.rrd" "${BUILD}-hw.xml" || fail 1 "dump Holt-Winters"
+$RRDTOOL restore "${BUILD}-hw.xml" "${BUILD}-hw-restored.rrd" || fail 1 "restore Holt-Winters"
+$RRDTOOL dump "${BUILD}-hw-restored.rrd" "${BUILD}-hw-restored.xml" || fail 1 "dump restored Holt-Winters"
+cmp "${BUILD}-hw.xml" "${BUILD}-hw-restored.xml" || fail 1 "Holt-Winters round trip changed data"
+report "preserve Holt-Winters dump/restore round trip"

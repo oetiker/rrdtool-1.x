@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# rrdcached must treat "./a/b.rrd", "a/./b.rrd", "a//b.rrd" and "a/b.rrd"
+# as the same file, so that a fetch flushes values still in the cache (#1071).
+# Uses a TCP socket, because over a unix socket the client resolves the
+# path itself.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base/sub" || fail 1 "mkdir $W/base/sub"
+W=$(readlink -f -- "$W")
+
+port=$(python3 -S << HERE
+import socketserver
+s = socketserver.TCPServer(("localhost", 0), None)
+print(s.server_address[1])
+s.server_close()
+HERE
+)
+ADDR="localhost:$port"
+PIDFILE="$W/rrdcached.pid"
+
+# -w 3600: nothing gets written to disk unless a client asks for a flush
+$RRDCACHED -p "$PIDFILE" -l "$ADDR" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE"); rm -rf "$W"' EXIT
+sleep 1
+
+T=1700000000
+
+function check_path {
+	local upd="$1" fet="$2"
+	# rrdcached remembers the last update time, so every round moves on
+	T=$((T+1000))
+	rm -f "$W/base/sub/c.rrd"
+	$RRDTOOL create "$W/base/sub/c.rrd" --start $((T-10)) --step 10 DS:a:GAUGE:20:U:U RRA:AVERAGE:0.5:1:100 || fail $? create
+	for i in 1 2 3 4 5 6; do
+		$RRDTOOL update -d "$ADDR" "$upd" $((T+i*10)):$i || fail $? "update $upd"
+	done
+	got=`$RRDTOOL fetch -d "$ADDR" "$fet" AVERAGE -s $((T+20)) -e $((T+40)) | grep -c 'e+00'`
+	test "$got" = 3
+	report "update '$upd', fetch '$fet' returns cached values (got $got of 3)"
+}
+
+check_path sub/c.rrd ./sub/c.rrd
+check_path sub/c.rrd sub/./c.rrd
+check_path sub/c.rrd sub//c.rrd
+check_path sub/c.rrd .//sub/c.rrd
+check_path ./sub/c.rrd sub/c.rrd
+check_path .//sub/./c.rrd sub//c.rrd
