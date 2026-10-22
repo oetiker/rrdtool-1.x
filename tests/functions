@@ -131,6 +131,15 @@ function report {
 
 }
 
+# Skip the calling test (automake exit code 77) when rrdtool was built
+# with --disable-rrd_graph.
+function require_graph {
+	if "$TOP_BUILDDIR/src/rrdtool" graph - 2>&1 | grep -q "compiled without graphics" ; then
+		echo >&2 "SKIP: rrdtool was built without graph support"
+		exit 77
+	fi
+}
+
 function run_cached {
         local D="$1"
         local CACHED="${D:-$RRDCACHED}"

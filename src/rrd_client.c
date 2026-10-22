@@ -1327,7 +1327,7 @@ rrd_info_t *rrd_client_info(
                 break;
             }
         }
-        if (!*s)
+        if (!*s && itype != RD_I_STR)
             break;
         /* finally, we're pointing to the value */
         switch (itype) {
