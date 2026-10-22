@@ -1,0 +1,48 @@
+#!/bin/bash
+# rrdtool info through rrdcached must return the same keys as a local
+# info, also when a DS has an empty last_ds string (#1080).
+
+. $(dirname $0)/functions
+
+is_cached && exit 0
+
+BUILD=$BUILDDIR/info-cached1
+CACHED_BIN=$TOP_BUILDDIR/src/rrdcached
+SOCK=$BUILDDIR/info-cached1-rrdcached.sock
+PIDFILE=$BUILDDIR/info-cached1-rrdcached.pid
+
+# no rrdcached in this build (or on Windows): skip
+[ -n "$MSYSTEM" ] && exit 77
+[ -x "$CACHED_BIN" ] || exit 77
+
+rm -f "$BUILD.rrd" "$BUILD.xml" "$SOCK" "$PIDFILE"
+
+$RRDTOOL create "$BUILD.rrd" --start 1300000000 --step 300 \
+    DS:a:GAUGE:600:U:U DS:b:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
+report "create"
+
+# give DS a an empty last_ds via dump/restore
+$RRDTOOL dump "$BUILD.rrd" \
+    | sed '0,/<last_ds>U<\/last_ds>/s//<last_ds><\/last_ds>/' > "$BUILD.xml"
+$RRDTOOL restore -f "$BUILD.xml" "$BUILD.rrd"
+report "restore with empty last_ds"
+
+$RRDTOOL info "$BUILD.rrd" | grep -q '^ds\[a\]\.last_ds = ""$'
+report "local info shows empty last_ds"
+
+"$CACHED_BIN" -p "$PIDFILE" -l "unix:$SOCK" -b "$BUILDDIR" -B -F
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; rm -f "$PIDFILE" "$SOCK"' EXIT
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ -S "$SOCK" ] && break
+    sleep 0.5
+done
+
+LOCAL=$($RRDTOOL info "$BUILD.rrd" | sed 's/ = .*//')
+REMOTE=$($RRDTOOL info --daemon "unix:$SOCK" "$BUILD.rrd" | sed 's/ = .*//')
+MSG="info via rrdcached lists all $(echo "$LOCAL" | wc -l) keys (got $(echo "$REMOTE" | wc -l))"
+[ -n "$REMOTE" ] && [ "$LOCAL" = "$REMOTE" ]
+report "$MSG"
+
+$RRDTOOL info --daemon "unix:$SOCK" "$BUILD.rrd" | grep -q '^ds\[a\]\.last_ds = ""$'
+report "info via rrdcached shows empty last_ds"
