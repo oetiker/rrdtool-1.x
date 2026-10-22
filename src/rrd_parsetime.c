@@ -833,6 +833,47 @@ static char *day(
  * the pointer to the error message in the case of problems
  */
 
+/*
+ * 'epoch' is 1970-01-01 00:00:00 UTC.  The parser collects the year,
+ * month and day deltas of an epoch based time in ptv->tm (all starting
+ * at 0) and the rest in ptv->offset.  Do the calendar arithmetic in UTC
+ * and store the result as local broken-down time with a zero offset, so
+ * that every consumer computing mktime(&ptv->tm) + ptv->offset gets the
+ * right timestamp, independent of the local timezone.
+ */
+static void epoch_to_tm(
+    rrd_time_value_t * ptv)
+{
+    long long year = 1970LL + ptv->tm.tm_year;
+    long long mon = ptv->tm.tm_mon;
+    long long days, era, yoe, mp, doy, doe;
+    time_t    result;
+
+    /* normalize the month delta into the year */
+    year += mon / 12;
+    mon %= 12;
+    if (mon < 0) {
+        mon += 12;
+        year--;
+    }
+    /* days since 1970-01-01 of the first of that month
+       (proleptic Gregorian calendar, Howard Hinnant's days_from_civil) */
+    if (mon < 2)
+        year--;
+    era = (year >= 0 ? year : year - 399) / 400;
+    yoe = year - era * 400;
+    mp = (mon + 10) % 12;   /* March = 0 */
+    doy = (153 * mp + 2) / 5;
+    doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    days = era * 146097 + doe - 719468;
+
+    days += ptv->tm.tm_mday;
+    result = (time_t) (days * 86400LL + ptv->offset);
+
+    localtime_r(&result, &ptv->tm);
+    ptv->offset = 0;
+}
+
 static mutex_t parsetime_mutex = MUTEX_INITIALIZER;
 
 static char     *rrd_parsetime_nomt(
@@ -1005,6 +1046,9 @@ static char     *rrd_parsetime_nomt(
         panic(e("unparsable trailing text: '...%s%s'", sc_token, sct));
     }
 
+    if (ptv->type == RELATIVE_TO_EPOCH)
+        epoch_to_tm(ptv);
+
     if (ptv->type == ABSOLUTE_TIME)
         if (mktime(&ptv->tm) == -1) {   /* normalize & check */
             /* can happen for "nonexistent" times, e.g. around 3am */
@@ -1051,23 +1095,6 @@ int rrd_proc_start_end(
         tmtmp.tm_year += start_tv->tm.tm_year;
 
         *start = mktime(&tmtmp) + start_tv->offset;
-    } else if (start_tv->type == RELATIVE_TO_EPOCH) {
-        /* epoch is Unix time 0 (1970-01-01 00:00:00 local).  The parsed
-         * year/month/day deltas are in start_tv->tm (accumulated relative
-         * to 0), so add them to the 1970 base before calling mktime. */
-        struct tm tmtmp;
-        time_t    epoch = 0;
-
-        localtime_r(&epoch, &tmtmp);
-        tmtmp.tm_sec  = 0;
-        tmtmp.tm_min  = 0;
-        tmtmp.tm_hour = 0;
-        tmtmp.tm_isdst = -1;
-        tmtmp.tm_mday += start_tv->tm.tm_mday;
-        tmtmp.tm_mon  += start_tv->tm.tm_mon;
-        tmtmp.tm_year += start_tv->tm.tm_year;
-
-        *start = mktime(&tmtmp) + start_tv->offset;
     } else {
         *start = mktime(&(start_tv->tm)) + start_tv->offset;
     }
@@ -1078,20 +1105,6 @@ int rrd_proc_start_end(
         localtime_r(start,&tmtmp);
         tmtmp.tm_mday += end_tv->tm.tm_mday;
         tmtmp.tm_mon += end_tv->tm.tm_mon;
-        tmtmp.tm_year += end_tv->tm.tm_year;
-
-        *end = mktime(&tmtmp) + end_tv->offset;
-    } else if (end_tv->type == RELATIVE_TO_EPOCH) {
-        struct tm tmtmp;
-        time_t    epoch = 0;
-
-        localtime_r(&epoch, &tmtmp);
-        tmtmp.tm_sec  = 0;
-        tmtmp.tm_min  = 0;
-        tmtmp.tm_hour = 0;
-        tmtmp.tm_isdst = -1;
-        tmtmp.tm_mday += end_tv->tm.tm_mday;
-        tmtmp.tm_mon  += end_tv->tm.tm_mon;
         tmtmp.tm_year += end_tv->tm.tm_year;
 
         *end = mktime(&tmtmp) + end_tv->offset;

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# 'epoch' based time specifications count from 1970-01-01 00:00:00 UTC,
+# independent of the local timezone (#939).
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/`basename $0`
+
+# first timestamp returned by fetch for the given start time
+function first_fetch {
+	$RRDTOOL fetch ${BUILD}.rrd AVERAGE -s "$1" -e start+60 | sed -n 's/^ *\([0-9]*\):.*/\1/p' | head -n 1
+}
+
+function expect_first {
+	local tz="$1" spec="$2" want="$3"
+	local got
+	got=`TZ=$tz first_fetch "$spec"`
+	test "$got" = "$want"
+	report "TZ=$tz fetch -s '$spec' starts at $want (got '$got')"
+}
+
+$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60s DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:600
+report create
+
+for tz in UTC Europe/Zurich America/New_York Asia/Tokyo; do
+	# fetch returns the first row after the start time
+	expect_first $tz 'epoch+1500000000s' 1500000060
+	expect_first $tz 'epoch+315439500s' 315439560
+	# 2050-01-01 00:00:00 UTC
+	expect_first $tz 'epoch+80y' 2524608060
+	# 2017-07-14 00:00:00 UTC + 2h
+	expect_first $tz 'epoch+47y+6mon+13d+2h' 1499997660
+done
+
+TZ=America/New_York $RRDTOOL create ${BUILD}-b.rrd -b 'epoch+1500000000s' --step 60 DS:a:GAUGE:120:U:U RRA:LAST:0.5:1:10
+report "create -b epoch+1500000000s"
+test "`$RRDTOOL last ${BUILD}-b.rrd`" = 1500000000
+report "last after create -b epoch+1500000000s"
+
+TZ=Asia/Tokyo $RRDTOOL update ${BUILD}-b.rrd 'epoch+1500000060s@5'
+report "update epoch+1500000060s@5"
+test "`$RRDTOOL last ${BUILD}-b.rrd`" = 1500000060
+report "last after update epoch+1500000060s@5"
+
+# end given relative to epoch, start relative to end
+got=`TZ=Europe/Zurich $RRDTOOL fetch ${BUILD}.rrd AVERAGE -s end-120 -e 'epoch+1500000000s' | sed -n 's/^ *\([0-9]*\):.*/\1/p' | head -n 1`
+test "$got" = 1499999940
+report "fetch -s end-120 -e epoch+1500000000s (got '$got')"
