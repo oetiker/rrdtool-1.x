@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool fetch --daemon ./switch/foo.rrd` returned `-nan` for values
+  still waiting in the rrdcached cache, while `switch/foo.rrd` showed
+  them. rrdcached now treats `./switch/foo.rrd`, `switch/./foo.rrd`,
+  `switch//foo.rrd` and `switch/foo.rrd` as the same file in every
+  command. (#1071) @oetiker
 * `rrdtool lastupdate --daemon host:port file.rrd` failed with
   "ERROR: opening 'file.rrd': No such file or directory" when the file
   exists only on the rrdcached host. It now asks rrdcached, which writes
