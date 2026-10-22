@@ -1,0 +1,71 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# rrdtool routes through RRDCACHED_ADDRESS when it's set, and the crafted
+# file lives outside the daemon's base directory, so dump would fail with
+# "No such file or directory" rather than exercising the check being
+# tested here (same reasoning as security-tune-failures-window).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+# window_len is stored as an on-disk unsigned long; the crafted value below
+# exercises the LP64 rra_def_t layout used by the supported Unix builds.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+trap 'rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}"*.out' EXIT
+[ -n "$MSYSTEM" ] && exit 77
+
+$RRDTOOL create "${BUILD}.rrd" --start 0 --step 300 \
+  DS:val:GAUGE:600:U:U \
+  RRA:AVERAGE:0.5:1:100 \
+  RRA:HWPREDICT:100:0.1:0.0035:20 || fail create
+
+# rra[5] is the FAILURES RRA rrd_create derives from the HWPREDICT period.
+# rrd_dump's CF_FAILURES branch walks violations_array[0..window_len) out of
+# a fixed MAX_CDP_PAR_EN-element scratch buffer; window_len is read straight
+# from the file, 72 bytes past the "FAILURES" cf_nam marker (20-byte cf_nam
+# padded to 24, + row_cnt + pdp_cnt, landing on par[] index 4).
+cp "${BUILD}.rrd" "${BUILD}-overflow.rrd"
+perl -0777 -pi -e '
+  my $off = index($_, "FAILURES");
+  die "FAILURES cf_nam not found\n" if $off < 0;
+  substr($_, $off + 72, 8, pack("Q", 60000));
+' "${BUILD}-overflow.rrd"
+
+if $RRDTOOL dump "${BUILD}-overflow.rrd" "${BUILD}-overflow.xml" \
+    >"${BUILD}.out" 2>&1; then
+  fail 1 "dump accepted an out-of-range window_len"
+fi
+grep -q "window_len.*out of range" "${BUILD}.out" || \
+  fail 1 "dump did not diagnose the out-of-range window_len"
+
+report "reject out-of-range FAILURES window_len in rrd_dump"
+
+# Check every file-opening consumer and the XML ingestion boundary, including
+# the valid maximum and the first invalid value, not only a large corruption.
+$RRDTOOL dump "${BUILD}.rrd" "${BUILD}-valid.xml" || fail dump
+for window in 0 28 29 60000; do
+  cp "${BUILD}.rrd" "${BUILD}-boundary.rrd"
+  perl -0777 -pi -e 'BEGIN { $window=shift @ARGV }
+    my $off=index($_,"FAILURES"); die if $off<0;
+    substr($_,$off+72,8,pack("Q",$window));' "$window" "${BUILD}-boundary.rrd"
+  sed "s@<window_len>[^<]*</window_len>@<window_len>$window</window_len>@" \
+    "${BUILD}-valid.xml" > "${BUILD}-boundary.xml"
+  for command in info update restore; do
+    case "$command" in
+      info) args=(info "${BUILD}-boundary.rrd") ;;
+      update) args=(update "${BUILD}-boundary.rrd" N:1) ;;
+      restore) args=(restore -f "${BUILD}-boundary.xml" "${BUILD}-restored.rrd") ;;
+    esac
+    $RRDTOOL "${args[@]}" >"${BUILD}-boundary.out" 2>&1
+    rc=$?
+    if [ "$window" = 28 ]; then
+      [ "$rc" = 0 ] || fail 1 "$command rejected the valid maximum window"
+    else
+      [ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "$command did not reject window $window cleanly"
+      grep -q 'window_len.*out of range' "${BUILD}-boundary.out" || fail 1 "$command gave the wrong error"
+    fi
+  done
+done
+report "validate FAILURES history boundaries in info, update, and restore"

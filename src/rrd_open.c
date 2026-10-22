@@ -20,6 +20,8 @@
 #include <limits.h>
 #endif                          /* WIN32 */
 
+#include <stdint.h>
+
 #include "rrd_tool.h"
 #include "compat-cloexec.h"
 #include "unused.h"
@@ -62,13 +64,58 @@ DWORD     dwCreationDisposition = 0;
 /* Avoid calling madvise on areas that were already hinted. May be beneficial if
  * your syscalls are very slow */
 
+/* ds_cnt / rra_cnt and the record counts derived from them are read straight
+ * from an untrusted file.  Every "sizeof(record) * count" used below as an
+ * offset or allocation size must be range-checked first: a crafted count can
+ * otherwise wrap size_t, pass the "> file_len" bounds check, and alias or
+ * iterate past the mapped file.
+ */
+#if defined(__has_builtin)
+#define RRD_HAVE_OVERFLOW_BUILTINS (__has_builtin(__builtin_mul_overflow) && __has_builtin(__builtin_add_overflow))
+#elif defined(__GNUC__) && __GNUC__ >= 5
+#define RRD_HAVE_OVERFLOW_BUILTINS 1
+#else
+#define RRD_HAVE_OVERFLOW_BUILTINS 0
+#endif
+
+static inline int rrd_mul_overflow(
+    size_t a,
+    size_t b,
+    size_t *out)
+{
+#if RRD_HAVE_OVERFLOW_BUILTINS
+    return __builtin_mul_overflow(a, b, out);
+#else
+    *out = a * b;
+    return b != 0 && a > (size_t) -1 / b;
+#endif
+}
+
+static inline int rrd_add_overflow(
+    size_t a,
+    size_t b,
+    size_t *out)
+{
+#if RRD_HAVE_OVERFLOW_BUILTINS
+    return __builtin_add_overflow(a, b, out);
+#else
+    *out = a + b;
+    return a > (size_t) -1 - b;
+#endif
+}
+
 #ifdef HAVE_MMAP
 /* the cast to void* is there to avoid this warning seen on ia64 with certain
    versions of gcc: 'cast increases required alignment of target type'
 */
 #define __rrd_read_mmap(dst, dst_t, cnt) { \
-    size_t wanted = sizeof(dst_t)*(cnt); \
-    if (offset + wanted > rrd_file->file_len) { \
+    size_t wanted; \
+    if (rrd_mul_overflow(sizeof(dst_t), (size_t)(cnt), &wanted)) { \
+        rrd_set_error("header size overflow while reading " #dst); \
+        goto out_close; \
+    } \
+    if (offset < 0 || (uintmax_t) offset > rrd_file->file_len || \
+        wanted > rrd_file->file_len - (size_t) offset) { \
         rrd_set_error("reached EOF while loading header " #dst); \
         goto out_close; \
     } \
@@ -77,8 +124,17 @@ DWORD     dwCreationDisposition = 0;
     }
 #else
 #define __rrd_read_seq(dst, dst_t, cnt) { \
-    size_t wanted = sizeof(dst_t)*(cnt); \
+    size_t wanted; \
         size_t got; \
+    if (rrd_mul_overflow(sizeof(dst_t), (size_t)(cnt), &wanted)) { \
+        rrd_set_error("header size overflow while reading " #dst); \
+        goto out_close; \
+    } \
+    if (offset < 0 || (uintmax_t) offset > rrd_file->file_len || \
+        wanted > rrd_file->file_len - (size_t) offset) { \
+        rrd_set_error("reached EOF while loading header " #dst); \
+        goto out_close; \
+    } \
     if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
         rrd_set_error(#dst " malloc"); \
         goto out_close; \
@@ -94,8 +150,17 @@ DWORD     dwCreationDisposition = 0;
 
 #ifdef HAVE_LIBRADOS
 #define __rrd_read_rados(dst, dst_t, cnt) { \
-    size_t wanted = sizeof(dst_t)*(cnt); \
+    size_t wanted; \
         size_t got; \
+    if (rrd_mul_overflow(sizeof(dst_t), (size_t)(cnt), &wanted)) { \
+        rrd_set_error("header size overflow while reading " #dst); \
+        goto out_close; \
+    } \
+    if (offset < 0 || (uintmax_t) offset > rrd_file->file_len || \
+        wanted > rrd_file->file_len - (size_t) offset) { \
+        rrd_set_error("reached EOF while loading header " #dst); \
+        goto out_close; \
+    } \
     if ((dst = (dst_t*)malloc(wanted)) == NULL) { \
         rrd_set_error(#dst " malloc"); \
         goto out_close; \
@@ -180,17 +245,33 @@ rrd_file_t *rrd_open(
 
     /* Are we creating a new file? */
     if (rdwr & RRD_CREAT) {
+        size_t    row_cnt = 0;
         size_t    header_len, value_cnt, data_len;
 
         header_len = rrd_get_header_size(rrd);
 
-        value_cnt = 0;
+        /* ds_cnt/rra_cnt/row_cnt are supplied by the caller (e.g. rrdtool
+         * create arguments) rather than parsed from a file, but the same
+         * "sizeof(record) * count" arithmetic can still wrap size_t given
+         * an absurd combination of DS/RRA counts, so guard it exactly like
+         * the read-path computation further down in this function -- the
+         * row_cnt sum itself can wrap before the multiplications ever run. */
         for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            value_cnt += rrd->stat_head->ds_cnt * rrd->rra_def[ui].row_cnt;
+            if (rrd_add_overflow(row_cnt,
+                                 (size_t) rrd->rra_def[ui].row_cnt,
+                                 &row_cnt)) {
+                rrd_set_error("'%s' describes an impossibly large database",
+                              file_name);
+                return NULL;
+            }
 
-        data_len = sizeof(rrd_value_t) * value_cnt;
-
-        newfile_size = header_len + data_len;
+        if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
+            rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &data_len) ||
+            rrd_add_overflow(header_len, data_len, &newfile_size)) {
+            rrd_set_error("'%s' describes an impossibly large database",
+                          file_name);
+            return NULL;
+        }
     }
 
     rrd_file = (rrd_file_t *) malloc(sizeof(rrd_file_t));
@@ -245,6 +326,27 @@ rrd_file_t *rrd_open(
 
         if (rdwr & RRD_CREAT)
             goto out_done;
+
+        /* Check the actual object length before allocating header arrays. */
+        {
+            uint64_t object_size;
+            time_t object_mtime;
+            int status = rados_stat(rrd_file->rados->ioctx,
+                                    rrd_file->rados->oid,
+                                    &object_size, &object_mtime);
+            if (status < 0) {
+                rrd_set_error("could not stat RADOS object '%s': %s",
+                              file_name, rrd_strerror(-status));
+                goto out_close;
+            }
+#if SIZE_MAX < UINT64_MAX
+            if (object_size > SIZE_MAX) {
+                rrd_set_error("RADOS object '%s' is too large", file_name);
+                goto out_close;
+            }
+#endif
+            rrd_file->file_len = (size_t) object_size;
+        }
 
         goto read_check;
     }
@@ -509,11 +611,44 @@ rrd_file_t *rrd_open(
                       rrd->stat_head->version);
         goto out_close;
     }
+
+    /* Bound the attacker-controlled counts by the file size before any
+     * "sizeof(record) * count" arithmetic.  A valid RRD must physically
+     * contain ds_cnt ds_def_t and rra_cnt rra_def_t records, so a well-formed
+     * file is never rejected, while a crafted count can no longer wrap size_t.
+     * This also applies to RADOS objects, whose length was queried above.
+     */
+    {
+        if (rrd->stat_head->ds_cnt == 0 ||
+            rrd->stat_head->ds_cnt > rrd_file->file_len / sizeof(ds_def_t) ||
+            rrd->stat_head->rra_cnt == 0 ||
+            rrd->stat_head->rra_cnt > rrd_file->file_len / sizeof(rra_def_t)) {
+            rrd_set_error("'%s' has an invalid ds_cnt/rra_cnt in its header",
+                          file_name);
+            goto out_close;
+        }
+    }
+    if (rrd->stat_head->pdp_step == 0) {
+        rrd_set_error("header pdp_step is zero");
+        goto out_close;
+    }
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
 
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
+
+    /* Validate disk-supplied FAILURES history bounds before any consumer
+     * (including info and update) can use the fixed-size scratch buffer. */
+    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        if (strncmp(rrd->rra_def[i].cf_nam, "FAILURES", CF_NAM_SIZE) == 0 &&
+            (rrd->rra_def[i].par[RRA_window_len].u_cnt < 1 ||
+             rrd->rra_def[i].par[RRA_window_len].u_cnt > MAX_FAILURES_WINDOW_LEN)) {
+            rrd_set_error("invalid RRA %lu: window_len %lu out of range", i,
+                          rrd->rra_def[i].par[RRA_window_len].u_cnt);
+            goto out_close;
+        }
+    }
 
     /* handle different format for the live_head */
     if (version < 3) {
@@ -533,8 +668,16 @@ rrd_file_t *rrd_open(
     }
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
-    __rrd_read(rrd->cdp_prep, cdp_prep_t,
-               rrd->stat_head->rra_cnt * rrd->stat_head->ds_cnt);
+    {
+        size_t    cdp_cnt;
+
+        if (rrd_mul_overflow(rrd->stat_head->rra_cnt,
+                             rrd->stat_head->ds_cnt, &cdp_cnt)) {
+            rrd_set_error("'%s' header cdp_prep count overflow", file_name);
+            goto out_close;
+        }
+        __rrd_read(rrd->cdp_prep, cdp_prep_t, cdp_cnt);
+    }
     __rrd_read(rrd->rra_ptr, rra_ptr_t,
                rrd->stat_head->rra_cnt);
 
@@ -557,29 +700,43 @@ rrd_file_t *rrd_open(
 #endif
 
     {
-        unsigned long row_cnt = 0;
+        size_t    row_cnt = 0;
+        size_t    value_cnt;
+        size_t    correct_len;
 
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            row_cnt += rrd->rra_def[ui].row_cnt;
-
-        size_t    correct_len = rrd_file->header_len +
-            sizeof(rrd_value_t) * row_cnt * rrd->stat_head->ds_cnt;
-
-#ifdef HAVE_LIBRADOS
-        /* skip length checking for rados file */
-        if (rrd_file->rados) {
-            rrd_file->file_len = correct_len;
+        /* rra_def[].row_cnt is read straight from an untrusted header, so the
+         * running sum wraps just as easily as the products derived from it.
+         * A sum that wrapped to a small value would sail through the checks
+         * below and leave correct_len under the real file length. */
+        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
+            if (rrd->rra_def[ui].row_cnt == 0 || rrd->rra_def[ui].pdp_cnt == 0) {
+                rrd_set_error("'%s' RRA %lu has zero row_cnt/pdp_cnt", file_name, ui);
+                goto out_close;
+            }
+            if (rrd_add_overflow(row_cnt, rrd->rra_def[ui].row_cnt,
+                                 &row_cnt)) {
+                rrd_set_error("'%s' header describes an impossibly large database",
+                              file_name);
+                goto out_close;
+            }
         }
-#endif
+
+        if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
+            rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &correct_len) ||
+            rrd_add_overflow(rrd_file->header_len, correct_len, &correct_len)) {
+            rrd_set_error("'%s' header describes an impossibly large database",
+                          file_name);
+            goto out_close;
+        }
 
         if (correct_len > rrd_file->file_len) {
-            rrd_set_error("'%s' is too small (should be %ld bytes)",
+            rrd_set_error("'%s' is too small (should be %lld bytes)",
                           file_name, (long long) correct_len);
             goto out_close;
         }
         if (rdwr & RRD_READVALUES) {
             __rrd_read(rrd->rrd_value, rrd_value_t,
-                       row_cnt * rrd->stat_head->ds_cnt);
+                       value_cnt);
 
             if (rrd_seek(rrd_file, rrd_file->header_len, SEEK_SET) != 0)
                 goto out_close;
@@ -1133,10 +1290,12 @@ static void free_rrd_ptr_if_not_mmapped(
         return;
     }
 
-    /* is this ALWAYS correct on all supported platforms ??? */
-    long      ofs = (char *) m - (char *) rrd->__mmap_start;
+    /* Allocated legacy headers can lie outside the mapped file. Comparing
+     * integer addresses avoids subtracting pointers to unrelated objects. */
+    uintptr_t address = (uintptr_t) m;
+    uintptr_t start = (uintptr_t) rrd->__mmap_start;
 
-    if (ofs < rrd->__mmap_size) {
+    if (address >= start && address - start < (uintptr_t) rrd->__mmap_size) {
         // DO NOT FREE, this memory is mmapped!!
         return;
     }
@@ -1284,6 +1443,13 @@ int _rrd_lock_from_opt(int *out_flags, const char *opt)
  */
 int _rrd_lock_flags(int extra_flags)
 {
+    static const int lock_flags[] = {
+        RRD_LOCK_DEFAULT,
+        RRD_LOCK_NONE,
+        RRD_LOCK_BLOCK,
+        RRD_LOCK_TRY
+    };
+
     /* Due to legacy reasons, we have to map this manually.
      *
      * E.g. RRD_LOCK_DEFAULT (which might be used by deprecated direct calls
@@ -1291,16 +1457,5 @@ int _rrd_lock_flags(int extra_flags)
      * must be 0 because not all users of the updatex api might have been
      * updated yet.
      */
-    switch (extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) {
-    case RRD_FLAGS_LOCKING_MODE_NONE:
-        return RRD_LOCK_NONE;
-    case RRD_FLAGS_LOCKING_MODE_TRY:
-        return RRD_LOCK_TRY;
-    case RRD_FLAGS_LOCKING_MODE_BLOCK:
-        return RRD_LOCK_BLOCK;
-    case RRD_FLAGS_LOCKING_MODE_DEFAULT:
-        return RRD_LOCK_DEFAULT;
-    default:
-        abort();
-    }
+    return lock_flags[(extra_flags & RRD_FLAGS_LOCKING_MODE_MASK) >> 7];
 }

@@ -15,6 +15,27 @@ Bugfixes
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* `rrdtool restore` no longer crashes with "Floating point exception" on
+  a dump whose RRA has no rows, and no longer writes an RRD from a dump that
+  is cut short, lacks a `<database>` block or repeats one. It now stops with
+  an error such as "RRA has zero rows" or "contains multiple database
+  elements", and accepts a FAILURES `<window_len>` only from 1 to 28.
+  @somethingwithproof
+* A damaged or hand-crafted RRD file no longer crashes `rrdtool info`,
+  `fetch`, `update` or `tune`, nor makes `rrdtool dump` print garbage. They
+  now fail with "has an invalid ds_cnt/rra_cnt in its header", "describes an
+  impossibly large database" or "window_len ... out of range". RRDs stored
+  in Ceph get the same checks, at the cost of one object size query per
+  open. @somethingwithproof
+* `rrdtool fetch` and `rrdtool graph` over a time range too large to hold
+  in memory now fail with "fetch data size overflow" or "covers an
+  impossibly large data range" instead of crashing or reporting "malloc
+  fetch data area". @somethingwithproof
+* rrdcached no longer sends stray memory contents after a reply line
+  longer than 4 KB, as `PENDING` produced for a very long queued update;
+  such lines are cut short and still end with a newline. A `FETCH` or
+  `FETCHBIN` that runs out of memory while building its answer now closes
+  the connection instead of sending a partial reply. @somethingwithproof
 * `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
   a segmentation fault. It now fails with an error message. (#1353) @SAY-5
 * rrdcached started through systemd socket activation (`rrdcached.socket`)
@@ -30,6 +51,10 @@ Features
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+* `./configure --enable-fuzzing` builds libFuzzer harnesses for RRD files
+  and XML dumps in `fuzz/`. It needs clang and instruments the whole
+  library with ASan/UBSan, so it is meant for testing, not for production
+  builds. @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
