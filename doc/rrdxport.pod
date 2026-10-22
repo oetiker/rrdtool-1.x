@@ -69,6 +69,12 @@ For a list of accepted formats, see the B<-l> option in the L<rrdcached> manual.
 
 include the time into each data row.
 
+[B<-Z>|B<--use-nan-for-all-missing-data>]
+
+If one DS is missing, either because the RRD is not available or
+because it does not contain the requested DS name, just assume that we
+got empty values instead of raising a fatal error.
+
 =item B<--json>
 
 produce json formatted output (instead of xml)
