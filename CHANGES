@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph` now fails with "Could not save svg to '...'" when it
+  cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
+  can't even die" and still exited with status 0.
 * Restore rejects unknown RRA parameter tags, incomplete XML, and missing,
   duplicate, or empty databases instead of writing partial output. Unknown
   parameter tags are errors, including tags from newer or third-party dumps.
@@ -14,6 +17,9 @@ Bugfixes
 
 Features
 --------
+* SVG graphs now show sharp grid lines in the browser. Before, each grid
+  line was smeared over two pixels. `--no-gridfit` restores the old
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
 * Add opt-in libFuzzer coverage with ASan/UBSan instrumentation of librrd
   and the harnesses. Fuzz builds are diagnostic builds, not production builds.
 
