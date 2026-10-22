@@ -4317,9 +4317,8 @@ static int open_listen_sockets_systemd(
             return i;
         }
 
-        listen_fds[listen_fds_num].wbuf_data = NULL;
-        listen_fds[listen_fds_num].wbuf_size = 0;
-        listen_fds[listen_fds_num].wbuf_capacity = 0;
+        /* realloc() memory is uninitialized; addr must be NULL, not garbage */
+        memset(&listen_fds[listen_fds_num], 0, sizeof(listen_fds[0]));
         listen_fds[listen_fds_num].fd = sd_fd;
         listen_fds[listen_fds_num].family = sa.sun_family;
         /* Add permissions to the socket */

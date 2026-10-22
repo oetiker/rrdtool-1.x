@@ -81,6 +81,7 @@
 #endif
 
 text_prop_t text_prop[] = {
+#ifdef HAVE_RRD_GRAPH
     {8.0, RRD_DEFAULT_FONT, NULL}
     ,                   /* default */
     {9.0, RRD_DEFAULT_FONT, NULL}
@@ -91,7 +92,20 @@ text_prop_t text_prop[] = {
     ,                   /* unit */
     {8.0, RRD_DEFAULT_FONT, NULL}   /* legend */
     ,
-    {5.5, RRD_DEFAULT_FONT, NULL}   /* watermark */
+    {5.5, RRD_DEFAULT_FONT, NULL} /* watermark */
+#else
+    {8.0, RRD_DEFAULT_FONT}
+    ,
+    {9.0, RRD_DEFAULT_FONT}
+    ,
+    {7.0, RRD_DEFAULT_FONT}
+    ,
+    {8.0, RRD_DEFAULT_FONT}
+    ,
+    {8.0, RRD_DEFAULT_FONT}
+    ,         /* legend */
+    {5.5, RRD_DEFAULT_FONT}          /* watermark */
+#endif
 };
 
 char      week_fmt[128] = "Week %V";
@@ -429,8 +443,9 @@ int im_free(
     image_desc_t *im)
 {
     unsigned long i, ii;
+#ifdef HAVE_RRD_GRAPH
     cairo_status_t status = (cairo_status_t) 0;
-
+#endif
     if (im == NULL)
         return 0;
 
@@ -466,7 +481,7 @@ int im_free(
         free(im->gdes[i].rpnp);
     }
     free(im->gdes);
-
+#ifdef HAVE_RRD_GRAPH
     if (im->init_mode == IMAGE_INIT_CAIRO) {
         for (i = 0; i < DIM(text_prop); i++) {
             pango_font_description_free(im->text_prop[i].font_desc);
@@ -497,7 +512,7 @@ int im_free(
             g_object_unref(im->layout);
         }
     }
-
+#endif
     if (im->ylegend)
         free(im->ylegend);
     if (im->title)
@@ -712,7 +727,20 @@ void expand_range(
 #endif
 }
 
+/* convert color */
+struct gfx_color_t gfx_hex_to_col(
+    long unsigned int color)
+{
+    struct gfx_color_t gfx_color;
 
+    gfx_color.red = 1.0 / 255.0 * ((color & 0xff000000) >> (3 * 8));
+    gfx_color.green = 1.0 / 255.0 * ((color & 0x00ff0000) >> (2 * 8));
+    gfx_color.blue = 1.0 / 255.0 * ((color & 0x0000ff00) >> (1 * 8));
+    gfx_color.alpha = 1.0 / 255.0 * (color & 0x000000ff);
+    return gfx_color;
+}
+
+#ifdef HAVE_RRD_GRAPH
 void apply_gridfit(
     image_desc_t *im)
 {
@@ -787,7 +815,7 @@ void apply_gridfit(
         calc_horizontal_grid(im);   /* recalc with changed im->maxval */
     }
 }
-
+#endif
 /* reduce data reimplementation by Alex */
 
 int rrd_reduce_data(
@@ -2146,6 +2174,7 @@ int print_calc(
 
 
 /* place legends with color spots */
+#ifdef HAVE_RRD_GRAPH
 int leg_place(
     image_desc_t *im,
     int calc_width)
@@ -2579,10 +2608,11 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof graph_label,
                                      im->primary_axis_format,
-                                     scaledstep * (double) i);
+                                     scaledstep * (double) i, " ");
                         }
                     } else {
                         char      sisym = (i == 0 ? ' ' : im->symbol);
+                        char      sisym_str[2] = { sisym, '\0' };
 
                         if (im->primary_axis_format == NULL
                             || im->primary_axis_format[0] == '\0') {
@@ -2606,7 +2636,7 @@ int draw_horizontal_grid(
                         } else {
                             snprintf(graph_label, sizeof(graph_label),
                                      im->primary_axis_format,
-                                     scaledstep * (double) i, sisym);
+                                     scaledstep * (double) i, sisym_str);
                         }
                     }
                     break;
@@ -4710,7 +4740,7 @@ int graph_paint_xy(
     rrd_set_error("XY diagram not implemented");
     return -1;
 }
-
+#endif
 /*****************************************************
  * graph stuff
  *****************************************************/
@@ -4798,6 +4828,7 @@ int scan_for_col(
 }
 
 /* Now just a wrapper around rrd_graph_v */
+#ifdef HAVE_RRD_GRAPH
 int rrd_graph(
     int argc,
     const char **argv,
@@ -4982,6 +5013,7 @@ rrd_info_t *rrd_graph_v(
     im_free(&im);
     return grinfo;
 }
+#endif
 
 static void rrd_set_font_desc(
     image_desc_t *im,
@@ -4993,19 +5025,23 @@ static void rrd_set_font_desc(
         strncpy(im->text_prop[prop].font, font,
                 sizeof(text_prop[prop].font) - 1);
         im->text_prop[prop].font[sizeof(text_prop[prop].font) - 1] = '\0';
+#ifdef HAVE_RRD_GRAPH
         /* if we already got one, drop it first */
         pango_font_description_free(im->text_prop[prop].font_desc);
         im->text_prop[prop].font_desc =
             pango_font_description_from_string(font);
+#endif
     };
     if (size > 0) {
         im->text_prop[prop].size = size;
     };
+#ifdef HAVE_RRD_GRAPH
     if (im->text_prop[prop].font_desc && im->text_prop[prop].size) {
         pango_font_description_set_size(im->text_prop[prop].font_desc,
                                         im->text_prop[prop].size *
                                         PANGO_SCALE);
     };
+#endif
 }
 
 void rrd_graph_init(
@@ -5013,9 +5049,10 @@ void rrd_graph_init(
     enum image_init_en init_mode)
 {
     unsigned int i;
+#ifdef HAVE_RRD_GRAPH
     char     *deffont = getenv("RRD_DEFAULT_FONT");
     PangoContext *context;
-
+#endif
     /* zero the whole structure first */
     memset(im, 0, sizeof(image_desc_t));
 
@@ -5037,7 +5074,9 @@ void rrd_graph_init(
     im->forceleftspace = 0;
     im->gdes_c = 0;
     im->gdes = NULL;
+#ifdef HAVE_RRD_GRAPH
     im->graph_antialias = CAIRO_ANTIALIAS_GRAY;
+#endif
     im->grid_dash_off = 1;
     im->grid_dash_on = 1;
     im->gridfit = 1;
@@ -5103,7 +5142,7 @@ void rrd_graph_init(
     im->zoom = 1;
     im->init_mode = init_mode;
     im->last_tabwidth = -1;
-
+#ifdef HAVE_RRD_GRAPH
     if (init_mode == IMAGE_INIT_CAIRO) {
         im->font_options = cairo_font_options_create();
         im->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 10, 10);
@@ -5141,7 +5180,7 @@ void rrd_graph_init(
         cairo_font_options_set_antialias(im->font_options,
                                          CAIRO_ANTIALIAS_GRAY);
     }
-
+#endif
     for (i = 0; i < DIM(graph_col); i++)
         im->graph_col[i] = graph_col[i];
 
@@ -5765,6 +5804,7 @@ void rrd_graph_options(
             }
             break;
         case 'R':
+#ifdef HAVE_RRD_GRAPH
             if (strcmp(poptions->optarg, "normal") == 0) {
                 cairo_font_options_set_antialias
                     (im->font_options, CAIRO_ANTIALIAS_GRAY);
@@ -5785,8 +5825,10 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+#endif
             break;
         case 'G':
+#ifdef HAVE_RRD_GRAPH
             if (strcmp(poptions->optarg, "normal") == 0)
                 im->graph_antialias = CAIRO_ANTIALIAS_GRAY;
             else if (strcmp(poptions->optarg, "mono") == 0)
@@ -5796,6 +5838,7 @@ void rrd_graph_options(
                               poptions->optarg);
                 return;
             }
+#endif
             break;
         case 'B':
             /* not supported currently */
@@ -5828,16 +5871,16 @@ void rrd_graph_options(
             return;
         }
     }                   /* while (opt != -1) */
-
+#ifdef HAVE_RRD_GRAPH
     pango_cairo_context_set_font_options(pango_layout_get_context(im->layout),
                                          im->font_options);
     pango_layout_context_changed(im->layout);
-
+#endif
 
     if (im->primary_axis_format != NULL && im->primary_axis_format[0] != '\0') {
         switch (im->primary_axis_formatter) {
         case VALUE_FORMATTER_NUMERIC:
-            if (bad_format_axis(im->primary_axis_format))
+            if (bad_format_axis_si(im->primary_axis_format))
                 return;
             break;
         case VALUE_FORMATTER_TIMESTAMP:
@@ -6002,6 +6045,27 @@ int bad_format_axis(
 {
     return bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING "$",
                             fmt);
+}
+
+/* --left-axis-format: like bad_format_axis, but also allow the %s / %S
+   SI unit that GPRINT allows. All labels of an axis share one magnitude,
+   so %S means the same as %s here; rewrite it to %s, since printf would
+   read %S as a wide string. */
+int bad_format_axis_si(
+    char *fmt)
+{
+    char     *p;
+
+    if (bad_format_check("^" SAFE_STRING FLOAT_STRING SAFE_STRING
+                         "(?:%[sS])?" SAFE_STRING "$", fmt))
+        return 1;
+    for (p = fmt; *p != '\0'; p++) {
+        if (p[0] == '%' && p[1] == '%')
+            p++;
+        else if (p[0] == '%' && p[1] == 'S')
+            p[1] = 's';
+    }
+    return 0;
 }
 
 int bad_format_print(
