@@ -1,0 +1,91 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# This test mutates the local RRD file and is not meaningful through the
+# rrdcached transport variants of the test suite.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+# The on-disk format stores these counters as unsigned long.  The crafted
+# values below exercise the LP64 layout used by the supported Unix builds.
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+# RRDTOOL may contain the test harness command and wrapper arguments.
+BUILD="$BUILDDIR/$(basename "$0")"
+
+$RRDTOOL create "${BUILD}-ds.rrd" --start 0 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail create-ds
+
+# Native LP64 layout: stat_head_t.ds_cnt is at byte 24. With one
+# ds_def_t, rra_def_t[0].row_cnt is at 272; each RRA record is 120 bytes,
+# so rra_def_t[1].row_cnt is at 392. RRD uses native byte order.
+cp "${BUILD}-ds.rrd" "${BUILD}-ds-overflow.rrd"
+perl -0777 -pi -e 'substr($_, 24, 8, pack("Q", 0x2000000000000001))' \
+  "${BUILD}-ds-overflow.rrd"
+if $RRDTOOL info "${BUILD}-ds-overflow.rrd" >"${BUILD}.out" 2>&1; then
+  fail 1 "header ds_cnt overflow was accepted"
+fi
+grep -q "invalid ds_cnt/rra_cnt" "${BUILD}.out" || \
+  fail 1 "header ds_cnt overflow was not diagnosed"
+report "reject ds_cnt overflow"
+
+$RRDTOOL create "${BUILD}-rows.rrd" --start 0 --step 60 \
+  DS:value:GAUGE:120:U:U \
+  RRA:AVERAGE:0.5:1:2 RRA:AVERAGE:0.5:1:2 || fail create-rows
+
+cp "${BUILD}-rows.rrd" "${BUILD}-rows-overflow.rrd"
+perl -0777 -pi -e '
+  substr($_, 272, 8, pack("Q", 0x8000000000000000));
+  substr($_, 392, 8, pack("Q", 0x8000000000000000));
+' "${BUILD}-rows-overflow.rrd"
+if $RRDTOOL info "${BUILD}-rows-overflow.rrd" >"${BUILD}.out" 2>&1; then
+  fail 1 "cumulative RRA row-count overflow was accepted"
+fi
+grep -q "impossibly large database" "${BUILD}.out" || \
+  fail 1 "cumulative RRA row-count overflow was not diagnosed"
+report "reject cumulative RRA row-count overflow"
+
+# Each count fits size_t, but their product (the CDP record count) does not.
+# The file-size guard should reject this before attempting any large allocation.
+cp "${BUILD}-ds.rrd" "${BUILD}-cdp-overflow.rrd"
+perl -0777 -pi -e '
+  substr($_, 24, 8, pack("Q", 0x100000000));
+  substr($_, 32, 8, pack("Q", 0x100000000));
+' "${BUILD}-cdp-overflow.rrd"
+if $RRDTOOL info "${BUILD}-cdp-overflow.rrd" >"${BUILD}.out" 2>&1; then
+  fail 1 "overflowing CDP count was accepted"
+fi
+grep -q "invalid ds_cnt/rra_cnt" "${BUILD}.out" || \
+  fail 1 "overflowing CDP count was not rejected before allocation"
+report "reject counts whose CDP product overflows"
+
+# LP64: the RRA array begins at 248 and needs 120 bytes. A 350-byte file
+# passes the individual count limits but has only 102 bytes remaining.
+head -c 350 "${BUILD}-ds.rrd" > "${BUILD}-truncated.rrd"
+if $RRDTOOL info "${BUILD}-truncated.rrd" >"${BUILD}.out" 2>&1; then
+  fail 1 "truncated RRA header was accepted"
+fi
+grep -q "reached EOF while loading header" "${BUILD}.out" || \
+  fail 1 "truncated RRA header was not rejected before allocation"
+report "reject header array larger than remaining file bytes"
+
+# LP64 offsets: ds_cnt, rra_cnt, pdp_step, first RRA row_cnt and pdp_cnt.
+for offset in 24 32 40 272 280; do
+  cp "${BUILD}-ds.rrd" "${BUILD}-zero.rrd"
+  perl -0777 -pi -e 'BEGIN { $offset = shift @ARGV; } substr($_, $offset, 8, pack("Q", 0));' \
+    "$offset" "${BUILD}-zero.rrd"
+  for command in info fetch update; do
+    case "$command" in
+      info) args=() ;;
+      fetch) args=(AVERAGE --start 900000000 --end 900000120) ;;
+      update) args=(900000060:1) ;;
+    esac
+    $RRDTOOL "$command" "${BUILD}-zero.rrd" "${args[@]}" >"${BUILD}.out" 2>&1
+    status=$?
+    [ "$status" -ne 0 ] && [ "$status" -lt 128 ] || fail 1 "zero counter crashed or was accepted"
+    grep -Eq 'invalid ds_cnt/rra_cnt|pdp_step is zero|zero row_cnt/pdp_cnt' "${BUILD}.out" || \
+      fail 1 "zero counter was not diagnosed"
+  done
+done
+report "reject zero counters before info, fetch, and update"

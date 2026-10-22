@@ -82,12 +82,13 @@ int lookup_seasonal(
 /* For the specified CDP prep area and the FAILURES RRA,
  * erase all history of past violations.
  */
-void erase_violations(
+int erase_violations(
     rrd_t *rrd,
     unsigned long cdp_idx,
     unsigned long rra_idx)
 {
-    unsigned short i;
+    unsigned long i;
+    unsigned long window_len;
     char     *violations_array;
 
     /* check that rra_idx is a CF_FAILURES array */
@@ -96,7 +97,20 @@ void erase_violations(
         fprintf(stderr, "erase_violations called for non-FAILURES RRA: %s\n",
                 rrd->rra_def[rra_idx].cf_nam);
 #endif
-        return;
+        return 0;
+    }
+
+    /* window_len comes straight from the on-disk rra_def and is not tied
+     * to any count rrd_open validates; rrd_create/rrd_tune only enforce
+     * MAX_FAILURES_WINDOW_LEN when the value is set through them, so a
+     * hand-crafted file can carry an arbitrary window_len here. scratch[]
+     * is a fixed MAX_CDP_PAR_EN-element buffer, so bound the erase to it
+     * before it is used as a violations_array index. */
+    window_len = rrd->rra_def[rra_idx].par[RRA_window_len].u_cnt;
+    if (window_len > MAX_FAILURES_WINDOW_LEN) {
+        rrd_set_error("erase_violations: window_len %lu for RRA %lu out of range",
+                      window_len, rra_idx);
+        return -1;
     }
 #ifdef DEBUG
     fprintf(stderr, "scratch buffer before erase:\n");
@@ -111,7 +125,7 @@ void erase_violations(
     violations_array = (char *) ((void *) rrd->cdp_prep[cdp_idx].scratch);
     /* erase everything in the part of the CDP scratch array that will be
      * used to store violations for the current window */
-    for (i = rrd->rra_def[rra_idx].par[RRA_window_len].u_cnt; i > 0; i--) {
+    for (i = window_len; i > 0; i--) {
         violations_array[i - 1] = 0;
     }
 #ifdef DEBUG
@@ -121,6 +135,7 @@ void erase_violations(
     }
     fprintf(stderr, "\n");
 #endif
+    return 0;
 }
 
 /* Smooth a periodic array with a moving average: equal weights and
@@ -380,7 +395,8 @@ void reset_aberrant_coefficients(
             }
             break;
         case CF_FAILURES:
-            erase_violations(rrd, cdp_idx, rra_idx);
+            if (erase_violations(rrd, cdp_idx, rra_idx) != 0)
+                return;
             break;
         default:
             break;

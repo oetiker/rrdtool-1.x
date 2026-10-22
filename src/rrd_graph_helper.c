@@ -1263,6 +1263,11 @@ static int parse_def(
         /* get the first parameter */
         keyvalue_t *first = getFirstUnusedArgument(0, pa);
 
+        if (!first) {
+            rrd_set_error("No argument for definition in %s", pa->arg_orig);
+            return 1;
+        }
+
         /* if it is any of the "original" positional args, then we terminate immediately */
         for (int i = 0; i < 10; i++) {
             if (poskeys[i] == first->key) {
