@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool info` run through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  stopped after a few lines, without an error, when a data source had an
+  empty `last_ds` value. It now prints the complete info. (#1080) @oetiker
 * `rrdtool fetch` printed unknown values as `-nan` on many systems, which
   broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
