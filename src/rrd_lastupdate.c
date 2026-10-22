@@ -62,14 +62,27 @@ int rrd_lastupdate (int argc, const char **argv)
         return (-1);
     }
 
-    status = rrdc_flush_if_daemon(opt_daemon, options.argv[options.optind]);
-    if (opt_daemon != NULL) {
-    	free (opt_daemon);
+    rrdc_connect(opt_daemon);
+    if (rrdc_is_connected(opt_daemon)) {
+        status = rrdc_lastupdate(options.argv[options.optind],
+                &last_update, &ds_count, &ds_names, &last_ds);
+        if (status != 0 && strstr(rrd_get_error(), "Unknown command") != NULL) {
+            /* an older rrdcached has no LASTUPDATE command:
+             * flush the file and read it locally, as before */
+            rrd_clear_error();
+            status = rrdc_flush_if_daemon(opt_daemon,
+                    options.argv[options.optind]);
+            if (status == 0)
+                status = rrd_lastupdate_r(options.argv[options.optind],
+                        &last_update, &ds_count, &ds_names, &last_ds);
+        }
+    } else {
+        status = rrd_lastupdate_r(options.argv[options.optind],
+                &last_update, &ds_count, &ds_names, &last_ds);
     }
-    if (status) return (-1);
-
-    status = rrd_lastupdate_r(options.argv[options.optind],
-            &last_update, &ds_count, &ds_names, &last_ds);
+    if (opt_daemon != NULL) {
+        free(opt_daemon);
+    }
     if (status != 0)
         return (status);
 

@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool lastupdate --daemon host:port file.rrd` failed with
+  "ERROR: opening 'file.rrd': No such file or directory" when the file
+  exists only on the rrdcached host. It now asks rrdcached, which writes
+  pending updates for the file first, through the new rrdcached command
+  `LASTUPDATE` (librrd: `rrdc_lastupdate`). Against an older rrdcached
+  without that command, rrdtool reads the file locally as before. (#1293) @oetiker
 * `--left-axis-format` now accepts `%s` or `%S` after the number, like
   GPRINT, and shows the SI unit there (e.g. `%5.1lf %Srpm` gives "1.5 krpm").
   Before, such a format failed with "invalid format string", and a format
