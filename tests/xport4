@@ -1,0 +1,59 @@
+#!/bin/bash
+# xport --step must be honoured when it is finer than (end-start)/maxrows,
+# unless --maxrows is given explicitly (#1023).
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+    BUILD=xport4
+else
+    BUILD=$BUILDDIR/xport4
+fi
+
+E=1300086400
+S=$((E - 86400))
+
+$RRDTOOL create "${BUILD}.rrd" --start $((S - 3600)) --step 60 \
+    DS:val:GAUGE:120:U:U \
+    RRA:AVERAGE:0.5:1:1500 \
+    RRA:AVERAGE:0.5:10:300
+report "create"
+
+$RRDTOOL update "${BUILD}.rrd" \
+    $(seq -f "%.0f:1" $((S - 3540)) 60 $E)
+report "update"
+
+is_cached && exit 0
+
+# xport_meta <tag> <xport options...>: print the value of <tag> in the meta block
+xport_meta() {
+    local tag="$1"
+    shift
+    $RRDTOOL xport -s $S -e $E "$@" \
+        "DEF:v=${BUILD}.rrd:val:AVERAGE" "XPORT:v:val" \
+        | sed -n "s:.*<$tag>\([0-9]*\)</$tag>.*:\1:p"
+}
+
+# default: (end-start)/400 = 216 s, rounded up to a multiple of the 60 s RRA
+STEP=$(xport_meta step)
+[ "$STEP" = 240 ]
+report "default step is 240 (got $STEP)"
+
+# explicit --step finer than the default row limit is honoured
+STEP=$(xport_meta step --step 60)
+[ "$STEP" = 60 ]
+report "--step 60 gives step 60 (got $STEP)"
+
+ROWS=$(xport_meta rows --step 60)
+[ "$ROWS" = 1441 ]
+report "--step 60 gives 1441 rows (got $ROWS)"
+
+# with an explicit --maxrows the row limit still wins
+STEP=$(xport_meta step --step 60 --maxrows 100)
+[ "$STEP" = 1200 ]
+report "--step 60 --maxrows 100 gives step 1200 (got $STEP)"
+
+# --step 0 keeps the automatic step
+STEP=$(xport_meta step --step 0)
+[ "$STEP" = 240 ]
+report "--step 0 gives step 240 (got $STEP)"
