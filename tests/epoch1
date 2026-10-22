@@ -38,10 +38,13 @@ report "create -b epoch+1500000000s"
 test "`$RRDTOOL last ${BUILD}-b.rrd`" = 1500000000
 report "last after create -b epoch+1500000000s"
 
-TZ=Asia/Tokyo $RRDTOOL update ${BUILD}-b.rrd 'epoch+1500000060s@5'
-report "update epoch+1500000060s@5"
-test "`$RRDTOOL last ${BUILD}-b.rrd`" = 1500000060
-report "last after update epoch+1500000060s@5"
+# rrdcached accepts only numeric update times, no at-style 'time@value'
+if ! is_cached; then
+	TZ=Asia/Tokyo $RRDTOOL update ${BUILD}-b.rrd 'epoch+1500000060s@5'
+	report "update epoch+1500000060s@5"
+	test "`$RRDTOOL last ${BUILD}-b.rrd`" = 1500000060
+	report "last after update epoch+1500000060s@5"
+fi
 
 # end given relative to epoch, start relative to end
 got=`TZ=Europe/Zurich $RRDTOOL fetch ${BUILD}.rrd AVERAGE -s end-120 -e 'epoch+1500000000s' | sed -n 's/^ *\([0-9]*\):.*/\1/p' | head -n 1`
