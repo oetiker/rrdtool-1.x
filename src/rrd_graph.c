@@ -3944,6 +3944,55 @@ static cairo_status_t cairo_output(
     return CAIRO_STATUS_SUCCESS;
 }
 
+#ifdef CAIRO_HAS_SVG_SURFACE
+#define SVG_STR(x) SVG_STR_(x)
+#define SVG_STR_(x) #x
+/* cairo 1.17.6 and later write the line width as an attribute, older
+   versions put it into the style attribute. Both print the same digits
+   as the source of GRIDWIDTH and MGRIDWIDTH. The line width is in user
+   units, --zoom goes into a transform and does not change it. */
+static const char svg_crisp_grid_style[] =
+    "\n<style type=\"text/css\">"
+    "path[stroke-width=\"" SVG_STR(GRIDWIDTH) "\"],"
+    "path[stroke-width=\"" SVG_STR(MGRIDWIDTH) "\"],"
+    "path[style*=\"stroke-width:" SVG_STR(GRIDWIDTH) ";\"],"
+    "path[style*=\"stroke-width:" SVG_STR(MGRIDWIDTH) ";\"]"
+    "{shape-rendering:crispEdges}</style>";
+
+/* The grid lines sit on whole user units, but only the SVG renderer
+   knows where the device pixels are. Ask it to snap the grid lines by
+   adding a style sheet right after the opening <svg> tag. */
+static int svg_add_crisp_grid_style(
+    image_desc_t *im)
+{
+    unsigned char *img = im->rendered_image;
+    size_t    size = im->rendered_image_size;
+    size_t    len = sizeof(svg_crisp_grid_style) - 1;
+    size_t    pos = 0;
+
+    while (pos + 4 <= size && memcmp(img + pos, "<svg", 4) != 0)
+        pos++;
+    if (pos + 4 > size)
+        return 0;       /* not what we expected, leave it alone */
+    while (pos < size && img[pos] != '>')
+        pos++;
+    if (pos >= size)
+        return 0;
+    pos++;
+
+    img = (unsigned char *) realloc(img, size + len);
+    if (img == NULL) {
+        rrd_set_error("cannot allocate memory for the svg grid style");
+        return 1;
+    }
+    memmove(img + pos + len, img + pos, size - pos);
+    memcpy(img + pos, svg_crisp_grid_style, len);
+    im->rendered_image = img;
+    im->rendered_image_size = size + len;
+    return 0;
+}
+#endif
+
 /* draw that picture thing ... */
 int graph_paint(
     image_desc_t *im)
@@ -4508,12 +4557,13 @@ int graph_cairo_setup(
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
     case IF_SVG:
+        /* snapping to SVG user units does not help when the browser
+           scales the picture, so leave the grid to the renderer instead */
+        im->svg_crisp_grid = im->gridfit;
         im->gridfit = 0;
-        im->surface = im->graphfile
-            ?
-            cairo_svg_surface_create(im->graphfile,
-                                     im->ximg * im->zoom, im->yimg * im->zoom)
-            : cairo_svg_surface_create_for_stream
+        /* always render to memory, graph_cairo_finish adds the grid style
+           and writes the file */
+        im->surface = cairo_svg_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         cairo_svg_surface_restrict_to_version
             (im->surface, CAIRO_SVG_VERSION_1_1);
@@ -4573,6 +4623,31 @@ int graph_cairo_finish(
         }
         break;
     }
+#ifdef CAIRO_HAS_SVG_SURFACE
+    case IF_SVG:
+        cairo_surface_finish(im->surface);
+        if (im->svg_crisp_grid && svg_add_crisp_grid_style(im))
+            return 1;
+        if (im->graphfile) {
+            FILE     *fd = rrd_fopen(im->graphfile, "wbe");
+            int       failed = fd == NULL
+                || fwrite(im->rendered_image, 1, im->rendered_image_size,
+                          fd) != im->rendered_image_size;
+
+            if (fd != NULL && fclose(fd) != 0)
+                failed = 1;
+            /* like the other formats, a graph written to a file is not
+               returned in memory as well */
+            free(im->rendered_image);
+            im->rendered_image = NULL;
+            im->rendered_image_size = 0;
+            if (failed) {
+                rrd_set_error("Could not save svg to '%s'", im->graphfile);
+                return 1;
+            }
+        }
+        break;
+#endif
     case IF_XML:
     case IF_XMLENUM:
     case IF_CSV:
@@ -4932,6 +5007,7 @@ void rrd_graph_init(
     im->grid_dash_off = 1;
     im->grid_dash_on = 1;
     im->gridfit = 1;
+    im->svg_crisp_grid = 0;
     im->grinfo = (rrd_info_t *) NULL;
     im->grinfo_current = (rrd_info_t *) NULL;
     im->imgformat = IF_PNG;
