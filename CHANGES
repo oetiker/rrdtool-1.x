@@ -3,12 +3,18 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph` now fails with "Could not save svg to '...'" when it
+  cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
+  can't even die" and still exited with status 0.
 * `rrdtool xport --json` and `rrdtool graph --imgformat JSON` with a `PRINT`
   statement wrote invalid JSON: the `"prints"` list had no comma before it
   and a stray comma after it, so JSON parsers rejected the output. @Reinerost
 
 Features
 --------
+* SVG graphs now show sharp grid lines in the browser. Before, each grid
+  line was smeared over two pixels. `--no-gridfit` restores the old
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
