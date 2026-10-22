@@ -7,12 +7,26 @@ Bugfixes
   GPRINT, and shows the SI unit there (e.g. `%5.1lf %Srpm` gives "1.5 krpm").
   Before, such a format failed with "invalid format string", and a format
   without it showed scaled numbers with no unit. (#1271, #1217, #837) @oetiker
+* `rrdtool info` run through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  stopped after a few lines, without an error, when a data source had an
+  empty `last_ds` value. It now prints the complete info. (#1080) @oetiker
+* `rrdtool fetch` printed unknown values as `-nan` on many systems, which
+  broke tools that look for `nan`. It now always prints `nan`. (#297) @oetiker
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* `rrdtool graph out.png DEF` (a `DEF` without any arguments) crashed with
+  a segmentation fault. It now fails with an error message. (#1353) @SAY-5
+* rrdcached started through systemd socket activation (`rrdcached.socket`)
+  no longer crashes with a segmentation fault when the first client
+  connects. (#1387) @emwgit
 
 Features
 --------
+* `rrdtool xport` now works in builds configured with `--disable-rrd_graph`,
+  which do not need cairo and pango. Before, it failed with "the instance of
+  rrdtool has been compiled without graphics", like `graph` and `graphv`
+  still do. @Reinerost
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
