@@ -14,6 +14,10 @@ Bugfixes
 
 Features
 --------
+* `rrdtool xport` now works in builds configured with `--disable-rrd_graph`,
+  which do not need cairo and pango. Before, it failed with "the instance of
+  rrdtool has been compiled without graphics", like `graph` and `graphv`
+  still do. @Reinerost
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
