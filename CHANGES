@@ -3,15 +3,26 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
-* Fix epoch+offset time specs (e.g. `epoch+80y` or `epoch+315439500s`)
-  anchoring to 1899-12-31 instead of 1970-01-01 on 64-bit systems.
-  On 64-bit systems `mktime` of an all-zero `struct tm` (year 1900) succeeds
-  and returns -2209082400, whereas on 32-bit it fails with -1 and the
-  subsequent add of the offset accidentally yields the right answer.
-  Fix: in `rrd_proc_start_end`, add an explicit `RELATIVE_TO_EPOCH` branch
-  that initialises the base `struct tm` from Unix timestamp 0 before
-  applying the parsed calendar deltas. Issue #939 reported by @joneikifi,
-  fixed by @oetiker.
+* Times like `epoch+80y` or `epoch+315439500s` in `rrdtool fetch`,
+  `graph`, `xport`, `create --start` and `update` now count from
+  1970-01-01 00:00:00 UTC, as documented. Before, `epoch+315439500s`
+  failed with "the first entry to fetch should be after 1980" and
+  `epoch+80y` gave a time on 1979-12-31 instead of 2050-01-01. (#939) @oetiker
+* `rrdtool graph` now fails with "Could not save svg to '...'" when it
+  cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
+  can't even die" and still exited with status 0.
+
+Features
+--------
+* SVG graphs now show sharp grid lines in the browser. Before, each grid
+  line was smeared over two pixels. `--no-gridfit` restores the old
+  output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+
+RRDtool 1.11.0 - 2026-08-07
+===========================
+Bugfixes
+--------
+* hardening: size the rrd_diff scratch buffer for its largest input @somethingwithproof
 * `rrdtool dump` now uses a numeric UTC offset (`%z`, e.g. `+0900`) instead
   of the locale timezone name (`%Z`) in XML comments. Locale timezone names
   can be encoded in a non-UTF-8 encoding (e.g. CJK locales), which breaks
@@ -71,6 +82,17 @@ Bugfixes
 
 Features
 --------
+* rrdgraph: new --vertical-label-angle and --right-axis-label-angle options
+  to rotate the two y axis legends independently at run time. The compile
+  time RRDGRAPH_YLEGEND_ANGLE remains the default for both, so existing
+  graphs are unchanged. Use --right-axis-label-angle 270 to have the right
+  hand legend read from the top down. Suggested by @blappm in #1377,
+  implemented by @oetiker
+* rrdgraph: new --right-axis-range min:max option to suppress right axis
+  labels outside the given range, so a bounded right axis is no longer
+  labelled with values it cannot reach when the left axis range does not
+  line up. Either end may be left empty for unbounded. Suggested by @blappm
+  in #1377, implemented by @oetiker
 
 RRDtool 1.10.3 - 2026-05-25
 ===========================
