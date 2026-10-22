@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# rrdtool lastupdate --daemon reads the file on the daemon side and sees
+# values the daemon still caches (#1293).
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+unset RRDCACHED_ADDRESS
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base/sub" "$W/elsewhere" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+
+port=$(python3 -S << HERE
+import socketserver
+s = socketserver.TCPServer(("localhost", 0), None)
+print(s.server_address[1])
+s.server_close()
+HERE
+)
+ADDR="localhost:$port"
+PIDFILE="$W/rrdcached.pid"
+
+# -w 3600: nothing gets written to disk unless a client asks for a flush
+$RRDCACHED -p "$PIDFILE" -l "$ADDR" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE"); rm -rf "$W"' EXIT
+sleep 1
+
+$RRDTOOL create "$W/base/sub/c.rrd" --start 1699999990 --step 10 DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
+report create
+
+$RRDTOOL update -d "$ADDR" sub/c.rrd 1700000010:1:2 1700000020:3:4.5
+report "update via daemon"
+
+# sub/c.rrd does not exist relative to the current directory
+cd "$W/elsewhere"
+out=`$RRDTOOL lastupdate -d "$ADDR" sub/c.rrd | tr '\n' '|'`
+test "$out" = " a b||1700000020: 3 4.5|"
+report "lastupdate via daemon (got '$out')"
+
+out=`RRDCACHED_ADDRESS="$ADDR" $RRDTOOL lastupdate sub/c.rrd | tr '\n' '|'`
+test "$out" = " a b||1700000020: 3 4.5|"
+report "lastupdate via RRDCACHED_ADDRESS (got '$out')"
+
+! $RRDTOOL lastupdate -d "$ADDR" sub/missing.rrd 2>/dev/null
+report "lastupdate via daemon fails for a missing file"

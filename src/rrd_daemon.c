@@ -2543,6 +2543,14 @@ static int handle_request_lastupdate(
                            rrd_strerror(EACCES));
         goto done;
     }
+    /* write pending values first, like FETCH does */
+    status = flush_file(file);
+    if ((status != 0) && (status != ENOENT)) {
+        rc = send_response(sock, RESP_ERR,
+                           "flush_file (%s) failed with status %i.\n",
+                           file, status);
+        goto done;
+    }
     rrd_clear_error();
     rrd_init(&rrd);
     rrd_file = rrd_open(file, &rrd, RRD_READONLY | RRD_LOCK);
@@ -3224,8 +3232,7 @@ static command_t list_of_commands[] = { /* {{{ */
      "The LASTUPDATE command retrieves the last update time and DS values for\n"
      "a specified RRD file.  Returns one line per DS with the DS name and its\n"
      "last value, and the status line contains the timestamp.\n"
-     "Note that this reflects the data as of the last write to the RRD file.\n"
-     "If there are pending updates in the cache, run FLUSH first.\n"},
+     "Pending updates for the file are written to disk first.\n"},
     {
      "CREATE",
      handle_request_create,

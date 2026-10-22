@@ -362,6 +362,16 @@ This function returns an rrd_info_t structure of the following format:
 
 Grab the unix epoch of the last time RRD C<filename> was updated.
 
+=item B<rrd_client_lastupdate(rrd_client_t *client, const char *filename, time_t *ret_last_update, unsigned long *ret_ds_count, char ***ret_ds_names, char ***ret_last_ds)>
+
+=item B<rrdc_lastupdate(const char *filename, time_t *ret_last_update, unsigned long *ret_ds_count, char ***ret_ds_names, char ***ret_last_ds)>
+
+Daemon counterpart of B<rrd_lastupdate_r>: the daemon writes pending
+updates for C<filename> and returns the time of its last update, the
+number of data sources, their names and their last values. Returns 0 on
+success. The caller frees each string and both arrays with C<free>.
+Requires a daemon that knows the C<LASTUPDATE> command.
+
 =item B<rrd_client_first(rrd_client_t *client, const char *filename, int rraindex)>
 
 =item B<rrdc_first(const char *filename, int rraindex)>
