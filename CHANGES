@@ -8,6 +8,9 @@ Bugfixes
 * `rrdtool graph` now fails with "Could not save svg to '...'" when it
   cannot write an SVG file. Before, it printed "OOPS: Cairo has issues it
   can't even die" and still exited with status 0.
+* rrdcached started through systemd socket activation (`rrdcached.socket`)
+  no longer crashes with a segmentation fault when the first client
+  connects. (#1387) @emwgit
 
 Features
 --------
