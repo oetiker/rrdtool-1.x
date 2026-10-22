@@ -175,6 +175,11 @@ appearance. If this is not to your liking, you can use this switch
 to turn this behavior off.
 
 Grid-fitting is turned off for PDF, EPS, SVG output by default.
+SVG output instead carries a style sheet that asks the renderer to draw
+the grid lines with C<shape-rendering:crispEdges>, so they stay sharp at
+any scale. B<--no-gridfit> leaves this style sheet out. The style
+sheet picks the grid lines by their width of 0.4 and 0.6; a B<LINE>
+of exactly that width is drawn crisp as well.
 
 =head2 X-Axis
 
