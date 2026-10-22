@@ -27,7 +27,13 @@ int main(void)
     const char *args[] = {
         "DS:value:GAUGE:120:U:U", "RRA:AVERAGE:0.5:1:10"
     };
-    char path[] = "/tmp/rrd-fetch-test.XXXXXX";
+    const char *builddir = getenv("BUILDDIR");
+    char path[4096];
+    if (builddir == NULL || *builddir == '\0')
+        builddir = ".";
+    if (snprintf(path, sizeof(path), "%s/rrd-fetch-test.XXXXXX", builddir)
+        >= (int) sizeof(path))
+        return 1;
     int fd = mkstemp(path);
     if (fd < 0)
         return 1;
@@ -42,7 +48,7 @@ int main(void)
     for (int binary = 0; binary < 2; binary++) {
         for (size_t slack = 1; slack < 256; slack++) {
             listen_socket_t sock = {0};
-            char command[512];
+            char command[sizeof(path) + 64];
             int pair[2];
             if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) != 0)
                 return 1;

@@ -11,29 +11,6 @@
 
 #include "rrd_tool.h"
 
-static int restore_mul_overflow(size_t a, size_t b, size_t *out)
-{
-#if defined(__GNUC__) || defined(__clang__)
-    return __builtin_mul_overflow(a, b, out);
-#else
-    if (b != 0 && a > (size_t) -1 / b)
-        return 1;
-    *out = a * b;
-    return 0;
-#endif
-}
-
-static int restore_add_overflow(size_t a, size_t b, size_t *out)
-{
-#if defined(__GNUC__) || defined(__clang__)
-    return __builtin_add_overflow(a, b, out);
-#else
-    if (a > (size_t) -1 - b)
-        return 1;
-    *out = a + b;
-    return 0;
-#endif
-}
 #include "rrd_rpncalc.h"
 #include "rrd_restore.h"
 #include "unused.h"
@@ -43,6 +20,7 @@ static int restore_add_overflow(size_t a, size_t b, size_t *out)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <libxml/parser.h>
 #include <libxml/xmlreader.h>
 #include <locale.h>
@@ -71,6 +49,25 @@ static int opt_force_overwrite = 0;
 /*
  * Helpers
  */
+
+/* Size arithmetic on counts read from untrusted XML. Not on a hot path, so
+ * the portable form is used instead of compiler builtins (GCC < 5 and MSVC
+ * lack __builtin_*_overflow). */
+static int restore_mul_overflow(size_t a, size_t b, size_t *out)
+{
+    if (b != 0 && a > (size_t) -1 / b)
+        return 1;
+    *out = a * b;
+    return 0;
+}
+
+static int restore_add_overflow(size_t a, size_t b, size_t *out)
+{
+    if (a > (size_t) -1 - b)
+        return 1;
+    *out = a + b;
+    return 0;
+}
 
 /* skip all but tags. complain if we do not get the right tag */
 /* dept -1 causes depth to be ignored */

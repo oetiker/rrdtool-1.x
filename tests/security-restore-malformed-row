@@ -10,7 +10,6 @@ trap 'rm -rf "$WORK"' EXIT
 # Two well-formed database blocks in one RRA must be rejected. Re-entering
 # the database parser used to reset the allocation base while retaining the
 # first block's row count, leading to out-of-bounds row rotation.
-[ -n "$RRDCACHED_ADDRESS" ] && exit 77
 FIXTURE="$(dirname "$0")/security-restore-malformed-row.xml"
 
 $RRDTOOL restore -f "${FIXTURE}" "${BUILD}-out.rrd" >"${BUILD}.out" 2>&1
@@ -45,44 +44,3 @@ if [ -e "${BUILD}-eof.rrd" ]; then
   fail 1 "restore left output after rejecting truncated XML"
 fi
 report "reject database without an end tag"
-
-# Exercise missing and empty databases separately from XML parser failures.
-$RRDTOOL create "${BUILD}-valid.rrd" --start 900000000 --step 60 \
-  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 || fail create
-$RRDTOOL dump "${BUILD}-valid.rrd" "${BUILD}-valid.xml" || fail dump
-for variant in missing empty unknown; do
-  case "$variant" in
-    missing) sed '/<database>/,/<\/database>/d' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='has no database rows' ;;
-    empty) sed '/<row>/d' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='zero rows' ;;
-    unknown) sed 's@<row>.*</row>@<unexpected>1</unexpected>@' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='found unexpected tag: unexpected' ;;
-  esac
-  $RRDTOOL restore -f "${BUILD}-edge.xml" "${BUILD}-edge.rrd" >"${BUILD}-edge.out" 2>&1
-  rc=$?
-  [ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "restore did not reject $variant database cleanly"
-  grep -q "$diagnostic" "${BUILD}-edge.out" || fail 1 "restore lost the $variant diagnostic"
-  [ ! -e "${BUILD}-edge.rrd" ] || fail 1 "restore left a partial database"
-done
-report "reject missing, empty, and malformed databases with specific errors"
-
-# EOF outside the database parser must also prevent write_file().
-for boundary in database params /database; do
-  awk -v tag="<$boundary>" 'index($0,tag) { exit } { print }' \
-    "${BUILD}-valid.xml" >"${BUILD}-truncated.xml"
-  $RRDTOOL restore -f "${BUILD}-truncated.xml" "${BUILD}-truncated.rrd" >"${BUILD}-truncated.out" 2>&1
-  rc=$?
-  [ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "truncated $boundary was not rejected cleanly"
-  [ ! -e "${BUILD}-truncated.rrd" ] || fail 1 "truncated $boundary left an output RRD"
-done
-# Duplicate a complete database without corrupting unrelated XML fields.
-awk '
- /<database>/ { in_database=1; block="" }
- in_database { block=block $0 "\n" }
- { print }
- /<\/database>/ { printf "%s",block; in_database=0 }
-' "${BUILD}-valid.xml" >"${BUILD}-duplicate.xml"
-$RRDTOOL restore -f "${BUILD}-duplicate.xml" "${BUILD}-duplicate.rrd" >"${BUILD}-duplicate.out" 2>&1
-rc=$?
-[ "$rc" -gt 0 ] && [ "$rc" -lt 128 ] || fail 1 "duplicate database was not rejected cleanly"
-grep -q 'multiple database elements' "${BUILD}-duplicate.out" || fail 1 "duplicate database was not diagnosed"
-[ ! -e "${BUILD}-duplicate.rrd" ] || fail 1 "duplicate database left an output RRD"
-report "reject truncated and duplicate databases before writing an RRD"

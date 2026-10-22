@@ -6,7 +6,6 @@
 # engine, not the regular test suite.
 
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
-AM_CFLAGS = @CFLAGS@
 
 EXTRA_DIST = corpus
 
