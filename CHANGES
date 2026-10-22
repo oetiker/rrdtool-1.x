@@ -9,6 +9,10 @@ Bugfixes
 
 Features
 --------
+* `rrdtool xport` accepts `-Z`/`--use-nan-for-all-missing-data` like
+  `rrdtool graph`: a DEF on a missing RRD file or a missing DS yields unknown
+  values instead of failing with "No DS called '...' in '...'". (#1350)
+  @Thomas-Gelf
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.

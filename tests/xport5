@@ -2,12 +2,12 @@
 
 . $(dirname $0)/functions
 
-BASE=$BASEDIR/xport4
+BASE=$BASEDIR/xport5
 if [ -n "$MSYSTEM" ]; then
     # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
-    BUILD=xport4
+    BUILD=xport5
 else
-    BUILD=$BUILDDIR/xport4
+    BUILD=$BUILDDIR/xport5
 fi
 
 function do_update {
@@ -31,5 +31,5 @@ report "update all"
 
 is_cached && exit 0
 
-$RRDTOOL xport --json --use-nan-for-all-missing-data -s 1300000000 -e 1300001240 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:noval=${BUILD}.rrd:noval:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:noval:noval XPORT:wh:wh | $DIFF9 - $BASEDIR/xport4.json.output
+$RRDTOOL xport --json --use-nan-for-all-missing-data -s 1300000000 -e 1300001240 --step 600 DEF:dv=${BUILD}.rrd:dv:AVERAGE DEF:noval=${BUILD}.rrd:noval:AVERAGE DEF:wh=${BUILD}.rrd:wh:AVERAGE XPORT:dv:dv XPORT:noval:noval XPORT:wh:wh | $DIFF9 - $BASEDIR/xport5.json.output
 report "xport json"
