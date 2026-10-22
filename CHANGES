@@ -51,6 +51,9 @@ Features
 * SVG graphs now show sharp grid lines in the browser. Before, each grid
   line was smeared over two pixels. `--no-gridfit` restores the old
   output; a `LINE0.4` or `LINE0.6` is drawn sharp as well.
+* configure no longer looks for the PCRE library. RRDtool uses the regular
+  expressions built into GLib, which every supported GLib version provides,
+  so packagers can drop `libpcre` from the build dependencies. @Reinerost
 * `./configure --enable-fuzzing` builds libFuzzer harnesses for RRD files
   and XML dumps in `fuzz/`. It needs clang and instruments the whole
   library with ASan/UBSan, so it is meant for testing, not for production
