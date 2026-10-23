@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# rrdtool tune --window-length and --failure-threshold erase the stored
+# FAILURES history.  The erased history must reach the file in builds
+# with and without mmap.
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/tune-failures-history
+
+# a repeating pattern, then a spike the Holt-Winters prediction flags
+make_rrd() {
+	local i v T U
+	$RRDTOOL create $1 --start 1300000000 --step 60 \
+		DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:300 \
+		RRA:HWPREDICT:100:0.5:0.5:20 || fail $? "create $1"
+	U=""
+	for i in $(seq 1 200); do
+		v=$(( (i % 20) * 10 ))
+		[ $i -gt 196 ] && v=100000
+		T=$(( 1300000000 + 60 * i ))
+		U="$U $T:$v"
+		if [ $(( i % 60 )) = 0 ] || [ $i = 200 ]; then
+			$RRDTOOL update $1 $U || fail $? "update $1"
+			U=""
+		fi
+	done
+}
+
+get_history() {
+	$RRDTOOL dump $1 | sed -n 's/.*<history>\(.*\)<\/history>.*/\1/p'
+}
+
+make_rrd ${BUILD}-w.rrd
+H=$(get_history ${BUILD}-w.rrd)
+[ "${H#*1}" != "$H" ]
+report "violations recorded (history $H)"
+
+$RRDTOOL tune ${BUILD}-w.rrd --window-length 7 || fail $? "tune --window-length"
+H=$(get_history ${BUILD}-w.rrd)
+[ "$H" = 0000000 ]
+report "tune --window-length erases the history (history $H)"
+
+make_rrd ${BUILD}-f.rrd
+$RRDTOOL tune ${BUILD}-f.rrd --failure-threshold 5 || fail $? "tune --failure-threshold"
+H=$(get_history ${BUILD}-f.rrd)
+[ "$H" = 000000000 ]
+report "tune --failure-threshold erases the history (history $H)"

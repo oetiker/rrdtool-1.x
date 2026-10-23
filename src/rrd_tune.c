@@ -204,6 +204,7 @@ int rrd_tune_r(
     char      dst[DST_SIZE];
     int       rc = -1;
     int       opt_newstep = -1;
+    int       cdp_prep_changed = 0;
     rrd_file_t *rrd_file = NULL;
     char      double_str[ 41 ] = {0};
     struct optparse_long longopts[] = {
@@ -390,11 +391,13 @@ int rrd_tune_r(
             if (set_windowarg(&rrd, RRA_failure_threshold, options.optarg)) {
 		goto done;
             }
+            cdp_prep_changed = 1;
             break;
         case 'w':
             if (set_windowarg(&rrd, RRA_window_len, options.optarg)) {
 		goto done;
             }
+            cdp_prep_changed = 1;
             break;
         case 'x':
             if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, options.optarg)) {
@@ -474,6 +477,25 @@ int rrd_tune_r(
         /* need to write rra_defs for RRA parameter changes */
         rrd_write(rrd_file, rrd.rra_def,
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
+    }
+    if (cdp_prep_changed) {
+        /* --window-length and --failure-threshold erase the FAILURES
+           history in cdp_prep.  With mmap that is the file itself;
+           without mmap the change only exists in memory.  cdp_prep sits
+           right before rra_ptr at the end of the header. */
+        size_t    cdp_size = sizeof(cdp_prep_t) * rrd.stat_head->rra_cnt
+            * rrd.stat_head->ds_cnt;
+        off_t     cdp_start = rrd_file->header_len - cdp_size
+            - sizeof(rra_ptr_t) * rrd.stat_head->rra_cnt;
+
+        if (rrd_seek(rrd_file, cdp_start, SEEK_SET) != 0
+            || rrd_write(rrd_file, rrd.cdp_prep, cdp_size)
+            != (ssize_t) cdp_size) {
+            if (!rrd_test_error())
+                rrd_set_error("writing cdp_prep of '%s' failed",
+                              in_filename);
+            goto done;
+        }
     }
     
     if (options.optind >= options.argc) {
