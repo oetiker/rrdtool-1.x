@@ -314,9 +314,11 @@ used.
 
 =item B<rrdc_connect(const char *daemon_addr)>
 
-Connect to a running rrdcached instance, specified via C<daemon_addr>. Any
-previous connection will be closed. If C<daemon_addr> is C<NULL>, it defaults
-to the value of the C<ENV_RRDCACHED_ADDRESS> environment address.
+Connect to a running rrdcached instance, specified via C<daemon_addr>. A
+connection to another daemon is closed first; a connection to the same
+address is kept. If C<daemon_addr> is C<NULL>, it defaults to the value of
+the C<RRDCACHED_ADDRESS> environment variable; if that is not set either,
+nothing is done and 0 is returned.
 
 =item B<rrd_client_is_connected(rrd_client_t *client)>
 
@@ -432,9 +434,9 @@ off the RRD.
 =item B<rrdc_create(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, int argc, const char **argv)>
 
 Create RRD database of path C<filename>.
-The RRD will have a step size of C<pfp_step>, the unix epoch timestamp to
-start collecting data from. The number of data sources and RRAs C<argc> and
-the definitions of the data sources and RRAs C<argv>. Lastly whether or
+The RRD will have a step size of C<pdp_step> seconds and start
+collecting data after C<last_up>, a unix epoch timestamp. The number of
+data sources and RRAs C<argc> and the definitions of the data sources and RRAs C<argv>. Lastly whether or
 not to overwrite an existing RRD if one is found with the same
 filename; C<no_overwrite>.
 
@@ -500,10 +502,11 @@ data.
 =item B<rrdc_tune(const char *filename, int argc, const char **argv)>
 
 Run B<rrdtune>(1) on the RRD C<filename> inside the daemon. C<argv> holds
-the C<argc> tune options exactly as they would follow the file name on the
-B<rrdtool tune> command line, for example C<"--heartbeat"> and
-C<"in:300">. Returns 0 on success, -1 if the request could not be sent or
-the daemon reported an error.
+the C<argc> words of a whole B<rrdtool tune> command line from the
+command name on, for example C<"tune">, C<"x.rrd">, C<"--heartbeat"> and
+C<"in:300">: the daemon skips the first word as the command name, as the
+command line does. Returns 0 on success, -1 if the request could not be
+sent or the daemon reported an error.
 
 =item B<rrd_client_dump(rrd_client_t *client, const char *filename, const char *opt_header, rrd_output_callback_t output_cb, void *cb_userdata)>
 
@@ -544,7 +547,7 @@ Free the stats struct allocated via B<rrdc_stats_get>.
 
 =head2 SEE ALSO
 
-B<rrcached>(1) B<rrdfetch>(1) B<rrdinfo>(1) B<rrdlast>(1) B<rrdcreate>(1) B<rrdupdate>(1) B<rrdlast>(1)
+B<rrdcached>(1) B<rrdfetch>(1) B<rrdinfo>(1) B<rrdlast>(1) B<rrdcreate>(1) B<rrdupdate>(1)
 
 =head1 AUTHOR
 

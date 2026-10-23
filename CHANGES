@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* The rrdcached manual page now describes the `TUNE` and `DUMP` commands
+  of the protocol. The librrd manual page told callers of the client tune
+  call to pass the options alone, so the first option was ignored; it now
+  says to pass the whole `rrdtool tune` command line, and its client
+  section names the `RRDCACHED_ADDRESS` variable correctly. @oetiker
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
