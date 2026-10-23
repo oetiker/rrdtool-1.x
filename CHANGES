@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph -Z` (`--use-nan-for-all-missing-data`) with a DEF naming
+  a data source the RRD file does not have drew that DEF with the values of
+  a neighbouring data source, shifted by one row, instead of leaving it
+  unknown. Such a DEF now has only unknown values, and the other DEFs on
+  the same file keep their data. @oetiker
 * `rrdtool tune` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
   printed nothing and exited with status 0 when adding, removing or
   resizing a data source or RRA failed, for example on an invalid or
