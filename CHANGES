@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph out.csv --imgformat CSV` (also TSV, SSV, XML, XMLENUM,
+  JSON and JSONTIME) printed the data to the terminal and exited with
+  status 0 when `out.csv` could not be created. It now fails with
+  "Could not open 'out.csv' for writing: No such file or directory" (or
+  the matching reason). @oetiker
 * `rrdtool list` and the rrdcached `LIST` command could leak memory or
   free an invalid pointer when the system ran out of memory while
   building the file list. @oetiker
