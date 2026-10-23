@@ -152,7 +152,7 @@ namespace dnrrdlib
         /// The file is created at its final, full size and filled with *UNKNOWN* data.
         /// </summary>
         /// <param name="argv">String array of command line arguments</param>
-        /// <returns>0 if successful, -1 if an error occurred</returns>
+        /// <returns>0 if successful, non-zero if an error occurred</returns>
         public static int Create(string[] argv)
         {
             return rrd_create(argv.Length, argv);
@@ -168,7 +168,7 @@ namespace dnrrdlib
         /// <param name="argv">String array of command line arguments</param>
         public static void Create(string filename, UInt32 pdp_step, Int32 last_up, string[] argv)
         {
-            if (rrd_create_r(filename, pdp_step, last_up, argv.Length, argv) < 0)
+            if (rrd_create_r(filename, pdp_step, last_up, argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -236,7 +236,7 @@ namespace dnrrdlib
         /// <returns>0 if successful, -1 if an error occurred</returns>
         public static void Update(params string[] argv)
         {
-            if (rrd_update(argv.Length, argv) < 0)
+            if (rrd_update(argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -262,7 +262,7 @@ namespace dnrrdlib
         /// <param name="argv">String array of command line arguments</param>
         public static void Update(string filename, string template, params string[] argv)
         {
-            if (rrd_update_r(filename, template, argv.Length, argv) < 0)
+            if (rrd_update_r(filename, template, argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -304,7 +304,7 @@ namespace dnrrdlib
             Int64 starti64 = 0, endi64 = 0;
             IntPtr ptr = new IntPtr();
             if (rrd_fetch(argv.Length, argv, ref starti64, ref endi64, ref step, out ds_cnt,
-                out ptr, out data) < 0)
+                out ptr, out data) != 0)
             {
                 throw new RrdException();
             }
@@ -391,7 +391,7 @@ namespace dnrrdlib
             IntPtr last_ds = new IntPtr();
             Int32 last_update = 0;
             Int32 rt = rrd_lastupdate_r(filename, ref last_update, ref ret_ds_count, out ds_names, out last_ds);
-            if (rt < 0)
+            if (rt != 0)
             {
                 throw new RrdException();
             }
@@ -408,7 +408,7 @@ namespace dnrrdlib
         /// <returns>0 if successful, -1 if an error occurred</returns>
         public static void Dump(string filename, string outname)
         {
-            if (rrd_dump_r(filename, outname) < 0)
+            if (rrd_dump_r(filename, outname) != 0)
             {
                 throw new RrdException();
             }
@@ -421,7 +421,7 @@ namespace dnrrdlib
         /// <returns>0 if successful, -1 if an error occurred</returns>
         public static void Dump(params string[] argv)
         {
-            if (rrd_dump(argv.Length, argv) < 0)
+            if (rrd_dump(argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -445,7 +445,7 @@ namespace dnrrdlib
             IntPtr legend = new IntPtr();
             Int32 rt = rrd_xport(argv.Length, argv, 0, ref starti64, ref endi64, ref step, ref col_cnt,
                 out legend, out data);
-            if (rt < 0)
+            if (rt != 0)
             {
                 throw new RrdException();
             }
@@ -461,7 +461,7 @@ namespace dnrrdlib
         /// <returns>0 if successful, -1 if an error occurred</returns>
         public static void Restore(params string[] argv)
         {
-            if (rrd_restore(argv.Length, argv) < 0)
+            if (rrd_restore(argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -475,7 +475,7 @@ namespace dnrrdlib
         /// <param name="argv">String array of command line arguments</param>
         public static void Resize(params string[] argv)
         {
-            if (rrd_resize(argv.Length, argv) < 0)
+            if (rrd_resize(argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
@@ -487,7 +487,7 @@ namespace dnrrdlib
         /// <param name="argv">String array of command line arguments</param>
         public static void Tune(params string[] argv)
         {
-            if (rrd_tune(argv.Length, argv) < 0)
+            if (rrd_tune(argv.Length, argv) != 0)
             {
                 throw new RrdException();
             }
