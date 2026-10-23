@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Building on Windows with MSYS2 printed "warning: 'O_CREAT' redefined"
+  and the same for `O_WRONLY`, `O_RDONLY`, `O_APPEND` and `O_RDWR`
+  while compiling `compat-cloexec.c` and its test. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the

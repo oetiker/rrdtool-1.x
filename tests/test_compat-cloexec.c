@@ -8,9 +8,18 @@
 #ifdef _POSIX_C_SOURCE
 #  include <fcntl.h>
 #else
-#  define O_RDONLY	0
-#  define O_RDWR	0
-#  define O_APPEND	0
+/* rrd_config.h may have included <fcntl.h> already (MinGW does);
+   the flags are not used without _POSIX_C_SOURCE, so only make sure
+   they exist */
+#  ifndef O_RDONLY
+#    define O_RDONLY	0
+#  endif
+#  ifndef O_RDWR
+#    define O_RDWR	0
+#  endif
+#  ifndef O_APPEND
+#    define O_APPEND	0
+#  endif
 #endif
 
 static void fail(char *msg, int line)
