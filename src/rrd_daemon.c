@@ -2684,8 +2684,8 @@ static int handle_request_lastupdate(
     }
     rrd_close(rrd_file);
     rrd_free(&rrd);
-    rc = send_response(sock, RESP_OK, "%lu LastUpdate values follow\n",
-                       (unsigned long) last_update);
+    rc = send_response(sock, RESP_OK, "%lld LastUpdate values follow\n",
+                       (long long) last_update);
   done:
     free(file);
     return rc;

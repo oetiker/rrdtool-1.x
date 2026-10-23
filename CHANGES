@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On systems where a long integer has 32 bits, such as 32-bit Linux with
+  a 64-bit time, `rrdtool lastupdate --daemon` and the rrdcached
+  `LASTUPDATE` command showed a wrong time for updates after 2106-02-07.
+  They now show the same time as `rrdtool lastupdate` without the
+  daemon. @oetiker
 * `rrdtool list` and the rrdcached `LIST` command could leak memory or
   free an invalid pointer when the system ran out of memory while
   building the file list. @oetiker
