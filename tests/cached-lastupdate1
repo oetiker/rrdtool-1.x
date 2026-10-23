@@ -58,3 +58,37 @@ report "lastupdate via RRDCACHED_ADDRESS (got '$out')"
 
 ! $RRDTOOL lastupdate -d "$ADDR" sub/missing.rrd 2>/dev/null
 report "lastupdate via daemon fails for a missing file"
+
+# the library call rrd_lastupdate_v() parses the same options and returns
+# the values instead of printing them
+LUV=$TOP_BUILDDIR/tests/lastupdate-v
+out=`$LUV -d "$ADDR" sub/c.rrd`
+test "$out" = "1700000020 a=3 b=4.5"
+report "rrd_lastupdate_v via daemon (got '$out')"
+
+out=`$LUV sub/c.rrd --daemon "$ADDR"`
+test "$out" = "1700000020 a=3 b=4.5"
+report "rrd_lastupdate_v with option after the file (got '$out')"
+
+out=`RRDCACHED_ADDRESS="$ADDR" $LUV sub/c.rrd`
+test "$out" = "1700000020 a=3 b=4.5"
+report "rrd_lastupdate_v via RRDCACHED_ADDRESS (got '$out')"
+
+$LUV -d "$ADDR" sub/missing.rrd 2>/dev/null
+test $? = 1
+report "rrd_lastupdate_v via daemon fails for a missing file"
+
+$LUV --bogus sub/c.rrd 2>/dev/null
+test $? = 1
+report "rrd_lastupdate_v rejects an unknown option"
+
+$LUV sub/c.rrd sub/c.rrd 2>/dev/null
+test $? = 1
+report "rrd_lastupdate_v rejects a second file"
+
+# without a daemon it reads the file itself
+$RRDTOOL flushcached --daemon "$ADDR" sub/c.rrd
+report "flush"
+out=`$LUV "$W/base/sub/c.rrd"`
+test "$out" = "1700000020 a=3 b=4.5"
+report "rrd_lastupdate_v without daemon (got '$out')"

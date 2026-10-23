@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# The rrd_client_* functions of rrd_client.h are documented in librrd(3),
+# but librrd did not export them, so a program using them failed to link.
+# Drive every one of them through the shared library against a running
+# rrdcached.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no unix sockets on Windows"
+	exit 77
+fi
+
+# not $BUILDDIR: the rrdcached-unix test style points it elsewhere
+PROG=$TOP_BUILDDIR/tests/rrd-client-api
+if [ ! -x "$PROG" ]; then
+	echo "rrd-client-api was not built (rrdcached disabled)"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+RRDCACHED=$TOP_BUILDDIR/src/rrdcached
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+
+make_sock_dir
+SOCK=$RRDTEST_SOCKDIR/client-api.sock
+PIDFILE=$W/rrdcached.pid
+
+cleanup() {
+	[ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+	sleep 0.5
+	remove_sock_dir
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W" -B
+report "start rrdcached"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+	[ -S "$SOCK" ] && break
+	sleep 0.5
+done
+
+"$PROG" "unix:$SOCK" "$W/client-api.rrd"
+report "client API calls through the shared librrd"

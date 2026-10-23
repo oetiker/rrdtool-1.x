@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# rrdcached accepts UPDATE command lines of up to 8191 bytes, but wrote
+# only the first 4095 bytes of such a line to its journal. After a crash
+# the journal replay lost the values of the cut-off line. Send one long
+# UPDATE straight to the daemon (rrdtool itself splits long value lists),
+# stop the daemon without writing the file (SIGTERM without -F keeps the
+# values in the journal only), restart it on the same journal and check
+# that every value arrives.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+command -v python3 >/dev/null 2>&1 || exit 77
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" "$W/journal" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/journal-long.sock"
+PIDFILE="$W/rrdcached.pid"
+
+start_daemon() {
+	# -w 3600: nothing gets written to disk unless a client asks for a flush
+	$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1 \
+		-j "$W/journal"
+}
+
+start_daemon
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+$RRDTOOL create "$W/base/long.rrd" --start 1000000000 --step 1 \
+	DS:a:GAUGE:20:U:U RRA:LAST:0.5:1:1000
+report create
+
+# 500 values: one line of about 7400 bytes
+python3 - "$SOCK" <<'PYEOF'
+import socket
+import sys
+
+values = " ".join("%d:%d" % (1000000001 + i, i) for i in range(500))
+line = ("UPDATE long.rrd " + values + "\n").encode()
+assert 4096 < len(line) < 8192, len(line)
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(10)
+s.connect(sys.argv[1])
+s.sendall(line)
+reply = s.recv(4096)
+print("reply: %r" % reply)
+sys.exit(0 if reply.startswith(b"0 ") else 1)
+PYEOF
+report "send a long UPDATE line"
+
+# the cached values survive only in the journal
+PID=$(cat "$PIDFILE")
+kill $PID
+report "stop rrdcached"
+for i in $(seq 1 50); do
+	kill -0 $PID 2>/dev/null || break
+	sleep 0.2
+done
+! kill -0 $PID 2>/dev/null
+report "rrdcached has stopped"
+
+start_daemon
+report "restart rrdcached on the journal"
+sleep 1
+
+$RRDTOOL flushcached -d "unix:$SOCK" "$W/base/long.rrd"
+report "flush"
+
+out=$($RRDTOOL lastupdate "$W/base/long.rrd" | tr '\n' '|')
+test "$out" = " a||1000000500: 499|"
+report "last value of the long line replayed (got '$out')"
+
+n=$($RRDTOOL fetch "$W/base/long.rrd" LAST -s 1000000000 -e 1000000500 \
+	| grep -c '^10000[0-9]*: [0-9]')
+[ "$n" = 500 ]
+report "all 500 values replayed (got $n)"
