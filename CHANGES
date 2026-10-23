@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --aberrant-reset` damaged RRDs of format version 0001 or
+  0002 (`rrd_version` in `rrdtool info`): it cleared the seasonal values
+  of the wrong data source, scrambled the Holt-Winters state and moved the
+  current row of the first RRA. It now resets the same values as in newer
+  files. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the

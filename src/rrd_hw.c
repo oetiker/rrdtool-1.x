@@ -352,15 +352,15 @@ void reset_aberrant_coefficients(
     unsigned long cdp_start, rra_start;
     rrd_value_t nan_buffer = DNAN;
 
-    /* compute the offset for the cdp area */
-    cdp_start = sizeof(stat_head_t) +
-        rrd->stat_head->ds_cnt * sizeof(ds_def_t) +
-        rrd->stat_head->rra_cnt * sizeof(rra_def_t) +
-        sizeof(live_head_t) + rrd->stat_head->ds_cnt * sizeof(pdp_prep_t);
-    /* compute the offset for the first rra */
-    rra_start = cdp_start +
+    /* rrd_open() measured the header as it sits in the file.  Building
+     * the offsets from sizeof(live_head_t) instead would place them
+     * wrong for files before version 3, which store the live header as a
+     * bare time_t.  The header ends with cdp_prep and rra_ptr. */
+    rra_start = rrd_file->header_len;
+    cdp_start = rra_start -
+        rrd->stat_head->rra_cnt * sizeof(rra_ptr_t) -
         (rrd->stat_head->ds_cnt) * (rrd->stat_head->rra_cnt) *
-        sizeof(cdp_prep_t) + rrd->stat_head->rra_cnt * sizeof(rra_ptr_t);
+        sizeof(cdp_prep_t);
 
     /* loop over the RRAs */
     for (rra_idx = 0; rra_idx < rrd->stat_head->rra_cnt; rra_idx++) {
