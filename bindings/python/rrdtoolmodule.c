@@ -279,7 +279,7 @@ _rrdtool_create(PyObject *Py_UNUSED(self), PyObject *args)
     status = rrd_create(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -357,7 +357,7 @@ _rrdtool_update(PyObject *Py_UNUSED(self), PyObject *args)
     status = rrd_update(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -436,7 +436,7 @@ _rrdtool_fetch(PyObject *Py_UNUSED(self), PyObject *args)
                        &ds_cnt, &ds_namv, &data);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -607,7 +607,7 @@ _rrdtool_graph(PyObject *Py_UNUSED(self), PyObject *args)
                        NULL, &ymin, &ymax);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -712,7 +712,7 @@ _rrdtool_xport(PyObject *Py_UNUSED(self), PyObject *args)
                        &col_cnt, &legend_v, &data);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -867,7 +867,7 @@ _rrdtool_tune(PyObject *Py_UNUSED(self), PyObject *args)
     status = rrd_tune(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
@@ -977,7 +977,7 @@ _rrdtool_resize(PyObject *Py_UNUSED(self), PyObject *args)
     status = rrd_resize(rrdtool_argc, rrdtool_argv);
     Py_END_ALLOW_THREADS
 
-    if (status == -1) {
+    if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
         ret = NULL;
