@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . $(dirname $0)/functions
+require_graph
 
 BASE=$BASEDIR/$(basename $0)-test
 PREFIX=$BUILDDIR/$(basename $0)-test
@@ -93,12 +94,23 @@ for T in $(seq $ST $TSTEP $(($ST + $STEPAB * 120)) ) ; do
 	VB=$(($VB + $DELTAB))
 	ST=$T
 done
-$RRDTOOL update ${PREFIX}a1.rrd  $UPDATEA
+# send the values in batches of 60, as a single update with all of them is
+# too long for the rrdcached client buffer
+function update_batched {
+	local FILE="$1"
+	shift
+	while [ $# -gt 0 ]; do
+		$RRDTOOL update "$FILE" "${@:1:60}" || return 1
+		shift $(( $# < 60 ? $# : 60 ))
+	done
+}
+
+update_batched ${PREFIX}a1.rrd $UPDATEA
 report update a
-$RRDTOOL update ${PREFIX}b1.rrd  $UPDATEB
+update_batched ${PREFIX}b1.rrd $UPDATEB
 report update b
 
-$RRDTOOL update ${PREFIX}ab1.rrd  $UPDATEAB
+update_batched ${PREFIX}ab1.rrd $UPDATEAB
 report update ab
 
 
@@ -152,20 +164,20 @@ XB1=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
 # Tsample / 2 * slope for the AVERAGE RRD
 
 set -- $A1
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average a1 within 1% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 60.0)) ; exit ((\$r < 0.01) ? 0 : 1)" ; report "average a1 within 1% of expectation"
 
 set -- $B1
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average b1 within 1% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 60.0)) ; exit ((\$r < 0.01) ? 0 : 1)" ; report "average b1 within 1% of expectation"
 
 set -- $XA1
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average a from ab1 within 1% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 60.0)) ; exit ((\$r < 0.01) ? 0 : 1)" ; report "average a from ab1 within 1% of expectation"
 
 set -- $XB1
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 1) ? 0 : 1)" ; report "average b from ab1 within 1% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 60.0)) ; exit ((\$r < 0.01) ? 0 : 1)" ; report "average b from ab1 within 1% of expectation"
 
 
 
-$RRDTOOL create ${PREFIX}ab2.rrd --start $ST --step $STEPAB 
+$RRDTOOL create ${PREFIX}ab2.rrd --start $ST --step $STEPAB \
     --source ${PREFIX}a1.rrd --source ${PREFIX}b1.rrd \
     DS:a:GAUGE:$MINUPDATE:U:U  \
     DS:b:GAUGE:$MINUPDATE:U:U  \
@@ -197,10 +209,10 @@ XB2=$($RRDTOOL graph ${PREFIX}.png --imginfo '' --end "$ST" --start end-1h \
 )
 
 set -- $XA2
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 6.00)) ; exit ((\$r < 4) ? 0 : 1)" ; report "average a from ab2 within 4% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEA / 60.0)) ; exit ((\$r < 0.04) ? 0 : 1)" ; report "average a from ab2 within 4% of expectation"
 
 set -- $XB2
-perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 6.00)) ; exit ((\$r < 4) ? 0 : 1)" ; report "average b from ab2 within 4% of expectation"
+perl -e "\$r = abs(1.0 - $2 / ($TSTEP / 2.0 * $SLOPEB / 60.0)) ; exit ((\$r < 0.04) ? 0 : 1)" ; report "average b from ab2 within 4% of expectation"
 
 
 

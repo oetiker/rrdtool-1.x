@@ -39,7 +39,7 @@ CLEANFILES = *.rrd info-cached1.xml \
 	graph7-s.pdf graph7-S.pdf graph7-pct.pdf graph7-r.pdf \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
-	rpn1.out rpn1.output.out
+	rpn1.out rpn1.output.out create-with-source-5-test.png
 
 check_PROGRAMS = \
 	compat-cloexec \
