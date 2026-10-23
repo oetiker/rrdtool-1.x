@@ -688,8 +688,11 @@ for, so describing the mechanism again is unnecessary. Read L</"HOW IT WORKS">
 above for a detailed explanation.
 
 Note that rrdcached only accepts absolute timestamps in the update values.
-Updates strings like "N:1:2:3" are automatically converted to absolute
-time by the RRD client library before sending to rrdcached.
+Updates strings like "N:1:2:3" and at-style times like "now@1:2:3" or
+"epoch+1d@1:2:3" are automatically converted to absolute time by the RRD
+client library before sending to rrdcached. A command line must fit into
+4096 bytes; the client library sends a longer list of values as several
+B<UPDATE> commands.
 
 =item B<WROTE> I<filename>
 
