@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Running `make` in a git checkout no longer rewrites the translation files
+  `po/fr.po`, `po/hu.po` and `po/ka.po`. To merge new messages into the
+  translations, run `make -C po update-po`; `make dist` still does this. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
