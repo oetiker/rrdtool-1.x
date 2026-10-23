@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# rrdtool last through rrdcached rounded the time down to the step of the
+# RRD, while rrdtool last without the daemon prints the exact time of the
+# last update. Check both a value on disk and a value still in the cache.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/last-exact.sock"
+PIDFILE="$W/rrdcached.pid"
+
+# long write delay: updates sent to the daemon stay in its cache
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+# 1000000123 is not a multiple of the 300 s step
+$RRDTOOL create "$W/base/a.rrd" --start 1000000000 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:LAST:0.5:1:10
+report create
+$RRDTOOL update "$W/base/a.rrd" 1000000123:1
+report "local update"
+
+local_t=$($RRDTOOL last "$W/base/a.rrd")
+cached_t=$($RRDTOOL last -d "unix:$SOCK" "$W/base/a.rrd")
+[ "$local_t" = 1000000123 ] && [ "$cached_t" = 1000000123 ]
+report -s $? "last of a file on disk (local '$local_t', daemon '$cached_t')"
+
+# an update the daemon holds in its cache, not yet on disk
+$RRDTOOL update -d "unix:$SOCK" "$W/base/a.rrd" 1000000250:2
+report "update via daemon"
+cached_t=$($RRDTOOL last -d "unix:$SOCK" "$W/base/a.rrd")
+[ "$cached_t" = 1000000250 ]
+report -s $? "last of a cached update (daemon '$cached_t')"

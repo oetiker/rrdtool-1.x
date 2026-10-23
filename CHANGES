@@ -7,6 +7,43 @@ Bugfixes
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,
   also after a dump the daemon refused. @oetiker
+* `make dist` from a separate build directory printed "Can't open
+  doc/rrdbuild.pod: No such file or directory" and went on; in the
+  source directory it rewrote `doc/rrdbuild.pod` in place. It now leaves
+  the source alone and ships `doc/rrdbuild.pod` with the version that
+  the release scripts already set there. @oetiker
+* In the Python binding, `rrdtool.update()` returned as if it had worked
+  when rrdcached could not be reached, and `rrdtool.xport()` crashed
+  Python with a segmentation fault. Both now raise `OperationalError`
+  with "Unable to connect to rrdcached: ...". @oetiker
+* `rrdtool tune --aberrant-reset` damaged RRDs of format version 0001 or
+  0002 (`rrd_version` in `rrdtool info`): it cleared the seasonal values
+  of the wrong data source, scrambled the Holt-Winters state and moved the
+  current row of the first RRA. It now resets the same values as in newer
+  files. @oetiker
+* On systems where a long integer has 32 bits, such as 32-bit Linux with
+  a 64-bit time, `rrdtool lastupdate --daemon` and the rrdcached
+  `LASTUPDATE` command showed a wrong time for updates after 2106-02-07.
+  They now show the same time as `rrdtool lastupdate` without the
+  daemon. @oetiker
+* `rrdtool last --daemon` printed the time of the last update rounded down
+  to the step of the RRD, for example 999999900 instead of 1000000123,
+  and so did the rrdcached `LAST` command. It now prints the exact time,
+  the same as `rrdtool last` without the daemon. @oetiker
+* `rrdtool update --skip-past-updates` (`-s`) through rrdcached ignored
+  the option: a value older than the last update failed with "illegal
+  attempt to update using time ... when last update time is ...", and the
+  newer values given after it were lost too. Such values are now skipped,
+  as without the daemon. @oetiker
+* The librrd manual page listed the rrdcached client calls for creating
+  with sources and for reading statistics under the wrong names, and did
+  not describe the client calls for listing, flushing all files, tuning
+  and dumping at all. All of them are documented now. @oetiker
+* `rrdtool tune --data-source-type` now resets the last value of the data
+  source (`last_ds` in `rrdtool dump` shows `UNKN`) on builds without mmap,
+  such as the Windows (MinGW) build. Before, the old value stayed, so the
+  first update after switching e.g. from GAUGE to COUNTER computed a rate
+  from a value of the old type. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
