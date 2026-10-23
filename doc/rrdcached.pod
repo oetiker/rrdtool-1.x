@@ -740,6 +740,32 @@ the parameters are valid, and (if the -O option is given or if the rrdcached
 was started with the -O flag) the specified I<filename> does not already
 exist.
 
+=item B<TUNE> I<filename> I<count> I<word> ...
+
+Change the RRD as B<rrdtool tune> would, see L<rrdtune>. I<count> is the
+number of words that follow, and they are a whole B<rrdtool tune> command
+line from the command name on, as B<rrdtool tune --daemon> sends it: the
+first word is skipped as the command name, and the file name in it is not
+used: the daemon tunes I<filename>. For example
+
+ TUNE x.rrd 4 tune x.rrd -h ds:600
+
+sets the heartbeat of the data source C<ds> to 600 seconds. On success
+the reply is C<0 Success>.
+
+=item B<DUMP> I<filename> [I<header>]
+
+Write pending updates for the specified RRD to disk, then send it as XML,
+as B<rrdtool dump> would, see L<rrddump>. I<header> selects the XML
+header: C<dtd> (the default), C<xsd> or C<none>; it may also be given as
+C<-h> I<header>. Older versions of rrdcached ignore I<header> and always
+send the C<dtd> header.
+
+Unlike the other commands, a successful B<DUMP> sends no status line: the
+reply is the XML document itself, and the daemon closes the connection
+at its end. If the dump cannot be started, the reply is a single status line
+with a negative status, and the connection stays open.
+
 =item B<BATCH>
 
 This command initiates the bulk load of multiple commands.  This is
