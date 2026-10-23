@@ -45,7 +45,7 @@ jobs:
       with:
         name: rrdcached-tcp_test-suite.log
         path: tests/test-suite.log
-    - name: Run "rrdcached-udp"
+    - name: Run "rrdcached-unix"
       run: |
         make check TESTS_STYLE="rrdcached-unix"
     - name: Run valgrind
@@ -72,3 +72,25 @@ jobs:
         sudo make install
         cd /opt/rrdtool-$V
         bin/rrdtool
+
+  no-graph:
+    name: Build without rrd_graph
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install autopoint build-essential libtool-bin gettext libglib2.0-dev libxml2-dev
+
+    - name: Build
+      run: |
+        ./bootstrap
+        ./configure --disable-rrd_graph --disable-perl --disable-python --disable-ruby --disable-lua --disable-tcl
+        make
+
+    - name: Run Checks
+      run: |
+        make check || { cat tests/test-suite.log; exit 1; }
