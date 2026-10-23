@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool update --skip-past-updates` (`-s`) through rrdcached ignored
+  the option: a value older than the last update failed with "illegal
+  attempt to update using time ... when last update time is ...", and the
+  newer values given after it were lost too. Such values are now skipped,
+  as without the daemon. @oetiker
 * The librrd manual page listed the rrdcached client calls for creating
   with sources and for reading statistics under the wrong names, and did
   not describe the client calls for listing, flushing all files, tuning
