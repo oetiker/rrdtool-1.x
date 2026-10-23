@@ -3,13 +3,9 @@
 # Regression test for issue #878:
 # `rrdtool tune` must reject an invalid DS: specification and leave the
 # original RRD untouched instead of writing out a corrupt data source.
+# Through rrdcached the failure must reach the client as an error as well.
 
 . $(dirname $0)/functions
-
-# The rrdcached tune path does not propagate expected-failure exit codes the
-# same way; this test targets the local (non-daemon) rrd_tune fix, so skip it
-# under rrdcached.
-is_cached && exit 0
 
 BASE=$BASEDIR/modify6-test
 BUILD=$BUILDDIR/modify6-test
@@ -25,6 +21,14 @@ report "reject invalid DS add"
 $RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after.dump || fail "RRD corrupted - dump failed"
 $DIFF ${BUILD}before.dump ${BUILD}after.dump
 report "RRD unchanged after rejected DS add"
+
+# adding a DS whose name already exists must fail too, also through rrdcached
+! $RRDTOOL tune ${BUILD}a.rrd DS:temp:GAUGE:600:U:U 2>/dev/null
+report "reject duplicate DS add"
+
+$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after2.dump || fail "RRD corrupted - dump failed"
+$DIFF ${BUILD}before.dump ${BUILD}after2.dump
+report "RRD unchanged after rejected duplicate DS add"
 
 # a valid DS add must still succeed
 $RRDTOOL tune ${BUILD}a.rrd DS:humidity:GAUGE:600:0:100 || fail "valid DS add"

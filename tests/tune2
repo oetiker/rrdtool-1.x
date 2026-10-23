@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/tune2-test
 BUILD=$BUILDDIR/tune2-test
+STORE=$RRDDIR/tune2-test
 
 xDIFF9="${DIFF9} -I .*<seasonal_smooth_idx>.*"
 
@@ -11,8 +12,10 @@ $RRDTOOL create ${BUILD}org.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U 
 $RRDTOOL dump ${BUILD}org.rrd | $xDIFF9 - ${BASE}org.dump
 report create
 
-is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
-cp ${BASE}org.rrd ${BASE}a.rrd
+if is_cached; then
+	$RRDTOOL flushcached ${BUILD}org.rrd || fail $? flushcached
+fi
+cp ${STORE}org.rrd ${STORE}a.rrd
 # this must fail
 ! $RRDTOOL tune ${BUILD}a.rrd --beta 1.4 2>/dev/null
 report "out of range beta error"

@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/modify-test1
 BUILD=$BUILDDIR/modify-test1
+STORE=$RRDDIR/modify-test1
 
 $RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10 || fail create
 
@@ -19,7 +20,7 @@ $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump
 report "created content"
 
 # extend base RRA, refill from coarse RRA
-cp ${BASE}a.rrd ${BASE}b.rrd
+cp ${STORE}a.rrd ${STORE}b.rrd
 $RRDTOOL tune ${BUILD}b.rrd RRA#0:+10 || fail "tune"
 $RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump 
 report "extend base RRA"

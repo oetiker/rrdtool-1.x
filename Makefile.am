@@ -19,6 +19,12 @@ if BUILD_FUZZERS
 SUBDIRS += fuzz
 endif
 
+# "make distcheck" installs into a temporary prefix, but the systemd unit
+# directory from pkg-config is absolute, so move it into that prefix.
+if HAVE_SYSTEMD
+AM_DISTCHECK_CONFIGURE_FLAGS = --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
+endif
+
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
