@@ -6,9 +6,10 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
-	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error cached-first-last
+	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
+	cached-client-api cached-journal-long cached-journal-crash cached-first-last
 
-TESTS = $(script_tests) compat-cloexec rrd-open-security
+TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version
 
 script_tests += security-rrdcached-response-bounds
 
@@ -43,7 +44,9 @@ CLEANFILES = *.rrd info-cached1.xml \
 
 check_PROGRAMS = \
 	compat-cloexec \
-	rrd-open-security
+	rrd-open-security \
+	lastupdate-v \
+	tune-legacy-version
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
@@ -54,6 +57,16 @@ rrd_open_security_SOURCES = \
 	test_rrd_open_security.c
 
 rrd_open_security_LDADD = \
+	${top_builddir}/src/librrd.la
+
+# helper for cached-lastupdate1; links the shared librrd to check the export
+lastupdate_v_SOURCES = test_lastupdate_v.c
+lastupdate_v_LDADD = ${top_builddir}/src/librrd.la
+
+tune_legacy_version_SOURCES = \
+	test_tune_legacy_version.c
+
+tune_legacy_version_LDADD = \
 	${top_builddir}/src/librrd.la
 
 # Compile the real RADOS read path against a local mock; no Ceph service needed.
@@ -78,6 +91,14 @@ fetch_empty_security_SOURCES = test_fetch_empty_security.c
 fetch_empty_security_LDFLAGS = -static
 fetch_empty_security_LDADD = ${top_builddir}/src/librrd.la
 endif
+
+# Linked against the shared librrd on purpose: it fails to link when a
+# function of the installed rrd_client.h is not exported.
+if BUILD_RRDCACHED
+check_PROGRAMS += rrd-client-api
+endif
+rrd_client_api_SOURCES = test_rrd_client_api.c
+rrd_client_api_LDADD = ${top_builddir}/src/librrd.la
 
 if BUILD_RRDCACHED
 if HAVE_STATIC_LIBRRD
