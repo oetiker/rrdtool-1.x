@@ -9,11 +9,24 @@
 #  include <fcntl.h>
 #  include <unistd.h>
 #else
-#  define O_CREAT	0
-#  define O_WRONLY	0
-#  define O_RDONLY	0
-#  define O_APPEND	0
-#  define O_RDWR	0
+/* rrd_config.h may have included <fcntl.h> already (MinGW does);
+   the flags are not used without _POSIX_C_SOURCE, so only make sure
+   they exist */
+#  ifndef O_CREAT
+#    define O_CREAT	0
+#  endif
+#  ifndef O_WRONLY
+#    define O_WRONLY	0
+#  endif
+#  ifndef O_RDONLY
+#    define O_RDONLY	0
+#  endif
+#  ifndef O_APPEND
+#    define O_APPEND	0
+#  endif
+#  ifndef O_RDWR
+#    define O_RDWR	0
+#  endif
 #endif
 
 inline static bool have_decl_o_cloexec(void)

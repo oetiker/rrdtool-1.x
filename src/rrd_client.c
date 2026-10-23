@@ -2325,6 +2325,27 @@ int rrdc_fetch(
     return status;
 }                       /* }}} int rrdc_fetch */
 
+/* Replace the connection of `client' by a new one to the same daemon.
+ * Used after the daemon closed the connection on purpose. If the new
+ * connection fails, the client is left disconnected, as if
+ * rrd_client_disconnect had been called, and no error is set: the
+ * caller's request has already succeeded, and the next request reports
+ * that the client is not connected. */
+static void reopen_connection(
+    rrd_client_t *client)
+{                       /* {{{ */
+    char     *addr = NULL;
+
+    if (client->sd_path != NULL)
+        addr = strdup(client->sd_path);
+    close_connection(client);
+    if (addr == NULL)
+        return;
+    if (rrd_client_connect(client, addr) != 0)
+        rrd_clear_error();
+    free(addr);
+}                       /* }}} void reopen_connection */
+
 int rrd_client_dump(
     rrd_client_t *client,
     const char *filename,   /* {{{ */
@@ -2403,7 +2424,10 @@ int rrd_client_dump(
             return -1;
         }
         if (received == 0) {
-            close_connection(client);
+            /* the daemon marks the end of the dump by closing the
+             * connection; open a new one to the same daemon so the
+             * caller's client stays usable */
+            reopen_connection(client);
             break; // EOF
         }
         written = output_cb(buffer, received, cb_userdata);
@@ -2434,7 +2458,8 @@ int rrd_client_dump(
             *nl = '\0'; // \0 terminate at newline
             chomp(resp_buffer); // chomp away possible \r too
             rrd_set_error("rrdc_dump: failed to dump: %s", resp_buffer);
-            close_connection(client);
+            /* the daemon answered with a single status line and keeps
+             * the connection open, so it stays usable */
             return -1;
         }
         // if the response starts with `<` an XML payload is assumed and the connection
