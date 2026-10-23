@@ -432,7 +432,8 @@ static int buffer_add_string(
 }                       /* }}} int buffer_add_string */
 
 /* rrdcached only accepts numeric update times ("<seconds>:<values>").
- * Turn "N:<values>" and at-style times ("<at-time>@<values>", e.g.
+ * Turn "N:<values>", negative times ("-5:<values>", seconds before now)
+ * and at-style times ("<at-time>@<values>", e.g.
  * "now@5" or "epoch+1d@5") into that form here, on the client, with the
  * same rules a local update uses (see parse_ds() and
  * get_time_from_reading() in rrd_update.c): any '@' marks an at-style
@@ -445,6 +446,8 @@ char     *rrd_client_numeric_update_value(
 {                       /* {{{ */
     const char *at;
     char     *result;
+    char     *end;
+    double    offset;
 
     at = strchr(value, '@');
     if (at != NULL) {
@@ -476,6 +479,26 @@ char     *rrd_client_numeric_update_value(
     } else if (strncmp(value, "N:", 2) == 0) {
         result = sprintf_alloc("%lu:%s", (unsigned long) time(NULL),
                                value + 2);
+    } else if (value[0] == '-'
+               && rrd_strtodbl(value, &end, &offset, NULL) == 1
+               && *end == ':' && offset < 0) {
+        /* a negative time counts back from now */
+        double    t = (double) time(NULL) + offset;
+        long long sec = (long long) t;
+        long      usec;
+
+        if ((double) sec > t)
+            sec--;
+        usec = (long) ((t - (double) sec) * 1e6 + 0.5);
+        if (usec >= 1000000) {
+            sec++;
+            usec -= 1000000;
+        }
+        /* not "%f": the decimal point would follow the locale */
+        if (usec == 0)
+            result = sprintf_alloc("%lld%s", sec, end);
+        else
+            result = sprintf_alloc("%lld.%06ld%s", sec, usec, end);
     } else {
         result = strdup(value);
     }
