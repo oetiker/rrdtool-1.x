@@ -164,7 +164,8 @@ function run_cached {
         if [ $RRDCACHED_SOCK == "unix" ]; then
             export BASEDIR="${BUILDDIR}/cached"
             export BUILDDIR="${BASEDIR}"
-            ADDR="unix:$BASEDIR/$(basename $0)-rrdcached.sock"
+            make_sock_dir
+            ADDR="unix:$RRDTEST_SOCKDIR/$(basename $0)-rrdcached.sock"
         else
             export BASEDIR="${BUILDDIR}/cached"
             export RRDCACHED_STRIPPATH="${BUILDDIR}"
@@ -245,6 +246,28 @@ function stop_cached {
                 CACHED_PID_FILE=""
                 RRDCACHED_ADDRESS=""
         fi
+        remove_sock_dir
+}
+
+# A unix socket path must be shorter than sizeof(sun_path): 108 bytes on
+# Linux, 104 on BSD and macOS. A build directory can be deeper than that,
+# so test sockets live in a short directory of their own, one per test
+# run, created here and removed by remove_sock_dir (called by stop_cached).
+function make_sock_dir {
+        [ -n "$RRDTEST_SOCKDIR" ] && [ -d "$RRDTEST_SOCKDIR" ] && return
+        local base="${TMPDIR:-/tmp}"
+        # leave room for the socket name in the directory
+        [ ${#base} -gt 40 ] && base=/tmp
+        RRDTEST_SOCKDIR=$(mktemp -d "$base/rrdtest.XXXXXX") \
+                || fail 1 "cannot create a socket directory in $base"
+}
+
+function remove_sock_dir {
+        if [ -n "$RRDTEST_SOCKDIR" ] && [ -d "$RRDTEST_SOCKDIR" ] ; then
+                rm -f -- "$RRDTEST_SOCKDIR"/*.sock
+                rmdir -- "$RRDTEST_SOCKDIR"
+        fi
+        RRDTEST_SOCKDIR=""
 }
 
 function is_cached {

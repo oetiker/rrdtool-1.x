@@ -19,7 +19,7 @@ function rtest() {
     testname="$1"
     xpected="$2"
     shift 2 || exit 1
-    $DIFF <(echo -e "$xpected") <($RRDTOOL "$@"|sed s/-nan/nan/g)
+    $DIFF <(echo -e "$xpected") <($RRDTOOL "$@")
     report "$testname"
     #&& echo "OK: $testname" || echo "FAIL: $testname"
 }
@@ -36,6 +36,17 @@ rtest "No data, sampling timestamp" '0x0\n---------- --:--:--' "${graphargs[@]}"
 rtest "No data, value timestamp" '0x0\nnan' "${graphargs[@]}" 'PRINT:v:%F %T:valstrftime'
 
 rtest "No data, value duration" '0x0\nnan' "${graphargs[@]}" 'PRINT:v::valstrfduration'
+
+# unknown values print as "nan", never "-nan" (#297)
+rtest "No data, numeric with width" '0x0\n     nan' "${graphargs[@]}" 'PRINT:v:%8.2lf'
+
+rtest "No data, PRINT with CF" '0x0\nnan' "${graphargs[@]}" 'PRINT:dv:LAST:%lf'
+
+$DIFF <(echo -e 'legend[0] = "   nan"\nlegend[1] = "nan"\nlegend[2] = "nan"') \
+    <($RRDTOOL graphv /dev/null --start 1420070400 --end 1420071000 \
+        "DEF:dv=$RRD:v:LAST" 'VDEF:v=dv,LAST' 'GPRINT:v:%6.1lf' \
+        'GPRINT:v:%F %T:valstrftime' 'GPRINT:v::valstrfduration' | grep '^legend')
+report "No data, GPRINT"
 
 
 $RRDTOOL update $RRD --template v -- 1420070460:0 || exit 1
