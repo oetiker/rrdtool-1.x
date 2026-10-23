@@ -54,13 +54,13 @@ jobs:
             # https://github.com/microsoft/vcpkg/releases/tag/2025.12.12
             # https://github.com/microsoft/vcpkg/commit/84bab45d415d22042bd0b9081aea57f362da3f35
             vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
-            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
+            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2022
             vcpkg_triplet: x86-windows
             vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
-            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib'
+            vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x86'
             nmake_configuration: ''
     defaults:

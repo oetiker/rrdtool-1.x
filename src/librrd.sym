@@ -38,8 +38,6 @@ rrd_dump_r
 rrd_fetch
 rrd_fetch_cb_register
 rrd_fetch_r
-rrd_tune
-rrd_tune_r
 rrd_first
 rrd_first_r
 rrd_flush
@@ -89,6 +87,7 @@ rrd_strversion
 rrd_tell
 rrd_test_error
 rrd_tune
+rrd_tune_r
 rrd_update
 rrd_update_r
 rrd_update_v

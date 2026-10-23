@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/$(basename $0)-test
 BUILD=$BUILDDIR/$(basename $0)-test
+STORE=$RRDDIR/$(basename $0)-test
 
 ST=1300000000
 $RRDTOOL create ${BUILD}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:20 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
@@ -18,7 +19,7 @@ for A in $(seq $ST 60 $(($ST + 60*($CNT - 1))) ) ; do
 	ST=$A
 	$RRDTOOL update ${BUILD}a1.rrd  $A:$V
 
-	rm -f ${BASE}a1.xml ${BASE}r1.rrd ${BASE}r1.xml
+	rm -f ${BUILD}a1.xml ${STORE}r1.rrd ${BUILD}r1.xml
 
 	$RRDTOOL dump ${BUILD}a1.rrd ${BUILD}a1.xml
 	$RRDTOOL restore ${BUILD}a1.xml ${BUILD}r1.rrd

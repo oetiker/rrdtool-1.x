@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/$(basename $0)-test
 PREFIX=$BUILDDIR/$(basename $0)-test
+STORE=$RRDDIR/$(basename $0)-test
 
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
@@ -29,7 +30,7 @@ ST=$FIRST
 
 
 
-rm -f ${BASE}*.rrd ${BASE}*.xml
+rm -f ${STORE}*.rrd ${STORE}*.xml
 $RRDTOOL create ${PREFIX}a1_x.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report createa1
 
@@ -45,8 +46,8 @@ report createba1
 $RRDTOOL create ${PREFIX}bca1_x.rrd --start $(($ST-1)) --step 60 DS:b:GAUGE:120:0:U DS:c:GAUGE:120:0:U DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report createbca1
 
-for A in ${BASE}*_x.rrd ; do
-	cp $A ${BASEDIR}/$(basename $A _x.rrd)_y.rrd
+for A in ${STORE}*_x.rrd ; do
+	cp $A ${RRDDIR}/$(basename $A _x.rrd)_y.rrd
 done
 
 
