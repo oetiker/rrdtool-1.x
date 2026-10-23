@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make dist` from a separate build directory printed "Can't open
+  doc/rrdbuild.pod: No such file or directory" and went on; in the
+  source directory it rewrote `doc/rrdbuild.pod` in place. It now leaves
+  the source alone and ships `doc/rrdbuild.pod` with the version that
+  the release scripts already set there. @oetiker
 * In the Python binding, `rrdtool.update()` returned as if it had worked
   when rrdcached could not be reached, and `rrdtool.xport()` crashed
   Python with a segmentation fault. Both now raise `OperationalError`
