@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* In the Python binding, `rrdtool.update()` returned as if it had worked
+  when rrdcached could not be reached, and `rrdtool.xport()` crashed
+  Python with a segmentation fault. Both now raise `OperationalError`
+  with "Unable to connect to rrdcached: ...". @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
