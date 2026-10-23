@@ -264,6 +264,31 @@ static int parse_ulong_header(
     return (0);
 }                       /* }}} int parse_ulong_header */
 
+/* Times are sent as decimal "long long": a long has only 32 bits on
+ * Windows and on 32-bit systems with a 64-bit time_t. */
+static int parse_time_header(
+    char *line,         /* {{{ */
+    char **ret_key,
+    time_t *ret_value)
+{
+    char     *str_value;
+    char     *endptr;
+    int       status;
+
+    str_value = NULL;
+    status = parse_header(line, ret_key, &str_value);
+    if (status != 0)
+        return (status);
+
+    endptr = NULL;
+    errno = 0;
+    *ret_value = (time_t) strtoll(str_value, &endptr, /* base = */ 10);
+    if ((endptr == str_value) || (errno != 0))
+        return (-1);
+
+    return (0);
+}                       /* }}} int parse_time_header */
+
 static int parse_char_array_header(
     char *line,         /* {{{ */
     char **ret_key,
@@ -332,7 +357,7 @@ static int parse_value_array_header(
 
     errno = 0;
     endptr = NULL;
-    *ret_time = (time_t) strtol(str_key, &endptr, /* base = */ 10);
+    *ret_time = (time_t) strtoll(str_key, &endptr, /* base = */ 10);
     if ((endptr == str_key) || (errno != 0)) {
         free(str_array);
         return (-1);
@@ -477,7 +502,7 @@ char     *rrd_client_numeric_update_value(
         t = mktime(&tv.tm) + tv.offset;
         result = sprintf_alloc("%lld:%s", (long long) t, at + 1);
     } else if (strncmp(value, "N:", 2) == 0) {
-        result = sprintf_alloc("%lu:%s", (unsigned long) time(NULL),
+        result = sprintf_alloc("%lld:%s", (long long) time(NULL),
                                value + 2);
     } else if (value[0] == '-'
                && rrd_strtodbl(value, &end, &offset, NULL) == 1
@@ -2146,7 +2171,7 @@ int rrd_client_fetch(
     if ((ret_start != NULL) && (*ret_start > 0)) {
         char      tmp[64];
 
-        snprintf(tmp, sizeof(tmp), "%lu", (unsigned long) *ret_start);
+        snprintf(tmp, sizeof(tmp), "%lld", (long long) *ret_start);
         tmp[sizeof(tmp) - 1] = 0;
         status = buffer_add_string(tmp, &buffer_ptr, &buffer_free);
         if (status != 0) {
@@ -2154,7 +2179,7 @@ int rrd_client_fetch(
         }
 
         if ((ret_end != NULL) && (*ret_end > 0)) {
-            snprintf(tmp, sizeof(tmp), "%lu", (unsigned long) *ret_end);
+            snprintf(tmp, sizeof(tmp), "%lld", (long long) *ret_end);
             tmp[sizeof(tmp) - 1] = 0;
             status = buffer_add_string(tmp, &buffer_ptr, &buffer_free);
             if (status != 0) {
@@ -2211,6 +2236,17 @@ int rrd_client_fetch(
     current_line++; \
   } while (0)
 
+#define READ_TIME_FIELD(name,var) do { \
+    char *key; \
+    assert (current_line < res->lines_num); \
+    status = parse_time_header (res->lines[current_line], &key, &var); \
+    if (status != 0) \
+      BAIL_OUT (-1, "Unable to parse header `%s'", name); \
+    if (strcasecmp (key, name) != 0) \
+      BAIL_OUT (-1, "Unexpected header line: Expected `%s', got `%s'", name, key); \
+    current_line++; \
+  } while (0)
+
     if (res->lines_num < 1)
         BAIL_OUT(-1, "Premature end of response packet");
 
@@ -2228,14 +2264,12 @@ int rrd_client_fetch(
     if (res->lines_num < 5)
         BAIL_OUT(-1, "Premature end of response packet");
 
-    READ_NUMERIC_FIELD("Start", time_t,
-                       start);
-    READ_NUMERIC_FIELD("End", time_t,
-                       end);
+    READ_TIME_FIELD("Start", start);
+    READ_TIME_FIELD("End", end);
 
     if (start >= end)
-        BAIL_OUT(-1, "Malformed start and end times: start = %lu; end = %lu;",
-                 (unsigned long) start, (unsigned long) end);
+        BAIL_OUT(-1, "Malformed start and end times: start = %lld; end = %lld;",
+                 (long long) start, (long long) end);
 
     READ_NUMERIC_FIELD("Step", unsigned long,
                        step);
@@ -2301,6 +2335,7 @@ int rrd_client_fetch(
 
     response_free(res);
     return (0);
+#undef READ_TIME_FIELD
 #undef READ_NUMERIC_FIELD
 #undef BAIL_OUT
 }                       /* }}} int_rrd_client_fetch */

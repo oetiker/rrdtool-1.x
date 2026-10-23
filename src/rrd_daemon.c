@@ -2155,11 +2155,11 @@ static int handle_request_fetch_parse(
     /* Parse start time */
     if (start_str != NULL) {
         char     *endptr;
-        long      value;
+        long long value;
 
         endptr = NULL;
         errno = 0;
-        value = strtol(start_str, &endptr, /* base = */ 0);
+        value = strtoll(start_str, &endptr, /* base = */ 0);
         if ((endptr == start_str) || (errno != 0)) {
             send_response(sock, RESP_ERR,
                           "Cannot parse start time `%s': Only simple integers are allowed.\n",
@@ -2178,11 +2178,11 @@ static int handle_request_fetch_parse(
     /* Parse end time */
     if (end_str != NULL) {
         char     *endptr;
-        long      value;
+        long long value;
 
         endptr = NULL;
         errno = 0;
-        value = strtol(end_str, &endptr, /* base = */ 0);
+        value = strtoll(end_str, &endptr, /* base = */ 0);
         if ((endptr == end_str) || (errno != 0)) {
             send_response(sock, RESP_ERR,
                           "Cannot parse end time `%s': Only simple integers are allowed.\n",
@@ -2297,11 +2297,11 @@ static int handle_request_fetch(
      * the socket rather than send a partial result. */
     if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
         goto out;
-    if ((status = add_response_info(sock, "Start: %lu\n",
-                                    (unsigned long) parsed.start_tm)))
+    if ((status = add_response_info(sock, "Start: %lld\n",
+                                    (long long) parsed.start_tm)))
         goto out;
-    if ((status = add_response_info(sock, "End: %lu\n",
-                                    (unsigned long) parsed.end_tm)))
+    if ((status = add_response_info(sock, "End: %lld\n",
+                                    (long long) parsed.end_tm)))
         goto out;
     if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
         goto out;
@@ -2323,7 +2323,7 @@ static int handle_request_fetch(
     assert(parsed.step > 0);
     for (t = parsed.start_tm + parsed.step, j = 0;
          t <= parsed.end_tm; t += parsed.step, j++) {
-        if ((status = add_response_info(sock, "%10lu:", (unsigned long) t)))
+        if ((status = add_response_info(sock, "%10lld:", (long long) t)))
             goto out;
         for (i = 0; i < parsed.field_cnt; i++) {
             size_t idx = (size_t) j * parsed.ds_cnt + parsed.field_idx[i];
@@ -2381,11 +2381,11 @@ static int handle_request_fetchbin(
      * buffer can't grow, rather than emit a truncated binary response. */
     if ((status = add_response_info(sock, "FlushVersion: %lu\n", 1UL)))
         goto out;
-    if ((status = add_response_info(sock, "Start: %lu\n",
-                                    (unsigned long) parsed.start_tm)))
+    if ((status = add_response_info(sock, "Start: %lld\n",
+                                    (long long) parsed.start_tm)))
         goto out;
-    if ((status = add_response_info(sock, "End: %lu\n",
-                                    (unsigned long) parsed.end_tm)))
+    if ((status = add_response_info(sock, "End: %lld\n",
+                                    (long long) parsed.end_tm)))
         goto out;
     if ((status = add_response_info(sock, "Step: %lu\n", parsed.step)))
         goto out;

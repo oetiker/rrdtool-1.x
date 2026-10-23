@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# rrdcached sent the FETCH times (Start:, End: and the time of each row)
+# as unsigned long, and the client read them back as long. Where a long
+# has 32 bits (Windows, 32-bit systems with a 64-bit time_t) times after
+# 2038 or 2106 came back wrong or not at all. Fetch beyond 2^32 seconds
+# through the daemon and compare with the local result.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/fetch-time.sock"
+PIDFILE="$W/rrdcached.pid"
+
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+# beyond 2^32 seconds
+$RRDTOOL create "$W/base/far.rrd" --start 4300000000 --step 10 \
+	DS:a:GAUGE:20:U:U RRA:LAST:0.5:1:10
+report create
+$RRDTOOL update "$W/base/far.rrd" 4300000010:1 4300000020:2 4300000030:3
+report "local update"
+
+local_out=$($RRDTOOL fetch "$W/base/far.rrd" LAST -s 4300000000 -e 4300000030)
+report "local fetch"
+cached_out=$($RRDTOOL fetch -d "unix:$SOCK" "$W/base/far.rrd" LAST \
+	-s 4300000000 -e 4300000030)
+report "fetch via daemon"
+[ -n "$local_out" ] && [ "$local_out" = "$cached_out" ]
+report -s $? "fetch via daemon matches local fetch"
+echo "$cached_out" | grep -q '^4300000030: '
+report -s $? "fetch via daemon has the row at 4300000030"
+
+# the daemon's own reply carries the full times
+reply=$(python3 - "$SOCK" "$W/base/far.rrd" <<'PYEOF'
+import socket
+import sys
+
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(10)
+s.connect(sys.argv[1])
+s.sendall(b"FETCH " + sys.argv[2].encode() + b" LAST 4300000000 4300000030\nQUIT\n")
+buf = b""
+while True:
+    chunk = s.recv(65536)
+    if not chunk:
+        break
+    buf += chunk
+sys.stdout.write(buf.decode())
+PYEOF
+)
+echo "$reply" | grep -q '^Start: 4300000000$' \
+	&& echo "$reply" | grep -q '^End: 43000000[0-9][0-9]$'
+report -s $? "FETCH reply has Start and End beyond 2^32"

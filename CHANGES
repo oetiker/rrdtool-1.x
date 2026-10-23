@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On Windows and on 32-bit systems with a 64-bit time, `rrdtool fetch
+  --daemon` failed with "rrdc_fetch: Unable to parse header `Start'" or
+  showed wrong times for data after 2038, and `rrdtool update --daemon`
+  with `N:` sent a wrong time after 2106. rrdcached and the client now
+  send these times as full 64-bit numbers, as they already do for `last`
+  and `first`. @oetiker
 * The librrd manual page listed the rrdcached client calls for creating
   with sources and for reading statistics under the wrong names, and did
   not describe the client calls for listing, flushing all files, tuning
