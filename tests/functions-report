@@ -16,3 +16,26 @@
 
 ( true ; report "passed check" ) >/dev/null 2>&1
 [ $? = 0 ] ; report "report passes a passed check"
+
+# fail and report must not change a variable RC of the test
+RC=5
+true ; report "a passed check"
+[ "$RC" = 5 ] ; report -s $? "report leaves RC of the test alone (RC is $RC)"
+( RC=7 ; CONTINUE=1 ; fail 3 "an expected failure" 2>/dev/null ; [ "$RC" = 7 ] )
+report "fail leaves RC of the test alone"
+
+# make_sock_dir puts the socket directory into TMPDIR whenever the socket
+# paths fit there, also for a TMPDIR longer than 40 bytes
+base="${TMPDIR:-/tmp}"
+base="${base%/}"
+# a directory of 50 bytes in TMPDIR: "<base>/rrdtest-XXX..."
+pad=$(( 50 - ${#base} - 9 ))
+if [ $pad -ge 6 ] && [ "$(uname -s)" = Linux ]; then
+	long=$(mktemp -d "$base/rrdtest-$(printf 'X%.0s' $(seq 1 $pad))")
+	[ ${#long} -gt 40 ] ; report "TMPDIR for the test is ${#long} bytes long"
+	got=$( TMPDIR=$long ; RRDTEST_SOCKDIR= ; make_sock_dir ; echo "$RRDTEST_SOCKDIR" ; remove_sock_dir )
+	[ "${got#$long/rrdtest.}" != "$got" ] ; report -s $? "socket directory $got is in TMPDIR"
+	rmdir -- "$long"
+else
+	ok "skip the TMPDIR check: TMPDIR '$base' is too long to extend"
+fi

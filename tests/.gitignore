@@ -15,12 +15,14 @@
 /daemon-fetch-security
 /tune-legacy-version
 /tune-daemon-error
+/rrd-client-api
 /tune-legacy-aberrant
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf
 /graph*.svg
 /graph-cairo-error.*
+/graph-incomplete-file.err
 /info-cached1.xml
 /modify6-test*.dump
 # the same with rrdcached over a unix socket; cached/ also holds tracked files
@@ -29,3 +31,4 @@
 /cached/*.dump.tmp
 /cached/modify6-test*.dump
 /cached/graph-cairo-error.*
+/cached/graph-incomplete-file.err

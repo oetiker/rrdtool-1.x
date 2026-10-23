@@ -97,12 +97,14 @@ function verbose_rrdtool {
 # or INTERACTIVE is set; then a test can use FAILURES for its result.
 FAILURES=0
 
+# fail and report keep their status in local variables: a test may use
+# RC for its own purposes and must find it unchanged afterwards.
 function fail {
-	RC="$1"
+	local fail_rc="$1"
 	shift
 
 	FAILURES=$((FAILURES + 1))
-	echo >&2 "FAILED: (rc=$RC)" "$@"
+	echo >&2 "FAILED: (rc=$fail_rc)" "$@"
 	if [ -n "$CONTINUE" ] ; then
 		return
 	fi
@@ -129,20 +131,20 @@ function ok {
 # substitution, pass the status first; $? is expanded before the rest:
 #	[ "$got" = 3 ] ; report -s $? "got 3 ($(cat out))"
 function report {
-	RC=$?
+	local report_rc=$?
 	if [ "$1" = "-s" ]; then
-		RC="$2"
+		report_rc="$2"
 		shift 2
 	fi
 	if [ -e "$VALGRIND_ERR_FILE" ]; then
-		RC="valgrind error"
+		report_rc="valgrind error"
 		rm "$VALGRIND_ERR_FILE"
 	fi
 
-	if [ "$RC" = 0 ] ; then
+	if [ "$report_rc" = 0 ] ; then
 		ok "$@"
 	else
-		fail "$RC" "$@"
+		fail "$report_rc" "$@"
 	fi
 
 
@@ -258,11 +260,22 @@ function stop_cached {
 # Linux, 104 on BSD and macOS. A build directory can be deeper than that,
 # so test sockets live in a short directory of their own, one per test
 # run, created here and removed by remove_sock_dir (called by stop_cached).
+# The directory goes into $TMPDIR when the socket paths fit there, else
+# into /tmp.  The socket names of the tests are at most as long as the
+# one run_cached uses, "<test name>-rrdcached.sock".
 function make_sock_dir {
         [ -n "$RRDTEST_SOCKDIR" ] && [ -d "$RRDTEST_SOCKDIR" ] && return
         local base="${TMPDIR:-/tmp}"
-        # leave room for the socket name in the directory
-        [ ${#base} -gt 40 ] && base=/tmp
+        local name="$(basename -- $0)-rrdcached.sock"
+        local max=103
+        [ "$(uname -s)" = Linux ] && max=107
+        base="${base%/}"
+        [ -n "$base" ] || base=/tmp
+        # "<base>/rrdtest.XXXXXX/<name>"
+        if [ $(( ${#base} + 16 + ${#name} )) -gt $max ]; then
+                echo >&2 "TMPDIR '$base' is too long for unix socket paths; using /tmp"
+                base=/tmp
+        fi
         RRDTEST_SOCKDIR=$(mktemp -d "$base/rrdtest.XXXXXX") \
                 || fail 1 "cannot create a socket directory in $base"
 }

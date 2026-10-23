@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make check` in the rrdcached test styles created its socket
+  directories (`rrdtest.XXXXXX`) in /tmp whenever TMPDIR was longer than
+  40 characters. They now go into TMPDIR whenever the socket paths fit
+  there, and /tmp is used only after a message saying TMPDIR is too long.
+  `make clean` also removes `graph-incomplete-file.err` and
+  `cached/first-last-error.out`. @oetiker
 * In the Python binding, `rrdtool.update()` returned as if it had worked
   when rrdcached could not be reached, and `rrdtool.xport()` crashed
   Python with a segmentation fault. Both now raise `OperationalError`

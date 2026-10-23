@@ -160,3 +160,5 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
+CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err \
+	cached/first-last-error.out
