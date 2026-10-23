@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool last --daemon` printed the time of the last update rounded down
+  to the step of the RRD, for example 999999900 instead of 1000000123,
+  and so did the rrdcached `LAST` command. It now prints the exact time,
+  the same as `rrdtool last` without the daemon. @oetiker
 * `rrdtool update --skip-past-updates` (`-s`) through rrdcached ignored
   the option: a value older than the last update failed with "illegal
   attempt to update using time ... when last update time is ...", and the
