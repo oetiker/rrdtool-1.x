@@ -10,7 +10,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
-	tune-legacy-aberrant
+	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
 
@@ -49,7 +49,11 @@ check_PROGRAMS = \
 	lastupdate-v \
 	tune-legacy-version \
 	tune-daemon-error \
-	tune-legacy-aberrant
+	tune-legacy-aberrant \
+	client-header-standalone
+
+# compile-only: includes nothing but the installed rrd_client.h
+client_header_standalone_SOURCES = test_client_header_standalone.c
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
