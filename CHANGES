@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* C programs using the rrdcached client functions documented in librrd(3)
+  failed to link with "undefined reference to `rrd_client_new'" (and the
+  same for every other `rrd_client_*` function, `rrdc_tune` and
+  `rrdc_dump`). librrd now exports them on Linux, BSD, macOS and Windows,
+  and `rrd_client_disconnect`, declared in `rrd_client.h` but missing from
+  the library, now exists. @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`
