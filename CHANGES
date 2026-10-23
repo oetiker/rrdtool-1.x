@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --smoothing-window` (or `--smoothing-window-deviation`) on
+  an RRD of format version 0003 or older could switch smoothing off for
+  the other seasonal RRA: `rrdtool info` then showed
+  `smoothing_window = 0.0000000000e+00` for it, for example on an RRD
+  made by `rrdtool restore`. The RRAs the option does not name now keep the
+  window of 0.05 that these files have always used. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
