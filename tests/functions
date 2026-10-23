@@ -288,3 +288,14 @@ if [ -n "$VERBOSE" ] ; then
 	RRDTOOL_V="$RRDTOOL"
 	RRDTOOL=verbose_rrdtool
 fi
+
+# Tests name their RRD files by $BUILDDIR paths, but some touch the files
+# directly (cp, rm, test -f).  Those must use $RRDDIR: in a VPATH build
+# $BASEDIR is the read-only source directory, and with rrdcached over TCP
+# the daemon strips $BUILDDIR and keeps the files in its base directory,
+# $BASEDIR.  Expected output files always come from $BASEDIR.
+if [ -n "$RRDCACHED_STRIPPATH" ] ; then
+	RRDDIR="$BASEDIR"
+else
+	RRDDIR="$BUILDDIR"
+fi

@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/tune1-test
 BUILD=$BUILDDIR/tune1-test
+STORE=$RRDDIR/tune1-test
 
 $RRDTOOL create ${BUILD}org.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U DS:b:COUNTER:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10
 report create
@@ -19,19 +20,23 @@ $RRDTOOL dump ${BUILD}org.rrd | $DIFF9 - ${BASE}org.dump
 report "update"
 
 # NOTE: for rrdcached based tests, we must flush before we can copy...
-is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached)
+if is_cached; then
+	$RRDTOOL flushcached ${BUILD}org.rrd || fail $? flushcached
+fi
 
 
-cp ${BASE}org.rrd ${BASE}a.rrd
+cp ${STORE}org.rrd ${STORE}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:U
 $RRDTOOL tune ${BUILD}a.rrd --heartbeat a:90 --minimum b:-100
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}a-mod1.dump
 report "tune heartbeat/minimum" 
 
 # NOTE: for rrdcached based tests, we must flush before we can copy...
-is_cached && ( $RRDTOOL flushcached ${BUILD}org.rrd || fail flushcached )
+if is_cached; then
+	$RRDTOOL flushcached ${BUILD}org.rrd || fail $? flushcached
+fi
 
-cp ${BASE}org.rrd ${BASE}a.rrd
+cp ${STORE}org.rrd ${STORE}a.rrd
 $RRDTOOL tune ${BUILD}a.rrd --data-source-type a:COUNTER --data-source-rename b:c
 $RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}a-mod2.dump
 report "tune dst/ds-name" 
