@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On Windows, programs linked against librrd-8.dll could not use
+  `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
+  The Windows build instructions no longer install the unused `pcre`
+  package from vcpkg. @oetiker
 * `./configure --disable-rrdcgi --enable-rrd_graph` still built and
   installed rrdcgi; any explicit `--enable-rrd_graph` switched rrdcgi back
   on. Now `--disable-rrdcgi` always wins, and `--disable-rrd_graph` still
