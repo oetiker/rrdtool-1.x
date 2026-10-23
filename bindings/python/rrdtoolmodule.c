@@ -26,6 +26,7 @@
 #include <datetime.h>
 #include "rrd_config.h"
 #include "rrd_tool.h"
+#include "rrd_client.h"
 
 /* Some macros to maintain compatibility between Python 2.x and 3.x */
 #if PY_MAJOR_VERSION >= 3
@@ -1047,20 +1048,72 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
     time_t last_update;
     char **ds_names, **last_ds;
     unsigned long ds_cnt, i;
+    const char *filename = NULL, *daemon = NULL;
+    int arg, opts_done = 0;
 
     if (convert_args("lastupdate", args, &rrdtool_argv, &rrdtool_argc) == -1)
         return NULL;
-    else if (rrdtool_argc < 2) {
+
+    /* parse the options like rrd_lastupdate() does; there is no librrd
+     * call that takes argv and returns the values instead of printing */
+    for (arg = 1; arg < rrdtool_argc; arg++) {
+        const char *a = rrdtool_argv[arg];
+
+        if (!opts_done && strcmp(a, "--") == 0) {
+            opts_done = 1;
+        } else if (!opts_done
+                   && (strcmp(a, "-d") == 0 || strcmp(a, "--daemon") == 0)) {
+            if (arg + 1 >= rrdtool_argc) {
+                PyErr_Format(rrdtool_OperationalError,
+                             "option requires an argument -- '%s'", a);
+                destroy_args(&rrdtool_argv);
+                return NULL;
+            }
+            daemon = rrdtool_argv[++arg];
+        } else if (!opts_done && strncmp(a, "--daemon=", 9) == 0) {
+            daemon = a + 9;
+        } else if (!opts_done && strncmp(a, "-d", 2) == 0) {
+            daemon = a + 2;
+        } else if (!opts_done && a[0] == '-' && a[1] != '\0') {
+            PyErr_Format(rrdtool_OperationalError, "invalid option -- '%s'", a);
+            destroy_args(&rrdtool_argv);
+            return NULL;
+        } else if (filename == NULL) {
+            filename = a;
+        } else {
+            PyErr_SetString(rrdtool_OperationalError,
+                            "Usage: lastupdate(filename, [--daemon|-d <addr>])");
+            destroy_args(&rrdtool_argv);
+            return NULL;
+        }
+    }
+
+    if (filename == NULL) {
         PyErr_SetString(rrdtool_ProgrammingError, "Missing filename argument");
+        destroy_args(&rrdtool_argv);
         return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_lastupdate_r(rrdtool_argv[1],
-                              &last_update,
-                              &ds_cnt,
-                              &ds_names,
-                              &last_ds);
+    /* same daemon handling as rrd_lastupdate() (rrdtool lastupdate) */
+    rrdc_connect(daemon);
+    if (rrdc_is_connected(daemon)) {
+        status = rrdc_lastupdate(filename, &last_update, &ds_cnt,
+                                 &ds_names, &last_ds);
+        if (status != 0
+            && strstr(rrd_get_error(), "Unknown command") != NULL) {
+            /* an older rrdcached has no LASTUPDATE command:
+             * flush the file and read it locally */
+            rrd_clear_error();
+            status = rrdc_flush_if_daemon(daemon, filename);
+            if (status == 0)
+                status = rrd_lastupdate_r(filename, &last_update, &ds_cnt,
+                                          &ds_names, &last_ds);
+        }
+    } else {
+        status = rrd_lastupdate_r(filename, &last_update, &ds_cnt,
+                                  &ds_names, &last_ds);
+    }
     Py_END_ALLOW_THREADS
 
     if (status != 0) {

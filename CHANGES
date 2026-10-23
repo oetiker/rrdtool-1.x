@@ -3,6 +3,13 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Python's `rrdtool.lastupdate()` ignored `--daemon`/`-d` and
+  `RRDCACHED_ADDRESS` and always read the file locally, so it failed with
+  "opening 'sub/c.rrd': No such file or directory" for a file that exists
+  only on the rrdcached host, and `lastupdate('-d', addr, 'file.rrd')` tried
+  to open a file called "-d". It now asks rrdcached like
+  `rrdtool lastupdate --daemon`, and raises an error for unknown options or
+  more than one file instead of ignoring them. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
