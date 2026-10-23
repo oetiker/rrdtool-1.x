@@ -69,7 +69,11 @@ function. If this is done accidentally (and this can only be done
 using the template switch), B<RRDtool> will ignore the value specified
 for the COMPUTE B<DST>.
 
-The caching daemon L<rrdcached> cannot be used together with templates yet.
+Templates work with the caching daemon L<rrdcached>. B<RRDtool> then reads
+the order of the data sources from the RRD file itself before it sends the
+values, so the file must be readable under the given name on the host where
+B<rrdtool> runs, not only by the daemon. Together with the daemon, templates
+cannot be combined with B<--skip-past-updates>.
 
 =item B<--skip-past-updates>|B<-s>
 
