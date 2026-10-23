@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
+  with "got 'nan nan nan nan '", and `graph-cairo-error`. The tests passed
+  an RRD path to `rrdtool graph` that the Windows build cannot open; they
+  now use a path that works there, as the other graph tests do. @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`

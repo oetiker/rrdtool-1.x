@@ -9,7 +9,14 @@
 
 require_graph
 
-BUILD=$BUILDDIR/`basename $0`
+if [ -n "$MSYSTEM" ]; then
+    # MSYS2 does not translate the POSIX path inside DEF:vname=file:...,
+    # so rrdtool.exe would not find the file. A relative path works on
+    # both sides.
+    BUILD=`basename $0`
+else
+    BUILD=$BUILDDIR/`basename $0`
+fi
 
 $RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
     DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
@@ -46,8 +53,8 @@ expect_error () {
 }
 
 for format in PDF EPS; do
-    if ! graph ${BUILD}.probe $format LINE1:a#ff0000:ok > /dev/null 2>&1; then
-        ok "no $format support, skipping"
+    if ! graph ${BUILD}.probe $format LINE1:a#ff0000:ok > /dev/null 2> ${BUILD}.err; then
+        ok "no $format support, skipping: $(cat ${BUILD}.err)"
         continue
     fi
     lc=$(echo $format | tr A-Z a-z)
@@ -68,8 +75,11 @@ for format in PDF EPS; do
 done
 
 # PNG draws labels that are not valid UTF-8 as before
-graph ${BUILD}.png PNG "LINE1:a#ff0000:$BAD" > /dev/null 2>&1
-report "PNG with a legend not valid UTF-8 still works"
+if graph ${BUILD}.png PNG "LINE1:a#ff0000:$BAD" > /dev/null 2> ${BUILD}.err; then
+    ok "PNG with a legend not valid UTF-8 still works"
+else
+    fail 1 "PNG with a legend not valid UTF-8 failed: $(grep -v Pango ${BUILD}.err)"
+fi
 
 expect_error "PNG to a directory that does not exist" \
     "Could not save png to '${BUILD}-missing/x.png'" \
