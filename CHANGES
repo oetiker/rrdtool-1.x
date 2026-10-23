@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On Windows, `rrdtool graph --lazy` redrew the graph every time when the
+  file name contained non-ASCII characters (given in UTF-8); it now
+  finds the existing file and leaves it alone like elsewhere. @oetiker
 * Building on Windows with MSYS2 printed "warning: 'O_CREAT' redefined"
   and the same for `O_WRONLY`, `O_RDONLY`, `O_APPEND` and `O_RDWR`
   while compiling `compat-cloexec.c` and its test. @oetiker
