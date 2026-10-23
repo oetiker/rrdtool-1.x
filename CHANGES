@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool dump --daemon` ignored `--header xsd`, `--header none` and
+  `--no-header` and always wrote the `<!DOCTYPE rrd SYSTEM ...>` header.
+  rrdcached now honours the header type the client sends with `DUMP`;
+  older daemons still send the DTD header. @oetiker
 * On systems where a long integer has 32 bits, such as 32-bit Linux with
   a 64-bit time, `rrdtool lastupdate --daemon` and the rrdcached
   `LASTUPDATE` command showed a wrong time for updates after 2106-02-07.

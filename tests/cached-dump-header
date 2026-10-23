@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# rrdtool dump --daemon ignored --header and --no-header: rrdcached
+# always sent the DTD header. Compare every header choice with the
+# local dump.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/dump-header.sock"
+PIDFILE="$W/rrdcached.pid"
+
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+$RRDTOOL create "$W/base/a.rrd" --start 1200000000 --step 10 \
+	DS:a:GAUGE:20:U:U RRA:LAST:0.5:1:10
+report create
+$RRDTOOL update "$W/base/a.rrd" 1200000010:1 1200000020:2
+report "local update"
+
+for opt in "--header dtd" "--header xsd" "--header none" "--no-header" ""; do
+	local_out=$($RRDTOOL dump $opt "$W/base/a.rrd")
+	cached_out=$($RRDTOOL dump $opt -d "unix:$SOCK" "$W/base/a.rrd")
+	[ -n "$local_out" ] && [ "$local_out" = "$cached_out" ]
+	report -s $? "dump ${opt:-(default)} via daemon matches local dump"
+done
+
+# an unknown header type gets an error line, not a dump
+reply=$(python3 - "$SOCK" "$W/base/a.rrd" <<'PYEOF'
+import socket
+import sys
+
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(10)
+s.connect(sys.argv[1])
+s.sendall(b"DUMP " + sys.argv[2].encode() + b" bogus\n")
+buf = b""
+while b"\n" not in buf:
+    chunk = s.recv(65536)
+    if not chunk:
+        break
+    buf += chunk
+sys.stdout.write(buf.decode())
+PYEOF
+)
+case "$reply" in
+	"-1 unknown header type"*) true ;;
+	*) false ;;
+esac
+report -s $? "DUMP with an unknown header type is refused (got '$reply')"

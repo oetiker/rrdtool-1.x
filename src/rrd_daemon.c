@@ -1930,10 +1930,29 @@ static int handle_request_dump(
 {                       /* {{{ */
     char *filename;
     char *filepath;
+    char *header;
+    int opt_header = 1; /* DTD header, as before the option was read */
     int rc;
 
     rc = buffer_get_field(&buffer, &buffer_size, &filename);
     if (rc != 0) return syntax_error(sock, cmd);
+
+    /* optional XML header type, as rrdtool dump --header takes it */
+    if (buffer_size > 0) {
+        rc = buffer_get_field(&buffer, &buffer_size, &header);
+        if (rc != 0) return syntax_error(sock, cmd);
+        if (header[0] == '\0' || strcmp(header, "dtd") == 0) {
+            opt_header = 1;
+        } else if (strcmp(header, "xsd") == 0) {
+            opt_header = 2;
+        } else if (strcmp(header, "none") == 0) {
+            opt_header = 0;
+        } else {
+            return send_response(sock, RESP_ERR,
+                    "unknown header type '%s' (dtd, xsd or none)\n", header);
+        }
+    }
+
     filepath = get_abs_path(filename); /* absolute filename */
     if (filepath == NULL) {
         return send_response(sock, RESP_ERR, "%s\n", rrd_strerror(ENOMEM));
@@ -1958,7 +1977,7 @@ static int handle_request_dump(
             return send_response(sock, RESP_ERR, "%s: failed to flush\n", filename);
     }
 
-    rc = rrd_dump_cb_r(filepath, 1, send_unbuffered, (void*)sock);
+    rc = rrd_dump_cb_r(filepath, opt_header, send_unbuffered, (void*)sock);
     if (rc != 0) {
         RRDD_LOG(LOG_WARNING, "rrddump request for %s: failed to relay dump: %s", filepath, rrd_get_error());
         free(filepath);
