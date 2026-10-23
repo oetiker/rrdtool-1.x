@@ -8,6 +8,10 @@ Bugfixes
   status 0 when `out.csv` could not be created. It now fails with
   "Could not open 'out.csv' for writing: No such file or directory" (or
   the matching reason). @oetiker
+* `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
+  with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
+  failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
+  Windows build can open and no longer depend on the locale. @oetiker
 * `rrdtool list` and the rrdcached `LIST` command could leak memory or
   free an invalid pointer when the system ran out of memory while
   building the file list. @oetiker
@@ -75,6 +79,11 @@ Bugfixes
   failed with "Cannot find timestamp in 'now@1:2'!" for at-style times
   such as `now@…`, `N@…` or `epoch+1700000000s@…`. These times are now
   resolved before they are sent, the same way a local update does. @oetiker
+* The rrdupdate manual said "The caching daemon rrdcached cannot be used
+  together with templates yet", but `--template` works through rrdcached.
+  The manual now says so, and that rrdtool must be able to read the RRD
+  file itself and cannot combine a template with `--skip-past-updates`
+  there. @oetiker
 * rrdcached closed the connection without any answer when a client sent
   a command line longer than 8191 bytes. It now answers "-1 Command line
   too long (at most 8191 bytes allowed)", skips that line and keeps the
