@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --aberrant-reset` damaged RRDs of format version 0001 or
+  0002 (`rrd_version` in `rrdtool info`): it cleared the seasonal values
+  of the wrong data source, scrambled the Holt-Winters state and moved the
+  current row of the first RRA. It now resets the same values as in newer
+  files. @oetiker
 * On systems where a long integer has 32 bits, such as 32-bit Linux with
   a 64-bit time, `rrdtool lastupdate --daemon` and the rrdcached
   `LASTUPDATE` command showed a wrong time for updates after 2106-02-07.
