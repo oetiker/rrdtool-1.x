@@ -7,9 +7,24 @@
 /compat-cloexec
 
 /rrd-open-security
+/lastupdate-v
 /mock-rados-bounds
 /fetch-empty-security
 /.libs/
 /graph-security
 /daemon-fetch-security
+/tune-legacy-version
 /tune-daemon-error
+
+# scratch output of the tests (removed by make clean)
+/graph*.pdf
+/graph*.svg
+/graph-cairo-error.*
+/info-cached1.xml
+/modify6-test*.dump
+# the same with rrdcached over a unix socket; cached/ also holds tracked files
+/cached/*.rrd
+/cached/*.out
+/cached/*.dump.tmp
+/cached/modify6-test*.dump
+/cached/graph-cairo-error.*
