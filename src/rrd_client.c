@@ -1065,6 +1065,13 @@ int rrdc_connect(
     return status;
 }                       /* }}} int rrdc_connect */
 
+int rrd_client_disconnect(
+    rrd_client_t *client)
+{                       /* {{{ */
+    close_connection(client);
+    return 0;
+}                       /* }}} int rrd_client_disconnect */
+
 int rrdc_disconnect(
     void)
 {                       /* {{{ */
