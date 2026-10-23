@@ -9,7 +9,14 @@
 
 require_graph
 
-BUILD=$BUILDDIR/`basename $0`
+if [ -n "$MSYSTEM" ]; then
+    # MSYS2 does not translate the POSIX path inside DEF:vname=file:...,
+    # so rrdtool.exe would not find the file and -Z would hide that as
+    # all-unknown data. A relative path works on both sides.
+    BUILD=`basename $0`
+else
+    BUILD=$BUILDDIR/`basename $0`
+fi
 
 $RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
     DS:a:GAUGE:600:U:U DS:b:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
@@ -45,6 +52,12 @@ check () {
             ;;
     esac
 }
+
+# -Z also turns a file that cannot be opened into unknown data: make sure
+# the DEF path reaches the file before relying on -Z
+$RRDTOOL graph ${BUILD}.png --start 1000000600 --end 1000012000 \
+    DEF:a=${BUILD}.rrd:a:AVERAGE PRINT:a:AVERAGE:%lf > /dev/null
+report "DEF opens the file without -Z"
 
 check "missing DS after the real ones" \
     DEF:a=${BUILD}.rrd:a:AVERAGE DEF:b=${BUILD}.rrd:b:AVERAGE \
