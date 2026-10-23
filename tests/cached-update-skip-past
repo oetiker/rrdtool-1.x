@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# rrdtool update --skip-past-updates through rrdcached ignored the option:
+# the daemon refused the first value older than its last update with
+# "illegal attempt to update using time ..." and dropped the newer values
+# after it. Without the daemon such values are skipped silently.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/skip-past.sock"
+PIDFILE="$W/rrdcached.pid"
+D="unix:$SOCK"
+F="$W/base/a.rrd"
+
+# long write delay: updates sent to the daemon stay in its cache
+$RRDCACHED -p "$PIDFILE" -l "$D" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+# all times are multiples of the step
+$RRDTOOL create "$F" --start 1200000000 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:LAST:0.5:1:10
+report create
+$RRDTOOL update "$F" 1200000600:1
+report "local update"
+
+# value older than the one on disk, then a newer one
+$RRDTOOL update -s -d "$D" "$F" 1200000300:5 1200000900:2
+report "update -s via daemon skips a value older than the file"
+
+# value older than the one in the daemon's cache
+$RRDTOOL update -s -d "$D" "$F" 1200000600:5 1200001200:3
+report "update -s via daemon skips a value older than the cache"
+
+# nothing new at all
+$RRDTOOL update -s -d "$D" "$F" 1200000300:7
+report "update -s via daemon with only old values"
+
+# without -s an old value is still an error
+! $RRDTOOL update -d "$D" "$F" 1200000300:8 2>/dev/null
+report "update via daemon without -s refuses an old value"
+
+$RRDTOOL flushcached -d "$D" "$F"
+report flushcached
+
+got=$($RRDTOOL last "$F")
+[ "$got" = 1200001200 ]
+report -s $? "last update on disk is 1200001200 (got '$got')"
+
+got=$($RRDTOOL fetch "$F" LAST -s 1200000300 -e 1200000900 | \
+	sed -n 's/^\(12000[0-9]*\): \(.*\)$/\1 \2/p' | tr '\n' ' ')
+want="1200000600 1.0000000000e+00 1200000900 2.0000000000e+00 1200001200 3.0000000000e+00 "
+[ "$got" = "$want" ]
+report -s $? "stored values (got '$got')"
