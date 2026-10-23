@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make distcheck` and `make check` in a separate build directory now
+  pass. Before, 13 tests failed with "cp: cannot stat" or "Permission
+  denied", and the install step tried to write the rrdcached systemd units
+  to `/usr/lib/systemd/system`. @oetiker
 * Running `make` in a git checkout no longer rewrites the translation files
   `po/fr.po`, `po/hu.po` and `po/ka.po`. To merge new messages into the
   translations, run `make -C po update-po`; `make dist` still does this. @oetiker
