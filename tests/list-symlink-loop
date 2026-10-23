@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# "rrdtool list --recursive" and the rrdcached command "LIST RECURSIVE"
+# followed symbolic links to directories.  A link to "." or to a parent
+# made the walk loop until the path got too long, and two such links made
+# the output grow exponentially.  Symlinked directories are not descended
+# into; symlinked RRD files are still listed.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no symbolic links on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+PIDFILE=$W/rrdcached.pid
+
+cleanup() {
+	if [ -f "$PIDFILE" ]; then
+		pid=$(cat "$PIDFILE")
+		kill $pid 2>/dev/null
+		# a daemon stuck in a looping walk does not stop on SIGTERM
+		for i in 1 2 3 4; do
+			kill -0 $pid 2>/dev/null || break
+			sleep 0.5
+		done
+		kill -9 $pid 2>/dev/null
+	fi
+	remove_sock_dir
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+# Run a command with a time limit and an address space limit, so that a
+# walk that loops fails this test instead of hanging or eating memory.
+# The output goes to the file $OUT, sorted.
+OUT=$W/out
+limited() {
+	(
+		ulimit -v 1048576
+		if command -v timeout >/dev/null; then
+			timeout 20 "$@"
+		else
+			"$@"
+		fi
+	) > "$OUT.raw"
+	local rc=$?
+	LC_ALL=C sort "$OUT.raw" > "$OUT"
+	head -20 "$OUT"
+	return $rc
+}
+
+B=$W/base
+L=$B/loop
+E=$B/esc
+mkdir -p "$L/sub" "$E" "$W/outside" || fail 1 "mkdir"
+$RRDTOOL create "$L/a.rrd" --start 1300000000 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
+report "create"
+cp "$L/a.rrd" "$L/sub/b.rrd"
+cp "$L/a.rrd" "$E/c.rrd"
+cp "$L/a.rrd" "$W/outside/secret.rrd"
+# symlinked RRD file: still listed
+ln -s "$L/a.rrd" "$L/sub/link.rrd"
+# loops: two links to ".", one to the parent
+ln -s . "$L/sub/self"
+ln -s . "$L/sub/self2"
+ln -s .. "$L/sub/up"
+# a link to a directory outside the daemon's base directory
+ln -s "$W/outside" "$E/out"
+
+LOOP_EXPECTED="a.rrd
+sub/b.rrd
+sub/link.rrd"
+
+limited $RRDTOOL list --recursive "$L"
+report "list --recursive of a tree with symlink loops ends"
+[ "$(cat "$OUT")" = "$LOOP_EXPECTED" ]
+report "list --recursive lists each RRD once"
+
+limited $RRDTOOL list --recursive "$E"
+report "list --recursive of a tree with a symlinked directory"
+[ "$(cat "$OUT")" = "c.rrd" ]
+report "list --recursive does not descend into a symlinked directory"
+
+limited $RRDTOOL list "$L/sub"
+report "list of a directory with symlink loops"
+[ "$(cat "$OUT")" = "b.rrd
+link.rrd
+self
+self2
+up" ]
+report "list without --recursive still shows symlinked directories"
+
+make_sock_dir
+SOCK=unix:$RRDTEST_SOCKDIR/`basename $0`.sock
+# the address space limit also holds the daemon in check
+(ulimit -v 1048576; $RRDCACHED -p "$PIDFILE" -l "$SOCK" -b "$B" -B)
+report "start rrdcached"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+	[ -S "${SOCK#unix:}" ] && break
+	sleep 0.5
+done
+
+limited $RRDTOOL list --recursive --daemon "$SOCK" /esc
+report "LIST RECURSIVE of a tree with a symlinked directory"
+[ "$(cat "$OUT")" = "c.rrd" ]
+report "LIST RECURSIVE lists nothing outside the base directory"
+
+limited $RRDTOOL list --recursive --daemon "$SOCK" /loop
+report "LIST RECURSIVE of a tree with symlink loops ends"
+[ "$(cat "$OUT")" = "$LOOP_EXPECTED" ]
+report "LIST RECURSIVE lists each RRD once"
+
+test "$FAILURES" -eq 0
+report "list-symlink-loop ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))

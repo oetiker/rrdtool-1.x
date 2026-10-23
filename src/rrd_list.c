@@ -19,6 +19,15 @@
 #include "rrd_client.h"
 #include "rrd_snprintf.h"
 
+#ifdef _WIN32
+/* Native Windows builds have neither lstat() nor POSIX symbolic links. */
+#define list_lstat(path, st) stat(path, st)
+#define LIST_IS_LINK(mode) 0
+#else
+#define list_lstat(path, st) lstat(path, st)
+#define LIST_IS_LINK(mode) S_ISLNK(mode)
+#endif
+
 static char *move_past_prefix(const char *prefix, const char *string)
 {
 	int index = 0;
@@ -44,6 +53,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 	DIR *dir;
 	char *out = NULL, *out_rec = NULL, *out_short, *next, *ptr;
 	char *current = NULL, *fullpath = NULL;
+	int is_link;
 
 	dir = opendir(dirname);
 
@@ -72,12 +82,22 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 			continue;
 		}
 
-		/* NOTE: stat(2) follows symlinks and gives info on target. */
-		if (stat(current, &st) != 0) {
+		if (list_lstat(current, &st) != 0) {
+			continue;
+		}
+		is_link = LIST_IS_LINK(st.st_mode);
+
+		/* A symbolic link is listed according to what it points to. */
+		if (is_link && stat(current, &st) != 0) {
 			continue;
 		}
 
 		if (S_ISDIR(st.st_mode) && recursive) {
+			/* Do not descend into symlinked directories: a link
+			 * to "." or to a parent would make the walk loop. */
+			if (is_link) {
+				continue;
+			}
 			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
 				fullpath = NULL;
 				continue;

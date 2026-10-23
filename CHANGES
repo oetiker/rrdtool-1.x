@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool list --recursive` and the rrdcached `LIST RECURSIVE` command
+  never finished, and used ever more memory, on a tree containing a
+  symbolic link to its own or a parent directory. They no longer descend
+  into symlinked directories, so rrdcached also no longer lists files
+  outside its base directory through such a link; symlinked RRD files are
+  still listed. @oetiker
 * `rrdtool tune --aberrant-reset` damaged RRDs of format version 0001 or
   0002 (`rrd_version` in `rrdtool info`): it cleared the seasonal values
   of the wrong data source, scrambled the Holt-Winters state and moved the

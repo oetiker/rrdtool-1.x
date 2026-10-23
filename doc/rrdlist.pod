@@ -43,6 +43,12 @@ disk before performing operations. This option disables cache flushing.
 
 Make the list of rrd databases recursive.
 
+Symbolic links to directories are not followed, so a link to the
+directory itself or to a parent cannot make the listing loop, and the
+listing does not leave the tree it was asked for. Symbolic links to rrd
+files are listed. Without B<--recursive>, symbolic links to directories
+are shown like directories.
+
 =back
 
 =head1 ENVIRONMENT VARIABLES

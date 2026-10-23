@@ -12,7 +12,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
 	tune-legacy-aberrant
 
-script_tests += security-rrdcached-response-bounds
+script_tests += security-rrdcached-response-bounds list-symlink-loop
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
