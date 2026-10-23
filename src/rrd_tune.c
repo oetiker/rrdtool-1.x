@@ -75,6 +75,9 @@ static int smoothing_window_requested(
     const char **argv,
     const struct optparse_long *longopts);
 
+static void require_version4(
+    rrd_t *rrd);
+
 int rrd_tune(
     int argc,
     const char **argv)
@@ -437,18 +440,14 @@ int rrd_tune_r(
             }
             break;
         case 's':
-            if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION4)) {
-                strcpy(rrd.stat_head->version, RRD_VERSION4);    /* smoothing_window causes Version 4 */
-            }
+            require_version4(&rrd);    /* smoothing_window causes Version 4 */
             if (set_hwsmootharg
                 (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, options.optarg)) {
 		goto done;
             }
             break;
         case 'S':
-            if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION4)) {
-                strcpy(rrd.stat_head->version, RRD_VERSION4);    /* smoothing_window causes Version 4 */
-            }
+            require_version4(&rrd);    /* smoothing_window causes Version 4 */
             if (set_hwsmootharg
                 (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
                  options.optarg)) {
@@ -587,6 +586,32 @@ static int set_hwsmootharg(
     /* set the value */
     rrd->rra_def[rra_idx].par[rra_par].u_val = param;
     return 0;
+}
+
+/* Version 3 files smooth every SEASONAL and DEVSEASONAL RRA with a
+   window of 0.05 and ignore the stored value, which may be anything (a
+   restored version 3 dump stores 0, which version 4 reads as "no
+   smoothing").  When a smoothing window lifts a file to version 4, store
+   0.05 in all of them, so the RRAs the option does not name keep
+   smoothing as before. */
+static void require_version4(
+    rrd_t *rrd)
+{
+    unsigned long i;
+
+    if (atoi(rrd->stat_head->version) >= atoi(RRD_VERSION4))
+        return;
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        switch (rrd_cf_conv(rrd->rra_def[i].cf_nam)) {
+        case CF_SEASONAL:
+        case CF_DEVSEASONAL:
+            rrd->rra_def[i].par[RRA_seasonal_smoothing_window].u_val = 0.05;
+            break;
+        default:
+            break;
+        }
+    }
+    strcpy(rrd->stat_head->version, RRD_VERSION4);
 }
 
 static int smoothing_window_requested(
