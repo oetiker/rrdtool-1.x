@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On Windows, programs linked against librrd-8.dll could not use
+  `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
+  The Windows build instructions no longer install the unused `pcre`
+  package from vcpkg. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
