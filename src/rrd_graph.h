@@ -314,6 +314,8 @@ typedef struct image_desc_t {
                            grindlines falls in integer pixel values */
     int       svg_crisp_grid;   /* ask the SVG renderer to draw the
                                    grid lines crisp */
+    FILE     *graphfd;  /* graphfile while PDF or EPS streams into it */
+    int       graphfd_removable; /* graphfd may be removed on failure */
     char     *imginfo;  /* construct an <IMG ... tag and return
                            as first retval */
     enum gfx_if_en imgformat;   /* image format */
@@ -469,6 +471,15 @@ int       graph_cairo_setup(
     image_desc_t *);
 int       graph_cairo_finish(
     image_desc_t *);
+FILE     *graph_fopen_write(
+    const char *,
+    int,
+    int *);
+int       graph_fclose_write(
+    FILE *,
+    const char *,
+    int,
+    int);
 
 int       gdes_alloc(
     image_desc_t *);

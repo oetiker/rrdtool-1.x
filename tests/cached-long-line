@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# A command line longer than rrdcached's read buffer (8191 bytes) made the
+# daemon close the connection without any answer. It now answers with an
+# error line, drops the long line and keeps serving the connection.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+command -v python3 >/dev/null 2>&1 || exit 77
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/long-line.sock"
+PIDFILE="$W/rrdcached.pid"
+
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+python3 - "$SOCK" <<'PYEOF'
+import socket
+import sys
+
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.settimeout(10)
+s.connect(sys.argv[1])
+buf = b""
+
+
+def read_line():
+    global buf
+    while b"\n" not in buf:
+        chunk = s.recv(65536)
+        if not chunk:
+            print("connection closed, unread: %r" % buf)
+            sys.exit(1)
+        buf += chunk
+    line, _, buf = buf.partition(b"\n")
+    print("reply: %r" % line)
+    return line
+
+
+rc = 0
+# just one byte too long, and several buffers long
+for size in (8192, 30000):
+    line = b"UPDATE x.rrd " + b"1" * (size - len(b"UPDATE x.rrd "))
+    s.sendall(line + b"\n")
+    reply = read_line()
+    if not reply.startswith(b"-1 Command line too long"):
+        print("FAIL: expected an error for a %d byte line" % size)
+        rc = 1
+    # the connection still works, and the next command is read whole
+    s.sendall(b"PING\n")
+    if read_line() != b"0 PONG":
+        print("FAIL: no PONG after the %d byte line" % size)
+        rc = 1
+# the longest line the daemon takes is not refused for its length
+line = b"UPDATE x.rrd " + b"1" * (8191 - len(b"UPDATE x.rrd "))
+s.sendall(line + b"\n")
+reply = read_line()
+if not reply.startswith(b"-1 ") or b"too long" in reply:
+    print("FAIL: a 8191 byte line must reach the UPDATE command")
+    rc = 1
+sys.exit(rc)
+PYEOF
+report "over-long command lines get an error reply"

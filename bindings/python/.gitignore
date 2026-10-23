@@ -1,2 +1,5 @@
 # generated files
 /build/
+/dist/
+/*.egg-info/
+/wheel.stamp
