@@ -46,6 +46,9 @@ Bugfixes
   for example with "Could not save pdf to 'x.pdf': input string not valid
   UTF-8" or on a full disk, a broken, cut-short file stayed behind; it is
   now removed. @oetiker
+* On Windows, `rrdtool graph` now writes SVG, CSV, TSV, SSV, XML and JSON
+  files whose names contain non-ASCII characters (given in UTF-8), as it
+  already did for PNG, PDF and EPS. @oetiker
 * `rrdtool graph` with CSV, TSV, SSV, XML or JSON output emptied an existing
   output file when it could not read the data, for example with "opening
   'x.rrd': No such file or directory"; the file is now left unchanged. @oetiker

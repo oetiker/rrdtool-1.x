@@ -471,6 +471,9 @@ int       graph_cairo_setup(
     image_desc_t *);
 int       graph_cairo_finish(
     image_desc_t *);
+FILE     *graph_fopen_write(
+    const char *,
+    int);
 void      graph_remove_incomplete(
     const char *);
 

@@ -494,7 +494,7 @@ int rrd_graph_xport(
     /* if we write a file, then open it, only now that the data is there,
        so a failed fetch leaves an existing file alone */
     if (im->graphfile) {
-        buffer.file = rrd_fopen(im->graphfile, "we");
+        buffer.file = graph_fopen_write(im->graphfile, 0);
     }
 
     /* fill in some data */

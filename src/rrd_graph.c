@@ -35,6 +35,8 @@
 
 #if defined(_WIN32)
 #define timegm _mkgmtime
+#include <errno.h>
+#include <wchar.h>      /* _wfopen, _wstat, _wunlink */
 #if !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
@@ -429,22 +431,62 @@ enum text_prop_en text_prop_conv(
 
 #undef conv_if
 
+#ifdef _WIN32
+/* On Windows the graph file name is UTF-8, as it is for the PDF and EPS
+   files cairo opens itself; like cairo, refuse a name that is not valid
+   UTF-8. The caller frees the result with g_free(). */
+static wchar_t *graph_path_w(
+    const char *path)
+{
+    wchar_t  *wpath =
+        (wchar_t *) g_utf8_to_utf16(path, -1, NULL, NULL, NULL);
+
+    if (wpath == NULL)
+        errno = EINVAL;
+    return wpath;
+}
+#endif
+
+/* Open a graph file for writing, in binary mode or in text mode. */
+FILE     *graph_fopen_write(
+    const char *path,
+    int binary)
+{
+#ifdef _WIN32
+    wchar_t  *wpath = graph_path_w(path);
+    FILE     *fd;
+
+    if (wpath == NULL)
+        return NULL;
+    fd = _wfopen(wpath, binary ? L"wb" : L"w");
+    g_free(wpath);
+    return fd;
+#else
+    return rrd_fopen(path, binary ? "wbe" : "we");
+#endif
+}
+
 /* Remove a graph file that this call opened for writing but could not
    finish, so that no broken file is left behind.  Only a regular file
    is removed, never a device, a pipe or a symbolic link. */
 void graph_remove_incomplete(
     const char *path)
 {
+#ifdef _WIN32
+    struct _stat st;
+    wchar_t  *wpath = graph_path_w(path);
+
+    if (wpath == NULL)
+        return;
+    if (_wstat(wpath, &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFREG)
+        _wunlink(wpath);
+    g_free(wpath);
+#else
     struct stat st;
 
-#ifdef _WIN32
-    if (stat(path, &st) != 0)
-#else
-    if (lstat(path, &st) != 0)
-#endif
-        return;
-    if ((st.st_mode & S_IFMT) == S_IFREG)
+    if (lstat(path, &st) == 0 && S_ISREG(st.st_mode))
         unlink(path);
+#endif
 }
 
 int im_free(
@@ -4772,7 +4814,7 @@ int graph_cairo_finish(
         if (im->graphfile) {
             /* open the file here rather than in cairo, so that a file
                left incomplete by a failed write can be removed */
-            FILE     *fd = rrd_fopen(im->graphfile, "wbe");
+            FILE     *fd = graph_fopen_write(im->graphfile, 1);
 
             if (fd == NULL)
                 status = CAIRO_STATUS_WRITE_ERROR;
@@ -4801,7 +4843,7 @@ int graph_cairo_finish(
         if (im->svg_crisp_grid && svg_add_crisp_grid_style(im))
             return -1;
         if (im->graphfile) {
-            FILE     *fd = rrd_fopen(im->graphfile, "wbe");
+            FILE     *fd = graph_fopen_write(im->graphfile, 1);
             int       failed = fd == NULL
                 || fwrite(im->rendered_image, 1, im->rendered_image_size,
                           fd) != im->rendered_image_size;
