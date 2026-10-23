@@ -23,6 +23,7 @@ echo Current iFirstDayOfWeek="$iFirstDayOfWeek_BAK"
 reg add "HKEY_CURRENT_USER\Control Panel\International" //t REG_SZ //v iFirstDayOfWeek //d 6 //f
 
 make check || :
+cat tests/test-suite.log || :  # TEMPORARY debug for PR #1412, reverted before merge
 
 # Restore first day of week
 reg add "HKEY_CURRENT_USER\Control Panel\International" //t REG_SZ //v iFirstDayOfWeek //d "$iFirstDayOfWeek_BAK" //f
