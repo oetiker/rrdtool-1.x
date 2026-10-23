@@ -15,6 +15,7 @@
 /daemon-fetch-security
 /tune-legacy-version
 /tune-daemon-error
+/tune-legacy-aberrant
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf
