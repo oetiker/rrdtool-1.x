@@ -57,6 +57,38 @@ when it is called for the first time, nor for the last time. If you require
 this for initialization and cleanup you should do those tasks before and
 after calling B<rrd_dump_cb_r> respectively.
 
+=item B<rrd_lastupdate_v(int argc, const char **argv, time_t *ret_last_update, unsigned long *ret_ds_count, char ***ret_ds_names, char ***ret_last_ds)>
+
+Takes the same arguments as B<rrdtool lastupdate>, including
+B<--daemon>|B<-d> I<address>, and honours the B<RRDCACHED_ADDRESS>
+environment variable in the same way. C<argv[0]> is the command name and
+is only used in the usage message. Instead of printing the result, it
+returns the time of the last update, the number of data sources, their
+names and their last values as strings, like B<rrd_lastupdate_r>. Through
+B<rrdcached> the values come from the daemon, so updates it has not yet
+written to disk are included.
+
+Returns 0 on success. The caller frees each string and both arrays with
+C<free>. On failure it returns -1, sets the error (see B<rrd_get_error>),
+sets C<*ret_ds_count> to 0 and both arrays to NULL. Like the other
+functions taking C<argv>, it may reorder the elements of C<argv>.
+
+    time_t last;
+    unsigned long n, i;
+    char **names, **values;
+    const char *args[] = { "lastupdate", "--daemon", "unix:/run/rrdcached.sock",
+                           "data.rrd" };
+
+    if (rrd_lastupdate_v(4, args, &last, &n, &names, &values) == 0) {
+        for (i = 0; i < n; i++) {
+            printf("%s=%s\n", names[i], values[i]);
+            free(names[i]);
+            free(values[i]);
+        }
+        free(names);
+        free(values);
+    }
+
 =item B<rrd_fetch_cb_register(rrd_fetch_cb_t c)>
 
 If your data does not reside in rrd files, but you would like to draw charts using the

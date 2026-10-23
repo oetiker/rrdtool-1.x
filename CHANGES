@@ -64,6 +64,13 @@ Bugfixes
   the error, e.g. "Got error Duplicate DS name: temp", and exits with
   status 1. Python's `rrdtool.tune()` now raises an error in this case
   too, with or without rrdcached. @oetiker
+* Python's `rrdtool.lastupdate()` ignored `--daemon`/`-d` and
+  `RRDCACHED_ADDRESS` and always read the file locally, so it failed with
+  "opening 'sub/c.rrd': No such file or directory" for a file that exists
+  only on the rrdcached host, and `lastupdate('-d', addr, 'file.rrd')` tried
+  to open a file called "-d". It now asks rrdcached like
+  `rrdtool lastupdate --daemon`, and raises an error for unknown options or
+  more than one file instead of ignoring them. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
@@ -146,6 +153,11 @@ Features
   and XML dumps in `fuzz/`. It needs clang and instruments the whole
   library with ASan/UBSan, so it is meant for testing, not for production
   builds. @somethingwithproof
+* librrd has a new function `rrd_lastupdate_v()`. It takes the same
+  arguments as `rrdtool lastupdate`, including `--daemon` and
+  `RRDCACHED_ADDRESS`, and returns the time and values instead of printing
+  them, so programs and language bindings no longer need to parse the
+  output. @oetiker
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
