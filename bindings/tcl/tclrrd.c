@@ -467,45 +467,54 @@ static int Rrd_Lastupdate(
     time_t    last_update;
     char    **ds_namv;
     char    **last_ds;
-    char      s[30];
+    char      s[64];
+    const char **argv2;
     Tcl_Obj  *listPtr;
+    Tcl_Obj  *elemPtr;
     unsigned long ds_cnt, i;
+    size_t    len;
+    int       status;
 
-    /* TODO: support for rrdcached */
-    if (argc != 2) {
-        Tcl_AppendResult(interp, "RRD Error: needs a single rrd filename",
-                         (char *) NULL);
+    /* Rrd::lastupdate ?--daemon|-d address? filename */
+    argv2 = getopt_init(argc, argv);
+    status = rrd_lastupdate_v(argc, argv2, &last_update,
+                              &ds_cnt, &ds_namv, &last_ds);
+    getopt_cleanup(argc, argv2);
+
+    if (status != 0) {
+        Tcl_AppendResult(interp, "RRD Error: ",
+                         rrd_get_error(), (char *) NULL);
+        rrd_clear_error();
         return TCL_ERROR;
     }
 
-    if (rrd_lastupdate_r(argv[1], &last_update,
-                       &ds_cnt, &ds_namv, &last_ds) == 0) {
-        listPtr = Tcl_GetObjResult(interp);
-        for (i = 0; i < ds_cnt; i++) {
-            sprintf(s, " %28s", ds_namv[i]);
-            Tcl_ListObjAppendElement(interp, listPtr,
-                                     Tcl_NewStringObj(s, -1));
-#if SIZEOF_TIME_T == 8
-            sprintf(s, "\n\n%10llu:", last_update);
-#else
-            sprintf(s, "\n\n%10lu:", last_update);
-#endif
-            Tcl_ListObjAppendElement(interp, listPtr,
-                                     Tcl_NewStringObj(s, -1));
-            for (i = 0; i < ds_cnt; i++) {
-                sprintf(s, " %s", last_ds[i]);
-                Tcl_ListObjAppendElement(interp, listPtr,
-                                         Tcl_NewStringObj(s, -1));
-                free(last_ds[i]);
-                free(ds_namv[i]);
-            }
-            sprintf(s, "\n");
-            Tcl_ListObjAppendElement(interp, listPtr,
-                                     Tcl_NewStringObj(s, -1));
-            free(last_ds);
-            free(ds_namv);
-        }
+    /* the layout of `rrdtool lastupdate': the data source names, then
+     * the time of the last update, then the last value of each source */
+    listPtr = Tcl_NewListObj(0, NULL);
+    for (i = 0; i < ds_cnt; i++) {
+        /* right-aligned in 28 columns, as before */
+        elemPtr = Tcl_NewStringObj(" ", 1);
+        for (len = strlen(ds_namv[i]); len < 28; len++)
+            Tcl_AppendToObj(elemPtr, " ", 1);
+        Tcl_AppendToObj(elemPtr, ds_namv[i], -1);
+        Tcl_ListObjAppendElement(interp, listPtr, elemPtr);
     }
+    snprintf(s, sizeof(s), "\n\n%10llu:", (unsigned long long) last_update);
+    Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewStringObj(s, -1));
+    for (i = 0; i < ds_cnt; i++) {
+        elemPtr = Tcl_NewStringObj(" ", 1);
+        Tcl_AppendToObj(elemPtr, last_ds[i], -1);
+        Tcl_ListObjAppendElement(interp, listPtr, elemPtr);
+    }
+    Tcl_ListObjAppendElement(interp, listPtr, Tcl_NewStringObj("\n", -1));
+    Tcl_SetObjResult(interp, listPtr);
+
+    for (i = 0; i < ds_cnt; i++) {
+        free(last_ds[i]);
+        free(ds_namv[i]);
+    }
+    free(last_ds);
+    free(ds_namv);
     return TCL_OK;
 }
 

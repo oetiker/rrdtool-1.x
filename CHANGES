@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Tcl: `Rrd::lastupdate` on an RRD with several data sources showed only
+  the first data source name, could crash on a long last value, and
+  returned an empty result instead of an error when the file could not be
+  read. It now lists every name, reports errors such as "RRD Error:
+  opening 'x.rrd': No such file or directory", and accepts `--daemon` like
+  `rrdtool lastupdate`. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
