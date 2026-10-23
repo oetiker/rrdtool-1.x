@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Building on Windows with MSYS2 printed "warning: 'O_CREAT' redefined"
+  and the same for `O_WRONLY`, `O_RDONLY`, `O_APPEND` and `O_RDWR`
+  while compiling `compat-cloexec.c` and its test. @oetiker
 * A program that dumped an RRD through rrdcached with the client library
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,
