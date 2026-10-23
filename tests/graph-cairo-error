@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# When cairo fails to draw or write a PDF or EPS graph, for example on a
+# label that is not valid UTF-8, rrdtool graph must report the error and
+# exit non-zero instead of printing "OOPS: Cairo has issues it can't even
+# die" and exiting 0.
+
+. $(dirname $0)/functions
+
+require_graph
+
+BUILD=$BUILDDIR/`basename $0`
+
+$RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
+    DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
+report create
+
+$RRDTOOL update ${BUILD}.rrd 1000000300:1 1000000600:2 1000000900:3
+report update
+
+BAD=$(printf 'bad\377\376label')
+
+graph () {
+    local file="$1" format="$2"
+    shift 2
+    $RRDTOOL graph "$file" --imgformat "$format" \
+        --start 1000000000 --end 1000001200 \
+        DEF:a=${BUILD}.rrd:a:AVERAGE "$@"
+}
+
+# expect a failure with the given message and no "OOPS"
+expect_error () {
+    local what="$1" want="$2" rc
+    shift 2
+    "$@" > ${BUILD}.out 2> ${BUILD}.err
+    rc=$?
+    if [ $rc = 0 ]; then
+        fail 1 "$what: exit status 0, stderr: $(cat ${BUILD}.err)"
+    elif grep -q OOPS ${BUILD}.err; then
+        fail 1 "$what: printed $(grep OOPS ${BUILD}.err)"
+    elif ! grep -qF "$want" ${BUILD}.err; then
+        fail 1 "$what: expected '$want', got: $(grep -v Pango ${BUILD}.err)"
+    else
+        ok "$what: $(grep -F "$want" ${BUILD}.err)"
+    fi
+}
+
+for format in PDF EPS; do
+    if ! graph ${BUILD}.probe $format LINE1:a#ff0000:ok > /dev/null 2>&1; then
+        ok "no $format support, skipping"
+        continue
+    fi
+    lc=$(echo $format | tr A-Z a-z)
+    expect_error "$format legend not valid UTF-8" \
+        "Could not save $lc to '${BUILD}.$lc': input string not valid UTF-8" \
+        graph ${BUILD}.$lc $format "LINE1:a#ff0000:$BAD"
+    expect_error "$format title not valid UTF-8 on stdout" \
+        "Could not save $lc to 'memory': input string not valid UTF-8" \
+        graph - $format --title "$BAD" LINE1:a#ff0000:ok
+    if [ -s ${BUILD}.out ]; then
+        fail 1 "$format on stdout wrote output despite the error"
+    else
+        ok "$format on stdout writes nothing after the error"
+    fi
+    expect_error "$format to a directory that does not exist" \
+        "Could not save $lc to '${BUILD}-missing/x.$lc'" \
+        graph ${BUILD}-missing/x.$lc $format LINE1:a#ff0000:ok
+done
+
+# PNG draws labels that are not valid UTF-8 as before
+graph ${BUILD}.png PNG "LINE1:a#ff0000:$BAD" > /dev/null 2>&1
+report "PNG with a legend not valid UTF-8 still works"
+
+expect_error "PNG to a directory that does not exist" \
+    "Could not save png to '${BUILD}-missing/x.png'" \
+    graph ${BUILD}-missing/x.png PNG LINE1:a#ff0000:ok
