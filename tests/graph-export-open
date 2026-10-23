@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# When rrdtool graph exports data (CSV, TSV, SSV, XML, JSON) to a file
+# it cannot open, it must fail with an error naming the file, and must
+# not write the data to stdout instead.
+
+. $(dirname $0)/functions
+
+require_graph
+
+BUILD=$BUILDDIR/`basename $0`
+
+$RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
+    DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
+report create
+
+$RRDTOOL update ${BUILD}.rrd 1000000300:1 1000000600:2 1000000900:3
+report update
+
+graph () {
+    local file="$1" format="$2"
+    $RRDTOOL graph "$file" --imgformat "$format" \
+        --start 1000000000 --end 1000001200 \
+        DEF:a=${BUILD}.rrd:a:AVERAGE XPORT:a:a
+}
+
+for format in CSV TSV SSV XML XMLENUM JSON JSONTIME; do
+    file=${BUILD}-missing-dir/out
+    if graph $file $format > ${BUILD}.out 2> ${BUILD}.err; then
+        fail 1 "$format to '$file': exit status 0"
+    elif [ -s ${BUILD}.out ]; then
+        fail 1 "$format to '$file': wrote to stdout: $(head -c 80 ${BUILD}.out)"
+    elif ! grep -qF "$file" ${BUILD}.err; then
+        fail 1 "$format to '$file': error does not name the file:" \
+            "$(cat ${BUILD}.err)"
+    else
+        ok "$format to an unwritable file: $(cat ${BUILD}.err)"
+    fi
+
+    rm -f ${BUILD}.export
+    graph ${BUILD}.export $format > ${BUILD}.out 2>&1
+    report "$format to a writable file"
+    if [ -s ${BUILD}.export ]; then
+        ok "$format file written"
+    else
+        fail 1 "$format file '${BUILD}.export' is empty or missing"
+    fi
+done
+
+rm -f ${BUILD}.export ${BUILD}.out ${BUILD}.err

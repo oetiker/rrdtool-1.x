@@ -5,6 +5,7 @@
  ****************************************************************************/
 
 #include <sys/stat.h>
+#include <errno.h>
 #include <limits.h>
 #include <locale.h>
 
@@ -496,6 +497,17 @@ int rrd_graph_xport(
        so a failed fetch leaves an existing file alone */
     if (im->graphfile) {
         buffer.file = graph_fopen_write(im->graphfile, 0, &removable);
+        /* fail rather than send the data to stdout instead */
+        if (buffer.file == NULL) {
+            rrd_set_error("Could not open '%s' for writing: %s",
+                          im->graphfile, rrd_strerror(errno));
+            for (unsigned long j = 0; j < col_cnt; j++) {
+                free(legend_v[j]);
+            }
+            free(legend_v);
+            free(data);
+            return -1;
+        }
     }
 
     /* fill in some data */
