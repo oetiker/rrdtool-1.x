@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune` reported success when it could not write its changes
+  back to the RRD, for example on a full disk, leaving the file only
+  partly updated. It now fails with "writing header of '...' failed:
+  No space left on device". @oetiker
 * `rrdtool tune --data-source-type` now resets the last value of the data
   source (`last_ds` in `rrdtool dump` shows `UNKN`) on builds without mmap,
   such as the Windows (MinGW) build. Before, the old value stayed, so the
