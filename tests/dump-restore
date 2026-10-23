@@ -18,12 +18,18 @@ for A in $(seq $ST 60 $(($ST + 60*($CNT - 1))) ) ; do
 	N=$(($N + 1))
 	ST=$A
 	$RRDTOOL update ${BUILD}a1.rrd  $A:$V
+	report update $N/$CNT
 
 	rm -f ${BUILD}a1.xml ${STORE}r1.rrd ${BUILD}r1.xml
 
 	$RRDTOOL dump ${BUILD}a1.rrd ${BUILD}a1.xml
+	report dump $N/$CNT
+	grep -q "<lastupdate>$A</lastupdate>" ${BUILD}a1.xml
+	report dump shows update $N/$CNT
 	$RRDTOOL restore ${BUILD}a1.xml ${BUILD}r1.rrd
+	report restore $N/$CNT
 	$RRDTOOL dump ${BUILD}r1.rrd ${BUILD}r1.xml
+	report dump-restored $N/$CNT
 
 	$DIFF ${BUILD}a1.xml ${BUILD}r1.xml 
 	report dump-restore-cycle $N/$CNT
