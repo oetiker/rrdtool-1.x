@@ -473,7 +473,9 @@ int rrd_tune_r(
             }
     }
 
-    options.optind = handle_modify(&rrd, in_filename, options.argc, options.argv, options.optind + 1, opt_newstep);
+    if (handle_modify(&rrd, in_filename, options.argc, options.argv,
+                      options.optind + 1, opt_newstep) < 0)
+        goto done;
     rc = 0;
 done:
     if (rrd_file) {

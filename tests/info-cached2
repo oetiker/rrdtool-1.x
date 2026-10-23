@@ -1,0 +1,101 @@
+#!/bin/bash
+# rrdtool info --daemon must fail, naming the offending line, when the
+# daemon's INFO reply contains a malformed line. Before, the client took
+# such a line as the end of the data and printed a truncated info with
+# exit status 0. An empty value stays valid for string fields (#1080).
+#
+# A small fake rrdcached (python3, TCP on localhost) sends the replies, so
+# the test does not depend on what the real daemon can be made to emit.
+
+. "$(dirname "$0")/functions"
+
+command -v python3 >/dev/null 2>&1 || exit 77
+[ -n "$MSYSTEM" ] && exit 77
+
+# This test talks to its own fake daemon: drop the style daemon.
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+RRD=$TOP_BUILDDIR/src/rrdtool
+
+PORTFILE=$BUILDDIR/info-cached2.port
+rm -f "$PORTFILE"
+
+python3 - "$PORTFILE" <<'PYEOF' &
+import socket
+import sys
+
+replies = {
+    "good.rrd": ["filename 2 good.rrd", "step 1 300", "ds[a].last_ds 2 ",
+                 "ds[a].value 0 NaN", "ds[a].index 1 0"],
+    "nospace.rrd": ["filename 2 nospace.rrd", "garbage", "step 1 300"],
+    "novalue.rrd": ["filename 2 novalue.rrd", "step 1", "header_size 1 100"],
+    "badtype.rrd": ["filename 2 badtype.rrd", "step x 300", "header_size 1 100"],
+}
+
+srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+srv.bind(("127.0.0.1", 0))
+srv.listen(8)
+with open(sys.argv[1] + ".tmp", "w") as f:
+    f.write(str(srv.getsockname()[1]))
+import os
+os.rename(sys.argv[1] + ".tmp", sys.argv[1])
+srv.settimeout(30)
+
+served = 0
+while served < len(replies):
+    try:
+        conn, _ = srv.accept()
+    except socket.timeout:
+        break
+    conn.settimeout(10)
+    f = conn.makefile("rwb")
+    for raw in f:
+        words = raw.decode().split()
+        if not words:
+            continue
+        cmd = words[0].upper()
+        if cmd == "INFO":
+            lines = replies.get(os.path.basename(words[1]), [])
+            f.write(("%d Info follows\n" % len(lines)).encode())
+            for l in lines:
+                f.write((l + "\n").encode())
+            served += 1
+        elif cmd == "QUIT":
+            break
+        else:
+            f.write(b"0 ok\n")
+        f.flush()
+    conn.close()
+PYEOF
+PYPID=$!
+trap 'kill $PYPID 2>/dev/null; rm -f "$PORTFILE"' EXIT
+
+for i in $(seq 1 50); do
+    [ -s "$PORTFILE" ] && break
+    sleep 0.1
+done
+[ -s "$PORTFILE" ] || fail 1 "fake rrdcached did not start"
+ADDR=127.0.0.1:$(cat "$PORTFILE")
+
+OUT=$($RRD info --daemon "$ADDR" good.rrd)
+report "well-formed reply is accepted"
+echo "$OUT" | grep -q '^ds\[a\]\.last_ds = ""$'
+report "empty string value is kept"
+echo "$OUT" | grep -q '^ds\[a\]\.index = 0$'
+report "lines after the empty string value are kept"
+
+for f in nospace novalue badtype; do
+    OUT=$($RRD info --daemon "$ADDR" $f.rrd 2>&1)
+    RC=$?
+    echo "$OUT"
+    [ $RC -ne 0 ]
+    report "$f: malformed reply makes info fail"
+    case $f in
+        nospace) BAD="garbage" ;;
+        novalue) BAD="step 1" ;;
+        badtype) BAD="step x 300" ;;
+    esac
+    echo "$OUT" | grep -q "ERROR: .*'$BAD'"
+    report "$f: error names the bad line '$BAD'"
+done

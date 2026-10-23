@@ -63,6 +63,11 @@ extern    "C" {
     char *,
     ...);
 
+/* rrd_client.c: the update value with its time in the numeric form
+ * rrdcached accepts (internal, not exported) */
+    char     *rrd_client_numeric_update_value(
+    const char *value);
+
 /* HELPER FUNCTIONS */
 
     int       PngSize(
