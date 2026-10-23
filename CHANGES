@@ -33,6 +33,11 @@ Bugfixes
   failed with "Cannot find timestamp in 'now@1:2'!" for at-style times
   such as `now@…`, `N@…` or `epoch+1700000000s@…`. These times are now
   resolved before they are sent, the same way a local update does. @oetiker
+* `rrdtool update` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  failed with "illegal attempt to update using time -5.000000 when last
+  update time is ..." for negative times such as `-5:1`, which a local
+  update counts back from the current time. These times are now resolved
+  before they are sent, like `N:` and at-style times. @oetiker
 * `rrdtool update` through rrdcached with more values than fit into 4096
   bytes (a few hundred, depending on their length) failed with "Failed
   sending the values to rrdcached: No buffer space available". The values
