@@ -28,7 +28,7 @@ is_cached && exit 0
 for i in $(seq 1 20); do
     t=$((1748087640 + i*60))
     v=$((i * 5))
-    $RRDTOOL update ${BUILD}.rrd ${t}:${v}
+    $RRDTOOL update ${BUILD}.rrd ${t}:${v} || fail $? "update ${t}:${v}"
 done
 report "update"
 

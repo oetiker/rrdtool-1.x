@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Check the report helper itself: a command substitution in the message
+# must not decide whether report prints OK or FAILED.
+
+. $(dirname $0)/functions
+
+( false ; report -s $? "failed check, message with $(true)" ) >/dev/null 2>&1
+[ $? = 1 ] ; report "report -s fails a failed check despite \$(true) in the message"
+
+( true ; report -s $? "passed check, message with $(false)" ) >/dev/null 2>&1
+[ $? = 0 ] ; report "report -s passes a passed check despite \$(false) in the message"
+
+( false ; report "failed check" ) >/dev/null 2>&1
+[ $? = 1 ] ; report "report fails a failed check"
+
+( true ; report "passed check" ) >/dev/null 2>&1
+[ $? = 0 ] ; report "report passes a passed check"
