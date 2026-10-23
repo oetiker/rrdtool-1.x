@@ -1,12 +1,12 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
 
 script_tests = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 graph1 graph2 rpn1 \
+	tune1 tune2 graph1 graph2 graph-missing-ds rpn1 \
 	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
-	security-fetch-arithmetic security-fetch-daemon-arithmetic
+	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security
 
@@ -39,7 +39,7 @@ CLEANFILES = *.rrd info-cached1.xml \
 	graph7-s.pdf graph7-S.pdf graph7-pct.pdf graph7-r.pdf \
 	modify5-testa1-mod.dump modify5-testa2-mod.dump \
 	modify5-testa1-mod.dump.tmp modify5-testa2-mod.dump.tmp \
-	rpn1.out rpn1.output.out
+	rpn1.out rpn1.output.out create-with-source-5-test.png
 
 check_PROGRAMS = \
 	compat-cloexec \
