@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* When `rrdtool tune` could not reach rrdcached, the Python and .NET
+  bindings reported success although nothing was tuned. tune now fails
+  there like the other commands, and shows the same message, such as
+  "Unable to connect to rrdcached: No such file or directory", instead of
+  "Cannot connect to daemon". @oetiker
 * `./bootstrap` in an already configured tree reran `configure` with the
   old options and rebuilt everything; it now only generates the build
   system. `make clean` also removes an `rrdcgi` or `rrdcached` built

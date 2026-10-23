@@ -9,7 +9,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
 	cached-client-api cached-journal-long cached-journal-crash cached-first-last first-last-error
 
-TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version
+TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error
 
 script_tests += security-rrdcached-response-bounds
 
@@ -46,7 +46,8 @@ check_PROGRAMS = \
 	compat-cloexec \
 	rrd-open-security \
 	lastupdate-v \
-	tune-legacy-version
+	tune-legacy-version \
+	tune-daemon-error
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
@@ -67,6 +68,12 @@ tune_legacy_version_SOURCES = \
 	test_tune_legacy_version.c
 
 tune_legacy_version_LDADD = \
+	${top_builddir}/src/librrd.la
+
+tune_daemon_error_SOURCES = \
+	test_tune_daemon_error.c
+
+tune_daemon_error_LDADD = \
 	${top_builddir}/src/librrd.la
 
 # Compile the real RADOS read path against a local mock; no Ceph service needed.
