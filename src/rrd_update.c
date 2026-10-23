@@ -650,9 +650,15 @@ static int rrd_template_update(const char *filename,  /* {{{ */
 
 	/* map the values */
 	for(i=0;i<values_num;i++) {
+		/* resolve "N:" and at-style times first: the mapping
+		 * expects "<time>:<value>..." */
+		char *numeric = rrd_client_numeric_update_value(values[i]);
+		if (!numeric)
+			goto error;
 		mapped_values[i] =
 			rrd_map_template_to_values(
-				tpl, file_format, values[i]);
+				tpl, file_format, numeric);
+		free(numeric);
 		if (!mapped_values[i])
 			goto error;
 	}
