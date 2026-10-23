@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph -Z` (`--use-nan-for-all-missing-data`) with a DEF naming
+  a data source the RRD file does not have drew that DEF with the values of
+  a neighbouring data source, shifted by one row, instead of leaving it
+  unknown. Such a DEF now has only unknown values, and the other DEFs on
+  the same file keep their data. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
