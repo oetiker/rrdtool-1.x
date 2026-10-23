@@ -6,12 +6,12 @@ BASE=$BASEDIR/modify-test1
 BUILD=$BUILDDIR/modify-test1
 STORE=$RRDDIR/modify-test1
 
-$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10 || fail create
+$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:5:10 || fail $? create
 
 # add 50 values to 
 N=10
 for T in $(seq 1300000020 60 1300003020) ; do
-	$RRDTOOL update ${BUILD}a.rrd --template a $T:$N || fail "update"
+	$RRDTOOL update ${BUILD}a.rrd --template a $T:$N || fail $? "update"
 	let N=$N+10
 done
 
@@ -21,6 +21,6 @@ report "created content"
 
 # extend base RRA, refill from coarse RRA
 cp ${STORE}a.rrd ${STORE}b.rrd
-$RRDTOOL tune ${BUILD}b.rrd RRA#0:+10 || fail "tune"
+$RRDTOOL tune ${BUILD}b.rrd RRA#0:+10 || fail $? "tune"
 $RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump 
 report "extend base RRA"
