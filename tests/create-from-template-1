@@ -54,7 +54,7 @@ report createay1
 $RRDTOOL update ${PREFIX}ax1.rrd --template a $UPDATEAx1
 report update ax1
 
-$RRDTOOL create ${PREFIX}ax2.rrd --template ${PREFIX}ax1.rrd || fail "create ax2"
+$RRDTOOL create ${PREFIX}ax2.rrd --template ${PREFIX}ax1.rrd || fail $? "create ax2"
 
 $RRDTOOL dump ${PREFIX}ay1.rrd > ${PREFIX}ay1.xml
 $RRDTOOL dump ${PREFIX}ax2.rrd > ${PREFIX}ax2.xml
@@ -69,7 +69,7 @@ report createb1
 report "create with template and name-clashing DS fails"
 
 $RRDTOOL create ${PREFIX}ax3.rrd --template ${PREFIX}ax1-copy.rrd \
-    --source ${PREFIX}ax1.rrd || fail "create ax3"
+    --source ${PREFIX}ax1.rrd || fail $? "create ax3"
 
 $RRDTOOL dump ${PREFIX}ax1.rrd > ${PREFIX}ax1.xml
 $RRDTOOL dump ${PREFIX}ax3.rrd > ${PREFIX}ax3.xml
