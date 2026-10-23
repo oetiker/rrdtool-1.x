@@ -486,18 +486,15 @@ int rrd_graph_xport(
         return -1;
     }
 
-    /* if we write a file, then open it */
-    if (im->graphfile) {
-        buffer.file = rrd_fopen(im->graphfile, "we");
-    }
-
     /* do the data processing */
     if (rrd_xport_fn(im, &start, &end, &step, &col_cnt, &legend_v, &data, 1)) {
-        /* close the file */
-        if (buffer.file) {
-            fclose(buffer.file);
-        }
         return -1;
+    }
+
+    /* if we write a file, then open it, only now that the data is there,
+       so a failed fetch leaves an existing file alone */
+    if (im->graphfile) {
+        buffer.file = rrd_fopen(im->graphfile, "we");
     }
 
     /* fill in some data */
@@ -562,9 +559,10 @@ int rrd_graph_xport(
         if (buffer.data) {
             free(buffer.data);
         }
-        /* close the file */
+        /* close the file and remove what is there of it */
         if (buffer.file) {
             fclose(buffer.file);
+            graph_remove_incomplete(im->graphfile);
         }
         /* and return with error */
         return r;

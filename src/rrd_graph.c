@@ -429,6 +429,24 @@ enum text_prop_en text_prop_conv(
 
 #undef conv_if
 
+/* Remove a graph file that this call opened for writing but could not
+   finish, so that no broken file is left behind.  Only a regular file
+   is removed, never a device, a pipe or a symbolic link. */
+void graph_remove_incomplete(
+    const char *path)
+{
+    struct stat st;
+
+#ifdef _WIN32
+    if (stat(path, &st) != 0)
+#else
+    if (lstat(path, &st) != 0)
+#endif
+        return;
+    if ((st.st_mode & S_IFMT) == S_IFREG)
+        unlink(path);
+}
+
 int im_free(
     image_desc_t *im)
 {
@@ -438,8 +456,6 @@ int im_free(
 #endif
     if (im == NULL)
         return 0;
-
-    free(im->graphfile);
 
     if (im->daemon_addr != NULL)
         free(im->daemon_addr);
@@ -504,6 +520,10 @@ int im_free(
         }
     }
 #endif
+    /* only now is the surface closed and its file can go */
+    if (im->graphfile_incomplete && im->graphfile)
+        graph_remove_incomplete(im->graphfile);
+    free(im->graphfile);
     if (im->ylegend)
         free(im->ylegend);
     if (im->title)
@@ -4009,6 +4029,16 @@ int graph_size_location(
     return 0;
 }
 
+static cairo_status_t cairo_output_file(
+    void *closure,
+    const unsigned char
+    *data,
+    unsigned int length)
+{
+    return fwrite(data, 1, length, (FILE *) closure) == length
+        ? CAIRO_STATUS_SUCCESS : CAIRO_STATUS_WRITE_ERROR;
+}
+
 static cairo_status_t cairo_output(
     void *closure,
     const unsigned char
@@ -4628,6 +4658,9 @@ int graph_cairo_setup(
                                        im->yimg * im->zoom)
             : cairo_pdf_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
+        /* cairo has opened the file already */
+        im->graphfile_incomplete = im->graphfile != NULL
+            && cairo_surface_status(im->surface) == CAIRO_STATUS_SUCCESS;
         break;
 #endif
 #ifdef CAIRO_HAS_PS_SURFACE
@@ -4639,6 +4672,9 @@ int graph_cairo_setup(
                                     im->yimg * im->zoom)
             : cairo_ps_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
+        /* cairo has opened the file already */
+        im->graphfile_incomplete = im->graphfile != NULL
+            && cairo_surface_status(im->surface) == CAIRO_STATUS_SUCCESS;
         break;
 #endif
 #ifdef CAIRO_HAS_SVG_SURFACE
@@ -4733,10 +4769,24 @@ int graph_cairo_finish(
     switch (im->imgformat) {
     case IF_PNG:
     {
-        status = im->graphfile ?
-            cairo_surface_write_to_png(im->surface, im->graphfile)
-            : cairo_surface_write_to_png_stream(im->surface, &cairo_output,
-                                                im);
+        if (im->graphfile) {
+            /* open the file here rather than in cairo, so that a file
+               left incomplete by a failed write can be removed */
+            FILE     *fd = rrd_fopen(im->graphfile, "wbe");
+
+            if (fd == NULL)
+                status = CAIRO_STATUS_WRITE_ERROR;
+            else {
+                status = cairo_surface_write_to_png_stream
+                    (im->surface, &cairo_output_file, fd);
+                if (fclose(fd) != 0 && status == CAIRO_STATUS_SUCCESS)
+                    status = CAIRO_STATUS_WRITE_ERROR;
+                if (status != CAIRO_STATUS_SUCCESS)
+                    graph_remove_incomplete(im->graphfile);
+            }
+        } else
+            status = cairo_surface_write_to_png_stream(im->surface,
+                                                       &cairo_output, im);
 
         if (status != CAIRO_STATUS_SUCCESS) {
             rrd_set_error("Could not save png to '%s'",
@@ -4758,6 +4808,8 @@ int graph_cairo_finish(
 
             if (fd != NULL && fclose(fd) != 0)
                 failed = 1;
+            if (fd != NULL && failed)
+                graph_remove_incomplete(im->graphfile);
             /* like the other formats, a graph written to a file is not
                returned in memory as well */
             free(im->rendered_image);
@@ -4789,6 +4841,8 @@ int graph_cairo_finish(
             status = cairo_surface_status(im->surface);
         if (status != CAIRO_STATUS_SUCCESS)
             return graph_cairo_error(im, status);
+        /* the file is complete and closed */
+        im->graphfile_incomplete = 0;
         break;
     }
 
