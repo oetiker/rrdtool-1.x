@@ -7,11 +7,13 @@
 /compat-cloexec
 
 /rrd-open-security
+/lastupdate-v
 /mock-rados-bounds
 /fetch-empty-security
 /.libs/
 /graph-security
 /daemon-fetch-security
+/tune-legacy-version
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf
