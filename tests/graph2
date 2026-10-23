@@ -101,14 +101,21 @@ report "update all"
 
 is_cached && exit 0
 
-$BLANK < $BASEDIR/graph2.output > $BASEDIR/graph2.output.out
+# The PNG bytes depend on the installed cairo, pango and fonts, so the image
+# blob is cut out and only the text part is compared: the graph geometry
+# (blanked), the GPRINT legends and the --add-jsontime JSON data.  Blob sizes
+# are blanked too, as the JSON size depends on how floats get printed.
+function strip_image {
+	perl -0777 -p -e 's/^image = BLOB_SIZE:\d+\n.*?(?=graph_start = )/image = BLOB_SIZE:#\n/ms; s/BLOB_SIZE:\d+/BLOB_SIZE:#/g' "$@"
+}
+
+strip_image $BASEDIR/graph2.output | $BLANK > $BUILDDIR/graph2.output.out
 
 $RRDTOOL graphv  -s 1300000000 -e 1300015200 --step 600 --imgformat=PNG --add-jsontime - \
 	DEF:wh=${BUILD}.rrd:wh:AVERAGE \
 	AREA:wh#EA8F007F:'5 Minute Average ':STACK \
 	GPRINT:wh:LAST:'Current\:%4.2lf'  \
 	GPRINT:wh:AVERAGE:'Average\:%4.2lf'  \
-	GPRINT:wh:MAX:'Maximum\:%4.2lf\n' > graph2.output
-# | $BLANK | $DIFF9 - $BASEDIR/graph2.output.out
+	GPRINT:wh:MAX:'Maximum\:%4.2lf\n' | strip_image | $BLANK | $DIFF9 - $BUILDDIR/graph2.output.out
 
 report "graphv"

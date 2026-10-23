@@ -106,7 +106,13 @@ AC_ARG_ENABLE(rrdcgi,AS_HELP_STRING([--disable-rrdcgi],[disable building of rrdc
 [],[enable_rrdcgi=yes])
 
 AC_ARG_ENABLE(rrd_graph,AS_HELP_STRING([--disable-rrd_graph],[disable all rrd_graph functions]),
-[enable_rrdcgi=$enableval],[enable_rrd_graph=yes])
+[],[enable_rrd_graph=yes])
+
+dnl rrdcgi needs rrd_graph; an explicit --disable-rrdcgi always wins
+if test "x$enable_rrd_graph" = xno && test "x$enable_rrdcgi" != xno; then
+  enable_rrdcgi=no
+  AC_MSG_NOTICE([rrd_graph is disabled, so rrdcgi is not built either])
+fi
 
 AC_ARG_ENABLE(rrd_restore,AS_HELP_STRING([--disable-rrd_restore],[disable rrd_restore XML import functions]),
 [],[enable_rrd_restore=yes])
