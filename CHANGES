@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --smoothing-window` or `--smoothing-window-deviation` on
+  an RRD from before format version 0003 relabelled it as version 0004
+  without converting it, so every later command failed with "... is too
+  small (should be ... bytes)". tune now converts such a file to the
+  current format first, as `rrdtool restore` does. @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`
