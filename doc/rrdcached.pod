@@ -571,7 +571,9 @@ C<E<lt>LFE<gt>> ("line feed").
 After the connection has been established, the client is expected to send a
 "command". A command consists of the command keyword, possibly some arguments,
 and a terminating newline character. For a list of commands, see
-L</"Valid Commands"> below.
+L</"Valid Commands"> below. The daemon reads at most 8191 bytes per command
+line; it answers a longer line with the error "Command line too long" and
+ignores the line.
 
 Example:
 
@@ -688,9 +690,10 @@ for, so describing the mechanism again is unnecessary. Read L</"HOW IT WORKS">
 above for a detailed explanation.
 
 Note that rrdcached only accepts absolute timestamps in the update values.
-Updates strings like "N:1:2:3" and at-style times like "now@1:2:3" or
-"epoch+1d@1:2:3" are automatically converted to absolute time by the RRD
-client library before sending to rrdcached. A command line must fit into
+Updates strings like "N:1:2:3", negative times like "-5:1:2:3" (five
+seconds ago) and at-style times like "now@1:2:3" or "epoch+1d@1:2:3" are
+automatically converted to absolute time by the RRD client library before
+sending to rrdcached. A command line must fit into
 4096 bytes; the client library sends a longer list of values as several
 B<UPDATE> commands.
 

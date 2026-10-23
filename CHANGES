@@ -8,6 +8,53 @@ Bugfixes
   such as the Windows (MinGW) build. Before, the old value stayed, so the
   first update after switching e.g. from GAUGE to COUNTER computed a rate
   from a value of the old type. @oetiker
+* `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
+  with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
+  failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
+  Windows build can open and no longer depend on the locale. @oetiker
+* `rrdtool list` and the rrdcached `LIST` command could leak memory or
+  free an invalid pointer when the system ran out of memory while
+  building the file list. @oetiker
+* When `rrdtool tune` could not reach rrdcached, the Python and .NET
+  bindings reported success although nothing was tuned. tune now fails
+  there like the other commands, and shows the same message, such as
+  "Unable to connect to rrdcached: No such file or directory", instead of
+  "Cannot connect to daemon". @oetiker
+* `./bootstrap` in an already configured tree reran `configure` with the
+  old options and rebuilt everything; it now only generates the build
+  system. `make clean` also removes an `rrdcgi` or `rrdcached` built
+  before it was switched off with `--disable-rrdcgi` or
+  `--disable-rrdcached`. @oetiker
+* Editing only `src/librrd.sym` did not relink `librrd`, so the library
+  kept exporting the old set of functions until some source file
+  changed. @oetiker
+* In a git checkout, `git status` listed `configure`, every `Makefile.in`,
+  the helper scripts in `conftools/` and the Python wheel output as
+  untracked after a build; they are ignored now. @oetiker
+* `make check` passed the `list1` and `dump-restore` tests even when
+  rrdtool failed inside them: `list1` always ended with "OK: tests with
+  rrdcached", and `dump-restore` ignored a failed `update`, `dump` or
+  `restore`. Both tests now fail when any step fails. @oetiker
+* After `make check`, `git status` showed test output such as
+  `tests/graph4.pdf`, `tests/info-cached1.xml` and many files in
+  `tests/cached/` (among them a link `tmp` pointing to `/tmp`), and
+  `make clean` left some of them behind. They are now ignored and removed
+  by `make clean`, and two rrdcached tests no longer create directories
+  directly in `/tmp` but honour `TMPDIR`. @oetiker
+* `rrdtool first` and `rrdtool last` on a file they could not read printed
+  "-1" on standard output after the error message. They now print only
+  the error and exit with status 1. @oetiker
+* `rrdtool tune --smoothing-window` or `--smoothing-window-deviation` on
+  an RRD from before format version 0003 relabelled it as version 0004
+  without converting it, so every later command failed with "... is too
+  small (should be ... bytes)". tune now converts such a file to the
+  current format first, as `rrdtool restore` does. @oetiker
+* C programs using the rrdcached client functions documented in librrd(3)
+  failed to link with "undefined reference to `rrd_client_new'" (and the
+  same for every other `rrd_client_*` function, `rrdc_tune` and
+  `rrdc_dump`). librrd now exports them on Linux, BSD, macOS and Windows,
+  and `rrd_client_disconnect`, declared in `rrd_client.h` but missing from
+  the library, now exists. @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`
@@ -32,6 +79,33 @@ Bugfixes
   failed with "Cannot find timestamp in 'now@1:2'!" for at-style times
   such as `now@…`, `N@…` or `epoch+1700000000s@…`. These times are now
   resolved before they are sent, the same way a local update does. @oetiker
+* The rrdupdate manual said "The caching daemon rrdcached cannot be used
+  together with templates yet", but `--template` works through rrdcached.
+  The manual now says so, and that rrdtool must be able to read the RRD
+  file itself and cannot combine a template with `--skip-past-updates`
+  there. @oetiker
+* rrdcached closed the connection without any answer when a client sent
+  a command line longer than 8191 bytes. It now answers "-1 Command line
+  too long (at most 8191 bytes allowed)", skips that line and keeps the
+  connection open; in a BATCH the error is listed with the others. @oetiker
+* `rrdtool first` and `rrdtool last` through rrdcached (`--daemon` or
+  `RRDCACHED_ADDRESS`) printed a wrong, much smaller time for files whose
+  times lie after 2106-02-07 (for example 5032724 instead of 4300000020).
+  On Windows, `first`, `last` and `lastupdate` through rrdcached also read
+  times after 2038 wrongly. @oetiker
+* When rrdcached crashed or was killed, its journal (`-j`) lacked the last
+  updates it had already confirmed to clients (up to a few KiB of them), so
+  restarting on the journal lost those values. Each journal entry is now
+  written out before the client gets its answer. @oetiker
+* rrdcached wrote only the first 4096 bytes of a longer UPDATE command
+  line (it accepts up to 8191) to its journal (`-j`), so restarting on the
+  journal lost the values of that line. The journal now keeps the whole
+  line. @oetiker
+* `rrdtool update` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  failed with "illegal attempt to update using time -5.000000 when last
+  update time is ..." for negative times such as `-5:1`, which a local
+  update counts back from the current time. These times are now resolved
+  before they are sent, like `N:` and at-style times. @oetiker
 * `rrdtool update` through rrdcached with more values than fit into 4096
   bytes (a few hundred, depending on their length) failed with "Failed
   sending the values to rrdcached: No buffer space available". The values
@@ -47,6 +121,16 @@ Bugfixes
   when a PNG or SVG file cannot be written, `graph` no longer prints the
   image size before the error and `graphv` no longer prints the graph
   information. @oetiker
+* When `rrdtool graph` failed while writing a PNG, SVG, PDF or EPS file,
+  for example with "Could not save pdf to 'x.pdf': input string not valid
+  UTF-8" or on a full disk, a broken, cut-short file stayed behind; it is
+  now removed. @oetiker
+* On Windows, `rrdtool graph` now writes SVG, CSV, TSV, SSV, XML and JSON
+  files whose names contain non-ASCII characters (given in UTF-8), as it
+  already did for PNG, PDF and EPS. @oetiker
+* `rrdtool graph` with CSV, TSV, SSV, XML or JSON output emptied an existing
+  output file when it could not read the data, for example with "opening
+  'x.rrd': No such file or directory"; the file is now left unchanged. @oetiker
 * `PRINT` and `GPRINT` in `rrdtool graph` and `graphv` showed unknown
   values as `-nan` on many systems, like `rrdtool fetch` did before. They
   now always show `nan`, with the same padding as before, also with
@@ -63,6 +147,13 @@ Bugfixes
   the error, e.g. "Got error Duplicate DS name: temp", and exits with
   status 1. Python's `rrdtool.tune()` now raises an error in this case
   too, with or without rrdcached. @oetiker
+* Python's `rrdtool.lastupdate()` ignored `--daemon`/`-d` and
+  `RRDCACHED_ADDRESS` and always read the file locally, so it failed with
+  "opening 'sub/c.rrd': No such file or directory" for a file that exists
+  only on the rrdcached host, and `lastupdate('-d', addr, 'file.rrd')` tried
+  to open a file called "-d". It now asks rrdcached like
+  `rrdtool lastupdate --daemon`, and raises an error for unknown options or
+  more than one file instead of ignoring them. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
@@ -145,6 +236,11 @@ Features
   and XML dumps in `fuzz/`. It needs clang and instruments the whole
   library with ASan/UBSan, so it is meant for testing, not for production
   builds. @somethingwithproof
+* librrd has a new function `rrd_lastupdate_v()`. It takes the same
+  arguments as `rrdtool lastupdate`, including `--daemon` and
+  `RRDCACHED_ADDRESS`, and returns the time and values instead of printing
+  them, so programs and language bindings no longer need to parse the
+  output. @oetiker
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================

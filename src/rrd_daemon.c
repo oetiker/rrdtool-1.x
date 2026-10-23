@@ -164,6 +164,9 @@ struct listen_socket_s {
     char     *rbuf;
     off_t     next_cmd;
     off_t     next_read;
+    /* set after an over-long command line has been answered with an
+     * error: its remainder is read and dropped up to the next newline */
+    int       skip_line;
 
     char     *wbuf_data;
     size_t    wbuf_size;
@@ -1712,14 +1715,16 @@ static int handle_request_update(
     char     *file = NULL, *pbuffile;
     int       values_num = 0;
     int       status, rc;
-    char      orig_buf[RRD_CMD_MAX];
+    /* a command line can fill the whole read buffer, and the journal
+     * must keep all of it: a cut-short line loses values on replay */
+    char      orig_buf[RBUF_SIZE];
 
     cache_item_t *ci;
 
     /* save it for the journal later */
     if (!JOURNAL_REPLAY(sock)) {
-        strncpy(orig_buf, buffer, min(RRD_CMD_MAX, buffer_size));
-        orig_buf[min(RRD_CMD_MAX, buffer_size) - 1] = '\0';
+        memcpy(orig_buf, buffer, min(RBUF_SIZE, buffer_size));
+        orig_buf[min(RBUF_SIZE, buffer_size) - 1] = '\0';
     }
 
     status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
@@ -2561,7 +2566,7 @@ static int handle_request_first(
                            rrd_get_error());
         goto done;
     }
-    rc = send_response(sock, RESP_OK, "%lu\n", (unsigned) t);
+    rc = send_response(sock, RESP_OK, "%lld\n", (long long) t);
   done:
     free(file);
     return rc;
@@ -2621,7 +2626,7 @@ static int handle_request_last(
                            "Error: rrdcached: Invalid timestamp returned\n");
         goto done;
     }
-    rc = send_response(sock, RESP_OK, "%lu\n", (unsigned) t);
+    rc = send_response(sock, RESP_OK, "%lld\n", (long long) t);
   done:
     free(file);
     return rc;
@@ -3759,6 +3764,11 @@ static int journal_write(
     }
 
     chars = fprintf(journal_fh, "%s %s\n", cmd, args);
+    /* hand the entry to the kernel before the client gets its answer:
+     * whatever stays in the stdio buffer is lost if the daemon crashes */
+    if (fflush(journal_fh) != 0)
+        RRDD_LOG(LOG_ERR, "journal_write: cannot write the journal: %s",
+                 rrd_strerror(errno));
     journal_size += chars;
 
     if (journal_size > JOURNAL_MAX)
@@ -3783,7 +3793,10 @@ static int journal_replay(
     int       entry_cnt = 0;
     int       fail_cnt = 0;
     uint64_t  line = 0;
-    char      entry[RRD_CMD_MAX];
+    /* the longest entry is an UPDATE command line as long as the read
+     * buffer allows (RBUF_SIZE - 1 bytes), plus its newline and the
+     * terminating NUL */
+    char      entry[RBUF_SIZE + 1];
     time_t    now;
 
     if (file == NULL)
@@ -3999,6 +4012,7 @@ static void *connection_thread_main(
 
     /* init read buffers */
     sock->next_read = sock->next_cmd = 0;
+    sock->skip_line = 0;
     sock->rbuf = malloc(RBUF_SIZE);
     if (sock->rbuf == NULL) {
         RRDD_LOG(LOG_ERR,
@@ -4071,6 +4085,19 @@ static void *connection_thread_main(
 
         sock->next_read += rbytes;
 
+        if (sock->skip_line) {
+            /* drop the rest of an over-long line, up to its newline */
+            char     *eol = memchr(sock->rbuf, '\n', sock->next_read);
+
+            if (eol == NULL) {
+                sock->next_read = 0;
+                continue;
+            }
+            sock->next_read -= eol - sock->rbuf + 1;
+            memmove(sock->rbuf, eol + 1, sock->next_read);
+            sock->skip_line = 0;
+        }
+
         if (sock->batch_start)
             now = sock->batch_start;
         else
@@ -4080,6 +4107,24 @@ static void *connection_thread_main(
             status = handle_request(sock, now, cmd, cmd_len + 1);
             if (status != 0)
                 goto out_close;
+        }
+
+        /* A full read buffer without a newline holds the start of a line
+         * longer than the daemon can take. Answer it with an error, like
+         * any other bad command, instead of reading nothing more (read()
+         * with no room returns 0, which looked like the end of the
+         * connection), and drop the line. */
+        if (sock->next_read >= RBUF_SIZE) {
+            if (sock->batch_start)
+                sock->batch_cmd++;
+            status = send_response(sock, RESP_ERR,
+                                   "Command line too long "
+                                   "(at most %d bytes allowed)\n",
+                                   RBUF_SIZE - 1);
+            if (status != 0)
+                goto out_close;
+            sock->next_read = 0;
+            sock->skip_line = 1;
         }
     }
 
