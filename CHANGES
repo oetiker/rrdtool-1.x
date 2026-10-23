@@ -10,6 +10,22 @@ Bugfixes
   when a PNG or SVG file cannot be written, `graph` no longer prints the
   image size before the error and `graphv` no longer prints the graph
   information. @oetiker
+* `PRINT` and `GPRINT` in `rrdtool graph` and `graphv` showed unknown
+  values as `-nan` on many systems, like `rrdtool fetch` did before. They
+  now always show `nan`, with the same padding as before, also with
+  `valstrftime` and `valstrfduration`. (#297) @oetiker
+* `rrdtool graph -Z` (`--use-nan-for-all-missing-data`) with a DEF naming
+  a data source the RRD file does not have drew that DEF with the values of
+  a neighbouring data source, shifted by one row, instead of leaving it
+  unknown. Such a DEF now has only unknown values, and the other DEFs on
+  the same file keep their data. @oetiker
+* `rrdtool tune` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  printed nothing and exited with status 0 when adding, removing or
+  resizing a data source or RRA failed, for example on an invalid or
+  duplicate `DS:` name, so the unchanged file looked tuned. It now prints
+  the error, e.g. "Got error Duplicate DS name: temp", and exits with
+  status 1. Python's `rrdtool.tune()` now raises an error in this case
+  too, with or without rrdcached. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker

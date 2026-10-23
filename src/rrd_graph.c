@@ -1102,10 +1102,35 @@ int data_fetch(
                 im->gdes[i].ds = ii;
             }
         }
-        if ((im->gdes[i].ds == -1) && !(im->extra_flags & ALLOW_MISSING_DS)) {
-            rrd_set_error("No DS called '%s' in '%s'",
-                          im->gdes[i].ds_nam, im->gdes[i].rrd);
-            return -1;
+        if (im->gdes[i].ds == -1) {
+            if (!(im->extra_flags & ALLOW_MISSING_DS)) {
+                rrd_set_error("No DS called '%s' in '%s'",
+                              im->gdes[i].ds_nam, im->gdes[i].rrd);
+                return -1;
+            }
+            /* The file exists but lacks this DS. Give the DEF its own
+             * all-unknown data instead of indexing the fetched rows with
+             * ds == -1, and do not cache it: other DEFs on the same file
+             * must still get the real data. */
+            if (im->gdes[i].data_first) {
+                for (ii = 0; ii < (int) im->gdes[i].ds_cnt; ii++)
+                    free(im->gdes[i].ds_namv[ii]);
+                free(im->gdes[i].ds_namv);
+                free(im->gdes[i].data);
+            }
+            im->gdes[i].ds_namv = NULL;
+            im->gdes[i].data = NULL;
+            im->gdes[i].data_first = 1;
+            if (rrd_fetch_empty(&im->gdes[i].start,
+                                &im->gdes[i].end,
+                                &im->gdes[i].step,
+                                &im->gdes[i].ds_cnt,
+                                im->gdes[i].ds_nam,
+                                &im->gdes[i].ds_namv,
+                                &im->gdes[i].data) == -1)
+                return -1;
+            im->gdes[i].ds = 0;
+            continue;
         }
         // remember that we already got this one
         g_hash_table_insert(im->rrd_map, gdes_fetch_key(im->gdes[i]),
@@ -1954,6 +1979,12 @@ int print_calc(
                     }
                 }
             }           /* prepare printval */
+
+            /* printf() shows a NaN with the sign bit set as "-nan"
+               (glibc) or "-nan(ind)" (MSVC); clear the sign so unknown
+               values print as "nan", like fetch and xport do */
+            if (isnan(printval))
+                printval = fabs(printval);
 
             if (!im->gdes[i].strftm
                 && im->gdes[i].vformatter == VALUE_FORMATTER_NUMERIC) {
