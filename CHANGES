@@ -4,6 +4,10 @@ RRDtool - master ...
 Bugfixes
 --------
 * A program that dumped an RRD through rrdcached with the client library
+  got the daemon's refusal, such as "-1 ...: failed to stat: No such file
+  or directory", written into its dump output as well as reported as the
+  error. The refusal is now only reported as the error. @oetiker
+* A program that dumped an RRD through rrdcached with the client library
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,
   also after a dump the daemon refused. @oetiker
