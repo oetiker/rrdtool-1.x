@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* The librrd manual page listed the rrdcached client calls for creating
+  with sources and for reading statistics under the wrong names, and did
+  not describe the client calls for listing, flushing all files, tuning
+  and dumping at all. All of them are documented now. @oetiker
 * `rrdtool tune --data-source-type` now resets the last value of the data
   source (`last_ds` in `rrdtool dump` shows `UNKN`) on builds without mmap,
   such as the Windows (MinGW) build. Before, the old value stayed, so the
