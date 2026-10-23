@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # rrdtool update --daemon: at-style times ("now@5", "N@5",
-# "epoch+1700000010s@5") are resolved on the client like in a local update,
+# "epoch+1700000010s@5") and negative times ("-5:1", seconds before now)
+# are resolved on the client like in a local update,
 # because rrdcached accepts numeric times only; and a value list too long
 # for one rrdcached command is sent as several commands instead of failing
 # with "No buffer space available".
@@ -43,7 +44,7 @@ trap 'kill $(cat "$PIDFILE"); rm -rf "$W"' EXIT
 sleep 1
 
 NOW=$(date +%s)
-for f in now n; do
+for f in now n rel; do
 	$RRDTOOL create "$W/base/$f.rrd" --start $((NOW - 100)) --step 1 \
 		DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
 	report "create $f.rrd"
@@ -72,6 +73,14 @@ $RRDTOOL update -d "$ADDR" n.rrd N@3:4
 report "update via daemon with N@"
 near_now n.rrd
 report "N@ resolves to the current time"
+
+$RRDTOOL update -d "$ADDR" rel.rrd -- -4:5:6 -2.5:7:8
+report "update via daemon with negative times"
+near_now rel.rrd
+report "negative times count back from the current time"
+out=$($RRDTOOL lastupdate -d "$ADDR" rel.rrd | sed -n 's/^[0-9]*: //p')
+test "$out" = "7 8"
+report "both negative-time values arrive (last values '$out')"
 
 $RRDTOOL update -d "$ADDR" epoch.rrd epoch+1700000010s@5:6 'epoch+1700000020s@7:8'
 report "update via daemon with epoch+...@"
