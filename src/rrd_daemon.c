@@ -3761,6 +3761,11 @@ static int journal_write(
     }
 
     chars = fprintf(journal_fh, "%s %s\n", cmd, args);
+    /* hand the entry to the kernel before the client gets its answer:
+     * whatever stays in the stdio buffer is lost if the daemon crashes */
+    if (fflush(journal_fh) != 0)
+        RRDD_LOG(LOG_ERR, "journal_write: cannot write the journal: %s",
+                 rrd_strerror(errno));
     journal_size += chars;
 
     if (journal_size > JOURNAL_MAX)
