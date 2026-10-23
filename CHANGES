@@ -27,6 +27,10 @@ Bugfixes
   failed with "Cannot find timestamp in 'now@1:2'!" for at-style times
   such as `now@…`, `N@…` or `epoch+1700000000s@…`. These times are now
   resolved before they are sent, the same way a local update does. @oetiker
+* rrdcached closed the connection without any answer when a client sent
+  a command line longer than 8191 bytes. It now answers "-1 Command line
+  too long (at most 8191 bytes allowed)", skips that line and keeps the
+  connection open; in a BATCH the error is listed with the others. @oetiker
 * `rrdtool update` through rrdcached with more values than fit into 4096
   bytes (a few hundred, depending on their length) failed with "Failed
   sending the values to rrdcached: No buffer space available". The values
