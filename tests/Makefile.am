@@ -7,10 +7,10 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line
+	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
-	client-header-standalone
+	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
 
@@ -49,6 +49,7 @@ check_PROGRAMS = \
 	lastupdate-v \
 	tune-legacy-version \
 	tune-daemon-error \
+	tune-legacy-aberrant \
 	client-header-standalone
 
 # compile-only: includes nothing but the installed rrd_client.h
@@ -79,6 +80,12 @@ tune_daemon_error_SOURCES = \
 	test_tune_daemon_error.c
 
 tune_daemon_error_LDADD = \
+	${top_builddir}/src/librrd.la
+
+tune_legacy_aberrant_SOURCES = \
+	test_tune_legacy_aberrant.c
+
+tune_legacy_aberrant_LDADD = \
 	${top_builddir}/src/librrd.la
 
 # Compile the real RADOS read path against a local mock; no Ceph service needed.
