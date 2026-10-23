@@ -69,28 +69,6 @@ static int set_hwsmootharg(
     enum rra_par_en rra_par,
     const char *arg);
 
-/* Write one part of the header back.  rrd_write() may return -1 or a
-   short count (a full disk without mmap); both mean the file now holds
-   only part of the change, which the caller must report. */
-static int write_header_part(
-    rrd_file_t *rrd_file,
-    const char *filename,
-    const void *buf,
-    size_t size)
-{
-    ssize_t   written = rrd_write(rrd_file, buf, size);
-
-    if (written < 0 || (size_t) written != size) {
-        int       err = errno;
-
-        if (written >= 0 || !rrd_test_error())
-            rrd_set_error("writing header of '%s' failed: %s", filename,
-                          written < 0 ? rrd_strerror(err) : "short write");
-        return -1;
-    }
-    return 0;
-}
-
 int rrd_tune(
     int argc,
     const char **argv)
@@ -201,6 +179,28 @@ done:
             rrd_set_error("error message was lost (out of memory)");
     }
     return status;
+}
+
+/* Write one part of the header back.  rrd_write() may return -1 or a
+   short count (a full disk without mmap); both mean the file now holds
+   only part of the change, which the caller must report. */
+static int write_header_part(
+    rrd_file_t *rrd_file,
+    const char *filename,
+    const void *buf,
+    size_t size)
+{
+    ssize_t   written = rrd_write(rrd_file, buf, size);
+
+    if (written < 0 || (size_t) written != size) {
+        int       err = errno;
+
+        if (written >= 0 || !rrd_test_error())
+            rrd_set_error("writing header of '%s' failed: %s", filename,
+                          written < 0 ? rrd_strerror(err) : "short write");
+        return -1;
+    }
+    return 0;
 }
 
 int rrd_tune_r(
