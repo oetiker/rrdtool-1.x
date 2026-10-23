@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool info` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  printed only the lines before a malformed line in the daemon's reply
+  and still exited with status 0. It now fails with "rrdc_info: malformed
+  line N in reply from rrdcached: '...'", quoting the line. @oetiker
 * `rrdtool graph` with PDF or EPS output printed "OOPS: Cairo has issues it
   can't even die" and exited with status 0 when a title or label was not
   valid UTF-8 or the file could not be written. It now fails with, for

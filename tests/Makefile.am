@@ -6,7 +6,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
-	security-fetch-arithmetic security-fetch-daemon-arithmetic graph-cairo-error
+	security-fetch-arithmetic security-fetch-daemon-arithmetic info-cached2 graph-cairo-error
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security
 
