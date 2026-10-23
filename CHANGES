@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* The release tarball did not contain the tests of the Python binding
+  (`bindings/python/tests`), so they could not be run from it. They are
+  included now. @oetiker
 * In the Python binding, `rrdtool.update()` returned as if it had worked
   when rrdcached could not be reached, and `rrdtool.xport()` crashed
   Python with a segmentation fault. Both now raise `OperationalError`

@@ -34,7 +34,7 @@ jobs:
     - name: Test bindings
       run: |
         (cd bindings/perl-shared && make test)
-        (cd bindings/python && sudo chown -R $USER . && python setup.py test)
+        (cd bindings/python && sudo chown -R $USER . && PYTHONPATH=/opt/rrdtool-master/lib/python3/site-packages python -m unittest discover -v -s tests -t .)
     - name: Run "rrdcached-tcp"
       continue-on-error: true
       run: |
