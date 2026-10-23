@@ -3,6 +3,12 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool graph out.csv --imgformat CSV` (also TSV, SSV, XML, XMLENUM,
+  JSON and JSONTIME) exited with status 0 and left a cut-short file
+  when the disk filled up or the file size limit was reached. It now
+  fails with "Could not write 'out.csv': No space left on device" (or
+  the matching reason) and removes the incomplete file, as it already
+  did for images. @oetiker
 * `rrdtool list` and the rrdcached `LIST` command could leak memory or
   free an invalid pointer when the system ran out of memory while
   building the file list. @oetiker

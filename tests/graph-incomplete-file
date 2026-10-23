@@ -110,10 +110,26 @@ for format in PNG SVG PDF EPS; do
         LINE1:a#ff0000:ok
 done
 
+# an export that runs past the file size limit fails and is removed;
+# 60 columns over 100 rows are well over the 1 KiB limit
+XPORTS=""
+for i in $(seq 1 60); do
+    XPORTS="$XPORTS XPORT:a:column$i"
+done
+for format in CSV TSV SSV XML XMLENUM JSON JSONTIME; do
+    lc=$(echo $format | tr A-Z a-z)
+    rm -f ${BUILD}-big.$lc
+    expect_removed "$format export past the file size limit" \
+        ${BUILD}-big.$lc \
+        small_files $RRDTOOL graph ${BUILD}-big.$lc --imgformat $format \
+        --start 1000000000 --end 1000030000 \
+        DEF:a=${BUILD}.rrd:a:AVERAGE $XPORTS
+done
+
 # an export that cannot fetch its data leaves an existing file alone
 echo old > ${BUILD}.csv
 expect_kept "CSV with a missing rrd file" ${BUILD}.csv old \
     graph ${BUILD}.csv CSV DEF:a=${BUILD}-missing.rrd:a:AVERAGE \
     LINE1:a#ff0000:ok
 
-rm -f ${BUILD}.probe ${BUILD}.csv ${BUILD}.pdf ${BUILD}.eps
+rm -f ${BUILD}.probe ${BUILD}.csv ${BUILD}.pdf ${BUILD}.eps ${BUILD}-big.*
