@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# A unix socket path longer than sizeof(sun_path) - 1 bytes used to be cut
+# short silently: rrdcached listened on, and left behind, a socket with a
+# truncated name, and the client connected to whatever listened on that
+# truncated name. Both must refuse such a path with an error instead.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no unix sockets on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+
+make_sock_dir
+D=$RRDTEST_SOCKDIR
+NAME=$(printf 'a%.0s' $(seq 1 120)).sock
+LONG=$D/$NAME
+TRUNC=${LONG:0:107}
+PIDFILE=$W/rrdcached.pid
+PIDFILE2=$W/rrdcached2.pid
+
+cleanup() {
+	for p in "$PIDFILE" "$PIDFILE2"; do
+		[ -f "$p" ] && kill $(cat "$p") 2>/dev/null
+	done
+	sleep 0.5
+	rm -f -- "$D"/a*
+	remove_sock_dir
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+echo "socket path: ${#LONG} bytes"
+
+out=$($RRDCACHED -p "$PIDFILE" -l "unix:$LONG" -b "$W" -B 2>&1)
+RC=$?
+echo "$out"
+[ $RC -ne 0 ]
+report "rrdcached refuses a ${#LONG} byte socket path"
+echo "$out" | grep -q "too long"
+report "rrdcached says the path is too long"
+sleep 0.5
+[ -z "$(find "$D" -type s)" ]
+report "rrdcached left no socket behind"
+[ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+
+# a daemon listening on the truncated name must not be reached; the cut
+# is at 107 bytes on Linux (sun_path is shorter on BSD and macOS)
+[ "$(uname -s)" = Linux ] || exit 0
+$RRDCACHED -p "$PIDFILE2" -l "unix:$TRUNC" -b "$W" -B
+report "start rrdcached on the truncated path"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+	[ -S "$TRUNC" ] && break
+	sleep 0.5
+done
+$RRDTOOL create "$W/x.rrd" --start 1300000000 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
+report "create"
+$RRDTOOL info --daemon "unix:$TRUNC" "$W/x.rrd" >/dev/null
+report "info through the daemon on the truncated path works"
+
+out=$($RRDTOOL info --daemon "unix:$LONG" "$W/x.rrd" 2>&1)
+RC=$?
+echo "$out" | head -3
+[ $RC -ne 0 ]
+report "rrdtool refuses a ${#LONG} byte socket path"
+echo "$out" | grep -q "too long"
+report "rrdtool says the path is too long"

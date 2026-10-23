@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# rrdtool update --daemon: at-style times ("now@5", "N@5",
+# "epoch+1700000010s@5") are resolved on the client like in a local update,
+# because rrdcached accepts numeric times only; and a value list too long
+# for one rrdcached command is sent as several commands instead of failing
+# with "No buffer space available".
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" "$W/local" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+
+port=$(python3 -S << HERE
+import socketserver
+s = socketserver.TCPServer(("localhost", 0), None)
+print(s.server_address[1])
+s.server_close()
+HERE
+)
+ADDR="localhost:$port"
+PIDFILE="$W/rrdcached.pid"
+
+$RRDCACHED -p "$PIDFILE" -l "$ADDR" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE"); rm -rf "$W"' EXIT
+sleep 1
+
+NOW=$(date +%s)
+for f in now n; do
+	$RRDTOOL create "$W/base/$f.rrd" --start $((NOW - 100)) --step 1 \
+		DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
+	report "create $f.rrd"
+done
+# epoch based times must lie after the start
+$RRDTOOL create "$W/base/epoch.rrd" -O --start 1700000000 --step 10 \
+	DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
+$RRDTOOL create "$W/base/tpl.rrd" -O --start 1700000000 --step 10 \
+	DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
+
+# the time lastupdate reports, and whether it is within 5s of "now"
+near_now() {
+	local t
+	t=$($RRDTOOL lastupdate -d "$ADDR" "$1" | sed -n 's/^\([0-9]*\):.*/\1/p')
+	local now=$(date +%s)
+	echo "$1: last update $t, now $now"
+	[ -n "$t" ] && [ $((now - t)) -ge 0 ] && [ $((now - t)) -le 5 ]
+}
+
+$RRDTOOL update -d "$ADDR" now.rrd now@1:2
+report "update via daemon with now@"
+near_now now.rrd
+report "now@ resolves to the current time"
+
+$RRDTOOL update -d "$ADDR" n.rrd N@3:4
+report "update via daemon with N@"
+near_now n.rrd
+report "N@ resolves to the current time"
+
+$RRDTOOL update -d "$ADDR" epoch.rrd epoch+1700000010s@5:6 'epoch+1700000020s@7:8'
+report "update via daemon with epoch+...@"
+out=$($RRDTOOL lastupdate -d "$ADDR" epoch.rrd | tr '\n' '|')
+test "$out" = " a b||1700000020: 7 8|"
+report "epoch+...@ times as in a local update (got '$out')"
+
+# a template update reads the DS names from the file itself
+(cd "$W/base" && $RRDTOOL update -d "$ADDR" -t b:a tpl.rrd epoch+1700000010s@10:9)
+report "update via daemon with template and at-style time"
+out=$($RRDTOOL lastupdate -d "$ADDR" tpl.rrd | tr '\n' '|')
+test "$out" = " a b||1700000010: 9 10|"
+report "template with at-style time (got '$out')"
+
+out=$($RRDTOOL update -d "$ADDR" now.rrd start+1@1:1 2>&1)
+RC=$?
+echo "$out"
+[ $RC -ne 0 ] && echo "$out" | grep -q "makes no sense here"
+report "time relative to start is refused as in a local update"
+
+# 1500 values in one call: far more than one rrdcached command holds
+VALUES=()
+for i in $(seq 1 1500); do
+	VALUES+=("$((1700000000 + 10 * i)):$i:$((i % 7))")
+done
+for f in long; do
+	$RRDTOOL create "$W/base/$f.rrd" --start 1700000000 --step 10 \
+		DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:2000
+	cp "$W/base/$f.rrd" "$W/local/$f.rrd"
+done
+$RRDTOOL update "$W/local/long.rrd" "${VALUES[@]}"
+report "local update with 1500 values"
+$RRDTOOL update -d "$ADDR" long.rrd "${VALUES[@]}"
+report "update via daemon with 1500 values"
+$RRDTOOL flushcached -d "$ADDR" long.rrd
+report "flush"
+$RRDTOOL fetch "$W/local/long.rrd" LAST -s 1700000000 -e 1700015000 > "$W/local.out"
+$RRDTOOL fetch "$W/base/long.rrd" LAST -s 1700000000 -e 1700015000 > "$W/cached.out"
+$DIFF "$W/local.out" "$W/cached.out"
+report "all 1500 values arrive, in order"
+n=$(grep -c '^17000[0-9]*: [1-9]' "$W/cached.out")
+[ "$n" -ge 1499 ]
+report "fetch after the daemon update shows $n known rows"
