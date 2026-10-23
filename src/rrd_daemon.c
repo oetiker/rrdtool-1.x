@@ -1937,10 +1937,15 @@ static int handle_request_dump(
     rc = buffer_get_field(&buffer, &buffer_size, &filename);
     if (rc != 0) return syntax_error(sock, cmd);
 
-    /* optional XML header type, as rrdtool dump --header takes it */
+    /* optional XML header type, as rrdtool dump --header takes it; the
+     * client sends the bare word, HELP shows it after "-h" */
     if (buffer_size > 0) {
         rc = buffer_get_field(&buffer, &buffer_size, &header);
         if (rc != 0) return syntax_error(sock, cmd);
+        if (strcmp(header, "-h") == 0) {
+            rc = buffer_get_field(&buffer, &buffer_size, &header);
+            if (rc != 0) return syntax_error(sock, cmd);
+        }
         if (header[0] == '\0' || strcmp(header, "dtd") == 0) {
             opt_header = 1;
         } else if (strcmp(header, "xsd") == 0) {

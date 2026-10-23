@@ -46,24 +46,33 @@ for opt in "--header dtd" "--header xsd" "--header none" "--no-header" ""; do
 	report -s $? "dump ${opt:-(default)} via daemon matches local dump"
 done
 
-# an unknown header type gets an error line, not a dump
-reply=$(python3 - "$SOCK" "$W/base/a.rrd" <<'PYEOF'
+# the raw protocol: the bare word as the client sends it, "-h <type>" as
+# HELP DUMP shows it, and an unknown type, which gets an error line
+dump_raw() {
+python3 - "$SOCK" "$W/base/a.rrd" "$1" <<'PYEOF'
 import socket
 import sys
 
 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 s.settimeout(10)
 s.connect(sys.argv[1])
-s.sendall(b"DUMP " + sys.argv[2].encode() + b" bogus\n")
+s.sendall(b"DUMP " + sys.argv[2].encode() + b" " + sys.argv[3].encode() + b"\n")
 buf = b""
-while b"\n" not in buf:
+# a dump ends when the daemon closes the connection, an error line at
+# its end of line
+while not (buf and buf[:1] != b"<" and b"\n" in buf):
     chunk = s.recv(65536)
     if not chunk:
         break
     buf += chunk
 sys.stdout.write(buf.decode())
 PYEOF
-)
+}
+for arg in "xsd" "-h xsd"; do
+	dump_raw "$arg" | grep -q 'xsi:schemaLocation='
+	report -s $? "DUMP <file> $arg sends the XSD header"
+done
+reply=$(dump_raw bogus)
 case "$reply" in
 	"-1 unknown header type"*) true ;;
 	*) false ;;
