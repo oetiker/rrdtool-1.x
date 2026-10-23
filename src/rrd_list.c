@@ -39,20 +39,10 @@ static char *move_past_prefix(const char *prefix, const char *string)
 
 static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 {
-#define SANE_ASPRINTF2(_dest_str, _format, ...)				\
-	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
-		if (out != NULL) {					\
-			free(out);					\
-		}							\
-		closedir(dir);						\
-		errno = ENOMEM;						\
-		return NULL;						\
-	}
-
 	struct stat st;
 	struct dirent *entry;
 	DIR *dir;
-	char *out = NULL, *out_rec, *out_short, *tmp, *ptr;
+	char *out = NULL, *out_rec = NULL, *out_short, *next, *ptr;
 	char *current = NULL, *fullpath = NULL;
 
 	dir = opendir(dirname);
@@ -98,15 +88,14 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 				continue;
 			}
 
-			if (out == NULL) {
-				SANE_ASPRINTF2(out, "%s", out_rec);
-
-			} else {
-				tmp = out;
-				SANE_ASPRINTF2(out, "%s%s", out, out_rec);
-				free(tmp);
+			if (asprintf(&next, "%s%s", out ? out : "",
+				     out_rec) == -1) {
+				goto oom;
 			}
+			free(out);
+			out = next;
 			free(out_rec);
+			out_rec = NULL;
 
 		} else {
 
@@ -133,14 +122,12 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 				out_short++;
 			}
 
-			if (out == NULL) {
-				SANE_ASPRINTF2(out, "%s\n", out_short);
-
-                        } else {
-				tmp = out;
-				SANE_ASPRINTF2(out, "%s%s\n", out, out_short);
-                                free(tmp);
-                        }
+			if (asprintf(&next, "%s%s\n", out ? out : "",
+				     out_short) == -1) {
+				goto oom;
+			}
+			free(out);
+			out = next;
 		}
 	}
 	closedir(dir);
@@ -149,20 +136,22 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 
 	errno = 0;
 	return out;
+
+oom:
+	/* asprintf leaves its target undefined on failure: free only
+	   what we still own */
+	free(out);
+	free(out_rec);
+	free(current);
+	free(fullpath);
+	closedir(dir);
+	errno = ENOMEM;
+	return NULL;
 }
 
 char *rrd_list_r(int recursive, const char *dirname)
 {
-#define SANE_ASPRINTF(_dest_str, _format, ...)				\
-	if (asprintf(&_dest_str, _format, __VA_ARGS__) == -1) {		\
-		if (out != NULL) {					\
-			free(out);					\
-		}							\
-		errno = ENOMEM;						\
-		return NULL;						\
-	}
-
-	char *out = NULL, *tmp;
+	char *out = NULL, *next;
 	glob_t buf;
 	char *ptr;
 	unsigned int i;
@@ -196,14 +185,15 @@ char *rrd_list_r(int recursive, const char *dirname)
 				continue;
 			}
 
-			if (out == NULL) {
-				SANE_ASPRINTF(out, "%s\n", ptr + 1);
-
-			} else {
-				tmp = out;
-				SANE_ASPRINTF(out, "%s%s\n", out, ptr + 1);
-				free(tmp);
+			if (asprintf(&next, "%s%s\n", out ? out : "",
+				     ptr + 1) == -1) {
+				free(out);
+				globfree(&buf);
+				errno = ENOMEM;
+				return NULL;
 			}
+			free(out);
+			out = next;
 		}
 		globfree(&buf);
 
@@ -234,7 +224,10 @@ char *rrd_list_r(int recursive, const char *dirname)
 		ptr = strrchr(dirname, '/');
 
 		if (ptr) {
-			SANE_ASPRINTF(out, "%s\n", ptr + 1);
+			if (asprintf(&out, "%s\n", ptr + 1) == -1) {
+				errno = ENOMEM;
+				return NULL;
+			}
 		} else {
 			errno = EINVAL;
 		}
