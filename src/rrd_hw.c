@@ -350,6 +350,7 @@ void reset_aberrant_coefficients(
 {
     unsigned long cdp_idx, rra_idx, i;
     unsigned long cdp_start, rra_start;
+    unsigned long value_idx = 0;
     rrd_value_t nan_buffer = DNAN;
 
     /* rrd_open() measured the header as it sits in the file.  Building
@@ -393,6 +394,15 @@ void reset_aberrant_coefficients(
                 rrd_seek(rrd_file, (rrd->stat_head->ds_cnt - 1) *
                          sizeof(rrd_value_t), SEEK_CUR);
             }
+            /* Without mmap, rows read by rrd_open() are a copy that the
+             * file writes above do not reach.  rrdtool tune hands that
+             * copy to rrd_modify when it also adds or removes DS or RRAs,
+             * so reset the copy too.  With mmap it is the file itself. */
+            if (rrd->rrd_value != NULL) {
+                for (i = 0; i < rrd->rra_def[rra_idx].row_cnt; ++i)
+                    rrd->rrd_value[value_idx + i * rrd->stat_head->ds_cnt
+                                   + ds_idx] = DNAN;
+            }
             break;
         case CF_FAILURES:
             if (erase_violations(rrd, cdp_idx, rra_idx) != 0)
@@ -404,6 +414,7 @@ void reset_aberrant_coefficients(
         /* move offset to the next rra */
         rra_start += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt *
             sizeof(rrd_value_t);
+        value_idx += rrd->rra_def[rra_idx].row_cnt * rrd->stat_head->ds_cnt;
     }
     rrd_seek(rrd_file, cdp_start, SEEK_SET);
     if (rrd_write(rrd_file, rrd->cdp_prep,

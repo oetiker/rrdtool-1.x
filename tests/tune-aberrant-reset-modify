@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# rrdtool tune --aberrant-reset together with DS: or RRA: rewrites the
+# RRD.  The rewritten file must carry the reset: the SEASONAL and
+# DEVSEASONAL rows of the reset data source are unknown afterwards.  On
+# builds without mmap the rewrite used to take the rows as read before
+# the reset.
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/tune-aberrant-reset-modify
+
+make_rrd() {
+	local i U
+	$RRDTOOL create $1 --start 1300000000 --step 60 \
+		DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:300 \
+		RRA:HWPREDICT:100:0.5:0.5:20 || fail $? "create $1"
+	U=""
+	for i in $(seq 1 120); do
+		U="$U $(( 1300000000 + 60 * i )):$(( (i % 20) * 10 ))"
+		if [ $(( i % 60 )) = 0 ]; then
+			$RRDTOOL update $1 $U || fail $? "update $1"
+			U=""
+		fi
+	done
+}
+
+# number of rows of RRA type $2 whose first value (data source a) is known
+known_rows() {
+	$RRDTOOL dump $1 | awk -v cf="<cf>$2</cf>" '
+		/<cf>/ { s = index($0, cf) > 0 }
+		s && /<row>/ { sub(/.*<row><v>/, ""); sub(/<.*/, ""); print }' \
+		| grep -vc NaN
+}
+
+make_rrd ${BUILD}-ds.rrd
+N=$(known_rows ${BUILD}-ds.rrd SEASONAL)
+[ "$N" = 20 ]
+report -s $? "SEASONAL has 20 known rows before the reset (got $N)"
+
+$RRDTOOL tune ${BUILD}-ds.rrd --aberrant-reset a DS:b:GAUGE:120:0:U \
+	|| fail $? "tune --aberrant-reset a DS:b"
+N=$(known_rows ${BUILD}-ds.rrd SEASONAL)
+[ "$N" = 0 ]
+report -s $? "reset with DS: clears SEASONAL (known rows: $N)"
+N=$(known_rows ${BUILD}-ds.rrd DEVSEASONAL)
+[ "$N" = 0 ]
+report -s $? "reset with DS: clears DEVSEASONAL (known rows: $N)"
+
+make_rrd ${BUILD}-rra.rrd
+$RRDTOOL tune ${BUILD}-rra.rrd --aberrant-reset a RRA:MAX:0.5:1:10 \
+	|| fail $? "tune --aberrant-reset a RRA:MAX"
+N=$(known_rows ${BUILD}-rra.rrd SEASONAL)
+[ "$N" = 0 ]
+report -s $? "reset with RRA: clears SEASONAL (known rows: $N)"
+N=$(known_rows ${BUILD}-rra.rrd DEVSEASONAL)
+[ "$N" = 0 ]
+report -s $? "reset with RRA: clears DEVSEASONAL (known rows: $N)"

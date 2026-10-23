@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --aberrant-reset` together with `DS:`, `DEL:` or `RRA:`
+  arguments kept the learnt seasonal values of the reset data source
+  (the SEASONAL and DEVSEASONAL rows in `rrdtool dump`) on builds without
+  mmap, such as the Windows (MinGW) build. These rows are now unknown
+  after the reset, as on other builds. @oetiker
 * In the Python binding, `rrdtool.update()` returned as if it had worked
   when rrdcached could not be reached, and `rrdtool.xport()` crashed
   Python with a segmentation fault. Both now raise `OperationalError`
