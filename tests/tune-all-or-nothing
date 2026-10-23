@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# When one option of rrdtool tune is wrong, tune must fail and leave the
+# file as it was, including the changes of the options before it.
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/tune-all-or-nothing
+
+$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60 \
+	DS:a:GAUGE:120:0:U DS:b:GAUGE:120:0:U RRA:AVERAGE:0.5:1:300 \
+	RRA:HWPREDICT:100:0.5:0.5:20 || fail $? create
+U=""
+for i in $(seq 1 120); do
+	U="$U $(( 1300000000 + 60 * i )):$(( (i % 20) * 10 )):$(( (i % 10) * 3 ))"
+	if [ $(( i % 60 )) = 0 ]; then
+		$RRDTOOL update ${BUILD}.rrd $U || fail $? update
+		U=""
+	fi
+done
+$RRDTOOL dump ${BUILD}.rrd > ${BUILD}-before.out || fail $? dump
+
+check_unchanged() {
+	$RRDTOOL dump ${BUILD}.rrd > ${BUILD}-after.out || fail $? dump
+	cmp -s ${BUILD}-before.out ${BUILD}-after.out
+}
+
+$RRDTOOL tune ${BUILD}.rrd --heartbeat a:90 --data-source-rename b:c \
+	--minimum nosuchds:0 > ${BUILD}-tune.out 2>&1
+[ $? != 0 ]
+report "tune fails on an unknown data source"
+check_unchanged
+report "a failed tune leaves heartbeat and DS name unchanged"
+
+$RRDTOOL tune ${BUILD}.rrd --aberrant-reset a --window-length 3 \
+	--alpha 2 > ${BUILD}-tune.out 2>&1
+[ $? != 0 ]
+report "tune fails on an invalid alpha"
+check_unchanged
+report "a failed tune leaves the Holt-Winters state unchanged"
+
+# the same options without the bad one still apply
+$RRDTOOL tune ${BUILD}.rrd --heartbeat a:90 --data-source-rename b:c \
+	|| fail $? "tune heartbeat/rename"
+$RRDTOOL info ${BUILD}.rrd > ${BUILD}-info.out || fail $? info
+grep -q '^ds\[a\]\.minimal_heartbeat = 90$' ${BUILD}-info.out \
+	&& grep -q '^ds\[c\]\.type' ${BUILD}-info.out
+report "a valid tune applies its changes"
