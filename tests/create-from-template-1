@@ -37,7 +37,7 @@ report createax1
 RRD_FIRST=$($RRDTOOL first ${PREFIX}ax1.rrd)
 [ $RRD_FIRST = 1299994020 ] ; report rrdtool first == $RRD_FIRST
 
-cp ${BASE}ax1.rrd ${BASE}ax1-copy.rrd
+cp ${PREFIX}ax1.rrd ${PREFIX}ax1-copy.rrd
 
 UPDATEAx1=
 V=10
