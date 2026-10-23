@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool list` and the rrdcached `LIST` command could leak memory or
+  free an invalid pointer when the system ran out of memory while
+  building the file list. @oetiker
 * When `rrdtool tune` could not reach rrdcached, the Python and .NET
   bindings reported success although nothing was tuned. tune now fails
   there like the other commands, and shows the same message, such as
