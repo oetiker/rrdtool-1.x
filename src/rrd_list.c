@@ -110,6 +110,9 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 				if (ptr == NULL || strlen(ptr) != 4) {
 					continue;
 				}
+			} else if (!S_ISDIR(st.st_mode)) {
+				/* named pipes, sockets, devices */
+				continue;
 			}
 			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
 				fullpath = NULL;

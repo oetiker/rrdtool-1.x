@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool list` and the rrdcached `LIST` command showed named pipes,
+  sockets and device files whatever their name, also with `--recursive`
+  and `LIST RECURSIVE`. They now show only directories and RRD files
+  ending in `.rrd`. @oetiker
 * A program that dumped an RRD through rrdcached with the client library
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,

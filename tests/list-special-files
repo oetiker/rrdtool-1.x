@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# "rrdtool list" and the rrdcached command "LIST" showed named pipes and
+# sockets whatever their name, because only regular files were checked
+# for the ".rrd" suffix.  Only directories and regular ".rrd" files are
+# listed now.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no named pipes or unix sockets on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+PIDFILE=$W/rrdcached.pid
+
+cleanup() {
+	[ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+	sleep 0.5
+	remove_sock_dir
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+B=$W/base
+mkdir -p "$B/sub" || fail 1 "mkdir"
+$RRDTOOL create "$B/a.rrd" --start 1300000000 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
+report "create"
+cp "$B/a.rrd" "$B/sub/b.rrd"
+mkfifo "$B/fifo" "$B/fifo.rrd" "$B/sub/fifo.rrd"
+report "mkfifo"
+# relative socket paths: the full path may be too long for a socket
+(cd "$B" && python3 -S -c '
+import socket, sys
+for p in sys.argv[1:]:
+    socket.socket(socket.AF_UNIX).bind(p)
+' sock sub/sock.rrd)
+report "create unix sockets"
+
+check() {
+	local what="$1" expected="$2"
+	shift 2
+	out=$("$@")
+	RC=$?
+	out=$(echo "$out" | LC_ALL=C sort)
+	echo "$out"
+	[ $RC = 0 ] && [ "$out" = "$expected" ]
+	report -s $? "$what"
+}
+
+check "list shows only directories and RRD files" "a.rrd
+sub" $RRDTOOL list "$B"
+check "list --recursive shows only RRD files" "a.rrd
+sub/b.rrd" $RRDTOOL list --recursive "$B"
+
+make_sock_dir
+SOCK=unix:$RRDTEST_SOCKDIR/`basename $0`.sock
+$RRDCACHED -p "$PIDFILE" -l "$SOCK" -b "$B" -B
+report "start rrdcached"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+	[ -S "${SOCK#unix:}" ] && break
+	sleep 0.5
+done
+
+check "LIST shows only directories and RRD files" "a.rrd
+sub" $RRDTOOL list --daemon "$SOCK" /
+check "LIST RECURSIVE shows only RRD files" "a.rrd
+sub/b.rrd" $RRDTOOL list --recursive --daemon "$SOCK" /
+
+test "$FAILURES" -eq 0
+report "list-special-files ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))
