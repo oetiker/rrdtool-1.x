@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* In the .NET binding, `Update()` and `Xport()` returned as if they had
+  worked when rrdcached could not be reached. They, and the other calls
+  that report success with 0, now throw `RrdException` with "Unable to
+  connect to rrdcached: ...". @oetiker
 * The librrd manual page listed the rrdcached client calls for creating
   with sources and for reading statistics under the wrong names, and did
   not describe the client calls for listing, flushing all files, tuning
