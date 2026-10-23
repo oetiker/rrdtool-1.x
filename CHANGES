@@ -135,6 +135,11 @@ Features
   and XML dumps in `fuzz/`. It needs clang and instruments the whole
   library with ASan/UBSan, so it is meant for testing, not for production
   builds. @somethingwithproof
+* librrd has a new function `rrd_lastupdate_v()`. It takes the same
+  arguments as `rrdtool lastupdate`, including `--daemon` and
+  `RRDCACHED_ADDRESS`, and returns the time and values instead of printing
+  them, so programs and language bindings no longer need to parse the
+  output. @oetiker
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================

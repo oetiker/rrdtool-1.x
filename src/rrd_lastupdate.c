@@ -14,7 +14,11 @@
 #include "rrd_client.h"
 #include <stdarg.h>
 
-int rrd_lastupdate (int argc, const char **argv)
+int rrd_lastupdate_v(int argc, const char **argv,
+        time_t *ret_last_update,
+        unsigned long *ret_ds_count,
+        char ***ret_ds_names,
+        char ***ret_last_ds)
 {
     struct optparse_long longopts[] = {
         {"daemon", 'd', OPTPARSE_REQUIRED},
@@ -22,12 +26,14 @@ int rrd_lastupdate (int argc, const char **argv)
     };
     struct    optparse options;
     int       opt;
-    time_t    last_update;
-    char    **ds_names;
-    char    **last_ds;
-    unsigned long ds_count, i;
-    int status;
-    char *opt_daemon = NULL;
+    int       status;
+    const char *filename;
+    char     *opt_daemon = NULL;
+
+    *ret_last_update = 0;
+    *ret_ds_count = 0;
+    *ret_ds_names = NULL;
+    *ret_last_ds = NULL;
 
     optparse_init(&options, argc, argv);
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
@@ -61,28 +67,47 @@ int rrd_lastupdate (int argc, const char **argv)
         }
         return (-1);
     }
+    filename = options.argv[options.optind];
 
     rrdc_connect(opt_daemon);
     if (rrdc_is_connected(opt_daemon)) {
-        status = rrdc_lastupdate(options.argv[options.optind],
-                &last_update, &ds_count, &ds_names, &last_ds);
+        status = rrdc_lastupdate(filename,
+                ret_last_update, ret_ds_count, ret_ds_names, ret_last_ds);
         if (status != 0 && strstr(rrd_get_error(), "Unknown command") != NULL) {
             /* an older rrdcached has no LASTUPDATE command:
              * flush the file and read it locally, as before */
             rrd_clear_error();
-            status = rrdc_flush_if_daemon(opt_daemon,
-                    options.argv[options.optind]);
+            status = rrdc_flush_if_daemon(opt_daemon, filename);
             if (status == 0)
-                status = rrd_lastupdate_r(options.argv[options.optind],
-                        &last_update, &ds_count, &ds_names, &last_ds);
+                status = rrd_lastupdate_r(filename, ret_last_update,
+                        ret_ds_count, ret_ds_names, ret_last_ds);
         }
     } else {
-        status = rrd_lastupdate_r(options.argv[options.optind],
-                &last_update, &ds_count, &ds_names, &last_ds);
+        status = rrd_lastupdate_r(filename, ret_last_update,
+                ret_ds_count, ret_ds_names, ret_last_ds);
     }
     if (opt_daemon != NULL) {
         free(opt_daemon);
     }
+    if (status != 0) {
+        /* the callees free their arrays on failure */
+        *ret_ds_count = 0;
+        *ret_ds_names = NULL;
+        *ret_last_ds = NULL;
+    }
+    return (status);
+} /* int rrd_lastupdate_v */
+
+int rrd_lastupdate (int argc, const char **argv)
+{
+    time_t    last_update;
+    char    **ds_names;
+    char    **last_ds;
+    unsigned long ds_count, i;
+    int status;
+
+    status = rrd_lastupdate_v(argc, argv,
+            &last_update, &ds_count, &ds_names, &last_ds);
     if (status != 0)
         return (status);
 

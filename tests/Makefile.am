@@ -43,7 +43,8 @@ CLEANFILES = *.rrd info-cached1.xml \
 
 check_PROGRAMS = \
 	compat-cloexec \
-	rrd-open-security
+	rrd-open-security \
+	lastupdate-v
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
@@ -55,6 +56,10 @@ rrd_open_security_SOURCES = \
 
 rrd_open_security_LDADD = \
 	${top_builddir}/src/librrd.la
+
+# helper for cached-lastupdate1; links the shared librrd to check the export
+lastupdate_v_SOURCES = test_lastupdate_v.c
+lastupdate_v_LDADD = ${top_builddir}/src/librrd.la
 
 # Compile the real RADOS read path against a local mock; no Ceph service needed.
 EXTRA_DIST += mock-rados/rados/librados.h security-rados-bounds
