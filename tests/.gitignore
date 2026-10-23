@@ -13,3 +13,4 @@
 /.libs/
 /graph-security
 /daemon-fetch-security
+/tune-legacy-version
