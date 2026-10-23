@@ -388,6 +388,20 @@ This function returns an rrd_info_t structure of the following format:
         struct rrd_info_t *next;
     } rrd_info_t;
 
+=item B<rrd_client_list(rrd_client_t *client, int recursive, const char *dirname)>
+
+=item B<rrdc_list(int recursive, const char *dirname)>
+
+List the directories and RRD files the daemon sees in C<dirname>, which
+the daemon resolves below its base directory (see B<-b> in
+B<rrdcached>(1)); C<"/"> is the base directory itself. With a non-zero
+C<recursive>, all RRD files in the subtree are listed. Requires a daemon
+that knows the C<LIST> command.
+
+Returns a newly allocated string with one name per line, an empty string
+if there is nothing to list, or C<NULL> on error. The caller frees the
+string with C<free>.
+
 =item B<rrd_client_last(rrd_client_t *client, const char *filename)>
 
 =item B<rrdc_last(const char *filename)>
@@ -424,7 +438,7 @@ the definitions of the data sources and RRAs C<argv>. Lastly whether or
 not to overwrite an existing RRD if one is found with the same
 filename; C<no_overwrite>.
 
-=item B<rrdc_create_r2(rrd_client_t *client, const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
+=item B<rrd_client_create_r2(rrd_client_t *client, const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
 
 =item B<rrdc_create_r2(const char *filename, unsigned long pdp_step, time_t last_up, int no_overwrite, const char **sources, const char *template, int argc, const char **argv)>
 
@@ -450,10 +464,25 @@ flush the currently RRD cached in the daemon specified via C<filename>.
 
 Drop the cached data for the RRD file specified via C<filename>.
 
+=item B<rrd_client_flushall(rrd_client_t *client)>
+
+=item B<rrdc_flushall(void)>
+
+Ask the daemon to start writing all pending updates for all files to disk.
+The daemon answers at once; the writes may finish much later. Returns 0 on
+success.
+
 =item B<rrdc_flush_if_daemon(const char *daemon_addr, const char *filename)>
 
 Flush the specified RRD given by C<filename> only if the daemon
 C<daemon_addr> is up and connected.
+
+=item B<rrdc_flushall_if_daemon(const char *daemon_addr)>
+
+Connect to the daemon C<daemon_addr> (or, if it is C<NULL>, to the one named
+by the C<RRDCACHED_ADDRESS> environment variable) and run B<rrdc_flushall>.
+Returns 0 without doing anything if no daemon is given or none can be
+reached.
 
 =item B<rrd_client_fetch(rrd_client_t *client, const char *filename, const char *cf, time_t *ret_start, time_t *ret_end, unsigned long *ret_step, unsigned long *ret_ds_num, char ***ret_ds_names, rrd_value_t **ret_data)>
 
@@ -466,7 +495,28 @@ in seconds, C<ret_ds_num> the number of data sources in the RRD, C<ret_ds_names>
 the names of the data sources, and a pointer to an rrd_value_t object to shlep the
 data.
 
-=item B<rrdc_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats)>
+=item B<rrd_client_tune(rrd_client_t *client, const char *filename, int argc, const char **argv)>
+
+=item B<rrdc_tune(const char *filename, int argc, const char **argv)>
+
+Run B<rrdtune>(1) on the RRD C<filename> inside the daemon. C<argv> holds
+the C<argc> tune options exactly as they would follow the file name on the
+B<rrdtool tune> command line, for example C<"--heartbeat"> and
+C<"in:300">. Returns 0 on success, -1 if the request could not be sent or
+the daemon reported an error.
+
+=item B<rrd_client_dump(rrd_client_t *client, const char *filename, const char *opt_header, rrd_output_callback_t output_cb, void *cb_userdata)>
+
+=item B<rrdc_dump(const char *filename, const char *opt_header, rrd_output_callback_t output_cb, void *cb_userdata)>
+
+Daemon counterpart of B<rrd_dump_cb_r>: the daemon writes pending updates
+for C<filename> and sends the XML dump of the file, which is passed on, in
+pieces, to C<output_cb> together with C<cb_userdata>. C<opt_header> is one
+of C<"none">, C<"dtd"> or C<"xsd"> and may be C<NULL>; current daemons
+ignore it and always send the DTD header. Returns 0 on success and -1 on
+error.
+
+=item B<rrd_client_stats_get(rrd_client_t *client, rrdc_stats_t **ret_stats)>
 
 =item B<rrdc_stats_get(rrdc_stats_t **ret_stats)>
 

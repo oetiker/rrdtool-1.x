@@ -678,6 +678,71 @@ error:
 	return ret;
 } /* }}} int rrd_template_update */
 
+/* --skip-past-updates through rrdcached: the daemon rejects any value
+ * that is not newer than the last one it has seen, so leave out those
+ * values here. LAST tells the time of the last update, including
+ * values still held in the daemon's cache. */
+static int rrd_skip_past_update(const char *filename,  /* {{{ */
+			int values_num,
+			const char * const *values)
+{
+	int i;
+	int kept = 0;
+	int ret = 0;
+	int convert_failed = 0;
+	char **numeric = NULL;
+	double last;
+	time_t last_t;
+
+	last_t = rrdc_last(filename);
+	if (last_t == -1) {
+		if (!rrd_test_error())
+			rrd_set_error("rrdcached: cannot get the last update "
+				"time of %s", filename);
+		return -1;
+	}
+	last = (double) last_t;
+
+	numeric = (char **) calloc(values_num > 0 ? values_num : 1,
+				   sizeof(char *));
+	if (!numeric) {
+		rrd_set_error("rrd_skip_past_update: out of memory");
+		return -1;
+	}
+	for (i = 0; i < values_num; i++) {
+		double stamp;
+		char *end;
+		char *value = rrd_client_numeric_update_value(values[i]);
+
+		if (!value) {
+			/* like a local update, keep the values before the
+			 * bad one */
+			convert_failed = 1;
+			break;
+		}
+		if (rrd_strtodbl(value, &end, &stamp, NULL) == 1
+		    && *end == ':') {
+			if (stamp <= last) {
+				free(value);
+				continue;
+			}
+			last = stamp;
+		}
+		numeric[kept++] = value;
+	}
+
+	if (kept > 0)
+		ret = rrdc_update(filename, kept,
+				  (const char * const *) numeric);
+	if (ret == 0 && convert_failed)
+		ret = -1;
+
+	for (i = 0; i < kept; i++)
+		free(numeric[i]);
+	free(numeric);
+	return ret;
+} /* }}} int rrd_skip_past_update */
+
 int rrd_update(
     int argc,
     const char **argv)
@@ -768,7 +833,12 @@ int rrd_update(
 					     options.argc - options.optind - 1, /* values_num */
 					     (const char *const *) (options.argv + options.optind + 1)); /* values */
 		}
-	} else
+	} else if ((extra_flags & RRD_SKIP_PAST_UPDATES) != 0)
+		rc = rrd_skip_past_update(
+			options.argv[options.optind], /* file */
+			options.argc - options.optind - 1, /* values_num */
+			(const char *const *) (options.argv + options.optind + 1)); /* values */
+	else
 		rc = rrdc_update (
 			options.argv[options.optind], /* file */
 			options.argc - options.optind - 1, /* values_num */

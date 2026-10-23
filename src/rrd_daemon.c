@@ -2578,7 +2578,7 @@ static int handle_request_last(
 {                       /* {{{ */
     char     *file = NULL, *pbuffile;
     int       status, rc;
-    time_t    t, from_file, step;
+    time_t    t, from_file;
     rrd_file_t *rrd_file;
     cache_item_t *ci;
     rrd_t     rrd;
@@ -2610,7 +2610,6 @@ static int handle_request_last(
         goto done;
     }
     from_file = rrd.live_head->last_up;
-    step = rrd.stat_head->pdp_step;
     rrd_close(rrd_file);
     pthread_mutex_lock(&cache_lock);
     ci = g_tree_lookup(cache_tree, file);
@@ -2619,7 +2618,6 @@ static int handle_request_last(
     else
         t = from_file;
     pthread_mutex_unlock(&cache_lock);
-    t -= t % step;
     rrd_free(&rrd);
     if (t < 1) {
         rc = send_response(sock, RESP_ERR,
