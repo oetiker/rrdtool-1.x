@@ -3,6 +3,13 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* When one option of `rrdtool tune` was wrong, for example
+  `--minimum nosuchds:0` ("unknown data source name 'nosuchds'"), tune
+  failed but kept the changes of the options before it, and an
+  `--aberrant-reset` before it had already cleared the Holt-Winters data.
+  tune now changes nothing unless all its options are valid; on builds
+  without mmap it also no longer loses the effect of `--data-source-type`,
+  `--window-length` and `--failure-threshold`. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the

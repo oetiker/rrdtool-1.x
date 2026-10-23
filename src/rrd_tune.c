@@ -75,6 +75,29 @@ static int smoothing_window_requested(
     const char **argv,
     const struct optparse_long *longopts);
 
+/* The parts of the header the tune options change.  They are tuned in
+   private copies and written to the file only when every option has been
+   accepted, so a bad option leaves the file untouched.  With mmap the
+   header rrd_open() hands out is the file itself. */
+typedef struct tune_header {
+    stat_head_t *stat_head;
+    ds_def_t *ds_def;
+    rra_def_t *rra_def;
+    pdp_prep_t *pdp_prep;
+    cdp_prep_t *cdp_prep;
+} tune_header_t;
+
+static int tune_header_copy(
+    rrd_t *rrd,
+    tune_header_t *file_header);
+static void tune_header_release(
+    rrd_t *rrd,
+    tune_header_t *file_header);
+static int tune_header_write(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    const char *filename);
+
 int rrd_tune(
     int argc,
     const char **argv)
@@ -205,6 +228,9 @@ int rrd_tune_r(
     int       rc = -1;
     int       opt_newstep = -1;
     rrd_file_t *rrd_file = NULL;
+    tune_header_t file_header = { NULL, NULL, NULL, NULL, NULL };
+    char     *aberrant_reset = NULL;
+    unsigned long reset_ds;
     char      double_str[ 41 ] = {0};
     struct optparse_long longopts[] = {
         {"heartbeat", 'h', OPTPARSE_REQUIRED},
@@ -270,6 +296,16 @@ int rrd_tune_r(
         if (rrd_file == NULL) {
             goto done;
         }
+    }
+
+    if (tune_header_copy(&rrd, &file_header) != 0)
+        goto done;
+    /* --aberrant-reset also clears data rows, so it runs once all
+       options are accepted; remember which data sources it names */
+    aberrant_reset = (char *) calloc(rrd.stat_head->ds_cnt + 1, 1);
+    if (aberrant_reset == NULL) {
+        rrd_set_error("out of memory");
+        goto done;
     }
 
     optparse_init(&options, argc, argv); /* re-initialize optparse */
@@ -431,10 +467,7 @@ int rrd_tune_r(
                 /* ds_match handles it own errors */
 		goto done;
             }
-            reset_aberrant_coefficients(&rrd, rrd_file, (unsigned long) ds);
-            if (rrd_test_error()) {
-		goto done;
-            }
+            aberrant_reset[ds] = 1;
             break;
         case 's':
             if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION4)) {
@@ -467,13 +500,15 @@ int rrd_tune_r(
         }
     }
     if (optcnt > 0) {
-        rrd_seek(rrd_file, 0, SEEK_SET);
-        rrd_write(rrd_file, rrd.stat_head, sizeof(stat_head_t) * 1);
-        rrd_write(rrd_file, rrd.ds_def,
-                  sizeof(ds_def_t) * rrd.stat_head->ds_cnt);
-        /* need to write rra_defs for RRA parameter changes */
-        rrd_write(rrd_file, rrd.rra_def,
-                  sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
+        if (tune_header_write(&rrd, rrd_file, in_filename) != 0)
+            goto done;
+        for (reset_ds = 0; reset_ds < rrd.stat_head->ds_cnt; reset_ds++) {
+            if (!aberrant_reset[reset_ds])
+                continue;
+            reset_aberrant_coefficients(&rrd, rrd_file, reset_ds);
+            if (rrd_test_error())
+                goto done;
+        }
     }
     
     if (options.optind >= options.argc) {
@@ -504,11 +539,143 @@ int rrd_tune_r(
         goto done;
     rc = 0;
 done:
+    free(aberrant_reset);
+    tune_header_release(&rrd, &file_header);
     if (rrd_file) {
 	rrd_close(rrd_file);
     }
     rrd_free(&rrd);
     return rc;
+}
+
+static void *tune_dup(
+    const void *src,
+    size_t size)
+{
+    void     *copy = malloc(size > 0 ? size : 1);
+
+    if (copy != NULL && size > 0)
+        memcpy(copy, src, size);
+    return copy;
+}
+
+/* Point rrd at private copies of the tunable header parts and keep the
+   originals in file_header. */
+static int tune_header_copy(
+    rrd_t *rrd,
+    tune_header_t *file_header)
+{
+    unsigned long ds_cnt = rrd->stat_head->ds_cnt;
+    unsigned long rra_cnt = rrd->stat_head->rra_cnt;
+    tune_header_t copy;
+
+    copy.stat_head = (stat_head_t *) tune_dup(rrd->stat_head,
+                                              sizeof(stat_head_t));
+    copy.ds_def = (ds_def_t *) tune_dup(rrd->ds_def,
+                                        sizeof(ds_def_t) * ds_cnt);
+    copy.rra_def = (rra_def_t *) tune_dup(rrd->rra_def,
+                                          sizeof(rra_def_t) * rra_cnt);
+    copy.pdp_prep = (pdp_prep_t *) tune_dup(rrd->pdp_prep,
+                                            sizeof(pdp_prep_t) * ds_cnt);
+    copy.cdp_prep = (cdp_prep_t *) tune_dup(rrd->cdp_prep,
+                                            sizeof(cdp_prep_t) * ds_cnt
+                                            * rra_cnt);
+    if (copy.stat_head == NULL || copy.ds_def == NULL
+        || copy.rra_def == NULL || copy.pdp_prep == NULL
+        || copy.cdp_prep == NULL) {
+        free(copy.stat_head);
+        free(copy.ds_def);
+        free(copy.rra_def);
+        free(copy.pdp_prep);
+        free(copy.cdp_prep);
+        rrd_set_error("out of memory");
+        return -1;
+    }
+
+    file_header->stat_head = rrd->stat_head;
+    file_header->ds_def = rrd->ds_def;
+    file_header->rra_def = rrd->rra_def;
+    file_header->pdp_prep = rrd->pdp_prep;
+    file_header->cdp_prep = rrd->cdp_prep;
+    rrd->stat_head = copy.stat_head;
+    rrd->ds_def = copy.ds_def;
+    rrd->rra_def = copy.rra_def;
+    rrd->pdp_prep = copy.pdp_prep;
+    rrd->cdp_prep = copy.cdp_prep;
+    return 0;
+}
+
+/* Drop the private copies and give rrd its own header back, so rrd_free()
+   releases what rrd_open() allocated. */
+static void tune_header_release(
+    rrd_t *rrd,
+    tune_header_t *file_header)
+{
+    if (file_header->stat_head == NULL)
+        return;
+    free(rrd->stat_head);
+    free(rrd->ds_def);
+    free(rrd->rra_def);
+    free(rrd->pdp_prep);
+    free(rrd->cdp_prep);
+    rrd->stat_head = file_header->stat_head;
+    rrd->ds_def = file_header->ds_def;
+    rrd->rra_def = file_header->rra_def;
+    rrd->pdp_prep = file_header->pdp_prep;
+    rrd->cdp_prep = file_header->cdp_prep;
+    file_header->stat_head = NULL;
+}
+
+static int tune_write_part(
+    rrd_file_t *rrd_file,
+    const char *filename,
+    const void *buf,
+    size_t size)
+{
+    if (rrd_write(rrd_file, buf, size) != (ssize_t) size) {
+        if (!rrd_test_error())
+            rrd_set_error("writing header of '%s' failed", filename);
+        return -1;
+    }
+    return 0;
+}
+
+/* Write the tuned header parts to the file.  pdp_prep and cdp_prep sit
+   right before rra_ptr at the end of the header; taking their offset
+   from header_len keeps this right for files before version 3, whose
+   live header is shorter. */
+static int tune_header_write(
+    rrd_t *rrd,
+    rrd_file_t *rrd_file,
+    const char *filename)
+{
+    unsigned long ds_cnt = rrd->stat_head->ds_cnt;
+    unsigned long rra_cnt = rrd->stat_head->rra_cnt;
+    size_t    pdp_size = sizeof(pdp_prep_t) * ds_cnt;
+    size_t    cdp_size = sizeof(cdp_prep_t) * ds_cnt * rra_cnt;
+    off_t     pdp_start = rrd_file->header_len
+        - sizeof(rra_ptr_t) * rra_cnt - cdp_size - pdp_size;
+
+    if (rrd_seek(rrd_file, 0, SEEK_SET) != 0) {
+        rrd_set_error("seek to start of '%s' failed", filename);
+        return -1;
+    }
+    if (tune_write_part(rrd_file, filename, rrd->stat_head,
+                        sizeof(stat_head_t)) != 0
+        || tune_write_part(rrd_file, filename, rrd->ds_def,
+                           sizeof(ds_def_t) * ds_cnt) != 0
+        || tune_write_part(rrd_file, filename, rrd->rra_def,
+                           sizeof(rra_def_t) * rra_cnt) != 0)
+        return -1;
+    if (rrd_seek(rrd_file, pdp_start, SEEK_SET) != 0) {
+        rrd_set_error("seek in '%s' failed", filename);
+        return -1;
+    }
+    if (tune_write_part(rrd_file, filename, rrd->pdp_prep, pdp_size) != 0
+        || tune_write_part(rrd_file, filename, rrd->cdp_prep,
+                           cdp_size) != 0)
+        return -1;
+    return 0;
 }
 
 static int set_hwarg(
