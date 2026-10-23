@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdcached -l unix:<path>` with a path longer than 107 bytes (103 on
+  BSD and macOS) listened on a socket with a cut-short name and left it
+  behind; it now refuses to start with "socket path '...' is too long".
+  rrdtool and other clients refuse such an address the same way, instead
+  of connecting to whatever listens on the cut-short name. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
