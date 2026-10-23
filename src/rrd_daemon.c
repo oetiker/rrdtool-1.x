@@ -2563,7 +2563,7 @@ static int handle_request_first(
                            rrd_get_error());
         goto done;
     }
-    rc = send_response(sock, RESP_OK, "%lu\n", (unsigned) t);
+    rc = send_response(sock, RESP_OK, "%lld\n", (long long) t);
   done:
     free(file);
     return rc;
@@ -2623,7 +2623,7 @@ static int handle_request_last(
                            "Error: rrdcached: Invalid timestamp returned\n");
         goto done;
     }
-    rc = send_response(sock, RESP_OK, "%lu\n", (unsigned) t);
+    rc = send_response(sock, RESP_OK, "%lld\n", (long long) t);
   done:
     free(file);
     return rc;
