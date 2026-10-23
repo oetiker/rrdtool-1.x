@@ -40,6 +40,10 @@
 #define ENV_RRDCACHED_ADDRESS "RRDCACHED_ADDRESS"
 #define ENV_RRDCACHED_STRIPPATH "RRDCACHED_STRIPPATH"
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 struct rrd_client;
 typedef struct rrd_client rrd_client_t;
 
@@ -178,6 +182,10 @@ int rrdc_fetch (const char *filename,
 
 int rrdc_stats_get (rrdc_stats_t **ret_stats);
 void rrdc_stats_free (rrdc_stats_t *ret_stats);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* __RRD_CLIENT_H */
 /*
