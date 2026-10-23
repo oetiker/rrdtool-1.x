@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool list --recursive` and the rrdcached `LIST RECURSIVE` command
+  returned an incomplete list without any error when they ran out of
+  memory while listing a subdirectory. They now fail with "Cannot allocate
+  memory"; subdirectories that cannot be read are still skipped. @oetiker
 * A program that dumped an RRD through rrdcached with the client library
   lost its daemon connection: every later call on the same client failed
   until it connected again. The connection now stays usable after a dump,

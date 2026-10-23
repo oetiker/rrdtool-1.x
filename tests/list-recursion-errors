@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# "rrdtool list --recursive" and the rrdcached command "LIST RECURSIVE"
+# ignored a failure to list a subdirectory, so running out of memory
+# there gave an incomplete list without an error.  Out of memory is an
+# error now.  Unreadable subdirectories are still skipped.
+
+. $(dirname $0)/functions
+
+# this test calls the library and rrdtool directly: bypass the
+# rrdcached-tcp/-unix test style
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+LIST_OOM=$TOP_BUILDDIR/tests/list-oom
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+
+cleanup() {
+	chmod -R u+rwx "$W" 2>/dev/null
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+# A subdirectory whose list is about 110 kB long, next to one RRD.
+T=$W/oom
+mkdir -p "$T/sub"
+touch "$T/top.rrd"
+LONG=$(printf 'x%.0s' $(seq 1 100))
+for i in $(seq 1000 1999); do
+	touch "$T/sub/$LONG$i.rrd"
+done
+
+out=$("$LIST_OOM" "$T" 0)
+RC=$?
+[ $RC = 77 ] && exit 77
+[ $RC = 0 ] && [ $(echo "$out" | wc -l) = 1001 ]
+report -s $? "list --recursive without an allocation limit lists 1001 files"
+
+# allocations over 64 kB fail: the list of sub/ cannot be built
+out=$("$LIST_OOM" "$T" 65536)
+RC=$?
+echo "$out" | head -3
+[ $RC = 1 ]
+report -s $? "out of memory in a subdirectory is an error (rc=$RC)"
+
+# unreadable subdirectories are skipped
+if [ "$(id -u)" = 0 ] || [ -n "$MSYSTEM" ]; then
+	echo "running as root or on Windows: skipping the unreadable directory check"
+else
+	U=$W/unreadable
+	mkdir -p "$U/locked" "$U/open"
+	touch "$U/a.rrd" "$U/open/b.rrd" "$U/locked/c.rrd"
+	chmod 000 "$U/locked"
+	out=$($RRDTOOL list --recursive "$U")
+	RC=$?
+	out=$(echo "$out" | LC_ALL=C sort)
+	echo "$out"
+	[ $RC = 0 ] && [ "$out" = "a.rrd
+open/b.rrd" ]
+	report -s $? "list --recursive skips an unreadable subdirectory"
+	chmod 755 "$U/locked"
+fi
+
+test "$FAILURES" -eq 0
+report "list-recursion-errors ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))

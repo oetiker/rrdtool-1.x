@@ -29,3 +29,4 @@
 /cached/*.dump.tmp
 /cached/modify6-test*.dump
 /cached/graph-cairo-error.*
+/list-oom

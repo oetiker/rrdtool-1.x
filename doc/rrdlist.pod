@@ -41,7 +41,9 @@ disk before performing operations. This option disables cache flushing.
 
 =item B<--recursive>|B<-r>
 
-Make the list of rrd databases recursive.
+Make the list of rrd databases recursive. Subdirectories that cannot be
+read, for lack of permission, are skipped; running out of memory while
+listing a subdirectory is an error.
 
 =back
 

@@ -44,6 +44,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 	DIR *dir;
 	char *out = NULL, *out_rec = NULL, *out_short, *next, *ptr;
 	char *current = NULL, *fullpath = NULL;
+	int saved_errno;
 
 	dir = opendir(dirname);
 
@@ -69,7 +70,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 
 		if (asprintf(&current, "%s/%s", dirname, entry->d_name) < 0) {
 			current = NULL;
-			continue;
+			goto oom;
 		}
 
 		/* NOTE: stat(2) follows symlinks and gives info on target. */
@@ -80,12 +81,21 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 		if (S_ISDIR(st.st_mode) && recursive) {
 			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
 				fullpath = NULL;
-				continue;
+				goto oom;
 			}
 			out_rec = rrd_list_rec(recursive, root, fullpath);
 
 			if (out_rec == NULL) {
-				continue;
+				/* Skip an empty or unreadable subdirectory, and
+				 * one removed or replaced while we list. Any
+				 * other failure, such as running out of memory,
+				 * would leave the list incomplete. */
+				if (errno == 0 || errno == EACCES ||
+				    errno == EPERM || errno == ENOENT ||
+				    errno == ENOTDIR) {
+					continue;
+				}
+				goto fail;
 			}
 
 			if (asprintf(&next, "%s%s", out ? out : "",
@@ -113,7 +123,7 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 			}
 			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
 				fullpath = NULL;
-				continue;
+				goto oom;
 			}
 			out_short = move_past_prefix(root, fullpath);
 
@@ -138,14 +148,17 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 	return out;
 
 oom:
+	errno = ENOMEM;
+fail:
 	/* asprintf leaves its target undefined on failure: free only
 	   what we still own */
+	saved_errno = errno;
 	free(out);
 	free(out_rec);
 	free(current);
 	free(fullpath);
 	closedir(dir);
-	errno = ENOMEM;
+	errno = saved_errno;
 	return NULL;
 }
 

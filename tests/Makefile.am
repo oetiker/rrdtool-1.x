@@ -12,7 +12,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
 	tune-legacy-aberrant
 
-script_tests += security-rrdcached-response-bounds
+script_tests += security-rrdcached-response-bounds list-recursion-errors
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -49,7 +49,8 @@ check_PROGRAMS = \
 	lastupdate-v \
 	tune-legacy-version \
 	tune-daemon-error \
-	tune-legacy-aberrant
+	tune-legacy-aberrant \
+	list-oom
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
@@ -71,6 +72,10 @@ tune_legacy_version_SOURCES = \
 
 tune_legacy_version_LDADD = \
 	${top_builddir}/src/librrd.la
+
+# helper for list-recursion-errors
+list_oom_SOURCES = test_list_oom.c
+list_oom_LDADD = ${top_builddir}/src/librrd.la
 
 tune_daemon_error_SOURCES = \
 	test_tune_daemon_error.c
