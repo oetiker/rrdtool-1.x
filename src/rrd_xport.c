@@ -5,6 +5,7 @@
  ****************************************************************************/
 
 #include <sys/stat.h>
+#include <errno.h>
 #include <limits.h>
 #include <locale.h>
 
@@ -40,6 +41,7 @@ typedef struct stringbuffer_t {
     size_t    len;
     unsigned char *data;
     FILE     *file;
+    int       write_errno;  /* errno of the first failed write to file */
 } stringbuffer_t;
 static int addToBuffer(
     stringbuffer_t *,
@@ -239,7 +241,7 @@ int rrd_xport(
         if (enumds) {
             flags |= 4;
         }
-        stringbuffer_t buffer = { 0, 0, NULL, stdout };
+        stringbuffer_t buffer = { 0, 0, NULL, stdout, 0 };
         rrd_xport_format_xmljson(flags, &buffer, &im,
                                  *start, *end, *step,
                                  *col_cnt, *legend_v, *data);
@@ -473,7 +475,7 @@ int rrd_graph_xport(
     rrd_value_t *data = NULL;
 
     /* initialize buffer */
-    stringbuffer_t buffer = { 0, 0, NULL, NULL };
+    stringbuffer_t buffer = { 0, 0, NULL, NULL, 0 };
     int       removable = 0;
 
     /* check if we have a supported ggraph format */
@@ -570,7 +572,23 @@ int rrd_graph_xport(
 
     /* now do the cleanup */
     if (buffer.file) {
-        fclose(buffer.file);
+        /* a full disk may only show at the flush or the close; remove
+           the incomplete file then */
+        int       failed = 0;
+
+        if (fflush(buffer.file) != 0 && buffer.write_errno == 0) {
+            buffer.write_errno = errno;
+        }
+        if (buffer.write_errno != 0 || ferror(buffer.file)) {
+            failed = 1;
+        }
+        if (graph_fclose_write(buffer.file, im->graphfile, removable,
+                               failed)) {
+            rrd_set_error("Could not write '%s': %s", im->graphfile,
+                          rrd_strerror(buffer.write_errno ?
+                                       buffer.write_errno : errno));
+            return -1;
+        }
         buffer.file = NULL;
         im->rendered_image_size = 0;
         im->rendered_image = NULL;
@@ -595,7 +613,12 @@ static int addToBuffer(
     /* if we have got a file, then take the shortcut */
     if (sb->file) {
         sb->len += len;
-        fwrite(data, len, 1, sb->file);
+        /* not all callers check the result, so remember the first
+           error for the close */
+        if (len > 0 && fwrite(data, len, 1, sb->file) != 1
+            && sb->write_errno == 0) {
+            sb->write_errno = errno ? errno : EIO;
+        }
         return 0;
     }
     /* if buffer is 0, then initialize */
@@ -1094,9 +1117,9 @@ static int rrd_xport_format_addprints(
     image_desc_t *im)
 {
     /* initialize buffer */
-    stringbuffer_t prints = { 1024, 0, NULL, NULL };
-    stringbuffer_t rules = { 1024, 0, NULL, NULL };
-    stringbuffer_t gprints = { 4096, 0, NULL, NULL };
+    stringbuffer_t prints = { 1024, 0, NULL, NULL, 0 };
+    stringbuffer_t rules = { 1024, 0, NULL, NULL, 0 };
+    stringbuffer_t gprints = { 4096, 0, NULL, NULL, 0 };
     char      buf[256];
     char      dbuf[1024];
     double    magfact = -1; /* for unit autoscaling, see %s and %S */
