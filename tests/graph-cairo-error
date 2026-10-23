@@ -9,7 +9,14 @@
 
 require_graph
 
-BUILD=$BUILDDIR/`basename $0`
+if [ -n "$MSYSTEM" ]; then
+    # MSYS2 does not translate the POSIX path inside DEF:vname=file:...,
+    # so rrdtool.exe would not find the file. A relative path works on
+    # both sides.
+    BUILD=`basename $0`
+else
+    BUILD=$BUILDDIR/`basename $0`
+fi
 
 $RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
     DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
@@ -20,12 +27,32 @@ report update
 
 BAD=$(printf 'bad\377\376label')
 
+# rrdtool converts labels from the character set of the locale to UTF-8.
+# In a single-byte locale such as Latin-1 every byte converts and the
+# label turns valid, so use the C locale, where \377 does not convert.
+export LC_ALL=C
+
+# On Windows the label does not reach cairo as invalid UTF-8 (a PDF with
+# it is written without error): rrdtool.exe gets its arguments in the ANSI
+# code page and converts labels from that code page to UTF-8. Only the
+# steps without such a label apply there.
+if [ -n "$MSYSTEM" ]; then
+    CAN_PASS_BAD_UTF8=no
+else
+    CAN_PASS_BAD_UTF8=yes
+fi
+
 graph () {
     local file="$1" format="$2"
     shift 2
     $RRDTOOL graph "$file" --imgformat "$format" \
         --start 1000000000 --end 1000001200 \
         DEF:a=${BUILD}.rrd:a:AVERAGE "$@"
+}
+
+# stderr of the last graph call, without shell trace and pango warnings
+errors () {
+    grep -v -e '^+' -e Pango ${BUILD}.err
 }
 
 # expect a failure with the given message and no "OOPS"
@@ -35,22 +62,29 @@ expect_error () {
     "$@" > ${BUILD}.out 2> ${BUILD}.err
     rc=$?
     if [ $rc = 0 ]; then
-        fail 1 "$what: exit status 0, stderr: $(cat ${BUILD}.err)"
+        fail 1 "$what: exit status 0, stderr: $(errors)"
     elif grep -q OOPS ${BUILD}.err; then
         fail 1 "$what: printed $(grep OOPS ${BUILD}.err)"
     elif ! grep -qF "$want" ${BUILD}.err; then
-        fail 1 "$what: expected '$want', got: $(grep -v Pango ${BUILD}.err)"
+        fail 1 "$what: expected '$want', got: $(errors)"
     else
         ok "$what: $(grep -F "$want" ${BUILD}.err)"
     fi
 }
 
 for format in PDF EPS; do
-    if ! graph ${BUILD}.probe $format LINE1:a#ff0000:ok > /dev/null 2>&1; then
-        ok "no $format support, skipping"
+    if ! graph ${BUILD}.probe $format LINE1:a#ff0000:ok > /dev/null 2> ${BUILD}.err; then
+        ok "no $format support, skipping: $(errors)"
         continue
     fi
     lc=$(echo $format | tr A-Z a-z)
+    expect_error "$format to a directory that does not exist" \
+        "Could not save $lc to '${BUILD}-missing/x.$lc'" \
+        graph ${BUILD}-missing/x.$lc $format LINE1:a#ff0000:ok
+    if [ $CAN_PASS_BAD_UTF8 = no ]; then
+        ok "$format: no label can be passed as invalid UTF-8 here, skipping those steps"
+        continue
+    fi
     expect_error "$format legend not valid UTF-8" \
         "Could not save $lc to '${BUILD}.$lc': input string not valid UTF-8" \
         graph ${BUILD}.$lc $format "LINE1:a#ff0000:$BAD"
@@ -62,14 +96,14 @@ for format in PDF EPS; do
     else
         ok "$format on stdout writes nothing after the error"
     fi
-    expect_error "$format to a directory that does not exist" \
-        "Could not save $lc to '${BUILD}-missing/x.$lc'" \
-        graph ${BUILD}-missing/x.$lc $format LINE1:a#ff0000:ok
 done
 
 # PNG draws labels that are not valid UTF-8 as before
-graph ${BUILD}.png PNG "LINE1:a#ff0000:$BAD" > /dev/null 2>&1
-report "PNG with a legend not valid UTF-8 still works"
+if graph ${BUILD}.png PNG "LINE1:a#ff0000:$BAD" > /dev/null 2> ${BUILD}.err; then
+    ok "PNG with a legend not valid UTF-8 still works"
+else
+    fail 1 "PNG with a legend not valid UTF-8 failed: $(errors)"
+fi
 
 expect_error "PNG to a directory that does not exist" \
     "Could not save png to '${BUILD}-missing/x.png'" \
