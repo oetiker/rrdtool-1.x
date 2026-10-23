@@ -112,7 +112,8 @@ librrdupd_la_CFLAGS       = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrdupd_la_LDFLAGS 	  = $(MULTITHREAD_LDFLAGS)
 
 librrd_la_SOURCES         = $(RRD_C_FILES)
-librrd_la_DEPENDENCIES    = librrdupd.la
+# relink when only the exported symbol list changes
+librrd_la_DEPENDENCIES    = librrdupd.la $(srcdir)/librrd.sym
 librrd_la_LIBADD          = librrdupd.la $(ALL_LIBS) $(LIBINTL)
 librrd_la_CFLAGS          = $(AM_CFLAGS) $(MULTITHREAD_CFLAGS)
 librrd_la_LDFLAGS         = $(MULTITHREAD_LDFLAGS) -version-info @LIBVERS@
@@ -125,12 +126,19 @@ include_HEADERS	= rrd.h rrd_format.h rrd_client.h
 
 bin_PROGRAMS	= rrdtool rrdupdate
 
+# make clean only removes the programs of the current configuration, so
+# also remove an optional program built before it was disabled
+CLEANFILES =
 if BUILD_RRDCGI
 bin_PROGRAMS += rrdcgi
+else
+CLEANFILES += rrdcgi$(EXEEXT)
 endif
 
 if BUILD_RRDCACHED
 bin_PROGRAMS += rrdcached
+else
+CLEANFILES += rrdcached$(EXEEXT)
 endif
 
 rrdcgi_SOURCES	= rrd_cgi.c

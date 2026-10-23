@@ -3,6 +3,17 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `./bootstrap` in an already configured tree reran `configure` with the
+  old options and rebuilt everything; it now only generates the build
+  system. `make clean` also removes an `rrdcgi` or `rrdcached` built
+  before it was switched off with `--disable-rrdcgi` or
+  `--disable-rrdcached`. @oetiker
+* Editing only `src/librrd.sym` did not relink `librrd`, so the library
+  kept exporting the old set of functions until some source file
+  changed. @oetiker
+* In a git checkout, `git status` listed `configure`, every `Makefile.in`,
+  the helper scripts in `conftools/` and the Python wheel output as
+  untracked after a build; they are ignored now. @oetiker
 * `make check` passed the `list1` and `dump-restore` tests even when
   rrdtool failed inside them: `list1` always ended with "OK: tests with
   rrdcached", and `dump-restore` ignored a failed `update`, `dump` or
