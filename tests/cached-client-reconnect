@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# After a failed send the client connects again to its stored address.
+# When that name has several addresses and an early one refuses, the
+# client used to free the stored address, so rrd_client_address()
+# returned NULL afterwards. See test_rrd_client_reconnect.c.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# not $BUILDDIR: the rrdcached-unix test style points it elsewhere
+PROG=$TOP_BUILDDIR/tests/rrd-client-reconnect
+if [ ! -x "$PROG" ]; then
+	echo "rrd-client-reconnect was not built (rrdcached disabled)"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+RRDCACHED=$TOP_BUILDDIR/src/rrdcached
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+PIDFILE=$W/rrdcached.pid
+
+port=$(python3 -S << HERE
+import socketserver
+s = socketserver.TCPServer(("127.0.0.1", 0), None)
+print(s.server_address[1])
+s.server_close()
+HERE
+)
+
+cleanup() {
+	[ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+	sleep 0.5
+	rm -rf "$W"
+}
+trap cleanup EXIT
+
+$RRDCACHED -p "$PIDFILE" -l "127.0.0.1:$port" -b "$W" -B
+report "start rrdcached"
+sleep 1
+
+"$PROG" "$port"
+rc=$?
+if [ $rc -eq 77 ]; then
+	echo "cannot give a name several addresses here"
+	exit 77
+fi
+report -s $rc "reconnect keeps the daemon address"

@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* A program using the rrdcached client library whose connection broke
+  could not send any more file names after connecting again, when the
+  daemon's host name has several addresses and an early one refused the
+  connection: the client forgot the daemon address on the way. It now
+  keeps the address. @oetiker
 * On Windows, `rrdtool graph --lazy` redrew the graph every time when the
   file name contained non-ASCII characters (given in UTF-8); it now
   finds the existing file and leaves it alone like elsewhere. @oetiker

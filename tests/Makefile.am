@@ -7,7 +7,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line cached-last-exact create-no-overwrite functions-report cached-update-skip-past graph-lazy
+	cached-client-api cached-client-reconnect cached-journal-long cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line cached-last-exact create-no-overwrite functions-report cached-update-skip-past graph-lazy
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
 	tune-legacy-aberrant
@@ -114,6 +114,13 @@ check_PROGRAMS += rrd-client-api
 endif
 rrd_client_api_SOURCES = test_rrd_client_api.c
 rrd_client_api_LDADD = ${top_builddir}/src/librrd.la
+
+# defines its own getaddrinfo() to give one name several addresses
+if BUILD_RRDCACHED
+check_PROGRAMS += rrd-client-reconnect
+endif
+rrd_client_reconnect_SOURCES = test_rrd_client_reconnect.c
+rrd_client_reconnect_LDADD = ${top_builddir}/src/librrd.la
 
 if BUILD_RRDCACHED
 if HAVE_STATIC_LIBRRD

@@ -876,7 +876,9 @@ static int connect_unix(
     status = connect(client->sd, (struct sockaddr *) &sa, sizeof(sa));
     if (status != 0) {
         status = errno;
-        close_connection(client);
+        /* only the socket: when connecting again, `path' points into
+         * the stored address, which reconnect() still owns */
+        close_socket(client);
         return (status);
     }
 
@@ -978,7 +980,9 @@ static int connect_network(
         status = connect(client->sd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
         if (status != 0) {
             status = errno;
-            close_connection(client);
+            /* only the socket: the stored address must survive the
+             * attempt, as the next address may work */
+            close_socket(client);
             continue;
         }
         assert(status == 0);
@@ -1005,11 +1009,17 @@ static int client_connect(
 static int reconnect(
     rrd_client_t *client)
 {                       /* {{{ */
+    int       status;
+
     if ((client == NULL) || (client->sd_path == NULL))
         return -1;
 
     close_socket(client);
-    return client_connect(client, client->sd_path);
+    status = client_connect(client, client->sd_path);
+    /* as before: a client that cannot connect again forgets the address */
+    if (status != 0 || client->sd < 0)
+        close_connection(client);
+    return status;
 }                       /* }}} int reconnect */
 
 int rrd_client_connect(
