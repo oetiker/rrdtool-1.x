@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --window-length` and `--failure-threshold` did not clear
+  the recorded failures (`<history>` in `rrdtool dump`) on builds without
+  mmap, such as the Windows (MinGW) build, so old violations counted
+  against the new window. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
