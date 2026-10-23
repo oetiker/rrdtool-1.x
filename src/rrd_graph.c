@@ -35,10 +35,17 @@
 
 #if defined(_WIN32)
 #define timegm _mkgmtime
+#include <errno.h>
+#include <wchar.h>      /* _wfopen, _wstat, _wunlink */
 #if !defined(__CYGWIN__) && !defined(__CYGWIN32__)
 #include <io.h>
 #include <fcntl.h>
 #endif
+#endif
+
+#ifndef _WIN32
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #include <time.h>
@@ -429,6 +436,99 @@ enum text_prop_en text_prop_conv(
 
 #undef conv_if
 
+#ifdef _WIN32
+/* On Windows the graph file name is UTF-8, as it is for the PDF and EPS
+   files cairo opens itself; like cairo, refuse a name that is not valid
+   UTF-8. The caller frees the result with g_free(). */
+static wchar_t *graph_path_w(
+    const char *path)
+{
+    wchar_t  *wpath =
+        (wchar_t *) g_utf8_to_utf16(path, -1, NULL, NULL, NULL);
+
+    if (wpath == NULL)
+        errno = EINVAL;
+    return wpath;
+}
+#endif
+
+/* Open a graph file for writing, in binary mode or in text mode.
+   *removable tells whether the file may be removed again when the graph
+   cannot be completed: only a regular file, as seen on the handle just
+   opened, never a device or a pipe, and never through a symbolic link. */
+FILE     *graph_fopen_write(
+    const char *path,
+    int binary,
+    int *removable)
+{
+    FILE     *fd;
+
+#ifdef _WIN32
+    struct _stat st;
+    wchar_t  *wpath = graph_path_w(path);
+
+    *removable = 0;
+    if (wpath == NULL)
+        return NULL;
+    fd = _wfopen(wpath, binary ? L"wb" : L"w");
+    g_free(wpath);
+    if (fd != NULL && _fstat(_fileno(fd), &st) == 0
+        && (st.st_mode & _S_IFMT) == _S_IFREG)
+        *removable = 1;
+#else
+    struct stat st;
+    int       fdn = -1;
+    int       nofollow = 0;
+
+    (void) binary;
+    *removable = 0;
+#ifdef O_NOFOLLOW
+    fdn = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC,
+               0666);
+    nofollow = fdn >= 0;
+#endif
+    /* a symbolic link is followed as before, but never removed */
+    if (fdn < 0)
+        fdn = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+    if (fdn < 0)
+        return NULL;
+    fd = fdopen(fdn, "w");
+    if (fd == NULL) {
+        close(fdn);
+        return NULL;
+    }
+    if (nofollow && fstat(fdn, &st) == 0 && S_ISREG(st.st_mode))
+        *removable = 1;
+#endif
+    return fd;
+}
+
+/* Close a file opened by graph_fopen_write().  When writing failed or
+   the close fails, remove the file if it is removable, so that no broken
+   file is left behind.  Returns -1 on failure, 0 otherwise. */
+int graph_fclose_write(
+    FILE *fd,
+    const char *path,
+    int removable,
+    int failed)
+{
+    if (fclose(fd) != 0)
+        failed = 1;
+    if (failed && removable) {
+#ifdef _WIN32
+        wchar_t  *wpath = graph_path_w(path);
+
+        if (wpath != NULL) {
+            _wunlink(wpath);
+            g_free(wpath);
+        }
+#else
+        unlink(path);
+#endif
+    }
+    return failed ? -1 : 0;
+}
+
 int im_free(
     image_desc_t *im)
 {
@@ -438,8 +538,6 @@ int im_free(
 #endif
     if (im == NULL)
         return 0;
-
-    free(im->graphfile);
 
     if (im->daemon_addr != NULL)
         free(im->daemon_addr);
@@ -504,6 +602,12 @@ int im_free(
         }
     }
 #endif
+    /* a graph file still open here is incomplete; the surface has been
+       destroyed above, so nothing writes to it anymore */
+    if (im->graphfd != NULL)
+        graph_fclose_write(im->graphfd, im->graphfile,
+                           im->graphfd_removable, 1);
+    free(im->graphfile);
     if (im->ylegend)
         free(im->ylegend);
     if (im->title)
@@ -4009,6 +4113,16 @@ int graph_size_location(
     return 0;
 }
 
+static cairo_status_t cairo_output_file(
+    void *closure,
+    const unsigned char
+    *data,
+    unsigned int length)
+{
+    return fwrite(data, 1, length, (FILE *) closure) == length
+        ? CAIRO_STATUS_SUCCESS : CAIRO_STATUS_WRITE_ERROR;
+}
+
 static cairo_status_t cairo_output(
     void *closure,
     const unsigned char
@@ -4607,11 +4721,33 @@ int graph_paint_timestring(
     return graph_cairo_finish(im);
 }
 
+static int graph_cairo_error(
+    image_desc_t *im,
+    cairo_status_t status);
+
 int graph_cairo_setup(
     image_desc_t *im)
 {
     /* the actual graph is created by going through the individual
        graph elements and then drawing them */
+
+    /* PDF and EPS stream into the graph file, open it before anything
+       else, so a failure leaves the image state as it is */
+    if (im->graphfile != NULL && im->graphfd == NULL && (0
+#ifdef CAIRO_HAS_PDF_SURFACE
+                                                         || im->imgformat ==
+                                                         IF_PDF
+#endif
+#ifdef CAIRO_HAS_PS_SURFACE
+                                                         || im->imgformat ==
+                                                         IF_EPS
+#endif
+        )) {
+        im->graphfd = graph_fopen_write(im->graphfile, 1,
+                                        &im->graphfd_removable);
+        if (im->graphfd == NULL)
+            return graph_cairo_error(im, CAIRO_STATUS_WRITE_ERROR);
+    }
     cairo_surface_destroy(im->surface);
     switch (im->imgformat) {
     case IF_PNG:
@@ -4623,9 +4759,10 @@ int graph_cairo_setup(
 #ifdef CAIRO_HAS_PDF_SURFACE
     case IF_PDF:
         im->gridfit = 0;
-        im->surface = im->graphfile
-            ? cairo_pdf_surface_create(im->graphfile, im->ximg * im->zoom,
-                                       im->yimg * im->zoom)
+        im->surface = im->graphfd
+            ? cairo_pdf_surface_create_for_stream
+            (&cairo_output_file, im->graphfd, im->ximg * im->zoom,
+             im->yimg * im->zoom)
             : cairo_pdf_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
@@ -4633,10 +4770,10 @@ int graph_cairo_setup(
 #ifdef CAIRO_HAS_PS_SURFACE
     case IF_EPS:
         im->gridfit = 0;
-        im->surface = im->graphfile
-            ?
-            cairo_ps_surface_create(im->graphfile, im->ximg * im->zoom,
-                                    im->yimg * im->zoom)
+        im->surface = im->graphfd
+            ? cairo_ps_surface_create_for_stream
+            (&cairo_output_file, im->graphfd, im->ximg * im->zoom,
+             im->yimg * im->zoom)
             : cairo_ps_surface_create_for_stream
             (&cairo_output, im, im->ximg * im->zoom, im->yimg * im->zoom);
         break;
@@ -4733,10 +4870,24 @@ int graph_cairo_finish(
     switch (im->imgformat) {
     case IF_PNG:
     {
-        status = im->graphfile ?
-            cairo_surface_write_to_png(im->surface, im->graphfile)
-            : cairo_surface_write_to_png_stream(im->surface, &cairo_output,
-                                                im);
+        if (im->graphfile) {
+            /* open the file here rather than in cairo, so that a file
+               left incomplete by a failed write can be removed */
+            int       removable;
+            FILE     *fd = graph_fopen_write(im->graphfile, 1, &removable);
+
+            if (fd == NULL)
+                status = CAIRO_STATUS_WRITE_ERROR;
+            else {
+                status = cairo_surface_write_to_png_stream
+                    (im->surface, &cairo_output_file, fd);
+                if (graph_fclose_write(fd, im->graphfile, removable,
+                                       status != CAIRO_STATUS_SUCCESS))
+                    status = CAIRO_STATUS_WRITE_ERROR;
+            }
+        } else
+            status = cairo_surface_write_to_png_stream(im->surface,
+                                                       &cairo_output, im);
 
         if (status != CAIRO_STATUS_SUCCESS) {
             rrd_set_error("Could not save png to '%s'",
@@ -4751,13 +4902,15 @@ int graph_cairo_finish(
         if (im->svg_crisp_grid && svg_add_crisp_grid_style(im))
             return -1;
         if (im->graphfile) {
-            FILE     *fd = rrd_fopen(im->graphfile, "wbe");
-            int       failed = fd == NULL
-                || fwrite(im->rendered_image, 1, im->rendered_image_size,
-                          fd) != im->rendered_image_size;
+            int       removable;
+            FILE     *fd = graph_fopen_write(im->graphfile, 1, &removable);
+            int       failed = fd == NULL;
 
-            if (fd != NULL && fclose(fd) != 0)
-                failed = 1;
+            if (fd != NULL)
+                failed = graph_fclose_write
+                    (fd, im->graphfile, removable,
+                     fwrite(im->rendered_image, 1, im->rendered_image_size,
+                            fd) != im->rendered_image_size);
             /* like the other formats, a graph written to a file is not
                returned in memory as well */
             free(im->rendered_image);
@@ -4789,6 +4942,15 @@ int graph_cairo_finish(
             status = cairo_surface_status(im->surface);
         if (status != CAIRO_STATUS_SUCCESS)
             return graph_cairo_error(im, status);
+        if (im->graphfd != NULL) {
+            FILE     *fd = im->graphfd;
+
+            /* closed here, im_free() must not close it again */
+            im->graphfd = NULL;
+            if (graph_fclose_write(fd, im->graphfile,
+                                   im->graphfd_removable, 0))
+                return graph_cairo_error(im, CAIRO_STATUS_WRITE_ERROR);
+        }
         break;
     }
 

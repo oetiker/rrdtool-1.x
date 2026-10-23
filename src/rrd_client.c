@@ -1691,7 +1691,7 @@ time_t rrd_client_last(
         return (-1);
     }
 
-    lastup = atol(res->message);
+    lastup = (time_t) strtoll(res->message, NULL, 10);
     response_free(res);
 
     return (lastup);
@@ -1772,7 +1772,7 @@ int rrd_client_lastupdate(
     }
 
     /* The status line message contains the timestamp */
-    *ret_last_update = (time_t) atol(res->message);
+    *ret_last_update = (time_t) strtoll(res->message, NULL, 10);
     ds_count = (unsigned long) res->lines_num;
 
     *ret_ds_names = (char **) calloc(ds_count, sizeof(char *));
@@ -1915,7 +1915,7 @@ time_t rrd_client_first(
         return (-1);
     }
 
-    firstup = atol(res->message);
+    firstup = (time_t) strtoll(res->message, NULL, 10);
     response_free(res);
 
     return (firstup);

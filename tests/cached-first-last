@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# rrdtool first/last through rrdcached printed the time cut to 32 bits:
+# the daemon formatted it as an unsigned int, so times after 2106-02-07
+# (4294967296 seconds) came back wrong. Compare against the local result.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/first-last.sock"
+PIDFILE="$W/rrdcached.pid"
+
+$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+# beyond 2^32 seconds
+$RRDTOOL create "$W/base/far.rrd" --start 4300000000 --step 10 \
+	DS:a:GAUGE:20:U:U RRA:LAST:0.5:1:10
+report create
+$RRDTOOL update "$W/base/far.rrd" 4300000010:1 4300000020:2
+report "local update"
+
+for cmd in last first; do
+	local_t=$($RRDTOOL $cmd "$W/base/far.rrd")
+	cached_t=$($RRDTOOL $cmd -d "unix:$SOCK" "$W/base/far.rrd")
+	[ -n "$local_t" ] && [ "$local_t" = "$cached_t" ]
+	report -s $? "$cmd via daemon (local '$local_t', daemon '$cached_t')"
+done

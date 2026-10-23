@@ -571,7 +571,9 @@ C<E<lt>LFE<gt>> ("line feed").
 After the connection has been established, the client is expected to send a
 "command". A command consists of the command keyword, possibly some arguments,
 and a terminating newline character. For a list of commands, see
-L</"Valid Commands"> below.
+L</"Valid Commands"> below. The daemon reads at most 8191 bytes per command
+line; it answers a longer line with the error "Command line too long" and
+ignores the line.
 
 Example:
 

@@ -7,9 +7,9 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long
+	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line
 
-TESTS = $(script_tests) compat-cloexec rrd-open-security
+TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error
 
 script_tests += security-rrdcached-response-bounds
 
@@ -45,7 +45,9 @@ CLEANFILES = *.rrd info-cached1.xml \
 check_PROGRAMS = \
 	compat-cloexec \
 	rrd-open-security \
-	lastupdate-v
+	lastupdate-v \
+	tune-legacy-version \
+	tune-daemon-error
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
@@ -61,6 +63,18 @@ rrd_open_security_LDADD = \
 # helper for cached-lastupdate1; links the shared librrd to check the export
 lastupdate_v_SOURCES = test_lastupdate_v.c
 lastupdate_v_LDADD = ${top_builddir}/src/librrd.la
+
+tune_legacy_version_SOURCES = \
+	test_tune_legacy_version.c
+
+tune_legacy_version_LDADD = \
+	${top_builddir}/src/librrd.la
+
+tune_daemon_error_SOURCES = \
+	test_tune_daemon_error.c
+
+tune_daemon_error_LDADD = \
+	${top_builddir}/src/librrd.la
 
 # Compile the real RADOS read path against a local mock; no Ceph service needed.
 EXTRA_DIST += mock-rados/rados/librados.h security-rados-bounds
@@ -112,6 +126,18 @@ EXTRA_DIST += security-restore-malformed-row.xml
 CLEANFILES += security-header-counts.out
 CLEANFILES += cached/*.rrd modify6-testbefore.dump modify6-testafter.dump \
 	security-*.out security-fetch-daemon-arithmetic-cached.log
+CLEANFILES += modify6-testafter2.dump \
+	graph-cairo-error.out graph-cairo-error.err graph-cairo-error.probe \
+	graph-cairo-error.png graph-cairo-error.pdf graph-cairo-error.eps
+# with rrdcached over a unix socket the tests write into cached/; it also
+# holds tracked files, so name the scratch files one by one
+CLEANFILES += cached/graph1.output.out cached/rpn1.out cached/rpn1.output.out \
+	cached/modify5-testa1-mod.dump.tmp cached/modify5-testa2-mod.dump.tmp \
+	cached/modify6-testbefore.dump cached/modify6-testafter.dump \
+	cached/modify6-testafter2.dump \
+	cached/graph-cairo-error.out cached/graph-cairo-error.err \
+	cached/graph-cairo-error.probe cached/graph-cairo-error.png \
+	cached/graph-cairo-error.pdf cached/graph-cairo-error.eps
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH
@@ -125,3 +151,4 @@ graph_security_LDFLAGS = -static
 graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
+CLEANFILES += first-last-error.out

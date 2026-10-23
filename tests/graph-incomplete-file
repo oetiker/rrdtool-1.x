@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# When rrdtool graph fails after it has opened the output file, the
+# incomplete file must be removed. A file the call never opened, a
+# symbolic link and the output on stdout must be left alone.
+
+. $(dirname $0)/functions
+
+require_graph
+
+BUILD=$BUILDDIR/`basename $0`
+
+$RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
+    DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
+report create
+
+$RRDTOOL update ${BUILD}.rrd 1000000300:1 1000000600:2 1000000900:3
+report update
+
+BAD=$(printf 'bad\377\376label')
+
+graph () {
+    local file="$1" format="$2"
+    shift 2
+    $RRDTOOL graph "$file" --imgformat "$format" \
+        --start 1000000000 --end 1000001200 "$@"
+}
+
+# expect the command to fail and the file to be gone
+expect_removed () {
+    local what="$1" file="$2"
+    shift 2
+    if "$@" > /dev/null 2> ${BUILD}.err; then
+        fail 1 "$what: exit status 0"
+    elif [ -e "$file" ] || [ -L "$file" ]; then
+        fail 1 "$what: incomplete file '$file' left behind:" \
+            "$(ls -l "$file")"
+    else
+        ok "$what: failed and removed the file"
+    fi
+}
+
+# expect the command to fail and the file to be unchanged
+expect_kept () {
+    local what="$1" file="$2" want="$3"
+    shift 3
+    if "$@" > /dev/null 2> ${BUILD}.err; then
+        fail 1 "$what: exit status 0"
+    elif [ "$(cat "$file" 2>&1)" != "$want" ]; then
+        fail 1 "$what: '$file' changed to: $(head -c 80 "$file" 2>&1)"
+    else
+        ok "$what: failed and left '$file' alone"
+    fi
+}
+
+# a write that runs past the file size limit fails with EFBIG
+small_files () {
+    ( trap '' XFSZ; ulimit -f 1; "$@" )
+}
+
+for format in PDF EPS; do
+    if ! graph ${BUILD}.probe $format DEF:a=${BUILD}.rrd:a:AVERAGE \
+            LINE1:a#ff0000:ok > /dev/null 2>&1; then
+        ok "no $format support, skipping"
+        continue
+    fi
+    lc=$(echo $format | tr A-Z a-z)
+
+    rm -f ${BUILD}.$lc
+    expect_removed "$format legend not valid UTF-8" ${BUILD}.$lc \
+        graph ${BUILD}.$lc $format DEF:a=${BUILD}.rrd:a:AVERAGE \
+        "LINE1:a#ff0000:$BAD"
+
+    echo old > ${BUILD}.$lc
+    expect_removed "$format legend not valid UTF-8 over an old file" \
+        ${BUILD}.$lc \
+        graph ${BUILD}.$lc $format DEF:a=${BUILD}.rrd:a:AVERAGE \
+        "LINE1:a#ff0000:$BAD"
+
+    echo old > ${BUILD}.$lc
+    expect_kept "$format with a missing rrd file" ${BUILD}.$lc old \
+        graph ${BUILD}.$lc $format DEF:a=${BUILD}-missing.rrd:a:AVERAGE \
+        LINE1:a#ff0000:ok
+
+    rm -f ${BUILD}-link.$lc
+    echo old > ${BUILD}-target.$lc
+    ln -s $(basename ${BUILD}-target.$lc) ${BUILD}-link.$lc
+    graph ${BUILD}-link.$lc $format DEF:a=${BUILD}.rrd:a:AVERAGE \
+        "LINE1:a#ff0000:$BAD" > /dev/null 2>&1
+    if [ -L ${BUILD}-link.$lc ]; then
+        ok "$format through a symbolic link keeps the link"
+    else
+        fail 1 "$format through a symbolic link removed the link"
+    fi
+    rm -f ${BUILD}-link.$lc ${BUILD}-target.$lc
+done
+
+for format in PNG SVG PDF EPS; do
+    lc=$(echo $format | tr A-Z a-z)
+    if ! graph ${BUILD}.probe $format DEF:a=${BUILD}.rrd:a:AVERAGE \
+            LINE1:a#ff0000:ok > /dev/null 2>&1; then
+        ok "no $format support, skipping"
+        continue
+    fi
+    rm -f ${BUILD}-big.$lc
+    expect_removed "$format write past the file size limit" \
+        ${BUILD}-big.$lc \
+        small_files graph ${BUILD}-big.$lc $format \
+        --width 2000 --height 1000 DEF:a=${BUILD}.rrd:a:AVERAGE \
+        LINE1:a#ff0000:ok
+done
+
+# an export that cannot fetch its data leaves an existing file alone
+echo old > ${BUILD}.csv
+expect_kept "CSV with a missing rrd file" ${BUILD}.csv old \
+    graph ${BUILD}.csv CSV DEF:a=${BUILD}-missing.rrd:a:AVERAGE \
+    LINE1:a#ff0000:ok
+
+rm -f ${BUILD}.probe ${BUILD}.csv ${BUILD}.pdf ${BUILD}.eps
