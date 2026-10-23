@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# rrdtool first and last on a file that does not exist must print only
+# the error message and exit non-zero, not a "-1" timestamp on stdout.
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/`basename $0`
+OUT=${BUILD}.out
+
+rm -f -- "${BUILD}-missing.rrd"
+
+for cmd in first last; do
+	$RRDTOOL $cmd "${BUILD}-missing.rrd" > "$OUT" 2>/dev/null
+	rc=$?
+	got=$(cat "$OUT")
+	[ $rc -ne 0 ] && [ -z "$got" ]
+	report -s $? "$cmd on a missing file: exit $rc, stdout '$got'"
+done
+
+# step-aligned start: through rrdcached, last reports the end of the
+# last complete step instead of the last update time
+$RRDTOOL create "${BUILD}.rrd" --start 1300000020 --step 60 DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10
+report create
+
+got=$($RRDTOOL last "${BUILD}.rrd")
+[ "$got" = 1300000020 ]
+report -s $? "last on an existing file prints 1300000020 (got '$got')"
+
+got=$($RRDTOOL first "${BUILD}.rrd")
+[ "$got" = 1299999480 ]
+report -s $? "first on an existing file prints 1299999480 (got '$got')"

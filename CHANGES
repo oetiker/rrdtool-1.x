@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool first` and `rrdtool last` on a file they could not read printed
+  "-1" on standard output after the error message. They now print only
+  the error and exit with status 1. @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`
