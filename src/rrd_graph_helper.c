@@ -1905,11 +1905,7 @@ static int parse_shift(
         dprintf("SHIFTBY : %s (%i)\n", im->gdes[gdp->shidx].vname,
                 gdp->shidx);
     } else {
-#if SIZEOF_TIME_T == 8    /* in case of __MINGW64__, _WIN64 and _MSC_VER >= 1400 (ifndef _USE_32BIT_TIME_T) */
-        dprintf("SHIFTBY : %lli\n", gdp->shval);    /* argument 3 has type 'time_t {aka long long int}' */
-#else
-        dprintf("SHIFTBY : %li\n", gdp->shval);
-#endif
+        dprintf("SHIFTBY : %lld\n", (long long int) gdp->shval);
     }
     dprintf("=================================\n");
     /* and return */

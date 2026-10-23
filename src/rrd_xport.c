@@ -436,8 +436,8 @@ static int rrd_xport_fn(
 
             if (im->gdes[vidx].step > 0) {
                 long idx = (now - im->gdes[vidx].start) / (long) im->gdes[vidx].step;
-                long row_cnt = (long) ((im->gdes[vidx].end - im->gdes[vidx].start) / im->gdes[vidx].step);
-                if (idx >= 0 && idx < row_cnt) {
+                long src_row_cnt = (long) ((im->gdes[vidx].end - im->gdes[vidx].start) / im->gdes[vidx].step);
+                if (idx >= 0 && idx < src_row_cnt) {
                     unsigned long uidx = (unsigned long) idx;
                     if (im->gdes[vidx].ds_cnt > 0 &&
                         uidx > (ULONG_MAX - im->gdes[vidx].ds) / im->gdes[vidx].ds_cnt) {

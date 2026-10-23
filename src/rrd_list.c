@@ -77,8 +77,10 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 			continue;
 		}
 
-		if (asprintf(&current, "%s/%s", dirname, entry->d_name) < 0)
+		if (asprintf(&current, "%s/%s", dirname, entry->d_name) < 0) {
+			current = NULL;
 			continue;
+		}
 
 		/* NOTE: stat(2) follows symlinks and gives info on target. */
 		if (stat(current, &st) != 0) {
@@ -86,7 +88,10 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 		}
 
 		if (S_ISDIR(st.st_mode) && recursive) {
-			asprintf(&fullpath, "%s/%s", dirname, entry->d_name);
+			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
+				fullpath = NULL;
+				continue;
+			}
 			out_rec = rrd_list_rec(recursive, root, fullpath);
 
 			if (out_rec == NULL) {
@@ -117,7 +122,10 @@ static char *rrd_list_rec(int recursive, const char *root, const char *dirname)
 					continue;
 				}
 			}
-			asprintf(&fullpath,"%s/%s", dirname, entry->d_name);
+			if (asprintf(&fullpath, "%s/%s", dirname, entry->d_name) < 0) {
+				fullpath = NULL;
+				continue;
+			}
 			out_short = move_past_prefix(root, fullpath);
 
 			/* don't start output with a '/' */
