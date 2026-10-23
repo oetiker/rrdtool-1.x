@@ -431,22 +431,58 @@ static int buffer_add_string(
     return (0);
 }                       /* }}} int buffer_add_string */
 
-static int buffer_add_value(
-    const char *value,  /* {{{ */
-    char **buffer_ret,
-    size_t *buffer_size_ret)
-{
-    char      temp[RRD_CMD_MAX];
+/* rrdcached only accepts numeric update times ("<seconds>:<values>").
+ * Turn "N:<values>" and at-style times ("<at-time>@<values>", e.g.
+ * "now@5" or "epoch+1d@5") into that form here, on the client, with the
+ * same rules a local update uses (see parse_ds() and
+ * get_time_from_reading() in rrd_update.c): any '@' marks an at-style
+ * time, which ends at the first '@'. The time is resolved now, against
+ * this host's clock and time zone, just as a local update resolves it
+ * when it runs. Returns a newly allocated string, or NULL with the rrd
+ * error set. */
+char     *rrd_client_numeric_update_value(
+    const char *value)
+{                       /* {{{ */
+    const char *at;
+    char     *result;
 
-    if (strncmp(value, "N:", 2) == 0)
-        snprintf(temp, sizeof(temp), "%lu:%s",
-                 (unsigned long) time(NULL), value + 2);
-    else
-        strncpy(temp, value, sizeof(temp));
-    temp[sizeof(temp) - 1] = 0;
+    at = strchr(value, '@');
+    if (at != NULL) {
+        rrd_time_value_t tv;
+        char     *spec, *parse_error;
+        time_t    t;
 
-    return (buffer_add_string(temp, buffer_ret, buffer_size_ret));
-}                       /* }}} int buffer_add_value */
+        spec = strdup(value);
+        if (spec == NULL) {
+            rrd_set_error("out of memory");
+            return NULL;
+        }
+        spec[at - value] = '\0';
+        if ((parse_error = rrd_parsetime(spec, &tv)) != NULL) {
+            rrd_set_error("ds time: %s: %s", spec, parse_error);
+            free(spec);
+            return NULL;
+        }
+        if (tv.type == RELATIVE_TO_END_TIME
+            || tv.type == RELATIVE_TO_START_TIME) {
+            rrd_set_error("specifying time relative to the 'start' "
+                          "or 'end' makes no sense here: %s", spec);
+            free(spec);
+            return NULL;
+        }
+        free(spec);
+        t = mktime(&tv.tm) + tv.offset;
+        result = sprintf_alloc("%lld:%s", (long long) t, at + 1);
+    } else if (strncmp(value, "N:", 2) == 0) {
+        result = sprintf_alloc("%lu:%s", (unsigned long) time(NULL),
+                               value + 2);
+    } else {
+        result = strdup(value);
+    }
+    if (result == NULL)
+        rrd_set_error("out of memory");
+    return result;
+}                       /* }}} char *rrd_client_numeric_update_value */
 
 static int buffer_add_ulong(
     const unsigned long value,  /* {{{ */
@@ -1039,6 +1075,32 @@ void rrd_client_destroy(
     free(client);
 }                       /* }}} void rrd_client_destroy */
 
+/* Send one UPDATE command assembled in buffer (RRD_CMD_MAX bytes, of
+ * which buffer_free are unused) and return the daemon's status. */
+static int send_update_buffer(
+    rrd_client_t *client,
+    char *buffer,
+    size_t buffer_free)
+{                       /* {{{ */
+    size_t    buffer_size;
+    rrdc_response_t *res;
+    int       status;
+
+    assert(buffer_free < RRD_CMD_MAX);
+    buffer_size = RRD_CMD_MAX - buffer_free;
+    assert(buffer[buffer_size - 1] == ' ');
+    buffer[buffer_size - 1] = '\n';
+
+    res = NULL;
+    status = request(client, buffer, buffer_size, &res);
+    if (status != 0)
+        return (status);
+
+    status = res->status;
+    response_free(res);
+    return (status);
+}                       /* }}} int send_update_buffer */
+
 int rrd_client_update(
     rrd_client_t *client,
     const char *filename,   /* {{{ */
@@ -1048,11 +1110,13 @@ int rrd_client_update(
     char      buffer[RRD_CMD_MAX];
     char     *buffer_ptr;
     size_t    buffer_free;
-    size_t    buffer_size;
-    rrdc_response_t *res;
+    size_t    header_free;
     int       status;
     int       i;
+    int       queued;
+    int       convert_failed;
     char     *file_path;
+    char     *value;
 
     if (client == NULL)
         return -1;
@@ -1077,26 +1141,44 @@ int rrd_client_update(
         return (ENOBUFS);
     }
 
+    /* A command must fit into RRD_CMD_MAX bytes: that is what rrdcached
+     * keeps of it for its journal, and a line longer than its read
+     * buffer (2 * RRD_CMD_MAX) makes it drop the connection. So send
+     * long value lists as several UPDATE commands for the same file. */
+    header_free = buffer_free;
+    queued = 0;
+    convert_failed = 0;
+    status = 0;
     for (i = 0; i < values_num; i++) {
-        status = buffer_add_value(values[i], &buffer_ptr, &buffer_free);
-        if (status != 0) {
-            return (ENOBUFS);
+        value = rrd_client_numeric_update_value(values[i]);
+        if (value == NULL) {
+            /* like a local update, keep the values before the bad one */
+            convert_failed = 1;
+            break;
         }
+        status = buffer_add_string(value, &buffer_ptr, &buffer_free);
+        if (status != 0 && queued > 0) {
+            status = send_update_buffer(client, buffer, buffer_free);
+            buffer_ptr = buffer + sizeof(buffer) - header_free;
+            buffer_free = header_free;
+            queued = 0;
+            if (status == 0)
+                status = buffer_add_string(value, &buffer_ptr, &buffer_free);
+            else {
+                free(value);
+                return (status);
+            }
+        }
+        free(value);
+        if (status != 0)
+            return (ENOBUFS);
+        queued++;
     }
 
-    assert(buffer_free < sizeof(buffer));
-    buffer_size = sizeof(buffer) - buffer_free;
-    assert(buffer[buffer_size - 1] == ' ');
-    buffer[buffer_size - 1] = '\n';
-
-    res = NULL;
-    status = request(client, buffer, buffer_size, &res);
-
-    if (status != 0)
-        return (status);
-
-    status = res->status;
-    response_free(res);
+    if (queued > 0 || values_num == 0)
+        status = send_update_buffer(client, buffer, buffer_free);
+    if (status == 0 && convert_failed)
+        status = -1;
 
     return (status);
 }                       /* int rrd_client_update */
