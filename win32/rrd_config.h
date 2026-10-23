@@ -64,9 +64,6 @@
 /* Define to 1 if you have the `isnan' function. */
 #define HAVE_ISNAN 1
 
-/* glib has g_regex_new since 2.14 */
-#define HAVE_G_REGEX_NEW 1
-
 /* is rrd_graph supported by this install */
 #define HAVE_RRD_GRAPH /**/
 

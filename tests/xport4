@@ -25,7 +25,7 @@ T=$((S - 3540))
 while [ $T -le $E ]; do
     $RRDTOOL update "${BUILD}.rrd" \
         $(seq -f "%.0f:1" $T 60 $((T + 59 * 60 < E ? T + 59 * 60 : E))) \
-        || break
+        || fail $? "update from $T"
     T=$((T + 60 * 60))
 done
 report "update"

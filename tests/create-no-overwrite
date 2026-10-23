@@ -24,7 +24,14 @@ function xmlfilter {
 
 ST=1300000000
 
-rm -f ${PREFIX}*.rrd ${PREFIX}*.xml
+# The rm, touch and -s checks act on the file rrdtool creates.  With
+# rrdcached over TCP that file is in the daemon's base directory.
+FILE=${PREFIX}a1.rrd
+if [ -n "$RRDCACHED_STRIPPATH" ]; then
+	FILE=$BASEDIR/$(basename $FILE)
+fi
+
+rm -f ${PREFIX}*.rrd ${PREFIX}*.xml $FILE
 $RRDTOOL create ${PREFIX}a1.rrd --no-overwrite --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2
 report create-new-RRD
 
@@ -33,22 +40,22 @@ report create-new-RRD
 report fail-using-no-overwrite-1
 
 
-rm -f ${PREFIX}a1.rrd
-touch ${PREFIX}a1.rrd
+rm -f $FILE
+touch $FILE
 ! $RRDTOOL create ${PREFIX}a1.rrd --no-overwrite --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 2>/dev/null
 report fail-using-no-overwrite-2
 
-rm -f ${PREFIX}a1.rrd
-touch ${PREFIX}a1.rrd
+rm -f $FILE
+touch $FILE
 $RRDTOOL create ${PREFIX}a1.rrd --no-overwrite --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 2>/dev/null
 [ $? = 1 ] ; report "exit code == 1"
 
-rm -f ${PREFIX}a1.rrd
-touch ${PREFIX}a1.rrd
+rm -f $FILE
+touch $FILE
 $RRDTOOL create ${PREFIX}a1.rrd --start $(($ST-1)) --step 60 DS:a:GAUGE:120:0:U  RRA:AVERAGE:0.5:1:100 RRA:AVERAGE:0.5:5:2 RRA:MIN:0.5:5:2 RRA:MAX:0.5:5:2 RRA:LAST:0.5:5:2 
 report create-using-overwrite
 
-[ -s ${PREFIX}a1.rrd ]
+[ -s $FILE ]
 report overwritten-rrd-size-larger-than-0
 
 rm -f ${PREFIX}*.rrd ${PREFIX}*.xml

@@ -4,6 +4,7 @@
 
 BASE=$BASEDIR/$(basename $0)-test
 PREFIX=$BUILDDIR/$(basename $0)-test
+STORE=$RRDDIR/$(basename $0)-test
 
 # currently, we do not properly copy cdp and pdp information, so for
 # comparison of RRD dumps, we just filter out those parts we do not
@@ -37,7 +38,7 @@ report createax1
 RRD_FIRST=$($RRDTOOL first ${PREFIX}ax1.rrd)
 [ $RRD_FIRST = 1299994020 ] ; report rrdtool first == $RRD_FIRST
 
-cp ${BASE}ax1.rrd ${BASE}ax1-copy.rrd
+cp ${STORE}ax1.rrd ${STORE}ax1-copy.rrd
 
 UPDATEAx1=
 V=10

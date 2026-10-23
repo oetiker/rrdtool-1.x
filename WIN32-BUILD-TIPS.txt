@@ -19,8 +19,8 @@ https://github.com/microsoft/vcpkg
     cd vcpkg
 
 (2) Install the headers and libraries the following way for 32-bit or 64-bit:
-    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x86-windows
-    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x64-windows
+    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib --triplet x86-windows
+    .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib --triplet x64-windows
 
 Information, how to compile using nmake, can be found here: win32/README
 
