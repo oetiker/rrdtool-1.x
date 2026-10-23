@@ -160,3 +160,28 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
+
+# The rrdcached test styles read expected output from cached/ of the build
+# directory; in the source tree cached/ holds links to the files here.  A
+# separate build directory has no such links, so copy the files there.
+check_DATA = cached-expected
+.PHONY: cached-expected
+cached-expected:
+	@if test "$(abs_srcdir)" != "$(abs_builddir)" \
+	    && test -d "$(srcdir)/cached"; then \
+	  $(MKDIR_P) cached || exit 1; \
+	  for f in `cd "$(srcdir)/cached" && ls`; do \
+	    cmp -s "$(srcdir)/cached/$$f" "cached/$$f" && continue; \
+	    rm -f "cached/$$f"; \
+	    cp "$(srcdir)/cached/$$f" "cached/$$f" || exit 1; \
+	    chmod u+w "cached/$$f"; \
+	  done; \
+	fi
+
+clean-local:
+	@if test "$(abs_srcdir)" != "$(abs_builddir)" \
+	    && test -d "$(srcdir)/cached"; then \
+	  for f in `cd "$(srcdir)/cached" && ls`; do \
+	    rm -f "cached/$$f"; \
+	  done; \
+	fi

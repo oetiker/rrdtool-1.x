@@ -19,6 +19,20 @@ if BUILD_FUZZERS
 SUBDIRS += fuzz
 endif
 
+# A separate build directory cannot share its source tree with an
+# in-place build: make finds the targets of the in-place build through
+# VPATH, takes them as up to date and never builds them here, so linking
+# the tests fails later on.  Stop at once with a clear message instead.
+BUILT_SOURCES = srcdir-check
+.PHONY: srcdir-check
+srcdir-check:
+	@if test "$(abs_srcdir)" != "$(abs_builddir)" \
+	    && test -f "$(srcdir)/config.status"; then \
+	  echo "error: $(abs_srcdir) is also configured for an in-place build;" >&2; \
+	  echo "error: run 'make distclean' there before building in $(abs_builddir)" >&2; \
+	  exit 1; \
+	fi
+
 # "make distcheck" installs into a temporary prefix, but the systemd unit
 # directory from pkg-config is absolute, so move it into that prefix.
 if HAVE_SYSTEMD

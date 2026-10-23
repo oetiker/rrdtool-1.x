@@ -3,6 +3,14 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make check TESTS_STYLE=rrdcached-tcp` (or `rrdcached-unix`) in a build
+  directory separate from the source failed modify1 to modify5, tune1,
+  tune2, rpn2 and, over a unix socket, graph1 and rpn1 with "No such file
+  or directory" for `cached/*.dump` and `cached/*.output`; they pass now.
+  When the source directory is also configured for an in-place build,
+  `make` in the separate build directory now stops with "error: ... is
+  also configured for an in-place build" instead of using the programs of
+  the source directory. @oetiker
 * In the Python binding, `rrdtool.update()` returned as if it had worked
   when rrdcached could not be reached, and `rrdtool.xport()` crashed
   Python with a segmentation fault. Both now raise `OperationalError`
