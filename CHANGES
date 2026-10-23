@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make distcheck` and `make check` in a separate build directory now
+  pass. Before, 13 tests failed with "cp: cannot stat" or "Permission
+  denied", and the install step tried to write the rrdcached systemd units
+  to `/usr/lib/systemd/system`. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
