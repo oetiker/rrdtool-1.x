@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool info` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
+  printed only the lines before a malformed line in the daemon's reply
+  and still exited with status 0. It now fails with "rrdc_info: malformed
+  line N in reply from rrdcached: '...'", quoting the line. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
