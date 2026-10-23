@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* A program that included only the installed `rrd_client.h` did not
+  compile, with errors such as "unknown type name 'rrd_info_t'" and
+  "unknown type name 'time_t'"; it first had to include `rrd.h`. The
+  header now includes what it needs. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
