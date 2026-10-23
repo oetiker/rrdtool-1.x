@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* When `rrdtool tune` could not reach rrdcached, the Python and .NET
+  bindings reported success although nothing was tuned. tune now fails
+  there like the other commands, and shows the same message, such as
+  "Unable to connect to rrdcached: No such file or directory", instead of
+  "Cannot connect to daemon". @oetiker
 * On Windows, programs linked against librrd-8.dll could not use
   `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
   The Windows build instructions no longer install the unused `pcre`

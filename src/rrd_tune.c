@@ -129,10 +129,10 @@ int rrd_tune(
     }
     
     // connect to daemon (will take care of environment variable automatically)
+    /* rrdc_connect() has set "Unable to connect to rrdcached: ..." */
     if (rrdc_connect(opt_daemon) != 0) {
-    	rrd_set_error("Cannot connect to daemon");
-    	free(opt_daemon);
-	return 1;
+        free(opt_daemon);
+        return -1;
     }
 
     if (opt_daemon) {
