@@ -8,6 +8,10 @@ Bugfixes
   `LASTUPDATE` command showed a wrong time for updates after 2106-02-07.
   They now show the same time as `rrdtool lastupdate` without the
   daemon. @oetiker
+* `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
+  with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
+  failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
+  Windows build can open and no longer depend on the locale. @oetiker
 * `rrdtool list` and the rrdcached `LIST` command could leak memory or
   free an invalid pointer when the system ran out of memory while
   building the file list. @oetiker
