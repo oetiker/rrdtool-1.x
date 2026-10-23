@@ -8,12 +8,14 @@ is_cached && exit 0
 
 BUILD=$BUILDDIR/info-cached1
 CACHED_BIN=$TOP_BUILDDIR/src/rrdcached
-SOCK=$BUILDDIR/info-cached1-rrdcached.sock
 PIDFILE=$BUILDDIR/info-cached1-rrdcached.pid
 
 # no rrdcached in this build (or on Windows): skip
 [ -n "$MSYSTEM" ] && exit 77
 [ -x "$CACHED_BIN" ] || exit 77
+
+make_sock_dir
+SOCK=$RRDTEST_SOCKDIR/info-cached1-rrdcached.sock
 
 rm -f "$BUILD.rrd" "$BUILD.xml" "$SOCK" "$PIDFILE"
 
@@ -32,7 +34,7 @@ report "local info shows empty last_ds"
 
 "$CACHED_BIN" -p "$PIDFILE" -l "unix:$SOCK" -b "$BUILDDIR" -B -F
 report "start rrdcached"
-trap 'kill $(cat "$PIDFILE") 2>/dev/null; rm -f "$PIDFILE" "$SOCK"' EXIT
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; rm -f "$PIDFILE"; remove_sock_dir' EXIT
 for i in 1 2 3 4 5 6 7 8 9 10; do
     [ -S "$SOCK" ] && break
     sleep 0.5

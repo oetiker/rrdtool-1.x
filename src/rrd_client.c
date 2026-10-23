@@ -832,6 +832,14 @@ static int connect_unix(
     assert(path != NULL);
     assert(client->sd == -1);
 
+    /* a longer path would be cut short and name a different socket */
+    if (strlen(path) >= sizeof(sa.sun_path)) {
+        rrd_set_error("socket path '%s' is too long (%lu bytes, at most "
+                      "%lu allowed)", path, (unsigned long) strlen(path),
+                      (unsigned long) (sizeof(sa.sun_path) - 1));
+        return (-1);
+    }
+
     client->sd = socket(PF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, /* protocol = */ 0);
     if (client->sd < 0) {
         status = errno;

@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdcached -l unix:<path>` with a path longer than 107 bytes (103 on
+  BSD and macOS) listened on a socket with a cut-short name and left it
+  behind; it now refuses to start with "socket path '...' is too long".
+  rrdtool and other clients refuse such an address the same way, instead
+  of connecting to whatever listens on the cut-short name. @oetiker
 * `rrdtool update` through rrdcached (`--daemon` or `RRDCACHED_ADDRESS`)
   failed with "Cannot find timestamp in 'now@1:2'!" for at-style times
   such as `now@…`, `N@…` or `epoch+1700000000s@…`. These times are now

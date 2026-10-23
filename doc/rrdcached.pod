@@ -72,6 +72,9 @@ domain socket B<must> start with a slash in the second case!
    [<hostname-or-ip>]:<port>
    <hostname-or-ipv4>:<port>
 
+The path of a UNIX domain socket can be at most 107 bytes long on Linux
+(103 on BSD and macOS); the daemon refuses to start with a longer one.
+
 Given a port without a host (e.g. C<-l :42217>) the daemon will listen
 on that port on all network interfaces.  Use C<-L> to avoid the need
 to explicitly provide the port if the default port is desired.

@@ -4096,6 +4096,23 @@ static void *connection_thread_main(
     return (NULL);
 }                       /* }}} void *connection_thread_main */
 
+/* bind(2) and connect(2) cut a unix socket path at
+ * sizeof(sun_path) - 1 bytes, so a longer path would silently name a
+ * different socket. Refuse it, with a message on stderr. */
+static int unix_socket_path_fits(
+    const char *path)
+{                       /* {{{ */
+    struct sockaddr_un sa;
+
+    if (strlen(path) < sizeof(sa.sun_path))
+        return 1;
+    fprintf(stderr, "rrdcached: socket path '%s' is too long "
+            "(%lu bytes, at most %lu allowed)\n", path,
+            (unsigned long) strlen(path),
+            (unsigned long) (sizeof(sa.sun_path) - 1));
+    return 0;
+}                       /* }}} int unix_socket_path_fits */
+
 static int open_listen_socket_unix(
     const listen_socket_t *sock)
 {                       /* {{{ */
@@ -4109,6 +4126,9 @@ static int open_listen_socket_unix(
     path = sock->addr;
     if (strncmp(path, "unix:", strlen("unix:")) == 0)
         path += strlen("unix:");
+
+    if (!unix_socket_path_fits(path))
+        return (-1);
 
     /* dirname may modify its argument */
     path_copy = strdup(path);
@@ -4927,6 +4947,18 @@ static int read_options(
                 new->addr = strdup("");
             else
                 new->addr = strdup(options.optarg);
+
+            /* refuse an over-long unix socket path before starting up */
+            if (new->addr != NULL
+                && (strncmp("unix:", new->addr, strlen("unix:")) == 0
+                    || new->addr[0] == '/')
+                && !unix_socket_path_fits(new->addr
+                                          + (new->addr[0] == '/'
+                                             ? 0 : strlen("unix:")))) {
+                free(new->addr);
+                free(new);
+                return (2);
+            }
 
             /* Add permissions to the socket {{{ */
             if (default_socket.permissions != 0) {
