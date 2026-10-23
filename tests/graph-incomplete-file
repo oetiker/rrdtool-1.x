@@ -132,4 +132,4 @@ expect_kept "CSV with a missing rrd file" ${BUILD}.csv old \
     graph ${BUILD}.csv CSV DEF:a=${BUILD}-missing.rrd:a:AVERAGE \
     LINE1:a#ff0000:ok
 
-rm -f ${BUILD}.probe ${BUILD}.csv ${BUILD}.pdf ${BUILD}.eps ${BUILD}-big.*
+rm -f ${BUILD}.probe ${BUILD}.csv ${BUILD}.pdf ${BUILD}.eps ${BUILD}-big.* ${BUILD}.err
