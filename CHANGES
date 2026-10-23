@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* A program that dumped an RRD through rrdcached with the client library
+  lost its daemon connection: every later call on the same client failed
+  until it connected again. The connection now stays usable after a dump,
+  also after a dump the daemon refused. @oetiker
 * `make dist` from a separate build directory printed "Can't open
   doc/rrdbuild.pod: No such file or directory" and went on; in the
   source directory it rewrote `doc/rrdbuild.pod` in place. It now leaves
