@@ -3,6 +3,16 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make check` passed the `list1` and `dump-restore` tests even when
+  rrdtool failed inside them: `list1` always ended with "OK: tests with
+  rrdcached", and `dump-restore` ignored a failed `update`, `dump` or
+  `restore`. Both tests now fail when any step fails. @oetiker
+* After `make check`, `git status` showed test output such as
+  `tests/graph4.pdf`, `tests/info-cached1.xml` and many files in
+  `tests/cached/` (among them a link `tmp` pointing to `/tmp`), and
+  `make clean` left some of them behind. They are now ignored and removed
+  by `make clean`, and two rrdcached tests no longer create directories
+  directly in `/tmp` but honour `TMPDIR`. @oetiker
 * `rrdtool first` and `rrdtool last` on a file they could not read printed
   "-1" on standard output after the error message. They now print only
   the error and exit with status 1. @oetiker
