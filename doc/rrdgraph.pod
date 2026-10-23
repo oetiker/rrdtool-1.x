@@ -64,6 +64,9 @@ end this in C<.png>, C<.svg> or C<.eps>, but B<RRDtool> does not enforce this.
 I<filename> can be 'C<->' to send the image to C<stdout>. In
 this case, no other output is generated.
 
+When the graph cannot be completed after B<RRDtool> has started to
+write I<filename>, the incomplete file is removed.
+
 =head2 Time range
 
 [B<-s>|B<--start> I<time>]

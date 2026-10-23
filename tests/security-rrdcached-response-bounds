@@ -20,17 +20,11 @@ command -v python3 >/dev/null 2>&1 || exit 77
 [ -n "$RRDCACHED_ADDRESS" ] && exit 77
 [ -x "$TOP_BUILDDIR/src/rrdcached" ] || exit 77
 
-# AF_UNIX socket paths are capped at ~104 bytes on BSD/macOS; a checkout
-# under a long path (e.g. a deep CI workspace, or macOS's $TMPDIR) can
-# push run_cached's default $BUILDDIR/cached/<test>-rrdcached.sock past
-# that. Point the cache base dir at a short directory under /tmp instead.
-SHORTBASE=$(mktemp -d /tmp/rc-bounds.XXXXXX) || fail 1 "mktemp failed"
-mkdir -p "$SHORTBASE/cached"
-BUILDDIR=$SHORTBASE
-
+# run_cached keeps the RRD files in $BUILDDIR/cached and puts the socket
+# into a short directory from make_sock_dir.
+mkdir -p "$BUILDDIR/cached"
 RRDCACHED_SOCK=unix
 run_cached
-trap 'stop_cached; rm -rf "$SHORTBASE"' EXIT
 
 BUILD=$BUILDDIR/$(basename $0)
 RELFILE=$(basename $0).rrd

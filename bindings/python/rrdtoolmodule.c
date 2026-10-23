@@ -1052,63 +1052,60 @@ _rrdtool_lastupdate(PyObject *Py_UNUSED(self), PyObject *args)
         return NULL;
     else if (rrdtool_argc < 2) {
         PyErr_SetString(rrdtool_ProgrammingError, "Missing filename argument");
+        destroy_args(&rrdtool_argv);
         return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS
-    status = rrd_lastupdate_r(rrdtool_argv[1],
+    status = rrd_lastupdate_v(rrdtool_argc, rrdtool_argv,
                               &last_update,
                               &ds_cnt,
                               &ds_names,
                               &last_ds);
     Py_END_ALLOW_THREADS
 
+    destroy_args(&rrdtool_argv);
+
     if (status != 0) {
         PyErr_SetString(rrdtool_OperationalError, rrd_get_error());
         rrd_clear_error();
-        ret = NULL;
-    } else {
-        /* convert last_update to Python datetime object */
-        ret = PyDict_New();
-        ds_dict = PyDict_New();
-        lastupd = PyRRD_DateTime_FromTS(last_update);
-
-        PyDict_SetItemString(ret, "date", lastupd);
-        PyDict_SetItemString(ret, "ds", ds_dict);
-
-        Py_DECREF(lastupd);
-        Py_DECREF(ds_dict);
-
-        for (i = 0; i < ds_cnt; i++) {
-            PyObject* val = Py_None;
-
-            double num;
-            if (sscanf(last_ds[i], "%lf", &num) == 1) {
-                val = PyFloat_FromDouble(num);
-            }
-
-            if (!val) {
-            	free(last_ds[i]);
-            	free(last_ds);
-            	free(ds_names);
-                return NULL;
-            }
-
-            PyDict_SetItemString(ds_dict, ds_names[i], val);
-
-            if (val != Py_None)
-                Py_DECREF(val);
-
-            free(last_ds[i]);
-            free(ds_names[i]);
-        }
-
-        free(last_ds);
-        free(ds_names);
-
+        return NULL;
     }
 
-    destroy_args(&rrdtool_argv);
+    /* convert last_update to Python datetime object */
+    ret = PyDict_New();
+    ds_dict = PyDict_New();
+    lastupd = PyRRD_DateTime_FromTS(last_update);
+
+    if (ret == NULL || ds_dict == NULL || lastupd == NULL
+        || PyDict_SetItemString(ret, "date", lastupd) != 0
+        || PyDict_SetItemString(ret, "ds", ds_dict) != 0) {
+        Py_CLEAR(ret);
+    }
+    Py_XDECREF(lastupd);
+
+    for (i = 0; i < ds_cnt; i++) {
+        if (ret != NULL) {
+            PyObject *val = Py_None;
+            double num;
+
+            if (sscanf(last_ds[i], "%lf", &num) == 1)
+                val = PyFloat_FromDouble(num);
+            else
+                Py_INCREF(val);
+
+            if (val == NULL
+                || PyDict_SetItemString(ds_dict, ds_names[i], val) != 0)
+                Py_CLEAR(ret);
+            Py_XDECREF(val);
+        }
+        free(last_ds[i]);
+        free(ds_names[i]);
+    }
+
+    free(last_ds);
+    free(ds_names);
+    Py_XDECREF(ds_dict);
 
     return ret;
 }
@@ -1243,7 +1240,7 @@ _rrdtool_fetch_cb_wrapper(
         unsigned int x = 0;
 
         while (PyDict_Next(tmp, &pos, &key, &value)) {
-            char *key_str = PyRRD_String_AS_STRING(key);
+            const char *key_str = PyRRD_String_AS_STRING(key);
 
             if (key_str == NULL) {
                 rrd_set_error("key of 'data' element from callback return "
@@ -1302,8 +1299,8 @@ _rrdtool_fetch_cb_wrapper(
 
                         if (exc_value != NULL) {
                             exc_value_str = PyObject_Str(exc_value);
-                            char *exc_str = PyRRD_String_AS_STRING(exc_value_str);
-                            rrd_set_error(exc_str);
+                            const char *exc_str = PyRRD_String_AS_STRING(exc_value_str);
+                            rrd_set_error("%s", exc_str);
                             Py_DECREF(exc_value);
                         }
 

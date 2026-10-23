@@ -15,9 +15,12 @@ function do_list_tests()
         [ "$1" == "" ] && return 1
         [ "$1" == "$LIST_DIR" ] && LIST_TEST_DIR="$1" || LIST_TEST_DIR=".$1"
 
-        list_count=`$RRDTOOL list "$LIST_TEST_DIR" 2>/dev/null | wc -l`
-        test $list_count -eq 0
-        report "empty directory $LIST_TEST_DIR returns nothing"
+        # $LIST_TEST_DIR is for file operations; rrdtool list takes "$1",
+        # which via rrdcached must start with "/".
+        list_out=`$RRDTOOL list "$1"`
+        report "list empty directory $1"
+        test -z "$list_out"
+        report "empty directory $1 returns nothing"
 
         rrd_name=`basename ${BUILD}.rrd`
         [ "$LIST_TEST_DIR" == "$LIST_DIR" ] && rrd=${BUILD}.rrd || rrd="/${rrd_name}"
@@ -94,12 +97,18 @@ if is_cached; then
         CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BUILDDIR||"`
         cd "$BASEDIR" && mkdir -p ".$CACHED_DIR"
         $RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60s DS:dv:DDERIVE:300:U:U DS:wh:DCOUNTER:300:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:10:144
+        report "create via rrdcached"
         do_list_tests "$CACHED_DIR"
 
         # rrdcached-specific tests
-        ( cd "$LIST_DIR"; ln -s /tmp ./; )
-        list_count=`$RRDTOOL list "/$CACHED_DIR" | grep -c '^tmp$'`
-        test $list_count -eq 0
+        # The link goes into the directory the daemon lists: that is
+        # $BASEDIR/$CACHED_DIR (the cwd), which is not $LIST_DIR when
+        # rrdcached runs over TCP.
+        ln -s /tmp ".$CACHED_DIR/tmp"
+        report "symlink to /tmp in the listed directory"
+        list_out=`$RRDTOOL list "/$CACHED_DIR"`
+        report "list directory with a symlink to /tmp"
+        ! grep -q '^tmp$' <<< "$list_out"
         report "escape from cached basedir via symlink denied"
 
         rm -rf ".$CACHED_DIR"
@@ -108,4 +117,8 @@ if is_cached; then
 else
         echo "rrdcached not started - skipping"
 fi
-report "tests with rrdcached"
+# Every check above reports on its own; this one sums them up for runs
+# with CONTINUE or INTERACTIVE set, where a failed check does not exit.
+test "$FAILURES" -eq 0
+report "list tests ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))

@@ -93,10 +93,15 @@ function verbose_rrdtool {
 	"$RRDTOOL_V" "$@"
 }
 
+# Number of failed checks so far.  fail exits at once unless CONTINUE
+# or INTERACTIVE is set; then a test can use FAILURES for its result.
+FAILURES=0
+
 function fail {
 	RC="$1"
 	shift
 
+	FAILURES=$((FAILURES + 1))
 	echo >&2 "FAILED: (rc=$RC)" "$@"
 	if [ -n "$CONTINUE" ] ; then
 		return

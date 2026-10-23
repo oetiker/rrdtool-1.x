@@ -8,4 +8,6 @@ else
 	libtoolize
 fi
 
-autoreconf --force --install --verbose -I m4 --make
+# Only generate the build system; run ./configure and make yourself.
+# (autoreconf --make would rerun configure and make in a configured tree.)
+autoreconf --force --install --verbose -I m4
