@@ -22,7 +22,13 @@ iFirstDayOfWeek_BAK="${iFirstDayOfWeek_key//[!0-9]/}"
 echo Current iFirstDayOfWeek="$iFirstDayOfWeek_BAK"
 reg add "HKEY_CURRENT_USER\Control Panel\International" //t REG_SZ //v iFirstDayOfWeek //d 6 //f
 
-make check || :
+# Collect the result instead of stopping here (set -e), so the registry and
+# the timezone get restored before the job fails.
+RC=0
+make check || RC=$?
+if [ "$RC" != 0 ] && [ -f tests/test-suite.log ]; then
+    cat tests/test-suite.log
+fi
 
 # Restore first day of week
 reg add "HKEY_CURRENT_USER\Control Panel\International" //t REG_SZ //v iFirstDayOfWeek //d "$iFirstDayOfWeek_BAK" //f
@@ -30,3 +36,5 @@ reg add "HKEY_CURRENT_USER\Control Panel\International" //t REG_SZ //v iFirstDay
 # Restore the timezone
 tzutil.exe //s "$TZ_BAK"
 echo Restored timezone="$(tzutil.exe //g)"
+
+exit $RC

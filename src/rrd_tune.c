@@ -474,6 +474,16 @@ int rrd_tune_r(
         /* need to write rra_defs for RRA parameter changes */
         rrd_write(rrd_file, rrd.rra_def,
                   sizeof(rra_def_t) * rrd.stat_head->rra_cnt);
+        /* --data-source-type resets last_ds in pdp_prep, which follows
+           the live header.  With mmap the change already sits in the
+           mapped file; without mmap it only exists in memory, so write
+           the live header and pdp_prep back as well. */
+        if (rrd.legacy_last_up != NULL)
+            rrd_write(rrd_file, rrd.legacy_last_up, sizeof(time_t));
+        else
+            rrd_write(rrd_file, rrd.live_head, sizeof(live_head_t));
+        rrd_write(rrd_file, rrd.pdp_prep,
+                  sizeof(pdp_prep_t) * rrd.stat_head->ds_cnt);
     }
     
     if (options.optind >= options.argc) {
