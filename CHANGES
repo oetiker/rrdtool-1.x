@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool first` and `rrdtool last` on a file they could not read printed
+  "-1" on standard output after the error message. They now print only
+  the error and exit with status 1. @oetiker
 * `rrdtool tune --smoothing-window` or `--smoothing-window-deviation` on
   an RRD from before format version 0003 relabelled it as version 0004
   without converting it, so every later command failed with "... is too

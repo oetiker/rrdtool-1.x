@@ -733,13 +733,20 @@ static int HandleInputLine(
 #endif
     else if (strcmp("resize", argv[1]) == 0)
         rrd_resize(argc - 1, &argv[1]);
-    else if (strcmp("last", argv[1]) == 0)
-        printf("%lld\n", (long long int) rrd_last(argc - 1, &argv[1]));
-    else if (strcmp("lastupdate", argv[1]) == 0) {
+    else if (strcmp("last", argv[1]) == 0) {
+        time_t    ts = rrd_last(argc - 1, &argv[1]);
+
+        /* on error only the message is printed, not the -1 */
+        if (ts != -1 || !rrd_test_error())
+            printf("%lld\n", (long long int) ts);
+    } else if (strcmp("lastupdate", argv[1]) == 0) {
         rrd_lastupdate(argc - 1, &argv[1]);
-    } else if (strcmp("first", argv[1]) == 0)
-        printf("%lld\n", (long long int) rrd_first(argc - 1, &argv[1]));
-    else if (strcmp("update", argv[1]) == 0)
+    } else if (strcmp("first", argv[1]) == 0) {
+        time_t    ts = rrd_first(argc - 1, &argv[1]);
+
+        if (ts != -1 || !rrd_test_error())
+            printf("%lld\n", (long long int) ts);
+    } else if (strcmp("update", argv[1]) == 0)
         rrd_update(argc - 1, &argv[1]);
     else if (strcmp("fetch", argv[1]) == 0) {
         time_t    start, end, ti;

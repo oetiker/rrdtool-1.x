@@ -7,7 +7,7 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long cached-journal-crash cached-first-last
+	cached-client-api cached-journal-long cached-journal-crash cached-first-last first-last-error
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version
 
@@ -132,3 +132,4 @@ graph_security_LDFLAGS = -static
 graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
+CLEANFILES += first-last-error.out
