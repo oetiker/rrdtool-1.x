@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# rrdcached answered an UPDATE before the journal entry left its stdio
+# buffer. When the daemon crashed, the last few KiB of acknowledged
+# updates were missing from the journal (-j) and lost. Send a few updates,
+# kill the daemon with SIGKILL, restart it on the same journal and check
+# that every value arrives.
+
+. $(dirname $0)/functions
+
+if [ -n "$MSYSTEM" ]; then
+	echo "no rrdcached tests on Windows"
+	exit 77
+fi
+
+# this test runs its own daemon: stop the one of the rrdcached-tcp/-unix
+# test style and bypass its rrdtool wrapper
+stop_cached
+unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
+RRDCACHED="${RRDCACHED:-$TOP_BUILDDIR/src/rrdcached}"
+
+W=$BUILDDIR/`basename $0`_dir
+rm -rf "$W"
+mkdir -p "$W/base" "$W/journal" || fail 1 "mkdir $W"
+W=$(readlink -f -- "$W")
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/journal-crash.sock"
+PIDFILE="$W/rrdcached.pid"
+
+start_daemon() {
+	# -w 3600: nothing gets written to disk unless a client asks for a flush
+	$RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1 \
+		-j "$W/journal"
+}
+
+start_daemon
+report "start rrdcached"
+trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+sleep 1
+
+$RRDTOOL create "$W/base/crash.rrd" --start 1000000000 --step 1 \
+	DS:a:GAUGE:20:U:U RRA:LAST:0.5:1:100
+report create
+
+for i in 1 2 3; do
+	$RRDTOOL update -d "unix:$SOCK" "$W/base/crash.rrd" \
+		$((1000000000 + i)):$i
+	report "update $i via daemon"
+done
+
+# crash: the acknowledged values survive only in the journal
+PID=$(cat "$PIDFILE")
+kill -9 $PID
+report "kill rrdcached"
+for i in $(seq 1 50); do
+	kill -0 $PID 2>/dev/null || break
+	sleep 0.2
+done
+rm -f "$SOCK"
+
+start_daemon
+report "restart rrdcached on the journal"
+sleep 1
+
+$RRDTOOL flushcached -d "unix:$SOCK" "$W/base/crash.rrd"
+report "flush"
+
+out=$($RRDTOOL lastupdate "$W/base/crash.rrd" | tr '\n' '|')
+test "$out" = " a||1000000003: 3|"
+report "acknowledged values replayed after a crash (got '$out')"
