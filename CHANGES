@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* The librrd manual page listed the rrdcached client calls for creating
+  with sources and for reading statistics under the wrong names, and did
+  not describe the client calls for listing, flushing all files, tuning
+  and dumping at all. All of them are documented now. @oetiker
 * `make check` on Windows (MSYS2) failed the tests `graph-missing-ds`,
   with "got 'nan nan nan nan '", and `graph-cairo-error`, which also
   failed on Linux in a Latin-1 locale. The tests now pass an RRD path the
