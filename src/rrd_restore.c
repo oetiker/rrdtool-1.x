@@ -1018,8 +1018,23 @@ static int parse_tag_rra(
                               cur_rra_def->par[RRA_window_len].u_cnt);
                 return -1;
             }
+            /* Files before version 4 smooth SEASONAL and DEVSEASONAL with
+               a fixed window of 0.05, and their dumps carry no
+               <smoothing_window>.  Store 0.05 instead of leaving 0, which
+               a later lift to version 4 would read as "no smoothing". */
+            if (atoi(rrd->stat_head->version) < atoi(RRD_VERSION4)) {
+                switch (rrd_cf_conv(cur_rra_def->cf_nam)) {
+                case CF_SEASONAL:
+                case CF_DEVSEASONAL:
+                    cur_rra_def->par[RRA_seasonal_smoothing_window].u_val =
+                        0.05;
+                    break;
+                default:
+                    break;
+                }
+            }
             return status;
-        }  /* }}} */        
+        }  /* }}} */
        else {
             rrd_set_error("line %d: parse_tag_rra: Unknown tag: %s",
                           xmlTextReaderGetParserLineNumber(reader), element);

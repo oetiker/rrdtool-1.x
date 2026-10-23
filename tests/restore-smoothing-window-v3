@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# A version 0003 dump carries no <smoothing_window>: version 0003 smooths
+# every SEASONAL and DEVSEASONAL RRA with a fixed window of 0.05.  The
+# restored file must store 0.05, so that lifting it to version 0004 keeps
+# the smoothing.  The test relabels the restored file as 0004 (the layout
+# of the two versions is the same) and reads the stored window with info.
+
+. $(dirname $0)/functions
+
+NAME=$(basename $0)-test
+BUILD=$BUILDDIR/$NAME
+
+rm -f ${BUILD}a.rrd ${BUILD}r.rrd $RRDDIR/${NAME}a.xml
+$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 \
+	DS:a:GAUGE:120:0:U RRA:AVERAGE:0.5:1:100 \
+	RRA:HWPREDICT:100:0.5:0.5:20
+report create
+$RRDTOOL dump ${BUILD}a.rrd > $RRDDIR/${NAME}a.xml
+report dump
+grep -q '<version>0003</version>' $RRDDIR/${NAME}a.xml
+report "dump has version 0003"
+! grep -q smoothing_window $RRDDIR/${NAME}a.xml
+report "dump has no smoothing_window"
+$RRDTOOL restore $RRDDIR/${NAME}a.xml ${BUILD}r.rrd
+report restore
+
+# the version string follows the 4 byte cookie "RRD\0"
+printf '0004' | dd of=$RRDDIR/${NAME}r.rrd bs=1 seek=4 conv=notrunc 2>/dev/null
+report "relabel as version 0004"
+$RRDTOOL info ${BUILD}r.rrd > $RRDDIR/${NAME}r-info.out
+report info
+
+grep -q '^rrd_version = "0004"$' $RRDDIR/${NAME}r-info.out
+report "relabelled RRD has version 0004"
+grep -q '^rra\[2\]\.smoothing_window = 5\.0000000000e-02$' $RRDDIR/${NAME}r-info.out
+report "SEASONAL smoothing window is 0.05"
+grep -q '^rra\[3\]\.smoothing_window = 5\.0000000000e-02$' $RRDDIR/${NAME}r-info.out
+report "DEVSEASONAL smoothing window is 0.05"
+
+rm -f $RRDDIR/${NAME}a.xml $RRDDIR/${NAME}r-info.out

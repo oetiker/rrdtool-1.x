@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
 
 script_tests = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 graph1 graph2 graph-missing-ds rpn1 \
-	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
+	rpn2 rrdcreate dump-restore restore-smoothing-window-v3 create-with-source-1 create-with-source-2 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \

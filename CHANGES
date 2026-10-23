@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool restore` of a dump with `<version>0003</version>` stored a
+  smoothing window of 0 for the SEASONAL and DEVSEASONAL RRAs, so once the
+  file was lifted to version 0004 `rrdtool info` showed
+  `smoothing_window = 0.0000000000e+00` and smoothing was off. Restore now
+  stores the window of 0.05 that version 0003 files always use. @oetiker
 * The librrd manual page listed the rrdcached client calls for creating
   with sources and for reading statistics under the wrong names, and did
   not describe the client calls for listing, flushing all files, tuning
