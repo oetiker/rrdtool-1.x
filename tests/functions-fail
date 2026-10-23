@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# The test helpers themselves: with CONTINUE set, fail and a failing
+# report must count the failure and return nonzero, so that a test
+# ending in a failed check does not exit 0.
+
+. $(dirname $0)/functions
+
+CONTINUE=1
+
+fail 3 "deliberate failure" 2> /dev/null
+FAIL_STATUS=$?
+
+false
+report "deliberate failed report" 2> /dev/null
+REPORT_STATUS=$?
+
+unset CONTINUE
+FOUND=$FAILURES
+FAILURES=0
+
+[ "$FAIL_STATUS" -ne 0 ]
+report -s $? "fail returns nonzero under CONTINUE (got $FAIL_STATUS)"
+[ "$REPORT_STATUS" -ne 0 ]
+report -s $? "a failing report returns nonzero under CONTINUE (got $REPORT_STATUS)"
+[ "$FOUND" -eq 2 ]
+report -s $? "both failures counted (got $FOUND)"

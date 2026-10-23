@@ -19,7 +19,7 @@ BUILD="$BUILDDIR/$(basename "$0")"
 $RRDTOOL create "${BUILD}.rrd" --start 0 --step 300 \
   DS:val:GAUGE:600:U:U \
   RRA:AVERAGE:0.5:1:100 \
-  RRA:HWPREDICT:100:0.1:0.0035:20 || fail create
+  RRA:HWPREDICT:100:0.1:0.0035:20 || fail $? create
 
 # rra[5] is the FAILURES RRA rrd_create derives from the HWPREDICT period.
 # Its cf_nam is a unique "FAILURES" marker in the file; window_len is the

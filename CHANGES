@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `make check CONTINUE=1`, which runs on past a failed check, reported
+  a test as PASS when its last check had printed "FAILED:". Several
+  tests also printed "FAILED: (rc=create)" without saying what failed;
+  they now show the exit status and the step. @oetiker
 * On Windows, `rrdtool graph --lazy` redrew the graph every time when the
   file name contained non-ASCII characters (given in UTF-8); it now
   finds the existing file and leaves it alone like elsewhere. @oetiker
