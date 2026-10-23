@@ -489,7 +489,8 @@ int im_free(
             cairo_destroy(im->cr);
         }
 
-        if (status)
+        /* graph_cairo_finish() has reported the error already */
+        if (status && !rrd_test_error())
             fprintf(stderr, "OOPS: Cairo has issues it can't even die: %s\n",
                     cairo_status_to_string(status));
 
@@ -4687,15 +4688,51 @@ int graph_cairo_setup(
     return 0;
 }
 
+/* report a cairo error the way a failed write is reported */
+static int graph_cairo_error(
+    image_desc_t *im,
+    cairo_status_t status)
+{
+    const char *format;
+
+    switch (im->imgformat) {
+    case IF_PNG:
+        format = "png";
+        break;
+    case IF_SVG:
+        format = "svg";
+        break;
+    case IF_EPS:
+        format = "eps";
+        break;
+    case IF_PDF:
+        format = "pdf";
+        break;
+    default:
+        format = "graph";
+        break;
+    }
+    rrd_set_error("Could not save %s to '%s': %s", format,
+                  im->graphfile ? im->graphfile : "memory",
+                  cairo_status_to_string(status));
+    return -1;
+}
+
 int graph_cairo_finish(
     image_desc_t *im)
 {
+    cairo_status_t status;
+
+    /* a cairo error is sticky and turns all later drawing into a no-op,
+       so the picture is incomplete; for example, PDF and EPS keep the
+       label text and fail with "input string not valid UTF-8" */
+    if (im->imgformat < IF_XML
+        && (status = cairo_status(im->cr)) != CAIRO_STATUS_SUCCESS)
+        return graph_cairo_error(im, status);
 
     switch (im->imgformat) {
     case IF_PNG:
     {
-        cairo_status_t status;
-
         status = im->graphfile ?
             cairo_surface_write_to_png(im->surface, im->graphfile)
             : cairo_surface_write_to_png_stream(im->surface, &cairo_output,
@@ -4704,7 +4741,7 @@ int graph_cairo_finish(
         if (status != CAIRO_STATUS_SUCCESS) {
             rrd_set_error("Could not save png to '%s'",
                           im->graphfile ? im->graphfile : "memory");
-            return 1;
+            return -1;
         }
         break;
     }
@@ -4712,7 +4749,7 @@ int graph_cairo_finish(
     case IF_SVG:
         cairo_surface_finish(im->surface);
         if (im->svg_crisp_grid && svg_add_crisp_grid_style(im))
-            return 1;
+            return -1;
         if (im->graphfile) {
             FILE     *fd = rrd_fopen(im->graphfile, "wbe");
             int       failed = fd == NULL
@@ -4728,7 +4765,7 @@ int graph_cairo_finish(
             im->rendered_image_size = 0;
             if (failed) {
                 rrd_set_error("Could not save svg to '%s'", im->graphfile);
-                return 1;
+                return -1;
             }
         }
         break;
@@ -4742,11 +4779,16 @@ int graph_cairo_finish(
     case IF_JSONTIME:
         break;
     default:
-        if (im->graphfile) {
+        if (im->graphfile)
             cairo_show_page(im->cr);
-        } else {
-            cairo_surface_finish(im->surface);
-        }
+        /* write the file or the memory buffer now, so a failed write
+           is reported */
+        cairo_surface_finish(im->surface);
+        status = cairo_status(im->cr);
+        if (status == CAIRO_STATUS_SUCCESS)
+            status = cairo_surface_status(im->surface);
+        if (status != CAIRO_STATUS_SUCCESS)
+            return graph_cairo_error(im, status);
         break;
     }
 
