@@ -5,8 +5,8 @@ Win32 Build Instructions (using nmake Makefile):
 
 2) An efficient way, to obtain up-to-date build-dependencies, is using vcpkg.
    Install the headers and libraries the following way into the vcpkg directory:
-   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x86-windows
-   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango pcre zlib --triplet x64-windows
+   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib --triplet x86-windows
+   .\vcpkg install cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib --triplet x64-windows
 
    If you do not want to build the build-dependencies, you can download prebuilt
    (but in the meantime outdated) versions from the following address:

@@ -68,6 +68,7 @@ rrd_strversion
 rrd_tell
 rrd_test_error
 rrd_tune
+rrd_tune_r
 rrd_update
 rrd_update_r
 rrd_update_v
@@ -97,4 +98,6 @@ rrdc_ping
 rrdc_stats_free
 rrdc_stats_get
 rrdc_update
+; Windows only, not in src/librrd.sym: rrdcgi.exe links against this DLL
+; alone and reaches _rrd_fopen through rrd_fopen() in compat-cloexec.h.
 _rrd_fopen

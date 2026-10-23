@@ -3,6 +3,18 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* On Windows, programs linked against librrd-8.dll could not use
+  `rrd_tune_r`; the DLL now exports it, like the Linux and macOS library.
+  The Windows build instructions no longer install the unused `pcre`
+  package from vcpkg. @oetiker
+* `./configure --disable-rrdcgi --enable-rrd_graph` still built and
+  installed rrdcgi; any explicit `--enable-rrd_graph` switched rrdcgi back
+  on. Now `--disable-rrdcgi` always wins, and `--disable-rrd_graph` still
+  disables rrdcgi, which needs it. @oetiker
+* `make distcheck` and `make check` in a separate build directory now
+  pass. Before, 13 tests failed with "cp: cannot stat" or "Permission
+  denied", and the install step tried to write the rrdcached systemd units
+  to `/usr/lib/systemd/system`. @oetiker
 * Running `make` in a git checkout no longer rewrites the translation files
   `po/fr.po`, `po/hu.po` and `po/ka.po`. To merge new messages into the
   translations, run `make -C po update-po`; `make dist` still does this. @oetiker

@@ -33,7 +33,7 @@ AM_TESTS_ENVIRONMENT = \
 	TOP_BUILDDIR=${abs_top_builddir} ; export TOP_BUILDDIR ;
 
 CLEANFILES = *.rrd info-cached1.xml \
-	ct.out dur.out graph1.output.out graph2.output.out \
+	ct.out dur.out graph1.out graph1.output.out graph2.output.out \
 	graph4.pdf graph5-full.pdf graph5-clipped.pdf graph5-angle.pdf \
 	graph6.svg graph6-stdout.svg graph6-zoom.svg graph6-nogridfit.svg \
 	graph7-s.pdf graph7-S.pdf graph7-pct.pdf graph7-r.pdf \
@@ -101,6 +101,8 @@ script_tests += security-restore-zero-row-cnt security-restore-malformed-row
 EXTRA_DIST += security-restore-malformed-row.xml
 
 CLEANFILES += security-header-counts.out
+CLEANFILES += cached/*.rrd modify6-testbefore.dump modify6-testafter.dump \
+	security-*.out security-fetch-daemon-arithmetic-cached.log
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH
