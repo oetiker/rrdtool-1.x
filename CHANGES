@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* In the Python binding, `rrdtool.update()` returned as if it had worked
+  when rrdcached could not be reached, and `rrdtool.xport()` crashed
+  Python with a segmentation fault. Both now raise `OperationalError`
+  with "Unable to connect to rrdcached: ...". @oetiker
 * `rrdtool tune --aberrant-reset` damaged RRDs of format version 0001 or
   0002 (`rrd_version` in `rrdtool info`): it cleared the seasonal values
   of the wrong data source, scrambled the Holt-Winters state and moved the
