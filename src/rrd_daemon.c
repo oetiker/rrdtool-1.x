@@ -1712,14 +1712,16 @@ static int handle_request_update(
     char     *file = NULL, *pbuffile;
     int       values_num = 0;
     int       status, rc;
-    char      orig_buf[RRD_CMD_MAX];
+    /* a command line can fill the whole read buffer, and the journal
+     * must keep all of it: a cut-short line loses values on replay */
+    char      orig_buf[RBUF_SIZE];
 
     cache_item_t *ci;
 
     /* save it for the journal later */
     if (!JOURNAL_REPLAY(sock)) {
-        strncpy(orig_buf, buffer, min(RRD_CMD_MAX, buffer_size));
-        orig_buf[min(RRD_CMD_MAX, buffer_size) - 1] = '\0';
+        memcpy(orig_buf, buffer, min(RBUF_SIZE, buffer_size));
+        orig_buf[min(RBUF_SIZE, buffer_size) - 1] = '\0';
     }
 
     status = buffer_get_field(&buffer, &buffer_size, &pbuffile);
@@ -3783,7 +3785,10 @@ static int journal_replay(
     int       entry_cnt = 0;
     int       fail_cnt = 0;
     uint64_t  line = 0;
-    char      entry[RRD_CMD_MAX];
+    /* the longest entry is an UPDATE command line as long as the read
+     * buffer allows (RBUF_SIZE - 1 bytes), plus its newline and the
+     * terminating NUL */
+    char      entry[RBUF_SIZE + 1];
     time_t    now;
 
     if (file == NULL)

@@ -217,6 +217,13 @@ extern    "C" {
     int       rrd_lastupdate(
     int argc,
     const char **argv);
+    int       rrd_lastupdate_v(
+    int argc,
+    const char **argv,
+    time_t *ret_last_update,
+    unsigned long *ret_ds_count,
+    char ***ret_ds_names,
+    char ***ret_last_ds);
     time_t    rrd_first(
     int,
     const char **);
