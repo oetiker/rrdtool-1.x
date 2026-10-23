@@ -98,6 +98,18 @@ EXTRA_DIST += security-restore-malformed-row.xml
 CLEANFILES += security-header-counts.out
 CLEANFILES += cached/*.rrd modify6-testbefore.dump modify6-testafter.dump \
 	security-*.out security-fetch-daemon-arithmetic-cached.log
+CLEANFILES += modify6-testafter2.dump \
+	graph-cairo-error.out graph-cairo-error.err graph-cairo-error.probe \
+	graph-cairo-error.png graph-cairo-error.pdf graph-cairo-error.eps
+# with rrdcached over a unix socket the tests write into cached/; it also
+# holds tracked files, so name the scratch files one by one
+CLEANFILES += cached/graph1.output.out cached/rpn1.out cached/rpn1.output.out \
+	cached/modify5-testa1-mod.dump.tmp cached/modify5-testa2-mod.dump.tmp \
+	cached/modify6-testbefore.dump cached/modify6-testafter.dump \
+	cached/modify6-testafter2.dump \
+	cached/graph-cairo-error.out cached/graph-cairo-error.err \
+	cached/graph-cairo-error.probe cached/graph-cairo-error.png \
+	cached/graph-cairo-error.pdf cached/graph-cairo-error.eps
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH

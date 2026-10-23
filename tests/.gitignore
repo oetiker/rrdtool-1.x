@@ -12,3 +12,16 @@
 /.libs/
 /graph-security
 /daemon-fetch-security
+
+# scratch output of the tests (removed by make clean)
+/graph*.pdf
+/graph*.svg
+/graph-cairo-error.*
+/info-cached1.xml
+/modify6-test*.dump
+# the same with rrdcached over a unix socket; cached/ also holds tracked files
+/cached/*.rrd
+/cached/*.out
+/cached/*.dump.tmp
+/cached/modify6-test*.dump
+/cached/graph-cairo-error.*
