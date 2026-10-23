@@ -47,6 +47,7 @@
 #include "rrd_rpncalc.h"
 #include "rrd_hw.h"
 #include "rrd_modify.h"
+#include "rrd_create.h"
 #include "rrd_client.h"
 
 static int set_hwarg(
@@ -68,6 +69,11 @@ static int set_hwsmootharg(
     enum cf_en cf,
     enum rra_par_en rra_par,
     const char *arg);
+
+static int smoothing_window_requested(
+    int argc,
+    const char **argv,
+    const struct optparse_long *longopts);
 
 int rrd_tune(
     int argc,
@@ -129,10 +135,10 @@ int rrd_tune(
     }
     
     // connect to daemon (will take care of environment variable automatically)
+    /* rrdc_connect() has set "Unable to connect to rrdcached: ..." */
     if (rrdc_connect(opt_daemon) != 0) {
-    	rrd_set_error("Cannot connect to daemon");
-    	free(opt_daemon);
-	return 1;
+        free(opt_daemon);
+        return -1;
     }
 
     if (opt_daemon) {
@@ -234,6 +240,36 @@ int rrd_tune_r(
                                            RRD_READAHEAD | RRD_READVALUES);
     if (rrd_file == NULL) {
 	goto done;
+    }
+
+    /* A smoothing window needs a version 4 header.  Files older than
+       version 3 store the live header as a bare time_t, so relabelling
+       them in place would make every later read misplace the rest of the
+       file.  Rewrite such a file in the current layout first, as
+       rrdtool restore does, then tune the rewritten file. */
+    if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION3)
+        && smoothing_window_requested(argc, argv, longopts)) {
+        char      old_version[sizeof(rrd.stat_head->version)];
+
+        /* write_rrd() relabels the header in memory; with mmap that
+           memory is the original file, so put the label back if the
+           rewrite fails. */
+        memcpy(old_version, rrd.stat_head->version, sizeof(old_version));
+        if (write_rrd(in_filename, &rrd) != 0) {
+            memcpy(rrd.stat_head->version, old_version, sizeof(old_version));
+            if (!rrd_test_error())
+                rrd_set_error("cannot convert '%s' to RRD version %s",
+                              in_filename, RRD_VERSION3);
+            goto done;
+        }
+        rrd_close(rrd_file);
+        rrd_free(&rrd);
+        rrd_init(&rrd);
+        rrd_file = rrd_open(in_filename, &rrd, RRD_READWRITE | RRD_LOCK |
+                                               RRD_READAHEAD | RRD_READVALUES);
+        if (rrd_file == NULL) {
+            goto done;
+        }
     }
 
     optparse_init(&options, argc, argv); /* re-initialize optparse */
@@ -550,6 +586,22 @@ static int set_hwsmootharg(
 
     /* set the value */
     rrd->rra_def[rra_idx].par[rra_par].u_val = param;
+    return 0;
+}
+
+static int smoothing_window_requested(
+    int argc,
+    const char **argv,
+    const struct optparse_long *longopts)
+{
+    struct optparse options;
+    int       opt;
+
+    optparse_init(&options, argc, argv);
+    while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
+        if (opt == 's' || opt == 'S')
+            return 1;
+    }
     return 0;
 }
 
