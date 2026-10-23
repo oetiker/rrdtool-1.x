@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# graph -Z (--use-nan-for-all-missing-data) with a DEF that names a data
+# source the existing RRD file does not have: that DEF must be all
+# unknown, and the other DEFs on the same file must keep their real data,
+# whichever DEF fetches the file first.
+
+. $(dirname $0)/functions
+
+require_graph
+
+BUILD=$BUILDDIR/`basename $0`
+
+$RRDTOOL create ${BUILD}.rrd --start 1000000000 --step 300 \
+    DS:a:GAUGE:600:U:U DS:b:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100
+report create
+
+VALUES=
+for i in $(seq 1 50); do
+    VALUES="$VALUES $((1000000000 + i * 300)):$i:$((i * 100))"
+done
+$RRDTOOL update ${BUILD}.rrd $VALUES
+report update
+
+# print "a b zz" averages, one per line, for the given order of DEFs
+averages () {
+    $RRDTOOL graph ${BUILD}.png -Z \
+        --start 1000000600 --end 1000012000 \
+        "$@" \
+        PRINT:a:AVERAGE:%.6lf PRINT:b:AVERAGE:%.6lf \
+        PRINT:z:AVERAGE:%.6lf PRINT:z:MAX:%.6lf | tail -n +2
+}
+
+check () {
+    local what="$1"
+    shift
+    local got
+    got=$(averages "$@" | tr '\n' ' ')
+    case "$got" in
+        "21.666667 2166.666667 "*nan" "*nan" ")
+            ok "$what: $got"
+            ;;
+        *)
+            fail 1 "$what: expected '21.666667 2166.666667 nan nan', got '$got'"
+            ;;
+    esac
+}
+
+check "missing DS after the real ones" \
+    DEF:a=${BUILD}.rrd:a:AVERAGE DEF:b=${BUILD}.rrd:b:AVERAGE \
+    DEF:z=${BUILD}.rrd:zz:AVERAGE
+
+check "missing DS first" \
+    DEF:z=${BUILD}.rrd:zz:AVERAGE \
+    DEF:a=${BUILD}.rrd:a:AVERAGE DEF:b=${BUILD}.rrd:b:AVERAGE
+
+check "missing DS between the real ones" \
+    DEF:a=${BUILD}.rrd:a:AVERAGE DEF:z=${BUILD}.rrd:zz:AVERAGE \
+    DEF:b=${BUILD}.rrd:b:AVERAGE
+
+# without -Z the missing DS is still an error
+! $RRDTOOL graph ${BUILD}.png --start 1000000600 --end 1000012000 \
+    DEF:z=${BUILD}.rrd:zz:AVERAGE PRINT:z:AVERAGE:%lf 2>/dev/null
+report "missing DS without -Z fails"
