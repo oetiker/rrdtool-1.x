@@ -474,6 +474,7 @@ int rrd_graph_xport(
 
     /* initialize buffer */
     stringbuffer_t buffer = { 0, 0, NULL, NULL };
+    int       removable = 0;
 
     /* check if we have a supported ggraph format */
     switch (im->graph_type) {
@@ -494,7 +495,7 @@ int rrd_graph_xport(
     /* if we write a file, then open it, only now that the data is there,
        so a failed fetch leaves an existing file alone */
     if (im->graphfile) {
-        buffer.file = graph_fopen_write(im->graphfile, 0);
+        buffer.file = graph_fopen_write(im->graphfile, 0, &removable);
     }
 
     /* fill in some data */
@@ -561,8 +562,7 @@ int rrd_graph_xport(
         }
         /* close the file and remove what is there of it */
         if (buffer.file) {
-            fclose(buffer.file);
-            graph_remove_incomplete(im->graphfile);
+            graph_fclose_write(buffer.file, im->graphfile, removable, 1);
         }
         /* and return with error */
         return r;
