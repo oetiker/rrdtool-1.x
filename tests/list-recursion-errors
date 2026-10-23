@@ -7,8 +7,10 @@
 
 . $(dirname $0)/functions
 
-# this test calls the library and rrdtool directly: bypass the
-# rrdcached-tcp/-unix test style
+# this test calls the library and rrdtool directly: stop the daemon of
+# the rrdcached-tcp/-unix test style (the trap below replaces the one
+# that would stop it) and bypass it
+stop_cached
 unset RRDCACHED_ADDRESS RRDCACHED_STRIPPATH
 RRDTOOL=$TOP_BUILDDIR/src/rrdtool
 LIST_OOM=$TOP_BUILDDIR/tests/list-oom
