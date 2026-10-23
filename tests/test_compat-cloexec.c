@@ -22,6 +22,13 @@
 #  endif
 #endif
 
+/* Native Windows programs know no /dev/null; the null device is "NUL". */
+#ifdef _WIN32
+#  define NULL_DEVICE	"NUL"
+#else
+#  define NULL_DEVICE	"/dev/null"
+#endif
+
 static void fail(char *msg, int line)
 {
 	fprintf(stderr, "%s:%u %s\n", __FILE__, line, msg);
@@ -65,27 +72,27 @@ static void check_file(FILE *f, int exp_flags, bool is_cloexec, int line)
 int main(void) {
 	FILE *f;
 
-	f = _rrd_fopen("/dev/null", "r");
+	f = _rrd_fopen(NULL_DEVICE, "r");
 	check_file(f, O_RDONLY, false, __LINE__);
 
-	f = _rrd_fopen("/dev/null", "re");
+	f = _rrd_fopen(NULL_DEVICE, "re");
 	check_file(f, O_RDONLY, true, __LINE__);
 
-	f = _rrd_fopen("/dev/null", "w+be");
+	f = _rrd_fopen(NULL_DEVICE, "w+be");
 	check_file(f, O_RDWR, true, __LINE__);
 
-	f = _rrd_fopen("/dev/null", "a+be");
+	f = _rrd_fopen(NULL_DEVICE, "a+be");
 	check_file(f, O_RDWR | O_APPEND, true, __LINE__);
 
 	errno = 0;
-	f = _rrd_fopen("/dev/null", "rrrrrrrrrrrrrrrrrrrrrrrrr");
+	f = _rrd_fopen(NULL_DEVICE, "rrrrrrrrrrrrrrrrrrrrrrrrr");
 	if (f != NULL)
 		fail("oversized _rrd_fopen() mode did not fail", __LINE__);
 	if (errno != EINVAL)
 		fail("oversized _rrd_fopen() mode did not set EINVAL", __LINE__);
 
 	errno = 0;
-	f = _rrd_fopen("/dev/null", "z");
+	f = _rrd_fopen(NULL_DEVICE, "z");
 	if (f != NULL)
 		fail("unknown _rrd_fopen() mode did not fail", __LINE__);
 	if (errno != EINVAL)

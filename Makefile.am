@@ -80,11 +80,12 @@ clean-local:
 
 
 
+# The version in doc/rrdbuild.pod is set by conftools/bump-version.sh,
+# which both release paths run before make dist; the tarball ships that
+# file and the pages made from it unchanged, and the source is not touched.
 dist-hook: VERSION
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$$VERSION.+/\$$VERSION='$(NUMVERS)';/' bindings/perl-*/*.pm
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1.GIT, Copyright by Tobi Oetiker/RRDtool '$(PACKAGE_VERSION)', Copyright 1997-'`date +%Y`' by Tobi Oetiker/' src/*.h src/*.c
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
-	$(AM_V_GEN)$(PERL) -i -p -e 's/rrdtool-[\.\d]+\d(-[a-z0-9]+)?/rrdtool-'$(PACKAGE_VERSION)'/g' doc/rrdbuild.pod
-	$(AM_V_GEN)(cd doc && $(MAKE)) && cp -p doc/rrdbuild.* $(distdir)/doc
 
 ##END##
