@@ -3,6 +3,11 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --data-source-type` now resets the last value of the data
+  source (`last_ds` in `rrdtool dump` shows `UNKN`) on builds without mmap,
+  such as the Windows (MinGW) build. Before, the old value stayed, so the
+  first update after switching e.g. from GAUGE to COUNTER computed a rate
+  from a value of the old type. @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
