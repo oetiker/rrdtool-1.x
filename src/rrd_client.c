@@ -1391,26 +1391,30 @@ rrd_info_t *rrd_client_info(
 
     data = cd = NULL;
     for (l = 0; l < res->lines_num; l++) {
-        /* first extract the keyword */
-        for (k = s = res->lines[l]; s && *s; s++) {
-            if (*s == ' ') {
-                *s = 0;
-                s++;
-                break;
-            }
+        char     *sep, *endp;
+        long      tcode;
+
+        /* each line is "<key> <type code> <value>"; the value may be
+         * empty for string fields only (#1080). Anything else is a
+         * protocol error: fail instead of returning a truncated info. */
+        k = res->lines[l];
+        sep = strchr(k, ' ');
+        if (sep == NULL || sep == k)
+            goto malformed;
+        *sep = 0;
+        s = sep + 1;
+        errno = 0;
+        tcode = strtol(s, &endp, 10);
+        if (endp == s || errno != 0 || (*endp != ' ' && *endp != 0)) {
+            *sep = ' ';
+            goto malformed;
         }
-        if (!s || !*s)
-            break;
-        itype = (rrd_info_type_t) atoi(s);  /* extract type code */
-        for (; *s; s++) {
-            if (*s == ' ') {
-                *s = 0;
-                s++;
-                break;
-            }
+        itype = (rrd_info_type_t) tcode;
+        s = (*endp == ' ') ? endp + 1 : endp;
+        if (*s == 0 && itype != RD_I_STR) {
+            *sep = ' ';
+            goto malformed;
         }
-        if (!*s && itype != RD_I_STR)
-            break;
         /* finally, we're pointing to the value */
         switch (itype) {
         case RD_I_VAL:
@@ -1432,20 +1436,10 @@ rrd_info_t *rrd_client_info(
             break;
         case RD_I_BLO:
             rrd_set_error("rrdc_info: BLOB objects are not supported");
-            if (cd && cd != data)
-                free(cd);
-            if (data)
-                free(data);
-            response_free(res);
-            return (NULL);
+            goto out_free_data;
         default:
             rrd_set_error("rrdc_info: Unsupported info type %d", itype);
-            if (cd && cd != data)
-                free(cd);
-            if (data)
-                free(data);
-            response_free(res);
-            return (NULL);
+            goto out_free_data;
         }
 
         cd = rrd_info_push(cd, sprintf_alloc("%s", k), itype, info);
@@ -1456,6 +1450,14 @@ rrd_info_t *rrd_client_info(
             info.u_str = NULL;
         }
     }
+    goto out_free_res;
+
+  malformed:
+    rrd_set_error("rrdc_info: malformed line %u in reply from rrdcached: "
+                  "'%s'", l + 1, res->lines[l]);
+  out_free_data:
+    rrd_info_free(data);
+    data = NULL;
 
   out_free_res:
     response_free(res);
