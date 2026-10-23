@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `PRINT` and `GPRINT` in `rrdtool graph` and `graphv` showed unknown
+  values as `-nan` on many systems, like `rrdtool fetch` did before. They
+  now always show `nan`, with the same padding as before, also with
+  `valstrftime` and `valstrfduration`. (#297) @oetiker
 * `rrdtool xport --step` is now honoured when `--maxrows` is not given;
   before, the step was silently raised to fit 400 rows. Add `--maxrows 400`
   to keep the old output. (#1023) @oetiker
