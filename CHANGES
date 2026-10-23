@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `PRINT` and `GPRINT` in `rrdtool graph` and `graphv` showed unknown
+  values as `-nan` on many systems, like `rrdtool fetch` did before. They
+  now always show `nan`, with the same padding as before, also with
+  `valstrftime` and `valstrfduration`. (#297) @oetiker
 * `rrdtool graph -Z` (`--use-nan-for-all-missing-data`) with a DEF naming
   a data source the RRD file does not have drew that DEF with the values of
   a neighbouring data source, shifted by one row, instead of leaving it

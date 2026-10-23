@@ -1979,6 +1979,12 @@ int print_calc(
                 }
             }           /* prepare printval */
 
+            /* printf() shows a NaN with the sign bit set as "-nan"
+               (glibc) or "-nan(ind)" (MSVC); clear the sign so unknown
+               values print as "nan", like fetch and xport do */
+            if (isnan(printval))
+                printval = fabs(printval);
+
             if (!im->gdes[i].strftm
                 && im->gdes[i].vformatter == VALUE_FORMATTER_NUMERIC) {
                 if ((percent_s = strstr(im->gdes[i].format, "%S")) != NULL) {
