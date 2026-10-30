@@ -342,7 +342,7 @@ AC_CHECK_FUNCS(posix_fallocate)
 
 CONFIGURE_PART(Libintl Processing)
 
-AM_GNU_GETTEXT_VERSION(0.17)
+AM_GNU_GETTEXT_VERSION([0.19.8])
 AM_GNU_GETTEXT(external)
 
 CONFIGURE_PART(IEEE Math Checks)
@@ -848,14 +848,14 @@ LUA_EOF
     lua_vdot=$LUA_MAJOR.$LUA_MINOR
     lua_vndot=$LUA_MAJOR$LUA_MINOR
     lua_version=$LUA_MAJOR.$LUA_MINOR.$LUA_POINT
-    AC_CHECK_HEADERS(lua$lua_vndot/lua.h,
-      [AC_CHECK_HEADERS(lua$lua_vndot/lualib.h,
+    AC_CHECK_HEADER(lua$lua_vndot/lua.h,
+      [AC_CHECK_HEADER(lua$lua_vndot/lualib.h,
         [AC_CHECK_HEADER(lua$lua_vndot/lauxlib.h,
           [lua_headerdir=lua$lua_vndot],
           [])],
         [])],
-      [AC_CHECK_HEADERS(lua$lua_vdot/lua.h,
-        [AC_CHECK_HEADERS(lua$lua_vdot/lualib.h,
+      [AC_CHECK_HEADER(lua$lua_vdot/lua.h,
+        [AC_CHECK_HEADER(lua$lua_vdot/lualib.h,
           [AC_CHECK_HEADER(lua$lua_vdot/lauxlib.h,
             [lua_headerdir=lua$lua_vdot],
             [])],
@@ -1092,7 +1092,7 @@ AC_ARG_WITH([systemdsystemunitdir],
 	[], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
 if test "x$with_systemdsystemunitdir" != xno; then
 	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
-	AC_OUTPUT([etc/rrdcached.socket etc/rrdcached.service])
+	AC_CONFIG_FILES([etc/rrdcached.socket etc/rrdcached.service])
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ])
 
