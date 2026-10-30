@@ -220,22 +220,31 @@ jobs:
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
           CFG: ${{ matrix.configuration }}
+          TRIPLET: ${{ matrix.vcpkg_triplet }}
         run: |
           set -e
-          dir="win32/nmake_release_${CFG}_vcpkg/rrdtool-${VERSION}-${CFG}_vcpkg"
+          name="rrdtool-${VERSION}-${CFG}_vcpkg"
+          dir="win32/nmake_release_${CFG}_vcpkg/${name}"
           if [ ! -d "$dir" ]; then
             echo "::error::Expected collected dir not found: $dir"
             ls win32/nmake_release_${CFG}_vcpkg/ || true
             exit 1
           fi
-          zip="rrdtool-${VERSION}-${CFG}_vcpkg.zip"
+          # The SBOM goes inside the zip and next to it as a release asset.
+          python win32/vcpkg_sbom.py --installed "vcpkg/installed/${TRIPLET}" \
+              --release-dir "$dir" --version "$VERSION" --name "$name" \
+              --output "${name}.spdx.json"
+          cp "${name}.spdx.json" "$dir/"
+          zip="${name}.zip"
           (cd "$(dirname "$dir")" && 7z a -tzip "../../$zip" "$(basename "$dir")")
-          ls -l "$zip"
+          ls -l "$zip" "${name}.spdx.json"
 
       - uses: actions/upload-artifact@v7
         with:
           name: windows-${{ matrix.configuration }}
-          path: rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.zip
+          path: |
+            rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.zip
+            rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.spdx.json
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
