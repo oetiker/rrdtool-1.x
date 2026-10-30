@@ -331,7 +331,9 @@ Features
 * Each Windows release zip contains an SPDX SBOM, also attached to the
   release as `rrdtool-<version>-<arch>_vcpkg.spdx.json`, that lists every
   bundled DLL with its hash and the vcpkg package and version it came
-  from. @somethingwithproof
+  from. The release files carry GitHub build provenance, and each zip is
+  attested together with its SBOM; `gh attestation verify <file> --repo
+  oetiker/rrdtool-1.x` checks a download. @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================

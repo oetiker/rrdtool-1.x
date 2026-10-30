@@ -617,6 +617,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Sign the provenance and SBOM attestations below via Sigstore.
+      id-token: write
+      attestations: write
     steps:
       # RELEASE_PAT is a repo-admin Personal Access Token (Contents: write).
       # The default GITHUB_TOKEN / github-actions[bot] cannot be added to the
@@ -644,6 +647,42 @@ jobs:
             exit 1
           fi
 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          pattern: '*'
+          merge-multiple: true
+
+      - name: List collected artifacts
+        run: |
+          set -e
+          ls -lR dist/
+          test -n "$(ls dist/)" || { echo "::error::no artifacts collected"; exit 1; }
+
+      # Attest before the tag is pushed, so a signing failure stops the
+      # release cleanly. Verify with: gh attestation verify <file> --repo oetiker/rrdtool-1.x
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.rpm
+            dist/*.deb
+
+      - name: Attest SBOM (Windows x64)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x64_vcpkg.zip
+          sbom-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x64_vcpkg.spdx.json
+
+      - name: Attest SBOM (Windows x86)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x86_vcpkg.zip
+          sbom-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x86_vcpkg.spdx.json
+
       - name: Bump version in working tree
         uses: ./.github/actions/bump-version
         with:
@@ -661,19 +700,6 @@ jobs:
           git commit -m "release v$NEW"
           git tag -a "v$NEW" -m "release v$NEW"
           git push origin master --follow-tags
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: dist
-          pattern: '*'
-          merge-multiple: true
-
-      - name: List collected artifacts
-        run: |
-          set -e
-          ls -lR dist/
-          test -n "$(ls dist/)" || { echo "::error::no artifacts collected"; exit 1; }
 
       - name: Extract release notes from CHANGES
         env:
