@@ -89,3 +89,27 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.configuration }}
           nmake -f win32\Makefile_vcpkg.msc ${{ matrix.nmake_configuration }}
+
+      - name: Collect files
+        run: |
+          win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
+
+      # Same SBOM step as the release workflow, so a vcpkg bump that renames
+      # or adds a shipped DLL fails here instead of at release time.
+      - name: Generate SBOM
+        shell: bash
+        env:
+          CFG: ${{ matrix.configuration }}
+          TRIPLET: ${{ matrix.vcpkg_triplet }}
+        run: |
+          set -e
+          name="rrdtool-$(cat VERSION)-${CFG}_vcpkg"
+          python win32/vcpkg_sbom.py --installed "vcpkg/installed/${TRIPLET}" \
+              --release-dir "win32/nmake_release_${CFG}_vcpkg/${name}" \
+              --version "$(cat VERSION)" --name "$name" --output "${name}.spdx.json"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-${{ matrix.configuration }}
+          path: rrdtool-*_vcpkg.spdx.json
+          if-no-files-found: error

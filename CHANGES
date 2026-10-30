@@ -328,6 +328,10 @@ Features
   `RRDCACHED_ADDRESS`, and returns the time and values instead of printing
   them, so programs and language bindings no longer need to parse the
   output. @oetiker
+* Each Windows release zip contains an SPDX SBOM, also attached to the
+  release as `rrdtool-<version>-<arch>_vcpkg.spdx.json`, that lists every
+  bundled DLL with its hash and the vcpkg package and version it came
+  from. @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
