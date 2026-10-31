@@ -13,7 +13,7 @@ RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
 AM_CPPFLAGS = -DLOCALEDIR="\"$(localedir)\"" \
 	-DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" \
 	-DNUMVERS=@NUMVERS@
-AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
+AM_CFLAGS = $(RRD_CFLAGS) -I$(top_srcdir)
 
 UPD_C_FILES =		\
 	mutex.c		\
@@ -64,6 +64,8 @@ endif
 
 if BUILD_RRDRESTORE
 RRD_C_FILES += rrd_restore.c
+else
+RRD_C_FILES += rrd_restore_none.c
 endif
 
 noinst_HEADERS = \

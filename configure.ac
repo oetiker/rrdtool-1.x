@@ -135,11 +135,7 @@ dnl Check if we run on a system that has fonts
 AC_ARG_WITH(rrd-default-font,
 [  --with-rrd-default-font=[OPTIONS]  set the full path to your default font.],
 [RRD_DEFAULT_FONT=$withval],[
-  if test -d ${WINDIR:-nodir}/cour.ttf ; then
-	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
-  else
-	RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace,Courier"'
-  fi
+  RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace,Courier"'
 ])
 
 dnl Use mmap in rrd_update instead of seek+write
@@ -200,19 +196,24 @@ AM_CONDITIONAL(HAVE_STATIC_LIBRRD,[test "x$enable_static" = "xyes"])
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
-dnl which flags does the compiler support?
+dnl which flags does the compiler support? They go into RRD_CFLAGS, which
+dnl the Makefiles put in AM_CFLAGS, ahead of the user's CFLAGS, so that
+dnl CFLAGS=-std=c11 (say) still wins and "make CFLAGS=..." can drop them.
+RRD_CFLAGS=
 if test "x$GCC" = "xyes"; then
   for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
     oCFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $flag"
+    CFLAGS="$CFLAGS $RRD_CFLAGS $flag"
     cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
     AC_CACHE_CHECK([if gcc likes the $flag flag], $cachename,
        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
-    if eval test \$$cachename = no; then
-         CFLAGS="$oCFLAGS"
+    CFLAGS="$oCFLAGS"
+    if eval test \$$cachename = yes; then
+         RRD_CFLAGS="$RRD_CFLAGS $flag"
     fi
   done
 fi
+AC_SUBST(RRD_CFLAGS)
 
 AC_TYPE_LONG_LONG_INT
 
@@ -294,7 +295,8 @@ if test "x$enable_mmap" = "xyes"; then
   ;;
   *)
     AC_CHECK_HEADERS(sys/mman.h)
-    AC_FUNC_MMAP
+    dnl AC_FUNC_MMAP tested MAP_FIXED private mappings, which rrdtool does
+    dnl not use, and its HAVE_MMAP was overridden by this check anyway
     AC_CHECK_FUNCS(mmap munmap)
     AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
 				     # include <sys/mman.h>
@@ -413,7 +415,8 @@ AS_IF([test "x$ac_cv_libc_sigwait" = xyes],
       [AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])])
 
 
-CHECK_FOR_WORKING_MS_ASYNC
+dnl only mmap access depends on it
+AS_IF([test "x$enable_mmap" = xyes], [CHECK_FOR_WORKING_MS_ASYNC])
 
 dnl do we have nl_langinfo(_NL_TIME_WEEK_1STDAY)
 AC_CHECK_FUNCS(_NL_TIME_WEEK_1STDAY, ,
@@ -478,7 +481,8 @@ if test $enable_pthread != no; then
     MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
     MULTITHREAD_LDFLAGS=$PTHREAD_LIBS
 	     ],
-	     [])
+	     [enable_pthread=no
+	      AC_MSG_WARN([no way to build with POSIX threads was found])])
 fi
 
 dnl since we use lots of *_r functions all over the code we better
@@ -488,7 +492,6 @@ if test  "x$x_rflag" != "xno"; then
    CPPFLAGS="$CPPFLAGS $x_rflag"
 fi
 
-AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
 
 AC_LANG_PUSH(C)
 dnl see if we have to include malloc/malloc.h
@@ -583,10 +586,14 @@ AC_ARG_ENABLE(librados,AS_HELP_STRING([--disable-librados],[do not build in supp
 [enable_librados=yes])
 
 AS_IF([test "x$enable_librados" != xno], [
+    dnl the header alone is not enough: it can be there without a usable
+    dnl library (or one for another architecture)
     AC_CHECK_HEADER(rados/librados.h, [
+      AC_CHECK_LIB(rados, rados_create, [
         AC_DEFINE(HAVE_LIBRADOS,[1],[have got librados installed])
         LIBS="${LIBS} -lrados"
         have_librados=yes
+      ])
     ])
 ])
 
@@ -615,11 +622,15 @@ AS_IF([test "x$enable_libwrap" != xno], [
 ])
 
 
-AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
 
 AM_CONDITIONAL(BUILD_RRDGRAPH,[test $enable_rrd_graph != no])
 
 AM_CONDITIONAL(BUILD_RRDRESTORE,[test $enable_rrd_restore != no])
+
+dnl pkg-config for the library checks below, the Lua check and systemd;
+dnl PKG_CONFIG=... or a $host-pkg-config is used when cross-compiling
+PKG_PROG_PKG_CONFIG
+PKGCONFIG=${PKG_CONFIG:-no}
 
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.28.7, ftp://ftp.gtk.org/pub/glib/2.28/, "")
 
@@ -659,8 +670,11 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
-dnl Sort and remove duplicate entries in LIBS before assigning to ALL_LIBS
-ALL_LIBS=$(echo "$LIBS"|tr -s " " "\n"|sort -u|tr "\n" " ")
+dnl Remove duplicate entries in LIBS, keeping the last of each: every check
+dnl prepends its library, so a library's dependencies come after it, and
+dnl static links need that order (sort -u put -lpango-1.0 before
+dnl -lpangocairo-1.0)
+ALL_LIBS=`echo "$LIBS" | tr -s " " "\n" | awk 'NF { l@<:@n++@:>@ = $0 } END { r = ""; for (i = n - 1; i >= 0; i--) if (!seen@<:@l@<:@i@:>@@:>@++) r = l@<:@i@:>@ " " r; print r }'`
 LIBS=
 
 AC_SUBST(CORE_LIBS)
@@ -728,7 +742,8 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 # Use reproducible build date and time
 if test "$SOURCE_DATE_EPOCH"; then
 	DATE_FMT="%b %d %Y %H:%M:%S"
-	BUILD_DATE=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT")
+	dnl -d @N is GNU date, -r N the BSD and macOS one
+	BUILD_DATE=`LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT" 2>/dev/null || LC_ALL=C date -u -r "$SOURCE_DATE_EPOCH" "+$DATE_FMT"`
 	AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"], [Use reproducible build date])
 fi
 
@@ -1027,13 +1042,22 @@ fi
 AC_SUBST(COMP_PYTHON)
 AM_CONDITIONAL(BUILD_PYTHON,[test $enable_python = "yes"])
 
-if test $enable_docs != no; then
-
-dnl Check for nroff
+dnl The formatters are looked for even with --disable-docs: make dist
+dnl builds every page (including the PDFs) for the tarball.
 AC_ARG_VAR(NROFF, [path to the local nroff version])
 AC_PATH_PROGS(NROFF, [gnroff nroff])
+AC_ARG_VAR(TROFF, [path to the local troff version])
+AC_PATH_PROGS(TROFF, [groff troff])
+AC_ARG_VAR(PS2PDF, [path to ps2pdf (ghostscript), for the PDF pages])
+AC_PATH_PROG(PS2PDF, ps2pdf)
+
+if test $enable_docs != no; then
+
 if test x$NROFF = x; then
   AC_MSG_ERROR([I need a copy of *nroff to format the documentation])
+fi
+if test "x$POD2MAN" = xno -o "x$POD2HTML" = xno; then
+  AC_MSG_ERROR([I need pod2man and pod2html (from perl) to format the documentation])
 fi
 dnl -Wbreak is a GNU groff extension used to silence "can't break line"
 dnl warnings; BSD-derived nroff (e.g. macOS /usr/bin/nroff) rejects it.
@@ -1046,10 +1070,10 @@ else
   AC_MSG_RESULT([no])
 fi
 AC_SUBST(NROFF_WBREAK)
-AC_ARG_VAR(TROFF, [path to the local troff version])
-AC_PATH_PROGS(TROFF, [groff troff])
-if test x$TROFF = x; then
-  AC_MSG_ERROR([I need a copy of *troff to format the documentation])
+dnl troff and ps2pdf only make the PDF pages, which make dist needs and
+dnl a normal build does not
+if test x$TROFF = x -o x$PS2PDF = x; then
+  AC_MSG_WARN([troff or ps2pdf not found: make dist will fail])
 fi
 
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
