@@ -299,6 +299,8 @@ Errors return a nonzero exit status and an object with an C<error> string;
 B<verify> instead returns C<valid: false> and its C<errors> array. Strings
 escape control characters and invalid UTF-8 bytes. In remote control mode,
 the existing protocol status line still follows the command output.
+Failed JSON commands are followed by an C<ERROR:> line; successful commands
+are followed by the usual C<OK> line.
 
 =head2 REMOTE CONTROL
 

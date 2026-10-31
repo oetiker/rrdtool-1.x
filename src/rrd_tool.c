@@ -619,10 +619,16 @@ static int HandleInputLine(
         argv[--argc] = NULL;
         json = 1;
     }
-    if (argc > 1 && strcmp(argv[1], "verify") == 0)
-        return rrd_cli_verify(argc - 1, argv + 1, json);
-    if (json && argc > 1)
-        return rrd_cli_json(argc - 1, argv + 1);
+    if (argc > 1 && (strcmp(argv[1], "verify") == 0 || json)) {
+        int result = strcmp(argv[1], "verify") == 0 ?
+            rrd_cli_verify(argc - 1, argv + 1, json) :
+            rrd_cli_json(argc - 1, argv + 1);
+
+        /* Pipe clients wait for a protocol status after every command. */
+        if (RemoteMode && result != 0)
+            fprintf(out, "ERROR: command failed\n");
+        return result;
+    }
     /* Reset errno to 0 before we start.
      */
     if (RemoteMode) {

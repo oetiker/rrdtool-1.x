@@ -128,6 +128,25 @@ class CliTests(unittest.TestCase):
         self.run_cli("update", "counter.rrd", "1000000120:U")
         self.assertEqual(self.output("lastupdate", "counter.rrd")["values"], [None])
 
+    def test_remote_protocol(self):
+        result = subprocess.run([self.binary, "-"], cwd=self.directory, env=self.env,
+                                input=(b"--json info data.rrd\n"
+                                       b"--json info missing.rrd\n"
+                                       b"verify --json --diagnose-unknown data.rrd\n"
+                                       b"--json last data.rrd\n"),
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = result.stdout.splitlines()
+        self.assertEqual(len(lines), 8, result.stdout)
+        self.assertEqual(json.loads(lines[0])["step"], 60)
+        self.assertTrue(lines[1].startswith(b"OK"))
+        self.assertIn("error", json.loads(lines[2]))
+        self.assertTrue(lines[3].startswith(b"ERROR:"))
+        self.assertTrue(json.loads(lines[4])["valid"])
+        self.assertTrue(lines[5].startswith(b"OK"))
+        self.assertEqual(json.loads(lines[6])["timestamp"], 1000000180)
+        self.assertTrue(lines[7].startswith(b"OK"))
+
     def test_graph_and_xport(self):
         definition = "DEF:a=data.rrd:a:AVERAGE"
         interval = ["--start", "1000000000", "--end", "1000000240"]
@@ -186,7 +205,8 @@ class CliTests(unittest.TestCase):
                      "DS:a:GAUGE:120:U:U", "RRA:MHWPREDICT:20:0.1:0.0035:10")
         self.assertTrue(self.output("verify", "--diagnose-unknown", "hw.rrd")["valid"])
 
-    @unittest.skipUnless(ctypes.sizeof(ctypes.c_ulong) == 8, "LP64 header mutations")
+    @unittest.skipUnless(ctypes.sizeof(ctypes.c_ulong) == 8 and not os.environ.get("MSYSTEM"),
+                         "LP64 header mutations")
     def test_compute_and_hw_damage(self):
         self.test_compute_and_holt_winters()
         path = self.directory / "compute.rrd"
@@ -221,7 +241,8 @@ class CliTests(unittest.TestCase):
             path.write_bytes(damaged)
             self.assertFalse(self.output("verify", "hw.rrd", code=1)["valid"])
 
-    @unittest.skipUnless(ctypes.sizeof(ctypes.c_ulong) == 8, "LP64 header mutations")
+    @unittest.skipUnless(ctypes.sizeof(ctypes.c_ulong) == 8 and not os.environ.get("MSYSTEM"),
+                         "LP64 header mutations")
     def test_damaged_headers(self):
         original = (self.directory / "data.rrd").read_bytes()
         ds = ctypes.sizeof(Header)
