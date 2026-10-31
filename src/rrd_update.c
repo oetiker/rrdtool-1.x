@@ -1954,8 +1954,12 @@ static int update_all_cdp_prep(
             /* If this is a bulk update, we need to skip ahead in the seasonal arrays
              * so that they will be correct for the next observed value; note that for
              * the bulk update itself, no update will occur to DEVSEASONAL or SEASONAL;
-             * furthermore, HWPREDICT and DEVPREDICT will be set to DNAN. */
-            if (rra_step_cnt[rra_idx] > 1) {
+             * furthermore, HWPREDICT and DEVPREDICT will be set to DNAN.
+             * update_cdp_prep resets a 1-step RRA from these coefficients
+             * whenever more than two steps elapsed, which a 1-row (period 1)
+             * SEASONAL reaches with rra_step_cnt still 1. */
+            if (rra_step_cnt[rra_idx] > 1
+                || (rrd->rra_def[rra_idx].pdp_cnt == 1 && elapsed_pdp_st > 2)) {
                 skip_update[rra_idx] = 1;
                 lookup_seasonal(rrd, rra_idx, rra_start, rrd_file,
                                 elapsed_pdp_st, last_seasonal_coef);

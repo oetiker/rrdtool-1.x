@@ -1,0 +1,75 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# The SEASONAL smoothing window sizes the moving average in
+# apply_smoother. A value outside 0..1, including NaN, must be refused by
+# create and tune, and a file that carries one (restore does not check it)
+# must fail update with an error instead of reading past the RRA.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+expect_error () {
+  local what="$1" pattern="$2"
+  shift 2
+  "$@" >"${BUILD}.out" 2>&1
+  status=$?
+  if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+    fail 1 "$what: exit status $status: $(cat "${BUILD}.out")"
+  elif ! grep -q "$pattern" "${BUILD}.out"; then
+    fail 1 "$what: unexpected error: $(cat "${BUILD}.out")"
+  else
+    ok "$what"
+  fi
+}
+
+hw_rras () {
+  echo RRA:HWPREDICT:40:0.1:0.0035:10:2 \
+    RRA:SEASONAL:10:0.1:1:smoothing-window=$1 \
+    RRA:DEVSEASONAL:10:0.1:1:smoothing-window=$1 \
+    RRA:DEVPREDICT:40:3 RRA:FAILURES:40:7:9:3
+}
+
+rm -f "${BUILD}"*.rrd
+expect_error "create with smoothing-window=nan" "Invalid smoothing-window" \
+  $RRDTOOL create "${BUILD}-nan.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:10:U:U $(hw_rras nan)
+
+$RRDTOOL create "${BUILD}.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:10:U:U $(hw_rras 0.5)
+report create
+
+for option in --smoothing-window --alpha --beta --gamma; do
+  expect_error "tune $option nan" "must be between 0 and 1" \
+    $RRDTOOL tune "${BUILD}.rrd" $option nan
+done
+$RRDTOOL tune "${BUILD}.rrd" --smoothing-window 0.2 --alpha 0.2
+report "tune with values in range"
+
+$RRDTOOL dump "${BUILD}.rrd" |
+  sed 's|<smoothing_window>[^<]*<|<smoothing_window>5.0e+00<|' > "${BUILD}.xml"
+$RRDTOOL restore "${BUILD}.xml" "${BUILD}-wide.rrd"
+report "restore a dump with smoothing window 5"
+
+# Smoothing runs as the SEASONAL RRA reaches its smoothing row, within
+# the first period here.
+status=0
+for t in $(seq 1 20); do
+  $RRDTOOL update "${BUILD}-wide.rrd" $((1000000000 + t)):$((t % 7)) \
+    >"${BUILD}.out" 2>&1 || { status=$?; break; }
+done
+if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+  fail 1 "update with smoothing window 5: exit status $status: $(cat "${BUILD}.out")"
+elif ! grep -q "smoothing window 5.000000 is not between 0 and 1" "${BUILD}.out"; then
+  fail 1 "update with smoothing window 5: $(cat "${BUILD}.out")"
+else
+  ok "update refuses to smooth with window 5"
+fi
+
+for t in $(seq 1 20); do
+  $RRDTOOL update "${BUILD}.rrd" $((1000000000 + t)):$((t % 7)) || break
+done
+report "update with smoothing window 0.2"
+
+rm -f "${BUILD}"*.rrd "${BUILD}.xml" "${BUILD}.out"
