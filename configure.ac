@@ -196,12 +196,20 @@ AM_CONDITIONAL(HAVE_STATIC_LIBRRD,[test "x$enable_static" = "xyes"])
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
-dnl which flags does the compiler support? They go into RRD_CFLAGS, which
-dnl the Makefiles put in AM_CFLAGS, ahead of the user's CFLAGS, so that
-dnl CFLAGS=-std=c11 (say) still wins and "make CFLAGS=..." can drop them.
+dnl which flags does the compiler support? The language ones stay in CFLAGS,
+dnl so the checks below see the dialect the sources are compiled in;
+dnl -std=gnu99 only when the user's CFLAGS do not choose a -std.
+dnl The warnings go into RRD_CFLAGS, which the Makefiles put in AM_CFLAGS
+dnl ahead of the user's CFLAGS (so "make CFLAGS=..." can override them,
+dnl and CFLAGS no longer appears twice on every compile line).
 RRD_CFLAGS=
 if test "x$GCC" = "xyes"; then
-  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
+  rd_lang_flags=-fno-strict-aliasing
+  case " $CFLAGS " in
+    *" -std="*) ;;
+    *) rd_lang_flags="$rd_lang_flags -std=gnu99" ;;
+  esac
+  for flag in $rd_lang_flags -Wall -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
     oCFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $RRD_CFLAGS $flag"
     cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
@@ -209,7 +217,10 @@ if test "x$GCC" = "xyes"; then
        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
     CFLAGS="$oCFLAGS"
     if eval test \$$cachename = yes; then
-         RRD_CFLAGS="$RRD_CFLAGS $flag"
+      case " $rd_lang_flags " in
+        *" $flag "*) CFLAGS="$CFLAGS $flag" ;;
+        *) RRD_CFLAGS="$RRD_CFLAGS $flag" ;;
+      esac
     fi
   done
 fi
