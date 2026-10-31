@@ -57,6 +57,12 @@ check "reject an unterminated last_ds" \
   'substr($_, 384, 30, "1" x 30)' \
   "unterminated last_ds"
 
+# The version (at 4, five bytes, then padding) is quoted in the error,
+# and rrd_open used to restore that error with the message as the format.
+check "report a version with % in it as text" \
+  'substr($_, 4, 5, "9%s%s")' \
+  "can't handle RRD file version 9%s%s"
+
 $RRDTOOL info "${BUILD}.rrd" >/dev/null
 report "the unmodified file still opens"
 

@@ -71,6 +71,11 @@ Bugfixes
   zero), the current row must lie inside the RRA, and data source names,
   types, consolidation functions and last values must be terminated.
   @somethingwithproof
+* Opening a file whose header RRDtool refuses restored the error message
+  with the message itself as the printf format, so a crafted RRD with `%`
+  in its version string crashed `rrdtool info`, and `%n` could write to
+  memory. `tune` and graph's DEF parsing restored errors the same way.
+  @somethingwithproof
 * rrdcached started with an empty journal directory passed a null pointer
   to qsort, which is undefined. @somethingwithproof
 * `rrdtool graph` leaked the title it split into lines, and `graphv` the

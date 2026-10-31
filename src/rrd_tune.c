@@ -205,7 +205,7 @@ done:
 	rrd_clear_error();
         
         if (e) {
-            rrd_set_error(e);
+            rrd_set_error("%s", e);
             free(e);
         } else
             rrd_set_error("error message was lost (out of memory)");

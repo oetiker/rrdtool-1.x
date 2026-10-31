@@ -808,7 +808,8 @@ rrd_file_t *rrd_open(
         close_and_unlock(rrd_simple_file->fd);
 
         if (e) {
-            rrd_set_error(e);
+            /* the message can contain text from the file; not a format */
+            rrd_set_error("%s", e);
             free(e);
         } else
             rrd_set_error("error message was lost (out of memory)");
