@@ -181,6 +181,23 @@ function require_graph {
 	fi
 }
 
+# Skip the calling test when rrdtool was built with --disable-rrd_restore.
+function require_restore {
+	if "$TOP_BUILDDIR/src/rrdtool" restore /dev/null "$BUILDDIR/require-restore.rrd" 2>&1 |
+	    grep -q "compiled without XML import" ; then
+		echo >&2 "SKIP: rrdtool was built without restore support"
+		exit 77
+	fi
+}
+
+# Skip the calling test when rrdcached was not built (--disable-rrdcached).
+function require_rrdcached {
+	if [ ! -x "$TOP_BUILDDIR/src/rrdcached" ] ; then
+		echo >&2 "SKIP: rrdcached was not built"
+		exit 77
+	fi
+}
+
 function run_cached {
         local D="$1"
         local CACHED="${D:-$RRDCACHED}"

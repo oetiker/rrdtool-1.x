@@ -2,6 +2,7 @@
 
 . $(dirname $0)/functions
 
+require_rrdcached
 BASE=$BASEDIR/`basename $0`
 BUILD=$BUILDDIR/`basename $0`
 LIST_DIR=$BUILDDIR/`basename $0`_dir

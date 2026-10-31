@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/functions"
 
+require_restore
 # Holt-Winters RRAs point at their partner RRA by index, and update
 # follows that index without checking it. create, restore and rrd_open
 # must refuse an index past the last RRA or at an RRA of the wrong kind.

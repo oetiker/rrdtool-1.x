@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/functions"
 
+require_restore
 # A parse error inside a value made xmlTextReaderRead return -1 on every
 # call, and get_xml_text looped on it forever. restore must fail instead.
 # The input is what the restore fuzzer reduced it to: a dump cut short,

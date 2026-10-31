@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/functions"
 
+require_restore
 # The SEASONAL smoothing window sizes the moving average in
 # apply_smoother. A value outside 0..1, including NaN, must be refused by
 # create and tune, and a file that carries one (restore does not check it)
