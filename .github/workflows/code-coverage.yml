@@ -5,13 +5,17 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
       run: |
@@ -96,14 +100,14 @@ jobs:
         # Retain all DA line counts, including zero-hit lines, for comparison.
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' coverage-full.info > coverage.info
     - name: Preserve full line and branch coverage
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: coverage-full
         path: |
           coverage.xml
           coverage-full.info
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
       with:
         files: coverage.info
         disable_search: true
@@ -114,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
       run: |
@@ -153,13 +157,13 @@ jobs:
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
 
     - name: Preserve full fuzz line and branch coverage
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: fuzz-coverage-full
         path: fuzz-coverage-full.info
 
     - name: Upload fuzz coverage to Codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
       with:
         files: fuzz-coverage.info
         disable_search: true

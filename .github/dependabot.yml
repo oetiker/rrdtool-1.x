@@ -1,0 +1,14 @@
+---
+# Keeps the commit-SHA pins of the GitHub Actions current; one grouped
+# pull request a week rather than one per action.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
