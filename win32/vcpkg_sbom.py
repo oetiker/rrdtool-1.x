@@ -160,8 +160,16 @@ def main():
             print(f"error: hash mismatch for {line}", file=sys.stderr)
         sys.exit(1)
 
+    licenses = {"LicenseRef-RRDtool": {
+        "licenseId": "LicenseRef-RRDtool",
+        "name": "GPL-2.0-or-later with the RRDtool FLOSS License Exception",
+        "extractedText": "GNU GPL version 2 or (at your option) any later version, "
+                         "with the RRDtool FLOSS License Exception. See the COPYRIGHT file.",
+    }}
     for port in sorted(used):
         doc = ports[port]
+        for info in doc.get("hasExtractedLicensingInfos", []):
+            licenses.setdefault(info["licenseId"], info)
         # vcpkg's own IDs (SPDXRef-port, SPDXRef-binary, SPDXRef-resource-N)
         # repeat in every port document; prefix them with the port name.
         rename = {p["SPDXID"]: spdx_id(port, p["SPDXID"][len("SPDXRef-"):])
@@ -184,6 +192,16 @@ def main():
             "relatedSpdxElement": spdx_id(port, "binary"),
         })
 
+    # vcpkg writes LicenseRef-vcpkg-null for a port that declares no
+    # license, without defining it; an undefined reference makes the
+    # document invalid, so it becomes NOASSERTION.
+    for pkg in packages:
+        for field in ("licenseConcluded", "licenseDeclared"):
+            value = pkg.get(field, "")
+            refs = re.findall(r"LicenseRef-[A-Za-z0-9.-]+", value)
+            if any(ref not in licenses for ref in refs):
+                pkg[field] = "NOASSERTION"
+
     sbom = {
         "spdxVersion": "SPDX-2.3",
         "dataLicense": "CC0-1.0",
@@ -194,12 +212,7 @@ def main():
             "creators": ["Tool: rrdtool win32/vcpkg_sbom.py"],
             "created": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         },
-        "hasExtractedLicensingInfos": [{
-            "licenseId": "LicenseRef-RRDtool",
-            "name": "GPL-2.0-or-later with the RRDtool FLOSS License Exception",
-            "extractedText": "GNU GPL version 2 or (at your option) any later version, "
-                             "with the RRDtool FLOSS License Exception. See the COPYRIGHT file.",
-        }],
+        "hasExtractedLicensingInfos": list(licenses.values()),
         "packages": packages,
         "files": files,
         "relationships": relationships,
