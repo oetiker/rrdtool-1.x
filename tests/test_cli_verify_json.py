@@ -81,6 +81,27 @@ class CliTests(unittest.TestCase):
         self.assertEqual((cells[0]["known"], cells[0]["unknown"]), (4, 4))
         self.assertEqual(cells[1]["infinite"], 8)
         self.assertEqual(cells[1]["unknown"], 0)
+        data = self.output("fetch", "data.rrd", "AVERAGE", "--start", "1000000000",
+                           "--end", "1000000180")
+        emitted = [value for row in data["data"] for value in row["values"]]
+        self.assertIn("Infinity", emitted)
+        self.assertIn("-Infinity", emitted)
+
+    def test_chunk_boundaries(self):
+        self.run_cli("create", "wide.rrd", "--start", "1000000000", "--step", "60",
+                     "DS:a:GAUGE:120:U:U", "DS:b:GAUGE:120:U:U", "DS:c:GAUGE:120:U:U",
+                     "RRA:AVERAGE:0.5:1:1000", "RRA:MAX:0.5:2:600")
+        header = self.output("info", "wide.rrd")["header_size"]
+        path = self.directory / "wide.rrd"
+        content = bytearray(path.read_bytes())
+        content[header:] = struct.pack("=4800d", *([3.5, float("nan"), float("inf")] * 1600))
+        path.write_bytes(content)
+        result = self.output("verify", "--diagnose-unknown", "wide.rrd")
+        for archive, rows in zip(result["unknown_diagnostics"]["archives"], (1000, 600)):
+            cells = archive["data_sources"]
+            self.assertEqual(cells[0]["known"], rows)
+            self.assertEqual(cells[1]["unknown"], rows)
+            self.assertEqual(cells[2]["infinite"], rows)
 
     def test_existing_reports(self):
         info = self.output("info", "data.rrd")
@@ -137,7 +158,7 @@ class CliTests(unittest.TestCase):
         before = path.read_bytes()
         self.assertIn("error", self.output("update", "data.rrd", "1000000240:1:2", code=1))
         self.assertEqual(path.read_bytes(), before)
-        for args in (("missing.rrd",), ("--bad", "data.rrd"), (),
+        for args in (("missing.rrd",), ("%s%n.rrd",), ("--bad", "data.rrd"), (),
                      ("data.rrd", "extra.rrd")):
             result = self.output("verify", *args, code=1)
             self.assertFalse(result["valid"])
@@ -205,13 +226,20 @@ class CliTests(unittest.TestCase):
         original = (self.directory / "data.rrd").read_bytes()
         ds = ctypes.sizeof(Header)
         rra = ds + 2 * ctypes.sizeof(Source)
+        header_size = self.output("info", "data.rrd")["header_size"]
+        live = rra + ctypes.sizeof(Archive)
         cases = [(0, b"BAD!"), (4, b"12345"),
+                 (4, b"9999\0"), (4, b"%s%n\0"), (4, b"0000\0"),
                  (Header.pdp_step.offset, struct.pack("=Q", 0)),
                  (Header.ds_cnt.offset, struct.pack("=Q", 2**63)),
                  (ds, b"x" * 20), (ds, b"?\0"), (ds, b"\0"),
                  (ds + Source.type.offset, b"X\0"),
                  (ds + Source.type.offset, b"X" * 20),
                  (ds + ctypes.sizeof(Source), b"a\0"),
+                 (ds + Source.par.offset + 8, struct.pack("=2d", 10, 1)),
+                 (live + 8, struct.pack("=q", 1000000)),
+                 (live + 16, b"X" * 30),
+                 (header_size - 8, struct.pack("=Q", 8)),
                  (rra, b"INVALID\0"), (rra, b"X" * 20),
                  (rra + Archive.rows.offset, struct.pack("=Q", 0)),
                  (rra + Archive.pdps.offset, struct.pack("=Q", 2**63)),
@@ -228,6 +256,12 @@ class CliTests(unittest.TestCase):
         for damaged in (original[:20], original[:-8], original + b"trailer"):
             (self.directory / "bad.rrd").write_bytes(damaged)
             self.assertFalse(self.output("verify", "bad.rrd", code=1)["valid"])
+        damaged = bytearray(original)
+        damaged[ds:ds + 20] = b"X" * 20
+        damaged[rra:rra + 20] = b"X" * 20
+        (self.directory / "bad.rrd").write_bytes(damaged)
+        self.assertGreaterEqual(len(self.output("verify", "bad.rrd", code=1)["errors"]), 2)
+        self.assertIn(b"INVALID", self.run_cli("verify", "bad.rrd", code=1))
 
 
 if __name__ == "__main__":
