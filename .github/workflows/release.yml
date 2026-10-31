@@ -39,7 +39,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Verify required CI workflows succeeded
         env:
@@ -94,7 +94,7 @@ jobs:
       tag: ${{ steps.calc.outputs.tag }}
       date: ${{ steps.calc.outputs.date }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
 
@@ -128,7 +128,7 @@ jobs:
     needs: compute-version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps
         run: |
@@ -149,7 +149,7 @@ jobs:
           ./configure
           make dist
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-tarball
           path: rrdtool-${{ needs.compute-version.outputs.version }}.tar.gz
@@ -184,7 +184,7 @@ jobs:
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           submodules: true
 
@@ -195,7 +195,7 @@ jobs:
           date: ${{ needs.compute-version.outputs.date }}
 
       - name: vcpkg build
-        uses: johnwason/vcpkg-action@v8
+        uses: johnwason/vcpkg-action@04c68c847bf5196ecaa72331ecf51208583916ef # v8.0.0
         id: vcpkg
         with:
           pkgs: '${{ matrix.vcpkgPackages }}'
@@ -239,7 +239,7 @@ jobs:
           (cd "$(dirname "$dir")" && 7z a -tzip "../../$zip" "$(basename "$dir")")
           ls -l "$zip" "${name}.spdx.json"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-${{ matrix.configuration }}
           path: |
@@ -283,7 +283,7 @@ jobs:
           set -e
           dnf install -y git-core perl
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps
         env:
@@ -324,7 +324,7 @@ jobs:
       # rebuilding it here: `make dist` needs doc-toolchain deps (ps2pdf via
       # ghostscript) that this minimal RPM container does not carry.
       - name: Download source tarball from build-source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: source-tarball
 
@@ -361,7 +361,7 @@ jobs:
           cp ~/rpmbuild/RPMS/x86_64/*.rpm out/
           ls -l out/
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rpm-${{ matrix.tag }}
           path: out/*.rpm
@@ -436,7 +436,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends git ca-certificates perl
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps + fpm
         run: |
@@ -566,7 +566,7 @@ jobs:
               -C stage opt
           ls -l out/
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deb-${{ matrix.tag }}
           path: out/*.deb
@@ -627,7 +627,7 @@ jobs:
       # authenticated as the admin (who IS on the bypass list) via this PAT.
       # actions/checkout persists the token in git config, so the later
       # `git push` and `git fetch` steps use it automatically.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_PAT }}
@@ -648,7 +648,7 @@ jobs:
           fi
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: dist
           pattern: '*'
@@ -716,7 +716,7 @@ jobs:
           test -s releasenotes || { echo "::error::release notes empty"; exit 1; }
 
       - name: Create GitHub Release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
           tag: v${{ needs.compute-version.outputs.version }}
           name: "RRDtool Version ${{ needs.compute-version.outputs.version }}"
