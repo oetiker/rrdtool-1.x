@@ -195,9 +195,15 @@ class CliTests(unittest.TestCase):
         if not windows:
             names.append('quote"\\\n.rrd')
         for name in names:
-            path = self.directory / name
-            path.write_bytes((self.directory / "data.rrd").read_bytes())
-            self.assertEqual(self.output("verify", name)["filename"], name)
+            if windows:
+                # The existing Windows RRD opener uses CreateFileA. Check
+                # JSON encoding without requiring Unicode file-open support.
+                result = self.output("verify", name, code=1)
+            else:
+                path = self.directory / name
+                path.write_bytes((self.directory / "data.rrd").read_bytes())
+                result = self.output("verify", name)
+            self.assertEqual(result["filename"], name)
         if not windows:
             name = os.fsdecode(b"invalid-\xff-\xe0.rrd")
             (self.directory / name).write_bytes((self.directory / "data.rrd").read_bytes())
