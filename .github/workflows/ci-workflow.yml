@@ -97,6 +97,23 @@ jobs:
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
 
+      # The collect script copies DLLs by name and carries on when one is
+      # missing (vcpkg renames them now and then).  Run the collected tree
+      # with only the system directories on PATH, so a DLL left out of the
+      # zip fails here.
+      - name: Run from the release directory
+        env:
+          CFG: ${{ matrix.configuration }}
+        run: |
+          set /p version=<VERSION
+          set PATH=%SystemRoot%\System32;%SystemRoot%
+          set rrd=%CD%\win32\nmake_release_%CFG%_vcpkg\rrdtool-%version%-%CFG%_vcpkg\rrdtool.exe
+          rem Relative names: a drive letter's colon would split the DEF.
+          cd /d "%RUNNER_TEMP%"
+          "%rrd%" create t.rrd --start 1000000000 --step 300 DS:x:GAUGE:600:U:U RRA:AVERAGE:0.5:1:12 || exit /b 1
+          "%rrd%" update t.rrd 1000000300:42 1000000600:43 || exit /b 1
+          "%rrd%" graph t.png --start 1000000000 --end 1000000600 DEF:x=t.rrd:x:AVERAGE LINE1:x#ff0000 || exit /b 1
+
       # The validator pins in win32/sbom-requirements.txt are for Python 3.12.
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:

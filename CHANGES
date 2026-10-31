@@ -344,7 +344,8 @@ Features
   (gitsign). @somethingwithproof
 * The Windows build uses vcpkg 2026.10.16 (previously 2025.12.12), which
   updates the bundled libraries, among them libxml2 2.15.4, expat 2.9.0,
-  libpng 1.6.59, glib 2.90.0, pango 1.58.0 and cairo 1.18.6.
+  libpng 1.6.59, glib 2.90.0, pango 1.58.0 and cairo 1.18.6. zlib 1.3.2
+  names its DLL `z.dll`, so the zip ships that instead of `zlib1.dll`.
   @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
