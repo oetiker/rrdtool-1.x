@@ -16,11 +16,18 @@ After=rrdcached.socket
 #
 # -B -b: only touch files below /var/lib/rrdcached/db (relative paths are
 #        taken from there); -O: CREATE never overwrites an existing file.
-# Point -b at the directory your RRD files live in, and give the
-# service user access to it.
-ExecStart=@bindir@/rrdcached -g -B -O -b /var/lib/rrdcached/db -j /var/lib/rrdcached/journal
-DynamicUser=yes
+# The rest of the file system is read-only to the daemon. To keep your
+# RRD files elsewhere, point -b there and add the directory to
+# ReadWritePaths= (and give User= access to it if you set one).
+# The pid file goes to the state directory, which is writable.
+ExecStart=@bindir@/rrdcached -g -B -O -b /var/lib/rrdcached/db -j /var/lib/rrdcached/journal -p /var/lib/rrdcached/rrdcached.pid
 StateDirectory=rrdcached rrdcached/db rrdcached/journal
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+# No NoNewPrivileges=: it stops the SELinux transition into rrdcached_t,
+# leaving the daemon in systemd's own domain (see rrdcached(1), SELinux).
+#ReadWritePaths=
 #User=
 #Group=
 

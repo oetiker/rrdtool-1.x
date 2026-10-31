@@ -523,10 +523,25 @@ Authorization does not work when rrdcached is socket-activated by systemd:
 every client that can open the socket may use every command. The units
 shipped in F<etc/> therefore create the socket as
 F</run/rrdcached/rrdcached.sock> with mode 0660 for root and root's group, and
-run the daemon as a dynamic user with B<-B -O -b /var/lib/rrdcached/db>, so it
-writes only below that directory and never overwrites a file on CREATE.
-Change B<-b> to where your RRD files are, and set B<SocketGroup=> for a group
-of trusted users.
+run the daemon with B<-B -O -b /var/lib/rrdcached/db> and the rest of the file
+system read-only, so it writes only below that directory and never overwrites
+a file on CREATE. To keep the RRD files elsewhere, change B<-b> and add the
+directory to B<ReadWritePaths=>; set B<SocketGroup=> for a group of trusted
+users.
+
+With SELinux enforcing and the distribution's rrdcached policy (Fedora:
+F</usr/bin/rrdcached> runs as B<rrdcached_t>), that policy lets the daemon
+write only files of its own types, and on Fedora 44 it does not let it map
+them, which rrdcached needs for every update. Label the directories and allow
+the mapping, for example:
+
+  semanage fcontext -a -t rrdcached_var_run_t '/var/lib/rrdcached(/.*)?'
+  restorecon -R /var/lib/rrdcached
+  setsebool -P domain_can_mmap_files 1
+
+(or a local policy module that allows C<rrdcached_t rrdcached_var_run_t:file
+map>). Do the same for a B<-b> directory elsewhere, with the type your other
+programs need there.
 
 =head2 Encryption
 
