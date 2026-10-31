@@ -66,6 +66,9 @@ class CliTests(unittest.TestCase):
         self.assertEqual(before, (hashlib.sha256(path.read_bytes()).digest(),
                                   path.stat().st_mtime_ns))
         self.assertIn(b"OK (0 errors)", self.run_cli("verify", "data.rrd"))
+        self.assertTrue(json.loads(self.run_cli("verify", "data.rrd", "--json"))["valid"])
+        self.assertTrue(self.output("verify", "--", "data.rrd")["valid"])
+        self.assertIn(b"--diagnose-unknown", self.run_cli("help", "verify"))
         self.assertIn(b"historical causes", self.run_cli(
             "verify", "--diagnose-unknown", "data.rrd"))
 
@@ -170,6 +173,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.output("xport", *args), native)
 
     def test_errors_and_no_mutation(self):
+        self.assertIn("error", self.output("xport", "DEF:" + ":".join(["x"] * 11), code=1))
         for command in ("info", "fetch", "lastupdate", "first", "last", "graphv", "xport"):
             with self.subTest(command=command):
                 self.assertIn("error", self.output(command, "missing.rrd", code=1))

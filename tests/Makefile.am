@@ -155,6 +155,11 @@ CLEANFILES += cached/graph1.output.out cached/rpn1.out cached/rpn1.output.out \
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH
+check_PROGRAMS += cli-failures
+TESTS += cli-failures
+cli_failures_SOURCES = test_cli_failures.c
+cli_failures_LDFLAGS = -static
+cli_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += graph-security
 TESTS += graph-security
 endif

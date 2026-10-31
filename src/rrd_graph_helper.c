@@ -342,6 +342,7 @@ int parseArguments(
                 } else {
                     if (poscnt > 9) {
                         rrd_set_error("too many positional arguments");
+                        free(keyvalue);
                         freeParsedArguments(pa);
                         return -1;
                     }
