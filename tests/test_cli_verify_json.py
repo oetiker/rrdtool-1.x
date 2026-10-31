@@ -39,7 +39,8 @@ class CliTests(unittest.TestCase):
         if os.name == "nt" and os.environ.get("MSYSTEM"):
             # Native Python uses CreateProcessW; the CLI consumes UTF-8
             # narrow argv. Let MSYS perform the same conversion as shell tests.
-            self.command = ["bash", "-c", 'exec "$@"', "rrdtool", self.binary]
+            self.command = [os.environ["RRDTOOL_TEST_SHELL"], "-c", 'exec "$@"',
+                            "rrdtool", self.binary]
         self.env = dict(os.environ)
         self.env.pop("RRDCACHED_ADDRESS", None)
         self.run_cli("create", "data.rrd", "--start", "1000000000",
