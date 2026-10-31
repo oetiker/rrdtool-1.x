@@ -23,6 +23,8 @@
 #include <stdint.h>
 
 #include "rrd_tool.h"
+#include "rrd_hw.h"
+#include "rrd_rpncalc.h"
 #include "compat-cloexec.h"
 #include "unused.h"
 
@@ -638,6 +640,29 @@ rrd_file_t *rrd_open(
     __rrd_read(rrd->rra_def, rra_def_t,
                rrd->stat_head->rra_cnt);
 
+    /* Names are printed and compared as C strings. */
+    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
+        if (memchr(rrd->ds_def[i].ds_nam, '\0', DS_NAM_SIZE) == NULL ||
+            memchr(rrd->ds_def[i].dst, '\0', DST_SIZE) == NULL) {
+            rrd_set_error("'%s' DS %lu has an unterminated name or type",
+                          file_name, i);
+            goto out_close;
+        }
+        if (strcmp(rrd->ds_def[i].dst, "COMPUTE") == 0 &&
+            rpn_compact_check((rpn_cdefds_t *) &rrd->ds_def[i].par[DS_cdef],
+                              rrd->stat_head->ds_cnt) != 0)
+            goto out_close;
+    }
+    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        if (memchr(rrd->rra_def[i].cf_nam, '\0', CF_NAM_SIZE) == NULL) {
+            rrd_set_error("'%s' RRA %lu has an unterminated CF name",
+                          file_name, i);
+            goto out_close;
+        }
+    }
+    if (rrd_check_hw_dependencies(rrd) != 0)
+        goto out_close;
+
     /* Validate disk-supplied FAILURES history bounds before any consumer
      * (including info and update) can use the fixed-size scratch buffer. */
     for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
@@ -668,6 +693,13 @@ rrd_file_t *rrd_open(
     }
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
+    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
+        if (memchr(rrd->pdp_prep[i].last_ds, '\0', LAST_DS_LEN) == NULL) {
+            rrd_set_error("'%s' DS %lu has an unterminated last_ds",
+                          file_name, i);
+            goto out_close;
+        }
+    }
     {
         size_t    cdp_cnt;
 
@@ -711,6 +743,20 @@ rrd_file_t *rrd_open(
         for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
             if (rrd->rra_def[ui].row_cnt == 0 || rrd->rra_def[ui].pdp_cnt == 0) {
                 rrd_set_error("'%s' RRA %lu has zero row_cnt/pdp_cnt", file_name, ui);
+                goto out_close;
+            }
+            if (rrd->rra_ptr[ui].cur_row >= rrd->rra_def[ui].row_cnt) {
+                rrd_set_error("'%s' RRA %lu cur_row %lu is past its %lu rows",
+                              file_name, ui, rrd->rra_ptr[ui].cur_row,
+                              rrd->rra_def[ui].row_cnt);
+                goto out_close;
+            }
+            /* consumers divide by pdp_cnt * pdp_step, which must not wrap */
+            if (rrd->rra_def[ui].pdp_cnt > ULONG_MAX / rrd->stat_head->pdp_step) {
+                rrd_set_error("'%s' RRA %lu pdp_cnt %lu is too large for "
+                              "step %lu", file_name, ui,
+                              rrd->rra_def[ui].pdp_cnt,
+                              rrd->stat_head->pdp_step);
                 goto out_close;
             }
             if (rrd_add_overflow(row_cnt, rrd->rra_def[ui].row_cnt,

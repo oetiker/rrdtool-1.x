@@ -984,6 +984,9 @@ int rrd_create_r2(
         rrd.live_head->last_up = template_latest_last_up;
     }
 
+    if (rrd_check_hw_dependencies(&rrd) != 0)
+        goto done;
+
     rc = rrd_init_data(&rrd);
     if (rc != 0)
         goto done;

@@ -1,0 +1,75 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# Holt-Winters RRAs point at their partner RRA by index, and update
+# follows that index without checking it. create, restore and rrd_open
+# must refuse an index past the last RRA or at an RRA of the wrong kind.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+expect_error () {
+  local what="$1" pattern="$2"
+  shift 2
+  "$@" >"${BUILD}.out" 2>&1
+  status=$?
+  if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+    fail 1 "$what: exit status $status: $(cat "${BUILD}.out")"
+  elif ! grep -q "$pattern" "${BUILD}.out"; then
+    fail 1 "$what: unexpected error: $(cat "${BUILD}.out")"
+  else
+    ok "$what"
+  fi
+}
+
+rm -f "${BUILD}"*.rrd
+expect_error "create with a SEASONAL index past the last RRA" \
+  "refers to RRA 99999999, but there are only 2 RRAs" \
+  $RRDTOOL create "${BUILD}-range.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:10:U:U RRA:AVERAGE:0.5:1:10 RRA:SEASONAL:10:0.1:100000000
+[ ! -e "${BUILD}-range.rrd" ]
+report "no file left behind"
+
+expect_error "create with a SEASONAL pointing at an AVERAGE RRA" \
+  "not its Holt-Winters partner" \
+  $RRDTOOL create "${BUILD}-partner.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:10:U:U RRA:AVERAGE:0.5:1:10 RRA:SEASONAL:10:0.1:1
+
+# The implicit form links HWPREDICT, SEASONAL, DEVSEASONAL, DEVPREDICT and
+# FAILURES itself; it must keep working, through update and dump/restore.
+$RRDTOOL create "${BUILD}.rrd" --step 1 --start 1000000000 \
+  DS:a:GAUGE:10:U:U RRA:HWPREDICT:20:0.1:0.0035:5
+report "create with implicit Holt-Winters RRAs"
+$RRDTOOL update "${BUILD}.rrd" 1000000001:1 1000000002:2 1000000003:3
+report "update the Holt-Winters RRAs"
+$RRDTOOL dump "${BUILD}.rrd" > "${BUILD}.xml"
+report dump
+$RRDTOOL restore "${BUILD}.xml" "${BUILD}-restored.rrd"
+report "restore the dump"
+
+# The first RRA is HWPREDICT; point it past the end in the dump.
+perl -0777 -pe 's{<dependent_rra_idx>\d+</dependent_rra_idx>}{<dependent_rra_idx>99</dependent_rra_idx>}' \
+  "${BUILD}.xml" > "${BUILD}-bad.xml"
+expect_error "restore with an index past the last RRA" \
+  "refers to RRA 99, but there are only 5 RRAs" \
+  $RRDTOOL restore "${BUILD}-bad.xml" "${BUILD}-bad.rrd"
+
+# The on-disk format needs the LP64 layout for the offsets below.
+if [ -z "$MSYSTEM" ] && [ "$(getconf LONG_BIT)" = 64 ]; then
+  # LP64, one DS: rra_def[0] starts at 248, its par[] at 288, and
+  # par[RRA_dependent_rra_idx] (3) at 312.
+  cp "${BUILD}.rrd" "${BUILD}-crafted.rrd"
+  perl -0777 -pi -e 'substr($_, 312, 8, pack("Q", 99))' "${BUILD}-crafted.rrd"
+  for command in info update; do
+    case "$command" in
+      info) args=() ;;
+      update) args=(1000000004:4) ;;
+    esac
+    expect_error "$command on a file with an index past the last RRA" \
+      "refers to RRA 99, but there are only 5 RRAs" \
+      $RRDTOOL "$command" "${BUILD}-crafted.rrd" "${args[@]}"
+  done
+fi
+
+rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"

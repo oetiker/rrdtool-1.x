@@ -390,6 +390,15 @@ int rrd_tune_r(
             if ((int) dst_conv(dst) == -1) {
 		goto done;
             }
+            /* A COMPUTE DS keeps its RPN program where the other types keep
+             * heartbeat, min and max, so the type cannot be switched in
+             * place in either direction. */
+            if ((dst_conv(dst) == DST_CDEF) !=
+                (dst_conv(rrd.ds_def[ds].dst) == DST_CDEF)) {
+                rrd_set_error("cannot change data source %s from %s to %s",
+                              ds_nam, rrd.ds_def[ds].dst, dst);
+		goto done;
+            }
             /* only reset when something is changed */
             if (strncmp(rrd.ds_def[ds].dst, dst, DST_SIZE - 1) != 0) {
                 strncpy(rrd.ds_def[ds].dst, dst, DST_SIZE - 1);

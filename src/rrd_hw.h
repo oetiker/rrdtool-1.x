@@ -5,6 +5,8 @@
  *****************************************************************************/
 
 /* functions implemented in rrd_hw.c */
+int       rrd_check_hw_dependencies(
+    const rrd_t *rrd);
 int       update_aberrant_CF(
     rrd_t *rrd,
     rrd_value_t pdp_val,
