@@ -57,7 +57,7 @@ GENERATED_EXTRADIST = $(DIST_POD:.pod=.html) $(POD3:.pod=.html) $(PMP:.pod=.html
 CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
-EXTRA_DIST= $(GENERATED_EXTRADIST) $(DIST_POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(DIST_POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd mkpdf.sh
 
 idocdir = $(RRDTXTDIR)
 idoc_DATA = $(POD) $(TXT)
@@ -83,7 +83,7 @@ all-local: link man txt html-local
 	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp @NROFF_WBREAK@ $< > $@
 
 .1.pdf .3.pdf:
-	$(AM_V_GEN)@TROFF@ -man $< | @PS2PDF@ - $@
+	$(AM_V_GEN)$(SHELL) $(srcdir)/mkpdf.sh '@TROFF@' '@PS2PDF@' $< $@
 
 .pm.html .pod.html .pl.html:
 	$(AM_V_GEN)@POD2HTML@ --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
