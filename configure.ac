@@ -200,21 +200,6 @@ AM_CONDITIONAL(HAVE_STATIC_LIBRRD,[test "x$enable_static" = "xyes"])
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
-dnl check for -Werror separately
-dnl (quite a few autotool checks do not work with -Werror; also, the
-dnl check for -Werror fails after checking and adding the other flags)
-AC_CACHE_CHECK([if gcc likes the -Werror flag], rd_cv_gcc_flag__Werror,
-  [AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([[]], [[return 0 ]])],
-    [rd_cv_gcc_flag__Werror="yes"],
-    [rd_cv_gcc_flag__Werror="no"])])
-if test "x$rd_cv_gcc_flag__Werror" = "xyes"; then
-  WERROR="-Werror"
-else
-  WERROR=""
-fi
-AC_SUBST(WERROR)
-
 dnl which flags does the compiler support?
 if test "x$GCC" = "xyes"; then
   for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
@@ -417,16 +402,15 @@ GC_TIMEZONE()
 
 AC_CACHE_CHECK(whether sigwait has 2 arguments,
     ac_cv_libc_sigwait,
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
         #define _POSIX_PTHREAD_SEMANTICS
         #include <stdio.h>
         #include <signal.h>]],
         [[sigset_t sigs; int signo; sigwait(&sigs, &signo);]])],
-        [AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])
-        AC_MSG_RESULT(yes)],
-        [AC_MSG_RESULT(no)]
-    )
-)
+        [ac_cv_libc_sigwait=yes],
+        [ac_cv_libc_sigwait=no])])
+AS_IF([test "x$ac_cv_libc_sigwait" = xyes],
+      [AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])])
 
 
 CHECK_FOR_WORKING_MS_ASYNC
@@ -445,6 +429,7 @@ AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
               char *x = NULL;
 	      x = realloc (x,10);
 	      if (x==NULL) return 1;
+	      free (x);
 	      return 0;
              }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
 
@@ -644,9 +629,10 @@ AC_CACHE_CHECK([whether we need to include gthreads for g_thread_init],
                     [[#if !GLIB_CHECK_VERSION(2, 32, 0)
                      # error "glib needs g_thread_init"
                      #endif]])],
-                     [AC_MSG_RESULT(no)],
-                     [EX_CHECK_ALL(gthread-2.0, g_thread_init, glib.h, gthread-2.0, x.x.x, "", "")
-                     AC_MSG_RESULT(yes)])])
+                     [ac_cv_glibc_g_thread_init=no],
+                     [ac_cv_glibc_g_thread_init=yes])])
+AS_IF([test "x$ac_cv_glibc_g_thread_init" = xyes],
+      [EX_CHECK_ALL(gthread-2.0, g_thread_init, glib.h, gthread-2.0, x.x.x, "", "")])
 
 CORE_LIBS="$LIBS"
 
@@ -757,7 +743,7 @@ PERL_MAKE_OPTIONS="PREFIX=$langpref INSTALL_BASE= LIB=$langpref/lib/perl/$PERL_V
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
 AS_HELP_STRING([--enable-perl-site-install],[by default the rrdtool perl modules are installed together with rrdtool in $prefix/lib/perl. You have to put a 'use lib qw($prefix/lib/perl)' into your scripts when you want to use them. When you set this option the perl modules will get installed wherever your perl setup thinks it is best.]),
-[PERL_MAKE_OPTIONS=],[])
+[AS_IF([test "x$enableval" = xyes], [PERL_MAKE_OPTIONS=])],[])
 
 if test ! -z "$PERLCC"; then
    PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC=$PERLCC"
@@ -812,7 +798,9 @@ fi
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
 AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules are installed together with rrdtool in $prefix/lib/ruby. You have to add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable for ruby to find the RRD.so file.]),
-[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
+[AS_IF([test "x$enableval" = xyes], [RUBY_MAKE_OPTIONS=],
+       [RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])],
+[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
 
 
 AC_ARG_WITH(ruby-options,
@@ -825,7 +813,7 @@ AC_ARG_WITH(ruby-options,
 AC_SUBST(RUBY_MAKE_OPTIONS)
 AC_SUBST(RUBY)
 AC_SUBST(COMP_RUBY)
-AM_CONDITIONAL(BUILD_RUBY,[test $enable_ruby = "yes"])
+AM_CONDITIONAL(BUILD_RUBY,[test -n "$COMP_RUBY"])
 
 dnl Check for Lua.
 AC_PATH_PROG(LUA, lua, no)
@@ -943,7 +931,8 @@ LUA_EOF
         dnl found and install together with RRDtool, under $langpref.
         AC_ARG_ENABLE(lua-site-install,
         AS_HELP_STRING([--enable-lua-site-install],[by default the lua module is installed together with rrdtool in $prefix/lib/lua/$lua_version. You have to add $prefix/lib/lua/$lua_version/?.so to package.cpath for lua to find 'rrd.so'. For lua 5.0 you may also need to change LUA_PATH to the same dir, to require 'compat-5.1'. When you set this option the lua modules will get installed wherever your Lua setup thinks it is best. WARNING: if you set this option, system lua modules compat-5.1.lua and rrd.so, if any, may be overwritten.]),
-        [],
+        [AS_IF([test "x$enableval" != xyes],
+               [LUA_INSTALL_CMOD="$LUA_RRD_LIBDIR"; LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"])],
         [LUA_INSTALL_CMOD="$LUA_RRD_LIBDIR"; LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"])
 
         LUA_DEFINES="-DLUA$lua_vndot -D$LUA_HAVE_COMPAT51"
@@ -970,8 +959,6 @@ AM_CONDITIONAL(LUA_SITE_LINSTALL, [test "$LUA_INSTALL_LMOD" != "$LUA_RRD_LIBDIR"
 AM_CONDITIONAL(LUA50, [test "$lua_vndot" = "50"])
 AM_CONDITIONAL(BUILD_LUA, [test "$enable_lua" = "yes"])
 
-enable_tcl_site=no
-
 AC_ARG_ENABLE(tcl,AS_HELP_STRING([--disable-tcl],[do not build the tcl modules]),
 [],[enable_tcl=yes])
 
@@ -996,13 +983,14 @@ if test  "$enable_tcl" = "yes"; then
         AC_MSG_WARN([tclConfig.sh not found - Tcl interface will not be built])
   else
 	. $tcl_config
-	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
+	dnl TCL_PACKAGE_PATH is a search list (several directories on Debian)
+	TCL_PACKAGE_DIR="`echo $TCL_PACKAGE_PATH | sed 's/ .*//'`/tclrrd$VERSION"
 	if test -n "$TCL_INC_DIR"; then
 	  TCL_INCLUDE_SPEC="$TCL_INCLUDE_SPEC -I$TCL_INC_DIR"
 	fi
   fi
   AC_ARG_ENABLE(tcl-site,AS_HELP_STRING([--enable-tcl-site],[install the tcl extension in the tcl tree]),
-  [],[enable_tcl_site=yes])
+  [],[enable_tcl_site=no])
 
 fi
 
@@ -1089,12 +1077,14 @@ AM_CONDITIONAL([MINGW_W64], [test "$build_mingw_w64" = "yes"])
 PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([systemdsystemunitdir],
 	AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
-	[], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+	[], [with_systemdsystemunitdir=`test -n "$PKG_CONFIG" && $PKG_CONFIG --variable=systemdsystemunitdir systemd 2>/dev/null`])
+dnl without pkg-config or systemd.pc there is no directory to install to
+test -z "$with_systemdsystemunitdir" && with_systemdsystemunitdir=no
 if test "x$with_systemdsystemunitdir" != xno; then
 	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
 	AC_CONFIG_FILES([etc/rrdcached.socket etc/rrdcached.service])
 fi
-AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ])
+AM_CONDITIONAL(HAVE_SYSTEMD, [test "x$with_systemdsystemunitdir" != xno])
 
 
 CONFIGURE_PART(Apply Configuration Information)

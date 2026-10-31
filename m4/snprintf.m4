@@ -122,7 +122,7 @@ AC_DEFUN([HW_FUNC_VSNPRINTF],
         [hw_cv_func_vsnprintf_c99=yes],
         [hw_cv_func_vsnprintf_c99=no],
         [hw_cv_func_vsnprintf_c99=no])])],
-    [hw_cv_func_snprintf_c99=no])
+    [hw_cv_func_vsnprintf_c99=no])
   AS_IF([test "$hw_cv_func_vsnprintf_c99" = yes],
     [AC_DEFINE([HAVE_VSNPRINTF], [1],
       [Define to 1 if you have a C99 compliant `vsnprintf' function.])],
