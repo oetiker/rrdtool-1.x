@@ -32,7 +32,7 @@ cleanup() {
     done
     kill -9 "$CACHED_PID" 2>/dev/null
   fi
-  rm -f "$PIDFILE"
+  rm -f "$PIDFILE" "$LOG" ${BUILD}.rrd
   remove_sock_dir
 }
 trap cleanup EXIT
