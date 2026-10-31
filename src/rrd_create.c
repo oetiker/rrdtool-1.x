@@ -2513,7 +2513,7 @@ static long rra_for_cdp_prefilling(
 
         for (ii = 0; ii < rrd->stat_head->ds_cnt; ii++) {
             init_cdp(rrd, &(rrd->rra_def[found_rra_index]),
-                     rrd->pdp_prep + found_rra_index,
+                     rrd->pdp_prep + ii,
                      rrd->cdp_prep +
                      rrd->stat_head->ds_cnt * found_rra_index + ii);
         }

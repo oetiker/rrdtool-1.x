@@ -1,0 +1,28 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# create --source adds a temporary 1-step AVERAGE RRA when the new file's
+# own one is too short, and initialized its CDPs from pdp_prep at that RRA's
+# index instead of the DS's. With one DS and the temporary RRA at index 2
+# that read past pdp_prep; valgrind or a sanitizer build reports it.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+rm -f "${BUILD}"*.rrd
+$RRDTOOL create "${BUILD}-src.rrd" --step 60 --start 1000000000 \
+  DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10
+report "create the source"
+$RRDTOOL update "${BUILD}-src.rrd" 1000000060:1 1000000120:2 1000000180:3
+report "update the source"
+
+$RRDTOOL create "${BUILD}.rrd" --source "${BUILD}-src.rrd" --step 60 \
+  DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10 RRA:AVERAGE:0.5:100:10
+report "create from a source with a temporary prefill RRA"
+
+LAST=$($RRDTOOL lastupdate "${BUILD}.rrd" | tail -1 | tr -d '\r')
+[ "$LAST" = "1000000180: 3" ]
+report -s $? "last update carried over ($LAST)"
+
+rm -f "${BUILD}"*.rrd
