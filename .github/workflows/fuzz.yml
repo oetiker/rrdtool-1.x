@@ -1,0 +1,56 @@
+name: "Fuzz"
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.harness }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        harness: [ rrd_open_fuzzer, rrd_restore_fuzzer ]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y autopoint build-essential clang libtool-bin \
+                                libpango1.0-dev libxml2-dev gettext
+
+    - name: Build fuzz harnesses
+      run: |
+        ./bootstrap
+        ./configure --enable-fuzzing --disable-shared --disable-libwrap --disable-docs --disable-librados --disable-libdbi --disable-perl --disable-python --disable-tcl --disable-lua CC=clang \
+                    CFLAGS='-O1 -g'
+        make
+
+    # The coverage job replays the seed corpus with a fixed seed; this one
+    # mutates it: a few minutes on each change, longer every night.
+    - name: Fuzz
+      env:
+        ASAN_OPTIONS: detect_leaks=0
+        FUZZ_SECONDS: ${{ github.event_name == 'schedule' && '1800' || '120' }}
+      run: |
+        mkdir -p corpus artifacts
+        cp fuzz/corpus/* corpus/
+        fuzz/${{ matrix.harness }} -max_total_time="$FUZZ_SECONDS" \
+          -timeout=25 -rss_limit_mb=2048 -artifact_prefix=artifacts/ corpus
+
+    - name: Upload crash reproducers
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: ${{ matrix.harness }}-artifacts
+        path: artifacts/
