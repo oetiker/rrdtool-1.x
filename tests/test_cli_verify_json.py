@@ -35,12 +35,6 @@ class CliTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.directory = Path(self.tmp.name)
         self.binary = os.environ["RRDTOOL_BIN"]
-        self.command = [self.binary]
-        if os.name == "nt" and os.environ.get("MSYSTEM"):
-            # Native Python uses CreateProcessW; the CLI consumes UTF-8
-            # narrow argv. Let MSYS perform the same conversion as shell tests.
-            self.command = [os.environ["RRDTOOL_TEST_SHELL"], "-c", 'exec "$@"',
-                            "rrdtool", self.binary]
         self.env = dict(os.environ)
         self.env.pop("RRDCACHED_ADDRESS", None)
         self.run_cli("create", "data.rrd", "--start", "1000000000",
@@ -50,7 +44,7 @@ class CliTests(unittest.TestCase):
                      "1000000120:24:6", "1000000180:36:9")
 
     def run_cli(self, *args, code=0):
-        result = subprocess.run([*self.command, *args], cwd=self.directory,
+        result = subprocess.run([self.binary, *args], cwd=self.directory,
                                 env=self.env, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         self.assertEqual(result.returncode, code,
@@ -135,7 +129,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(self.output("lastupdate", "counter.rrd")["values"], [None])
 
     def test_remote_protocol(self):
-        result = subprocess.run([*self.command, "-"], cwd=self.directory, env=self.env,
+        result = subprocess.run([self.binary, "-"], cwd=self.directory, env=self.env,
                                 input=(b"--json info data.rrd\n"
                                        b"--json info missing.rrd\n"
                                        b"verify --json --diagnose-unknown data.rrd\n"
@@ -156,7 +150,7 @@ class CliTests(unittest.TestCase):
     def test_graph_and_xport(self):
         definition = "DEF:a=data.rrd:a:AVERAGE"
         interval = ["--start", "1000000000", "--end", "1000000240"]
-        probe = subprocess.run([*self.command, "graphv", "-", *interval,
+        probe = subprocess.run([self.binary, "graphv", "-", *interval,
                                 definition, "LINE1:a#ff0000"], cwd=self.directory,
                                env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if probe.returncode:
@@ -191,9 +185,20 @@ class CliTests(unittest.TestCase):
 
     def test_filename_encoding(self):
         windows = os.name == "nt" or bool(os.environ.get("MSYSTEM"))
-        names = ['é日😀.rrd']
+        unicode_name = 'é日😀.rrd'
+        # Pipe input specifies UTF-8 independently of Windows' ANSI argv
+        # conversion and its existing CreateFileA file opener.
+        result = subprocess.run([self.binary, "-"], cwd=self.directory, env=self.env,
+                                input=('verify --json "' + unicode_name + '"\n').encode('utf-8'),
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = result.stdout.splitlines()
+        self.assertEqual(len(lines), 2, result.stdout)
+        self.assertEqual(json.loads(lines[0])["filename"], unicode_name)
+        self.assertTrue(lines[1].startswith(b"ERROR:"))
+        names = ['quote"\\\n.rrd']
         if not windows:
-            names.append('quote"\\\n.rrd')
+            names.append(unicode_name)
         for name in names:
             if windows:
                 # The existing Windows RRD opener uses CreateFileA. Check
