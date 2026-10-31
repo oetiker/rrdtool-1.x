@@ -131,11 +131,24 @@ jobs:
                     LDFLAGS='-fprofile-instr-generate -fcoverage-mapping'
         make
 
-    - name: Run instrumented open and restore regressions
+    - name: Run instrumented regressions
       run: |
         mkdir -p /tmp/rrd-fuzz-profiles
+        tests="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+        for test in hw-failures rpn-failures restore-text cli-failures \
+                    graph-security security-hw-smoothing-window \
+                    security-hw-dependencies security-compute-ds \
+                    update-compute-only verify-json; do
+          if test -f "tests/$test" || test -f "tests/test_${test//-/_}.c"; then
+            tests+=" $test"
+          fi
+        done
+        # Graph regressions use fontconfig's process-lifetime cache. Keep
+        # leak detection enabled for application allocations.
+        printf 'leak:libfontconfig\n' > /tmp/rrd-fuzz-lsan.supp
+        LSAN_OPTIONS=suppressions=/tmp/rrd-fuzz-lsan.supp \
         LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/test-%p.profraw' \
-          make check TESTS="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+          make check TESTS="$tests"
 
     - name: Exercise seed corpora
       run: |
@@ -146,10 +159,20 @@ jobs:
         LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/restore-%p.profraw' \
           fuzz/rrd_restore_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
         llvm-profdata merge -sparse /tmp/rrd-fuzz-profiles/*.profraw -o fuzz.profdata
+        # The CLI and fault tests execute library paths that seed mutation
+        # may never reach. Export their mappings as well as the fuzzers'.
+        objects=(-object src/rrdtool)
+        for binary in tests/hw-failures tests/rpn-failures \
+                      tests/restore-text tests/cli-failures tests/graph-security; do
+          if test -x "$binary"; then
+            objects+=(-object "$binary")
+          fi
+        done
         llvm-cov export -format=lcov \
           -instr-profile=fuzz.profdata \
           fuzz/rrd_open_fuzzer \
           -object fuzz/rrd_restore_fuzzer \
+          "${objects[@]}" \
           >fuzz-coverage-full.info
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
 
