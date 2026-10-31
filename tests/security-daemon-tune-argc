@@ -1,0 +1,97 @@
+#!/bin/bash
+
+. $(dirname $0)/functions
+
+# This test starts and talks to its own private rrdcached instance over
+# a dedicated socket (same reasoning as security-fetch-daemon-arithmetic).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77
+
+perl -MIO::Socket::UNIX -e 1 >/dev/null 2>&1 || exit 77
+
+DAEMON="$TOP_BUILDDIR/src/rrdcached"
+[ -x "$DAEMON" ] || exit 77
+
+BUILD=$BUILDDIR/$(basename $0)
+
+# TUNE <file> <argc> <args...>: the daemon allocates argc pointers but
+# fills in only the arguments actually sent. Passing the declared count
+# on to rrd_tune_r made the option parser read uninitialized pointers.
+make_sock_dir
+SOCK="$RRDTEST_SOCKDIR/$(basename $0).sock"
+PIDFILE=${BUILD}.pid
+LOG=${BUILD}-cached.log
+
+cleanup() {
+  if [ -f "$PIDFILE" ]; then
+    CACHED_PID="$(cat "$PIDFILE")"
+    kill "$CACHED_PID" 2>/dev/null
+    for i in $(seq 1 20); do
+      kill -0 "$CACHED_PID" 2>/dev/null || break
+      sleep 0.1
+    done
+    kill -9 "$CACHED_PID" 2>/dev/null
+  fi
+  rm -f "$PIDFILE"
+  remove_sock_dir
+}
+trap cleanup EXIT
+
+$RRDTOOL create ${BUILD}.rrd --start 900000000 --step 60 \
+  DS:value:GAUGE:120:0:100 RRA:AVERAGE:0.5:1:5 || fail $? create
+
+"$DAEMON" -p "$PIDFILE" -l "unix:$SOCK" -b "$(readlink -f -- "$BUILDDIR")" \
+  -B -o "$LOG" || fail 1 "rrdcached would not start"
+
+for i in $(seq 1 50); do
+  [ -S "$SOCK" ] && break
+  sleep 0.1
+done
+[ -S "$SOCK" ] || fail 1 "rrdcached did not open its listen socket"
+
+send () {
+  perl -e '
+    use strict;
+    use warnings;
+    use IO::Socket::UNIX;
+    use IO::Select;
+
+    my ($sockpath, $cmd) = @ARGV;
+    my $sock = IO::Socket::UNIX->new(Peer => $sockpath, Type => SOCK_STREAM)
+      or die "connect failed: $!\n";
+    $sock->autoflush(1);
+    syswrite($sock, "$cmd\n") or die "write failed: $!\n";
+
+    my $sel = IO::Select->new($sock);
+    my $all = "";
+    my $deadline = time() + 15;
+    while (time() < $deadline) {
+      last unless $sel->can_read(1);
+      my $buf;
+      my $n = sysread($sock, $buf, 65536);
+      last if !defined($n) || $n == 0;
+      $all .= $buf;
+      last if $all =~ /\n/;
+    }
+    print $all eq "" ? "TIMEOUT\n" : $all;
+  ' "$SOCK" "$1"
+}
+
+FILE=$(basename ${BUILD}.rrd)
+
+RESPONSE=$(send "TUNE $FILE 50 --heartbeat value:300")
+case "$RESPONSE" in
+  *"Too few arguments"*) : ;;
+  *) fail 1 "TUNE with fewer arguments than declared: $RESPONSE" ;;
+esac
+report "reject TUNE with fewer arguments than declared"
+
+RESPONSE=$(send "TUNE $FILE 2 --heartbeat value:300")
+case "$RESPONSE" in
+  0*) : ;;
+  *) fail 1 "TUNE with a matching count: $RESPONSE" ;;
+esac
+report "accept TUNE with a matching argument count"
+
+kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+report "rrdcached still running"
