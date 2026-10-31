@@ -147,7 +147,7 @@ rrdcgi_LDADD	= librrd.la librrdupd.la
 rrdupdate_SOURCES = rrdupdate.c
 rrdupdate_LDADD	  = librrdupd.la
 
-rrdtool_SOURCES = rrd_tool.c
+rrdtool_SOURCES = rrd_tool.c rrd_cli_json.c rrd_cli_verify.c rrd_cli.h
 rrdtool_DEPENDENCIES = librrd.la
 rrdtool_LDADD	= librrd.la
 

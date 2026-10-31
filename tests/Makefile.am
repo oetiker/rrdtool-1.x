@@ -13,8 +13,10 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += verify-json
+EXTRA_DIST = test_cli_verify_json.py
 
-EXTRA_DIST = Makefile.am \
+EXTRA_DIST += Makefile.am \
 	functions $(script_tests) \
 	modify-test1.create.dump modify-test1.mod1.dump \
 	modify2-testa-create.dump modify2-testb-mod1.dump modify2-testc-mod1.dump \

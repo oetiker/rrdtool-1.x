@@ -3505,7 +3505,7 @@ int grid_paint(
 
     /* graph title */
     image_title = graph_title_split(im->title ? im->title : "");
-    while (image_title.lines[j] != NULL) {
+    while (image_title.lines && image_title.lines[j] != NULL) {
         gfx_text(im,
                  im->ximg / 2,
                  (im->text_prop[TEXT_PROP_TITLE].size * 1.3) +
@@ -3516,6 +3516,7 @@ int grid_paint(
                  image_title.lines[j] ? image_title.lines[j] : "");
         j++;
     }
+    free(image_title.lines);
 
     /* rrdtool 'logo' */
     if (!(im->extra_flags & NO_RRDTOOL_TAG)) {
@@ -3850,6 +3851,7 @@ int graph_size_location(
         Ytitle =
             im->text_prop[TEXT_PROP_TITLE].size * (image_title.count +
                                                    1) * 1.6;
+        free(image_title.lines);
     } else {
         // we have no title; get a little clearing from the top
         Ytitle = Yspacing;
@@ -6896,13 +6898,26 @@ image_title_t graph_title_split(
     char     *found_pos;
     int       found_size;
 
-    retval.lines = malloc((MAX_IMAGE_TITLE_LINES + 1) * sizeof(char *));
+    size_t title_size = strlen(title) + 1;
+    size_t index_size = (MAX_IMAGE_TITLE_LINES + 1) * sizeof(char *);
+
+    retval.count = 0;
+    retval.lines = NULL;
+    if (title_size > (size_t) -1 - index_size)
+        return retval;
+    /* Keep the string and its line index in one allocation. A leading
+     * delimiter may advance lines[0] beyond the start of the string. */
+    retval.lines = malloc(index_size + title_size);
+    if (retval.lines == NULL)
+        return retval;
 
     char     *delims[] = { "\n", "\\n", "<br>", "<br/>" };
 
     // printf("unsplit title: %s\n", title);
 
-    char     *consumed = strdup(title); /* allocates copy */
+    char     *consumed = (char *) retval.lines + index_size;
+
+    memcpy(consumed, title, title_size);
 
     do {
         /*
@@ -6942,7 +6957,8 @@ image_title_t graph_title_split(
         }
 
         // move the consumed pointer past any delimiter, so we can loop around again
-        consumed = consumed + found_size;
+        if (found_pos)
+            consumed += found_size;
     }
     // must not create more than MAX lines, so must stop splitting
     // either when we hit the max, or have no other delimiter

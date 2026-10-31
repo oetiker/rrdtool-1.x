@@ -604,6 +604,11 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
 
+    if (memchr(rrd->stat_head->version, '\0',
+               sizeof(rrd->stat_head->version)) == NULL) {
+        rrd_set_error("RRD format version is not terminated");
+        goto out_close;
+    }
     version = atoi(rrd->stat_head->version);
 
     if (version > atoi(RRD_VERSION5)) {
@@ -762,7 +767,7 @@ rrd_file_t *rrd_open(
         close_and_unlock(rrd_simple_file->fd);
 
         if (e) {
-            rrd_set_error(e);
+            rrd_set_error("%s", e);
             free(e);
         } else
             rrd_set_error("error message was lost (out of memory)");

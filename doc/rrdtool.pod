@@ -99,6 +99,12 @@ for each datum in the most recent update. Check L<rrdlastupdate>.
 
 Get information about an RRD. Check L<rrdinfo>.
 
+=item B<verify>
+
+Check the integrity of an RRD without changing it. Add
+B<--diagnose-unknown> to inspect stored UNKNOWN values and current
+preparation state. Check L<rrdverify>.
+
 =item B<resize>
 
 Change the size of individual RRAs. This is dangerous! Check L<rrdresize>.
@@ -265,6 +271,34 @@ initiate real-time alerts.
 For a detailed description on how to set this up, see L<rrdcreate>.
 
 =back
+
+=head2 JSON OUTPUT
+
+B<rrdtool> B<--json> I<command> I<arguments> selects structured output for
+B<info>, B<updatev>, B<graph>, B<graphv>, B<fetch>, B<lastupdate>, B<first>,
+B<last>, B<list>, B<xport>, and B<verify>. Except for B<xport>, B<--json>
+can also immediately follow the command name. The existing B<xport --json>
+option retains its native format. Other commands reject this option before
+performing their operation. Default command output is unchanged.
+
+B<info>, B<updatev>, and the graph commands return an object whose keys match
+their verbose output. Binary image values are objects with C<encoding> set to
+C<base64> and C<data> containing the encoded bytes. NaN becomes JSON C<null>;
+positive and negative infinity become the strings C<Infinity> and C<-Infinity>.
+Finite values use a decimal point regardless of the selected locale.
+
+B<fetch> returns C<start>, C<end>, C<step>, C<ds_names>, and C<data>. Each data
+row contains C<timestamp> and C<values>, in DS order. B<lastupdate> returns
+C<last_update>, C<ds_names>, and C<values>; raw input values remain strings
+to preserve large counters, with C<U> represented by C<null>. B<first> and
+B<last> return C<timestamp>. B<list> returns the existing listing text in
+C<listing>, including its newline separators. See L<rrdverify> for verification
+and UNKNOWN diagnostics fields.
+
+Errors return a nonzero exit status and an object with an C<error> string;
+B<verify> instead returns C<valid: false> and its C<errors> array. Strings
+escape control characters and invalid UTF-8 bytes. In remote control mode,
+the existing protocol status line still follows the command output.
 
 =head2 REMOTE CONTROL
 

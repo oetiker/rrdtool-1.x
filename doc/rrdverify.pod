@@ -1,0 +1,69 @@
+=head1 NAME
+
+rrdverify - check RRD integrity and inspect UNKNOWN data
+
+=head1 SYNOPSIS
+
+B<rrdtool> B<verify> [B<--json>] [B<--diagnose-unknown>] [B<-->] I<file.rrd>
+
+=head1 DESCRIPTION
+
+B<verify> opens an RRD read-only and holds a read lock while checking its
+structure. It checks the file layout, data source names and types, range
+limits, RRA types, consolidation steps, circular row pointers, xff,
+encoded COMPUTE operators and references, and Holt-Winters dependencies
+and parameters. It reports trailing bytes as a size error.
+
+A structurally valid RRD exits with status 0. A failed check, unreadable
+file, or invalid command line exits with status 1. UNKNOWN samples are
+normal RRD data and do not make a file invalid. Verification does not
+repair the file or establish the accuracy of the measurements.
+
+The command reads the stored file directly. It does not flush rrdcached;
+pending updates in the daemon are outside this snapshot.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--diagnose-unknown>
+
+Scan the archive values and report known, UNKNOWN, and infinite value
+counts for each data source in each RRA. Also show the latest input,
+heartbeat, range limits, current PDP unknown seconds, and, for ordinary
+consolidation functions, current CDP unknown PDP counts and xff.
+
+These are observations about the stored state. RRD files do not record
+the cause of each historical UNKNOWN sample. Explicit U input,
+heartbeat gaps, range filtering, insufficient known PDPs, undefined
+COMPUTE results, and Holt-Winters initialization are possible causes;
+the diagnostic output does not claim to reconstruct that history.
+
+The scan reads values in bounded chunks. Counter storage is proportional
+to the number of data sources multiplied by the number of RRAs.
+
+=item B<--json>
+
+Write one JSON object. C<valid> is a boolean; C<errors> contains objects
+with a stable C<code> and a human-readable C<message>. Successful header
+reads also supply C<step>, C<ds_count>, C<rra_count>, and C<last_update>.
+
+With B<--diagnose-unknown>, C<unknown_diagnostics> contains
+C<data_sources> and C<archives> arrays. Its
+C<historical_causes_recorded> field is false; C<possible_causes> lists
+possibilities rather than assigning causes to samples.
+
+=back
+
+=head1 EXAMPLES
+
+ rrdtool verify traffic.rrd
+ rrdtool verify --json --diagnose-unknown traffic.rrd
+
+UNKNOWN values are counted without treating NaNs as structural damage.
+Infinite values are counted separately from both finite and UNKNOWN
+values.
+
+=head1 SEE ALSO
+
+L<rrdtool>, L<rrdinfo>, L<rrdfetch>, L<rrdlastupdate>

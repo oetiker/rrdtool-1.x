@@ -1,6 +1,12 @@
 
 RRDtool - master ...
 ====================
+Features
+--------
+* Add read-only `rrdtool verify` structural checks and `--diagnose-unknown`
+  summaries of stored archive values and current PDP/CDP state.
+* Add opt-in `--json` output for existing reporting commands and verification.
+
 Bugfixes
 --------
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
@@ -35,6 +41,8 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
+* Release parsed graph arguments on invalid function names and free graph
+  title buffers after layout and drawing.
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The

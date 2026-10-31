@@ -1969,6 +1969,7 @@ void rrd_graph_script(
         freeParsedArguments(&pa);
         /* processed parsed args */
         if (parseArguments(argv[i], &pa)) {
+            freeParsedArguments(&pa);
             return;
         }
 
@@ -2000,6 +2001,7 @@ void rrd_graph_script(
             } else {
                 rrd_set_error("'%s' is not a valid function name in %s", cmd,
                               pa.arg_orig);
+                freeParsedArguments(&pa);
                 return;
             }
         }
