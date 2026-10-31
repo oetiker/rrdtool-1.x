@@ -10,11 +10,10 @@ AM_LDFLAGS = -all-static
 endif
 
 RRD_DEFAULT_FONT=@RRD_DEFAULT_FONT@
-AM_CPPFLAGS = -DLOCALEDIR="\"$(datadir)/locale\"" \
+AM_CPPFLAGS = -DLOCALEDIR="\"$(localedir)\"" \
 	-DRRD_DEFAULT_FONT=\"$(RRD_DEFAULT_FONT)\" \
 	-DNUMVERS=@NUMVERS@
 AM_CFLAGS = @CFLAGS@ -I$(top_srcdir)
-## no including this by default @WERROR@
 
 UPD_C_FILES =		\
 	mutex.c		\

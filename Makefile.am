@@ -61,7 +61,7 @@ site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefil
 	cd bindings/perl-shared && $(MAKE) install
 
 site-tcl-install: all
-	cd bindings/tcl && $(MAKE) tcl-install
+	cd bindings/tcl && $(MAKE) install
 
 site-python-install: all
 	cd bindings/python && $(PYTHON) setup.py install $(if $(DESTDIR),--root=$(DESTDIR))
