@@ -2,16 +2,21 @@
 # To customize, copy this file to /etc/systemd/system/
 # and edit there
 #
+# Every client that can open the socket may update, create and flush
+# files (within the service's base directory), so keep it to root and
+# root's group; add SocketGroup= for a group of trusted users.
+#
 
 [Unit]
 Description=sockets activating rrdcached
 Documentation=man:rrdcached(1)
 
 [Socket]
-ListenStream=/tmp/rrdcached.sock
+ListenStream=/run/rrdcached/rrdcached.sock
 #ListenStream=[::1]:42217
-#DirectoryMode=0755
-#SocketMode=0666
+SocketMode=0660
+DirectoryMode=0755
+#SocketGroup=
 #BindToDevice=
 
 [Install]

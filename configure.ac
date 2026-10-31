@@ -1098,15 +1098,17 @@ esac
 AM_CONDITIONAL([MINGW_W64], [test "$build_mingw_w64" = "yes"])
 
 # systemd check
-PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([systemdsystemunitdir],
 	AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
-	[], [with_systemdsystemunitdir=`test -n "$PKG_CONFIG" && $PKG_CONFIG --variable=systemdsystemunitdir systemd 2>/dev/null`])
+	[], [dnl relative to --prefix, as systemd.pc defines it, so a non-root
+	     dnl install under another prefix does not write to /usr/lib
+	     rd_unit_prefix=$prefix
+	     test "x$rd_unit_prefix" = xNONE && rd_unit_prefix=$ac_default_prefix
+	     with_systemdsystemunitdir=`test -n "$PKG_CONFIG" && $PKG_CONFIG --define-variable=prefix="$rd_unit_prefix" --variable=systemdsystemunitdir systemd 2>/dev/null`])
 dnl without pkg-config or systemd.pc there is no directory to install to
 test -z "$with_systemdsystemunitdir" && with_systemdsystemunitdir=no
 if test "x$with_systemdsystemunitdir" != xno; then
 	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
-	AC_CONFIG_FILES([etc/rrdcached.socket etc/rrdcached.service])
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test "x$with_systemdsystemunitdir" != xno])
 

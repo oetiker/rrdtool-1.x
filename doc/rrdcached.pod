@@ -519,7 +519,14 @@ accepted commands to those needed by external clients. If, for example,
 external clients want to draw graphs of the cached data, they should only be
 allowed to use the C<FLUSH> command.
 
-Authorization does not work when rrdcached is socket-activated by systemd.
+Authorization does not work when rrdcached is socket-activated by systemd:
+every client that can open the socket may use every command. The units
+shipped in F<etc/> therefore create the socket as
+F</run/rrdcached/rrdcached.sock> with mode 0660 for root and root's group, and
+run the daemon as a dynamic user with B<-B -O -b /var/lib/rrdcached/db>, so it
+writes only below that directory and never overwrites a file on CREATE.
+Change B<-b> to where your RRD files are, and set B<SocketGroup=> for a group
+of trusted users.
 
 =head2 Encryption
 
