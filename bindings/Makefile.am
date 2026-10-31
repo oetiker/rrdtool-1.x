@@ -27,25 +27,42 @@ EXTRA_DIST = perl-piped/MANIFEST perl-piped/README perl-piped/Makefile.PL perl-p
 # add the following to the all target
 all-local:  @COMP_PERL@ @COMP_RUBY@ @COMP_PYTHON@
 
+# A binding that was not built is skipped; one that was built and fails
+# to install fails "make install".
 install-data-local:
-	$(AM_V_GEN)test -f ${builddir}/perl-piped/Makefile \
-           && ( cd ${builddir}/perl-piped \
-	        && $(MAKE) install ) \
-	   || true
-	$(AM_V_GEN)test -f ${builddir}/perl-shared/Makefile \
-           && ( cd ${builddir}/perl-shared \
-                && $(MAKE) install ) \
-           || true
-	$(AM_V_GEN)test -f ${builddir}/ruby/Makefile \
-           && ( cd ${builddir}/ruby \
-                && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install ) \
-           || true
-	$(AM_V_GEN)test -f ${builddir}/python/dist/*.whl \
-           && ( $(PYTHON) -m pip install --upgrade --no-index --no-deps \
-                  --no-cache-dir --disable-pip-version-check \
-                  --target=$(DESTDIR)$(libdir)/python3/site-packages \
-                  ${builddir}/python/dist/*.whl ) \
-           || true
+	$(AM_V_GEN)if test -f ${builddir}/perl-piped/Makefile; then \
+	  ( cd ${builddir}/perl-piped && $(MAKE) install ) || exit 1; \
+	fi
+	$(AM_V_GEN)if test -f ${builddir}/perl-shared/Makefile; then \
+	  ( cd ${builddir}/perl-shared && $(MAKE) install ) || exit 1; \
+	fi
+	$(AM_V_GEN)if test -f ${builddir}/ruby/Makefile; then \
+	  test -z "$(RUBY_INSTALL_DIR)" || $(MKDIR_P) "$(DESTDIR)$(RUBY_INSTALL_DIR)"; \
+	  ( cd ${builddir}/ruby \
+	    && $(MAKE) EPREFIX=$(DESTDIR)$(exec_prefix) $(RUBY_MAKE_OPTIONS) install ) || exit 1; \
+	fi
+	$(AM_V_GEN)if test -f ${builddir}/python/wheel.stamp; then \
+	  $(PYTHON) -m pip install --upgrade --no-index --no-deps \
+	    --no-cache-dir --disable-pip-version-check \
+	    --target=$(DESTDIR)$(libdir)/python3/site-packages \
+	    ${builddir}/python/dist/*.whl || exit 1; \
+	fi
+
+# The installers have no uninstall of their own. Perl's packlists name
+# what it installed; the Python and Ruby files are at the fixed places
+# install-data-local put them (a site install is left to its owner).
+uninstall-local:
+	@for pl in `find "$(DESTDIR)$(prefix)" -name .packlist -path '*/auto/RRD[ps]/.packlist' 2>/dev/null`; do \
+	  sed 's/ .*//' "$$pl" | while read f; do \
+	    f=$${f#$(DESTDIR)}; rm -f "$(DESTDIR)$$f"; \
+	  done; \
+	  rm -f "$$pl"; \
+	done
+	@perllocal=`find "$(DESTDIR)$(prefix)" -name perllocal.pod -path '*/lib/perl/*' 2>/dev/null`; \
+	  test -z "$$perllocal" || rm -f $$perllocal
+	rm -rf $(DESTDIR)$(libdir)/python3/site-packages/rrdtool*
+	@test -z "$(COMP_RUBY)" || test -z "$(RUBY_INSTALL_DIR)" \
+	  || rm -f "$(DESTDIR)$(RUBY_INSTALL_DIR)"/RRD.*
 
 # rules for building the ruby module
 # RUBYARCHDIR= is to work around in a makefile quirk not sure 
@@ -76,6 +93,7 @@ python: ${builddir}/python/wheel.stamp
 ${builddir}/python/wheel.stamp: ${abs_srcdir}/python/rrdtoolmodule.c ${abs_srcdir}/python/setup.py
 	-mkdir -p ${builddir}/python
 	cd ${builddir}/python \
+	  && rm -rf dist \
 	  && ( test -e rrdtoolmodule.c || ln -s ${abs_srcdir}/python/rrdtoolmodule.c ) \
           && env \
                ABS_TOP_SRCDIR=${abs_top_srcdir} \

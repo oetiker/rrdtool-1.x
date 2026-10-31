@@ -25,9 +25,10 @@ if LUA_NEED_OUR_COMPAT51
 else
   rrd_la_SOURCES = rrdlua.c
 endif
-rrd_la_LIBADD = -lrrd -lm
-rrd_la_LDFLAGS = -module -version-info $(LIB_VERSION_INFO) $(LUA_LFLAGS) -L$(top_builddir)/src/.libs
-rrd_la_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src -I$(top_srcdir) $(LUA_CFLAGS) $(LUA_DEFINES) -DLIB_VERSION=\"$(LIB_VERSION)\"
+# the in-tree librrd, not whatever -lrrd $(LUA_LFLAGS) finds first
+rrd_la_LIBADD = $(top_builddir)/src/librrd.la -lm
+rrd_la_LDFLAGS = -module -version-info $(LIB_VERSION_INFO) $(LUA_LFLAGS)
+rrd_la_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src -I$(top_srcdir) $(RRD_CFLAGS) $(LUA_CFLAGS) $(LUA_DEFINES) -DLIB_VERSION=\"$(VERSION)\"
 
 .PHONY: test.lua
 

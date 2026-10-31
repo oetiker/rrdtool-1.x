@@ -63,13 +63,10 @@ site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefil
 site-tcl-install: all
 	cd bindings/tcl && $(MAKE) install
 
+# into the interpreter's own site-packages, from the wheel "make" built
 site-python-install: all
-	cd bindings/python && $(PYTHON) setup.py install $(if $(DESTDIR),--root=$(DESTDIR))
-
-# Skip this part of "make distcheck": the perl, ruby, and tcl files
-# are not uninstalled by "make uninstall".
-distuninstallcheck:
-	@:
+	$(PYTHON) -m pip install --no-index --no-deps --disable-pip-version-check \
+	  $${DESTDIR:+--root="$$DESTDIR"} bindings/python/dist/*.whl
 
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
