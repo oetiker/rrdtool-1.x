@@ -6,6 +6,9 @@
 [Unit]
 Description=Data caching daemon for rrdtool
 Documentation=man:rrdcached(1)
+# the service gets its socket from rrdcached.socket (-g, no -l)
+Requires=rrdcached.socket
+After=rrdcached.socket
 
 [Service]
 # If you enable socket-activable rrdcached.socket,
