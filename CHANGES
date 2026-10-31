@@ -35,6 +35,11 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
+* Opening a file whose header RRDtool refuses restored the error message
+  with the message itself as the printf format, so a crafted RRD with `%`
+  in its version string crashed `rrdtool info`, and `%n` could write to
+  memory. `tune` and graph's DEF parsing restored errors the same way.
+  @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The

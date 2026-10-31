@@ -13,6 +13,7 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += security-error-format
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -164,4 +165,5 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
+CLEANFILES += security-error-format-cached.log
 CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err

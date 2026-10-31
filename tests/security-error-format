@@ -1,0 +1,62 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# rrd_open, and rrd_tune after a daemon request, save the current error
+# and set it again. The message quotes the file's version, so setting it
+# with the message as the printf format let a version of "9%s%s" crash
+# rrdtool, and %n write to memory.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+PATTERN="can't handle RRD file version 9%s%s"
+
+$RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail $? create
+
+# The version follows the 4-byte cookie on every platform. Five bytes
+# leave it unterminated, but create zeroes the padding that follows.
+cp "${BUILD}.rrd" "${BUILD}-crafted.rrd"
+perl -0777 -pi -e 'substr($_, 4, 5, "9%s%s")' "${BUILD}-crafted.rrd"
+
+expect_version_error () {
+  local what="$1"
+  shift
+  "$@" >"${BUILD}.out" 2>&1
+  status=$?
+  if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+    fail 1 "$what: exit status $status: $(cat "${BUILD}.out")"
+  elif ! grep -qF "$PATTERN" "${BUILD}.out"; then
+    fail 1 "$what: unexpected error: $(cat "${BUILD}.out")"
+  else
+    ok "$what"
+  fi
+}
+
+expect_version_error "info reports a version with % in it as text" \
+  $RRDTOOL info "${BUILD}-crafted.rrd"
+
+DAEMON="$TOP_BUILDDIR/src/rrdcached"
+if [ -x "$DAEMON" ]; then
+  make_sock_dir
+  SOCK="$RRDTEST_SOCKDIR/$(basename "$0").sock"
+  PIDFILE="${BUILD}.pid"
+  cleanup () {
+    [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE")" 2>/dev/null
+    rm -f "$PIDFILE"
+    remove_sock_dir
+  }
+  trap cleanup EXIT
+  "$DAEMON" -p "$PIDFILE" -l "unix:$SOCK" -b "$(cd "$BUILDDIR" && pwd -P)" \
+    -B -o "${BUILD}-cached.log" || fail 1 "rrdcached would not start"
+  for i in $(seq 1 50); do
+    [ -S "$SOCK" ] && break
+    sleep 0.1
+  done
+  [ -S "$SOCK" ] || fail 1 "rrdcached did not open its listen socket"
+  expect_version_error "tune through rrdcached reports the error as text" \
+    $RRDTOOL tune --daemon "unix:$SOCK" "$(basename "${BUILD}")-crafted.rrd" \
+    --heartbeat value:100
+fi
+
+rm -f "${BUILD}.rrd" "${BUILD}-crafted.rrd" "${BUILD}.out"

@@ -161,10 +161,33 @@ static int test_empty_percentiles(void)
     return 0;
 }
 
+static int test_def_retry_error(void)
+{
+    /* The retry keeps the first error and restores it if the retry fails
+     * too; the restored text comes from the argument, so it must not be
+     * used as a format. */
+    const char *args[] = {
+        "DEF:debug=bad%literal:vname=x:rrd=missing.rrd:ds=a:cf=INVALID"
+    };
+    image_desc_t im;
+    int failed;
+
+    rrd_graph_init(&im, IMAGE_INIT_NO_CAIRO);
+    rrd_clear_error();
+    rrd_graph_script(1, args, &im, 0);
+    failed = !rrd_test_error() ||
+        strcmp(rrd_get_error(), "Bad debug value: bad%literal") != 0;
+    if (failed)
+        fprintf(stderr, "DEF retry error: '%s'\n",
+                rrd_test_error() ? rrd_get_error() : "");
+    im_free(&im);
+    return failed;
+}
+
 int main(void)
 {
     int result = test_percentiles(0) | test_percentiles(-4) | test_percentiles(-2) |
-        test_invalid_ranges() | test_empty_percentiles();
+        test_invalid_ranges() | test_empty_percentiles() | test_def_retry_error();
     if (sizeof(time_t) > sizeof(int))
         result |= test_cdef_overflow(0, (time_t) ((uintmax_t) INT_MAX + 1));
     /* Allocation-bound cases require a representable end timestamp. */
