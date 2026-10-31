@@ -1100,6 +1100,12 @@ int data_fetch(
         if (im->gdes[i].gf != GF_DEF)
             continue;
 
+        /* graphv --add-jsontime processes the DEFs again. Keep each
+         * existing allocation and its owner, even when another DEF for
+         * this RRD has replaced its entry in rrd_map. */
+        if (im->gdes[i].data != NULL)
+            continue;
+
         /* do we have it already ? */
         gpointer  value;
         char     *key = gdes_fetch_key(im->gdes[i]);
@@ -1108,11 +1114,6 @@ int data_fetch(
         free(key);
         if (ok) {
             ii = GPOINTER_TO_INT(value);
-            /* graphv --add-jsontime fetches a second time; this DEF still
-             * owns what it got the first time, so leave data_first set
-             * for im_free */
-            if (ii == i)
-                continue;
             im->gdes[i].start = im->gdes[ii].start;
             im->gdes[i].end = im->gdes[ii].end;
             im->gdes[i].step = im->gdes[ii].step;
