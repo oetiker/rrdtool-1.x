@@ -97,6 +97,12 @@ Bugfixes
   `--disable-perl-site-install` and `--disable-ruby-site-install` no
   longer select the site install, `--enable-tcl-site` works, and
   `--localedir` is honoured. @somethingwithproof
+* `--htmldir` is honoured for the HTML pages, and `RRDTXTDIR` sets where
+  the text pages go (#1178). `--enable-python-site-install` puts the
+  Python module into the interpreter's site-packages (#1347). The Perl
+  module builds standalone against an installed librrd again (#1354).
+  `rrdcached.service` requires `rrdcached.socket` (#1143).
+  @somethingwithproof
 * configure uses `PKG_CONFIG` (and a cross `$host-pkg-config`), keeps the
   user's `CFLAGS` last, keeps library order for static links, and adds
   `Libs.private` to `librrd.pc`. `make check` skips the tests of features
