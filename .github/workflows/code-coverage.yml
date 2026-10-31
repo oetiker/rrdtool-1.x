@@ -90,8 +90,9 @@ jobs:
     - name: Merge coverage reports
       run: |
         # Merge static, shared, and regression-test counters before upload.
-        # Search build directories explicitly to skip configure's conftest files.
-        gcovr --root . --xml-pretty --output coverage.xml \
+        # Collect test-object counters too, but report application sources;
+        # failing assertions are test outcomes, not untested application paths.
+        gcovr --root . --filter src/ --xml-pretty --output coverage.xml \
           --lcov coverage-full.info --print-summary src tests
         # The existing Codecov baseline measures lines, not branch completeness.
         # Retain all DA line counts, including zero-hit lines, for comparison.

@@ -110,6 +110,21 @@ endif
 endif
 
 if HAVE_STATIC_LIBRRD
+check_PROGRAMS += hw-failures rpn-failures
+TESTS += hw-failures rpn-failures
+hw_failures_SOURCES = test_hw_failures.c
+hw_failures_LDFLAGS = -static
+hw_failures_LDADD = ${top_builddir}/src/librrd.la
+if BUILD_RRDRESTORE
+check_PROGRAMS += restore-text
+TESTS += restore-text
+restore_text_SOURCES = test_restore_text.c
+restore_text_LDFLAGS = -static
+restore_text_LDADD = ${top_builddir}/src/librrd.la
+endif
+rpn_failures_SOURCES = test_rpn_failures.c
+rpn_failures_LDFLAGS = -static
+rpn_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += fetch-empty-security
 TESTS += fetch-empty-security
 fetch_empty_security_SOURCES = test_fetch_empty_security.c

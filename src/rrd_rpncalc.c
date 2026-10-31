@@ -274,15 +274,17 @@ static short addop2str(
 {
     if (op == op_type) {
         short     op_len;
+        char     *grown;
 
         op_len = strlen(op_str);
-        *result_str = (char *) rrd_realloc(*result_str,
+        grown = (char *) rrd_realloc(*result_str,
                                            (op_len + 1 +
                                             *offset) * sizeof(char));
-        if (*result_str == NULL) {
+        if (grown == NULL) {
             rrd_set_error("failed to alloc memory in addop2str");
             return -1;
         }
+        *result_str = grown;
         strncpy(*result_str + *offset, op_str, op_len + 1);
         *offset += op_len;
         return 1;

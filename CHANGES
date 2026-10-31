@@ -35,6 +35,7 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
+* Preserve the existing COMPUTE string buffer when growing it fails.
 * An rrdcached `TUNE` request that announced more arguments than it sent
   made the daemon read uninitialized memory, which crashed it or left a
   worker thread spinning. It now answers "Too few arguments".
