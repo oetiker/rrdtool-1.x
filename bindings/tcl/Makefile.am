@@ -56,5 +56,8 @@ install-exec-local: $(TCL_RRD_LIB)
 	@$(NORMAL_INSTALL)
 	$(INSTALL_PROGRAM) $(TCL_RRD_LIB) $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
 
+uninstall-local:
+	rm -f $(DESTDIR)$(libdir)/$(TCL_RRD_LIB)
+
 CLEANFILES = tclrrd.o tclrrd.so $(TCL_RRD_LIB) pkgIndex.tcl
 

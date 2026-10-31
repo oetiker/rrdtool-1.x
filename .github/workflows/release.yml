@@ -559,7 +559,9 @@ jobs:
           fi
           echo "found ruby binding at: $rrd_rb"
           mkdir -p stage/opt/rrdtool/lib/ruby
-          mv "$rrd_rb" stage/opt/rrdtool/lib/ruby/RRD.so
+          # configure now installs it there itself; older trees did not
+          [ "$rrd_rb" = stage/opt/rrdtool/lib/ruby/RRD.so ] \
+            || mv "$rrd_rb" stage/opt/rrdtool/lib/ruby/RRD.so
           # Drop the now-empty system tree the ruby binding escaped into.
           rm -rf stage/usr
           # Nothing should remain staged outside opt/.

@@ -760,20 +760,22 @@ AC_ARG_ENABLE(perl-site-install,
 AS_HELP_STRING([--enable-perl-site-install],[by default the rrdtool perl modules are installed together with rrdtool in $prefix/lib/perl. You have to put a 'use lib qw($prefix/lib/perl)' into your scripts when you want to use them. When you set this option the perl modules will get installed wherever your perl setup thinks it is best.]),
 [AS_IF([test "x$enableval" = xyes], [PERL_MAKE_OPTIONS=])],[])
 
+dnl quoted, because the Makefile passes PERL_MAKE_OPTIONS through the shell
+dnl and "-O2 -g" must stay one argument
 if test ! -z "$PERLCC"; then
-   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC=$PERLCC"
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC='$PERLCC'"
 
    if test ! -z "$PERLCCFLAGS"; then
-       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS=$PERLCCFLAGS"
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS='$PERLCCFLAGS'"
    fi
 
    if test -z "$PERLLD"; then
        PERLLD=$PERLCC
    fi
-   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD=$PERLLD"
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD='$PERLLD'"
 
    if test ! -z "$PERLLDFLAGS"; then
-       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS='$PERLLDFLAGS'"
    fi
 fi
 
@@ -810,12 +812,19 @@ else
 	fi
 fi
 
+dnl mkmf installs into the interpreter's own sitearchdir unless told
+dnl otherwise; sitedir alone is not enough for current Ruby versions.
+dnl $(DESTDIR) is expanded by make at install time, as in mkmf's defaults.
+rd_ruby_prefix_options='sitedir=$(DESTDIR)'"$langpref"'/lib/ruby sitelibdir=$(DESTDIR)'"$langpref"'/lib/ruby sitearchdir=$(DESTDIR)'"$langpref"'/lib/ruby'
+
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
 AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules are installed together with rrdtool in $prefix/lib/ruby. You have to add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable for ruby to find the RRD.so file.]),
-[AS_IF([test "x$enableval" = xyes], [RUBY_MAKE_OPTIONS=],
-       [RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])],
-[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
+[AS_IF([test "x$enableval" = xyes], [RUBY_MAKE_OPTIONS=; RUBY_INSTALL_DIR=],
+       [RUBY_MAKE_OPTIONS="$rd_ruby_prefix_options"; RUBY_INSTALL_DIR="$langpref/lib/ruby"])],
+[RUBY_MAKE_OPTIONS="$rd_ruby_prefix_options"; RUBY_INSTALL_DIR="$langpref/lib/ruby"])
+dnl mkmf does not create an overridden sitearchdir; install-data-local does
+AC_SUBST(RUBY_INSTALL_DIR)
 
 
 AC_ARG_WITH(ruby-options,
@@ -831,7 +840,8 @@ AC_SUBST(COMP_RUBY)
 AM_CONDITIONAL(BUILD_RUBY,[test -n "$COMP_RUBY"])
 
 dnl Check for Lua.
-AC_PATH_PROG(LUA, lua, no)
+dnl distributions often install only a versioned interpreter
+AC_PATH_PROGS(LUA, [lua lua5.4 lua5.3 lua5.2 lua5.1], no)
 
 AC_ARG_ENABLE(lua,AS_HELP_STRING([--disable-lua],[do not build the lua modules]),
 [],[enable_lua=yes])
@@ -982,7 +992,15 @@ if test  "$enable_tcl" = "yes"; then
   withval=""
   AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
   enable_tcl=no
-  for dir in $withval /usr/lib /usr/lib64 /usr/local/lib /usr/lib/tcl8.4 /usr/lib/tcl8.3 ; do
+  dnl Debian and Ubuntu keep tclConfig.sh in /usr/lib/<multiarch>/tcl8.x,
+  dnl and the /usr/lib link only comes with the tcl-dev metapackage
+  tcl_multiarch=`$CC -print-multiarch 2>/dev/null`
+  tcl_dirs=
+  for v in 8.6 8.5 8.4 8.3; do
+    tcl_dirs="$tcl_dirs /usr/lib/tcl$v /usr/lib64/tcl$v"
+    test -n "$tcl_multiarch" && tcl_dirs="$tcl_dirs /usr/lib/$tcl_multiarch/tcl$v"
+  done
+  for dir in $withval /usr/lib /usr/lib64 /usr/local/lib $tcl_dirs ; do
     AC_MSG_CHECKING(for tclConfig.sh in $dir)
     if test -f "$dir/tclConfig.sh" ; then
     	tcl_config=$dir/tclConfig.sh
@@ -1031,6 +1049,17 @@ if test  "$enable_python" = "yes"; then
 dnl Check for python
 AM_PATH_PYTHON(3,[],[enable_python=no])
 AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
+fi
+dnl the module is built as a wheel (setup.py bdist_wheel) and installed with pip
+if test "$enable_python" = "yes"; then
+  AC_MSG_CHECKING([for setuptools, wheel and pip in $PYTHON])
+  if $PYTHON -c 'import setuptools, wheel, pip' >/dev/null 2>&1; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+    AC_MSG_WARN([setuptools, wheel or pip is missing: the Python module will not be built])
+    enable_python=no
+  fi
 fi
 
 if test  x$enable_python = xno; then
