@@ -58,8 +58,7 @@ client_header_standalone_SOURCES = test_client_header_standalone.c
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
-	${top_srcdir}/src/compat-cloexec.c \
-	${top_srcdir}/src/compat-cloexec.h
+	src-compat-cloexec.c
 
 rrd_open_security_SOURCES = \
 	test_rrd_open_security.c
@@ -96,7 +95,7 @@ if HAVE_STATIC_LIBRRD
 if BUILD_LIBRADOS
 script_tests += security-rados-bounds
 check_PROGRAMS += mock-rados-bounds
-mock_rados_bounds_SOURCES = test_rrd_rados_bounds.c ${top_srcdir}/src/rrd_open.c
+mock_rados_bounds_SOURCES = test_rrd_rados_bounds.c src-rrd_open.c
 mock_rados_bounds_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/mock-rados
 mock_rados_bounds_LDFLAGS = -static
 mock_rados_bounds_LDADD = ${top_builddir}/src/librrd.la
@@ -166,3 +165,7 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
 CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err
+
+# the rrdcached test styles make cached/ in a separate build directory
+distclean-local:
+	if test "$(srcdir)" != "."; then rm -rf cached; fi

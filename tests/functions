@@ -207,6 +207,17 @@ function run_cached {
         local ADDR
         [ -z "$RRDCACHED_SOCK" ] && RRDCACHED_SOCK="unix"
 
+        # cached/ holds links to the reference files. The git tree has
+        # them; a separate build directory or a tarball build does not,
+        # so make the missing ones (distclean removes them again).
+        mkdir -p "${BUILDDIR}/cached"
+        local ref
+        for ref in "$BASEDIR"/*.output "$BASEDIR"/*.dump "$BASEDIR/valgrind-supressions"; do
+            [ -e "$ref" ] || continue
+            [ -e "${BUILDDIR}/cached/$(basename "$ref")" ] ||
+                ln -s "$ref" "${BUILDDIR}/cached/" 2>/dev/null
+        done
+
         if [ $RRDCACHED_SOCK == "unix" ]; then
             export BASEDIR="${BUILDDIR}/cached"
             export BUILDDIR="${BASEDIR}"
