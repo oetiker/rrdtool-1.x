@@ -10,7 +10,6 @@ on:
     branches: [master]
   workflow_dispatch:
 
-
 permissions:
   contents: read
 
@@ -55,15 +54,15 @@ jobs:
         include:
           - os: windows-2022
             vcpkg_triplet: x64-windows
-            # https://github.com/microsoft/vcpkg/releases/tag/2025.12.12
-            # https://github.com/microsoft/vcpkg/commit/84bab45d415d22042bd0b9081aea57f362da3f35
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            # https://github.com/microsoft/vcpkg/releases/tag/2026.10.16
+            # https://github.com/microsoft/vcpkg/commit/9eec002df1cd109f8f104cd966a763daf9751489
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2022
             vcpkg_triplet: x86-windows
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x86'
             nmake_configuration: ''
@@ -98,6 +97,11 @@ jobs:
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
 
+      # The validator pins in win32/sbom-requirements.txt are for Python 3.12.
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
       # Same SBOM step as the release workflow, so a vcpkg bump that renames
       # or adds a shipped DLL fails here instead of at release time.
       - name: Generate SBOM
@@ -111,6 +115,8 @@ jobs:
           python win32/vcpkg_sbom.py --installed "vcpkg/installed/${TRIPLET}" \
               --release-dir "win32/nmake_release_${CFG}_vcpkg/${name}" \
               --version "$(cat VERSION)" --name "$name" --output "${name}.spdx.json"
+          python -m pip install --quiet --require-hashes -r win32/sbom-requirements.txt
+          pyspdxtools -i "${name}.spdx.json"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

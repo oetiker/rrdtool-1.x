@@ -171,13 +171,13 @@ jobs:
         include:
           - os: windows-2022
             vcpkg_triplet: x64-windows
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2022
             vcpkg_triplet: x86-windows
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x86'
             nmake_configuration: ''
