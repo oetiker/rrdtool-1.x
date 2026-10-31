@@ -47,7 +47,7 @@ GENERATED_EXTRADIST = $(HTML) $(MAN) $(MAN3) $(TXT) $(PMP) $(PDF)
 CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
-EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
             rrdpython.pod rrdrados.pod rrdruby.pod
 
 idocdir = $(RRDDOCDIR)/txt
@@ -99,3 +99,6 @@ pod: $(POD) $(POD3)
 
 install-data-hook:
 	$(AM_V_GEN)cd $(DESTDIR)$(ihtmldir) && rm -f index.html && $(LN_S) rrdtool.html index.html
+
+uninstall-hook:
+	rm -f $(DESTDIR)$(ihtmldir)/index.html

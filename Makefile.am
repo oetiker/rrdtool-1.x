@@ -28,7 +28,7 @@ endif
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
-             libtool .indent.pro \
+             .indent.pro \
              m4/snprintf.m4 \
              win32/build-rrdtool.dot win32/build-rrdtool.pdf win32/build-rrdtool.svg \
              win32/librrd-8.def win32/librrd-8.rc win32/librrd-8.vcxproj \
