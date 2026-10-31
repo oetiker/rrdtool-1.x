@@ -172,5 +172,8 @@ EXTRA_DIST= librrd.pc.in strftime.c strftime.h \
 install-exec-hook:
 	(cd $(DESTDIR)$(bindir) && $(LN_S) rrdupdate rrdcreate && $(LN_S) rrdupdate rrdinfo) || true
 
+uninstall-hook:
+	rm -f $(DESTDIR)$(bindir)/rrdcreate $(DESTDIR)$(bindir)/rrdinfo
+
 distclean-local:
 	-rm -rf rrd_config.h
