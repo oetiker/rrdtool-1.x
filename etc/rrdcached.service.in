@@ -10,8 +10,14 @@ Documentation=man:rrdcached(1)
 [Service]
 # If you enable socket-activable rrdcached.socket,
 # command line socket declarations will be ignored
-ExecStart=@prefix@/bin/rrdcached -g
-#WorkingDirectory=
+#
+# -B -b: only touch files below /var/lib/rrdcached/db (relative paths are
+#        taken from there); -O: CREATE never overwrites an existing file.
+# Point -b at the directory your RRD files live in, and give the
+# service user access to it.
+ExecStart=@bindir@/rrdcached -g -B -O -b /var/lib/rrdcached/db -j /var/lib/rrdcached/journal
+DynamicUser=yes
+StateDirectory=rrdcached rrdcached/db rrdcached/journal
 #User=
 #Group=
 

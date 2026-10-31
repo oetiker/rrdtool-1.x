@@ -6,3 +6,12 @@ systemdsystemunit_DATA = \
 	rrdcached.socket \
 	rrdcached.service
 endif
+
+# made here rather than by configure so @bindir@ is fully expanded
+rrdcached.service: rrdcached.service.in Makefile
+	$(AM_V_GEN)sed -e 's|@bindir[@]|$(bindir)|g' $(srcdir)/rrdcached.service.in > $@
+
+rrdcached.socket: rrdcached.socket.in Makefile
+	$(AM_V_GEN)cp $(srcdir)/rrdcached.socket.in $@
+
+CLEANFILES = rrdcached.service rrdcached.socket
