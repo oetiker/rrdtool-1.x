@@ -1,0 +1,30 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# With every DS a COMPUTE DS there is no data slot in the update template,
+# and update stored the first value through an uninitialized index.
+# Through rrdcached the update is only queued, and checked when the
+# daemon writes it, so the error is not the client's to see.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+BUILD="$BUILDDIR/$(basename "$0")"
+
+rm -f "${BUILD}.rrd"
+$RRDTOOL create "${BUILD}.rrd" --start 1000000000 --step 60 \
+  DS:c:COMPUTE:1,2,+ RRA:AVERAGE:0.5:1:5
+report create
+
+$RRDTOOL update "${BUILD}.rrd" 1000000060:5 >"${BUILD}.out" 2>&1
+status=$?
+if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+  fail 1 "update with a value: exit status $status: $(cat "${BUILD}.out")"
+elif ! grep -q "found extra data on update argument: 5" "${BUILD}.out"; then
+  fail 1 "update with a value: $(cat "${BUILD}.out")"
+else
+  ok "update with a value is refused"
+fi
+
+$RRDTOOL update "${BUILD}.rrd" 1000000120:
+report "update with no value"
+
+rm -f "${BUILD}.rrd" "${BUILD}.out"
