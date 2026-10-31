@@ -1,0 +1,53 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# A parse error inside a value made xmlTextReaderRead return -1 on every
+# call, and get_xml_text looped on it forever. restore must fail instead.
+# The input is what the restore fuzzer reduced it to: a dump cut short,
+# with 121 0xE1 bytes (not UTF-8) where a value is expected.
+command -v timeout >/dev/null 2>&1 || exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+rm -f "${BUILD}.rrd"
+perl -pe 's/\@BAD\@/"\xe1" x 121/e' > "${BUILD}.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rrd SYSTEM "https://oss.oetiker.ch/rrdtool/rrdtool.dtd">
+<!-- Round Robin Database Dump -->
+<rrd>
+	<version>0002</version>
+	<step>300</step> <!-- Seconds -->
+	<lastupdate>900000600</lastupdate> <!-- 1998-07-09 09:10C00 -0700 -->
+
+	<ds>
+		<name> in </name>
+		<type> COUNTER </type>
+		<minimal_heartbeat>600</minimal_heartbeat>
+		<min>0.0000000000e+070</min>
+		<max>NaN</max>
+
+		<!-- PDP Status -->
+		<last_ds>15</last_ds>
+		<value><!-- PDP Status -->
+		<@BAD@last_ds>25</last_ds>
+atabase>
+	</rra>
+</rrd>
+XML
+[ "$(wc -c < "${BUILD}.xml")" -eq 668 ]
+report "write the malformed dump"
+
+timeout 60 $RRDTOOL restore "${BUILD}.xml" "${BUILD}.rrd" >"${BUILD}.out" 2>&1
+status=$?
+if [ "$status" -eq 124 ]; then
+  fail 1 "restore of malformed XML did not finish"
+elif [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+  fail 1 "restore of malformed XML: exit status $status"
+elif ! grep -q "XML parse error while looking for text" "${BUILD}.out"; then
+  fail 1 "restore of malformed XML: $(cat "${BUILD}.out")"
+else
+  ok "restore of malformed XML fails"
+fi
+
+rm -f "${BUILD}.rrd" "${BUILD}.xml" "${BUILD}.out"

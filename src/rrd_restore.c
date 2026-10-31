@@ -206,7 +206,11 @@ static xmlChar* get_xml_text (
     xmlTextReaderPtr reader
     )
 {
-    while(xmlTextReaderRead(reader)){
+    int rc;
+
+    /* xmlTextReaderRead returns -1 on a parse error, and keeps returning
+     * it; only 1 means there is another node */
+    while((rc = xmlTextReaderRead(reader)) == 1){
         xmlChar  *ret;    
         xmlChar  *text;
         xmlChar  *begin_ptr;
@@ -254,7 +258,11 @@ static xmlChar* get_xml_text (
         xmlFree(text);
         return ret;
     }
-    rrd_set_error("file ended while looking for text");
+    if (rc < 0)
+        rrd_set_error("line %d: XML parse error while looking for text",
+                      xmlTextReaderGetParserLineNumber(reader));
+    else
+        rrd_set_error("file ended while looking for text");
     return NULL;
 }  /* get_xml_text */ 
 
