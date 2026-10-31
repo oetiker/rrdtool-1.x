@@ -14,6 +14,7 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 
 script_tests += security-rrdcached-response-bounds
 script_tests += restore-xml-parse-error
+script_tests += security-create-source-prefill
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \

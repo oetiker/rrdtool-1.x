@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool create --source` read past the end of an internal array
+  (valgrind reports an invalid read in init_cdp) when the new file had no
+  1-step AVERAGE RRA long enough to prefill from. The created file was not
+  affected. @somethingwithproof
 * `rrdtool restore` hung forever on some malformed XML (an invalid byte
   sequence in a value); it now fails with "XML parse error while looking
   for text". @somethingwithproof
