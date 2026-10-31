@@ -76,6 +76,12 @@ Bugfixes
   in its version string crashed `rrdtool info`, and `%n` could write to
   memory. `tune` and graph's DEF parsing restored errors the same way.
   @somethingwithproof
+* `rrdtool update` of a file whose data sources are all COMPUTE wrote the
+  first value through an uninitialized index; it now reports the value as
+  extra data. An update error after a skipped partial step no longer
+  leaks memory. @somethingwithproof
+* The PDF pages in a release tarball are reproducible with any
+  Ghostscript 9.55 or later, not only Debian's. @somethingwithproof
 * rrdcached started with an empty journal directory passed a null pointer
   to qsort, which is undefined. @somethingwithproof
 * `rrdtool graph` leaked the title it split into lines, and `graphv` the
