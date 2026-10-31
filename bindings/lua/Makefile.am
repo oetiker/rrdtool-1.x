@@ -62,7 +62,7 @@ endif
 if !LUA_SITE_CINSTALL
 	@echo "package.cpath = '$(LUA_INSTALL_CMOD)/?.so;' .. package.cpath" >> test.lua
 endif
-	@cat test.lua.bottom >> test.lua
+	@cat $(srcdir)/test.lua.bottom >> test.lua
 
 test: test.lua
 	$(LUA) test.lua

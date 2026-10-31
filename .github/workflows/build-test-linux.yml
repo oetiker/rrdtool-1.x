@@ -150,7 +150,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install autopoint build-essential libtool-bin libpango1.0-dev libxml2-dev \
           gettext groff ghostscript dc python3-setuptools python3-wheel python3-pip \
-          ruby-dev libperl-dev systemd-dev
+          ruby-dev libperl-dev systemd-dev lua5.4 liblua5.4-dev
 
     - name: Configure
       run: |
