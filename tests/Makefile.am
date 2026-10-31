@@ -1,4 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
+AM_CFLAGS = $(RRD_CFLAGS)
 
 script_tests = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 tune-per-rra tune-value-parse number-special-values graph1 graph2 graph-missing-ds rpn1 \

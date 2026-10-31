@@ -7,4 +7,5 @@ Name: librrd
 Description: Library for the RRDtool
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lrrd
+Libs.private: @MULTITHREAD_LDFLAGS@ @ALL_LIBS@ @LIBINTL@
 Cflags: -I${includedir}

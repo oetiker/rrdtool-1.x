@@ -85,7 +85,6 @@ clean-local:
 # file and the pages made from it unchanged, and the source is not touched.
 dist-hook: VERSION
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$$VERSION.+/\$$VERSION='$(NUMVERS)';/' bindings/perl-*/*.pm
-	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1.GIT, Copyright by Tobi Oetiker/RRDtool '$(PACKAGE_VERSION)', Copyright 1997-'`date +%Y`' by Tobi Oetiker/' src/*.h src/*.c
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
 
 ##END##

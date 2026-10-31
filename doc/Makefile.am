@@ -6,12 +6,18 @@ AUTOMAKE_OPTIONS        =  foreign
 
 #ACLOCAL_M4 = $(top_srcdir)/config/aclocal.m4
 
-POD = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdrestore.pod         rrdupdate.pod  \
+POD_BASE = bin_dec_hex.pod        rrddump.pod            rrdgraph_examples.pod  rrdrestore.pod         rrdupdate.pod  \
       cdeftutorial.pod       rrdfetch.pod           rrdgraph_graph.pod     rrdthreads.pod         rrdxport.pod   \
       rpntutorial.pod        rrdfirst.pod           rrdgraph_rpn.pod       rrdtool.pod            rrdcached.pod  \
       rrd-beginners.pod      rrdinfo.pod            rrdtune.pod            rrdbuild.pod           rrdflushcached.pod   \
       rrdcgi.pod             rrdgraph.pod           rrdlast.pod            rrdlastupdate.pod      rrdcreate.pod  \
       rrdgraph_data.pod      rrdresize.pod          rrdtutorial.pod        rrd_pdpcalc.pod        rrdlist.pod
+
+# pages for optional features: installed when the feature is built, but
+# always in the tarball, so its contents do not depend on configure options
+POD_OPTIONAL = rrdgraph_libdbi.pod rrdrados.pod rrdlua.pod rrdpython.pod rrdruby.pod
+
+POD = $(POD_BASE)
 
 if BUILD_LIBDBI
   POD += rrdgraph_libdbi.pod
@@ -43,12 +49,15 @@ TXT = $(MAN:.1=.txt) $(MAN3:.3=.txt)
 HTML = $(POD:.pod=.html) $(POD3:.pod=.html) $(PMP:.pod=.html)
 PDF = $(MAN:.1=.pdf) $(MAN3:.3=.pdf)
 
-GENERATED_EXTRADIST = $(HTML) $(MAN) $(MAN3) $(TXT) $(PMP) $(PDF)
+DIST_POD = $(POD_BASE) $(POD_OPTIONAL)
+DIST_MAN = $(DIST_POD:.pod=.1)
+GENERATED_EXTRADIST = $(DIST_POD:.pod=.html) $(POD3:.pod=.html) $(PMP:.pod=.html) \
+	$(DIST_MAN) $(MAN3) $(DIST_MAN:.1=.txt) $(MAN3:.3=.txt) $(PMP) \
+	$(DIST_MAN:.1=.pdf) $(MAN3:.3=.pdf)
 CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 
 # what should go into the distribution
-EXTRA_DIST= $(GENERATED_EXTRADIST) $(POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd rrdgraph_libdbi.pod rrdlua.pod \
-            rrdpython.pod rrdrados.pod rrdruby.pod
+EXTRA_DIST= $(GENERATED_EXTRADIST) $(DIST_POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd
 
 idocdir = $(RRDDOCDIR)/txt
 idoc_DATA = $(POD) $(TXT)
@@ -74,7 +83,7 @@ all-local: link man txt html-local
 	$(AM_V_GEN)GROFF_NO_SGR=1 @NROFF@ -man -Tlp @NROFF_WBREAK@ $< > $@
 
 .1.pdf .3.pdf:
-	$(AM_V_GEN)@TROFF@ -man $< | ps2pdf - $@
+	$(AM_V_GEN)@TROFF@ -man $< | @PS2PDF@ - $@
 
 .pm.html .pod.html .pl.html:
 	$(AM_V_GEN)@POD2HTML@ --infile=$< --outfile=$@ --noindex --htmlroot=. --podpath=. --title=$*
