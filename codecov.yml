@@ -5,3 +5,8 @@ codecov:
 
 comment:
   after_n_builds: 2
+
+# Keep test and fuzz-driver assertions out of application coverage.
+ignore:
+  - "tests/**"
+  - "fuzz/**"

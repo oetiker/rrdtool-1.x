@@ -6960,7 +6960,8 @@ image_title_t graph_title_split(
         }
 
         // move the consumed pointer past any delimiter, so we can loop around again
-        consumed = consumed + found_size;
+        if (found_pos)
+            consumed += found_size;
     }
     // must not create more than MAX lines, so must stop splitting
     // either when we hit the max, or have no other delimiter

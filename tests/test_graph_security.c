@@ -257,11 +257,33 @@ static int test_def_retry_error(void)
     return failed;
 }
 
+static int test_title_cleanup(void)
+{
+    const char *titles[] = {"", "\nleading\n\nsecond", "one<br>two\\nthree\nfour"};
+    const int counts[] = {1, 2, 3};
+    const char *first[] = {"", "leading", "one"};
+    size_t i;
+
+    for (i = 0; i < sizeof(titles) / sizeof(titles[0]); i++) {
+        image_title_t title = graph_title_split(titles[i]);
+
+        if (title.lines == NULL || title.buf == NULL ||
+            title.count != counts[i] || strcmp(title.lines[0], first[i]) != 0)
+            return 1;
+        graph_title_free(&title);
+        if (title.lines != NULL || title.buf != NULL)
+            return 1;
+        graph_title_free(&title);
+    }
+    return 0;
+}
+
 int main(void)
 {
     int result = test_percentiles(0) | test_percentiles(-4) | test_percentiles(-2) |
         test_invalid_ranges() | test_empty_percentiles() |
-        test_repeated_fetch(1) | test_repeated_fetch(60) | test_def_retry_error();
+        test_repeated_fetch(1) | test_repeated_fetch(60) | test_def_retry_error() |
+        test_title_cleanup();
     if (sizeof(time_t) > sizeof(int))
         result |= test_cdef_overflow(0, (time_t) ((uintmax_t) INT_MAX + 1));
     /* Allocation-bound cases require a representable end timestamp. */
