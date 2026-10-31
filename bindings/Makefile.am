@@ -44,13 +44,14 @@ install-data-local:
 	$(AM_V_GEN)if test -f ${builddir}/python/wheel.stamp; then \
 	  $(PYTHON) -m pip install --upgrade --no-index --no-deps \
 	    --no-cache-dir --disable-pip-version-check \
-	    --target=$(DESTDIR)$(libdir)/python3/site-packages \
+	    --target=$(DESTDIR)$(PYTHON_INSTALL_DIR) \
 	    ${builddir}/python/dist/*.whl || exit 1; \
 	fi
 
 # The installers have no uninstall of their own. Perl's packlists name
-# what it installed; the Python and Ruby files are at the fixed places
-# install-data-local put them (a site install is left to its owner).
+# what it installed; the Python and Ruby files are where
+# install-data-local put them (a Perl or Ruby site install is left to
+# its owner).
 uninstall-local:
 	@for pl in `find "$(DESTDIR)$(prefix)" -name .packlist -path '*/auto/RRD[ps]/.packlist' 2>/dev/null`; do \
 	  sed 's/ .*//' "$$pl" | while read f; do \
@@ -60,7 +61,7 @@ uninstall-local:
 	done
 	@perllocal=`find "$(DESTDIR)$(prefix)" -name perllocal.pod -path '*/lib/perl/*' 2>/dev/null`; \
 	  test -z "$$perllocal" || rm -f $$perllocal
-	rm -rf $(DESTDIR)$(libdir)/python3/site-packages/rrdtool*
+	rm -rf $(DESTDIR)$(PYTHON_INSTALL_DIR)/rrdtool*
 	@test -z "$(COMP_RUBY)" || test -z "$(RUBY_INSTALL_DIR)" \
 	  || rm -f "$(DESTDIR)$(RUBY_INSTALL_DIR)"/RRD.*
 

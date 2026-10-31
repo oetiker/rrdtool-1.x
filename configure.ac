@@ -1050,6 +1050,19 @@ dnl Check for python
 AM_PATH_PYTHON(3,[],[enable_python=no])
 AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
 fi
+dnl by default the module goes to a fixed directory under the prefix, which
+dnl rrdtool-env.sh knows; distributions want the interpreter's own
+dnl site-packages instead (pyexecdir, e.g. /usr/lib64/python3.x/site-packages)
+AC_ARG_ENABLE(python-site-install,
+AS_HELP_STRING([--enable-python-site-install],[install the python module into the interpreter's site-packages under the prefix (pyexecdir) instead of $libdir/python3/site-packages]),
+[],[enable_python_site_install=no])
+if test "x$enable_python_site_install" = xyes; then
+  PYTHON_INSTALL_DIR='${pyexecdir}'
+else
+  PYTHON_INSTALL_DIR='${libdir}/python3/site-packages'
+fi
+AC_SUBST(PYTHON_INSTALL_DIR)
+
 dnl the module is built as a wheel (setup.py bdist_wheel) and installed with pip
 if test "$enable_python" = "yes"; then
   AC_MSG_CHECKING([for setuptools, wheel and pip in $PYTHON])
