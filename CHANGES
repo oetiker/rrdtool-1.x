@@ -3,6 +3,9 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool restore` hung forever on some malformed XML (an invalid byte
+  sequence in a value); it now fails with "XML parse error while looking
+  for text". @somethingwithproof
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
   stored inf; all Holt-Winters and FAILURES parameters now refuse such
   values with "alpha must be a finite number, not 'nan'". Wherever
