@@ -42,10 +42,9 @@ EXTRA_LOCALE_CATEGORIES =
 
 # Plain "make" must not rewrite the translations under version control.
 # rrdtool.pot is not tracked, so every fresh tree regenerates it, and the
-# gettext 0.17 rule that refreshes each PO file from a newer rrdtool.pot
-# would then run msgmerge on fr.po, hu.po and ka.po during the build.
-# Newer gettext offers PO_DEPENDS_ON_POT = no for this; with 0.17 we turn
-# that refresh into a no-op instead.  The .gmo catalogs are still built
-# from the PO files as they are.  To merge new messages into the
-# translations, run "make -C po update-po" (also run by "make dist").
-MSGMERGE_UPDATE = true
+# rule that refreshes each PO file from a newer rrdtool.pot would then run
+# msgmerge on fr.po, hu.po and ka.po during the build.  The .gmo catalogs
+# are still built from the PO files as they are.  To merge new messages
+# into the translations, run "make -C po update-po" (also run by
+# "make dist").
+PO_DEPENDS_ON_POT = no

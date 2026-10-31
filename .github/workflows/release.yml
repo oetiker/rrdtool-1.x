@@ -142,17 +142,40 @@ jobs:
           version: ${{ needs.compute-version.outputs.version }}
           date: ${{ needs.compute-version.outputs.date }}
 
+      # Reproducible: every timestamp is the release date (the one CHANGES
+      # records), tar entries are sorted with fixed owners, and gzip stores
+      # no name or time, so the tag rebuilds to the same bytes.  xgettext
+      # stamps the build time into the POT-Creation-Date of rrdtool.pot and
+      # the merged PO files, so the translations are refreshed first, given
+      # the release date, and not refreshed again by make dist.
       - name: Build source tarball
+        env:
+          DATE: ${{ needs.compute-version.outputs.date }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
         run: |
           set -e
+          SOURCE_DATE_EPOCH=$(date -u -d "$DATE" +%s)
+          export SOURCE_DATE_EPOCH
+          export TAR_OPTIONS="--sort=name --mtime=@$SOURCE_DATE_EPOCH --owner=0 --group=0 --numeric-owner"
           ./bootstrap
           ./configure
-          make dist
+          make -C po update-po
+          sed -i "s/^\"POT-Creation-Date: .*\\\\n\"\$/\"POT-Creation-Date: $DATE 00:00+0000\\\\n\"/" \
+              po/rrdtool.pot po/*.po
+          make dist DIST_DEPENDS_ON_UPDATE_PO=no GZIP_ENV="--best --no-name"
+          python3 conftools/release_sbom.py source --tarball "rrdtool-${VERSION}.tar.gz" \
+              --version "$VERSION" --output "rrdtool-${VERSION}.tar.gz.spdx.json"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-tarball
           path: rrdtool-${{ needs.compute-version.outputs.version }}.tar.gz
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-sbom
+          path: rrdtool-${{ needs.compute-version.outputs.version }}.tar.gz.spdx.json
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
@@ -398,6 +421,24 @@ jobs:
           # sets, find librrd through the wheel's embedded RPATH, and run.
           python3 -c 'import rrdtool; print("python binding OK:", rrdtool.__file__, "librrd", rrdtool.lib_version())'
 
+      # Runs while the package is installed: lists the distro packages that
+      # its binaries load, at the versions this release was tested with.
+      - name: SBOM for the rpm
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          set -e
+          for rpm in out/rrdtool-1-opt-"${VERSION}"-*.rpm; do
+            python3 conftools/release_sbom.py rpm --package "$rpm" \
+                --version "$VERSION" --output "$rpm.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rpm-sbom-${{ matrix.tag }}
+          path: out/*.rpm.spdx.json
+          if-no-files-found: error
+
   # ---------------------------------------------------------------------------
   # build-deb: per-distro container, builds a .deb via fpm from a staged
   # `make install DESTDIR=...` tree. No in-tree debian/ packaging needed.
@@ -601,6 +642,24 @@ jobs:
           # sets, find librrd through the wheel's embedded RPATH, and run.
           python3 -c 'import rrdtool; print("python binding OK:", rrdtool.__file__, "librrd", rrdtool.lib_version())'
 
+      # Runs while the package is installed: lists the distro packages that
+      # its binaries load, at the versions this release was tested with.
+      - name: SBOM for the deb
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          set -e
+          for deb in out/rrdtool-1-opt_*.deb; do
+            python3 conftools/release_sbom.py deb --package "$deb" \
+                --version "$VERSION" --output "$deb.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deb-sbom-${{ matrix.tag }}
+          path: out/*.deb.spdx.json
+          if-no-files-found: error
+
   # ---------------------------------------------------------------------------
   # publish: only job that mutates the repo. Runs only after every build job
   # (and every matrix entry) has succeeded. Re-applies the version bump,
@@ -621,16 +680,12 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      # RELEASE_PAT is a repo-admin Personal Access Token (Contents: write).
-      # The default GITHUB_TOKEN / github-actions[bot] cannot be added to the
-      # branch ruleset bypass list, so the release commit + tag push below is
-      # authenticated as the admin (who IS on the bypass list) via this PAT.
-      # actions/checkout persists the token in git config, so the later
-      # `git push` and `git fetch` steps use it automatically.
+      # The token is only handed to the push step below, not persisted in
+      # git config where every later step could read it.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
+          persist-credentials: false
 
       - name: Race check (master not advanced since check-ci)
         env:
@@ -670,6 +725,7 @@ jobs:
             dist/*.zip
             dist/*.rpm
             dist/*.deb
+            dist/*.spdx.json
 
       - name: Attest SBOM (Windows x64)
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
@@ -689,17 +745,57 @@ jobs:
           version: ${{ needs.compute-version.outputs.version }}
           date: ${{ needs.compute-version.outputs.date }}
 
+      # The release commit and tag push to master past the branch ruleset, so
+      # they need an identity on its bypass list; GITHUB_TOKEN cannot be put
+      # there.  Preferred: a GitHub App installed on this repository only,
+      # with Contents read/write, on the bypass list, its client ID in the
+      # RELEASE_APP_CLIENT_ID variable and its key in the
+      # RELEASE_APP_PRIVATE_KEY secret; it yields a token that is scoped to
+      # this repository and expires within the hour.  Until that is set up
+      # the repo-admin personal access token RELEASE_PAT is used as before.
+      - name: Release token from the GitHub App
+        id: app-token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      # Sign the release commit and tag keylessly with Sigstore: the
+      # signature certifies this workflow on this repository, no key to
+      # keep.  Check a tag with
+      #   gitsign verify-tag vX.Y.Z \
+      #     --certificate-identity-regexp '^https://github.com/oetiker/rrdtool-1.x/.github/workflows/release.yml@' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Install gitsign
+        env:
+          GITSIGN_VERSION: 0.18.0
+          GITSIGN_SHA256: 2bc625472a08fea3bb6a57982c7d8b4978d1032251d305ceef3bf2ded0ca4483
+        run: |
+          set -e
+          curl -fsSLo /tmp/gitsign \
+              "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  /tmp/gitsign" | sha256sum -c -
+          sudo install -m 0755 /tmp/gitsign /usr/local/bin/gitsign
+
       - name: Commit, tag, push
         env:
           NEW: ${{ needs.compute-version.outputs.version }}
+          TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PAT }}
         run: |
           set -e
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config gpg.format x509
+          git config gpg.x509.program gitsign
           git add -u
-          git commit -m "release v$NEW"
-          git tag -a "v$NEW" -m "release v$NEW"
-          git push origin master --follow-tags
+          git commit -S -m "release v$NEW"
+          git tag -s -a "v$NEW" -m "release v$NEW"
+          auth=$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
+              push origin master --follow-tags
 
       - name: Extract release notes from CHANGES
         env:
