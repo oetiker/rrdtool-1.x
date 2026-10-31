@@ -59,9 +59,9 @@ CLEANFILES = $(GENERATED_EXTRADIST) pod2htm*.tmp
 # what should go into the distribution
 EXTRA_DIST= $(GENERATED_EXTRADIST) $(DIST_POD) $(POD3) rrdtool-dump.dtd rrdtool-dump.xsd rrdtool-xport.dtd
 
-idocdir = $(RRDDOCDIR)/txt
+idocdir = $(RRDTXTDIR)
 idoc_DATA = $(POD) $(TXT)
-ihtmldir = $(RRDDOCDIR)/html
+ihtmldir = $(RRDHTMLDIR)
 ihtml_DATA = $(HTML)
 imandir = $(mandir)/man1
 iman_DATA = $(MAN)

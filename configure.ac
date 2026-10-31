@@ -1108,6 +1108,17 @@ fi
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
+dnl HTML pages go to RRDDOCDIR/html unless --htmldir was given (its default
+dnl is ${docdir}); the text pages to RRDDOCDIR/txt unless RRDTXTDIR is set
+if test "x$htmldir" = 'x${docdir}'; then
+   RRDHTMLDIR='${RRDDOCDIR}/html'
+else
+   RRDHTMLDIR=$htmldir
+fi
+AC_SUBST(RRDHTMLDIR)
+AC_ARG_VAR(RRDTXTDIR, [[RRDDOCDIR/txt] directory for the text pages])
+if test -z "$RRDTXTDIR"; then
+   RRDTXTDIR='${RRDDOCDIR}/txt'; fi
 
 fi
 
