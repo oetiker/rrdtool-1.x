@@ -84,9 +84,10 @@ Bugfixes
 * The systemd units in `etc/` gave every local user root file access:
   the socket was `/tmp/rrdcached.sock` with mode 0666, and the service ran
   rrdcached as root without `-B`. The socket is now
-  `/run/rrdcached/rrdcached.sock`, mode 0660, and the service runs as a
-  dynamic user with `-B -O -b /var/lib/rrdcached/db`; point `-b` at your
-  RRD files when you use the shipped units. They are also installed under
+  `/run/rrdcached/rrdcached.sock`, mode 0660, and the service runs with
+  `-B -O -b /var/lib/rrdcached/db` and the rest of the file system
+  read-only; point `-b` at your RRD files (and add them to
+  `ReadWritePaths=`) when you use the shipped units. They are also installed under
   `--prefix` and use `--bindir`. @somethingwithproof
 * Building from the release tarball in a separate directory used the
   release machine's `rrd_config.h` instead of the one configure wrote.

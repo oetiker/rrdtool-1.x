@@ -16,6 +16,12 @@ ListenStream=/run/rrdcached/rrdcached.sock
 #ListenStream=[::1]:42217
 SocketMode=0660
 DirectoryMode=0755
+# rrdcached.service creates its state directory when it first starts,
+# but a client resolves the file names it sends (below -b) before it
+# connects, and so before socket activation starts the service
+ExecStartPre=/bin/mkdir -p /var/lib/rrdcached/db /var/lib/rrdcached/journal
+# give them their SELinux label, where there is one (see rrdcached(1))
+ExecStartPre=-/bin/sh -c 'command -v restorecon >/dev/null && restorecon -R /var/lib/rrdcached || :'
 #SocketGroup=
 #BindToDevice=
 
