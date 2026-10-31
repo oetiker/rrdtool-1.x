@@ -5,7 +5,7 @@
 #
 # Usage: conftools/check-buildsystem.sh [step...]
 #   steps: distcheck reproducible sbom disabled tarball-daemon install
-#          options perl-standalone flags systemd
+#          options perl-standalone flags lua systemd
 #   (default: all but systemd, in that order)
 #
 # Run from the top of a git checkout that has been bootstrapped and
@@ -13,7 +13,9 @@
 # The other builds are made out of tree from the tarball distcheck
 # leaves, so they also test what is shipped.
 # Needs perl, python3 with setuptools/wheel/pip, ruby with mkmf, groff,
-# ghostscript and pkg-config; systemd-analyze is used when present. The
+# ghostscript and pkg-config. The Lua check runs when a versioned
+# interpreter is installed, with its development files. The
+# systemd-analyze tool is used when present. The
 # systemd step installs and starts the units, so it needs root and a
 # running systemd (CI runners and test VMs, not containers).
 # Everything is written below ./_check, which is removed first.
@@ -133,11 +135,29 @@ PY
 
 do_install () {
     step "install and uninstall into one DESTDIR"
+    python3 "$TOP/bindings/python/tests/test_uninstall.py" \
+        || fail "Python uninstall record checks"
     local d=$W/destdir prefix
     prefix=$(sed -n 's/^prefix = //p' Makefile)
     rm -rf "$d"
+    # Shared-prefix installs must leave other packages and Perl's shared
+    # installation record alone, including when bindings are disabled.
+    local perldir pyother
+    perldir="$d$prefix/lib/perl/$(perl -MConfig -e 'print "$Config{version}/$Config{archname}"')"
+    pyother="$d$prefix/lib/python3/site-packages/rrdtool_unrelated"
+    mkdir -p "$perldir" "$pyother"
+    echo 'another Perl module' >"$perldir/perllocal.pod"
+    echo 'another Python package' >"$pyother/__init__.py"
     make -s install DESTDIR="$d" >"$W/install.out" 2>&1 \
         || { tail -40 "$W/install.out"; fail "make install"; }
+    grep -qx 'another Perl module' "$perldir/perllocal.pod" \
+        || fail "install changed the shared Perl record"
+    find "$d" -type f | sort >"$W/installed-files"
+    make -s -C bindings uninstall-local DESTDIR="$d" \
+        COMP_PERL= COMP_PYTHON= COMP_RUBY= || fail "uninstall disabled bindings"
+    find "$d" -type f | sort >"$W/disabled-uninstall-files"
+    cmp "$W/installed-files" "$W/disabled-uninstall-files" \
+        || fail "disabled bindings removed installed files"
     local libdir="$d$prefix/lib"
     if grep -q '^COMP_PERL = perl' bindings/Makefile; then
         PERL5LIB=$(dirname "$(find "$d" -name RRDs.pm | head -1)") LD_LIBRARY_PATH=$libdir \
@@ -166,6 +186,11 @@ do_install () {
         fi
     fi
     make -s uninstall DESTDIR="$d" >"$W/uninstall.out" 2>&1 || fail "make uninstall"
+    grep -qx 'another Perl module' "$perldir/perllocal.pod" \
+        || fail "uninstall changed the shared Perl record"
+    grep -qx 'another Python package' "$pyother/__init__.py" \
+        || fail "uninstall removed another Python package"
+    rm -f "$perldir/perllocal.pod" "$pyother/__init__.py"
     local left; left=$(find "$d" -type f -o -type l)
     [ -z "$left" ] || fail "make uninstall left: $left"
     echo "install, load and uninstall: ok"
@@ -188,6 +213,10 @@ do_options () {
     grep -q 'LOCALEDIR="\\"$(localedir)\\""' "$W/opt/src/Makefile" \
         && grep -q '^localedir = /usr/share/locale-x' "$W/opt/src/Makefile" \
         || fail "--localedir does not reach the program"
+    (cd "$W/opt" && make -s uninstall DESTDIR="$W/opt-d" >uninstall.out 2>&1) \
+        || fail "uninstall with --enable-python-site-install"
+    [ -z "$(find "$W/opt-d" -type f -o -type l)" ] \
+        || fail "site install left files after uninstall"
     echo "options: ok"
 }
 
@@ -226,6 +255,23 @@ EOF
     (cd "$W/perlq" && make -s -C bindings perl-shared >/dev/null 2>&1)
     grep -q '^CCFLAGS = -O2 -g$' "$W/perlq/bindings/perl-shared/Makefile" || fail "PERLCCFLAGS split"
     echo "flags: ok"
+}
+
+do_lua () {
+    step "a versioned Lua interpreter and its pkg-config flags"
+    local lua= binary
+    for binary in lua5.4 lua5.3 lua5.2 lua5.1; do
+        lua=$(command -v "$binary" || true)
+        [ -z "$lua" ] || break
+    done
+    [ -n "$lua" ] || { echo "no versioned Lua interpreter; skipped"; return; }
+    build "$W/lua" --disable-perl --disable-python --disable-ruby \
+        --disable-tcl --disable-docs LUA="$lua"
+    (cd "$W/lua/bindings/lua" && \
+        LUA_CPATH="$W/lua/bindings/lua/.libs/?.so;;" \
+        LD_LIBRARY_PATH="$W/lua/src/.libs" make -s test >test.out 2>&1) \
+        || { cat "$W/lua/bindings/lua/test.out"; fail "Lua binding test"; }
+    echo "versioned Lua: ok"
 }
 
 SE_MMAP=
@@ -319,7 +365,7 @@ do_systemd () {
 }
 
 rm -rf "$W"; mkdir -p "$W"
-steps=${*:-distcheck reproducible sbom disabled tarball-daemon install options perl-standalone flags}
+steps=${*:-distcheck reproducible sbom disabled tarball-daemon install options perl-standalone flags lua}
 for s in $steps; do
     case $s in
         distcheck) do_distcheck ;;
@@ -332,6 +378,7 @@ for s in $steps; do
         options) do_options ;;
         perl-standalone) do_perl_standalone ;;
         flags) do_flags ;;
+        lua) do_lua ;;
         *) fail "unknown step $s" ;;
     esac
 done

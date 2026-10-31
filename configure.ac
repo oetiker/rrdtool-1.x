@@ -836,6 +836,10 @@ AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules
 [RUBY_MAKE_OPTIONS="$rd_ruby_prefix_options"; RUBY_INSTALL_DIR="$langpref/lib/ruby"])
 dnl mkmf does not create an overridden sitearchdir; install-data-local does
 AC_SUBST(RUBY_INSTALL_DIR)
+RUBY_DLEXT=
+AS_IF([test -n "$COMP_RUBY"],
+      [RUBY_DLEXT=`$RUBY -rrbconfig -e 'print RbConfig::CONFIG.fetch("DLEXT")'`])
+AC_SUBST(RUBY_DLEXT)
 
 
 AC_ARG_WITH(ruby-options,
@@ -934,8 +938,15 @@ LUA_EOF
           # try with dot, without dot and finally without version
           for f in $lua_pkg_prefix$lua_vdot $lua_pkg_prefix$lua_vndot $lua_pkg_prefix; do
             lua_exec_prefix=`$PKGCONFIG --variable=prefix $f 2>/dev/null`
-            # same binaries?
-            if test "$lua_exec_prefix/bin/lua" = "$LUA"; then
+            # Match the selected interpreter's version, including versioned
+            # executables such as /usr/bin/lua5.4.
+            lua_pkg_version=`$PKGCONFIG --modversion $f 2>/dev/null`
+            case "$lua_pkg_version" in
+              "$lua_vdot"|"$lua_vdot".*) lua_pkg_matches=yes ;;
+              *) lua_pkg_matches=no ;;
+            esac
+            if test "$lua_pkg_matches" = yes \
+                && test "$lua_exec_prefix/bin" = "${LUA%/*}"; then
                 # OK, found CFLAGS. Get Lua LFLAGS and modules install dir
                 LUA_CFLAGS=`$PKGCONFIG --cflags $f 2>/dev/null`
                 LUA_LFLAGS=`$PKGCONFIG --libs $f 2>/dev/null`
