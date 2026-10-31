@@ -229,15 +229,28 @@ int apply_smoother(
     rrd_value_t *baseline;
 
     if (atoi(rrd->stat_head->version) >= 4) {
-        offset = floor(rrd->rra_def[rra_idx].
-                       par[RRA_seasonal_smoothing_window].
-                       u_val / 2 * row_count);
+        double    window = rrd->rra_def[rra_idx].
+            par[RRA_seasonal_smoothing_window].u_val;
+
+        /* the window comes from the file; outside 0..1 (or NaN) the
+         * offset below is undefined or larger than the RRA */
+        if (!(window >= 0.0 && window <= 1.0)) {
+            rrd_set_error("apply smoother: RRA %lu smoothing window %f is "
+                          "not between 0 and 1", rra_idx, window);
+            return -1;
+        }
+        offset = floor(window / 2 * row_count);
     } else {
         offset = floor(0.05 / 2 * row_count);
     }
 
     if (offset == 0)
         return 0;       /* no smoothing */
+    if (offset > INT_MAX / 2 - 1) {
+        rrd_set_error("apply smoother: RRA %lu is too long to smooth",
+                      rra_idx);
+        return -1;
+    }
 
     /* allocate memory */
     totalbytes = sizeof(rrd_value_t) * row_length * row_count;
@@ -264,6 +277,8 @@ int apply_smoother(
                 != (ssize_t) (sizeof(rrd_value_t) * 1)) {
                 rrd_set_error("reading value failed: %s",
                               rrd_strerror(errno));
+                free(rrd_values);
+                return -1;
             }
             if (isnan(rrd_values[i * row_length + j])) {
                 /* can't apply smoothing, still uninitialized values */
@@ -279,13 +294,32 @@ int apply_smoother(
     }
 
     /* allocate queues, one for each data source */
-    buffers = (FIFOqueue **) malloc(sizeof(FIFOqueue *) * row_length);
-    for (i = 0; i < row_length; ++i) {
-        queue_alloc(&(buffers[i]), 2 * offset + 1);
-    }
+    buffers = (FIFOqueue **) calloc(row_length, sizeof(FIFOqueue *));
     /* need working average initialized to 0 */
     working_average = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
     baseline = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
+    rrd_values_cpy = (rrd_value_t *) calloc(row_length * row_count,
+                                            sizeof(rrd_value_t));
+    if (buffers != NULL)
+        for (i = 0; i < row_length; ++i)
+            if (queue_alloc(&(buffers[i]), 2 * offset + 1) != 0) {
+                buffers[i] = NULL;
+                break;
+            }
+    if (buffers == NULL || i < row_length || working_average == NULL
+        || baseline == NULL || rrd_values_cpy == NULL) {
+        rrd_set_error("apply smoother: memory allocation failure");
+        if (buffers != NULL) {
+            for (i = 0; i < row_length && buffers[i] != NULL; ++i)
+                queue_dealloc(buffers[i]);
+            free(buffers);
+        }
+        free(working_average);
+        free(baseline);
+        free(rrd_values_cpy);
+        free(rrd_values);
+        return -1;
+    }
 
     /* compute sums of the first 2*offset terms */
     for (i = 0; i < 2 * offset; ++i) {
@@ -299,7 +333,6 @@ int apply_smoother(
     /* as we are working through the value, we have to make sure to not double
        apply the smoothing after wrapping around. so best is to copy the rrd_values first */
 
-    rrd_values_cpy = (rrd_value_t *) calloc(row_length*row_count, sizeof(rrd_value_t));
     memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length*row_count);
 
     /* compute moving averages */
@@ -625,6 +658,7 @@ int queue_alloc(
     (*q)->queue = (rrd_value_t *) malloc(sizeof(rrd_value_t) * capacity);
     if ((*q)->queue == NULL) {
         free(*q);
+        *q = NULL;
         return -1;
     }
     (*q)->capacity = capacity;
