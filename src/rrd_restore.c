@@ -16,6 +16,7 @@
 #include "unused.h"
 #include "rrd_strtod.h"
 #include "rrd_create.h"
+#include "rrd_hw.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1412,6 +1413,9 @@ static rrd_t *parse_file(
         rrd_set_error("RRD requires at least one data source and RRA");
         status = -1;
     }
+    if (status == 0 && !rrd_test_error() &&
+        rrd_check_hw_dependencies(rrd) != 0)
+        status = -1;
     if (status != 0 || rrd_test_error()) {
         local_rrd_free(rrd);
         rrd = NULL;

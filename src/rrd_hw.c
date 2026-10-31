@@ -7,6 +7,8 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
 #include "rrd_tool.h"
 #include "rrd_hw.h"
@@ -21,6 +23,75 @@
 static unsigned long MyMod(
     signed long val,
     unsigned long mod);
+
+/* Holt-Winters RRAs refer to their partner RRA by index, and update and
+ * info follow those links (several hops for DEVPREDICT) without checking
+ * them. Make sure each link stays inside rra_def and lands on the kind of
+ * RRA the consumer expects, whether it came from create, restore or a
+ * file on disk. */
+static int hw_cf(
+    const char *cf_nam)
+{
+    /* like rrd_cf_conv, but without setting an error for other CFs */
+    static const struct {
+        const char *name;
+        enum cf_en cf;
+    } hw[] = {
+        {"HWPREDICT", CF_HWPREDICT}, {"MHWPREDICT", CF_MHWPREDICT},
+        {"SEASONAL", CF_SEASONAL}, {"DEVSEASONAL", CF_DEVSEASONAL},
+        {"DEVPREDICT", CF_DEVPREDICT}, {"FAILURES", CF_FAILURES}
+    };
+    size_t    k;
+
+    for (k = 0; k < sizeof(hw) / sizeof(hw[0]); k++)
+        if (strncmp(cf_nam, hw[k].name, CF_NAM_SIZE) == 0)
+            return hw[k].cf;
+    return -1;
+}
+
+int rrd_check_hw_dependencies(
+    const rrd_t *rrd)
+{
+    unsigned long i;
+
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        int       cf = hw_cf(rrd->rra_def[i].cf_nam);
+        unsigned long dep = rrd->rra_def[i].par[RRA_dependent_rra_idx].u_cnt;
+        int       dep_cf;
+        int       ok;
+
+        if (cf < 0)
+            continue;
+        if (dep >= rrd->stat_head->rra_cnt) {
+            rrd_set_error("RRA %lu (%s) refers to RRA %lu, but there are "
+                          "only %lu RRAs", i, rrd->rra_def[i].cf_nam,
+                          dep, rrd->stat_head->rra_cnt);
+            return -1;
+        }
+        dep_cf = hw_cf(rrd->rra_def[dep].cf_nam);
+        switch (cf) {
+        case CF_HWPREDICT:
+        case CF_MHWPREDICT:
+            ok = dep_cf == CF_SEASONAL;
+            break;
+        case CF_SEASONAL:
+        case CF_DEVSEASONAL:
+            ok = dep_cf == CF_HWPREDICT || dep_cf == CF_MHWPREDICT;
+            break;
+        default:       /* CF_DEVPREDICT, CF_FAILURES */
+            ok = dep_cf == CF_DEVSEASONAL;
+            break;
+        }
+        if (!ok) {
+            rrd_set_error("RRA %lu (%s) refers to RRA %lu (%s), which is "
+                          "not its Holt-Winters partner", i,
+                          rrd->rra_def[i].cf_nam, dep,
+                          rrd->rra_def[dep].cf_nam);
+            return -1;
+        }
+    }
+    return 0;
+}
 
 int lookup_seasonal(
     rrd_t *rrd,

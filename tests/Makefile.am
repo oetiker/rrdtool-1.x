@@ -14,6 +14,7 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += security-hw-dependencies security-compute-ds security-header-fields
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
