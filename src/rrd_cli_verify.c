@@ -6,7 +6,6 @@
 #include "rrd_cli.h"
 #include "rrd_rpncalc.h"
 
-#include <limits.h>
 #include <stdarg.h>
 #include <stdint.h>
 
@@ -180,8 +179,6 @@ static void check_archives(verify_output_t *out, const rrd_t *rrd,
         if (rrd->rra_ptr[i].cur_row >= rra->row_cnt)
             issue(out, "rra_pointer", "RRA %lu current row %lu is outside its %lu rows",
                   i, rrd->rra_ptr[i].cur_row, rra->row_cnt);
-        if (rra->pdp_cnt > ULONG_MAX / rrd->stat_head->pdp_step)
-            issue(out, "rra_step", "RRA %lu consolidation step overflows", i);
         if (cf <= CF_LAST) {
             double xff = rra->par[RRA_cdp_xff_val].u_val;
 
@@ -428,10 +425,6 @@ int rrd_cli_verify(int argc, const char **argv, int json)
         rrd_clear_error();
         goto done;
     }
-    if (atoi(rrd.stat_head->version) < 1)
-        issue(&out, "version", "unsupported RRD format version");
-    if (rrd.live_head->last_up_usec < 0 || rrd.live_head->last_up_usec >= 1000000)
-        issue(&out, "last_update", "microsecond timestamp is outside [0, 1000000)");
     check_sources(&out, &rrd);
     check_archives(&out, &rrd, file);
     if (diagnose && out.errors == 0)

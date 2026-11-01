@@ -64,6 +64,7 @@
 #include <locale.h>
 #endif
 #include <sys/types.h>
+#include <inttypes.h>
 #include <limits.h>
 
 #include "compat-cloexec.h"
@@ -204,13 +205,14 @@ static size_t strsplit(
     i = 0;
     ptr = string;
     saveptr = NULL;
-    while ((fields[i] = strtok_r(ptr, " \t\r\n", &saveptr)) != NULL) {
+    while (i < size &&
+           (fields[i] = strtok_r(ptr, " \t\r\n", &saveptr)) != NULL) {
         ptr = NULL;
         i++;
-
-        if (i >= size)
-            break;
     }
+
+    if ((i == size) && (strtok_r(NULL, " \t\r\n", &saveptr) != NULL))
+        return (size + 1);
 
     return (i);
 }                       /* }}} size_t strsplit */
@@ -241,10 +243,10 @@ static int parse_header(
     return (0);
 }                       /* }}} int parse_header */
 
-static int parse_ulong_header(
+static int parse_uintmax_header(
     char *line,         /* {{{ */
     char **ret_key,
-    unsigned long *ret_value)
+    uintmax_t *ret_value)
 {
     char     *str_value;
     char     *endptr;
@@ -255,14 +257,86 @@ static int parse_ulong_header(
     if (status != 0)
         return (status);
 
+    if ((str_value[0] < '0') || (str_value[0] > '9'))
+        return (-1);
+
     endptr = NULL;
     errno = 0;
-    *ret_value = (unsigned long) strtol(str_value, &endptr, /* base = */ 0);
-    if ((endptr == str_value) || (errno != 0))
+    *ret_value = strtoumax(str_value, &endptr, /* base = */ 10);
+    if ((endptr == str_value) || (errno != 0) || (endptr[0] != 0))
         return (-1);
 
     return (0);
-}                       /* }}} int parse_ulong_header */
+}                       /* }}} int parse_uintmax_header */
+
+static int parse_intmax_header(
+    char *line,         /* {{{ */
+    char **ret_key,
+    intmax_t *ret_value)
+{
+    char     *str_value;
+    char     *first_digit;
+    char     *endptr;
+    int       status;
+
+    str_value = NULL;
+    status = parse_header(line, ret_key, &str_value);
+    if (status != 0)
+        return (status);
+
+    first_digit = str_value;
+    if ((first_digit[0] == '+') || (first_digit[0] == '-'))
+        first_digit++;
+    if ((first_digit[0] < '0') || (first_digit[0] > '9'))
+        return (-1);
+
+    endptr = NULL;
+    errno = 0;
+    *ret_value = strtoimax(str_value, &endptr, /* base = */ 10);
+    if ((endptr == str_value) || (errno != 0) || (endptr[0] != 0))
+        return (-1);
+
+    return (0);
+}                       /* }}} int parse_intmax_header */
+
+static int parse_time_value_suffix(
+    const char *str_value,
+    const char *suffix,
+    time_t *ret_value)
+{
+    const char *first_digit;
+    char     *endptr;
+    intmax_t  parsed_value;
+    time_t    converted_value;
+
+    if ((str_value == NULL) || (suffix == NULL) || (ret_value == NULL))
+        return (-1);
+
+    first_digit = str_value;
+    if ((first_digit[0] == '+') || (first_digit[0] == '-'))
+        first_digit++;
+    if ((first_digit[0] < '0') || (first_digit[0] > '9'))
+        return (-1);
+
+    errno = 0;
+    endptr = NULL;
+    parsed_value = strtoimax(str_value, &endptr, /* base = */ 10);
+    converted_value = (time_t) parsed_value;
+    if ((endptr == str_value) || (errno != 0) ||
+        (strcmp(endptr, suffix) != 0) ||
+        ((intmax_t) converted_value != parsed_value))
+        return (-1);
+
+    *ret_value = converted_value;
+    return (0);
+}
+
+static int parse_time_value(
+    const char *str_value,
+    time_t *ret_value)
+{
+    return parse_time_value_suffix(str_value, "", ret_value);
+}
 
 static int parse_char_array_header(
     char *line,         /* {{{ */
@@ -276,7 +350,11 @@ static int parse_char_array_header(
     size_t    num;
     int       status;
 
-    if ((tmp_array = (char **) malloc(array_len * sizeof(char *))) == NULL)
+    if ((array_len == 0) || (array_len > SIZE_MAX / sizeof(*tmp_array)))
+        return (-1);
+
+    tmp_array = (char **) malloc(array_len * sizeof(*tmp_array));
+    if (tmp_array == NULL)
         return (-1);
 
     value = NULL;
@@ -297,8 +375,18 @@ static int parse_char_array_header(
     } else {
         size_t    i;
 
-        for (i = 0; i < array_len; i++)
+        for (i = 0; i < array_len; i++) {
             array[i] = strdup(tmp_array[i]);
+            if (array[i] == NULL) {
+                while (i > 0) {
+                    i--;
+                    free(array[i]);
+                    array[i] = NULL;
+                }
+                free(tmp_array);
+                return (-1);
+            }
+        }
     }
 
     free(tmp_array);
@@ -314,12 +402,15 @@ static int parse_value_array_header(
 {
     char     *str_key;
     char    **str_array;
-    char     *endptr;
     int       status;
     size_t    i;
     double    tmp;
 
-    if ((str_array = (char **) malloc(array_len * sizeof(char *))) == NULL)
+    if ((array_len == 0) || (array_len > SIZE_MAX / sizeof(*str_array)))
+        return (-1);
+
+    str_array = (char **) malloc(array_len * sizeof(*str_array));
+    if (str_array == NULL)
         return (-1);
 
     str_key = NULL;
@@ -330,10 +421,9 @@ static int parse_value_array_header(
         return (-1);
     }
 
-    errno = 0;
-    endptr = NULL;
-    *ret_time = (time_t) strtol(str_key, &endptr, /* base = */ 10);
-    if ((endptr == str_key) || (errno != 0)) {
+    while (str_key[0] == ' ')
+        str_key++;
+    if (parse_time_value(str_key, ret_time) != 0) {
         free(str_array);
         return (-1);
     }
@@ -570,6 +660,11 @@ static int recvline(
 {                       /* {{{ */
     size_t    len;
     char     *s, *p, *t;
+#ifdef _WIN32
+    int       received;
+#else
+    ssize_t   received;
+#endif
 
     /* Sanity check */
     if ((client == NULL) || (n <= 0))
@@ -583,14 +678,13 @@ static int recvline(
          */
         if (((len = client->inbuf_used) <= 0) || (client->inbuf == NULL)) {
             client->inbuf = client->_inbuf;
-            client->inbuf_used =
-                recv(client->sd, client->inbuf, RRD_CMD_MAX, 0);
-            if (client->inbuf_used <= 0) {
-                if (s == buf) {
-                    /* EOF/error: stop with partial or no line */
-                    return (-1);
-                }
+            received = recv(client->sd, client->inbuf, RRD_CMD_MAX, 0);
+            if (received <= 0) {
+                client->inbuf = NULL;
+                client->inbuf_used = 0;
+                return (-1);
             }
+            client->inbuf_used = (size_t) received;
             len = client->inbuf_used;
         }
         p = client->inbuf;
@@ -605,12 +699,16 @@ static int recvline(
         t = (char *) memchr((void *) p, '\n', len);
         if (t != NULL) {
             len = ++t - p;
+            if (memchr((void *) p, 0, len) != NULL)
+                return (-1);
             client->inbuf_used -= len;
             client->inbuf = t;
             (void) memcpy((void *) s, (void *) p, len);
             s[len] = 0;
             return (1);
         }
+        if (memchr((void *) p, 0, len) != NULL)
+            return (-1);
         client->inbuf_used -= len;
         client->inbuf += len;
         (void) memcpy((void *) s, (void *) p, len);
@@ -618,7 +716,7 @@ static int recvline(
         n -= len;
     }
     *s = 0;
-    return (1);
+    return (-1);
 }                       /* }}} int recvline */
 
 static int response_read(
@@ -630,8 +728,11 @@ static int response_read(
 
     char      buffer[RRD_CMD_MAX];
     char     *message_ptr;
+    char     *first_digit;
+    long      response_status;
 
     size_t    i;
+    size_t    expected_lines;
 
 #define DIE(code) do { status = code; goto err_out; } while(0)
 
@@ -651,9 +752,20 @@ static int response_read(
 
     chomp(buffer);
 
-    ret->status = strtol(buffer, &message_ptr, 0);
-    if (buffer == message_ptr)
+    first_digit = buffer;
+    if ((first_digit[0] == '+') || (first_digit[0] == '-'))
+        first_digit++;
+    if ((first_digit[0] < '0') || (first_digit[0] > '9'))
         DIE(-4);
+
+    errno = 0;
+    response_status = strtol(buffer, &message_ptr, 10);
+    if ((buffer == message_ptr) || (errno != 0) ||
+        (response_status < INT_MIN) || (response_status > INT_MAX) ||
+        ((message_ptr[0] != 0) && (message_ptr[0] != ' ') &&
+         (message_ptr[0] != '\t')))
+        DIE(-4);
+    ret->status = (int) response_status;
 
     /* Skip leading whitespace of the status message */
     message_ptr += strspn(message_ptr, " \t");
@@ -668,22 +780,24 @@ static int response_read(
         goto out;
     }
 
-    ret->lines = (char **) malloc(sizeof(char *) * ret->status);
+    if ((size_t) ret->status > SIZE_MAX / sizeof(*ret->lines))
+        DIE(-6);
+
+    expected_lines = (size_t) ret->status;
+    ret->lines = (char **) calloc(expected_lines, sizeof(*ret->lines));
     if (ret->lines == NULL)
         DIE(-6);
 
-    memset(ret->lines, 0, sizeof(char *) * ret->status);
-    ret->lines_num = (size_t) ret->status;
-
-    for (i = 0; i < ret->lines_num; i++) {
+    for (i = 0; i < expected_lines; i++) {
         if (recvline(client, buffer, sizeof(buffer)) == -1)
             DIE(-7);
 
         chomp(buffer);
 
-        ret->lines[i] = strdup(buffer);
-        if (ret->lines[i] == NULL)
+        ret->lines[ret->lines_num] = strdup(buffer);
+        if (ret->lines[ret->lines_num] == NULL)
             DIE(-8);
+        ret->lines_num++;
     }
 
   out:
@@ -1447,6 +1561,10 @@ rrd_info_t *rrd_client_info(
             *sep = ' ';
             goto malformed;
         }
+        if ((tcode < RD_I_VAL) || (tcode > RD_I_BLO)) {
+            *sep = ' ';
+            goto malformed;
+        }
         itype = (rrd_info_type_t) tcode;
         s = (*endp == ' ') ? endp + 1 : endp;
         if (*s == 0 && itype != RD_I_STR) {
@@ -1456,21 +1574,46 @@ rrd_info_t *rrd_client_info(
         /* finally, we're pointing to the value */
         switch (itype) {
         case RD_I_VAL:
-            if (*s == 'N') {
+            if (strcmp(s, "NaN") == 0) {
                 info.u_val = DNAN;
-            } else {
-                info.u_val = atof(s);
-            }
+            } else if (rrd_strtodbl(s, NULL, &info.u_val, NULL) != 2)
+                goto malformed_value;
             break;
-        case RD_I_CNT:
-            info.u_cnt = atol(s);
+        case RD_I_CNT: {
+            char     *value_end;
+
+            if ((s[0] < '0') || (s[0] > '9'))
+                goto malformed_value;
+            errno = 0;
+            info.u_cnt = strtoul(s, &value_end, 10);
+            if ((errno != 0) || (value_end[0] != 0))
+                goto malformed_value;
             break;
-        case RD_I_INT:
-            info.u_int = atoi(s);
+        }
+        case RD_I_INT: {
+            char     *value_end;
+            char     *first_digit = s;
+            long      value;
+
+            if ((first_digit[0] == '+') || (first_digit[0] == '-'))
+                first_digit++;
+            if ((first_digit[0] < '0') || (first_digit[0] > '9'))
+                goto malformed_value;
+            errno = 0;
+            value = strtol(s, &value_end, 10);
+            if ((errno != 0) || (value_end[0] != 0) ||
+                (value < INT_MIN) || (value > INT_MAX))
+                goto malformed_value;
+            info.u_int = (int) value;
             break;
+        }
         case RD_I_STR:
             chomp(s);
             info.u_str = strdup(s);
+            if (info.u_str == NULL) {
+                rrd_set_error("rrdc_info: out of memory");
+                goto out_free_data;
+            }
             break;
         case RD_I_BLO:
             rrd_set_error("rrdc_info: BLOB objects are not supported");
@@ -1487,6 +1630,11 @@ rrd_info_t *rrd_client_info(
             free(info.u_str);
             info.u_str = NULL;
         }
+        continue;
+
+      malformed_value:
+        *sep = ' ';
+        goto malformed;
     }
     goto out_free_res;
 
@@ -1496,6 +1644,7 @@ rrd_info_t *rrd_client_info(
   out_free_data:
     rrd_info_free(data);
     data = NULL;
+    close_connection(client);
 
   out_free_res:
     response_free(res);
@@ -1525,9 +1674,9 @@ char     *rrd_client_list(
     size_t    buffer_size;
     rrdc_response_t *res;
     int       status;
-    unsigned int i;
+    size_t    i;
     char     *list = NULL;
-    int       list_len = 0;
+    size_t    list_len = 0;
 
     if (client == NULL)
         return NULL;
@@ -1588,10 +1737,16 @@ char     *rrd_client_list(
     }
 
     for (i = 0; i < res->lines_num; i++) {
-        int       len;
+        size_t    len;
         char     *buf;
 
         len = strlen(res->lines[i]);
+        if ((len > SIZE_MAX - 2) || (list_len > SIZE_MAX - len - 2)) {
+            rrd_set_error("rrdc_list: response is too large");
+            free(list);
+            list = NULL;
+            goto out_free_res;
+        }
         buf = realloc(list, list_len + len + 2);
 
         if (!buf) {
@@ -1605,14 +1760,11 @@ char     *rrd_client_list(
             goto out_free_res;
         }
 
-        if (!list)
-            buf[0] = '\0';
-
-        strcat(buf, res->lines[i]);
-        strcat(buf, "\n");
-
+        memcpy(buf + list_len, res->lines[i], len);
+        list_len += len;
+        buf[list_len++] = '\n';
+        buf[list_len] = 0;
         list = buf;
-        list_len += (len + 1);
     }
 
   out_free_res:
@@ -1690,8 +1842,19 @@ time_t rrd_client_last(
         response_free(res);
         return (-1);
     }
+    if (res->status != 0) {
+        rrd_set_error("rrdc_last: unexpected response body");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
 
-    lastup = (time_t) strtoll(res->message, NULL, 10);
+    if (parse_time_value(res->message, &lastup) != 0) {
+        rrd_set_error("rrdc_last: malformed response from rrdcached");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
     response_free(res);
 
     return (lastup);
@@ -1726,8 +1889,14 @@ int rrd_client_lastupdate(
     unsigned long ds_count;
     size_t    i;
 
-    if (client == NULL)
+    if ((client == NULL) || (ret_last_update == NULL) ||
+        (ret_ds_count == NULL) || (ret_ds_names == NULL) ||
+        (ret_last_ds == NULL))
         return -1;
+    *ret_ds_count = 0;
+    *ret_ds_names = NULL;
+    *ret_last_ds = NULL;
+    *ret_last_update = 0;
     if (filename == NULL) {
         rrd_set_error("rrdc_lastupdate: no filename");
         return (-1);
@@ -1770,10 +1939,24 @@ int rrd_client_lastupdate(
         response_free(res);
         return (-1);
     }
-
     /* The status line message contains the timestamp */
-    *ret_last_update = (time_t) strtoll(res->message, NULL, 10);
+    if (parse_time_value_suffix(res->message, " LastUpdate values follow",
+                                ret_last_update) != 0) {
+        rrd_set_error("rrdc_lastupdate: malformed timestamp in response");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
     ds_count = (unsigned long) res->lines_num;
+
+    if ((ds_count == 0) ||
+        ((uintmax_t) ds_count > SIZE_MAX / sizeof(char *))) {
+        rrd_set_error("rrdc_lastupdate: invalid data-source count in "
+                      "response");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
 
     *ret_ds_names = (char **) calloc(ds_count, sizeof(char *));
     if (*ret_ds_names == NULL) {
@@ -1796,8 +1979,9 @@ int rrd_client_lastupdate(
         char     *line = res->lines[i];
         char     *space = strchr(line, ' ');
 
-        if (space == NULL) {
-            rrd_set_error("rrdc_lastupdate: malformed response line: %s", line);
+        if ((space == NULL) || (space == line) || (space[1] == 0)) {
+            rrd_set_error("rrdc_lastupdate: malformed response line: %s",
+                          line);
             /* free what we've allocated so far */
             for (size_t j = 0; j < i; j++) {
                 free((*ret_ds_names)[j]);
@@ -1808,6 +1992,7 @@ int rrd_client_lastupdate(
             free(*ret_last_ds);
             *ret_last_ds = NULL;
             response_free(res);
+            close_connection(client);
             return (-1);
         }
         *space = '\0';
@@ -1825,6 +2010,7 @@ int rrd_client_lastupdate(
             free(*ret_last_ds);
             *ret_last_ds = NULL;
             response_free(res);
+            close_connection(client);
             return (-1);
         }
     }
@@ -1914,8 +2100,19 @@ time_t rrd_client_first(
         response_free(res);
         return (-1);
     }
+    if (res->status != 0) {
+        rrd_set_error("rrdc_first: unexpected response body");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
 
-    firstup = (time_t) strtoll(res->message, NULL, 10);
+    if (parse_time_value(res->message, &firstup) != 0) {
+        rrd_set_error("rrdc_first: malformed response from rrdcached");
+        response_free(res);
+        close_connection(client);
+        return (-1);
+    }
     response_free(res);
 
     return (firstup);
@@ -2096,7 +2293,7 @@ int rrd_client_fetch(
     char     *file_path;
 
     char     *str_tmp;
-    unsigned long flush_version;
+    uintmax_t flush_version;
 
     time_t    start;
     time_t    end;
@@ -2107,12 +2304,17 @@ int rrd_client_fetch(
     rrd_value_t *data;
     size_t    data_size;
     size_t    data_fill;
+    size_t    row_count;
+    size_t    row;
+    uintmax_t interval;
+    uintmax_t expected_rows;
 
     int       status;
     size_t    current_line;
-    time_t    t;
 
-    if ((client == NULL) || (filename == NULL) || (cf == NULL))
+    if ((client == NULL) || (filename == NULL) || (cf == NULL) ||
+        (ret_start == NULL) || (ret_end == NULL) || (ret_step == NULL) ||
+        (ret_ds_num == NULL) || (ret_ds_names == NULL) || (ret_data == NULL))
         return (-1);
 
     /* Send request {{{ */
@@ -2146,7 +2348,7 @@ int rrd_client_fetch(
     if ((ret_start != NULL) && (*ret_start > 0)) {
         char      tmp[64];
 
-        snprintf(tmp, sizeof(tmp), "%lu", (unsigned long) *ret_start);
+        snprintf(tmp, sizeof(tmp), "%jd", (intmax_t) *ret_start);
         tmp[sizeof(tmp) - 1] = 0;
         status = buffer_add_string(tmp, &buffer_ptr, &buffer_free);
         if (status != 0) {
@@ -2154,7 +2356,7 @@ int rrd_client_fetch(
         }
 
         if ((ret_end != NULL) && (*ret_end > 0)) {
-            snprintf(tmp, sizeof(tmp), "%lu", (unsigned long) *ret_end);
+            snprintf(tmp, sizeof(tmp), "%jd", (intmax_t) *ret_end);
             tmp[sizeof(tmp) - 1] = 0;
             status = buffer_add_string(tmp, &buffer_ptr, &buffer_free);
             if (status != 0) {
@@ -2195,19 +2397,41 @@ int rrd_client_fetch(
     if (ds_names != 0) { size_t k; for (k = 0; k < ds_num; k++) free (ds_names[k]); } \
     free (ds_names); \
     response_free (res); \
+    close_connection (client); \
     return (status); \
   } while (0)
 
-#define READ_NUMERIC_FIELD(name,type,var) do { \
+#define READ_UNSIGNED_FIELD(name,type,max,var) do { \
     char *key; \
-    unsigned long value; \
-    assert (current_line < res->lines_num); \
-    status = parse_ulong_header (res->lines[current_line], &key, &value); \
+    uintmax_t value; \
+    if (current_line >= res->lines_num) \
+      BAIL_OUT (-1, "Premature end of response packet"); \
+    status = parse_uintmax_header (res->lines[current_line], &key, &value); \
     if (status != 0) \
       BAIL_OUT (-1, "Unable to parse header `%s'", name); \
     if (strcasecmp (key, name) != 0) \
-      BAIL_OUT (-1, "Unexpected header line: Expected `%s', got `%s'", name, key); \
+      BAIL_OUT (-1, "Unexpected header line: Expected `%s', got `%s'", \
+                name, key); \
+    if (value > (uintmax_t) (max)) \
+      BAIL_OUT (-1, "Value for `%s' is out of range", name); \
     var = (type) value; \
+    current_line++; \
+  } while (0)
+
+#define READ_SIGNED_FIELD(name,type,var) do { \
+    char *key; \
+    intmax_t value; \
+    if (current_line >= res->lines_num) \
+      BAIL_OUT (-1, "Premature end of response packet"); \
+    status = parse_intmax_header (res->lines[current_line], &key, &value); \
+    if (status != 0) \
+      BAIL_OUT (-1, "Unable to parse header `%s'", name); \
+    if (strcasecmp (key, name) != 0) \
+      BAIL_OUT (-1, "Unexpected header line: Expected `%s', got `%s'", \
+                name, key); \
+    var = (type) value; \
+    if ((intmax_t) var != value) \
+      BAIL_OUT (-1, "Value for `%s' is out of range", name); \
     current_line++; \
   } while (0)
 
@@ -2218,36 +2442,36 @@ int rrd_client_fetch(
      * therefore check the version of the `flush' command first, so that later
      * versions can change the order of fields and it's easier to implement
      * backwards compatibility. */
-    READ_NUMERIC_FIELD("FlushVersion", unsigned long,
-                       flush_version);
+    READ_UNSIGNED_FIELD("FlushVersion", uintmax_t, UINTMAX_MAX,
+                        flush_version);
 
     if (flush_version != 1)
-        BAIL_OUT(-1, "Don't know how to handle flush format version %lu.",
+        BAIL_OUT(-1, "Don't know how to handle flush format version %ju.",
                  flush_version);
 
-    if (res->lines_num < 5)
+    if (res->lines_num < 6)
         BAIL_OUT(-1, "Premature end of response packet");
 
-    READ_NUMERIC_FIELD("Start", time_t,
-                       start);
-    READ_NUMERIC_FIELD("End", time_t,
-                       end);
+    READ_SIGNED_FIELD("Start", time_t, start);
+    READ_SIGNED_FIELD("End", time_t, end);
 
     if (start >= end)
-        BAIL_OUT(-1, "Malformed start and end times: start = %lu; end = %lu;",
-                 (unsigned long) start, (unsigned long) end);
+        BAIL_OUT(-1, "Malformed start and end times: start = %jd; end = %jd;",
+                 (intmax_t) start, (intmax_t) end);
 
-    READ_NUMERIC_FIELD("Step", unsigned long,
-                       step);
+    READ_UNSIGNED_FIELD("Step", unsigned long, ULONG_MAX, step);
 
     if (step < 1)
         BAIL_OUT(-1, "Invalid number for Step: %lu", step);
 
-    READ_NUMERIC_FIELD("DSCount", unsigned long,
-                       ds_num);
+    READ_UNSIGNED_FIELD("DSCount", unsigned long, ULONG_MAX, ds_num);
 
     if (ds_num < 1)
         BAIL_OUT(-1, "Invalid number for DSCount: %lu", ds_num);
+
+    if ((ds_num > RRD_CMD_MAX) ||
+        ((uintmax_t) ds_num > SIZE_MAX / sizeof(*ds_names)))
+        BAIL_OUT(-1, "DSCount is too large");
 
     /* It's time to allocate some memory */
     ds_names = (char **) calloc((size_t) ds_num, sizeof(*ds_names));
@@ -2264,13 +2488,17 @@ int rrd_client_fetch(
                  str_tmp);
     current_line++;
 
-    data_size = ds_num * (end - start) / step;
-    if (data_size < 1)
+    row_count = res->lines_num - current_line;
+    interval = (uintmax_t) end - (uintmax_t) start;
+    expected_rows = interval / (uintmax_t) step;
+    if ((expected_rows == 0) || ((uintmax_t) row_count != expected_rows))
         BAIL_OUT(-1, "No data returned or headers invalid.");
 
-    if (res->lines_num != (6 + (data_size / ds_num)))
-        BAIL_OUT(-1, "Got %zu lines, expected %zu",
-                 res->lines_num, (6 + (data_size / ds_num)));
+    if ((size_t) ds_num > SIZE_MAX / row_count)
+        BAIL_OUT(-1, "Returned data size is too large");
+    data_size = row_count * (size_t) ds_num;
+    if (data_size > SIZE_MAX / sizeof(*data))
+        BAIL_OUT(-1, "Returned data size is too large");
 
     data = (rrd_value_t *) calloc(data_size, sizeof(*data));
     if (data == NULL)
@@ -2278,16 +2506,17 @@ int rrd_client_fetch(
 
 
     data_fill = 0;
-    for (t = start + step; t <= end; t += step, current_line++) {
+    for (row = 0; row < row_count; row++, current_line++) {
         time_t    tmp;
-
-        assert(current_line < res->lines_num);
 
         status = parse_value_array_header(res->lines[current_line],
                                           &tmp, data + data_fill,
                                           (size_t) ds_num);
         if (status != 0)
             BAIL_OUT(-1, "Cannot parse value line");
+        if (((uintmax_t) tmp - (uintmax_t) start) !=
+            ((uintmax_t) row + 1) * (uintmax_t) step)
+            BAIL_OUT(-1, "Unexpected timestamp in value line");
 
         data_fill += (size_t) ds_num;
     }
@@ -2301,7 +2530,8 @@ int rrd_client_fetch(
 
     response_free(res);
     return (0);
-#undef READ_NUMERIC_FIELD
+#undef READ_SIGNED_FIELD
+#undef READ_UNSIGNED_FIELD
 #undef BAIL_OUT
 }                       /* }}} int_rrd_client_fetch */
 
@@ -2650,7 +2880,13 @@ int rrd_client_stats_get(
     rrdc_response_t *res;
 
     int       status;
+    int       malformed;
+    int       out_of_memory;
     size_t    i;
+
+    if ((client == NULL) || (ret_stats == NULL))
+        return (EINVAL);
+    *ret_stats = NULL;
 
     /* Protocol example: {{{
      * ->  STATS
@@ -2675,6 +2911,8 @@ int rrd_client_stats_get(
 
     head = NULL;
     tail = NULL;
+    malformed = 0;
+    out_of_memory = 0;
     for (i = 0; i < res->lines_num; i++) {
         char     *key;
         char     *value;
@@ -2683,8 +2921,10 @@ int rrd_client_stats_get(
 
         key = res->lines[i];
         value = strchr(key, ':');
-        if (value == NULL)
+        if ((value == NULL) || (value == key)) {
+            malformed = 1;
             continue;
+        }
         *value = 0;
         value++;
 
@@ -2692,11 +2932,18 @@ int rrd_client_stats_get(
             value++;
 
         s = (rrdc_stats_t *) malloc(sizeof(rrdc_stats_t));
-        if (s == NULL)
-            continue;
+        if (s == NULL) {
+            out_of_memory = 1;
+            break;
+        }
         memset(s, 0, sizeof(*s));
 
         s->name = strdup(key);
+        if (s->name == NULL) {
+            free(s);
+            out_of_memory = 1;
+            break;
+        }
 
         endptr = NULL;
         if ((strcmp("QueueLength", key) == 0)
@@ -2711,16 +2958,34 @@ int rrd_client_stats_get(
                    || (strcmp("JournalRotate", key) == 0)
                    || (strcmp("UpdatesReceived", key) == 0)
                    || (strcmp("UpdatesWritten", key) == 0)) {
+            uintmax_t counter;
+
             s->type = RRDC_STATS_TYPE_COUNTER;
-            s->value.counter =
-                (uint64_t) strtoll(value, &endptr, /* base = */ 0);
+            errno = 0;
+            if ((value[0] < '0') || (value[0] > '9')) {
+                malformed = 1;
+                free((char *) s->name);
+                free(s);
+                continue;
+            }
+            counter = strtoumax(value, &endptr, /* base = */ 10);
+            if ((errno != 0) || (counter > UINT64_MAX)) {
+                malformed = 1;
+                free((char *) s->name);
+                free(s);
+                continue;
+            }
+            s->value.counter = (uint64_t) counter;
         } else {
+            free((char *) s->name);
             free(s);
             continue;
         }
 
         /* Conversion failed */
         if ((endptr == value) || (endptr[0] != '\0')) {
+            malformed = 1;
+            free((char *) s->name);
             free(s);
             continue;
         }
@@ -2737,12 +3002,27 @@ int rrd_client_stats_get(
 
     response_free(res);
 
-    if (head == NULL)
+    if (out_of_memory || malformed) {
+        rrdc_stats_free(head);
+        if (malformed)
+            close_connection(client);
+        if (out_of_memory)
+            return (ENOMEM);
 #ifdef EPROTO
         return (EPROTO);
 #else
         return (EINVAL);
 #endif
+    }
+
+    if (head == NULL) {
+        close_connection(client);
+#ifdef EPROTO
+        return (EPROTO);
+#else
+        return (EINVAL);
+#endif
+    }
 
     *ret_stats = head;
     return (0);
