@@ -22,6 +22,7 @@ script_tests += security-hw-dependencies security-compute-ds security-header-fie
 script_tests += security-daemon-tune-argc
 
 script_tests += security-time-fields
+script_tests += security-client-response-validation
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \

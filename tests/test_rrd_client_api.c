@@ -44,6 +44,137 @@ static size_t count_bytes(
     return len;
 }
 
+static int check_fetch_failure(
+    const char *addr,
+    const char *file)
+{
+    rrd_client_t *client;
+    time_t    start = 1000000000;
+    time_t    end = 1000000060;
+    unsigned long step = 0;
+    unsigned long ds_num = 0;
+    char    **ds_names = NULL;
+    rrd_value_t *data = NULL;
+    int       status;
+
+    client = rrd_client_new(NULL);
+    if (client == NULL)
+        return 1;
+    if (rrd_client_connect(client, addr) != 0) {
+        rrd_client_destroy(client);
+        return 1;
+    }
+
+    status = rrd_client_fetch(client, file, "AVERAGE", &start, &end, &step,
+                              &ds_num, &ds_names, &data);
+    if (status == 0 || rrd_client_is_connected(client) ||
+        rrd_client_ping(client)) {
+        free(data);
+        while (ds_num > 0)
+            free(ds_names[--ds_num]);
+        free(ds_names);
+        rrd_client_destroy(client);
+        return 1;
+    }
+
+    rrd_client_destroy(client);
+    return 0;
+}
+
+static int check_time_failure(
+    const char *addr,
+    const char *file,
+    int first)
+{
+    rrd_client_t *client;
+    time_t    value;
+    int       failed;
+
+    client = rrd_client_new(addr);
+    if (client == NULL)
+        return 1;
+
+    if (first)
+        value = rrd_client_first(client, file, 0);
+    else
+        value = rrd_client_last(client, file);
+    failed = (value == (time_t) -1) && !rrd_client_is_connected(client) &&
+        !rrd_client_ping(client);
+    rrd_client_destroy(client);
+    return failed ? 0 : 1;
+}
+
+static int check_lastupdate_failure(
+    const char *addr,
+    const char *file)
+{
+    rrd_client_t *client;
+    time_t    last_update = 0;
+    unsigned long ds_count = 0;
+    char    **ds_names = NULL;
+    char    **last_ds = NULL;
+    unsigned long i;
+    int       status;
+    int       failed;
+
+    client = rrd_client_new(addr);
+    if (client == NULL)
+        return 1;
+
+    status = rrd_client_lastupdate(client, file, &last_update, &ds_count,
+                                   &ds_names, &last_ds);
+    failed = (status != 0) && !rrd_client_is_connected(client) &&
+        !rrd_client_ping(client);
+    for (i = 0; i < ds_count; i++) {
+        free(ds_names[i]);
+        free(last_ds[i]);
+    }
+    free(ds_names);
+    free(last_ds);
+    rrd_client_destroy(client);
+    return failed ? 0 : 1;
+}
+
+static int check_stats_failure(
+    const char *addr)
+{
+    rrd_client_t *client;
+    rrdc_stats_t *stats = NULL;
+    int       status;
+    int       failed;
+
+    client = rrd_client_new(addr);
+    if (client == NULL)
+        return 1;
+
+    status = rrd_client_stats_get(client, &stats);
+    failed = (status != 0) && !rrd_client_is_connected(client) &&
+        !rrd_client_ping(client);
+    rrdc_stats_free(stats);
+    rrd_client_destroy(client);
+    return failed ? 0 : 1;
+}
+
+static int check_info_failure(
+    const char *addr,
+    const char *file)
+{
+    rrd_client_t *client;
+    rrd_info_t *info;
+    int       failed;
+
+    client = rrd_client_new(addr);
+    if (client == NULL)
+        return 1;
+
+    info = rrd_client_info(client, file);
+    failed = (info == NULL) && !rrd_client_is_connected(client) &&
+        !rrd_client_ping(client);
+    rrd_info_free(info);
+    rrd_client_destroy(client);
+    return failed ? 0 : 1;
+}
+
 int main(
     int argc,
     char **argv)
@@ -72,6 +203,21 @@ int main(
     rrd_value_t *data;
     size_t    dumped;
     char      missing[4096];
+
+    if (argc == 4) {
+        if (strcmp(argv[1], "fetch-failure") == 0)
+            return check_fetch_failure(argv[2], argv[3]);
+        if (strcmp(argv[1], "last-failure") == 0)
+            return check_time_failure(argv[2], argv[3], 0);
+        if (strcmp(argv[1], "first-failure") == 0)
+            return check_time_failure(argv[2], argv[3], 1);
+        if (strcmp(argv[1], "lastupdate-failure") == 0)
+            return check_lastupdate_failure(argv[2], argv[3]);
+        if (strcmp(argv[1], "stats-failure") == 0)
+            return check_stats_failure(argv[2]);
+        if (strcmp(argv[1], "info-failure") == 0)
+            return check_info_failure(argv[2], argv[3]);
+    }
 
     if (argc != 3) {
         fprintf(stderr, "usage: %s DAEMON-ADDRESS RRD-FILE\n", argv[0]);
