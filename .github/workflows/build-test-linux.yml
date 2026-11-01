@@ -5,13 +5,17 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
       run: |
@@ -41,7 +45,7 @@ jobs:
         make check TESTS_STYLE="rrdcached-tcp"
     - name: Upload rrdcached-tcp test-suite.log
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: rrdcached-tcp_test-suite.log
         path: tests/test-suite.log
@@ -51,13 +55,11 @@ jobs:
     - name: Run valgrind
       run: |
         # make check TESTS_STYLE="valgrind-logfile"
-        # Disable the following, failing tests: graph1, graph2, rpn1, create-with-source-4, vformatter1
-        # These tests are failing in the GitHub Action (currently Ubuntu 24.04), when using valgrind-logfile
-        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
+        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 graph2 rpn1 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 xport1 list1 pdp-calc1"
         podchecker doc/*.pod
     - name: Upload valgrind test-suite.log
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: valgrind_test-suite.log
         path: tests/test-suite.log
@@ -73,17 +75,81 @@ jobs:
         cd /opt/rrdtool-$V
         bin/rrdtool
 
+  sanitizers:
+    name: AddressSanitizer and UBSan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install autopoint build-essential libtool-bin dc libpango1.0-dev libxml2-dev gettext
+
+    - name: Build
+      run: |
+        ./bootstrap
+        ./configure --disable-perl --disable-python --disable-ruby --disable-lua --disable-tcl --disable-docs \
+                    CFLAGS='-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined' \
+                    LDFLAGS='-fsanitize=address,undefined'
+        make
+
+    - name: Run Checks
+      # Leaks are left to the valgrind runs; any memory error or undefined
+      # behaviour fails the test that hit it.
+      env:
+        ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      run: |
+        make check || { cat tests/test-suite.log; exit 1; }
+
+  build-system:
+    name: Build system and install
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install autopoint build-essential libtool-bin libpango1.0-dev libxml2-dev \
+          gettext groff ghostscript dc python3-setuptools python3-wheel python3-pip \
+          ruby-dev libperl-dev systemd-dev lua5.4 liblua5.4-dev
+
+    - name: Configure
+      run: |
+        ./bootstrap
+        ./configure --disable-lua --disable-tcl
+
+    # distcheck, a reproducible release tarball, the release SBOM,
+    # --disable-* builds, the rrdcached test styles from the tarball,
+    # install/load/uninstall of the bindings, and configure options whose
+    # effect only shows in what is installed
+    - name: Check the build system
+      run: conftools/check-buildsystem.sh
+
+    # installs the shipped units, starts the socket and talks to
+    # rrdcached through it
+    - name: Check the systemd units
+      run: sudo conftools/check-buildsystem.sh systemd
+
   no-graph:
     name: Build without rrd_graph
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
+      timeout-minutes: 10
       run: |
-        sudo apt-get update
-        sudo apt-get install autopoint build-essential libtool-bin gettext libglib2.0-dev libxml2-dev
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y \
+          autopoint build-essential libtool-bin gettext libglib2.0-dev libxml2-dev
 
     - name: Build
       run: |

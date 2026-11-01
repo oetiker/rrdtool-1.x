@@ -103,6 +103,40 @@ rpnp_t   *rpn_expand(
     return rpnp;
 }
 
+/* rpn_compact_check: a COMPUTE program read from a file must end within
+ * the par array, use only operators rpn_compact2str and rpn_expand know,
+ * and refer only to data sources that exist. */
+int rpn_compact_check(
+    const rpn_cdefds_t *rpnc,
+    unsigned long ds_cnt)
+{
+    int       i;
+
+    for (i = 0; i < DS_CDEF_MAX_RPN_NODES; i++) {
+        int       op = (unsigned char) rpnc[i].op;
+
+        if (op == OP_END) {
+            if (i == 0) {
+                rrd_set_error("COMPUTE program is empty");
+                return -1;
+            }
+            return 0;
+        }
+        if (op > OP_ROUND) {
+            rrd_set_error("COMPUTE program has unknown operator %d", op);
+            return -1;
+        }
+        if ((op == OP_VARIABLE || op == OP_PREV_OTHER)
+            && (rpnc[i].val < 0 || (unsigned long) rpnc[i].val >= ds_cnt)) {
+            rrd_set_error("COMPUTE program refers to DS %d of %lu",
+                          rpnc[i].val, ds_cnt);
+            return -1;
+        }
+    }
+    rrd_set_error("COMPUTE program has no end marker");
+    return -1;
+}
+
 /* rpn_compact2str: convert a compact sequence of RPN operator nodes back
  * into a CDEF string. This function is used by rrd_dump.
  * arguments:
@@ -119,9 +153,11 @@ void rpn_compact2str(
     unsigned short i, offset = 0;
     char      buffer[7];    /* short as a string */
 
-    for (i = 0; rpnc[i].op != OP_END; i++) {
-        if (i > 0)
-            (*str)[offset++] = ',';
+    for (i = 0; i < DS_CDEF_MAX_RPN_NODES && rpnc[i].op != OP_END; i++) {
+        /* addop2str sizes the buffer for what it appends, so the comma
+         * goes through it too */
+        if (i > 0 && addop2str(OP_END, OP_END, (char *) ",", str, &offset) != 1)
+            return;
 
 #define add_op(VV,VVV) \
 	  if (addop2str((enum op_en)(rpnc[i].op), VV, VVV, str, &offset) == 1) continue;
@@ -221,6 +257,10 @@ void rpn_compact2str(
             add_op(OP_ROUND, ROUND)
 #undef add_op
     }
+    if (*str == NULL && (*str = (char *) malloc(1)) == NULL) {
+        rrd_set_error("failed to alloc memory in rpn_compact2str");
+        return;
+    }
     (*str)[offset] = '\0';
 
 }
@@ -234,15 +274,17 @@ static short addop2str(
 {
     if (op == op_type) {
         short     op_len;
+        char     *grown;
 
         op_len = strlen(op_str);
-        *result_str = (char *) rrd_realloc(*result_str,
+        grown = (char *) rrd_realloc(*result_str,
                                            (op_len + 1 +
                                             *offset) * sizeof(char));
-        if (*result_str == NULL) {
+        if (grown == NULL) {
             rrd_set_error("failed to alloc memory in addop2str");
             return -1;
         }
+        *result_str = grown;
         strncpy(*result_str + *offset, op_str, op_len + 1);
         *offset += op_len;
         return 1;

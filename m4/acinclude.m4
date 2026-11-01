@@ -37,7 +37,8 @@ AC_DEFUN([EX_CHECK_ALL],
     AC_CHECK_HEADER($3,[LIBS="-l$1 ${LIBS}";EX_CHECK_STATE=YES],[])],[])
  if test $EX_CHECK_STATE = NO; then
     dnl now asking pkg-config for help
-    AC_CHECK_PROGS(PKGCONFIG,[pkg-config],no)
+    dnl PKGCONFIG comes from PKG_PROG_PKG_CONFIG, so PKG_CONFIG and
+    dnl $host-pkg-config are honoured
     if test "$PKGCONFIG" != "no"; then
           if $PKGCONFIG --exists $4; then
              CPPFLAGS=${CPPFLAGS}" "`$PKGCONFIG --cflags $4`
@@ -538,7 +539,10 @@ int main(void){
         unlink(temp);
         return 1;
 }
-]])],[rd_cv_ms_async=ok],[rd_cv_ms_async=broken],[:])])
+]])],[rd_cv_ms_async=ok],[rd_cv_ms_async=broken],
+[dnl cross-compiling: assume a current kernel, where it works; set
+ dnl rd_cv_ms_async=broken in the environment for one where it does not
+ rd_cv_ms_async=ok])])
 
 
 if test "${rd_cv_ms_async}" = "ok"; then

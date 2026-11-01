@@ -135,11 +135,7 @@ dnl Check if we run on a system that has fonts
 AC_ARG_WITH(rrd-default-font,
 [  --with-rrd-default-font=[OPTIONS]  set the full path to your default font.],
 [RRD_DEFAULT_FONT=$withval],[
-  if test -d ${WINDIR:-nodir}/cour.ttf ; then
-	RRD_DEFAULT_FONT=`cd $WINDIR;pwd`/cour.ttf
-  else
-	RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace,Courier"'
-  fi
+  RRD_DEFAULT_FONT='"DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace,Courier"'
 ])
 
 dnl Use mmap in rrd_update instead of seek+write
@@ -200,34 +196,35 @@ AM_CONDITIONAL(HAVE_STATIC_LIBRRD,[test "x$enable_static" = "xyes"])
 dnl Try to detect/use GNU features
 CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
-dnl check for -Werror separately
-dnl (quite a few autotool checks do not work with -Werror; also, the
-dnl check for -Werror fails after checking and adding the other flags)
-AC_CACHE_CHECK([if gcc likes the -Werror flag], rd_cv_gcc_flag__Werror,
-  [AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([[]], [[return 0 ]])],
-    [rd_cv_gcc_flag__Werror="yes"],
-    [rd_cv_gcc_flag__Werror="no"])])
-if test "x$rd_cv_gcc_flag__Werror" = "xyes"; then
-  WERROR="-Werror"
-else
-  WERROR=""
-fi
-AC_SUBST(WERROR)
-
-dnl which flags does the compiler support?
+dnl which flags does the compiler support? The language ones stay in CFLAGS,
+dnl so the checks below see the dialect the sources are compiled in;
+dnl -std=gnu99 only when the user's CFLAGS do not choose a -std.
+dnl The warnings go into RRD_CFLAGS, which the Makefiles put in AM_CFLAGS
+dnl ahead of the user's CFLAGS (so "make CFLAGS=..." can override them,
+dnl and CFLAGS no longer appears twice on every compile line).
+RRD_CFLAGS=
 if test "x$GCC" = "xyes"; then
-  for flag in -fno-strict-aliasing -Wall -std=gnu99 -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
+  rd_lang_flags=-fno-strict-aliasing
+  case " $CFLAGS " in
+    *" -std="*) ;;
+    *) rd_lang_flags="$rd_lang_flags -std=gnu99" ;;
+  esac
+  for flag in $rd_lang_flags -Wall -pedantic -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wmissing-prototypes -Wmissing-declarations -Wnested-externs -Winline -Wold-style-definition -W; do
     oCFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $flag"
+    CFLAGS="$CFLAGS $RRD_CFLAGS $flag"
     cachename=rd_cv_gcc_flag_`echo $flag|sed 's/[[^A-Za-z]]/_/g'`
     AC_CACHE_CHECK([if gcc likes the $flag flag], $cachename,
        [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[return 0 ]])],[eval $cachename=yes],[eval $cachename=no])])
-    if eval test \$$cachename = no; then
-         CFLAGS="$oCFLAGS"
+    CFLAGS="$oCFLAGS"
+    if eval test \$$cachename = yes; then
+      case " $rd_lang_flags " in
+        *" $flag "*) CFLAGS="$CFLAGS $flag" ;;
+        *) RRD_CFLAGS="$RRD_CFLAGS $flag" ;;
+      esac
     fi
   done
 fi
+AC_SUBST(RRD_CFLAGS)
 
 AC_TYPE_LONG_LONG_INT
 
@@ -309,7 +306,8 @@ if test "x$enable_mmap" = "xyes"; then
   ;;
   *)
     AC_CHECK_HEADERS(sys/mman.h)
-    AC_FUNC_MMAP
+    dnl AC_FUNC_MMAP tested MAP_FIXED private mappings, which rrdtool does
+    dnl not use, and its HAVE_MMAP was overridden by this check anyway
     AC_CHECK_FUNCS(mmap munmap)
     AC_CHECK_DECLS(madvise, [], [], [#ifdef HAVE_SYS_MMAN_H
 				     # include <sys/mman.h>
@@ -342,7 +340,7 @@ AC_CHECK_FUNCS(posix_fallocate)
 
 CONFIGURE_PART(Libintl Processing)
 
-AM_GNU_GETTEXT_VERSION(0.17)
+AM_GNU_GETTEXT_VERSION([0.19.8])
 AM_GNU_GETTEXT(external)
 
 CONFIGURE_PART(IEEE Math Checks)
@@ -417,19 +415,19 @@ GC_TIMEZONE()
 
 AC_CACHE_CHECK(whether sigwait has 2 arguments,
     ac_cv_libc_sigwait,
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
         #define _POSIX_PTHREAD_SEMANTICS
         #include <stdio.h>
         #include <signal.h>]],
         [[sigset_t sigs; int signo; sigwait(&sigs, &signo);]])],
-        [AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])
-        AC_MSG_RESULT(yes)],
-        [AC_MSG_RESULT(no)]
-    )
-)
+        [ac_cv_libc_sigwait=yes],
+        [ac_cv_libc_sigwait=no])])
+AS_IF([test "x$ac_cv_libc_sigwait" = xyes],
+      [AC_DEFINE(HAVE_SIGWAIT,1,[have two argument posix sigwait])])
 
 
-CHECK_FOR_WORKING_MS_ASYNC
+dnl only mmap access depends on it
+AS_IF([test "x$enable_mmap" = xyes], [CHECK_FOR_WORKING_MS_ASYNC])
 
 dnl do we have nl_langinfo(_NL_TIME_WEEK_1STDAY)
 AC_CHECK_FUNCS(_NL_TIME_WEEK_1STDAY, ,
@@ -445,6 +443,7 @@ AC_CACHE_CHECK([if realloc can deal with NULL], rd_cv_null_realloc,
               char *x = NULL;
 	      x = realloc (x,10);
 	      if (x==NULL) return 1;
+	      free (x);
 	      return 0;
              }]])],[rd_cv_null_realloc=yes],[rd_cv_null_realloc=nope],[:])])
 
@@ -493,7 +492,8 @@ if test $enable_pthread != no; then
     MULTITHREAD_CFLAGS=$PTHREAD_CFLAGS
     MULTITHREAD_LDFLAGS=$PTHREAD_LIBS
 	     ],
-	     [])
+	     [enable_pthread=no
+	      AC_MSG_WARN([no way to build with POSIX threads was found])])
 fi
 
 dnl since we use lots of *_r functions all over the code we better
@@ -503,7 +503,6 @@ if test  "x$x_rflag" != "xno"; then
    CPPFLAGS="$CPPFLAGS $x_rflag"
 fi
 
-AM_CONDITIONAL(BUILD_MULTITHREAD,[test $enable_pthread != no])
 
 AC_LANG_PUSH(C)
 dnl see if we have to include malloc/malloc.h
@@ -598,10 +597,14 @@ AC_ARG_ENABLE(librados,AS_HELP_STRING([--disable-librados],[do not build in supp
 [enable_librados=yes])
 
 AS_IF([test "x$enable_librados" != xno], [
+    dnl the header alone is not enough: it can be there without a usable
+    dnl library (or one for another architecture)
     AC_CHECK_HEADER(rados/librados.h, [
+      AC_CHECK_LIB(rados, rados_create, [
         AC_DEFINE(HAVE_LIBRADOS,[1],[have got librados installed])
         LIBS="${LIBS} -lrados"
         have_librados=yes
+      ])
     ])
 ])
 
@@ -630,11 +633,15 @@ AS_IF([test "x$enable_libwrap" != xno], [
 ])
 
 
-AM_CONDITIONAL(BUILD_LIBWRAP,[test $have_libwrap != no])
 
 AM_CONDITIONAL(BUILD_RRDGRAPH,[test $enable_rrd_graph != no])
 
 AM_CONDITIONAL(BUILD_RRDRESTORE,[test $enable_rrd_restore != no])
+
+dnl pkg-config for the library checks below, the Lua check and systemd;
+dnl PKG_CONFIG=... or a $host-pkg-config is used when cross-compiling
+PKG_PROG_PKG_CONFIG
+PKGCONFIG=${PKG_CONFIG:-no}
 
 EX_CHECK_ALL(glib-2.0,   glib_check_version,            glib.h,                 glib-2.0,    2.28.7, ftp://ftp.gtk.org/pub/glib/2.28/, "")
 
@@ -644,9 +651,10 @@ AC_CACHE_CHECK([whether we need to include gthreads for g_thread_init],
                     [[#if !GLIB_CHECK_VERSION(2, 32, 0)
                      # error "glib needs g_thread_init"
                      #endif]])],
-                     [AC_MSG_RESULT(no)],
-                     [EX_CHECK_ALL(gthread-2.0, g_thread_init, glib.h, gthread-2.0, x.x.x, "", "")
-                     AC_MSG_RESULT(yes)])])
+                     [ac_cv_glibc_g_thread_init=no],
+                     [ac_cv_glibc_g_thread_init=yes])])
+AS_IF([test "x$ac_cv_glibc_g_thread_init" = xyes],
+      [EX_CHECK_ALL(gthread-2.0, g_thread_init, glib.h, gthread-2.0, x.x.x, "", "")])
 
 CORE_LIBS="$LIBS"
 
@@ -673,8 +681,11 @@ if test "$EX_CHECK_ALL_ERR" = "YES"; then
   AC_MSG_ERROR([Please fix the library issues listed above and try again.])
 fi
 
-dnl Sort and remove duplicate entries in LIBS before assigning to ALL_LIBS
-ALL_LIBS=$(echo "$LIBS"|tr -s " " "\n"|sort -u|tr "\n" " ")
+dnl Remove duplicate entries in LIBS, keeping the last of each: every check
+dnl prepends its library, so a library's dependencies come after it, and
+dnl static links need that order (sort -u put -lpango-1.0 before
+dnl -lpangocairo-1.0)
+ALL_LIBS=`echo "$LIBS" | tr -s " " "\n" | awk 'NF { l@<:@n++@:>@ = $0 } END { r = ""; for (i = n - 1; i >= 0; i--) if (!seen@<:@l@<:@i@:>@@:>@++) r = l@<:@i@:>@ " " r; print r }'`
 LIBS=
 
 AC_SUBST(CORE_LIBS)
@@ -742,7 +753,8 @@ AC_MSG_RESULT(${COMP_PERL:-No Perl Modules will be built})
 # Use reproducible build date and time
 if test "$SOURCE_DATE_EPOCH"; then
 	DATE_FMT="%b %d %Y %H:%M:%S"
-	BUILD_DATE=$(LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT")
+	dnl -d @N is GNU date, -r N the BSD and macOS one
+	BUILD_DATE=`LC_ALL=C date -u -d "@$SOURCE_DATE_EPOCH" "+$DATE_FMT" 2>/dev/null || LC_ALL=C date -u -r "$SOURCE_DATE_EPOCH" "+$DATE_FMT"`
 	AC_DEFINE_UNQUOTED([BUILD_DATE], ["$BUILD_DATE"], [Use reproducible build date])
 fi
 
@@ -757,22 +769,24 @@ PERL_MAKE_OPTIONS="PREFIX=$langpref INSTALL_BASE= LIB=$langpref/lib/perl/$PERL_V
 dnl pass additional perl options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(perl-site-install,
 AS_HELP_STRING([--enable-perl-site-install],[by default the rrdtool perl modules are installed together with rrdtool in $prefix/lib/perl. You have to put a 'use lib qw($prefix/lib/perl)' into your scripts when you want to use them. When you set this option the perl modules will get installed wherever your perl setup thinks it is best.]),
-[PERL_MAKE_OPTIONS=],[])
+[AS_IF([test "x$enableval" = xyes], [PERL_MAKE_OPTIONS=])],[])
 
+dnl quoted, because the Makefile passes PERL_MAKE_OPTIONS through the shell
+dnl and "-O2 -g" must stay one argument
 if test ! -z "$PERLCC"; then
-   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC=$PERLCC"
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CC='$PERLCC'"
 
    if test ! -z "$PERLCCFLAGS"; then
-       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS=$PERLCCFLAGS"
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS CCFLAGS='$PERLCCFLAGS'"
    fi
 
    if test -z "$PERLLD"; then
        PERLLD=$PERLCC
    fi
-   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD=$PERLLD"
+   PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LD='$PERLLD'"
 
    if test ! -z "$PERLLDFLAGS"; then
-       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS=$PERLLDFLAGS"
+       PERL_MAKE_OPTIONS="$PERL_MAKE_OPTIONS LDFLAGS='$PERLLDFLAGS'"
    fi
 fi
 
@@ -809,10 +823,23 @@ else
 	fi
 fi
 
+dnl mkmf installs into the interpreter's own sitearchdir unless told
+dnl otherwise; sitedir alone is not enough for current Ruby versions.
+dnl $(DESTDIR) is expanded by make at install time, as in mkmf's defaults.
+rd_ruby_prefix_options='sitedir=$(DESTDIR)'"$langpref"'/lib/ruby sitelibdir=$(DESTDIR)'"$langpref"'/lib/ruby sitearchdir=$(DESTDIR)'"$langpref"'/lib/ruby'
+
 dnl pass additional ruby options when generating Makefile from Makefile.PL
 AC_ARG_ENABLE(ruby-site-install,
 AS_HELP_STRING([--enable-ruby-site-install],[by default the rrdtool ruby modules are installed together with rrdtool in $prefix/lib/ruby. You have to add $prefix/lib/ruby/$ruby_version/$sitearch to your $: variable for ruby to find the RRD.so file.]),
-[RUBY_MAKE_OPTIONS=],[RUBY_MAKE_OPTIONS="sitedir=$langpref/lib/ruby"])
+[AS_IF([test "x$enableval" = xyes], [RUBY_MAKE_OPTIONS=; RUBY_INSTALL_DIR=],
+       [RUBY_MAKE_OPTIONS="$rd_ruby_prefix_options"; RUBY_INSTALL_DIR="$langpref/lib/ruby"])],
+[RUBY_MAKE_OPTIONS="$rd_ruby_prefix_options"; RUBY_INSTALL_DIR="$langpref/lib/ruby"])
+dnl mkmf does not create an overridden sitearchdir; install-data-local does
+AC_SUBST(RUBY_INSTALL_DIR)
+RUBY_DLEXT=
+AS_IF([test -n "$COMP_RUBY"],
+      [RUBY_DLEXT=`$RUBY -rrbconfig -e 'print RbConfig::CONFIG.fetch("DLEXT")'`])
+AC_SUBST(RUBY_DLEXT)
 
 
 AC_ARG_WITH(ruby-options,
@@ -825,10 +852,11 @@ AC_ARG_WITH(ruby-options,
 AC_SUBST(RUBY_MAKE_OPTIONS)
 AC_SUBST(RUBY)
 AC_SUBST(COMP_RUBY)
-AM_CONDITIONAL(BUILD_RUBY,[test $enable_ruby = "yes"])
+AM_CONDITIONAL(BUILD_RUBY,[test -n "$COMP_RUBY"])
 
 dnl Check for Lua.
-AC_PATH_PROG(LUA, lua, no)
+dnl distributions often install only a versioned interpreter
+AC_PATH_PROGS(LUA, [lua lua5.4 lua5.3 lua5.2 lua5.1], no)
 
 AC_ARG_ENABLE(lua,AS_HELP_STRING([--disable-lua],[do not build the lua modules]),
 [],[enable_lua=yes])
@@ -848,14 +876,14 @@ LUA_EOF
     lua_vdot=$LUA_MAJOR.$LUA_MINOR
     lua_vndot=$LUA_MAJOR$LUA_MINOR
     lua_version=$LUA_MAJOR.$LUA_MINOR.$LUA_POINT
-    AC_CHECK_HEADERS(lua$lua_vndot/lua.h,
-      [AC_CHECK_HEADERS(lua$lua_vndot/lualib.h,
+    AC_CHECK_HEADER(lua$lua_vndot/lua.h,
+      [AC_CHECK_HEADER(lua$lua_vndot/lualib.h,
         [AC_CHECK_HEADER(lua$lua_vndot/lauxlib.h,
           [lua_headerdir=lua$lua_vndot],
           [])],
         [])],
-      [AC_CHECK_HEADERS(lua$lua_vdot/lua.h,
-        [AC_CHECK_HEADERS(lua$lua_vdot/lualib.h,
+      [AC_CHECK_HEADER(lua$lua_vdot/lua.h,
+        [AC_CHECK_HEADER(lua$lua_vdot/lualib.h,
           [AC_CHECK_HEADER(lua$lua_vdot/lauxlib.h,
             [lua_headerdir=lua$lua_vdot],
             [])],
@@ -910,8 +938,15 @@ LUA_EOF
           # try with dot, without dot and finally without version
           for f in $lua_pkg_prefix$lua_vdot $lua_pkg_prefix$lua_vndot $lua_pkg_prefix; do
             lua_exec_prefix=`$PKGCONFIG --variable=prefix $f 2>/dev/null`
-            # same binaries?
-            if test "$lua_exec_prefix/bin/lua" = "$LUA"; then
+            # Match the selected interpreter's version, including versioned
+            # executables such as /usr/bin/lua5.4.
+            lua_pkg_version=`$PKGCONFIG --modversion $f 2>/dev/null`
+            case "$lua_pkg_version" in
+              "$lua_vdot"|"$lua_vdot".*) lua_pkg_matches=yes ;;
+              *) lua_pkg_matches=no ;;
+            esac
+            if test "$lua_pkg_matches" = yes \
+                && test "$lua_exec_prefix/bin" = "${LUA%/*}"; then
                 # OK, found CFLAGS. Get Lua LFLAGS and modules install dir
                 LUA_CFLAGS=`$PKGCONFIG --cflags $f 2>/dev/null`
                 LUA_LFLAGS=`$PKGCONFIG --libs $f 2>/dev/null`
@@ -943,7 +978,8 @@ LUA_EOF
         dnl found and install together with RRDtool, under $langpref.
         AC_ARG_ENABLE(lua-site-install,
         AS_HELP_STRING([--enable-lua-site-install],[by default the lua module is installed together with rrdtool in $prefix/lib/lua/$lua_version. You have to add $prefix/lib/lua/$lua_version/?.so to package.cpath for lua to find 'rrd.so'. For lua 5.0 you may also need to change LUA_PATH to the same dir, to require 'compat-5.1'. When you set this option the lua modules will get installed wherever your Lua setup thinks it is best. WARNING: if you set this option, system lua modules compat-5.1.lua and rrd.so, if any, may be overwritten.]),
-        [],
+        [AS_IF([test "x$enableval" != xyes],
+               [LUA_INSTALL_CMOD="$LUA_RRD_LIBDIR"; LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"])],
         [LUA_INSTALL_CMOD="$LUA_RRD_LIBDIR"; LUA_INSTALL_LMOD="$LUA_RRD_LIBDIR"])
 
         LUA_DEFINES="-DLUA$lua_vndot -D$LUA_HAVE_COMPAT51"
@@ -970,8 +1006,6 @@ AM_CONDITIONAL(LUA_SITE_LINSTALL, [test "$LUA_INSTALL_LMOD" != "$LUA_RRD_LIBDIR"
 AM_CONDITIONAL(LUA50, [test "$lua_vndot" = "50"])
 AM_CONDITIONAL(BUILD_LUA, [test "$enable_lua" = "yes"])
 
-enable_tcl_site=no
-
 AC_ARG_ENABLE(tcl,AS_HELP_STRING([--disable-tcl],[do not build the tcl modules]),
 [],[enable_tcl=yes])
 
@@ -980,7 +1014,15 @@ if test  "$enable_tcl" = "yes"; then
   withval=""
   AC_ARG_WITH(tcllib,[  --with-tcllib=DIR       location of the tclConfig.sh])
   enable_tcl=no
-  for dir in $withval /usr/lib /usr/lib64 /usr/local/lib /usr/lib/tcl8.4 /usr/lib/tcl8.3 ; do
+  dnl Debian and Ubuntu keep tclConfig.sh in /usr/lib/<multiarch>/tcl8.x,
+  dnl and the /usr/lib link only comes with the tcl-dev metapackage
+  tcl_multiarch=`$CC -print-multiarch 2>/dev/null`
+  tcl_dirs=
+  for v in 8.6 8.5 8.4 8.3; do
+    tcl_dirs="$tcl_dirs /usr/lib/tcl$v /usr/lib64/tcl$v"
+    test -n "$tcl_multiarch" && tcl_dirs="$tcl_dirs /usr/lib/$tcl_multiarch/tcl$v"
+  done
+  for dir in $withval /usr/lib /usr/lib64 /usr/local/lib $tcl_dirs ; do
     AC_MSG_CHECKING(for tclConfig.sh in $dir)
     if test -f "$dir/tclConfig.sh" ; then
     	tcl_config=$dir/tclConfig.sh
@@ -996,13 +1038,14 @@ if test  "$enable_tcl" = "yes"; then
         AC_MSG_WARN([tclConfig.sh not found - Tcl interface will not be built])
   else
 	. $tcl_config
-	TCL_PACKAGE_DIR="$TCL_PACKAGE_PATH/tclrrd$VERSION"
+	dnl TCL_PACKAGE_PATH is a search list (several directories on Debian)
+	TCL_PACKAGE_DIR="`echo $TCL_PACKAGE_PATH | sed 's/ .*//'`/tclrrd$VERSION"
 	if test -n "$TCL_INC_DIR"; then
 	  TCL_INCLUDE_SPEC="$TCL_INCLUDE_SPEC -I$TCL_INC_DIR"
 	fi
   fi
   AC_ARG_ENABLE(tcl-site,AS_HELP_STRING([--enable-tcl-site],[install the tcl extension in the tcl tree]),
-  [],[enable_tcl_site=yes])
+  [],[enable_tcl_site=no])
 
 fi
 
@@ -1029,6 +1072,30 @@ dnl Check for python
 AM_PATH_PYTHON(3,[],[enable_python=no])
 AM_CHECK_PYTHON_HEADERS(,[enable_python=no;AC_MSG_WARN(could not find Python headers)])
 fi
+dnl by default the module goes to a fixed directory under the prefix, which
+dnl rrdtool-env.sh knows; distributions want the interpreter's own
+dnl site-packages instead (pyexecdir, e.g. /usr/lib64/python3.x/site-packages)
+AC_ARG_ENABLE(python-site-install,
+AS_HELP_STRING([--enable-python-site-install],[install the python module into the interpreter's site-packages under the prefix (pyexecdir) instead of $libdir/python3/site-packages]),
+[],[enable_python_site_install=no])
+if test "x$enable_python_site_install" = xyes; then
+  PYTHON_INSTALL_DIR='${pyexecdir}'
+else
+  PYTHON_INSTALL_DIR='${libdir}/python3/site-packages'
+fi
+AC_SUBST(PYTHON_INSTALL_DIR)
+
+dnl the module is built as a wheel (setup.py bdist_wheel) and installed with pip
+if test "$enable_python" = "yes"; then
+  AC_MSG_CHECKING([for setuptools, wheel and pip in $PYTHON])
+  if $PYTHON -c 'import setuptools, wheel, pip' >/dev/null 2>&1; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+    AC_MSG_WARN([setuptools, wheel or pip is missing: the Python module will not be built])
+    enable_python=no
+  fi
+fi
 
 if test  x$enable_python = xno; then
 	COMP_PYTHON=
@@ -1039,13 +1106,22 @@ fi
 AC_SUBST(COMP_PYTHON)
 AM_CONDITIONAL(BUILD_PYTHON,[test $enable_python = "yes"])
 
-if test $enable_docs != no; then
-
-dnl Check for nroff
+dnl The formatters are looked for even with --disable-docs: make dist
+dnl builds every page (including the PDFs) for the tarball.
 AC_ARG_VAR(NROFF, [path to the local nroff version])
 AC_PATH_PROGS(NROFF, [gnroff nroff])
+AC_ARG_VAR(TROFF, [path to the local troff version])
+AC_PATH_PROGS(TROFF, [groff troff])
+AC_ARG_VAR(PS2PDF, [path to ps2pdf (ghostscript), for the PDF pages])
+AC_PATH_PROG(PS2PDF, ps2pdf)
+
+if test $enable_docs != no; then
+
 if test x$NROFF = x; then
   AC_MSG_ERROR([I need a copy of *nroff to format the documentation])
+fi
+if test "x$POD2MAN" = xno -o "x$POD2HTML" = xno; then
+  AC_MSG_ERROR([I need pod2man and pod2html (from perl) to format the documentation])
 fi
 dnl -Wbreak is a GNU groff extension used to silence "can't break line"
 dnl warnings; BSD-derived nroff (e.g. macOS /usr/bin/nroff) rejects it.
@@ -1058,15 +1134,26 @@ else
   AC_MSG_RESULT([no])
 fi
 AC_SUBST(NROFF_WBREAK)
-AC_ARG_VAR(TROFF, [path to the local troff version])
-AC_PATH_PROGS(TROFF, [groff troff])
-if test x$TROFF = x; then
-  AC_MSG_ERROR([I need a copy of *troff to format the documentation])
+dnl troff and ps2pdf only make the PDF pages, which make dist needs and
+dnl a normal build does not
+if test x$TROFF = x -o x$PS2PDF = x; then
+  AC_MSG_WARN([troff or ps2pdf not found: make dist will fail])
 fi
 
 AC_ARG_VAR(RRDDOCDIR, [[DATADIR/doc/PACKAGE-VERSION] Documentation directory])
 if test -z "$RRDDOCDIR"; then
    RRDDOCDIR='${datadir}/doc/${PACKAGE}-${VERSION}'; fi
+dnl HTML pages go to RRDDOCDIR/html unless --htmldir was given (its default
+dnl is ${docdir}); the text pages to RRDDOCDIR/txt unless RRDTXTDIR is set
+if test "x$htmldir" = 'x${docdir}'; then
+   RRDHTMLDIR='${RRDDOCDIR}/html'
+else
+   RRDHTMLDIR=$htmldir
+fi
+AC_SUBST(RRDHTMLDIR)
+AC_ARG_VAR(RRDTXTDIR, [[RRDDOCDIR/txt] directory for the text pages])
+if test -z "$RRDTXTDIR"; then
+   RRDTXTDIR='${RRDDOCDIR}/txt'; fi
 
 fi
 
@@ -1086,15 +1173,19 @@ esac
 AM_CONDITIONAL([MINGW_W64], [test "$build_mingw_w64" = "yes"])
 
 # systemd check
-PKG_PROG_PKG_CONFIG
 AC_ARG_WITH([systemdsystemunitdir],
 	AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
-	[], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+	[], [dnl relative to --prefix, as systemd.pc defines it, so a non-root
+	     dnl install under another prefix does not write to /usr/lib
+	     rd_unit_prefix=$prefix
+	     test "x$rd_unit_prefix" = xNONE && rd_unit_prefix=$ac_default_prefix
+	     with_systemdsystemunitdir=`test -n "$PKG_CONFIG" && $PKG_CONFIG --define-variable=prefix="$rd_unit_prefix" --variable=systemdsystemunitdir systemd 2>/dev/null`])
+dnl without pkg-config or systemd.pc there is no directory to install to
+test -z "$with_systemdsystemunitdir" && with_systemdsystemunitdir=no
 if test "x$with_systemdsystemunitdir" != xno; then
 	AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])
-	AC_OUTPUT([etc/rrdcached.socket etc/rrdcached.service])
 fi
-AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ])
+AM_CONDITIONAL(HAVE_SYSTEMD, [test "x$with_systemdsystemunitdir" != xno])
 
 
 CONFIGURE_PART(Apply Configuration Information)

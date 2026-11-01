@@ -77,7 +77,8 @@ Setting I<max> to 'U' will disable this limit.
 
 =item S<B<--data-source-type>|B<-d> I<ds-name>:I<DST>>
 
-alter the type B<DST> of a data source.
+alter the type B<DST> of a data source. A data source cannot be changed
+to or from B<COMPUTE>.
 
 =item S<B<--data-source-rename>|B<-r> I<old-name>:I<new-name>>
 

@@ -28,7 +28,7 @@ endif
  # the following files are not mentioned in any other Makefile
 EXTRA_DIST = COPYRIGHT CHANGES TODO CONTRIBUTORS THREADS VERSION LICENSE \
              rrdtool.spec favicon.ico bootstrap \
-             libtool .indent.pro \
+             .indent.pro \
              m4/snprintf.m4 \
              win32/build-rrdtool.dot win32/build-rrdtool.pdf win32/build-rrdtool.svg \
              win32/librrd-8.def win32/librrd-8.rc win32/librrd-8.vcxproj \
@@ -61,15 +61,12 @@ site-perl-install: all bindings/perl-piped/Makefile bindings/perl-shared/Makefil
 	cd bindings/perl-shared && $(MAKE) install
 
 site-tcl-install: all
-	cd bindings/tcl && $(MAKE) tcl-install
+	cd bindings/tcl && $(MAKE) install
 
+# into the interpreter's own site-packages, from the wheel "make" built
 site-python-install: all
-	cd bindings/python && $(PYTHON) setup.py install $(if $(DESTDIR),--root=$(DESTDIR))
-
-# Skip this part of "make distcheck": the perl, ruby, and tcl files
-# are not uninstalled by "make uninstall".
-distuninstallcheck:
-	@:
+	$(PYTHON) -m pip install --no-index --no-deps --disable-pip-version-check \
+	  $${DESTDIR:+--root="$$DESTDIR"} bindings/python/dist/*.whl
 
 # find . -name "*.c" -or -name "*.h" | xargs perl -0777 -n -e 'while (s/typedef\s+(?:unsigned\s+|signed\s+|unival\s+)?\S+\s+\*?([^{}\s;(]+)//){print "-T$1\n"}'
 indent:
@@ -85,7 +82,6 @@ clean-local:
 # file and the pages made from it unchanged, and the source is not touched.
 dist-hook: VERSION
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^\$$VERSION.+/\$$VERSION='$(NUMVERS)';/' bindings/perl-*/*.pm
-	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/RRDtool 1.GIT, Copyright by Tobi Oetiker/RRDtool '$(PACKAGE_VERSION)', Copyright 1997-'`date +%Y`' by Tobi Oetiker/' src/*.h src/*.c
 	$(AM_V_GEN)cd $(distdir) && $(PERL) -i -p -e 's/^Version:.+/Version: '$(PACKAGE_VERSION)'/' rrdtool.spec
 
 ##END##

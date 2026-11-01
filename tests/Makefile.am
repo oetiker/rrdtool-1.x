@@ -1,4 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
+AM_CFLAGS = $(RRD_CFLAGS)
 
 script_tests = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 graph1 graph2 graph-missing-ds rpn1 \
@@ -7,12 +8,21 @@ script_tests = modify1 modify2 modify3 modify4 modify5 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
+	cached-client-api cached-journal-long create-with-source-5 create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += restore-xml-parse-error
+script_tests += update-compute-only
+script_tests += security-create-source-prefill
+script_tests += security-hw-smoothing-window hw-bulk-update-period1
+script_tests += security-hw-dependencies security-compute-ds security-header-fields
+script_tests += security-daemon-tune-argc
+
+script_tests += security-time-fields
+script_tests += security-client-response-validation
 
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
@@ -57,8 +67,7 @@ client_header_standalone_SOURCES = test_client_header_standalone.c
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \
-	${top_srcdir}/src/compat-cloexec.c \
-	${top_srcdir}/src/compat-cloexec.h
+	src-compat-cloexec.c
 
 rrd_open_security_SOURCES = \
 	test_rrd_open_security.c
@@ -95,7 +104,7 @@ if HAVE_STATIC_LIBRRD
 if BUILD_LIBRADOS
 script_tests += security-rados-bounds
 check_PROGRAMS += mock-rados-bounds
-mock_rados_bounds_SOURCES = test_rrd_rados_bounds.c ${top_srcdir}/src/rrd_open.c
+mock_rados_bounds_SOURCES = test_rrd_rados_bounds.c src-rrd_open.c
 mock_rados_bounds_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/mock-rados
 mock_rados_bounds_LDFLAGS = -static
 mock_rados_bounds_LDADD = ${top_builddir}/src/librrd.la
@@ -104,6 +113,21 @@ endif
 endif
 
 if HAVE_STATIC_LIBRRD
+check_PROGRAMS += hw-failures rpn-failures
+TESTS += hw-failures rpn-failures
+hw_failures_SOURCES = test_hw_failures.c
+hw_failures_LDFLAGS = -static
+hw_failures_LDADD = ${top_builddir}/src/librrd.la
+if BUILD_RRDRESTORE
+check_PROGRAMS += restore-text
+TESTS += restore-text
+restore_text_SOURCES = test_restore_text.c
+restore_text_LDFLAGS = -static
+restore_text_LDADD = ${top_builddir}/src/librrd.la
+endif
+rpn_failures_SOURCES = test_rpn_failures.c
+rpn_failures_LDFLAGS = -static
+rpn_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += fetch-empty-security
 TESTS += fetch-empty-security
 fetch_empty_security_SOURCES = test_fetch_empty_security.c
@@ -162,5 +186,18 @@ graph_security_SOURCES = test_graph_security.c
 graph_security_LDFLAGS = -static
 graph_security_LDADD = ${top_builddir}/src/librrd.la
 
-script_tests += security-tune-failures-window security-dump-failures-window
-CLEANFILES += first-last-error.out
+script_tests += security-tune-failures-window security-dump-failures-window \
+	tune-reopen
+CLEANFILES += first-last-error.out graph-incomplete-file.err
+
+# the rrdcached test styles make cached/ in a separate build directory
+distclean-local:
+	if test "$(srcdir)" != "."; then rm -rf cached; fi
+
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += numeric-limits
+TESTS += numeric-limits
+numeric_limits_SOURCES = test_numeric_limits.c
+numeric_limits_LDFLAGS = -static
+numeric_limits_LDADD = ${top_builddir}/src/librrd.la
+endif

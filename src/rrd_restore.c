@@ -16,6 +16,7 @@
 #include "unused.h"
 #include "rrd_strtod.h"
 #include "rrd_create.h"
+#include "rrd_hw.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -205,7 +206,11 @@ static xmlChar* get_xml_text (
     xmlTextReaderPtr reader
     )
 {
-    while(xmlTextReaderRead(reader)){
+    int rc;
+
+    /* xmlTextReaderRead returns -1 on a parse error, and keeps returning
+     * it; only 1 means there is another node */
+    while((rc = xmlTextReaderRead(reader)) == 1){
         xmlChar  *ret;    
         xmlChar  *text;
         xmlChar  *begin_ptr;
@@ -253,7 +258,11 @@ static xmlChar* get_xml_text (
         xmlFree(text);
         return ret;
     }
-    rrd_set_error("file ended while looking for text");
+    if (rc < 0)
+        rrd_set_error("line %d: XML parse error while looking for text",
+                      xmlTextReaderGetParserLineNumber(reader));
+    else
+        rrd_set_error("file ended while looking for text");
     return NULL;
 }  /* get_xml_text */ 
 
@@ -1412,6 +1421,9 @@ static rrd_t *parse_file(
         rrd_set_error("RRD requires at least one data source and RRA");
         status = -1;
     }
+    if (status == 0 && !rrd_test_error() &&
+        rrd_check_hw_dependencies(rrd) != 0)
+        status = -1;
     if (status != 0 || rrd_test_error()) {
         local_rrd_free(rrd);
         rrd = NULL;

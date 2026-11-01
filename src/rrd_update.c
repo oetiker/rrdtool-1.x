@@ -1261,6 +1261,7 @@ static int process_arg(
 
                 /* allocate temp storage for assigning values to most left open pdp */
                 rrd_value_t *open_pdp_new;
+                int       open_rc;
                 if ((open_pdp_new = (rrd_value_t *) malloc(sizeof(rrd_value_t) * rrd->stat_head->ds_cnt)) == NULL) {
                     rrd_set_error("allocating open_pdp_new.");
                     return -1;
@@ -1283,12 +1284,16 @@ static int process_arg(
                     #endif
                 }
 
-                if (process_all_pdp_st(rrd,
+                /* only this call reads open_pdp_new; free it before the
+                 * error paths below, which return without it */
+                open_rc = process_all_pdp_st(rrd,
                                        (double) sec_open_pdp,  /* interval */
                                        (double) sec_open_pdp,  /* pre_int */
                                        0.0,                    /* post_int */
                                        1L,                     /* elapsed_pdp_st */
-                                       open_pdp_new, pdp_temp) == -1) {
+                                       open_pdp_new, pdp_temp);
+                free(open_pdp_new);
+                if (open_rc == -1) {
                     return -1;
                 }
 
@@ -1322,8 +1327,6 @@ static int process_arg(
                 pre_int -= sec_open_pdp;
                 elapsed_pdp_st--;
                 proc_pdp_cnt++;
-
-                free(open_pdp_new);
             }
         } /* JKammler - bugfix end */
 
@@ -1409,7 +1412,13 @@ static int parse_ds(
     }
     *p = '\0';
     i = 1;
-    updvals[tmpl_idx[i++]] = p + 1;
+    /* tmpl_idx has no data slot when every DS is COMPUTE (tmpl_cnt == 1) */
+    if (i < tmpl_cnt) {
+        updvals[tmpl_idx[i++]] = p + 1;
+    } else if (p[1] != '\0') {
+        rrd_set_error("found extra data on update argument: %s", p + 1);
+        return -1;
+    }
     while (*(++p)) {
         if (*p == ':') {
             *p = '\0';
@@ -1482,6 +1491,13 @@ static int get_time_from_reading(
             tmp = (double)tmp_time.tv_sec + (double)tmp_time.tv_usec * 1e-6f + tmp;
         }
 
+        /* The upper bound is exclusive: converting TIME_MAX to double can
+         * round it up to the first unrepresentable time_t value. */
+        if (!isfinite(tmp) || tmp < 0 ||
+            tmp >= ldexp(1.0, sizeof(time_t) * CHAR_BIT - 1)) {
+            rrd_set_error("update time is out of range");
+            return -1;
+        }
         *current_time = floor(tmp);
         *current_time_usec = (long) ((tmp - (double) *current_time) * 1e6f);
     }
@@ -1742,7 +1758,7 @@ static void simple_update(
                should have thought of it when going subsecond resolution ...
                sorry next format change we will have it! */
             rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt +=
-                floor(interval);
+                (unsigned long) floor(interval);
         } else {
             if (isnan(rrd->pdp_prep[i].scratch[PDP_val].u_val)) {
                 rrd->pdp_prep[i].scratch[PDP_val].u_val = pdp_new[i];
@@ -1954,8 +1970,12 @@ static int update_all_cdp_prep(
             /* If this is a bulk update, we need to skip ahead in the seasonal arrays
              * so that they will be correct for the next observed value; note that for
              * the bulk update itself, no update will occur to DEVSEASONAL or SEASONAL;
-             * furthermore, HWPREDICT and DEVPREDICT will be set to DNAN. */
-            if (rra_step_cnt[rra_idx] > 1) {
+             * furthermore, HWPREDICT and DEVPREDICT will be set to DNAN.
+             * update_cdp_prep resets a 1-step RRA from these coefficients
+             * whenever more than two steps elapsed, which a 1-row (period 1)
+             * SEASONAL reaches with rra_step_cnt still 1. */
+            if (rra_step_cnt[rra_idx] > 1
+                || (rrd->rra_def[rra_idx].pdp_cnt == 1 && elapsed_pdp_st > 2)) {
                 skip_update[rra_idx] = 1;
                 lookup_seasonal(rrd, rra_idx, rra_start, rrd_file,
                                 elapsed_pdp_st, last_seasonal_coef);

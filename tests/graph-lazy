@@ -7,7 +7,12 @@
 
 require_graph
 
-BUILD=$BUILDDIR/`basename $0`
+if [ -n "$MSYSTEM" ]; then
+    # Avoid Windows drive letter issues in the path of DEF:vname=rrdfile under MSYS or MSYS2
+    BUILD=`basename $0`
+else
+    BUILD=$BUILDDIR/`basename $0`
+fi
 
 $RRDTOOL create ${BUILD}.rrd --step 300 DS:a:GAUGE:600:U:U \
     RRA:AVERAGE:0.5:1:300

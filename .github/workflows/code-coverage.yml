@@ -5,13 +5,17 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
       run: |
@@ -46,28 +50,27 @@ jobs:
     - name: Run valgrind
       run: |
         # make check TESTS_STYLE="valgrind-logfile"
-        # Disable the following, failing tests: graph1, graph2, rpn1, create-with-source-4, vformatter1
-        # These tests are failing in the GitHub Action (currently Ubuntu 24.04), when using valgrind-logfile
-        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
+        make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 graph1 graph2 rpn1 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 vformatter1 xport1 list1 pdp-calc1"
         podchecker doc/*.pod
     - name: Merge coverage reports
       run: |
         # Merge static, shared, and regression-test counters before upload.
-        # Search build directories explicitly to skip configure's conftest files.
-        gcovr --root . --xml-pretty --output coverage.xml \
+        # Collect test-object counters too, but report application sources;
+        # failing assertions are test outcomes, not untested application paths.
+        gcovr --root . --filter src/ --xml-pretty --output coverage.xml \
           --lcov coverage-full.info --print-summary src tests
         # The existing Codecov baseline measures lines, not branch completeness.
         # Retain all DA line counts, including zero-hit lines, for comparison.
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' coverage-full.info > coverage.info
     - name: Preserve full line and branch coverage
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: coverage-full
         path: |
           coverage.xml
           coverage-full.info
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
       with:
         files: coverage.info
         disable_search: true
@@ -78,13 +81,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
+      timeout-minutes: 10
       run: |
-        sudo apt-get update
-        sudo apt-get install -y autopoint build-essential clang llvm libtool-bin \
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y autopoint build-essential clang llvm libtool-bin \
                                 libpango1.0-dev libxml2-dev gettext
+
+    - name: Verify sanitizer failure handling
+      run: bash fuzz/test-run.sh
 
     - name: Build fuzz harnesses
       run: |
@@ -94,36 +103,82 @@ jobs:
                     LDFLAGS='-fprofile-instr-generate -fcoverage-mapping'
         make
 
-    - name: Run instrumented open and restore regressions
+    - name: Run instrumented regressions
+      env:
+        ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+        UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1:print_stacktrace=1
       run: |
         mkdir -p /tmp/rrd-fuzz-profiles
+        tests="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+        for test in hw-failures rpn-failures restore-text cli-failures \
+                    graph-security security-hw-smoothing-window \
+                    security-hw-dependencies security-compute-ds \
+                    update-compute-only verify-json security-time-fields \
+                    numeric-limits; do
+          if test -f "tests/$test" || test -f "tests/test_${test//-/_}.c"; then
+            tests+=" $test"
+          fi
+        done
+        # Graph regressions use fontconfig's process-lifetime cache. Keep
+        # leak detection enabled for application allocations.
+        printf 'leak:libfontconfig\n' > /tmp/rrd-fuzz-lsan.supp
+        LSAN_OPTIONS=suppressions=/tmp/rrd-fuzz-lsan.supp \
         LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/test-%p.profraw' \
-          make check TESTS="security-header-counts rrd-open-security security-rados-bounds security-restore-zero-row-cnt security-restore-malformed-row dump-restore"
+          make check TESTS="$tests"
 
     - name: Exercise seed corpora
       run: |
-        mkdir -p /tmp/rrd-fuzz-corpus
-        cp fuzz/corpus/* /tmp/rrd-fuzz-corpus/
-        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/open-%p.profraw' \
-          fuzz/rrd_open_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
-        LLVM_PROFILE_FILE='/tmp/rrd-fuzz-profiles/restore-%p.profraw' \
-          fuzz/rrd_restore_fuzzer -seed=1 -runs=10000 /tmp/rrd-fuzz-corpus
+        status=0
+        for harness in rrd_open_fuzzer rrd_restore_fuzzer; do
+          LLVM_PROFILE_FILE="/tmp/rrd-fuzz-profiles/$harness-%p.profraw" \
+            bash fuzz/run.sh "fuzz/$harness" "fuzz-state/$harness" \
+              -seed=1 -runs=10000 -timeout=25 -rss_limit_mb=2048 || status=1
+        done
+        exit "$status"
+
+    - name: Preserve fuzz logs, reproducers, corpus and profiles
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: fuzz-coverage-diagnostics
+        path: |
+          fuzz-state/
+          /tmp/rrd-fuzz-run.*/
+          /tmp/rrd-fuzz-profiles/
+          tests/*.log
+          tests/test-suite.trs
+        retention-days: 30
+        if-no-files-found: warn
+
+    - name: Export fuzz coverage
+      run: |
         llvm-profdata merge -sparse /tmp/rrd-fuzz-profiles/*.profraw -o fuzz.profdata
+        # The CLI and fault tests execute library paths that seed mutation
+        # may never reach. Export their mappings as well as the fuzzers'.
+        objects=(-object src/rrdtool)
+        for binary in tests/hw-failures tests/rpn-failures \
+                      tests/restore-text tests/cli-failures tests/graph-security \
+                      tests/numeric-limits; do
+          if test -x "$binary"; then
+            objects+=(-object "$binary")
+          fi
+        done
         llvm-cov export -format=lcov \
           -instr-profile=fuzz.profdata \
           fuzz/rrd_open_fuzzer \
           -object fuzz/rrd_restore_fuzzer \
+          "${objects[@]}" \
           >fuzz-coverage-full.info
         sed '/^BRDA:/d; /^BRF:/d; /^BRH:/d' fuzz-coverage-full.info > fuzz-coverage.info
 
     - name: Preserve full fuzz line and branch coverage
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: fuzz-coverage-full
         path: fuzz-coverage-full.info
 
     - name: Upload fuzz coverage to Codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
       with:
         files: fuzz-coverage.info
         disable_search: true

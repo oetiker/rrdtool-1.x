@@ -38,6 +38,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "rrd.h"
 #ifdef _MSC_VER
@@ -166,12 +167,19 @@ double rrd_strtod(const char *str, char **endptr) {
         // Process string of digits
         n = 0;
         while (isdigit(*p)) {
-            n = n * 10 + (*p - '0');
+            /* Consume the whole exponent even when it exceeds int range. */
+            if (n > (INT_MAX - (*p - '0')) / 10)
+                n = INT_MAX;
+            else
+                n = n * 10 + (*p - '0');
             p++;
         }
 
         if (negative) {
-            exponent -= n;
+            if (exponent < INT_MIN + n)
+                exponent = INT_MIN;
+            else
+                exponent -= n;
         } else {
             exponent += n;
         }

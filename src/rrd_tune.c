@@ -179,7 +179,7 @@ done:
 	rrd_clear_error();
         
         if (e) {
-            rrd_set_error(e);
+            rrd_set_error("%s", e);
             free(e);
         } else
             rrd_set_error("error message was lost (out of memory)");
@@ -349,6 +349,15 @@ int rrd_tune_r(
 		goto done;
             }
             if ((int) dst_conv(dst) == -1) {
+		goto done;
+            }
+            /* A COMPUTE DS keeps its RPN program where the other types keep
+             * heartbeat, min and max, so the type cannot be switched in
+             * place in either direction. */
+            if ((dst_conv(dst) == DST_CDEF) !=
+                (dst_conv(rrd.ds_def[ds].dst) == DST_CDEF)) {
+                rrd_set_error("cannot change data source %s from %s to %s",
+                              ds_nam, rrd.ds_def[ds].dst, dst);
 		goto done;
             }
             /* only reset when something is changed */
@@ -535,7 +544,7 @@ static int set_hwarg(
     strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
     /* read the value */
     if ((strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
-         (param <= 0.0 || param >= 1.0) ) {
+         !(param > 0.0 && param < 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
         return -1;
     } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
@@ -575,7 +584,7 @@ static int set_hwsmootharg(
     /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
      * the 0.0 value*/
     if ( (strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
-         (param < 0.0 || param > 1.0) ) {
+         !(param >= 0.0 && param <= 1.0) ) {
         rrd_set_error("Holt-Winters parameter must be between 0 and 1");
         return -1;
     } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# A COMPUTE DS keeps its RPN program where other types keep heartbeat,
+# min and max. tune must not switch a DS into or out of COMPUTE, and a
+# COMPUTE program read from a file must be checked before info, dump or
+# update interpret it.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+expect_error () {
+  local what="$1" pattern="$2"
+  shift 2
+  "$@" >"${BUILD}.out" 2>&1
+  status=$?
+  if [ "$status" -eq 0 ] || [ "$status" -ge 128 ]; then
+    fail 1 "$what: exit status $status: $(cat "${BUILD}.out")"
+  elif ! grep -q "$pattern" "${BUILD}.out"; then
+    fail 1 "$what: unexpected error: $(cat "${BUILD}.out")"
+  else
+    ok "$what"
+  fi
+}
+
+rm -f "${BUILD}"*.rrd
+$RRDTOOL create "${BUILD}.rrd" --step 60 --start 1000000000 \
+  DS:a:GAUGE:120:U:U DS:c:COMPUTE:a,2,* RRA:AVERAGE:0.5:1:10
+report create
+
+expect_error "tune a GAUGE DS to COMPUTE" \
+  "cannot change data source a from GAUGE to COMPUTE" \
+  $RRDTOOL tune "${BUILD}.rrd" -d a:COMPUTE
+expect_error "tune a COMPUTE DS to GAUGE" \
+  "cannot change data source c from COMPUTE to GAUGE" \
+  $RRDTOOL tune "${BUILD}.rrd" -d c:GAUGE
+$RRDTOOL tune "${BUILD}.rrd" -d a:DERIVE >/dev/null
+report "tune between non-COMPUTE types"
+
+$RRDTOOL info "${BUILD}.rrd" | grep -qF 'ds[c].cdef = "a,2,*"'
+report "info prints the COMPUTE program"
+
+# The on-disk format needs the LP64 layout for the offsets below.
+if [ -z "$MSYSTEM" ] && [ "$(getconf LONG_BIT)" = 64 ]; then
+
+# LP64: ds_def[1] starts at 248 and its par[] at 288. Each RPN node is
+# 4 bytes (op, pad, short val): a,2,* is VARIABLE(0) NUMBER(2) MUL END.
+craft () {
+  cp "${BUILD}.rrd" "${BUILD}-crafted.rrd"
+  perl -0777 -pi -e "$1" "${BUILD}-crafted.rrd"
+}
+
+craft 'substr($_, 290, 2, pack("s", 7))'
+for command in info dump; do
+  expect_error "$command with a COMPUTE program naming a missing DS" \
+    "COMPUTE program refers to DS 7 of 2" \
+    $RRDTOOL "$command" "${BUILD}-crafted.rrd"
+done
+expect_error "update with a COMPUTE program naming a missing DS" \
+  "COMPUTE program refers to DS 7 of 2" \
+  $RRDTOOL update "${BUILD}-crafted.rrd" 1000000060:1
+
+craft 'substr($_, 296, 1, chr(200))'
+expect_error "info with an unknown COMPUTE operator" \
+  "COMPUTE program has unknown operator 200" \
+  $RRDTOOL info "${BUILD}-crafted.rrd"
+
+# OP_ADD (8) in all 20 nodes: no end marker inside the par array.
+craft 'substr($_, 288, 80, pack("CxS", 8, 0) x 20)'
+expect_error "info with an unterminated COMPUTE program" \
+  "COMPUTE program has no end marker" \
+  $RRDTOOL info "${BUILD}-crafted.rrd"
+
+# OP_END (32) first: an empty program.
+craft 'substr($_, 288, 1, chr(32))'
+expect_error "info with an empty COMPUTE program" \
+  "COMPUTE program is empty" \
+  $RRDTOOL info "${BUILD}-crafted.rrd"
+
+fi
+
+rm -f "${BUILD}"*.rrd "${BUILD}.out"

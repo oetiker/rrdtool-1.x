@@ -39,7 +39,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Verify required CI workflows succeeded
         env:
@@ -94,7 +94,7 @@ jobs:
       tag: ${{ steps.calc.outputs.tag }}
       date: ${{ steps.calc.outputs.date }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
 
@@ -128,7 +128,7 @@ jobs:
     needs: compute-version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps
         run: |
@@ -142,17 +142,40 @@ jobs:
           version: ${{ needs.compute-version.outputs.version }}
           date: ${{ needs.compute-version.outputs.date }}
 
+      # Reproducible: every timestamp is the release date (the one CHANGES
+      # records), tar entries are sorted with fixed owners, and gzip stores
+      # no name or time, so the tag rebuilds to the same bytes.  xgettext
+      # stamps the build time into the POT-Creation-Date of rrdtool.pot and
+      # the merged PO files, so the translations are refreshed first, given
+      # the release date, and not refreshed again by make dist.
       - name: Build source tarball
+        env:
+          DATE: ${{ needs.compute-version.outputs.date }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
         run: |
           set -e
+          SOURCE_DATE_EPOCH=$(date -u -d "$DATE" +%s)
+          export SOURCE_DATE_EPOCH
+          export TAR_OPTIONS="--sort=name --mtime=@$SOURCE_DATE_EPOCH --owner=0 --group=0 --numeric-owner"
           ./bootstrap
           ./configure
-          make dist
+          make -C po update-po
+          sed -i "s/^\"POT-Creation-Date: .*\\\\n\"\$/\"POT-Creation-Date: $DATE 00:00+0000\\\\n\"/" \
+              po/rrdtool.pot po/*.po
+          make dist DIST_DEPENDS_ON_UPDATE_PO=no GZIP_ENV="--best --no-name"
+          python3 conftools/release_sbom.py source --tarball "rrdtool-${VERSION}.tar.gz" \
+              --version "$VERSION" --output "rrdtool-${VERSION}.tar.gz.spdx.json"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: source-tarball
           path: rrdtool-${{ needs.compute-version.outputs.version }}.tar.gz
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-sbom
+          path: rrdtool-${{ needs.compute-version.outputs.version }}.tar.gz.spdx.json
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
@@ -171,20 +194,20 @@ jobs:
         include:
           - os: windows-2022
             vcpkg_triplet: x64-windows
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x64'
             nmake_configuration: 'USE_64BIT=1'
           - os: windows-2022
             vcpkg_triplet: x86-windows
-            vcpkgCommitId: '84bab45d415d22042bd0b9081aea57f362da3f35'
+            vcpkgCommitId: '9eec002df1cd109f8f104cd966a763daf9751489'
             vcpkgPackages: 'cairo expat fontconfig freetype gettext glib libpng libxml2 pango zlib'
             configuration: 'x86'
             nmake_configuration: ''
     env:
       buildDir: '${{ github.workspace }}/build/'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           submodules: true
 
@@ -195,7 +218,7 @@ jobs:
           date: ${{ needs.compute-version.outputs.date }}
 
       - name: vcpkg build
-        uses: johnwason/vcpkg-action@v8
+        uses: johnwason/vcpkg-action@04c68c847bf5196ecaa72331ecf51208583916ef # v8.0.0
         id: vcpkg
         with:
           pkgs: '${{ matrix.vcpkgPackages }}'
@@ -220,22 +243,31 @@ jobs:
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
           CFG: ${{ matrix.configuration }}
+          TRIPLET: ${{ matrix.vcpkg_triplet }}
         run: |
           set -e
-          dir="win32/nmake_release_${CFG}_vcpkg/rrdtool-${VERSION}-${CFG}_vcpkg"
+          name="rrdtool-${VERSION}-${CFG}_vcpkg"
+          dir="win32/nmake_release_${CFG}_vcpkg/${name}"
           if [ ! -d "$dir" ]; then
             echo "::error::Expected collected dir not found: $dir"
             ls win32/nmake_release_${CFG}_vcpkg/ || true
             exit 1
           fi
-          zip="rrdtool-${VERSION}-${CFG}_vcpkg.zip"
+          # The SBOM goes inside the zip and next to it as a release asset.
+          python win32/vcpkg_sbom.py --installed "vcpkg/installed/${TRIPLET}" \
+              --release-dir "$dir" --version "$VERSION" --name "$name" \
+              --output "${name}.spdx.json"
+          cp "${name}.spdx.json" "$dir/"
+          zip="${name}.zip"
           (cd "$(dirname "$dir")" && 7z a -tzip "../../$zip" "$(basename "$dir")")
-          ls -l "$zip"
+          ls -l "$zip" "${name}.spdx.json"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-${{ matrix.configuration }}
-          path: rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.zip
+          path: |
+            rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.zip
+            rrdtool-${{ needs.compute-version.outputs.version }}-${{ matrix.configuration }}_vcpkg.spdx.json
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
@@ -274,7 +306,7 @@ jobs:
           set -e
           dnf install -y git-core perl
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps
         env:
@@ -315,7 +347,7 @@ jobs:
       # rebuilding it here: `make dist` needs doc-toolchain deps (ps2pdf via
       # ghostscript) that this minimal RPM container does not carry.
       - name: Download source tarball from build-source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: source-tarball
 
@@ -352,7 +384,7 @@ jobs:
           cp ~/rpmbuild/RPMS/x86_64/*.rpm out/
           ls -l out/
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rpm-${{ matrix.tag }}
           path: out/*.rpm
@@ -388,6 +420,24 @@ jobs:
           # The pip-installed python binding must import via the PYTHONPATH it
           # sets, find librrd through the wheel's embedded RPATH, and run.
           python3 -c 'import rrdtool; print("python binding OK:", rrdtool.__file__, "librrd", rrdtool.lib_version())'
+
+      # Runs while the package is installed: lists the distro packages that
+      # its binaries load, at the versions this release was tested with.
+      - name: SBOM for the rpm
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          set -e
+          for rpm in out/rrdtool-1-opt-"${VERSION}"-*.rpm; do
+            python3 conftools/release_sbom.py rpm --package "$rpm" \
+                --version "$VERSION" --output "$rpm.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rpm-sbom-${{ matrix.tag }}
+          path: out/*.rpm.spdx.json
+          if-no-files-found: error
 
   # ---------------------------------------------------------------------------
   # build-deb: per-distro container, builds a .deb via fpm from a staged
@@ -427,7 +477,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends git ca-certificates perl
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install build deps + fpm
         run: |
@@ -509,7 +559,9 @@ jobs:
           fi
           echo "found ruby binding at: $rrd_rb"
           mkdir -p stage/opt/rrdtool/lib/ruby
-          mv "$rrd_rb" stage/opt/rrdtool/lib/ruby/RRD.so
+          # configure now installs it there itself; older trees did not
+          [ "$rrd_rb" = stage/opt/rrdtool/lib/ruby/RRD.so ] \
+            || mv "$rrd_rb" stage/opt/rrdtool/lib/ruby/RRD.so
           # Drop the now-empty system tree the ruby binding escaped into.
           rm -rf stage/usr
           # Nothing should remain staged outside opt/.
@@ -557,7 +609,7 @@ jobs:
               -C stage opt
           ls -l out/
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deb-${{ matrix.tag }}
           path: out/*.deb
@@ -592,6 +644,24 @@ jobs:
           # sets, find librrd through the wheel's embedded RPATH, and run.
           python3 -c 'import rrdtool; print("python binding OK:", rrdtool.__file__, "librrd", rrdtool.lib_version())'
 
+      # Runs while the package is installed: lists the distro packages that
+      # its binaries load, at the versions this release was tested with.
+      - name: SBOM for the deb
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          set -e
+          for deb in out/rrdtool-1-opt_*.deb; do
+            python3 conftools/release_sbom.py deb --package "$deb" \
+                --version "$VERSION" --output "$deb.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deb-sbom-${{ matrix.tag }}
+          path: out/*.deb.spdx.json
+          if-no-files-found: error
+
   # ---------------------------------------------------------------------------
   # publish: only job that mutates the repo. Runs only after every build job
   # (and every matrix entry) has succeeded. Re-applies the version bump,
@@ -608,17 +678,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Sign the provenance and SBOM attestations below via Sigstore.
+      id-token: write
+      attestations: write
     steps:
-      # RELEASE_PAT is a repo-admin Personal Access Token (Contents: write).
-      # The default GITHUB_TOKEN / github-actions[bot] cannot be added to the
-      # branch ruleset bypass list, so the release commit + tag push below is
-      # authenticated as the admin (who IS on the bypass list) via this PAT.
-      # actions/checkout persists the token in git config, so the later
-      # `git push` and `git fetch` steps use it automatically.
-      - uses: actions/checkout@v6
+      # The token is only handed to the push step below, not persisted in
+      # git config where every later step could read it.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
+          persist-credentials: false
 
       - name: Race check (master not advanced since check-ci)
         env:
@@ -635,26 +704,8 @@ jobs:
             exit 1
           fi
 
-      - name: Bump version in working tree
-        uses: ./.github/actions/bump-version
-        with:
-          version: ${{ needs.compute-version.outputs.version }}
-          date: ${{ needs.compute-version.outputs.date }}
-
-      - name: Commit, tag, push
-        env:
-          NEW: ${{ needs.compute-version.outputs.version }}
-        run: |
-          set -e
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -u
-          git commit -m "release v$NEW"
-          git tag -a "v$NEW" -m "release v$NEW"
-          git push origin master --follow-tags
-
       - name: Download all artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: dist
           pattern: '*'
@@ -665,6 +716,95 @@ jobs:
           set -e
           ls -lR dist/
           test -n "$(ls dist/)" || { echo "::error::no artifacts collected"; exit 1; }
+
+      # Attest before the tag is pushed, so a signing failure stops the
+      # release cleanly. Verify with: gh attestation verify <file> --repo oetiker/rrdtool-1.x
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.rpm
+            dist/*.deb
+            dist/*.spdx.json
+
+      - name: Attest SBOM (Windows x64)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x64_vcpkg.zip
+          sbom-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x64_vcpkg.spdx.json
+
+      - name: Attest SBOM (Windows x86)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x86_vcpkg.zip
+          sbom-path: dist/rrdtool-${{ needs.compute-version.outputs.version }}-x86_vcpkg.spdx.json
+
+      - name: Bump version in working tree
+        uses: ./.github/actions/bump-version
+        with:
+          version: ${{ needs.compute-version.outputs.version }}
+          date: ${{ needs.compute-version.outputs.date }}
+
+      # The release commit and tag push to master past the branch ruleset, so
+      # they need an identity on its bypass list; GITHUB_TOKEN cannot be put
+      # there.  Preferred: a GitHub App installed on this repository only,
+      # with Contents read/write, on the bypass list, its client ID in the
+      # RELEASE_APP_CLIENT_ID variable and its key in the
+      # RELEASE_APP_PRIVATE_KEY secret; it yields a token that is scoped to
+      # this repository and expires within the hour.  Until that is set up
+      # the repo-admin personal access token RELEASE_PAT is used as before.
+      - name: Release token from the GitHub App
+        id: app-token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      # Sign the release commit and tag keylessly with Sigstore: the
+      # signature certifies this workflow on this repository, no key to
+      # keep.  Check a tag with
+      #   gitsign verify-tag vX.Y.Z \
+      #     --certificate-identity-regexp '^https://github.com/oetiker/rrdtool-1.x/.github/workflows/release.yml@' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Install gitsign
+        env:
+          GITSIGN_VERSION: 0.18.0
+          GITSIGN_SHA256: 2bc625472a08fea3bb6a57982c7d8b4978d1032251d305ceef3bf2ded0ca4483
+        run: |
+          set -e
+          curl -fsSLo /tmp/gitsign \
+              "https://github.com/sigstore/gitsign/releases/download/v${GITSIGN_VERSION}/gitsign_${GITSIGN_VERSION}_linux_amd64"
+          echo "${GITSIGN_SHA256}  /tmp/gitsign" | sha256sum -c -
+          sudo install -m 0755 /tmp/gitsign /usr/local/bin/gitsign
+
+      - name: Commit, tag, push
+        env:
+          NEW: ${{ needs.compute-version.outputs.version }}
+          TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PAT }}
+          # Fail instead of waiting for a browser login if the OIDC
+          # permission is ever dropped.
+          GITSIGN_TOKEN_PROVIDER: github-actions
+        run: |
+          set -e
+          if [ -z "$TOKEN" ]; then
+            echo "::error::no release token: configure the GitHub App or RELEASE_PAT"
+            exit 1
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config gpg.format x509
+          git config gpg.x509.program gitsign
+          git add -u
+          git commit -S -m "release v$NEW"
+          git tag -s -a "v$NEW" -m "release v$NEW"
+          auth=$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
+              push --atomic origin master "refs/tags/v$NEW"
 
       - name: Extract release notes from CHANGES
         env:
@@ -681,7 +821,7 @@ jobs:
           test -s releasenotes || { echo "::error::release notes empty"; exit 1; }
 
       - name: Create GitHub Release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
           tag: v${{ needs.compute-version.outputs.version }}
           name: "RRDtool Version ${{ needs.compute-version.outputs.version }}"

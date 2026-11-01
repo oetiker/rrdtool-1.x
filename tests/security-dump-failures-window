@@ -2,6 +2,7 @@
 
 . "$(dirname "$0")/functions"
 
+require_restore
 # rrdtool routes through RRDCACHED_ADDRESS when it's set, and the crafted
 # file lives outside the daemon's base directory, so dump would fail with
 # "No such file or directory" rather than exercising the check being

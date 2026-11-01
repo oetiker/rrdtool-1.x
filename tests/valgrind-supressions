@@ -57,3 +57,26 @@
     fun:rrd_graph_init
     ...
 }
+{
+    fontconfig_cache
+    Memcheck:Leak
+    ...
+    obj:*/libfontconfig.so*
+    ...
+}
+{
+    pango_fc_font_cache
+    Memcheck:Leak
+    ...
+    obj:*/libpangoft2-*
+    ...
+}
+{
+    glib_worker_thread_tls
+    Memcheck:Leak
+    ...
+    fun:_dl_allocate_tls
+    ...
+    fun:g_thread_new
+    ...
+}

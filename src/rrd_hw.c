@@ -7,6 +7,8 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
 #include "rrd_tool.h"
 #include "rrd_hw.h"
@@ -21,6 +23,75 @@
 static unsigned long MyMod(
     signed long val,
     unsigned long mod);
+
+/* Holt-Winters RRAs refer to their partner RRA by index, and update and
+ * info follow those links (several hops for DEVPREDICT) without checking
+ * them. Make sure each link stays inside rra_def and lands on the kind of
+ * RRA the consumer expects, whether it came from create, restore or a
+ * file on disk. */
+static int hw_cf(
+    const char *cf_nam)
+{
+    /* like rrd_cf_conv, but without setting an error for other CFs */
+    static const struct {
+        const char *name;
+        enum cf_en cf;
+    } hw[] = {
+        {"HWPREDICT", CF_HWPREDICT}, {"MHWPREDICT", CF_MHWPREDICT},
+        {"SEASONAL", CF_SEASONAL}, {"DEVSEASONAL", CF_DEVSEASONAL},
+        {"DEVPREDICT", CF_DEVPREDICT}, {"FAILURES", CF_FAILURES}
+    };
+    size_t    k;
+
+    for (k = 0; k < sizeof(hw) / sizeof(hw[0]); k++)
+        if (strncmp(cf_nam, hw[k].name, CF_NAM_SIZE) == 0)
+            return hw[k].cf;
+    return -1;
+}
+
+int rrd_check_hw_dependencies(
+    const rrd_t *rrd)
+{
+    unsigned long i;
+
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        int       cf = hw_cf(rrd->rra_def[i].cf_nam);
+        unsigned long dep = rrd->rra_def[i].par[RRA_dependent_rra_idx].u_cnt;
+        int       dep_cf;
+        int       ok;
+
+        if (cf < 0)
+            continue;
+        if (dep >= rrd->stat_head->rra_cnt) {
+            rrd_set_error("RRA %lu (%s) refers to RRA %lu, but there are "
+                          "only %lu RRAs", i, rrd->rra_def[i].cf_nam,
+                          dep, rrd->stat_head->rra_cnt);
+            return -1;
+        }
+        dep_cf = hw_cf(rrd->rra_def[dep].cf_nam);
+        switch (cf) {
+        case CF_HWPREDICT:
+        case CF_MHWPREDICT:
+            ok = dep_cf == CF_SEASONAL;
+            break;
+        case CF_SEASONAL:
+        case CF_DEVSEASONAL:
+            ok = dep_cf == CF_HWPREDICT || dep_cf == CF_MHWPREDICT;
+            break;
+        default:       /* CF_DEVPREDICT, CF_FAILURES */
+            ok = dep_cf == CF_DEVSEASONAL;
+            break;
+        }
+        if (!ok) {
+            rrd_set_error("RRA %lu (%s) refers to RRA %lu (%s), which is "
+                          "not its Holt-Winters partner", i,
+                          rrd->rra_def[i].cf_nam, dep,
+                          rrd->rra_def[dep].cf_nam);
+            return -1;
+        }
+    }
+    return 0;
+}
 
 int lookup_seasonal(
     rrd_t *rrd,
@@ -158,15 +229,28 @@ int apply_smoother(
     rrd_value_t *baseline;
 
     if (atoi(rrd->stat_head->version) >= 4) {
-        offset = floor(rrd->rra_def[rra_idx].
-                       par[RRA_seasonal_smoothing_window].
-                       u_val / 2 * row_count);
+        double    window = rrd->rra_def[rra_idx].
+            par[RRA_seasonal_smoothing_window].u_val;
+
+        /* the window comes from the file; outside 0..1 (or NaN) the
+         * offset below is undefined or larger than the RRA */
+        if (!(window >= 0.0 && window <= 1.0)) {
+            rrd_set_error("apply smoother: RRA %lu smoothing window %f is "
+                          "not between 0 and 1", rra_idx, window);
+            return -1;
+        }
+        offset = floor(window / 2 * row_count);
     } else {
         offset = floor(0.05 / 2 * row_count);
     }
 
     if (offset == 0)
         return 0;       /* no smoothing */
+    if (offset > INT_MAX / 2 - 1) {
+        rrd_set_error("apply smoother: RRA %lu is too long to smooth",
+                      rra_idx);
+        return -1;
+    }
 
     /* allocate memory */
     totalbytes = sizeof(rrd_value_t) * row_length * row_count;
@@ -193,6 +277,8 @@ int apply_smoother(
                 != (ssize_t) (sizeof(rrd_value_t) * 1)) {
                 rrd_set_error("reading value failed: %s",
                               rrd_strerror(errno));
+                free(rrd_values);
+                return -1;
             }
             if (isnan(rrd_values[i * row_length + j])) {
                 /* can't apply smoothing, still uninitialized values */
@@ -208,13 +294,32 @@ int apply_smoother(
     }
 
     /* allocate queues, one for each data source */
-    buffers = (FIFOqueue **) malloc(sizeof(FIFOqueue *) * row_length);
-    for (i = 0; i < row_length; ++i) {
-        queue_alloc(&(buffers[i]), 2 * offset + 1);
-    }
+    buffers = (FIFOqueue **) calloc(row_length, sizeof(FIFOqueue *));
     /* need working average initialized to 0 */
     working_average = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
     baseline = (rrd_value_t *) calloc(row_length, sizeof(rrd_value_t));
+    rrd_values_cpy = (rrd_value_t *) calloc(row_length * row_count,
+                                            sizeof(rrd_value_t));
+    if (buffers != NULL)
+        for (i = 0; i < row_length; ++i)
+            if (queue_alloc(&(buffers[i]), 2 * offset + 1) != 0) {
+                buffers[i] = NULL;
+                break;
+            }
+    if (buffers == NULL || i < row_length || working_average == NULL
+        || baseline == NULL || rrd_values_cpy == NULL) {
+        rrd_set_error("apply smoother: memory allocation failure");
+        if (buffers != NULL) {
+            for (i = 0; i < row_length && buffers[i] != NULL; ++i)
+                queue_dealloc(buffers[i]);
+            free(buffers);
+        }
+        free(working_average);
+        free(baseline);
+        free(rrd_values_cpy);
+        free(rrd_values);
+        return -1;
+    }
 
     /* compute sums of the first 2*offset terms */
     for (i = 0; i < 2 * offset; ++i) {
@@ -228,7 +333,6 @@ int apply_smoother(
     /* as we are working through the value, we have to make sure to not double
        apply the smoothing after wrapping around. so best is to copy the rrd_values first */
 
-    rrd_values_cpy = (rrd_value_t *) calloc(row_length*row_count, sizeof(rrd_value_t));
     memcpy(rrd_values_cpy,rrd_values,sizeof(rrd_value_t)*row_length*row_count);
 
     /* compute moving averages */
@@ -554,6 +658,7 @@ int queue_alloc(
     (*q)->queue = (rrd_value_t *) malloc(sizeof(rrd_value_t) * capacity);
     if ((*q)->queue == NULL) {
         free(*q);
+        *q = NULL;
         return -1;
     }
     (*q)->capacity = capacity;

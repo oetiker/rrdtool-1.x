@@ -1,0 +1,12 @@
+# Each coverage run uploads a GCC report and an LLVM fuzz report.
+codecov:
+  notify:
+    after_n_builds: 2
+
+comment:
+  after_n_builds: 2
+
+# Keep test and fuzz-driver assertions out of application coverage.
+ignore:
+  - "tests/**"
+  - "fuzz/**"

@@ -3,6 +3,95 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* Preserve the existing COMPUTE string buffer when growing it fails.
+* Avoid null-pointer arithmetic after the last graph title line.
+* An rrdcached `TUNE` request that announced more arguments than it sent
+  made the daemon read uninitialized memory, which crashed it or left a
+  worker thread spinning. It now answers "Too few arguments".
+  @somethingwithproof
+* `rrdtool create` accepted a SEASONAL, DEVSEASONAL, DEVPREDICT or
+  FAILURES RRA whose RRA number pointed past the last RRA or at an RRA of
+  the wrong kind, and the next `update` crashed; `restore` and crafted
+  files had the same effect. create and restore now refuse such a
+  definition, and opening such a file fails with "RRA 1 (SEASONAL) refers
+  to RRA 99, ...". @somethingwithproof
+* `rrdtool tune -d <ds>:COMPUTE` turned a data source into COMPUTE without
+  a program, after which `info` and `dump` crashed; changing a COMPUTE data
+  source to another type broke it the same way. tune now refuses both
+  changes. Opening a file whose COMPUTE program is unterminated, uses an
+  unknown operator or names a missing data source fails with an error
+  instead of crashing `info`, `dump` and `update`. @somethingwithproof
+* `rrdtool create --source` read past the end of an internal array when
+  the new file's 1-step AVERAGE RRA was shorter than twice its longest
+  step, and could initialize the new file from the wrong values.
+  @somethingwithproof
+* `rrdtool tune` and `create` accepted `nan` for `--alpha`, `--beta`,
+  `--gamma` and `--smoothing-window` (`smoothing-window=nan`). A smoothing
+  window outside 0 to 1, which `restore` accepts, made `update` read past
+  the SEASONAL RRA; update now fails with "smoothing window ... is not
+  between 0 and 1". Running out of memory while smoothing no longer leads
+  to a use-after-free. @somethingwithproof
+* A Holt-Winters RRA with a seasonal period of 1 crashed `update` as soon
+  as an update skipped more than two steps. @somethingwithproof
+* `rrdtool restore` hung forever on some malformed XML (an invalid byte
+  sequence in a value); it now fails with "XML parse error while looking
+  for text". @somethingwithproof
+* Opening an RRD now checks more of its header: the product of an RRA's
+  steps and the file's step must not overflow (`rrdtool first` divided by
+  zero), the current row must lie inside the RRA, and data source names,
+  types, consolidation functions and last values must be terminated.
+  @somethingwithproof
+* Opening a file whose header RRDtool refuses restored the error message
+  with the message itself as the printf format, so a crafted RRD with `%`
+  in its version string crashed `rrdtool info`, and `%n` could write to
+  memory. `tune` and graph's DEF parsing restored errors the same way.
+  @somethingwithproof
+* `rrdtool update` of a file whose data sources are all COMPUTE wrote the
+  first value through an uninitialized index; it now reports the value as
+  extra data. An update error after a skipped partial step no longer
+  leaks memory. @somethingwithproof
+* The PDF pages in a release tarball are reproducible with any
+  Ghostscript 9.55 or later, not only Debian's. @somethingwithproof
+* rrdcached started with an empty journal directory passed a null pointer
+  to qsort, which is undefined. @somethingwithproof
+* `rrdtool graph` leaked the title it split into lines, and `graphv` the
+  legend and coordinate strings; `graphv --add-jsontime` also leaked the
+  image and the fetched data. @somethingwithproof
+* The systemd units in `etc/` gave every local user root file access:
+  the socket was `/tmp/rrdcached.sock` with mode 0666, and the service ran
+  rrdcached as root without `-B`. The socket is now
+  `/run/rrdcached/rrdcached.sock`, mode 0660, and the service runs with
+  `-B -O -b /var/lib/rrdcached/db` and the rest of the file system
+  read-only; point `-b` at your RRD files (and add them to
+  `ReadWritePaths=`) when you use the shipped units. They are also installed under
+  `--prefix` and use `--bindir`. @somethingwithproof
+* Building from the release tarball in a separate directory used the
+  release machine's `rrd_config.h` instead of the one configure wrote.
+  @somethingwithproof
+* `make install` reports a failed Perl, Ruby or Python binding install
+  instead of ignoring it, and puts the Ruby binding under `--prefix`;
+  `make uninstall` removes the bindings, and `make distcheck` passes.
+  `--disable-perl-site-install` and `--disable-ruby-site-install` no
+  longer select the site install, `--enable-tcl-site` works, and
+  `--localedir` is honoured. @somethingwithproof
+* `--htmldir` is honoured for the HTML pages, and `RRDTXTDIR` sets where
+  the text pages go (#1178). `--enable-python-site-install` puts the
+  Python module into the interpreter's site-packages (#1347). The Perl
+  module builds standalone against an installed librrd again (#1354).
+  `rrdcached.service` requires `rrdcached.socket` (#1143).
+  @somethingwithproof
+* configure uses `PKG_CONFIG` (and a cross `$host-pkg-config`), keeps the
+  user's `CFLAGS` last, keeps library order for static links, and adds
+  `Libs.private` to `librrd.pc`. `make check` skips the tests of features
+  that were not built. @somethingwithproof
+* The valgrind runs in CI skipped `graph1`, `graph2`, `rpn1`,
+  `create-with-source-4` and `vformatter1`, which failed only on font and
+  thread caches of fontconfig, pango and glib; those are suppressed now and
+  the tests run again. A new CI job runs the whole test suite with
+  AddressSanitizer and UBSan, and a fuzzing job mutates the seed corpora
+  for two minutes per harness on every change and half an hour every
+  night. The open harness now also runs info, dump, first, last,
+  lastupdate and update on every file that opens. @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
@@ -296,6 +385,25 @@ Features
   `RRDCACHED_ADDRESS`, and returns the time and values instead of printing
   them, so programs and language bindings no longer need to parse the
   output. @oetiker
+* Each Windows release zip contains an SPDX SBOM, also attached to the
+  release as `rrdtool-<version>-<arch>_vcpkg.spdx.json`, that lists every
+  bundled DLL with its hash and the vcpkg package and version it came
+  from. The source tarball and each RPM and DEB get one too
+  (`<file>.spdx.json`): the tarball's lists the third-party code it
+  carries, a package's lists the distribution packages its binaries load,
+  at the versions the release was tested with. All release files and
+  SBOMs carry GitHub build provenance, and each zip is attested together
+  with its SBOM; `gh attestation verify <file> --repo oetiker/rrdtool-1.x`
+  checks a download. @somethingwithproof
+* The source tarball is reproducible: rebuilding a release tag the way
+  the release workflow does, with the same autotools and gettext, gives
+  the same bytes. The release commit and tag are signed with Sigstore
+  (gitsign). @somethingwithproof
+* The Windows build uses vcpkg 2026.10.16 (previously 2025.12.12), which
+  updates the bundled libraries, among them libxml2 2.15.4, expat 2.9.0,
+  libpng 1.6.59, glib 2.90.0, pango 1.58.0 and cairo 1.18.6. zlib 1.3.2
+  names its DLL `z.dll`, so the zip ships that instead of `zlib1.dll`.
+  @somethingwithproof
 
 RRDtool 1.11.0 - 2026-08-07
 ===========================
