@@ -21,6 +21,8 @@ script_tests += security-hw-smoothing-window hw-bulk-update-period1
 script_tests += security-hw-dependencies security-compute-ds security-header-fields
 script_tests += security-daemon-tune-argc
 
+script_tests += security-time-fields
+
 EXTRA_DIST = Makefile.am \
 	functions $(script_tests) \
 	modify-test1.create.dump modify-test1.mod1.dump \
@@ -190,3 +192,11 @@ CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err
 # the rrdcached test styles make cached/ in a separate build directory
 distclean-local:
 	if test "$(srcdir)" != "."; then rm -rf cached; fi
+
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += numeric-limits
+TESTS += numeric-limits
+numeric_limits_SOURCES = test_numeric_limits.c
+numeric_limits_LDFLAGS = -static
+numeric_limits_LDADD = ${top_builddir}/src/librrd.la
+endif

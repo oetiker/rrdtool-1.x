@@ -1,0 +1,71 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# Stored time fields must be safe for every reporting/update consumer.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+$RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail $? create
+
+# Native LP64 layout: step at 40, row_cnt/pdp_cnt at 272/280,
+# last_up/usecs at 368/376, PDP unknown seconds at 416.
+check () {
+  local what="$1" edit="$2" pattern="$3"
+  cp "${BUILD}.rrd" "${BUILD}-crafted.rrd"
+  perl -0777 -pi -e "$edit" "${BUILD}-crafted.rrd"
+  for command in info first dump update; do
+    case "$command" in
+      info|first|dump) args=() ;;
+      update) args=(900000060:1) ;;
+    esac
+    $RRDTOOL "$command" "${BUILD}-crafted.rrd" "${args[@]}" >"${BUILD}.out" 2>&1
+    status=$?
+    [ "$status" -ne 0 ] && [ "$status" -lt 128 ] || \
+      fail 1 "$what: $command exit status $status: $(cat "${BUILD}.out")"
+    grep -q "$pattern" "${BUILD}.out" || \
+      fail 1 "$what: $command was not diagnosed: $(cat "${BUILD}.out")"
+  done
+  ok "$what"
+}
+
+check "reject a resolution outside signed offset range" \
+  'substr($_, 280, 8, pack("Q", (1 << 63))); substr($_, 40, 8, pack("Q", 1))' \
+  "time span is too large"
+
+check "reject an overflowing signed archive time span" \
+  'substr($_, 280, 8, pack("Q", (1 << 62))); substr($_, 40, 8, pack("Q", 1)); substr($_, 272, 8, pack("Q", 4))' \
+  "time span is too large"
+
+check "reject negative last update seconds" \
+  'substr($_, 368, 8, pack("q", -1))' \
+  "invalid last update time"
+
+check "reject last update usecs outside one second" \
+  'substr($_, 376, 8, pack("Q", 1000000))' \
+  "invalid last update time"
+
+check "reject an excessive unknown seconds count" \
+  'substr($_, 416, 8, pack("Q", 61))' \
+  "invalid unknown seconds count"
+
+for stamp in NaN inf 1e100 9223372036854775808; do
+  $RRDTOOL update "${BUILD}.rrd" "$stamp:1" >"${BUILD}.out" 2>&1
+  status=$?
+  [ "$status" -ne 0 ] && [ "$status" -lt 128 ] || fail 1 "invalid update time status $status"
+  grep -q "update time is out of range" "${BUILD}.out" || fail 1 "invalid time not diagnosed"
+done
+ok "reject unrepresentable update times"
+$RRDTOOL update "${BUILD}.rrd" 900000060.5:1 || fail $? "fractional update"
+$RRDTOOL update "${BUILD}.rrd" 900000060.75:2 || fail $? "later fractional update"
+
+$RRDTOOL update "${BUILD}.rrd" 900000060.999999:3 || fail $? "microsecond boundary"
+
+$RRDTOOL info "${BUILD}.rrd" >/dev/null
+report "the unmodified file still opens"
+
+rm -f "${BUILD}"*.rrd "${BUILD}.out"

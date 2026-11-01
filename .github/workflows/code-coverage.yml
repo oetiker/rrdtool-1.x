@@ -145,7 +145,8 @@ jobs:
         for test in hw-failures rpn-failures restore-text cli-failures \
                     graph-security security-hw-smoothing-window \
                     security-hw-dependencies security-compute-ds \
-                    update-compute-only verify-json; do
+                    update-compute-only verify-json security-time-fields \
+                    numeric-limits; do
           if test -f "tests/$test" || test -f "tests/test_${test//-/_}.c"; then
             tests+=" $test"
           fi
@@ -188,7 +189,8 @@ jobs:
         # may never reach. Export their mappings as well as the fuzzers'.
         objects=(-object src/rrdtool)
         for binary in tests/hw-failures tests/rpn-failures \
-                      tests/restore-text tests/cli-failures tests/graph-security; do
+                      tests/restore-text tests/cli-failures tests/graph-security \
+                      tests/numeric-limits; do
           if test -x "$binary"; then
             objects+=(-object "$binary")
           fi
