@@ -14,6 +14,8 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 
 script_tests += security-rrdcached-response-bounds
 script_tests += verify-json
+script_tests += security-time-fields
+
 EXTRA_DIST = test_cli_verify_json.py
 
 EXTRA_DIST += Makefile.am \

@@ -673,6 +673,7 @@ rrd_file_t *rrd_open(
     }
     /* Update arithmetic uses nonnegative seconds and normalized usecs. */
     if (rrd->live_head->last_up < 0 ||
+        rrd->live_head->last_up_usec < 0 ||
         rrd->live_head->last_up_usec >= 1000000) {
         rrd_set_error("'%s' has an invalid last update time", file_name);
         goto out_close;
