@@ -119,9 +119,12 @@ jobs:
       uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
     - name: Install dependencies
+      timeout-minutes: 10
       run: |
-        sudo apt-get update
-        sudo apt-get install -y autopoint build-essential clang llvm libtool-bin \
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+        sudo apt-get -o Acquire::Retries=3 \
+          -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y autopoint build-essential clang llvm libtool-bin \
                                 libpango1.0-dev libxml2-dev gettext
 
     - name: Verify sanitizer failure handling
