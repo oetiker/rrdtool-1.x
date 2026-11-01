@@ -45,6 +45,10 @@ check "reject negative last update seconds" \
   'substr($_, 368, 8, pack("q", -1))' \
   "invalid last update time"
 
+check "reject negative last update usecs" \
+  'substr($_, 376, 8, pack("q", -9223372036854775808))' \
+  "invalid last update time"
+
 check "reject last update usecs outside one second" \
   'substr($_, 376, 8, pack("Q", 1000000))' \
   "invalid last update time"
