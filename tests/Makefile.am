@@ -172,3 +172,11 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
 CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err
+
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += numeric-limits
+TESTS += numeric-limits
+numeric_limits_SOURCES = test_numeric_limits.c
+numeric_limits_LDFLAGS = -static
+numeric_limits_LDADD = ${top_builddir}/src/librrd.la
+endif

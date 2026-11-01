@@ -671,8 +671,22 @@ rrd_file_t *rrd_open(
         __rrd_read(rrd->live_head, live_head_t,
                    1);
     }
+    /* Update arithmetic uses nonnegative seconds and normalized usecs. */
+    if (rrd->live_head->last_up < 0 ||
+        rrd->live_head->last_up_usec >= 1000000) {
+        rrd_set_error("'%s' has an invalid last update time", file_name);
+        goto out_close;
+    }
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
+    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
+        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd->stat_head->pdp_step) {
+            rrd_set_error("'%s' DS %lu has an invalid unknown seconds count",
+                          file_name, i);
+            goto out_close;
+        }
+    }
     {
         size_t    cdp_cnt;
 
@@ -716,6 +730,16 @@ rrd_file_t *rrd_open(
         for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
             if (rrd->rra_def[ui].row_cnt == 0 || rrd->rra_def[ui].pdp_cnt == 0) {
                 rrd_set_error("'%s' RRA %lu has zero row_cnt/pdp_cnt", file_name, ui);
+                goto out_close;
+            }
+            /* Consumers use signed offsets for the archive time span. */
+            if (rrd->rra_def[ui].pdp_cnt >
+                LONG_MAX / rrd->stat_head->pdp_step ||
+                rrd->rra_def[ui].row_cnt - 1 > LONG_MAX /
+                (rrd->rra_def[ui].pdp_cnt * rrd->stat_head->pdp_step)) {
+                rrd_set_error("'%s' header describes an impossibly large "
+                              "database (RRA %lu time span is too large)",
+                              file_name, ui);
                 goto out_close;
             }
             if (rrd_add_overflow(row_cnt, rrd->rra_def[ui].row_cnt,
