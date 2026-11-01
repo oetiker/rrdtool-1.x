@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "rrd_tool.h"
+#include "rrd_validate.h"
 #include "compat-cloexec.h"
 #include "unused.h"
 
@@ -63,46 +64,6 @@ DWORD     dwCreationDisposition = 0;
  * set DONTNEED for the rest, which is assumed to be data */
 /* Avoid calling madvise on areas that were already hinted. May be beneficial if
  * your syscalls are very slow */
-
-/* ds_cnt / rra_cnt and the record counts derived from them are read straight
- * from an untrusted file.  Every "sizeof(record) * count" used below as an
- * offset or allocation size must be range-checked first: a crafted count can
- * otherwise wrap size_t, pass the "> file_len" bounds check, and alias or
- * iterate past the mapped file.
- */
-#if defined(__has_builtin)
-#define RRD_HAVE_OVERFLOW_BUILTINS (__has_builtin(__builtin_mul_overflow) && __has_builtin(__builtin_add_overflow))
-#elif defined(__GNUC__) && __GNUC__ >= 5
-#define RRD_HAVE_OVERFLOW_BUILTINS 1
-#else
-#define RRD_HAVE_OVERFLOW_BUILTINS 0
-#endif
-
-static inline int rrd_mul_overflow(
-    size_t a,
-    size_t b,
-    size_t *out)
-{
-#if RRD_HAVE_OVERFLOW_BUILTINS
-    return __builtin_mul_overflow(a, b, out);
-#else
-    *out = a * b;
-    return b != 0 && a > (size_t) -1 / b;
-#endif
-}
-
-static inline int rrd_add_overflow(
-    size_t a,
-    size_t b,
-    size_t *out)
-{
-#if RRD_HAVE_OVERFLOW_BUILTINS
-    return __builtin_add_overflow(a, b, out);
-#else
-    *out = a + b;
-    return a > (size_t) -1 - b;
-#endif
-}
 
 #ifdef HAVE_MMAP
 /* the cast to void* is there to avoid this warning seen on ia64 with certain
@@ -210,6 +171,109 @@ static int rrd_rwlock(
 static int close_and_unlock(
     int fd);
 
+int rrd_validate_stat_head(
+    const rrd_t *rrd)
+{
+    if (rrd->stat_head->pdp_step == 0) {
+        rrd_set_error("header pdp_step is zero");
+        return -1;
+    }
+    return 0;
+}
+
+int rrd_validate_failures_windows(
+    const rrd_t *rrd)
+{
+    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
+        if (strncmp(rrd->rra_def[i].cf_nam, "FAILURES", CF_NAM_SIZE) == 0 &&
+            (rrd->rra_def[i].par[RRA_window_len].u_cnt < 1 ||
+             rrd->rra_def[i].par[RRA_window_len].u_cnt > MAX_FAILURES_WINDOW_LEN)) {
+            rrd_set_error("invalid RRA %lu: window_len %lu out of range", i,
+                          rrd->rra_def[i].par[RRA_window_len].u_cnt);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int rrd_validate_live_head(
+    const rrd_t *rrd,
+    const char *file_name)
+{
+    /* Update arithmetic uses nonnegative seconds and normalized usecs. */
+    if (rrd->live_head->last_up < 0 ||
+        rrd->live_head->last_up_usec < 0 ||
+        rrd->live_head->last_up_usec >= 1000000) {
+        rrd_set_error("'%s' has an invalid last update time", file_name);
+        return -1;
+    }
+    return 0;
+}
+
+int rrd_validate_pdp_prep(
+    const rrd_t *rrd,
+    const char *file_name)
+{
+    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
+        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd->stat_head->pdp_step) {
+            rrd_set_error("'%s' DS %lu has an invalid unknown seconds count",
+                          file_name, i);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int rrd_validate_rra_sizes(
+    const rrd_t *rrd,
+    const char *file_name)
+{
+    size_t    data_len;
+
+    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        const rra_def_t *rra = &rrd->rra_def[i];
+
+        if (rra->row_cnt == 0 || rra->pdp_cnt == 0) {
+            rrd_set_error("'%s' RRA %lu has zero row_cnt/pdp_cnt", file_name, i);
+            return -1;
+        }
+        /* Consumers use signed offsets for the archive time span. */
+        if (rra->pdp_cnt > LONG_MAX / rrd->stat_head->pdp_step ||
+            rra->row_cnt - 1 > LONG_MAX /
+            (rra->pdp_cnt * rrd->stat_head->pdp_step)) {
+            rrd_set_error("'%s' header describes an impossibly large "
+                          "database (RRA %lu time span is too large)",
+                          file_name, i);
+            return -1;
+        }
+    }
+    /* row_cnt is untrusted, so the running sum wraps just as easily as
+     * the products derived from it; a wrapped length would sail through
+     * the file size checks. */
+    if (rrd_data_len(rrd, &data_len)) {
+        rrd_set_error("'%s' header describes an impossibly large database",
+                      file_name);
+        return -1;
+    }
+    return 0;
+}
+
+/* For an rrd_t assembled in memory, as rrd_restore does: the checks
+ * rrd_open() makes on the header once the counts fit the file. */
+int rrd_validate_header(
+    const rrd_t *rrd,
+    const char *file_name)
+{
+    if (rrd_validate_stat_head(rrd) != 0 ||
+        rrd_validate_failures_windows(rrd) != 0 ||
+        rrd_validate_live_head(rrd, file_name) != 0 ||
+        rrd_validate_pdp_prep(rrd, file_name) != 0 ||
+        rrd_validate_rra_sizes(rrd, file_name) != 0)
+        return -1;
+    return 0;
+}
+
 /* Open a database file, return its header and an open filehandle,
  * positioned to the first cdp in the first rra.
  * In the error path of rrd_open, only rrd_free(&rrd) has to be called
@@ -225,7 +289,6 @@ rrd_file_t *rrd_open(
     rrd_t *rrd,
     unsigned rdwr)
 {
-    unsigned long ui;
     int       flags = 0;
     int       version;
 
@@ -245,8 +308,7 @@ rrd_file_t *rrd_open(
 
     /* Are we creating a new file? */
     if (rdwr & RRD_CREAT) {
-        size_t    row_cnt = 0;
-        size_t    header_len, value_cnt, data_len;
+        size_t    header_len, data_len;
 
         header_len = rrd_get_header_size(rrd);
 
@@ -254,19 +316,8 @@ rrd_file_t *rrd_open(
          * create arguments) rather than parsed from a file, but the same
          * "sizeof(record) * count" arithmetic can still wrap size_t given
          * an absurd combination of DS/RRA counts, so guard it exactly like
-         * the read-path computation further down in this function -- the
-         * row_cnt sum itself can wrap before the multiplications ever run. */
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++)
-            if (rrd_add_overflow(row_cnt,
-                                 (size_t) rrd->rra_def[ui].row_cnt,
-                                 &row_cnt)) {
-                rrd_set_error("'%s' describes an impossibly large database",
-                              file_name);
-                return NULL;
-            }
-
-        if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
-            rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &data_len) ||
+         * the read path does. */
+        if (rrd_data_len(rrd, &data_len) ||
             rrd_add_overflow(header_len, data_len, &newfile_size)) {
             rrd_set_error("'%s' describes an impossibly large database",
                           file_name);
@@ -645,10 +696,8 @@ rrd_file_t *rrd_open(
             goto out_close;
         }
     }
-    if (rrd->stat_head->pdp_step == 0) {
-        rrd_set_error("header pdp_step is zero");
+    if (rrd_validate_stat_head(rrd) != 0)
         goto out_close;
-    }
     __rrd_read(rrd->ds_def, ds_def_t,
                rrd->stat_head->ds_cnt);
 
@@ -657,15 +706,8 @@ rrd_file_t *rrd_open(
 
     /* Validate disk-supplied FAILURES history bounds before any consumer
      * (including info and update) can use the fixed-size scratch buffer. */
-    for (unsigned long i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (strncmp(rrd->rra_def[i].cf_nam, "FAILURES", CF_NAM_SIZE) == 0 &&
-            (rrd->rra_def[i].par[RRA_window_len].u_cnt < 1 ||
-             rrd->rra_def[i].par[RRA_window_len].u_cnt > MAX_FAILURES_WINDOW_LEN)) {
-            rrd_set_error("invalid RRA %lu: window_len %lu out of range", i,
-                          rrd->rra_def[i].par[RRA_window_len].u_cnt);
-            goto out_close;
-        }
-    }
+    if (rrd_validate_failures_windows(rrd) != 0)
+        goto out_close;
 
     /* handle different format for the live_head */
     if (version < 3) {
@@ -683,23 +725,12 @@ rrd_file_t *rrd_open(
         __rrd_read(rrd->live_head, live_head_t,
                    1);
     }
-    /* Update arithmetic uses nonnegative seconds and normalized usecs. */
-    if (rrd->live_head->last_up < 0 ||
-        rrd->live_head->last_up_usec < 0 ||
-        rrd->live_head->last_up_usec >= 1000000) {
-        rrd_set_error("'%s' has an invalid last update time", file_name);
+    if (rrd_validate_live_head(rrd, file_name) != 0)
         goto out_close;
-    }
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
-    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
-        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
-            rrd->stat_head->pdp_step) {
-            rrd_set_error("'%s' DS %lu has an invalid unknown seconds count",
-                          file_name, i);
-            goto out_close;
-        }
-    }
+    if (rrd_validate_pdp_prep(rrd, file_name) != 0)
+        goto out_close;
     {
         size_t    cdp_cnt;
 
@@ -732,40 +763,15 @@ rrd_file_t *rrd_open(
 #endif
 
     {
-        size_t    row_cnt = 0;
         size_t    value_cnt;
         size_t    correct_len;
 
-        /* rra_def[].row_cnt is read straight from an untrusted header, so the
-         * running sum wraps just as easily as the products derived from it.
-         * A sum that wrapped to a small value would sail through the checks
-         * below and leave correct_len under the real file length. */
-        for (ui = 0; ui < rrd->stat_head->rra_cnt; ui++) {
-            if (rrd->rra_def[ui].row_cnt == 0 || rrd->rra_def[ui].pdp_cnt == 0) {
-                rrd_set_error("'%s' RRA %lu has zero row_cnt/pdp_cnt", file_name, ui);
-                goto out_close;
-            }
-            /* Consumers use signed offsets for the archive time span. */
-            if (rrd->rra_def[ui].pdp_cnt >
-                LONG_MAX / rrd->stat_head->pdp_step ||
-                rrd->rra_def[ui].row_cnt - 1 > LONG_MAX /
-                (rrd->rra_def[ui].pdp_cnt * rrd->stat_head->pdp_step)) {
-                rrd_set_error("'%s' header describes an impossibly large "
-                              "database (RRA %lu time span is too large)",
-                              file_name, ui);
-                goto out_close;
-            }
-            if (rrd_add_overflow(row_cnt, rrd->rra_def[ui].row_cnt,
-                                 &row_cnt)) {
-                rrd_set_error("'%s' header describes an impossibly large database",
-                              file_name);
-                goto out_close;
-            }
-        }
-
-        if (rrd_mul_overflow(row_cnt, rrd->stat_head->ds_cnt, &value_cnt) ||
-            rrd_mul_overflow(value_cnt, sizeof(rrd_value_t), &correct_len) ||
-            rrd_add_overflow(rrd_file->header_len, correct_len, &correct_len)) {
+        if (rrd_validate_rra_sizes(rrd, file_name) != 0)
+            goto out_close;
+        /* rrd_validate_rra_sizes() has checked rrd_data_len() */
+        rrd_data_len(rrd, &correct_len);
+        value_cnt = correct_len / sizeof(rrd_value_t);
+        if (rrd_add_overflow(rrd_file->header_len, correct_len, &correct_len)) {
             rrd_set_error("'%s' header describes an impossibly large database",
                           file_name);
             goto out_close;

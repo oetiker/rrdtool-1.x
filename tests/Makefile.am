@@ -14,10 +14,11 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 
 script_tests += security-rrdcached-response-bounds
 script_tests += verify-json
+script_tests += validate-agreement
 script_tests += security-time-fields
 script_tests += security-client-response-validation
 
-EXTRA_DIST = test_cli_verify_json.py
+EXTRA_DIST = test_cli_verify_json.py test_validate_agreement.py
 
 EXTRA_DIST += Makefile.am \
 	functions $(script_tests) \

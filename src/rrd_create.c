@@ -21,6 +21,7 @@
 
 #include "rrd_strtod.h"
 #include "rrd_tool.h"
+#include "rrd_validate.h"
 #include "fnv.h"
 
 #include "rrd_rpncalc.h"
@@ -1358,6 +1359,10 @@ int write_rrd(
 {
     int       rc = -1;
     char     *tmpfilename = NULL;
+
+    /* Do not write a file that rrd_open() would refuse to read. */
+    if (rrd_validate_header(out, outfilename) != 0)
+        return -1;
 
     /* write out the new file */
 #ifdef HAVE_LIBRADOS

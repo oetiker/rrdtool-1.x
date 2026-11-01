@@ -5,6 +5,7 @@
 
 #include "rrd_cli.h"
 #include "rrd_rpncalc.h"
+#include "rrd_validate.h"
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -92,11 +93,7 @@ static void check_compute(verify_output_t *out, const ds_def_t *ds,
                 issue(out, "compute_program", "DS %lu has an empty COMPUTE program", index);
             return;
         }
-        if (op > OP_ROUND || op == OP_TIME || op == OP_LTIME ||
-            op == OP_PREV || op == OP_COUNT || op == OP_TREND ||
-            op == OP_TRENDNAN || op == OP_PREDICT || op == OP_PREDICTSIGMA ||
-            op == OP_PREDICTPERC || op == OP_STEPWIDTH || op == OP_NEWDAY ||
-            op == OP_NEWWEEK || op == OP_NEWMONTH || op == OP_NEWYEAR) {
+        if (!rpn_compute_op_allowed((int) op)) {
             issue(out, "compute_program", "DS %lu has an invalid COMPUTE operator %u",
                   index, op);
             return;
@@ -164,14 +161,14 @@ static void check_archives(verify_output_t *out, const rrd_t *rrd,
                            const rrd_file_t *file)
 {
     unsigned long i;
-    size_t expected = file->header_len;
+    size_t data_len;
 
+    /* rrd_open has rejected a length that overflows or exceeds file_len. */
+    rrd_data_len(rrd, &data_len);
     for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
         const rra_def_t *rra = &rrd->rra_def[i];
         int cf = cf_type(rra);
 
-        /* rrd_open has already bounded the sum and products by file_len. */
-        expected += rra->row_cnt * rrd->stat_head->ds_cnt * sizeof(rrd_value_t);
         if (cf == -1) {
             issue(out, "rra_type", "RRA %lu has an invalid consolidation function", i);
             continue;
@@ -216,9 +213,9 @@ static void check_archives(verify_output_t *out, const rrd_t *rrd,
             }
         }
     }
-    if (expected != file->file_len)
+    if (file->header_len + data_len != file->file_len)
         issue(out, "file_size", "file has %llu trailing bytes",
-              (unsigned long long) (file->file_len - expected));
+              (unsigned long long) (file->file_len - file->header_len - data_len));
 }
 
 static value_counts_t *count_values(verify_output_t *out, rrd_t *rrd,

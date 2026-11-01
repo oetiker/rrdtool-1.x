@@ -56,6 +56,35 @@ typedef struct rpn_cdefds_t {
 /* limit imposed by sizeof(rpn_cdefs_t) and rrd.ds_def.par */
 #define DS_CDEF_MAX_RPN_NODES (int)(sizeof(unival)*10 / sizeof(rpn_cdefds_t))
 
+/* Whether a COMPUTE DS may store operator op.  Time, history and
+ * step-dependent operators are excluded because a COMPUTE DS only sees the
+ * current PDP; adding them needs a file format change.  Shared by
+ * parseCDEF_DS (create, restore) and `rrdtool verify`, which links only
+ * exported symbols, hence inline. */
+static inline int rpn_compute_op_allowed(
+    int op)
+{
+    switch (op) {
+    case OP_TIME:
+    case OP_LTIME:
+    case OP_PREV:
+    case OP_COUNT:
+    case OP_TREND:
+    case OP_TRENDNAN:
+    case OP_PREDICT:
+    case OP_PREDICTSIGMA:
+    case OP_PREDICTPERC:
+    case OP_STEPWIDTH:
+    case OP_NEWDAY:
+    case OP_NEWWEEK:
+    case OP_NEWMONTH:
+    case OP_NEWYEAR:
+        return 0;
+    default:
+        return op >= 0 && op <= OP_ROUND;
+    }
+}
+
 typedef struct rpnstack_t {
     double   *s;
     long      dc_stacksize;
