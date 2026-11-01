@@ -1,0 +1,40 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# tune is not routed through rrdcached (see tests/functions).
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+# tune --step divides the step; the unknown seconds of the PDP being built
+# must shrink with it or rrd_open refuses the file. --start 1000000400 with
+# step 300 leaves 200 unknown seconds, more than the 60 second step.
+$RRDTOOL create "${BUILD}-step.rrd" --start 1000000400 --step 300 \
+  DS:val:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100 || fail $? create
+$RRDTOOL tune "${BUILD}-step.rrd" --step 60 'RRA#0:+0' || fail $? "tune --step"
+$RRDTOOL info "${BUILD}-step.rrd" >/dev/null 2>&1 || fail $? "info after tune --step"
+$RRDTOOL update "${BUILD}-step.rrd" 1000000500:1 || fail $? "update after tune --step"
+
+# Deleting an RRA in front of the Holt-Winters group renumbers the partner
+# links; the file must still open and dump.
+$RRDTOOL create "${BUILD}-hw.rrd" --start 1000000000 --step 300 \
+  DS:val:GAUGE:600:U:U \
+  RRA:AVERAGE:0.5:1:100 \
+  RRA:HWPREDICT:1440:0.1:0.0035:288 || fail $? create
+$RRDTOOL tune "${BUILD}-hw.rrd" 'RRA#0:=0' || fail $? "tune RRA#0:=0"
+$RRDTOOL info "${BUILD}-hw.rrd" >/dev/null 2>&1 || fail $? "info after deleting an RRA"
+$RRDTOOL dump "${BUILD}-hw.rrd" >/dev/null 2>&1 || fail $? "dump after deleting an RRA"
+
+# Deleting a partner the remaining Holt-Winters RRAs need is refused and
+# leaves the file as it was.
+$RRDTOOL create "${BUILD}-partner.rrd" --start 1000000000 --step 300 \
+  DS:val:GAUGE:600:U:U RRA:HWPREDICT:1440:0.1:0.0035:288 || fail $? create
+if $RRDTOOL tune "${BUILD}-partner.rrd" 'RRA#1:=0' >"${BUILD}-partner.out" 2>&1; then
+  fail 1 "tune deleted an RRA that another Holt-Winters RRA depends on"
+fi
+grep -q "depends on it" "${BUILD}-partner.out" || \
+  fail 1 "tune did not explain the refused RRA deletion"
+$RRDTOOL info "${BUILD}-partner.rrd" >/dev/null 2>&1 || fail $? "refused tune changed the file"
+
+report "tune leaves files that rrd_open accepts"

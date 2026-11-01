@@ -210,7 +210,17 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
     cdp_prep_t empty_cdp_prep;
     memset(&empty_cdp_prep, 0, sizeof(empty_cdp_prep));
 
+    /* new index of every input RRA, or -1 when it is deleted. Holt-Winters
+       RRAs refer to their partners by index, so the links need renumbering
+       when an RRA in front of them goes away. */
+    long *new_index = malloc(sizeof(long) * (in->stat_head->rra_cnt + 1));
+    if (new_index == NULL) {
+	rrd_set_error("Cannot allocate memory");
+	goto done;
+    }
+
     for (j = 0 ; j < in->stat_head->rra_cnt ; j++) {
+	new_index[j] = -1;
 	if (total_in_rra_rows) 
 	    *total_in_rra_rows +=  in->rra_def[j].row_cnt;
 
@@ -268,6 +278,8 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 					 sizeof(rra_def_t));
 	if (out->rra_def == NULL) goto done;
 
+	new_index[j] = out->stat_head->rra_cnt;
+
 	// adapt row count:
 	out->rra_def[out->stat_head->rra_cnt].row_cnt = final_row_count;
 
@@ -313,8 +325,27 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 
 	out->stat_head->rra_cnt++;
     }
+
+    /* renumber the Holt-Winters partner links. */
+    for (j = 0 ; j < out->stat_head->rra_cnt ; j++) {
+	rra_def_t *rra = out->rra_def + j;
+	enum cf_en cf = rrd_cf_conv(rra->cf_nam);
+	unsigned long dep;
+	if (cf != CF_HWPREDICT && cf != CF_MHWPREDICT && cf != CF_SEASONAL
+	    && cf != CF_DEVSEASONAL && cf != CF_DEVPREDICT
+	    && cf != CF_FAILURES)
+	    continue;
+	dep = rra->par[RRA_dependent_rra_idx].u_cnt;
+	if (dep >= in->stat_head->rra_cnt || new_index[dep] < 0) {
+	    rrd_set_error("cannot delete RRA %lu: the %s RRA that is left "
+			  "depends on it", dep, rra->cf_nam);
+	    goto done;
+	}
+	rra->par[RRA_dependent_rra_idx].u_cnt = new_index[dep];
+    }
     rc = 0;
 done:
+    free(new_index);
     return rc;
 }
 
@@ -730,7 +761,18 @@ static int stretch_rras(rrd_t *out, int stretch) {
     }
     
     out->stat_head->pdp_step /= stretch;
-    
+
+    /* the unknown seconds of the PDP being built can not exceed the time
+       that has passed in it, and that shrank with the step */
+    for (ds_index = 0 ; ds_index < ds_cnt ; ds_index++) {
+	unsigned long elapsed =
+	    out->live_head->last_up % out->stat_head->pdp_step;
+	unsigned long *unkn =
+	    &out->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt;
+	if (*unkn > elapsed)
+	    *unkn = elapsed;
+    }
+
     rc =0;
 done:
     return rc;
