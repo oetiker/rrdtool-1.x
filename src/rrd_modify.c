@@ -8,6 +8,7 @@
  *****************************************************************************/
 #include "rrd_tool.h"
 #include "rrd_rpncalc.h"
+#include "rrd_hw.h"         /* rrd_check_hw_dependencies */
 #include "rrd_client.h"
 #include "rrd_restore.h"   /* write_file */
 #include "rrd_create.h"    /* parseDS */
@@ -182,6 +183,36 @@ static int copy_or_delete_DSs(const rrd_t *in, rrd_t *out, char *ops) {
 	default:
 	    rrd_set_error("internal error: invalid ops");
 	    goto done;
+	}
+    }
+
+    /* COMPUTE programs refer to other data sources by index, so the
+       references need renumbering when a DS in front of them goes away,
+       and a DS a remaining program uses can not go away at all. */
+    for (unsigned int out_ds = 0 ; out_ds < out->stat_head->ds_cnt ; out_ds++) {
+	rpn_cdefds_t *rpnc;
+
+	if (dst_conv(out->ds_def[out_ds].dst) != DST_CDEF)
+	    continue;
+	rpnc = (rpn_cdefds_t *) &out->ds_def[out_ds].par[DS_cdef];
+	for (int i = 0 ; i < DS_CDEF_MAX_RPN_NODES && rpnc[i].op != OP_END ; i++) {
+	    int new_ds = 0;
+
+	    if (rpnc[i].op != OP_VARIABLE && rpnc[i].op != OP_PREV_OTHER)
+		continue;
+	    if (rpnc[i].val < 0
+		|| (unsigned long) rpnc[i].val >= in->stat_head->ds_cnt)
+		continue;   /* rrd_open already refuses such a program */
+	    if (ops[rpnc[i].val] != 'c') {
+		rrd_set_error("cannot delete DS %s: COMPUTE DS %s uses it",
+			      in->ds_def[rpnc[i].val].ds_nam,
+			      out->ds_def[out_ds].ds_nam);
+		goto done;
+	    }
+	    for (int k = 0 ; k < rpnc[i].val ; k++)
+		if (ops[k] == 'c')
+		    new_ds++;
+	    rpnc[i].val = (short) new_ds;
 	}
     }
     // only if we did all iterations without any problems will we arrive here
@@ -894,6 +925,10 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
 	    ds_ops[ds_ops_cnt++] = 'a';
 	}
     }
+    if (out->stat_head->ds_cnt == 0) {
+	rrd_set_error("cannot delete every data source");
+	goto done;
+    }
     
     /* prepare explicit data source index to map from output index to
        input index */
@@ -954,7 +989,18 @@ static rrd_t *rrd_modify_structure(const rrd_t *in,
     
     rc = add_rras(in, out, ds_map, rra_mod_ops, rra_mod_ops_cnt, hash);
     if (rc != 0) goto done;
-    
+
+    /* rrd_open refuses files without RRAs or with Holt-Winters RRAs whose
+       partner links do not fit, so do not write them */
+    rc = -1;
+    if (out->stat_head->rra_cnt == 0) {
+	rrd_set_error("cannot delete every RRA");
+	goto done;
+    }
+    if (rrd_check_hw_dependencies(out) != 0)
+	goto done;
+    rc = 0;
+
 
 done:
     if (ds_ops != NULL) free(ds_ops);

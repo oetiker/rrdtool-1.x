@@ -37,4 +37,42 @@ grep -q "depends on it" "${BUILD}-partner.out" || \
   fail 1 "tune did not explain the refused RRA deletion"
 $RRDTOOL info "${BUILD}-partner.rrd" >/dev/null 2>&1 || fail $? "refused tune changed the file"
 
+# A COMPUTE program refers to data sources by index. Deleting a DS in
+# front of the ones it uses renumbers the references, and deleting one
+# it uses is refused.
+$RRDTOOL create "${BUILD}-compute.rrd" --start 1000000200 --step 300 \
+  DS:x:GAUGE:600:U:U DS:a:GAUGE:600:U:U DS:b:GAUGE:600:U:U \
+  DS:c:COMPUTE:a,b,+ RRA:AVERAGE:0.5:1:100 || fail $? create
+cp "${BUILD}-compute.rrd" "${BUILD}-compute-used.rrd"
+$RRDTOOL tune "${BUILD}-compute.rrd" DEL:x || fail $? "tune DEL:x"
+$RRDTOOL info "${BUILD}-compute.rrd" | grep -q '^ds\[c\]\.cdef = "a,b,+"$' || \
+  fail 1 "deleting a DS changed what a COMPUTE DS computes"
+if $RRDTOOL tune "${BUILD}-compute-used.rrd" DEL:a DEL:b >"${BUILD}-compute.out" 2>&1; then
+  fail 1 "tune deleted the data sources a COMPUTE DS uses"
+fi
+grep -q "COMPUTE DS c uses it" "${BUILD}-compute.out" || \
+  fail 1 "tune did not explain the refused DS deletion"
+$RRDTOOL info "${BUILD}-compute-used.rrd" >/dev/null 2>&1 || fail $? "refused tune changed the file"
+
+# rrd_open refuses a file without data sources or RRAs.
+$RRDTOOL create "${BUILD}-empty.rrd" --start 1000000200 --step 300 \
+  DS:val:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100 || fail $? create
+if $RRDTOOL tune "${BUILD}-empty.rrd" DEL:val >/dev/null 2>&1; then
+  fail 1 "tune deleted every data source"
+fi
+if $RRDTOOL tune "${BUILD}-empty.rrd" 'RRA#0:=0' >/dev/null 2>&1; then
+  fail 1 "tune deleted every RRA"
+fi
+$RRDTOOL info "${BUILD}-empty.rrd" >/dev/null 2>&1 || fail $? "refused tune changed the file"
+
+# An added Holt-Winters RRA must link to a partner of the right kind.
+$RRDTOOL create "${BUILD}-addhw.rrd" --start 1000000200 --step 300 \
+  DS:val:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100 || fail $? create
+if $RRDTOOL tune "${BUILD}-addhw.rrd" RRA:SEASONAL:24:0.1:1 >/dev/null 2>&1; then
+  fail 1 "tune added a SEASONAL RRA without a HWPREDICT partner"
+fi
+$RRDTOOL tune "${BUILD}-addhw.rrd" RRA:HWPREDICT:100:0.1:0.0035:24 || \
+  fail $? "tune adding a Holt-Winters group"
+$RRDTOOL info "${BUILD}-addhw.rrd" >/dev/null 2>&1 || fail $? "info after adding a Holt-Winters group"
+
 report "tune leaves files that rrd_open accepts"
