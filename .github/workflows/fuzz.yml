@@ -41,7 +41,7 @@ jobs:
 
     - name: Restore mutation corpus
       id: corpus
-      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: fuzz-state/${{ matrix.harness }}/corpus
         key: fuzz-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.harness }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -74,7 +74,7 @@ jobs:
     # are required because cache entries cannot be updated in place.
     - name: Save mutation corpus
       if: ${{ always() && steps.fuzz.outcome != 'skipped' }}
-      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: fuzz-state/${{ matrix.harness }}/corpus
         key: ${{ steps.corpus.outputs.cache-primary-key }}

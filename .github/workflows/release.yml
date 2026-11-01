@@ -785,8 +785,15 @@ jobs:
         env:
           NEW: ${{ needs.compute-version.outputs.version }}
           TOKEN: ${{ steps.app-token.outputs.token || secrets.RELEASE_PAT }}
+          # Fail instead of waiting for a browser login if the OIDC
+          # permission is ever dropped.
+          GITSIGN_TOKEN_PROVIDER: github-actions
         run: |
           set -e
+          if [ -z "$TOKEN" ]; then
+            echo "::error::no release token: configure the GitHub App or RELEASE_PAT"
+            exit 1
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config gpg.format x509
@@ -797,7 +804,7 @@ jobs:
           auth=$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)
           echo "::add-mask::$auth"
           git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth" \
-              push origin master --follow-tags
+              push --atomic origin master "refs/tags/v$NEW"
 
       - name: Extract release notes from CHANGES
         env:
