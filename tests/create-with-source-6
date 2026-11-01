@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# create --source from an RRD with a larger step copies the source
+# pdp_prep, whose unknown seconds count can exceed the new step.
+# create must clamp it, or rrd_open rejects the new file.
+
+. $(dirname $0)/functions
+
+PREFIX=$BUILDDIR/$(basename $0)-test
+
+rm -f ${PREFIX}*.rrd
+
+# start 200s into a 300s PDP, so the source has 200 unknown seconds;
+# the update lands in the last 60s of that PDP, where the 60s target
+# PDP ends at the same time and the pdp_prep is copied
+$RRDTOOL create ${PREFIX}src.rrd --start 1000000400 --step 300 \
+	DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10
+report create source
+
+$RRDTOOL update ${PREFIX}src.rrd 1000000450:5
+report update source
+
+$RRDTOOL create ${PREFIX}new.rrd --source ${PREFIX}src.rrd --step 60 \
+	DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:10
+report create with coarser source
+
+$RRDTOOL info ${PREFIX}new.rrd > /dev/null
+report info
+
+unknown=$($RRDTOOL dump ${PREFIX}new.rrd | sed -n 's,.*<unknown_sec> *\([0-9]*\) *</unknown_sec>.*,\1,p')
+[ -n "$unknown" ] && [ "$unknown" -le 60 ]
+report -s $? "unknown seconds within the new step (got '$unknown')"
+
+$RRDTOOL update ${PREFIX}new.rrd 1000000460:6 1000000520:7
+report update
+
+$RRDTOOL fetch ${PREFIX}new.rrd AVERAGE -s 1000000300 -e 1000000600 > /dev/null
+report fetch
+
+rm -f ${PREFIX}*.rrd

@@ -2143,12 +2143,16 @@ static void prefill_pdp_prep(
                  * I really hope that I got the semantics right here - PSt.
                  */
 
-                if (rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_val >
-                    rrd->stat_head->pdp_step) {
+                /* PDP_unkn_sec_cnt is an integer (u_cnt); reading it as
+                 * u_val reinterprets the bits as a tiny double and the
+                 * clamp never fires, leaving a count rrd_open rejects. */
+                unsigned long unkn_sec =
+                    rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt;
+
+                if (unkn_sec > rrd->stat_head->pdp_step) {
+                    /* rrd_open bounded unkn_sec by the source step. */
                     long      source_known =
-                        srrd->stat_head->pdp_step -
-                        rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].
-                        u_val;
+                        (long) (srrd->stat_head->pdp_step - unkn_sec);
                     long      max_target_known =
                         rrd->live_head->last_up - current_pdp_begin_time;
 
