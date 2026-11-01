@@ -271,7 +271,8 @@ class CliTests(unittest.TestCase):
         header_size = self.output("info", "data.rrd")["header_size"]
         live = rra + ctypes.sizeof(Archive)
         cases = [(0, b"BAD!"), (4, b"12345"),
-                 (4, b"9999\0"), (4, b"%s%n\0"), (4, b"0000\0"),
+                 (4, b"9999\0"), (4, b"%s%n\0"), (4, b"000x\0"),
+                 (4, b"0000\0"),
                  (Header.pdp_step.offset, struct.pack("=Q", 0)),
                  (Header.ds_cnt.offset, struct.pack("=Q", 2**63)),
                  (ds, b"x" * 20), (ds, b"?\0"), (ds, b"\0"),
