@@ -606,9 +606,21 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
 
+    if (rrd->stat_head->version[4] != '\0' ||
+        rrd->stat_head->version[0] < '0' ||
+        rrd->stat_head->version[0] > '9' ||
+        rrd->stat_head->version[1] < '0' ||
+        rrd->stat_head->version[1] > '9' ||
+        rrd->stat_head->version[2] < '0' ||
+        rrd->stat_head->version[2] > '9' ||
+        rrd->stat_head->version[3] < '0' ||
+        rrd->stat_head->version[3] > '9') {
+        rrd_set_error("'%s' has an invalid version field", file_name);
+        goto out_close;
+    }
     version = atoi(rrd->stat_head->version);
 
-    if (version > atoi(RRD_VERSION5)) {
+    if (version < 1 || version > atoi(RRD_VERSION5)) {
         rrd_set_error("can't handle RRD file version %s",
                       rrd->stat_head->version);
         goto out_close;
