@@ -272,18 +272,7 @@ void parseCDEF_DS(
      * COMPUTE DS specific. This is less efficient, but creation doesn't
      * occur too often. */
     for (i = 0; rpnp[i].op != OP_END; i++) {
-        if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME ||
-            rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
-            rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
-            rpnp[i].op == OP_PREDICT || rpnp[i].op == OP_PREDICTSIGMA ||
-            rpnp[i].op == OP_PREDICTPERC ||
-            /* these could actually go into COMPUTE with RRD format 06 ... since adding new
-               stuff into COMPUTE requires a fileformat update and that can only happen with the
-               1.6 release */
-            rpnp[i].op == OP_STEPWIDTH ||
-            rpnp[i].op == OP_NEWDAY ||
-            rpnp[i].op == OP_NEWWEEK ||
-            rpnp[i].op == OP_NEWMONTH || rpnp[i].op == OP_NEWYEAR) {
+        if (!rpn_compute_op_allowed(rpnp[i].op)) {
 
             rrd_set_error
                 ("operators TIME LTIME STEPWIDTH PREV NEW* COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");

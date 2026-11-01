@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+if command -v python3 >/dev/null 2>&1; then
+    python=python3
+elif command -v python >/dev/null 2>&1; then
+    python=python
+else
+    exit 77
+fi
+RRDTOOL_BIN="${TOP_BUILDDIR}/src/rrdtool"
+if test -n "${MSYSTEM:-}"; then
+    RRDTOOL_BIN=$(cygpath -m "${RRDTOOL_BIN}.exe")
+fi
+export RRDTOOL_BIN
+exec "$python" "${BASEDIR}/test_validate_agreement.py"

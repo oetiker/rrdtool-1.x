@@ -7,7 +7,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
 
-EXTRA_DIST = corpus
+EXTRA_DIST = corpus run.sh test-run.sh README.md
 
 noinst_PROGRAMS = rrd_open_fuzzer rrd_restore_fuzzer
 

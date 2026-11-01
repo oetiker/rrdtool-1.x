@@ -12,6 +12,7 @@
 #include "rrd_tool.h"
 
 #include "rrd_rpncalc.h"
+#include "rrd_validate.h"
 #include "rrd_restore.h"
 #include "unused.h"
 #include "rrd_strtod.h"
@@ -49,25 +50,6 @@ static int opt_force_overwrite = 0;
 /*
  * Helpers
  */
-
-/* Size arithmetic on counts read from untrusted XML. Not on a hot path, so
- * the portable form is used instead of compiler builtins (GCC < 5 and MSVC
- * lack __builtin_*_overflow). */
-static int restore_mul_overflow(size_t a, size_t b, size_t *out)
-{
-    if (b != 0 && a > (size_t) -1 / b)
-        return 1;
-    *out = a * b;
-    return 0;
-}
-
-static int restore_add_overflow(size_t a, size_t b, size_t *out)
-{
-    if (a > (size_t) -1 - b)
-        return 1;
-    *out = a + b;
-    return 0;
-}
 
 /* skip all but tags. complain if we do not get the right tag */
 /* dept -1 causes depth to be ignored */
@@ -440,9 +422,9 @@ static int parse_tag_rra_database(
     
     total_row_cnt = 0;
     for (i = 0; i < (((int) rrd->stat_head->rra_cnt) - 1); i++)
-        if (restore_add_overflow(total_row_cnt,
-                                 (size_t) rrd->rra_def[i].row_cnt,
-                                 &total_row_cnt)) {
+        if (rrd_add_overflow(total_row_cnt,
+                             (size_t) rrd->rra_def[i].row_cnt,
+                             &total_row_cnt)) {
             rrd_set_error("parse_tag_rra_database: row count overflow");
             return -1;
         }
@@ -460,10 +442,10 @@ static int parse_tag_rra_database(
            size_t total_rows;
            size_t total_values_bytes;
 
-            if (restore_add_overflow(total_row_cnt, 1, &total_rows) ||
-                restore_mul_overflow(ds_cnt, total_rows, &total_values_count) ||
-                restore_mul_overflow(sizeof(rrd_value_t), total_values_count,
-                                     &total_values_bytes)) {
+            if (rrd_add_overflow(total_row_cnt, 1, &total_rows) ||
+                rrd_mul_overflow(ds_cnt, total_rows, &total_values_count) ||
+                rrd_mul_overflow(sizeof(rrd_value_t), total_values_count,
+                                 &total_values_bytes)) {
                 rrd_set_error("parse_tag_rra_database: data size overflow");
                 status = -1;
                 break;
@@ -567,8 +549,8 @@ static int parse_tag_rra_database(
                (size_t) cur_rra_ptr->cur_row - 1;
     size_t temp_count;
 
-    if (restore_mul_overflow(ds_cnt, a, &temp_count) ||
-        restore_mul_overflow(sizeof(rrd_value_t), temp_count, &temp_count)) {
+    if (rrd_mul_overflow(ds_cnt, a, &temp_count) ||
+        rrd_mul_overflow(sizeof(rrd_value_t), temp_count, &temp_count)) {
         rrd_set_error("parse_tag_rra: data size overflow");
         return -1;
     }
@@ -1010,14 +992,6 @@ static int parse_tag_rra(
                               rrd->stat_head->rra_cnt - 1);
                 return -1;
             }
-            if (strcmp(cur_rra_def->cf_nam, "FAILURES") == 0 &&
-                (cur_rra_def->par[RRA_window_len].u_cnt < 1 ||
-                 cur_rra_def->par[RRA_window_len].u_cnt > MAX_FAILURES_WINDOW_LEN)) {
-                rrd_set_error("invalid RRA %lu: window_len %lu out of range",
-                              rrd->stat_head->rra_cnt - 1,
-                              cur_rra_def->par[RRA_window_len].u_cnt);
-                return -1;
-            }
             return status;
         }  /* }}} */        
        else {
@@ -1425,6 +1399,10 @@ int write_file(
     rrd_t *rrd)
 {
     FILE     *fh;
+
+    /* Do not write a file that rrd_open() would refuse to read. */
+    if (rrd_validate_header(rrd, file_name) != 0)
+        return -1;
 
 #ifdef HAVE_LIBRADOS
     if (strncmp("ceph//", file_name, 6) == 0) {

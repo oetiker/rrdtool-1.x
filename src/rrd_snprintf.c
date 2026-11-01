@@ -1023,7 +1023,7 @@ fmtint(char *str, size_t *len, size_t size, INTMAX_T value, int base, int width,
 	if (flags & PRINT_F_UNSIGNED)
 		uvalue = value;
 	else {
-		uvalue = (value >= 0) ? value : -value;
+		uvalue = (value >= 0) ? (UINTMAX_T)value : 0 - (UINTMAX_T)value;
 		if (value < 0)
 			sign = '-';
 		else if (flags & PRINT_F_PLUS)	/* Do a sign. */

@@ -106,8 +106,10 @@ $(TOP)/win32/$(RRD_LIB_NAME).dll $(TOP)/win32/$(RRD_LIB_NAME).lib: \
         $(RRD_LIB_OBJ_LIST) /link $(THIRD_PARTY_LIB) $(LD_FLAGS)
 
 $(TOP)/win32/rrdtool.exe: $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
+        $(TOP)/src/rrd_cli_json.obj $(TOP)/src/rrd_cli_verify.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib
     cl /nologo /MD /Zi /Fe$@ $(TOP)/win32/rrdtool.res $(TOP)/src/rrd_tool.obj \
+        $(TOP)/src/rrd_cli_json.obj $(TOP)/src/rrd_cli_verify.obj \
         $(TOP)/win32/$(RRD_LIB_NAME).lib /link $(LD_FLAGS)
 #Just waiting for antivirus program to finished check tasks
     -@ping 1.1.1.1 -n 1 -w 1000 > NUL

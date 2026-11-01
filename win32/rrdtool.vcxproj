@@ -354,6 +354,8 @@ copy $(ProjectDir)\..\contrib-x64\bin\zlib1.dll "$(TargetDir)"\
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\rrd_tool.c" />
+    <ClCompile Include="..\src\rrd_cli_json.c" />
+    <ClCompile Include="..\src\rrd_cli_verify.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rrd_config.h" />

@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
 script_tests = modify1 modify2 modify3 modify4 modify5 \
 	tune1 tune2 graph1 graph2 graph-missing-ds rpn1 \
 	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
-	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
+	create-with-source-3 create-with-source-4 create-with-source-6 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
@@ -13,8 +13,14 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
+script_tests += verify-json
+script_tests += validate-agreement
+script_tests += security-time-fields
+script_tests += security-client-response-validation
 
-EXTRA_DIST = Makefile.am \
+EXTRA_DIST = test_cli_verify_json.py test_validate_agreement.py
+
+EXTRA_DIST += Makefile.am \
 	functions $(script_tests) \
 	modify-test1.create.dump modify-test1.mod1.dump \
 	modify2-testa-create.dump modify2-testb-mod1.dump modify2-testc-mod1.dump \
@@ -153,6 +159,11 @@ CLEANFILES += cached/graph1.output.out cached/rpn1.out cached/rpn1.output.out \
 
 if HAVE_STATIC_LIBRRD
 if BUILD_RRDGRAPH
+check_PROGRAMS += cli-failures
+TESTS += cli-failures
+cli_failures_SOURCES = test_cli_failures.c
+cli_failures_LDFLAGS = -static
+cli_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += graph-security
 TESTS += graph-security
 endif
@@ -164,3 +175,11 @@ graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window
 CLEANFILES += first-last-error.out
+
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += numeric-limits
+TESTS += numeric-limits
+numeric_limits_SOURCES = test_numeric_limits.c
+numeric_limits_LDFLAGS = -static
+numeric_limits_LDADD = ${top_builddir}/src/librrd.la
+endif

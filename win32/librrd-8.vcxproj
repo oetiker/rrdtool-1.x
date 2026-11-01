@@ -451,6 +451,7 @@
     <ClInclude Include="..\src\rrd_parsetime.h" />
     <ClInclude Include="..\src\rrd_restore.h" />
     <ClInclude Include="..\src\rrd_rpncalc.h" />
+    <ClInclude Include="..\src\rrd_validate.h" />
     <ClInclude Include="..\src\rrd_snprintf.h" />
     <ClInclude Include="..\src\rrd_strtod.h" />
     <ClInclude Include="..\src\rrd_tool.h" />

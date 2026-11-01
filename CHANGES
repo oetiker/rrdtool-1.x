@@ -1,8 +1,16 @@
 
 RRDtool - master ...
 ====================
+Features
+--------
+* Add read-only `rrdtool verify` structural checks and `--diagnose-unknown`
+  summaries of stored archive values and current PDP/CDP state.
+* Add opt-in `--json` output for existing reporting commands and verification.
+
 Bugfixes
 --------
+* Release parsed graph arguments on invalid function names and free graph
+  title buffers after layout and drawing.
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
@@ -260,6 +268,12 @@ Bugfixes
   impossibly large database" or "window_len ... out of range". RRDs stored
   in Ceph get the same checks, at the cost of one object size query per
   open. @somethingwithproof
+* `rrdtool restore` and `rrdtool create` no longer write an RRD that every
+  other command then refuses to open, such as a dump with a step of 0, a
+  negative `<lastupdate>`, `<unknown_sec>` larger than the step, or an RRA
+  whose time span is too large. They now fail with the error opening that
+  file would give, for example "DS 0 has an invalid unknown seconds count".
+  @somethingwithproof
 * `rrdtool fetch` and `rrdtool graph` over a time range too large to hold
   in memory now fail with "fetch data size overflow" or "covers an
   impossibly large data range" instead of crashing or reporting "malloc
