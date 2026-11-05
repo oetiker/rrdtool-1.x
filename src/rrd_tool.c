@@ -233,7 +233,8 @@ static void PrintUsage(
            "\t\t[DEL:ds-name]\n"
            "\t\t[DS:ds-spec]\n"
            "\t\t[DELRRA:index]\n"
-           "\t\t[RRA:rra-spec]\n" "\t\t[RRA#index:[+-=]number]\n");
+           "\t\t[RRA:rra-spec]\n" "\t\t[RRA#index:[+-=]number]\n"
+           "\t\t[RRA#index:parameter=value]\n");
     const char *help_resize =
         N_
         (" * resize - alter the length of one of the RRAs in an RRD\n\n"
