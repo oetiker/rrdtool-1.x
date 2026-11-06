@@ -61,6 +61,40 @@ jobs:
       with:
         name: valgrind_test-suite.log
         path: tests/test-suite.log
+    - name: Show valgrind error reports
+      if: ${{ failure() }}
+      run: |
+        # test-suite.log only carries the LEAK/ERROR SUMMARY; the reports
+        # themselves are in tests/<test>-valgrind.log. Print the error
+        # blocks of every process that counted errors (first pass: find
+        # those PIDs; second pass: print their reports, minus the
+        # still-reachable and indirectly-lost records that do not count).
+        shopt -s nullglob
+        for log in tests/*-valgrind.log; do
+          grep -q 'ERROR SUMMARY: [1-9]' "$log" || continue
+          echo "::group::$log"
+          awk '
+            FNR == NR { if (/ERROR SUMMARY: [1-9]/) bad[$1] = 1; next }
+            !($1 in bad) { next }
+            /^==[0-9]+== Command:/ { print "-----"; print; next }
+            /^==[0-9]+== *$/ { if (blk) print ""; blk = 0; next }
+            /^==[0-9]+== ERROR SUMMARY:/ { print; print ""; next }
+            /^==[0-9]+== [^ ]/ {
+              blk = !/== (Memcheck,|Copyright|Using Valgrind|Parent PID|HEAP SUMMARY|LEAK SUMMARY|FILE DESCRIPTORS|All heap blocks|For lists of|For counts of|Rerun with|To see them|.* still reachable|.* indirectly lost)/
+            }
+            blk { print }
+          ' "$log" "$log"
+          echo "::endgroup::"
+        done
+    - name: Upload valgrind logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: valgrind-logs
+        path: |
+          tests/*-valgrind.log
+          tests/*-valgrind*.tmp
+        if-no-files-found: ignore
     - name: Dist and Re-Build Test
       run: |
         V=$(cat VERSION)
