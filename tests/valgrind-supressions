@@ -77,7 +77,15 @@
 {
     rrdcached_daemonize_devnull_stdin
     CoreError:FdNotClosed
-    fun:*open*
+    fun:open*
+    fun:daemonize
+    ...
+}
+{
+    rrdcached_daemonize_devnull_stdin_fortified
+    CoreError:FdNotClosed
+    fun:open*
+    fun:open*
     fun:daemonize
     ...
 }
