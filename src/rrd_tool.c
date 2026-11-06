@@ -17,6 +17,7 @@
 #include "rrd_tool.h"
 #include "rrd_xport.h"
 #include "rrd_i18n.h"
+#include "rrd_client.h"
 
 #include <locale.h>
 
@@ -445,6 +446,15 @@ static char *fgetslong(
     return *aLinePtr = 0;
 }
 
+/* Commands given --daemon (or RRDCACHED_ADDRESS) leave the librrd
+   default rrdcached connection open. Close it on every way out of
+   main(), exit() calls included, so no socket is left open at exit. */
+static void disconnect_daemon(
+    void)
+{
+    rrdc_disconnect();
+}
+
 int main(
     int argc,
     const char *argv[])
@@ -463,6 +473,8 @@ int main(
     /* initialize locale settings
        according to localeconv(3) */
     setlocale(LC_ALL, "");
+
+    atexit(disconnect_daemon);
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
     setmode(fileno(stdout), O_BINARY);
