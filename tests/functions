@@ -94,9 +94,12 @@ function verbose_rrdtool {
 }
 
 # Number of failed checks so far.  fail exits at once unless CONTINUE
-# or INTERACTIVE is set; then a test can use FAILURES for its result.
+# or INTERACTIVE is set; then it returns 1 and a test can use FAILURES
+# for its result.
 FAILURES=0
 
+# fail STATUS MESSAGE...
+# STATUS is the exit status of the failed command, usually $?.
 function fail {
 	RC="$1"
 	shift
@@ -104,7 +107,7 @@ function fail {
 	FAILURES=$((FAILURES + 1))
 	echo >&2 "FAILED: (rc=$RC)" "$@"
 	if [ -n "$CONTINUE" ] ; then
-		return
+		return 1
 	fi
 	if [ -n "$INTERACTIVE" ] ; then
 		read -p "Continue? (y/n)" YN
@@ -114,6 +117,7 @@ function fail {
 	else
 		exit 1
 	fi
+	return 1
 }
 
 function ok {

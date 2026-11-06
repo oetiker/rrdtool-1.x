@@ -3722,19 +3722,45 @@ int lazy_check(
 {
     FILE     *fd = NULL;
     int       size = 1;
+
+#ifdef _WIN32
+    /* the graph file name is UTF-8, as graph_fopen_write() takes it */
+    struct _stat imgstat;
+    wchar_t  *wpath;
+#else
     struct stat imgstat;
+#endif
 
     if (im->lazy == 0)
         return 0;       /* no lazy option */
     if (im->graphfile == NULL)
         return 0;       /* inmemory option */
+#ifdef _WIN32
+    if ((wpath = graph_path_w(im->graphfile)) == NULL)
+        return 0;
+    if (_wstat(wpath, &imgstat) != 0) {
+        g_free(wpath);
+        return 0;       /* can't stat */
+    }
+#else
     if (stat(im->graphfile, &imgstat) != 0)
         return 0;       /* can't stat */
+#endif
     /* one pixel in the existing graph is more then what we would
        change here ... */
-    if (time(NULL) - imgstat.st_mtime > (im->end - im->start) / im->xsize)
+    if (time(NULL) - imgstat.st_mtime > (im->end - im->start) / im->xsize) {
+#ifdef _WIN32
+        g_free(wpath);
+#endif
         return 0;
-    if ((fd = rrd_fopen(im->graphfile, "rbe")) == NULL)
+    }
+#ifdef _WIN32
+    fd = _wfopen(wpath, L"rb");
+    g_free(wpath);
+#else
+    fd = rrd_fopen(im->graphfile, "rbe");
+#endif
+    if (fd == NULL)
         return 0;       /* the file does not exist */
     switch (im->imgformat) {
     case IF_PNG:

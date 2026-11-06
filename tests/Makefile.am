@@ -1,16 +1,16 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src
 
 script_tests = modify1 modify2 modify3 modify4 modify5 \
-	tune1 tune2 graph1 graph2 graph-missing-ds rpn1 \
+	tune1 tune2 tune-per-rra graph1 graph2 graph-missing-ds rpn1 \
 	rpn2 rrdcreate dump-restore create-with-source-1 create-with-source-2 \
 	create-with-source-3 create-with-source-4 create-with-source-and-mapping-1 create-from-template-1 dcounter1 \
 	vformatter1 xport1 xport2 xport3 list1 \
 	pdp-calc1 graph3 graph4 graph5 graph6 graph7 info-cached1 xport4 epoch1 modify6 cached-path1 cached-lastupdate1 security-header-counts \
 	security-fetch-arithmetic security-fetch-daemon-arithmetic cached-sockpath1 cached-update1 info-cached2 graph-cairo-error \
-	cached-client-api cached-journal-long cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line cached-last-exact create-no-overwrite functions-report cached-update-skip-past
+	cached-client-api cached-journal-long create-no-overwrite functions-report cached-journal-crash cached-first-last first-last-error graph-incomplete-file cached-long-line graph-export-open cached-last-exact cached-update-skip-past graph-lazy functions-fail
 
 TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tune-daemon-error \
-	tune-legacy-aberrant
+	client-header-standalone tune-legacy-aberrant
 
 script_tests += security-rrdcached-response-bounds
 
@@ -49,7 +49,11 @@ check_PROGRAMS = \
 	lastupdate-v \
 	tune-legacy-version \
 	tune-daemon-error \
-	tune-legacy-aberrant
+	tune-legacy-aberrant \
+	client-header-standalone
+
+# compile-only: includes nothing but the installed rrd_client.h
+client_header_standalone_SOURCES = test_client_header_standalone.c
 
 compat_cloexec_SOURCES = \
 	test_compat-cloexec.c \

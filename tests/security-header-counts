@@ -15,7 +15,7 @@ test "$(getconf LONG_BIT)" = 64 || exit 77
 BUILD="$BUILDDIR/$(basename "$0")"
 
 $RRDTOOL create "${BUILD}-ds.rrd" --start 0 --step 60 \
-  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail create-ds
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:2 || fail $? create-ds
 
 # Native LP64 layout: stat_head_t.ds_cnt is at byte 24. With one
 # ds_def_t, rra_def_t[0].row_cnt is at 272; each RRA record is 120 bytes,
@@ -32,7 +32,7 @@ report "reject ds_cnt overflow"
 
 $RRDTOOL create "${BUILD}-rows.rrd" --start 0 --step 60 \
   DS:value:GAUGE:120:U:U \
-  RRA:AVERAGE:0.5:1:2 RRA:AVERAGE:0.5:1:2 || fail create-rows
+  RRA:AVERAGE:0.5:1:2 RRA:AVERAGE:0.5:1:2 || fail $? create-rows
 
 cp "${BUILD}-rows.rrd" "${BUILD}-rows-overflow.rrd"
 perl -0777 -pi -e '

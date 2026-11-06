@@ -16,6 +16,7 @@
 /tune-legacy-version
 /tune-daemon-error
 /tune-legacy-aberrant
+/client-header-standalone
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf

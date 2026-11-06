@@ -8,9 +8,9 @@ BUILD="$WORK/test"
 trap 'rm -rf "$WORK"' EXIT
 
 $RRDTOOL create "${BUILD}.rrd" --start 900000000 --step 60 \
-  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 RRA:MAX:0.5:1:5 || fail create
-$RRDTOOL update "${BUILD}.rrd" 900000060:1 900000120:2 900000180:3 || fail update
-$RRDTOOL dump "${BUILD}.rrd" "${BUILD}.xml" || fail dump
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 RRA:MAX:0.5:1:5 || fail $? create
+$RRDTOOL update "${BUILD}.rrd" 900000060:1 900000120:2 900000180:3 || fail $? update
+$RRDTOOL dump "${BUILD}.rrd" "${BUILD}.xml" || fail $? dump
 
 # Empty only the first RRA's database; keep the second RRA intact.
 awk '
@@ -36,8 +36,8 @@ report "reject zero-row RRA on restore"
 
 # Exercise missing and empty databases separately from XML parser failures.
 $RRDTOOL create "${BUILD}-valid.rrd" --start 900000000 --step 60 \
-  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 || fail create
-$RRDTOOL dump "${BUILD}-valid.rrd" "${BUILD}-valid.xml" || fail dump
+  DS:value:GAUGE:120:U:U RRA:AVERAGE:0.5:1:5 || fail $? create
+$RRDTOOL dump "${BUILD}-valid.rrd" "${BUILD}-valid.xml" || fail $? dump
 for variant in missing empty unknown; do
   case "$variant" in
     missing) sed '/<database>/,/<\/database>/d' "${BUILD}-valid.xml" >"${BUILD}-edge.xml"; diagnostic='has no database rows' ;;

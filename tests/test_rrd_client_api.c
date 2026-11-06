@@ -71,6 +71,7 @@ int main(
     unsigned long step, ds_num, i;
     rrd_value_t *data;
     size_t    dumped;
+    char      missing[4096];
 
     if (argc != 3) {
         fprintf(stderr, "usage: %s DAEMON-ADDRESS RRD-FILE\n", argv[0]);
@@ -78,6 +79,7 @@ int main(
     }
     addr = argv[1];
     file = argv[2];
+    snprintf(missing, sizeof(missing), "%s.missing", file);
 
     client = rrd_client_new(NULL);
     check(client != NULL, "rrd_client_new without address");
@@ -150,11 +152,22 @@ int main(
 
     check(rrd_client_forget(client, file) == 0, "rrd_client_forget");
 
-    /* the daemon ends a dump by closing the connection */
+    /* the daemon ends a dump by closing the connection; the client
+     * must still be usable afterwards */
     dumped = 0;
     check(rrd_client_dump(client, file, "none", count_bytes, &dumped) == 0
           && dumped > 0, "rrd_client_dump");
-    check(rrd_client_connect(client, addr) == 0, "reconnect after dump");
+    check(rrd_client_is_connected(client), "still connected after dump");
+    check(rrd_client_ping(client), "rrd_client_ping after dump");
+    check(rrd_client_last(client, file) == start + 300,
+          "rrd_client_last after dump");
+
+    /* a dump the daemon refuses must not drop the connection either */
+    dumped = 0;
+    check(rrd_client_dump(client, missing, "none", count_bytes,
+                          &dumped) != 0, "rrd_client_dump of missing file fails");
+    rrd_clear_error();
+    check(rrd_client_ping(client), "rrd_client_ping after failed dump");
 
     check(rrd_client_disconnect(client) == 0
           && !rrd_client_is_connected(client), "rrd_client_disconnect");
@@ -166,6 +179,8 @@ int main(
     dumped = 0;
     check(rrdc_dump(file, "none", count_bytes, &dumped) == 0
           && dumped > 0, "rrdc_dump");
+    check(rrdc_is_any_connected(), "rrdc still connected after dump");
+    check(rrdc_ping(), "rrdc_ping after dump");
     rrdc_disconnect();
 
     return failures ? 1 : 0;

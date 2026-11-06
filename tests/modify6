@@ -10,15 +10,15 @@
 BASE=$BASEDIR/modify6-test
 BUILD=$BUILDDIR/modify6-test
 
-$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 300 DS:temp:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100 || fail create
-$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}before.dump || fail "dump before"
+$RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 300 DS:temp:GAUGE:600:U:U RRA:AVERAGE:0.5:1:100 || fail $? create
+$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}before.dump || fail $? "dump before"
 
 # this must fail: the DS name exceeds the 19 char limit and contains invalid chars
 ! $RRDTOOL tune ${BUILD}a.rrd DS:4cca6c7e-46a8-45e7-a888-cffdcb6f7f45:GAUGE:600:U:U 2>/dev/null
 report "reject invalid DS add"
 
 # the RRD must still be a valid, unmodified file - a corrupt DS would make dump fail
-$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after.dump || fail "RRD corrupted - dump failed"
+$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after.dump || fail $? "RRD corrupted - dump failed"
 $DIFF ${BUILD}before.dump ${BUILD}after.dump
 report "RRD unchanged after rejected DS add"
 
@@ -26,11 +26,11 @@ report "RRD unchanged after rejected DS add"
 ! $RRDTOOL tune ${BUILD}a.rrd DS:temp:GAUGE:600:U:U 2>/dev/null
 report "reject duplicate DS add"
 
-$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after2.dump || fail "RRD corrupted - dump failed"
+$RRDTOOL dump ${BUILD}a.rrd > ${BUILD}after2.dump || fail $? "RRD corrupted - dump failed"
 $DIFF ${BUILD}before.dump ${BUILD}after2.dump
 report "RRD unchanged after rejected duplicate DS add"
 
 # a valid DS add must still succeed
-$RRDTOOL tune ${BUILD}a.rrd DS:humidity:GAUGE:600:0:100 || fail "valid DS add"
+$RRDTOOL tune ${BUILD}a.rrd DS:humidity:GAUGE:600:0:100 || fail $? "valid DS add"
 $RRDTOOL info ${BUILD}a.rrd | grep -q 'ds\[humidity\]'
 report "valid DS add still works"

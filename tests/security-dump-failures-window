@@ -19,7 +19,7 @@ trap 'rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}"*.out' EXIT
 $RRDTOOL create "${BUILD}.rrd" --start 0 --step 300 \
   DS:val:GAUGE:600:U:U \
   RRA:AVERAGE:0.5:1:100 \
-  RRA:HWPREDICT:100:0.1:0.0035:20 || fail create
+  RRA:HWPREDICT:100:0.1:0.0035:20 || fail $? create
 
 # rra[5] is the FAILURES RRA rrd_create derives from the HWPREDICT period.
 # rrd_dump's CF_FAILURES branch walks violations_array[0..window_len) out of
@@ -44,7 +44,7 @@ report "reject out-of-range FAILURES window_len in rrd_dump"
 
 # Check every file-opening consumer and the XML ingestion boundary, including
 # the valid maximum and the first invalid value, not only a large corruption.
-$RRDTOOL dump "${BUILD}.rrd" "${BUILD}-valid.xml" || fail dump
+$RRDTOOL dump "${BUILD}.rrd" "${BUILD}-valid.xml" || fail $? dump
 for window in 0 28 29 60000; do
   cp "${BUILD}.rrd" "${BUILD}-boundary.rrd"
   perl -0777 -pi -e 'BEGIN { $window=shift @ARGV }

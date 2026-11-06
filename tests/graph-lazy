@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# rrdtool graph --lazy must leave a recent PNG alone and only report
+# its size, and must still draw a graph that is missing.
+
+. $(dirname $0)/functions
+
+require_graph
+
+BUILD=$BUILDDIR/`basename $0`
+
+$RRDTOOL create ${BUILD}.rrd --step 300 DS:a:GAUGE:600:U:U \
+    RRA:AVERAGE:0.5:1:300
+report create
+
+graph () {
+    $RRDTOOL graph ${BUILD}.png --imgformat PNG "$@" \
+        DEF:a=${BUILD}.rrd:a:AVERAGE LINE1:a#ff0000:a
+}
+
+rm -f ${BUILD}.png ${BUILD}-first.png
+graph --lazy --title first > ${BUILD}.out
+report "lazy graph without an existing file"
+[ -s ${BUILD}.png ]
+report "lazy graph draws a missing file"
+cp -p ${BUILD}.png ${BUILD}-first.png
+
+graph --lazy --title second > ${BUILD}.out
+report "lazy graph with a recent file"
+cmp -s ${BUILD}.png ${BUILD}-first.png
+report "lazy graph leaves a recent file alone"
+grep -qx '[0-9]*x[0-9]*' ${BUILD}.out
+report -s $? "lazy graph reports the size of the existing file ($(cat ${BUILD}.out))"
+
+graph --title second > ${BUILD}.out
+report "graph without --lazy"
+! cmp -s ${BUILD}.png ${BUILD}-first.png
+report "graph without --lazy draws again"
+
+rm -f ${BUILD}.png ${BUILD}-first.png ${BUILD}.out

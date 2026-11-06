@@ -28,6 +28,7 @@ S<[B<DS:>I<ds-spec>]>
 S<[B<DELRRA:>I<index>]>
 S<[B<RRA:>I<rra-spec>]>
 S<[B<RRA#>I<index>:[+-=]<number>]>
+S<[B<RRA#>I<index>:I<parameter>=I<value>]>
 
 =head1 DESCRIPTION
 
@@ -44,6 +45,14 @@ the data source header in the B<RRD>.
 
 A second application of the B<tune> function is to set or alter parameters
 used by the specialized function B<RRAs> for aberrant behavior detection.
+The options B<--deltapos>, B<--deltaneg>, B<--failure-threshold>,
+B<--window-length>, B<--alpha>, B<--beta>, B<--gamma>, B<--gamma-deviation>,
+B<--smoothing-window> and B<--smoothing-window-deviation> change the one
+B<RRA> of the matching type. When the B<RRD> holds more than one such B<RRA>,
+for example two SEASONAL B<RRAs>, or a HWPREDICT and a MHWPREDICT B<RRA> for
+B<--alpha> and B<--beta>, the option fails with an error that lists the
+indices of these B<RRAs>, and tune changes nothing. Such an B<RRA> is tuned
+with B<RRA#>I<index>:I<parameter>=I<value>.
 
 Still another application is to add or remove data sources (DS) or
 add / remove or alter some aspects of round-robin archives (RRA). These operations
@@ -231,6 +240,40 @@ RRD. Multiple RRA specifications are permitted.
 Adds/removes or sets the given number of rows for the RRA with index
 <index>. The index is zero-based, that is the very first RRA has index 0.
 
+=item B<RRA#>I<index>:I<parameter>=I<value>
+
+Sets one parameter of the RRA with index I<index>, in place. The index is
+zero-based, as shown by B<rrdtool info> (C<rra[3].alpha>). The accepted
+values are those of the matching option above. I<parameter> is one of:
+
+=over 4
+
+=item B<alpha>, B<beta>
+
+HWPREDICT and MHWPREDICT B<RRAs>; see B<--alpha> and B<--beta>.
+
+=item B<gamma>, B<smoothing-window>
+
+SEASONAL and DEVSEASONAL B<RRAs>; see B<--gamma> and B<--smoothing-window>.
+
+=item B<deltapos>, B<deltaneg>, B<failure-threshold>, B<window-length>
+
+FAILURES B<RRAs>; see B<--deltapos>, B<--deltaneg>, B<--failure-threshold>
+and B<--window-length>. Setting B<failure-threshold> or B<window-length>
+resets the count of violations of that B<RRA> to 0.
+
+=back
+
+tune fails and changes nothing when the index is out of range or the
+parameter does not belong to the type of the B<RRA>, for example B<alpha>
+on an AVERAGE B<RRA>.
+
+These changes are made after the options, so for the same B<RRA> they
+override an option such as B<--alpha>. They are made before the B<DEL:>,
+B<DS:>, B<DELRRA:>, B<RRA:> and B<RRA#>I<index>:[+-=]I<number> changes,
+which rewrite the file. Every I<index> on the command line refers to the
+B<RRAs> as they are numbered before tune runs.
+
 =back
 
 =head1 EXAMPLE 1
@@ -258,6 +301,19 @@ C<rrdtool tune some.rrd DEL:a RRA#0:+10>
 Delete the data source named B<a> and extend the very first archive by 10 rows.
 This will in fact replace the input RRD with a new RRD keeping all existing data.
 For most practical use cases this is identical to a real in-place modification.
+
+=head1 EXAMPLE 4
+
+C<rrdtool tune traffic.rrd RRA#6:alpha=0.3 RRA#10:window-length=6>
+
+traffic.rrd holds a HWPREDICT set with its FAILURES B<RRA> at index 5 and a
+MHWPREDICT set at index 6, with its FAILURES B<RRA> at index 10.
+C<rrdtool tune traffic.rrd --alpha 0.3> fails on this file with
+
+ ERROR: --alpha fits 2 RRAs (RRA#1, RRA#6); use RRA#<index>:alpha=<value> to tune one of them
+
+The command above sets alpha of the MHWPREDICT B<RRA> and the window length
+of its FAILURES B<RRA>, and leaves the HWPREDICT set unchanged.
 
 =head1 AUTHORS
 

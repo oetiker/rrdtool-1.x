@@ -29,6 +29,9 @@
 
 #include <stdint.h>
 
+/* rrd_info_t, rrd_value_t, rrd_output_callback_t and time_t */
+#include "rrd.h"
+
 /* max length of socket command or response */
 #define RRD_CMD_MAX 4096
 

@@ -10,15 +10,15 @@ $RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  D
 # add 50 values to 
 N=10
 for T in $(seq 1300000020 60 1300003020) ; do
-	$RRDTOOL update ${BUILD}a.rrd --template a:b:c $T:$N:$((10000+$N)):$((20000+$N)) || fail update
+	$RRDTOOL update ${BUILD}a.rrd --template a:b:c $T:$N:$((10000+$N)):$((20000+$N)) || fail $? update
 	let N=$N+10
 done
 
-$RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump && ok "create" || fail "create"
+$RRDTOOL dump ${BUILD}a.rrd | $DIFF9 - ${BASE}.create.dump && ok "create" || fail $? "create"
 
 # extend base RRA, refill from coarse RRA
 cp ${STORE}a.rrd ${STORE}b.rrd
-$RRDTOOL tune ${BUILD}b.rrd DEL:a RRA#0:+10 || fail modify
+$RRDTOOL tune ${BUILD}b.rrd DEL:a RRA#0:+10 || fail $? modify
 
-$RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump && ok "extend base RRA" || fail "extend base RRA"
+$RRDTOOL dump ${BUILD}b.rrd | $DIFF9 - ${BASE}.mod1.dump && ok "extend base RRA" || fail $? "extend base RRA"
 
