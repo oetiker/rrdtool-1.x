@@ -3,6 +3,16 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool tune --deltapos abc` (also `--deltaneg` and
+  `RRA#<index>:deltapos=abc`) silently set the value to 0. It now fails
+  with "Unable to parse deltapos value 'abc'" and leaves the file
+  unchanged. @oetiker
+* `rrdtool tune --alpha 0.5abc` stored 0.5 and `--window-length 3x`
+  stored 3: tune ignored characters after the number for all Holt-Winters
+  and FAILURES parameters. Such values are now refused with "Unable to
+  parse ...", and `--window-length abc` or `--failure-threshold abc` no
+  longer report the misleading "Parameter must be between 1 and 28".
+  @oetiker
 * On MSYS2, `make check` failed the tests graph-export-open and
   graph-lazy with "ERROR: opening '/d/a/.../tests/graph-lazy.rrd': The
   system cannot find the path specified." @oetiker

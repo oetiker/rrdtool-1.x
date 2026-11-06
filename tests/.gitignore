@@ -17,11 +17,13 @@
 /tune-daemon-error
 /tune-legacy-aberrant
 /client-header-standalone
+/rrd-client-api
 
 # scratch output of the tests (removed by make clean)
 /graph*.pdf
 /graph*.svg
 /graph-cairo-error.*
+/graph-incomplete-file.err
 /info-cached1.xml
 /modify6-test*.dump
 # the same with rrdcached over a unix socket; cached/ also holds tracked files
