@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# rrdtool tune refuses a Holt-Winters or FAILURES value that is not a
+# number in full, and leaves the file unchanged.
+
+. $(dirname $0)/functions
+
+# check every value, not just up to the first failure
+CONTINUE=yes
+
+BUILD=$BUILDDIR/tune-value-parse
+
+#  0 HWPREDICT  1 SEASONAL  2 DEVSEASONAL  3 DEVPREDICT  4 FAILURES
+$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60 \
+	DS:a:GAUGE:120:U:U RRA:HWPREDICT:100:0.1:0.0035:20 \
+	|| fail $? create
+$RRDTOOL dump ${BUILD}.rrd > ${BUILD}-before.out || fail $? dump
+
+refused() {
+	$RRDTOOL tune ${BUILD}.rrd "$@" > ${BUILD}-tune.out 2>&1
+	local rc=$?
+	$RRDTOOL dump ${BUILD}.rrd > ${BUILD}-after.out || fail $? dump
+	[ $rc != 0 ] && grep -q "Unable to parse" ${BUILD}-tune.out \
+		&& cmp -s ${BUILD}-before.out ${BUILD}-after.out
+	report -s $? "tune $* is refused, file unchanged ($(cat ${BUILD}-tune.out))"
+}
+
+refused --deltapos abc
+refused --deltaneg abc
+refused RRA#4:deltapos=abc
+refused RRA#4:deltaneg=abc
+refused --alpha 0.5abc
+refused --beta 0.01x
+refused --gamma 0.3x
+refused --gamma-deviation 0.3x
+refused --smoothing-window 0.1x
+refused --smoothing-window-deviation 0.1x
+refused RRA#0:alpha=0.5abc
+refused RRA#1:smoothing-window=0.1x
+refused --window-length 3x
+refused --window-length abc
+refused --failure-threshold 3x
+refused --failure-threshold abc
+refused RRA#4:window-length=3x
+refused RRA#4:failure-threshold=3x
+
+# well-formed values still go through
+$RRDTOOL tune ${BUILD}.rrd --alpha 0.5 --smoothing-window 0.1 \
+	--deltapos 3 --window-length 8 --failure-threshold 4 \
+	> ${BUILD}-tune.out 2>&1
+report -s $? "tune with valid values ($(cat ${BUILD}-tune.out))"
+$RRDTOOL info ${BUILD}.rrd > ${BUILD}-info.out || fail $? info
+grep -q '^rra\[0\].alpha = 5.0000000000e-01$' ${BUILD}-info.out \
+	&& grep -q '^rra\[1\].smoothing_window = 1.0000000000e-01$' ${BUILD}-info.out \
+	&& grep -q '^rra\[4\].delta_pos = 3.0000000000e+00$' ${BUILD}-info.out \
+	&& grep -q '^rra\[4\].window_length = 8$' ${BUILD}-info.out \
+	&& grep -q '^rra\[4\].failure_threshold = 4$' ${BUILD}-info.out
+report "valid values are stored"
+
+test "$FAILURES" -eq 0
+report "tune value parsing ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))

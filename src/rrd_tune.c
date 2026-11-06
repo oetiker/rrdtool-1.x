@@ -603,47 +603,52 @@ static int tune_parse_value(
 {
     double    dbl;
     long      cnt;
-    unsigned int strtod_ret_val;
+    char     *end;
 
+    /* rrd_strtodbl returns 2 only when it converted the whole string;
+       1 means a number followed by other characters */
     switch (param->kind) {
     case TUNE_HW:
-        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
-        if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
-            (dbl <= 0.0 || dbl >= 1.0)) {
-            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        if (rrd_strtodbl(arg, NULL, &dbl, NULL) != 2) {
+            rrd_set_error("Unable to parse Holt-Winters parameter '%s'", arg);
             return -1;
-        } else if (strtod_ret_val == 0 || strtod_ret_val > 2) {
-            rrd_set_error("Unable to parse Holt-Winters parameter");
+        }
+        if (dbl <= 0.0 || dbl >= 1.0) {
+            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
             return -1;
         }
         value->u_val = dbl;
         return 0;
     case TUNE_HW_SMOOTH:
-        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
-        /* 0.0 turns the smoothing of SEASONAL or DEVSEASONAL off */
-        if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
-            (dbl < 0.0 || dbl > 1.0)) {
-            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+        if (rrd_strtodbl(arg, NULL, &dbl, NULL) != 2) {
+            rrd_set_error("Unable to parse Holt-Winters parameter '%s'", arg);
             return -1;
-        } else if (strtod_ret_val == 0 || strtod_ret_val > 2) {
-            rrd_set_error("Unable to parse Holt-Winters parameter");
+        }
+        /* 0.0 turns the smoothing of SEASONAL or DEVSEASONAL off */
+        if (dbl < 0.0 || dbl > 1.0) {
+            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
             return -1;
         }
         value->u_val = dbl;
         return 0;
     case TUNE_DELTA:
-        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
-        if ((strtod_ret_val == 1 || strtod_ret_val == 2) && dbl < 0.1) {
-            rrd_set_error("Parameter specified is too small");
+        if (rrd_strtodbl(arg, NULL, &dbl, NULL) != 2) {
+            rrd_set_error("Unable to parse %s value '%s'", param->name, arg);
             return -1;
-        } else if (strtod_ret_val == 1 || strtod_ret_val > 2) {
-            rrd_set_error("Unable to parse parameter in set_deltaarg");
+        }
+        if (dbl < 0.1) {
+            rrd_set_error("Parameter specified is too small");
             return -1;
         }
         value->u_val = dbl;
         return 0;
     case TUNE_WINDOW:
-        cnt = atoi(arg);
+        errno = 0;
+        cnt = strtol(arg, &end, 10);
+        if (end == arg || *end != '\0' || errno != 0) {
+            rrd_set_error("Unable to parse %s value '%s'", param->name, arg);
+            return -1;
+        }
         if (cnt < 1 || cnt > MAX_FAILURES_WINDOW_LEN) {
             rrd_set_error("Parameter must be between %d and %d",
                           1, MAX_FAILURES_WINDOW_LEN);
