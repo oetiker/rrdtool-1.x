@@ -13,6 +13,9 @@ Bugfixes
   parse ...", and `--window-length abc` or `--failure-threshold abc` no
   longer report the misleading "Parameter must be between 1 and 28".
   @oetiker
+* On MSYS2, `make check` failed the tests graph-export-open and
+  graph-lazy with "ERROR: opening '/d/a/.../tests/graph-lazy.rrd': The
+  system cannot find the path specified." @oetiker
 * The release tarball did not contain the tests of the Python binding
   (`bindings/python/tests`), so they could not be run from it. They are
   included now. @oetiker
