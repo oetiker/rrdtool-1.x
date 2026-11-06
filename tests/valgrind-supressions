@@ -74,3 +74,28 @@
     fun:daemonize
     ...
 }
+{
+    rrdcached_daemonize_devnull_stdin
+    CoreError:FdNotClosed
+    fun:*open*
+    fun:daemonize
+    ...
+}
+{
+    rrdcached_daemonize_devnull_stdout_stderr
+    CoreError:FdNotClosed
+    fun:dup
+    fun:daemonize
+    ...
+}
+{
+    rrdcached_signal_receiver_thread_tls
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:calloc
+    ...
+    fun:pthread_create*
+    fun:install_signal_receiver
+    fun:daemonize
+    ...
+}
