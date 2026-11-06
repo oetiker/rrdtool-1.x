@@ -57,3 +57,20 @@
     fun:rrd_graph_init
     ...
 }
+{
+    rrdcached_daemonize_listen_socket
+    CoreError:FdNotClosed
+    ...
+    fun:open_listen_socket_unix
+    ...
+    fun:daemonize
+    ...
+}
+{
+    rrdcached_daemonize_pidfile
+    CoreError:FdNotClosed
+    ...
+    fun:open_pidfile
+    fun:daemonize
+    ...
+}
