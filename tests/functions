@@ -37,6 +37,30 @@ if [ -e "$VALGRIND_ERR_FILE" ]; then
   rm "$VALGRIND_ERR_FILE"
 fi
 
+# collect_valgrind_logs
+#
+# Valgrind writes one log per process (--log-file with %p), so a process
+# that forks, like the rrdcached daemon, keeps its own log.  Append every
+# log of a process that has exited (valgrind ends the log with the ERROR
+# SUMMARY line) to $VALGRIND_LOGFILE and remove it; the log of a process
+# still running, such as the daemon, stays until a later call.  Print the
+# summary of each log with errors to stderr and return 1 if there was one.
+function collect_valgrind_logs {
+    local LOG RC=0
+    [ -n "$VALGRIND_LOGFILE" ] || return 0
+    for LOG in "${VALGRIND_LOGFILE}".*.tmp ; do
+        [ -e "$LOG" ] || continue
+        grep -q '^==[0-9]*== ERROR SUMMARY:' -- "$LOG" || continue
+        cat -- "$LOG" >> "$VALGRIND_LOGFILE"
+        if grep -q '^==[0-9]*== ERROR SUMMARY: [1-9]' -- "$LOG" ; then
+            sed -n '/== Command:/p;/LEAK SUMMARY:/,$p' -- "$LOG" >&2
+            RC=1
+        fi
+        rm -f -- "$LOG"
+    done
+    return $RC
+}
+
 function valgrind {
   # use a sub shell, so setting environment variables only affects the current
   # rrdtool run and not subsequent ones
@@ -51,8 +75,8 @@ function valgrind {
 
     VALGRIND_OPTS=
     if [ -n "$VALGRIND_LOGFILE" ] ; then
-        TMP_LOG="${VALGRIND_LOGFILE}.$$.tmp"
-        VALGRIND_OPTS=--log-file="${TMP_LOG}"
+        # %p: every process, also a forked child, gets a log of its own
+        VALGRIND_OPTS=--log-file="${VALGRIND_LOGFILE}.%p.tmp"
     fi
 
     libtool --mode=execute valgrind --tool=memcheck \
@@ -67,13 +91,9 @@ function valgrind {
 			"$CMD" "$@"
     RC=$?
 
-    if [ -n "$VALGRIND_LOGFILE" ] ; then
-        cat -- "${TMP_LOG}" >> "$VALGRIND_LOGFILE"
-        if [ $RC == 111 ] ; then
-            sed -n '/LEAK SUMMARY:/,$p' -- "${TMP_LOG}" >&2
-        fi
-        rm -f -- "${TMP_LOG}"
-    fi
+    # Errors of a process other than the one started here, such as a
+    # forked child that has exited, do not show in RC.
+    collect_valgrind_logs || touch "$VALGRIND_ERR_FILE"
 
     # make sure to properly report the rrdtool exit code to the caller by:
     #  - first: exiting with the original exit code from the subshell and
@@ -245,17 +265,54 @@ HERE
         export RRDCACHED_ADDRESS
 
         sleep 1
-        trap 'stop_cached' EXIT
+        trap 'stop_cached_at_exit' EXIT
 }
 
 function stop_cached {
         if [ -n "$CACHED_PID_FILE" ] ; then
-                kill $(cat "$CACHED_PID_FILE")
+                local PID=$(cat "$CACHED_PID_FILE")
+                kill $PID
+                if [ -n "$VALGRIND_LOGFILE" ] ; then
+                        # valgrind writes the daemon's report as it exits
+                        wait_for_exit "$PID" 60
+                        collect_valgrind_logs || touch "$VALGRIND_ERR_FILE"
+                fi
                 rm -f -- "$CACHED_PID_FILE"
                 CACHED_PID_FILE=""
                 RRDCACHED_ADDRESS=""
         fi
         remove_sock_dir
+}
+
+# wait_for_exit PID SECONDS
+# Wait until process PID has gone.  If it is still there after SECONDS,
+# its valgrind report cannot be checked: touch $VALGRIND_ERR_FILE.
+function wait_for_exit {
+        local PID="$1" N=$(( $2 * 10 ))
+        while kill -0 "$PID" 2>/dev/null ; do
+                if [ $N -le 0 ] ; then
+                        echo >&2 "process $PID did not exit within $2s"
+                        touch "$VALGRIND_ERR_FILE"
+                        return 1
+                fi
+                N=$(( N - 1 ))
+                sleep 0.1
+        done
+        return 0
+}
+
+# EXIT trap of run_cached: stop the daemon, and fail the test on valgrind
+# errors no report call has turned into a failure yet, such as those of
+# the daemon, which only show once it has stopped.
+function stop_cached_at_exit {
+        local RC=$?
+        stop_cached
+        if [ -e "$VALGRIND_ERR_FILE" ] ; then
+                rm -f -- "$VALGRIND_ERR_FILE"
+                echo >&2 "FAILED: valgrind error"
+                [ "$RC" = 0 ] && RC=1
+        fi
+        exit $RC
 }
 
 # A unix socket path must be shorter than sizeof(sun_path): 108 bytes on
@@ -317,7 +374,7 @@ if [ -z "$RRDTOOL" ] ; then
                         RRDTOOL="valgrind $TOP_BUILDDIR/src/rrdtool"
                         RRDCACHED="valgrind $TOP_BUILDDIR/src/rrdcached"
                         VALGRIND_LOGFILE="${BASEDIR}/$(basename $0)"-valgrind.log
-                        rm -f "$VALGRIND_LOGFILE"
+                        rm -f -- "$VALGRIND_LOGFILE" "$VALGRIND_LOGFILE".*.tmp
                         ;;
                 *)
                         ;;
