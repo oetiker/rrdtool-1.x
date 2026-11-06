@@ -6,6 +6,9 @@ Bugfixes
 * On MSYS2, `make check` failed the tests graph-export-open and
   graph-lazy with "ERROR: opening '/d/a/.../tests/graph-lazy.rrd': The
   system cannot find the path specified." @oetiker
+* The release tarball did not contain the tests of the Python binding
+  (`bindings/python/tests`), so they could not be run from it. They are
+  included now. @oetiker
 * In an RRD with several Holt-Winters sets, `rrdtool tune --alpha`,
   `--gamma`, `--window-length` and the other Holt-Winters options changed
   only the first matching RRA and silently left the others alone; `--alpha`
