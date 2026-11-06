@@ -52,7 +52,8 @@ jobs:
       run: |
         # make check TESTS_STYLE="valgrind-logfile"
         # Disable the following, failing tests: graph1, graph2, rpn1, create-with-source-4, vformatter1
-        # These tests are failing in the GitHub Action (currently Ubuntu 24.04), when using valgrind-logfile
+        # These tests failed in the GitHub Action with valgrind-logfile when last checked on Ubuntu 24.04;
+        # they have not been re-checked on the current ubuntu-latest runner (Ubuntu 26.04)
         make check TESTS_STYLE="valgrind-logfile" TESTS="modify1 modify2 modify3 modify4 modify5 tune1 tune2 rpn2 rrdcreate compat-cloexec dump-restore create-with-source-1 create-with-source-2 create-with-source-3 create-with-source-and-mapping-1 create-from-template-1 dcounter1 xport1 list1 pdp-calc1"
         podchecker doc/*.pod
     - name: Upload valgrind test-suite.log
