@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# Holt-Winters parameters of one RRA in a file with several of them:
+# the old options refuse to guess, RRA#<index>:<parameter>=<value>
+# changes exactly that RRA.
+
+. $(dirname $0)/functions
+
+BUILD=$BUILDDIR/tune-per-rra
+
+# Two complete Holt-Winters sets:
+#  0 AVERAGE
+#  1 HWPREDICT   2 SEASONAL  3 DEVSEASONAL  4 DEVPREDICT  5 FAILURES
+#  6 MHWPREDICT  7 SEASONAL  8 DEVSEASONAL  9 DEVPREDICT 10 FAILURES
+$RRDTOOL create ${BUILD}-two.rrd --start 1300000000 --step 60 \
+	DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:100 \
+	RRA:HWPREDICT:100:0.1:0.0035:20:2 RRA:SEASONAL:20:0.1:1 \
+	RRA:DEVSEASONAL:20:0.1:1 RRA:DEVPREDICT:100:3 RRA:FAILURES:100:7:9:3 \
+	RRA:MHWPREDICT:100:0.2:0.004:20:7 RRA:SEASONAL:20:0.2:6 \
+	RRA:DEVSEASONAL:20:0.2:6 RRA:DEVPREDICT:100:8 RRA:FAILURES:100:5:8:8 \
+	|| fail $? create two
+U=""
+for i in $(seq 1 60); do
+	U="$U $(( 1300000000 + 60 * i )):$(( (i % 20) * 10 ))"
+done
+$RRDTOOL update ${BUILD}-two.rrd $U || fail $? update two
+$RRDTOOL dump ${BUILD}-two.rrd > ${BUILD}-two-before.out || fail $? dump
+
+unchanged() {
+	$RRDTOOL dump ${BUILD}-two.rrd > ${BUILD}-two-after.out || fail $? dump
+	cmp -s ${BUILD}-two-before.out ${BUILD}-two-after.out
+}
+
+info() {
+	$RRDTOOL info ${BUILD}-two.rrd > ${BUILD}-two-info.out || fail $? info
+	grep -q "^$1 = $2\$" ${BUILD}-two-info.out
+}
+
+# old options with two matching RRAs: error naming both, file unchanged
+ambiguous() {
+	local opt="$1" value="$2" candidates="$3"
+	$RRDTOOL tune ${BUILD}-two.rrd --heartbeat a:90 $opt $value \
+		> ${BUILD}-two-tune.out 2>&1
+	[ $? != 0 ] && grep -q "$candidates" ${BUILD}-two-tune.out \
+		&& grep -q "RRA#<index>:" ${BUILD}-two-tune.out
+	report -s $? "$opt is refused when several RRAs match ($(cat ${BUILD}-two-tune.out))"
+	unchanged
+	report "$opt on several matching RRAs leaves the file unchanged"
+}
+ambiguous --alpha 0.5 "RRA#1, RRA#6"
+ambiguous --beta 0.01 "RRA#1, RRA#6"
+ambiguous --gamma 0.5 "RRA#2, RRA#7"
+ambiguous --gamma-deviation 0.5 "RRA#3, RRA#8"
+ambiguous --smoothing-window 0.2 "RRA#2, RRA#7"
+ambiguous --smoothing-window-deviation 0.2 "RRA#3, RRA#8"
+ambiguous --deltapos 3 "RRA#5, RRA#10"
+ambiguous --deltaneg 3 "RRA#5, RRA#10"
+ambiguous --failure-threshold 4 "RRA#5, RRA#10"
+ambiguous --window-length 6 "RRA#5, RRA#10"
+
+# RRA#<index>:<parameter>=<value> changes only that RRA
+$RRDTOOL tune ${BUILD}-two.rrd RRA#6:alpha=0.3 RRA#6:beta=0.005 \
+	RRA#2:gamma=0.15 RRA#8:gamma=0.25 RRA#7:smoothing-window=0.2 \
+	RRA#10:deltapos=3.5 RRA#10:deltaneg=4.5 \
+	RRA#10:failure-threshold=4 RRA#10:window-length=6 \
+	> ${BUILD}-two-tune.out 2>&1
+report -s $? "tune RRA#n:parameter=value ($(cat ${BUILD}-two-tune.out))"
+info 'rra\[6\].alpha' 3.0000000000e-01 \
+	&& info 'rra\[6\].beta' 5.0000000000e-03 \
+	&& info 'rra\[1\].alpha' 1.0000000000e-01 \
+	&& info 'rra\[1\].beta' 3.5000000000e-03
+report "alpha/beta change on RRA#6 only"
+info 'rra\[2\].gamma' 1.5000000000e-01 \
+	&& info 'rra\[7\].gamma' 2.0000000000e-01 \
+	&& info 'rra\[8\].gamma' 2.5000000000e-01 \
+	&& info 'rra\[3\].gamma' 1.0000000000e-01
+report "gamma changes on RRA#2 and RRA#8 only"
+info 'rra\[7\].smoothing_window' 2.0000000000e-01 \
+	&& info 'rra\[2\].smoothing_window' 5.0000000000e-02
+report "smoothing window changes on RRA#7 only"
+info 'rra\[10\].delta_pos' 3.5000000000e+00 \
+	&& info 'rra\[10\].delta_neg' 4.5000000000e+00 \
+	&& info 'rra\[10\].failure_threshold' 4 \
+	&& info 'rra\[10\].window_length' 6 \
+	&& info 'rra\[5\].delta_pos' 2.0000000000e+00 \
+	&& info 'rra\[5\].delta_neg' 2.0000000000e+00 \
+	&& info 'rra\[5\].failure_threshold' 7 \
+	&& info 'rra\[5\].window_length' 9
+report "FAILURES parameters change on RRA#10 only"
+
+$RRDTOOL dump ${BUILD}-two.rrd > ${BUILD}-two-before.out || fail $? dump
+
+# errors leave the file unchanged
+refused() {
+	local message="$1"
+	shift
+	$RRDTOOL tune ${BUILD}-two.rrd --heartbeat a:100 RRA#6:beta=0.006 "$@" \
+		> ${BUILD}-two-tune.out 2>&1
+	[ $? != 0 ] && grep -q "$message" ${BUILD}-two-tune.out
+	report -s $? "$* is refused ($(cat ${BUILD}-two-tune.out))"
+	unchanged
+	report "$* leaves the file unchanged"
+}
+refused "AVERAGE" RRA#0:alpha=0.5
+refused "SEASONAL" RRA#2:alpha=0.5
+refused "HWPREDICT" RRA#1:gamma=0.5
+refused "MHWPREDICT" RRA#6:window-length=3
+refused "no RRA#11" RRA#11:alpha=0.5
+refused "between 0 and 1" RRA#1:alpha=1.5
+refused "between 1 and" RRA#5:window-length=29
+refused "unknown parameter" RRA#1:nosuch=1
+refused "RRA#1:alpha" RRA#1:alpha
+
+# parameter changes go together with a structural change
+$RRDTOOL tune ${BUILD}-two.rrd RRA#1:alpha=0.4 RRA#0:+10 \
+	> ${BUILD}-two-tune.out 2>&1
+report -s $? "tune RRA#1:alpha=0.4 RRA#0:+10 ($(cat ${BUILD}-two-tune.out))"
+info 'rra\[1\].alpha' 4.0000000000e-01 \
+	&& info 'rra\[6\].alpha' 3.0000000000e-01 \
+	&& info 'rra\[0\].rows' 110
+report "parameter and row change in one tune"
+
+# a file with one Holt-Winters set: the old options keep working
+$RRDTOOL create ${BUILD}-one.rrd --start 1300000000 --step 60 \
+	DS:a:GAUGE:120:U:U RRA:AVERAGE:0.5:1:100 \
+	RRA:MHWPREDICT:100:0.1:0.0035:20 || fail $? create one
+$RRDTOOL tune ${BUILD}-one.rrd --alpha 0.3 --beta 0.005 --gamma 0.4 \
+	--gamma-deviation 0.45 --smoothing-window 0.2 \
+	--smoothing-window-deviation 0.25 --deltapos 3 --deltaneg 4 \
+	--failure-threshold 4 --window-length 6 \
+	> ${BUILD}-one-tune.out 2>&1
+report -s $? "old options on a file with one Holt-Winters set ($(cat ${BUILD}-one-tune.out))"
+$RRDTOOL info ${BUILD}-one.rrd > ${BUILD}-one-info.out || fail $? info
+grep -q '^rra\[1\].cf = "MHWPREDICT"$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[1\].alpha = 3.0000000000e-01$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[1\].beta = 5.0000000000e-03$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[2\].gamma = 4.0000000000e-01$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[2\].smoothing_window = 2.0000000000e-01$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[3\].gamma = 4.5000000000e-01$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[3\].smoothing_window = 2.5000000000e-01$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[5\].delta_pos = 3.0000000000e+00$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[5\].delta_neg = 4.0000000000e+00$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[5\].failure_threshold = 4$' ${BUILD}-one-info.out \
+	&& grep -q '^rra\[5\].window_length = 6$' ${BUILD}-one-info.out
+report "old options change the single Holt-Winters set"

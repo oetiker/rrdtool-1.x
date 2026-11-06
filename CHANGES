@@ -3,6 +3,15 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* In an RRD with several Holt-Winters sets, `rrdtool tune --alpha`,
+  `--gamma`, `--window-length` and the other Holt-Winters options changed
+  only the first matching RRA and silently left the others alone; `--alpha`
+  and `--beta` never reached a MHWPREDICT RRA when a HWPREDICT RRA was
+  present. These options now refuse such a file with "--alpha fits 2 RRAs
+  (RRA#1, RRA#6); use RRA#<index>:alpha=<value> to tune one of them" and
+  change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
+  `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
+  `window-length`) tunes exactly one RRA. @oetiker
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The

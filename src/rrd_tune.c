@@ -50,30 +50,56 @@
 #include "rrd_create.h"
 #include "rrd_client.h"
 
-static int set_hwarg(
-    rrd_t *rrd,
-    enum cf_en cf,
-    enum rra_par_en rra_par,
-    const char *arg);
-static int set_deltaarg(
-    rrd_t *rrd,
-    enum rra_par_en rra_par,
-    const char *arg);
-static int set_windowarg(
-    rrd_t *rrd,
-    enum rra_par_en,
-    const char *arg);
+/* How tune checks the value of a Holt-Winters or FAILURES parameter */
+enum tune_value_kind {
+    TUNE_HW,                    /* 0 < value < 1 */
+    TUNE_HW_SMOOTH,             /* 0 <= value <= 1, needs a version 4 header */
+    TUNE_DELTA,                 /* value >= 0.1 */
+    TUNE_WINDOW                 /* 1 .. MAX_FAILURES_WINDOW_LEN */
+};
 
-static int set_hwsmootharg(
-    rrd_t *rrd,
-    enum cf_en cf,
-    enum rra_par_en rra_par,
-    const char *arg);
+/* A parameter of a Holt-Winters or FAILURES RRA.  Entries with an option
+   letter belong to the old options, which tune the one RRA of cf[0] or
+   cf[1]; entries without one are the names RRA#<index>:<name>=<value>
+   takes. */
+typedef struct tune_param {
+    int       opt;
+    const char *optname;
+    const char *name;
+    enum rra_par_en par;
+    enum tune_value_kind kind;
+    enum cf_en cf[2];
+    const char *cf_names;
+    const char *missing;
+} tune_param_t;
 
-static int smoothing_window_requested(
+/* One parameter change for one RRA, checked and ready to apply */
+typedef struct tune_change {
+    const tune_param_t *param;
+    unsigned long rra_idx;
+    unival    value;
+} tune_change_t;
+
+static int tune_prepare(
+    rrd_t *rrd,
     int argc,
     const char **argv,
-    const struct optparse_long *longopts);
+    const struct optparse_long *longopts,
+    tune_change_t **changes,
+    unsigned long *change_cnt,
+    int *smoothing_window);
+static const tune_param_t *tune_option_param(
+    int opt);
+static int tune_option(
+    rrd_t *rrd,
+    const tune_param_t *param,
+    const char *arg,
+    int apply);
+static int tune_apply(
+    rrd_t *rrd,
+    const tune_change_t *change);
+static int is_rra_param_arg(
+    const char *arg);
 
 int rrd_tune(
     int argc,
@@ -232,6 +258,13 @@ int rrd_tune_r(
     };
     struct optparse options;
     int opt;
+    tune_change_t *changes = NULL;
+    unsigned long change_cnt = 0;
+    unsigned long change;
+    int       smoothing_window = 0;
+    const char **modify_argv = NULL;
+    int       modify_argc = 0;
+    int       arg_idx;
 
     /* Fix CWE-457 */
     memset(&rrd, 0, sizeof(rrd_t));
@@ -242,13 +275,19 @@ int rrd_tune_r(
 	goto done;
     }
 
+    /* Check the Holt-Winters options and the RRA#<index>:<name>=<value>
+       arguments before anything changes in the file */
+    if (tune_prepare(&rrd, argc, argv, longopts, &changes, &change_cnt,
+                     &smoothing_window) != 0)
+        goto done;
+
     /* A smoothing window needs a version 4 header.  Files older than
        version 3 store the live header as a bare time_t, so relabelling
        them in place would make every later read misplace the rest of the
        file.  Rewrite such a file in the current layout first, as
        rrdtool restore does, then tune the rewritten file. */
     if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION3)
-        && smoothing_window_requested(argc, argv, longopts)) {
+        && smoothing_window) {
         char      old_version[sizeof(rrd.stat_head->version)];
 
         /* write_rrd() relabels the header in memory; with mmap that
@@ -377,50 +416,15 @@ int rrd_tune_r(
             rrd.ds_def[ds].ds_nam[DS_NAM_SIZE - 1] = '\0';
             break;
         case 'p':
-            if (set_deltaarg(&rrd, RRA_delta_pos, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'n':
-            if (set_deltaarg(&rrd, RRA_delta_neg, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'f':
-            if (set_windowarg(&rrd, RRA_failure_threshold, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'w':
-            if (set_windowarg(&rrd, RRA_window_len, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'x':
-            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_alpha, options.optarg)) {
-                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_alpha, options.optarg)) {
-		    goto done;
-                }
-                rrd_clear_error();
-            }
-            break;
         case 'y':
-            if (set_hwarg(&rrd, CF_HWPREDICT, RRA_hw_beta, options.optarg)) {
-                if (set_hwarg(&rrd, CF_MHWPREDICT, RRA_hw_beta, options.optarg)) {
-		    goto done;
-                }
-                rrd_clear_error();
-            }
-            break;
         case 'z':
-            if (set_hwarg(&rrd, CF_SEASONAL, RRA_seasonal_gamma, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'v':
-            if (set_hwarg(&rrd, CF_DEVSEASONAL, RRA_seasonal_gamma, options.optarg)) {
-		goto done;
-	    }
+            if (tune_option(&rrd, tune_option_param(opt), options.optarg, 1))
+                goto done;
             break;
         case 'b':
             if (sscanf(options.optarg, DS_NAM_FMT, ds_nam) != 1) {
@@ -437,23 +441,9 @@ int rrd_tune_r(
             }
             break;
         case 's':
-            if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION4)) {
-                strcpy(rrd.stat_head->version, RRD_VERSION4);    /* smoothing_window causes Version 4 */
-            }
-            if (set_hwsmootharg
-                (&rrd, CF_SEASONAL, RRA_seasonal_smoothing_window, options.optarg)) {
-		goto done;
-            }
-            break;
         case 'S':
-            if (atoi(rrd.stat_head->version) < atoi(RRD_VERSION4)) {
-                strcpy(rrd.stat_head->version, RRD_VERSION4);    /* smoothing_window causes Version 4 */
-            }
-            if (set_hwsmootharg
-                (&rrd, CF_DEVSEASONAL, RRA_seasonal_smoothing_window,
-                 options.optarg)) {
-		goto done;
-            }
+            if (tune_option(&rrd, tune_option_param(opt), options.optarg, 1))
+                goto done;
             break;
 	case 't':
 	    opt_newstep = atoi(options.optarg);
@@ -466,6 +456,14 @@ int rrd_tune_r(
 	    goto done;
         }
     }
+    /* RRA#<index>:<name>=<value> arguments apply after the options, so
+       they win over an option that tunes the same RRA */
+    for (change = 0; change < change_cnt; change++) {
+        if (tune_apply(&rrd, &changes[change]) != 0)
+            goto done;
+    }
+    optcnt += change_cnt;
+
     if (optcnt > 0) {
         rrd_seek(rrd_file, 0, SEEK_SET);
         rrd_write(rrd_file, rrd.stat_head, sizeof(stat_head_t) * 1);
@@ -509,8 +507,19 @@ int rrd_tune_r(
             }
     }
 
-    if (handle_modify(&rrd, in_filename, options.argc, options.argv,
-                      options.optind + 1, opt_newstep) < 0)
+    /* the RRA#<index>:<name>=<value> arguments are done; hand the
+       structural changes to rrd_modify, which rewrites the file */
+    modify_argv = (const char **) malloc(sizeof(char *) * (options.argc + 1));
+    if (modify_argv == NULL) {
+        rrd_set_error("out of memory");
+        goto done;
+    }
+    for (arg_idx = options.optind + 1; arg_idx < options.argc; arg_idx++) {
+        if (!is_rra_param_arg(options.argv[arg_idx]))
+            modify_argv[modify_argc++] = options.argv[arg_idx];
+    }
+    if (handle_modify(&rrd, in_filename, modify_argc, modify_argv, 0,
+                      opt_newstep) < 0)
         goto done;
     rc = 0;
 done:
@@ -518,177 +527,366 @@ done:
 	rrd_close(rrd_file);
     }
     rrd_free(&rrd);
+    free(changes);
+    free((void *) modify_argv);
     return rc;
 }
 
-static int set_hwarg(
-    rrd_t *rrd,
-    enum cf_en cf,
-    enum rra_par_en rra_par,
-    const char *arg)
+#define HW_MISSING "Holt-Winters RRA does not exist in this RRD"
+#define FAILURES_MISSING "Failures RRA does not exist in this RRD"
+
+static const tune_param_t tune_params[] = {
+    /* the old options */
+    {'x', "--alpha", "alpha", RRA_hw_alpha, TUNE_HW,
+     {CF_HWPREDICT, CF_MHWPREDICT}, NULL, HW_MISSING},
+    {'y', "--beta", "beta", RRA_hw_beta, TUNE_HW,
+     {CF_HWPREDICT, CF_MHWPREDICT}, NULL, HW_MISSING},
+    {'z', "--gamma", "gamma", RRA_seasonal_gamma, TUNE_HW,
+     {CF_SEASONAL, CF_SEASONAL}, NULL, HW_MISSING},
+    {'v', "--gamma-deviation", "gamma", RRA_seasonal_gamma, TUNE_HW,
+     {CF_DEVSEASONAL, CF_DEVSEASONAL}, NULL, HW_MISSING},
+    {'s', "--smoothing-window", "smoothing-window",
+     RRA_seasonal_smoothing_window, TUNE_HW_SMOOTH,
+     {CF_SEASONAL, CF_SEASONAL}, NULL, HW_MISSING},
+    {'S', "--smoothing-window-deviation", "smoothing-window",
+     RRA_seasonal_smoothing_window, TUNE_HW_SMOOTH,
+     {CF_DEVSEASONAL, CF_DEVSEASONAL}, NULL, HW_MISSING},
+    {'p', "--deltapos", "deltapos", RRA_delta_pos, TUNE_DELTA,
+     {CF_FAILURES, CF_FAILURES}, NULL, FAILURES_MISSING},
+    {'n', "--deltaneg", "deltaneg", RRA_delta_neg, TUNE_DELTA,
+     {CF_FAILURES, CF_FAILURES}, NULL, FAILURES_MISSING},
+    {'f', "--failure-threshold", "failure-threshold", RRA_failure_threshold,
+     TUNE_WINDOW, {CF_FAILURES, CF_FAILURES}, NULL, FAILURES_MISSING},
+    {'w', "--window-length", "window-length", RRA_window_len, TUNE_WINDOW,
+     {CF_FAILURES, CF_FAILURES}, NULL, FAILURES_MISSING},
+    /* RRA#<index>:<name>=<value>; the CF of the RRA picks the meaning */
+    {0, NULL, "alpha", RRA_hw_alpha, TUNE_HW,
+     {CF_HWPREDICT, CF_MHWPREDICT}, "HWPREDICT and MHWPREDICT", NULL},
+    {0, NULL, "beta", RRA_hw_beta, TUNE_HW,
+     {CF_HWPREDICT, CF_MHWPREDICT}, "HWPREDICT and MHWPREDICT", NULL},
+    {0, NULL, "gamma", RRA_seasonal_gamma, TUNE_HW,
+     {CF_SEASONAL, CF_DEVSEASONAL}, "SEASONAL and DEVSEASONAL", NULL},
+    {0, NULL, "smoothing-window", RRA_seasonal_smoothing_window,
+     TUNE_HW_SMOOTH, {CF_SEASONAL, CF_DEVSEASONAL},
+     "SEASONAL and DEVSEASONAL", NULL},
+    {0, NULL, "deltapos", RRA_delta_pos, TUNE_DELTA,
+     {CF_FAILURES, CF_FAILURES}, "FAILURES", NULL},
+    {0, NULL, "deltaneg", RRA_delta_neg, TUNE_DELTA,
+     {CF_FAILURES, CF_FAILURES}, "FAILURES", NULL},
+    {0, NULL, "failure-threshold", RRA_failure_threshold, TUNE_WINDOW,
+     {CF_FAILURES, CF_FAILURES}, "FAILURES", NULL},
+    {0, NULL, "window-length", RRA_window_len, TUNE_WINDOW,
+     {CF_FAILURES, CF_FAILURES}, "FAILURES", NULL},
+};
+
+#define TUNE_PARAM_CNT (sizeof(tune_params) / sizeof(tune_params[0]))
+
+/* The parameter an old option tunes, NULL for any other option */
+static const tune_param_t *tune_option_param(
+    int opt)
 {
-    double    param;
-    unsigned long i;
-    signed short rra_idx = -1;
+    size_t    i;
+
+    for (i = 0; i < TUNE_PARAM_CNT; i++) {
+        if (tune_params[i].opt != 0 && tune_params[i].opt == opt)
+            return &tune_params[i];
+    }
+    return NULL;
+}
+
+/* Read and check the value of a parameter.  The checks are those the
+   options have always made. */
+static int tune_parse_value(
+    const tune_param_t *param,
+    const char *arg,
+    unival *value)
+{
+    double    dbl;
+    long      cnt;
     unsigned int strtod_ret_val;
 
-    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
-    /* read the value */
-    if ((strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
-         (param <= 0.0 || param >= 1.0) ) {
-        rrd_set_error("Holt-Winters parameter must be between 0 and 1");
-        return -1;
-    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
-        rrd_set_error("Unable to parse Holt-Winters parameter");
-        return -1;
-    }
-    /* does the appropriate RRA exist?  */
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == cf) {
-            rra_idx = i;
-            break;
+    switch (param->kind) {
+    case TUNE_HW:
+        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
+        if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
+            (dbl <= 0.0 || dbl >= 1.0)) {
+            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+            return -1;
+        } else if (strtod_ret_val == 0 || strtod_ret_val > 2) {
+            rrd_set_error("Unable to parse Holt-Winters parameter");
+            return -1;
         }
+        value->u_val = dbl;
+        return 0;
+    case TUNE_HW_SMOOTH:
+        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
+        /* 0.0 turns the smoothing of SEASONAL or DEVSEASONAL off */
+        if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
+            (dbl < 0.0 || dbl > 1.0)) {
+            rrd_set_error("Holt-Winters parameter must be between 0 and 1");
+            return -1;
+        } else if (strtod_ret_val == 0 || strtod_ret_val > 2) {
+            rrd_set_error("Unable to parse Holt-Winters parameter");
+            return -1;
+        }
+        value->u_val = dbl;
+        return 0;
+    case TUNE_DELTA:
+        strtod_ret_val = rrd_strtodbl(arg, NULL, &dbl, NULL);
+        if ((strtod_ret_val == 1 || strtod_ret_val == 2) && dbl < 0.1) {
+            rrd_set_error("Parameter specified is too small");
+            return -1;
+        } else if (strtod_ret_val == 1 || strtod_ret_val > 2) {
+            rrd_set_error("Unable to parse parameter in set_deltaarg");
+            return -1;
+        }
+        value->u_val = dbl;
+        return 0;
+    case TUNE_WINDOW:
+        cnt = atoi(arg);
+        if (cnt < 1 || cnt > MAX_FAILURES_WINDOW_LEN) {
+            rrd_set_error("Parameter must be between %d and %d",
+                          1, MAX_FAILURES_WINDOW_LEN);
+            return -1;
+        }
+        value->u_cnt = (unsigned long) cnt;
+        return 0;
     }
-    if (rra_idx == -1) {
-        rrd_set_error("Holt-Winters RRA does not exist in this RRD");
+    rrd_set_error("unknown parameter kind");
+    return -1;
+}
+
+static int tune_rra_fits(
+    const rrd_t *rrd,
+    unsigned long rra_idx,
+    const tune_param_t *param)
+{
+    enum cf_en cf = rrd_cf_conv(rrd->rra_def[rra_idx].cf_nam);
+
+    return cf == param->cf[0] || cf == param->cf[1];
+}
+
+/* Find the one RRA an old option tunes.  When several RRAs fit, the
+   option cannot know which one is meant; it names them and points to
+   RRA#<index>:<name>=<value>. */
+static int tune_find_rra(
+    const rrd_t *rrd,
+    const tune_param_t *param,
+    unsigned long *rra_idx)
+{
+    unsigned long i;
+    unsigned long found = 0;
+    char      list[256] = "";
+    size_t    len = 0;
+    int       n;
+
+    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+        if (!tune_rra_fits(rrd, i, param))
+            continue;
+        if (found == 0)
+            *rra_idx = i;
+        if (len < sizeof(list) - 32) {
+            n = snprintf(list + len, sizeof(list) - len, "%sRRA#%lu",
+                         found > 0 ? ", " : "", i);
+            if (n > 0)
+                len += (size_t) n;
+        } else if (len < sizeof(list)) {
+            snprintf(list + len, sizeof(list) - len, ", ...");
+            len = sizeof(list);
+        }
+        found++;
+    }
+    if (found == 0) {
+        rrd_set_error("%s", param->missing);
         return -1;
     }
-
-    /* set the value */
-    rrd->rra_def[rra_idx].par[rra_par].u_val = param;
+    if (found > 1) {
+        rrd_set_error("%s fits %lu RRAs (%s); "
+                      "use RRA#<index>:%s=<value> to tune one of them",
+                      param->optname, found, list, param->name);
+        return -1;
+    }
     return 0;
 }
 
-static int set_hwsmootharg(
+/* Check an old option and, with apply set, make the change */
+static int tune_option(
     rrd_t *rrd,
-    enum cf_en cf,
-    enum rra_par_en rra_par,
-    const char *arg)
+    const tune_param_t *param,
+    const char *arg,
+    int apply)
 {
-    double    param;
+    tune_change_t change;
+
+    change.param = param;
+    if (tune_parse_value(param, arg, &change.value) != 0
+        || tune_find_rra(rrd, param, &change.rra_idx) != 0)
+        return -1;
+    return apply ? tune_apply(rrd, &change) : 0;
+}
+
+/* Set a checked parameter in the header */
+static int tune_apply(
+    rrd_t *rrd,
+    const tune_change_t *change)
+{
+    const tune_param_t *param = change->param;
+    unsigned long rra_idx = change->rra_idx;
     unsigned long i;
-    signed short rra_idx = -1;
-    unsigned int strtod_ret_val;
 
-    /* read the value */
-    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
-    /* in order to avoid smoothing of SEASONAL or DEVSEASONAL, we need to 
-     * the 0.0 value*/
-    if ( (strtod_ret_val == 1 || strtod_ret_val == 2 ) &&
-         (param < 0.0 || param > 1.0) ) {
-        rrd_set_error("Holt-Winters parameter must be between 0 and 1");
-        return -1;
-    } else if( strtod_ret_val == 0 || strtod_ret_val > 2 ) {
-        rrd_set_error("Unable to parse Holt-Winters parameter");
-        return -1;
-    }
-    /* does the appropriate RRA exist?  */
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == cf) {
-            rra_idx = i;
-            break;
+    if (param->kind != TUNE_WINDOW) {
+        if (param->kind == TUNE_HW_SMOOTH
+            && atoi(rrd->stat_head->version) < atoi(RRD_VERSION4)) {
+            /* smoothing_window causes Version 4 */
+            strcpy(rrd->stat_head->version, RRD_VERSION4);
         }
-    }
-    if (rra_idx == -1) {
-        rrd_set_error("Holt-Winters RRA does not exist in this RRD");
-        return -1;
+        rrd->rra_def[rra_idx].par[param->par].u_val = change->value.u_val;
+        return 0;
     }
 
-    /* set the value */
-    rrd->rra_def[rra_idx].par[rra_par].u_val = param;
+    rrd->rra_def[rra_idx].par[param->par].u_cnt = change->value.u_cnt;
+    /* erase existing violations */
+    for (i = 0; i < rrd->stat_head->ds_cnt; i++) {
+        if (erase_violations(rrd, rra_idx * rrd->stat_head->ds_cnt + i,
+                             rra_idx) != 0)
+            return -1;
+    }
     return 0;
 }
 
-static int smoothing_window_requested(
+/* Is arg RRA#<index>:<name>=<value>?  RRA#<index>:[+-=]<rows> is not;
+   rrd_modify handles that one. */
+static int is_rra_param_arg(
+    const char *arg)
+{
+    const char *s;
+
+    if (strncmp(arg, "RRA#", 4) != 0)
+        return 0;
+    s = arg + 4;
+    if (!isdigit((unsigned char) *s))
+        return 0;
+    while (isdigit((unsigned char) *s))
+        s++;
+    return s[0] == ':' && isalpha((unsigned char) s[1]);
+}
+
+/* Parse and check RRA#<index>:<name>=<value> */
+static int tune_parse_rra_param(
+    const rrd_t *rrd,
+    const char *arg,
+    tune_change_t *change)
+{
+    const char *digits = arg + 4;
+    const char *name;
+    const char *eq;
+    char     *end;
+    unsigned long rra_idx;
+    size_t    i, len;
+    const tune_param_t *param = NULL;
+    char     *msg;
+
+    errno = 0;
+    rra_idx = strtoul(digits, &end, 10);
+    if (errno == ERANGE)
+        rra_idx = ULONG_MAX;
+    name = end + 1;
+    eq = strchr(name, '=');
+    if (eq == NULL) {
+        rrd_set_error("%s: expected RRA#<index>:<parameter>=<value>", arg);
+        return -1;
+    }
+    len = (size_t) (eq - name);
+    for (i = 0; i < TUNE_PARAM_CNT; i++) {
+        if (tune_params[i].opt == 0
+            && strlen(tune_params[i].name) == len
+            && strncmp(tune_params[i].name, name, len) == 0) {
+            param = &tune_params[i];
+            break;
+        }
+    }
+    if (param == NULL) {
+        rrd_set_error("%s: unknown parameter '%.*s'; RRA#<index>: takes "
+                      "alpha, beta, gamma, smoothing-window, deltapos, "
+                      "deltaneg, failure-threshold or window-length",
+                      arg, (int) len, name);
+        return -1;
+    }
+    if (rra_idx >= rrd->stat_head->rra_cnt) {
+        rrd_set_error("%s: there is no RRA#%.*s, the RRAs of this RRD are "
+                      "RRA#0 to RRA#%lu", arg, (int) (end - digits), digits,
+                      rrd->stat_head->rra_cnt - 1);
+        return -1;
+    }
+    if (!tune_rra_fits(rrd, rra_idx, param)) {
+        rrd_set_error("%s: %s belongs to %s RRAs, but RRA#%lu is %s",
+                      arg, param->name, param->cf_names, rra_idx,
+                      rrd->rra_def[rra_idx].cf_nam);
+        return -1;
+    }
+    if (tune_parse_value(param, eq + 1, &change->value) != 0) {
+        msg = strdup(rrd_get_error());
+        rrd_set_error("%s: %s", arg, msg ? msg : "invalid value");
+        free(msg);
+        return -1;
+    }
+    change->param = param;
+    change->rra_idx = rra_idx;
+    return 0;
+}
+
+/* Check the old Holt-Winters options and parse the
+   RRA#<index>:<name>=<value> arguments, all before tune changes anything:
+   with mmap the header is the file itself, so an error half way through
+   the options would leave the changes of the earlier ones behind.
+   smoothing_window tells whether a smoothing window gets set. */
+static int tune_prepare(
+    rrd_t *rrd,
     int argc,
     const char **argv,
-    const struct optparse_long *longopts)
+    const struct optparse_long *longopts,
+    tune_change_t **changes,
+    unsigned long *change_cnt,
+    int *smoothing_window)
 {
     struct optparse options;
+    const tune_param_t *param;
     int       opt;
+    int       i;
+    unsigned long cnt = 0;
 
     optparse_init(&options, argc, argv);
     while ((opt = optparse_long(&options, longopts, NULL)) != -1) {
-        if (opt == 's' || opt == 'S')
-            return 1;
-    }
-    return 0;
-}
-
-static int set_deltaarg(
-    rrd_t *rrd,
-    enum rra_par_en rra_par,
-    const char *arg)
-{
-    rrd_value_t param;
-    unsigned long i;
-    signed short rra_idx = -1;
-    unsigned int strtod_ret_val;
-
-    strtod_ret_val = rrd_strtodbl(arg, NULL, &param, NULL);
-    if ((strtod_ret_val == 1 || strtod_ret_val == 2) &&
-         param < 0.1) {
-        rrd_set_error("Parameter specified is too small");
-        return -1;
-    } else if( strtod_ret_val == 1 || strtod_ret_val > 2 ) {
-        rrd_set_error("Unable to parse parameter in set_deltaarg");
-        return -1;
-    }
-
-    /* does the appropriate RRA exist?  */
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
-            rra_idx = i;
-            break;
-        }
-    }
-    if (rra_idx == -1) {
-        rrd_set_error("Failures RRA does not exist in this RRD");
-        return -1;
-    }
-
-    /* set the value */
-    rrd->rra_def[rra_idx].par[rra_par].u_val = param;
-    return 0;
-}
-
-static int set_windowarg(
-    rrd_t *rrd,
-    enum rra_par_en rra_par,
-    const char *arg)
-{
-    unsigned long param;
-    unsigned long i, cdp_idx;
-    signed short rra_idx = -1;
-
-    /* read the value */
-    param = atoi(arg);
-    if (param < 1 || param > MAX_FAILURES_WINDOW_LEN) {
-        rrd_set_error("Parameter must be between %d and %d",
-                      1, MAX_FAILURES_WINDOW_LEN);
-        return -1;
-    }
-    /* does the appropriate RRA exist?  */
-    for (i = 0; i < rrd->stat_head->rra_cnt; ++i) {
-        if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == CF_FAILURES) {
-            rra_idx = i;
-            break;
-        }
-    }
-    if (rra_idx == -1) {
-        rrd_set_error("Failures RRA does not exist in this RRD");
-        return -1;
-    }
-
-    /* set the value */
-    rrd->rra_def[rra_idx].par[rra_par].u_cnt = param;
-
-    /* erase existing violations */
-    for (i = 0; i < rrd->stat_head->ds_cnt; i++) {
-        cdp_idx = rra_idx * (rrd->stat_head->ds_cnt) + i;
-        if (erase_violations(rrd, cdp_idx, rra_idx) != 0) {
+        param = tune_option_param(opt);
+        if (param == NULL)
+            continue;
+        if (tune_option(rrd, param, options.optarg, 0) != 0)
             return -1;
-        }
+        if (param->kind == TUNE_HW_SMOOTH)
+            *smoothing_window = 1;
+    }
+
+    /* the file name sits at optind, the other arguments follow it */
+    for (i = options.optind + 1; i < options.argc; i++) {
+        if (is_rra_param_arg(options.argv[i]))
+            cnt++;
+    }
+    if (cnt == 0)
+        return 0;
+    *changes = (tune_change_t *) malloc(sizeof(tune_change_t) * cnt);
+    if (*changes == NULL) {
+        rrd_set_error("out of memory");
+        return -1;
+    }
+    for (i = options.optind + 1; i < options.argc; i++) {
+        if (!is_rra_param_arg(options.argv[i]))
+            continue;
+        if (tune_parse_rra_param(rrd, options.argv[i],
+                                 &(*changes)[*change_cnt]) != 0)
+            return -1;
+        if ((*changes)[*change_cnt].param->kind == TUNE_HW_SMOOTH)
+            *smoothing_window = 1;
+        (*change_cnt)++;
     }
     return 0;
 }
