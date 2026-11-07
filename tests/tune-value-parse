@@ -16,13 +16,24 @@ $RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60 \
 	|| fail $? create
 $RRDTOOL dump ${BUILD}.rrd > ${BUILD}-before.out || fail $? dump
 
-refused() {
+# refused_with MESSAGE TUNE-ARGUMENTS...
+refused_with() {
+	local msg="$1"
+	shift
 	$RRDTOOL tune ${BUILD}.rrd "$@" > ${BUILD}-tune.out 2>&1
 	local rc=$?
 	$RRDTOOL dump ${BUILD}.rrd > ${BUILD}-after.out || fail $? dump
-	[ $rc != 0 ] && grep -q "Unable to parse" ${BUILD}-tune.out \
+	[ $rc != 0 ] && grep -q "$msg" ${BUILD}-tune.out \
 		&& cmp -s ${BUILD}-before.out ${BUILD}-after.out
 	report -s $? "tune $* is refused, file unchanged ($(cat ${BUILD}-tune.out))"
+}
+
+refused() {
+	refused_with "Unable to parse" "$@"
+}
+
+nonfinite() {
+	refused_with "must be a finite number" "$@"
 }
 
 refused --deltapos abc
@@ -43,6 +54,29 @@ refused --failure-threshold 3x
 refused --failure-threshold abc
 refused RRA#4:window-length=3x
 refused RRA#4:failure-threshold=3x
+
+# NaN and infinity pass every range check, so they are refused as such
+nonfinite --alpha nan
+nonfinite --beta -nan
+nonfinite --gamma inf
+nonfinite --gamma-deviation NaN
+nonfinite --smoothing-window nan
+nonfinite --smoothing-window-deviation -inf
+nonfinite --deltapos inf
+nonfinite --deltapos infinity
+nonfinite --deltaneg -inf
+nonfinite --deltaneg nan
+nonfinite RRA#0:alpha=nan
+nonfinite RRA#0:beta=inf
+nonfinite RRA#1:gamma=-inf
+nonfinite RRA#2:smoothing-window=nan
+nonfinite RRA#4:deltapos=inf
+nonfinite RRA#4:deltaneg=nan
+# a word that only starts like nan or inf is no number at all
+refused --alpha nanxyz
+refused --deltapos infjunk
+refused RRA#0:alpha=nanxyz
+refused RRA#4:deltaneg=-infx
 
 # well-formed values still go through
 $RRDTOOL tune ${BUILD}.rrd --alpha 0.5 --smoothing-window 0.1 \

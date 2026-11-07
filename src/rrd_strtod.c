@@ -45,13 +45,41 @@
 #endif
 #include "rrd_strtod.h"
 
+/* Recognise the spellings printf uses for NaN and infinity, as the
+   whole string: "nan", "-nan", "inf", "-inf", "infinity" and
+   "-infinity" in any case, and the C99 form "nan(chars)" ("-nan(ind)"
+   is how MSVC prints NaN).  Anything after the word, as in "nanxyz",
+   makes it no number at all.  "-nan" maps to DNAN and "nan" to -DNAN
+   because the default NaN has its sign bit set on x86 and glibc prints
+   DNAN as "-nan"; the value parsed prints the way it was written. */
 static int parse_special(const char *str, double *d) {
-    if (strncasecmp(str, "-nan", 4) == 0) *d = DNAN;
-    else if (strncasecmp(str, "nan", 3) == 0)  *d = -DNAN;
-    else if (strncasecmp(str, "inf", 3) == 0) *d = DINF;
-    else if (strncasecmp(str, "-inf", 4) == 0) *d =  -DINF;
-    else return 0;
-    return 2;
+    const char *p = str;
+    int negative = 0;
+
+    if (*p == '-') {
+        negative = 1;
+        p++;
+    }
+    if (strncasecmp(p, "nan", 3) == 0) {
+        p += 3;
+        if (*p == '(') {
+            p++;
+            while (isalnum((unsigned char) *p) || *p == '_')
+                p++;
+            if (*p != ')')
+                return 0;
+            p++;
+        }
+        if (*p != '\0')
+            return 0;
+        *d = negative ? DNAN : -DNAN;
+        return 2;
+    }
+    if (strcasecmp(p, "inf") == 0 || strcasecmp(p, "infinity") == 0) {
+        *d = negative ? -DINF : DINF;
+        return 2;
+    }
+    return 0;
 }
 
 /* returns 2 on success */
