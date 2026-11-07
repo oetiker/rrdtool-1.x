@@ -37,7 +37,7 @@ PIDFILE="$W/rrdcached.pid"
 # -w 3600: nothing gets written to disk unless a client asks for a flush
 $RRDCACHED -p "$PIDFILE" -l "$ADDR" -b "$W/base" -B -w 3600 -z 1
 report "start rrdcached"
-trap 'kill $(cat "$PIDFILE"); rm -rf "$W"' EXIT
+trap 'RC=$?; stop_own_cached "$PIDFILE"; rm -rf "$W"; exit_checking_valgrind $RC' EXIT
 sleep 1
 
 $RRDTOOL create "$W/base/sub/c.rrd" --start 1699999990 --step 10 DS:a:GAUGE:20:U:U DS:b:GAUGE:20:U:U RRA:LAST:0.5:1:10
