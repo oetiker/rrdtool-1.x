@@ -606,11 +606,18 @@ static int tune_parse_value(
     char     *end;
 
     /* rrd_strtodbl returns 2 only when it converted the whole string;
-       1 means a number followed by other characters */
+       1 means a number followed by other characters.  It also returns 2
+       for "nan" and "inf", which no range check below would catch, as
+       every comparison with NaN is false. */
     switch (param->kind) {
     case TUNE_HW:
         if (rrd_strtodbl(arg, NULL, &dbl, NULL) != 2) {
             rrd_set_error("Unable to parse Holt-Winters parameter '%s'", arg);
+            return -1;
+        }
+        if (!isfinite(dbl)) {
+            rrd_set_error("%s must be a finite number, not '%s'",
+                          param->name, arg);
             return -1;
         }
         if (dbl <= 0.0 || dbl >= 1.0) {
@@ -624,6 +631,11 @@ static int tune_parse_value(
             rrd_set_error("Unable to parse Holt-Winters parameter '%s'", arg);
             return -1;
         }
+        if (!isfinite(dbl)) {
+            rrd_set_error("%s must be a finite number, not '%s'",
+                          param->name, arg);
+            return -1;
+        }
         /* 0.0 turns the smoothing of SEASONAL or DEVSEASONAL off */
         if (dbl < 0.0 || dbl > 1.0) {
             rrd_set_error("Holt-Winters parameter must be between 0 and 1");
@@ -634,6 +646,11 @@ static int tune_parse_value(
     case TUNE_DELTA:
         if (rrd_strtodbl(arg, NULL, &dbl, NULL) != 2) {
             rrd_set_error("Unable to parse %s value '%s'", param->name, arg);
+            return -1;
+        }
+        if (!isfinite(dbl)) {
+            rrd_set_error("%s must be a finite number, not '%s'",
+                          param->name, arg);
             return -1;
         }
         if (dbl < 0.1) {
