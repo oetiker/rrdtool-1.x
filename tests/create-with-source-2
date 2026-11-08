@@ -35,7 +35,7 @@ UPDATEA=
 UPDATEB=
 UPDATEAB=
 V=10
-for A in $(seq $ST 60 $(($ST + 9000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 9000)) ) ; do
 	UPDATEA="$UPDATEA $A:$V"
 	UPDATEB="$UPDATEB $A:$(($V * 2))"
 	UPDATEAB="$UPDATEAB $A:$V:$(($V * 2))"

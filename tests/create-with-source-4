@@ -56,7 +56,7 @@ report createab1
 UPDATEA=
 UPDATEB=
 V=10
-for A in $(seq $ST $STEPAB $(($ST + $STEPAB * 120)) ) ; do
+for A in $(seq -f %.0f $ST $STEPAB $(($ST + $STEPAB * 120)) ) ; do
 	UPDATEA="$UPDATEA $A:$V"
 	UPDATEB="$UPDATEB $A:$(($V * 2))"
         UPDATEAB="$UPDATEAB $A:$V:$(($V * 2))"

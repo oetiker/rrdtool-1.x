@@ -10,7 +10,7 @@ $RRDTOOL create ${BUILD}a.rrd --start 1300000000 --step 60 DS:a:GAUGE:120:0:U  R
 
 # add 50 values to 
 N=10
-for T in $(seq 1300000020 60 1300003020) ; do
+for T in $(seq -f %.0f 1300000020 60 1300003020) ; do
 	$RRDTOOL update ${BUILD}a.rrd --template a $T:$N || fail $? update
 	let N=$N+10
 done

@@ -31,7 +31,7 @@ report create1
 
 UPDATE=
 V=10
-for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 3000)) ) ; do
 	UPDATE="$UPDATE $A:$V"
 	V=$(($V + 20))
 	ST=$A
@@ -59,7 +59,7 @@ report create-with-source-effectively-adding-DS
 
 UPDATE=
 ST=$(($ST + 60))
-for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 3000)) ) ; do
 	UPDATE="$UPDATE $A:$V:$((2 * $V))"
 	V=$(($V + 20))
 	ST=$A

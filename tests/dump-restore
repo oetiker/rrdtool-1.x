@@ -13,7 +13,7 @@ report create1
 V=10
 N=0
 CNT=25
-for A in $(seq $ST 60 $(($ST + 60*($CNT - 1))) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 60*($CNT - 1))) ) ; do
 	V=$(($V + 20))
 	N=$(($N + 1))
 	ST=$A

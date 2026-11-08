@@ -55,7 +55,7 @@ UPDATEA_x=
 UPDATEB_x=
 UPDATEAB_x=
 V=10
-for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 3000)) ) ; do
 	UPDATEA_x="$UPDATEA_x $A:$V"
 	UPDATEB_x="$UPDATEB_x $A:$(($V * 2))"
 	UPDATEAB_x="$UPDATEAB_x $A:$V:$(($V * 2))"
@@ -72,7 +72,7 @@ UPDATEA_y=
 UPDATEB_y=
 UPDATEAB_y=
 V=40
-for A in $(seq $ST 60 $(($ST + 3000)) ) ; do
+for A in $(seq -f %.0f $ST 60 $(($ST + 3000)) ) ; do
 	UPDATEA_y="$UPDATEA_y $A:$V"
 	UPDATEB_y="$UPDATEB_y $A:$(($V * 2))"
 	UPDATEAB_y="$UPDATEAB_y $A:$V:$(($V * 2))"
