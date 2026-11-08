@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool create` accepted `PREV(<name>)` in a COMPUTE data source, but
+  every `update` of the file then failed with "VDEF made it into
+  rpn_calc... aborting". create now refuses it, like the plain PREV that
+  COMPUTE already rejects. @somethingwithproof
 * `rrdtool tune --deltapos abc` (also `--deltaneg` and
   `RRA#<index>:deltapos=abc`) silently set the value to 0. It now fails
   with "Unable to parse deltapos value 'abc'" and leaves the file
