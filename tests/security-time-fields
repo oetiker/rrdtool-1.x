@@ -53,9 +53,19 @@ check "reject last update usecs outside one second" \
   'substr($_, 376, 8, pack("Q", 1000000))' \
   "invalid last update time"
 
-check "reject an excessive unknown seconds count" \
-  'substr($_, 416, 8, pack("Q", 61))' \
-  "invalid unknown seconds count"
+# Released tune --step left more unknown seconds than a step, so readers
+# accept the count and update clamps it before dividing by what is left.
+cp "${BUILD}.rrd" "${BUILD}-unknown.rrd"
+perl -0777 -pi -e 'substr($_, 416, 8, pack("Q", (1 << 63) + 1))' "${BUILD}-unknown.rrd"
+for command in info first dump; do
+  $RRDTOOL "$command" "${BUILD}-unknown.rrd" >/dev/null
+  report "$command accepts an excessive unknown seconds count"
+done
+$RRDTOOL update "${BUILD}-unknown.rrd" 900000060:1
+report "update accepts an excessive unknown seconds count"
+$RRDTOOL fetch "${BUILD}-unknown.rrd" AVERAGE --start 900000000 --end 900000060 \
+  | grep -q '^ *900000060: -\?nan$'
+report "the PDP with an excessive unknown seconds count is unknown"
 
 for stamp in NaN inf 1e100 9223372036854775808; do
   $RRDTOOL update "${BUILD}.rrd" "$stamp:1" >"${BUILD}.out" 2>&1

@@ -45,8 +45,14 @@ Bugfixes
   FAILURES RRA whose RRA number pointed past the last RRA or at an RRA of
   the wrong kind, and the next `update` crashed; `restore` and crafted
   files had the same effect. create and restore now refuse such a
-  definition, and opening such a file fails with "RRA 1 (SEASONAL) refers
-  to RRA 99, ...". @somethingwithproof
+  definition, and `update` of such a file fails with "RRA 1 (SEASONAL)
+  refers to RRA 99, ...". Earlier releases left such links behind when
+  `tune` deleted an RRA in front of the Holt-Winters RRAs; `info`, `fetch`
+  and `dump` still read those files, and the links can be repaired in the
+  dump and restored. @somethingwithproof
+* `rrdtool tune --step` of earlier releases could leave more unknown
+  seconds in the current step than the new step is long. `update` now
+  clamps the count to the step before using it. @somethingwithproof
 * `rrdtool tune -d <ds>:COMPUTE` turned a data source into COMPUTE without
   a program, after which `info` and `dump` crashed; changing a COMPUTE data
   source to another type broke it the same way. tune now refuses both
