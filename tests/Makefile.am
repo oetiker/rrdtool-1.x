@@ -166,6 +166,9 @@ graph_security_LDFLAGS = -static
 graph_security_LDADD = ${top_builddir}/src/librrd.la
 
 script_tests += security-tune-failures-window security-dump-failures-window \
-	tune-reopen
+	tune-reopen compat-released-tune
+EXTRA_DIST += compat-released-tune-step.bin compat-released-tune-hw.bin
 CLEANFILES += first-last-error.out
-CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err
+CLEANFILES += graph-incomplete-file.err cached/graph-incomplete-file.err \
+	tune-reopen-partner.out tune-reopen-compute.out \
+	compat-released-tune.out

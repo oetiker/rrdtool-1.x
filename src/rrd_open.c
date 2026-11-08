@@ -672,8 +672,10 @@ rrd_file_t *rrd_open(
             goto out_close;
         }
     }
-    if (rrd_check_hw_dependencies(rrd) != 0)
-        goto out_close;
+    /* Holt-Winters partner links are checked by update, the only reader
+     * that follows them.  Released rrdtool tune left stale links behind
+     * when it deleted an RRA, and info and dump must still open such a
+     * file so it can be inspected and repaired through restore. */
 
     /* Validate disk-supplied FAILURES history bounds before any consumer
      * (including info and update) can use the fixed-size scratch buffer. */
@@ -719,14 +721,9 @@ rrd_file_t *rrd_open(
             goto out_close;
         }
     }
-    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
-        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
-            rrd->stat_head->pdp_step) {
-            rrd_set_error("'%s' DS %lu has an invalid unknown seconds count",
-                          file_name, i);
-            goto out_close;
-        }
-    }
+    /* An unknown seconds count above pdp_step is left for update to
+     * clamp: released rrdtool tune --step wrote such files, and readers
+     * only print the count. */
     {
         size_t    cdp_cnt;
 
