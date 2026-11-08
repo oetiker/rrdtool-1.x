@@ -302,10 +302,13 @@ Bugfixes
   open. @somethingwithproof
 * `rrdtool restore` and `rrdtool create` no longer write an RRD that every
   other command then refuses to open, such as a dump with a step of 0, a
-  negative `<lastupdate>`, `<unknown_sec>` larger than the step, or an RRA
-  whose time span is too large. They now fail with the error opening that
-  file would give, for example "DS 0 has an invalid unknown seconds count".
-  @somethingwithproof
+  negative `<lastupdate>`, or an RRA whose time span is too large. They
+  now fail with the error opening that file would give, for example
+  "'x.rrd' has an invalid last update time". @somethingwithproof
+* `rrdtool tune --step` of earlier releases could leave more unknown
+  seconds in the current step than the new step is long. Every command
+  still opens such a file, `update` clamps the count to the step, and
+  `verify` reports it as `unknown_seconds`. @somethingwithproof
 * `rrdtool fetch` and `rrdtool graph` over a time range too large to hold
   in memory now fail with "fetch data size overflow" or "covers an
   impossibly large data range" instead of crashing or reporting "malloc

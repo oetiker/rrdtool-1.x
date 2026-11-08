@@ -1,0 +1,43 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# compat-released-tune-step.bin was written by rrdtool 1.11.0 on LP64
+# little-endian:
+#   create --start 1000000000 --step 300 DS:x:GAUGE:100:U:U RRA:AVERAGE:0.5:1:10
+#   update 1000000010:1 1000000290:2
+#   tune --step 60 'RRA#0:+1'
+# which leaves ds[x].unknown_sec = 90 with a 60 second step. Every command
+# must keep reading it so the data stays reachable after an upgrade.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+[ -n "$MSYSTEM" ] && exit 77 # getconf describes MSYS, not the MinGW binary.
+test "$(getconf LONG_BIT)" = 64 || exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+
+cp "$BASEDIR/compat-released-tune-step.bin" "${BUILD}.rrd" || fail $? copy
+chmod u+w "${BUILD}.rrd"
+$RRDTOOL info "${BUILD}.rrd" >"${BUILD}.out" 2>&1
+if grep -q "another architecture" "${BUILD}.out"; then
+  exit 77
+fi
+grep -q '^ds\[x\]\.unknown_sec = 90$' "${BUILD}.out" || \
+  fail 1 "info on a file from released tune --step: $(cat "${BUILD}.out")"
+ok "info on a file from released tune --step"
+$RRDTOOL fetch "${BUILD}.rrd" AVERAGE --start 1000000000 --end 1000000300 >/dev/null
+report "fetch on a file from released tune --step"
+$RRDTOOL dump "${BUILD}.rrd" >/dev/null
+report "dump on a file from released tune --step"
+
+$RRDTOOL verify "${BUILD}.rrd" >"${BUILD}.out" 2>&1
+status=$?
+[ "$status" -eq 1 ] && grep -q "unknown_seconds: DS 0 has 90 unknown seconds" "${BUILD}.out" || \
+  fail 1 "verify did not report the unknown seconds: $(cat "${BUILD}.out")"
+ok "verify reports the unknown seconds"
+
+$RRDTOOL update "${BUILD}.rrd" 1000000300:3 1000000360:4
+report "update on a file from released tune --step"
+$RRDTOOL verify "${BUILD}.rrd" >/dev/null
+report "update brings the unknown seconds back within the step"
+
+rm -f "${BUILD}.rrd" "${BUILD}.out"

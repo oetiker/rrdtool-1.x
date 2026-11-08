@@ -9,8 +9,9 @@
 #include <locale.h>
 #include <stdint.h>
 
-/* Keep UTF-8 strings intact, but escape invalid filename bytes so the
- * result is still a JSON document on filesystems allowing arbitrary bytes. */
+/* Keep UTF-8 strings intact.  Filenames can hold arbitrary bytes; each
+ * byte that is not part of valid UTF-8 becomes U+FFFD.  Escaping it as
+ * \u00XX instead would decode as a different, valid character. */
 static size_t utf8_length(const unsigned char *p)
 {
     size_t length, i;
@@ -56,7 +57,8 @@ void rrd_json_string(FILE *out, const char *value)
                 fwrite(p, 1, length, out);
                 p += length;
             } else {
-                fprintf(out, "\\u%04x", *p++);
+                fputs("\\ufffd", out);
+                p++;
             }
         } else {
             fputc(*p++, out);
@@ -287,9 +289,18 @@ int rrd_cli_json(int argc, const char **argv)
         char *listing = rrd_list(argc, argv);
 
         if (!rrd_test_error()) {
-            fputs("{\"listing\":", stdout);
-            rrd_json_string(stdout, listing ? listing : "");
-            fputs("}\n", stdout);
+            char *entry = listing, *end;
+
+            fputs("{\"listing\":[", stdout);
+            /* rrd_list ends every entry with a newline */
+            while (entry && (end = strchr(entry, '\n')) != NULL) {
+                *end = '\0';
+                if (entry != listing)
+                    fputc(',', stdout);
+                rrd_json_string(stdout, entry);
+                entry = end + 1;
+            }
+            fputs("]}\n", stdout);
         }
         free(listing);
     } else {

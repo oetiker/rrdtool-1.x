@@ -2150,12 +2150,15 @@ static void prefill_pdp_prep(
 
                 /* PDP_unkn_sec_cnt is an integer (u_cnt); reading it as
                  * u_val reinterprets the bits as a tiny double and the
-                 * clamp never fires, leaving a count rrd_open rejects. */
+                 * clamp never fires, leaving a count above the new step. */
                 unsigned long unkn_sec =
                     rrd->pdp_prep[ds_index].scratch[PDP_unkn_sec_cnt].u_cnt;
 
+                /* rrd_open accepts a count above the source step, which
+                 * released tune --step wrote; such a PDP is all unknown. */
+                if (unkn_sec > srrd->stat_head->pdp_step)
+                    unkn_sec = srrd->stat_head->pdp_step;
                 if (unkn_sec > rrd->stat_head->pdp_step) {
-                    /* rrd_open bounded unkn_sec by the source step. */
                     long      source_known =
                         (long) (srrd->stat_head->pdp_step - unkn_sec);
                     long      max_target_known =

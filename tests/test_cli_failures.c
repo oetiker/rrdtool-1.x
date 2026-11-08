@@ -98,7 +98,8 @@ static int test_encoding(void)
     length = fread(buffer, 1, sizeof(buffer) - 1, stream);
     buffer[length] = '\0';
     fclose(stream);
-    return strcmp(buffer, "1.5 \"\\u00ed\\u00a0\\u0080\"") != 0;
+    /* each byte of the invalid sequence becomes U+FFFD */
+    return strcmp(buffer, "1.5 \"\\ufffd\\ufffd\\ufffd\"") != 0;
 }
 
 int main(void)

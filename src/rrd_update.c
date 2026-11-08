@@ -952,6 +952,15 @@ static int _rrd_updatex(
     if (rrd_file == NULL) {
         goto err_free;
     }
+    /* Released rrdtool tune --step could leave more unknown seconds than
+     * a step.  Any such count already marks the whole PDP unknown, so
+     * clamping it keeps the result and keeps the arithmetic in range. */
+    for (unsigned long i = 0; i < rrd.stat_head->ds_cnt; i++) {
+        if (rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd.stat_head->pdp_step)
+            rrd.pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt =
+                rrd.stat_head->pdp_step;
+    }
     /* We are now at the beginning of the rra's */
     rra_begin = rrd_file->header_len;
 

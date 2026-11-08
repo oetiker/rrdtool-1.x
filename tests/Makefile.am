@@ -15,7 +15,7 @@ TESTS = $(script_tests) compat-cloexec rrd-open-security tune-legacy-version tun
 script_tests += security-rrdcached-response-bounds
 script_tests += verify-json
 script_tests += validate-agreement
-script_tests += security-time-fields
+script_tests += security-time-fields compat-released-tune
 script_tests += security-client-response-validation
 
 EXTRA_DIST = test_cli_verify_json.py test_validate_agreement.py
@@ -184,3 +184,6 @@ numeric_limits_SOURCES = test_numeric_limits.c
 numeric_limits_LDFLAGS = -static
 numeric_limits_LDADD = ${top_builddir}/src/librrd.la
 endif
+
+EXTRA_DIST += compat-released-tune-step.bin
+CLEANFILES += compat-released-tune.out

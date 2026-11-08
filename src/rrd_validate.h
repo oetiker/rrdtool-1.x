@@ -81,9 +81,6 @@ int       rrd_validate_failures_windows(
 int       rrd_validate_live_head(
     const rrd_t *rrd,
     const char *file_name);
-int       rrd_validate_pdp_prep(
-    const rrd_t *rrd,
-    const char *file_name);
 /* requires a nonzero pdp_step */
 int       rrd_validate_rra_sizes(
     const rrd_t *rrd,

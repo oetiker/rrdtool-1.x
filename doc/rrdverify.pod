@@ -12,7 +12,10 @@ B<verify> opens an RRD read-only and holds a read lock while checking its
 structure. It checks the file layout, data source names and types, range
 limits, RRA types, consolidation steps, circular row pointers, xff,
 encoded COMPUTE operators and references, and Holt-Winters dependencies
-and parameters. It reports trailing bytes as a size error.
+and parameters. It reports trailing bytes as a size error, and a current
+PDP whose unknown seconds exceed the step as C<unknown_seconds>; B<tune>
+B<--step> in earlier releases could leave such a count, and the next
+B<update> clamps it.
 
 A structurally valid RRD exits with status 0. A failed check, unreadable
 file, or invalid command line exits with status 1. UNKNOWN samples are

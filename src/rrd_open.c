@@ -210,21 +210,6 @@ int rrd_validate_live_head(
     return 0;
 }
 
-int rrd_validate_pdp_prep(
-    const rrd_t *rrd,
-    const char *file_name)
-{
-    for (unsigned long i = 0; i < rrd->stat_head->ds_cnt; ++i) {
-        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
-            rrd->stat_head->pdp_step) {
-            rrd_set_error("'%s' DS %lu has an invalid unknown seconds count",
-                          file_name, i);
-            return -1;
-        }
-    }
-    return 0;
-}
-
 int rrd_validate_rra_sizes(
     const rrd_t *rrd,
     const char *file_name)
@@ -268,7 +253,6 @@ int rrd_validate_header(
     if (rrd_validate_stat_head(rrd) != 0 ||
         rrd_validate_failures_windows(rrd) != 0 ||
         rrd_validate_live_head(rrd, file_name) != 0 ||
-        rrd_validate_pdp_prep(rrd, file_name) != 0 ||
         rrd_validate_rra_sizes(rrd, file_name) != 0)
         return -1;
     return 0;
@@ -727,10 +711,11 @@ rrd_file_t *rrd_open(
     }
     if (rrd_validate_live_head(rrd, file_name) != 0)
         goto out_close;
+    /* An unknown seconds count above pdp_step is not rejected: released
+     * rrdtool tune --step wrote such files.  update clamps it, and verify
+     * reports it. */
     __rrd_read(rrd->pdp_prep, pdp_prep_t,
                rrd->stat_head->ds_cnt);
-    if (rrd_validate_pdp_prep(rrd, file_name) != 0)
-        goto out_close;
     {
         size_t    cdp_cnt;
 

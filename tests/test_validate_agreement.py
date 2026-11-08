@@ -76,8 +76,6 @@ REJECTED = [
     ("negative last update", LIVE + Live.last_up.offset, l(-1),
      (r"<lastupdate>\d+</lastupdate>", "<lastupdate>-1</lastupdate>")),
     ("unnormalized microseconds", LIVE + Live.last_up_usec.offset, l(1000000), None),
-    ("unknown seconds beyond the step", PREP + Prep.scratch.offset, q(STEP + 1),
-     (r"<unknown_sec> *\d+ *</unknown_sec>", "<unknown_sec> %d </unknown_sec>" % (STEP + 1))),
     ("FAILURES window of 0", WINDOW, q(0),
      (r"<window_len>\d+</window_len>", "<window_len>0</window_len>")),
     ("FAILURES window above 28", WINDOW, q(29),
@@ -169,6 +167,22 @@ class AgreementTests(unittest.TestCase):
                 self.write("edge.rrd", offset, value)
                 self.assertIsNone(self.open_error("edge.rrd"))
                 self.assertTrue(self.verify("edge.rrd")["valid"])
+
+    def test_unknown_seconds_beyond_the_step(self):
+        # released tune --step wrote such files; they must stay readable,
+        # verify reports them, and the next update clamps the count
+        self.write("legacy.rrd", PREP + Prep.scratch.offset, q(STEP + 1))
+        self.assertIsNone(self.open_error("legacy.rrd"))
+        self.assertEqual([error["code"] for error in self.verify("legacy.rrd")["errors"]],
+                         ["unknown_seconds"])
+        damaged, count = re.subn(r"<unknown_sec> *\d+ *</unknown_sec>",
+                                 "<unknown_sec> %d </unknown_sec>" % (STEP + 1), self.xml,
+                                 count=1)
+        self.assertEqual(count, 1)
+        (self.directory / "legacy.xml").write_text(damaged)
+        self.check("restore", "legacy.xml", "restored.rrd")
+        self.check("update", "legacy.rrd", "1000000180:3")
+        self.assertTrue(self.verify("legacy.rrd")["valid"])
 
     def test_restore_refuses_what_open_rejects(self):
         for what, offset, value, xml in REJECTED:

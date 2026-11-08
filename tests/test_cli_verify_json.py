@@ -1,6 +1,7 @@
 """Exercise the installed command protocol against real and damaged RRD files."""
 import base64
 import ctypes
+import errno
 import hashlib
 import json
 import os
@@ -120,7 +121,9 @@ class CliTests(unittest.TestCase):
         self.assertTrue(any(None in row["values"] for row in data["data"]))
         self.assertEqual(json.loads(self.run_cli("info", "--json", "data.rrd")), info)
         self.assertIsInstance(self.output("updatev", "data.rrd", "1000000240:48:12"), dict)
-        self.assertIn("data.rrd", self.output("list", ".")["listing"])
+        listing = self.output("list", ".")["listing"]
+        self.assertIn("data.rrd", listing)
+        self.assertNotIn("", listing)
 
     def test_raw_counter_and_unknown(self):
         self.run_cli("create", "counter.rrd", "--start", "1000000000", "--step", "60",
@@ -214,9 +217,22 @@ class CliTests(unittest.TestCase):
                 result = self.output("verify", name)
             self.assertEqual(result["filename"], name)
         if not windows:
+            # an invalid byte must not come back as a different, valid
+            # character; this needs no file, so it runs on every file system
+            missing = self.output("verify", b"missing-\xe9.rrd", code=1)
+            self.assertEqual(missing["filename"], "missing-\ufffd.rrd")
             name = os.fsdecode(b"invalid-\xff-\xe0.rrd")
-            (self.directory / name).write_bytes((self.directory / "data.rrd").read_bytes())
-            self.assertTrue(self.output("verify", name)["valid"])
+            try:
+                (self.directory / name).write_bytes((self.directory / "data.rrd").read_bytes())
+            except OSError as error:
+                # APFS and other UTF-8-only file systems refuse the name
+                if error.errno != errno.EILSEQ:
+                    raise
+                self.skipTest("file system rejects invalid UTF-8 names")
+            result = self.output("verify", name)
+            self.assertTrue(result["valid"])
+            # not "invalid-\xff-\xe0.rrd", which names a different file
+            self.assertEqual(result["filename"], "invalid-\ufffd-\ufffd.rrd")
 
     def test_compute_and_holt_winters(self):
         self.run_cli("create", "compute.rrd", "--start", "1000000000", "--step", "60",

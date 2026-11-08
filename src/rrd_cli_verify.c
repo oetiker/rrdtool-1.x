@@ -148,6 +148,14 @@ static void check_sources(verify_output_t *out, const rrd_t *rrd)
         }
         if (memchr(rrd->pdp_prep[i].last_ds, '\0', LAST_DS_LEN) == NULL)
             issue(out, "last_input", "DS %lu last input is not terminated", i);
+        /* rrd_open accepts this so the file stays readable; the next
+         * update clamps it to the step. */
+        if (rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt >
+            rrd->stat_head->pdp_step)
+            issue(out, "unknown_seconds",
+                  "DS %lu has %lu unknown seconds, more than the %lu second step",
+                  i, rrd->pdp_prep[i].scratch[PDP_unkn_sec_cnt].u_cnt,
+                  rrd->stat_head->pdp_step);
     }
     if (count > 1)
         qsort(names, count, sizeof(*names), name_compare);
