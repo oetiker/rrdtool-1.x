@@ -66,6 +66,26 @@ expect_error "info with an unknown COMPUTE operator" \
   "COMPUTE program has unknown operator 200" \
   $RRDTOOL info "${BUILD}-crafted.rrd"
 
+# Operators create refuses in COMPUTE, here in place of MUL (node 2):
+# OP_PREV (3) and OP_TREND (42). update must not run such a program.
+craft 'substr($_, 296, 1, chr(3))'
+for command in info update; do
+  expect_error "$command with PREV in a COMPUTE program" \
+    "COMPUTE program uses operator PREV, which COMPUTE does not allow" \
+    $RRDTOOL "$command" "${BUILD}-crafted.rrd" $([ "$command" = update ] && echo 1000000060:1)
+done
+craft 'substr($_, 296, 1, chr(42))'
+for command in info update; do
+  expect_error "$command with TREND in a COMPUTE program" \
+    "COMPUTE program uses operator TREND, which COMPUTE does not allow" \
+    $RRDTOOL "$command" "${BUILD}-crafted.rrd" $([ "$command" = update ] && echo 1000000060:1)
+done
+# create refuses PREV(<ds>) now, but released create wrote it, so open
+# must keep accepting it: OP_PREV_OTHER (36) of DS 0 in place of node 1.
+craft 'substr($_, 292, 4, pack("Cxs", 36, 0))'
+$RRDTOOL info "${BUILD}-crafted.rrd" >/dev/null
+report "COMPUTE with PREV(<ds>) from released create still opens"
+
 # OP_ADD (8) in all 20 nodes: no end marker inside the par array.
 craft 'substr($_, 288, 80, pack("CxS", 8, 0) x 20)'
 expect_error "info with an unterminated COMPUTE program" \
