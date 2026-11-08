@@ -98,7 +98,7 @@ if command -v pdftotext > /dev/null; then
 
     if [ "$FULL" -lt 4 ]; then
         fail 1 "expected the unclipped graph to carry right axis labels (got $FULL)"
-    elif [ "$ABOVE" != 0 ]; then
+    elif [ "$ABOVE" -ne 0 ]; then
         fail 1 "--right-axis-range left $ABOVE label(s) above the range"
     elif [ "$BELOW" -lt 2 ]; then
         fail 1 "--right-axis-range dropped labels inside the range (kept $BELOW)"
