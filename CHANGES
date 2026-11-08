@@ -58,7 +58,10 @@ Bugfixes
   source to another type broke it the same way. tune now refuses both
   changes. Opening a file whose COMPUTE program is unterminated, uses an
   unknown operator or names a missing data source fails with an error
-  instead of crashing `info`, `dump` and `update`. @somethingwithproof
+  instead of crashing `info`, `dump` and `update`. A program that uses an
+  operator `create` refuses in COMPUTE (TIME, LTIME, STEPWIDTH, PREV,
+  NEW*, COUNT, TREND, TRENDNAN, PREDICT, PREDICTSIGMA, PREDICTPERC) is
+  refused the same way. @somethingwithproof
 * `rrdtool create --source` read past the end of an internal array when
   the new file's 1-step AVERAGE RRA was shorter than twice its longest
   step, and could initialize the new file from the wrong values.
