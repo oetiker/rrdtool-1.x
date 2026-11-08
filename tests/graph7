@@ -36,10 +36,10 @@ graph_left () {
         DEF:v=${BUILD}.rrd:v:AVERAGE LINE1:v#ff0000 > /dev/null
 }
 
-graph_left ${BUILD}-s.pdf "%5.1lf %s"
+graph_left ${BUILD}-lower-s.pdf "%5.1lf %s"
 report "left axis format with %s"
 
-graph_left ${BUILD}-S.pdf "%5.1lF%Srpm"
+graph_left ${BUILD}-upper-s.pdf "%5.1lF%Srpm"
 report "left axis format with %S"
 
 graph_left ${BUILD}-pct.pdf "%5.1lf%%S"
@@ -53,11 +53,11 @@ report "left axis format with literal %%S"
 report "right axis format with %s is rejected"
 
 if command -v pdftotext > /dev/null; then
-    N=$(pdftotext ${BUILD}-s.pdf - | grep -cE '^ *[0-9]\.[0-9] k$')
+    N=$(pdftotext ${BUILD}-lower-s.pdf - | grep -cE '^ *[0-9]\.[0-9] k$')
     [ "$N" -ge 3 ]
     report "%s labels show the k unit ($N labels)"
 
-    N=$(pdftotext ${BUILD}-S.pdf - | grep -cE '^ *[0-9]\.[0-9]krpm$')
+    N=$(pdftotext ${BUILD}-upper-s.pdf - | grep -cE '^ *[0-9]\.[0-9]krpm$')
     [ "$N" -ge 3 ]
     report "%S labels show the k unit and suffix ($N labels)"
 
