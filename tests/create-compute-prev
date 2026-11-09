@@ -19,6 +19,13 @@ report create-names-prev-name
 [ ! -e ${PREFIX}prev.rrd ]
 report create-leaves-no-file
 
+# The operators that were already refused must stay refused.
+for expr in 'a,PREV,+' 'a,COUNT,+'; do
+    ! $RRDTOOL create ${PREFIX}op.rrd --start $ST --step 60 \
+        DS:a:GAUGE:120:U:U "DS:c:COMPUTE:$expr" RRA:AVERAGE:0.5:1:10 2>/dev/null
+    report create-refuses-$expr
+done
+
 $RRDTOOL create ${PREFIX}ok.rrd --start $ST --step 60 \
 	DS:a:GAUGE:120:U:U 'DS:c:COMPUTE:a,2,*' RRA:AVERAGE:0.5:1:10
 report create-plain-compute
