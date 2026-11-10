@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Where rrdtool reads a number it takes "nan", "inf", "-inf" and
+# "infinity" as the whole value, and refuses a word with more after
+# it, such as "nanxyz".
+
+. $(dirname $0)/functions
+
+# the checks look at the file itself, which rrdcached writes later
+exit_if_cached_running 77 "SKIP: needs local updates"
+
+# check every value, not just up to the first failure
+CONTINUE=yes
+
+BUILD=$BUILDDIR/number-special-values
+
+create() {
+	rm -f ${BUILD}.rrd
+	$RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60 \
+		DS:a:GAUGE:120:$1:$2 RRA:LAST:0.5:1:10 \
+		> ${BUILD}-out.out 2>&1
+}
+
+for v in nanxyz infjunk -infinity-x nan123 "nan(x"; do
+	create "$v" U
+	[ $? != 0 ] && grep -q "Cannot convert '$v' to float" ${BUILD}-out.out \
+		&& [ ! -e ${BUILD}.rrd ]
+	report -s $? "create with DS minimum $v is refused ($(cat ${BUILD}-out.out))"
+done
+
+create -inf Infinity
+report -s $? "create with DS minimum -inf, maximum Infinity ($(cat ${BUILD}-out.out))"
+$RRDTOOL info ${BUILD}.rrd > ${BUILD}-info.out || fail $? info
+grep -q '^ds\[a\].min = -inf$' ${BUILD}-info.out \
+	&& grep -q '^ds\[a\].max = inf$' ${BUILD}-info.out
+report "-inf and Infinity are stored as min and max"
+
+create 0 U || fail $? create
+T=1300000000
+for v in nanxyz infjunk; do
+	T=$((T + 60))
+	$RRDTOOL update ${BUILD}.rrd $T:$v > ${BUILD}-out.out 2>&1
+	[ $? != 0 ] && grep -q "Cannot convert '$v' to float" ${BUILD}-out.out
+	report -s $? "update with $v is refused ($(cat ${BUILD}-out.out))"
+done
+for v in nan -nan NaN inf -inf INF infinity; do
+	T=$((T + 60))
+	$RRDTOOL update ${BUILD}.rrd $T:$v > ${BUILD}-out.out 2>&1
+	report -s $? "update with $v is taken ($(cat ${BUILD}-out.out))"
+done
+
+test "$FAILURES" -eq 0
+report "special number values ($FAILURES failed checks)"
+exit $(( FAILURES > 0 ))
