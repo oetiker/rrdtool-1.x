@@ -96,6 +96,10 @@ if is_cached; then
         # This relies on '-b' setting in functions::run_cached()
         CACHED_DIR=`echo "$LIST_DIR" | sed "s|^$BUILDDIR||"`
         cd "$BASEDIR" && mkdir -p ".$CACHED_DIR"
+        # remove the directory, with its symlink to /tmp, also when a
+        # check below fails and ends the test; then do what run_cached's
+        # EXIT trap does
+        trap 'RC=$?; [ -n "$CACHED_DIR" ] && rm -rf -- "$BASEDIR$CACHED_DIR"; stop_cached; exit_checking_valgrind $RC' EXIT
         $RRDTOOL create ${BUILD}.rrd --start 1300000000 --step 60s DS:dv:DDERIVE:300:U:U DS:wh:DCOUNTER:300:0:U RRA:AVERAGE:0.5:1:600 RRA:AVERAGE:0.5:10:144
         report "create via rrdcached"
         do_list_tests "$CACHED_DIR"
