@@ -273,7 +273,8 @@ void parseCDEF_DS(
      * occur too often. */
     for (i = 0; rpnp[i].op != OP_END; i++) {
         if (rpnp[i].op == OP_TIME || rpnp[i].op == OP_LTIME ||
-            rpnp[i].op == OP_PREV || rpnp[i].op == OP_COUNT ||
+            rpnp[i].op == OP_PREV || rpnp[i].op == OP_PREV_OTHER ||
+            rpnp[i].op == OP_COUNT ||
             rpnp[i].op == OP_TREND || rpnp[i].op == OP_TRENDNAN ||
             rpnp[i].op == OP_PREDICT || rpnp[i].op == OP_PREDICTSIGMA ||
             rpnp[i].op == OP_PREDICTPERC ||
@@ -286,7 +287,7 @@ void parseCDEF_DS(
             rpnp[i].op == OP_NEWMONTH || rpnp[i].op == OP_NEWYEAR) {
 
             rrd_set_error
-                ("operators TIME LTIME STEPWIDTH PREV NEW* COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
+                ("operators TIME LTIME STEPWIDTH PREV PREV(name) NEW* COUNT TREND TRENDNAN PREDICT PREDICTSIGMA PREDICTPERC are not supported with DS COMPUTE");
             free(rpnp);
             return;
         }

@@ -3,6 +3,10 @@ RRDtool - master ...
 ====================
 Bugfixes
 --------
+* `rrdtool create` accepted `PREV(<name>)` in a COMPUTE data source, but
+  every `update` of the file then failed with "VDEF made it into
+  rpn_calc... aborting". create now refuses it, like the plain PREV that
+  COMPUTE already rejects. @somethingwithproof
 * `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
   stored inf; all Holt-Winters and FAILURES parameters now refuse such
   values with "alpha must be a finite number, not 'nan'". Wherever
