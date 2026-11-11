@@ -47,12 +47,12 @@ A second application of the B<tune> function is to set or alter parameters
 used by the specialized function B<RRAs> for aberrant behavior detection.
 The options B<--deltapos>, B<--deltaneg>, B<--failure-threshold>,
 B<--window-length>, B<--alpha>, B<--beta>, B<--gamma>, B<--gamma-deviation>,
-B<--smoothing-window> and B<--smoothing-window-deviation> change the one
-B<RRA> of the matching type. When the B<RRD> holds more than one such B<RRA>,
-for example two SEASONAL B<RRAs>, or a HWPREDICT and a MHWPREDICT B<RRA> for
-B<--alpha> and B<--beta>, the option fails with an error that lists the
-indices of these B<RRAs>, and tune changes nothing. Such an B<RRA> is tuned
-with B<RRA#>I<index>:I<parameter>=I<value>.
+B<--smoothing-window> and B<--smoothing-window-deviation> change the first
+B<RRA> of the matching type. B<--alpha> and B<--beta> change the first
+HWPREDICT B<RRA>, or the first MHWPREDICT B<RRA> when there is no HWPREDICT
+B<RRA>. When the B<RRD> holds more than one such B<RRA>, for example two
+SEASONAL B<RRAs>, the others are not changed by these options; they are
+tuned with B<RRA#>I<index>:I<parameter>=I<value>.
 
 Still another application is to add or remove data sources (DS) or
 add / remove or alter some aspects of round-robin archives (RRA). These operations
@@ -308,11 +308,8 @@ C<rrdtool tune traffic.rrd RRA#6:alpha=0.3 RRA#10:window-length=6>
 
 traffic.rrd holds a HWPREDICT set with its FAILURES B<RRA> at index 5 and a
 MHWPREDICT set at index 6, with its FAILURES B<RRA> at index 10.
-C<rrdtool tune traffic.rrd --alpha 0.3> fails on this file with
-
- ERROR: --alpha fits 2 RRAs (RRA#1, RRA#6); use RRA#<index>:alpha=<value> to tune one of them
-
-The command above sets alpha of the MHWPREDICT B<RRA> and the window length
+C<rrdtool tune traffic.rrd --alpha 0.3> would change the HWPREDICT
+B<RRA> at index 1 only. The command above sets alpha of the MHWPREDICT B<RRA> and the window length
 of its FAILURES B<RRA>, and leaves the HWPREDICT set unchanged.
 
 =head1 AUTHORS

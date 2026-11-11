@@ -59,9 +59,9 @@ enum tune_value_kind {
 };
 
 /* A parameter of a Holt-Winters or FAILURES RRA.  Entries with an option
-   letter belong to the old options, which tune the one RRA of cf[0] or
-   cf[1]; entries without one are the names RRA#<index>:<name>=<value>
-   takes. */
+   letter belong to the old options, which tune the first RRA of cf[0],
+   or of cf[1] when there is none; entries without one are the names
+   RRA#<index>:<name>=<value> takes. */
 typedef struct tune_param {
     int       opt;
     const char *optname;
@@ -688,8 +688,10 @@ static int tune_rra_fits(
     return cf == param->cf[0] || cf == param->cf[1];
 }
 
-/* Find the one RRA an old option tunes.  When several RRAs fit, the
-   option cannot know which one is meant; it names them and points to
+/* Find the RRA an old option tunes: the first RRA of cf[0], or when
+   there is none, the first of cf[1].  This is what tune always did, so
+   --alpha prefers HWPREDICT over MHWPREDICT.  The other RRAs of a file
+   with several Holt-Winters sets are reached with
    RRA#<index>:<name>=<value>. */
 static int tune_find_rra(
     const rrd_t *rrd,
@@ -697,38 +699,18 @@ static int tune_find_rra(
     unsigned long *rra_idx)
 {
     unsigned long i;
-    unsigned long found = 0;
-    char      list[256] = "";
-    size_t    len = 0;
-    int       n;
+    int       k;
 
-    for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
-        if (!tune_rra_fits(rrd, i, param))
-            continue;
-        if (found == 0)
-            *rra_idx = i;
-        if (len < sizeof(list) - 32) {
-            n = snprintf(list + len, sizeof(list) - len, "%sRRA#%lu",
-                         found > 0 ? ", " : "", i);
-            if (n > 0)
-                len += (size_t) n;
-        } else if (len < sizeof(list)) {
-            snprintf(list + len, sizeof(list) - len, ", ...");
-            len = sizeof(list);
+    for (k = 0; k < 2; k++) {
+        for (i = 0; i < rrd->stat_head->rra_cnt; i++) {
+            if (rrd_cf_conv(rrd->rra_def[i].cf_nam) == param->cf[k]) {
+                *rra_idx = i;
+                return 0;
+            }
         }
-        found++;
     }
-    if (found == 0) {
-        rrd_set_error("%s", param->missing);
-        return -1;
-    }
-    if (found > 1) {
-        rrd_set_error("%s fits %lu RRAs (%s); "
-                      "use RRA#<index>:%s=<value> to tune one of them",
-                      param->optname, found, list, param->name);
-        return -1;
-    }
-    return 0;
+    rrd_set_error("%s", param->missing);
+    return -1;
 }
 
 /* Check an old option and, with apply set, make the change */
