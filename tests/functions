@@ -307,12 +307,45 @@ function wait_for_exit {
 function stop_cached_at_exit {
         local RC=$?
         stop_cached
+        exit_checking_valgrind $RC
+}
+
+# exit_checking_valgrind RC
+# End an EXIT trap: exit with RC, or with 1 if a valgrind error is still
+# pending that no report call has turned into a failure yet.
+function exit_checking_valgrind {
+        local RC="$1"
         if [ -e "$VALGRIND_ERR_FILE" ] ; then
                 rm -f -- "$VALGRIND_ERR_FILE"
                 echo >&2 "FAILED: valgrind error"
                 [ "$RC" = 0 ] && RC=1
         fi
         exit $RC
+}
+
+# stop_own_cached PIDFILE...
+# Stop the rrdcached daemons a test started itself with -p PIDFILE rather
+# than through run_cached.  Under valgrind-logfile a plain kill is not
+# enough: valgrind writes the daemon's report only as the daemon exits,
+# when the test may be gone.  So wait for each daemon to exit and collect
+# its report; a report with errors leaves $VALGRIND_ERR_FILE behind for
+# exit_checking_valgrind.  Call it in the EXIT trap before the daemon's
+# files are removed:
+#	trap 'RC=$?; stop_own_cached "$PIDFILE"; rm -rf "$W"; exit_checking_valgrind $RC' EXIT
+function stop_own_cached {
+        local PIDFILE PID PIDS=()
+        for PIDFILE in "$@" ; do
+                [ -f "$PIDFILE" ] || continue
+                PID=$(cat -- "$PIDFILE")
+                [ -n "$PID" ] || continue
+                kill $PID 2>/dev/null && PIDS+=("$PID")
+        done
+        if [ -n "$VALGRIND_LOGFILE" ] ; then
+                for PID in "${PIDS[@]}" ; do
+                        wait_for_exit "$PID" 60
+                done
+                collect_valgrind_logs || touch "$VALGRIND_ERR_FILE"
+        fi
 }
 
 # A unix socket path must be shorter than sizeof(sun_path): 108 bytes on

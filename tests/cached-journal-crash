@@ -38,7 +38,7 @@ start_daemon() {
 
 start_daemon
 report "start rrdcached"
-trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+trap 'RC=$?; stop_own_cached "$PIDFILE"; remove_sock_dir; rm -rf "$W"; exit_checking_valgrind $RC' EXIT
 sleep 1
 
 $RRDTOOL create "$W/base/crash.rrd" --start 1000000000 --step 1 \
@@ -60,6 +60,12 @@ for i in $(seq 1 50); do
 	sleep 0.2
 done
 rm -f "$SOCK"
+# valgrind cannot finish the report of a process killed with SIGKILL, so
+# collect_valgrind_logs would never take it: keep it in the test's log
+if [ -n "$VALGRIND_LOGFILE" ] && [ -e "$VALGRIND_LOGFILE.$PID.tmp" ]; then
+	cat -- "$VALGRIND_LOGFILE.$PID.tmp" >> "$VALGRIND_LOGFILE"
+	rm -f -- "$VALGRIND_LOGFILE.$PID.tmp"
+fi
 
 start_daemon
 report "restart rrdcached on the journal"

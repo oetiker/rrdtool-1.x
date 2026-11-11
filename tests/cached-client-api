@@ -35,10 +35,12 @@ SOCK=$RRDTEST_SOCKDIR/client-api.sock
 PIDFILE=$W/rrdcached.pid
 
 cleanup() {
-	[ -f "$PIDFILE" ] && kill $(cat "$PIDFILE") 2>/dev/null
+	local RC=$?
+	stop_own_cached "$PIDFILE"
 	sleep 0.5
 	remove_sock_dir
 	rm -rf "$W"
+	exit_checking_valgrind $RC
 }
 trap cleanup EXIT
 

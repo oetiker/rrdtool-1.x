@@ -41,7 +41,7 @@ start_daemon() {
 
 start_daemon
 report "start rrdcached"
-trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+trap 'RC=$?; stop_own_cached "$PIDFILE"; remove_sock_dir; rm -rf "$W"; exit_checking_valgrind $RC' EXIT
 sleep 1
 
 $RRDTOOL create "$W/base/long.rrd" --start 1000000000 --step 1 \
