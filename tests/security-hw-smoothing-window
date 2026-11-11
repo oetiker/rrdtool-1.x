@@ -41,7 +41,7 @@ $RRDTOOL create "${BUILD}.rrd" --step 1 --start 1000000000 \
 report create
 
 for option in --smoothing-window --alpha --beta --gamma; do
-  expect_error "tune $option nan" "must be between 0 and 1" \
+  expect_error "tune $option nan" "must be a finite number, not 'nan'" \
     $RRDTOOL tune "${BUILD}.rrd" $option nan
 done
 $RRDTOOL tune "${BUILD}.rrd" --smoothing-window 0.2 --alpha 0.2
