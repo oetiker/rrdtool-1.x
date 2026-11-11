@@ -7,6 +7,11 @@
 # The input is what the restore fuzzer reduced it to: a dump cut short,
 # with 121 0xE1 bytes (not UTF-8) where a value is expected.
 command -v timeout >/dev/null 2>&1 || exit 77
+# timeout cannot run the rrdcached-tcp style's shell-function wrapper, and
+# restore does not go through the daemon anyway.
+if [ "$RRDTOOL" = RRDTOOLCOMPAT ]; then
+	RRDTOOL=$TOP_BUILDDIR/src/rrdtool
+fi
 
 BUILD="$BUILDDIR/$(basename "$0")"
 
