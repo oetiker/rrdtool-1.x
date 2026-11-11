@@ -7,6 +7,13 @@ Bugfixes
   seq and sed, bash 4.3 and an unpadded `wc -l`, and graph7 wrote two
   files whose names differ only in case. They now pass with the system
   tools and on a case-insensitive filesystem. @somethingwithproof
+* `rrdtool tune --alpha nan` stored NaN as alpha and `--deltapos inf`
+  stored inf; all Holt-Winters and FAILURES parameters now refuse such
+  values with "alpha must be a finite number, not 'nan'". Wherever
+  rrdtool reads a number, as in `update`, `create` DS limits or `graph`
+  options, a word that only starts like nan or inf, such as `nanxyz`, was
+  taken as NaN or infinity and is now refused; `nan`, `-nan`, `inf`,
+  `-inf` and `infinity` still work. @oetiker
 * `rrdtool tune --deltapos abc` (also `--deltaneg` and
   `RRA#<index>:deltapos=abc`) silently set the value to 0. It now fails
   with "Unable to parse deltapos value 'abc'" and leaves the file

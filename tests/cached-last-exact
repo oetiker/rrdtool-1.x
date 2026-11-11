@@ -31,7 +31,7 @@ PIDFILE="$W/rrdcached.pid"
 # long write delay: updates sent to the daemon stay in its cache
 $RRDCACHED -p "$PIDFILE" -l "unix:$SOCK" -b "$W/base" -B -w 3600 -z 1
 report "start rrdcached"
-trap 'kill $(cat "$PIDFILE") 2>/dev/null; remove_sock_dir; rm -rf "$W"' EXIT
+trap 'RC=$?; stop_own_cached "$PIDFILE"; remove_sock_dir; rm -rf "$W"; exit_checking_valgrind $RC' EXIT
 sleep 1
 
 # 1000000123 is not a multiple of the 300 s step
