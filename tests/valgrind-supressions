@@ -130,3 +130,10 @@
     fun:g_thread_new
     ...
 }
+{
+    fontconfig_init_files_open_at_exit
+    CoreError:FdNotClosed
+    ...
+    fun:FcInit
+    ...
+}
