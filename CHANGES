@@ -35,6 +35,12 @@ Bugfixes
   change nothing. The new `RRA#<index>:alpha=<value>` form (also `beta`,
   `gamma`, `smoothing-window`, `deltapos`, `deltaneg`, `failure-threshold`,
   `window-length`) tunes exactly one RRA. @oetiker
+* The CI now runs the whole test suite under AddressSanitizer and UBSan,
+  and a fuzzing job mutates the seed corpora for two minutes per harness on
+  every change and half an hour every night. A sanitizer finding fails the
+  job and keeps the log and the reproducing input as a build artifact. The
+  open harness now also runs info, dump, first, last, lastupdate and update
+  on every file that opens. @somethingwithproof
 * A program that included only the installed `rrd_client.h` did not
   compile, with errors such as "unknown type name 'rrd_info_t'" and
   "unknown type name 'time_t'"; it first had to include `rrd.h`. The
