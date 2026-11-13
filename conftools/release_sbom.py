@@ -69,7 +69,8 @@ def spdx_id(*parts):
 
 
 def run(*cmd):
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    return subprocess.run(cmd, check=True, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE, universal_newlines=True).stdout
 
 
 def document(name, packages, relationships, licenses):
@@ -153,7 +154,8 @@ def shared_libraries(paths):
     """Resolved shared-library paths loaded by the given ELF files."""
     libs, missing = set(), []
     for path in paths:
-        out = subprocess.run(["ldd", path], capture_output=True, text=True).stdout
+        out = subprocess.run(["ldd", path], stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, universal_newlines=True).stdout
         for line in out.splitlines():
             m = re.match(r"\s*(\S+) => (\S+)", line)
             if not m:
@@ -185,7 +187,8 @@ def deb_info(args):
 def rpm_owner(lib):
     out = subprocess.run(["rpm", "-qf", "--qf",
                           "%{NAME}\t%{EPOCHNUM}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{LICENSE}\n", lib],
-                         capture_output=True, text=True)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         universal_newlines=True)
     if out.returncode != 0:
         return None
     name, epoch, version, arch, lic = out.stdout.splitlines()[0].split("\t")
@@ -193,11 +196,14 @@ def rpm_owner(lib):
 
 
 def deb_owner(lib):
-    out = subprocess.run(["dpkg", "-S", lib], capture_output=True, text=True)
+    out = subprocess.run(["dpkg", "-S", lib], stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, universal_newlines=True)
     if out.returncode != 0:
         # usrmerge: dpkg may know the file under /lib rather than /usr/lib.
         alt = lib[4:] if lib.startswith("/usr/") else None
-        out = subprocess.run(["dpkg", "-S", alt], capture_output=True, text=True) if alt else out
+        if alt:
+            out = subprocess.run(["dpkg", "-S", alt], stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, universal_newlines=True)
         if out.returncode != 0:
             return None
     # "libcairo2:amd64: /usr/lib/..." (several owners are comma-separated)
@@ -263,7 +269,9 @@ def package_sbom(args, kind):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    sub = parser.add_subparsers(dest="kind", required=True)
+    # AlmaLinux 8 ships Python 3.6, before add_subparsers(required=True).
+    sub = parser.add_subparsers(dest="kind")
+    sub.required = True
     src = sub.add_parser("source", help="SBOM for the source tarball")
     src.add_argument("--tarball", required=True)
     for kind in ("rpm", "deb"):
