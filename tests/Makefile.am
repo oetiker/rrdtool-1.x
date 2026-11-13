@@ -105,6 +105,11 @@ endif
 endif
 
 if HAVE_STATIC_LIBRRD
+check_PROGRAMS += hw-failures
+TESTS += hw-failures
+hw_failures_SOURCES = test_hw_failures.c
+hw_failures_LDFLAGS = -static
+hw_failures_LDADD = ${top_builddir}/src/librrd.la
 check_PROGRAMS += fetch-empty-security
 TESTS += fetch-empty-security
 fetch_empty_security_SOURCES = test_fetch_empty_security.c
