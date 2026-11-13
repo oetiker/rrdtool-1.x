@@ -67,6 +67,10 @@ if [ -z "$MSYSTEM" ] && [ "$(getconf LONG_BIT)" = 64 ]; then
   expect_error "update on a file with an index past the last RRA" \
     "refers to RRA 99, but there are only 5 RRAs" \
     $RRDTOOL update "${BUILD}-crafted.rrd" 1000000004:4
+  # tune rewrites the links; it must name the bad link, not a deletion.
+  expect_error "tune on a file with an index past the last RRA" \
+    "the HWPREDICT RRA refers to RRA 99, but there are only 5 RRAs" \
+    $RRDTOOL tune "${BUILD}-crafted.rrd" DS:b:GAUGE:10:U:U
 fi
 
 rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"

@@ -367,7 +367,16 @@ static int handle_rra_defs(const rrd_t *in, rrd_t *out,
 	    && cf != CF_FAILURES)
 	    continue;
 	dep = rra->par[RRA_dependent_rra_idx].u_cnt;
-	if (dep >= in->stat_head->rra_cnt || new_index[dep] < 0) {
+	/* a link past the last RRA was already wrong in the input file
+	   (released tune left such links behind); say so instead of
+	   blaming a deletion */
+	if (dep >= in->stat_head->rra_cnt) {
+	    rrd_set_error("the %s RRA refers to RRA %lu, but there are "
+			  "only %lu RRAs", rra->cf_nam, dep,
+			  in->stat_head->rra_cnt);
+	    goto done;
+	}
+	if (new_index[dep] < 0) {
 	    rrd_set_error("cannot delete RRA %lu: the %s RRA that is left "
 			  "depends on it", dep, rra->cf_nam);
 	    goto done;
