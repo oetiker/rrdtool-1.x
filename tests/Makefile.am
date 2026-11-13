@@ -113,6 +113,14 @@ fetch_empty_security_LDFLAGS = -static
 fetch_empty_security_LDADD = ${top_builddir}/src/librrd.la
 endif
 
+if HAVE_STATIC_LIBRRD
+check_PROGRAMS += restore-text
+TESTS += restore-text
+restore_text_SOURCES = test_restore_text.c
+restore_text_LDFLAGS = -static
+restore_text_LDADD = ${top_builddir}/src/librrd.la
+endif
+
 # Linked against the shared librrd on purpose: it fails to link when a
 # function of the installed rrd_client.h is not exported.
 if BUILD_RRDCACHED
