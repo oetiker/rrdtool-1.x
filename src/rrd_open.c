@@ -783,13 +783,18 @@ rrd_file_t *rrd_open(
                               rrd->stat_head->pdp_step);
                 goto out_close;
             }
-            /* first/dump form signed offsets back from the aligned time. */
+            /* first and dump compute the time of the oldest row as a
+             * signed 64-bit offset from the aligned last update.  The limit
+             * must not depend on the size of long: on platforms with a
+             * 32-bit long, valid files span more than LONG_MAX seconds
+             * (--step 300 RRA:AVERAGE:0.5:288:36500 covers 100 years). */
             {
-                unsigned long step = rrd->rra_def[ui].pdp_cnt *
+                uint64_t  step = (uint64_t) rrd->rra_def[ui].pdp_cnt *
                     rrd->stat_head->pdp_step;
 
-                if (step > LONG_MAX ||
-                    rrd->rra_def[ui].row_cnt - 1 > LONG_MAX / step) {
+                if (step > INT64_MAX ||
+                    (uint64_t) (rrd->rra_def[ui].row_cnt - 1) >
+                    INT64_MAX / step) {
                     rrd_set_error("'%s' header describes an impossibly large "
                                   "database (RRA %lu time span is too large)",
                                   file_name, ui);

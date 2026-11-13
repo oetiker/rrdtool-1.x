@@ -1,0 +1,25 @@
+#!/bin/bash
+
+. "$(dirname "$0")/functions"
+
+# Files that rrd_open's header checks must keep accepting.
+[ -n "$RRDCACHED_ADDRESS" ] && exit 77
+
+BUILD="$BUILDDIR/$(basename "$0")"
+rm -f "${BUILD}"*.rrd
+
+# 100 years of daily averages span more than 2^31 seconds, more than a
+# 32-bit long holds (Windows, 32-bit Linux).
+$RRDTOOL create "${BUILD}-century.rrd" --start 1100000000 --step 300 \
+  DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:288:36500 || fail $? create
+$RRDTOOL info "${BUILD}-century.rrd" >/dev/null
+report "info on a 100-year RRA"
+first=$($RRDTOOL first "${BUILD}-century.rrd")
+[ "$first" = -2053555200 ]
+report "first on a 100-year RRA ($first)"
+$RRDTOOL dump "${BUILD}-century.rrd" >"${BUILD}.xml"
+report "dump of a 100-year RRA"
+$RRDTOOL update "${BUILD}-century.rrd" 1100000300:1
+report "update of a 100-year RRA"
+
+rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"
