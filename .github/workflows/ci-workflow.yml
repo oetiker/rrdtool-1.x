@@ -98,6 +98,11 @@ jobs:
         run: |
           win32\collect_rrdtool_vcpkg_files.bat ${{ matrix.configuration }}
 
+      # The validator pins in win32/sbom-requirements.txt are for Python 3.12.
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
       # Same SBOM step as the release workflow, so a vcpkg bump that renames
       # or adds a shipped DLL fails here instead of at release time.
       - name: Generate SBOM
@@ -111,6 +116,8 @@ jobs:
           python win32/vcpkg_sbom.py --installed "vcpkg/installed/${TRIPLET}" \
               --release-dir "win32/nmake_release_${CFG}_vcpkg/${name}" \
               --version "$(cat VERSION)" --name "$name" --output "${name}.spdx.json"
+          python -m pip install --quiet --require-hashes -r win32/sbom-requirements.txt
+          pyspdxtools -i "${name}.spdx.json"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
