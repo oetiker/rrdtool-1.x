@@ -22,4 +22,14 @@ report "dump of a 100-year RRA"
 $RRDTOOL update "${BUILD}-century.rrd" 1100000300:1
 report "update of a 100-year RRA"
 
+# restore copies <version> as it is; a short version still opens.
+$RRDTOOL create "${BUILD}.rrd" --start 1000000000 --step 300 \
+  DS:a:GAUGE:600:U:U RRA:AVERAGE:0.5:1:10 || fail $? create
+$RRDTOOL dump "${BUILD}.rrd" >"${BUILD}.xml" || fail $? dump
+sed 's#<version>0003</version>#<version>3</version>#' "${BUILD}.xml" \
+  >"${BUILD}-v3.xml"
+$RRDTOOL restore "${BUILD}-v3.xml" "${BUILD}-v3.rrd" &&
+  $RRDTOOL info "${BUILD}-v3.rrd" >/dev/null
+report "a restored file with version 3 opens"
+
 rm -f "${BUILD}"*.rrd "${BUILD}"*.xml "${BUILD}.out"

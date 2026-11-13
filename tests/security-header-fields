@@ -63,7 +63,7 @@ check "reject an unterminated version" \
 
 check "reject a non-numeric version" \
   'substr($_, 4, 5, "000x\0")' \
-  "invalid version field"
+  "can't handle RRD file version 000x"
 
 check "reject version zero" \
   'substr($_, 4, 5, "0000\0")' \

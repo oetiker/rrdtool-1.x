@@ -606,15 +606,10 @@ rrd_file_t *rrd_open(
         goto out_close;
     }
 
-    if (rrd->stat_head->version[4] != '\0' ||
-        rrd->stat_head->version[0] < '0' ||
-        rrd->stat_head->version[0] > '9' ||
-        rrd->stat_head->version[1] < '0' ||
-        rrd->stat_head->version[1] > '9' ||
-        rrd->stat_head->version[2] < '0' ||
-        rrd->stat_head->version[2] > '9' ||
-        rrd->stat_head->version[3] < '0' ||
-        rrd->stat_head->version[3] > '9') {
+    /* atoi and the "%s" below need a terminated string.  restore copies
+     * the <version> text as it is, so "3" is as valid as "0003". */
+    if (memchr(rrd->stat_head->version, '\0',
+               sizeof(rrd->stat_head->version)) == NULL) {
         rrd_set_error("'%s' has an invalid version field", file_name);
         goto out_close;
     }
